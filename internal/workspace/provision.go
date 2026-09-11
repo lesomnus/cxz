@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -28,6 +29,21 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string) error 
 			}
 			if e = core.WriteJSON(p.Config, map[string]any{"name": p.Name, "image": "mcr.microsoft.com/devcontainers/base:bookworm", "remoteUser": "vscode"}); e != nil {
 				return e
+			}
+			if e = os.Chmod(p.Config, 0644); e != nil {
+				return e
+			}
+			if uid, err := strconv.Atoi(os.Getenv("CXZ_HOST_UID")); err == nil {
+				gid, err := strconv.Atoi(os.Getenv("CXZ_HOST_GID"))
+				if err != nil {
+					return err
+				}
+				if e = os.Chown(p.Config, uid, gid); e != nil {
+					return e
+				}
+				if e = os.Chown(filepath.Dir(p.Config), uid, gid); e != nil {
+					return e
+				}
 			}
 		case 1:
 			p.Config = configs[0]

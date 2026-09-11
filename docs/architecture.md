@@ -9,8 +9,11 @@ Claude Code alone, through tmux and a terminal. This document records the
 decisions that differ from cld and the reasoning behind them, so that a later
 change knows what it is overturning.
 
-Status: design draft. Nothing here is implemented yet. Sections marked
-**Open** are genuinely undecided.
+Status: architecture with a TUI-first implementation in progress (2026-09-11).
+Owned devcontainer management and Claude/Codex adapters are implemented; see
+[cld-parity acceptance](plans/cld-parity.md) and [verification progress](progress.md).
+The web/IDE/authentication portions remain design work. Sections marked **Open**
+are genuinely undecided. The user's current scope brings Codex into the TUI phase.
 
 ## Goals
 

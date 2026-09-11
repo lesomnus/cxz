@@ -27,9 +27,24 @@ type Project struct {
 }
 type Runtime struct{ ProjectID, Workspace, Token, Claude, Codex string }
 type Manager struct {
+	opsMu                                                     sync.Mutex
+	writeMu                                                   sync.Mutex
+	ops                                                       map[string]*sync.Mutex
 	mu                                                        sync.Mutex
 	DB                                                        *sql.DB
 	Root, Owner, WorkspaceRoot, ToolsVolume, Image, Container string
+}
+
+func (m *Manager) projectLock(id string) *sync.Mutex {
+	m.opsMu.Lock()
+	defer m.opsMu.Unlock()
+	if m.ops == nil {
+		m.ops = map[string]*sync.Mutex{}
+	}
+	if m.ops[id] == nil {
+		m.ops[id] = &sync.Mutex{}
+	}
+	return m.ops[id]
 }
 
 func New(db *sql.DB, root string) (*Manager, error) {
@@ -80,6 +95,8 @@ func New(db *sql.DB, root string) (*Manager, error) {
 	return m, e
 }
 func (m *Manager) save(ctx context.Context, p *Project) error {
+	m.writeMu.Lock()
+	defer m.writeMu.Unlock()
 	b, e := json.Marshal(p)
 	if e != nil {
 		return e
@@ -156,8 +173,6 @@ func (m *Manager) client(ctx context.Context, p *Project) (*grpc.ClientConn, api
 	return conn, api.NewSessionsClient(conn), nil
 }
 func (m *Manager) ClientFor(ctx context.Context, id string) (*grpc.ClientConn, api.SessionsClient, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
 	all, e := m.all(ctx)
 	if e != nil {
 		return nil, nil, e
@@ -180,6 +195,17 @@ func (m *Manager) Sessions(ctx context.Context) (*api.SessionList, error) {
 	}
 	out := &api.SessionList{}
 	for _, p := range all {
+		lock := m.projectLock(p.ID)
+		if !lock.TryLock() {
+			out.Sessions = append(out.Sessions, p.Sessions...)
+			continue
+		}
+		latest, err := m.resolve(ctx, p.ID)
+		if err != nil {
+			lock.Unlock()
+			return nil, err
+		}
+		p = latest
 		c, client, e := m.client(ctx, p)
 		var list *api.SessionList
 		if e == nil {
@@ -197,6 +223,7 @@ func (m *Manager) Sessions(ctx context.Context) (*api.SessionList, error) {
 			p.Sessions = list.Sessions
 			if string(before) != string(after) {
 				if e = m.save(ctx, p); e != nil {
+					lock.Unlock()
 					return nil, e
 				}
 			}
@@ -209,6 +236,7 @@ func (m *Manager) Sessions(ctx context.Context) (*api.SessionList, error) {
 			}
 		}
 		out.Sessions = append(out.Sessions, p.Sessions...)
+		lock.Unlock()
 	}
 	return out, nil
 }
@@ -225,8 +253,6 @@ func (m *Manager) Get(ctx context.Context, id string) (*api.Session, error) {
 	return nil, fmt.Errorf("session not found: %s", id)
 }
 func (m *Manager) Projects(ctx context.Context) (*api.ProjectList, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
 	all, e := m.all(ctx)
 	if e != nil {
 		return nil, e
@@ -256,8 +282,6 @@ func (m *Manager) Projects(ctx context.Context) (*api.ProjectList, error) {
 	return out, nil
 }
 func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (*api.Session, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
 	path := r.Workspace
 	if path == "" {
 		return nil, fmt.Errorf("workspace required")
@@ -285,6 +309,12 @@ func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (*api.Session
 		h := sha256.Sum256([]byte(path))
 		id := hex.EncodeToString(h[:12])
 		p = &Project{ID: id, Workspace: path, Name: filepath.Base(path), Network: "cxz-" + m.Owner[:12] + "-" + id, Volume: "cxz-" + m.Owner[:12] + "-" + id + "-state", Token: core.ID() + core.ID()}
+	}
+	lock := m.projectLock(p.ID)
+	lock.Lock()
+	defer lock.Unlock()
+	if latest, err := m.resolve(ctx, p.ID); err == nil {
+		p = latest
 	}
 	if r.TrustConfig {
 		p.Trusted = true
@@ -369,6 +399,14 @@ func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (*api.Session
 		live := s.State == "idle" || s.State == "working" || s.State == "waiting_input" || s.State == "starting"
 		if live {
 			if r.NewSession || s.Agent != kind {
+				if r.NewSession && r.ClientId != "" && s.Agent == kind {
+					// A lost Open response must not turn a successful Create retry
+					// into an active-workspace conflict. The runtime checks its key.
+					if retry, err := client.Create(ctx, &api.CreateRequest{Workspace: p.RemoteWorkspace, Agent: kind, ClientId: r.ClientId}); err == nil {
+						chosen = retry
+						break
+					}
+				}
 				return nil, fmt.Errorf("workspace has an active %s session %s; stop it explicitly before starting another", s.Agent, s.Id)
 			}
 			chosen = s
@@ -402,9 +440,14 @@ func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (*api.Session
 	return chosen, m.save(ctx, p)
 }
 func (m *Manager) Down(ctx context.Context, r *api.ProjectRequest) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
 	p, e := m.resolve(ctx, r.Workspace)
+	if e != nil {
+		return e
+	}
+	lock := m.projectLock(p.ID)
+	lock.Lock()
+	defer lock.Unlock()
+	p, e = m.resolve(ctx, p.ID)
 	if e != nil {
 		return e
 	}

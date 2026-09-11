@@ -1,0 +1,37 @@
+{
+  "date": "2026-09-11",
+  "scope": "installed Docker manager and cxz-owned devcontainers",
+  "versions": {"claude": "2.1.267", "codex": "0.154.0", "devcontainer_cli": "0.89.0"},
+  "provisioning_passed": [
+    "image and original lifecycle hook",
+    "Alpine/musl Claude startup",
+    "Dockerfile build with non-root remote user and create/start hooks",
+    "generated default configuration with non-root vscode runtime",
+    "official git feature and postCreateCommand",
+    "Compose dev service and sidecar DNS",
+    "Compose exact external state/tools volumes and read-only tools",
+    "project-scoped in-container CLI"
+  ],
+  "boundary_checks_passed": [
+    "foreign up leaves existing container untouched",
+    "recreate requires explicit noninteractive confirmation",
+    "confirmed recreate owns replacement and does not mount Docker socket",
+    "project client denies fleet access and unknown session ids",
+    "second active agent rejected",
+    "down retains project state volume"
+  ],
+  "codex_live": {
+    "passed": ["conversation", "manager restart preserves run", "approval", "denial", "interrupt", "recreation 1 retains vendor id and conversation memory", "recreation 2 retains vendor id and conversation memory"]
+  },
+  "claude_live": {
+    "passed": ["conversation", "manager restart preserves run", "approval", "denial", "interrupt", "recreation 1 retains vendor id and conversation memory"],
+    "not_passed": [{"check": "recreation 2 conversation memory", "reason": "vendor returned an API safeguard refusal (reasoning_extraction) instead of answering; same vendor id and the error were preserved", "reproduced": true}],
+    "probe_adjustment": "A foreground sleep was rejected by the vendor harness on another run. The interrupt test now uses a bounded checksum computation. No vendor safeguard configuration was disabled."
+  },
+  "terminal_passed": ["attach selects Codex session", "Ctrl-N and Tab selects vendor", "manager restart reconnects event cursor", "Ctrl-C detaches"],
+  "additional_recovery_passed": ["abrupt Codex container removal retains session/thread and starts a new run", "manager SQLite rebuild from manifests preserves running project supervisor"],
+  "regressions_passed": ["go test ./...", "CXZ_TEST_RACE=1 go test -race ./internal/... -count=1", "go vet ./...", "protobuf regeneration without tracked changes", "git diff --check"],
+  "credentials": "Only disposable project-local access-token projections were used; no host refresh token was copied. Temporary credential files were removed and authenticated test agents stopped.",
+  "evidence_policy": "Summary only; raw project journals and account data are not committed."
+  ,"cleanup": "Test-owned project containers and manager removed; workspaces, named volumes and database backup retained. No shared-engine prune performed."
+}
