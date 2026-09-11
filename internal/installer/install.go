@@ -108,24 +108,49 @@ func Install(ctx context.Context, root, workspaceRoot, image string, recreate bo
 	if e != nil {
 		return e
 	}
+	previousRoot := v.WorkspaceRoot
 	v.WorkspaceRoot = workspaceRoot
+	// Validate connectivity before replacing any existing manager.
+	endpointArgs, e := dockerEndpoint()
+	if e != nil {
+		return e
+	}
 	if image == "" {
 		image, e = Build(ctx, out)
 		if e != nil {
 			return e
 		}
 	}
+	previousImage := v.Image
 	v.Image = image
 	if old, e := dockerx.Inspect(ctx, v.Container); e == nil {
 		if old.Config.Labels["cxz.owner"] != v.Owner {
 			return fmt.Errorf("daemon name is occupied by an unowned container")
 		}
 		if !recreate {
-			return fmt.Errorf("already installed; use install --recreate")
+			if old.Config.Image != image || previousRoot != workspaceRoot {
+				return fmt.Errorf("manager image or workspace root differs; use install --recreate (data retained)")
+			}
+			if !old.State.Running {
+				if _, e = dockerx.Run(ctx, "start", old.ID); e != nil {
+					return e
+				}
+			}
+			return waitReady(ctx, v, out)
+		}
+		if previousImage != image && previousImage != "" {
+			v.PreviousImage = previousImage
+		}
+		if e = core.WriteJSON(filepath.Join(root, "installation.json"), v); e != nil {
+			return e
 		}
 		if _, e = dockerx.Run(ctx, "rm", "-f", old.ID); e != nil {
 			return e
 		}
+	}
+	// Persist identity before creating resources, including on a first attempt.
+	if e = core.WriteJSON(filepath.Join(root, "installation.json"), v); e != nil {
+		return e
 	}
 	for _, vol := range []string{v.StateVolume, v.ToolsVolume} {
 		if e = dockerx.EnsureResource(ctx, "volume", vol, v.Owner, ""); e != nil {
@@ -139,6 +164,16 @@ func Install(ctx context.Context, root, workspaceRoot, image string, recreate bo
 	}
 	args := []string{"run", "-d", "--name", v.Container, "--restart", "unless-stopped", "--label", "cxz.role=daemon", "--label", "cxz.owner=" + v.Owner, "--mount", "type=volume,source=" + v.StateVolume + ",target=/var/lib/cxz", "--mount", "type=volume,source=" + v.ToolsVolume + ",target=/cxz/tools", "--mount", "type=bind,source=" + workspaceRoot + ",target=" + workspaceRoot, "-e", "CXZ_OWNER=" + v.Owner, "-e", "CXZ_WORKSPACE_ROOT=" + workspaceRoot, "-e", "CXZ_TOOLS_VOLUME=" + v.ToolsVolume, "-e", "CXZ_MANAGER_IMAGE=" + image, "-e", "CXZ_MANAGER_CONTAINER=" + v.Container}
 	args = append(args, "-e", "CXZ_HOST_UID="+strconv.Itoa(os.Getuid()), "-e", "CXZ_HOST_GID="+strconv.Itoa(os.Getgid()))
+	args = append(args, endpointArgs...)
+	args = append(args, image, "--state", "/var/lib/cxz", "serve")
+	if _, e = dockerx.Run(ctx, args...); e != nil {
+		return e
+	}
+	return waitReady(ctx, v, out)
+}
+
+func dockerEndpoint() ([]string, error) {
+	var args []string
 	host := os.Getenv("DOCKER_HOST")
 	if host == "" || strings.HasPrefix(host, "unix://") {
 		path := strings.TrimPrefix(host, "unix://")
@@ -149,28 +184,25 @@ func Install(ctx context.Context, root, workspaceRoot, image string, recreate bo
 	} else {
 		u, e := url.Parse(host)
 		if e != nil || u.Scheme != "tcp" {
-			return fmt.Errorf("unsupported Docker endpoint")
+			return nil, fmt.Errorf("unsupported Docker endpoint")
 		}
 		if os.Getenv("DOCKER_TLS_VERIFY") != "" {
-			return fmt.Errorf("TLS Docker endpoints need an explicit configured manager image/mount setup")
+			return nil, fmt.Errorf("TLS Docker endpoints need an explicit configured manager image/mount setup")
 		}
 		ips, e := net.LookupHost(u.Hostname())
 		if e != nil {
-			return e
+			return nil, e
 		}
 		u.Host = net.JoinHostPort(ips[0], u.Port())
 		args = append(args, "-e", "DOCKER_HOST="+u.String())
 	}
-	args = append(args, image, "--state", "/var/lib/cxz", "serve")
-	if _, e = dockerx.Run(ctx, args...); e != nil {
-		return e
-	}
-	if e = core.WriteJSON(filepath.Join(root, "installation.json"), v); e != nil {
-		return e
-	}
+	return args, nil
+}
+
+func waitReady(ctx context.Context, v transport.Installation, out io.Writer) error {
 	for i := 0; i < 150; i++ {
-		if e = dockerx.Input(ctx, bytes.NewReader(nil), "exec", v.Container, "/usr/local/bin/cxz", "--state", "/var/lib/cxz", "_ready"); e == nil {
-			fmt.Fprintln(out, "cxz installed:", v.Container, "workspace root:", workspaceRoot)
+		if e := dockerx.Input(ctx, bytes.NewReader(nil), "exec", v.Container, "/usr/local/bin/cxz", "--state", "/var/lib/cxz", "_ready"); e == nil {
+			fmt.Fprintln(out, "cxz installed:", v.Container, "workspace root:", v.WorkspaceRoot)
 			return nil
 		}
 		select {

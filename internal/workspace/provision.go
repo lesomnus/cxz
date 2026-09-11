@@ -19,6 +19,9 @@ import (
 
 func (m *Manager) provision(ctx context.Context, p *Project, kind string) error {
 	var e error
+	if e = m.checkpoint(ctx, p, "configuration"); e != nil {
+		return e
+	}
 	if p.Config == "" {
 		configs := Discover(p.Workspace)
 		switch len(configs) {
@@ -87,6 +90,9 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string) error 
 				b[key] = abspath(v)
 			}
 		}
+	}
+	if e = m.checkpoint(ctx, p, "resources"); e != nil {
+		return e
 	}
 	for _, name := range []string{p.Network} {
 		if e = dockerx.EnsureResource(ctx, "network", name, m.Owner, p.ID); e != nil {
@@ -237,6 +243,9 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string) error 
 		return e
 	}
 	cmd := exec.CommandContext(ctx, "devcontainer", "up", "--workspace-folder", p.Workspace, "--config", p.Config, "--override-config", configPath, "--id-label", "cxz.owner="+m.Owner, "--id-label", "cxz.project="+p.ID, "--id-label", "devcontainer.local_folder="+p.Workspace, "--mount-workspace-git-root=false", "--update-remote-user-uid-default", "off", "--include-merged-configuration")
+	if e = m.checkpoint(ctx, p, "devcontainer-up"); e != nil {
+		return e
+	}
 	cmd.Env = append(os.Environ(), "COMPOSE_PROJECT_NAME=cxz-"+m.Owner[:12]+"-"+p.ID)
 	var stdout bytes.Buffer
 	log, e := os.OpenFile(filepath.Join(m.Root, "projects", p.ID, "provision.log"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
@@ -279,6 +288,9 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string) error 
 	if _, e = dockerx.Owned(ctx, p.ContainerID, m.Owner, p.ID); e != nil {
 		return e
 	}
+	if e = m.checkpoint(ctx, p, "agent-tools"); e != nil {
+		return e
+	}
 	platform, e := dockerx.Run(ctx, "exec", p.ContainerID, "uname", "-m")
 	if e != nil {
 		return e
@@ -312,6 +324,9 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string) error 
 	}
 	// The runtime reads binary choices on each Create. Its lifetime is not the
 	// docker exec connection; _boot only starts a detached, independently locked process.
+	if e = m.checkpoint(ctx, p, "runtime-boot"); e != nil {
+		return e
+	}
 	_, e = dockerx.Run(ctx, "exec", "--user", p.RemoteUser, p.ContainerID, "/cxz/tools/cxz", "--state", "/cxz/state/data", "_boot")
 	return e
 }
