@@ -32,6 +32,7 @@ import (
 type Server struct {
 	api.UnimplementedSessionsServer
 	mu                     sync.Mutex
+	projectionMu           sync.Mutex
 	root, agent, configDir string
 	db                     *sql.DB
 }
@@ -121,6 +122,18 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 	if e = os.Chmod(sock, 0600); e != nil {
 		return e
 	}
+	ctx, telemetry, e := (&config.OtelConfig{}).Build(ctx, config.Service{Name: "cxz", Scope: "github.com/lesomnus/cxz"})
+	if e != nil {
+		return e
+	}
+	defer func() {
+		shutdown, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_ = telemetry.Shutdown(shutdown)
+	}()
+	if e = telemetry.Start(ctx); e != nil {
+		return e
+	}
 	opts := grpcx.ServerOptions(ctx)
 	opts = append(opts, grpc.MaxRecvMsgSize(1024*1024), grpc.MaxSendMsgSize(20*1024*1024))
 	g := grpc.NewServer(opts...)
@@ -153,6 +166,10 @@ func pbEvent(e core.Event) *api.Event {
 	return &api.Event{SessionId: e.SessionID, RunId: e.RunID, Seq: e.Seq, TimeMs: e.TimeMS, Kind: e.Kind, Text: e.Text, RequestId: e.RequestID, Payload: e.Payload}
 }
 func (s *Server) snapshot(ctx context.Context, m core.Session) (*api.Session, error) {
+	// Serialize read/advance so another reader cannot advance SQLite between this
+	// reader's journal snapshot and its sequence consistency check.
+	s.projectionMu.Lock()
+	defer s.projectionMu.Unlock()
 	events, e := journal.Read(filepath.Join(core.Dir(s.root, m.ID), "events.jsonl"))
 	if e != nil {
 		return nil, e
@@ -288,6 +305,9 @@ func (s *Server) Create(ctx context.Context, r *api.CreateRequest) (*api.Session
 		return nil, e
 	}
 	if e = core.WriteJSON(filepath.Join(core.Dir(s.root, m.ID), "session.json"), m); e != nil {
+		return nil, e
+	}
+	if e = core.SyncDir(filepath.Join(s.root, "sessions")); e != nil {
 		return nil, e
 	}
 	b, _ = json.Marshal(m)

@@ -22,7 +22,8 @@ SQLite, 독립 supervisor와 세션 클라이언트가 추가되었다. 2026-09-
 로그인은 별도 빈 설정 디렉터리에서 인증 URL 발급까지 확인했으며 실제 OAuth 완료는 남아 있다.
 후속 Docker 검증에서는 동일 workspace 경로·UID·named volume을 사용해 대기 중, 승인 대기 중,
 도구 실행 중 컨테이너를 제거·재생성한 뒤 문맥과 파일 상태 복구를 확인했다.
-실제 cxz supervisor나 `devcontainer up`을 통한 통합 검증은 아직 아니다.
+당시 probe는 실제 cxz supervisor나 `devcontainer up` 통합 검증은 아니었다.
+이후 본체 통합 테스트 및 cxz의 Docker 재생성 결과는 진행 문서에 별도로 기록했다.
 아래 순서는 사용자 지시에 따라 Claude 검증·구현 우선으로 갱신했다.
 
 ## 1. 구현 전에 정리할 결정

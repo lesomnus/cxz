@@ -78,6 +78,11 @@ func run() error {
 			return fmt.Errorf("session id required")
 		}
 		return supervisor.Run(ctx, *root, args[1])
+	case "_guard":
+		if len(args) != 2 {
+			return fmt.Errorf("process group required")
+		}
+		return supervisor.Guard(args[1])
 	}
 	conn, e := server.Dial(*root)
 	if e != nil {

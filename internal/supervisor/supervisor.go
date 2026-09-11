@@ -5,6 +5,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -35,6 +36,8 @@ type Supervisor struct {
 	done        chan struct{}
 	stopping    bool
 	interrupted bool
+	batch       []core.Event
+	buffering   bool
 }
 type record struct {
 	Op      string       `json:"op"`
@@ -84,6 +87,11 @@ func Run(ctx context.Context, root, id string) error {
 	if e = json.Unmarshal(b, &session); e != nil {
 		return e
 	}
+	workspaceLock, e := core.Lock(filepath.Join(root, "run", fmt.Sprintf("workspace-%x.lock", sha256.Sum256([]byte(session.Workspace)))))
+	if e != nil {
+		return e
+	}
+	defer workspaceLock.Close()
 	l, e := journal.Open(filepath.Join(dir, "events.jsonl"))
 	if e != nil {
 		return e
@@ -131,6 +139,13 @@ func Run(ctx context.Context, root, id string) error {
 		return e
 	}
 	defer s.kill()
+	// A separate pipe watcher survives supervisor SIGKILL and reaps the entire
+	// agent process group, including active shell children (Pdeathsig alone cannot).
+	disarm, e := guard(s.cmd.Process.Pid, errlog, workspaceLock)
+	if e != nil {
+		return e
+	}
+	defer disarm()
 	sock := core.Socket(root, id)
 	if e = os.Remove(sock); e != nil && !os.IsNotExist(e) {
 		return e
@@ -200,7 +215,15 @@ func (s *Supervisor) event(kind, text, id string, payload any, raw []byte) core.
 	if payload != nil {
 		b, _ = json.Marshal(payload)
 	}
-	e, err := s.log.Append(core.Event{SessionID: s.session.ID, RunID: s.snap.RunID, Kind: kind, Text: text, RequestID: id, Payload: b, Raw: raw})
+	e := core.Event{SessionID: s.session.ID, RunID: s.snap.RunID, Kind: kind, Text: text, RequestID: id, Payload: b, Raw: raw}
+	var err error
+	if s.buffering {
+		e.Seq = s.snap.LastSeq + 1
+		e.TimeMS = time.Now().UnixMilli()
+		s.batch = append(s.batch, e)
+	} else {
+		e, err = s.log.Append(e)
+	}
 	if err != nil {
 		s.kill()
 		panic(fmt.Sprintf("journal durability failure: %v", err))
@@ -228,6 +251,17 @@ func (s *Supervisor) clearPending() {
 func (s *Supervisor) consume(raw []byte) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	s.buffering = true
+	s.batch = nil
+	defer func() {
+		_, err := s.log.AppendBatch(s.batch)
+		s.buffering = false
+		s.batch = nil
+		if err != nil {
+			s.kill()
+			panic(fmt.Sprintf("journal durability failure: %v", err))
+		}
+	}()
 	s.event("raw", "", "", nil, raw)
 	var v struct {
 		Type      string         `json:"type"`
@@ -275,6 +309,9 @@ func (s *Supervisor) consume(raw []byte) {
 	case "control_cancel_request":
 		delete(s.pending, v.RequestID)
 		s.event("approval_resolved", "canceled", v.RequestID, nil, nil)
+		if len(s.pending) == 0 && s.snap.State == "waiting_input" {
+			s.event("state", "working", "", nil, nil)
+		}
 	case "assistant", "user":
 		var blocks []struct {
 			Type    string `json:"type"`
@@ -402,6 +439,7 @@ func (s *Supervisor) execute(op string, c core.Command) (core.Receipt, error) {
 	}
 	if wire != nil {
 		if e := s.write(wire); e != nil {
+			s.kill()
 			return core.Receipt{ClientID: c.ClientID, Status: "delivery_unknown"}, nil
 		}
 	}

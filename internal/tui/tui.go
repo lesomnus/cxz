@@ -29,6 +29,7 @@ type model struct {
 	cursor              map[string]uint64
 	watchCancel         context.CancelFunc
 	watchID             string
+	wantID              string
 	program             *tea.Program
 }
 type listing struct {
@@ -44,8 +45,9 @@ type disconnected struct {
 	err error
 }
 type result struct {
-	text string
-	err  error
+	text      string
+	err       error
+	sessionID string
 }
 type tick time.Time
 
@@ -221,11 +223,18 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if s := m.current(); s != nil {
 			old = s.Id
 		}
+		if m.wantID != "" {
+			old = m.wantID
+		}
 		m.sessions = v.sessions
 		for i, s := range m.sessions {
 			if s.Id == old {
 				m.selected = i
+				m.wantID = ""
 			}
+		}
+		if strings.Contains(m.notice, "reconnecting") {
+			m.notice = "connected"
 		}
 		m.watch()
 		m.render()
@@ -250,6 +259,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.notice = v.err.Error()
 		} else {
 			m.notice = v.text
+			if v.sessionID != "" {
+				m.wantID = v.sessionID
+			}
 		}
 		return m, m.refresh()
 	case tea.KeyMsg:
@@ -309,8 +321,11 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					}
 					ctx, cancel := context.WithTimeout(m.ctx, 30*time.Second)
 					defer cancel()
-					_, e = m.client.Create(ctx, &api.CreateRequest{Workspace: path, ClientId: core.ID()})
-					return result{text: "session created", err: e}
+					s, e := m.client.Create(ctx, &api.CreateRequest{Workspace: path, ClientId: core.ID()})
+					if e != nil {
+						return result{err: e}
+					}
+					return result{text: "session created", sessionID: s.Id}
 				}
 			}
 			if strings.HasPrefix(text, "/answer ") {

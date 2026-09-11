@@ -15,7 +15,23 @@
   daemon SIGKILL 중 출력 보존, supervisor SIGKILL 후 새 run으로 resume,
   이전 run 승인 거부, SQLite 재구성.
 - 통과: 저널 torn-tail 복구 및 committed corruption 거부 단위 테스트.
-- 진행: 실제 Claude live integration, TUI 검증, race/vet, 장애 경계 보강.
+- 통과: 실제 Claude Code 2.1.267 live integration 7개 경로 — 대화, 승인,
+  거절, 질문, 실행 중 중단, daemon 재접속, 동일 vendor 세션 resume.
+  중단된 명령의 예정 종료 시각 이후에도 파일 부작용이 없음을 확인했다.
+  정제된 결과: `testdata/recovery/claude-live-summary.json`.
+- 통과: 실제 터미널에서 TUI 세션 생성, 대화, F2 승인, 질문 JSON 응답,
+  F4 중단, Ctrl+C detach 후 살아 있는 세션 확인. 키 매핑·중복 이벤트 제거·
+  터미널 escape 제거는 TUI 단위 테스트로도 검증한다.
+- 통과: cxz 앱 자체의 비루트 Docker 재생성 4개 검사. 승인 대기 및 실행 중
+  컨테이너 소실 후 영속 volume으로 registry/journal 복구, 새 run resume,
+  stale 승인 거부, 복구 후 대화. fixture agent 사용, 네트워크 없음.
+  결과: `testdata/recovery/cxz-container/summary.json`. 공유 엔진의 테스트 소유
+  컨테이너/volume만 label 확인 후 제거했다.
+- 보강: raw와 정규화 이벤트를 단일 JSONL batch로 원자적으로 기록하고,
+  중간에 끊긴 batch는 전부 제외한다. 기존 단건 형식도 읽는다.
+- 보강: supervisor SIGKILL 시 shell 자식까지 종료하는 liveness guardian,
+  workspace flock, manifest 디렉터리 fsync, 조회 projection 경쟁 직렬화.
+- 진행: 마지막 변경 후 race/vet 및 live 회귀 재실행.
 - 설계 결정: raw append-only 저널을 원본으로 유지하고 SQLite를 재구성 가능한
   조회 projection으로 사용한다. daemon/TUI 종료는 agent 종료와 분리한다.
 - 설계 결정: 현재 개발 컨테이너 안에서 agent를 실행한다. 별도 devcontainer 자동
@@ -28,3 +44,12 @@
 
 Git: 첫 기반 커밋 `2eaeda5`를 `lesomnus/cxz`의 `main`에 push했다.
 HTTPS 인증은 없지만 기존 SSH 인증을 사용할 수 있어 push URL만 SSH로 설정했다.
+두 번째 기능 커밋 `73b95c3`도 push 완료.
+
+## 남겨 둔 범위
+
+사용자 인증/roster, 새 Claude 로그인 UI, 브라우저 UI, devcontainer 자동 생성,
+파일·diff/IDE relay, 외부 암호화 백업, Codex adapter는 이번 TUI 수직 구현에
+포함하지 않는다. 장기 아키텍처의 전체 MVP가 완료되었다는 의미는 아니다.
+현재 journal은 세션 단위로 메모리에 재생하며 조회 시 파일을 스캔하므로
+대용량 장기 운영에는 segment/index 및 보관 정책이 후속으로 필요하다.
