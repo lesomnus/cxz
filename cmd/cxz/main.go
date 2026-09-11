@@ -7,9 +7,12 @@ import (
 	"fmt"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/installer"
 	"github.com/lesomnus/cxz/internal/server"
 	"github.com/lesomnus/cxz/internal/supervisor"
+	"github.com/lesomnus/cxz/internal/transport"
 	"github.com/lesomnus/cxz/internal/tui"
+	"github.com/lesomnus/cxz/internal/workspace"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -34,7 +37,11 @@ func run() error {
 		base = filepath.Join(home, ".local", "state")
 	}
 	f := flag.NewFlagSet("cxz", flag.ContinueOnError)
-	root := f.String("state", filepath.Join(base, "cxz"), "private persistent state directory")
+	defaultRoot := filepath.Join(base, "cxz")
+	if v := os.Getenv("CXZ_STATE"); v != "" {
+		defaultRoot = v
+	}
+	root := f.String("state", defaultRoot, "private persistent state directory")
 	agent := f.String("agent", "claude", "Claude executable (serve only)")
 	cfg := f.String("claude-config", os.Getenv("CLAUDE_CONFIG_DIR"), "existing Claude config directory (serve only)")
 	f.Usage = func() {
@@ -57,7 +64,33 @@ func run() error {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 	switch args[0] {
+	case "_boot":
+		return workspace.Boot(*root)
+	case "_project":
+		runtime, e := workspace.LoadRuntime(*root)
+		if e != nil {
+			return e
+		}
+		os.Setenv("CXZ_PROJECT_ID", runtime.ProjectID)
+		os.Setenv("CXZ_STATE", *root)
+		return server.Run(ctx, *root, runtime.Claude, "")
+	case "install":
+		flags := flag.NewFlagSet("install", flag.ContinueOnError)
+		image := flags.String("image", "", "manager image (default builds from this binary)")
+		workspace := flags.String("workspace-root", "", "engine-visible workspace root")
+		recreate := flags.Bool("recreate", false, "replace owned manager, retaining state")
+		if e = flags.Parse(args[1:]); e != nil {
+			return e
+		}
+		return installer.Install(ctx, *root, *workspace, *image, *recreate, os.Stderr)
+	case "uninstall":
+		return installer.Uninstall(ctx, *root)
+	case "_bridge":
+		return transport.Bridge(*root)
 	case "serve":
+		if os.Getenv("CXZ_OWNER") != "" {
+			return server.Run(ctx, *root, *agent, *cfg)
+		}
 		*agent, e = exec.LookPath(*agent)
 		if e != nil {
 			return e
@@ -90,13 +123,25 @@ func run() error {
 	}
 	defer conn.Close()
 	client := api.NewSessionsClient(conn)
-	if args[0] == "tui" {
+	if args[0] == "up" || args[0] == "new" || args[0] == "recreate" || args[0] == "down" {
+		return projectCommand(ctx, client, args[0], args[1:])
+	}
+	if args[0] == "attach" || args[0] == "it" {
+		target := ""
+		if len(args) > 1 {
+			target = args[1]
+		}
+		return attach(ctx, client, target)
+	}
+	if args[0] == "tui" || args[0] == "watch" {
 		return tui.Run(ctx, client)
 	}
 	callCtx, done := context.WithTimeout(ctx, 30*time.Second)
 	defer done()
 	var result any
 	switch args[0] {
+	case "projects":
+		result, e = client.Projects(callCtx, &api.Empty{})
 	case "new":
 		if len(args) < 2 {
 			return fmt.Errorf("workspace required")

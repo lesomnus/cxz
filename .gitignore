@@ -1,4 +1,6 @@
 /bin/
 /.cxz/
+/.cxz-integration/
+/.cxz-test-workspaces/
 *.test
 coverage.out

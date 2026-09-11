@@ -10,6 +10,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/dockerx"
 	"path/filepath"
 	"strings"
 	"time"
@@ -30,6 +31,7 @@ type model struct {
 	watchCancel         context.CancelFunc
 	watchID             string
 	wantID              string
+	newAgent            string
 	program             *tea.Program
 }
 type listing struct {
@@ -52,11 +54,14 @@ type result struct {
 type tick time.Time
 
 func Run(ctx context.Context, c api.SessionsClient) error {
+	return RunSelected(ctx, c, "")
+}
+func RunSelected(ctx context.Context, c api.SessionsClient, id string) error {
 	input := textinput.New()
 	input.Placeholder = "message · /answer {\"question\":\"answer\"}"
 	input.CharLimit = 100000
 	input.Focus()
-	m := &model{ctx: ctx, client: c, input: input, view: viewport.New(80, 15), events: map[string][]*api.Event{}, cursor: map[string]uint64{}, width: 100, height: 30}
+	m := &model{ctx: ctx, client: c, input: input, view: viewport.New(80, 15), events: map[string][]*api.Event{}, cursor: map[string]uint64{}, width: 100, height: 30, wantID: id, newAgent: "claude"}
 	p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithContext(ctx))
 	m.program = p
 	_, e := p.Run()
@@ -269,6 +274,15 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c":
 			return m, tea.Quit
 		case "tab":
+			if m.creating {
+				if m.newAgent == "codex" {
+					m.newAgent = "claude"
+				} else {
+					m.newAgent = "codex"
+				}
+				m.notice = "New session agent: " + m.newAgent + " (Tab changes)"
+				return m, nil
+			}
 			m.focusList = !m.focusList
 			return m, nil
 		case "ctrl+n":
@@ -276,6 +290,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.focusList = false
 			m.input.SetValue("")
 			m.input.Placeholder = "absolute workspace path; Enter creates, Esc cancels"
+			m.notice = "New session agent: " + m.newAgent + " (Tab changes)"
 			return m, nil
 		case "esc":
 			m.creating = false
@@ -312,6 +327,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.input.SetValue("")
 			if m.creating {
+				kind := m.newAgent
 				m.creating = false
 				m.input.Placeholder = "message"
 				return m, func() tea.Msg {
@@ -319,9 +335,13 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					if e != nil {
 						return result{err: e}
 					}
-					ctx, cancel := context.WithTimeout(m.ctx, 30*time.Second)
+					ctx, cancel := context.WithTimeout(m.ctx, 30*time.Minute)
 					defer cancel()
-					s, e := m.client.Create(ctx, &api.CreateRequest{Workspace: path, ClientId: core.ID()})
+					path, e = dockerx.EnginePath(path)
+					if e != nil {
+						return result{err: e}
+					}
+					s, e := m.client.Open(ctx, &api.ProjectRequest{Workspace: path, Agent: kind, NewSession: true, ClientId: core.ID()})
 					if e != nil {
 						return result{err: e}
 					}
@@ -356,7 +376,7 @@ func (m *model) View() string {
 		if i == m.selected {
 			mark = ">"
 		}
-		fmt.Fprintf(&b, "%s %.8s [%s] %s\n", mark, s.Id, safeText(s.State), safeText(s.Workspace))
+		fmt.Fprintf(&b, "%s %.8s %s [%s] %s\n", mark, s.Id, safeText(s.Agent), safeText(s.State), safeText(s.Workspace))
 	}
 	b.WriteString("Tab sessions/chat · Ctrl+N new · F2 allow · F3 deny · F4 interrupt · Ctrl+R resume\n")
 	if s := m.current(); s != nil && len(s.Pending) > 0 {

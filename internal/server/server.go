@@ -20,12 +20,13 @@ import (
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/journal"
 	"github.com/lesomnus/cxz/internal/supervisor"
+	"github.com/lesomnus/cxz/internal/transport"
+	"github.com/lesomnus/cxz/internal/workspace"
 	"github.com/lesomnus/payday/config"
 	_ "github.com/lesomnus/payday/config/dbsqlite3"
 	"github.com/lesomnus/payday/grpcx"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 )
 
@@ -35,13 +36,12 @@ type Server struct {
 	projectionMu           sync.Mutex
 	root, agent, configDir string
 	db                     *sql.DB
+	manager                *workspace.Manager
 }
 
 func Socket(root string) string { return filepath.Join(root, "run", "daemon.sock") }
 func Dial(root string) (*grpc.ClientConn, error) {
-	return grpc.NewClient("passthrough:///cxz", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithContextDialer(func(ctx context.Context, _ string) (net.Conn, error) {
-		return (&net.Dialer{}).DialContext(ctx, "unix", Socket(root))
-	}))
+	return transport.Dial(root)
 }
 func Run(ctx context.Context, root, agent, configDir string) error {
 	if e := core.Prepare(root); e != nil {
@@ -81,6 +81,12 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 		return e
 	}
 	s := &Server{root: root, agent: agent, configDir: configDir, db: db}
+	if os.Getenv("CXZ_OWNER") != "" {
+		s.manager, e = workspace.New(db, root)
+		if e != nil {
+			return e
+		}
+	}
 	// Manifests survive rebuilding the derived SQLite database.
 	dirs, e := os.ReadDir(filepath.Join(root, "sessions"))
 	if e != nil {
@@ -138,6 +144,33 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 	opts = append(opts, grpc.MaxRecvMsgSize(1024*1024), grpc.MaxSendMsgSize(20*1024*1024))
 	g := grpc.NewServer(opts...)
 	api.RegisterSessionsServer(g, s)
+	if os.Getenv("CXZ_PROJECT_ID") != "" {
+		runtime, e := workspace.LoadRuntime(root)
+		if e != nil {
+			return e
+		}
+		tcp, e := net.Listen("tcp", "0.0.0.0:7348")
+		if e != nil {
+			return e
+		}
+		defer tcp.Close()
+		projectOptions := grpcx.ServerOptions(ctx)
+		projectOptions = append(projectOptions, grpc.MaxRecvMsgSize(1024*1024), grpc.MaxSendMsgSize(24*1024*1024), grpc.ChainUnaryInterceptor(func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+			if e := transport.RequireToken(ctx, runtime.Token); e != nil {
+				return nil, status.Error(codes.Unauthenticated, e.Error())
+			}
+			return handler(ctx, req)
+		}), grpc.ChainStreamInterceptor(func(srv any, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+			if e := transport.RequireToken(stream.Context(), runtime.Token); e != nil {
+				return status.Error(codes.Unauthenticated, e.Error())
+			}
+			return handler(srv, stream)
+		}))
+		projectServer := grpc.NewServer(projectOptions...)
+		api.RegisterSessionsServer(projectServer, s)
+		defer projectServer.Stop()
+		go projectServer.Serve(tcp)
+	}
 	go func() { <-ctx.Done(); g.Stop() }()
 	e = g.Serve(ln)
 	if ctx.Err() != nil {
@@ -210,7 +243,10 @@ func (s *Server) snapshot(ctx context.Context, m core.Session) (*api.Session, er
 		}
 		snap.Pending = nil
 	}
-	v := &api.Session{Id: m.ID, Workspace: m.Workspace, Title: m.Title, CreatedAt: m.CreatedAt, State: snap.State, RunId: snap.RunID, VendorId: snap.VendorID, LastSeq: snap.LastSeq}
+	v := &api.Session{Id: m.ID, Workspace: m.Workspace, Title: m.Title, CreatedAt: m.CreatedAt, State: snap.State, RunId: snap.RunID, VendorId: snap.VendorID, LastSeq: snap.LastSeq, Agent: m.Kind, ProjectId: m.ProjectID}
+	if v.Agent == "" {
+		v.Agent = "claude"
+	}
 	for _, p := range snap.Pending {
 		v.Pending = append(v.Pending, pbEvent(p))
 	}
@@ -256,10 +292,19 @@ func (s *Server) launch(ctx context.Context, m core.Session) (*api.Session, erro
 	}
 }
 func (s *Server) Create(ctx context.Context, r *api.CreateRequest) (*api.Session, error) {
+	if s.manager != nil {
+		return s.manager.Open(ctx, &api.ProjectRequest{Workspace: r.Workspace, Agent: r.Agent, NewSession: true, ClientId: r.ClientId})
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if r.ClientId == "" || r.Workspace == "" {
 		return nil, status.Error(codes.InvalidArgument, "workspace and client_id required")
+	}
+	if r.Agent == "" {
+		r.Agent = "claude"
+	}
+	if r.Agent != "claude" && r.Agent != "codex" {
+		return nil, status.Error(codes.InvalidArgument, "agent must be claude or codex")
 	}
 	path, e := filepath.Abs(r.Workspace)
 	if e != nil {
@@ -300,7 +345,36 @@ func (s *Server) Create(ctx context.Context, r *api.CreateRequest) (*api.Session
 			}
 		}
 	}
-	m := core.Session{CreateID: r.ClientId, ID: core.ID(), Workspace: path, Title: r.Title, CreatedAt: time.Now().UnixMilli(), Agent: s.agent, ConfigDir: s.configDir}
+	bin, cfg := s.agent, s.configDir
+	if r.Agent == "codex" && os.Getenv("CXZ_PROJECT_ID") == "" {
+		var e error
+		bin, e = exec.LookPath("codex")
+		if e != nil {
+			return nil, e
+		}
+		cfg = os.Getenv("CODEX_HOME")
+	}
+	if os.Getenv("CXZ_PROJECT_ID") != "" {
+		runtime, e := workspace.LoadRuntime(s.root)
+		if e != nil {
+			return nil, e
+		}
+		if path != runtime.Workspace {
+			return nil, status.Error(codes.PermissionDenied, "project runtime only serves its own workspace")
+		}
+		bin = runtime.Claude
+		if r.Agent == "codex" {
+			bin = runtime.Codex
+		}
+		if bin == "" {
+			return nil, status.Error(codes.FailedPrecondition, "agent is not provisioned; run cxz up --agent "+r.Agent)
+		}
+		cfg = filepath.Join(s.root, "agents", r.Agent)
+		if e = os.MkdirAll(cfg, 0700); e != nil {
+			return nil, e
+		}
+	}
+	m := core.Session{CreateID: r.ClientId, ID: core.ID(), Workspace: path, Title: r.Title, CreatedAt: time.Now().UnixMilli(), Agent: bin, Kind: r.Agent, ProjectID: os.Getenv("CXZ_PROJECT_ID"), ConfigDir: cfg}
 	if e = os.Mkdir(core.Dir(s.root, m.ID), 0700); e != nil {
 		return nil, e
 	}
@@ -337,6 +411,9 @@ func (s *Server) list(ctx context.Context) ([]core.Session, error) {
 	return ms, rows.Err()
 }
 func (s *Server) List(ctx context.Context, _ *api.Empty) (*api.SessionList, error) {
+	if s.manager != nil {
+		return s.manager.Sessions(ctx)
+	}
 	ms, e := s.list(ctx)
 	if e != nil {
 		return nil, e
@@ -352,6 +429,9 @@ func (s *Server) List(ctx context.Context, _ *api.Empty) (*api.SessionList, erro
 	return out, nil
 }
 func (s *Server) Get(ctx context.Context, r *api.SessionRef) (*api.Session, error) {
+	if s.manager != nil {
+		return s.manager.Get(ctx, r.Id)
+	}
 	m, e := s.manifest(ctx, r.Id)
 	if e != nil {
 		return nil, e
@@ -369,9 +449,25 @@ func (s *Server) command(ctx context.Context, id, op string, c core.Command) (*a
 	return &api.Receipt{ClientId: v.ClientID, Status: v.Status}, nil
 }
 func (s *Server) Send(ctx context.Context, r *api.Input) (*api.Receipt, error) {
+	if s.manager != nil {
+		c, client, e := s.manager.ClientFor(ctx, r.SessionId)
+		if e != nil {
+			return nil, e
+		}
+		defer c.Close()
+		return client.Send(ctx, r)
+	}
 	return s.command(ctx, r.SessionId, "send", core.Command{RunID: r.RunId, ClientID: r.ClientId, Text: r.Text})
 }
 func (s *Server) Reply(ctx context.Context, r *api.Answer) (*api.Receipt, error) {
+	if s.manager != nil {
+		c, client, e := s.manager.ClientFor(ctx, r.SessionId)
+		if e != nil {
+			return nil, e
+		}
+		defer c.Close()
+		return client.Reply(ctx, r)
+	}
 	var answers map[string]string
 	if r.AnswersJson != "" {
 		if e := json.Unmarshal([]byte(r.AnswersJson), &answers); e != nil {
@@ -381,12 +477,36 @@ func (s *Server) Reply(ctx context.Context, r *api.Answer) (*api.Receipt, error)
 	return s.command(ctx, r.SessionId, "reply", core.Command{RunID: r.RunId, ClientID: r.ClientId, RequestID: r.RequestId, Allow: r.Allow, Answers: answers})
 }
 func (s *Server) Interrupt(ctx context.Context, r *api.Control) (*api.Receipt, error) {
+	if s.manager != nil {
+		c, client, e := s.manager.ClientFor(ctx, r.SessionId)
+		if e != nil {
+			return nil, e
+		}
+		defer c.Close()
+		return client.Interrupt(ctx, r)
+	}
 	return s.command(ctx, r.SessionId, "interrupt", core.Command{RunID: r.RunId, ClientID: r.ClientId})
 }
 func (s *Server) Stop(ctx context.Context, r *api.Control) (*api.Receipt, error) {
+	if s.manager != nil {
+		c, client, e := s.manager.ClientFor(ctx, r.SessionId)
+		if e != nil {
+			return nil, e
+		}
+		defer c.Close()
+		return client.Stop(ctx, r)
+	}
 	return s.command(ctx, r.SessionId, "stop", core.Command{RunID: r.RunId, ClientID: r.ClientId})
 }
 func (s *Server) Resume(ctx context.Context, r *api.Control) (*api.Session, error) {
+	if s.manager != nil {
+		c, client, e := s.manager.ClientFor(ctx, r.SessionId)
+		if e != nil {
+			return nil, e
+		}
+		defer c.Close()
+		return client.Resume(ctx, r)
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	m, e := s.manifest(ctx, r.SessionId)
@@ -418,6 +538,9 @@ func (s *Server) Resume(ctx context.Context, r *api.Control) (*api.Session, erro
 	return s.launch(ctx, m)
 }
 func (s *Server) Watch(r *api.WatchRequest, stream grpc.ServerStreamingServer[api.Event]) error {
+	if s.manager != nil {
+		return s.watchRemote(r, stream)
+	}
 	ctx := stream.Context()
 	m, e := s.manifest(ctx, r.SessionId)
 	if e != nil {
