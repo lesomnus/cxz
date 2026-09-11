@@ -106,3 +106,9 @@ workspace, project container, named volumes를 삭제하지 않는다. client bi
 자동 재현: `owned-boundaries.mjs`, `owned-provision-retry.mjs`,
 `owned-install-update.mjs`, `owned-session-live.mjs`, `owned-recovery.mjs`. 인증 검사는 사용자 로그인 또는 명시적으로
 허용된 일회성 access token이 있어야 한다. 인증 검사를 건너뛴 결과를 통과로 적지 않는다.
+
+Claude 반복 복구 문제를 도구 승인/중단과 분리하려면 **새 disposable 프로젝트에 로그인한 뒤**
+`CXZ_PROBE_MEMORY_ONLY=1 node scripts/probes/owned-session-live.mjs STATE PROJECT claude`를
+실행한다. 일반 사용자 메시지의 프로젝트 별칭만 기억하는 최소 대화로 두 번 복구한다.
+실패 시 vendor ID 유지 여부와 `reasoning_extraction` 응답 관찰 여부만 공개 요약에 기록한다.
+해당 응답 관찰만으로 원인이 vendor에만 있다고 단정하지 않으며 안전장치는 끄지 않는다.
