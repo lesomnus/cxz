@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.2
 // - protoc             (unknown)
-// source: cxz.v2/payday/audit_svc.g.proto
+// source: cxz/payday/audit_svc.g.proto
 
 package resource
 
@@ -19,12 +19,12 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AuditService_Add_FullMethodName   = "/cxz.v2.AuditService/Add"
-	AuditService_Get_FullMethodName   = "/cxz.v2.AuditService/Get"
-	AuditService_Patch_FullMethodName = "/cxz.v2.AuditService/Patch"
-	AuditService_Apply_FullMethodName = "/cxz.v2.AuditService/Apply"
-	AuditService_Erase_FullMethodName = "/cxz.v2.AuditService/Erase"
-	AuditService_List_FullMethodName  = "/cxz.v2.AuditService/List"
+	AuditService_Add_FullMethodName   = "/cxz.AuditService/Add"
+	AuditService_Get_FullMethodName   = "/cxz.AuditService/Get"
+	AuditService_Patch_FullMethodName = "/cxz.AuditService/Patch"
+	AuditService_Apply_FullMethodName = "/cxz.AuditService/Apply"
+	AuditService_Erase_FullMethodName = "/cxz.AuditService/Erase"
+	AuditService_List_FullMethodName  = "/cxz.AuditService/List"
 )
 
 // AuditServiceClient is the client API for AuditService service.
@@ -290,7 +290,7 @@ func _AuditService_List_Handler(srv interface{}, ctx context.Context, dec func(i
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var AuditService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "cxz.v2.AuditService",
+	ServiceName: "cxz.AuditService",
 	HandlerType: (*AuditServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -319,5 +319,5 @@ var AuditService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "cxz.v2/payday/audit_svc.g.proto",
+	Metadata: "cxz/payday/audit_svc.g.proto",
 }

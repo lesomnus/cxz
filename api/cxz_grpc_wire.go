@@ -19,19 +19,19 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Sessions_Create_FullMethodName    = "/cxz.v1.Sessions/Create"
-	Sessions_List_FullMethodName      = "/cxz.v1.Sessions/List"
-	Sessions_Get_FullMethodName       = "/cxz.v1.Sessions/Get"
-	Sessions_Send_FullMethodName      = "/cxz.v1.Sessions/Send"
-	Sessions_Reply_FullMethodName     = "/cxz.v1.Sessions/Reply"
-	Sessions_Interrupt_FullMethodName = "/cxz.v1.Sessions/Interrupt"
-	Sessions_Resume_FullMethodName    = "/cxz.v1.Sessions/Resume"
-	Sessions_Stop_FullMethodName      = "/cxz.v1.Sessions/Stop"
-	Sessions_Watch_FullMethodName     = "/cxz.v1.Sessions/Watch"
-	Sessions_History_FullMethodName   = "/cxz.v1.Sessions/History"
-	Sessions_Open_FullMethodName      = "/cxz.v1.Sessions/Open"
-	Sessions_Projects_FullMethodName  = "/cxz.v1.Sessions/Projects"
-	Sessions_Down_FullMethodName      = "/cxz.v1.Sessions/Down"
+	Sessions_Create_FullMethodName    = "/cxz.runtime.Sessions/Create"
+	Sessions_List_FullMethodName      = "/cxz.runtime.Sessions/List"
+	Sessions_Get_FullMethodName       = "/cxz.runtime.Sessions/Get"
+	Sessions_Send_FullMethodName      = "/cxz.runtime.Sessions/Send"
+	Sessions_Reply_FullMethodName     = "/cxz.runtime.Sessions/Reply"
+	Sessions_Interrupt_FullMethodName = "/cxz.runtime.Sessions/Interrupt"
+	Sessions_Resume_FullMethodName    = "/cxz.runtime.Sessions/Resume"
+	Sessions_Stop_FullMethodName      = "/cxz.runtime.Sessions/Stop"
+	Sessions_Watch_FullMethodName     = "/cxz.runtime.Sessions/Watch"
+	Sessions_History_FullMethodName   = "/cxz.runtime.Sessions/History"
+	Sessions_Open_FullMethodName      = "/cxz.runtime.Sessions/Open"
+	Sessions_Projects_FullMethodName  = "/cxz.runtime.Sessions/Projects"
+	Sessions_Down_FullMethodName      = "/cxz.runtime.Sessions/Down"
 )
 
 // SessionsClient is the client API for Sessions service.
@@ -518,7 +518,7 @@ func _Sessions_Down_Handler(srv interface{}, ctx context.Context, dec func(inter
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Sessions_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "cxz.v1.Sessions",
+	ServiceName: "cxz.runtime.Sessions",
 	HandlerType: (*SessionsServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

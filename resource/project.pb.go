@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        (unknown)
-// source: cxz/v2/project.proto
+// source: cxz/project.proto
 
 package resource
 
@@ -44,7 +44,7 @@ type Project struct {
 
 func (x *Project) Reset() {
 	*x = Project{}
-	mi := &file_cxz_v2_project_proto_msgTypes[0]
+	mi := &file_cxz_project_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -56,7 +56,7 @@ func (x *Project) String() string {
 func (*Project) ProtoMessage() {}
 
 func (x *Project) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_project_proto_msgTypes[0]
+	mi := &file_cxz_project_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -285,7 +285,7 @@ type ProjectStatus struct {
 
 func (x *ProjectStatus) Reset() {
 	*x = ProjectStatus{}
-	mi := &file_cxz_v2_project_proto_msgTypes[1]
+	mi := &file_cxz_project_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -297,7 +297,7 @@ func (x *ProjectStatus) String() string {
 func (*ProjectStatus) ProtoMessage() {}
 
 func (x *ProjectStatus) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_project_proto_msgTypes[1]
+	mi := &file_cxz_project_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -424,11 +424,11 @@ func (b0 ProjectStatus_builder) Build() *ProjectStatus {
 	return m0
 }
 
-var File_cxz_v2_project_proto protoreflect.FileDescriptor
+var File_cxz_project_proto protoreflect.FileDescriptor
 
-const file_cxz_v2_project_proto_rawDesc = "" +
+const file_cxz_project_proto_rawDesc = "" +
 	"\n" +
-	"\x14cxz/v2/project.proto\x12\x06cxz.v2\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xcb\x04\n" +
+	"\x11cxz/project.proto\x12\x03cxz\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xc8\x04\n" +
 	"\aProject\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12\x12\n" +
 	"\x04name\x18\x05 \x01(\tR\x04name\x12\x12\n" +
@@ -441,8 +441,8 @@ const file_cxz_v2_project_proto_rawDesc = "" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +
-	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated\x12-\n" +
-	"\x06status\x18\x10 \x01(\v2\x15.cxz.v2.ProjectStatusR\x06status\x12#\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated\x12*\n" +
+	"\x06status\x18\x10 \x01(\v2\x12.cxz.ProjectStatusR\x06status\x12#\n" +
 	"\x06listed\x18\x11 \x01(\bB\v\xea\x82\x16\a\x82\x01\x04trueR\x06listed:f\xca\xfc\x15&\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
 	"\fdate_created\x10\x0f\x1a\x06\n" +
 	"\x02id\x10\x01\x8a\xbb\x168\b\a20\n" +
@@ -465,17 +465,17 @@ const file_cxz_v2_project_proto_rawDesc = "" +
 	"\x11provision_attempt\x18\a \x01(\x04R\x10provisionAttempt\x12\x14\n" +
 	"\x05error\x18\b \x01(\tR\x05errorB+\xca\xc7\x16\x00Z github.com/lesomnus/cxz/resource\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
-var file_cxz_v2_project_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
-var file_cxz_v2_project_proto_goTypes = []any{
-	(*Project)(nil),               // 0: cxz.v2.Project
-	(*ProjectStatus)(nil),         // 1: cxz.v2.ProjectStatus
+var file_cxz_project_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_cxz_project_proto_goTypes = []any{
+	(*Project)(nil),               // 0: cxz.Project
+	(*ProjectStatus)(nil),         // 1: cxz.ProjectStatus
 	(*timestamppb.Timestamp)(nil), // 2: google.protobuf.Timestamp
 }
-var file_cxz_v2_project_proto_depIdxs = []int32{
-	2, // 0: cxz.v2.Project.date_updated:type_name -> google.protobuf.Timestamp
-	2, // 1: cxz.v2.Project.date_erased:type_name -> google.protobuf.Timestamp
-	2, // 2: cxz.v2.Project.date_created:type_name -> google.protobuf.Timestamp
-	1, // 3: cxz.v2.Project.status:type_name -> cxz.v2.ProjectStatus
+var file_cxz_project_proto_depIdxs = []int32{
+	2, // 0: cxz.Project.date_updated:type_name -> google.protobuf.Timestamp
+	2, // 1: cxz.Project.date_erased:type_name -> google.protobuf.Timestamp
+	2, // 2: cxz.Project.date_created:type_name -> google.protobuf.Timestamp
+	1, // 3: cxz.Project.status:type_name -> cxz.ProjectStatus
 	4, // [4:4] is the sub-list for method output_type
 	4, // [4:4] is the sub-list for method input_type
 	4, // [4:4] is the sub-list for extension type_name
@@ -483,26 +483,26 @@ var file_cxz_v2_project_proto_depIdxs = []int32{
 	0, // [0:4] is the sub-list for field type_name
 }
 
-func init() { file_cxz_v2_project_proto_init() }
-func file_cxz_v2_project_proto_init() {
-	if File_cxz_v2_project_proto != nil {
+func init() { file_cxz_project_proto_init() }
+func file_cxz_project_proto_init() {
+	if File_cxz_project_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_cxz_v2_project_proto_rawDesc), len(file_cxz_v2_project_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_cxz_project_proto_rawDesc), len(file_cxz_project_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_cxz_v2_project_proto_goTypes,
-		DependencyIndexes: file_cxz_v2_project_proto_depIdxs,
-		MessageInfos:      file_cxz_v2_project_proto_msgTypes,
+		GoTypes:           file_cxz_project_proto_goTypes,
+		DependencyIndexes: file_cxz_project_proto_depIdxs,
+		MessageInfos:      file_cxz_project_proto_msgTypes,
 	}.Build()
-	File_cxz_v2_project_proto = out.File
-	file_cxz_v2_project_proto_goTypes = nil
-	file_cxz_v2_project_proto_depIdxs = nil
+	File_cxz_project_proto = out.File
+	file_cxz_project_proto_goTypes = nil
+	file_cxz_project_proto_depIdxs = nil
 }

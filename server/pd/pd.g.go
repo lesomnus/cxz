@@ -88,12 +88,12 @@ const (
 )
 
 func init() {
-	pdid.Register("cxz.v2.Audit", AuditDomain, "audit")
-	pdid.Register("cxz.v2.Holder", HolderDomain, "holder")
-	pdid.Register("cxz.v2.Outbox", OutboxDomain, "outbox")
-	pdid.Register("cxz.v2.Project", ProjectDomain, "project")
-	pdid.Register("cxz.v2.Session", SessionDomain, "session")
-	pdid.Register("cxz.v2.Tenant", TenantDomain, "tenant")
+	pdid.Register("cxz.Audit", AuditDomain, "audit")
+	pdid.Register("cxz.Holder", HolderDomain, "holder")
+	pdid.Register("cxz.Outbox", OutboxDomain, "outbox")
+	pdid.Register("cxz.Project", ProjectDomain, "project")
+	pdid.Register("cxz.Session", SessionDomain, "session")
+	pdid.Register("cxz.Tenant", TenantDomain, "tenant")
 
 	pdid.RegisterTenant(TenantDomain)
 }
@@ -101,12 +101,12 @@ func init() {
 // Domains is the domain of each entity by the full name of its message,
 // which is the name a [Minter] is asked about.
 var Domains = map[string]pdid.Domain{
-	"cxz.v2.Audit":   AuditDomain,
-	"cxz.v2.Holder":  HolderDomain,
-	"cxz.v2.Outbox":  OutboxDomain,
-	"cxz.v2.Project": ProjectDomain,
-	"cxz.v2.Session": SessionDomain,
-	"cxz.v2.Tenant":  TenantDomain,
+	"cxz.Audit":   AuditDomain,
+	"cxz.Holder":  HolderDomain,
+	"cxz.Outbox":  OutboxDomain,
+	"cxz.Project": ProjectDomain,
+	"cxz.Session": SessionDomain,
+	"cxz.Tenant":  TenantDomain,
 }
 
 // Minter answers with the [bare.Minter] that gives every new row an
@@ -500,7 +500,7 @@ func (s sinkHolder) Add(ctx context.Context, req *resource.HolderAddRequest) (*r
 	}
 
 	for try := 0; ; try++ {
-		v, err := slug.NameWith(ctx, s.namer, "cxz.v2.Holder", req.GetAlias(), req)
+		v, err := slug.NameWith(ctx, s.namer, "cxz.Holder", req.GetAlias(), req)
 		if err != nil {
 			return nil, pderr.At("alias", err)
 		}
@@ -1621,7 +1621,7 @@ func (s sinkTenant) Add(ctx context.Context, req *resource.TenantAddRequest) (*r
 	}
 
 	for try := 0; ; try++ {
-		v, err := slug.NameWith(ctx, s.namer, "cxz.v2.Tenant", req.GetAlias(), req)
+		v, err := slug.NameWith(ctx, s.namer, "cxz.Tenant", req.GetAlias(), req)
 		if err != nil {
 			return nil, pderr.At("alias", err)
 		}

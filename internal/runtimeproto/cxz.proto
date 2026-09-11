@@ -1,5 +1,5 @@
 syntax = "proto3";
-package cxz.v1;
+package cxz.runtime;
 option go_package = "github.com/lesomnus/cxz/api;api";
 
 service Sessions {

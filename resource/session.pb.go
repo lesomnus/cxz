@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        (unknown)
-// source: cxz/v2/session.proto
+// source: cxz/session.proto
 
 package resource
 
@@ -46,7 +46,7 @@ type Session struct {
 
 func (x *Session) Reset() {
 	*x = Session{}
-	mi := &file_cxz_v2_session_proto_msgTypes[0]
+	mi := &file_cxz_session_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -58,7 +58,7 @@ func (x *Session) String() string {
 func (*Session) ProtoMessage() {}
 
 func (x *Session) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_session_proto_msgTypes[0]
+	mi := &file_cxz_session_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -321,7 +321,7 @@ type SessionStatus struct {
 
 func (x *SessionStatus) Reset() {
 	*x = SessionStatus{}
-	mi := &file_cxz_v2_session_proto_msgTypes[1]
+	mi := &file_cxz_session_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -333,7 +333,7 @@ func (x *SessionStatus) String() string {
 func (*SessionStatus) ProtoMessage() {}
 
 func (x *SessionStatus) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_session_proto_msgTypes[1]
+	mi := &file_cxz_session_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -438,7 +438,7 @@ type SessionEvent struct {
 
 func (x *SessionEvent) Reset() {
 	*x = SessionEvent{}
-	mi := &file_cxz_v2_session_proto_msgTypes[2]
+	mi := &file_cxz_session_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -450,7 +450,7 @@ func (x *SessionEvent) String() string {
 func (*SessionEvent) ProtoMessage() {}
 
 func (x *SessionEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_session_proto_msgTypes[2]
+	mi := &file_cxz_session_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -567,16 +567,16 @@ func (b0 SessionEvent_builder) Build() *SessionEvent {
 	return m0
 }
 
-var File_cxz_v2_session_proto protoreflect.FileDescriptor
+var File_cxz_session_proto protoreflect.FileDescriptor
 
-const file_cxz_v2_session_proto_rawDesc = "" +
+const file_cxz_session_proto_rawDesc = "" +
 	"\n" +
-	"\x14cxz/v2/session.proto\x12\x06cxz.v2\x1a\x14cxz/v2/project.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xac\x05\n" +
+	"\x11cxz/session.proto\x12\x03cxz\x1a\x11cxz/project.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xa6\x05\n" +
 	"\aSession\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12\x12\n" +
 	"\x04name\x18\x05 \x01(\tR\x04name\x12\x12\n" +
-	"\x04desc\x18\x06 \x01(\tR\x04desc\x121\n" +
-	"\aproject\x18\b \x01(\v2\x0f.cxz.v2.ProjectB\x06\xf2\x82\x16\x02@\x01R\aproject\x12\x1c\n" +
+	"\x04desc\x18\x06 \x01(\tR\x04desc\x12.\n" +
+	"\aproject\x18\b \x01(\v2\f.cxz.ProjectB\x06\xf2\x82\x16\x02@\x01R\aproject\x12\x1c\n" +
 	"\x05agent\x18\t \x01(\tB\x06\xea\x82\x16\x02@\x01R\x05agent\x12\x1c\n" +
 	"\x05model\x18\n" +
 	" \x01(\tB\x06\xea\x82\x16\x02@\x01R\x05model\x12'\n" +
@@ -586,8 +586,8 @@ const file_cxz_v2_session_proto_rawDesc = "" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +
-	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated\x12-\n" +
-	"\x06status\x18\x10 \x01(\v2\x15.cxz.v2.SessionStatusR\x06status\x12#\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated\x12*\n" +
+	"\x06status\x18\x10 \x01(\v2\x12.cxz.SessionStatusR\x06status\x12#\n" +
 	"\x06listed\x18\x11 \x01(\bB\v\xea\x82\x16\a\x82\x01\x04trueR\x06listed:q\xca\xfc\x15&\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
 	"\fdate_created\x10\x0f\x1a\x06\n" +
 	"\x02id\x10\x01\x8a\xbb\x16C\b\b2;\n" +
@@ -599,13 +599,13 @@ const file_cxz_v2_session_proto_rawDesc = "" +
 	"\x02id\x1a\x05\n" +
 	"\x03ref\x1a\t\n" +
 	"\aproject\x1a\b\n" +
-	"\x06listed 2(\xc8\x01:\x00*\x00\"\xa4\x01\n" +
+	"\x06listed 2(\xc8\x01:\x00*\x00\"\xa1\x01\n" +
 	"\rSessionStatus\x12\x14\n" +
 	"\x05state\x18\x01 \x01(\tR\x05state\x12\x15\n" +
 	"\x06run_id\x18\x02 \x01(\tR\x05runId\x12\x1b\n" +
 	"\tvendor_id\x18\x03 \x01(\tR\bvendorId\x12\x19\n" +
-	"\blast_seq\x18\x04 \x01(\x04R\alastSeq\x12.\n" +
-	"\apending\x18\x05 \x03(\v2\x14.cxz.v2.SessionEventR\apending\"\xb1\x01\n" +
+	"\blast_seq\x18\x04 \x01(\x04R\alastSeq\x12+\n" +
+	"\apending\x18\x05 \x03(\v2\x11.cxz.SessionEventR\apending\"\xb1\x01\n" +
 	"\fSessionEvent\x12\x15\n" +
 	"\x06run_id\x18\x01 \x01(\tR\x05runId\x12\x10\n" +
 	"\x03seq\x18\x02 \x01(\x04R\x03seq\x12\x17\n" +
@@ -616,21 +616,21 @@ const file_cxz_v2_session_proto_rawDesc = "" +
 	"request_id\x18\x06 \x01(\tR\trequestId\x12\x18\n" +
 	"\apayload\x18\a \x01(\fR\apayloadB'Z github.com/lesomnus/cxz/resource\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
-var file_cxz_v2_session_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
-var file_cxz_v2_session_proto_goTypes = []any{
-	(*Session)(nil),               // 0: cxz.v2.Session
-	(*SessionStatus)(nil),         // 1: cxz.v2.SessionStatus
-	(*SessionEvent)(nil),          // 2: cxz.v2.SessionEvent
-	(*Project)(nil),               // 3: cxz.v2.Project
+var file_cxz_session_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_cxz_session_proto_goTypes = []any{
+	(*Session)(nil),               // 0: cxz.Session
+	(*SessionStatus)(nil),         // 1: cxz.SessionStatus
+	(*SessionEvent)(nil),          // 2: cxz.SessionEvent
+	(*Project)(nil),               // 3: cxz.Project
 	(*timestamppb.Timestamp)(nil), // 4: google.protobuf.Timestamp
 }
-var file_cxz_v2_session_proto_depIdxs = []int32{
-	3, // 0: cxz.v2.Session.project:type_name -> cxz.v2.Project
-	4, // 1: cxz.v2.Session.date_updated:type_name -> google.protobuf.Timestamp
-	4, // 2: cxz.v2.Session.date_erased:type_name -> google.protobuf.Timestamp
-	4, // 3: cxz.v2.Session.date_created:type_name -> google.protobuf.Timestamp
-	1, // 4: cxz.v2.Session.status:type_name -> cxz.v2.SessionStatus
-	2, // 5: cxz.v2.SessionStatus.pending:type_name -> cxz.v2.SessionEvent
+var file_cxz_session_proto_depIdxs = []int32{
+	3, // 0: cxz.Session.project:type_name -> cxz.Project
+	4, // 1: cxz.Session.date_updated:type_name -> google.protobuf.Timestamp
+	4, // 2: cxz.Session.date_erased:type_name -> google.protobuf.Timestamp
+	4, // 3: cxz.Session.date_created:type_name -> google.protobuf.Timestamp
+	1, // 4: cxz.Session.status:type_name -> cxz.SessionStatus
+	2, // 5: cxz.SessionStatus.pending:type_name -> cxz.SessionEvent
 	6, // [6:6] is the sub-list for method output_type
 	6, // [6:6] is the sub-list for method input_type
 	6, // [6:6] is the sub-list for extension type_name
@@ -638,27 +638,27 @@ var file_cxz_v2_session_proto_depIdxs = []int32{
 	0, // [0:6] is the sub-list for field type_name
 }
 
-func init() { file_cxz_v2_session_proto_init() }
-func file_cxz_v2_session_proto_init() {
-	if File_cxz_v2_session_proto != nil {
+func init() { file_cxz_session_proto_init() }
+func file_cxz_session_proto_init() {
+	if File_cxz_session_proto != nil {
 		return
 	}
-	file_cxz_v2_project_proto_init()
+	file_cxz_project_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_cxz_v2_session_proto_rawDesc), len(file_cxz_v2_session_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_cxz_session_proto_rawDesc), len(file_cxz_session_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_cxz_v2_session_proto_goTypes,
-		DependencyIndexes: file_cxz_v2_session_proto_depIdxs,
-		MessageInfos:      file_cxz_v2_session_proto_msgTypes,
+		GoTypes:           file_cxz_session_proto_goTypes,
+		DependencyIndexes: file_cxz_session_proto_depIdxs,
+		MessageInfos:      file_cxz_session_proto_msgTypes,
 	}.Build()
-	File_cxz_v2_session_proto = out.File
-	file_cxz_v2_session_proto_goTypes = nil
-	file_cxz_v2_session_proto_depIdxs = nil
+	File_cxz_session_proto = out.File
+	file_cxz_session_proto_goTypes = nil
+	file_cxz_session_proto_depIdxs = nil
 }

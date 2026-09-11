@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.2
 // - protoc             (unknown)
-// source: cxz.v2/payday/holder_svc.g.proto
+// source: cxz/payday/holder_svc.g.proto
 
 package resource
 
@@ -19,13 +19,13 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	HolderService_Add_FullMethodName   = "/cxz.v2.HolderService/Add"
-	HolderService_Get_FullMethodName   = "/cxz.v2.HolderService/Get"
-	HolderService_Patch_FullMethodName = "/cxz.v2.HolderService/Patch"
-	HolderService_Apply_FullMethodName = "/cxz.v2.HolderService/Apply"
-	HolderService_Erase_FullMethodName = "/cxz.v2.HolderService/Erase"
-	HolderService_List_FullMethodName  = "/cxz.v2.HolderService/List"
-	HolderService_Watch_FullMethodName = "/cxz.v2.HolderService/Watch"
+	HolderService_Add_FullMethodName   = "/cxz.HolderService/Add"
+	HolderService_Get_FullMethodName   = "/cxz.HolderService/Get"
+	HolderService_Patch_FullMethodName = "/cxz.HolderService/Patch"
+	HolderService_Apply_FullMethodName = "/cxz.HolderService/Apply"
+	HolderService_Erase_FullMethodName = "/cxz.HolderService/Erase"
+	HolderService_List_FullMethodName  = "/cxz.HolderService/List"
+	HolderService_Watch_FullMethodName = "/cxz.HolderService/Watch"
 )
 
 // HolderServiceClient is the client API for HolderService service.
@@ -348,7 +348,7 @@ type HolderService_WatchServer = grpc.ServerStreamingServer[HolderWatchResponse]
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var HolderService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "cxz.v2.HolderService",
+	ServiceName: "cxz.HolderService",
 	HandlerType: (*HolderServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -383,5 +383,5 @@ var HolderService_ServiceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 		},
 	},
-	Metadata: "cxz.v2/payday/holder_svc.g.proto",
+	Metadata: "cxz/payday/holder_svc.g.proto",
 }

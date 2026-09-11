@@ -1,12 +1,21 @@
 # 구현 진행 상황
 
+## 2026-09-11 — proto 버전 표기 제거
+
+- 사용자 요청에 따라 공개 proto 패키지를 `cxz`, 정의 경로를 `proto/cxz`,
+  확장 경로를 `proto/ext/cxz`로 정리했다. 버전 접미사나 하위호환 별칭은 없다.
+- 내부 view model도 버전 대신 `cxz.runtime` namespace와
+  `internal/runtimeproto` 경로를 사용한다. 공개 서비스로 등록하지 않는다.
+- payday/ORM 및 내부 protobuf 생성 코드를 새 이름으로 재생성했다.
+- 전체 Go 테스트와 proto namespace 회귀 테스트를 통과했다.
+
 ## 2026-09-11 — payday resource framework 전환
 
 이전의 config/DB/grpcx만 이용한 구현은 사용자가 요청한 payday 프레임워크
 사용을 충족하지 않았다. 아래 전환은 기존 rc.1 태그와 별개의 변경이다.
 
-- `proto/cxz/v2/{project,session}.proto`에 tenant 없는 global 리소스를 선언하고
-  `proto/ext/cxz/v2/*_svc.ext.proto`에 Up/Down/Recreate 및
+- `proto/cxz/{project,session}.proto`에 tenant 없는 global 리소스를 선언하고
+  `proto/ext/cxz/*_svc.ext.proto`에 Up/Down/Recreate 및
   Resume/Send/Reply/Interrupt/Stop/Events/History를 선언했다.
 - 버전 고정 Go tools와 Buf lock으로 실제 `pd gen`을 실행했다.
   `resource/`, `server/bare/`, `server/pd/`, `internal/ent/`가 생성 산출물이다.
@@ -31,8 +40,7 @@
   이번 전환에서 다시 실행하지 않았고, 이전 vendor-specific 잔여 검증은 그대로 남는다.
 - 사용자 인증/roster, HTTP/Web UI는 이번 범위에 추가하지 않는다.
   Dockerfile은 기존 `internal/installer/image.Dockerfile`; Bake 전환은 하지 않았다.
-- 구 rc.1과 wire 호환되지 않으므로 manager 갱신 후 기존 project도 명시적으로
-  recreate해야 한다. 전체 state volume 백업은 필요하며 resource 표시 이름/설명과
+- 전체 state volume 백업은 필요하며 resource 표시 이름/설명과
   audit는 저널로 재생성되지 않는다.
 
 설계: [payday resource API](plans/payday-resources.md).

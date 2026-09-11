@@ -25,6 +25,18 @@ type fixture struct {
 	up     *api.ProjectRequest
 }
 
+func TestUnversionedProtoNamespace(t *testing.T) {
+	if resource.File_cxz_project_proto.Package() != "cxz" || resource.File_cxz_session_proto.Package() != "cxz" {
+		t.Fatal("public resources must use the unversioned cxz package")
+	}
+	if resource.ProjectService_Add_FullMethodName != "/cxz.ProjectService/Add" || resource.SessionService_Resume_FullMethodName != "/cxz.SessionService/Resume" {
+		t.Fatal("resource RPC names must not carry a version suffix")
+	}
+	if api.File_cxz_proto.Package() != "cxz.runtime" {
+		t.Fatal("runtime models must use a separate unversioned namespace")
+	}
+}
+
 func (f *fixture) RegisterProject(context.Context, string, string) (*api.Project, error) {
 	return f.p, nil
 }

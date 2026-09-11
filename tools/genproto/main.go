@@ -16,7 +16,7 @@ import (
 )
 
 func main() {
-	c := protocompile.Compiler{Resolver: &protocompile.SourceResolver{ImportPaths: []string{"internal/legacyproto"}}}
+	c := protocompile.Compiler{Resolver: &protocompile.SourceResolver{ImportPaths: []string{"internal/runtimeproto"}}}
 	fs, err := c.Compile(context.Background(), "cxz.proto")
 	must(err)
 	req := &pluginpb.CodeGeneratorRequest{FileToGenerate: []string{"cxz.proto"}, Parameter: proto.String("module=github.com/lesomnus/cxz")}

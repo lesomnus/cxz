@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        (unknown)
-// source: cxz/v2/session_svc.g.proto
+// source: cxz/session_svc.g.proto
 
 package resource
 
@@ -43,7 +43,7 @@ type SessionAddRequest struct {
 
 func (x *SessionAddRequest) Reset() {
 	*x = SessionAddRequest{}
-	mi := &file_cxz_v2_session_svc_g_proto_msgTypes[0]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -55,7 +55,7 @@ func (x *SessionAddRequest) String() string {
 func (*SessionAddRequest) ProtoMessage() {}
 
 func (x *SessionAddRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_session_svc_g_proto_msgTypes[0]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -299,7 +299,7 @@ type SessionGetRequest struct {
 
 func (x *SessionGetRequest) Reset() {
 	*x = SessionGetRequest{}
-	mi := &file_cxz_v2_session_svc_g_proto_msgTypes[1]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -311,7 +311,7 @@ func (x *SessionGetRequest) String() string {
 func (*SessionGetRequest) ProtoMessage() {}
 
 func (x *SessionGetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_session_svc_g_proto_msgTypes[1]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -391,7 +391,7 @@ type SessionRef struct {
 
 func (x *SessionRef) Reset() {
 	*x = SessionRef{}
-	mi := &file_cxz_v2_session_svc_g_proto_msgTypes[2]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -403,7 +403,7 @@ func (x *SessionRef) String() string {
 func (*SessionRef) ProtoMessage() {}
 
 func (x *SessionRef) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_session_svc_g_proto_msgTypes[2]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -559,7 +559,7 @@ func (b0 SessionRef_builder) Build() *SessionRef {
 type case_SessionRef_Key protoreflect.FieldNumber
 
 func (x case_SessionRef_Key) String() string {
-	md := file_cxz_v2_session_svc_g_proto_msgTypes[2].Descriptor()
+	md := file_cxz_session_svc_g_proto_msgTypes[2].Descriptor()
 	if x == 0 {
 		return "not set"
 	}
@@ -611,7 +611,7 @@ type SessionSelect struct {
 
 func (x *SessionSelect) Reset() {
 	*x = SessionSelect{}
-	mi := &file_cxz_v2_session_svc_g_proto_msgTypes[3]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -623,7 +623,7 @@ func (x *SessionSelect) String() string {
 func (*SessionSelect) ProtoMessage() {}
 
 func (x *SessionSelect) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_session_svc_g_proto_msgTypes[3]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1036,7 +1036,7 @@ type SessionPatchRequest struct {
 
 func (x *SessionPatchRequest) Reset() {
 	*x = SessionPatchRequest{}
-	mi := &file_cxz_v2_session_svc_g_proto_msgTypes[4]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1048,7 +1048,7 @@ func (x *SessionPatchRequest) String() string {
 func (*SessionPatchRequest) ProtoMessage() {}
 
 func (x *SessionPatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_session_svc_g_proto_msgTypes[4]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1320,7 +1320,7 @@ type SessionApplyRequest struct {
 
 func (x *SessionApplyRequest) Reset() {
 	*x = SessionApplyRequest{}
-	mi := &file_cxz_v2_session_svc_g_proto_msgTypes[5]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1332,7 +1332,7 @@ func (x *SessionApplyRequest) String() string {
 func (*SessionApplyRequest) ProtoMessage() {}
 
 func (x *SessionApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_session_svc_g_proto_msgTypes[5]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1414,7 +1414,7 @@ type SessionEraseResponse struct {
 
 func (x *SessionEraseResponse) Reset() {
 	*x = SessionEraseResponse{}
-	mi := &file_cxz_v2_session_svc_g_proto_msgTypes[6]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1426,7 +1426,7 @@ func (x *SessionEraseResponse) String() string {
 func (*SessionEraseResponse) ProtoMessage() {}
 
 func (x *SessionEraseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_session_svc_g_proto_msgTypes[6]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1494,7 +1494,7 @@ type SessionListRequest struct {
 
 func (x *SessionListRequest) Reset() {
 	*x = SessionListRequest{}
-	mi := &file_cxz_v2_session_svc_g_proto_msgTypes[7]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1506,7 +1506,7 @@ func (x *SessionListRequest) String() string {
 func (*SessionListRequest) ProtoMessage() {}
 
 func (x *SessionListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_session_svc_g_proto_msgTypes[7]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1589,7 +1589,7 @@ type SessionListResponse struct {
 
 func (x *SessionListResponse) Reset() {
 	*x = SessionListResponse{}
-	mi := &file_cxz_v2_session_svc_g_proto_msgTypes[8]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1601,7 +1601,7 @@ func (x *SessionListResponse) String() string {
 func (*SessionListResponse) ProtoMessage() {}
 
 func (x *SessionListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_session_svc_g_proto_msgTypes[8]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1672,7 +1672,7 @@ type SessionFilter struct {
 
 func (x *SessionFilter) Reset() {
 	*x = SessionFilter{}
-	mi := &file_cxz_v2_session_svc_g_proto_msgTypes[9]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1684,7 +1684,7 @@ func (x *SessionFilter) String() string {
 func (*SessionFilter) ProtoMessage() {}
 
 func (x *SessionFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_session_svc_g_proto_msgTypes[9]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1794,7 +1794,7 @@ type SessionWatchRequest struct {
 
 func (x *SessionWatchRequest) Reset() {
 	*x = SessionWatchRequest{}
-	mi := &file_cxz_v2_session_svc_g_proto_msgTypes[10]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1806,7 +1806,7 @@ func (x *SessionWatchRequest) String() string {
 func (*SessionWatchRequest) ProtoMessage() {}
 
 func (x *SessionWatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_session_svc_g_proto_msgTypes[10]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1878,7 +1878,7 @@ type SessionWatchResponse struct {
 
 func (x *SessionWatchResponse) Reset() {
 	*x = SessionWatchResponse{}
-	mi := &file_cxz_v2_session_svc_g_proto_msgTypes[11]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1890,7 +1890,7 @@ func (x *SessionWatchResponse) String() string {
 func (*SessionWatchResponse) ProtoMessage() {}
 
 func (x *SessionWatchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_session_svc_g_proto_msgTypes[11]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1942,7 +1942,7 @@ type SessionWatchItem struct {
 
 func (x *SessionWatchItem) Reset() {
 	*x = SessionWatchItem{}
-	mi := &file_cxz_v2_session_svc_g_proto_msgTypes[12]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1954,7 +1954,7 @@ func (x *SessionWatchItem) String() string {
 func (*SessionWatchItem) ProtoMessage() {}
 
 func (x *SessionWatchItem) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_session_svc_g_proto_msgTypes[12]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2076,7 +2076,7 @@ type SessionControl struct {
 
 func (x *SessionControl) Reset() {
 	*x = SessionControl{}
-	mi := &file_cxz_v2_session_svc_g_proto_msgTypes[13]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2088,7 +2088,7 @@ func (x *SessionControl) String() string {
 func (*SessionControl) ProtoMessage() {}
 
 func (x *SessionControl) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_session_svc_g_proto_msgTypes[13]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2211,7 +2211,7 @@ type SessionReceipt struct {
 
 func (x *SessionReceipt) Reset() {
 	*x = SessionReceipt{}
-	mi := &file_cxz_v2_session_svc_g_proto_msgTypes[14]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2223,7 +2223,7 @@ func (x *SessionReceipt) String() string {
 func (*SessionReceipt) ProtoMessage() {}
 
 func (x *SessionReceipt) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_session_svc_g_proto_msgTypes[14]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2324,7 +2324,7 @@ type SessionSendRequest struct {
 
 func (x *SessionSendRequest) Reset() {
 	*x = SessionSendRequest{}
-	mi := &file_cxz_v2_session_svc_g_proto_msgTypes[15]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2336,7 +2336,7 @@ func (x *SessionSendRequest) String() string {
 func (*SessionSendRequest) ProtoMessage() {}
 
 func (x *SessionSendRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_session_svc_g_proto_msgTypes[15]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2495,7 +2495,7 @@ type SessionReplyRequest struct {
 
 func (x *SessionReplyRequest) Reset() {
 	*x = SessionReplyRequest{}
-	mi := &file_cxz_v2_session_svc_g_proto_msgTypes[16]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2507,7 +2507,7 @@ func (x *SessionReplyRequest) String() string {
 func (*SessionReplyRequest) ProtoMessage() {}
 
 func (x *SessionReplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_session_svc_g_proto_msgTypes[16]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2723,7 +2723,7 @@ type SessionEventsRequest struct {
 
 func (x *SessionEventsRequest) Reset() {
 	*x = SessionEventsRequest{}
-	mi := &file_cxz_v2_session_svc_g_proto_msgTypes[17]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2735,7 +2735,7 @@ func (x *SessionEventsRequest) String() string {
 func (*SessionEventsRequest) ProtoMessage() {}
 
 func (x *SessionEventsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_session_svc_g_proto_msgTypes[17]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2820,7 +2820,7 @@ type SessionEventBatch struct {
 
 func (x *SessionEventBatch) Reset() {
 	*x = SessionEventBatch{}
-	mi := &file_cxz_v2_session_svc_g_proto_msgTypes[18]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2832,7 +2832,7 @@ func (x *SessionEventBatch) String() string {
 func (*SessionEventBatch) ProtoMessage() {}
 
 func (x *SessionEventBatch) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_session_svc_g_proto_msgTypes[18]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2870,40 +2870,40 @@ func (b0 SessionEventBatch_builder) Build() *SessionEventBatch {
 	return m0
 }
 
-var File_cxz_v2_session_svc_g_proto protoreflect.FileDescriptor
+var File_cxz_session_svc_g_proto protoreflect.FileDescriptor
 
-const file_cxz_v2_session_svc_g_proto_rawDesc = "" +
+const file_cxz_session_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x1acxz/v2/session_svc.g.proto\x12\x06cxz.v2\x1a\x1acxz/v2/project_svc.g.proto\x1a\x14cxz/v2/session.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\"\x91\x03\n" +
+	"\x17cxz/session_svc.g.proto\x12\x03cxz\x1a\x17cxz/project_svc.g.proto\x1a\x11cxz/session.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\"\x8b\x03\n" +
 	"\x11SessionAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12\x19\n" +
 	"\x04name\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04name\x12\x19\n" +
-	"\x04desc\x18\x06 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04desc\x12,\n" +
-	"\aproject\x18\b \x01(\v2\x12.cxz.v2.ProjectRefR\aproject\x12\x1b\n" +
+	"\x04desc\x18\x06 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04desc\x12)\n" +
+	"\aproject\x18\b \x01(\v2\x0f.cxz.ProjectRefR\aproject\x12\x1b\n" +
 	"\x05agent\x18\t \x01(\tB\x05\xaa\x01\x02\b\x02R\x05agent\x12\x1b\n" +
 	"\x05model\x18\n" +
 	" \x01(\tB\x05\xaa\x01\x02\b\x02R\x05model\x12$\n" +
 	"\n" +
 	"runtime_id\x18\v \x01(\tB\x05\xaa\x01\x02\b\x02R\truntimeId\x12\"\n" +
 	"\tclient_id\x18\f \x01(\tB\x05\xaa\x01\x02\b\x02R\bclientId\x12=\n" +
-	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\x12-\n" +
-	"\x06status\x18\x10 \x01(\v2\x15.cxz.v2.SessionStatusR\x06status\x12\x16\n" +
-	"\x06listed\x18\x11 \x01(\bR\x06listed\"h\n" +
-	"\x11SessionGetRequest\x12$\n" +
-	"\x03ref\x18\x01 \x01(\v2\x12.cxz.v2.SessionRefR\x03ref\x12-\n" +
-	"\x06select\x18\x02 \x01(\v2\x15.cxz.v2.SessionSelectR\x06select\"e\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\x12*\n" +
+	"\x06status\x18\x10 \x01(\v2\x12.cxz.SessionStatusR\x06status\x12\x16\n" +
+	"\x06listed\x18\x11 \x01(\bR\x06listed\"b\n" +
+	"\x11SessionGetRequest\x12!\n" +
+	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.SessionRefR\x03ref\x12*\n" +
+	"\x06select\x18\x02 \x01(\v2\x12.cxz.SessionSelectR\x06select\"e\n" +
 	"\n" +
 	"SessionRef\x12\x10\n" +
 	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12\x1f\n" +
 	"\n" +
 	"runtime_id\x18\v \x01(\tH\x00R\truntimeId\x12\x1d\n" +
 	"\tclient_id\x18\f \x01(\tH\x00R\bclientIdB\x05\n" +
-	"\x03key\"\xf9\x02\n" +
+	"\x03key\"\xf6\x02\n" +
 	"\rSessionSelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12\x12\n" +
 	"\x04name\x18\x05 \x01(\bR\x04name\x12\x12\n" +
-	"\x04desc\x18\x06 \x01(\bR\x04desc\x12/\n" +
-	"\aproject\x18\b \x01(\v2\x15.cxz.v2.ProjectSelectR\aproject\x12\x14\n" +
+	"\x04desc\x18\x06 \x01(\bR\x04desc\x12,\n" +
+	"\aproject\x18\b \x01(\v2\x12.cxz.ProjectSelectR\aproject\x12\x14\n" +
 	"\x05agent\x18\t \x01(\bR\x05agent\x12\x14\n" +
 	"\x05model\x18\n" +
 	" \x01(\bR\x05model\x12\x1d\n" +
@@ -2915,165 +2915,165 @@ const file_cxz_v2_session_svc_g_proto_rawDesc = "" +
 	"dateErased\x12!\n" +
 	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\x12\x16\n" +
 	"\x06status\x18\x10 \x01(\bR\x06status\x12\x16\n" +
-	"\x06listed\x18\x11 \x01(\bR\x06listed\"\xb8\x02\n" +
-	"\x13SessionPatchRequest\x12$\n" +
-	"\x03ref\x18\x01 \x01(\v2\x12.cxz.v2.SessionRefR\x03ref\x12\x12\n" +
+	"\x06listed\x18\x11 \x01(\bR\x06listed\"\xb2\x02\n" +
+	"\x13SessionPatchRequest\x12!\n" +
+	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.SessionRefR\x03ref\x12\x12\n" +
 	"\x04name\x18\n" +
 	" \x01(\tR\x04name\x12\x12\n" +
 	"\x04desc\x18\f \x01(\tR\x04desc\x12=\n" +
 	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
-	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\x12-\n" +
-	"\x06status\x18  \x01(\v2\x15.cxz.v2.SessionStatusR\x06status\x12\x1f\n" +
+	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\x12*\n" +
+	"\x06status\x18  \x01(\v2\x12.cxz.SessionStatusR\x06status\x12\x1f\n" +
 	"\vstatus_null\x18! \x01(\bR\n" +
 	"statusNull\x12\x16\n" +
-	"\x06listed\x18\" \x01(\bR\x06listed\"_\n" +
-	"\x13SessionApplyRequest\x12$\n" +
-	"\x03ref\x18\x01 \x01(\v2\x12.cxz.v2.SessionRefR\x03ref\x12\"\n" +
+	"\x06listed\x18\" \x01(\bR\x06listed\"\\\n" +
+	"\x13SessionApplyRequest\x12!\n" +
+	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.SessionRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\".\n" +
 	"\x14SessionEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"}\n" +
-	"\x12SessionListRequest\x12/\n" +
-	"\afilters\x18\x01 \x03(\v2\x15.cxz.v2.SessionFilterR\afilters\x12\x19\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"z\n" +
+	"\x12SessionListRequest\x12,\n" +
+	"\afilters\x18\x01 \x03(\v2\x12.cxz.SessionFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
-	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\"W\n" +
-	"\x13SessionListResponse\x12%\n" +
-	"\x05items\x18\x01 \x03(\v2\x0f.cxz.v2.SessionR\x05items\x12\x19\n" +
-	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"{\n" +
-	"\rSessionFilter\x12$\n" +
-	"\x03ref\x18\x01 \x01(\v2\x12.cxz.v2.SessionRefR\x03ref\x12,\n" +
-	"\aproject\x18\x02 \x01(\v2\x12.cxz.v2.ProjectRefR\aproject\x12\x16\n" +
-	"\x06listed\x18\x03 \x01(\bR\x06listed\"r\n" +
-	"\x13SessionWatchRequest\x12/\n" +
-	"\afilters\x18\x01 \x03(\v2\x15.cxz.v2.SessionFilterR\afilters\x12*\n" +
-	"\rskip_snapshot\x18\x02 \x01(\bB\x05\xaa\x01\x02\b\x02R\fskipSnapshot\"F\n" +
-	"\x14SessionWatchResponse\x12.\n" +
-	"\x05items\x18\x01 \x03(\v2\x18.cxz.v2.SessionWatchItemR\x05items\"h\n" +
+	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\"T\n" +
+	"\x13SessionListResponse\x12\"\n" +
+	"\x05items\x18\x01 \x03(\v2\f.cxz.SessionR\x05items\x12\x19\n" +
+	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"u\n" +
+	"\rSessionFilter\x12!\n" +
+	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.SessionRefR\x03ref\x12)\n" +
+	"\aproject\x18\x02 \x01(\v2\x0f.cxz.ProjectRefR\aproject\x12\x16\n" +
+	"\x06listed\x18\x03 \x01(\bR\x06listed\"o\n" +
+	"\x13SessionWatchRequest\x12,\n" +
+	"\afilters\x18\x01 \x03(\v2\x12.cxz.SessionFilterR\afilters\x12*\n" +
+	"\rskip_snapshot\x18\x02 \x01(\bB\x05\xaa\x01\x02\b\x02R\fskipSnapshot\"C\n" +
+	"\x14SessionWatchResponse\x12+\n" +
+	"\x05items\x18\x01 \x03(\v2\x15.cxz.SessionWatchItemR\x05items\"e\n" +
 	"\x10SessionWatchItem\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12%\n" +
-	"\x05value\x18\x02 \x01(\v2\x0f.cxz.v2.SessionR\x05value\x12\x1d\n" +
-	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action\"j\n" +
-	"\x0eSessionControl\x12$\n" +
-	"\x03ref\x18\x01 \x01(\v2\x12.cxz.v2.SessionRefR\x03ref\x12\x15\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12\"\n" +
+	"\x05value\x18\x02 \x01(\v2\f.cxz.SessionR\x05value\x12\x1d\n" +
+	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action\"g\n" +
+	"\x0eSessionControl\x12!\n" +
+	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.SessionRefR\x03ref\x12\x15\n" +
 	"\x06run_id\x18\x02 \x01(\tR\x05runId\x12\x1b\n" +
 	"\tclient_id\x18\x03 \x01(\tR\bclientId\"E\n" +
 	"\x0eSessionReceipt\x12\x1b\n" +
 	"\tclient_id\x18\x01 \x01(\tR\bclientId\x12\x16\n" +
-	"\x06status\x18\x02 \x01(\tR\x06status\"\x82\x01\n" +
-	"\x12SessionSendRequest\x12$\n" +
-	"\x03ref\x18\x01 \x01(\v2\x12.cxz.v2.SessionRefR\x03ref\x12\x15\n" +
+	"\x06status\x18\x02 \x01(\tR\x06status\"\x7f\n" +
+	"\x12SessionSendRequest\x12!\n" +
+	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.SessionRefR\x03ref\x12\x15\n" +
 	"\x06run_id\x18\x02 \x01(\tR\x05runId\x12\x1b\n" +
 	"\tclient_id\x18\x03 \x01(\tR\bclientId\x12\x12\n" +
-	"\x04text\x18\x04 \x01(\tR\x04text\"\xc7\x01\n" +
-	"\x13SessionReplyRequest\x12$\n" +
-	"\x03ref\x18\x01 \x01(\v2\x12.cxz.v2.SessionRefR\x03ref\x12\x15\n" +
+	"\x04text\x18\x04 \x01(\tR\x04text\"\xc4\x01\n" +
+	"\x13SessionReplyRequest\x12!\n" +
+	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.SessionRefR\x03ref\x12\x15\n" +
 	"\x06run_id\x18\x02 \x01(\tR\x05runId\x12\x1b\n" +
 	"\tclient_id\x18\x03 \x01(\tR\bclientId\x12\x1d\n" +
 	"\n" +
 	"request_id\x18\x04 \x01(\tR\trequestId\x12\x14\n" +
 	"\x05allow\x18\x05 \x01(\bR\x05allow\x12!\n" +
-	"\fanswers_json\x18\x06 \x01(\tR\vanswersJson\"Y\n" +
-	"\x14SessionEventsRequest\x12$\n" +
-	"\x03ref\x18\x01 \x01(\v2\x12.cxz.v2.SessionRefR\x03ref\x12\x1b\n" +
-	"\tafter_seq\x18\x02 \x01(\x04R\bafterSeq\"A\n" +
-	"\x11SessionEventBatch\x12,\n" +
-	"\x06events\x18\x01 \x03(\v2\x14.cxz.v2.SessionEventR\x06events2\xc5\x06\n" +
-	"\x0eSessionService\x121\n" +
-	"\x03Add\x12\x19.cxz.v2.SessionAddRequest\x1a\x0f.cxz.v2.Session\x121\n" +
-	"\x03Get\x12\x19.cxz.v2.SessionGetRequest\x1a\x0f.cxz.v2.Session\x125\n" +
-	"\x05Patch\x12\x1b.cxz.v2.SessionPatchRequest\x1a\x0f.cxz.v2.Session\x125\n" +
-	"\x05Apply\x12\x1b.cxz.v2.SessionApplyRequest\x1a\x0f.cxz.v2.Session\x129\n" +
-	"\x05Erase\x12\x12.cxz.v2.SessionRef\x1a\x1c.cxz.v2.SessionEraseResponse\x12?\n" +
-	"\x04List\x12\x1a.cxz.v2.SessionListRequest\x1a\x1b.cxz.v2.SessionListResponse\x12D\n" +
-	"\x05Watch\x12\x1b.cxz.v2.SessionWatchRequest\x1a\x1c.cxz.v2.SessionWatchResponse0\x01\x121\n" +
-	"\x06Resume\x12\x16.cxz.v2.SessionControl\x1a\x0f.cxz.v2.Session\x12/\n" +
-	"\x04Stop\x12\x16.cxz.v2.SessionControl\x1a\x0f.cxz.v2.Session\x12;\n" +
-	"\tInterrupt\x12\x16.cxz.v2.SessionControl\x1a\x16.cxz.v2.SessionReceipt\x12:\n" +
-	"\x04Send\x12\x1a.cxz.v2.SessionSendRequest\x1a\x16.cxz.v2.SessionReceipt\x12<\n" +
-	"\x05Reply\x12\x1b.cxz.v2.SessionReplyRequest\x1a\x16.cxz.v2.SessionReceipt\x12B\n" +
-	"\aHistory\x12\x1c.cxz.v2.SessionEventsRequest\x1a\x19.cxz.v2.SessionEventBatch\x12>\n" +
-	"\x06Events\x12\x1c.cxz.v2.SessionEventsRequest\x1a\x14.cxz.v2.SessionEvent0\x01B\"Z github.com/lesomnus/cxz/resourceb\beditionsp\xe8\a"
+	"\fanswers_json\x18\x06 \x01(\tR\vanswersJson\"V\n" +
+	"\x14SessionEventsRequest\x12!\n" +
+	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.SessionRefR\x03ref\x12\x1b\n" +
+	"\tafter_seq\x18\x02 \x01(\x04R\bafterSeq\">\n" +
+	"\x11SessionEventBatch\x12)\n" +
+	"\x06events\x18\x01 \x03(\v2\x11.cxz.SessionEventR\x06events2\xf1\x05\n" +
+	"\x0eSessionService\x12+\n" +
+	"\x03Add\x12\x16.cxz.SessionAddRequest\x1a\f.cxz.Session\x12+\n" +
+	"\x03Get\x12\x16.cxz.SessionGetRequest\x1a\f.cxz.Session\x12/\n" +
+	"\x05Patch\x12\x18.cxz.SessionPatchRequest\x1a\f.cxz.Session\x12/\n" +
+	"\x05Apply\x12\x18.cxz.SessionApplyRequest\x1a\f.cxz.Session\x123\n" +
+	"\x05Erase\x12\x0f.cxz.SessionRef\x1a\x19.cxz.SessionEraseResponse\x129\n" +
+	"\x04List\x12\x17.cxz.SessionListRequest\x1a\x18.cxz.SessionListResponse\x12>\n" +
+	"\x05Watch\x12\x18.cxz.SessionWatchRequest\x1a\x19.cxz.SessionWatchResponse0\x01\x12+\n" +
+	"\x06Resume\x12\x13.cxz.SessionControl\x1a\f.cxz.Session\x12)\n" +
+	"\x04Stop\x12\x13.cxz.SessionControl\x1a\f.cxz.Session\x125\n" +
+	"\tInterrupt\x12\x13.cxz.SessionControl\x1a\x13.cxz.SessionReceipt\x124\n" +
+	"\x04Send\x12\x17.cxz.SessionSendRequest\x1a\x13.cxz.SessionReceipt\x126\n" +
+	"\x05Reply\x12\x18.cxz.SessionReplyRequest\x1a\x13.cxz.SessionReceipt\x12<\n" +
+	"\aHistory\x12\x19.cxz.SessionEventsRequest\x1a\x16.cxz.SessionEventBatch\x128\n" +
+	"\x06Events\x12\x19.cxz.SessionEventsRequest\x1a\x11.cxz.SessionEvent0\x01B\"Z github.com/lesomnus/cxz/resourceb\beditionsp\xe8\a"
 
-var file_cxz_v2_session_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
-var file_cxz_v2_session_svc_g_proto_goTypes = []any{
-	(*SessionAddRequest)(nil),     // 0: cxz.v2.SessionAddRequest
-	(*SessionGetRequest)(nil),     // 1: cxz.v2.SessionGetRequest
-	(*SessionRef)(nil),            // 2: cxz.v2.SessionRef
-	(*SessionSelect)(nil),         // 3: cxz.v2.SessionSelect
-	(*SessionPatchRequest)(nil),   // 4: cxz.v2.SessionPatchRequest
-	(*SessionApplyRequest)(nil),   // 5: cxz.v2.SessionApplyRequest
-	(*SessionEraseResponse)(nil),  // 6: cxz.v2.SessionEraseResponse
-	(*SessionListRequest)(nil),    // 7: cxz.v2.SessionListRequest
-	(*SessionListResponse)(nil),   // 8: cxz.v2.SessionListResponse
-	(*SessionFilter)(nil),         // 9: cxz.v2.SessionFilter
-	(*SessionWatchRequest)(nil),   // 10: cxz.v2.SessionWatchRequest
-	(*SessionWatchResponse)(nil),  // 11: cxz.v2.SessionWatchResponse
-	(*SessionWatchItem)(nil),      // 12: cxz.v2.SessionWatchItem
-	(*SessionControl)(nil),        // 13: cxz.v2.SessionControl
-	(*SessionReceipt)(nil),        // 14: cxz.v2.SessionReceipt
-	(*SessionSendRequest)(nil),    // 15: cxz.v2.SessionSendRequest
-	(*SessionReplyRequest)(nil),   // 16: cxz.v2.SessionReplyRequest
-	(*SessionEventsRequest)(nil),  // 17: cxz.v2.SessionEventsRequest
-	(*SessionEventBatch)(nil),     // 18: cxz.v2.SessionEventBatch
-	(*ProjectRef)(nil),            // 19: cxz.v2.ProjectRef
+var file_cxz_session_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
+var file_cxz_session_svc_g_proto_goTypes = []any{
+	(*SessionAddRequest)(nil),     // 0: cxz.SessionAddRequest
+	(*SessionGetRequest)(nil),     // 1: cxz.SessionGetRequest
+	(*SessionRef)(nil),            // 2: cxz.SessionRef
+	(*SessionSelect)(nil),         // 3: cxz.SessionSelect
+	(*SessionPatchRequest)(nil),   // 4: cxz.SessionPatchRequest
+	(*SessionApplyRequest)(nil),   // 5: cxz.SessionApplyRequest
+	(*SessionEraseResponse)(nil),  // 6: cxz.SessionEraseResponse
+	(*SessionListRequest)(nil),    // 7: cxz.SessionListRequest
+	(*SessionListResponse)(nil),   // 8: cxz.SessionListResponse
+	(*SessionFilter)(nil),         // 9: cxz.SessionFilter
+	(*SessionWatchRequest)(nil),   // 10: cxz.SessionWatchRequest
+	(*SessionWatchResponse)(nil),  // 11: cxz.SessionWatchResponse
+	(*SessionWatchItem)(nil),      // 12: cxz.SessionWatchItem
+	(*SessionControl)(nil),        // 13: cxz.SessionControl
+	(*SessionReceipt)(nil),        // 14: cxz.SessionReceipt
+	(*SessionSendRequest)(nil),    // 15: cxz.SessionSendRequest
+	(*SessionReplyRequest)(nil),   // 16: cxz.SessionReplyRequest
+	(*SessionEventsRequest)(nil),  // 17: cxz.SessionEventsRequest
+	(*SessionEventBatch)(nil),     // 18: cxz.SessionEventBatch
+	(*ProjectRef)(nil),            // 19: cxz.ProjectRef
 	(*timestamppb.Timestamp)(nil), // 20: google.protobuf.Timestamp
-	(*SessionStatus)(nil),         // 21: cxz.v2.SessionStatus
-	(*ProjectSelect)(nil),         // 22: cxz.v2.ProjectSelect
+	(*SessionStatus)(nil),         // 21: cxz.SessionStatus
+	(*ProjectSelect)(nil),         // 22: cxz.ProjectSelect
 	(*patchpb.Patch)(nil),         // 23: patch.Patch
-	(*Session)(nil),               // 24: cxz.v2.Session
-	(*SessionEvent)(nil),          // 25: cxz.v2.SessionEvent
+	(*Session)(nil),               // 24: cxz.Session
+	(*SessionEvent)(nil),          // 25: cxz.SessionEvent
 }
-var file_cxz_v2_session_svc_g_proto_depIdxs = []int32{
-	19, // 0: cxz.v2.SessionAddRequest.project:type_name -> cxz.v2.ProjectRef
-	20, // 1: cxz.v2.SessionAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	21, // 2: cxz.v2.SessionAddRequest.status:type_name -> cxz.v2.SessionStatus
-	2,  // 3: cxz.v2.SessionGetRequest.ref:type_name -> cxz.v2.SessionRef
-	3,  // 4: cxz.v2.SessionGetRequest.select:type_name -> cxz.v2.SessionSelect
-	22, // 5: cxz.v2.SessionSelect.project:type_name -> cxz.v2.ProjectSelect
-	2,  // 6: cxz.v2.SessionPatchRequest.ref:type_name -> cxz.v2.SessionRef
-	20, // 7: cxz.v2.SessionPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	21, // 8: cxz.v2.SessionPatchRequest.status:type_name -> cxz.v2.SessionStatus
-	2,  // 9: cxz.v2.SessionApplyRequest.ref:type_name -> cxz.v2.SessionRef
-	23, // 10: cxz.v2.SessionApplyRequest.patch:type_name -> patch.Patch
-	9,  // 11: cxz.v2.SessionListRequest.filters:type_name -> cxz.v2.SessionFilter
-	24, // 12: cxz.v2.SessionListResponse.items:type_name -> cxz.v2.Session
-	2,  // 13: cxz.v2.SessionFilter.ref:type_name -> cxz.v2.SessionRef
-	19, // 14: cxz.v2.SessionFilter.project:type_name -> cxz.v2.ProjectRef
-	9,  // 15: cxz.v2.SessionWatchRequest.filters:type_name -> cxz.v2.SessionFilter
-	12, // 16: cxz.v2.SessionWatchResponse.items:type_name -> cxz.v2.SessionWatchItem
-	24, // 17: cxz.v2.SessionWatchItem.value:type_name -> cxz.v2.Session
-	2,  // 18: cxz.v2.SessionControl.ref:type_name -> cxz.v2.SessionRef
-	2,  // 19: cxz.v2.SessionSendRequest.ref:type_name -> cxz.v2.SessionRef
-	2,  // 20: cxz.v2.SessionReplyRequest.ref:type_name -> cxz.v2.SessionRef
-	2,  // 21: cxz.v2.SessionEventsRequest.ref:type_name -> cxz.v2.SessionRef
-	25, // 22: cxz.v2.SessionEventBatch.events:type_name -> cxz.v2.SessionEvent
-	0,  // 23: cxz.v2.SessionService.Add:input_type -> cxz.v2.SessionAddRequest
-	1,  // 24: cxz.v2.SessionService.Get:input_type -> cxz.v2.SessionGetRequest
-	4,  // 25: cxz.v2.SessionService.Patch:input_type -> cxz.v2.SessionPatchRequest
-	5,  // 26: cxz.v2.SessionService.Apply:input_type -> cxz.v2.SessionApplyRequest
-	2,  // 27: cxz.v2.SessionService.Erase:input_type -> cxz.v2.SessionRef
-	7,  // 28: cxz.v2.SessionService.List:input_type -> cxz.v2.SessionListRequest
-	10, // 29: cxz.v2.SessionService.Watch:input_type -> cxz.v2.SessionWatchRequest
-	13, // 30: cxz.v2.SessionService.Resume:input_type -> cxz.v2.SessionControl
-	13, // 31: cxz.v2.SessionService.Stop:input_type -> cxz.v2.SessionControl
-	13, // 32: cxz.v2.SessionService.Interrupt:input_type -> cxz.v2.SessionControl
-	15, // 33: cxz.v2.SessionService.Send:input_type -> cxz.v2.SessionSendRequest
-	16, // 34: cxz.v2.SessionService.Reply:input_type -> cxz.v2.SessionReplyRequest
-	17, // 35: cxz.v2.SessionService.History:input_type -> cxz.v2.SessionEventsRequest
-	17, // 36: cxz.v2.SessionService.Events:input_type -> cxz.v2.SessionEventsRequest
-	24, // 37: cxz.v2.SessionService.Add:output_type -> cxz.v2.Session
-	24, // 38: cxz.v2.SessionService.Get:output_type -> cxz.v2.Session
-	24, // 39: cxz.v2.SessionService.Patch:output_type -> cxz.v2.Session
-	24, // 40: cxz.v2.SessionService.Apply:output_type -> cxz.v2.Session
-	6,  // 41: cxz.v2.SessionService.Erase:output_type -> cxz.v2.SessionEraseResponse
-	8,  // 42: cxz.v2.SessionService.List:output_type -> cxz.v2.SessionListResponse
-	11, // 43: cxz.v2.SessionService.Watch:output_type -> cxz.v2.SessionWatchResponse
-	24, // 44: cxz.v2.SessionService.Resume:output_type -> cxz.v2.Session
-	24, // 45: cxz.v2.SessionService.Stop:output_type -> cxz.v2.Session
-	14, // 46: cxz.v2.SessionService.Interrupt:output_type -> cxz.v2.SessionReceipt
-	14, // 47: cxz.v2.SessionService.Send:output_type -> cxz.v2.SessionReceipt
-	14, // 48: cxz.v2.SessionService.Reply:output_type -> cxz.v2.SessionReceipt
-	18, // 49: cxz.v2.SessionService.History:output_type -> cxz.v2.SessionEventBatch
-	25, // 50: cxz.v2.SessionService.Events:output_type -> cxz.v2.SessionEvent
+var file_cxz_session_svc_g_proto_depIdxs = []int32{
+	19, // 0: cxz.SessionAddRequest.project:type_name -> cxz.ProjectRef
+	20, // 1: cxz.SessionAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	21, // 2: cxz.SessionAddRequest.status:type_name -> cxz.SessionStatus
+	2,  // 3: cxz.SessionGetRequest.ref:type_name -> cxz.SessionRef
+	3,  // 4: cxz.SessionGetRequest.select:type_name -> cxz.SessionSelect
+	22, // 5: cxz.SessionSelect.project:type_name -> cxz.ProjectSelect
+	2,  // 6: cxz.SessionPatchRequest.ref:type_name -> cxz.SessionRef
+	20, // 7: cxz.SessionPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	21, // 8: cxz.SessionPatchRequest.status:type_name -> cxz.SessionStatus
+	2,  // 9: cxz.SessionApplyRequest.ref:type_name -> cxz.SessionRef
+	23, // 10: cxz.SessionApplyRequest.patch:type_name -> patch.Patch
+	9,  // 11: cxz.SessionListRequest.filters:type_name -> cxz.SessionFilter
+	24, // 12: cxz.SessionListResponse.items:type_name -> cxz.Session
+	2,  // 13: cxz.SessionFilter.ref:type_name -> cxz.SessionRef
+	19, // 14: cxz.SessionFilter.project:type_name -> cxz.ProjectRef
+	9,  // 15: cxz.SessionWatchRequest.filters:type_name -> cxz.SessionFilter
+	12, // 16: cxz.SessionWatchResponse.items:type_name -> cxz.SessionWatchItem
+	24, // 17: cxz.SessionWatchItem.value:type_name -> cxz.Session
+	2,  // 18: cxz.SessionControl.ref:type_name -> cxz.SessionRef
+	2,  // 19: cxz.SessionSendRequest.ref:type_name -> cxz.SessionRef
+	2,  // 20: cxz.SessionReplyRequest.ref:type_name -> cxz.SessionRef
+	2,  // 21: cxz.SessionEventsRequest.ref:type_name -> cxz.SessionRef
+	25, // 22: cxz.SessionEventBatch.events:type_name -> cxz.SessionEvent
+	0,  // 23: cxz.SessionService.Add:input_type -> cxz.SessionAddRequest
+	1,  // 24: cxz.SessionService.Get:input_type -> cxz.SessionGetRequest
+	4,  // 25: cxz.SessionService.Patch:input_type -> cxz.SessionPatchRequest
+	5,  // 26: cxz.SessionService.Apply:input_type -> cxz.SessionApplyRequest
+	2,  // 27: cxz.SessionService.Erase:input_type -> cxz.SessionRef
+	7,  // 28: cxz.SessionService.List:input_type -> cxz.SessionListRequest
+	10, // 29: cxz.SessionService.Watch:input_type -> cxz.SessionWatchRequest
+	13, // 30: cxz.SessionService.Resume:input_type -> cxz.SessionControl
+	13, // 31: cxz.SessionService.Stop:input_type -> cxz.SessionControl
+	13, // 32: cxz.SessionService.Interrupt:input_type -> cxz.SessionControl
+	15, // 33: cxz.SessionService.Send:input_type -> cxz.SessionSendRequest
+	16, // 34: cxz.SessionService.Reply:input_type -> cxz.SessionReplyRequest
+	17, // 35: cxz.SessionService.History:input_type -> cxz.SessionEventsRequest
+	17, // 36: cxz.SessionService.Events:input_type -> cxz.SessionEventsRequest
+	24, // 37: cxz.SessionService.Add:output_type -> cxz.Session
+	24, // 38: cxz.SessionService.Get:output_type -> cxz.Session
+	24, // 39: cxz.SessionService.Patch:output_type -> cxz.Session
+	24, // 40: cxz.SessionService.Apply:output_type -> cxz.Session
+	6,  // 41: cxz.SessionService.Erase:output_type -> cxz.SessionEraseResponse
+	8,  // 42: cxz.SessionService.List:output_type -> cxz.SessionListResponse
+	11, // 43: cxz.SessionService.Watch:output_type -> cxz.SessionWatchResponse
+	24, // 44: cxz.SessionService.Resume:output_type -> cxz.Session
+	24, // 45: cxz.SessionService.Stop:output_type -> cxz.Session
+	14, // 46: cxz.SessionService.Interrupt:output_type -> cxz.SessionReceipt
+	14, // 47: cxz.SessionService.Send:output_type -> cxz.SessionReceipt
+	14, // 48: cxz.SessionService.Reply:output_type -> cxz.SessionReceipt
+	18, // 49: cxz.SessionService.History:output_type -> cxz.SessionEventBatch
+	25, // 50: cxz.SessionService.Events:output_type -> cxz.SessionEvent
 	37, // [37:51] is the sub-list for method output_type
 	23, // [23:37] is the sub-list for method input_type
 	23, // [23:23] is the sub-list for extension type_name
@@ -3081,14 +3081,14 @@ var file_cxz_v2_session_svc_g_proto_depIdxs = []int32{
 	0,  // [0:23] is the sub-list for field type_name
 }
 
-func init() { file_cxz_v2_session_svc_g_proto_init() }
-func file_cxz_v2_session_svc_g_proto_init() {
-	if File_cxz_v2_session_svc_g_proto != nil {
+func init() { file_cxz_session_svc_g_proto_init() }
+func file_cxz_session_svc_g_proto_init() {
+	if File_cxz_session_svc_g_proto != nil {
 		return
 	}
-	file_cxz_v2_project_svc_g_proto_init()
-	file_cxz_v2_session_proto_init()
-	file_cxz_v2_session_svc_g_proto_msgTypes[2].OneofWrappers = []any{
+	file_cxz_project_svc_g_proto_init()
+	file_cxz_session_proto_init()
+	file_cxz_session_svc_g_proto_msgTypes[2].OneofWrappers = []any{
 		(*sessionRef_Id)(nil),
 		(*sessionRef_RuntimeId)(nil),
 		(*sessionRef_ClientId)(nil),
@@ -3097,17 +3097,17 @@ func file_cxz_v2_session_svc_g_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_cxz_v2_session_svc_g_proto_rawDesc), len(file_cxz_v2_session_svc_g_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_cxz_session_svc_g_proto_rawDesc), len(file_cxz_session_svc_g_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   19,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_cxz_v2_session_svc_g_proto_goTypes,
-		DependencyIndexes: file_cxz_v2_session_svc_g_proto_depIdxs,
-		MessageInfos:      file_cxz_v2_session_svc_g_proto_msgTypes,
+		GoTypes:           file_cxz_session_svc_g_proto_goTypes,
+		DependencyIndexes: file_cxz_session_svc_g_proto_depIdxs,
+		MessageInfos:      file_cxz_session_svc_g_proto_msgTypes,
 	}.Build()
-	File_cxz_v2_session_svc_g_proto = out.File
-	file_cxz_v2_session_svc_g_proto_goTypes = nil
-	file_cxz_v2_session_svc_g_proto_depIdxs = nil
+	File_cxz_session_svc_g_proto = out.File
+	file_cxz_session_svc_g_proto_goTypes = nil
+	file_cxz_session_svc_g_proto_depIdxs = nil
 }

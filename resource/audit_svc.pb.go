@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        (unknown)
-// source: cxz.v2/payday/audit_svc.g.proto
+// source: cxz/payday/audit_svc.g.proto
 
 package resource
 
@@ -44,7 +44,7 @@ type AuditAddRequest struct {
 
 func (x *AuditAddRequest) Reset() {
 	*x = AuditAddRequest{}
-	mi := &file_cxz_v2_payday_audit_svc_g_proto_msgTypes[0]
+	mi := &file_cxz_payday_audit_svc_g_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -56,7 +56,7 @@ func (x *AuditAddRequest) String() string {
 func (*AuditAddRequest) ProtoMessage() {}
 
 func (x *AuditAddRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_payday_audit_svc_g_proto_msgTypes[0]
+	mi := &file_cxz_payday_audit_svc_g_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -331,7 +331,7 @@ type AuditGetRequest struct {
 
 func (x *AuditGetRequest) Reset() {
 	*x = AuditGetRequest{}
-	mi := &file_cxz_v2_payday_audit_svc_g_proto_msgTypes[1]
+	mi := &file_cxz_payday_audit_svc_g_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -343,7 +343,7 @@ func (x *AuditGetRequest) String() string {
 func (*AuditGetRequest) ProtoMessage() {}
 
 func (x *AuditGetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_payday_audit_svc_g_proto_msgTypes[1]
+	mi := &file_cxz_payday_audit_svc_g_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -423,7 +423,7 @@ type AuditRef struct {
 
 func (x *AuditRef) Reset() {
 	*x = AuditRef{}
-	mi := &file_cxz_v2_payday_audit_svc_g_proto_msgTypes[2]
+	mi := &file_cxz_payday_audit_svc_g_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -435,7 +435,7 @@ func (x *AuditRef) String() string {
 func (*AuditRef) ProtoMessage() {}
 
 func (x *AuditRef) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_payday_audit_svc_g_proto_msgTypes[2]
+	mi := &file_cxz_payday_audit_svc_g_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -523,7 +523,7 @@ func (b0 AuditRef_builder) Build() *AuditRef {
 type case_AuditRef_Key protoreflect.FieldNumber
 
 func (x case_AuditRef_Key) String() string {
-	md := file_cxz_v2_payday_audit_svc_g_proto_msgTypes[2].Descriptor()
+	md := file_cxz_payday_audit_svc_g_proto_msgTypes[2].Descriptor()
 	if x == 0 {
 		return "not set"
 	}
@@ -562,7 +562,7 @@ type AuditSelect struct {
 
 func (x *AuditSelect) Reset() {
 	*x = AuditSelect{}
-	mi := &file_cxz_v2_payday_audit_svc_g_proto_msgTypes[3]
+	mi := &file_cxz_payday_audit_svc_g_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -574,7 +574,7 @@ func (x *AuditSelect) String() string {
 func (*AuditSelect) ProtoMessage() {}
 
 func (x *AuditSelect) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_payday_audit_svc_g_proto_msgTypes[3]
+	mi := &file_cxz_payday_audit_svc_g_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -967,7 +967,7 @@ type AuditPatchRequest struct {
 
 func (x *AuditPatchRequest) Reset() {
 	*x = AuditPatchRequest{}
-	mi := &file_cxz_v2_payday_audit_svc_g_proto_msgTypes[4]
+	mi := &file_cxz_payday_audit_svc_g_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -979,7 +979,7 @@ func (x *AuditPatchRequest) String() string {
 func (*AuditPatchRequest) ProtoMessage() {}
 
 func (x *AuditPatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_payday_audit_svc_g_proto_msgTypes[4]
+	mi := &file_cxz_payday_audit_svc_g_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1386,7 +1386,7 @@ type AuditApplyRequest struct {
 
 func (x *AuditApplyRequest) Reset() {
 	*x = AuditApplyRequest{}
-	mi := &file_cxz_v2_payday_audit_svc_g_proto_msgTypes[5]
+	mi := &file_cxz_payday_audit_svc_g_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1398,7 +1398,7 @@ func (x *AuditApplyRequest) String() string {
 func (*AuditApplyRequest) ProtoMessage() {}
 
 func (x *AuditApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_payday_audit_svc_g_proto_msgTypes[5]
+	mi := &file_cxz_payday_audit_svc_g_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1480,7 +1480,7 @@ type AuditEraseResponse struct {
 
 func (x *AuditEraseResponse) Reset() {
 	*x = AuditEraseResponse{}
-	mi := &file_cxz_v2_payday_audit_svc_g_proto_msgTypes[6]
+	mi := &file_cxz_payday_audit_svc_g_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1492,7 +1492,7 @@ func (x *AuditEraseResponse) String() string {
 func (*AuditEraseResponse) ProtoMessage() {}
 
 func (x *AuditEraseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_payday_audit_svc_g_proto_msgTypes[6]
+	mi := &file_cxz_payday_audit_svc_g_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1560,7 +1560,7 @@ type AuditListRequest struct {
 
 func (x *AuditListRequest) Reset() {
 	*x = AuditListRequest{}
-	mi := &file_cxz_v2_payday_audit_svc_g_proto_msgTypes[7]
+	mi := &file_cxz_payday_audit_svc_g_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1572,7 +1572,7 @@ func (x *AuditListRequest) String() string {
 func (*AuditListRequest) ProtoMessage() {}
 
 func (x *AuditListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_payday_audit_svc_g_proto_msgTypes[7]
+	mi := &file_cxz_payday_audit_svc_g_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1655,7 +1655,7 @@ type AuditListResponse struct {
 
 func (x *AuditListResponse) Reset() {
 	*x = AuditListResponse{}
-	mi := &file_cxz_v2_payday_audit_svc_g_proto_msgTypes[8]
+	mi := &file_cxz_payday_audit_svc_g_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1667,7 +1667,7 @@ func (x *AuditListResponse) String() string {
 func (*AuditListResponse) ProtoMessage() {}
 
 func (x *AuditListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_payday_audit_svc_g_proto_msgTypes[8]
+	mi := &file_cxz_payday_audit_svc_g_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1740,7 +1740,7 @@ type AuditFilter struct {
 
 func (x *AuditFilter) Reset() {
 	*x = AuditFilter{}
-	mi := &file_cxz_v2_payday_audit_svc_g_proto_msgTypes[9]
+	mi := &file_cxz_payday_audit_svc_g_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1752,7 +1752,7 @@ func (x *AuditFilter) String() string {
 func (*AuditFilter) ProtoMessage() {}
 
 func (x *AuditFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_payday_audit_svc_g_proto_msgTypes[9]
+	mi := &file_cxz_payday_audit_svc_g_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1935,11 +1935,11 @@ func (b0 AuditFilter_builder) Build() *AuditFilter {
 	return m0
 }
 
-var File_cxz_v2_payday_audit_svc_g_proto protoreflect.FileDescriptor
+var File_cxz_payday_audit_svc_g_proto protoreflect.FileDescriptor
 
-const file_cxz_v2_payday_audit_svc_g_proto_rawDesc = "" +
+const file_cxz_payday_audit_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x1fcxz.v2/payday/audit_svc.g.proto\x12\x06cxz.v2\x1a\x19cxz.v2/payday/audit.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\"\xc0\x03\n" +
+	"\x1ccxz/payday/audit_svc.g.proto\x12\x03cxz\x1a\x16cxz/payday/audit.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\"\xc0\x03\n" +
 	"\x0fAuditAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12\"\n" +
 	"\ttenant_id\x18\x02 \x01(\fB\x05\xaa\x01\x02\b\x02R\btenantId\x12 \n" +
@@ -1953,10 +1953,10 @@ const file_cxz_v2_payday_audit_svc_g_proto_rawDesc = "" +
 	"\x0factor_tenant_id\x18\x10 \x01(\fB\x05\xaa\x01\x02\b\x02R\ractorTenantId\x12\x1b\n" +
 	"\x05value\x18\x11 \x01(\fB\x05\xaa\x01\x02\b\x02R\x05value\x122\n" +
 	"\x15counterpart_tenant_id\x18\x12 \x01(\fR\x13counterpartTenantId\x12\x16\n" +
-	"\x06domain\x18\x13 \x01(\rR\x06domain\"b\n" +
-	"\x0fAuditGetRequest\x12\"\n" +
-	"\x03ref\x18\x01 \x01(\v2\x10.cxz.v2.AuditRefR\x03ref\x12+\n" +
-	"\x06select\x18\x02 \x01(\v2\x13.cxz.v2.AuditSelectR\x06select\"#\n" +
+	"\x06domain\x18\x13 \x01(\rR\x06domain\"\\\n" +
+	"\x0fAuditGetRequest\x12\x1f\n" +
+	"\x03ref\x18\x01 \x01(\v2\r.cxz.AuditRefR\x03ref\x12(\n" +
+	"\x06select\x18\x02 \x01(\v2\x10.cxz.AuditSelectR\x06select\"#\n" +
 	"\bAuditRef\x12\x10\n" +
 	"\x02id\x18\x01 \x01(\fH\x00R\x02idB\x05\n" +
 	"\x03key\"\xea\x02\n" +
@@ -1973,9 +1973,9 @@ const file_cxz_v2_payday_audit_svc_g_proto_rawDesc = "" +
 	"\x0factor_tenant_id\x18\x10 \x01(\bR\ractorTenantId\x12\x14\n" +
 	"\x05value\x18\x11 \x01(\bR\x05value\x122\n" +
 	"\x15counterpart_tenant_id\x18\x12 \x01(\bR\x13counterpartTenantId\x12\x16\n" +
-	"\x06domain\x18\x13 \x01(\bR\x06domain\"\x9c\x03\n" +
-	"\x11AuditPatchRequest\x12\"\n" +
-	"\x03ref\x18\x01 \x01(\v2\x10.cxz.v2.AuditRefR\x03ref\x12\x1b\n" +
+	"\x06domain\x18\x13 \x01(\bR\x06domain\"\x99\x03\n" +
+	"\x11AuditPatchRequest\x12\x1f\n" +
+	"\x03ref\x18\x01 \x01(\v2\r.cxz.AuditRefR\x03ref\x12\x1b\n" +
 	"\ttenant_id\x18\x04 \x01(\fR\btenantId\x12\x19\n" +
 	"\bactor_id\x18\x10 \x01(\fR\aactorId\x12\x19\n" +
 	"\btrace_id\x18\x12 \x01(\fR\atraceId\x12\x16\n" +
@@ -1986,70 +1986,75 @@ const file_cxz_v2_payday_audit_svc_g_proto_rawDesc = "" +
 	"\x05value\x18\" \x01(\fR\x05value\x122\n" +
 	"\x15counterpart_tenant_id\x18$ \x01(\fR\x13counterpartTenantId\x12;\n" +
 	"\x1acounterpart_tenant_id_null\x18% \x01(\bR\x17counterpartTenantIdNull\x12\x16\n" +
-	"\x06domain\x18& \x01(\rR\x06domain\"[\n" +
-	"\x11AuditApplyRequest\x12\"\n" +
-	"\x03ref\x18\x01 \x01(\v2\x10.cxz.v2.AuditRefR\x03ref\x12\"\n" +
+	"\x06domain\x18& \x01(\rR\x06domain\"X\n" +
+	"\x11AuditApplyRequest\x12\x1f\n" +
+	"\x03ref\x18\x01 \x01(\v2\r.cxz.AuditRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\",\n" +
 	"\x12AuditEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"y\n" +
-	"\x10AuditListRequest\x12-\n" +
-	"\afilters\x18\x01 \x03(\v2\x13.cxz.v2.AuditFilterR\afilters\x12\x19\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"v\n" +
+	"\x10AuditListRequest\x12*\n" +
+	"\afilters\x18\x01 \x03(\v2\x10.cxz.AuditFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
-	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\"S\n" +
-	"\x11AuditListResponse\x12#\n" +
-	"\x05items\x18\x01 \x03(\v2\r.cxz.v2.AuditR\x05items\x12\x19\n" +
+	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\"P\n" +
+	"\x11AuditListResponse\x12 \n" +
+	"\x05items\x18\x01 \x03(\v2\n" +
+	".cxz.AuditR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\xbe\x01\n" +
 	"\vAuditFilter\x12\x1b\n" +
 	"\tobject_id\x18\x01 \x01(\fR\bobjectId\x12\x19\n" +
 	"\bactor_id\x18\x02 \x01(\fR\aactorId\x12\x1b\n" +
 	"\ttenant_id\x18\x03 \x01(\fR\btenantId\x12&\n" +
 	"\x0factor_tenant_id\x18\x04 \x01(\fR\ractorTenantId\x122\n" +
-	"\x15counterpart_tenant_id\x18\x05 \x01(\fR\x13counterpartTenantId2\xc6\x02\n" +
-	"\fAuditService\x12-\n" +
-	"\x03Add\x12\x17.cxz.v2.AuditAddRequest\x1a\r.cxz.v2.Audit\x12-\n" +
-	"\x03Get\x12\x17.cxz.v2.AuditGetRequest\x1a\r.cxz.v2.Audit\x121\n" +
-	"\x05Patch\x12\x19.cxz.v2.AuditPatchRequest\x1a\r.cxz.v2.Audit\x121\n" +
-	"\x05Apply\x12\x19.cxz.v2.AuditApplyRequest\x1a\r.cxz.v2.Audit\x125\n" +
-	"\x05Erase\x12\x10.cxz.v2.AuditRef\x1a\x1a.cxz.v2.AuditEraseResponse\x12;\n" +
-	"\x04List\x12\x18.cxz.v2.AuditListRequest\x1a\x19.cxz.v2.AuditListResponseB\"Z github.com/lesomnus/cxz/resourceb\beditionsp\xe8\a"
+	"\x15counterpart_tenant_id\x18\x05 \x01(\fR\x13counterpartTenantId2\xa2\x02\n" +
+	"\fAuditService\x12'\n" +
+	"\x03Add\x12\x14.cxz.AuditAddRequest\x1a\n" +
+	".cxz.Audit\x12'\n" +
+	"\x03Get\x12\x14.cxz.AuditGetRequest\x1a\n" +
+	".cxz.Audit\x12+\n" +
+	"\x05Patch\x12\x16.cxz.AuditPatchRequest\x1a\n" +
+	".cxz.Audit\x12+\n" +
+	"\x05Apply\x12\x16.cxz.AuditApplyRequest\x1a\n" +
+	".cxz.Audit\x12/\n" +
+	"\x05Erase\x12\r.cxz.AuditRef\x1a\x17.cxz.AuditEraseResponse\x125\n" +
+	"\x04List\x12\x15.cxz.AuditListRequest\x1a\x16.cxz.AuditListResponseB\"Z github.com/lesomnus/cxz/resourceb\beditionsp\xe8\a"
 
-var file_cxz_v2_payday_audit_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
-var file_cxz_v2_payday_audit_svc_g_proto_goTypes = []any{
-	(*AuditAddRequest)(nil),       // 0: cxz.v2.AuditAddRequest
-	(*AuditGetRequest)(nil),       // 1: cxz.v2.AuditGetRequest
-	(*AuditRef)(nil),              // 2: cxz.v2.AuditRef
-	(*AuditSelect)(nil),           // 3: cxz.v2.AuditSelect
-	(*AuditPatchRequest)(nil),     // 4: cxz.v2.AuditPatchRequest
-	(*AuditApplyRequest)(nil),     // 5: cxz.v2.AuditApplyRequest
-	(*AuditEraseResponse)(nil),    // 6: cxz.v2.AuditEraseResponse
-	(*AuditListRequest)(nil),      // 7: cxz.v2.AuditListRequest
-	(*AuditListResponse)(nil),     // 8: cxz.v2.AuditListResponse
-	(*AuditFilter)(nil),           // 9: cxz.v2.AuditFilter
+var file_cxz_payday_audit_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_cxz_payday_audit_svc_g_proto_goTypes = []any{
+	(*AuditAddRequest)(nil),       // 0: cxz.AuditAddRequest
+	(*AuditGetRequest)(nil),       // 1: cxz.AuditGetRequest
+	(*AuditRef)(nil),              // 2: cxz.AuditRef
+	(*AuditSelect)(nil),           // 3: cxz.AuditSelect
+	(*AuditPatchRequest)(nil),     // 4: cxz.AuditPatchRequest
+	(*AuditApplyRequest)(nil),     // 5: cxz.AuditApplyRequest
+	(*AuditEraseResponse)(nil),    // 6: cxz.AuditEraseResponse
+	(*AuditListRequest)(nil),      // 7: cxz.AuditListRequest
+	(*AuditListResponse)(nil),     // 8: cxz.AuditListResponse
+	(*AuditFilter)(nil),           // 9: cxz.AuditFilter
 	(*timestamppb.Timestamp)(nil), // 10: google.protobuf.Timestamp
 	(*patchpb.Patch)(nil),         // 11: patch.Patch
-	(*Audit)(nil),                 // 12: cxz.v2.Audit
+	(*Audit)(nil),                 // 12: cxz.Audit
 }
-var file_cxz_v2_payday_audit_svc_g_proto_depIdxs = []int32{
-	10, // 0: cxz.v2.AuditAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	2,  // 1: cxz.v2.AuditGetRequest.ref:type_name -> cxz.v2.AuditRef
-	3,  // 2: cxz.v2.AuditGetRequest.select:type_name -> cxz.v2.AuditSelect
-	2,  // 3: cxz.v2.AuditPatchRequest.ref:type_name -> cxz.v2.AuditRef
-	2,  // 4: cxz.v2.AuditApplyRequest.ref:type_name -> cxz.v2.AuditRef
-	11, // 5: cxz.v2.AuditApplyRequest.patch:type_name -> patch.Patch
-	9,  // 6: cxz.v2.AuditListRequest.filters:type_name -> cxz.v2.AuditFilter
-	12, // 7: cxz.v2.AuditListResponse.items:type_name -> cxz.v2.Audit
-	0,  // 8: cxz.v2.AuditService.Add:input_type -> cxz.v2.AuditAddRequest
-	1,  // 9: cxz.v2.AuditService.Get:input_type -> cxz.v2.AuditGetRequest
-	4,  // 10: cxz.v2.AuditService.Patch:input_type -> cxz.v2.AuditPatchRequest
-	5,  // 11: cxz.v2.AuditService.Apply:input_type -> cxz.v2.AuditApplyRequest
-	2,  // 12: cxz.v2.AuditService.Erase:input_type -> cxz.v2.AuditRef
-	7,  // 13: cxz.v2.AuditService.List:input_type -> cxz.v2.AuditListRequest
-	12, // 14: cxz.v2.AuditService.Add:output_type -> cxz.v2.Audit
-	12, // 15: cxz.v2.AuditService.Get:output_type -> cxz.v2.Audit
-	12, // 16: cxz.v2.AuditService.Patch:output_type -> cxz.v2.Audit
-	12, // 17: cxz.v2.AuditService.Apply:output_type -> cxz.v2.Audit
-	6,  // 18: cxz.v2.AuditService.Erase:output_type -> cxz.v2.AuditEraseResponse
-	8,  // 19: cxz.v2.AuditService.List:output_type -> cxz.v2.AuditListResponse
+var file_cxz_payday_audit_svc_g_proto_depIdxs = []int32{
+	10, // 0: cxz.AuditAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	2,  // 1: cxz.AuditGetRequest.ref:type_name -> cxz.AuditRef
+	3,  // 2: cxz.AuditGetRequest.select:type_name -> cxz.AuditSelect
+	2,  // 3: cxz.AuditPatchRequest.ref:type_name -> cxz.AuditRef
+	2,  // 4: cxz.AuditApplyRequest.ref:type_name -> cxz.AuditRef
+	11, // 5: cxz.AuditApplyRequest.patch:type_name -> patch.Patch
+	9,  // 6: cxz.AuditListRequest.filters:type_name -> cxz.AuditFilter
+	12, // 7: cxz.AuditListResponse.items:type_name -> cxz.Audit
+	0,  // 8: cxz.AuditService.Add:input_type -> cxz.AuditAddRequest
+	1,  // 9: cxz.AuditService.Get:input_type -> cxz.AuditGetRequest
+	4,  // 10: cxz.AuditService.Patch:input_type -> cxz.AuditPatchRequest
+	5,  // 11: cxz.AuditService.Apply:input_type -> cxz.AuditApplyRequest
+	2,  // 12: cxz.AuditService.Erase:input_type -> cxz.AuditRef
+	7,  // 13: cxz.AuditService.List:input_type -> cxz.AuditListRequest
+	12, // 14: cxz.AuditService.Add:output_type -> cxz.Audit
+	12, // 15: cxz.AuditService.Get:output_type -> cxz.Audit
+	12, // 16: cxz.AuditService.Patch:output_type -> cxz.Audit
+	12, // 17: cxz.AuditService.Apply:output_type -> cxz.Audit
+	6,  // 18: cxz.AuditService.Erase:output_type -> cxz.AuditEraseResponse
+	8,  // 19: cxz.AuditService.List:output_type -> cxz.AuditListResponse
 	14, // [14:20] is the sub-list for method output_type
 	8,  // [8:14] is the sub-list for method input_type
 	8,  // [8:8] is the sub-list for extension type_name
@@ -2057,30 +2062,30 @@ var file_cxz_v2_payday_audit_svc_g_proto_depIdxs = []int32{
 	0,  // [0:8] is the sub-list for field type_name
 }
 
-func init() { file_cxz_v2_payday_audit_svc_g_proto_init() }
-func file_cxz_v2_payday_audit_svc_g_proto_init() {
-	if File_cxz_v2_payday_audit_svc_g_proto != nil {
+func init() { file_cxz_payday_audit_svc_g_proto_init() }
+func file_cxz_payday_audit_svc_g_proto_init() {
+	if File_cxz_payday_audit_svc_g_proto != nil {
 		return
 	}
-	file_cxz_v2_payday_audit_proto_init()
-	file_cxz_v2_payday_audit_svc_g_proto_msgTypes[2].OneofWrappers = []any{
+	file_cxz_payday_audit_proto_init()
+	file_cxz_payday_audit_svc_g_proto_msgTypes[2].OneofWrappers = []any{
 		(*auditRef_Id)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_cxz_v2_payday_audit_svc_g_proto_rawDesc), len(file_cxz_v2_payday_audit_svc_g_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_cxz_payday_audit_svc_g_proto_rawDesc), len(file_cxz_payday_audit_svc_g_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_cxz_v2_payday_audit_svc_g_proto_goTypes,
-		DependencyIndexes: file_cxz_v2_payday_audit_svc_g_proto_depIdxs,
-		MessageInfos:      file_cxz_v2_payday_audit_svc_g_proto_msgTypes,
+		GoTypes:           file_cxz_payday_audit_svc_g_proto_goTypes,
+		DependencyIndexes: file_cxz_payday_audit_svc_g_proto_depIdxs,
+		MessageInfos:      file_cxz_payday_audit_svc_g_proto_msgTypes,
 	}.Build()
-	File_cxz_v2_payday_audit_svc_g_proto = out.File
-	file_cxz_v2_payday_audit_svc_g_proto_goTypes = nil
-	file_cxz_v2_payday_audit_svc_g_proto_depIdxs = nil
+	File_cxz_payday_audit_svc_g_proto = out.File
+	file_cxz_payday_audit_svc_g_proto_goTypes = nil
+	file_cxz_payday_audit_svc_g_proto_depIdxs = nil
 }
