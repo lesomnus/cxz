@@ -35,6 +35,48 @@ type Manager struct {
 func New(db *sql.DB, root string) (*Manager, error) {
 	m := &Manager{DB: db, Root: root, Owner: os.Getenv("CXZ_OWNER"), WorkspaceRoot: os.Getenv("CXZ_WORKSPACE_ROOT"), ToolsVolume: os.Getenv("CXZ_TOOLS_VOLUME"), Image: os.Getenv("CXZ_MANAGER_IMAGE"), Container: os.Getenv("CXZ_MANAGER_CONTAINER")}
 	_, e := db.Exec(`CREATE TABLE IF NOT EXISTS projects(id TEXT PRIMARY KEY,data BLOB NOT NULL)`)
+	if e != nil {
+		return nil, e
+	}
+	manifests, e := filepath.Glob(filepath.Join(root, "projects", "*", "project.json"))
+	if e != nil {
+		return nil, e
+	}
+	for _, file := range manifests {
+		b, err := os.ReadFile(file)
+		if err != nil {
+			return nil, err
+		}
+		var p Project
+		if err = json.Unmarshal(b, &p); err != nil {
+			return nil, fmt.Errorf("invalid project manifest %s: %w", file, err)
+		}
+		if p.ID != filepath.Base(filepath.Dir(file)) {
+			return nil, fmt.Errorf("project manifest identity mismatch")
+		}
+		if _, err = db.Exec("INSERT INTO projects VALUES(?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data", p.ID, b); err != nil {
+			return nil, err
+		}
+		// A replacement manager has a new Docker network namespace. Reconnect
+		// its project networks without touching any project container/process.
+		if m.Container != "" {
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			if _, err := dockerx.Run(ctx, "network", "inspect", p.Network); err == nil {
+				if err = dockerx.EnsureResource(ctx, "network", p.Network, m.Owner, p.ID); err != nil {
+					cancel()
+					return nil, err
+				}
+				if _, err = dockerx.Run(ctx, "network", "connect", p.Network, m.Container); err != nil {
+					v, ie := dockerx.Inspect(ctx, m.Container)
+					if ie != nil || v.NetworkSettings.Networks[p.Network].IPAddress == "" {
+						cancel()
+						return nil, err
+					}
+				}
+			}
+			cancel()
+		}
+	}
 	return m, e
 }
 func (m *Manager) save(ctx context.Context, p *Project) error {
@@ -77,9 +119,21 @@ func (m *Manager) resolve(ctx context.Context, path string) (*Project, error) {
 		return nil, e
 	}
 	for _, p := range all {
-		if p.ID == path || p.Workspace == path || p.Name == path {
+		if p.ID == path || p.Workspace == path {
 			return p, nil
 		}
+	}
+	var found *Project
+	for _, p := range all {
+		if p.Name == path {
+			if found != nil {
+				return nil, fmt.Errorf("ambiguous project name: use its id or path")
+			}
+			found = p
+		}
+	}
+	if found != nil {
+		return found, nil
 	}
 	return nil, fmt.Errorf("project not found: %s", path)
 }
@@ -188,7 +242,7 @@ func (m *Manager) Projects(ctx context.Context) (*api.ProjectList, error) {
 			}
 		}
 		seen[p.ContainerID] = true
-		out.Projects = append(out.Projects, &api.Project{Id: p.ID, Workspace: p.Workspace, Name: p.Name, Config: p.Config, ContainerId: p.ContainerID, State: state, Error: p.Error})
+		out.Projects = append(out.Projects, &api.Project{Id: p.ID, Workspace: p.Workspace, Name: p.Name, Config: p.Config, ContainerId: p.ContainerID, State: state, Error: p.Error, RemoteUser: p.RemoteUser, RemoteWorkspace: p.RemoteWorkspace})
 	}
 	foreign, e := dockerx.List(ctx, "label=devcontainer.local_folder")
 	if e != nil {
@@ -240,6 +294,9 @@ func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (*api.Session
 	}
 	if r.Agent != "" && r.Agent != "claude" && r.Agent != "codex" {
 		return nil, fmt.Errorf("agent must be claude or codex")
+	}
+	if e = preflight(p); e != nil {
+		return nil, e
 	}
 	containers, e := dockerx.List(ctx, "label=devcontainer.local_folder="+path)
 	if e != nil {
@@ -354,6 +411,42 @@ func (m *Manager) Down(ctx context.Context, r *api.ProjectRequest) error {
 	return m.down(ctx, p)
 }
 func (m *Manager) down(ctx context.Context, p *Project) error {
+	// Capture the final conversation before removing containers. If the runtime
+	// is already gone, the project volume remains the authoritative recovery source.
+	if conn, client, err := m.client(ctx, p); err == nil {
+		defer conn.Close()
+		q, cancel := context.WithTimeout(ctx, 30*time.Second)
+		defer cancel()
+		if list, err := client.List(q, &api.Empty{}); err == nil {
+			for _, s := range list.Sessions {
+				if s.State == "idle" || s.State == "working" || s.State == "waiting_input" || s.State == "starting" {
+					if _, err = client.Stop(q, &api.Control{SessionId: s.Id, RunId: s.RunId, ClientId: core.ID()}); err != nil {
+						return err
+					}
+				}
+				var cursor uint64
+				for {
+					batch, err := client.History(q, &api.WatchRequest{SessionId: s.Id, AfterSeq: cursor})
+					if err != nil {
+						return err
+					}
+					if err = m.cache(q, batch); err != nil {
+						return err
+					}
+					if len(batch.Events) == 0 {
+						break
+					}
+					cursor = batch.Events[len(batch.Events)-1].Seq
+				}
+			}
+			if list, err = client.List(q, &api.Empty{}); err == nil {
+				p.Sessions = list.Sessions
+				for _, s := range p.Sessions {
+					s.ProjectId = p.ID
+				}
+			}
+		}
+	}
 	containers, e := dockerx.List(ctx, "label=cxz.owner="+m.Owner, "label=cxz.project="+p.ID)
 	if e != nil {
 		return e

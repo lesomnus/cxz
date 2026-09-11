@@ -127,7 +127,7 @@ func Install(ctx context.Context, root, workspaceRoot, image string, recreate bo
 		}
 	}
 	for _, vol := range []string{v.StateVolume, v.ToolsVolume} {
-		if _, e = dockerx.Run(ctx, "volume", "create", "--label", "cxz.owner="+v.Owner, vol); e != nil {
+		if e = dockerx.EnsureResource(ctx, "volume", vol, v.Owner, ""); e != nil {
 			return e
 		}
 	}

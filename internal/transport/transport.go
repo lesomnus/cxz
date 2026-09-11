@@ -2,6 +2,7 @@ package transport
 
 import (
 	"context"
+	"crypto/subtle"
 	"encoding/json"
 	"fmt"
 	"google.golang.org/grpc"
@@ -99,7 +100,7 @@ func Remote(endpoint, token string) (*grpc.ClientConn, error) {
 }
 func RequireToken(ctx context.Context, token string) error {
 	v, ok := metadata.FromIncomingContext(ctx)
-	if !ok || len(v.Get("authorization")) != 1 || v.Get("authorization")[0] != "Bearer "+token {
+	if token == "" || !ok || len(v.Get("authorization")) != 1 || subtle.ConstantTimeCompare([]byte(v.Get("authorization")[0]), []byte("Bearer "+token)) != 1 {
 		return fmt.Errorf("invalid project capability")
 	}
 	return nil

@@ -2,6 +2,7 @@ package workspace
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/transport"
 	"net"
@@ -11,6 +12,31 @@ import (
 	"syscall"
 	"time"
 )
+
+func Login(root, kind string) error {
+	r, e := LoadRuntime(root)
+	if e != nil {
+		return e
+	}
+	bin := r.Claude
+	args := []string{"auth", "login"}
+	key := "CLAUDE_CONFIG_DIR"
+	if kind == "codex" {
+		bin = r.Codex
+		args = []string{"login", "--device-auth"}
+		key = "CODEX_HOME"
+	} else if kind != "claude" {
+		return fmt.Errorf("unknown agent")
+	}
+	if bin == "" {
+		return fmt.Errorf("agent not provisioned; run cxz up --agent %s", kind)
+	}
+	cfg := filepath.Join(root, "agents", kind)
+	if e = os.MkdirAll(cfg, 0700); e != nil {
+		return e
+	}
+	return syscall.Exec(bin, append([]string{bin}, args...), append(os.Environ(), key+"="+cfg))
+}
 
 func LoadRuntime(root string) (Runtime, error) {
 	var r Runtime

@@ -6,18 +6,20 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/charmbracelet/x/term"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/dockerx"
 	"github.com/lesomnus/cxz/internal/tui"
 	"github.com/lesomnus/cxz/internal/workspace"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
 )
 
-func terminal() bool { st, e := os.Stdin.Stat(); return e == nil && st.Mode()&os.ModeCharDevice != 0 }
+func terminal() bool { return term.IsTerminal(os.Stdin.Fd()) }
 
 // Keep conventional `cxz up . --agent codex` ordering with the standard flag package.
 func optionsFirst(args []string, bools map[string]bool) []string {
@@ -54,6 +56,12 @@ func projectCommand(ctx context.Context, client api.SessionsClient, command stri
 		return fmt.Errorf("one workspace argument expected")
 	}
 	if command == "down" {
+		if st, e := os.Stat(path); e == nil && st.IsDir() {
+			path, e = dockerx.EnginePath(path)
+			if e != nil {
+				return e
+			}
+		}
 		r, e := client.Down(ctx, &api.ProjectRequest{Workspace: path, ClientId: core.ID()})
 		if e != nil {
 			return e
@@ -146,10 +154,31 @@ func attach(ctx context.Context, client api.SessionsClient, arg string) error {
 	if e != nil {
 		return e
 	}
+	projectID := ""
+	if arg != "" {
+		if projects, e := client.Projects(c, &api.Empty{}); e == nil {
+			for _, p := range projects.Projects {
+				if p.Name == arg || p.Id == arg || p.Workspace == arg {
+					if projectID != "" && projectID != p.Id {
+						return fmt.Errorf("ambiguous project name; use its id")
+					}
+					projectID = p.Id
+				}
+			}
+		}
+	}
 	var matches []*api.Session
 	for _, s := range list.Sessions {
-		if arg == "" || s.Id == arg || strings.HasPrefix(s.Id, arg) || s.ProjectId == arg || s.Title == arg || filepath.Base(s.Workspace) == arg {
+		if arg == "" || s.Id == arg || strings.HasPrefix(s.Id, arg) || s.ProjectId == arg || s.Title == arg || filepath.Base(s.Workspace) == arg || projectID != "" && s.ProjectId == projectID {
 			matches = append(matches, s)
+		}
+	}
+	if projectID != "" && len(matches) > 1 {
+		for _, s := range matches {
+			if s.State == "idle" || s.State == "working" || s.State == "waiting_input" {
+				matches = []*api.Session{s}
+				break
+			}
 		}
 	}
 	if len(matches) == 0 {
@@ -162,4 +191,62 @@ func attach(ctx context.Context, client api.SessionsClient, arg string) error {
 		return tui.Run(ctx, client)
 	}
 	return tui.RunSelected(ctx, client, matches[0].Id)
+}
+
+func projectExec(ctx context.Context, client api.SessionsClient, op string, args []string) error {
+	f := flag.NewFlagSet(op, flag.ContinueOnError)
+	kind := f.String("agent", "claude", "agent to log in to")
+	var command []string
+	for i, v := range args {
+		if v == "--" {
+			command = args[i+1:]
+			args = args[:i]
+			break
+		}
+	}
+	if e := f.Parse(optionsFirst(args, nil)); e != nil {
+		return e
+	}
+	if f.NArg() != 1 {
+		return fmt.Errorf("%s PROJECT [--agent claude|codex] [-- COMMAND...]", op)
+	}
+	name := f.Arg(0)
+	projects, e := client.Projects(ctx, &api.Empty{})
+	if e != nil {
+		return e
+	}
+	var match *api.Project
+	for _, p := range projects.Projects {
+		if p.Id == name || p.Name == name || p.Workspace == name {
+			if match != nil {
+				return fmt.Errorf("ambiguous project name")
+			}
+			match = p
+		}
+	}
+	if match == nil || match.State != "running" {
+		return fmt.Errorf("no running owned project %s", name)
+	}
+	flags := []string{"exec", "-i"}
+	if terminal() {
+		flags = append(flags, "-t")
+	}
+	user := match.RemoteUser
+	if user == "" {
+		user = "root"
+	}
+	flags = append(flags, "--user", user, "--workdir", match.RemoteWorkspace, match.ContainerId)
+	if op == "login" {
+		flags = append(flags, "/cxz/tools/cxz", "--state", "/cxz/state/data", "_login", *kind)
+	} else {
+		if len(command) == 0 {
+			command = []string{"sh"}
+		}
+		flags = append(flags, command...)
+	}
+	c := exec.CommandContext(ctx, "docker", flags...)
+	c.Stdin = os.Stdin
+	c.Stdout = os.Stdout
+	c.Stderr = os.Stderr
+	return c.Run()
 }

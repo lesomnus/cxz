@@ -347,12 +347,7 @@ func (s *Server) Create(ctx context.Context, r *api.CreateRequest) (*api.Session
 	}
 	bin, cfg := s.agent, s.configDir
 	if r.Agent == "codex" && os.Getenv("CXZ_PROJECT_ID") == "" {
-		var e error
-		bin, e = exec.LookPath("codex")
-		if e != nil {
-			return nil, e
-		}
-		cfg = os.Getenv("CODEX_HOME")
+		return nil, status.Error(codes.FailedPrecondition, "Codex requires an owned devcontainer: use cxz install and cxz up --agent codex")
 	}
 	if os.Getenv("CXZ_PROJECT_ID") != "" {
 		runtime, e := workspace.LoadRuntime(s.root)
