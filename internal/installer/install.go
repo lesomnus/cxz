@@ -17,6 +17,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -26,6 +27,14 @@ import (
 var dockerfile []byte
 
 func Build(ctx context.Context, out io.Writer) (string, error) {
+	platform, err := dockerx.Run(ctx, "info", "--format", "{{.OSType}}/{{.Architecture}}")
+	if err != nil {
+		return "", err
+	}
+	target := strings.NewReplacer("x86_64", "amd64", "aarch64", "arm64").Replace(strings.TrimSpace(string(platform)))
+	if runtime.GOOS != "linux" || target != runtime.GOOS+"/"+runtime.GOARCH {
+		return "", fmt.Errorf("local binary platform %s/%s differs from engine %s; install --image with a matching published image", runtime.GOOS, runtime.GOARCH, target)
+	}
 	exe, e := os.Executable()
 	if e != nil {
 		return "", e
@@ -123,6 +132,13 @@ func Install(ctx context.Context, root, workspaceRoot, image string, recreate bo
 	}
 	previousImage := v.Image
 	v.Image = image
+	// Pull/inspect the replacement before removing a healthy manager. A typo or
+	// unavailable release must not cause avoidable downtime.
+	if _, err := dockerx.Run(ctx, "image", "inspect", image); err != nil {
+		if _, err = dockerx.Run(ctx, "pull", image); err != nil {
+			return err
+		}
+	}
 	if old, e := dockerx.Inspect(ctx, v.Container); e == nil {
 		if old.Config.Labels["cxz.owner"] != v.Owner {
 			return fmt.Errorf("daemon name is occupied by an unowned container")

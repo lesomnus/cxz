@@ -10,6 +10,7 @@ import (
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/dockerx"
+	"github.com/lesomnus/cxz/internal/settings"
 	"github.com/lesomnus/cxz/internal/transport"
 	"google.golang.org/grpc"
 	"os"
@@ -317,6 +318,9 @@ func (m *Manager) Projects(ctx context.Context) (*api.ProjectList, error) {
 	return out, nil
 }
 func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (result *api.Session, retErr error) {
+	if err := settings.ValidateModel(r.Model); err != nil {
+		return nil, err
+	}
 	path := r.Workspace
 	if path == "" {
 		return nil, fmt.Errorf("workspace required")
@@ -464,7 +468,7 @@ func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (result *api.
 				if r.NewSession && r.ClientId != "" && s.Agent == kind {
 					// A lost Open response must not turn a successful Create retry
 					// into an active-workspace conflict. The runtime checks its key.
-					if retry, err := client.Create(ctx, &api.CreateRequest{Workspace: p.RemoteWorkspace, Agent: kind, ClientId: r.ClientId}); err == nil {
+					if retry, err := client.Create(ctx, &api.CreateRequest{Workspace: p.RemoteWorkspace, Agent: kind, Model: r.Model, ClientId: r.ClientId}); err == nil {
 						chosen = retry
 						break
 					}
@@ -483,9 +487,15 @@ func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (result *api.
 		if clientID == "" {
 			clientID = core.ID()
 		}
-		chosen, e = client.Create(ctx, &api.CreateRequest{Workspace: p.RemoteWorkspace, Agent: kind, ClientId: clientID})
+		chosen, e = client.Create(ctx, &api.CreateRequest{Workspace: p.RemoteWorkspace, Agent: kind, Model: r.Model, ClientId: clientID})
 	} else if chosen.State == "interrupted" || chosen.State == "stopped" || chosen.State == "failed" {
+		if r.Model != "" && r.Model != chosen.Model {
+			return nil, fmt.Errorf("existing session model is immutable; use cxz new --model after stopping it")
+		}
 		chosen, e = client.Resume(ctx, &api.Control{SessionId: chosen.Id, RunId: chosen.RunId, ClientId: core.ID()})
+	}
+	if chosen != nil && r.Model != "" && chosen.Model != r.Model {
+		return nil, fmt.Errorf("existing session model is immutable; stop it and create a new session")
 	}
 	if e != nil {
 		return nil, e
@@ -568,6 +578,9 @@ func (m *Manager) down(ctx context.Context, p *Project) error {
 		}
 	}
 	p.ContainerID = ""
+	p.Error = ""
+	p.Job.State, p.Job.Step = "complete", "down"
+	p.Job.UpdatedAt = time.Now().UnixMilli()
 	return m.save(ctx, p)
 }
 func Discover(path string) []string {

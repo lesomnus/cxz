@@ -38,6 +38,12 @@ stores are never copied. Only the selected vendor is downloaded. Stop the active
 session before `new --agent OTHER_VENDOR`. Interactive `new` offers agent choice;
 scripts default to Claude. Agent selection is saved per session.
 
+Client preferences can change that default: `cxz config set agent codex`.
+Use `cxz config set codex-model MODEL_ID` or `new --model MODEL_ID .` for a new
+session's model; reconnect/resume preserves it. `cxz doctor`, `cxz logs PROJECT`
+and `cxz version` provide diagnostics. See [operations and releases](docs/operations.md)
+for retry behavior, model settings, versioned installation, updates and rollback.
+
 The remote user must have write permission on the host workspace. Explicit
 `remoteUser` settings are respected; cxz does not silently change repository file
 ownership or remap an existing user's UID. Adjust the devcontainer for a host UID

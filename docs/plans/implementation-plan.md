@@ -225,6 +225,12 @@ P0에 의존한다. Go 모듈·빌드·fixture runner와 supervisor/journal/첫 
 
 ### P2 — 프로젝트 컨테이너와 daemon 연결
 
+2026-09-11 상태: 소유 devcontainer, Claude/Codex, xli CLI/TUI와 기본 생명주기 구현.
+후속 실사용 보강으로 durable provisioning checkpoint, 시작/조회 inventory reconcile,
+client 설정·모델, 진단, 버전 배포/rollback을 구현 중이다. 상세 검증 상태는
+[진행 기록](../progress.md), 절차는 [운영 문서](../operations.md)를 따른다.
+Docker event watch 자체는 미구현이며 현재는 시작과 조회/재접속 시 실제 inventory를 사용한다.
+
 P1에 의존한다. `cxz up`, 프로젝트 등록, 이름 volume, release cache, 컨테이너 소유 label,
 프로젝트별 네트워크, supervisor 인증과 SQLite projection을 연결한다.
 devcontainer CLI는 관리 컨테이너에 고정 버전으로 설치하고 Docker socket은 관리 계층만 접근한다.
@@ -285,10 +291,10 @@ projection만 제외하고, 나머지는 일관된 vendor/SQLite snapshot 또는
 실행한다. 토큰 만료 시 브라우저 재로그인이 가능하다. checksum 오류·복호화 실패가 기존 상태를
 덮어쓰지 않는다. 실제 외부 백업과 복원 리허설이 끝나기 전에는 MVP 완료로 표시하지 않는다.
 
-### P6 이후 — 두 번째 vendor와 확장
+### P6 이후 — 확장 (Codex는 TUI 단계로 앞당김)
 
-1. Codex adapter를 추가해 공통 계약을 검증한다.
-   첫 adapter와 동일한 장애·재생 테스트를 실행하고 vendor별 capability 차이를 유지한다.
+1. Codex adapter와 실제 장애·재생 검증은 P2/TUI 단계에서 구현했다.
+   이후 vendor 업데이트 시 같은 회귀 검증과 capability 차이를 유지한다.
 2. PTY transport와 `cxz attach`를 구현한다. 실행 중인 headless agent를 같은 vendor TUI로
    그대로 attach할 수 있다고 가정하지 않는다. transport 선택은 세션 생성 계약에 명시한다.
 3. 원격 TLS와 세션 관리, SSH attach를 추가한다.

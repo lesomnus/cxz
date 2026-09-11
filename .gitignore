@@ -1,4 +1,5 @@
 /bin/
+/dist/
 /.cxz/
 /.cxz-integration/
 /.cxz-test-workspaces/

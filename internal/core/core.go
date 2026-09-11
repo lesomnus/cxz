@@ -18,6 +18,7 @@ type Session struct {
 	CreatedAt int64  `json:"created_at"`
 	Agent     string `json:"agent"`
 	Kind      string `json:"kind,omitempty"`
+	Model     string `json:"model,omitempty"`
 	ProjectID string `json:"project_id,omitempty"`
 	ConfigDir string `json:"config_dir,omitempty"`
 }

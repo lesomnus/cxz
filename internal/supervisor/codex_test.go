@@ -19,11 +19,14 @@ func TestCodexProtocol(t *testing.T) {
 	}
 	defer log.Close()
 	input := &sink{}
-	s := &Supervisor{session: core.Session{ID: "s", Kind: "codex", Workspace: "/workspaces/test"}, log: log, snap: core.Snapshot{RunID: "run", State: "starting"}, pending: map[string]core.Event{}, receipts: map[string]record{}, stdin: input}
+	s := &Supervisor{session: core.Session{ID: "s", Kind: "codex", Model: "test-model", Workspace: "/workspaces/test"}, log: log, snap: core.Snapshot{RunID: "run", State: "starting"}, pending: map[string]core.Event{}, receipts: map[string]record{}, stdin: input}
 	s.codex = &codexProtocol{s: s}
 	s.consume([]byte(`{"id":"cxz-initialize","result":{}}`))
 	if !bytes.Contains(input.Bytes(), []byte(`"method":"thread/start"`)) {
 		t.Fatal("no thread startup")
+	}
+	if !bytes.Contains(input.Bytes(), []byte(`"model":"test-model"`)) {
+		t.Fatal("model not passed")
 	}
 	s.consume([]byte(`{"id":"cxz-thread","result":{"thread":{"id":"thread-1"}}}`))
 	if s.snap.State != "idle" || s.snap.VendorID != "thread-1" {

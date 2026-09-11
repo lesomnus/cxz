@@ -1,0 +1,108 @@
+# TUI 운영·배포
+
+## 설정과 진단
+
+```sh
+cxz config set agent codex
+cxz config set codex-model MODEL_ID
+cxz config set claude-model MODEL_ID_OR_ALIAS
+cxz config
+cxz config unset codex-model
+cxz new --model MODEL_ID .
+cxz doctor
+cxz logs                         # manager stdout/stderr, last 100 lines
+cxz logs --tail 200 PROJECT       # devcontainer provisioning log
+cxz version
+```
+
+설정은 해당 `--state`의 `settings.json`에 0600으로 저장한다. 인증정보와 권한 정책은
+이 설정에 넣을 수 없다. CLI 명시 값 > client 설정 > vendor 기본값 순서다. 기본 agent는
+`new`, TUI 새 세션, `login`에 적용한다. `up`은 기존 세션의 vendor/model을 유지한다.
+모델은 세션 생성 시 고정된다. 기존 대화의 모델을 몰래 바꾸지 않으며 변경은 명시적으로
+기존 세션을 stop한 뒤 새 세션을 만든다. 사용 가능한 모델은 vendor 계정에 따라 다르다.
+
+`doctor`는 설정, Docker, 설치 locator, manager 소유권, project inventory와 세션 RPC를
+검사한다. 실패 시 JSON 상세와 비영 종료 코드를 반환한다. 유료 요청이나 자격증명 읽기는
+하지 않으므로 **인증 성공을 보장하는 검사가 아니다**. 정상적으로 down한 프로젝트는
+오류가 아니다. 로그는 hook이 출력한 비밀/경로가 포함될 수 있으므로 공개 공유 전에 검토한다.
+
+TUI는 vendor 진단과 실패 payload를 표시한다. 인증 실패 의심 메시지는 로그인 경로를
+안내하지만 자동 로그인/토큰 갱신/프롬프트 재전송은 하지 않는다.
+
+```sh
+cxz login --agent codex PROJECT
+cxz up PROJECT
+```
+
+## 중간 실패와 복구
+
+- `install` 실패 후 같은 client state로 재실행한다. owner/volume 이름이 유지된다.
+  같은 이미지·workspace root의 기존 설치는 준비 상태를 다시 확인하고, 정지된 manager는
+  시작한다. 이미지/root 변경은 명시적인 `install --recreate`가 필요하다.
+- `up` 준비 단계는 project manifest에 저장된다. `projects`의 `provision_state`,
+  `provision_step`, `provision_attempt`와 `logs PROJECT`로 실패 위치를 확인한다.
+  manager가 중간에 죽으면 다음 시작에서 interrupted로 표시한다.
+- 같은 `up`을 재시도하면 소유 label과 실제 리소스를 재확인한다. 동시 요청은 프로젝트별로
+  직렬화한다. 사용자 devcontainer hook은 다시 실행될 수 있어 멱등하게 작성해야 한다.
+- 외부 컨테이너는 편입하지 않는다. 중복 소유 컨테이너도 임의로 하나를 선택하지 않는다.
+- manager 재시작은 agent 재시작이 아니다. 프로젝트 컨테이너 소실은 같은 세션을 새 run으로
+  명시적으로 resume하는 복구다. 이전 승인과 prompt를 자동 재전송하지 않는다.
+
+## 릴리스와 설치
+
+현재 대상은 **Linux amd64/arm64**다. arm64는 cross-build 검증과 실제 실행 검증을 구분한다.
+Go 버전은 `go.mod`를 따른다. `bash scripts/release.sh vX.Y.Z`가 `dist/`에 아키텍처별
+tar.gz, raw binary, `SHA256SUMS`를 만든다. 압축 메타데이터는 고정하지만 빌드 입력 전체의
+재현성을 보장하는 공급망 attestation을 대체하지는 않는다.
+
+GitHub Actions CI는 test/race/vet/proto 재생성/cross-build를 실행한다. 버전 tag push는
+같은 검사를 거쳐 GHCR multi-platform 이미지와 GitHub Release를 게시한다. prerelease tag는
+prerelease로 게시하고 `latest` tag는 만들지 않는다. Actions는 commit SHA로 고정했다.
+workflow 구현은 [GitHub 공식 이미지 배포 안내](https://docs.github.com/en/actions/tutorials/publish-packages/publish-docker-images)를 따른다.
+게시에는 저장소 Actions 및 `contents:write`, `packages:write`가 필요하다. 최초 GHCR package가
+비공개이면 공개 배포를 위해 소유자가 가시성을 설정해야 한다. 로컬 빌드 성공만으로 원격
+게시 완료를 뜻하지 않는다.
+
+게시된 release의 해당 아키텍처 tar.gz와 SHA256SUMS를 내려받고 체크섬을 비교한 뒤
+빈 임시 디렉터리에 압축을 푼다. 검증한 `cxz`를 사용자 PATH에 설치한다. manager-image.txt의
+digest를 사용하면 tag 변경과 무관하게 이미지를 고정할 수 있다.
+
+```sh
+cxz install --image ghcr.io/lesomnus/cxz:vX.Y.Z --workspace-root /absolute/projects
+cxz doctor
+cxz new --agent codex .
+```
+
+호스트와 Docker engine 아키텍처가 다르면 `--image`로 대응 platform 이미지를 사용한다.
+현재 binary로 manager를 빌드하는 기본 설치는 플랫폼이 다르면 사전에 거부한다.
+원격 Docker bind는 engine 관점의 경로다. 이 개발 환경에서는 `/workspaces/...`를 사용한다.
+
+## 업데이트와 롤백
+
+```sh
+cxz update --image ghcr.io/lesomnus/cxz:vX.Y.Z
+cxz doctor
+cxz rollback
+```
+
+업데이트는 명시한 버전/digest만 사용하고 다운로드가 실패하면 기존 manager를 제거하지 않는다.
+client locator에 이전 이미지가 기록된다. rollback은 그 이미지로 manager를 교체하며
+workspace, project container, named volumes를 삭제하지 않는다. client binary는 별도로
+이전 검증본을 보관/복원한다. 프로젝트의 이미 실행 중인 runtime/supervisor는 그대로 살아 있어
+새 기능을 적용하려면 세션을 마무리한 뒤 명시적인 project recreate가 필요할 수 있다.
+
+이 롤백은 **manager 이미지 롤백**이지 데이터 되감기/외부 백업이 아니다. 향후 비호환 데이터
+마이그레이션 전에는 별도 백업과 호환성 확인이 필요하다. `uninstall`도 named volume을
+지우지 않으며 공유 엔진에서 prune을 사용하면 안 된다.
+
+## 인수 검사
+
+1. 빈 client state에서 install, 동일 install 재호출, doctor.
+2. 소유 workspace new, vendor 선택, 사용자 login, 대화/승인/거절/중단/재접속.
+3. 준비 중 manager 강제 종료, 상태 checkpoint 확인, 동시 up 재시도 시 중복 방지.
+4. manager 교체/rollback 후 기존 session run 유지.
+5. down/up 후 vendor ID와 과거 대화 기억 확인. Claude와 Codex를 별도로 판정한다.
+
+자동 재현: `owned-boundaries.mjs`, `owned-provision-retry.mjs`,
+`owned-session-live.mjs`, `owned-recovery.mjs`. 인증 검사는 사용자 로그인 또는 명시적으로
+허용된 일회성 access token이 있어야 한다. 인증 검사를 건너뛴 결과를 통과로 적지 않는다.
