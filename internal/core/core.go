@@ -17,6 +17,8 @@ type Session struct {
 	Title     string `json:"title"`
 	CreatedAt int64  `json:"created_at"`
 	Agent     string `json:"agent"`
+	Kind      string `json:"kind,omitempty"`
+	ProjectID string `json:"project_id,omitempty"`
 	ConfigDir string `json:"config_dir,omitempty"`
 }
 type Event struct {

@@ -28,6 +28,10 @@ const (
 	Sessions_Resume_FullMethodName    = "/cxz.v1.Sessions/Resume"
 	Sessions_Stop_FullMethodName      = "/cxz.v1.Sessions/Stop"
 	Sessions_Watch_FullMethodName     = "/cxz.v1.Sessions/Watch"
+	Sessions_History_FullMethodName   = "/cxz.v1.Sessions/History"
+	Sessions_Open_FullMethodName      = "/cxz.v1.Sessions/Open"
+	Sessions_Projects_FullMethodName  = "/cxz.v1.Sessions/Projects"
+	Sessions_Down_FullMethodName      = "/cxz.v1.Sessions/Down"
 )
 
 // SessionsClient is the client API for Sessions service.
@@ -43,6 +47,10 @@ type SessionsClient interface {
 	Resume(ctx context.Context, in *Control, opts ...grpc.CallOption) (*Session, error)
 	Stop(ctx context.Context, in *Control, opts ...grpc.CallOption) (*Receipt, error)
 	Watch(ctx context.Context, in *WatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[Event], error)
+	History(ctx context.Context, in *WatchRequest, opts ...grpc.CallOption) (*EventBatch, error)
+	Open(ctx context.Context, in *ProjectRequest, opts ...grpc.CallOption) (*Session, error)
+	Projects(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ProjectList, error)
+	Down(ctx context.Context, in *ProjectRequest, opts ...grpc.CallOption) (*Receipt, error)
 }
 
 type sessionsClient struct {
@@ -152,6 +160,46 @@ func (c *sessionsClient) Watch(ctx context.Context, in *WatchRequest, opts ...gr
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type Sessions_WatchClient = grpc.ServerStreamingClient[Event]
 
+func (c *sessionsClient) History(ctx context.Context, in *WatchRequest, opts ...grpc.CallOption) (*EventBatch, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EventBatch)
+	err := c.cc.Invoke(ctx, Sessions_History_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) Open(ctx context.Context, in *ProjectRequest, opts ...grpc.CallOption) (*Session, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Session)
+	err := c.cc.Invoke(ctx, Sessions_Open_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) Projects(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ProjectList, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ProjectList)
+	err := c.cc.Invoke(ctx, Sessions_Projects_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) Down(ctx context.Context, in *ProjectRequest, opts ...grpc.CallOption) (*Receipt, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Receipt)
+	err := c.cc.Invoke(ctx, Sessions_Down_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SessionsServer is the server API for Sessions service.
 // All implementations must embed UnimplementedSessionsServer
 // for forward compatibility.
@@ -165,6 +213,10 @@ type SessionsServer interface {
 	Resume(context.Context, *Control) (*Session, error)
 	Stop(context.Context, *Control) (*Receipt, error)
 	Watch(*WatchRequest, grpc.ServerStreamingServer[Event]) error
+	History(context.Context, *WatchRequest) (*EventBatch, error)
+	Open(context.Context, *ProjectRequest) (*Session, error)
+	Projects(context.Context, *Empty) (*ProjectList, error)
+	Down(context.Context, *ProjectRequest) (*Receipt, error)
 	mustEmbedUnimplementedSessionsServer()
 }
 
@@ -201,6 +253,18 @@ func (UnimplementedSessionsServer) Stop(context.Context, *Control) (*Receipt, er
 }
 func (UnimplementedSessionsServer) Watch(*WatchRequest, grpc.ServerStreamingServer[Event]) error {
 	return status.Error(codes.Unimplemented, "method Watch not implemented")
+}
+func (UnimplementedSessionsServer) History(context.Context, *WatchRequest) (*EventBatch, error) {
+	return nil, status.Error(codes.Unimplemented, "method History not implemented")
+}
+func (UnimplementedSessionsServer) Open(context.Context, *ProjectRequest) (*Session, error) {
+	return nil, status.Error(codes.Unimplemented, "method Open not implemented")
+}
+func (UnimplementedSessionsServer) Projects(context.Context, *Empty) (*ProjectList, error) {
+	return nil, status.Error(codes.Unimplemented, "method Projects not implemented")
+}
+func (UnimplementedSessionsServer) Down(context.Context, *ProjectRequest) (*Receipt, error) {
+	return nil, status.Error(codes.Unimplemented, "method Down not implemented")
 }
 func (UnimplementedSessionsServer) mustEmbedUnimplementedSessionsServer() {}
 func (UnimplementedSessionsServer) testEmbeddedByValue()                  {}
@@ -378,6 +442,78 @@ func _Sessions_Watch_Handler(srv interface{}, stream grpc.ServerStream) error {
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type Sessions_WatchServer = grpc.ServerStreamingServer[Event]
 
+func _Sessions_History_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(WatchRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).History(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_History_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).History(ctx, req.(*WatchRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_Open_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProjectRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).Open(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_Open_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).Open(ctx, req.(*ProjectRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_Projects_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).Projects(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_Projects_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).Projects(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_Down_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProjectRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).Down(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_Down_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).Down(ctx, req.(*ProjectRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Sessions_ServiceDesc is the grpc.ServiceDesc for Sessions service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -416,6 +552,22 @@ var Sessions_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Stop",
 			Handler:    _Sessions_Stop_Handler,
+		},
+		{
+			MethodName: "History",
+			Handler:    _Sessions_History_Handler,
+		},
+		{
+			MethodName: "Open",
+			Handler:    _Sessions_Open_Handler,
+		},
+		{
+			MethodName: "Projects",
+			Handler:    _Sessions_Projects_Handler,
+		},
+		{
+			MethodName: "Down",
+			Handler:    _Sessions_Down_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

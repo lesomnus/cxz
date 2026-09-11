@@ -38,6 +38,7 @@ type Supervisor struct {
 	interrupted bool
 	batch       []core.Event
 	buffering   bool
+	codex       *codexProtocol
 }
 type record struct {
 	Op      string       `json:"op"`
@@ -112,12 +113,20 @@ func Run(ctx context.Context, root, id string) error {
 	if old.VendorID != "" {
 		args = append(args, "--resume", old.VendorID)
 	}
+	if session.Kind == "codex" {
+		s.codex = &codexProtocol{s: s}
+		args = []string{"app-server", "--listen", "stdio://"}
+	}
 	s.cmd = exec.Command(session.Agent, args...)
 	s.cmd.Dir = session.Workspace
 	s.cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true, Pdeathsig: syscall.SIGKILL}
 	s.cmd.Env = os.Environ()
 	if session.ConfigDir != "" {
-		s.cmd.Env = append(s.cmd.Env, "CLAUDE_CONFIG_DIR="+session.ConfigDir)
+		key := "CLAUDE_CONFIG_DIR"
+		if session.Kind == "codex" {
+			key = "CODEX_HOME"
+		}
+		s.cmd.Env = append(s.cmd.Env, key+"="+session.ConfigDir)
 	}
 	s.stdin, e = s.cmd.StdinPipe()
 	if e != nil {
@@ -189,7 +198,11 @@ func Run(ctx context.Context, root, id string) error {
 		s.event("state", state, "", nil, nil)
 	}()
 	s.mu.Lock()
-	e = s.write(map[string]any{"type": "control_request", "request_id": "initialize", "request": map[string]any{"subtype": "initialize", "hooks": map[string]any{}, "sdkMcpServers": []any{}}})
+	if s.codex != nil {
+		e = s.write(rpc("cxz-initialize", "initialize", map[string]any{"clientInfo": map[string]any{"name": "cxz", "version": "0.1.0"}, "capabilities": map[string]any{"experimentalApi": true}}))
+	} else {
+		e = s.write(map[string]any{"type": "control_request", "request_id": "initialize", "request": map[string]any{"subtype": "initialize", "hooks": map[string]any{}, "sdkMcpServers": []any{}}})
+	}
 	s.mu.Unlock()
 	if e != nil {
 		return e
@@ -263,6 +276,10 @@ func (s *Supervisor) consume(raw []byte) {
 		}
 	}()
 	s.event("raw", "", "", nil, raw)
+	if s.codex != nil {
+		s.codex.consume(raw)
+		return
+	}
 	var v struct {
 		Type      string         `json:"type"`
 		Subtype   string         `json:"subtype"`
@@ -370,51 +387,59 @@ func (s *Supervisor) execute(op string, c core.Command) (core.Receipt, error) {
 		return receipt, errors.New("stale run_id; refresh session")
 	}
 	var wire any
-	switch op {
-	case "send":
-		if s.snap.State != "idle" || c.Text == "" {
-			return receipt, errors.New("session must be idle and text nonempty")
+	if s.codex != nil {
+		var err error
+		wire, err = s.codex.command(op, c)
+		if err != nil {
+			return receipt, err
 		}
-		wire = map[string]any{"type": "user", "session_id": "", "parent_tool_use_id": nil, "message": map[string]any{"role": "user", "content": c.Text}}
-	case "reply":
-		p, ok := s.pending[c.RequestID]
-		if !ok {
-			return receipt, errors.New("approval is stale or already resolved")
-		}
-		var request struct {
-			Tool  string         `json:"tool_name"`
-			Input map[string]any `json:"input"`
-		}
-		if e := json.Unmarshal(p.Payload, &request); e != nil {
-			return receipt, e
-		}
-		response := map[string]any{"behavior": "deny", "message": "User denied this request."}
-		if c.Allow {
-			if request.Tool == "AskUserQuestion" {
-				qs, _ := request.Input["questions"].([]any)
-				if len(qs) == 0 {
-					return receipt, errors.New("question payload missing")
-				}
-				for _, q := range qs {
-					m, _ := q.(map[string]any)
-					key, _ := m["question"].(string)
-					if c.Answers[key] == "" {
-						return receipt, fmt.Errorf("answer required for %q", key)
-					}
-				}
-				request.Input["answers"] = c.Answers
+	} else {
+		switch op {
+		case "send":
+			if s.snap.State != "idle" || c.Text == "" {
+				return receipt, errors.New("session must be idle and text nonempty")
 			}
-			response = map[string]any{"behavior": "allow", "updatedInput": request.Input}
+			wire = map[string]any{"type": "user", "session_id": "", "parent_tool_use_id": nil, "message": map[string]any{"role": "user", "content": c.Text}}
+		case "reply":
+			p, ok := s.pending[c.RequestID]
+			if !ok {
+				return receipt, errors.New("approval is stale or already resolved")
+			}
+			var request struct {
+				Tool  string         `json:"tool_name"`
+				Input map[string]any `json:"input"`
+			}
+			if e := json.Unmarshal(p.Payload, &request); e != nil {
+				return receipt, e
+			}
+			response := map[string]any{"behavior": "deny", "message": "User denied this request."}
+			if c.Allow {
+				if request.Tool == "AskUserQuestion" {
+					qs, _ := request.Input["questions"].([]any)
+					if len(qs) == 0 {
+						return receipt, errors.New("question payload missing")
+					}
+					for _, q := range qs {
+						m, _ := q.(map[string]any)
+						key, _ := m["question"].(string)
+						if c.Answers[key] == "" {
+							return receipt, fmt.Errorf("answer required for %q", key)
+						}
+					}
+					request.Input["answers"] = c.Answers
+				}
+				response = map[string]any{"behavior": "allow", "updatedInput": request.Input}
+			}
+			wire = map[string]any{"type": "control_response", "response": map[string]any{"subtype": "success", "request_id": c.RequestID, "response": response}}
+		case "interrupt":
+			if s.snap.State != "working" && s.snap.State != "waiting_input" {
+				return receipt, errors.New("no active turn")
+			}
+			wire = map[string]any{"type": "control_request", "request_id": c.ClientID, "request": map[string]any{"subtype": "interrupt"}}
+		case "stop":
+		default:
+			return receipt, errors.New("unknown command")
 		}
-		wire = map[string]any{"type": "control_response", "response": map[string]any{"subtype": "success", "request_id": c.RequestID, "response": response}}
-	case "interrupt":
-		if s.snap.State != "working" && s.snap.State != "waiting_input" {
-			return receipt, errors.New("no active turn")
-		}
-		wire = map[string]any{"type": "control_request", "request_id": c.ClientID, "request": map[string]any{"subtype": "interrupt"}}
-	case "stop":
-	default:
-		return receipt, errors.New("unknown command")
 	}
 	r := record{Op: op, Command: c, Status: "delivery_unknown"}
 	s.event("intent", op, c.ClientID, r, nil)

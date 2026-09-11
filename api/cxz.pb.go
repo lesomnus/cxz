@@ -62,6 +62,7 @@ type CreateRequest struct {
 	Workspace     string                 `protobuf:"bytes,1,opt,name=workspace,proto3" json:"workspace,omitempty"`
 	Title         string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
 	ClientId      string                 `protobuf:"bytes,3,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
+	Agent         string                 `protobuf:"bytes,4,opt,name=agent,proto3" json:"agent,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -113,6 +114,13 @@ func (x *CreateRequest) GetTitle() string {
 func (x *CreateRequest) GetClientId() string {
 	if x != nil {
 		return x.ClientId
+	}
+	return ""
+}
+
+func (x *CreateRequest) GetAgent() string {
+	if x != nil {
+		return x.Agent
 	}
 	return ""
 }
@@ -172,6 +180,8 @@ type Session struct {
 	CreatedAt     int64                  `protobuf:"varint,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	LastSeq       uint64                 `protobuf:"varint,8,opt,name=last_seq,json=lastSeq,proto3" json:"last_seq,omitempty"`
 	Pending       []*Event               `protobuf:"bytes,9,rep,name=pending,proto3" json:"pending,omitempty"`
+	Agent         string                 `protobuf:"bytes,10,opt,name=agent,proto3" json:"agent,omitempty"`
+	ProjectId     string                 `protobuf:"bytes,11,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -267,6 +277,20 @@ func (x *Session) GetPending() []*Event {
 		return x.Pending
 	}
 	return nil
+}
+
+func (x *Session) GetAgent() string {
+	if x != nil {
+		return x.Agent
+	}
+	return ""
+}
+
+func (x *Session) GetProjectId() string {
+	if x != nil {
+		return x.ProjectId
+	}
+	return ""
 }
 
 type SessionList struct {
@@ -729,19 +753,300 @@ func (x *Event) GetPayload() []byte {
 	return nil
 }
 
+type EventBatch struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Events        []*Event               `protobuf:"bytes,1,rep,name=events,proto3" json:"events,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *EventBatch) Reset() {
+	*x = EventBatch{}
+	mi := &file_cxz_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EventBatch) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EventBatch) ProtoMessage() {}
+
+func (x *EventBatch) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EventBatch.ProtoReflect.Descriptor instead.
+func (*EventBatch) Descriptor() ([]byte, []int) {
+	return file_cxz_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *EventBatch) GetEvents() []*Event {
+	if x != nil {
+		return x.Events
+	}
+	return nil
+}
+
+type ProjectRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Workspace     string                 `protobuf:"bytes,1,opt,name=workspace,proto3" json:"workspace,omitempty"`
+	Agent         string                 `protobuf:"bytes,2,opt,name=agent,proto3" json:"agent,omitempty"`
+	Config        string                 `protobuf:"bytes,3,opt,name=config,proto3" json:"config,omitempty"`
+	NewSession    bool                   `protobuf:"varint,4,opt,name=new_session,json=newSession,proto3" json:"new_session,omitempty"`
+	Recreate      bool                   `protobuf:"varint,5,opt,name=recreate,proto3" json:"recreate,omitempty"`
+	Confirmed     bool                   `protobuf:"varint,6,opt,name=confirmed,proto3" json:"confirmed,omitempty"`
+	TrustConfig   bool                   `protobuf:"varint,7,opt,name=trust_config,json=trustConfig,proto3" json:"trust_config,omitempty"`
+	ClientId      string                 `protobuf:"bytes,8,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ProjectRequest) Reset() {
+	*x = ProjectRequest{}
+	mi := &file_cxz_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ProjectRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ProjectRequest) ProtoMessage() {}
+
+func (x *ProjectRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ProjectRequest.ProtoReflect.Descriptor instead.
+func (*ProjectRequest) Descriptor() ([]byte, []int) {
+	return file_cxz_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *ProjectRequest) GetWorkspace() string {
+	if x != nil {
+		return x.Workspace
+	}
+	return ""
+}
+
+func (x *ProjectRequest) GetAgent() string {
+	if x != nil {
+		return x.Agent
+	}
+	return ""
+}
+
+func (x *ProjectRequest) GetConfig() string {
+	if x != nil {
+		return x.Config
+	}
+	return ""
+}
+
+func (x *ProjectRequest) GetNewSession() bool {
+	if x != nil {
+		return x.NewSession
+	}
+	return false
+}
+
+func (x *ProjectRequest) GetRecreate() bool {
+	if x != nil {
+		return x.Recreate
+	}
+	return false
+}
+
+func (x *ProjectRequest) GetConfirmed() bool {
+	if x != nil {
+		return x.Confirmed
+	}
+	return false
+}
+
+func (x *ProjectRequest) GetTrustConfig() bool {
+	if x != nil {
+		return x.TrustConfig
+	}
+	return false
+}
+
+func (x *ProjectRequest) GetClientId() string {
+	if x != nil {
+		return x.ClientId
+	}
+	return ""
+}
+
+type Project struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Workspace     string                 `protobuf:"bytes,2,opt,name=workspace,proto3" json:"workspace,omitempty"`
+	Name          string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	State         string                 `protobuf:"bytes,4,opt,name=state,proto3" json:"state,omitempty"`
+	ContainerId   string                 `protobuf:"bytes,5,opt,name=container_id,json=containerId,proto3" json:"container_id,omitempty"`
+	Config        string                 `protobuf:"bytes,6,opt,name=config,proto3" json:"config,omitempty"`
+	Error         string                 `protobuf:"bytes,7,opt,name=error,proto3" json:"error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Project) Reset() {
+	*x = Project{}
+	mi := &file_cxz_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Project) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Project) ProtoMessage() {}
+
+func (x *Project) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Project.ProtoReflect.Descriptor instead.
+func (*Project) Descriptor() ([]byte, []int) {
+	return file_cxz_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *Project) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *Project) GetWorkspace() string {
+	if x != nil {
+		return x.Workspace
+	}
+	return ""
+}
+
+func (x *Project) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *Project) GetState() string {
+	if x != nil {
+		return x.State
+	}
+	return ""
+}
+
+func (x *Project) GetContainerId() string {
+	if x != nil {
+		return x.ContainerId
+	}
+	return ""
+}
+
+func (x *Project) GetConfig() string {
+	if x != nil {
+		return x.Config
+	}
+	return ""
+}
+
+func (x *Project) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+type ProjectList struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Projects      []*Project             `protobuf:"bytes,1,rep,name=projects,proto3" json:"projects,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ProjectList) Reset() {
+	*x = ProjectList{}
+	mi := &file_cxz_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ProjectList) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ProjectList) ProtoMessage() {}
+
+func (x *ProjectList) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ProjectList.ProtoReflect.Descriptor instead.
+func (*ProjectList) Descriptor() ([]byte, []int) {
+	return file_cxz_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *ProjectList) GetProjects() []*Project {
+	if x != nil {
+		return x.Projects
+	}
+	return nil
+}
+
 var File_cxz_proto protoreflect.FileDescriptor
 
 const file_cxz_proto_rawDesc = "" +
 	"\n" +
 	"\tcxz.proto\x12\x06cxz.v1\"\a\n" +
-	"\x05Empty\"`\n" +
+	"\x05Empty\"v\n" +
 	"\rCreateRequest\x12\x1c\n" +
 	"\tworkspace\x18\x01 \x01(\tR\tworkspace\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x1b\n" +
-	"\tclient_id\x18\x03 \x01(\tR\bclientId\"\x1c\n" +
+	"\tclient_id\x18\x03 \x01(\tR\bclientId\x12\x14\n" +
+	"\x05agent\x18\x04 \x01(\tR\x05agent\"\x1c\n" +
 	"\n" +
 	"SessionRef\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"\xfa\x01\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"\xaf\x02\n" +
 	"\aSession\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1c\n" +
 	"\tworkspace\x18\x02 \x01(\tR\tworkspace\x12\x14\n" +
@@ -752,7 +1057,11 @@ const file_cxz_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\a \x01(\x03R\tcreatedAt\x12\x19\n" +
 	"\blast_seq\x18\b \x01(\x04R\alastSeq\x12'\n" +
-	"\apending\x18\t \x03(\v2\r.cxz.v1.EventR\apending\":\n" +
+	"\apending\x18\t \x03(\v2\r.cxz.v1.EventR\apending\x12\x14\n" +
+	"\x05agent\x18\n" +
+	" \x01(\tR\x05agent\x12\x1d\n" +
+	"\n" +
+	"project_id\x18\v \x01(\tR\tprojectId\":\n" +
 	"\vSessionList\x12+\n" +
 	"\bsessions\x18\x01 \x03(\v2\x0f.cxz.v1.SessionR\bsessions\"n\n" +
 	"\x05Input\x12\x1d\n" +
@@ -792,7 +1101,30 @@ const file_cxz_proto_rawDesc = "" +
 	"\x04text\x18\x06 \x01(\tR\x04text\x12\x1d\n" +
 	"\n" +
 	"request_id\x18\a \x01(\tR\trequestId\x12\x18\n" +
-	"\apayload\x18\b \x01(\fR\apayload2\x9b\x03\n" +
+	"\apayload\x18\b \x01(\fR\apayload\"3\n" +
+	"\n" +
+	"EventBatch\x12%\n" +
+	"\x06events\x18\x01 \x03(\v2\r.cxz.v1.EventR\x06events\"\xf7\x01\n" +
+	"\x0eProjectRequest\x12\x1c\n" +
+	"\tworkspace\x18\x01 \x01(\tR\tworkspace\x12\x14\n" +
+	"\x05agent\x18\x02 \x01(\tR\x05agent\x12\x16\n" +
+	"\x06config\x18\x03 \x01(\tR\x06config\x12\x1f\n" +
+	"\vnew_session\x18\x04 \x01(\bR\n" +
+	"newSession\x12\x1a\n" +
+	"\brecreate\x18\x05 \x01(\bR\brecreate\x12\x1c\n" +
+	"\tconfirmed\x18\x06 \x01(\bR\tconfirmed\x12!\n" +
+	"\ftrust_config\x18\a \x01(\bR\vtrustConfig\x12\x1b\n" +
+	"\tclient_id\x18\b \x01(\tR\bclientId\"\xb2\x01\n" +
+	"\aProject\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1c\n" +
+	"\tworkspace\x18\x02 \x01(\tR\tworkspace\x12\x12\n" +
+	"\x04name\x18\x03 \x01(\tR\x04name\x12\x14\n" +
+	"\x05state\x18\x04 \x01(\tR\x05state\x12!\n" +
+	"\fcontainer_id\x18\x05 \x01(\tR\vcontainerId\x12\x16\n" +
+	"\x06config\x18\x06 \x01(\tR\x06config\x12\x14\n" +
+	"\x05error\x18\a \x01(\tR\x05error\":\n" +
+	"\vProjectList\x12+\n" +
+	"\bprojects\x18\x01 \x03(\v2\x0f.cxz.v1.ProjectR\bprojects2\xe2\x04\n" +
 	"\bSessions\x120\n" +
 	"\x06Create\x12\x15.cxz.v1.CreateRequest\x1a\x0f.cxz.v1.Session\x12*\n" +
 	"\x04List\x12\r.cxz.v1.Empty\x1a\x13.cxz.v1.SessionList\x12*\n" +
@@ -802,7 +1134,11 @@ const file_cxz_proto_rawDesc = "" +
 	"\tInterrupt\x12\x0f.cxz.v1.Control\x1a\x0f.cxz.v1.Receipt\x12*\n" +
 	"\x06Resume\x12\x0f.cxz.v1.Control\x1a\x0f.cxz.v1.Session\x12(\n" +
 	"\x04Stop\x12\x0f.cxz.v1.Control\x1a\x0f.cxz.v1.Receipt\x12.\n" +
-	"\x05Watch\x12\x14.cxz.v1.WatchRequest\x1a\r.cxz.v1.Event0\x01B!Z\x1fgithub.com/lesomnus/cxz/api;apib\x06proto3"
+	"\x05Watch\x12\x14.cxz.v1.WatchRequest\x1a\r.cxz.v1.Event0\x01\x123\n" +
+	"\aHistory\x12\x14.cxz.v1.WatchRequest\x1a\x12.cxz.v1.EventBatch\x12/\n" +
+	"\x04Open\x12\x16.cxz.v1.ProjectRequest\x1a\x0f.cxz.v1.Session\x12.\n" +
+	"\bProjects\x12\r.cxz.v1.Empty\x1a\x13.cxz.v1.ProjectList\x12/\n" +
+	"\x04Down\x12\x16.cxz.v1.ProjectRequest\x1a\x0f.cxz.v1.ReceiptB!Z\x1fgithub.com/lesomnus/cxz/api;apib\x06proto3"
 
 var (
 	file_cxz_proto_rawDescOnce sync.Once
@@ -816,46 +1152,60 @@ func file_cxz_proto_rawDescGZIP() []byte {
 	return file_cxz_proto_rawDescData
 }
 
-var file_cxz_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_cxz_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
 var file_cxz_proto_goTypes = []any{
-	(*Empty)(nil),         // 0: cxz.v1.Empty
-	(*CreateRequest)(nil), // 1: cxz.v1.CreateRequest
-	(*SessionRef)(nil),    // 2: cxz.v1.SessionRef
-	(*Session)(nil),       // 3: cxz.v1.Session
-	(*SessionList)(nil),   // 4: cxz.v1.SessionList
-	(*Input)(nil),         // 5: cxz.v1.Input
-	(*Answer)(nil),        // 6: cxz.v1.Answer
-	(*Control)(nil),       // 7: cxz.v1.Control
-	(*Receipt)(nil),       // 8: cxz.v1.Receipt
-	(*WatchRequest)(nil),  // 9: cxz.v1.WatchRequest
-	(*Event)(nil),         // 10: cxz.v1.Event
+	(*Empty)(nil),          // 0: cxz.v1.Empty
+	(*CreateRequest)(nil),  // 1: cxz.v1.CreateRequest
+	(*SessionRef)(nil),     // 2: cxz.v1.SessionRef
+	(*Session)(nil),        // 3: cxz.v1.Session
+	(*SessionList)(nil),    // 4: cxz.v1.SessionList
+	(*Input)(nil),          // 5: cxz.v1.Input
+	(*Answer)(nil),         // 6: cxz.v1.Answer
+	(*Control)(nil),        // 7: cxz.v1.Control
+	(*Receipt)(nil),        // 8: cxz.v1.Receipt
+	(*WatchRequest)(nil),   // 9: cxz.v1.WatchRequest
+	(*Event)(nil),          // 10: cxz.v1.Event
+	(*EventBatch)(nil),     // 11: cxz.v1.EventBatch
+	(*ProjectRequest)(nil), // 12: cxz.v1.ProjectRequest
+	(*Project)(nil),        // 13: cxz.v1.Project
+	(*ProjectList)(nil),    // 14: cxz.v1.ProjectList
 }
 var file_cxz_proto_depIdxs = []int32{
 	10, // 0: cxz.v1.Session.pending:type_name -> cxz.v1.Event
 	3,  // 1: cxz.v1.SessionList.sessions:type_name -> cxz.v1.Session
-	1,  // 2: cxz.v1.Sessions.Create:input_type -> cxz.v1.CreateRequest
-	0,  // 3: cxz.v1.Sessions.List:input_type -> cxz.v1.Empty
-	2,  // 4: cxz.v1.Sessions.Get:input_type -> cxz.v1.SessionRef
-	5,  // 5: cxz.v1.Sessions.Send:input_type -> cxz.v1.Input
-	6,  // 6: cxz.v1.Sessions.Reply:input_type -> cxz.v1.Answer
-	7,  // 7: cxz.v1.Sessions.Interrupt:input_type -> cxz.v1.Control
-	7,  // 8: cxz.v1.Sessions.Resume:input_type -> cxz.v1.Control
-	7,  // 9: cxz.v1.Sessions.Stop:input_type -> cxz.v1.Control
-	9,  // 10: cxz.v1.Sessions.Watch:input_type -> cxz.v1.WatchRequest
-	3,  // 11: cxz.v1.Sessions.Create:output_type -> cxz.v1.Session
-	4,  // 12: cxz.v1.Sessions.List:output_type -> cxz.v1.SessionList
-	3,  // 13: cxz.v1.Sessions.Get:output_type -> cxz.v1.Session
-	8,  // 14: cxz.v1.Sessions.Send:output_type -> cxz.v1.Receipt
-	8,  // 15: cxz.v1.Sessions.Reply:output_type -> cxz.v1.Receipt
-	8,  // 16: cxz.v1.Sessions.Interrupt:output_type -> cxz.v1.Receipt
-	3,  // 17: cxz.v1.Sessions.Resume:output_type -> cxz.v1.Session
-	8,  // 18: cxz.v1.Sessions.Stop:output_type -> cxz.v1.Receipt
-	10, // 19: cxz.v1.Sessions.Watch:output_type -> cxz.v1.Event
-	11, // [11:20] is the sub-list for method output_type
-	2,  // [2:11] is the sub-list for method input_type
-	2,  // [2:2] is the sub-list for extension type_name
-	2,  // [2:2] is the sub-list for extension extendee
-	0,  // [0:2] is the sub-list for field type_name
+	10, // 2: cxz.v1.EventBatch.events:type_name -> cxz.v1.Event
+	13, // 3: cxz.v1.ProjectList.projects:type_name -> cxz.v1.Project
+	1,  // 4: cxz.v1.Sessions.Create:input_type -> cxz.v1.CreateRequest
+	0,  // 5: cxz.v1.Sessions.List:input_type -> cxz.v1.Empty
+	2,  // 6: cxz.v1.Sessions.Get:input_type -> cxz.v1.SessionRef
+	5,  // 7: cxz.v1.Sessions.Send:input_type -> cxz.v1.Input
+	6,  // 8: cxz.v1.Sessions.Reply:input_type -> cxz.v1.Answer
+	7,  // 9: cxz.v1.Sessions.Interrupt:input_type -> cxz.v1.Control
+	7,  // 10: cxz.v1.Sessions.Resume:input_type -> cxz.v1.Control
+	7,  // 11: cxz.v1.Sessions.Stop:input_type -> cxz.v1.Control
+	9,  // 12: cxz.v1.Sessions.Watch:input_type -> cxz.v1.WatchRequest
+	9,  // 13: cxz.v1.Sessions.History:input_type -> cxz.v1.WatchRequest
+	12, // 14: cxz.v1.Sessions.Open:input_type -> cxz.v1.ProjectRequest
+	0,  // 15: cxz.v1.Sessions.Projects:input_type -> cxz.v1.Empty
+	12, // 16: cxz.v1.Sessions.Down:input_type -> cxz.v1.ProjectRequest
+	3,  // 17: cxz.v1.Sessions.Create:output_type -> cxz.v1.Session
+	4,  // 18: cxz.v1.Sessions.List:output_type -> cxz.v1.SessionList
+	3,  // 19: cxz.v1.Sessions.Get:output_type -> cxz.v1.Session
+	8,  // 20: cxz.v1.Sessions.Send:output_type -> cxz.v1.Receipt
+	8,  // 21: cxz.v1.Sessions.Reply:output_type -> cxz.v1.Receipt
+	8,  // 22: cxz.v1.Sessions.Interrupt:output_type -> cxz.v1.Receipt
+	3,  // 23: cxz.v1.Sessions.Resume:output_type -> cxz.v1.Session
+	8,  // 24: cxz.v1.Sessions.Stop:output_type -> cxz.v1.Receipt
+	10, // 25: cxz.v1.Sessions.Watch:output_type -> cxz.v1.Event
+	11, // 26: cxz.v1.Sessions.History:output_type -> cxz.v1.EventBatch
+	3,  // 27: cxz.v1.Sessions.Open:output_type -> cxz.v1.Session
+	14, // 28: cxz.v1.Sessions.Projects:output_type -> cxz.v1.ProjectList
+	8,  // 29: cxz.v1.Sessions.Down:output_type -> cxz.v1.Receipt
+	17, // [17:30] is the sub-list for method output_type
+	4,  // [4:17] is the sub-list for method input_type
+	4,  // [4:4] is the sub-list for extension type_name
+	4,  // [4:4] is the sub-list for extension extendee
+	0,  // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_cxz_proto_init() }
@@ -869,7 +1219,7 @@ func file_cxz_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_cxz_proto_rawDesc), len(file_cxz_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   11,
+			NumMessages:   15,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

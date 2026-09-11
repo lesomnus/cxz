@@ -12,14 +12,20 @@ service Sessions {
   rpc Resume(Control) returns (Session);
   rpc Stop(Control) returns (Receipt);
   rpc Watch(WatchRequest) returns (stream Event);
+  rpc History(WatchRequest) returns (EventBatch);
+  rpc Open(ProjectRequest) returns (Session);
+  rpc Projects(Empty) returns (ProjectList);
+  rpc Down(ProjectRequest) returns (Receipt);
 }
 message Empty {}
-message CreateRequest { string workspace = 1; string title = 2; string client_id = 3; }
+message CreateRequest { string workspace = 1; string title = 2; string client_id = 3; string agent = 4; }
 message SessionRef { string id = 1; }
 message Session {
   string id = 1; string workspace = 2; string title = 3; string state = 4;
   string run_id = 5; string vendor_id = 6; int64 created_at = 7; uint64 last_seq = 8;
   repeated Event pending = 9;
+  string agent = 10;
+  string project_id = 11;
 }
 message SessionList { repeated Session sessions = 1; }
 message Input { string session_id = 1; string run_id = 2; string client_id = 3; string text = 4; }
@@ -34,3 +40,14 @@ message Event {
   string session_id = 1; string run_id = 2; uint64 seq = 3; int64 time_ms = 4;
   string kind = 5; string text = 6; string request_id = 7; bytes payload = 8;
 }
+message EventBatch { repeated Event events = 1; }
+message ProjectRequest {
+ string workspace = 1; string agent = 2; string config = 3;
+ bool new_session = 4; bool recreate = 5; bool confirmed = 6;
+ bool trust_config = 7; string client_id = 8;
+}
+message Project {
+ string id = 1; string workspace = 2; string name = 3; string state = 4;
+ string container_id = 5; string config = 6; string error = 7;
+}
+message ProjectList { repeated Project projects = 1; }
