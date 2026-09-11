@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/dockerx"
+	"github.com/lesomnus/cxz/internal/resourceclient"
 	"github.com/lesomnus/cxz/internal/settings"
 	"github.com/lesomnus/cxz/internal/transport"
 	"github.com/lesomnus/xli"
@@ -49,7 +50,7 @@ func doctorCommand() *xli.Command {
 				add("transport", e, "Docker exec bridge")
 				if e == nil {
 					defer conn.Close()
-					client := api.NewSessionsClient(conn)
+					client := resourceclient.New(conn)
 					projects, e := client.Projects(ctx, &api.Empty{})
 					add("projects", e, "inventory reconciled")
 					if e == nil {
@@ -102,7 +103,7 @@ func logsCommand() *xli.Command {
 				return err
 			}
 			defer conn.Close()
-			list, err := api.NewSessionsClient(conn).Projects(ctx, &api.Empty{})
+			list, err := resourceclient.New(conn).Projects(ctx, &api.Empty{})
 			if err != nil {
 				return err
 			}

@@ -1,0 +1,139 @@
+edition = "2023";
+
+package cxz.v2;
+
+import "google/protobuf/timestamp.proto";
+import "orm.proto";
+import "payday.proto";
+import "cxz.v2/payday/tenant.proto";
+
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/cxz/resource";
+
+// Holder is who a request is from.
+//
+// It is the row `payday/auth` reads to turn a credential into somebody, and the
+// row the trail names on every line it writes. Like [Tenant] it is payday's
+// because everything that decides anything reads it.
+//
+// **Fields 1, 2, 4..7 and 13..15 are payday's**; 3 is not -- it is left for
+// the app's set edge -- and an app adds its own in 8..12 and from 16, in a
+// `holder.ext.proto` beside this. Adding an email or the subject an external
+// identity provider knows them by is exactly what that is for.
+message Holder {
+  bytes id = 1 [(orm.field) = {
+    type: TYPE_UUID
+    key: true
+    default: ""
+  }];
+
+  // The tenant this holder is inside, which is immutable: moving somebody
+  // between tenants is not a field write, since their whole trail was stamped
+  // with where they were.
+  Tenant tenant = 2 [(orm.edge) = {immutable: true}];
+
+  // Alias is what a person writes this holder as, within its tenant:
+  // `@acme/admin`. It is unique inside a tenant and not across the deployment.
+  string alias = 4;
+
+  string name = 5;
+  string desc = 6;
+  map<string, string> labels = 7;
+
+  // See [Tenant.date_updated].
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+
+  // When this holder was erased, and null for as long as it is here.
+  //
+  // A holder is erased **softly** and a tenant is not, and the difference is
+  // the trail. Every row of it names the holder that did something, and a
+  // holder that was deleted leaves an identifier nothing answers to -- the
+  // trail goes on saying who while nobody can find out who. Stamping instead
+  // means the answer outlives the person leaving, which is most of what a trail
+  // is kept for.
+  //
+  // What follows is what soft erasure always follows with: an erased holder
+  // cannot be read, cannot be changed, and **cannot authenticate**, because
+  // every read is narrowed by this column and `auth` reads one to work out who
+  // is calling. The index below covers only the rows that are still here, so
+  // the alias comes free again.
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {
+    immutable: true
+    default: ""
+  }];
+
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [
+      {
+        name: "slug"
+        refs: [
+          {
+            name: "alias"
+            number: 4
+          },
+          {
+            name: "tenant"
+            number: 2
+          }
+        ]
+        unique: true
+      }
+    ]
+  };
+  option (payday.entity) = {
+    // payday's own, so that generation finds it whatever an app called the
+    // proto package. An app never writes this; see `Own` in entity.proto.
+    own: OWN_HOLDER
+
+    domain: 2
+
+    // Nothing about tenancy, which **is** the declaration: behind the wall, by
+    // the edge called `tenant`. Getting that wrong hides every row, which is
+    // noticed; getting it wrong the other way shows every row to everybody,
+    // which is not -- so the assumption is the loud one, and the quiet one
+    // (`global: {}`) is the thing that has to be written.
+
+    // Watchable, which is here and not in an app because an app cannot add it:
+    // an overlay merges **fields** and not the entity option, so a deployment
+    // has no way to declare payday's own entity streamable.
+    //
+    // It earns the RPC. A product app anchors an identifier and a tenant --
+    // neither of which changes -- so the one fact about somebody that has to
+    // travel is that they are **gone**. Without a stream that arrives when the
+    // next sign-in fails, and a session already issued outlives it.
+    //
+    // A `Watch` nobody opens costs a generated method and nothing else: the
+    // outbox and the drain are already there for whatever else an app declares.
+    watch: {}
+
+    // And the page a watch is, over and over. Without one there is no order to
+    // read in, nothing for a filter to be about, and no cap on the first
+    // message -- which is a stream whose opening frame is the whole table.
+    //
+    // The order is what every entity here uses: when the row was made, then its
+    // identifier to break a tie. Stable under insertion, so a client reading
+    // through never sees one twice or misses one.
+    list: {
+      order: [{field: {name: "date_created"}}, {field: {name: "id"}}]
+
+      // `tenant` as well as `ref`, because "who is in this tenant" is the
+      // question a deployment administering its customers asks first and could
+      // not ask at all.
+      //
+      // It grants nothing. The wall already narrows this list to the tenants
+      // the caller may see, so a filter that names one can only ever cut that
+      // down further -- naming a tenant outside the scope answers with nothing
+      // rather than with somebody else's people.
+      // `labels` because an app modelling anything Kubernetes-shaped grows
+      // one, and the alternative is every such app writing the same paging
+      // loop on the client -- where filtering the first page is the obvious
+      // implementation and is silently wrong.
+      by: [{name: "ref"}, {name: "tenant"}, {name: "labels"}]
+      size: 20
+      max: 100
+    }
+  };
+}

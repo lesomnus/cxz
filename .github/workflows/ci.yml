@@ -19,5 +19,6 @@ jobs:
       - run: go test ./...
       - run: CXZ_TEST_RACE=1 go test -race ./... -count=1
       - run: go run ./tools/genproto && git diff --exit-code -- api
+      - run: go tool pd gen --check .
       - run: bash scripts/release.sh v0.0.0-ci
       - run: dist/linux-amd64/cxz version

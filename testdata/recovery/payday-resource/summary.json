@@ -1,0 +1,23 @@
+{
+  "timestamp": "2026-09-11T21:41:14.491Z",
+  "agent": "deterministic stream-json fixture",
+  "checks": [
+    {
+      "name": "nonroot_app_session_and_conversation",
+      "status": "passed"
+    },
+    {
+      "name": "container_recreation_preserves_journal_registry_and_marks_interrupted",
+      "status": "passed"
+    },
+    {
+      "name": "explicit_resume_new_run_stale_approval_rejected_no_prompt_replay",
+      "status": "passed"
+    },
+    {
+      "name": "active_turn_container_loss_and_post_recovery_conversation",
+      "status": "passed"
+    }
+  ],
+  "cleanup": "owned containers and volumes removed"
+}

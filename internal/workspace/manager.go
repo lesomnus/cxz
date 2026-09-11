@@ -10,6 +10,7 @@ import (
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/dockerx"
+	"github.com/lesomnus/cxz/internal/resourceclient"
 	"github.com/lesomnus/cxz/internal/settings"
 	"github.com/lesomnus/cxz/internal/transport"
 	"google.golang.org/grpc"
@@ -190,7 +191,7 @@ func (m *Manager) client(ctx context.Context, p *Project) (*grpc.ClientConn, api
 	if e != nil {
 		return nil, nil, e
 	}
-	return conn, api.NewSessionsClient(conn), nil
+	return conn, resourceclient.New(conn), nil
 }
 func (m *Manager) ClientFor(ctx context.Context, id string) (*grpc.ClientConn, api.SessionsClient, error) {
 	all, e := m.all(ctx)
@@ -456,6 +457,11 @@ func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (result *api.
 	}
 	if e != nil {
 		return nil, fmt.Errorf("project runtime not ready: %w", e)
+	}
+	if r.PrepareOnly {
+		p.Job.State, p.Job.Step = "complete", "ready"
+		p.Job.UpdatedAt = time.Now().UnixMilli()
+		return &api.Session{ProjectId: p.ID, Workspace: p.RemoteWorkspace}, m.save(ctx, p)
 	}
 	var chosen *api.Session
 	if e = m.checkpoint(ctx, p, "session"); e != nil {

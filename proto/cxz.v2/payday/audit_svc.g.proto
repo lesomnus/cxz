@@ -1,0 +1,135 @@
+edition = "2023";
+package cxz.v2;
+
+import "cxz.v2/payday/audit.proto";
+import "google/protobuf/timestamp.proto";
+import "patch/patch.proto";
+
+option go_package = "github.com/lesomnus/cxz/resource";
+
+service AuditService {
+  // Add creates a new Audit
+  rpc Add(AuditAddRequest) returns (Audit);
+  // Get retrieves a Audit
+  rpc Get(AuditGetRequest) returns (Audit);
+  // Patch updates an existing Audit
+  rpc Patch(AuditPatchRequest) returns (Audit);
+  // Apply applies a patch document to an existing Audit
+  rpc Apply(AuditApplyRequest) returns (Audit);
+  // Erase deletes a Audit
+  rpc Erase(AuditRef) returns (AuditEraseResponse);
+  // List reads Audits a page at a time.
+  rpc List(AuditListRequest) returns (AuditListResponse);
+}
+
+message AuditAddRequest {
+  bytes id = 1;
+  bytes tenant_id = 2 [features.field_presence = IMPLICIT];
+  bytes actor_id = 8 [features.field_presence = IMPLICIT];
+  bytes trace_id = 9 [features.field_presence = IMPLICIT];
+  string action = 10 [features.field_presence = IMPLICIT];
+  bytes object_id = 11 [features.field_presence = IMPLICIT];
+  bytes patch = 12 [features.field_presence = IMPLICIT];
+  google.protobuf.Timestamp date_created = 15;
+  bytes actor_tenant_id = 16 [features.field_presence = IMPLICIT];
+  bytes value = 17 [features.field_presence = IMPLICIT];
+  bytes counterpart_tenant_id = 18;
+  uint32 domain = 19;
+}
+
+message AuditGetRequest {
+  AuditRef ref = 1;
+  AuditSelect select = 2;
+}
+
+message AuditRef {
+  oneof key {
+    bytes id = 1;
+  }
+}
+
+message AuditSelect {
+  bool all = 1;
+  bool tenant_id = 2;
+  bool actor_id = 8;
+  bool trace_id = 9;
+  bool action = 10;
+  bool object_id = 11;
+  bool patch = 12;
+  bool date_created = 15;
+  bool actor_tenant_id = 16;
+  bool value = 17;
+  bool counterpart_tenant_id = 18;
+  bool domain = 19;
+}
+
+message AuditPatchRequest {
+  AuditRef ref = 1;
+  bytes tenant_id = 4;
+  bytes actor_id = 16;
+  bytes trace_id = 18;
+  string action = 20;
+  bytes object_id = 22;
+  bytes patch = 24;
+  bytes actor_tenant_id = 32;
+  bytes value = 34;
+  bytes counterpart_tenant_id = 36;
+  // Clear counterpart_tenant_id instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and counterpart_tenant_id clears.
+  bool counterpart_tenant_id_null = 37;
+  uint32 domain = 38;
+}
+
+message AuditApplyRequest {
+  AuditRef ref = 1;
+  patch.Patch patch = 2;
+}
+
+message AuditEraseResponse {
+  // Erased is whether this call is the one that erased the row.
+  //
+  // False for a row that was already gone, was never there, or is out
+  // of this caller's reach -- which are one answer on purpose, and the
+  // reason the RPC does not fail instead.
+  bool erased = 1;
+}
+
+message AuditListRequest {
+  // Bounded because the work is: each filter is a predicate in the same query,
+  // so this is what says how much of the database one request may read.
+  repeated AuditFilter filters = 1;
+
+  // How many to answer with. Nothing said is what the schema declared, and more
+  // than the cap is the cap -- a caller asking for more than there is meant no
+  // harm, so it is not an error and it is not the whole table either.
+  int32 size = 2 [features.field_presence = IMPLICIT];
+
+  // Where to carry on from: the "next" of the answer before. It names the last
+  // row of that page rather than counting rows from the start, so a row added
+  // ahead of the page does not shift it and a caller reading through never sees
+  // one twice or misses one.
+  string after = 3 [features.field_presence = IMPLICIT];
+}
+
+message AuditListResponse {
+  repeated Audit items = 1;
+
+  // What to ask for next, and empty when this was the last of them.
+  //
+  // Empty means there is no more *for now*: a list is read as it is, and one
+  // that has grown since answers a fresh call. It is not empty merely because
+  // the page came back short -- a page is short when the last row of it was the
+  // last row there was, which is a thing the server can only know by having
+  // looked.
+  string next = 2 [features.field_presence = IMPLICIT];
+}
+
+message AuditFilter {
+  bytes object_id = 1;
+  bytes actor_id = 2;
+  bytes tenant_id = 3;
+  bytes actor_tenant_id = 4;
+  bytes counterpart_tenant_id = 5;
+}

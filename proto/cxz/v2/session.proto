@@ -1,0 +1,54 @@
+edition = "2023";
+package cxz.v2;
+import "cxz/v2/project.proto";
+import "google/protobuf/timestamp.proto";
+import "orm.proto";
+import "payday.proto";
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/cxz/resource";
+
+// The durable conversation identity. Runtime/run IDs and journal cursors are
+// operational state, not caller-patchable columns.
+message Session {
+  bytes id = 1 [(orm.field) = {type: TYPE_UUID, key: true, default: ""}];
+  string name = 5;
+  string desc = 6;
+  Project project = 8 [(orm.edge) = {immutable: true}];
+  string agent = 9 [(orm.field) = {immutable: true}];
+  string model = 10 [(orm.field) = {immutable: true}];
+  string runtime_id = 11 [(orm.field) = {unique: true, immutable: true}];
+  string client_id = 12 [(orm.field) = {unique: true, immutable: true}];
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {immutable: true, default: ""}];
+  SessionStatus status = 16;
+  bool listed = 17 [(orm.field) = {default: "true"}];
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [{name: "page", refs: [{name: "date_created", number: 15}, {name: "id", number: 1}]}]
+  };
+  option (payday.entity) = {
+    domain: 8
+    global: {}
+    list: {order: [{field: {name: "date_created"}}, {field: {name: "id"}}], by: [{name: "ref"}, {name: "project"}, {name: "listed"}], size: 50, max: 200}
+    watch: {}
+  };
+}
+
+message SessionStatus {
+  string state = 1;
+  string run_id = 2;
+  string vendor_id = 3;
+  uint64 last_seq = 4;
+  repeated SessionEvent pending = 5;
+}
+
+message SessionEvent {
+  string run_id = 1;
+  uint64 seq = 2;
+  int64 time_ms = 3;
+  string kind = 4;
+  string text = 5;
+  string request_id = 6;
+  bytes payload = 7;
+}

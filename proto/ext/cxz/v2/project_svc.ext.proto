@@ -1,0 +1,35 @@
+edition = "2023";
+package cxz.v2;
+import "cxz/v2/project.proto";
+option go_package = "github.com/lesomnus/cxz/resource";
+
+service ProjectService {
+  // Provision/start a registered workspace. This never creates a conversation.
+  rpc Up(ProjectUpRequest) returns (Project);
+  // Remove owned containers, retaining the resource, workspace and volumes.
+  rpc Down(ProjectControl) returns (Project);
+  // Replace only explicitly confirmed targets. Foreign containers are not adopted.
+  rpc Recreate(ProjectRecreateRequest) returns (Project);
+  // Foreign inventory is not part of the registered Project resource list.
+  rpc InspectForeign(InspectForeignRequest) returns (InspectForeignResponse);
+}
+
+message ProjectUpRequest {
+  ProjectRef ref = 1;
+  string client_id = 2;
+  string agent = 3;
+  bool trust_config = 4;
+  string config = 5;
+}
+message ProjectControl { ProjectRef ref = 1; string client_id = 2; }
+message ProjectRecreateRequest {
+  ProjectRef ref = 1;
+  string client_id = 2;
+  string agent = 3;
+  bool trust_config = 4;
+  bool confirmed = 5;
+  string config = 6;
+}
+message InspectForeignRequest {}
+message InspectForeignResponse { repeated ForeignContainer items = 1; }
+message ForeignContainer { string container_id = 1; string workspace = 2; string name = 3; }

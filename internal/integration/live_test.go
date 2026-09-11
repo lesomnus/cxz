@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/resourceclient"
 	"github.com/lesomnus/cxz/internal/server"
 	"os"
 	"os/exec"
@@ -54,7 +55,7 @@ func TestLiveClaude(t *testing.T) {
 		t.Fatal(e)
 	}
 	defer conn.Close()
-	client := api.NewSessionsClient(conn)
+	client := resourceclient.New(conn)
 	for i := 0; i < 100; i++ {
 		c, done := context.WithTimeout(ctx, 100*time.Millisecond)
 		_, e = client.List(c, &api.Empty{})

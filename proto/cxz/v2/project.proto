@@ -1,0 +1,45 @@
+edition = "2023";
+package cxz.v2;
+import "google/protobuf/timestamp.proto";
+import "orm.proto";
+import "payday.proto";
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/cxz/resource";
+option (payday.app) = {};
+
+// A registered workspace, independent of whether its container is running.
+// No tenant: project-local capability checks remain a separate trust boundary.
+message Project {
+  bytes id = 1 [(orm.field) = {type: TYPE_UUID, key: true, default: ""}];
+  string name = 5;
+  string desc = 6;
+  string workspace = 8 [(orm.field) = {unique: true, immutable: true}];
+  string config = 9;
+  string runtime_id = 10 [(orm.field) = {unique: true, immutable: true}];
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {immutable: true, default: ""}];
+  ProjectStatus status = 16;
+  bool listed = 17 [(orm.field) = {default: "true"}];
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [{name: "page", refs: [{name: "date_created", number: 15}, {name: "id", number: 1}]}]
+  };
+  option (payday.entity) = {
+    domain: 7
+    global: {}
+    list: {order: [{field: {name: "date_created"}}, {field: {name: "id"}}], by: [{name: "ref"}, {name: "listed"}], size: 50, max: 200}
+    watch: {}
+  };
+}
+
+message ProjectStatus {
+  string state = 1;
+  string container_id = 2;
+  string remote_user = 3;
+  string remote_workspace = 4;
+  string provision_state = 5;
+  string provision_step = 6;
+  uint64 provision_attempt = 7;
+  string error = 8;
+}

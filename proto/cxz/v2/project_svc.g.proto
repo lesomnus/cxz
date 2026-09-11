@@ -1,0 +1,241 @@
+edition = "2023";
+package cxz.v2;
+
+import "cxz/v2/project.proto";
+import "google/protobuf/timestamp.proto";
+import "patch/patch.proto";
+
+option go_package = "github.com/lesomnus/cxz/resource";
+
+service ProjectService {
+  // Add creates a new Project
+  rpc Add(ProjectAddRequest) returns (Project);
+  // Get retrieves a Project
+  rpc Get(ProjectGetRequest) returns (Project);
+  // Patch updates an existing Project
+  rpc Patch(ProjectPatchRequest) returns (Project);
+  // Apply applies a patch document to an existing Project
+  rpc Apply(ProjectApplyRequest) returns (Project);
+  // Erase deletes a Project
+  rpc Erase(ProjectRef) returns (ProjectEraseResponse);
+  // List reads Projects a page at a time.
+  rpc List(ProjectListRequest) returns (ProjectListResponse);
+  // Watch the Projects this caller may see, as they are now and as they change.
+  //
+  // What arrives is **state and never a delta**, so a client converges rather
+  // than replays: it keeps what it was last told about a row and replaces it.
+  // An event it did not receive is one it does not need, since the next one
+  // about that row carries the whole of it.
+  //
+  // The first message is everything that matches right now, so a client does
+  // not have to List first and race the subscription. A row may arrive twice --
+  // once in that first message and once as a change that happened while it was
+  // being read -- and that is harmless for the same reason.
+  rpc Watch(ProjectWatchRequest) returns (stream ProjectWatchResponse);
+  // Provision/start a registered workspace. This never creates a conversation.
+  rpc Up(ProjectUpRequest) returns (Project);
+  // Remove owned containers, retaining the resource, workspace and volumes.
+  rpc Down(ProjectControl) returns (Project);
+  // Replace only explicitly confirmed targets. Foreign containers are not adopted.
+  rpc Recreate(ProjectRecreateRequest) returns (Project);
+  // Foreign inventory is not part of the registered Project resource list.
+  rpc InspectForeign(InspectForeignRequest) returns (InspectForeignResponse);
+}
+
+message ProjectAddRequest {
+  bytes id = 1;
+  string name = 5 [features.field_presence = IMPLICIT];
+  string desc = 6 [features.field_presence = IMPLICIT];
+  string workspace = 8 [features.field_presence = IMPLICIT];
+  string config = 9 [features.field_presence = IMPLICIT];
+  string runtime_id = 10 [features.field_presence = IMPLICIT];
+  google.protobuf.Timestamp date_created = 15;
+  ProjectStatus status = 16;
+  bool listed = 17;
+}
+
+message ProjectGetRequest {
+  ProjectRef ref = 1;
+  ProjectSelect select = 2;
+}
+
+message ProjectRef {
+  oneof key {
+    bytes id = 1;
+    string workspace = 8;
+    string runtime_id = 10;
+  }
+}
+
+message ProjectSelect {
+  bool all = 1;
+  bool name = 5;
+  bool desc = 6;
+  bool workspace = 8;
+  bool config = 9;
+  bool runtime_id = 10;
+  bool date_updated = 13;
+  bool date_erased = 14;
+  bool date_created = 15;
+  bool status = 16;
+  bool listed = 17;
+}
+
+message ProjectPatchRequest {
+  ProjectRef ref = 1;
+  string name = 10;
+  string desc = 12;
+  string config = 18;
+  // The version this update requires the stored date_updated to be.
+  // It is a precondition, not a write: the update applies only if the row
+  // still holds this value, and the server stamps the new version itself.
+  // Setting it together with date_updated_force is an error --
+  // the version is the token every client's compare-and-swap is measured
+  // against, so it is not the caller's to choose.
+  google.protobuf.Timestamp date_updated = 26;
+  // Update whatever the stored date_updated is, with no precondition.
+  // The server still stamps a new version, so other clients' tokens are
+  // invalidated as usual; this declines the check for THIS update only.
+  // One of date_updated or this must be set. An omitted version is
+  // refused rather than assumed, because an unset field cannot be told
+  // apart from a caller who never considered locking at all.
+  bool date_updated_force = 27;
+  ProjectStatus status = 32;
+  // Clear status instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and status clears.
+  bool status_null = 33;
+  bool listed = 34;
+}
+
+message ProjectApplyRequest {
+  ProjectRef ref = 1;
+  patch.Patch patch = 2;
+}
+
+message ProjectEraseResponse {
+  // Erased is whether this call is the one that erased the row.
+  //
+  // False for a row that was already gone, was never there, or is out
+  // of this caller's reach -- which are one answer on purpose, and the
+  // reason the RPC does not fail instead.
+  bool erased = 1;
+}
+
+message ProjectListRequest {
+  // Bounded because the work is: each filter is a predicate in the same query,
+  // so this is what says how much of the database one request may read.
+  repeated ProjectFilter filters = 1;
+
+  // How many to answer with. Nothing said is what the schema declared, and more
+  // than the cap is the cap -- a caller asking for more than there is meant no
+  // harm, so it is not an error and it is not the whole table either.
+  int32 size = 2 [features.field_presence = IMPLICIT];
+
+  // Where to carry on from: the "next" of the answer before. It names the last
+  // row of that page rather than counting rows from the start, so a row added
+  // ahead of the page does not shift it and a caller reading through never sees
+  // one twice or misses one.
+  string after = 3 [features.field_presence = IMPLICIT];
+}
+
+message ProjectListResponse {
+  repeated Project items = 1;
+
+  // What to ask for next, and empty when this was the last of them.
+  //
+  // Empty means there is no more *for now*: a list is read as it is, and one
+  // that has grown since answers a fresh call. It is not empty merely because
+  // the page came back short -- a page is short when the last row of it was the
+  // last row there was, which is a thing the server can only know by having
+  // looked.
+  string next = 2 [features.field_presence = IMPLICIT];
+}
+
+message ProjectFilter {
+  ProjectRef ref = 1;
+  bool listed = 2;
+}
+
+message ProjectWatchRequest {
+  // Which rows to watch, in the same words List takes them: what is watched is
+  // what that list would answer with, now and afterwards.
+  //
+  // Required, and bounded the way a List is -- for a heavier reason. A list
+  // runs its filters once; a watch runs them again for every write that touches
+  // the entity, for as long as the stream is open. A watch with no filters is
+  // the whole table, forever, which is the one shape that has no cap at all.
+  repeated ProjectFilter filters = 1;
+
+  // Skip what is there now and send only what changes from here.
+  //
+  // Off by default, and the default is the safe one: a client that does not
+  // know the current state and did not ask for it holds something wrong until
+  // the next write happens to correct it.
+  bool skip_snapshot = 2 [features.field_presence = IMPLICIT];
+}
+
+message ProjectWatchResponse {
+  // What changed, or -- in the first message -- everything that matches.
+  repeated ProjectWatchItem items = 1;
+}
+
+message ProjectWatchItem {
+  // Which row. Always said, since one that is gone still has to be named.
+  bytes id = 1;
+
+  // The row as it is now, and **absent when it is no longer one this caller may
+  // see**: erased, or moved out of the filters this stream named.
+  //
+  // Absence is the whole of how a removal is said. There is no flag for it, and
+  // there is deliberately no way to tell those two apart -- a stream that
+  // distinguished "erased" from "no longer yours" would be telling a caller
+  // about rows that stopped being theirs, which is the thing the wall is for.
+  //
+  // It is only ever said about a row this stream has already carried. One that
+  // never matched is not news.
+  Project value = 2;
+
+  // The RPC that changed it, by the name gRPC knows it by. It is what the
+  // caller of *that* RPC asked for and not the write it became, so an RPC
+  // written by hand is here under its own name.
+  //
+  // Empty in the first message, which is not something anybody asked for -- it
+  // is what is already there.
+  string action = 3 [features.field_presence = IMPLICIT];
+}
+
+message ProjectUpRequest {
+  ProjectRef ref = 1;
+  string client_id = 2;
+  string agent = 3;
+  bool trust_config = 4;
+  string config = 5;
+}
+
+message ProjectControl {
+  ProjectRef ref = 1;
+  string client_id = 2;
+}
+
+message ProjectRecreateRequest {
+  ProjectRef ref = 1;
+  string client_id = 2;
+  string agent = 3;
+  bool trust_config = 4;
+  bool confirmed = 5;
+  string config = 6;
+}
+
+message InspectForeignRequest {}
+
+message InspectForeignResponse {
+  repeated ForeignContainer items = 1;
+}
+
+message ForeignContainer {
+  string container_id = 1;
+  string workspace = 2;
+  string name = 3;
+}
