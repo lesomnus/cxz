@@ -1,8 +1,8 @@
 edition = "2023";
-package cxz.v2;
+package cxz;
 
-import "cxz/v2/project_svc.g.proto";
-import "cxz/v2/session.proto";
+import "cxz/project_svc.g.proto";
+import "cxz/session.proto";
 import "google/protobuf/timestamp.proto";
 import "patch/patch.proto";
 

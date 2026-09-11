@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        (unknown)
-// source: cxz/v2/project_svc.g.proto
+// source: cxz/project_svc.g.proto
 
 package resource
 
@@ -41,7 +41,7 @@ type ProjectAddRequest struct {
 
 func (x *ProjectAddRequest) Reset() {
 	*x = ProjectAddRequest{}
-	mi := &file_cxz_v2_project_svc_g_proto_msgTypes[0]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -53,7 +53,7 @@ func (x *ProjectAddRequest) String() string {
 func (*ProjectAddRequest) ProtoMessage() {}
 
 func (x *ProjectAddRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_project_svc_g_proto_msgTypes[0]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -260,7 +260,7 @@ type ProjectGetRequest struct {
 
 func (x *ProjectGetRequest) Reset() {
 	*x = ProjectGetRequest{}
-	mi := &file_cxz_v2_project_svc_g_proto_msgTypes[1]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -272,7 +272,7 @@ func (x *ProjectGetRequest) String() string {
 func (*ProjectGetRequest) ProtoMessage() {}
 
 func (x *ProjectGetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_project_svc_g_proto_msgTypes[1]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -352,7 +352,7 @@ type ProjectRef struct {
 
 func (x *ProjectRef) Reset() {
 	*x = ProjectRef{}
-	mi := &file_cxz_v2_project_svc_g_proto_msgTypes[2]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -364,7 +364,7 @@ func (x *ProjectRef) String() string {
 func (*ProjectRef) ProtoMessage() {}
 
 func (x *ProjectRef) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_project_svc_g_proto_msgTypes[2]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -520,7 +520,7 @@ func (b0 ProjectRef_builder) Build() *ProjectRef {
 type case_ProjectRef_Key protoreflect.FieldNumber
 
 func (x case_ProjectRef_Key) String() string {
-	md := file_cxz_v2_project_svc_g_proto_msgTypes[2].Descriptor()
+	md := file_cxz_project_svc_g_proto_msgTypes[2].Descriptor()
 	if x == 0 {
 		return "not set"
 	}
@@ -570,7 +570,7 @@ type ProjectSelect struct {
 
 func (x *ProjectSelect) Reset() {
 	*x = ProjectSelect{}
-	mi := &file_cxz_v2_project_svc_g_proto_msgTypes[3]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -582,7 +582,7 @@ func (x *ProjectSelect) String() string {
 func (*ProjectSelect) ProtoMessage() {}
 
 func (x *ProjectSelect) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_project_svc_g_proto_msgTypes[3]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -943,7 +943,7 @@ type ProjectPatchRequest struct {
 
 func (x *ProjectPatchRequest) Reset() {
 	*x = ProjectPatchRequest{}
-	mi := &file_cxz_v2_project_svc_g_proto_msgTypes[4]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -955,7 +955,7 @@ func (x *ProjectPatchRequest) String() string {
 func (*ProjectPatchRequest) ProtoMessage() {}
 
 func (x *ProjectPatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_project_svc_g_proto_msgTypes[4]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1259,7 +1259,7 @@ type ProjectApplyRequest struct {
 
 func (x *ProjectApplyRequest) Reset() {
 	*x = ProjectApplyRequest{}
-	mi := &file_cxz_v2_project_svc_g_proto_msgTypes[5]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1271,7 +1271,7 @@ func (x *ProjectApplyRequest) String() string {
 func (*ProjectApplyRequest) ProtoMessage() {}
 
 func (x *ProjectApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_project_svc_g_proto_msgTypes[5]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1353,7 +1353,7 @@ type ProjectEraseResponse struct {
 
 func (x *ProjectEraseResponse) Reset() {
 	*x = ProjectEraseResponse{}
-	mi := &file_cxz_v2_project_svc_g_proto_msgTypes[6]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1365,7 +1365,7 @@ func (x *ProjectEraseResponse) String() string {
 func (*ProjectEraseResponse) ProtoMessage() {}
 
 func (x *ProjectEraseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_project_svc_g_proto_msgTypes[6]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1433,7 +1433,7 @@ type ProjectListRequest struct {
 
 func (x *ProjectListRequest) Reset() {
 	*x = ProjectListRequest{}
-	mi := &file_cxz_v2_project_svc_g_proto_msgTypes[7]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1445,7 +1445,7 @@ func (x *ProjectListRequest) String() string {
 func (*ProjectListRequest) ProtoMessage() {}
 
 func (x *ProjectListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_project_svc_g_proto_msgTypes[7]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1528,7 +1528,7 @@ type ProjectListResponse struct {
 
 func (x *ProjectListResponse) Reset() {
 	*x = ProjectListResponse{}
-	mi := &file_cxz_v2_project_svc_g_proto_msgTypes[8]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1540,7 +1540,7 @@ func (x *ProjectListResponse) String() string {
 func (*ProjectListResponse) ProtoMessage() {}
 
 func (x *ProjectListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_project_svc_g_proto_msgTypes[8]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1610,7 +1610,7 @@ type ProjectFilter struct {
 
 func (x *ProjectFilter) Reset() {
 	*x = ProjectFilter{}
-	mi := &file_cxz_v2_project_svc_g_proto_msgTypes[9]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1622,7 +1622,7 @@ func (x *ProjectFilter) String() string {
 func (*ProjectFilter) ProtoMessage() {}
 
 func (x *ProjectFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_project_svc_g_proto_msgTypes[9]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1708,7 +1708,7 @@ type ProjectWatchRequest struct {
 
 func (x *ProjectWatchRequest) Reset() {
 	*x = ProjectWatchRequest{}
-	mi := &file_cxz_v2_project_svc_g_proto_msgTypes[10]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1720,7 +1720,7 @@ func (x *ProjectWatchRequest) String() string {
 func (*ProjectWatchRequest) ProtoMessage() {}
 
 func (x *ProjectWatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_project_svc_g_proto_msgTypes[10]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1792,7 +1792,7 @@ type ProjectWatchResponse struct {
 
 func (x *ProjectWatchResponse) Reset() {
 	*x = ProjectWatchResponse{}
-	mi := &file_cxz_v2_project_svc_g_proto_msgTypes[11]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1804,7 +1804,7 @@ func (x *ProjectWatchResponse) String() string {
 func (*ProjectWatchResponse) ProtoMessage() {}
 
 func (x *ProjectWatchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_project_svc_g_proto_msgTypes[11]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1856,7 +1856,7 @@ type ProjectWatchItem struct {
 
 func (x *ProjectWatchItem) Reset() {
 	*x = ProjectWatchItem{}
-	mi := &file_cxz_v2_project_svc_g_proto_msgTypes[12]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1868,7 +1868,7 @@ func (x *ProjectWatchItem) String() string {
 func (*ProjectWatchItem) ProtoMessage() {}
 
 func (x *ProjectWatchItem) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_project_svc_g_proto_msgTypes[12]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1992,7 +1992,7 @@ type ProjectUpRequest struct {
 
 func (x *ProjectUpRequest) Reset() {
 	*x = ProjectUpRequest{}
-	mi := &file_cxz_v2_project_svc_g_proto_msgTypes[13]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2004,7 +2004,7 @@ func (x *ProjectUpRequest) String() string {
 func (*ProjectUpRequest) ProtoMessage() {}
 
 func (x *ProjectUpRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_project_svc_g_proto_msgTypes[13]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2188,7 +2188,7 @@ type ProjectControl struct {
 
 func (x *ProjectControl) Reset() {
 	*x = ProjectControl{}
-	mi := &file_cxz_v2_project_svc_g_proto_msgTypes[14]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2200,7 +2200,7 @@ func (x *ProjectControl) String() string {
 func (*ProjectControl) ProtoMessage() {}
 
 func (x *ProjectControl) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_project_svc_g_proto_msgTypes[14]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2295,7 +2295,7 @@ type ProjectRecreateRequest struct {
 
 func (x *ProjectRecreateRequest) Reset() {
 	*x = ProjectRecreateRequest{}
-	mi := &file_cxz_v2_project_svc_g_proto_msgTypes[15]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2307,7 +2307,7 @@ func (x *ProjectRecreateRequest) String() string {
 func (*ProjectRecreateRequest) ProtoMessage() {}
 
 func (x *ProjectRecreateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_project_svc_g_proto_msgTypes[15]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2516,7 +2516,7 @@ type InspectForeignRequest struct {
 
 func (x *InspectForeignRequest) Reset() {
 	*x = InspectForeignRequest{}
-	mi := &file_cxz_v2_project_svc_g_proto_msgTypes[16]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2528,7 +2528,7 @@ func (x *InspectForeignRequest) String() string {
 func (*InspectForeignRequest) ProtoMessage() {}
 
 func (x *InspectForeignRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_project_svc_g_proto_msgTypes[16]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2560,7 +2560,7 @@ type InspectForeignResponse struct {
 
 func (x *InspectForeignResponse) Reset() {
 	*x = InspectForeignResponse{}
-	mi := &file_cxz_v2_project_svc_g_proto_msgTypes[17]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2572,7 +2572,7 @@ func (x *InspectForeignResponse) String() string {
 func (*InspectForeignResponse) ProtoMessage() {}
 
 func (x *InspectForeignResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_project_svc_g_proto_msgTypes[17]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2623,7 +2623,7 @@ type ForeignContainer struct {
 
 func (x *ForeignContainer) Reset() {
 	*x = ForeignContainer{}
-	mi := &file_cxz_v2_project_svc_g_proto_msgTypes[18]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2635,7 +2635,7 @@ func (x *ForeignContainer) String() string {
 func (*ForeignContainer) ProtoMessage() {}
 
 func (x *ForeignContainer) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_project_svc_g_proto_msgTypes[18]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2754,11 +2754,11 @@ func (b0 ForeignContainer_builder) Build() *ForeignContainer {
 	return m0
 }
 
-var File_cxz_v2_project_svc_g_proto protoreflect.FileDescriptor
+var File_cxz_project_svc_g_proto protoreflect.FileDescriptor
 
-const file_cxz_v2_project_svc_g_proto_rawDesc = "" +
+const file_cxz_project_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x1acxz/v2/project_svc.g.proto\x12\x06cxz.v2\x1a\x14cxz/v2/project.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\"\xc9\x02\n" +
+	"\x17cxz/project_svc.g.proto\x12\x03cxz\x1a\x11cxz/project.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\"\xc6\x02\n" +
 	"\x11ProjectAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12\x19\n" +
 	"\x04name\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04name\x12\x19\n" +
@@ -2768,12 +2768,12 @@ const file_cxz_v2_project_svc_g_proto_rawDesc = "" +
 	"\n" +
 	"runtime_id\x18\n" +
 	" \x01(\tB\x05\xaa\x01\x02\b\x02R\truntimeId\x12=\n" +
-	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\x12-\n" +
-	"\x06status\x18\x10 \x01(\v2\x15.cxz.v2.ProjectStatusR\x06status\x12\x16\n" +
-	"\x06listed\x18\x11 \x01(\bR\x06listed\"h\n" +
-	"\x11ProjectGetRequest\x12$\n" +
-	"\x03ref\x18\x01 \x01(\v2\x12.cxz.v2.ProjectRefR\x03ref\x12-\n" +
-	"\x06select\x18\x02 \x01(\v2\x15.cxz.v2.ProjectSelectR\x06select\"f\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\x12*\n" +
+	"\x06status\x18\x10 \x01(\v2\x12.cxz.ProjectStatusR\x06status\x12\x16\n" +
+	"\x06listed\x18\x11 \x01(\bR\x06listed\"b\n" +
+	"\x11ProjectGetRequest\x12!\n" +
+	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.ProjectRefR\x03ref\x12*\n" +
+	"\x06select\x18\x02 \x01(\v2\x12.cxz.ProjectSelectR\x06select\"f\n" +
 	"\n" +
 	"ProjectRef\x12\x10\n" +
 	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12\x1e\n" +
@@ -2796,147 +2796,147 @@ const file_cxz_v2_project_svc_g_proto_rawDesc = "" +
 	"dateErased\x12!\n" +
 	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\x12\x16\n" +
 	"\x06status\x18\x10 \x01(\bR\x06status\x12\x16\n" +
-	"\x06listed\x18\x11 \x01(\bR\x06listed\"\xd0\x02\n" +
-	"\x13ProjectPatchRequest\x12$\n" +
-	"\x03ref\x18\x01 \x01(\v2\x12.cxz.v2.ProjectRefR\x03ref\x12\x12\n" +
+	"\x06listed\x18\x11 \x01(\bR\x06listed\"\xca\x02\n" +
+	"\x13ProjectPatchRequest\x12!\n" +
+	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.ProjectRefR\x03ref\x12\x12\n" +
 	"\x04name\x18\n" +
 	" \x01(\tR\x04name\x12\x12\n" +
 	"\x04desc\x18\f \x01(\tR\x04desc\x12\x16\n" +
 	"\x06config\x18\x12 \x01(\tR\x06config\x12=\n" +
 	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
-	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\x12-\n" +
-	"\x06status\x18  \x01(\v2\x15.cxz.v2.ProjectStatusR\x06status\x12\x1f\n" +
+	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\x12*\n" +
+	"\x06status\x18  \x01(\v2\x12.cxz.ProjectStatusR\x06status\x12\x1f\n" +
 	"\vstatus_null\x18! \x01(\bR\n" +
 	"statusNull\x12\x16\n" +
-	"\x06listed\x18\" \x01(\bR\x06listed\"_\n" +
-	"\x13ProjectApplyRequest\x12$\n" +
-	"\x03ref\x18\x01 \x01(\v2\x12.cxz.v2.ProjectRefR\x03ref\x12\"\n" +
+	"\x06listed\x18\" \x01(\bR\x06listed\"\\\n" +
+	"\x13ProjectApplyRequest\x12!\n" +
+	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.ProjectRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\".\n" +
 	"\x14ProjectEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"}\n" +
-	"\x12ProjectListRequest\x12/\n" +
-	"\afilters\x18\x01 \x03(\v2\x15.cxz.v2.ProjectFilterR\afilters\x12\x19\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"z\n" +
+	"\x12ProjectListRequest\x12,\n" +
+	"\afilters\x18\x01 \x03(\v2\x12.cxz.ProjectFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
-	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\"W\n" +
-	"\x13ProjectListResponse\x12%\n" +
-	"\x05items\x18\x01 \x03(\v2\x0f.cxz.v2.ProjectR\x05items\x12\x19\n" +
-	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"M\n" +
-	"\rProjectFilter\x12$\n" +
-	"\x03ref\x18\x01 \x01(\v2\x12.cxz.v2.ProjectRefR\x03ref\x12\x16\n" +
-	"\x06listed\x18\x02 \x01(\bR\x06listed\"r\n" +
-	"\x13ProjectWatchRequest\x12/\n" +
-	"\afilters\x18\x01 \x03(\v2\x15.cxz.v2.ProjectFilterR\afilters\x12*\n" +
-	"\rskip_snapshot\x18\x02 \x01(\bB\x05\xaa\x01\x02\b\x02R\fskipSnapshot\"F\n" +
-	"\x14ProjectWatchResponse\x12.\n" +
-	"\x05items\x18\x01 \x03(\v2\x18.cxz.v2.ProjectWatchItemR\x05items\"h\n" +
+	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\"T\n" +
+	"\x13ProjectListResponse\x12\"\n" +
+	"\x05items\x18\x01 \x03(\v2\f.cxz.ProjectR\x05items\x12\x19\n" +
+	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"J\n" +
+	"\rProjectFilter\x12!\n" +
+	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.ProjectRefR\x03ref\x12\x16\n" +
+	"\x06listed\x18\x02 \x01(\bR\x06listed\"o\n" +
+	"\x13ProjectWatchRequest\x12,\n" +
+	"\afilters\x18\x01 \x03(\v2\x12.cxz.ProjectFilterR\afilters\x12*\n" +
+	"\rskip_snapshot\x18\x02 \x01(\bB\x05\xaa\x01\x02\b\x02R\fskipSnapshot\"C\n" +
+	"\x14ProjectWatchResponse\x12+\n" +
+	"\x05items\x18\x01 \x03(\v2\x15.cxz.ProjectWatchItemR\x05items\"e\n" +
 	"\x10ProjectWatchItem\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12%\n" +
-	"\x05value\x18\x02 \x01(\v2\x0f.cxz.v2.ProjectR\x05value\x12\x1d\n" +
-	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action\"\xa6\x01\n" +
-	"\x10ProjectUpRequest\x12$\n" +
-	"\x03ref\x18\x01 \x01(\v2\x12.cxz.v2.ProjectRefR\x03ref\x12\x1b\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12\"\n" +
+	"\x05value\x18\x02 \x01(\v2\f.cxz.ProjectR\x05value\x12\x1d\n" +
+	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action\"\xa3\x01\n" +
+	"\x10ProjectUpRequest\x12!\n" +
+	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.ProjectRefR\x03ref\x12\x1b\n" +
 	"\tclient_id\x18\x02 \x01(\tR\bclientId\x12\x14\n" +
 	"\x05agent\x18\x03 \x01(\tR\x05agent\x12!\n" +
 	"\ftrust_config\x18\x04 \x01(\bR\vtrustConfig\x12\x16\n" +
-	"\x06config\x18\x05 \x01(\tR\x06config\"S\n" +
-	"\x0eProjectControl\x12$\n" +
-	"\x03ref\x18\x01 \x01(\v2\x12.cxz.v2.ProjectRefR\x03ref\x12\x1b\n" +
-	"\tclient_id\x18\x02 \x01(\tR\bclientId\"\xca\x01\n" +
-	"\x16ProjectRecreateRequest\x12$\n" +
-	"\x03ref\x18\x01 \x01(\v2\x12.cxz.v2.ProjectRefR\x03ref\x12\x1b\n" +
+	"\x06config\x18\x05 \x01(\tR\x06config\"P\n" +
+	"\x0eProjectControl\x12!\n" +
+	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.ProjectRefR\x03ref\x12\x1b\n" +
+	"\tclient_id\x18\x02 \x01(\tR\bclientId\"\xc7\x01\n" +
+	"\x16ProjectRecreateRequest\x12!\n" +
+	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.ProjectRefR\x03ref\x12\x1b\n" +
 	"\tclient_id\x18\x02 \x01(\tR\bclientId\x12\x14\n" +
 	"\x05agent\x18\x03 \x01(\tR\x05agent\x12!\n" +
 	"\ftrust_config\x18\x04 \x01(\bR\vtrustConfig\x12\x1c\n" +
 	"\tconfirmed\x18\x05 \x01(\bR\tconfirmed\x12\x16\n" +
 	"\x06config\x18\x06 \x01(\tR\x06config\"\x17\n" +
-	"\x15InspectForeignRequest\"H\n" +
-	"\x16InspectForeignResponse\x12.\n" +
-	"\x05items\x18\x01 \x03(\v2\x18.cxz.v2.ForeignContainerR\x05items\"g\n" +
+	"\x15InspectForeignRequest\"E\n" +
+	"\x16InspectForeignResponse\x12+\n" +
+	"\x05items\x18\x01 \x03(\v2\x15.cxz.ForeignContainerR\x05items\"g\n" +
 	"\x10ForeignContainer\x12!\n" +
 	"\fcontainer_id\x18\x01 \x01(\tR\vcontainerId\x12\x1c\n" +
 	"\tworkspace\x18\x02 \x01(\tR\tworkspace\x12\x12\n" +
-	"\x04name\x18\x03 \x01(\tR\x04name2\x96\x05\n" +
-	"\x0eProjectService\x121\n" +
-	"\x03Add\x12\x19.cxz.v2.ProjectAddRequest\x1a\x0f.cxz.v2.Project\x121\n" +
-	"\x03Get\x12\x19.cxz.v2.ProjectGetRequest\x1a\x0f.cxz.v2.Project\x125\n" +
-	"\x05Patch\x12\x1b.cxz.v2.ProjectPatchRequest\x1a\x0f.cxz.v2.Project\x125\n" +
-	"\x05Apply\x12\x1b.cxz.v2.ProjectApplyRequest\x1a\x0f.cxz.v2.Project\x129\n" +
-	"\x05Erase\x12\x12.cxz.v2.ProjectRef\x1a\x1c.cxz.v2.ProjectEraseResponse\x12?\n" +
-	"\x04List\x12\x1a.cxz.v2.ProjectListRequest\x1a\x1b.cxz.v2.ProjectListResponse\x12D\n" +
-	"\x05Watch\x12\x1b.cxz.v2.ProjectWatchRequest\x1a\x1c.cxz.v2.ProjectWatchResponse0\x01\x12/\n" +
-	"\x02Up\x12\x18.cxz.v2.ProjectUpRequest\x1a\x0f.cxz.v2.Project\x12/\n" +
-	"\x04Down\x12\x16.cxz.v2.ProjectControl\x1a\x0f.cxz.v2.Project\x12;\n" +
-	"\bRecreate\x12\x1e.cxz.v2.ProjectRecreateRequest\x1a\x0f.cxz.v2.Project\x12O\n" +
-	"\x0eInspectForeign\x12\x1d.cxz.v2.InspectForeignRequest\x1a\x1e.cxz.v2.InspectForeignResponseB\"Z github.com/lesomnus/cxz/resourceb\beditionsp\xe8\a"
+	"\x04name\x18\x03 \x01(\tR\x04name2\xd4\x04\n" +
+	"\x0eProjectService\x12+\n" +
+	"\x03Add\x12\x16.cxz.ProjectAddRequest\x1a\f.cxz.Project\x12+\n" +
+	"\x03Get\x12\x16.cxz.ProjectGetRequest\x1a\f.cxz.Project\x12/\n" +
+	"\x05Patch\x12\x18.cxz.ProjectPatchRequest\x1a\f.cxz.Project\x12/\n" +
+	"\x05Apply\x12\x18.cxz.ProjectApplyRequest\x1a\f.cxz.Project\x123\n" +
+	"\x05Erase\x12\x0f.cxz.ProjectRef\x1a\x19.cxz.ProjectEraseResponse\x129\n" +
+	"\x04List\x12\x17.cxz.ProjectListRequest\x1a\x18.cxz.ProjectListResponse\x12>\n" +
+	"\x05Watch\x12\x18.cxz.ProjectWatchRequest\x1a\x19.cxz.ProjectWatchResponse0\x01\x12)\n" +
+	"\x02Up\x12\x15.cxz.ProjectUpRequest\x1a\f.cxz.Project\x12)\n" +
+	"\x04Down\x12\x13.cxz.ProjectControl\x1a\f.cxz.Project\x125\n" +
+	"\bRecreate\x12\x1b.cxz.ProjectRecreateRequest\x1a\f.cxz.Project\x12I\n" +
+	"\x0eInspectForeign\x12\x1a.cxz.InspectForeignRequest\x1a\x1b.cxz.InspectForeignResponseB\"Z github.com/lesomnus/cxz/resourceb\beditionsp\xe8\a"
 
-var file_cxz_v2_project_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
-var file_cxz_v2_project_svc_g_proto_goTypes = []any{
-	(*ProjectAddRequest)(nil),      // 0: cxz.v2.ProjectAddRequest
-	(*ProjectGetRequest)(nil),      // 1: cxz.v2.ProjectGetRequest
-	(*ProjectRef)(nil),             // 2: cxz.v2.ProjectRef
-	(*ProjectSelect)(nil),          // 3: cxz.v2.ProjectSelect
-	(*ProjectPatchRequest)(nil),    // 4: cxz.v2.ProjectPatchRequest
-	(*ProjectApplyRequest)(nil),    // 5: cxz.v2.ProjectApplyRequest
-	(*ProjectEraseResponse)(nil),   // 6: cxz.v2.ProjectEraseResponse
-	(*ProjectListRequest)(nil),     // 7: cxz.v2.ProjectListRequest
-	(*ProjectListResponse)(nil),    // 8: cxz.v2.ProjectListResponse
-	(*ProjectFilter)(nil),          // 9: cxz.v2.ProjectFilter
-	(*ProjectWatchRequest)(nil),    // 10: cxz.v2.ProjectWatchRequest
-	(*ProjectWatchResponse)(nil),   // 11: cxz.v2.ProjectWatchResponse
-	(*ProjectWatchItem)(nil),       // 12: cxz.v2.ProjectWatchItem
-	(*ProjectUpRequest)(nil),       // 13: cxz.v2.ProjectUpRequest
-	(*ProjectControl)(nil),         // 14: cxz.v2.ProjectControl
-	(*ProjectRecreateRequest)(nil), // 15: cxz.v2.ProjectRecreateRequest
-	(*InspectForeignRequest)(nil),  // 16: cxz.v2.InspectForeignRequest
-	(*InspectForeignResponse)(nil), // 17: cxz.v2.InspectForeignResponse
-	(*ForeignContainer)(nil),       // 18: cxz.v2.ForeignContainer
+var file_cxz_project_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
+var file_cxz_project_svc_g_proto_goTypes = []any{
+	(*ProjectAddRequest)(nil),      // 0: cxz.ProjectAddRequest
+	(*ProjectGetRequest)(nil),      // 1: cxz.ProjectGetRequest
+	(*ProjectRef)(nil),             // 2: cxz.ProjectRef
+	(*ProjectSelect)(nil),          // 3: cxz.ProjectSelect
+	(*ProjectPatchRequest)(nil),    // 4: cxz.ProjectPatchRequest
+	(*ProjectApplyRequest)(nil),    // 5: cxz.ProjectApplyRequest
+	(*ProjectEraseResponse)(nil),   // 6: cxz.ProjectEraseResponse
+	(*ProjectListRequest)(nil),     // 7: cxz.ProjectListRequest
+	(*ProjectListResponse)(nil),    // 8: cxz.ProjectListResponse
+	(*ProjectFilter)(nil),          // 9: cxz.ProjectFilter
+	(*ProjectWatchRequest)(nil),    // 10: cxz.ProjectWatchRequest
+	(*ProjectWatchResponse)(nil),   // 11: cxz.ProjectWatchResponse
+	(*ProjectWatchItem)(nil),       // 12: cxz.ProjectWatchItem
+	(*ProjectUpRequest)(nil),       // 13: cxz.ProjectUpRequest
+	(*ProjectControl)(nil),         // 14: cxz.ProjectControl
+	(*ProjectRecreateRequest)(nil), // 15: cxz.ProjectRecreateRequest
+	(*InspectForeignRequest)(nil),  // 16: cxz.InspectForeignRequest
+	(*InspectForeignResponse)(nil), // 17: cxz.InspectForeignResponse
+	(*ForeignContainer)(nil),       // 18: cxz.ForeignContainer
 	(*timestamppb.Timestamp)(nil),  // 19: google.protobuf.Timestamp
-	(*ProjectStatus)(nil),          // 20: cxz.v2.ProjectStatus
+	(*ProjectStatus)(nil),          // 20: cxz.ProjectStatus
 	(*patchpb.Patch)(nil),          // 21: patch.Patch
-	(*Project)(nil),                // 22: cxz.v2.Project
+	(*Project)(nil),                // 22: cxz.Project
 }
-var file_cxz_v2_project_svc_g_proto_depIdxs = []int32{
-	19, // 0: cxz.v2.ProjectAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	20, // 1: cxz.v2.ProjectAddRequest.status:type_name -> cxz.v2.ProjectStatus
-	2,  // 2: cxz.v2.ProjectGetRequest.ref:type_name -> cxz.v2.ProjectRef
-	3,  // 3: cxz.v2.ProjectGetRequest.select:type_name -> cxz.v2.ProjectSelect
-	2,  // 4: cxz.v2.ProjectPatchRequest.ref:type_name -> cxz.v2.ProjectRef
-	19, // 5: cxz.v2.ProjectPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	20, // 6: cxz.v2.ProjectPatchRequest.status:type_name -> cxz.v2.ProjectStatus
-	2,  // 7: cxz.v2.ProjectApplyRequest.ref:type_name -> cxz.v2.ProjectRef
-	21, // 8: cxz.v2.ProjectApplyRequest.patch:type_name -> patch.Patch
-	9,  // 9: cxz.v2.ProjectListRequest.filters:type_name -> cxz.v2.ProjectFilter
-	22, // 10: cxz.v2.ProjectListResponse.items:type_name -> cxz.v2.Project
-	2,  // 11: cxz.v2.ProjectFilter.ref:type_name -> cxz.v2.ProjectRef
-	9,  // 12: cxz.v2.ProjectWatchRequest.filters:type_name -> cxz.v2.ProjectFilter
-	12, // 13: cxz.v2.ProjectWatchResponse.items:type_name -> cxz.v2.ProjectWatchItem
-	22, // 14: cxz.v2.ProjectWatchItem.value:type_name -> cxz.v2.Project
-	2,  // 15: cxz.v2.ProjectUpRequest.ref:type_name -> cxz.v2.ProjectRef
-	2,  // 16: cxz.v2.ProjectControl.ref:type_name -> cxz.v2.ProjectRef
-	2,  // 17: cxz.v2.ProjectRecreateRequest.ref:type_name -> cxz.v2.ProjectRef
-	18, // 18: cxz.v2.InspectForeignResponse.items:type_name -> cxz.v2.ForeignContainer
-	0,  // 19: cxz.v2.ProjectService.Add:input_type -> cxz.v2.ProjectAddRequest
-	1,  // 20: cxz.v2.ProjectService.Get:input_type -> cxz.v2.ProjectGetRequest
-	4,  // 21: cxz.v2.ProjectService.Patch:input_type -> cxz.v2.ProjectPatchRequest
-	5,  // 22: cxz.v2.ProjectService.Apply:input_type -> cxz.v2.ProjectApplyRequest
-	2,  // 23: cxz.v2.ProjectService.Erase:input_type -> cxz.v2.ProjectRef
-	7,  // 24: cxz.v2.ProjectService.List:input_type -> cxz.v2.ProjectListRequest
-	10, // 25: cxz.v2.ProjectService.Watch:input_type -> cxz.v2.ProjectWatchRequest
-	13, // 26: cxz.v2.ProjectService.Up:input_type -> cxz.v2.ProjectUpRequest
-	14, // 27: cxz.v2.ProjectService.Down:input_type -> cxz.v2.ProjectControl
-	15, // 28: cxz.v2.ProjectService.Recreate:input_type -> cxz.v2.ProjectRecreateRequest
-	16, // 29: cxz.v2.ProjectService.InspectForeign:input_type -> cxz.v2.InspectForeignRequest
-	22, // 30: cxz.v2.ProjectService.Add:output_type -> cxz.v2.Project
-	22, // 31: cxz.v2.ProjectService.Get:output_type -> cxz.v2.Project
-	22, // 32: cxz.v2.ProjectService.Patch:output_type -> cxz.v2.Project
-	22, // 33: cxz.v2.ProjectService.Apply:output_type -> cxz.v2.Project
-	6,  // 34: cxz.v2.ProjectService.Erase:output_type -> cxz.v2.ProjectEraseResponse
-	8,  // 35: cxz.v2.ProjectService.List:output_type -> cxz.v2.ProjectListResponse
-	11, // 36: cxz.v2.ProjectService.Watch:output_type -> cxz.v2.ProjectWatchResponse
-	22, // 37: cxz.v2.ProjectService.Up:output_type -> cxz.v2.Project
-	22, // 38: cxz.v2.ProjectService.Down:output_type -> cxz.v2.Project
-	22, // 39: cxz.v2.ProjectService.Recreate:output_type -> cxz.v2.Project
-	17, // 40: cxz.v2.ProjectService.InspectForeign:output_type -> cxz.v2.InspectForeignResponse
+var file_cxz_project_svc_g_proto_depIdxs = []int32{
+	19, // 0: cxz.ProjectAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	20, // 1: cxz.ProjectAddRequest.status:type_name -> cxz.ProjectStatus
+	2,  // 2: cxz.ProjectGetRequest.ref:type_name -> cxz.ProjectRef
+	3,  // 3: cxz.ProjectGetRequest.select:type_name -> cxz.ProjectSelect
+	2,  // 4: cxz.ProjectPatchRequest.ref:type_name -> cxz.ProjectRef
+	19, // 5: cxz.ProjectPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	20, // 6: cxz.ProjectPatchRequest.status:type_name -> cxz.ProjectStatus
+	2,  // 7: cxz.ProjectApplyRequest.ref:type_name -> cxz.ProjectRef
+	21, // 8: cxz.ProjectApplyRequest.patch:type_name -> patch.Patch
+	9,  // 9: cxz.ProjectListRequest.filters:type_name -> cxz.ProjectFilter
+	22, // 10: cxz.ProjectListResponse.items:type_name -> cxz.Project
+	2,  // 11: cxz.ProjectFilter.ref:type_name -> cxz.ProjectRef
+	9,  // 12: cxz.ProjectWatchRequest.filters:type_name -> cxz.ProjectFilter
+	12, // 13: cxz.ProjectWatchResponse.items:type_name -> cxz.ProjectWatchItem
+	22, // 14: cxz.ProjectWatchItem.value:type_name -> cxz.Project
+	2,  // 15: cxz.ProjectUpRequest.ref:type_name -> cxz.ProjectRef
+	2,  // 16: cxz.ProjectControl.ref:type_name -> cxz.ProjectRef
+	2,  // 17: cxz.ProjectRecreateRequest.ref:type_name -> cxz.ProjectRef
+	18, // 18: cxz.InspectForeignResponse.items:type_name -> cxz.ForeignContainer
+	0,  // 19: cxz.ProjectService.Add:input_type -> cxz.ProjectAddRequest
+	1,  // 20: cxz.ProjectService.Get:input_type -> cxz.ProjectGetRequest
+	4,  // 21: cxz.ProjectService.Patch:input_type -> cxz.ProjectPatchRequest
+	5,  // 22: cxz.ProjectService.Apply:input_type -> cxz.ProjectApplyRequest
+	2,  // 23: cxz.ProjectService.Erase:input_type -> cxz.ProjectRef
+	7,  // 24: cxz.ProjectService.List:input_type -> cxz.ProjectListRequest
+	10, // 25: cxz.ProjectService.Watch:input_type -> cxz.ProjectWatchRequest
+	13, // 26: cxz.ProjectService.Up:input_type -> cxz.ProjectUpRequest
+	14, // 27: cxz.ProjectService.Down:input_type -> cxz.ProjectControl
+	15, // 28: cxz.ProjectService.Recreate:input_type -> cxz.ProjectRecreateRequest
+	16, // 29: cxz.ProjectService.InspectForeign:input_type -> cxz.InspectForeignRequest
+	22, // 30: cxz.ProjectService.Add:output_type -> cxz.Project
+	22, // 31: cxz.ProjectService.Get:output_type -> cxz.Project
+	22, // 32: cxz.ProjectService.Patch:output_type -> cxz.Project
+	22, // 33: cxz.ProjectService.Apply:output_type -> cxz.Project
+	6,  // 34: cxz.ProjectService.Erase:output_type -> cxz.ProjectEraseResponse
+	8,  // 35: cxz.ProjectService.List:output_type -> cxz.ProjectListResponse
+	11, // 36: cxz.ProjectService.Watch:output_type -> cxz.ProjectWatchResponse
+	22, // 37: cxz.ProjectService.Up:output_type -> cxz.Project
+	22, // 38: cxz.ProjectService.Down:output_type -> cxz.Project
+	22, // 39: cxz.ProjectService.Recreate:output_type -> cxz.Project
+	17, // 40: cxz.ProjectService.InspectForeign:output_type -> cxz.InspectForeignResponse
 	30, // [30:41] is the sub-list for method output_type
 	19, // [19:30] is the sub-list for method input_type
 	19, // [19:19] is the sub-list for extension type_name
@@ -2944,13 +2944,13 @@ var file_cxz_v2_project_svc_g_proto_depIdxs = []int32{
 	0,  // [0:19] is the sub-list for field type_name
 }
 
-func init() { file_cxz_v2_project_svc_g_proto_init() }
-func file_cxz_v2_project_svc_g_proto_init() {
-	if File_cxz_v2_project_svc_g_proto != nil {
+func init() { file_cxz_project_svc_g_proto_init() }
+func file_cxz_project_svc_g_proto_init() {
+	if File_cxz_project_svc_g_proto != nil {
 		return
 	}
-	file_cxz_v2_project_proto_init()
-	file_cxz_v2_project_svc_g_proto_msgTypes[2].OneofWrappers = []any{
+	file_cxz_project_proto_init()
+	file_cxz_project_svc_g_proto_msgTypes[2].OneofWrappers = []any{
 		(*projectRef_Id)(nil),
 		(*projectRef_Workspace)(nil),
 		(*projectRef_RuntimeId)(nil),
@@ -2959,17 +2959,17 @@ func file_cxz_v2_project_svc_g_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_cxz_v2_project_svc_g_proto_rawDesc), len(file_cxz_v2_project_svc_g_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_cxz_project_svc_g_proto_rawDesc), len(file_cxz_project_svc_g_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   19,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_cxz_v2_project_svc_g_proto_goTypes,
-		DependencyIndexes: file_cxz_v2_project_svc_g_proto_depIdxs,
-		MessageInfos:      file_cxz_v2_project_svc_g_proto_msgTypes,
+		GoTypes:           file_cxz_project_svc_g_proto_goTypes,
+		DependencyIndexes: file_cxz_project_svc_g_proto_depIdxs,
+		MessageInfos:      file_cxz_project_svc_g_proto_msgTypes,
 	}.Build()
-	File_cxz_v2_project_svc_g_proto = out.File
-	file_cxz_v2_project_svc_g_proto_goTypes = nil
-	file_cxz_v2_project_svc_g_proto_depIdxs = nil
+	File_cxz_project_svc_g_proto = out.File
+	file_cxz_project_svc_g_proto_goTypes = nil
+	file_cxz_project_svc_g_proto_depIdxs = nil
 }

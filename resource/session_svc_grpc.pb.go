@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.2
 // - protoc             (unknown)
-// source: cxz/v2/session_svc.g.proto
+// source: cxz/session_svc.g.proto
 
 package resource
 
@@ -19,20 +19,20 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	SessionService_Add_FullMethodName       = "/cxz.v2.SessionService/Add"
-	SessionService_Get_FullMethodName       = "/cxz.v2.SessionService/Get"
-	SessionService_Patch_FullMethodName     = "/cxz.v2.SessionService/Patch"
-	SessionService_Apply_FullMethodName     = "/cxz.v2.SessionService/Apply"
-	SessionService_Erase_FullMethodName     = "/cxz.v2.SessionService/Erase"
-	SessionService_List_FullMethodName      = "/cxz.v2.SessionService/List"
-	SessionService_Watch_FullMethodName     = "/cxz.v2.SessionService/Watch"
-	SessionService_Resume_FullMethodName    = "/cxz.v2.SessionService/Resume"
-	SessionService_Stop_FullMethodName      = "/cxz.v2.SessionService/Stop"
-	SessionService_Interrupt_FullMethodName = "/cxz.v2.SessionService/Interrupt"
-	SessionService_Send_FullMethodName      = "/cxz.v2.SessionService/Send"
-	SessionService_Reply_FullMethodName     = "/cxz.v2.SessionService/Reply"
-	SessionService_History_FullMethodName   = "/cxz.v2.SessionService/History"
-	SessionService_Events_FullMethodName    = "/cxz.v2.SessionService/Events"
+	SessionService_Add_FullMethodName       = "/cxz.SessionService/Add"
+	SessionService_Get_FullMethodName       = "/cxz.SessionService/Get"
+	SessionService_Patch_FullMethodName     = "/cxz.SessionService/Patch"
+	SessionService_Apply_FullMethodName     = "/cxz.SessionService/Apply"
+	SessionService_Erase_FullMethodName     = "/cxz.SessionService/Erase"
+	SessionService_List_FullMethodName      = "/cxz.SessionService/List"
+	SessionService_Watch_FullMethodName     = "/cxz.SessionService/Watch"
+	SessionService_Resume_FullMethodName    = "/cxz.SessionService/Resume"
+	SessionService_Stop_FullMethodName      = "/cxz.SessionService/Stop"
+	SessionService_Interrupt_FullMethodName = "/cxz.SessionService/Interrupt"
+	SessionService_Send_FullMethodName      = "/cxz.SessionService/Send"
+	SessionService_Reply_FullMethodName     = "/cxz.SessionService/Reply"
+	SessionService_History_FullMethodName   = "/cxz.SessionService/History"
+	SessionService_Events_FullMethodName    = "/cxz.SessionService/Events"
 )
 
 // SessionServiceClient is the client API for SessionService service.
@@ -590,7 +590,7 @@ type SessionService_EventsServer = grpc.ServerStreamingServer[SessionEvent]
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var SessionService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "cxz.v2.SessionService",
+	ServiceName: "cxz.SessionService",
 	HandlerType: (*SessionServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -654,5 +654,5 @@ var SessionService_ServiceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 		},
 	},
-	Metadata: "cxz/v2/session_svc.g.proto",
+	Metadata: "cxz/session_svc.g.proto",
 }

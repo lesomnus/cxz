@@ -114,8 +114,8 @@ mutations are never blindly retried. Session APIs accept idempotency keys.
 ## Resource API
 
 The server uses payday's generated resource framework, not only its config
-packages. Definitions are in `proto/cxz/v2`; lifecycle extensions are in
-`proto/ext/cxz/v2`. `go tool pd gen .` generates `resource/`, `internal/ent/`,
+packages. Definitions are in `proto/cxz`; lifecycle extensions are in
+`proto/ext/cxz`. `go tool pd gen .` generates `resource/`, `internal/ent/`,
 `server/bare/` and `server/pd/`. The handwritten application layer is
 `server/lifecycle/` (generated Sink → publish interceptor → lifecycle → audit/gate).
 
@@ -128,12 +128,11 @@ packages. Definitions are in `proto/cxz/v2`; lifecycle extensions are in
 
 Both resources are payday `global` entities: no fabricated tenant or user.
 General Patch/Apply/Erase is closed; runtime status is not caller-writable.
-CLI/TUI and manager-to-project traffic use these generated services. The old
-`cxz.v1.Sessions` service is no longer registered; `api/` and
-`internal/legacyproto/` remain internal compatibility view models for the runtime.
-Upgrade the manager and explicitly recreate old project runtimes together: old
-rc.1 wire clients/servers are not compatible with this API. Existing session,
-vendor IDs and journals are retained, mapped to payday domain UUID resource IDs.
+CLI/TUI and manager-to-project traffic use `cxz.ProjectService` and
+`cxz.SessionService`. The API has no version suffix or compatibility aliases.
+`api/` and `internal/runtimeproto/` define internal runtime view models in the
+separate `cxz.runtime` namespace; that service is not registered publicly.
+Runtime session/vendor IDs and journals are separate from payday resource IDs.
 
 `resources.db` stores ent resources and payday audit rows; `cxz.db` retains the
 runtime registry/event cache during this migration. Resource state is imported

@@ -1117,7 +1117,7 @@ var File_cxz_proto protoreflect.FileDescriptor
 
 const file_cxz_proto_rawDesc = "" +
 	"\n" +
-	"\tcxz.proto\x12\x06cxz.v1\"\a\n" +
+	"\tcxz.proto\x12\vcxz.runtime\"\a\n" +
 	"\x05Empty\"\x8c\x01\n" +
 	"\rCreateRequest\x12\x1c\n" +
 	"\tworkspace\x18\x01 \x01(\tR\tworkspace\x12\x14\n" +
@@ -1127,7 +1127,7 @@ const file_cxz_proto_rawDesc = "" +
 	"\x05model\x18\x05 \x01(\tR\x05model\"\x1c\n" +
 	"\n" +
 	"SessionRef\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"\xe2\x02\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"\xe7\x02\n" +
 	"\aSession\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1c\n" +
 	"\tworkspace\x18\x02 \x01(\tR\tworkspace\x12\x14\n" +
@@ -1137,16 +1137,16 @@ const file_cxz_proto_rawDesc = "" +
 	"\tvendor_id\x18\x06 \x01(\tR\bvendorId\x12\x1d\n" +
 	"\n" +
 	"created_at\x18\a \x01(\x03R\tcreatedAt\x12\x19\n" +
-	"\blast_seq\x18\b \x01(\x04R\alastSeq\x12'\n" +
-	"\apending\x18\t \x03(\v2\r.cxz.v1.EventR\apending\x12\x14\n" +
+	"\blast_seq\x18\b \x01(\x04R\alastSeq\x12,\n" +
+	"\apending\x18\t \x03(\v2\x12.cxz.runtime.EventR\apending\x12\x14\n" +
 	"\x05agent\x18\n" +
 	" \x01(\tR\x05agent\x12\x1d\n" +
 	"\n" +
 	"project_id\x18\v \x01(\tR\tprojectId\x12\x14\n" +
 	"\x05model\x18\f \x01(\tR\x05model\x12\x1b\n" +
-	"\tcreate_id\x18\r \x01(\tR\bcreateId\":\n" +
-	"\vSessionList\x12+\n" +
-	"\bsessions\x18\x01 \x03(\v2\x0f.cxz.v1.SessionR\bsessions\"n\n" +
+	"\tcreate_id\x18\r \x01(\tR\bcreateId\"?\n" +
+	"\vSessionList\x120\n" +
+	"\bsessions\x18\x01 \x03(\v2\x14.cxz.runtime.SessionR\bsessions\"n\n" +
 	"\x05Input\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x15\n" +
@@ -1184,10 +1184,10 @@ const file_cxz_proto_rawDesc = "" +
 	"\x04text\x18\x06 \x01(\tR\x04text\x12\x1d\n" +
 	"\n" +
 	"request_id\x18\a \x01(\tR\trequestId\x12\x18\n" +
-	"\apayload\x18\b \x01(\fR\apayload\"3\n" +
+	"\apayload\x18\b \x01(\fR\apayload\"8\n" +
 	"\n" +
-	"EventBatch\x12%\n" +
-	"\x06events\x18\x01 \x03(\v2\r.cxz.v1.EventR\x06events\"\xb0\x02\n" +
+	"EventBatch\x12*\n" +
+	"\x06events\x18\x01 \x03(\v2\x12.cxz.runtime.EventR\x06events\"\xb0\x02\n" +
 	"\x0eProjectRequest\x12\x1c\n" +
 	"\tworkspace\x18\x01 \x01(\tR\tworkspace\x12\x14\n" +
 	"\x05agent\x18\x02 \x01(\tR\x05agent\x12\x16\n" +
@@ -1215,23 +1215,23 @@ const file_cxz_proto_rawDesc = "" +
 	"\x0fprovision_state\x18\n" +
 	" \x01(\tR\x0eprovisionState\x12%\n" +
 	"\x0eprovision_step\x18\v \x01(\tR\rprovisionStep\x12+\n" +
-	"\x11provision_attempt\x18\f \x01(\x04R\x10provisionAttempt\":\n" +
-	"\vProjectList\x12+\n" +
-	"\bprojects\x18\x01 \x03(\v2\x0f.cxz.v1.ProjectR\bprojects2\xe2\x04\n" +
-	"\bSessions\x120\n" +
-	"\x06Create\x12\x15.cxz.v1.CreateRequest\x1a\x0f.cxz.v1.Session\x12*\n" +
-	"\x04List\x12\r.cxz.v1.Empty\x1a\x13.cxz.v1.SessionList\x12*\n" +
-	"\x03Get\x12\x12.cxz.v1.SessionRef\x1a\x0f.cxz.v1.Session\x12&\n" +
-	"\x04Send\x12\r.cxz.v1.Input\x1a\x0f.cxz.v1.Receipt\x12(\n" +
-	"\x05Reply\x12\x0e.cxz.v1.Answer\x1a\x0f.cxz.v1.Receipt\x12-\n" +
-	"\tInterrupt\x12\x0f.cxz.v1.Control\x1a\x0f.cxz.v1.Receipt\x12*\n" +
-	"\x06Resume\x12\x0f.cxz.v1.Control\x1a\x0f.cxz.v1.Session\x12(\n" +
-	"\x04Stop\x12\x0f.cxz.v1.Control\x1a\x0f.cxz.v1.Receipt\x12.\n" +
-	"\x05Watch\x12\x14.cxz.v1.WatchRequest\x1a\r.cxz.v1.Event0\x01\x123\n" +
-	"\aHistory\x12\x14.cxz.v1.WatchRequest\x1a\x12.cxz.v1.EventBatch\x12/\n" +
-	"\x04Open\x12\x16.cxz.v1.ProjectRequest\x1a\x0f.cxz.v1.Session\x12.\n" +
-	"\bProjects\x12\r.cxz.v1.Empty\x1a\x13.cxz.v1.ProjectList\x12/\n" +
-	"\x04Down\x12\x16.cxz.v1.ProjectRequest\x1a\x0f.cxz.v1.ReceiptB!Z\x1fgithub.com/lesomnus/cxz/api;apib\x06proto3"
+	"\x11provision_attempt\x18\f \x01(\x04R\x10provisionAttempt\"?\n" +
+	"\vProjectList\x120\n" +
+	"\bprojects\x18\x01 \x03(\v2\x14.cxz.runtime.ProjectR\bprojects2\xe4\x05\n" +
+	"\bSessions\x12:\n" +
+	"\x06Create\x12\x1a.cxz.runtime.CreateRequest\x1a\x14.cxz.runtime.Session\x124\n" +
+	"\x04List\x12\x12.cxz.runtime.Empty\x1a\x18.cxz.runtime.SessionList\x124\n" +
+	"\x03Get\x12\x17.cxz.runtime.SessionRef\x1a\x14.cxz.runtime.Session\x120\n" +
+	"\x04Send\x12\x12.cxz.runtime.Input\x1a\x14.cxz.runtime.Receipt\x122\n" +
+	"\x05Reply\x12\x13.cxz.runtime.Answer\x1a\x14.cxz.runtime.Receipt\x127\n" +
+	"\tInterrupt\x12\x14.cxz.runtime.Control\x1a\x14.cxz.runtime.Receipt\x124\n" +
+	"\x06Resume\x12\x14.cxz.runtime.Control\x1a\x14.cxz.runtime.Session\x122\n" +
+	"\x04Stop\x12\x14.cxz.runtime.Control\x1a\x14.cxz.runtime.Receipt\x128\n" +
+	"\x05Watch\x12\x19.cxz.runtime.WatchRequest\x1a\x12.cxz.runtime.Event0\x01\x12=\n" +
+	"\aHistory\x12\x19.cxz.runtime.WatchRequest\x1a\x17.cxz.runtime.EventBatch\x129\n" +
+	"\x04Open\x12\x1b.cxz.runtime.ProjectRequest\x1a\x14.cxz.runtime.Session\x128\n" +
+	"\bProjects\x12\x12.cxz.runtime.Empty\x1a\x18.cxz.runtime.ProjectList\x129\n" +
+	"\x04Down\x12\x1b.cxz.runtime.ProjectRequest\x1a\x14.cxz.runtime.ReceiptB!Z\x1fgithub.com/lesomnus/cxz/api;apib\x06proto3"
 
 var (
 	file_cxz_proto_rawDescOnce sync.Once
@@ -1247,53 +1247,53 @@ func file_cxz_proto_rawDescGZIP() []byte {
 
 var file_cxz_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
 var file_cxz_proto_goTypes = []any{
-	(*Empty)(nil),          // 0: cxz.v1.Empty
-	(*CreateRequest)(nil),  // 1: cxz.v1.CreateRequest
-	(*SessionRef)(nil),     // 2: cxz.v1.SessionRef
-	(*Session)(nil),        // 3: cxz.v1.Session
-	(*SessionList)(nil),    // 4: cxz.v1.SessionList
-	(*Input)(nil),          // 5: cxz.v1.Input
-	(*Answer)(nil),         // 6: cxz.v1.Answer
-	(*Control)(nil),        // 7: cxz.v1.Control
-	(*Receipt)(nil),        // 8: cxz.v1.Receipt
-	(*WatchRequest)(nil),   // 9: cxz.v1.WatchRequest
-	(*Event)(nil),          // 10: cxz.v1.Event
-	(*EventBatch)(nil),     // 11: cxz.v1.EventBatch
-	(*ProjectRequest)(nil), // 12: cxz.v1.ProjectRequest
-	(*Project)(nil),        // 13: cxz.v1.Project
-	(*ProjectList)(nil),    // 14: cxz.v1.ProjectList
+	(*Empty)(nil),          // 0: cxz.runtime.Empty
+	(*CreateRequest)(nil),  // 1: cxz.runtime.CreateRequest
+	(*SessionRef)(nil),     // 2: cxz.runtime.SessionRef
+	(*Session)(nil),        // 3: cxz.runtime.Session
+	(*SessionList)(nil),    // 4: cxz.runtime.SessionList
+	(*Input)(nil),          // 5: cxz.runtime.Input
+	(*Answer)(nil),         // 6: cxz.runtime.Answer
+	(*Control)(nil),        // 7: cxz.runtime.Control
+	(*Receipt)(nil),        // 8: cxz.runtime.Receipt
+	(*WatchRequest)(nil),   // 9: cxz.runtime.WatchRequest
+	(*Event)(nil),          // 10: cxz.runtime.Event
+	(*EventBatch)(nil),     // 11: cxz.runtime.EventBatch
+	(*ProjectRequest)(nil), // 12: cxz.runtime.ProjectRequest
+	(*Project)(nil),        // 13: cxz.runtime.Project
+	(*ProjectList)(nil),    // 14: cxz.runtime.ProjectList
 }
 var file_cxz_proto_depIdxs = []int32{
-	10, // 0: cxz.v1.Session.pending:type_name -> cxz.v1.Event
-	3,  // 1: cxz.v1.SessionList.sessions:type_name -> cxz.v1.Session
-	10, // 2: cxz.v1.EventBatch.events:type_name -> cxz.v1.Event
-	13, // 3: cxz.v1.ProjectList.projects:type_name -> cxz.v1.Project
-	1,  // 4: cxz.v1.Sessions.Create:input_type -> cxz.v1.CreateRequest
-	0,  // 5: cxz.v1.Sessions.List:input_type -> cxz.v1.Empty
-	2,  // 6: cxz.v1.Sessions.Get:input_type -> cxz.v1.SessionRef
-	5,  // 7: cxz.v1.Sessions.Send:input_type -> cxz.v1.Input
-	6,  // 8: cxz.v1.Sessions.Reply:input_type -> cxz.v1.Answer
-	7,  // 9: cxz.v1.Sessions.Interrupt:input_type -> cxz.v1.Control
-	7,  // 10: cxz.v1.Sessions.Resume:input_type -> cxz.v1.Control
-	7,  // 11: cxz.v1.Sessions.Stop:input_type -> cxz.v1.Control
-	9,  // 12: cxz.v1.Sessions.Watch:input_type -> cxz.v1.WatchRequest
-	9,  // 13: cxz.v1.Sessions.History:input_type -> cxz.v1.WatchRequest
-	12, // 14: cxz.v1.Sessions.Open:input_type -> cxz.v1.ProjectRequest
-	0,  // 15: cxz.v1.Sessions.Projects:input_type -> cxz.v1.Empty
-	12, // 16: cxz.v1.Sessions.Down:input_type -> cxz.v1.ProjectRequest
-	3,  // 17: cxz.v1.Sessions.Create:output_type -> cxz.v1.Session
-	4,  // 18: cxz.v1.Sessions.List:output_type -> cxz.v1.SessionList
-	3,  // 19: cxz.v1.Sessions.Get:output_type -> cxz.v1.Session
-	8,  // 20: cxz.v1.Sessions.Send:output_type -> cxz.v1.Receipt
-	8,  // 21: cxz.v1.Sessions.Reply:output_type -> cxz.v1.Receipt
-	8,  // 22: cxz.v1.Sessions.Interrupt:output_type -> cxz.v1.Receipt
-	3,  // 23: cxz.v1.Sessions.Resume:output_type -> cxz.v1.Session
-	8,  // 24: cxz.v1.Sessions.Stop:output_type -> cxz.v1.Receipt
-	10, // 25: cxz.v1.Sessions.Watch:output_type -> cxz.v1.Event
-	11, // 26: cxz.v1.Sessions.History:output_type -> cxz.v1.EventBatch
-	3,  // 27: cxz.v1.Sessions.Open:output_type -> cxz.v1.Session
-	14, // 28: cxz.v1.Sessions.Projects:output_type -> cxz.v1.ProjectList
-	8,  // 29: cxz.v1.Sessions.Down:output_type -> cxz.v1.Receipt
+	10, // 0: cxz.runtime.Session.pending:type_name -> cxz.runtime.Event
+	3,  // 1: cxz.runtime.SessionList.sessions:type_name -> cxz.runtime.Session
+	10, // 2: cxz.runtime.EventBatch.events:type_name -> cxz.runtime.Event
+	13, // 3: cxz.runtime.ProjectList.projects:type_name -> cxz.runtime.Project
+	1,  // 4: cxz.runtime.Sessions.Create:input_type -> cxz.runtime.CreateRequest
+	0,  // 5: cxz.runtime.Sessions.List:input_type -> cxz.runtime.Empty
+	2,  // 6: cxz.runtime.Sessions.Get:input_type -> cxz.runtime.SessionRef
+	5,  // 7: cxz.runtime.Sessions.Send:input_type -> cxz.runtime.Input
+	6,  // 8: cxz.runtime.Sessions.Reply:input_type -> cxz.runtime.Answer
+	7,  // 9: cxz.runtime.Sessions.Interrupt:input_type -> cxz.runtime.Control
+	7,  // 10: cxz.runtime.Sessions.Resume:input_type -> cxz.runtime.Control
+	7,  // 11: cxz.runtime.Sessions.Stop:input_type -> cxz.runtime.Control
+	9,  // 12: cxz.runtime.Sessions.Watch:input_type -> cxz.runtime.WatchRequest
+	9,  // 13: cxz.runtime.Sessions.History:input_type -> cxz.runtime.WatchRequest
+	12, // 14: cxz.runtime.Sessions.Open:input_type -> cxz.runtime.ProjectRequest
+	0,  // 15: cxz.runtime.Sessions.Projects:input_type -> cxz.runtime.Empty
+	12, // 16: cxz.runtime.Sessions.Down:input_type -> cxz.runtime.ProjectRequest
+	3,  // 17: cxz.runtime.Sessions.Create:output_type -> cxz.runtime.Session
+	4,  // 18: cxz.runtime.Sessions.List:output_type -> cxz.runtime.SessionList
+	3,  // 19: cxz.runtime.Sessions.Get:output_type -> cxz.runtime.Session
+	8,  // 20: cxz.runtime.Sessions.Send:output_type -> cxz.runtime.Receipt
+	8,  // 21: cxz.runtime.Sessions.Reply:output_type -> cxz.runtime.Receipt
+	8,  // 22: cxz.runtime.Sessions.Interrupt:output_type -> cxz.runtime.Receipt
+	3,  // 23: cxz.runtime.Sessions.Resume:output_type -> cxz.runtime.Session
+	8,  // 24: cxz.runtime.Sessions.Stop:output_type -> cxz.runtime.Receipt
+	10, // 25: cxz.runtime.Sessions.Watch:output_type -> cxz.runtime.Event
+	11, // 26: cxz.runtime.Sessions.History:output_type -> cxz.runtime.EventBatch
+	3,  // 27: cxz.runtime.Sessions.Open:output_type -> cxz.runtime.Session
+	14, // 28: cxz.runtime.Sessions.Projects:output_type -> cxz.runtime.ProjectList
+	8,  // 29: cxz.runtime.Sessions.Down:output_type -> cxz.runtime.Receipt
 	17, // [17:30] is the sub-list for method output_type
 	4,  // [4:17] is the sub-list for method input_type
 	4,  // [4:4] is the sub-list for extension type_name

@@ -1,6 +1,6 @@
 edition = "2023";
-package cxz.v2;
-import "cxz/v2/project.proto";
+package cxz;
+import "cxz/project.proto";
 import "google/protobuf/timestamp.proto";
 import "orm.proto";
 import "payday.proto";

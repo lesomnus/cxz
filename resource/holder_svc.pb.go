@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        (unknown)
-// source: cxz.v2/payday/holder_svc.g.proto
+// source: cxz/payday/holder_svc.g.proto
 
 package resource
 
@@ -39,7 +39,7 @@ type HolderAddRequest struct {
 
 func (x *HolderAddRequest) Reset() {
 	*x = HolderAddRequest{}
-	mi := &file_cxz_v2_payday_holder_svc_g_proto_msgTypes[0]
+	mi := &file_cxz_payday_holder_svc_g_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -51,7 +51,7 @@ func (x *HolderAddRequest) String() string {
 func (*HolderAddRequest) ProtoMessage() {}
 
 func (x *HolderAddRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_payday_holder_svc_g_proto_msgTypes[0]
+	mi := &file_cxz_payday_holder_svc_g_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -216,7 +216,7 @@ type HolderGetRequest struct {
 
 func (x *HolderGetRequest) Reset() {
 	*x = HolderGetRequest{}
-	mi := &file_cxz_v2_payday_holder_svc_g_proto_msgTypes[1]
+	mi := &file_cxz_payday_holder_svc_g_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -228,7 +228,7 @@ func (x *HolderGetRequest) String() string {
 func (*HolderGetRequest) ProtoMessage() {}
 
 func (x *HolderGetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_payday_holder_svc_g_proto_msgTypes[1]
+	mi := &file_cxz_payday_holder_svc_g_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -308,7 +308,7 @@ type HolderRef struct {
 
 func (x *HolderRef) Reset() {
 	*x = HolderRef{}
-	mi := &file_cxz_v2_payday_holder_svc_g_proto_msgTypes[2]
+	mi := &file_cxz_payday_holder_svc_g_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -320,7 +320,7 @@ func (x *HolderRef) String() string {
 func (*HolderRef) ProtoMessage() {}
 
 func (x *HolderRef) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_payday_holder_svc_g_proto_msgTypes[2]
+	mi := &file_cxz_payday_holder_svc_g_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -446,7 +446,7 @@ func (b0 HolderRef_builder) Build() *HolderRef {
 type case_HolderRef_Key protoreflect.FieldNumber
 
 func (x case_HolderRef_Key) String() string {
-	md := file_cxz_v2_payday_holder_svc_g_proto_msgTypes[2].Descriptor()
+	md := file_cxz_payday_holder_svc_g_proto_msgTypes[2].Descriptor()
 	if x == 0 {
 		return "not set"
 	}
@@ -481,7 +481,7 @@ type HolderRefBySlug struct {
 
 func (x *HolderRefBySlug) Reset() {
 	*x = HolderRefBySlug{}
-	mi := &file_cxz_v2_payday_holder_svc_g_proto_msgTypes[3]
+	mi := &file_cxz_payday_holder_svc_g_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -493,7 +493,7 @@ func (x *HolderRefBySlug) String() string {
 func (*HolderRefBySlug) ProtoMessage() {}
 
 func (x *HolderRefBySlug) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_payday_holder_svc_g_proto_msgTypes[3]
+	mi := &file_cxz_payday_holder_svc_g_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -591,7 +591,7 @@ type HolderSelect struct {
 
 func (x *HolderSelect) Reset() {
 	*x = HolderSelect{}
-	mi := &file_cxz_v2_payday_holder_svc_g_proto_msgTypes[4]
+	mi := &file_cxz_payday_holder_svc_g_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -603,7 +603,7 @@ func (x *HolderSelect) String() string {
 func (*HolderSelect) ProtoMessage() {}
 
 func (x *HolderSelect) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_payday_holder_svc_g_proto_msgTypes[4]
+	mi := &file_cxz_payday_holder_svc_g_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -899,7 +899,7 @@ type HolderPatchRequest struct {
 
 func (x *HolderPatchRequest) Reset() {
 	*x = HolderPatchRequest{}
-	mi := &file_cxz_v2_payday_holder_svc_g_proto_msgTypes[5]
+	mi := &file_cxz_payday_holder_svc_g_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -911,7 +911,7 @@ func (x *HolderPatchRequest) String() string {
 func (*HolderPatchRequest) ProtoMessage() {}
 
 func (x *HolderPatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_payday_holder_svc_g_proto_msgTypes[5]
+	mi := &file_cxz_payday_holder_svc_g_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1142,7 +1142,7 @@ type HolderApplyRequest struct {
 
 func (x *HolderApplyRequest) Reset() {
 	*x = HolderApplyRequest{}
-	mi := &file_cxz_v2_payday_holder_svc_g_proto_msgTypes[6]
+	mi := &file_cxz_payday_holder_svc_g_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1154,7 +1154,7 @@ func (x *HolderApplyRequest) String() string {
 func (*HolderApplyRequest) ProtoMessage() {}
 
 func (x *HolderApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_payday_holder_svc_g_proto_msgTypes[6]
+	mi := &file_cxz_payday_holder_svc_g_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1236,7 +1236,7 @@ type HolderEraseResponse struct {
 
 func (x *HolderEraseResponse) Reset() {
 	*x = HolderEraseResponse{}
-	mi := &file_cxz_v2_payday_holder_svc_g_proto_msgTypes[7]
+	mi := &file_cxz_payday_holder_svc_g_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1248,7 +1248,7 @@ func (x *HolderEraseResponse) String() string {
 func (*HolderEraseResponse) ProtoMessage() {}
 
 func (x *HolderEraseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_payday_holder_svc_g_proto_msgTypes[7]
+	mi := &file_cxz_payday_holder_svc_g_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1316,7 +1316,7 @@ type HolderListRequest struct {
 
 func (x *HolderListRequest) Reset() {
 	*x = HolderListRequest{}
-	mi := &file_cxz_v2_payday_holder_svc_g_proto_msgTypes[8]
+	mi := &file_cxz_payday_holder_svc_g_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1328,7 +1328,7 @@ func (x *HolderListRequest) String() string {
 func (*HolderListRequest) ProtoMessage() {}
 
 func (x *HolderListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_payday_holder_svc_g_proto_msgTypes[8]
+	mi := &file_cxz_payday_holder_svc_g_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1411,7 +1411,7 @@ type HolderListResponse struct {
 
 func (x *HolderListResponse) Reset() {
 	*x = HolderListResponse{}
-	mi := &file_cxz_v2_payday_holder_svc_g_proto_msgTypes[9]
+	mi := &file_cxz_payday_holder_svc_g_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1423,7 +1423,7 @@ func (x *HolderListResponse) String() string {
 func (*HolderListResponse) ProtoMessage() {}
 
 func (x *HolderListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_payday_holder_svc_g_proto_msgTypes[9]
+	mi := &file_cxz_payday_holder_svc_g_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1492,7 +1492,7 @@ type HolderFilter struct {
 
 func (x *HolderFilter) Reset() {
 	*x = HolderFilter{}
-	mi := &file_cxz_v2_payday_holder_svc_g_proto_msgTypes[10]
+	mi := &file_cxz_payday_holder_svc_g_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1504,7 +1504,7 @@ func (x *HolderFilter) String() string {
 func (*HolderFilter) ProtoMessage() {}
 
 func (x *HolderFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_payday_holder_svc_g_proto_msgTypes[10]
+	mi := &file_cxz_payday_holder_svc_g_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1598,7 +1598,7 @@ type HolderWatchRequest struct {
 
 func (x *HolderWatchRequest) Reset() {
 	*x = HolderWatchRequest{}
-	mi := &file_cxz_v2_payday_holder_svc_g_proto_msgTypes[11]
+	mi := &file_cxz_payday_holder_svc_g_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1610,7 +1610,7 @@ func (x *HolderWatchRequest) String() string {
 func (*HolderWatchRequest) ProtoMessage() {}
 
 func (x *HolderWatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_payday_holder_svc_g_proto_msgTypes[11]
+	mi := &file_cxz_payday_holder_svc_g_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1682,7 +1682,7 @@ type HolderWatchResponse struct {
 
 func (x *HolderWatchResponse) Reset() {
 	*x = HolderWatchResponse{}
-	mi := &file_cxz_v2_payday_holder_svc_g_proto_msgTypes[12]
+	mi := &file_cxz_payday_holder_svc_g_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1694,7 +1694,7 @@ func (x *HolderWatchResponse) String() string {
 func (*HolderWatchResponse) ProtoMessage() {}
 
 func (x *HolderWatchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_payday_holder_svc_g_proto_msgTypes[12]
+	mi := &file_cxz_payday_holder_svc_g_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1746,7 +1746,7 @@ type HolderWatchItem struct {
 
 func (x *HolderWatchItem) Reset() {
 	*x = HolderWatchItem{}
-	mi := &file_cxz_v2_payday_holder_svc_g_proto_msgTypes[13]
+	mi := &file_cxz_payday_holder_svc_g_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1758,7 +1758,7 @@ func (x *HolderWatchItem) String() string {
 func (*HolderWatchItem) ProtoMessage() {}
 
 func (x *HolderWatchItem) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_payday_holder_svc_g_proto_msgTypes[13]
+	mi := &file_cxz_payday_holder_svc_g_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1867,35 +1867,35 @@ func (b0 HolderWatchItem_builder) Build() *HolderWatchItem {
 	return m0
 }
 
-var File_cxz_v2_payday_holder_svc_g_proto protoreflect.FileDescriptor
+var File_cxz_payday_holder_svc_g_proto protoreflect.FileDescriptor
 
-const file_cxz_v2_payday_holder_svc_g_proto_rawDesc = "" +
+const file_cxz_payday_holder_svc_g_proto_rawDesc = "" +
 	"\n" +
-	" cxz.v2/payday/holder_svc.g.proto\x12\x06cxz.v2\x1a\x1acxz.v2/payday/holder.proto\x1a cxz.v2/payday/tenant_svc.g.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\"\xd8\x02\n" +
+	"\x1dcxz/payday/holder_svc.g.proto\x12\x03cxz\x1a\x17cxz/payday/holder.proto\x1a\x1dcxz/payday/tenant_svc.g.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\"\xd2\x02\n" +
 	"\x10HolderAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
-	"\x06tenant\x18\x02 \x01(\v2\x11.cxz.v2.TenantRefR\x06tenant\x12\x1b\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12&\n" +
+	"\x06tenant\x18\x02 \x01(\v2\x0e.cxz.TenantRefR\x06tenant\x12\x1b\n" +
 	"\x05alias\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05alias\x12\x19\n" +
 	"\x04name\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04name\x12\x19\n" +
-	"\x04desc\x18\x06 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04desc\x12<\n" +
-	"\x06labels\x18\a \x03(\v2$.cxz.v2.HolderAddRequest.LabelsEntryR\x06labels\x12=\n" +
+	"\x04desc\x18\x06 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04desc\x129\n" +
+	"\x06labels\x18\a \x03(\v2!.cxz.HolderAddRequest.LabelsEntryR\x06labels\x12=\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"e\n" +
-	"\x10HolderGetRequest\x12#\n" +
-	"\x03ref\x18\x01 \x01(\v2\x11.cxz.v2.HolderRefR\x03ref\x12,\n" +
-	"\x06select\x18\x02 \x01(\v2\x14.cxz.v2.HolderSelectR\x06select\"S\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"_\n" +
+	"\x10HolderGetRequest\x12 \n" +
+	"\x03ref\x18\x01 \x01(\v2\x0e.cxz.HolderRefR\x03ref\x12)\n" +
+	"\x06select\x18\x02 \x01(\v2\x11.cxz.HolderSelectR\x06select\"P\n" +
 	"\tHolderRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12-\n" +
-	"\x04slug\x18\x04 \x01(\v2\x17.cxz.v2.HolderRefBySlugH\x00R\x04slugB\x05\n" +
-	"\x03key\"R\n" +
+	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12*\n" +
+	"\x04slug\x18\x04 \x01(\v2\x14.cxz.HolderRefBySlugH\x00R\x04slugB\x05\n" +
+	"\x03key\"O\n" +
 	"\x0fHolderRefBySlug\x12\x14\n" +
-	"\x05alias\x18\x04 \x01(\tR\x05alias\x12)\n" +
-	"\x06tenant\x18\x02 \x01(\v2\x11.cxz.v2.TenantRefR\x06tenant\"\x8b\x02\n" +
+	"\x05alias\x18\x04 \x01(\tR\x05alias\x12&\n" +
+	"\x06tenant\x18\x02 \x01(\v2\x0e.cxz.TenantRefR\x06tenant\"\x88\x02\n" +
 	"\fHolderSelect\x12\x10\n" +
-	"\x03all\x18\x01 \x01(\bR\x03all\x12,\n" +
-	"\x06tenant\x18\x02 \x01(\v2\x14.cxz.v2.TenantSelectR\x06tenant\x12\x14\n" +
+	"\x03all\x18\x01 \x01(\bR\x03all\x12)\n" +
+	"\x06tenant\x18\x02 \x01(\v2\x11.cxz.TenantSelectR\x06tenant\x12\x14\n" +
 	"\x05alias\x18\x04 \x01(\bR\x05alias\x12\x12\n" +
 	"\x04name\x18\x05 \x01(\bR\x04name\x12\x12\n" +
 	"\x04desc\x18\x06 \x01(\bR\x04desc\x12\x16\n" +
@@ -1903,117 +1903,117 @@ const file_cxz_v2_payday_holder_svc_g_proto_rawDesc = "" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +
 	"\vdate_erased\x18\x0e \x01(\bR\n" +
 	"dateErased\x12!\n" +
-	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xdf\x02\n" +
-	"\x12HolderPatchRequest\x12#\n" +
-	"\x03ref\x18\x01 \x01(\v2\x11.cxz.v2.HolderRefR\x03ref\x12\x14\n" +
+	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xd9\x02\n" +
+	"\x12HolderPatchRequest\x12 \n" +
+	"\x03ref\x18\x01 \x01(\v2\x0e.cxz.HolderRefR\x03ref\x12\x14\n" +
 	"\x05alias\x18\b \x01(\tR\x05alias\x12\x12\n" +
 	"\x04name\x18\n" +
 	" \x01(\tR\x04name\x12\x12\n" +
-	"\x04desc\x18\f \x01(\tR\x04desc\x12>\n" +
-	"\x06labels\x18\x0e \x03(\v2&.cxz.v2.HolderPatchRequest.LabelsEntryR\x06labels\x12=\n" +
+	"\x04desc\x18\f \x01(\tR\x04desc\x12;\n" +
+	"\x06labels\x18\x0e \x03(\v2#.cxz.HolderPatchRequest.LabelsEntryR\x06labels\x12=\n" +
 	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
 	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"]\n" +
-	"\x12HolderApplyRequest\x12#\n" +
-	"\x03ref\x18\x01 \x01(\v2\x11.cxz.v2.HolderRefR\x03ref\x12\"\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"Z\n" +
+	"\x12HolderApplyRequest\x12 \n" +
+	"\x03ref\x18\x01 \x01(\v2\x0e.cxz.HolderRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"-\n" +
 	"\x13HolderEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"{\n" +
-	"\x11HolderListRequest\x12.\n" +
-	"\afilters\x18\x01 \x03(\v2\x14.cxz.v2.HolderFilterR\afilters\x12\x19\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"x\n" +
+	"\x11HolderListRequest\x12+\n" +
+	"\afilters\x18\x01 \x03(\v2\x11.cxz.HolderFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
-	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\"U\n" +
-	"\x12HolderListResponse\x12$\n" +
-	"\x05items\x18\x01 \x03(\v2\x0e.cxz.v2.HolderR\x05items\x12\x19\n" +
-	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\xd3\x01\n" +
-	"\fHolderFilter\x12#\n" +
-	"\x03ref\x18\x01 \x01(\v2\x11.cxz.v2.HolderRefR\x03ref\x12)\n" +
-	"\x06tenant\x18\x02 \x01(\v2\x11.cxz.v2.TenantRefR\x06tenant\x128\n" +
-	"\x06labels\x18\x03 \x03(\v2 .cxz.v2.HolderFilter.LabelsEntryR\x06labels\x1a9\n" +
+	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\"R\n" +
+	"\x12HolderListResponse\x12!\n" +
+	"\x05items\x18\x01 \x03(\v2\v.cxz.HolderR\x05items\x12\x19\n" +
+	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\xca\x01\n" +
+	"\fHolderFilter\x12 \n" +
+	"\x03ref\x18\x01 \x01(\v2\x0e.cxz.HolderRefR\x03ref\x12&\n" +
+	"\x06tenant\x18\x02 \x01(\v2\x0e.cxz.TenantRefR\x06tenant\x125\n" +
+	"\x06labels\x18\x03 \x03(\v2\x1d.cxz.HolderFilter.LabelsEntryR\x06labels\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"p\n" +
-	"\x12HolderWatchRequest\x12.\n" +
-	"\afilters\x18\x01 \x03(\v2\x14.cxz.v2.HolderFilterR\afilters\x12*\n" +
-	"\rskip_snapshot\x18\x02 \x01(\bB\x05\xaa\x01\x02\b\x02R\fskipSnapshot\"D\n" +
-	"\x13HolderWatchResponse\x12-\n" +
-	"\x05items\x18\x01 \x03(\v2\x17.cxz.v2.HolderWatchItemR\x05items\"f\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"m\n" +
+	"\x12HolderWatchRequest\x12+\n" +
+	"\afilters\x18\x01 \x03(\v2\x11.cxz.HolderFilterR\afilters\x12*\n" +
+	"\rskip_snapshot\x18\x02 \x01(\bB\x05\xaa\x01\x02\b\x02R\fskipSnapshot\"A\n" +
+	"\x13HolderWatchResponse\x12*\n" +
+	"\x05items\x18\x01 \x03(\v2\x14.cxz.HolderWatchItemR\x05items\"c\n" +
 	"\x0fHolderWatchItem\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12$\n" +
-	"\x05value\x18\x02 \x01(\v2\x0e.cxz.v2.HolderR\x05value\x12\x1d\n" +
-	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action2\x97\x03\n" +
-	"\rHolderService\x12/\n" +
-	"\x03Add\x12\x18.cxz.v2.HolderAddRequest\x1a\x0e.cxz.v2.Holder\x12/\n" +
-	"\x03Get\x12\x18.cxz.v2.HolderGetRequest\x1a\x0e.cxz.v2.Holder\x123\n" +
-	"\x05Patch\x12\x1a.cxz.v2.HolderPatchRequest\x1a\x0e.cxz.v2.Holder\x123\n" +
-	"\x05Apply\x12\x1a.cxz.v2.HolderApplyRequest\x1a\x0e.cxz.v2.Holder\x127\n" +
-	"\x05Erase\x12\x11.cxz.v2.HolderRef\x1a\x1b.cxz.v2.HolderEraseResponse\x12=\n" +
-	"\x04List\x12\x19.cxz.v2.HolderListRequest\x1a\x1a.cxz.v2.HolderListResponse\x12B\n" +
-	"\x05Watch\x12\x1a.cxz.v2.HolderWatchRequest\x1a\x1b.cxz.v2.HolderWatchResponse0\x01B\"Z github.com/lesomnus/cxz/resourceb\beditionsp\xe8\a"
+	"\x02id\x18\x01 \x01(\fR\x02id\x12!\n" +
+	"\x05value\x18\x02 \x01(\v2\v.cxz.HolderR\x05value\x12\x1d\n" +
+	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action2\xed\x02\n" +
+	"\rHolderService\x12)\n" +
+	"\x03Add\x12\x15.cxz.HolderAddRequest\x1a\v.cxz.Holder\x12)\n" +
+	"\x03Get\x12\x15.cxz.HolderGetRequest\x1a\v.cxz.Holder\x12-\n" +
+	"\x05Patch\x12\x17.cxz.HolderPatchRequest\x1a\v.cxz.Holder\x12-\n" +
+	"\x05Apply\x12\x17.cxz.HolderApplyRequest\x1a\v.cxz.Holder\x121\n" +
+	"\x05Erase\x12\x0e.cxz.HolderRef\x1a\x18.cxz.HolderEraseResponse\x127\n" +
+	"\x04List\x12\x16.cxz.HolderListRequest\x1a\x17.cxz.HolderListResponse\x12<\n" +
+	"\x05Watch\x12\x17.cxz.HolderWatchRequest\x1a\x18.cxz.HolderWatchResponse0\x01B\"Z github.com/lesomnus/cxz/resourceb\beditionsp\xe8\a"
 
-var file_cxz_v2_payday_holder_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
-var file_cxz_v2_payday_holder_svc_g_proto_goTypes = []any{
-	(*HolderAddRequest)(nil),      // 0: cxz.v2.HolderAddRequest
-	(*HolderGetRequest)(nil),      // 1: cxz.v2.HolderGetRequest
-	(*HolderRef)(nil),             // 2: cxz.v2.HolderRef
-	(*HolderRefBySlug)(nil),       // 3: cxz.v2.HolderRefBySlug
-	(*HolderSelect)(nil),          // 4: cxz.v2.HolderSelect
-	(*HolderPatchRequest)(nil),    // 5: cxz.v2.HolderPatchRequest
-	(*HolderApplyRequest)(nil),    // 6: cxz.v2.HolderApplyRequest
-	(*HolderEraseResponse)(nil),   // 7: cxz.v2.HolderEraseResponse
-	(*HolderListRequest)(nil),     // 8: cxz.v2.HolderListRequest
-	(*HolderListResponse)(nil),    // 9: cxz.v2.HolderListResponse
-	(*HolderFilter)(nil),          // 10: cxz.v2.HolderFilter
-	(*HolderWatchRequest)(nil),    // 11: cxz.v2.HolderWatchRequest
-	(*HolderWatchResponse)(nil),   // 12: cxz.v2.HolderWatchResponse
-	(*HolderWatchItem)(nil),       // 13: cxz.v2.HolderWatchItem
-	nil,                           // 14: cxz.v2.HolderAddRequest.LabelsEntry
-	nil,                           // 15: cxz.v2.HolderPatchRequest.LabelsEntry
-	nil,                           // 16: cxz.v2.HolderFilter.LabelsEntry
-	(*TenantRef)(nil),             // 17: cxz.v2.TenantRef
+var file_cxz_payday_holder_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
+var file_cxz_payday_holder_svc_g_proto_goTypes = []any{
+	(*HolderAddRequest)(nil),      // 0: cxz.HolderAddRequest
+	(*HolderGetRequest)(nil),      // 1: cxz.HolderGetRequest
+	(*HolderRef)(nil),             // 2: cxz.HolderRef
+	(*HolderRefBySlug)(nil),       // 3: cxz.HolderRefBySlug
+	(*HolderSelect)(nil),          // 4: cxz.HolderSelect
+	(*HolderPatchRequest)(nil),    // 5: cxz.HolderPatchRequest
+	(*HolderApplyRequest)(nil),    // 6: cxz.HolderApplyRequest
+	(*HolderEraseResponse)(nil),   // 7: cxz.HolderEraseResponse
+	(*HolderListRequest)(nil),     // 8: cxz.HolderListRequest
+	(*HolderListResponse)(nil),    // 9: cxz.HolderListResponse
+	(*HolderFilter)(nil),          // 10: cxz.HolderFilter
+	(*HolderWatchRequest)(nil),    // 11: cxz.HolderWatchRequest
+	(*HolderWatchResponse)(nil),   // 12: cxz.HolderWatchResponse
+	(*HolderWatchItem)(nil),       // 13: cxz.HolderWatchItem
+	nil,                           // 14: cxz.HolderAddRequest.LabelsEntry
+	nil,                           // 15: cxz.HolderPatchRequest.LabelsEntry
+	nil,                           // 16: cxz.HolderFilter.LabelsEntry
+	(*TenantRef)(nil),             // 17: cxz.TenantRef
 	(*timestamppb.Timestamp)(nil), // 18: google.protobuf.Timestamp
-	(*TenantSelect)(nil),          // 19: cxz.v2.TenantSelect
+	(*TenantSelect)(nil),          // 19: cxz.TenantSelect
 	(*patchpb.Patch)(nil),         // 20: patch.Patch
-	(*Holder)(nil),                // 21: cxz.v2.Holder
+	(*Holder)(nil),                // 21: cxz.Holder
 }
-var file_cxz_v2_payday_holder_svc_g_proto_depIdxs = []int32{
-	17, // 0: cxz.v2.HolderAddRequest.tenant:type_name -> cxz.v2.TenantRef
-	14, // 1: cxz.v2.HolderAddRequest.labels:type_name -> cxz.v2.HolderAddRequest.LabelsEntry
-	18, // 2: cxz.v2.HolderAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	2,  // 3: cxz.v2.HolderGetRequest.ref:type_name -> cxz.v2.HolderRef
-	4,  // 4: cxz.v2.HolderGetRequest.select:type_name -> cxz.v2.HolderSelect
-	3,  // 5: cxz.v2.HolderRef.slug:type_name -> cxz.v2.HolderRefBySlug
-	17, // 6: cxz.v2.HolderRefBySlug.tenant:type_name -> cxz.v2.TenantRef
-	19, // 7: cxz.v2.HolderSelect.tenant:type_name -> cxz.v2.TenantSelect
-	2,  // 8: cxz.v2.HolderPatchRequest.ref:type_name -> cxz.v2.HolderRef
-	15, // 9: cxz.v2.HolderPatchRequest.labels:type_name -> cxz.v2.HolderPatchRequest.LabelsEntry
-	18, // 10: cxz.v2.HolderPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	2,  // 11: cxz.v2.HolderApplyRequest.ref:type_name -> cxz.v2.HolderRef
-	20, // 12: cxz.v2.HolderApplyRequest.patch:type_name -> patch.Patch
-	10, // 13: cxz.v2.HolderListRequest.filters:type_name -> cxz.v2.HolderFilter
-	21, // 14: cxz.v2.HolderListResponse.items:type_name -> cxz.v2.Holder
-	2,  // 15: cxz.v2.HolderFilter.ref:type_name -> cxz.v2.HolderRef
-	17, // 16: cxz.v2.HolderFilter.tenant:type_name -> cxz.v2.TenantRef
-	16, // 17: cxz.v2.HolderFilter.labels:type_name -> cxz.v2.HolderFilter.LabelsEntry
-	10, // 18: cxz.v2.HolderWatchRequest.filters:type_name -> cxz.v2.HolderFilter
-	13, // 19: cxz.v2.HolderWatchResponse.items:type_name -> cxz.v2.HolderWatchItem
-	21, // 20: cxz.v2.HolderWatchItem.value:type_name -> cxz.v2.Holder
-	0,  // 21: cxz.v2.HolderService.Add:input_type -> cxz.v2.HolderAddRequest
-	1,  // 22: cxz.v2.HolderService.Get:input_type -> cxz.v2.HolderGetRequest
-	5,  // 23: cxz.v2.HolderService.Patch:input_type -> cxz.v2.HolderPatchRequest
-	6,  // 24: cxz.v2.HolderService.Apply:input_type -> cxz.v2.HolderApplyRequest
-	2,  // 25: cxz.v2.HolderService.Erase:input_type -> cxz.v2.HolderRef
-	8,  // 26: cxz.v2.HolderService.List:input_type -> cxz.v2.HolderListRequest
-	11, // 27: cxz.v2.HolderService.Watch:input_type -> cxz.v2.HolderWatchRequest
-	21, // 28: cxz.v2.HolderService.Add:output_type -> cxz.v2.Holder
-	21, // 29: cxz.v2.HolderService.Get:output_type -> cxz.v2.Holder
-	21, // 30: cxz.v2.HolderService.Patch:output_type -> cxz.v2.Holder
-	21, // 31: cxz.v2.HolderService.Apply:output_type -> cxz.v2.Holder
-	7,  // 32: cxz.v2.HolderService.Erase:output_type -> cxz.v2.HolderEraseResponse
-	9,  // 33: cxz.v2.HolderService.List:output_type -> cxz.v2.HolderListResponse
-	12, // 34: cxz.v2.HolderService.Watch:output_type -> cxz.v2.HolderWatchResponse
+var file_cxz_payday_holder_svc_g_proto_depIdxs = []int32{
+	17, // 0: cxz.HolderAddRequest.tenant:type_name -> cxz.TenantRef
+	14, // 1: cxz.HolderAddRequest.labels:type_name -> cxz.HolderAddRequest.LabelsEntry
+	18, // 2: cxz.HolderAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	2,  // 3: cxz.HolderGetRequest.ref:type_name -> cxz.HolderRef
+	4,  // 4: cxz.HolderGetRequest.select:type_name -> cxz.HolderSelect
+	3,  // 5: cxz.HolderRef.slug:type_name -> cxz.HolderRefBySlug
+	17, // 6: cxz.HolderRefBySlug.tenant:type_name -> cxz.TenantRef
+	19, // 7: cxz.HolderSelect.tenant:type_name -> cxz.TenantSelect
+	2,  // 8: cxz.HolderPatchRequest.ref:type_name -> cxz.HolderRef
+	15, // 9: cxz.HolderPatchRequest.labels:type_name -> cxz.HolderPatchRequest.LabelsEntry
+	18, // 10: cxz.HolderPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	2,  // 11: cxz.HolderApplyRequest.ref:type_name -> cxz.HolderRef
+	20, // 12: cxz.HolderApplyRequest.patch:type_name -> patch.Patch
+	10, // 13: cxz.HolderListRequest.filters:type_name -> cxz.HolderFilter
+	21, // 14: cxz.HolderListResponse.items:type_name -> cxz.Holder
+	2,  // 15: cxz.HolderFilter.ref:type_name -> cxz.HolderRef
+	17, // 16: cxz.HolderFilter.tenant:type_name -> cxz.TenantRef
+	16, // 17: cxz.HolderFilter.labels:type_name -> cxz.HolderFilter.LabelsEntry
+	10, // 18: cxz.HolderWatchRequest.filters:type_name -> cxz.HolderFilter
+	13, // 19: cxz.HolderWatchResponse.items:type_name -> cxz.HolderWatchItem
+	21, // 20: cxz.HolderWatchItem.value:type_name -> cxz.Holder
+	0,  // 21: cxz.HolderService.Add:input_type -> cxz.HolderAddRequest
+	1,  // 22: cxz.HolderService.Get:input_type -> cxz.HolderGetRequest
+	5,  // 23: cxz.HolderService.Patch:input_type -> cxz.HolderPatchRequest
+	6,  // 24: cxz.HolderService.Apply:input_type -> cxz.HolderApplyRequest
+	2,  // 25: cxz.HolderService.Erase:input_type -> cxz.HolderRef
+	8,  // 26: cxz.HolderService.List:input_type -> cxz.HolderListRequest
+	11, // 27: cxz.HolderService.Watch:input_type -> cxz.HolderWatchRequest
+	21, // 28: cxz.HolderService.Add:output_type -> cxz.Holder
+	21, // 29: cxz.HolderService.Get:output_type -> cxz.Holder
+	21, // 30: cxz.HolderService.Patch:output_type -> cxz.Holder
+	21, // 31: cxz.HolderService.Apply:output_type -> cxz.Holder
+	7,  // 32: cxz.HolderService.Erase:output_type -> cxz.HolderEraseResponse
+	9,  // 33: cxz.HolderService.List:output_type -> cxz.HolderListResponse
+	12, // 34: cxz.HolderService.Watch:output_type -> cxz.HolderWatchResponse
 	28, // [28:35] is the sub-list for method output_type
 	21, // [21:28] is the sub-list for method input_type
 	21, // [21:21] is the sub-list for extension type_name
@@ -2021,14 +2021,14 @@ var file_cxz_v2_payday_holder_svc_g_proto_depIdxs = []int32{
 	0,  // [0:21] is the sub-list for field type_name
 }
 
-func init() { file_cxz_v2_payday_holder_svc_g_proto_init() }
-func file_cxz_v2_payday_holder_svc_g_proto_init() {
-	if File_cxz_v2_payday_holder_svc_g_proto != nil {
+func init() { file_cxz_payday_holder_svc_g_proto_init() }
+func file_cxz_payday_holder_svc_g_proto_init() {
+	if File_cxz_payday_holder_svc_g_proto != nil {
 		return
 	}
-	file_cxz_v2_payday_holder_proto_init()
-	file_cxz_v2_payday_tenant_svc_g_proto_init()
-	file_cxz_v2_payday_holder_svc_g_proto_msgTypes[2].OneofWrappers = []any{
+	file_cxz_payday_holder_proto_init()
+	file_cxz_payday_tenant_svc_g_proto_init()
+	file_cxz_payday_holder_svc_g_proto_msgTypes[2].OneofWrappers = []any{
 		(*holderRef_Id)(nil),
 		(*holderRef_Slug)(nil),
 	}
@@ -2036,17 +2036,17 @@ func file_cxz_v2_payday_holder_svc_g_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_cxz_v2_payday_holder_svc_g_proto_rawDesc), len(file_cxz_v2_payday_holder_svc_g_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_cxz_payday_holder_svc_g_proto_rawDesc), len(file_cxz_payday_holder_svc_g_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   17,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_cxz_v2_payday_holder_svc_g_proto_goTypes,
-		DependencyIndexes: file_cxz_v2_payday_holder_svc_g_proto_depIdxs,
-		MessageInfos:      file_cxz_v2_payday_holder_svc_g_proto_msgTypes,
+		GoTypes:           file_cxz_payday_holder_svc_g_proto_goTypes,
+		DependencyIndexes: file_cxz_payday_holder_svc_g_proto_depIdxs,
+		MessageInfos:      file_cxz_payday_holder_svc_g_proto_msgTypes,
 	}.Build()
-	File_cxz_v2_payday_holder_svc_g_proto = out.File
-	file_cxz_v2_payday_holder_svc_g_proto_goTypes = nil
-	file_cxz_v2_payday_holder_svc_g_proto_depIdxs = nil
+	File_cxz_payday_holder_svc_g_proto = out.File
+	file_cxz_payday_holder_svc_g_proto_goTypes = nil
+	file_cxz_payday_holder_svc_g_proto_depIdxs = nil
 }

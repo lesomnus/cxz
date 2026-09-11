@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        (unknown)
-// source: cxz.v2/payday/holder.proto
+// source: cxz/payday/holder.proto
 
 package resource
 
@@ -50,7 +50,7 @@ type Holder struct {
 
 func (x *Holder) Reset() {
 	*x = Holder{}
-	mi := &file_cxz_v2_payday_holder_proto_msgTypes[0]
+	mi := &file_cxz_payday_holder_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -62,7 +62,7 @@ func (x *Holder) String() string {
 func (*Holder) ProtoMessage() {}
 
 func (x *Holder) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_v2_payday_holder_proto_msgTypes[0]
+	mi := &file_cxz_payday_holder_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -269,18 +269,18 @@ func (b0 Holder_builder) Build() *Holder {
 	return m0
 }
 
-var File_cxz_v2_payday_holder_proto protoreflect.FileDescriptor
+var File_cxz_payday_holder_proto protoreflect.FileDescriptor
 
-const file_cxz_v2_payday_holder_proto_rawDesc = "" +
+const file_cxz_payday_holder_proto_rawDesc = "" +
 	"\n" +
-	"\x1acxz.v2/payday/holder.proto\x12\x06cxz.v2\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x1acxz.v2/payday/tenant.proto\"\xca\x04\n" +
+	"\x17cxz/payday/holder.proto\x12\x03cxz\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x17cxz/payday/tenant.proto\"\xc4\x04\n" +
 	"\x06Holder\x12\x1b\n" +
-	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
-	"\x06tenant\x18\x02 \x01(\v2\x0e.cxz.v2.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12\x14\n" +
+	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12+\n" +
+	"\x06tenant\x18\x02 \x01(\v2\v.cxz.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12\x14\n" +
 	"\x05alias\x18\x04 \x01(\tR\x05alias\x12\x12\n" +
 	"\x04name\x18\x05 \x01(\tR\x04name\x12\x12\n" +
-	"\x04desc\x18\x06 \x01(\tR\x04desc\x122\n" +
-	"\x06labels\x18\a \x03(\v2\x1a.cxz.v2.Holder.LabelsEntryR\x06labels\x12F\n" +
+	"\x04desc\x18\x06 \x01(\tR\x04desc\x12/\n" +
+	"\x06labels\x18\a \x03(\v2\x17.cxz.Holder.LabelsEntryR\x06labels\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +
@@ -301,19 +301,19 @@ const file_cxz_v2_payday_holder_proto_rawDesc = "" +
 	"\x06tenant\x1a\b\n" +
 	"\x06labels \x14(d:\x00H\x02B'Z github.com/lesomnus/cxz/resource\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
-var file_cxz_v2_payday_holder_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
-var file_cxz_v2_payday_holder_proto_goTypes = []any{
-	(*Holder)(nil),                // 0: cxz.v2.Holder
-	nil,                           // 1: cxz.v2.Holder.LabelsEntry
-	(*Tenant)(nil),                // 2: cxz.v2.Tenant
+var file_cxz_payday_holder_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_cxz_payday_holder_proto_goTypes = []any{
+	(*Holder)(nil),                // 0: cxz.Holder
+	nil,                           // 1: cxz.Holder.LabelsEntry
+	(*Tenant)(nil),                // 2: cxz.Tenant
 	(*timestamppb.Timestamp)(nil), // 3: google.protobuf.Timestamp
 }
-var file_cxz_v2_payday_holder_proto_depIdxs = []int32{
-	2, // 0: cxz.v2.Holder.tenant:type_name -> cxz.v2.Tenant
-	1, // 1: cxz.v2.Holder.labels:type_name -> cxz.v2.Holder.LabelsEntry
-	3, // 2: cxz.v2.Holder.date_updated:type_name -> google.protobuf.Timestamp
-	3, // 3: cxz.v2.Holder.date_erased:type_name -> google.protobuf.Timestamp
-	3, // 4: cxz.v2.Holder.date_created:type_name -> google.protobuf.Timestamp
+var file_cxz_payday_holder_proto_depIdxs = []int32{
+	2, // 0: cxz.Holder.tenant:type_name -> cxz.Tenant
+	1, // 1: cxz.Holder.labels:type_name -> cxz.Holder.LabelsEntry
+	3, // 2: cxz.Holder.date_updated:type_name -> google.protobuf.Timestamp
+	3, // 3: cxz.Holder.date_erased:type_name -> google.protobuf.Timestamp
+	3, // 4: cxz.Holder.date_created:type_name -> google.protobuf.Timestamp
 	5, // [5:5] is the sub-list for method output_type
 	5, // [5:5] is the sub-list for method input_type
 	5, // [5:5] is the sub-list for extension type_name
@@ -321,27 +321,27 @@ var file_cxz_v2_payday_holder_proto_depIdxs = []int32{
 	0, // [0:5] is the sub-list for field type_name
 }
 
-func init() { file_cxz_v2_payday_holder_proto_init() }
-func file_cxz_v2_payday_holder_proto_init() {
-	if File_cxz_v2_payday_holder_proto != nil {
+func init() { file_cxz_payday_holder_proto_init() }
+func file_cxz_payday_holder_proto_init() {
+	if File_cxz_payday_holder_proto != nil {
 		return
 	}
-	file_cxz_v2_payday_tenant_proto_init()
+	file_cxz_payday_tenant_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_cxz_v2_payday_holder_proto_rawDesc), len(file_cxz_v2_payday_holder_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_cxz_payday_holder_proto_rawDesc), len(file_cxz_payday_holder_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_cxz_v2_payday_holder_proto_goTypes,
-		DependencyIndexes: file_cxz_v2_payday_holder_proto_depIdxs,
-		MessageInfos:      file_cxz_v2_payday_holder_proto_msgTypes,
+		GoTypes:           file_cxz_payday_holder_proto_goTypes,
+		DependencyIndexes: file_cxz_payday_holder_proto_depIdxs,
+		MessageInfos:      file_cxz_payday_holder_proto_msgTypes,
 	}.Build()
-	File_cxz_v2_payday_holder_proto = out.File
-	file_cxz_v2_payday_holder_proto_goTypes = nil
-	file_cxz_v2_payday_holder_proto_depIdxs = nil
+	File_cxz_payday_holder_proto = out.File
+	file_cxz_payday_holder_proto_goTypes = nil
+	file_cxz_payday_holder_proto_depIdxs = nil
 }

@@ -1,5 +1,5 @@
 // Package resourceclient adapts the existing TUI view models to the payday
-// resource API. It never calls the retired cxz.v1.Sessions wire service.
+// resource API. Runtime view models are not a public wire API.
 package resourceclient
 
 import (

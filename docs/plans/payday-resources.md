@@ -30,7 +30,7 @@
 
 위 1–4를 구현하고 deterministic 통합·race·Docker 재생성·동시 provisioning 복구
 검증을 통과했다. CLI/TUI view model은 내부 호환 adapter에 남아 있지만 네트워크에는
-생성된 `cxz.v2.ProjectService`와 `cxz.v2.SessionService`만 등록한다.
+생성된 `cxz.ProjectService`와 `cxz.SessionService`만 등록한다.
 
 `ProjectService.Add`는 작업 공간을 등록한다. `Up`은 컨테이너만 준비하고,
 `SessionService.Add`는 준비된 Project에 대화를 생성한다. `up` CLI는 이를 조합하며,
@@ -43,6 +43,7 @@ agent/model의 세션에 연결한다. 명시적인 `new` 충돌은 자동 연�
 운영 상태의 복구 원천으로 사용한다. 사용자 정의 resource 이름/설명·audit까지
 재생성되는 것은 아니므로 전체 state volume을 백업한다.
 
-호환성: rc.1 wire API와 호환되지 않는다. manager와 project runtime을 함께
-갱신하되 기존 volume을 지우지 말고 project는 명시적으로 recreate한다.
+API 정책: 사용자 배포 전이므로 하위호환을 제공하지 않는다. proto 패키지는
+`cxz`, 경로는 `proto/cxz`와 `proto/ext/cxz`이며 버전 접미사나 별칭을 두지 않는다.
+내부 runtime view model은 `cxz.runtime`으로 구분한다.
 사용자 인증/roster, HTTP/Web UI, Docker Bake는 이 전환에 추가하지 않았다.

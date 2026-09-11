@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.2
 // - protoc             (unknown)
-// source: cxz/v2/project_svc.g.proto
+// source: cxz/project_svc.g.proto
 
 package resource
 
@@ -19,17 +19,17 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ProjectService_Add_FullMethodName            = "/cxz.v2.ProjectService/Add"
-	ProjectService_Get_FullMethodName            = "/cxz.v2.ProjectService/Get"
-	ProjectService_Patch_FullMethodName          = "/cxz.v2.ProjectService/Patch"
-	ProjectService_Apply_FullMethodName          = "/cxz.v2.ProjectService/Apply"
-	ProjectService_Erase_FullMethodName          = "/cxz.v2.ProjectService/Erase"
-	ProjectService_List_FullMethodName           = "/cxz.v2.ProjectService/List"
-	ProjectService_Watch_FullMethodName          = "/cxz.v2.ProjectService/Watch"
-	ProjectService_Up_FullMethodName             = "/cxz.v2.ProjectService/Up"
-	ProjectService_Down_FullMethodName           = "/cxz.v2.ProjectService/Down"
-	ProjectService_Recreate_FullMethodName       = "/cxz.v2.ProjectService/Recreate"
-	ProjectService_InspectForeign_FullMethodName = "/cxz.v2.ProjectService/InspectForeign"
+	ProjectService_Add_FullMethodName            = "/cxz.ProjectService/Add"
+	ProjectService_Get_FullMethodName            = "/cxz.ProjectService/Get"
+	ProjectService_Patch_FullMethodName          = "/cxz.ProjectService/Patch"
+	ProjectService_Apply_FullMethodName          = "/cxz.ProjectService/Apply"
+	ProjectService_Erase_FullMethodName          = "/cxz.ProjectService/Erase"
+	ProjectService_List_FullMethodName           = "/cxz.ProjectService/List"
+	ProjectService_Watch_FullMethodName          = "/cxz.ProjectService/Watch"
+	ProjectService_Up_FullMethodName             = "/cxz.ProjectService/Up"
+	ProjectService_Down_FullMethodName           = "/cxz.ProjectService/Down"
+	ProjectService_Recreate_FullMethodName       = "/cxz.ProjectService/Recreate"
+	ProjectService_InspectForeign_FullMethodName = "/cxz.ProjectService/InspectForeign"
 )
 
 // ProjectServiceClient is the client API for ProjectService service.
@@ -492,7 +492,7 @@ func _ProjectService_InspectForeign_Handler(srv interface{}, ctx context.Context
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var ProjectService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "cxz.v2.ProjectService",
+	ServiceName: "cxz.ProjectService",
 	HandlerType: (*ProjectServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -543,5 +543,5 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 		},
 	},
-	Metadata: "cxz/v2/project_svc.g.proto",
+	Metadata: "cxz/project_svc.g.proto",
 }

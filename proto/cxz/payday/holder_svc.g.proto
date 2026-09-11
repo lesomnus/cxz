@@ -1,8 +1,8 @@
 edition = "2023";
-package cxz.v2;
+package cxz;
 
-import "cxz.v2/payday/holder.proto";
-import "cxz.v2/payday/tenant_svc.g.proto";
+import "cxz/payday/holder.proto";
+import "cxz/payday/tenant_svc.g.proto";
 import "google/protobuf/timestamp.proto";
 import "patch/patch.proto";
 

@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.2
 // - protoc             (unknown)
-// source: cxz.v2/payday/tenant_svc.g.proto
+// source: cxz/payday/tenant_svc.g.proto
 
 package resource
 
@@ -19,12 +19,12 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	TenantService_Add_FullMethodName   = "/cxz.v2.TenantService/Add"
-	TenantService_Get_FullMethodName   = "/cxz.v2.TenantService/Get"
-	TenantService_Patch_FullMethodName = "/cxz.v2.TenantService/Patch"
-	TenantService_Apply_FullMethodName = "/cxz.v2.TenantService/Apply"
-	TenantService_Erase_FullMethodName = "/cxz.v2.TenantService/Erase"
-	TenantService_List_FullMethodName  = "/cxz.v2.TenantService/List"
+	TenantService_Add_FullMethodName   = "/cxz.TenantService/Add"
+	TenantService_Get_FullMethodName   = "/cxz.TenantService/Get"
+	TenantService_Patch_FullMethodName = "/cxz.TenantService/Patch"
+	TenantService_Apply_FullMethodName = "/cxz.TenantService/Apply"
+	TenantService_Erase_FullMethodName = "/cxz.TenantService/Erase"
+	TenantService_List_FullMethodName  = "/cxz.TenantService/List"
 )
 
 // TenantServiceClient is the client API for TenantService service.
@@ -290,7 +290,7 @@ func _TenantService_List_Handler(srv interface{}, ctx context.Context, dec func(
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var TenantService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "cxz.v2.TenantService",
+	ServiceName: "cxz.TenantService",
 	HandlerType: (*TenantServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -319,5 +319,5 @@ var TenantService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "cxz.v2/payday/tenant_svc.g.proto",
+	Metadata: "cxz/payday/tenant_svc.g.proto",
 }

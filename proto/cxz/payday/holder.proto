@@ -1,11 +1,11 @@
 edition = "2023";
 
-package cxz.v2;
+package cxz;
 
 import "google/protobuf/timestamp.proto";
 import "orm.proto";
 import "payday.proto";
-import "cxz.v2/payday/tenant.proto";
+import "cxz/payday/tenant.proto";
 
 option features.field_presence = IMPLICIT;
 option go_package = "github.com/lesomnus/cxz/resource";

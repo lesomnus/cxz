@@ -1,6 +1,6 @@
 edition = "2023";
-package cxz.v2;
-import "cxz/v2/session.proto";
+package cxz;
+import "cxz/session.proto";
 option go_package = "github.com/lesomnus/cxz/resource";
 
 service SessionService {
