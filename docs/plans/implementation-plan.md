@@ -1,6 +1,13 @@
 # cxz 구현 계획
 
-작성일: 2026-09-11. 상태: 구현 착수 전 제안.
+작성일: 2026-09-11. 상태: TUI 우선 구현 진행 중.
+
+> 최신 실행 범위: 사용자 지시에 따라 **payday + SQLite + TUI**의 세션 생성·대화·
+> 승인·중단·재접속을 먼저 구현한다. 사용자 인증과 웹 UI는 남겨 둔다.
+> 아래 P0–P6는 장기 제품 계획이며 이번 작업의 완료 조건과 같지 않다.
+> 구체적인 진행/검증 결과는 [진행 문서](../progress.md), 사용법은
+> [README](../../README.md)를 따른다. 현재 backend는 기존 개발 컨테이너 안의
+> 로컬 프로세스이며 자동 devcontainer provisioning은 아직 포함하지 않는다.
 
 근거 문서:
 
@@ -8,7 +15,8 @@
 - [Codex 검증 기록](codex-verification.md)
 - [Claude Code 검증 기록](claude-code-verification.md)
 
-애플리케이션 본체는 아직 구현되지 않았다. 2026-09-11 후속 검증에서 Claude Code의 승인·거절,
+초기 계획 당시 본체는 미구현이었다. 후속 TUI 구현으로 payday gRPC daemon,
+SQLite, 독립 supervisor와 세션 클라이언트가 추가되었다. 2026-09-11 검증에서 Claude Code의 승인·거절,
 질문 응답·중단·동일 경로에서의 프로세스 재시작 후 resume를 확인했다. 재실행 스크립트는
 `scripts/probes/claude-protocol.mjs`, 정제된 fixture는 `testdata/protocol/claude/`에 있다.
 로그인은 별도 빈 설정 디렉터리에서 인증 URL 발급까지 확인했으며 실제 OAuth 완료는 남아 있다.
