@@ -93,6 +93,38 @@ func Owned(ctx context.Context, id, owner, project string) (Container, error) {
 	return v, nil
 }
 
+// EnsureResource never adopts a pre-existing shared-engine volume or network.
+func EnsureResource(ctx context.Context, kind, name, owner, project string) error {
+	if kind != "volume" && kind != "network" {
+		return fmt.Errorf("unsupported resource kind")
+	}
+	b, e := Run(ctx, kind, "inspect", name)
+	if e == nil {
+		var resources []struct{ Labels map[string]string }
+		if json.Unmarshal(b, &resources) != nil || len(resources) != 1 || resources[0].Labels["cxz.owner"] != owner || resources[0].Labels["cxz.project"] != project {
+			return fmt.Errorf("refusing unowned %s %s", kind, name)
+		}
+		return nil
+	}
+	args := []string{kind, "create", "--label", "cxz.owner=" + owner}
+	if project != "" {
+		args = append(args, "--label", "cxz.project="+project)
+	}
+	if _, e = Run(ctx, append(args, name)...); e != nil {
+		return e
+	}
+	// Verify again: volume create is idempotent even if an unowned name raced us.
+	b, e = Run(ctx, kind, "inspect", name)
+	if e != nil {
+		return e
+	}
+	var resources []struct{ Labels map[string]string }
+	if json.Unmarshal(b, &resources) != nil || len(resources) != 1 || resources[0].Labels["cxz.owner"] != owner || resources[0].Labels["cxz.project"] != project {
+		return fmt.Errorf("resource ownership mismatch")
+	}
+	return nil
+}
+
 // EnginePath translates this development environment's documented shared bind.
 // Unknown remote paths fail rather than silently mounting an empty directory.
 func EnginePath(path string) (string, error) {

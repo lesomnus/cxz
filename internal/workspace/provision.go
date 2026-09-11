@@ -73,10 +73,8 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string) error 
 		}
 	}
 	for _, name := range []string{p.Network} {
-		if _, e = dockerx.Run(ctx, "network", "inspect", name); e != nil {
-			if _, e = dockerx.Run(ctx, "network", "create", "--label", "cxz.owner="+m.Owner, "--label", "cxz.project="+p.ID, name); e != nil {
-				return e
-			}
+		if e = dockerx.EnsureResource(ctx, "network", name, m.Owner, p.ID); e != nil {
+			return e
 		}
 	}
 	if _, e = dockerx.Run(ctx, "network", "connect", p.Network, m.Container); e != nil {
@@ -88,7 +86,7 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string) error 
 			return e
 		}
 	}
-	if _, e = dockerx.Run(ctx, "volume", "create", "--label", "cxz.owner="+m.Owner, "--label", "cxz.project="+p.ID, p.Volume); e != nil {
+	if e = dockerx.EnsureResource(ctx, "volume", p.Volume, m.Owner, p.ID); e != nil {
 		return e
 	}
 	// This directory contains only one project's runtime. The private data
@@ -134,7 +132,11 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string) error 
 		}
 	}
 	if len(files) > 0 {
+		// The CLI's string-mount conversion gives Compose volumes a project
+		// prefix and drops readonly. Declare our exact external volumes directly.
+		cfg["mounts"] = mounts[:len(mounts)-2]
 		services := map[string]any{}
+		devNetworks := map[string]any{}
 		service, _ := cfg["service"].(string)
 		if service == "" {
 			return fmt.Errorf("compose devcontainer requires service")
@@ -154,14 +156,36 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string) error 
 			ss, _ := compose["services"].(map[string]any)
 			for name := range ss {
 				services[name] = map[string]any{"labels": map[string]string{"cxz.owner": m.Owner, "cxz.project": p.ID}}
+				if name == service {
+					if spec, ok := ss[name].(map[string]any); ok {
+						switch networks := spec["networks"].(type) {
+						case map[string]any:
+							for name, options := range networks {
+								devNetworks[name] = options
+							}
+						case []any:
+							for _, name := range networks {
+								if s, ok := name.(string); ok {
+									devNetworks[s] = nil
+								}
+							}
+						}
+					}
+				}
 			}
 		}
 		dev, ok := services[service].(map[string]any)
 		if !ok {
 			return fmt.Errorf("devcontainer service missing from compose files")
 		}
-		dev["networks"] = map[string]any{"cxz": nil}
-		override := map[string]any{"services": services, "networks": map[string]any{"cxz": map[string]any{"external": true, "name": p.Network}}}
+		if len(devNetworks) == 0 {
+			devNetworks["default"] = nil
+		}
+		devNetworks["cxz"] = nil
+		dev["networks"] = devNetworks
+		dev["environment"] = map[string]string{"CXZ_PROJECT_ID": p.ID, "CXZ_STATE": "/cxz/state/data"}
+		dev["volumes"] = []any{map[string]any{"type": "volume", "source": p.Volume, "target": "/cxz/state"}, map[string]any{"type": "volume", "source": m.ToolsVolume, "target": "/cxz/tools", "read_only": true}}
+		override := map[string]any{"name": "cxz-" + m.Owner[:12] + "-" + p.ID, "services": services, "networks": map[string]any{"cxz": map[string]any{"external": true, "name": p.Network}}, "volumes": map[string]any{p.Volume: map[string]any{"external": true, "name": p.Volume}, m.ToolsVolume: map[string]any{"external": true, "name": m.ToolsVolume}}}
 		cp := filepath.Join(m.Root, "projects", p.ID, "compose.json")
 		if e = core.WriteJSON(cp, override); e != nil {
 			return e
@@ -179,10 +203,25 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string) error 
 	// The bootstrap hook can run before the manager knows the remote workspace
 	// and selected binaries. It waits for this project-local runtime manifest.
 	runtime := Runtime{ProjectID: p.ID, Workspace: p.RemoteWorkspace, Token: p.Token}
+	prev, readErr := dockerx.Run(ctx, "run", "--rm", "--label", "cxz.owner="+m.Owner, "--label", "cxz.project="+p.ID, "--entrypoint", "sh", "--mount", "type=volume,source="+p.Volume+",target=/cxz/state,readonly", m.Image, "-c", "if test -f /cxz/state/runtime.json; then cat /cxz/state/runtime.json; fi")
+	if readErr != nil {
+		return readErr
+	}
+	if len(bytes.TrimSpace(prev)) > 0 {
+		var old Runtime
+		if e = json.Unmarshal(prev, &old); e != nil {
+			return fmt.Errorf("invalid saved runtime: %w", e)
+		}
+		if old.ProjectID != p.ID || old.Token != p.Token {
+			return fmt.Errorf("project volume identity mismatch")
+		}
+		runtime.Claude, runtime.Codex = old.Claude, old.Codex
+	}
 	if e = m.writeRuntime(ctx, p, runtime); e != nil {
 		return e
 	}
 	cmd := exec.CommandContext(ctx, "devcontainer", "up", "--workspace-folder", p.Workspace, "--config", p.Config, "--override-config", configPath, "--id-label", "cxz.owner="+m.Owner, "--id-label", "cxz.project="+p.ID, "--id-label", "devcontainer.local_folder="+p.Workspace, "--mount-workspace-git-root=false", "--update-remote-user-uid-default", "off", "--include-merged-configuration")
+	cmd.Env = append(os.Environ(), "COMPOSE_PROJECT_NAME=cxz-"+m.Owner[:12]+"-"+p.ID)
 	var stdout bytes.Buffer
 	log, e := os.OpenFile(filepath.Join(m.Root, "projects", p.ID, "provision.log"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
 	if e != nil {
@@ -235,7 +274,7 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string) error 
 	}
 	runtime.Workspace = p.RemoteWorkspace
 	// Preserve the other vendor's selected binary when switching agent types.
-	prev, e := dockerx.Run(ctx, "exec", p.ContainerID, "cat", "/cxz/state/runtime.json")
+	prev, e = dockerx.Run(ctx, "exec", p.ContainerID, "cat", "/cxz/state/runtime.json")
 	if e == nil {
 		var old Runtime
 		if json.Unmarshal(prev, &old) == nil {
@@ -249,6 +288,10 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string) error 
 		runtime.Codex = bin
 	}
 	if e = m.writeRuntime(ctx, p, runtime); e != nil {
+		return e
+	}
+	// Expose the project-scoped client without replacing an image-provided cxz.
+	if _, e = dockerx.Run(ctx, "exec", "--user", "root", p.ContainerID, "sh", "-c", "if ! command -v cxz >/dev/null 2>&1; then mkdir -p /usr/local/bin && ln -s /cxz/tools/cxz /usr/local/bin/cxz; fi"); e != nil {
 		return e
 	}
 	// The runtime reads binary choices on each Create. Its lifetime is not the
@@ -280,7 +323,10 @@ func CheckTrust(cfg map[string]any, trusted bool) error {
 				}
 			}
 		case []any:
-			for _, v := range x {
+			for i, v := range x {
+				if s, ok := v.(string); ok && (s == "--network" || s == "--net" || s == "--pid") && i+1 < len(x) && x[i+1] == "host" {
+					return true
+				}
 				if walk(v) {
 					return true
 				}
@@ -296,6 +342,68 @@ func CheckTrust(cfg map[string]any, trusted bool) error {
 	}
 	if walk(cfg) {
 		return fmt.Errorf("devcontainer requests host-side commands or elevated access; inspect the configuration and explicitly pass --trust-config")
+	}
+	return nil
+}
+
+// Validate all readable configuration before a confirmed recreate removes a
+// container. Missing default configuration is generated later during provision.
+func preflight(p *Project) error {
+	file := p.Config
+	if file == "" {
+		configs := Discover(p.Workspace)
+		if len(configs) > 1 {
+			return fmt.Errorf("multiple devcontainer configurations: specify --config")
+		}
+		if len(configs) == 0 {
+			return nil
+		}
+		file = configs[0]
+	}
+	if !filepath.IsAbs(file) {
+		file = filepath.Join(p.Workspace, file)
+	}
+	b, e := os.ReadFile(file)
+	if e != nil {
+		return e
+	}
+	b, e = hujson.Standardize(b)
+	if e != nil {
+		return e
+	}
+	var cfg map[string]any
+	if e = json.Unmarshal(b, &cfg); e != nil {
+		return e
+	}
+	if e = CheckTrust(cfg, p.Trusted); e != nil {
+		return e
+	}
+	var files []any
+	switch v := cfg["dockerComposeFile"].(type) {
+	case string:
+		files = []any{v}
+	case []any:
+		files = v
+	}
+	for _, f := range files {
+		name, ok := f.(string)
+		if !ok {
+			return fmt.Errorf("invalid compose filename")
+		}
+		if !filepath.IsAbs(name) {
+			name = filepath.Join(filepath.Dir(file), name)
+		}
+		b, e = os.ReadFile(name)
+		if e != nil {
+			return e
+		}
+		var compose map[string]any
+		if e = yaml.Unmarshal(b, &compose); e != nil {
+			return e
+		}
+		if e = CheckTrust(compose, p.Trusted); e != nil {
+			return e
+		}
 	}
 	return nil
 }

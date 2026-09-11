@@ -45,7 +45,22 @@ func run() error {
 	agent := f.String("agent", "claude", "Claude executable (serve only)")
 	cfg := f.String("claude-config", os.Getenv("CLAUDE_CONFIG_DIR"), "existing Claude config directory (serve only)")
 	f.Usage = func() {
-		fmt.Fprintln(f.Output(), "cxz [--state DIR] [--agent PATH] COMMAND\nCommands: serve, tui, new WORKSPACE [TITLE], ls, get ID, send ID TEXT, reply ID REQUEST allow|deny [ANSWERS_JSON], interrupt ID, resume ID, stop ID, events ID [AFTER_SEQ]\nGlobal flags must precede COMMAND. TUI/daemon exit detaches; stop explicitly terminates an agent.")
+		fmt.Fprintln(f.Output(), `cxz [--state DIR] COMMAND
+  install [--workspace-root PATH] [--recreate]  Install background Docker manager
+  uninstall                                  Remove manager; retain project data
+  up|new [PATH] [--agent claude|codex] [--config FILE] [--no-attach]
+  recreate [PATH|PROJECT] --yes               Replace container; keep workspace/volumes
+  down [PATH|PROJECT]                        Remove owned project containers
+  attach|it [SESSION|PROJECT]                 Attach TUI (Ctrl-C detaches)
+  tui|watch                                  Multi-project TUI
+  projects | ls | get SESSION                 Inspect projects/sessions
+  login PROJECT --agent claude|codex          Project-local vendor login
+  shell PROJECT | exec PROJECT -- COMMAND    Enter owned project environment
+  send ID TEXT | reply ID REQUEST allow|deny [ANSWERS_JSON]
+  interrupt ID | resume ID | stop ID | events ID [AFTER_SEQ]
+  serve                                      Foreground local development server
+Global flags precede COMMAND. Stop terminates the agent; down also removes containers.
+Foreign devcontainers are never adopted. Inspect before recreate or --trust-config.`)
 		f.PrintDefaults()
 	}
 	if e := f.Parse(os.Args[1:]); e != nil {
@@ -74,6 +89,11 @@ func run() error {
 		os.Setenv("CXZ_PROJECT_ID", runtime.ProjectID)
 		os.Setenv("CXZ_STATE", *root)
 		return server.Run(ctx, *root, runtime.Claude, "")
+	case "_login":
+		if len(args) != 2 {
+			return fmt.Errorf("agent required")
+		}
+		return workspace.Login(*root, args[1])
 	case "install":
 		flags := flag.NewFlagSet("install", flag.ContinueOnError)
 		image := flags.String("image", "", "manager image (default builds from this binary)")
@@ -123,6 +143,9 @@ func run() error {
 	}
 	defer conn.Close()
 	client := api.NewSessionsClient(conn)
+	if args[0] == "login" || args[0] == "shell" || args[0] == "exec" {
+		return projectExec(ctx, client, args[0], args[1:])
+	}
 	if args[0] == "up" || args[0] == "new" || args[0] == "recreate" || args[0] == "down" {
 		return projectCommand(ctx, client, args[0], args[1:])
 	}

@@ -898,16 +898,18 @@ func (x *ProjectRequest) GetClientId() string {
 }
 
 type Project struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Workspace     string                 `protobuf:"bytes,2,opt,name=workspace,proto3" json:"workspace,omitempty"`
-	Name          string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
-	State         string                 `protobuf:"bytes,4,opt,name=state,proto3" json:"state,omitempty"`
-	ContainerId   string                 `protobuf:"bytes,5,opt,name=container_id,json=containerId,proto3" json:"container_id,omitempty"`
-	Config        string                 `protobuf:"bytes,6,opt,name=config,proto3" json:"config,omitempty"`
-	Error         string                 `protobuf:"bytes,7,opt,name=error,proto3" json:"error,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Id              string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Workspace       string                 `protobuf:"bytes,2,opt,name=workspace,proto3" json:"workspace,omitempty"`
+	Name            string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	State           string                 `protobuf:"bytes,4,opt,name=state,proto3" json:"state,omitempty"`
+	ContainerId     string                 `protobuf:"bytes,5,opt,name=container_id,json=containerId,proto3" json:"container_id,omitempty"`
+	Config          string                 `protobuf:"bytes,6,opt,name=config,proto3" json:"config,omitempty"`
+	Error           string                 `protobuf:"bytes,7,opt,name=error,proto3" json:"error,omitempty"`
+	RemoteUser      string                 `protobuf:"bytes,8,opt,name=remote_user,json=remoteUser,proto3" json:"remote_user,omitempty"`
+	RemoteWorkspace string                 `protobuf:"bytes,9,opt,name=remote_workspace,json=remoteWorkspace,proto3" json:"remote_workspace,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *Project) Reset() {
@@ -985,6 +987,20 @@ func (x *Project) GetConfig() string {
 func (x *Project) GetError() string {
 	if x != nil {
 		return x.Error
+	}
+	return ""
+}
+
+func (x *Project) GetRemoteUser() string {
+	if x != nil {
+		return x.RemoteUser
+	}
+	return ""
+}
+
+func (x *Project) GetRemoteWorkspace() string {
+	if x != nil {
+		return x.RemoteWorkspace
 	}
 	return ""
 }
@@ -1114,7 +1130,7 @@ const file_cxz_proto_rawDesc = "" +
 	"\brecreate\x18\x05 \x01(\bR\brecreate\x12\x1c\n" +
 	"\tconfirmed\x18\x06 \x01(\bR\tconfirmed\x12!\n" +
 	"\ftrust_config\x18\a \x01(\bR\vtrustConfig\x12\x1b\n" +
-	"\tclient_id\x18\b \x01(\tR\bclientId\"\xb2\x01\n" +
+	"\tclient_id\x18\b \x01(\tR\bclientId\"\xfe\x01\n" +
 	"\aProject\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1c\n" +
 	"\tworkspace\x18\x02 \x01(\tR\tworkspace\x12\x12\n" +
@@ -1122,7 +1138,10 @@ const file_cxz_proto_rawDesc = "" +
 	"\x05state\x18\x04 \x01(\tR\x05state\x12!\n" +
 	"\fcontainer_id\x18\x05 \x01(\tR\vcontainerId\x12\x16\n" +
 	"\x06config\x18\x06 \x01(\tR\x06config\x12\x14\n" +
-	"\x05error\x18\a \x01(\tR\x05error\":\n" +
+	"\x05error\x18\a \x01(\tR\x05error\x12\x1f\n" +
+	"\vremote_user\x18\b \x01(\tR\n" +
+	"remoteUser\x12)\n" +
+	"\x10remote_workspace\x18\t \x01(\tR\x0fremoteWorkspace\":\n" +
 	"\vProjectList\x12+\n" +
 	"\bprojects\x18\x01 \x03(\v2\x0f.cxz.v1.ProjectR\bprojects2\xe2\x04\n" +
 	"\bSessions\x120\n" +

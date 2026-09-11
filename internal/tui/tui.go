@@ -11,6 +11,7 @@ import (
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/dockerx"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -133,7 +134,11 @@ func (m *model) render() {
 		case "input":
 			lines = append(lines, "you › "+e.Text)
 		case "assistant":
-			lines = append(lines, "claude › "+e.Text)
+			kind := s.Agent
+			if kind == "" {
+				kind = "agent"
+			}
+			lines = append(lines, kind+" › "+e.Text)
 		case "approval":
 			lines = append(lines, "APPROVAL "+e.Text+" ["+e.RequestId+"]\n"+string(e.Payload))
 		case "approval_resolved":
@@ -337,6 +342,13 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					}
 					ctx, cancel := context.WithTimeout(m.ctx, 30*time.Minute)
 					defer cancel()
+					if os.Getenv("CXZ_PROJECT_ID") != "" {
+						s, e := m.client.Create(ctx, &api.CreateRequest{Workspace: path, Agent: kind, ClientId: core.ID()})
+						if e != nil {
+							return result{err: e}
+						}
+						return result{text: "session created", sessionID: s.Id}
+					}
 					path, e = dockerx.EnginePath(path)
 					if e != nil {
 						return result{err: e}

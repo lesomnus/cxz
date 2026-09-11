@@ -27,8 +27,16 @@
 1. 구현: agent 종류를 명시하는 API, Codex app-server adapter, 프로토콜 단위 테스트.
 2. 구현: 관리 이미지/installer, 소유 프로젝트 provisioning, scoped 프로젝트 runtime.
    실제 Docker에서 install → up → Claude/Codex 세션 준비 성공. 기존 hook도 실행됨.
-3. 진행 중: 사용자 CLI/TUI 흐름과 복구·foreign 관리, 로그인 진입점.
-4. 대기: Docker/실제 vendor 검증, 사용 문서, 단계별 commit/push.
+3. 구현: CLI/TUI 자동 연결, agent 선택, 프로젝트 내부 client, login/shell/exec,
+   foreign 거부/명시적 recreate, down 전 history 수집, 관리 서버 교체 시 network 재연결.
+4. 검증 중: 실제 Docker image/Alpine/Compose 성공. Compose sidecar 통신,
+   tools read-only, 내부 프로젝트 범위 확인. 실제 vendor 대화/승인/중단/반복 복구
+   probe를 추가하고 실행 중. 최초 인증은 별도 사용자 단계이며 probe는 기존
+   access token의 일회성 투영만 사용하고 refresh token은 복사하지 않는다.
+
+실제 검증에서 수정한 사항: Compose의 named volume 접두사/readonly 변환,
+기본 sidecar network 누락, 관리 컨테이너 교체 후 project network 재연결,
+비 TTY 표준입력 판별, Codex의 첫 turn 이전 비영속 빈 thread 처리.
 
 웹 UI·roster 사용자 인증·호스팅 IDE·원격 공개는 이 TUI 단계와 분리한다.
 이는 cld의 외부 컨테이너 편입 방식이나 tmux 구현을 그대로 복제하는 작업이 아니다.

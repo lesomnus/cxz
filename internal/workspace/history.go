@@ -15,24 +15,7 @@ func (m *Manager) History(ctx context.Context, r *api.WatchRequest) (*api.EventB
 		cancel()
 		c.Close()
 		if err == nil {
-			tx, e := m.DB.BeginTx(ctx, nil)
-			if e != nil {
-				return nil, e
-			}
-			defer tx.Rollback()
-			for _, v := range batch.Events {
-				b, e := json.Marshal(v)
-				if e != nil {
-					return nil, e
-				}
-				if _, e = tx.ExecContext(ctx, "INSERT OR IGNORE INTO events VALUES(?,?,?)", v.SessionId, v.Seq, b); e != nil {
-					return nil, e
-				}
-			}
-			if e = tx.Commit(); e != nil {
-				return nil, e
-			}
-			return batch, nil
+			return batch, m.cache(ctx, batch)
 		}
 	}
 	rows, e := m.DB.QueryContext(ctx, "SELECT data FROM events WHERE session_id=? AND seq>? ORDER BY seq LIMIT 128", r.SessionId, r.AfterSeq)
@@ -53,4 +36,22 @@ func (m *Manager) History(ctx context.Context, r *api.WatchRequest) (*api.EventB
 		out.Events = append(out.Events, &v)
 	}
 	return out, rows.Err()
+}
+
+func (m *Manager) cache(ctx context.Context, batch *api.EventBatch) error {
+	tx, e := m.DB.BeginTx(ctx, nil)
+	if e != nil {
+		return e
+	}
+	defer tx.Rollback()
+	for _, v := range batch.Events {
+		b, e := json.Marshal(v)
+		if e != nil {
+			return e
+		}
+		if _, e = tx.ExecContext(ctx, "INSERT OR IGNORE INTO events VALUES(?,?,?)", v.SessionId, v.Seq, b); e != nil {
+			return e
+		}
+	}
+	return tx.Commit()
 }
