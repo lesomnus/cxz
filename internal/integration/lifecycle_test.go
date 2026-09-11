@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/resourceclient"
 	"github.com/lesomnus/cxz/internal/server"
 	"os"
 	"os/exec"
@@ -50,7 +51,7 @@ func TestLifecycle(t *testing.T) {
 		t.Fatal(e)
 	}
 	defer conn.Close()
-	client := api.NewSessionsClient(conn)
+	client := resourceclient.New(conn)
 	var daemon *exec.Cmd
 	var log *os.File
 	start := func() {
@@ -95,6 +96,10 @@ func TestLifecycle(t *testing.T) {
 	}
 	if s.Model != "fixture-model" {
 		t.Fatal("model missing from session")
+	}
+	listed, e := client.List(ctx, &api.Empty{})
+	if e != nil || len(listed.GetSessions()) != 1 || listed.Sessions[0].Id != s.Id || listed.Sessions[0].Workspace != work {
+		t.Fatalf("resource list lost session or project edge: %v %v", listed, e)
 	}
 	id := s.Id
 	defer func() {
@@ -285,7 +290,7 @@ func TestLifecycle(t *testing.T) {
 	stopped := await("stopped")
 	// Rebuild SQLite from manifests + journal without losing the transcript.
 	killDaemon()
-	for _, name := range []string{"cxz.db", "cxz.db-wal", "cxz.db-shm"} {
+	for _, name := range []string{"cxz.db", "cxz.db-wal", "cxz.db-shm", "resources.db", "resources.db-wal", "resources.db-shm"} {
 		path := filepath.Join(state, name)
 		if _, e = os.Stat(path); e == nil {
 			if e = os.Rename(path, path+".backup"); e != nil {

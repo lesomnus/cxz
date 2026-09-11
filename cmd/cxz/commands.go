@@ -12,6 +12,7 @@ import (
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/installer"
+	"github.com/lesomnus/cxz/internal/resourceclient"
 	"github.com/lesomnus/cxz/internal/server"
 	"github.com/lesomnus/cxz/internal/settings"
 	"github.com/lesomnus/cxz/internal/supervisor"
@@ -61,7 +62,7 @@ func withClient(fn clientFunc) xli.Handler {
 			return err
 		}
 		defer conn.Close()
-		return fn(ctx, api.NewSessionsClient(conn), c)
+		return fn(ctx, resourceclient.New(conn), c)
 	})
 }
 
@@ -193,7 +194,7 @@ func internalCommands() xli.Commands {
 			defer conn.Close()
 			q, cancel := context.WithTimeout(ctx, 2*time.Second)
 			defer cancel()
-			_, err = api.NewSessionsClient(conn).List(q, &api.Empty{})
+			_, err = resourceclient.New(conn).List(q, &api.Empty{})
 			return err
 		}),
 		makeCmd("_boot", nil, func(ctx context.Context, _ *xli.Command) error { return workspace.Boot(stateFrom(ctx)) }),

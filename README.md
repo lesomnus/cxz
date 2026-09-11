@@ -111,6 +111,35 @@ JSON commands: `ls`, `projects`, `get ID`, `send ID TEXT`,
 `stop ID`, `events ID [AFTER_SEQ]`. TUI event connections retry by cursor;
 mutations are never blindly retried. Session APIs accept idempotency keys.
 
+## Resource API
+
+The server uses payday's generated resource framework, not only its config
+packages. Definitions are in `proto/cxz/v2`; lifecycle extensions are in
+`proto/ext/cxz/v2`. `go tool pd gen .` generates `resource/`, `internal/ent/`,
+`server/bare/` and `server/pd/`. The handwritten application layer is
+`server/lifecycle/` (generated Sink → publish interceptor → lifecycle → audit/gate).
+
+- `ProjectService.Add/Get/List/Watch` registers and reads workspace resources;
+  `Up/Down/Recreate` controls their owned containers. Up does not create a session.
+- `SessionService.Add/Get/List/Watch` manages conversation resources;
+  `Resume/Send/Reply/Interrupt/Stop` controls their runs.
+- Resource `Watch` subscribes to explicit resource refs. `Events/History` is the
+  separate, durable conversation journal with sequence cursors.
+
+Both resources are payday `global` entities: no fabricated tenant or user.
+General Patch/Apply/Erase is closed; runtime status is not caller-writable.
+CLI/TUI and manager-to-project traffic use these generated services. The old
+`cxz.v1.Sessions` service is no longer registered; `api/` and
+`internal/legacyproto/` remain internal compatibility view models for the runtime.
+Upgrade the manager and explicitly recreate old project runtimes together: old
+rc.1 wire clients/servers are not compatible with this API. Existing session,
+vendor IDs and journals are retained, mapped to payday domain UUID resource IDs.
+
+`resources.db` stores ent resources and payday audit rows; `cxz.db` retains the
+runtime registry/event cache during this migration. Resource state is imported
+from existing manifests/journals. Custom resource metadata and audit history cannot be rebuilt from them:
+back up the full state volumes, not just transcripts.
+
 ## Persistence and boundaries
 
 - One active agent per canonical workspace. Project supervisors are independent
@@ -120,7 +149,8 @@ mutations are never blindly retried. Session APIs accept idempotency keys.
   Project TCP is authenticated, not encrypted; the Docker operator is trusted.
 - Project state/transcripts use named volumes; checksum-verified tools are shared
   read-only. Back up these volumes **and workspace contents**. SQLite alone is not
-  a backup. The fsynced journal/manifests are authoritative; SQLite is rebuilt.
+  a backup. The fsynced journal/manifests are authoritative for runtime recovery;
+  SQLite resource/audit history should also be backed up.
 - Container loss ends its processes. `up`/`resume` creates a new run and resumes
   the vendor conversation. Stale approvals fail and old prompts are not replayed.
   Codex may give a previously empty thread a new vendor ID: no transcript exists
@@ -142,6 +172,7 @@ go test ./...
 CXZ_TEST_RACE=1 go test -race ./internal/... -count=1
 go vet ./...
 go run ./tools/genproto
+go tool pd gen --check .
 # Uses an explicitly selected disposable, authenticated owned project and live usage:
 node scripts/probes/owned-session-live.mjs CLIENT_STATE PROJECT codex
 ```

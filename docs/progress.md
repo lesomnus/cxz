@@ -1,5 +1,42 @@
 # 구현 진행 상황
 
+## 2026-09-11 — payday resource framework 전환
+
+이전의 config/DB/grpcx만 이용한 구현은 사용자가 요청한 payday 프레임워크
+사용을 충족하지 않았다. 아래 전환은 기존 rc.1 태그와 별개의 변경이다.
+
+- `proto/cxz/v2/{project,session}.proto`에 tenant 없는 global 리소스를 선언하고
+  `proto/ext/cxz/v2/*_svc.ext.proto`에 Up/Down/Recreate 및
+  Resume/Send/Reply/Interrupt/Stop/Events/History를 선언했다.
+- 버전 고정 Go tools와 Buf lock으로 실제 `pd gen`을 실행했다.
+  `resource/`, `server/bare/`, `server/pd/`, `internal/ent/`가 생성 산출물이다.
+- `server/lifecycle/`가 generated Sink·ent SQLite·payday audit/gate·Watch를
+  실제 서버 요청 경로에 연결한다. Docker/process 작업은 DB transaction 밖에서
+  실행하고, 내부 projection 쓰기도 commit 이후 Watch 알림을 발행한다.
+- CLI/TUI 및 manager→project는 generated resource client를 사용한다.
+  기존 Sessions 공개 service 등록은 제거했다. runtime DTO만 내부에 남겼다.
+- Project.Up은 provisioning만 한다. Session.Add와 Resume는 별도 요청이다.
+  runtime/vendor ID·저널·생성 재시도 키를 유지하면서 payday domain UUID에 매핑한다.
+- 통과: resource API를 통한 생명주기/승인/중단/복구 및 두 SQLite DB 재구성,
+  xli CLI 전달, generated audit 기록·tenant 불필요·stale run 거부,
+  상태 Patch 우회 거부, payday Watch snapshot/update, `pd gen --check`.
+- 통과: `go test ./...`, 전체 `CXZ_TEST_RACE=1 go test -race ./... -count=1`,
+  `go vet ./...`, `pd gen --check`, Docker foreign/recreate/프로젝트 권한/단일 agent/down
+  경계, manager 강제 종료 checkpoint 복구와 동시 up 수렴.
+- 통과: non-root 컨테이너 재생성 후 대화·저널·vendor ID 유지, 새 run의 명시적 Resume,
+  stale 승인 거부, 진행 중 turn 손실 후 재접속. 인증 없는 deterministic agent로 검증했다.
+  증거: `testdata/recovery/payday-resource/summary.json`.
+- 첫 Docker 테스트는 개발 바이너리를 CGO 기본값으로 빌드해 Alpine loader 실패;
+  배포와 동일한 CGO_ENABLED=0 정적 빌드로 재검증했다. 실제 vendor 인증/과금 대화는
+  이번 전환에서 다시 실행하지 않았고, 이전 vendor-specific 잔여 검증은 그대로 남는다.
+- 사용자 인증/roster, HTTP/Web UI는 이번 범위에 추가하지 않는다.
+  Dockerfile은 기존 `internal/installer/image.Dockerfile`; Bake 전환은 하지 않았다.
+- 구 rc.1과 wire 호환되지 않으므로 manager 갱신 후 기존 project도 명시적으로
+  recreate해야 한다. 전체 state volume 백업은 필요하며 resource 표시 이름/설명과
+  audit는 저널로 재생성되지 않는다.
+
+설계: [payday resource API](plans/payday-resources.md).
+
 ## 2026-09-11 — 실사용 보강·prerelease 게시 (남은 검증 별도)
 
 순서: 복구·재시도 → TUI 설정/진단 → 설치·배포. 웹 UI/사용자 인증은 후속 범위.

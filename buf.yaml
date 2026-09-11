@@ -1,0 +1,20 @@
+version: v2
+modules:
+  - path: proto
+    excludes:
+      - proto/ext
+deps:
+  - buf.build/payday/payday:dev
+  - buf.build/orm/orm
+  - buf.build/patch/patch
+lint:
+  use: [STANDARD]
+  except:
+    - RPC_REQUEST_STANDARD_NAME
+    - RPC_RESPONSE_STANDARD_NAME
+    - RPC_REQUEST_RESPONSE_UNIQUE
+    - PACKAGE_VERSION_SUFFIX
+    - PACKAGE_DIRECTORY_MATCH
+    - PACKAGE_SAME_DIRECTORY
+breaking:
+  use: [FILE]

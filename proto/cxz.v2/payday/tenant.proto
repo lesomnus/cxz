@@ -1,0 +1,101 @@
+edition = "2023";
+
+package cxz.v2;
+
+import "google/protobuf/timestamp.proto";
+import "orm.proto";
+import "payday.proto";
+
+option features.field_presence = IMPLICIT;
+
+// The Go package is the app's, and `pd gen` writes it in. These files are not
+// generated where they live: an app generates from them, so that what comes out
+// -- the messages, the ent schema, the servers -- is one set of types in one
+// module. See the note on `go_package` in docs/schema.md.
+option go_package = "github.com/lesomnus/cxz/resource";
+
+// Tenant is the wall an app is divided by.
+//
+// It is payday's rather than each app's because everything that reads a request
+// reads it: the wall narrows every query by it, the trail stamps it, a rate
+// limit counts against it. An app that declared its own would be an app in
+// which none of those could be written once.
+//
+// **Fields 1, 2, 4..7 and 13..15 are payday's, and 3 is not**: it is left for
+// the app's set edge, and payday will not spend it. An app adds its own in
+// 8..12 and from 16, in a `tenant.ext.proto` beside this; `pd gen` refuses an
+// overlay that touches a number here, since the merge would take it silently
+// and `alias` would quietly become whatever the overlay said.
+message Tenant {
+  bytes id = 1 [(orm.field) = {
+    type: TYPE_UUID
+    key: true
+    default: ""
+  }];
+
+  // Alias is what a person writes this tenant as, and it is unique across the
+  // deployment: `@acme/arm-01` says which tenant before it says which row.
+  string alias = 4 [(orm.field) = {unique: true}];
+
+  string name = 5;
+  string desc = 6;
+  map<string, string> labels = 7;
+
+  // DateUpdated is stamped by the server on every write and refused to a patch
+  // document, so it is a version and not a field.
+  //
+  // What needs it is a client holding a copy: a `Watch` sends state rather than
+  // deltas, so two answers about one row have to be orderable or a late one
+  // overwrites an early one that was newer. It is here rather than added when
+  // that is built because adding it later is every app's migration.
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {
+    immutable: true
+    default: ""
+  }];
+
+  // A tenant is **not** erased softly, and a Holder is. The difference is the
+  // trail: every row of it names the Holder that acted, so a deleted Holder
+  // would leave the trail saying who while nobody could find out who. Nothing
+  // names a tenant that way, so there is nothing for its row to outlive.
+  option (orm.message) = {rpc: {crud: true}};
+  option (payday.entity) = {
+    // payday's own, so that generation finds it whatever an app called the
+    // proto package. An app never writes this; see `Own` in entity.proto.
+    own: OWN_TENANT
+
+    domain: 1
+    tenant: {}
+
+    // A tenant is not erased softly, for the reason above -- and in practice
+    // it is barely erased at all: every tenanted row holds a foreign key to
+    // one, so a tenant with anything in it cannot go, and the gate does not
+    // serve the RPC.
+    erase: {hard: {}}
+
+    // A tenant can be listed, and the wall is what makes that safe rather than
+    // alarming.
+    //
+    // `Tenant` **is** the wall, so a list of them is narrowed to the tenants
+    // the caller's scope already covers: an ordinary person sees the one they
+    // are in, and a caller whose grant covers everything -- a deployment
+    // administering its customers from a port with no wall -- sees them all.
+    // Neither is a new right; both are the scope that was already there,
+    // enumerated.
+    //
+    // It was absent rather than declined. Nothing wrote down a reason, `Holder`
+    // has had one all along, and the asymmetry showed up the first time
+    // somebody built a console: an operator could open a tenant they already
+    // knew the name of and could not find out which ones there were.
+    list: {
+      order: [
+        {field: {name: "date_created"}},
+        {field: {name: "id"}}
+      ]
+      by: [{name: "ref"}]
+      size: 20
+      max: 100
+    }
+  };
+}

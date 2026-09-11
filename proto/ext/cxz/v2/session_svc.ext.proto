@@ -1,0 +1,28 @@
+edition = "2023";
+package cxz.v2;
+import "cxz/v2/session.proto";
+option go_package = "github.com/lesomnus/cxz/resource";
+
+service SessionService {
+  rpc Resume(SessionControl) returns (Session);
+  rpc Stop(SessionControl) returns (Session);
+  rpc Interrupt(SessionControl) returns (SessionReceipt);
+  rpc Send(SessionSendRequest) returns (SessionReceipt);
+  rpc Reply(SessionReplyRequest) returns (SessionReceipt);
+  // Journal replay is not payday Watch: it is cursor-ordered event history.
+  rpc History(SessionEventsRequest) returns (SessionEventBatch);
+  rpc Events(SessionEventsRequest) returns (stream SessionEvent);
+}
+message SessionControl { SessionRef ref = 1; string run_id = 2; string client_id = 3; }
+message SessionSendRequest { SessionRef ref = 1; string run_id = 2; string client_id = 3; string text = 4; }
+message SessionReplyRequest {
+  SessionRef ref = 1;
+  string run_id = 2;
+  string client_id = 3;
+  string request_id = 4;
+  bool allow = 5;
+  string answers_json = 6;
+}
+message SessionReceipt { string client_id = 1; string status = 2; }
+message SessionEventsRequest { SessionRef ref = 1; uint64 after_seq = 2; }
+message SessionEventBatch { repeated SessionEvent events = 1; }

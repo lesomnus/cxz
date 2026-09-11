@@ -1,0 +1,124 @@
+edition = "2023";
+package cxz.v2;
+
+import "cxz.v2/payday/tenant.proto";
+import "google/protobuf/timestamp.proto";
+import "patch/patch.proto";
+
+option go_package = "github.com/lesomnus/cxz/resource";
+
+service TenantService {
+  // Add creates a new Tenant
+  rpc Add(TenantAddRequest) returns (Tenant);
+  // Get retrieves a Tenant
+  rpc Get(TenantGetRequest) returns (Tenant);
+  // Patch updates an existing Tenant
+  rpc Patch(TenantPatchRequest) returns (Tenant);
+  // Apply applies a patch document to an existing Tenant
+  rpc Apply(TenantApplyRequest) returns (Tenant);
+  // Erase deletes a Tenant
+  rpc Erase(TenantRef) returns (TenantEraseResponse);
+  // List reads Tenants a page at a time.
+  rpc List(TenantListRequest) returns (TenantListResponse);
+}
+
+message TenantAddRequest {
+  bytes id = 1;
+  string alias = 4 [features.field_presence = IMPLICIT];
+  string name = 5 [features.field_presence = IMPLICIT];
+  string desc = 6 [features.field_presence = IMPLICIT];
+  map<string, string> labels = 7;
+  google.protobuf.Timestamp date_created = 15;
+}
+
+message TenantGetRequest {
+  TenantRef ref = 1;
+  TenantSelect select = 2;
+}
+
+message TenantRef {
+  oneof key {
+    bytes id = 1;
+    string alias = 4;
+  }
+}
+
+message TenantSelect {
+  bool all = 1;
+  bool alias = 4;
+  bool name = 5;
+  bool desc = 6;
+  bool labels = 7;
+  bool date_updated = 13;
+  bool date_created = 15;
+}
+
+message TenantPatchRequest {
+  TenantRef ref = 1;
+  string alias = 8;
+  string name = 10;
+  string desc = 12;
+  map<string, string> labels = 14;
+  // The version this update requires the stored date_updated to be.
+  // It is a precondition, not a write: the update applies only if the row
+  // still holds this value, and the server stamps the new version itself.
+  // Setting it together with date_updated_force is an error --
+  // the version is the token every client's compare-and-swap is measured
+  // against, so it is not the caller's to choose.
+  google.protobuf.Timestamp date_updated = 26;
+  // Update whatever the stored date_updated is, with no precondition.
+  // The server still stamps a new version, so other clients' tokens are
+  // invalidated as usual; this declines the check for THIS update only.
+  // One of date_updated or this must be set. An omitted version is
+  // refused rather than assumed, because an unset field cannot be told
+  // apart from a caller who never considered locking at all.
+  bool date_updated_force = 27;
+}
+
+message TenantApplyRequest {
+  TenantRef ref = 1;
+  patch.Patch patch = 2;
+}
+
+message TenantEraseResponse {
+  // Erased is whether this call is the one that erased the row.
+  //
+  // False for a row that was already gone, was never there, or is out
+  // of this caller's reach -- which are one answer on purpose, and the
+  // reason the RPC does not fail instead.
+  bool erased = 1;
+}
+
+message TenantListRequest {
+  // Bounded because the work is: each filter is a predicate in the same query,
+  // so this is what says how much of the database one request may read.
+  repeated TenantFilter filters = 1;
+
+  // How many to answer with. Nothing said is what the schema declared, and more
+  // than the cap is the cap -- a caller asking for more than there is meant no
+  // harm, so it is not an error and it is not the whole table either.
+  int32 size = 2 [features.field_presence = IMPLICIT];
+
+  // Where to carry on from: the "next" of the answer before. It names the last
+  // row of that page rather than counting rows from the start, so a row added
+  // ahead of the page does not shift it and a caller reading through never sees
+  // one twice or misses one.
+  string after = 3 [features.field_presence = IMPLICIT];
+}
+
+message TenantListResponse {
+  repeated Tenant items = 1;
+
+  // What to ask for next, and empty when this was the last of them.
+  //
+  // Empty means there is no more *for now*: a list is read as it is, and one
+  // that has grown since answers a fresh call. It is not empty merely because
+  // the page came back short -- a page is short when the last row of it was the
+  // last row there was, which is a thing the server can only know by having
+  // looked.
+  string next = 2 [features.field_presence = IMPLICIT];
+}
+
+message TenantFilter {
+  TenantRef ref = 1;
+}

@@ -23,6 +23,8 @@ import (
 	"github.com/lesomnus/cxz/internal/supervisor"
 	"github.com/lesomnus/cxz/internal/transport"
 	"github.com/lesomnus/cxz/internal/workspace"
+	"github.com/lesomnus/cxz/resource"
+	"github.com/lesomnus/cxz/server/lifecycle"
 	"github.com/lesomnus/payday/config"
 	_ "github.com/lesomnus/payday/config/dbsqlite3"
 	"github.com/lesomnus/payday/grpcx"
@@ -117,6 +119,37 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 		}
 	}
 	sock := Socket(root)
+	resourceDB, _, e := (config.DbConfig{Driver: "sqlite3", Dsn: (&url.URL{Scheme: "file", Path: filepath.Join(root, "resources.db")}).String() + "?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)&_pragma=foreign_keys(1)", MaxOpenConns: 1}).Open(ctx)
+	if e != nil {
+		return e
+	}
+	defer resourceDB.Close()
+	if e = os.Chmod(filepath.Join(root, "resources.db"), 0600); e != nil {
+		return e
+	}
+	resources, e := lifecycle.Build(ctx, resourceDB, s)
+	if e != nil {
+		return fmt.Errorf("build payday resource server: %w", e)
+	}
+	watchCtx, cancelWatch := context.WithCancel(ctx)
+	watchDone := make(chan struct{})
+	go func() {
+		defer close(watchDone)
+		layer, _ := resource.Find[lifecycle.Layer](resources)
+		ticker := time.NewTicker(time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-watchCtx.Done():
+				return
+			case <-ticker.C:
+				if err := layer.Reconcile(watchCtx); err != nil && watchCtx.Err() == nil {
+					fmt.Fprintln(os.Stderr, "resource reconciliation:", err)
+				}
+			}
+		}
+	}()
+	defer func() { cancelWatch(); <-watchDone }()
 	if e = os.Remove(sock); e != nil && !os.IsNotExist(e) {
 		return e
 	}
@@ -144,7 +177,7 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 	opts := grpcx.ServerOptions(ctx)
 	opts = append(opts, grpc.MaxRecvMsgSize(1024*1024), grpc.MaxSendMsgSize(20*1024*1024))
 	g := grpc.NewServer(opts...)
-	api.RegisterSessionsServer(g, s)
+	resource.RegisterServer(g, resources)
 	if os.Getenv("CXZ_PROJECT_ID") != "" {
 		runtime, e := workspace.LoadRuntime(root)
 		if e != nil {
@@ -168,7 +201,7 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 			return handler(srv, stream)
 		}))
 		projectServer := grpc.NewServer(projectOptions...)
-		api.RegisterSessionsServer(projectServer, s)
+		resource.RegisterServer(projectServer, resources)
 		defer projectServer.Stop()
 		go projectServer.Serve(tcp)
 	}
@@ -244,7 +277,7 @@ func (s *Server) snapshot(ctx context.Context, m core.Session) (*api.Session, er
 		}
 		snap.Pending = nil
 	}
-	v := &api.Session{Id: m.ID, Workspace: m.Workspace, Title: m.Title, CreatedAt: m.CreatedAt, State: snap.State, RunId: snap.RunID, VendorId: snap.VendorID, LastSeq: snap.LastSeq, Agent: m.Kind, ProjectId: m.ProjectID, Model: m.Model}
+	v := &api.Session{Id: m.ID, Workspace: m.Workspace, Title: m.Title, CreatedAt: m.CreatedAt, State: snap.State, RunId: snap.RunID, VendorId: snap.VendorID, LastSeq: snap.LastSeq, Agent: m.Kind, ProjectId: m.ProjectID, Model: m.Model, CreateId: m.CreateID}
 	if v.Agent == "" {
 		v.Agent = "claude"
 	}
@@ -294,7 +327,7 @@ func (s *Server) launch(ctx context.Context, m core.Session) (*api.Session, erro
 }
 func (s *Server) Create(ctx context.Context, r *api.CreateRequest) (*api.Session, error) {
 	if s.manager != nil {
-		return s.manager.Open(ctx, &api.ProjectRequest{Workspace: r.Workspace, Agent: r.Agent, Model: r.Model, NewSession: true, ClientId: r.ClientId})
+		return s.manager.CreateSession(ctx, r)
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()

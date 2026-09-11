@@ -12,10 +12,11 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 )
 
 func main() {
-	c := protocompile.Compiler{Resolver: &protocompile.SourceResolver{ImportPaths: []string{"proto"}}}
+	c := protocompile.Compiler{Resolver: &protocompile.SourceResolver{ImportPaths: []string{"internal/legacyproto"}}}
 	fs, err := c.Compile(context.Background(), "cxz.proto")
 	must(err)
 	req := &pluginpb.CodeGeneratorRequest{FileToGenerate: []string{"cxz.proto"}, Parameter: proto.String("module=github.com/lesomnus/cxz")}
@@ -34,9 +35,10 @@ func main() {
 			panic(res.GetError())
 		}
 		for _, f := range res.File {
-			must(os.MkdirAll(filepath.Dir(f.GetName()), 0755))
-			must(os.WriteFile(f.GetName(), []byte(f.GetContent()), 0644))
-			fmt.Println(f.GetName())
+			name := strings.TrimSuffix(f.GetName(), ".pb.go") + "_wire.go"
+			must(os.MkdirAll(filepath.Dir(name), 0755))
+			must(os.WriteFile(name, []byte(f.GetContent()), 0644))
+			fmt.Println(name)
 		}
 	}
 }

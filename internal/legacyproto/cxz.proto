@@ -27,6 +27,7 @@ message Session {
   string agent = 10;
   string project_id = 11;
   string model = 12;
+  string create_id = 13;
 }
 message SessionList { repeated Session sessions = 1; }
 message Input { string session_id = 1; string run_id = 2; string client_id = 3; string text = 4; }
@@ -47,6 +48,7 @@ message ProjectRequest {
  bool new_session = 4; bool recreate = 5; bool confirmed = 6;
  bool trust_config = 7; string client_id = 8;
  string model = 9;
+ bool prepare_only = 10;
 }
 message Project {
  string id = 1; string workspace = 2; string name = 3; string state = 4;

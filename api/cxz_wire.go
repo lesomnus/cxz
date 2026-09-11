@@ -191,6 +191,7 @@ type Session struct {
 	Agent         string                 `protobuf:"bytes,10,opt,name=agent,proto3" json:"agent,omitempty"`
 	ProjectId     string                 `protobuf:"bytes,11,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
 	Model         string                 `protobuf:"bytes,12,opt,name=model,proto3" json:"model,omitempty"`
+	CreateId      string                 `protobuf:"bytes,13,opt,name=create_id,json=createId,proto3" json:"create_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -305,6 +306,13 @@ func (x *Session) GetProjectId() string {
 func (x *Session) GetModel() string {
 	if x != nil {
 		return x.Model
+	}
+	return ""
+}
+
+func (x *Session) GetCreateId() string {
+	if x != nil {
+		return x.CreateId
 	}
 	return ""
 }
@@ -824,6 +832,7 @@ type ProjectRequest struct {
 	TrustConfig   bool                   `protobuf:"varint,7,opt,name=trust_config,json=trustConfig,proto3" json:"trust_config,omitempty"`
 	ClientId      string                 `protobuf:"bytes,8,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
 	Model         string                 `protobuf:"bytes,9,opt,name=model,proto3" json:"model,omitempty"`
+	PrepareOnly   bool                   `protobuf:"varint,10,opt,name=prepare_only,json=prepareOnly,proto3" json:"prepare_only,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -919,6 +928,13 @@ func (x *ProjectRequest) GetModel() string {
 		return x.Model
 	}
 	return ""
+}
+
+func (x *ProjectRequest) GetPrepareOnly() bool {
+	if x != nil {
+		return x.PrepareOnly
+	}
+	return false
 }
 
 type Project struct {
@@ -1111,7 +1127,7 @@ const file_cxz_proto_rawDesc = "" +
 	"\x05model\x18\x05 \x01(\tR\x05model\"\x1c\n" +
 	"\n" +
 	"SessionRef\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"\xc5\x02\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"\xe2\x02\n" +
 	"\aSession\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1c\n" +
 	"\tworkspace\x18\x02 \x01(\tR\tworkspace\x12\x14\n" +
@@ -1127,7 +1143,8 @@ const file_cxz_proto_rawDesc = "" +
 	" \x01(\tR\x05agent\x12\x1d\n" +
 	"\n" +
 	"project_id\x18\v \x01(\tR\tprojectId\x12\x14\n" +
-	"\x05model\x18\f \x01(\tR\x05model\":\n" +
+	"\x05model\x18\f \x01(\tR\x05model\x12\x1b\n" +
+	"\tcreate_id\x18\r \x01(\tR\bcreateId\":\n" +
 	"\vSessionList\x12+\n" +
 	"\bsessions\x18\x01 \x03(\v2\x0f.cxz.v1.SessionR\bsessions\"n\n" +
 	"\x05Input\x12\x1d\n" +
@@ -1170,7 +1187,7 @@ const file_cxz_proto_rawDesc = "" +
 	"\apayload\x18\b \x01(\fR\apayload\"3\n" +
 	"\n" +
 	"EventBatch\x12%\n" +
-	"\x06events\x18\x01 \x03(\v2\r.cxz.v1.EventR\x06events\"\x8d\x02\n" +
+	"\x06events\x18\x01 \x03(\v2\r.cxz.v1.EventR\x06events\"\xb0\x02\n" +
 	"\x0eProjectRequest\x12\x1c\n" +
 	"\tworkspace\x18\x01 \x01(\tR\tworkspace\x12\x14\n" +
 	"\x05agent\x18\x02 \x01(\tR\x05agent\x12\x16\n" +
@@ -1181,7 +1198,9 @@ const file_cxz_proto_rawDesc = "" +
 	"\tconfirmed\x18\x06 \x01(\bR\tconfirmed\x12!\n" +
 	"\ftrust_config\x18\a \x01(\bR\vtrustConfig\x12\x1b\n" +
 	"\tclient_id\x18\b \x01(\tR\bclientId\x12\x14\n" +
-	"\x05model\x18\t \x01(\tR\x05model\"\xfb\x02\n" +
+	"\x05model\x18\t \x01(\tR\x05model\x12!\n" +
+	"\fprepare_only\x18\n" +
+	" \x01(\bR\vprepareOnly\"\xfb\x02\n" +
 	"\aProject\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1c\n" +
 	"\tworkspace\x18\x02 \x01(\tR\tworkspace\x12\x12\n" +

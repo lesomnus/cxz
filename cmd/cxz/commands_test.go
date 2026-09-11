@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/resource"
 	"github.com/lesomnus/xli"
 	"github.com/lesomnus/xli/arg"
 	"github.com/lesomnus/xli/xlitest"
@@ -88,28 +89,49 @@ func TestExecPassThrough(t *testing.T) {
 }
 
 type rpcStub struct {
-	api.UnimplementedSessionsServer
+	resource.UnimplementedSessionServiceServer
 	requests chan any
 }
 
-func (s *rpcStub) Open(_ context.Context, r *api.ProjectRequest) (*api.Session, error) {
-	s.requests <- r
-	return &api.Session{Id: "session", Workspace: r.Workspace, Agent: r.Agent}, nil
+func (s *rpcStub) Add(_ context.Context, r *resource.SessionAddRequest) (*resource.Session, error) {
+	s.requests <- &api.ProjectRequest{Workspace: "project-name", Agent: r.GetAgent(), Model: r.GetModel(), ClientId: r.GetClientId(), NewSession: true}
+	return resource.Session_builder{RuntimeId: "session", Agent: r.GetAgent()}.Build(), nil
 }
-func (s *rpcStub) Get(_ context.Context, r *api.SessionRef) (*api.Session, error) {
-	return &api.Session{Id: r.Id, RunId: "current-run"}, nil
+func (s *rpcStub) List(context.Context, *resource.SessionListRequest) (*resource.SessionListResponse, error) {
+	return &resource.SessionListResponse{}, nil
 }
-func (s *rpcStub) Send(_ context.Context, r *api.Input) (*api.Receipt, error) {
-	s.requests <- r
-	return &api.Receipt{Status: "accepted"}, nil
+func (s *rpcStub) Get(_ context.Context, r *resource.SessionGetRequest) (*resource.Session, error) {
+	return resource.Session_builder{RuntimeId: r.GetRef().GetRuntimeId(), Status: resource.SessionStatus_builder{RunId: "current-run"}.Build()}.Build(), nil
 }
-func (s *rpcStub) Reply(_ context.Context, r *api.Answer) (*api.Receipt, error) {
-	s.requests <- r
-	return &api.Receipt{Status: "accepted"}, nil
+func (s *rpcStub) Send(_ context.Context, r *resource.SessionSendRequest) (*resource.SessionReceipt, error) {
+	s.requests <- &api.Input{SessionId: r.GetRef().GetRuntimeId(), RunId: r.GetRunId(), ClientId: r.GetClientId(), Text: r.GetText()}
+	return resource.SessionReceipt_builder{Status: ptr("accepted")}.Build(), nil
 }
-func (s *rpcStub) Down(_ context.Context, r *api.ProjectRequest) (*api.Receipt, error) {
-	s.requests <- r
-	return &api.Receipt{Status: "stopped"}, nil
+func (s *rpcStub) Reply(_ context.Context, r *resource.SessionReplyRequest) (*resource.SessionReceipt, error) {
+	s.requests <- &api.Answer{SessionId: r.GetRef().GetRuntimeId(), RunId: r.GetRunId(), ClientId: r.GetClientId(), RequestId: r.GetRequestId(), Allow: r.GetAllow(), AnswersJson: r.GetAnswersJson()}
+	return resource.SessionReceipt_builder{Status: ptr("accepted")}.Build(), nil
+}
+
+type projectStub struct {
+	resource.UnimplementedProjectServiceServer
+	requests chan any
+}
+
+func testProject() *resource.Project {
+	return resource.Project_builder{RuntimeId: "project-name", Workspace: "project-name", Name: "project-name"}.Build()
+}
+func (s projectStub) Add(context.Context, *resource.ProjectAddRequest) (*resource.Project, error) {
+	return testProject(), nil
+}
+func (s projectStub) Up(context.Context, *resource.ProjectUpRequest) (*resource.Project, error) {
+	return testProject(), nil
+}
+func (s projectStub) List(context.Context, *resource.ProjectListRequest) (*resource.ProjectListResponse, error) {
+	return resource.ProjectListResponse_builder{Items: []*resource.Project{testProject()}}.Build(), nil
+}
+func (s projectStub) Down(_ context.Context, r *resource.ProjectControl) (*resource.Project, error) {
+	s.requests <- &api.ProjectRequest{Workspace: r.GetRef().GetRuntimeId(), ClientId: r.GetClientId()}
+	return testProject(), nil
 }
 
 func TestCommandsReachAPI(t *testing.T) {
@@ -127,7 +149,8 @@ func TestCommandsReachAPI(t *testing.T) {
 	}
 	server := grpc.NewServer()
 	stub := &rpcStub{requests: make(chan any, 10)}
-	api.RegisterSessionsServer(server, stub)
+	resource.RegisterSessionServiceServer(server, stub)
+	resource.RegisterProjectServiceServer(server, projectStub{requests: stub.requests})
 	go server.Serve(listener)
 	defer server.Stop()
 	run := func(args ...string) xlitest.Result {

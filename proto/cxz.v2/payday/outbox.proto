@@ -1,0 +1,134 @@
+edition = "2023";
+
+package cxz.v2;
+
+import "google/protobuf/timestamp.proto";
+import "orm.proto";
+import "payday.proto";
+
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/cxz/resource";
+
+// Outbox is a write that has to be published even if this process does not
+// live long enough to publish it.
+//
+// # What it is for
+//
+// `payday/watch` publishes in this process, once the handler has answered
+// without an error -- which is the earliest moment it is known the transaction
+// committed. That is a gap: the commit and the publish are two steps, and a
+// process that stops between them loses the event with nothing to say so. A
+// broker does not close it, and this is the reason it is worth being clear
+// about -- putting Kafka behind the seam moves the publish, it does not move
+// the commit, so the same crash loses the same event.
+//
+// The only thing that closes it is writing the event **in the transaction**, as
+// a row, and having something else pick it up. That is this.
+//
+// # Why it is cheap here and expensive elsewhere
+//
+// An outbox is normally a project because a stream of deltas has to be
+// delivered exactly once: the same delta applied twice is a different answer,
+// so somebody designs deduplication, and that is where the weeks go.
+//
+// payday sends **state**. A row published twice says the same thing the second
+// time, so at-least-once is not a compromise here -- it is simply correct. What
+// is left is a table, a recorder and a loop, and payday already had all three
+// shapes: recorders stack, `Audit` already writes inside the transaction, and
+// `payday/spin` already runs a loop.
+//
+// # One row per write, not per call
+//
+// A recorder is called once per write, from inside the transaction. The call it
+// belongs to only ends at the interceptor, which is after the commit -- so
+// there is no moment inside the transaction at which one row could hold a whole
+// call.
+//
+// Nothing is lost by that. Each row carries the RPC the caller asked for, so
+// every event published from here still says what it was; a call that wrote
+// three rows arrives as three events rather than one, and a stream that dedupes
+// by key -- which every one of them does, since what arrives is state -- reads
+// them as one read anyway.
+//
+// # It is drained, so it is not the trail
+//
+// Rows here are deleted once published. That is the whole difference from
+// [Audit], which is otherwise nearly the same shape: a trail is written once
+// and kept forever, and an outbox is a queue that is empty when everything is
+// working. Reading one for the other would be reading a trail that a drainer
+// truncates, or a queue that grows without end.
+message Outbox {
+  bytes id = 1 [(orm.field) = {
+    type: TYPE_UUID
+    key: true
+    default: ""
+  }];
+
+  // The tenant the caller was held by and the holder that made the call, both
+  // zero for a write nobody asked for.
+  //
+  // Columns and not edges, for the reason [Audit] gives: a row here has to
+  // survive whatever it points at, and a foreign key to a tenant would make
+  // erasing one either impossible or destructive of the record.
+  bytes tenant_id = 2 [(orm.field) = {type: TYPE_UUID}];
+  bytes actor_id = 8 [(orm.field) = {type: TYPE_UUID}];
+
+  // The RPC the caller asked for, and the RPC of the generated server that
+  // actually wrote. They answer different questions and a subscriber needs
+  // both: `method` is what to show somebody, and `by` says which entity and
+  // which kind of write, which is what anything acting on the row needs.
+  string method = 9;
+  string by = 10;
+
+  // The row that changed, and the patch document the write was compiled from --
+  // empty for a write that was not one.
+  bytes object_id = 11 [(orm.field) = {type: TYPE_UUID}];
+  bytes patch = 12;
+
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {
+    immutable: true
+    default: ""
+  }];
+
+  // No RPCs. Nothing outside the deployment reads or writes this: it is a queue
+  // between the transaction and the loop that drains it, and an entity whose
+  // rows a caller could add would be one where anybody can publish an event
+  // saying a row changed when it did not.
+  //
+  // The ent schema and the store are still generated, which is what the
+  // recorder and the drainer use.
+  option (orm.message) = {
+    indexes: [
+      // The order it is drained in, which is the order it was written in: an
+      // identifier carries the time it was minted. Without this the loop scans
+      // the table on every pass -- cheap while the queue is empty and exactly
+      // wrong when it is not, which is when something is already going badly.
+      {
+        name: "queue"
+        refs: [
+          {
+            name: "id"
+            number: 1
+          }
+        ]
+      }
+    ]
+  };
+  option (payday.entity) = {
+    // payday's own, so that generation finds it whatever an app called the
+    // proto package. An app never writes this; see `Own` in entity.proto.
+    own: OWN_OUTBOX
+
+
+    // A queue is emptied. A row that stayed after it was drained would be a
+    // queue that is also a log, and this is not the table for that.
+    erase: {hard: {}}
+    domain: 4
+
+    // Not behind the wall, and not because it was awkward: a drainer is the
+    // deployment and not a tenant, and there is no request in front of it to
+    // carry a frame. What keeps a tenant's writes from being read by another is
+    // that nothing serves this at all.
+    global: {}
+  };
+}
