@@ -1,0 +1,36 @@
+syntax = "proto3";
+package cxz.v1;
+option go_package = "github.com/lesomnus/cxz/api;api";
+
+service Sessions {
+  rpc Create(CreateRequest) returns (Session);
+  rpc List(Empty) returns (SessionList);
+  rpc Get(SessionRef) returns (Session);
+  rpc Send(Input) returns (Receipt);
+  rpc Reply(Answer) returns (Receipt);
+  rpc Interrupt(Control) returns (Receipt);
+  rpc Resume(Control) returns (Session);
+  rpc Stop(Control) returns (Receipt);
+  rpc Watch(WatchRequest) returns (stream Event);
+}
+message Empty {}
+message CreateRequest { string workspace = 1; string title = 2; string client_id = 3; }
+message SessionRef { string id = 1; }
+message Session {
+  string id = 1; string workspace = 2; string title = 3; string state = 4;
+  string run_id = 5; string vendor_id = 6; int64 created_at = 7; uint64 last_seq = 8;
+  repeated Event pending = 9;
+}
+message SessionList { repeated Session sessions = 1; }
+message Input { string session_id = 1; string run_id = 2; string client_id = 3; string text = 4; }
+message Answer {
+  string session_id = 1; string run_id = 2; string client_id = 3;
+  string request_id = 4; bool allow = 5; string answers_json = 6;
+}
+message Control { string session_id = 1; string run_id = 2; string client_id = 3; }
+message Receipt { string client_id = 1; string status = 2; }
+message WatchRequest { string session_id = 1; uint64 after_seq = 2; }
+message Event {
+  string session_id = 1; string run_id = 2; uint64 seq = 3; int64 time_ms = 4;
+  string kind = 5; string text = 6; string request_id = 7; bytes payload = 8;
+}

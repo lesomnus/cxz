@@ -1,0 +1,12 @@
+{
+  "version": "2.1.267 (Claude Code)",
+  "sdk_source_version": "0.3.268",
+  "tested_at": "2026-09-11T08:45:03.383Z",
+  "without_prompt_tool": true,
+  "checks": [
+    {
+      "name": "without_stdio_no_host_request_and_no_execution",
+      "status": "passed"
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+/bin/
+/.cxz/
+*.test
+coverage.out

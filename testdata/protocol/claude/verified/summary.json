@@ -1,0 +1,67 @@
+{
+  "version": "2.1.267 (Claude Code)",
+  "sdk_source_version": "0.3.268",
+  "tested_at": "2026-09-11T08:45:11.049Z",
+  "without_prompt_tool": false,
+  "checks": [
+    {
+      "name": "initialize",
+      "status": "passed",
+      "response_keys": [
+        "commands",
+        "agents",
+        "output_style",
+        "available_output_styles",
+        "models",
+        "account",
+        "pid",
+        "current_permission_mode",
+        "hooks_applied",
+        "analytics_disabled",
+        "remote_control_auto_enable",
+        "remote_control_available",
+        "remote_control_auto_on_by_default",
+        "ide_rc_auto_enable_gate",
+        "fast_mode_state",
+        "fast_mode_disabled_reason",
+        "session_state"
+      ]
+    },
+    {
+      "name": "approval_blocks_execution",
+      "status": "passed",
+      "held_ms": 3504
+    },
+    {
+      "name": "approval_allows_execution",
+      "status": "passed"
+    },
+    {
+      "name": "denial_prevents_execution",
+      "status": "passed"
+    },
+    {
+      "name": "multiple_turns_same_session",
+      "status": "passed"
+    },
+    {
+      "name": "question_answer_round_trip",
+      "status": "passed"
+    },
+    {
+      "name": "interrupt_ack_and_result",
+      "status": "passed",
+      "elapsed_ms": 26,
+      "result_subtype": "error_during_execution",
+      "stop_reason": "tool_use"
+    },
+    {
+      "name": "interrupt_prevents_delayed_side_effect",
+      "status": "passed"
+    },
+    {
+      "name": "resume_same_session_and_context_after_process_exit",
+      "status": "passed"
+    }
+  ]
+}
