@@ -166,6 +166,32 @@ back up the full state volumes, not just transcripts.
 
 ## Verification and scope
 
+### Docker Bake and edge images
+
+CI follows cld's two-stage Bake flow: `build` exports static amd64/arm64 binaries,
+then `app` packages them with `internal/installer/image.Dockerfile`. The same
+Dockerfile is embedded in the standalone install command; releases use Bake too.
+
+After tests pass, main pushes publish `ghcr.io/lesomnus/cxz:edge` and
+`ghcr.io/lesomnus/cxz:sha-COMMIT_SHA` for `linux/amd64` and `linux/arm64`.
+PRs build without registry login or publication. `edge` is a moving development
+tag; use a recorded image digest when you need an exact build.
+
+```sh
+TAG=edge BUILD_HASH=$(git rev-parse HEAD) docker buildx bake build
+# Local native smoke test (the example assumes an amd64 engine):
+TAG=local docker buildx bake app --set app.platform=linux/amd64 --load
+docker run --rm ghcr.io/lesomnus/cxz:local version
+# Explicit publication, with registry credentials and both binaries prepared:
+TAG=edge BUILD_HASH=$(git rev-parse HEAD) docker buildx bake app --push
+```
+
+The build context excludes workspace state and credentials. Tests run in CI on
+the runner, not inside the Docker build. Root `Dockerfile` compiles source;
+`docker-bake.hcl` defines output, platforms, tags and image metadata.
+
+### Tests
+
 ```sh
 go test ./...
 CXZ_TEST_RACE=1 go test -race ./internal/... -count=1

@@ -66,7 +66,7 @@ func Build(ctx context.Context, out io.Writer) (string, error) {
 			_, e = tw.Write(dockerfile)
 		}
 		if e == nil {
-			e = tw.WriteHeader(&tar.Header{Name: "cxz", Mode: 0755, Size: st.Size()})
+			e = tw.WriteHeader(&tar.Header{Name: "linux-" + runtime.GOARCH + "/cxz", Mode: 0755, Size: st.Size()})
 		}
 		if e == nil {
 			_, e = io.Copy(tw, f)

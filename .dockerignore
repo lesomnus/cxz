@@ -1,0 +1,9 @@
+# Only source required to compile the application belongs in the build context.
+**
+!go.mod
+!go.sum
+!api/**
+!cmd/**
+!internal/**
+!resource/**
+!server/**

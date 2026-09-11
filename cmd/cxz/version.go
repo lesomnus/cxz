@@ -14,13 +14,14 @@ import (
 	"strings"
 )
 
-// Set by scripts/release.sh. A source build reports its VCS revision separately.
+// Set by release/Bake builds. Source builds also read the Go VCS metadata.
 var version = "dev"
+var buildRevision string
 
 func releaseCommands() xli.Commands {
 	return xli.Commands{
 		{Name: "version", Brief: "Print client build and pinned agent versions", Handler: onRun(func(_ context.Context, c *xli.Command) error {
-			revision := ""
+			revision := buildRevision
 			dirty := false
 			if info, ok := debug.ReadBuildInfo(); ok {
 				for _, s := range info.Settings {

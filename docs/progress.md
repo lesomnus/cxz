@@ -1,5 +1,20 @@
 # 구현 진행 상황
 
+## 2026-09-11 — Docker Bake 및 edge 게시
+
+- cld의 build → app 흐름을 참고해 루트 `Dockerfile`, `docker-bake.hcl`,
+  source-only `.dockerignore`를 추가했다. build는 amd64/arm64 정적 바이너리를
+  `dist/linux-*/cxz`로 내보내고 app은 기존 설치용 Dockerfile로 이미지를 만든다.
+- 설치 명령의 tar context도 같은 아키텍처별 경로를 사용한다. release workflow의
+  임시 Dockerfile 생성/sed를 제거하고 같은 Bake app target을 사용한다.
+- CI는 test 성공 후 이미지를 빌드한다. main push만 GHCR에 `edge`와
+  `sha-<commit>`을 게시하고, PR은 로그인/게시하지 않는다. 이전 main 실행이 늦게
+  edge를 덮어쓰지 않도록 workflow concurrency를 설정했다.
+- 이미지 라벨과 바이너리 version 출력에 commit 정보를 포함한다.
+- 로컬 확인: Bake 설정 해석, amd64/arm64 정적 바이너리 빌드, workflow actionlint,
+  전체 Go 테스트 통과. amd64 Bake 이미지의 `version` 실행에서 edge 및 build hash를
+  확인했다. CI는 별도로 두 아키텍처 이미지를 빌드하고 main에서 게시한다.
+
 ## 2026-09-11 — proto 버전 표기 제거
 
 - 사용자 요청에 따라 공개 proto 패키지를 `cxz`, 정의 경로를 `proto/cxz`,

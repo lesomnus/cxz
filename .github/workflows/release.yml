@@ -33,27 +33,26 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Prepare multi-platform image context
-        run: |
-          sed 's|COPY cxz /usr/local/bin/cxz|ARG TARGETARCH\nCOPY linux-${TARGETARCH}/cxz /usr/local/bin/cxz|' internal/installer/image.Dockerfile > dist/Dockerfile
       - name: Publish versioned manager image
         id: image
-        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        uses: docker/bake-action@d3418bd7d0e9324001bca92fa8ba175ea7e6dc9b # v7
+        env:
+          REPO: ghcr.io/${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+          APP_VERSION: ${{ github.ref_name }}
+          BUILD_HASH: ${{ github.sha }}
         with:
-          context: dist
-          platforms: linux/amd64,linux/arm64
+          source: .
+          targets: app
           push: true
-          tags: ghcr.io/${{ github.repository }}:${{ github.ref_name }}
-          labels: |
-            org.opencontainers.image.source=https://github.com/${{ github.repository }}
-            org.opencontainers.image.revision=${{ github.sha }}
-            org.opencontainers.image.version=${{ github.ref_name }}
+          set: app.tags=ghcr.io/${{ github.repository }}:${{ github.ref_name }}
       - name: Publish release artifacts
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_VERSION: ${{ github.ref_name }}
-          IMAGE_DIGEST: ${{ steps.image.outputs.digest }}
+          IMAGE_METADATA: ${{ steps.image.outputs.metadata }}
         run: |
+          IMAGE_DIGEST=$(jq -er '.app["containerimage.digest"]' <<< "$IMAGE_METADATA")
           printf '%s\n' "ghcr.io/$GITHUB_REPOSITORY@$IMAGE_DIGEST" > dist/manager-image.txt
           args=()
           if [[ "$RELEASE_VERSION" == *-* ]]; then args+=(--prerelease); fi
