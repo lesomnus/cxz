@@ -10,6 +10,7 @@ require (
 	github.com/charmbracelet/x/term v0.2.2
 	github.com/goccy/go-yaml v1.19.2
 	github.com/lesomnus/payday v0.0.0-20260910081359-dbf0f70be7a2
+	github.com/lesomnus/xli v0.0.0-20260717171524-bf8cac633057
 	github.com/tailscale/hujson v0.0.0-20260727124030-b80ff77dac4f
 	google.golang.org/grpc v1.83.0
 	google.golang.org/protobuf v1.36.11
@@ -60,6 +61,7 @@ require (
 	go.opentelemetry.io/otel/sdk/log v0.20.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.44.0 // indirect
 	go.opentelemetry.io/otel/trace v1.45.0 // indirect
+	golang.org/x/exp v0.0.0-20250911091902-df9299821621 // indirect
 	golang.org/x/net v0.58.0 // indirect
 	golang.org/x/sync v0.22.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
