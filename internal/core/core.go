@@ -11,6 +11,7 @@ import (
 )
 
 type Session struct {
+	CreateID  string `json:"create_id"`
 	ID        string `json:"id"`
 	Workspace string `json:"workspace"`
 	Title     string `json:"title"`
