@@ -71,12 +71,18 @@ TUI / CLI → private Unix gRPC socket → payday daemon → SQLite projection
   session ID. Old approvals are invalid; old prompts are never auto-replayed by
   cxz. A resumed model can still propose retrying a previous task: cancel it
   explicitly in the next prompt if desired.
+- A liveness guardian terminates the agent process group if the supervisor is
+  killed, so foreground shell children do not continue writing after recovery.
+  Arbitrary commands that deliberately detach into another process group are
+  outside this local process boundary; use a container for full containment.
 - Persist the **cxz state, workspace at the same path, and original Claude state**
   across container recreation. SQLite alone is not a backup. Reauthentication
   may be necessary; restoring credentials is not implemented.
 - SQLite is rebuilt from session manifests and committed journal events when
   missing. A torn final journal record is preserved in a `.partial-*` diagnostic
   file before repair. Corrupt committed records fail closed.
+  Journal lines contain atomic arrays of events (the original single-event
+  format remains readable); raw bytes and derived events commit together.
 - Requests include a run ID; approvals additionally include their request ID.
   Durable intent precedes delivery. After a crash, a receipt can remain
   `delivery_unknown`: **this is not an exactly-once side-effect guarantee**.
@@ -92,7 +98,7 @@ TUI / CLI → private Unix gRPC socket → payday daemon → SQLite projection
 
 ```sh
 go test ./...
-go test -race ./internal/...
+CXZ_TEST_RACE=1 go test -race ./internal/... # also instruments child binaries
 go vet ./...
 # Opt-in, consumes Claude usage using your existing login:
 CXZ_LIVE_TEST=1 go test ./internal/integration -run TestLiveClaude -v -count=1
@@ -106,3 +112,15 @@ a printed `/tmp/cxz-live-*` directory. They never copy credentials.
 Protobuf generation (no system protoc required): `go run ./tools/genproto`.
 The generated API is tracked. See [progress](docs/progress.md) and
 [implementation plan](docs/plans/implementation-plan.md) for scope and results.
+
+App-level Docker recreation probe (deterministic agent; owned resources only):
+
+```sh
+go build -o bin/fake-claude ./internal/testagent
+CXZ_ENGINE_REPO=/workspaces/github.com/lesomnus/cxz \
+  node scripts/probes/cxz-container-recreate.mjs /tmp/fresh-cxz-evidence
+```
+
+The shared Docker engine resolves binds on its own host. Use `/workspaces/...`,
+not `/workspace`. This probe never prunes shared resources. For real-vendor
+container recovery evidence, see `scripts/probes/claude-container-recreate.mjs`.

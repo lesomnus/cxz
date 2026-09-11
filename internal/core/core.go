@@ -75,11 +75,11 @@ func WriteJSON(path string, v any) error {
 	if e != nil {
 		return e
 	}
-	f, e := os.OpenFile(path+".tmp", os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
+	f, e := os.CreateTemp(filepath.Dir(path), ".cxz-write-*")
 	if e != nil {
 		return e
 	}
-	defer os.Remove(path + ".tmp")
+	defer os.Remove(f.Name())
 	_, e = f.Write(b)
 	if e == nil {
 		e = f.Sync()
@@ -91,7 +91,19 @@ func WriteJSON(path string, v any) error {
 	if closeErr != nil {
 		return closeErr
 	}
-	return os.Rename(path+".tmp", path)
+	if e = os.Rename(f.Name(), path); e != nil {
+		return e
+	}
+	return SyncDir(filepath.Dir(path))
+}
+
+func SyncDir(path string) error {
+	f, e := os.Open(path)
+	if e != nil {
+		return e
+	}
+	defer f.Close()
+	return f.Sync()
 }
 func Lock(path string) (*os.File, error) {
 	f, e := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0600)

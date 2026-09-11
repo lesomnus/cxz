@@ -1,0 +1,19 @@
+{
+  "timestamp": "2026-09-11T11:51:18Z",
+  "agent": "Claude Code 2.1.267",
+  "test": "CXZ_LIVE_TEST=1 go test ./internal/integration -run TestLiveClaude -v -count=1",
+  "passed": ["conversation", "approval", "denial", "question", "interrupt", "daemon_reconnect", "vendor_resume"],
+  "duration_seconds": 46.12,
+
+  "final_regression": {
+    "private_evidence_directory": "cxz-live-1737831463",
+    "duration_seconds": 40.17,
+    "all_seven_checks": "passed",
+    "includes": ["atomic_journal_batches", "supervisor_liveness_guardian", "payday_telemetry"]
+  },
+  "notes": [
+    "Uses existing login without copying credentials; raw evidence stays private.",
+    "Waited beyond the interrupted tool deadline and verified no delayed file side effect.",
+    "First run failed because the CLI blocked a foreground sleep 30 command before approval; the established sleep 20 probe succeeded."
+  ]
+}

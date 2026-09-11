@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 	"sync"
 	"time"
@@ -62,6 +63,12 @@ func main() {
 			case v.Message.Content == "slow":
 				go func() { time.Sleep(2 * time.Second); finish("slow complete") }()
 			case v.Message.Content == "wait":
+			case v.Message.Content == "spawn-child":
+				child := exec.Command("sh", "-c", "sleep 2; printf orphan > orphan.txt")
+				if child.Start() == nil {
+					go child.Wait()
+				}
+				emit(map[string]any{"type": "assistant", "session_id": vendor, "message": map[string]any{"content": []any{map[string]any{"type": "text", "text": "child started"}}}})
 			default:
 				finish("echo: " + v.Message.Content)
 			}

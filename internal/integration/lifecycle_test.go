@@ -29,7 +29,12 @@ func TestLifecycle(t *testing.T) {
 	bin := filepath.Join(root, "cxz")
 	fake := filepath.Join(root, "fake")
 	for _, v := range [][2]string{{bin, "./cmd/cxz"}, {fake, "./internal/testagent"}} {
-		c := exec.Command("go", "build", "-o", v[0], v[1])
+		args := []string{"build", "-o", v[0]}
+		if os.Getenv("CXZ_TEST_RACE") == "1" {
+			args = append(args, "-race")
+		}
+		args = append(args, v[1])
+		c := exec.Command("go", args...)
 		c.Dir = repo
 		if b, e := c.CombinedOutput(); e != nil {
 			t.Fatalf("build: %s %v", b, e)
@@ -253,6 +258,23 @@ func TestLifecycle(t *testing.T) {
 	}
 	send("after resume")
 	await("idle")
+	// SIGKILL of the supervisor must also cancel a shell grandchild, not only
+	// the agent itself. The liveness guardian owns the same process-group boundary.
+	before = get()
+	send("spawn-child")
+	readUntil(before.LastSeq, func(v *api.Event) bool { return v.Kind == "assistant" && v.Text == "child started" })
+	s = get()
+	b, _ = os.ReadFile(filepath.Join(core.Dir(state, id), "pid.json"))
+	json.Unmarshal(b, &p)
+	syscall.Kill(p["supervisor"], syscall.SIGKILL)
+	await("interrupted")
+	time.Sleep(2300 * time.Millisecond)
+	if _, e = os.Stat(filepath.Join(work, "orphan.txt")); !os.IsNotExist(e) {
+		t.Fatal("shell descendant survived supervisor death")
+	}
+	if _, e = client.Resume(ctx, &api.Control{SessionId: id, RunId: s.RunId, ClientId: core.ID()}); e != nil {
+		t.Fatal(e)
+	}
 	s = get()
 	if _, e = client.Stop(ctx, &api.Control{SessionId: id, RunId: s.RunId, ClientId: core.ID()}); e != nil {
 		t.Fatal(e)
@@ -272,6 +294,15 @@ func TestLifecycle(t *testing.T) {
 	restored := get()
 	if restored.LastSeq != stopped.LastSeq || restored.VendorId == "" || !strings.Contains(restored.Workspace, "work") {
 		t.Fatal("bad database reconstruction")
+	}
+	if duplicate, e := client.Create(ctx, create); e != nil || duplicate.Id != id {
+		t.Fatal("create idempotency lost after SQLite reconstruction", e)
+	}
+	for _, name := range []string{filepath.Join(root, "daemon.log"), filepath.Join(core.Dir(state, id), "supervisor.log"), filepath.Join(core.Dir(state, id), "agent.stderr.log")} {
+		b, _ := os.ReadFile(name)
+		if strings.Contains(string(b), "WARNING: DATA RACE") {
+			t.Fatalf("child process race in %s", name)
+		}
 	}
 	t.Log("create, conversation, allow/deny/question, interrupt, replay, daemon/supervisor recovery, SQLite rebuild passed")
 }
