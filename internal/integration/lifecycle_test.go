@@ -249,7 +249,7 @@ func TestLifecycle(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	if s.RunId == old.RunId || s.VendorId != old.VendorId || len(s.Pending) != 0 {
+	if s.RunId == old.RunId || s.VendorId != old.VendorId || len(s.Pending) != 0 || s.Model != "fixture-model" {
 		t.Fatalf("bad resumed snapshot: %v", s)
 	}
 	if _, e = client.Reply(ctx, &api.Answer{SessionId: id, RunId: old.RunId, ClientId: core.ID(), RequestId: old.Pending[0].RequestId, Allow: true}); e == nil {

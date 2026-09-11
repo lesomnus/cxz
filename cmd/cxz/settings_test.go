@@ -25,3 +25,21 @@ func TestConfigOffline(t *testing.T) {
 		}
 	}
 }
+
+func TestReleaseCommandsOffline(t *testing.T) {
+	root := t.TempDir()
+	got := xlitest.Run(t, newRoot(root), "version")
+	if got.Err != nil || !strings.Contains(got.Stdout, `"version"`) {
+		t.Fatal(got)
+	}
+	for _, image := range []string{"", "ghcr.io/lesomnus/cxz", "ghcr.io/lesomnus/cxz:latest"} {
+		args := []string{"update"}
+		if image != "" {
+			args = append(args, "--image", image)
+		}
+		got = xlitest.Run(t, newRoot(root), args...)
+		if got.Err == nil || !strings.Contains(got.Err.Error(), "explicit version") {
+			t.Fatal(got)
+		}
+	}
+}

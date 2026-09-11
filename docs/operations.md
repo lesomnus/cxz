@@ -104,5 +104,5 @@ workspace, project container, named volumes를 삭제하지 않는다. client bi
 5. down/up 후 vendor ID와 과거 대화 기억 확인. Claude와 Codex를 별도로 판정한다.
 
 자동 재현: `owned-boundaries.mjs`, `owned-provision-retry.mjs`,
-`owned-session-live.mjs`, `owned-recovery.mjs`. 인증 검사는 사용자 로그인 또는 명시적으로
+`owned-install-update.mjs`, `owned-session-live.mjs`, `owned-recovery.mjs`. 인증 검사는 사용자 로그인 또는 명시적으로
 허용된 일회성 access token이 있어야 한다. 인증 검사를 건너뛴 결과를 통과로 적지 않는다.
