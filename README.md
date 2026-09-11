@@ -8,6 +8,10 @@ detected, never adopted.
 
 ## Start
 
+Linux release binaries and checksums: [v0.1.0-rc.1](https://github.com/lesomnus/cxz/releases/tag/v0.1.0-rc.1).
+This is a prerelease; Claude's second repeated-recreation memory check and native
+arm64 runtime acceptance remain unverified. See its release notes before use.
+
 ```sh
 CGO_ENABLED=0 go build -o bin/cxz ./cmd/cxz
 bin/cxz install --workspace-root /absolute/directory/containing/your/projects

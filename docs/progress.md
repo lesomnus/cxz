@@ -1,6 +1,6 @@
 # 구현 진행 상황
 
-## 2026-09-11 — 실사용 마무리 (진행 중)
+## 2026-09-11 — 실사용 보강·prerelease 게시 (남은 검증 별도)
 
 순서: 복구·재시도 → TUI 설정/진단 → 설치·배포. 웹 UI/사용자 인증은 후속 범위.
 
@@ -48,6 +48,26 @@
   이번 검증의 일회성 access token은 제거했고 refresh token은 복사하지 않았다.
 - Linux amd64/arm64 artifact cross-build 및 SHA256SUMS 검사 통과.
   Claude 재인증/반복 복구는 미통과로 남겨 prerelease와 안정판 완료를 구분한다.
+
+배포/인계 결과:
+
+- `v0.1.0-rc.1`을 GitHub Release에 게시했다. release commit은 `4a386ad`이며
+  xli CLI/설정/진단/복구/업데이트 기능을 포함한다. 이후 main 변경은 검증 도구와 문서다.
+- GitHub CI 및 Release workflow 성공. 공개 바이너리 두 아키텍처를 다시 다운로드하여
+  SHA256 검증, amd64 version/revision 일치를 확인했다.
+- Docker 로그인 설정이 없는 별도 client에서 GHCR digest로 빈 설치 → doctor →
+  프로젝트 foreign/recreate/내부 범위/RO tools/down 6개 경계 검증 통과.
+- 실행 중 Codex supervisor를 둔 manager update/rollback에서도 같은 run 유지.
+  강제 컨테이너 제거 및 manager SQLite 재구성, 실제 TUI 자동 재접속도 재검증 통과.
+- Claude 문제를 분리하는 `CXZ_PROBE_MEMORY_ONLY=1` 모드를 추가했다. syntax 검증만 했으며
+  Claude 실제 최소 재현은 재로그인 후 실행해야 한다. 안전장치는 변경하지 않았다.
+- arm64는 artifact/image 빌드와 checksum만 검증했다. 현재 amd64 Docker engine에서 실행은
+  `exec format error`로 불가능했다. 공유 엔진에 전역 QEMU/binfmt 설정을 설치하지 않았다.
+- 검증용 manager 3개와 이번 프로젝트 컨테이너를 제거했다. 사용자 작업 폴더/영속 볼륨,
+  복구 가능한 SQLite backup, 다운로드 산출물은 보존했으며 prune은 실행하지 않았다.
+- 정제된 증거: `testdata/recovery/operations-summary.json`.
+  최초 vendor 로그인, Claude 반복 복구 재검증, native arm64 인수 검증은 남은 항목이다.
+  웹 UI/roster/IDE/외부 백업은 이번 세 우선순위의 범위가 아니며 여전히 후속 계획이다.
 
 ## 2026-09-11 — xli CLI 전환
 

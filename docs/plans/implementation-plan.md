@@ -227,7 +227,8 @@ P0에 의존한다. Go 모듈·빌드·fixture runner와 supervisor/journal/첫 
 
 2026-09-11 상태: 소유 devcontainer, Claude/Codex, xli CLI/TUI와 기본 생명주기 구현.
 후속 실사용 보강으로 durable provisioning checkpoint, 시작/조회 inventory reconcile,
-client 설정·모델, 진단, 버전 배포/rollback을 구현 중이다. 상세 검증 상태는
+client 설정·모델, 진단, 버전 배포/rollback을 구현하고 `v0.1.0-rc.1`을 게시했다.
+Claude 반복 복구 및 native arm64 인수 검증은 남아 있다. 상세 검증 상태는
 [진행 기록](../progress.md), 절차는 [운영 문서](../operations.md)를 따른다.
 Docker event watch 자체는 미구현이며 현재는 시작과 조회/재접속 시 실제 inventory를 사용한다.
 

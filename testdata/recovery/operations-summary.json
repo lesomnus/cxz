@@ -1,0 +1,38 @@
+{
+  "date": "2026-09-11",
+  "release": "v0.1.0-rc.1",
+  "release_commit": "4a386ad066febebea3f9aa1c1277880b0e3e46b2",
+  "manager_image": "ghcr.io/lesomnus/cxz@sha256:05b95bc0a1cf964a91e4a632e34f1ef180f0eb1ef8fb87aedc8b1ba01cf2bf44",
+  "passed": [
+    "unit and subprocess integration tests",
+    "race tests including child binaries",
+    "go vet and protobuf regeneration",
+    "settings validation, private mode, model propagation and persistence",
+    "TUI diagnostics and login hints",
+    "manager SIGKILL during provisioning: durable checkpoint and container identity recovery",
+    "concurrent up retries: same container and session",
+    "fresh install, repeated install, stopped-manager restart",
+    "unavailable update retains existing manager and locator",
+    "manager update and rollback preserve owner, volumes and active Codex run",
+    "Codex live conversation, approval, denial, interrupt, manager restart and two container recreations: 7 checks",
+    "abrupt project removal: same session/thread, new fenced run, journal retained",
+    "SQLite projection rebuilt from manifests without restarting supervisor",
+    "interactive TUI reconnect during recovery and Ctrl-C detach",
+    "GitHub CI and release workflows",
+    "downloaded Linux amd64 and arm64 archive SHA256 verification",
+    "downloaded amd64 client version/revision matches release",
+    "anonymous GHCR digest installation and doctor",
+    "published client/image foreign-container and lifecycle boundaries: 6 checks"
+  ],
+  "not_passed": [
+    "Claude second repeated recreation memory check: previous safeguard refusal remains unresolved; current retest requires reauthentication",
+    "arm64 runtime acceptance: artifacts and multi-platform image built; this amd64 engine cannot execute arm64 (exec format error), no shared-engine emulation installed"
+  ],
+  "cleanup": {
+    "temporary_codex_access_token_removed": true,
+    "host_refresh_tokens_copied": false,
+    "probe_project_and_manager_containers_removed": true,
+    "workspace_fixtures_named_volumes_and_database_backup_retained": true,
+    "shared_engine_prune_used": false
+  }
+}

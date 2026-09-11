@@ -10,6 +10,7 @@ import {randomUUID} from 'node:crypto';
 import {setTimeout as delay} from 'node:timers/promises';
 const exec=promisify(execFile);
 const [state, project, kind]=process.argv.slice(2);
+const memoryOnly=process.env.CXZ_PROBE_MEMORY_ONLY==='1';
 assert(state && project && ['claude','codex'].includes(kind),'STATE PROJECT claude|codex required');
 const binary=resolve(process.env.CXZ_BIN || 'bin/cxz');
 const installation=JSON.parse(readFileSync(join(state,'installation.json'),'utf8'));
@@ -61,6 +62,7 @@ try {
   await until(async()=>{try{return (await json('get',session.id)).run_id===run;}catch{return false;}},'manager restart');
   pass('manager restart preserves supervisor run');
   watch(); await delay(500);
+  if(!memoryOnly){
   after=await send('Use the shell to run exactly: printf approved > cxz-approved.txt. Wait for tool approval. Do not edit the file using any other tool.');
   let pending=await until(async()=>{const s=await json('get',session.id);return s.pending?.length&&s.pending[0];},'tool approval');
   await cli('reply',session.id,pending.request_id,'allow');
@@ -75,6 +77,7 @@ try {
   pending=await until(async()=>{const s=await json('get',session.id);return s.pending?.length&&s.pending[0];},'long command approval');
   await cli('reply',session.id,pending.request_id,'allow');await delay(1500);
   await cli('interrupt',session.id);await idle(after);await cli('exec',project,'--','test','!','-e','cxz-interrupted.txt');pass('interrupt active command');
+  }
   const vendor=session.vendor_id;
   for(let i=1;i<=2;i++){
     const before=await info();watcher.kill();
@@ -82,8 +85,12 @@ try {
     session=await json('up','--agent',kind,'--no-attach',project);
     p=await info();assert.notEqual(p.container_id,before.container_id);assert.equal(session.vendor_id,vendor);
     watch();await delay(500);
-    after=await send('The interrupted shell task is canceled. Without using tools, repeat the project codename that I provided in my earlier message. Only the codename, please.');
-    await idle(after);assert(events.some(e=>e.seq>after&&e.kind==='assistant'&&e.text.includes(marker)),'vendor memory survived');
+    after=await send((memoryOnly?'':'The interrupted shell task is canceled. ')+'Without using tools, repeat the project codename that I provided in my earlier message. Only the codename, please.');
+    await idle(after);
+    if(!events.some(e=>e.seq>after&&e.kind==='assistant'&&e.text.includes(marker))){
+      console.log(JSON.stringify({agent:kind,check:`container recreation ${i}`,status:'failed',same_vendor_id:session.vendor_id===vendor,observed_reasoning_extraction_refusal:events.some(e=>e.seq>after&&JSON.stringify(e).includes('reasoning_extraction')),memory_only:memoryOnly}));
+      assert.fail('vendor memory response not verified; inspect private events, no safeguard bypass is attempted');
+    }
     pass(`container recreation ${i}: same vendor conversation, memory retained`);
   }
   console.log(JSON.stringify({agent:kind,passed:checks.length,checks}));
