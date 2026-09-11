@@ -21,6 +21,7 @@ type Installation struct {
 	Owner         string `json:"owner"`
 	Container     string `json:"container"`
 	Image         string `json:"image"`
+	PreviousImage string `json:"previous_image,omitempty"`
 	WorkspaceRoot string `json:"workspace_root"`
 	StateVolume   string `json:"state_volume"`
 	ToolsVolume   string `json:"tools_volume"`

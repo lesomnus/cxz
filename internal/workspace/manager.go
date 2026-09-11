@@ -24,6 +24,7 @@ type Project struct {
 	ID, Workspace, Name, Config, ContainerID, Network, Volume, Token, RemoteWorkspace, RemoteUser, Error string
 	Trusted                                                                                              bool
 	Sessions                                                                                             []*api.Session
+	Job                                                                                                  ProvisionJob
 }
 type Runtime struct{ ProjectID, Workspace, Token, Claude, Codex string }
 type Manager struct {
@@ -69,6 +70,17 @@ func New(db *sql.DB, root string) (*Manager, error) {
 		if p.ID != filepath.Base(filepath.Dir(file)) {
 			return nil, fmt.Errorf("project manifest identity mismatch")
 		}
+		if p.Job.State == "running" {
+			p.Job.State = "interrupted"
+			p.Error = "manager stopped during " + p.Job.Step + "; retry cxz up (prompts are never resent)"
+			if err = core.WriteJSON(file, &p); err != nil {
+				return nil, err
+			}
+			b, err = json.Marshal(&p)
+			if err != nil {
+				return nil, err
+			}
+		}
 		if _, err = db.Exec("INSERT INTO projects VALUES(?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data", p.ID, b); err != nil {
 			return nil, err
 		}
@@ -90,6 +102,13 @@ func New(db *sql.DB, root string) (*Manager, error) {
 				}
 			}
 			cancel()
+		}
+	}
+	if m.Container != "" {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		if _, err := m.Projects(ctx); err != nil {
+			return nil, fmt.Errorf("startup inventory: %w", err)
 		}
 	}
 	return m, e
@@ -257,9 +276,25 @@ func (m *Manager) Projects(ctx context.Context) (*api.ProjectList, error) {
 	if e != nil {
 		return nil, e
 	}
+	inventory, e := dockerx.List(ctx, "label=cxz.owner="+m.Owner)
+	if e != nil {
+		return nil, e
+	}
 	out := &api.ProjectList{}
 	seen := map[string]bool{}
 	for _, p := range all {
+		lock := m.projectLock(p.ID)
+		if lock.TryLock() {
+			latest, err := m.resolve(ctx, p.ID)
+			if err == nil {
+				p = latest
+				err = m.reconcile(ctx, p, inventory)
+			}
+			lock.Unlock()
+			if err != nil {
+				return nil, err
+			}
+		}
 		state := "absent"
 		if v, e := dockerx.Owned(ctx, p.ContainerID, m.Owner, p.ID); e == nil {
 			state = "stopped"
@@ -268,7 +303,7 @@ func (m *Manager) Projects(ctx context.Context) (*api.ProjectList, error) {
 			}
 		}
 		seen[p.ContainerID] = true
-		out.Projects = append(out.Projects, &api.Project{Id: p.ID, Workspace: p.Workspace, Name: p.Name, Config: p.Config, ContainerId: p.ContainerID, State: state, Error: p.Error, RemoteUser: p.RemoteUser, RemoteWorkspace: p.RemoteWorkspace})
+		out.Projects = append(out.Projects, &api.Project{Id: p.ID, Workspace: p.Workspace, Name: p.Name, Config: p.Config, ContainerId: p.ContainerID, State: state, Error: p.Error, RemoteUser: p.RemoteUser, RemoteWorkspace: p.RemoteWorkspace, ProvisionState: p.Job.State, ProvisionStep: p.Job.Step, ProvisionAttempt: p.Job.Attempt})
 	}
 	foreign, e := dockerx.List(ctx, "label=devcontainer.local_folder")
 	if e != nil {
@@ -281,7 +316,7 @@ func (m *Manager) Projects(ctx context.Context) (*api.ProjectList, error) {
 	}
 	return out, nil
 }
-func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (*api.Session, error) {
+func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (result *api.Session, retErr error) {
 	path := r.Workspace
 	if path == "" {
 		return nil, fmt.Errorf("workspace required")
@@ -328,12 +363,30 @@ func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (*api.Session
 	if e = preflight(p); e != nil {
 		return nil, e
 	}
+	p.Job.Attempt++
+	if e = m.checkpoint(ctx, p, "inventory"); e != nil {
+		return nil, e
+	}
+	defer func() {
+		if retErr != nil {
+			p.Job.State = "failed"
+			p.Error = retErr.Error()
+			if err := m.save(context.WithoutCancel(ctx), p); err != nil {
+				retErr = fmt.Errorf("%w; recording failure: %v", retErr, err)
+			}
+		}
+	}()
 	containers, e := dockerx.List(ctx, "label=devcontainer.local_folder="+path)
 	if e != nil {
 		return nil, e
 	}
 	for _, v := range containers {
 		if v.Config.Labels["cxz.owner"] == m.Owner && v.Config.Labels["cxz.project"] == p.ID {
+			if p.ContainerID != "" && p.ContainerID != v.ID {
+				if _, err := dockerx.Owned(ctx, p.ContainerID, m.Owner, p.ID); err == nil {
+					return nil, fmt.Errorf("multiple owned workspace containers; inspect cxz projects before retrying")
+				}
+			}
 			p.ContainerID = v.ID
 			continue
 		}
@@ -347,6 +400,9 @@ func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (*api.Session
 	if r.Recreate && p.ContainerID != "" {
 		if !r.Confirmed {
 			return nil, fmt.Errorf("recreate requires confirmation: writable layer lost and editors disconnect")
+		}
+		if e = m.checkpoint(ctx, p, "recreate"); e != nil {
+			return nil, e
 		}
 		if e = m.down(ctx, p); e != nil {
 			return nil, e
@@ -377,6 +433,9 @@ func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (*api.Session
 		return nil, e
 	}
 	defer conn.Close()
+	if e = m.checkpoint(ctx, p, "runtime-ready"); e != nil {
+		return nil, e
+	}
 	var list *api.SessionList
 	for i := 0; i < 150; i++ {
 		q, cancel := context.WithTimeout(ctx, time.Second)
@@ -395,6 +454,9 @@ func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (*api.Session
 		return nil, fmt.Errorf("project runtime not ready: %w", e)
 	}
 	var chosen *api.Session
+	if e = m.checkpoint(ctx, p, "session"); e != nil {
+		return nil, e
+	}
 	for _, s := range list.Sessions {
 		live := s.State == "idle" || s.State == "working" || s.State == "waiting_input" || s.State == "starting"
 		if live {
@@ -437,6 +499,9 @@ func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (*api.Session
 		s.ProjectId = p.ID
 	}
 	chosen.ProjectId = p.ID
+	p.Job.State = "complete"
+	p.Job.Step = "ready"
+	p.Job.UpdatedAt = time.Now().UnixMilli()
 	return chosen, m.save(ctx, p)
 }
 func (m *Manager) Down(ctx context.Context, r *api.ProjectRequest) error {

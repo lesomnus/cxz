@@ -39,6 +39,7 @@ type Container struct {
 	Name   string
 	Config struct {
 		Labels map[string]string
+		Image  string
 		User   string
 	}
 	State           struct{ Running bool }

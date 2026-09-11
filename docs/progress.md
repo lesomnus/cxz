@@ -1,5 +1,22 @@
 # 구현 진행 상황
 
+## 2026-09-11 — 실사용 마무리 (진행 중)
+
+순서: 복구·재시도 → TUI 설정/진단 → 설치·배포. 웹 UI/사용자 인증은 후속 범위.
+
+- 설치 identity를 리소스 생성 전에 원자적으로 보존해 실패한 첫 설치도 같은
+  owner/volume을 재사용한다. 동일 이미지의 설치 재호출은 readiness 재확인,
+  정지한 manager는 시작한다. endpoint는 기존 manager 제거 전에 검증한다.
+- 프로젝트 준비 단계/시도 횟수를 manifest에 기록한다. manager 재시작은 실행 중
+  job을 interrupted로 표시하며 SQLite 재구성 후에도 마지막 단계를 유지한다.
+- 시작/프로젝트 조회 시 소유 label 기반 inventory를 재확인한다. 생성 후 저장 전에
+  끊긴 container ID를 복구하고, 중복 소유 컨테이너는 임의 선택하지 않는다.
+- 재시도는 실제 리소스 소유권을 다시 확인하고 수렴한다. devcontainer 사용자 hook은
+  다시 실행될 수 있어 멱등하게 작성해야 한다. prompt 자동 재전송은 하지 않는다.
+- 통과: 설치 실패 identity 재사용, endpoint 사전 거부, checkpoint/DB 재구성,
+  inventory 복구·foreign/중복 거부, 기존 workspace/CLI 테스트.
+- Claude 반복 복구 미통과는 아직 해소하지 않았으며 후속 검증 항목으로 유지한다.
+
 ## 2026-09-11 — xli CLI 전환
 
 - `flag.FlagSet`, 수동 최상위 명령 분기, `optionsFirst` 순서 보정 제거.

@@ -50,5 +50,6 @@ message Project {
  string id = 1; string workspace = 2; string name = 3; string state = 4;
  string container_id = 5; string config = 6; string error = 7;
  string remote_user = 8; string remote_workspace = 9;
+ string provision_state = 10; string provision_step = 11; uint64 provision_attempt = 12;
 }
 message ProjectList { repeated Project projects = 1; }
