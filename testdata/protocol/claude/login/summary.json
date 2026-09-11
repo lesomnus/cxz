@@ -1,0 +1,20 @@
+{
+  "version": "2.1.267 (Claude Code)",
+  "sdk_source_version": "0.3.268",
+  "tested_at": "2026-09-11T08:43:44.695Z",
+  "without_prompt_tool": false,
+  "checks": [
+    {
+      "name": "isolated_login_returns_url",
+      "status": "passed",
+      "response_keys": [
+        "manualUrl",
+        "automaticUrl"
+      ]
+    },
+    {
+      "name": "login_probe_closed_without_completing_or_copying_credentials",
+      "status": "passed"
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "run": "cxz-claude-recreate-a3c639e6-77e",
+  "configured_image": "golang:1.26-trixie",
+  "cli_sha256": "0399c793ff571d5946ef923d80b4f330d05ac4b6842a6b0775468f5d389403c0",
+  "image_id": "sha256:771f3162219f7a66bb6be3fea1ba31f418932946a99ad9eac26ffd555dfcf393",
+  "docker_version": "29.7.2",
+  "cli_version": "2.1.267 (Claude Code)",
+  "tested_at": "2026-09-11T10:57:34.167Z",
+  "checks": [
+    {
+      "name": "isolated_resources_provisioned",
+      "status": "passed",
+      "cli_version": "2.1.267 (Claude Code)"
+    },
+    {
+      "name": "suite",
+      "status": "failed",
+      "error": "docker exec failed: cat: /workspace/greeting.txt: No such file or directory\n"
+    }
+  ],
+  "cleanup": [
+    {
+      "resource": "cxz-claude-recreate-a3c639e6-77e-provision",
+      "removed": true
+    },
+    {
+      "resource": "cxz-claude-recreate-a3c639e6-77e-1",
+      "removed": true
+    },
+    {
+      "resource": "cxz-claude-recreate-a3c639e6-77e-state",
+      "removed": true
+    },
+    {
+      "resource": "cxz-claude-recreate-a3c639e6-77e-workspace",
+      "removed": true
+    },
+    {
+      "resource": "cxz-claude-recreate-a3c639e6-77e-tools",
+      "removed": true
+    }
+  ],
+  "limits": [
+    "Direct Docker CLI, not devcontainer up or a cxz supervisor",
+    "Same workspace path and UID",
+    "Existing short-lived access token injected for each CLI process; OAuth persistence not tested",
+    "Named-volume retention, not host-loss backup restore"
+  ]
+}
