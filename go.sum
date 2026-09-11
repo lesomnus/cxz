@@ -61,6 +61,8 @@ github.com/lesomnus/otx/otxgrpc v0.0.0-20260807173743-977a5687d6ba h1:UCZIYVeng2
 github.com/lesomnus/otx/otxgrpc v0.0.0-20260807173743-977a5687d6ba/go.mod h1:v/VS9C5p4/BpSBCqBDFJ+z/9z155Ykq/F02uEteusns=
 github.com/lesomnus/payday v0.0.0-20260910081359-dbf0f70be7a2 h1:wr1ohsRBP8WqiWY1ZPukDAIdqv4lZmTS3H687BnpfQM=
 github.com/lesomnus/payday v0.0.0-20260910081359-dbf0f70be7a2/go.mod h1:iVAwNZalDtbBAFkY8mtzhgRy4aU8BA7ftdVgGHXXlq8=
+github.com/lesomnus/xli v0.0.0-20260717171524-bf8cac633057 h1:R2XCSr97o/DRfLdUBNM3eYj9CUhTBBXWOYH2y7uP63E=
+github.com/lesomnus/xli v0.0.0-20260717171524-bf8cac633057/go.mod h1:9dZNkM86FqzAsiBYaeT026Nt8PPxAyuq6RtWE4vNxSA=
 github.com/lesomnus/z v0.0.0-20260531102454-3f1853bb4278 h1:dBLfXrOR8qLwZculDy8uJfNN+Q5xlyvM9CF4yylPB/0=
 github.com/lesomnus/z v0.0.0-20260531102454-3f1853bb4278/go.mod h1:v3+tOhGZhT6JQ/ZYncEQryo23ApoN03Ez4G2BHp2SWM=
 github.com/lucasb-eyer/go-colorful v1.3.0 h1:2/yBRLdWBZKrf7gB40FoiKfAWYQ0lqNcbuQwVHXptag=

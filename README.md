@@ -1,7 +1,7 @@
 # cxz
 
 Claude Code and Codex in **cxz-owned devcontainers**, with durable history and a
-reconnecting TUI. Go + payday gRPC + SQLite + Bubble Tea. Linux first.
+reconnecting TUI. Go + xli CLI + payday gRPC + SQLite + Bubble Tea. Linux first.
 The workflow succeeds [cld](https://github.com/lesomnus/cld), following
 [cxz's ownership architecture](docs/architecture.md): foreign containers are
 detected, never adopted.
@@ -11,7 +11,7 @@ detected, never adopted.
 ```sh
 CGO_ENABLED=0 go build -o bin/cxz ./cmd/cxz
 bin/cxz install --workspace-root /absolute/directory/containing/your/projects
-bin/cxz new . --agent codex       # or claude; prepares the project and opens TUI
+bin/cxz new --agent codex .       # or claude; prepares the project and opens TUI
 ```
 
 `install` builds and starts a background Docker manager, waits for its API, and
@@ -29,8 +29,8 @@ First login is a user action, in another terminal:
 
 ```sh
 bin/cxz projects
-bin/cxz login PROJECT --agent codex    # device login
-bin/cxz login PROJECT --agent claude
+bin/cxz login --agent codex PROJECT    # device login
+bin/cxz login --agent claude PROJECT
 ```
 
 Credentials/transcripts stay on the project's state volume. Host refresh-token
@@ -45,15 +45,15 @@ other than the default image's 1000 when necessary.
 
 ```sh
 bin/cxz up .                       # attach existing session; recover if necessary
-bin/cxz up . --no-attach            # prepare, return JSON
-bin/cxz new . --agent claude        # new conversation; stop an active one first
+bin/cxz up --no-attach .            # prepare, return JSON
+bin/cxz new --agent claude .        # new conversation; stop an active one first
 bin/cxz attach PROJECT             # also: it SESSION_ID
 bin/cxz tui                        # also: watch
 bin/cxz exec PROJECT -- go test ./...
 bin/cxz shell PROJECT
 bin/cxz down .                     # remove owned containers; preserve workspace/volumes
 bin/cxz up .                       # recreate + resume; never replay old prompts
-bin/cxz recreate . --yes           # writable layer lost; editors disconnect
+bin/cxz recreate --yes .           # writable layer lost; editors disconnect
 bin/cxz install --recreate         # replace manager, keep project processes/data
 bin/cxz uninstall                  # remove manager only; projects/data remain
 ```
@@ -63,6 +63,14 @@ project. No manager Docker socket or credential directory is mounted there.
 Global options precede commands: `cxz --state /private/client-state up .`.
 Use the same client state for all host commands. Default: `$XDG_STATE_HOME/cxz`
 or `~/.local/state/cxz`; this stores an installation locator, not the named volumes.
+
+The CLI uses `lesomnus/xli`: command flags must precede positional arguments.
+Use `cxz new --agent codex .`, not `cxz new . --agent codex` (the old ordering is
+now rejected). Each command has generated `--help`; help and completion need no
+running manager. Enable zsh completion with `source <(bin/cxz completion zsh)`.
+`exec PROJECT -- COMMAND...` preserves everything after `--` as command arguments.
+For local development, prefer `cxz serve --agent /path/to/claude`; the old
+root-level `--agent` / `--claude-config` flags are retained for serve compatibility.
 
 ### Remote Docker
 

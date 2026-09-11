@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"github.com/charmbracelet/x/term"
 	"github.com/lesomnus/cxz/api"
@@ -12,6 +11,10 @@ import (
 	"github.com/lesomnus/cxz/internal/dockerx"
 	"github.com/lesomnus/cxz/internal/tui"
 	"github.com/lesomnus/cxz/internal/workspace"
+	"github.com/lesomnus/xli"
+	"github.com/lesomnus/xli/arg"
+	"github.com/lesomnus/xli/flg"
+	"github.com/lesomnus/xli/tab"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -19,42 +22,30 @@ import (
 	"time"
 )
 
-func terminal() bool { return term.IsTerminal(os.Stdin.Fd()) }
-
-// Keep conventional `cxz up . --agent codex` ordering with the standard flag package.
-func optionsFirst(args []string, bools map[string]bool) []string {
-	var flags, pos []string
-	for i := 0; i < len(args); i++ {
-		v := args[i]
-		if strings.HasPrefix(v, "-") {
-			flags = append(flags, v)
-			if !strings.Contains(v, "=") && !bools[strings.TrimLeft(v, "-")] && i+1 < len(args) {
-				i++
-				flags = append(flags, args[i])
-			}
-		} else {
-			pos = append(pos, v)
-		}
-	}
-	return append(flags, pos...)
+func terminal(c *xli.Command) bool {
+	f, ok := c.ReadCloser.(*os.File)
+	return ok && term.IsTerminal(f.Fd())
 }
-func projectCommand(ctx context.Context, client api.SessionsClient, command string, args []string) error {
-	f := flag.NewFlagSet(command, flag.ContinueOnError)
-	agent := f.String("agent", "", "claude or codex; remembered on existing sessions")
-	config := f.String("config", "", "devcontainer configuration")
-	detach := f.Bool("no-attach", false, "prepare session without opening the TUI")
-	yes := f.Bool("yes", false, "confirm replacement of matching containers")
-	trust := f.Bool("trust-config", false, "explicitly trust privileged settings/host lifecycle commands")
-	if e := f.Parse(optionsFirst(args, map[string]bool{"no-attach": true, "yes": true, "trust-config": true})); e != nil {
-		return e
+
+func newProjectCommand(name string) *xli.Command {
+	path := stringArg("WORKSPACE", true)
+	path.Default = ptr(".")
+	path.Handler = arg.OnTab[string](func(_ context.Context, t tab.Tab) { t.Dirs() })
+	c := &xli.Command{Name: name, Brief: map[string]string{"up": "Prepare project and attach existing session", "new": "Create project session and attach TUI", "down": "Remove owned containers, retaining volumes", "recreate": "Replace container; writable layer lost, editors disconnect"}[name], Args: arg.Args{path}, Handler: withClient(projectCommand)}
+	if name != "down" {
+		config := stringFlag("config", "Devcontainer configuration", "")
+		config.Handler = flg.OnTab[string](func(_ context.Context, t tab.Tab) error { t.Files(""); return nil })
+		c.Flags = flg.Flags{agentFlag(""), config, switchFlag("no-attach", "Return JSON without opening TUI"), switchFlag("trust-config", "Trust elevated settings and host initialization")}
 	}
-	path := "."
-	if f.NArg() > 0 {
-		path = f.Arg(0)
+	if name == "recreate" {
+		c.Flags = append(c.Flags, switchFlag("yes", "Confirm writable-layer loss and editor disconnection"))
 	}
-	if f.NArg() > 1 {
-		return fmt.Errorf("one workspace argument expected")
-	}
+	return c
+}
+
+func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Command) error {
+	command := c.Name
+	path := arg.MustGet[string](c, "WORKSPACE")
 	if command == "down" {
 		if st, e := os.Stat(path); e == nil && st.IsDir() {
 			path, e = dockerx.EnginePath(path)
@@ -66,7 +57,15 @@ func projectCommand(ctx context.Context, client api.SessionsClient, command stri
 		if e != nil {
 			return e
 		}
-		return json.NewEncoder(os.Stdout).Encode(r)
+		return json.NewEncoder(c.Writer).Encode(r)
+	}
+	agent := flg.MustGet[string](c, "agent")
+	config := flg.MustGet[string](c, "config")
+	detach := flg.MustGet[bool](c, "no-attach")
+	trust := flg.MustGet[bool](c, "trust-config")
+	yes := false
+	if command == "recreate" {
+		yes = flg.MustGet[bool](c, "yes")
 	}
 	local := path
 	if st, e := os.Stat(path); e == nil && st.IsDir() {
@@ -75,75 +74,75 @@ func projectCommand(ctx context.Context, client api.SessionsClient, command stri
 		if e != nil {
 			return e
 		}
-		if *config == "" {
+		if config == "" {
 			configs := workspace.Discover(local)
 			if len(configs) > 1 {
-				if !terminal() {
+				if !terminal(c) {
 					return fmt.Errorf("multiple configurations; pass --config")
 				}
-				for i, c := range configs {
-					fmt.Fprintf(os.Stderr, "%d) %s\n", i+1, c)
+				for i, configPath := range configs {
+					fmt.Fprintf(c.ErrWriter, "%d) %s\n", i+1, configPath)
 				}
-				fmt.Fprint(os.Stderr, "Configuration: ")
+				fmt.Fprint(c.ErrWriter, "Configuration: ")
 				var n int
-				if _, e = fmt.Fscanln(os.Stdin, &n); e != nil || n < 1 || n > len(configs) {
+				if _, e = fmt.Fscanln(c.ReadCloser, &n); e != nil || n < 1 || n > len(configs) {
 					return fmt.Errorf("invalid configuration selection")
 				}
-				*config = configs[n-1]
+				config = configs[n-1]
 			}
 		}
 	}
-	if *config != "" {
-		v := *config
+	if config != "" {
+		v := config
 		if !filepath.IsAbs(v) {
 			if _, e := os.Stat(v); e != nil {
 				v = filepath.Join(local, v)
 			}
 		}
 		var e error
-		*config, e = dockerx.EnginePath(v)
+		config, e = dockerx.EnginePath(v)
 		if e != nil {
 			return e
 		}
 	}
-	if command == "new" && *agent == "" && terminal() {
-		fmt.Fprint(os.Stderr, "Agent [claude/codex] (claude): ")
-		v, e := bufio.NewReader(os.Stdin).ReadString('\n')
+	if command == "new" && agent == "" && terminal(c) {
+		fmt.Fprint(c.ErrWriter, "Agent [claude/codex] (claude): ")
+		v, e := bufio.NewReader(c.ReadCloser).ReadString('\n')
 		if e != nil {
 			return e
 		}
-		*agent = strings.TrimSpace(v)
+		agent = strings.TrimSpace(v)
 	}
-	if command == "recreate" && !*yes {
+	if command == "recreate" && !yes {
 		projects, e := client.Projects(ctx, &api.Empty{})
 		if e != nil {
 			return e
 		}
-		fmt.Fprintln(os.Stderr, "Recreate removes the writable layer and disconnects attached editors. Workspace and named volumes are kept.")
+		fmt.Fprintln(c.ErrWriter, "Recreate removes the writable layer and disconnects attached editors. Workspace and named volumes are kept.")
 		for _, p := range projects.Projects {
 			if p.Workspace == path || p.Name == path || p.Id == path {
-				fmt.Fprintf(os.Stderr, "Target: %s %s (%s)\n", p.ContainerId, p.Workspace, p.State)
+				fmt.Fprintf(c.ErrWriter, "Target: %s %s (%s)\n", p.ContainerId, p.Workspace, p.State)
 			}
 		}
-		if !terminal() {
+		if !terminal(c) {
 			return fmt.Errorf("review targets with cxz projects, then pass --yes")
 		}
-		fmt.Fprint(os.Stderr, "Type recreate to continue: ")
-		v, e := bufio.NewReader(os.Stdin).ReadString('\n')
+		fmt.Fprint(c.ErrWriter, "Type recreate to continue: ")
+		v, e := bufio.NewReader(c.ReadCloser).ReadString('\n')
 		if e != nil || strings.TrimSpace(v) != "recreate" {
 			return fmt.Errorf("canceled")
 		}
-		*yes = true
+		yes = true
 	}
-	fmt.Fprintln(os.Stderr, "cxz: preparing workspace; initial image/agent downloads may take a few minutes")
+	fmt.Fprintln(c.ErrWriter, "cxz: preparing workspace; initial image/agent downloads may take a few minutes")
 	call, cancel := context.WithTimeout(ctx, 30*time.Minute)
 	defer cancel()
-	s, e := client.Open(call, &api.ProjectRequest{Workspace: path, Agent: *agent, Config: *config, NewSession: command == "new", Recreate: command == "recreate", Confirmed: *yes, TrustConfig: *trust, ClientId: core.ID()})
+	s, e := client.Open(call, &api.ProjectRequest{Workspace: path, Agent: agent, Config: config, NewSession: command == "new", Recreate: command == "recreate", Confirmed: yes, TrustConfig: trust, ClientId: core.ID()})
 	if e != nil {
 		return e
 	}
-	if *detach || !terminal() {
-		return json.NewEncoder(os.Stdout).Encode(s)
+	if detach || !terminal(c) {
+		return json.NewEncoder(c.Writer).Encode(s)
 	}
 	return tui.RunSelected(ctx, client, s.Id)
 }
@@ -193,24 +192,19 @@ func attach(ctx context.Context, client api.SessionsClient, arg string) error {
 	return tui.RunSelected(ctx, client, matches[0].Id)
 }
 
-func projectExec(ctx context.Context, client api.SessionsClient, op string, args []string) error {
-	f := flag.NewFlagSet(op, flag.ContinueOnError)
-	kind := f.String("agent", "claude", "agent to log in to")
+func projectExec(ctx context.Context, client api.SessionsClient, c *xli.Command) error {
+	op := c.Name
+	name := arg.MustGet[string](c, "PROJECT")
+	kind := "claude"
 	var command []string
-	for i, v := range args {
-		if v == "--" {
-			command = args[i+1:]
-			args = args[:i]
-			break
-		}
+	if op == "login" {
+		kind = flg.MustGet[string](c, "agent")
+	} else {
+		command, _ = arg.Get[[]string](c, "COMMAND")
 	}
-	if e := f.Parse(optionsFirst(args, nil)); e != nil {
-		return e
+	if op == "exec" && len(command) == 0 {
+		return fmt.Errorf("exec requires PROJECT -- COMMAND...")
 	}
-	if f.NArg() != 1 {
-		return fmt.Errorf("%s PROJECT [--agent claude|codex] [-- COMMAND...]", op)
-	}
-	name := f.Arg(0)
 	projects, e := client.Projects(ctx, &api.Empty{})
 	if e != nil {
 		return e
@@ -228,7 +222,7 @@ func projectExec(ctx context.Context, client api.SessionsClient, op string, args
 		return fmt.Errorf("no running owned project %s", name)
 	}
 	flags := []string{"exec", "-i"}
-	if terminal() {
+	if terminal(c) {
 		flags = append(flags, "-t")
 	}
 	user := match.RemoteUser
@@ -237,16 +231,16 @@ func projectExec(ctx context.Context, client api.SessionsClient, op string, args
 	}
 	flags = append(flags, "--user", user, "--workdir", match.RemoteWorkspace, match.ContainerId)
 	if op == "login" {
-		flags = append(flags, "/cxz/tools/cxz", "--state", "/cxz/state/data", "_login", *kind)
+		flags = append(flags, "/cxz/tools/cxz", "--state", "/cxz/state/data", "_login", kind)
 	} else {
 		if len(command) == 0 {
 			command = []string{"sh"}
 		}
 		flags = append(flags, command...)
 	}
-	c := exec.CommandContext(ctx, "docker", flags...)
-	c.Stdin = os.Stdin
-	c.Stdout = os.Stdout
-	c.Stderr = os.Stderr
-	return c.Run()
+	process := exec.CommandContext(ctx, "docker", flags...)
+	process.Stdin = c.ReadCloser
+	process.Stdout = c.Writer
+	process.Stderr = c.ErrWriter
+	return process.Run()
 }

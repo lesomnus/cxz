@@ -1,5 +1,26 @@
 # 구현 진행 상황
 
+## 2026-09-11 — xli CLI 전환
+
+- `flag.FlagSet`, 수동 최상위 명령 분기, `optionsFirst` 순서 보정 제거.
+  `xli.Command` 트리, typed flags/args, 명령별 handler로 교체했다.
+- payday가 이미 요구하는 xli revision `bf8cac633057`을 직접 의존성으로 사용하며
+  payday 버전과 서버/supervisor/agent API는 변경하지 않았다.
+- API 연결은 실행 handler에서만 수행한다. 도움말·완성은 설치/네트워크 연결 없이 동작.
+- 자동 도움말, zsh completion, vendor/승인 값 및 workspace/config 경로 완성을 추가.
+- 명령 IO는 xli의 입출력을 사용한다. JSON stdout과 진행/확인 stderr를 분리하고
+  `exec PROJECT -- COMMAND...`의 나머지 인자를 그대로 보존한다.
+- 문법 변경: `new --agent codex .`, `recreate --yes .`, `login --agent codex PROJECT`.
+  위치 인자 뒤 플래그는 xli 규칙에 따라 거부한다. README와 기존 probe를 갱신했다.
+- 내부 `_boot/_project/_supervise/_guard/_bridge/_ready/_login/_new-local`과
+  `attach/it`, `tui/watch` alias는 유지한다. 기존 root-level serve flags도 호환 유지.
+- 통과: xlitest 도움말/입력 검증/완성/exec 인자, 실제 gRPC 전달 테스트,
+  기존 프로세스 통합 테스트, Docker install/경계 probe 6개 검사,
+  `CXZ_TEST_RACE=1 go test -race ./... -count=1`, `go vet ./...`.
+  vendor adapter를 변경하지 않았으므로 유료 모델 호출/로그인은 재실행하지 않았다.
+- 검증 후 이번 실행의 project container와 manager를 제거했다. 기존 workspace,
+  named volumes와 private evidence는 보존했고 공유 엔진에 prune을 실행하지 않았다.
+
 ## 2026-09-11 — cld 사용 흐름 + Codex 확장 (현재)
 
 이전 로컬 TUI 구현은 기반 단계였다. 현재 완료 기준은

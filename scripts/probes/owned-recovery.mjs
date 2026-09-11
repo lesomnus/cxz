@@ -17,13 +17,13 @@ async function cli(...args){return JSON.parse((await exec(binary,['--state',stat
 function pass(check){console.log(JSON.stringify({check,status:'passed'}));}
 let list=await cli('projects');
 let p=list.projects.find(p=>p.id===project||p.name===project);assert(p);
-let before=await cli('up',p.id,'--agent','codex','--no-attach');assert(before.vendor_id,'use a Codex project with a persisted conversation');
+let before=await cli('up','--agent','codex','--no-attach',p.id);assert(before.vendor_id,'use a Codex project with a persisted conversation');
 p=(await cli('projects')).projects.find(v=>v.id===p.id);
 const owned=JSON.parse(await docker('inspect',p.container_id))[0];
 assert.equal(owned.Config.Labels['cxz.owner'],install.owner);assert.equal(owned.Config.Labels['cxz.project'],p.id);
 await docker('rm','-f',p.container_id);
 const offline=await cli('get',before.id);assert.equal(offline.state,'interrupted');assert(!offline.pending?.length);
-const after=await cli('up',p.id,'--agent','codex','--no-attach');
+const after=await cli('up','--agent','codex','--no-attach',p.id);
 assert.equal(after.id,before.id);assert.equal(after.vendor_id,before.vendor_id);assert.notEqual(after.run_id,before.run_id);assert(after.last_seq>before.last_seq);
 pass('abrupt project removal: same session/thread, new fenced run, journal retained');
 list=await cli('projects');const ids=list.projects.filter(p=>p.id).map(p=>p.id).sort();
