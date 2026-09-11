@@ -63,6 +63,7 @@ type CreateRequest struct {
 	Title         string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
 	ClientId      string                 `protobuf:"bytes,3,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
 	Agent         string                 `protobuf:"bytes,4,opt,name=agent,proto3" json:"agent,omitempty"`
+	Model         string                 `protobuf:"bytes,5,opt,name=model,proto3" json:"model,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -125,6 +126,13 @@ func (x *CreateRequest) GetAgent() string {
 	return ""
 }
 
+func (x *CreateRequest) GetModel() string {
+	if x != nil {
+		return x.Model
+	}
+	return ""
+}
+
 type SessionRef struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -182,6 +190,7 @@ type Session struct {
 	Pending       []*Event               `protobuf:"bytes,9,rep,name=pending,proto3" json:"pending,omitempty"`
 	Agent         string                 `protobuf:"bytes,10,opt,name=agent,proto3" json:"agent,omitempty"`
 	ProjectId     string                 `protobuf:"bytes,11,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
+	Model         string                 `protobuf:"bytes,12,opt,name=model,proto3" json:"model,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -289,6 +298,13 @@ func (x *Session) GetAgent() string {
 func (x *Session) GetProjectId() string {
 	if x != nil {
 		return x.ProjectId
+	}
+	return ""
+}
+
+func (x *Session) GetModel() string {
+	if x != nil {
+		return x.Model
 	}
 	return ""
 }
@@ -807,6 +823,7 @@ type ProjectRequest struct {
 	Confirmed     bool                   `protobuf:"varint,6,opt,name=confirmed,proto3" json:"confirmed,omitempty"`
 	TrustConfig   bool                   `protobuf:"varint,7,opt,name=trust_config,json=trustConfig,proto3" json:"trust_config,omitempty"`
 	ClientId      string                 `protobuf:"bytes,8,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
+	Model         string                 `protobuf:"bytes,9,opt,name=model,proto3" json:"model,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -893,6 +910,13 @@ func (x *ProjectRequest) GetTrustConfig() bool {
 func (x *ProjectRequest) GetClientId() string {
 	if x != nil {
 		return x.ClientId
+	}
+	return ""
+}
+
+func (x *ProjectRequest) GetModel() string {
+	if x != nil {
+		return x.Model
 	}
 	return ""
 }
@@ -1078,15 +1102,16 @@ var File_cxz_proto protoreflect.FileDescriptor
 const file_cxz_proto_rawDesc = "" +
 	"\n" +
 	"\tcxz.proto\x12\x06cxz.v1\"\a\n" +
-	"\x05Empty\"v\n" +
+	"\x05Empty\"\x8c\x01\n" +
 	"\rCreateRequest\x12\x1c\n" +
 	"\tworkspace\x18\x01 \x01(\tR\tworkspace\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x1b\n" +
 	"\tclient_id\x18\x03 \x01(\tR\bclientId\x12\x14\n" +
-	"\x05agent\x18\x04 \x01(\tR\x05agent\"\x1c\n" +
+	"\x05agent\x18\x04 \x01(\tR\x05agent\x12\x14\n" +
+	"\x05model\x18\x05 \x01(\tR\x05model\"\x1c\n" +
 	"\n" +
 	"SessionRef\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"\xaf\x02\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"\xc5\x02\n" +
 	"\aSession\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1c\n" +
 	"\tworkspace\x18\x02 \x01(\tR\tworkspace\x12\x14\n" +
@@ -1101,7 +1126,8 @@ const file_cxz_proto_rawDesc = "" +
 	"\x05agent\x18\n" +
 	" \x01(\tR\x05agent\x12\x1d\n" +
 	"\n" +
-	"project_id\x18\v \x01(\tR\tprojectId\":\n" +
+	"project_id\x18\v \x01(\tR\tprojectId\x12\x14\n" +
+	"\x05model\x18\f \x01(\tR\x05model\":\n" +
 	"\vSessionList\x12+\n" +
 	"\bsessions\x18\x01 \x03(\v2\x0f.cxz.v1.SessionR\bsessions\"n\n" +
 	"\x05Input\x12\x1d\n" +
@@ -1144,7 +1170,7 @@ const file_cxz_proto_rawDesc = "" +
 	"\apayload\x18\b \x01(\fR\apayload\"3\n" +
 	"\n" +
 	"EventBatch\x12%\n" +
-	"\x06events\x18\x01 \x03(\v2\r.cxz.v1.EventR\x06events\"\xf7\x01\n" +
+	"\x06events\x18\x01 \x03(\v2\r.cxz.v1.EventR\x06events\"\x8d\x02\n" +
 	"\x0eProjectRequest\x12\x1c\n" +
 	"\tworkspace\x18\x01 \x01(\tR\tworkspace\x12\x14\n" +
 	"\x05agent\x18\x02 \x01(\tR\x05agent\x12\x16\n" +
@@ -1154,7 +1180,8 @@ const file_cxz_proto_rawDesc = "" +
 	"\brecreate\x18\x05 \x01(\bR\brecreate\x12\x1c\n" +
 	"\tconfirmed\x18\x06 \x01(\bR\tconfirmed\x12!\n" +
 	"\ftrust_config\x18\a \x01(\bR\vtrustConfig\x12\x1b\n" +
-	"\tclient_id\x18\b \x01(\tR\bclientId\"\xfb\x02\n" +
+	"\tclient_id\x18\b \x01(\tR\bclientId\x12\x14\n" +
+	"\x05model\x18\t \x01(\tR\x05model\"\xfb\x02\n" +
 	"\aProject\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1c\n" +
 	"\tworkspace\x18\x02 \x01(\tR\tworkspace\x12\x12\n" +

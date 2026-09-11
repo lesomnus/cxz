@@ -19,6 +19,7 @@ import (
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/journal"
+	"github.com/lesomnus/cxz/internal/settings"
 	"github.com/lesomnus/cxz/internal/supervisor"
 	"github.com/lesomnus/cxz/internal/transport"
 	"github.com/lesomnus/cxz/internal/workspace"
@@ -243,7 +244,7 @@ func (s *Server) snapshot(ctx context.Context, m core.Session) (*api.Session, er
 		}
 		snap.Pending = nil
 	}
-	v := &api.Session{Id: m.ID, Workspace: m.Workspace, Title: m.Title, CreatedAt: m.CreatedAt, State: snap.State, RunId: snap.RunID, VendorId: snap.VendorID, LastSeq: snap.LastSeq, Agent: m.Kind, ProjectId: m.ProjectID}
+	v := &api.Session{Id: m.ID, Workspace: m.Workspace, Title: m.Title, CreatedAt: m.CreatedAt, State: snap.State, RunId: snap.RunID, VendorId: snap.VendorID, LastSeq: snap.LastSeq, Agent: m.Kind, ProjectId: m.ProjectID, Model: m.Model}
 	if v.Agent == "" {
 		v.Agent = "claude"
 	}
@@ -293,7 +294,7 @@ func (s *Server) launch(ctx context.Context, m core.Session) (*api.Session, erro
 }
 func (s *Server) Create(ctx context.Context, r *api.CreateRequest) (*api.Session, error) {
 	if s.manager != nil {
-		return s.manager.Open(ctx, &api.ProjectRequest{Workspace: r.Workspace, Agent: r.Agent, NewSession: true, ClientId: r.ClientId})
+		return s.manager.Open(ctx, &api.ProjectRequest{Workspace: r.Workspace, Agent: r.Agent, Model: r.Model, NewSession: true, ClientId: r.ClientId})
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -305,6 +306,9 @@ func (s *Server) Create(ctx context.Context, r *api.CreateRequest) (*api.Session
 	}
 	if r.Agent != "claude" && r.Agent != "codex" {
 		return nil, status.Error(codes.InvalidArgument, "agent must be claude or codex")
+	}
+	if err := settings.ValidateModel(r.Model); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	path, e := filepath.Abs(r.Workspace)
 	if e != nil {
@@ -325,7 +329,7 @@ func (s *Server) Create(ctx context.Context, r *api.CreateRequest) (*api.Session
 		if e = json.Unmarshal(b, &m); e != nil {
 			return nil, e
 		}
-		if m.Workspace != path || m.Title != r.Title {
+		if m.Workspace != path || m.Title != r.Title || m.Kind != r.Agent || m.Model != r.Model {
 			return nil, status.Error(codes.AlreadyExists, "client_id reused")
 		}
 		return s.snapshot(ctx, m)
@@ -369,7 +373,7 @@ func (s *Server) Create(ctx context.Context, r *api.CreateRequest) (*api.Session
 			return nil, e
 		}
 	}
-	m := core.Session{CreateID: r.ClientId, ID: core.ID(), Workspace: path, Title: r.Title, CreatedAt: time.Now().UnixMilli(), Agent: bin, Kind: r.Agent, ProjectID: os.Getenv("CXZ_PROJECT_ID"), ConfigDir: cfg}
+	m := core.Session{CreateID: r.ClientId, ID: core.ID(), Workspace: path, Title: r.Title, CreatedAt: time.Now().UnixMilli(), Agent: bin, Kind: r.Agent, ProjectID: os.Getenv("CXZ_PROJECT_ID"), ConfigDir: cfg, Model: r.Model}
 	if e = os.Mkdir(core.Dir(s.root, m.ID), 0700); e != nil {
 		return nil, e
 	}

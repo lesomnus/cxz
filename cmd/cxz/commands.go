@@ -13,6 +13,7 @@ import (
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/installer"
 	"github.com/lesomnus/cxz/internal/server"
+	"github.com/lesomnus/cxz/internal/settings"
 	"github.com/lesomnus/cxz/internal/supervisor"
 	"github.com/lesomnus/cxz/internal/transport"
 	"github.com/lesomnus/cxz/internal/tui"
@@ -41,6 +42,11 @@ func onRun(fn commandFunc) xli.Handler {
 func withClient(fn clientFunc) xli.Handler {
 	return onRun(func(ctx context.Context, c *xli.Command) error {
 		root := stateFrom(ctx)
+		cfg, err := settings.Load(root)
+		if err != nil {
+			return err
+		}
+		ctx = settings.With(ctx, cfg)
 		if _, err := transport.Load(root); os.IsNotExist(err) {
 			if os.Getenv("CXZ_PROJECT_ID") == "" {
 				if _, err := os.Stat(server.Socket(root)); os.IsNotExist(err) {
@@ -133,7 +139,7 @@ func newRoot(state string) *xli.Command {
 	for _, name := range []string{"login", "shell", "exec"} {
 		c := &xli.Command{Name: name, Brief: map[string]string{"login": "Log in to a vendor inside the project", "shell": "Open project shell", "exec": "Execute command inside project"}[name], Args: arg.Args{stringArg("PROJECT", false)}, Handler: withClient(projectExec)}
 		if name == "login" {
-			c.Flags = flg.Flags{agentFlag("claude")}
+			c.Flags = flg.Flags{agentFlag("")}
 		} else {
 			c.Args = append(c.Args, &arg.Remains{Name: "COMMAND", Optional: name == "shell"})
 		}
@@ -143,6 +149,8 @@ func newRoot(state string) *xli.Command {
 		root.Commands = append(root.Commands, newSessionCommand(name))
 	}
 	root.Commands = append(root.Commands, internalCommands()...)
+	root.Commands = append(root.Commands, settingsCommand(), doctorCommand(), logsCommand())
+	root.Commands = append(root.Commands, releaseCommands()...)
 	root.Commands = append(root.Commands, xli.NewCmdCompletion())
 	return root
 }

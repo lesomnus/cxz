@@ -11,6 +11,7 @@ import (
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/dockerx"
+	"github.com/lesomnus/cxz/internal/settings"
 	"os"
 	"path/filepath"
 	"strings"
@@ -63,6 +64,9 @@ func RunSelected(ctx context.Context, c api.SessionsClient, id string) error {
 	input.CharLimit = 100000
 	input.Focus()
 	m := &model{ctx: ctx, client: c, input: input, view: viewport.New(80, 15), events: map[string][]*api.Event{}, cursor: map[string]uint64{}, width: 100, height: 30, wantID: id, newAgent: "claude"}
+	if cfg := settings.From(ctx); cfg.Agent != "" {
+		m.newAgent = cfg.Agent
+	}
 	p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithContext(ctx))
 	m.program = p
 	_, e := p.Run()
@@ -148,9 +152,14 @@ func (m *model) render() {
 		case "tool_result":
 			lines = append(lines, "result › "+string(e.Payload))
 		case "turn_end":
-			lines = append(lines, "turn: "+e.Text)
+			lines = append(lines, "turn: "+e.Text+" "+string(e.Payload))
+		case "diagnostic", "stderr":
+			lines = append(lines, "diagnostic › "+e.Text+" "+string(e.Payload))
 		case "state":
 			lines = append(lines, "["+e.Text+"]")
+		}
+		if hint := authHint(s, e); hint != "" {
+			lines = append(lines, hint)
 		}
 	}
 	m.view.SetContent(ansi.Hardwrap(safeText(strings.Join(lines, "\n\n")), m.view.Width, true))
@@ -343,7 +352,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					ctx, cancel := context.WithTimeout(m.ctx, 30*time.Minute)
 					defer cancel()
 					if os.Getenv("CXZ_PROJECT_ID") != "" {
-						s, e := m.client.Create(ctx, &api.CreateRequest{Workspace: path, Agent: kind, ClientId: core.ID()})
+						s, e := m.client.Create(ctx, &api.CreateRequest{Workspace: path, Agent: kind, Model: settings.From(m.ctx).Model(kind), ClientId: core.ID()})
 						if e != nil {
 							return result{err: e}
 						}
@@ -353,7 +362,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					if e != nil {
 						return result{err: e}
 					}
-					s, e := m.client.Open(ctx, &api.ProjectRequest{Workspace: path, Agent: kind, NewSession: true, ClientId: core.ID()})
+					s, e := m.client.Open(ctx, &api.ProjectRequest{Workspace: path, Agent: kind, Model: settings.From(m.ctx).Model(kind), NewSession: true, ClientId: core.ID()})
 					if e != nil {
 						return result{err: e}
 					}
@@ -388,7 +397,7 @@ func (m *model) View() string {
 		if i == m.selected {
 			mark = ">"
 		}
-		fmt.Fprintf(&b, "%s %.8s %s [%s] %s\n", mark, s.Id, safeText(s.Agent), safeText(s.State), safeText(s.Workspace))
+		fmt.Fprintf(&b, "%s %.8s %s/%s [%s] %s\n", mark, s.Id, safeText(s.Agent), safeText(s.Model), safeText(s.State), safeText(s.Workspace))
 	}
 	b.WriteString("Tab sessions/chat · Ctrl+N new · F2 allow · F3 deny · F4 interrupt · Ctrl+R resume\n")
 	if s := m.current(); s != nil && len(s.Pending) > 0 {
@@ -397,4 +406,17 @@ func (m *model) View() string {
 	b.WriteString(m.view.View())
 	b.WriteString("\n" + m.input.View() + "\n" + safeText(m.notice) + "\n")
 	return b.String()
+}
+
+func authHint(s *api.Session, e *api.Event) string {
+	if e.Kind != "diagnostic" && e.Kind != "turn_end" && e.Kind != "stderr" {
+		return ""
+	}
+	text := strings.ToLower(e.Text + " " + string(e.Payload))
+	for _, needle := range []string{"not logged in", "unauthorized", "authentication", "login required", "401"} {
+		if strings.Contains(text, needle) && s.ProjectId != "" {
+			return fmt.Sprintf("Authentication may be required. Detach, run cxz login --agent %s %s, then cxz up %s. Failed prompts are not resent.", s.Agent, s.ProjectId, s.ProjectId)
+		}
+	}
+	return ""
 }

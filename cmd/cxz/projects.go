@@ -9,6 +9,7 @@ import (
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/dockerx"
+	"github.com/lesomnus/cxz/internal/settings"
 	"github.com/lesomnus/cxz/internal/tui"
 	"github.com/lesomnus/cxz/internal/workspace"
 	"github.com/lesomnus/xli"
@@ -35,7 +36,7 @@ func newProjectCommand(name string) *xli.Command {
 	if name != "down" {
 		config := stringFlag("config", "Devcontainer configuration", "")
 		config.Handler = flg.OnTab[string](func(_ context.Context, t tab.Tab) error { t.Files(""); return nil })
-		c.Flags = flg.Flags{agentFlag(""), config, switchFlag("no-attach", "Return JSON without opening TUI"), switchFlag("trust-config", "Trust elevated settings and host initialization")}
+		c.Flags = flg.Flags{agentFlag(""), stringFlag("model", "Model ID/alias for a new session (persisted on resume)", ""), config, switchFlag("no-attach", "Return JSON without opening TUI"), switchFlag("trust-config", "Trust elevated settings and host initialization")}
 	}
 	if name == "recreate" {
 		c.Flags = append(c.Flags, switchFlag("yes", "Confirm writable-layer loss and editor disconnection"))
@@ -60,6 +61,11 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 		return json.NewEncoder(c.Writer).Encode(r)
 	}
 	agent := flg.MustGet[string](c, "agent")
+	model := flg.MustGet[string](c, "model")
+	cfg := settings.From(ctx)
+	if command == "new" && agent == "" {
+		agent = cfg.Agent
+	}
 	config := flg.MustGet[string](c, "config")
 	detach := flg.MustGet[bool](c, "no-attach")
 	trust := flg.MustGet[bool](c, "trust-config")
@@ -134,10 +140,16 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 		}
 		yes = true
 	}
+	if command == "new" && model == "" {
+		model = cfg.Model(agent)
+	}
+	if err := settings.ValidateModel(model); err != nil {
+		return err
+	}
 	fmt.Fprintln(c.ErrWriter, "cxz: preparing workspace; initial image/agent downloads may take a few minutes")
 	call, cancel := context.WithTimeout(ctx, 30*time.Minute)
 	defer cancel()
-	s, e := client.Open(call, &api.ProjectRequest{Workspace: path, Agent: agent, Config: config, NewSession: command == "new", Recreate: command == "recreate", Confirmed: yes, TrustConfig: trust, ClientId: core.ID()})
+	s, e := client.Open(call, &api.ProjectRequest{Workspace: path, Agent: agent, Model: model, Config: config, NewSession: command == "new", Recreate: command == "recreate", Confirmed: yes, TrustConfig: trust, ClientId: core.ID()})
 	if e != nil {
 		return e
 	}
@@ -199,6 +211,12 @@ func projectExec(ctx context.Context, client api.SessionsClient, c *xli.Command)
 	var command []string
 	if op == "login" {
 		kind = flg.MustGet[string](c, "agent")
+		if kind == "" {
+			kind = settings.From(ctx).Agent
+		}
+		if kind == "" {
+			kind = "claude"
+		}
 	} else {
 		command, _ = arg.Get[[]string](c, "COMMAND")
 	}

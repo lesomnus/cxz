@@ -144,10 +144,13 @@ func TestCommandsReachAPI(t *testing.T) {
 		}
 		return got
 	}
-	got := run("new", "--agent", "codex", "--no-attach", "project-name")
+	got := run("new", "--agent", "codex", "--model", "test-model", "--no-attach", "project-name")
 	req := (<-stub.requests).(*api.ProjectRequest)
 	if req.Agent != "codex" || !req.NewSession || req.Workspace != "project-name" || req.ClientId == "" {
 		t.Fatal(req)
+	}
+	if req.Model != "test-model" {
+		t.Fatal("model not passed")
 	}
 	if !strings.Contains(got.Stderr, "preparing workspace") {
 		t.Fatal("progress must use stderr")

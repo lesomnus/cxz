@@ -46,6 +46,9 @@ func (c *codexProtocol) consume(raw []byte) {
 		_ = s.write(map[string]any{"method": "initialized"})
 		params := map[string]any{"cwd": s.session.Workspace, "approvalPolicy": "untrusted", "sandbox": "danger-full-access", "experimentalRawEvents": false, "persistExtendedHistory": true}
 		method := "thread/start"
+		if s.session.Model != "" {
+			params["model"] = s.session.Model
+		}
 		if s.snap.VendorID != "" {
 			method = "thread/resume"
 			params["threadId"] = s.snap.VendorID

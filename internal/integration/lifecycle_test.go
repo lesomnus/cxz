@@ -88,10 +88,13 @@ func TestLifecycle(t *testing.T) {
 	}
 	defer killDaemon()
 	start()
-	create := &api.CreateRequest{Workspace: work, ClientId: "create-1"}
+	create := &api.CreateRequest{Workspace: work, ClientId: "create-1", Model: "fixture-model"}
 	s, e := client.Create(ctx, create)
 	if e != nil {
 		t.Fatal(e)
+	}
+	if s.Model != "fixture-model" {
+		t.Fatal("model missing from session")
 	}
 	id := s.Id
 	defer func() {

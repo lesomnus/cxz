@@ -113,6 +113,9 @@ func Run(ctx context.Context, root, id string) error {
 	if old.VendorID != "" {
 		args = append(args, "--resume", old.VendorID)
 	}
+	if session.Model != "" {
+		args = append(args, "--model", session.Model)
+	}
 	if session.Kind == "codex" {
 		// Codex does not persist an empty thread until its first turn. Starting
 		// a fresh empty thread is safe only when no send intent ever existed.

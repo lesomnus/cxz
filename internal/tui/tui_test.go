@@ -18,6 +18,20 @@ type recordingClient struct {
 	interrupts []*api.Control
 }
 
+func TestDiagnosticAndAuthenticationHint(t *testing.T) {
+	s := &api.Session{Id: "s", Agent: "codex", ProjectId: "project"}
+	e := &api.Event{Kind: "diagnostic", Text: "authentication failed", Payload: []byte(`{"code":401}`)}
+	m := &model{sessions: []*api.Session{s}, view: viewport.New(120, 20), events: map[string][]*api.Event{"s": {e}}}
+	m.render()
+	text := m.view.View()
+	if !strings.Contains(text, "authentication failed") || !strings.Contains(text, "cxz login --agent codex project") {
+		t.Fatal(text)
+	}
+	if authHint(s, &api.Event{Kind: "assistant", Text: "401"}) != "" {
+		t.Fatal("assistant text misclassified")
+	}
+}
+
 func (c *recordingClient) Send(_ context.Context, r *api.Input, _ ...grpc.CallOption) (*api.Receipt, error) {
 	c.inputs = append(c.inputs, r)
 	return &api.Receipt{Status: "accepted"}, nil

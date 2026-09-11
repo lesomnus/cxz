@@ -11,8 +11,8 @@ import (
 
 func TestFailedInstallRetainsIdentity(t *testing.T) {
 	root, bin := t.TempDir(), t.TempDir()
-	// Every Docker operation fails: the locator must still survive and be reused.
-	if err := os.WriteFile(filepath.Join(bin, "docker"), []byte("#!/bin/sh\nexit 1\n"), 0700); err != nil {
+	// Image preflight succeeds; resource operations fail. Identity must survive.
+	if err := os.WriteFile(filepath.Join(bin, "docker"), []byte("#!/bin/sh\nif [ \"$1\" = image ]; then exit 0; fi\nexit 1\n"), 0700); err != nil {
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", bin+":"+os.Getenv("PATH"))

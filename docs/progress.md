@@ -17,6 +17,24 @@
   inventory 복구·foreign/중복 거부, 기존 workspace/CLI 테스트.
 - Claude 반복 복구 미통과는 아직 해소하지 않았으며 후속 검증 항목으로 유지한다.
 
+추가 구현:
+
+- `config`의 기본 agent/vendor별 model, `new --model`, TUI 새 세션 기본값.
+  model은 세션 manifest/API에 저장하고 Claude argv/Codex thread start/resume로 전달한다.
+  기존 세션의 모델은 변경하지 않는다. 설정은 secret/권한 변경을 허용하지 않는다.
+- TUI 진단/실패 payload와 인증 의심 메시지의 login 안내, `doctor`, `logs`, `version`.
+- 버전 고정 `update --image`, 이전 manager 이미지 `rollback`. 이미지 다운로드/플랫폼
+  검증을 기존 manager 제거 전에 수행한다. named volumes/project 프로세스는 보존한다.
+- Linux amd64/arm64 release build와 checksum, SHA-pinned CI/release workflow.
+  원격 게시/arm64 실실행은 로컬 cross-build와 별도로 검증해야 한다.
+- 통과: 전체 test/race/vet, 설정 offline 검증·0600·잘못된 값/secret key 거부,
+  API model 전달·영속 세션·Codex protocol, TUI 진단/로그인 안내.
+- 실제 Docker foreign/명시적 recreate/RO tools/내부 범위/down 보존 경계 6개 통과.
+- Claude 재검증에 쓸 기존 access token의 유효기간이 부족하다. refresh token을 사용하거나
+  사용자의 계정을 조작하지 않았고 반복 복구의 기존 미통과 판정은 유지한다.
+- 운영 절차와 범위는 [operations.md](operations.md). 준비 중 강제 종료/동시 재시도,
+  update/rollback, Codex live 및 release 게시 검증은 아래에 결과를 추가할 예정이다.
+
 ## 2026-09-11 — xli CLI 전환
 
 - `flag.FlagSet`, 수동 최상위 명령 분기, `optionsFirst` 순서 보정 제거.
