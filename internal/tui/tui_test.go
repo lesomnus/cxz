@@ -64,6 +64,13 @@ func TestKeyboardControls(t *testing.T) {
 	if len(c.inputs) != 1 {
 		t.Fatal("replayed input on disconnection")
 	}
+	m.newAgent = "claude"
+	m.Update(tea.KeyMsg{Type: tea.KeyCtrlN})
+	m.Update(tea.KeyMsg{Type: tea.KeyTab})
+	if m.newAgent != "codex" || !m.creating {
+		t.Fatal("agent selection lost")
+	}
+	m.Update(tea.KeyMsg{Type: tea.KeyEsc})
 	_, cmd = m.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
 	if _, ok := cmd().(tea.QuitMsg); !ok {
 		t.Fatal("quit must detach")

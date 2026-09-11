@@ -32,6 +32,7 @@ try {
     authPath=`/cxz/state/data/agents/${kind}/${kind==='claude'?'.credentials.json':'auth.json'}`;
     await docker('exec',p.container_id,'test','!','-e',authPath);
     if(['idle','working','waiting_input','starting'].includes(session.state)) await cli('stop',session.id);
+    temporaryAuth=true;
     if(kind==='claude'){
       const source=JSON.parse(readFileSync(join(process.env.CLAUDE_CONFIG_DIR||join(process.env.HOME,'.claude'),'.credentials.json'),'utf8')).claudeAiOauth;
       assert(source.accessToken&&source.expiresAt>Date.now()+600000,'valid access token with 10 minutes remaining required');
@@ -45,12 +46,11 @@ try {
       // Project-local short-lived projection deliberately has NO refresh token.
       await input(['exec','-i','--user',p.remote_user,p.container_id,'sh','-c',`umask 077; cat > ${authPath}`],JSON.stringify({auth_mode:'chatgpt',tokens:{id_token,access_token,account_id,refresh_token:''},last_refresh:new Date().toISOString()}));
     }
-    temporaryAuth=true;
     session=await json('resume',session.id);
   }
   watch(); await delay(500);
-  const marker=`CXZ_MEMORY_${randomUUID().replaceAll('-','')}`;
-  let after=await send(`Remember this exact token for this conversation: ${marker}. Do not use tools or write files. Reply with just READY.`);
+  const marker=`orchard-${randomUUID().slice(0,8)}`;
+  let after=await send(`For this test project's user-facing notes, its codename is ${marker}. Keep that note in our conversation only, not in files. Reply with just READY.`);
   await idle(after);
   assert(events.some(e=>e.seq>after&&e.kind==='assistant'&&e.text.includes('READY')),'real authenticated response');
   session=await json('get',session.id);assert(session.vendor_id);
@@ -71,7 +71,7 @@ try {
   pending=await until(async()=>{const s=await json('get',session.id);return s.pending?.length&&s.pending[0];},'denial request');
   await cli('reply',session.id,pending.request_id,'deny'); await idle(after);
   await cli('exec',project,'--','test','!','-e','cxz-denied.txt');pass('denial prevents side effect');
-  after=await send('Use only the shell to run exactly: sleep 60; printf finished > cxz-interrupted.txt. Do not retry if interrupted.');
+  after=await send('For an interrupt-handling test, use only the shell to run exactly: head -c 8589934592 /dev/zero | sha256sum; printf finished > cxz-interrupted.txt. This is a bounded checksum benchmark that I will interrupt. Do not retry if interrupted.');
   pending=await until(async()=>{const s=await json('get',session.id);return s.pending?.length&&s.pending[0];},'long command approval');
   await cli('reply',session.id,pending.request_id,'allow');await delay(1500);
   await cli('interrupt',session.id);await idle(after);await cli('exec',project,'--','test','!','-e','cxz-interrupted.txt');pass('interrupt active command');
@@ -82,12 +82,12 @@ try {
     session=await json('up',project,'--agent',kind,'--no-attach');
     p=await info();assert.notEqual(p.container_id,before.container_id);assert.equal(session.vendor_id,vendor);
     watch();await delay(500);
-    after=await send('Cancel any previously interrupted task. Do not use tools. What exact CXZ_MEMORY_ token did I ask you to remember? Reply with only that token.');
+    after=await send('The interrupted shell task is canceled. Without using tools, repeat the project codename that I provided in my earlier message. Only the codename, please.');
     await idle(after);assert(events.some(e=>e.seq>after&&e.kind==='assistant'&&e.text.includes(marker)),'vendor memory survived');
     pass(`container recreation ${i}: same vendor conversation, memory retained`);
   }
   console.log(JSON.stringify({agent:kind,passed:checks.length,checks}));
 } finally {
   watcher?.kill();
-  if(temporaryAuth){const p=await info();await docker('exec','--user',p.remote_user,p.container_id,'rm','-f',authPath);console.log(JSON.stringify({agent:kind,temporary_access_token_removed:true}));}
+  if(temporaryAuth){const p=await info();const s=await json('get',session.id);if(['idle','working','waiting_input','starting'].includes(s.state))await cli('stop',session.id);await docker('exec','--user',p.remote_user,p.container_id,'rm','-f',authPath);console.log(JSON.stringify({agent:kind,temporary_access_token_removed:true}));}
 }

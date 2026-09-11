@@ -49,7 +49,7 @@ try {
   for (const v of [state,workspace]) { docker(['volume','create','--label',label,v]);volumes.add(v); }
   const provision=`${prefix}-provision`;containers.add(provision);
   docker(['run','--name',provision,'--label',label,'--user','0','--cap-drop','ALL','--cap-add','CHOWN','--network','none',...mounts,image,'chown','1000:1000','/cxz-state','/cxz-work']);removeContainer(provision);
-  let name=start(1);await ready(name);let s=cli(name,'new','/cxz-work');const id=s.id;
+  let name=start(1);await ready(name);let s=cli(name,'_new-local','/cxz-work');const id=s.id;
   cli(name,'send',id,'hello');s=await untilState(name,id,'idle');const vendor=s.vendor_id;
   check('nonroot_app_session_and_conversation');
   cli(name,'send',id,'approval recovery');s=await untilState(name,id,'waiting_input');const oldRun=s.run_id,request=s.pending[0].request_id,last=s.last_seq;

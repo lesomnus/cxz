@@ -59,6 +59,12 @@ func TestCodexProtocol(t *testing.T) {
 	if s.snap.State != "idle" {
 		t.Fatal("not idle")
 	}
+	if _, e = s.execute("reply", core.Command{RunID: "previous-run", ClientID: "stale-run", RequestID: "42", Allow: true}); e == nil {
+		t.Fatal("stale run accepted")
+	}
+	if _, e = s.execute("reply", core.Command{RunID: "run", ClientID: "stale-request", RequestID: "42", Allow: true}); e == nil {
+		t.Fatal("resolved approval accepted again")
+	}
 	events := log.All()
 	found := false
 	for _, v := range events {

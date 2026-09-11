@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"github.com/lesomnus/cxz/api"
@@ -23,6 +24,9 @@ import (
 
 func main() {
 	if e := run(); e != nil {
+		if errors.Is(e, flag.ErrHelp) {
+			return
+		}
 		fmt.Fprintln(os.Stderr, e)
 		os.Exit(1)
 	}
@@ -79,6 +83,16 @@ Foreign devcontainers are never adopted. Inspect before recreate or --trust-conf
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 	switch args[0] {
+	case "_ready":
+		conn, e := server.Dial(*root)
+		if e != nil {
+			return e
+		}
+		defer conn.Close()
+		q, cancel := context.WithTimeout(ctx, 2*time.Second)
+		defer cancel()
+		_, e = api.NewSessionsClient(conn).List(q, &api.Empty{})
+		return e
 	case "_boot":
 		return workspace.Boot(*root)
 	case "_project":
@@ -137,6 +151,15 @@ Foreign devcontainers are never adopted. Inspect before recreate or --trust-conf
 		}
 		return supervisor.Guard(args[1])
 	}
+	if _, err := transport.Load(*root); os.IsNotExist(err) {
+		if os.Getenv("CXZ_PROJECT_ID") == "" {
+			if _, err := os.Stat(server.Socket(*root)); os.IsNotExist(err) {
+				return fmt.Errorf("cxz is not installed; run cxz install first")
+			}
+		}
+	} else if err != nil {
+		return err
+	}
 	conn, e := server.Dial(*root)
 	if e != nil {
 		return e
@@ -165,7 +188,7 @@ Foreign devcontainers are never adopted. Inspect before recreate or --trust-conf
 	switch args[0] {
 	case "projects":
 		result, e = client.Projects(callCtx, &api.Empty{})
-	case "new":
+	case "_new-local":
 		if len(args) < 2 {
 			return fmt.Errorf("workspace required")
 		}

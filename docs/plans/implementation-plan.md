@@ -1,13 +1,14 @@
 # cxz 구현 계획
 
-작성일: 2026-09-11. 상태: 이번 TUI 수직 구현 및 검증 완료; 장기 제품 계획은 후속.
+작성일: 2026-09-11. 상태: 로컬 기반 구현 후, cld 사용 흐름/Codex 확장 검증 중.
 
-> 최신 실행 범위: 사용자 지시에 따라 **payday + SQLite + TUI**의 세션 생성·대화·
-> 승인·중단·재접속을 먼저 구현한다. 사용자 인증과 웹 UI는 남겨 둔다.
+> 최신 실행 범위: **payday + SQLite + TUI + cxz-owned devcontainers + Claude/Codex**.
+> [cld-parity 완료 기준](cld-parity.md)이 이전 로컬 TUI 범위를 대체한다.
+> 사용자 인증과 웹 UI는 남겨 둔다.
 > 아래 P0–P6는 장기 제품 계획이며 이번 작업의 완료 조건과 같지 않다.
 > 구체적인 진행/검증 결과는 [진행 문서](../progress.md), 사용법은
-> [README](../../README.md)를 따른다. 현재 backend는 기존 개발 컨테이너 안의
-> 로컬 프로세스이며 자동 devcontainer provisioning은 아직 포함하지 않는다.
+> [README](../../README.md)를 따른다. Docker manager가 공식 CLI로 프로젝트를
+> 생성하며, 외부 개발 컨테이너의 편입은 지원하지 않는다.
 
 근거 문서:
 

@@ -380,7 +380,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 func (m *model) View() string {
 	var b strings.Builder
-	b.WriteString("cxz · local sessions · Ctrl+C detaches (agent keeps running)\n")
+	b.WriteString("cxz · sessions · Ctrl+C detaches (agent keeps running)\n")
 	start := max(0, m.selected-1)
 	for i := start; i < min(len(m.sessions), start+3); i++ {
 		s := m.sessions[i]

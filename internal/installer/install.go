@@ -17,6 +17,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -137,6 +138,7 @@ func Install(ctx context.Context, root, workspaceRoot, image string, recreate bo
 		return e
 	}
 	args := []string{"run", "-d", "--name", v.Container, "--restart", "unless-stopped", "--label", "cxz.role=daemon", "--label", "cxz.owner=" + v.Owner, "--mount", "type=volume,source=" + v.StateVolume + ",target=/var/lib/cxz", "--mount", "type=volume,source=" + v.ToolsVolume + ",target=/cxz/tools", "--mount", "type=bind,source=" + workspaceRoot + ",target=" + workspaceRoot, "-e", "CXZ_OWNER=" + v.Owner, "-e", "CXZ_WORKSPACE_ROOT=" + workspaceRoot, "-e", "CXZ_TOOLS_VOLUME=" + v.ToolsVolume, "-e", "CXZ_MANAGER_IMAGE=" + image, "-e", "CXZ_MANAGER_CONTAINER=" + v.Container}
+	args = append(args, "-e", "CXZ_HOST_UID="+strconv.Itoa(os.Getuid()), "-e", "CXZ_HOST_GID="+strconv.Itoa(os.Getgid()))
 	host := os.Getenv("DOCKER_HOST")
 	if host == "" || strings.HasPrefix(host, "unix://") {
 		path := strings.TrimPrefix(host, "unix://")
@@ -167,7 +169,7 @@ func Install(ctx context.Context, root, workspaceRoot, image string, recreate bo
 		return e
 	}
 	for i := 0; i < 150; i++ {
-		if e = dockerx.Input(ctx, bytes.NewReader(nil), "exec", v.Container, "test", "-S", "/var/lib/cxz/run/daemon.sock"); e == nil {
+		if e = dockerx.Input(ctx, bytes.NewReader(nil), "exec", v.Container, "/usr/local/bin/cxz", "--state", "/var/lib/cxz", "_ready"); e == nil {
 			fmt.Fprintln(out, "cxz installed:", v.Container, "workspace root:", workspaceRoot)
 			return nil
 		}

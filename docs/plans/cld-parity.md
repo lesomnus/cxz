@@ -29,10 +29,12 @@
    실제 Docker에서 install → up → Claude/Codex 세션 준비 성공. 기존 hook도 실행됨.
 3. 구현: CLI/TUI 자동 연결, agent 선택, 프로젝트 내부 client, login/shell/exec,
    foreign 거부/명시적 recreate, down 전 history 수집, 관리 서버 교체 시 network 재연결.
-4. 검증 중: 실제 Docker image/Alpine/Compose 성공. Compose sidecar 통신,
-   tools read-only, 내부 프로젝트 범위 확인. 실제 vendor 대화/승인/중단/반복 복구
-   probe를 추가하고 실행 중. 최초 인증은 별도 사용자 단계이며 probe는 기존
-   access token의 일회성 투영만 사용하고 refresh token은 복사하지 않는다.
+4. 구현 및 실검증: image/Alpine/Dockerfile/non-root/feature/Compose, sidecar 통신,
+   tools read-only, 내부 프로젝트 범위, foreign 방어. Codex live 7개 검사 통과.
+   Claude live 6개 검사 통과; 두 번째 반복 복구의 기억 응답은 vendor API의
+   safeguard refusal로 미통과(같은 vendor ID는 유지). 이 제한을 완료로 포장하지 않는다.
+   최초 인증은 사용자 단계이며 probe의 임시 access-token 투영은 제거했다.
+   강제 컨테이너 소실과 manager SQLite 재구성도 통과. 전체/race/vet/생성물 회귀 통과.
 
 실제 검증에서 수정한 사항: Compose의 named volume 접두사/readonly 변환,
 기본 sidecar network 누락, 관리 컨테이너 교체 후 project network 재연결,

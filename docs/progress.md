@@ -1,6 +1,51 @@
 # 구현 진행 상황
 
-## 2026-09-11 — TUI 우선 구현 완료
+## 2026-09-11 — cld 사용 흐름 + Codex 확장 (현재)
+
+이전 로컬 TUI 구현은 기반 단계였다. 현재 완료 기준은
+[cld-parity 계획](plans/cld-parity.md)이며, 아래의 과거 제외 범위를 대체한다.
+
+- 구현: Docker manager install/reinstall/uninstall, official devcontainer CLI
+  provisioning, image/Dockerfile/Compose 설정, 프로젝트별 state volume와 RO tools.
+- 구현: `up/new` 자동 TUI 연결, Claude/Codex 선택, `attach/it`, `login`, `shell/exec`,
+  `down/up/recreate`. 외부 컨테이너는 편입하지 않으며 확인한 recreate만 허용.
+- 구현: Codex app-server 초기화/thread/turn/approval/question/interrupt/resume.
+  공식 schema/docs를 확인해 numeric request ID 보존과 빈 thread 재시작을 처리.
+- 실검증 통과: image+기존 hook, Alpine Claude 시작, Compose Codex 시작,
+  sidecar DNS, tools readonly, 프로젝트 내부 scoped client.
+- 실검증 통과: 실제 Codex 인증 대화, manager restart 시 동일 supervisor run,
+  도구 승인/거절, 실행 중 중단, 컨테이너 down/up **2회** 후 동일 vendor thread
+  및 대화 기억 복구. `owned-session-live.mjs`의 7개 검사 모두 통과.
+  호스트 refresh token은 복사하지 않았고 일회성 access-token 투영은 검증 후 제거.
+- 실검증 통과: Claude 대화/승인/거절/중단, manager restart, 첫 컨테이너
+  재생성 후 동일 vendor 대화와 기억 복구. 두 번째 재생성의 기억 확인은
+  vendor API safeguard refusal(`reasoning_extraction`)로 재현되어 **미통과**로 기록.
+  vendor ID와 실패 이벤트는 보존되며, vendor의 안전 설정을 끄지 않았다.
+- 실검증 통과: 생성한 기본 non-root 설정, Dockerfile+worker 사용자+hooks,
+  공식 git feature, foreign 무변경 거부/명시적 recreate/내부 범위 제한 등 6개 경계 검사.
+- 실검증 통과: 실제 TUI Codex attach, Ctrl-N/Tab agent 선택, manager restart
+  중 cursor 재접속, Ctrl-C detach. Feature provisioning 중에도 다른 프로젝트를 조회.
+- 실검증 통과: Codex 컨테이너 강제 제거 후 같은 세션/thread를 새 run으로 복구;
+  manager SQLite 파일을 백업 위치로 이동 후 manifest 재구성, 기존 project run 유지.
+  데이터베이스 원본은 named volume에 복구 가능한 이름으로 보존했다.
+- 검증 요약: `testdata/recovery/owned-workspaces-summary.json`. 재실행 도구는
+  `owned-session-live.mjs`, `owned-boundaries.mjs`, `owned-recovery.mjs`.
+- 보강: 준비 확인을 socket 파일 존재가 아닌 실제 RPC로 변경, 프로젝트별
+  lifecycle lock으로 다른 프로젝트의 provisioning이 세션 제어를 막지 않도록 함.
+- 최종 회귀 통과: `go test ./...`, `CXZ_TEST_RACE=1 go test -race ./internal/... -count=1`,
+  `go vet ./...`, protobuf 재생성 후 생성물 diff 없음, `git diff --check`.
+- 중간 커밋: `bab4541` (manager/Codex), `e9fc20e` (CLI/Compose/복구 보강).
+- 정리: 검증 소유 label을 가진 프로젝트 컨테이너와 manager를 제거했다.
+  테스트 workspace, named volumes, DB backup과 private journal은 보존했다.
+  공유 Docker 엔진의 다른 프로젝트나 이미지/볼륨을 prune하지 않았다.
+
+현재 인계 범위: cld식 설치→devcontainer 생성→vendor 선택→TUI 접속/제어→복구의
+핵심 흐름 구현. 전체 cld 편의 기능의 복제나 웹 MVP 완료를 뜻하지 않는다.
+최초 vendor 로그인, 웹/IDE UI, roster 인증, 중앙 로그인 broker, 자동 release update,
+dotfile/SSH forwarding, off-host backup은 미구현/사용자 단계로 명시한다.
+Claude의 두 번째 반복 복구 검증은 위 vendor 응답 제한 때문에 미통과로 유지한다.
+
+## 2026-09-11 — 로컬 TUI 기반 구현 (이전 기록)
 
 요청 범위: payday + SQLite, TUI의 세션 생성·대화·승인·중단·재접속.
 사용자 인증·브라우저 UI는 이번 구현에서 제외한다. 서버는 다른 OS 사용자가
@@ -57,7 +102,7 @@ HTTPS 인증은 없지만 기존 SSH 인증을 사용할 수 있어 push URL만 
 두 번째 기능 커밋 `73b95c3`도 push 완료.
 복구 보강 및 실제 검증 커밋 `df146cd`도 push 완료. 최종 검증 기록을 추가 커밋한다.
 
-## 남겨 둔 범위
+## 당시 남겨 둔 범위 (위 현재 단계에서 일부 구현됨)
 
 사용자 인증/roster, 새 Claude 로그인 UI, 브라우저 UI, devcontainer 자동 생성,
 파일·diff/IDE relay, 외부 암호화 백업, Codex adapter는 이번 TUI 수직 구현에
