@@ -35,6 +35,20 @@
 - 운영 절차와 범위는 [operations.md](operations.md). 준비 중 강제 종료/동시 재시도,
   update/rollback, Codex live 및 release 게시 검증은 아래에 결과를 추가할 예정이다.
 
+실제 검증 추가:
+
+- `owned-provision-retry.mjs`: hook 실행 중 manager SIGKILL → interrupted checkpoint,
+  저장 직전 container ID 복구 → 동시 up 2회에서 동일 container/session 유지, 로그 조회 통과.
+  최초 probe의 short/full Docker ID 비교 오류는 `--no-trunc`로 수정 후 전체 재실행했다.
+- `owned-install-update.mjs`: 빈 state 설치, 반복 install, 정지 manager 시작, 존재하지 않는
+  update 이미지 거부 시 기존 manager/locator 보존, update/rollback identity·volume 유지 통과.
+  별도 검증 manager는 제거했고 named volumes와 locator는 보존했다.
+- Codex 0.154.0 실제 인증 대화, manager restart 동일 run, 도구 승인/거절,
+  실행 중 interrupt, 컨테이너 재생성 2회 후 동일 vendor ID/대화 기억: 7개 모두 통과.
+  이번 검증의 일회성 access token은 제거했고 refresh token은 복사하지 않았다.
+- Linux amd64/arm64 artifact cross-build 및 SHA256SUMS 검사 통과.
+  Claude 재인증/반복 복구는 미통과로 남겨 prerelease와 안정판 완료를 구분한다.
+
 ## 2026-09-11 — xli CLI 전환
 
 - `flag.FlagSet`, 수동 최상위 명령 분기, `optionsFirst` 순서 보정 제거.
