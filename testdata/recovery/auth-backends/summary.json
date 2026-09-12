@@ -1,0 +1,34 @@
+{
+  "date": "2026-09-12",
+  "authentication": "synthetic fixtures only; no real OAuth login or paid model calls",
+  "go": [
+    "go test ./...",
+    "CXZ_TEST_RACE=1 go test -race ./... -count=1",
+    "go test -race ./internal/server -count=1",
+    "go vet ./...",
+    "go tool pd gen --check ."
+  ],
+  "owned_accounts": {
+    "status": "passed",
+    "checks": [
+      "Claude and Codex backend catalog; unsupported backend rejected",
+      "project-local staged login/status; repeated login retains one binding",
+      "session carries fixed backend and binding",
+      "distinct accounts and projects have distinct bindings",
+      "isolated HOME/config; inherited API keys removed; no manager credential store",
+      "missing login, different-account live attach and active login rejected",
+      "resume preserves account; manager restart and project recreation preserve binding",
+      "another project requires independent login",
+      "project display name and alias regression"
+    ]
+  },
+  "container_recovery": {
+    "status": "passed",
+    "checks": [
+      "non-root network-none session and conversation",
+      "container recreation preserves journal and marks interrupted",
+      "explicit resume creates new run; stale approval rejected without prompt replay",
+      "active-turn container loss and post-recovery conversation"
+    ]
+  }
+}
