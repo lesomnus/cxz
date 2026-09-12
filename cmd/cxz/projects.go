@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/charmbracelet/x/term"
 	"github.com/lesomnus/cxz/api"
@@ -32,6 +33,37 @@ import (
 func terminal(c *xli.Command) bool {
 	f, ok := c.ReadCloser.(*os.File)
 	return ok && term.IsTerminal(f.Fd())
+}
+
+func selectProjectAccount(ctx context.Context, resources *resourceclient.Client, c *xli.Command) (string, error) {
+	if !terminal(c) {
+		return "", fmt.Errorf("%s requires --account to create a session; list profiles with cxz account list", c.Name)
+	}
+	var choices []*resource.Account
+	after := ""
+	for {
+		page, err := resources.Accounts.List(ctx, resource.AccountListRequest_builder{Size: 200, After: after}.Build())
+		if err != nil {
+			return "", err
+		}
+		choices = append(choices, page.GetItems()...)
+		after = page.GetNext()
+		if after == "" {
+			break
+		}
+	}
+	if len(choices) == 0 {
+		return "", fmt.Errorf("no accounts; run cxz account add --agent codex NAME, then cxz account login NAME")
+	}
+	for i, a := range choices {
+		fmt.Fprintf(c.ErrWriter, "%d) %s · %s · %s\n", i+1, a.GetAlias(), a.GetAgent(), a.GetName())
+	}
+	fmt.Fprint(c.ErrWriter, "Account: ")
+	var n int
+	if _, err := fmt.Fscanln(c.ReadCloser, &n); err != nil || n < 1 || n > len(choices) {
+		return "", fmt.Errorf("invalid account selection")
+	}
+	return choices[n-1].GetAlias(), nil
 }
 
 func newProjectCommand(name string) *xli.Command {
@@ -119,35 +151,11 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 	agent := flg.MustGet[string](c, "agent")
 	account := flg.MustGet[string](c, "account")
 	if command == "new" && account == "" {
-		if !terminal(c) {
-			return fmt.Errorf("new requires --account; list profiles with cxz account list")
+		var err error
+		account, err = selectProjectAccount(ctx, client.(*resourceclient.Client), c)
+		if err != nil {
+			return err
 		}
-		resources := client.(*resourceclient.Client)
-		var choices []*resource.Account
-		after := ""
-		for {
-			page, err := resources.Accounts.List(ctx, resource.AccountListRequest_builder{Size: 200, After: after}.Build())
-			if err != nil {
-				return err
-			}
-			choices = append(choices, page.GetItems()...)
-			after = page.GetNext()
-			if after == "" {
-				break
-			}
-		}
-		if len(choices) == 0 {
-			return fmt.Errorf("no accounts; run cxz account add --agent codex NAME, then cxz account login NAME")
-		}
-		for i, a := range choices {
-			fmt.Fprintf(c.ErrWriter, "%d) %s · %s · %s\n", i+1, a.GetAlias(), a.GetAgent(), a.GetName())
-		}
-		fmt.Fprint(c.ErrWriter, "Account: ")
-		var n int
-		if _, err := fmt.Fscanln(c.ReadCloser, &n); err != nil || n < 1 || n > len(choices) {
-			return fmt.Errorf("invalid account selection")
-		}
-		account = choices[n-1].GetAlias()
 	}
 	if account != "" {
 		a, err := client.(*resourceclient.Client).Account(ctx, account)
@@ -217,6 +225,23 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 		}
 		agent = strings.TrimSpace(v)
 	}
+	if command == "new" && model == "" {
+		model = cfg.Model(agent)
+	}
+	request := &api.ProjectRequest{Workspace: path, Name: flg.MustGet[string](c, "name"), Alias: flg.MustGet[string](c, "alias"), Agent: agent, Model: model, Config: config, NewSession: command == "new", Recreate: command == "recreate", Confirmed: yes, TrustConfig: trust, ClientId: core.ID(), Account: account}
+	resources := client.(*resourceclient.Client)
+	if err := resources.CheckOpen(ctx, request); err != nil {
+		if !errors.Is(err, resourceclient.ErrAccountRequired) {
+			return err
+		}
+		request.Account, err = selectProjectAccount(ctx, resources, c)
+		if err != nil {
+			return err
+		}
+		if err = resources.CheckOpen(ctx, request); err != nil {
+			return err
+		}
+	}
 	if command == "recreate" && !yes {
 		projects, e := client.Projects(ctx, &api.Empty{})
 		if e != nil {
@@ -244,16 +269,11 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 		}
 		yes = true
 	}
-	if command == "new" && model == "" {
-		model = cfg.Model(agent)
-	}
-	if err := settings.ValidateModel(model); err != nil {
-		return err
-	}
+	request.Confirmed = yes
 	fmt.Fprintln(c.ErrWriter, "cxz: preparing workspace; initial image/agent downloads may take a few minutes")
 	call, cancel := context.WithTimeout(ctx, 30*time.Minute)
 	defer cancel()
-	s, e := client.Open(call, &api.ProjectRequest{Workspace: path, Name: flg.MustGet[string](c, "name"), Alias: flg.MustGet[string](c, "alias"), Agent: agent, Model: model, Config: config, NewSession: command == "new", Recreate: command == "recreate", Confirmed: yes, TrustConfig: trust, ClientId: core.ID(), Account: account})
+	s, e := client.Open(call, request)
 	if e != nil {
 		return e
 	}

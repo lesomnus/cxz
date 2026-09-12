@@ -38,6 +38,15 @@ cxz up PROJECT
 
 Account 등록·로그인·계정 격리 범위는 [Account 문서](accounts.md)를 참고한다.
 
+`up/new/recreate`는 프로젝트 등록·컨테이너 준비/삭제 전에 계정 필요 여부,
+등록된 계정의 agent/backend, 활성 세션 충돌, 기존 세션의 모델 불변 조건을 확인한다.
+기존 세션이 있으면 `up`은 그 계정을 유지한다. 없으면 대화형 터미널에서는 Account를
+선택하고, 비대화형에서는 `--account ACCOUNT`가 없을 때 즉시 실패한다.
+`--trust-config`는 이 조건을 건너뛰지 않는다. 로그인용 prepare-only는 계정 없는
+세션을 만들지 않으므로 세션 계정 선택을 요구하지 않는다.
+사전 조회 실패를 빈 프로젝트로 간주하지 않으며, 준비 후에도 세션 상태를 다시 확인한다.
+실제 vendor 인증의 유효성 등 프로젝트 런타임이 필요한 검사는 준비 이후 수행한다.
+
 devcontainer 신뢰 검사로 차단되면 해당 설정 파일명과 JSON Pointer 경로·이유를
 출력한다. 예: `/initializeCommand`(호스트 초기화 명령),
 `/services/dev/privileged`(privileged 컨테이너), `/runArgs/0`(배열 첫 항목).

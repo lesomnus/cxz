@@ -69,6 +69,9 @@ func (c *Client) view(ctx context.Context, s *resource.Session, opts ...grpc.Cal
 	return v, nil
 }
 func (c *Client) Create(ctx context.Context, r *api.CreateRequest, opts ...grpc.CallOption) (*api.Session, error) {
+	if r.Account == "" {
+		return nil, ErrAccountRequired
+	}
 	p, err := c.projects.Add(ctx, resource.ProjectAddRequest_builder{Workspace: r.Workspace}.Build(), opts...)
 	if err != nil {
 		return nil, err

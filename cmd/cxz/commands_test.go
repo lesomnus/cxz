@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -114,7 +115,8 @@ func (s *rpcStub) Reply(_ context.Context, r *resource.SessionReplyRequest) (*re
 
 type projectStub struct {
 	resource.UnimplementedProjectServiceServer
-	requests chan any
+	requests  chan any
+	mutations *atomic.Int32
 }
 type accountStub struct {
 	resource.UnimplementedAccountServiceServer
@@ -138,9 +140,15 @@ func (s projectStub) Get(context.Context, *resource.ProjectGetRequest) (*resourc
 	return testProject(), nil
 }
 func (s projectStub) Add(context.Context, *resource.ProjectAddRequest) (*resource.Project, error) {
+	if s.mutations != nil {
+		s.mutations.Add(1)
+	}
 	return testProject(), nil
 }
 func (s projectStub) Up(context.Context, *resource.ProjectUpRequest) (*resource.Project, error) {
+	if s.mutations != nil {
+		s.mutations.Add(1)
+	}
 	return testProject(), nil
 }
 func (s projectStub) List(context.Context, *resource.ProjectListRequest) (*resource.ProjectListResponse, error) {
@@ -169,9 +177,19 @@ func TestCommandsReachAPI(t *testing.T) {
 	resource.RegisterSessionServiceServer(server, stub)
 	resource.RegisterAccountServiceServer(server, accountStub{})
 	resource.RegisterAuthBindingServiceServer(server, bindingStub{})
-	resource.RegisterProjectServiceServer(server, projectStub{requests: stub.requests})
+	mutations := &atomic.Int32{}
+	resource.RegisterProjectServiceServer(server, projectStub{requests: stub.requests, mutations: mutations})
 	go server.Serve(listener)
 	defer server.Stop()
+	for _, args := range [][]string{{"up", "--trust-config", "project-name"}, {"recreate", "--trust-config", "--yes", "project-name"}, {"new", "--no-attach", "project-name"}} {
+		got := xlitest.Run(t, newRoot(root), args...)
+		if got.Err == nil || !strings.Contains(got.Err.Error(), "--account") {
+			t.Fatalf("missing account guidance: %v", got.Err)
+		}
+		if strings.Contains(got.Stderr, "preparing workspace") || mutations.Load() != 0 {
+			t.Fatal("started preparation before validating account", got.Stderr)
+		}
+	}
 	run := func(args ...string) xlitest.Result {
 		t.Helper()
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
