@@ -14,6 +14,9 @@ func (x *Session) Ref() *SessionRef {
 	if v := x.GetId(); len(v) > 0 {
 		return SessionById(v)
 	}
+	if v := x.GetAlias(); len(v) > 0 {
+		return SessionByAlias(v)
+	}
 	if v := x.GetRuntimeId(); len(v) > 0 {
 		return SessionByRuntimeId(v)
 	}
@@ -32,6 +35,8 @@ func (x *SessionRef) Picks(v *Session) bool {
 	switch x.WhichKey() {
 	case SessionRef_Id_case:
 		return bytes.Equal(x.GetId(), v.GetId())
+	case SessionRef_Alias_case:
+		return x.GetAlias() == v.GetAlias()
 	case SessionRef_RuntimeId_case:
 		return x.GetRuntimeId() == v.GetRuntimeId()
 	case SessionRef_ClientId_case:
@@ -55,6 +60,12 @@ func SessionById(v []byte) *SessionRef {
 	return x
 }
 
+func SessionByAlias(v string) *SessionRef {
+	x := &SessionRef{}
+	x.SetAlias(v)
+	return x
+}
+
 func SessionByRuntimeId(v string) *SessionRef {
 	x := &SessionRef{}
 	x.SetRuntimeId(v)
@@ -69,6 +80,10 @@ func SessionByClientId(v string) *SessionRef {
 
 func SessionGetById(v []byte) *SessionGetRequest {
 	return SessionGetRequest_builder{Ref: SessionById(v)}.Build()
+}
+
+func SessionGetByAlias(v string) *SessionGetRequest {
+	return SessionGetRequest_builder{Ref: SessionByAlias(v)}.Build()
 }
 
 func SessionGetByRuntimeId(v string) *SessionGetRequest {

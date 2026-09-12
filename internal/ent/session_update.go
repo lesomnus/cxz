@@ -30,6 +30,26 @@ func (_u *SessionUpdate) Where(ps ...predicate.Session) *SessionUpdate {
 	return _u
 }
 
+// SetAlias sets the "alias" field.
+func (_u *SessionUpdate) SetAlias(v string) *SessionUpdate {
+	_u.mutation.SetAlias(v)
+	return _u
+}
+
+// SetNillableAlias sets the "alias" field if the given value is not nil.
+func (_u *SessionUpdate) SetNillableAlias(v *string) *SessionUpdate {
+	if v != nil {
+		_u.SetAlias(*v)
+	}
+	return _u
+}
+
+// ClearAlias clears the value of the "alias" field.
+func (_u *SessionUpdate) ClearAlias() *SessionUpdate {
+	_u.mutation.ClearAlias()
+	return _u
+}
+
 // SetName sets the "name" field.
 func (_u *SessionUpdate) SetName(v string) *SessionUpdate {
 	_u.mutation.SetName(v)
@@ -188,6 +208,12 @@ func (_u *SessionUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			}
 		}
 	}
+	if value, ok := _u.mutation.Alias(); ok {
+		_spec.SetField(session.FieldAlias, field.TypeString, value)
+	}
+	if _u.mutation.AliasCleared() {
+		_spec.ClearField(session.FieldAlias, field.TypeString)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(session.FieldName, field.TypeString, value)
 	}
@@ -245,6 +271,26 @@ type SessionUpdateOne struct {
 	hooks     []Hook
 	mutation  *SessionMutation
 	modifiers []func(*sql.UpdateBuilder)
+}
+
+// SetAlias sets the "alias" field.
+func (_u *SessionUpdateOne) SetAlias(v string) *SessionUpdateOne {
+	_u.mutation.SetAlias(v)
+	return _u
+}
+
+// SetNillableAlias sets the "alias" field if the given value is not nil.
+func (_u *SessionUpdateOne) SetNillableAlias(v *string) *SessionUpdateOne {
+	if v != nil {
+		_u.SetAlias(*v)
+	}
+	return _u
+}
+
+// ClearAlias clears the value of the "alias" field.
+func (_u *SessionUpdateOne) ClearAlias() *SessionUpdateOne {
+	_u.mutation.ClearAlias()
+	return _u
 }
 
 // SetName sets the "name" field.
@@ -434,6 +480,12 @@ func (_u *SessionUpdateOne) sqlSave(ctx context.Context) (_node *Session, err er
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := _u.mutation.Alias(); ok {
+		_spec.SetField(session.FieldAlias, field.TypeString, value)
+	}
+	if _u.mutation.AliasCleared() {
+		_spec.ClearField(session.FieldAlias, field.TypeString)
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(session.FieldName, field.TypeString, value)

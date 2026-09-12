@@ -102,13 +102,27 @@ func (s Layer) saveSession(ctx context.Context, v *api.Session, clientID string)
 		if binding.GetBindingId() != v.AuthBinding {
 			return nil, status.Error(codes.FailedPrecondition, "runtime auth binding mismatch")
 		}
-		return srv.Add(ctx, resource.SessionAddRequest_builder{Id: resourceID(8, v.Id), Name: v.Title, Project: projectRef(v.ProjectId), Agent: v.Agent, Model: v.Model, Account: account, AuthBinding: bindingRef(v.AuthBinding), RuntimeId: v.Id, ClientId: clientID, DateCreated: timestamppb.New(time.UnixMilli(v.CreatedAt)), Status: state, Listed: ptr(true)}.Build())
+		alias, err := s.newSessionAlias(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return srv.Add(ctx, resource.SessionAddRequest_builder{Id: resourceID(8, v.Id), Alias: &alias, Name: v.Title, Project: projectRef(v.ProjectId), Agent: v.Agent, Model: v.Model, Account: account, AuthBinding: bindingRef(v.AuthBinding), RuntimeId: v.Id, ClientId: clientID, DateCreated: timestamppb.New(time.UnixMilli(v.CreatedAt)), Status: state, Listed: ptr(true)}.Build())
 	}
 	if err != nil {
 		return nil, err
 	}
 	if !old.GetListed() {
 		return old, nil
+	}
+	if old.GetAlias() == "" {
+		alias, e := s.newSessionAlias(ctx)
+		if e != nil {
+			return nil, e
+		}
+		old, e = srv.Patch(ctx, resource.SessionPatchRequest_builder{Ref: ref, Alias: &alias, DateUpdatedForce: ptr(true)}.Build())
+		if e != nil {
+			return nil, e
+		}
 	}
 	if old.GetStatus().GetLastSeq() > state.GetLastSeq() || (old.GetListed() && proto.Equal(old.GetStatus(), state)) {
 		return old, nil

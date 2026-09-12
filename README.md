@@ -164,8 +164,8 @@ resource database and survives server/container restarts; back up state volumes.
 The dashboard groups workspace details and session cards; the conversation view
 keeps tool activity above a growing, rounded message editor. Drafts are retained
 per session while this TUI is open, including trips back to the project view.
-Escape does not discard a conversation draft. The screen, composer and its
-borders use a black background; use a terminal of at least
+Escape does not discard a conversation draft. Only the composer and its
+borders use a black background; the rest keeps the terminal background. Use at least
 40 × 14 cells. The composer spans the terminal width. User messages show local
 timestamps instead of a YOU label; Claude/Codex speaker badges and pastel tool
 colors distinguish output. Transient state events update the status area rather
@@ -184,9 +184,20 @@ Session information occupies a single
 bottom line; persistent shortcut rows are hidden. Type `/help` to display local
 shortcut help in the conversation without sending a prompt to the agent.
 Typing `/` overlays command hints above the editor: arrows select, Tab completes,
-Enter executes, Esc dismisses. `/context`, `/compact`, and `/usage` currently
-display local `Unimplemented` responses. The status bar labels short session IDs
-with `id:`; it no longer includes the redundant `sessions` label.
+Enter executes, Esc dismisses. `/context` and `/compact` currently display local
+`Unimplemented` responses. `/usage` reads the full session journal and reports
+tokens, cost and elapsed time with per-metric coverage. Claude cumulative costs
+are counted once per run, not repeatedly per turn. This is not account quota or billing.
+
+The status bar starts with one reserved selection cell and a seven-cell session
+alias, followed by agent/model, ◉ account and state. Aliases are globally unique,
+random 3–7-letter English words, stored in payday/SQLite and assigned to existing
+sessions on reconciliation. In session selection mode (Tab), press `r` to edit;
+Enter saves and returns to selection, Esc cancels. Custom aliases accept 3–7
+lowercase letters. Session commands also accept aliases. Deleting a session
+releases its alias while retaining the journal. The curated word pool is finite;
+exhaustion is reported explicitly without falling back to numeric identifiers.
+The composer starts with `>` on row 0 and dim line numbers from row 1 onward.
 
 Data commands (table by default; use `--format json` for scripts): `session ls`, `project ls`, `session get ID`, `session send ID TEXT`,
 `session reply ID REQUEST_ID allow|deny [ANSWERS_JSON]`, `session interrupt ID`, `session resume ID`,

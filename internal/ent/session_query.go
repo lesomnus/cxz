@@ -373,12 +373,12 @@ func (_q *SessionQuery) WithAuthBinding(opts ...func(*AuthBindingQuery)) *Sessio
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name,omitempty"`
+//		Alias string `json:"alias,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Session.Query().
-//		GroupBy(session.FieldName).
+//		GroupBy(session.FieldAlias).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (_q *SessionQuery) GroupBy(field string, fields ...string) *SessionGroupBy {
@@ -396,11 +396,11 @@ func (_q *SessionQuery) GroupBy(field string, fields ...string) *SessionGroupBy 
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name,omitempty"`
+//		Alias string `json:"alias,omitempty"`
 //	}
 //
 //	client.Session.Query().
-//		Select(session.FieldName).
+//		Select(session.FieldAlias).
 //		Scan(ctx, &v)
 func (_q *SessionQuery) Select(fields ...string) *SessionSelect {
 	_q.ctx.Fields = append(_q.ctx.Fields, fields...)

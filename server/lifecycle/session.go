@@ -4,10 +4,12 @@ import (
 	"context"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/accounts"
+	"github.com/lesomnus/cxz/internal/sessionalias"
 	"github.com/lesomnus/cxz/resource"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 type SessionServer struct {
@@ -21,7 +23,7 @@ func (s SessionServer) Add(ctx context.Context, r *resource.SessionAddRequest) (
 	if err := s.effect(); err != nil {
 		return nil, err
 	}
-	if r.HasId() || r.GetRuntimeId() != "" || r.HasStatus() || r.HasDateCreated() || (r.HasListed() && !r.GetListed()) {
+	if r.HasAlias() || r.HasId() || r.GetRuntimeId() != "" || r.HasStatus() || r.HasDateCreated() || (r.HasListed() && !r.GetListed()) {
 		return nil, closed()
 	}
 	if r.GetClientId() == "" {
@@ -104,8 +106,46 @@ func (s SessionServer) Watch(r *resource.SessionWatchRequest, stream grpc.Server
 	}
 	return s.SessionServiceServer.Watch(r, stream)
 }
-func (s SessionServer) Patch(context.Context, *resource.SessionPatchRequest) (*resource.Session, error) {
-	return nil, closed()
+func (s SessionServer) Patch(ctx context.Context, r *resource.SessionPatchRequest) (*resource.Session, error) {
+	s.shared.transition.RLock()
+	defer s.shared.transition.RUnlock()
+	allowed := true
+	r.ProtoReflect().Range(func(f protoreflect.FieldDescriptor, v protoreflect.Value) bool {
+		if f.Name() != "ref" && f.Name() != "alias" && f.Name() != "date_updated" {
+			allowed = false
+		}
+		return allowed
+	})
+	if !allowed {
+		return nil, closed()
+	}
+	if !r.HasAlias() || !sessionalias.Valid(r.GetAlias()) {
+		return nil, status.Error(codes.InvalidArgument, "alias must contain 3–7 lowercase English letters")
+	}
+	if err := s.effect(); err != nil {
+		return nil, err
+	}
+	if err := s.sync(ctx); err != nil {
+		return nil, err
+	}
+	s.shared.mu.Lock()
+	defer s.shared.mu.Unlock()
+	v, err := s.SessionServiceServer.Get(ctx, resource.SessionGetRequest_builder{Ref: r.GetRef(), Select: resource.SessionSelect_builder{All: ptr(true)}.Build()}.Build())
+	if err != nil {
+		return nil, err
+	}
+	if !v.GetListed() {
+		return nil, status.Error(codes.NotFound, "session deleted")
+	}
+	owner, err := s.SessionServiceServer.Get(ctx, resource.SessionGetRequest_builder{Ref: resource.SessionRef_builder{Alias: ptr(r.GetAlias())}.Build()}.Build())
+	if err != nil && status.Code(err) != codes.NotFound {
+		return nil, err
+	}
+	if owner != nil && owner.GetRuntimeId() != v.GetRuntimeId() {
+		return nil, status.Error(codes.AlreadyExists, "session alias is already in use")
+	}
+	r.SetDateUpdatedForce(true)
+	return s.SessionServiceServer.Patch(ctx, r)
 }
 func (s SessionServer) Apply(context.Context, *resource.SessionApplyRequest) (*resource.Session, error) {
 	return nil, closed()

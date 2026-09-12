@@ -325,6 +325,11 @@ func attach(ctx context.Context, client api.SessionsClient, arg string) error {
 		return e
 	}
 	projectID := ""
+	for _, s := range list.Sessions {
+		if arg != "" && s.Alias == arg {
+			return tui.RunSelected(ctx, client, s.Id)
+		}
+	}
 	if arg != "" {
 		if projects, e := client.Projects(c, &api.Empty{}); e == nil {
 			if p, err := projectref.Resolve(projects.Projects, arg); err == nil {

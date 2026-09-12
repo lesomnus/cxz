@@ -14,6 +14,8 @@ const (
 	Label = "session"
 	// FieldId holds the string denoting the id field in the database.
 	FieldId = "id"
+	// FieldAlias holds the string denoting the alias field in the database.
+	FieldAlias = "alias"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
 	// FieldDesc holds the string denoting the desc field in the database.
@@ -76,6 +78,7 @@ const (
 // Columns holds all SQL columns for session fields.
 var Columns = []string{
 	FieldId,
+	FieldAlias,
 	FieldName,
 	FieldDesc,
 	FieldAgent,
@@ -115,6 +118,11 @@ type OrderOption func(*sql.Selector)
 // ById orders the results by the id field.
 func ById(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldId, opts...).ToFunc()
+}
+
+// ByAlias orders the results by the alias field.
+func ByAlias(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAlias, opts...).ToFunc()
 }
 
 // ByName orders the results by the name field.

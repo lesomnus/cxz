@@ -108,6 +108,9 @@ func (s SessionServiceServer) Add(ctx context.Context, req *resource.SessionAddR
 	} else {
 		q.SetId(v)
 	}
+	if req.HasAlias() {
+		q.SetAlias(req.GetAlias())
+	}
 	q.SetName(req.GetName())
 	q.SetDesc(req.GetDesc())
 	if k, err := ProjectGetKey(ctx, st.Db, req.GetProject()); err != nil {
@@ -218,6 +221,9 @@ func SessionSelectedFields(m *resource.SessionSelect) []string {
 	vs := make([]string, 0, len(session.Columns))
 	{
 		vs = append(vs, session.FieldId)
+	}
+	if m.GetAlias() {
+		vs = append(vs, session.FieldAlias)
 	}
 	if m.GetName() {
 		vs = append(vs, session.FieldName)
@@ -338,7 +344,7 @@ func SessionGetKey(ctx context.Context, db *ent.Client, ref *resource.SessionRef
 var sessionOrmEntity = ormpatch.MustEntityOf(resource.File_cxz_session_proto, "Session")
 
 var sessionPatchColumns = entpatch.Columns{
-	1: session.FieldId, 5: session.FieldName, 6: session.FieldDesc, 8: session.ProjectColumn, 9: session.FieldAgent, 10: session.FieldModel, 11: session.FieldRuntimeId, 12: session.FieldClientId, 13: session.FieldDateUpdated, 14: session.FieldDateErased, 15: session.FieldDateCreated, 16: session.FieldStatus, 17: session.FieldListed, 18: session.AccountColumn, 19: session.AuthBindingColumn}
+	1: session.FieldId, 4: session.FieldAlias, 5: session.FieldName, 6: session.FieldDesc, 8: session.ProjectColumn, 9: session.FieldAgent, 10: session.FieldModel, 11: session.FieldRuntimeId, 12: session.FieldClientId, 13: session.FieldDateUpdated, 14: session.FieldDateErased, 15: session.FieldDateCreated, 16: session.FieldStatus, 17: session.FieldListed, 18: session.AccountColumn, 19: session.AuthBindingColumn}
 
 func (s SessionServiceServer) Apply(ctx context.Context, req *resource.SessionApplyRequest) (*resource.Session, error) {
 	if !req.HasPatch() {
@@ -539,6 +545,8 @@ func pickSession(req *resource.SessionRef) (predicate.Session, error) {
 		} else {
 			return session.IdEQ(v), nil
 		}
+	case resource.SessionRef_Alias_case:
+		return session.AliasEQ(req.GetAlias()), nil
 	case resource.SessionRef_RuntimeId_case:
 		return session.RuntimeIdEQ(req.GetRuntimeId()), nil
 	case resource.SessionRef_ClientId_case:

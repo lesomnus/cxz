@@ -54,7 +54,7 @@ func (s SessionServer) Erase(ctx context.Context, ref *resource.SessionRef) (*re
 	}
 	s.shared.mu.Lock()
 	defer s.shared.mu.Unlock()
-	_, err = s.Next().Session().Patch(ctx, resource.SessionPatchRequest_builder{Ref: ref, Listed: ptr(false), DateUpdatedForce: ptr(true)}.Build())
+	_, err = s.Next().Session().Patch(ctx, resource.SessionPatchRequest_builder{Ref: ref, Listed: ptr(false), AliasNull: ptr(true), DateUpdatedForce: ptr(true)}.Build())
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +89,7 @@ func (s ProjectServer) Erase(ctx context.Context, ref *resource.ProjectRef) (*re
 			return nil, e
 		}
 		for _, v := range page.GetItems() {
-			if _, e = s.Next().Session().Patch(ctx, resource.SessionPatchRequest_builder{Ref: sessionRef(v.GetRuntimeId()), Listed: ptr(false), DateUpdatedForce: ptr(true)}.Build()); e != nil {
+			if _, e = s.Next().Session().Patch(ctx, resource.SessionPatchRequest_builder{Ref: sessionRef(v.GetRuntimeId()), Listed: ptr(false), AliasNull: ptr(true), DateUpdatedForce: ptr(true)}.Build()); e != nil {
 				return nil, e
 			}
 		}

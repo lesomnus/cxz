@@ -221,6 +221,7 @@ type Session struct {
 	Account       string                 `protobuf:"bytes,16,opt,name=account,proto3" json:"account,omitempty"`
 	AuthBackend   string                 `protobuf:"bytes,17,opt,name=auth_backend,json=authBackend,proto3" json:"auth_backend,omitempty"`
 	AuthBinding   string                 `protobuf:"bytes,18,opt,name=auth_binding,json=authBinding,proto3" json:"auth_binding,omitempty"`
+	Alias         string                 `protobuf:"bytes,19,opt,name=alias,proto3" json:"alias,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -377,6 +378,13 @@ func (x *Session) GetAuthBackend() string {
 func (x *Session) GetAuthBinding() string {
 	if x != nil {
 		return x.AuthBinding
+	}
+	return ""
+}
+
+func (x *Session) GetAlias() string {
+	if x != nil {
+		return x.Alias
 	}
 	return ""
 }
@@ -1226,7 +1234,7 @@ const file_cxz_proto_rawDesc = "" +
 	"\fauth_binding\x18\b \x01(\tR\vauthBinding\"\x1c\n" +
 	"\n" +
 	"SessionRef\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"\x8f\x04\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"\xa5\x04\n" +
 	"\aSession\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1c\n" +
 	"\tworkspace\x18\x02 \x01(\tR\tworkspace\x12\x14\n" +
@@ -1248,7 +1256,8 @@ const file_cxz_proto_rawDesc = "" +
 	"\rproject_alias\x18\x0f \x01(\tR\fprojectAlias\x12\x18\n" +
 	"\aaccount\x18\x10 \x01(\tR\aaccount\x12!\n" +
 	"\fauth_backend\x18\x11 \x01(\tR\vauthBackend\x12!\n" +
-	"\fauth_binding\x18\x12 \x01(\tR\vauthBinding\"?\n" +
+	"\fauth_binding\x18\x12 \x01(\tR\vauthBinding\x12\x14\n" +
+	"\x05alias\x18\x13 \x01(\tR\x05alias\"?\n" +
 	"\vSessionList\x120\n" +
 	"\bsessions\x18\x01 \x03(\v2\x14.cxz.runtime.SessionR\bsessions\"n\n" +
 	"\x05Input\x12\x1d\n" +

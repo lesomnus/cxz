@@ -1,5 +1,21 @@
 # 구현 진행 상황
 
+## 2026-09-12 — 영단어 세션 alias와 /usage
+
+- 검정 배경을 입력창/테두리로 한정하고 입력창 줄번호를 첫 줄 >, 이후 1부터 표시한다.
+  상태바는 선택 indicator 1칸과 alias 7칸을 먼저 표시하며 계정은 ◉ 심볼로 구분한다.
+- payday Session.alias와 unique index, 생성기/기존 세션 backfill, alias 전용 Patch를
+  추가하고 proto→payday→ent 및 내부 뷰 모델을 재생성했다. 3–7자 영단어를 무작위로
+  할당하며 직접 편집은 소문자 3–7자를 검증한다. 삭제 시 alias만 해제한다.
+- Tab 선택 모드의 r은 하단 alias 커서를 활성화한다. Enter는 저장 후 선택 모드로,
+  Esc는 취소하며 중복/길이 오류는 편집기를 유지한다. CLI에도 alias 조회/제어를 연결했다.
+- /usage는 전체 저널을 페이지별로 읽어 현재 세션 사용량을 집계한다. 제공 항목 수를
+  표시하고 Claude 실행별 누적 비용 중복 합산과 Codex 누적 토큰 오표시를 막는다.
+- 기존 SQLite 행의 alias 컬럼 없는 스키마에서 실제 업그레이드/backfill, 재시작 후
+  rename 유지, 중복/보호 필드 검사, 고정 폭 편집, 줄번호, usage 페이지/누적 비용을 검증했다.
+- 전체 Go 테스트·vet, CLI/TUI/resourceclient/lifecycle race, uncached integration,
+  payday 생성물 일치 검사를 통과했다. 실제 OAuth/유료 모델 호출은 실행하지 않았다.
+
 ## 2026-09-12 — 검정 배경·indicator 여백·명령어 오버레이
 
 - 화면과 입력창/테두리를 검정으로 채우고 첫 두 칸을 indicator 전용으로 정리했다.

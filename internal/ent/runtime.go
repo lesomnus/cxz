@@ -23,6 +23,6 @@ func init() {
 	sessionFields := schema.Session{}.Fields()
 	_ = sessionFields
 	// sessionDescStatus is the schema descriptor for status field.
-	sessionDescStatus := sessionFields[10].Descriptor()
+	sessionDescStatus := sessionFields[11].Descriptor()
 	session.ValueScanner.Status = sessionDescStatus.ValueScanner.(field.TypeValueScanner[*resource.SessionStatus])
 }

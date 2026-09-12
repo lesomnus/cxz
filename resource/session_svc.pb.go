@@ -25,6 +25,7 @@ const (
 type SessionAddRequest struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
+	xxx_hidden_Alias       *string                `protobuf:"bytes,4,opt,name=alias"`
 	xxx_hidden_Name        string                 `protobuf:"bytes,5,opt,name=name"`
 	xxx_hidden_Desc        string                 `protobuf:"bytes,6,opt,name=desc"`
 	xxx_hidden_Project     *ProjectRef            `protobuf:"bytes,8,opt,name=project"`
@@ -73,6 +74,16 @@ func (x *SessionAddRequest) GetId() []byte {
 		return x.xxx_hidden_Id
 	}
 	return nil
+}
+
+func (x *SessionAddRequest) GetAlias() string {
+	if x != nil {
+		if x.xxx_hidden_Alias != nil {
+			return *x.xxx_hidden_Alias
+		}
+		return ""
+	}
+	return ""
 }
 
 func (x *SessionAddRequest) GetName() string {
@@ -164,7 +175,12 @@ func (x *SessionAddRequest) SetId(v []byte) {
 		v = []byte{}
 	}
 	x.xxx_hidden_Id = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 13)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 14)
+}
+
+func (x *SessionAddRequest) SetAlias(v string) {
+	x.xxx_hidden_Alias = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 14)
 }
 
 func (x *SessionAddRequest) SetName(v string) {
@@ -205,7 +221,7 @@ func (x *SessionAddRequest) SetStatus(v *SessionStatus) {
 
 func (x *SessionAddRequest) SetListed(v bool) {
 	x.xxx_hidden_Listed = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 13)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 14)
 }
 
 func (x *SessionAddRequest) SetAccount(v *AccountRef) {
@@ -221,6 +237,13 @@ func (x *SessionAddRequest) HasId() bool {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *SessionAddRequest) HasAlias() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
 }
 
 func (x *SessionAddRequest) HasProject() bool {
@@ -248,7 +271,7 @@ func (x *SessionAddRequest) HasListed() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 10)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 11)
 }
 
 func (x *SessionAddRequest) HasAccount() bool {
@@ -270,6 +293,11 @@ func (x *SessionAddRequest) ClearId() {
 	x.xxx_hidden_Id = nil
 }
 
+func (x *SessionAddRequest) ClearAlias() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_Alias = nil
+}
+
 func (x *SessionAddRequest) ClearProject() {
 	x.xxx_hidden_Project = nil
 }
@@ -283,7 +311,7 @@ func (x *SessionAddRequest) ClearStatus() {
 }
 
 func (x *SessionAddRequest) ClearListed() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 10)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 11)
 	x.xxx_hidden_Listed = false
 }
 
@@ -299,6 +327,7 @@ type SessionAddRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Id          []byte
+	Alias       *string
 	Name        string
 	Desc        string
 	Project     *ProjectRef
@@ -318,8 +347,12 @@ func (b0 SessionAddRequest_builder) Build() *SessionAddRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Id != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 13)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 14)
 		x.xxx_hidden_Id = b.Id
+	}
+	if b.Alias != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 14)
+		x.xxx_hidden_Alias = b.Alias
 	}
 	x.xxx_hidden_Name = b.Name
 	x.xxx_hidden_Desc = b.Desc
@@ -331,7 +364,7 @@ func (b0 SessionAddRequest_builder) Build() *SessionAddRequest {
 	x.xxx_hidden_DateCreated = b.DateCreated
 	x.xxx_hidden_Status = b.Status
 	if b.Listed != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 13)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 14)
 		x.xxx_hidden_Listed = *b.Listed
 	}
 	x.xxx_hidden_Account = b.Account
@@ -473,6 +506,15 @@ func (x *SessionRef) GetId() []byte {
 	return nil
 }
 
+func (x *SessionRef) GetAlias() string {
+	if x != nil {
+		if x, ok := x.xxx_hidden_Key.(*sessionRef_Alias); ok {
+			return x.Alias
+		}
+	}
+	return ""
+}
+
 func (x *SessionRef) GetRuntimeId() string {
 	if x != nil {
 		if x, ok := x.xxx_hidden_Key.(*sessionRef_RuntimeId); ok {
@@ -498,6 +540,10 @@ func (x *SessionRef) SetId(v []byte) {
 	x.xxx_hidden_Key = &sessionRef_Id{v}
 }
 
+func (x *SessionRef) SetAlias(v string) {
+	x.xxx_hidden_Key = &sessionRef_Alias{v}
+}
+
 func (x *SessionRef) SetRuntimeId(v string) {
 	x.xxx_hidden_Key = &sessionRef_RuntimeId{v}
 }
@@ -518,6 +564,14 @@ func (x *SessionRef) HasId() bool {
 		return false
 	}
 	_, ok := x.xxx_hidden_Key.(*sessionRef_Id)
+	return ok
+}
+
+func (x *SessionRef) HasAlias() bool {
+	if x == nil {
+		return false
+	}
+	_, ok := x.xxx_hidden_Key.(*sessionRef_Alias)
 	return ok
 }
 
@@ -547,6 +601,12 @@ func (x *SessionRef) ClearId() {
 	}
 }
 
+func (x *SessionRef) ClearAlias() {
+	if _, ok := x.xxx_hidden_Key.(*sessionRef_Alias); ok {
+		x.xxx_hidden_Key = nil
+	}
+}
+
 func (x *SessionRef) ClearRuntimeId() {
 	if _, ok := x.xxx_hidden_Key.(*sessionRef_RuntimeId); ok {
 		x.xxx_hidden_Key = nil
@@ -561,6 +621,7 @@ func (x *SessionRef) ClearClientId() {
 
 const SessionRef_Key_not_set_case case_SessionRef_Key = 0
 const SessionRef_Id_case case_SessionRef_Key = 1
+const SessionRef_Alias_case case_SessionRef_Key = 4
 const SessionRef_RuntimeId_case case_SessionRef_Key = 11
 const SessionRef_ClientId_case case_SessionRef_Key = 12
 
@@ -571,6 +632,8 @@ func (x *SessionRef) WhichKey() case_SessionRef_Key {
 	switch x.xxx_hidden_Key.(type) {
 	case *sessionRef_Id:
 		return SessionRef_Id_case
+	case *sessionRef_Alias:
+		return SessionRef_Alias_case
 	case *sessionRef_RuntimeId:
 		return SessionRef_RuntimeId_case
 	case *sessionRef_ClientId:
@@ -585,6 +648,7 @@ type SessionRef_builder struct {
 
 	// Fields of oneof xxx_hidden_Key:
 	Id        []byte
+	Alias     *string
 	RuntimeId *string
 	ClientId  *string
 	// -- end of xxx_hidden_Key
@@ -596,6 +660,9 @@ func (b0 SessionRef_builder) Build() *SessionRef {
 	_, _ = b, x
 	if b.Id != nil {
 		x.xxx_hidden_Key = &sessionRef_Id{b.Id}
+	}
+	if b.Alias != nil {
+		x.xxx_hidden_Key = &sessionRef_Alias{*b.Alias}
 	}
 	if b.RuntimeId != nil {
 		x.xxx_hidden_Key = &sessionRef_RuntimeId{*b.RuntimeId}
@@ -624,6 +691,10 @@ type sessionRef_Id struct {
 	Id []byte `protobuf:"bytes,1,opt,name=id,oneof"`
 }
 
+type sessionRef_Alias struct {
+	Alias string `protobuf:"bytes,4,opt,name=alias,oneof"`
+}
+
 type sessionRef_RuntimeId struct {
 	RuntimeId string `protobuf:"bytes,11,opt,name=runtime_id,json=runtimeId,oneof"`
 }
@@ -634,6 +705,8 @@ type sessionRef_ClientId struct {
 
 func (*sessionRef_Id) isSessionRef_Key() {}
 
+func (*sessionRef_Alias) isSessionRef_Key() {}
+
 func (*sessionRef_RuntimeId) isSessionRef_Key() {}
 
 func (*sessionRef_ClientId) isSessionRef_Key() {}
@@ -641,6 +714,7 @@ func (*sessionRef_ClientId) isSessionRef_Key() {}
 type SessionSelect struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_All         bool                   `protobuf:"varint,1,opt,name=all"`
+	xxx_hidden_Alias       bool                   `protobuf:"varint,4,opt,name=alias"`
 	xxx_hidden_Name        bool                   `protobuf:"varint,5,opt,name=name"`
 	xxx_hidden_Desc        bool                   `protobuf:"varint,6,opt,name=desc"`
 	xxx_hidden_Project     *ProjectSelect         `protobuf:"bytes,8,opt,name=project"`
@@ -689,6 +763,13 @@ func (x *SessionSelect) ProtoReflect() protoreflect.Message {
 func (x *SessionSelect) GetAll() bool {
 	if x != nil {
 		return x.xxx_hidden_All
+	}
+	return false
+}
+
+func (x *SessionSelect) GetAlias() bool {
+	if x != nil {
+		return x.xxx_hidden_Alias
 	}
 	return false
 }
@@ -793,17 +874,22 @@ func (x *SessionSelect) GetAuthBinding() *AuthBindingSelect {
 
 func (x *SessionSelect) SetAll(v bool) {
 	x.xxx_hidden_All = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 15)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 16)
+}
+
+func (x *SessionSelect) SetAlias(v bool) {
+	x.xxx_hidden_Alias = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 16)
 }
 
 func (x *SessionSelect) SetName(v bool) {
 	x.xxx_hidden_Name = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 15)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 16)
 }
 
 func (x *SessionSelect) SetDesc(v bool) {
 	x.xxx_hidden_Desc = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 15)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 16)
 }
 
 func (x *SessionSelect) SetProject(v *ProjectSelect) {
@@ -812,47 +898,47 @@ func (x *SessionSelect) SetProject(v *ProjectSelect) {
 
 func (x *SessionSelect) SetAgent(v bool) {
 	x.xxx_hidden_Agent = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 15)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 16)
 }
 
 func (x *SessionSelect) SetModel(v bool) {
 	x.xxx_hidden_Model = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 15)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 16)
 }
 
 func (x *SessionSelect) SetRuntimeId(v bool) {
 	x.xxx_hidden_RuntimeId = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 15)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 16)
 }
 
 func (x *SessionSelect) SetClientId(v bool) {
 	x.xxx_hidden_ClientId = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 15)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 16)
 }
 
 func (x *SessionSelect) SetDateUpdated(v bool) {
 	x.xxx_hidden_DateUpdated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 15)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 16)
 }
 
 func (x *SessionSelect) SetDateErased(v bool) {
 	x.xxx_hidden_DateErased = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 15)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 16)
 }
 
 func (x *SessionSelect) SetDateCreated(v bool) {
 	x.xxx_hidden_DateCreated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 15)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 16)
 }
 
 func (x *SessionSelect) SetStatus(v bool) {
 	x.xxx_hidden_Status = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 15)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 16)
 }
 
 func (x *SessionSelect) SetListed(v bool) {
 	x.xxx_hidden_Listed = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 15)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 13, 16)
 }
 
 func (x *SessionSelect) SetAccount(v *AccountSelect) {
@@ -870,18 +956,25 @@ func (x *SessionSelect) HasAll() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
 }
 
-func (x *SessionSelect) HasName() bool {
+func (x *SessionSelect) HasAlias() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
 }
 
-func (x *SessionSelect) HasDesc() bool {
+func (x *SessionSelect) HasName() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+}
+
+func (x *SessionSelect) HasDesc() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
 }
 
 func (x *SessionSelect) HasProject() bool {
@@ -895,63 +988,63 @@ func (x *SessionSelect) HasAgent() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
 }
 
 func (x *SessionSelect) HasModel() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
 }
 
 func (x *SessionSelect) HasRuntimeId() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 7)
 }
 
 func (x *SessionSelect) HasClientId() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 7)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 8)
 }
 
 func (x *SessionSelect) HasDateUpdated() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 8)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 9)
 }
 
 func (x *SessionSelect) HasDateErased() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 9)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 10)
 }
 
 func (x *SessionSelect) HasDateCreated() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 10)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 11)
 }
 
 func (x *SessionSelect) HasStatus() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 11)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 12)
 }
 
 func (x *SessionSelect) HasListed() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 12)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 13)
 }
 
 func (x *SessionSelect) HasAccount() bool {
@@ -973,13 +1066,18 @@ func (x *SessionSelect) ClearAll() {
 	x.xxx_hidden_All = false
 }
 
-func (x *SessionSelect) ClearName() {
+func (x *SessionSelect) ClearAlias() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_Alias = false
+}
+
+func (x *SessionSelect) ClearName() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
 	x.xxx_hidden_Name = false
 }
 
 func (x *SessionSelect) ClearDesc() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
 	x.xxx_hidden_Desc = false
 }
 
@@ -988,47 +1086,47 @@ func (x *SessionSelect) ClearProject() {
 }
 
 func (x *SessionSelect) ClearAgent() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
 	x.xxx_hidden_Agent = false
 }
 
 func (x *SessionSelect) ClearModel() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
 	x.xxx_hidden_Model = false
 }
 
 func (x *SessionSelect) ClearRuntimeId() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
 	x.xxx_hidden_RuntimeId = false
 }
 
 func (x *SessionSelect) ClearClientId() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 8)
 	x.xxx_hidden_ClientId = false
 }
 
 func (x *SessionSelect) ClearDateUpdated() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 8)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 9)
 	x.xxx_hidden_DateUpdated = false
 }
 
 func (x *SessionSelect) ClearDateErased() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 9)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 10)
 	x.xxx_hidden_DateErased = false
 }
 
 func (x *SessionSelect) ClearDateCreated() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 10)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 11)
 	x.xxx_hidden_DateCreated = false
 }
 
 func (x *SessionSelect) ClearStatus() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 11)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 12)
 	x.xxx_hidden_Status = false
 }
 
 func (x *SessionSelect) ClearListed() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 12)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 13)
 	x.xxx_hidden_Listed = false
 }
 
@@ -1044,6 +1142,7 @@ type SessionSelect_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	All         *bool
+	Alias       *bool
 	Name        *bool
 	Desc        *bool
 	Project     *ProjectSelect
@@ -1065,52 +1164,56 @@ func (b0 SessionSelect_builder) Build() *SessionSelect {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.All != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 15)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 16)
 		x.xxx_hidden_All = *b.All
 	}
+	if b.Alias != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 16)
+		x.xxx_hidden_Alias = *b.Alias
+	}
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 15)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 16)
 		x.xxx_hidden_Name = *b.Name
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 15)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 16)
 		x.xxx_hidden_Desc = *b.Desc
 	}
 	x.xxx_hidden_Project = b.Project
 	if b.Agent != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 15)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 16)
 		x.xxx_hidden_Agent = *b.Agent
 	}
 	if b.Model != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 15)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 16)
 		x.xxx_hidden_Model = *b.Model
 	}
 	if b.RuntimeId != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 15)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 16)
 		x.xxx_hidden_RuntimeId = *b.RuntimeId
 	}
 	if b.ClientId != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 15)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 16)
 		x.xxx_hidden_ClientId = *b.ClientId
 	}
 	if b.DateUpdated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 15)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 16)
 		x.xxx_hidden_DateUpdated = *b.DateUpdated
 	}
 	if b.DateErased != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 15)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 16)
 		x.xxx_hidden_DateErased = *b.DateErased
 	}
 	if b.DateCreated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 15)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 16)
 		x.xxx_hidden_DateCreated = *b.DateCreated
 	}
 	if b.Status != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 15)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 16)
 		x.xxx_hidden_Status = *b.Status
 	}
 	if b.Listed != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 15)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 13, 16)
 		x.xxx_hidden_Listed = *b.Listed
 	}
 	x.xxx_hidden_Account = b.Account
@@ -1121,6 +1224,8 @@ func (b0 SessionSelect_builder) Build() *SessionSelect {
 type SessionPatchRequest struct {
 	state                       protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Ref              *SessionRef            `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Alias            *string                `protobuf:"bytes,8,opt,name=alias"`
+	xxx_hidden_AliasNull        bool                   `protobuf:"varint,9,opt,name=alias_null,json=aliasNull"`
 	xxx_hidden_Name             *string                `protobuf:"bytes,10,opt,name=name"`
 	xxx_hidden_Desc             *string                `protobuf:"bytes,12,opt,name=desc"`
 	xxx_hidden_DateUpdated      *timestamppb.Timestamp `protobuf:"bytes,26,opt,name=date_updated,json=dateUpdated"`
@@ -1164,6 +1269,23 @@ func (x *SessionPatchRequest) GetRef() *SessionRef {
 		return x.xxx_hidden_Ref
 	}
 	return nil
+}
+
+func (x *SessionPatchRequest) GetAlias() string {
+	if x != nil {
+		if x.xxx_hidden_Alias != nil {
+			return *x.xxx_hidden_Alias
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *SessionPatchRequest) GetAliasNull() bool {
+	if x != nil {
+		return x.xxx_hidden_AliasNull
+	}
+	return false
 }
 
 func (x *SessionPatchRequest) GetName() string {
@@ -1225,14 +1347,24 @@ func (x *SessionPatchRequest) SetRef(v *SessionRef) {
 	x.xxx_hidden_Ref = v
 }
 
+func (x *SessionPatchRequest) SetAlias(v string) {
+	x.xxx_hidden_Alias = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 10)
+}
+
+func (x *SessionPatchRequest) SetAliasNull(v bool) {
+	x.xxx_hidden_AliasNull = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 10)
+}
+
 func (x *SessionPatchRequest) SetName(v string) {
 	x.xxx_hidden_Name = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 8)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 10)
 }
 
 func (x *SessionPatchRequest) SetDesc(v string) {
 	x.xxx_hidden_Desc = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 8)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 10)
 }
 
 func (x *SessionPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
@@ -1241,7 +1373,7 @@ func (x *SessionPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
 
 func (x *SessionPatchRequest) SetDateUpdatedForce(v bool) {
 	x.xxx_hidden_DateUpdatedForce = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 8)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 10)
 }
 
 func (x *SessionPatchRequest) SetStatus(v *SessionStatus) {
@@ -1250,12 +1382,12 @@ func (x *SessionPatchRequest) SetStatus(v *SessionStatus) {
 
 func (x *SessionPatchRequest) SetStatusNull(v bool) {
 	x.xxx_hidden_StatusNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 8)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 10)
 }
 
 func (x *SessionPatchRequest) SetListed(v bool) {
 	x.xxx_hidden_Listed = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 8)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 10)
 }
 
 func (x *SessionPatchRequest) HasRef() bool {
@@ -1265,18 +1397,32 @@ func (x *SessionPatchRequest) HasRef() bool {
 	return x.xxx_hidden_Ref != nil
 }
 
-func (x *SessionPatchRequest) HasName() bool {
+func (x *SessionPatchRequest) HasAlias() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
 }
 
-func (x *SessionPatchRequest) HasDesc() bool {
+func (x *SessionPatchRequest) HasAliasNull() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+}
+
+func (x *SessionPatchRequest) HasName() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
+}
+
+func (x *SessionPatchRequest) HasDesc() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
 }
 
 func (x *SessionPatchRequest) HasDateUpdated() bool {
@@ -1290,7 +1436,7 @@ func (x *SessionPatchRequest) HasDateUpdatedForce() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
 }
 
 func (x *SessionPatchRequest) HasStatus() bool {
@@ -1304,27 +1450,37 @@ func (x *SessionPatchRequest) HasStatusNull() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 8)
 }
 
 func (x *SessionPatchRequest) HasListed() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 7)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 9)
 }
 
 func (x *SessionPatchRequest) ClearRef() {
 	x.xxx_hidden_Ref = nil
 }
 
-func (x *SessionPatchRequest) ClearName() {
+func (x *SessionPatchRequest) ClearAlias() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_Alias = nil
+}
+
+func (x *SessionPatchRequest) ClearAliasNull() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	x.xxx_hidden_AliasNull = false
+}
+
+func (x *SessionPatchRequest) ClearName() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
 	x.xxx_hidden_Name = nil
 }
 
 func (x *SessionPatchRequest) ClearDesc() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
 	x.xxx_hidden_Desc = nil
 }
 
@@ -1333,7 +1489,7 @@ func (x *SessionPatchRequest) ClearDateUpdated() {
 }
 
 func (x *SessionPatchRequest) ClearDateUpdatedForce() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
 	x.xxx_hidden_DateUpdatedForce = false
 }
 
@@ -1342,21 +1498,27 @@ func (x *SessionPatchRequest) ClearStatus() {
 }
 
 func (x *SessionPatchRequest) ClearStatusNull() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 8)
 	x.xxx_hidden_StatusNull = false
 }
 
 func (x *SessionPatchRequest) ClearListed() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 9)
 	x.xxx_hidden_Listed = false
 }
 
 type SessionPatchRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Ref  *SessionRef
-	Name *string
-	Desc *string
+	Ref   *SessionRef
+	Alias *string
+	// Clear alias instead of writing it.
+	// It takes a field of its own because an unset value already means
+	// "leave it alone", so no value could have meant NULL. It wins
+	// outright: setting both this and alias clears.
+	AliasNull *bool
+	Name      *string
+	Desc      *string
 	// The version this update requires the stored date_updated to be.
 	// It is a precondition, not a write: the update applies only if the row
 	// still holds this value, and the server stamps the new version itself.
@@ -1385,26 +1547,34 @@ func (b0 SessionPatchRequest_builder) Build() *SessionPatchRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
+	if b.Alias != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 10)
+		x.xxx_hidden_Alias = b.Alias
+	}
+	if b.AliasNull != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 10)
+		x.xxx_hidden_AliasNull = *b.AliasNull
+	}
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 8)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 10)
 		x.xxx_hidden_Name = b.Name
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 8)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 10)
 		x.xxx_hidden_Desc = b.Desc
 	}
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	if b.DateUpdatedForce != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 8)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 10)
 		x.xxx_hidden_DateUpdatedForce = *b.DateUpdatedForce
 	}
 	x.xxx_hidden_Status = b.Status
 	if b.StatusNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 8)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 10)
 		x.xxx_hidden_StatusNull = *b.StatusNull
 	}
 	if b.Listed != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 8)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 10)
 		x.xxx_hidden_Listed = *b.Listed
 	}
 	return m0
@@ -2974,9 +3144,10 @@ var File_cxz_session_svc_g_proto protoreflect.FileDescriptor
 
 const file_cxz_session_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x17cxz/session_svc.g.proto\x12\x03cxz\x1a\x17cxz/account_svc.g.proto\x1a\x1ccxz/auth_binding_svc.g.proto\x1a\x17cxz/project_svc.g.proto\x1a\x11cxz/session.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\"\xee\x03\n" +
+	"\x17cxz/session_svc.g.proto\x12\x03cxz\x1a\x17cxz/account_svc.g.proto\x1a\x1ccxz/auth_binding_svc.g.proto\x1a\x17cxz/project_svc.g.proto\x1a\x11cxz/session.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\"\x84\x04\n" +
 	"\x11SessionAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12\x19\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12\x14\n" +
+	"\x05alias\x18\x04 \x01(\tR\x05alias\x12\x19\n" +
 	"\x04name\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04name\x12\x19\n" +
 	"\x04desc\x18\x06 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04desc\x12)\n" +
 	"\aproject\x18\b \x01(\v2\x0f.cxz.ProjectRefR\aproject\x12\x1b\n" +
@@ -2993,16 +3164,18 @@ const file_cxz_session_svc_g_proto_rawDesc = "" +
 	"\fauth_binding\x18\x13 \x01(\v2\x13.cxz.AuthBindingRefR\vauthBinding\"b\n" +
 	"\x11SessionGetRequest\x12!\n" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.SessionRefR\x03ref\x12*\n" +
-	"\x06select\x18\x02 \x01(\v2\x12.cxz.SessionSelectR\x06select\"e\n" +
+	"\x06select\x18\x02 \x01(\v2\x12.cxz.SessionSelectR\x06select\"}\n" +
 	"\n" +
 	"SessionRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12\x1f\n" +
+	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12\x16\n" +
+	"\x05alias\x18\x04 \x01(\tH\x00R\x05alias\x12\x1f\n" +
 	"\n" +
 	"runtime_id\x18\v \x01(\tH\x00R\truntimeId\x12\x1d\n" +
 	"\tclient_id\x18\f \x01(\tH\x00R\bclientIdB\x05\n" +
-	"\x03key\"\xdf\x03\n" +
+	"\x03key\"\xf5\x03\n" +
 	"\rSessionSelect\x12\x10\n" +
-	"\x03all\x18\x01 \x01(\bR\x03all\x12\x12\n" +
+	"\x03all\x18\x01 \x01(\bR\x03all\x12\x14\n" +
+	"\x05alias\x18\x04 \x01(\bR\x05alias\x12\x12\n" +
 	"\x04name\x18\x05 \x01(\bR\x04name\x12\x12\n" +
 	"\x04desc\x18\x06 \x01(\bR\x04desc\x12,\n" +
 	"\aproject\x18\b \x01(\v2\x12.cxz.ProjectSelectR\aproject\x12\x14\n" +
@@ -3019,9 +3192,12 @@ const file_cxz_session_svc_g_proto_rawDesc = "" +
 	"\x06status\x18\x10 \x01(\bR\x06status\x12\x16\n" +
 	"\x06listed\x18\x11 \x01(\bR\x06listed\x12,\n" +
 	"\aaccount\x18\x12 \x01(\v2\x12.cxz.AccountSelectR\aaccount\x129\n" +
-	"\fauth_binding\x18\x13 \x01(\v2\x16.cxz.AuthBindingSelectR\vauthBinding\"\xb2\x02\n" +
+	"\fauth_binding\x18\x13 \x01(\v2\x16.cxz.AuthBindingSelectR\vauthBinding\"\xe7\x02\n" +
 	"\x13SessionPatchRequest\x12!\n" +
-	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.SessionRefR\x03ref\x12\x12\n" +
+	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.SessionRefR\x03ref\x12\x14\n" +
+	"\x05alias\x18\b \x01(\tR\x05alias\x12\x1d\n" +
+	"\n" +
+	"alias_null\x18\t \x01(\bR\taliasNull\x12\x12\n" +
 	"\x04name\x18\n" +
 	" \x01(\tR\x04name\x12\x12\n" +
 	"\x04desc\x18\f \x01(\tR\x04desc\x12=\n" +
@@ -3204,6 +3380,7 @@ func file_cxz_session_svc_g_proto_init() {
 	file_cxz_session_proto_init()
 	file_cxz_session_svc_g_proto_msgTypes[2].OneofWrappers = []any{
 		(*sessionRef_Id)(nil),
+		(*sessionRef_Alias)(nil),
 		(*sessionRef_RuntimeId)(nil),
 		(*sessionRef_ClientId)(nil),
 	}

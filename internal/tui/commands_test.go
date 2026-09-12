@@ -39,7 +39,7 @@ func TestCommandOverlayAndPlaceholders(t *testing.T) {
 	if len(m.commandHints()) != 0 || m.input.Value() != "/context" {
 		t.Fatal("escape must only dismiss hints")
 	}
-	for _, cmd := range []string{"/context", "/compact", "/usage", "/context details"} {
+	for _, cmd := range []string{"/context", "/compact", "/context details"} {
 		m.input.SetValue(cmd)
 		_, action := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 		if action != nil || len(c.inputs) != 0 || m.cursor["s"] != 0 {

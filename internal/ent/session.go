@@ -22,6 +22,8 @@ type Session struct {
 	config `json:"-"`
 	// Id of the ent.
 	Id uuid.UUID `json:"id,omitempty"`
+	// Alias holds the value of the "alias" field.
+	Alias *string `json:"alias,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// Desc holds the value of the "desc" field.
@@ -109,7 +111,7 @@ func (*Session) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case session.FieldListed:
 			values[i] = new(sql.NullBool)
-		case session.FieldName, session.FieldDesc, session.FieldAgent, session.FieldModel, session.FieldRuntimeId, session.FieldClientId:
+		case session.FieldAlias, session.FieldName, session.FieldDesc, session.FieldAgent, session.FieldModel, session.FieldRuntimeId, session.FieldClientId:
 			values[i] = new(sql.NullString)
 		case session.FieldDateUpdated, session.FieldDateErased, session.FieldDateCreated:
 			values[i] = new(sql.NullTime)
@@ -137,6 +139,13 @@ func (_m *Session) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
 				_m.Id = *value
+			}
+		case session.FieldAlias:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field alias", values[i])
+			} else if value.Valid {
+				_m.Alias = new(string)
+				*_m.Alias = value.String
 			}
 		case session.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -274,6 +283,11 @@ func (_m *Session) String() string {
 	var builder strings.Builder
 	builder.WriteString("Session(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", _m.Id))
+	if v := _m.Alias; v != nil {
+		builder.WriteString("alias=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
 	builder.WriteString("name=")
 	builder.WriteString(_m.Name)
 	builder.WriteString(", ")

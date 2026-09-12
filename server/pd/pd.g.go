@@ -2109,6 +2109,80 @@ func (s Sink) Session() resource.SessionServiceServer {
 	return sinkSession{s.Server.Session(), s.Server.Store, s.w, s.namer, s.joined}
 }
 
+// Add decides the name, and refuses one that was given and cannot be one.
+//
+// It goes through [Sink.WithNamer], which is unset in most deployments and
+// then means: fold what was given, and make a name up when nothing was --
+// for the reason `bare.Minter` makes a key up. An app whose rows have to
+// be named says so with `slug.Required`; see `slug.Names` for why that is
+// the way round it is.
+//
+// The request is copied rather than written to. It belongs to whoever
+// called, and for a call made in this process that is a message they may
+// still be holding -- a server that folded a caller's own field would be
+// changing a value they can read back.
+func (s sinkSession) Add(ctx context.Context, req *resource.SessionAddRequest) (*resource.Session, error) {
+	// How many names to try. More than one only when the caller named
+	// nothing -- then the name is this server's and a collision is this
+	// server's to resolve. A name the caller gave is theirs, and quietly
+	// choosing a different one would write a row they did not ask for.
+	//
+	// And only when this Add opens its own transaction; see [Sink.joined].
+	tries := 1
+	if req.GetAlias() == "" && !s.joined {
+		tries = slug.Tries
+	}
+
+	for try := 0; ; try++ {
+		v, err := slug.NameWith(ctx, s.namer, "cxz.Session", req.GetAlias(), req)
+		if err != nil {
+			return nil, pderr.At("alias", err)
+		}
+
+		// The request is copied rather than written to, and copied again on
+		// each try: it belongs to whoever called, and for a call made in this
+		// process that is a message they may still be holding.
+		r := proto.CloneOf(req)
+		r.SetAlias(v)
+
+		res, err := s.SessionServiceServer.Add(ctx, r)
+		if err == nil || try+1 >= tries || status.Code(err) != codes.AlreadyExists {
+			// Whatever it was, said in the words it was said in. Rewriting
+			// it into "no free name" would assert the one thing this cannot
+			// know -- a duplicate key is the same code -- and would say it
+			// loudest exactly when it is wrong.
+			return res, err
+		}
+	}
+}
+
+// Patch folds a name it was given, and says nothing about one it was not.
+//
+// The presence is the whole of the difference from [sinkSession.Add]: a patch
+// that does not mention the alias is not a patch setting it to the empty
+// string, and refusing one would make every patch of any other field carry
+// the name along.
+//
+// The namer is **not** asked here, and that is the second difference. It
+// decides the name of a row being made; a patch that cleared the alias is
+// a caller asking for something invalid, and answering that with an
+// invented name would hand them a row they did not ask for.
+func (s sinkSession) Patch(ctx context.Context, req *resource.SessionPatchRequest) (*resource.Session, error) {
+	if !req.HasAlias() {
+		return s.SessionServiceServer.Patch(ctx, req)
+	}
+
+	v, err := slug.ParseAlias(req.GetAlias())
+	if err != nil {
+		return nil, pderr.At("alias", err)
+	}
+
+	req = proto.CloneOf(req)
+	req.SetAlias(v)
+
+	return s.SessionServiceServer.Patch(ctx, req)
+}
+
 // orderSession is how Sessions come back.
 //
 // The last column is the key, and it is not decoration: a cursor cannot

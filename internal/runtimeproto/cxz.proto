@@ -33,6 +33,7 @@ message Session {
   string account = 16;
   string auth_backend = 17;
   string auth_binding = 18;
+  string alias = 19;
 }
 message SessionList { repeated Session sessions = 1; }
 message Input { string session_id = 1; string run_id = 2; string client_id = 3; string text = 4; }

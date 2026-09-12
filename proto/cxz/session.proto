@@ -13,6 +13,8 @@ option go_package = "github.com/lesomnus/cxz/resource";
 // operational state, not caller-patchable columns.
 message Session {
   bytes id = 1 [(orm.field) = {type: TYPE_UUID, key: true, default: ""}];
+  // Nullable only for upgrading older databases; lifecycle assigns every session.
+  string alias = 4 [(orm.field) = {unique: true, nullable: true}];
   string name = 5;
   string desc = 6;
   Project project = 8 [(orm.edge) = {immutable: true}];

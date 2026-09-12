@@ -116,6 +116,8 @@ func renderOutput(c *xli.Command, b []byte, event bool) error {
 		preferred := []string{"id", "alias", "name", "agent", "account", "state", "workspace"}
 		if c.HasParent() {
 			switch c.Parent().Name {
+			case "session":
+				preferred = []string{"alias", "id", "title", "agent", "account", "state"}
 			case "account":
 				preferred = []string{"alias", "name", "agent", "authBackend"}
 			case "binding":

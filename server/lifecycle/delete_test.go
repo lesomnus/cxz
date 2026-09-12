@@ -85,6 +85,10 @@ func TestDeletionTombstonesSurviveSnapshots(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
+				var retainedAliases int
+				if err = db.QueryRowContext(ctx, "SELECT count(*) FROM session WHERE listed=false AND alias IS NOT NULL").Scan(&retainedAliases); err != nil || retainedAliases != 0 {
+					t.Fatal("deleted session retained alias", retainedAliases, err)
+				}
 				ss, err := stack.Session().List(ctx, &resource.SessionListRequest{})
 				if err != nil || len(ss.GetItems()) != 0 {
 					t.Fatal("session resurrected", ss, err)
