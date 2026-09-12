@@ -121,20 +121,30 @@ func accountCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 	if backend.Info().Workflow != "project-login" || backend.Info().Scope != "project" {
 		return fmt.Errorf("unsupported auth workflow: %s", backend.Info().Workflow)
 	}
+	return projectAccountWorkflow(ctx, resources, c, a, c.Name, flg.MustGet[string](c, "project"), true)
+}
+
+func projectAccountWorkflow(ctx context.Context, resources *resourceclient.Client, c *xli.Command, a *resource.Account, op, target string, prepare bool) error {
+	backend, err := accounts.Resolve(a.GetAgent(), a.GetAuthBackend())
+	if err != nil {
+		return err
+	}
+	if backend.Info().Workflow != "project-login" || backend.Info().Scope != "project" {
+		return fmt.Errorf("account does not use project login")
+	}
 	// Account registration is global; OAuth grants belong to one project and
 	// profile. Never fan out rotating refresh tokens (architecture §4.2).
 	install, err := transport.Load(stateFrom(ctx))
 	if err != nil {
 		return fmt.Errorf("account login/status requires cxz install: %w", err)
 	}
-	target := flg.MustGet[string](c, "project")
 	if st, e := os.Stat(target); e == nil && st.IsDir() {
 		target, err = dockerx.EnginePath(target)
 		if err != nil {
 			return err
 		}
 	}
-	if c.Name == "login" {
+	if op == "login" && prepare {
 		if _, err = resources.Open(ctx, &api.ProjectRequest{Workspace: target, Agent: a.GetAgent(), PrepareOnly: true, ClientId: core.ID()}); err != nil {
 			return err
 		}
@@ -149,8 +159,8 @@ func accountCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 	if _, err = dockerx.Owned(ctx, p.ContainerId, install.Owner, p.Id); err != nil {
 		return err
 	}
-	if c.Name == "login" {
-		list, err := client.List(ctx, &api.Empty{})
+	if op == "login" {
+		list, err := resources.List(ctx, &api.Empty{})
 		if err != nil {
 			return err
 		}
@@ -162,7 +172,7 @@ func accountCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 		fmt.Fprintf(c.ErrWriter, "Log in as %s (%s) for project %s. Other projects require independent login.\n", a.GetAlias(), a.GetAgent(), p.Alias)
 	}
 	var binding *resource.AuthBinding
-	if c.Name == "login" {
+	if op == "login" {
 		binding, err = resources.Bind(ctx, p.Id, a.GetAlias())
 	} else {
 		spec, e := backend.Binding(p.Id, a.GetAlias())
@@ -175,17 +185,20 @@ func accountCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 	if err != nil {
 		return err
 	}
-	if c.Name == "login" {
+	if op == "login" {
 		fmt.Fprintf(c.ErrWriter, "Authentication backend: %s; binding: %s\n", binding.GetAuthBackend(), binding.GetBindingId())
 	}
 	args := []string{"exec", "-i"}
 	if terminal(c) {
 		args = append(args, "-t")
 	}
-	args = append(args, "--user", p.RemoteUser, p.ContainerId, "/cxz/tools/cxz", "--state", "/cxz/state/data", "_account-"+c.Name, a.GetAlias(), a.GetAgent(), a.GetAuthBackend())
+	args = append(args, "--user", p.RemoteUser, p.ContainerId, "/cxz/tools/cxz", "--state", "/cxz/state/data", "_account-"+op, a.GetAlias(), a.GetAgent(), a.GetAuthBackend())
 	cmd := exec.CommandContext(ctx, "docker", args...)
 	cmd.Stdin = c.ReadCloser
 	cmd.Stdout = c.Writer
+	if !prepare {
+		cmd.Stdout = c.ErrWriter
+	} // Inline login must not contaminate session JSON.
 	cmd.Stderr = c.ErrWriter
 	return cmd.Run()
 }

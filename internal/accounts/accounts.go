@@ -17,6 +17,12 @@ import (
 
 var aliasPattern = regexp.MustCompile(`^[a-z][a-z0-9-]{0,62}$`)
 
+type LoginRequired struct{ Account string }
+
+func (e *LoginRequired) Error() string {
+	return fmt.Sprintf("account %s needs login; run cxz account login %s", e.Account, e.Account)
+}
+
 func Validate(alias, agent string) error {
 	if !aliasPattern.MatchString(alias) {
 		return fmt.Errorf("account alias must be 1–63 lowercase letters, digits or hyphens, starting with a letter")
@@ -58,6 +64,9 @@ func Credential(root, alias, agent string) ([]byte, error) {
 	}
 	path := filepath.Join(Config(root, alias), filename(agent))
 	st, err := os.Lstat(path)
+	if os.IsNotExist(err) {
+		return nil, &LoginRequired{Account: alias}
+	}
 	if err != nil || !st.Mode().IsRegular() || st.Size() > 1024*1024 {
 		return nil, fmt.Errorf("account %s needs login; run cxz account login %s", alias, alias)
 	}

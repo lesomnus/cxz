@@ -1,5 +1,19 @@
 # 구현 진행 상황
 
+## 2026-09-12 — 프로젝트 첫 로그인을 up 흐름에 연결
+
+- project-local-oauth의 인증 파일 누락을 구조화된 gRPC ErrorInfo로 전달한다.
+  대화형 CLI new/up/recreate는 준비된 프로젝트의 기존 공식 로그인 워크플로를
+  실행하고 성공하면 세션 생성/재접속을 한 번 재시도한다.
+- 번호/문자열 오류 파싱에 의존하지 않는다. 중앙 backend, 다른 계정, 인증 파일 손상은
+  자동 로그인 대상에서 제외한다. 계정 binding·소유권·활성 세션 검사와 OAuth 격리는 유지한다.
+- 재시도 시 recreate는 해제하고 request ID와 새 세션 여부는 보존한다. 로그인 출력은
+  stderr로 분리한다. 취소 시 준비된 프로젝트를 보존하며 비대화형은 로그인 명령을 안내한다.
+- CLI 성공/실패/취소/재시도 제한 테스트와 실제 RPC의 누락 인증 details 전달,
+  인증 전 세션 미생성 및 합성 인증 설치 후 동일 요청 성공 통합 검증을 추가했다.
+  실제 OAuth 브라우저 로그인이나 유료 모델 호출은 실행하지 않았다.
+- 전체 Go 테스트·vet, CLI/accounts/server/integration race, diff 검사 통과.
+
 ## 2026-09-12 — 검색 가능한 계정 선택 TUI
 
 - CLI new/up/recreate의 정수 전용 Fscanln 선택기를 Bubble Tea 화면으로 교체했다.

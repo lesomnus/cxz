@@ -8,6 +8,8 @@ import (
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/resourceclient"
 	"github.com/lesomnus/cxz/internal/server"
+	"google.golang.org/genproto/googleapis/rpc/errdetails"
+	"google.golang.org/grpc/status"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -93,10 +95,26 @@ func TestLifecycle(t *testing.T) {
 	if e = client.EnsureAccount(ctx, "test-claude", "claude"); e != nil {
 		t.Fatal(e)
 	}
+	create := &api.CreateRequest{Workspace: work, ClientId: "create-1", Model: "fixture-model", Account: "test-claude"}
+	if _, err := client.Create(ctx, create); err == nil {
+		t.Fatal("unauthenticated session started")
+	} else {
+		details := status.Convert(err).Details()
+		if len(details) != 1 {
+			t.Fatalf("login details lost across RPC: %v", err)
+		}
+		info, ok := details[0].(*errdetails.ErrorInfo)
+		if !ok || info.Reason != "PROJECT_LOGIN_REQUIRED" || info.Metadata["account"] != "test-claude" {
+			t.Fatal(details)
+		}
+	}
+	beforeLogin, err := client.List(ctx, &api.Empty{})
+	if err != nil || len(beforeLogin.Sessions) != 0 {
+		t.Fatal("created session before login", beforeLogin, err)
+	}
 	if e = accounts.Install(state, "test-claude", "claude", []byte(`{"claudeAiOauth":{"accessToken":"synthetic-test-only"}}`)); e != nil {
 		t.Fatal(e)
 	}
-	create := &api.CreateRequest{Workspace: work, ClientId: "create-1", Model: "fixture-model", Account: "test-claude"}
 	s, e := client.Create(ctx, create)
 	if e != nil {
 		t.Fatal(e)
