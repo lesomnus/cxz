@@ -47,6 +47,7 @@ service SessionService {
 
 message SessionAddRequest {
   bytes id = 1;
+  string alias = 4;
   string name = 5 [features.field_presence = IMPLICIT];
   string desc = 6 [features.field_presence = IMPLICIT];
   ProjectRef project = 8;
@@ -69,6 +70,7 @@ message SessionGetRequest {
 message SessionRef {
   oneof key {
     bytes id = 1;
+    string alias = 4;
     string runtime_id = 11;
     string client_id = 12;
   }
@@ -76,6 +78,7 @@ message SessionRef {
 
 message SessionSelect {
   bool all = 1;
+  bool alias = 4;
   bool name = 5;
   bool desc = 6;
   ProjectSelect project = 8;
@@ -94,6 +97,12 @@ message SessionSelect {
 
 message SessionPatchRequest {
   SessionRef ref = 1;
+  string alias = 8;
+  // Clear alias instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and alias clears.
+  bool alias_null = 9;
   string name = 10;
   string desc = 12;
   // The version this update requires the stored date_updated to be.

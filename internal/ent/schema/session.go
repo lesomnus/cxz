@@ -23,6 +23,9 @@ func (Session) Fields() []ent.Field {
 		field.Uuid("id").
 			Unique().
 			Immutable(),
+		field.String("alias").
+			Nillable().
+			Optional(),
 		field.String("name"),
 		field.String("desc"),
 		field.String("agent").
@@ -76,6 +79,9 @@ func (Session) Edges() []ent.Edge {
 func (Session) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("date_created", "id"),
+		index.Fields("alias").
+			Unique().
+			Annotations(entsql.IndexWhere("date_erased IS NULL")),
 		index.Fields("runtime_id").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),

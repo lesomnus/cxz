@@ -12,6 +12,9 @@ import (
 func (e *Session) Proto() *resource.Session {
 	x := &resource.Session{}
 	x.SetId(e.Id[:])
+	if e.Alias != nil {
+		x.SetAlias(*e.Alias)
+	}
 	x.SetName(e.Name)
 	x.SetDesc(e.Desc)
 	if v := e.Edges.Project; v != nil {

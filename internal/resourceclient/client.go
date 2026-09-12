@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/sessionalias"
 	"github.com/lesomnus/cxz/resource"
 	"google.golang.org/grpc"
 )
@@ -23,8 +24,13 @@ func New(conn grpc.ClientConnInterface) *Client {
 
 var _ api.SessionsClient = (*Client)(nil)
 
-func ptr[T any](v T) *T                 { return &v }
-func sr(id string) *resource.SessionRef { return resource.SessionRef_builder{RuntimeId: &id}.Build() }
+func ptr[T any](v T) *T { return &v }
+func sr(id string) *resource.SessionRef {
+	if sessionalias.Valid(id) {
+		return resource.SessionRef_builder{Alias: &id}.Build()
+	}
+	return resource.SessionRef_builder{RuntimeId: &id}.Build()
+}
 func pr(id string) *resource.ProjectRef { return resource.ProjectRef_builder{RuntimeId: &id}.Build() }
 func (c *Client) view(ctx context.Context, s *resource.Session, opts ...grpc.CallOption) (*api.Session, error) {
 	p := s.GetProject()
@@ -38,6 +44,7 @@ func (c *Client) view(ctx context.Context, s *resource.Session, opts ...grpc.Cal
 	st := s.GetStatus()
 	v := &api.Session{Id: s.GetRuntimeId(), Title: s.GetName(), Agent: s.GetAgent(), Model: s.GetModel(), CreateId: s.GetClientId(), ProjectId: p.GetRuntimeId(), Workspace: p.GetWorkspace(), State: st.GetState(), RunId: st.GetRunId(), VendorId: st.GetVendorId(), LastSeq: st.GetLastSeq()}
 	v.ProjectName = p.GetName()
+	v.Alias = s.GetAlias()
 	v.ProjectAlias = p.GetAlias()
 	if a := s.GetAccount(); a != nil {
 		if a.GetAlias() == "" {

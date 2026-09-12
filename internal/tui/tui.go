@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/charmbracelet/bubbles/textarea"
+	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/x/ansi"
@@ -36,6 +37,12 @@ type model struct {
 	localOutput          map[string]string
 	hintSelected         int
 	hintDismissed        bool
+	renaming             bool
+	renameBusy           bool
+	renameID             string
+	aliasInput           textinput.Model
+	usageReports         map[string]string
+	usageGeneration      map[string]uint64
 	view                 viewport.Model
 	focusList, creating  bool
 	notice               string
@@ -320,6 +327,31 @@ func (m *model) action(kind, text string) tea.Cmd {
 }
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch v := msg.(type) {
+	case renameResult:
+		m.renameBusy = false
+		if v.err != nil {
+			m.notice = v.err.Error()
+			return m, nil
+		}
+		for _, s := range m.sessions {
+			if s.Id == v.id {
+				s.Alias = v.alias
+			}
+		}
+		m.renaming = false
+		m.focusList = true
+		m.notice = "alias updated"
+		return m, m.refresh()
+	case usageLoaded:
+		if m.usageGeneration[v.id] != v.generation {
+			return m, nil
+		}
+		m.usageReports[v.id] = v.text
+		if v.err != nil {
+			m.usageReports[v.id] = "Usage unavailable: " + v.err.Error()
+		}
+		m.render()
+		return m, nil
 	case accountListing:
 		if !m.creating {
 			return m, nil
@@ -396,6 +428,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, m.refresh()
 	case tea.KeyMsg:
+		if m.renaming {
+			return m, m.renameKey(v)
+		}
 		if !m.projectView && !m.creating {
 			if handled, cmd := m.commandKey(v); handled {
 				return m, cmd
@@ -423,7 +458,15 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 			m.focusList = !m.focusList
-			return m, nil
+			if m.focusList {
+				m.input.Blur()
+				return m, nil
+			}
+			return m, m.input.Focus()
+		case "r":
+			if m.focusList {
+				return m, m.startRename()
+			}
 		case "ctrl+n":
 			m.creating = true
 			m.focusList = false
@@ -474,7 +517,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			if m.focusList {
 				m.focusList = false
-				return m, nil
+				return m, m.input.Focus()
 			}
 			text := strings.TrimSpace(m.input.Value())
 			if m.creating && m.project != nil {
@@ -522,7 +565,10 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.action("answer", strings.TrimPrefix(text, "/answer "))
 			}
 			localName := strings.Fields(text)[0]
-			if localName == "/help" || localName == "/context" || localName == "/compact" || localName == "/usage" {
+			if localName == "/usage" {
+				return m, m.loadUsage()
+			}
+			if localName == "/help" || localName == "/context" || localName == "/compact" {
 				id := ""
 				if s := m.current(); s != nil {
 					id = s.Id
@@ -548,6 +594,10 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 	var cmd tea.Cmd
+	if m.renaming {
+		m.aliasInput, cmd = m.aliasInput.Update(msg)
+		return m, cmd
+	}
 	if !m.focusList {
 		m.input, cmd = m.input.Update(msg)
 	}
@@ -562,9 +612,9 @@ func (m *model) View() string {
 		return screen("cxz\nResize terminal to 40 × 14 or larger.\nCtrl+C detach", m.width, m.height)
 	}
 	if m.projectView {
-		return blackScreen(m.projectScreen(), m.width, m.height)
+		return m.projectScreen()
 	}
-	return blackScreen(m.sessionScreen(), m.width, m.height)
+	return m.sessionScreen()
 }
 
 func authHint(s *api.Session, e *api.Event) string {

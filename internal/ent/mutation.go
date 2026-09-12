@@ -1898,6 +1898,23 @@ func (m *SessionMutation) Ids(ctx context.Context) ([]uuid.UUID, error) {
 	}
 }
 
+// OldAlias returns the old "alias" field's value of the Session entity.
+// If the Session object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SessionMutation) OldAlias(ctx context.Context) (v *string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldAlias is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldAlias requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAlias: %w", err)
+	}
+	return oldValue.Alias, nil
+}
+
 // OldName returns the old "name" field's value of the Session entity.
 // If the Session object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
@@ -2141,6 +2158,8 @@ func (m *SessionMutation) OldAuthBindingId(ctx context.Context) (v uuid.UUID, er
 // database failed.
 func (m *SessionMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
+	case session.FieldAlias:
+		return m.OldAlias(ctx)
 	case session.FieldName:
 		return m.OldName(ctx)
 	case session.FieldDesc:

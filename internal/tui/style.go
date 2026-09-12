@@ -33,11 +33,11 @@ func newComposer() textarea.Model {
 	input := textarea.New()
 	input.Placeholder = "Ask a question or describe a task… (/help)"
 	input.Prompt = "› "
-	input.SetPromptFunc(2, func(line int) string {
+	input.SetPromptFunc(4, func(line int) string {
 		if line == 0 {
-			return "› "
+			return "›   "
 		}
-		return "  "
+		return timestamp.Render(fmt.Sprintf("%3d ", line))
 	})
 	input.ShowLineNumbers = false
 	input.CharLimit = 100000
@@ -83,7 +83,7 @@ func (m *model) resize() {
 	m.input.SetWidth(max(2, m.width-2))
 	rows := 0
 	for _, line := range strings.Split(m.input.Value(), "\n") {
-		rows += max(1, (ansi.StringWidth(line)+max(1, m.width-4)-1)/max(1, m.width-4))
+		rows += max(1, (ansi.StringWidth(line)+max(1, m.width-6)-1)/max(1, m.width-6))
 	}
 	m.input.SetHeight(min(max(2, rows), min(6, max(1, m.height/4))))
 	m.view.Width = max(1, m.width)
@@ -123,7 +123,7 @@ func screen(s string, width, height int) string {
 
 func (m *model) sessionScreen() string {
 	width := max(1, m.width)
-	info := brand.Render("cxz")
+	info := " -------"
 	if s := m.current(); s != nil {
 		agent := pickerLabel(s.Agent)
 		if s.Model != "" {
@@ -133,12 +133,18 @@ func (m *model) sessionScreen() string {
 		if title == "" {
 			title = "Untitled"
 		}
-		info += "  " + blue.Render(agent) + " · " + lavender.Render("account:"+pickerLabel(s.Account)) + " · " + teal.Render("["+pickerLabel(s.State)+"]") + " · " + title + fmt.Sprintf(" · id:%.8s", s.Id)
-	}
-	if m.focusList {
-		info = accent.Render("↔ ") + info
-	} else {
-		info = "  " + info
+		alias := fmt.Sprintf("%-7s", clip(pickerLabel(safeText(s.Alias)), 7))
+		if s.Alias == "" {
+			alias = "-------"
+		}
+		if m.renaming {
+			alias = m.aliasInput.View()
+		}
+		indicator := " "
+		if m.focusList {
+			indicator = accent.Render("›")
+		}
+		info = indicator + accent.Render(alias) + "  " + blue.Render(agent) + " · " + lavender.Render("◉ "+pickerLabel(s.Account)) + " · " + teal.Render("["+pickerLabel(s.State)+"]") + " · " + title
 	}
 	status := warning.Render(pickerLabel(m.notice))
 	if s := m.current(); s != nil && len(s.Pending) > 0 {
@@ -158,6 +164,7 @@ func helpView(width int) string {
 				"Alt+Enter / Ctrl+J  Newline\n"+
 				"Ctrl+X         Clear draft\n"+
 				"Tab            Toggle session selection; ↑/↓ select, Enter open\n"+
+				"r (selection)  Rename session alias; Enter save, Esc cancel\n"+
 				"Ctrl+Q         Return to project\n"+
 				"Ctrl+N         Create session\n"+
 				"F2 / F3        Allow / deny pending approval\n"+
@@ -168,7 +175,8 @@ func helpView(width int) string {
 				"/answer {\"question\":\"answer\"}  Reply to question\n"+
 				"/stop          Stop agent\n"+
 				"/help          Show this local help (not sent to agent)\n"+
-				"/context /compact /usage  Unimplemented",
+				"/usage         Session usage from the full journal\n"+
+				"/context /compact  Unimplemented",
 			max(1, width-2), true)))
 }
 
@@ -177,8 +185,4 @@ func indentBlock(s string) string {
 		return ""
 	}
 	return "  " + strings.ReplaceAll(s, "\n", "\n  ")
-}
-
-func blackScreen(s string, width, height int) string {
-	return black.Width(max(1, width)).Height(max(1, height)).Render(s)
 }

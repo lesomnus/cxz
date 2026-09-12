@@ -28,6 +28,7 @@ const (
 type Session struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
+	xxx_hidden_Alias       string                 `protobuf:"bytes,4,opt,name=alias"`
 	xxx_hidden_Name        string                 `protobuf:"bytes,5,opt,name=name"`
 	xxx_hidden_Desc        string                 `protobuf:"bytes,6,opt,name=desc"`
 	xxx_hidden_Project     *Project               `protobuf:"bytes,8,opt,name=project"`
@@ -76,6 +77,13 @@ func (x *Session) GetId() []byte {
 		return x.xxx_hidden_Id
 	}
 	return nil
+}
+
+func (x *Session) GetAlias() string {
+	if x != nil {
+		return x.xxx_hidden_Alias
+	}
+	return ""
 }
 
 func (x *Session) GetName() string {
@@ -181,6 +189,10 @@ func (x *Session) SetId(v []byte) {
 		v = []byte{}
 	}
 	x.xxx_hidden_Id = v
+}
+
+func (x *Session) SetAlias(v string) {
+	x.xxx_hidden_Alias = v
 }
 
 func (x *Session) SetName(v string) {
@@ -319,7 +331,9 @@ func (x *Session) ClearAuthBinding() {
 type Session_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Id          []byte
+	Id []byte
+	// Nullable only for upgrading older databases; lifecycle assigns every session.
+	Alias       string
 	Name        string
 	Desc        string
 	Project     *Project
@@ -341,6 +355,7 @@ func (b0 Session_builder) Build() *Session {
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Id = b.Id
+	x.xxx_hidden_Alias = b.Alias
 	x.xxx_hidden_Name = b.Name
 	x.xxx_hidden_Desc = b.Desc
 	x.xxx_hidden_Project = b.Project
@@ -621,9 +636,10 @@ var File_cxz_session_proto protoreflect.FileDescriptor
 
 const file_cxz_session_proto_rawDesc = "" +
 	"\n" +
-	"\x11cxz/session.proto\x12\x03cxz\x1a\x11cxz/project.proto\x1a\x11cxz/account.proto\x1a\x16cxz/auth_binding.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\x93\x06\n" +
+	"\x11cxz/session.proto\x12\x03cxz\x1a\x11cxz/project.proto\x1a\x11cxz/account.proto\x1a\x16cxz/auth_binding.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xb3\x06\n" +
 	"\aSession\x12\x1b\n" +
-	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12\x12\n" +
+	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12\x1e\n" +
+	"\x05alias\x18\x04 \x01(\tB\b\xea\x82\x16\x040\x018\x01R\x05alias\x12\x12\n" +
 	"\x04name\x18\x05 \x01(\tR\x04name\x12\x12\n" +
 	"\x04desc\x18\x06 \x01(\tR\x04desc\x12.\n" +
 	"\aproject\x18\b \x01(\v2\f.cxz.ProjectB\x06\xf2\x82\x16\x02@\x01R\aproject\x12\x1c\n" +

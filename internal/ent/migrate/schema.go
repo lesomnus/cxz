@@ -248,6 +248,7 @@ var (
 	// SessionColumns holds the columns for the "session" table.
 	SessionColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "alias", Type: field.TypeString, Nullable: true},
 		{Name: "name", Type: field.TypeString},
 		{Name: "desc", Type: field.TypeString},
 		{Name: "agent", Type: field.TypeString},
@@ -271,19 +272,19 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "session_project_project",
-				Columns:    []*schema.Column{SessionColumns[12]},
+				Columns:    []*schema.Column{SessionColumns[13]},
 				RefColumns: []*schema.Column{ProjectColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "session_account_account",
-				Columns:    []*schema.Column{SessionColumns[13]},
+				Columns:    []*schema.Column{SessionColumns[14]},
 				RefColumns: []*schema.Column{AccountColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "session_authbinding_auth_binding",
-				Columns:    []*schema.Column{SessionColumns[14]},
+				Columns:    []*schema.Column{SessionColumns[15]},
 				RefColumns: []*schema.Column{AuthbindingColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -292,12 +293,20 @@ var (
 			{
 				Name:    "session_date_created_id",
 				Unique:  false,
-				Columns: []*schema.Column{SessionColumns[9], SessionColumns[0]},
+				Columns: []*schema.Column{SessionColumns[10], SessionColumns[0]},
+			},
+			{
+				Name:    "session_alias",
+				Unique:  true,
+				Columns: []*schema.Column{SessionColumns[1]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "date_erased IS NULL",
+				},
 			},
 			{
 				Name:    "session_runtime_id",
 				Unique:  true,
-				Columns: []*schema.Column{SessionColumns[5]},
+				Columns: []*schema.Column{SessionColumns[6]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},
@@ -305,7 +314,7 @@ var (
 			{
 				Name:    "session_client_id",
 				Unique:  true,
-				Columns: []*schema.Column{SessionColumns[6]},
+				Columns: []*schema.Column{SessionColumns[7]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},

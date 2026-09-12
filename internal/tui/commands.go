@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/x/ansi"
 )
 
 type slashCommand struct{ name, description string }
@@ -12,7 +13,7 @@ var slashCommands = []slashCommand{
 	{"/help", "Keyboard shortcuts"},
 	{"/context", "Context details · Unimplemented"},
 	{"/compact", "Compact conversation · Unimplemented"},
-	{"/usage", "Usage details · Unimplemented"},
+	{"/usage", "Session tokens, cost and time"},
 	{"/answer", "Reply to a pending question"},
 	{"/stop", "Stop agent"},
 }
@@ -82,13 +83,17 @@ func (m *model) commandOverlay(view string) string {
 			text = "› " + c.name + "  " + c.description
 			style = accent
 		}
-		rows[len(rows)-count+i] = black.Width(max(1, m.width)).Render(style.Render(clip(text, m.width)))
+		line := clip(text, m.width)
+		rows[len(rows)-count+i] = style.Render(line + strings.Repeat(" ", max(0, m.width-ansi.StringWidth(line))))
 	}
 	return strings.Join(rows, "\n")
 }
 
 func (m *model) localCommandView(id string) string {
 	command := m.localOutput[id]
+	if command == "/usage" {
+		return indentBlock(ansi.Hardwrap(safeText(m.usageReports[id]), max(1, m.view.Width-2), true))
+	}
 	if command == "" || command == "/help" {
 		return helpView(m.view.Width)
 	}

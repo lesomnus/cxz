@@ -26,6 +26,20 @@ type SessionCreate struct {
 	hooks    []Hook
 }
 
+// SetAlias sets the "alias" field.
+func (_c *SessionCreate) SetAlias(v string) *SessionCreate {
+	_c.mutation.SetAlias(v)
+	return _c
+}
+
+// SetNillableAlias sets the "alias" field if the given value is not nil.
+func (_c *SessionCreate) SetNillableAlias(v *string) *SessionCreate {
+	if v != nil {
+		_c.SetAlias(*v)
+	}
+	return _c
+}
+
 // SetName sets the "name" field.
 func (_c *SessionCreate) SetName(v string) *SessionCreate {
 	_c.mutation.SetName(v)
@@ -269,6 +283,10 @@ func (_c *SessionCreate) createSpec() (*Session, *sqlgraph.CreateSpec, error) {
 	if id, ok := _c.mutation.Id(); ok {
 		_node.Id = id
 		_spec.Id.Value = &id
+	}
+	if value, ok := _c.mutation.Alias(); ok {
+		_spec.SetField(session.FieldAlias, field.TypeString, value)
+		_node.Alias = &value
 	}
 	if value, ok := _c.mutation.Name(); ok {
 		_spec.SetField(session.FieldName, field.TypeString, value)

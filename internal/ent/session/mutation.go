@@ -18,6 +18,7 @@ import (
 type Mutation struct {
 	op                  ent.Op
 	typ                 string
+	alias               *string
 	name                *string
 	desc                *string
 	agent               *string
@@ -51,6 +52,38 @@ func NewMutation(op ent.Op) *Mutation {
 // Predicates returns the list of predicates set on the mutation.
 func (m *Mutation) Predicates() []predicate.Session {
 	return m.predicates
+}
+
+// SetAlias sets the "alias" field.
+func (m *Mutation) SetAlias(s string) {
+	m.alias = &s
+}
+
+// Alias returns the value of the "alias" field in the mutation.
+func (m *Mutation) Alias() (r string, exists bool) {
+	v := m.alias
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearAlias clears the value of the "alias" field.
+func (m *Mutation) ClearAlias() {
+	m.alias = nil
+	m.clearedFields[FieldAlias] = struct{}{}
+}
+
+// AliasCleared returns if the "alias" field was cleared in this mutation.
+func (m *Mutation) AliasCleared() bool {
+	_, ok := m.clearedFields[FieldAlias]
+	return ok
+}
+
+// ResetAlias resets all changes to the "alias" field.
+func (m *Mutation) ResetAlias() {
+	m.alias = nil
+	delete(m.clearedFields, FieldAlias)
 }
 
 // SetName sets the "name" field.
@@ -486,7 +519,10 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 14)
+	fields := make([]string, 0, 15)
+	if m.alias != nil {
+		fields = append(fields, FieldAlias)
+	}
 	if m.name != nil {
 		fields = append(fields, FieldName)
 	}
@@ -537,6 +573,8 @@ func (m *Mutation) Fields() []string {
 // schema.
 func (m *Mutation) Field(name string) (ent.Value, bool) {
 	switch name {
+	case FieldAlias:
+		return m.Alias()
 	case FieldName:
 		return m.Name()
 	case FieldDesc:
@@ -581,6 +619,13 @@ func (m *Mutation) OldField(ctx context.Context, name string) (ent.Value, error)
 // type.
 func (m *Mutation) SetField(name string, value ent.Value) error {
 	switch name {
+	case FieldAlias:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAlias(v)
+		return nil
 	case FieldName:
 		v, ok := value.(string)
 		if !ok {
@@ -709,6 +754,9 @@ func (m *Mutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *Mutation) ClearedFields() []string {
 	var fields []string
+	if m.FieldCleared(FieldAlias) {
+		fields = append(fields, FieldAlias)
+	}
 	if m.FieldCleared(FieldDateErased) {
 		fields = append(fields, FieldDateErased)
 	}
@@ -735,6 +783,9 @@ func (m *Mutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *Mutation) ClearField(name string) error {
 	switch name {
+	case FieldAlias:
+		m.ClearAlias()
+		return nil
 	case FieldDateErased:
 		m.ClearDateErased()
 		return nil
@@ -755,6 +806,9 @@ func (m *Mutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *Mutation) ResetField(name string) error {
 	switch name {
+	case FieldAlias:
+		m.ResetAlias()
+		return nil
 	case FieldName:
 		m.ResetName()
 		return nil

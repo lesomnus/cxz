@@ -122,6 +122,7 @@ func (m *model) projectKey(key tea.KeyMsg) tea.Cmd {
 			m.restoreDraft()
 			m.watch()
 			m.render()
+			return m.input.Focus()
 		}
 	case "ctrl+n", "n":
 		if m.createProjectSession != nil {
@@ -177,7 +178,11 @@ func (m *model) projectScreen() string {
 			style = selectedRow
 		}
 		rows = append(rows, style.Render(clip(mark+title, width)))
-		detail := fmt.Sprintf("  %.8s  %s · %s · %s", s.Id, pickerLabel(s.State), pickerLabel(s.Agent), pickerLabel(s.Account))
+		handle := pickerLabel(safeText(s.Alias))
+		if handle == "" {
+			handle = fmt.Sprintf("%.8s", s.Id)
+		}
+		detail := fmt.Sprintf("  %-7s  %s · %s · %s", handle, pickerLabel(s.State), pickerLabel(s.Agent), pickerLabel(s.Account))
 		rows = append(rows, blue.Render(clip(detail, width)), "")
 	}
 	if len(m.sessions) > capacity {
