@@ -1,6 +1,6 @@
 # 구현 진행 상황
 
-## 2026-09-12 — AuthBackend / AuthBinding 분리 (검증 중)
+## 2026-09-12 — AuthBackend / AuthBinding 분리
 
 - AgentKind별 기본/지원 backend factory registry와 `Info/Binding/Login/Check/Launch`
   계약을 도입했다. 기존 프로젝트 OAuth 로그인·인증 확인·환경/인자 구성을 backend로 옮겼다.
@@ -11,7 +11,17 @@
 - backend/binding은 manifest와 조회 JSON에 보존한다. 누락·불명 backend와 다른 범위의
   binding은 실행/복구 시 거부한다. 기본값은 Account 생성 시에만 선택한다.
 - Claude/Codex의 프로젝트별 OAuth만 활성화했다. 중앙 토큰 공급·API key·실계정 인증은
-  추가하지 않았다. 단위·통합 테스트 1차 통과; 전체 race와 Docker 회귀 검증 예정.
+  추가하지 않았다. 실제 OAuth 로그인·유료 모델 호출 없이 합성 agent로 검증했다.
+- 전체 Go 테스트·race·vet와 payday 코드 생성 일치 검사를 통과했다. Claude/Codex
+  로그인 인자·환경 구성, 실패한 로그인 시 기존 인증 보존, 잘못된 저장 binding의
+  실행 전 거부를 테스트했다.
+- Docker `owned-accounts.mjs`: 지원 backend 조회·미지원 backend 거부, 재로그인 시
+  binding 중복 방지, 계정/프로젝트별 binding 분리, Session 전달, manager 재시작 및
+  project recreate 후 동일 backend/binding 유지 통과. 기존 Account 격리 회귀도 통과했다.
+- `cxz-container-recreate.mjs`: non-root·network-none에서 대화 보존, 명시적 resume과
+  새 Run, 과거 승인 거부, 진행 중 컨테이너 소실 후 대화 복구 통과.
+- 합성 인증 시험에 사용한 전용 컨테이너와 state/tools 볼륨은 정리했다.
+  scratch workspace·이미지 캐시는 보존했다. [검증 요약](../testdata/recovery/auth-backends/summary.json).
 
 ## 2026-09-12 — Account 인증 프로필
 
