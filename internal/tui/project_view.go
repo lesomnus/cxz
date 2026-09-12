@@ -154,7 +154,7 @@ func (m *model) projectScreen() string {
 	if name == "" {
 		name = pickerLabel(p.Alias)
 	}
-	header := accent.Bold(true).Render("cxz · project") + "  /  " + strong.Render(name)
+	header := brand.Render("cxz · project") + "  /  " + strong.Render(name)
 	meta := pickerLabel(p.Workspace)
 	info := fmt.Sprintf("%s  ·  %s  ·  %d sessions", pickerLabel(p.Alias), pickerLabel(p.State), len(m.sessions))
 	var rows []string
@@ -178,7 +178,7 @@ func (m *model) projectScreen() string {
 		}
 		rows = append(rows, style.Render(clip(mark+title, width)))
 		detail := fmt.Sprintf("  %.8s  %s · %s · %s", s.Id, pickerLabel(s.State), pickerLabel(s.Agent), pickerLabel(s.Account))
-		rows = append(rows, muted.Render(clip(detail, width)), "")
+		rows = append(rows, blue.Render(clip(detail, width)), "")
 	}
 	if len(m.sessions) > capacity {
 		rows = append(rows, muted.Render(fmt.Sprintf("  %d–%d of %d", start+1, min(len(m.sessions), start+capacity), len(m.sessions))))

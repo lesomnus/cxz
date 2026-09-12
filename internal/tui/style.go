@@ -10,7 +10,14 @@ import (
 )
 
 var (
-	accent      = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#006D77", Dark: "#76D7CB"})
+	accent      = lipgloss.NewStyle().Foreground(lipgloss.Color("#24d17c"))
+	brand       = lipgloss.NewStyle().Foreground(lipgloss.Color("#aeff98")).Background(lipgloss.Color("#031e2c")).Bold(true)
+	teal        = lipgloss.NewStyle().Foreground(lipgloss.Color("#07898f"))
+	lavender    = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#7255A0", Dark: "#C9B6EE"})
+	blue        = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#42758B", Dark: "#ACD6EB"})
+	peach       = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#A35D52", Dark: "#F2B8A7"})
+	claude      = lipgloss.NewStyle().Foreground(lipgloss.Color("#D97757")).Bold(true)
+	codex       = lipgloss.NewStyle().Foreground(lipgloss.Color("#FFFFFF")).Background(lipgloss.Color("#000000")).Bold(true)
 	muted       = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#626773", Dark: "#969BA8"})
 	strong      = lipgloss.NewStyle().Bold(true)
 	warning     = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#945600", Dark: "#EBC078"})
@@ -64,10 +71,10 @@ func (m *model) resize() {
 	if m.width <= 0 || m.height <= 0 {
 		return
 	}
-	m.input.SetWidth(max(2, m.width-6))
+	m.input.SetWidth(max(2, m.width-2))
 	rows := 0
 	for _, line := range strings.Split(m.input.Value(), "\n") {
-		rows += max(1, (ansi.StringWidth(line)+max(1, m.width-8)-1)/max(1, m.width-8))
+		rows += max(1, (ansi.StringWidth(line)+max(1, m.width-4)-1)/max(1, m.width-4))
 	}
 	m.input.SetHeight(min(max(2, rows), min(6, max(1, m.height/4))))
 	m.view.Width = max(1, m.width-4)
@@ -80,7 +87,7 @@ func clip(s string, width int) string {
 }
 
 func frame(body string, width int, highlighted bool) string {
-	border := muted
+	border := teal
 	if highlighted {
 		border = accent
 	}
@@ -114,11 +121,14 @@ func (m *model) sessionScreen() string {
 		}
 		detail = fmt.Sprintf("%s  ·  account %s  ·  %s", agent, pickerLabel(s.Account), pickerLabel(s.State))
 	}
-	heading := accent.Bold(true).Render("cxz · sessions") + "  /  " + strong.Render(title)
+	heading := brand.Render("cxz · sessions") + "  /  " + strong.Render(title)
 	if m.focusList {
 		heading += accent.Render("  [↑/↓ select · Enter open]")
 	}
 	status := muted.Render("Agent continues when you detach.")
+	if s := m.current(); s != nil {
+		status = lavender.Render("["+pickerLabel(s.State)+"]") + "  " + muted.Render("Agent continues when you detach.")
+	}
 	if s := m.current(); s != nil && len(s.Pending) > 0 {
 		status = warning.Bold(true).Render("APPROVAL · F2 allow / F3 deny") + "  " + pickerLabel(s.Pending[0].Text)
 	} else if !m.view.AtBottom() {
@@ -129,10 +139,11 @@ func (m *model) sessionScreen() string {
 	if s := m.current(); s != nil && len(s.Pending) > 0 {
 		help = "F2 allow · F3 deny · /answer {\"question\":\"answer\"} · Enter send"
 	}
-	body := clip(heading, width) + "\n" + clip(muted.Render(detail), width) + "\n\n" +
-		m.view.View() + "\n" + clip(status, width) + "\n" +
-		frame(m.input.View(), width, !m.focusList) + "\n" +
-		clip(muted.Render(help), width) + "\n" + clip(muted.Render(controls), width) + "\n" +
-		clip(warning.Render(pickerLabel(m.notice)), width)
-	return screen(lipgloss.NewStyle().Padding(0, 2).Render(body), m.width, m.height)
+	inset := lipgloss.NewStyle().Padding(0, 2)
+	body := inset.Render(clip(heading, width)+"\n"+clip(blue.Render(detail), width)+"\n\n"+
+		m.view.View()+"\n"+clip(status, width)) + "\n" +
+		frame(m.input.View(), m.width, !m.focusList) + "\n" +
+		inset.Render(clip(muted.Render(help), width)+"\n"+clip(muted.Render(controls), width)+"\n"+
+			clip(warning.Render(pickerLabel(m.notice)), width))
+	return screen(body, m.width, m.height)
 }
