@@ -59,7 +59,11 @@ func (s Layer) saveProject(ctx context.Context, v *api.Project) (*resource.Proje
 	old, err := srv.Get(ctx, resource.ProjectGetRequest_builder{Ref: ref, Select: resource.ProjectSelect_builder{All: ptr(true)}.Build()}.Build())
 	state := projectStatus(v)
 	if status.Code(err) == codes.NotFound {
-		return srv.Add(ctx, resource.ProjectAddRequest_builder{Id: resourceID(7, v.Id), Name: v.Name, Workspace: v.Workspace, Config: v.Config, RuntimeId: v.Id, Status: state, Listed: ptr(true)}.Build())
+		alias, err := s.alias(ctx, v.Id, v.Name, v.Alias)
+		if err != nil {
+			return nil, err
+		}
+		return srv.Add(ctx, resource.ProjectAddRequest_builder{Id: resourceID(7, v.Id), Alias: alias, Name: v.Name, Workspace: v.Workspace, Config: v.Config, RuntimeId: v.Id, Status: state, Listed: ptr(true)}.Build())
 	}
 	if err != nil {
 		return nil, err

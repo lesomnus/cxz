@@ -129,8 +129,9 @@ func newRoot(state string) *xli.Command {
 	for _, name := range []string{"up", "new", "recreate", "down"} {
 		root.Commands = append(root.Commands, newProjectCommand(name))
 	}
+	root.Commands = append(root.Commands, projectMetadataCommands())
 	root.Commands = append(root.Commands,
-		&xli.Command{Name: "attach", Aliases: []string{"it"}, Brief: "Attach TUI to session/project", Args: arg.Args{stringArg("TARGET", true)}, Handler: withClient(func(ctx context.Context, client api.SessionsClient, c *xli.Command) error {
+		&xli.Command{Name: "attach", Aliases: []string{"it"}, Brief: "Attach TUI to session/project", Args: arg.Args{projectArg("TARGET", true)}, Handler: withClient(func(ctx context.Context, client api.SessionsClient, c *xli.Command) error {
 			return attach(ctx, client, arg.MustGet[string](c, "TARGET"))
 		})},
 		&xli.Command{Name: "tui", Aliases: []string{"watch"}, Brief: "Open multi-project TUI", Handler: withClient(func(ctx context.Context, client api.SessionsClient, _ *xli.Command) error {
@@ -138,7 +139,7 @@ func newRoot(state string) *xli.Command {
 		})},
 	)
 	for _, name := range []string{"login", "shell", "exec"} {
-		c := &xli.Command{Name: name, Brief: map[string]string{"login": "Log in to a vendor inside the project", "shell": "Open project shell", "exec": "Execute command inside project"}[name], Args: arg.Args{stringArg("PROJECT", false)}, Handler: withClient(projectExec)}
+		c := &xli.Command{Name: name, Brief: map[string]string{"login": "Log in to a vendor inside the project", "shell": "Open project shell", "exec": "Execute command inside project"}[name], Args: arg.Args{projectArg("PROJECT", false)}, Handler: withClient(projectExec)}
 		if name == "login" {
 			c.Flags = flg.Flags{agentFlag("")}
 		} else {
@@ -153,6 +154,7 @@ func newRoot(state string) *xli.Command {
 	root.Commands = append(root.Commands, settingsCommand(), doctorCommand(), logsCommand())
 	root.Commands = append(root.Commands, releaseCommands()...)
 	root.Commands = append(root.Commands, xli.NewCmdCompletion())
+	bindProjectCompletions(root)
 	return root
 }
 

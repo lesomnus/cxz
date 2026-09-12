@@ -1,5 +1,23 @@
 # 구현 진행 상황
 
+## 2026-09-12 — Project display name / alias
+
+- payday Project의 `name`을 표시 이름으로 사용하고 `alias = 4`에 전역 unique
+  인덱스를 선언했다. 생성된 ProjectRef의 alias 조회와 metadata-only Patch를 지원한다.
+- cld의 짧은 이름/단어 이니셜/긴 단어 절단 방식을 참고해 자동 alias를 생성한다.
+  자동 충돌은 ID 기반 suffix로 해소하고 기존 alias는 바꾸지 않는다. 직접 지정한
+  중복/잘못된 alias는 거부한다. Patch는 version 조건을 요구하고 상태 수정은 막는다.
+- `project add --name/--alias`, `project set --name/--alias`, new/up/recreate의
+  이름 옵션을 추가했다. up/down/attach/exec/shell/login/logs가 공통 project resolver를
+  사용한다. ID·경로 → alias → 표시 이름 순서이며 중복 표시 이름은 임의 선택하지 않는다.
+- JSON 조회와 TUI에 표시 이름·alias를 노출하고 프로젝트 인자 자동완성을 추가했다.
+  표시 이름만 바꿔도 alias는 유지하며, alias를 바꾸면 이전 alias는 더 이상 해석하지 않는다.
+- 통과: 자동 생성/충돌, 명시적 중복 거부, generated alias ref, 변경 후 ID 유지,
+  재시작 후 유지, 등록 재시도 시 metadata 보존, 상태 Patch 우회 차단, 전체 race.
+  Docker alias 흐름도 `scripts/probes/owned-project-names.mjs`로 통과했다:
+  alias 기반 up/exec/logs/down, 이름·alias 변경 후 동일 session 재접속.
+  테스트 manager/container는 정리하고 작업 파일·볼륨은 보존했다.
+
 ## 2026-09-11 — Docker Bake 및 edge 게시
 
 - cld의 build → app 흐름을 참고해 루트 `Dockerfile`, `docker-bake.hcl`,

@@ -18,7 +18,7 @@ func init() {
 	projectFields := schema.Project{}.Fields()
 	_ = projectFields
 	// projectDescStatus is the schema descriptor for status field.
-	projectDescStatus := projectFields[9].Descriptor()
+	projectDescStatus := projectFields[10].Descriptor()
 	project.ValueScanner.Status = projectDescStatus.ValueScanner.(field.TypeValueScanner[*resource.ProjectStatus])
 	sessionFields := schema.Session{}.Fields()
 	_ = sessionFields

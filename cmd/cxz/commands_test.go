@@ -118,7 +118,10 @@ type projectStub struct {
 }
 
 func testProject() *resource.Project {
-	return resource.Project_builder{RuntimeId: "project-name", Workspace: "project-name", Name: "project-name"}.Build()
+	return resource.Project_builder{RuntimeId: "project-name", Workspace: "project-name", Name: "project-name", Alias: "pn"}.Build()
+}
+func (s projectStub) Get(context.Context, *resource.ProjectGetRequest) (*resource.Project, error) {
+	return testProject(), nil
 }
 func (s projectStub) Add(context.Context, *resource.ProjectAddRequest) (*resource.Project, error) {
 	return testProject(), nil
@@ -188,9 +191,17 @@ func TestCommandsReachAPI(t *testing.T) {
 	if answer.RequestId != "42" || !answer.Allow || answer.RunId != "current-run" || answer.AnswersJson != `{"color":"blue"}` {
 		t.Fatal(answer)
 	}
-	run("down", "project-name")
+	run("down", "pn")
 	if (<-stub.requests).(*api.ProjectRequest).Workspace != "project-name" {
 		t.Fatal("wrong project")
+	}
+	completion := xlitest.Complete(t, newRoot(root), "up ")
+	if completion.Err != nil || !completion.Has("pn") || !completion.Has("project-name") {
+		t.Fatalf("project completion: %+v", completion)
+	}
+	override := xlitest.Complete(t, newRoot("/nonexistent-cxz-test"), "--state "+root+" up ")
+	if override.Err != nil || !override.Has("pn") {
+		t.Fatalf("state override completion: %+v", override)
 	}
 }
 

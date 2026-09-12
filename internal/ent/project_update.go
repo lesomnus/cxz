@@ -30,6 +30,20 @@ func (_u *ProjectUpdate) Where(ps ...predicate.Project) *ProjectUpdate {
 	return _u
 }
 
+// SetAlias sets the "alias" field.
+func (_u *ProjectUpdate) SetAlias(v string) *ProjectUpdate {
+	_u.mutation.SetAlias(v)
+	return _u
+}
+
+// SetNillableAlias sets the "alias" field if the given value is not nil.
+func (_u *ProjectUpdate) SetNillableAlias(v *string) *ProjectUpdate {
+	if v != nil {
+		_u.SetAlias(*v)
+	}
+	return _u
+}
+
 // SetName sets the "name" field.
 func (_u *ProjectUpdate) SetName(v string) *ProjectUpdate {
 	_u.mutation.SetName(v)
@@ -185,6 +199,9 @@ func (_u *ProjectUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			}
 		}
 	}
+	if value, ok := _u.mutation.Alias(); ok {
+		_spec.SetField(project.FieldAlias, field.TypeString, value)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(project.FieldName, field.TypeString, value)
 	}
@@ -245,6 +262,20 @@ type ProjectUpdateOne struct {
 	hooks     []Hook
 	mutation  *ProjectMutation
 	modifiers []func(*sql.UpdateBuilder)
+}
+
+// SetAlias sets the "alias" field.
+func (_u *ProjectUpdateOne) SetAlias(v string) *ProjectUpdateOne {
+	_u.mutation.SetAlias(v)
+	return _u
+}
+
+// SetNillableAlias sets the "alias" field if the given value is not nil.
+func (_u *ProjectUpdateOne) SetNillableAlias(v *string) *ProjectUpdateOne {
+	if v != nil {
+		_u.SetAlias(*v)
+	}
+	return _u
 }
 
 // SetName sets the "name" field.
@@ -431,6 +462,9 @@ func (_u *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err er
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := _u.mutation.Alias(); ok {
+		_spec.SetField(project.FieldAlias, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(project.FieldName, field.TypeString, value)

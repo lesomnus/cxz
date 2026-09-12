@@ -14,6 +14,9 @@ func (x *Project) Ref() *ProjectRef {
 	if v := x.GetId(); len(v) > 0 {
 		return ProjectById(v)
 	}
+	if v := x.GetAlias(); len(v) > 0 {
+		return ProjectByAlias(v)
+	}
 	if v := x.GetWorkspace(); len(v) > 0 {
 		return ProjectByWorkspace(v)
 	}
@@ -32,6 +35,8 @@ func (x *ProjectRef) Picks(v *Project) bool {
 	switch x.WhichKey() {
 	case ProjectRef_Id_case:
 		return bytes.Equal(x.GetId(), v.GetId())
+	case ProjectRef_Alias_case:
+		return x.GetAlias() == v.GetAlias()
 	case ProjectRef_Workspace_case:
 		return x.GetWorkspace() == v.GetWorkspace()
 	case ProjectRef_RuntimeId_case:
@@ -55,6 +60,12 @@ func ProjectById(v []byte) *ProjectRef {
 	return x
 }
 
+func ProjectByAlias(v string) *ProjectRef {
+	x := &ProjectRef{}
+	x.SetAlias(v)
+	return x
+}
+
 func ProjectByWorkspace(v string) *ProjectRef {
 	x := &ProjectRef{}
 	x.SetWorkspace(v)
@@ -69,6 +80,10 @@ func ProjectByRuntimeId(v string) *ProjectRef {
 
 func ProjectGetById(v []byte) *ProjectGetRequest {
 	return ProjectGetRequest_builder{Ref: ProjectById(v)}.Build()
+}
+
+func ProjectGetByAlias(v string) *ProjectGetRequest {
+	return ProjectGetRequest_builder{Ref: ProjectByAlias(v)}.Build()
 }
 
 func ProjectGetByWorkspace(v string) *ProjectGetRequest {

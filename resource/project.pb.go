@@ -28,6 +28,7 @@ const (
 type Project struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
+	xxx_hidden_Alias       string                 `protobuf:"bytes,4,opt,name=alias"`
 	xxx_hidden_Name        string                 `protobuf:"bytes,5,opt,name=name"`
 	xxx_hidden_Desc        string                 `protobuf:"bytes,6,opt,name=desc"`
 	xxx_hidden_Workspace   string                 `protobuf:"bytes,8,opt,name=workspace"`
@@ -72,6 +73,13 @@ func (x *Project) GetId() []byte {
 		return x.xxx_hidden_Id
 	}
 	return nil
+}
+
+func (x *Project) GetAlias() string {
+	if x != nil {
+		return x.xxx_hidden_Alias
+	}
+	return ""
 }
 
 func (x *Project) GetName() string {
@@ -149,6 +157,10 @@ func (x *Project) SetId(v []byte) {
 		v = []byte{}
 	}
 	x.xxx_hidden_Id = v
+}
+
+func (x *Project) SetAlias(v string) {
+	x.xxx_hidden_Alias = v
 }
 
 func (x *Project) SetName(v string) {
@@ -239,6 +251,7 @@ type Project_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Id          []byte
+	Alias       string
 	Name        string
 	Desc        string
 	Workspace   string
@@ -256,6 +269,7 @@ func (b0 Project_builder) Build() *Project {
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Id = b.Id
+	x.xxx_hidden_Alias = b.Alias
 	x.xxx_hidden_Name = b.Name
 	x.xxx_hidden_Desc = b.Desc
 	x.xxx_hidden_Workspace = b.Workspace
@@ -428,9 +442,10 @@ var File_cxz_project_proto protoreflect.FileDescriptor
 
 const file_cxz_project_proto_rawDesc = "" +
 	"\n" +
-	"\x11cxz/project.proto\x12\x03cxz\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xc8\x04\n" +
+	"\x11cxz/project.proto\x12\x03cxz\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xe6\x04\n" +
 	"\aProject\x12\x1b\n" +
-	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12\x12\n" +
+	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12\x1c\n" +
+	"\x05alias\x18\x04 \x01(\tB\x06\xea\x82\x16\x020\x01R\x05alias\x12\x12\n" +
 	"\x04name\x18\x05 \x01(\tR\x04name\x12\x12\n" +
 	"\x04desc\x18\x06 \x01(\tR\x04desc\x12&\n" +
 	"\tworkspace\x18\b \x01(\tB\b\xea\x82\x16\x040\x01@\x01R\tworkspace\x12\x16\n" +
