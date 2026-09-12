@@ -87,10 +87,17 @@ func TestQuotaFailureNeverFailsTurn(t *testing.T) {
 		if s.snap.State != "working" || input.Len() != 0 {
 			t.Fatal("telemetry failed turn or retried unsupported API")
 		}
+		statusRecorded := false
 		for _, e := range s.log.All() {
 			if e.Kind == "turn_end" {
 				t.Fatal("quota error became failed turn")
 			}
+			if e.Kind == "usage_status" && e.Text == "unsupported" {
+				statusRecorded = true
+			}
+		}
+		if !statusRecorded {
+			t.Fatal("quota failure not observable")
 		}
 	}
 }

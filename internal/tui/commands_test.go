@@ -58,8 +58,12 @@ func TestCommandOverlayAndContext(t *testing.T) {
 func TestTranscriptGutterAndDuration(t *testing.T) {
 	for _, kind := range []string{"assistant", "tool_call", "tool_result", "diagnostic", "approval"} {
 		text := ansi.Strip(eventView(&api.Session{Agent: "codex"}, &api.Event{Kind: kind, Text: "hello", Payload: []byte(`{"value":"world"}`)}, 40))
-		for _, line := range strings.Split(text, "\n") {
-			if !strings.HasPrefix(line, "  ") || ansi.StringWidth(line) > 40 {
+		for i, line := range strings.Split(text, "\n") {
+			prefix := "  "
+			if kind == "assistant" && i == 0 {
+				prefix = "• "
+			}
+			if !strings.HasPrefix(line, prefix) || ansi.StringWidth(line) > 40 {
 				t.Fatal(kind, line)
 			}
 		}

@@ -24,6 +24,7 @@ func (m *model) loadUsage() tea.Cmd {
 		return nil
 	}
 	id := s.Id
+	provider, run := s.Agent, s.RunId
 	if m.localHelp == nil {
 		m.localHelp = map[string]uint64{}
 	}
@@ -68,7 +69,7 @@ func (m *model) loadUsage() tea.Cmd {
 				return usageLoaded{id: id, generation: generation, err: fmt.Errorf("history cursor did not advance")}
 			}
 		}
-		return usageLoaded{id: id, generation: generation, text: usageReport(events)}
+		return usageLoaded{id: id, generation: generation, text: usageReport(events) + "\n\n" + quotaHistoryReport(provider, run, events)}
 	}
 }
 

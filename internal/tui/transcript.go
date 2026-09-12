@@ -16,7 +16,9 @@ import (
 func eventView(s *api.Session, e *api.Event, width int) (out string) {
 	if e.Kind != "input" && e.Kind != "turn_end" {
 		width = max(1, width-2)
-		defer func() { out = indentBlock(out) }()
+		if e.Kind != "assistant" {
+			defer func() { out = indentBlock(out) }()
+		}
 	}
 	wrap := func(text string) string { return ansi.Hardwrap(safeText(text), max(1, width), true) }
 	switch e.Kind {
@@ -48,7 +50,7 @@ func eventView(s *api.Session, e *api.Event, width int) (out string) {
 		if name == "" {
 			name = "AGENT"
 		}
-		return style.Render(name) + "\n" + markdownView(e.Text, width)
+		return style.Render("•") + " " + style.Render(name) + "\n" + indentBlock(markdownView(e.Text, width))
 	case "approval":
 		return strings.TrimPrefix(approvalLine(s, e, "requested", width+2), "  ")
 	case "approval_resolved":

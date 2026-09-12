@@ -1,5 +1,22 @@
 # 구현 진행 상황
 
+## 2026-09-12 — 응답 시작 표시·사용량 부재 진단·전송 키 안내
+
+- 에이전트 헤더에 indicator 열의 •를 추가하고 답변 본문의 두 칸 들여쓰기는 유지했다.
+  최하단 우측 사용량에는 한 칸 여백을 추가했다.
+- quota waiting/unsupported/unavailable/error를 구분하고 /usage에 원인별 안내를
+  추가했다. 기존 실행 프로세스는 새 cxz 바이너리로 자동 교체되지 않으므로, telemetry가
+  계속 없으면 서버/런타임을 업데이트하고 agent를 재시작해야 한다.
+- 이전 검증은 fixture였다. 이번에는 실제 설치된 Claude Code 2.1.267을 빈 프로필로
+  실행해 get_usage 지원과 응답 필드를 확인했다. 인증·프롬프트·모델 호출은 하지 않았으며
+  사용자 로그인 계정의 실제 quota는 확인하지 못했다. opt-in 재현 명령:
+  `CXZ_PROBE_CLAUDE=1 go test ./internal/supervisor -run TestInstalledClaudeQuotaControl -v`.
+- 실제 빈 프로필 응답은 rate_limits_available=false였다. 전체 Go 테스트(통합 포함),
+  TUI/supervisor race, go vet, 표시/한도 상태 전이 회귀 검증을 통과했다.
+- Ctrl-Enter의 legacy CR 중복과 확장 모드 opt-in 요구를 확인했다. 현재 cxz는 확장 모드를
+  활성화하지 않으며, 기존에 구현/PTY 검증한 Ctrl-S를 기본 전송 안내로 강조한다.
+  [키보드 프로토콜](https://sw.kovidgoyal.net/kitty/keyboard-protocol/) 참고.
+
 ## 2026-09-12 — 입력·명령 팔레트·승인·공급자 사용량/컨텍스트
 
 - Enter 줄바꿈, Ctrl-Enter(CSI-u/xterm)/Ctrl-S 전송. 실제 PTY 키 디코딩과 붙여넣기
