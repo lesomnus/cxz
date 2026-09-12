@@ -94,7 +94,7 @@ type rpcStub struct {
 }
 
 func (s *rpcStub) Add(_ context.Context, r *resource.SessionAddRequest) (*resource.Session, error) {
-	s.requests <- &api.ProjectRequest{Workspace: "project-name", Agent: r.GetAgent(), Model: r.GetModel(), ClientId: r.GetClientId(), NewSession: true}
+	s.requests <- &api.ProjectRequest{Workspace: "project-name", Agent: r.GetAgent(), Model: r.GetModel(), ClientId: r.GetClientId(), NewSession: true, Account: r.GetAccount().GetAlias()}
 	return resource.Session_builder{RuntimeId: "session", Agent: r.GetAgent()}.Build(), nil
 }
 func (s *rpcStub) List(context.Context, *resource.SessionListRequest) (*resource.SessionListResponse, error) {
@@ -180,7 +180,7 @@ func TestCommandsReachAPI(t *testing.T) {
 	}
 	got := run("new", "--account", "work-codex", "--agent", "codex", "--model", "test-model", "--no-attach", "project-name")
 	req := (<-stub.requests).(*api.ProjectRequest)
-	if req.Agent != "codex" || !req.NewSession || req.Workspace != "project-name" || req.ClientId == "" {
+	if req.Agent != "codex" || req.Account != "work-codex" || !req.NewSession || req.Workspace != "project-name" || req.ClientId == "" {
 		t.Fatal(req)
 	}
 	if req.Model != "test-model" {

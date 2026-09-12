@@ -437,6 +437,14 @@ not an inconvenience.
 
 ### 4.2 Agent credentials
 
+**Implementation update (2026-09-12):** Account is now a global payday profile
+resource, while each `(Project, Account)` keeps its own OAuth grant/config/HOME.
+`cxz account login --project PROJECT ACCOUNT` prepares that project and performs
+an independent login there. Session.account is immutable. This preserves option
+(c) below; it does **not** distribute shared refresh tokens. See [Accounts](accounts.md).
+The Codex central-token mechanism discussed below remains a capability research
+result, not the implemented subscription login path.
+
 Subscription logins use OAuth with **rotating refresh tokens**: each refresh
 issues a new one and invalidates its predecessor. Three arrangements are
 possible, and two of them have already been tried and rejected in cld:

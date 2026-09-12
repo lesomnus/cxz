@@ -9,17 +9,16 @@ import {join, resolve} from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {setTimeout as delay} from 'node:timers/promises';
 const exec=promisify(execFile);
-const [state, project, kind]=process.argv.slice(2);
+const [state, project, kind, account]=process.argv.slice(2);
 const memoryOnly=process.env.CXZ_PROBE_MEMORY_ONLY==='1';
-assert(state && project && ['claude','codex'].includes(kind),'STATE PROJECT claude|codex required');
+assert(state && project && account && ['claude','codex'].includes(kind),'STATE PROJECT claude|codex ACCOUNT required');
 const binary=resolve(process.env.CXZ_BIN || 'bin/cxz');
 const installation=JSON.parse(readFileSync(join(state,'installation.json'),'utf8'));
-const checks=[]; let watcher; let events=[]; let temporaryAuth=false; let authPath; let session;
+const checks=[]; let watcher; let events=[]; let session;
 async function cli(...args) { return (await exec(binary,['--state',state,...args],{timeout:300000,maxBuffer:8*1024*1024})).stdout.trim(); }
 async function json(...args){return JSON.parse(await cli(...args));}
 async function docker(...args){return (await exec('docker',args,{timeout:60000,maxBuffer:1024*1024})).stdout.trim();}
 async function info(){const p=(await json('projects')).projects.find(p=>p.id===project||p.name===project);assert(p && p.state==='running');const v=JSON.parse(await docker('inspect',p.container_id))[0];assert.equal(v.Config.Labels['cxz.owner'],installation.owner);assert.equal(v.Config.Labels['cxz.project'],p.id);return p;}
-async function input(args,data){await new Promise((resolve,reject)=>{const p=spawn('docker',args,{stdio:['pipe','ignore','pipe']});let error='';p.stderr.on('data',b=>error+=b);p.on('error',reject);p.on('close',code=>code===0?resolve():reject(new Error(`credential provisioning failed (${code}): ${error.replaceAll(data.trim(),'<redacted>').replace(/eyJ[\w-]+\.[\w-]+\.[\w-]+|sk-[\w-]+/g,'<redacted>').slice(0,1000)}`)));p.stdin.end(data);});}
 function watch(){watcher?.kill();events=[];watcher=spawn(binary,['--state',state,'events',session.id],{stdio:['ignore','pipe','ignore']});let text='';watcher.stdout.on('data',b=>{text+=b;let n;while((n=text.indexOf('\n'))>=0){const line=text.slice(0,n);text=text.slice(n+1);try{events.push(JSON.parse(line));}catch{}}});}
 async function until(predicate,description,timeout=120000){const deadline=Date.now()+timeout;while(Date.now()<deadline){const v=await predicate();if(v)return v;await delay(250);}throw new Error(`timeout: ${description}`);}
 function pass(name){checks.push(name);console.log(JSON.stringify({agent:kind,check:name,status:'passed'}));}
@@ -27,28 +26,9 @@ async function idle(after){return until(async()=>{const s=await json('get',sessi
 async function send(text){const s=await json('get',session.id);await cli('send',session.id,text);return s.last_seq||0;}
 try {
   let p=await info();
-  session=(await json('ls')).sessions.find(s=>s.project_id===p.id&&s.agent===kind);
+  session=(await json('ls')).sessions.find(s=>s.project_id===p.id&&s.agent===kind&&s.account===account);
   assert(session,'run cxz up with this agent first');
-  if(process.env.CXZ_PROBE_USE_ACCESS_TOKEN==='1'){
-    authPath=`/cxz/state/data/agents/${kind}/${kind==='claude'?'.credentials.json':'auth.json'}`;
-    await docker('exec',p.container_id,'test','!','-e',authPath);
-    if(['idle','working','waiting_input','starting'].includes(session.state)) await cli('stop',session.id);
-    temporaryAuth=true;
-    if(kind==='claude'){
-      const source=JSON.parse(readFileSync(join(process.env.CLAUDE_CONFIG_DIR||join(process.env.HOME,'.claude'),'.credentials.json'),'utf8')).claudeAiOauth;
-      assert(source.accessToken&&source.expiresAt>Date.now()+600000,'valid access token with 10 minutes remaining required');
-      const {accessToken,expiresAt,scopes,subscriptionType,rateLimitTier}=source;
-      await input(['exec','-i','--user',p.remote_user,p.container_id,'sh','-c',`umask 077; cat > ${authPath}`],JSON.stringify({claudeAiOauth:{accessToken,expiresAt,scopes,subscriptionType,rateLimitTier}}));
-    }else{
-      const source=JSON.parse(readFileSync(join(process.env.CODEX_HOME||join(process.env.HOME,'.codex'),'auth.json'),'utf8'));
-      assert(source.tokens?.access_token,'existing access token required');
-      const {id_token,access_token,account_id}=source.tokens;
-      // --with-access-token accepts agent-identity tokens, not ChatGPT OAuth.
-      // Project-local short-lived projection deliberately has NO refresh token.
-      await input(['exec','-i','--user',p.remote_user,p.container_id,'sh','-c',`umask 077; cat > ${authPath}`],JSON.stringify({auth_mode:'chatgpt',tokens:{id_token,access_token,account_id,refresh_token:''},last_refresh:new Date().toISOString()}));
-    }
-    session=await json('resume',session.id);
-  }
+  assert.notEqual(process.env.CXZ_PROBE_USE_ACCESS_TOKEN,'1','log in with cxz account login --project PROJECT ACCOUNT; host token copying is disabled');
   watch(); await delay(500);
   const marker=`orchard-${randomUUID().slice(0,8)}`;
   let after=await send(`For this test project's user-facing notes, its codename is ${marker}. Keep that note in our conversation only, not in files. Reply with just READY.`);
@@ -96,5 +76,4 @@ try {
   console.log(JSON.stringify({agent:kind,passed:checks.length,checks}));
 } finally {
   watcher?.kill();
-  if(temporaryAuth){const p=await info();const s=await json('get',session.id);if(['idle','working','waiting_input','starting'].includes(s.state))await cli('stop',session.id);await docker('exec','--user',p.remote_user,p.container_id,'rm','-f',authPath);console.log(JSON.stringify({agent:kind,temporary_access_token_removed:true}));}
 }

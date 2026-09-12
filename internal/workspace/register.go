@@ -80,22 +80,6 @@ func (m *Manager) CreateSession(ctx context.Context, r *api.CreateRequest) (*api
 		return nil, err
 	}
 	defer conn.Close()
-	// Never replace credentials underneath a live agent, even on a create retry.
-	live, err := client.List(ctx, &api.Empty{})
-	if err != nil {
-		return nil, err
-	}
-	active := false
-	for _, v := range live.Sessions {
-		if v.State == "starting" || v.State == "idle" || v.State == "working" || v.State == "waiting_input" {
-			active = true
-		}
-	}
-	if !active {
-		if err = m.prepareAccount(ctx, p, r.Account, r.Agent); err != nil {
-			return nil, err
-		}
-	}
 	if err = resourceclient.New(conn).EnsureAccount(ctx, r.Account, r.Agent); err != nil {
 		return nil, err
 	}

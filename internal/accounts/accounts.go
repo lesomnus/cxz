@@ -1,5 +1,5 @@
 // Package accounts owns private vendor authentication files. No secret is a
-// resource field: the manager transfers only the selected profile over stdin.
+// resource field. OAuth grants belong to one project and one profile.
 package accounts
 
 import (
@@ -100,8 +100,8 @@ func validateCredential(alias, agent string, b []byte) error {
 	return nil
 }
 
-// Install does not overwrite refreshed project tokens until the manager login
-// changes. Vendor history/config remains in this account's project directory.
+// Install publishes a completed local login. Vendor history/config remains in
+// this account's project directory. No production path copies grants to projects.
 func Install(root, alias, agent string, credential []byte) error {
 	if err := Validate(alias, agent); err != nil {
 		return err

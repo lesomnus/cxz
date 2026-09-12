@@ -1,12 +1,8 @@
 package workspace
 
 import (
-	"bytes"
 	"context"
-	"fmt"
 	"github.com/lesomnus/cxz/api"
-	"github.com/lesomnus/cxz/internal/accounts"
-	"github.com/lesomnus/cxz/internal/dockerx"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -52,9 +48,6 @@ func (m *Manager) ResumeSession(ctx context.Context, r *api.Control) (*api.Sessi
 					return nil, status.Error(codes.AlreadyExists, "workspace has another live session")
 				}
 			}
-			if err = m.prepareAccount(ctx, p, v.Account, v.Agent); err != nil {
-				return nil, err
-			}
 			return client.Resume(ctx, r)
 		}
 	}
@@ -62,18 +55,4 @@ func (m *Manager) ResumeSession(ctx context.Context, r *api.Control) (*api.Sessi
 }
 func liveSession(s *api.Session) bool {
 	return s.State == "starting" || s.State == "idle" || s.State == "working" || s.State == "waiting_input"
-}
-func (m *Manager) prepareAccount(ctx context.Context, p *Project, alias, agent string) error {
-	if alias == "" {
-		return fmt.Errorf("session has no account; create a new session with --account")
-	}
-	credential, err := accounts.Credential(m.Root, alias, agent)
-	if err != nil {
-		return err
-	}
-	if _, err = dockerx.Owned(ctx, p.ContainerID, m.Owner, p.ID); err != nil {
-		return err
-	}
-	// No credential appears in command arguments, resource audit, or journals.
-	return dockerx.Input(ctx, bytes.NewReader(credential), "exec", "-i", "--user", p.RemoteUser, p.ContainerID, "/cxz/tools/cxz", "--state", "/cxz/state/data", "_account-import", alias, agent)
 }

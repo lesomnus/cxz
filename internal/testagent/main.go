@@ -14,6 +14,15 @@ import (
 )
 
 func main() {
+	if len(os.Args) > 2 && os.Args[1] == "auth" && os.Args[2] == "login" {
+		config := os.Getenv("CLAUDE_CONFIG_DIR")
+		b, _ := json.Marshal(map[string]any{"claudeAiOauth": map[string]string{"accessToken": "synthetic-" + filepath.Base(filepath.Dir(config))}})
+		if err := os.WriteFile(filepath.Join(config, ".credentials.json"), b, 0600); err != nil {
+			panic(err)
+		}
+		fmt.Println("Synthetic fixture login complete (not a real vendor login)")
+		return
+	}
 	var mu sync.Mutex
 	vendor := "00000000-0000-4000-8000-000000000001"
 	emit := func(v any) { mu.Lock(); defer mu.Unlock(); b, _ := json.Marshal(v); fmt.Println(string(b)) }

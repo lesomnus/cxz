@@ -1,15 +1,29 @@
 # 구현 진행 상황
 
-## 2026-09-12 — Account 인증 프로필 (구현·검증 중)
+## 2026-09-12 — Account 인증 프로필
 
 - payday Account 리소스(domain 9), 고정 Session.account 연결, 계정 등록/조회,
-  manager 로그인·상태 확인, CLI --account와 TUI 계정 선택을 구현했다.
-- manager 비공개 vault에서 선택한 계정만 project volume으로 전달한다. 계정별
-  HOME/config를 사용하고 inherited vendor 인증 환경변수를 차단한다.
+  프로젝트별 로그인·상태 확인, CLI --account와 TUI 계정 선택을 구현했다.
+- 최초 구현의 중앙 vault 복제는 architecture §4.2와 충돌하여 최종 구현에서 제거했다.
+  실제 OAuth grant는 프로젝트×Account별로 독립 발급·저장한다. 계정별 HOME/config를
+  사용하고 inherited vendor 인증 환경변수를 차단한다. refresh token을 복제하지 않는다.
 - 누락된 인증·다른 vendor·다른 Account로의 live attach를 거부한다. 정지 세션의
   resume은 계정을 유지하며, 재로그인은 다음 실행 시 반영한다.
-- 전체 Go 테스트 1차 통과. Account 리소스/인증 환경/토큰 갱신 보존/DB 복구 테스트를
-  추가했다. Docker 검증과 최종 race/codegen 검증 진행 중. 실계정 로그인은 수행하지 않는다.
+- 전체 Go 테스트 및 `CXZ_TEST_RACE=1 go test -race ./... -count=1` 통과.
+  Account 리소스/인증 환경/갱신 보존/DB 복구 테스트를 추가했다.
+- Docker `owned-accounts.mjs`: 실제 CLI의 staged login/status(합성 vendor), 두 Account
+  별도 세션, 계정별 HOME/config, 환경 인증 차단, 잘못된 live attach/활성 로그인 거부,
+  원래 계정 resume, manager 재시작·project recreate 후 동일 계정 유지 통과.
+  manager에 인증 저장소가 생기지 않는 것도 확인했다.
+- 별도 Project에서 동일 Account를 선택해도 기존 프로젝트 인증을 사용하지 못하고
+  독립 로그인을 요구하는 것을 확인했다. 기존 이름/alias up·exec·logs·rename도 재검증했다.
+- 최종 `go vet ./...`, `go tool pd gen --check .`, `git diff --check` 통과.
+- `cxz-container-recreate.mjs`: non-root·network-none에서 Account/대화 보존,
+  새 Run·과거 승인 거부·진행 중 컨테이너 소실 후 복구 통과.
+- 실계정 로그인/유료 대화는 수행하지 않았다. `owned-session-live.mjs`는 명시적으로
+  인증된 Project/Account를 받도록 바꾸고, host token 복사 경로를 제거했다.
+- 합성 인증을 사용한 시험 manager/project 컨테이너와 전용 state/tools 볼륨은 정리했다.
+  실제 계정에는 로그인하지 않았으며 scratch workspace와 이미지 빌드 캐시는 보존했다.
 - 범위·제약: [Account 설계](accounts.md). 사용자 인증/roster와 프로젝트별 허용 계정
   정책은 별도이며, 동일 OS 사용자 간의 적대적 코드 격리를 주장하지 않는다.
 

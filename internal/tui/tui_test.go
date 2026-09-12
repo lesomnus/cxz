@@ -25,7 +25,7 @@ func TestDiagnosticAndAuthenticationHint(t *testing.T) {
 	m := &model{sessions: []*api.Session{s}, view: viewport.New(120, 20), events: map[string][]*api.Event{"s": {e}}}
 	m.render()
 	text := m.view.View()
-	if !strings.Contains(text, "authentication failed") || !strings.Contains(text, "cxz account login work-codex") {
+	if !strings.Contains(text, "authentication failed") || !strings.Contains(text, "cxz account login --project project work-codex") {
 		t.Fatal(text)
 	}
 	if authHint(s, &api.Event{Kind: "assistant", Text: "401"}) != "" {
@@ -79,7 +79,6 @@ func TestKeyboardControls(t *testing.T) {
 	if len(c.inputs) != 1 {
 		t.Fatal("replayed input on disconnection")
 	}
-	m.newAgent = "claude"
 	m.Update(tea.KeyMsg{Type: tea.KeyCtrlN})
 	m.Update(accountListing{accounts: []*resource.Account{resource.Account_builder{Alias: "personal", Agent: "claude"}.Build(), resource.Account_builder{Alias: "work", Agent: "codex"}.Build()}})
 	m.Update(tea.KeyMsg{Type: tea.KeyTab})

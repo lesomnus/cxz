@@ -61,8 +61,14 @@ func TestIsolationAndRefresh(t *testing.T) {
 			t.Fatal("unsafe alias", alias)
 		}
 	}
-	if err := os.Symlink(p, filepath.Join(Config(root, "personal"), "bad")); err != nil {
+	if err := Prepare(root, "linked", "codex"); err != nil {
 		t.Fatal(err)
+	}
+	if err := os.Symlink(p, filepath.Join(Config(root, "linked"), "auth.json")); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Credential(root, "linked", "codex"); err == nil {
+		t.Fatal("symlink credential accepted")
 	}
 }
 func TestEnvironment(t *testing.T) {
