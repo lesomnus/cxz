@@ -188,7 +188,12 @@ func (b projectLocalOAuth) Login(ctx context.Context, r LoginRequest) error {
 	cmd.Stdin = r.Input
 	cmd.Stdout = r.Output
 	cmd.Stderr = r.Error
-	if err = cmd.Run(); err != nil {
+	if b.agent == Claude && terminalInput(r.Input) {
+		err = runClaudeLogin(ctx, cmd, r.Input, r.Error)
+	} else {
+		err = cmd.Run()
+	}
+	if err != nil {
 		return err
 	}
 	credential, err := Credential(staging, r.Account, string(b.agent))
