@@ -51,7 +51,7 @@ func TestClaudeLoginPrivatePTY(t *testing.T) {
 	go func() {
 		buf := make([]byte, 4096)
 		var pending, all string
-		stages := []struct{ want, send string }{{"[     ]", "private-code#state"}, {"inserted; ctrl+x to clear.", "\x18"}, {"[     ]", "replacement#state\r"}}
+		stages := []struct{ want, send string }{{"[   ]", "private-code#state"}, {"[***]", "\x18"}, {"[   ]", "replacement#state\r"}}
 		for _, stage := range stages {
 			for !strings.Contains(pending, stage.want) {
 				n, err := master.Read(buf)
