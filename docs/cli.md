@@ -13,8 +13,9 @@ cxz manager update ghcr.io/lesomnus/cxz:edge
 
 ## 필수값과 기본값 점검
 
-공개 작업 명령은 `<리소스> <동사>` 형식이다. 이전 최상위 `projects`, `ls`, `up`,
-`new`, `install` 등의 호환 별칭은 제공하지 않는다. version/completion/tui는 공통 도구다.
+데이터·관리 명령은 `<리소스> <동사>` 형식이다. 워크스페이스 진입 경험을 위한
+install/uninstall/up/down/it은 최상위에 둔다. projects/ls/new의 최상위 별칭은 없다.
+version/completion/tui는 공통 도구다.
 리소스 이름만 입력하면 도움말을 표시한다.
 
 데이터 출력의 기본값은 표이며 `--format json`으로 전체 JSON을 받을 수 있다.
@@ -35,8 +36,11 @@ cxz --format json project ls
 
 | 명령 | 입력 계약 / 생략 시 동작 |
 | --- | --- |
-| `manager install` | `--image` 생략 시 현재 바이너리로 빌드. `--workspace-root`는 기존 설치/실행 환경에서 결정하며 결정 불가 시 오류. `--recreate` 기본 false |
-| `manager uninstall` | 인자 없음. manager만 제거하고 프로젝트와 볼륨 보존 |
+| `install` | `--image` 생략 시 현재 바이너리로 빌드. `--workspace-root`는 기존 설치/실행 환경에서 결정하며 결정 불가 시 오류. `--recreate` 기본 false |
+| `uninstall` | 인자 없음. manager만 제거하고 프로젝트와 볼륨 보존 |
+| `up [WORKSPACE]` | 기본 `.`. 프로젝트를 준비하고 프로젝트 화면을 연다. 이미 실행 중이면 재준비 없이 연결. 세션 생성/Account/로그인 요구 없음. 비대화형 또는 `--no-attach`는 프로젝트 정보 출력 |
+| `down [WORKSPACE]` | 기본 `.`. 소유 컨테이너 정리 후 프로젝트·세션을 사용 목록에서 삭제. 워크스페이스 소스/이름 있는 볼륨/저널은 보존 |
+| `it [WORKSPACE]` | 기본 `.`. 해당 프로젝트의 가장 최근 생성 세션 화면. 다른 프로젝트 세션은 제외하고 생성 시각 동률은 ID로 고정 정렬. 프로젝트/세션이 없으면 오류이며 자동 생성하지 않음 |
 | `manager serve` | foreground 서버. `--agent`는 Claude 실행 파일 경로이며 기본 `claude`; 계정의 agent 선택이 아님 |
 | `manager update IMAGE` | 이미지 필수. 명시적 tag/digest 필요, latest 거부 |
 | `manager rollback`, `version` | 인자 없음. 이전 이미지로 manager 교체 / 버전 출력 |
@@ -48,7 +52,7 @@ cxz --format json project ls
 | `project set PROJECT` | 대상 필수이며 `--name`, `--alias` 중 하나 이상 필수 |
 | `session new [WORKSPACE]` | 경로 기본 `.`. 새 세션의 `--account`는 터미널에서 선택, 비대화형에서는 필수 |
 | `project up [WORKSPACE]`, `project recreate [WORKSPACE]` | 경로 기본 `.`. 기존 세션 계정 유지; 새 세션이면 계정 선택/명시 필요. recreate는 대화형 확인 또는 `--yes` 필요 |
-| `project down [WORKSPACE]` | 경로 기본 `.` |
+| `project down [WORKSPACE]` | 경로 기본 `.`. 컨테이너만 내리고 등록·세션은 유지하는 저수준 동작. 최상위 down과 다름 |
 | `session attach [TARGET]` , `tui` (`watch`) | 대상 생략 시 선택/TUI. tui는 인자 없음 |
 | `project shell PROJECT [COMMAND...]` | 대상 필수, 명령 기본 sh |
 | `project exec PROJECT COMMAND...` | 대상과 실행 명령 모두 필수. `project exec PROJECT -- COMMAND...`로 옵션 전달 가능 |
@@ -70,6 +74,20 @@ new/up/recreate의 `--agent`는 Account/기존 세션에서 결정하므로 선�
 조건부 필수인 옵션은 대화형 선택이나 재접속을 위해 positional로 바꾸지 않았다.
 
 ### 계정 선택 화면
+
+최상위 up의 프로젝트 화면은 프로젝트 정보와 해당 프로젝트 세션만 보여준다.
+↑/↓·Enter로 세션을 열고, n/Ctrl-N은 계정 선택·첫 로그인·새 세션 생성으로 이어진다.
+프로젝트당 실행 세션 하나 제약은 유지하므로 기존 세션을 s로 중지한 뒤 새로 만든다.
+d/Delete는 확인(y, Esc/n 취소) 후 선택한 세션을 중지·삭제한다. 확인 중 목록이 바뀌어도
+처음 지정한 ID만 삭제한다. Ctrl-Q는 세션 화면에서 프로젝트 화면으로 돌아가며 agent를
+중지하거나 프롬프트를 전송하지 않는다. Ctrl-C는 TUI만 닫는다.
+it은 세션 화면을 선택해 열 뿐 중지된 agent를 자동 재개하지 않는다(Ctrl-R로 재개).
+
+삭제는 payday Listed=false를 영속 tombstone으로 보관하는 논리 삭제다. 일반 목록·Get·
+세션 제어에서 제외하며 재시작/상태 동기화가 복원하지 않는다. up으로 같은 workspace를
+명시적으로 다시 등록할 수 있지만 이전 세션은 복원하지 않는다. 볼륨과 보관된 저널은
+삭제하지 않는다. 복구 UI는 없으며 resources.db를 수동 제거·재구축하면 tombstone도
+잃을 수 있으므로 resource DB를 포함해 백업해야 한다.
 
 `session new`/`project up`/`project recreate`에서 새 세션의 계정 선택이 필요하면 검색 가능한 TUI를 연다.
 목록에서 ↑/↓(Ctrl-P/Ctrl-N)로 이동하고 Enter로 확정한다. 하단 Search 입력창은

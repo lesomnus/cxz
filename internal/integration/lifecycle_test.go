@@ -344,5 +344,24 @@ func TestLifecycle(t *testing.T) {
 			t.Fatalf("child process race in %s", name)
 		}
 	}
+	// Delete a live session through payday, then restart without resurrecting it.
+	if _, e = client.Resume(ctx, &api.Control{SessionId: id, RunId: restored.RunId, ClientId: core.ID()}); e != nil {
+		t.Fatal(e)
+	}
+	if e = client.DeleteSession(ctx, id); e != nil {
+		t.Fatal("delete live session", e)
+	}
+	if _, e = os.Stat(filepath.Join(core.Dir(state, id), "session.json")); e != nil {
+		t.Fatal("deleted recoverable manifest", e)
+	}
+	killDaemon()
+	start()
+	remaining, e := client.List(ctx, &api.Empty{})
+	if e != nil || len(remaining.Sessions) != 0 {
+		t.Fatal("deleted session resurrected after restart", remaining, e)
+	}
+	if _, e = client.Get(ctx, &api.SessionRef{Id: id}); e == nil {
+		t.Fatal("deleted session accessible")
+	}
 	t.Log("create, conversation, allow/deny/question, interrupt, replay, daemon/supervisor recovery, SQLite rebuild passed")
 }

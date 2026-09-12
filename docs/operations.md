@@ -87,7 +87,7 @@ workflow 구현은 [GitHub 공식 이미지 배포 안내](https://docs.github.c
 digest를 사용하면 tag 변경과 무관하게 이미지를 고정할 수 있다.
 
 ```sh
-cxz manager install --image ghcr.io/lesomnus/cxz:vX.Y.Z --workspace-root /absolute/projects
+cxz install --image ghcr.io/lesomnus/cxz:vX.Y.Z --workspace-root /absolute/projects
 cxz manager doctor
 cxz session new --account work-codex .
 ```

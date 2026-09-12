@@ -14,13 +14,13 @@ arm64 runtime acceptance remain unverified. See its release notes before use.
 
 ```sh
 CGO_ENABLED=0 go build -o bin/cxz ./cmd/cxz
-bin/cxz manager install --workspace-root /absolute/directory/containing/your/projects
+bin/cxz install --workspace-root /absolute/directory/containing/your/projects
 bin/cxz account add codex personal-codex
 bin/cxz account login personal-codex   # central Codex login; no project needed
-bin/cxz session new --account personal-codex . # prepares project and opens TUI
+bin/cxz up .                          # project dashboard; n creates a session
 ```
 
-`manager install` builds and starts a background Docker manager, waits for its API, and
+`install` builds and starts a background Docker manager, waits for its API, and
 returns. The host needs Docker and cxz; Node, devcontainer CLI and agent binaries
 are managed in containers. `manager serve` is a **foreground, blocking development
 server**, not the normal installation command.
@@ -72,18 +72,20 @@ ownership or remap an existing user's UID. Adjust the devcontainer for a host UI
 other than the default image's 1000 when necessary.
 
 ```sh
-bin/cxz project up .                       # attach existing session; recover if necessary
-bin/cxz project up --no-attach --format json . # prepare, return JSON
+bin/cxz up .                               # project information + session list
+bin/cxz up --no-attach --format json .      # prepare project only; no Account required
+bin/cxz it .                               # newest session in this workspace
 bin/cxz session new --account work-codex .  # new conversation; stop an active one first
 bin/cxz session attach PROJECT             # or SESSION_ID
 bin/cxz tui                        # also: watch
 bin/cxz project exec PROJECT -- go test ./...
 bin/cxz project shell PROJECT
 bin/cxz project down .                     # remove owned containers; preserve workspace/volumes
+bin/cxz down .                             # remove project + sessions from use; retain source/volumes
 bin/cxz project up .                       # recreate + resume; never replay old prompts
 bin/cxz project recreate --yes .           # writable layer lost; editors disconnect
-bin/cxz manager install --recreate         # replace manager, keep project processes/data
-bin/cxz manager uninstall                  # remove manager only; projects/data remain
+bin/cxz install --recreate         # replace manager, keep project processes/data
+bin/cxz uninstall                  # remove manager only; projects/data remain
 ```
 
 Inside an owned project, `cxz session attach`, `cxz session ls` and session controls are scoped to that
@@ -142,8 +144,12 @@ resource database and survives server/container restarts; back up state volumes.
 
 | Key | Action |
 |---|---|
-| Ctrl+N, path, Enter | New session; Tab selects a registered Account while entering path |
-| Tab, ↑/↓, Enter | Select session / return to message entry |
+| n / Ctrl+N (project) | Select Account and create a session; first project login runs if needed |
+| ↑/↓, Enter (project) | Select a session and open its view |
+| s (project) | Stop selected session before starting another (one live session per project) |
+| d / Delete, then y (project) | Stop and remove selected session; archived journal retained |
+| Ctrl+Q (session) | Return to project view without stopping the agent |
+| Tab (session) | Switch session selector / message input |
 | Enter | Send message |
 | F2 / F3 | Allow / deny pending approval |
 | `/answer {"question text or id":"answer"}` | Answer question |

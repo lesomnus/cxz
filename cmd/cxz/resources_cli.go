@@ -92,4 +92,15 @@ func reorganizeCommands(root *xli.Command) {
 			}
 		}
 	}
+	managerGroup := root.Commands.Get("manager")
+	var remaining xli.Commands
+	for _, c := range managerGroup.Commands {
+		if c.Name == "install" || c.Name == "uninstall" {
+			root.Commands = append(root.Commands, c)
+		} else {
+			remaining = append(remaining, c)
+		}
+	}
+	managerGroup.Commands = remaining
+	root.Commands = append(root.Commands, workspaceEntryCommands()...)
 }

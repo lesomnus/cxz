@@ -68,6 +68,9 @@ func (s Layer) saveProject(ctx context.Context, v *api.Project) (*resource.Proje
 	if err != nil {
 		return nil, err
 	}
+	if !old.GetListed() {
+		return old, nil
+	}
 	if proto.Equal(old.GetStatus(), state) && old.GetConfig() == v.Config && old.GetListed() {
 		return old, nil
 	}
@@ -103,6 +106,9 @@ func (s Layer) saveSession(ctx context.Context, v *api.Session, clientID string)
 	}
 	if err != nil {
 		return nil, err
+	}
+	if !old.GetListed() {
+		return old, nil
 	}
 	if old.GetStatus().GetLastSeq() > state.GetLastSeq() || (old.GetListed() && proto.Equal(old.GetStatus(), state)) {
 		return old, nil

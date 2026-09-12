@@ -5,7 +5,7 @@
 
 ## 완료 조건
 
-- `cxz manager install`: Docker 관리 서버를 백그라운드 설치, 준비 확인, 재설치/제거.
+- `cxz install`: Docker 관리 서버를 백그라운드 설치, 준비 확인, 재설치/제거.
   호스트에는 Docker/cxz만 필요. 원격 엔진은 명시적인 공유 경로 매핑을 사용한다.
 - `cxz project up/new [path]`: devcontainer 설정 발견/선택/기본 생성, 공식 devcontainer
   CLI로 생성, agent/state/tools와 supervisor를 생성 시점에 제공, 준비 후 TUI 연결.
