@@ -64,6 +64,13 @@ func main() {
 		switch v.Method {
 		case "initialize":
 			reply(map[string]any{})
+		case "account/rateLimits/read":
+			reply(map[string]any{"rateLimits": map[string]any{"primary": map[string]any{"usedPercent": 60, "windowDurationMins": 300, "resetsAt": time.Now().Add(time.Hour).Unix()}}})
+		case "thread/compact/start":
+			reply(map[string]any{})
+			emit(map[string]any{"method": "turn/started", "params": map[string]any{"turn": map[string]string{"id": "compact"}}})
+			emit(map[string]any{"method": "item/completed", "params": map[string]any{"item": map[string]string{"type": "contextCompaction", "id": "compact-item"}}})
+			finish()
 		case "account/read":
 			if v.Params.Refresh {
 				writeAuth()
