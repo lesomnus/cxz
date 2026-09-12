@@ -41,7 +41,8 @@ func eventView(s *api.Session, e *api.Event, width int) string {
 		if name == "" {
 			name = "AGENT"
 		}
-		return style.Render(name) + "\n" + answer.Render(wrap(e.Text))
+		body := ansi.Hardwrap(safeText(e.Text), max(1, width-2), true)
+		return "  " + style.Render(name) + "\n" + answer.Render("  "+strings.ReplaceAll(body, "\n", "\n  "))
 	case "approval":
 		return warning.Render(wrap("APPROVAL " + e.Text + " [" + e.RequestId + "]\n" + string(e.Payload)))
 	case "approval_resolved":

@@ -81,7 +81,7 @@ func TestSpeakerPaletteAndSafeOutput(t *testing.T) {
 		if agent == "claude" {
 			style = claude
 		}
-		if !strings.HasPrefix(got, style.Render(strings.ToUpper(agent))+"\n") {
+		if !strings.HasPrefix(got, "  "+style.Render(strings.ToUpper(agent))+"\n") {
 			t.Fatal("wrong speaker style")
 		}
 	}

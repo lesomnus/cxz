@@ -28,7 +28,7 @@ var (
 
 func newComposer() textarea.Model {
 	input := textarea.New()
-	input.Placeholder = "Ask a question or describe a task…"
+	input.Placeholder = "Ask a question or describe a task… (/help)"
 	input.Prompt = "› "
 	input.SetPromptFunc(2, func(line int) string {
 		if line == 0 {
@@ -80,8 +80,8 @@ func (m *model) resize() {
 	}
 	m.input.SetHeight(min(max(2, rows), min(6, max(1, m.height/4))))
 	m.view.Width = max(1, m.width)
-	// Header (3), approval/status (2), composer border (2), help (3).
-	m.view.Height = max(1, m.height-m.input.Height()-10)
+	// Status (1), composer border (2), bottom session information (1).
+	m.view.Height = max(1, m.height-m.input.Height()-4)
 }
 
 func clip(s string, width int) string {
@@ -110,42 +110,49 @@ func screen(s string, width, height int) string {
 }
 
 func (m *model) sessionScreen() string {
-	width := max(1, m.width-4)
-	title, detail := "Conversation", "Choose a session with Tab · ↑/↓ · Enter"
+	width := max(1, m.width)
+	info := brand.Render("cxz · sessions")
 	if s := m.current(); s != nil {
-		title = pickerLabel(s.Title)
-		if title == "" {
-			title = "Session " + fmt.Sprintf("%.8s", s.Id)
-		}
 		agent := pickerLabel(s.Agent)
 		if s.Model != "" {
-			agent += " / " + pickerLabel(s.Model)
+			agent += "/" + pickerLabel(s.Model)
 		}
-		detail = fmt.Sprintf("%s  ·  account %s  ·  %s", agent, pickerLabel(s.Account), pickerLabel(s.State))
+		title := pickerLabel(s.Title)
+		if title == "" {
+			title = fmt.Sprintf("%.8s", s.Id)
+		}
+		info += "  " + blue.Render(agent) + " · " + lavender.Render(pickerLabel(s.Account)) + " · " + teal.Render("["+pickerLabel(s.State)+"]") + " · " + title
 	}
-	heading := brand.Render("cxz · sessions") + "  /  " + strong.Render(title)
 	if m.focusList {
-		heading += accent.Render("  [↑/↓ select · Enter open]")
+		info = accent.Render("↔ ") + info
 	}
-	status := muted.Render("Agent continues when you detach.")
-	if s := m.current(); s != nil {
-		status = lavender.Render("["+pickerLabel(s.State)+"]") + "  " + muted.Render("Agent continues when you detach.")
-	}
+	status := warning.Render(pickerLabel(m.notice))
 	if s := m.current(); s != nil && len(s.Pending) > 0 {
 		status = warning.Bold(true).Render("APPROVAL · F2 allow / F3 deny") + "  " + pickerLabel(s.Pending[0].Text)
 	} else if !m.view.AtBottom() {
-		status = warning.Render("Reading history · PgDown to return to latest")
+		status = muted.Render("Reading history") + "  " + status
 	}
-	help := "Enter send · Alt+Enter/Ctrl+J newline · PgUp/PgDn history"
-	controls := "Ctrl+Q project · Tab sessions · F4 interrupt · Ctrl+R resume · Ctrl+C detach"
-	if s := m.current(); s != nil && len(s.Pending) > 0 {
-		help = "F2 allow · F3 deny · /answer {\"question\":\"answer\"} · Enter send"
-	}
-	inset := lipgloss.NewStyle().Padding(0, 2)
-	body := inset.Render(clip(heading, width)+"\n"+clip(blue.Render(detail), width)) + "\n\n" +
-		m.view.View() + "\n" + inset.Render(clip(status, width)) + "\n" +
-		frame(m.input.View(), m.width, !m.focusList) + "\n" +
-		inset.Render(clip(muted.Render(help), width)+"\n"+clip(muted.Render(controls), width)+"\n"+
-			clip(warning.Render(pickerLabel(m.notice)), width))
+	body := m.view.View() + "\n" + clip(status, width) + "\n" +
+		frame(m.input.View(), width, !m.focusList) + "\n" + clip(info, width)
 	return screen(body, m.width, m.height)
+}
+
+func helpView(width int) string {
+	return lavender.Bold(true).Render("cxz /help") + "\n" +
+		muted.Render(ansi.Hardwrap(
+			"Enter          Send message\n"+
+				"Alt+Enter / Ctrl+J  Newline\n"+
+				"Ctrl+X         Clear draft\n"+
+				"Tab            Toggle session selection; ↑/↓ select, Enter open\n"+
+				"Ctrl+Q         Return to project\n"+
+				"Ctrl+N         Create session\n"+
+				"F2 / F3        Allow / deny pending approval\n"+
+				"F4             Interrupt active turn\n"+
+				"Ctrl+R         Resume stopped session\n"+
+				"PgUp / PgDn    Scroll conversation\n"+
+				"Ctrl+C         Detach (agent continues)\n"+
+				"/answer {\"question\":\"answer\"}  Reply to question\n"+
+				"/stop          Stop agent\n"+
+				"/help          Show this local help (not sent to agent)",
+			max(1, width), true))
 }
