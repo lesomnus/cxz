@@ -16,11 +16,13 @@ var slashCommands = []slashCommand{
 	{"/usage", "Session tokens, cost and time"},
 	{"/answer", "Reply to a pending question"},
 	{"/stop", "Stop agent"},
+	{"/permission", "full: auto-approve this run · ask: manual"},
+	{"/approval", "Inspect selected approval payload"},
 }
 
 func (m *model) commandHints() []slashCommand {
 	text := m.input.Value()
-	if m.creating || m.focusList || m.hintDismissed || !strings.HasPrefix(text, "/") || strings.ContainsAny(text, " \n\t") {
+	if m.creating || m.focusList || m.focusApproval || m.hintDismissed || !strings.HasPrefix(text, "/") || strings.ContainsAny(text, " \n\t") {
 		return nil
 	}
 	var matches []slashCommand
@@ -91,6 +93,9 @@ func (m *model) commandOverlay(view string) string {
 
 func (m *model) localCommandView(id string) string {
 	command := m.localOutput[id]
+	if command == "/permission" || command == "/approval" {
+		return localReport(m.localReports[id], m.view.Width)
+	}
 	if command == "/usage" {
 		return indentBlock(ansi.Hardwrap(safeText(m.usageReports[id]), max(1, m.view.Width-2), true))
 	}

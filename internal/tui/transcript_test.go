@@ -35,7 +35,7 @@ func TestStateReplacedNotAddedToTranscript(t *testing.T) {
 	m.Update(received{id: "s", event: &api.Event{Kind: "state", Seq: 3, Text: "idle"}})
 	m.Update(listing{sessions: []*api.Session{{Id: "s", ProjectId: "p", State: "idle"}}})
 	text := ansi.Strip(m.View())
-	if strings.Contains(text, "[working]") || strings.Count(text, "[idle]") != 1 || !strings.Contains(text, "Useful output") {
+	if strings.Contains(text, "[working]") || strings.Contains(text, "[idle]") || !strings.Contains(text, "Useful output") {
 		t.Fatal(text)
 	}
 	if len(m.events["s"]) != 3 {

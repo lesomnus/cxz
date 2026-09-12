@@ -45,9 +45,9 @@ func eventView(s *api.Session, e *api.Event, width int) (out string) {
 		if name == "" {
 			name = "AGENT"
 		}
-		return style.Render(name) + "\n" + answer.Render(wrap(e.Text))
+		return style.Render(name) + "\n" + markdownView(e.Text, width)
 	case "approval":
-		return warning.Render(wrap("APPROVAL " + e.Text + " [" + e.RequestId + "]\n" + string(e.Payload)))
+		return warning.Render(wrap("approval requested · " + e.Text))
 	case "approval_resolved":
 		return teal.Render(wrap("approval: " + e.Text))
 	case "tool_call":

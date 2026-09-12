@@ -60,6 +60,9 @@ func TestKeyboardControls(t *testing.T) {
 		t.Fatal("bad send")
 	}
 	for _, k := range []tea.KeyType{tea.KeyF2, tea.KeyF3, tea.KeyF4} {
+		if k == tea.KeyF3 {
+			m.sessions[0].Pending = []*api.Event{{RequestId: "permission-deny"}}
+		}
 		_, cmd = m.Update(tea.KeyMsg{Type: k})
 		if cmd == nil {
 			t.Fatal("missing action")
@@ -70,6 +73,7 @@ func TestKeyboardControls(t *testing.T) {
 		t.Fatal("bad approval/interrupt mapping")
 	}
 	m.input.SetValue(`/answer {"question":"Blue"}`)
+	m.sessions[0].Pending = []*api.Event{{RequestId: "question", Text: "AskUserQuestion"}}
 	_, cmd = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	cmd()
 	if c.answers[2].AnswersJson != `{"question":"Blue"}` {

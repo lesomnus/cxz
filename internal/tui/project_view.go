@@ -47,6 +47,8 @@ func (m *model) backToProject() {
 	m.selected = max(0, min(m.selected, len(m.sessions)-1))
 	m.creating = false
 	m.focusList = false
+	m.focusApproval = false
+	m.fullPermission = nil
 	m.deletingID = ""
 	m.wantID = ""
 	m.input.Reset()
