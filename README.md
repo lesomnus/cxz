@@ -43,9 +43,10 @@ bin/cxz new --account work-codex .
 ```
 
 Account is an agent authentication profile, not a cxz user/tenant. The manager's
-resource DB holds profile metadata; each project has an independent login for
-each profile on its state volume. Rotating refresh tokens are never copied across
-projects. Use `account login --project PROJECT ACCOUNT` for another project.
+resource DB holds profile metadata. Codex defaults to central login: log in once
+per account, then supply access tokens to its connected projects. Claude keeps
+independent project-local logins; use `account login --project PROJECT ACCOUNT`.
+Rotating refresh tokens are never copied across projects.
 Host credentials are never imported implicitly. Account and agent are fixed for each session;
 resume/recreate preserves them. Missing login fails instead of falling back to
 environment credentials. Interactive `new` and TUI Ctrl+N offer account selection;
@@ -53,9 +54,11 @@ scripts must pass `--account` when creating a session. Stop an active session be
 starting another. See [Account design and boundaries](docs/accounts.md).
 
 `Account.auth_backend` selects the authentication strategy; `Session.auth_binding`
-fixes the concrete authentication association. Both agents currently use
-`project-local-oauth`. `account add --auth-backend project-local-oauth` makes this
-explicit. Unsupported backends are rejected; brokered tokens/API keys are not enabled.
+fixes the concrete authentication association. Codex defaults to
+`brokered-access-token`; Claude defaults to `project-local-oauth`. Codex also
+supports explicitly selected `project-local-oauth`. Existing accounts keep their
+selected backend. API keys remain unsupported. Central OAuth login and refresh
+are delegated to official Codex; cxz does not implement OAuth endpoints.
 
 The account determines the agent; a conflicting explicit `--agent` is rejected.
 Use `cxz config set codex-model MODEL_ID` or `new --model MODEL_ID .` for a new

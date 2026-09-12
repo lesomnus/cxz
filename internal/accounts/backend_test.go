@@ -20,10 +20,21 @@ func TestBackendMappingsAndBindings(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		want := ProjectLocalOAuth
+		if agent == "codex" {
+			want = BrokeredAccessToken
+		}
+		if b.Info().ID != want {
+			t.Fatal("wrong default")
+		}
+		b, err = Resolve(agent, ProjectLocalOAuth)
+		if err != nil {
+			t.Fatal(err)
+		}
 		if b.Info().ID != ProjectLocalOAuth || b.Info().RefreshOwner != "agent" || b.Info().Workflow != "project-login" {
 			t.Fatal("wrong strategy")
 		}
-		for _, unsupported := range []string{"", BrokeredAccessToken, APIKey, "typo"} {
+		for _, unsupported := range []string{"", APIKey, "typo"} {
 			if _, err := Resolve(agent, unsupported); err == nil {
 				t.Fatal("silent backend fallback", unsupported)
 			}

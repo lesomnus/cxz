@@ -26,18 +26,20 @@ token을 직접 반환하는 공통 API로 모든 공급 방식을 억지로 맞
 | AgentKind | 기본 / 활성 backend | 범위 | 로그인 workflow | 갱신 담당 |
 |---|---|---|---|---|
 | claude | project-local-oauth | Project × Account | 프로젝트에서 Claude 로그인 | Claude |
-| codex | project-local-oauth | Project × Account | 프로젝트에서 Codex device login | Codex |
+| codex | brokered-access-token (기본) | 중앙 Account, 공급 권한은 Project × Account | 중앙 Codex device login | 중앙 Codex |
+| codex | project-local-oauth (명시 선택) | Project × Account | 프로젝트에서 Codex device login | 프로젝트 Codex |
 
-`brokered-access-token`, `api-key`는 아직 구현·등록하지 않았다. 선택하면 명시적으로
-실패한다. 다른 backend나 계정으로 자동 전환하지 않는다. 중앙 공급을 추가할 때는
-backend 구현과 에이전트별 등록, 해당 workflow와 갱신 통합 검증이 필요하다.
+`api-key`는 아직 지원하지 않는다. 다른 backend나 계정으로 자동 전환하지 않는다.
+기존에 등록한 Codex Account의 backend는 자동 변경하지 않는다. 중앙 방식을 사용하려면
+새 Account를 등록한다. 중앙 방식도 AuthBinding은 프로젝트별 공급 권한을 표현하므로
+project scope이며, credential_ref는 `central/accounts/ALIAS`다.
 
 ```sh
 cxz account add --agent codex --name "Personal" personal-codex
 cxz account add --agent codex --name "Company" work-codex
 cxz account login personal-codex
-cxz account login --project . work-codex
-cxz account status --project . work-codex
+cxz account login work-codex       # 중앙에서 한 번 로그인
+cxz account status work-codex
 cxz new --account work-codex .
 cxz up .                         # 기존 세션의 Account 유지
 cxz account get work-codex
@@ -53,24 +55,58 @@ cxz account add --agent claude --auth-backend project-local-oauth work-claude
 - `SessionService.Add`는 AccountRef와 AuthBindingRef를 받는다. CLI/TUI가 선택된
   Account와 Project의 binding을 해결해 전달한다. 등록되지 않은 계정, vendor 불일치,
   인증 파일 누락을 거부한다. TUI Ctrl+N에서 Tab으로 Account를 고르고 경로를 입력한다.
-- 로그인은 지정 프로젝트에서 실행하며 사용자가 직접 vendor 인증을 완료해야 한다.
+- `project-local-oauth` 로그인은 지정 프로젝트에서 실행하며 사용자가 직접 vendor 인증을 완료해야 한다.
   `--project` 생략 시 현재 디렉터리다. login은 필요한 컨테이너·에이전트를 준비하지만
   세션은 생성하지 않는다. 같은 Account도 다른 Project에서는 독립 로그인이 필요하다.
   취소/실패한 로그인은 기존 인증을 덮어쓰지 않는다. `status`는 파일 형식/존재만
   검사하며 유효한 구독·네트워크 인증 성공을 보장하지 않는다.
-- 프로젝트의 `accounts/ALIAS/config`에 인증 원본을 0600으로 보관한다. SQLite에는
+- `project-local-oauth`는 프로젝트의 `accounts/ALIAS/config`에 인증 원본을 0600으로 보관한다. SQLite에는
   메타데이터만 저장한다. 토큰은 API 응답, payday audit, journal에 넣지 않는다.
-  manager는 인증 파일을 보관하거나 다른 프로젝트로 전달하지 않는다.
+  이 방식의 인증 파일은 manager에 보관하거나 다른 프로젝트로 전달하지 않는다.
 - 프로젝트의 `accounts/ALIAS/config`와 `accounts/ALIAS/home`를 선택한다.
   HOME/XDG 경로를 분리하고 inherited OpenAI/Anthropic/Claude/Codex 및 cloud 인증
-  환경변수를 제거한다. Codex는 OpenAI provider와 file credential store를 명시한다.
-- 재로그인 전 활성 세션을 중단해야 한다. vendor가 갱신한 토큰은 해당 프로젝트·계정에
+  환경변수를 제거한다. Codex는 OpenAI provider를 고정하고 로컬 OAuth는 file,
+  중앙 공급은 ephemeral credential store를 명시한다.
+- 로컬 OAuth 재로그인 전 활성 세션을 중단해야 한다. vendor가 갱신한 토큰은 해당 프로젝트·계정에
   그대로 남으며 다른 프로젝트와 동기화하지 않는다. 이는 기존 아키텍처 §4.2의
-  refresh-token 회전 충돌 방지 원칙을 유지한다. Codex의 중앙 단기 토큰 공급은
-  아직 구현하지 않았으며 Claude와 동일하게 프로젝트별 독립 구독 로그인을 사용한다.
+  refresh-token 회전 충돌 방지 원칙을 유지한다.
 - 컨테이너 재생성은 project volume의 Account별 인증·대화 파일과 manifest의 계정
   연결을 유지한다. manager와 project의 **전체 state volume**을 비공개로 백업한다.
   기존 account 없는 개발 데이터는 자동 계정 할당/인증 이관하지 않는다.
+
+## Codex 중앙 공급
+
+1. `account login ACCOUNT`는 manager의 Account별 격리 프로필에서 공식
+   `codex login --device-auth`를 실행한다. cxz는 URL·코드를 전달할 뿐 OAuth
+   endpoint, PKCE, code 교환을 직접 구현하지 않는다. 사용자가 브라우저에서 승인한다.
+2. 완료된 인증은 manager state의 `central/accounts/ALIAS/config/auth.json`에만
+   저장한다. 재로그인은 기존 account ID와 사용자 subject를 모두 확인한다.
+   실패·취소·다른 사용자 로그인은 기존 인증을 덮어쓰지 않는다.
+3. Session 생성/resume 시 manager가 Project × Account별 256-bit capability를
+   프로젝트의 비공개 `accounts/ALIAS/broker.json`으로 전달한다. 이 권한 파일도 비밀이다.
+   공개 AuthBinding 리소스에는 capability나 토큰이 없다. 한번 연결한 프로젝트의
+   같은 OS 사용자에게는 해당 Account 접근 권한이 남으므로 프로젝트를 신뢰해야 한다.
+4. supervisor는 공유 tools 볼륨의 읽기 전용 경로에 있는 Unix socket으로 토큰을
+   요청한다. broker는 capability를 고정된 계정에 매핑한다. 프로젝트에는 access token과
+   account ID만 반환하며 refresh token/id token은 반환하지 않는다.
+5. 프로젝트 Codex를 `chatgptAuthTokens`로 로그인시킨 후 thread를 시작/복구한다.
+   401의 `account/chatgptAuthTokens/refresh`는 사용자 승인 요청이 아니라 내부 인증 요청이다.
+   중앙은 계정 lock 아래 공식 Codex app-server의 `account/read(refreshToken=true)`를
+   호출하고 갱신된 인증 파일에서 access token을 읽는다. 이 파일 형식 의존성은
+   고정 Codex 버전(현재 0.154.0)과 함께 검증/관리한다.
+6. token은 프로젝트 auth.json·journal·resource DB/audit에 저장하지 않는다.
+   manager 중단 시 갱신은 실패하며 다른 계정/로컬 인증으로 대체하지 않는다.
+   manager 재시작 후 기존 capability로 다시 요청할 수 있다. 오류 응답은 비밀을 제거한다.
+
+공급 요청은 8초, 중앙 갱신·계정 lock 대기는 합쳐 7초로 제한한다. 로그인 중이거나
+공식 인증 서버 응답이 늦으면 갱신이 실패할 수 있으며 재로그인/재시도가 필요하다.
+로그아웃·capability 철회 명령은 아직 없으며, 기존 연결 권한은 세션 종료만으로 철회되지 않는다.
+manager의 전체 state 볼륨도 민감한 인증 백업이다.
+
+공식 external-token API는 실험적 기능이다. 참고:
+[Codex app-server 인증](https://learn.chatgpt.com/docs/app-server#auth-endpoints).
+네이티브 0.154.0의 외부 토큰 수용·ephemeral 비저장은 합성 JWT로 검증했다.
+전체 Docker 흐름은 합성 Codex로 검증하며 실계정 OAuth 교환/갱신·유료 대화는 별도다.
 
 ## 격리 범위
 

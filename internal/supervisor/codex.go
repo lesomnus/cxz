@@ -3,13 +3,15 @@ package supervisor
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/internal/core"
 	"strings"
 )
 
 type codexProtocol struct {
-	s    *Supervisor
-	turn string
+	s     *Supervisor
+	turn  string
+	token func(previous string, refresh bool) (accounts.Token, error)
 }
 
 func rpc(id, method string, params any) any {
@@ -30,6 +32,12 @@ func (c *codexProtocol) consume(raw []byte) {
 	}
 	id := string(v.ID)
 	if len(v.Error) > 0 && string(v.Error) != "null" {
+		if id == `"cxz-auth"` {
+			s.event("diagnostic", "central Codex login failed", "", nil, nil)
+			s.event("state", "failed", "", nil, nil)
+			s.kill()
+			return
+		}
 		s.event("diagnostic", "Codex request failed", "", v.Error, nil)
 		if s.snap.State == "starting" {
 			s.event("state", "failed", "", nil, nil)
@@ -44,16 +52,21 @@ func (c *codexProtocol) consume(raw []byte) {
 	switch id {
 	case `"cxz-initialize"`:
 		_ = s.write(map[string]any{"method": "initialized"})
-		params := map[string]any{"cwd": s.session.Workspace, "approvalPolicy": "untrusted", "sandbox": "danger-full-access", "experimentalRawEvents": false, "persistExtendedHistory": true}
-		method := "thread/start"
-		if s.session.Model != "" {
-			params["model"] = s.session.Model
+		if c.token != nil {
+			token, err := c.token("", false)
+			if err != nil {
+				s.event("diagnostic", "central authentication unavailable; check account login", "", nil, nil)
+				s.event("state", "failed", "", nil, nil)
+				s.kill()
+				return
+			}
+			_ = s.write(rpc("cxz-auth", "account/login/start", map[string]any{"type": "chatgptAuthTokens", "accessToken": token.AccessToken, "chatgptAccountId": token.AccountID, "chatgptPlanType": token.PlanType}))
+			return
 		}
-		if s.snap.VendorID != "" {
-			method = "thread/resume"
-			params["threadId"] = s.snap.VendorID
-		}
-		_ = s.write(rpc("cxz-thread", method, params))
+		c.startThread()
+		return
+	case `"cxz-auth"`:
+		c.startThread()
 		return
 	case `"cxz-thread"`:
 		var r struct {
@@ -73,11 +86,26 @@ func (c *codexProtocol) consume(raw []byte) {
 	}
 	if len(v.ID) > 0 && v.Method != "" {
 		switch v.Method {
+		case "account/chatgptAuthTokens/refresh":
+			var p struct {
+				PreviousAccountID string `json:"previousAccountId"`
+			}
+			var token accounts.Token
+			err := fmt.Errorf("external authentication not configured")
+			if c.token != nil && json.Unmarshal(v.Params, &p) == nil {
+				token, err = c.token(p.PreviousAccountID, true)
+			}
+			if err != nil {
+				_ = s.write(map[string]any{"id": v.ID, "error": map[string]any{"code": -32000, "message": "central authentication unavailable; check account login"}})
+				s.event("diagnostic", "central authentication refresh failed", "", nil, nil)
+			} else {
+				_ = s.write(map[string]any{"id": v.ID, "result": token})
+			}
 		case "item/commandExecution/requestApproval", "item/fileChange/requestApproval", "item/permissions/requestApproval", "item/tool/requestUserInput":
 			p := s.event("approval", v.Method, id, map[string]any{"method": v.Method, "id": v.ID, "params": v.Params}, nil)
 			s.pending[id] = p
 			s.event("state", "waiting_input", "", nil, nil)
-		default: // Unknown server calls, especially token refresh, are never auto-approved.
+		default: // Unknown server calls are never auto-approved.
 			_ = s.write(map[string]any{"id": v.ID, "error": map[string]any{"code": -32601, "message": "cxz does not support this server request; use project-local login for authentication"}})
 			s.event("diagnostic", "unsupported Codex request: "+v.Method, "", nil, nil)
 		}
@@ -129,6 +157,19 @@ func (c *codexProtocol) consume(raw []byte) {
 	case "error":
 		s.event("diagnostic", "Codex error", "", v.Params, nil)
 	}
+}
+func (c *codexProtocol) startThread() {
+	s := c.s
+	params := map[string]any{"cwd": s.session.Workspace, "approvalPolicy": "untrusted", "sandbox": "danger-full-access", "experimentalRawEvents": false, "persistExtendedHistory": true}
+	method := "thread/start"
+	if s.session.Model != "" {
+		params["model"] = s.session.Model
+	}
+	if s.snap.VendorID != "" {
+		method = "thread/resume"
+		params["threadId"] = s.snap.VendorID
+	}
+	_ = s.write(rpc("cxz-thread", method, params))
 }
 func (c *codexProtocol) command(op string, v core.Command) (any, error) {
 	s := c.s
