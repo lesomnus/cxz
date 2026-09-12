@@ -164,22 +164,29 @@ resource database and survives server/container restarts; back up state volumes.
 The dashboard groups workspace details and session cards; the conversation view
 keeps tool activity above a growing, rounded message editor. Drafts are retained
 per session while this TUI is open, including trips back to the project view.
-Escape does not discard a conversation draft. Light/dark terminal palettes are
-supported without forcing a full-screen background; use a terminal of at least
+Escape does not discard a conversation draft. The screen, composer and its
+borders use a black background; use a terminal of at least
 40 × 14 cells. The composer spans the terminal width. User messages show local
 timestamps instead of a YOU label; Claude/Codex speaker badges and pastel tool
 colors distinguish output. Transient state events update the status area rather
 than accumulating in the transcript (the journal remains intact).
 Reply text is white; only speaker labels retain agent branding. User timestamps
 are dimmed and the first-line `>` starts at the left edge. Completed-turn JSON is
-replaced by a left-aligned metrics footer after a blank line: ↑ input / ↓ output / ↺ cache read /
-⊕ cache write / ∑ total tokens, $ USD, ◷ duration. Missing values are omitted;
-◷≈ denotes elapsed request-to-completion time when no provider duration exists.
+replaced by a dim metrics footer after a blank line: duration, cost, then tokens.
+Duration uses `00:00:00 ◷` (zero units are darker); cost uses `$0.0123`.
+Token symbols follow the values: ↑ input / ↓ output / ↺ cache read / ⊕ cache write /
+∑ total. Missing values are omitted; ≈◷ denotes measured request-to-completion time.
 Codex metrics use per-turn usage, never cumulative thread totals.
 Metrics use fixed 16-cell slots and compact counts (`1k`, `1.2k`, `1m`).
-Agent replies are indented two spaces. Session information occupies a single
+Values except cost are right-aligned within their slots. The first two columns
+are reserved for indicators; other content is indented (except the composer).
+Session information occupies a single
 bottom line; persistent shortcut rows are hidden. Type `/help` to display local
 shortcut help in the conversation without sending a prompt to the agent.
+Typing `/` overlays command hints above the editor: arrows select, Tab completes,
+Enter executes, Esc dismisses. `/context`, `/compact`, and `/usage` currently
+display local `Unimplemented` responses. The status bar labels short session IDs
+with `id:`; it no longer includes the redundant `sessions` label.
 
 Data commands (table by default; use `--format json` for scripts): `session ls`, `project ls`, `session get ID`, `session send ID TEXT`,
 `session reply ID REQUEST_ID allow|deny [ANSWERS_JSON]`, `session interrupt ID`, `session resume ID`,

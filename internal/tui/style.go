@@ -11,7 +11,7 @@ import (
 
 var (
 	accent      = lipgloss.NewStyle().Foreground(lipgloss.Color("#24d17c"))
-	brand       = lipgloss.NewStyle().Foreground(lipgloss.Color("#aeff98")).Background(lipgloss.Color("#031e2c")).Bold(true)
+	brand       = lipgloss.NewStyle().Foreground(lipgloss.Color("#aeff98")).Background(lipgloss.Color("#000000")).Bold(true)
 	teal        = lipgloss.NewStyle().Foreground(lipgloss.Color("#07898f"))
 	lavender    = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#7255A0", Dark: "#C9B6EE"})
 	blue        = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#42758B", Dark: "#ACD6EB"})
@@ -20,6 +20,9 @@ var (
 	codex       = lipgloss.NewStyle().Foreground(lipgloss.Color("#FFFFFF")).Background(lipgloss.Color("#000000")).Bold(true)
 	muted       = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#626773", Dark: "#969BA8"})
 	timestamp   = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#777777", Dark: "#555B65"})
+	metricStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#626975"))
+	zeroStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#30343B"))
+	black       = lipgloss.NewStyle().Background(lipgloss.Color("#000000"))
 	answer      = lipgloss.NewStyle().Foreground(lipgloss.Color("#FFFFFF"))
 	strong      = lipgloss.NewStyle().Bold(true)
 	warning     = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#945600", Dark: "#EBC078"})
@@ -44,6 +47,10 @@ func newComposer() textarea.Model {
 	input.SetHeight(3)
 	input.FocusedStyle.Prompt = accent
 	input.BlurredStyle.Prompt = muted
+	input.FocusedStyle.Base = black
+	input.BlurredStyle.Base = black
+	input.FocusedStyle.CursorLine = black
+	input.BlurredStyle.CursorLine = black
 	input.Focus()
 	return input
 }
@@ -93,8 +100,13 @@ func frame(body string, width int, highlighted bool) string {
 	if highlighted {
 		border = accent
 	}
-	return lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).
-		BorderForeground(border.GetForeground()).Width(max(1, width-2)).Render(body)
+	style := lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Background(lipgloss.Color("#000000")).Width(max(1, width-2))
+	// Lip Gloss 1.x emits empty SGR parameters when both border colors are
+	// configured on an uncolored renderer.
+	if lipgloss.ColorProfile().Name() != "Ascii" {
+		style = style.BorderBackground(lipgloss.Color("#000000")).BorderForeground(border.GetForeground())
+	}
+	return style.Render(body)
 }
 
 // Clip by display cells, not bytes: CJK text and ANSI styling stay intact.
@@ -111,7 +123,7 @@ func screen(s string, width, height int) string {
 
 func (m *model) sessionScreen() string {
 	width := max(1, m.width)
-	info := brand.Render("cxz · sessions")
+	info := brand.Render("cxz")
 	if s := m.current(); s != nil {
 		agent := pickerLabel(s.Agent)
 		if s.Model != "" {
@@ -119,12 +131,14 @@ func (m *model) sessionScreen() string {
 		}
 		title := pickerLabel(s.Title)
 		if title == "" {
-			title = fmt.Sprintf("%.8s", s.Id)
+			title = "Untitled"
 		}
-		info += "  " + blue.Render(agent) + " · " + lavender.Render(pickerLabel(s.Account)) + " · " + teal.Render("["+pickerLabel(s.State)+"]") + " · " + title
+		info += "  " + blue.Render(agent) + " · " + lavender.Render("account:"+pickerLabel(s.Account)) + " · " + teal.Render("["+pickerLabel(s.State)+"]") + " · " + title + fmt.Sprintf(" · id:%.8s", s.Id)
 	}
 	if m.focusList {
 		info = accent.Render("↔ ") + info
+	} else {
+		info = "  " + info
 	}
 	status := warning.Render(pickerLabel(m.notice))
 	if s := m.current(); s != nil && len(s.Pending) > 0 {
@@ -132,13 +146,13 @@ func (m *model) sessionScreen() string {
 	} else if !m.view.AtBottom() {
 		status = muted.Render("Reading history") + "  " + status
 	}
-	body := m.view.View() + "\n" + clip(status, width) + "\n" +
+	body := m.commandOverlay(m.view.View()) + "\n" + clip("  "+status, width) + "\n" +
 		frame(m.input.View(), width, !m.focusList) + "\n" + clip(info, width)
 	return screen(body, m.width, m.height)
 }
 
 func helpView(width int) string {
-	return lavender.Bold(true).Render("cxz /help") + "\n" +
+	return indentBlock(lavender.Bold(true).Render("cxz /help") + "\n" +
 		muted.Render(ansi.Hardwrap(
 			"Enter          Send message\n"+
 				"Alt+Enter / Ctrl+J  Newline\n"+
@@ -153,6 +167,18 @@ func helpView(width int) string {
 				"Ctrl+C         Detach (agent continues)\n"+
 				"/answer {\"question\":\"answer\"}  Reply to question\n"+
 				"/stop          Stop agent\n"+
-				"/help          Show this local help (not sent to agent)",
-			max(1, width), true))
+				"/help          Show this local help (not sent to agent)\n"+
+				"/context /compact /usage  Unimplemented",
+			max(1, width-2), true)))
+}
+
+func indentBlock(s string) string {
+	if s == "" {
+		return ""
+	}
+	return "  " + strings.ReplaceAll(s, "\n", "\n  ")
+}
+
+func blackScreen(s string, width, height int) string {
+	return black.Width(max(1, width)).Height(max(1, height)).Render(s)
 }

@@ -9,7 +9,7 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/lesomnus/cxz/api"
 )
 
@@ -196,5 +196,12 @@ func (m *model) projectScreen() string {
 	}
 	footer += "\n" + warning.Render(status)
 	gap := max(0, m.height-len(rows)-strings.Count(footer, "\n")-2)
-	return screen(lipgloss.NewStyle().Padding(0, 2).Render(strings.Join(rows, "\n")+strings.Repeat("\n", gap+1)+footer), m.width, m.height)
+	all := strings.Split(strings.Join(rows, "\n")+strings.Repeat("\n", gap+1)+footer, "\n")
+	for i, line := range all {
+		plain := ansi.Strip(line)
+		if !strings.HasPrefix(plain, "› ") && !strings.HasPrefix(plain, "  ") {
+			all[i] = "  " + line
+		}
+	}
+	return screen(strings.Join(all, "\n"), m.width, m.height)
 }

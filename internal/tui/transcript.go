@@ -10,7 +10,11 @@ import (
 
 // Style only after sanitizing remote text. State events stay in the journal,
 // but the transcript omits them: the live status line is their presentation.
-func eventView(s *api.Session, e *api.Event, width int) string {
+func eventView(s *api.Session, e *api.Event, width int) (out string) {
+	if e.Kind != "input" && e.Kind != "turn_end" {
+		width = max(1, width-2)
+		defer func() { out = indentBlock(out) }()
+	}
 	wrap := func(text string) string { return ansi.Hardwrap(safeText(text), max(1, width), true) }
 	switch e.Kind {
 	case "state":
@@ -41,8 +45,7 @@ func eventView(s *api.Session, e *api.Event, width int) string {
 		if name == "" {
 			name = "AGENT"
 		}
-		body := ansi.Hardwrap(safeText(e.Text), max(1, width-2), true)
-		return "  " + style.Render(name) + "\n" + answer.Render("  "+strings.ReplaceAll(body, "\n", "\n  "))
+		return style.Render(name) + "\n" + answer.Render(wrap(e.Text))
 	case "approval":
 		return warning.Render(wrap("APPROVAL " + e.Text + " [" + e.RequestId + "]\n" + string(e.Payload)))
 	case "approval_resolved":
