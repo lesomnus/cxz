@@ -206,44 +206,15 @@ func (m *model) render() {
 	}
 	var lines []string
 	for _, e := range m.events[s.Id] {
-		switch e.Kind {
-		case "input":
-			lines = append(lines, "YOU\n"+e.Text)
-		case "assistant":
-			kind := s.Agent
-			if kind == "" {
-				kind = "agent"
-			}
-			lines = append(lines, strings.ToUpper(kind)+"\n"+e.Text)
-		case "approval":
-			lines = append(lines, "APPROVAL "+e.Text+" ["+e.RequestId+"]\n"+string(e.Payload))
-		case "approval_resolved":
-			lines = append(lines, "approval: "+e.Text)
-		case "tool_call":
-			lines = append(lines, "tool › "+e.Text+" "+string(e.Payload))
-		case "tool_result":
-			lines = append(lines, "result › "+string(e.Payload))
-		case "turn_end":
-			lines = append(lines, "turn: "+e.Text+" "+string(e.Payload))
-		case "diagnostic", "stderr":
-			lines = append(lines, "diagnostic › "+e.Text+" "+string(e.Payload))
-		case "state":
-			lines = append(lines, "["+e.Text+"]")
+		if text := eventView(s, e, max(1, m.view.Width)); text != "" {
+			lines = append(lines, text)
 		}
 		if hint := authHint(s, e); hint != "" {
-			lines = append(lines, hint)
+			lines = append(lines, warning.Render(ansi.Hardwrap(safeText(hint), max(1, m.view.Width), true)))
 		}
 	}
 	if len(lines) == 0 {
-		lines = append(lines, "Start a conversation\n\nDescribe a task below. Messages and tool activity will appear here.\nStopped session? Ctrl+R resumes the agent.")
-	}
-	for i, line := range lines {
-		parts := strings.SplitN(safeText(line), "\n", 2)
-		if len(parts) == 2 && (parts[0] == "YOU" || parts[0] == strings.ToUpper(s.Agent)) {
-			lines[i] = accent.Bold(true).Render(parts[0]) + "\n" + ansi.Hardwrap(parts[1], max(1, m.view.Width), true)
-		} else {
-			lines[i] = muted.Render(ansi.Hardwrap(safeText(line), max(1, m.view.Width), true))
-		}
+		lines = append(lines, muted.Render(ansi.Hardwrap("Start a conversation\n\nDescribe a task below. Messages and tool activity will appear here.\nStopped session? Ctrl+R resumes the agent.", max(1, m.view.Width), true)))
 	}
 	m.view.SetContent(strings.Join(lines, "\n\n"))
 	if follow {

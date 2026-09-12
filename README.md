@@ -165,7 +165,11 @@ The dashboard groups workspace details and session cards; the conversation view
 keeps tool activity above a growing, rounded message editor. Drafts are retained
 per session while this TUI is open, including trips back to the project view.
 Escape does not discard a conversation draft. Light/dark terminal palettes are
-supported without forcing a background; use a terminal of at least 40 × 14 cells.
+supported without forcing a full-screen background; use a terminal of at least
+40 × 14 cells. The composer spans the terminal width. User messages show local
+timestamps instead of a YOU label; Claude/Codex speaker badges and pastel tool
+colors distinguish output. Transient state events update the status area rather
+than accumulating in the transcript (the journal remains intact).
 
 Data commands (table by default; use `--format json` for scripts): `session ls`, `project ls`, `session get ID`, `session send ID TEXT`,
 `session reply ID REQUEST_ID allow|deny [ANSWERS_JSON]`, `session interrupt ID`, `session resume ID`,
