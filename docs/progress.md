@@ -1,5 +1,15 @@
 # 구현 진행 상황
 
+## 2026-09-12 — devcontainer 신뢰 검사 진단
+
+- `--trust-config` 요구 오류에 설정 파일명과 차단된 항목의 JSON Pointer 경로,
+  탐지 이유를 모두 표시한다. devcontainer JSONC와 Compose YAML 양쪽에 적용했다.
+- 기존 차단 기준은 변경하지 않았다. 출력 순서를 고정하고 경로의 특수문자를
+  이스케이프하며 명령·환경변수·mount 원문 값은 출력하지 않는다.
+- 각 탐지 규칙, 여러 원인 동시 표시, 값 비노출, 경로 이스케이프, explicit trust,
+  recreate 전 preflight의 파일명·항목 경로를 회귀 테스트에 추가했다.
+- 전체 Go 테스트, workspace race·vet, diff 검사 통과.
+
 ## 2026-09-12 — Codex 중앙 인증 공급
 
 - 신규 Codex Account의 기본 backend를 `brokered-access-token`으로 변경했다.
