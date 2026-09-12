@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/dockerx"
@@ -20,7 +19,7 @@ import (
 )
 
 func doctorCommand() *xli.Command {
-	return &xli.Command{Name: "doctor", Brief: "Read-only installation and project health checks (JSON)", Handler: onRun(func(ctx context.Context, c *xli.Command) error {
+	return &xli.Command{Name: "doctor", Brief: "Read-only installation and project health checks", Handler: onRun(func(ctx context.Context, c *xli.Command) error {
 		ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
 		defer cancel()
 		type check struct {
@@ -61,7 +60,7 @@ func doctorCommand() *xli.Command {
 							}
 							var failure error
 							if p.ProvisionState == "failed" || p.ProvisionState == "interrupted" {
-								failure = fmt.Errorf("%s at %s: %s; inspect cxz logs %s", p.ProvisionState, p.ProvisionStep, p.Error, p.Id)
+								failure = fmt.Errorf("%s at %s: %s; inspect cxz project logs %s", p.ProvisionState, p.ProvisionStep, p.Error, p.Id)
 							}
 							add("project:"+p.Id, failure, p.State+" / "+p.ProvisionStep)
 						}
@@ -71,11 +70,11 @@ func doctorCommand() *xli.Command {
 				}
 			}
 		}
-		if err = json.NewEncoder(c.Writer).Encode(checks); err != nil {
+		if err = writeOutput(c, checks); err != nil {
 			return err
 		}
 		if !healthy {
-			return fmt.Errorf("health checks failed; see JSON details (no credentials were read)")
+			return fmt.Errorf("health checks failed; see check details (no credentials were read)")
 		}
 		return nil
 	})}
@@ -97,7 +96,7 @@ func logsCommand() *xli.Command {
 			return err
 		}
 		args := []string{"logs", "--tail", fmt.Sprint(n), v.Container}
-		name := arg.MustGet[string](c, "PROJECT")
+		name, _ := arg.Get[string](c, "PROJECT")
 		if name != "" {
 			conn, err := transport.Dial(stateFrom(ctx))
 			if err != nil {
@@ -114,7 +113,7 @@ func logsCommand() *xli.Command {
 			}
 			id := p.Id
 			if !regexp.MustCompile(`^[a-f0-9]{24}$`).MatchString(id) {
-				return fmt.Errorf("owned project not found; use cxz projects")
+				return fmt.Errorf("owned project not found; use cxz project ls")
 			}
 			args = []string{"exec", v.Container, "tail", "-n", fmt.Sprint(n), "--", "/var/lib/cxz/projects/" + id + "/provision.log"}
 		}

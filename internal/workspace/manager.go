@@ -74,7 +74,7 @@ func New(db *sql.DB, root string) (*Manager, error) {
 		}
 		if p.Job.State == "running" {
 			p.Job.State = "interrupted"
-			p.Error = "manager stopped during " + p.Job.Step + "; retry cxz up (prompts are never resent)"
+			p.Error = "manager stopped during " + p.Job.Step + "; retry cxz project up (prompts are never resent)"
 			if err = core.WriteJSON(file, &p); err != nil {
 				return nil, err
 			}
@@ -181,7 +181,7 @@ func (m *Manager) client(ctx context.Context, p *Project) (*grpc.ClientConn, api
 		return nil, nil, e
 	}
 	if !v.State.Running {
-		return nil, nil, fmt.Errorf("project is stopped; run cxz up")
+		return nil, nil, fmt.Errorf("project is stopped; run cxz project up")
 	}
 	ip := v.NetworkSettings.Networks[p.Network].IPAddress
 	if ip == "" {
@@ -389,7 +389,7 @@ func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (result *api.
 		if v.Config.Labels["cxz.owner"] == m.Owner && v.Config.Labels["cxz.project"] == p.ID {
 			if p.ContainerID != "" && p.ContainerID != v.ID {
 				if _, err := dockerx.Owned(ctx, p.ContainerID, m.Owner, p.ID); err == nil {
-					return nil, fmt.Errorf("multiple owned workspace containers; inspect cxz projects before retrying")
+					return nil, fmt.Errorf("multiple owned workspace containers; inspect cxz project ls before retrying")
 				}
 			}
 			p.ContainerID = v.ID
@@ -496,7 +496,7 @@ func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (result *api.
 		chosen, e = client.Create(ctx, &api.CreateRequest{Workspace: p.RemoteWorkspace, Agent: kind, Model: r.Model, ClientId: clientID})
 	} else if chosen.State == "interrupted" || chosen.State == "stopped" || chosen.State == "failed" {
 		if r.Model != "" && r.Model != chosen.Model {
-			return nil, fmt.Errorf("existing session model is immutable; use cxz new --model after stopping it")
+			return nil, fmt.Errorf("existing session model is immutable; use cxz session new --model after stopping it")
 		}
 		chosen, e = client.Resume(ctx, &api.Control{SessionId: chosen.Id, RunId: chosen.RunId, ClientId: core.ID()})
 	}

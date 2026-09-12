@@ -14,18 +14,18 @@ arm64 runtime acceptance remain unverified. See its release notes before use.
 
 ```sh
 CGO_ENABLED=0 go build -o bin/cxz ./cmd/cxz
-bin/cxz install --workspace-root /absolute/directory/containing/your/projects
+bin/cxz manager install --workspace-root /absolute/directory/containing/your/projects
 bin/cxz account add codex personal-codex
 bin/cxz account login personal-codex   # central Codex login; no project needed
-bin/cxz new --account personal-codex . # prepares project and opens TUI
+bin/cxz session new --account personal-codex . # prepares project and opens TUI
 ```
 
-`install` builds and starts a background Docker manager, waits for its API, and
+`manager install` builds and starts a background Docker manager, waits for its API, and
 returns. The host needs Docker and cxz; Node, devcontainer CLI and agent binaries
-are managed in containers. `serve` is a **foreground, blocking development
+are managed in containers. `manager serve` is a **foreground, blocking development
 server**, not the normal installation command.
 
-The directory must exist under the installed root. `new .` uses its
+The directory must exist under the installed root. `session new .` uses its
 `devcontainer.json`, not an existing VS Code container. Missing configuration gets
 a base Debian devcontainer with non-root `vscode` user. Multiple configurations
 prompt in a terminal; scripts pass `--config`. Image, Dockerfile, Compose,
@@ -36,10 +36,10 @@ Register separate profiles for personal/company subscriptions:
 ```sh
 bin/cxz account add --name "Company Codex" codex work-codex
 bin/cxz account login work-codex
-bin/cxz account list
-bin/cxz account backends             # supported agent/auth workflow mappings
-bin/cxz account bindings work-codex   # metadata only; no tokens
-bin/cxz new --account work-codex .
+bin/cxz account ls
+bin/cxz backend ls             # supported agent/auth workflow mappings
+bin/cxz binding ls work-codex   # metadata only; no tokens
+bin/cxz session new --account work-codex .
 ```
 
 Account is an agent authentication profile, not a cxz user/tenant. The manager's
@@ -49,7 +49,7 @@ independent project-local logins; use `account login --project PROJECT ACCOUNT`.
 Rotating refresh tokens are never copied across projects.
 Host credentials are never imported implicitly. Account and agent are fixed for each session;
 resume/recreate preserves them. Missing login fails instead of falling back to
-environment credentials. Interactive `new` and TUI Ctrl+N offer account selection;
+environment credentials. Interactive `session new` and TUI Ctrl+N offer account selection;
 scripts must pass `--account` when creating a session. Stop an active session before
 starting another. See [Account design and boundaries](docs/accounts.md).
 
@@ -61,8 +61,8 @@ selected backend. API keys remain unsupported. Central OAuth login and refresh
 are delegated to official Codex; cxz does not implement OAuth endpoints.
 
 The account determines the agent; a conflicting explicit `--agent` is rejected.
-Use `cxz config set codex-model MODEL_ID` or `new --model MODEL_ID .` for a new
-session's model; reconnect/resume preserves it. `cxz doctor`, `cxz logs PROJECT`
+Use `cxz config set codex-model MODEL_ID` or `session new --model MODEL_ID .` for a new
+session's model; reconnect/resume preserves it. `cxz manager doctor`, `cxz project logs PROJECT`
 and `cxz version` provide diagnostics. See [operations and releases](docs/operations.md)
 for retry behavior, model settings, versioned installation, updates and rollback.
 
@@ -72,32 +72,32 @@ ownership or remap an existing user's UID. Adjust the devcontainer for a host UI
 other than the default image's 1000 when necessary.
 
 ```sh
-bin/cxz up .                       # attach existing session; recover if necessary
-bin/cxz up --no-attach .            # prepare, return JSON
-bin/cxz new --account work-codex .  # new conversation; stop an active one first
-bin/cxz attach PROJECT             # also: it SESSION_ID
+bin/cxz project up .                       # attach existing session; recover if necessary
+bin/cxz project up --no-attach --format json . # prepare, return JSON
+bin/cxz session new --account work-codex .  # new conversation; stop an active one first
+bin/cxz session attach PROJECT             # or SESSION_ID
 bin/cxz tui                        # also: watch
-bin/cxz exec PROJECT -- go test ./...
-bin/cxz shell PROJECT
-bin/cxz down .                     # remove owned containers; preserve workspace/volumes
-bin/cxz up .                       # recreate + resume; never replay old prompts
-bin/cxz recreate --yes .           # writable layer lost; editors disconnect
-bin/cxz install --recreate         # replace manager, keep project processes/data
-bin/cxz uninstall                  # remove manager only; projects/data remain
+bin/cxz project exec PROJECT -- go test ./...
+bin/cxz project shell PROJECT
+bin/cxz project down .                     # remove owned containers; preserve workspace/volumes
+bin/cxz project up .                       # recreate + resume; never replay old prompts
+bin/cxz project recreate --yes .           # writable layer lost; editors disconnect
+bin/cxz manager install --recreate         # replace manager, keep project processes/data
+bin/cxz manager uninstall                  # remove manager only; projects/data remain
 ```
 
-Inside an owned project, `cxz it`, `cxz ls` and session controls are scoped to that
+Inside an owned project, `cxz session attach`, `cxz session ls` and session controls are scoped to that
 project. No manager Docker socket or credential directory is mounted there.
-Global options precede commands: `cxz --state /private/client-state up .`.
+Global options precede commands: `cxz --state /private/client-state project up .`.
 Use the same client state for all host commands. Default: `$XDG_STATE_HOME/cxz`
 or `~/.local/state/cxz`; this stores an installation locator, not the named volumes.
 
 The CLI uses `lesomnus/xli`: command flags must precede positional arguments.
-Use `cxz new --account work-codex .`, not `cxz new . --account work-codex` (the old ordering is
+Use `cxz session new --account work-codex .`, not `cxz session new . --account work-codex` (the old ordering is
 now rejected). Each command has generated `--help`; help and completion need no
 running manager. Enable zsh completion with `source <(bin/cxz completion zsh)`.
-`exec PROJECT -- COMMAND...` preserves everything after `--` as command arguments.
-For local development, use `cxz serve --agent /path/to/claude` (default: `claude`).
+`project exec PROJECT -- COMMAND...` preserves everything after `--` as command arguments.
+For local development, use `cxz manager serve --agent /path/to/claude` (default: `claude`).
 Root-level `--agent`, the unused `--claude-config`, and the disabled project-wide
 `login` command are removed; authenticate with `cxz account login ACCOUNT`.
 See the [complete CLI argument audit](docs/cli.md).
@@ -122,17 +122,17 @@ and are case-normalized. A duplicate explicit alias is rejected.
 
 ```sh
 cxz project add --name "My Web App" --alias web .  # register only; no container
-cxz up --no-attach web
+cxz project up --no-attach web
 cxz project set --name "Production Web" --alias prod web
-cxz exec prod -- pwd
-cxz logs prod
-cxz attach prod
-cxz down prod
+cxz project exec prod -- pwd
+cxz project logs prod
+cxz session attach prod
+cxz project down prod
 # Name/alias can also be supplied during new/up/recreate:
-cxz new --name "My Web App" --alias web .
+cxz session new --name "My Web App" --alias web .
 ```
 
-`cxz projects` exposes both fields; the TUI shows alias and display name. Project
+`cxz project ls` exposes both fields; the TUI shows alias and display name. Project
 arguments accept an exact ID/path, then an alias, then an unambiguous display
 name, in that order. Display names can contain spaces and need not be unique.
 Shell completion offers handles for project/up/new/down/recreate/attach/exec/shell/login/logs.
@@ -153,9 +153,9 @@ resource database and survives server/container restarts; back up state volumes.
 | `/stop` | Terminate selected agent |
 | Ctrl+C | Detach; agent continues |
 
-JSON commands: `ls`, `projects`, `get ID`, `send ID TEXT`,
-`reply ID REQUEST_ID allow|deny [ANSWERS_JSON]`, `interrupt ID`, `resume ID`,
-`stop ID`, `events ID [AFTER_SEQ]`. TUI event connections retry by cursor;
+Data commands (table by default; use `--format json` for scripts): `session ls`, `project ls`, `session get ID`, `session send ID TEXT`,
+`session reply ID REQUEST_ID allow|deny [ANSWERS_JSON]`, `session interrupt ID`, `session resume ID`,
+`session stop ID`, `session events ID [AFTER_SEQ]`. TUI event connections retry by cursor;
 mutations are never blindly retried. Session APIs accept idempotency keys.
 
 ## Resource API
@@ -198,14 +198,14 @@ back up the full state volumes, not just transcripts.
   read-only. Back up these volumes **and workspace contents**. SQLite alone is not
   a backup. The fsynced journal/manifests are authoritative for runtime recovery;
   SQLite resource/audit history should also be backed up.
-- Container loss ends its processes. `up`/`resume` creates a new run and resumes
+- Container loss ends its processes. `project up`/`session resume` creates a new run and resumes
   the vendor conversation. Stale approvals fail and old prompts are not replayed.
   Codex may give a previously empty thread a new vendor ID: no transcript exists
   until its first turn. This exception requires no recorded send intent.
 - A crash may leave `delivery_unknown`; there is no exactly-once side-effect
-  guarantee. Inspect history before repeating a task. `down` collects final
-  history; abrupt loss can leave manager history incomplete until `up` recovers.
-- Foreign `recreate` requires confirmation: writable layer lost, editors detached,
+  guarantee. Inspect history before repeating a task. `project down` collects final
+  history; abrupt loss can leave manager history incomplete until `project up` recovers.
+- Foreign `project recreate` requires confirmation: writable layer lost, editors detached,
   workspace/named volumes retained. Host initialization/elevated settings require
   `--trust-config`. That flag trusts the configuration; it is not a hostile-code sandbox.
 - Codex uses `untrusted` approval policy without a nested sandbox inside its owned

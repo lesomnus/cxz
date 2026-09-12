@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/lesomnus/cxz/internal/distribution"
 	"github.com/lesomnus/cxz/internal/installer"
@@ -32,7 +31,7 @@ func releaseCommands() xli.Commands {
 					}
 				}
 			}
-			return json.NewEncoder(c.Writer).Encode(map[string]any{"version": version, "revision": revision, "dirty": dirty, "platform": runtime.GOOS + "/" + runtime.GOARCH, "claude": distribution.ClaudeVersion, "codex": distribution.CodexVersion})
+			return writeOutput(c, map[string]any{"version": version, "revision": revision, "dirty": dirty, "platform": runtime.GOOS + "/" + runtime.GOARCH, "claude": distribution.ClaudeVersion, "codex": distribution.CodexVersion})
 		})},
 		{Name: "update", Brief: "Replace manager with IMAGE (explicit tag/digest, not latest); keep projects/data", Args: arg.Args{stringArg("IMAGE", false)}, Handler: onRun(func(ctx context.Context, c *xli.Command) error {
 			image := arg.MustGet[string](c, "IMAGE")

@@ -75,7 +75,7 @@ reason ownership matters.
 ### Foreign containers
 
 cxz still watches Docker events, because it must know when a project's container
-is already running outside its control — otherwise `cxz up` would race it or
+is already running outside its control — otherwise `cxz project up` would race it or
 create a second one for the same workspace. But detection is all that happens.
 
 Such a project is listed with its state shown as running outside cxz, and one
@@ -165,7 +165,7 @@ The pty is kept as a **second-class transport**, not a second architecture:
 
 - some vendors will not have a usable protocol mode
 - interactive approval flows may be far easier to hand to the real TUI
-- `cxz attach` from a terminal should still feel native
+- `cxz session attach` from a terminal should still feel native
 
 Both are the same pipeline with a different payload type (§3.3).
 
@@ -776,9 +776,9 @@ Live updates use SSE from the event bus, not polling.
 
 The CLI remains a first-class client, not a fallback:
 
-- `cxz up [path]` — create/start a project's container and a session
-- `cxz ls` — sessions, their agents, their states
-- `cxz attach <session>` — the pty view of a session, in the terminal
+- `cxz project up [path]` — create/start a project's container and a session
+- `cxz session ls` — sessions, their agents, their states
+- `cxz session attach <session>` — the pty view of a session, in the terminal
 - `cxz web` — serve the UI
 - daemon lifecycle, config, and everything destructive
 
@@ -860,7 +860,7 @@ The order matters: each step is what makes the next one answerable.
 
 1. **Codex adapter.** The first real test of §3.4. Expect the seam to change.
 2. **pty transport** — second-class, same log — for vendors whose protocol mode
-   is unusable, and for `cxz attach`.
+   is unusable, and for `cxz session attach`.
 3. **Remote exposure**: TLS, origin hardening, session management — and with it
    the SSH attach link (§5.6).
 4. **Container port proxy**, for running what the agent wrote.

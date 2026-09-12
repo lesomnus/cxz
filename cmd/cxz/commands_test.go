@@ -53,17 +53,17 @@ func TestValidationBeforeConnection(t *testing.T) {
 		args []string
 		want error
 	}{
-		{[]string{"new", ".", "--agent", "codex"}, xli.ErrFlagAfterArg},
-		{[]string{"get"}, xli.ErrNeedArgs},
-		{[]string{"stop", "id", "extra"}, xli.ErrTooManyArgs},
-		{[]string{"install", "unexpected"}, xli.ErrTooManyArgs},
+		{[]string{"session", "new", ".", "--agent", "codex"}, xli.ErrFlagAfterArg},
+		{[]string{"session", "get"}, xli.ErrNeedArgs},
+		{[]string{"session", "stop", "id", "extra"}, xli.ErrTooManyArgs},
+		{[]string{"manager", "install", "unexpected"}, xli.ErrTooManyArgs},
 		{[]string{"unknown"}, xli.ErrUnknownCmd},
-		{[]string{"new", "--unknown"}, xli.ErrUnknownFlag},
-		{[]string{"new", "--agent", "invalid", "."}, nil},
-		{[]string{"reply", "id", "request", "maybe"}, nil},
-		{[]string{"events", "id", "-1"}, nil},
-		{[]string{"events", "id", "12junk"}, nil},
-		{[]string{"exec", "project"}, xli.ErrNeedArgs},
+		{[]string{"session", "new", "--unknown"}, xli.ErrUnknownFlag},
+		{[]string{"session", "new", "--agent", "invalid", "."}, nil},
+		{[]string{"session", "reply", "id", "request", "maybe"}, nil},
+		{[]string{"session", "events", "id", "-1"}, nil},
+		{[]string{"session", "events", "id", "12junk"}, nil},
+		{[]string{"project", "exec", "project"}, xli.ErrNeedArgs},
 		{[]string{"--agent", "codex", "new", "."}, nil},
 	}
 	for _, tc := range cases {
@@ -83,13 +83,13 @@ func TestValidationBeforeConnection(t *testing.T) {
 func TestExecPassThrough(t *testing.T) {
 	root := newRoot("unused")
 	var got []string
-	for _, c := range root.Commands {
+	for _, c := range root.Commands.Get("project").Commands {
 		if c.Name == "exec" {
 			c.Handler = onRun(func(_ context.Context, c *xli.Command) error { got, _ = arg.Get[[]string](c, "COMMAND"); return nil })
 		}
 	}
 	want := []string{"sh", "-c", "printf '%s' \"$1\"", "--", "--agent", "", "--help"}
-	result := xlitest.Run(t, root, append([]string{"exec", "project", "--"}, want...)...)
+	result := xlitest.Run(t, root, append([]string{"project", "exec", "project", "--"}, want...)...)
 	if result.Err != nil || !reflect.DeepEqual(got, want) {
 		t.Fatalf("%v: %q", result.Err, got)
 	}
@@ -194,7 +194,11 @@ func TestCommandsReachAPI(t *testing.T) {
 	resource.RegisterProjectServiceServer(server, projectStub{requests: stub.requests, mutations: mutations})
 	go server.Serve(listener)
 	defer server.Stop()
-	for _, args := range [][]string{{"up", "--trust-config", "project-name"}, {"recreate", "--trust-config", "--yes", "project-name"}, {"new", "--no-attach", "project-name"}} {
+	table := xlitest.Run(t, newRoot(root), "project", "ls")
+	if table.Err != nil || !strings.Contains(table.Stdout, "ALIAS") || !strings.Contains(table.Stdout, "pn") {
+		t.Fatal("default API table", table)
+	}
+	for _, args := range [][]string{{"project", "up", "--trust-config", "project-name"}, {"project", "recreate", "--trust-config", "--yes", "project-name"}, {"session", "new", "--no-attach", "project-name"}} {
 		got := xlitest.Run(t, newRoot(root), args...)
 		if got.Err == nil || !strings.Contains(got.Err.Error(), "--account") {
 			t.Fatalf("missing account guidance: %v", got.Err)
@@ -207,7 +211,7 @@ func TestCommandsReachAPI(t *testing.T) {
 		t.Helper()
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer cancel()
-		got := (xlitest.Harness{Cmd: newRoot(root), Ctx: ctx}).Run(t, args...)
+		got := (xlitest.Harness{Cmd: newRoot(root), Ctx: ctx}).Run(t, append([]string{"--format", "json"}, args...)...)
 		if got.Err != nil {
 			t.Fatalf("%v: %v", args, got.Err)
 		}
@@ -222,7 +226,7 @@ func TestCommandsReachAPI(t *testing.T) {
 	if a.GetAlias() != "work-codex" || a.GetAgent() != "codex" || a.GetName() != "Work Codex" || a.GetAuthBackend() != "" {
 		t.Fatal(a)
 	}
-	got := run("new", "--account", "work-codex", "--agent", "codex", "--model", "test-model", "--no-attach", "project-name")
+	got := run("session", "new", "--account", "work-codex", "--agent", "codex", "--model", "test-model", "--no-attach", "project-name")
 	req := (<-stub.requests).(*api.ProjectRequest)
 	if req.Agent != "codex" || req.Account != "work-codex" || !req.NewSession || req.Workspace != "project-name" || req.ClientId == "" {
 		t.Fatal(req)
@@ -233,25 +237,25 @@ func TestCommandsReachAPI(t *testing.T) {
 	if !strings.Contains(got.Stderr, "preparing workspace") {
 		t.Fatal("progress must use stderr")
 	}
-	run("send", "session", "text --help with spaces")
+	run("session", "send", "session", "text --help with spaces")
 	input := (<-stub.requests).(*api.Input)
 	if input.Text != "text --help with spaces" || input.RunId != "current-run" || input.ClientId == "" {
 		t.Fatal(input)
 	}
-	run("reply", "session", "42", "allow", `{"color":"blue"}`)
+	run("session", "reply", "session", "42", "allow", `{"color":"blue"}`)
 	answer := (<-stub.requests).(*api.Answer)
 	if answer.RequestId != "42" || !answer.Allow || answer.RunId != "current-run" || answer.AnswersJson != `{"color":"blue"}` {
 		t.Fatal(answer)
 	}
-	run("down", "pn")
+	run("project", "down", "pn")
 	if (<-stub.requests).(*api.ProjectRequest).Workspace != "project-name" {
 		t.Fatal("wrong project")
 	}
-	completion := xlitest.Complete(t, newRoot(root), "up ")
+	completion := xlitest.Complete(t, newRoot(root), "project up ")
 	if completion.Err != nil || !completion.Has("pn") || !completion.Has("project-name") {
 		t.Fatalf("project completion: %+v", completion)
 	}
-	override := xlitest.Complete(t, newRoot("/nonexistent-cxz-test"), "--state "+root+" up ")
+	override := xlitest.Complete(t, newRoot("/nonexistent-cxz-test"), "--state "+root+" project up ")
 	if override.Err != nil || !override.Has("pn") {
 		t.Fatalf("state override completion: %+v", override)
 	}
@@ -262,26 +266,26 @@ func TestAgentCompletionWithoutConnection(t *testing.T) {
 	if account.Err != nil || !account.Has("claude") || !account.Has("codex") {
 		t.Fatalf("account agent completion: %+v", account)
 	}
-	got := xlitest.Complete(t, newRoot("/nonexistent-cxz-test"), "new --agent ")
+	got := xlitest.Complete(t, newRoot("/nonexistent-cxz-test"), "session new --agent ")
 	if got.Err != nil || !got.Has("claude") || !got.Has("codex") {
 		t.Fatalf("%+v", got)
 	}
-	paths := xlitest.Complete(t, newRoot("/nonexistent-cxz-test"), "new ")
+	paths := xlitest.Complete(t, newRoot("/nonexistent-cxz-test"), "session new ")
 	if paths.Err != nil || !paths.WantDirs {
 		t.Fatalf("workspace completion: %+v", paths)
 	}
-	config := xlitest.Complete(t, newRoot("/nonexistent-cxz-test"), "new --config ")
+	config := xlitest.Complete(t, newRoot("/nonexistent-cxz-test"), "session new --config ")
 	if config.Err != nil || !config.WantFiles {
 		t.Fatalf("config completion: %+v", config)
 	}
-	decision := xlitest.Complete(t, newRoot("/nonexistent-cxz-test"), "reply session 42 ")
+	decision := xlitest.Complete(t, newRoot("/nonexistent-cxz-test"), "session reply session 42 ")
 	if decision.Err != nil || !decision.Has("allow") || !decision.Has("deny") {
 		t.Fatalf("decision completion: %+v", decision)
 	}
 }
 
 func TestAliases(t *testing.T) {
-	for _, alias := range []struct{ name, target string }{{"it", "attach"}, {"watch", "tui"}} {
+	for _, alias := range []struct{ name, target string }{{"watch", "tui"}} {
 		root := newRoot("unused")
 		called := false
 		for _, c := range root.Commands {

@@ -1,5 +1,22 @@
 # 구현 진행 상황
 
+## 2026-09-12 — 리소스 중심 CLI와 기본 표 출력
+
+- 공개 작업 명령을 project/session/account/manager/config 및 backend/binding 하위로
+  재편했다. projects → project ls, ls → session ls, new → session new,
+  up/recreate/down → project 하위, 설치·서버 실행·업데이트 → manager 하위로 옮겼다.
+  로그는 manager logs / project logs PROJECT로 분리하며 config show를 명시한다.
+  이전 최상위 명령의 호환 별칭은 제공하지 않는다. 내부 프로세스 진입점은 유지한다.
+- 데이터 명령의 기본 출력은 표이며 --format table|json을 추가했다. 명령별 옵션이
+  루트 옵션보다 우선한다. 목록 주요 열, 상세 FIELD/VALUE, 빈 목록, 한글 표시 폭,
+  터미널 너비에 따른 축약과 제어문자 비활성화를 처리한다. JSON/JSONL은 기존
+  직렬화 필드·큰 정수·줄바꿈을 보존한다. raw exec/shell/logs/login/TUI는 변환하지 않는다.
+- account status도 포맷을 지원하고 파일 존재와 vendor 인증 검증 여부를 구분한다.
+  Docker manager의 시작 인자·이미지 CMD, 도움말·완성·안내문, 현재 문서와 probe 호출을
+  갱신했다. 자동화 probe는 JSON을 명시하고 과거 릴리스 문서는 원래 버전의 설명을 유지한다.
+- 전체 Go 테스트·vet, CLI/installer/integration race, diff 및 probe JS 구문 검사 통과.
+  Bake --print 설정 검증 통과. 이번 변경에서 Docker runtime probe나 실제 OAuth는 실행하지 않았다.
+
 ## 2026-09-12 — Claude 로그인 코드 입력 표시
 
 - 대화형 Claude auth login을 파이프로 연결하고 cxz 입력 표시기를 추가했다.

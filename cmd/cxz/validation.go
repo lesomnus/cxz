@@ -82,7 +82,7 @@ func validateInvocation(c *xli.Command) error {
 		}
 	case c.Name == "new" && !terminal(c):
 		if flg.MustGet[string](c, "account") == "" {
-			return fmt.Errorf("new requires --account outside an interactive terminal; list profiles with cxz account list")
+			return fmt.Errorf("new requires --account outside an interactive terminal; list profiles with cxz account ls")
 		}
 	case c.Name == "reply":
 		if value, set := arg.Get[string](c, "ANSWERS_JSON"); set {

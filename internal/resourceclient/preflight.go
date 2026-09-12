@@ -13,7 +13,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-var ErrAccountRequired = errors.New("no matching session to resume; select an account with --account ACCOUNT (list profiles with cxz account list)")
+var ErrAccountRequired = errors.New("no matching session to resume; select an account with --account ACCOUNT (list profiles with cxz account ls)")
 
 // CheckOpen performs read-only prerequisite checks before project registration,
 // provisioning or destructive recreation. Open checks again for non-CLI callers.

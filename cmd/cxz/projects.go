@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/charmbracelet/x/term"
@@ -37,7 +36,7 @@ func terminal(c *xli.Command) bool {
 
 func selectProjectAccount(ctx context.Context, resources *resourceclient.Client, c *xli.Command) (string, error) {
 	if !terminal(c) {
-		return "", fmt.Errorf("%s requires --account to create a session; list profiles with cxz account list", c.Name)
+		return "", fmt.Errorf("%s requires --account to create a session; list profiles with cxz account ls", c.Name)
 	}
 	var choices []*resource.Account
 	after := ""
@@ -65,7 +64,7 @@ func newProjectCommand(name string) *xli.Command {
 	if name != "down" {
 		config := stringFlag("config", "Devcontainer configuration", "")
 		config.Handler = flg.OnTab[string](func(_ context.Context, t tab.Tab) error { t.Files(""); return nil })
-		c.Flags = flg.Flags{agentFlag(""), stringFlag("model", "Model ID/alias for a new session (persisted on resume)", ""), config, switchFlag("no-attach", "Return JSON without opening TUI"), switchFlag("trust-config", "Trust elevated settings and host initialization")}
+		c.Flags = flg.Flags{agentFlag(""), stringFlag("model", "Model ID/alias for a new session (persisted on resume)", ""), config, switchFlag("no-attach", "Print session data without opening TUI (see --format)"), switchFlag("trust-config", "Trust elevated settings and host initialization")}
 		c.Flags = append(c.Flags, stringFlag("name", "Project display name", ""), stringFlag("alias", "Unique short project handle (generated when omitted)", ""))
 		c.Flags = append(c.Flags, stringFlag("account", "Registered profile; required for new sessions in scripts, selected interactively or inherited on resume", ""))
 	}
@@ -138,7 +137,7 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 		if e != nil {
 			return e
 		}
-		return json.NewEncoder(c.Writer).Encode(r)
+		return writeOutput(c, r)
 	}
 	agent := flg.MustGet[string](c, "agent")
 	account := flg.MustGet[string](c, "account")
@@ -241,7 +240,7 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 			}
 		}
 		if !terminal(c) {
-			return fmt.Errorf("review targets with cxz projects, then pass --yes")
+			return fmt.Errorf("review targets with cxz project ls, then pass --yes")
 		}
 		fmt.Fprint(c.ErrWriter, "Type recreate to continue: ")
 		v, e := bufio.NewReader(c.ReadCloser).ReadString('\n')
@@ -268,7 +267,7 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 		return e
 	}
 	if detach || !terminal(c) {
-		return json.NewEncoder(c.Writer).Encode(s)
+		return writeOutput(c, s)
 	}
 	return tui.RunSelected(ctx, client, s.Id)
 }
@@ -304,10 +303,10 @@ func attach(ctx context.Context, client api.SessionsClient, arg string) error {
 		}
 	}
 	if len(matches) == 0 {
-		return fmt.Errorf("no matching session; use cxz ls")
+		return fmt.Errorf("no matching session; use cxz session ls")
 	}
 	if len(matches) > 1 && arg != "" {
-		return fmt.Errorf("ambiguous session; use a session id from cxz ls")
+		return fmt.Errorf("ambiguous session; use a session id from cxz session ls")
 	}
 	if len(matches) > 1 && arg == "" && os.Getenv("CXZ_PROJECT_ID") == "" {
 		return tui.Run(ctx, client)
@@ -391,7 +390,7 @@ func projectMetadataCommands() *xli.Command {
 			if err != nil {
 				return err
 			}
-			return json.NewEncoder(c.Writer).Encode(p)
+			return writeOutput(c, p)
 		})}
 		parent.Commands = append(parent.Commands, c)
 	}
