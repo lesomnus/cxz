@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/charmbracelet/bubbles/textinput"
+	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/x/ansi"
@@ -30,7 +30,8 @@ type model struct {
 	client               api.SessionsClient
 	sessions             []*api.Session
 	selected             int
-	input                textinput.Model
+	input                textarea.Model
+	drafts               map[string]string
 	view                 viewport.Model
 	focusList, creating  bool
 	notice               string
@@ -115,10 +116,7 @@ func RunSelected(ctx context.Context, c api.SessionsClient, id string) error {
 }
 
 func RunProject(ctx context.Context, c api.SessionsClient, project *api.Project, id string, create ProjectCreator) error {
-	input := textinput.New()
-	input.Placeholder = "message · /answer {\"question\":\"answer\"}"
-	input.CharLimit = 100000
-	input.Focus()
+	input := newComposer()
 	m := &model{ctx: ctx, client: c, input: input, view: viewport.New(80, 15), events: map[string][]*api.Event{}, cursor: map[string]uint64{}, width: 100, height: 30, wantID: id}
 	m.project = project
 	m.projectView = project != nil && id == ""
@@ -158,7 +156,7 @@ func (m *model) refresh() tea.Cmd {
 	}
 }
 func timer() tea.Cmd           { return tea.Tick(time.Second, func(t time.Time) tea.Msg { return tick(t) }) }
-func (m *model) Init() tea.Cmd { return tea.Batch(m.refresh(), timer(), textinput.Blink) }
+func (m *model) Init() tea.Cmd { return tea.Batch(m.refresh(), timer(), textarea.Blink) }
 func (m *model) current() *api.Session {
 	if len(m.sessions) == 0 {
 		return nil
@@ -210,13 +208,13 @@ func (m *model) render() {
 	for _, e := range m.events[s.Id] {
 		switch e.Kind {
 		case "input":
-			lines = append(lines, "you › "+e.Text)
+			lines = append(lines, "YOU\n"+e.Text)
 		case "assistant":
 			kind := s.Agent
 			if kind == "" {
 				kind = "agent"
 			}
-			lines = append(lines, kind+" › "+e.Text)
+			lines = append(lines, strings.ToUpper(kind)+"\n"+e.Text)
 		case "approval":
 			lines = append(lines, "APPROVAL "+e.Text+" ["+e.RequestId+"]\n"+string(e.Payload))
 		case "approval_resolved":
@@ -236,7 +234,18 @@ func (m *model) render() {
 			lines = append(lines, hint)
 		}
 	}
-	m.view.SetContent(ansi.Hardwrap(safeText(strings.Join(lines, "\n\n")), m.view.Width, true))
+	if len(lines) == 0 {
+		lines = append(lines, "Start a conversation\n\nDescribe a task below. Messages and tool activity will appear here.\nStopped session? Ctrl+R resumes the agent.")
+	}
+	for i, line := range lines {
+		parts := strings.SplitN(safeText(line), "\n", 2)
+		if len(parts) == 2 && (parts[0] == "YOU" || parts[0] == strings.ToUpper(s.Agent)) {
+			lines[i] = accent.Bold(true).Render(parts[0]) + "\n" + ansi.Hardwrap(parts[1], max(1, m.view.Width), true)
+		} else {
+			lines[i] = muted.Render(ansi.Hardwrap(safeText(line), max(1, m.view.Width), true))
+		}
+	}
+	m.view.SetContent(strings.Join(lines, "\n\n"))
 	if follow {
 		m.view.GotoBottom()
 	}
@@ -312,9 +321,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = v.Width
 		m.height = v.Height
-		m.view.Width = max(20, v.Width-2)
-		m.view.Height = max(3, v.Height-11)
-		m.input.Width = max(20, v.Width-4)
+		m.resize()
 		m.render()
 	case tick:
 		m.watch()
@@ -385,6 +392,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch v.String() {
 		case "ctrl+c":
 			return m, tea.Quit
+		case "pgup", "pgdown":
+			m.view, _ = m.view.Update(v)
+			return m, nil
 		case "tab":
 			if m.creating {
 				if len(m.accounts) > 0 {
@@ -405,6 +415,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.notice = "Loading registered accounts…"
 			return m, m.loadAccounts()
 		case "esc":
+			if !m.creating {
+				return m, nil
+			}
 			m.creating = false
 			m.input.SetValue("")
 			m.input.Placeholder = "message"
@@ -417,13 +430,24 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.action("interrupt", "")
 		case "ctrl+r":
 			return m, m.action("resume", "")
+		case "ctrl+x":
+			m.input.Reset()
+			return m, nil
+		case "alt+enter", "ctrl+j":
+			if !m.focusList && !m.creating {
+				m.input.InsertString("\n")
+				m.resize()
+			}
+			return m, nil
 		case "up", "down":
 			if m.focusList && len(m.sessions) > 0 {
+				m.saveDraft()
 				if v.String() == "up" {
 					m.selected = (m.selected + len(m.sessions) - 1) % len(m.sessions)
 				} else {
 					m.selected = (m.selected + 1) % len(m.sessions)
 				}
+				m.restoreDraft()
 				m.watch()
 				m.render()
 				return m, nil
@@ -488,40 +512,20 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if !m.focusList {
 		m.input, cmd = m.input.Update(msg)
 	}
+	m.resize()
 	if k, ok := msg.(tea.KeyMsg); ok && (k.String() == "pgup" || k.String() == "pgdown") {
 		m.view, _ = m.view.Update(msg)
 	}
 	return m, cmd
 }
 func (m *model) View() string {
+	if m.width > 0 && (m.width < 40 || m.height < 14) {
+		return screen("cxz\nResize terminal to 40 × 14 or larger.\nCtrl+C detach", m.width, m.height)
+	}
 	if m.projectView {
 		return m.projectScreen()
 	}
-	var b strings.Builder
-	b.WriteString("cxz · sessions · Ctrl+C detaches (agent keeps running)\n")
-	start := max(0, m.selected-1)
-	for i := start; i < min(len(m.sessions), start+3); i++ {
-		s := m.sessions[i]
-		mark := " "
-		if i == m.selected {
-			mark = ">"
-		}
-		label := s.Workspace
-		if s.ProjectName != "" {
-			label = s.ProjectName
-		}
-		if s.ProjectAlias != "" {
-			label = s.ProjectAlias + " · " + label
-		}
-		fmt.Fprintf(&b, "%s %.8s %s/%s · account:%s [%s] %s\n", mark, s.Id, safeText(s.Agent), safeText(s.Model), safeText(s.Account), safeText(s.State), safeText(label))
-	}
-	b.WriteString("Ctrl+Q project · Tab sessions/chat · F2 allow · F3 deny · F4 interrupt · Ctrl+R resume\n")
-	if s := m.current(); s != nil && len(s.Pending) > 0 {
-		fmt.Fprintf(&b, "PENDING %s · /answer {\"question\":\"answer\"} for AskUserQuestion\n", safeText(s.Pending[0].Text))
-	}
-	b.WriteString(m.view.View())
-	b.WriteString("\n" + m.input.View() + "\n" + safeText(m.notice) + "\n")
-	return b.String()
+	return m.sessionScreen()
 }
 
 func authHint(s *api.Session, e *api.Event) string {

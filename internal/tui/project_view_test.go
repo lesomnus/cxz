@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/charmbracelet/bubbles/textinput"
+	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/lesomnus/cxz/api"
@@ -21,7 +21,7 @@ func (c *projectClient) DeleteSession(_ context.Context, id string) error {
 	return nil
 }
 func projectModel() *model {
-	return &model{ctx: context.Background(), client: &projectClient{}, project: &api.Project{Id: "p", Name: "Project", Workspace: "/work", State: "running"}, projectView: true, input: textinput.New(), view: viewport.New(80, 15), width: 100, height: 25, events: map[string][]*api.Event{}, cursor: map[string]uint64{}}
+	return &model{ctx: context.Background(), client: &projectClient{}, project: &api.Project{Id: "p", Name: "Project", Workspace: "/work", State: "running"}, projectView: true, input: textarea.New(), view: viewport.New(80, 15), width: 100, height: 25, events: map[string][]*api.Event{}, cursor: map[string]uint64{}}
 }
 func TestProjectScopeAndLatest(t *testing.T) {
 	m := projectModel()

@@ -9,7 +9,7 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/x/ansi"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/lesomnus/cxz/api"
 )
 
@@ -40,6 +40,7 @@ func (m *model) backToProject() {
 	if m.project == nil {
 		return
 	}
+	m.saveDraft()
 	m.projectView = true
 	m.sessions = ProjectSessions(m.sessions, m.project)
 	m.selected = max(0, min(m.selected, len(m.sessions)-1))
@@ -118,6 +119,7 @@ func (m *model) projectKey(key tea.KeyMsg) tea.Cmd {
 			m.projectView = false
 			m.focusList = false
 			m.input.Reset()
+			m.restoreDraft()
 			m.watch()
 			m.render()
 		}
@@ -146,36 +148,53 @@ func (m *model) projectKey(key tea.KeyMsg) tea.Cmd {
 }
 
 func (m *model) projectScreen() string {
-	var b strings.Builder
 	p := m.project
-	fmt.Fprintf(&b, "cxz · project · %s (%s)\nWorkspace: %s\nState: %s · ID: %s\n\n", pickerLabel(p.Name), pickerLabel(p.Alias), pickerLabel(p.Workspace), pickerLabel(p.State), p.Id)
-	rows := max(1, m.height-10)
-	start := max(0, m.selected-rows+1)
+	width := max(1, m.width-4)
+	name := pickerLabel(p.Name)
+	if name == "" {
+		name = pickerLabel(p.Alias)
+	}
+	header := accent.Bold(true).Render("cxz · project") + "  /  " + strong.Render(name)
+	meta := pickerLabel(p.Workspace)
+	info := fmt.Sprintf("%s  ·  %s  ·  %d sessions", pickerLabel(p.Alias), pickerLabel(p.State), len(m.sessions))
+	var rows []string
+	rows = append(rows, clip(header, width), muted.Render(clip(meta, width)), accent.Render(clip(info, width)), "", strong.Render("Sessions")+"  "+muted.Render("newest first"))
+	capacity := max(1, (m.height-13)/3)
+	start := max(0, m.selected-capacity+1)
 	if len(m.sessions) == 0 {
-		b.WriteString("No sessions. Press n to create one.\n")
+		rows = append(rows, "", strong.Render("No sessions yet"), muted.Render("Press n to choose an account and start a conversation."))
 	}
-	for i := start; i < min(len(m.sessions), start+rows); i++ {
+	for i := start; i < min(len(m.sessions), start+capacity); i++ {
 		s := m.sessions[i]
-		mark := " "
-		if i == m.selected {
-			mark = ">"
+		title := pickerLabel(s.Title)
+		if title == "" {
+			title = "Untitled conversation"
 		}
-		fmt.Fprintf(&b, "%s %.8s  %-13s %s · %s · %s\n", mark, s.Id, pickerLabel(s.State), pickerLabel(s.Agent), pickerLabel(s.Account), pickerLabel(s.Title))
+		mark := "  "
+		style := strong
+		if i == m.selected {
+			mark = "› "
+			style = selectedRow
+		}
+		rows = append(rows, style.Render(clip(mark+title, width)))
+		detail := fmt.Sprintf("  %.8s  %s · %s · %s", s.Id, pickerLabel(s.State), pickerLabel(s.Agent), pickerLabel(s.Account))
+		rows = append(rows, muted.Render(clip(detail, width)), "")
 	}
-	b.WriteString("\n↑/↓ select · Enter open · n new · s stop · d delete · Ctrl+C detach\n")
-	if m.deletingID != "" {
-		fmt.Fprintf(&b, "Delete session %.8s? Active agent will stop. Journal retained. [y/N]\n", m.deletingID)
+	if len(m.sessions) > capacity {
+		rows = append(rows, muted.Render(fmt.Sprintf("  %d–%d of %d", start+1, min(len(m.sessions), start+capacity), len(m.sessions))))
 	}
+	footer := muted.Render("↑/↓ select · Enter open · n new · s stop · d delete") + "\n" + muted.Render("Ctrl+C detach · agents keep running")
+	status := pickerLabel(m.notice)
 	if m.busy {
-		b.WriteString("Working…\n")
+		status = "Working… " + status
+	}
+	if m.deletingID != "" {
+		status = fmt.Sprintf("Delete session %.8s? [y/N]\nActive agent will stop. Journal retained.", m.deletingID)
 	}
 	if m.creating {
-		b.WriteString(m.input.View() + "\n")
+		status = m.input.View() + "\n" + status
 	}
-	b.WriteString(safeText(m.notice))
-	lines := strings.Split(b.String(), "\n")
-	for i, line := range lines {
-		lines[i] = ansi.Truncate(line, max(1, m.width), "…")
-	}
-	return strings.Join(lines, "\n")
+	footer += "\n" + warning.Render(status)
+	gap := max(0, m.height-len(rows)-strings.Count(footer, "\n")-2)
+	return screen(lipgloss.NewStyle().Padding(0, 2).Render(strings.Join(rows, "\n")+strings.Repeat("\n", gap+1)+footer), m.width, m.height)
 }

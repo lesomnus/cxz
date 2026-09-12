@@ -151,6 +151,8 @@ resource database and survives server/container restarts; back up state volumes.
 | Ctrl+Q (session) | Return to project view without stopping the agent |
 | Tab (session) | Switch session selector / message input |
 | Enter | Send message |
+| Alt+Enter / Ctrl+J | Insert newline (multiline paste stays in the editor) |
+| Ctrl+X (session) | Clear the current draft |
 | F2 / F3 | Allow / deny pending approval |
 | `/answer {"question text or id":"answer"}` | Answer question |
 | F4 | Interrupt active turn |
@@ -158,6 +160,12 @@ resource database and survives server/container restarts; back up state volumes.
 | PageUp / PageDown | Scroll |
 | `/stop` | Terminate selected agent |
 | Ctrl+C | Detach; agent continues |
+
+The dashboard groups workspace details and session cards; the conversation view
+keeps tool activity above a growing, rounded message editor. Drafts are retained
+per session while this TUI is open, including trips back to the project view.
+Escape does not discard a conversation draft. Light/dark terminal palettes are
+supported without forcing a background; use a terminal of at least 40 × 14 cells.
 
 Data commands (table by default; use `--format json` for scripts): `session ls`, `project ls`, `session get ID`, `session send ID TEXT`,
 `session reply ID REQUEST_ID allow|deny [ANSWERS_JSON]`, `session interrupt ID`, `session resume ID`,
