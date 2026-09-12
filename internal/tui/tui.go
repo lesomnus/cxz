@@ -32,6 +32,7 @@ type model struct {
 	selected             int
 	input                textarea.Model
 	drafts               map[string]string
+	localHelp            map[string]uint64
 	view                 viewport.Model
 	focusList, creating  bool
 	notice               string
@@ -202,37 +203,55 @@ func (m *model) render() {
 	s := m.current()
 	if s == nil {
 		m.view.SetContent("No sessions. Ctrl+N creates one from an existing workspace directory.")
+		if _, ok := m.localHelp[""]; ok {
+			m.view.SetContent(helpView(m.view.Width))
+		}
 		return
 	}
 	var lines []string
 	var usage *api.Event
 	var started int64
+	replyIndex := -1
+	helpAfter, showHelp := m.localHelp[s.Id]
+	helped := false
 	for _, e := range m.events[s.Id] {
+		if showHelp && !helped && e.Seq > helpAfter {
+			lines = append(lines, helpView(m.view.Width))
+			helped = true
+		}
 		if e.Kind == "input" {
 			started = e.TimeMs
 			usage = nil
+			replyIndex = -1
 		}
 		if e.Kind == "usage" && e.Text == "thread/tokenUsage/updated" {
 			usage = e
 		}
 		if e.Kind == "turn_end" {
 			if text := turnSummary(e, usage, started, max(1, m.view.Width)); text != "" {
-				if len(lines) > 0 {
-					lines[len(lines)-1] += "\n" + text
+				if replyIndex >= 0 {
+					lines[replyIndex] += "\n\n" + text
 				} else {
 					lines = append(lines, text)
 				}
 			}
 			usage = nil
 			started = 0
+			replyIndex = -1
 		} else {
 			if text := eventView(s, e, max(1, m.view.Width)); text != "" {
 				lines = append(lines, text)
+				if e.Kind == "assistant" {
+					replyIndex = len(lines) - 1
+				}
 			}
 		}
 		if hint := authHint(s, e); hint != "" {
 			lines = append(lines, warning.Render(ansi.Hardwrap(safeText(hint), max(1, m.view.Width), true)))
 		}
+	}
+	if showHelp && !helped {
+		lines = append(lines, helpView(m.view.Width))
 	}
 	if len(lines) == 0 {
 		lines = append(lines, muted.Render(ansi.Hardwrap("Start a conversation\n\nDescribe a task below. Messages and tool activity will appear here.\nStopped session? Ctrl+R resumes the agent.", max(1, m.view.Width), true)))
@@ -493,6 +512,20 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			if strings.HasPrefix(text, "/answer ") {
 				return m, m.action("answer", strings.TrimPrefix(text, "/answer "))
+			}
+			if text == "/help" {
+				id := ""
+				if s := m.current(); s != nil {
+					id = s.Id
+				}
+				if m.localHelp == nil {
+					m.localHelp = map[string]uint64{}
+				}
+				m.localHelp[id] = m.cursor[id]
+				m.resize()
+				m.render()
+				m.view.GotoBottom()
+				return m, nil
 			}
 			if text == "/stop" {
 				return m, m.action("stop", "")

@@ -3,11 +3,38 @@ package tui
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"strings"
 
 	"github.com/charmbracelet/x/ansi"
 	"github.com/lesomnus/cxz/api"
 )
+
+func humanCount(n float64) string {
+	units := []string{"", "k", "m", "b", "t"}
+	u := 0
+	for n >= 1000 && u < len(units)-1 {
+		n /= 1000
+		u++
+	}
+	if u == 0 {
+		return fmt.Sprintf("%.0f", n)
+	}
+	n = math.Round(n*10) / 10
+	if n >= 1000 && u < len(units)-1 {
+		n /= 1000
+		u++
+	}
+	return strings.TrimSuffix(fmt.Sprintf("%.1f", n), ".0") + units[u]
+}
+
+// Fixed terminal-cell slots keep the next symbol stationary as values grow.
+const metricWidth = 16
+
+func metricCell(s string) string {
+	s = clip(s, metricWidth-2)
+	return s + strings.Repeat(" ", max(0, metricWidth-ansi.StringWidth(s)))
+}
 
 type metrics map[string]json.RawMessage
 
@@ -55,7 +82,7 @@ func turnSummary(e, usageEvent *api.Event, started int64, width int) string {
 		{"∑", []string{"total_tokens", "totalTokens"}},
 	} {
 		if n, ok := usage.number(field.keys...); ok {
-			parts = append(parts, fmt.Sprintf("%s %.0f", field.symbol, n))
+			parts = append(parts, fmt.Sprintf("%s %s", field.symbol, humanCount(n)))
 		}
 	}
 	if n, ok := root.number("total_cost_usd", "costUSD", "costUsd"); ok {
@@ -93,22 +120,19 @@ func turnSummary(e, usageEvent *api.Event, started int64, width int) string {
 		}
 		lines = append(lines, peach.Render(ansi.Hardwrap(status, max(1, width), true)))
 	}
-	// Wrap at metric boundaries, then right-align each row in terminal cells.
+	// Wrap at fixed-cell boundaries; never shift symbols with numeric magnitude.
 	row := ""
 	flush := func() {
 		if row != "" {
-			lines = append(lines, muted.Render(strings.Repeat(" ", max(0, width-ansi.StringWidth(row)))+row))
+			lines = append(lines, muted.Render(strings.TrimRight(row, " ")))
 			row = ""
 		}
 	}
 	for _, part := range parts {
-		next := part
-		if row != "" {
-			next = row + "  ·  " + part
-		}
+		next := row + metricCell(part)
 		if ansi.StringWidth(next) > width {
 			flush()
-			next = part
+			next = metricCell(part)
 		}
 		row = clip(next, width)
 	}

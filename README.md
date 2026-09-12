@@ -172,10 +172,14 @@ colors distinguish output. Transient state events update the status area rather
 than accumulating in the transcript (the journal remains intact).
 Reply text is white; only speaker labels retain agent branding. User timestamps
 are dimmed and the first-line `>` starts at the left edge. Completed-turn JSON is
-replaced by a right-aligned metrics footer: ↑ input / ↓ output / ↺ cache read /
+replaced by a left-aligned metrics footer after a blank line: ↑ input / ↓ output / ↺ cache read /
 ⊕ cache write / ∑ total tokens, $ USD, ◷ duration. Missing values are omitted;
 ◷≈ denotes elapsed request-to-completion time when no provider duration exists.
 Codex metrics use per-turn usage, never cumulative thread totals.
+Metrics use fixed 16-cell slots and compact counts (`1k`, `1.2k`, `1m`).
+Agent replies are indented two spaces. Session information occupies a single
+bottom line; persistent shortcut rows are hidden. Type `/help` to display local
+shortcut help in the conversation without sending a prompt to the agent.
 
 Data commands (table by default; use `--format json` for scripts): `session ls`, `project ls`, `session get ID`, `session send ID TEXT`,
 `session reply ID REQUEST_ID allow|deny [ANSWERS_JSON]`, `session interrupt ID`, `session resume ID`,
