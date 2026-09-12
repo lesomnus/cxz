@@ -2,19 +2,20 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/internal/core"
-	"github.com/lesomnus/cxz/internal/distribution"
+	"github.com/lesomnus/cxz/internal/dockerx"
 	"github.com/lesomnus/cxz/internal/resourceclient"
 	"github.com/lesomnus/cxz/internal/transport"
+	"github.com/lesomnus/cxz/internal/workspace"
 	"github.com/lesomnus/cxz/resource"
 	"github.com/lesomnus/xli"
 	"github.com/lesomnus/xli/arg"
@@ -32,6 +33,9 @@ func accountCommands() *xli.Command {
 		if op == "add" {
 			c.Flags = flg.Flags{agentFlag(""), stringFlag("name", "Display name", "")}
 		}
+		if op == "login" || op == "status" {
+			c.Flags = flg.Flags{stringFlag("project", "Project alias or workspace (defaults to current directory)", ".")}
+		}
 		parent.Commands = append(parent.Commands, c)
 	}
 	return parent
@@ -40,16 +44,16 @@ func accountCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 	resources := client.(*resourceclient.Client)
 	if c.Name == "list" {
 		after := ""
+		var all []*resource.Account
 		for {
 			page, err := resources.Accounts.List(ctx, resource.AccountListRequest_builder{Size: 200, After: after}.Build())
 			if err != nil {
 				return err
 			}
-			for _, a := range page.GetItems() {
-				fmt.Fprintln(c.Writer, protojson.Format(a))
-			}
+			all = append(all, page.GetItems()...)
 			after = page.GetNext()
 			if after == "" {
+				fmt.Fprintln(c.Writer, protojson.Format(resource.AccountListResponse_builder{Items: all}.Build()))
 				return nil
 			}
 		}
@@ -71,17 +75,51 @@ func accountCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 		fmt.Fprintln(c.Writer, protojson.Format(a))
 		return nil
 	}
-	// Interactive vendor login runs in the manager, not in a project. The vault
-	// is retained in its state volume and is never mounted into projects.
+	// Account registration is global; OAuth grants belong to one project and
+	// profile. Never fan out rotating refresh tokens (architecture §4.2).
 	install, err := transport.Load(stateFrom(ctx))
 	if err != nil {
 		return fmt.Errorf("account login/status requires cxz install: %w", err)
+	}
+	target := flg.MustGet[string](c, "project")
+	if st, e := os.Stat(target); e == nil && st.IsDir() {
+		target, err = dockerx.EnginePath(target)
+		if err != nil {
+			return err
+		}
+	}
+	if c.Name == "login" {
+		if _, err = resources.Open(ctx, &api.ProjectRequest{Workspace: target, Agent: a.GetAgent(), PrepareOnly: true, ClientId: core.ID()}); err != nil {
+			return err
+		}
+	}
+	p, err := resources.ResolveProject(ctx, target)
+	if err != nil {
+		return err
+	}
+	if p.State != "running" {
+		return fmt.Errorf("project is not running; use cxz up first")
+	}
+	if _, err = dockerx.Owned(ctx, p.ContainerId, install.Owner, p.Id); err != nil {
+		return err
+	}
+	if c.Name == "login" {
+		list, err := client.List(ctx, &api.Empty{})
+		if err != nil {
+			return err
+		}
+		for _, s := range list.Sessions {
+			if s.ProjectId == p.Id && (s.State == "idle" || s.State == "working" || s.State == "waiting_input" || s.State == "starting") {
+				return fmt.Errorf("stop session %s before logging in this account again", s.Id)
+			}
+		}
+		fmt.Fprintf(c.ErrWriter, "Log in as %s (%s) for project %s. Other projects require independent login.\n", a.GetAlias(), a.GetAgent(), p.Alias)
 	}
 	args := []string{"exec", "-i"}
 	if terminal(c) {
 		args = append(args, "-t")
 	}
-	args = append(args, install.Container, "/usr/local/bin/cxz", "--state", "/var/lib/cxz", "_account-"+c.Name, a.GetAlias(), a.GetAgent())
+	args = append(args, "--user", p.RemoteUser, p.ContainerId, "/cxz/tools/cxz", "--state", "/cxz/state/data", "_account-"+c.Name, a.GetAlias(), a.GetAgent())
 	cmd := exec.CommandContext(ctx, "docker", args...)
 	cmd.Stdin = c.ReadCloser
 	cmd.Stdout = c.Writer
@@ -116,6 +154,15 @@ func accountInternalCommands() []*xli.Command {
 				}
 				return accounts.Install(root, alias, agent, b)
 			}
+			r, err := workspace.LoadRuntime(root)
+			if err != nil {
+				return err
+			}
+			workspaceLock, err := core.Lock(filepath.Join(root, "run", fmt.Sprintf("workspace-%x.lock", sha256.Sum256([]byte(r.Workspace)))))
+			if err != nil {
+				return fmt.Errorf("stop the active project session before login: %w", err)
+			}
+			defer workspaceLock.Close()
 			if err := accounts.Prepare(root, alias, agent); err != nil {
 				return err
 			}
@@ -133,9 +180,12 @@ func accountInternalCommands() []*xli.Command {
 			if err = accounts.Prepare(staging, alias, agent); err != nil {
 				return err
 			}
-			bin, err := distribution.Ensure(ctx, "/cxz/tools", agent, runtime.GOARCH, false)
-			if err != nil {
-				return err
+			bin := r.Claude
+			if agent == "codex" {
+				bin = r.Codex
+			}
+			if bin == "" {
+				return fmt.Errorf("agent not provisioned")
 			}
 			args := []string{"auth", "login"}
 			if agent == "codex" {

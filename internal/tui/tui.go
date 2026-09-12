@@ -35,7 +35,6 @@ type model struct {
 	watchCancel         context.CancelFunc
 	watchID             string
 	wantID              string
-	newAgent            string
 	accounts            []*resource.Account
 	accountIndex        int
 	program             *tea.Program
@@ -102,10 +101,7 @@ func RunSelected(ctx context.Context, c api.SessionsClient, id string) error {
 	input.Placeholder = "message · /answer {\"question\":\"answer\"}"
 	input.CharLimit = 100000
 	input.Focus()
-	m := &model{ctx: ctx, client: c, input: input, view: viewport.New(80, 15), events: map[string][]*api.Event{}, cursor: map[string]uint64{}, width: 100, height: 30, wantID: id, newAgent: "claude"}
-	if cfg := settings.From(ctx); cfg.Agent != "" {
-		m.newAgent = cfg.Agent
-	}
+	m := &model{ctx: ctx, client: c, input: input, view: viewport.New(80, 15), events: map[string][]*api.Event{}, cursor: map[string]uint64{}, width: 100, height: 30, wantID: id}
 	p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithContext(ctx))
 	m.program = p
 	_, e := p.Run()
@@ -478,7 +474,7 @@ func authHint(s *api.Session, e *api.Event) string {
 	text := strings.ToLower(e.Text + " " + string(e.Payload))
 	for _, needle := range []string{"not logged in", "unauthorized", "authentication", "login required", "401"} {
 		if strings.Contains(text, needle) && s.ProjectId != "" {
-			return fmt.Sprintf("Authentication may be required. Detach, run cxz account login %s, then cxz resume %s. Failed prompts are not resent.", s.Account, s.Id)
+			return fmt.Sprintf("Authentication may be required. Stop the session, run cxz account login --project %s %s, then cxz resume %s. Failed prompts are not resent.", s.ProjectId, s.Account, s.Id)
 		}
 	}
 	return ""

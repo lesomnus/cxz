@@ -1,0 +1,23 @@
+{
+  "date": "2026-09-12",
+  "agent": "deterministic Claude stream-json and login fixture; no real vendor credentials",
+  "platform": "Linux amd64, remote shared Docker engine, Alpine owned devcontainer",
+  "checks": [
+    "payday Account registration, duplicate rejection, immutable identity, AccountRef and Session.account",
+    "CLI account add/list/get/login/status and new --account",
+    "project-local staged login and private credential file permissions",
+    "missing login rejected without environment fallback",
+    "separate personal/work HOME and vendor config",
+    "inherited vendor API keys removed from agent environment",
+    "different-account live attach and active-session relogin rejected",
+    "two profiles create distinct threads; resume preserves original profile",
+    "manager restart and project recreate retain account and conversation",
+    "same Account in another Project requires an independent login",
+    "no credential store in manager volume",
+    "project display name and alias regression checks",
+    "nonroot network-none container recovery preserves Account and fences stale approvals",
+    "full Go race suite, go vet, payday codegen check and git diff check"
+  ],
+  "not_verified": ["real user OAuth completion", "paid Claude/Codex conversation with these profiles", "native arm64 runtime"],
+  "cleanup": "test containers and synthetic credential/tools volumes removed; scratch workspaces and build images retained"
+}

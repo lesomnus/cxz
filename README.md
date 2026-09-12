@@ -16,7 +16,7 @@ arm64 runtime acceptance remain unverified. See its release notes before use.
 CGO_ENABLED=0 go build -o bin/cxz ./cmd/cxz
 bin/cxz install --workspace-root /absolute/directory/containing/your/projects
 bin/cxz account add --agent codex personal-codex
-bin/cxz account login personal-codex   # interactive vendor login
+bin/cxz account login personal-codex   # login for current project (prepares it)
 bin/cxz new --account personal-codex . # prepares project and opens TUI
 ```
 
@@ -41,9 +41,10 @@ bin/cxz new --account work-codex .
 ```
 
 Account is an agent authentication profile, not a cxz user/tenant. The manager's
-private state volume holds login credentials; only the selected profile is copied
-to an account-specific directory on the project's state volume. Host credentials
-are never imported implicitly. Account and agent are fixed for each session;
+resource DB holds profile metadata; each project has an independent login for
+each profile on its state volume. Rotating refresh tokens are never copied across
+projects. Use `account login --project PROJECT ACCOUNT` for another project.
+Host credentials are never imported implicitly. Account and agent are fixed for each session;
 resume/recreate preserves them. Missing login fails instead of falling back to
 environment credentials. Interactive `new` and TUI Ctrl+N offer account selection;
 scripts must pass `--account` when creating a session. Stop an active session before
@@ -82,7 +83,7 @@ Use the same client state for all host commands. Default: `$XDG_STATE_HOME/cxz`
 or `~/.local/state/cxz`; this stores an installation locator, not the named volumes.
 
 The CLI uses `lesomnus/xli`: command flags must precede positional arguments.
-Use `cxz new --agent codex .`, not `cxz new . --agent codex` (the old ordering is
+Use `cxz new --account work-codex .`, not `cxz new . --account work-codex` (the old ordering is
 now rejected). Each command has generated `--help`; help and completion need no
 running manager. Enable zsh completion with `source <(bin/cxz completion zsh)`.
 `exec PROJECT -- COMMAND...` preserves everything after `--` as command arguments.
@@ -129,7 +130,7 @@ resource database and survives server/container restarts; back up state volumes.
 
 | Key | Action |
 |---|---|
-| Ctrl+N, path, Enter | New session; Tab switches Claude/Codex while entering path |
+| Ctrl+N, path, Enter | New session; Tab selects a registered Account while entering path |
 | Tab, ↑/↓, Enter | Select session / return to message entry |
 | Enter | Send message |
 | F2 / F3 | Allow / deny pending approval |
@@ -234,7 +235,7 @@ go vet ./...
 go run ./tools/genproto
 go tool pd gen --check .
 # Uses an explicitly selected disposable, authenticated owned project and live usage:
-node scripts/probes/owned-session-live.mjs CLIENT_STATE PROJECT codex
+node scripts/probes/owned-session-live.mjs CLIENT_STATE PROJECT codex ACCOUNT
 ```
 
 Pinned: Claude 2.1.267, Codex 0.154.0, devcontainer CLI 0.89.0. Codex integration

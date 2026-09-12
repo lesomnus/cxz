@@ -8,8 +8,8 @@ Account를 사용할 수 있다. 한 프로젝트에 활성 세션 하나라는 
 cxz account add --agent codex --name "Personal" personal-codex
 cxz account add --agent codex --name "Company" work-codex
 cxz account login personal-codex
-cxz account login work-codex
-cxz account status work-codex
+cxz account login --project . work-codex
+cxz account status --project . work-codex
 cxz new --account work-codex .
 cxz up .                         # 기존 세션의 Account 유지
 cxz account get work-codex
@@ -19,20 +19,21 @@ cxz account get work-codex
   Account alias/agent와 Session.account는 변경할 수 없다. 삭제도 현재 닫혀 있다.
 - `SessionService.Add`는 AccountRef를 받는다. 등록되지 않은 계정, vendor 불일치,
   인증 파일 누락을 거부한다. TUI Ctrl+N에서 Tab으로 Account를 고르고 경로를 입력한다.
-- 로그인은 설치된 manager에서 실행하며 사용자가 직접 vendor 인증을 완료해야 한다.
+- 로그인은 지정 프로젝트에서 실행하며 사용자가 직접 vendor 인증을 완료해야 한다.
+  `--project` 생략 시 현재 디렉터리다. login은 필요한 컨테이너·에이전트를 준비하지만
+  세션은 생성하지 않는다. 같은 Account도 다른 Project에서는 독립 로그인이 필요하다.
   취소/실패한 로그인은 기존 인증을 덮어쓰지 않는다. `status`는 파일 형식/존재만
   검사하며 유효한 구독·네트워크 인증 성공을 보장하지 않는다.
-- manager의 `accounts/ALIAS/config`에 인증 원본을 0600으로 보관한다. SQLite에는
+- 프로젝트의 `accounts/ALIAS/config`에 인증 원본을 0600으로 보관한다. SQLite에는
   메타데이터만 저장한다. 토큰은 API 응답, payday audit, journal에 넣지 않는다.
-  프로젝트로의 전달은 소유권 확인 후 `docker exec` stdin을 이용한다.
+  manager는 인증 파일을 보관하거나 다른 프로젝트로 전달하지 않는다.
 - 프로젝트의 `accounts/ALIAS/config`와 `accounts/ALIAS/home`를 선택한다.
   HOME/XDG 경로를 분리하고 inherited OpenAI/Anthropic/Claude/Codex 및 cloud 인증
   환경변수를 제거한다. Codex는 OpenAI provider와 file credential store를 명시한다.
-- manager 로그인 변경은 다음 새 세션/정지된 세션 resume 때 반영한다. 동일 로그인
-  원본을 다시 전달할 때 프로젝트에서 vendor가 갱신한 토큰을 덮어쓰지 않는다.
-  프로젝트의 갱신 토큰을 manager나 다른 프로젝트로 역동기화하지 않는다. 여러
-  프로젝트에서 같은 Account를 쓰다가 vendor가 refresh token을 무효화하면 재로그인이
-  필요할 수 있다. 다른 Account로 자동 전환하지 않는다.
+- 재로그인 전 활성 세션을 중단해야 한다. vendor가 갱신한 토큰은 해당 프로젝트·계정에
+  그대로 남으며 다른 프로젝트와 동기화하지 않는다. 이는 기존 아키텍처 §4.2의
+  refresh-token 회전 충돌 방지 원칙을 유지한다. Codex의 중앙 단기 토큰 공급은
+  아직 구현하지 않았으며 Claude와 동일하게 프로젝트별 독립 구독 로그인을 사용한다.
 - 컨테이너 재생성은 project volume의 Account별 인증·대화 파일과 manifest의 계정
   연결을 유지한다. manager와 project의 **전체 state volume**을 비공개로 백업한다.
   기존 account 없는 개발 데이터는 자동 계정 할당/인증 이관하지 않는다.
