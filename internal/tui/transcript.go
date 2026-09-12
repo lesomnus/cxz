@@ -28,7 +28,7 @@ func eventView(s *api.Session, e *api.Event, width int) string {
 			}
 			text[i] = blue.Render(prefix + text[i])
 		}
-		return muted.Render("  "+stamp) + "\n" + strings.Join(text, "\n")
+		return timestamp.Render("  "+stamp) + "\n" + strings.Join(text, "\n")
 	case "assistant":
 		name := strings.ToUpper(pickerLabel(safeText(s.Agent)))
 		style := lavender.Bold(true)
@@ -41,7 +41,7 @@ func eventView(s *api.Session, e *api.Event, width int) string {
 		if name == "" {
 			name = "AGENT"
 		}
-		return style.Render(name) + "\n" + style.Bold(false).Render(wrap(e.Text))
+		return style.Render(name) + "\n" + answer.Render(wrap(e.Text))
 	case "approval":
 		return warning.Render(wrap("APPROVAL " + e.Text + " [" + e.RequestId + "]\n" + string(e.Payload)))
 	case "approval_resolved":
@@ -51,7 +51,7 @@ func eventView(s *api.Session, e *api.Event, width int) string {
 	case "tool_result":
 		return blue.Render(wrap("result › " + string(e.Payload)))
 	case "turn_end":
-		return muted.Render(wrap("turn: " + e.Text + " " + string(e.Payload)))
+		return turnSummary(e, nil, 0, width)
 	case "diagnostic", "stderr":
 		return peach.Render(wrap("diagnostic › " + e.Text + " " + string(e.Payload)))
 	}

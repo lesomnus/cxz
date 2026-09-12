@@ -170,6 +170,12 @@ supported without forcing a full-screen background; use a terminal of at least
 timestamps instead of a YOU label; Claude/Codex speaker badges and pastel tool
 colors distinguish output. Transient state events update the status area rather
 than accumulating in the transcript (the journal remains intact).
+Reply text is white; only speaker labels retain agent branding. User timestamps
+are dimmed and the first-line `>` starts at the left edge. Completed-turn JSON is
+replaced by a right-aligned metrics footer: ↑ input / ↓ output / ↺ cache read /
+⊕ cache write / ∑ total tokens, $ USD, ◷ duration. Missing values are omitted;
+◷≈ denotes elapsed request-to-completion time when no provider duration exists.
+Codex metrics use per-turn usage, never cumulative thread totals.
 
 Data commands (table by default; use `--format json` for scripts): `session ls`, `project ls`, `session get ID`, `session send ID TEXT`,
 `session reply ID REQUEST_ID allow|deny [ANSWERS_JSON]`, `session interrupt ID`, `session resume ID`,
