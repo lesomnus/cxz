@@ -28,7 +28,7 @@ func TestMultilineComposerAndDraft(t *testing.T) {
 	if m.input.Value() != "한글\ncode\nlast" {
 		t.Fatal("draft lost")
 	}
-	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyCtrlS})
 	cmd()
 	if len(c.inputs) != 1 || c.inputs[0].Text != "한글\ncode\nlast" {
 		t.Fatal("multiline send changed")

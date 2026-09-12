@@ -9,13 +9,13 @@ import (
 	"testing"
 )
 
-func TestCommandOverlayAndPlaceholders(t *testing.T) {
+func TestCommandOverlayAndContext(t *testing.T) {
 	m := projectModel()
 	c := &recordingClient{}
 	m.client = c
 	m.projectView = false
 	m.input = newComposer()
-	m.sessions = []*api.Session{{Id: "s", Agent: "claude"}}
+	m.sessions = []*api.Session{{Id: "s", Agent: "codex", State: "idle"}}
 	m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
 	before := m.view.View()
 	offset := m.view.YOffset
@@ -39,14 +39,14 @@ func TestCommandOverlayAndPlaceholders(t *testing.T) {
 	if len(m.commandHints()) != 0 || m.input.Value() != "/context" {
 		t.Fatal("escape must only dismiss hints")
 	}
-	for _, cmd := range []string{"/context", "/compact", "/context details"} {
+	for _, cmd := range []string{"/context", "/context details"} {
 		m.input.SetValue(cmd)
-		_, action := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+		_, action := m.Update(tea.KeyMsg{Type: tea.KeyCtrlS})
 		if action != nil || len(c.inputs) != 0 || m.cursor["s"] != 0 {
 			t.Fatal("placeholder was sent to agent")
 		}
-		if !strings.Contains(ansi.Strip(m.view.View()), "Unimplemented") {
-			t.Fatal("missing placeholder reply")
+		if !strings.Contains(ansi.Strip(m.view.View()), "Provider has not reported context usage") {
+			t.Fatal("missing context report")
 		}
 	}
 	m.input.SetValue("ordinary input")
@@ -56,7 +56,7 @@ func TestCommandOverlayAndPlaceholders(t *testing.T) {
 }
 
 func TestTranscriptGutterAndDuration(t *testing.T) {
-	for _, kind := range []string{"assistant", "tool_call", "tool_result", "diagnostic", "approval", "approval_resolved"} {
+	for _, kind := range []string{"assistant", "tool_call", "tool_result", "diagnostic", "approval"} {
 		text := ansi.Strip(eventView(&api.Session{Agent: "codex"}, &api.Event{Kind: kind, Text: "hello", Payload: []byte(`{"value":"world"}`)}, 40))
 		for _, line := range strings.Split(text, "\n") {
 			if !strings.HasPrefix(line, "  ") || ansi.StringWidth(line) > 40 {

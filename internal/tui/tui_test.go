@@ -51,7 +51,7 @@ func TestKeyboardControls(t *testing.T) {
 	input.Focus()
 	m := &model{ctx: context.Background(), client: c, input: input, view: viewport.New(60, 8), watchID: "s", sessions: []*api.Session{{Id: "s", RunId: "run", Pending: []*api.Event{{RequestId: "permission"}}}}, events: map[string][]*api.Event{}, cursor: map[string]uint64{}}
 	m.input.SetValue("hello")
-	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyCtrlS})
 	if cmd == nil {
 		t.Fatal("missing send")
 	}
@@ -74,7 +74,7 @@ func TestKeyboardControls(t *testing.T) {
 	}
 	m.input.SetValue(`/answer {"question":"Blue"}`)
 	m.sessions[0].Pending = []*api.Event{{RequestId: "question", Text: "AskUserQuestion"}}
-	_, cmd = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	_, cmd = m.Update(tea.KeyMsg{Type: tea.KeyCtrlS})
 	cmd()
 	if c.answers[2].AnswersJson != `{"question":"Blue"}` {
 		t.Fatal("lost question answer")

@@ -54,7 +54,7 @@ func TestApprovalFocusAndDecisionIdentity(t *testing.T) {
 	if !strings.Contains(m.View(), "Pending approvals") {
 		t.Fatal(m.View())
 	}
-	m.Update(tea.KeyMsg{Type: tea.KeyTab})
+	m.Update(tea.KeyMsg{Type: tea.KeyShiftTab})
 	if !m.focusApproval || m.focusList {
 		t.Fatal("Tab skipped approvals")
 	}
@@ -96,7 +96,7 @@ func TestPermissionScopeAndUnknownRequests(t *testing.T) {
 	c := m.client.(*recordingClient)
 	m.current().Pending = []*api.Event{{RequestId: "tool", Text: "Bash"}, {RequestId: "question", Text: "AskUserQuestion"}, {RequestId: "unknown", Text: "new/vendor/method"}}
 	m.input.SetValue("/permission full")
-	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyCtrlS})
 	if cmd == nil {
 		t.Fatal("full did not approve pending tool")
 	}
@@ -335,7 +335,7 @@ func TestApprovalConversationPreview(t *testing.T) {
 	m.input.SetValue("한글 입력 ㄱ")
 	m.resize()
 	m.render()
-	m.Update(tea.KeyMsg{Type: tea.KeyTab})
+	m.Update(tea.KeyMsg{Type: tea.KeyShiftTab})
 	view := ansi.Strip(m.View())
 	if !strings.Contains(view, "Enter allow") || !strings.Contains(view, "Backspace deny") {
 		t.Fatal(view)

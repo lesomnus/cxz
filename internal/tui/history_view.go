@@ -26,7 +26,7 @@ func (m *model) conversationView() string {
 		frames := []rune("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏")
 		// render reserves a final transcript row for this transient indicator.
 		index := min(len(rows)-1, max(0, len(m.historyTimes)-m.view.YOffset-1))
-		rows[index] = indentBlock(accent.Render(string(frames[m.pulse%len(frames)])))
+		rows[index] = indentBlock(accent.Render(string(frames[m.pulse%len(frames)])) + " " + muted.Render(clip(m.workingLabel(time.Now()), max(1, m.width-4))))
 	}
 	if m.latestPrompt != "" && m.lastPromptEnd > 0 && m.lastPromptEnd <= m.view.YOffset {
 		prompt := strings.Split(ansi.Hardwrap(safeText(m.latestPrompt), max(1, m.width-2), true), "\n")

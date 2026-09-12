@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"sort"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -11,13 +12,14 @@ type slashCommand struct{ name, description string }
 
 var slashCommands = []slashCommand{
 	{"/help", "Keyboard shortcuts"},
-	{"/context", "Context details · Unimplemented"},
-	{"/compact", "Compact conversation · Unimplemented"},
+	{"/context", "Inspect current context"},
+	{"/compact", "Compact agent context"},
 	{"/usage", "Session tokens, cost and time"},
 	{"/answer", "Reply to a pending question"},
 	{"/stop", "Stop agent"},
 	{"/permission", "full: auto-approve this run · ask: manual"},
 	{"/approval", "Inspect selected approval payload"},
+	{"/details", "Inspect latest tool result"},
 }
 
 func (m *model) commandHints() []slashCommand {
@@ -27,11 +29,33 @@ func (m *model) commandHints() []slashCommand {
 	}
 	var matches []slashCommand
 	for _, c := range slashCommands {
-		if strings.HasPrefix(c.name, text) {
+		if fuzzyScore(c.name, text) >= 0 {
 			matches = append(matches, c)
 		}
 	}
+	sort.SliceStable(matches, func(i, j int) bool { return fuzzyScore(matches[i].name, text) < fuzzyScore(matches[j].name, text) })
 	return matches
+}
+
+// Subsequence matching, preferring exact/prefix and tightly clustered matches.
+func fuzzyScore(name, query string) int {
+	name, query = strings.ToLower(name), strings.ToLower(query)
+	if name == query {
+		return 0
+	}
+	if strings.HasPrefix(name, query) {
+		return 1
+	}
+	pos, score := 0, 2
+	for _, r := range query {
+		i := strings.IndexRune(name[pos:], r)
+		if i < 0 {
+			return -1
+		}
+		score += i
+		pos += i + len(string(r))
+	}
+	return score
 }
 
 func (m *model) commandKey(k tea.KeyMsg) (bool, tea.Cmd) {
@@ -52,10 +76,10 @@ func (m *model) commandKey(k tea.KeyMsg) (bool, tea.Cmd) {
 			m.input.SetValue(hints[m.hintSelected].name)
 			m.hintSelected = 0
 			return true, nil
-		case "enter":
+		case "ctrl+s":
 			m.input.SetValue(hints[m.hintSelected].name)
 			m.hintSelected = 0
-			// Submission stays in the ordinary Enter handler.
+			// Submission stays in the ordinary send handler.
 			return false, nil
 		}
 	}
@@ -74,9 +98,17 @@ func (m *model) commandOverlay(view string) string {
 		return view
 	}
 	rows := strings.Split(view, "\n")
-	count := min(len(hints), len(rows))
+	count := min(7, min(len(hints), max(0, len(rows)-1)))
+	if count == 0 {
+		return view
+	}
 	selected := max(0, min(m.hintSelected, len(hints)-1))
-	start := max(0, selected-count+1)
+	margin := min(2, (count-1)/2)
+	start := min(m.hintOffset, selected-margin)
+	start = max(start, selected+margin-count+1)
+	start = max(0, min(start, len(hints)-count))
+	m.hintOffset = start
+	rows[len(rows)-count-1] = strings.Repeat(" ", m.width)
 	for i := 0; i < count; i++ {
 		c := hints[start+i]
 		text := "  " + c.name + "  " + c.description
@@ -93,7 +125,7 @@ func (m *model) commandOverlay(view string) string {
 
 func (m *model) localCommandView(id string) string {
 	command := m.localOutput[id]
-	if command == "/permission" || command == "/approval" {
+	if command == "/permission" || command == "/approval" || command == "/context" || command == "/compact" || command == "/details" {
 		return localReport(m.localReports[id], m.view.Width)
 	}
 	if command == "/usage" {

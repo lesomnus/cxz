@@ -17,6 +17,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -26,20 +27,21 @@ import (
 )
 
 type Supervisor struct {
-	mu          sync.Mutex
-	session     core.Session
-	log         *journal.Log
-	snap        core.Snapshot
-	pending     map[string]core.Event
-	receipts    map[string]record
-	cmd         *exec.Cmd
-	stdin       io.WriteCloser
-	done        chan struct{}
-	stopping    bool
-	interrupted bool
-	batch       []core.Event
-	buffering   bool
-	codex       *codexProtocol
+	mu            sync.Mutex
+	session       core.Session
+	log           *journal.Log
+	snap          core.Snapshot
+	pending       map[string]core.Event
+	receipts      map[string]record
+	cmd           *exec.Cmd
+	stdin         io.WriteCloser
+	done          chan struct{}
+	stopping      bool
+	interrupted   bool
+	batch         []core.Event
+	buffering     bool
+	codex         *codexProtocol
+	quotaDisabled bool
 }
 type record struct {
 	Op      string       `json:"op"`
@@ -110,7 +112,7 @@ func Run(ctx context.Context, root, id string) error {
 		}
 	}
 	s.event("state", "starting", "", nil, nil)
-	args := []string{"-p", "--input-format", "stream-json", "--output-format", "stream-json", "--verbose", "--permission-mode", "manual", "--permission-prompts", "host", "--permission-prompt-tool", "stdio", "--setting-sources=", "--strict-mcp-config", "--mcp-config", `{"mcpServers":{}}`, "--disable-slash-commands", "--tools", "Bash,Read,Edit,Write,Glob,Grep,AskUserQuestion", "--settings", `{"permissions":{"defaultMode":"manual","allow":[],"deny":[],"ask":["Bash","Edit","Write"]},"disableAllHooks":true}`}
+	args := claudeArgs()
 	if old.VendorID != "" {
 		args = append(args, "--resume", old.VendorID)
 	}
@@ -231,13 +233,27 @@ func Run(ctx context.Context, root, id string) error {
 	if e != nil {
 		return e
 	}
-	select {
-	case <-s.done:
-		return nil
-	case <-ctx.Done():
-		s.kill()
-		<-s.done
-		return ctx.Err()
+	quotaTick := time.NewTicker(time.Minute)
+	defer quotaTick.Stop()
+	for {
+		select {
+		case <-s.done:
+			return nil
+		case <-quotaTick.C:
+			s.mu.Lock()
+			if !s.quotaDisabled && (s.snap.State == "idle" || s.snap.State == "working" || s.snap.State == "waiting_input") {
+				if s.codex != nil {
+					s.codex.readQuota()
+				} else {
+					s.readClaudeQuota()
+				}
+			}
+			s.mu.Unlock()
+		case <-ctx.Done():
+			s.kill()
+			<-s.done
+			return ctx.Err()
+		}
 	}
 }
 func (s *Supervisor) kill() {
@@ -311,8 +327,10 @@ func (s *Supervisor) consume(raw []byte) {
 		RequestID string         `json:"request_id"`
 		Request   map[string]any `json:"request"`
 		Response  struct {
-			RequestID string `json:"request_id"`
-			Subtype   string `json:"subtype"`
+			RequestID string          `json:"request_id"`
+			Subtype   string          `json:"subtype"`
+			Response  json.RawMessage `json:"response"`
+			Error     string          `json:"error"`
 		} `json:"response"`
 		Message struct {
 			Content json.RawMessage `json:"content"`
@@ -329,10 +347,25 @@ func (s *Supervisor) consume(raw []byte) {
 		s.event("vendor", v.SessionID, "", nil, nil)
 	}
 	switch v.Type {
+	case "rate_limit_event":
+		s.event("usage", "rate_limit_event", "", json.RawMessage(raw), nil)
+	case "system":
+		if v.Subtype == "compact_boundary" {
+			s.event("compact", "completed", "", json.RawMessage(raw), nil)
+		}
 	case "control_response":
+		if v.Response.RequestID == "cxz-quota" {
+			if v.Response.Subtype == "success" {
+				s.event("usage", "get_usage", "", v.Response.Response, nil)
+			} else if text := strings.ToLower(v.Response.Error); strings.Contains(text, "unsupported") || strings.Contains(text, "unknown control") {
+				s.quotaDisabled = true
+			}
+			return
+		}
 		if v.Response.RequestID == "initialize" {
 			if v.Response.Subtype == "success" {
 				s.event("state", "idle", "", nil, nil)
+				s.readClaudeQuota()
 			} else {
 				s.event("state", "failed", "", nil, nil)
 				s.kill()
@@ -355,12 +388,14 @@ func (s *Supervisor) consume(raw []byte) {
 		}
 	case "assistant", "user":
 		var blocks []struct {
-			Type    string `json:"type"`
-			Text    string `json:"text"`
-			Name    string `json:"name"`
-			ID      string `json:"id"`
-			Content any    `json:"content"`
-			Input   any    `json:"input"`
+			Type      string `json:"type"`
+			Text      string `json:"text"`
+			Name      string `json:"name"`
+			ID        string `json:"id"`
+			Content   any    `json:"content"`
+			Input     any    `json:"input"`
+			ToolUseID string `json:"tool_use_id"`
+			IsError   bool   `json:"is_error"`
 		}
 		if json.Unmarshal(v.Message.Content, &blocks) != nil {
 			return
@@ -374,7 +409,7 @@ func (s *Supervisor) consume(raw []byte) {
 			case "tool_use":
 				s.event("tool_call", b.Name, b.ID, b.Input, nil)
 			case "tool_result":
-				s.event("tool_result", "", "", b.Content, nil)
+				s.event("tool_result", "", b.ToolUseID, map[string]any{"content": b.Content, "is_error": b.IsError, "tool_use_id": b.ToolUseID}, nil)
 			}
 		}
 	case "result":
@@ -389,6 +424,7 @@ func (s *Supervisor) consume(raw []byte) {
 		s.interrupted = false
 		s.event("turn_end", result, "", json.RawMessage(raw), nil)
 		s.event("state", "idle", "", nil, nil)
+		s.readClaudeQuota()
 	}
 }
 func (s *Supervisor) execute(op string, c core.Command) (core.Receipt, error) {

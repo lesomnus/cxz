@@ -10,6 +10,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/agentview"
 	"github.com/lesomnus/cxz/internal/core"
 )
 
@@ -145,8 +146,24 @@ func (m *model) approvalKey(k tea.KeyMsg) tea.Cmd {
 	s := m.current()
 	switch k.String() {
 	case "esc":
-		m.focusApproval = false
-		return m.input.Focus()
+		return m.confirmInterrupt(time.Now())
+	case "pgup", "pgdown", "ctrl+up", "ctrl+down", "ctrl+home", "ctrl+end":
+		step := max(1, m.approvalHeight()-5)
+		switch k.String() {
+		case "pgup":
+			m.approvalOffset -= step
+		case "pgdown":
+			m.approvalOffset += step
+		case "ctrl+up":
+			m.approvalOffset--
+		case "ctrl+down":
+			m.approvalOffset++
+		case "ctrl+home":
+			m.approvalOffset = 0
+		case "ctrl+end":
+			m.approvalOffset = 1 << 30
+		}
+		m.approvalOffset = max(0, m.approvalOffset)
 	case "up", "down":
 		for i, v := range s.Pending {
 			if v.RequestId == p.RequestId {
@@ -155,6 +172,7 @@ func (m *model) approvalKey(k tea.KeyMsg) tea.Cmd {
 					delta = len(s.Pending) - 1
 				}
 				m.approvalID = s.Pending[(i+delta)%len(s.Pending)].RequestId
+				m.approvalOffset = 0
 				break
 			}
 		}
@@ -173,7 +191,7 @@ func (m *model) approvalHeight() int {
 	if m.selectedApproval() == nil {
 		return 0
 	}
-	return min(9, max(5, m.height/3))
+	return min(12, max(5, m.height/3))
 }
 func (m *model) approvalBox() string {
 	p := m.selectedApproval()
@@ -188,27 +206,30 @@ func (m *model) approvalBox() string {
 			index = i
 		}
 	}
-	rows := []string{warning.Render(fmt.Sprintf("Pending approvals · %d/%d", index+1, len(s.Pending)))}
-	capacity := max(1, height-5)
-	start := max(0, index-capacity+1)
-	for i := start; i < min(len(s.Pending), start+capacity); i++ {
-		prefix := "  "
-		if i == index {
-			prefix = "› "
+	view := agentview.ApprovalView(s.Agent, p.Text, p.Payload)
+	rows := []string{warning.Render(clip(fmt.Sprintf("  Pending approvals · %d/%d", index+1, len(s.Pending)), max(1, m.width-2)))}
+	rows = append(rows, clip("› "+pickerLabel(view.Title), max(1, m.width-2)))
+	capacity := max(0, height-5)
+	details := strings.Split(ansi.Hardwrap(safeText(view.Detail), max(1, m.width-4), true), "\n")
+	m.approvalOffset = max(0, min(m.approvalOffset, max(0, len(details)-capacity)))
+	for i := 0; i < capacity; i++ {
+		line := ""
+		if m.approvalOffset+i < len(details) {
+			line = details[m.approvalOffset+i]
 		}
-		rows = append(rows, clip(prefix+pickerLabel(s.Pending[i].Text), max(1, m.width-2)))
-	}
-	if height >= 6 {
-		rows = append(rows, muted.Render(clip("  "+pickerLabel(string(p.Payload)), max(1, m.width-2))))
+		rows = append(rows, "  "+muted.Render(line))
 	}
 	footer := "Tab focus · /approval details"
 	if m.focusApproval {
-		footer = "↑/↓ · Enter allow · Backspace deny"
+		footer = "↑/↓ · Enter allow · Backspace deny · PgUp/PgDn scroll"
 		if question(p) {
 			footer = "/answer required · Backspace deny"
 		}
 	}
-	rows = append(rows, muted.Render(clip(footer, max(1, m.width-2))))
+	if m.focusApproval {
+		footer = fmt.Sprintf("L%d/%d · ", m.approvalOffset+1, len(details)) + footer
+	}
+	rows = append(rows, muted.Render(clip("  "+footer, max(1, m.width-2))))
 	for len(rows) < height-2 {
 		rows = append(rows, "")
 	}

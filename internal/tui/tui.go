@@ -9,6 +9,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/agentview"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/dockerx"
 	"github.com/lesomnus/cxz/internal/resourceclient"
@@ -35,6 +36,7 @@ type model struct {
 	localHelp            map[string]uint64
 	localOutput          map[string]string
 	hintSelected         int
+	hintOffset           int
 	hintDismissed        bool
 	renaming             bool
 	renameBusy           bool
@@ -42,6 +44,7 @@ type model struct {
 	aliasInput           textinput.Model
 	usageReports         map[string]string
 	usageGeneration      map[string]uint64
+	quotaWindows         []agentview.Window
 	view                 viewport.Model
 	focusList, creating  bool
 	notice               string
@@ -67,6 +70,9 @@ type model struct {
 	loginAccount         AccountLogin
 	focusApproval        bool
 	approvalID           string
+	approvalOffset       int
+	interruptUntil       time.Time
+	interruptKey         string
 	approvalSent         map[string]bool
 	fullPermission       map[string]string
 	localReports         map[string]string
@@ -75,6 +81,7 @@ type model struct {
 	lastPromptEnd        int
 	latestPrompt         string
 	pulse                int
+	workingSince         int64
 	cursorOutput         *cursorWriter
 	renderedResponses    map[*api.Event]renderedResponse
 	program              *tea.Program
@@ -173,7 +180,7 @@ func RunProject(ctx context.Context, c api.SessionsClient, project *api.Project,
 		m.loginAccount = login[0]
 	}
 	m.cursorOutput = &cursorWriter{out: os.Stdout}
-	p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithContext(ctx), tea.WithMouseCellMotion(), tea.WithOutput(m.cursorOutput))
+	p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithContext(ctx), tea.WithMouseCellMotion(), tea.WithOutput(m.cursorOutput), tea.WithInput(keyboardInput(os.Stdin)))
 	m.program = p
 	_, e := p.Run()
 	if m.watchCancel != nil {
@@ -250,6 +257,8 @@ func (m *model) watch() {
 	}()
 }
 func (m *model) render() {
+	m.updateQuota()
+	m.workingSince = 0
 	follow := m.view.AtBottom()
 	s := m.current()
 	if s == nil {
@@ -272,10 +281,28 @@ func (m *model) render() {
 	replyIndex := -1
 	helpAfter, showHelp := m.localHelp[s.Id]
 	helped := false
+	decisions := map[string]string{}
+	for _, e := range m.events[s.Id] {
+		if e.Kind == "approval_resolved" {
+			decisions[e.RunId+"/"+e.RequestId] = e.Text
+		}
+	}
 	for _, e := range m.events[s.Id] {
 		if showHelp && !helped && e.Seq > helpAfter {
 			add(m.localCommandView(s.Id), 0)
 			helped = true
+		}
+		if e.RunId == "" || e.RunId == s.RunId {
+			switch e.Kind {
+			case "input":
+				m.workingSince = e.TimeMs
+			case "turn_end":
+				m.workingSince = 0
+			case "state":
+				if m.workingSince == 0 && e.Text == "working" {
+					m.workingSince = e.TimeMs
+				}
+			}
 		}
 		if e.Kind == "input" {
 			started = e.TimeMs
@@ -298,6 +325,13 @@ func (m *model) render() {
 			replyIndex = -1
 		} else {
 			text := eventViewCached(m, s, e, max(1, m.view.Width))
+			if e.Kind == "approval" {
+				state := decisions[e.RunId+"/"+e.RequestId]
+				if state == "" {
+					state = "requested"
+				}
+				text = approvalLine(s, e, state, max(1, m.view.Width))
+			}
 			if text != "" {
 				add(text, e.TimeMs)
 				if e.Kind == "input" {
@@ -418,6 +452,15 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.render()
 		return m, tea.Batch(m.refresh(), m.autoApprove())
 	case tea.MouseMsg:
+		if m.focusApproval && v.Y >= m.view.Height && v.Y < m.height-m.input.Height()-3 {
+			switch v.Button {
+			case tea.MouseButtonWheelUp:
+				m.approvalOffset = max(0, m.approvalOffset-3)
+			case tea.MouseButtonWheelDown:
+				m.approvalOffset += 3
+			}
+			return m, nil
+		}
 		if !m.projectView && !m.accountView && v.Y < m.view.Height {
 			m.view, _ = m.view.Update(v)
 		}
@@ -541,6 +584,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 			if !found {
+				m.approvalOffset = 0
 				m.focusApproval = false
 				m.input.Focus()
 				m.notice = "Selected approval resolved; review the next request before deciding"
@@ -552,6 +596,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 		if m.selectedApproval() == nil {
+			m.approvalOffset = 0
 			if m.focusApproval {
 				m.input.Focus()
 			}
@@ -562,6 +607,10 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.autoApprove()
 	case received:
 		if v.event.Seq > m.cursor[v.id] {
+			if s := m.current(); s != nil && s.Id == v.id && (v.event.Kind == "turn_end" || v.event.Kind == "input") {
+				m.interruptUntil = time.Time{}
+				m.interruptKey = ""
+			}
 			m.cursor[v.id] = v.event.Seq
 			m.events[v.id] = append(m.events[v.id], v.event)
 			if s := m.current(); s != nil && s.Id == v.id {
@@ -606,7 +655,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.projectView && !m.creating {
 			return m, m.projectKey(v)
 		}
-		if m.focusApproval && v.String() != "tab" && v.String() != "ctrl+c" && v.String() != "pgup" && v.String() != "pgdown" && v.String() != "ctrl+end" && v.String() != "ctrl+home" {
+		if m.focusApproval && v.String() != "tab" && v.String() != "shift+tab" && v.String() != "ctrl+c" {
 			return m, m.approvalKey(v)
 		}
 		switch v.String() {
@@ -621,31 +670,19 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+home":
 			m.view.GotoTop()
 			return m, nil
-		case "tab":
+		case "tab", "shift+tab":
 			if m.creating {
 				if len(m.accounts) > 0 {
-					m.accountIndex = (m.accountIndex + 1) % len(m.accounts)
+					step := 1
+					if v.String() == "shift+tab" {
+						step = len(m.accounts) - 1
+					}
+					m.accountIndex = (m.accountIndex + step) % len(m.accounts)
 				}
 				m.notice = m.accountNotice()
 				return m, nil
 			}
-			if !m.focusList && !m.focusApproval && m.selectedApproval() != nil {
-				m.approvalID = m.selectedApproval().RequestId
-				m.focusApproval = true
-				m.input.Blur()
-				return m, nil
-			}
-			if m.focusApproval {
-				m.focusApproval = false
-				m.focusList = true
-			} else {
-				m.focusList = !m.focusList
-			}
-			if m.focusList {
-				m.input.Blur()
-				return m, nil
-			}
-			return m, m.input.Focus()
+			return m, m.cycleFocus(v.String() == "shift+tab")
 		case "r":
 			if m.focusList {
 				return m, m.startRename()
@@ -661,7 +698,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.loadAccounts()
 		case "esc":
 			if !m.creating {
-				return m, nil
+				return m, m.confirmInterrupt(time.Now())
 			}
 			m.creating = false
 			m.input.SetValue("")
@@ -698,6 +735,13 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 		case "enter":
+			if !m.focusList && !m.creating {
+				m.input.InsertString("\n")
+				m.resize()
+				return m, nil
+			}
+			fallthrough
+		case "ctrl+s":
 			if m.focusList {
 				m.focusList = false
 				return m, m.input.Focus()
@@ -758,7 +802,17 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if localName == "/usage" {
 				return m, m.loadUsage()
 			}
-			if localName == "/help" || localName == "/context" || localName == "/compact" {
+			if localName == "/details" {
+				m.toolDetails()
+				return m, nil
+			}
+			if localName == "/context" {
+				return m, m.contextCommand()
+			}
+			if localName == "/compact" {
+				return m, m.compactCommand(text)
+			}
+			if localName == "/help" {
 				id := ""
 				if s := m.current(); s != nil {
 					id = s.Id

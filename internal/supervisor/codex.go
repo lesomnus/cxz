@@ -31,6 +31,19 @@ func (c *codexProtocol) consume(raw []byte) {
 		return
 	}
 	id := string(v.ID)
+	// Account telemetry is best-effort and must never fail an active turn.
+	if id == `"cxz-quota"` {
+		if len(v.Result) > 0 && string(v.Result) != "null" {
+			s.event("usage", "account/rateLimits/updated", "", v.Result, nil)
+		}
+		var failure struct {
+			Code int `json:"code"`
+		}
+		if json.Unmarshal(v.Error, &failure) == nil && failure.Code == -32601 {
+			s.quotaDisabled = true
+		}
+		return
+	}
 	if len(v.Error) > 0 && string(v.Error) != "null" {
 		if id == `"cxz-auth"` {
 			s.event("diagnostic", "central Codex login failed", "", nil, nil)
@@ -82,6 +95,7 @@ func (c *codexProtocol) consume(raw []byte) {
 		s.snap.VendorID = r.Thread.ID
 		s.event("vendor", r.Thread.ID, "", nil, nil)
 		s.event("state", "idle", "", nil, nil)
+		c.readQuota()
 		return
 	}
 	if len(v.ID) > 0 && v.Method != "" {
@@ -142,12 +156,15 @@ func (c *codexProtocol) consume(raw []byte) {
 		c.turn = ""
 		s.event("turn_end", state, "", v.Params, nil)
 		s.event("state", "idle", "", nil, nil)
+		c.readQuota()
 	case "item/started":
 		if p.Item.Type == "commandExecution" || p.Item.Type == "fileChange" {
 			s.event("tool_call", p.Item.Command, p.Item.ID, v.Params, nil)
 		}
 	case "item/completed":
-		if p.Item.Type == "agentMessage" {
+		if p.Item.Type == "contextCompaction" {
+			s.event("compact", "completed", p.Item.ID, v.Params, nil)
+		} else if p.Item.Type == "agentMessage" {
 			s.event("assistant", p.Item.Text, p.Item.ID, v.Params, nil)
 		} else if p.Item.Type == "commandExecution" || p.Item.Type == "fileChange" {
 			s.event("tool_result", p.Item.Output, p.Item.ID, v.Params, nil)
@@ -171,12 +188,21 @@ func (c *codexProtocol) startThread() {
 	}
 	_ = s.write(rpc("cxz-thread", method, params))
 }
+
+func (c *codexProtocol) readQuota() {
+	if !c.s.quotaDisabled {
+		_ = c.s.write(rpc("cxz-quota", "account/rateLimits/read", map[string]any{}))
+	}
+}
 func (c *codexProtocol) command(op string, v core.Command) (any, error) {
 	s := c.s
 	switch op {
 	case "send":
 		if s.snap.State != "idle" || strings.TrimSpace(v.Text) == "" {
 			return nil, fmt.Errorf("session must be idle and text nonempty")
+		}
+		if strings.TrimSpace(v.Text) == "/compact" {
+			return rpc(v.ClientID, "thread/compact/start", map[string]any{"threadId": s.snap.VendorID}), nil
 		}
 		return rpc(v.ClientID, "turn/start", map[string]any{"threadId": s.snap.VendorID, "input": []any{map[string]any{"type": "text", "text": v.Text, "text_elements": []any{}}}}), nil
 	case "interrupt":

@@ -3,6 +3,7 @@ package tui
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/lipgloss"
@@ -79,6 +80,8 @@ func (m *model) saveDraft() {
 }
 
 func (m *model) restoreDraft() {
+	m.interruptKey = ""
+	m.approvalOffset = 0
 	m.input.Reset()
 	if s := m.current(); s != nil {
 		m.input.SetValue(m.drafts[s.Id])
@@ -179,9 +182,16 @@ func (m *model) sessionScreen() string {
 		status = warning.Render(pickerLabel(s.State)) + " · " + status
 	}
 	box := m.approvalBox()
+	if s := m.current(); s != nil && s.State == "waiting_input" && m.interruptKey == s.Id+"/"+s.RunId && time.Now().Before(m.interruptUntil) {
+		status = warning.Render("Esc again to interrupt (3s)")
+	}
 	if box != "" {
 		box += "\n"
 	}
+	quota := m.quotaStatus(time.Now(), max(1, width-12))
+	leftWidth := max(8, width-ansi.StringWidth(quota)-2)
+	info = clip(info, leftWidth)
+	info += strings.Repeat(" ", max(1, width-ansi.StringWidth(info)-ansi.StringWidth(quota))) + quota
 	body := m.commandOverlay(m.conversationView()) + "\n\n" + clip("  "+status, width) + "\n" + box +
 		frame(m.input.View(), width, !m.focusList && !m.focusApproval) + "\n" + clip(info, width)
 	return screen(body, m.width, m.height)
@@ -190,16 +200,17 @@ func (m *model) sessionScreen() string {
 func helpView(width int) string {
 	return indentBlock(lavender.Bold(true).Render("cxz /help") + "\n" +
 		muted.Render(ansi.Hardwrap(
-			"Enter          Send message\n"+
-				"Alt+Enter / Ctrl+J  Newline\n"+
+			"Enter / Alt+Enter / Ctrl+J  Newline\n"+
+				"Ctrl+Enter / Ctrl+S  Send (Ctrl+Enter needs terminal support)\n"+
 				"Ctrl+X         Clear draft\n"+
-				"Tab            Input → approvals (if any) → sessions → input\n"+
-				"Approvals      ↑/↓ select; Enter allow, Backspace deny\n"+
+				"Tab / Shift+Tab  Next / previous: approvals → input → sessions\n"+
+				"Approvals      ↑/↓ select; PgUp/PgDn scroll; Enter allow, Backspace deny\n"+
 				"r (selection)  Rename session alias; Enter save, Esc cancel\n"+
 				"Ctrl+Q         Return to project\n"+
 				"Ctrl+N         Create session\n"+
 				"F2 / F3        Allow / deny pending approval\n"+
 				"F4             Interrupt active turn\n"+
+				"Esc twice within 3s  Confirm interrupt\n"+
 				"Ctrl+R         Resume stopped session\n"+
 				"PgUp / PgDn / mouse wheel  Scroll; Ctrl+End follows latest\n"+
 				"Ctrl+C         Detach (agent continues)\n"+
@@ -209,7 +220,9 @@ func helpView(width int) string {
 				"/usage         Session usage from the full journal\n"+
 				"/permission full | ask  Auto/manual approval for this attached run\n"+
 				"/approval      Full selected request payload\n"+
-				"/context /compact  Unimplemented",
+				"/details       Full latest tool result (also in journal)\n"+
+				"/context       Provider context snapshot\n"+
+				"/compact       Compact provider context; keeps cxz journal",
 			max(1, width-2), true)))
 }
 
