@@ -28,15 +28,34 @@ func humanCount(n float64) string {
 	return strings.TrimSuffix(fmt.Sprintf("%.1f", n), ".0") + units[u]
 }
 
-// Fixed terminal-cell slots keep the next symbol stationary as values grow.
-const metricWidth = 16
-
-func metricCell(s string) string {
-	s = clip(s, metricWidth-2)
-	if strings.HasPrefix(ansi.Strip(s), "$") {
-		return s + strings.Repeat(" ", max(0, metricWidth-ansi.StringWidth(s)))
+// Three numeric cells plus two unit cells (scale and symbol).
+func compactMetric(n float64) (string, string) {
+	units := []string{" ", "k", "m", "b", "t"}
+	u := 0
+	for n >= 999.5 && u < len(units)-1 {
+		n /= 1000
+		u++
 	}
-	return strings.Repeat(" ", max(0, metricWidth-2-ansi.StringWidth(s))) + s + "  "
+	value := fmt.Sprintf("%.0f", n)
+	if n < 9.95 && n != math.Trunc(n) {
+		value = fmt.Sprintf("%.1f", n)
+	}
+	if len(value) > 3 {
+		value = ">99"
+	}
+	return fmt.Sprintf("%3s", value), units[u]
+}
+
+func costMetric(n float64) string {
+	symbol := "$"
+	if n > 0 && n < 0.1 {
+		symbol, n = "¢", n*100
+	}
+	value, scale := compactMetric(n)
+	if n > 0 && n < 0.05 {
+		value = "<.1"
+	}
+	return symbol + value + scale
 }
 
 func clockMetric(ms float64, measured bool) string {
@@ -106,7 +125,8 @@ func turnSummary(e, usageEvent *api.Event, started int64, width int) string {
 		{"∑", []string{"total_tokens", "totalTokens"}},
 	} {
 		if n, ok := usage.number(field.keys...); ok {
-			parts = append(parts, fmt.Sprintf("%s %s", humanCount(n), field.symbol))
+			value, scale := compactMetric(n)
+			parts = append(parts, value+scale+field.symbol)
 		}
 	}
 	duration, ok := root.number("duration_ms", "durationMs")
@@ -127,7 +147,7 @@ func turnSummary(e, usageEvent *api.Event, started int64, width int) string {
 		if ok {
 			idx = 1
 		}
-		parts = append(parts[:idx], append([]string{fmt.Sprintf("$%.4f", n)}, parts[idx:]...)...)
+		parts = append(parts[:idx], append([]string{costMetric(n)}, parts[idx:]...)...)
 	}
 	var lines []string
 	if e.Text != "completed" && e.Text != "" {
@@ -153,10 +173,13 @@ func turnSummary(e, usageEvent *api.Event, started int64, width int) string {
 		}
 	}
 	for _, part := range parts {
-		next := row + metricCell(part)
+		next := part
+		if row != "" {
+			next = row + " " + part
+		}
 		if ansi.StringWidth(next) > width {
 			flush()
-			next = metricCell(part)
+			next = part
 		}
 		row = clip(next, width)
 	}

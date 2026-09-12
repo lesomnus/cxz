@@ -110,11 +110,13 @@ func TestUsageFullJournal(t *testing.T) {
 
 func TestComposerNumbers(t *testing.T) {
 	input := newComposer()
-	input.SetValue("first\nsecond\nthird")
-	input.SetHeight(3)
+	input.SetValue("first\nsecond\nthird\n4\n5\n6\n7\n8\n9\n10\n11\n12")
+	input.SetHeight(12)
 	text := ansi.Strip(input.View())
-	if !strings.Contains(text, "›   first") || !strings.Contains(text, "  1 second") || !strings.Contains(text, "  2 third") {
-		t.Fatal(text)
+	for _, want := range []string{"> first", "1 second", "2 third", "9 10", "0 11", "1 12"} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("missing %q: %s", want, text)
+		}
 	}
 }
 

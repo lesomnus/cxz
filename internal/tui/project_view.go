@@ -13,7 +13,8 @@ import (
 	"github.com/lesomnus/cxz/api"
 )
 
-type ProjectCreator func(io.Reader, io.Writer, io.Writer) (*api.Session, error)
+type ProjectCreator func(string, io.Reader, io.Writer, io.Writer) (*api.Session, error)
+type AccountLogin func(string, io.Reader, io.Writer, io.Writer) error
 
 func ProjectSessions(sessions []*api.Session, p *api.Project) []*api.Session {
 	var out []*api.Session
@@ -57,7 +58,7 @@ func (m *model) backToProject() {
 }
 
 type createProjectExec struct {
-	create   ProjectCreator
+	create   func(io.Reader, io.Writer, io.Writer) (*api.Session, error)
 	in       io.Reader
 	out, err io.Writer
 	session  *api.Session
@@ -105,6 +106,8 @@ func (m *model) projectKey(key tea.KeyMsg) tea.Cmd {
 		}
 	}
 	switch key.String() {
+	case "a":
+		return m.openAccounts(false)
 	case "s":
 		if m.current() != nil {
 			m.busy = true
@@ -126,15 +129,7 @@ func (m *model) projectKey(key tea.KeyMsg) tea.Cmd {
 		}
 	case "ctrl+n", "n":
 		if m.createProjectSession != nil {
-			m.busy = true
-			e := &createProjectExec{create: m.createProjectSession}
-			return tea.Exec(e, func(err error) tea.Msg {
-				r := result{err: err, text: "session created"}
-				if err == nil && e.session != nil {
-					r.sessionID = e.session.Id
-				}
-				return r
-			})
+			return m.openAccounts(true)
 		}
 		m.creating = true
 		m.input.SetValue(m.project.Workspace)
@@ -188,7 +183,7 @@ func (m *model) projectScreen() string {
 	if len(m.sessions) > capacity {
 		rows = append(rows, muted.Render(fmt.Sprintf("  %d–%d of %d", start+1, min(len(m.sessions), start+capacity), len(m.sessions))))
 	}
-	footer := muted.Render("↑/↓ select · Enter open · n new · s stop · d delete") + "\n" + muted.Render("Ctrl+C detach · agents keep running")
+	footer := muted.Render("↑/↓ select · Enter open · n new · a accounts · s stop · d delete") + "\n" + muted.Render("Ctrl+C detach · agents keep running")
 	status := pickerLabel(m.notice)
 	if m.busy {
 		status = "Working… " + status

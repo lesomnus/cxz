@@ -12,7 +12,7 @@ import (
 func TestTurnSummary(t *testing.T) {
 	e := &api.Event{Kind: "turn_end", Text: "completed", Payload: []byte(`{"usage":{"input_tokens":1234,"output_tokens":321,"cache_read_input_tokens":100},"total_cost_usd":0.0123,"duration_ms":2400,"result":"do not duplicate reply"}`)}
 	text := ansi.Strip(turnSummary(e, nil, 0, 100))
-	for _, want := range []string{"1.2k ↑", "321 ↓", "100 ↺", "$0.0123", "00:00:02 ◷"} {
+	for _, want := range []string{"1.2k↑", "321 ↓", "100 ↺", "¢1.2", "00:00:02 ◷"} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("missing %s: %s", want, text)
 		}

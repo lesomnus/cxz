@@ -283,7 +283,9 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 	call, cancel := context.WithTimeout(ctx, 30*time.Minute)
 	defer cancel()
 	if projectEntry {
-		if _, err := resources.Open(call, request); err != nil {
+		if err := prepareWithProgress(call, c.ErrWriter, func(ctx context.Context) (*api.Project, error) {
+			return resources.ResolveProject(ctx, path)
+		}, func() error { _, err := resources.Open(call, request); return err }, time.Second); err != nil {
 			return err
 		}
 		p, err := resources.ResolveProject(call, path)

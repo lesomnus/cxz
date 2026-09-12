@@ -54,6 +54,18 @@ type model struct {
 	wantID               string
 	accounts             []*resource.Account
 	accountIndex         int
+	accountView          bool
+	accountAdding        bool
+	accountChoosing      bool
+	accountLoading       bool
+	accountAgent         string
+	accountField         int
+	accountAlias         textinput.Model
+	accountName          textinput.Model
+	accountSearch        textinput.Model
+	accountSearching     bool
+	accountService       resource.AccountServiceClient
+	loginAccount         AccountLogin
 	program              *tea.Program
 }
 type listing struct {
@@ -89,8 +101,13 @@ func (m *model) accountNotice() string {
 }
 func (m *model) loadAccounts() tea.Cmd {
 	return func() tea.Msg {
-		c, ok := m.client.(*resourceclient.Client)
-		if !ok {
+		service := m.accountService
+		if service == nil {
+			if c, ok := m.client.(*resourceclient.Client); ok {
+				service = c.Accounts
+			}
+		}
+		if service == nil {
 			return accountListing{}
 		}
 		ctx, cancel := context.WithTimeout(m.ctx, 5*time.Second)
@@ -98,7 +115,7 @@ func (m *model) loadAccounts() tea.Cmd {
 		var all []*resource.Account
 		after := ""
 		for {
-			p, err := c.Accounts.List(ctx, resource.AccountListRequest_builder{Size: 200, After: after}.Build())
+			p, err := service.List(ctx, resource.AccountListRequest_builder{Size: 200, After: after}.Build())
 			if err != nil {
 				return accountListing{err: err}
 			}
@@ -126,12 +143,18 @@ func RunSelected(ctx context.Context, c api.SessionsClient, id string) error {
 	return RunProject(ctx, c, project, id, nil)
 }
 
-func RunProject(ctx context.Context, c api.SessionsClient, project *api.Project, id string, create ProjectCreator) error {
+func RunProject(ctx context.Context, c api.SessionsClient, project *api.Project, id string, create ProjectCreator, login ...AccountLogin) error {
 	input := newComposer()
 	m := &model{ctx: ctx, client: c, input: input, view: viewport.New(80, 15), events: map[string][]*api.Event{}, cursor: map[string]uint64{}, width: 100, height: 30, wantID: id}
 	m.project = project
 	m.projectView = project != nil && id == ""
 	m.createProjectSession = create
+	if resources, ok := c.(*resourceclient.Client); ok {
+		m.accountService = resources.Accounts
+	}
+	if len(login) > 0 {
+		m.loginAccount = login[0]
+	}
 	p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithContext(ctx))
 	m.program = p
 	_, e := p.Run()
@@ -353,16 +376,49 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.render()
 		return m, nil
 	case accountListing:
-		if !m.creating {
+		if !m.creating && !m.accountView {
 			return m, nil
 		}
+		m.accountLoading = false
 		if v.err != nil {
 			m.notice = v.err.Error()
 			return m, nil
 		}
+		alias := ""
+		if choices := m.accountChoices(); len(choices) > m.accountIndex {
+			alias = choices[m.accountIndex].GetAlias()
+		}
 		m.accounts = v.accounts
 		m.accountIndex = 0
+		for i, a := range m.accountChoices() {
+			if a.GetAlias() == alias {
+				m.accountIndex = i
+			}
+		}
 		m.notice = m.accountNotice()
+		if m.accountView {
+			m.notice = ""
+		}
+		return m, nil
+	case accountSaved:
+		m.busy = false
+		if v.err != nil {
+			m.notice = v.err.Error()
+			return m, nil
+		}
+		m.accountAdding = false
+		m.accountSearch.Reset()
+		m.accounts = []*resource.Account{v.account}
+		m.accountIndex = 0
+		m.notice = "Account registered. Press l to log in."
+		m.accountLoading = true
+		return m, m.loadAccounts()
+	case accountLoggedIn:
+		m.busy = false
+		m.notice = "Login completed."
+		if v.err != nil {
+			m.notice = v.err.Error()
+		}
 		return m, nil
 	case tea.WindowSizeMsg:
 		m.width = v.Width
@@ -424,10 +480,14 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if v.sessionID != "" {
 				m.wantID = v.sessionID
 				m.projectView = false
+				m.accountView = false
 			}
 		}
 		return m, m.refresh()
 	case tea.KeyMsg:
+		if m.accountView {
+			return m, m.accountKey(v)
+		}
 		if m.renaming {
 			return m, m.renameKey(v)
 		}
@@ -594,6 +654,18 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 	var cmd tea.Cmd
+	if m.accountView {
+		if m.accountSearching {
+			m.accountSearch, cmd = m.accountSearch.Update(msg)
+		}
+		if m.accountAdding && m.accountField == 1 {
+			m.accountAlias, cmd = m.accountAlias.Update(msg)
+		}
+		if m.accountAdding && m.accountField == 2 {
+			m.accountName, cmd = m.accountName.Update(msg)
+		}
+		return m, cmd
+	}
 	if m.renaming {
 		m.aliasInput, cmd = m.aliasInput.Update(msg)
 		return m, cmd
@@ -610,6 +682,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *model) View() string {
 	if m.width > 0 && (m.width < 40 || m.height < 14) {
 		return screen("cxz\nResize terminal to 40 × 14 or larger.\nCtrl+C detach", m.width, m.height)
+	}
+	if m.accountView {
+		return m.accountScreen()
 	}
 	if m.projectView {
 		return m.projectScreen()
