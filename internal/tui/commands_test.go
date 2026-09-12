@@ -72,7 +72,4 @@ func TestTranscriptGutterAndDuration(t *testing.T) {
 	if got := clockMetric(2000, false); !strings.Contains(got, zeroStyle.Render("00")) {
 		t.Fatal("zero units not dimmed")
 	}
-	if got := black.GetBackground(); got == nil {
-		t.Fatal("missing background")
-	}
 }

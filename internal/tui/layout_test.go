@@ -14,12 +14,12 @@ func TestFixedMetricPositions(t *testing.T) {
 	for _, n := range []int{1, 10, 100, 1000, 1000000} {
 		e := &api.Event{Text: "completed", Payload: []byte(fmt.Sprintf(`{"usage":{"input_tokens":%d,"output_tokens":%d},"costUSD":0.1,"duration_ms":2000}`, n, n))}
 		text := ansi.Strip(turnSummary(e, nil, 0, 100))
+		if !strings.HasPrefix(text, "  00:00:02") {
+			t.Fatal("duration has leading padding", text)
+		}
 		for i, symbol := range []string{"◷", "$", "↑", "↓"} {
 			offset := strings.Index(text, symbol)
-			want := 2 + i*metricWidth + metricWidth - 3
-			if symbol == "$" {
-				want = 2 + i*metricWidth
-			}
+			want := []int{11, 13, 23, 29}[i]
 			if offset < 0 || ansi.StringWidth(text[:offset]) != want {
 				t.Fatalf("symbol moved: %q", text)
 			}

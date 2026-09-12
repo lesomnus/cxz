@@ -163,6 +163,7 @@ resource database and survives server/container restarts; back up state volumes.
 | Key | Action |
 |---|---|
 | n / Ctrl+N (project) | Select Account and create a session; first project login runs if needed |
+| a (project) | Open account view; n adds, l logs in, / searches, Esc returns |
 | ↑/↓, Enter (project) | Select a session and open its view |
 | s (project) | Stop selected session before starting another (one live session per project) |
 | d / Delete, then y (project) | Stop and remove selected session; archived journal retained |
@@ -182,8 +183,8 @@ resource database and survives server/container restarts; back up state volumes.
 The dashboard groups workspace details and session cards; the conversation view
 keeps tool activity above a growing, rounded message editor. Drafts are retained
 per session while this TUI is open, including trips back to the project view.
-Escape does not discard a conversation draft. Only the composer and its
-borders use a black background; the rest keeps the terminal background. Use at least
+Escape does not discard a conversation draft. The composer and its borders keep
+the terminal's background (including the current input line). Use at least
 40 × 14 cells. The composer spans the terminal width. User messages show local
 timestamps instead of a YOU label; Claude/Codex speaker badges and pastel tool
 colors distinguish output. Transient state events update the status area rather
@@ -191,12 +192,15 @@ than accumulating in the transcript (the journal remains intact).
 Reply text is white; only speaker labels retain agent branding. User timestamps
 are dimmed and the first-line `>` starts at the left edge. Completed-turn JSON is
 replaced by a dim metrics footer after a blank line: duration, cost, then tokens.
-Duration uses `00:00:00 ◷` (zero units are darker); cost uses `$0.0123`.
+Duration starts immediately after the two indicator cells and uses `00:00:00 ◷`
+(zero units are darker). Cost is compact: `$0.1`; below $0.10 it uses cents (`¢1.2`).
+Nonzero amounts below 0.05 cents show `¢<.1`; `/usage` retains four-decimal USD totals.
 Token symbols follow the values: ↑ input / ↓ output / ↺ cache read / ⊕ cache write /
 ∑ total. Missing values are omitted; ≈◷ denotes measured request-to-completion time.
 Codex metrics use per-turn usage, never cumulative thread totals.
-Metrics use fixed 16-cell slots and compact counts (`1k`, `1.2k`, `1m`).
-Values except cost are right-aligned within their slots. The first two columns
+Apart from the clock, metrics use five-cell slots (three numeric cells and two
+unit cells) with one separating cell, e.g. `1.2k↑`. Numeric counts are right-aligned;
+cost keeps its leading currency symbol. The first two columns
 are reserved for indicators; other content is indented (except the composer).
 Session information occupies a single
 bottom line; persistent shortcut rows are hidden. Type `/help` to display local
@@ -215,7 +219,21 @@ Enter saves and returns to selection, Esc cancels. Custom aliases accept 3–7
 lowercase letters. Session commands also accept aliases. Deleting a session
 releases its alias while retaining the journal. The curated word pool is finite;
 exhaustion is reported explicitly without falling back to numeric identifiers.
-The composer starts with `>` on row 0 and dim line numbers from row 1 onward.
+The composer starts with `>` on row 0 and dim single-digit line numbers afterward:
+`1 … 9, 0, 1 …`. The two-cell gutter never grows.
+
+`cxz up` prints elapsed time and observed server provisioning checkpoints to stderr:
+configuration, resources, devcontainer image/build/hooks, selected agent installation,
+runtime boot/readiness. Fast steps may pass between polls; long steps repeat every
+ten seconds. This is stage reporting, not a percentage or raw Docker build log.
+`--no-attach --format json` keeps stdout clean.
+
+Project `a` opens accounts without leaving the app. New-session `n` opens the same
+view in selection mode; an empty list offers account creation. Add a provider
+(Claude/Codex), alias and optional display name, then confirm Create account.
+`/` focuses search by alias/name/provider/number; Enter selects in new-session mode.
+`l` runs the existing login workflow and returns to accounts (Claude: current
+project; Codex default: central). Registration alone does not authenticate.
 
 Data commands (table by default; use `--format json` for scripts): `session ls`, `project ls`, `session get ID`, `session send ID TEXT`,
 `session reply ID REQUEST_ID allow|deny [ANSWERS_JSON]`, `session interrupt ID`, `session resume ID`,

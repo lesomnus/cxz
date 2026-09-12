@@ -22,7 +22,6 @@ var (
 	timestamp   = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#777777", Dark: "#555B65"})
 	metricStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#626975"))
 	zeroStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#30343B"))
-	black       = lipgloss.NewStyle().Background(lipgloss.Color("#000000"))
 	answer      = lipgloss.NewStyle().Foreground(lipgloss.Color("#FFFFFF"))
 	strong      = lipgloss.NewStyle().Bold(true)
 	warning     = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#945600", Dark: "#EBC078"})
@@ -33,11 +32,11 @@ func newComposer() textarea.Model {
 	input := textarea.New()
 	input.Placeholder = "Ask a question or describe a task… (/help)"
 	input.Prompt = "› "
-	input.SetPromptFunc(4, func(line int) string {
+	input.SetPromptFunc(2, func(line int) string {
 		if line == 0 {
-			return "›   "
+			return "> "
 		}
-		return timestamp.Render(fmt.Sprintf("%3d ", line))
+		return timestamp.Render(fmt.Sprintf("%d ", line%10))
 	})
 	input.ShowLineNumbers = false
 	input.CharLimit = 100000
@@ -47,10 +46,8 @@ func newComposer() textarea.Model {
 	input.SetHeight(3)
 	input.FocusedStyle.Prompt = accent
 	input.BlurredStyle.Prompt = muted
-	input.FocusedStyle.Base = black
-	input.BlurredStyle.Base = black
-	input.FocusedStyle.CursorLine = black
-	input.BlurredStyle.CursorLine = black
+	input.FocusedStyle.CursorLine = lipgloss.NewStyle()
+	input.BlurredStyle.CursorLine = lipgloss.NewStyle()
 	input.Focus()
 	return input
 }
@@ -83,7 +80,7 @@ func (m *model) resize() {
 	m.input.SetWidth(max(2, m.width-2))
 	rows := 0
 	for _, line := range strings.Split(m.input.Value(), "\n") {
-		rows += max(1, (ansi.StringWidth(line)+max(1, m.width-6)-1)/max(1, m.width-6))
+		rows += max(1, (ansi.StringWidth(line)+max(1, m.width-4)-1)/max(1, m.width-4))
 	}
 	m.input.SetHeight(min(max(2, rows), min(6, max(1, m.height/4))))
 	m.view.Width = max(1, m.width)
@@ -100,11 +97,11 @@ func frame(body string, width int, highlighted bool) string {
 	if highlighted {
 		border = accent
 	}
-	style := lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Background(lipgloss.Color("#000000")).Width(max(1, width-2))
+	style := lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Width(max(1, width-2))
 	// Lip Gloss 1.x emits empty SGR parameters when both border colors are
 	// configured on an uncolored renderer.
 	if lipgloss.ColorProfile().Name() != "Ascii" {
-		style = style.BorderBackground(lipgloss.Color("#000000")).BorderForeground(border.GetForeground())
+		style = style.BorderForeground(border.GetForeground())
 	}
 	return style.Render(body)
 }

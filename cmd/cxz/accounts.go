@@ -98,6 +98,16 @@ func accountCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 		if _, set := flg.Get[string](c, "project"); set {
 			return fmt.Errorf("central account login/status does not accept --project; omit it")
 		}
+	}
+	return registeredAccountWorkflow(ctx, resources, c, a, c.Name, flg.MustGet[string](c, "project"), true)
+}
+
+func registeredAccountWorkflow(ctx context.Context, resources *resourceclient.Client, c *xli.Command, a *resource.Account, op, target string, prepare bool) error {
+	backend, err := accounts.Resolve(a.GetAgent(), a.GetAuthBackend())
+	if err != nil {
+		return err
+	}
+	if backend.Info().Workflow == "account-login" {
 		install, err := transport.Load(stateFrom(ctx))
 		if err != nil {
 			return err
@@ -106,17 +116,17 @@ func accountCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 		if terminal(c) {
 			args = append(args, "-t")
 		}
-		args = append(args, install.Container, "/cxz/tools/cxz", "--state", "/var/lib/cxz", "_central-account-"+c.Name, alias)
+		args = append(args, install.Container, "/cxz/tools/cxz", "--state", "/var/lib/cxz", "_central-account-"+op, a.GetAlias())
 		cmd := exec.CommandContext(ctx, "docker", args...)
 		cmd.Stdin = c.ReadCloser
 		cmd.Stdout = c.Writer
 		cmd.Stderr = c.ErrWriter
-		return runAccountProcess(cmd, c, a, c.Name)
+		return runAccountProcess(cmd, c, a, op)
 	}
 	if backend.Info().Workflow != "project-login" || backend.Info().Scope != "project" {
 		return fmt.Errorf("unsupported auth workflow: %s", backend.Info().Workflow)
 	}
-	return projectAccountWorkflow(ctx, resources, c, a, c.Name, flg.MustGet[string](c, "project"), true)
+	return projectAccountWorkflow(ctx, resources, c, a, op, target, prepare)
 }
 
 func projectAccountWorkflow(ctx context.Context, resources *resourceclient.Client, c *xli.Command, a *resource.Account, op, target string, prepare bool) error {
