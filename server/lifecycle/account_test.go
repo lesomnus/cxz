@@ -28,7 +28,7 @@ func TestAccountResources(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, alias := range []string{"personal", "work"} {
-		a, err := stack.Account().Add(ctx, resource.AccountAddRequest_builder{Alias: alias, Name: alias, Agent: "codex"}.Build())
+		a, err := stack.Account().Add(ctx, resource.AccountAddRequest_builder{Alias: alias, Name: alias, Agent: "codex", AuthBackend: accounts.ProjectLocalOAuth}.Build())
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -55,7 +55,7 @@ func TestAccountResources(t *testing.T) {
 	if s.GetAccount().GetAlias() != "work" {
 		t.Fatal("account edge lost", s)
 	}
-	for _, backend := range []string{accounts.BrokeredAccessToken, accounts.APIKey, "unknown"} {
+	for _, backend := range []string{accounts.APIKey, "unknown"} {
 		_, err = stack.Account().Add(ctx, resource.AccountAddRequest_builder{Alias: "unsupported", Agent: "codex", AuthBackend: backend}.Build())
 		if status.Code(err) != codes.InvalidArgument {
 			t.Fatal("unsupported backend accepted", err)

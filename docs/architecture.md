@@ -438,19 +438,23 @@ not an inconvenience.
 ### 4.2 Agent credentials
 
 **Implementation update (2026-09-12):** Account is now a global payday profile
-resource, while each `(Project, Account)` keeps its own OAuth grant/config/HOME.
-`cxz account login --project PROJECT ACCOUNT` prepares that project and performs
-an independent login there. Session.account is immutable. This preserves option
-(c) below; it does **not** distribute shared refresh tokens. See [Accounts](accounts.md).
-The Codex central-token mechanism discussed below remains a capability research
-result, not the implemented subscription login path.
+resource. Claude keeps its OAuth grant/config/HOME per `(Project, Account)`;
+`cxz account login --project PROJECT ACCOUNT` performs an independent login there.
+Codex now defaults to central account login, supplying only access tokens to
+authorized projects. Official Codex performs both device login and managed refresh;
+cxz pins the workspace/user identity and serializes account authentication work.
+Session.account is immutable. Neither strategy copies refresh tokens into other
+projects. See [Accounts](accounts.md).
 
 The implemented `AuthBackend` registry now maps each AgentKind to a default and
 supported strategy factories. Account fixes the strategy; AuthBinding fixes its
 scope/storage reference; Session fixes the binding. Backend owns binding identity,
-login, credential checks and launch configuration. Both agents currently register
-only `project-local-oauth`. Unsupported strategies fail closed, including on
-recovery; no central token broker is enabled by this abstraction.
+login, credential checks and launch configuration. Codex registers
+`brokered-access-token` (default) and optional `project-local-oauth`; Claude only
+registers `project-local-oauth`. The broker uses a capability-authenticated Unix
+socket, not the public resource API/audit path. AuthBinding remains project-scoped
+as a token-supply authorization, while its credential reference points centrally.
+Unsupported strategies fail closed, including on recovery.
 
 Subscription logins use OAuth with **rotating refresh tokens**: each refresh
 issues a new one and invalidates its predecessor. Three arrangements are

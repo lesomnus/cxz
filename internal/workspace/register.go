@@ -83,6 +83,9 @@ func (m *Manager) CreateSession(ctx context.Context, r *api.CreateRequest) (*api
 	if err = resourceclient.New(conn).EnsureAccount(ctx, r.Account, r.Agent, r.AuthBackend); err != nil {
 		return nil, err
 	}
+	if err = m.connectAccount(ctx, p, r.Account, r.AuthBackend); err != nil {
+		return nil, err
+	}
 	v, err := client.Create(ctx, &api.CreateRequest{Workspace: p.RemoteWorkspace, Title: r.Title, Agent: r.Agent, Model: r.Model, ClientId: r.ClientId, Account: r.Account, AuthBackend: r.AuthBackend, AuthBinding: r.AuthBinding})
 	if err != nil {
 		return nil, err

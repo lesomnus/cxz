@@ -141,6 +141,13 @@ func Run(ctx context.Context, root, id string) error {
 		return err
 	}
 	args = append(args, auth.Args...)
+	if session.AuthBackend == accounts.BrokeredAccessToken {
+		s.codex.token = func(previous string, refresh bool) (accounts.Token, error) {
+			ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
+			defer cancel()
+			return accounts.FetchToken(ctx, root, session.Account, session.ProjectID, session.AuthBinding, previous, refresh)
+		}
+	}
 	s.cmd = exec.Command(session.Agent, args...)
 	s.cmd.Dir = session.Workspace
 	s.cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true, Pdeathsig: syscall.SIGKILL}

@@ -1,5 +1,24 @@
 # 구현 진행 상황
 
+## 2026-09-12 — Codex 중앙 인증 공급
+
+- 신규 Codex Account의 기본 backend를 `brokered-access-token`으로 변경했다.
+  기존 Account의 backend는 유지하고 Claude의 프로젝트별 OAuth도 유지한다.
+- 공식 Codex device login과 app-server managed refresh를 중앙 Account별 격리
+  프로필에서 실행한다. cxz는 OAuth endpoint/code 교환을 재구현하지 않는다.
+- 프로젝트별 capability를 비공개로 전달하고 Unix socket을 통해 access token만
+  공급한다. AuthBinding은 프로젝트별 공급 권한을 고정하며 token/capability는
+  공개 resource·audit·대화 journal에 넣지 않는다. 프로젝트는 ephemeral 인증을 쓴다.
+- 재로그인 시 workspace/account ID와 사용자 subject를 고정하고, 중앙 로그인·갱신은
+  계정 lock으로 직렬화한다. 다른 계정, 위조 capability, manager 중단은 명시적으로 실패한다.
+- 전체 race 1차 통과. Docker에서 중앙 로그인으로 두 프로젝트 사용, 동시 갱신,
+  개인/회사 프로필, 승인·중단, resume·manager restart·project recreate 통과.
+  최종 non-root 프로젝트 회귀를 진행 중이다.
+- 네이티브 Codex 0.154.0도 합성 JWT로 external login 수용·account/read·ephemeral
+  auth.json 비저장을 확인했다. 실제 OAuth 로그인/갱신과 유료 모델 호출은 하지 않았다.
+- [인증 설계와 제약](accounts.md): 공식 external-token API는 실험적이며, 토큰 추출은
+  고정 버전의 managed auth.json 형식에 의존한다. 사용자 인증/roster와 권한 철회 UI는 별도다.
+
 ## 2026-09-12 — AuthBackend / AuthBinding 분리
 
 - AgentKind별 기본/지원 backend factory registry와 `Info/Binding/Login/Check/Launch`

@@ -3,6 +3,7 @@ package supervisor
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/journal"
 	"path/filepath"
@@ -10,6 +11,45 @@ import (
 )
 
 type sink struct{ bytes.Buffer }
+
+func TestCodexExternalAuthentication(t *testing.T) {
+	log, err := journal.Open(filepath.Join(t.TempDir(), "events"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer log.Close()
+	input := &sink{}
+	s := &Supervisor{session: core.Session{Kind: "codex", Workspace: "/workspace"}, log: log, stdin: input, snap: core.Snapshot{State: "starting"}, pending: map[string]core.Event{}}
+	requests := 0
+	c := &codexProtocol{s: s, token: func(previous string, refresh bool) (accounts.Token, error) {
+		requests++
+		if refresh && previous != "subject-work" {
+			t.Fatal("lost account pin")
+		}
+		return accounts.Token{AccessToken: "synthetic-secret", AccountID: "subject-work"}, nil
+	}}
+	c.consume([]byte(`{"id":"cxz-initialize","result":{}}`))
+	if bytes.Contains(input.Bytes(), []byte("thread/start")) || !bytes.Contains(input.Bytes(), []byte("chatgptAuthTokens")) {
+		t.Fatal("thread started before auth")
+	}
+	c.consume([]byte(`{"id":"cxz-auth","result":{"type":"chatgptAuthTokens"}}`))
+	if !bytes.Contains(input.Bytes(), []byte("thread/start")) {
+		t.Fatal("no thread after auth")
+	}
+	c.consume([]byte(`{"id":42,"method":"account/chatgptAuthTokens/refresh","params":{"previousAccountId":"subject-work","reason":"unauthorized"}}`))
+	if requests != 2 || len(s.pending) != 0 {
+		t.Fatal("refresh incorrectly routed as approval")
+	}
+	for _, event := range log.All() {
+		raw, _ := json.Marshal(event)
+		if bytes.Contains(raw, []byte("synthetic-secret")) {
+			t.Fatal("token journaled")
+		}
+	}
+	if !bytes.Contains(input.Bytes(), []byte(`"id":42`)) {
+		t.Fatal("refresh correlation lost")
+	}
+}
 
 func (s *sink) Close() error { return nil }
 func TestCodexProtocol(t *testing.T) {

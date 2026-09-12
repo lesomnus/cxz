@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/lesomnus/cxz/internal/accounts"
+	"github.com/lesomnus/cxz/internal/distribution"
 	"net"
 	"net/url"
 	"os"
@@ -90,6 +91,17 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 		if e != nil {
 			return e
 		}
+		broker, err := accounts.StartBroker(root, accounts.BrokerSocket, func(ctx context.Context, account string) error {
+			bin, err := distribution.Ensure(ctx, "/cxz/tools", "codex", "", true)
+			if err != nil {
+				return err
+			}
+			return accounts.RefreshManaged(ctx, root, account, bin)
+		})
+		if err != nil {
+			return err
+		}
+		defer broker.Close()
 	}
 	// Manifests survive rebuilding the derived SQLite database.
 	dirs, e := os.ReadDir(filepath.Join(root, "sessions"))

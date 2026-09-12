@@ -39,6 +39,7 @@ type LoginRequest struct {
 	Env                              []string
 	Input                            io.Reader
 	Output, Error                    io.Writer
+	ValidateCredential               func([]byte) error
 }
 type LaunchAuth struct {
 	Env, Args []string
@@ -63,7 +64,7 @@ type registration struct {
 
 var registry = map[AgentKind]registration{
 	Claude: {ProjectLocalOAuth, map[string]func() Backend{ProjectLocalOAuth: func() Backend { return projectLocalOAuth{Claude} }}},
-	Codex:  {ProjectLocalOAuth, map[string]func() Backend{ProjectLocalOAuth: func() Backend { return projectLocalOAuth{Codex} }}},
+	Codex:  {BrokeredAccessToken, map[string]func() Backend{ProjectLocalOAuth: func() Backend { return projectLocalOAuth{Codex} }, BrokeredAccessToken: func() Backend { return brokered{} }}},
 }
 
 func Catalog() []AgentInfo {
@@ -193,6 +194,11 @@ func (b projectLocalOAuth) Login(ctx context.Context, r LoginRequest) error {
 	credential, err := Credential(staging, r.Account, string(b.agent))
 	if err != nil {
 		return err
+	}
+	if r.ValidateCredential != nil {
+		if err := r.ValidateCredential(credential); err != nil {
+			return err
+		}
 	}
 	return Install(r.Root, r.Account, string(b.agent), credential)
 }

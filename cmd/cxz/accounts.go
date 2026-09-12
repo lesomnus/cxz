@@ -11,6 +11,7 @@ import (
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/distribution"
 	"github.com/lesomnus/cxz/internal/dockerx"
 	"github.com/lesomnus/cxz/internal/resourceclient"
 	"github.com/lesomnus/cxz/internal/transport"
@@ -97,6 +98,22 @@ func accountCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 	if err != nil {
 		return err
 	}
+	if backend.Info().Workflow == "account-login" {
+		install, err := transport.Load(stateFrom(ctx))
+		if err != nil {
+			return err
+		}
+		args := []string{"exec", "-i"}
+		if terminal(c) {
+			args = append(args, "-t")
+		}
+		args = append(args, install.Container, "/cxz/tools/cxz", "--state", "/var/lib/cxz", "_central-account-"+c.Name, alias)
+		cmd := exec.CommandContext(ctx, "docker", args...)
+		cmd.Stdin = c.ReadCloser
+		cmd.Stdout = c.Writer
+		cmd.Stderr = c.ErrWriter
+		return cmd.Run()
+	}
 	if backend.Info().Workflow != "project-login" || backend.Info().Scope != "project" {
 		return fmt.Errorf("unsupported auth workflow: %s", backend.Info().Workflow)
 	}
@@ -171,6 +188,44 @@ func accountCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 
 func accountInternalCommands() []*xli.Command {
 	var out []*xli.Command
+	for _, op := range []string{"login", "status"} {
+		out = append(out, &xli.Command{Name: "_central-account-" + op, Category: "Internal runtime", Args: arg.Args{stringArg("ACCOUNT", false)}, Handler: onRun(func(ctx context.Context, c *xli.Command) error {
+			if os.Getenv("CXZ_OWNER") == "" {
+				return fmt.Errorf("central authentication requires manager")
+			}
+			alias := arg.MustGet[string](c, "ACCOUNT")
+			if err := accounts.Validate(alias, "codex"); err != nil {
+				return err
+			}
+			if c.Name == "_central-account-status" {
+				_, err := accounts.CentralToken(stateFrom(ctx), alias)
+				if err == nil {
+					fmt.Fprintln(c.Writer, "Central Codex login present; tokens are supplied only to connected projects.")
+				}
+				return err
+			}
+			bin, err := distribution.Ensure(ctx, "/cxz/tools", "codex", "", true)
+			if err != nil {
+				return err
+			}
+			fmt.Fprintln(c.ErrWriter, "Log in to the selected Codex account. This login is shared by its authorized projects.")
+			return accounts.CentralLogin(ctx, accounts.LoginRequest{Root: stateFrom(ctx), Account: alias, Binary: bin, Env: os.Environ(), Input: c.ReadCloser, Output: c.Writer, Error: c.ErrWriter})
+		})})
+	}
+	out = append(out, &xli.Command{Name: "_account-bind", Category: "Internal runtime", Handler: onRun(func(ctx context.Context, c *xli.Command) error {
+		var g accounts.Grant
+		if err := json.NewDecoder(io.LimitReader(c.ReadCloser, 16384)).Decode(&g); err != nil {
+			return fmt.Errorf("invalid account connection")
+		}
+		r, err := workspace.LoadRuntime(stateFrom(ctx))
+		if err != nil {
+			return err
+		}
+		if r.ProjectID != g.Project {
+			return fmt.Errorf("account connection project mismatch")
+		}
+		return accounts.InstallGrant(stateFrom(ctx), g)
+	})})
 	for _, op := range []string{"login", "import", "status"} {
 		c := &xli.Command{Name: "_account-" + op, Category: "Internal runtime", Args: arg.Args{stringArg("ACCOUNT", false), stringArg("AGENT", false), &arg.String{Name: "BACKEND", Optional: true, Default: ptr(accounts.ProjectLocalOAuth)}}, Handler: onRun(func(ctx context.Context, c *xli.Command) error {
 			alias, agent := arg.MustGet[string](c, "ACCOUNT"), arg.MustGet[string](c, "AGENT")
