@@ -34,6 +34,8 @@ func (c *Client) view(ctx context.Context, s *resource.Session, opts ...grpc.Cal
 	}
 	st := s.GetStatus()
 	v := &api.Session{Id: s.GetRuntimeId(), Title: s.GetName(), Agent: s.GetAgent(), Model: s.GetModel(), CreateId: s.GetClientId(), ProjectId: p.GetRuntimeId(), Workspace: p.GetWorkspace(), State: st.GetState(), RunId: st.GetRunId(), VendorId: st.GetVendorId(), LastSeq: st.GetLastSeq()}
+	v.ProjectName = p.GetName()
+	v.ProjectAlias = p.GetAlias()
 	if s.GetDateCreated() != nil {
 		v.CreatedAt = s.GetDateCreated().AsTime().UnixMilli()
 	}

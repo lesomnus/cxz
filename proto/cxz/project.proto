@@ -11,6 +11,7 @@ option (payday.app) = {};
 // No tenant: project-local capability checks remain a separate trust boundary.
 message Project {
   bytes id = 1 [(orm.field) = {type: TYPE_UUID, key: true, default: ""}];
+  string alias = 4 [(orm.field) = {unique: true}];
   string name = 5;
   string desc = 6;
   string workspace = 8 [(orm.field) = {unique: true, immutable: true}];

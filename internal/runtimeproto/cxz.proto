@@ -28,6 +28,8 @@ message Session {
   string project_id = 11;
   string model = 12;
   string create_id = 13;
+  string project_name = 14;
+  string project_alias = 15;
 }
 message SessionList { repeated Session sessions = 1; }
 message Input { string session_id = 1; string run_id = 2; string client_id = 3; string text = 4; }
@@ -49,11 +51,14 @@ message ProjectRequest {
  bool trust_config = 7; string client_id = 8;
  string model = 9;
  bool prepare_only = 10;
+ string name = 11;
+ string alias = 12;
 }
 message Project {
  string id = 1; string workspace = 2; string name = 3; string state = 4;
  string container_id = 5; string config = 6; string error = 7;
  string remote_user = 8; string remote_workspace = 9;
  string provision_state = 10; string provision_step = 11; uint64 provision_attempt = 12;
+ string alias = 13;
 }
 message ProjectList { repeated Project projects = 1; }

@@ -93,6 +93,33 @@ unauthenticated API to an untrusted network.
 
 ## TUI and scripts
 
+Projects have a display `name` and a unique short `alias`. The default name is
+the workspace directory name. Like cld, short names remain short, multi-word
+names use initials (`my-web-app` → `mwa`), and long single words are truncated.
+Collisions get a stable ID-derived suffix; existing aliases are not reassigned.
+Explicit aliases follow payday's lowercase-letter/alphanumeric/hyphen grammar
+and are case-normalized. A duplicate explicit alias is rejected.
+
+```sh
+cxz project add --name "My Web App" --alias web .  # register only; no container
+cxz up --no-attach web
+cxz project set --name "Production Web" --alias prod web
+cxz exec prod -- pwd
+cxz logs prod
+cxz attach prod
+cxz down prod
+# Name/alias can also be supplied during new/up/recreate:
+cxz new --name "My Web App" --alias web .
+```
+
+`cxz projects` exposes both fields; the TUI shows alias and display name. Project
+arguments accept an exact ID/path, then an alias, then an unambiguous display
+name, in that order. Display names can contain spaces and need not be unique.
+Shell completion offers handles for project/up/new/down/recreate/attach/exec/shell/login/logs.
+Renaming does not change the project/session/container identity, and changing a
+display name does not implicitly change its alias. Metadata lives in the payday
+resource database and survives server/container restarts; back up state volumes.
+
 | Key | Action |
 |---|---|
 | Ctrl+N, path, Enter | New session; Tab switches Claude/Codex while entering path |
@@ -127,7 +154,8 @@ packages. Definitions are in `proto/cxz`; lifecycle extensions are in
   separate, durable conversation journal with sequence cursors.
 
 Both resources are payday `global` entities: no fabricated tenant or user.
-General Patch/Apply/Erase is closed; runtime status is not caller-writable.
+Project Patch permits only name/alias/description with optimistic version checks.
+Other general Patch/Apply/Erase is closed; runtime status is not caller-writable.
 CLI/TUI and manager-to-project traffic use `cxz.ProjectService` and
 `cxz.SessionService`. The API has no version suffix or compatibility aliases.
 `api/` and `internal/runtimeproto/` define internal runtime view models in the

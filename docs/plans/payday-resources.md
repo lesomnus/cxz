@@ -13,7 +13,8 @@
   프로젝트 capability 경계를 제거하지 않는다. tenant 생략이 공개 접근을 뜻하지 않는다.
 - Project=7, Session=8 domain UUID를 사용한다. 기존 runtime ID·vendor ID·저널은
   별도 유지하며 기존 rc.1 데이터를 삭제하거나 ID를 바꿔서 새 대화로 만들지 않는다.
-- 일반 Patch/Apply/Erase는 생명주기 규칙을 우회하지 못하게 외부에서 닫는다.
+- Project Patch는 version 조건을 가진 name/alias/desc 수정만 허용한다.
+  그 외 일반 Patch/Apply/Erase는 생명주기 규칙을 우회하지 못하게 외부에서 닫는다.
   Docker 작업은 DB transaction 안에 넣지 않는다. 리소스 의도와 실행 결과를 분리한다.
 
 ## 구현 순서

@@ -23,6 +23,12 @@ type ProjectCreate struct {
 	hooks    []Hook
 }
 
+// SetAlias sets the "alias" field.
+func (_c *ProjectCreate) SetAlias(v string) *ProjectCreate {
+	_c.mutation.SetAlias(v)
+	return _c
+}
+
 // SetName sets the "name" field.
 func (_c *ProjectCreate) SetName(v string) *ProjectCreate {
 	_c.mutation.SetName(v)
@@ -147,6 +153,9 @@ func (_c *ProjectCreate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (_c *ProjectCreate) check() error {
+	if _, ok := _c.mutation.Alias(); !ok {
+		return &ValidationError{Name: "alias", err: errors.New(`ent: missing required field "Project.alias"`)}
+	}
 	if _, ok := _c.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Project.name"`)}
 	}
@@ -206,6 +215,10 @@ func (_c *ProjectCreate) createSpec() (*Project, *sqlgraph.CreateSpec, error) {
 	if id, ok := _c.mutation.Id(); ok {
 		_node.Id = id
 		_spec.Id.Value = &id
+	}
+	if value, ok := _c.mutation.Alias(); ok {
+		_spec.SetField(project.FieldAlias, field.TypeString, value)
+		_node.Alias = value
 	}
 	if value, ok := _c.mutation.Name(); ok {
 		_spec.SetField(project.FieldName, field.TypeString, value)

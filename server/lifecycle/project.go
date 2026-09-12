@@ -4,9 +4,11 @@ import (
 	"context"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/resource"
+	"github.com/lesomnus/payday/slug"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"path/filepath"
 )
 
 type ProjectServer struct {
@@ -24,23 +26,59 @@ func (s ProjectServer) Add(ctx context.Context, r *resource.ProjectAddRequest) (
 	if r.GetWorkspace() == "" {
 		return nil, status.Error(codes.InvalidArgument, "workspace required")
 	}
+	if r.GetName() != "" {
+		if err := validName(r.GetName()); err != nil {
+			return nil, err
+		}
+	}
+	s.shared.mu.Lock()
+	defer s.shared.mu.Unlock()
+	// Reject malformed/occupied explicit aliases before registering runtime intent.
+	if r.GetAlias() != "" {
+		a, err := slug.ParseAlias(r.GetAlias())
+		if err != nil {
+			return nil, err
+		}
+		owner, err := s.Next().Project().Get(ctx, resource.ProjectGetRequest_builder{Ref: resource.ProjectRef_builder{Alias: &a}.Build(), Select: resource.ProjectSelect_builder{All: ptr(true)}.Build()}.Build())
+		if err != nil && status.Code(err) != codes.NotFound {
+			return nil, err
+		}
+		path := r.GetWorkspace()
+		if absolute, e := filepath.Abs(path); e == nil {
+			if canonical, e := filepath.EvalSymlinks(absolute); e == nil {
+				path = canonical
+			}
+		}
+		if owner != nil && owner.GetWorkspace() != path && owner.GetRuntimeId() != r.GetWorkspace() {
+			return nil, status.Error(codes.AlreadyExists, "project alias is already in use")
+		}
+	}
 	p, err := s.shared.runtime.RegisterProject(ctx, r.GetWorkspace(), r.GetConfig())
 	if err != nil {
 		return nil, err
 	}
-	s.shared.mu.Lock()
-	defer s.shared.mu.Unlock()
+	if r.GetName() != "" {
+		p.Name = r.GetName()
+	}
+	alias, err := s.alias(ctx, p.Id, p.Name, r.GetAlias())
+	if err != nil {
+		return nil, err
+	}
+	p.Alias = alias
 	v, err := s.saveProject(ctx, p)
 	if err != nil {
 		return nil, err
 	}
-	if r.GetName() != "" || r.GetDesc() != "" {
+	if r.GetName() != "" || r.GetDesc() != "" || r.GetAlias() != "" {
 		patch := resource.ProjectPatchRequest_builder{Ref: projectRef(p.Id), DateUpdatedForce: ptr(true)}.Build()
 		if r.GetName() != "" {
 			patch.SetName(r.GetName())
 		}
 		if r.GetDesc() != "" {
 			patch.SetDesc(r.GetDesc())
+		}
+		if r.GetAlias() != "" {
+			patch.SetAlias(alias)
 		}
 		return s.Next().Project().Patch(ctx, patch)
 	}
@@ -66,8 +104,32 @@ func (s ProjectServer) Watch(r *resource.ProjectWatchRequest, stream grpc.Server
 	}
 	return s.ProjectServiceServer.Watch(r, stream)
 }
-func (s ProjectServer) Patch(context.Context, *resource.ProjectPatchRequest) (*resource.Project, error) {
-	return nil, closed()
+func (s ProjectServer) Patch(ctx context.Context, r *resource.ProjectPatchRequest) (*resource.Project, error) {
+	if r.HasStatus() || r.HasStatusNull() || r.HasConfig() || r.HasListed() || r.GetDateUpdatedForce() {
+		return nil, closed()
+	}
+	if r.HasName() {
+		if err := validName(r.GetName()); err != nil {
+			return nil, err
+		}
+	}
+	s.shared.mu.Lock()
+	defer s.shared.mu.Unlock()
+	if r.HasAlias() {
+		if r.GetAlias() == "" {
+			return nil, status.Error(codes.InvalidArgument, "alias cannot be empty")
+		}
+		p, err := s.ProjectServiceServer.Get(ctx, resource.ProjectGetRequest_builder{Ref: r.GetRef(), Select: resource.ProjectSelect_builder{All: ptr(true)}.Build()}.Build())
+		if err != nil {
+			return nil, err
+		}
+		a, err := s.alias(ctx, p.GetRuntimeId(), p.GetName(), r.GetAlias())
+		if err != nil {
+			return nil, err
+		}
+		r.SetAlias(a)
+	}
+	return s.ProjectServiceServer.Patch(ctx, r)
 }
 func (s ProjectServer) Apply(context.Context, *resource.ProjectApplyRequest) (*resource.Project, error) {
 	return nil, closed()

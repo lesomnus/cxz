@@ -397,7 +397,14 @@ func (m *model) View() string {
 		if i == m.selected {
 			mark = ">"
 		}
-		fmt.Fprintf(&b, "%s %.8s %s/%s [%s] %s\n", mark, s.Id, safeText(s.Agent), safeText(s.Model), safeText(s.State), safeText(s.Workspace))
+		label := s.Workspace
+		if s.ProjectName != "" {
+			label = s.ProjectName
+		}
+		if s.ProjectAlias != "" {
+			label = s.ProjectAlias + " · " + label
+		}
+		fmt.Fprintf(&b, "%s %.8s %s/%s [%s] %s\n", mark, s.Id, safeText(s.Agent), safeText(s.Model), safeText(s.State), safeText(label))
 	}
 	b.WriteString("Tab sessions/chat · Ctrl+N new · F2 allow · F3 deny · F4 interrupt · Ctrl+R resume\n")
 	if s := m.current(); s != nil && len(s.Pending) > 0 {

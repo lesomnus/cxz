@@ -125,6 +125,7 @@ var (
 	// ProjectColumns holds the columns for the "project" table.
 	ProjectColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "alias", Type: field.TypeString},
 		{Name: "name", Type: field.TypeString},
 		{Name: "desc", Type: field.TypeString},
 		{Name: "workspace", Type: field.TypeString},
@@ -145,12 +146,20 @@ var (
 			{
 				Name:    "project_date_created_id",
 				Unique:  false,
-				Columns: []*schema.Column{ProjectColumns[8], ProjectColumns[0]},
+				Columns: []*schema.Column{ProjectColumns[9], ProjectColumns[0]},
+			},
+			{
+				Name:    "project_alias",
+				Unique:  true,
+				Columns: []*schema.Column{ProjectColumns[1]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "date_erased IS NULL",
+				},
 			},
 			{
 				Name:    "project_workspace",
 				Unique:  true,
-				Columns: []*schema.Column{ProjectColumns[3]},
+				Columns: []*schema.Column{ProjectColumns[4]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},
@@ -158,7 +167,7 @@ var (
 			{
 				Name:    "project_runtime_id",
 				Unique:  true,
-				Columns: []*schema.Column{ProjectColumns[5]},
+				Columns: []*schema.Column{ProjectColumns[6]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},

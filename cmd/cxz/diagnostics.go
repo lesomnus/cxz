@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/dockerx"
+	"github.com/lesomnus/cxz/internal/projectref"
 	"github.com/lesomnus/cxz/internal/resourceclient"
 	"github.com/lesomnus/cxz/internal/settings"
 	"github.com/lesomnus/cxz/internal/transport"
@@ -107,15 +108,11 @@ func logsCommand() *xli.Command {
 			if err != nil {
 				return err
 			}
-			id := ""
-			for _, p := range list.Projects {
-				if p.Id == name || p.Name == name || p.Workspace == name {
-					if id != "" {
-						return fmt.Errorf("ambiguous project")
-					}
-					id = p.Id
-				}
+			p, err := projectref.Resolve(list.Projects, name)
+			if err != nil {
+				return err
 			}
+			id := p.Id
 			if !regexp.MustCompile(`^[a-f0-9]{24}$`).MatchString(id) {
 				return fmt.Errorf("owned project not found; use cxz projects")
 			}

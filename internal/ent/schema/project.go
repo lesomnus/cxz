@@ -22,6 +22,7 @@ func (Project) Fields() []ent.Field {
 		field.Uuid("id").
 			Unique().
 			Immutable(),
+		field.String("alias"),
 		field.String("name"),
 		field.String("desc"),
 		field.String("workspace").
@@ -46,6 +47,9 @@ func (Project) Fields() []ent.Field {
 func (Project) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("date_created", "id"),
+		index.Fields("alias").
+			Unique().
+			Annotations(entsql.IndexWhere("date_erased IS NULL")),
 		index.Fields("workspace").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),

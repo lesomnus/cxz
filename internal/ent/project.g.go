@@ -11,6 +11,7 @@ import (
 func (e *Project) Proto() *resource.Project {
 	x := &resource.Project{}
 	x.SetId(e.Id[:])
+	x.SetAlias(e.Alias)
 	x.SetName(e.Name)
 	x.SetDesc(e.Desc)
 	x.SetWorkspace(e.Workspace)

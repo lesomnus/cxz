@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/projectref"
 	"github.com/lesomnus/cxz/resource"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -12,7 +13,7 @@ import (
 
 func project(p *resource.Project) *api.Project {
 	st := p.GetStatus()
-	return &api.Project{Id: p.GetRuntimeId(), Workspace: p.GetWorkspace(), Name: p.GetName(), Config: p.GetConfig(), State: st.GetState(), ContainerId: st.GetContainerId(), RemoteUser: st.GetRemoteUser(), RemoteWorkspace: st.GetRemoteWorkspace(), ProvisionState: st.GetProvisionState(), ProvisionStep: st.GetProvisionStep(), ProvisionAttempt: st.GetProvisionAttempt(), Error: st.GetError()}
+	return &api.Project{Id: p.GetRuntimeId(), Alias: p.GetAlias(), Workspace: p.GetWorkspace(), Name: p.GetName(), Config: p.GetConfig(), State: st.GetState(), ContainerId: st.GetContainerId(), RemoteUser: st.GetRemoteUser(), RemoteWorkspace: st.GetRemoteWorkspace(), ProvisionState: st.GetProvisionState(), ProvisionStep: st.GetProvisionStep(), ProvisionAttempt: st.GetProvisionAttempt(), Error: st.GetError()}
 }
 func (c *Client) Projects(ctx context.Context, _ *api.Empty, opts ...grpc.CallOption) (*api.ProjectList, error) {
 	out := &api.ProjectList{}
@@ -45,7 +46,7 @@ func (c *Client) Projects(ctx context.Context, _ *api.Empty, opts ...grpc.CallOp
 // Add resolves the manager's workspace path, runtime ID or unambiguous name.
 // Session selection is a client workflow; Project.Up never creates a session.
 func (c *Client) Open(ctx context.Context, r *api.ProjectRequest, opts ...grpc.CallOption) (*api.Session, error) {
-	p, err := c.projects.Add(ctx, resource.ProjectAddRequest_builder{Workspace: r.Workspace, Config: r.Config}.Build(), opts...)
+	p, err := c.openProject(ctx, r, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -145,21 +146,11 @@ func (c *Client) Down(ctx context.Context, r *api.ProjectRequest, opts ...grpc.C
 	if err != nil {
 		return nil, err
 	}
-	id := ""
-	for _, p := range ps.Projects {
-		if p.State == "foreign" {
-			continue
-		}
-		if p.Id == r.Workspace || p.Workspace == r.Workspace || p.Name == r.Workspace {
-			if id != "" && id != p.Id {
-				return nil, fmt.Errorf("ambiguous project %q", r.Workspace)
-			}
-			id = p.Id
-		}
+	p, err := projectref.Resolve(ps.Projects, r.Workspace)
+	if err != nil {
+		return nil, err
 	}
-	if id == "" {
-		return nil, status.Error(codes.NotFound, "project not found")
-	}
+	id := p.Id
 	_, err = c.projects.Down(ctx, resource.ProjectControl_builder{Ref: pr(id), ClientId: &r.ClientId}.Build(), opts...)
 	if err != nil {
 		return nil, err

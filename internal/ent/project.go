@@ -19,6 +19,8 @@ type Project struct {
 	config `json:"-"`
 	// Id of the ent.
 	Id uuid.UUID `json:"id,omitempty"`
+	// Alias holds the value of the "alias" field.
+	Alias string `json:"alias,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// Desc holds the value of the "desc" field.
@@ -49,7 +51,7 @@ func (*Project) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case project.FieldListed:
 			values[i] = new(sql.NullBool)
-		case project.FieldName, project.FieldDesc, project.FieldWorkspace, project.FieldConfig, project.FieldRuntimeId:
+		case project.FieldAlias, project.FieldName, project.FieldDesc, project.FieldWorkspace, project.FieldConfig, project.FieldRuntimeId:
 			values[i] = new(sql.NullString)
 		case project.FieldDateUpdated, project.FieldDateErased, project.FieldDateCreated:
 			values[i] = new(sql.NullTime)
@@ -77,6 +79,12 @@ func (_m *Project) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
 				_m.Id = *value
+			}
+		case project.FieldAlias:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field alias", values[i])
+			} else if value.Valid {
+				_m.Alias = value.String
 			}
 		case project.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -175,6 +183,9 @@ func (_m *Project) String() string {
 	var builder strings.Builder
 	builder.WriteString("Project(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", _m.Id))
+	builder.WriteString("alias=")
+	builder.WriteString(_m.Alias)
+	builder.WriteString(", ")
 	builder.WriteString("name=")
 	builder.WriteString(_m.Name)
 	builder.WriteString(", ")

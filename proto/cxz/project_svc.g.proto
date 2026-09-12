@@ -44,6 +44,7 @@ service ProjectService {
 
 message ProjectAddRequest {
   bytes id = 1;
+  string alias = 4 [features.field_presence = IMPLICIT];
   string name = 5 [features.field_presence = IMPLICIT];
   string desc = 6 [features.field_presence = IMPLICIT];
   string workspace = 8 [features.field_presence = IMPLICIT];
@@ -62,6 +63,7 @@ message ProjectGetRequest {
 message ProjectRef {
   oneof key {
     bytes id = 1;
+    string alias = 4;
     string workspace = 8;
     string runtime_id = 10;
   }
@@ -69,6 +71,7 @@ message ProjectRef {
 
 message ProjectSelect {
   bool all = 1;
+  bool alias = 4;
   bool name = 5;
   bool desc = 6;
   bool workspace = 8;
@@ -83,6 +86,7 @@ message ProjectSelect {
 
 message ProjectPatchRequest {
   ProjectRef ref = 1;
+  string alias = 8;
   string name = 10;
   string desc = 12;
   string config = 18;

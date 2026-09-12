@@ -192,6 +192,8 @@ type Session struct {
 	ProjectId     string                 `protobuf:"bytes,11,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
 	Model         string                 `protobuf:"bytes,12,opt,name=model,proto3" json:"model,omitempty"`
 	CreateId      string                 `protobuf:"bytes,13,opt,name=create_id,json=createId,proto3" json:"create_id,omitempty"`
+	ProjectName   string                 `protobuf:"bytes,14,opt,name=project_name,json=projectName,proto3" json:"project_name,omitempty"`
+	ProjectAlias  string                 `protobuf:"bytes,15,opt,name=project_alias,json=projectAlias,proto3" json:"project_alias,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -313,6 +315,20 @@ func (x *Session) GetModel() string {
 func (x *Session) GetCreateId() string {
 	if x != nil {
 		return x.CreateId
+	}
+	return ""
+}
+
+func (x *Session) GetProjectName() string {
+	if x != nil {
+		return x.ProjectName
+	}
+	return ""
+}
+
+func (x *Session) GetProjectAlias() string {
+	if x != nil {
+		return x.ProjectAlias
 	}
 	return ""
 }
@@ -833,6 +849,8 @@ type ProjectRequest struct {
 	ClientId      string                 `protobuf:"bytes,8,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
 	Model         string                 `protobuf:"bytes,9,opt,name=model,proto3" json:"model,omitempty"`
 	PrepareOnly   bool                   `protobuf:"varint,10,opt,name=prepare_only,json=prepareOnly,proto3" json:"prepare_only,omitempty"`
+	Name          string                 `protobuf:"bytes,11,opt,name=name,proto3" json:"name,omitempty"`
+	Alias         string                 `protobuf:"bytes,12,opt,name=alias,proto3" json:"alias,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -937,6 +955,20 @@ func (x *ProjectRequest) GetPrepareOnly() bool {
 	return false
 }
 
+func (x *ProjectRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *ProjectRequest) GetAlias() string {
+	if x != nil {
+		return x.Alias
+	}
+	return ""
+}
+
 type Project struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Id               string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -951,6 +983,7 @@ type Project struct {
 	ProvisionState   string                 `protobuf:"bytes,10,opt,name=provision_state,json=provisionState,proto3" json:"provision_state,omitempty"`
 	ProvisionStep    string                 `protobuf:"bytes,11,opt,name=provision_step,json=provisionStep,proto3" json:"provision_step,omitempty"`
 	ProvisionAttempt uint64                 `protobuf:"varint,12,opt,name=provision_attempt,json=provisionAttempt,proto3" json:"provision_attempt,omitempty"`
+	Alias            string                 `protobuf:"bytes,13,opt,name=alias,proto3" json:"alias,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -1069,6 +1102,13 @@ func (x *Project) GetProvisionAttempt() uint64 {
 	return 0
 }
 
+func (x *Project) GetAlias() string {
+	if x != nil {
+		return x.Alias
+	}
+	return ""
+}
+
 type ProjectList struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Projects      []*Project             `protobuf:"bytes,1,rep,name=projects,proto3" json:"projects,omitempty"`
@@ -1127,7 +1167,7 @@ const file_cxz_proto_rawDesc = "" +
 	"\x05model\x18\x05 \x01(\tR\x05model\"\x1c\n" +
 	"\n" +
 	"SessionRef\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"\xe7\x02\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"\xaf\x03\n" +
 	"\aSession\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1c\n" +
 	"\tworkspace\x18\x02 \x01(\tR\tworkspace\x12\x14\n" +
@@ -1144,7 +1184,9 @@ const file_cxz_proto_rawDesc = "" +
 	"\n" +
 	"project_id\x18\v \x01(\tR\tprojectId\x12\x14\n" +
 	"\x05model\x18\f \x01(\tR\x05model\x12\x1b\n" +
-	"\tcreate_id\x18\r \x01(\tR\bcreateId\"?\n" +
+	"\tcreate_id\x18\r \x01(\tR\bcreateId\x12!\n" +
+	"\fproject_name\x18\x0e \x01(\tR\vprojectName\x12#\n" +
+	"\rproject_alias\x18\x0f \x01(\tR\fprojectAlias\"?\n" +
 	"\vSessionList\x120\n" +
 	"\bsessions\x18\x01 \x03(\v2\x14.cxz.runtime.SessionR\bsessions\"n\n" +
 	"\x05Input\x12\x1d\n" +
@@ -1187,7 +1229,7 @@ const file_cxz_proto_rawDesc = "" +
 	"\apayload\x18\b \x01(\fR\apayload\"8\n" +
 	"\n" +
 	"EventBatch\x12*\n" +
-	"\x06events\x18\x01 \x03(\v2\x12.cxz.runtime.EventR\x06events\"\xb0\x02\n" +
+	"\x06events\x18\x01 \x03(\v2\x12.cxz.runtime.EventR\x06events\"\xda\x02\n" +
 	"\x0eProjectRequest\x12\x1c\n" +
 	"\tworkspace\x18\x01 \x01(\tR\tworkspace\x12\x14\n" +
 	"\x05agent\x18\x02 \x01(\tR\x05agent\x12\x16\n" +
@@ -1200,7 +1242,9 @@ const file_cxz_proto_rawDesc = "" +
 	"\tclient_id\x18\b \x01(\tR\bclientId\x12\x14\n" +
 	"\x05model\x18\t \x01(\tR\x05model\x12!\n" +
 	"\fprepare_only\x18\n" +
-	" \x01(\bR\vprepareOnly\"\xfb\x02\n" +
+	" \x01(\bR\vprepareOnly\x12\x12\n" +
+	"\x04name\x18\v \x01(\tR\x04name\x12\x14\n" +
+	"\x05alias\x18\f \x01(\tR\x05alias\"\x91\x03\n" +
 	"\aProject\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1c\n" +
 	"\tworkspace\x18\x02 \x01(\tR\tworkspace\x12\x12\n" +
@@ -1215,7 +1259,8 @@ const file_cxz_proto_rawDesc = "" +
 	"\x0fprovision_state\x18\n" +
 	" \x01(\tR\x0eprovisionState\x12%\n" +
 	"\x0eprovision_step\x18\v \x01(\tR\rprovisionStep\x12+\n" +
-	"\x11provision_attempt\x18\f \x01(\x04R\x10provisionAttempt\"?\n" +
+	"\x11provision_attempt\x18\f \x01(\x04R\x10provisionAttempt\x12\x14\n" +
+	"\x05alias\x18\r \x01(\tR\x05alias\"?\n" +
 	"\vProjectList\x120\n" +
 	"\bprojects\x18\x01 \x03(\v2\x14.cxz.runtime.ProjectR\bprojects2\xe4\x05\n" +
 	"\bSessions\x12:\n" +

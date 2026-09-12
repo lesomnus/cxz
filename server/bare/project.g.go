@@ -104,6 +104,7 @@ func (s ProjectServiceServer) Add(ctx context.Context, req *resource.ProjectAddR
 	} else {
 		q.SetId(v)
 	}
+	q.SetAlias(req.GetAlias())
 	q.SetName(req.GetName())
 	q.SetDesc(req.GetDesc())
 	q.SetWorkspace(req.GetWorkspace())
@@ -185,6 +186,9 @@ func ProjectSelectedFields(m *resource.ProjectSelect) []string {
 	vs := make([]string, 0, len(project.Columns))
 	{
 		vs = append(vs, project.FieldId)
+	}
+	if m.GetAlias() {
+		vs = append(vs, project.FieldAlias)
 	}
 	if m.GetName() {
 		vs = append(vs, project.FieldName)
@@ -281,7 +285,7 @@ func ProjectGetKey(ctx context.Context, db *ent.Client, ref *resource.ProjectRef
 var projectOrmEntity = ormpatch.MustEntityOf(resource.File_cxz_project_proto, "Project")
 
 var projectPatchColumns = entpatch.Columns{
-	1: project.FieldId, 5: project.FieldName, 6: project.FieldDesc, 8: project.FieldWorkspace, 9: project.FieldConfig, 10: project.FieldRuntimeId, 13: project.FieldDateUpdated, 14: project.FieldDateErased, 15: project.FieldDateCreated, 16: project.FieldStatus, 17: project.FieldListed}
+	1: project.FieldId, 4: project.FieldAlias, 5: project.FieldName, 6: project.FieldDesc, 8: project.FieldWorkspace, 9: project.FieldConfig, 10: project.FieldRuntimeId, 13: project.FieldDateUpdated, 14: project.FieldDateErased, 15: project.FieldDateCreated, 16: project.FieldStatus, 17: project.FieldListed}
 
 func (s ProjectServiceServer) Apply(ctx context.Context, req *resource.ProjectApplyRequest) (*resource.Project, error) {
 	if !req.HasPatch() {
@@ -482,6 +486,8 @@ func pickProject(req *resource.ProjectRef) (predicate.Project, error) {
 		} else {
 			return project.IdEQ(v), nil
 		}
+	case resource.ProjectRef_Alias_case:
+		return project.AliasEQ(req.GetAlias()), nil
 	case resource.ProjectRef_Workspace_case:
 		return project.WorkspaceEQ(req.GetWorkspace()), nil
 	case resource.ProjectRef_RuntimeId_case:
