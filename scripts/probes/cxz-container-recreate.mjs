@@ -31,7 +31,7 @@ function start(n) {
   const name = `${prefix}-${n}`; containers.add(name);
   docker(['run', '-d', '--name', name, '--label', label, '--user', '1000:1000', '--cap-drop', 'ALL', '--security-opt', 'no-new-privileges', '--network', 'none',
     '--mount', `type=bind,source=${repo},target=/app,readonly`, ...mounts,
-    image, '/app/bin/cxz', '--state', '/cxz-state', '--agent', '/app/bin/fake-claude', 'serve']);
+    image, '/app/bin/cxz', '--state', '/cxz-state', 'serve', '--agent', '/app/bin/fake-claude']);
   return name;
 }
 function cli(name, ...args) {
@@ -50,9 +50,9 @@ try {
   const provision=`${prefix}-provision`;containers.add(provision);
   docker(['run','--name',provision,'--label',label,'--user','0','--cap-drop','ALL','--cap-add','CHOWN','--network','none',...mounts,image,'chown','1000:1000','/cxz-state','/cxz-work']);removeContainer(provision);
   let name=start(1);await ready(name);
-  cli(name,'account','add','--agent','claude','recovery-test');
+  cli(name,'account','add','claude','recovery-test');
   execFileSync('docker',['exec','-i',name,'/app/bin/cxz','--state','/cxz-state','_account-import','recovery-test','claude'],{input:JSON.stringify({claudeAiOauth:{accessToken:'synthetic-recovery-only'}}),stdio:['pipe','pipe','pipe']});
-  let s=cli(name,'_new-local','--account','recovery-test','/cxz-work');const id=s.id;assert.equal(s.account,'recovery-test');
+  let s=cli(name,'_new-local','recovery-test','/cxz-work');const id=s.id;assert.equal(s.account,'recovery-test');
   cli(name,'send',id,'hello');s=await untilState(name,id,'idle');const vendor=s.vendor_id;
   check('nonroot_app_session_and_conversation');
   cli(name,'send',id,'approval recovery');s=await untilState(name,id,'waiting_input');const oldRun=s.run_id,request=s.pending[0].request_id,last=s.last_seq;

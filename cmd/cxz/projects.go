@@ -53,7 +53,7 @@ func selectProjectAccount(ctx context.Context, resources *resourceclient.Client,
 		}
 	}
 	if len(choices) == 0 {
-		return "", fmt.Errorf("no accounts; run cxz account add --agent codex NAME, then cxz account login NAME")
+		return "", fmt.Errorf("no accounts; run cxz account add codex NAME, then cxz account login NAME")
 	}
 	for i, a := range choices {
 		fmt.Fprintf(c.ErrWriter, "%d) %s · %s · %s\n", i+1, a.GetAlias(), a.GetAgent(), a.GetName())
@@ -75,7 +75,7 @@ func newProjectCommand(name string) *xli.Command {
 		config.Handler = flg.OnTab[string](func(_ context.Context, t tab.Tab) error { t.Files(""); return nil })
 		c.Flags = flg.Flags{agentFlag(""), stringFlag("model", "Model ID/alias for a new session (persisted on resume)", ""), config, switchFlag("no-attach", "Return JSON without opening TUI"), switchFlag("trust-config", "Trust elevated settings and host initialization")}
 		c.Flags = append(c.Flags, stringFlag("name", "Project display name", ""), stringFlag("alias", "Unique short project handle (generated when omitted)", ""))
-		c.Flags = append(c.Flags, stringFlag("account", "Registered authentication profile (fixed for the session)", ""))
+		c.Flags = append(c.Flags, stringFlag("account", "Registered profile; required for new sessions in scripts, selected interactively or inherited on resume", ""))
 	}
 	if name == "recreate" {
 		c.Flags = append(c.Flags, switchFlag("yes", "Confirm writable-layer loss and editor disconnection"))
@@ -169,9 +169,6 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 	}
 	model := flg.MustGet[string](c, "model")
 	cfg := settings.From(ctx)
-	if command == "new" && agent == "" {
-		agent = cfg.Agent
-	}
 	config := flg.MustGet[string](c, "config")
 	detach := flg.MustGet[bool](c, "no-attach")
 	trust := flg.MustGet[bool](c, "trust-config")
@@ -216,14 +213,6 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 		if e != nil {
 			return e
 		}
-	}
-	if command == "new" && agent == "" && terminal(c) {
-		fmt.Fprint(c.ErrWriter, "Agent [claude/codex] (claude): ")
-		v, e := bufio.NewReader(c.ReadCloser).ReadString('\n')
-		if e != nil {
-			return e
-		}
-		agent = strings.TrimSpace(v)
 	}
 	if command == "new" && model == "" {
 		model = cfg.Model(agent)
@@ -329,9 +318,6 @@ func projectExec(ctx context.Context, client api.SessionsClient, c *xli.Command)
 	op := c.Name
 	name := arg.MustGet[string](c, "PROJECT")
 	var command []string
-	if op == "login" {
-		return fmt.Errorf("project-wide login is disabled; use cxz account add --agent codex NAME and cxz account login NAME")
-	}
 	command, _ = arg.Get[[]string](c, "COMMAND")
 	if op == "exec" && len(command) == 0 {
 		return fmt.Errorf("exec requires PROJECT -- COMMAND...")

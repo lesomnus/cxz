@@ -3,7 +3,7 @@
 ## 설정과 진단
 
 ```sh
-cxz config set agent codex
+cxz account add codex work-codex
 cxz config set codex-model MODEL_ID
 cxz config set claude-model MODEL_ID_OR_ALIAS
 cxz config
@@ -89,7 +89,7 @@ digest를 사용하면 tag 변경과 무관하게 이미지를 고정할 수 있
 ```sh
 cxz install --image ghcr.io/lesomnus/cxz:vX.Y.Z --workspace-root /absolute/projects
 cxz doctor
-cxz new --agent codex .
+cxz new --account work-codex .
 ```
 
 호스트와 Docker engine 아키텍처가 다르면 `--image`로 대응 platform 이미지를 사용한다.
@@ -99,7 +99,7 @@ cxz new --agent codex .
 ## 업데이트와 롤백
 
 ```sh
-cxz update --image ghcr.io/lesomnus/cxz:vX.Y.Z
+cxz update ghcr.io/lesomnus/cxz:vX.Y.Z
 cxz doctor
 cxz rollback
 ```

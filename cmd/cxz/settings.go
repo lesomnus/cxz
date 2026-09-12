@@ -25,7 +25,7 @@ func settingsCommand() *xli.Command {
 		if op == "set" {
 			args = append(args, stringArg("VALUE", false))
 		}
-		c.Commands = append(c.Commands, &xli.Command{Name: op, Brief: "Preference keys: agent, claude-model, codex-model", Args: args, Handler: onRun(func(ctx context.Context, c *xli.Command) error {
+		c.Commands = append(c.Commands, &xli.Command{Name: op, Brief: "Model defaults: claude-model, codex-model (unset agent cleans up the obsolete preference)", Args: args, Handler: onRun(func(ctx context.Context, c *xli.Command) error {
 			root := stateFrom(ctx)
 			if err := os.MkdirAll(root, 0700); err != nil {
 				return err

@@ -31,10 +31,11 @@ func accountCommands() *xli.Command {
 			c.Args = arg.Args{stringArg("ACCOUNT", false)}
 		}
 		if op == "add" {
-			c.Flags = flg.Flags{agentFlag(""), stringFlag("name", "Display name", ""), stringFlag("auth-backend", "Authentication strategy (agent default when omitted)", "")}
+			c.Args = arg.Args{agentArg(), stringArg("ACCOUNT", false)}
+			c.Flags = flg.Flags{stringFlag("name", "Display name (Account alias when omitted)", ""), stringFlag("auth-backend", "Strategy (codex: brokered-access-token; claude: project-local-oauth)", "")}
 		}
 		if op == "login" || op == "status" {
-			c.Flags = flg.Flags{stringFlag("project", "Project alias or workspace (defaults to current directory)", ".")}
+			c.Flags = flg.Flags{stringFlag("project", "For project-local OAuth only; defaults to current directory. Central login needs no project", ".")}
 		}
 		parent.Commands = append(parent.Commands, c)
 	}
@@ -63,7 +64,7 @@ func accountCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 	}
 	alias := arg.MustGet[string](c, "ACCOUNT")
 	if c.Name == "add" {
-		a, err := resources.Accounts.Add(ctx, resource.AccountAddRequest_builder{Alias: alias, Name: flg.MustGet[string](c, "name"), Agent: flg.MustGet[string](c, "agent"), AuthBackend: flg.MustGet[string](c, "auth-backend")}.Build())
+		a, err := resources.Accounts.Add(ctx, resource.AccountAddRequest_builder{Alias: alias, Name: flg.MustGet[string](c, "name"), Agent: arg.MustGet[string](c, "AGENT"), AuthBackend: flg.MustGet[string](c, "auth-backend")}.Build())
 		if err != nil {
 			return err
 		}
@@ -99,6 +100,9 @@ func accountCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 		return err
 	}
 	if backend.Info().Workflow == "account-login" {
+		if _, set := flg.Get[string](c, "project"); set {
+			return fmt.Errorf("central account login/status does not accept --project; omit it")
+		}
 		install, err := transport.Load(stateFrom(ctx))
 		if err != nil {
 			return err

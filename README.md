@@ -15,8 +15,8 @@ arm64 runtime acceptance remain unverified. See its release notes before use.
 ```sh
 CGO_ENABLED=0 go build -o bin/cxz ./cmd/cxz
 bin/cxz install --workspace-root /absolute/directory/containing/your/projects
-bin/cxz account add --agent codex personal-codex
-bin/cxz account login personal-codex   # login for current project (prepares it)
+bin/cxz account add codex personal-codex
+bin/cxz account login personal-codex   # central Codex login; no project needed
 bin/cxz new --account personal-codex . # prepares project and opens TUI
 ```
 
@@ -34,7 +34,7 @@ features and hooks delegate to the official devcontainer CLI.
 Register separate profiles for personal/company subscriptions:
 
 ```sh
-bin/cxz account add --agent codex --name "Company Codex" work-codex
+bin/cxz account add --name "Company Codex" codex work-codex
 bin/cxz account login work-codex
 bin/cxz account list
 bin/cxz account backends             # supported agent/auth workflow mappings
@@ -97,8 +97,10 @@ Use `cxz new --account work-codex .`, not `cxz new . --account work-codex` (the 
 now rejected). Each command has generated `--help`; help and completion need no
 running manager. Enable zsh completion with `source <(bin/cxz completion zsh)`.
 `exec PROJECT -- COMMAND...` preserves everything after `--` as command arguments.
-For local development, prefer `cxz serve --agent /path/to/claude`; the old
-root-level `--agent` / `--claude-config` flags are retained for serve compatibility.
+For local development, use `cxz serve --agent /path/to/claude` (default: `claude`).
+Root-level `--agent`, the unused `--claude-config`, and the disabled project-wide
+`login` command are removed; authenticate with `cxz account login ACCOUNT`.
+See the [complete CLI argument audit](docs/cli.md).
 
 ### Remote Docker
 

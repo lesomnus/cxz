@@ -30,7 +30,7 @@ async function stop(s){await cli('stop',s.id);return until(s.id,'stopped');}
 async function chat(s,prompt='hello'){await cli('send',s.id,prompt);const v=await until(s.id,'idle');assert.equal(v.account,s.account);return v;}
 try{
  for(const alias of ['work','personal']){
-  let account;try{account=await json('account','get',alias);}catch{account=await json('account','add','--agent','codex',alias);}assert.equal(account.authBackend,'brokered-access-token');
+  let account;try{account=await json('account','get',alias);}catch{account=await json('account','add','codex',alias);}assert.equal(account.authBackend,'brokered-access-token');
   await cli('account','login',alias);await cli('account','status',alias);
  }
  for(let i=0;i<2;i++){
