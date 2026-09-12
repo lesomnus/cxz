@@ -50,6 +50,8 @@ cxz account add --auth-backend project-local-oauth claude work-claude
 
 - payday `AccountService.Add/Get/List/Watch`, 전역 unique alias, domain 9.
   Account alias/agent/backend와 Session.account/auth_binding은 변경할 수 없다.
+- CLI new/up/recreate의 계정 선택은 방향키와 하단 검색창을 제공한다. 번호·이름·alias로
+  검색하고 Enter로 확정하며 Esc/Ctrl-C로 취소한다. 스크립트는 `--account ALIAS`를 쓴다.
   AuthBinding도 `Add/Get/List/Watch`를 사용하며 Add 재시도는 같은 binding으로 수렴한다.
   일반 Patch/Apply/Erase는 닫혀 있다. credential_ref는 backend가 만들며 호출자가 지정할 수 없다.
 - `SessionService.Add`는 AccountRef와 AuthBindingRef를 받는다. CLI/TUI가 선택된

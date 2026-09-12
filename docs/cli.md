@@ -49,6 +49,16 @@ new/up/recreate의 `--agent`는 Account/기존 세션에서 결정하므로 선�
 `--no-attach`, `--trust-config`, `--yes`는 명시적인 동작/신뢰/확인 스위치다.
 조건부 필수인 옵션은 대화형 선택이나 재접속을 위해 positional로 바꾸지 않았다.
 
+### 계정 선택 화면
+
+`new`/`up`/`recreate`에서 새 세션의 계정 선택이 필요하면 검색 가능한 TUI를 연다.
+목록에서 ↑/↓(Ctrl-P/Ctrl-N)로 이동하고 Enter로 확정한다. 하단 Search 입력창은
+항상 입력 가능하며 번호·display name·alias의 정확한 일치를 우선하고, 없으면
+이름·alias·agent의 부분 일치로 검색한다. 영문 대소문자는 구분하지 않는다.
+번호는 검색 전 원래 목록 기준이며 중복 이름이나 번호/alias 충돌은 후보를 모두 표시한다.
+검색 결과가 없으면 Enter로 진행하지 않는다. Esc/Ctrl-C는 선택을 취소한다.
+비대화형 실행은 기존대로 `--account ALIAS`를 명시한다.
+
 ## 내부 명령
 
 - `_new-local ACCOUNT WORKSPACE [TITLE]`: 테스트용 로컬 세션 생성. 계정과 경로 필수.
