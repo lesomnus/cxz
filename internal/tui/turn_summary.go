@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/x/ansi"
 	"github.com/lesomnus/cxz/api"
@@ -150,6 +151,9 @@ func turnSummary(e, usageEvent *api.Event, started int64, width int) string {
 		parts = append(parts[:idx], append([]string{costMetric(n)}, parts[idx:]...)...)
 	}
 	var lines []string
+	if e.TimeMs > 0 {
+		parts = append([]string{time.UnixMilli(e.TimeMs).Local().Format("01-02 15:04") + " /"}, parts...)
+	}
 	if e.Text != "completed" && e.Text != "" {
 		detail := root.text("result")
 		if detail == "" {

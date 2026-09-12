@@ -1,5 +1,33 @@
 # 구현 진행 상황
 
+## 2026-09-12 — 입력·명령 팔레트·승인·공급자 사용량/컨텍스트
+
+- Enter 줄바꿈, Ctrl-Enter(CSI-u/xterm)/Ctrl-S 전송. 실제 PTY 키 디코딩과 붙여넣기
+  비전송을 검증했다. Tab/Shift-Tab은 승인→입력→하단 세션의 정방향/역방향이다.
+- 명령 팔레트는 위 빈 줄, 최대 7항목, 양쪽 2항목 scroll margin, fuzzy 검색을 적용했다.
+- 응답 메트릭 앞 완료 시각을 추가하고 working에 경과 시간/Esc 안내, 3초 내 두 번째
+  Esc 중단 확인을 구현했다. 확인은 새 턴으로 승계하지 않는다.
+- internal/agentview에 공급자 승인/한도 표시 모델을 분리했다. 승인 내용 전체 스크롤,
+  원래 요청 행의 결정 색/체크박스 갱신, 결과 한 줄 요약과 /details를 구현했다.
+- 하단 우측은 남은 quota/막대/window/reset을 표시한다. Codex RPC 및 Claude 실험적
+  get_usage와 rate_limit_event를 같은 agent 프로세스로 조회한다. 1분 갱신, 미지원/오래된
+  스냅샷/기한 경과를 구분하며 사용량을 추정하거나 TUI에서 OAuth를 갱신하지 않는다.
+- /context: Claude 내장 보고서, Codex 마지막 토큰 footprint/window. /compact: Claude
+  내장 명령 및 Codex thread/compact/start. 기존 Send의 run/client ID·저널·재전송 방지를
+  유지하고 실제 압축 완료 이벤트를 보관한다. 저널 자체는 압축/삭제하지 않는다.
+- Claude --tools/--disable-slash-commands를 제거했다. 기존 수동 승인·설정/MCP/hook
+  격리는 유지하고 도구 profile 설정은 TODO.md에 남겼다.
+- 전체 Go 테스트(통합 포함), 공급자 정규화/프로토콜 단위 테스트 통과. 실제 유료 모델
+  compaction/OAuth는 실행하지 않았으며 공급자 버전에 따른 quota 미지원은 안전하게 처리한다.
+- PTY에서 Enter/Ctrl-Enter/Shift-Tab/Esc, 긴 한글·emoji paste와 모든 키 시퀀스 분할
+  경계를 검사했다. Bubble Tea의 borrowed unknown-CSI 버퍼를 읽지 않도록 Unix 입력
+  단계에서 키를 변환하며, 파일 descriptor·raw mode·취소 처리를 유지한다.
+- TUI/supervisor/agentview race 및 go vet 통과. native command 통합 fixture에서
+  payday Send→supervisor→대화/압축/사용량 이벤트와 압축 후 기존 저널 보존을 검증했다.
+- 참고: [Codex App Server](https://learn.chatgpt.com/docs/app-server),
+  [Claude SDK commands](https://code.claude.com/docs/en/agent-sdk/slash-commands),
+  @anthropic-ai/claude-agent-sdk 0.3.268의 SDKControlGetUsageResponse/SDKRateLimitInfo 타입.
+
 ## 2026-09-12 — 전체 화면 크기 감지 복구·고정 입력 배경
 
 - IME 커서 보정용 출력 래퍼가 `term.File` 인터페이스를 숨겨 초기 크기 조회와

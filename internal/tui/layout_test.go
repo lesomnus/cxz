@@ -48,10 +48,11 @@ func TestLocalHelpAndBottomSessionBar(t *testing.T) {
 		t.Fatal("static shortcuts/header remain")
 	}
 	m.input.SetValue("/help")
-	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyCtrlS})
 	if cmd != nil || len(c.inputs) != 0 || m.cursor["s"] != 0 {
 		t.Fatal("help must not call agent or advance replay cursor")
 	}
+	m.view.GotoTop()
 	if !strings.Contains(ansi.Strip(m.view.View()), "cxz /help") {
 		t.Fatal("missing local help")
 	}

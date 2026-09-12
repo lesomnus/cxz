@@ -95,7 +95,7 @@ func TestUsageFullJournal(t *testing.T) {
 	m.input = newComposer()
 	m.sessions = []*api.Session{{Id: "s"}}
 	m.input.SetValue("/usage")
-	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyCtrlS})
 	m.Update(cmd())
 	text := m.usageReports["s"]
 	for _, want := range []string{"2 finished turns", "1k", "$0.5000", "00:00:03", "1/2 turns reported"} {

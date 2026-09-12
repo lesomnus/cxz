@@ -168,14 +168,15 @@ resource database and survives server/container restarts; back up state volumes.
 | s (project) | Stop selected session before starting another (one live session per project) |
 | d / Delete, then y (project) | Stop and remove selected session; archived journal retained |
 | Ctrl+Q (session) | Return to project view without stopping the agent |
-| Tab (session) | Input → pending approvals (if any) → session selector → input |
+| Tab / Shift+Tab (session) | Forward / reverse: pending approvals → input → bottom session selector |
 | Enter / Backspace (approval focus) | Allow / deny selected request; questions require `/answer` |
-| Enter | Send message |
-| Alt+Enter / Ctrl+J | Insert newline (multiline paste stays in the editor) |
+| Ctrl+Enter / Ctrl+S | Send message (Ctrl+Enter requires terminal support) |
+| Enter / Alt+Enter / Ctrl+J | Insert newline (multiline paste stays in the editor) |
 | Ctrl+X (session) | Clear the current draft |
 | F2 / F3 | Allow / deny pending approval |
 | `/answer {"question text or id":"answer"}` | Answer question |
 | F4 | Interrupt active turn |
+| Esc twice within 3 seconds | Confirm interruption of the active turn |
 | Ctrl+R | Explicitly resume stopped/offline session |
 | PageUp / PageDown / mouse wheel | Scroll; Ctrl+Home first line, Ctrl+End follow latest |
 | `/approval` | Inspect the selected request's complete payload |
@@ -210,14 +211,28 @@ are reserved for indicators; other content is indented (except the composer).
 Session information occupies a single
 bottom line; persistent shortcut rows are hidden. Type `/help` to display local
 shortcut help in the conversation without sending a prompt to the agent.
-Typing `/` overlays command hints above the editor: arrows select, Tab completes,
-Enter executes, Esc dismisses. `/context` and `/compact` currently display local
-`Unimplemented` responses. `/usage` reads the full session journal and reports
+Enter inserts a newline; Ctrl+Enter sends on terminals emitting CSI-u or xterm
+modified-Enter sequences. Ctrl+S is the portable send alternative (legacy
+terminals cannot distinguish Ctrl+Enter from Enter). Paste never submits.
+Typing `/` overlays fuzzy-matched command hints above the editor: arrows select,
+Tab completes, Ctrl+Enter/Ctrl+S executes, Esc dismisses. A blank row separates
+the overlay from history. It shows at most seven items, with a two-item scroll
+margin on either side where available. `/context` invokes Claude's native report
+or displays Codex's latest reported context footprint/window. `/compact` invokes
+native Claude compaction or Codex `thread/compact/start`; it requires an idle
+session and preserves the cxz journal. `/usage` reads the full session journal and reports
 tokens, cost and elapsed time with per-metric coverage. Claude cumulative costs
 are counted once per run, not repeatedly per turn. This is not account quota or billing.
 
 The status bar starts with one reserved selection cell and a seven-cell session
-alias, followed by agent/model, ◉ account and title (no state badges). Aliases are globally unique,
+alias, followed by agent/model, ◉ account and title (no state badges). The right
+side shows provider-reported **remaining** account quota, eight-cell bars, window
+labels and reset countdowns. Missing quota is `quota —`, old snapshots carry `~`,
+and expired windows show `refresh` rather than assuming they reset to 100%.
+Telemetry uses the already authenticated provider process: Codex rate-limit RPCs
+and Claude's experimental `get_usage`/rate-limit events. It refreshes at startup,
+after turns and every minute; unsupported versions degrade without failing turns.
+Aliases are globally unique,
 random 3–7-letter English words, stored in payday/SQLite and assigned to existing
 sessions on reconciliation. In session selection mode (Tab), press `r` to edit;
 Enter saves and returns to selection, Esc cancels. Custom aliases accept 3–7
@@ -227,11 +242,24 @@ exhaustion is reported explicitly without falling back to numeric identifiers.
 The composer starts with `>` on row 0 and dim single-digit line numbers afterward:
 `1 … 9, 0, 1 …`. The two-cell gutter never grows.
 
-Pending approvals have their own box above the composer. Tab focuses it, arrows
-select, Enter allows and Backspace denies. `/approval` shows the full selected
+Pending approvals have their own box above the composer. Tab follows physical
+order (approvals → composer → bottom session bar); Shift+Tab reverses it. Arrows
+select, Enter allows and Backspace denies. PgUp/PgDn, Ctrl+Up/Down, Ctrl+Home/End
+and the mouse wheel scroll the focused request without truncating its content.
+Provider-specific titles/commands/reasons appear before the full native payload.
+`/approval` shows the full selected
 payload in the conversation; questions need `/answer` rather than an empty approval.
 After a decision, focus returns to input to avoid approving the next request with
 a repeated Enter. A blank row separates the conversation from the notice area.
+Resolved approvals update the original checkbox row in place, with separate
+allowed/denied/canceled colors. Tool results are a single-line summary;
+`/details` shows the latest full result and `session events` retains all events.
+Reply metrics begin with completion time (`MM-DD HH:MM / duration …`). The working
+spinner includes elapsed time and an Esc interrupt hint; press Esc twice within
+three seconds to confirm. F4 remains a direct interrupt shortcut.
+
+Claude uses its default tool set (`--tools` is omitted). This does not enable
+automatic approval. Configurable agent profiles are tracked in [TODO.md](TODO.md).
 
 `/permission full` immediately allows existing and future **known tool, command,
 file and permission requests** for the current run while viewing this session in

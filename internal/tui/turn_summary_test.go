@@ -45,11 +45,11 @@ func TestCodexLastUsageAndMissingMetrics(t *testing.T) {
 	if strings.Contains(text, "99999") || strings.Contains(text, "USD") {
 		t.Fatal("invented/cumulative metrics", text)
 	}
-	if got := turnSummary(e, nil, 0, 80); got != "" {
-		t.Fatal("empty completed turn should be hidden", got)
+	if got := turnSummary(e, nil, 0, 80); !strings.Contains(ansi.Strip(got), "01-01 00:00 /") {
+		t.Fatal("completed turn timestamp missing", got)
 	}
 	e.Payload = []byte(`{"usage":{"input_tokens":null,"output_tokens":-1},"costUSD":"unknown"}`)
-	if got := turnSummary(e, nil, 0, 80); got != "" {
+	if got := turnSummary(e, nil, 0, 80); strings.Contains(got, "↑") || strings.Contains(got, "$") {
 		t.Fatal("invalid metrics displayed", got)
 	}
 	e.Text = "failed"
