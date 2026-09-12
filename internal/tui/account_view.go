@@ -197,7 +197,7 @@ func (m *model) accountScreen() string {
 	rows := []string{brand.Render("cxz · accounts"), muted.Render("Isolated authentication profiles · Esc / Ctrl+Q returns to project"), ""}
 	if m.accountAdding {
 		m.accountAlias.Width, m.accountName.Width = max(1, width-16), max(1, width-16)
-		fields := []string{"Provider     " + m.accountAgent + "  ←/→", "Alias        " + m.accountAlias.View(), "Display name " + m.accountName.View(), "[ Create account ]"}
+		fields := []string{"Provider     " + providerLabel(m.accountAgent) + "  ←/→", "Alias        " + m.accountAlias.View(), "Display name " + m.accountName.View(), "[ Create account ]"}
 		for i, field := range fields {
 			if i == m.accountField {
 				rows = append(rows, accent.Render("› "+field))
@@ -218,7 +218,7 @@ func (m *model) accountScreen() string {
 		start := max(0, m.accountIndex-capacity+1)
 		for i := start; i < min(len(choices), start+capacity); i++ {
 			a := choices[i]
-			label := fmt.Sprintf("%s · %s · %s", pickerLabel(a.GetAlias()), pickerLabel(a.GetAgent()), pickerLabel(a.GetName()))
+			label := fmt.Sprintf("%s · %s · %s", pickerLabel(a.GetAlias()), providerLabel(a.GetAgent()), pickerLabel(a.GetName()))
 			if i == m.accountIndex {
 				label = accent.Render("› " + label)
 			} else {

@@ -60,7 +60,8 @@ func TestProjectSessionTerminalNavigation(t *testing.T) {
 	m := projectModel()
 	m.ctx = ctx
 	m.client = &screenClient{}
-	p := tea.NewProgram(m, tea.WithContext(ctx), tea.WithInput(slave), tea.WithOutput(slave), tea.WithAltScreen())
+	m.cursorOutput = &cursorWriter{out: slave}
+	p := tea.NewProgram(m, tea.WithContext(ctx), tea.WithInput(slave), tea.WithOutput(m.cursorOutput), tea.WithAltScreen(), tea.WithMouseCellMotion())
 	m.program = p
 	done := make(chan error, 1)
 	go func() { _, err := p.Run(); done <- err }()

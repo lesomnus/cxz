@@ -9,6 +9,18 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
+func providerLabel(provider string) string {
+	text := fmt.Sprintf("%-6s", clip(pickerLabel(provider), 6))
+	switch provider {
+	case "claude":
+		return claude.Render(text)
+	case "codex":
+		return codex.Render(text)
+	default:
+		return lavender.Render(text)
+	}
+}
+
 var (
 	accent      = lipgloss.NewStyle().Foreground(lipgloss.Color("#24d17c"))
 	brand       = lipgloss.NewStyle().Foreground(lipgloss.Color("#aeff98")).Background(lipgloss.Color("#000000")).Bold(true)
@@ -77,15 +89,23 @@ func (m *model) resize() {
 	if m.width <= 0 || m.height <= 0 {
 		return
 	}
+	follow := m.view.AtBottom()
 	m.input.SetWidth(max(2, m.width-2))
 	rows := 0
 	for _, line := range strings.Split(m.input.Value(), "\n") {
 		rows += max(1, (ansi.StringWidth(line)+max(1, m.width-4)-1)/max(1, m.width-4))
 	}
 	m.input.SetHeight(min(max(2, rows), min(6, max(1, m.height/4))))
+	// SetValue/SetHeight alone do not reveal a cursor below the old viewport.
+	// Populate its new content, then let the widget re-anchor its scroll offset.
+	_ = m.input.View()
+	m.input, _ = m.input.Update(nil)
 	m.view.Width = max(1, m.width)
-	// Status (1), composer border (2), bottom session information (1).
-	m.view.Height = max(1, m.height-m.input.Height()-4)
+	// Blank separator + status (2), composer border (2), session information (1).
+	m.view.Height = max(1, m.height-m.input.Height()-5-m.approvalHeight())
+	if follow {
+		m.view.GotoBottom()
+	}
 }
 
 func clip(s string, width int) string {
@@ -141,16 +161,28 @@ func (m *model) sessionScreen() string {
 		if m.focusList {
 			indicator = accent.Render("›")
 		}
-		info = indicator + accent.Render(alias) + "  " + blue.Render(agent) + " · " + lavender.Render("◉ "+pickerLabel(s.Account)) + " · " + teal.Render("["+pickerLabel(s.State)+"]") + " · " + title
+		info = indicator + accent.Render(alias) + "  " + blue.Render(agent) + " · " + lavender.Render("◉ "+pickerLabel(s.Account)) + " · " + title
 	}
 	status := warning.Render(pickerLabel(m.notice))
-	if s := m.current(); s != nil && len(s.Pending) > 0 {
-		status = warning.Bold(true).Render("APPROVAL · F2 allow / F3 deny") + "  " + pickerLabel(s.Pending[0].Text)
-	} else if !m.view.AtBottom() {
-		status = muted.Render("Reading history") + "  " + status
+	if !m.view.AtBottom() {
+		status = muted.Render(m.scrollStatus())
+		if m.fullPermissionNotice() != "" {
+			status = warning.Render("FULL · ") + status
+		}
+	} else if full := m.fullPermissionNotice(); full != "" {
+		status = warning.Render(full)
+		if m.notice != "" {
+			status += " · " + warning.Render(pickerLabel(m.notice))
+		}
+	} else if s := m.current(); s != nil && s.State != "working" && s.State != "idle" && s.State != "waiting_input" {
+		status = warning.Render(pickerLabel(s.State)) + " · " + status
 	}
-	body := m.commandOverlay(m.view.View()) + "\n" + clip("  "+status, width) + "\n" +
-		frame(m.input.View(), width, !m.focusList) + "\n" + clip(info, width)
+	box := m.approvalBox()
+	if box != "" {
+		box += "\n"
+	}
+	body := m.commandOverlay(m.conversationView()) + "\n\n" + clip("  "+status, width) + "\n" + box +
+		frame(m.input.View(), width, !m.focusList && !m.focusApproval) + "\n" + clip(info, width)
 	return screen(body, m.width, m.height)
 }
 
@@ -160,19 +192,22 @@ func helpView(width int) string {
 			"Enter          Send message\n"+
 				"Alt+Enter / Ctrl+J  Newline\n"+
 				"Ctrl+X         Clear draft\n"+
-				"Tab            Toggle session selection; ↑/↓ select, Enter open\n"+
+				"Tab            Input → approvals (if any) → sessions → input\n"+
+				"Approvals      ↑/↓ select; Enter allow, Backspace deny\n"+
 				"r (selection)  Rename session alias; Enter save, Esc cancel\n"+
 				"Ctrl+Q         Return to project\n"+
 				"Ctrl+N         Create session\n"+
 				"F2 / F3        Allow / deny pending approval\n"+
 				"F4             Interrupt active turn\n"+
 				"Ctrl+R         Resume stopped session\n"+
-				"PgUp / PgDn    Scroll conversation\n"+
+				"PgUp / PgDn / mouse wheel  Scroll; Ctrl+End follows latest\n"+
 				"Ctrl+C         Detach (agent continues)\n"+
 				"/answer {\"question\":\"answer\"}  Reply to question\n"+
 				"/stop          Stop agent\n"+
 				"/help          Show this local help (not sent to agent)\n"+
 				"/usage         Session usage from the full journal\n"+
+				"/permission full | ask  Auto/manual approval for this attached run\n"+
+				"/approval      Full selected request payload\n"+
 				"/context /compact  Unimplemented",
 			max(1, width-2), true)))
 }

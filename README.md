@@ -168,7 +168,8 @@ resource database and survives server/container restarts; back up state volumes.
 | s (project) | Stop selected session before starting another (one live session per project) |
 | d / Delete, then y (project) | Stop and remove selected session; archived journal retained |
 | Ctrl+Q (session) | Return to project view without stopping the agent |
-| Tab (session) | Switch session selector / message input |
+| Tab (session) | Input → pending approvals (if any) → session selector → input |
+| Enter / Backspace (approval focus) | Allow / deny selected request; questions require `/answer` |
 | Enter | Send message |
 | Alt+Enter / Ctrl+J | Insert newline (multiline paste stays in the editor) |
 | Ctrl+X (session) | Clear the current draft |
@@ -176,7 +177,9 @@ resource database and survives server/container restarts; back up state volumes.
 | `/answer {"question text or id":"answer"}` | Answer question |
 | F4 | Interrupt active turn |
 | Ctrl+R | Explicitly resume stopped/offline session |
-| PageUp / PageDown | Scroll |
+| PageUp / PageDown / mouse wheel | Scroll; Ctrl+Home first line, Ctrl+End follow latest |
+| `/approval` | Inspect the selected request's complete payload |
+| `/permission full`, `/permission ask` | Auto/manual tool approval for the current attached session run |
 | `/stop` | Terminate selected agent |
 | Ctrl+C | Detach; agent continues |
 
@@ -187,8 +190,10 @@ Escape does not discard a conversation draft. The composer and its borders keep
 the terminal's background (including the current input line). Use at least
 40 × 14 cells. The composer spans the terminal width. User messages show local
 timestamps instead of a YOU label; Claude/Codex speaker badges and pastel tool
-colors distinguish output. Transient state events update the status area rather
-than accumulating in the transcript (the journal remains intact).
+colors distinguish output. State events never accumulate in the transcript. Only
+`working` animates a braille spinner in the live conversation. `idle` is silent;
+`waiting_input` uses the pending-request box; starting/stopping/stopped/interrupted/
+failed conditions remain visible in notices. All state events remain in the journal.
 Reply text is white; only speaker labels retain agent branding. User timestamps
 are dimmed and the first-line `>` starts at the left edge. Completed-turn JSON is
 replaced by a dim metrics footer after a blank line: duration, cost, then tokens.
@@ -212,7 +217,7 @@ tokens, cost and elapsed time with per-metric coverage. Claude cumulative costs
 are counted once per run, not repeatedly per turn. This is not account quota or billing.
 
 The status bar starts with one reserved selection cell and a seven-cell session
-alias, followed by agent/model, ◉ account and state. Aliases are globally unique,
+alias, followed by agent/model, ◉ account and title (no state badges). Aliases are globally unique,
 random 3–7-letter English words, stored in payday/SQLite and assigned to existing
 sessions on reconciliation. In session selection mode (Tab), press `r` to edit;
 Enter saves and returns to selection, Esc cancels. Custom aliases accept 3–7
@@ -221,6 +226,43 @@ releases its alias while retaining the journal. The curated word pool is finite;
 exhaustion is reported explicitly without falling back to numeric identifiers.
 The composer starts with `>` on row 0 and dim single-digit line numbers afterward:
 `1 … 9, 0, 1 …`. The two-cell gutter never grows.
+
+Pending approvals have their own box above the composer. Tab focuses it, arrows
+select, Enter allows and Backspace denies. `/approval` shows the full selected
+payload in the conversation; questions need `/answer` rather than an empty approval.
+After a decision, focus returns to input to avoid approving the next request with
+a repeated Enter. A blank row separates the conversation from the notice area.
+
+`/permission full` immediately allows existing and future **known tool, command,
+file and permission requests** for the current run while viewing this session in
+this TUI. It does not invent question answers or allow unknown protocol requests.
+`/permission ask` restores manual approval; decisions already sent cannot be
+retracted. Disconnect, run replacement, approval failure, returning to the project
+or exiting the TUI disables this local mode. It is not persisted or a change to
+the vendor's sandbox/permission configuration. Decisions still use normal Reply
+RPCs with run/request identities; ambiguous failures are never automatically retried.
+
+While scrolling, the notice row displays rendered line range/total and the source
+event timestamp in local time. Line numbers start at the session's first loaded
+event and change when the terminal width changes; a multiline event shares its
+timestamp. The TUI retains all streamed events instead of dropping the oldest
+2,000-event overflow, so large sessions consume more client memory. New output
+does not pull you away from history. If your latest prompt is above the viewport,
+up to two prompt lines are pinned over its top edge. Ctrl+End follows new output.
+
+Assistant text is parsed as CommonMark/GFM when structural Markdown syntax is
+found; plain text remains plain. Headings, lists, emphasis, tables and code are
+rendered locally; inline/fenced code uses a black background. HTML is not rendered,
+images are not fetched and escape sequences are stripped. The current
+[Claude text block](https://github.com/anthropics/claude-agent-sdk-python/blob/main/src/claude_agent_sdk/types.py)
+and [Codex agentMessage schema](https://github.com/openai/codex/blob/main/codex-rs/app-server-protocol/schema/typescript/v2/ThreadItem.ts)
+do not provide a Markdown MIME discriminator, so detection is heuristic.
+
+The alternate-screen output adapter repositions the physical terminal cursor at
+the input widget's Unicode-aware cursor cell, including wrapped/scrolled drafts.
+This fixes the bottom-row cursor anchor used by IME preedit/candidate windows;
+actual composition behavior still depends on the terminal and OS IME. OAuth's
+temporary terminal ownership is left untouched.
 
 `cxz up` prints elapsed time and observed server provisioning checkpoints to stderr:
 configuration, resources, devcontainer image/build/hooks, selected agent installation,
@@ -231,6 +273,7 @@ ten seconds. This is stage reporting, not a percentage or raw Docker build log.
 Project `a` opens accounts without leaving the app. New-session `n` opens the same
 view in selection mode; an empty list offers account creation. Add a provider
 (Claude/Codex), alias and optional display name, then confirm Create account.
+Provider names use their brand colors in a six-cell slot, keeping selector arrows fixed.
 `/` focuses search by alias/name/provider/number; Enter selects in new-session mode.
 `l` runs the existing login workflow and returns to accounts (Claude: current
 project; Codex default: central). Registration alone does not authenticate.

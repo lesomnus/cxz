@@ -1,5 +1,26 @@
 # 구현 진행 상황
 
+## 2026-09-12 — 승인 포커스·자동 승인·스크롤·Markdown·IME 입력
+
+- 계정 Provider는 브랜드색+6셀 슬롯을 사용한다. Claude 코드 입력은 최대 3개 별,
+  최소 3자리 Unicode 글자 수, 어두운 padding 0, 깜빡이는 커서를 표시한다.
+- 상태바의 상태 배지를 제거하고 working에만 대화 점자 스피너를 표시한다.
+  대화/안내 사이 빈 줄과 별도 승인 박스를 추가했다. Tab 포커스, ↑/↓ 선택,
+  Enter/Backspace 결정, /approval 상세 조회와 질문의 /answer 요구를 구현했다.
+- /permission full|ask는 현재 TUI·세션 run 범위로 정상 승인 RPC를 자동 전송한다.
+  알려진 요청만 허용하고 질문/미지원 요청, stale run과 중복 전송을 제외한다.
+  연결/승인 실패·프로젝트 복귀·run 교체에 수동 모드로 복귀하며 공급자 설정은 바꾸지 않는다.
+- 마우스/PgUp/PgDn, Ctrl+Home/End, 렌더링 줄 번호·이벤트 시각, 스크롤 위치 유지,
+  마지막 입력 최대 2줄 고정을 추가했다. 전체 수신 이벤트를 보유하며 응답 렌더링을 캐시한다.
+- 공식 Claude TextBlock/Codex agentMessage 타입과 어댑터를 확인했다. Markdown MIME
+  구분 필드가 없어 Goldmark CommonMark/GFM 구문 감지 후 로컬 렌더링한다.
+  코드만 검정 배경이며 escape/HTML/외부 이미지 fetch는 허용하지 않는다.
+- Bubble Tea v1의 마지막 줄 물리 커서 위치를 위젯 커서 칸으로 보정했다. Unicode,
+  줄바꿈/스크롤, NO_COLOR, alt-screen 진입/복귀를 다루고 로그인 터미널은 간섭하지 않는다.
+  사용자 OS IME 조합 자체는 여기서 재현하지 못해 실제 사용 터미널 확인이 필요하다.
+- 전체 Go 테스트·vet, TUI/accounts/CLI race, 통합 테스트 및 PTY 화면 이동/로그인
+  비밀 비노출 검증을 통과했다. 실제 OAuth·유료 모델 호출은 실행하지 않았다.
+
 ## 2026-09-12 — 입력창·메트릭 밀도, up 진행 상황, 계정 화면
 
 - 입력창/테두리와 위젯 기본 현재 줄 배경을 제거했다. prompt gutter는 두 칸이며

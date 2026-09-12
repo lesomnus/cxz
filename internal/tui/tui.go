@@ -2,7 +2,6 @@ package tui
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/textinput"
@@ -66,6 +65,18 @@ type model struct {
 	accountSearching     bool
 	accountService       resource.AccountServiceClient
 	loginAccount         AccountLogin
+	focusApproval        bool
+	approvalID           string
+	approvalSent         map[string]bool
+	fullPermission       map[string]string
+	localReports         map[string]string
+	historyTimes         []int64
+	lastPromptStart      int
+	lastPromptEnd        int
+	latestPrompt         string
+	pulse                int
+	cursorOutput         *cursorWriter
+	renderedResponses    map[*api.Event]renderedResponse
 	program              *tea.Program
 }
 type listing struct {
@@ -87,6 +98,12 @@ type result struct {
 	sessionID string
 }
 type tick time.Time
+type pulseTick struct{}
+
+func pulseTimer() tea.Cmd {
+	return tea.Tick(100*time.Millisecond, func(time.Time) tea.Msg { return pulseTick{} })
+}
+
 type accountListing struct {
 	accounts []*resource.Account
 	err      error
@@ -155,7 +172,8 @@ func RunProject(ctx context.Context, c api.SessionsClient, project *api.Project,
 	if len(login) > 0 {
 		m.loginAccount = login[0]
 	}
-	p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithContext(ctx))
+	m.cursorOutput = &cursorWriter{out: os.Stdout}
+	p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithContext(ctx), tea.WithMouseCellMotion(), tea.WithOutput(m.cursorOutput))
 	m.program = p
 	_, e := p.Run()
 	if m.watchCancel != nil {
@@ -190,7 +208,7 @@ func (m *model) refresh() tea.Cmd {
 	}
 }
 func timer() tea.Cmd           { return tea.Tick(time.Second, func(t time.Time) tea.Msg { return tick(t) }) }
-func (m *model) Init() tea.Cmd { return tea.Batch(m.refresh(), timer(), textarea.Blink) }
+func (m *model) Init() tea.Cmd { return tea.Batch(m.refresh(), timer(), textarea.Blink, pulseTimer()) }
 func (m *model) current() *api.Session {
 	if len(m.sessions) == 0 {
 		return nil
@@ -235,6 +253,9 @@ func (m *model) render() {
 	follow := m.view.AtBottom()
 	s := m.current()
 	if s == nil {
+		m.historyTimes = nil
+		m.latestPrompt = ""
+		m.lastPromptStart, m.lastPromptEnd = -1, -1
 		m.view.SetContent(indentBlock(ansi.Hardwrap("No sessions. Ctrl+N creates one from an existing workspace directory.", max(1, m.view.Width-2), true)))
 		if _, ok := m.localHelp[""]; ok {
 			m.view.SetContent(m.localCommandView(""))
@@ -242,6 +263,10 @@ func (m *model) render() {
 		return
 	}
 	var lines []string
+	var times []int64
+	promptBlock := -1
+	m.latestPrompt = ""
+	add := func(text string, stamp int64) { lines = append(lines, text); times = append(times, stamp) }
 	var usage *api.Event
 	var started int64
 	replyIndex := -1
@@ -249,7 +274,7 @@ func (m *model) render() {
 	helped := false
 	for _, e := range m.events[s.Id] {
 		if showHelp && !helped && e.Seq > helpAfter {
-			lines = append(lines, m.localCommandView(s.Id))
+			add(m.localCommandView(s.Id), 0)
 			helped = true
 		}
 		if e.Kind == "input" {
@@ -265,29 +290,52 @@ func (m *model) render() {
 				if replyIndex >= 0 {
 					lines[replyIndex] += "\n\n" + text
 				} else {
-					lines = append(lines, text)
+					add(text, e.TimeMs)
 				}
 			}
 			usage = nil
 			started = 0
 			replyIndex = -1
 		} else {
-			if text := eventView(s, e, max(1, m.view.Width)); text != "" {
-				lines = append(lines, text)
+			text := eventViewCached(m, s, e, max(1, m.view.Width))
+			if text != "" {
+				add(text, e.TimeMs)
+				if e.Kind == "input" {
+					promptBlock = len(lines) - 1
+					m.latestPrompt = e.Text
+				}
 				if e.Kind == "assistant" {
 					replyIndex = len(lines) - 1
 				}
 			}
 		}
 		if hint := authHint(s, e); hint != "" {
-			lines = append(lines, indentBlock(warning.Render(ansi.Hardwrap(safeText(hint), max(1, m.view.Width-2), true))))
+			add(indentBlock(warning.Render(ansi.Hardwrap(safeText(hint), max(1, m.view.Width-2), true))), e.TimeMs)
 		}
 	}
 	if showHelp && !helped {
-		lines = append(lines, m.localCommandView(s.Id))
+		add(m.localCommandView(s.Id), 0)
 	}
 	if len(lines) == 0 {
-		lines = append(lines, indentBlock(muted.Render(ansi.Hardwrap("Start a conversation\n\nDescribe a task below. Messages and tool activity will appear here.\nStopped session? Ctrl+R resumes the agent.", max(1, m.view.Width-2), true))))
+		add(indentBlock(muted.Render(ansi.Hardwrap("Start a conversation\n\nDescribe a task below. Messages and tool activity will appear here.\nStopped session? Ctrl+R resumes the agent.", max(1, m.view.Width-2), true))), 0)
+	}
+	if s.State == "working" {
+		add("  ", 0)
+	}
+	m.historyTimes = nil
+	m.lastPromptStart, m.lastPromptEnd = -1, -1
+	for i, block := range lines {
+		if i > 0 {
+			m.historyTimes = append(m.historyTimes, 0)
+		}
+		start := len(m.historyTimes)
+		for range strings.Split(block, "\n") {
+			m.historyTimes = append(m.historyTimes, times[i])
+		}
+		if i == promptBlock {
+			m.lastPromptStart = start
+			m.lastPromptEnd = len(m.historyTimes)
+		}
 	}
 	m.view.SetContent(strings.Join(lines, "\n\n"))
 	if follow {
@@ -305,15 +353,14 @@ func safeText(s string) string {
 	}, ansi.Strip(s))
 }
 func (m *model) action(kind, text string) tea.Cmd {
+	if kind == "allow" || kind == "deny" || kind == "answer" {
+		return m.replyApproval(m.selectedApproval(), kind != "deny", text, false)
+	}
 	s := m.current()
 	if s == nil {
 		return nil
 	}
 	id, run := s.Id, s.RunId
-	request := ""
-	if len(s.Pending) > 0 {
-		request = s.Pending[0].RequestId
-	}
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(m.ctx, 30*time.Second)
 		defer cancel()
@@ -323,17 +370,6 @@ func (m *model) action(kind, text string) tea.Cmd {
 		switch kind {
 		case "send":
 			receipt, e = m.client.Send(ctx, &api.Input{SessionId: id, RunId: run, ClientId: ctrl.ClientId, Text: text})
-		case "allow", "deny", "answer":
-			if request == "" {
-				return result{err: fmt.Errorf("no pending approval")}
-			}
-			if kind == "answer" {
-				var a map[string]string
-				if json.Unmarshal([]byte(text), &a) != nil {
-					return result{err: fmt.Errorf("/answer requires a JSON string map")}
-				}
-			}
-			receipt, e = m.client.Reply(ctx, &api.Answer{SessionId: id, RunId: run, ClientId: ctrl.ClientId, RequestId: request, Allow: kind != "deny", AnswersJson: text})
 		case "interrupt":
 			receipt, e = m.client.Interrupt(ctx, ctrl)
 		case "resume":
@@ -350,6 +386,42 @@ func (m *model) action(kind, text string) tea.Cmd {
 }
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch v := msg.(type) {
+	case pulseTick:
+		m.pulse++
+		return m, pulseTimer()
+	case approvalResult:
+		if v.err != nil {
+			delete(m.fullPermission, v.id)
+			m.notice = "Approval failed; not retried. " + v.err.Error()
+		} else {
+			for _, s := range m.sessions {
+				if s.Id == v.id && s.RunId == v.run {
+					var pending []*api.Event
+					for _, p := range s.Pending {
+						if p.RequestId != v.request {
+							pending = append(pending, p)
+						}
+					}
+					s.Pending = pending
+				}
+			}
+			m.notice = "Approval decision sent"
+			if v.automatic {
+				m.notice = "Automatically approved · " + v.request
+			}
+		}
+		if m.focusApproval {
+			m.focusApproval = false
+			m.input.Focus()
+		}
+		m.resize()
+		m.render()
+		return m, tea.Batch(m.refresh(), m.autoApprove())
+	case tea.MouseMsg:
+		if !m.projectView && !m.accountView && v.Y < m.view.Height {
+			m.view, _ = m.view.Update(v)
+		}
+		return m, nil
 	case renameResult:
 		m.renameBusy = false
 		if v.err != nil {
@@ -430,8 +502,13 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(timer(), m.refresh())
 	case listing:
 		if v.err != nil {
+			m.fullPermission = nil
 			m.notice = "daemon disconnected; reconnecting (commands are not retried)"
 			return m, nil
+		}
+		oldApproval := ""
+		if p := m.selectedApproval(); p != nil && m.focusApproval {
+			oldApproval = p.RequestId
 		}
 		old := ""
 		if s := m.current(); s != nil {
@@ -454,19 +531,45 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.notice = "connected"
 		}
 		m.watch()
+		if oldApproval != "" {
+			found := false
+			if s := m.current(); s != nil {
+				for _, p := range s.Pending {
+					if p.RequestId == oldApproval {
+						found = true
+					}
+				}
+			}
+			if !found {
+				m.focusApproval = false
+				m.input.Focus()
+				m.notice = "Selected approval resolved; review the next request before deciding"
+			}
+		}
+		for _, s := range m.sessions {
+			if m.fullPermission[s.Id] != "" && (m.fullPermission[s.Id] != s.RunId || !permissionState(s.State)) {
+				delete(m.fullPermission, s.Id)
+			}
+		}
+		if m.selectedApproval() == nil {
+			if m.focusApproval {
+				m.input.Focus()
+			}
+			m.focusApproval = false
+		}
+		m.resize()
 		m.render()
+		return m, m.autoApprove()
 	case received:
 		if v.event.Seq > m.cursor[v.id] {
 			m.cursor[v.id] = v.event.Seq
 			m.events[v.id] = append(m.events[v.id], v.event)
-			if len(m.events[v.id]) > 2000 {
-				m.events[v.id] = m.events[v.id][len(m.events[v.id])-2000:]
-			}
 			if s := m.current(); s != nil && s.Id == v.id {
 				m.render()
 			}
 		}
 	case disconnected:
+		delete(m.fullPermission, v.id)
 		if m.watchID == v.id {
 			m.watchID = ""
 			m.notice = "event connection lost; reconnecting from saved cursor"
@@ -491,7 +594,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.renaming {
 			return m, m.renameKey(v)
 		}
-		if !m.projectView && !m.creating {
+		if !m.projectView && !m.creating && !m.focusApproval {
 			if handled, cmd := m.commandKey(v); handled {
 				return m, cmd
 			}
@@ -503,11 +606,20 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.projectView && !m.creating {
 			return m, m.projectKey(v)
 		}
+		if m.focusApproval && v.String() != "tab" && v.String() != "ctrl+c" && v.String() != "pgup" && v.String() != "pgdown" && v.String() != "ctrl+end" && v.String() != "ctrl+home" {
+			return m, m.approvalKey(v)
+		}
 		switch v.String() {
 		case "ctrl+c":
 			return m, tea.Quit
 		case "pgup", "pgdown":
 			m.view, _ = m.view.Update(v)
+			return m, nil
+		case "ctrl+end":
+			m.view.GotoBottom()
+			return m, nil
+		case "ctrl+home":
+			m.view.GotoTop()
 			return m, nil
 		case "tab":
 			if m.creating {
@@ -517,7 +629,18 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.notice = m.accountNotice()
 				return m, nil
 			}
-			m.focusList = !m.focusList
+			if !m.focusList && !m.focusApproval && m.selectedApproval() != nil {
+				m.approvalID = m.selectedApproval().RequestId
+				m.focusApproval = true
+				m.input.Blur()
+				return m, nil
+			}
+			if m.focusApproval {
+				m.focusApproval = false
+				m.focusList = true
+			} else {
+				m.focusList = !m.focusList
+			}
 			if m.focusList {
 				m.input.Blur()
 				return m, nil
@@ -625,6 +748,13 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.action("answer", strings.TrimPrefix(text, "/answer "))
 			}
 			localName := strings.Fields(text)[0]
+			if localName == "/permission" {
+				return m, m.permissionCommand(text)
+			}
+			if localName == "/approval" {
+				m.approvalDetails()
+				return m, nil
+			}
 			if localName == "/usage" {
 				return m, m.loadUsage()
 			}
@@ -680,6 +810,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 func (m *model) View() string {
+	m.anchorCursor()
 	if m.width > 0 && (m.width < 40 || m.height < 14) {
 		return screen("cxz\nResize terminal to 40 × 14 or larger.\nCtrl+C detach", m.width, m.height)
 	}
