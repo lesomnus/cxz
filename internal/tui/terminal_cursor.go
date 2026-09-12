@@ -2,6 +2,7 @@ package tui
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"regexp"
 	"strings"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/charmbracelet/x/term"
 	"github.com/muesli/termenv"
 )
 
@@ -22,6 +24,32 @@ type cursorWriter struct {
 	out                io.Writer
 	x, y               int
 	enabled, alternate bool
+}
+
+var _ term.File = (*cursorWriter)(nil)
+
+// term.File also requires Read and Close, even for output-only terminal use.
+func (w *cursorWriter) Read(p []byte) (int, error) {
+	if r, ok := w.out.(io.Reader); ok {
+		return r.Read(p)
+	}
+	return 0, errors.ErrUnsupported
+}
+
+func (w *cursorWriter) Close() error {
+	if c, ok := w.out.(io.Closer); ok {
+		return c.Close()
+	}
+	return nil
+}
+
+// Preserve terminal detection, initial sizing and SIGWINCH handling when Bubble
+// Tea receives this wrapper instead of stdout. Non-file writers have no valid fd.
+func (w *cursorWriter) Fd() uintptr {
+	if f, ok := w.out.(term.File); ok {
+		return f.Fd()
+	}
+	return ^uintptr(0)
 }
 
 func (w *cursorWriter) position(x, y int, enabled bool) {

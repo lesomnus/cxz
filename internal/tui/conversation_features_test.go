@@ -144,7 +144,8 @@ func TestHistoryStickyPromptAndWorkingIndicator(t *testing.T) {
 	m.render()
 	m.view.GotoBottom()
 	before := ansi.Strip(m.View())
-	if !strings.HasPrefix(before, "> First prompt\n  second line") || !strings.Contains(before, "⠋") || strings.Contains(before, "[working]") {
+	rows := strings.Split(before, "\n")
+	if strings.TrimRight(rows[0], " ") != "> First prompt" || !strings.HasPrefix(rows[1], "  second line") || !strings.Contains(before, "⠋") || strings.Contains(before, "[working]") {
 		t.Fatal(before)
 	}
 	m.Update(pulseTick{})
@@ -180,6 +181,50 @@ func TestHistoryStickyPromptAndWorkingIndicator(t *testing.T) {
 	}
 	if len(m.historyTimes) != m.view.TotalLineCount() {
 		t.Fatal("line metadata misaligned", len(m.historyTimes), m.view.TotalLineCount())
+	}
+}
+
+func TestPinnedPromptFullRowBackground(t *testing.T) {
+	profile := lipgloss.ColorProfile()
+	lipgloss.SetColorProfile(termenv.TrueColor)
+	defer lipgloss.SetColorProfile(profile)
+	const background = "48;2;3;30;44m"
+	for _, width := range []int{40, 80, 123} {
+		m := conversationModel()
+		m.Update(tea.WindowSizeMsg{Width: width, Height: 24})
+		m.events["s"] = []*api.Event{
+			{Seq: 1, Kind: "input", Text: "한글 prompt\nsecond line\nthird line"},
+			{Seq: 2, Kind: "assistant", Text: strings.Repeat("Response\n", 60)},
+		}
+		m.render()
+		m.view.GotoBottom()
+		rows := strings.Split(m.View(), "\n")
+		for i, row := range rows {
+			if i < 2 {
+				if ansi.StringWidth(row) != width || !strings.Contains(row, background) {
+					t.Fatalf("width %d row %d not fully highlighted: %q", width, i, row)
+				}
+				// Padding must be inside the background span, before its reset.
+				painted := strings.SplitN(row, background, 2)[1]
+				painted = strings.SplitN(painted, "\x1b[0m", 2)[0]
+				if ansi.StringWidth(painted) != width {
+					t.Fatalf("unpainted padding: %q", row)
+				}
+			} else if strings.Contains(row, background) {
+				t.Fatalf("background leaked outside pinned rows: %q", row)
+			}
+		}
+		m.view.GotoTop()
+		if strings.Contains(m.View(), background) {
+			t.Fatal("prompt still highlighted when not pinned")
+		}
+	}
+}
+
+func TestCursorWriterNonTerminalDescriptor(t *testing.T) {
+	w := &cursorWriter{out: &bytes.Buffer{}}
+	if w.Fd() != ^uintptr(0) {
+		t.Fatal("non-terminal writer must not borrow stdin or stdout")
 	}
 }
 

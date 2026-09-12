@@ -39,7 +39,8 @@ func (m *model) conversationView() string {
 			if i == 1 && len(prompt) > 2 {
 				text = clip(text+" …", m.width)
 			}
-			rows[i] = blue.Render(text)
+			text = clip(text, m.width)
+			rows[i] = pinnedPrompt.Render(text + strings.Repeat(" ", max(0, m.width-ansi.StringWidth(text))))
 		}
 	}
 	return strings.Join(rows, "\n")

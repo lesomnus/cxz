@@ -248,7 +248,9 @@ event and change when the terminal width changes; a multiline event shares its
 timestamp. The TUI retains all streamed events instead of dropping the oldest
 2,000-event overflow, so large sessions consume more client memory. New output
 does not pull you away from history. If your latest prompt is above the viewport,
-up to two prompt lines are pinned over its top edge. Ctrl+End follows new output.
+up to two prompt lines are pinned over its top edge with a full-width dark brand
+background. Ctrl+End follows new output. The TUI fills the terminal and follows
+terminal size changes.
 
 Assistant text is parsed as CommonMark/GFM when structural Markdown syntax is
 found; plain text remains plain. Headings, lists, emphasis, tables and code are
