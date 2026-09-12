@@ -1,5 +1,18 @@
 # 구현 진행 상황
 
+## 2026-09-12 — 검색 가능한 계정 선택 TUI
+
+- CLI new/up/recreate의 정수 전용 Fscanln 선택기를 Bubble Tea 화면으로 교체했다.
+  이름을 입력하면 파싱이 실패하고 나머지 문자가 셸에 남을 수 있던 경로를 제거했다.
+- 방향키 선택, 하단 상시 검색 입력, 번호·display name·alias 정확 일치 및
+  이름·alias·agent 부분 검색을 제공한다. 중복 후보, 검색 결과 없음, 긴 목록 스크롤,
+  한글 입력과 화면 크기 변경을 처리한다. Esc/Ctrl-C는 계정 선택 없이 취소한다.
+- 입력/출력은 CLI의 stdin/stderr를 사용해 stdout JSON과 분리한다. 비대화형 계정
+  명시 및 기존 세션의 Account 유지 동작은 변경하지 않았다.
+- 모델/실제 입력 디코더 회귀 테스트 및 Linux PTY에서 main 입력·Ctrl-C 취소,
+  터미널 상태 복구와 입력 잔여 없음 검증을 추가했다.
+- 전체 Go 테스트·vet, CLI/TUI race, diff 검사 통과. Docker나 실제 인증 상태는 변경하지 않았다.
+
 ## 2026-09-12 — 전체 CLI 입력 계약 점검
 
 - `account add AGENT ACCOUNT`, `update IMAGE`, 내부 `_new-local ACCOUNT WORKSPACE`

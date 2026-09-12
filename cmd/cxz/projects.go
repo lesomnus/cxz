@@ -55,15 +55,7 @@ func selectProjectAccount(ctx context.Context, resources *resourceclient.Client,
 	if len(choices) == 0 {
 		return "", fmt.Errorf("no accounts; run cxz account add codex NAME, then cxz account login NAME")
 	}
-	for i, a := range choices {
-		fmt.Fprintf(c.ErrWriter, "%d) %s · %s · %s\n", i+1, a.GetAlias(), a.GetAgent(), a.GetName())
-	}
-	fmt.Fprint(c.ErrWriter, "Account: ")
-	var n int
-	if _, err := fmt.Fscanln(c.ReadCloser, &n); err != nil || n < 1 || n > len(choices) {
-		return "", fmt.Errorf("invalid account selection")
-	}
-	return choices[n-1].GetAlias(), nil
+	return tui.SelectAccount(ctx, choices, c.ReadCloser, c.ErrWriter)
 }
 
 func newProjectCommand(name string) *xli.Command {
