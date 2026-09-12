@@ -19,6 +19,8 @@ var (
 	claude      = lipgloss.NewStyle().Foreground(lipgloss.Color("#D97757")).Bold(true)
 	codex       = lipgloss.NewStyle().Foreground(lipgloss.Color("#FFFFFF")).Background(lipgloss.Color("#000000")).Bold(true)
 	muted       = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#626773", Dark: "#969BA8"})
+	timestamp   = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#777777", Dark: "#555B65"})
+	answer      = lipgloss.NewStyle().Foreground(lipgloss.Color("#FFFFFF"))
 	strong      = lipgloss.NewStyle().Bold(true)
 	warning     = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#945600", Dark: "#EBC078"})
 	selectedRow = accent.Bold(true)
@@ -77,7 +79,7 @@ func (m *model) resize() {
 		rows += max(1, (ansi.StringWidth(line)+max(1, m.width-4)-1)/max(1, m.width-4))
 	}
 	m.input.SetHeight(min(max(2, rows), min(6, max(1, m.height/4))))
-	m.view.Width = max(1, m.width-4)
+	m.view.Width = max(1, m.width)
 	// Header (3), approval/status (2), composer border (2), help (3).
 	m.view.Height = max(1, m.height-m.input.Height()-10)
 }
@@ -140,8 +142,8 @@ func (m *model) sessionScreen() string {
 		help = "F2 allow · F3 deny · /answer {\"question\":\"answer\"} · Enter send"
 	}
 	inset := lipgloss.NewStyle().Padding(0, 2)
-	body := inset.Render(clip(heading, width)+"\n"+clip(blue.Render(detail), width)+"\n\n"+
-		m.view.View()+"\n"+clip(status, width)) + "\n" +
+	body := inset.Render(clip(heading, width)+"\n"+clip(blue.Render(detail), width)) + "\n\n" +
+		m.view.View() + "\n" + inset.Render(clip(status, width)) + "\n" +
 		frame(m.input.View(), m.width, !m.focusList) + "\n" +
 		inset.Render(clip(muted.Render(help), width)+"\n"+clip(muted.Render(controls), width)+"\n"+
 			clip(warning.Render(pickerLabel(m.notice)), width))

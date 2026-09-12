@@ -205,9 +205,30 @@ func (m *model) render() {
 		return
 	}
 	var lines []string
+	var usage *api.Event
+	var started int64
 	for _, e := range m.events[s.Id] {
-		if text := eventView(s, e, max(1, m.view.Width)); text != "" {
-			lines = append(lines, text)
+		if e.Kind == "input" {
+			started = e.TimeMs
+			usage = nil
+		}
+		if e.Kind == "usage" && e.Text == "thread/tokenUsage/updated" {
+			usage = e
+		}
+		if e.Kind == "turn_end" {
+			if text := turnSummary(e, usage, started, max(1, m.view.Width)); text != "" {
+				if len(lines) > 0 {
+					lines[len(lines)-1] += "\n" + text
+				} else {
+					lines = append(lines, text)
+				}
+			}
+			usage = nil
+			started = 0
+		} else {
+			if text := eventView(s, e, max(1, m.view.Width)); text != "" {
+				lines = append(lines, text)
+			}
 		}
 		if hint := authHint(s, e); hint != "" {
 			lines = append(lines, warning.Render(ansi.Hardwrap(safeText(hint), max(1, m.view.Width), true)))
