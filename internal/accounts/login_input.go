@@ -6,9 +6,11 @@ import (
 	"io"
 	"os/exec"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/charmbracelet/x/term"
 )
@@ -38,7 +40,7 @@ func newLoginInput(stdin io.Writer) *loginInput {
 	return &loginInput{input: input, stdin: stdin}
 }
 
-func (m *loginInput) Init() tea.Cmd { return nil }
+func (m *loginInput) Init() tea.Cmd { return textinput.Blink }
 
 func (m *loginInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.finished {
@@ -103,11 +105,14 @@ func (m *loginInput) View() string {
 	if m.finished {
 		return ""
 	}
-	indicator := "[     ]"
-	if m.input.Value() != "" {
-		indicator = "[ *** ] inserted; ctrl+x to clear."
-	} else if m.submitting || m.submitted {
-		indicator = "[     ] submitted; waiting for Claude."
+	n := utf8.RuneCountInString(m.input.Value())
+	digits := fmt.Sprintf("%03d", n)
+	padding := len(digits) - len(fmt.Sprint(n))
+	digits = lipgloss.NewStyle().Foreground(lipgloss.Color("#30343B")).Render(digits[:padding]) + digits[padding:]
+	m.input.Cursor.SetChar(" ")
+	indicator := "[" + strings.Repeat("*", min(3, n)) + strings.Repeat(" ", max(0, 3-n)) + "]" + m.input.Cursor.View() + digits + "; ctrl+x to clear."
+	if m.submitting || m.submitted {
+		indicator = "[   ] submitted; waiting for Claude."
 	}
 	return ansi.Strip(m.pending) + "\n" + indicator + "\nEnter to submit; Esc/Ctrl-C to cancel.\n"
 }

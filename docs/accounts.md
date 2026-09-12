@@ -72,9 +72,10 @@ cxz account add --auth-backend project-local-oauth claude work-claude
   세션은 생성하지 않는다. 같은 Account도 다른 Project에서는 독립 로그인이 필요하다.
   취소/실패한 로그인은 기존 인증을 덮어쓰지 않는다. `status`는 파일 형식/존재만
   검사하며 유효한 구독·네트워크 인증 성공을 보장하지 않는다.
-- Claude의 대화형 로그인 코드 입력은 cxz가 표시한다. 빈 입력은 `[     ]`, 입력이 있으면
-  길이와 무관하게 `[ *** ] inserted; ctrl+x to clear.`로 표시한다. 실제 코드나 글자별
-  마스킹은 출력하지 않는다. Ctrl-X로 지우고 Enter로 공식 CLI의 stdin에 제출하며,
+- Claude의 대화형 로그인 코드 입력은 cxz가 표시한다. `[   ] 000; ctrl+x to clear.`에서
+  `[*  ] 001`, `[** ] 002`, `[***] 003`, `[***] 004` 순으로 변한다. 별은 최대 3개,
+  수는 실제 Unicode 문자 수이며 최소 3자리다. padding 0은 더 어둡고 입력 커서는 깜빡인다.
+  실제 코드는 출력하지 않는다. Ctrl-X로 지우고 Enter로 공식 CLI의 stdin에 제출하며,
   Esc/Ctrl-C로 취소한다. OAuth URL 생성·코드 교환은 계속 공식 Claude가 담당한다.
   Codex 및 비대화형 로그인 입력은 변경하지 않는다.
 - `project-local-oauth`는 프로젝트의 `accounts/ALIAS/config`에 인증 원본을 0600으로 보관한다. SQLite에는
