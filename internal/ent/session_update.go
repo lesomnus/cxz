@@ -161,6 +161,9 @@ func (_u *SessionUpdate) check() error {
 	if _u.mutation.ProjectCleared() && len(_u.mutation.ProjectIds()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Session.project"`)
 	}
+	if _u.mutation.AccountCleared() && len(_u.mutation.AccountIds()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Session.account"`)
+	}
 	return nil
 }
 
@@ -384,6 +387,9 @@ func (_u *SessionUpdateOne) ExecX(ctx context.Context) {
 func (_u *SessionUpdateOne) check() error {
 	if _u.mutation.ProjectCleared() && len(_u.mutation.ProjectIds()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Session.project"`)
+	}
+	if _u.mutation.AccountCleared() && len(_u.mutation.AccountIds()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Session.account"`)
 	}
 	return nil
 }

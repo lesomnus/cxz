@@ -8,6 +8,7 @@ import (
 	"time"
 	"uuid"
 
+	"github.com/lesomnus/cxz/internal/ent/account"
 	"github.com/lesomnus/cxz/internal/ent/project"
 	"github.com/lesomnus/cxz/internal/ent/session"
 	"github.com/lesomnus/cxz/resource"
@@ -44,6 +45,8 @@ type Session struct {
 	Listed bool `json:"listed,omitempty"`
 	// ProjectId holds the value of the "project_id" field.
 	ProjectId uuid.UUID `json:"project_id,omitempty"`
+	// AccountId holds the value of the "account_id" field.
+	AccountId uuid.UUID `json:"account_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the SessionQuery when eager-loading is set.
 	Edges        SessionEdges `json:"edges"`
@@ -54,9 +57,11 @@ type Session struct {
 type SessionEdges struct {
 	// Project holds the value of the project edge.
 	Project *Project `json:"project,omitempty"`
+	// Account holds the value of the account edge.
+	Account *Account `json:"account,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
 }
 
 // ProjectOrErr returns the Project value or an error if the edge
@@ -70,6 +75,17 @@ func (e SessionEdges) ProjectOrErr() (*Project, error) {
 	return nil, &NotLoadedError{edge: "project"}
 }
 
+// AccountOrErr returns the Account value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e SessionEdges) AccountOrErr() (*Account, error) {
+	if e.Account != nil {
+		return e.Account, nil
+	} else if e.loadedTypes[1] {
+		return nil, &NotFoundError{label: account.Label}
+	}
+	return nil, &NotLoadedError{edge: "account"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*Session) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -81,7 +97,7 @@ func (*Session) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case session.FieldDateUpdated, session.FieldDateErased, session.FieldDateCreated:
 			values[i] = new(sql.NullTime)
-		case session.FieldId, session.FieldProjectId:
+		case session.FieldId, session.FieldProjectId, session.FieldAccountId:
 			values[i] = new(uuid.UUID)
 		case session.FieldStatus:
 			values[i] = session.ValueScanner.Status.ScanValue()
@@ -179,6 +195,12 @@ func (_m *Session) assignValues(columns []string, values []any) error {
 			} else if value != nil {
 				_m.ProjectId = *value
 			}
+		case session.FieldAccountId:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field account_id", values[i])
+			} else if value != nil {
+				_m.AccountId = *value
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -195,6 +217,11 @@ func (_m *Session) Value(name string) (ent.Value, error) {
 // QueryProject queries the "project" edge of the Session entity.
 func (_m *Session) QueryProject() *ProjectQuery {
 	return NewSessionClient(_m.config).QueryProject(_m)
+}
+
+// QueryAccount queries the "account" edge of the Session entity.
+func (_m *Session) QueryAccount() *AccountQuery {
+	return NewSessionClient(_m.config).QueryAccount(_m)
 }
 
 // Update returns a builder for updating this Session.
@@ -257,6 +284,9 @@ func (_m *Session) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("project_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.ProjectId))
+	builder.WriteString(", ")
+	builder.WriteString("account_id=")
+	builder.WriteString(fmt.Sprintf("%v", _m.AccountId))
 	builder.WriteByte(')')
 	return builder.String()
 }

@@ -11,7 +11,9 @@ import (
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/dockerx"
+	"github.com/lesomnus/cxz/internal/resourceclient"
 	"github.com/lesomnus/cxz/internal/settings"
+	"github.com/lesomnus/cxz/resource"
 	"os"
 	"path/filepath"
 	"strings"
@@ -34,6 +36,8 @@ type model struct {
 	watchID             string
 	wantID              string
 	newAgent            string
+	accounts            []*resource.Account
+	accountIndex        int
 	program             *tea.Program
 }
 type listing struct {
@@ -54,6 +58,41 @@ type result struct {
 	sessionID string
 }
 type tick time.Time
+type accountListing struct {
+	accounts []*resource.Account
+	err      error
+}
+
+func (m *model) accountNotice() string {
+	if len(m.accounts) == 0 {
+		return "No registered accounts. Run cxz account add --agent codex NAME, then cxz account login NAME."
+	}
+	a := m.accounts[m.accountIndex]
+	return "Account: " + a.GetAlias() + " · " + a.GetAgent() + " (Tab changes; Enter creates)"
+}
+func (m *model) loadAccounts() tea.Cmd {
+	return func() tea.Msg {
+		c, ok := m.client.(*resourceclient.Client)
+		if !ok {
+			return accountListing{}
+		}
+		ctx, cancel := context.WithTimeout(m.ctx, 5*time.Second)
+		defer cancel()
+		var all []*resource.Account
+		after := ""
+		for {
+			p, err := c.Accounts.List(ctx, resource.AccountListRequest_builder{Size: 200, After: after}.Build())
+			if err != nil {
+				return accountListing{err: err}
+			}
+			all = append(all, p.GetItems()...)
+			after = p.GetNext()
+			if after == "" {
+				return accountListing{accounts: all}
+			}
+		}
+	}
+}
 
 func Run(ctx context.Context, c api.SessionsClient) error {
 	return RunSelected(ctx, c, "")
@@ -223,6 +262,18 @@ func (m *model) action(kind, text string) tea.Cmd {
 }
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch v := msg.(type) {
+	case accountListing:
+		if !m.creating {
+			return m, nil
+		}
+		if v.err != nil {
+			m.notice = v.err.Error()
+			return m, nil
+		}
+		m.accounts = v.accounts
+		m.accountIndex = 0
+		m.notice = m.accountNotice()
+		return m, nil
 	case tea.WindowSizeMsg:
 		m.width = v.Width
 		m.height = v.Height
@@ -289,12 +340,10 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		case "tab":
 			if m.creating {
-				if m.newAgent == "codex" {
-					m.newAgent = "claude"
-				} else {
-					m.newAgent = "codex"
+				if len(m.accounts) > 0 {
+					m.accountIndex = (m.accountIndex + 1) % len(m.accounts)
 				}
-				m.notice = "New session agent: " + m.newAgent + " (Tab changes)"
+				m.notice = m.accountNotice()
 				return m, nil
 			}
 			m.focusList = !m.focusList
@@ -304,8 +353,10 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.focusList = false
 			m.input.SetValue("")
 			m.input.Placeholder = "absolute workspace path; Enter creates, Esc cancels"
-			m.notice = "New session agent: " + m.newAgent + " (Tab changes)"
-			return m, nil
+			m.accounts = nil
+			m.accountIndex = 0
+			m.notice = "Loading registered accounts…"
+			return m, m.loadAccounts()
 		case "esc":
 			m.creating = false
 			m.input.SetValue("")
@@ -341,7 +392,12 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.input.SetValue("")
 			if m.creating {
-				kind := m.newAgent
+				if len(m.accounts) == 0 {
+					m.notice = m.accountNotice()
+					return m, nil
+				}
+				a := m.accounts[m.accountIndex]
+				kind, account := a.GetAgent(), a.GetAlias()
 				m.creating = false
 				m.input.Placeholder = "message"
 				return m, func() tea.Msg {
@@ -352,7 +408,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					ctx, cancel := context.WithTimeout(m.ctx, 30*time.Minute)
 					defer cancel()
 					if os.Getenv("CXZ_PROJECT_ID") != "" {
-						s, e := m.client.Create(ctx, &api.CreateRequest{Workspace: path, Agent: kind, Model: settings.From(m.ctx).Model(kind), ClientId: core.ID()})
+						s, e := m.client.Create(ctx, &api.CreateRequest{Workspace: path, Agent: kind, Model: settings.From(m.ctx).Model(kind), ClientId: core.ID(), Account: account})
 						if e != nil {
 							return result{err: e}
 						}
@@ -362,7 +418,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					if e != nil {
 						return result{err: e}
 					}
-					s, e := m.client.Open(ctx, &api.ProjectRequest{Workspace: path, Agent: kind, Model: settings.From(m.ctx).Model(kind), NewSession: true, ClientId: core.ID()})
+					s, e := m.client.Open(ctx, &api.ProjectRequest{Workspace: path, Agent: kind, Model: settings.From(m.ctx).Model(kind), NewSession: true, ClientId: core.ID(), Account: account})
 					if e != nil {
 						return result{err: e}
 					}
@@ -404,7 +460,7 @@ func (m *model) View() string {
 		if s.ProjectAlias != "" {
 			label = s.ProjectAlias + " · " + label
 		}
-		fmt.Fprintf(&b, "%s %.8s %s/%s [%s] %s\n", mark, s.Id, safeText(s.Agent), safeText(s.Model), safeText(s.State), safeText(label))
+		fmt.Fprintf(&b, "%s %.8s %s/%s · account:%s [%s] %s\n", mark, s.Id, safeText(s.Agent), safeText(s.Model), safeText(s.Account), safeText(s.State), safeText(label))
 	}
 	b.WriteString("Tab sessions/chat · Ctrl+N new · F2 allow · F3 deny · F4 interrupt · Ctrl+R resume\n")
 	if s := m.current(); s != nil && len(s.Pending) > 0 {
@@ -422,7 +478,7 @@ func authHint(s *api.Session, e *api.Event) string {
 	text := strings.ToLower(e.Text + " " + string(e.Payload))
 	for _, needle := range []string{"not logged in", "unauthorized", "authentication", "login required", "401"} {
 		if strings.Contains(text, needle) && s.ProjectId != "" {
-			return fmt.Sprintf("Authentication may be required. Detach, run cxz login --agent %s %s, then cxz up %s. Failed prompts are not resent.", s.Agent, s.ProjectId, s.ProjectId)
+			return fmt.Sprintf("Authentication may be required. Detach, run cxz account login %s, then cxz resume %s. Failed prompts are not resent.", s.Account, s.Id)
 		}
 	}
 	return ""

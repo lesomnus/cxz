@@ -130,6 +130,8 @@ func newRoot(state string) *xli.Command {
 		root.Commands = append(root.Commands, newProjectCommand(name))
 	}
 	root.Commands = append(root.Commands, projectMetadataCommands())
+	root.Commands = append(root.Commands, accountCommands())
+	root.Commands = append(root.Commands, accountInternalCommands()...)
 	root.Commands = append(root.Commands,
 		&xli.Command{Name: "attach", Aliases: []string{"it"}, Brief: "Attach TUI to session/project", Args: arg.Args{projectArg("TARGET", true)}, Handler: withClient(func(ctx context.Context, client api.SessionsClient, c *xli.Command) error {
 			return attach(ctx, client, arg.MustGet[string](c, "TARGET"))
@@ -224,6 +226,7 @@ func newSessionCommand(name string) *xli.Command {
 	c := &xli.Command{Name: name, Brief: map[string]string{"ls": "List sessions as JSON", "projects": "List owned and foreign projects as JSON", "get": "Get session status", "send": "Send one message", "reply": "Answer a pending approval/question", "interrupt": "Interrupt active turn", "resume": "Explicitly resume session", "stop": "Terminate session agent", "events": "Stream journal events", "_new-local": "Internal local integration entrypoint"}[name], Handler: withClient(sessionCommand)}
 	if name == "_new-local" {
 		c.Category = "Internal runtime"
+		c.Flags = flg.Flags{stringFlag("account", "Registered profile", "")}
 		c.Args = arg.Args{stringArg("WORKSPACE", false), stringArg("TITLE", true)}
 		return c
 	}
@@ -258,7 +261,7 @@ func sessionCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 		if e != nil {
 			return e
 		}
-		result, err = client.Create(call, &api.CreateRequest{Workspace: path, Title: arg.MustGet[string](c, "TITLE"), ClientId: core.ID()})
+		result, err = client.Create(call, &api.CreateRequest{Workspace: path, Title: arg.MustGet[string](c, "TITLE"), ClientId: core.ID(), Account: flg.MustGet[string](c, "account")})
 	case "events":
 		stream, e := client.Watch(ctx, &api.WatchRequest{SessionId: arg.MustGet[string](c, "SESSION"), AfterSeq: arg.MustGet[uint64](c, "AFTER_SEQ")})
 		if e != nil {

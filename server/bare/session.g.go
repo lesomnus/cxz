@@ -7,6 +7,7 @@ import (
 	context "context"
 	errors "errors"
 	ent "github.com/lesomnus/cxz/internal/ent"
+	account "github.com/lesomnus/cxz/internal/ent/account"
 	predicate "github.com/lesomnus/cxz/internal/ent/predicate"
 	project "github.com/lesomnus/cxz/internal/ent/project"
 	session "github.com/lesomnus/cxz/internal/ent/session"
@@ -91,7 +92,7 @@ func (s SessionServiceServer) Add(ctx context.Context, req *resource.SessionAddR
 	st := s
 	st.Db = tx.Db
 
-	ds := make([]func(v *resource.Session), 0, 1)
+	ds := make([]func(v *resource.Session), 0, 2)
 	q := st.Db.Session.Create()
 	var k uuid.UUID
 	if req.HasId() {
@@ -133,6 +134,14 @@ func (s SessionServiceServer) Add(ctx context.Context, req *resource.SessionAddR
 		q.SetListed(req.GetListed())
 	} else {
 		q.SetListed(false)
+	}
+	if k, err := AccountGetKey(ctx, st.Db, req.GetAccount()); err != nil {
+		return nil, err
+	} else {
+		q.SetAccountId(k)
+		ds = append(ds, func(v *resource.Session) {
+			v.SetAccount(resource.Account_builder{Id: k[:]}.Build())
+		})
 	}
 
 	u, err := q.Save(ctx)
@@ -249,6 +258,12 @@ func SessionSelect(q *ent.SessionQuery, m *resource.SessionSelect) {
 			ProjectSelect(q, m.GetProject())
 		})
 	}
+	if m.HasAccount() {
+		q.WithAccount(func(q *ent.AccountQuery) {
+			q.Where(account.DateErasedIsNil())
+			AccountSelect(q, m.GetAccount())
+		})
+	}
 }
 
 func SessionSelectInit(q *ent.SessionQuery, m *resource.SessionSelect) {
@@ -256,6 +271,7 @@ func SessionSelectInit(q *ent.SessionQuery, m *resource.SessionSelect) {
 		SessionSelect(q, m)
 	} else {
 		q.WithProject(selectProjectKey)
+		q.WithAccount(selectAccountKey)
 	}
 }
 
@@ -306,7 +322,7 @@ func SessionGetKey(ctx context.Context, db *ent.Client, ref *resource.SessionRef
 var sessionOrmEntity = ormpatch.MustEntityOf(resource.File_cxz_session_proto, "Session")
 
 var sessionPatchColumns = entpatch.Columns{
-	1: session.FieldId, 5: session.FieldName, 6: session.FieldDesc, 8: session.ProjectColumn, 9: session.FieldAgent, 10: session.FieldModel, 11: session.FieldRuntimeId, 12: session.FieldClientId, 13: session.FieldDateUpdated, 14: session.FieldDateErased, 15: session.FieldDateCreated, 16: session.FieldStatus, 17: session.FieldListed}
+	1: session.FieldId, 5: session.FieldName, 6: session.FieldDesc, 8: session.ProjectColumn, 9: session.FieldAgent, 10: session.FieldModel, 11: session.FieldRuntimeId, 12: session.FieldClientId, 13: session.FieldDateUpdated, 14: session.FieldDateErased, 15: session.FieldDateCreated, 16: session.FieldStatus, 17: session.FieldListed, 18: session.AccountColumn}
 
 func (s SessionServiceServer) Apply(ctx context.Context, req *resource.SessionApplyRequest) (*resource.Session, error) {
 	if !req.HasPatch() {

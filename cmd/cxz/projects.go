@@ -15,6 +15,7 @@ import (
 	"github.com/lesomnus/cxz/internal/transport"
 	"github.com/lesomnus/cxz/internal/tui"
 	"github.com/lesomnus/cxz/internal/workspace"
+	"github.com/lesomnus/cxz/resource"
 	"github.com/lesomnus/xli"
 	"github.com/lesomnus/xli/arg"
 	"github.com/lesomnus/xli/flg"
@@ -42,6 +43,7 @@ func newProjectCommand(name string) *xli.Command {
 		config.Handler = flg.OnTab[string](func(_ context.Context, t tab.Tab) error { t.Files(""); return nil })
 		c.Flags = flg.Flags{agentFlag(""), stringFlag("model", "Model ID/alias for a new session (persisted on resume)", ""), config, switchFlag("no-attach", "Return JSON without opening TUI"), switchFlag("trust-config", "Trust elevated settings and host initialization")}
 		c.Flags = append(c.Flags, stringFlag("name", "Project display name", ""), stringFlag("alias", "Unique short project handle (generated when omitted)", ""))
+		c.Flags = append(c.Flags, stringFlag("account", "Registered authentication profile (fixed for the session)", ""))
 	}
 	if name == "recreate" {
 		c.Flags = append(c.Flags, switchFlag("yes", "Confirm writable-layer loss and editor disconnection"))
@@ -115,6 +117,48 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 		return json.NewEncoder(c.Writer).Encode(r)
 	}
 	agent := flg.MustGet[string](c, "agent")
+	account := flg.MustGet[string](c, "account")
+	if command == "new" && account == "" {
+		if !terminal(c) {
+			return fmt.Errorf("new requires --account; list profiles with cxz account list")
+		}
+		resources := client.(*resourceclient.Client)
+		var choices []*resource.Account
+		after := ""
+		for {
+			page, err := resources.Accounts.List(ctx, resource.AccountListRequest_builder{Size: 200, After: after}.Build())
+			if err != nil {
+				return err
+			}
+			choices = append(choices, page.GetItems()...)
+			after = page.GetNext()
+			if after == "" {
+				break
+			}
+		}
+		if len(choices) == 0 {
+			return fmt.Errorf("no accounts; run cxz account add --agent codex NAME, then cxz account login NAME")
+		}
+		for i, a := range choices {
+			fmt.Fprintf(c.ErrWriter, "%d) %s · %s · %s\n", i+1, a.GetAlias(), a.GetAgent(), a.GetName())
+		}
+		fmt.Fprint(c.ErrWriter, "Account: ")
+		var n int
+		if _, err := fmt.Fscanln(c.ReadCloser, &n); err != nil || n < 1 || n > len(choices) {
+			return fmt.Errorf("invalid account selection")
+		}
+		account = choices[n-1].GetAlias()
+	}
+	if account != "" {
+		a, err := client.(*resourceclient.Client).Account(ctx, account)
+		if err != nil {
+			return err
+		}
+		if agent != "" && agent != a.GetAgent() {
+			return fmt.Errorf("agent does not match account")
+		}
+		agent = a.GetAgent()
+	}
 	model := flg.MustGet[string](c, "model")
 	cfg := settings.From(ctx)
 	if command == "new" && agent == "" {
@@ -209,7 +253,7 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 	fmt.Fprintln(c.ErrWriter, "cxz: preparing workspace; initial image/agent downloads may take a few minutes")
 	call, cancel := context.WithTimeout(ctx, 30*time.Minute)
 	defer cancel()
-	s, e := client.Open(call, &api.ProjectRequest{Workspace: path, Name: flg.MustGet[string](c, "name"), Alias: flg.MustGet[string](c, "alias"), Agent: agent, Model: model, Config: config, NewSession: command == "new", Recreate: command == "recreate", Confirmed: yes, TrustConfig: trust, ClientId: core.ID()})
+	s, e := client.Open(call, &api.ProjectRequest{Workspace: path, Name: flg.MustGet[string](c, "name"), Alias: flg.MustGet[string](c, "alias"), Agent: agent, Model: model, Config: config, NewSession: command == "new", Recreate: command == "recreate", Confirmed: yes, TrustConfig: trust, ClientId: core.ID(), Account: account})
 	if e != nil {
 		return e
 	}
@@ -264,19 +308,11 @@ func attach(ctx context.Context, client api.SessionsClient, arg string) error {
 func projectExec(ctx context.Context, client api.SessionsClient, c *xli.Command) error {
 	op := c.Name
 	name := arg.MustGet[string](c, "PROJECT")
-	kind := "claude"
 	var command []string
 	if op == "login" {
-		kind = flg.MustGet[string](c, "agent")
-		if kind == "" {
-			kind = settings.From(ctx).Agent
-		}
-		if kind == "" {
-			kind = "claude"
-		}
-	} else {
-		command, _ = arg.Get[[]string](c, "COMMAND")
+		return fmt.Errorf("project-wide login is disabled; use cxz account add --agent codex NAME and cxz account login NAME")
 	}
+	command, _ = arg.Get[[]string](c, "COMMAND")
 	if op == "exec" && len(command) == 0 {
 		return fmt.Errorf("exec requires PROJECT -- COMMAND...")
 	}
@@ -300,14 +336,10 @@ func projectExec(ctx context.Context, client api.SessionsClient, c *xli.Command)
 		user = "root"
 	}
 	flags = append(flags, "--user", user, "--workdir", match.RemoteWorkspace, match.ContainerId)
-	if op == "login" {
-		flags = append(flags, "/cxz/tools/cxz", "--state", "/cxz/state/data", "_login", kind)
-	} else {
-		if len(command) == 0 {
-			command = []string{"sh"}
-		}
-		flags = append(flags, command...)
+	if len(command) == 0 {
+		command = []string{"sh"}
 	}
+	flags = append(flags, command...)
 	process := exec.CommandContext(ctx, "docker", flags...)
 	process.Stdin = c.ReadCloser
 	process.Stdout = c.Writer

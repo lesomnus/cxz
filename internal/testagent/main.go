@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -51,6 +52,8 @@ func main() {
 		case "user":
 			emit(map[string]any{"type": "system", "subtype": "init", "session_id": vendor})
 			switch {
+			case v.Message.Content == "account-context":
+				finish("profile=" + filepath.Base(filepath.Dir(os.Getenv("CLAUDE_CONFIG_DIR"))) + " home=" + filepath.Base(filepath.Dir(os.Getenv("HOME"))) + " inherited-key=" + fmt.Sprint(os.Getenv("OPENAI_API_KEY") != "" || os.Getenv("ANTHROPIC_API_KEY") != ""))
 			case strings.HasPrefix(v.Message.Content, "approval"), v.Message.Content == "question":
 				pending = v.Message.Content
 				tool := "Bash"

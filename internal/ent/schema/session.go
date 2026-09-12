@@ -46,6 +46,8 @@ func (Session) Fields() []ent.Field {
 			Optional(),
 		field.Uuid("project_id").
 			Immutable(),
+		field.Uuid("account_id").
+			Immutable(),
 	}
 }
 
@@ -54,6 +56,11 @@ func (Session) Edges() []ent.Edge {
 		edge.To("project", Project.Type).
 			Unique().
 			Field("project_id").
+			Required().
+			Immutable(),
+		edge.To("account", Account.Type).
+			Unique().
+			Field("account_id").
 			Required().
 			Immutable(),
 	}

@@ -26,6 +26,7 @@ import (
 )
 
 type Server interface {
+	Account() AccountServiceServer
 	Audit() AuditServiceServer
 	Tenant() TenantServiceServer
 	Holder() HolderServiceServer
@@ -39,6 +40,7 @@ type Server interface {
 // It takes a [grpc.ServiceRegistrar] rather than a *grpc.Server so that a
 // server which is not gRPC's own can be handed the same set of services.
 func RegisterServer(g grpc.ServiceRegistrar, s Server) {
+	RegisterAccountServiceServer(g, s.Account())
 	RegisterAuditServiceServer(g, s.Audit())
 	RegisterTenantServiceServer(g, s.Tenant())
 	RegisterHolderServiceServer(g, s.Holder())
@@ -48,6 +50,7 @@ func RegisterServer(g grpc.ServiceRegistrar, s Server) {
 }
 
 type UnimplementedServer struct {
+	AccountServer AccountServiceServer
 	AuditServer   AuditServiceServer
 	TenantServer  TenantServiceServer
 	HolderServer  HolderServiceServer
@@ -56,6 +59,7 @@ type UnimplementedServer struct {
 	SessionServer SessionServiceServer
 }
 
+func (UnimplementedServer) Account() AccountServiceServer { return UnimplementedAccountServiceServer{} }
 func (UnimplementedServer) Audit() AuditServiceServer     { return UnimplementedAuditServiceServer{} }
 func (UnimplementedServer) Tenant() TenantServiceServer   { return UnimplementedTenantServiceServer{} }
 func (UnimplementedServer) Holder() HolderServiceServer   { return UnimplementedHolderServiceServer{} }
@@ -64,6 +68,7 @@ func (UnimplementedServer) Project() ProjectServiceServer { return Unimplemented
 func (UnimplementedServer) Session() SessionServiceServer { return UnimplementedSessionServiceServer{} }
 
 type StaticServer struct {
+	AccountServer AccountServiceServer
 	AuditServer   AuditServiceServer
 	TenantServer  TenantServiceServer
 	HolderServer  HolderServiceServer
@@ -72,6 +77,7 @@ type StaticServer struct {
 	SessionServer SessionServiceServer
 }
 
+func (s StaticServer) Account() AccountServiceServer { return s.AccountServer }
 func (s StaticServer) Audit() AuditServiceServer     { return s.AuditServer }
 func (s StaticServer) Tenant() TenantServiceServer   { return s.TenantServer }
 func (s StaticServer) Holder() HolderServiceServer   { return s.HolderServer }
@@ -80,6 +86,7 @@ func (s StaticServer) Project() ProjectServiceServer { return s.ProjectServer }
 func (s StaticServer) Session() SessionServiceServer { return s.SessionServer }
 
 type Client interface {
+	Account() AccountServiceClient
 	Audit() AuditServiceClient
 	Tenant() TenantServiceClient
 	Holder() HolderServiceClient
@@ -90,6 +97,7 @@ type Client interface {
 
 func NewClient(c *grpc.ClientConn) Client {
 	return &client{
+		_Account: NewAccountServiceClient(c),
 		_Audit:   NewAuditServiceClient(c),
 		_Tenant:  NewTenantServiceClient(c),
 		_Holder:  NewHolderServiceClient(c),
@@ -100,6 +108,7 @@ func NewClient(c *grpc.ClientConn) Client {
 }
 
 type client struct {
+	_Account AccountServiceClient
 	_Audit   AuditServiceClient
 	_Tenant  TenantServiceClient
 	_Holder  HolderServiceClient
@@ -108,6 +117,7 @@ type client struct {
 	_Session SessionServiceClient
 }
 
+func (c *client) Account() AccountServiceClient { return c._Account }
 func (c *client) Audit() AuditServiceClient     { return c._Audit }
 func (c *client) Tenant() TenantServiceClient   { return c._Tenant }
 func (c *client) Holder() HolderServiceClient   { return c._Holder }
@@ -185,7 +195,7 @@ func SinkOf(s Server) Server {
 //		Overlay
 //	}
 //
-//	func (s Server) Audit() AuditServiceServer { ... }
+//	func (s Server) Account() AccountServiceServer { ... }
 type Overlay struct {
 	Server
 }

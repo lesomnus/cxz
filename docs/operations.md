@@ -16,8 +16,8 @@ cxz version
 ```
 
 설정은 해당 `--state`의 `settings.json`에 0600으로 저장한다. 인증정보와 권한 정책은
-이 설정에 넣을 수 없다. CLI 명시 값 > client 설정 > vendor 기본값 순서다. 기본 agent는
-`new`, TUI 새 세션, `login`에 적용한다. `up`은 기존 세션의 vendor/model을 유지한다.
+이 설정에 넣을 수 없다. CLI 명시 값 > client 설정 > vendor 기본값 순서다.
+새 세션의 agent는 선택한 Account로 결정한다. `up`은 기존 Account/vendor/model을 유지한다.
 모델은 세션 생성 시 고정된다. 기존 대화의 모델을 몰래 바꾸지 않으며 변경은 명시적으로
 기존 세션을 stop한 뒤 새 세션을 만든다. 사용 가능한 모델은 vendor 계정에 따라 다르다.
 
@@ -30,11 +30,13 @@ TUI는 vendor 진단과 실패 payload를 표시한다. 인증 실패 의심 메
 안내하지만 자동 로그인/토큰 갱신/프롬프트 재전송은 하지 않는다.
 
 ```sh
-cxz login --agent codex PROJECT
+cxz account login ACCOUNT
 cxz up PROJECT
 ```
 
 ## 중간 실패와 복구
+
+Account 등록·로그인·계정 격리 범위는 [Account 문서](accounts.md)를 참고한다.
 
 - `install` 실패 후 같은 client state로 재실행한다. owner/volume 이름이 유지된다.
   같은 이미지·workspace root의 기존 설치는 준비 상태를 다시 확인하고, 정지된 manager는

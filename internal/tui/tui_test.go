@@ -6,6 +6,7 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/resource"
 	"google.golang.org/grpc"
 	"strings"
 	"testing"
@@ -19,12 +20,12 @@ type recordingClient struct {
 }
 
 func TestDiagnosticAndAuthenticationHint(t *testing.T) {
-	s := &api.Session{Id: "s", Agent: "codex", ProjectId: "project"}
+	s := &api.Session{Id: "s", Agent: "codex", ProjectId: "project", Account: "work-codex"}
 	e := &api.Event{Kind: "diagnostic", Text: "authentication failed", Payload: []byte(`{"code":401}`)}
 	m := &model{sessions: []*api.Session{s}, view: viewport.New(120, 20), events: map[string][]*api.Event{"s": {e}}}
 	m.render()
 	text := m.view.View()
-	if !strings.Contains(text, "authentication failed") || !strings.Contains(text, "cxz login --agent codex project") {
+	if !strings.Contains(text, "authentication failed") || !strings.Contains(text, "cxz account login work-codex") {
 		t.Fatal(text)
 	}
 	if authHint(s, &api.Event{Kind: "assistant", Text: "401"}) != "" {
@@ -80,9 +81,10 @@ func TestKeyboardControls(t *testing.T) {
 	}
 	m.newAgent = "claude"
 	m.Update(tea.KeyMsg{Type: tea.KeyCtrlN})
+	m.Update(accountListing{accounts: []*resource.Account{resource.Account_builder{Alias: "personal", Agent: "claude"}.Build(), resource.Account_builder{Alias: "work", Agent: "codex"}.Build()}})
 	m.Update(tea.KeyMsg{Type: tea.KeyTab})
-	if m.newAgent != "codex" || !m.creating {
-		t.Fatal("agent selection lost")
+	if m.accounts[m.accountIndex].GetAlias() != "work" || !m.creating || !strings.Contains(m.notice, "work · codex") {
+		t.Fatal("account selection lost")
 	}
 	m.Update(tea.KeyMsg{Type: tea.KeyEsc})
 	_, cmd = m.Update(tea.KeyMsg{Type: tea.KeyCtrlC})

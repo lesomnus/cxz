@@ -64,6 +64,7 @@ type CreateRequest struct {
 	ClientId      string                 `protobuf:"bytes,3,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
 	Agent         string                 `protobuf:"bytes,4,opt,name=agent,proto3" json:"agent,omitempty"`
 	Model         string                 `protobuf:"bytes,5,opt,name=model,proto3" json:"model,omitempty"`
+	Account       string                 `protobuf:"bytes,6,opt,name=account,proto3" json:"account,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -133,6 +134,13 @@ func (x *CreateRequest) GetModel() string {
 	return ""
 }
 
+func (x *CreateRequest) GetAccount() string {
+	if x != nil {
+		return x.Account
+	}
+	return ""
+}
+
 type SessionRef struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -194,6 +202,7 @@ type Session struct {
 	CreateId      string                 `protobuf:"bytes,13,opt,name=create_id,json=createId,proto3" json:"create_id,omitempty"`
 	ProjectName   string                 `protobuf:"bytes,14,opt,name=project_name,json=projectName,proto3" json:"project_name,omitempty"`
 	ProjectAlias  string                 `protobuf:"bytes,15,opt,name=project_alias,json=projectAlias,proto3" json:"project_alias,omitempty"`
+	Account       string                 `protobuf:"bytes,16,opt,name=account,proto3" json:"account,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -329,6 +338,13 @@ func (x *Session) GetProjectName() string {
 func (x *Session) GetProjectAlias() string {
 	if x != nil {
 		return x.ProjectAlias
+	}
+	return ""
+}
+
+func (x *Session) GetAccount() string {
+	if x != nil {
+		return x.Account
 	}
 	return ""
 }
@@ -851,6 +867,7 @@ type ProjectRequest struct {
 	PrepareOnly   bool                   `protobuf:"varint,10,opt,name=prepare_only,json=prepareOnly,proto3" json:"prepare_only,omitempty"`
 	Name          string                 `protobuf:"bytes,11,opt,name=name,proto3" json:"name,omitempty"`
 	Alias         string                 `protobuf:"bytes,12,opt,name=alias,proto3" json:"alias,omitempty"`
+	Account       string                 `protobuf:"bytes,13,opt,name=account,proto3" json:"account,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -965,6 +982,13 @@ func (x *ProjectRequest) GetName() string {
 func (x *ProjectRequest) GetAlias() string {
 	if x != nil {
 		return x.Alias
+	}
+	return ""
+}
+
+func (x *ProjectRequest) GetAccount() string {
+	if x != nil {
+		return x.Account
 	}
 	return ""
 }
@@ -1158,16 +1182,17 @@ var File_cxz_proto protoreflect.FileDescriptor
 const file_cxz_proto_rawDesc = "" +
 	"\n" +
 	"\tcxz.proto\x12\vcxz.runtime\"\a\n" +
-	"\x05Empty\"\x8c\x01\n" +
+	"\x05Empty\"\xa6\x01\n" +
 	"\rCreateRequest\x12\x1c\n" +
 	"\tworkspace\x18\x01 \x01(\tR\tworkspace\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x1b\n" +
 	"\tclient_id\x18\x03 \x01(\tR\bclientId\x12\x14\n" +
 	"\x05agent\x18\x04 \x01(\tR\x05agent\x12\x14\n" +
-	"\x05model\x18\x05 \x01(\tR\x05model\"\x1c\n" +
+	"\x05model\x18\x05 \x01(\tR\x05model\x12\x18\n" +
+	"\aaccount\x18\x06 \x01(\tR\aaccount\"\x1c\n" +
 	"\n" +
 	"SessionRef\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"\xaf\x03\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"\xc9\x03\n" +
 	"\aSession\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1c\n" +
 	"\tworkspace\x18\x02 \x01(\tR\tworkspace\x12\x14\n" +
@@ -1186,7 +1211,8 @@ const file_cxz_proto_rawDesc = "" +
 	"\x05model\x18\f \x01(\tR\x05model\x12\x1b\n" +
 	"\tcreate_id\x18\r \x01(\tR\bcreateId\x12!\n" +
 	"\fproject_name\x18\x0e \x01(\tR\vprojectName\x12#\n" +
-	"\rproject_alias\x18\x0f \x01(\tR\fprojectAlias\"?\n" +
+	"\rproject_alias\x18\x0f \x01(\tR\fprojectAlias\x12\x18\n" +
+	"\aaccount\x18\x10 \x01(\tR\aaccount\"?\n" +
 	"\vSessionList\x120\n" +
 	"\bsessions\x18\x01 \x03(\v2\x14.cxz.runtime.SessionR\bsessions\"n\n" +
 	"\x05Input\x12\x1d\n" +
@@ -1229,7 +1255,7 @@ const file_cxz_proto_rawDesc = "" +
 	"\apayload\x18\b \x01(\fR\apayload\"8\n" +
 	"\n" +
 	"EventBatch\x12*\n" +
-	"\x06events\x18\x01 \x03(\v2\x12.cxz.runtime.EventR\x06events\"\xda\x02\n" +
+	"\x06events\x18\x01 \x03(\v2\x12.cxz.runtime.EventR\x06events\"\xf4\x02\n" +
 	"\x0eProjectRequest\x12\x1c\n" +
 	"\tworkspace\x18\x01 \x01(\tR\tworkspace\x12\x14\n" +
 	"\x05agent\x18\x02 \x01(\tR\x05agent\x12\x16\n" +
@@ -1244,7 +1270,8 @@ const file_cxz_proto_rawDesc = "" +
 	"\fprepare_only\x18\n" +
 	" \x01(\bR\vprepareOnly\x12\x12\n" +
 	"\x04name\x18\v \x01(\tR\x04name\x12\x14\n" +
-	"\x05alias\x18\f \x01(\tR\x05alias\"\x91\x03\n" +
+	"\x05alias\x18\f \x01(\tR\x05alias\x12\x18\n" +
+	"\aaccount\x18\r \x01(\tR\aaccount\"\x91\x03\n" +
 	"\aProject\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1c\n" +
 	"\tworkspace\x18\x02 \x01(\tR\tworkspace\x12\x12\n" +

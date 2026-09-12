@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/lesomnus/cxz/internal/accounts"
 	"net"
 	"net/url"
 	"os"
@@ -277,7 +278,7 @@ func (s *Server) snapshot(ctx context.Context, m core.Session) (*api.Session, er
 		}
 		snap.Pending = nil
 	}
-	v := &api.Session{Id: m.ID, Workspace: m.Workspace, Title: m.Title, CreatedAt: m.CreatedAt, State: snap.State, RunId: snap.RunID, VendorId: snap.VendorID, LastSeq: snap.LastSeq, Agent: m.Kind, ProjectId: m.ProjectID, Model: m.Model, CreateId: m.CreateID}
+	v := &api.Session{Id: m.ID, Workspace: m.Workspace, Title: m.Title, CreatedAt: m.CreatedAt, State: snap.State, RunId: snap.RunID, VendorId: snap.VendorID, LastSeq: snap.LastSeq, Agent: m.Kind, ProjectId: m.ProjectID, Model: m.Model, CreateId: m.CreateID, Account: m.Account}
 	if v.Agent == "" {
 		v.Agent = "claude"
 	}
@@ -287,6 +288,11 @@ func (s *Server) snapshot(ctx context.Context, m core.Session) (*api.Session, er
 	return v, nil
 }
 func (s *Server) launch(ctx context.Context, m core.Session) (*api.Session, error) {
+	if m.Account != "" {
+		if _, err := accounts.Credential(s.root, m.Account, m.Kind); err != nil {
+			return nil, status.Error(codes.FailedPrecondition, err.Error())
+		}
+	}
 	exe, e := os.Executable()
 	if e != nil {
 		return nil, e
@@ -362,7 +368,7 @@ func (s *Server) Create(ctx context.Context, r *api.CreateRequest) (*api.Session
 		if e = json.Unmarshal(b, &m); e != nil {
 			return nil, e
 		}
-		if m.Workspace != path || m.Title != r.Title || m.Kind != r.Agent || m.Model != r.Model {
+		if m.Workspace != path || m.Title != r.Title || m.Kind != r.Agent || m.Model != r.Model || m.Account != r.Account {
 			return nil, status.Error(codes.AlreadyExists, "client_id reused")
 		}
 		return s.snapshot(ctx, m)
@@ -387,6 +393,9 @@ func (s *Server) Create(ctx context.Context, r *api.CreateRequest) (*api.Session
 		return nil, status.Error(codes.FailedPrecondition, "Codex requires an owned devcontainer: use cxz install and cxz up --agent codex")
 	}
 	if os.Getenv("CXZ_PROJECT_ID") != "" {
+		if r.Account == "" {
+			return nil, status.Error(codes.InvalidArgument, "account required; register and log in with cxz account")
+		}
 		runtime, e := workspace.LoadRuntime(s.root)
 		if e != nil {
 			return nil, e
@@ -406,7 +415,13 @@ func (s *Server) Create(ctx context.Context, r *api.CreateRequest) (*api.Session
 			return nil, e
 		}
 	}
-	m := core.Session{CreateID: r.ClientId, ID: core.ID(), Workspace: path, Title: r.Title, CreatedAt: time.Now().UnixMilli(), Agent: bin, Kind: r.Agent, ProjectID: os.Getenv("CXZ_PROJECT_ID"), ConfigDir: cfg, Model: r.Model}
+	if r.Account != "" {
+		if _, err := accounts.Credential(s.root, r.Account, r.Agent); err != nil {
+			return nil, status.Error(codes.FailedPrecondition, err.Error())
+		}
+		cfg = accounts.Config(s.root, r.Account)
+	}
+	m := core.Session{CreateID: r.ClientId, ID: core.ID(), Workspace: path, Title: r.Title, CreatedAt: time.Now().UnixMilli(), Agent: bin, Kind: r.Agent, ProjectID: os.Getenv("CXZ_PROJECT_ID"), ConfigDir: cfg, Model: r.Model, Account: r.Account}
 	if e = os.Mkdir(core.Dir(s.root, m.ID), 0700); e != nil {
 		return nil, e
 	}
@@ -532,12 +547,7 @@ func (s *Server) Stop(ctx context.Context, r *api.Control) (*api.Receipt, error)
 }
 func (s *Server) Resume(ctx context.Context, r *api.Control) (*api.Session, error) {
 	if s.manager != nil {
-		c, client, e := s.manager.ClientFor(ctx, r.SessionId)
-		if e != nil {
-			return nil, e
-		}
-		defer c.Close()
-		return client.Resume(ctx, r)
+		return s.manager.ResumeSession(ctx, r)
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()

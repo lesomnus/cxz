@@ -9,6 +9,18 @@ import (
 	"github.com/lesomnus/cxz/internal/ent"
 )
 
+// The AccountFunc type is an adapter to allow the use of ordinary
+// function as Account mutator.
+type AccountFunc func(context.Context, *ent.AccountMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f AccountFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.AccountMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.AccountMutation", m)
+}
+
 // The AuditFunc type is an adapter to allow the use of ordinary
 // function as Audit mutator.
 type AuditFunc func(context.Context, *ent.AuditMutation) (ent.Value, error)

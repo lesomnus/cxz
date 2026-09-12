@@ -21,6 +21,7 @@ type Session struct {
 	Model     string `json:"model,omitempty"`
 	ProjectID string `json:"project_id,omitempty"`
 	ConfigDir string `json:"config_dir,omitempty"`
+	Account   string `json:"account,omitempty"`
 }
 type Event struct {
 	SessionID string          `json:"session_id"`

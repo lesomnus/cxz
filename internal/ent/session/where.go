@@ -111,6 +111,11 @@ func ProjectId(v uuid.UUID) predicate.Session {
 	return predicate.Session(sql.FieldEQ(FieldProjectId, v))
 }
 
+// AccountId applies equality check predicate on the "account_id" field. It's identical to AccountIdEQ.
+func AccountId(v uuid.UUID) predicate.Session {
+	return predicate.Session(sql.FieldEQ(FieldAccountId, v))
+}
+
 // NameEQ applies the EQ predicate on the "name" field.
 func NameEQ(v string) predicate.Session {
 	return predicate.Session(sql.FieldEQ(FieldName, v))
@@ -691,6 +696,26 @@ func ProjectIdNotIn(vs ...uuid.UUID) predicate.Session {
 	return predicate.Session(sql.FieldNotIn(FieldProjectId, vs...))
 }
 
+// AccountIdEQ applies the EQ predicate on the "account_id" field.
+func AccountIdEQ(v uuid.UUID) predicate.Session {
+	return predicate.Session(sql.FieldEQ(FieldAccountId, v))
+}
+
+// AccountIdNEQ applies the NEQ predicate on the "account_id" field.
+func AccountIdNEQ(v uuid.UUID) predicate.Session {
+	return predicate.Session(sql.FieldNEQ(FieldAccountId, v))
+}
+
+// AccountIdIn applies the In predicate on the "account_id" field.
+func AccountIdIn(vs ...uuid.UUID) predicate.Session {
+	return predicate.Session(sql.FieldIn(FieldAccountId, vs...))
+}
+
+// AccountIdNotIn applies the NotIn predicate on the "account_id" field.
+func AccountIdNotIn(vs ...uuid.UUID) predicate.Session {
+	return predicate.Session(sql.FieldNotIn(FieldAccountId, vs...))
+}
+
 // HasProject applies the HasEdge predicate on the "project" edge.
 func HasProject() predicate.Session {
 	return predicate.Session(func(s *sql.Selector) {
@@ -706,6 +731,29 @@ func HasProject() predicate.Session {
 func HasProjectWith(preds ...predicate.Project) predicate.Session {
 	return predicate.Session(func(s *sql.Selector) {
 		step := newProjectStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasAccount applies the HasEdge predicate on the "account" edge.
+func HasAccount() predicate.Session {
+	return predicate.Session(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, AccountTable, AccountColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasAccountWith applies the HasEdge predicate on the "account" edge with a given conditions (other predicates).
+func HasAccountWith(preds ...predicate.Account) predicate.Session {
+	return predicate.Session(func(s *sql.Selector) {
+		step := newAccountStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

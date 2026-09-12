@@ -13,6 +13,7 @@ import (
 	context "context"
 	fmt "fmt"
 	ent "github.com/lesomnus/cxz/internal/ent"
+	account "github.com/lesomnus/cxz/internal/ent/account"
 	audit "github.com/lesomnus/cxz/internal/ent/audit"
 	holder "github.com/lesomnus/cxz/internal/ent/holder"
 	outbox "github.com/lesomnus/cxz/internal/ent/outbox"
@@ -79,6 +80,7 @@ func Check() error { return version.Same(Payday) }
 // trail says what kind of thing it was long after the row is gone. So a
 // number is chosen once and never given to something else.
 const (
+	AccountDomain pdid.Domain = 9 // "account"
 	AuditDomain   pdid.Domain = 3 // "audit"
 	HolderDomain  pdid.Domain = 2 // "holder"
 	OutboxDomain  pdid.Domain = 4 // "outbox"
@@ -88,6 +90,7 @@ const (
 )
 
 func init() {
+	pdid.Register("cxz.Account", AccountDomain, "account")
 	pdid.Register("cxz.Audit", AuditDomain, "audit")
 	pdid.Register("cxz.Holder", HolderDomain, "holder")
 	pdid.Register("cxz.Outbox", OutboxDomain, "outbox")
@@ -101,6 +104,7 @@ func init() {
 // Domains is the domain of each entity by the full name of its message,
 // which is the name a [Minter] is asked about.
 var Domains = map[string]pdid.Domain{
+	"cxz.Account": AccountDomain,
 	"cxz.Audit":   AuditDomain,
 	"cxz.Holder":  HolderDomain,
 	"cxz.Outbox":  OutboxDomain,
@@ -150,6 +154,11 @@ func Wall() bare.Scope { return wall{} }
 type wall struct{}
 
 var _ bare.Scope = wall{}
+
+// AccountScope: declared `global`, so it is not behind the wall at all.
+func (wall) AccountScope(ctx context.Context) (predicate.Account, error) {
+	return nil, nil
+}
 
 // AuditScope: a row is readable by every tenant it names -- tenant_id, actor_tenant_id, counterpart_tenant_id -- which is the trail.
 func (wall) AuditScope(ctx context.Context) (predicate.Audit, error) {
@@ -286,6 +295,405 @@ func (s Sink) WithDriver(drv dialect.Driver) (resource.Server, error) {
 	// is a rule the requests inside a transaction go around, and it fails
 	// only there -- which is the hardest place to notice it.
 	return Sink{Server: v.(bare.Server), w: s.w, namer: s.namer, joined: true}, nil
+}
+
+type sinkAccount struct {
+	resource.AccountServiceServer
+	store  bare.Store
+	w      *watch.Watch
+	namer  slug.Namer
+	joined bool
+}
+
+func (s Sink) Account() resource.AccountServiceServer {
+	return sinkAccount{s.Server.Account(), s.Server.Store, s.w, s.namer, s.joined}
+}
+
+// Add decides the name, and refuses one that was given and cannot be one.
+//
+// It goes through [Sink.WithNamer], which is unset in most deployments and
+// then means: fold what was given, and make a name up when nothing was --
+// for the reason `bare.Minter` makes a key up. An app whose rows have to
+// be named says so with `slug.Required`; see `slug.Names` for why that is
+// the way round it is.
+//
+// The request is copied rather than written to. It belongs to whoever
+// called, and for a call made in this process that is a message they may
+// still be holding -- a server that folded a caller's own field would be
+// changing a value they can read back.
+func (s sinkAccount) Add(ctx context.Context, req *resource.AccountAddRequest) (*resource.Account, error) {
+	// How many names to try. More than one only when the caller named
+	// nothing -- then the name is this server's and a collision is this
+	// server's to resolve. A name the caller gave is theirs, and quietly
+	// choosing a different one would write a row they did not ask for.
+	//
+	// And only when this Add opens its own transaction; see [Sink.joined].
+	tries := 1
+	if req.GetAlias() == "" && !s.joined {
+		tries = slug.Tries
+	}
+
+	for try := 0; ; try++ {
+		v, err := slug.NameWith(ctx, s.namer, "cxz.Account", req.GetAlias(), req)
+		if err != nil {
+			return nil, pderr.At("alias", err)
+		}
+
+		// The request is copied rather than written to, and copied again on
+		// each try: it belongs to whoever called, and for a call made in this
+		// process that is a message they may still be holding.
+		r := proto.CloneOf(req)
+		r.SetAlias(v)
+
+		res, err := s.AccountServiceServer.Add(ctx, r)
+		if err == nil || try+1 >= tries || status.Code(err) != codes.AlreadyExists {
+			// Whatever it was, said in the words it was said in. Rewriting
+			// it into "no free name" would assert the one thing this cannot
+			// know -- a duplicate key is the same code -- and would say it
+			// loudest exactly when it is wrong.
+			return res, err
+		}
+	}
+}
+
+// Patch folds a name it was given, and says nothing about one it was not.
+//
+// The presence is the whole of the difference from [sinkAccount.Add]: a patch
+// that does not mention the alias is not a patch setting it to the empty
+// string, and refusing one would make every patch of any other field carry
+// the name along.
+//
+// The namer is **not** asked here, and that is the second difference. It
+// decides the name of a row being made; a patch that cleared the alias is
+// a caller asking for something invalid, and answering that with an
+// invented name would hand them a row they did not ask for.
+func (s sinkAccount) Patch(ctx context.Context, req *resource.AccountPatchRequest) (*resource.Account, error) {
+	if !req.HasAlias() {
+		return s.AccountServiceServer.Patch(ctx, req)
+	}
+
+	v, err := slug.ParseAlias(req.GetAlias())
+	if err != nil {
+		return nil, pderr.At("alias", err)
+	}
+
+	req = proto.CloneOf(req)
+	req.SetAlias(v)
+
+	return s.AccountServiceServer.Patch(ctx, req)
+}
+
+// orderAccount is how Accounts come back.
+//
+// The last column is the key, and it is not decoration: a cursor cannot
+// tell apart two rows equal in every column of the order, so the page after
+// the first of them either repeats the second or skips it. Rows written by
+// one request are stamped a moment apart at best.
+var orderAccount = []sqlpage.Order{
+	{Column: account.FieldDateCreated, Desc: false},
+	{Column: account.FieldId, Desc: false},
+}
+
+const (
+	// AccountPageSize is what a request that did not say gets, and
+	// AccountPageLimit is the most it gets however loudly it asks.
+	AccountPageSize  = 50
+	AccountPageLimit = 200
+
+	// AccountFilterLimit is how many filters one request may carry. Each is a
+	// predicate in the same query, so it is what says how much of the
+	// database a request may ask to read -- and it is refused rather than
+	// clamped, because dropping half the filters would answer a question
+	// nobody asked.
+	AccountFilterLimit = 32
+)
+
+// List answers with the Accounts that match any of the given filters, or with
+// every one there is if the request named none, a page at a time.
+func (s sinkAccount) List(ctx context.Context, req *resource.AccountListRequest) (*resource.AccountListResponse, error) {
+	q := s.store.Db.Account.Query()
+
+	// Through the same narrowing every generated read goes through, and not
+	// by asking the scope alone: what narrows a read is the wall today and
+	// the wall and something else tomorrow, and a list that reached past it
+	// would be the one read that missed the something else.
+	if p, err := bare.AccountNarrow(ctx, s.store.Scope, nil); err != nil {
+		return nil, err
+	} else if p != nil {
+		q.Where(p)
+	}
+
+	if fs := req.GetFilters(); len(fs) > 0 {
+		if len(fs) > AccountFilterLimit {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters: %d of them, and %d is the most one list carries", len(fs), AccountFilterLimit)
+		}
+
+		ps := make([]predicate.Account, 0, len(fs))
+		for i, f := range fs {
+			p, err := filterAccount(f)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "filters[%d]: %s", i, err)
+			}
+
+			ps = append(ps, p)
+		}
+
+		q.Where(account.Or(ps...))
+	}
+
+	if v := req.GetAfter(); v != "" {
+		var (
+			at0 time.Time
+			at1 uuid.UUID
+		)
+		if err := sqlpage.Decode(v, &at0, &at1); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		p, err := sqlpage.After(orderAccount, []any{at0, at1})
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		q.Where(p)
+	}
+
+	// One row more than the page, which is how "is there another" is answered
+	// without a second query and without a count. The extra is dropped before
+	// the answer is built; it was only ever asked for to see whether it was
+	// there -- so a full last page answers with no cursor rather than sending
+	// the caller back for an empty one.
+	size := sqlpage.Size(int(req.GetSize()), AccountPageSize, AccountPageLimit)
+	us, err := q.Order(account.ByDateCreated(), account.ById()).Limit(size + 1).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	more := len(us) > size
+	if more {
+		us = us[:size]
+	}
+
+	items := make([]*resource.Account, len(us))
+	for i, u := range us {
+		items[i] = u.Proto()
+	}
+
+	res := resource.AccountListResponse_builder{Items: items}.Build()
+	if more {
+		last := us[len(us)-1]
+		next, err := sqlpage.Encode(last.DateCreated, last.Id)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "next: %s", err)
+		}
+
+		res.SetNext(next)
+	}
+
+	return res, nil
+}
+
+// filterAccount turns one filter into the predicate that selects what it
+// names. Naming nothing is refused, since the request asked for "these" and
+// did not say which.
+func filterAccount(f *resource.AccountFilter) (predicate.Account, error) {
+	ps := make([]predicate.Account, 0, 1)
+	if f.HasRef() {
+		p, err := bare.AccountPick(f.GetRef())
+		if err != nil {
+			return nil, err
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
+	}
+
+	return account.And(ps...), nil
+}
+
+// AccountService is the prefix of every Rpc of that service, which is how a
+// change is known to be about a Account. A service is named for the entity it
+// is about, so the name carries it.
+var AccountService = watch.ServiceOf(resource.AccountService_Get_FullMethodName)
+
+// Watch answers with the Accounts this caller may see, as they are now and as
+// they change.
+//
+// What is sent is **state and never a delta**, which is what makes a stream
+// that missed something still correct: the next item about a row carries the
+// whole of it, so a client converges rather than replays. It is also what
+// makes the first message safe to duplicate against the ones after it.
+func (s sinkAccount) Watch(req *resource.AccountWatchRequest, out grpc.ServerStreamingServer[resource.AccountWatchResponse]) error {
+	ctx := out.Context()
+
+	// A watch with no filters is the whole table, forever. It is the one
+	// shape that has no cap at all, so it is the one shape refused.
+	fs := req.GetFilters()
+	switch {
+	case len(fs) == 0:
+		return status.Error(codes.InvalidArgument,
+			"filters: a watch says which rows it is about; one that says nothing is the whole table, for as long as it is open")
+	case len(fs) > AccountFilterLimit:
+		return status.Errorf(codes.InvalidArgument,
+			"filters: %d of them, and %d is the most one watch carries", len(fs), AccountFilterLimit)
+	}
+
+	// Resolved before anything is subscribed to, so a name that names
+	// nothing is an answer rather than a stream that quietly watches none.
+	watching, err := s.watchAccountKeys(ctx, fs)
+	if err != nil {
+		return err
+	}
+
+	var snapshot func(watch.Seen) error
+	if !req.GetSkipSnapshot() {
+		snapshot = func(sent watch.Seen) error { return s.watchNow(ctx, req, out, sent) }
+	}
+
+	if s.w == nil {
+		return status.Error(codes.Unimplemented,
+			"this deployment publishes no changes; see WithWatch")
+	}
+
+	return watch.Stream(ctx, s.w, AccountService, snapshot,
+		func(ks map[pdid.Id]string, sent watch.Seen) error {
+			items := make([]*resource.AccountWatchItem, 0, len(ks))
+			for k, action := range ks {
+				u, err := s.watchRead(ctx, watching, k)
+				if err != nil {
+					return err
+				}
+				if u == nil && !sent[k] {
+					// Not theirs, or not what they asked for, and they
+					// have never been told about it. A row that never
+					// matched is not news.
+					continue
+				}
+
+				sent[k] = u != nil
+				items = append(items, resource.AccountWatchItem_builder{
+					Id:     k.Bytes(),
+					Value:  u,
+					Action: action,
+				}.Build())
+			}
+			if len(items) == 0 {
+				return nil
+			}
+
+			return out.Send(resource.AccountWatchResponse_builder{Items: items}.Build())
+		})
+}
+
+// watchNow sends what matches right now, through the same List a caller
+// would have called -- so what a stream begins with and what a list answers
+// cannot disagree, and a client does not have to do both and race them.
+func (s sinkAccount) watchNow(
+	ctx context.Context, req *resource.AccountWatchRequest, out grpc.ServerStreamingServer[resource.AccountWatchResponse],
+	sent watch.Seen,
+) error {
+	after := ""
+	for {
+		res, err := s.List(ctx, resource.AccountListRequest_builder{
+			Filters: req.GetFilters(),
+			After:   after,
+		}.Build())
+		if err != nil {
+			return err
+		}
+
+		items := make([]*resource.AccountWatchItem, 0, len(res.GetItems()))
+		for _, u := range res.GetItems() {
+			k, err := pdid.From(u.GetId())
+			if err != nil {
+				return err
+			}
+
+			sent[k] = true
+			// No action: this is not something anybody asked for, it is
+			// what is already there.
+			items = append(items, resource.AccountWatchItem_builder{Id: u.GetId(), Value: u}.Build())
+		}
+		if len(items) > 0 {
+			if err := out.Send(resource.AccountWatchResponse_builder{Items: items}.Build()); err != nil {
+				return err
+			}
+		}
+
+		if after = res.GetNext(); after == "" {
+			return nil
+		}
+	}
+}
+
+// watchRead answers with the row as it is now, or nil when it is no longer
+// one this caller may see -- erased, walled off, or no longer matching what
+// they asked for. The three are deliberately indistinguishable to a caller:
+// a stream that told them apart would be saying which rows stopped being
+// theirs, which is the thing the wall is for.
+//
+// The Get is what keeps the wall out of this file. It goes through the same
+// server every other read does, with the context of the caller who asked, so
+// a row they may not see comes back NotFound and is never sent.
+func (s sinkAccount) watchRead(
+	ctx context.Context, watching []pdid.Id, k pdid.Id,
+) (*resource.Account, error) {
+	// Not one of the rows this stream is about. Asked before the read, so a
+	// busy table costs a stream nothing for the rows it does not watch.
+	if !slices.Contains(watching, k) {
+		return nil, nil
+	}
+
+	v, err := s.Get(ctx, resource.AccountGetRequest_builder{
+		Ref: resource.AccountRef_builder{Id: k.Bytes()}.Build(),
+	}.Build())
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return v, nil
+}
+
+// watchAccountKeys is the rows a stream is about, resolved once when it opens.
+//
+// A filter names a row and a row is named several ways -- by identifier, or
+// by whatever unique index the schema declared. Resolving them here rather
+// than comparing them per event does three things: the comparison afterwards
+// is an identifier against an identifier, a name that names nothing is
+// refused when the stream opens rather than silently watching nothing, and a
+// row renamed while the stream is open goes on being the row that was asked
+// for -- which is what somebody watching a thing meant.
+func (s sinkAccount) watchAccountKeys(
+	ctx context.Context, fs []*resource.AccountFilter,
+) ([]pdid.Id, error) {
+	ks := make([]pdid.Id, 0, len(fs))
+	for i, f := range fs {
+		if !f.HasRef() {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters[%d]: a watch says which rows it is about by naming them", i)
+		}
+
+		v, err := s.Get(ctx, resource.AccountGetRequest_builder{Ref: f.GetRef()}.Build())
+		if err != nil {
+			return nil, err
+		}
+
+		k, err := pdid.From(v.GetId())
+		if err != nil {
+			return nil, err
+		}
+
+		ks = append(ks, k)
+	}
+
+	return ks, nil
 }
 
 type sinkAudit struct {
@@ -2411,6 +2819,50 @@ func (s Intercept) WithDriver(drv dialect.Driver) (resource.Server, error) {
 	return Intercept{Overlay: resource.NewOverlay(next), unary: s.unary, stream: s.stream}, nil
 }
 
+func (s Intercept) Account() resource.AccountServiceServer {
+	return interceptAccount{s, s.Next().Account()}
+}
+
+type interceptAccount struct {
+	Intercept
+	resource.AccountServiceServer
+}
+
+func (s interceptAccount) Add(ctx context.Context, req *resource.AccountAddRequest) (*resource.Account, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.AccountServiceServer,
+		resource.AccountService_Add_FullMethodName, req, s.AccountServiceServer.Add)
+}
+
+func (s interceptAccount) Get(ctx context.Context, req *resource.AccountGetRequest) (*resource.Account, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.AccountServiceServer,
+		resource.AccountService_Get_FullMethodName, req, s.AccountServiceServer.Get)
+}
+
+func (s interceptAccount) Patch(ctx context.Context, req *resource.AccountPatchRequest) (*resource.Account, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.AccountServiceServer,
+		resource.AccountService_Patch_FullMethodName, req, s.AccountServiceServer.Patch)
+}
+
+func (s interceptAccount) Apply(ctx context.Context, req *resource.AccountApplyRequest) (*resource.Account, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.AccountServiceServer,
+		resource.AccountService_Apply_FullMethodName, req, s.AccountServiceServer.Apply)
+}
+
+func (s interceptAccount) Erase(ctx context.Context, req *resource.AccountRef) (*resource.AccountEraseResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.AccountServiceServer,
+		resource.AccountService_Erase_FullMethodName, req, s.AccountServiceServer.Erase)
+}
+
+func (s interceptAccount) List(ctx context.Context, req *resource.AccountListRequest) (*resource.AccountListResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.AccountServiceServer,
+		resource.AccountService_List_FullMethodName, req, s.AccountServiceServer.List)
+}
+
+func (s interceptAccount) Watch(req *resource.AccountWatchRequest, out grpc.ServerStreamingServer[resource.AccountWatchResponse]) error {
+	return grpcx.RunStream(s.stream, s.AccountServiceServer,
+		resource.AccountService_Watch_FullMethodName, req, out, s.AccountServiceServer.Watch)
+}
+
 func (s Intercept) Audit() resource.AuditServiceServer {
 	return interceptAudit{s, s.Next().Audit()}
 }
@@ -3197,6 +3649,84 @@ func dispatch(ctx context.Context, s resource.Server, op *pdpb.Op) (*anypb.Any, 
 	ctx = batch.AsOp(ctx, m)
 
 	switch m {
+	case resource.AccountService_Add_FullMethodName:
+		v := &resource.AccountAddRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Account().Add(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.AccountService_Get_FullMethodName:
+		v := &resource.AccountGetRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Account().Get(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.AccountService_Patch_FullMethodName:
+		v := &resource.AccountPatchRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Account().Patch(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.AccountService_Apply_FullMethodName:
+		v := &resource.AccountApplyRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Account().Apply(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.AccountService_Erase_FullMethodName:
+		v := &resource.AccountRef{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Account().Erase(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.AccountService_List_FullMethodName:
+		v := &resource.AccountListRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Account().List(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
 	case resource.AuditService_Add_FullMethodName:
 		v := &resource.AuditAddRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {

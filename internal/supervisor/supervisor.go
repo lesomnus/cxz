@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/lesomnus/cxz/internal/accounts"
 	"io"
 	"net"
 	"net/http"
@@ -130,11 +131,17 @@ func Run(ctx context.Context, root, id string) error {
 		}
 		s.codex = &codexProtocol{s: s}
 		args = []string{"app-server", "--listen", "stdio://"}
+		if session.Account != "" {
+			args = append(args, "-c", `cli_auth_credentials_store="file"`, "-c", `model_provider="openai"`)
+		}
 	}
 	s.cmd = exec.Command(session.Agent, args...)
 	s.cmd.Dir = session.Workspace
 	s.cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true, Pdeathsig: syscall.SIGKILL}
 	s.cmd.Env = os.Environ()
+	if session.Account != "" {
+		s.cmd.Env = accounts.Environment(s.cmd.Env, root, session.Account, session.Kind)
+	}
 	if session.ConfigDir != "" {
 		key := "CLAUDE_CONFIG_DIR"
 		if session.Kind == "codex" {
