@@ -54,7 +54,7 @@ func withClient(fn clientFunc) xli.Handler {
 		if _, err := transport.Load(root); os.IsNotExist(err) {
 			if os.Getenv("CXZ_PROJECT_ID") == "" {
 				if _, err := os.Stat(server.Socket(root)); os.IsNotExist(err) {
-					return fmt.Errorf("cxz is not installed; run cxz manager install first")
+					return fmt.Errorf("cxz is not installed; run cxz install first")
 				}
 			}
 		} else if err != nil {

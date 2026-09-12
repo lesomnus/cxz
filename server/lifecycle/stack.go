@@ -30,6 +30,7 @@ type Runtime interface {
 	ResourceSnapshot(context.Context) (*api.ProjectList, *api.SessionList, error)
 }
 type shared struct {
+	transition sync.RWMutex
 	mu         sync.Mutex
 	snapshotMu sync.Mutex
 	watchers   atomic.Int64

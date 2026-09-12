@@ -125,7 +125,35 @@ func bindProjectCompletions(root *xli.Command) {
 
 func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Command) error {
 	command := c.Name
+	projectEntry := command == "up" && c.Parent().Name == "cxz"
 	path := arg.MustGet[string](c, "WORKSPACE")
+	if projectEntry {
+		target := path
+		if st, err := os.Stat(target); err == nil && st.IsDir() {
+			var e error
+			target, e = dockerx.EnginePath(target)
+			if e != nil {
+				return e
+			}
+		}
+		resources := client.(*resourceclient.Client)
+		p, err := resources.ResolveProject(ctx, target)
+		if err != nil && status.Code(err) != codes.NotFound {
+			return err
+		}
+		changed := false
+		for _, flag := range []string{"config", "name", "alias", "agent"} {
+			if _, set := flg.Get[string](c, flag); set {
+				changed = true
+			}
+		}
+		if err == nil && p.State == "running" && !changed {
+			if flg.MustGet[bool](c, "no-attach") || !terminal(c) {
+				return writeOutput(c, p)
+			}
+			return projectTUI(ctx, resources, c, p, "", flg.MustGet[bool](c, "trust-config"))
+		}
+	}
 	if command == "down" {
 		if st, e := os.Stat(path); e == nil && st.IsDir() {
 			path, e = dockerx.EnginePath(path)
@@ -140,7 +168,7 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 		return writeOutput(c, r)
 	}
 	agent := flg.MustGet[string](c, "agent")
-	account := flg.MustGet[string](c, "account")
+	account, _ := flg.Get[string](c, "account")
 	if command == "new" && account == "" {
 		var err error
 		account, err = selectProjectAccount(ctx, client.(*resourceclient.Client), c)
@@ -158,7 +186,7 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 		}
 		agent = a.GetAgent()
 	}
-	model := flg.MustGet[string](c, "model")
+	model, _ := flg.Get[string](c, "model")
 	cfg := settings.From(ctx)
 	config := flg.MustGet[string](c, "config")
 	detach := flg.MustGet[bool](c, "no-attach")
@@ -209,6 +237,7 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 		model = cfg.Model(agent)
 	}
 	request := &api.ProjectRequest{Workspace: path, Name: flg.MustGet[string](c, "name"), Alias: flg.MustGet[string](c, "alias"), Agent: agent, Model: model, Config: config, NewSession: command == "new", Recreate: command == "recreate", Confirmed: yes, TrustConfig: trust, ClientId: core.ID(), Account: account}
+	request.PrepareOnly = projectEntry
 	resources := client.(*resourceclient.Client)
 	if err := resources.CheckOpen(ctx, request); err != nil {
 		if !errors.Is(err, resourceclient.ErrAccountRequired) {
@@ -253,6 +282,19 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 	fmt.Fprintln(c.ErrWriter, "cxz: preparing workspace; initial image/agent downloads may take a few minutes")
 	call, cancel := context.WithTimeout(ctx, 30*time.Minute)
 	defer cancel()
+	if projectEntry {
+		if _, err := resources.Open(call, request); err != nil {
+			return err
+		}
+		p, err := resources.ResolveProject(call, path)
+		if err != nil {
+			return err
+		}
+		if detach || !terminal(c) {
+			return writeOutput(c, p)
+		}
+		return projectTUI(ctx, resources, c, p, "", trust)
+	}
 	s, e := openWithProjectLogin(call, request, terminal(c), func(ctx context.Context, r *api.ProjectRequest) (*api.Session, error) {
 		return client.Open(ctx, r)
 	}, func(ctx context.Context, alias string) error {
@@ -269,7 +311,11 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 	if detach || !terminal(c) {
 		return writeOutput(c, s)
 	}
-	return tui.RunSelected(ctx, client, s.Id)
+	p, err := resources.ResolveProject(ctx, s.ProjectId)
+	if err != nil {
+		return err
+	}
+	return projectTUI(ctx, resources, c, p, s.Id, trust)
 }
 func attach(ctx context.Context, client api.SessionsClient, arg string) error {
 	c, cancel := context.WithTimeout(ctx, 15*time.Second)

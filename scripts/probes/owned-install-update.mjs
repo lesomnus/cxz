@@ -14,13 +14,13 @@ async function cli(...args){return (await exec(binary,['--state',state,'--format
 async function inspect(){const v=load();const c=JSON.parse((await exec('docker',['inspect',v.container])).stdout)[0];assert.equal(c.Config.Labels['cxz.owner'],v.owner);return c;}
 function pass(check){console.log(JSON.stringify({check,status:'passed'}));}
 try {
- await cli('manager','install','--workspace-root',root,'--image',image);const first=await inspect();const identity=load();
- await cli('manager','install','--image',image);assert.equal((await inspect()).Id,first.Id);await cli('manager','doctor');pass('fresh installation and repeated install keep manager identity');
- await exec('docker',['stop',first.Id]);await cli('manager','install','--image',image);assert.equal((await inspect()).Id,first.Id);pass('install resumes stopped owned manager');
+ await cli('install','--workspace-root',root,'--image',image);const first=await inspect();const identity=load();
+ await cli('install','--image',image);assert.equal((await inspect()).Id,first.Id);await cli('manager','doctor');pass('fresh installation and repeated install keep manager identity');
+ await exec('docker',['stop',first.Id]);await cli('install','--image',image);assert.equal((await inspect()).Id,first.Id);pass('install resumes stopped owned manager');
  try{await cli('manager','update','invalid.invalid/cxz:missing');assert.fail('invalid image accepted');}catch(e){assert(!String(e).includes('invalid image accepted'));}
  assert.equal((await inspect()).Id,first.Id);assert.equal(load().image,image);pass('unavailable update preserves running manager and locator');
  await cli('manager','update',previous);const updated=await inspect();assert.notEqual(updated.Id,first.Id);assert.equal(load().previous_image,image);
  await cli('manager','rollback');const rolled=await inspect();assert.notEqual(rolled.Id,updated.Id);assert.equal(load().image,image);assert.equal(load().owner,identity.owner);assert.equal(load().state_volume,identity.state_volume);await cli('manager','doctor');pass('update and rollback retain installation identity and volumes');
 } finally {
- if(existsSync(join(state,'installation.json'))){await inspect();await cli('manager','uninstall');console.log(JSON.stringify({manager_removed:true,named_volumes_retained:true,client_state:state}));}
+ if(existsSync(join(state,'installation.json'))){await inspect();await cli('uninstall');console.log(JSON.stringify({manager_removed:true,named_volumes_retained:true,client_state:state}));}
 }

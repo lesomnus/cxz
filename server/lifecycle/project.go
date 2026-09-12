@@ -17,6 +17,8 @@ type ProjectServer struct {
 }
 
 func (s ProjectServer) Add(ctx context.Context, r *resource.ProjectAddRequest) (*resource.Project, error) {
+	s.shared.transition.RLock()
+	defer s.shared.transition.RUnlock()
 	if err := s.effect(); err != nil {
 		return nil, err
 	}
@@ -69,6 +71,12 @@ func (s ProjectServer) Add(ctx context.Context, r *resource.ProjectAddRequest) (
 	if err != nil {
 		return nil, err
 	}
+	if !v.GetListed() {
+		v, err = s.Next().Project().Patch(ctx, resource.ProjectPatchRequest_builder{Ref: projectRef(p.Id), Alias: &p.Alias, Listed: ptr(true), Status: projectStatus(p), DateUpdatedForce: ptr(true)}.Build())
+		if err != nil {
+			return nil, err
+		}
+	}
 	if r.GetName() != "" || r.GetDesc() != "" || r.GetAlias() != "" {
 		patch := resource.ProjectPatchRequest_builder{Ref: projectRef(p.Id), DateUpdatedForce: ptr(true)}.Build()
 		if r.GetName() != "" {
@@ -88,9 +96,19 @@ func (s ProjectServer) Get(ctx context.Context, r *resource.ProjectGetRequest) (
 	if err := s.sync(ctx); err != nil {
 		return nil, err
 	}
+	v, err := s.ProjectServiceServer.Get(ctx, resource.ProjectGetRequest_builder{Ref: r.GetRef(), Select: resource.ProjectSelect_builder{All: ptr(true)}.Build()}.Build())
+	if err == nil && !v.GetListed() {
+		return nil, status.Error(codes.NotFound, "project deleted")
+	}
+	if err != nil {
+		return nil, err
+	}
 	return s.ProjectServiceServer.Get(ctx, r)
 }
 func (s ProjectServer) List(ctx context.Context, r *resource.ProjectListRequest) (*resource.ProjectListResponse, error) {
+	if len(r.GetFilters()) == 0 {
+		r.SetFilters([]*resource.ProjectFilter{resource.ProjectFilter_builder{Listed: ptr(true)}.Build()})
+	}
 	if err := s.sync(ctx); err != nil {
 		return nil, err
 	}
@@ -134,9 +152,6 @@ func (s ProjectServer) Patch(ctx context.Context, r *resource.ProjectPatchReques
 func (s ProjectServer) Apply(context.Context, *resource.ProjectApplyRequest) (*resource.Project, error) {
 	return nil, closed()
 }
-func (s ProjectServer) Erase(context.Context, *resource.ProjectRef) (*resource.ProjectEraseResponse, error) {
-	return nil, closed()
-}
 func (s ProjectServer) Up(ctx context.Context, r *resource.ProjectUpRequest) (*resource.Project, error) {
 	return s.up(ctx, r.GetRef(), r.GetClientId(), r.GetAgent(), r.GetConfig(), r.GetTrustConfig(), false, false)
 }
@@ -144,6 +159,8 @@ func (s ProjectServer) Recreate(ctx context.Context, r *resource.ProjectRecreate
 	return s.up(ctx, r.GetRef(), r.GetClientId(), r.GetAgent(), r.GetConfig(), r.GetTrustConfig(), true, r.GetConfirmed())
 }
 func (s ProjectServer) up(ctx context.Context, ref *resource.ProjectRef, clientID, agent, config string, trust, recreate, confirmed bool) (*resource.Project, error) {
+	s.shared.transition.RLock()
+	defer s.shared.transition.RUnlock()
 	if err := s.effect(); err != nil {
 		return nil, err
 	}
@@ -154,6 +171,9 @@ func (s ProjectServer) up(ctx context.Context, ref *resource.ProjectRef, clientI
 	if config == "" {
 		config = p.GetConfig()
 	}
+	if !p.GetListed() {
+		return nil, status.Error(codes.NotFound, "project deleted")
+	}
 	_, err = s.shared.runtime.Open(ctx, &api.ProjectRequest{Workspace: p.GetRuntimeId(), Config: config, Agent: agent, ClientId: clientID, TrustConfig: trust, Recreate: recreate, Confirmed: confirmed, PrepareOnly: true})
 	if err != nil {
 		return nil, err
@@ -161,6 +181,8 @@ func (s ProjectServer) up(ctx context.Context, ref *resource.ProjectRef, clientI
 	return s.Get(ctx, resource.ProjectGetRequest_builder{Ref: ref, Select: resource.ProjectSelect_builder{All: ptr(true)}.Build()}.Build())
 }
 func (s ProjectServer) Down(ctx context.Context, r *resource.ProjectControl) (*resource.Project, error) {
+	s.shared.transition.RLock()
+	defer s.shared.transition.RUnlock()
 	if err := s.effect(); err != nil {
 		return nil, err
 	}

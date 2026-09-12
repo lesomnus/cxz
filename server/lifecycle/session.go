@@ -16,6 +16,8 @@ type SessionServer struct {
 }
 
 func (s SessionServer) Add(ctx context.Context, r *resource.SessionAddRequest) (*resource.Session, error) {
+	s.shared.transition.RLock()
+	defer s.shared.transition.RUnlock()
 	if err := s.effect(); err != nil {
 		return nil, err
 	}
@@ -42,6 +44,9 @@ func (s SessionServer) Add(ctx context.Context, r *resource.SessionAddRequest) (
 	p, err := s.Next().Project().Get(ctx, resource.ProjectGetRequest_builder{Ref: r.GetProject(), Select: resource.ProjectSelect_builder{All: ptr(true)}.Build()}.Build())
 	if err != nil {
 		return nil, err
+	}
+	if !p.GetListed() {
+		return nil, status.Error(codes.NotFound, "project deleted")
 	}
 	if _, err := accounts.Resolve(r.GetAgent(), backend); err != nil {
 		return nil, status.Error(codes.FailedPrecondition, err.Error())
@@ -73,9 +78,19 @@ func (s SessionServer) Get(ctx context.Context, r *resource.SessionGetRequest) (
 	if err := s.sync(ctx); err != nil {
 		return nil, err
 	}
+	v, err := s.SessionServiceServer.Get(ctx, resource.SessionGetRequest_builder{Ref: r.GetRef(), Select: resource.SessionSelect_builder{All: ptr(true)}.Build()}.Build())
+	if err == nil && !v.GetListed() {
+		return nil, status.Error(codes.NotFound, "session deleted")
+	}
+	if err != nil {
+		return nil, err
+	}
 	return s.SessionServiceServer.Get(ctx, r)
 }
 func (s SessionServer) List(ctx context.Context, r *resource.SessionListRequest) (*resource.SessionListResponse, error) {
+	if len(r.GetFilters()) == 0 {
+		r.SetFilters([]*resource.SessionFilter{resource.SessionFilter_builder{Listed: ptr(true)}.Build()})
+	}
 	if err := s.sync(ctx); err != nil {
 		return nil, err
 	}
@@ -95,9 +110,6 @@ func (s SessionServer) Patch(context.Context, *resource.SessionPatchRequest) (*r
 func (s SessionServer) Apply(context.Context, *resource.SessionApplyRequest) (*resource.Session, error) {
 	return nil, closed()
 }
-func (s SessionServer) Erase(context.Context, *resource.SessionRef) (*resource.SessionEraseResponse, error) {
-	return nil, closed()
-}
 func (s SessionServer) resolve(ctx context.Context, ref *resource.SessionRef) (*resource.Session, error) {
 	if err := s.effect(); err != nil {
 		return nil, err
@@ -105,9 +117,15 @@ func (s SessionServer) resolve(ctx context.Context, ref *resource.SessionRef) (*
 	if err := s.sync(ctx); err != nil {
 		return nil, err
 	}
-	return s.SessionServiceServer.Get(ctx, resource.SessionGetRequest_builder{Ref: ref, Select: resource.SessionSelect_builder{All: ptr(true), Project: resource.ProjectSelect_builder{All: ptr(true)}.Build()}.Build()}.Build())
+	v, err := s.SessionServiceServer.Get(ctx, resource.SessionGetRequest_builder{Ref: ref, Select: resource.SessionSelect_builder{All: ptr(true), Project: resource.ProjectSelect_builder{All: ptr(true)}.Build()}.Build()}.Build())
+	if err == nil && !v.GetListed() {
+		return nil, status.Error(codes.NotFound, "session deleted")
+	}
+	return v, err
 }
 func (s SessionServer) Resume(ctx context.Context, r *resource.SessionControl) (*resource.Session, error) {
+	s.shared.transition.RLock()
+	defer s.shared.transition.RUnlock()
 	v, err := s.resolve(ctx, r.GetRef())
 	if err != nil {
 		return nil, err

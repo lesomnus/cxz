@@ -17,7 +17,7 @@ import (
 )
 
 func TestResourceCommandTree(t *testing.T) {
-	for _, name := range []string{"projects", "ls", "up", "down", "new", "get", "send", "reply", "stop", "resume", "interrupt", "events", "install", "serve", "update", "rollback", "logs", "it"} {
+	for _, name := range []string{"projects", "ls", "new", "get", "send", "reply", "stop", "resume", "interrupt", "events", "serve", "update", "rollback", "logs"} {
 		got := xlitest.Run(t, newRoot("unused"), name)
 		if !errors.Is(got.Err, xli.ErrUnknownCmd) {
 			t.Fatalf("old command %s: %v", name, got.Err)

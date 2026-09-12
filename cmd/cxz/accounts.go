@@ -131,7 +131,7 @@ func projectAccountWorkflow(ctx context.Context, resources *resourceclient.Clien
 	// profile. Never fan out rotating refresh tokens (architecture §4.2).
 	install, err := transport.Load(stateFrom(ctx))
 	if err != nil {
-		return fmt.Errorf("account login/status requires cxz manager install: %w", err)
+		return fmt.Errorf("account login/status requires cxz install: %w", err)
 	}
 	if st, e := os.Stat(target); e == nil && st.IsDir() {
 		target, err = dockerx.EnginePath(target)

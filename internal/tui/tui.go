@@ -21,25 +21,31 @@ import (
 )
 
 type model struct {
-	ctx                 context.Context
-	client              api.SessionsClient
-	sessions            []*api.Session
-	selected            int
-	input               textinput.Model
-	view                viewport.Model
-	focusList, creating bool
-	notice              string
-	width, height       int
-	events              map[string][]*api.Event
-	cursor              map[string]uint64
-	watchCancel         context.CancelFunc
-	watchID             string
-	wantID              string
-	accounts            []*resource.Account
-	accountIndex        int
-	program             *tea.Program
+	project              *api.Project
+	projectView          bool
+	deletingID           string
+	busy                 bool
+	createProjectSession ProjectCreator
+	ctx                  context.Context
+	client               api.SessionsClient
+	sessions             []*api.Session
+	selected             int
+	input                textinput.Model
+	view                 viewport.Model
+	focusList, creating  bool
+	notice               string
+	width, height        int
+	events               map[string][]*api.Event
+	cursor               map[string]uint64
+	watchCancel          context.CancelFunc
+	watchID              string
+	wantID               string
+	accounts             []*resource.Account
+	accountIndex         int
+	program              *tea.Program
 }
 type listing struct {
+	project  *api.Project
 	sessions []*api.Session
 	err      error
 }
@@ -97,11 +103,26 @@ func Run(ctx context.Context, c api.SessionsClient) error {
 	return RunSelected(ctx, c, "")
 }
 func RunSelected(ctx context.Context, c api.SessionsClient, id string) error {
+	var project *api.Project
+	if id != "" {
+		s, err := c.Get(ctx, &api.SessionRef{Id: id})
+		if err != nil {
+			return err
+		}
+		project = &api.Project{Id: s.ProjectId, Name: s.ProjectName, Alias: s.ProjectAlias, Workspace: s.Workspace}
+	}
+	return RunProject(ctx, c, project, id, nil)
+}
+
+func RunProject(ctx context.Context, c api.SessionsClient, project *api.Project, id string, create ProjectCreator) error {
 	input := textinput.New()
 	input.Placeholder = "message · /answer {\"question\":\"answer\"}"
 	input.CharLimit = 100000
 	input.Focus()
 	m := &model{ctx: ctx, client: c, input: input, view: viewport.New(80, 15), events: map[string][]*api.Event{}, cursor: map[string]uint64{}, width: 100, height: 30, wantID: id}
+	m.project = project
+	m.projectView = project != nil && id == ""
+	m.createProjectSession = create
 	p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithContext(ctx))
 	m.program = p
 	_, e := p.Run()
@@ -111,6 +132,10 @@ func RunSelected(ctx context.Context, c api.SessionsClient, id string) error {
 	return e
 }
 func (m *model) refresh() tea.Cmd {
+	projectID := ""
+	if m.project != nil {
+		projectID = m.project.Id
+	}
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(m.ctx, 2*time.Second)
 		defer cancel()
@@ -118,7 +143,18 @@ func (m *model) refresh() tea.Cmd {
 		if e != nil {
 			return listing{err: e}
 		}
-		return listing{sessions: v.Sessions}
+		var p *api.Project
+		if projectID != "" {
+			if ps, err := m.client.Projects(ctx, &api.Empty{}); err == nil {
+				for _, candidate := range ps.Projects {
+					if candidate.Id == projectID {
+						p = candidate
+						break
+					}
+				}
+			}
+		}
+		return listing{sessions: v.Sessions, project: p}
 	}
 }
 func timer() tea.Cmd           { return tea.Tick(time.Second, func(t time.Time) tea.Msg { return tick(t) }) }
@@ -131,6 +167,9 @@ func (m *model) current() *api.Session {
 	return m.sessions[m.selected]
 }
 func (m *model) watch() {
+	if m.projectView || m.program == nil {
+		return
+	}
 	s := m.current()
 	if s == nil || m.watchID == s.Id {
 		return
@@ -292,7 +331,10 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.wantID != "" {
 			old = m.wantID
 		}
-		m.sessions = v.sessions
+		if v.project != nil {
+			m.project = v.project
+		}
+		m.sessions = ProjectSessions(v.sessions, m.project)
 		for i, s := range m.sessions {
 			if s.Id == old {
 				m.selected = i
@@ -321,16 +363,25 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.notice = "event connection lost; reconnecting from saved cursor"
 		}
 	case result:
+		m.busy = false
 		if v.err != nil {
 			m.notice = v.err.Error()
 		} else {
 			m.notice = v.text
 			if v.sessionID != "" {
 				m.wantID = v.sessionID
+				m.projectView = false
 			}
 		}
 		return m, m.refresh()
 	case tea.KeyMsg:
+		if v.String() == "ctrl+q" {
+			m.backToProject()
+			return m, m.refresh()
+		}
+		if m.projectView && !m.creating {
+			return m, m.projectKey(v)
+		}
 		switch v.String() {
 		case "ctrl+c":
 			return m, tea.Quit
@@ -383,6 +434,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 			text := strings.TrimSpace(m.input.Value())
+			if m.creating && m.project != nil {
+				text = m.project.Workspace
+			}
 			if text == "" {
 				return m, nil
 			}
@@ -440,6 +494,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 func (m *model) View() string {
+	if m.projectView {
+		return m.projectScreen()
+	}
 	var b strings.Builder
 	b.WriteString("cxz · sessions · Ctrl+C detaches (agent keeps running)\n")
 	start := max(0, m.selected-1)
@@ -458,7 +515,7 @@ func (m *model) View() string {
 		}
 		fmt.Fprintf(&b, "%s %.8s %s/%s · account:%s [%s] %s\n", mark, s.Id, safeText(s.Agent), safeText(s.Model), safeText(s.Account), safeText(s.State), safeText(label))
 	}
-	b.WriteString("Tab sessions/chat · Ctrl+N new · F2 allow · F3 deny · F4 interrupt · Ctrl+R resume\n")
+	b.WriteString("Ctrl+Q project · Tab sessions/chat · F2 allow · F3 deny · F4 interrupt · Ctrl+R resume\n")
 	if s := m.current(); s != nil && len(s.Pending) > 0 {
 		fmt.Fprintf(&b, "PENDING %s · /answer {\"question\":\"answer\"} for AskUserQuestion\n", safeText(s.Pending[0].Text))
 	}

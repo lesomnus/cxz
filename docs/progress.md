@@ -1,5 +1,24 @@
 # 구현 진행 상황
 
+## 2026-09-12 — 워크스페이스 진입 명령과 프로젝트/세션 화면
+
+- install/uninstall을 최상위로 되돌리고 up/down/it을 추가했다. up은 Account 없이
+  프로젝트만 준비해 대시보드를 열며, 실행 중인 기존 프로젝트는 재준비 없이 연결한다.
+  it은 해당 프로젝트의 최신 생성 세션 화면으로 연결하고 없으면 생성 없이 안내한다.
+- 프로젝트 화면에 정보·세션 목록, 방향키/Enter 선택, n 새 세션, s 중지, d 삭제 확인을
+  추가했다. 생성 중에는 터미널을 반환해 Account 검색·공식 로그인 후 세션 화면으로
+  이어진다. Ctrl-Q는 프로젝트 화면으로 돌아가며 Ctrl-C는 연결만 끊는다.
+- payday Project/Session.Erase를 lifecycle 규칙에 맞게 열었다. 프로젝트 삭제는 소유
+  컨테이너 정리 후 프로젝트와 세션을 목록에서 제외한다. 세션 삭제는 실행 agent 중지를
+  확인한 뒤 제외한다. 소스/볼륨/저널을 보존하고 Listed tombstone은 일반 조회·제어와
+  snapshot 재등장을 막는다. 같은 workspace 재등록 시에도 이전 세션은 제외한다.
+- 기존 프로젝트당 실행 세션 하나 제약, 저수준 project down의 등록/세션 보존 동작은
+  유지한다. DB 재구축은 tombstone을 잃을 수 있으므로 resource DB 백업이 필요하다.
+- 준비 반복 시 세션·Account 부작용 없음, 프로젝트 격리·최신 선택·삭제 확인 대상 고정,
+  Ctrl-Q·PTY 터미널 복구, 실제 RPC live-session 삭제와 서버 재시작 후 제외를 검증했다.
+- 전체 Go 테스트·vet, CLI/TUI/lifecycle/integration race, diff 검사 통과.
+  Docker runtime probe 및 실제 OAuth/유료 모델 호출은 이번 변경에서 실행하지 않았다.
+
 ## 2026-09-12 — 리소스 중심 CLI와 기본 표 출력
 
 - 공개 작업 명령을 project/session/account/manager/config 및 backend/binding 하위로

@@ -56,7 +56,7 @@ func TestValidationBeforeConnection(t *testing.T) {
 		{[]string{"session", "new", ".", "--agent", "codex"}, xli.ErrFlagAfterArg},
 		{[]string{"session", "get"}, xli.ErrNeedArgs},
 		{[]string{"session", "stop", "id", "extra"}, xli.ErrTooManyArgs},
-		{[]string{"manager", "install", "unexpected"}, xli.ErrTooManyArgs},
+		{[]string{"install", "unexpected"}, xli.ErrTooManyArgs},
 		{[]string{"unknown"}, xli.ErrUnknownCmd},
 		{[]string{"session", "new", "--unknown"}, xli.ErrUnknownFlag},
 		{[]string{"session", "new", "--agent", "invalid", "."}, nil},
@@ -121,8 +121,9 @@ func (s *rpcStub) Reply(_ context.Context, r *resource.SessionReplyRequest) (*re
 
 type projectStub struct {
 	resource.UnimplementedProjectServiceServer
-	requests  chan any
-	mutations *atomic.Int32
+	requests     chan any
+	mutations    *atomic.Int32
+	unregistered *atomic.Bool
 }
 type accountStub struct {
 	resource.UnimplementedAccountServiceServer
@@ -147,12 +148,15 @@ func (accountStub) Get(_ context.Context, r *resource.AccountGetRequest) (*resou
 }
 
 func testProject() *resource.Project {
-	return resource.Project_builder{RuntimeId: "project-name", Workspace: "project-name", Name: "project-name", Alias: "pn"}.Build()
+	return resource.Project_builder{RuntimeId: "project-name", Workspace: "project-name", Name: "project-name", Alias: "pn", Status: resource.ProjectStatus_builder{State: "running"}.Build()}.Build()
 }
 func (s projectStub) Get(context.Context, *resource.ProjectGetRequest) (*resource.Project, error) {
 	return testProject(), nil
 }
 func (s projectStub) Add(context.Context, *resource.ProjectAddRequest) (*resource.Project, error) {
+	if s.unregistered != nil {
+		s.unregistered.Store(false)
+	}
 	if s.mutations != nil {
 		s.mutations.Add(1)
 	}
@@ -165,11 +169,19 @@ func (s projectStub) Up(context.Context, *resource.ProjectUpRequest) (*resource.
 	return testProject(), nil
 }
 func (s projectStub) List(context.Context, *resource.ProjectListRequest) (*resource.ProjectListResponse, error) {
+	if s.unregistered != nil && s.unregistered.Load() {
+		return &resource.ProjectListResponse{}, nil
+	}
 	return resource.ProjectListResponse_builder{Items: []*resource.Project{testProject()}}.Build(), nil
 }
 func (s projectStub) Down(_ context.Context, r *resource.ProjectControl) (*resource.Project, error) {
 	s.requests <- &api.ProjectRequest{Workspace: r.GetRef().GetRuntimeId(), ClientId: r.GetClientId()}
 	return testProject(), nil
+}
+
+func (s projectStub) Erase(_ context.Context, r *resource.ProjectRef) (*resource.ProjectEraseResponse, error) {
+	s.requests <- r
+	return resource.ProjectEraseResponse_builder{Erased: ptr(true)}.Build(), nil
 }
 
 func TestCommandsReachAPI(t *testing.T) {
@@ -191,7 +203,8 @@ func TestCommandsReachAPI(t *testing.T) {
 	resource.RegisterAccountServiceServer(server, accountStub{requests: stub.requests})
 	resource.RegisterAuthBindingServiceServer(server, bindingStub{})
 	mutations := &atomic.Int32{}
-	resource.RegisterProjectServiceServer(server, projectStub{requests: stub.requests, mutations: mutations})
+	unregistered := &atomic.Bool{}
+	resource.RegisterProjectServiceServer(server, projectStub{requests: stub.requests, mutations: mutations, unregistered: unregistered})
 	go server.Serve(listener)
 	defer server.Stop()
 	table := xlitest.Run(t, newRoot(root), "project", "ls")
@@ -205,6 +218,18 @@ func TestCommandsReachAPI(t *testing.T) {
 		}
 		if strings.Contains(got.Stderr, "preparing workspace") || mutations.Load() != 0 {
 			t.Fatal("started preparation before validating account", got.Stderr)
+		}
+	}
+	unregistered.Store(true)
+	prepared := xlitest.Run(t, newRoot(root), "up", "--no-attach", "--format", "json", "project-name")
+	if prepared.Err != nil || mutations.Load() != 2 || len(stub.requests) != 0 {
+		t.Fatal("new project up must only Add/Up", prepared, mutations.Load())
+	}
+	mutations.Store(0)
+	for i := 0; i < 2; i++ {
+		got := xlitest.Run(t, newRoot(root), "up", "--no-attach", "--format", "json", "project-name")
+		if got.Err != nil || !strings.Contains(got.Stdout, `"id":"project-name"`) || len(stub.requests) != 0 || mutations.Load() != 0 {
+			t.Fatal("up created a session or required account", got)
 		}
 	}
 	run := func(args ...string) xlitest.Result {
@@ -250,6 +275,10 @@ func TestCommandsReachAPI(t *testing.T) {
 	run("project", "down", "pn")
 	if (<-stub.requests).(*api.ProjectRequest).Workspace != "project-name" {
 		t.Fatal("wrong project")
+	}
+	run("down", "pn")
+	if (<-stub.requests).(*resource.ProjectRef).GetRuntimeId() != "project-name" {
+		t.Fatal("top-level down did not delete resolved project")
 	}
 	completion := xlitest.Complete(t, newRoot(root), "project up ")
 	if completion.Err != nil || !completion.Has("pn") || !completion.Has("project-name") {
