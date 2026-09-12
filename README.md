@@ -115,6 +115,24 @@ unauthenticated API to an untrusted network.
 
 ## TUI and scripts
 
+`cxz purge` opens an irreversible-cleanup checklist for the installation selected
+by `--state`. All categories start checked: containers, project data/login
+volumes, manager database/account volume, tool volumes, networks and local state.
+Use Space to toggle, arrows/Tab to navigate, PgUp/PgDn to inspect targets, then
+the final **Confirm irreversible deletion** button. Esc cancels.
+`cxz purge --dry-run` lists targets without modifying anything.
+
+Unlike `uninstall`, purge can delete conversations and credentials permanently.
+Back them up first. Run from the host/client; stop native cxz servers/agents first.
+Owned Docker containers are removed before volumes; owner labels and the inventory
+are rechecked. Partial failures retain the installation locator. If Docker data
+is unchecked, keep local state too so its ownership identity remains available.
+Workspace sources, personal Claude/Codex login directories, the CLI executable,
+shared images/build caches, and unlabeled Docker resources are never removed.
+Unknown files inside the state directory are reported and preserved; only known
+cxz children are deleted, not the state directory itself. This does not clean
+other cxz installations or revoke OAuth tokens at the provider.
+
 Projects have a display `name` and a unique short `alias`. The default name is
 the workspace directory name. Like cld, short names remain short, multi-word
 names use initials (`my-web-app` → `mwa`), and long single words are truncated.
