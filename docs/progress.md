@@ -1,5 +1,19 @@
 # 구현 진행 상황
 
+## 2026-09-12 — 프로젝트·대화 TUI 디자인 및 입력 개선
+
+- Codex CLI의 대화 중심 구성과 편집 경험을 참고하여 프로젝트 정보/세션 카드,
+  대화 역할/도구 출력, 승인 상태, 하단 rounded 입력창/단축키의 시각적 계층을 정리했다.
+  밝은/어두운 터미널 대응 강조색과 Unicode 셀 너비 기반 자르기를 적용했다.
+- 여러 줄 편집·붙여넣기, Enter 전송, Alt-Enter/Ctrl-J 줄바꿈, Ctrl-X 지우기,
+  세션별 메모리 초안 복구를 추가했다. Esc로 초안을 지우지 않으며 PgUp/PgDn은
+  본문만 스크롤한다. 기존 생성·로그인·승인·중단·재접속 API 동작은 유지했다.
+- 한글/붙여넣기/명시적 전송/초안/크기별 렌더링 회귀 테스트를 추가했다.
+  전체 Go 테스트·vet, CLI/TUI race, 실제 PTY 화면 이동/터미널 복구,
+  uncached integration 및 diff 검사를 통과했다.
+  실제 OAuth나 유료 모델 호출은 이 UI 변경의 검증에 사용하지 않았다.
+  참고: https://learn.chatgpt.com/docs/codex/cli (공식 Codex CLI 문서).
+
 ## 2026-09-12 — 워크스페이스 진입 명령과 프로젝트/세션 화면
 
 - install/uninstall을 최상위로 되돌리고 up/down/it을 추가했다. up은 Account 없이
