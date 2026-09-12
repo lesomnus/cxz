@@ -8,14 +8,17 @@ import {join,resolve} from 'node:path';
 import {randomUUID,createHash} from 'node:crypto';
 import {setTimeout as delay} from 'node:timers/promises';
 const exec=promisify(execFile);
-const [state,repo]=process.argv.slice(2);assert(state&&repo);
+const [state,repo,retryRun]=process.argv.slice(2);assert(state&&repo);
 const binary=resolve('bin/cxz'),installation=JSON.parse(readFileSync(join(state,'installation.json')));
-const run=randomUUID().slice(0,8),projects=[];
+const run=retryRun||randomUUID().slice(0,8),projects=[];
+assert.match(run,/^[a-f0-9]{8}$/);
 async function cli(...args){return(await exec(binary,['--state',state,...args],{timeout:300000,maxBuffer:8*1024*1024})).stdout.trim();}
 async function json(...args){return JSON.parse(await cli(...args));}
 async function docker(...args){return(await exec('docker',args,{timeout:60000,maxBuffer:8*1024*1024})).stdout.trim();}
 assert.equal(JSON.parse(await docker('inspect',installation.container))[0].Config.Labels['cxz.owner'],installation.owner);
-assert.equal((await json('projects')).projects?.length||0,0);
+const existing=(await json('projects')).projects||[];
+if(retryRun){assert(existing.every(p=>p.workspace.startsWith(join(repo,'.cxz-test-workspaces',`broker-${run}-`))&&p.state==='absent'));}
+else{assert.equal(existing.length,0);}
 const version=readFileSync('internal/distribution/release.go','utf8').match(/const CodexVersion = "([^"]+)"/)[1];
 const arch=(await docker('exec',installation.container,'uname','-m'))==='aarch64'?'aarch64':'x86_64';
 const cache=`/cxz/tools/codex/${version}/${arch}-unknown-linux-musl/bin`;
