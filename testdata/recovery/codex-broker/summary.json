@@ -1,0 +1,43 @@
+{
+  "date": "2026-09-12",
+  "status": "passed",
+  "native_codex": {
+    "version": "0.154.0",
+    "probe": "scripts/probes/codex-external-auth.mjs",
+    "checks": [
+      "external chatgptAuthTokens login accepts a synthetic JWT",
+      "account/read reports ChatGPT",
+      "ephemeral authentication does not create auth.json"
+    ],
+    "real_credentials": false,
+    "model_turns": 0
+  },
+  "docker": {
+    "probe": "scripts/probes/owned-codex-broker.mjs",
+    "agent": "deterministic Codex fixture",
+    "project_users": ["root", "node (non-root)"],
+    "checks": [
+      "central account login and status through cxz CLI",
+      "one central account supplies two projects without additional login",
+      "concurrent token refresh through central managed Codex adapter",
+      "separate personal and company accounts",
+      "approval, interrupt and account-preserving resume",
+      "running project refresh after manager restart",
+      "project recreation retains authentication binding",
+      "no access/refresh tokens in project JSON or journals; no project auth.json"
+    ],
+    "retry": "shared Docker address pool exhaustion resolved by removing only this test's previous owned networks"
+  },
+  "automated": [
+    "CXZ_TEST_RACE=1 go test -race ./... -count=1",
+    "go vet ./...",
+    "go tool pd gen --check .",
+    "git diff --check",
+    "forged capability, wrong account/project and manager outage rejected",
+    "concurrent refresh serialized; grants survive restart",
+    "different user in same ChatGPT workspace rejected without replacing login",
+    "managed refresh rejects logged-out response and honors cancellation",
+    "supervisor authenticates before thread startup and keeps tokens out of journal"
+  ],
+  "not_performed": ["real OAuth login or refresh", "paid model calls"]
+}

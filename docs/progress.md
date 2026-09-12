@@ -11,13 +11,18 @@
   공개 resource·audit·대화 journal에 넣지 않는다. 프로젝트는 ephemeral 인증을 쓴다.
 - 재로그인 시 workspace/account ID와 사용자 subject를 고정하고, 중앙 로그인·갱신은
   계정 lock으로 직렬화한다. 다른 계정, 위조 capability, manager 중단은 명시적으로 실패한다.
-- 전체 race 1차 통과. Docker에서 중앙 로그인으로 두 프로젝트 사용, 동시 갱신,
+- 전체 Go/race·vet·payday 코드 생성 일치·diff 검사 통과. Docker에서 중앙 로그인으로 두 프로젝트 사용, 동시 갱신,
   개인/회사 프로필, 승인·중단, resume·manager restart·project recreate 통과.
-  최종 non-root 프로젝트 회귀를 진행 중이다.
+  non-root(node 사용자) 프로젝트를 포함한 최종 회귀도 통과했다.
 - 네이티브 Codex 0.154.0도 합성 JWT로 external login 수용·account/read·ephemeral
   auth.json 비저장을 확인했다. 실제 OAuth 로그인/갱신과 유료 모델 호출은 하지 않았다.
 - [인증 설계와 제약](accounts.md): 공식 external-token API는 실험적이며, 토큰 추출은
   고정 버전의 managed auth.json 형식에 의존한다. 사용자 인증/roster와 권한 철회 UI는 별도다.
+- 추가 검증 중 공유 Docker 주소 풀 고갈을 만났지만 이번 시험의 이전 소유 네트워크만
+  정리하고 재시도하여 통과했다. 타 프로젝트 자원/prune은 사용하지 않았다.
+- [검증 요약](../testdata/recovery/codex-broker/summary.json).
+- 시험에 사용한 두 manager와 프로젝트 컨테이너, 합성 인증 state/tools 볼륨 및
+  소유 네트워크는 삭제했다. scratch workspace·이미지 빌드 캐시는 보존했다.
 
 ## 2026-09-12 — AuthBackend / AuthBinding 분리
 
