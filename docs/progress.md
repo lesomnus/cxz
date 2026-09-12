@@ -24,6 +24,8 @@
   단계에서 키를 변환하며, 파일 descriptor·raw mode·취소 처리를 유지한다.
 - TUI/supervisor/agentview race 및 go vet 통과. native command 통합 fixture에서
   payday Send→supervisor→대화/압축/사용량 이벤트와 압축 후 기존 저널 보존을 검증했다.
+- 구현 커밋 `0e13367`. 별도 검증 커밋에 Claude/Codex 프로세스 fixture의 quota/compact
+  응답과 lifecycle의 /context·/compact·저널 보존 검사를 포함했다.
 - 참고: [Codex App Server](https://learn.chatgpt.com/docs/app-server),
   [Claude SDK commands](https://code.claude.com/docs/en/agent-sdk/slash-commands),
   @anthropic-ai/claude-agent-sdk 0.3.268의 SDKControlGetUsageResponse/SDKRateLimitInfo 타입.

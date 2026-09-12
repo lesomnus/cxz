@@ -54,13 +54,22 @@ func main() {
 		}
 		switch v.Type {
 		case "control_request":
-			emit(map[string]any{"type": "control_response", "response": map[string]any{"subtype": "success", "request_id": v.RequestID}})
+			response := map[string]any{"subtype": "success", "request_id": v.RequestID}
+			if v.Request.Subtype == "get_usage" {
+				response["response"] = map[string]any{"rate_limits": map[string]any{"five_hour": map[string]any{"utilization": 60, "resets_at": time.Now().Add(time.Hour).UTC().Format(time.RFC3339)}, "seven_day": map[string]any{"utilization": 54, "resets_at": time.Now().Add(24 * time.Hour).UTC().Format(time.RFC3339)}}}
+			}
+			emit(map[string]any{"type": "control_response", "response": response})
 			if v.Request.Subtype == "interrupt" {
 				finish("interrupted")
 			}
 		case "user":
 			emit(map[string]any{"type": "system", "subtype": "init", "session_id": vendor})
 			switch {
+			case v.Message.Content == "/context":
+				finish("Context fixture · 2k / 10k tokens")
+			case v.Message.Content == "/compact":
+				emit(map[string]any{"type": "system", "subtype": "compact_boundary", "compact_metadata": map[string]any{"trigger": "manual", "pre_tokens": 2000}})
+				finish("Compacted fixture context")
 			case v.Message.Content == "account-context":
 				finish("profile=" + filepath.Base(filepath.Dir(os.Getenv("CLAUDE_CONFIG_DIR"))) + " home=" + filepath.Base(filepath.Dir(os.Getenv("HOME"))) + " inherited-key=" + fmt.Sprint(os.Getenv("OPENAI_API_KEY") != "" || os.Getenv("ANTHROPIC_API_KEY") != ""))
 			case strings.HasPrefix(v.Message.Content, "approval"), v.Message.Content == "question":

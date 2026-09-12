@@ -212,6 +212,32 @@ func TestLifecycle(t *testing.T) {
 	if _, e = client.Send(ctx, r); e == nil {
 		t.Fatal("conflicting retry accepted")
 	}
+	// Native context/compaction traverse payday Send, runtime RPC and the
+	// supervisor protocol; compaction must never erase the cxz journal.
+	beforeContext := get().LastSeq
+	send("/context")
+	readUntil(beforeContext, func(v *api.Event) bool { return v.Kind == "assistant" && strings.Contains(v.Text, "Context fixture") })
+	await("idle")
+	beforeCompact := get().LastSeq
+	send("/compact")
+	readUntil(beforeCompact, func(v *api.Event) bool { return v.Kind == "compact" })
+	await("idle")
+	postCompact, err := client.History(ctx, &api.WatchRequest{SessionId: id})
+	if err != nil {
+		t.Fatal(err)
+	}
+	hello, quota := false, false
+	for _, event := range postCompact.Events {
+		if event.Kind == "input" && event.Text == "hello" {
+			hello = true
+		}
+		if event.Kind == "usage" && event.Text == "get_usage" {
+			quota = true
+		}
+	}
+	if !hello || !quota {
+		t.Fatal("journal or quota missing after compaction")
+	}
 	send("approval allow")
 	s = await("waiting_input")
 	if len(s.Pending) != 1 {
