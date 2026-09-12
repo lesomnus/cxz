@@ -46,15 +46,8 @@ func (c *Client) Projects(ctx context.Context, _ *api.Empty, opts ...grpc.CallOp
 // Add resolves the manager's workspace path, runtime ID or unambiguous name.
 // Session selection is a client workflow; Project.Up never creates a session.
 func (c *Client) Open(ctx context.Context, r *api.ProjectRequest, opts ...grpc.CallOption) (*api.Session, error) {
-	if r.Account != "" {
-		a, err := c.Account(ctx, r.Account)
-		if err != nil {
-			return nil, err
-		}
-		if r.Agent != "" && r.Agent != a.GetAgent() {
-			return nil, fmt.Errorf("agent does not match account %s", r.Account)
-		}
-		r.Agent = a.GetAgent()
+	if err := c.CheckOpen(ctx, r, opts...); err != nil {
+		return nil, err
 	}
 	p, err := c.openProject(ctx, r, opts...)
 	if err != nil {
@@ -76,40 +69,14 @@ func (c *Client) Open(ctx context.Context, r *api.ProjectRequest, opts ...grpc.C
 	if err != nil {
 		return nil, err
 	}
-	kind := r.Agent
-	if kind == "" {
-		for _, s := range list.Sessions {
-			if s.ProjectId == p.GetRuntimeId() {
-				kind = s.Agent
-				break
-			}
-		}
-	}
-	if kind == "" {
-		kind = "claude"
-	}
-	var chosen *api.Session
-	for _, s := range list.Sessions {
-		if s.ProjectId != p.GetRuntimeId() {
-			continue
-		}
-		live := s.State == "idle" || s.State == "working" || s.State == "waiting_input" || s.State == "starting"
-		if live {
-			if r.NewSession || s.Agent != kind || (r.Account != "" && s.Account != r.Account) {
-				if r.NewSession && s.Agent == kind && s.Account == r.Account && s.CreateId == r.ClientId {
-					chosen = s
-					break
-				}
-				return nil, fmt.Errorf("workspace has an active %s session %s; stop it explicitly before starting another", s.Agent, s.Id)
-			}
-			chosen = s
-			break
-		}
-		if !r.NewSession && chosen == nil && s.Agent == kind && (r.Account == "" || s.Account == r.Account) {
-			chosen = s
-		}
+	kind, chosen, err := chooseSession(list.Sessions, p.GetRuntimeId(), r, false)
+	if err != nil {
+		return nil, err
 	}
 	if chosen == nil {
+		if r.Account == "" {
+			return nil, ErrAccountRequired
+		}
 		b, err := c.Bind(ctx, p.GetRuntimeId(), r.Account)
 		if err != nil {
 			return nil, err

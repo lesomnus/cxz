@@ -1,5 +1,16 @@
 # 구현 진행 상황
 
+## 2026-09-12 — 세션 조건 fail-fast
+
+- `up`이 컨테이너를 준비한 뒤 빈 AccountRef로 새 세션 binding을 만들던 경로를 수정했다.
+- 공통 resource client와 CLI가 등록·provision/recreate 전에 계정·agent/backend,
+  활성 세션 충돌·모델 불변 조건을 확인한다. 조회 실패는 즉시 반환한다.
+- 기존 세션의 계정을 유지하며, 첫 up/recreate에서는 new와 같은 Account 선택을
+  제공한다. 비대화형 계정 누락은 `--account` 안내로 실패하고 준비 메시지도 출력하지 않는다.
+- 새 세션 조건 실패 시 Project Add/Up/Recreate가 호출되지 않는 테스트와 CLI 회귀,
+  기존 세션의 모든 재접속 상태 및 로그인 prepare-only 예외 테스트를 추가했다.
+- 전체 Go 테스트·vet, resourceclient/CLI/integration race, diff 검사 통과.
+
 ## 2026-09-12 — devcontainer 신뢰 검사 진단
 
 - `--trust-config` 요구 오류에 설정 파일명과 차단된 항목의 JSON Pointer 경로,
