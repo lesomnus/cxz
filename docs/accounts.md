@@ -52,11 +52,17 @@ cxz account add --auth-backend project-local-oauth claude work-claude
   Account alias/agent/backend와 Session.account/auth_binding은 변경할 수 없다.
 - CLI new/up/recreate의 계정 선택은 방향키와 하단 검색창을 제공한다. 번호·이름·alias로
   검색하고 Enter로 확정하며 Esc/Ctrl-C로 취소한다. 스크립트는 `--account ALIAS`를 쓴다.
-  AuthBinding도 `Add/Get/List/Watch`를 사용하며 Add 재시도는 같은 binding으로 수렴한다.
+- AuthBinding도 `Add/Get/List/Watch`를 사용하며 Add 재시도는 같은 binding으로 수렴한다.
   일반 Patch/Apply/Erase는 닫혀 있다. credential_ref는 backend가 만들며 호출자가 지정할 수 없다.
 - `SessionService.Add`는 AccountRef와 AuthBindingRef를 받는다. CLI/TUI가 선택된
   Account와 Project의 binding을 해결해 전달한다. 등록되지 않은 계정, vendor 불일치,
   인증 파일 누락을 거부한다. TUI Ctrl+N에서 Tab으로 Account를 고르고 경로를 입력한다.
+- 대화형 CLI new/up/recreate는 준비된 프로젝트의 OAuth 인증 파일이 없으면
+  별도 명령 실행을 요구하지 않고 공식 agent 로그인으로 이어진다. 사용자가 인증을
+  완료하면 같은 요청으로 세션 생성/재접속을 한 번 재시도한다. recreate는 반복하지 않는다.
+  비대화형 실행은 프로젝트를 유지하고 `account login --project PROJECT ACCOUNT`를 안내한다.
+  중앙 인증이나 손상된 기존 인증 파일에는 자동 프로젝트 로그인을 실행하지 않는다.
+  이 흐름에는 CLI와 프로젝트 runtime 양쪽의 새 버전이 필요하다.
 - `project-local-oauth` 로그인은 지정 프로젝트에서 실행하며 사용자가 직접 vendor 인증을 완료해야 한다.
   `--project` 생략 시 현재 디렉터리다. login은 필요한 컨테이너·에이전트를 준비하지만
   세션은 생성하지 않는다. 같은 Account도 다른 Project에서는 독립 로그인이 필요하다.

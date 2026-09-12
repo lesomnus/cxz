@@ -254,7 +254,16 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 	fmt.Fprintln(c.ErrWriter, "cxz: preparing workspace; initial image/agent downloads may take a few minutes")
 	call, cancel := context.WithTimeout(ctx, 30*time.Minute)
 	defer cancel()
-	s, e := client.Open(call, request)
+	s, e := openWithProjectLogin(call, request, terminal(c), func(ctx context.Context, r *api.ProjectRequest) (*api.Session, error) {
+		return client.Open(ctx, r)
+	}, func(ctx context.Context, alias string) error {
+		a, err := resources.Account(ctx, alias)
+		if err != nil {
+			return err
+		}
+		fmt.Fprintln(c.ErrWriter, "cxz: workspace ready; starting project account login, then connecting the session")
+		return projectAccountWorkflow(ctx, resources, c, a, "login", request.Workspace, false)
+	})
 	if e != nil {
 		return e
 	}

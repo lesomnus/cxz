@@ -30,6 +30,7 @@ import (
 	"github.com/lesomnus/payday/config"
 	_ "github.com/lesomnus/payday/config/dbsqlite3"
 	"github.com/lesomnus/payday/grpcx"
+	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -299,6 +300,18 @@ func (s *Server) snapshot(ctx context.Context, m core.Session) (*api.Session, er
 	}
 	return v, nil
 }
+func authCheckError(err error, backend string) error {
+	st := status.New(codes.FailedPrecondition, err.Error())
+	var missing *accounts.LoginRequired
+	if backend == accounts.ProjectLocalOAuth && errors.As(err, &missing) {
+		withDetails, e := st.WithDetails(&errdetails.ErrorInfo{Domain: "cxz.auth", Reason: "PROJECT_LOGIN_REQUIRED", Metadata: map[string]string{"account": missing.Account}})
+		if e == nil {
+			st = withDetails
+		}
+	}
+	return st.Err()
+}
+
 func (s *Server) launch(ctx context.Context, m core.Session) (*api.Session, error) {
 	if m.Account != "" {
 		backend, err := accounts.ResolveBinding(m.Kind, m.AuthBackend, m.ProjectID, m.Account, m.AuthBinding)
@@ -306,7 +319,7 @@ func (s *Server) launch(ctx context.Context, m core.Session) (*api.Session, erro
 			return nil, status.Error(codes.FailedPrecondition, err.Error())
 		}
 		if err := backend.Check(s.root, m.Account); err != nil {
-			return nil, status.Error(codes.FailedPrecondition, err.Error())
+			return nil, authCheckError(err, m.AuthBackend)
 		}
 	}
 	exe, e := os.Executable()
@@ -433,7 +446,7 @@ func (s *Server) Create(ctx context.Context, r *api.CreateRequest) (*api.Session
 			return nil, status.Error(codes.FailedPrecondition, err.Error())
 		}
 		if err := backend.Check(s.root, r.Account); err != nil {
-			return nil, status.Error(codes.FailedPrecondition, err.Error())
+			return nil, authCheckError(err, r.AuthBackend)
 		}
 	}
 	project, err := s.RegisterProject(ctx, path, "")
