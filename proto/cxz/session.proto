@@ -2,6 +2,7 @@ edition = "2023";
 package cxz;
 import "cxz/project.proto";
 import "cxz/account.proto";
+import "cxz/auth_binding.proto";
 import "google/protobuf/timestamp.proto";
 import "orm.proto";
 import "payday.proto";
@@ -25,6 +26,7 @@ message Session {
   SessionStatus status = 16;
   bool listed = 17 [(orm.field) = {default: "true"}];
   Account account = 18 [(orm.edge) = {immutable: true}];
+  AuthBinding auth_binding = 19 [(orm.edge) = {immutable: true}];
   option (orm.message) = {
     rpc: {crud: true}
     indexes: [{name: "page", refs: [{name: "date_created", number: 15}, {name: "id", number: 1}]}]

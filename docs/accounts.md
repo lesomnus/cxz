@@ -4,6 +4,34 @@ Account는 cxz 사용자 인증이나 tenant가 아니라 Claude/Codex 구독 �
 `Project → Session → Account`로 연결하고, 같은 Project의 여러 대화가 서로 다른
 Account를 사용할 수 있다. 한 프로젝트에 활성 세션 하나라는 기존 제약은 유지한다.
 
+## AgentKind / AuthBackend / AuthBinding
+
+- `AgentKind`: `claude`, `codex`. 모델 서비스 provider와 구별한다. API의 `agent`
+  문자열은 등록된 AgentKind로 검증한다.
+- `AuthBackend`: 로그인·인증 확인·실행 환경·갱신 주체를 결정하는 전략이다.
+  `Account.auth_backend`에 고정한다. 생략 시 Account 생성 시에만 agent 기본값을
+  선택하며, 세션 실행/복구에서는 빈 값이나 알 수 없는 값을 기본값으로 대체하지 않는다.
+- `AuthBinding`: Account와 실제 인증 범위의 연결이다. payday domain 10 리소스로
+  Account, 선택적 Project, backend, scope, 비밀 저장소 참조를 저장한다. 현재 구현은
+  project scope만 허용한다. binding의 존재는 로그인 성공을 의미하지 않는다.
+- `Session.auth_binding`도 생성 후 고정한다. backend/binding ID는 runtime manifest와
+  manager 캐시에 보존하며, DB를 재구성해도 같은 연결을 복원한다. 다른 프로젝트·계정의
+  binding으로 실행할 수 없다. 이전 개발 데이터에 없는 backend/binding은 임의 배정하지 않는다.
+
+에이전트별 registry는 기본 backend와 지원 backend factory 목록을 가진다. Backend는
+`Info`, `Binding`, `Login`, `Check`, `Launch`를 구현한다. CLI는 backend가 선언한
+workflow로 진입하고, supervisor는 backend가 반환한 환경변수·인자를 사용한다.
+token을 직접 반환하는 공통 API로 모든 공급 방식을 억지로 맞추지 않는다.
+
+| AgentKind | 기본 / 활성 backend | 범위 | 로그인 workflow | 갱신 담당 |
+|---|---|---|---|---|
+| claude | project-local-oauth | Project × Account | 프로젝트에서 Claude 로그인 | Claude |
+| codex | project-local-oauth | Project × Account | 프로젝트에서 Codex device login | Codex |
+
+`brokered-access-token`, `api-key`는 아직 구현·등록하지 않았다. 선택하면 명시적으로
+실패한다. 다른 backend나 계정으로 자동 전환하지 않는다. 중앙 공급을 추가할 때는
+backend 구현과 에이전트별 등록, 해당 workflow와 갱신 통합 검증이 필요하다.
+
 ```sh
 cxz account add --agent codex --name "Personal" personal-codex
 cxz account add --agent codex --name "Company" work-codex
@@ -13,11 +41,17 @@ cxz account status --project . work-codex
 cxz new --account work-codex .
 cxz up .                         # 기존 세션의 Account 유지
 cxz account get work-codex
+cxz account backends              # 설치 없이 지원 매핑 확인
+cxz account bindings work-codex    # 비밀 없는 인증 연결 목록
+cxz account add --agent claude --auth-backend project-local-oauth work-claude
 ```
 
 - payday `AccountService.Add/Get/List/Watch`, 전역 unique alias, domain 9.
-  Account alias/agent와 Session.account는 변경할 수 없다. 삭제도 현재 닫혀 있다.
-- `SessionService.Add`는 AccountRef를 받는다. 등록되지 않은 계정, vendor 불일치,
+  Account alias/agent/backend와 Session.account/auth_binding은 변경할 수 없다.
+  AuthBinding도 `Add/Get/List/Watch`를 사용하며 Add 재시도는 같은 binding으로 수렴한다.
+  일반 Patch/Apply/Erase는 닫혀 있다. credential_ref는 backend가 만들며 호출자가 지정할 수 없다.
+- `SessionService.Add`는 AccountRef와 AuthBindingRef를 받는다. CLI/TUI가 선택된
+  Account와 Project의 binding을 해결해 전달한다. 등록되지 않은 계정, vendor 불일치,
   인증 파일 누락을 거부한다. TUI Ctrl+N에서 Tab으로 Account를 고르고 경로를 입력한다.
 - 로그인은 지정 프로젝트에서 실행하며 사용자가 직접 vendor 인증을 완료해야 한다.
   `--project` 생략 시 현재 디렉터리다. login은 필요한 컨테이너·에이전트를 준비하지만

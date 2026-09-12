@@ -20,6 +20,7 @@ type Mutation struct {
 	name          *string
 	desc          *string
 	agent         *string
+	auth_backend  *string
 	date_updated  *time.Time
 	date_erased   *time.Time
 	date_created  *time.Time
@@ -115,6 +116,25 @@ func (m *Mutation) Agent() (r string, exists bool) {
 // ResetAgent resets all changes to the "agent" field.
 func (m *Mutation) ResetAgent() {
 	m.agent = nil
+}
+
+// SetAuthBackend sets the "auth_backend" field.
+func (m *Mutation) SetAuthBackend(s string) {
+	m.auth_backend = &s
+}
+
+// AuthBackend returns the value of the "auth_backend" field in the mutation.
+func (m *Mutation) AuthBackend() (r string, exists bool) {
+	v := m.auth_backend
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetAuthBackend resets all changes to the "auth_backend" field.
+func (m *Mutation) ResetAuthBackend() {
+	m.auth_backend = nil
 }
 
 // SetDateUpdated sets the "date_updated" field.
@@ -234,7 +254,7 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 7)
+	fields := make([]string, 0, 8)
 	if m.alias != nil {
 		fields = append(fields, FieldAlias)
 	}
@@ -246,6 +266,9 @@ func (m *Mutation) Fields() []string {
 	}
 	if m.agent != nil {
 		fields = append(fields, FieldAgent)
+	}
+	if m.auth_backend != nil {
+		fields = append(fields, FieldAuthBackend)
 	}
 	if m.date_updated != nil {
 		fields = append(fields, FieldDateUpdated)
@@ -272,6 +295,8 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.Desc()
 	case FieldAgent:
 		return m.Agent()
+	case FieldAuthBackend:
+		return m.AuthBackend()
 	case FieldDateUpdated:
 		return m.DateUpdated()
 	case FieldDateErased:
@@ -321,6 +346,13 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetAgent(v)
+		return nil
+	case FieldAuthBackend:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAuthBackend(v)
 		return nil
 	case FieldDateUpdated:
 		v, ok := value.(time.Time)
@@ -418,6 +450,9 @@ func (m *Mutation) ResetField(name string) error {
 		return nil
 	case FieldAgent:
 		m.ResetAgent()
+		return nil
+	case FieldAuthBackend:
+		m.ResetAuthBackend()
 		return nil
 	case FieldDateUpdated:
 		m.ResetDateUpdated()

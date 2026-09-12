@@ -9,6 +9,7 @@ import (
 	"uuid"
 
 	"github.com/lesomnus/cxz/internal/ent/account"
+	"github.com/lesomnus/cxz/internal/ent/authbinding"
 	"github.com/lesomnus/cxz/internal/ent/predicate"
 	"github.com/lesomnus/cxz/internal/ent/project"
 	"github.com/lesomnus/cxz/internal/ent/session"
@@ -21,13 +22,14 @@ import (
 // SessionQuery is the builder for querying Session entities.
 type SessionQuery struct {
 	config
-	ctx         *QueryContext
-	order       []session.OrderOption
-	inters      []Interceptor
-	predicates  []predicate.Session
-	withProject *ProjectQuery
-	withAccount *AccountQuery
-	modifiers   []func(*sql.Selector)
+	ctx             *QueryContext
+	order           []session.OrderOption
+	inters          []Interceptor
+	predicates      []predicate.Session
+	withProject     *ProjectQuery
+	withAccount     *AccountQuery
+	withAuthBinding *AuthBindingQuery
+	modifiers       []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -101,6 +103,28 @@ func (_q *SessionQuery) QueryAccount() *AccountQuery {
 			sqlgraph.From(session.Table, session.FieldId, selector),
 			sqlgraph.To(account.Table, account.FieldId),
 			sqlgraph.Edge(sqlgraph.M2O, false, session.AccountTable, session.AccountColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryAuthBinding chains the current query on the "auth_binding" edge.
+func (_q *SessionQuery) QueryAuthBinding() *AuthBindingQuery {
+	query := (&AuthBindingClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(session.Table, session.FieldId, selector),
+			sqlgraph.To(authbinding.Table, authbinding.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, session.AuthBindingTable, session.AuthBindingColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -295,13 +319,14 @@ func (_q *SessionQuery) Clone() *SessionQuery {
 		return nil
 	}
 	return &SessionQuery{
-		config:      _q.config,
-		ctx:         _q.ctx.Clone(),
-		order:       append([]session.OrderOption{}, _q.order...),
-		inters:      append([]Interceptor{}, _q.inters...),
-		predicates:  append([]predicate.Session{}, _q.predicates...),
-		withProject: _q.withProject.Clone(),
-		withAccount: _q.withAccount.Clone(),
+		config:          _q.config,
+		ctx:             _q.ctx.Clone(),
+		order:           append([]session.OrderOption{}, _q.order...),
+		inters:          append([]Interceptor{}, _q.inters...),
+		predicates:      append([]predicate.Session{}, _q.predicates...),
+		withProject:     _q.withProject.Clone(),
+		withAccount:     _q.withAccount.Clone(),
+		withAuthBinding: _q.withAuthBinding.Clone(),
 		// clone intermediate query.
 		sql:       _q.sql.Clone(),
 		path:      _q.path,
@@ -328,6 +353,17 @@ func (_q *SessionQuery) WithAccount(opts ...func(*AccountQuery)) *SessionQuery {
 		opt(query)
 	}
 	_q.withAccount = query
+	return _q
+}
+
+// WithAuthBinding tells the query-builder to eager-load the nodes that are connected to
+// the "auth_binding" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *SessionQuery) WithAuthBinding(opts ...func(*AuthBindingQuery)) *SessionQuery {
+	query := (&AuthBindingClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withAuthBinding = query
 	return _q
 }
 
@@ -409,9 +445,10 @@ func (_q *SessionQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Sess
 	var (
 		nodes       = []*Session{}
 		_spec       = _q.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
 			_q.withProject != nil,
 			_q.withAccount != nil,
+			_q.withAuthBinding != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -444,6 +481,12 @@ func (_q *SessionQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Sess
 	if query := _q.withAccount; query != nil {
 		if err := _q.loadAccount(ctx, query, nodes, nil,
 			func(n *Session, e *Account) { n.Edges.Account = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withAuthBinding; query != nil {
+		if err := _q.loadAuthBinding(ctx, query, nodes, nil,
+			func(n *Session, e *AuthBinding) { n.Edges.AuthBinding = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -508,6 +551,35 @@ func (_q *SessionQuery) loadAccount(ctx context.Context, query *AccountQuery, no
 	}
 	return nil
 }
+func (_q *SessionQuery) loadAuthBinding(ctx context.Context, query *AuthBindingQuery, nodes []*Session, init func(*Session), assign func(*Session, *AuthBinding)) error {
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*Session)
+	for i := range nodes {
+		fk := nodes[i].AuthBindingId
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(authbinding.IdIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.Id]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "auth_binding_id" returned %v`, n.Id)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
 
 func (_q *SessionQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
@@ -542,6 +614,9 @@ func (_q *SessionQuery) querySpec() *sqlgraph.QuerySpec {
 		}
 		if _q.withAccount != nil {
 			_spec.Node.AddColumnOnce(session.FieldAccountId)
+		}
+		if _q.withAuthBinding != nil {
+			_spec.Node.AddColumnOnce(session.FieldAuthBindingId)
 		}
 	}
 	if ps := _q.predicates; len(ps) > 0 {

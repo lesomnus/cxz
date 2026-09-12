@@ -27,6 +27,10 @@ func (s AccountServer) Add(ctx context.Context, r *resource.AccountAddRequest) (
 	if err := accounts.Validate(r.GetAlias(), r.GetAgent()); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
+	backend, err := accounts.Select(r.GetAgent(), r.GetAuthBackend())
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
 	name := r.GetName()
 	if name == "" {
 		name = r.GetAlias()
@@ -36,7 +40,7 @@ func (s AccountServer) Add(ctx context.Context, r *resource.AccountAddRequest) (
 	}
 	s.shared.mu.Lock()
 	defer s.shared.mu.Unlock()
-	return s.Next().Account().Add(ctx, resource.AccountAddRequest_builder{Id: resourceID(9, r.GetAlias()), Alias: r.GetAlias(), Name: name, Desc: r.GetDesc(), Agent: r.GetAgent()}.Build())
+	return s.Next().Account().Add(ctx, resource.AccountAddRequest_builder{Id: resourceID(9, r.GetAlias()), Alias: r.GetAlias(), Name: name, Desc: r.GetDesc(), Agent: r.GetAgent(), AuthBackend: backend.Info().ID}.Build())
 }
 func (s AccountServer) Patch(context.Context, *resource.AccountPatchRequest) (*resource.Account, error) {
 	return nil, closed()
@@ -48,16 +52,19 @@ func (s AccountServer) Erase(context.Context, *resource.AccountRef) (*resource.A
 	return nil, closed()
 }
 
-func (s Layer) ensureAccount(ctx context.Context, alias, agent string) error {
+func (s Layer) ensureAccount(ctx context.Context, alias, agent, backend string) error {
 	if alias == "" {
 		return nil
 	}
+	if _, err := accounts.Resolve(agent, backend); err != nil {
+		return status.Error(codes.FailedPrecondition, err.Error())
+	}
 	v, err := s.Next().Account().Get(ctx, resource.AccountGetRequest_builder{Ref: accountRef(alias), Select: resource.AccountSelect_builder{All: ptr(true)}.Build()}.Build())
 	if status.Code(err) == codes.NotFound {
-		_, err = s.Next().Account().Add(ctx, resource.AccountAddRequest_builder{Id: resourceID(9, alias), Alias: alias, Name: alias, Agent: agent}.Build())
+		_, err = s.Next().Account().Add(ctx, resource.AccountAddRequest_builder{Id: resourceID(9, alias), Alias: alias, Name: alias, Agent: agent, AuthBackend: backend}.Build())
 		return err
 	}
-	if err == nil && v.GetAgent() != agent {
+	if err == nil && (v.GetAgent() != agent || v.GetAuthBackend() != backend) {
 		return status.Error(codes.FailedPrecondition, "account agent mismatch")
 	}
 	return err

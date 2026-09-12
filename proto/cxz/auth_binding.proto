@@ -1,0 +1,31 @@
+edition = "2023";
+package cxz;
+import "cxz/account.proto";
+import "cxz/project.proto";
+import "google/protobuf/timestamp.proto";
+import "orm.proto";
+import "payday.proto";
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/cxz/resource";
+
+// A stable authentication association. Its existence does not mean that login
+// succeeded. Credential validity is checked privately by the selected backend.
+message AuthBinding {
+  bytes id = 1 [(orm.field) = {type: TYPE_UUID, key: true, default: ""}];
+  string binding_id = 4 [(orm.field) = {unique: true, immutable: true}];
+  Account account = 8 [(orm.edge) = {immutable: true}];
+  Project project = 9 [(orm.edge) = {immutable: true, nullable: true}];
+  string auth_backend = 10 [(orm.field) = {immutable: true}];
+  string scope = 11 [(orm.field) = {immutable: true}];
+  string credential_ref = 12 [(orm.field) = {immutable: true}];
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {immutable: true, default: ""}];
+  option (orm.message) = {rpc: {crud: true}};
+  option (payday.entity) = {
+    domain: 10
+    global: {}
+    list: {order: [{field: {name: "date_created"}}, {field: {name: "id"}}], by: [{name: "ref"}, {name: "account"}, {name: "project"}], size: 50, max: 200}
+    watch: {}
+  };
+}

@@ -12,6 +12,7 @@ import (
 
 	"github.com/lesomnus/cxz/internal/ent/account"
 	"github.com/lesomnus/cxz/internal/ent/audit"
+	"github.com/lesomnus/cxz/internal/ent/authbinding"
 	"github.com/lesomnus/cxz/internal/ent/holder"
 	"github.com/lesomnus/cxz/internal/ent/outbox"
 	"github.com/lesomnus/cxz/internal/ent/project"
@@ -30,6 +31,8 @@ type Client struct {
 	Account *AccountClient
 	// Audit is the client for interacting with the Audit builders.
 	Audit *AuditClient
+	// AuthBinding is the client for interacting with the AuthBinding builders.
+	AuthBinding *AuthBindingClient
 	// Holder is the client for interacting with the Holder builders.
 	Holder *HolderClient
 	// Outbox is the client for interacting with the Outbox builders.
@@ -52,6 +55,7 @@ func NewClient(opts ...Option) *Client {
 func (c *Client) init() {
 	c.Account = NewAccountClient(c.config)
 	c.Audit = NewAuditClient(c.config)
+	c.AuthBinding = NewAuthBindingClient(c.config)
 	c.Holder = NewHolderClient(c.config)
 	c.Outbox = NewOutboxClient(c.config)
 	c.Project = NewProjectClient(c.config)
@@ -147,15 +151,16 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:     ctx,
-		config:  cfg,
-		Account: NewAccountClient(cfg),
-		Audit:   NewAuditClient(cfg),
-		Holder:  NewHolderClient(cfg),
-		Outbox:  NewOutboxClient(cfg),
-		Project: NewProjectClient(cfg),
-		Session: NewSessionClient(cfg),
-		Tenant:  NewTenantClient(cfg),
+		ctx:         ctx,
+		config:      cfg,
+		Account:     NewAccountClient(cfg),
+		Audit:       NewAuditClient(cfg),
+		AuthBinding: NewAuthBindingClient(cfg),
+		Holder:      NewHolderClient(cfg),
+		Outbox:      NewOutboxClient(cfg),
+		Project:     NewProjectClient(cfg),
+		Session:     NewSessionClient(cfg),
+		Tenant:      NewTenantClient(cfg),
 	}, nil
 }
 
@@ -173,15 +178,16 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:     ctx,
-		config:  cfg,
-		Account: NewAccountClient(cfg),
-		Audit:   NewAuditClient(cfg),
-		Holder:  NewHolderClient(cfg),
-		Outbox:  NewOutboxClient(cfg),
-		Project: NewProjectClient(cfg),
-		Session: NewSessionClient(cfg),
-		Tenant:  NewTenantClient(cfg),
+		ctx:         ctx,
+		config:      cfg,
+		Account:     NewAccountClient(cfg),
+		Audit:       NewAuditClient(cfg),
+		AuthBinding: NewAuthBindingClient(cfg),
+		Holder:      NewHolderClient(cfg),
+		Outbox:      NewOutboxClient(cfg),
+		Project:     NewProjectClient(cfg),
+		Session:     NewSessionClient(cfg),
+		Tenant:      NewTenantClient(cfg),
 	}, nil
 }
 
@@ -257,7 +263,8 @@ func (c *Client) InTx() bool {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.Account, c.Audit, c.Holder, c.Outbox, c.Project, c.Session, c.Tenant,
+		c.Account, c.Audit, c.AuthBinding, c.Holder, c.Outbox, c.Project, c.Session,
+		c.Tenant,
 	} {
 		n.Use(hooks...)
 	}
@@ -267,7 +274,8 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.Account, c.Audit, c.Holder, c.Outbox, c.Project, c.Session, c.Tenant,
+		c.Account, c.Audit, c.AuthBinding, c.Holder, c.Outbox, c.Project, c.Session,
+		c.Tenant,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -280,6 +288,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Account.mutate(ctx, m)
 	case *AuditMutation:
 		return c.Audit.mutate(ctx, m)
+	case *AuthBindingMutation:
+		return c.AuthBinding.mutate(ctx, m)
 	case *HolderMutation:
 		return c.Holder.mutate(ctx, m)
 	case *OutboxMutation:
@@ -558,6 +568,171 @@ func (c *AuditClient) mutate(ctx context.Context, m *AuditMutation) (Value, erro
 		return (&AuditDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown Audit mutation op: %q", m.Op())
+	}
+}
+
+// AuthBindingClient is a client for the AuthBinding schema.
+type AuthBindingClient struct {
+	config
+}
+
+// NewAuthBindingClient returns a client for the AuthBinding from the given config.
+func NewAuthBindingClient(c config) *AuthBindingClient {
+	return &AuthBindingClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `authbinding.Hooks(f(g(h())))`.
+func (c *AuthBindingClient) Use(hooks ...Hook) {
+	c.hooks.AuthBinding = append(c.hooks.AuthBinding, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `authbinding.Intercept(f(g(h())))`.
+func (c *AuthBindingClient) Intercept(interceptors ...Interceptor) {
+	c.inters.AuthBinding = append(c.inters.AuthBinding, interceptors...)
+}
+
+// Create returns a builder for creating a AuthBinding entity.
+func (c *AuthBindingClient) Create() *AuthBindingCreate {
+	mutation := newAuthBindingMutation(c.config, OpCreate)
+	return &AuthBindingCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of AuthBinding entities.
+func (c *AuthBindingClient) CreateBulk(builders ...*AuthBindingCreate) *AuthBindingCreateBulk {
+	return &AuthBindingCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *AuthBindingClient) MapCreateBulk(slice any, setFunc func(*AuthBindingCreate, int)) *AuthBindingCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &AuthBindingCreateBulk{err: fmt.Errorf("calling to AuthBindingClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*AuthBindingCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &AuthBindingCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for AuthBinding.
+func (c *AuthBindingClient) Update() *AuthBindingUpdate {
+	mutation := newAuthBindingMutation(c.config, OpUpdate)
+	return &AuthBindingUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *AuthBindingClient) UpdateOne(_m *AuthBinding) *AuthBindingUpdateOne {
+	mutation := newAuthBindingMutation(c.config, OpUpdateOne, withAuthBinding(_m))
+	return &AuthBindingUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneId returns an update builder for the given id.
+func (c *AuthBindingClient) UpdateOneId(id uuid.UUID) *AuthBindingUpdateOne {
+	mutation := newAuthBindingMutation(c.config, OpUpdateOne, withAuthBindingId(id))
+	return &AuthBindingUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for AuthBinding.
+func (c *AuthBindingClient) Delete() *AuthBindingDelete {
+	mutation := newAuthBindingMutation(c.config, OpDelete)
+	return &AuthBindingDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *AuthBindingClient) DeleteOne(_m *AuthBinding) *AuthBindingDeleteOne {
+	return c.DeleteOneId(_m.Id)
+}
+
+// DeleteOneId returns a builder for deleting the given entity by its id.
+func (c *AuthBindingClient) DeleteOneId(id uuid.UUID) *AuthBindingDeleteOne {
+	builder := c.Delete().Where(authbinding.Id(id))
+	builder.mutation.id = &id
+	builder.mutation.SetOp(OpDeleteOne)
+	return &AuthBindingDeleteOne{builder}
+}
+
+// Query returns a query builder for AuthBinding.
+func (c *AuthBindingClient) Query() *AuthBindingQuery {
+	return &AuthBindingQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeAuthBinding},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a AuthBinding entity by its id.
+func (c *AuthBindingClient) Get(ctx context.Context, id uuid.UUID) (*AuthBinding, error) {
+	return c.Query().Where(authbinding.Id(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *AuthBindingClient) GetX(ctx context.Context, id uuid.UUID) *AuthBinding {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryAccount queries the account edge of a AuthBinding.
+func (c *AuthBindingClient) QueryAccount(_m *AuthBinding) *AccountQuery {
+	query := (&AccountClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(authbinding.Table, authbinding.FieldId, id),
+			sqlgraph.To(account.Table, account.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, authbinding.AccountTable, authbinding.AccountColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryProject queries the project edge of a AuthBinding.
+func (c *AuthBindingClient) QueryProject(_m *AuthBinding) *ProjectQuery {
+	query := (&ProjectClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(authbinding.Table, authbinding.FieldId, id),
+			sqlgraph.To(project.Table, project.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, authbinding.ProjectTable, authbinding.ProjectColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *AuthBindingClient) Hooks() []Hook {
+	return c.hooks.AuthBinding
+}
+
+// Interceptors returns the client interceptors.
+func (c *AuthBindingClient) Interceptors() []Interceptor {
+	return c.inters.AuthBinding
+}
+
+func (c *AuthBindingClient) mutate(ctx context.Context, m *AuthBindingMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&AuthBindingCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&AuthBindingUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&AuthBindingUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&AuthBindingDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown AuthBinding mutation op: %q", m.Op())
 	}
 }
 
@@ -1116,6 +1291,22 @@ func (c *SessionClient) QueryAccount(_m *Session) *AccountQuery {
 	return query
 }
 
+// QueryAuthBinding queries the auth_binding edge of a Session.
+func (c *SessionClient) QueryAuthBinding(_m *Session) *AuthBindingQuery {
+	query := (&AuthBindingClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(session.Table, session.FieldId, id),
+			sqlgraph.To(authbinding.Table, authbinding.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, session.AuthBindingTable, session.AuthBindingColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *SessionClient) Hooks() []Hook {
 	return c.hooks.Session
@@ -1277,9 +1468,10 @@ func (c *TenantClient) mutate(ctx context.Context, m *TenantMutation) (Value, er
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Account, Audit, Holder, Outbox, Project, Session, Tenant []ent.Hook
+		Account, Audit, AuthBinding, Holder, Outbox, Project, Session, Tenant []ent.Hook
 	}
 	inters struct {
-		Account, Audit, Holder, Outbox, Project, Session, Tenant []ent.Interceptor
+		Account, Audit, AuthBinding, Holder, Outbox, Project, Session,
+		Tenant []ent.Interceptor
 	}
 )

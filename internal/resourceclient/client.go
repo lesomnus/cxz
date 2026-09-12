@@ -4,6 +4,7 @@ package resourceclient
 
 import (
 	"context"
+	"fmt"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/resource"
 	"google.golang.org/grpc"
@@ -13,10 +14,11 @@ type Client struct {
 	projects resource.ProjectServiceClient
 	sessions resource.SessionServiceClient
 	Accounts resource.AccountServiceClient
+	Bindings resource.AuthBindingServiceClient
 }
 
 func New(conn grpc.ClientConnInterface) *Client {
-	return &Client{resource.NewProjectServiceClient(conn), resource.NewSessionServiceClient(conn), resource.NewAccountServiceClient(conn)}
+	return &Client{resource.NewProjectServiceClient(conn), resource.NewSessionServiceClient(conn), resource.NewAccountServiceClient(conn), resource.NewAuthBindingServiceClient(conn)}
 }
 
 var _ api.SessionsClient = (*Client)(nil)
@@ -46,6 +48,17 @@ func (c *Client) view(ctx context.Context, s *resource.Session, opts ...grpc.Cal
 			}
 		}
 		v.Account = a.GetAlias()
+		v.AuthBackend = a.GetAuthBackend()
+	}
+	if b := s.GetAuthBinding(); b != nil {
+		if b.GetBindingId() == "" {
+			var err error
+			b, err = c.Bindings.Get(ctx, resource.AuthBindingGetRequest_builder{Ref: resource.AuthBindingRef_builder{Id: b.GetId()}.Build(), Select: resource.AuthBindingSelect_builder{All: ptr(true)}.Build()}.Build(), opts...)
+			if err != nil {
+				return nil, err
+			}
+		}
+		v.AuthBinding = b.GetBindingId()
 	}
 	if s.GetDateCreated() != nil {
 		v.CreatedAt = s.GetDateCreated().AsTime().UnixMilli()
@@ -65,7 +78,14 @@ func (c *Client) Create(ctx context.Context, r *api.CreateRequest, opts ...grpc.
 			return nil, err
 		}
 	}
-	s, err := c.sessions.Add(ctx, resource.SessionAddRequest_builder{Project: pr(p.GetRuntimeId()), Name: r.Title, ClientId: r.ClientId, Agent: r.Agent, Model: r.Model, Account: ar(r.Account)}.Build(), opts...)
+	b, err := c.Bind(ctx, p.GetRuntimeId(), r.Account)
+	if err != nil {
+		return nil, err
+	}
+	if (r.AuthBinding != "" && r.AuthBinding != b.GetBindingId()) || (r.AuthBackend != "" && r.AuthBackend != b.GetAuthBackend()) {
+		return nil, fmt.Errorf("auth binding/backend mismatch")
+	}
+	s, err := c.sessions.Add(ctx, resource.SessionAddRequest_builder{Project: pr(p.GetRuntimeId()), Name: r.Title, ClientId: r.ClientId, Agent: r.Agent, Model: r.Model, Account: ar(r.Account), AuthBinding: br(b.GetBindingId())}.Build(), opts...)
 	if err != nil {
 		return nil, err
 	}

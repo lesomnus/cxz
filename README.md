@@ -37,6 +37,8 @@ Register separate profiles for personal/company subscriptions:
 bin/cxz account add --agent codex --name "Company Codex" work-codex
 bin/cxz account login work-codex
 bin/cxz account list
+bin/cxz account backends             # supported agent/auth workflow mappings
+bin/cxz account bindings work-codex   # metadata only; no tokens
 bin/cxz new --account work-codex .
 ```
 
@@ -49,6 +51,11 @@ resume/recreate preserves them. Missing login fails instead of falling back to
 environment credentials. Interactive `new` and TUI Ctrl+N offer account selection;
 scripts must pass `--account` when creating a session. Stop an active session before
 starting another. See [Account design and boundaries](docs/accounts.md).
+
+`Account.auth_backend` selects the authentication strategy; `Session.auth_binding`
+fixes the concrete authentication association. Both agents currently use
+`project-local-oauth`. `account add --auth-backend project-local-oauth` makes this
+explicit. Unsupported backends are rejected; brokered tokens/API keys are not enabled.
 
 The account determines the agent; a conflicting explicit `--agent` is rejected.
 Use `cxz config set codex-model MODEL_ID` or `new --model MODEL_ID .` for a new

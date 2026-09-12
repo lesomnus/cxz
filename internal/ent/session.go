@@ -9,6 +9,7 @@ import (
 	"uuid"
 
 	"github.com/lesomnus/cxz/internal/ent/account"
+	"github.com/lesomnus/cxz/internal/ent/authbinding"
 	"github.com/lesomnus/cxz/internal/ent/project"
 	"github.com/lesomnus/cxz/internal/ent/session"
 	"github.com/lesomnus/cxz/resource"
@@ -47,6 +48,8 @@ type Session struct {
 	ProjectId uuid.UUID `json:"project_id,omitempty"`
 	// AccountId holds the value of the "account_id" field.
 	AccountId uuid.UUID `json:"account_id,omitempty"`
+	// AuthBindingId holds the value of the "auth_binding_id" field.
+	AuthBindingId uuid.UUID `json:"auth_binding_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the SessionQuery when eager-loading is set.
 	Edges        SessionEdges `json:"edges"`
@@ -59,9 +62,11 @@ type SessionEdges struct {
 	Project *Project `json:"project,omitempty"`
 	// Account holds the value of the account edge.
 	Account *Account `json:"account,omitempty"`
+	// AuthBinding holds the value of the auth_binding edge.
+	AuthBinding *AuthBinding `json:"auth_binding,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
 // ProjectOrErr returns the Project value or an error if the edge
@@ -86,6 +91,17 @@ func (e SessionEdges) AccountOrErr() (*Account, error) {
 	return nil, &NotLoadedError{edge: "account"}
 }
 
+// AuthBindingOrErr returns the AuthBinding value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e SessionEdges) AuthBindingOrErr() (*AuthBinding, error) {
+	if e.AuthBinding != nil {
+		return e.AuthBinding, nil
+	} else if e.loadedTypes[2] {
+		return nil, &NotFoundError{label: authbinding.Label}
+	}
+	return nil, &NotLoadedError{edge: "auth_binding"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*Session) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -97,7 +113,7 @@ func (*Session) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case session.FieldDateUpdated, session.FieldDateErased, session.FieldDateCreated:
 			values[i] = new(sql.NullTime)
-		case session.FieldId, session.FieldProjectId, session.FieldAccountId:
+		case session.FieldId, session.FieldProjectId, session.FieldAccountId, session.FieldAuthBindingId:
 			values[i] = new(uuid.UUID)
 		case session.FieldStatus:
 			values[i] = session.ValueScanner.Status.ScanValue()
@@ -201,6 +217,12 @@ func (_m *Session) assignValues(columns []string, values []any) error {
 			} else if value != nil {
 				_m.AccountId = *value
 			}
+		case session.FieldAuthBindingId:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field auth_binding_id", values[i])
+			} else if value != nil {
+				_m.AuthBindingId = *value
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -222,6 +244,11 @@ func (_m *Session) QueryProject() *ProjectQuery {
 // QueryAccount queries the "account" edge of the Session entity.
 func (_m *Session) QueryAccount() *AccountQuery {
 	return NewSessionClient(_m.config).QueryAccount(_m)
+}
+
+// QueryAuthBinding queries the "auth_binding" edge of the Session entity.
+func (_m *Session) QueryAuthBinding() *AuthBindingQuery {
+	return NewSessionClient(_m.config).QueryAuthBinding(_m)
 }
 
 // Update returns a builder for updating this Session.
@@ -287,6 +314,9 @@ func (_m *Session) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("account_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.AccountId))
+	builder.WriteString(", ")
+	builder.WriteString("auth_binding_id=")
+	builder.WriteString(fmt.Sprintf("%v", _m.AuthBindingId))
 	builder.WriteByte(')')
 	return builder.String()
 }

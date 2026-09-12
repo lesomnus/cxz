@@ -25,6 +25,8 @@ func (Account) Fields() []ent.Field {
 		field.String("desc"),
 		field.String("agent").
 			Immutable(),
+		field.String("auth_backend").
+			Immutable(),
 		field.Time("date_updated"),
 		field.Time("date_erased").
 			Nillable().

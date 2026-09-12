@@ -16,25 +16,27 @@ import (
 
 // Mutation represents an operation that mutates the Session nodes in the graph.
 type Mutation struct {
-	op             ent.Op
-	typ            string
-	name           *string
-	desc           *string
-	agent          *string
-	model          *string
-	runtime_id     *string
-	client_id      *string
-	date_updated   *time.Time
-	date_erased    *time.Time
-	date_created   *time.Time
-	status         **resource.SessionStatus
-	listed         *bool
-	clearedFields  map[string]struct{}
-	project        *uuid.UUID
-	clearedproject bool
-	account        *uuid.UUID
-	clearedaccount bool
-	predicates     []predicate.Session
+	op                  ent.Op
+	typ                 string
+	name                *string
+	desc                *string
+	agent               *string
+	model               *string
+	runtime_id          *string
+	client_id           *string
+	date_updated        *time.Time
+	date_erased         *time.Time
+	date_created        *time.Time
+	status              **resource.SessionStatus
+	listed              *bool
+	clearedFields       map[string]struct{}
+	project             *uuid.UUID
+	clearedproject      bool
+	account             *uuid.UUID
+	clearedaccount      bool
+	auth_binding        *uuid.UUID
+	clearedauth_binding bool
+	predicates          []predicate.Session
 }
 
 // NewMutation creates a new Mutation for the Session entity.
@@ -350,6 +352,25 @@ func (m *Mutation) ResetAccountId() {
 	m.account = nil
 }
 
+// SetAuthBindingId sets the "auth_binding_id" field.
+func (m *Mutation) SetAuthBindingId(u uuid.UUID) {
+	m.auth_binding = &u
+}
+
+// AuthBindingId returns the value of the "auth_binding_id" field in the mutation.
+func (m *Mutation) AuthBindingId() (r uuid.UUID, exists bool) {
+	v := m.auth_binding
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetAuthBindingId resets all changes to the "auth_binding_id" field.
+func (m *Mutation) ResetAuthBindingId() {
+	m.auth_binding = nil
+}
+
 // ClearProject clears the "project" edge to the Project entity.
 func (m *Mutation) ClearProject() {
 	m.clearedproject = true
@@ -404,6 +425,33 @@ func (m *Mutation) ResetAccount() {
 	m.clearedaccount = false
 }
 
+// ClearAuthBinding clears the "auth_binding" edge to the AuthBinding entity.
+func (m *Mutation) ClearAuthBinding() {
+	m.clearedauth_binding = true
+	m.clearedFields[FieldAuthBindingId] = struct{}{}
+}
+
+// AuthBindingCleared reports if the "auth_binding" edge to the AuthBinding entity was cleared.
+func (m *Mutation) AuthBindingCleared() bool {
+	return m.clearedauth_binding
+}
+
+// AuthBindingIds returns the "auth_binding" edge Ids in the mutation.
+// Note that Ids always returns len(Ids) <= 1 for unique edges, and you should use
+// AuthBindingId instead. It exists only for internal usage by the builders.
+func (m *Mutation) AuthBindingIds() (ids []uuid.UUID) {
+	if id := m.auth_binding; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetAuthBinding resets all changes to the "auth_binding" edge.
+func (m *Mutation) ResetAuthBinding() {
+	m.auth_binding = nil
+	m.clearedauth_binding = false
+}
+
 // Where appends a list predicates to the Mutation builder.
 func (m *Mutation) Where(ps ...predicate.Session) {
 	m.predicates = append(m.predicates, ps...)
@@ -438,7 +486,7 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 13)
+	fields := make([]string, 0, 14)
 	if m.name != nil {
 		fields = append(fields, FieldName)
 	}
@@ -478,6 +526,9 @@ func (m *Mutation) Fields() []string {
 	if m.account != nil {
 		fields = append(fields, FieldAccountId)
 	}
+	if m.auth_binding != nil {
+		fields = append(fields, FieldAuthBindingId)
+	}
 	return fields
 }
 
@@ -512,6 +563,8 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.ProjectId()
 	case FieldAccountId:
 		return m.AccountId()
+	case FieldAuthBindingId:
+		return m.AuthBindingId()
 	}
 	return nil, false
 }
@@ -618,6 +671,13 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetAccountId(v)
+		return nil
+	case FieldAuthBindingId:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAuthBindingId(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Session field %s", name)
@@ -734,18 +794,24 @@ func (m *Mutation) ResetField(name string) error {
 	case FieldAccountId:
 		m.ResetAccountId()
 		return nil
+	case FieldAuthBindingId:
+		m.ResetAuthBindingId()
+		return nil
 	}
 	return fmt.Errorf("unknown Session field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *Mutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.project != nil {
 		edges = append(edges, EdgeProject)
 	}
 	if m.account != nil {
 		edges = append(edges, EdgeAccount)
+	}
+	if m.auth_binding != nil {
+		edges = append(edges, EdgeAuthBinding)
 	}
 	return edges
 }
@@ -762,13 +828,17 @@ func (m *Mutation) AddedIds(name string) []ent.Value {
 		if id := m.account; id != nil {
 			return []ent.Value{*id}
 		}
+	case EdgeAuthBinding:
+		if id := m.auth_binding; id != nil {
+			return []ent.Value{*id}
+		}
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *Mutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	return edges
 }
 
@@ -780,12 +850,15 @@ func (m *Mutation) RemovedIds(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *Mutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.clearedproject {
 		edges = append(edges, EdgeProject)
 	}
 	if m.clearedaccount {
 		edges = append(edges, EdgeAccount)
+	}
+	if m.clearedauth_binding {
+		edges = append(edges, EdgeAuthBinding)
 	}
 	return edges
 }
@@ -798,6 +871,8 @@ func (m *Mutation) EdgeCleared(name string) bool {
 		return m.clearedproject
 	case EdgeAccount:
 		return m.clearedaccount
+	case EdgeAuthBinding:
+		return m.clearedauth_binding
 	}
 	return false
 }
@@ -812,6 +887,9 @@ func (m *Mutation) ClearEdge(name string) error {
 	case EdgeAccount:
 		m.ClearAccount()
 		return nil
+	case EdgeAuthBinding:
+		m.ClearAuthBinding()
+		return nil
 	}
 	return fmt.Errorf("unknown Session unique edge %s", name)
 }
@@ -825,6 +903,9 @@ func (m *Mutation) ResetEdge(name string) error {
 		return nil
 	case EdgeAccount:
 		m.ResetAccount()
+		return nil
+	case EdgeAuthBinding:
+		m.ResetAuthBinding()
 		return nil
 	}
 	return fmt.Errorf("unknown Session edge %s", name)

@@ -16,6 +16,7 @@ var (
 		{Name: "name", Type: field.TypeString},
 		{Name: "desc", Type: field.TypeString},
 		{Name: "agent", Type: field.TypeString},
+		{Name: "auth_backend", Type: field.TypeString},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
@@ -86,6 +87,49 @@ var (
 				Name:    "audit_actor_id_date_created",
 				Unique:  false,
 				Columns: []*schema.Column{AuditColumns[2], AuditColumns[7]},
+			},
+		},
+	}
+	// AuthbindingColumns holds the columns for the "authbinding" table.
+	AuthbindingColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "binding_id", Type: field.TypeString},
+		{Name: "auth_backend", Type: field.TypeString},
+		{Name: "scope", Type: field.TypeString},
+		{Name: "credential_ref", Type: field.TypeString},
+		{Name: "date_updated", Type: field.TypeTime},
+		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+		{Name: "account_id", Type: field.TypeUuid},
+		{Name: "project_id", Type: field.TypeUuid, Nullable: true},
+	}
+	// AuthbindingTable holds the schema information for the "authbinding" table.
+	AuthbindingTable = &schema.Table{
+		Name:       "authbinding",
+		Columns:    AuthbindingColumns,
+		PrimaryKey: []*schema.Column{AuthbindingColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "authbinding_account_account",
+				Columns:    []*schema.Column{AuthbindingColumns[8]},
+				RefColumns: []*schema.Column{AccountColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "authbinding_project_project",
+				Columns:    []*schema.Column{AuthbindingColumns[9]},
+				RefColumns: []*schema.Column{ProjectColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "authbinding_binding_id",
+				Unique:  true,
+				Columns: []*schema.Column{AuthbindingColumns[1]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "date_erased IS NULL",
+				},
 			},
 		},
 	}
@@ -217,6 +261,7 @@ var (
 		{Name: "listed", Type: field.TypeBool, Nullable: true},
 		{Name: "project_id", Type: field.TypeUuid},
 		{Name: "account_id", Type: field.TypeUuid},
+		{Name: "auth_binding_id", Type: field.TypeUuid},
 	}
 	// SessionTable holds the schema information for the "session" table.
 	SessionTable = &schema.Table{
@@ -234,6 +279,12 @@ var (
 				Symbol:     "session_account_account",
 				Columns:    []*schema.Column{SessionColumns[13]},
 				RefColumns: []*schema.Column{AccountColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "session_authbinding_auth_binding",
+				Columns:    []*schema.Column{SessionColumns[14]},
+				RefColumns: []*schema.Column{AuthbindingColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 		},
@@ -281,6 +332,7 @@ var (
 	Tables = []*schema.Table{
 		AccountTable,
 		AuditTable,
+		AuthbindingTable,
 		HolderTable,
 		OutboxTable,
 		ProjectTable,
@@ -296,6 +348,11 @@ func init() {
 	AuditTable.Annotation = &entsql.Annotation{
 		Table: "audit",
 	}
+	AuthbindingTable.ForeignKeys[0].RefTable = AccountTable
+	AuthbindingTable.ForeignKeys[1].RefTable = ProjectTable
+	AuthbindingTable.Annotation = &entsql.Annotation{
+		Table: "authbinding",
+	}
 	HolderTable.ForeignKeys[0].RefTable = TenantTable
 	HolderTable.Annotation = &entsql.Annotation{
 		Table: "holder",
@@ -308,6 +365,7 @@ func init() {
 	}
 	SessionTable.ForeignKeys[0].RefTable = ProjectTable
 	SessionTable.ForeignKeys[1].RefTable = AccountTable
+	SessionTable.ForeignKeys[2].RefTable = AuthbindingTable
 	SessionTable.Annotation = &entsql.Annotation{
 		Table: "session",
 	}

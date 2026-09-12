@@ -278,7 +278,7 @@ func (s *Server) snapshot(ctx context.Context, m core.Session) (*api.Session, er
 		}
 		snap.Pending = nil
 	}
-	v := &api.Session{Id: m.ID, Workspace: m.Workspace, Title: m.Title, CreatedAt: m.CreatedAt, State: snap.State, RunId: snap.RunID, VendorId: snap.VendorID, LastSeq: snap.LastSeq, Agent: m.Kind, ProjectId: m.ProjectID, Model: m.Model, CreateId: m.CreateID, Account: m.Account}
+	v := &api.Session{Id: m.ID, Workspace: m.Workspace, Title: m.Title, CreatedAt: m.CreatedAt, State: snap.State, RunId: snap.RunID, VendorId: snap.VendorID, LastSeq: snap.LastSeq, Agent: m.Kind, ProjectId: m.ProjectID, Model: m.Model, CreateId: m.CreateID, Account: m.Account, AuthBackend: m.AuthBackend, AuthBinding: m.AuthBinding}
 	if v.Agent == "" {
 		v.Agent = "claude"
 	}
@@ -289,7 +289,11 @@ func (s *Server) snapshot(ctx context.Context, m core.Session) (*api.Session, er
 }
 func (s *Server) launch(ctx context.Context, m core.Session) (*api.Session, error) {
 	if m.Account != "" {
-		if _, err := accounts.Credential(s.root, m.Account, m.Kind); err != nil {
+		backend, err := accounts.ResolveBinding(m.Kind, m.AuthBackend, m.ProjectID, m.Account, m.AuthBinding)
+		if err != nil {
+			return nil, status.Error(codes.FailedPrecondition, err.Error())
+		}
+		if err := backend.Check(s.root, m.Account); err != nil {
 			return nil, status.Error(codes.FailedPrecondition, err.Error())
 		}
 	}
@@ -368,7 +372,7 @@ func (s *Server) Create(ctx context.Context, r *api.CreateRequest) (*api.Session
 		if e = json.Unmarshal(b, &m); e != nil {
 			return nil, e
 		}
-		if m.Workspace != path || m.Title != r.Title || m.Kind != r.Agent || m.Model != r.Model || m.Account != r.Account {
+		if m.Workspace != path || m.Title != r.Title || m.Kind != r.Agent || m.Model != r.Model || m.Account != r.Account || m.AuthBackend != r.AuthBackend || m.AuthBinding != r.AuthBinding {
 			return nil, status.Error(codes.AlreadyExists, "client_id reused")
 		}
 		return s.snapshot(ctx, m)
@@ -388,7 +392,7 @@ func (s *Server) Create(ctx context.Context, r *api.CreateRequest) (*api.Session
 			}
 		}
 	}
-	bin, cfg := s.agent, s.configDir
+	bin := s.agent
 	if r.Agent == "codex" && os.Getenv("CXZ_PROJECT_ID") == "" {
 		return nil, status.Error(codes.FailedPrecondition, "Codex requires an owned devcontainer: use cxz install and cxz up --agent codex")
 	}
@@ -410,18 +414,24 @@ func (s *Server) Create(ctx context.Context, r *api.CreateRequest) (*api.Session
 		if bin == "" {
 			return nil, status.Error(codes.FailedPrecondition, "agent is not provisioned; run cxz up --agent "+r.Agent)
 		}
-		cfg = filepath.Join(s.root, "agents", r.Agent)
-		if e = os.MkdirAll(cfg, 0700); e != nil {
-			return nil, e
-		}
 	}
 	if r.Account != "" {
-		if _, err := accounts.Credential(s.root, r.Account, r.Agent); err != nil {
+		backend, err := accounts.Resolve(r.Agent, r.AuthBackend)
+		if err != nil {
 			return nil, status.Error(codes.FailedPrecondition, err.Error())
 		}
-		cfg = accounts.Config(s.root, r.Account)
+		if err := backend.Check(s.root, r.Account); err != nil {
+			return nil, status.Error(codes.FailedPrecondition, err.Error())
+		}
 	}
-	m := core.Session{CreateID: r.ClientId, ID: core.ID(), Workspace: path, Title: r.Title, CreatedAt: time.Now().UnixMilli(), Agent: bin, Kind: r.Agent, ProjectID: os.Getenv("CXZ_PROJECT_ID"), ConfigDir: cfg, Model: r.Model, Account: r.Account}
+	project, err := s.RegisterProject(ctx, path, "")
+	if err != nil {
+		return nil, err
+	}
+	if _, err := accounts.ResolveBinding(r.Agent, r.AuthBackend, project.Id, r.Account, r.AuthBinding); err != nil {
+		return nil, status.Error(codes.InvalidArgument, "auth binding does not belong to this project")
+	}
+	m := core.Session{CreateID: r.ClientId, ID: core.ID(), Workspace: path, Title: r.Title, CreatedAt: time.Now().UnixMilli(), Agent: bin, Kind: r.Agent, ProjectID: project.Id, Model: r.Model, Account: r.Account, AuthBackend: r.AuthBackend, AuthBinding: r.AuthBinding}
 	if e = os.Mkdir(core.Dir(s.root, m.ID), 0700); e != nil {
 		return nil, e
 	}

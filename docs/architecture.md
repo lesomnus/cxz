@@ -445,6 +445,13 @@ an independent login there. Session.account is immutable. This preserves option
 The Codex central-token mechanism discussed below remains a capability research
 result, not the implemented subscription login path.
 
+The implemented `AuthBackend` registry now maps each AgentKind to a default and
+supported strategy factories. Account fixes the strategy; AuthBinding fixes its
+scope/storage reference; Session fixes the binding. Backend owns binding identity,
+login, credential checks and launch configuration. Both agents currently register
+only `project-local-oauth`. Unsupported strategies fail closed, including on
+recovery; no central token broker is enabled by this abstraction.
+
 Subscription logins use OAuth with **rotating refresh tokens**: each refresh
 issues a new one and invalidates its predecessor. Three arrangements are
 possible, and two of them have already been tried and rejected in cld:

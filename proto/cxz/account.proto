@@ -14,6 +14,7 @@ message Account {
   string name = 5;
   string desc = 6;
   string agent = 8 [(orm.field) = {immutable: true}];
+  string auth_backend = 9 [(orm.field) = {immutable: true}];
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
   google.protobuf.Timestamp date_created = 15 [(orm.field) = {immutable: true, default: ""}];

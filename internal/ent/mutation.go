@@ -12,6 +12,7 @@ import (
 
 	"github.com/lesomnus/cxz/internal/ent/account"
 	"github.com/lesomnus/cxz/internal/ent/audit"
+	"github.com/lesomnus/cxz/internal/ent/authbinding"
 	"github.com/lesomnus/cxz/internal/ent/holder"
 	"github.com/lesomnus/cxz/internal/ent/outbox"
 	"github.com/lesomnus/cxz/internal/ent/project"
@@ -30,13 +31,14 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
-	TypeAccount = "Account"
-	TypeAudit   = "Audit"
-	TypeHolder  = "Holder"
-	TypeOutbox  = "Outbox"
-	TypeProject = "Project"
-	TypeSession = "Session"
-	TypeTenant  = "Tenant"
+	TypeAccount     = "Account"
+	TypeAudit       = "Audit"
+	TypeAuthBinding = "AuthBinding"
+	TypeHolder      = "Holder"
+	TypeOutbox      = "Outbox"
+	TypeProject     = "Project"
+	TypeSession     = "Session"
+	TypeTenant      = "Tenant"
 )
 
 // AccountMutation represents an operation that mutates the Account nodes in the graph.
@@ -218,6 +220,23 @@ func (m *AccountMutation) OldAgent(ctx context.Context) (v string, err error) {
 	return oldValue.Agent, nil
 }
 
+// OldAuthBackend returns the old "auth_backend" field's value of the Account entity.
+// If the Account object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AccountMutation) OldAuthBackend(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldAuthBackend is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldAuthBackend requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAuthBackend: %w", err)
+	}
+	return oldValue.AuthBackend, nil
+}
+
 // OldDateUpdated returns the old "date_updated" field's value of the Account entity.
 // If the Account object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
@@ -282,6 +301,8 @@ func (m *AccountMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldDesc(ctx)
 	case account.FieldAgent:
 		return m.OldAgent(ctx)
+	case account.FieldAuthBackend:
+		return m.OldAuthBackend(ctx)
 	case account.FieldDateUpdated:
 		return m.OldDateUpdated(ctx)
 	case account.FieldDateErased:
@@ -619,6 +640,297 @@ func (m *AuditMutation) OldField(ctx context.Context, name string) (ent.Value, e
 		return m.OldDomain(ctx)
 	}
 	return nil, fmt.Errorf("unknown Audit field %s", name)
+}
+
+// AuthBindingMutation represents an operation that mutates the AuthBinding nodes in the graph.
+type AuthBindingMutation struct {
+	authbinding.Mutation
+	config
+	id       *uuid.UUID
+	done     bool
+	oldValue func(context.Context) (*AuthBinding, error)
+}
+
+var _ ent.Mutation = (*AuthBindingMutation)(nil)
+
+// authbindingOption allows management of the mutation configuration using functional options.
+type authbindingOption func(*AuthBindingMutation)
+
+// newAuthBindingMutation creates new mutation for the AuthBinding entity.
+func newAuthBindingMutation(c config, op Op, opts ...authbindingOption) *AuthBindingMutation {
+	m := &AuthBindingMutation{
+		Mutation: *authbinding.NewMutation(op),
+		config:   c,
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// SetId sets the value of the id field. Note that this
+// operation is only accepted on creation of AuthBinding entities.
+func (m *AuthBindingMutation) SetId(id uuid.UUID) {
+	m.id = &id
+}
+
+// Id returns the Id value in the mutation. Note that the Id is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *AuthBindingMutation) Id() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// withAuthBindingId sets the Id field of the mutation.
+func withAuthBindingId(id uuid.UUID) authbindingOption {
+	return func(m *AuthBindingMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *AuthBinding
+		)
+		m.oldValue = func(ctx context.Context) (*AuthBinding, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().AuthBinding.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withAuthBinding sets the old AuthBinding of the mutation.
+func withAuthBinding(node *AuthBinding) authbindingOption {
+	return func(m *AuthBindingMutation) {
+		m.oldValue = func(context.Context) (*AuthBinding, error) {
+			return node, nil
+		}
+		m.id = &node.Id
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m AuthBindingMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m AuthBindingMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// Ids queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *AuthBindingMutation) Ids(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.Op().Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.Id()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.Op().Is(OpUpdate | OpDelete):
+		return m.Client().AuthBinding.Query().Where(m.Predicates()...).Ids(ctx)
+	default:
+		return nil, fmt.Errorf("Ids is not allowed on %s operations", m.Op())
+	}
+}
+
+// OldBindingId returns the old "binding_id" field's value of the AuthBinding entity.
+// If the AuthBinding object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AuthBindingMutation) OldBindingId(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldBindingId is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldBindingId requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldBindingId: %w", err)
+	}
+	return oldValue.BindingId, nil
+}
+
+// OldAuthBackend returns the old "auth_backend" field's value of the AuthBinding entity.
+// If the AuthBinding object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AuthBindingMutation) OldAuthBackend(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldAuthBackend is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldAuthBackend requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAuthBackend: %w", err)
+	}
+	return oldValue.AuthBackend, nil
+}
+
+// OldScope returns the old "scope" field's value of the AuthBinding entity.
+// If the AuthBinding object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AuthBindingMutation) OldScope(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldScope is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldScope requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldScope: %w", err)
+	}
+	return oldValue.Scope, nil
+}
+
+// OldCredentialRef returns the old "credential_ref" field's value of the AuthBinding entity.
+// If the AuthBinding object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AuthBindingMutation) OldCredentialRef(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldCredentialRef is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldCredentialRef requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCredentialRef: %w", err)
+	}
+	return oldValue.CredentialRef, nil
+}
+
+// OldDateUpdated returns the old "date_updated" field's value of the AuthBinding entity.
+// If the AuthBinding object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AuthBindingMutation) OldDateUpdated(ctx context.Context) (v time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateUpdated is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateUpdated requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateUpdated: %w", err)
+	}
+	return oldValue.DateUpdated, nil
+}
+
+// OldDateErased returns the old "date_erased" field's value of the AuthBinding entity.
+// If the AuthBinding object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AuthBindingMutation) OldDateErased(ctx context.Context) (v *time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateErased is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateErased requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateErased: %w", err)
+	}
+	return oldValue.DateErased, nil
+}
+
+// OldDateCreated returns the old "date_created" field's value of the AuthBinding entity.
+// If the AuthBinding object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AuthBindingMutation) OldDateCreated(ctx context.Context) (v time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateCreated is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateCreated requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateCreated: %w", err)
+	}
+	return oldValue.DateCreated, nil
+}
+
+// OldAccountId returns the old "account_id" field's value of the AuthBinding entity.
+// If the AuthBinding object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AuthBindingMutation) OldAccountId(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldAccountId is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldAccountId requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAccountId: %w", err)
+	}
+	return oldValue.AccountId, nil
+}
+
+// OldProjectId returns the old "project_id" field's value of the AuthBinding entity.
+// If the AuthBinding object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AuthBindingMutation) OldProjectId(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldProjectId is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldProjectId requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProjectId: %w", err)
+	}
+	return oldValue.ProjectId, nil
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *AuthBindingMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case authbinding.FieldBindingId:
+		return m.OldBindingId(ctx)
+	case authbinding.FieldAuthBackend:
+		return m.OldAuthBackend(ctx)
+	case authbinding.FieldScope:
+		return m.OldScope(ctx)
+	case authbinding.FieldCredentialRef:
+		return m.OldCredentialRef(ctx)
+	case authbinding.FieldDateUpdated:
+		return m.OldDateUpdated(ctx)
+	case authbinding.FieldDateErased:
+		return m.OldDateErased(ctx)
+	case authbinding.FieldDateCreated:
+		return m.OldDateCreated(ctx)
+	case authbinding.FieldAccountId:
+		return m.OldAccountId(ctx)
+	case authbinding.FieldProjectId:
+		return m.OldProjectId(ctx)
+	}
+	return nil, fmt.Errorf("unknown AuthBinding field %s", name)
 }
 
 // HolderMutation represents an operation that mutates the Holder nodes in the graph.
@@ -1807,6 +2119,23 @@ func (m *SessionMutation) OldAccountId(ctx context.Context) (v uuid.UUID, err er
 	return oldValue.AccountId, nil
 }
 
+// OldAuthBindingId returns the old "auth_binding_id" field's value of the Session entity.
+// If the Session object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SessionMutation) OldAuthBindingId(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldAuthBindingId is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldAuthBindingId requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAuthBindingId: %w", err)
+	}
+	return oldValue.AuthBindingId, nil
+}
+
 // OldField returns the old value of the field from the database. An error is
 // returned if the mutation operation is not UpdateOne, or the query to the
 // database failed.
@@ -1838,6 +2167,8 @@ func (m *SessionMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldProjectId(ctx)
 	case session.FieldAccountId:
 		return m.OldAccountId(ctx)
+	case session.FieldAuthBindingId:
+		return m.OldAuthBindingId(ctx)
 	}
 	return nil, fmt.Errorf("unknown Session field %s", name)
 }

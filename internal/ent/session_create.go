@@ -10,6 +10,7 @@ import (
 	"uuid"
 
 	"github.com/lesomnus/cxz/internal/ent/account"
+	"github.com/lesomnus/cxz/internal/ent/authbinding"
 	"github.com/lesomnus/cxz/internal/ent/project"
 	"github.com/lesomnus/cxz/internal/ent/session"
 	"github.com/lesomnus/cxz/resource"
@@ -127,6 +128,12 @@ func (_c *SessionCreate) SetAccountId(v uuid.UUID) *SessionCreate {
 	return _c
 }
 
+// SetAuthBindingId sets the "auth_binding_id" field.
+func (_c *SessionCreate) SetAuthBindingId(v uuid.UUID) *SessionCreate {
+	_c.mutation.SetAuthBindingId(v)
+	return _c
+}
+
 // SetId sets the "id" field.
 func (_c *SessionCreate) SetId(v uuid.UUID) *SessionCreate {
 	_c.mutation.SetId(v)
@@ -141,6 +148,11 @@ func (_c *SessionCreate) SetProject(v *Project) *SessionCreate {
 // SetAccount sets the "account" edge to the Account entity.
 func (_c *SessionCreate) SetAccount(v *Account) *SessionCreate {
 	return _c.SetAccountId(v.Id)
+}
+
+// SetAuthBinding sets the "auth_binding" edge to the AuthBinding entity.
+func (_c *SessionCreate) SetAuthBinding(v *AuthBinding) *SessionCreate {
+	return _c.SetAuthBindingId(v.Id)
 }
 
 // Mutation returns the SessionMutation object of the builder.
@@ -204,11 +216,17 @@ func (_c *SessionCreate) check() error {
 	if _, ok := _c.mutation.AccountId(); !ok {
 		return &ValidationError{Name: "account_id", err: errors.New(`ent: missing required field "Session.account_id"`)}
 	}
+	if _, ok := _c.mutation.AuthBindingId(); !ok {
+		return &ValidationError{Name: "auth_binding_id", err: errors.New(`ent: missing required field "Session.auth_binding_id"`)}
+	}
 	if len(_c.mutation.ProjectIds()) == 0 {
 		return &ValidationError{Name: "project", err: errors.New(`ent: missing required edge "Session.project"`)}
 	}
 	if len(_c.mutation.AccountIds()) == 0 {
 		return &ValidationError{Name: "account", err: errors.New(`ent: missing required edge "Session.account"`)}
+	}
+	if len(_c.mutation.AuthBindingIds()) == 0 {
+		return &ValidationError{Name: "auth_binding", err: errors.New(`ent: missing required edge "Session.auth_binding"`)}
 	}
 	return nil
 }
@@ -335,6 +353,23 @@ func (_c *SessionCreate) createSpec() (*Session, *sqlgraph.CreateSpec, error) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.AccountId = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.AuthBindingIds(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   session.AuthBindingTable,
+			Columns: []string{session.AuthBindingColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IdSpec: sqlgraph.NewFieldSpec(authbinding.FieldId, field.TypeUuid),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.AuthBindingId = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec, nil

@@ -3,6 +3,7 @@ package lifecycle
 import (
 	"context"
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/resource"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -25,6 +26,7 @@ func (s SessionServer) Add(ctx context.Context, r *resource.SessionAddRequest) (
 		return nil, status.Error(codes.InvalidArgument, "client_id required")
 	}
 	account := ""
+	backend := ""
 	if r.HasAccount() {
 		a, err := s.Next().Account().Get(ctx, resource.AccountGetRequest_builder{Ref: r.GetAccount(), Select: resource.AccountSelect_builder{All: ptr(true)}.Build()}.Build())
 		if err != nil {
@@ -35,12 +37,23 @@ func (s SessionServer) Add(ctx context.Context, r *resource.SessionAddRequest) (
 		}
 		r.SetAgent(a.GetAgent())
 		account = a.GetAlias()
+		backend = a.GetAuthBackend()
 	}
 	p, err := s.Next().Project().Get(ctx, resource.ProjectGetRequest_builder{Ref: r.GetProject(), Select: resource.ProjectSelect_builder{All: ptr(true)}.Build()}.Build())
 	if err != nil {
 		return nil, err
 	}
-	v, err := s.shared.runtime.Create(ctx, &api.CreateRequest{Workspace: p.GetWorkspace(), Title: r.GetName(), Agent: r.GetAgent(), Model: r.GetModel(), ClientId: r.GetClientId(), Account: account})
+	if _, err := accounts.Resolve(r.GetAgent(), backend); err != nil {
+		return nil, status.Error(codes.FailedPrecondition, err.Error())
+	}
+	binding, err := s.Next().AuthBinding().Get(ctx, resource.AuthBindingGetRequest_builder{Ref: r.GetAuthBinding(), Select: resource.AuthBindingSelect_builder{All: ptr(true)}.Build()}.Build())
+	if err != nil {
+		return nil, err
+	}
+	if _, err := accounts.ResolveBinding(r.GetAgent(), backend, p.GetRuntimeId(), account, binding.GetBindingId()); err != nil || binding.GetAuthBackend() != backend {
+		return nil, status.Error(codes.InvalidArgument, "auth binding does not match project/account/backend")
+	}
+	v, err := s.shared.runtime.Create(ctx, &api.CreateRequest{Workspace: p.GetWorkspace(), Title: r.GetName(), Agent: r.GetAgent(), Model: r.GetModel(), ClientId: r.GetClientId(), Account: account, AuthBackend: backend, AuthBinding: binding.GetBindingId()})
 	if err != nil {
 		return nil, err
 	}

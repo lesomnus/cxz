@@ -18,7 +18,7 @@ service Sessions {
   rpc Down(ProjectRequest) returns (Receipt);
 }
 message Empty {}
-message CreateRequest { string workspace = 1; string title = 2; string client_id = 3; string agent = 4; string model = 5; string account = 6; }
+message CreateRequest { string workspace = 1; string title = 2; string client_id = 3; string agent = 4; string model = 5; string account = 6; string auth_backend = 7; string auth_binding = 8; }
 message SessionRef { string id = 1; }
 message Session {
   string id = 1; string workspace = 2; string title = 3; string state = 4;
@@ -31,6 +31,8 @@ message Session {
   string project_name = 14;
   string project_alias = 15;
   string account = 16;
+  string auth_backend = 17;
+  string auth_binding = 18;
 }
 message SessionList { repeated Session sessions = 1; }
 message Input { string session_id = 1; string run_id = 2; string client_id = 3; string text = 4; }

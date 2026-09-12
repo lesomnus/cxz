@@ -33,6 +33,18 @@ func (f AuditFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.AuditMutation", m)
 }
 
+// The AuthBindingFunc type is an adapter to allow the use of ordinary
+// function as AuthBinding mutator.
+type AuthBindingFunc func(context.Context, *ent.AuthBindingMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f AuthBindingFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.AuthBindingMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.AuthBindingMutation", m)
+}
+
 // The HolderFunc type is an adapter to allow the use of ordinary
 // function as Holder mutator.
 type HolderFunc func(context.Context, *ent.HolderMutation) (ent.Value, error)

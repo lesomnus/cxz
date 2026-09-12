@@ -131,24 +131,20 @@ func Run(ctx context.Context, root, id string) error {
 		}
 		s.codex = &codexProtocol{s: s}
 		args = []string{"app-server", "--listen", "stdio://"}
-		if session.Account != "" {
-			args = append(args, "-c", `cli_auth_credentials_store="file"`, "-c", `model_provider="openai"`)
-		}
 	}
+	backend, err := accounts.ResolveBinding(session.Kind, session.AuthBackend, session.ProjectID, session.Account, session.AuthBinding)
+	if err != nil {
+		return err
+	}
+	auth, err := backend.Launch(root, session.Account, os.Environ())
+	if err != nil {
+		return err
+	}
+	args = append(args, auth.Args...)
 	s.cmd = exec.Command(session.Agent, args...)
 	s.cmd.Dir = session.Workspace
 	s.cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true, Pdeathsig: syscall.SIGKILL}
-	s.cmd.Env = os.Environ()
-	if session.Account != "" {
-		s.cmd.Env = accounts.Environment(s.cmd.Env, root, session.Account, session.Kind)
-	}
-	if session.ConfigDir != "" {
-		key := "CLAUDE_CONFIG_DIR"
-		if session.Kind == "codex" {
-			key = "CODEX_HOME"
-		}
-		s.cmd.Env = append(s.cmd.Env, key+"="+session.ConfigDir)
-	}
+	s.cmd.Env = auth.Env
 	s.stdin, e = s.cmd.StdinPipe()
 	if e != nil {
 		return e
