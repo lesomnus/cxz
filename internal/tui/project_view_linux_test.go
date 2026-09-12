@@ -66,7 +66,7 @@ func TestProjectSessionTerminalNavigation(t *testing.T) {
 	go func() { _, err := p.Run(); done <- err }()
 	navigated := make(chan error, 1)
 	go func() {
-		for _, stage := range []struct{ want, key string }{{"session  stopped", "\r"}, {"cxz · sessions", "\x11"}, {"cxz · project", "\x03"}} {
+		for _, stage := range []struct{ want, key string }{{"session  stopped", "\r"}, {"account:", "\x11"}, {"cxz · project", "\x03"}} {
 			var output strings.Builder
 			buf := make([]byte, 4096)
 			for !strings.Contains(output.String(), stage.want) {

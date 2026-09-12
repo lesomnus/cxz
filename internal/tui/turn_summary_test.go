@@ -12,7 +12,7 @@ import (
 func TestTurnSummary(t *testing.T) {
 	e := &api.Event{Kind: "turn_end", Text: "completed", Payload: []byte(`{"usage":{"input_tokens":1234,"output_tokens":321,"cache_read_input_tokens":100},"total_cost_usd":0.0123,"duration_ms":2400,"result":"do not duplicate reply"}`)}
 	text := ansi.Strip(turnSummary(e, nil, 0, 100))
-	for _, want := range []string{"↑ 1.2k", "↓ 321", "↺ 100", "$0.0123 USD", "◷ 2.4s"} {
+	for _, want := range []string{"1.2k ↑", "321 ↓", "100 ↺", "$0.0123", "00:00:02 ◷"} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("missing %s: %s", want, text)
 		}
@@ -21,13 +21,13 @@ func TestTurnSummary(t *testing.T) {
 		t.Fatal(text)
 	}
 	for _, line := range strings.Split(text, "\n") {
-		if ansi.StringWidth(line) > 100 || strings.HasPrefix(line, " ") {
+		if ansi.StringWidth(line) > 100 || !strings.HasPrefix(line, "  ") {
 			t.Fatal("not left aligned", line)
 		}
 	}
 	text = ansi.Strip(turnSummary(e, nil, 0, 40))
 	for _, line := range strings.Split(text, "\n") {
-		if ansi.StringWidth(line) > 40 || strings.HasPrefix(line, " ") {
+		if ansi.StringWidth(line) > 40 || !strings.HasPrefix(line, "  ") {
 			t.Fatal("narrow summary not aligned", line)
 		}
 	}
@@ -37,7 +37,7 @@ func TestCodexLastUsageAndMissingMetrics(t *testing.T) {
 	e := &api.Event{Kind: "turn_end", Text: "completed", TimeMs: 3500, Payload: []byte(`{"turn":{"status":"completed"}}`)}
 	usage := &api.Event{Payload: []byte(`{"tokenUsage":{"total":{"inputTokens":99999},"last":{"inputTokens":50,"outputTokens":7,"cachedInputTokens":0,"totalTokens":57}}}`)}
 	text := ansi.Strip(turnSummary(e, usage, 1000, 100))
-	for _, want := range []string{"↑ 50", "↓ 7", "∑ 57", "◷≈ 2.5s"} {
+	for _, want := range []string{"50 ↑", "7 ↓", "57 ∑", "00:00:02 ≈◷"} {
 		if !strings.Contains(text, want) {
 			t.Fatal(text)
 		}
@@ -80,12 +80,12 @@ func TestConversationAlignmentAndSummaryPlacement(t *testing.T) {
 		rows[i] = strings.TrimRight(rows[i], " ")
 	}
 	transcript = strings.Join(rows, "\n")
-	if !strings.Contains(transcript, "  reply\n\n$") {
+	if !strings.Contains(transcript, "  reply\n\n") || !strings.Contains(transcript, "00:00:01 ≈◷") {
 		t.Fatal("summary must follow a blank line", transcript)
 	}
 	for _, agent := range []string{"claude", "codex"} {
 		got := eventView(&api.Session{Agent: agent}, &api.Event{Kind: "assistant", Text: "reply"}, 80)
-		if !strings.HasSuffix(got, "\n"+answer.Render("  reply")) {
+		if !strings.HasSuffix(got, "\n  "+answer.Render("reply")) {
 			t.Fatal("answer must use neutral white")
 		}
 	}

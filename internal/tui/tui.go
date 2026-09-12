@@ -33,6 +33,9 @@ type model struct {
 	input                textarea.Model
 	drafts               map[string]string
 	localHelp            map[string]uint64
+	localOutput          map[string]string
+	hintSelected         int
+	hintDismissed        bool
 	view                 viewport.Model
 	focusList, creating  bool
 	notice               string
@@ -202,9 +205,9 @@ func (m *model) render() {
 	follow := m.view.AtBottom()
 	s := m.current()
 	if s == nil {
-		m.view.SetContent("No sessions. Ctrl+N creates one from an existing workspace directory.")
+		m.view.SetContent(indentBlock(ansi.Hardwrap("No sessions. Ctrl+N creates one from an existing workspace directory.", max(1, m.view.Width-2), true)))
 		if _, ok := m.localHelp[""]; ok {
-			m.view.SetContent(helpView(m.view.Width))
+			m.view.SetContent(m.localCommandView(""))
 		}
 		return
 	}
@@ -216,7 +219,7 @@ func (m *model) render() {
 	helped := false
 	for _, e := range m.events[s.Id] {
 		if showHelp && !helped && e.Seq > helpAfter {
-			lines = append(lines, helpView(m.view.Width))
+			lines = append(lines, m.localCommandView(s.Id))
 			helped = true
 		}
 		if e.Kind == "input" {
@@ -247,14 +250,14 @@ func (m *model) render() {
 			}
 		}
 		if hint := authHint(s, e); hint != "" {
-			lines = append(lines, warning.Render(ansi.Hardwrap(safeText(hint), max(1, m.view.Width), true)))
+			lines = append(lines, indentBlock(warning.Render(ansi.Hardwrap(safeText(hint), max(1, m.view.Width-2), true))))
 		}
 	}
 	if showHelp && !helped {
-		lines = append(lines, helpView(m.view.Width))
+		lines = append(lines, m.localCommandView(s.Id))
 	}
 	if len(lines) == 0 {
-		lines = append(lines, muted.Render(ansi.Hardwrap("Start a conversation\n\nDescribe a task below. Messages and tool activity will appear here.\nStopped session? Ctrl+R resumes the agent.", max(1, m.view.Width), true)))
+		lines = append(lines, indentBlock(muted.Render(ansi.Hardwrap("Start a conversation\n\nDescribe a task below. Messages and tool activity will appear here.\nStopped session? Ctrl+R resumes the agent.", max(1, m.view.Width-2), true))))
 	}
 	m.view.SetContent(strings.Join(lines, "\n\n"))
 	if follow {
@@ -393,6 +396,11 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, m.refresh()
 	case tea.KeyMsg:
+		if !m.projectView && !m.creating {
+			if handled, cmd := m.commandKey(v); handled {
+				return m, cmd
+			}
+		}
 		if v.String() == "ctrl+q" {
 			m.backToProject()
 			return m, m.refresh()
@@ -513,7 +521,8 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if strings.HasPrefix(text, "/answer ") {
 				return m, m.action("answer", strings.TrimPrefix(text, "/answer "))
 			}
-			if text == "/help" {
+			localName := strings.Fields(text)[0]
+			if localName == "/help" || localName == "/context" || localName == "/compact" || localName == "/usage" {
 				id := ""
 				if s := m.current(); s != nil {
 					id = s.Id
@@ -522,6 +531,11 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.localHelp = map[string]uint64{}
 				}
 				m.localHelp[id] = m.cursor[id]
+				if m.localOutput == nil {
+					m.localOutput = map[string]string{}
+				}
+				m.localOutput[id] = localName
+				m.hintDismissed = false
 				m.resize()
 				m.render()
 				m.view.GotoBottom()
@@ -548,9 +562,9 @@ func (m *model) View() string {
 		return screen("cxz\nResize terminal to 40 × 14 or larger.\nCtrl+C detach", m.width, m.height)
 	}
 	if m.projectView {
-		return m.projectScreen()
+		return blackScreen(m.projectScreen(), m.width, m.height)
 	}
-	return m.sessionScreen()
+	return blackScreen(m.sessionScreen(), m.width, m.height)
 }
 
 func authHint(s *api.Session, e *api.Event) string {

@@ -14,9 +14,13 @@ func TestFixedMetricPositions(t *testing.T) {
 	for _, n := range []int{1, 10, 100, 1000, 1000000} {
 		e := &api.Event{Text: "completed", Payload: []byte(fmt.Sprintf(`{"usage":{"input_tokens":%d,"output_tokens":%d},"costUSD":0.1,"duration_ms":2000}`, n, n))}
 		text := ansi.Strip(turnSummary(e, nil, 0, 100))
-		for i, symbol := range []string{"↑", "↓", "$", "◷"} {
+		for i, symbol := range []string{"◷", "$", "↑", "↓"} {
 			offset := strings.Index(text, symbol)
-			if offset < 0 || ansi.StringWidth(text[:offset]) != i*metricWidth {
+			want := 2 + i*metricWidth + metricWidth - 3
+			if symbol == "$" {
+				want = 2 + i*metricWidth
+			}
+			if offset < 0 || ansi.StringWidth(text[:offset]) != want {
 				t.Fatalf("symbol moved: %q", text)
 			}
 		}
@@ -37,7 +41,7 @@ func TestLocalHelpAndBottomSessionBar(t *testing.T) {
 	m.sessions = []*api.Session{{Id: "s", Agent: "codex", Account: "work", Title: "Example", State: "idle"}}
 	m.Update(tea.WindowSizeMsg{Width: 100, Height: 30})
 	lines := strings.Split(ansi.Strip(m.View()), "\n")
-	if len(lines) != 30 || !strings.Contains(lines[len(lines)-1], "codex · work") {
+	if len(lines) != 30 || !strings.Contains(lines[len(lines)-1], "codex · account:work") {
 		t.Fatal("session bar is not at bottom", strings.Join(lines, "\n"))
 	}
 	if strings.Contains(m.View(), "F4 interrupt") || strings.Contains(lines[0], "cxz · sessions") {

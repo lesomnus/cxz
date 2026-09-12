@@ -33,7 +33,30 @@ const metricWidth = 16
 
 func metricCell(s string) string {
 	s = clip(s, metricWidth-2)
-	return s + strings.Repeat(" ", max(0, metricWidth-ansi.StringWidth(s)))
+	if strings.HasPrefix(ansi.Strip(s), "$") {
+		return s + strings.Repeat(" ", max(0, metricWidth-ansi.StringWidth(s)))
+	}
+	return strings.Repeat(" ", max(0, metricWidth-2-ansi.StringWidth(s))) + s + "  "
+}
+
+func clockMetric(ms float64, measured bool) string {
+	seconds := int64(ms / 1000)
+	units := []int64{seconds / 3600, seconds / 60 % 60, seconds % 60}
+	var parts []string
+	for _, unit := range units {
+		text := fmt.Sprintf("%02d", unit)
+		if unit == 0 {
+			text = zeroStyle.Render(text)
+		} else {
+			text = metricStyle.Render(text)
+		}
+		parts = append(parts, text)
+	}
+	suffix := " ◷"
+	if measured {
+		suffix = " ≈◷"
+	}
+	return strings.Join(parts, metricStyle.Render(":")) + metricStyle.Render(suffix)
 }
 
 type metrics map[string]json.RawMessage
@@ -62,6 +85,7 @@ func (m metrics) text(key string) string {
 // Only display values the provider reports. Codex "last" usage is per-turn;
 // cumulative thread totals must never be presented as the current reply's usage.
 func turnSummary(e, usageEvent *api.Event, started int64, width int) string {
+	width = max(1, width-2)
 	root := fields(e.Payload)
 	usage := root.object("usage")
 	if len(usage) == 0 {
@@ -82,11 +106,8 @@ func turnSummary(e, usageEvent *api.Event, started int64, width int) string {
 		{"∑", []string{"total_tokens", "totalTokens"}},
 	} {
 		if n, ok := usage.number(field.keys...); ok {
-			parts = append(parts, fmt.Sprintf("%s %s", field.symbol, humanCount(n)))
+			parts = append(parts, fmt.Sprintf("%s %s", humanCount(n), field.symbol))
 		}
-	}
-	if n, ok := root.number("total_cost_usd", "costUSD", "costUsd"); ok {
-		parts = append(parts, fmt.Sprintf("$%.4f USD", n))
 	}
 	duration, ok := root.number("duration_ms", "durationMs")
 	if !ok {
@@ -99,11 +120,14 @@ func turnSummary(e, usageEvent *api.Event, started int64, width int) string {
 		measured = true
 	}
 	if ok {
-		symbol := "◷"
-		if measured {
-			symbol += "≈"
+		parts = append([]string{clockMetric(duration, measured)}, parts...)
+	}
+	if n, hasCost := root.number("total_cost_usd", "costUSD", "costUsd"); hasCost {
+		idx := 0
+		if ok {
+			idx = 1
 		}
-		parts = append(parts, fmt.Sprintf("%s %.1fs", symbol, duration/1000))
+		parts = append(parts[:idx], append([]string{fmt.Sprintf("$%.4f", n)}, parts[idx:]...)...)
 	}
 	var lines []string
 	if e.Text != "completed" && e.Text != "" {
@@ -124,7 +148,7 @@ func turnSummary(e, usageEvent *api.Event, started int64, width int) string {
 	row := ""
 	flush := func() {
 		if row != "" {
-			lines = append(lines, muted.Render(strings.TrimRight(row, " ")))
+			lines = append(lines, metricStyle.Render(strings.TrimRight(row, " ")))
 			row = ""
 		}
 	}
@@ -137,5 +161,5 @@ func turnSummary(e, usageEvent *api.Event, started int64, width int) string {
 		row = clip(next, width)
 	}
 	flush()
-	return strings.Join(lines, "\n")
+	return indentBlock(strings.Join(lines, "\n"))
 }
