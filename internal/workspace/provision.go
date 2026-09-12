@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -70,7 +71,7 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string) error 
 		return e
 	}
 	if e = CheckTrust(cfg, p.Trusted); e != nil {
-		return e
+		return fmt.Errorf("configuration %q: %w", p.Config, e)
 	}
 	base := filepath.Dir(p.Config)
 	abspath := func(v any) any {
@@ -173,7 +174,7 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string) error 
 				return e
 			}
 			if e = CheckTrust(compose, p.Trusted); e != nil {
-				return e
+				return fmt.Errorf("configuration %q: %w", file, e)
 			}
 			ss, _ := compose["services"].(map[string]any)
 			for name := range ss {
@@ -337,42 +338,69 @@ func (m *Manager) writeRuntime(ctx context.Context, p *Project, r Runtime) error
 	}
 	return dockerx.Input(ctx, bytes.NewReader(b), "run", "--rm", "-i", "--label", "cxz.owner="+m.Owner, "--label", "cxz.project="+p.ID, "--entrypoint", "sh", "--mount", "type=volume,source="+p.Volume+",target=/cxz/state", m.Image, "-c", "umask 022; cat > /cxz/state/runtime.next && mv /cxz/state/runtime.next /cxz/state/runtime.json")
 }
+
+// CheckTrust reports JSON Pointer locations, never configuration values.
+// Detection remains conservative (including string markers), not a sandbox.
 func CheckTrust(cfg map[string]any, trusted bool) error {
 	if trusted {
 		return nil
 	}
-	var walk func(any) bool
-	walk = func(v any) bool {
+	var findings []string
+	add := func(path, reason string) { findings = append(findings, fmt.Sprintf("  - %q: %s", path, reason)) }
+	var walk func(any, string)
+	walk = func(v any, path string) {
 		switch x := v.(type) {
 		case map[string]any:
-			for k, v := range x {
-				if (k == "privileged" && v == true) || (k == "initializeCommand") || (k == "network_mode" && v == "host") || (k == "pid" && v == "host") {
-					return true
+			keys := make([]string, 0, len(x))
+			for key := range x {
+				keys = append(keys, key)
+			}
+			sort.Strings(keys)
+			for _, key := range keys {
+				value := x[key]
+				child := path + "/" + strings.ReplaceAll(strings.ReplaceAll(key, "~", "~0"), "/", "~1")
+				switch {
+				case key == "privileged" && value == true:
+					add(child, "privileged container requested")
+				case key == "initializeCommand":
+					add(child, "host-side initialization command configured")
+				case key == "network_mode" && value == "host":
+					add(child, "host network namespace requested")
+				case key == "pid" && value == "host":
+					add(child, "host PID namespace requested")
 				}
-				if walk(v) {
-					return true
-				}
+				walk(value, child)
 			}
 		case []any:
-			for i, v := range x {
-				if s, ok := v.(string); ok && (s == "--network" || s == "--net" || s == "--pid") && i+1 < len(x) && x[i+1] == "host" {
-					return true
+			for i, value := range x {
+				child := path + "/" + strconv.Itoa(i)
+				if flag, ok := value.(string); ok && i+1 < len(x) && x[i+1] == "host" {
+					switch flag {
+					case "--network", "--net":
+						add(child, "host network namespace requested (next array item)")
+					case "--pid":
+						add(child, "host PID namespace requested (next array item)")
+					}
 				}
-				if walk(v) {
-					return true
-				}
+				walk(value, child)
 			}
 		case string:
-			for _, s := range []string{"docker.sock", "--privileged", "--network=host", "--pid=host", "SYS_ADMIN"} {
-				if strings.Contains(x, s) {
-					return true
+			for _, rule := range []struct{ marker, reason string }{
+				{"docker.sock", "Docker socket reference detected"},
+				{"--privileged", "privileged container flag detected"},
+				{"--network=host", "host network flag detected"},
+				{"--pid=host", "host PID flag detected"},
+				{"SYS_ADMIN", "SYS_ADMIN capability reference detected"},
+			} {
+				if strings.Contains(x, rule.marker) {
+					add(path, rule.reason)
 				}
 			}
 		}
-		return false
 	}
-	if walk(cfg) {
-		return fmt.Errorf("devcontainer requests host-side commands or elevated access; inspect the configuration and explicitly pass --trust-config")
+	walk(cfg, "")
+	if len(findings) > 0 {
+		return fmt.Errorf("devcontainer configuration requires explicit trust:\n%s\ninspect these settings and explicitly pass --trust-config if trusted (configuration values omitted)", strings.Join(findings, "\n"))
 	}
 	return nil
 }
@@ -407,7 +435,7 @@ func preflight(p *Project) error {
 		return e
 	}
 	if e = CheckTrust(cfg, p.Trusted); e != nil {
-		return e
+		return fmt.Errorf("configuration %q: %w", file, e)
 	}
 	var files []any
 	switch v := cfg["dockerComposeFile"].(type) {
@@ -433,7 +461,7 @@ func preflight(p *Project) error {
 			return e
 		}
 		if e = CheckTrust(compose, p.Trusted); e != nil {
-			return e
+			return fmt.Errorf("configuration %q: %w", name, e)
 		}
 	}
 	return nil

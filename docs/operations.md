@@ -38,6 +38,14 @@ cxz up PROJECT
 
 Account 등록·로그인·계정 격리 범위는 [Account 문서](accounts.md)를 참고한다.
 
+devcontainer 신뢰 검사로 차단되면 해당 설정 파일명과 JSON Pointer 경로·이유를
+출력한다. 예: `/initializeCommand`(호스트 초기화 명령),
+`/services/dev/privileged`(privileged 컨테이너), `/runArgs/0`(배열 첫 항목).
+여러 원인은 모두 일정한 순서로 표시한다. 명령·환경변수·mount 원문 값은 출력하지 않는다.
+Compose 파일도 같은 진단을 제공한다. 해당 설정을 직접 확인한 뒤 신뢰한다면
+`cxz up --trust-config PROJECT`로 재시도한다. 탐지는 문자열 참조도 포함하는 보수적인
+검사이며, 이 메시지가 실제 권한 사용을 증명하거나 완전한 보안 검사를 뜻하지는 않는다.
+
 - `install` 실패 후 같은 client state로 재실행한다. owner/volume 이름이 유지된다.
   같은 이미지·workspace root의 기존 설치는 준비 상태를 다시 확인하고, 정지된 manager는
   시작한다. 이미지/root 변경은 명시적인 `install --recreate`가 필요하다.
