@@ -40,11 +40,11 @@ cxz account add --name "Company" codex work-codex
 cxz account login personal-codex
 cxz account login work-codex       # 중앙에서 한 번 로그인
 cxz account status work-codex
-cxz new --account work-codex .
-cxz up .                         # 기존 세션의 Account 유지
+cxz session new --account work-codex .
+cxz project up .                         # 기존 세션의 Account 유지
 cxz account get work-codex
-cxz account backends              # 설치 없이 지원 매핑 확인
-cxz account bindings work-codex    # 비밀 없는 인증 연결 목록
+cxz backend ls              # 설치 없이 지원 매핑 확인
+cxz binding ls work-codex    # 비밀 없는 인증 연결 목록
 cxz account add --auth-backend project-local-oauth claude work-claude
 ```
 

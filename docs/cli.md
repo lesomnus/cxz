@@ -7,40 +7,60 @@
 ```sh
 cxz account add --name "Company" codex work
 cxz account login work
-cxz new --account work .
-cxz update ghcr.io/lesomnus/cxz:edge
+cxz session new --account work .
+cxz manager update ghcr.io/lesomnus/cxz:edge
 ```
 
 ## 필수값과 기본값 점검
 
+공개 작업 명령은 `<리소스> <동사>` 형식이다. 이전 최상위 `projects`, `ls`, `up`,
+`new`, `install` 등의 호환 별칭은 제공하지 않는다. version/completion/tui는 공통 도구다.
+리소스 이름만 입력하면 도움말을 표시한다.
+
+데이터 출력의 기본값은 표이며 `--format json`으로 전체 JSON을 받을 수 있다.
+목록은 주요 열, 단일 객체는 FIELD/VALUE 표로 표시한다. 긴 셀은 줄이고 한글의
+표시 폭을 고려한다. JSON은 기존 필드/목록 구조를 유지하며 표의 열 제한·문자열 축약을 적용하지 않는다.
+이벤트 스트림의 JSON은 한 줄당 한 객체(JSONL)다.
+
+```sh
+cxz project ls
+cxz session ls --format json
+cxz account get --format table work
+cxz --format json project ls
+```
+
+명령의 `--format`이 루트 설정보다 우선한다. scripts는 기본값에 의존하지 말고 json을
+명시한다. shell/exec/logs/login/TUI는 원문/대화형 출력을 유지하며 format으로 변환하지
+않는다. account status는 인증 파일 존재와 vendor 검증 여부를 구분해 출력한다.
+
 | 명령 | 입력 계약 / 생략 시 동작 |
 | --- | --- |
-| `install` | `--image` 생략 시 현재 바이너리로 빌드. `--workspace-root`는 기존 설치/실행 환경에서 결정하며 결정 불가 시 오류. `--recreate` 기본 false |
-| `uninstall` | 인자 없음. manager만 제거하고 프로젝트와 볼륨 보존 |
-| `serve` | foreground 서버. `--agent`는 Claude 실행 파일 경로이며 기본 `claude`; 계정의 agent 선택이 아님 |
-| `update IMAGE` | 이미지 필수. 명시적 tag/digest 필요, latest 거부 |
-| `rollback`, `version` | 인자 없음. 이전 이미지로 manager 교체 / 버전 출력 |
+| `manager install` | `--image` 생략 시 현재 바이너리로 빌드. `--workspace-root`는 기존 설치/실행 환경에서 결정하며 결정 불가 시 오류. `--recreate` 기본 false |
+| `manager uninstall` | 인자 없음. manager만 제거하고 프로젝트와 볼륨 보존 |
+| `manager serve` | foreground 서버. `--agent`는 Claude 실행 파일 경로이며 기본 `claude`; 계정의 agent 선택이 아님 |
+| `manager update IMAGE` | 이미지 필수. 명시적 tag/digest 필요, latest 거부 |
+| `manager rollback`, `version` | 인자 없음. 이전 이미지로 manager 교체 / 버전 출력 |
 | `account add AGENT ACCOUNT` | agent 필수(`claude`/`codex`), 계정 alias 필수. `--name`은 alias 기본값. `--auth-backend`는 Claude `project-local-oauth`, Codex `brokered-access-token` |
-| `account list`, `account backends` | 인자 없음 |
-| `account get ACCOUNT`, `account bindings ACCOUNT` | 계정 필수 |
+| `account ls`, `backend ls` | 인자 없음 |
+| `account get ACCOUNT`, `binding ls ACCOUNT` | 계정 필수 |
 | `account login ACCOUNT`, `account status ACCOUNT` | 계정 필수. 프로젝트별 OAuth는 `--project` 기본 현재 디렉터리. 중앙 인증은 프로젝트 불필요하며 명시적 `--project` 거부 |
 | `project add PROJECT` | 등록 대상 필수. `--name`, `--alias`는 자동 결정 가능 |
 | `project set PROJECT` | 대상 필수이며 `--name`, `--alias` 중 하나 이상 필수 |
-| `new [WORKSPACE]` | 경로 기본 `.`. 새 세션의 `--account`는 터미널에서 선택, 비대화형에서는 필수 |
-| `up [WORKSPACE]`, `recreate [WORKSPACE]` | 경로 기본 `.`. 기존 세션 계정 유지; 새 세션이면 계정 선택/명시 필요. recreate는 대화형 확인 또는 `--yes` 필요 |
-| `down [WORKSPACE]` | 경로 기본 `.` |
-| `attach [TARGET]` (`it`), `tui` (`watch`) | 대상 생략 시 선택/TUI. tui는 인자 없음 |
-| `shell PROJECT [COMMAND...]` | 대상 필수, 명령 기본 sh |
-| `exec PROJECT COMMAND...` | 대상과 실행 명령 모두 필수. `exec PROJECT -- COMMAND...`로 옵션 전달 가능 |
-| `ls`, `projects` | 인자 없음 |
-| `get SESSION`, `interrupt SESSION`, `resume SESSION`, `stop SESSION` | 세션 필수 |
-| `send SESSION TEXT` | 세션과 비어 있지 않은 메시지 필수 |
-| `reply SESSION REQUEST DECISION [ANSWERS_JSON]` | decision은 allow/deny. 답변 JSON은 문자열 값의 object; 실제 질문별 필수 답변은 서버에서 검사 |
-| `events SESSION [AFTER_SEQ]` | 세션 필수, sequence 기본 0 (uint64) |
-| `config` | 인자 없이 현재 비밀 아닌 설정 출력 |
+| `session new [WORKSPACE]` | 경로 기본 `.`. 새 세션의 `--account`는 터미널에서 선택, 비대화형에서는 필수 |
+| `project up [WORKSPACE]`, `project recreate [WORKSPACE]` | 경로 기본 `.`. 기존 세션 계정 유지; 새 세션이면 계정 선택/명시 필요. recreate는 대화형 확인 또는 `--yes` 필요 |
+| `project down [WORKSPACE]` | 경로 기본 `.` |
+| `session attach [TARGET]` , `tui` (`watch`) | 대상 생략 시 선택/TUI. tui는 인자 없음 |
+| `project shell PROJECT [COMMAND...]` | 대상 필수, 명령 기본 sh |
+| `project exec PROJECT COMMAND...` | 대상과 실행 명령 모두 필수. `project exec PROJECT -- COMMAND...`로 옵션 전달 가능 |
+| `session ls`, `project ls` | 인자 없음 |
+| `session get SESSION`, `session interrupt SESSION`, `session resume SESSION`, `session stop SESSION` | 세션 필수 |
+| `session send SESSION TEXT` | 세션과 비어 있지 않은 메시지 필수 |
+| `session reply SESSION REQUEST DECISION [ANSWERS_JSON]` | decision은 allow/deny. 답변 JSON은 문자열 값의 object; 실제 질문별 필수 답변은 서버에서 검사 |
+| `session events SESSION [AFTER_SEQ]` | 세션 필수, sequence 기본 0 (uint64) |
+| `config show` | 인자 없이 현재 비밀 아닌 설정 출력 |
 | `config set KEY VALUE`, `config unset KEY` | claude-model/codex-model만 설정. unset은 이전 agent 설정 제거도 허용 |
-| `doctor` | 인자 없이 읽기 전용 진단 |
-| `logs [PROJECT]` | 생략 시 manager 로그. `--tail` 기본 100, 범위 1–10000 |
+| `manager doctor` | 인자 없이 읽기 전용 진단 |
+| `manager logs`, `project logs PROJECT` | manager/프로젝트 로그를 구분한다. `--tail` 기본 100, 범위 1–10000 |
 | `completion SHELL` | xli 제공 shell completion 생성 |
 
 new/up/recreate의 `--agent`는 Account/기존 세션에서 결정하므로 선택 옵션이며,
@@ -51,7 +71,7 @@ new/up/recreate의 `--agent`는 Account/기존 세션에서 결정하므로 선�
 
 ### 계정 선택 화면
 
-`new`/`up`/`recreate`에서 새 세션의 계정 선택이 필요하면 검색 가능한 TUI를 연다.
+`session new`/`project up`/`project recreate`에서 새 세션의 계정 선택이 필요하면 검색 가능한 TUI를 연다.
 목록에서 ↑/↓(Ctrl-P/Ctrl-N)로 이동하고 Enter로 확정한다. 하단 Search 입력창은
 항상 입력 가능하며 번호·display name·alias의 정확한 일치를 우선하고, 없으면
 이름·alias·agent의 부분 일치로 검색한다. 영문 대소문자는 구분하지 않는다.
@@ -77,7 +97,7 @@ new/up/recreate의 `--agent`는 Account/기존 세션에서 결정하므로 선�
 
 ## 변경 사항 및 검증 범위
 
-`account add --agent ... ACCOUNT`, `update --image ...`, `_new-local --account ...`를
+`account add --agent ... ACCOUNT`, `manager update --image ...`, `_new-local --account ...`를
 필수 positional로 교체했다. 빈 문자열은 누락된 값의 대용으로 받지 않는다.
 agent enum, alias, 모델, 이름, 수정값 누락, config 키, 답변 JSON은 설정 파일 접근이나
 연결 전에 검사한다. 리소스 존재/소유권/기존 세션과의 일치 등은 읽기 전용 조회 후 검사한다.

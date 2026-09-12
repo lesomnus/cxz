@@ -5,9 +5,9 @@
 
 ## 완료 조건
 
-- `cxz install`: Docker 관리 서버를 백그라운드 설치, 준비 확인, 재설치/제거.
+- `cxz manager install`: Docker 관리 서버를 백그라운드 설치, 준비 확인, 재설치/제거.
   호스트에는 Docker/cxz만 필요. 원격 엔진은 명시적인 공유 경로 매핑을 사용한다.
-- `cxz up/new [path]`: devcontainer 설정 발견/선택/기본 생성, 공식 devcontainer
+- `cxz project up/new [path]`: devcontainer 설정 발견/선택/기본 생성, 공식 devcontainer
   CLI로 생성, agent/state/tools와 supervisor를 생성 시점에 제공, 준비 후 TUI 연결.
 - Claude/Codex 선택과 저장. `up`은 기존 세션 재접속, `new`는 새 대화.
   한 작업 트리의 활성 agent는 하나로 유지하며 다른 vendor로 변경 시 명시적으로 중단한다.

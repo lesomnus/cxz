@@ -419,7 +419,7 @@ func (s *Server) Create(ctx context.Context, r *api.CreateRequest) (*api.Session
 	}
 	bin := s.agent
 	if r.Agent == "codex" && os.Getenv("CXZ_PROJECT_ID") == "" {
-		return nil, status.Error(codes.FailedPrecondition, "Codex requires an owned devcontainer: use cxz install and cxz up --agent codex")
+		return nil, status.Error(codes.FailedPrecondition, "Codex requires an owned devcontainer: use cxz manager install and cxz project up --agent codex")
 	}
 	if os.Getenv("CXZ_PROJECT_ID") != "" {
 		if r.Account == "" {
@@ -437,7 +437,7 @@ func (s *Server) Create(ctx context.Context, r *api.CreateRequest) (*api.Session
 			bin = runtime.Codex
 		}
 		if bin == "" {
-			return nil, status.Error(codes.FailedPrecondition, "agent is not provisioned; run cxz up --agent "+r.Agent)
+			return nil, status.Error(codes.FailedPrecondition, "agent is not provisioned; run cxz project up --agent "+r.Agent)
 		}
 	}
 	if r.Account != "" {

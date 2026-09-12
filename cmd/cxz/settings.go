@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/settings"
@@ -18,7 +17,7 @@ func settingsCommand() *xli.Command {
 		if err != nil {
 			return err
 		}
-		return json.NewEncoder(c.Writer).Encode(cfg)
+		return writeOutput(c, cfg)
 	})}
 	for _, op := range []string{"set", "unset"} {
 		args := arg.Args{stringArg("KEY", false)}
@@ -56,7 +55,7 @@ func settingsCommand() *xli.Command {
 			if err = settings.Save(root, cfg); err != nil {
 				return err
 			}
-			return json.NewEncoder(c.Writer).Encode(cfg)
+			return writeOutput(c, cfg)
 		})})
 	}
 	return c

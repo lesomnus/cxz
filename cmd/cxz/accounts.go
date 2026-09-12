@@ -20,7 +20,6 @@ import (
 	"github.com/lesomnus/xli"
 	"github.com/lesomnus/xli/arg"
 	"github.com/lesomnus/xli/flg"
-	"google.golang.org/protobuf/encoding/protojson"
 )
 
 func accountCommands() *xli.Command {
@@ -40,13 +39,13 @@ func accountCommands() *xli.Command {
 		parent.Commands = append(parent.Commands, c)
 	}
 	parent.Commands = append(parent.Commands, &xli.Command{Name: "backends", Brief: "List supported agent/auth backend mappings", Handler: onRun(func(_ context.Context, c *xli.Command) error {
-		return json.NewEncoder(c.Writer).Encode(accounts.Catalog())
+		return writeOutput(c, accounts.Catalog())
 	})})
 	return parent
 }
 func accountCommand(ctx context.Context, client api.SessionsClient, c *xli.Command) error {
 	resources := client.(*resourceclient.Client)
-	if c.Name == "list" {
+	if c.Name == "ls" && c.Parent().Name == "account" {
 		after := ""
 		var all []*resource.Account
 		for {
@@ -57,8 +56,7 @@ func accountCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 			all = append(all, page.GetItems()...)
 			after = page.GetNext()
 			if after == "" {
-				fmt.Fprintln(c.Writer, protojson.Format(resource.AccountListResponse_builder{Items: all}.Build()))
-				return nil
+				return writeResource(c, resource.AccountListResponse_builder{Items: all}.Build())
 			}
 		}
 	}
@@ -68,18 +66,16 @@ func accountCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 		if err != nil {
 			return err
 		}
-		fmt.Fprintln(c.Writer, protojson.Format(a))
-		return nil
+		return writeResource(c, a)
 	}
 	a, err := resources.Account(ctx, alias)
 	if err != nil {
 		return err
 	}
 	if c.Name == "get" {
-		fmt.Fprintln(c.Writer, protojson.Format(a))
-		return nil
+		return writeResource(c, a)
 	}
-	if c.Name == "bindings" {
+	if c.Parent().Name == "binding" {
 		after := ""
 		var all []*resource.AuthBinding
 		for {
@@ -90,8 +86,7 @@ func accountCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 			all = append(all, page.GetItems()...)
 			after = page.GetNext()
 			if after == "" {
-				fmt.Fprintln(c.Writer, protojson.Format(resource.AuthBindingListResponse_builder{Items: all}.Build()))
-				return nil
+				return writeResource(c, resource.AuthBindingListResponse_builder{Items: all}.Build())
 			}
 		}
 	}
@@ -116,7 +111,7 @@ func accountCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 		cmd.Stdin = c.ReadCloser
 		cmd.Stdout = c.Writer
 		cmd.Stderr = c.ErrWriter
-		return cmd.Run()
+		return runAccountProcess(cmd, c, a, c.Name)
 	}
 	if backend.Info().Workflow != "project-login" || backend.Info().Scope != "project" {
 		return fmt.Errorf("unsupported auth workflow: %s", backend.Info().Workflow)
@@ -136,7 +131,7 @@ func projectAccountWorkflow(ctx context.Context, resources *resourceclient.Clien
 	// profile. Never fan out rotating refresh tokens (architecture §4.2).
 	install, err := transport.Load(stateFrom(ctx))
 	if err != nil {
-		return fmt.Errorf("account login/status requires cxz install: %w", err)
+		return fmt.Errorf("account login/status requires cxz manager install: %w", err)
 	}
 	if st, e := os.Stat(target); e == nil && st.IsDir() {
 		target, err = dockerx.EnginePath(target)
@@ -154,7 +149,7 @@ func projectAccountWorkflow(ctx context.Context, resources *resourceclient.Clien
 		return err
 	}
 	if p.State != "running" {
-		return fmt.Errorf("project is not running; use cxz up first")
+		return fmt.Errorf("project is not running; use cxz project up first")
 	}
 	if _, err = dockerx.Owned(ctx, p.ContainerId, install.Owner, p.Id); err != nil {
 		return err
@@ -200,7 +195,18 @@ func projectAccountWorkflow(ctx context.Context, resources *resourceclient.Clien
 		cmd.Stdout = c.ErrWriter
 	} // Inline login must not contaminate session JSON.
 	cmd.Stderr = c.ErrWriter
-	return cmd.Run()
+	return runAccountProcess(cmd, c, a, op)
+}
+
+func runAccountProcess(cmd *exec.Cmd, c *xli.Command, a *resource.Account, op string) error {
+	if op != "status" {
+		return cmd.Run()
+	}
+	cmd.Stdout = io.Discard
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	return writeOutput(c, map[string]any{"account": a.GetAlias(), "agent": a.GetAgent(), "auth_backend": a.GetAuthBackend(), "credential_present": true, "vendor_verified": false})
 }
 
 func accountInternalCommands() []*xli.Command {

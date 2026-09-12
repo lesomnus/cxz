@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -55,7 +54,7 @@ func withClient(fn clientFunc) xli.Handler {
 		if _, err := transport.Load(root); os.IsNotExist(err) {
 			if os.Getenv("CXZ_PROJECT_ID") == "" {
 				if _, err := os.Stat(server.Socket(root)); os.IsNotExist(err) {
-					return fmt.Errorf("cxz is not installed; run cxz install first")
+					return fmt.Errorf("cxz is not installed; run cxz manager install first")
 				}
 			}
 		} else if err != nil {
@@ -116,7 +115,7 @@ func agentArg() *arg.Mono[string, agentParser] {
 
 func newRoot(state string) *xli.Command {
 	root := &xli.Command{Name: "cxz", Brief: "Persistent coding-agent sessions in owned devcontainers",
-		Synop: "Flags precede positional arguments: cxz account add codex work; cxz new --account work .\nCtrl-C detaches the TUI; stop terminates the agent. Foreign containers are never adopted.",
+		Synop: "Flags precede positional arguments: cxz account add codex work; cxz session new --account work .\nCtrl-C detaches the TUI; stop terminates the agent. Foreign containers are never adopted.",
 		Flags: flg.Flags{stringFlag("state", "Private client/runtime state directory", state)},
 		Handler: xli.Chain(xli.OnRunPass(func(ctx context.Context, c *xli.Command, next xli.Next) error {
 			if err := validateInvocation(c); err != nil {
@@ -161,6 +160,7 @@ func newRoot(state string) *xli.Command {
 	root.Commands = append(root.Commands, settingsCommand(), doctorCommand(), logsCommand())
 	root.Commands = append(root.Commands, releaseCommands()...)
 	root.Commands = append(root.Commands, xli.NewCmdCompletion())
+	reorganizeCommands(root)
 	bindProjectCompletions(root)
 	return root
 }
@@ -244,10 +244,12 @@ func sessionCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 	var result any
 	var err error
 	switch c.Name {
-	case "projects":
-		result, err = client.Projects(call, &api.Empty{})
 	case "ls":
-		result, err = client.List(call, &api.Empty{})
+		if c.Parent().Name == "project" {
+			result, err = client.Projects(call, &api.Empty{})
+		} else {
+			result, err = client.List(call, &api.Empty{})
+		}
 	case "_new-local":
 		path, e := filepath.Abs(arg.MustGet[string](c, "WORKSPACE"))
 		if e != nil {
@@ -267,7 +269,7 @@ func sessionCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 				}
 				return e
 			}
-			if e = json.NewEncoder(c.Writer).Encode(v); e != nil {
+			if e = writeOutput(c, v); e != nil {
 				return e
 			}
 		}
@@ -296,5 +298,8 @@ func sessionCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 	if err != nil {
 		return err
 	}
-	return json.NewEncoder(c.Writer).Encode(result)
+	if c.Name == "_new-local" {
+		return writeJSON(c.Writer, result)
+	}
+	return writeOutput(c, result)
 }

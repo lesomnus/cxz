@@ -63,7 +63,7 @@ func TestLifecycle(t *testing.T) {
 		if e != nil {
 			t.Fatal(e)
 		}
-		daemon = exec.Command(bin, "--state", state, "serve", "--agent", fake)
+		daemon = exec.Command(bin, "--state", state, "manager", "serve", "--agent", fake)
 		daemon.Stdout = log
 		daemon.Stderr = log
 		if e = daemon.Start(); e != nil {

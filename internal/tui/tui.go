@@ -474,7 +474,7 @@ func authHint(s *api.Session, e *api.Event) string {
 	text := strings.ToLower(e.Text + " " + string(e.Payload))
 	for _, needle := range []string{"not logged in", "unauthorized", "authentication", "login required", "401"} {
 		if strings.Contains(text, needle) && s.ProjectId != "" {
-			return fmt.Sprintf("Authentication may be required. Stop the session, run cxz account login --project %s %s, then cxz resume %s. Failed prompts are not resent.", s.ProjectId, s.Account, s.Id)
+			return fmt.Sprintf("Authentication may be required. Stop the session, run cxz account login --project %s %s, then cxz session resume %s. Failed prompts are not resent.", s.ProjectId, s.Account, s.Id)
 		}
 	}
 	return ""

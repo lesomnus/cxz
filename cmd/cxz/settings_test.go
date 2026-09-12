@@ -11,13 +11,13 @@ import (
 func TestConfigOffline(t *testing.T) {
 	root := t.TempDir()
 	t.Setenv("DOCKER_HOST", "tcp://invalid.invalid:1")
-	for _, args := range [][]string{{"config", "set", "claude-model", "claude-test"}, {"config", "set", "codex-model", "test-model"}, {"config"}, {"config", "unset", "agent"}} {
+	for _, args := range [][]string{{"config", "set", "claude-model", "claude-test"}, {"config", "set", "codex-model", "test-model"}, {"config", "show"}, {"config", "unset", "agent"}} {
 		result := xlitest.Run(t, newRoot(root), args...)
 		if result.Err != nil {
 			t.Fatalf("%v: %v", args, result.Err)
 		}
 	}
-	got := xlitest.Run(t, newRoot(root), "config")
+	got := xlitest.Run(t, newRoot(root), "config", "show", "--format", "json")
 	if !strings.Contains(got.Stdout, "test-model") || strings.Contains(got.Stdout, `"agent"`) {
 		t.Fatal(got)
 	}
@@ -30,12 +30,12 @@ func TestConfigOffline(t *testing.T) {
 
 func TestReleaseCommandsOffline(t *testing.T) {
 	root := t.TempDir()
-	got := xlitest.Run(t, newRoot(root), "version")
+	got := xlitest.Run(t, newRoot(root), "version", "--format", "json")
 	if got.Err != nil || !strings.Contains(got.Stdout, `"version"`) {
 		t.Fatal(got)
 	}
 	for _, image := range []string{"", "ghcr.io/lesomnus/cxz", "ghcr.io/lesomnus/cxz:latest"} {
-		args := []string{"update"}
+		args := []string{"manager", "update"}
 		if image != "" {
 			args = append(args, image)
 		}

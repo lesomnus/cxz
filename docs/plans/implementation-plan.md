@@ -232,7 +232,7 @@ Claude 반복 복구 및 native arm64 인수 검증은 남아 있다. 상세 검
 [진행 기록](../progress.md), 절차는 [운영 문서](../operations.md)를 따른다.
 Docker event watch 자체는 미구현이며 현재는 시작과 조회/재접속 시 실제 inventory를 사용한다.
 
-P1에 의존한다. `cxz up`, 프로젝트 등록, 이름 volume, release cache, 컨테이너 소유 label,
+P1에 의존한다. `cxz project up`, 프로젝트 등록, 이름 volume, release cache, 컨테이너 소유 label,
 프로젝트별 네트워크, supervisor 인증과 SQLite projection을 연결한다.
 devcontainer CLI는 관리 컨테이너에 고정 버전으로 설치하고 Docker socket은 관리 계층만 접근한다.
 supervisor는 daemon의 `docker exec` 연결 수명과 무관하게 컨테이너 생명주기로 시작한다.
@@ -296,7 +296,7 @@ projection만 제외하고, 나머지는 일관된 vendor/SQLite snapshot 또는
 
 1. Codex adapter와 실제 장애·재생 검증은 P2/TUI 단계에서 구현했다.
    이후 vendor 업데이트 시 같은 회귀 검증과 capability 차이를 유지한다.
-2. PTY transport와 `cxz attach`를 구현한다. 실행 중인 headless agent를 같은 vendor TUI로
+2. PTY transport와 `cxz session attach`를 구현한다. 실행 중인 headless agent를 같은 vendor TUI로
    그대로 attach할 수 있다고 가정하지 않는다. transport 선택은 세션 생성 계약에 명시한다.
 3. 원격 TLS와 세션 관리, SSH attach를 추가한다.
 4. 개발 서버 port proxy와 터미널 대시보드를 제공한다.
