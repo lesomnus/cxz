@@ -3,6 +3,7 @@ package lifecycle
 import (
 	"context"
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/resource"
 	"github.com/lesomnus/payday/config"
 	_ "github.com/lesomnus/payday/config/dbsqlite3"
@@ -69,6 +70,8 @@ func TestResourceStack(t *testing.T) {
 		t.Fatal(err)
 	}
 	f.s.Account = "test-codex"
+	f.s.AuthBackend = accounts.ProjectLocalOAuth
+	f.s.AuthBinding = accounts.BindingID(f.p.Id, f.s.Account, f.s.AuthBackend)
 	p, err := stack.Project().Add(ctx, resource.ProjectAddRequest_builder{Workspace: f.p.Workspace}.Build())
 	if err != nil {
 		t.Fatal(err)

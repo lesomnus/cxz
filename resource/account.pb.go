@@ -32,6 +32,7 @@ type Account struct {
 	xxx_hidden_Name        string                 `protobuf:"bytes,5,opt,name=name"`
 	xxx_hidden_Desc        string                 `protobuf:"bytes,6,opt,name=desc"`
 	xxx_hidden_Agent       string                 `protobuf:"bytes,8,opt,name=agent"`
+	xxx_hidden_AuthBackend string                 `protobuf:"bytes,9,opt,name=auth_backend,json=authBackend"`
 	xxx_hidden_DateUpdated *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateErased  *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
 	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
@@ -99,6 +100,13 @@ func (x *Account) GetAgent() string {
 	return ""
 }
 
+func (x *Account) GetAuthBackend() string {
+	if x != nil {
+		return x.xxx_hidden_AuthBackend
+	}
+	return ""
+}
+
 func (x *Account) GetDateUpdated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -141,6 +149,10 @@ func (x *Account) SetDesc(v string) {
 
 func (x *Account) SetAgent(v string) {
 	x.xxx_hidden_Agent = v
+}
+
+func (x *Account) SetAuthBackend(v string) {
+	x.xxx_hidden_AuthBackend = v
 }
 
 func (x *Account) SetDateUpdated(v *timestamppb.Timestamp) {
@@ -196,6 +208,7 @@ type Account_builder struct {
 	Name        string
 	Desc        string
 	Agent       string
+	AuthBackend string
 	DateUpdated *timestamppb.Timestamp
 	DateErased  *timestamppb.Timestamp
 	DateCreated *timestamppb.Timestamp
@@ -210,6 +223,7 @@ func (b0 Account_builder) Build() *Account {
 	x.xxx_hidden_Name = b.Name
 	x.xxx_hidden_Desc = b.Desc
 	x.xxx_hidden_Agent = b.Agent
+	x.xxx_hidden_AuthBackend = b.AuthBackend
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	x.xxx_hidden_DateErased = b.DateErased
 	x.xxx_hidden_DateCreated = b.DateCreated
@@ -220,13 +234,14 @@ var File_cxz_account_proto protoreflect.FileDescriptor
 
 const file_cxz_account_proto_rawDesc = "" +
 	"\n" +
-	"\x11cxz/account.proto\x12\x03cxz\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\x9e\x03\n" +
+	"\x11cxz/account.proto\x12\x03cxz\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xc9\x03\n" +
 	"\aAccount\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12\x1c\n" +
 	"\x05alias\x18\x04 \x01(\tB\x06\xea\x82\x16\x020\x01R\x05alias\x12\x12\n" +
 	"\x04name\x18\x05 \x01(\tR\x04name\x12\x12\n" +
 	"\x04desc\x18\x06 \x01(\tR\x04desc\x12\x1c\n" +
-	"\x05agent\x18\b \x01(\tB\x06\xea\x82\x16\x02@\x01R\x05agent\x12F\n" +
+	"\x05agent\x18\b \x01(\tB\x06\xea\x82\x16\x02@\x01R\x05agent\x12)\n" +
+	"\fauth_backend\x18\t \x01(\tB\x06\xea\x82\x16\x02@\x01R\vauthBackend\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +

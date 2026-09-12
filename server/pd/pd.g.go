@@ -15,6 +15,7 @@ import (
 	ent "github.com/lesomnus/cxz/internal/ent"
 	account "github.com/lesomnus/cxz/internal/ent/account"
 	audit "github.com/lesomnus/cxz/internal/ent/audit"
+	authbinding "github.com/lesomnus/cxz/internal/ent/authbinding"
 	holder "github.com/lesomnus/cxz/internal/ent/holder"
 	outbox "github.com/lesomnus/cxz/internal/ent/outbox"
 	predicate "github.com/lesomnus/cxz/internal/ent/predicate"
@@ -80,18 +81,20 @@ func Check() error { return version.Same(Payday) }
 // trail says what kind of thing it was long after the row is gone. So a
 // number is chosen once and never given to something else.
 const (
-	AccountDomain pdid.Domain = 9 // "account"
-	AuditDomain   pdid.Domain = 3 // "audit"
-	HolderDomain  pdid.Domain = 2 // "holder"
-	OutboxDomain  pdid.Domain = 4 // "outbox"
-	ProjectDomain pdid.Domain = 7 // "project"
-	SessionDomain pdid.Domain = 8 // "session"
-	TenantDomain  pdid.Domain = 1 // "tenant"
+	AccountDomain     pdid.Domain = 9  // "account"
+	AuditDomain       pdid.Domain = 3  // "audit"
+	AuthBindingDomain pdid.Domain = 10 // "auth-binding"
+	HolderDomain      pdid.Domain = 2  // "holder"
+	OutboxDomain      pdid.Domain = 4  // "outbox"
+	ProjectDomain     pdid.Domain = 7  // "project"
+	SessionDomain     pdid.Domain = 8  // "session"
+	TenantDomain      pdid.Domain = 1  // "tenant"
 )
 
 func init() {
 	pdid.Register("cxz.Account", AccountDomain, "account")
 	pdid.Register("cxz.Audit", AuditDomain, "audit")
+	pdid.Register("cxz.AuthBinding", AuthBindingDomain, "auth-binding")
 	pdid.Register("cxz.Holder", HolderDomain, "holder")
 	pdid.Register("cxz.Outbox", OutboxDomain, "outbox")
 	pdid.Register("cxz.Project", ProjectDomain, "project")
@@ -104,13 +107,14 @@ func init() {
 // Domains is the domain of each entity by the full name of its message,
 // which is the name a [Minter] is asked about.
 var Domains = map[string]pdid.Domain{
-	"cxz.Account": AccountDomain,
-	"cxz.Audit":   AuditDomain,
-	"cxz.Holder":  HolderDomain,
-	"cxz.Outbox":  OutboxDomain,
-	"cxz.Project": ProjectDomain,
-	"cxz.Session": SessionDomain,
-	"cxz.Tenant":  TenantDomain,
+	"cxz.Account":     AccountDomain,
+	"cxz.Audit":       AuditDomain,
+	"cxz.AuthBinding": AuthBindingDomain,
+	"cxz.Holder":      HolderDomain,
+	"cxz.Outbox":      OutboxDomain,
+	"cxz.Project":     ProjectDomain,
+	"cxz.Session":     SessionDomain,
+	"cxz.Tenant":      TenantDomain,
 }
 
 // Minter answers with the [bare.Minter] that gives every new row an
@@ -168,6 +172,11 @@ func (wall) AuditScope(ctx context.Context) (predicate.Audit, error) {
 	}
 
 	return audit.Or(audit.TenantIdIn(vs...), audit.ActorTenantIdIn(vs...), audit.CounterpartTenantIdIn(vs...)), nil
+}
+
+// AuthBindingScope: declared `global`, so it is not behind the wall at all.
+func (wall) AuthBindingScope(ctx context.Context) (predicate.AuthBinding, error) {
+	return nil, nil
 }
 
 // HolderScope: a row belongs to the tenant its "tenant" reaches.
@@ -869,6 +878,381 @@ func filterAudit(f *resource.AuditFilter) (predicate.Audit, error) {
 	}
 
 	return audit.And(ps...), nil
+}
+
+type sinkAuthBinding struct {
+	resource.AuthBindingServiceServer
+	store  bare.Store
+	w      *watch.Watch
+	namer  slug.Namer
+	joined bool
+}
+
+func (s Sink) AuthBinding() resource.AuthBindingServiceServer {
+	return sinkAuthBinding{s.Server.AuthBinding(), s.Server.Store, s.w, s.namer, s.joined}
+}
+
+// orderAuthBinding is how AuthBindings come back.
+//
+// The last column is the key, and it is not decoration: a cursor cannot
+// tell apart two rows equal in every column of the order, so the page after
+// the first of them either repeats the second or skips it. Rows written by
+// one request are stamped a moment apart at best.
+var orderAuthBinding = []sqlpage.Order{
+	{Column: authbinding.FieldDateCreated, Desc: false},
+	{Column: authbinding.FieldId, Desc: false},
+}
+
+const (
+	// AuthBindingPageSize is what a request that did not say gets, and
+	// AuthBindingPageLimit is the most it gets however loudly it asks.
+	AuthBindingPageSize  = 50
+	AuthBindingPageLimit = 200
+
+	// AuthBindingFilterLimit is how many filters one request may carry. Each is a
+	// predicate in the same query, so it is what says how much of the
+	// database a request may ask to read -- and it is refused rather than
+	// clamped, because dropping half the filters would answer a question
+	// nobody asked.
+	AuthBindingFilterLimit = 32
+)
+
+// List answers with the AuthBindings that match any of the given filters, or with
+// every one there is if the request named none, a page at a time.
+func (s sinkAuthBinding) List(ctx context.Context, req *resource.AuthBindingListRequest) (*resource.AuthBindingListResponse, error) {
+	q := s.store.Db.AuthBinding.Query()
+
+	// Through the same narrowing every generated read goes through, and not
+	// by asking the scope alone: what narrows a read is the wall today and
+	// the wall and something else tomorrow, and a list that reached past it
+	// would be the one read that missed the something else.
+	if p, err := bare.AuthBindingNarrow(ctx, s.store.Scope, nil); err != nil {
+		return nil, err
+	} else if p != nil {
+		q.Where(p)
+	}
+
+	if fs := req.GetFilters(); len(fs) > 0 {
+		if len(fs) > AuthBindingFilterLimit {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters: %d of them, and %d is the most one list carries", len(fs), AuthBindingFilterLimit)
+		}
+
+		ps := make([]predicate.AuthBinding, 0, len(fs))
+		for i, f := range fs {
+			p, err := filterAuthBinding(f)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "filters[%d]: %s", i, err)
+			}
+
+			ps = append(ps, p)
+		}
+
+		q.Where(authbinding.Or(ps...))
+	}
+
+	if v := req.GetAfter(); v != "" {
+		var (
+			at0 time.Time
+			at1 uuid.UUID
+		)
+		if err := sqlpage.Decode(v, &at0, &at1); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		p, err := sqlpage.After(orderAuthBinding, []any{at0, at1})
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		q.Where(p)
+	}
+
+	// One row more than the page, which is how "is there another" is answered
+	// without a second query and without a count. The extra is dropped before
+	// the answer is built; it was only ever asked for to see whether it was
+	// there -- so a full last page answers with no cursor rather than sending
+	// the caller back for an empty one.
+	size := sqlpage.Size(int(req.GetSize()), AuthBindingPageSize, AuthBindingPageLimit)
+	us, err := q.Order(authbinding.ByDateCreated(), authbinding.ById()).Limit(size + 1).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	more := len(us) > size
+	if more {
+		us = us[:size]
+	}
+
+	items := make([]*resource.AuthBinding, len(us))
+	for i, u := range us {
+		items[i] = u.Proto()
+	}
+
+	res := resource.AuthBindingListResponse_builder{Items: items}.Build()
+	if more {
+		last := us[len(us)-1]
+		next, err := sqlpage.Encode(last.DateCreated, last.Id)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "next: %s", err)
+		}
+
+		res.SetNext(next)
+	}
+
+	return res, nil
+}
+
+// filterAuthBinding turns one filter into the predicate that selects what it
+// names. Naming nothing is refused, since the request asked for "these" and
+// did not say which.
+func filterAuthBinding(f *resource.AuthBindingFilter) (predicate.AuthBinding, error) {
+	ps := make([]predicate.AuthBinding, 0, 1)
+	if f.HasRef() {
+		p, err := bare.AuthBindingPick(f.GetRef())
+		if err != nil {
+			return nil, err
+		}
+
+		ps = append(ps, p)
+	}
+	if f.HasAccount() {
+		w := f.GetAccount()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "account: %s", err)
+			}
+
+			ps = append(ps, authbinding.AccountIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.AccountPick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, authbinding.HasAccountWith(q))
+		}
+	}
+	if f.HasProject() {
+		w := f.GetProject()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "project: %s", err)
+			}
+
+			ps = append(ps, authbinding.ProjectIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.ProjectPick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, authbinding.HasProjectWith(q))
+		}
+	}
+	if len(ps) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
+	}
+
+	return authbinding.And(ps...), nil
+}
+
+// AuthBindingService is the prefix of every Rpc of that service, which is how a
+// change is known to be about a AuthBinding. A service is named for the entity it
+// is about, so the name carries it.
+var AuthBindingService = watch.ServiceOf(resource.AuthBindingService_Get_FullMethodName)
+
+// Watch answers with the AuthBindings this caller may see, as they are now and as
+// they change.
+//
+// What is sent is **state and never a delta**, which is what makes a stream
+// that missed something still correct: the next item about a row carries the
+// whole of it, so a client converges rather than replays. It is also what
+// makes the first message safe to duplicate against the ones after it.
+func (s sinkAuthBinding) Watch(req *resource.AuthBindingWatchRequest, out grpc.ServerStreamingServer[resource.AuthBindingWatchResponse]) error {
+	ctx := out.Context()
+
+	// A watch with no filters is the whole table, forever. It is the one
+	// shape that has no cap at all, so it is the one shape refused.
+	fs := req.GetFilters()
+	switch {
+	case len(fs) == 0:
+		return status.Error(codes.InvalidArgument,
+			"filters: a watch says which rows it is about; one that says nothing is the whole table, for as long as it is open")
+	case len(fs) > AuthBindingFilterLimit:
+		return status.Errorf(codes.InvalidArgument,
+			"filters: %d of them, and %d is the most one watch carries", len(fs), AuthBindingFilterLimit)
+	}
+
+	// Resolved before anything is subscribed to, so a name that names
+	// nothing is an answer rather than a stream that quietly watches none.
+	watching, err := s.watchAuthBindingKeys(ctx, fs)
+	if err != nil {
+		return err
+	}
+
+	var snapshot func(watch.Seen) error
+	if !req.GetSkipSnapshot() {
+		snapshot = func(sent watch.Seen) error { return s.watchNow(ctx, req, out, sent) }
+	}
+
+	if s.w == nil {
+		return status.Error(codes.Unimplemented,
+			"this deployment publishes no changes; see WithWatch")
+	}
+
+	return watch.Stream(ctx, s.w, AuthBindingService, snapshot,
+		func(ks map[pdid.Id]string, sent watch.Seen) error {
+			items := make([]*resource.AuthBindingWatchItem, 0, len(ks))
+			for k, action := range ks {
+				u, err := s.watchRead(ctx, watching, k)
+				if err != nil {
+					return err
+				}
+				if u == nil && !sent[k] {
+					// Not theirs, or not what they asked for, and they
+					// have never been told about it. A row that never
+					// matched is not news.
+					continue
+				}
+
+				sent[k] = u != nil
+				items = append(items, resource.AuthBindingWatchItem_builder{
+					Id:     k.Bytes(),
+					Value:  u,
+					Action: action,
+				}.Build())
+			}
+			if len(items) == 0 {
+				return nil
+			}
+
+			return out.Send(resource.AuthBindingWatchResponse_builder{Items: items}.Build())
+		})
+}
+
+// watchNow sends what matches right now, through the same List a caller
+// would have called -- so what a stream begins with and what a list answers
+// cannot disagree, and a client does not have to do both and race them.
+func (s sinkAuthBinding) watchNow(
+	ctx context.Context, req *resource.AuthBindingWatchRequest, out grpc.ServerStreamingServer[resource.AuthBindingWatchResponse],
+	sent watch.Seen,
+) error {
+	after := ""
+	for {
+		res, err := s.List(ctx, resource.AuthBindingListRequest_builder{
+			Filters: req.GetFilters(),
+			After:   after,
+		}.Build())
+		if err != nil {
+			return err
+		}
+
+		items := make([]*resource.AuthBindingWatchItem, 0, len(res.GetItems()))
+		for _, u := range res.GetItems() {
+			k, err := pdid.From(u.GetId())
+			if err != nil {
+				return err
+			}
+
+			sent[k] = true
+			// No action: this is not something anybody asked for, it is
+			// what is already there.
+			items = append(items, resource.AuthBindingWatchItem_builder{Id: u.GetId(), Value: u}.Build())
+		}
+		if len(items) > 0 {
+			if err := out.Send(resource.AuthBindingWatchResponse_builder{Items: items}.Build()); err != nil {
+				return err
+			}
+		}
+
+		if after = res.GetNext(); after == "" {
+			return nil
+		}
+	}
+}
+
+// watchRead answers with the row as it is now, or nil when it is no longer
+// one this caller may see -- erased, walled off, or no longer matching what
+// they asked for. The three are deliberately indistinguishable to a caller:
+// a stream that told them apart would be saying which rows stopped being
+// theirs, which is the thing the wall is for.
+//
+// The Get is what keeps the wall out of this file. It goes through the same
+// server every other read does, with the context of the caller who asked, so
+// a row they may not see comes back NotFound and is never sent.
+func (s sinkAuthBinding) watchRead(
+	ctx context.Context, watching []pdid.Id, k pdid.Id,
+) (*resource.AuthBinding, error) {
+	// Not one of the rows this stream is about. Asked before the read, so a
+	// busy table costs a stream nothing for the rows it does not watch.
+	if !slices.Contains(watching, k) {
+		return nil, nil
+	}
+
+	v, err := s.Get(ctx, resource.AuthBindingGetRequest_builder{
+		Ref: resource.AuthBindingRef_builder{Id: k.Bytes()}.Build(),
+	}.Build())
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return v, nil
+}
+
+// watchAuthBindingKeys is the rows a stream is about, resolved once when it opens.
+//
+// A filter names a row and a row is named several ways -- by identifier, or
+// by whatever unique index the schema declared. Resolving them here rather
+// than comparing them per event does three things: the comparison afterwards
+// is an identifier against an identifier, a name that names nothing is
+// refused when the stream opens rather than silently watching nothing, and a
+// row renamed while the stream is open goes on being the row that was asked
+// for -- which is what somebody watching a thing meant.
+func (s sinkAuthBinding) watchAuthBindingKeys(
+	ctx context.Context, fs []*resource.AuthBindingFilter,
+) ([]pdid.Id, error) {
+	ks := make([]pdid.Id, 0, len(fs))
+	for i, f := range fs {
+		if !f.HasRef() {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters[%d]: a watch says which rows it is about by naming them", i)
+		}
+
+		v, err := s.Get(ctx, resource.AuthBindingGetRequest_builder{Ref: f.GetRef()}.Build())
+		if err != nil {
+			return nil, err
+		}
+
+		k, err := pdid.From(v.GetId())
+		if err != nil {
+			return nil, err
+		}
+
+		ks = append(ks, k)
+	}
+
+	return ks, nil
 }
 
 type sinkHolder struct {
@@ -2863,6 +3247,114 @@ func (s interceptAccount) Watch(req *resource.AccountWatchRequest, out grpc.Serv
 		resource.AccountService_Watch_FullMethodName, req, out, s.AccountServiceServer.Watch)
 }
 
+func (s Intercept) Project() resource.ProjectServiceServer {
+	return interceptProject{s, s.Next().Project()}
+}
+
+type interceptProject struct {
+	Intercept
+	resource.ProjectServiceServer
+}
+
+func (s interceptProject) Add(ctx context.Context, req *resource.ProjectAddRequest) (*resource.Project, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_Add_FullMethodName, req, s.ProjectServiceServer.Add)
+}
+
+func (s interceptProject) Get(ctx context.Context, req *resource.ProjectGetRequest) (*resource.Project, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_Get_FullMethodName, req, s.ProjectServiceServer.Get)
+}
+
+func (s interceptProject) Patch(ctx context.Context, req *resource.ProjectPatchRequest) (*resource.Project, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_Patch_FullMethodName, req, s.ProjectServiceServer.Patch)
+}
+
+func (s interceptProject) Apply(ctx context.Context, req *resource.ProjectApplyRequest) (*resource.Project, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_Apply_FullMethodName, req, s.ProjectServiceServer.Apply)
+}
+
+func (s interceptProject) Erase(ctx context.Context, req *resource.ProjectRef) (*resource.ProjectEraseResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_Erase_FullMethodName, req, s.ProjectServiceServer.Erase)
+}
+
+func (s interceptProject) List(ctx context.Context, req *resource.ProjectListRequest) (*resource.ProjectListResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_List_FullMethodName, req, s.ProjectServiceServer.List)
+}
+
+func (s interceptProject) Watch(req *resource.ProjectWatchRequest, out grpc.ServerStreamingServer[resource.ProjectWatchResponse]) error {
+	return grpcx.RunStream(s.stream, s.ProjectServiceServer,
+		resource.ProjectService_Watch_FullMethodName, req, out, s.ProjectServiceServer.Watch)
+}
+
+func (s interceptProject) Up(ctx context.Context, req *resource.ProjectUpRequest) (*resource.Project, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_Up_FullMethodName, req, s.ProjectServiceServer.Up)
+}
+
+func (s interceptProject) Down(ctx context.Context, req *resource.ProjectControl) (*resource.Project, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_Down_FullMethodName, req, s.ProjectServiceServer.Down)
+}
+
+func (s interceptProject) Recreate(ctx context.Context, req *resource.ProjectRecreateRequest) (*resource.Project, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_Recreate_FullMethodName, req, s.ProjectServiceServer.Recreate)
+}
+
+func (s interceptProject) InspectForeign(ctx context.Context, req *resource.InspectForeignRequest) (*resource.InspectForeignResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_InspectForeign_FullMethodName, req, s.ProjectServiceServer.InspectForeign)
+}
+
+func (s Intercept) AuthBinding() resource.AuthBindingServiceServer {
+	return interceptAuthBinding{s, s.Next().AuthBinding()}
+}
+
+type interceptAuthBinding struct {
+	Intercept
+	resource.AuthBindingServiceServer
+}
+
+func (s interceptAuthBinding) Add(ctx context.Context, req *resource.AuthBindingAddRequest) (*resource.AuthBinding, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.AuthBindingServiceServer,
+		resource.AuthBindingService_Add_FullMethodName, req, s.AuthBindingServiceServer.Add)
+}
+
+func (s interceptAuthBinding) Get(ctx context.Context, req *resource.AuthBindingGetRequest) (*resource.AuthBinding, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.AuthBindingServiceServer,
+		resource.AuthBindingService_Get_FullMethodName, req, s.AuthBindingServiceServer.Get)
+}
+
+func (s interceptAuthBinding) Patch(ctx context.Context, req *resource.AuthBindingPatchRequest) (*resource.AuthBinding, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.AuthBindingServiceServer,
+		resource.AuthBindingService_Patch_FullMethodName, req, s.AuthBindingServiceServer.Patch)
+}
+
+func (s interceptAuthBinding) Apply(ctx context.Context, req *resource.AuthBindingApplyRequest) (*resource.AuthBinding, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.AuthBindingServiceServer,
+		resource.AuthBindingService_Apply_FullMethodName, req, s.AuthBindingServiceServer.Apply)
+}
+
+func (s interceptAuthBinding) Erase(ctx context.Context, req *resource.AuthBindingRef) (*resource.AuthBindingEraseResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.AuthBindingServiceServer,
+		resource.AuthBindingService_Erase_FullMethodName, req, s.AuthBindingServiceServer.Erase)
+}
+
+func (s interceptAuthBinding) List(ctx context.Context, req *resource.AuthBindingListRequest) (*resource.AuthBindingListResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.AuthBindingServiceServer,
+		resource.AuthBindingService_List_FullMethodName, req, s.AuthBindingServiceServer.List)
+}
+
+func (s interceptAuthBinding) Watch(req *resource.AuthBindingWatchRequest, out grpc.ServerStreamingServer[resource.AuthBindingWatchResponse]) error {
+	return grpcx.RunStream(s.stream, s.AuthBindingServiceServer,
+		resource.AuthBindingService_Watch_FullMethodName, req, out, s.AuthBindingServiceServer.Watch)
+}
+
 func (s Intercept) Audit() resource.AuditServiceServer {
 	return interceptAudit{s, s.Next().Audit()}
 }
@@ -2983,70 +3475,6 @@ func (s interceptHolder) List(ctx context.Context, req *resource.HolderListReque
 func (s interceptHolder) Watch(req *resource.HolderWatchRequest, out grpc.ServerStreamingServer[resource.HolderWatchResponse]) error {
 	return grpcx.RunStream(s.stream, s.HolderServiceServer,
 		resource.HolderService_Watch_FullMethodName, req, out, s.HolderServiceServer.Watch)
-}
-
-func (s Intercept) Project() resource.ProjectServiceServer {
-	return interceptProject{s, s.Next().Project()}
-}
-
-type interceptProject struct {
-	Intercept
-	resource.ProjectServiceServer
-}
-
-func (s interceptProject) Add(ctx context.Context, req *resource.ProjectAddRequest) (*resource.Project, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_Add_FullMethodName, req, s.ProjectServiceServer.Add)
-}
-
-func (s interceptProject) Get(ctx context.Context, req *resource.ProjectGetRequest) (*resource.Project, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_Get_FullMethodName, req, s.ProjectServiceServer.Get)
-}
-
-func (s interceptProject) Patch(ctx context.Context, req *resource.ProjectPatchRequest) (*resource.Project, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_Patch_FullMethodName, req, s.ProjectServiceServer.Patch)
-}
-
-func (s interceptProject) Apply(ctx context.Context, req *resource.ProjectApplyRequest) (*resource.Project, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_Apply_FullMethodName, req, s.ProjectServiceServer.Apply)
-}
-
-func (s interceptProject) Erase(ctx context.Context, req *resource.ProjectRef) (*resource.ProjectEraseResponse, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_Erase_FullMethodName, req, s.ProjectServiceServer.Erase)
-}
-
-func (s interceptProject) List(ctx context.Context, req *resource.ProjectListRequest) (*resource.ProjectListResponse, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_List_FullMethodName, req, s.ProjectServiceServer.List)
-}
-
-func (s interceptProject) Watch(req *resource.ProjectWatchRequest, out grpc.ServerStreamingServer[resource.ProjectWatchResponse]) error {
-	return grpcx.RunStream(s.stream, s.ProjectServiceServer,
-		resource.ProjectService_Watch_FullMethodName, req, out, s.ProjectServiceServer.Watch)
-}
-
-func (s interceptProject) Up(ctx context.Context, req *resource.ProjectUpRequest) (*resource.Project, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_Up_FullMethodName, req, s.ProjectServiceServer.Up)
-}
-
-func (s interceptProject) Down(ctx context.Context, req *resource.ProjectControl) (*resource.Project, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_Down_FullMethodName, req, s.ProjectServiceServer.Down)
-}
-
-func (s interceptProject) Recreate(ctx context.Context, req *resource.ProjectRecreateRequest) (*resource.Project, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_Recreate_FullMethodName, req, s.ProjectServiceServer.Recreate)
-}
-
-func (s interceptProject) InspectForeign(ctx context.Context, req *resource.InspectForeignRequest) (*resource.InspectForeignResponse, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_InspectForeign_FullMethodName, req, s.ProjectServiceServer.InspectForeign)
 }
 
 func (s Intercept) Session() resource.SessionServiceServer {
@@ -3727,6 +4155,214 @@ func dispatch(ctx context.Context, s resource.Server, op *pdpb.Op) (*anypb.Any, 
 
 		return anypb.New(res)
 
+	case resource.ProjectService_Add_FullMethodName:
+		v := &resource.ProjectAddRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().Add(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.ProjectService_Get_FullMethodName:
+		v := &resource.ProjectGetRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().Get(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.ProjectService_Patch_FullMethodName:
+		v := &resource.ProjectPatchRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().Patch(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.ProjectService_Apply_FullMethodName:
+		v := &resource.ProjectApplyRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().Apply(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.ProjectService_Erase_FullMethodName:
+		v := &resource.ProjectRef{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().Erase(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.ProjectService_List_FullMethodName:
+		v := &resource.ProjectListRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().List(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.ProjectService_Up_FullMethodName:
+		v := &resource.ProjectUpRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().Up(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.ProjectService_Down_FullMethodName:
+		v := &resource.ProjectControl{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().Down(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.ProjectService_Recreate_FullMethodName:
+		v := &resource.ProjectRecreateRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().Recreate(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.ProjectService_InspectForeign_FullMethodName:
+		v := &resource.InspectForeignRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().InspectForeign(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.AuthBindingService_Add_FullMethodName:
+		v := &resource.AuthBindingAddRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.AuthBinding().Add(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.AuthBindingService_Get_FullMethodName:
+		v := &resource.AuthBindingGetRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.AuthBinding().Get(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.AuthBindingService_Patch_FullMethodName:
+		v := &resource.AuthBindingPatchRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.AuthBinding().Patch(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.AuthBindingService_Apply_FullMethodName:
+		v := &resource.AuthBindingApplyRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.AuthBinding().Apply(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.AuthBindingService_Erase_FullMethodName:
+		v := &resource.AuthBindingRef{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.AuthBinding().Erase(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.AuthBindingService_List_FullMethodName:
+		v := &resource.AuthBindingListRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.AuthBinding().List(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
 	case resource.AuditService_Add_FullMethodName:
 		v := &resource.AuditAddRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
@@ -3955,136 +4591,6 @@ func dispatch(ctx context.Context, s resource.Server, op *pdpb.Op) (*anypb.Any, 
 		}
 
 		res, err := s.Holder().List(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_Add_FullMethodName:
-		v := &resource.ProjectAddRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().Add(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_Get_FullMethodName:
-		v := &resource.ProjectGetRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().Get(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_Patch_FullMethodName:
-		v := &resource.ProjectPatchRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().Patch(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_Apply_FullMethodName:
-		v := &resource.ProjectApplyRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().Apply(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_Erase_FullMethodName:
-		v := &resource.ProjectRef{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().Erase(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_List_FullMethodName:
-		v := &resource.ProjectListRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().List(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_Up_FullMethodName:
-		v := &resource.ProjectUpRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().Up(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_Down_FullMethodName:
-		v := &resource.ProjectControl{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().Down(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_Recreate_FullMethodName:
-		v := &resource.ProjectRecreateRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().Recreate(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_InspectForeign_FullMethodName:
-		v := &resource.InspectForeignRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().InspectForeign(ctx, v)
 		if err != nil {
 			return nil, err
 		}

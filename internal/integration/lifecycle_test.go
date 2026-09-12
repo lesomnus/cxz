@@ -104,6 +104,10 @@ func TestLifecycle(t *testing.T) {
 	if s.Model != "fixture-model" || s.Account != "test-claude" {
 		t.Fatal("model missing from session")
 	}
+	binding := s.AuthBinding
+	if binding == "" || s.AuthBackend != accounts.ProjectLocalOAuth {
+		t.Fatal("missing auth binding/backend", s)
+	}
 	listed, e := client.List(ctx, &api.Empty{})
 	if e != nil || len(listed.GetSessions()) != 1 || listed.Sessions[0].Id != s.Id || listed.Sessions[0].Workspace != work {
 		t.Fatalf("resource list lost session or project edge: %v %v", listed, e)
@@ -307,6 +311,9 @@ func TestLifecycle(t *testing.T) {
 	}
 	start()
 	restored := get()
+	if restored.AuthBinding != binding || restored.AuthBackend != accounts.ProjectLocalOAuth {
+		t.Fatal("auth strategy lost on reconstruction", restored)
+	}
 	if restored.LastSeq != stopped.LastSeq || restored.VendorId == "" || !strings.Contains(restored.Workspace, "work") || restored.Account != "test-claude" {
 		t.Fatal("bad database reconstruction")
 	}

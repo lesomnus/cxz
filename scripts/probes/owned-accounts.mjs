@@ -40,13 +40,19 @@ async function contextCheck(s,alias){
  }throw new Error('account context timeout');
 }
 try{
+ const catalog=await json('account','backends');assert.equal(catalog.length,2);
+ for(const agent of catalog){assert.equal(agent.default_backend,'project-local-oauth');assert.equal(agent.backends[0].scope,'project');assert.equal(agent.backends[0].refresh_owner,'agent');}
+ await assert.rejects(()=>cli('account','add','--agent','claude','--auth-backend','brokered-access-token','unsupported'));
  for(const alias of ['personal','work']){await cli('account','add','--agent','claude',alias);}
  await cli('account','add','--agent','claude','missing');
  project=await json('project','add','--name','Account Test Project','--alias',`account-${run}`,work);
  await assert.rejects(()=>cli('new','--account','missing','--no-attach',project.alias));
  await cli('account','login','--project',project.alias,'personal');
  await cli('account','status','--project',project.alias,'personal');
+ const bindings=await json('account','bindings','personal');assert.equal(bindings.items.length,1);const personalBinding=bindings.items[0].bindingId;assert.equal(bindings.items[0].authBackend,'project-local-oauth');
+ await cli('account','login','--project',project.alias,'personal');assert.equal((await json('account','bindings','personal')).items.length,1);
  let personal=await json('new','--account','personal','--no-attach',project.alias);assert.equal(personal.account,'personal');
+ assert.equal(personal.auth_binding,personalBinding);assert.equal(personal.auth_backend,'project-local-oauth');
  assert.equal(personal.project_name,'Account Test Project');assert.equal(personal.project_alias,project.alias);
  await cli('exec',project.alias,'--','pwd');await cli('logs',project.alias);
  await contextCheck(personal,'personal');
@@ -57,6 +63,7 @@ try{
  personal=await stopped(personal);
  await cli('account','login','--project',project.alias,'work');
  let workSession=await json('new','--account','work','--no-attach',project.alias);assert.notEqual(workSession.id,personal.id);assert.equal(workSession.account,'work');await contextCheck(workSession,'work');
+ const workBinding=workSession.auth_binding;assert.notEqual(workBinding,personalBinding);
  workSession=await stopped(workSession);
  project=await json('project','set','--name','Renamed Account Project','--alias',`renamed-${run}`,project.alias);
  personal=await json('resume',personal.id);assert.equal(personal.account,'personal');await contextCheck(personal,'personal');personal=await stopped(personal);
@@ -64,6 +71,7 @@ try{
  for(let i=0;i<60;i++){try{await cli('account','get','work');break;}catch{await delay(100);}}
  const oldContainer=(await json('projects')).projects.find(p=>p.id===project.id).container_id;
  workSession=await json('recreate','--yes','--account','work','--no-attach',project.alias);assert.equal(workSession.account,'work');await contextCheck(workSession,'work');
+ assert.equal(workSession.auth_binding,workBinding);assert.equal(workSession.auth_backend,'project-local-oauth');
  assert.equal(workSession.project_name,'Renamed Account Project');assert.equal(workSession.project_alias,project.alias);
  assert.notEqual((await json('projects')).projects.find(p=>p.id===project.id).container_id,oldContainer);
  await docker('exec',installation.container,'test','!','-e','/var/lib/cxz/accounts');
@@ -71,6 +79,7 @@ try{
  writeFileSync(join(other,'.devcontainer/devcontainer.json'),JSON.stringify({image:'alpine:latest',remoteUser:'root'}));
  second=await json('project','add','--alias',`other-${run}`,other);
  await assert.rejects(()=>cli('new','--account','work','--no-attach',second.alias));
+ const workBindings=(await json('account','bindings','work')).items;assert.equal(workBindings.length,2);assert.notEqual(workBindings[0].bindingId,workBindings[1].bindingId);
  const otherProject=(await json('projects')).projects.find(p=>p.id===second.id);
  await docker('exec',otherProject.container_id,'test','!','-e','/cxz/state/data/accounts/work/config/.credentials.json');
  console.log(JSON.stringify({status:'passed',checks:['missing login rejected','project-local staged login/status','no manager credential store','isolated HOME/config and inherited keys removed','different-account live attach and active login rejected','two accounts distinct threads','resume retains original account','manager restart and project recreate retain account','another project requires independent login','project name/alias regression']}));

@@ -12,6 +12,9 @@ type Account func(*sql.Selector)
 // Audit is the predicate function for audit builders.
 type Audit func(*sql.Selector)
 
+// AuthBinding is the predicate function for authbinding builders.
+type AuthBinding func(*sql.Selector)
+
 // Holder is the predicate function for holder builders.
 type Holder func(*sql.Selector)
 

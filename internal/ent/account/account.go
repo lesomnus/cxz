@@ -19,6 +19,8 @@ const (
 	FieldDesc = "desc"
 	// FieldAgent holds the string denoting the agent field in the database.
 	FieldAgent = "agent"
+	// FieldAuthBackend holds the string denoting the auth_backend field in the database.
+	FieldAuthBackend = "auth_backend"
 	// FieldDateUpdated holds the string denoting the date_updated field in the database.
 	FieldDateUpdated = "date_updated"
 	// FieldDateErased holds the string denoting the date_erased field in the database.
@@ -36,6 +38,7 @@ var Columns = []string{
 	FieldName,
 	FieldDesc,
 	FieldAgent,
+	FieldAuthBackend,
 	FieldDateUpdated,
 	FieldDateErased,
 	FieldDateCreated,
@@ -77,6 +80,11 @@ func ByDesc(opts ...sql.OrderTermOption) OrderOption {
 // ByAgent orders the results by the agent field.
 func ByAgent(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldAgent, opts...).ToFunc()
+}
+
+// ByAuthBackend orders the results by the auth_backend field.
+func ByAuthBackend(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAuthBackend, opts...).ToFunc()
 }
 
 // ByDateUpdated orders the results by the date_updated field.

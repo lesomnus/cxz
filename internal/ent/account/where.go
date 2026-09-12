@@ -75,6 +75,11 @@ func Agent(v string) predicate.Account {
 	return predicate.Account(sql.FieldEQ(FieldAgent, v))
 }
 
+// AuthBackend applies equality check predicate on the "auth_backend" field. It's identical to AuthBackendEQ.
+func AuthBackend(v string) predicate.Account {
+	return predicate.Account(sql.FieldEQ(FieldAuthBackend, v))
+}
+
 // DateUpdated applies equality check predicate on the "date_updated" field. It's identical to DateUpdatedEQ.
 func DateUpdated(v time.Time) predicate.Account {
 	return predicate.Account(sql.FieldEQ(FieldDateUpdated, v))
@@ -348,6 +353,71 @@ func AgentEqualFold(v string) predicate.Account {
 // AgentContainsFold applies the ContainsFold predicate on the "agent" field.
 func AgentContainsFold(v string) predicate.Account {
 	return predicate.Account(sql.FieldContainsFold(FieldAgent, v))
+}
+
+// AuthBackendEQ applies the EQ predicate on the "auth_backend" field.
+func AuthBackendEQ(v string) predicate.Account {
+	return predicate.Account(sql.FieldEQ(FieldAuthBackend, v))
+}
+
+// AuthBackendNEQ applies the NEQ predicate on the "auth_backend" field.
+func AuthBackendNEQ(v string) predicate.Account {
+	return predicate.Account(sql.FieldNEQ(FieldAuthBackend, v))
+}
+
+// AuthBackendIn applies the In predicate on the "auth_backend" field.
+func AuthBackendIn(vs ...string) predicate.Account {
+	return predicate.Account(sql.FieldIn(FieldAuthBackend, vs...))
+}
+
+// AuthBackendNotIn applies the NotIn predicate on the "auth_backend" field.
+func AuthBackendNotIn(vs ...string) predicate.Account {
+	return predicate.Account(sql.FieldNotIn(FieldAuthBackend, vs...))
+}
+
+// AuthBackendGT applies the GT predicate on the "auth_backend" field.
+func AuthBackendGT(v string) predicate.Account {
+	return predicate.Account(sql.FieldGT(FieldAuthBackend, v))
+}
+
+// AuthBackendGTE applies the GTE predicate on the "auth_backend" field.
+func AuthBackendGTE(v string) predicate.Account {
+	return predicate.Account(sql.FieldGTE(FieldAuthBackend, v))
+}
+
+// AuthBackendLT applies the LT predicate on the "auth_backend" field.
+func AuthBackendLT(v string) predicate.Account {
+	return predicate.Account(sql.FieldLT(FieldAuthBackend, v))
+}
+
+// AuthBackendLTE applies the LTE predicate on the "auth_backend" field.
+func AuthBackendLTE(v string) predicate.Account {
+	return predicate.Account(sql.FieldLTE(FieldAuthBackend, v))
+}
+
+// AuthBackendContains applies the Contains predicate on the "auth_backend" field.
+func AuthBackendContains(v string) predicate.Account {
+	return predicate.Account(sql.FieldContains(FieldAuthBackend, v))
+}
+
+// AuthBackendHasPrefix applies the HasPrefix predicate on the "auth_backend" field.
+func AuthBackendHasPrefix(v string) predicate.Account {
+	return predicate.Account(sql.FieldHasPrefix(FieldAuthBackend, v))
+}
+
+// AuthBackendHasSuffix applies the HasSuffix predicate on the "auth_backend" field.
+func AuthBackendHasSuffix(v string) predicate.Account {
+	return predicate.Account(sql.FieldHasSuffix(FieldAuthBackend, v))
+}
+
+// AuthBackendEqualFold applies the EqualFold predicate on the "auth_backend" field.
+func AuthBackendEqualFold(v string) predicate.Account {
+	return predicate.Account(sql.FieldEqualFold(FieldAuthBackend, v))
+}
+
+// AuthBackendContainsFold applies the ContainsFold predicate on the "auth_backend" field.
+func AuthBackendContainsFold(v string) predicate.Account {
+	return predicate.Account(sql.FieldContainsFold(FieldAuthBackend, v))
 }
 
 // DateUpdatedEQ applies the EQ predicate on the "date_updated" field.

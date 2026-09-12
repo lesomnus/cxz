@@ -27,11 +27,12 @@ import (
 
 type Server interface {
 	Account() AccountServiceServer
+	Project() ProjectServiceServer
+	AuthBinding() AuthBindingServiceServer
 	Audit() AuditServiceServer
 	Tenant() TenantServiceServer
 	Holder() HolderServiceServer
 	Outbox() OutboxServiceServer
-	Project() ProjectServiceServer
 	Session() SessionServiceServer
 }
 
@@ -41,89 +42,100 @@ type Server interface {
 // server which is not gRPC's own can be handed the same set of services.
 func RegisterServer(g grpc.ServiceRegistrar, s Server) {
 	RegisterAccountServiceServer(g, s.Account())
+	RegisterProjectServiceServer(g, s.Project())
+	RegisterAuthBindingServiceServer(g, s.AuthBinding())
 	RegisterAuditServiceServer(g, s.Audit())
 	RegisterTenantServiceServer(g, s.Tenant())
 	RegisterHolderServiceServer(g, s.Holder())
 	RegisterOutboxServiceServer(g, s.Outbox())
-	RegisterProjectServiceServer(g, s.Project())
 	RegisterSessionServiceServer(g, s.Session())
 }
 
 type UnimplementedServer struct {
-	AccountServer AccountServiceServer
-	AuditServer   AuditServiceServer
-	TenantServer  TenantServiceServer
-	HolderServer  HolderServiceServer
-	OutboxServer  OutboxServiceServer
-	ProjectServer ProjectServiceServer
-	SessionServer SessionServiceServer
+	AccountServer     AccountServiceServer
+	ProjectServer     ProjectServiceServer
+	AuthBindingServer AuthBindingServiceServer
+	AuditServer       AuditServiceServer
+	TenantServer      TenantServiceServer
+	HolderServer      HolderServiceServer
+	OutboxServer      OutboxServiceServer
+	SessionServer     SessionServiceServer
 }
 
 func (UnimplementedServer) Account() AccountServiceServer { return UnimplementedAccountServiceServer{} }
+func (UnimplementedServer) Project() ProjectServiceServer { return UnimplementedProjectServiceServer{} }
+func (UnimplementedServer) AuthBinding() AuthBindingServiceServer {
+	return UnimplementedAuthBindingServiceServer{}
+}
 func (UnimplementedServer) Audit() AuditServiceServer     { return UnimplementedAuditServiceServer{} }
 func (UnimplementedServer) Tenant() TenantServiceServer   { return UnimplementedTenantServiceServer{} }
 func (UnimplementedServer) Holder() HolderServiceServer   { return UnimplementedHolderServiceServer{} }
 func (UnimplementedServer) Outbox() OutboxServiceServer   { return UnimplementedOutboxServiceServer{} }
-func (UnimplementedServer) Project() ProjectServiceServer { return UnimplementedProjectServiceServer{} }
 func (UnimplementedServer) Session() SessionServiceServer { return UnimplementedSessionServiceServer{} }
 
 type StaticServer struct {
-	AccountServer AccountServiceServer
-	AuditServer   AuditServiceServer
-	TenantServer  TenantServiceServer
-	HolderServer  HolderServiceServer
-	OutboxServer  OutboxServiceServer
-	ProjectServer ProjectServiceServer
-	SessionServer SessionServiceServer
+	AccountServer     AccountServiceServer
+	ProjectServer     ProjectServiceServer
+	AuthBindingServer AuthBindingServiceServer
+	AuditServer       AuditServiceServer
+	TenantServer      TenantServiceServer
+	HolderServer      HolderServiceServer
+	OutboxServer      OutboxServiceServer
+	SessionServer     SessionServiceServer
 }
 
-func (s StaticServer) Account() AccountServiceServer { return s.AccountServer }
-func (s StaticServer) Audit() AuditServiceServer     { return s.AuditServer }
-func (s StaticServer) Tenant() TenantServiceServer   { return s.TenantServer }
-func (s StaticServer) Holder() HolderServiceServer   { return s.HolderServer }
-func (s StaticServer) Outbox() OutboxServiceServer   { return s.OutboxServer }
-func (s StaticServer) Project() ProjectServiceServer { return s.ProjectServer }
-func (s StaticServer) Session() SessionServiceServer { return s.SessionServer }
+func (s StaticServer) Account() AccountServiceServer         { return s.AccountServer }
+func (s StaticServer) Project() ProjectServiceServer         { return s.ProjectServer }
+func (s StaticServer) AuthBinding() AuthBindingServiceServer { return s.AuthBindingServer }
+func (s StaticServer) Audit() AuditServiceServer             { return s.AuditServer }
+func (s StaticServer) Tenant() TenantServiceServer           { return s.TenantServer }
+func (s StaticServer) Holder() HolderServiceServer           { return s.HolderServer }
+func (s StaticServer) Outbox() OutboxServiceServer           { return s.OutboxServer }
+func (s StaticServer) Session() SessionServiceServer         { return s.SessionServer }
 
 type Client interface {
 	Account() AccountServiceClient
+	Project() ProjectServiceClient
+	AuthBinding() AuthBindingServiceClient
 	Audit() AuditServiceClient
 	Tenant() TenantServiceClient
 	Holder() HolderServiceClient
 	Outbox() OutboxServiceClient
-	Project() ProjectServiceClient
 	Session() SessionServiceClient
 }
 
 func NewClient(c *grpc.ClientConn) Client {
 	return &client{
-		_Account: NewAccountServiceClient(c),
-		_Audit:   NewAuditServiceClient(c),
-		_Tenant:  NewTenantServiceClient(c),
-		_Holder:  NewHolderServiceClient(c),
-		_Outbox:  NewOutboxServiceClient(c),
-		_Project: NewProjectServiceClient(c),
-		_Session: NewSessionServiceClient(c),
+		_Account:     NewAccountServiceClient(c),
+		_Project:     NewProjectServiceClient(c),
+		_AuthBinding: NewAuthBindingServiceClient(c),
+		_Audit:       NewAuditServiceClient(c),
+		_Tenant:      NewTenantServiceClient(c),
+		_Holder:      NewHolderServiceClient(c),
+		_Outbox:      NewOutboxServiceClient(c),
+		_Session:     NewSessionServiceClient(c),
 	}
 }
 
 type client struct {
-	_Account AccountServiceClient
-	_Audit   AuditServiceClient
-	_Tenant  TenantServiceClient
-	_Holder  HolderServiceClient
-	_Outbox  OutboxServiceClient
-	_Project ProjectServiceClient
-	_Session SessionServiceClient
+	_Account     AccountServiceClient
+	_Project     ProjectServiceClient
+	_AuthBinding AuthBindingServiceClient
+	_Audit       AuditServiceClient
+	_Tenant      TenantServiceClient
+	_Holder      HolderServiceClient
+	_Outbox      OutboxServiceClient
+	_Session     SessionServiceClient
 }
 
-func (c *client) Account() AccountServiceClient { return c._Account }
-func (c *client) Audit() AuditServiceClient     { return c._Audit }
-func (c *client) Tenant() TenantServiceClient   { return c._Tenant }
-func (c *client) Holder() HolderServiceClient   { return c._Holder }
-func (c *client) Outbox() OutboxServiceClient   { return c._Outbox }
-func (c *client) Project() ProjectServiceClient { return c._Project }
-func (c *client) Session() SessionServiceClient { return c._Session }
+func (c *client) Account() AccountServiceClient         { return c._Account }
+func (c *client) Project() ProjectServiceClient         { return c._Project }
+func (c *client) AuthBinding() AuthBindingServiceClient { return c._AuthBinding }
+func (c *client) Audit() AuditServiceClient             { return c._Audit }
+func (c *client) Tenant() TenantServiceClient           { return c._Tenant }
+func (c *client) Holder() HolderServiceClient           { return c._Holder }
+func (c *client) Outbox() OutboxServiceClient           { return c._Outbox }
+func (c *client) Session() SessionServiceClient         { return c._Session }
 
 // Middleware is a server that delegates to another server.
 type Middleware interface {

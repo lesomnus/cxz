@@ -26,6 +26,8 @@ type Account struct {
 	Desc string `json:"desc,omitempty"`
 	// Agent holds the value of the "agent" field.
 	Agent string `json:"agent,omitempty"`
+	// AuthBackend holds the value of the "auth_backend" field.
+	AuthBackend string `json:"auth_backend,omitempty"`
 	// DateUpdated holds the value of the "date_updated" field.
 	DateUpdated time.Time `json:"date_updated,omitempty"`
 	// DateErased holds the value of the "date_erased" field.
@@ -40,7 +42,7 @@ func (*Account) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case account.FieldAlias, account.FieldName, account.FieldDesc, account.FieldAgent:
+		case account.FieldAlias, account.FieldName, account.FieldDesc, account.FieldAgent, account.FieldAuthBackend:
 			values[i] = new(sql.NullString)
 		case account.FieldDateUpdated, account.FieldDateErased, account.FieldDateCreated:
 			values[i] = new(sql.NullTime)
@@ -90,6 +92,12 @@ func (_m *Account) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field agent", values[i])
 			} else if value.Valid {
 				_m.Agent = value.String
+			}
+		case account.FieldAuthBackend:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field auth_backend", values[i])
+			} else if value.Valid {
+				_m.AuthBackend = value.String
 			}
 		case account.FieldDateUpdated:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -157,6 +165,9 @@ func (_m *Account) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("agent=")
 	builder.WriteString(_m.Agent)
+	builder.WriteString(", ")
+	builder.WriteString("auth_backend=")
+	builder.WriteString(_m.AuthBackend)
 	builder.WriteString(", ")
 	builder.WriteString("date_updated=")
 	builder.WriteString(_m.DateUpdated.Format(time.ANSIC))

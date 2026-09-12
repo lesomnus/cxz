@@ -67,7 +67,7 @@ func (m *model) accountNotice() string {
 		return "No registered accounts. Run cxz account add --agent codex NAME, then cxz account login NAME."
 	}
 	a := m.accounts[m.accountIndex]
-	return "Account: " + a.GetAlias() + " · " + a.GetAgent() + " (Tab changes; Enter creates)"
+	return "Account: " + a.GetAlias() + " · " + a.GetAgent() + " · " + a.GetAuthBackend() + " (Tab changes; Enter creates)"
 }
 func (m *model) loadAccounts() tea.Cmd {
 	return func() tea.Msg {

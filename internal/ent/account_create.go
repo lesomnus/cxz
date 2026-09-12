@@ -46,6 +46,12 @@ func (_c *AccountCreate) SetAgent(v string) *AccountCreate {
 	return _c
 }
 
+// SetAuthBackend sets the "auth_backend" field.
+func (_c *AccountCreate) SetAuthBackend(v string) *AccountCreate {
+	_c.mutation.SetAuthBackend(v)
+	return _c
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_c *AccountCreate) SetDateUpdated(v time.Time) *AccountCreate {
 	_c.mutation.SetDateUpdated(v)
@@ -132,6 +138,9 @@ func (_c *AccountCreate) check() error {
 	if _, ok := _c.mutation.Agent(); !ok {
 		return &ValidationError{Name: "agent", err: errors.New(`ent: missing required field "Account.agent"`)}
 	}
+	if _, ok := _c.mutation.AuthBackend(); !ok {
+		return &ValidationError{Name: "auth_backend", err: errors.New(`ent: missing required field "Account.auth_backend"`)}
+	}
 	if _, ok := _c.mutation.DateUpdated(); !ok {
 		return &ValidationError{Name: "date_updated", err: errors.New(`ent: missing required field "Account.date_updated"`)}
 	}
@@ -189,6 +198,10 @@ func (_c *AccountCreate) createSpec() (*Account, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Agent(); ok {
 		_spec.SetField(account.FieldAgent, field.TypeString, value)
 		_node.Agent = value
+	}
+	if value, ok := _c.mutation.AuthBackend(); ok {
+		_spec.SetField(account.FieldAuthBackend, field.TypeString, value)
+		_node.AuthBackend = value
 	}
 	if value, ok := _c.mutation.DateUpdated(); ok {
 		_spec.SetField(account.FieldDateUpdated, field.TypeTime, value)

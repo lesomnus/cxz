@@ -11,6 +11,7 @@ import (
 
 	"github.com/lesomnus/cxz/internal/ent/account"
 	"github.com/lesomnus/cxz/internal/ent/audit"
+	"github.com/lesomnus/cxz/internal/ent/authbinding"
 	"github.com/lesomnus/cxz/internal/ent/holder"
 	"github.com/lesomnus/cxz/internal/ent/outbox"
 	"github.com/lesomnus/cxz/internal/ent/project"
@@ -79,13 +80,14 @@ var (
 func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
-			account.Table: account.ValidColumn,
-			audit.Table:   audit.ValidColumn,
-			holder.Table:  holder.ValidColumn,
-			outbox.Table:  outbox.ValidColumn,
-			project.Table: project.ValidColumn,
-			session.Table: session.ValidColumn,
-			tenant.Table:  tenant.ValidColumn,
+			account.Table:     account.ValidColumn,
+			audit.Table:       audit.ValidColumn,
+			authbinding.Table: authbinding.ValidColumn,
+			holder.Table:      holder.ValidColumn,
+			outbox.Table:      outbox.ValidColumn,
+			project.Table:     project.ValidColumn,
+			session.Table:     session.ValidColumn,
+			tenant.Table:      tenant.ValidColumn,
 		})
 	})
 	return columnCheck(t, c)

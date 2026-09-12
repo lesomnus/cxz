@@ -119,9 +119,16 @@ type projectStub struct {
 type accountStub struct {
 	resource.UnimplementedAccountServiceServer
 }
+type bindingStub struct {
+	resource.UnimplementedAuthBindingServiceServer
+}
+
+func (bindingStub) Add(_ context.Context, r *resource.AuthBindingAddRequest) (*resource.AuthBinding, error) {
+	return resource.AuthBinding_builder{BindingId: "fixture-binding", AuthBackend: "project-local-oauth"}.Build(), nil
+}
 
 func (accountStub) Get(_ context.Context, r *resource.AccountGetRequest) (*resource.Account, error) {
-	return resource.Account_builder{Alias: r.GetRef().GetAlias(), Agent: "codex"}.Build(), nil
+	return resource.Account_builder{Alias: r.GetRef().GetAlias(), Agent: "codex", AuthBackend: "project-local-oauth"}.Build(), nil
 }
 
 func testProject() *resource.Project {
@@ -161,6 +168,7 @@ func TestCommandsReachAPI(t *testing.T) {
 	stub := &rpcStub{requests: make(chan any, 10)}
 	resource.RegisterSessionServiceServer(server, stub)
 	resource.RegisterAccountServiceServer(server, accountStub{})
+	resource.RegisterAuthBindingServiceServer(server, bindingStub{})
 	resource.RegisterProjectServiceServer(server, projectStub{requests: stub.requests})
 	go server.Serve(listener)
 	defer server.Stop()

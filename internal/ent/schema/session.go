@@ -48,6 +48,8 @@ func (Session) Fields() []ent.Field {
 			Immutable(),
 		field.Uuid("account_id").
 			Immutable(),
+		field.Uuid("auth_binding_id").
+			Immutable(),
 	}
 }
 
@@ -61,6 +63,11 @@ func (Session) Edges() []ent.Edge {
 		edge.To("account", Account.Type).
 			Unique().
 			Field("account_id").
+			Required().
+			Immutable(),
+		edge.To("auth_binding", AuthBinding.Type).
+			Unique().
+			Field("auth_binding_id").
 			Required().
 			Immutable(),
 	}

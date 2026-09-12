@@ -87,12 +87,19 @@ func (s Layer) saveSession(ctx context.Context, v *api.Session, clientID string)
 		}
 		var account *resource.AccountRef
 		if v.Account != "" {
-			if err := s.ensureAccount(ctx, v.Account, v.Agent); err != nil {
+			if err := s.ensureAccount(ctx, v.Account, v.Agent, v.AuthBackend); err != nil {
 				return nil, err
 			}
 			account = accountRef(v.Account)
 		}
-		return srv.Add(ctx, resource.SessionAddRequest_builder{Id: resourceID(8, v.Id), Name: v.Title, Project: projectRef(v.ProjectId), Agent: v.Agent, Model: v.Model, Account: account, RuntimeId: v.Id, ClientId: clientID, DateCreated: timestamppb.New(time.UnixMilli(v.CreatedAt)), Status: state, Listed: ptr(true)}.Build())
+		binding, err := s.ensureBinding(ctx, v.ProjectId, v.Account, v.Agent, v.AuthBackend)
+		if err != nil {
+			return nil, err
+		}
+		if binding.GetBindingId() != v.AuthBinding {
+			return nil, status.Error(codes.FailedPrecondition, "runtime auth binding mismatch")
+		}
+		return srv.Add(ctx, resource.SessionAddRequest_builder{Id: resourceID(8, v.Id), Name: v.Title, Project: projectRef(v.ProjectId), Agent: v.Agent, Model: v.Model, Account: account, AuthBinding: bindingRef(v.AuthBinding), RuntimeId: v.Id, ClientId: clientID, DateCreated: timestamppb.New(time.UnixMilli(v.CreatedAt)), Status: state, Listed: ptr(true)}.Build())
 	}
 	if err != nil {
 		return nil, err

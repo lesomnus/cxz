@@ -3,6 +3,7 @@ package lifecycle
 import (
 	"context"
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/resource"
 	"github.com/lesomnus/payday/config"
 	"google.golang.org/grpc/codes"
@@ -20,6 +21,8 @@ func TestAccountResources(t *testing.T) {
 	}
 	defer db.Close()
 	f := &fixture{p: &api.Project{Id: "project", Workspace: "/workspaces/test", Name: "test"}, s: &api.Session{Id: "session", ProjectId: "project", Agent: "codex", Account: "work", CreateId: "create", CreatedAt: time.Now().UnixMilli()}}
+	f.s.AuthBackend = accounts.ProjectLocalOAuth
+	f.s.AuthBinding = accounts.BindingID(f.p.Id, f.s.Account, f.s.AuthBackend)
 	stack, err := Build(ctx, db, f)
 	if err != nil {
 		t.Fatal(err)
@@ -52,11 +55,49 @@ func TestAccountResources(t *testing.T) {
 	if s.GetAccount().GetAlias() != "work" {
 		t.Fatal("account edge lost", s)
 	}
-	_, err = stack.Session().Add(ctx, resource.SessionAddRequest_builder{Project: projectRef("project"), ClientId: "wrong-vendor", Agent: "claude", Account: accountRef("work")}.Build())
+	for _, backend := range []string{accounts.BrokeredAccessToken, accounts.APIKey, "unknown"} {
+		_, err = stack.Account().Add(ctx, resource.AccountAddRequest_builder{Alias: "unsupported", Agent: "codex", AuthBackend: backend}.Build())
+		if status.Code(err) != codes.InvalidArgument {
+			t.Fatal("unsupported backend accepted", err)
+		}
+	}
+	bindRequest := resource.AuthBindingAddRequest_builder{Account: accountRef("work"), Project: projectRef("project")}.Build()
+	binding, err := stack.AuthBinding().Add(ctx, bindRequest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	again, err := stack.AuthBinding().Add(ctx, bindRequest)
+	if err != nil || binding.GetBindingId() != again.GetBindingId() {
+		t.Fatal("binding retry not idempotent", err)
+	}
+	if binding.GetId()[9] != 10 || binding.GetScope() != "project" || binding.GetCredentialRef() != "accounts/work" || binding.GetAuthBackend() != accounts.ProjectLocalOAuth {
+		t.Fatal("invalid binding", binding)
+	}
+	_, err = stack.AuthBinding().Patch(ctx, resource.AuthBindingPatchRequest_builder{Ref: bindingRef(binding.GetBindingId())}.Build())
+	if status.Code(err) != codes.PermissionDenied {
+		t.Fatal("binding mutation accepted", err)
+	}
+	_, err = stack.AuthBinding().Add(ctx, resource.AuthBindingAddRequest_builder{Account: accountRef("work"), Project: projectRef("project"), CredentialRef: "/arbitrary/path"}.Build())
+	if status.Code(err) != codes.PermissionDenied {
+		t.Fatal("caller-selected credential path accepted", err)
+	}
+	f.p = &api.Project{Id: "other-project", Workspace: "/workspaces/other", Name: "other"}
+	if _, err = stack.Project().Add(ctx, resource.ProjectAddRequest_builder{Workspace: f.p.Workspace}.Build()); err != nil {
+		t.Fatal(err)
+	}
+	other, err := stack.AuthBinding().Add(ctx, resource.AuthBindingAddRequest_builder{Account: accountRef("work"), Project: projectRef(f.p.Id)}.Build())
+	if err != nil || other.GetBindingId() == binding.GetBindingId() {
+		t.Fatal("cross-project auth sharing", err)
+	}
+	_, err = stack.Session().Add(ctx, resource.SessionAddRequest_builder{Project: projectRef("project"), Account: accountRef("work"), AuthBinding: bindingRef(other.GetBindingId()), Agent: "codex", ClientId: "wrong-binding"}.Build())
+	if status.Code(err) != codes.InvalidArgument {
+		t.Fatal("cross-project session binding accepted", err)
+	}
+	_, err = stack.Session().Add(ctx, resource.SessionAddRequest_builder{Project: projectRef("project"), ClientId: "wrong-vendor", Agent: "claude", Account: accountRef("work"), AuthBinding: bindingRef(f.s.AuthBinding)}.Build())
 	if status.Code(err) != codes.InvalidArgument {
 		t.Fatal("wrong vendor accepted", err)
 	}
-	_, err = stack.Session().Add(ctx, resource.SessionAddRequest_builder{Project: projectRef("project"), ClientId: "unknown", Agent: "codex", Account: accountRef("unknown")}.Build())
+	_, err = stack.Session().Add(ctx, resource.SessionAddRequest_builder{Project: projectRef("project"), ClientId: "unknown", Agent: "codex", Account: accountRef("unknown"), AuthBinding: bindingRef(f.s.AuthBinding)}.Build())
 	if status.Code(err) != codes.NotFound {
 		t.Fatal("unknown account accepted", err)
 	}

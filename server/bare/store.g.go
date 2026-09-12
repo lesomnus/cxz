@@ -9,6 +9,7 @@ import (
 	ent "github.com/lesomnus/cxz/internal/ent"
 	account "github.com/lesomnus/cxz/internal/ent/account"
 	audit "github.com/lesomnus/cxz/internal/ent/audit"
+	authbinding "github.com/lesomnus/cxz/internal/ent/authbinding"
 	holder "github.com/lesomnus/cxz/internal/ent/holder"
 	outbox "github.com/lesomnus/cxz/internal/ent/outbox"
 	predicate "github.com/lesomnus/cxz/internal/ent/predicate"
@@ -315,11 +316,12 @@ func record(ctx context.Context, rec Recorder, db *ent.Client, c Change) error {
 // say about.
 type Scope interface {
 	AccountScope(ctx context.Context) (predicate.Account, error)
+	ProjectScope(ctx context.Context) (predicate.Project, error)
+	AuthBindingScope(ctx context.Context) (predicate.AuthBinding, error)
 	AuditScope(ctx context.Context) (predicate.Audit, error)
 	TenantScope(ctx context.Context) (predicate.Tenant, error)
 	HolderScope(ctx context.Context) (predicate.Holder, error)
 	OutboxScope(ctx context.Context) (predicate.Outbox, error)
-	ProjectScope(ctx context.Context) (predicate.Project, error)
 	SessionScope(ctx context.Context) (predicate.Session, error)
 }
 
@@ -338,6 +340,12 @@ var _ Scope = Unscoped{}
 func (Unscoped) AccountScope(_ context.Context) (predicate.Account, error) {
 	return nil, nil
 }
+func (Unscoped) ProjectScope(_ context.Context) (predicate.Project, error) {
+	return nil, nil
+}
+func (Unscoped) AuthBindingScope(_ context.Context) (predicate.AuthBinding, error) {
+	return nil, nil
+}
 func (Unscoped) AuditScope(_ context.Context) (predicate.Audit, error) {
 	return nil, nil
 }
@@ -348,9 +356,6 @@ func (Unscoped) HolderScope(_ context.Context) (predicate.Holder, error) {
 	return nil, nil
 }
 func (Unscoped) OutboxScope(_ context.Context) (predicate.Outbox, error) {
-	return nil, nil
-}
-func (Unscoped) ProjectScope(_ context.Context) (predicate.Project, error) {
 	return nil, nil
 }
 func (Unscoped) SessionScope(_ context.Context) (predicate.Session, error) {
@@ -394,6 +399,46 @@ func (ss Scopes) AccountScope(ctx context.Context) (predicate.Account, error) {
 	}
 
 	return account.And(ps...), nil
+}
+
+func (ss Scopes) ProjectScope(ctx context.Context) (predicate.Project, error) {
+	ps := make([]predicate.Project, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.ProjectScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return project.And(ps...), nil
+}
+
+func (ss Scopes) AuthBindingScope(ctx context.Context) (predicate.AuthBinding, error) {
+	ps := make([]predicate.AuthBinding, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.AuthBindingScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return authbinding.And(ps...), nil
 }
 
 func (ss Scopes) AuditScope(ctx context.Context) (predicate.Audit, error) {
@@ -474,26 +519,6 @@ func (ss Scopes) OutboxScope(ctx context.Context) (predicate.Outbox, error) {
 	}
 
 	return outbox.And(ps...), nil
-}
-
-func (ss Scopes) ProjectScope(ctx context.Context) (predicate.Project, error) {
-	ps := make([]predicate.Project, 0, len(ss))
-	for _, s := range ss {
-		p, err := s.ProjectScope(ctx)
-		if err != nil {
-			return nil, err
-		}
-		if p == nil {
-			continue
-		}
-
-		ps = append(ps, p)
-	}
-	if len(ps) == 0 {
-		return nil, nil
-	}
-
-	return project.And(ps...), nil
 }
 
 func (ss Scopes) SessionScope(ctx context.Context) (predicate.Session, error) {
@@ -596,7 +621,7 @@ func (s Store) now() time.Time {
 // is rendered for that dialect, not just what this server writes.
 //
 // That set is also what a soft erasure needs, so this is the whole
-// check. Account, Holder, Project and Session free the names they held when a row
+// check. Account, AuthBinding, Holder, Project and Session free the names they held when a row
 // is erased, which is a unique index covering only the rows that are
 // still there -- a partial index, and the dialects above are the ones
 // that have one. MySQL does not, and ent writes the annotation out for
@@ -635,9 +660,12 @@ func (s Server) WithDriver(drv dialect.Driver) (resource.Server, error) {
 }
 
 func (s Server) Account() resource.AccountServiceServer { return AccountServiceServer{Store: s.Store} }
+func (s Server) Project() resource.ProjectServiceServer { return ProjectServiceServer{Store: s.Store} }
+func (s Server) AuthBinding() resource.AuthBindingServiceServer {
+	return AuthBindingServiceServer{Store: s.Store}
+}
 func (s Server) Audit() resource.AuditServiceServer     { return AuditServiceServer{Store: s.Store} }
 func (s Server) Tenant() resource.TenantServiceServer   { return TenantServiceServer{Store: s.Store} }
 func (s Server) Holder() resource.HolderServiceServer   { return HolderServiceServer{Store: s.Store} }
 func (s Server) Outbox() resource.OutboxServiceServer   { return OutboxServiceServer{Store: s.Store} }
-func (s Server) Project() resource.ProjectServiceServer { return ProjectServiceServer{Store: s.Store} }
 func (s Server) Session() resource.SessionServiceServer { return SessionServiceServer{Store: s.Store} }

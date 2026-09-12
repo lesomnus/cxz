@@ -110,7 +110,11 @@ func (c *Client) Open(ctx context.Context, r *api.ProjectRequest, opts ...grpc.C
 		}
 	}
 	if chosen == nil {
-		s, err := c.sessions.Add(ctx, resource.SessionAddRequest_builder{Project: ref, Agent: kind, Model: r.Model, ClientId: r.ClientId, Account: ar(r.Account)}.Build(), opts...)
+		b, err := c.Bind(ctx, p.GetRuntimeId(), r.Account)
+		if err != nil {
+			return nil, err
+		}
+		s, err := c.sessions.Add(ctx, resource.SessionAddRequest_builder{Project: ref, Agent: kind, Model: r.Model, ClientId: r.ClientId, Account: ar(r.Account), AuthBinding: br(b.GetBindingId())}.Build(), opts...)
 		if err != nil {
 			if !r.NewSession {
 				if attached := c.concurrentOpen(ctx, p.GetRuntimeId(), kind, r.Model, r.Account, opts...); attached != nil {

@@ -40,10 +40,14 @@ const (
 	FieldProjectId = "project_id"
 	// FieldAccountId holds the string denoting the account_id field in the database.
 	FieldAccountId = "account_id"
+	// FieldAuthBindingId holds the string denoting the auth_binding_id field in the database.
+	FieldAuthBindingId = "auth_binding_id"
 	// EdgeProject holds the string denoting the project edge name in mutations.
 	EdgeProject = "project"
 	// EdgeAccount holds the string denoting the account edge name in mutations.
 	EdgeAccount = "account"
+	// EdgeAuthBinding holds the string denoting the auth_binding edge name in mutations.
+	EdgeAuthBinding = "auth_binding"
 	// Table holds the table name of the session in the database.
 	Table = "session"
 	// ProjectTable is the table that holds the project relation/edge.
@@ -60,6 +64,13 @@ const (
 	AccountInverseTable = "account"
 	// AccountColumn is the table column denoting the account relation/edge.
 	AccountColumn = "account_id"
+	// AuthBindingTable is the table that holds the auth_binding relation/edge.
+	AuthBindingTable = "session"
+	// AuthBindingInverseTable is the table name for the AuthBinding entity.
+	// It exists in this package in order to avoid circular dependency with the "authbinding" package.
+	AuthBindingInverseTable = "authbinding"
+	// AuthBindingColumn is the table column denoting the auth_binding relation/edge.
+	AuthBindingColumn = "auth_binding_id"
 )
 
 // Columns holds all SQL columns for session fields.
@@ -78,6 +89,7 @@ var Columns = []string{
 	FieldListed,
 	FieldProjectId,
 	FieldAccountId,
+	FieldAuthBindingId,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -165,6 +177,11 @@ func ByAccountId(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldAccountId, opts...).ToFunc()
 }
 
+// ByAuthBindingId orders the results by the auth_binding_id field.
+func ByAuthBindingId(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAuthBindingId, opts...).ToFunc()
+}
+
 // ByProjectField orders the results by project field.
 func ByProjectField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -176,6 +193,13 @@ func ByProjectField(field string, opts ...sql.OrderTermOption) OrderOption {
 func ByAccountField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newAccountStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// ByAuthBindingField orders the results by auth_binding field.
+func ByAuthBindingField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newAuthBindingStep(), sql.OrderByField(field, opts...))
 	}
 }
 func newProjectStep() *sqlgraph.Step {
@@ -190,5 +214,12 @@ func newAccountStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldId),
 		sqlgraph.To(AccountInverseTable, FieldId),
 		sqlgraph.Edge(sqlgraph.M2O, false, AccountTable, AccountColumn),
+	)
+}
+func newAuthBindingStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldId),
+		sqlgraph.To(AuthBindingInverseTable, FieldId),
+		sqlgraph.Edge(sqlgraph.M2O, false, AuthBindingTable, AuthBindingColumn),
 	)
 }

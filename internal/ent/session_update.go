@@ -164,6 +164,9 @@ func (_u *SessionUpdate) check() error {
 	if _u.mutation.AccountCleared() && len(_u.mutation.AccountIds()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Session.account"`)
 	}
+	if _u.mutation.AuthBindingCleared() && len(_u.mutation.AuthBindingIds()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Session.auth_binding"`)
+	}
 	return nil
 }
 
@@ -390,6 +393,9 @@ func (_u *SessionUpdateOne) check() error {
 	}
 	if _u.mutation.AccountCleared() && len(_u.mutation.AccountIds()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Session.account"`)
+	}
+	if _u.mutation.AuthBindingCleared() && len(_u.mutation.AuthBindingIds()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Session.auth_binding"`)
 	}
 	return nil
 }

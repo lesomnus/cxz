@@ -11,17 +11,18 @@ import (
 )
 
 type Session struct {
-	CreateID  string `json:"create_id"`
-	ID        string `json:"id"`
-	Workspace string `json:"workspace"`
-	Title     string `json:"title"`
-	CreatedAt int64  `json:"created_at"`
-	Agent     string `json:"agent"`
-	Kind      string `json:"kind,omitempty"`
-	Model     string `json:"model,omitempty"`
-	ProjectID string `json:"project_id,omitempty"`
-	ConfigDir string `json:"config_dir,omitempty"`
-	Account   string `json:"account,omitempty"`
+	CreateID    string `json:"create_id"`
+	ID          string `json:"id"`
+	Workspace   string `json:"workspace"`
+	Title       string `json:"title"`
+	CreatedAt   int64  `json:"created_at"`
+	Agent       string `json:"agent"`
+	Kind        string `json:"kind,omitempty"`
+	Model       string `json:"model,omitempty"`
+	ProjectID   string `json:"project_id,omitempty"`
+	Account     string `json:"account,omitempty"`
+	AuthBackend string `json:"auth_backend"`
+	AuthBinding string `json:"auth_binding"`
 }
 type Event struct {
 	SessionID string          `json:"session_id"`

@@ -116,6 +116,11 @@ func AccountId(v uuid.UUID) predicate.Session {
 	return predicate.Session(sql.FieldEQ(FieldAccountId, v))
 }
 
+// AuthBindingId applies equality check predicate on the "auth_binding_id" field. It's identical to AuthBindingIdEQ.
+func AuthBindingId(v uuid.UUID) predicate.Session {
+	return predicate.Session(sql.FieldEQ(FieldAuthBindingId, v))
+}
+
 // NameEQ applies the EQ predicate on the "name" field.
 func NameEQ(v string) predicate.Session {
 	return predicate.Session(sql.FieldEQ(FieldName, v))
@@ -716,6 +721,26 @@ func AccountIdNotIn(vs ...uuid.UUID) predicate.Session {
 	return predicate.Session(sql.FieldNotIn(FieldAccountId, vs...))
 }
 
+// AuthBindingIdEQ applies the EQ predicate on the "auth_binding_id" field.
+func AuthBindingIdEQ(v uuid.UUID) predicate.Session {
+	return predicate.Session(sql.FieldEQ(FieldAuthBindingId, v))
+}
+
+// AuthBindingIdNEQ applies the NEQ predicate on the "auth_binding_id" field.
+func AuthBindingIdNEQ(v uuid.UUID) predicate.Session {
+	return predicate.Session(sql.FieldNEQ(FieldAuthBindingId, v))
+}
+
+// AuthBindingIdIn applies the In predicate on the "auth_binding_id" field.
+func AuthBindingIdIn(vs ...uuid.UUID) predicate.Session {
+	return predicate.Session(sql.FieldIn(FieldAuthBindingId, vs...))
+}
+
+// AuthBindingIdNotIn applies the NotIn predicate on the "auth_binding_id" field.
+func AuthBindingIdNotIn(vs ...uuid.UUID) predicate.Session {
+	return predicate.Session(sql.FieldNotIn(FieldAuthBindingId, vs...))
+}
+
 // HasProject applies the HasEdge predicate on the "project" edge.
 func HasProject() predicate.Session {
 	return predicate.Session(func(s *sql.Selector) {
@@ -754,6 +779,29 @@ func HasAccount() predicate.Session {
 func HasAccountWith(preds ...predicate.Account) predicate.Session {
 	return predicate.Session(func(s *sql.Selector) {
 		step := newAccountStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasAuthBinding applies the HasEdge predicate on the "auth_binding" edge.
+func HasAuthBinding() predicate.Session {
+	return predicate.Session(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, AuthBindingTable, AuthBindingColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasAuthBindingWith applies the HasEdge predicate on the "auth_binding" edge with a given conditions (other predicates).
+func HasAuthBindingWith(preds ...predicate.AuthBinding) predicate.Session {
+	return predicate.Session(func(s *sql.Selector) {
+		step := newAuthBindingStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

@@ -41,5 +41,12 @@ func (e *Session) Proto() *resource.Session {
 		r.SetId(v[:])
 		x.SetAccount(r)
 	}
+	if v := e.Edges.AuthBinding; v != nil {
+		x.SetAuthBinding(v.Proto())
+	} else if v := e.AuthBindingId; v != *new(uuid.UUID) {
+		r := &resource.AuthBinding{}
+		r.SetId(v[:])
+		x.SetAuthBinding(r)
+	}
 	return x
 }

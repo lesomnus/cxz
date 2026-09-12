@@ -1,5 +1,18 @@
 # 구현 진행 상황
 
+## 2026-09-12 — AuthBackend / AuthBinding 분리 (검증 중)
+
+- AgentKind별 기본/지원 backend factory registry와 `Info/Binding/Login/Check/Launch`
+  계약을 도입했다. 기존 프로젝트 OAuth 로그인·인증 확인·환경/인자 구성을 backend로 옮겼다.
+- payday Account.auth_backend, AuthBinding(domain 10), Session.auth_binding을 선언·생성했다.
+  binding은 project/account/backend별로 안정적인 ID를 가지며 재시도해도 중복 생성되지 않는다.
+- CLI `account backends`, `account bindings`, `account add --auth-backend`를 추가했다.
+  실제 login/status/new/resume과 manager→project 경로가 backend/binding을 사용한다.
+- backend/binding은 manifest와 조회 JSON에 보존한다. 누락·불명 backend와 다른 범위의
+  binding은 실행/복구 시 거부한다. 기본값은 Account 생성 시에만 선택한다.
+- Claude/Codex의 프로젝트별 OAuth만 활성화했다. 중앙 토큰 공급·API key·실계정 인증은
+  추가하지 않았다. 단위·통합 테스트 1차 통과; 전체 race와 Docker 회귀 검증 예정.
+
 ## 2026-09-12 — Account 인증 프로필
 
 - payday Account 리소스(domain 9), 고정 Session.account 연결, 계정 등록/조회,
