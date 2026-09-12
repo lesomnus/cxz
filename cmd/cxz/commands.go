@@ -22,7 +22,6 @@ import (
 	"github.com/lesomnus/xli"
 	"github.com/lesomnus/xli/arg"
 	"github.com/lesomnus/xli/flg"
-	"github.com/lesomnus/xli/frm"
 	"github.com/lesomnus/xli/tab"
 )
 
@@ -36,7 +35,12 @@ type commandFunc func(context.Context, *xli.Command) error
 type clientFunc func(context.Context, api.SessionsClient, *xli.Command) error
 
 func onRun(fn commandFunc) xli.Handler {
-	return xli.OnRun(func(ctx context.Context, c *xli.Command, _ xli.Next) error { return fn(ctx, c) })
+	return xli.OnRun(func(ctx context.Context, c *xli.Command, _ xli.Next) error {
+		if err := validateInvocation(c); err != nil {
+			return err
+		}
+		return fn(ctx, c)
+	})
 }
 
 // Connection setup runs only for an executed API command, never help/completion.
@@ -67,7 +71,11 @@ func withClient(fn clientFunc) xli.Handler {
 }
 
 func stringArg(name string, optional bool) *arg.String {
-	return &arg.String{Name: name, Optional: optional, Default: ptr("")}
+	a := &arg.String{Name: name, Optional: optional}
+	if optional {
+		a.Default = ptr("")
+	}
+	return a
 }
 func stringFlag(name, brief, value string) *flg.String {
 	return &flg.String{Name: name, Brief: brief, Default: ptr(value)}
@@ -79,7 +87,7 @@ func switchFlag(name, brief string) *flg.Switch {
 type agentParser struct{ flg.StringParser }
 
 func (agentParser) Parse(v string) (string, error) {
-	if v != "" && v != "claude" && v != "codex" {
+	if v != "claude" && v != "codex" {
 		return "", fmt.Errorf("agent must be claude or codex")
 	}
 	return v, nil
@@ -95,22 +103,24 @@ func (decisionParser) Parse(v string) (string, error) {
 }
 
 func agentFlag(value string) *flg.Base[string, agentParser] {
-	f := &flg.Base[string, agentParser]{Name: "agent", Brief: "Agent vendor: claude or codex", Default: ptr(value)}
+	f := &flg.Base[string, agentParser]{Name: "agent", Brief: "Agent: claude or codex (selected Account / existing session when omitted)", Default: ptr(value)}
 	f.Handler = flg.OnTab[string](func(_ context.Context, t tab.Tab) error { t.Value("claude"); t.Value("codex"); return nil })
 	return f
 }
 
+func agentArg() *arg.Mono[string, agentParser] {
+	a := &arg.Mono[string, agentParser]{Name: "AGENT", Brief: "Required agent: claude or codex"}
+	a.Handler = arg.OnTab[string](func(_ context.Context, t tab.Tab) { t.Value("claude"); t.Value("codex") })
+	return a
+}
+
 func newRoot(state string) *xli.Command {
 	root := &xli.Command{Name: "cxz", Brief: "Persistent coding-agent sessions in owned devcontainers",
-		Synop: "Flags precede positional arguments: cxz new --agent codex .\nCtrl-C detaches the TUI; stop terminates the agent. Foreign containers are never adopted.",
-		Flags: flg.Flags{stringFlag("state", "Private client/runtime state directory", state), stringFlag("agent", "Legacy serve-only executable; prefer serve --agent", "claude"), stringFlag("claude-config", "Legacy serve-only Claude config directory", os.Getenv("CLAUDE_CONFIG_DIR"))},
+		Synop: "Flags precede positional arguments: cxz account add codex work; cxz new --account work .\nCtrl-C detaches the TUI; stop terminates the agent. Foreign containers are never adopted.",
+		Flags: flg.Flags{stringFlag("state", "Private client/runtime state directory", state)},
 		Handler: xli.Chain(xli.OnRunPass(func(ctx context.Context, c *xli.Command, next xli.Next) error {
-			if !frm.HasSeq(frm.From(ctx).Next(), "serve") {
-				for _, name := range []string{"agent", "claude-config"} {
-					if _, set := flg.Get[string](c, name); set {
-						return fmt.Errorf("root --%s is serve-only; put command flags after the command and before its arguments", name)
-					}
-				}
+			if err := validateInvocation(c); err != nil {
+				return err
 			}
 			path, err := filepath.Abs(flg.MustGet[string](c, "state"))
 			if err != nil {
@@ -124,7 +134,7 @@ func newRoot(state string) *xli.Command {
 			return installer.Install(ctx, stateFrom(ctx), flg.MustGet[string](c, "workspace-root"), flg.MustGet[string](c, "image"), flg.MustGet[bool](c, "recreate"), c.ErrWriter)
 		})},
 		{Name: "uninstall", Brief: "Remove manager; retain projects and volumes", Handler: onRun(func(ctx context.Context, _ *xli.Command) error { return installer.Uninstall(ctx, stateFrom(ctx)) })},
-		{Name: "serve", Brief: "Run foreground development server", Flags: flg.Flags{&flg.String{Name: "agent", Brief: "Claude executable (not vendor selection)"}, &flg.String{Name: "claude-config", Brief: "Existing Claude configuration directory"}}, Handler: onRun(serveCommand)},
+		{Name: "serve", Brief: "Run foreground development server", Flags: flg.Flags{stringFlag("agent", "Claude executable (not Account agent selection)", "claude")}, Handler: onRun(serveCommand)},
 	}
 	for _, name := range []string{"up", "new", "recreate", "down"} {
 		root.Commands = append(root.Commands, newProjectCommand(name))
@@ -140,13 +150,8 @@ func newRoot(state string) *xli.Command {
 			return tui.Run(ctx, client)
 		})},
 	)
-	for _, name := range []string{"login", "shell", "exec"} {
-		c := &xli.Command{Name: name, Brief: map[string]string{"login": "Log in to a vendor inside the project", "shell": "Open project shell", "exec": "Execute command inside project"}[name], Args: arg.Args{projectArg("PROJECT", false)}, Handler: withClient(projectExec)}
-		if name == "login" {
-			c.Flags = flg.Flags{agentFlag("")}
-		} else {
-			c.Args = append(c.Args, &arg.Remains{Name: "COMMAND", Optional: name == "shell"})
-		}
+	for _, name := range []string{"shell", "exec"} {
+		c := &xli.Command{Name: name, Brief: map[string]string{"shell": "Open project shell", "exec": "Execute command inside project"}[name], Args: arg.Args{projectArg("PROJECT", false), &arg.Remains{Name: "COMMAND", Optional: name == "shell"}}, Handler: withClient(projectExec)}
 		root.Commands = append(root.Commands, c)
 	}
 	for _, name := range []string{"ls", "projects", "get", "send", "reply", "interrupt", "resume", "stop", "events", "_new-local"} {
@@ -161,10 +166,7 @@ func newRoot(state string) *xli.Command {
 }
 
 func serveCommand(ctx context.Context, c *xli.Command) error {
-	bin := flg.MustGet[string](c.Root(), "agent")
-	cfg := flg.MustGet[string](c.Root(), "claude-config")
-	flg.VisitP(c, "agent", &bin)
-	flg.VisitP(c, "claude-config", &cfg)
+	bin := flg.MustGet[string](c, "agent")
 	if os.Getenv("CXZ_OWNER") == "" {
 		var err error
 		bin, err = exec.LookPath(bin)
@@ -175,14 +177,8 @@ func serveCommand(ctx context.Context, c *xli.Command) error {
 		if err != nil {
 			return err
 		}
-		if cfg != "" {
-			cfg, err = filepath.Abs(cfg)
-			if err != nil {
-				return err
-			}
-		}
 	}
-	return server.Run(ctx, stateFrom(ctx), bin, cfg)
+	return server.Run(ctx, stateFrom(ctx), bin, "")
 }
 
 func internalCommands() xli.Commands {
@@ -212,9 +208,6 @@ func internalCommands() xli.Commands {
 			os.Setenv("CXZ_STATE", stateFrom(ctx))
 			return server.Run(ctx, stateFrom(ctx), r.Claude, "")
 		}),
-		makeCmd("_login", arg.Args{stringArg("AGENT", false)}, func(ctx context.Context, c *xli.Command) error {
-			return workspace.Login(stateFrom(ctx), arg.MustGet[string](c, "AGENT"))
-		}),
 		makeCmd("_supervise", arg.Args{stringArg("SESSION", false)}, func(ctx context.Context, c *xli.Command) error {
 			return supervisor.Run(ctx, stateFrom(ctx), arg.MustGet[string](c, "SESSION"))
 		}),
@@ -226,8 +219,7 @@ func newSessionCommand(name string) *xli.Command {
 	c := &xli.Command{Name: name, Brief: map[string]string{"ls": "List sessions as JSON", "projects": "List owned and foreign projects as JSON", "get": "Get session status", "send": "Send one message", "reply": "Answer a pending approval/question", "interrupt": "Interrupt active turn", "resume": "Explicitly resume session", "stop": "Terminate session agent", "events": "Stream journal events", "_new-local": "Internal local integration entrypoint"}[name], Handler: withClient(sessionCommand)}
 	if name == "_new-local" {
 		c.Category = "Internal runtime"
-		c.Flags = flg.Flags{stringFlag("account", "Registered profile", "")}
-		c.Args = arg.Args{stringArg("WORKSPACE", false), stringArg("TITLE", true)}
+		c.Args = arg.Args{stringArg("ACCOUNT", false), stringArg("WORKSPACE", false), stringArg("TITLE", true)}
 		return c
 	}
 	if name != "ls" && name != "projects" {
@@ -261,7 +253,7 @@ func sessionCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 		if e != nil {
 			return e
 		}
-		result, err = client.Create(call, &api.CreateRequest{Workspace: path, Title: arg.MustGet[string](c, "TITLE"), ClientId: core.ID(), Account: flg.MustGet[string](c, "account")})
+		result, err = client.Create(call, &api.CreateRequest{Workspace: path, Title: arg.MustGet[string](c, "TITLE"), ClientId: core.ID(), Account: arg.MustGet[string](c, "ACCOUNT")})
 	case "events":
 		stream, e := client.Watch(ctx, &api.WatchRequest{SessionId: arg.MustGet[string](c, "SESSION"), AfterSeq: arg.MustGet[uint64](c, "AFTER_SEQ")})
 		if e != nil {

@@ -8,10 +8,9 @@ import (
 	"github.com/lesomnus/cxz/internal/installer"
 	"github.com/lesomnus/cxz/internal/transport"
 	"github.com/lesomnus/xli"
-	"github.com/lesomnus/xli/flg"
+	"github.com/lesomnus/xli/arg"
 	"runtime"
 	"runtime/debug"
-	"strings"
 )
 
 // Set by release/Bake builds. Source builds also read the Go VCS metadata.
@@ -35,12 +34,8 @@ func releaseCommands() xli.Commands {
 			}
 			return json.NewEncoder(c.Writer).Encode(map[string]any{"version": version, "revision": revision, "dirty": dirty, "platform": runtime.GOOS + "/" + runtime.GOARCH, "claude": distribution.ClaudeVersion, "codex": distribution.CodexVersion})
 		})},
-		{Name: "update", Brief: "Replace manager with an explicit pinned image; keep projects/data", Flags: flg.Flags{stringFlag("image", "Required version tag or digest (not latest)", "")}, Handler: onRun(func(ctx context.Context, c *xli.Command) error {
-			image := flg.MustGet[string](c, "image")
-			last := image[strings.LastIndex(image, "/")+1:]
-			if image == "" || (!strings.Contains(last, ":") && !strings.Contains(last, "@")) || strings.HasSuffix(image, ":latest") {
-				return fmt.Errorf("update requires --image with an explicit version tag or digest")
-			}
+		{Name: "update", Brief: "Replace manager with IMAGE (explicit tag/digest, not latest); keep projects/data", Args: arg.Args{stringArg("IMAGE", false)}, Handler: onRun(func(ctx context.Context, c *xli.Command) error {
+			image := arg.MustGet[string](c, "IMAGE")
 			v, err := transport.Load(stateFrom(ctx))
 			if err != nil {
 				return err

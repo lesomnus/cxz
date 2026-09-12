@@ -26,9 +26,15 @@ func TestHelpWithoutInstallation(t *testing.T) {
 	state := filepath.Join(t.TempDir(), "must-not-be-created")
 	root := newRoot(state)
 	cases := [][]string{nil, {"--help"}, {"completion", "zsh"}}
-	for _, c := range root.Commands {
-		cases = append(cases, []string{c.Name, "--help"})
+	var visit func(*xli.Command, []string)
+	visit = func(parent *xli.Command, path []string) {
+		for _, c := range parent.Commands {
+			next := append(append([]string{}, path...), c.Name)
+			cases = append(cases, append(append([]string{}, next...), "--help"))
+			visit(c, next)
+		}
 	}
+	visit(root, nil)
 	for _, args := range cases {
 		t.Run(strings.Join(args, " "), func(t *testing.T) {
 			got := xlitest.Run(t, newRoot(state), args...)
@@ -120,7 +126,14 @@ type projectStub struct {
 }
 type accountStub struct {
 	resource.UnimplementedAccountServiceServer
+	requests chan any
 }
+
+func (s accountStub) Add(_ context.Context, r *resource.AccountAddRequest) (*resource.Account, error) {
+	s.requests <- r
+	return resource.Account_builder{Alias: r.GetAlias(), Name: r.GetName(), Agent: r.GetAgent(), AuthBackend: r.GetAuthBackend()}.Build(), nil
+}
+
 type bindingStub struct {
 	resource.UnimplementedAuthBindingServiceServer
 }
@@ -175,7 +188,7 @@ func TestCommandsReachAPI(t *testing.T) {
 	server := grpc.NewServer()
 	stub := &rpcStub{requests: make(chan any, 10)}
 	resource.RegisterSessionServiceServer(server, stub)
-	resource.RegisterAccountServiceServer(server, accountStub{})
+	resource.RegisterAccountServiceServer(server, accountStub{requests: stub.requests})
 	resource.RegisterAuthBindingServiceServer(server, bindingStub{})
 	mutations := &atomic.Int32{}
 	resource.RegisterProjectServiceServer(server, projectStub{requests: stub.requests, mutations: mutations})
@@ -203,6 +216,11 @@ func TestCommandsReachAPI(t *testing.T) {
 			t.Fatalf("not JSON: %q", got.Stdout)
 		}
 		return got
+	}
+	run("account", "add", "--name", "Work Codex", "codex", "work-codex")
+	a := (<-stub.requests).(*resource.AccountAddRequest)
+	if a.GetAlias() != "work-codex" || a.GetAgent() != "codex" || a.GetName() != "Work Codex" || a.GetAuthBackend() != "" {
+		t.Fatal(a)
 	}
 	got := run("new", "--account", "work-codex", "--agent", "codex", "--model", "test-model", "--no-attach", "project-name")
 	req := (<-stub.requests).(*api.ProjectRequest)
@@ -240,6 +258,10 @@ func TestCommandsReachAPI(t *testing.T) {
 }
 
 func TestAgentCompletionWithoutConnection(t *testing.T) {
+	account := xlitest.Complete(t, newRoot("/nonexistent-cxz-test"), "account add ")
+	if account.Err != nil || !account.Has("claude") || !account.Has("codex") {
+		t.Fatalf("account agent completion: %+v", account)
+	}
 	got := xlitest.Complete(t, newRoot("/nonexistent-cxz-test"), "new --agent ")
 	if got.Err != nil || !got.Has("claude") || !got.Has("codex") {
 		t.Fatalf("%+v", got)

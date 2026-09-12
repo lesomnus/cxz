@@ -35,8 +35,8 @@ token을 직접 반환하는 공통 API로 모든 공급 방식을 억지로 맞
 project scope이며, credential_ref는 `central/accounts/ALIAS`다.
 
 ```sh
-cxz account add --agent codex --name "Personal" personal-codex
-cxz account add --agent codex --name "Company" work-codex
+cxz account add --name "Personal" codex personal-codex
+cxz account add --name "Company" codex work-codex
 cxz account login personal-codex
 cxz account login work-codex       # 중앙에서 한 번 로그인
 cxz account status work-codex
@@ -45,7 +45,7 @@ cxz up .                         # 기존 세션의 Account 유지
 cxz account get work-codex
 cxz account backends              # 설치 없이 지원 매핑 확인
 cxz account bindings work-codex    # 비밀 없는 인증 연결 목록
-cxz account add --agent claude --auth-backend project-local-oauth work-claude
+cxz account add --auth-backend project-local-oauth claude work-claude
 ```
 
 - payday `AccountService.Add/Get/List/Watch`, 전역 unique alias, domain 9.

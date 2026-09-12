@@ -17,9 +17,9 @@ try {
  await cli('install','--workspace-root',root,'--image',image);const first=await inspect();const identity=load();
  await cli('install','--image',image);assert.equal((await inspect()).Id,first.Id);await cli('doctor');pass('fresh installation and repeated install keep manager identity');
  await exec('docker',['stop',first.Id]);await cli('install','--image',image);assert.equal((await inspect()).Id,first.Id);pass('install resumes stopped owned manager');
- try{await cli('update','--image','invalid.invalid/cxz:missing');assert.fail('invalid image accepted');}catch(e){assert(!String(e).includes('invalid image accepted'));}
+ try{await cli('update','invalid.invalid/cxz:missing');assert.fail('invalid image accepted');}catch(e){assert(!String(e).includes('invalid image accepted'));}
  assert.equal((await inspect()).Id,first.Id);assert.equal(load().image,image);pass('unavailable update preserves running manager and locator');
- await cli('update','--image',previous);const updated=await inspect();assert.notEqual(updated.Id,first.Id);assert.equal(load().previous_image,image);
+ await cli('update',previous);const updated=await inspect();assert.notEqual(updated.Id,first.Id);assert.equal(load().previous_image,image);
  await cli('rollback');const rolled=await inspect();assert.notEqual(rolled.Id,updated.Id);assert.equal(load().image,image);assert.equal(load().owner,identity.owner);assert.equal(load().state_volume,identity.state_volume);await cli('doctor');pass('update and rollback retain installation identity and volumes');
 } finally {
  if(existsSync(join(state,'installation.json'))){await inspect();await cli('uninstall');console.log(JSON.stringify({manager_removed:true,named_volumes_retained:true,client_state:state}));}

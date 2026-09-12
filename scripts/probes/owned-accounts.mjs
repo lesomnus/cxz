@@ -42,9 +42,9 @@ async function contextCheck(s,alias){
 try{
  const catalog=await json('account','backends');assert.equal(catalog.length,2);
  for(const agent of catalog){assert.equal(agent.default_backend,agent.kind==='codex'?'brokered-access-token':'project-local-oauth');const local=agent.backends.find(b=>b.id==='project-local-oauth');assert.equal(local.scope,'project');assert.equal(local.refresh_owner,'agent');}
- await assert.rejects(()=>cli('account','add','--agent','claude','--auth-backend','brokered-access-token','unsupported'));
- for(const alias of ['personal','work']){await cli('account','add','--agent','claude',alias);}
- await cli('account','add','--agent','claude','missing');
+ await assert.rejects(()=>cli('account','add','--auth-backend','brokered-access-token','claude','unsupported'));
+ for(const alias of ['personal','work']){await cli('account','add','claude',alias);}
+ await cli('account','add','claude','missing');
  project=await json('project','add','--name','Account Test Project','--alias',`account-${run}`,work);
  await assert.rejects(()=>cli('new','--account','missing','--no-attach',project.alias));
  await cli('account','login','--project',project.alias,'personal');

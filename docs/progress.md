@@ -1,5 +1,20 @@
 # 구현 진행 상황
 
+## 2026-09-12 — 전체 CLI 입력 계약 점검
+
+- `account add AGENT ACCOUNT`, `update IMAGE`, 내부 `_new-local ACCOUNT WORKSPACE`
+  형식으로 필수값을 positional에 드러냈다. agent에는 기본값 없이 enum/completion을 제공한다.
+- `project set` 변경값 누락, 계정/프로젝트 alias, 모델/이름, 빈 문자열, config 키,
+  reply JSON을 설정 IO·연결 전에 검사한다. 비대화형 new의 Account 누락도 즉시 거부한다.
+- 재접속/대화형 선택에 필요한 선택 옵션은 유지하고 도움말에 조건·실제 기본값을 명시했다.
+  중앙 인증에 적용되지 않는 `--project`는 계정 조회 후 명시적으로 거부한다.
+- 사용되지 않는 루트 agent/claude-config 옵션과 항상 실패하던 login 진입점을 제거했다.
+  Account가 agent를 결정하므로 `config set agent`는 거부하고 기존 설정의 unset은 허용한다.
+- 모든 하위 명령 도움말, agent completion, Account Add RPC 전달, 잘못된 입력의
+  state 미생성·무연결 회귀 테스트를 추가했다. 예제와 Docker probe의 CLI 호출도 갱신했다.
+- 전체 Go 테스트·vet, CLI/integration race, diff 검사 통과. 이번 변경에서 Docker probe나
+  실제 OAuth/유료 모델 호출은 실행하지 않았다. [전체 명령 점검표](cli.md).
+
 ## 2026-09-12 — 세션 조건 fail-fast
 
 - `up`이 컨테이너를 준비한 뒤 빈 AccountRef로 새 세션 binding을 만들던 경로를 수정했다.

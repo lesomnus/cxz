@@ -64,7 +64,7 @@ type accountListing struct {
 
 func (m *model) accountNotice() string {
 	if len(m.accounts) == 0 {
-		return "No registered accounts. Run cxz account add --agent codex NAME, then cxz account login NAME."
+		return "No registered accounts. Run cxz account add codex NAME, then cxz account login NAME."
 	}
 	a := m.accounts[m.accountIndex]
 	return "Account: " + a.GetAlias() + " · " + a.GetAgent() + " · " + a.GetAuthBackend() + " (Tab changes; Enter creates)"
