@@ -24,11 +24,23 @@ func (s SessionServer) Add(ctx context.Context, r *resource.SessionAddRequest) (
 	if r.GetClientId() == "" {
 		return nil, status.Error(codes.InvalidArgument, "client_id required")
 	}
+	account := ""
+	if r.HasAccount() {
+		a, err := s.Next().Account().Get(ctx, resource.AccountGetRequest_builder{Ref: r.GetAccount(), Select: resource.AccountSelect_builder{All: ptr(true)}.Build()}.Build())
+		if err != nil {
+			return nil, err
+		}
+		if r.GetAgent() != "" && r.GetAgent() != a.GetAgent() {
+			return nil, status.Error(codes.InvalidArgument, "agent does not match account")
+		}
+		r.SetAgent(a.GetAgent())
+		account = a.GetAlias()
+	}
 	p, err := s.Next().Project().Get(ctx, resource.ProjectGetRequest_builder{Ref: r.GetProject(), Select: resource.ProjectSelect_builder{All: ptr(true)}.Build()}.Build())
 	if err != nil {
 		return nil, err
 	}
-	v, err := s.shared.runtime.Create(ctx, &api.CreateRequest{Workspace: p.GetWorkspace(), Title: r.GetName(), Agent: r.GetAgent(), Model: r.GetModel(), ClientId: r.GetClientId()})
+	v, err := s.shared.runtime.Create(ctx, &api.CreateRequest{Workspace: p.GetWorkspace(), Title: r.GetName(), Agent: r.GetAgent(), Model: r.GetModel(), ClientId: r.GetClientId(), Account: account})
 	if err != nil {
 		return nil, err
 	}

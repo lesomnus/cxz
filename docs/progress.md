@@ -1,5 +1,18 @@
 # 구현 진행 상황
 
+## 2026-09-12 — Account 인증 프로필 (구현·검증 중)
+
+- payday Account 리소스(domain 9), 고정 Session.account 연결, 계정 등록/조회,
+  manager 로그인·상태 확인, CLI --account와 TUI 계정 선택을 구현했다.
+- manager 비공개 vault에서 선택한 계정만 project volume으로 전달한다. 계정별
+  HOME/config를 사용하고 inherited vendor 인증 환경변수를 차단한다.
+- 누락된 인증·다른 vendor·다른 Account로의 live attach를 거부한다. 정지 세션의
+  resume은 계정을 유지하며, 재로그인은 다음 실행 시 반영한다.
+- 전체 Go 테스트 1차 통과. Account 리소스/인증 환경/토큰 갱신 보존/DB 복구 테스트를
+  추가했다. Docker 검증과 최종 race/codegen 검증 진행 중. 실계정 로그인은 수행하지 않는다.
+- 범위·제약: [Account 설계](accounts.md). 사용자 인증/roster와 프로젝트별 허용 계정
+  정책은 별도이며, 동일 OS 사용자 간의 적대적 코드 격리를 주장하지 않는다.
+
 ## 2026-09-12 — Project display name / alias
 
 - payday Project의 `name`을 표시 이름으로 사용하고 `alias = 4`에 전역 unique

@@ -85,7 +85,14 @@ func (s Layer) saveSession(ctx context.Context, v *api.Session, clientID string)
 		if clientID == "" {
 			clientID = "recovered:" + v.Id
 		}
-		return srv.Add(ctx, resource.SessionAddRequest_builder{Id: resourceID(8, v.Id), Name: v.Title, Project: projectRef(v.ProjectId), Agent: v.Agent, Model: v.Model, RuntimeId: v.Id, ClientId: clientID, DateCreated: timestamppb.New(time.UnixMilli(v.CreatedAt)), Status: state, Listed: ptr(true)}.Build())
+		var account *resource.AccountRef
+		if v.Account != "" {
+			if err := s.ensureAccount(ctx, v.Account, v.Agent); err != nil {
+				return nil, err
+			}
+			account = accountRef(v.Account)
+		}
+		return srv.Add(ctx, resource.SessionAddRequest_builder{Id: resourceID(8, v.Id), Name: v.Title, Project: projectRef(v.ProjectId), Agent: v.Agent, Model: v.Model, Account: account, RuntimeId: v.Id, ClientId: clientID, DateCreated: timestamppb.New(time.UnixMilli(v.CreatedAt)), Status: state, Listed: ptr(true)}.Build())
 	}
 	if err != nil {
 		return nil, err

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/resourceclient"
 	"os"
 	"path/filepath"
 	"strings"
@@ -60,6 +61,9 @@ func projectView(p *Project) *api.Project {
 // CreateSession operates only on a prepared project. Provisioning is Project.Up,
 // not an implicit part of Session.Add, so its checkpoint/retry count is stable.
 func (m *Manager) CreateSession(ctx context.Context, r *api.CreateRequest) (*api.Session, error) {
+	if r.Account == "" {
+		return nil, fmt.Errorf("account required; use --account")
+	}
 	p, err := m.resolve(ctx, r.Workspace)
 	if err != nil {
 		return nil, err
@@ -76,7 +80,26 @@ func (m *Manager) CreateSession(ctx context.Context, r *api.CreateRequest) (*api
 		return nil, err
 	}
 	defer conn.Close()
-	v, err := client.Create(ctx, &api.CreateRequest{Workspace: p.RemoteWorkspace, Title: r.Title, Agent: r.Agent, Model: r.Model, ClientId: r.ClientId})
+	// Never replace credentials underneath a live agent, even on a create retry.
+	live, err := client.List(ctx, &api.Empty{})
+	if err != nil {
+		return nil, err
+	}
+	active := false
+	for _, v := range live.Sessions {
+		if v.State == "starting" || v.State == "idle" || v.State == "working" || v.State == "waiting_input" {
+			active = true
+		}
+	}
+	if !active {
+		if err = m.prepareAccount(ctx, p, r.Account, r.Agent); err != nil {
+			return nil, err
+		}
+	}
+	if err = resourceclient.New(conn).EnsureAccount(ctx, r.Account, r.Agent); err != nil {
+		return nil, err
+	}
+	v, err := client.Create(ctx, &api.CreateRequest{Workspace: p.RemoteWorkspace, Title: r.Title, Agent: r.Agent, Model: r.Model, ClientId: r.ClientId, Account: r.Account})
 	if err != nil {
 		return nil, err
 	}

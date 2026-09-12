@@ -9,6 +9,7 @@ import (
 	"time"
 	"uuid"
 
+	"github.com/lesomnus/cxz/internal/ent/account"
 	"github.com/lesomnus/cxz/internal/ent/project"
 	"github.com/lesomnus/cxz/internal/ent/session"
 	"github.com/lesomnus/cxz/resource"
@@ -120,6 +121,12 @@ func (_c *SessionCreate) SetProjectId(v uuid.UUID) *SessionCreate {
 	return _c
 }
 
+// SetAccountId sets the "account_id" field.
+func (_c *SessionCreate) SetAccountId(v uuid.UUID) *SessionCreate {
+	_c.mutation.SetAccountId(v)
+	return _c
+}
+
 // SetId sets the "id" field.
 func (_c *SessionCreate) SetId(v uuid.UUID) *SessionCreate {
 	_c.mutation.SetId(v)
@@ -129,6 +136,11 @@ func (_c *SessionCreate) SetId(v uuid.UUID) *SessionCreate {
 // SetProject sets the "project" edge to the Project entity.
 func (_c *SessionCreate) SetProject(v *Project) *SessionCreate {
 	return _c.SetProjectId(v.Id)
+}
+
+// SetAccount sets the "account" edge to the Account entity.
+func (_c *SessionCreate) SetAccount(v *Account) *SessionCreate {
+	return _c.SetAccountId(v.Id)
 }
 
 // Mutation returns the SessionMutation object of the builder.
@@ -189,8 +201,14 @@ func (_c *SessionCreate) check() error {
 	if _, ok := _c.mutation.ProjectId(); !ok {
 		return &ValidationError{Name: "project_id", err: errors.New(`ent: missing required field "Session.project_id"`)}
 	}
+	if _, ok := _c.mutation.AccountId(); !ok {
+		return &ValidationError{Name: "account_id", err: errors.New(`ent: missing required field "Session.account_id"`)}
+	}
 	if len(_c.mutation.ProjectIds()) == 0 {
 		return &ValidationError{Name: "project", err: errors.New(`ent: missing required edge "Session.project"`)}
+	}
+	if len(_c.mutation.AccountIds()) == 0 {
+		return &ValidationError{Name: "account", err: errors.New(`ent: missing required edge "Session.account"`)}
 	}
 	return nil
 }
@@ -300,6 +318,23 @@ func (_c *SessionCreate) createSpec() (*Session, *sqlgraph.CreateSpec, error) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.ProjectId = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.AccountIds(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   session.AccountTable,
+			Columns: []string{session.AccountColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IdSpec: sqlgraph.NewFieldSpec(account.FieldId, field.TypeUuid),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.AccountId = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec, nil

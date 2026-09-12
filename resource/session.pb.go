@@ -40,6 +40,7 @@ type Session struct {
 	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
 	xxx_hidden_Status      *SessionStatus         `protobuf:"bytes,16,opt,name=status"`
 	xxx_hidden_Listed      bool                   `protobuf:"varint,17,opt,name=listed"`
+	xxx_hidden_Account     *Account               `protobuf:"bytes,18,opt,name=account"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -160,6 +161,13 @@ func (x *Session) GetListed() bool {
 	return false
 }
 
+func (x *Session) GetAccount() *Account {
+	if x != nil {
+		return x.xxx_hidden_Account
+	}
+	return nil
+}
+
 func (x *Session) SetId(v []byte) {
 	if v == nil {
 		v = []byte{}
@@ -215,6 +223,10 @@ func (x *Session) SetListed(v bool) {
 	x.xxx_hidden_Listed = v
 }
 
+func (x *Session) SetAccount(v *Account) {
+	x.xxx_hidden_Account = v
+}
+
 func (x *Session) HasProject() bool {
 	if x == nil {
 		return false
@@ -250,6 +262,13 @@ func (x *Session) HasStatus() bool {
 	return x.xxx_hidden_Status != nil
 }
 
+func (x *Session) HasAccount() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Account != nil
+}
+
 func (x *Session) ClearProject() {
 	x.xxx_hidden_Project = nil
 }
@@ -270,6 +289,10 @@ func (x *Session) ClearStatus() {
 	x.xxx_hidden_Status = nil
 }
 
+func (x *Session) ClearAccount() {
+	x.xxx_hidden_Account = nil
+}
+
 type Session_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -286,6 +309,7 @@ type Session_builder struct {
 	DateCreated *timestamppb.Timestamp
 	Status      *SessionStatus
 	Listed      bool
+	Account     *Account
 }
 
 func (b0 Session_builder) Build() *Session {
@@ -305,6 +329,7 @@ func (b0 Session_builder) Build() *Session {
 	x.xxx_hidden_DateCreated = b.DateCreated
 	x.xxx_hidden_Status = b.Status
 	x.xxx_hidden_Listed = b.Listed
+	x.xxx_hidden_Account = b.Account
 	return m0
 }
 
@@ -571,7 +596,7 @@ var File_cxz_session_proto protoreflect.FileDescriptor
 
 const file_cxz_session_proto_rawDesc = "" +
 	"\n" +
-	"\x11cxz/session.proto\x12\x03cxz\x1a\x11cxz/project.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xa6\x05\n" +
+	"\x11cxz/session.proto\x12\x03cxz\x1a\x11cxz/project.proto\x1a\x11cxz/account.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xd6\x05\n" +
 	"\aSession\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12\x12\n" +
 	"\x04name\x18\x05 \x01(\tR\x04name\x12\x12\n" +
@@ -588,7 +613,8 @@ const file_cxz_session_proto_rawDesc = "" +
 	"dateErased\x12H\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated\x12*\n" +
 	"\x06status\x18\x10 \x01(\v2\x12.cxz.SessionStatusR\x06status\x12#\n" +
-	"\x06listed\x18\x11 \x01(\bB\v\xea\x82\x16\a\x82\x01\x04trueR\x06listed:q\xca\xfc\x15&\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
+	"\x06listed\x18\x11 \x01(\bB\v\xea\x82\x16\a\x82\x01\x04trueR\x06listed\x12.\n" +
+	"\aaccount\x18\x12 \x01(\v2\f.cxz.AccountB\x06\xf2\x82\x16\x02@\x01R\aaccount:q\xca\xfc\x15&\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
 	"\fdate_created\x10\x0f\x1a\x06\n" +
 	"\x02id\x10\x01\x8a\xbb\x16C\b\b2;\n" +
 	"\x10\n" +
@@ -623,6 +649,7 @@ var file_cxz_session_proto_goTypes = []any{
 	(*SessionEvent)(nil),          // 2: cxz.SessionEvent
 	(*Project)(nil),               // 3: cxz.Project
 	(*timestamppb.Timestamp)(nil), // 4: google.protobuf.Timestamp
+	(*Account)(nil),               // 5: cxz.Account
 }
 var file_cxz_session_proto_depIdxs = []int32{
 	3, // 0: cxz.Session.project:type_name -> cxz.Project
@@ -630,12 +657,13 @@ var file_cxz_session_proto_depIdxs = []int32{
 	4, // 2: cxz.Session.date_erased:type_name -> google.protobuf.Timestamp
 	4, // 3: cxz.Session.date_created:type_name -> google.protobuf.Timestamp
 	1, // 4: cxz.Session.status:type_name -> cxz.SessionStatus
-	2, // 5: cxz.SessionStatus.pending:type_name -> cxz.SessionEvent
-	6, // [6:6] is the sub-list for method output_type
-	6, // [6:6] is the sub-list for method input_type
-	6, // [6:6] is the sub-list for extension type_name
-	6, // [6:6] is the sub-list for extension extendee
-	0, // [0:6] is the sub-list for field type_name
+	5, // 5: cxz.Session.account:type_name -> cxz.Account
+	2, // 6: cxz.SessionStatus.pending:type_name -> cxz.SessionEvent
+	7, // [7:7] is the sub-list for method output_type
+	7, // [7:7] is the sub-list for method input_type
+	7, // [7:7] is the sub-list for extension type_name
+	7, // [7:7] is the sub-list for extension extendee
+	0, // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_cxz_session_proto_init() }
@@ -644,6 +672,7 @@ func file_cxz_session_proto_init() {
 		return
 	}
 	file_cxz_project_proto_init()
+	file_cxz_account_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

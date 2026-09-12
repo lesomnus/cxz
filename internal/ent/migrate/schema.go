@@ -9,6 +9,33 @@ import (
 )
 
 var (
+	// AccountColumns holds the columns for the "account" table.
+	AccountColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "alias", Type: field.TypeString},
+		{Name: "name", Type: field.TypeString},
+		{Name: "desc", Type: field.TypeString},
+		{Name: "agent", Type: field.TypeString},
+		{Name: "date_updated", Type: field.TypeTime},
+		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+	}
+	// AccountTable holds the schema information for the "account" table.
+	AccountTable = &schema.Table{
+		Name:       "account",
+		Columns:    AccountColumns,
+		PrimaryKey: []*schema.Column{AccountColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "account_alias",
+				Unique:  true,
+				Columns: []*schema.Column{AccountColumns[1]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "date_erased IS NULL",
+				},
+			},
+		},
+	}
 	// AuditColumns holds the columns for the "audit" table.
 	AuditColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUuid, Unique: true},
@@ -189,6 +216,7 @@ var (
 		{Name: "status", Type: field.TypeJson, Nullable: true},
 		{Name: "listed", Type: field.TypeBool, Nullable: true},
 		{Name: "project_id", Type: field.TypeUuid},
+		{Name: "account_id", Type: field.TypeUuid},
 	}
 	// SessionTable holds the schema information for the "session" table.
 	SessionTable = &schema.Table{
@@ -200,6 +228,12 @@ var (
 				Symbol:     "session_project_project",
 				Columns:    []*schema.Column{SessionColumns[12]},
 				RefColumns: []*schema.Column{ProjectColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "session_account_account",
+				Columns:    []*schema.Column{SessionColumns[13]},
+				RefColumns: []*schema.Column{AccountColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 		},
@@ -245,6 +279,7 @@ var (
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		AccountTable,
 		AuditTable,
 		HolderTable,
 		OutboxTable,
@@ -255,6 +290,9 @@ var (
 )
 
 func init() {
+	AccountTable.Annotation = &entsql.Annotation{
+		Table: "account",
+	}
 	AuditTable.Annotation = &entsql.Annotation{
 		Table: "audit",
 	}
@@ -269,6 +307,7 @@ func init() {
 		Table: "project",
 	}
 	SessionTable.ForeignKeys[0].RefTable = ProjectTable
+	SessionTable.ForeignKeys[1].RefTable = AccountTable
 	SessionTable.Annotation = &entsql.Annotation{
 		Table: "session",
 	}

@@ -46,6 +46,16 @@ func (c *Client) Projects(ctx context.Context, _ *api.Empty, opts ...grpc.CallOp
 // Add resolves the manager's workspace path, runtime ID or unambiguous name.
 // Session selection is a client workflow; Project.Up never creates a session.
 func (c *Client) Open(ctx context.Context, r *api.ProjectRequest, opts ...grpc.CallOption) (*api.Session, error) {
+	if r.Account != "" {
+		a, err := c.Account(ctx, r.Account)
+		if err != nil {
+			return nil, err
+		}
+		if r.Agent != "" && r.Agent != a.GetAgent() {
+			return nil, fmt.Errorf("agent does not match account %s", r.Account)
+		}
+		r.Agent = a.GetAgent()
+	}
 	p, err := c.openProject(ctx, r, opts...)
 	if err != nil {
 		return nil, err
@@ -85,8 +95,8 @@ func (c *Client) Open(ctx context.Context, r *api.ProjectRequest, opts ...grpc.C
 		}
 		live := s.State == "idle" || s.State == "working" || s.State == "waiting_input" || s.State == "starting"
 		if live {
-			if r.NewSession || s.Agent != kind {
-				if r.NewSession && s.Agent == kind && s.CreateId == r.ClientId {
+			if r.NewSession || s.Agent != kind || (r.Account != "" && s.Account != r.Account) {
+				if r.NewSession && s.Agent == kind && s.Account == r.Account && s.CreateId == r.ClientId {
 					chosen = s
 					break
 				}
@@ -95,15 +105,15 @@ func (c *Client) Open(ctx context.Context, r *api.ProjectRequest, opts ...grpc.C
 			chosen = s
 			break
 		}
-		if !r.NewSession && chosen == nil && s.Agent == kind {
+		if !r.NewSession && chosen == nil && s.Agent == kind && (r.Account == "" || s.Account == r.Account) {
 			chosen = s
 		}
 	}
 	if chosen == nil {
-		s, err := c.sessions.Add(ctx, resource.SessionAddRequest_builder{Project: ref, Agent: kind, Model: r.Model, ClientId: r.ClientId}.Build(), opts...)
+		s, err := c.sessions.Add(ctx, resource.SessionAddRequest_builder{Project: ref, Agent: kind, Model: r.Model, ClientId: r.ClientId, Account: ar(r.Account)}.Build(), opts...)
 		if err != nil {
 			if !r.NewSession {
-				if attached := c.concurrentOpen(ctx, p.GetRuntimeId(), kind, r.Model, opts...); attached != nil {
+				if attached := c.concurrentOpen(ctx, p.GetRuntimeId(), kind, r.Model, r.Account, opts...); attached != nil {
 					return attached, nil
 				}
 			}
@@ -117,7 +127,7 @@ func (c *Client) Open(ctx context.Context, r *api.ProjectRequest, opts ...grpc.C
 	if chosen.State == "interrupted" || chosen.State == "stopped" || chosen.State == "failed" {
 		resumed, err := c.Resume(ctx, &api.Control{SessionId: chosen.Id, RunId: chosen.RunId, ClientId: r.ClientId}, opts...)
 		if err != nil && !r.NewSession {
-			if attached := c.concurrentOpen(ctx, p.GetRuntimeId(), kind, r.Model, opts...); attached != nil && attached.Id == chosen.Id {
+			if attached := c.concurrentOpen(ctx, p.GetRuntimeId(), kind, r.Model, chosen.Account, opts...); attached != nil && attached.Id == chosen.Id {
 				return attached, nil
 			}
 		}
@@ -128,13 +138,13 @@ func (c *Client) Open(ctx context.Context, r *api.ProjectRequest, opts ...grpc.C
 
 // Another up may finish between List and Add/Resume. Re-read, never resend an
 // effect or relax explicit `new` conflicts. Only an already live match attaches.
-func (c *Client) concurrentOpen(ctx context.Context, project, agent, model string, opts ...grpc.CallOption) *api.Session {
+func (c *Client) concurrentOpen(ctx context.Context, project, agent, model, account string, opts ...grpc.CallOption) *api.Session {
 	list, err := c.List(ctx, &api.Empty{}, opts...)
 	if err != nil {
 		return nil
 	}
 	for _, s := range list.Sessions {
-		if s.ProjectId == project && s.Agent == agent && (model == "" || s.Model == model) && (s.State == "idle" || s.State == "working" || s.State == "waiting_input" || s.State == "starting") {
+		if s.ProjectId == project && s.Agent == agent && s.Account == account && (model == "" || s.Model == model) && (s.State == "idle" || s.State == "working" || s.State == "waiting_input" || s.State == "starting") {
 			return s
 		}
 	}

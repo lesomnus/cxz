@@ -7,6 +7,7 @@ import (
 	errors "errors"
 	fmt "fmt"
 	ent "github.com/lesomnus/cxz/internal/ent"
+	account "github.com/lesomnus/cxz/internal/ent/account"
 	audit "github.com/lesomnus/cxz/internal/ent/audit"
 	holder "github.com/lesomnus/cxz/internal/ent/holder"
 	outbox "github.com/lesomnus/cxz/internal/ent/outbox"
@@ -313,6 +314,7 @@ func record(ctx context.Context, rec Recorder, db *ent.Client, c Change) error {
 // Embed [Unscoped] to write out only the entities there is something to
 // say about.
 type Scope interface {
+	AccountScope(ctx context.Context) (predicate.Account, error)
 	AuditScope(ctx context.Context) (predicate.Audit, error)
 	TenantScope(ctx context.Context) (predicate.Tenant, error)
 	HolderScope(ctx context.Context) (predicate.Holder, error)
@@ -333,6 +335,9 @@ type Unscoped struct{}
 
 var _ Scope = Unscoped{}
 
+func (Unscoped) AccountScope(_ context.Context) (predicate.Account, error) {
+	return nil, nil
+}
 func (Unscoped) AuditScope(_ context.Context) (predicate.Audit, error) {
 	return nil, nil
 }
@@ -370,6 +375,26 @@ func (Unscoped) SessionScope(_ context.Context) (predicate.Session, error) {
 type Scopes []Scope
 
 var _ Scope = Scopes{}
+
+func (ss Scopes) AccountScope(ctx context.Context) (predicate.Account, error) {
+	ps := make([]predicate.Account, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.AccountScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return account.And(ps...), nil
+}
 
 func (ss Scopes) AuditScope(ctx context.Context) (predicate.Audit, error) {
 	ps := make([]predicate.Audit, 0, len(ss))
@@ -571,7 +596,7 @@ func (s Store) now() time.Time {
 // is rendered for that dialect, not just what this server writes.
 //
 // That set is also what a soft erasure needs, so this is the whole
-// check. Holder, Project and Session free the names they held when a row
+// check. Account, Holder, Project and Session free the names they held when a row
 // is erased, which is a unique index covering only the rows that are
 // still there -- a partial index, and the dialects above are the ones
 // that have one. MySQL does not, and ent writes the annotation out for
@@ -609,6 +634,7 @@ func (s Server) WithDriver(drv dialect.Driver) (resource.Server, error) {
 	return s, nil
 }
 
+func (s Server) Account() resource.AccountServiceServer { return AccountServiceServer{Store: s.Store} }
 func (s Server) Audit() resource.AuditServiceServer     { return AuditServiceServer{Store: s.Store} }
 func (s Server) Tenant() resource.TenantServiceServer   { return TenantServiceServer{Store: s.Store} }
 func (s Server) Holder() resource.HolderServiceServer   { return HolderServiceServer{Store: s.Store} }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/resourceclient"
 	"github.com/lesomnus/cxz/internal/server"
@@ -89,12 +90,18 @@ func TestLifecycle(t *testing.T) {
 	}
 	defer killDaemon()
 	start()
-	create := &api.CreateRequest{Workspace: work, ClientId: "create-1", Model: "fixture-model"}
+	if e = client.EnsureAccount(ctx, "test-claude", "claude"); e != nil {
+		t.Fatal(e)
+	}
+	if e = accounts.Install(state, "test-claude", "claude", []byte(`{"claudeAiOauth":{"accessToken":"synthetic-test-only"}}`)); e != nil {
+		t.Fatal(e)
+	}
+	create := &api.CreateRequest{Workspace: work, ClientId: "create-1", Model: "fixture-model", Account: "test-claude"}
 	s, e := client.Create(ctx, create)
 	if e != nil {
 		t.Fatal(e)
 	}
-	if s.Model != "fixture-model" {
+	if s.Model != "fixture-model" || s.Account != "test-claude" {
 		t.Fatal("model missing from session")
 	}
 	listed, e := client.List(ctx, &api.Empty{})
@@ -117,7 +124,7 @@ func TestLifecycle(t *testing.T) {
 	if e != nil || same.Id != id {
 		t.Fatalf("create idempotency: %v", e)
 	}
-	if _, e = client.Create(ctx, &api.CreateRequest{Workspace: work, ClientId: "second"}); e == nil {
+	if _, e = client.Create(ctx, &api.CreateRequest{Workspace: work, ClientId: "second", Account: "test-claude"}); e == nil {
 		t.Fatal("duplicate active workspace allowed")
 	}
 	get := func() *api.Session {
@@ -254,7 +261,7 @@ func TestLifecycle(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	if s.RunId == old.RunId || s.VendorId != old.VendorId || len(s.Pending) != 0 || s.Model != "fixture-model" {
+	if s.RunId == old.RunId || s.VendorId != old.VendorId || len(s.Pending) != 0 || s.Model != "fixture-model" || s.Account != "test-claude" {
 		t.Fatalf("bad resumed snapshot: %v", s)
 	}
 	if _, e = client.Reply(ctx, &api.Answer{SessionId: id, RunId: old.RunId, ClientId: core.ID(), RequestId: old.Pending[0].RequestId, Allow: true}); e == nil {
@@ -300,7 +307,7 @@ func TestLifecycle(t *testing.T) {
 	}
 	start()
 	restored := get()
-	if restored.LastSeq != stopped.LastSeq || restored.VendorId == "" || !strings.Contains(restored.Workspace, "work") {
+	if restored.LastSeq != stopped.LastSeq || restored.VendorId == "" || !strings.Contains(restored.Workspace, "work") || restored.Account != "test-claude" {
 		t.Fatal("bad database reconstruction")
 	}
 	if duplicate, e := client.Create(ctx, create); e != nil || duplicate.Id != id {

@@ -15,7 +15,9 @@ arm64 runtime acceptance remain unverified. See its release notes before use.
 ```sh
 CGO_ENABLED=0 go build -o bin/cxz ./cmd/cxz
 bin/cxz install --workspace-root /absolute/directory/containing/your/projects
-bin/cxz new --agent codex .       # or claude; prepares the project and opens TUI
+bin/cxz account add --agent codex personal-codex
+bin/cxz account login personal-codex   # interactive vendor login
+bin/cxz new --account personal-codex . # prepares project and opens TUI
 ```
 
 `install` builds and starts a background Docker manager, waits for its API, and
@@ -29,20 +31,25 @@ a base Debian devcontainer with non-root `vscode` user. Multiple configurations
 prompt in a terminal; scripts pass `--config`. Image, Dockerfile, Compose,
 features and hooks delegate to the official devcontainer CLI.
 
-First login is a user action, in another terminal:
+Register separate profiles for personal/company subscriptions:
 
 ```sh
-bin/cxz projects
-bin/cxz login --agent codex PROJECT    # device login
-bin/cxz login --agent claude PROJECT
+bin/cxz account add --agent codex --name "Company Codex" work-codex
+bin/cxz account login work-codex
+bin/cxz account list
+bin/cxz new --account work-codex .
 ```
 
-Credentials/transcripts stay on the project's state volume. Host refresh-token
-stores are never copied. Only the selected vendor is downloaded. Stop the active
-session before `new --agent OTHER_VENDOR`. Interactive `new` offers agent choice;
-scripts default to Claude. Agent selection is saved per session.
+Account is an agent authentication profile, not a cxz user/tenant. The manager's
+private state volume holds login credentials; only the selected profile is copied
+to an account-specific directory on the project's state volume. Host credentials
+are never imported implicitly. Account and agent are fixed for each session;
+resume/recreate preserves them. Missing login fails instead of falling back to
+environment credentials. Interactive `new` and TUI Ctrl+N offer account selection;
+scripts must pass `--account` when creating a session. Stop an active session before
+starting another. See [Account design and boundaries](docs/accounts.md).
 
-Client preferences can change that default: `cxz config set agent codex`.
+The account determines the agent; a conflicting explicit `--agent` is rejected.
 Use `cxz config set codex-model MODEL_ID` or `new --model MODEL_ID .` for a new
 session's model; reconnect/resume preserves it. `cxz doctor`, `cxz logs PROJECT`
 and `cxz version` provide diagnostics. See [operations and releases](docs/operations.md)
@@ -56,7 +63,7 @@ other than the default image's 1000 when necessary.
 ```sh
 bin/cxz up .                       # attach existing session; recover if necessary
 bin/cxz up --no-attach .            # prepare, return JSON
-bin/cxz new --agent claude .        # new conversation; stop an active one first
+bin/cxz new --account work-codex .  # new conversation; stop an active one first
 bin/cxz attach PROJECT             # also: it SESSION_ID
 bin/cxz tui                        # also: watch
 bin/cxz exec PROJECT -- go test ./...

@@ -32,6 +32,8 @@ type Mutation struct {
 	clearedFields  map[string]struct{}
 	project        *uuid.UUID
 	clearedproject bool
+	account        *uuid.UUID
+	clearedaccount bool
 	predicates     []predicate.Session
 }
 
@@ -329,6 +331,25 @@ func (m *Mutation) ResetProjectId() {
 	m.project = nil
 }
 
+// SetAccountId sets the "account_id" field.
+func (m *Mutation) SetAccountId(u uuid.UUID) {
+	m.account = &u
+}
+
+// AccountId returns the value of the "account_id" field in the mutation.
+func (m *Mutation) AccountId() (r uuid.UUID, exists bool) {
+	v := m.account
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetAccountId resets all changes to the "account_id" field.
+func (m *Mutation) ResetAccountId() {
+	m.account = nil
+}
+
 // ClearProject clears the "project" edge to the Project entity.
 func (m *Mutation) ClearProject() {
 	m.clearedproject = true
@@ -354,6 +375,33 @@ func (m *Mutation) ProjectIds() (ids []uuid.UUID) {
 func (m *Mutation) ResetProject() {
 	m.project = nil
 	m.clearedproject = false
+}
+
+// ClearAccount clears the "account" edge to the Account entity.
+func (m *Mutation) ClearAccount() {
+	m.clearedaccount = true
+	m.clearedFields[FieldAccountId] = struct{}{}
+}
+
+// AccountCleared reports if the "account" edge to the Account entity was cleared.
+func (m *Mutation) AccountCleared() bool {
+	return m.clearedaccount
+}
+
+// AccountIds returns the "account" edge Ids in the mutation.
+// Note that Ids always returns len(Ids) <= 1 for unique edges, and you should use
+// AccountId instead. It exists only for internal usage by the builders.
+func (m *Mutation) AccountIds() (ids []uuid.UUID) {
+	if id := m.account; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetAccount resets all changes to the "account" edge.
+func (m *Mutation) ResetAccount() {
+	m.account = nil
+	m.clearedaccount = false
 }
 
 // Where appends a list predicates to the Mutation builder.
@@ -390,7 +438,7 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 12)
+	fields := make([]string, 0, 13)
 	if m.name != nil {
 		fields = append(fields, FieldName)
 	}
@@ -427,6 +475,9 @@ func (m *Mutation) Fields() []string {
 	if m.project != nil {
 		fields = append(fields, FieldProjectId)
 	}
+	if m.account != nil {
+		fields = append(fields, FieldAccountId)
+	}
 	return fields
 }
 
@@ -459,6 +510,8 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.Listed()
 	case FieldProjectId:
 		return m.ProjectId()
+	case FieldAccountId:
+		return m.AccountId()
 	}
 	return nil, false
 }
@@ -558,6 +611,13 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetProjectId(v)
+		return nil
+	case FieldAccountId:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAccountId(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Session field %s", name)
@@ -671,15 +731,21 @@ func (m *Mutation) ResetField(name string) error {
 	case FieldProjectId:
 		m.ResetProjectId()
 		return nil
+	case FieldAccountId:
+		m.ResetAccountId()
+		return nil
 	}
 	return fmt.Errorf("unknown Session field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *Mutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.project != nil {
 		edges = append(edges, EdgeProject)
+	}
+	if m.account != nil {
+		edges = append(edges, EdgeAccount)
 	}
 	return edges
 }
@@ -692,13 +758,17 @@ func (m *Mutation) AddedIds(name string) []ent.Value {
 		if id := m.project; id != nil {
 			return []ent.Value{*id}
 		}
+	case EdgeAccount:
+		if id := m.account; id != nil {
+			return []ent.Value{*id}
+		}
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *Mutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	return edges
 }
 
@@ -710,9 +780,12 @@ func (m *Mutation) RemovedIds(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *Mutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.clearedproject {
 		edges = append(edges, EdgeProject)
+	}
+	if m.clearedaccount {
+		edges = append(edges, EdgeAccount)
 	}
 	return edges
 }
@@ -723,6 +796,8 @@ func (m *Mutation) EdgeCleared(name string) bool {
 	switch name {
 	case EdgeProject:
 		return m.clearedproject
+	case EdgeAccount:
+		return m.clearedaccount
 	}
 	return false
 }
@@ -734,6 +809,9 @@ func (m *Mutation) ClearEdge(name string) error {
 	case EdgeProject:
 		m.ClearProject()
 		return nil
+	case EdgeAccount:
+		m.ClearAccount()
+		return nil
 	}
 	return fmt.Errorf("unknown Session unique edge %s", name)
 }
@@ -744,6 +822,9 @@ func (m *Mutation) ResetEdge(name string) error {
 	switch name {
 	case EdgeProject:
 		m.ResetProject()
+		return nil
+	case EdgeAccount:
+		m.ResetAccount()
 		return nil
 	}
 	return fmt.Errorf("unknown Session edge %s", name)

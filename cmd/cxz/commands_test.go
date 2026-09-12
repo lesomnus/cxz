@@ -116,6 +116,13 @@ type projectStub struct {
 	resource.UnimplementedProjectServiceServer
 	requests chan any
 }
+type accountStub struct {
+	resource.UnimplementedAccountServiceServer
+}
+
+func (accountStub) Get(_ context.Context, r *resource.AccountGetRequest) (*resource.Account, error) {
+	return resource.Account_builder{Alias: r.GetRef().GetAlias(), Agent: "codex"}.Build(), nil
+}
 
 func testProject() *resource.Project {
 	return resource.Project_builder{RuntimeId: "project-name", Workspace: "project-name", Name: "project-name", Alias: "pn"}.Build()
@@ -153,6 +160,7 @@ func TestCommandsReachAPI(t *testing.T) {
 	server := grpc.NewServer()
 	stub := &rpcStub{requests: make(chan any, 10)}
 	resource.RegisterSessionServiceServer(server, stub)
+	resource.RegisterAccountServiceServer(server, accountStub{})
 	resource.RegisterProjectServiceServer(server, projectStub{requests: stub.requests})
 	go server.Serve(listener)
 	defer server.Stop()
@@ -170,7 +178,7 @@ func TestCommandsReachAPI(t *testing.T) {
 		}
 		return got
 	}
-	got := run("new", "--agent", "codex", "--model", "test-model", "--no-attach", "project-name")
+	got := run("new", "--account", "work-codex", "--agent", "codex", "--model", "test-model", "--no-attach", "project-name")
 	req := (<-stub.requests).(*api.ProjectRequest)
 	if req.Agent != "codex" || !req.NewSession || req.Workspace != "project-name" || req.ClientId == "" {
 		t.Fatal(req)

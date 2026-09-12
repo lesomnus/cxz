@@ -38,8 +38,12 @@ const (
 	FieldListed = "listed"
 	// FieldProjectId holds the string denoting the project_id field in the database.
 	FieldProjectId = "project_id"
+	// FieldAccountId holds the string denoting the account_id field in the database.
+	FieldAccountId = "account_id"
 	// EdgeProject holds the string denoting the project edge name in mutations.
 	EdgeProject = "project"
+	// EdgeAccount holds the string denoting the account edge name in mutations.
+	EdgeAccount = "account"
 	// Table holds the table name of the session in the database.
 	Table = "session"
 	// ProjectTable is the table that holds the project relation/edge.
@@ -49,6 +53,13 @@ const (
 	ProjectInverseTable = "project"
 	// ProjectColumn is the table column denoting the project relation/edge.
 	ProjectColumn = "project_id"
+	// AccountTable is the table that holds the account relation/edge.
+	AccountTable = "session"
+	// AccountInverseTable is the table name for the Account entity.
+	// It exists in this package in order to avoid circular dependency with the "account" package.
+	AccountInverseTable = "account"
+	// AccountColumn is the table column denoting the account relation/edge.
+	AccountColumn = "account_id"
 )
 
 // Columns holds all SQL columns for session fields.
@@ -66,6 +77,7 @@ var Columns = []string{
 	FieldStatus,
 	FieldListed,
 	FieldProjectId,
+	FieldAccountId,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -148,10 +160,22 @@ func ByProjectId(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldProjectId, opts...).ToFunc()
 }
 
+// ByAccountId orders the results by the account_id field.
+func ByAccountId(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAccountId, opts...).ToFunc()
+}
+
 // ByProjectField orders the results by project field.
 func ByProjectField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newProjectStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// ByAccountField orders the results by account field.
+func ByAccountField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newAccountStep(), sql.OrderByField(field, opts...))
 	}
 }
 func newProjectStep() *sqlgraph.Step {
@@ -159,5 +183,12 @@ func newProjectStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldId),
 		sqlgraph.To(ProjectInverseTable, FieldId),
 		sqlgraph.Edge(sqlgraph.M2O, false, ProjectTable, ProjectColumn),
+	)
+}
+func newAccountStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldId),
+		sqlgraph.To(AccountInverseTable, FieldId),
+		sqlgraph.Edge(sqlgraph.M2O, false, AccountTable, AccountColumn),
 	)
 }

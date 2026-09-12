@@ -12,10 +12,11 @@ import (
 type Client struct {
 	projects resource.ProjectServiceClient
 	sessions resource.SessionServiceClient
+	Accounts resource.AccountServiceClient
 }
 
 func New(conn grpc.ClientConnInterface) *Client {
-	return &Client{resource.NewProjectServiceClient(conn), resource.NewSessionServiceClient(conn)}
+	return &Client{resource.NewProjectServiceClient(conn), resource.NewSessionServiceClient(conn), resource.NewAccountServiceClient(conn)}
 }
 
 var _ api.SessionsClient = (*Client)(nil)
@@ -36,6 +37,16 @@ func (c *Client) view(ctx context.Context, s *resource.Session, opts ...grpc.Cal
 	v := &api.Session{Id: s.GetRuntimeId(), Title: s.GetName(), Agent: s.GetAgent(), Model: s.GetModel(), CreateId: s.GetClientId(), ProjectId: p.GetRuntimeId(), Workspace: p.GetWorkspace(), State: st.GetState(), RunId: st.GetRunId(), VendorId: st.GetVendorId(), LastSeq: st.GetLastSeq()}
 	v.ProjectName = p.GetName()
 	v.ProjectAlias = p.GetAlias()
+	if a := s.GetAccount(); a != nil {
+		if a.GetAlias() == "" {
+			var err error
+			a, err = c.Accounts.Get(ctx, resource.AccountGetRequest_builder{Ref: resource.AccountRef_builder{Id: a.GetId()}.Build(), Select: resource.AccountSelect_builder{All: ptr(true)}.Build()}.Build(), opts...)
+			if err != nil {
+				return nil, err
+			}
+		}
+		v.Account = a.GetAlias()
+	}
 	if s.GetDateCreated() != nil {
 		v.CreatedAt = s.GetDateCreated().AsTime().UnixMilli()
 	}
@@ -54,7 +65,7 @@ func (c *Client) Create(ctx context.Context, r *api.CreateRequest, opts ...grpc.
 			return nil, err
 		}
 	}
-	s, err := c.sessions.Add(ctx, resource.SessionAddRequest_builder{Project: pr(p.GetRuntimeId()), Name: r.Title, ClientId: r.ClientId, Agent: r.Agent, Model: r.Model}.Build(), opts...)
+	s, err := c.sessions.Add(ctx, resource.SessionAddRequest_builder{Project: pr(p.GetRuntimeId()), Name: r.Title, ClientId: r.ClientId, Agent: r.Agent, Model: r.Model, Account: ar(r.Account)}.Build(), opts...)
 	if err != nil {
 		return nil, err
 	}

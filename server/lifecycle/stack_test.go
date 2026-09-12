@@ -68,6 +68,7 @@ func TestResourceStack(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	f.s.Account = "test-codex"
 	p, err := stack.Project().Add(ctx, resource.ProjectAddRequest_builder{Workspace: f.p.Workspace}.Build())
 	if err != nil {
 		t.Fatal(err)
