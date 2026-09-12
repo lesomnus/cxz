@@ -44,7 +44,7 @@ var (
 
 func newComposer() textarea.Model {
 	input := textarea.New()
-	input.Placeholder = "Ask a question or describe a task… (/help)"
+	input.Placeholder = "Ask a question… (Ctrl+S to send · /help)"
 	input.Prompt = "› "
 	input.SetPromptFunc(2, func(line int) string {
 		if line == 0 {
@@ -188,10 +188,10 @@ func (m *model) sessionScreen() string {
 	if box != "" {
 		box += "\n"
 	}
-	quota := m.quotaStatus(time.Now(), max(1, width-12))
-	leftWidth := max(8, width-ansi.StringWidth(quota)-2)
+	quota := m.quotaStatus(time.Now(), max(1, width-13))
+	leftWidth := max(8, width-ansi.StringWidth(quota)-3)
 	info = clip(info, leftWidth)
-	info += strings.Repeat(" ", max(1, width-ansi.StringWidth(info)-ansi.StringWidth(quota))) + quota
+	info += strings.Repeat(" ", max(1, width-1-ansi.StringWidth(info)-ansi.StringWidth(quota))) + quota + " "
 	body := m.commandOverlay(m.conversationView()) + "\n\n" + clip("  "+status, width) + "\n" + box +
 		frame(m.input.View(), width, !m.focusList && !m.focusApproval) + "\n" + clip(info, width)
 	return screen(body, m.width, m.height)
@@ -201,7 +201,7 @@ func helpView(width int) string {
 	return indentBlock(lavender.Bold(true).Render("cxz /help") + "\n" +
 		muted.Render(ansi.Hardwrap(
 			"Enter / Alt+Enter / Ctrl+J  Newline\n"+
-				"Ctrl+Enter / Ctrl+S  Send (Ctrl+Enter needs terminal support)\n"+
+				"Ctrl+S         Send (Ctrl+Enter also works with compatible terminal encoding)\n"+
 				"Ctrl+X         Clear draft\n"+
 				"Tab / Shift+Tab  Next / previous: approvals → input → sessions\n"+
 				"Approvals      ↑/↓ select; PgUp/PgDn scroll; Enter allow, Backspace deny\n"+

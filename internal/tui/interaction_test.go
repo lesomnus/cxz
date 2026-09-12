@@ -225,8 +225,40 @@ func TestQuotaFooterAndStaleness(t *testing.T) {
 	for _, width := range []int{40, 80, 140} {
 		m.Update(tea.WindowSizeMsg{Width: width, Height: 24})
 		rows := strings.Split(m.View(), "\n")
-		if ansi.StringWidth(rows[len(rows)-1]) != width {
+		if ansi.StringWidth(rows[len(rows)-1]) != width || !strings.HasSuffix(ansi.Strip(rows[len(rows)-1]), " ") || strings.HasSuffix(ansi.Strip(rows[len(rows)-1]), "  ") {
 			t.Fatal("footer not right aligned")
 		}
+	}
+}
+
+func TestQuotaAvailabilityDiagnostics(t *testing.T) {
+	for _, tc := range []struct {
+		state  string
+		events []*api.Event
+		hint   string
+	}{
+		{"waiting", nil, "Existing supervisors keep their old code"},
+		{"unsupported", []*api.Event{{Kind: "usage_status", Text: "unsupported", RunId: "run"}}, "Update the provider CLI"},
+		{"unavailable", []*api.Event{{Kind: "usage", Text: "get_usage", Payload: []byte(`{"rate_limits_available":false,"rate_limits":null}`)}}, "no quota windows"},
+		{"error", []*api.Event{{Kind: "usage_status", Text: "error", RunId: "run"}}, "will retry"},
+		{"waiting", []*api.Event{{Kind: "usage_status", Text: "unsupported", RunId: "old"}}, "Existing supervisors keep their old code"},
+	} {
+		m := conversationModel()
+		m.events["s"] = tc.events
+		m.updateQuota()
+		if m.quotaState != tc.state || !strings.Contains(ansi.Strip(m.quotaStatus(time.Now(), 40)), tc.state) {
+			t.Fatal("wrong quota state", m.quotaState)
+		}
+		if report := quotaHistoryReport("claude", "run", tc.events); !strings.Contains(report, tc.hint) {
+			t.Fatal(report)
+		}
+	}
+	events := []*api.Event{
+		{Kind: "usage_status", Text: "error"},
+		{Kind: "usage", Text: "get_usage", Payload: []byte(`{"rate_limits":{"five_hour":{"utilization":30}}}`)},
+	}
+	windows, state := quotaSnapshot("claude", "run", events)
+	if state != "available" || len(windows) != 1 || *windows[0].Remaining != 70 {
+		t.Fatal("quota did not recover")
 	}
 }

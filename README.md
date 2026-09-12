@@ -170,7 +170,7 @@ resource database and survives server/container restarts; back up state volumes.
 | Ctrl+Q (session) | Return to project view without stopping the agent |
 | Tab / Shift+Tab (session) | Forward / reverse: pending approvals → input → bottom session selector |
 | Enter / Backspace (approval focus) | Allow / deny selected request; questions require `/answer` |
-| Ctrl+Enter / Ctrl+S | Send message (Ctrl+Enter requires terminal support) |
+| Ctrl+S | Send message (Ctrl+Enter also works with compatible terminal encoding) |
 | Enter / Alt+Enter / Ctrl+J | Insert newline (multiline paste stays in the editor) |
 | Ctrl+X (session) | Clear the current draft |
 | F2 / F3 | Allow / deny pending approval |
@@ -227,7 +227,9 @@ are counted once per run, not repeatedly per turn. This is not account quota or 
 The status bar starts with one reserved selection cell and a seven-cell session
 alias, followed by agent/model, ◉ account and title (no state badges). The right
 side shows provider-reported **remaining** account quota, eight-cell bars, window
-labels and reset countdowns. Missing quota is `quota —`, old snapshots carry `~`,
+labels and reset countdowns, with one cell of right padding. Missing quota shows
+`quota waiting`, `unsupported`, `unavailable` or `error`; `/usage` explains the
+reason. Old snapshots carry `~`,
 and expired windows show `refresh` rather than assuming they reset to 100%.
 Telemetry uses the already authenticated provider process: Codex rate-limit RPCs
 and Claude's experimental `get_usage`/rate-limit events. It refreshes at startup,
@@ -293,6 +295,11 @@ the input widget's Unicode-aware cursor cell, including wrapped/scrolled drafts.
 This fixes the bottom-row cursor anchor used by IME preedit/candidate windows;
 actual composition behavior still depends on the terminal and OS IME. OAuth's
 temporary terminal ownership is left untouched.
+
+Assistant headers start with `• CLAUDE` / `• CODEX` in the indicator gutter;
+answer text stays indented by two cells. Prefer Ctrl+S to send: cxz does not
+negotiate extended keyboard mode, so many terminals send the same CR for Enter
+and Ctrl+Enter even if they support an opt-in keyboard extension.
 
 `cxz up` prints elapsed time and observed server provisioning checkpoints to stderr:
 configuration, resources, devcontainer image/build/hooks, selected agent installation,

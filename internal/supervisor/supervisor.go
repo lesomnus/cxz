@@ -359,6 +359,9 @@ func (s *Supervisor) consume(raw []byte) {
 				s.event("usage", "get_usage", "", v.Response.Response, nil)
 			} else if text := strings.ToLower(v.Response.Error); strings.Contains(text, "unsupported") || strings.Contains(text, "unknown control") {
 				s.quotaDisabled = true
+				s.event("usage_status", "unsupported", "", nil, nil)
+			} else {
+				s.event("usage_status", "error", "", nil, nil)
 			}
 			return
 		}

@@ -41,6 +41,9 @@ func (c *codexProtocol) consume(raw []byte) {
 		}
 		if json.Unmarshal(v.Error, &failure) == nil && failure.Code == -32601 {
 			s.quotaDisabled = true
+			s.event("usage_status", "unsupported", "", nil, nil)
+		} else if len(v.Error) > 0 && string(v.Error) != "null" {
+			s.event("usage_status", "error", "", nil, nil)
 		}
 		return
 	}

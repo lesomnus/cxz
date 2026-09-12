@@ -45,6 +45,7 @@ type model struct {
 	usageReports         map[string]string
 	usageGeneration      map[string]uint64
 	quotaWindows         []agentview.Window
+	quotaState           string
 	view                 viewport.Model
 	focusList, creating  bool
 	notice               string
