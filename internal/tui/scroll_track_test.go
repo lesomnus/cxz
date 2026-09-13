@@ -136,9 +136,11 @@ func TestModalDimsComposerWithoutLosingFocus(t *testing.T) {
 	}
 	top := m.height - m.input.Height() - 3
 	active := strings.Split(m.sessionScreen(), "\n")[top]
-	for _, kind := range []string{"report", "picker"} {
+	for _, kind := range []string{"report", "picker", "restart"} {
 		if kind == "report" {
 			m.openReport("/usage", "report")
+		} else if kind == "restart" {
+			m.restartCommand("/restart")
 		} else {
 			m.modelPicker = &modelPicker{kind: "/model"}
 		}

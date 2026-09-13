@@ -535,6 +535,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.render()
 		return m, tea.Batch(m.refresh(), m.autoApprove())
 	case tea.MouseMsg:
+		if m.restartConfirm != nil {
+			return m, m.restartMouse(v)
+		}
 		if m.report != nil {
 			if v.Button == tea.MouseButtonWheelUp {
 				m.report.offset = max(0, m.report.offset-3)
@@ -748,6 +751,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, m.refresh()
 	case tea.KeyMsg:
+		if m.restartConfirm != nil {
+			return m, m.restartKey(v)
+		}
 		if m.report != nil {
 			return m, m.reportKey(v)
 		}

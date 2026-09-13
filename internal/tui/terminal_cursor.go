@@ -115,7 +115,7 @@ func (m *model) anchorCursor() {
 			copy.accountName.Cursor.Style = cursorProbeStyle
 			copy.accountSearch.Cursor.Style = cursorProbeStyle
 			x, y, ok = widgetCursor(copy.accountScreen())
-		case !m.projectView && !m.focusList && !m.focusApproval && m.report == nil && m.modelPicker == nil:
+		case !m.projectView && !m.focusList && !m.focusApproval && m.report == nil && m.modelPicker == nil && m.restartConfirm == nil:
 			copy := m.input
 			copy.Cursor.Blink = false
 			copy.Cursor.Style = cursorProbeStyle
