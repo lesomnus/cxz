@@ -46,6 +46,8 @@ type model struct {
 	usageGeneration      map[string]uint64
 	quotaWindows         []agentview.Window
 	quotaState           string
+	modelPicker          *modelPicker
+	modelPickerEpoch     uint64
 	view                 viewport.Model
 	focusList, creating  bool
 	notice               string
@@ -445,6 +447,8 @@ func (m *model) action(kind, text string) tea.Cmd {
 }
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch v := msg.(type) {
+	case modelCatalogLoaded:
+		return m, m.acceptModelCatalog(v)
 	case historyPage:
 		m.applyHistoryPage(v)
 		if v.err == nil && m.view.TotalLineCount() <= m.view.Height {
@@ -483,6 +487,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.render()
 		return m, tea.Batch(m.refresh(), m.autoApprove())
 	case tea.MouseMsg:
+		if m.modelPicker != nil {
+			return m, nil
+		}
 		if m.focusApproval && v.Y >= m.view.Height && v.Y < m.height-m.input.Height()-3 {
 			switch v.Button {
 			case tea.MouseButtonWheelUp:
@@ -669,6 +676,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, m.refresh()
 	case tea.KeyMsg:
+		if m.modelPicker != nil {
+			return m, m.modelPickerKey(v)
+		}
 		if m.accountView {
 			return m, m.accountKey(v)
 		}

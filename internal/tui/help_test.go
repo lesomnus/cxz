@@ -19,9 +19,16 @@ func TestHelpTopicsAndKeycaps(t *testing.T) {
 	if ansi.Strip(a) != " Ctrl  +  S " || ansi.Strip(b) != ansi.Strip(a) || a == b {
 		t.Fatalf("key padding or alternating background missing: %q / %q", a, b)
 	}
+	if !strings.Contains(a, "48;2;8;8;8") || !strings.Contains(b, "48;2;24;24;24") {
+		t.Fatal("chord separator has no distinct truecolor background")
+	}
+	lipgloss.SetColorProfile(termenv.ANSI256)
+	if helpKeycaps("Ctrl+S", 0) != helpKeycaps("Ctrl+S", 1) {
+		t.Fatal("256-color backgrounds should both be black")
+	}
 	lipgloss.SetColorProfile(termenv.ANSI)
-	if helpKeycaps("Ctrl+S", 0) == helpKeycaps("Ctrl+S", 1) {
-		t.Fatal("16-color keycaps collapsed to the same background")
+	if helpKeycaps("Ctrl+S", 0) != helpKeycaps("Ctrl+S", 1) {
+		t.Fatal("low-color keycaps must share black background")
 	}
 	lipgloss.SetColorProfile(termenv.TrueColor)
 	for _, width := range []int{20, 80, 120} {
