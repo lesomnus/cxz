@@ -70,7 +70,7 @@ func eventView(s *api.Session, e *api.Event, width int) (out string) {
 		}
 		if activity, ok := agentview.ToolView(s.Agent, e.Text, e.Payload); ok {
 			// This branch is already indented by eventView's deferred wrapper.
-			return toolActivityBody(activity, nil, width+2)
+			return toolActivityStateBody(activity, nil, width+2, toolInitialState(s.Agent, e))
 		}
 		return lavender.Render(wrap("tool › " + e.Text + " · /details"))
 	case "tool_result":
@@ -94,9 +94,9 @@ func approvalLine(s *api.Session, e *api.Event, state string, width int) string 
 	case "allowed":
 		icon, style = "[✓]", accent
 	case "denied":
-		icon, style = "[×]", peach
+		icon, style = "[×]", failure
 	case "canceled":
-		icon, style = "[×]", muted
+		icon, style = "[×]", failure
 	}
 	title := agentview.ApprovalView(s.Agent, e.Text, nil).Title
 	if question(e) {
