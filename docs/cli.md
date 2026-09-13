@@ -1,5 +1,34 @@
 # CLI 입력 계약
 
+## 컨테이너 GitHub CLI와 호스트 인증
+
+프로젝트 준비 시 GitHub CLI 2.100.0 공식 Linux amd64/arm64 아카이브를 checksum 검증 후
+공유 tools volume에 캐시한다. 프로젝트에 `gh`가 없으면 `/usr/local/bin/gh` wrapper를 설치하며
+이미지에 있는 `gh`는 덮어쓰지 않는다. 인증은 바이너리 cache나 이미지에 포함하지 않는다.
+
+`cxz install`, `cxz up`, 프로젝트 준비/새 세션 작업에서 호스트 인증 snapshot을 manager에
+동기화한다. `GH_CONFIG_DIR`, `XDG_CONFIG_HOME`, 기본 `~/.config/gh` 순서로 설정을 찾고
+각 호스트의 활성 토큰을 `gh auth token --hostname HOST`로 읽는다. 키체인 인증도 이 경로를
+사용하며, 호스트 gh가 없으면 hosts.yml의 평문 토큰을 사용할 수 있다. GH_TOKEN 계열 환경변수는
+gh와 같은 우선순위로 적용한다. 토큰 값과 인증 명령 stderr는 출력하지 않는다.
+
+snapshot은 Docker stdin으로 manager의 `/var/lib/cxz/host-gh/hosts.yml`에 전달한다.
+프로젝트에는 `/cxz/state/data/gh/hosts.yml`로 복사하고 `GH_CONFIG_DIR`로 연결한다.
+디렉터리 0700, 파일 0600이며 프로젝트 사본은 remote user 소유다. 호스트 경로 bind mount나
+Docker 환경변수/명령 인수에 토큰을 넣지 않는다. Claude/Codex의 분리된 HOME에서도 같은
+프로젝트 GitHub 인증을 사용하며 provider account별 GitHub 계정을 선택하는 기능은 아니다.
+프로젝트 안에서 실행되는 도구는 이 인증을 사용할 수 있으므로 신뢰하는 workspace에서 사용한다.
+
+기존 환경의 최초 적용: CLI와 manager를 업데이트(`cxz install --recreate`)하고 필요한 프로젝트를
+`cxz project recreate WORKSPACE`로 재생성한다. 기존 사용자 gh, GH_CONFIG_DIR 환경변수와 관련된
+차이까지 적용하려면 재생성이 필요하다. 이후 호스트 로그인 변경/로그아웃 후 `cxz up WORKSPACE`는
+해당 실행 중 프로젝트의 credential snapshot을 다시 복사하며, 로그아웃한 인증은 빈 snapshot으로
+제거한다. 다른 프로젝트는 각각 up/재준비할 때 갱신된다. 상시 토큰 갱신 broker는 아니다.
+`gh auth setup-git`, SSH 키 전달, 사용자 gitconfig 전체 복사는 자동 수행하지 않는다.
+
+참고: [gh 환경변수](https://cli.github.com/manual/gh_help_environment),
+[gh auth token](https://cli.github.com/manual/gh_auth_token).
+
 ## 뷰 폭과 프로젝트 패널
 
 뷰의 본문 최대 폭은 133칸이며 초과 영역은 오른쪽에 비워 둔다. 터미널 가로가
