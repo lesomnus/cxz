@@ -1,5 +1,21 @@
 # 구현 진행 상황
 
+## 2026-09-13 — 세션 하단 컨테이너 PTY 패널
+
+- Ctrl+백틱/`/terminal`: 열기 → 포커스 → 접기. 최대 24줄 + 외부 헤더, 작은 창 높이 조절.
+  세션별 셸을 접기/뷰 전환 중 유지한다. 클릭 가능한 대화 복귀·접기 버튼은 내부 mouse mode와 분리.
+- VT emulator + local Docker exec PTY. 프로젝트 소유권/실행 상태 확인 후 remote user/workspace로
+  실행한다. 입력은 agent 명령/approval 경로와 별도이며 private agent HOME/대화 저널에 섞지 않는다.
+- 셸 키·paste·mouse 전달, resize, 실제 커서 anchor, composer focus 스타일 분리, UTF-8/alternate
+  screen 경계. 출력 알림 20fps 병합. Kitty Ctrl+백틱 변환과 `/terminal` fallback 및 help 추가.
+- 로컬 PTY와 실제 Docker fixture에서 셸 입출력, workspace, resize, Ctrl+C, exit와 소유권 거부 확인.
+  포커스/헤더 hit test/작은 화면/키 변환 회귀 테스트와 변경 패키지 race 검사 통과.
+  Docker 테스트는 새로 만든 소유 label의 컨테이너만 사용하고 제거했다. 사용자 컨테이너는 변경하지 않았다.
+- 전체 Go 테스트·vet 통과. Docker fixture를 3회 반복하여 비루트 사용자 및 비동기 remote resize도
+  확인했다. 접기/재열기 후 셸 변수 보존과 alternate-screen escape의 패널 경계를 회귀 테스트했다.
+- 현재 셸은 TUI 연결 수명이며 detach 복구나 manager terminal RPC relay는 범위 밖이다.
+  로컬 Docker가 같은 engine에 접근해야 한다. 기능 적용에는 새 CLI가 필요하다.
+
 ## 2026-09-13 — 기본 활성화된 provider CLI 자동 rollout
 
 - manager에서 24시간마다 공식 stable Claude/Codex/gh 버전을 확인하고 30초마다 순차 큐를 처리한다.

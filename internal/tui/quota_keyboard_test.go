@@ -12,6 +12,18 @@ import (
 	"github.com/muesli/termenv"
 )
 
+func TestTerminalToggleKittyAndPaste(t *testing.T) {
+	r := keyboardReader{}
+	out, pending := r.translate([]byte("\x1b[96;5u"), true)
+	if string(out) != "\x1b[34~" || len(pending) != 0 {
+		t.Fatalf("toggle lost: %q", out)
+	}
+	out, _ = r.translate([]byte("\x1b[200~\x1b[96;5u\x1b[201~"), true)
+	if strings.Contains(string(out), "\x1b[34~") {
+		t.Fatal("pasted shortcut was executed")
+	}
+}
+
 func TestQuotaBarThresholds(t *testing.T) {
 	old := lipgloss.ColorProfile()
 	lipgloss.SetColorProfile(termenv.TrueColor)

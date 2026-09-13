@@ -25,6 +25,7 @@ var slashCommands = []slashCommand{
 	{"/effort", "Provider reasoning strength"},
 	{"/background", "Inspect provider background tasks"},
 	{"/paste", "Preview pasted text or attach it as a file"},
+	{"/terminal", "Open container terminal; Ctrl+` folds it"},
 }
 
 func (m *model) commandHints() []slashCommand {

@@ -110,7 +110,10 @@ func (m *model) resize() {
 	m.input, _ = m.input.Update(nil)
 	m.view.Width = max(1, m.width)
 	// Blank separator + status (2), composer border (2), session information (1).
-	m.view.Height = max(1, m.height-m.input.Height()-5-m.approvalHeight())
+	m.view.Height = max(1, m.height-m.input.Height()-5-m.approvalHeight()-m.terminalHeight())
+	if p := m.terminal(); p != nil && p.session != nil && m.terminalHeight() > 0 {
+		p.session.Resize(m.width, m.terminalHeight()-1)
+	}
 	if follow {
 		m.view.GotoBottom()
 	}
@@ -206,12 +209,16 @@ func (m *model) sessionScreen() string {
 		track = m.scrollTrack()
 	}
 	composer := m.input
-	modal := m.panelFocus || m.report != nil || m.modelPicker != nil || m.restartConfirm != nil || m.questionDialog != nil || m.pasteDialog != nil
+	modal := m.terminalFocused() || m.panelFocus || m.report != nil || m.modelPicker != nil || m.restartConfirm != nil || m.questionDialog != nil || m.pasteDialog != nil
 	if modal {
 		composer.Blur()
 	}
 	body := m.pasteOverlay(m.questionOverlay(m.restartOverlay(m.reportView(m.modelPickerOverlay(m.commandOverlay(m.conversationView())))))) + "\n" + track + "\n" + clip("  "+status, width) + "\n" + box +
-		frame(m.decorateInputPastes(composer.View()), width, !modal && !m.focusList && !m.focusApproval) + "\n" + clip(info, width)
+		frame(m.decorateInputPastes(composer.View()), width, !modal && !m.focusList && !m.focusApproval) + "\n"
+	if m.terminalHeight() > 0 {
+		body += m.terminalView() + "\n"
+	}
+	body += clip(info, width)
 	return screen(body, m.width, m.height)
 }
 
