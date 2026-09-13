@@ -53,13 +53,13 @@ func TestLocalHelpAndBottomSessionBar(t *testing.T) {
 		t.Fatal("help must not call agent or advance replay cursor")
 	}
 	m.view.GotoTop()
-	if !strings.Contains(ansi.Strip(m.view.View()), "cxz /help") {
+	if !strings.Contains(ansi.Strip(m.View()), "cxz /help") {
 		t.Fatal("missing local help")
 	}
 	m.Update(received{id: "s", event: &api.Event{Seq: 1, Kind: "assistant", Text: "New reply"}})
 	// Scroll to inspect the full content; help remains before subsequent replies.
 	m.view.GotoTop()
-	content := m.view.View()
+	content := m.View()
 	if !strings.Contains(content, "cxz /help") {
 		t.Fatal("help lost on refresh")
 	}

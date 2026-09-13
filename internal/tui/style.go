@@ -192,7 +192,7 @@ func (m *model) sessionScreen() string {
 	leftWidth := max(8, width-ansi.StringWidth(quota)-3)
 	info = clip(info, leftWidth)
 	info += strings.Repeat(" ", max(1, width-1-ansi.StringWidth(info)-ansi.StringWidth(quota))) + quota + " "
-	body := m.modelPickerOverlay(m.commandOverlay(m.conversationView())) + "\n\n" + clip("  "+status, width) + "\n" + box +
+	body := m.reportView(m.modelPickerOverlay(m.commandOverlay(m.conversationView()))) + "\n\n" + clip("  "+status, width) + "\n" + box +
 		frame(m.input.View(), width, !m.focusList && !m.focusApproval) + "\n" + clip(info, width)
 	return screen(body, m.width, m.height)
 }

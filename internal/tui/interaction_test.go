@@ -114,8 +114,8 @@ func TestFuzzyHintsViewportAndMargin(t *testing.T) {
 	}
 	m.input.SetValue("/")
 	rows := strings.Split(m.commandOverlay(strings.Repeat("transcript\n", 11)+"transcript"), "\n")
-	if strings.TrimSpace(rows[4]) != "" {
-		t.Fatal("missing gap above seven hints", rows)
+	if !strings.Contains(rows[3], "╭") || !strings.Contains(rows[len(rows)-1], "╰") {
+		t.Fatal("missing overlay border", rows)
 	}
 	if strings.Count(strings.Join(rows, "\n"), "/") != 7 {
 		t.Fatal("more than seven hints visible", rows)
@@ -140,7 +140,7 @@ func TestScrollableApprovalAndResolvedRow(t *testing.T) {
 	m.resize()
 	m.render()
 	m.Update(tea.KeyMsg{Type: tea.KeyShiftTab})
-	if !strings.Contains(ansi.Strip(m.approvalBox()), "│  Pending") {
+	if !strings.Contains(ansi.Strip(m.approvalBox()), "\n  Pending") || strings.Contains(ansi.Strip(m.approvalBox()), "│") {
 		t.Fatal("missing gutter")
 	}
 	m.Update(tea.KeyMsg{Type: tea.KeyCtrlEnd})
@@ -188,7 +188,7 @@ func TestContextAndCompactCommands(t *testing.T) {
 			if c.inputs[0].Text != "/context" {
 				t.Fatal(c.inputs)
 			}
-		} else if cmd != nil || !strings.Contains(m.localReports["s"], "20.0%") {
+		} else if cmd != nil || m.report == nil || !strings.Contains(m.report.text, "20.0%") {
 			t.Fatal(m.localReports)
 		}
 		cmd = m.compactCommand("/compact")

@@ -119,6 +119,10 @@ func (m *model) permissionCommand(text string) tea.Cmd {
 	return m.autoApprove()
 }
 func (m *model) recordLocal(command, text string) {
+	if command == "/context" || command == "/usage" || command == "/help" || strings.HasPrefix(command, "/help ") {
+		m.openReport(command, text)
+		return
+	}
 	id := ""
 	if s := m.current(); s != nil {
 		id = s.Id
@@ -233,7 +237,11 @@ func (m *model) approvalBox() string {
 	for len(rows) < height-2 {
 		rows = append(rows, "")
 	}
-	return frame(strings.Join(rows[:min(len(rows), height-2)], "\n"), m.width, m.focusApproval)
+	line := muted.Render(strings.Repeat("─", max(1, m.width)))
+	if m.focusApproval {
+		line = accent.Render(strings.Repeat("─", max(1, m.width)))
+	}
+	return line + "\n" + strings.Join(rows[:min(len(rows), height-2)], "\n") + "\n" + line
 }
 
 func (m *model) approvalDetails() {

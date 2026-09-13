@@ -48,6 +48,9 @@ type model struct {
 	quotaState           string
 	modelPicker          *modelPicker
 	modelPickerEpoch     uint64
+	report               *reportOverlay
+	contextCapture       *contextCapture
+	hiddenEvents         map[*api.Event]bool
 	view                 viewport.Model
 	focusList, creating  bool
 	notice               string
@@ -308,6 +311,7 @@ func (m *model) render() {
 	replyIndex := -1
 	helpAfter, showHelp := m.localHelp[s.Id]
 	helped := false
+	contextTurns := map[string]bool{}
 	decisions := map[string]string{}
 	for _, e := range m.events[s.Id] {
 		if e.Kind == "approval_resolved" {
@@ -318,6 +322,19 @@ func (m *model) render() {
 		if showHelp && !helped && e.Seq > helpAfter {
 			add(m.localCommandView(s.Id), 0)
 			helped = true
+		}
+		if e.Kind == "input" {
+			contextTurns[e.RunId] = strings.TrimSpace(e.Text) == "/context"
+		}
+		contextOutput := contextTurns[e.RunId] && (e.Kind == "input" || e.Kind == "assistant" || e.Kind == "turn_end")
+		if e.Kind == "turn_end" {
+			delete(contextTurns, e.RunId)
+		}
+		if contextOutput {
+			continue
+		}
+		if m.hiddenEvents[e] {
+			continue
 		}
 		if e.RunId == "" || e.RunId == s.RunId {
 			switch e.Kind {
@@ -446,7 +463,23 @@ func (m *model) action(kind, text string) tea.Cmd {
 	}
 }
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if p := m.report; p != nil {
+		if s := m.current(); m.projectView || m.accountView || s != nil && (s.Id != p.id || s.RunId != p.run) {
+			m.report = nil
+		}
+	}
+	if c := m.contextCapture; c != nil {
+		if s := m.current(); s == nil || s.Id != c.id || s.RunId != c.run {
+			m.contextCapture = nil
+		}
+	}
 	switch v := msg.(type) {
+	case contextSent:
+		if c := m.contextCapture; c != nil && c.request == v.request && v.err != nil {
+			c.report.text = "Context unavailable: " + v.err.Error()
+			m.contextCapture = nil
+		}
+		return m, nil
 	case modelCatalogLoaded:
 		return m, m.acceptModelCatalog(v)
 	case historyPage:
@@ -487,6 +520,15 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.render()
 		return m, tea.Batch(m.refresh(), m.autoApprove())
 	case tea.MouseMsg:
+		if m.report != nil {
+			if v.Button == tea.MouseButtonWheelUp {
+				m.report.offset = max(0, m.report.offset-3)
+			}
+			if v.Button == tea.MouseButtonWheelDown {
+				m.report.offset += 3
+			}
+			return m, nil
+		}
 		if m.modelPicker != nil {
 			return m, nil
 		}
@@ -527,7 +569,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if v.err != nil {
 			m.usageReports[v.id] = "Usage unavailable: " + v.err.Error()
 		}
-		m.render()
+		if p := m.report; p != nil && p.id == v.id && p.title == "/usage" && p.generation == v.generation {
+			p.text = m.usageReports[v.id]
+		}
 		return m, nil
 	case accountListing:
 		if !m.creating && !m.accountView {
@@ -646,6 +690,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.autoApprove()
 	case received:
 		if v.event.Seq > m.cursor[v.id] {
+			m.captureContext(v.id, v.event)
 			if s := m.current(); s != nil && s.Id == v.id && (v.event.Kind == "turn_end" || v.event.Kind == "input") {
 				m.interruptUntil = time.Time{}
 				m.interruptKey = ""
@@ -657,6 +702,10 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 	case disconnected:
+		if c := m.contextCapture; c != nil && c.id == v.id {
+			c.report.text = "Disconnected while querying context. Reopen /context after reconnecting."
+			m.contextCapture = nil
+		}
 		delete(m.fullPermission, v.id)
 		if m.watchID == v.id {
 			m.watchID = ""
@@ -676,6 +725,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, m.refresh()
 	case tea.KeyMsg:
+		if m.report != nil {
+			return m, m.reportKey(v)
+		}
 		if m.modelPicker != nil {
 			return m, m.modelPickerKey(v)
 		}
@@ -858,22 +910,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.compactCommand(text)
 			}
 			if localName == "/help" {
-				id := ""
-				if s := m.current(); s != nil {
-					id = s.Id
-				}
-				if m.localHelp == nil {
-					m.localHelp = map[string]uint64{}
-				}
-				m.localHelp[id] = m.cursor[id]
-				if m.localOutput == nil {
-					m.localOutput = map[string]string{}
-				}
-				m.localOutput[id] = text
-				m.hintDismissed = false
-				m.resize()
-				m.render()
-				m.view.GotoBottom()
+				m.openReport(text, "")
 				return m, nil
 			}
 			if text == "/stop" {

@@ -71,7 +71,7 @@ func TestModelPickerSelectAndStaleRun(t *testing.T) {
 
 func TestLocalReportsHaveSeparator(t *testing.T) {
 	m := conversationModel()
-	for _, command := range []string{"/help", "/usage", "/permission"} {
+	for _, command := range []string{"/approval", "/details", "/permission"} {
 		m.recordLocal(command, "example")
 		text := ansi.Strip(m.localCommandView("s"))
 		if !strings.HasPrefix(text, "  ─") {

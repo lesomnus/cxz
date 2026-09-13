@@ -63,10 +63,10 @@ func TestHelpAnswerIsLocalAndKeepsTopic(t *testing.T) {
 	m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
 	m.input.SetValue("/help answer")
 	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyCtrlS})
-	if cmd != nil || len(c.inputs) != 0 || m.localOutput["s"] != "/help answer" {
+	if cmd != nil || len(c.inputs) != 0 || m.report == nil || m.report.title != "/help answer" {
 		t.Fatal("help topic lost or sent to agent")
 	}
-	if !strings.Contains(ansi.Strip(m.localCommandView("s")), `/answer {"question-id":"Use SQLite"}`) {
+	if !strings.Contains(ansi.Strip(m.reportView(strings.Repeat("\n", 35))), `/answer {"question-id":"Use SQLite"}`) {
 		t.Fatal("answer example not rendered")
 	}
 }
