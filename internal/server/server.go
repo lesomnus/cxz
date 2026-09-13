@@ -300,11 +300,15 @@ func (s *Server) snapshot(ctx context.Context, m core.Session) (*api.Session, er
 	}
 	return v, nil
 }
-func authCheckError(err error, backend string) error {
+func authCheckError(err error, backend string, creationKeys ...string) error {
 	st := status.New(codes.FailedPrecondition, err.Error())
 	var missing *accounts.LoginRequired
 	if backend == accounts.ProjectLocalOAuth && errors.As(err, &missing) {
-		withDetails, e := st.WithDetails(&errdetails.ErrorInfo{Domain: "cxz.auth", Reason: "PROJECT_LOGIN_REQUIRED", Metadata: map[string]string{"account": missing.Account}})
+		metadata := map[string]string{"account": missing.Account}
+		if len(creationKeys) > 0 {
+			metadata["session_key"] = creationKeys[0]
+		}
+		withDetails, e := st.WithDetails(&errdetails.ErrorInfo{Domain: "cxz.auth", Reason: "PROJECT_LOGIN_REQUIRED", Metadata: metadata})
 		if e == nil {
 			st = withDetails
 		}
@@ -318,9 +322,12 @@ func (s *Server) launch(ctx context.Context, m core.Session) (*api.Session, erro
 		if err != nil {
 			return nil, status.Error(codes.FailedPrecondition, err.Error())
 		}
-		if err := backend.Check(s.root, m.Account); err != nil {
-			return nil, authCheckError(err, m.AuthBackend)
+		if err := backend.Check(accounts.AuthRoot(s.root, m), m.Account); err != nil {
+			return nil, authCheckError(err, m.AuthBackend, m.CreateID)
 		}
+	}
+	if err := s.awaitSessionRelease(ctx, m); err != nil {
+		return nil, err
 	}
 	exe, e := os.Executable()
 	if e != nil {
@@ -357,6 +364,41 @@ func (s *Server) launch(ctx context.Context, m core.Session) (*api.Session, erro
 			if supervisor.Call(ctx, s.root, m.ID, "status", nil, &v) == nil && v.State != "starting" {
 				return s.snapshot(ctx, m)
 			}
+		}
+	}
+}
+
+// Stop can acknowledge before supervisor defers and its process-group guard
+// release their leases. Wait only for this session, never the whole workspace.
+// Run still acquires both leases itself; this is not a replacement for locking.
+func (s *Server) awaitSessionRelease(ctx context.Context, m core.Session) error {
+	profile := accounts.SessionRoot(s.root, m.CreateID)
+	if err := accounts.Prepare(profile, m.Account, m.Kind); err != nil {
+		return err
+	}
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	for {
+		ready := true
+		var held []*os.File
+		for _, path := range []string{filepath.Join(core.Dir(s.root, m.ID), "supervisor.lock"), filepath.Join(accounts.Dir(profile, m.Account), "login.lock")} {
+			f, err := core.Lock(path)
+			if err != nil {
+				ready = false
+				break
+			}
+			held = append(held, f)
+		}
+		for _, f := range held {
+			f.Close()
+		}
+		if ready {
+			return nil
+		}
+		select {
+		case <-ctx.Done():
+			return status.Error(codes.Unavailable, "session process/profile is still busy; retry after it finishes stopping or logging in")
+		case <-time.After(25 * time.Millisecond):
 		}
 	}
 }
@@ -405,18 +447,6 @@ func (s *Server) Create(ctx context.Context, r *api.CreateRequest) (*api.Session
 	if !errors.Is(e, sql.ErrNoRows) {
 		return nil, e
 	}
-	all, e := s.list(ctx)
-	if e != nil {
-		return nil, e
-	}
-	for _, m := range all {
-		if m.Workspace == path {
-			var live core.Snapshot
-			if supervisor.Call(ctx, s.root, m.ID, "status", nil, &live) == nil {
-				return nil, status.Error(codes.AlreadyExists, "workspace already has a live session: "+m.ID)
-			}
-		}
-	}
 	bin := s.agent
 	if r.Agent == "codex" && os.Getenv("CXZ_PROJECT_ID") == "" {
 		return nil, status.Error(codes.FailedPrecondition, "Codex requires an owned devcontainer: use cxz install and cxz project up --agent codex")
@@ -445,8 +475,8 @@ func (s *Server) Create(ctx context.Context, r *api.CreateRequest) (*api.Session
 		if err != nil {
 			return nil, status.Error(codes.FailedPrecondition, err.Error())
 		}
-		if err := backend.Check(s.root, r.Account); err != nil {
-			return nil, authCheckError(err, r.AuthBackend)
+		if err := backend.Check(accounts.AuthRoot(s.root, core.Session{CreateID: r.ClientId, AuthBackend: r.AuthBackend}), r.Account); err != nil {
+			return nil, authCheckError(err, r.AuthBackend, r.ClientId)
 		}
 	}
 	project, err := s.RegisterProject(ctx, path, "")
@@ -599,18 +629,6 @@ func (s *Server) Resume(ctx context.Context, r *api.Control) (*api.Session, erro
 	}
 	if r.RunId != v.RunId {
 		return nil, status.Error(codes.FailedPrecondition, "stale run_id")
-	}
-	all, e := s.list(ctx)
-	if e != nil {
-		return nil, e
-	}
-	for _, other := range all {
-		if other.ID != m.ID && other.Workspace == m.Workspace {
-			var live core.Snapshot
-			if supervisor.Call(ctx, s.root, other.ID, "status", nil, &live) == nil {
-				return nil, status.Error(codes.AlreadyExists, "workspace has another live session")
-			}
-		}
 	}
 	return s.launch(ctx, m)
 }

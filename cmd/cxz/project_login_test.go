@@ -7,10 +7,25 @@ import (
 	"testing"
 
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/accounts"
+	"github.com/lesomnus/xli/xlitest"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
+
+func TestSessionScopedInternalStatus(t *testing.T) {
+	root := t.TempDir()
+	if err := accounts.Install(accounts.SessionRoot(root, "creation"), "work", "claude", []byte(`{"claudeAiOauth":{"accessToken":"synthetic"}}`)); err != nil {
+		t.Fatal(err)
+	}
+	for _, key := range []string{"creation", "different"} {
+		got := xlitest.Run(t, newRoot(root), "_account-status", "--session-key", key, "work", "claude", accounts.ProjectLocalOAuth)
+		if (got.Err == nil) != (key == "creation") {
+			t.Fatalf("%s: %+v", key, got)
+		}
+	}
+}
 
 func projectLoginRequired(t *testing.T, alias string) error {
 	t.Helper()
@@ -49,9 +64,9 @@ func TestOpenWithProjectLogin(t *testing.T) {
 					t.Fatal("incorrect retry", retry)
 				}
 				return &api.Session{Id: "session"}, nil
-			}, func(_ context.Context, alias string) error {
+			}, func(_ context.Context, alias, key string) error {
 				logins++
-				if alias != "main" {
+				if alias != "main" || key != r.ClientId {
 					t.Fatal(alias)
 				}
 				return tc.loginErr
@@ -65,7 +80,7 @@ func TestOpenWithProjectLogin(t *testing.T) {
 			if tc.opens == 2 && err != nil {
 				t.Fatal(err)
 			}
-			if tc.name == "script" && (err == nil || !strings.Contains(err.Error(), `--project "/work/project" main`)) {
+			if tc.name == "script" && (err == nil || !strings.Contains(err.Error(), `--session <session>`)) {
 				t.Fatal(err)
 			}
 			if tc.loginErr != nil && !errors.Is(err, tc.loginErr) {
@@ -78,8 +93,31 @@ func TestOpenWithProjectLogin(t *testing.T) {
 func TestProjectLoginRetryIsBounded(t *testing.T) {
 	errLogin := projectLoginRequired(t, "main")
 	opens, logins := 0, 0
-	_, err := openWithProjectLogin(context.Background(), &api.ProjectRequest{Account: "main"}, true, func(context.Context, *api.ProjectRequest) (*api.Session, error) { opens++; return nil, errLogin }, func(context.Context, string) error { logins++; return nil })
+	_, err := openWithProjectLogin(context.Background(), &api.ProjectRequest{Account: "main"}, true, func(context.Context, *api.ProjectRequest) (*api.Session, error) { opens++; return nil, errLogin }, func(context.Context, string, string) error { logins++; return nil })
 	if err == nil || opens != 2 || logins != 1 {
 		t.Fatalf("%d %d %v", opens, logins, err)
+	}
+}
+
+func TestResumeLoginUsesOriginalSessionKey(t *testing.T) {
+	st, err := status.New(codes.FailedPrecondition, "login").WithDetails(&errdetails.ErrorInfo{Domain: "cxz.auth", Reason: "PROJECT_LOGIN_REQUIRED", Metadata: map[string]string{"account": "main", "session_key": "original-creation"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	opens := 0
+	_, err = openWithProjectLogin(context.Background(), &api.ProjectRequest{Account: "main", ClientId: "resume-operation"}, true, func(context.Context, *api.ProjectRequest) (*api.Session, error) {
+		opens++
+		if opens == 1 {
+			return nil, st.Err()
+		}
+		return &api.Session{}, nil
+	}, func(_ context.Context, alias, key string) error {
+		if alias != "main" || key != "original-creation" {
+			t.Fatalf("wrong login target: %s %s", alias, key)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
 	}
 }

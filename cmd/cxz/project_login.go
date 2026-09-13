@@ -14,18 +14,22 @@ import (
 
 func openWithProjectLogin(ctx context.Context, request *api.ProjectRequest, interactive bool,
 	open func(context.Context, *api.ProjectRequest) (*api.Session, error),
-	login func(context.Context, string) error,
+	login func(context.Context, string, string) error,
 ) (*api.Session, error) {
 	s, err := open(ctx, request)
 	if err == nil {
 		return s, nil
 	}
 	alias := ""
+	creationKey := request.ClientId
 	st := status.Convert(err)
 	if st.Code() == codes.FailedPrecondition {
 		for _, detail := range st.Details() {
 			if info, ok := detail.(*errdetails.ErrorInfo); ok && info.Domain == "cxz.auth" && info.Reason == "PROJECT_LOGIN_REQUIRED" {
 				alias = info.Metadata["account"]
+				if key := info.Metadata["session_key"]; key != "" {
+					creationKey = key
+				}
 			}
 		}
 	}
@@ -33,9 +37,9 @@ func openWithProjectLogin(ctx context.Context, request *api.ProjectRequest, inte
 		return nil, err
 	}
 	if !interactive {
-		return nil, fmt.Errorf("workspace prepared; account %s needs project login; run cxz account login --project %q %s, then retry: %w", alias, request.Workspace, alias, err)
+		return nil, fmt.Errorf("workspace prepared; account %s needs independent session login; create the session interactively with cxz up (existing sessions: cxz account login --session <session> %s): %w", alias, alias, err)
 	}
-	if err := login(ctx, alias); err != nil {
+	if err := login(ctx, alias, creationKey); err != nil {
 		return nil, err
 	}
 	// Provisioning/recreation already succeeded. Never repeat a destructive

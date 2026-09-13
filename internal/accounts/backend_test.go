@@ -31,7 +31,7 @@ func TestBackendMappingsAndBindings(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if b.Info().ID != ProjectLocalOAuth || b.Info().RefreshOwner != "agent" || b.Info().Workflow != "project-login" {
+		if b.Info().ID != ProjectLocalOAuth || b.Info().RefreshOwner != "agent" || b.Info().Workflow != "session-login" {
 			t.Fatal("wrong strategy")
 		}
 		for _, unsupported := range []string{"", APIKey, "typo"} {
@@ -43,7 +43,7 @@ func TestBackendMappingsAndBindings(t *testing.T) {
 		same, _ := b.Binding("project-a", "personal")
 		other, _ := b.Binding("project-b", "personal")
 		work, _ := b.Binding("project-a", "work")
-		if a != same || a.ID == other.ID || a.ID == work.ID || a.Scope != "project" || a.CredentialRef != "accounts/personal" {
+		if a != same || a.ID == other.ID || a.ID == work.ID || a.Scope != "project" || a.CredentialRef != "session-profiles/{creation-key-hash}/accounts/personal" {
 			t.Fatal("binding scope/identity")
 		}
 		if _, err := b.Binding("", "personal"); err == nil {

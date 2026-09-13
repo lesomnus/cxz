@@ -1,5 +1,31 @@
 # 구현 진행 상황
 
+## 2026-09-13 — 동시 세션·세션별 인증/실행 공간
+
+- client 선택, manager Open/Resume, runtime Create의 workspace 단일 live 세션
+  제한을 제거했다. 기존 세션은 provider/account가 일치할 때만 선택하며 explicit new는
+  같은 생성 요청 재시도 외에는 새 세션을 만든다. 작업 트리/동시 편집 결정은 에이전트에 맡긴다.
+- Claude와 명시적 로컬 OAuth Codex는 새 세션마다 공식 CLI에서 독립 로그인한다.
+  project 공용 refresh token을 복제/공유하지 않는다. 중앙 Codex의 공급 권한과
+  갱신 주체는 유지하되 각 app-server의 CODEX_HOME/기록은 별도 profile에 둔다.
+- 생성 요청 키로 고정된 session-profiles 경로에 config/HOME/cache/tmp/runtime을
+  분리했다. 재접속/재시작에도 경로는 유지된다. supervisor 중복 방지와 SIGKILL
+  guard는 유지하며, workspace lease 대신 세션 profile/login lease를 가진다.
+- 대화형 생성은 로그인 후 같은 생성 요청을 한 번 재시도한다. 재로그인은
+  `cxz account login --session SESSION_ALIAS ACCOUNT`, 확인은 `account status`의
+  같은 플래그다. 다른 세션은 중단할 필요가 없다. 재개 오류의 원래 생성 키도 전달한다.
+- 이전 공용 provider profile의 기록/인증은 자동 이관하지 않는다. 기존 journal은
+  보존되며 이전 버전 세션은 새 세션에서 별도 로그인해야 한다. CLI/manager/runtime
+  모두 업데이트가 필요하다. 사용자 컨테이너는 이 작업에서 재생성하지 않았다.
+- 검증: 전체 Go 테스트와 go vet 통과. fixture agent 프로세스 2개 동시 실행,
+  독립 인증 요구, 한쪽 중단의 영향 없음, 다른 세션 실행 중 재개, 같은 세션의
+  중복 프로세스 거부, 기존 recovery 테스트를 확인했다. CLI session-key 파싱과
+  resume 로그인 대상 키 전달도 검증했다.
+  실제 사용자 OAuth 로그인/토큰 만료 후 갱신은 사용자 인증이 필요해 미검증이다.
+  종료 응답 직후 즉시 재개 시 guard/profile 잠금 해제를 기다리는 처리를 추가했다.
+  주요 패키지 race 검사와 자식 프로세스까지 race로 빌드한 lifecycle 테스트
+  2회 반복을 통과했다. 최종 전체 테스트, go vet, git diff --check도 통과했다.
+
 ## 2026-09-13 — 모달 활성 테두리·동시 세션 제한 확인
 
 - 조회/모델 선택 모달에 활성 brand green 테두리를 적용했다. 자동완성은 입력창이

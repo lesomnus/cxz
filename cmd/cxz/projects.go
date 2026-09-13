@@ -299,13 +299,13 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 	}
 	s, e := openWithProjectLogin(call, request, terminal(c), func(ctx context.Context, r *api.ProjectRequest) (*api.Session, error) {
 		return client.Open(ctx, r)
-	}, func(ctx context.Context, alias string) error {
+	}, func(ctx context.Context, alias, key string) error {
 		a, err := resources.Account(ctx, alias)
 		if err != nil {
 			return err
 		}
 		fmt.Fprintln(c.ErrWriter, "cxz: workspace ready; starting project account login, then connecting the session")
-		return projectAccountWorkflow(ctx, resources, c, a, "login", request.Workspace, false)
+		return projectAccountWorkflow(ctx, resources, c, a, "login", request.Workspace, false, key)
 	})
 	if e != nil {
 		return e

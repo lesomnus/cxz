@@ -468,19 +468,18 @@ func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (result *api.
 		return nil, e
 	}
 	for _, s := range list.Sessions {
+		if s.Agent != kind || (r.Account != "" && s.Account != r.Account) {
+			continue
+		}
+		if r.NewSession {
+			if r.ClientId != "" && s.CreateId == r.ClientId {
+				chosen = s
+				break
+			}
+			continue
+		}
 		live := s.State == "idle" || s.State == "working" || s.State == "waiting_input" || s.State == "starting"
 		if live {
-			if r.NewSession || s.Agent != kind {
-				if r.NewSession && r.ClientId != "" && s.Agent == kind {
-					// A lost Open response must not turn a successful Create retry
-					// into an active-workspace conflict. The runtime checks its key.
-					if retry, err := client.Create(ctx, &api.CreateRequest{Workspace: p.RemoteWorkspace, Agent: kind, Model: r.Model, ClientId: r.ClientId}); err == nil {
-						chosen = retry
-						break
-					}
-				}
-				return nil, fmt.Errorf("workspace has an active %s session %s; stop it explicitly before starting another", s.Agent, s.Id)
-			}
 			chosen = s
 			break
 		}
