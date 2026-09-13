@@ -92,7 +92,7 @@ func projectTUI(ctx context.Context, resources *resourceclient.Client, c *xli.Co
 		r := &api.ProjectRequest{Workspace: p.Id, NewSession: true, Account: alias, Agent: a.GetAgent(), Model: settings.From(ctx).Model(a.GetAgent()), TrustConfig: trust, ClientId: core.ID()}
 		return openWithProjectLogin(ctx, r, true, func(ctx context.Context, r *api.ProjectRequest) (*api.Session, error) { return resources.Open(ctx, r) }, func(ctx context.Context, alias, key string) error {
 			return projectAccountWorkflow(ctx, resources, c, a, "login", p.Id, false, key)
-		})
+		}, c.ErrWriter)
 	}, func(alias string, input io.Reader, output, errOutput io.Writer) error {
 		oldIn, oldOut, oldErr := c.ReadCloser, c.Writer, c.ErrWriter
 		c.ReadCloser = io.NopCloser(input)

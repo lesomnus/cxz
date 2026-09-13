@@ -47,6 +47,23 @@ func (m *model) updateQuota() {
 		return
 	}
 	m.quotaWindows, m.quotaState = quotaSnapshot(s.Agent, s.RunId, m.events[s.Id])
+	m.quotaState = quotaPendingState(m.quotaState, s.RunId, m.events[s.Id], time.Now())
+}
+
+func quotaPendingState(state, run string, events []*api.Event, now time.Time) string {
+	if state != "polling" {
+		return state
+	}
+	for i := len(events) - 1; i >= 0; i-- {
+		e := events[i]
+		if e.Kind == "usage_status" && e.Text == "polling" && (e.RunId == "" || e.RunId == run) && e.TimeMs > 0 {
+			if now.Sub(time.UnixMilli(e.TimeMs)) >= time.Minute {
+				return "timeout"
+			}
+			break
+		}
+	}
+	return state
 }
 
 func quotaSnapshot(provider, run string, events []*api.Event) ([]agentview.Window, string) {
@@ -129,6 +146,7 @@ func (m *model) quotaStatus(now time.Time, width int) string {
 
 func quotaHistoryReport(provider, run string, events []*api.Event) string {
 	windows, state := quotaSnapshot(provider, run, events)
+	state = quotaPendingState(state, run, events, time.Now())
 	report := "Account quota · " + provider + " · " + state + "\n"
 	switch state {
 	case "polling":

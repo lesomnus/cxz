@@ -5,10 +5,40 @@ import (
 	"encoding/json"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/lesomnus/cxz/internal/agentview"
 	"github.com/lesomnus/cxz/internal/core"
 )
+
+func TestClaudeCatalogRefresh(t *testing.T) {
+	s, input := displaySupervisor(t, "claude")
+	s.readModels()
+	if !bytes.Contains(input.Bytes(), []byte(`"subtype":"list_models"`)) {
+		t.Fatal(input.String())
+	}
+	before := input.Len()
+	s.readModels()
+	if input.Len() != before {
+		t.Fatal("unthrottled polling")
+	}
+	s.consume([]byte(`{"type":"control_response","response":{"request_id":"cxz-models","subtype":"success","response":{"models":[{"value":"fable-test","supportedEffortLevels":["low","high"]}]}}}`))
+	if len(s.modelOptions) != 1 || s.modelOptions[0].ID != "fable-test" || s.modelSource != "list_models" {
+		t.Fatal(s.modelOptions)
+	}
+	s.modelRequested = time.Now().Add(-2 * time.Minute)
+	s.readModels()
+	if input.Len() == before {
+		t.Fatal("no refresh")
+	}
+	s.consume([]byte(`{"type":"control_response","response":{"request_id":"cxz-models","subtype":"error","error":"unsupported control"}}`))
+	s.modelRequested = time.Time{}
+	before = input.Len()
+	s.readModels()
+	if input.Len() != before || len(s.modelOptions) != 1 {
+		t.Fatal("unsupported refresh lost fallback catalog")
+	}
+}
 
 func TestProviderModelSettings(t *testing.T) {
 	for _, provider := range []string{"claude", "codex"} {

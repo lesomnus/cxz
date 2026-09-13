@@ -6,6 +6,7 @@ import (
 	"io"
 	"os/exec"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"github.com/charmbracelet/bubbles/textinput"
@@ -23,6 +24,11 @@ func terminalInput(input io.Reader) bool {
 type loginOutput string
 type loginFinished struct{ err error }
 type loginSubmitted struct{ err error }
+type loginPulse time.Time
+
+func loginTick() tea.Cmd {
+	return tea.Tick(100*time.Millisecond, func(t time.Time) tea.Msg { return loginPulse(t) })
+}
 
 type loginInput struct {
 	input                                     textinput.Model
@@ -30,6 +36,8 @@ type loginInput struct {
 	pending                                   string
 	submitting, submitted, canceled, finished bool
 	err                                       error
+	pulse                                     int
+	submittedAt                               time.Time
 }
 
 func newLoginInput(stdin io.Writer) *loginInput {
@@ -40,13 +48,16 @@ func newLoginInput(stdin io.Writer) *loginInput {
 	return &loginInput{input: input, stdin: stdin}
 }
 
-func (m *loginInput) Init() tea.Cmd { return textinput.Blink }
+func (m *loginInput) Init() tea.Cmd { return tea.Batch(textinput.Blink, loginTick()) }
 
 func (m *loginInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.finished {
 		return m, nil
 	}
 	switch msg := msg.(type) {
+	case loginPulse:
+		m.pulse++
+		return m, loginTick()
 	case loginFinished:
 		m.err, m.finished = msg.err, true
 		m.input.Reset()
@@ -86,6 +97,7 @@ func (m *loginInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			code := m.input.Value()
 			m.input.Reset()
 			m.submitting = true
+			m.submittedAt = time.Now()
 			return m, func() tea.Msg {
 				_, err := io.WriteString(m.stdin, code+"\n")
 				return loginSubmitted{err: err}
@@ -112,7 +124,8 @@ func (m *loginInput) View() string {
 	m.input.Cursor.SetChar(" ")
 	indicator := "[" + strings.Repeat("*", min(3, n)) + strings.Repeat(" ", max(0, 3-n)) + "]" + m.input.Cursor.View() + digits + "; ctrl+x to clear."
 	if m.submitting || m.submitted {
-		indicator = "[   ] submitted; waiting for Claude."
+		frames := []rune("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏")
+		indicator = fmt.Sprintf("%c [%s] submitted; waiting for Claude login to finish.", frames[m.pulse%len(frames)], time.Since(m.submittedAt).Round(time.Second))
 	}
 	return ansi.Strip(m.pending) + "\n" + indicator + "\nEnter to submit; Esc/Ctrl-C to cancel.\n"
 }

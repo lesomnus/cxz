@@ -9,6 +9,40 @@ import (
 	"github.com/lesomnus/cxz/api"
 )
 
+func sessionProgress(ctx context.Context, out io.Writer, work func() error) error {
+	started := time.Now()
+	done := make(chan error, 1)
+	go func() { done <- work() }()
+	tick := time.NewTicker(100 * time.Millisecond)
+	defer tick.Stop()
+	frames := []rune("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏")
+	frame := 0
+	print := func() {
+		fmt.Fprintf(out, "\r\x1b[2K%c cxz: preparing agent session · %s", frames[frame%len(frames)], time.Since(started).Round(time.Second))
+		frame++
+	}
+	print()
+	for {
+		select {
+		case err := <-done:
+			message := "session connected"
+			if err != nil {
+				message = "session preparation needs attention"
+			}
+			fmt.Fprintf(out, "\r\x1b[2Kcxz: %s · %s\n", message, time.Since(started).Round(time.Second))
+			return err
+		case <-tick.C:
+			print()
+		// Wait for the operation to finish even on cancellation so its caller
+		// never observes a concurrently written session result.
+		case <-ctx.Done():
+			err := <-done
+			fmt.Fprint(out, "\r\x1b[2K")
+			return err
+		}
+	}
+}
+
 func provisionDescription(step string) string {
 	switch step {
 	case "inventory":
