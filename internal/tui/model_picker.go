@@ -223,5 +223,5 @@ func (m *model) modelPickerOverlay(view string) string {
 		lines = append(lines, "No matching provider choices.")
 	}
 	lines = append(lines, "", "Search: "+safeText(p.query)+"▏")
-	return overlayBox(view, lines, m.width)
+	return overlayBox(view, lines, m.width, true)
 }
