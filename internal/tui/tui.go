@@ -475,7 +475,7 @@ func (m *model) render() {
 	if len(lines) == 0 {
 		add(indentBlock(muted.Render(ansi.Hardwrap("Start a conversation\n\nDescribe a task below. Messages and tool activity will appear here.\nStopped session? Ctrl+R resumes the agent.", max(1, m.view.Width-2), true))), 0)
 	}
-	if s.State == "working" {
+	if m.activeWork() {
 		add("  ", 0)
 	}
 	m.historyTimes = nil

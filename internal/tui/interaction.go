@@ -68,11 +68,29 @@ func (m *model) workingLabel(now time.Time) string {
 		sec := max(int64(0), (now.UnixMilli()-started)/1000)
 		duration = fmt.Sprintf("%02d:%02d:%02d", sec/3600, sec/60%60, sec%60)
 	}
-	label := "working " + duration + " · Esc interrupt"
+	activity := "working"
+	if s.State == "waiting_input" {
+		if p := m.selectedApproval(); p != nil {
+			activity = "waiting for approval"
+			if question(p) {
+				activity = "waiting for answer"
+			}
+		} else if m.fullPermission[s.Id] != s.RunId || s.RunId == "" {
+			activity = "waiting for input"
+		}
+	}
+	label := activity + " " + duration + " · Esc interrupt"
 	if m.interruptKey == s.Id+"/"+s.RunId && now.Before(m.interruptUntil) {
-		label = "working " + duration + " · Esc again to interrupt (3s)"
+		label = activity + " " + duration + " · Esc again to interrupt (3s)"
 	}
 	return label
+}
+
+// A tool permission round-trip does not end the turn. Both rendering stages
+// must agree on the reserved activity row, including during automatic approval.
+func (m *model) activeWork() bool {
+	s := m.current()
+	return s != nil && (s.State == "working" || s.State == "waiting_input")
 }
 
 func (m *model) compactCommand(text string) tea.Cmd {

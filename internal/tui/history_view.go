@@ -56,7 +56,7 @@ func (m *model) scrollStatus() string {
 
 func (m *model) conversationView() string {
 	rows := strings.Split(m.view.View(), "\n")
-	if s := m.current(); s != nil && s.State == "working" && m.view.AtBottom() && len(rows) > 0 {
+	if m.activeWork() && m.view.AtBottom() && len(rows) > 0 {
 		frames := []rune("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏")
 		// render reserves a final transcript row for this transient indicator.
 		index := min(len(rows)-1, max(0, len(m.historyTimes)-m.view.YOffset-1))
