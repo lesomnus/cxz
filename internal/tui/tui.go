@@ -32,6 +32,7 @@ type model struct {
 	lastUIInput          time.Time
 	lastActivityReport   time.Time
 	project              *api.Project
+	contextReports       map[string]contextReportSnapshot
 	wisp                 *containerterm.WispPool
 	terminalWidth        int
 	panelFocus           bool

@@ -36,3 +36,34 @@ func TestContextStatusRunAndCompaction(t *testing.T) {
 		t.Fatal(got)
 	}
 }
+
+func TestClaudeContextReportStatus(t *testing.T) {
+	m := conversationModel()
+	s := m.current()
+	s.Agent = "claude"
+	m.contextCapture = &contextCapture{id: s.Id, run: s.RunId, request: "request", report: &reportOverlay{}}
+	m.captureContext(s.Id, &api.Event{RunId: s.RunId, Kind: "input", RequestId: "request", Seq: 1})
+	m.captureContext(s.Id, &api.Event{RunId: s.RunId, Kind: "assistant", Seq: 2, Text: "## Context Usage\n\n**Model:** claude-opus-5[1m]\n**Tokens:** 109.7k / 1m (11%)\n..."})
+	m.captureContext(s.Id, &api.Event{RunId: s.RunId, Kind: "turn_end", Seq: 3})
+	if got := m.contextStatus(); got != "⡀11%" {
+		t.Fatal(got)
+	}
+	m.events[s.Id] = append(m.events[s.Id], &api.Event{RunId: s.RunId, Kind: "input", Seq: 4})
+	if got := m.contextStatus(); got != "⠀—" {
+		t.Fatal("stale report", got)
+	}
+}
+
+func TestClaudeEmptyResultKeepsKnownLimits(t *testing.T) {
+	m := conversationModel()
+	s := m.current()
+	s.Agent = "claude"
+	m.events[s.Id] = []*api.Event{
+		{RunId: s.RunId, Kind: "turn_end", Payload: []byte(`{"modelUsage":{"x":{"contextWindow":1000000}}}`)},
+		{RunId: s.RunId, Kind: "usage", Text: "context/message", Payload: []byte(`{"model":"x","usage":{"input_tokens":110000}}`)},
+		{RunId: s.RunId, Kind: "turn_end", Payload: []byte(`{}`)},
+	}
+	if got := m.contextStatus(); got != "⡀11%" {
+		t.Fatal(got)
+	}
+}

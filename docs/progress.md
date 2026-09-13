@@ -1,5 +1,14 @@
 # 구현 진행 상황
 
+## 2026-09-13 — Claude 컨텍스트 보고서와 status 연결
+
+- 기존 status는 `context/message`만 사용하여 `/context`에 비율이 있어도 표시하지 못했다.
+  직접 보낸 요청에 연결된 알려진 Context Usage 보고서의 Tokens 비율을 보조 snapshot으로 사용한다.
+- 일반 대화는 파싱하지 않고 보고서 snapshot은 다음 입력/compact/run 변경에 무효화한다.
+- 빈 modelUsage 결과가 이전 유효한 contextWindow를 가리던 조회 문제를 수정했다.
+- 사용자 제공 `109.7k / 1m (11%)` 예제, 요청 연결/무효화 및 빈 결과 회귀 테스트 추가.
+- 사용자의 runtime 이벤트는 제공되지 않아 context/message 누락 여부는 확정하지 않았다.
+
 ## 2026-09-13 — 하단 컨텍스트 점자 사용률
 
 - provider별 계산을 agentview.ContextPercent로 분리하고 status bar에 심볼+숫자만 추가했다.
