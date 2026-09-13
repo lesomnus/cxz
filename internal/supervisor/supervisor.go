@@ -575,6 +575,7 @@ func (s *Supervisor) execute(op string, c core.Command) (core.Receipt, error) {
 		}
 	}
 	r := record{Op: op, Command: c, Status: "delivery_unknown"}
+	asyncReply := op == "reply" && s.pending[c.RequestID].Text == agentview.CodexAsyncQuestion
 	s.event("intent", op, c.ClientID, r, nil)
 	s.receipts[c.ClientID] = r
 	switch op {
@@ -584,7 +585,11 @@ func (s *Supervisor) execute(op string, c core.Command) (core.Receipt, error) {
 	case "reply":
 		delete(s.pending, c.RequestID)
 		s.event("approval_resolved", map[bool]string{true: "allowed", false: "denied"}[c.Allow], c.RequestID, nil, nil)
-		if len(s.pending) == 0 {
+		if asyncReply {
+			if c.Allow {
+				s.event("state", "working", "", nil, nil)
+			}
+		} else if !s.hasBlockingPending() {
 			s.event("state", "working", "", nil, nil)
 		}
 	case "interrupt":

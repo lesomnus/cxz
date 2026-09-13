@@ -16,7 +16,44 @@ type Question struct {
 }
 type QuestionOption struct{ Label, Description, Preview string }
 
+// CodexAsyncQuestion is a cxz request type, not a provider JSON-RPC method.
+const CodexAsyncQuestion = "agentMessage/questions"
+
+func CodexAsyncQuestions(raw []byte) ([]Question, error) {
+	item := object(raw).child("item")
+	if item.text("type") != "agentMessage" || item.text("delivery") != "async" || item.text("id") == "" {
+		return nil, fmt.Errorf("not an asynchronous question message")
+	}
+	var wire []struct {
+		Title   string
+		Options []string
+	}
+	if err := json.Unmarshal(item["questions"], &wire); err != nil || len(wire) == 0 {
+		return nil, fmt.Errorf("missing async questions")
+	}
+	var out []Question
+	for i, w := range wire {
+		if strings.TrimSpace(w.Title) == "" {
+			return nil, fmt.Errorf("missing question title")
+		}
+		q := Question{Key: fmt.Sprint(i), Text: w.Title, Other: true}
+		labels := map[string]bool{}
+		for _, label := range w.Options {
+			if strings.TrimSpace(label) == "" || labels[label] {
+				return nil, fmt.Errorf("invalid question option")
+			}
+			labels[label] = true
+			q.Options = append(q.Options, QuestionOption{Label: label})
+		}
+		out = append(out, q)
+	}
+	return out, nil
+}
+
 func Questions(provider, method string, raw []byte) ([]Question, error) {
+	if provider == "codex" && method == CodexAsyncQuestion {
+		return CodexAsyncQuestions(raw)
+	}
 	root := object(raw)
 	var body fields
 	switch {

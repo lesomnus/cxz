@@ -21,7 +21,7 @@ type approvalResult struct {
 }
 
 func question(p *api.Event) bool {
-	return p.Text == "AskUserQuestion" || p.Text == "item/tool/requestUserInput"
+	return p.Text == "AskUserQuestion" || p.Text == "item/tool/requestUserInput" || p.Text == agentview.CodexAsyncQuestion
 }
 func automaticApproval(p *api.Event) bool {
 	switch p.Text {

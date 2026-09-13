@@ -1,5 +1,35 @@
 # 구현 진행 상황
 
+## 2026-09-13 — Codex 비동기 질문 다이얼로그와 실제 로그인 검증
+
+- 사용자 이벤트의 `agentMessage.delivery=async`, `item.questions`를 확인했다.
+  기존 코드는 blocking `item/tool/requestUserInput`만 처리하여 해당 메시지를 일반
+  대화로 표시했다. `default_mode_request_user_input`을 켜는 방식으로 우회하지 않는다.
+- provider adapter에서 비동기 질문을 공통 질문 모델과 pending 목록으로 연결했다.
+  위치 기반 question key는 같은 제목이 반복되어도 구분되며 option/Other는 구조화한다.
+  해당 Codex schema에는 multiSelect/preview가 없어 단일 선택 + Other만 제공한다.
+- 비동기 질문은 foreground 상태를 waiting_input으로 바꾸지 않고 정상 턴 종료에도
+  유지한다. 기존 blocking 질문/승인과 함께 있어도 blocking 승인 해제 후 작업은 진행된다.
+  재접속은 supervisor pending snapshot을 통해 복구한다. 중단/프로세스 종료 시에는 정리한다.
+- 응답은 승인 RPC가 아니라 `turn/start`의 빈 input + `toolOutput`으로 전달한다.
+  original question message ID, 질문 제목, selected/other를 포함하며 app-server가
+  진행 중 턴에 큐잉하거나 idle에서 다음 턴을 시작한다. 로컬 거절은 새 턴을 만들지 않는다.
+  동일 메시지 replay/동일 ClientId 재시도 중복을 막고, provider가 응답 요청을 거부하면
+  질문을 복구하고 diagnostic을 남긴다(자동 재전송 없음).
+- 공식 문서 https://learn.chatgpt.com/docs/app-server 의 standalone tool output 경로와
+  설치된 Codex 0.154.0 schema를 확인했다. 기존 ChatGPT CLI 로그인으로 격리된 테스트
+  workspace에서 실제 호출: async 질문 → `Dark` 선택 전달 → “You chose Dark.” 확인.
+- opt-in `CXZ_CODEX_LIVE=1 go test ./internal/supervisor -run '^TestCodexAsyncQuestionLive$' -count=1 -v`
+  도 통과했다. 실제 cxz supervisor/공통 질문 encoder를 거친 Other `Violet-731`을
+  Codex가 확인했다. 테스트는 사용량을 소비하며 기본 CI에서는 skip한다. 토큰 추출/복사는 없다.
+- CLI와 프로젝트 runtime/supervisor 업데이트 후 에이전트 restart가 필요하다.
+  이전 run에서 이미 일반 assistant로만 기록된 질문을 새 pending으로 되살리지는 않는다.
+  업데이트 후 새로운 질문으로 확인한다. purge는 필요 없다.
+- `go test ./...`, `go test -race ./internal/supervisor ./internal/agentview ./internal/tui`,
+  `go vet ./...`, `git diff --check` 통과. TUI 테스트는 idle 상태의 자동 다이얼로그와
+  선택 제출, full permission에서 질문이 자동 승인되지 않는 것을 확인한다.
+
+
 ## 2026-09-13 — 세션 준비·로그인을 TUI 안에서 처리
 
 - accounts 선택 후 세션 생성/로그인에 사용하던 `tea.Exec`를 제거했다. 기존 alternate
