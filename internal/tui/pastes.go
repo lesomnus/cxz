@@ -282,13 +282,39 @@ func decoratePastes(text string, items map[string]*pastedText) string {
 	var pairs []string
 	for token, p := range items {
 		if p.file {
-			pairs = append(pairs, token, strings.Replace(token, "[Paste ", "[File  ", 1))
+			// Match the label and unique ID, not the entire chip: metadata may
+			// wrap onto another display row. The two labels have equal width.
+			prefix, _, _ := strings.Cut(token, " ·")
+			pairs = append(pairs, prefix, strings.Replace(prefix, "[Paste ", "[File  ", 1))
 		}
 	}
 	if len(pairs) == 0 {
 		return text
 	}
-	return strings.NewReplacer(pairs...).Replace(text)
+	// Cursor blinking inserts SGR sequences inside the label. Replace visible
+	// characters while retaining their original styling and cursor escapes.
+	plain := ansi.Strip(text)
+	replaced := strings.NewReplacer(pairs...).Replace(plain)
+	if plain == replaced {
+		return text
+	}
+	var out strings.Builder
+	state := byte(0)
+	pos := 0
+	for len(text) > 0 {
+		seq, _, n, next := ansi.DecodeSequence(text, state, nil)
+		if n == 0 {
+			break
+		}
+		if visible := ansi.Strip(seq); visible != "" {
+			out.WriteString(replaced[pos : pos+len(visible)])
+			pos += len(visible)
+		} else {
+			out.WriteString(seq)
+		}
+		text, state = text[n:], next
+	}
+	return out.String()
 }
 
 func expandPastes(text string, items map[string]*pastedText) string {
