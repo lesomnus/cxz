@@ -9,8 +9,9 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
-// The range is the loaded viewport, matching the "loaded L" status while older
-// pages are not fetched. Use the existing spacer row to avoid layout movement.
+// Physical total lines depend on width/Markdown and cannot be known without
+// rendering every page. Journal coordinates provide a stable logical range:
+// prepending history does not change the coordinate of the visible event.
 func (m *model) scrollTrack() string {
 	width := max(1, m.width)
 	end := max(0, m.view.TotalLineCount()-m.view.Height)
@@ -18,7 +19,19 @@ func (m *model) scrollTrack() string {
 	if end > 0 {
 		position = int(math.Round(float64(min(max(0, m.view.YOffset), end)) * float64(width-1) / float64(end)))
 	}
-	return zeroStyle.Render(strings.Repeat("─", position)) + muted.Render("◆︎") + zeroStyle.Render(strings.Repeat("─", width-position-1))
+	if s := m.current(); s != nil && len(m.historyPositions) == m.view.TotalLineCount() && len(m.historyPositions) > 0 {
+		total := max(s.LastSeq, m.cursor[s.Id])
+		if total > 0 {
+			coordinate := m.historyPositions[min(max(0, m.view.YOffset), len(m.historyPositions)-1)]
+			position = min(width-1, max(0, int(math.Round(coordinate/float64(total)*float64(width-1)))))
+			if m.view.AtBottom() {
+				position = width - 1
+			} else if m.view.AtTop() && m.historyStart[s.Id] == 0 {
+				position = 0
+			}
+		}
+	}
+	return muted.Render(strings.Repeat("─", position)) + muted.Render("◆︎") + zeroStyle.Render(strings.Repeat("─", width-position-1))
 }
 
 func (m *model) scrollStatus() string {
@@ -34,7 +47,7 @@ func (m *model) scrollStatus() string {
 	if s := m.current(); s != nil && m.historyStart[s.Id] > 0 {
 		label = "loaded L"
 	}
-	return fmt.Sprintf("%s %d–%d/%d · %s · Ctrl+End latest", label, start+1, min(len(m.historyTimes), start+m.view.Height), len(m.historyTimes), stamp)
+	return fmt.Sprintf("%s %d–%d/%d · %s · track: journal · Ctrl+End latest", label, start+1, min(len(m.historyTimes), start+m.view.Height), len(m.historyTimes), stamp)
 }
 
 func (m *model) conversationView() string {
