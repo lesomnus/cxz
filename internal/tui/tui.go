@@ -326,7 +326,13 @@ func (m *model) render() {
 	helped := false
 	contextTurns := map[string]bool{}
 	decisions := map[string]string{}
+	toolCalls := map[string]agentview.ToolActivity{}
 	for _, e := range m.events[s.Id] {
+		if e.Kind == "tool_call" && e.RequestId != "" {
+			if activity, ok := agentview.ToolView(s.Agent, e.Text, e.Payload); ok {
+				toolCalls[e.RunId+"/"+e.RequestId] = activity
+			}
+		}
 		if e.Kind == "approval_resolved" {
 			decisions[e.RunId+"/"+e.RequestId] = e.Text
 		}
@@ -383,6 +389,11 @@ func (m *model) render() {
 			replyIndex = -1
 		} else {
 			text := eventViewCached(m, s, e, max(1, m.view.Width))
+			if e.Kind == "tool_result" {
+				if activity, ok := toolCalls[e.RunId+"/"+e.RequestId]; ok && activity.Kind == "files" && s.Agent == "claude" {
+					text = toolActivityView(activity, e, max(1, m.view.Width))
+				}
+			}
 			if e.Kind == "approval" {
 				state := decisions[e.RunId+"/"+e.RequestId]
 				if state == "" {

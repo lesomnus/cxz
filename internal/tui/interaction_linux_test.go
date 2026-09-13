@@ -53,7 +53,8 @@ func TestRecreatePTYBracketedPasteAndEditing(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	m := &recreateProbe{recreateConfirmation: newRecreateConfirmation(), ready: make(chan struct{})}
-	p := tea.NewProgram(m, tea.WithContext(ctx), tea.WithInput(keyboardInput(slave)), tea.WithOutput(io.Discard), tea.WithAltScreen())
+	var output bytes.Buffer
+	p := tea.NewProgram(m, tea.WithContext(ctx), tea.WithInput(keyboardInput(slave)), tea.WithOutput(&output))
 	done := make(chan error, 1)
 	go func() { _, err := p.Run(); done <- err }()
 	select {
@@ -70,6 +71,9 @@ func TestRecreatePTYBracketedPasteAndEditing(t *testing.T) {
 	}
 	if !m.confirmed {
 		t.Fatal("paste/edit confirmation failed")
+	}
+	if strings.Contains(output.String(), "\x1b[?1049") {
+		t.Fatal("recreate entered alternate screen")
 	}
 }
 

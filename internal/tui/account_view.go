@@ -26,6 +26,7 @@ func (m *model) openAccounts(choose bool) tea.Cmd {
 	m.accountAdding = false
 	m.accountSearching = false
 	m.accountSearch = textinput.New()
+	m.accountSearch.Cursor.Style = inputCursorStyle
 	m.accountSearch.Placeholder = "alias / name / provider / number"
 	m.accountSearch.CharLimit = 100
 	m.notice = "Loading accounts…"
@@ -142,6 +143,7 @@ func (m *model) accountKey(key tea.KeyMsg) tea.Cmd {
 	case "n":
 		m.accountAdding, m.accountField, m.accountAgent = true, 0, "claude"
 		m.accountAlias, m.accountName = textinput.New(), textinput.New()
+		m.accountAlias.Cursor.Style, m.accountName.Cursor.Style = inputCursorStyle, inputCursorStyle
 		m.accountAlias.Placeholder, m.accountName.Placeholder = "personal", "Display name (optional)"
 		m.accountAlias.CharLimit, m.accountName.CharLimit = 63, 120
 		m.notice = ""

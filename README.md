@@ -265,7 +265,7 @@ PgUp/PgDn or the wheel scroll long content. JSON is not required; the advanced
 `/answer {"question text or id":"answer"}` form remains available.
 The provider-neutral question model lives in `internal/agentview/questions.go`;
 original provider payloads stay in the journal and remain accessible via `/approval`.
-Previews have their own indented border; confirmed selections use vivid magenta,
+Previews have their own indented border; confirmed selections use softened magenta,
 while focus and buttons keep the green accent. Other drafts survive choosing a
 different radio option and are sent only while selected. Buttons have a blank
 row above and below. Multi-select and approval markers use `[ ]`, `[✓]`, and `[×]` for denial.
@@ -282,8 +282,19 @@ Do not purge data to upgrade.
 After a decision, focus returns to input to avoid approving the next request with
 a repeated Enter. A blank row separates the conversation from the notice area.
 Resolved approvals update the original checkbox row in place, with separate
-allowed/denied/canceled colors. Tool results are a single-line summary;
-`/details` shows the latest full result and `session events` retains all events.
+allowed/denied/canceled colors. Tool results use compact summaries;
+`/details` shows the latest full tool input/result (including its matching call
+when loaded), and `session events` retains all events. Tool activity uses a shared
+display model: Claude Write/Edit and Codex fileChange show file paths and change
+counts without printing file bodies. Claude Write counts supplied content lines;
+Edit counts replacement spans, and replace_all reports per-match counts with an
+unknown total. Codex unified diff hunks provide added/deleted line counts. These
+are request counts until the provider reports completion; missing diffs are not
+estimated. Shell calls show a compact command/description instead of raw JSON.
+
+Recreate's typed confirmation runs inline without switching to the alternate
+screen. TUI text inputs use a blinking light-green cursor (`#AEFF98`); this does
+not change the surrounding shell's cursor settings.
 Reply metrics begin with completion time (`MM-DD HH:MM / duration …`). The working
 spinner includes elapsed time and an Esc interrupt hint; press Esc twice within
 three seconds to confirm. F4 remains a direct interrupt shortcut.

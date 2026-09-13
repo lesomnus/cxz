@@ -68,8 +68,15 @@ func eventView(s *api.Session, e *api.Event, width int) (out string) {
 		if question(e) {
 			return lavender.Render("? Question · open /answer to choose")
 		}
-		return lavender.Render(wrap("tool › " + e.Text + " " + string(e.Payload)))
+		if activity, ok := agentview.ToolView(s.Agent, e.Text, e.Payload); ok {
+			// This branch is already indented by eventView's deferred wrapper.
+			return toolActivityBody(activity, nil, width+2)
+		}
+		return lavender.Render(wrap("tool › " + e.Text + " · /details"))
 	case "tool_result":
+		if activity, ok := agentview.ToolView(s.Agent, e.Text, e.Payload); ok && activity.Kind == "files" {
+			return toolActivityBody(activity, e, width+2)
+		}
 		return muted.Render(clip(toolResultSummary(e), width))
 	case "compact":
 		return teal.Render(wrap("◇ Context compacted · journal retained"))
@@ -152,7 +159,7 @@ func (m *model) toolDetails() {
 		events := m.events[s.Id]
 		for i := len(events) - 1; i >= 0; i-- {
 			e := events[i]
-			if e.Kind != "tool_result" {
+			if e.Kind != "tool_result" && e.Kind != "tool_call" {
 				continue
 			}
 			var value any
@@ -161,9 +168,27 @@ func (m *model) toolDetails() {
 				b, _ := json.MarshalIndent(value, "", "  ")
 				text = string(b)
 			}
-			m.recordLocal("/details", fmt.Sprintf("Tool result · event %d\n%s\n%s", e.Seq, e.Text, text))
+			callDetail := ""
+			for j := i - 1; e.Kind == "tool_result" && j >= 0; j-- {
+				call := events[j]
+				if call.Kind == "tool_call" && call.RequestId != "" && call.RequestId == e.RequestId && call.RunId == e.RunId {
+					payload := string(call.Payload)
+					var input any
+					if json.Unmarshal(call.Payload, &input) == nil {
+						b, _ := json.MarshalIndent(input, "", "  ")
+						payload = string(b)
+					}
+					callDetail = fmt.Sprintf("Tool input · event %d · %s\n%s\n\n", call.Seq, call.Text, payload)
+					break
+				}
+			}
+			kind := "Tool result"
+			if e.Kind == "tool_call" {
+				kind = "Tool input"
+			}
+			m.recordLocal("/details", callDetail+fmt.Sprintf("%s · event %d\n%s\n%s", kind, e.Seq, e.Text, text))
 			return
 		}
 	}
-	m.recordLocal("/details", "No tool result in the received history yet.")
+	m.recordLocal("/details", "No tool activity in the received history yet.")
 }

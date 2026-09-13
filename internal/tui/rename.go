@@ -22,6 +22,7 @@ func (m *model) startRename() tea.Cmd {
 		return nil
 	}
 	m.aliasInput = textinput.New()
+	m.aliasInput.Cursor.Style = inputCursorStyle
 	m.aliasInput.Prompt = ""
 	m.aliasInput.CharLimit = 7
 	m.aliasInput.Width = 6
