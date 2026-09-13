@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/lesomnus/cxz/internal/accounts"
+	"github.com/lesomnus/cxz/internal/agentview"
 	"github.com/lesomnus/cxz/internal/core"
 	"strings"
 	"time"
@@ -32,6 +33,24 @@ func (c *codexProtocol) consume(raw []byte) {
 		return
 	}
 	id := string(v.ID)
+	if id == `"cxz-models"` {
+		if len(v.Error) > 0 && string(v.Error) != "null" {
+			s.modelRequested = time.Time{}
+			s.event("models_status", "unavailable", "", nil, nil)
+			return
+		}
+		s.modelPages = append(s.modelPages, agentview.Models("codex", v.Result)...)
+		var page struct{ NextCursor string }
+		_ = json.Unmarshal(v.Result, &page)
+		if page.NextCursor != "" && len(s.modelPages) < 1000 {
+			_ = s.write(rpc("cxz-models", "model/list", map[string]any{"cursor": page.NextCursor, "limit": 100, "includeHidden": false}))
+		} else {
+			s.modelOptions = s.modelPages
+			s.modelRequested = time.Time{}
+			s.publishModels()
+		}
+		return
+	}
 	// Account telemetry is best-effort and must never fail an active turn.
 	if id == `"cxz-quota"` {
 		s.quotaRequested = time.Time{}
@@ -181,6 +200,7 @@ func (c *codexProtocol) consume(raw []byte) {
 	}
 }
 func (c *codexProtocol) startThread() {
+	c.s.readModels()
 	s := c.s
 	params := map[string]any{"cwd": s.session.Workspace, "approvalPolicy": "untrusted", "sandbox": "danger-full-access", "experimentalRawEvents": false, "persistExtendedHistory": true}
 	method := "thread/start"
@@ -207,7 +227,24 @@ func (c *codexProtocol) command(op string, v core.Command) (any, error) {
 		if strings.TrimSpace(v.Text) == "/compact" {
 			return rpc(v.ClientID, "thread/compact/start", map[string]any{"threadId": s.snap.VendorID}), nil
 		}
-		return rpc(v.ClientID, "turn/start", map[string]any{"threadId": s.snap.VendorID, "input": []any{map[string]any{"type": "text", "text": v.Text, "text_elements": []any{}}}}), nil
+		params := map[string]any{"threadId": s.snap.VendorID, "input": []any{map[string]any{"type": "text", "text": v.Text, "text_elements": []any{}}}}
+		model, effort := s.session.Model, s.effort
+		for _, option := range s.modelOptions {
+			if option.ID == model || model == "" && option.Default {
+				model = option.ID
+				if effort == "" {
+					effort = option.DefaultEffort
+				}
+				break
+			}
+		}
+		if model != "" {
+			params["model"] = model
+		}
+		if effort != "" {
+			params["effort"] = effort
+		}
+		return rpc(v.ClientID, "turn/start", params), nil
 	case "interrupt":
 		if c.turn == "" {
 			return nil, fmt.Errorf("no active Codex turn")

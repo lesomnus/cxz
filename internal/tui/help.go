@@ -12,6 +12,8 @@ type commandHelp struct {
 }
 
 var commandHelpEntries = []commandHelp{
+	{"Model settings", "model", "Inspect or select a provider model", "Lists provider-reported model IDs and supported effort levels. Use /model <id> to select an advertised model while idle; reset effort with /effort default before switching. Claude changes are confirmed by the CLI, Codex choices apply to the next turn. Confirmed preferences survive resume. Claude's catalog is an initialization snapshot; Codex refreshes every idle minute. A newer CLI requires an agent restart.", "/model\n/model <id-from-catalog>"},
+	{"Model settings", "effort", "Inspect or select reasoning strength", "Uses one common command for Codex reasoning effort and Claude effort. Select a model first, then use a level that its catalog reports. /effort default clears the override. Claude's flag-settings transport cannot apply session-only max effort; unsupported controls are rejected without creating a chat turn.", "/effort\n/effort high\n/effort default"},
 	{"Conversation", "answer", "Reply to a pending question", "Reply to the selected pending question using a JSON object mapping question IDs (or question text) to answers. Select the request in Pending approvals first; use /approval to inspect its question IDs. This is an approval reply, not a new chat message.", `/answer {"question-id":"Use SQLite"}`},
 	{"Conversation", "context", "Inspect provider context", "Claude runs its native /context command and requires an idle session. Codex displays the last reported turn's token footprint and context window, not a live estimate. Missing provider data is not guessed.", "/context"},
 	{"Conversation", "compact", "Compact agent context", "Requires an idle session. Runs native Claude /compact or Codex thread compaction. The provider reduces its conversation context; cxz keeps the full event journal. No arguments are accepted.", "/compact"},
@@ -26,11 +28,11 @@ var commandHelpEntries = []commandHelp{
 // Each key includes its own one-space padding. Alternating keycap backgrounds
 // separate adjacent shortcut rows without painting the transcript background.
 func helpKeycaps(keys string, row int) string {
-	bg := "#000000"
+	bg := lipgloss.CompleteColor{TrueColor: "#000000", ANSI256: "0", ANSI: "0"}
 	if row%2 == 1 {
-		bg = "#151515"
+		bg = lipgloss.CompleteColor{TrueColor: "#303030", ANSI256: "236", ANSI: "8"}
 	}
-	style := lipgloss.NewStyle().Foreground(lipgloss.Color("#E6E6E6")).Background(lipgloss.Color(bg))
+	style := lipgloss.NewStyle().Foreground(lipgloss.Color("#E6E6E6")).Background(bg)
 	alternatives := strings.Split(keys, " / ")
 	for i, chord := range alternatives {
 		parts := strings.Split(chord, "+")

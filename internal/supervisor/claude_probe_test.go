@@ -2,6 +2,7 @@ package supervisor
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"io"
@@ -11,6 +12,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/lesomnus/cxz/internal/agentview"
 )
 
 // Opt-in capability probe: a real CLI with an empty profile, no user prompt,
@@ -67,9 +70,39 @@ func TestInstalledClaudeQuotaControl(t *testing.T) {
 			if v.Response.Subtype != "success" {
 				t.Fatal("CLI initialization rejected")
 			}
-			if err := encoder.Encode(map[string]any{"type": "control_request", "request_id": "quota", "request": map[string]any{"subtype": "get_usage", "skip_behaviors": true}}); err != nil {
+			raw, _ := json.Marshal(v.Response.Response)
+			models := agentview.Models("claude", raw)
+			t.Logf("initialization catalog models=%d", len(models))
+			request := map[string]any{"subtype": "set_model", "model": "default"}
+			for _, model := range models {
+				if slices.Contains(model.Efforts, "low") {
+					request["model"] = model.ID
+					break
+				}
+			}
+			if err := encoder.Encode(map[string]any{"type": "control_request", "request_id": "model", "request": request}); err != nil {
 				t.Fatal(err)
 			}
+		} else if v.Response.RequestID == "model" {
+			if v.Response.Subtype != "success" {
+				t.Fatal("set_model rejected")
+			}
+			_ = encoder.Encode(map[string]any{"type": "control_request", "request_id": "effort", "request": map[string]any{"subtype": "apply_flag_settings", "settings": map[string]any{"effortLevel": "low"}}})
+		} else if v.Response.RequestID == "effort" {
+			if v.Response.Subtype != "success" {
+				t.Fatal("effort update rejected")
+			}
+			_ = encoder.Encode(map[string]any{"type": "control_request", "request_id": "settings", "request": map[string]any{"subtype": "get_settings"}})
+		} else if v.Response.RequestID == "settings" {
+			if v.Response.Subtype != "success" {
+				t.Fatal("get_settings rejected")
+			}
+			raw, _ := json.Marshal(v.Response.Response)
+			if !bytes.Contains(raw, []byte(`"effortLevel":"low"`)) {
+				t.Fatal("effort not reflected in settings")
+			}
+			t.Log("set_model and effort flag control acknowledged; low effort present in settings")
+			_ = encoder.Encode(map[string]any{"type": "control_request", "request_id": "quota", "request": map[string]any{"subtype": "get_usage", "skip_behaviors": true}})
 		} else if v.Response.RequestID == "quota" {
 			if v.Response.Subtype != "success" {
 				t.Logf("get_usage rejected; unsupported=%t", strings.Contains(strings.ToLower(v.Response.Error), "unsupported") || strings.Contains(strings.ToLower(v.Response.Error), "unknown"))

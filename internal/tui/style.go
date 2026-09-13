@@ -147,8 +147,8 @@ func (m *model) sessionScreen() string {
 	info := " -------"
 	if s := m.current(); s != nil {
 		agent := pickerLabel(s.Agent)
-		if s.Model != "" {
-			agent += "/" + pickerLabel(s.Model)
+		if model := m.selectedModelLabel(); model != "" {
+			agent += "/" + model
 		}
 		title := pickerLabel(s.Title)
 		if title == "" {

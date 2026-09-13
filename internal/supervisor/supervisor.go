@@ -22,6 +22,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/lesomnus/cxz/internal/agentview"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/journal"
 )
@@ -43,6 +44,11 @@ type Supervisor struct {
 	codex          *codexProtocol
 	quotaDisabled  bool
 	quotaRequested time.Time
+	modelOptions   []agentview.ModelOption
+	modelRequested time.Time
+	modelPages     []agentview.ModelOption
+	effort         string
+	settingPending string
 }
 type record struct {
 	Op      string       `json:"op"`
@@ -105,6 +111,9 @@ func Run(ctx context.Context, root, id string) error {
 	old := Replay(l.All())
 	s := &Supervisor{session: session, log: l, snap: core.Snapshot{State: "starting", RunID: core.ID(), VendorID: old.VendorID}, pending: map[string]core.Event{}, receipts: map[string]record{}, done: make(chan struct{})}
 	for _, v := range l.All() {
+		if v.Kind == "setting" {
+			s.restoreSetting(v.Text, v.Payload)
+		}
 		if v.Kind == "intent" || v.Kind == "receipt" {
 			var r record
 			if json.Unmarshal(v.Payload, &r) == nil {
@@ -117,15 +126,26 @@ func Run(ctx context.Context, root, id string) error {
 	if old.VendorID != "" {
 		args = append(args, "--resume", old.VendorID)
 	}
-	if session.Model != "" {
-		args = append(args, "--model", session.Model)
+	if s.session.Model != "" {
+		args = append(args, "--model", s.session.Model)
+	}
+	if s.effort != "" {
+		for i := 0; i+1 < len(args); i++ {
+			if args[i] == "--settings" {
+				var settings map[string]any
+				_ = json.Unmarshal([]byte(args[i+1]), &settings)
+				settings["effortLevel"] = s.effort
+				b, _ := json.Marshal(settings)
+				args[i+1] = string(b)
+			}
+		}
 	}
 	if session.Kind == "codex" {
 		// Codex does not persist an empty thread until its first turn. Starting
 		// a fresh empty thread is safe only when no send intent ever existed.
 		hasInput := false
 		for _, r := range s.receipts {
-			if r.Op == "send" {
+			if r.Op == "send" && !isSettingCommand(r.Command.Text) {
 				hasInput = true
 			}
 		}
@@ -242,12 +262,16 @@ func Run(ctx context.Context, root, id string) error {
 			return nil
 		case <-quotaTick.C:
 			s.mu.Lock()
+			s.expireSetting()
 			if !s.quotaDisabled && (s.snap.State == "idle" || s.snap.State == "working" || s.snap.State == "waiting_input") {
 				if s.codex != nil {
 					s.codex.readQuota()
 				} else {
 					s.readClaudeQuota()
 				}
+			}
+			if s.codex != nil && s.snap.State == "idle" {
+				s.readModels()
 			}
 			s.mu.Unlock()
 		case <-ctx.Done():
@@ -355,6 +379,10 @@ func (s *Supervisor) consume(raw []byte) {
 			s.event("compact", "completed", "", json.RawMessage(raw), nil)
 		}
 	case "control_response":
+		if strings.HasPrefix(v.Response.RequestID, "cxz-setting-") {
+			s.finishSetting(strings.TrimPrefix(v.Response.RequestID, "cxz-setting-"), v.Response.Subtype == "success")
+			return
+		}
 		if v.Response.RequestID == "cxz-quota" {
 			s.quotaRequested = time.Time{}
 			if v.Response.Subtype == "success" {
@@ -369,6 +397,8 @@ func (s *Supervisor) consume(raw []byte) {
 		}
 		if v.Response.RequestID == "initialize" {
 			if v.Response.Subtype == "success" {
+				s.modelOptions = agentview.Models("claude", v.Response.Response)
+				s.publishModels()
 				s.event("state", "idle", "", nil, nil)
 				s.readClaudeQuota()
 			} else {
@@ -450,6 +480,14 @@ func (s *Supervisor) execute(op string, c core.Command) (core.Receipt, error) {
 	}
 	if c.RunID != s.snap.RunID {
 		return receipt, errors.New("stale run_id; refresh session")
+	}
+	if op == "send" {
+		if isSettingCommand(c.Text) {
+			return s.configure(c)
+		}
+		if s.settingPending != "" {
+			return receipt, errors.New("model/effort update pending; wait for confirmation")
+		}
 	}
 	var wire any
 	if s.codex != nil {

@@ -187,6 +187,61 @@ reset 시각이 지나도 100%로 추정하지 않고 refresh를 표시한다.
 
 ### 승인·스크롤·대화 렌더링
 
+접속 시 최근 128개 이벤트를 한 번에 읽어 마지막 화면부터 표시한다. 위쪽으로 스크롤하면
+이전 기록을 128개씩 추가로 읽으며, 추가 전 보고 있던 줄의 위치를 유지한다. 화면을 채울
+내용이 부족하면 이전 페이지를 추가로 읽는다. PgUp/Ctrl+Home/마우스 휠을 지원한다.
+아직 전체 기록을 읽지 않았다면 줄 번호는 `loaded L`로 표시하며 전체 저널의 절대 줄
+번호가 아니다. 읽은 페이지와 렌더링 캐시는 현재 TUI에서 유지한다. 이는 TUI의 지연
+로딩이며 서버의 원본 저널 재생/SQLite projection 자체를 바꾼 것은 아니다.
+
+Markdown fenced/indented 코드 블록은 본문 폭 전체의 검정 배경과 내부 한 칸 여백으로
+표시한다. 도움말 짝수 행 키캡은 #303030이며 256색/16색 터미널에서는 각각 236/8번
+색을 명시한다. 16색 팔레트의 밝은 검정까지 순수 검정으로 설정한 터미널은 팔레트
+설정을 변경해야 구분된다.
+
+### 모델·추론 강도
+
+`/model` 또는 `/effort`로 모델 ID와 해당 모델이 보고한 강도 목록을 확인한다.
+`/model <id>` → `/effort <level>`로 설정하며 `/effort default`로 기본 강도로 복귀한다.
+강도를 지정한 상태에서 모델을 바꾸려면 먼저 `/effort default`를 실행한다.
+명령별 예제와 제한은 `/help model`, `/help effort`에 있다.
+
+- 공통 ModelOption으로 Claude의 supportedEffortLevels와 Codex의
+  supportedReasoningEfforts/defaultReasoningEffort를 변환한다. 모델/강도 목록을
+  하드코딩하지 않고 공급자가 보고하지 않은 선택은 거절한다.
+- Claude는 initialize의 모델 목록을 사용하고 set_model/apply_flag_settings로
+  변경한다. 응답 전에는 다음 대화를 차단하며 거절을 성공으로 표시하지 않는다.
+  flag settings로 전달할 수 없는 session-only max effort는 명시적으로 거절한다.
+  모델 목록의 실시간 재조회 API는 확인되지 않아 초기화 스냅샷임을 표시한다.
+- Codex는 [공식 app-server model/list](https://learn.chatgpt.com/docs/app-server#list-models-modellist)를
+  시작 시·조회 명령·idle 매분 호출하고 모든 페이지를 합친다. 선택은 다음 turn/start의
+  model/effort에 전달한다. 기본값 복귀도 보고된 기본값을 사용한다.
+- 실행 중인 CLI 버전/계정/공급자 정책에 따른 지원 범위를 유지한다. 확인된 선택은
+  런타임 저널에 남아 resume 시 복원되고 TUI 상태바에 반영된다. 리소스의 최초 생성
+  model 값과 실행 중 선택은 구분한다. 이전 프로세스에는 새 코드가 자동 적용되지 않는다.
+- 실제 설치 Claude의 빈 프로필로 모델 선택·effort 반영·get_settings를 검증했다.
+  사용자 로그인 계정이나 모델 호출은 하지 않았다. Codex 변경은 프로토콜 fixture로 검증했다.
+
+### quota 진단 로그 공유
+
+먼저 대화창에서 `/usage`를 실행해 Account quota 상태와 마지막 조회 시각을 확인한다.
+추가 진단에는 아래처럼 **payload를 제외한** 이벤트 메타데이터만 추출한다(jq 필요).
+SESSION_ALIAS를 해당 세션 alias로 바꾸고 약 70초 관찰한 뒤 Ctrl+C로 종료한다.
+
+```sh
+./cxz session events SESSION_ALIAS --format json |
+  jq --unbuffered 'select(.kind == "usage" or .kind == "usage_status") | {seq, run_id, time_ms, kind, text}'
+```
+
+이 명령은 과거 기록을 먼저 출력하고 새 이벤트를 계속 구독한다. usage가 없으면 아무것도
+출력되지 않을 수 있으며 그것도 진단에 유용하다. `/usage` 출력과 함께 공유하면 된다.
+원본 session events에는 대화/명령/도구 결과가 들어 있으므로 통째로 공유하지 않는다.
+인증 파일·access/refresh token은 공유하지 않는다. 서버 자체 오류는
+`./cxz manager logs --tail 100`, 준비 단계 오류는 `./cxz project logs PROJECT --tail 100`으로
+확인할 수 있으나 이 로그들도 공유 전에 비밀과 개인 경로를 검토해야 한다.
+
+### 승인 상자
+
 대화와 안내 줄 사이에 빈 줄을 둔다. 승인 박스는 안내와 입력창 사이에 표시한다.
 Tab은 위→아래의 승인(있을 때)→입력→최하단 세션 선택을 순환하며 Shift-Tab은 역순이다.
 승인 포커스에서는 ↑/↓ 선택,

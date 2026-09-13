@@ -20,6 +20,8 @@ var slashCommands = []slashCommand{
 	{"/permission", "full: auto-approve this run · ask: manual"},
 	{"/approval", "Inspect selected approval payload"},
 	{"/details", "Inspect latest tool result"},
+	{"/model", "Provider model catalog or model selection"},
+	{"/effort", "Provider reasoning strength"},
 }
 
 func (m *model) commandHints() []slashCommand {
@@ -125,7 +127,10 @@ func (m *model) commandOverlay(view string) string {
 
 func (m *model) localCommandView(id string) string {
 	command := m.localOutput[id]
-	if command == "/permission" || command == "/approval" || command == "/context" || command == "/compact" || command == "/details" {
+	if command == "/model" {
+		return localReport(m.modelReport(), m.view.Width)
+	}
+	if command == "/model" || command == "/permission" || command == "/approval" || command == "/context" || command == "/compact" || command == "/details" {
 		return localReport(m.localReports[id], m.view.Width)
 	}
 	if command == "/usage" {

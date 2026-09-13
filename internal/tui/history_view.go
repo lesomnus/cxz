@@ -17,7 +17,11 @@ func (m *model) scrollStatus() string {
 			break
 		}
 	}
-	return fmt.Sprintf("L %d–%d/%d · %s · Ctrl+End latest", start+1, min(len(m.historyTimes), start+m.view.Height), len(m.historyTimes), stamp)
+	label := "L"
+	if s := m.current(); s != nil && m.historyStart[s.Id] > 0 {
+		label = "loaded L"
+	}
+	return fmt.Sprintf("%s %d–%d/%d · %s · Ctrl+End latest", label, start+1, min(len(m.historyTimes), start+m.view.Height), len(m.historyTimes), stamp)
 }
 
 func (m *model) conversationView() string {
