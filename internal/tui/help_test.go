@@ -19,6 +19,11 @@ func TestHelpTopicsAndKeycaps(t *testing.T) {
 	if ansi.Strip(a) != " Ctrl  +  S " || ansi.Strip(b) != ansi.Strip(a) || a == b {
 		t.Fatalf("key padding or alternating background missing: %q / %q", a, b)
 	}
+	lipgloss.SetColorProfile(termenv.ANSI)
+	if helpKeycaps("Ctrl+S", 0) == helpKeycaps("Ctrl+S", 1) {
+		t.Fatal("16-color keycaps collapsed to the same background")
+	}
+	lipgloss.SetColorProfile(termenv.TrueColor)
 	for _, width := range []int{20, 80, 120} {
 		for _, entry := range commandHelpEntries {
 			for _, line := range strings.Split(helpView(width, entry.name), "\n") {

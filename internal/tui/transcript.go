@@ -24,6 +24,15 @@ func eventView(s *api.Session, e *api.Event, width int) (out string) {
 	switch e.Kind {
 	case "state":
 		return ""
+	case "setting":
+		var v struct{ Value string }
+		_ = json.Unmarshal(e.Payload, &v)
+		if v.Value == "" {
+			v.Value = "default"
+		}
+		return teal.Render(wrap("✓ " + e.Text + " · " + v.Value))
+	case "setting_status":
+		return muted.Render(wrap("Settings · " + e.Text))
 	case "input":
 		stamp := "-- -- --:--"
 		if e.TimeMs > 0 {

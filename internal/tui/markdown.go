@@ -69,9 +69,10 @@ func markdownView(raw string, width int) string {
 			segment := n.Lines().At(i)
 			b.Write(segment.Value(source))
 		}
-		rows := strings.Split(ansi.Hardwrap(strings.TrimRight(b.String(), "\n"), max(1, width), true), "\n")
+		rows := strings.Split(ansi.Hardwrap(strings.TrimRight(b.String(), "\n"), max(1, width-1), true), "\n")
 		for i := range rows {
-			rows[i] = codeStyle.Render(rows[i])
+			line := clip(" "+rows[i], max(1, width))
+			rows[i] = codeStyle.Render(line + strings.Repeat(" ", max(0, width-ansi.StringWidth(line))))
 		}
 		return strings.Join(rows, "\n") + "\n\n"
 	}

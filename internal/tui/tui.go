@@ -52,8 +52,11 @@ type model struct {
 	width, height        int
 	events               map[string][]*api.Event
 	cursor               map[string]uint64
+	historyLoading       map[string]bool
+	historyStart         map[string]uint64
 	watchCancel          context.CancelFunc
 	watchID              string
+	watchEpoch           uint64
 	wantID               string
 	accounts             []*resource.Account
 	accountIndex         int
@@ -239,8 +242,29 @@ func (m *model) watch() {
 	ctx, cancel := context.WithCancel(m.ctx)
 	m.watchCancel = cancel
 	m.watchID = id
+	m.watchEpoch++
+	epoch := m.watchEpoch
 	after := m.cursor[id]
+	last := s.LastSeq
 	go func() {
+		if after == 0 && last > 0 {
+			start := uint64(0)
+			if last > historyPageSize {
+				start = last - historyPageSize
+			}
+			batch, err := m.client.History(ctx, &api.WatchRequest{SessionId: id, AfterSeq: start})
+			if err != nil {
+				m.program.Send(disconnected{id, err})
+				return
+			}
+			for _, e := range batch.Events {
+				after = max(after, e.Seq)
+			}
+			if ctx.Err() != nil {
+				return
+			}
+			m.program.Send(historyPage{id: id, events: batch.Events, start: start, initial: true, epoch: epoch})
+		}
 		stream, e := m.client.Watch(ctx, &api.WatchRequest{SessionId: id, AfterSeq: after})
 		if e == nil {
 			for {
@@ -421,6 +445,12 @@ func (m *model) action(kind, text string) tea.Cmd {
 }
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch v := msg.(type) {
+	case historyPage:
+		m.applyHistoryPage(v)
+		if v.err == nil && m.view.TotalLineCount() <= m.view.Height {
+			return m, m.loadOlderHistory()
+		}
+		return m, nil
 	case pulseTick:
 		m.pulse++
 		return m, pulseTimer()
@@ -464,6 +494,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if !m.projectView && !m.accountView && v.Y < m.view.Height {
 			m.view, _ = m.view.Update(v)
+			return m, m.loadOlderHistory()
 		}
 		return m, nil
 	case renameResult:
@@ -664,13 +695,13 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		case "pgup", "pgdown":
 			m.view, _ = m.view.Update(v)
-			return m, nil
+			return m, m.loadOlderHistory()
 		case "ctrl+end":
 			m.view.GotoBottom()
 			return m, nil
 		case "ctrl+home":
 			m.view.GotoTop()
-			return m, nil
+			return m, m.loadOlderHistory()
 		case "tab", "shift+tab":
 			if m.creating {
 				if len(m.accounts) > 0 {
@@ -793,6 +824,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.action("answer", strings.TrimPrefix(text, "/answer "))
 			}
 			localName := strings.Fields(text)[0]
+			if localName == "/model" || localName == "/effort" {
+				return m, m.modelCommand(text)
+			}
 			if localName == "/permission" {
 				return m, m.permissionCommand(text)
 			}
