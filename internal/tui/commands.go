@@ -24,6 +24,7 @@ var slashCommands = []slashCommand{
 	{"/model", "Provider model catalog or model selection"},
 	{"/effort", "Provider reasoning strength"},
 	{"/background", "Inspect provider background tasks"},
+	{"/paste", "Preview pasted text or attach it as a file"},
 }
 
 func (m *model) commandHints() []slashCommand {

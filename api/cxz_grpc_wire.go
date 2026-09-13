@@ -23,6 +23,7 @@ const (
 	Sessions_List_FullMethodName      = "/cxz.runtime.Sessions/List"
 	Sessions_Get_FullMethodName       = "/cxz.runtime.Sessions/Get"
 	Sessions_Send_FullMethodName      = "/cxz.runtime.Sessions/Send"
+	Sessions_Attach_FullMethodName    = "/cxz.runtime.Sessions/Attach"
 	Sessions_Reply_FullMethodName     = "/cxz.runtime.Sessions/Reply"
 	Sessions_Interrupt_FullMethodName = "/cxz.runtime.Sessions/Interrupt"
 	Sessions_Resume_FullMethodName    = "/cxz.runtime.Sessions/Resume"
@@ -42,6 +43,7 @@ type SessionsClient interface {
 	List(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*SessionList, error)
 	Get(ctx context.Context, in *SessionRef, opts ...grpc.CallOption) (*Session, error)
 	Send(ctx context.Context, in *Input, opts ...grpc.CallOption) (*Receipt, error)
+	Attach(ctx context.Context, in *AttachmentInput, opts ...grpc.CallOption) (*Attachment, error)
 	Reply(ctx context.Context, in *Answer, opts ...grpc.CallOption) (*Receipt, error)
 	Interrupt(ctx context.Context, in *Control, opts ...grpc.CallOption) (*Receipt, error)
 	Resume(ctx context.Context, in *Control, opts ...grpc.CallOption) (*Session, error)
@@ -95,6 +97,16 @@ func (c *sessionsClient) Send(ctx context.Context, in *Input, opts ...grpc.CallO
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Receipt)
 	err := c.cc.Invoke(ctx, Sessions_Send_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) Attach(ctx context.Context, in *AttachmentInput, opts ...grpc.CallOption) (*Attachment, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Attachment)
+	err := c.cc.Invoke(ctx, Sessions_Attach_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -208,6 +220,7 @@ type SessionsServer interface {
 	List(context.Context, *Empty) (*SessionList, error)
 	Get(context.Context, *SessionRef) (*Session, error)
 	Send(context.Context, *Input) (*Receipt, error)
+	Attach(context.Context, *AttachmentInput) (*Attachment, error)
 	Reply(context.Context, *Answer) (*Receipt, error)
 	Interrupt(context.Context, *Control) (*Receipt, error)
 	Resume(context.Context, *Control) (*Session, error)
@@ -238,6 +251,9 @@ func (UnimplementedSessionsServer) Get(context.Context, *SessionRef) (*Session, 
 }
 func (UnimplementedSessionsServer) Send(context.Context, *Input) (*Receipt, error) {
 	return nil, status.Error(codes.Unimplemented, "method Send not implemented")
+}
+func (UnimplementedSessionsServer) Attach(context.Context, *AttachmentInput) (*Attachment, error) {
+	return nil, status.Error(codes.Unimplemented, "method Attach not implemented")
 }
 func (UnimplementedSessionsServer) Reply(context.Context, *Answer) (*Receipt, error) {
 	return nil, status.Error(codes.Unimplemented, "method Reply not implemented")
@@ -355,6 +371,24 @@ func _Sessions_Send_Handler(srv interface{}, ctx context.Context, dec func(inter
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SessionsServer).Send(ctx, req.(*Input))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_Attach_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AttachmentInput)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).Attach(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_Attach_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).Attach(ctx, req.(*AttachmentInput))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -536,6 +570,10 @@ var Sessions_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Send",
 			Handler:    _Sessions_Send_Handler,
+		},
+		{
+			MethodName: "Attach",
+			Handler:    _Sessions_Attach_Handler,
 		},
 		{
 			MethodName: "Reply",

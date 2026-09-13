@@ -206,12 +206,12 @@ func (m *model) sessionScreen() string {
 		track = m.scrollTrack()
 	}
 	composer := m.input
-	modal := m.report != nil || m.modelPicker != nil || m.restartConfirm != nil || m.questionDialog != nil
+	modal := m.report != nil || m.modelPicker != nil || m.restartConfirm != nil || m.questionDialog != nil || m.pasteDialog != nil
 	if modal {
 		composer.Blur()
 	}
-	body := m.questionOverlay(m.restartOverlay(m.reportView(m.modelPickerOverlay(m.commandOverlay(m.conversationView()))))) + "\n" + track + "\n" + clip("  "+status, width) + "\n" + box +
-		frame(composer.View(), width, !modal && !m.focusList && !m.focusApproval) + "\n" + clip(info, width)
+	body := m.pasteOverlay(m.questionOverlay(m.restartOverlay(m.reportView(m.modelPickerOverlay(m.commandOverlay(m.conversationView())))))) + "\n" + track + "\n" + clip("  "+status, width) + "\n" + box +
+		frame(decoratePastes(composer.View(), m.pastes), width, !modal && !m.focusList && !m.focusApproval) + "\n" + clip(info, width)
 	return screen(body, m.width, m.height)
 }
 

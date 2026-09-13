@@ -208,6 +208,18 @@ func (s SessionServer) Send(ctx context.Context, r *resource.SessionSendRequest)
 	}
 	return receipt(s.shared.runtime.Send(ctx, &api.Input{SessionId: v.GetRuntimeId(), RunId: r.GetRunId(), ClientId: r.GetClientId(), Text: r.GetText()}))
 }
+
+func (s SessionServer) Attach(ctx context.Context, r *resource.SessionAttachRequest) (*resource.SessionAttachment, error) {
+	v, err := s.resolve(ctx, r.GetRef())
+	if err != nil {
+		return nil, err
+	}
+	a, err := s.shared.runtime.Attach(ctx, &api.AttachmentInput{SessionId: v.GetRuntimeId(), RunId: r.GetRunId(), Content: r.GetContent()})
+	if err != nil {
+		return nil, err
+	}
+	return resource.SessionAttachment_builder{Path: &a.Path}.Build(), nil
+}
 func (s SessionServer) Reply(ctx context.Context, r *resource.SessionReplyRequest) (*resource.SessionReceipt, error) {
 	v, err := s.resolve(ctx, r.GetRef())
 	if err != nil {

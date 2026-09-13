@@ -3615,6 +3615,11 @@ func (s interceptSession) Send(ctx context.Context, req *resource.SessionSendReq
 		resource.SessionService_Send_FullMethodName, req, s.SessionServiceServer.Send)
 }
 
+func (s interceptSession) Attach(ctx context.Context, req *resource.SessionAttachRequest) (*resource.SessionAttachment, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
+		resource.SessionService_Attach_FullMethodName, req, s.SessionServiceServer.Attach)
+}
+
 func (s interceptSession) Reply(ctx context.Context, req *resource.SessionReplyRequest) (*resource.SessionReceipt, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
 		resource.SessionService_Reply_FullMethodName, req, s.SessionServiceServer.Reply)
@@ -4795,6 +4800,19 @@ func dispatch(ctx context.Context, s resource.Server, op *pdpb.Op) (*anypb.Any, 
 		}
 
 		res, err := s.Session().Send(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.SessionService_Attach_FullMethodName:
+		v := &resource.SessionAttachRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Session().Attach(ctx, v)
 		if err != nil {
 			return nil, err
 		}

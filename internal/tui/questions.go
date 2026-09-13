@@ -20,6 +20,7 @@ type questionDialog struct {
 	page, row, offset int
 	message           string
 	sending           bool
+	pastes            map[string]*pastedText
 }
 
 func (m *model) openQuestion(p *api.Event) tea.Cmd {
@@ -123,7 +124,7 @@ func (d *questionDialog) texts() []string {
 	for i, in := range d.other {
 		text := ""
 		if d.otherSelected[i] {
-			text = in.Value()
+			text = expandPastes(in.Value(), d.pastes)
 		}
 		out = append(out, text)
 	}
@@ -247,6 +248,11 @@ input:
 		var cmd tea.Cmd
 		d.other[d.page], cmd = d.other[d.page].Update(k)
 		if d.other[d.page].Value() != before {
+			if partialPasteEdit(before, d.other[d.page].Value(), d.pastes) {
+				d.other[d.page].SetValue(before)
+				d.message = "Ctrl+P to preview or delete the paste."
+				return nil
+			}
 			d.otherSelected[d.page] = strings.TrimSpace(d.other[d.page].Value()) != ""
 			if !q.Multi {
 				clear(d.selected[d.page])
@@ -258,6 +264,9 @@ input:
 }
 
 func (m *model) questionOverlay(view string) string {
+	if m.pasteDialog != nil {
+		return view
+	}
 	d := m.questionDialog
 	if d == nil {
 		return view
@@ -321,7 +330,7 @@ func (m *model) questionOverlay(view string) string {
 		} else if d.row == len(q.Options) {
 			label = accent.Render(label)
 		}
-		add(label + in.View())
+		add(label + decoratePastes(in.View(), d.pastes))
 	}
 	n := d.count()
 	add("")

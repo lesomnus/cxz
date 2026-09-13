@@ -30,6 +30,7 @@ const (
 	SessionService_Stop_FullMethodName      = "/cxz.SessionService/Stop"
 	SessionService_Interrupt_FullMethodName = "/cxz.SessionService/Interrupt"
 	SessionService_Send_FullMethodName      = "/cxz.SessionService/Send"
+	SessionService_Attach_FullMethodName    = "/cxz.SessionService/Attach"
 	SessionService_Reply_FullMethodName     = "/cxz.SessionService/Reply"
 	SessionService_History_FullMethodName   = "/cxz.SessionService/History"
 	SessionService_Events_FullMethodName    = "/cxz.SessionService/Events"
@@ -67,6 +68,7 @@ type SessionServiceClient interface {
 	Stop(ctx context.Context, in *SessionControl, opts ...grpc.CallOption) (*Session, error)
 	Interrupt(ctx context.Context, in *SessionControl, opts ...grpc.CallOption) (*SessionReceipt, error)
 	Send(ctx context.Context, in *SessionSendRequest, opts ...grpc.CallOption) (*SessionReceipt, error)
+	Attach(ctx context.Context, in *SessionAttachRequest, opts ...grpc.CallOption) (*SessionAttachment, error)
 	Reply(ctx context.Context, in *SessionReplyRequest, opts ...grpc.CallOption) (*SessionReceipt, error)
 	// Journal replay is not payday Watch: it is cursor-ordered event history.
 	History(ctx context.Context, in *SessionEventsRequest, opts ...grpc.CallOption) (*SessionEventBatch, error)
@@ -200,6 +202,16 @@ func (c *sessionServiceClient) Send(ctx context.Context, in *SessionSendRequest,
 	return out, nil
 }
 
+func (c *sessionServiceClient) Attach(ctx context.Context, in *SessionAttachRequest, opts ...grpc.CallOption) (*SessionAttachment, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SessionAttachment)
+	err := c.cc.Invoke(ctx, SessionService_Attach_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *sessionServiceClient) Reply(ctx context.Context, in *SessionReplyRequest, opts ...grpc.CallOption) (*SessionReceipt, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SessionReceipt)
@@ -271,6 +283,7 @@ type SessionServiceServer interface {
 	Stop(context.Context, *SessionControl) (*Session, error)
 	Interrupt(context.Context, *SessionControl) (*SessionReceipt, error)
 	Send(context.Context, *SessionSendRequest) (*SessionReceipt, error)
+	Attach(context.Context, *SessionAttachRequest) (*SessionAttachment, error)
 	Reply(context.Context, *SessionReplyRequest) (*SessionReceipt, error)
 	// Journal replay is not payday Watch: it is cursor-ordered event history.
 	History(context.Context, *SessionEventsRequest) (*SessionEventBatch, error)
@@ -317,6 +330,9 @@ func (UnimplementedSessionServiceServer) Interrupt(context.Context, *SessionCont
 }
 func (UnimplementedSessionServiceServer) Send(context.Context, *SessionSendRequest) (*SessionReceipt, error) {
 	return nil, status.Error(codes.Unimplemented, "method Send not implemented")
+}
+func (UnimplementedSessionServiceServer) Attach(context.Context, *SessionAttachRequest) (*SessionAttachment, error) {
+	return nil, status.Error(codes.Unimplemented, "method Attach not implemented")
 }
 func (UnimplementedSessionServiceServer) Reply(context.Context, *SessionReplyRequest) (*SessionReceipt, error) {
 	return nil, status.Error(codes.Unimplemented, "method Reply not implemented")
@@ -539,6 +555,24 @@ func _SessionService_Send_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SessionService_Attach_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SessionAttachRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionServiceServer).Attach(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SessionService_Attach_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionServiceServer).Attach(ctx, req.(*SessionAttachRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _SessionService_Reply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SessionReplyRequest)
 	if err := dec(in); err != nil {
@@ -632,6 +666,10 @@ var SessionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Send",
 			Handler:    _SessionService_Send_Handler,
+		},
+		{
+			MethodName: "Attach",
+			Handler:    _SessionService_Attach_Handler,
 		},
 		{
 			MethodName: "Reply",

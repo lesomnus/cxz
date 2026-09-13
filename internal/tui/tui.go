@@ -107,6 +107,8 @@ type model struct {
 	cursorOutput         *cursorWriter
 	renderedResponses    map[*api.Event]renderedResponse
 	program              *tea.Program
+	pastes               map[string]*pastedText
+	pasteDialog          *pasteDialog
 }
 type listing struct {
 	project  *api.Project
@@ -584,6 +586,38 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 	switch v := msg.(type) {
+	case pasteSent:
+		if v.result.err != nil {
+			if s := m.current(); s != nil && s.Id == v.id && m.input.Value() == "" {
+				m.input.SetValue(v.draft)
+			} else {
+				if m.drafts == nil {
+					m.drafts = map[string]string{}
+				}
+				if m.drafts[v.id] == "" {
+					m.drafts[v.id] = v.draft
+				}
+			}
+		}
+		return m.Update(v.result)
+	case pasteUploaded:
+		v.dialog.busy = false
+		if v.err != nil {
+			v.dialog.message = "Upload failed; original text retained: " + v.err.Error()
+			return m, nil
+		}
+		if v.path == "" {
+			v.dialog.message = "Upload returned no path; original text retained."
+			return m, nil
+		}
+		if p := m.pastes[v.token]; p != nil {
+			p.path = v.path
+			if m.pasteDialog == v.dialog {
+				p.file = true
+			}
+		}
+		v.dialog.message = "File stored. Only its path will be sent; t restores full text."
+		return m, nil
 	case workflowOutput:
 		if m.workflow == v.flow {
 			m.workflow.output += v.text
@@ -940,6 +974,15 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, m.refresh()
 	case tea.KeyMsg:
+		if m.pasteDialog != nil {
+			return m, m.pasteKey(v)
+		}
+		if m.capturePaste(v) {
+			return m, nil
+		}
+		if v.String() == "ctrl+p" && m.workflow == nil && !m.accountView && !m.projectView {
+			return m, m.openPastes()
+		}
 		if m.workflow != nil {
 			return m, m.workflowKey(v)
 		}
@@ -1054,7 +1097,11 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case "enter":
 			if !m.focusList && !m.creating {
+				before := m.input.Value()
 				m.input.InsertString("\n")
+				if partialPasteEdit(before, m.input.Value(), m.pastes) {
+					m.input.SetValue(before)
+				}
 				m.resize()
 				return m, nil
 			}
@@ -1065,6 +1112,15 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.input.Focus()
 			}
 			text := strings.TrimSpace(m.input.Value())
+			if text == "/paste" {
+				return m, m.openPastes()
+			}
+			draft := text
+			text = expandPastes(text, m.pastes)
+			if draft != text && !m.creating {
+				m.input.Reset()
+				return m, m.sendPastes(draft, text)
+			}
 			if m.creating && m.project != nil {
 				text = m.project.Workspace
 			}
@@ -1171,7 +1227,12 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, cmd
 	}
 	if !m.focusList {
+		before := m.input.Value()
 		m.input, cmd = m.input.Update(msg)
+		if partialPasteEdit(before, m.input.Value(), m.pastes) {
+			m.input.SetValue(before)
+			m.notice = "Paste chips are indivisible; Ctrl+P to preview or delete."
+		}
 	}
 	m.resize()
 	if k, ok := msg.(tea.KeyMsg); ok && (k.String() == "pgup" || k.String() == "pgdown") {
