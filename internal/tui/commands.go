@@ -100,7 +100,7 @@ func (m *model) commandOverlay(view string) string {
 		return view
 	}
 	rows := strings.Split(view, "\n")
-	count := min(7, min(len(hints), max(0, len(rows)-1)))
+	count := min(7, min(len(hints), max(0, len(rows)-2)))
 	if count == 0 {
 		return view
 	}
@@ -110,7 +110,7 @@ func (m *model) commandOverlay(view string) string {
 	start = max(start, selected+margin-count+1)
 	start = max(0, min(start, len(hints)-count))
 	m.hintOffset = start
-	rows[len(rows)-count-1] = strings.Repeat(" ", m.width)
+	var content []string
 	for i := 0; i < count; i++ {
 		c := hints[start+i]
 		text := "  " + c.name + "  " + c.description
@@ -119,10 +119,9 @@ func (m *model) commandOverlay(view string) string {
 			text = "› " + c.name + "  " + c.description
 			style = accent
 		}
-		line := clip(text, m.width)
-		rows[len(rows)-count+i] = style.Render(line + strings.Repeat(" ", max(0, m.width-ansi.StringWidth(line))))
+		content = append(content, style.Render(text))
 	}
-	return strings.Join(rows, "\n")
+	return overlayBox(view, content, m.width)
 }
 
 func (m *model) localCommandView(id string) (out string) {

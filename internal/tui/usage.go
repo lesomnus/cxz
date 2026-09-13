@@ -37,14 +37,11 @@ func (m *model) loadUsage() tea.Cmd {
 	if m.usageGeneration == nil {
 		m.usageGeneration = map[string]uint64{}
 	}
-	m.localHelp[id] = m.cursor[id]
-	m.localOutput[id] = "/usage"
 	m.usageReports[id] = "Loading session usage…"
 	m.usageGeneration[id]++
 	generation := m.usageGeneration[id]
-	m.resize()
-	m.render()
-	m.view.GotoBottom()
+	m.openReport("/usage", m.usageReports[id])
+	m.report.generation = generation
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(m.ctx, 20*time.Second)
 		defer cancel()

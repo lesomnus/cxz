@@ -45,9 +45,10 @@ func TestCommandOverlayAndContext(t *testing.T) {
 		if action != nil || len(c.inputs) != 0 || m.cursor["s"] != 0 {
 			t.Fatal("placeholder was sent to agent")
 		}
-		if !strings.Contains(ansi.Strip(m.view.View()), "Provider has not reported context usage") {
+		if m.report == nil || !strings.Contains(m.report.text, "Provider has not reported context usage") {
 			t.Fatal("missing context report")
 		}
+		m.Update(tea.KeyMsg{Type: tea.KeyEsc})
 	}
 	m.input.SetValue("ordinary input")
 	if len(m.commandHints()) != 0 {

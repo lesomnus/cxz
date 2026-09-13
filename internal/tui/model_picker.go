@@ -37,6 +37,7 @@ func (m *model) openModelPicker(command string) tea.Cmd {
 		return nil
 	}
 	m.modelPickerEpoch++
+	m.report = nil
 	if m.modelPicker != nil && m.modelPicker.cancel != nil {
 		m.modelPicker.cancel()
 	}
@@ -199,7 +200,7 @@ func (m *model) modelPickerOverlay(view string) string {
 		return view
 	}
 	rows := strings.Split(view, "\n")
-	width := max(1, m.width-2)
+	width := max(1, m.width-4)
 	lines := []string{accent.Bold(true).Render(p.kind + " · select"), muted.Render("↑/↓ choose · Enter apply · Esc cancel")}
 	if p.loading {
 		lines = append(lines, "Reading provider capabilities…")
@@ -208,7 +209,7 @@ func (m *model) modelPickerOverlay(view string) string {
 		lines = append(lines, strings.Split(ansi.Hardwrap(safeText(p.message), width, true), "\n")...)
 	}
 	options := p.options()
-	count := min(7, max(0, len(rows)-6))
+	count := min(7, max(0, len(rows)-8))
 	selected := min(p.selected, max(0, len(options)-1))
 	start := max(0, min(selected-max(0, count-3), len(options)-count))
 	for i := start; i < min(len(options), start+count); i++ {
@@ -222,13 +223,5 @@ func (m *model) modelPickerOverlay(view string) string {
 		lines = append(lines, "No matching provider choices.")
 	}
 	lines = append(lines, "", "Search: "+safeText(p.query)+"▏")
-	if len(lines) > len(rows) {
-		lines = lines[:len(rows)]
-	}
-	startRow := len(rows) - len(lines)
-	for i, line := range lines {
-		line = clip("  "+line, m.width)
-		rows[startRow+i] = line + strings.Repeat(" ", max(0, m.width-ansi.StringWidth(line)))
-	}
-	return strings.Join(rows, "\n")
+	return overlayBox(view, lines, m.width)
 }
