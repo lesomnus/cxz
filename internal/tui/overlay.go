@@ -14,7 +14,7 @@ type reportOverlay struct {
 }
 
 // A modal overlays existing rows without changing transcript height or scroll.
-func overlayBox(view string, content []string, width int) string {
+func overlayBox(view string, content []string, width int, focused ...bool) string {
 	rows := strings.Split(view, "\n")
 	if width < 4 || len(rows) < 3 {
 		return view
@@ -23,12 +23,16 @@ func overlayBox(view string, content []string, width int) string {
 	if len(content) > len(rows)-2 {
 		content = content[:len(rows)-2]
 	}
-	box := []string{teal.Render("╭" + strings.Repeat("─", width-2) + "╮")}
+	border := teal
+	if len(focused) > 0 && focused[0] {
+		border = accent
+	}
+	box := []string{border.Render("╭" + strings.Repeat("─", width-2) + "╮")}
 	for _, line := range content {
 		line = clip(line, inner)
-		box = append(box, teal.Render("│")+" "+line+strings.Repeat(" ", max(0, inner-ansi.StringWidth(line)))+" "+teal.Render("│"))
+		box = append(box, border.Render("│")+" "+line+strings.Repeat(" ", max(0, inner-ansi.StringWidth(line)))+" "+border.Render("│"))
 	}
-	box = append(box, teal.Render("╰"+strings.Repeat("─", width-2)+"╯"))
+	box = append(box, border.Render("╰"+strings.Repeat("─", width-2)+"╯"))
 	copy(rows[len(rows)-len(box):], box)
 	return strings.Join(rows, "\n")
 }
@@ -66,7 +70,7 @@ func (m *model) reportView(view string) string {
 	content := []string{accent.Bold(true).Render(p.title)}
 	content = append(content, lines[p.offset:min(len(lines), p.offset+capacity)]...)
 	content = append(content, muted.Render("↑/↓ · PgUp/PgDn scroll · Esc close"))
-	return overlayBox(view, content, m.width)
+	return overlayBox(view, content, m.width, true)
 }
 
 func (m *model) reportKey(k tea.KeyMsg) tea.Cmd {

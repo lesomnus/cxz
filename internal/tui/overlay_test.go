@@ -5,9 +5,34 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/lesomnus/cxz/api"
+	"github.com/muesli/termenv"
 )
+
+func TestOverlayFocusBorder(t *testing.T) {
+	profile := lipgloss.ColorProfile()
+	lipgloss.SetColorProfile(termenv.TrueColor)
+	t.Cleanup(func() { lipgloss.SetColorProfile(profile) })
+	view := strings.Repeat("\n", 10)
+	passive := overlayBox(view, []string{"hint"}, 40)
+	active := overlayBox(view, []string{"hint"}, 40, true)
+	if ansi.Strip(active) != ansi.Strip(passive) || active == passive {
+		t.Fatal("focus should affect border style, not geometry")
+	}
+	m := conversationModel()
+	m.openReport("/usage", "report")
+	top := accent.Render("╭" + strings.Repeat("─", m.width-2) + "╮")
+	if !strings.Contains(m.reportView(view), top) {
+		t.Fatal("report modal lacks focused border")
+	}
+	m.report = nil
+	m.modelPicker = &modelPicker{kind: "/model"}
+	if !strings.Contains(m.modelPickerOverlay(view), top) {
+		t.Fatal("model modal lacks focused border")
+	}
+}
 
 func TestReportModalPreservesConversationAndDraft(t *testing.T) {
 	m := conversationModel()

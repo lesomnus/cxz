@@ -1,5 +1,15 @@
 # 구현 진행 상황
 
+## 2026-09-13 — 모달 활성 테두리·동시 세션 제한 확인
+
+- 조회/모델 선택 모달에 활성 brand green 테두리를 적용했다. 자동완성은 입력창이
+  포커스를 유지하므로 기존 teal 테두리를 사용한다. 테두리 색만 바꾸며 크기는 유지한다.
+  전체 Go 테스트, TUI race, go vet, git diff --check와 모달 테두리 회귀 테스트를 통과했다.
+- 세션 추가 거절은 provider 자체 오류가 아니라 cxz의 workspace 단일 live 세션 정책이다.
+  client preflight, manager, runtime Create, supervisor의 workspace flock을 확인했다.
+  Claude/Codex/혼합에 동일하게 적용되며 idle도 live다. 기존 계획의 동시 작업 트리 vs
+  worktree 결정 유보에 해당한다. 이번 요청에서는 원인 확인만 하고 제한은 해제하지 않았다.
+
 ## 2026-09-13 — 모달 포커스 표시·대칭 구분선·스크롤 위치 막대
 
 - 조회/모델 선택 모달에서는 composer 복사본을 blur해 표시한다. 원래 입력 포커스와
