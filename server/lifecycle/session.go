@@ -220,6 +220,24 @@ func (s SessionServer) Attach(ctx context.Context, r *resource.SessionAttachRequ
 	}
 	return resource.SessionAttachment_builder{Path: &a.Path}.Build(), nil
 }
+func (s SessionServer) Activity(ctx context.Context, r *resource.SessionActivityRequest) (*resource.SessionReceipt, error) {
+	v, e := s.resolve(ctx, r.GetRef())
+	if e != nil {
+		return nil, e
+	}
+	return receipt(s.shared.runtime.Activity(ctx, &api.ActivityInput{SessionId: v.GetRuntimeId(), RunId: r.GetRunId(), ClientId: r.GetClientId(), Busy: r.GetBusy()}))
+}
+func (s SessionServer) UpdateAgent(ctx context.Context, r *resource.SessionUpdateRequest) (*resource.SessionUpdateStatus, error) {
+	v, e := s.resolve(ctx, r.GetRef())
+	if e != nil {
+		return nil, e
+	}
+	x, e := s.shared.runtime.UpdateAgent(ctx, &api.AgentUpdateInput{SessionId: v.GetRuntimeId(), RunId: r.GetRunId(), Binary: r.GetBinary(), Apply: r.GetApply()})
+	if e != nil {
+		return nil, e
+	}
+	return resource.SessionUpdateStatus_builder{Ready: &x.Ready, Reason: &x.Reason, Binary: &x.Binary, State: &x.State}.Build(), nil
+}
 func (s SessionServer) Reply(ctx context.Context, r *resource.SessionReplyRequest) (*resource.SessionReceipt, error) {
 	v, err := s.resolve(ctx, r.GetRef())
 	if err != nil {
@@ -253,5 +271,5 @@ func (s SessionServer) Events(r *resource.SessionEventsRequest, stream grpc.Serv
 	if err != nil {
 		return err
 	}
-	return s.shared.runtime.Watch(&api.WatchRequest{SessionId: v.GetRuntimeId(), AfterSeq: r.GetAfterSeq()}, eventStream{stream})
+	return s.shared.runtime.Watch(&api.WatchRequest{SessionId: v.GetRuntimeId(), AfterSeq: r.GetAfterSeq(), ClientId: r.GetClientId()}, eventStream{stream})
 }

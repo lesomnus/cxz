@@ -38,6 +38,7 @@ import (
 )
 
 type Server struct {
+	updateQueued map[string]string
 	api.UnimplementedSessionsServer
 	mu                     sync.Mutex
 	projectionMu           sync.Mutex
@@ -145,6 +146,20 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 	resources, e := lifecycle.Build(ctx, resourceDB, s)
 	if e != nil {
 		return fmt.Errorf("build payday resource server: %w", e)
+	}
+	if s.manager == nil {
+		s.recoverAgentUpdates(ctx)
+	}
+	if s.manager != nil {
+		updatesCtx, cancelUpdates := context.WithCancel(ctx)
+		updatesDone := make(chan struct{})
+		go func() { defer close(updatesDone); s.manager.RunUpdates(updatesCtx) }()
+		defer func() { cancelUpdates(); <-updatesDone }()
+	} else {
+		recoveryCtx, cancelRecovery := context.WithCancel(ctx)
+		recoveryDone := make(chan struct{})
+		go func() { defer close(recoveryDone); s.runUpdateRecovery(recoveryCtx) }()
+		defer func() { cancelRecovery(); <-recoveryDone }()
 	}
 	watchCtx, cancelWatch := context.WithCancel(ctx)
 	watchDone := make(chan struct{})
@@ -555,6 +570,11 @@ func (s *Server) Get(ctx context.Context, r *api.SessionRef) (*api.Session, erro
 	return s.snapshot(ctx, m)
 }
 func (s *Server) command(ctx context.Context, id, op string, c core.Command) (*api.Receipt, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.commandUnlocked(ctx, id, op, c)
+}
+func (s *Server) commandUnlocked(ctx context.Context, id, op string, c core.Command) (*api.Receipt, error) {
 	if _, e := s.manifest(ctx, id); e != nil {
 		return nil, e
 	}
@@ -644,9 +664,23 @@ func (s *Server) Watch(r *api.WatchRequest, stream grpc.ServerStreamingServer[ap
 		return e
 	}
 	cursor := r.AfterSeq
+	var lastWatchActivity time.Time
 	ticker := time.NewTicker(150 * time.Millisecond)
 	defer ticker.Stop()
 	for {
+		// Legacy watchers cannot report input activity. Treat them as busy
+		// until disconnected rather than restarting underneath an old TUI.
+		if lastWatchActivity.IsZero() || (r.ClientId == "" && time.Since(lastWatchActivity) > 10*time.Second) {
+			var snap core.Snapshot
+			if supervisor.Call(ctx, s.root, m.ID, "status", nil, &snap) == nil {
+				clientID := r.ClientId
+				if clientID == "" {
+					clientID = "legacy-watch"
+				}
+				_, _ = s.Activity(ctx, &api.ActivityInput{SessionId: m.ID, RunId: snap.RunID, ClientId: clientID, Busy: true})
+			}
+			lastWatchActivity = time.Now()
+		}
 		if _, e = s.snapshot(ctx, m); e != nil {
 			return e
 		}

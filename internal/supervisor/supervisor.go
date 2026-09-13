@@ -27,29 +27,35 @@ import (
 )
 
 type Supervisor struct {
-	mu             sync.Mutex
-	session        core.Session
-	log            *journal.Log
-	snap           core.Snapshot
-	pending        map[string]core.Event
-	receipts       map[string]record
-	cmd            *exec.Cmd
-	stdin          io.WriteCloser
-	done           chan struct{}
-	stopping       bool
-	interrupted    bool
-	batch          []core.Event
-	buffering      bool
-	codex          *codexProtocol
-	quotaDisabled  bool
-	quotaRequested time.Time
-	modelOptions   []agentview.ModelOption
-	modelRequested time.Time
-	modelDisabled  bool
-	modelSource    string
-	modelPages     []agentview.ModelOption
-	effort         string
-	settingPending string
+	lastActivity     time.Time
+	updateClients    map[string]updateClient
+	updateTools      map[string]bool
+	updateBackground agentview.BackgroundState
+	updateUnknown    bool
+	updateBlocked    bool
+	mu               sync.Mutex
+	session          core.Session
+	log              *journal.Log
+	snap             core.Snapshot
+	pending          map[string]core.Event
+	receipts         map[string]record
+	cmd              *exec.Cmd
+	stdin            io.WriteCloser
+	done             chan struct{}
+	stopping         bool
+	interrupted      bool
+	batch            []core.Event
+	buffering        bool
+	codex            *codexProtocol
+	quotaDisabled    bool
+	quotaRequested   time.Time
+	modelOptions     []agentview.ModelOption
+	modelRequested   time.Time
+	modelDisabled    bool
+	modelSource      string
+	modelPages       []agentview.ModelOption
+	effort           string
+	settingPending   string
 }
 type record struct {
 	Op      string       `json:"op"`
@@ -290,6 +296,7 @@ func (s *Supervisor) kill() {
 
 // Every state transition is durable before it is externally observable.
 func (s *Supervisor) event(kind, text, id string, payload any, raw []byte) core.Event {
+	s.observeUpdateEvent(kind, text, id)
 	var b []byte
 	if payload != nil {
 		b, _ = json.Marshal(payload)
@@ -330,6 +337,7 @@ func (s *Supervisor) clearPending() {
 func (s *Supervisor) consume(raw []byte) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	s.observeUpdateRaw(raw)
 	s.buffering = true
 	s.batch = nil
 	defer func() {
@@ -495,6 +503,13 @@ func (s *Supervisor) execute(op string, c core.Command) (core.Receipt, error) {
 	if c.RunID != s.snap.RunID {
 		return receipt, errors.New("stale run_id; refresh session")
 	}
+	if op == "update-stop" {
+		if reason := s.updateReason(time.Now(), s.processesQuiet()); reason != "" {
+			return receipt, errors.New(reason)
+		}
+		op = "stop"
+		s.event("update", "applying agent update", "", nil, nil)
+	}
 	if op == "send" {
 		if isSettingCommand(c.Text) {
 			return s.configure(c)
@@ -614,6 +629,9 @@ func (s *Supervisor) execute(op string, c core.Command) (core.Receipt, error) {
 }
 func (s *Supervisor) serve(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	if s.serveUpdate(w, r) {
+		return
+	}
 	if r.Method == "GET" && r.URL.Path == "/status" {
 		s.mu.Lock()
 		v := s.snap
@@ -640,7 +658,7 @@ func (s *Supervisor) serve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	json.NewEncoder(w).Encode(v)
-	if r.URL.Path == "/stop" {
+	if r.URL.Path == "/stop" || r.URL.Path == "/update-stop" {
 		if f, ok := w.(http.Flusher); ok {
 			f.Flush()
 		}

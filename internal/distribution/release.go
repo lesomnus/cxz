@@ -67,6 +67,17 @@ func verify(path, want string) error {
 // Ensure publishes only checksum-verified immutable releases. Shared tools are
 // read-only in projects; credentials never enter this cache.
 func Ensure(ctx context.Context, root, kind, arch string, musl bool) (string, error) {
+	version := ClaudeVersion
+	if kind == "codex" {
+		version = CodexVersion
+	}
+	return EnsureVersion(ctx, root, kind, arch, musl, SelectedVersion(root, kind, version))
+}
+
+func EnsureVersion(ctx context.Context, root, kind, arch string, musl bool, version string) (string, error) {
+	if !ValidVersion(version) {
+		return "", fmt.Errorf("invalid release version")
+	}
 	if arch == "" {
 		arch = runtime.GOARCH
 	}
@@ -81,10 +92,8 @@ func Ensure(ctx context.Context, root, kind, arch string, musl bool) (string, er
 	if musl {
 		platform += "-musl"
 	}
-	version := ClaudeVersion
 	key := platform
 	if kind == "codex" {
-		version = CodexVersion
 		key = target
 	} else if kind != "claude" {
 		return "", fmt.Errorf("unknown agent %s", kind)

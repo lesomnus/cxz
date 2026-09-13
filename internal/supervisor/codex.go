@@ -157,6 +157,7 @@ func (c *codexProtocol) consume(raw []byte) {
 			s.pending[id] = p
 			s.event("state", "waiting_input", "", nil, nil)
 		default: // Unknown server calls are never auto-approved.
+			s.updateUnknown = true
 			_ = s.write(map[string]any{"id": v.ID, "error": map[string]any{"code": -32601, "message": "cxz does not support this server request; use project-local login for authentication"}})
 			s.event("diagnostic", "unsupported Codex request: "+v.Method, "", nil, nil)
 		}

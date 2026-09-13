@@ -1,5 +1,27 @@
 # 구현 진행 상황
 
+## 2026-09-13 — 기본 활성화된 provider CLI 자동 rollout
+
+- manager에서 24시간마다 공식 stable Claude/Codex/gh 버전을 확인하고 30초마다 순차 큐를 처리한다.
+  자동 적용 기본 on, `CXZ_AUTO_UPDATE=false`로 opt-out. 최신 버전 channel과 queue 상태 영속화.
+- immutable/checksum cache 및 컨테이너 실행 사전 검사. 자동 downgrade와 prerelease 제외.
+  gh는 cxz wrapper의 symlink만 원자 교체하고 agent 재시작은 하지 않는다.
+- supervisor의 5분 연속 idle gate: turn/tool/background/pending question·approval/설정 변경,
+  TUI 활동·초안, 프로세스 그룹을 검사한다. unknown telemetry, 상주 자식 프로세스,
+  구버전 attached client는 보수적으로 보류한다. manager Watch의 History proxy도 lease를 전달한다.
+- Payday SessionService.Activity/UpdateAgent 리소스 API와 supervisor atomic update-stop 추가.
+  Send와 stop의 원자적 경계, 재시작 동안 runtime command fence, 실패 전송 초안 복원.
+- 기존 session/account/auth binding을 보존하며 resume. 초기화 실패 rollback, durable transaction,
+  runtime 재시작 복구와 실패 재시도 24시간 backoff. 사용자 메시지 재전송은 하지 않는다.
+- TUI queued/applying/completed/rollback 알림, manager updates.json 진단. cxz 자체나 프로젝트 이미지
+  자동 업데이트는 제외한다. 최초 적용에는 새 CLI/manager/runtime/supervisor가 필요하다.
+- 검증: 전체 Go 테스트와 vet 통과. idle/pending/background/client lease/원자적 Send-stop,
+  heartbeat journal 비증가, 미전송 초안, 버전 순서/opt-out, 초기화 실패·rollback 실패·연결 취소 후
+  완료와 transaction 보존을 fixture로 검증했다. 공식 stable 조회도 실제 네트워크로 통과했다.
+  실제 로그인된 provider의 자동 재시작/장시간 운영은 수행하지 않았다. 사용자 컨테이너는 변경하지 않았다.
+- 변경 패키지 race 검사와 `pd gen --check` 통과. 실제 runtime + fixture supervisor를 통한
+  Payday Activity/UpdateAgent RPC, stale activity 거부, busy 세션의 적용 거부 통합 테스트 통과.
+
 ## 2026-09-13 — 프로젝트 gh CLI와 호스트 GitHub 인증 주입
 
 - cld의 gh binary 주입 + hosts.yml 복사 흐름을 확인했다. cxz에서는 checksum 검증한

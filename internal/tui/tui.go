@@ -23,6 +23,9 @@ import (
 )
 
 type model struct {
+	activityID           string
+	lastUIInput          time.Time
+	lastActivityReport   time.Time
 	project              *api.Project
 	terminalWidth        int
 	panelFocus           bool
@@ -272,6 +275,10 @@ func (m *model) watch() {
 	if m.projectView || m.program == nil {
 		return
 	}
+	if m.activityID == "" {
+		m.activityID = core.ID()
+	}
+	activityID := m.activityID
 	s := m.current()
 	if s == nil || m.watchID == s.Id {
 		return
@@ -306,7 +313,7 @@ func (m *model) watch() {
 			}
 			m.program.Send(historyPage{id: id, events: batch.Events, start: start, initial: true, epoch: epoch})
 		}
-		stream, e := m.client.Watch(ctx, &api.WatchRequest{SessionId: id, AfterSeq: after})
+		stream, e := m.client.Watch(ctx, &api.WatchRequest{SessionId: id, AfterSeq: after, ClientId: activityID})
 		if e == nil {
 			for {
 				v, err := stream.Recv()
@@ -593,6 +600,22 @@ func (m *model) action(kind, text string) tea.Cmd {
 	}
 }
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var activity tea.Cmd
+	switch msg.(type) {
+	case tea.KeyMsg, tea.MouseMsg:
+		// Report the first input immediately after a pause; steady activity is
+		// covered by the heartbeat. Capture the old session before navigation.
+		if time.Since(m.lastUIInput) >= time.Second {
+			m.lastActivityReport = time.Time{}
+			m.lastUIInput = time.Now()
+			activity = m.reportActivity()
+		}
+	}
+	next, cmd := m.update(msg)
+	return next, tea.Batch(activity, cmd)
+}
+
+func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if p := m.report; p != nil {
 		if s := m.current(); m.projectView || m.accountView || s != nil && (s.Id != p.id || s.RunId != p.run) {
 			m.report = nil
@@ -780,6 +803,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.render()
 		return m, tea.Batch(m.refresh(), m.autoApprove())
 	case tea.MouseMsg:
+		m.lastUIInput = time.Now()
 		if v.X < m.contentOffset() || v.X >= m.contentOffset()+m.width || m.panelFocus {
 			return m, nil
 		}
@@ -908,7 +932,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.render()
 	case tick:
 		m.watch()
-		return m, tea.Batch(timer(), m.refresh())
+		return m, tea.Batch(timer(), m.refresh(), m.reportActivity())
+	case activityReported:
+		return m, nil
 	case listing:
 		if v.err != nil {
 			m.fullPermission = nil
@@ -1036,6 +1062,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, m.refresh()
 	case tea.KeyMsg:
+		m.lastUIInput = time.Now()
 		if m.panelFocus && m.panelVisible() {
 			return m, m.panelKey(v)
 		}
@@ -1279,7 +1306,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if text == "/stop" {
 				return m, m.action("stop", "")
 			}
-			return m, m.action("send", text)
+			return m, m.sendPastes(draft, text)
 		}
 	}
 	var cmd tea.Cmd
