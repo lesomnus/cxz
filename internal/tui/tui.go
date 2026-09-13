@@ -603,6 +603,38 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.Update(v.result)
 	case pasteUploaded:
 		v.dialog.busy = false
+		if v.dialog.direct {
+			p := m.pastes[v.token]
+			if p == nil || p.upload != v.dialog {
+				return m, nil
+			}
+			p.upload = nil
+			s := m.current()
+			if s == nil || s.Id != v.dialog.session || s.RunId != v.dialog.run {
+				return m, nil
+			}
+			text := m.input.Value()
+			if d := v.dialog.question; d != nil {
+				if m.questionDialog != d || d.page != v.dialog.page {
+					return m, nil
+				}
+				text = d.other[d.page].Value()
+			}
+			if !strings.Contains(text, v.token) {
+				return m, nil
+			}
+			if v.err != nil {
+				m.notice = "Upload failed; original text retained: " + v.err.Error()
+				return m, nil
+			}
+			if v.path == "" {
+				m.notice = "Upload returned no path; original text retained."
+				return m, nil
+			}
+			p.path, p.file = v.path, true
+			m.notice = "File stored. Only its path will be sent; t restores full text."
+			return m, nil
+		}
 		if v.err != nil {
 			v.dialog.message = "Upload failed; original text retained: " + v.err.Error()
 			return m, nil

@@ -3,7 +3,6 @@ package tui
 import (
 	"context"
 	"fmt"
-	"sort"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -19,6 +18,7 @@ type pastedText struct {
 	token, body, path string
 	owner             string
 	file              bool
+	upload            *pasteDialog
 }
 
 type chipSelection struct {
@@ -72,8 +72,41 @@ func (m *model) chipKey(k tea.KeyMsg) (bool, tea.Cmd) {
 		return false, nil
 	}
 	key := k.String()
+	if k.Paste {
+		m.pasteSelection = nil
+		return false, nil
+	}
 	if sel != nil {
 		switch key {
+		case "t":
+			p := m.pastes[sel.token]
+			p.file, p.upload = false, nil
+			m.notice = "Full text will be sent."
+			return true, nil
+		case "f":
+			p := m.pastes[sel.token]
+			if p.upload != nil {
+				return true, nil
+			}
+			m.openPastes()
+			d := m.pasteDialog
+			if d == nil {
+				return true, nil
+			}
+			for i, token := range d.tokens {
+				if token == sel.token {
+					d.index = i
+					break
+				}
+			}
+			d.direct = true
+			cmd := m.pasteKey(k)
+			m.pasteDialog = nil
+			if d.busy {
+				p.upload = d
+			}
+			m.notice = d.message
+			return true, cmd
 		case "enter", "ctrl+p":
 			cmd := m.openPastes()
 			if d := m.pasteDialog; d != nil {
@@ -93,7 +126,8 @@ func (m *model) chipKey(k tea.KeyMsg) (bool, tea.Cmd) {
 			}
 			m.pasteSelection = nil
 			return true, nil
-		case "backspace", "delete":
+		case "d", "backspace", "delete":
+			m.pastes[sel.token].upload = nil
 			r := []rune(value)
 			// SetValue may reset the textarea row. Delete using native keys instead.
 			if m.questionDialog == nil {
@@ -211,6 +245,7 @@ func (m *model) snapChipCursor() {
 }
 
 type pasteDialog struct {
+	direct        bool
 	tokens        []string
 	index, offset int
 	question      *questionDialog
@@ -419,18 +454,6 @@ func (m *model) openPastes() tea.Cmd {
 		text = text[first+len(token):]
 	}
 	if len(p.tokens) == 0 {
-		if p.question == nil {
-			if s := m.current(); s != nil {
-				for token, v := range m.pastes {
-					if v.owner == s.Id {
-						p.tokens = append(p.tokens, token)
-					}
-				}
-				sort.Strings(p.tokens)
-			}
-		}
-	}
-	if len(p.tokens) == 0 {
 		m.notice = "No pasted text in this input."
 		if p.question != nil {
 			p.question.message = m.notice
@@ -457,14 +480,6 @@ func (m *model) pasteKey(k tea.KeyMsg) tea.Cmd {
 	}
 	p := m.pastes[d.tokens[d.index]]
 	switch k.String() {
-	case "i":
-		if d.question != nil {
-			return nil
-		}
-		if !strings.Contains(m.input.Value(), p.token) {
-			m.input.InsertString(p.token)
-		}
-		m.pasteDialog = nil
 	case "up":
 		d.index = max(0, d.index-1)
 		d.offset = 0
@@ -477,8 +492,10 @@ func (m *model) pasteKey(k tea.KeyMsg) tea.Cmd {
 		d.offset += max(1, m.view.Height-8)
 	case "t":
 		p.file = false
+		p.upload = nil
 		d.message = "Full text will be sent."
 	case "d", "backspace", "delete":
+		p.upload = nil
 		if d.question != nil {
 			in := &d.question.other[d.page]
 			in.SetValue(strings.ReplaceAll(in.Value(), p.token, ""))
@@ -520,7 +537,7 @@ func (m *model) pasteOverlay(view string) string {
 		return view
 	}
 	width := max(1, m.width-4)
-	rows := []string{accent.Render("Pasted text · preview"), muted.Render("↑/↓ select · t send as full text · f send as file · d remove from draft"), muted.Render("i insert cached chip into composer · Esc back (nothing sent yet)"), ""}
+	rows := []string{accent.Render("Pasted text · preview"), muted.Render("↑/↓ select · t send as full text · f send as file · d remove from draft"), muted.Render("Esc back (nothing sent yet)"), ""}
 	start := max(0, d.index-1)
 	for i := start; i < min(len(d.tokens), start+3); i++ {
 		p := m.pastes[d.tokens[i]]
