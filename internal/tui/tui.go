@@ -23,6 +23,7 @@ import (
 )
 
 type model struct {
+	terminals            map[string]*terminalPanel
 	activityID           string
 	lastUIInput          time.Time
 	lastActivityReport   time.Time
@@ -205,6 +206,8 @@ func RunSelected(ctx context.Context, c api.SessionsClient, id string) error {
 }
 
 func RunProject(ctx context.Context, c api.SessionsClient, project *api.Project, id string, create ProjectCreator, login ...AccountLogin) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	input := newComposer()
 	m := &model{ctx: ctx, client: c, input: input, view: viewport.New(80, 15), events: map[string][]*api.Event{}, cursor: map[string]uint64{}, width: 100, height: 30, wantID: id}
 	m.project = project
@@ -220,6 +223,12 @@ func RunProject(ctx context.Context, c api.SessionsClient, project *api.Project,
 	p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithContext(ctx), tea.WithMouseCellMotion(), tea.WithOutput(m.cursorOutput), tea.WithInput(keyboardInput(os.Stdin)))
 	m.program = p
 	_, e := p.Run()
+	cancel()
+	for _, panel := range m.terminals {
+		if panel.session != nil {
+			panel.session.Close()
+		}
+	}
 	if m.workflow != nil {
 		m.workflow.close()
 	}
@@ -616,6 +625,32 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch v := msg.(type) {
+	case terminalOpened:
+		if p := m.terminals[v.id]; p != nil {
+			p.starting = false
+			p.session = v.session
+			p.err = v.err
+			m.resize()
+		} else if v.session != nil {
+			v.session.Close()
+		}
+		return m, nil
+	case terminalChanged:
+		return m, nil
+	case tea.KeyMsg:
+		if v.Type == tea.KeyF20 && !v.Paste {
+			return m, m.toggleTerminal()
+		}
+		if m.terminalFocused() {
+			m.terminalKey(v)
+			return m, nil
+		}
+	case tea.MouseMsg:
+		if m.terminalMouse(v) {
+			return m, nil
+		}
+	}
 	if p := m.report; p != nil {
 		if s := m.current(); m.projectView || m.accountView || s != nil && (s.Id != p.id || s.RunId != p.run) {
 			m.report = nil
@@ -832,7 +867,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.modelPicker != nil {
 			return m, nil
 		}
-		if m.focusApproval && v.Y >= m.view.Height && v.Y < m.height-m.input.Height()-3 {
+		if m.focusApproval && v.Y >= m.view.Height && v.Y < m.height-m.input.Height()-3-m.terminalHeight() {
 			switch v.Button {
 			case tea.MouseButtonWheelUp:
 				m.approvalOffset = max(0, m.approvalOffset-3)
@@ -1269,6 +1304,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.action("answer", strings.TrimPrefix(text, "/answer "))
 			}
 			localName := strings.Fields(text)[0]
+			if localName == "/terminal" {
+				return m, m.toggleTerminal()
+			}
 			if localName == "/background" {
 				m.openReport("/background", "")
 				return m, nil

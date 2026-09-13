@@ -130,6 +130,9 @@ func (r *keyboardReader) kittyKey(seq []byte) ([]byte, bool) {
 	if key == 13 && mod == 4 {
 		return []byte{'\x13'}, true
 	}
+	if key == 96 && mod == 4 {
+		return []byte("\x1b[34~"), true
+	} // reserved terminal toggle bridge (F20)
 	if key == 9 && mod == 1 {
 		return []byte("\x1b[Z"), true
 	}
