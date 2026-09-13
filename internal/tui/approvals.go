@@ -73,9 +73,8 @@ func (m *model) replyApproval(p *api.Event, allow bool, answers string, automati
 		return m.openQuestion(p)
 	}
 	if answers != "" {
-		var values map[string]string
-		if json.Unmarshal([]byte(answers), &values) != nil {
-			m.notice = "/answer requires a JSON string map"
+		if _, _, err := core.DecodeAnswers(answers); err != nil {
+			m.notice = err.Error()
 			return nil
 		}
 	}

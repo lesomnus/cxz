@@ -24,7 +24,7 @@ func providerLabel(provider string) string {
 
 var (
 	accent       = lipgloss.NewStyle().Foreground(lipgloss.Color("#24d17c"))
-	magenta      = lipgloss.NewStyle().Foreground(lipgloss.Color("#E6A0D8"))
+	magenta      = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF00FF"))
 	brand        = lipgloss.NewStyle().Foreground(lipgloss.Color("#aeff98")).Background(lipgloss.Color("#000000")).Bold(true)
 	teal         = lipgloss.NewStyle().Foreground(lipgloss.Color("#07898f"))
 	lavender     = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#7255A0", Dark: "#C9B6EE"})

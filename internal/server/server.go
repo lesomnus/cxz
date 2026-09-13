@@ -580,13 +580,11 @@ func (s *Server) Reply(ctx context.Context, r *api.Answer) (*api.Receipt, error)
 		defer c.Close()
 		return client.Reply(ctx, r)
 	}
-	var answers map[string]string
-	if r.AnswersJson != "" {
-		if e := json.Unmarshal([]byte(r.AnswersJson), &answers); e != nil {
-			return nil, status.Error(codes.InvalidArgument, "answers_json must be a string map")
-		}
+	answers, selections, err := core.DecodeAnswers(r.AnswersJson)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	return s.command(ctx, r.SessionId, "reply", core.Command{RunID: r.RunId, ClientID: r.ClientId, RequestID: r.RequestId, Allow: r.Allow, Answers: answers})
+	return s.command(ctx, r.SessionId, "reply", core.Command{RunID: r.RunId, ClientID: r.ClientId, RequestID: r.RequestId, Allow: r.Allow, Answers: answers, Selections: selections})
 }
 func (s *Server) Interrupt(ctx context.Context, r *api.Control) (*api.Receipt, error) {
 	if s.manager != nil {

@@ -1,5 +1,30 @@
 # 구현 진행 상황
 
+## 2026-09-13 — 확인 입력·Other 초안·구조화된 질문 답변
+
+- project recreate의 canonical ReadString 비교를 전용 TUI로 교체했다. 브래킷 붙여넣기,
+  편집 키, terminal reply를 처리하고 정확한 recreate 입력 후 Enter에서만 확인한다.
+  불일치는 종료 대신 재편집 가능. 대상 workspace를 표시하며 실제 재생성은 테스트하지 않는다.
+  기존 실패 입력 바이트가 없어 사용자의 증상 원인은 제어 문자 혼입 가능성까지만 확인했다.
+- 확정된 선택만 vivid magenta `#FF00FF`, 이동 포커스와 버튼은 기존 green accent.
+  버튼 위아래 공백, Other 기본 prompt 제거와 폭 보정으로 타이핑 시 줄 수 변화 방지.
+- Other 초안과 활성 선택을 분리했다. 다른 라디오 선택은 초안을 지우지 않으며 제출에서만
+  제외한다. Other에서 Enter로 다시 선택할 수 있다. 커서 편집 이동만으로 선택이 바뀌지 않는다.
+- AnswersJson은 질문별 `{selected: string[], other?: string}`를 전달하고 core.Command의
+  selections로 runtime/supervisor까지 보존한다. 수동 CLI string-map 입력은 유지한다.
+- Claude 설치 코드에서 annotations.notes/preview 스키마를 확인했다. string answers와 함께
+  notes에 선택 배열·Other JSON을 보존하고 단일 선택 preview는 원래 질문에서 가져온다.
+  Codex는 문자열 결합 없이 native answers 배열로 변환한다. 일반 Other는 trim하고 정확한
+  옵션 이름과 같으면 중복 없는 선택으로 정규화한다. secret 값은 임의 trim하지 않는다.
+- 배포: CLI 외 runtime/server와 supervisor 갱신이 필요하다. runtime 갱신 후 agent restart.
+  기존 실행 프로세스는 구코드가 유지되며 purge/데이터 삭제로 업데이트하지 않는다.
+- 검증: recreate PTY의 terminal reply·bracketed paste·오타 수정, Other 초안/높이,
+  선택색, provider native wire/annotations/preview, 중복 요청 idempotency 테스트 통과.
+  `go test ./...`, 관련 6패키지 race, `go vet ./...`, `git diff --check` 통과.
+  구조화 답변을 실제 테스트 daemon/runtime/fake-agent에 보내는 lifecycle 통합 테스트도
+  추가·재실행 통과했다. 사용자 계정의 live Claude/Codex 응답 확인은 하지 않았다.
+
+
 ## 2026-09-13 — 질문 모달 레이아웃 정리
 
 - preview를 옵션 설명과 같은 들여쓰기의 별도 테두리 박스로 표시한다.

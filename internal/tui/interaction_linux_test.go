@@ -21,6 +21,58 @@ type keyProbe struct {
 	keys  chan tea.KeyMsg
 }
 
+type recreateProbe struct {
+	*recreateConfirmation
+	ready chan struct{}
+}
+
+func (m *recreateProbe) Init() tea.Cmd { close(m.ready); return m.recreateConfirmation.Init() }
+func (m *recreateProbe) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	_, cmd := m.recreateConfirmation.Update(msg)
+	return m, cmd
+}
+
+func TestRecreatePTYBracketedPasteAndEditing(t *testing.T) {
+	master, err := os.OpenFile("/dev/ptmx", os.O_RDWR|unix.O_NOCTTY, 0)
+	if err != nil {
+		t.Skip(err)
+	}
+	defer master.Close()
+	if err := unix.IoctlSetPointerInt(int(master.Fd()), unix.TIOCSPTLCK, 0); err != nil {
+		t.Fatal(err)
+	}
+	n, err := unix.IoctlGetInt(int(master.Fd()), unix.TIOCGPTN)
+	if err != nil {
+		t.Fatal(err)
+	}
+	slave, err := os.OpenFile(fmt.Sprintf("/dev/pts/%d", n), os.O_RDWR|unix.O_NOCTTY, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer slave.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	m := &recreateProbe{recreateConfirmation: newRecreateConfirmation(), ready: make(chan struct{})}
+	p := tea.NewProgram(m, tea.WithContext(ctx), tea.WithInput(keyboardInput(slave)), tea.WithOutput(io.Discard), tea.WithAltScreen())
+	done := make(chan error, 1)
+	go func() { _, err := p.Run(); done <- err }()
+	select {
+	case <-m.ready:
+	case <-ctx.Done():
+		t.Fatal("startup timeout")
+	}
+	// A delayed terminal reply, pasted typo, Backspace repair, then explicit Enter.
+	if _, err := master.Write([]byte("\x1b[?1u\x1b[200~recreatx\x1b[201~\x7fe\r")); err != nil {
+		t.Fatal(err)
+	}
+	if err := <-done; err != nil {
+		t.Fatal(err)
+	}
+	if !m.confirmed {
+		t.Fatal("paste/edit confirmation failed")
+	}
+}
+
 func (m *keyProbe) Init() tea.Cmd { close(m.ready); return nil }
 func (m *keyProbe) View() string  { return "" }
 func (m *keyProbe) Update(msg tea.Msg) (tea.Model, tea.Cmd) {

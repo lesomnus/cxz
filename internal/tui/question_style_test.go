@@ -73,7 +73,7 @@ func TestQuestionMagentaAndTextCheckboxes(t *testing.T) {
 	d.selected[1][0] = true
 	d.row = 1
 	view := m.questionOverlay(strings.Repeat("\n", 20))
-	for _, want := range []string{magenta.Render("  [✓] X"), magenta.Bold(true).Render("› [ ] Y")} {
+	for _, want := range []string{magenta.Bold(true).Render("  [✓] X"), accent.Render("› [ ] Y")} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("missing selected color: %q", view)
 		}

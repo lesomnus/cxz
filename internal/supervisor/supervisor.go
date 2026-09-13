@@ -532,6 +532,22 @@ func (s *Supervisor) execute(op string, c core.Command) (core.Receipt, error) {
 			response := map[string]any{"behavior": "deny", "message": "User denied this request."}
 			if c.Allow {
 				if request.Tool == "AskUserQuestion" {
+					answerValues := c.Answers
+					if len(c.Selections) > 0 {
+						questions, err := agentview.Questions("claude", request.Tool, p.Payload)
+						if err != nil {
+							return receipt, err
+						}
+						values, err := agentview.NormalizeAnswers(questions, c.Selections)
+						if err != nil {
+							return receipt, err
+						}
+						answers, annotations := agentview.ClaudeAnswerAnnotations(questions, values)
+						answerValues = answers
+						if len(annotations) > 0 {
+							request.Input["annotations"] = annotations
+						}
+					}
 					qs, _ := request.Input["questions"].([]any)
 					if len(qs) == 0 {
 						return receipt, errors.New("question payload missing")
@@ -539,11 +555,11 @@ func (s *Supervisor) execute(op string, c core.Command) (core.Receipt, error) {
 					for _, q := range qs {
 						m, _ := q.(map[string]any)
 						key, _ := m["question"].(string)
-						if c.Answers[key] == "" {
+						if answerValues[key] == "" {
 							return receipt, fmt.Errorf("answer required for %q", key)
 						}
 					}
-					request.Input["answers"] = c.Answers
+					request.Input["answers"] = answerValues
 				}
 				response = map[string]any{"behavior": "allow", "updatedInput": request.Input}
 			}
