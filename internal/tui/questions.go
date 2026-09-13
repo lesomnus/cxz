@@ -95,7 +95,7 @@ func (m *model) syncQuestion() {
 			m.notice = "Question no longer pending"
 		}
 	}
-	if s == nil || m.projectView || m.accountView || m.questionDialog != nil || m.report != nil || m.modelPicker != nil || m.restartConfirm != nil {
+	if s == nil || m.panelFocus || m.projectView || m.accountView || m.questionDialog != nil || m.report != nil || m.modelPicker != nil || m.restartConfirm != nil {
 		return
 	}
 	for _, p := range s.Pending {

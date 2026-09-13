@@ -18,7 +18,7 @@ import (
 func TestWorkflowStaysInAppAndPipesSecret(t *testing.T) {
 	m := projectModel()
 	m.accountView = true
-	m.createProjectSession = func(ctx context.Context, alias string, in io.Reader, out, errOut io.Writer) (*api.Session, error) {
+	m.createProjectSession = func(ctx context.Context, _ string, alias string, in io.Reader, out, errOut io.Writer) (*api.Session, error) {
 		if alias != "main" {
 			return nil, fmt.Errorf("wrong account")
 		}
@@ -72,7 +72,7 @@ func TestWorkflowStaysInAppAndPipesSecret(t *testing.T) {
 func TestWorkflowCancelReturnsToAccounts(t *testing.T) {
 	m := projectModel()
 	m.accountView = true
-	m.loginAccount = func(ctx context.Context, _ string, _ string, _ io.Reader, _ io.Writer, _ io.Writer) error {
+	m.loginAccount = func(ctx context.Context, _ string, _ string, _ string, _ io.Reader, _ io.Writer, _ io.Writer) error {
 		<-ctx.Done()
 		return ctx.Err()
 	}
@@ -101,7 +101,7 @@ func TestClaudeAccountLoginSelectsScopedSession(t *testing.T) {
 		{Id: "other-project", Account: "main", Agent: "claude", ProjectId: "elsewhere"},
 	}
 	got := ""
-	m.loginAccount = func(_ context.Context, _ string, id string, _ io.Reader, _ io.Writer, _ io.Writer) error {
+	m.loginAccount = func(_ context.Context, _ string, _ string, id string, _ io.Reader, _ io.Writer, _ io.Writer) error {
 		got = id
 		return nil
 	}

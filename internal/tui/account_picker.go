@@ -95,7 +95,7 @@ func (m *accountPicker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		m.width, m.height = msg.Width, msg.Height
+		m.width, m.height = min(msg.Width, maxViewWidth), msg.Height
 		m.search.Width = max(1, msg.Width-12)
 	case tea.KeyMsg:
 		switch msg.String() {

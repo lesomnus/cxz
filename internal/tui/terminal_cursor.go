@@ -114,6 +114,7 @@ func (m *model) anchorCursor() {
 	x, y, ok := 0, 0, false
 	if m.width >= 40 && m.height >= 14 {
 		switch {
+		case m.panelFocus:
 		case m.pasteDialog != nil:
 		case m.workflow != nil:
 			// The workflow owns its masked input; never anchor to the hidden form.
@@ -149,5 +150,5 @@ func (m *model) anchorCursor() {
 			y += m.height - m.input.Height() - 2
 		}
 	}
-	m.cursorOutput.position(x, y, ok)
+	m.cursorOutput.position(x+m.contentOffset(), y, ok)
 }

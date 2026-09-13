@@ -13,8 +13,8 @@ import (
 	"github.com/lesomnus/cxz/api"
 )
 
-type ProjectCreator func(context.Context, string, io.Reader, io.Writer, io.Writer) (*api.Session, error)
-type AccountLogin func(context.Context, string, string, io.Reader, io.Writer, io.Writer) error
+type ProjectCreator func(context.Context, string, string, io.Reader, io.Writer, io.Writer) (*api.Session, error)
+type AccountLogin func(context.Context, string, string, string, io.Reader, io.Writer, io.Writer) error
 
 func ProjectSessions(sessions []*api.Session, p *api.Project) []*api.Session {
 	var out []*api.Session

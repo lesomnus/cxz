@@ -94,7 +94,7 @@ func TestCursorWriterTerminalResize(t *testing.T) {
 		for {
 			select {
 			case got := <-m.sizes:
-				if got != (sizeSnapshot{width, height, width, height}) {
+				if got != (sizeSnapshot{min(width, maxViewWidth), height, width, height}) {
 					t.Fatalf("want fullscreen %dx%d, got %+v", width, height, got)
 				}
 				return
@@ -114,6 +114,8 @@ func TestCursorWriterTerminalResize(t *testing.T) {
 	check(117, 37, false)
 	setSize(143, 45)
 	check(143, 45, true)
+	setSize(200, 45)
+	check(200, 45, true)
 	setSize(63, 19)
 	check(63, 19, true)
 }

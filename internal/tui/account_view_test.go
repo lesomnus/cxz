@@ -38,7 +38,7 @@ func TestAccountViewAddAndReturn(t *testing.T) {
 	m := projectModel()
 	s := &accountViewService{}
 	m.accountService = s
-	m.createProjectSession = func(context.Context, string, io.Reader, io.Writer, io.Writer) (*api.Session, error) {
+	m.createProjectSession = func(context.Context, string, string, io.Reader, io.Writer, io.Writer) (*api.Session, error) {
 		t.Fatal("created without selection")
 		return nil, nil
 	}
@@ -94,7 +94,7 @@ func TestAccountViewValidationAndLogin(t *testing.T) {
 	m.accountService = &accountViewService{}
 	m.openAccounts(false)
 	m.Update(accountListing{accounts: []*resource.Account{resource.Account_builder{Alias: "main", Agent: "codex"}.Build()}})
-	m.loginAccount = func(context.Context, string, string, io.Reader, io.Writer, io.Writer) error { return nil }
+	m.loginAccount = func(context.Context, string, string, string, io.Reader, io.Writer, io.Writer) error { return nil }
 	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("l")})
 	if cmd == nil || !m.busy {
 		t.Fatal("login not started")

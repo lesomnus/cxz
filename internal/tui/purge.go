@@ -51,7 +51,7 @@ func (m *purgeModel) Init() tea.Cmd { return nil }
 func (m *purgeModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch v := msg.(type) {
 	case tea.WindowSizeMsg:
-		m.width = v.Width
+		m.width = min(v.Width, maxViewWidth)
 		m.height = v.Height
 		m.details.Width = max(1, v.Width-4)
 		m.details.Height = max(1, v.Height-16)
