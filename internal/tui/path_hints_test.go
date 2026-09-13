@@ -165,11 +165,24 @@ func TestPathStreamingKeepsSelectionAndSuccessor(t *testing.T) {
 func TestPathWordDeleteStopsAtSlash(t *testing.T) {
 	m := pathModel()
 	m.input.SetValue("설명 `/tmp/한글.txt")
-	for _, want := range []string{"설명 `/tmp/", "설명 `/tmp", "설명 `/"} {
+	for _, want := range []string{"설명 `/tmp/", "설명 `/", "설명 `"} {
 		m.Update(tea.KeyMsg{Type: tea.KeyCtrlW})
 		if m.input.Value() != want {
 			t.Fatal(m.input.Value(), want)
 		}
+	}
+}
+
+func TestPathWordDeleteDirectoryAtMiddleCursor(t *testing.T) {
+	m := pathModel()
+	m.setPathInput("설명 `~/상위/하위/파일` 뒤", len([]rune("설명 `~/상위/하위/")))
+	m.Update(tea.KeyMsg{Type: tea.KeyBackspace, Alt: true})
+	if got := m.input.Value(); got != "설명 `~/상위/파일` 뒤" {
+		t.Fatal(got)
+	}
+	_, pos, _, _, _ := m.chipInput()
+	if pos != len([]rune("설명 `~/상위/")) {
+		t.Fatal("cursor", pos)
 	}
 }
 
