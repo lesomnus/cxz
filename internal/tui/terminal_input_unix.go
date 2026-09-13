@@ -6,18 +6,24 @@ import (
 	"bytes"
 	"io"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 	"unicode/utf8"
 
 	"golang.org/x/sys/unix"
 )
 
-// Translate only modified Enter before Bubble Tea v1 parses input. Its unknown
+const extendedKeyboard = true
+
+// Translate Kitty disambiguated keys before Bubble Tea v1 parses input. Its unknown
 // CSI messages borrow a reused buffer and cannot safely be inspected in Update.
 // Embedding the file preserves raw mode, cancellation and terminal detection.
 type keyboardReader struct {
 	*os.File
-	paste bool
+	paste          bool
+	kittyConfirmed bool
+	kittyFlags     int
 }
 
 func keyboardInput(file *os.File) io.Reader { return &keyboardReader{File: file} }
@@ -58,7 +64,9 @@ func (r *keyboardReader) translate(data []byte, final bool) (out, pending []byte
 			_, size = utf8.DecodeRune(data)
 		}
 		seq := data[:size]
-		if !r.paste && (bytes.Equal(seq, keyboardSequences[0]) || bytes.Equal(seq, keyboardSequences[1])) {
+		if translated, ok := r.kittyKey(seq); !r.paste && ok {
+			out = append(out, translated...)
+		} else if !r.paste && (bytes.Equal(seq, keyboardSequences[0]) || bytes.Equal(seq, keyboardSequences[1])) {
 			out = append(out, '\x13')
 		} else {
 			out = append(out, seq...)
@@ -72,6 +80,95 @@ func (r *keyboardReader) translate(data []byte, final bool) (out, pending []byte
 		data = data[size:]
 	}
 	return out, nil
+}
+
+// Bridge the disambiguation subset to Bubble Tea v1's legacy key decoder.
+// Do not request event/alternate-key/all-text flags that v1 cannot decode.
+func (r *keyboardReader) kittyKey(seq []byte) ([]byte, bool) {
+	if r.paste || !bytes.HasPrefix(seq, []byte("\x1b[")) || len(seq) < 4 || seq[len(seq)-1] != 'u' {
+		return nil, false
+	}
+	body := string(seq[2 : len(seq)-1])
+	if strings.HasPrefix(body, "?") {
+		flags, err := strconv.Atoi(body[1:])
+		if err != nil || flags < 0 {
+			return nil, false
+		}
+		r.kittyConfirmed, r.kittyFlags = true, flags
+		return nil, true
+	}
+	fields := strings.Split(body, ";")
+	if len(fields) > 2 {
+		return nil, false
+	}
+	key, err := strconv.Atoi(fields[0])
+	if err != nil {
+		return nil, false
+	}
+	mod := 1
+	if len(fields) == 2 {
+		mod, err = strconv.Atoi(fields[1])
+		if err != nil || mod < 1 {
+			return nil, false
+		}
+	}
+	mod = (mod - 1) &^ (64 | 128) // Caps/Num Lock do not change shortcuts.
+	if key >= 57399 && key <= 57416 {
+		key = int("0123456789./*-+\r=,"[key-57399])
+	}
+	if key >= 57417 && key <= 57426 && mod&^7 == 0 {
+		keys := []string{"1D", "1C", "1A", "1B", "5~", "6~", "1H", "1F", "2~", "3~"}
+		legacy := keys[key-57417]
+		if mod == 0 {
+			if legacy[0] == '1' {
+				legacy = legacy[1:]
+			}
+			return []byte("\x1b[" + legacy), true
+		}
+		return []byte("\x1b[" + legacy[:1] + ";" + strconv.Itoa(mod+1) + legacy[1:]), true
+	}
+	if key == 13 && mod == 4 {
+		return []byte{'\x13'}, true
+	}
+	if key == 9 && mod == 1 {
+		return []byte("\x1b[Z"), true
+	}
+	if mod&^7 != 0 || key < 0 || key > 127 {
+		return nil, false
+	}
+	if mod&4 != 0 {
+		switch {
+		case key >= 'a' && key <= 'z':
+			key -= 'a' - 1
+		case key >= '@' && key <= '_':
+			key -= '@'
+		case key == ' ':
+			key = 0
+		case key == '?':
+			key = 127
+		case key == 127:
+			key = 8
+		case key == '2':
+			key = 0
+		case key >= '3' && key <= '7':
+			key -= '3' - 27
+		case key == '8':
+			key = 127
+		case key == '/':
+			key = 31
+		case key == '~':
+			key = 30
+		default:
+			// Remaining ASCII keys keep their legacy value under Ctrl.
+		}
+	} else if mod&1 != 0 && key >= 'a' && key <= 'z' {
+		key -= 'a' - 'A'
+	}
+	out := []byte{byte(key)}
+	if mod&2 != 0 {
+		out = append([]byte{'\x1b'}, out...)
+	}
+	return out, true
 }
 
 func (r *keyboardReader) Read(p []byte) (int, error) {
