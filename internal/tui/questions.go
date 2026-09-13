@@ -247,6 +247,7 @@ input:
 		d.other[d.page].Focus()
 		var cmd tea.Cmd
 		d.other[d.page], cmd = d.other[d.page].Update(k)
+		m.snapChipCursor()
 		if d.other[d.page].Value() != before {
 			if partialPasteEdit(before, d.other[d.page].Value(), d.pastes) {
 				d.other[d.page].SetValue(before)
@@ -330,7 +331,7 @@ func (m *model) questionOverlay(view string) string {
 		} else if d.row == len(q.Options) {
 			label = accent.Render(label)
 		}
-		add(label + decoratePastes(in.View(), d.pastes))
+		add(label + m.decorateInputPastes(in.View()))
 	}
 	n := d.count()
 	add("")

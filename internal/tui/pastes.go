@@ -9,6 +9,7 @@ import (
 	"unicode/utf8"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/core"
@@ -19,6 +20,196 @@ type pastedText struct {
 	owner             string
 	file              bool
 }
+
+type chipSelection struct {
+	token, value, session    string
+	start, end, cursor, page int
+	question                 *questionDialog
+}
+
+// Cursor offsets are rune offsets, including logical newlines (not soft wraps).
+func (m *model) chipInput() (string, int, func(int), func(string), bool) {
+	if m.workflow != nil || m.projectView || m.accountView || m.creating || m.renaming || m.report != nil || m.modelPicker != nil || m.restartConfirm != nil {
+		return "", 0, nil, nil, false
+	}
+	if d := m.questionDialog; d != nil {
+		q := d.questions[d.page]
+		if d.sending || q.Secret || !q.Other || d.row != len(q.Options) {
+			return "", 0, nil, nil, false
+		}
+		in := &d.other[d.page]
+		return in.Value(), in.Position(), in.SetCursor, in.SetValue, true
+	}
+	if m.focusList || m.focusApproval {
+		return "", 0, nil, nil, false
+	}
+	li := m.input.LineInfo()
+	lines := strings.Split(m.input.Value(), "\n")
+	base := 0
+	for _, line := range lines[:m.input.Line()] {
+		base += len([]rune(line)) + 1
+	}
+	set := func(pos int) { m.input.SetCursor(pos - base) }
+	return m.input.Value(), base + li.StartColumn + li.ColumnOffset, set, m.input.SetValue, true
+}
+
+func (m *model) chipKey(k tea.KeyMsg) (bool, tea.Cmd) {
+	value, pos, cursor, setValue, ok := m.chipInput()
+	id := ""
+	if s := m.current(); s != nil {
+		id = s.Id
+	}
+	page := 0
+	if m.questionDialog != nil {
+		page = m.questionDialog.page
+	}
+	sel := m.pasteSelection
+	if !ok || sel != nil && (sel.value != value || sel.cursor != pos || sel.question != m.questionDialog || sel.page != page || sel.session != id) {
+		m.pasteSelection = nil
+		sel = nil
+	}
+	if !ok {
+		return false, nil
+	}
+	key := k.String()
+	if sel != nil {
+		switch key {
+		case "enter", "ctrl+p":
+			cmd := m.openPastes()
+			if d := m.pasteDialog; d != nil {
+				for i, token := range d.tokens {
+					if token == sel.token {
+						d.index = i
+						break
+					}
+				}
+			}
+			return true, cmd
+		case "left", "right":
+			if key == "left" {
+				cursor(sel.start)
+			} else {
+				cursor(sel.end)
+			}
+			m.pasteSelection = nil
+			return true, nil
+		case "backspace", "delete":
+			r := []rune(value)
+			// SetValue may reset the textarea row. Delete using native keys instead.
+			if m.questionDialog == nil {
+				cursor(sel.end)
+				for i := sel.start; i < sel.end; i++ {
+					m.input, _ = m.input.Update(tea.KeyMsg{Type: tea.KeyBackspace})
+				}
+			} else {
+				setValue(string(r[:sel.start]) + string(r[sel.end:]))
+				cursor(sel.start)
+				d := m.questionDialog
+				d.otherSelected[d.page] = strings.TrimSpace(d.other[d.page].Value()) != ""
+			}
+			m.pasteSelection = nil
+			return true, nil
+		}
+		m.pasteSelection = nil
+	}
+	if k.Paste {
+		return false, nil
+	}
+	if key != "left" && key != "right" && key != "backspace" && key != "delete" {
+		return false, nil
+	}
+	for token := range m.pastes {
+		for offset := 0; offset < len(value); {
+			i := strings.Index(value[offset:], token)
+			if i < 0 {
+				break
+			}
+			i += offset
+			start := utf8.RuneCountInString(value[:i])
+			end := start + utf8.RuneCountInString(token)
+			offset = i + len(token)
+			left := key == "left" || key == "backspace"
+			if left && pos > start && pos <= end || !left && pos >= start && pos < end {
+				boundary := end
+				if left {
+					boundary = start
+				}
+				cursor(boundary)
+				m.pasteSelection = &chipSelection{token: token, value: value, session: id, start: start, end: end, cursor: boundary, question: m.questionDialog, page: page}
+				if key == "backspace" || key == "delete" {
+					return m.chipKey(k)
+				}
+				return true, nil
+			}
+		}
+	}
+	return false, nil
+}
+
+func (m *model) decorateInputPastes(view string) string {
+	view = decoratePastes(view, m.pastes)
+	if s := m.pasteSelection; s != nil {
+		value, pos, _, _, ok := m.chipInput()
+		if !ok || value != s.value || pos != s.cursor || s.question != m.questionDialog {
+			return view
+		}
+		token := decoratePastes(s.token, m.pastes)
+		style := lipgloss.NewStyle().Foreground(lipgloss.Color("#031e2c")).Background(lipgloss.Color("#aeff98"))
+		lines := strings.Split(view, "\n")
+		remaining := token
+		for i, line := range lines {
+			plain := ansi.Strip(line)
+			// Textarea may wrap a chip and decorate the cursor inside it.
+			for n := len([]rune(remaining)); n > 0; n-- {
+				if remaining == token && n < min(8, len([]rune(token))) {
+					break
+				}
+				part := string([]rune(remaining)[:n])
+				at := strings.Index(plain, part)
+				if at < 0 {
+					continue
+				}
+				start := ansi.StringWidth(plain[:at])
+				end := start + ansi.StringWidth(part)
+				lines[i] = ansi.Cut(line, 0, start) + style.Render(part) + ansi.Cut(line, end, ansi.StringWidth(line))
+				remaining = string([]rune(remaining)[n:])
+				break
+			}
+			if remaining == "" {
+				break
+			}
+		}
+		if remaining == "" {
+			view = strings.Join(lines, "\n")
+		}
+	}
+	return view
+}
+
+// Vertical/word navigation can land inside a token; normalize that destination
+// before another edit or frame can expose an internal chip cursor.
+func (m *model) snapChipCursor() {
+	value, pos, _, _, ok := m.chipInput()
+	if !ok {
+		return
+	}
+	for token := range m.pastes {
+		for offset := 0; offset < len(value); {
+			i := strings.Index(value[offset:], token)
+			if i < 0 {
+				break
+			}
+			i += offset
+			start := utf8.RuneCountInString(value[:i])
+			if pos > start && pos < start+utf8.RuneCountInString(token) {
+				m.chipKey(tea.KeyMsg{Type: tea.KeyRight})
+				return
+			}
+			offset = i + len(token)
+		}
+	}
+}
+
 type pasteDialog struct {
 	tokens        []string
 	index, offset int
@@ -329,7 +520,7 @@ func (m *model) pasteOverlay(view string) string {
 		return view
 	}
 	width := max(1, m.width-4)
-	rows := []string{accent.Render("Pasted text · preview"), muted.Render("↑/↓ select · t text · f file · d delete · i insert · Esc back"), ""}
+	rows := []string{accent.Render("Pasted text · preview"), muted.Render("↑/↓ select · t send as full text · f send as file · d remove from draft"), muted.Render("i insert cached chip into composer · Esc back (nothing sent yet)"), ""}
 	start := max(0, d.index-1)
 	for i := start; i < min(len(d.tokens), start+3); i++ {
 		p := m.pastes[d.tokens[i]]
