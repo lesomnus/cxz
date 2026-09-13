@@ -367,6 +367,8 @@ func (s *Supervisor) consume(raw []byte) {
 			Error     string          `json:"error"`
 		} `json:"response"`
 		Message struct {
+			Model   string          `json:"model"`
+			Usage   json.RawMessage `json:"usage"`
 			Content json.RawMessage `json:"content"`
 		} `json:"message"`
 		Result  string `json:"result"`
@@ -444,6 +446,9 @@ func (s *Supervisor) consume(raw []byte) {
 			s.event("state", "working", "", nil, nil)
 		}
 	case "assistant", "user":
+		if v.Type == "assistant" && len(v.Message.Usage) > 0 {
+			s.event("usage", "context/message", "", map[string]any{"model": v.Message.Model, "usage": v.Message.Usage}, nil)
+		}
 		var blocks []struct {
 			Type      string `json:"type"`
 			Text      string `json:"text"`
