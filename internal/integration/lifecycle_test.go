@@ -142,6 +142,17 @@ func TestLifecycle(t *testing.T) {
 			syscall.Kill(p["supervisor"], syscall.SIGKILL)
 		}
 	}()
+	attachment, err := client.Attach(ctx, &api.AttachmentInput{SessionId: id, RunId: s.RunId, Content: []byte("synthetic attachment\nline two\n")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(attachment.Path)
+	if err != nil || string(data) != "synthetic attachment\nline two\n" {
+		t.Fatal("attachment RPC did not persist source", err)
+	}
+	if _, err := client.Attach(ctx, &api.AttachmentInput{SessionId: id, RunId: "stale", Content: []byte("reject")}); err == nil {
+		t.Fatal("stale attachment accepted")
+	}
 	same, e := client.Create(ctx, create)
 	if e != nil || same.Id != id {
 		t.Fatalf("create idempotency: %v", e)

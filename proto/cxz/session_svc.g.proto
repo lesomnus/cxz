@@ -39,6 +39,7 @@ service SessionService {
   rpc Stop(SessionControl) returns (Session);
   rpc Interrupt(SessionControl) returns (SessionReceipt);
   rpc Send(SessionSendRequest) returns (SessionReceipt);
+  rpc Attach(SessionAttachRequest) returns (SessionAttachment);
   rpc Reply(SessionReplyRequest) returns (SessionReceipt);
   // Journal replay is not payday Watch: it is cursor-ordered event history.
   rpc History(SessionEventsRequest) returns (SessionEventBatch);
@@ -242,6 +243,16 @@ message SessionSendRequest {
   string run_id = 2;
   string client_id = 3;
   string text = 4;
+}
+
+message SessionAttachRequest {
+  SessionRef ref = 1;
+  string run_id = 2;
+  bytes content = 3;
+}
+
+message SessionAttachment {
+  string path = 1;
 }
 
 message SessionReplyRequest {

@@ -24,6 +24,14 @@ func New(conn grpc.ClientConnInterface) *Client {
 
 var _ api.SessionsClient = (*Client)(nil)
 
+func (c *Client) Attach(ctx context.Context, r *api.AttachmentInput, opts ...grpc.CallOption) (*api.Attachment, error) {
+	v, err := c.sessions.Attach(ctx, resource.SessionAttachRequest_builder{Ref: sr(r.SessionId), RunId: &r.RunId, Content: r.Content}.Build(), opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &api.Attachment{Path: v.GetPath()}, nil
+}
+
 func ptr[T any](v T) *T { return &v }
 func sr(id string) *resource.SessionRef {
 	if sessionalias.Valid(id) {

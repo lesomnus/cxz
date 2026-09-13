@@ -1,5 +1,29 @@
 # 구현 진행 상황
 
+## 2026-09-13 — 긴 붙여넣기 칩과 명시적 파일 첨부
+
+- bracketed paste로 식별된 800자 초과 또는 4줄 이상 텍스트를 입력창/질문 Other에서
+  `[Paste … · NL · NB]` 칩으로 접는다. 기본 제출은 원문을 한 번만 펼치며 줄바꿈을 보존한다.
+  칩 내부 부분 편집은 막고 전체 삭제는 허용한다. 로그인 workflow와 secret 질문은 제외한다.
+- Ctrl+P 또는 `/paste`에서 선택·스크롤 미리보기, `t` 원문, `f` 파일 전환, `d` 초안에서 제거,
+  `i` 일반 입력에 재삽입을 제공한다. 미리보기 wrapping은 선택/폭 변경 때만 계산한다.
+- `SessionService.Attach`를 payday resource 확장 proto로 추가하고 generated code를 갱신했다.
+  resource ref → runtime ID → manager routing → 프로젝트 runtime 저장 경로를 사용한다.
+  파일 경로를 클라이언트가 정하지 않으며 현재 run 확인 후 세션의 durable data 아래
+  `attachments/paste-<sha256>.txt`로 저장한다. 디렉터리 0700/파일 0600, root-confined 경로,
+  내용 기반 중복 저장 방지를 적용한다. 파일 내용은 provider가 기존 도구/권한으로 읽는다.
+- 파일 모드는 저장 성공 후에만 적용되며 `[File …]`로 표시한다. 제출에는 경로와 읽기 안내만
+  들어간다. 실패하면 원문/칩을 유지한다. 삭제는 초안에서만 제거하며 이미 업로드한 파일은
+  세션 데이터와 함께 보존한다. 취소한 업로드가 완료돼도 전송 모드를 자동 변경하지 않는다.
+- paste/file 하나는 최대 1 MiB, 클라이언트 메모리 cache는 32 MiB다. 초안/paste cache는
+  detach 시 사라지고 파일만 영구 저장된다. 이미 정상 제출된 원문은 기존 journal에 남는다.
+- RPC 통합 테스트에서 파일 내용과 stale run 거부를 확인했다. 일반/Other 원문 보존,
+  파일↔원문 전환, 업로드 실패, secret 제외, 부분 편집, 경로 격리 회귀 테스트를 추가했다.
+- 전체 테스트, 주요 패키지 race, vet, `go tool pd gen --check .`, diff 검사 통과.
+  입력 접기는 CLI 업데이트로 적용된다. 파일 업로드에는 manager와 프로젝트 runtime 서버도
+  업데이트해야 한다. 에이전트 재시작/사용자 OAuth 호출은 이 변경의 필수 단계가 아니다.
+
+
 ## 2026-09-13 — provider별 compact quota status bar
 
 - quota 공통 Window에 bucket ID/name과 기간 label을 보존한다. 전체 `/usage` label은
