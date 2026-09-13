@@ -133,7 +133,7 @@ func (m *model) anchorCursor() {
 		case m.terminalFocused():
 			if p := m.terminal(); p.session != nil {
 				pos := p.session.Screen.CursorPosition()
-				x, y, ok = pos.X, m.terminalTop()+1+pos.Y, p.session.CursorVisible.Load()
+				x, y, ok = pos.X, m.terminalTop()+2+pos.Y, p.session.CursorVisible.Load()
 			}
 		case m.panelFocus:
 		case m.pasteDialog != nil:
