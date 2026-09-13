@@ -102,6 +102,17 @@ func TestInstalledClaudeQuotaControl(t *testing.T) {
 				t.Fatal("effort not reflected in settings")
 			}
 			t.Log("set_model and effort flag control acknowledged; low effort present in settings")
+			_ = encoder.Encode(map[string]any{"type": "control_request", "request_id": "models", "request": map[string]any{"subtype": "list_models"}})
+		} else if v.Response.RequestID == "models" {
+			if v.Response.Subtype != "success" {
+				t.Fatal("list_models rejected")
+			}
+			raw, _ := json.Marshal(v.Response.Response)
+			models := agentview.Models("claude", raw)
+			if len(models) == 0 {
+				t.Fatal("list_models returned no parseable models")
+			}
+			t.Logf("live list_models catalog models=%d", len(models))
 			_ = encoder.Encode(map[string]any{"type": "control_request", "request_id": "quota", "request": map[string]any{"subtype": "get_usage", "skip_behaviors": true}})
 		} else if v.Response.RequestID == "quota" {
 			if v.Response.Subtype != "success" {

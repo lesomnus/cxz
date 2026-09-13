@@ -57,6 +57,17 @@ func TestLoginCodeIndicator(t *testing.T) {
 	}
 }
 
+func TestLoginWaitingSpinner(t *testing.T) {
+	m := newLoginInput(&bytes.Buffer{})
+	m.submitted = true
+	m.submittedAt = time.Now().Add(-3 * time.Second)
+	before := m.View()
+	_, cmd := m.Update(loginPulse(time.Now()))
+	if cmd == nil || before == m.View() || !strings.Contains(m.View(), "waiting for Claude login") {
+		t.Fatal(m.View())
+	}
+}
+
 func TestClaudeLoginInputProcess(t *testing.T) {
 	for _, tc := range []struct {
 		name, input, script string

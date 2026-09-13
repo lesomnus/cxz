@@ -1,5 +1,36 @@
 # 구현 진행 상황
 
+## 2026-09-13 — 모델 목록 갱신·로그인 진행 표시·자동 승인 표시
+
+- 재시작과 purge 차이: restart는 에이전트 Stop/Resume이며 살아 있는 project runtime을
+  교체하지 않는다. Boot도 기존 소켓에 연결되면 종료한다. purge 후 신규 설치는
+  프로세스/설정/로그인까지 초기화한다. purge 전 로그가 없어 이번 quota/effort 실패의
+  정확한 원인은 확정하지 않았다. 데이터 삭제를 업데이트 방법으로 권장하지 않는다.
+- 설치된 Claude 2.1.267의 `list_models` 제어를 확인하고 실제 빈 프로필 probe에서
+  initialize(4개), list_models(4개), set_model, effort flag, get_usage 응답을 검증했다.
+  사용자 계정 quota/모델 entitlement는 이 probe로 검증하지 않는다. 사용자 보고처럼
+  restart 후 목록이 확장되면 initial catalog 시점 차이가 설명되지만 정확한 캐시/정책
+  원인은 추정이다. 모델 목록은 계정/정책 영향을 받을 수 있다:
+  https://code.claude.com/docs/en/model-config
+- Claude 모델 목록을 시작 직후와 idle 1분 주기로 재조회하고 journal에 게시한다.
+  열려 있는 선택창도 갱신하며 선택한 항목을 가능한 한 유지한다. 미지원 제어는 초기
+  목록을 보존하고 재요청을 중단한다. 모델을 하드코딩하거나 검증 없이 허용하지 않는다.
+- account 생성 폼의 ↑/↓를 Tab/Shift+Tab과 같은 필드 이동에 연결했다.
+- Claude 코드 제출 후 로그인 대기 spinner/경과 시간을 표시한다. 로그인 완료 이후
+  세션 준비/연결 RPC 대기도 stderr spinner로 표시한다. 구조화 stdout은 유지한다.
+- full permission에서 자동 승인 가능한 요청은 pending 박스/요청 줄에 순간 노출하지
+  않고 실제 resolution 이후 allowed만 표시한다. 질문/알 수 없는 도구는 수동으로 남으며
+  승인 실패 시 full 해제 후 요청을 다시 표시한다. 미확인 결과를 allowed로 꾸미지 않는다.
+- 오래된 polling 기록만 남았을 때 요청 후 1분이 지나면 TUI도 timeout으로 표시한다.
+  서버 무응답 자체를 해결했다고 간주하지 않으며, /usage의 마지막 요청 시각을 유지한다.
+- 폼 키 이동, spinner, 연결 진행 출력, 자동 승인 숨김/수동 fallback, quota 경과 시간,
+  모델 갱신/미지원 fallback과 열린 dialog 갱신 회귀 테스트를 추가했다. 전체 Go 테스트,
+  TUI/accounts/supervisor/CLI race, go vet, git diff --check 및 실제 Claude 무인증
+  control probe를 통과했다. 사용자 세션/컨테이너는 중단·재생성하지 않았다.
+
+이번 모델 갱신에는 **CLI와 project runtime/supervisor 업데이트가 모두 필요**하다.
+기존 프로세스에 클라이언트 코드만 교체해도 새 제어가 생기는 것은 아니다.
+
 ## 2026-09-13 — 재시작 확인 버튼 오버레이
 
 - `/restart`의 추가 confirm/cancel 명령 입력을 없애고 Confirm/Cancel 버튼 모달로

@@ -43,6 +43,24 @@ func TestPreparationProgress(t *testing.T) {
 		}
 	}
 }
+
+func TestSessionConnectionProgress(t *testing.T) {
+	for _, failure := range []bool{false, true} {
+		var out bytes.Buffer
+		err := sessionProgress(context.Background(), &out, func() error {
+			if failure {
+				return errors.New("login required")
+			}
+			return nil
+		})
+		if (err != nil) != failure || !strings.Contains(out.String(), "preparing agent session") {
+			t.Fatal(err, out.String())
+		}
+		if !failure && !strings.Contains(out.String(), "session connected") {
+			t.Fatal(out.String())
+		}
+	}
+}
 func TestPreparationFailure(t *testing.T) {
 	var out bytes.Buffer
 	want := errors.New("build failed")

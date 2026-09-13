@@ -46,7 +46,7 @@ func (m *model) modelReport() string {
 		}
 		break
 	}
-	lines = append(lines, "", "/model <id> · /effort <level> · /effort default", "Claude: initialization catalog; restart to refresh. Codex: catalog refreshes every idle minute.", "Changes require idle. Provider acknowledgement is shown in the transcript; no chat prompt is sent.")
+	lines = append(lines, "", "/model <id> · /effort <level> · /effort default", "Catalog refreshes every idle minute (Claude: list_models; Codex: model/list). Older Claude CLIs may only support the initial catalog.", "Changes require idle. Provider acknowledgement is shown in the transcript; no chat prompt is sent.")
 	return strings.Join(lines, "\n")
 }
 

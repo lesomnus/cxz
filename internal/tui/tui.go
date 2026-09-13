@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/textinput"
@@ -383,6 +384,9 @@ func (m *model) render() {
 			if e.Kind == "approval" {
 				state := decisions[e.RunId+"/"+e.RequestId]
 				if state == "" {
+					if m.hiddenAutoApproval(s, e) {
+						continue
+					}
 					state = "requested"
 				}
 				text = approvalLine(s, e, state, max(1, m.view.Width))
@@ -522,9 +526,8 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					s.Pending = pending
 				}
 			}
-			m.notice = "Approval decision sent"
-			if v.automatic {
-				m.notice = "Automatically approved · " + v.request
+			if !v.automatic {
+				m.notice = "Approval decision sent"
 			}
 		}
 		if m.focusApproval {
@@ -715,6 +718,24 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.cursor[v.id] = v.event.Seq
 			m.events[v.id] = append(m.events[v.id], v.event)
+			if p := m.modelPicker; p != nil && !p.loading && p.id == v.id && p.run == v.event.RunId && v.event.Kind == "models" {
+				var catalog modelCatalog
+				if json.Unmarshal(v.event.Payload, &catalog) == nil {
+					selected := ""
+					options := p.options()
+					if p.selected < len(options) {
+						selected = options[p.selected]
+					}
+					p.catalog = &catalog
+					p.selected = 0
+					for i, option := range p.options() {
+						if option == selected {
+							p.selected = i
+							break
+						}
+					}
+				}
+			}
 			if s := m.current(); s != nil && s.Id == v.id {
 				m.render()
 			}

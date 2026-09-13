@@ -82,9 +82,9 @@ func (m *model) accountKey(key tea.KeyMsg) tea.Cmd {
 	}
 	if m.accountAdding {
 		switch key.String() {
-		case "tab", "shift+tab":
+		case "tab", "shift+tab", "up", "down":
 			delta := 1
-			if key.String() == "shift+tab" {
+			if key.String() == "shift+tab" || key.String() == "up" {
 				delta = 3
 			}
 			m.accountField = (m.accountField + delta) % 4
@@ -205,7 +205,7 @@ func (m *model) accountScreen() string {
 				rows = append(rows, "  "+field)
 			}
 		}
-		rows = append(rows, "", muted.Render("Tab / Shift+Tab move · Enter next / create · Esc cancel"))
+		rows = append(rows, "", muted.Render("↑/↓ or Tab / Shift+Tab move · Enter next / create · Esc cancel"))
 	} else {
 		if m.accountChoosing {
 			rows = append(rows, strong.Render("Choose an account for the new session"))

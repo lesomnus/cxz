@@ -35,15 +35,33 @@ func permissionState(state string) bool {
 }
 func (m *model) selectedApproval() *api.Event {
 	s := m.current()
-	if s == nil || len(s.Pending) == 0 {
+	pending := m.visibleApprovals(s)
+	if len(pending) == 0 {
 		return nil
 	}
-	for _, p := range s.Pending {
+	for _, p := range pending {
 		if p.RequestId == m.approvalID {
 			return p
 		}
 	}
-	return s.Pending[0]
+	return pending[0]
+}
+
+// Suppress only auto-eligible requests for this attached run. Do not invent an
+// allowed result: the transcript displays it once provider resolution arrives.
+func (m *model) hiddenAutoApproval(s *api.Session, p *api.Event) bool {
+	return s != nil && s.RunId != "" && m.fullPermission[s.Id] == s.RunId && (p.RunId == "" || p.RunId == s.RunId) && permissionState(s.State) && automaticApproval(p) && !m.projectView && !m.accountView
+}
+func (m *model) visibleApprovals(s *api.Session) []*api.Event {
+	var out []*api.Event
+	if s != nil {
+		for _, p := range s.Pending {
+			if !m.hiddenAutoApproval(s, p) {
+				out = append(out, p)
+			}
+		}
+	}
+	return out
 }
 func (m *model) replyApproval(p *api.Event, allow bool, answers string, automatic bool) tea.Cmd {
 	s := m.current()
@@ -169,13 +187,14 @@ func (m *model) approvalKey(k tea.KeyMsg) tea.Cmd {
 		}
 		m.approvalOffset = max(0, m.approvalOffset)
 	case "up", "down":
-		for i, v := range s.Pending {
+		pending := m.visibleApprovals(s)
+		for i, v := range pending {
 			if v.RequestId == p.RequestId {
 				delta := 1
 				if k.String() == "up" {
-					delta = len(s.Pending) - 1
+					delta = len(pending) - 1
 				}
-				m.approvalID = s.Pending[(i+delta)%len(s.Pending)].RequestId
+				m.approvalID = pending[(i+delta)%len(pending)].RequestId
 				m.approvalOffset = 0
 				break
 			}
@@ -205,13 +224,14 @@ func (m *model) approvalBox() string {
 	s := m.current()
 	height := m.approvalHeight()
 	index := 0
-	for i, v := range s.Pending {
+	pending := m.visibleApprovals(s)
+	for i, v := range pending {
 		if v.RequestId == p.RequestId {
 			index = i
 		}
 	}
 	view := agentview.ApprovalView(s.Agent, p.Text, p.Payload)
-	rows := []string{warning.Render(clip(fmt.Sprintf("  Pending approvals · %d/%d", index+1, len(s.Pending)), max(1, m.width-2)))}
+	rows := []string{warning.Render(clip(fmt.Sprintf("  Pending approvals · %d/%d", index+1, len(pending)), max(1, m.width-2)))}
 	rows = append(rows, clip("› "+pickerLabel(view.Title), max(1, m.width-2)))
 	capacity := max(0, height-5)
 	details := strings.Split(ansi.Hardwrap(safeText(view.Detail), max(1, m.width-4), true), "\n")

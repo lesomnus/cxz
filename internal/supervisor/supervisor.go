@@ -45,6 +45,8 @@ type Supervisor struct {
 	quotaRequested time.Time
 	modelOptions   []agentview.ModelOption
 	modelRequested time.Time
+	modelDisabled  bool
+	modelSource    string
 	modelPages     []agentview.ModelOption
 	effort         string
 	settingPending string
@@ -269,7 +271,7 @@ func Run(ctx context.Context, root, id string) error {
 					s.readClaudeQuota()
 				}
 			}
-			if s.codex != nil && s.snap.State == "idle" {
+			if s.snap.State == "idle" {
 				s.readModels()
 			}
 			s.mu.Unlock()
@@ -378,6 +380,18 @@ func (s *Supervisor) consume(raw []byte) {
 			s.event("compact", "completed", "", json.RawMessage(raw), nil)
 		}
 	case "control_response":
+		if v.Response.RequestID == "cxz-models" {
+			if v.Response.Subtype == "success" {
+				s.modelOptions = agentview.Models("claude", v.Response.Response)
+				s.modelSource = "list_models"
+				s.publishModels()
+			} else {
+				text := strings.ToLower(v.Response.Error)
+				s.modelDisabled = strings.Contains(text, "unsupported") || strings.Contains(text, "unknown")
+				s.event("models_status", "unavailable", "", nil, nil)
+			}
+			return
+		}
 		if strings.HasPrefix(v.Response.RequestID, "cxz-setting-") {
 			s.finishSetting(strings.TrimPrefix(v.Response.RequestID, "cxz-setting-"), v.Response.Subtype == "success")
 			return
@@ -400,6 +414,7 @@ func (s *Supervisor) consume(raw []byte) {
 				s.publishModels()
 				s.event("state", "idle", "", nil, nil)
 				s.readClaudeQuota()
+				s.readModels()
 			} else {
 				s.event("state", "failed", "", nil, nil)
 				s.kill()

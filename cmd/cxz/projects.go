@@ -306,7 +306,7 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 		}
 		fmt.Fprintln(c.ErrWriter, "cxz: workspace ready; starting project account login, then connecting the session")
 		return projectAccountWorkflow(ctx, resources, c, a, "login", request.Workspace, false, key)
-	})
+	}, c.ErrWriter)
 	if e != nil {
 		return e
 	}

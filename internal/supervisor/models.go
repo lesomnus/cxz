@@ -11,7 +11,11 @@ import (
 )
 
 func (s *Supervisor) publishModels() {
-	s.event("models", "catalog", "", map[string]any{"models": s.modelOptions, "model": s.session.Model, "effort": s.effort, "source": map[bool]string{true: "model/list", false: "initialize"}[s.codex != nil]}, nil)
+	source := s.modelSource
+	if source == "" {
+		source = map[bool]string{true: "model/list", false: "initialize"}[s.codex != nil]
+	}
+	s.event("models", "catalog", "", map[string]any{"models": s.modelOptions, "model": s.session.Model, "effort": s.effort, "source": source}, nil)
 }
 
 func isSettingCommand(text string) bool {
@@ -20,11 +24,17 @@ func isSettingCommand(text string) bool {
 }
 
 func (s *Supervisor) readModels() {
-	if s.codex == nil || (!s.modelRequested.IsZero() && time.Since(s.modelRequested) < time.Minute) {
+	if s.modelDisabled || (!s.modelRequested.IsZero() && time.Since(s.modelRequested) < time.Minute) {
 		return
 	}
 	s.modelRequested = time.Now()
 	s.modelPages = nil
+	if s.codex == nil {
+		if err := s.write(map[string]any{"type": "control_request", "request_id": "cxz-models", "request": map[string]any{"subtype": "list_models"}}); err != nil {
+			s.event("models_status", "unavailable", "", nil, nil)
+		}
+		return
+	}
 	if err := s.write(rpc("cxz-models", "model/list", map[string]any{"limit": 100, "includeHidden": false})); err != nil {
 		s.modelRequested = time.Time{}
 		s.event("models_status", "unavailable", "", nil, nil)
@@ -51,9 +61,7 @@ func (s *Supervisor) configure(c core.Command) (core.Receipt, error) {
 		return r, fmt.Errorf("settings require an idle session with no pending update")
 	}
 	if len(f) == 1 {
-		if s.codex != nil {
-			s.readModels()
-		}
+		s.readModels()
 		s.publishModels()
 		rec := record{Op: "send", Command: c, Status: "accepted"}
 		s.receipts[c.ClientID] = rec
