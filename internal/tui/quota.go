@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/agentview"
@@ -38,6 +39,19 @@ func quotaBar(percent float64) string {
 		b.WriteRune(levels[max(0, min(4, filled-i*4))])
 	}
 	return b.String()
+}
+
+func quotaBarStyle(percent float64) lipgloss.Style {
+	switch {
+	case percent <= 15:
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("#F49BAA"))
+	case percent <= 30:
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("#F5AF98"))
+	case percent <= 50:
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("#F5CA9A"))
+	default:
+		return muted
+	}
 }
 
 func (m *model) updateQuota() {
@@ -130,7 +144,7 @@ func (m *model) quotaStatus(now time.Time, width int) string {
 	for _, w := range m.quotaWindows {
 		value := "—"
 		if w.Remaining != nil && (w.Reset.IsZero() || w.Reset.After(now)) {
-			value = fmt.Sprintf("%.0f%% %s", *w.Remaining, quotaBar(*w.Remaining))
+			value = fmt.Sprintf("%.0f%% %s", *w.Remaining, quotaBarStyle(*w.Remaining).Render(quotaBar(*w.Remaining)))
 		}
 		if m.quotaState == "error" || m.quotaState == "timeout" || w.Observed.IsZero() || now.Sub(w.Observed) > 2*time.Minute {
 			value = "~" + value

@@ -73,6 +73,12 @@ func TestTerminalCtrlEnterEncoding(t *testing.T) {
 		{"\r", tea.KeyEnter, false},
 		{"\x1b", tea.KeyEsc, false},
 		{"\x1b[13;5u", tea.KeyCtrlS, false},
+		{"\x1b[?1u\x1b[115;5u", tea.KeyCtrlS, false},
+		{"\x1b[99;5u", tea.KeyCtrlC, false},
+		{"\x1b[27u", tea.KeyEsc, false},
+		{"\x1b[9;2u", tea.KeyShiftTab, false},
+		{"\x1b[57414;5u", tea.KeyCtrlS, false},
+		{"\x1b[57419u", tea.KeyUp, false},
 		{"\x1b[27;5;13~", tea.KeyCtrlS, false},
 		{"\x13", tea.KeyCtrlS, false},
 		{"\x1b[Z", tea.KeyShiftTab, false},
@@ -99,6 +105,7 @@ func TestTerminalCtrlEnterEncoding(t *testing.T) {
 func TestKeyboardReaderSplitBoundaries(t *testing.T) {
 	for _, tc := range [][2]string{
 		{"한글🙂\x1b[13;5u", "한글🙂\x13"},
+		{"\x1b[?1u\x1b[13;69u\x1b[27u\x1b[115;5u", "\x13\x1b\x13"},
 		{"\x1b[27;5;13~\x1b[Z\x1b[15~\x1b[<64;123;456M", "\x13\x1b[Z\x1b[15~\x1b[<64;123;456M"},
 		{"\x1b[200~한글\x1b[13;5u\x1b[201~\x1b[13;5u", "\x1b[200~한글\x1b[13;5u\x1b[201~\x13"},
 	} {
@@ -112,5 +119,13 @@ func TestKeyboardReaderSplitBoundaries(t *testing.T) {
 				t.Fatalf("split %d: %q != %q", split, got, tc[1])
 			}
 		}
+	}
+}
+
+func TestKittyModeReply(t *testing.T) {
+	r := &keyboardReader{}
+	out, pending := r.translate([]byte("\x1b[?1u"), true)
+	if len(out) != 0 || len(pending) != 0 || !r.kittyConfirmed || r.kittyFlags != 1 {
+		t.Fatalf("reply not consumed/recorded: %+v %q", r, out)
 	}
 }

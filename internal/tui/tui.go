@@ -192,7 +192,7 @@ func RunProject(ctx context.Context, c api.SessionsClient, project *api.Project,
 	if len(login) > 0 {
 		m.loginAccount = login[0]
 	}
-	m.cursorOutput = &cursorWriter{out: os.Stdout}
+	m.cursorOutput = &cursorWriter{out: os.Stdout, keyboard: extendedKeyboard}
 	p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithContext(ctx), tea.WithMouseCellMotion(), tea.WithOutput(m.cursorOutput), tea.WithInput(keyboardInput(os.Stdin)))
 	m.program = p
 	_, e := p.Run()

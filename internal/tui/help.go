@@ -75,6 +75,7 @@ func helpView(width int, topics ...string) string {
 	}
 	shortcuts := []struct{ category, keys, text string }{
 		{"Input", "Ctrl+S", "Send message or command"},
+		{"Input", "Ctrl+Enter", "Send message or command (Kitty keyboard protocol)"},
 		{"Input", "Enter / Alt+Enter / Ctrl+J", "Newline"},
 		{"Input", "Ctrl+X", "Clear draft"},
 		{"Navigation", "Tab / Shift+Tab", "Next / previous focus: approvals → input → sessions"},

@@ -24,6 +24,7 @@ type cursorWriter struct {
 	out                io.Writer
 	x, y               int
 	enabled, alternate bool
+	keyboard           bool
 }
 
 var _ term.File = (*cursorWriter)(nil)
@@ -60,15 +61,21 @@ func (w *cursorWriter) position(x, y int, enabled bool) {
 func (w *cursorWriter) Write(p []byte) (int, error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
+	buf := p
+	// Keyboard stacks belong to each screen: push AFTER entering, pop BEFORE
+	// leaving. tea.Exec also leaves/re-enters, keeping OAuth subprocesses legacy.
+	if w.keyboard {
+		buf = bytes.ReplaceAll(buf, []byte("\x1b[?1049h"), []byte("\x1b[?1049h\x1b[>1u\x1b[?u"))
+		buf = bytes.ReplaceAll(buf, []byte("\x1b[?1049l"), []byte("\x1b[<u\x1b[?1049l"))
+	}
 	if bytes.Contains(p, []byte("\x1b[?1049h")) {
 		w.alternate = true
 	}
 	if bytes.Contains(p, []byte("\x1b[?1049l")) {
 		w.alternate = false
 	}
-	buf := p
 	if w.alternate && w.enabled {
-		buf = append(append([]byte{}, p...), []byte(ansi.CursorPosition(w.x+1, w.y+1))...)
+		buf = append(append([]byte{}, buf...), []byte(ansi.CursorPosition(w.x+1, w.y+1))...)
 	}
 	n, err := w.out.Write(buf)
 	if n < len(buf) && err == nil {

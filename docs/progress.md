@@ -1,5 +1,20 @@
 # 구현 진행 상황
 
+## 2026-09-13 — quota bar 구간 색상·Kitty Ctrl+Enter
+
+- 남은 quota ≤50% peach `#F5CA9A`, ≤30% coral `#F5AF98`, ≤15% pink-red
+  `#F49BAA`. bar 8칸만 변경하며 수치/라벨/시간/폭은 유지한다.
+- 기존 modified Enter 디코더에 Unix TUI의 Kitty disambiguation push/query/pop을
+  연결했다. 응답의 flags를 확인하며 미응답은 지원 확인 불가로 남긴다.
+  Ctrl+Enter/Ctrl+S는 전송, Enter는 줄바꿈. 모드에서 함께 바뀌는 Esc/Ctrl/Alt 및
+  Shift+Tab도 기존 키 이벤트로 변환한다. 붙여넣기는 변환/전송하지 않는다.
+- alternate screen 진입 뒤 push, 이탈 전 pop으로 tea.Exec 로그인/종료 시 모드를
+  복원한다. 일반 터미널은 Ctrl+S를 유지하며 non-Unix에서는 모드를 요청하지 않는다.
+- 검증: quota 경계/ANSI/레이아웃, 모드 진입·이탈 순서, PTY의 Kitty 키/조회 응답,
+  분할 CSI·UTF-8·붙여넣기 회귀. 실제 사용자 터미널/tmux/IME 조합은 미검증.
+- `go test ./...`, `go test -race ./internal/tui`, `go vet ./...`, `git diff --check` 통과.
+
+
 ## 2026-09-13 — 모델 목록 갱신·로그인 진행 표시·자동 승인 표시
 
 - 재시작과 purge 차이: restart는 에이전트 Stop/Resume이며 살아 있는 project runtime을

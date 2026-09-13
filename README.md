@@ -302,9 +302,17 @@ actual composition behavior still depends on the terminal and OS IME. OAuth's
 temporary terminal ownership is left untouched.
 
 Assistant headers start with `• CLAUDE` / `• CODEX` in the indicator gutter;
-answer text stays indented by two cells. Prefer Ctrl+S to send: cxz does not
-negotiate extended keyboard mode, so many terminals send the same CR for Enter
-and Ctrl+Enter even if they support an opt-in keyboard extension.
+answer text stays indented by two cells. On Unix, cxz requests Kitty keyboard
+disambiguation and queries the enabled flags while the TUI owns the alternate
+screen. Ctrl+Enter sends alongside Ctrl+S; Enter remains a newline. Keyboard
+mode is restored before exit or an external login and requested again on return.
+Terminals/multiplexers that do not deliver extended keys may still send the same
+CR for Enter and Ctrl+Enter; use Ctrl+S there. The actual terminal/IME still needs
+local verification; automated tests exercise the protocol bytes through a PTY.
+
+Only quota bars change color as remaining quota drops: at or below 50% pastel
+peach, 30% coral, and 15% pink-red. Above 50% the existing muted color remains;
+percentages, reset times and labels keep their existing styling.
 
 `cxz up` prints elapsed time and observed server provisioning checkpoints to stderr:
 configuration, resources, devcontainer image/build/hooks, selected agent installation,
