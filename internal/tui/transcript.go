@@ -82,14 +82,14 @@ func eventView(s *api.Session, e *api.Event, width int) (out string) {
 }
 
 func approvalLine(s *api.Session, e *api.Event, state string, width int) string {
-	icon, style := "☐", warning
+	icon, style := "[ ]", warning
 	switch state {
 	case "allowed":
-		icon, style = "🗹", accent
+		icon, style = "[✓]", accent
 	case "denied":
-		icon, style = "☒", peach
+		icon, style = "[×]", peach
 	case "canceled":
-		icon, style = "☒", muted
+		icon, style = "[×]", muted
 	}
 	title := agentview.ApprovalView(s.Agent, e.Text, nil).Title
 	if question(e) {

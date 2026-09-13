@@ -210,12 +210,18 @@ func (m *model) approvalKey(k tea.KeyMsg) tea.Cmd {
 	return nil
 }
 func (m *model) approvalHeight() int {
+	if m.questionDialog != nil {
+		return 0
+	}
 	if m.selectedApproval() == nil {
 		return 0
 	}
 	return min(12, max(5, m.height/3))
 }
 func (m *model) approvalBox() string {
+	if m.questionDialog != nil {
+		return ""
+	}
 	p := m.selectedApproval()
 	if p == nil {
 		return ""

@@ -65,7 +65,13 @@ func (m *model) openQuestion(p *api.Event) tea.Cmd {
 		m.modelPicker.cancel()
 	}
 	m.modelPicker = nil
+	m.resize()
 	return nil
+}
+
+func (m *model) closeQuestion() {
+	m.questionDialog = nil
+	m.resize()
 }
 
 func (m *model) syncQuestion() {
@@ -80,7 +86,7 @@ func (m *model) syncQuestion() {
 			}
 		}
 		if !valid {
-			m.questionDialog = nil
+			m.closeQuestion()
 			m.notice = "Question no longer pending"
 		}
 	}
@@ -167,12 +173,21 @@ func (m *model) questionKey(k tea.KeyMsg) tea.Cmd {
 	}
 	switch k.String() {
 	case "esc", "ctrl+q":
-		m.questionDialog = nil
+		m.closeQuestion()
 		return nil
 	case "ctrl+c":
 		return tea.Quit
 	case "ctrl+s":
 		return m.questionNext()
+	case "left", "right":
+		if d.row < n {
+			goto input
+		}
+		delta := 1
+		if k.String() == "left" {
+			delta = 2
+		}
+		d.row = n + (d.row-n+delta)%3
 	case "up", "shift+tab":
 		d.row = (d.row + n + 2) % (n + 3)
 	case "down", "tab":
@@ -201,7 +216,7 @@ func (m *model) questionKey(k tea.KeyMsg) tea.Cmd {
 				d.offset = 0
 			}
 		} else if d.row == n+2 {
-			m.questionDialog = nil
+			m.closeQuestion()
 			return nil
 		} else if k.String() == "enter" {
 			return m.questionNext()
@@ -244,12 +259,12 @@ func (m *model) questionOverlay(view string) string {
 	add("")
 	focus := len(lines)
 	for i, o := range q.Options {
-		marker := "☐"
+		marker := "[ ]"
 		if !q.Multi {
 			marker = "○"
 		}
 		if d.selected[d.page][i] {
-			marker = "☑"
+			marker = "[✓]"
 			if !q.Multi {
 				marker = "●"
 			}
@@ -260,16 +275,15 @@ func (m *model) questionOverlay(view string) string {
 			focus = len(lines)
 		}
 		label := prefix + marker + " " + safeText(o.Label)
-		if i == d.row {
-			label = accent.Render(label)
+		if i == d.row || d.selected[d.page][i] {
+			label = magenta.Bold(i == d.row).Render(label)
 		}
 		add(label)
 		if o.Description != "" {
 			add(muted.Render("    " + safeText(o.Description)))
 		}
 		if i == d.row && o.Preview != "" {
-			add("    Preview")
-			add(indentBlock(markdownView(o.Preview, max(1, width-4))))
+			add(questionPreview(o.Preview, width))
 		}
 	}
 	if q.Other {
@@ -283,9 +297,14 @@ func (m *model) questionOverlay(view string) string {
 			in.Focus()
 			in.Cursor.Blink = m.pulse%10 >= 5
 		}
-		add(prefix + "Other: " + in.View())
+		label := prefix + "Other: "
+		if d.row == len(q.Options) || in.Value() != "" {
+			label = magenta.Render(label)
+		}
+		add(label + in.View())
 	}
 	n := d.count()
+	buttonLine := ""
 	for i, label := range []string{"Next", "Back", "Cancel"} {
 		if i == 0 && d.page == len(d.questions)-1 {
 			label = "Submit"
@@ -293,13 +312,24 @@ func (m *model) questionOverlay(view string) string {
 		prefix := "  "
 		if d.row == n+i {
 			prefix = "› "
-			focus = len(lines)
-			label = accent.Reverse(true).Render("[ " + label + " ]")
+			label = magenta.Reverse(true).Render("[ " + label + " ]")
 		} else {
 			label = "[ " + label + " ]"
 		}
-		add(prefix + label)
+		button := prefix + label
+		if buttonLine != "" && ansi.StringWidth(buttonLine+" "+button) > width {
+			add(buttonLine)
+			buttonLine = ""
+		}
+		if d.row == n+i {
+			focus = len(lines)
+		}
+		if buttonLine != "" {
+			buttonLine += " "
+		}
+		buttonLine += button
 	}
+	add(buttonLine)
 	height := max(1, len(strings.Split(view, "\n"))-4)
 	start := max(0, focus-height+2) + d.offset
 	start = max(0, min(start, max(0, len(lines)-height)))
@@ -309,4 +339,20 @@ func (m *model) questionOverlay(view string) string {
 		body = append(body, warning.Render(safeText(d.message)))
 	}
 	return overlayBox(view, body, m.width, true)
+}
+
+// Align the preview with option descriptions, not with the list indicator.
+func questionPreview(text string, width int) string {
+	const indent = "    "
+	boxWidth := width - len(indent)
+	if boxWidth < 12 {
+		return indent + "Preview\n" + indentBlock(markdownView(text, max(1, width-2)))
+	}
+	inner := boxWidth - 4
+	rows := []string{indent + muted.Render("╭─ Preview "+strings.Repeat("─", boxWidth-12)+"╮")}
+	for _, line := range strings.Split(ansi.Hardwrap(markdownView(text, inner), inner, true), "\n") {
+		rows = append(rows, indent+muted.Render("│")+" "+line+strings.Repeat(" ", max(0, inner-ansi.StringWidth(line)))+" "+muted.Render("│"))
+	}
+	rows = append(rows, indent+muted.Render("╰"+strings.Repeat("─", boxWidth-2)+"╯"))
+	return strings.Join(rows, "\n")
 }
