@@ -23,6 +23,9 @@ import (
 )
 
 type model struct {
+	pathHints            *pathHints
+	pathHintGeneration   uint64
+	pathHintDismissed    string
 	terminals            map[string]*terminalPanel
 	activityID           string
 	lastUIInput          time.Time
@@ -224,6 +227,7 @@ func RunProject(ctx context.Context, c api.SessionsClient, project *api.Project,
 	m.program = p
 	_, e := p.Run()
 	cancel()
+	m.clearPathHints()
 	for _, panel := range m.terminals {
 		if panel.session != nil {
 			panel.session.Close()
@@ -621,7 +625,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 	next, cmd := m.update(msg)
-	return next, tea.Batch(activity, cmd)
+	return next, tea.Batch(activity, cmd, m.syncPathHints())
 }
 
 func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -631,12 +635,19 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			p.starting = false
 			p.session = v.session
 			p.err = v.err
+			m.closeSuccessfulTerminal(v.id)
 			m.resize()
 		} else if v.session != nil {
 			v.session.Close()
 		}
 		return m, nil
 	case terminalChanged:
+		m.closeSuccessfulTerminal(v.id)
+		return m, nil
+	case pathHintDue:
+		return m, m.fetchPathHints(v)
+	case pathHintResult:
+		m.receivePathHints(v)
 		return m, nil
 	case tea.KeyMsg:
 		if v.Type == tea.KeyF20 && !v.Paste {
@@ -1136,6 +1147,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.renameKey(v)
 		}
 		if !m.projectView && !m.creating && !m.focusApproval {
+			if handled, cmd := m.pathHintKey(v); handled {
+				return m, cmd
+			}
 			if handled, cmd := m.commandKey(v); handled {
 				return m, cmd
 			}

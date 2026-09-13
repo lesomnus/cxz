@@ -30,6 +30,23 @@ type terminalOpened struct {
 }
 type terminalChanged struct{ id string }
 
+func (m *model) closeSuccessfulTerminal(id string) {
+	p := m.terminals[id]
+	if p == nil || p.session == nil {
+		return
+	}
+	if exited, err := p.session.Exited(); exited && err == nil {
+		focused := p.focused
+		p.open, p.focused = false, false
+		if s := m.current(); s != nil && s.Id == id {
+			if focused && !m.panelFocus {
+				m.input.Focus()
+			}
+			m.resize()
+		}
+	}
+}
+
 func (m *model) terminal() *terminalPanel {
 	if s := m.current(); s != nil {
 		return m.terminals[s.Id]

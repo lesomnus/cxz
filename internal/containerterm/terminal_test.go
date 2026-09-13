@@ -136,6 +136,22 @@ func TestDockerTerminal(t *testing.T) {
 		}
 	})
 	p := &api.Project{Id: project, ContainerId: id, RemoteUser: "root", RemoteWorkspace: "/tmp"}
+	paths, err := ListPaths(ctx, p, "/")
+	if err != nil {
+		t.Fatal(err)
+	}
+	foundTmp := false
+	for _, entry := range paths.Entries {
+		if entry.Name == "tmp" && entry.Directory {
+			foundTmp = true
+		}
+	}
+	if !foundTmp {
+		t.Fatal("container root listing missing tmp")
+	}
+	if _, err := ListPaths(ctx, p, "~/"); err != nil {
+		t.Fatal("container home expansion failed", err)
+	}
 	s, err := Open(ctx, p, 80, 24, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -153,6 +169,9 @@ func TestDockerTerminal(t *testing.T) {
 	nonroot.Text("id -u\r", false)
 	waitText(t, nonroot, "65534")
 	p.Id = "unowned"
+	if _, err := ListPaths(ctx, p, "/"); err == nil {
+		t.Fatal("path lookup accepted wrong project")
+	}
 	if s, err := Open(ctx, p, 80, 24, nil); err == nil {
 		s.Close()
 		t.Fatal("wrong project accepted")
