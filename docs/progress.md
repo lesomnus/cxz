@@ -1,5 +1,23 @@
 # 구현 진행 상황
 
+## 2026-09-13 — 세션 준비·로그인을 TUI 안에서 처리
+
+- accounts 선택 후 세션 생성/로그인에 사용하던 `tea.Exec`를 제거했다. 기존 alternate
+  screen을 유지하는 비동기 workflow 화면에서 spinner·경과 시간·provider 출력을 표시한다.
+- 로그인 subprocess는 stdin/stdout pipe로 연결하며 provider의 화면 제어 escape는
+  렌더링하지 않는다. Claude 코드 입력은 `[***]`와 입력 글자 수만 표시하고 Ctrl+X로
+  지운다. URL/출력은 PgUp/PgDn으로 스크롤하며 대화 journal에는 추가하지 않는다.
+- accounts의 `l`: Codex는 중앙 계정 로그인, Claude는 현재 프로젝트/계정에 속한
+  세션을 선택해 재로그인하거나 명시적으로 `New session + independent login`을 선택한다.
+  기존 실행 세션은 먼저 중단해야 한다. CLI callback에서도 소유권/상태를 재확인한다.
+- Esc는 context와 stdin을 닫아 로컬 작업을 취소하고 완료 응답 후 accounts로 돌아간다.
+  이미 생성된 서버 리소스를 삭제하는 rollback은 하지 않는다. 성공한 세션 생성은 새 세션에
+  연결한다. 오류/취소는 accounts 뷰에 남고 별도 명령 실행을 요구하지 않는다.
+- 전체 테스트, `go test -race ./internal/tui ./cmd/cxz`, `go vet ./...`, diff 검사 통과.
+  fake login callback으로 파이프 코드 전달·비노출·화면 크기 변경·취소·세션 격리를 검증했다.
+  실제 사용자 OAuth 계정은 사용하지 않았다. 이번 변경은 로컬 CLI 업데이트로 적용된다.
+
+
 ## 2026-09-13 — Claude 백그라운드 작업 표시
 
 - `agentview.BackgroundState`로 실행 목록 snapshot, background task 시작, 상태 patch,

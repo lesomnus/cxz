@@ -3,14 +3,12 @@ package tui
 import (
 	"context"
 	"fmt"
-	"io"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/resource"
 )
@@ -24,6 +22,7 @@ type accountLoggedIn struct{ err error }
 func (m *model) openAccounts(choose bool) tea.Cmd {
 	m.accountView, m.accountChoosing, m.accountLoading = true, choose, true
 	m.accountAdding = false
+	m.loginChoosing = false
 	m.accountSearching = false
 	m.accountSearch = textinput.New()
 	m.accountSearch.Cursor.Style = inputCursorStyle
@@ -50,6 +49,9 @@ func (m *model) accountKey(key tea.KeyMsg) tea.Cmd {
 	}
 	if m.busy {
 		return nil
+	}
+	if m.loginChoosing {
+		return m.loginTargetKey(key)
 	}
 	if m.accountSearching {
 		switch key.String() {
@@ -165,11 +167,14 @@ func (m *model) accountKey(key tea.KeyMsg) tea.Cmd {
 				m.notice = "Login requires the workspace dashboard (cxz up)."
 				return nil
 			}
-			m.busy = true
-			e := &createProjectExec{create: func(in io.Reader, out, errOut io.Writer) (*api.Session, error) {
-				return nil, m.loginAccount(alias, in, out, errOut)
-			}}
-			return tea.Exec(e, func(err error) tea.Msg { return accountLoggedIn{err} })
+			if choices[m.accountIndex].GetAgent() == "claude" {
+				m.loginChoosing = true
+				m.loginAlias = alias
+				m.loginIndex = 0
+				m.notice = "Claude login is isolated per session."
+				return nil
+			}
+			return m.startAccountWorkflow(alias, choices[m.accountIndex].GetAgent(), "", false)
 		}
 		if !m.accountChoosing {
 			m.notice = "Press l to log in. Esc returns to project; n adds an account."
@@ -179,17 +184,7 @@ func (m *model) accountKey(key tea.KeyMsg) tea.Cmd {
 			m.notice = "Session creation unavailable"
 			return nil
 		}
-		m.busy = true
-		e := &createProjectExec{create: func(in io.Reader, out, errOut io.Writer) (*api.Session, error) {
-			return m.createProjectSession(alias, in, out, errOut)
-		}}
-		return tea.Exec(e, func(err error) tea.Msg {
-			r := result{err: err, text: "session created"}
-			if err == nil && e.session != nil {
-				r.sessionID = e.session.Id
-			}
-			return r
-		})
+		return m.startAccountWorkflow(alias, choices[m.accountIndex].GetAgent(), "", true)
 	}
 	return nil
 }
@@ -197,7 +192,24 @@ func (m *model) accountKey(key tea.KeyMsg) tea.Cmd {
 func (m *model) accountScreen() string {
 	width := max(1, m.width-4)
 	rows := []string{brand.Render("cxz · accounts"), muted.Render("Isolated authentication profiles · Esc / Ctrl+Q returns to project"), ""}
-	if m.accountAdding {
+	if m.loginChoosing {
+		rows = append(rows, strong.Render("Choose a session to log in · "+pickerLabel(m.loginAlias)))
+		sessions := m.loginSessions()
+		start := max(0, m.loginIndex-max(1, m.height-10)+1)
+		for i := start; i <= len(sessions) && i < start+max(1, m.height-10); i++ {
+			label := "[ New session + independent login ]"
+			if i < len(sessions) {
+				label = pickerLabel(sessions[i].Alias) + " · " + pickerLabel(sessions[i].State)
+			}
+			if i == m.loginIndex {
+				label = accent.Render("› " + label)
+			} else {
+				label = "  " + label
+			}
+			rows = append(rows, label)
+		}
+		rows = append(rows, "", muted.Render("↑/↓ Tab select · Enter continue · Esc back"))
+	} else if m.accountAdding {
 		m.accountAlias.Width, m.accountName.Width = max(1, width-16), max(1, width-16)
 		fields := []string{"Provider     " + providerLabel(m.accountAgent) + "  ←/→", "Alias        " + m.accountAlias.View(), "Display name " + m.accountName.View(), "[ Create account ]"}
 		for i, field := range fields {

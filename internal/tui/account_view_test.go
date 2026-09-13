@@ -38,7 +38,7 @@ func TestAccountViewAddAndReturn(t *testing.T) {
 	m := projectModel()
 	s := &accountViewService{}
 	m.accountService = s
-	m.createProjectSession = func(string, io.Reader, io.Writer, io.Writer) (*api.Session, error) {
+	m.createProjectSession = func(context.Context, string, io.Reader, io.Writer, io.Writer) (*api.Session, error) {
 		t.Fatal("created without selection")
 		return nil, nil
 	}
@@ -75,7 +75,7 @@ func TestAccountViewAddAndReturn(t *testing.T) {
 	if cmd == nil || !m.busy {
 		t.Fatal("account selection did not create exec command")
 	}
-	m.Update(result{err: errors.New("login needed")})
+	m.Update(workflowDone{flow: m.workflow, err: errors.New("login needed")})
 	if !m.accountView || m.busy {
 		t.Fatal("create failure left account view")
 	}
@@ -93,13 +93,13 @@ func TestAccountViewValidationAndLogin(t *testing.T) {
 	m := projectModel()
 	m.accountService = &accountViewService{}
 	m.openAccounts(false)
-	m.Update(accountListing{accounts: []*resource.Account{resource.Account_builder{Alias: "main", Agent: "claude"}.Build()}})
-	m.loginAccount = func(string, io.Reader, io.Writer, io.Writer) error { return nil }
+	m.Update(accountListing{accounts: []*resource.Account{resource.Account_builder{Alias: "main", Agent: "codex"}.Build()}})
+	m.loginAccount = func(context.Context, string, string, io.Reader, io.Writer, io.Writer) error { return nil }
 	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("l")})
 	if cmd == nil || !m.busy {
 		t.Fatal("login not started")
 	}
-	m.Update(accountLoggedIn{})
+	m.Update(workflowDone{flow: m.workflow})
 	if !m.accountView || m.busy {
 		t.Fatal("login did not return")
 	}
