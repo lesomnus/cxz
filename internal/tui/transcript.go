@@ -105,7 +105,7 @@ func approvalLine(s *api.Session, e *api.Event, state string, width int) string 
 		}
 		return indentBlock(style.Render(ansi.Hardwrap(fmt.Sprintf("%s question %s", icon, state), max(1, width-2), true)))
 	}
-	return indentBlock(style.Render(ansi.Hardwrap(fmt.Sprintf("%s approval %-9s · %s", icon, state, safeText(title)), max(1, width-2), true)))
+	return indentBlock(style.Render(ansi.Hardwrap(fmt.Sprintf("%s %s", icon, safeText(title)), max(1, width-2), true)))
 }
 
 func toolResultSummary(e *api.Event) string {

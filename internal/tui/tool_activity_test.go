@@ -21,10 +21,13 @@ func TestFileSummaryCorrelatesInterleavedResults(t *testing.T) {
 	}
 	m.render()
 	text := ansi.Strip(m.view.View())
-	for _, want := range []string{"/tmp/one.go", "1 lines supplied", "/tmp/two.go", "per match; total unknown", "failed"} {
+	for _, want := range []string{"[✓] Write /tmp/one.go", "+1 content", "[×] Edit /tmp/two.go", "+1 -1 /match"} {
 		if !strings.Contains(text, want) {
 			t.Fatal(text)
 		}
+	}
+	if strings.Count(text, "/tmp/one.go") != 1 || strings.Count(text, "/tmp/two.go") != 1 {
+		t.Fatal("paired activity duplicated", text)
 	}
 	for _, hidden := range []string{"SECRET_CONTENT", "NEW_CONTENT", "VERBOSE_RESULT", "ERROR_CONTENT", "file_path"} {
 		if strings.Contains(text, hidden) {
@@ -44,9 +47,9 @@ func TestFileSummaryWithoutLoadedCallAndCommands(t *testing.T) {
 	if !strings.Contains(text, "main.go") || !strings.Contains(text, "+1") || strings.Contains(text, "HIDDEN_CONTENT") {
 		t.Fatal(text)
 	}
-	e = &api.Event{Kind: "tool_call", Text: "Bash", Payload: []byte(`{"command":"echo ok\nHIDDEN_BODY"}`)}
+	e = &api.Event{Kind: "tool_call", Text: "Bash", Payload: []byte(`{"command":"echo ok\necho second\nHIDDEN_BODY"}`)}
 	text = ansi.Strip(eventView(&api.Session{Agent: "claude"}, e, 40))
-	if !strings.Contains(text, "run · echo ok") || strings.Contains(text, "HIDDEN_BODY") {
+	if !strings.Contains(text, "Bash · echo ok") || !strings.Contains(text, "echo second") || strings.Contains(text, "HIDDEN_BODY") {
 		t.Fatal(text)
 	}
 }

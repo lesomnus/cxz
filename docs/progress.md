@@ -1,5 +1,21 @@
 # 구현 진행 상황
 
+## 2026-09-13 — 도구 작업 단일 행 갱신
+
+- run + tool ID로 call/result를 연결하고 원래 요청 위치에서 결과 상태를 갱신한다.
+  짝이 있는 결과는 별도 출력하지 않으며, 페이지에 원래 요청이 없는 결과는 유지한다.
+- `[ ]` pending / `[•]` active / `[✓]` completed / `[×]` failed·denied·canceled.
+  Claude tool_use_id, Codex params.itemId가 명시된 승인만 도구 행에 합친다.
+  추측 연결은 하지 않으며 독립 승인 행은 체크박스와 작업 이름만 남긴다.
+- 변경량은 녹색 +N, 빨간색 -N. 기존 replacement lines 문구 제거, replace_all은
+  /match로 구간 단위임을 유지한다. Write +N content는 순증분이 아닌 전달한 줄 수다.
+- Bash는 description 대신 실제 명령어의 앞 두 화면 줄을 표시하며 결과 stdout은
+  /details로 확인한다. 원본 입력/응답 journal 및 승인 동작은 바꾸지 않는다.
+- pending→working→done의 위치 유지, interleaved 작업, run 격리, 미연결 결과 보존,
+  Codex 최종 diff 반영 및 Bash 두 줄 테스트 통과. `go test ./...`,
+  `go test -race ./internal/tui`, `go vet ./...`, `git diff --check` 통과.
+
+
 ## 2026-09-13 — inline 확인·커서 스타일·파일 작업 요약
 
 - recreate 확인에서 alternate screen을 제거하고 작은 inline 폼으로 표시한다.

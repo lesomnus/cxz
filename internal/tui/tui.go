@@ -327,14 +327,39 @@ func (m *model) render() {
 	contextTurns := map[string]bool{}
 	decisions := map[string]string{}
 	toolCalls := map[string]agentview.ToolActivity{}
+	toolResults := map[string]*api.Event{}
+	toolApprovals := map[string]*api.Event{}
+	pairedApprovals := map[*api.Event]bool{}
 	for _, e := range m.events[s.Id] {
-		if e.Kind == "tool_call" && e.RequestId != "" {
+		if e.Kind == "tool_call" && e.RequestId != "" && !question(e) && !m.hiddenEvents[e] {
 			if activity, ok := agentview.ToolView(s.Agent, e.Text, e.Payload); ok {
 				toolCalls[e.RunId+"/"+e.RequestId] = activity
+			} else {
+				toolCalls[e.RunId+"/"+e.RequestId] = agentview.ToolActivity{Kind: "tool", Description: e.Text}
 			}
+		}
+		if e.Kind == "tool_result" && e.RequestId != "" {
+			toolResults[e.RunId+"/"+e.RequestId] = e
 		}
 		if e.Kind == "approval_resolved" {
 			decisions[e.RunId+"/"+e.RequestId] = e.Text
+		}
+	}
+	for _, e := range m.events[s.Id] {
+		if e.Kind != "approval" || question(e) {
+			continue
+		}
+		root := fields(e.Payload)
+		id := root.text("tool_use_id")
+		if s.Agent == "codex" {
+			id = root.object("params").text("itemId")
+		}
+		if id != "" {
+			key := e.RunId + "/" + id
+			if _, ok := toolCalls[key]; ok {
+				toolApprovals[key] = e
+				pairedApprovals[e] = true
+			}
 		}
 	}
 	for _, e := range m.events[s.Id] {
@@ -389,12 +414,37 @@ func (m *model) render() {
 			replyIndex = -1
 		} else {
 			text := eventViewCached(m, s, e, max(1, m.view.Width))
+			key := e.RunId + "/" + e.RequestId
+			if e.Kind == "tool_call" {
+				if activity, ok := toolCalls[key]; ok {
+					state := "working"
+					if approval := toolApprovals[key]; approval != nil {
+						state = decisions[approval.RunId+"/"+approval.RequestId]
+						if state == "" {
+							state = "pending"
+						}
+						if state == "allowed" {
+							state = "working"
+						}
+					}
+					result := toolResults[key]
+					if result != nil && s.Agent == "codex" {
+						if final, ok := agentview.ToolView(s.Agent, result.Text, result.Payload); ok {
+							activity = final
+						}
+					}
+					text = indentBlock(toolActivityStateBody(activity, result, max(1, m.view.Width), state))
+				}
+			}
 			if e.Kind == "tool_result" {
-				if activity, ok := toolCalls[e.RunId+"/"+e.RequestId]; ok && activity.Kind == "files" && s.Agent == "claude" {
-					text = toolActivityView(activity, e, max(1, m.view.Width))
+				if _, ok := toolCalls[key]; ok {
+					continue
 				}
 			}
 			if e.Kind == "approval" {
+				if pairedApprovals[e] {
+					continue
+				}
 				state := decisions[e.RunId+"/"+e.RequestId]
 				if state == "" {
 					if m.hiddenAutoApproval(s, e) {
