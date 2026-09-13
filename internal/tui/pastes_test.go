@@ -7,9 +7,89 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/lesomnus/cxz/api"
+	"github.com/muesli/termenv"
 	"google.golang.org/grpc"
 )
+
+func TestSelectedChipHighlightPreservesLayout(t *testing.T) {
+	old := lipgloss.ColorProfile()
+	lipgloss.SetColorProfile(termenv.TrueColor)
+	t.Cleanup(func() { lipgloss.SetColorProfile(old) })
+	for _, width := range []int{70, 24} {
+		m := conversationModel()
+		m.input.SetWidth(width)
+		m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("a\nb\nc\nd"), Paste: true})
+		m.Update(tea.KeyMsg{Type: tea.KeyLeft})
+		m.input.SetWidth(width)
+		before := m.input.View()
+		after := m.decorateInputPastes(before)
+		if ansi.Strip(before) != ansi.Strip(after) {
+			t.Fatal("highlight changed layout")
+		}
+		if !strings.Contains(after, "48;2;174;255;152") {
+			t.Fatalf("missing chip highlight at width %d: %q", width, after)
+		}
+	}
+}
+
+func TestChipAtomicNavigationAndMenu(t *testing.T) {
+	m := conversationModel()
+	m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("a\nb\nc\nd"), Paste: true})
+	token := m.input.Value()
+	m.Update(tea.KeyMsg{Type: tea.KeyLeft})
+	if m.pasteSelection == nil {
+		t.Fatal("left must select chip")
+	}
+	m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	if m.pasteDialog == nil || m.input.Value() != token {
+		t.Fatal("enter must open chip menu without newline")
+	}
+	m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	m.Update(tea.KeyMsg{Type: tea.KeyRight})
+	if m.pasteSelection != nil {
+		t.Fatal("second arrow must exit chip")
+	}
+	_, pos, _, _, _ := m.chipInput()
+	if pos != len([]rune(token)) {
+		t.Fatal("did not exit at end")
+	}
+	m.Update(tea.KeyMsg{Type: tea.KeyBackspace})
+	if m.input.Value() != "" {
+		t.Fatal("backspace must remove whole chip")
+	}
+}
+
+func TestChipOtherDeleteAndLiteralInput(t *testing.T) {
+	m := questionModel()
+	m.syncQuestion()
+	d := m.questionDialog
+	d.row = len(d.questions[0].Options)
+	m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("a\nb\nc\nd"), Paste: true})
+	token := d.other[0].Value()
+	m.Update(tea.KeyMsg{Type: tea.KeyLeft})
+	m.Update(questionKeyMsg("t"))
+	if d.other[0].Value() != "t"+token {
+		t.Fatal("t must type literally outside menu")
+	}
+	m.Update(tea.KeyMsg{Type: tea.KeyDelete})
+	if d.other[0].Value() != "t" {
+		t.Fatal("delete must remove whole Other chip")
+	}
+}
+
+func TestChipMultilineUnicodeDeletion(t *testing.T) {
+	m := conversationModel()
+	m.input.SetValue("한글\n앞 ")
+	m.input.CursorEnd()
+	m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("a\nb\nc\nd"), Paste: true})
+	m.Update(tea.KeyMsg{Type: tea.KeyBackspace})
+	if m.input.Value() != "한글\n앞 " {
+		t.Fatalf("lost surrounding draft: %q", m.input.Value())
+	}
+}
 
 type pasteClient struct {
 	recordingClient

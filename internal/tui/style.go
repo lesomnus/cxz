@@ -211,7 +211,7 @@ func (m *model) sessionScreen() string {
 		composer.Blur()
 	}
 	body := m.pasteOverlay(m.questionOverlay(m.restartOverlay(m.reportView(m.modelPickerOverlay(m.commandOverlay(m.conversationView())))))) + "\n" + track + "\n" + clip("  "+status, width) + "\n" + box +
-		frame(decoratePastes(composer.View(), m.pastes), width, !modal && !m.focusList && !m.focusApproval) + "\n" + clip(info, width)
+		frame(m.decorateInputPastes(composer.View()), width, !modal && !m.focusList && !m.focusApproval) + "\n" + clip(info, width)
 	return screen(body, m.width, m.height)
 }
 

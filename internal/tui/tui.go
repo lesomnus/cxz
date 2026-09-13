@@ -108,6 +108,7 @@ type model struct {
 	renderedResponses    map[*api.Event]renderedResponse
 	program              *tea.Program
 	pastes               map[string]*pastedText
+	pasteSelection       *chipSelection
 	pasteDialog          *pasteDialog
 }
 type listing struct {
@@ -977,6 +978,10 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.pasteDialog != nil {
 			return m, m.pasteKey(v)
 		}
+		if handled, cmd := m.chipKey(v); handled {
+			m.resize()
+			return m, cmd
+		}
 		if m.capturePaste(v) {
 			return m, nil
 		}
@@ -1229,6 +1234,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if !m.focusList {
 		before := m.input.Value()
 		m.input, cmd = m.input.Update(msg)
+		if _, ok := msg.(tea.KeyMsg); ok {
+			m.snapChipCursor()
+		}
 		if partialPasteEdit(before, m.input.Value(), m.pastes) {
 			m.input.SetValue(before)
 			m.notice = "Paste chips are indivisible; Ctrl+P to preview or delete."
