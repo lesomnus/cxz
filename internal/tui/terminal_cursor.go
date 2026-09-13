@@ -26,8 +26,6 @@ type cursorWriter struct {
 	x, y               int
 	enabled, alternate bool
 	keyboard           bool
-	real               bool
-	realShown          bool
 }
 
 var _ term.File = (*cursorWriter)(nil)
@@ -60,12 +58,6 @@ func (w *cursorWriter) position(x, y int, enabled bool) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	w.x, w.y, w.enabled = x, y, enabled
-	w.real = false
-}
-func (w *cursorWriter) terminalPosition(x, y int) {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-	w.x, w.y, w.enabled, w.real = x, y, true, true
 }
 func (w *cursorWriter) Write(p []byte) (int, error) {
 	w.mu.Lock()
@@ -82,14 +74,6 @@ func (w *cursorWriter) Write(p []byte) (int, error) {
 	}
 	if bytes.Contains(p, []byte("\x1b[?1049l")) {
 		w.alternate = false
-	}
-	if w.alternate {
-		if w.real {
-			buf = append(append([]byte{}, buf...), []byte("\x1b[5 q\x1b[?25h")...)
-		} else if w.realShown {
-			buf = append(append([]byte{}, buf...), []byte("\x1b[?25l")...)
-		}
-		w.realShown = w.real
 	}
 	if w.alternate && w.enabled {
 		buf = append(append([]byte{}, buf...), []byte(ansi.CursorPosition(w.x+1, w.y+1))...)
@@ -131,9 +115,9 @@ func (m *model) anchorCursor() {
 	if m.width >= 40 && m.height >= 14 {
 		switch {
 		case m.terminalFocused():
-			if p := m.terminal(); p.session != nil {
+			if p := m.terminal(); p.session != nil && p.scroll == nil {
 				pos := p.session.Screen.CursorPosition()
-				x, y, ok = pos.X, m.terminalTop()+2+pos.Y, p.session.CursorVisible.Load()
+				x, y, ok = pos.X, m.terminalTop()+1+pos.Y, p.session.CursorVisible.Load()
 			}
 		case m.panelFocus:
 		case m.pasteDialog != nil:
@@ -172,7 +156,4 @@ func (m *model) anchorCursor() {
 		}
 	}
 	m.cursorOutput.position(x+m.contentOffset(), y, ok)
-	if m.terminalFocused() && ok {
-		m.cursorOutput.terminalPosition(x+m.contentOffset(), y)
-	}
 }

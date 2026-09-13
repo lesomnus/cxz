@@ -2,16 +2,68 @@ package tui
 
 import (
 	"context"
+	"fmt"
 	"os/exec"
 	"strings"
 	"testing"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/lesomnus/cxz/internal/containerterm"
+	"github.com/muesli/termenv"
 )
+
+func TestTerminalCursorOnlyMovementAndScroll(t *testing.T) {
+	old := lipgloss.ColorProfile()
+	lipgloss.SetColorProfile(termenv.TrueColor)
+	defer lipgloss.SetColorProfile(old)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	s, err := containerterm.Start(exec.CommandContext(ctx, "sleep", "8"), 100, 24, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	m := conversationModel()
+	m.width, m.height = 100, 60
+	p := &terminalPanel{session: s, open: true, focused: true}
+	m.terminals = map[string]*terminalPanel{m.current().Id: p}
+	m.resize()
+	m.input.Cursor.Blink = false
+	_, _ = s.Screen.Write([]byte("\x1b[2J\x1b[Habc"))
+	before := m.terminalView()
+	_, _ = s.Screen.Write([]byte("\x1b[D")) // shell moves cursor without changing any text
+	after := m.terminalView()
+	if before == after {
+		t.Fatal("cursor-only movement did not change frame")
+	}
+	if !strings.Contains(after, inputCursorStyle.Inline(true).Reverse(true).Render("c")) {
+		t.Fatal("cursor does not match composer style")
+	}
+	for i := 0; i < 100; i++ {
+		_, _ = s.Screen.Write([]byte(fmt.Sprintf("\r\nline-%03d", i)))
+	}
+	m.scrollTerminal(-6)
+	if p.scroll == nil {
+		t.Fatal("no scrollback")
+	}
+	frozen := m.terminalView()
+	_, _ = s.Screen.Write([]byte("\r\nnew output after scroll"))
+	if m.terminalView() != frozen {
+		t.Fatal("new output moved history viewport")
+	}
+	m.terminalMouse(tea.MouseMsg{X: 0, Y: m.height - 2, Action: tea.MouseActionPress, Button: tea.MouseButtonLeft})
+	if p.scroll == nil || p.scroll.top != 0 {
+		t.Fatal("track start did not reach oldest row")
+	}
+	m.terminalMouse(tea.MouseMsg{X: m.width - 1, Y: m.height - 2, Action: tea.MouseActionPress, Button: tea.MouseButtonLeft})
+	if p.scroll != nil || !strings.Contains(m.terminalView(), "new output after scroll") {
+		t.Fatal("track end did not return to live output")
+	}
+}
 
 func TestFoldRetainsPTYAndContainsScreenControl(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -46,7 +98,7 @@ func TestFoldRetainsPTYAndContainsScreenControl(t *testing.T) {
 	}
 	_, _ = s.Screen.Write([]byte("\x1b[?1049h\x1b[2J\x1b[H한국어 screen"))
 	view := m.sessionScreen()
-	if strings.Contains(view, "\x1b[2J") || strings.Contains(view, "\x1b[?1049h") || !strings.Contains(view, terminalBack) || !strings.Contains(view, "한국어 screen") {
+	if strings.Contains(view, "\x1b[2J") || strings.Contains(view, "\x1b[?1049h") || !strings.Contains(view, terminalFold) || !strings.Contains(view, "한국어 screen") {
 		t.Fatal("terminal control escaped its panel", view)
 	}
 }
@@ -59,16 +111,16 @@ func TestTerminalPanelFocusAndLayout(t *testing.T) {
 	m.terminals = map[string]*terminalPanel{m.current().Id: p}
 	m.resize()
 	m.render()
-	if m.terminalHeight() != 27 {
+	if m.terminalHeight() != 26 {
 		t.Fatal("not 24 terminal rows")
 	}
 	lines := strings.Split(m.sessionScreen(), "\n")
-	if len(lines) != m.height || !strings.Contains(lines[m.terminalTop()+1], terminalBack) {
+	if len(lines) != m.height || !strings.HasSuffix(ansi.Strip(lines[m.terminalTop()]), terminalFold) {
 		t.Fatal("header not at expected row", len(lines), m.terminalTop())
 	}
 	for _, row := range []int{m.terminalTop(), m.height - 2} {
-		if got := ansi.Strip(lines[row]); got != "  "+strings.Repeat("─", m.width-4)+"  " {
-			t.Fatalf("missing inset terminal separator at %d: %q", row, got)
+		if got := ansi.Strip(lines[row]); ansi.StringWidth(got) != m.width || strings.HasPrefix(got, " ") || strings.HasSuffix(got, " ") {
+			t.Fatalf("terminal separator not full width at %d: %q", row, got)
 		}
 		m.Update(tea.MouseMsg{X: 1, Y: row, Action: tea.MouseActionPress, Button: tea.MouseButtonLeft})
 		if !p.focused || !p.open {
@@ -79,9 +131,9 @@ func TestTerminalPanelFocusAndLayout(t *testing.T) {
 	if cmd != nil {
 		t.Fatal("Ctrl+C escaped to cxz")
 	}
-	m.Update(tea.MouseMsg{X: m.contentOffset() + 1, Y: m.terminalTop() + 1, Action: tea.MouseActionPress, Button: tea.MouseButtonLeft})
+	m.Update(tea.MouseMsg{X: m.contentOffset() + 1, Y: m.terminalTop() - 2, Action: tea.MouseActionPress, Button: tea.MouseButtonLeft})
 	if p.focused || !p.open {
-		t.Fatal("return button folded panel")
+		t.Fatal("composer click folded panel")
 	}
 	m.Update(tea.KeyMsg{Type: tea.KeyF20})
 	if !p.focused || !p.open {
@@ -92,7 +144,7 @@ func TestTerminalPanelFocusAndLayout(t *testing.T) {
 		t.Fatal("toggle did not fold")
 	}
 	m.Update(tea.KeyMsg{Type: tea.KeyF20})
-	m.Update(tea.MouseMsg{X: m.contentOffset() + ansi.StringWidth(terminalBack) + 2, Y: m.terminalTop() + 1, Action: tea.MouseActionPress, Button: tea.MouseButtonLeft})
+	m.Update(tea.MouseMsg{X: m.contentOffset() + m.width - 2, Y: m.terminalTop(), Action: tea.MouseActionPress, Button: tea.MouseButtonLeft})
 	if p.open || p.focused {
 		t.Fatal("fold button failed")
 	}

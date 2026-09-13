@@ -1,5 +1,18 @@
 # 구현 진행 상황
 
+## 2026-09-13 — 터미널 스크롤·커서·Unicode 보강
+
+- 별도 정보 줄/Back 버튼 제거, 위아래 전체 폭 구분선, 상단 오른쪽 Collapse만 유지.
+- 하단 스크롤바 클릭·드래그, 본문 휠/Alt+PgUp·PgDown, Ctrl+End 최신 복귀.
+  최대 2,000줄 보관 이력을 snapshot으로 고정하여 새 출력과 eviction 중에도 탐색 위치를 유지한다.
+- 커서-only 이동 시 동일 프레임을 생략하던 문제를 가상 커서로 수정했다. composer와 동일한
+  연두색 반전/깜빡임 스타일, IME용 물리 좌표 유지, scrollback에서는 커서 숨김.
+- 유효하지 않은/비 UTF-8 셸 locale의 UTF-8 fallback과 Kitty Unicode codepoint 전달 추가.
+  `<ffffffff>` 자체는 로컬 zsh에서 재현되지 않았다. 한글 입력/UTF-8 locale, 커서-only 프레임 변경,
+  스크롤 중 새 출력 안정성, 바 끝 이동, 버튼/레이아웃 테스트 및 변경 패키지 race 검사 통과.
+- 전체 Go 테스트·vet 통과. 실제 Docker fixture 한글 입출력 및 로컬 zsh의 한글 입력 후
+  왼쪽 방향키 이동을 검증했다. UTF-8 환경 보정은 새 셸부터 적용된다. 사용자 컨테이너는 변경하지 않았다.
+
 ## 2026-09-13 — 터미널 버튼 언어와 구분선 정리
 
 - 버튼을 기존 UI 언어에 맞춰 `[Back to chat]`, `[Collapse ▾]`로 통일했다.

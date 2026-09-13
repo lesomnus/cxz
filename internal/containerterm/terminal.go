@@ -29,6 +29,7 @@ type Session struct {
 	dirty         atomic.Bool
 	CursorVisible atomic.Bool
 	mu            sync.Mutex
+	viewMu        sync.Mutex
 	err           error
 	w, h          int
 }
@@ -47,6 +48,7 @@ func Open(ctx context.Context, p *api.Project, width, height int, notify func())
 		return nil, fmt.Errorf("refusing terminal in an unowned or stopped project container")
 	}
 	cmd := exec.CommandContext(ctx, "docker", "exec", "-it", "--user", p.RemoteUser, "--workdir", p.RemoteWorkspace, "--env", "TERM=xterm-256color", c.ID, "sh", "-c", `
+`+utf8ShellLocale+`
 if command -v getent >/dev/null 2>&1; then
   entry=$(getent passwd "$(id -u)")
   home=$(printf '%s' "$entry" | cut -d: -f6)
@@ -87,7 +89,9 @@ func Start(cmd *exec.Cmd, width, height int, notify func()) (*Session, error) {
 		for {
 			n, e := f.Read(buf)
 			if n > 0 {
+				s.viewMu.Lock()
 				_, _ = s.Screen.Write(buf[:n])
+				s.viewMu.Unlock()
 				s.dirty.Store(true)
 			}
 			if e != nil {
@@ -167,8 +171,64 @@ func (s *Session) Resize(w, h int) {
 	if s.w == w && s.h == h {
 		return
 	}
-	if s.Queue(func() { s.Screen.Resize(w, h) }) {
+	if s.Queue(func() { s.viewMu.Lock(); defer s.viewMu.Unlock(); s.Screen.Resize(w, h) }) {
 		s.w, s.h = w, h
 		_ = pty.Setsize(s.file, &pty.Winsize{Cols: uint16(w), Rows: uint16(h)})
 	}
+}
+
+// Only the new shell's environment changes; never rewrite user shell rc files.
+// Preserve an already working UTF-8 locale, otherwise select an installed one.
+const utf8ShellLocale = `
+if command -v locale >/dev/null 2>&1; then
+  charmap=$(locale charmap 2>/dev/null)
+  case "$charmap" in UTF-8|utf8|UTF8) ;;
+    *)
+      for candidate in C.UTF-8 C.utf8 en_US.UTF-8; do
+        charmap=$(LC_ALL="$candidate" locale charmap 2>/dev/null)
+        case "$charmap" in UTF-8|utf8|UTF8) export LC_ALL="$candidate" LANG="$candidate"; break;; esac
+      done
+      ;;
+  esac
+else
+  export LANG=C.UTF-8 LC_CTYPE=C.UTF-8
+  unset LC_ALL
+fi
+`
+
+type Snapshot struct {
+	Lines         []uv.Line
+	Cursor        uv.Position
+	CursorVisible bool
+}
+
+// Copy cells while the PTY writer is fenced. Returned snapshots are immutable
+// and safe to keep while browsing history, including during ring-buffer eviction.
+func (s *Session) Capture(history bool) Snapshot {
+	s.viewMu.Lock()
+	defer s.viewMu.Unlock()
+	w, h := s.Screen.Width(), s.Screen.Height()
+	n := 0
+	if history && !s.Screen.IsAltScreen() {
+		n = s.Screen.ScrollbackLen()
+	}
+	out := Snapshot{Lines: make([]uv.Line, n+h), Cursor: s.Screen.CursorPosition(), CursorVisible: s.CursorVisible.Load()}
+	for y := range out.Lines {
+		row := make(uv.Line, w)
+		for x := range row {
+			var cell *uv.Cell
+			if y < n {
+				cell = s.Screen.ScrollbackCellAt(x, y)
+			} else {
+				cell = s.Screen.CellAt(x, y-n)
+			}
+			if cell != nil {
+				row[x] = *cell
+			} else {
+				row[x] = uv.EmptyCell
+			}
+		}
+		out.Lines[y] = row
+	}
+	return out
 }
