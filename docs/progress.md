@@ -1,5 +1,23 @@
 # 구현 진행 상황
 
+## 2026-09-13 — provider 공통 질문 dialog
+
+- Claude AskUserQuestion의 input.questions와 Codex requestUserInput의 params.questions를
+  agentview.Question으로 정규화했다. Claude 질문 문구/Codex ID를 reply key로 유지하며,
+  단일·다중 선택, description, preview, Other 및 Codex secret 입력 정책을 표현한다.
+- 신규 pending 질문은 focus 모달을 자동으로 연다. 방향키/Tab 이동, Space/Enter 선택,
+  Other 직접 입력, Next/Back, 최종 Submit(또는 Ctrl+S), Esc/Cancel은 거절 없이 닫기.
+  /answer 및 pending 질문 Enter로 재열기. 긴 내용은 PgUp/PgDn/wheel로 스크롤한다.
+- 질문 로그/요약은 approval 대신 question requested/answered로 표시하며 큰 tool JSON은
+  접는다. 원본 journal 및 /approval raw 조회는 유지한다. 기존 JSON 답변도 계속 지원한다.
+- 전송은 기존 Reply API를 사용하며 session/run/request에 결합한다. 빈 답/중복 제출을
+  막고 실패 시 폼과 답을 보존한다. 자동 재전송하지 않으며 취소해도 chat draft는 유지한다.
+- 사용자 계정으로 실제 Claude/Codex 질문을 생성하지 않는다. provider fixture와
+  TUI → Reply 요청 테스트로 단일/다중/직접 입력, 모달, 취소/재열기, stale/실패를 검증한다.
+- `go test ./...`, `go test -race ./internal/tui ./internal/agentview`, `go vet ./...`,
+  `git diff --check` 통과. CLI만 교체·재접속하면 기존 pending에도 적용된다.
+
+
 ## 2026-09-13 — quota bar 구간 색상·Kitty Ctrl+Enter
 
 - 남은 quota ≤50% peach `#F5CA9A`, ≤30% coral `#F5AF98`, ≤15% pink-red

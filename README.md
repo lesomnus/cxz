@@ -173,12 +173,12 @@ resource database and survives server/container restarts; back up state volumes.
 | d / Delete, then y (project) | Stop and remove selected session; archived journal retained |
 | Ctrl+Q (session) | Return to project view without stopping the agent |
 | Tab / Shift+Tab (session) | Forward / reverse: pending approvals → input → bottom session selector |
-| Enter / Backspace (approval focus) | Allow / deny selected request; questions require `/answer` |
+| Enter / Backspace (approval focus) | Allow / deny selected request; Enter opens a dialog for questions |
 | Ctrl+S | Send message (Ctrl+Enter also works with compatible terminal encoding) |
 | Enter / Alt+Enter / Ctrl+J | Insert newline (multiline paste stays in the editor) |
 | Ctrl+X (session) | Clear the current draft |
 | F2 / F3 | Allow / deny pending approval |
-| `/answer {"question text or id":"answer"}` | Answer question |
+| `/answer` | Open/reopen the selected pending question dialog |
 | F4 | Interrupt active turn |
 | Esc twice within 3 seconds | Confirm interruption of the active turn |
 | Ctrl+R | Explicitly resume stopped/offline session |
@@ -255,7 +255,16 @@ select, Enter allows and Backspace denies. PgUp/PgDn, Ctrl+Up/Down, Ctrl+Home/En
 and the mouse wheel scroll the focused request without truncating its content.
 Provider-specific titles/commands/reasons appear before the full native payload.
 `/approval` shows the full selected
-payload in the conversation; questions need `/answer` rather than an empty approval.
+payload in the conversation. Questions open a focused dialog automatically;
+`/answer` (or Enter on a pending question) reopens it after dismissal. Arrows/Tab
+move, Space/Enter selects an option, and Other accepts free text. Claude supports
+multiple selections and option previews; Codex questions use its native question
+IDs and Other policy. Next/Back navigates questions; Submit sends all answers
+together (Ctrl+S is next/submit). Esc/Cancel closes without rejecting the request.
+PgUp/PgDn or the wheel scroll long content. JSON is not required; the advanced
+`/answer {"question text or id":"answer"}` form remains available.
+The provider-neutral question model lives in `internal/agentview/questions.go`;
+original provider payloads stay in the journal and remain accessible via `/approval`.
 After a decision, focus returns to input to avoid approving the next request with
 a repeated Enter. A blank row separates the conversation from the notice area.
 Resolved approvals update the original checkbox row in place, with separate

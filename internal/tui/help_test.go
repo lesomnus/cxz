@@ -66,7 +66,7 @@ func TestHelpAnswerIsLocalAndKeepsTopic(t *testing.T) {
 	if cmd != nil || len(c.inputs) != 0 || m.report == nil || m.report.title != "/help answer" {
 		t.Fatal("help topic lost or sent to agent")
 	}
-	if !strings.Contains(ansi.Strip(m.reportView(strings.Repeat("\n", 35))), `/answer {"question-id":"Use SQLite"}`) {
+	if !strings.Contains(ansi.Strip(m.reportView(strings.Repeat("\n", 35))), "Other accepts a custom answer") {
 		t.Fatal("answer example not rendered")
 	}
 }

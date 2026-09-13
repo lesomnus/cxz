@@ -89,6 +89,8 @@ type model struct {
 	historyTimes         []int64
 	historyPositions     []float64 // stable journal coordinates, not loaded-line offsets
 	restartConfirm       *restartConfirmation
+	questionDialog       *questionDialog
+	questionSeen         map[string]bool
 	restartBusy          bool
 	lastPromptStart      int
 	lastPromptEnd        int
@@ -511,6 +513,15 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.pulse++
 		return m, pulseTimer()
 	case approvalResult:
+		if d := m.questionDialog; d != nil && d.id == v.id && d.run == v.run && d.request == v.request {
+			if v.err == nil {
+				m.questionDialog = nil
+			} else {
+				d.sending = false
+				d.message = "Answer failed: " + v.err.Error() + ". Not retried automatically."
+				delete(m.approvalSent, v.id+"/"+v.run+"/"+v.request)
+			}
+		}
 		if v.err != nil {
 			delete(m.fullPermission, v.id)
 			m.notice = "Approval failed; not retried. " + v.err.Error()
@@ -538,6 +549,15 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.render()
 		return m, tea.Batch(m.refresh(), m.autoApprove())
 	case tea.MouseMsg:
+		if m.questionDialog != nil {
+			if v.Button == tea.MouseButtonWheelUp {
+				m.questionDialog.offset -= 3
+			}
+			if v.Button == tea.MouseButtonWheelDown {
+				m.questionDialog.offset += 3
+			}
+			return m, nil
+		}
 		if m.restartConfirm != nil {
 			return m, m.restartMouse(v)
 		}
@@ -708,6 +728,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.resize()
 		m.render()
+		m.syncQuestion()
 		return m, m.autoApprove()
 	case received:
 		if v.event.Seq > m.cursor[v.id] {
@@ -772,6 +793,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, m.refresh()
 	case tea.KeyMsg:
+		if m.questionDialog != nil {
+			return m, m.questionKey(v)
+		}
 		if m.restartConfirm != nil {
 			return m, m.restartKey(v)
 		}
@@ -931,6 +955,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					}
 					return result{text: "session created", sessionID: s.Id}
 				}
+			}
+			if text == "/answer" {
+				return m, m.openQuestion(m.selectedApproval())
 			}
 			if strings.HasPrefix(text, "/answer ") {
 				return m, m.action("answer", strings.TrimPrefix(text, "/answer "))

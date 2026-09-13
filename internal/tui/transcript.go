@@ -65,6 +65,9 @@ func eventView(s *api.Session, e *api.Event, width int) (out string) {
 	case "approval_resolved":
 		return ""
 	case "tool_call":
+		if question(e) {
+			return lavender.Render("? Question · open /answer to choose")
+		}
 		return lavender.Render(wrap("tool › " + e.Text + " " + string(e.Payload)))
 	case "tool_result":
 		return muted.Render(clip(toolResultSummary(e), width))
@@ -89,6 +92,12 @@ func approvalLine(s *api.Session, e *api.Event, state string, width int) string 
 		icon, style = "☒", muted
 	}
 	title := agentview.ApprovalView(s.Agent, e.Text, nil).Title
+	if question(e) {
+		if state == "allowed" {
+			state = "answered"
+		}
+		return indentBlock(style.Render(ansi.Hardwrap(fmt.Sprintf("%s question %s", icon, state), max(1, width-2), true)))
+	}
 	return indentBlock(style.Render(ansi.Hardwrap(fmt.Sprintf("%s approval %-9s · %s", icon, state, safeText(title)), max(1, width-2), true)))
 }
 

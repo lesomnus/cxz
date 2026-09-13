@@ -70,8 +70,7 @@ func (m *model) replyApproval(p *api.Event, allow bool, answers string, automati
 		return nil
 	}
 	if allow && question(p) && answers == "" {
-		m.notice = "This request needs an answer. Use /approval to inspect, then /answer {\"question\":\"answer\"}."
-		return nil
+		return m.openQuestion(p)
 	}
 	if answers != "" {
 		var values map[string]string
@@ -231,7 +230,21 @@ func (m *model) approvalBox() string {
 		}
 	}
 	view := agentview.ApprovalView(s.Agent, p.Text, p.Payload)
-	rows := []string{warning.Render(clip(fmt.Sprintf("  Pending approvals · %d/%d", index+1, len(pending)), max(1, m.width-2)))}
+	if question(p) {
+		if qs, err := agentview.Questions(s.Agent, p.Text, p.Payload); err == nil {
+			view.Title = "Question"
+			var lines []string
+			for _, q := range qs {
+				lines = append(lines, q.Text)
+			}
+			view.Detail = strings.Join(lines, "\n")
+		}
+	}
+	heading := "Pending approvals"
+	if question(p) {
+		heading = "Pending questions"
+	}
+	rows := []string{warning.Render(clip(fmt.Sprintf("  %s · %d/%d", heading, index+1, len(pending)), max(1, m.width-2)))}
 	rows = append(rows, clip("› "+pickerLabel(view.Title), max(1, m.width-2)))
 	capacity := max(0, height-5)
 	details := strings.Split(ansi.Hardwrap(safeText(view.Detail), max(1, m.width-4), true), "\n")
@@ -247,7 +260,7 @@ func (m *model) approvalBox() string {
 	if m.focusApproval {
 		footer = "↑/↓ · Enter allow · Backspace deny · PgUp/PgDn scroll"
 		if question(p) {
-			footer = "/answer required · Backspace deny"
+			footer = "Enter / /answer opens question dialog · Backspace deny"
 		}
 	}
 	if m.focusApproval {
