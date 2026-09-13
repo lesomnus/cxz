@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/agentview"
@@ -14,10 +15,11 @@ func toolActivityView(activity agentview.ToolActivity, result *api.Event, width 
 }
 
 func toolActivityBody(activity agentview.ToolActivity, result *api.Event, width int) string {
-	prefix := "◇"
-	status := "requested"
+	return toolActivityStateBody(activity, result, width, "working")
+}
+
+func toolActivityStateBody(activity agentview.ToolActivity, result *api.Event, width int, status string) string {
 	if result != nil {
-		prefix = "↳"
 		status = "done"
 		root := fields(result.Payload)
 		if string(root["is_error"]) == "true" {
@@ -26,51 +28,78 @@ func toolActivityBody(activity agentview.ToolActivity, result *api.Event, width 
 		if state := root.object("item").text("status"); state != "" {
 			status = state
 		}
+		if code, ok := root.object("item").number("exitCode"); ok && code != 0 {
+			status = "failed"
+		}
+	}
+	marker, style := "[•]", accent
+	switch status {
+	case "pending", "requested":
+		marker, style = "[ ]", warning
+	case "done", "completed":
+		marker, style = "[✓]", accent
+	case "failed", "denied", "declined", "canceled", "interrupted":
+		marker, style = "[×]", peach
+	}
+	prefix := style.Render(marker)
+	positive := func(n int) string { return accent.Render(fmt.Sprintf("+%d", n)) }
+	negative := func(n int) string {
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("#F49BAA")).Render(fmt.Sprintf("-%d", n))
 	}
 	var lines []string
 	if activity.Kind == "command" {
-		text := activity.Description
+		text := activity.Command
 		if text == "" {
-			text = activity.Command
+			text = activity.Description
 		}
-		text = strings.SplitN(text, "\n", 2)[0]
-		lines = append(lines, clip(safeText(prefix+" run · "+text), max(1, width-2)))
+		rows := strings.Split(ansi.Wrap(safeText(text), max(1, width-12), ""), "\n")
+		for i, row := range rows[:min(2, len(rows))] {
+			if i == 1 && len(rows) > 2 {
+				row = clip(row, max(1, width-14)) + "…"
+			}
+			if i == 0 {
+				lines = append(lines, prefix+" Bash · "+row)
+			} else {
+				lines = append(lines, "    "+row)
+			}
+		}
+	} else if activity.Kind == "tool" {
+		lines = append(lines, prefix+" "+safeText(activity.Description))
 	} else {
 		for _, f := range activity.Files {
 			path := f.Path
 			if path == "" {
 				path = "(path not reported)"
 			}
-			line := prefix + " " + f.Action + " · " + path
+			action := map[string]string{"write": "Write", "edit": "Edit", "update": "Edit", "add": "Write", "delete": "Delete", "read": "Read"}[f.Action]
+			if action == "" {
+				action = f.Action
+			}
+			line := prefix + " " + safeText(action) + " " + safeText(path)
 			if f.MovePath != "" {
-				line += " → " + f.MovePath
+				line += " → " + safeText(f.MovePath)
 			}
 			switch f.Measure {
 			case "content":
-				line += fmt.Sprintf(" · %d lines supplied", f.Lines)
+				line += " · " + positive(f.Lines) + " content"
 			case "replacement":
-				line += fmt.Sprintf(" · −%d +%d replacement lines", f.Removed, f.Added)
+				line += " · " + positive(f.Added) + " " + negative(f.Removed)
 			case "diff":
-				line += fmt.Sprintf(" · −%d +%d lines", f.Removed, f.Added)
+				line += " · " + positive(f.Added) + " " + negative(f.Removed)
 			case "unknown":
-				line += " · change count unavailable"
+				line += " · Δ?"
 			}
 			if f.PerMatch {
-				line += " · per match; total unknown"
+				line += " /match"
 			}
-			line += " · " + status
 			lines = append(lines, line)
 		}
 	}
 	if len(lines) == 0 {
-		lines = append(lines, prefix+" files · "+status+" · details not reported")
-	}
-	style := lavender
-	if result != nil {
-		style = muted
+		lines = append(lines, prefix+" Files · Δ?")
 	}
 	for i, line := range lines {
-		lines[i] = style.Render(ansi.Wrap(safeText(line), max(1, width-2), ""))
+		lines[i] = ansi.Wrap(line, max(1, width-2), "")
 	}
 	return strings.Join(lines, "\n")
 }

@@ -36,7 +36,7 @@ func TestAutomaticApprovalDoesNotFlashPending(t *testing.T) {
 	s.Pending = []*api.Event{p}
 	m.events[s.Id] = []*api.Event{p}
 	m.render()
-	if m.selectedApproval() != nil || m.approvalBox() != "" || strings.Contains(ansi.Strip(m.view.View()), "approval requested") {
+	if m.selectedApproval() != nil || m.approvalBox() != "" || strings.Contains(ansi.Strip(m.view.View()), "[ ] Bash") {
 		t.Fatal("automatic pending flashed")
 	}
 	if !m.hiddenAutoApproval(s, p) {
@@ -49,13 +49,13 @@ func TestAutomaticApprovalDoesNotFlashPending(t *testing.T) {
 	}
 	m.events[s.Id] = append(m.events[s.Id], &api.Event{Kind: "approval_resolved", Text: "allowed", RequestId: p.RequestId, RunId: s.RunId, Seq: 2})
 	m.render()
-	if !strings.Contains(ansi.Strip(m.view.View()), "approval allowed") {
+	if !strings.Contains(ansi.Strip(m.view.View()), "[✓] Bash") {
 		t.Fatal(m.view.View())
 	}
 	delete(m.fullPermission, s.Id)
 	m.events[s.Id] = []*api.Event{p}
 	m.render()
-	if m.selectedApproval() != p || !strings.Contains(ansi.Strip(m.view.View()), "approval requested") {
+	if m.selectedApproval() != p || !strings.Contains(ansi.Strip(m.view.View()), "[ ] Bash") {
 		t.Fatal("manual fallback hidden")
 	}
 }

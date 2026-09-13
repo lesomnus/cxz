@@ -291,6 +291,14 @@ Edit counts replacement spans, and replace_all reports per-match counts with an
 unknown total. Codex unified diff hunks provide added/deleted line counts. These
 are request counts until the provider reports completion; missing diffs are not
 estimated. Shell calls show a compact command/description instead of raw JSON.
+Paired tool calls/results occupy the original request row, updating its marker:
+`[ ]` pending approval, `[•]` active, `[✓]` completed, `[×]` failed/denied/canceled.
+Approval rows merge only when native tool IDs explicitly identify the same call;
+unmatched approvals keep just a checkbox and tool name. Results without a loaded
+call remain visible. File counts use green `+N` and red `-N`; `/match` means a
+replacement span per occurrence, not a known file-wide total. Write's `+N content`
+is supplied content size, not an inferred net addition. Bash shows the first two
+wrapped command lines; full output and input remain in `/details` and the journal.
 
 Recreate's typed confirmation runs inline without switching to the alternate
 screen. TUI text inputs use a blinking light-green cursor (`#AEFF98`); this does

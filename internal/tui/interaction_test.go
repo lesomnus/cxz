@@ -151,7 +151,7 @@ func TestScrollableApprovalAndResolvedRow(t *testing.T) {
 	m.Update(received{id: "s", event: &api.Event{Seq: 2, RunId: "run", Kind: "approval_resolved", RequestId: "r", Text: "allowed"}})
 	m.view.GotoTop()
 	text := ansi.Strip(m.view.View())
-	if !strings.Contains(text, "[✓] approval allowed") || strings.Contains(text, "approval requested") || strings.Contains(text, "approval: allowed") {
+	if !strings.Contains(text, "[✓] Bash") || strings.Contains(text, "approval requested") || strings.Contains(text, "approval: allowed") {
 		t.Fatal(text)
 	}
 	if request.Kind != "approval" || !strings.Contains(string(request.Payload), "TAIL") {
