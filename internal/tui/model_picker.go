@@ -94,7 +94,7 @@ func (m *model) acceptModelCatalog(v modelCatalogLoaded) tea.Cmd {
 	}
 	p.catalog = v.catalog
 	if p.catalog == nil {
-		p.message = "This run has no model-control capability record. Update manager and project runtime; restart the agent. No command was sent."
+		p.message = fmt.Sprintf("This run has no model-control capability record. No command was sent.\nRestart: cxz session stop %s, then cxz session resume %s (or Ctrl+R after stopping). If the runtime is outdated, update manager and project runtime first.", p.id, p.id)
 		return nil
 	}
 	if p.requested != "" {

@@ -20,10 +20,14 @@ func (m *model) scrollTrack() string {
 		position = int(math.Round(float64(min(max(0, m.view.YOffset), end)) * float64(width-1) / float64(end)))
 	}
 	if s := m.current(); s != nil && len(m.historyPositions) == m.view.TotalLineCount() && len(m.historyPositions) > 0 {
-		total := max(s.LastSeq, m.cursor[s.Id])
-		if total > 0 {
+		// The last reachable TOP row is the endpoint, not the final event.
+		// Rows already visible below it cannot be scrolled past the viewport.
+		// Using the journal tail here makes a tiny upward scroll jump left by
+		// an entire screen (or further when the tail contains hidden events).
+		endCoordinate := m.historyPositions[min(end, len(m.historyPositions)-1)]
+		if endCoordinate > 0 {
 			coordinate := m.historyPositions[min(max(0, m.view.YOffset), len(m.historyPositions)-1)]
-			position = min(width-1, max(0, int(math.Round(coordinate/float64(total)*float64(width-1)))))
+			position = min(width-1, max(0, int(math.Round(coordinate/endCoordinate*float64(width-1)))))
 			if m.view.AtBottom() {
 				position = width - 1
 			} else if m.view.AtTop() && m.historyStart[s.Id] == 0 {

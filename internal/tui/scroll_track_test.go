@@ -64,6 +64,33 @@ func TestScrollTrackPastIsBrighter(t *testing.T) {
 	}
 }
 
+func TestScrollTrackNearBottomUsesScrollableRange(t *testing.T) {
+	m := conversationModel()
+	m.width = 134
+	m.view.Height = 64
+	m.view.SetContent(strings.TrimSuffix(strings.Repeat("line\n", 574), "\n"))
+	m.current().LastSeq = 3000 // includes invisible status/usage events at the tail
+	m.historyPositions = make([]float64, 574)
+	for i := range m.historyPositions {
+		m.historyPositions[i] = float64(i + 1)
+	}
+	m.view.GotoBottom()
+	m.view.SetYOffset(m.view.YOffset - 3)
+	bar := ansi.Strip(m.scrollTrack())
+	left, _, _ := strings.Cut(bar, "◆︎")
+	if gap := m.width - 1 - ansi.StringWidth(left); gap > 2 {
+		t.Fatalf("three lines left a %d-column gap: %s", gap, bar)
+	}
+	// Resizing changes how far the viewport can scroll, not the journal tail.
+	m.view.Height = 100
+	m.view.GotoBottom()
+	m.view.SetYOffset(m.view.YOffset - 3)
+	left, _, _ = strings.Cut(ansi.Strip(m.scrollTrack()), "◆︎")
+	if m.width-1-ansi.StringWidth(left) > 2 {
+		t.Fatal("resize retained old scroll endpoint")
+	}
+}
+
 func TestScrollTrackWidthAndPositions(t *testing.T) {
 	m := conversationModel()
 	m.view.SetContent(strings.Repeat("line\n", 100))
