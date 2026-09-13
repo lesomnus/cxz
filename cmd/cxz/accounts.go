@@ -34,7 +34,7 @@ func accountCommands() *xli.Command {
 			c.Flags = flg.Flags{stringFlag("name", "Display name (Account alias when omitted)", ""), stringFlag("auth-backend", "Strategy (codex: brokered-access-token; claude: project-local-oauth)", "")}
 		}
 		if op == "login" || op == "status" {
-			c.Flags = flg.Flags{stringFlag("project", "For project-local OAuth only; defaults to current directory. Central login needs no project", ".")}
+			c.Flags = flg.Flags{stringFlag("project", "Project workspace (central login needs no project)", "."), stringFlag("session", "Session alias or ID for independent session login/status", "")}
 		}
 		parent.Commands = append(parent.Commands, c)
 	}
@@ -95,9 +95,22 @@ func accountCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 		return err
 	}
 	if backend.Info().Workflow == "account-login" {
+		if flg.MustGet[string](c, "session") != "" {
+			return fmt.Errorf("central account login/status does not accept --session")
+		}
 		if _, set := flg.Get[string](c, "project"); set {
 			return fmt.Errorf("central account login/status does not accept --project; omit it")
 		}
+	}
+	if id := flg.MustGet[string](c, "session"); id != "" {
+		s, err := resources.Get(ctx, &api.SessionRef{Id: id})
+		if err != nil {
+			return err
+		}
+		if s.Account != a.GetAlias() || s.Agent != a.GetAgent() {
+			return fmt.Errorf("session does not belong to this account/provider")
+		}
+		return projectAccountWorkflow(ctx, resources, c, a, c.Name, s.ProjectId, false, s.CreateId)
 	}
 	return registeredAccountWorkflow(ctx, resources, c, a, c.Name, flg.MustGet[string](c, "project"), true)
 }
@@ -123,18 +136,25 @@ func registeredAccountWorkflow(ctx context.Context, resources *resourceclient.Cl
 		cmd.Stderr = c.ErrWriter
 		return runAccountProcess(cmd, c, a, op)
 	}
-	if backend.Info().Workflow != "project-login" || backend.Info().Scope != "project" {
+	if backend.Info().Workflow != "session-login" || backend.Info().Scope != "project" {
 		return fmt.Errorf("unsupported auth workflow: %s", backend.Info().Workflow)
 	}
 	return projectAccountWorkflow(ctx, resources, c, a, op, target, prepare)
 }
 
-func projectAccountWorkflow(ctx context.Context, resources *resourceclient.Client, c *xli.Command, a *resource.Account, op, target string, prepare bool) error {
+func projectAccountWorkflow(ctx context.Context, resources *resourceclient.Client, c *xli.Command, a *resource.Account, op, target string, prepare bool, creationKeys ...string) error {
+	creationKey := ""
+	if len(creationKeys) > 0 {
+		creationKey = creationKeys[0]
+	}
+	if creationKey == "" {
+		return fmt.Errorf("each session needs its own login: create a session from cxz up, or use cxz account %s --session <session> %s", op, a.GetAlias())
+	}
 	backend, err := accounts.Resolve(a.GetAgent(), a.GetAuthBackend())
 	if err != nil {
 		return err
 	}
-	if backend.Info().Workflow != "project-login" || backend.Info().Scope != "project" {
+	if backend.Info().Workflow != "session-login" || backend.Info().Scope != "project" {
 		return fmt.Errorf("account does not use project login")
 	}
 	// Account registration is global; OAuth grants belong to one project and
@@ -170,11 +190,11 @@ func projectAccountWorkflow(ctx context.Context, resources *resourceclient.Clien
 			return err
 		}
 		for _, s := range list.Sessions {
-			if s.ProjectId == p.Id && (s.State == "idle" || s.State == "working" || s.State == "waiting_input" || s.State == "starting") {
+			if s.ProjectId == p.Id && s.CreateId == creationKey && (s.State == "idle" || s.State == "working" || s.State == "waiting_input" || s.State == "starting") {
 				return fmt.Errorf("stop session %s before logging in this account again", s.Id)
 			}
 		}
-		fmt.Fprintf(c.ErrWriter, "Log in as %s (%s) for project %s. Other projects require independent login.\n", a.GetAlias(), a.GetAgent(), p.Alias)
+		fmt.Fprintf(c.ErrWriter, "Log in as %s (%s) for this session in %s. Each session has independent credentials.\n", a.GetAlias(), a.GetAgent(), p.Alias)
 	}
 	var binding *resource.AuthBinding
 	if op == "login" {
@@ -197,7 +217,7 @@ func projectAccountWorkflow(ctx context.Context, resources *resourceclient.Clien
 	if terminal(c) {
 		args = append(args, "-t")
 	}
-	args = append(args, "--user", p.RemoteUser, p.ContainerId, "/cxz/tools/cxz", "--state", "/cxz/state/data", "_account-"+op, a.GetAlias(), a.GetAgent(), a.GetAuthBackend())
+	args = append(args, "--user", p.RemoteUser, p.ContainerId, "/cxz/tools/cxz", "--state", "/cxz/state/data", "_account-"+op, "--session-key", creationKey, a.GetAlias(), a.GetAgent(), a.GetAuthBackend())
 	cmd := exec.CommandContext(ctx, "docker", args...)
 	cmd.Stdin = c.ReadCloser
 	cmd.Stdout = c.Writer
@@ -260,7 +280,7 @@ func accountInternalCommands() []*xli.Command {
 		return accounts.InstallGrant(stateFrom(ctx), g)
 	})})
 	for _, op := range []string{"login", "import", "status"} {
-		c := &xli.Command{Name: "_account-" + op, Category: "Internal runtime", Args: arg.Args{stringArg("ACCOUNT", false), stringArg("AGENT", false), &arg.String{Name: "BACKEND", Optional: true, Default: ptr(accounts.ProjectLocalOAuth)}}, Handler: onRun(func(ctx context.Context, c *xli.Command) error {
+		c := &xli.Command{Name: "_account-" + op, Category: "Internal runtime", Flags: flg.Flags{stringFlag("session-key", "Session creation key", "")}, Args: arg.Args{stringArg("ACCOUNT", false), stringArg("AGENT", false), &arg.String{Name: "BACKEND", Optional: true, Default: ptr(accounts.ProjectLocalOAuth)}}, Handler: onRun(func(ctx context.Context, c *xli.Command) error {
 			alias, agent := arg.MustGet[string](c, "ACCOUNT"), arg.MustGet[string](c, "AGENT")
 			if err := accounts.Validate(alias, agent); err != nil {
 				return err
@@ -270,6 +290,9 @@ func accountInternalCommands() []*xli.Command {
 				return err
 			}
 			root := stateFrom(ctx)
+			if key := flg.MustGet[string](c, "session-key"); key != "" {
+				root = accounts.SessionRoot(root, key)
+			}
 			if c.Name == "_account-status" {
 				err := backend.Check(root, alias)
 				if err != nil {
@@ -288,7 +311,7 @@ func accountInternalCommands() []*xli.Command {
 				}
 				return accounts.Install(root, alias, agent, b)
 			}
-			r, err := workspace.LoadRuntime(root)
+			r, err := workspace.LoadRuntime(stateFrom(ctx))
 			if err != nil {
 				return err
 			}

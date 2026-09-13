@@ -2,7 +2,9 @@
 
 Account는 cxz 사용자 인증이나 tenant가 아니라 Claude/Codex 구독 로그인 프로필이다.
 `Project → Session → Account`로 연결하고, 같은 Project의 여러 대화가 서로 다른
-Account를 사용할 수 있다. 한 프로젝트에 활성 세션 하나라는 기존 제약은 유지한다.
+Account를 사용할 수 있다. 같은 workspace에서 Claude/Codex 및 같은 Account의
+여러 세션을 동시에 실행할 수 있다. 소스 충돌 해결과 worktree 선택은 에이전트/사용자
+책임이며 cxz는 세션별 설정·기록·HOME·캐시·임시 공간을 분리한다.
 
 ## AgentKind / AuthBackend / AuthBinding
 
@@ -14,6 +16,9 @@ Account를 사용할 수 있다. 한 프로젝트에 활성 세션 하나라는 
 - `AuthBinding`: Account와 실제 인증 범위의 연결이다. payday domain 10 리소스로
   Account, 선택적 Project, backend, scope, 비밀 저장소 참조를 저장한다. 현재 구현은
   project scope만 허용한다. binding의 존재는 로그인 성공을 의미하지 않는다.
+  로컬 OAuth binding은 프로젝트에서 사용할 Account의 연결만 나타내며,
+  credential_ref의 `{creation-key-hash}`는 실행할 세션에 따라 해석된다.
+  backend의 로그인 workflow는 `session-login`이다.
 - `Session.auth_binding`도 생성 후 고정한다. backend/binding ID는 runtime manifest와
   manager 캐시에 보존하며, DB를 재구성해도 같은 연결을 복원한다. 다른 프로젝트·계정의
   binding으로 실행할 수 없다. 이전 개발 데이터에 없는 backend/binding은 임의 배정하지 않는다.
@@ -25,9 +30,9 @@ token을 직접 반환하는 공통 API로 모든 공급 방식을 억지로 맞
 
 | AgentKind | 기본 / 활성 backend | 범위 | 로그인 workflow | 갱신 담당 |
 |---|---|---|---|---|
-| claude | project-local-oauth | Project × Account | 프로젝트에서 Claude 로그인 | Claude |
+| claude | project-local-oauth | Session × Account | 매 새 세션에서 Claude 로그인 | 해당 세션의 Claude |
 | codex | brokered-access-token (기본) | 중앙 Account, 공급 권한은 Project × Account | 중앙 Codex device login | 중앙 Codex |
-| codex | project-local-oauth (명시 선택) | Project × Account | 프로젝트에서 Codex device login | 프로젝트 Codex |
+| codex | project-local-oauth (명시 선택) | Session × Account | 매 새 세션에서 Codex device login | 해당 세션의 Codex |
 
 `api-key`는 아직 지원하지 않는다. 다른 backend나 계정으로 자동 전환하지 않는다.
 기존에 등록한 Codex Account의 backend는 자동 변경하지 않는다. 중앙 방식을 사용하려면
@@ -51,7 +56,8 @@ cxz account add --auth-backend project-local-oauth claude work-claude
 - payday `AccountService.Add/Get/List/Watch`, 전역 unique alias, domain 9.
   Account alias/agent/backend와 Session.account/auth_binding은 변경할 수 없다.
 - 최상위 up/it의 프로젝트 화면에서 a로 계정 화면을 연다. 계정이 없어도 n으로
-  provider·alias·display name을 등록하고 l로 로그인할 수 있다. 프로젝트 n은 같은
+  provider·alias·display name을 등록하고 l로 중앙 Codex 로그인할 수 있다. Claude는
+  프로젝트 n에서 세션 생성 시 로그인한다. 프로젝트 n은 같은
   화면의 세션 생성 모드다. / 검색과 방향키 선택을 지원하며 Esc로 프로젝트에 복귀한다.
   계정 추가에는 provider 기본 backend를 사용한다. 다른 backend는 CLI에서 명시한다.
 - CLI new/up/recreate의 계정 선택은 방향키와 하단 검색창을 제공한다. 번호·이름·alias로
@@ -64,12 +70,13 @@ cxz account add --auth-backend project-local-oauth claude work-claude
 - 대화형 CLI new/up/recreate는 준비된 프로젝트의 OAuth 인증 파일이 없으면
   별도 명령 실행을 요구하지 않고 공식 agent 로그인으로 이어진다. 사용자가 인증을
   완료하면 같은 요청으로 세션 생성/재접속을 한 번 재시도한다. recreate는 반복하지 않는다.
-  비대화형 실행은 프로젝트를 유지하고 `account login --project PROJECT ACCOUNT`를 안내한다.
+  비대화형 신규 로컬 OAuth 생성은 대화형 `cxz up`을 안내한다. 기존 세션 재로그인은
+  `account login --session SESSION_ALIAS ACCOUNT`를 사용한다.
   중앙 인증이나 손상된 기존 인증 파일에는 자동 프로젝트 로그인을 실행하지 않는다.
   이 흐름에는 CLI와 프로젝트 runtime 양쪽의 새 버전이 필요하다.
-- `project-local-oauth` 로그인은 지정 프로젝트에서 실행하며 사용자가 직접 vendor 인증을 완료해야 한다.
-  `--project` 생략 시 현재 디렉터리다. login은 필요한 컨테이너·에이전트를 준비하지만
-  세션은 생성하지 않는다. 같은 Account도 다른 Project에서는 독립 로그인이 필요하다.
+- `project-local-oauth`라는 backend ID는 유지하지만 인증 원본은 **세션별**이다.
+  사용자가 공식 CLI 인증을 직접 완료한다. 같은 Account여도 새 세션마다 별도로 로그인한다.
+  `account login/status --session SESSION_ALIAS ACCOUNT`는 해당 세션을 대상으로 한다.
   취소/실패한 로그인은 기존 인증을 덮어쓰지 않는다. `status`는 파일 형식/존재만
   검사하며 유효한 구독·네트워크 인증 성공을 보장하지 않는다.
 - Claude의 대화형 로그인 코드 입력은 cxz가 표시한다. `[   ] 000; ctrl+x to clear.`에서
@@ -78,19 +85,26 @@ cxz account add --auth-backend project-local-oauth claude work-claude
   실제 코드는 출력하지 않는다. Ctrl-X로 지우고 Enter로 공식 CLI의 stdin에 제출하며,
   Esc/Ctrl-C로 취소한다. OAuth URL 생성·코드 교환은 계속 공식 Claude가 담당한다.
   Codex 및 비대화형 로그인 입력은 변경하지 않는다.
-- `project-local-oauth`는 프로젝트의 `accounts/ALIAS/config`에 인증 원본을 0600으로 보관한다. SQLite에는
+- `project-local-oauth`는 프로젝트 state의 `session-profiles/HASH/accounts/ALIAS/config`에 인증 원본을 0600으로 보관한다. HASH는 변경 불가 생성 요청 키의 SHA-256 앞 128비트다. SQLite에는
   메타데이터만 저장한다. 토큰은 API 응답, payday audit, journal에 넣지 않는다.
   이 방식의 인증 파일은 manager에 보관하거나 다른 프로젝트로 전달하지 않는다.
-- 프로젝트의 `accounts/ALIAS/config`와 `accounts/ALIAS/home`를 선택한다.
+- 각 세션 profile 아래의 `accounts/ALIAS/config`와 `accounts/ALIAS/home`를 선택한다.
   HOME/XDG 경로를 분리하고 inherited OpenAI/Anthropic/Claude/Codex 및 cloud 인증
   환경변수를 제거한다. Codex는 OpenAI provider를 고정하고 로컬 OAuth는 file,
   중앙 공급은 ephemeral credential store를 명시한다.
-- 로컬 OAuth 재로그인 전 활성 세션을 중단해야 한다. vendor가 갱신한 토큰은 해당 프로젝트·계정에
-  그대로 남으며 다른 프로젝트와 동기화하지 않는다. 이는 기존 아키텍처 §4.2의
+- 로컬 OAuth 재로그인 전 **해당 세션만** 중단해야 한다. 다른 세션은 계속 실행된다.
+  supervisor/guard와 login이 같은 세션 profile 잠금을 사용한다. 갱신된 토큰은 그 세션에
+  그대로 남으며 다른 세션/프로젝트와 동기화하지 않는다. 이는 기존 아키텍처 §4.2의
   refresh-token 회전 충돌 방지 원칙을 유지한다.
-- 컨테이너 재생성은 project volume의 Account별 인증·대화 파일과 manifest의 계정
+- 컨테이너 재생성은 project volume의 세션별 인증·대화 파일과 manifest의 계정
   연결을 유지한다. manager와 project의 **전체 state volume**을 비공개로 백업한다.
   기존 account 없는 개발 데이터는 자동 계정 할당/인증 이관하지 않는다.
+
+이전 프로젝트 공용 프로필은 삭제하거나 세션별로 복제하지 않는다. 이전 버전에서
+생성한 세션의 vendor resume 기록은 새 프로필에 자동 이관되지 않으므로 새 세션을
+만들어 로그인한다. cxz의 기존 대화 journal은 유지된다. 이번 변경은 CLI뿐 아니라
+manager/project runtime 업데이트가 필요하다. 새 방식에서 생성된 세션은 재시작·
+재접속·컨테이너 재생성 후에도 같은 프로필을 사용한다.
 
 ## Codex 중앙 공급
 

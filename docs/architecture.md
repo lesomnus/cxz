@@ -139,10 +139,11 @@ not separate listings.
   by a client that is entitled to that container — but the *target* of every
   operation is a session id.
 
-**Open:** whether two sessions of the same project may run concurrently against
-the same working tree, or whether cxz gives each its own worktree. Concurrent
-agents editing one tree is a real hazard; git worktrees are the obvious answer
-and a large amount of machinery.
+**Decision (2026-09-13):** sessions may run concurrently against the same working
+tree, including the same agent/account. Agents/users decide whether to use Git
+worktrees or share edits. cxz provides independent session configuration, history,
+HOME, cache and temporary storage, not source-file conflict resolution or a
+security boundary against processes sharing the container's OS user.
 
 ## 3. Agent integration
 
@@ -438,8 +439,9 @@ not an inconvenience.
 ### 4.2 Agent credentials
 
 **Implementation update (2026-09-12):** Account is now a global payday profile
-resource. Claude keeps its OAuth grant/config/HOME per `(Project, Account)`;
-`cxz account login --project PROJECT ACCOUNT` performs an independent login there.
+resource. **Updated 2026-09-13:** Claude keeps its OAuth grant/config/HOME per
+session. Every new session performs an independent login, even for the same
+Account. `cxz account login --session SESSION ACCOUNT` renews a stopped session.
 Codex now defaults to central account login, supplying only access tokens to
 authorized projects. Official Codex performs both device login and managed refresh;
 cxz pins the workspace/user identity and serializes account authentication work.
@@ -908,11 +910,8 @@ VS Code CLI move quickly, so re-verify rather than trusting this list's age.
   is the only path to sharing the client across projects.
 - Whether the inline viewer allows edits when a session is idle, with a
   save-time hash check (§5.3).
-- Concurrent sessions on one working tree, or a worktree per session (§2).
-  Deferred: the motivation for cxz is environment fidelity, not parallelism, so
-  one session per project container is sufficient until it demonstrably is not.
-  Revisit only if concurrent agents on one repository become the normal way of
-  working.
+- Concurrent sessions are supported (§2); worktree creation and source-file
+  coordination are deliberately left to the agents/users.
 
 ## Appendix: lessons carried from cld
 

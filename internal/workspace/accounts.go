@@ -64,15 +64,6 @@ func (m *Manager) ResumeSession(ctx context.Context, r *api.Control) (*api.Sessi
 			if v.RunId != r.RunId {
 				return nil, status.Error(codes.FailedPrecondition, "stale run_id")
 			}
-			list, err := client.List(ctx, &api.Empty{})
-			if err != nil {
-				return nil, err
-			}
-			for _, other := range list.Sessions {
-				if liveSession(other) {
-					return nil, status.Error(codes.AlreadyExists, "workspace has another live session")
-				}
-			}
 			if err = m.connectAccount(ctx, p, v.Account, v.AuthBackend); err != nil {
 				return nil, err
 			}

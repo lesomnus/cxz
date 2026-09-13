@@ -5,7 +5,6 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -98,11 +97,15 @@ func Run(ctx context.Context, root, id string) error {
 	if e = json.Unmarshal(b, &session); e != nil {
 		return e
 	}
-	workspaceLock, e := core.Lock(filepath.Join(root, "run", fmt.Sprintf("workspace-%x.lock", sha256.Sum256([]byte(session.Workspace)))))
+	profile := accounts.SessionRoot(root, session.CreateID)
+	if e = accounts.Prepare(profile, session.Account, session.Kind); e != nil {
+		return e
+	}
+	profileLock, e := core.Lock(filepath.Join(accounts.Dir(profile, session.Account), "login.lock"))
 	if e != nil {
 		return e
 	}
-	defer workspaceLock.Close()
+	defer profileLock.Close()
 	l, e := journal.Open(filepath.Join(dir, "events.jsonl"))
 	if e != nil {
 		return e
@@ -155,11 +158,7 @@ func Run(ctx context.Context, root, id string) error {
 		s.codex = &codexProtocol{s: s}
 		args = []string{"app-server", "--listen", "stdio://"}
 	}
-	backend, err := accounts.ResolveBinding(session.Kind, session.AuthBackend, session.ProjectID, session.Account, session.AuthBinding)
-	if err != nil {
-		return err
-	}
-	auth, err := backend.Launch(root, session.Account, os.Environ())
+	auth, err := accounts.LaunchSession(root, session, os.Environ())
 	if err != nil {
 		return err
 	}
@@ -197,7 +196,7 @@ func Run(ctx context.Context, root, id string) error {
 	defer s.kill()
 	// A separate pipe watcher survives supervisor SIGKILL and reaps the entire
 	// agent process group, including active shell children (Pdeathsig alone cannot).
-	disarm, e := guard(s.cmd.Process.Pid, errlog, workspaceLock)
+	disarm, e := guard(s.cmd.Process.Pid, errlog, profileLock)
 	if e != nil {
 		return e
 	}

@@ -70,7 +70,7 @@ func TestAccountResources(t *testing.T) {
 	if err != nil || binding.GetBindingId() != again.GetBindingId() {
 		t.Fatal("binding retry not idempotent", err)
 	}
-	if binding.GetId()[9] != 10 || binding.GetScope() != "project" || binding.GetCredentialRef() != "accounts/work" || binding.GetAuthBackend() != accounts.ProjectLocalOAuth {
+	if binding.GetId()[9] != 10 || binding.GetScope() != "project" || binding.GetCredentialRef() != "session-profiles/{creation-key-hash}/accounts/work" || binding.GetAuthBackend() != accounts.ProjectLocalOAuth {
 		t.Fatal("invalid binding", binding)
 	}
 	_, err = stack.AuthBinding().Patch(ctx, resource.AuthBindingPatchRequest_builder{Ref: bindingRef(binding.GetBindingId())}.Build())

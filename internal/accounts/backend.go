@@ -111,7 +111,7 @@ func BindingID(project, account, backend string) string {
 type projectLocalOAuth struct{ agent AgentKind }
 
 func (b projectLocalOAuth) Info() BackendInfo {
-	return BackendInfo{ProjectLocalOAuth, "project", "project-login", "agent"}
+	return BackendInfo{ProjectLocalOAuth, "project", "session-login", "agent"}
 }
 func (b projectLocalOAuth) Binding(project, account string) (BindingSpec, error) {
 	if err := Validate(account, string(b.agent)); err != nil {
@@ -120,7 +120,7 @@ func (b projectLocalOAuth) Binding(project, account string) (BindingSpec, error)
 	if project == "" {
 		return BindingSpec{}, fmt.Errorf("project-local-oauth requires a project")
 	}
-	return BindingSpec{BindingID(project, account, ProjectLocalOAuth), "project", "accounts/" + account}, nil
+	return BindingSpec{BindingID(project, account, ProjectLocalOAuth), "project", "session-profiles/{creation-key-hash}/accounts/" + account}, nil
 }
 func ResolveBinding(agent, backend, project, account, id string) (Backend, error) {
 	b, err := Resolve(agent, backend)
@@ -157,12 +157,7 @@ func (b projectLocalOAuth) Login(ctx context.Context, r LoginRequest) error {
 	if r.Binary == "" || r.Workspace == "" {
 		return fmt.Errorf("project runtime and agent executable required")
 	}
-	lock, err := core.Lock(filepath.Join(r.Root, "run", fmt.Sprintf("workspace-%x.lock", sha256.Sum256([]byte(r.Workspace)))))
-	if err != nil {
-		return fmt.Errorf("stop the active project session before login: %w", err)
-	}
-	defer lock.Close()
-	if err = Prepare(r.Root, r.Account, string(b.agent)); err != nil {
+	if err := Prepare(r.Root, r.Account, string(b.agent)); err != nil {
 		return err
 	}
 	loginLock, err := core.Lock(filepath.Join(Dir(r.Root, r.Account), "login.lock"))

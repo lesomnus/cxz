@@ -9,7 +9,7 @@ import (
 	"syscall"
 )
 
-func guard(pgid int, log, workspaceLock *os.File) (func(), error) {
+func guard(pgid int, log, profileLock *os.File) (func(), error) {
 	read, write, e := os.Pipe()
 	if e != nil {
 		return nil, e
@@ -21,7 +21,7 @@ func guard(pgid int, log, workspaceLock *os.File) (func(), error) {
 		return nil, e
 	}
 	cmd := exec.Command(exe, "_guard", strconv.Itoa(pgid))
-	cmd.ExtraFiles = []*os.File{read, workspaceLock}
+	cmd.ExtraFiles = []*os.File{read, profileLock}
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
 	cmd.Stdout = log
 	cmd.Stderr = log
@@ -46,9 +46,9 @@ func Guard(pid string) error {
 		return fmt.Errorf("missing liveness pipe")
 	}
 	defer f.Close()
-	// Keep the workspace lease until the old process group is canceled, even if
+	// Keep the session profile lease until the old process group is canceled, even if
 	// the supervisor died before a replacement daemon noticed it.
-	lease := os.NewFile(4, "workspace-lease")
+	lease := os.NewFile(4, "session-profile-lease")
 	if lease != nil {
 		defer lease.Close()
 	}

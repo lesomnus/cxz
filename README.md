@@ -45,13 +45,17 @@ bin/cxz session new --account work-codex .
 Account is an agent authentication profile, not a cxz user/tenant. The manager's
 resource DB holds profile metadata. Codex defaults to central login: log in once
 per account, then supply access tokens to its connected projects. Claude keeps
-independent project-local logins; use `account login --project PROJECT ACCOUNT`.
-Rotating refresh tokens are never copied across projects.
+independent logins for **every session**, including sessions using the same account.
+Interactive session creation opens the login flow. To log in again, stop only that
+session and use `account login --session SESSION_ALIAS ACCOUNT`.
+Rotating refresh tokens are never copied across sessions or projects.
 Host credentials are never imported implicitly. Account and agent are fixed for each session;
 resume/recreate preserves them. Missing login fails instead of falling back to
 environment credentials. Interactive `session new` and TUI Ctrl+N offer account selection;
-scripts must pass `--account` when creating a session. Stop an active session before
-starting another. See [Account design and boundaries](docs/accounts.md).
+scripts must pass `--account` when creating a session. Multiple Claude/Codex sessions
+may run in the same workspace. Each has independent configuration, history, HOME,
+cache and temporary directories; cxz does not create worktrees or coordinate edits.
+See [Account design and boundaries](docs/accounts.md).
 
 `Account.auth_backend` selects the authentication strategy; `Session.auth_binding`
 fixes the concrete authentication association. Codex defaults to

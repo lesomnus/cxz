@@ -1,5 +1,5 @@
 // Package accounts owns private vendor authentication files. No secret is a
-// resource field. OAuth grants belong to one project and one profile.
+// resource field. Session-local OAuth grants are never shared between sessions.
 package accounts
 
 import (
@@ -44,7 +44,7 @@ func Prepare(root, alias, agent string) error {
 	if err := Validate(alias, agent); err != nil {
 		return err
 	}
-	for _, p := range []string{Dir(root, alias), Config(root, alias), filepath.Join(Dir(root, alias), "home")} {
+	for _, p := range []string{Dir(root, alias), Config(root, alias), filepath.Join(Dir(root, alias), "home"), filepath.Join(Dir(root, alias), "tmp"), filepath.Join(Dir(root, alias), "run")} {
 		if err := os.MkdirAll(p, 0700); err != nil {
 			return err
 		}
@@ -152,7 +152,7 @@ func Environment(env []string, root, alias, agent string) []string {
 	var out []string
 	for _, entry := range env {
 		key, _, _ := strings.Cut(entry, "=")
-		blocked := key == "HOME" || key == "XDG_CONFIG_HOME" || key == "XDG_DATA_HOME" || key == "XDG_CACHE_HOME" || key == "XDG_STATE_HOME" || key == "XDG_RUNTIME_DIR" || key == "DBUS_SESSION_BUS_ADDRESS"
+		blocked := key == "HOME" || key == "TMPDIR" || key == "TMP" || key == "TEMP" || key == "XDG_CONFIG_HOME" || key == "XDG_DATA_HOME" || key == "XDG_CACHE_HOME" || key == "XDG_STATE_HOME" || key == "XDG_RUNTIME_DIR" || key == "DBUS_SESSION_BUS_ADDRESS"
 		for _, prefix := range []string{"OPENAI_", "ANTHROPIC_", "CLAUDE_", "CLAUDECODE", "CODEX_", "AZURE_", "AWS_", "GOOGLE_", "GCLOUD_", "GEMINI_"} {
 			blocked = blocked || strings.HasPrefix(key, prefix)
 		}
@@ -161,6 +161,7 @@ func Environment(env []string, root, alias, agent string) []string {
 		}
 	}
 	home := filepath.Join(Dir(root, alias), "home")
+	out = append(out, "TMPDIR="+filepath.Join(Dir(root, alias), "tmp"), "TMP="+filepath.Join(Dir(root, alias), "tmp"), "TEMP="+filepath.Join(Dir(root, alias), "tmp"), "XDG_RUNTIME_DIR="+filepath.Join(Dir(root, alias), "run"))
 	out = append(out, "HOME="+home, "XDG_CONFIG_HOME="+filepath.Join(home, ".config"), "XDG_DATA_HOME="+filepath.Join(home, ".local/share"), "XDG_CACHE_HOME="+filepath.Join(home, ".cache"), "XDG_STATE_HOME="+filepath.Join(home, ".local/state"))
 	if agent == "codex" {
 		out = append(out, "CODEX_HOME="+Config(root, alias))

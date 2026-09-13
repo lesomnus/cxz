@@ -112,7 +112,7 @@ func TestLifecycle(t *testing.T) {
 	if err != nil || len(beforeLogin.Sessions) != 0 {
 		t.Fatal("created session before login", beforeLogin, err)
 	}
-	if e = accounts.Install(state, "test-claude", "claude", []byte(`{"claudeAiOauth":{"accessToken":"synthetic-test-only"}}`)); e != nil {
+	if e = accounts.Install(accounts.SessionRoot(state, create.ClientId), "test-claude", "claude", []byte(`{"claudeAiOauth":{"accessToken":"synthetic-test-only"}}`)); e != nil {
 		t.Fatal(e)
 	}
 	s, e := client.Create(ctx, create)
@@ -147,7 +147,35 @@ func TestLifecycle(t *testing.T) {
 		t.Fatalf("create idempotency: %v", e)
 	}
 	if _, e = client.Create(ctx, &api.CreateRequest{Workspace: work, ClientId: "second", Account: "test-claude"}); e == nil {
-		t.Fatal("duplicate active workspace allowed")
+		t.Fatal("new session reused another session's authentication")
+	}
+	if e = accounts.Install(accounts.SessionRoot(state, "second"), "test-claude", "claude", []byte(`{"claudeAiOauth":{"accessToken":"second-independent-login"}}`)); e != nil {
+		t.Fatal(e)
+	}
+	second, e := client.Create(ctx, &api.CreateRequest{Workspace: work, ClientId: "second", Account: "test-claude"})
+	if e != nil {
+		t.Fatalf("concurrent session: %v", e)
+	}
+	defer client.Stop(context.Background(), &api.Control{SessionId: second.Id, RunId: second.RunId, ClientId: "cleanup-second"})
+	if second.Id == id {
+		t.Fatal("concurrent sessions merged")
+	}
+	duplicateProcess := exec.CommandContext(ctx, bin, "--state", state, "_supervise", id)
+	if err := duplicateProcess.Run(); err == nil {
+		t.Fatal("same session started twice")
+	}
+	if _, e = client.Stop(ctx, &api.Control{SessionId: second.Id, RunId: second.RunId, ClientId: "stop-second"}); e != nil {
+		t.Fatal(e)
+	}
+	if first, err := client.Get(ctx, &api.SessionRef{Id: id}); err != nil || first.State != "idle" {
+		t.Fatalf("stopping second affected first: %v %v", first, err)
+	}
+	second, e = client.Resume(ctx, &api.Control{SessionId: second.Id, RunId: second.RunId, ClientId: "resume-second"})
+	if e != nil {
+		t.Fatalf("resume alongside first: %v", e)
+	}
+	if _, e = client.Stop(ctx, &api.Control{SessionId: second.Id, RunId: second.RunId, ClientId: "stop-second-again"}); e != nil {
+		t.Fatal(e)
 	}
 	get := func() *api.Session {
 		t.Helper()
@@ -376,6 +404,9 @@ func TestLifecycle(t *testing.T) {
 	}
 	if e = client.DeleteSession(ctx, id); e != nil {
 		t.Fatal("delete live session", e)
+	}
+	if e = client.DeleteSession(ctx, second.Id); e != nil {
+		t.Fatal(e)
 	}
 	if _, e = os.Stat(filepath.Join(core.Dir(state, id), "session.json")); e != nil {
 		t.Fatal("deleted recoverable manifest", e)

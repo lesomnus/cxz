@@ -64,6 +64,31 @@ func (s preflightSessions) List(context.Context, *resource.SessionListRequest, .
 func fixtureSession(p *resource.Project, state string) *resource.Session {
 	return resource.Session_builder{RuntimeId: "thread", Agent: "codex", Model: "original", ClientId: "creation", Project: p, Account: resource.Account_builder{Alias: "work", Agent: "codex", AuthBackend: "project-local-oauth"}.Build(), Status: resource.SessionStatus_builder{State: state}.Build()}.Build()
 }
+
+func TestConcurrentSessionSelection(t *testing.T) {
+	list := []*api.Session{{Id: "one", ProjectId: "p", Agent: "claude", Account: "work", State: "working", CreateId: "first"}, {Id: "two", ProjectId: "p", Agent: "codex", Account: "personal", State: "idle", CreateId: "second"}}
+	for _, tc := range []struct {
+		r  *api.ProjectRequest
+		id string
+	}{
+		{&api.ProjectRequest{NewSession: true, Agent: "claude", Account: "work", ClientId: "third"}, ""},
+		{&api.ProjectRequest{NewSession: true, Agent: "claude", Account: "work", ClientId: "first"}, "one"},
+		{&api.ProjectRequest{Agent: "codex", Account: "personal"}, "two"},
+		{&api.ProjectRequest{Agent: "claude", Account: "personal"}, ""},
+	} {
+		_, s, err := chooseSession(list, "p", tc.r, false)
+		if err != nil {
+			t.Fatal(err)
+		}
+		id := ""
+		if s != nil {
+			id = s.Id
+		}
+		if id != tc.id {
+			t.Fatalf("want %q got %q", tc.id, id)
+		}
+	}
+}
 func TestOpenFailsBeforeAnyProjectMutation(t *testing.T) {
 	cases := []struct {
 		name                  string
@@ -82,8 +107,6 @@ func TestOpenFailsBeforeAnyProjectMutation(t *testing.T) {
 		{name: "invalid model", account: "work", model: "bad model", want: "model must"},
 		{name: "immutable model", state: "idle", model: "changed", want: "model is immutable"},
 		{name: "immutable model before recreate", state: "idle", r: &api.ProjectRequest{Recreate: true, Confirmed: true}, model: "changed", want: "model is immutable"},
-		{name: "active account conflict", state: "idle", account: "personal", want: "active codex session"},
-		{name: "active new conflict", state: "idle", account: "work", r: &api.ProjectRequest{NewSession: true, ClientId: "different"}, want: "active codex session"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

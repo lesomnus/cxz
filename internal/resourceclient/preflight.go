@@ -111,17 +111,17 @@ func chooseSession(list []*api.Session, project string, r *api.ProjectRequest, b
 	}
 	var chosen *api.Session
 	for _, s := range list {
-		if s.ProjectId != project {
+		if s.ProjectId != project || s.Agent != kind || (r.Account != "" && s.Account != r.Account) {
+			continue
+		}
+		if r.NewSession {
+			if r.ClientId != "" && s.CreateId == r.ClientId {
+				chosen = s
+				break
+			}
 			continue
 		}
 		if isLive(s) && !beforeRecreate {
-			if r.NewSession || s.Agent != kind || (r.Account != "" && s.Account != r.Account) {
-				if r.NewSession && s.Agent == kind && s.Account == r.Account && s.CreateId == r.ClientId {
-					chosen = s
-					break
-				}
-				return kind, nil, fmt.Errorf("workspace has an active %s session %s; stop it explicitly before starting another", s.Agent, s.Id)
-			}
 			chosen = s
 			break
 		}
