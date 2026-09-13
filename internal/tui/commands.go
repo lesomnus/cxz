@@ -29,6 +29,9 @@ var slashCommands = []slashCommand{
 }
 
 func (m *model) commandHints() []slashCommand {
+	if m.pathHints != nil {
+		return nil
+	}
 	text := m.input.Value()
 	if m.creating || m.focusList || m.focusApproval || m.hintDismissed || !strings.HasPrefix(text, "/") || strings.ContainsAny(text, " \n\t") {
 		return nil
@@ -99,6 +102,9 @@ func (m *model) commandKey(k tea.KeyMsg) (bool, tea.Cmd) {
 // Replace the bottom visible transcript rows, without touching scroll position
 // or saved events. The composer and status line never move for this overlay.
 func (m *model) commandOverlay(view string) string {
+	if m.pathHints != nil {
+		return m.pathHintOverlay(view)
+	}
 	hints := m.commandHints()
 	if len(hints) == 0 {
 		return view

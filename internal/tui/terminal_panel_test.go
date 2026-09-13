@@ -170,3 +170,30 @@ func TestTerminalKeyEncoding(t *testing.T) {
 		}
 	}
 }
+
+func TestTerminalSuccessfulExitFoldsOnlyItsPanel(t *testing.T) {
+	for _, code := range []string{"0", "7"} {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		s, err := containerterm.Start(exec.CommandContext(ctx, "sh", "-c", "exit "+code), 80, 24, nil)
+		if err != nil {
+			cancel()
+			t.Fatal(err)
+		}
+		until := time.Now().Add(3 * time.Second)
+		for time.Now().Before(until) {
+			if exited, _ := s.Exited(); exited {
+				break
+			}
+			time.Sleep(10 * time.Millisecond)
+		}
+		m := conversationModel()
+		p := &terminalPanel{session: s, open: true, focused: true}
+		m.terminals = map[string]*terminalPanel{m.current().Id: p}
+		m.Update(terminalChanged{id: m.current().Id})
+		if p.open != (code != "0") || p.focused != (code != "0") {
+			t.Fatal("wrong exit policy", code, p.open, p.focused)
+		}
+		s.Close()
+		cancel()
+	}
+}
