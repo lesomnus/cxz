@@ -192,8 +192,17 @@ func (m *model) sessionScreen() string {
 	leftWidth := max(8, width-ansi.StringWidth(quota)-3)
 	info = clip(info, leftWidth)
 	info += strings.Repeat(" ", max(1, width-1-ansi.StringWidth(info)-ansi.StringWidth(quota))) + quota + " "
-	body := m.reportView(m.modelPickerOverlay(m.commandOverlay(m.conversationView()))) + "\n\n" + clip("  "+status, width) + "\n" + box +
-		frame(m.input.View(), width, !m.focusList && !m.focusApproval) + "\n" + clip(info, width)
+	track := ""
+	if !m.view.AtBottom() {
+		track = m.scrollTrack()
+	}
+	composer := m.input
+	modal := m.report != nil || m.modelPicker != nil
+	if modal {
+		composer.Blur()
+	}
+	body := m.reportView(m.modelPickerOverlay(m.commandOverlay(m.conversationView()))) + "\n" + track + "\n" + clip("  "+status, width) + "\n" + box +
+		frame(composer.View(), width, !modal && !m.focusList && !m.focusApproval) + "\n" + clip(info, width)
 	return screen(body, m.width, m.height)
 }
 
@@ -202,4 +211,11 @@ func indentBlock(s string) string {
 		return ""
 	}
 	return "  " + strings.ReplaceAll(s, "\n", "\n  ")
+}
+
+func insetRule(width int, style lipgloss.Style) string {
+	if width <= 4 {
+		return strings.Repeat(" ", max(0, width))
+	}
+	return "  " + style.Render(strings.Repeat("─", width-4)) + "  "
 }

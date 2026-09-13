@@ -138,7 +138,7 @@ func markdownView(raw string, width int) string {
 		case *ast.Blockquote:
 			return "│ " + strings.ReplaceAll(strings.TrimRight(children(n), "\n"), "\n", "\n│ ") + "\n\n"
 		case *ast.ThematicBreak:
-			return muted.Render(strings.Repeat("─", min(20, max(1, width)))) + "\n\n"
+			return muted.Render(strings.Repeat("─", min(20, max(0, width-2)))) + "\n\n"
 		case *ast.Paragraph:
 			return children(n) + "\n\n"
 		case *ast.TextBlock:
