@@ -14,6 +14,44 @@ import (
 	"google.golang.org/grpc"
 )
 
+func TestFileChipLabelStableAcrossCursorBlink(t *testing.T) {
+	old := lipgloss.ColorProfile()
+	lipgloss.SetColorProfile(termenv.TrueColor)
+	t.Cleanup(func() { lipgloss.SetColorProfile(old) })
+	for _, width := range []int{70, 24} {
+		m := conversationModel()
+		m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("a\nb\nc\nd"), Paste: true})
+		token := m.input.Value()
+		m.pastes[token].file = true
+		m.input.SetWidth(width)
+		for pos := 0; pos < 15; pos++ {
+			m.input.SetCursor(pos)
+			for _, blink := range []bool{false, true} {
+				m.input.Cursor.Blink = blink
+				view := m.input.View()
+				got := m.decorateInputPastes(view)
+				plain := ansi.Strip(got)
+				if strings.Contains(plain, "[Paste") || !strings.Contains(plain, "[File  ") {
+					t.Fatalf("width=%d cursor=%d blink=%v: %q", width, pos, blink, got)
+				}
+				if ansi.StringWidth(view) != ansi.StringWidth(got) || m.input.Value() != token {
+					t.Fatal("changed layout or underlying chip")
+				}
+			}
+		}
+	}
+}
+
+func TestFileChipDecorationPreservesEscapesAndUnicode(t *testing.T) {
+	token := "[Paste abcd1234 · 4L · 8B]"
+	items := map[string]*pastedText{token: {token: token, file: true}}
+	input := "한글 e\u0301\n\x1b[32m[Pa\x1b[7ms\x1b[27mte abcd1234 · 4L · 8B]\x1b[0m"
+	want := "한글 e\u0301\n\x1b[32m[Fi\x1b[7ml\x1b[27me  abcd1234 · 4L · 8B]\x1b[0m"
+	if got := decoratePastes(input, items); got != want {
+		t.Fatalf("got %q; want %q", got, want)
+	}
+}
+
 func TestSelectedChipHighlightPreservesLayout(t *testing.T) {
 	old := lipgloss.ColorProfile()
 	lipgloss.SetColorProfile(termenv.TrueColor)
