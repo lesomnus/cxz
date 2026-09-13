@@ -238,6 +238,8 @@ func TestQuotaAvailabilityDiagnostics(t *testing.T) {
 		hint   string
 	}{
 		{"waiting", nil, "Existing supervisors keep their old code"},
+		{"polling", []*api.Event{{Kind: "usage_status", Text: "polling"}}, "awaiting the provider"},
+		{"timeout", []*api.Event{{Kind: "usage_status", Text: "timeout"}, {Kind: "usage_status", Text: "polling"}}, "at least one minute"},
 		{"unsupported", []*api.Event{{Kind: "usage_status", Text: "unsupported", RunId: "run"}}, "Update the provider CLI"},
 		{"unavailable", []*api.Event{{Kind: "usage", Text: "get_usage", Payload: []byte(`{"rate_limits_available":false,"rate_limits":null}`)}}, "no quota windows"},
 		{"error", []*api.Event{{Kind: "usage_status", Text: "error", RunId: "run"}}, "will retry"},
@@ -254,11 +256,15 @@ func TestQuotaAvailabilityDiagnostics(t *testing.T) {
 		}
 	}
 	events := []*api.Event{
+		{Kind: "usage_status", Text: "polling", TimeMs: 1000},
 		{Kind: "usage_status", Text: "error"},
 		{Kind: "usage", Text: "get_usage", Payload: []byte(`{"rate_limits":{"five_hour":{"utilization":30}}}`)},
 	}
 	windows, state := quotaSnapshot("claude", "run", events)
 	if state != "available" || len(windows) != 1 || *windows[0].Remaining != 70 {
 		t.Fatal("quota did not recover")
+	}
+	if !strings.Contains(quotaHistoryReport("claude", "run", events), "Last quota request") {
+		t.Fatal("missing polling timestamp")
 	}
 }

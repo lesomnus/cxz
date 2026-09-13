@@ -7,10 +7,7 @@ func claudeArgs() []string {
 }
 
 func (s *Supervisor) readClaudeQuota() {
-	if s.quotaDisabled {
-		return
-	}
 	// Ask the already authenticated process; never read/refresh OAuth tokens in
 	// the TUI. Older CLIs can reject this experimental control without harming a turn.
-	_ = s.write(map[string]any{"type": "control_request", "request_id": "cxz-quota", "request": map[string]any{"subtype": "get_usage", "skip_behaviors": true}})
+	s.requestQuota(map[string]any{"type": "control_request", "request_id": "cxz-quota", "request": map[string]any{"subtype": "get_usage", "skip_behaviors": true}})
 }

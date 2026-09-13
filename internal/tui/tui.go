@@ -825,7 +825,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.localOutput == nil {
 					m.localOutput = map[string]string{}
 				}
-				m.localOutput[id] = localName
+				m.localOutput[id] = text
 				m.hintDismissed = false
 				m.resize()
 				m.render()

@@ -11,7 +11,7 @@ import (
 type slashCommand struct{ name, description string }
 
 var slashCommands = []slashCommand{
-	{"/help", "Keyboard shortcuts"},
+	{"/help", "Categories, shortcuts and command examples"},
 	{"/context", "Inspect current context"},
 	{"/compact", "Compact agent context"},
 	{"/usage", "Session tokens, cost and time"},
@@ -131,8 +131,8 @@ func (m *model) localCommandView(id string) string {
 	if command == "/usage" {
 		return indentBlock(ansi.Hardwrap(safeText(m.usageReports[id]), max(1, m.view.Width-2), true))
 	}
-	if command == "" || command == "/help" {
-		return helpView(m.view.Width)
+	if command == "" || strings.Fields(command)[0] == "/help" {
+		return helpView(m.view.Width, strings.TrimSpace(strings.TrimPrefix(command, "/help")))
 	}
 	return indentBlock(peach.Render(command + " · Unimplemented"))
 }
