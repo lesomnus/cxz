@@ -6,8 +6,10 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"unicode"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/containerterm"
 )
@@ -25,15 +27,18 @@ type pathHints struct {
 	err              error
 	selected, offset int
 	cancel           context.CancelFunc
+	order            []pathOption
 }
 type pathHintDue struct{ generation uint64 }
 type pathHintResult struct {
 	generation uint64
 	listing    containerterm.PathListing
 	err        error
+	partial    bool
 }
 type pathOption struct {
-	text, description string
+	text  string
+	entry containerterm.PathEntry
 }
 
 // Completion is explicitly delimited by backticks. Bare slash commands and
@@ -117,6 +122,7 @@ func (m *model) syncPathHints() tea.Cmd {
 	if p := m.pathHints; p != nil && p.key == key {
 		if p.signature != signature {
 			p.selected, p.offset = 0, 0
+			p.order = nil
 		}
 		p.token, p.signature = token, signature
 		return nil
@@ -125,7 +131,7 @@ func (m *model) syncPathHints() tea.Cmd {
 	m.pathHintGeneration++
 	p := &pathHints{key: key, signature: signature, token: token, generation: m.pathHintGeneration, loading: true}
 	m.pathHints = p
-	return tea.Tick(150*time.Millisecond, func(time.Time) tea.Msg { return pathHintDue{p.generation} })
+	return tea.Tick(50*time.Millisecond, func(time.Time) tea.Msg { return pathHintDue{p.generation} })
 }
 func (m *model) fetchPathHints(d pathHintDue) tea.Cmd {
 	p := m.pathHints
@@ -137,6 +143,7 @@ func (m *model) fetchPathHints(d pathHintDue) tea.Cmd {
 		return nil
 	}
 	projectID, parent, generation := s.ProjectId, p.token.parent, p.generation
+	program := m.program
 	ctx, cancel := context.WithTimeout(m.ctx, 4*time.Second)
 	p.cancel = cancel
 	return func() tea.Msg {
@@ -147,7 +154,11 @@ func (m *model) fetchPathHints(d pathHintDue) tea.Cmd {
 		}
 		for _, project := range projects.Projects {
 			if project.Id == projectID {
-				listing, err := containerterm.ListPaths(ctx, project, parent)
+				listing, err := containerterm.StreamPaths(ctx, project, parent, func(listing containerterm.PathListing) {
+					if ctx.Err() == nil && program != nil {
+						program.Send(pathHintResult{generation: generation, listing: listing, partial: true})
+					}
+				})
 				return pathHintResult{generation: generation, listing: listing, err: err}
 			}
 		}
@@ -156,7 +167,22 @@ func (m *model) fetchPathHints(d pathHintDue) tea.Cmd {
 }
 func (m *model) receivePathHints(r pathHintResult) {
 	if p := m.pathHints; p != nil && p.generation == r.generation {
-		p.listing, p.err, p.loading = r.listing, r.err, false
+		old := m.pathOptions()
+		p.listing, p.err, p.loading = r.listing, r.err, r.partial
+		p.order = nil
+		fresh := m.pathOptions()
+		// Keep the selected entry and its successor in place as batches arrive.
+		keep := old[:min(len(old), p.selected+2)]
+		seen := make(map[string]bool)
+		p.order = append([]pathOption(nil), keep...)
+		for _, o := range keep {
+			seen[o.text] = true
+		}
+		for _, o := range fresh {
+			if !seen[o.text] {
+				p.order = append(p.order, o)
+			}
+		}
 	}
 }
 
@@ -165,18 +191,19 @@ func (m *model) pathOptions() []pathOption {
 	if p == nil {
 		return nil
 	}
+	if p.order != nil {
+		return p.order
+	}
 	var paths []pathOption
 	for _, entry := range p.listing.Entries {
 		if fuzzyScore(entry.Name, p.token.query) < 0 {
 			continue
 		}
 		name := entry.Name
-		description := "file"
 		if entry.Directory {
 			name += "/"
-			description = "directory"
 		}
-		paths = append(paths, pathOption{text: p.token.parent + name, description: description})
+		paths = append(paths, pathOption{text: p.token.parent + name, entry: entry})
 	}
 	sort.SliceStable(paths, func(i, j int) bool {
 		return fuzzyScore(strings.TrimPrefix(paths[i].text, p.token.parent), p.token.query) < fuzzyScore(strings.TrimPrefix(paths[j].text, p.token.parent), p.token.query)
@@ -211,11 +238,19 @@ func (m *model) pathHintKey(k tea.KeyMsg) (bool, tea.Cmd) {
 			m.applyPathOption(options[p.selected])
 		}
 		return true, nil
+	case "enter":
+		if len(options) > 0 {
+			m.completePathOption(options[p.selected], true)
+		}
+		return true, nil
 	}
 	return false, nil
 }
 
 func (m *model) applyPathOption(option pathOption) {
+	m.completePathOption(option, false)
+}
+func (m *model) completePathOption(option pathOption, closeQuote bool) {
 	p := m.pathHints
 	if p == nil {
 		return
@@ -226,13 +261,23 @@ func (m *model) applyPathOption(option pathOption) {
 		return
 	}
 	replacement := option.text
-	cursor := len([]rune(replacement))
 	if strings.ContainsRune(replacement, '`') {
 		m.notice = "Path contains a backtick; type it explicitly"
 		return
 	}
+	if closeQuote {
+		replacement += "`"
+		if token.end < len(r) && r[token.end] == '`' {
+			token.end++
+		}
+	}
+	cursor := len([]rune(replacement))
 	value := string(r[:token.start]) + replacement + string(r[token.end:])
 	pos := token.start + cursor
+	m.setPathInput(value, pos)
+}
+
+func (m *model) setPathInput(value string, pos int) {
 	m.input.SetValue(value)
 	prefix := []rune(value)[:pos]
 	row := strings.Count(string(prefix), "\n")
@@ -257,7 +302,7 @@ func (m *model) pathHintOverlay(view string) string {
 	if capacity == 0 {
 		return view
 	}
-	content := []string{muted.Render("Container paths · ↑/↓ choose · Tab complete · Esc close")}
+	content := []string{muted.Render("Container paths · ↑/↓ choose · Tab browse · Enter finish · Esc close")}
 	if p.listing.Truncated {
 		content[0] = warning.Render("First 2048 entries · Tab complete · Esc close")
 	}
@@ -271,13 +316,25 @@ func (m *model) pathHintOverlay(view string) string {
 		for idx := p.offset; idx < p.offset+count; idx++ {
 			o := options[idx]
 			name := safeText(strings.TrimPrefix(o.text, p.token.parent))
-			text := "  " + name + "  " + o.description
-			style := muted
+			marker := "  "
 			if idx == p.selected {
-				text = "› " + name + "  " + o.description
+				marker = accent.Render("› ")
+			}
+			style := lipgloss.NewStyle()
+			if o.entry.Directory {
+				style = lipgloss.NewStyle().Foreground(lipgloss.Color("#8DAFFF"))
+			}
+			if o.entry.Executable {
 				style = accent
 			}
-			content = append(content, style.Render(text))
+			if o.entry.Symlink {
+				style = blue
+			}
+			text := marker + highlightPath(name, p.token.query, style)
+			if o.entry.Symlink {
+				text += blue.Render(" → " + safeText(o.entry.LinkTarget))
+			}
+			content = append(content, text)
 		}
 	} else if p.loading {
 		content = append(content, muted.Render("Loading directory…"))
@@ -287,4 +344,48 @@ func (m *model) pathHintOverlay(view string) string {
 		content = append(content, muted.Render("No matching entries"))
 	}
 	return overlayBox(view, content, m.width, true)
+}
+
+func highlightPath(name, query string, style lipgloss.Style) string {
+	q := []rune(strings.ToLower(query))
+	var out strings.Builder
+	i := 0
+	for _, r := range name {
+		if i < len(q) && unicode.ToLower(r) == q[i] {
+			out.WriteString(magenta.Render(string(r)))
+			i++
+		} else {
+			out.WriteString(style.Render(string(r)))
+		}
+	}
+	return out.String()
+}
+
+// Preserve path separators as word boundaries without changing prose deletion.
+func (m *model) deletePathWord(k tea.KeyMsg) bool {
+	if k.String() != "ctrl+w" && k.String() != "alt+backspace" {
+		return false
+	}
+	value, pos, _, _, ok := m.chipInput()
+	if !ok {
+		return false
+	}
+	token, ok := pathTokenAt(value, pos)
+	if !ok || pos <= token.start {
+		return false
+	}
+	r := []rune(value)
+	start := pos
+	if r[start-1] == '/' {
+		start--
+	} else {
+		for start > token.start && r[start-1] != '/' && !unicode.IsSpace(r[start-1]) {
+			start--
+		}
+		if start == pos {
+			start--
+		}
+	}
+	m.setPathInput(string(r[:start])+string(r[pos:]), start)
+	return true
 }

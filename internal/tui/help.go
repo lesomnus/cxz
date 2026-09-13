@@ -68,7 +68,7 @@ func helpView(width int, topics ...string) string {
 	}
 	profile := map[termenv.Profile]string{termenv.TrueColor: "24-bit True Color", termenv.ANSI256: "256 colors", termenv.ANSI: "16 colors", termenv.Ascii: "no color"}[lipgloss.ColorProfile()]
 	lines := []string{lavender.Bold(true).Render("cxz /help"), muted.Render("Detected color profile: " + profile), muted.Render("Details and examples: /help <command> · e.g. /help answer")}
-	lines = append(lines, muted.Render("Container paths: type backtick + / or ~ · arrows select · Tab completes · closing backtick/Esc finishes"))
+	lines = append(lines, muted.Render("Container paths: backtick + / or ~ · arrows select · Tab browses · Enter completes and closes · Esc dismisses"))
 	category := ""
 	for _, entry := range commandHelpEntries {
 		if category != entry.category {

@@ -7,7 +7,9 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/lesomnus/cxz/internal/containerterm"
+	"github.com/muesli/termenv"
 )
 
 func TestPathTokensRequireBackticks(t *testing.T) {
@@ -117,5 +119,67 @@ func TestPathOverlayFitsFourRows(t *testing.T) {
 	view := m.pathHintOverlay("row\nrow\nrow\nrow")
 	if len(strings.Split(view, "\n")) != 4 || !strings.Contains(view, "local/") {
 		t.Fatal("hint invisible in small viewport", view)
+	}
+}
+
+func TestPathEnterClosesAndPreservesSuffix(t *testing.T) {
+	for _, suffix := range []string{"", "` 뒤 문장"} {
+		m := pathModel()
+		m.setPathInput("먼저 `/tmp/한"+suffix, len([]rune("먼저 `/tmp/한")))
+		m.syncPathHints()
+		loadPathFixture(m, containerterm.PathEntry{Name: "한글.txt"})
+		m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+		want := "먼저 `/tmp/한글.txt`" + strings.TrimPrefix(suffix, "`")
+		if m.input.Value() != want || m.pathHints != nil {
+			t.Fatal(m.input.Value(), m.pathHints)
+		}
+		_, pos, _, _, _ := m.chipInput()
+		if pos != len([]rune("먼저 `/tmp/한글.txt`")) {
+			t.Fatal("cursor", pos)
+		}
+		if len(m.client.(*recordingClient).inputs) != 0 {
+			t.Fatal("sent conversation")
+		}
+	}
+}
+
+func TestPathStreamingKeepsSelectionAndSuccessor(t *testing.T) {
+	m := pathModel()
+	m.input.SetValue("`/tmp/")
+	m.syncPathHints()
+	loadPathFixture(m, containerterm.PathEntry{Name: "b"}, containerterm.PathEntry{Name: "c"}, containerterm.PathEntry{Name: "z"})
+	m.pathHints.selected = 0
+	loadPathFixture(m, containerterm.PathEntry{Name: "a"}, containerterm.PathEntry{Name: "b"}, containerterm.PathEntry{Name: "c"}, containerterm.PathEntry{Name: "d"}, containerterm.PathEntry{Name: "z"})
+	opts := m.pathOptions()
+	for i, want := range []string{"b", "c", "a", "d", "z"} {
+		if opts[i].text != "/tmp/"+want {
+			t.Fatal(opts)
+		}
+	}
+	m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("a")})
+	if opts = m.pathOptions(); len(opts) != 1 || opts[0].text != "/tmp/a" {
+		t.Fatal("query did not reset ordering", opts)
+	}
+}
+
+func TestPathWordDeleteStopsAtSlash(t *testing.T) {
+	m := pathModel()
+	m.input.SetValue("설명 `/tmp/한글.txt")
+	for _, want := range []string{"설명 `/tmp/", "설명 `/tmp", "설명 `/"} {
+		m.Update(tea.KeyMsg{Type: tea.KeyCtrlW})
+		if m.input.Value() != want {
+			t.Fatal(m.input.Value(), want)
+		}
+	}
+}
+
+func TestPathMatchingHighlight(t *testing.T) {
+	old := lipgloss.ColorProfile()
+	lipgloss.SetColorProfile(termenv.TrueColor)
+	t.Cleanup(func() { lipgloss.SetColorProfile(old) })
+	got := highlightPath("Local", "lc", blue)
+	want := magenta.Render("L") + blue.Render("o") + magenta.Render("c") + blue.Render("a") + blue.Render("l")
+	if got != want {
+		t.Fatalf("match colors: %q != %q", got, want)
 	}
 }
