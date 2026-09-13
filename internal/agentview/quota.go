@@ -9,10 +9,11 @@ import (
 // Window is a provider-reported account limit, never inferred from token usage.
 // Remaining is nil if the provider reported only a status, not utilization.
 type Window struct {
-	Key, Label, Status string
-	Remaining          *float64
-	Reset              time.Time
-	Observed           time.Time
+	Key, Label, Status         string
+	Bucket, BucketName, Period string
+	Remaining                  *float64
+	Reset                      time.Time
+	Observed                   time.Time
 }
 
 func Quota(provider, method string, raw []byte) []Window {
@@ -65,6 +66,7 @@ func Quota(provider, method string, raw []byte) []Window {
 						label = fmt.Sprintf("%.0fm", mins)
 					}
 				}
+				period := label
 				if id != "codex" {
 					name := limits.text("limitName")
 					if name == "" {
@@ -73,6 +75,11 @@ func Quota(provider, method string, raw []byte) []Window {
 					label = name + "/" + label
 				}
 				add(id+"/"+key, label, f, "usedPercent", 1)
+				if len(f) > 0 {
+					w := &result[len(result)-1]
+					w.Bucket, w.BucketName = id, limits.text("limitName")
+					w.Period = period
+				}
 			}
 		}
 	}

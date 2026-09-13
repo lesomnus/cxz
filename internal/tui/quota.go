@@ -22,20 +22,30 @@ func quotaCountdown(reset, now time.Time) string {
 	}
 	mins := int(math.Ceil(reset.Sub(now).Minutes()))
 	if mins >= 1440 {
+		if mins/60%24 == 0 {
+			return fmt.Sprintf("%dd", mins/1440)
+		}
 		return fmt.Sprintf("%dd%dh", mins/1440, mins/60%24)
 	}
 	if mins >= 60 {
+		if mins%60 == 0 {
+			return fmt.Sprintf("%dh", mins/60)
+		}
 		return fmt.Sprintf("%dh%dm", mins/60, mins%60)
 	}
 	return fmt.Sprintf("%dm", mins)
 }
 
 func quotaBar(percent float64) string {
+	return quotaBarWidth(percent, 8)
+}
+
+func quotaBarWidth(percent float64, cells int) string {
 	// Eight cells, with four levels per cell; the baseline remains visible.
 	levels := []rune{'⣀', '⣄', '⣤', '⣶', '⣿'}
-	filled := int(math.Round(max(0, min(100, percent)) * 32 / 100))
+	filled := int(math.Round(max(0, min(100, percent)) * float64(cells*4) / 100))
 	var b strings.Builder
-	for i := 0; i < 8; i++ {
+	for i := 0; i < cells; i++ {
 		b.WriteRune(levels[max(0, min(4, filled-i*4))])
 	}
 	return b.String()
@@ -140,22 +150,41 @@ func (m *model) quotaStatus(now time.Time, width int) string {
 		}
 		return muted.Render(clip("quota "+state, width))
 	}
-	var parts []string
-	for _, w := range m.quotaWindows {
+	provider, current := "", ""
+	if s := m.current(); s != nil {
+		provider = s.Agent
+		current = m.quotaModel()
+	}
+	windows, folded := statusQuotaWindows(provider, current, m.quotaWindows)
+	render := func(w agentview.Window, cells int) string {
 		value := "—"
 		if w.Remaining != nil && (w.Reset.IsZero() || w.Reset.After(now)) {
-			value = fmt.Sprintf("%.0f%% %s", *w.Remaining, quotaBarStyle(*w.Remaining).Render(quotaBar(*w.Remaining)))
+			value = fmt.Sprintf("%.0f%%", *w.Remaining)
+			if cells > 0 {
+				value += " " + quotaBarStyle(*w.Remaining).Render(quotaBarWidth(*w.Remaining, cells))
+			}
 		}
 		if m.quotaState == "error" || m.quotaState == "timeout" || w.Observed.IsZero() || now.Sub(w.Observed) > 2*time.Minute {
 			value = "~" + value
 		}
-		parts = append(parts, value+" "+safeText(w.Label)+" "+quotaCountdown(w.Reset, now))
+		return value + " " + safeText(w.Label) + " " + quotaCountdown(w.Reset, now)
 	}
-	for len(parts) > 1 && ansi.StringWidth(strings.Join(parts, " · ")) > width {
-		parts = parts[:len(parts)-1]
-		parts[len(parts)-1] += " +"
+	for count := len(windows); count >= 0; count-- {
+		for _, cells := range []int{8, 4, 0} {
+			var parts []string
+			for _, w := range windows[:count] {
+				parts = append(parts, render(w, cells))
+			}
+			if n := folded + len(windows) - count; n > 0 {
+				parts = append(parts, fmt.Sprintf("+%d limits", n))
+			}
+			text := strings.Join(parts, " · ")
+			if ansi.StringWidth(text) <= width {
+				return muted.Render(text)
+			}
+		}
 	}
-	return muted.Render(clip(strings.Join(parts, " · "), width))
+	return muted.Render(clip("quota · /usage", width))
 }
 
 func quotaHistoryReport(provider, run string, events []*api.Event) string {
