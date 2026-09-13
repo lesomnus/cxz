@@ -206,7 +206,7 @@ func (m *model) sessionScreen() string {
 		track = m.scrollTrack()
 	}
 	composer := m.input
-	modal := m.report != nil || m.modelPicker != nil || m.restartConfirm != nil || m.questionDialog != nil || m.pasteDialog != nil
+	modal := m.panelFocus || m.report != nil || m.modelPicker != nil || m.restartConfirm != nil || m.questionDialog != nil || m.pasteDialog != nil
 	if modal {
 		composer.Blur()
 	}

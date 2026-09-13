@@ -78,6 +78,10 @@ func (m *model) startAccountWorkflow(alias, provider, sessionID string, create b
 	m.workflow = f
 	m.busy = true
 	creator, login := m.createProjectSession, m.loginAccount
+	projectID := ""
+	if m.project != nil {
+		projectID = m.project.Id
+	}
 	work := func() tea.Msg {
 		defer r.Close()
 		defer w.Close()
@@ -85,9 +89,9 @@ func (m *model) startAccountWorkflow(alias, provider, sessionID string, create b
 		var s *api.Session
 		var err error
 		if create {
-			s, err = creator(ctx, alias, r, out, out)
+			s, err = creator(ctx, projectID, alias, r, out, out)
 		} else {
-			err = login(ctx, alias, sessionID, r, out, out)
+			err = login(ctx, projectID, alias, sessionID, r, out, out)
 		}
 		// Completion uses the command return path so cancellation cannot swallow it.
 		return workflowDone{f, s, err}

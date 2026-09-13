@@ -24,6 +24,12 @@ import (
 
 type model struct {
 	project              *api.Project
+	terminalWidth        int
+	panelFocus           bool
+	panelIndex           int
+	panelProjects        []*api.Project
+	allSessions          []*api.Session
+	panelError           string
 	projectView          bool
 	deletingID           string
 	busy                 bool
@@ -112,9 +118,12 @@ type model struct {
 	pasteDialog          *pasteDialog
 }
 type listing struct {
-	project  *api.Project
-	sessions []*api.Session
-	err      error
+	projects       []*api.Project
+	projectsErr    error
+	projectsLoaded bool
+	project        *api.Project
+	sessions       []*api.Session
+	err            error
 }
 type received struct {
 	id    string
@@ -217,6 +226,7 @@ func RunProject(ctx context.Context, c api.SessionsClient, project *api.Project,
 	return e
 }
 func (m *model) refresh() tea.Cmd {
+	panel := m.panelVisible()
 	projectID := ""
 	if m.project != nil {
 		projectID = m.project.Id
@@ -229,17 +239,24 @@ func (m *model) refresh() tea.Cmd {
 			return listing{err: e}
 		}
 		var p *api.Project
-		if projectID != "" {
+		var projects []*api.Project
+		var projectsErr error
+		projectsLoaded := false
+		if projectID != "" || panel {
 			if ps, err := m.client.Projects(ctx, &api.Empty{}); err == nil {
+				projectsLoaded = true
+				projects = ps.Projects
 				for _, candidate := range ps.Projects {
 					if candidate.Id == projectID {
 						p = candidate
 						break
 					}
 				}
+			} else {
+				projectsErr = err
 			}
 		}
-		return listing{sessions: v.Sessions, project: p}
+		return listing{sessions: v.Sessions, project: p, projects: projects, projectsErr: projectsErr, projectsLoaded: projectsLoaded}
 	}
 }
 func timer() tea.Cmd           { return tea.Tick(time.Second, func(t time.Time) tea.Msg { return tick(t) }) }
@@ -763,6 +780,10 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.render()
 		return m, tea.Batch(m.refresh(), m.autoApprove())
 	case tea.MouseMsg:
+		if v.X < m.contentOffset() || v.X >= m.contentOffset()+m.width || m.panelFocus {
+			return m, nil
+		}
+		v.X -= m.contentOffset()
 		if m.questionDialog != nil {
 			if v.Button == tea.MouseButtonWheelUp {
 				m.questionDialog.offset -= 3
@@ -874,8 +895,15 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 	case tea.WindowSizeMsg:
-		m.width = v.Width
+		m.terminalWidth = v.Width
+		m.width = min(v.Width, maxViewWidth)
 		m.height = v.Height
+		if !m.panelVisible() {
+			if m.panelFocus && !m.projectView && !m.accountView {
+				m.input.Focus()
+			}
+			m.panelFocus = false
+		}
 		m.resize()
 		m.render()
 	case tick:
@@ -898,7 +926,8 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.wantID != "" {
 			old = m.wantID
 		}
-		if v.project != nil {
+		m.updatePanel(v)
+		if v.project != nil && (m.project == nil || m.project.Id == v.project.Id) {
 			m.project = v.project
 		}
 		m.sessions = ProjectSessions(v.sessions, m.project)
@@ -1007,6 +1036,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, m.refresh()
 	case tea.KeyMsg:
+		if m.panelFocus && m.panelVisible() {
+			return m, m.panelKey(v)
+		}
 		if m.pasteDialog != nil {
 			return m, m.pasteKey(v)
 		}
@@ -1047,6 +1079,10 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 		if v.String() == "ctrl+q" {
+			if m.panelVisible() {
+				m.focusPanel()
+				return m, m.refresh()
+			}
 			m.backToProject()
 			return m, m.refresh()
 		}
@@ -1280,7 +1316,8 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	return m, cmd
 }
-func (m *model) View() string {
+func (m *model) View() (out string) {
+	defer func() { out = m.wideScreen(out) }()
 	m.anchorCursor()
 	if m.workflow != nil {
 		return m.workflowScreen()
