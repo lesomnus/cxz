@@ -8,7 +8,9 @@
 Codex는 CLI의 baseline 12,000 토큰 보정 기준을 따른 마지막 tokenUsage snapshot,
 Claude는 마지막 assistant 메시지의 input+cache-read+cache-write와 해당 모델의 contextWindow를 사용한다.
 누적 billing usage는 쓰지 않으며 `/context`를 자동 전송하지 않는다. `/context` 상세 출력은 변경하지 않는다.
-Claude는 새 supervisor의 `context/message` 이벤트가 필요하므로 공유 runtime 업데이트 후 에이전트를 재시작해야 한다.
+Claude의 자동 갱신은 새 supervisor의 `context/message` 이벤트가 필요하므로 공유 runtime 업데이트 후 에이전트를 재시작해야 한다.
+직접 실행한 `/context`의 `Context Usage`/`Model`/`Tokens` 보고서가 알려진 형식이면 명시된 비율도
+status bar에 반영한다. 일반 대화 텍스트는 파싱하지 않으며 다음 입력/compact/새 run에서는 보고서 값을 무효화한다.
 
 ## 백틱 경로 힌트
 

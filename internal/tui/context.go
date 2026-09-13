@@ -8,6 +8,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/agentview"
 	"github.com/lesomnus/cxz/internal/core"
 )
 
@@ -119,6 +120,12 @@ func (m *model) captureContext(id string, e *api.Event) {
 		}
 	case "turn_end":
 		if c.active {
+			if p, ok := agentview.ClaudeContextReport(c.text); ok {
+				if m.contextReports == nil {
+					m.contextReports = make(map[string]contextReportSnapshot)
+				}
+				m.contextReports[id] = contextReportSnapshot{run: c.run, seq: e.Seq, percent: p}
+			}
 			hide = true
 			if c.text == "" {
 				c.report.text = "No text context report received. Inspect session events for provider details."

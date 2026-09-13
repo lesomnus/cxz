@@ -3,6 +3,9 @@ package agentview
 import (
 	"encoding/json"
 	"math"
+	"regexp"
+	"strconv"
+	"strings"
 )
 
 // ContextPercent adapts provider snapshots, never cumulative billing usage.
@@ -70,4 +73,38 @@ func ContextPercent(provider string, usage, limits []byte) (int, bool) {
 		return 0, false
 	}
 	return int(math.Min(99, math.Floor(used/window*100))), true
+}
+
+var contextTokensLine = regexp.MustCompile(`(?m)^\*\*Tokens:\*\*\s+[0-9]+(?:\.[0-9]+)?[kKmM]?\s*/\s*[0-9]+(?:\.[0-9]+)?[kKmM]?\s+\(([0-9]+(?:\.[0-9]+)?)%\)\s*$`)
+
+// ClaudeContextReport accepts only the known native /context summary format.
+// Callers must correlate it to their own /context request, not arbitrary prose.
+func ClaudeContextReport(text string) (int, bool) {
+	if !strings.Contains(text, "## Context Usage") || !strings.Contains(text, "**Model:**") {
+		return 0, false
+	}
+	m := contextTokensLine.FindStringSubmatch(text)
+	if m == nil {
+		return 0, false
+	}
+	p, err := strconv.ParseFloat(m[1], 64)
+	if err != nil || p < 0 || p > 100 {
+		return 0, false
+	}
+	return min(99, int(p)), true
+}
+
+func HasContextLimits(raw []byte) bool {
+	var v struct {
+		ModelUsage map[string]struct{ ContextWindow float64 }
+	}
+	if json.Unmarshal(raw, &v) != nil {
+		return false
+	}
+	for _, m := range v.ModelUsage {
+		if m.ContextWindow > 0 {
+			return true
+		}
+	}
+	return false
 }

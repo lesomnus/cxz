@@ -2,6 +2,18 @@ package agentview
 
 import "testing"
 
+func TestClaudeContextReport(t *testing.T) {
+	text := "/context\n## Context Usage\n\n**Model:** claude-opus-5[1m]\n**Tokens:** 109.7k / 1m (11%)\n..."
+	if p, ok := ClaudeContextReport(text); !ok || p != 11 {
+		t.Fatal(p, ok)
+	}
+	for _, s := range []string{"11%", "**Tokens:** 109.7k / 1m (11%)", "## Context Usage\n**Model:** x\n**Tokens:** unknown"} {
+		if _, ok := ClaudeContextReport(s); ok {
+			t.Fatal(s)
+		}
+	}
+}
+
 func TestContextPercent(t *testing.T) {
 	for _, tc := range []struct {
 		provider, usage, limits string
