@@ -197,11 +197,11 @@ func (m *model) sessionScreen() string {
 		track = m.scrollTrack()
 	}
 	composer := m.input
-	modal := m.report != nil || m.modelPicker != nil
+	modal := m.report != nil || m.modelPicker != nil || m.restartConfirm != nil
 	if modal {
 		composer.Blur()
 	}
-	body := m.reportView(m.modelPickerOverlay(m.commandOverlay(m.conversationView()))) + "\n" + track + "\n" + clip("  "+status, width) + "\n" + box +
+	body := m.restartOverlay(m.reportView(m.modelPickerOverlay(m.commandOverlay(m.conversationView())))) + "\n" + track + "\n" + clip("  "+status, width) + "\n" + box +
 		frame(composer.View(), width, !modal && !m.focusList && !m.focusApproval) + "\n" + clip(info, width)
 	return screen(body, m.width, m.height)
 }

@@ -6,7 +6,6 @@ import (
 	"reflect"
 	"strings"
 	"testing"
-	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/lesomnus/cxz/api"
@@ -59,12 +58,12 @@ func TestRestartConfirmedAndLocallyRouted(t *testing.T) {
 			t.Fatal("unconfirmed command performed an effect", text)
 		}
 	}
-	m.input.SetValue("/restart confirm")
-	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyCtrlS})
+	m.Update(tea.KeyMsg{Type: tea.KeyShiftTab})
+	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	if cmd == nil || !m.restartBusy || m.fullPermission["s"] != "" {
 		t.Fatal("restart not armed safely")
 	}
-	if m.restartCommand("/restart confirm") != nil {
+	if m.restartCommand("/restart") != nil {
 		t.Fatal("duplicate restart")
 	}
 	msg := cmd().(restartFinished)
@@ -84,15 +83,13 @@ func TestRestartConfirmedAndLocallyRouted(t *testing.T) {
 }
 
 func TestRestartFailuresAndStaleConfirmation(t *testing.T) {
-	for _, kind := range []string{"expired", "changed-session", "changed-run", "server-run", "stop", "resume", "concurrent-run", "stopped"} {
+	for _, kind := range []string{"changed-session", "changed-run", "server-run", "stop", "resume", "concurrent-run", "stopped"} {
 		t.Run(kind, func(t *testing.T) {
 			m := conversationModel()
 			c := &restartClient{run: "run", state: "idle"}
 			m.client = c
 			m.restartCommand("/restart")
 			switch kind {
-			case "expired":
-				m.restartConfirm.expires = time.Now().Add(-time.Second)
 			case "changed-session":
 				m.current().Id = "other"
 			case "changed-run":
@@ -108,8 +105,8 @@ func TestRestartFailuresAndStaleConfirmation(t *testing.T) {
 			case "stopped":
 				c.state = "stopped"
 			}
-			cmd := m.restartCommand("/restart confirm")
-			if kind == "expired" || kind == "changed-session" || kind == "changed-run" {
+			cmd := m.confirmRestart()
+			if kind == "changed-session" || kind == "changed-run" {
 				if cmd != nil || len(c.calls) > 0 {
 					t.Fatal("stale confirmation accepted")
 				}

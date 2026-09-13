@@ -186,7 +186,7 @@ resource database and survives server/container restarts; back up state volumes.
 | `/approval` | Inspect the selected request's complete payload |
 | `/permission full`, `/permission ask` | Auto/manual tool approval for the current attached session run |
 | `/stop` | Terminate selected agent |
-| `/restart` → `/restart confirm` | Restart the same session's agent; confirm within 30s (`/restart cancel` cancels) |
+| `/restart` | Confirm/Cancel dialog to restart this session's agent; Tab/arrows select, Enter applies, Esc cancels |
 | Ctrl+C | Detach; agent continues |
 
 The dashboard groups workspace details and session cards; the conversation view

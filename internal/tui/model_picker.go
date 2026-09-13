@@ -94,7 +94,7 @@ func (m *model) acceptModelCatalog(v modelCatalogLoaded) tea.Cmd {
 	}
 	p.catalog = v.catalog
 	if p.catalog == nil {
-		p.message = "This run has no model-control capability record. No command was sent.\nClose with Esc, then submit /restart and /restart confirm. If the runtime is outdated, update manager and project runtime first."
+		p.message = "This run has no model-control capability record. No command was sent.\nClose with Esc, then submit /restart and choose Confirm. If the runtime is outdated, update manager and project runtime first."
 		return nil
 	}
 	if p.requested != "" {

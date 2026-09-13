@@ -13,7 +13,7 @@ import (
 
 type restartConfirmation struct {
 	id, run string
-	expires time.Time
+	confirm bool // Cancel is selected by default.
 }
 type restartFinished struct{ err error }
 
@@ -26,25 +26,29 @@ func (m *model) restartCommand(text string) tea.Cmd {
 	if s == nil {
 		return nil
 	}
-	f := strings.Fields(text)
-	if len(f) == 1 {
-		m.restartConfirm = &restartConfirmation{s.Id, s.RunId, time.Now().Add(30 * time.Second)}
-		m.notice = "Restart stops active work. /restart confirm (30s) · /restart cancel · history/login kept; approval resets."
+	if strings.TrimSpace(text) != "/restart" {
+		m.notice = "Usage: /restart — choose Confirm or Cancel in the dialog."
 		return nil
 	}
-	if len(f) == 2 && f[1] == "cancel" {
-		m.restartConfirm = nil
-		m.notice = "Restart canceled."
-		return nil
+	m.report = nil
+	if m.modelPicker != nil && m.modelPicker.cancel != nil {
+		m.modelPicker.cancel()
 	}
-	if len(f) != 2 || f[1] != "confirm" {
-		m.notice = "Usage: /restart · /restart confirm · /restart cancel"
+	m.modelPicker = nil
+	m.restartConfirm = &restartConfirmation{id: s.Id, run: s.RunId}
+	m.notice = ""
+	return nil
+}
+
+func (m *model) confirmRestart() tea.Cmd {
+	if m.restartBusy {
 		return nil
 	}
 	p := m.restartConfirm
 	m.restartConfirm = nil
-	if p == nil || p.id != s.Id || p.run != s.RunId || time.Now().After(p.expires) {
-		m.notice = "Restart confirmation expired or session changed. Submit /restart again."
+	s := m.current()
+	if p == nil || s == nil || p.id != s.Id || p.run != s.RunId {
+		m.notice = "Session changed. Open /restart again."
 		return nil
 	}
 	m.restartBusy = true
