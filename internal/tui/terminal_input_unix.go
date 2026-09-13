@@ -136,6 +136,9 @@ func (r *keyboardReader) kittyKey(seq []byte) ([]byte, bool) {
 	if key == 9 && mod == 1 {
 		return []byte("\x1b[Z"), true
 	}
+	if key > 127 && key <= utf8.MaxRune && utf8.ValidRune(rune(key)) && (mod == 0 || mod == 1) {
+		return []byte(string(rune(key))), true
+	}
 	if mod&^7 != 0 || key < 0 || key > 127 {
 		return nil, false
 	}

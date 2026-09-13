@@ -17,6 +17,11 @@ type terminalPanel struct {
 	session                 *containerterm.Session
 	open, focused, starting bool
 	err                     error
+	scroll                  *terminalScroll
+}
+type terminalScroll struct {
+	lines []uv.Line
+	top   int
 }
 type terminalOpened struct {
 	id      string
@@ -37,10 +42,10 @@ func (m *model) terminalHeight() int {
 		return 0
 	}
 	available := m.height - m.input.Height() - 5 - m.approvalHeight() - 4
-	if available < 5 {
+	if available < 4 {
 		return 0
 	}
-	return min(27, available) // two rules + header + up to 24 PTY rows
+	return min(26, available) // two rules + up to 24 PTY rows
 }
 func (m *model) terminalFocused() bool {
 	p := m.terminal()
@@ -83,7 +88,8 @@ func (m *model) toggleTerminal() tea.Cmd {
 	}
 	p.starting = true
 	p.err = nil
-	id, projectID, width, height := s.Id, s.ProjectId, m.width, max(1, m.terminalHeight()-3)
+	p.scroll = nil
+	id, projectID, width, height := s.Id, s.ProjectId, m.width, max(1, m.terminalHeight()-2)
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(m.ctx, 5*time.Second)
 		projects, err := m.client.Projects(ctx, &api.Empty{})
@@ -110,7 +116,6 @@ func (m *model) toggleTerminal() tea.Cmd {
 	}
 }
 
-const terminalBack = "[Back to chat]"
 const terminalFold = "[Collapse ▾]"
 
 func (m *model) terminalView() string {
@@ -119,33 +124,72 @@ func (m *model) terminalView() string {
 		return ""
 	}
 	p := m.terminal()
-	header := teal.Render(terminalBack) + " " + muted.Render(terminalFold) + "  " + muted.Render("Terminal · Ctrl+` · fold keeps shell")
-	if p.focused {
-		header = accent.Render(terminalBack) + " " + teal.Render(terminalFold) + "  " + accent.Render("Terminal · focused · Ctrl+`")
-	}
+	header := teal.Render(strings.Repeat("─", max(0, m.width-ansi.StringWidth(terminalFold)))) + teal.Render(terminalFold)
 	body := ""
 	if p.starting {
 		body = "  Preparing container terminal…"
 	} else if p.err != nil {
 		body = "  " + safeText(p.err.Error()) + " · fold and reopen to retry"
 	} else if p.session != nil {
-		body = p.session.Screen.Render()
-		if exited, err := p.session.Exited(); exited {
-			header += " · exited"
-			if err != nil {
-				header += " (error)"
+		frame := p.session.Capture(false)
+		rows := frame.Lines
+		if p.scroll != nil {
+			rows = p.scroll.lines[min(p.scroll.top, len(p.scroll.lines)):]
+		}
+		lines := make([]string, min(h-2, len(rows)))
+		for y := range lines {
+			lines[y] = rows[y].Render()
+		}
+		if p.scroll == nil && m.terminalFocused() && frame.CursorVisible && !m.input.Cursor.Blink {
+			x, y := frame.Cursor.X, frame.Cursor.Y
+			if y >= 0 && y < len(lines) && x >= 0 && x < m.width && x < len(rows[y]) {
+				cell := rows[y][x]
+				text := cell.Content
+				if text == "" {
+					text = " "
+				}
+				line := lines[y]
+				line += strings.Repeat(" ", max(0, x+max(1, cell.Width)-ansi.StringWidth(line)))
+				lines[y] = ansi.Cut(line, 0, x) + inputCursorStyle.Inline(true).Reverse(true).Render(text) + ansi.Cut(line, x+max(1, cell.Width), m.width)
 			}
 		}
+		body = strings.Join(lines, "\n")
 	}
 	lines := strings.Split(body, "\n")
-	for len(lines) < h-3 {
+	for len(lines) < h-2 {
 		lines = append(lines, "")
 	}
 	for i := range lines {
 		lines[i] = ansi.Truncate(lines[i], m.width, "")
 	}
-	rule := insetRule(m.width, teal)
-	return rule + "\n" + clip(header, m.width) + "\n" + strings.Join(lines[:h-3], "\n") + "\n" + rule
+	return clip(header, m.width) + "\n" + strings.Join(lines[:h-2], "\n") + "\n" + m.terminalTrack()
+}
+
+func (m *model) terminalTrack() string {
+	position := max(0, m.width-1)
+	if p := m.terminal(); p != nil && p.scroll != nil {
+		end := max(1, len(p.scroll.lines)-(m.terminalHeight()-2))
+		position = min(m.width-1, p.scroll.top*(m.width-1)/end)
+	}
+	return muted.Render(strings.Repeat("─", max(0, position))) + muted.Render("◆︎") + zeroStyle.Render(strings.Repeat("─", max(0, m.width-position-1)))
+}
+func (m *model) scrollTerminal(delta int) {
+	p := m.terminal()
+	if p == nil || p.session == nil {
+		return
+	}
+	if p.scroll == nil {
+		if delta >= 0 {
+			return
+		}
+		rows := p.session.Capture(true).Lines
+		p.scroll = &terminalScroll{lines: rows, top: max(0, len(rows)-(m.terminalHeight()-2))}
+	}
+	end := max(0, len(p.scroll.lines)-(m.terminalHeight()-2))
+	p.scroll.top = max(0, min(end, p.scroll.top+delta))
+	if p.scroll.top == end {
+		p.scroll = nil
+	}
 }
 
 func (m *model) terminalMouse(v tea.MouseMsg) bool {
@@ -158,16 +202,9 @@ func (m *model) terminalMouse(v tea.MouseMsg) bool {
 		return false
 	}
 	top := m.terminalTop()
-	if v.Y == top || v.Y == m.height-2 {
-		return true // separators belong to cxz, never to the PTY
-	}
-	if v.Y == top+1 {
+	if v.Y == top {
 		if v.Action == tea.MouseActionPress && v.Button == tea.MouseButtonLeft {
-			if x < ansi.StringWidth(terminalBack) {
-				p.focused = false
-				m.panelFocus, m.focusList, m.focusApproval = false, false, false
-				m.input.Focus()
-			} else if x < ansi.StringWidth(terminalBack)+1+ansi.StringWidth(terminalFold) {
+			if x >= m.width-ansi.StringWidth(terminalFold) {
 				p.open, p.focused = false, false
 				m.panelFocus, m.focusList, m.focusApproval = false, false, false
 				m.input.Focus()
@@ -176,13 +213,40 @@ func (m *model) terminalMouse(v tea.MouseMsg) bool {
 		}
 		return true
 	}
-	if v.Y > top+1 && v.Y < m.height-2 {
+	if v.Y == m.height-2 {
+		if v.Button == tea.MouseButtonWheelUp {
+			m.scrollTerminal(-3)
+		} else if v.Button == tea.MouseButtonWheelDown {
+			m.scrollTerminal(3)
+		} else if v.Button == tea.MouseButtonLeft && (v.Action == tea.MouseActionPress || v.Action == tea.MouseActionMotion) {
+			m.scrollTerminal(-1)
+			if p.scroll != nil {
+				end := max(0, len(p.scroll.lines)-(m.terminalHeight()-2))
+				p.scroll.top = x * end / max(1, m.width-1)
+				if x == m.width-1 {
+					p.scroll = nil
+				}
+			}
+		}
+		return true
+	}
+	if v.Y > top && v.Y < m.height-2 {
+		if p.session != nil && (!p.session.Screen.IsAltScreen() || v.Shift || p.scroll != nil) {
+			if v.Button == tea.MouseButtonWheelUp {
+				m.scrollTerminal(-3)
+				return true
+			}
+			if v.Button == tea.MouseButtonWheelDown {
+				m.scrollTerminal(3)
+				return true
+			}
+		}
 		if v.Action == tea.MouseActionPress {
 			p.focused = true
 			m.panelFocus = false
 		}
-		if p.session != nil {
-			mouse := uv.Mouse{X: x, Y: v.Y - top - 2}
+		if p.session != nil && p.scroll == nil {
+			mouse := uv.Mouse{X: x, Y: v.Y - top - 1}
 			buttons := map[tea.MouseButton]uv.MouseButton{tea.MouseButtonLeft: uv.MouseLeft, tea.MouseButtonRight: uv.MouseRight, tea.MouseButtonMiddle: uv.MouseMiddle, tea.MouseButtonWheelUp: uv.MouseWheelUp, tea.MouseButtonWheelDown: uv.MouseWheelDown}
 			mouse.Button = buttons[v.Button]
 			if v.Shift {
@@ -221,6 +285,20 @@ func (m *model) terminalKey(k tea.KeyMsg) {
 	if p == nil || p.session == nil {
 		return
 	}
+	if k.Type == tea.KeyPgUp && k.Alt {
+		m.scrollTerminal(-(m.terminalHeight() - 2))
+		return
+	}
+	if k.Type == tea.KeyPgDown && k.Alt {
+		m.scrollTerminal(m.terminalHeight() - 2)
+		return
+	}
+	if p.scroll != nil && k.Type == tea.KeyCtrlEnd {
+		p.scroll = nil
+		return
+	}
+	p.scroll = nil // typing returns to the live shell, never into a historical row
+	m.input.Cursor.Blink = false
 	ok := false
 	if k.Type == tea.KeyRunes && !k.Alt {
 		ok = p.session.Text(string(k.Runes), k.Paste)

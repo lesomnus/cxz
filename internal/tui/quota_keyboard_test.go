@@ -24,6 +24,16 @@ func TestTerminalToggleKittyAndPaste(t *testing.T) {
 	}
 }
 
+func TestKittyUnicodeCommit(t *testing.T) {
+	r := keyboardReader{}
+	for _, input := range []string{"한글", "\x1b[54620u\x1b[44544u"} {
+		out, pending := r.translate([]byte(input), true)
+		if string(out) != "한글" || len(pending) != 0 {
+			t.Fatalf("Unicode commit corrupted: %q", out)
+		}
+	}
+}
+
 func TestQuotaBarThresholds(t *testing.T) {
 	old := lipgloss.ColorProfile()
 	lipgloss.SetColorProfile(termenv.TrueColor)
