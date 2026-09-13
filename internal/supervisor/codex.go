@@ -6,6 +6,7 @@ import (
 	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/internal/core"
 	"strings"
+	"time"
 )
 
 type codexProtocol struct {
@@ -33,6 +34,7 @@ func (c *codexProtocol) consume(raw []byte) {
 	id := string(v.ID)
 	// Account telemetry is best-effort and must never fail an active turn.
 	if id == `"cxz-quota"` {
+		s.quotaRequested = time.Time{}
 		if len(v.Result) > 0 && string(v.Result) != "null" {
 			s.event("usage", "account/rateLimits/updated", "", v.Result, nil)
 		}
@@ -193,9 +195,7 @@ func (c *codexProtocol) startThread() {
 }
 
 func (c *codexProtocol) readQuota() {
-	if !c.s.quotaDisabled {
-		_ = c.s.write(rpc("cxz-quota", "account/rateLimits/read", map[string]any{}))
-	}
+	c.s.requestQuota(rpc("cxz-quota", "account/rateLimits/read", map[string]any{}))
 }
 func (c *codexProtocol) command(op string, v core.Command) (any, error) {
 	s := c.s

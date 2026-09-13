@@ -165,7 +165,7 @@ func (m *model) sessionScreen() string {
 		if m.focusList {
 			indicator = accent.Render("›")
 		}
-		info = indicator + accent.Render(alias) + "  " + blue.Render(agent) + " · " + lavender.Render("◉ "+pickerLabel(s.Account)) + " · " + title
+		info = indicator + accent.Render(alias) + "  " + blue.Render(agent) + " · " + lavender.Render(pickerLabel(s.Account)) + " · " + title
 	}
 	status := warning.Render(pickerLabel(m.notice))
 	if !m.view.AtBottom() {
@@ -195,35 +195,6 @@ func (m *model) sessionScreen() string {
 	body := m.commandOverlay(m.conversationView()) + "\n\n" + clip("  "+status, width) + "\n" + box +
 		frame(m.input.View(), width, !m.focusList && !m.focusApproval) + "\n" + clip(info, width)
 	return screen(body, m.width, m.height)
-}
-
-func helpView(width int) string {
-	return indentBlock(lavender.Bold(true).Render("cxz /help") + "\n" +
-		muted.Render(ansi.Hardwrap(
-			"Enter / Alt+Enter / Ctrl+J  Newline\n"+
-				"Ctrl+S         Send (Ctrl+Enter also works with compatible terminal encoding)\n"+
-				"Ctrl+X         Clear draft\n"+
-				"Tab / Shift+Tab  Next / previous: approvals → input → sessions\n"+
-				"Approvals      ↑/↓ select; PgUp/PgDn scroll; Enter allow, Backspace deny\n"+
-				"r (selection)  Rename session alias; Enter save, Esc cancel\n"+
-				"Ctrl+Q         Return to project\n"+
-				"Ctrl+N         Create session\n"+
-				"F2 / F3        Allow / deny pending approval\n"+
-				"F4             Interrupt active turn\n"+
-				"Esc twice within 3s  Confirm interrupt\n"+
-				"Ctrl+R         Resume stopped session\n"+
-				"PgUp / PgDn / mouse wheel  Scroll; Ctrl+End follows latest\n"+
-				"Ctrl+C         Detach (agent continues)\n"+
-				"/answer {\"question\":\"answer\"}  Reply to question\n"+
-				"/stop          Stop agent\n"+
-				"/help          Show this local help (not sent to agent)\n"+
-				"/usage         Session usage from the full journal\n"+
-				"/permission full | ask  Auto/manual approval for this attached run\n"+
-				"/approval      Full selected request payload\n"+
-				"/details       Full latest tool result (also in journal)\n"+
-				"/context       Provider context snapshot\n"+
-				"/compact       Compact provider context; keeps cxz journal",
-			max(1, width-2), true)))
 }
 
 func indentBlock(s string) string {

@@ -27,21 +27,22 @@ import (
 )
 
 type Supervisor struct {
-	mu            sync.Mutex
-	session       core.Session
-	log           *journal.Log
-	snap          core.Snapshot
-	pending       map[string]core.Event
-	receipts      map[string]record
-	cmd           *exec.Cmd
-	stdin         io.WriteCloser
-	done          chan struct{}
-	stopping      bool
-	interrupted   bool
-	batch         []core.Event
-	buffering     bool
-	codex         *codexProtocol
-	quotaDisabled bool
+	mu             sync.Mutex
+	session        core.Session
+	log            *journal.Log
+	snap           core.Snapshot
+	pending        map[string]core.Event
+	receipts       map[string]record
+	cmd            *exec.Cmd
+	stdin          io.WriteCloser
+	done           chan struct{}
+	stopping       bool
+	interrupted    bool
+	batch          []core.Event
+	buffering      bool
+	codex          *codexProtocol
+	quotaDisabled  bool
+	quotaRequested time.Time
 }
 type record struct {
 	Op      string       `json:"op"`
@@ -355,6 +356,7 @@ func (s *Supervisor) consume(raw []byte) {
 		}
 	case "control_response":
 		if v.Response.RequestID == "cxz-quota" {
+			s.quotaRequested = time.Time{}
 			if v.Response.Subtype == "success" {
 				s.event("usage", "get_usage", "", v.Response.Response, nil)
 			} else if text := strings.ToLower(v.Response.Error); strings.Contains(text, "unsupported") || strings.Contains(text, "unknown control") {

@@ -58,8 +58,12 @@ func quotaSnapshot(provider, run string, events []*api.Event) ([]agentview.Windo
 		}
 		if e.Kind == "usage_status" {
 			switch e.Text {
-			case "unsupported", "error", "unavailable":
+			case "unsupported", "error", "unavailable", "timeout":
 				state = e.Text
+			case "polling":
+				if state == "waiting" {
+					state = "polling"
+				}
 			}
 			continue
 		}
@@ -111,7 +115,7 @@ func (m *model) quotaStatus(now time.Time, width int) string {
 		if w.Remaining != nil && (w.Reset.IsZero() || w.Reset.After(now)) {
 			value = fmt.Sprintf("%.0f%% %s", *w.Remaining, quotaBar(*w.Remaining))
 		}
-		if m.quotaState == "error" || w.Observed.IsZero() || now.Sub(w.Observed) > 2*time.Minute {
+		if m.quotaState == "error" || m.quotaState == "timeout" || w.Observed.IsZero() || now.Sub(w.Observed) > 2*time.Minute {
 			value = "~" + value
 		}
 		parts = append(parts, value+" "+safeText(w.Label)+" "+quotaCountdown(w.Reset, now))
@@ -127,6 +131,10 @@ func quotaHistoryReport(provider, run string, events []*api.Event) string {
 	windows, state := quotaSnapshot(provider, run, events)
 	report := "Account quota · " + provider + " · " + state + "\n"
 	switch state {
+	case "polling":
+		report += "The supervisor sent a quota request and is awaiting the provider response. Active agents poll every minute, as well as after initialization and turns."
+	case "timeout":
+		report += "The provider has not answered a quota request for at least one minute. The supervisor retries on its minute polling tick; conversation state is unaffected. Check provider CLI/login/network."
 	case "waiting":
 		report += "No quota telemetry received for this run. Existing supervisors keep their old code: update and restart the agent if this persists."
 	case "unsupported":
@@ -137,6 +145,13 @@ func quotaHistoryReport(provider, run string, events []*api.Event) string {
 		report += "Provider quota query failed; it will retry. Check provider login/network. This does not fail the conversation."
 	default:
 		report += "Remaining quota is provider-reported, not inferred from session tokens."
+	}
+	for i := len(events) - 1; i >= 0; i-- {
+		e := events[i]
+		if e.Kind == "usage_status" && e.Text == "polling" && (e.RunId == "" || e.RunId == run) && e.TimeMs > 0 {
+			report += "\nLast quota request · " + time.UnixMilli(e.TimeMs).Local().Format("01-02 15:04:05") + " · poll interval 1m"
+			break
+		}
 	}
 	for _, w := range windows {
 		value := "percentage not reported"

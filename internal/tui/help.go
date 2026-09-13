@@ -1,0 +1,98 @@
+package tui
+
+import (
+	"strings"
+
+	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/ansi"
+)
+
+type commandHelp struct {
+	category, name, summary, detail, example string
+}
+
+var commandHelpEntries = []commandHelp{
+	{"Conversation", "answer", "Reply to a pending question", "Reply to the selected pending question using a JSON object mapping question IDs (or question text) to answers. Select the request in Pending approvals first; use /approval to inspect its question IDs. This is an approval reply, not a new chat message.", `/answer {"question-id":"Use SQLite"}`},
+	{"Conversation", "context", "Inspect provider context", "Claude runs its native /context command and requires an idle session. Codex displays the last reported turn's token footprint and context window, not a live estimate. Missing provider data is not guessed.", "/context"},
+	{"Conversation", "compact", "Compact agent context", "Requires an idle session. Runs native Claude /compact or Codex thread compaction. The provider reduces its conversation context; cxz keeps the full event journal. No arguments are accepted.", "/compact"},
+	{"Permissions", "permission", "Choose manual or automatic approval", "ask requires manual approval. full automatically approves supported tool requests for this attached run, including pending ones; questions and unknown request types still need a reply. Full approval can allow file changes and shell commands. It resets on disconnect, run change or return to the project and does not change provider sandbox policy.", "/permission full\n/permission ask"},
+	{"Permissions", "approval", "Inspect the selected request", "Shows the full selected pending approval payload locally. Tab focuses Pending approvals; arrow keys select a request. Enter allows it and Backspace denies it. Use /answer for a question that needs a structured response.", "/approval"},
+	{"Inspection", "usage", "View session usage and account quota", "Reads session tokens, cost and duration from the full journal. Account quota is separate provider telemetry, queried at initialization, after turns and every minute while active. This command reads recorded data, not a fresh provider request. It also explains waiting, timeout, unsupported, unavailable and error states.", "/usage"},
+	{"Inspection", "details", "Inspect the latest tool result", "Shows the full latest tool result locally instead of its compact transcript summary. Earlier raw events remain available through the cxz session events CLI command.", "/details"},
+	{"Session", "stop", "Stop the current agent", "Stops the agent process, not just the current turn. Session history remains and Ctrl+R resumes a stopped session. To interrupt only the current turn, press Esc twice within three seconds; Ctrl+C instead detaches while the agent continues.", "/stop"},
+	{"Help", "help", "Browse help or a command reference", "Help is local and is never sent to the agent. Use /help for categories and shortcuts, or /help followed by a command name for its behavior and examples. Submit with Ctrl+S; Enter inserts a newline.", "/help\n/help answer\n/help permission"},
+}
+
+// Each key includes its own one-space padding. Alternating keycap backgrounds
+// separate adjacent shortcut rows without painting the transcript background.
+func helpKeycaps(keys string, row int) string {
+	bg := "#000000"
+	if row%2 == 1 {
+		bg = "#151515"
+	}
+	style := lipgloss.NewStyle().Foreground(lipgloss.Color("#E6E6E6")).Background(lipgloss.Color(bg))
+	alternatives := strings.Split(keys, " / ")
+	for i, chord := range alternatives {
+		parts := strings.Split(chord, "+")
+		for j, key := range parts {
+			parts[j] = style.Render(" " + key + " ")
+		}
+		alternatives[i] = strings.Join(parts, " + ")
+	}
+	return strings.Join(alternatives, " / ")
+}
+
+func helpView(width int, topics ...string) string {
+	w := max(1, width-2)
+	topic := ""
+	if len(topics) > 0 {
+		topic = strings.TrimPrefix(strings.TrimSpace(topics[0]), "/")
+	}
+	if topic != "" {
+		for _, entry := range commandHelpEntries {
+			if entry.name == topic {
+				return indentBlock(ansi.Hardwrap(lavender.Bold(true).Render("cxz /help "+topic)+"\n\n"+
+					strong.Render(entry.summary)+"\n"+muted.Render(entry.detail)+"\n\n"+
+					accent.Render("Examples")+"\n"+entry.example+"\n\n"+muted.Render("Submit with ")+helpKeycaps("Ctrl+S", 0), w, true))
+			}
+		}
+		return indentBlock(ansi.Hardwrap("Unknown help topic: "+safeText(topic)+"\nUse /help to list commands; for example /help answer.", w, true))
+	}
+	lines := []string{lavender.Bold(true).Render("cxz /help"), muted.Render("Details and examples: /help <command> · e.g. /help answer")}
+	category := ""
+	for _, entry := range commandHelpEntries {
+		if category != entry.category {
+			category = entry.category
+			lines = append(lines, "", accent.Bold(true).Render(category))
+		}
+		lines = append(lines, "/"+entry.name+"  "+muted.Render(entry.summary))
+	}
+	shortcuts := []struct{ category, keys, text string }{
+		{"Input", "Ctrl+S", "Send message or command"},
+		{"Input", "Enter / Alt+Enter / Ctrl+J", "Newline"},
+		{"Input", "Ctrl+X", "Clear draft"},
+		{"Navigation", "Tab / Shift+Tab", "Next / previous focus: approvals → input → sessions"},
+		{"Navigation", "↑ / ↓", "Select session (session focus) or slash hint"},
+		{"Navigation", "PgUp / PgDn", "Scroll transcript (mouse wheel also works)"},
+		{"Navigation", "Ctrl+End", "Follow latest output"},
+		{"Navigation", "r", "Rename selected session; Enter saves, Esc cancels"},
+		{"Navigation", "Ctrl+Q", "Return to project"},
+		{"Navigation", "Ctrl+N", "Create session"},
+		{"Approval controls", "↑ / ↓", "Select pending request (approval focus)"},
+		{"Approval controls", "PgUp / PgDn", "Scroll full request (approval focus)"},
+		{"Approval controls", "Enter / Backspace", "Allow / deny (approval focus)"},
+		{"Approval controls", "F2 / F3", "Allow / deny selected request"},
+		{"Agent controls", "Esc", "Press twice within 3s to interrupt current turn"},
+		{"Agent controls", "F4", "Interrupt current turn immediately"},
+		{"Agent controls", "Ctrl+R", "Resume stopped session"},
+		{"Agent controls", "Ctrl+C", "Detach; agent continues"},
+	}
+	for i, shortcut := range shortcuts {
+		if category != shortcut.category {
+			category = shortcut.category
+			lines = append(lines, "", accent.Bold(true).Render(category+" · keys"))
+		}
+		lines = append(lines, helpKeycaps(shortcut.keys, i)+"  "+muted.Render(shortcut.text))
+	}
+	return indentBlock(ansi.Hardwrap(strings.Join(lines, "\n"), w, true))
+}
