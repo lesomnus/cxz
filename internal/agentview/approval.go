@@ -22,7 +22,7 @@ func ApprovalView(provider, name string, raw []byte) Approval {
 			title = "Files"
 		case "item/permissions/requestApproval":
 			title = "Permissions"
-		case "item/tool/requestUserInput":
+		case "item/tool/requestUserInput", CodexAsyncQuestion:
 			title = "Question"
 		}
 	}

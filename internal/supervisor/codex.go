@@ -11,9 +11,11 @@ import (
 )
 
 type codexProtocol struct {
-	s     *Supervisor
-	turn  string
-	token func(previous string, refresh bool) (accounts.Token, error)
+	s            *Supervisor
+	turn         string
+	token        func(previous string, refresh bool) (accounts.Token, error)
+	asyncSeen    map[string]bool
+	asyncReplies map[string]core.Event
 }
 
 func rpc(id, method string, params any) any {
@@ -33,6 +35,17 @@ func (c *codexProtocol) consume(raw []byte) {
 		return
 	}
 	id := string(v.ID)
+	if pending, ok := c.asyncReplies[id]; ok {
+		delete(c.asyncReplies, id)
+		if len(v.Error) > 0 && string(v.Error) != "null" {
+			s.pending[pending.RequestID] = s.event("approval", agentview.CodexAsyncQuestion, pending.RequestID, json.RawMessage(pending.Payload), nil)
+			s.event("diagnostic", "Codex rejected the asynchronous answer; question restored, not retried", pending.RequestID, v.Error, nil)
+			if c.turn == "" {
+				s.event("state", "idle", "", nil, nil)
+			}
+		}
+		return
+	}
 	if id == `"cxz-models"` {
 		if len(v.Error) > 0 && string(v.Error) != "null" {
 			s.modelRequested = time.Time{}
@@ -168,7 +181,15 @@ func (c *codexProtocol) consume(raw []byte) {
 		c.turn = p.Turn.ID
 		s.event("state", "working", "", nil, nil)
 	case "turn/completed":
-		s.clearPending()
+		// Async messages remain answerable after the turn. Native blocking
+		// requests still expire when their turn ends.
+		for id, pending := range s.pending {
+			if pending.Text == agentview.CodexAsyncQuestion {
+				continue
+			}
+			s.event("approval_resolved", "canceled", id, nil, nil)
+			delete(s.pending, id)
+		}
 		state := "completed"
 		if p.Turn.Status == "failed" {
 			state = "failed"
@@ -190,6 +211,16 @@ func (c *codexProtocol) consume(raw []byte) {
 			s.event("compact", "completed", p.Item.ID, v.Params, nil)
 		} else if p.Item.Type == "agentMessage" {
 			s.event("assistant", p.Item.Text, p.Item.ID, v.Params, nil)
+			if _, err := agentview.CodexAsyncQuestions(v.Params); err == nil {
+				id := "async:" + p.Item.ID
+				if c.asyncSeen == nil {
+					c.asyncSeen = map[string]bool{}
+				}
+				if !c.asyncSeen[id] {
+					c.asyncSeen[id] = true
+					s.pending[id] = s.event("approval", agentview.CodexAsyncQuestion, id, v.Params, nil)
+				}
+			}
 		} else if p.Item.Type == "commandExecution" || p.Item.Type == "fileChange" {
 			s.event("tool_result", p.Item.Output, p.Item.ID, v.Params, nil)
 		}
@@ -256,6 +287,9 @@ func (c *codexProtocol) command(op string, v core.Command) (any, error) {
 		p, ok := s.pending[v.RequestID]
 		if !ok {
 			return nil, fmt.Errorf("approval is stale or already resolved")
+		}
+		if p.Text == agentview.CodexAsyncQuestion {
+			return c.answerAsync(p, v)
 		}
 		var r struct {
 			ID     json.RawMessage `json:"id"`

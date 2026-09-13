@@ -1,5 +1,17 @@
 # CLI 입력 계약
 
+## Codex 비동기 질문
+
+Codex의 `agentMessage`에 `delivery: async`와 `questions`가 있으면 선택 다이얼로그가
+열린다. 턴이 끝나 idle이 되어도 해당 run에서 답변할 수 있다. Esc는 창만 닫고,
+`/answer`로 다시 열 수 있다. 단일 선택 또는 Other를 제출하면 질문과 선택 정보를
+Codex에 tool output으로 전달한다. Claude의 다중 선택 질문도 기존대로 지원한다.
+
+blocking 질문은 기존 승인 응답 경로를 사용하지만, async 질문은 작업을 멈추지 않는다.
+중단/에이전트 재시작으로 run이 끝난 질문은 만료된다. CLI뿐 아니라 runtime/supervisor를
+업데이트해야 새 이벤트가 pending 질문으로 전달된다.
+
+
 ## TUI 안에서 세션 생성과 로그인
 
 프로젝트 뷰에서 `n`으로 account를 선택하면 전체화면을 나가지 않고 세션 준비 상태를
