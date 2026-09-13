@@ -9,6 +9,7 @@ import (
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/dockerx"
+	"github.com/lesomnus/cxz/internal/installer"
 	"github.com/lesomnus/cxz/internal/resourceclient"
 	"github.com/lesomnus/cxz/internal/settings"
 	"github.com/lesomnus/cxz/internal/tui"
@@ -76,6 +77,9 @@ func workspaceEntry(ctx context.Context, client api.SessionsClient, c *xli.Comma
 
 func projectTUI(ctx context.Context, resources *resourceclient.Client, c *xli.Command, p *api.Project, selected string, trust bool) error {
 	return tui.RunProject(ctx, resources, p, selected, func(ctx context.Context, projectID, alias string, input io.Reader, output, errOutput io.Writer) (*api.Session, error) {
+		if err := installer.SyncGitHub(ctx, stateFrom(ctx), errOutput); err != nil {
+			return nil, err
+		}
 		// The dashboard owns the terminal. Provider processes use pipes; all
 		// progress and authentication output stays inside its workflow view.
 		oldIn, oldOut, oldErr := c.ReadCloser, c.Writer, c.ErrWriter

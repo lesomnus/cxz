@@ -8,6 +8,7 @@ import (
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/dockerx"
+	"github.com/lesomnus/cxz/internal/installer"
 	"github.com/lesomnus/cxz/internal/projectref"
 	"github.com/lesomnus/cxz/internal/resourceclient"
 	"github.com/lesomnus/cxz/internal/settings"
@@ -147,6 +148,9 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 			}
 		}
 		if err == nil && p.State == "running" && !changed {
+			if err = installer.SyncGitHub(ctx, stateFrom(ctx), c.ErrWriter, p); err != nil {
+				return err
+			}
 			if flg.MustGet[bool](c, "no-attach") || !terminal(c) {
 				return writeOutput(c, p)
 			}
@@ -165,6 +169,9 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 			return e
 		}
 		return writeOutput(c, r)
+	}
+	if err := installer.SyncGitHub(ctx, stateFrom(ctx), c.ErrWriter); err != nil {
+		return err
 	}
 	agent := flg.MustGet[string](c, "agent")
 	account, _ := flg.Get[string](c, "account")

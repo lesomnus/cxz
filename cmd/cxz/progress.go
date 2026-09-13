@@ -57,6 +57,8 @@ func provisionDescription(step string) string {
 		return "Starting devcontainer: image pull/build and lifecycle hooks"
 	case "agent-tools":
 		return "Installing/verifying the selected agent binary"
+	case "github-cli":
+		return "Installing/verifying GitHub CLI and injecting host credentials"
 	case "runtime-boot":
 		return "Starting the workspace runtime"
 	case "runtime-ready":

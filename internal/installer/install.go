@@ -152,7 +152,7 @@ func Install(ctx context.Context, root, workspaceRoot, image string, recreate bo
 					return e
 				}
 			}
-			return waitReady(ctx, v, out)
+			return readyWithGitHub(ctx, root, v, out)
 		}
 		if previousImage != image && previousImage != "" {
 			v.PreviousImage = previousImage
@@ -185,7 +185,7 @@ func Install(ctx context.Context, root, workspaceRoot, image string, recreate bo
 	if _, e = dockerx.Run(ctx, args...); e != nil {
 		return e
 	}
-	return waitReady(ctx, v, out)
+	return readyWithGitHub(ctx, root, v, out)
 }
 
 func dockerEndpoint() ([]string, error) {

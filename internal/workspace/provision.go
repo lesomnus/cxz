@@ -9,6 +9,7 @@ import (
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/distribution"
 	"github.com/lesomnus/cxz/internal/dockerx"
+	"github.com/lesomnus/cxz/internal/githubauth"
 	"github.com/tailscale/hujson"
 	"os"
 	"os/exec"
@@ -123,6 +124,7 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string) error 
 	}
 	env["CXZ_PROJECT_ID"] = p.ID
 	env["CXZ_STATE"] = "/cxz/state/data"
+	env["GH_CONFIG_DIR"] = githubauth.ConfigDir
 	cfg["containerEnv"] = env
 	mounts, _ := cfg["mounts"].([]any)
 	mounts = append(mounts, "type=volume,source="+p.Volume+",target=/cxz/state", "type=volume,source="+m.ToolsVolume+",target=/cxz/tools,readonly")
@@ -206,7 +208,7 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string) error 
 		}
 		devNetworks["cxz"] = nil
 		dev["networks"] = devNetworks
-		dev["environment"] = map[string]string{"CXZ_PROJECT_ID": p.ID, "CXZ_STATE": "/cxz/state/data"}
+		dev["environment"] = map[string]string{"CXZ_PROJECT_ID": p.ID, "CXZ_STATE": "/cxz/state/data", "GH_CONFIG_DIR": githubauth.ConfigDir}
 		dev["volumes"] = []any{map[string]any{"type": "volume", "source": p.Volume, "target": "/cxz/state"}, map[string]any{"type": "volume", "source": m.ToolsVolume, "target": "/cxz/tools", "read_only": true}}
 		override := map[string]any{"name": "cxz-" + m.Owner[:12] + "-" + p.ID, "services": services, "networks": map[string]any{"cxz": map[string]any{"external": true, "name": p.Network}}, "volumes": map[string]any{p.Volume: map[string]any{"external": true, "name": p.Volume}, m.ToolsVolume: map[string]any{"external": true, "name": m.ToolsVolume}}}
 		cp := filepath.Join(m.Root, "projects", p.ID, "compose.json")
@@ -297,6 +299,12 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string) error 
 		return e
 	}
 	libc, _ := dockerx.Run(ctx, "exec", p.ContainerID, "sh", "-c", "ls /lib/ld-musl-*.so.1 2>/dev/null || true")
+	if e = m.installGitHub(ctx, p, strings.TrimSpace(string(platform))); e != nil {
+		return e
+	}
+	if e = m.checkpoint(ctx, p, "agent-tools"); e != nil {
+		return e
+	}
 	bin, e := distribution.Ensure(ctx, "/cxz/tools", kind, strings.TrimSpace(string(platform)), len(bytes.TrimSpace(libc)) > 0)
 	if e != nil {
 		return e

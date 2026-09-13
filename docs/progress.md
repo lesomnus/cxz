@@ -1,5 +1,22 @@
 # 구현 진행 상황
 
+## 2026-09-13 — 프로젝트 gh CLI와 호스트 GitHub 인증 주입
+
+- cld의 gh binary 주입 + hosts.yml 복사 흐름을 확인했다. cxz에서는 checksum 검증한
+  gh 2.100.0 Linux amd64/arm64 바이너리를 tools volume에 캐시하고 없을 때만 wrapper를 설치한다.
+- 호스트 파일/환경변수/gh auth token(키체인 포함)에서 활성 인증 snapshot을 수집한다.
+  install/up/프로젝트 준비/TUI 생성 workflow에서 Docker stdin으로 전달한다. 토큰은 argv/env,
+  generated config, API journal, 이미지, tools volume에 저장하지 않는다.
+- manager private snapshot → project remote-user 소유 0700/0600 사본. GH_CONFIG_DIR를 통해
+  Claude/Codex의 개별 HOME과 독립적으로 사용한다. 계정 간 GitHub 인증은 프로젝트 단위 공유다.
+- 기존 실행 중 프로젝트의 up은 credential 사본만 갱신한다. 처음 gh/config 적용은 manager와
+  프로젝트 재생성이 필요하며 이 작업에서 사용자 컨테이너를 자동 재생성하지 않았다.
+- 실제 Docker 검증: 공식 checksum 다운로드/native gh 실행, 가짜 토큰 로딩, 파일 소유권/권한,
+  빈 snapshot 교체 통과. 테스트 컨테이너는 삭제했고 실제 호스트 토큰/인증 API는 사용하지 않았다.
+- 전체 Go 테스트, installer/workspace/githubauth/CLI race, vet, diff 검사 통과.
+  파일/키체인/환경변수 우선순위, 로그아웃 빈 snapshot, 오류 비밀값 차단,
+  Docker stdin 전달(명령 인수·출력에 토큰 없음)을 회귀 테스트했다.
+
 ## 2026-09-13 — 133칸 본문 제한과 전체 프로젝트 패널
 
 - 본문 최대 폭 133칸, 터미널 171칸 이상에서 왼쪽 36칸 프로젝트 패널 + 2칸 간격.
