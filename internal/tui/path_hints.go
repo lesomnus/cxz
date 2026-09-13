@@ -378,13 +378,12 @@ func (m *model) deletePathWord(k tea.KeyMsg) bool {
 	start := pos
 	if r[start-1] == '/' {
 		start--
-	} else {
-		for start > token.start && r[start-1] != '/' && !unicode.IsSpace(r[start-1]) {
-			start--
-		}
-		if start == pos {
-			start--
-		}
+	}
+	for start > token.start && r[start-1] != '/' && !unicode.IsSpace(r[start-1]) {
+		start--
+	}
+	if start == pos {
+		start--
 	}
 	m.setPathInput(string(r[:start])+string(r[pos:]), start)
 	return true
