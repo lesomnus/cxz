@@ -1,5 +1,17 @@
 # 구현 진행 상황
 
+## 2026-09-13 — 도구 승인 중 working 행 흔들림 수정
+
+- 원인: working에서만 transcript 끝의 indicator 공간을 추가/표시하여, 도구 승인
+  working ↔ waiting_input 전환마다 transcript 높이와 bottom scroll 위치가 바뀌었다.
+- 두 상태 모두 동일한 activity 행을 유지한다. 자동 승인에서는 working 표시를 유지하고,
+  수동 승인/질문 대기는 같은 자리에서 waiting for approval/answer로 문구만 바꾼다.
+  경과 시간은 원래 turn 시작 시각을 유지한다. idle/stopped에서는 indicator를 숨긴다.
+- 자동 승인 상태 반복 전환의 행 수·viewport 높이·scroll offset·indicator 위치 및
+  경과 시간 유지 테스트를 추가했다. 실제 사용자 승인이 필요한 panel 표시는 유지한다.
+- `go test ./...`, `go test -race ./internal/tui`, `go vet ./...`, `git diff --check` 통과.
+
+
 ## 2026-09-13 — 도구 작업 단일 행 갱신
 
 - run + tool ID로 call/result를 연결하고 원래 요청 위치에서 결과 상태를 갱신한다.
