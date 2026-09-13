@@ -69,6 +69,11 @@ func TestSessionAliasPersistenceAndMigration(t *testing.T) {
 	}
 	f.s.Id = "second"
 	f.s.CreateId = "second-create"
+	// External runtime changes are imported by reconciliation, not by Get.
+	layer, _ := resource.Find[Layer](stack)
+	if err := layer.sync(ctx); err != nil {
+		t.Fatal(err)
+	}
 	second := get("second")
 	if second.GetAlias() == "orchard" {
 		t.Fatal("duplicate allocation")

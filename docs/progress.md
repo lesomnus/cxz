@@ -1,5 +1,21 @@
 # 구현 진행 상황
 
+## 2026-09-13 — 리소스 폴링 및 원격 이벤트 조회 부하 감소
+
+- 매초 TUI 전체 목록 refresh를 제거하고 named payday Watch + 150ms coalescing/single-flight로 전환했다.
+  구독 대상 변경/세대 격리/재접속 backoff/최초 snapshot 포함. 신규 외부 리소스 등은 30초 안전망으로 발견한다.
+- Get/List/Watch는 bootstrap 이후 runtime 전체 sync를 호출하지 않는다. Session List에 연관 리소스를 포함해
+  세션별 Project/Account/AuthBinding Get RPC를 제거하고 자동 InspectForeign 호출을 없앴다.
+- manager의 200ms History RPC를 지속 Events 연결로 대체했다. 이벤트는 캐시에 기록한 뒤 전달한다.
+- Linux inotify 기반 해당 세션 projection 갱신과 PID 종료 감지를 추가했다. LastSeq만 바뀌는 출력은
+  목록 변경으로 알리지 않는다. local Events는 저널 변화가 없으면 전체 replay/DB/status 호출을 생략한다.
+- 서버 reconcile 주기는 1초에서 30초로 변경. activity heartbeat/계정 quota 갱신은 유지한다.
+- gRPC 부하 회귀 테스트: 최초 snapshot 1회, 목록당 RPC 1회, idle Watch 추가 요청 없음, 변경 전달/취소 통과.
+  전체 테스트와 vet 통과. 승인·중단·daemon 재시작·SIGKILL·저널 복구 통합 테스트 통과.
+- 상세 범위와 남아 있는 안전 갱신은 docs/resource-refresh.md에 기록했다.
+- TUI/resourceclient/lifecycle/server/workspace race 검사 통과.
+- CXZ_TEST_RACE=1 실제 daemon/supervisor 프로세스를 사용하는 lifecycle 통합 테스트도 통과했다.
+
 ## 2026-09-13 — Claude 컨텍스트 보고서와 status 연결
 
 - 기존 status는 `context/message`만 사용하여 `/context`에 비율이 있어도 표시하지 못했다.

@@ -55,3 +55,8 @@ func (m *Manager) cache(ctx context.Context, batch *api.EventBatch) error {
 	}
 	return tx.Commit()
 }
+
+// CacheEvents commits streamed events before acknowledging them to the TUI.
+func (m *Manager) CacheEvents(ctx context.Context, batch *api.EventBatch) error {
+	return m.cache(ctx, batch)
+}

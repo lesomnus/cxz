@@ -30,19 +30,17 @@ type Runtime interface {
 	ResourceSnapshot(context.Context) (*api.ProjectList, *api.SessionList, error)
 }
 type shared struct {
-	transition sync.RWMutex
-	mu         sync.Mutex
-	snapshotMu sync.Mutex
-	watchers   atomic.Int64
-	runtime    Runtime
+	transition  sync.RWMutex
+	mu          sync.Mutex
+	snapshotMu  sync.Mutex
+	initialMu   sync.Mutex
+	initialized bool
+	watchers    atomic.Int64
+	runtime     Runtime
 }
 
-// Reconcile advances payday Watch while resource subscribers exist. Journal
-// Events has its own durable cursor and does not depend on this poll.
+// Reconcile is a low-frequency safety net for changes made outside cxz.
 func (s Layer) Reconcile(ctx context.Context) error {
-	if s.shared.watchers.Load() == 0 {
-		return nil
-	}
 	return s.sync(ctx)
 }
 

@@ -77,7 +77,7 @@ func (s SessionServer) Add(ctx context.Context, r *resource.SessionAddRequest) (
 	return saved, nil
 }
 func (s SessionServer) Get(ctx context.Context, r *resource.SessionGetRequest) (*resource.Session, error) {
-	if err := s.sync(ctx); err != nil {
+	if err := s.ensureSnapshot(ctx); err != nil {
 		return nil, err
 	}
 	v, err := s.SessionServiceServer.Get(ctx, resource.SessionGetRequest_builder{Ref: r.GetRef(), Select: resource.SessionSelect_builder{All: ptr(true)}.Build()}.Build())
@@ -93,15 +93,28 @@ func (s SessionServer) List(ctx context.Context, r *resource.SessionListRequest)
 	if len(r.GetFilters()) == 0 {
 		r.SetFilters([]*resource.SessionFilter{resource.SessionFilter_builder{Listed: ptr(true)}.Build()})
 	}
-	if err := s.sync(ctx); err != nil {
+	if err := s.ensureSnapshot(ctx); err != nil {
 		return nil, err
 	}
-	return s.SessionServiceServer.List(ctx, r)
+	page, err := s.SessionServiceServer.List(ctx, r)
+	if err != nil {
+		return nil, err
+	}
+	items := make([]*resource.Session, 0, len(page.GetItems()))
+	for _, v := range page.GetItems() {
+		item, err := s.SessionServiceServer.Get(ctx, resource.SessionGetRequest_builder{Ref: resource.SessionRef_builder{Id: v.GetId()}.Build(), Select: resource.SessionSelect_builder{All: ptr(true), Project: resource.ProjectSelect_builder{All: ptr(true)}.Build(), Account: resource.AccountSelect_builder{All: ptr(true)}.Build(), AuthBinding: resource.AuthBindingSelect_builder{All: ptr(true)}.Build()}.Build()}.Build())
+		if err != nil {
+			return nil, err
+		}
+		items = append(items, item)
+	}
+	page.SetItems(items)
+	return page, nil
 }
 func (s SessionServer) Watch(r *resource.SessionWatchRequest, stream grpc.ServerStreamingServer[resource.SessionWatchResponse]) error {
 	s.shared.watchers.Add(1)
 	defer s.shared.watchers.Add(-1)
-	if err := s.sync(stream.Context()); err != nil {
+	if err := s.ensureSnapshot(stream.Context()); err != nil {
 		return err
 	}
 	return s.SessionServiceServer.Watch(r, stream)
@@ -186,6 +199,9 @@ func (s SessionServer) Stop(ctx context.Context, r *resource.SessionControl) (*r
 	if _, err = s.shared.runtime.Stop(ctx, &api.Control{SessionId: v.GetRuntimeId(), RunId: r.GetRunId(), ClientId: r.GetClientId()}); err != nil {
 		return nil, err
 	}
+	if err := s.RefreshSession(ctx, v.GetRuntimeId()); err != nil {
+		return nil, err
+	}
 	return s.Get(ctx, resource.SessionGetRequest_builder{Ref: r.GetRef(), Select: resource.SessionSelect_builder{All: ptr(true)}.Build()}.Build())
 }
 func receipt(v *api.Receipt, err error) (*resource.SessionReceipt, error) {
@@ -221,7 +237,7 @@ func (s SessionServer) Attach(ctx context.Context, r *resource.SessionAttachRequ
 	return resource.SessionAttachment_builder{Path: &a.Path}.Build(), nil
 }
 func (s SessionServer) Activity(ctx context.Context, r *resource.SessionActivityRequest) (*resource.SessionReceipt, error) {
-	v, e := s.resolve(ctx, r.GetRef())
+	v, e := s.Get(ctx, resource.SessionGetRequest_builder{Ref: r.GetRef(), Select: resource.SessionSelect_builder{All: ptr(true)}.Build()}.Build())
 	if e != nil {
 		return nil, e
 	}
@@ -246,7 +262,7 @@ func (s SessionServer) Reply(ctx context.Context, r *resource.SessionReplyReques
 	return receipt(s.shared.runtime.Reply(ctx, &api.Answer{SessionId: v.GetRuntimeId(), RunId: r.GetRunId(), ClientId: r.GetClientId(), RequestId: r.GetRequestId(), Allow: r.GetAllow(), AnswersJson: r.GetAnswersJson()}))
 }
 func (s SessionServer) History(ctx context.Context, r *resource.SessionEventsRequest) (*resource.SessionEventBatch, error) {
-	v, err := s.resolve(ctx, r.GetRef())
+	v, err := s.Get(ctx, resource.SessionGetRequest_builder{Ref: r.GetRef(), Select: resource.SessionSelect_builder{All: ptr(true)}.Build()}.Build())
 	if err != nil {
 		return nil, err
 	}
@@ -263,13 +279,34 @@ func (s SessionServer) History(ctx context.Context, r *resource.SessionEventsReq
 
 type eventStream struct {
 	grpc.ServerStreamingServer[resource.SessionEvent]
+	layer Layer
+	id    string
+	last  uint64
 }
 
-func (s eventStream) Send(e *api.Event) error { return s.ServerStreamingServer.Send(event(e)) }
+func (s *eventStream) Send(e *api.Event) error {
+	if (e.Kind == "state" || e.Kind == "turn_end" || e.Kind == "approval" || e.Kind == "approval_resolved") && e.Seq > s.last {
+		s.layer.shared.snapshotMu.Lock()
+		v, err := s.layer.shared.runtime.Get(s.Context(), &api.SessionRef{Id: s.id})
+		if err != nil {
+			s.layer.shared.snapshotMu.Unlock()
+			return err
+		}
+		s.layer.shared.mu.Lock()
+		_, err = s.layer.saveSession(s.Context(), v, "")
+		s.layer.shared.mu.Unlock()
+		s.layer.shared.snapshotMu.Unlock()
+		if err != nil {
+			return err
+		}
+		s.last = v.LastSeq
+	}
+	return s.ServerStreamingServer.Send(event(e))
+}
 func (s SessionServer) Events(r *resource.SessionEventsRequest, stream grpc.ServerStreamingServer[resource.SessionEvent]) error {
 	v, err := s.resolve(stream.Context(), r.GetRef())
 	if err != nil {
 		return err
 	}
-	return s.shared.runtime.Watch(&api.WatchRequest{SessionId: v.GetRuntimeId(), AfterSeq: r.GetAfterSeq(), ClientId: r.GetClientId()}, eventStream{stream})
+	return s.shared.runtime.Watch(&api.WatchRequest{SessionId: v.GetRuntimeId(), AfterSeq: r.GetAfterSeq(), ClientId: r.GetClientId()}, &eventStream{ServerStreamingServer: stream, layer: s.Layer, id: v.GetRuntimeId(), last: v.GetStatus().GetLastSeq()})
 }
