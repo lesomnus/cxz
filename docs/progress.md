@@ -1,5 +1,19 @@
 # 구현 진행 상황
 
+## 2026-09-13 — 질문 모달 레이아웃 정리
+
+- preview를 옵션 설명과 같은 들여쓰기의 별도 테두리 박스로 표시한다.
+- Next/Back/Cancel(마지막 질문은 Submit)을 가로 배치하고 좁은 창에서만 줄바꿈한다.
+  버튼에서는 좌우 방향키도 지원한다. 포커스/선택된 항목은 pastel magenta로 강조한다.
+- 다중 선택과 approval/question 로그의 체크박스를 `[ ]` / `[✓]`로 통일하고,
+  거절·취소는 `[×]`로 표시한다. 단일 선택은 기존 radio 심볼을 유지한다.
+- 질문 모달 중 Pending 패널을 숨기고 높이도 회수한다. 닫을 때 정상 복원한다.
+  원본 payload나 답변 전송 방식은 변경하지 않는다.
+- preview 테두리·폭, 가로 버튼·좌우 이동, magenta ANSI, 체크박스, Pending 영역
+  숨김·높이 복원 테스트 추가. `go test ./...`, `go test -race ./internal/tui`,
+  `go vet ./...`, `git diff --check` 통과.
+
+
 ## 2026-09-13 — provider 공통 질문 dialog
 
 - Claude AskUserQuestion의 input.questions와 Codex requestUserInput의 params.questions를

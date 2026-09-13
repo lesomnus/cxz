@@ -265,6 +265,10 @@ PgUp/PgDn or the wheel scroll long content. JSON is not required; the advanced
 `/answer {"question text or id":"answer"}` form remains available.
 The provider-neutral question model lives in `internal/agentview/questions.go`;
 original provider payloads stay in the journal and remain accessible via `/approval`.
+Previews have their own indented border; focused/selected choices use pastel
+magenta. Multi-select and approval markers use `[ ]`, `[✓]`, and `[×]` for denial.
+Navigation buttons share a row when space permits (Left/Right also moves between
+buttons). The pending panel is hidden while the question dialog is open.
 After a decision, focus returns to input to avoid approving the next request with
 a repeated Enter. A blank row separates the conversation from the notice area.
 Resolved approvals update the original checkbox row in place, with separate
