@@ -11,6 +11,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/agentview"
+	"github.com/lesomnus/cxz/internal/containerterm"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/dockerx"
 	"github.com/lesomnus/cxz/internal/resourceclient"
@@ -31,6 +32,7 @@ type model struct {
 	lastUIInput          time.Time
 	lastActivityReport   time.Time
 	project              *api.Project
+	wisp                 *containerterm.WispPool
 	terminalWidth        int
 	panelFocus           bool
 	panelIndex           int
@@ -228,6 +230,9 @@ func RunProject(ctx context.Context, c api.SessionsClient, project *api.Project,
 	_, e := p.Run()
 	cancel()
 	m.clearPathHints()
+	if m.wisp != nil {
+		m.wisp.Close()
+	}
 	for _, panel := range m.terminals {
 		if panel.session != nil {
 			panel.session.Close()

@@ -13,15 +13,10 @@ import (
 
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/dockerx"
+	"github.com/lesomnus/cxz/internal/wisp"
 )
 
-type PathEntry struct {
-	Name       string
-	Directory  bool
-	Executable bool
-	LinkTarget string
-	Symlink    bool
-}
+type PathEntry = wisp.Entry
 type PathListing struct {
 	Entries   []PathEntry
 	Truncated bool

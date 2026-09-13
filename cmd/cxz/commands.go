@@ -17,6 +17,7 @@ import (
 	"github.com/lesomnus/cxz/internal/supervisor"
 	"github.com/lesomnus/cxz/internal/transport"
 	"github.com/lesomnus/cxz/internal/tui"
+	"github.com/lesomnus/cxz/internal/wisp"
 	"github.com/lesomnus/cxz/internal/workspace"
 	"github.com/lesomnus/xli"
 	"github.com/lesomnus/xli/arg"
@@ -198,6 +199,7 @@ func internalCommands() xli.Commands {
 			_, err = resourceclient.New(conn).List(q, &api.Empty{})
 			return err
 		}),
+		makeCmd("wisp", nil, func(ctx context.Context, _ *xli.Command) error { return wisp.Serve(os.Stdin, os.Stdout) }),
 		makeCmd("_boot", nil, func(ctx context.Context, _ *xli.Command) error { return workspace.Boot(stateFrom(ctx)) }),
 		makeCmd("_bridge", nil, func(ctx context.Context, _ *xli.Command) error { return transport.Bridge(stateFrom(ctx)) }),
 		makeCmd("_project", nil, func(ctx context.Context, _ *xli.Command) error {

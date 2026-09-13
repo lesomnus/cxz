@@ -143,26 +143,31 @@ func (m *model) fetchPathHints(d pathHintDue) tea.Cmd {
 		return nil
 	}
 	projectID, parent, generation := s.ProjectId, p.token.parent, p.generation
+	var target *api.Project
+	for _, candidate := range append([]*api.Project{m.project}, m.panelProjects...) {
+		if candidate != nil && candidate.Id == projectID && candidate.ContainerId != "" && candidate.RemoteUser != "" {
+			target = &api.Project{Id: candidate.Id, ContainerId: candidate.ContainerId, RemoteUser: candidate.RemoteUser}
+			break
+		}
+	}
+	if m.wisp == nil {
+		m.wisp = &containerterm.WispPool{}
+	}
+	pool, lifetime := m.wisp, m.ctx
 	program := m.program
 	ctx, cancel := context.WithTimeout(m.ctx, 4*time.Second)
 	p.cancel = cancel
 	return func() tea.Msg {
 		defer cancel()
-		projects, err := m.client.Projects(ctx, &api.Empty{})
-		if err != nil {
-			return pathHintResult{generation: generation, err: err}
+		if target == nil {
+			return pathHintResult{generation: generation, err: fmt.Errorf("project metadata unavailable; refresh project view")}
 		}
-		for _, project := range projects.Projects {
-			if project.Id == projectID {
-				listing, err := containerterm.StreamPaths(ctx, project, parent, func(listing containerterm.PathListing) {
-					if ctx.Err() == nil && program != nil {
-						program.Send(pathHintResult{generation: generation, listing: listing, partial: true})
-					}
-				})
-				return pathHintResult{generation: generation, listing: listing, err: err}
+		listing, err := pool.Paths(lifetime, ctx, target, parent, func(listing containerterm.PathListing) {
+			if ctx.Err() == nil && program != nil {
+				program.Send(pathHintResult{generation: generation, listing: listing, partial: true})
 			}
-		}
-		return pathHintResult{generation: generation, err: fmt.Errorf("project container unavailable")}
+		})
+		return pathHintResult{generation: generation, listing: listing, err: err}
 	}
 }
 func (m *model) receivePathHints(r pathHintResult) {
@@ -206,7 +211,15 @@ func (m *model) pathOptions() []pathOption {
 		paths = append(paths, pathOption{text: p.token.parent + name, entry: entry})
 	}
 	sort.SliceStable(paths, func(i, j int) bool {
-		return fuzzyScore(strings.TrimPrefix(paths[i].text, p.token.parent), p.token.query) < fuzzyScore(strings.TrimPrefix(paths[j].text, p.token.parent), p.token.query)
+		a, b := paths[i], paths[j]
+		x, y := fuzzyScore(a.entry.Name, p.token.query), fuzzyScore(b.entry.Name, p.token.query)
+		if x != y {
+			return x < y
+		}
+		if a.entry.Directory != b.entry.Directory {
+			return a.entry.Directory
+		}
+		return a.text < b.text
 	})
 	return paths
 }
@@ -339,7 +352,14 @@ func (m *model) pathHintOverlay(view string) string {
 	} else if p.loading {
 		content = append(content, muted.Render("Loading directory…"))
 	} else if p.err != nil {
-		content = append(content, warning.Render("Directory unavailable · check container and permissions"))
+		message := "Directory unavailable · check container and permissions"
+		if strings.Contains(p.err.Error(), "wisp") {
+			message = "Wisp unavailable · update project runtime or reopen path hints"
+		}
+		if strings.Contains(p.err.Error(), "metadata unavailable") {
+			message = "Project metadata unavailable · refresh project view"
+		}
+		content = append(content, warning.Render(message))
 	} else {
 		content = append(content, muted.Render("No matching entries"))
 	}
