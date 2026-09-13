@@ -59,6 +59,9 @@ func (m *model) reportView(view string) string {
 		return view
 	}
 	body := p.text
+	if p.title == "/background" {
+		body = m.backgroundReport()
+	}
 	if strings.HasPrefix(p.title, "/help") {
 		body = helpView(max(1, m.width-4), strings.TrimSpace(strings.TrimPrefix(p.title, "/help")))
 	} else {

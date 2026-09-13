@@ -1,5 +1,26 @@
 # 구현 진행 상황
 
+## 2026-09-13 — Claude 백그라운드 작업 표시
+
+- `agentview.BackgroundState`로 실행 목록 snapshot, background task 시작, 상태 patch,
+  완료 알림을 정규화한다. foreground task나 `init`은 background 실행으로 추정하지 않는다.
+- 서버의 journal→API 변환에서 기존 raw system 이벤트를 `background` telemetry로
+  노출한다. journal 원본/sequence는 유지하며 이전 supervisor가 기록한 로그도 지원한다.
+- idle에서도 기존 상태 줄에 실행 수와 spinner를 표시한다. `/background`는 실시간
+  read-only modal로 상태·완료 summary·output 경로를 보여준다. 파일은 자동으로 읽지 않는다.
+- tool_use_id로 원래 Bash 행을 갱신한다. launch tool_result는 완료로 취급하지 않으며
+  실제 terminal 상태에 따라 완료/실패를 표시한다. 빈 snapshot은 실행 목록만 비우고
+  완료 결과를 만들어내지 않는다. 작업 상태는 session/run별로 격리한다.
+- 재접속 시 이전 telemetry만 별도로 backfill한다. 대화 행의 lazy loading은 유지하며,
+  30초 제한/실패 시 `/background`에서 불완전한 복구임을 표시한다.
+- 적용에는 CLI와 **프로젝트 runtime 서버** 업데이트가 필요하다. manager만 업데이트하거나
+  에이전트만 restart하면 기존 runtime의 API 변환은 바뀌지 않는다. purge는 필요 없다.
+- 사용자 제공 Claude 이벤트 순서 기반 회귀 테스트를 추가했다. 실제 로그인 세션에
+  명령을 실행하는 live 검증이나 Codex background protocol 지원은 이번 변경에 포함하지 않았다.
+- `go test ./...`, `go test -race ./internal/tui ./internal/agentview ./internal/server`,
+  `go vet ./...`, `git diff --check` 통과.
+
+
 ## 2026-09-13 — 실행 근거 없는 도구를 pending으로 표시
 
 - Claude tool_use는 실행 의도이며 실행 시작 신호가 아니다. tool_call의 기본 working

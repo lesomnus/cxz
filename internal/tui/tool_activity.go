@@ -50,7 +50,7 @@ func toolActivityStateBody(activity agentview.ToolActivity, result *api.Event, w
 		marker, style = "[ ]", warning
 	case "done", "completed":
 		marker, style = "[✓]", accent
-	case "failed", "denied", "declined", "canceled", "interrupted":
+	case "failed", "denied", "declined", "canceled", "cancelled", "stopped", "interrupted":
 		marker, style = "[×]", failure
 	}
 	prefix := style.Render(marker)
