@@ -37,10 +37,10 @@ func (m *model) terminalHeight() int {
 		return 0
 	}
 	available := m.height - m.input.Height() - 5 - m.approvalHeight() - 4
-	if available < 3 {
+	if available < 5 {
 		return 0
 	}
-	return min(25, available) // header + up to 24 PTY rows
+	return min(27, available) // two rules + header + up to 24 PTY rows
 }
 func (m *model) terminalFocused() bool {
 	p := m.terminal()
@@ -83,7 +83,7 @@ func (m *model) toggleTerminal() tea.Cmd {
 	}
 	p.starting = true
 	p.err = nil
-	id, projectID, width, height := s.Id, s.ProjectId, m.width, max(1, m.terminalHeight()-1)
+	id, projectID, width, height := s.Id, s.ProjectId, m.width, max(1, m.terminalHeight()-3)
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(m.ctx, 5*time.Second)
 		projects, err := m.client.Projects(ctx, &api.Empty{})
@@ -110,8 +110,8 @@ func (m *model) toggleTerminal() tea.Cmd {
 	}
 }
 
-const terminalBack = "[대화로 돌아가기]"
-const terminalFold = "[접기 ▾]"
+const terminalBack = "[Back to chat]"
+const terminalFold = "[Collapse ▾]"
 
 func (m *model) terminalView() string {
 	h := m.terminalHeight()
@@ -138,13 +138,14 @@ func (m *model) terminalView() string {
 		}
 	}
 	lines := strings.Split(body, "\n")
-	for len(lines) < h-1 {
+	for len(lines) < h-3 {
 		lines = append(lines, "")
 	}
 	for i := range lines {
 		lines[i] = ansi.Truncate(lines[i], m.width, "")
 	}
-	return clip(header, m.width) + "\n" + strings.Join(lines[:h-1], "\n")
+	rule := insetRule(m.width, teal)
+	return rule + "\n" + clip(header, m.width) + "\n" + strings.Join(lines[:h-3], "\n") + "\n" + rule
 }
 
 func (m *model) terminalMouse(v tea.MouseMsg) bool {
@@ -157,7 +158,10 @@ func (m *model) terminalMouse(v tea.MouseMsg) bool {
 		return false
 	}
 	top := m.terminalTop()
-	if v.Y == top {
+	if v.Y == top || v.Y == m.height-2 {
+		return true // separators belong to cxz, never to the PTY
+	}
+	if v.Y == top+1 {
 		if v.Action == tea.MouseActionPress && v.Button == tea.MouseButtonLeft {
 			if x < ansi.StringWidth(terminalBack) {
 				p.focused = false
@@ -172,13 +176,13 @@ func (m *model) terminalMouse(v tea.MouseMsg) bool {
 		}
 		return true
 	}
-	if v.Y > top && v.Y < m.height-1 {
+	if v.Y > top+1 && v.Y < m.height-2 {
 		if v.Action == tea.MouseActionPress {
 			p.focused = true
 			m.panelFocus = false
 		}
 		if p.session != nil {
-			mouse := uv.Mouse{X: x, Y: v.Y - top - 1}
+			mouse := uv.Mouse{X: x, Y: v.Y - top - 2}
 			buttons := map[tea.MouseButton]uv.MouseButton{tea.MouseButtonLeft: uv.MouseLeft, tea.MouseButtonRight: uv.MouseRight, tea.MouseButtonMiddle: uv.MouseMiddle, tea.MouseButtonWheelUp: uv.MouseWheelUp, tea.MouseButtonWheelDown: uv.MouseWheelDown}
 			mouse.Button = buttons[v.Button]
 			if v.Shift {

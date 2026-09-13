@@ -59,18 +59,27 @@ func TestTerminalPanelFocusAndLayout(t *testing.T) {
 	m.terminals = map[string]*terminalPanel{m.current().Id: p}
 	m.resize()
 	m.render()
-	if m.terminalHeight() != 25 {
+	if m.terminalHeight() != 27 {
 		t.Fatal("not 24 terminal rows")
 	}
 	lines := strings.Split(m.sessionScreen(), "\n")
-	if len(lines) != m.height || !strings.Contains(lines[m.terminalTop()], terminalBack) {
+	if len(lines) != m.height || !strings.Contains(lines[m.terminalTop()+1], terminalBack) {
 		t.Fatal("header not at expected row", len(lines), m.terminalTop())
+	}
+	for _, row := range []int{m.terminalTop(), m.height - 2} {
+		if got := ansi.Strip(lines[row]); got != "  "+strings.Repeat("─", m.width-4)+"  " {
+			t.Fatalf("missing inset terminal separator at %d: %q", row, got)
+		}
+		m.Update(tea.MouseMsg{X: 1, Y: row, Action: tea.MouseActionPress, Button: tea.MouseButtonLeft})
+		if !p.focused || !p.open {
+			t.Fatal("separator click activated a button")
+		}
 	}
 	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
 	if cmd != nil {
 		t.Fatal("Ctrl+C escaped to cxz")
 	}
-	m.Update(tea.MouseMsg{X: m.contentOffset() + 1, Y: m.terminalTop(), Action: tea.MouseActionPress, Button: tea.MouseButtonLeft})
+	m.Update(tea.MouseMsg{X: m.contentOffset() + 1, Y: m.terminalTop() + 1, Action: tea.MouseActionPress, Button: tea.MouseButtonLeft})
 	if p.focused || !p.open {
 		t.Fatal("return button folded panel")
 	}
@@ -83,7 +92,7 @@ func TestTerminalPanelFocusAndLayout(t *testing.T) {
 		t.Fatal("toggle did not fold")
 	}
 	m.Update(tea.KeyMsg{Type: tea.KeyF20})
-	m.Update(tea.MouseMsg{X: m.contentOffset() + ansi.StringWidth(terminalBack) + 2, Y: m.terminalTop(), Action: tea.MouseActionPress, Button: tea.MouseButtonLeft})
+	m.Update(tea.MouseMsg{X: m.contentOffset() + ansi.StringWidth(terminalBack) + 2, Y: m.terminalTop() + 1, Action: tea.MouseActionPress, Button: tea.MouseButtonLeft})
 	if p.open || p.focused {
 		t.Fatal("fold button failed")
 	}

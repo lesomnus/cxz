@@ -112,7 +112,7 @@ func (m *model) resize() {
 	// Blank separator + status (2), composer border (2), session information (1).
 	m.view.Height = max(1, m.height-m.input.Height()-5-m.approvalHeight()-m.terminalHeight())
 	if p := m.terminal(); p != nil && p.session != nil && m.terminalHeight() > 0 {
-		p.session.Resize(m.width, m.terminalHeight()-1)
+		p.session.Resize(m.width, m.terminalHeight()-3)
 	}
 	if follow {
 		m.view.GotoBottom()
