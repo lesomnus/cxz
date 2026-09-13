@@ -15,7 +15,17 @@ func toolActivityView(activity agentview.ToolActivity, result *api.Event, width 
 }
 
 func toolActivityBody(activity agentview.ToolActivity, result *api.Event, width int) string {
-	return toolActivityStateBody(activity, result, width, "working")
+	return toolActivityStateBody(activity, result, width, "pending")
+}
+
+// Claude tool_use announces an intention, not execution. In particular, other
+// tools in the same message may still be queued behind an approval. Only use
+// a native execution state (or a correlated approval decision in render).
+func toolInitialState(provider string, e *api.Event) string {
+	if provider == "codex" && fields(e.Payload).object("item").text("status") == "inProgress" {
+		return "working"
+	}
+	return "pending"
 }
 
 func toolActivityStateBody(activity agentview.ToolActivity, result *api.Event, width int, status string) string {
@@ -32,14 +42,16 @@ func toolActivityStateBody(activity agentview.ToolActivity, result *api.Event, w
 			status = "failed"
 		}
 	}
-	marker, style := "[•]", accent
+	marker, style := "[ ]", warning
 	switch status {
+	case "working", "inProgress":
+		marker, style = "[•]", accent
 	case "pending", "requested":
 		marker, style = "[ ]", warning
 	case "done", "completed":
 		marker, style = "[✓]", accent
 	case "failed", "denied", "declined", "canceled", "interrupted":
-		marker, style = "[×]", peach
+		marker, style = "[×]", failure
 	}
 	prefix := style.Render(marker)
 	positive := func(n int) string { return accent.Render(fmt.Sprintf("+%d", n)) }

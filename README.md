@@ -292,7 +292,10 @@ unknown total. Codex unified diff hunks provide added/deleted line counts. These
 are request counts until the provider reports completion; missing diffs are not
 estimated. Shell calls show a compact command/description instead of raw JSON.
 Paired tool calls/results occupy the original request row, updating its marker:
-`[ ]` pending approval, `[•]` active, `[✓]` completed, `[×]` failed/denied/canceled.
+`[ ]` requested/queued, `[•]` active, `[✓]` completed, `[×]` failed/denied/canceled.
+Claude tool requests alone do not imply execution: `[•]` requires that tool's
+approval or a native execution signal (Codex `inProgress`). Without that evidence,
+the row stays `[ ]` until a result arrives. Failure markers use red `#F26D78`.
 Approval rows merge only when native tool IDs explicitly identify the same call;
 unmatched approvals keep just a checkbox and tool name. Results without a loaded
 call remain visible. File counts use green `+N` and red `-N`; `/match` means a

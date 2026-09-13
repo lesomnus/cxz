@@ -1,5 +1,18 @@
 # 구현 진행 상황
 
+## 2026-09-13 — 실행 근거 없는 도구를 pending으로 표시
+
+- Claude tool_use는 실행 의도이며 실행 시작 신호가 아니다. tool_call의 기본 working
+  표시를 pending으로 바꿨다. 같은 메시지의 뒤쪽 도구가 승인 전에 active로 보이지 않는다.
+- 해당 도구 ID의 approval allowed 또는 Codex item.status=inProgress가 있을 때만
+  `[•]`, 결과가 오면 `[✓]`/`[×]`로 갱신한다. 다른 작업의 승인 대기가 이미 허용된
+  작업 상태를 바꾸지는 않는다. 실행 근거가 없는 도구는 결과까지 `[ ]`로 유지한다.
+- `[×]`의 작업 실패·거절·취소 및 독립 승인 표시를 reddish `#F26D78`로 변경했다.
+- 순차 승인되는 두 Write의 pending→allowed→result 시나리오, provider 시작 신호,
+  unknown 상태의 보수적 처리와 truecolor 실패 색상 회귀 테스트를 추가했다.
+- `go test ./...`, `go test -race ./internal/tui`, `go vet ./...`, `git diff --check` 통과.
+
+
 ## 2026-09-13 — 도구 승인 중 working 행 흔들림 수정
 
 - 원인: working에서만 transcript 끝의 indicator 공간을 추가/표시하여, 도구 승인

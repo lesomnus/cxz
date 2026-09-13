@@ -417,7 +417,7 @@ func (m *model) render() {
 			key := e.RunId + "/" + e.RequestId
 			if e.Kind == "tool_call" {
 				if activity, ok := toolCalls[key]; ok {
-					state := "working"
+					state := toolInitialState(s.Agent, e)
 					if approval := toolApprovals[key]; approval != nil {
 						state = decisions[approval.RunId+"/"+approval.RequestId]
 						if state == "" {
