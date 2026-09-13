@@ -93,7 +93,7 @@ func (s ProjectServer) Add(ctx context.Context, r *resource.ProjectAddRequest) (
 	return v, nil
 }
 func (s ProjectServer) Get(ctx context.Context, r *resource.ProjectGetRequest) (*resource.Project, error) {
-	if err := s.sync(ctx); err != nil {
+	if err := s.ensureSnapshot(ctx); err != nil {
 		return nil, err
 	}
 	v, err := s.ProjectServiceServer.Get(ctx, resource.ProjectGetRequest_builder{Ref: r.GetRef(), Select: resource.ProjectSelect_builder{All: ptr(true)}.Build()}.Build())
@@ -109,7 +109,7 @@ func (s ProjectServer) List(ctx context.Context, r *resource.ProjectListRequest)
 	if len(r.GetFilters()) == 0 {
 		r.SetFilters([]*resource.ProjectFilter{resource.ProjectFilter_builder{Listed: ptr(true)}.Build()})
 	}
-	if err := s.sync(ctx); err != nil {
+	if err := s.ensureSnapshot(ctx); err != nil {
 		return nil, err
 	}
 	return s.ProjectServiceServer.List(ctx, r)
@@ -117,7 +117,7 @@ func (s ProjectServer) List(ctx context.Context, r *resource.ProjectListRequest)
 func (s ProjectServer) Watch(r *resource.ProjectWatchRequest, stream grpc.ServerStreamingServer[resource.ProjectWatchResponse]) error {
 	s.shared.watchers.Add(1)
 	defer s.shared.watchers.Add(-1)
-	if err := s.sync(stream.Context()); err != nil {
+	if err := s.ensureSnapshot(stream.Context()); err != nil {
 		return err
 	}
 	return s.ProjectServiceServer.Watch(r, stream)

@@ -53,6 +53,48 @@ func (s Layer) sync(ctx context.Context) error {
 	}
 	return nil
 }
+
+// Bootstrap once; ordinary resource reads never reconcile Docker/runtime.
+// Keep errors retryable rather than poisoning initialization with sync.Once.
+func (s Layer) ensureSnapshot(ctx context.Context) error {
+	if s.bound {
+		return nil
+	}
+	s.shared.initialMu.Lock()
+	defer s.shared.initialMu.Unlock()
+	if s.shared.initialized {
+		return nil
+	}
+	if err := s.sync(ctx); err != nil {
+		return err
+	}
+	s.shared.initialized = true
+	return nil
+}
+
+// RefreshSession projects one local journal change without scanning inventory.
+func (s Layer) RefreshSession(ctx context.Context, id string) error {
+	s.shared.snapshotMu.Lock()
+	defer s.shared.snapshotMu.Unlock()
+	v, err := s.shared.runtime.Get(ctx, &api.SessionRef{Id: id})
+	if err != nil {
+		return err
+	}
+	s.shared.mu.Lock()
+	defer s.shared.mu.Unlock()
+	old, readErr := s.Next().Session().Get(ctx, resource.SessionGetRequest_builder{Ref: sessionRef(id), Select: resource.SessionSelect_builder{All: ptr(true)}.Build()}.Build())
+	if readErr == nil {
+		state := sessionStatus(v)
+		state.SetLastSeq(old.GetStatus().GetLastSeq())
+		// Token/chunk cursors travel on Events. They must not invalidate the
+		// resource list on every output fragment while state is unchanged.
+		if proto.Equal(old.GetStatus(), state) {
+			return nil
+		}
+	}
+	_, err = s.saveSession(ctx, v, "")
+	return err
+}
 func (s Layer) saveProject(ctx context.Context, v *api.Project) (*resource.Project, error) {
 	srv := s.Next().Project()
 	ref := projectRef(v.Id)

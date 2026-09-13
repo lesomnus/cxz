@@ -16,6 +16,27 @@ func project(p *resource.Project) *api.Project {
 	return &api.Project{Id: p.GetRuntimeId(), Alias: p.GetAlias(), Workspace: p.GetWorkspace(), Name: p.GetName(), Config: p.GetConfig(), State: st.GetState(), ContainerId: st.GetContainerId(), RemoteUser: st.GetRemoteUser(), RemoteWorkspace: st.GetRemoteWorkspace(), ProvisionState: st.GetProvisionState(), ProvisionStep: st.GetProvisionStep(), ProvisionAttempt: st.GetProvisionAttempt(), Error: st.GetError()}
 }
 func (c *Client) Projects(ctx context.Context, _ *api.Empty, opts ...grpc.CallOption) (*api.ProjectList, error) {
+	out, err := c.registeredProjects(ctx, opts...)
+	if err != nil {
+		return nil, err
+	}
+	foreign, err := c.projects.InspectForeign(ctx, &resource.InspectForeignRequest{}, opts...)
+	if err != nil && status.Code(err) != codes.Unimplemented {
+		return nil, err
+	}
+	if foreign != nil {
+		for _, p := range foreign.GetItems() {
+			out.Projects = append(out.Projects, &api.Project{Workspace: p.GetWorkspace(), Name: p.GetName(), ContainerId: p.GetContainerId(), State: "foreign"})
+		}
+	}
+	return out, nil
+}
+
+// RegisteredProjects avoids external Docker discovery in the TUI refresh path.
+func (c *Client) RegisteredProjects(ctx context.Context) (*api.ProjectList, error) {
+	return c.registeredProjects(ctx)
+}
+func (c *Client) registeredProjects(ctx context.Context, opts ...grpc.CallOption) (*api.ProjectList, error) {
 	out := &api.ProjectList{}
 	after := ""
 	for {
@@ -29,15 +50,6 @@ func (c *Client) Projects(ctx context.Context, _ *api.Empty, opts ...grpc.CallOp
 		after = page.GetNext()
 		if after == "" {
 			break
-		}
-	}
-	foreign, err := c.projects.InspectForeign(ctx, &resource.InspectForeignRequest{}, opts...)
-	if err != nil && status.Code(err) != codes.Unimplemented {
-		return nil, err
-	}
-	if foreign != nil {
-		for _, p := range foreign.GetItems() {
-			out.Projects = append(out.Projects, &api.Project{Workspace: p.GetWorkspace(), Name: p.GetName(), ContainerId: p.GetContainerId(), State: "foreign"})
 		}
 	}
 	return out, nil

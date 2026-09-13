@@ -24,108 +24,118 @@ import (
 )
 
 type model struct {
-	pathHints            *pathHints
-	pathHintGeneration   uint64
-	pathHintDismissed    string
-	terminals            map[string]*terminalPanel
-	activityID           string
-	lastUIInput          time.Time
-	lastActivityReport   time.Time
-	project              *api.Project
-	contextReports       map[string]contextReportSnapshot
-	wisp                 *containerterm.WispPool
-	terminalWidth        int
-	panelFocus           bool
-	panelIndex           int
-	panelProjects        []*api.Project
-	allSessions          []*api.Session
-	panelError           string
-	projectView          bool
-	deletingID           string
-	busy                 bool
-	createProjectSession ProjectCreator
-	ctx                  context.Context
-	client               api.SessionsClient
-	sessions             []*api.Session
-	selected             int
-	input                textarea.Model
-	drafts               map[string]string
-	localHelp            map[string]uint64
-	localOutput          map[string]string
-	hintSelected         int
-	hintOffset           int
-	hintDismissed        bool
-	renaming             bool
-	renameBusy           bool
-	renameID             string
-	aliasInput           textinput.Model
-	usageReports         map[string]string
-	usageGeneration      map[string]uint64
-	quotaWindows         []agentview.Window
-	quotaState           string
-	modelPicker          *modelPicker
-	modelPickerEpoch     uint64
-	report               *reportOverlay
-	contextCapture       *contextCapture
-	hiddenEvents         map[*api.Event]bool
-	view                 viewport.Model
-	focusList, creating  bool
-	notice               string
-	width, height        int
-	events               map[string][]*api.Event
-	cursor               map[string]uint64
-	historyLoading       map[string]bool
-	historyStart         map[string]uint64
-	watchCancel          context.CancelFunc
-	watchID              string
-	watchEpoch           uint64
-	wantID               string
-	accounts             []*resource.Account
-	accountIndex         int
-	accountView          bool
-	accountAdding        bool
-	accountChoosing      bool
-	accountLoading       bool
-	accountAgent         string
-	accountField         int
-	accountAlias         textinput.Model
-	accountName          textinput.Model
-	accountSearch        textinput.Model
-	accountSearching     bool
-	accountService       resource.AccountServiceClient
-	loginAccount         AccountLogin
-	workflow             *accountWorkflow
-	loginChoosing        bool
-	loginAlias           string
-	loginIndex           int
-	focusApproval        bool
-	approvalID           string
-	approvalOffset       int
-	interruptUntil       time.Time
-	interruptKey         string
-	approvalSent         map[string]bool
-	fullPermission       map[string]string
-	localReports         map[string]string
-	historyTimes         []int64
-	historyPositions     []float64 // stable journal coordinates, not loaded-line offsets
-	restartConfirm       *restartConfirmation
-	questionDialog       *questionDialog
-	questionSeen         map[string]bool
-	restartBusy          bool
-	lastPromptStart      int
-	lastPromptEnd        int
-	latestPrompt         string
-	pulse                int
-	workingSince         int64
-	backgroundHistory    map[string][]*api.Event
-	backgroundLoading    map[string]bool
-	backgroundErrors     map[string]string
-	cursorOutput         *cursorWriter
-	renderedResponses    map[*api.Event]renderedResponse
-	program              *tea.Program
-	pastes               map[string]*pastedText
-	pasteSelection       *chipSelection
-	pasteDialog          *pasteDialog
+	pathHints               *pathHints
+	pathHintGeneration      uint64
+	pathHintDismissed       string
+	terminals               map[string]*terminalPanel
+	activityID              string
+	lastUIInput             time.Time
+	lastActivityReport      time.Time
+	project                 *api.Project
+	resourcesWatching       bool
+	resourceWatchCancel     context.CancelFunc
+	resourceWatchGeneration uint64
+	resourceWatchSignature  string
+	resourceWatchStarted    time.Time
+	resourceRefreshPending  bool
+	resourceRefreshRunning  bool
+	resourceRefreshAgain    bool
+	resourceRetryDelay      time.Duration
+	lastResourceRefresh     time.Time
+	contextReports          map[string]contextReportSnapshot
+	wisp                    *containerterm.WispPool
+	terminalWidth           int
+	panelFocus              bool
+	panelIndex              int
+	panelProjects           []*api.Project
+	allSessions             []*api.Session
+	panelError              string
+	projectView             bool
+	deletingID              string
+	busy                    bool
+	createProjectSession    ProjectCreator
+	ctx                     context.Context
+	client                  api.SessionsClient
+	sessions                []*api.Session
+	selected                int
+	input                   textarea.Model
+	drafts                  map[string]string
+	localHelp               map[string]uint64
+	localOutput             map[string]string
+	hintSelected            int
+	hintOffset              int
+	hintDismissed           bool
+	renaming                bool
+	renameBusy              bool
+	renameID                string
+	aliasInput              textinput.Model
+	usageReports            map[string]string
+	usageGeneration         map[string]uint64
+	quotaWindows            []agentview.Window
+	quotaState              string
+	modelPicker             *modelPicker
+	modelPickerEpoch        uint64
+	report                  *reportOverlay
+	contextCapture          *contextCapture
+	hiddenEvents            map[*api.Event]bool
+	view                    viewport.Model
+	focusList, creating     bool
+	notice                  string
+	width, height           int
+	events                  map[string][]*api.Event
+	cursor                  map[string]uint64
+	historyLoading          map[string]bool
+	historyStart            map[string]uint64
+	watchCancel             context.CancelFunc
+	watchID                 string
+	watchEpoch              uint64
+	wantID                  string
+	accounts                []*resource.Account
+	accountIndex            int
+	accountView             bool
+	accountAdding           bool
+	accountChoosing         bool
+	accountLoading          bool
+	accountAgent            string
+	accountField            int
+	accountAlias            textinput.Model
+	accountName             textinput.Model
+	accountSearch           textinput.Model
+	accountSearching        bool
+	accountService          resource.AccountServiceClient
+	loginAccount            AccountLogin
+	workflow                *accountWorkflow
+	loginChoosing           bool
+	loginAlias              string
+	loginIndex              int
+	focusApproval           bool
+	approvalID              string
+	approvalOffset          int
+	interruptUntil          time.Time
+	interruptKey            string
+	approvalSent            map[string]bool
+	fullPermission          map[string]string
+	localReports            map[string]string
+	historyTimes            []int64
+	historyPositions        []float64 // stable journal coordinates, not loaded-line offsets
+	restartConfirm          *restartConfirmation
+	questionDialog          *questionDialog
+	questionSeen            map[string]bool
+	restartBusy             bool
+	lastPromptStart         int
+	lastPromptEnd           int
+	latestPrompt            string
+	pulse                   int
+	workingSince            int64
+	backgroundHistory       map[string][]*api.Event
+	backgroundLoading       map[string]bool
+	backgroundErrors        map[string]string
+	cursorOutput            *cursorWriter
+	renderedResponses       map[*api.Event]renderedResponse
+	program                 *tea.Program
+	pastes                  map[string]*pastedText
+	pasteSelection          *chipSelection
+	pasteDialog             *pasteDialog
 }
 type listing struct {
 	projects       []*api.Project
@@ -248,6 +258,12 @@ func RunProject(ctx context.Context, c api.SessionsClient, project *api.Project,
 	return e
 }
 func (m *model) refresh() tea.Cmd {
+	if m.resourceRefreshRunning {
+		m.resourceRefreshAgain = true
+		return nil
+	}
+	m.resourceRefreshRunning = true
+	m.lastResourceRefresh = time.Now()
 	panel := m.panelVisible()
 	projectID := ""
 	if m.project != nil {
@@ -265,7 +281,16 @@ func (m *model) refresh() tea.Cmd {
 		var projectsErr error
 		projectsLoaded := false
 		if projectID != "" || panel {
-			if ps, err := m.client.Projects(ctx, &api.Empty{}); err == nil {
+			var ps *api.ProjectList
+			var err error
+			if c, ok := m.client.(interface {
+				RegisteredProjects(context.Context) (*api.ProjectList, error)
+			}); ok {
+				ps, err = c.RegisteredProjects(ctx)
+			} else {
+				ps, err = m.client.Projects(ctx, &api.Empty{})
+			}
+			if err == nil {
 				projectsLoaded = true
 				projects = ps.Projects
 				for _, candidate := range ps.Projects {
@@ -281,8 +306,10 @@ func (m *model) refresh() tea.Cmd {
 		return listing{sessions: v.Sessions, project: p, projects: projects, projectsErr: projectsErr, projectsLoaded: projectsLoaded}
 	}
 }
-func timer() tea.Cmd           { return tea.Tick(time.Second, func(t time.Time) tea.Msg { return tick(t) }) }
-func (m *model) Init() tea.Cmd { return tea.Batch(m.refresh(), timer(), textarea.Blink, pulseTimer()) }
+func timer() tea.Cmd { return tea.Tick(time.Second, func(t time.Time) tea.Msg { return tick(t) }) }
+func (m *model) Init() tea.Cmd {
+	return tea.Batch(m.refresh(), m.watchResources(), timer(), textarea.Blink, pulseTimer())
+}
 func (m *model) current() *api.Session {
 	if len(m.sessions) == 0 {
 		return nil
@@ -631,6 +658,13 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 	next, cmd := m.update(msg)
+	if _, ok := msg.(listing); ok {
+		cmd = tea.Batch(cmd, m.watchResources())
+	}
+	if m.resourceRefreshAgain && !m.resourceRefreshRunning {
+		m.resourceRefreshAgain = false
+		cmd = tea.Batch(cmd, m.refresh())
+	}
 	return next, tea.Batch(activity, cmd, m.syncPathHints())
 }
 
@@ -984,10 +1018,38 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.render()
 	case tick:
 		m.watch()
-		return m, tea.Batch(timer(), m.refresh(), m.reportActivity())
+		return m, tea.Batch(timer(), m.periodicRefresh(), m.reportActivity())
+	case resourcesChanged:
+		if v.generation != m.resourceWatchGeneration {
+			return m, nil
+		}
+		if time.Since(m.resourceWatchStarted) > 10*time.Second {
+			m.resourceRetryDelay = 0
+		}
+		if m.resourceRefreshPending {
+			return m, nil
+		}
+		m.resourceRefreshPending = true
+		return m, tea.Tick(150*time.Millisecond, func(time.Time) tea.Msg { return resourcesRefreshDue{} })
+	case resourcesRefreshDue:
+		m.resourceRefreshPending = false
+		return m, m.refresh()
+	case resourcesWatchEnded:
+		if v.generation != m.resourceWatchGeneration {
+			return m, nil
+		}
+		m.resourcesWatching = false
+		if m.ctx == nil || m.ctx.Err() != nil {
+			return m, nil
+		}
+		m.resourceRetryDelay = min(30*time.Second, max(time.Second, m.resourceRetryDelay*2))
+		return m, tea.Tick(m.resourceRetryDelay, func(time.Time) tea.Msg { return resourcesWatchRetry{} })
+	case resourcesWatchRetry:
+		return m, m.watchResources()
 	case activityReported:
 		return m, nil
 	case listing:
+		m.resourceRefreshRunning = false
 		if v.err != nil {
 			m.fullPermission = nil
 			m.notice = "daemon disconnected; reconnecting (commands are not retried)"

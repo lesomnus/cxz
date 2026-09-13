@@ -148,6 +148,24 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 		return fmt.Errorf("build payday resource server: %w", e)
 	}
 	if s.manager == nil {
+		observeCtx, stopObserve := context.WithCancel(ctx)
+		observeDone := make(chan struct{})
+		go func() {
+			defer close(observeDone)
+			layer, _ := resource.Find[lifecycle.Layer](resources)
+			if err := observeJournals(observeCtx, root, func(id string) {
+				work, cancel := context.WithTimeout(observeCtx, 3*time.Second)
+				defer cancel()
+				if err := layer.RefreshSession(work, id); err != nil && observeCtx.Err() == nil {
+					fmt.Fprintln(os.Stderr, "session projection:", err)
+				}
+			}); err != nil && observeCtx.Err() == nil {
+				fmt.Fprintln(os.Stderr, "journal observer:", err)
+			}
+		}()
+		defer func() { stopObserve(); <-observeDone }()
+	}
+	if s.manager == nil {
 		s.recoverAgentUpdates(ctx)
 	}
 	if s.manager != nil {
@@ -166,7 +184,7 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 	go func() {
 		defer close(watchDone)
 		layer, _ := resource.Find[lifecycle.Layer](resources)
-		ticker := time.NewTicker(time.Second)
+		ticker := time.NewTicker(30 * time.Second)
 		defer ticker.Stop()
 		for {
 			select {
@@ -665,6 +683,8 @@ func (s *Server) Watch(r *api.WatchRequest, stream grpc.ServerStreamingServer[ap
 	}
 	cursor := r.AfterSeq
 	var lastWatchActivity time.Time
+	var lastJournalInfo os.FileInfo
+	var lastJournalRefresh time.Time
 	ticker := time.NewTicker(150 * time.Millisecond)
 	defer ticker.Stop()
 	for {
@@ -681,9 +701,19 @@ func (s *Server) Watch(r *api.WatchRequest, stream grpc.ServerStreamingServer[ap
 			}
 			lastWatchActivity = time.Now()
 		}
+		info, statErr := os.Stat(filepath.Join(core.Dir(s.root, m.ID), "events.jsonl"))
+		if statErr == nil && lastJournalInfo != nil && os.SameFile(info, lastJournalInfo) && info.Size() == lastJournalInfo.Size() && info.ModTime() == lastJournalInfo.ModTime() && time.Since(lastJournalRefresh) < 30*time.Second {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-ticker.C:
+				continue
+			}
+		}
 		if _, e = s.snapshot(ctx, m); e != nil {
 			return e
 		}
+		lastJournalInfo, lastJournalRefresh = info, time.Now()
 		rows, e := s.db.QueryContext(ctx, "SELECT data FROM events WHERE session_id=? AND seq>? ORDER BY seq LIMIT 256", m.ID, cursor)
 		if e != nil {
 			return e
@@ -714,6 +744,7 @@ func (s *Server) Watch(r *api.WatchRequest, stream grpc.ServerStreamingServer[ap
 			cursor = v.Seq
 		}
 		if len(batch) == 256 {
+			lastJournalInfo = nil // Drain a backlog without waiting for another write.
 			continue
 		}
 		select {
