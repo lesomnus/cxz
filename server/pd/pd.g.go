@@ -3620,6 +3620,16 @@ func (s interceptSession) Attach(ctx context.Context, req *resource.SessionAttac
 		resource.SessionService_Attach_FullMethodName, req, s.SessionServiceServer.Attach)
 }
 
+func (s interceptSession) Activity(ctx context.Context, req *resource.SessionActivityRequest) (*resource.SessionReceipt, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
+		resource.SessionService_Activity_FullMethodName, req, s.SessionServiceServer.Activity)
+}
+
+func (s interceptSession) UpdateAgent(ctx context.Context, req *resource.SessionUpdateRequest) (*resource.SessionUpdateStatus, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
+		resource.SessionService_UpdateAgent_FullMethodName, req, s.SessionServiceServer.UpdateAgent)
+}
+
 func (s interceptSession) Reply(ctx context.Context, req *resource.SessionReplyRequest) (*resource.SessionReceipt, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
 		resource.SessionService_Reply_FullMethodName, req, s.SessionServiceServer.Reply)
@@ -4813,6 +4823,32 @@ func dispatch(ctx context.Context, s resource.Server, op *pdpb.Op) (*anypb.Any, 
 		}
 
 		res, err := s.Session().Attach(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.SessionService_Activity_FullMethodName:
+		v := &resource.SessionActivityRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Session().Activity(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.SessionService_UpdateAgent_FullMethodName:
+		v := &resource.SessionUpdateRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Session().UpdateAgent(ctx, v)
 		if err != nil {
 			return nil, err
 		}

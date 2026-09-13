@@ -9,6 +9,8 @@ service SessionService {
   rpc Interrupt(SessionControl) returns (SessionReceipt);
   rpc Send(SessionSendRequest) returns (SessionReceipt);
   rpc Attach(SessionAttachRequest) returns (SessionAttachment);
+  rpc Activity(SessionActivityRequest) returns (SessionReceipt);
+  rpc UpdateAgent(SessionUpdateRequest) returns (SessionUpdateStatus);
   rpc Reply(SessionReplyRequest) returns (SessionReceipt);
   // Journal replay is not payday Watch: it is cursor-ordered event history.
   rpc History(SessionEventsRequest) returns (SessionEventBatch);
@@ -18,6 +20,9 @@ message SessionControl { SessionRef ref = 1; string run_id = 2; string client_id
 message SessionSendRequest { SessionRef ref = 1; string run_id = 2; string client_id = 3; string text = 4; }
 message SessionAttachRequest { SessionRef ref = 1; string run_id = 2; bytes content = 3; }
 message SessionAttachment { string path = 1; }
+message SessionActivityRequest { SessionRef ref = 1; string run_id = 2; string client_id = 3; bool busy = 4; }
+message SessionUpdateRequest { SessionRef ref = 1; string run_id = 2; string binary = 3; bool apply = 4; }
+message SessionUpdateStatus { bool ready = 1; string reason = 2; string binary = 3; string state = 4; }
 message SessionReplyRequest {
   SessionRef ref = 1;
   string run_id = 2;
@@ -27,5 +32,5 @@ message SessionReplyRequest {
   string answers_json = 6;
 }
 message SessionReceipt { string client_id = 1; string status = 2; }
-message SessionEventsRequest { SessionRef ref = 1; uint64 after_seq = 2; }
+message SessionEventsRequest { SessionRef ref = 1; uint64 after_seq = 2; string client_id = 3; }
 message SessionEventBatch { repeated SessionEvent events = 1; }

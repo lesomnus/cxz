@@ -13,6 +13,12 @@ import (
 const GitHubVersion = "2.100.0"
 
 func EnsureGitHub(ctx context.Context, root, arch string) (string, error) {
+	return EnsureGitHubVersion(ctx, root, arch, SelectedVersion(root, "gh", GitHubVersion))
+}
+func EnsureGitHubVersion(ctx context.Context, root, arch, version string) (string, error) {
+	if !ValidVersion(version) {
+		return "", fmt.Errorf("invalid gh release version")
+	}
 	switch arch {
 	case "x86_64":
 		arch = "amd64"
@@ -22,8 +28,8 @@ func EnsureGitHub(ctx context.Context, root, arch string) (string, error) {
 	if arch != "amd64" && arch != "arm64" {
 		return "", fmt.Errorf("unsupported gh architecture %s", arch)
 	}
-	name := "gh_" + GitHubVersion + "_linux_" + arch
-	dir := filepath.Join(root, "gh", GitHubVersion, arch)
+	name := "gh_" + version + "_linux_" + arch
+	dir := filepath.Join(root, "gh", version, arch)
 	bin := filepath.Join(dir, name, "bin", "gh")
 	if _, err := os.Stat(bin); err == nil {
 		return bin, nil
@@ -44,9 +50,9 @@ func EnsureGitHub(ctx context.Context, root, arch string) (string, error) {
 		return "", err
 	}
 	defer os.RemoveAll(tmp)
-	base := "https://github.com/cli/cli/releases/download/v" + GitHubVersion + "/"
+	base := "https://github.com/cli/cli/releases/download/v" + version + "/"
 	sums := filepath.Join(tmp, "checksums.txt")
-	if err = get(ctx, base+"gh_"+GitHubVersion+"_checksums.txt", sums); err != nil {
+	if err = get(ctx, base+"gh_"+version+"_checksums.txt", sums); err != nil {
 		return "", err
 	}
 	b, err := os.ReadFile(sums)

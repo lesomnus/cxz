@@ -166,6 +166,16 @@ func (c *Client) Interrupt(ctx context.Context, r *api.Control, opts ...grpc.Cal
 func (c *Client) Send(ctx context.Context, r *api.Input, opts ...grpc.CallOption) (*api.Receipt, error) {
 	return receipt(c.sessions.Send(ctx, resource.SessionSendRequest_builder{Ref: sr(r.SessionId), RunId: &r.RunId, ClientId: &r.ClientId, Text: &r.Text}.Build(), opts...))
 }
+func (c *Client) Activity(ctx context.Context, r *api.ActivityInput, opts ...grpc.CallOption) (*api.Receipt, error) {
+	return receipt(c.sessions.Activity(ctx, resource.SessionActivityRequest_builder{Ref: sr(r.SessionId), RunId: &r.RunId, ClientId: &r.ClientId, Busy: &r.Busy}.Build(), opts...))
+}
+func (c *Client) UpdateAgent(ctx context.Context, r *api.AgentUpdateInput, opts ...grpc.CallOption) (*api.AgentUpdateStatus, error) {
+	v, e := c.sessions.UpdateAgent(ctx, resource.SessionUpdateRequest_builder{Ref: sr(r.SessionId), RunId: &r.RunId, Binary: &r.Binary, Apply: &r.Apply}.Build(), opts...)
+	if e != nil {
+		return nil, e
+	}
+	return &api.AgentUpdateStatus{Ready: v.GetReady(), Reason: v.GetReason(), Binary: v.GetBinary(), State: v.GetState()}, nil
+}
 func (c *Client) Reply(ctx context.Context, r *api.Answer, opts ...grpc.CallOption) (*api.Receipt, error) {
 	return receipt(c.sessions.Reply(ctx, resource.SessionReplyRequest_builder{Ref: sr(r.SessionId), RunId: &r.RunId, ClientId: &r.ClientId, RequestId: &r.RequestId, Allow: &r.Allow, AnswersJson: &r.AnswersJson}.Build(), opts...))
 }
@@ -186,7 +196,7 @@ func (s stream) Recv() (*api.Event, error) {
 	return event(s.id, e), nil
 }
 func (c *Client) Watch(ctx context.Context, r *api.WatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[api.Event], error) {
-	s, err := c.sessions.Events(ctx, resource.SessionEventsRequest_builder{Ref: sr(r.SessionId), AfterSeq: &r.AfterSeq}.Build(), opts...)
+	s, err := c.sessions.Events(ctx, resource.SessionEventsRequest_builder{Ref: sr(r.SessionId), AfterSeq: &r.AfterSeq, ClientId: &r.ClientId}.Build(), opts...)
 	if err != nil {
 		return nil, err
 	}

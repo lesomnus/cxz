@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/core"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -35,9 +36,22 @@ func (s *Server) watchRemote(r *api.WatchRequest, stream grpc.ServerStreamingSer
 		return e
 	}
 	cursor := r.AfterSeq
+	clientID := r.ClientId
+	if clientID == "" {
+		clientID = "legacy-" + core.ID()
+	}
+	var lastActivity time.Time
 	ticker := time.NewTicker(200 * time.Millisecond)
 	defer ticker.Stop()
 	for {
+		if lastActivity.IsZero() || (r.ClientId == "" && time.Since(lastActivity) >= 10*time.Second) {
+			if session, err := s.manager.Get(stream.Context(), r.SessionId); err == nil {
+				ctx, cancel := context.WithTimeout(stream.Context(), 3*time.Second)
+				_, _ = s.Activity(ctx, &api.ActivityInput{SessionId: r.SessionId, RunId: session.RunId, ClientId: clientID, Busy: true})
+				cancel()
+			}
+			lastActivity = time.Now()
+		}
 		batch, e := s.manager.History(stream.Context(), &api.WatchRequest{SessionId: r.SessionId, AfterSeq: cursor})
 		if e != nil {
 			return e

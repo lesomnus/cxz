@@ -8,6 +8,8 @@ service Sessions {
   rpc Get(SessionRef) returns (Session);
   rpc Send(Input) returns (Receipt);
   rpc Attach(AttachmentInput) returns (Attachment);
+  rpc Activity(ActivityInput) returns (Receipt);
+  rpc UpdateAgent(AgentUpdateInput) returns (AgentUpdateStatus);
   rpc Reply(Answer) returns (Receipt);
   rpc Interrupt(Control) returns (Receipt);
   rpc Resume(Control) returns (Session);
@@ -40,13 +42,16 @@ message SessionList { repeated Session sessions = 1; }
 message Input { string session_id = 1; string run_id = 2; string client_id = 3; string text = 4; }
 message AttachmentInput { string session_id = 1; string run_id = 2; bytes content = 3; }
 message Attachment { string path = 1; }
+message ActivityInput { string session_id = 1; string run_id = 2; string client_id = 3; bool busy = 4; }
+message AgentUpdateInput { string session_id = 1; string run_id = 2; string binary = 3; bool apply = 4; }
+message AgentUpdateStatus { bool ready = 1; string reason = 2; string binary = 3; string state = 4; }
 message Answer {
   string session_id = 1; string run_id = 2; string client_id = 3;
   string request_id = 4; bool allow = 5; string answers_json = 6;
 }
 message Control { string session_id = 1; string run_id = 2; string client_id = 3; }
 message Receipt { string client_id = 1; string status = 2; }
-message WatchRequest { string session_id = 1; uint64 after_seq = 2; }
+message WatchRequest { string session_id = 1; uint64 after_seq = 2; string client_id = 3; }
 message Event {
   string session_id = 1; string run_id = 2; uint64 seq = 3; int64 time_ms = 4;
   string kind = 5; string text = 6; string request_id = 7; bytes payload = 8;

@@ -123,6 +123,21 @@ func TestLifecycle(t *testing.T) {
 		t.Fatal("model missing from session")
 	}
 	binding := s.AuthBinding
+	// Exercise generated Payday maintenance RPCs through the real runtime and
+	// fixture supervisor. An ineligible update must not restart this run.
+	if _, err := client.Activity(ctx, &api.ActivityInput{SessionId: s.Id, RunId: s.RunId, ClientId: "fixture-ui", Busy: true}); err != nil {
+		t.Fatal(err)
+	}
+	maintenance, err := client.UpdateAgent(ctx, &api.AgentUpdateInput{SessionId: s.Id, RunId: s.RunId, Binary: "/cxz/tools/claude/9.0.0/linux-x64/claude", Apply: true})
+	if err != nil || maintenance.Ready || maintenance.Binary != fake {
+		t.Fatal("busy fixture allowed maintenance", maintenance, err)
+	}
+	if _, err := client.Activity(ctx, &api.ActivityInput{SessionId: s.Id, RunId: "stale", ClientId: "fixture-ui"}); err == nil {
+		t.Fatal("stale activity accepted")
+	}
+	if _, err := client.Activity(ctx, &api.ActivityInput{SessionId: s.Id, RunId: s.RunId, ClientId: "fixture-ui"}); err != nil {
+		t.Fatal(err)
+	}
 	if binding == "" || s.AuthBackend != accounts.ProjectLocalOAuth {
 		t.Fatal("missing auth binding/backend", s)
 	}

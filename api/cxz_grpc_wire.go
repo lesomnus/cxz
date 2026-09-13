@@ -19,20 +19,22 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Sessions_Create_FullMethodName    = "/cxz.runtime.Sessions/Create"
-	Sessions_List_FullMethodName      = "/cxz.runtime.Sessions/List"
-	Sessions_Get_FullMethodName       = "/cxz.runtime.Sessions/Get"
-	Sessions_Send_FullMethodName      = "/cxz.runtime.Sessions/Send"
-	Sessions_Attach_FullMethodName    = "/cxz.runtime.Sessions/Attach"
-	Sessions_Reply_FullMethodName     = "/cxz.runtime.Sessions/Reply"
-	Sessions_Interrupt_FullMethodName = "/cxz.runtime.Sessions/Interrupt"
-	Sessions_Resume_FullMethodName    = "/cxz.runtime.Sessions/Resume"
-	Sessions_Stop_FullMethodName      = "/cxz.runtime.Sessions/Stop"
-	Sessions_Watch_FullMethodName     = "/cxz.runtime.Sessions/Watch"
-	Sessions_History_FullMethodName   = "/cxz.runtime.Sessions/History"
-	Sessions_Open_FullMethodName      = "/cxz.runtime.Sessions/Open"
-	Sessions_Projects_FullMethodName  = "/cxz.runtime.Sessions/Projects"
-	Sessions_Down_FullMethodName      = "/cxz.runtime.Sessions/Down"
+	Sessions_Create_FullMethodName      = "/cxz.runtime.Sessions/Create"
+	Sessions_List_FullMethodName        = "/cxz.runtime.Sessions/List"
+	Sessions_Get_FullMethodName         = "/cxz.runtime.Sessions/Get"
+	Sessions_Send_FullMethodName        = "/cxz.runtime.Sessions/Send"
+	Sessions_Attach_FullMethodName      = "/cxz.runtime.Sessions/Attach"
+	Sessions_Activity_FullMethodName    = "/cxz.runtime.Sessions/Activity"
+	Sessions_UpdateAgent_FullMethodName = "/cxz.runtime.Sessions/UpdateAgent"
+	Sessions_Reply_FullMethodName       = "/cxz.runtime.Sessions/Reply"
+	Sessions_Interrupt_FullMethodName   = "/cxz.runtime.Sessions/Interrupt"
+	Sessions_Resume_FullMethodName      = "/cxz.runtime.Sessions/Resume"
+	Sessions_Stop_FullMethodName        = "/cxz.runtime.Sessions/Stop"
+	Sessions_Watch_FullMethodName       = "/cxz.runtime.Sessions/Watch"
+	Sessions_History_FullMethodName     = "/cxz.runtime.Sessions/History"
+	Sessions_Open_FullMethodName        = "/cxz.runtime.Sessions/Open"
+	Sessions_Projects_FullMethodName    = "/cxz.runtime.Sessions/Projects"
+	Sessions_Down_FullMethodName        = "/cxz.runtime.Sessions/Down"
 )
 
 // SessionsClient is the client API for Sessions service.
@@ -44,6 +46,8 @@ type SessionsClient interface {
 	Get(ctx context.Context, in *SessionRef, opts ...grpc.CallOption) (*Session, error)
 	Send(ctx context.Context, in *Input, opts ...grpc.CallOption) (*Receipt, error)
 	Attach(ctx context.Context, in *AttachmentInput, opts ...grpc.CallOption) (*Attachment, error)
+	Activity(ctx context.Context, in *ActivityInput, opts ...grpc.CallOption) (*Receipt, error)
+	UpdateAgent(ctx context.Context, in *AgentUpdateInput, opts ...grpc.CallOption) (*AgentUpdateStatus, error)
 	Reply(ctx context.Context, in *Answer, opts ...grpc.CallOption) (*Receipt, error)
 	Interrupt(ctx context.Context, in *Control, opts ...grpc.CallOption) (*Receipt, error)
 	Resume(ctx context.Context, in *Control, opts ...grpc.CallOption) (*Session, error)
@@ -107,6 +111,26 @@ func (c *sessionsClient) Attach(ctx context.Context, in *AttachmentInput, opts .
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Attachment)
 	err := c.cc.Invoke(ctx, Sessions_Attach_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) Activity(ctx context.Context, in *ActivityInput, opts ...grpc.CallOption) (*Receipt, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Receipt)
+	err := c.cc.Invoke(ctx, Sessions_Activity_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) UpdateAgent(ctx context.Context, in *AgentUpdateInput, opts ...grpc.CallOption) (*AgentUpdateStatus, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AgentUpdateStatus)
+	err := c.cc.Invoke(ctx, Sessions_UpdateAgent_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -221,6 +245,8 @@ type SessionsServer interface {
 	Get(context.Context, *SessionRef) (*Session, error)
 	Send(context.Context, *Input) (*Receipt, error)
 	Attach(context.Context, *AttachmentInput) (*Attachment, error)
+	Activity(context.Context, *ActivityInput) (*Receipt, error)
+	UpdateAgent(context.Context, *AgentUpdateInput) (*AgentUpdateStatus, error)
 	Reply(context.Context, *Answer) (*Receipt, error)
 	Interrupt(context.Context, *Control) (*Receipt, error)
 	Resume(context.Context, *Control) (*Session, error)
@@ -254,6 +280,12 @@ func (UnimplementedSessionsServer) Send(context.Context, *Input) (*Receipt, erro
 }
 func (UnimplementedSessionsServer) Attach(context.Context, *AttachmentInput) (*Attachment, error) {
 	return nil, status.Error(codes.Unimplemented, "method Attach not implemented")
+}
+func (UnimplementedSessionsServer) Activity(context.Context, *ActivityInput) (*Receipt, error) {
+	return nil, status.Error(codes.Unimplemented, "method Activity not implemented")
+}
+func (UnimplementedSessionsServer) UpdateAgent(context.Context, *AgentUpdateInput) (*AgentUpdateStatus, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateAgent not implemented")
 }
 func (UnimplementedSessionsServer) Reply(context.Context, *Answer) (*Receipt, error) {
 	return nil, status.Error(codes.Unimplemented, "method Reply not implemented")
@@ -389,6 +421,42 @@ func _Sessions_Attach_Handler(srv interface{}, ctx context.Context, dec func(int
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SessionsServer).Attach(ctx, req.(*AttachmentInput))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_Activity_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ActivityInput)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).Activity(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_Activity_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).Activity(ctx, req.(*ActivityInput))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_UpdateAgent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AgentUpdateInput)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).UpdateAgent(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_UpdateAgent_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).UpdateAgent(ctx, req.(*AgentUpdateInput))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -574,6 +642,14 @@ var Sessions_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Attach",
 			Handler:    _Sessions_Attach_Handler,
+		},
+		{
+			MethodName: "Activity",
+			Handler:    _Sessions_Activity_Handler,
+		},
+		{
+			MethodName: "UpdateAgent",
+			Handler:    _Sessions_UpdateAgent_Handler,
 		},
 		{
 			MethodName: "Reply",

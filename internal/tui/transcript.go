@@ -24,6 +24,8 @@ func eventView(s *api.Session, e *api.Event, width int) (out string) {
 	switch e.Kind {
 	case "state":
 		return ""
+	case "update":
+		return teal.Render(wrap("↻ " + e.Text))
 	case "setting":
 		var v struct{ Value string }
 		_ = json.Unmarshal(e.Payload, &v)

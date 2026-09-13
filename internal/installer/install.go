@@ -180,6 +180,9 @@ func Install(ctx context.Context, root, workspaceRoot, image string, recreate bo
 	}
 	args := []string{"run", "-d", "--name", v.Container, "--restart", "unless-stopped", "--label", "cxz.role=daemon", "--label", "cxz.owner=" + v.Owner, "--mount", "type=volume,source=" + v.StateVolume + ",target=/var/lib/cxz", "--mount", "type=volume,source=" + v.ToolsVolume + ",target=/cxz/tools", "--mount", "type=bind,source=" + workspaceRoot + ",target=" + workspaceRoot, "-e", "CXZ_OWNER=" + v.Owner, "-e", "CXZ_WORKSPACE_ROOT=" + workspaceRoot, "-e", "CXZ_TOOLS_VOLUME=" + v.ToolsVolume, "-e", "CXZ_MANAGER_IMAGE=" + image, "-e", "CXZ_MANAGER_CONTAINER=" + v.Container}
 	args = append(args, "-e", "CXZ_HOST_UID="+strconv.Itoa(os.Getuid()), "-e", "CXZ_HOST_GID="+strconv.Itoa(os.Getgid()))
+	if value := os.Getenv("CXZ_AUTO_UPDATE"); value != "" {
+		args = append(args, "-e", "CXZ_AUTO_UPDATE="+value)
+	}
 	args = append(args, endpointArgs...)
 	args = append(args, image, "--state", "/var/lib/cxz", "manager", "serve")
 	if _, e = dockerx.Run(ctx, args...); e != nil {

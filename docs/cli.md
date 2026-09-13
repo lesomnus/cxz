@@ -1,5 +1,44 @@
 # CLI 입력 계약
 
+## CLI 자동 업데이트
+
+설치된 manager는 **기본으로 자동 적용**한다. 최초 실행 시와 마지막 확인으로부터 24시간마다
+Claude/Codex/gh의 공식 최신 stable 버전을 확인한다. prerelease는 제외하며 기존보다 높은
+버전만 적용한다. checksum 검증한 immutable tools cache에 다운로드하고 컨테이너에서
+`--version` 실행을 확인한 후, 전체 프로젝트에서 한 번에 한 세션씩 업데이트·재시작한다.
+대기 큐는 30초마다 검사하며 새 세션도 확인된 release channel을 사용한다.
+
+적용 조건은 연속 5분 idle이다. 실행 중인 turn/tool, background task/자식 프로세스,
+pending approval/question, model/effort 변경, TUI 입력 활동이나 미전송 초안이 있으면 보류한다.
+TUI는 10초 heartbeat와 휴지 후 첫 입력을 보고한다. 연결이 끊기면 30초 lease 만료 후
+새 idle 구간을 기다린다. 입력 보고가 없는 구버전 클라이언트가 붙어 있거나 알 수 없는
+background 이벤트/프로세스 상태가 있으면 적용하지 않는다. 상주 MCP/LSP 등의 자식 프로세스도
+보수적으로 보류 사유가 될 수 있다. 서버에서 받아들인 새 입력과 업데이트 중단은 같은 잠금으로
+직렬화한다. 재시작과 겹쳐 전송에 실패한 TUI 초안은 복원하며 메시지를 자동 재전송하지 않는다.
+
+업데이트는 기존 session/account/auth binding과 provider 대화 이력을 유지하는 resume이다.
+새 프로세스 초기화 실패 시 이전 실행 파일로 복구한다. runtime 중단에 대비한 transaction을
+세션 디렉터리에 저장하며 재기동/주기 검사에서 복구한다. 실패한 버전과 실패한 복구 재시도는
+24시간 간격으로 제한한다. `/permission full`처럼 run 단위 설정은 일반 재시작처럼 초기화된다.
+gh는 cxz-managed wrapper의 실행 파일 링크만 원자적으로 교체하고 에이전트를 재시작하지 않는다.
+이미지에 설치된 사용자 gh 및 과거 고정 경로 wrapper는 자동 교체 대상이 아니다.
+
+세션 대화에는 queued/applying/completed/rollback 알림이 표시된다. manager 컨테이너의
+`/var/lib/cxz/updates.json`에 마지막 확인 시각, 버전, 확인 오류와 세션별 대기/실패 사유를 저장한다.
+확인 실패 시 이미 실행 중인 세션은 계속 동작한다. 호스트 CLI, cxz manager/runtime 이미지,
+프로젝트 이미지 자체와 인증 토큰은 이 worker가 업데이트하지 않는다.
+
+최초 도입은 새 CLI로 `cxz install --recreate` 후 필요한 프로젝트를
+`cxz project recreate WORKSPACE`하여 manager/runtime/supervisor를 함께 갱신한다.
+구버전 runtime을 안전 조건 확인 없이 강제 재시작하지 않는다. 이후 provider CLI 자동 적용에는
+프로젝트 재생성이 필요 없다. 비활성화하려면:
+
+```sh
+CXZ_AUTO_UPDATE=false cxz install --recreate
+```
+
+다시 활성화하려면 `CXZ_AUTO_UPDATE=true cxz install --recreate`한다.
+
 ## 컨테이너 GitHub CLI와 호스트 인증
 
 프로젝트 준비 시 GitHub CLI 2.100.0 공식 Linux amd64/arm64 아카이브를 checksum 검증 후

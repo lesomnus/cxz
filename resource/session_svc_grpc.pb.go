@@ -19,21 +19,23 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	SessionService_Add_FullMethodName       = "/cxz.SessionService/Add"
-	SessionService_Get_FullMethodName       = "/cxz.SessionService/Get"
-	SessionService_Patch_FullMethodName     = "/cxz.SessionService/Patch"
-	SessionService_Apply_FullMethodName     = "/cxz.SessionService/Apply"
-	SessionService_Erase_FullMethodName     = "/cxz.SessionService/Erase"
-	SessionService_List_FullMethodName      = "/cxz.SessionService/List"
-	SessionService_Watch_FullMethodName     = "/cxz.SessionService/Watch"
-	SessionService_Resume_FullMethodName    = "/cxz.SessionService/Resume"
-	SessionService_Stop_FullMethodName      = "/cxz.SessionService/Stop"
-	SessionService_Interrupt_FullMethodName = "/cxz.SessionService/Interrupt"
-	SessionService_Send_FullMethodName      = "/cxz.SessionService/Send"
-	SessionService_Attach_FullMethodName    = "/cxz.SessionService/Attach"
-	SessionService_Reply_FullMethodName     = "/cxz.SessionService/Reply"
-	SessionService_History_FullMethodName   = "/cxz.SessionService/History"
-	SessionService_Events_FullMethodName    = "/cxz.SessionService/Events"
+	SessionService_Add_FullMethodName         = "/cxz.SessionService/Add"
+	SessionService_Get_FullMethodName         = "/cxz.SessionService/Get"
+	SessionService_Patch_FullMethodName       = "/cxz.SessionService/Patch"
+	SessionService_Apply_FullMethodName       = "/cxz.SessionService/Apply"
+	SessionService_Erase_FullMethodName       = "/cxz.SessionService/Erase"
+	SessionService_List_FullMethodName        = "/cxz.SessionService/List"
+	SessionService_Watch_FullMethodName       = "/cxz.SessionService/Watch"
+	SessionService_Resume_FullMethodName      = "/cxz.SessionService/Resume"
+	SessionService_Stop_FullMethodName        = "/cxz.SessionService/Stop"
+	SessionService_Interrupt_FullMethodName   = "/cxz.SessionService/Interrupt"
+	SessionService_Send_FullMethodName        = "/cxz.SessionService/Send"
+	SessionService_Attach_FullMethodName      = "/cxz.SessionService/Attach"
+	SessionService_Activity_FullMethodName    = "/cxz.SessionService/Activity"
+	SessionService_UpdateAgent_FullMethodName = "/cxz.SessionService/UpdateAgent"
+	SessionService_Reply_FullMethodName       = "/cxz.SessionService/Reply"
+	SessionService_History_FullMethodName     = "/cxz.SessionService/History"
+	SessionService_Events_FullMethodName      = "/cxz.SessionService/Events"
 )
 
 // SessionServiceClient is the client API for SessionService service.
@@ -69,6 +71,8 @@ type SessionServiceClient interface {
 	Interrupt(ctx context.Context, in *SessionControl, opts ...grpc.CallOption) (*SessionReceipt, error)
 	Send(ctx context.Context, in *SessionSendRequest, opts ...grpc.CallOption) (*SessionReceipt, error)
 	Attach(ctx context.Context, in *SessionAttachRequest, opts ...grpc.CallOption) (*SessionAttachment, error)
+	Activity(ctx context.Context, in *SessionActivityRequest, opts ...grpc.CallOption) (*SessionReceipt, error)
+	UpdateAgent(ctx context.Context, in *SessionUpdateRequest, opts ...grpc.CallOption) (*SessionUpdateStatus, error)
 	Reply(ctx context.Context, in *SessionReplyRequest, opts ...grpc.CallOption) (*SessionReceipt, error)
 	// Journal replay is not payday Watch: it is cursor-ordered event history.
 	History(ctx context.Context, in *SessionEventsRequest, opts ...grpc.CallOption) (*SessionEventBatch, error)
@@ -212,6 +216,26 @@ func (c *sessionServiceClient) Attach(ctx context.Context, in *SessionAttachRequ
 	return out, nil
 }
 
+func (c *sessionServiceClient) Activity(ctx context.Context, in *SessionActivityRequest, opts ...grpc.CallOption) (*SessionReceipt, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SessionReceipt)
+	err := c.cc.Invoke(ctx, SessionService_Activity_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionServiceClient) UpdateAgent(ctx context.Context, in *SessionUpdateRequest, opts ...grpc.CallOption) (*SessionUpdateStatus, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SessionUpdateStatus)
+	err := c.cc.Invoke(ctx, SessionService_UpdateAgent_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *sessionServiceClient) Reply(ctx context.Context, in *SessionReplyRequest, opts ...grpc.CallOption) (*SessionReceipt, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SessionReceipt)
@@ -284,6 +308,8 @@ type SessionServiceServer interface {
 	Interrupt(context.Context, *SessionControl) (*SessionReceipt, error)
 	Send(context.Context, *SessionSendRequest) (*SessionReceipt, error)
 	Attach(context.Context, *SessionAttachRequest) (*SessionAttachment, error)
+	Activity(context.Context, *SessionActivityRequest) (*SessionReceipt, error)
+	UpdateAgent(context.Context, *SessionUpdateRequest) (*SessionUpdateStatus, error)
 	Reply(context.Context, *SessionReplyRequest) (*SessionReceipt, error)
 	// Journal replay is not payday Watch: it is cursor-ordered event history.
 	History(context.Context, *SessionEventsRequest) (*SessionEventBatch, error)
@@ -333,6 +359,12 @@ func (UnimplementedSessionServiceServer) Send(context.Context, *SessionSendReque
 }
 func (UnimplementedSessionServiceServer) Attach(context.Context, *SessionAttachRequest) (*SessionAttachment, error) {
 	return nil, status.Error(codes.Unimplemented, "method Attach not implemented")
+}
+func (UnimplementedSessionServiceServer) Activity(context.Context, *SessionActivityRequest) (*SessionReceipt, error) {
+	return nil, status.Error(codes.Unimplemented, "method Activity not implemented")
+}
+func (UnimplementedSessionServiceServer) UpdateAgent(context.Context, *SessionUpdateRequest) (*SessionUpdateStatus, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateAgent not implemented")
 }
 func (UnimplementedSessionServiceServer) Reply(context.Context, *SessionReplyRequest) (*SessionReceipt, error) {
 	return nil, status.Error(codes.Unimplemented, "method Reply not implemented")
@@ -573,6 +605,42 @@ func _SessionService_Attach_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SessionService_Activity_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SessionActivityRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionServiceServer).Activity(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SessionService_Activity_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionServiceServer).Activity(ctx, req.(*SessionActivityRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SessionService_UpdateAgent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SessionUpdateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionServiceServer).UpdateAgent(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SessionService_UpdateAgent_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionServiceServer).UpdateAgent(ctx, req.(*SessionUpdateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _SessionService_Reply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SessionReplyRequest)
 	if err := dec(in); err != nil {
@@ -670,6 +738,14 @@ var SessionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Attach",
 			Handler:    _SessionService_Attach_Handler,
+		},
+		{
+			MethodName: "Activity",
+			Handler:    _SessionService_Activity_Handler,
+		},
+		{
+			MethodName: "UpdateAgent",
+			Handler:    _SessionService_UpdateAgent_Handler,
 		},
 		{
 			MethodName: "Reply",

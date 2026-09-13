@@ -43,6 +43,7 @@ type Snapshot struct {
 	Pending  []Event `json:"pending"`
 }
 type Command struct {
+	Busy       bool                       `json:"busy,omitempty"`
 	RunID      string                     `json:"run_id"`
 	ClientID   string                     `json:"client_id"`
 	Text       string                     `json:"text,omitempty"`
