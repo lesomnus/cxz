@@ -87,6 +87,8 @@ type model struct {
 	localReports         map[string]string
 	historyTimes         []int64
 	historyPositions     []float64 // stable journal coordinates, not loaded-line offsets
+	restartConfirm       *restartConfirmation
+	restartBusy          bool
 	lastPromptStart      int
 	lastPromptEnd        int
 	latestPrompt         string
@@ -724,6 +726,14 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.watchID = ""
 			m.notice = "event connection lost; reconnecting from saved cursor"
 		}
+	case restartFinished:
+		m.restartBusy = false
+		if v.err != nil {
+			m.notice = v.err.Error()
+		} else {
+			m.notice = "Agent restarted · same session · manual approval"
+		}
+		return m, m.refresh()
 	case result:
 		m.busy = false
 		if v.err != nil {
@@ -899,6 +909,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.action("answer", strings.TrimPrefix(text, "/answer "))
 			}
 			localName := strings.Fields(text)[0]
+			if localName == "/restart" {
+				return m, m.restartCommand(text)
+			}
 			if localName == "/model" || localName == "/effort" {
 				return m, m.modelCommand(text)
 			}

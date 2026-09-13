@@ -17,6 +17,7 @@ var slashCommands = []slashCommand{
 	{"/usage", "Session tokens, cost and time"},
 	{"/answer", "Reply to a pending question"},
 	{"/stop", "Stop agent"},
+	{"/restart", "Restart this session's agent (confirmation required)"},
 	{"/permission", "full: auto-approve this run · ask: manual"},
 	{"/approval", "Inspect selected approval payload"},
 	{"/details", "Inspect latest tool result"},
