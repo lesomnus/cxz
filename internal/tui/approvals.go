@@ -237,9 +237,9 @@ func (m *model) approvalBox() string {
 	for len(rows) < height-2 {
 		rows = append(rows, "")
 	}
-	line := muted.Render(strings.Repeat("─", max(1, m.width)))
+	line := insetRule(m.width, muted)
 	if m.focusApproval {
-		line = accent.Render(strings.Repeat("─", max(1, m.width)))
+		line = insetRule(m.width, accent)
 	}
 	return line + "\n" + strings.Join(rows[:min(len(rows), height-2)], "\n") + "\n" + line
 }

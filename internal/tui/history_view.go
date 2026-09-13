@@ -2,11 +2,24 @@ package tui
 
 import (
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
 	"github.com/charmbracelet/x/ansi"
 )
+
+// The range is the loaded viewport, matching the "loaded L" status while older
+// pages are not fetched. Use the existing spacer row to avoid layout movement.
+func (m *model) scrollTrack() string {
+	width := max(1, m.width)
+	end := max(0, m.view.TotalLineCount()-m.view.Height)
+	position := 0
+	if end > 0 {
+		position = int(math.Round(float64(min(max(0, m.view.YOffset), end)) * float64(width-1) / float64(end)))
+	}
+	return zeroStyle.Render(strings.Repeat("─", position)) + muted.Render("◆︎") + zeroStyle.Render(strings.Repeat("─", width-position-1))
+}
 
 func (m *model) scrollStatus() string {
 	start := m.view.YOffset
