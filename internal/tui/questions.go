@@ -16,6 +16,7 @@ type questionDialog struct {
 	questions         []agentview.Question
 	selected          [][]bool
 	other             []textinput.Model
+	otherSelected     []bool
 	page, row, offset int
 	message           string
 	sending           bool
@@ -50,10 +51,12 @@ func (m *model) openQuestion(p *api.Event) tea.Cmd {
 		in := textinput.New()
 		in.Placeholder = "Type your answer"
 		in.CharLimit = 0
+		in.Prompt = ""
 		if q.Secret {
 			in.EchoMode = textinput.EchoPassword
 		}
 		d.other = append(d.other, in)
+		d.otherSelected = append(d.otherSelected, false)
 	}
 	m.questionDialog = d
 	if m.questionSeen == nil {
@@ -116,8 +119,12 @@ func (d *questionDialog) count() int {
 }
 func (d *questionDialog) texts() []string {
 	var out []string
-	for _, in := range d.other {
-		out = append(out, in.Value())
+	for i, in := range d.other {
+		text := ""
+		if d.otherSelected[i] {
+			text = in.Value()
+		}
+		out = append(out, text)
 	}
 	return out
 }
@@ -204,7 +211,7 @@ func (m *model) questionKey(k tea.KeyMsg) tea.Cmd {
 			if !q.Multi {
 				value = true
 				clear(d.selected[d.page])
-				d.other[d.page].Reset()
+				d.otherSelected[d.page] = false
 			}
 			d.selected[d.page][d.row] = value
 		} else if d.row == n {
@@ -219,6 +226,10 @@ func (m *model) questionKey(k tea.KeyMsg) tea.Cmd {
 			m.closeQuestion()
 			return nil
 		} else if k.String() == "enter" {
+			d.otherSelected[d.page] = true
+			if !q.Multi {
+				clear(d.selected[d.page])
+			}
 			return m.questionNext()
 		} else {
 			goto input
@@ -230,12 +241,16 @@ func (m *model) questionKey(k tea.KeyMsg) tea.Cmd {
 	return nil
 input:
 	if q.Other && d.row == len(q.Options) {
-		if !q.Multi {
-			clear(d.selected[d.page])
-		}
+		before := d.other[d.page].Value()
 		d.other[d.page].Focus()
 		var cmd tea.Cmd
 		d.other[d.page], cmd = d.other[d.page].Update(k)
+		if d.other[d.page].Value() != before {
+			d.otherSelected[d.page] = strings.TrimSpace(d.other[d.page].Value()) != ""
+			if !q.Multi {
+				clear(d.selected[d.page])
+			}
+		}
 		return cmd
 	}
 	return nil
@@ -275,8 +290,10 @@ func (m *model) questionOverlay(view string) string {
 			focus = len(lines)
 		}
 		label := prefix + marker + " " + safeText(o.Label)
-		if i == d.row || d.selected[d.page][i] {
-			label = magenta.Bold(i == d.row).Render(label)
+		if d.selected[d.page][i] {
+			label = magenta.Bold(true).Render(label)
+		} else if i == d.row {
+			label = accent.Render(label)
 		}
 		add(label)
 		if o.Description != "" {
@@ -298,12 +315,15 @@ func (m *model) questionOverlay(view string) string {
 			in.Cursor.Blink = m.pulse%10 >= 5
 		}
 		label := prefix + "Other: "
-		if d.row == len(q.Options) || in.Value() != "" {
+		if d.otherSelected[d.page] {
 			label = magenta.Render(label)
+		} else if d.row == len(q.Options) {
+			label = accent.Render(label)
 		}
 		add(label + in.View())
 	}
 	n := d.count()
+	add("")
 	buttonLine := ""
 	for i, label := range []string{"Next", "Back", "Cancel"} {
 		if i == 0 && d.page == len(d.questions)-1 {
@@ -312,7 +332,7 @@ func (m *model) questionOverlay(view string) string {
 		prefix := "  "
 		if d.row == n+i {
 			prefix = "› "
-			label = magenta.Reverse(true).Render("[ " + label + " ]")
+			label = accent.Reverse(true).Render("[ " + label + " ]")
 		} else {
 			label = "[ " + label + " ]"
 		}
@@ -330,6 +350,7 @@ func (m *model) questionOverlay(view string) string {
 		buttonLine += button
 	}
 	add(buttonLine)
+	add("")
 	height := max(1, len(strings.Split(view, "\n"))-4)
 	start := max(0, focus-height+2) + d.offset
 	start = max(0, min(start, max(0, len(lines)-height)))

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	"errors"
 	"fmt"
@@ -271,10 +270,8 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 		if !terminal(c) {
 			return fmt.Errorf("review targets with cxz project ls, then pass --yes")
 		}
-		fmt.Fprint(c.ErrWriter, "Type recreate to continue: ")
-		v, e := bufio.NewReader(c.ReadCloser).ReadString('\n')
-		if e != nil || strings.TrimSpace(v) != "recreate" {
-			return fmt.Errorf("canceled")
+		if err := tui.ConfirmRecreate(ctx, c.ReadCloser, c.ErrWriter, path); err != nil {
+			return err
 		}
 		yes = true
 	}

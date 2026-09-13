@@ -265,10 +265,20 @@ PgUp/PgDn or the wheel scroll long content. JSON is not required; the advanced
 `/answer {"question text or id":"answer"}` form remains available.
 The provider-neutral question model lives in `internal/agentview/questions.go`;
 original provider payloads stay in the journal and remain accessible via `/approval`.
-Previews have their own indented border; focused/selected choices use pastel
-magenta. Multi-select and approval markers use `[ ]`, `[✓]`, and `[×]` for denial.
+Previews have their own indented border; confirmed selections use vivid magenta,
+while focus and buttons keep the green accent. Other drafts survive choosing a
+different radio option and are sent only while selected. Buttons have a blank
+row above and below. Multi-select and approval markers use `[ ]`, `[✓]`, and `[×]` for denial.
 Navigation buttons share a row when space permits (Left/Right also moves between
 buttons). The pending panel is hidden while the question dialog is open.
+Replies retain `{selected: [...], other: "..."}` per question through the runtime.
+Claude receives its native string answer plus annotations preserving exact
+selections/Other and the selected single-choice preview. Codex receives native
+answer arrays. Non-secret Other text is trimmed; an exact option match becomes
+that selection without duplication. The explicit CLI string-map reply remains
+available. This structured dialog path requires updated runtime and supervisor
+code as well as the CLI; restart the agent after updating the project runtime.
+Do not purge data to upgrade.
 After a decision, focus returns to input to avoid approving the next request with
 a repeated Enter. A blank row separates the conversation from the notice area.
 Resolved approvals update the original checkbox row in place, with separate

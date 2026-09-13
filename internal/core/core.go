@@ -43,12 +43,13 @@ type Snapshot struct {
 	Pending  []Event `json:"pending"`
 }
 type Command struct {
-	RunID     string            `json:"run_id"`
-	ClientID  string            `json:"client_id"`
-	Text      string            `json:"text,omitempty"`
-	RequestID string            `json:"request_id,omitempty"`
-	Allow     bool              `json:"allow,omitempty"`
-	Answers   map[string]string `json:"answers,omitempty"`
+	RunID      string                     `json:"run_id"`
+	ClientID   string                     `json:"client_id"`
+	Text       string                     `json:"text,omitempty"`
+	RequestID  string                     `json:"request_id,omitempty"`
+	Allow      bool                       `json:"allow,omitempty"`
+	Answers    map[string]string          `json:"answers,omitempty"`
+	Selections map[string]AnswerSelection `json:"selections,omitempty"`
 }
 type Receipt struct {
 	ClientID string `json:"client_id"`

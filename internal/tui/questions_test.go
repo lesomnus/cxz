@@ -9,6 +9,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/core"
 )
 
 func questionModel() *model {
@@ -51,9 +52,9 @@ func TestInteractiveQuestionAnswers(t *testing.T) {
 		t.Fatal("wrong route")
 	}
 	a := c.answers[0]
-	var values map[string]string
+	var values map[string]core.AnswerSelection
 	json.Unmarshal([]byte(a.AnswersJson), &values)
-	if a.RequestId != "q" || !a.Allow || values["무엇을?"] != "A" || values["여러 개?"] != "X, Y, 직접 입력" {
+	if a.RequestId != "q" || !a.Allow || strings.Join(values["무엇을?"].Selected, ",") != "A" || strings.Join(values["여러 개?"].Selected, ",") != "X,Y" || values["여러 개?"].Other != "직접 입력" {
 		t.Fatalf("%+v", a)
 	}
 	m.Update(result)
@@ -133,7 +134,7 @@ func TestCodexQuestionSecret(t *testing.T) {
 	}
 	cmd()
 	a := m.client.(*recordingClient).answers[0]
-	if a.AnswersJson != `{"secret-id":"private-value"}` {
+	if a.AnswersJson != `{"secret-id":{"selected":[],"other":"private-value"}}` {
 		t.Fatal(a.AnswersJson)
 	}
 	if m.questionDialog == nil || !m.questionDialog.sending {

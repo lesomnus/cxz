@@ -3,6 +3,7 @@ package agentview
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/lesomnus/cxz/internal/core"
 	"strings"
 )
 
@@ -62,13 +63,12 @@ func Questions(provider, method string, raw []byte) ([]Question, error) {
 	return out, nil
 }
 
-// EncodeQuestionAnswers preserves the existing reply API; only Claude supports
-// multiple selections here, represented by its comma-separated answer string.
+// Keep choices distinct until the provider adapter creates its native reply.
 func EncodeQuestionAnswers(qs []Question, selections [][]bool, other []string) (string, error) {
 	if len(qs) != len(selections) || len(qs) != len(other) {
 		return "", fmt.Errorf("incomplete answers")
 	}
-	values := map[string]string{}
+	values := map[string]core.AnswerSelection{}
 	for i, q := range qs {
 		var selected []string
 		for j, o := range q.Options {
@@ -76,14 +76,94 @@ func EncodeQuestionAnswers(qs []Question, selections [][]bool, other []string) (
 				selected = append(selected, o.Label)
 			}
 		}
-		if q.Other && strings.TrimSpace(other[i]) != "" {
-			selected = append(selected, other[i])
-		}
-		if len(selected) == 0 || (!q.Multi && len(selected) != 1) {
-			return "", fmt.Errorf("answer question %d before submitting", i+1)
-		}
-		values[q.Key] = strings.Join(selected, ", ")
+		values[q.Key] = core.AnswerSelection{Selected: selected, Other: other[i]}
+	}
+	values, err := NormalizeAnswers(qs, values)
+	if err != nil {
+		return "", err
 	}
 	b, err := json.Marshal(values)
 	return string(b), err
+}
+
+func NormalizeAnswers(qs []Question, values map[string]core.AnswerSelection) (map[string]core.AnswerSelection, error) {
+	if len(values) != len(qs) {
+		return nil, fmt.Errorf("answer every question")
+	}
+	out := map[string]core.AnswerSelection{}
+	for i, q := range qs {
+		a, ok := values[q.Key]
+		if !ok {
+			return nil, fmt.Errorf("missing answer %d", i+1)
+		}
+		labels := map[string]bool{}
+		for _, o := range q.Options {
+			labels[o.Label] = true
+		}
+		seen := map[string]bool{}
+		clean := core.AnswerSelection{Selected: []string{}, Other: a.Other}
+		if !q.Secret {
+			clean.Other = strings.TrimSpace(clean.Other)
+		}
+		for _, label := range a.Selected {
+			if !labels[label] {
+				return nil, fmt.Errorf("unknown option for question %d", i+1)
+			}
+			if !seen[label] {
+				clean.Selected = append(clean.Selected, label)
+				seen[label] = true
+			}
+		}
+		if clean.Other != "" {
+			if !q.Other {
+				return nil, fmt.Errorf("Other is not supported for question %d", i+1)
+			}
+			if labels[clean.Other] {
+				if !seen[clean.Other] {
+					clean.Selected = append(clean.Selected, clean.Other)
+				}
+				clean.Other = ""
+			}
+		}
+		count := len(clean.Selected)
+		if clean.Other != "" {
+			count++
+		}
+		if count == 0 || (!q.Multi && count != 1) {
+			return nil, fmt.Errorf("answer question %d before submitting", i+1)
+		}
+		out[q.Key] = clean
+	}
+	return out, nil
+}
+
+// Claude requires string answers. Notes preserve the exact selection/Other
+// boundary (including commas); preview comes only from the pending option.
+func ClaudeAnswerAnnotations(qs []Question, values map[string]core.AnswerSelection) (map[string]string, map[string]map[string]string) {
+	answers := map[string]string{}
+	annotations := map[string]map[string]string{}
+	for _, q := range qs {
+		a := values[q.Key]
+		parts := append([]string{}, a.Selected...)
+		if a.Other != "" {
+			parts = append(parts, a.Other)
+		}
+		answers[q.Key] = strings.Join(parts, ", ")
+		note := map[string]string{}
+		if a.Other != "" || q.Multi {
+			b, _ := json.Marshal(a)
+			note["notes"] = "cxz structured selection: " + string(b)
+		}
+		if !q.Multi && len(a.Selected) == 1 {
+			for _, o := range q.Options {
+				if o.Label == a.Selected[0] && o.Preview != "" {
+					note["preview"] = o.Preview
+				}
+			}
+		}
+		if len(note) > 0 {
+			annotations[q.Key] = note
+		}
+	}
+	return answers, annotations
 }

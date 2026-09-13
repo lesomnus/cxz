@@ -2,6 +2,8 @@ package agentview
 
 import (
 	"encoding/json"
+	"github.com/lesomnus/cxz/internal/core"
+	"strings"
 	"testing"
 )
 
@@ -25,13 +27,13 @@ func TestQuestionProviderAdapters(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		var answers map[string]string
+		var answers map[string]core.AnswerSelection
 		json.Unmarshal([]byte(encoded), &answers)
 		want := "A"
 		if tc.multi {
 			want = "A, B"
 		}
-		if answers[tc.key] != want {
+		if strings.Join(answers[tc.key].Selected, ", ") != want {
 			t.Fatal(encoded)
 		}
 		if _, err := EncodeQuestionAnswers(qs, [][]bool{{false, false}}, []string{""}); err == nil {
@@ -49,5 +51,15 @@ func TestQuestionMalformedAndSecret(t *testing.T) {
 	qs, err := Questions("codex", "item/tool/requestUserInput", []byte(`{"params":{"questions":[{"id":"secret","question":"Token?","isSecret":true}]}}`))
 	if err != nil || !qs[0].Secret || !qs[0].Other {
 		t.Fatalf("%+v %v", qs, err)
+	}
+}
+
+func TestOtherMatchesOptionAndTrims(t *testing.T) {
+	qs := []Question{{Key: "q", Text: "q", Multi: true, Other: true, Options: []QuestionOption{{Label: "high"}}}}
+	for _, selected := range [][]string{nil, {"high"}} {
+		got, err := NormalizeAnswers(qs, map[string]core.AnswerSelection{"q": {Selected: selected, Other: "  high  "}})
+		if err != nil || len(got["q"].Selected) != 1 || got["q"].Other != "" {
+			t.Fatalf("%+v %v", got, err)
+		}
 	}
 }

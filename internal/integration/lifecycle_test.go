@@ -300,6 +300,16 @@ func TestLifecycle(t *testing.T) {
 		t.Fatal(e)
 	}
 	await("idle")
+	send("question")
+	s = await("waiting_input")
+	structured := &api.Answer{SessionId: id, RunId: s.RunId, ClientId: core.ID(), RequestId: s.Pending[0].RequestId, Allow: true, AnswersJson: `{"Choose a color":{"selected":[],"other":"  custom, color  "}}`}
+	if _, err := client.Reply(ctx, structured); err != nil {
+		t.Fatal("structured reply through server/runtime", err)
+	}
+	await("idle")
+	if _, err := client.Reply(ctx, structured); err != nil {
+		t.Fatal("structured reply retry", err)
+	}
 	send("wait")
 	s = await("working")
 	if _, e = client.Interrupt(ctx, &api.Control{SessionId: id, RunId: s.RunId, ClientId: core.ID()}); e != nil {

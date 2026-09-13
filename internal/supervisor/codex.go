@@ -274,18 +274,37 @@ func (c *codexProtocol) command(op string, v core.Command) (any, error) {
 		result := map[string]any{}
 		switch r.Method {
 		case "item/tool/requestUserInput":
+			var selections map[string]core.AnswerSelection
+			if v.Allow && len(v.Selections) > 0 {
+				qs, err := agentview.Questions("codex", r.Method, p.Payload)
+				if err != nil {
+					return nil, err
+				}
+				selections, err = agentview.NormalizeAnswers(qs, v.Selections)
+				if err != nil {
+					return nil, err
+				}
+			}
 			answers := map[string]any{}
 			for _, q := range r.Params.Questions {
 				answer := v.Answers[q.ID]
 				if answer == "" {
 					answer = v.Answers[q.Question]
 				}
-				if v.Allow && answer == "" {
+				if v.Allow && answer == "" && len(selections) == 0 {
 					return nil, fmt.Errorf("answer required for %q (%s)", q.Question, q.ID)
 				}
 				a := []string{}
 				if v.Allow {
-					a = append(a, answer)
+					if len(selections) > 0 {
+						choice := selections[q.ID]
+						a = append(a, choice.Selected...)
+						if choice.Other != "" {
+							a = append(a, choice.Other)
+						}
+					} else {
+						a = append(a, answer)
+					}
 				}
 				answers[q.ID] = map[string]any{"answers": a}
 			}
