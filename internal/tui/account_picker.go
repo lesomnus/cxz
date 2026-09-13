@@ -46,6 +46,7 @@ type accountPicker struct {
 
 func newAccountPicker(accounts []*resource.Account) *accountPicker {
 	s := textinput.New()
+	s.Cursor.Style = inputCursorStyle
 	s.Prompt = "Search: "
 	s.Placeholder = "number, name, alias (or agent)"
 	s.CharLimit = 200

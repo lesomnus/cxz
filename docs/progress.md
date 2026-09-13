@@ -1,5 +1,27 @@
 # 구현 진행 상황
 
+## 2026-09-13 — inline 확인·커서 스타일·파일 작업 요약
+
+- recreate 확인에서 alternate screen을 제거하고 작은 inline 폼으로 표시한다.
+  기존 스크롤백은 유지하며 붙여넣기·편집·명시적 Enter 확인 동작은 보존한다.
+- 확정 선택 magenta를 `#ED79D4`로 완화. 입력 커서는 brand light-green `#AEFF98`,
+  기존 blink 모드를 유지한다. 질문 Other와 model 검색도 pulse 기반으로 깜빡인다.
+  셸의 전역 cursor 색/모드는 변경하지 않는다.
+- Write/Edit/Bash는 Claude native 이름이다. 공통 agentview.ToolActivity에 Claude
+  Write/Edit/Read/Bash, Codex fileChange/commandExecution을 표시용으로 매핑했다.
+  실행/승인 프로토콜의 도구 이름은 변경하지 않는다.
+- 파일 본문/교체 문자열 대신 경로와 변경량을 표시한다. Claude Write는 제공한 줄 수,
+  Edit는 교체 구간 −/+ 줄 수(파일 전체 diff 아님), replace_all은 per-match 및 총횟수
+  미상 표시. Codex는 unified diff hunk의 −/+ 줄 수, 미제공 시 count unavailable.
+- result는 run + tool ID로 call과 연결해 경로·변경량·성공/실패를 표시한다. 다른 run이나
+  동시에 실행한 도구와 섞지 않는다. /details에는 원본 입력/응답을 함께 표시하고
+  journal은 변경하지 않는다. CLI 표시 계층만 변경하므로 서버 재생성은 필요 없다.
+- 검증: inline recreate PTY/화면 전환 없음, green cursor blink on/off, native 도구 매핑,
+  diff header 제외·hunk 집계, interleaved 결과 연결·실패, 본문 숨김 및 raw details 보존.
+  `go test ./...`, `go test -race ./internal/tui ./internal/agentview`, `go vet ./...`,
+  `git diff --check` 통과. 사용자 에이전트로 실제 파일을 수정하는 테스트는 하지 않았다.
+
+
 ## 2026-09-13 — 확인 입력·Other 초안·구조화된 질문 답변
 
 - project recreate의 canonical ReadString 비교를 전용 TUI로 교체했다. 브래킷 붙여넣기,

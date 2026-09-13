@@ -222,6 +222,10 @@ func (m *model) modelPickerOverlay(view string) string {
 	if !p.loading && p.catalog != nil && len(options) == 0 {
 		lines = append(lines, "No matching provider choices.")
 	}
-	lines = append(lines, "", "Search: "+safeText(p.query)+"▏")
+	caret := " "
+	if m.pulse%10 < 5 {
+		caret = inputCursorStyle.Render("▏")
+	}
+	lines = append(lines, "", "Search: "+safeText(p.query)+caret)
 	return overlayBox(view, lines, m.width, true)
 }

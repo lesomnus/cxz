@@ -19,7 +19,7 @@ func ConfirmRecreate(ctx context.Context, in io.Reader, out io.Writer, target st
 	if file, ok := in.(*os.File); ok {
 		in = keyboardInput(file)
 	}
-	_, err := tea.NewProgram(m, tea.WithContext(ctx), tea.WithInput(in), tea.WithOutput(out), tea.WithAltScreen()).Run()
+	_, err := tea.NewProgram(m, tea.WithContext(ctx), tea.WithInput(in), tea.WithOutput(out)).Run()
 	if err != nil {
 		return err
 	}
@@ -38,6 +38,7 @@ type recreateConfirmation struct {
 
 func newRecreateConfirmation() *recreateConfirmation {
 	in := textinput.New()
+	in.Cursor.Style = inputCursorStyle
 	in.Prompt = "Type recreate to continue: "
 	in.Width = 20
 	in.CharLimit = 100
@@ -64,8 +65,7 @@ func (m *recreateConfirmation) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 func (m *recreateConfirmation) View() string {
-	return accent.Bold(true).Render("Recreate project container") + "\n\n" +
-		"Target: " + safeText(m.target) + "\n\n" +
-		"The writable layer is removed; attached editors disconnect.\nWorkspace and named volumes are kept.\n\n" +
-		m.input.View() + "\n" + warning.Render(m.message) + "\n\n" + muted.Render("Enter confirm · Esc cancel") + "\n"
+	return accent.Bold(true).Render("Recreate · "+safeText(m.target)) + "\n" +
+		"Writable layer removed; editors disconnect. Workspace/volumes kept.\n" +
+		m.input.View() + "\n" + warning.Render(m.message) + "\n" + muted.Render("Enter confirm · Esc cancel") + "\n"
 }

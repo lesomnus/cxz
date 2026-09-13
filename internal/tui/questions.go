@@ -49,6 +49,7 @@ func (m *model) openQuestion(p *api.Event) tea.Cmd {
 	for _, q := range qs {
 		d.selected = append(d.selected, make([]bool, len(q.Options)))
 		in := textinput.New()
+		in.Cursor.Style = inputCursorStyle
 		in.Placeholder = "Type your answer"
 		in.CharLimit = 0
 		in.Prompt = ""
