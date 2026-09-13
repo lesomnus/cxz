@@ -23,6 +23,7 @@ var slashCommands = []slashCommand{
 	{"/details", "Inspect latest tool result"},
 	{"/model", "Provider model catalog or model selection"},
 	{"/effort", "Provider reasoning strength"},
+	{"/background", "Inspect provider background tasks"},
 }
 
 func (m *model) commandHints() []slashCommand {

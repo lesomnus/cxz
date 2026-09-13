@@ -186,6 +186,9 @@ func (m *model) sessionScreen() string {
 		status = warning.Render(pickerLabel(s.State)) + " · " + status
 	}
 	box := m.approvalBox()
+	if background := m.backgroundStatus(); background != "" {
+		status = background + " · " + status
+	}
 	if s := m.current(); s != nil && s.State == "waiting_input" && m.interruptKey == s.Id+"/"+s.RunId && time.Now().Before(m.interruptUntil) {
 		status = warning.Render("Esc again to interrupt (3s)")
 	}

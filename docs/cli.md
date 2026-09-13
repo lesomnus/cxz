@@ -377,3 +377,12 @@ agent enum, alias, 모델, 이름, 수정값 누락, config 키, 답변 JSON은 
 전체 하위 명령 help, agent completion, API 전달, 잘못된 입력의 무연결·state 미생성,
 세션 lifecycle 통합 테스트를 검증한다. 실제 OAuth/유료 모델 호출은 CLI 입력 계약
 변경의 검증 범위에 포함하지 않는다.
+## Background tasks
+
+세션의 `/background` 명령은 provider가 보고한 현재 run의 백그라운드 작업을
+모달로 표시한다. 실행 중에는 foreground가 idle이어도 기존 상태 줄에 작업 수가
+남는다. Claude의 실행 목록/시작/완료 이벤트를 지원하며, Codex 명령 문자열에서
+백그라운드 실행을 추정하지는 않는다. 출력 파일 경로는 표시만 하고 읽지 않는다.
+
+오래된 로그의 작업 정보는 대화 스크롤과 별도로 복구한다. 복구 중이거나 실패하면
+모달에 표시된다. 업데이트 시 CLI와 프로젝트 runtime 서버 모두 갱신해야 한다.

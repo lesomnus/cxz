@@ -97,6 +97,9 @@ type model struct {
 	latestPrompt         string
 	pulse                int
 	workingSince         int64
+	backgroundHistory    map[string][]*api.Event
+	backgroundLoading    map[string]bool
+	backgroundErrors     map[string]string
 	cursorOutput         *cursorWriter
 	renderedResponses    map[*api.Event]renderedResponse
 	program              *tea.Program
@@ -328,6 +331,14 @@ func (m *model) render() {
 	decisions := map[string]string{}
 	toolCalls := map[string]agentview.ToolActivity{}
 	toolResults := map[string]*api.Event{}
+	backgroundTools := map[string]agentview.BackgroundTask{}
+	for run, state := range m.backgroundStates() {
+		for _, task := range state.Tasks {
+			if task.ToolID != "" {
+				backgroundTools[run+"/"+task.ToolID] = task
+			}
+		}
+	}
 	toolApprovals := map[string]*api.Event{}
 	pairedApprovals := map[*api.Event]bool{}
 	for _, e := range m.events[s.Id] {
@@ -434,6 +445,16 @@ func (m *model) render() {
 						}
 					}
 					text = indentBlock(toolActivityStateBody(activity, result, max(1, m.view.Width), state))
+					if task, ok := backgroundTools[key]; ok {
+						state = task.Status
+						if task.Active {
+							state = "working"
+						}
+						if !task.Active && (state == "working" || state == "running") {
+							state = "pending"
+						}
+						text = indentBlock(toolActivityStateBody(activity, nil, max(1, m.view.Width), state) + " · background")
+					}
 				}
 			}
 			if e.Kind == "tool_result" {
@@ -566,9 +587,34 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.acceptModelCatalog(v)
 	case historyPage:
 		m.applyHistoryPage(v)
-		if v.err == nil && m.view.TotalLineCount() <= m.view.Height {
-			return m, m.loadOlderHistory()
+		background := m.loadBackgroundHistory(v)
+		if background != nil {
+			if m.backgroundLoading == nil {
+				m.backgroundLoading = map[string]bool{}
+			}
+			m.backgroundLoading[v.id] = true
 		}
+		if v.err == nil && m.view.TotalLineCount() <= m.view.Height {
+			return m, tea.Batch(m.loadOlderHistory(), background)
+		}
+		return m, background
+	case backgroundHistory:
+		if v.epoch != 0 && v.epoch != m.watchEpoch {
+			return m, nil
+		}
+		if m.backgroundHistory == nil {
+			m.backgroundHistory = map[string][]*api.Event{}
+		}
+		if m.backgroundErrors == nil {
+			m.backgroundErrors = map[string]string{}
+		}
+		m.backgroundHistory[v.id] = v.events
+		delete(m.backgroundLoading, v.id)
+		delete(m.backgroundErrors, v.id)
+		if v.err != nil {
+			m.backgroundErrors[v.id] = v.err.Error()
+		}
+		m.render()
 		return m, nil
 	case pulseTick:
 		m.pulse++
@@ -1024,6 +1070,10 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.action("answer", strings.TrimPrefix(text, "/answer "))
 			}
 			localName := strings.Fields(text)[0]
+			if localName == "/background" {
+				m.openReport("/background", "")
+				return m, nil
+			}
 			if localName == "/restart" {
 				return m, m.restartCommand(text)
 			}

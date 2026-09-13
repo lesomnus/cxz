@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/lesomnus/cxz/internal/accounts"
+	"github.com/lesomnus/cxz/internal/agentview"
 	"github.com/lesomnus/cxz/internal/distribution"
 	"net"
 	"net/url"
@@ -244,6 +245,9 @@ func (s *Server) manifest(ctx context.Context, id string) (core.Session, error) 
 	return m, json.Unmarshal(b, &m)
 }
 func pbEvent(e core.Event) *api.Event {
+	if e.Kind == "raw" && agentview.IsBackgroundEvent(e.Raw) {
+		e.Kind, e.Payload = "background", e.Raw
+	}
 	return &api.Event{SessionId: e.SessionID, RunId: e.RunID, Seq: e.Seq, TimeMs: e.TimeMS, Kind: e.Kind, Text: e.Text, RequestId: e.RequestID, Payload: e.Payload}
 }
 func (s *Server) snapshot(ctx context.Context, m core.Session) (*api.Session, error) {
