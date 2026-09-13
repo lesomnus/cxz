@@ -78,6 +78,10 @@ type model struct {
 	accountSearching     bool
 	accountService       resource.AccountServiceClient
 	loginAccount         AccountLogin
+	workflow             *accountWorkflow
+	loginChoosing        bool
+	loginAlias           string
+	loginIndex           int
 	focusApproval        bool
 	approvalID           string
 	approvalOffset       int
@@ -201,6 +205,9 @@ func RunProject(ctx context.Context, c api.SessionsClient, project *api.Project,
 	p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithContext(ctx), tea.WithMouseCellMotion(), tea.WithOutput(m.cursorOutput), tea.WithInput(keyboardInput(os.Stdin)))
 	m.program = p
 	_, e := p.Run()
+	if m.workflow != nil {
+		m.workflow.close()
+	}
 	if m.watchCancel != nil {
 		m.watchCancel()
 	}
@@ -577,6 +584,39 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 	switch v := msg.(type) {
+	case workflowOutput:
+		if m.workflow == v.flow {
+			m.workflow.output += v.text
+			if len(m.workflow.output) > 32768 {
+				m.workflow.output = m.workflow.output[len(m.workflow.output)-32768:]
+			}
+			return m, m.workflow.wait()
+		}
+		return m, nil
+	case workflowWritten:
+		if m.workflow == v.flow {
+			m.workflow.sending = false
+			if v.err != nil {
+				m.workflow.message = "Code could not be submitted."
+			} else {
+				m.workflow.message = "Code submitted; waiting for provider…"
+			}
+		}
+		return m, nil
+	case workflowDone:
+		if m.workflow != v.flow {
+			return m, nil
+		}
+		m.workflow.close()
+		m.workflow = nil
+		if v.flow.create {
+			r := result{text: "session created", err: v.err}
+			if v.session != nil && v.err == nil {
+				r.sessionID = v.session.Id
+			}
+			return m.Update(r)
+		}
+		return m.Update(accountLoggedIn{v.err})
 	case contextSent:
 		if c := m.contextCapture; c != nil && c.request == v.request && v.err != nil {
 			c.report.text = "Context unavailable: " + v.err.Error()
@@ -900,6 +940,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, m.refresh()
 	case tea.KeyMsg:
+		if m.workflow != nil {
+			return m, m.workflowKey(v)
+		}
 		if m.questionDialog != nil {
 			return m, m.questionKey(v)
 		}
@@ -1138,6 +1181,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 func (m *model) View() string {
 	m.anchorCursor()
+	if m.workflow != nil {
+		return m.workflowScreen()
+	}
 	if m.width > 0 && (m.width < 40 || m.height < 14) {
 		return screen("cxz\nResize terminal to 40 × 14 or larger.\nCtrl+C detach", m.width, m.height)
 	}

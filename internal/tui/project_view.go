@@ -13,8 +13,8 @@ import (
 	"github.com/lesomnus/cxz/api"
 )
 
-type ProjectCreator func(string, io.Reader, io.Writer, io.Writer) (*api.Session, error)
-type AccountLogin func(string, io.Reader, io.Writer, io.Writer) error
+type ProjectCreator func(context.Context, string, io.Reader, io.Writer, io.Writer) (*api.Session, error)
+type AccountLogin func(context.Context, string, string, io.Reader, io.Writer, io.Writer) error
 
 func ProjectSessions(sessions []*api.Session, p *api.Project) []*api.Session {
 	var out []*api.Session
@@ -59,22 +59,6 @@ func (m *model) backToProject() {
 		m.watchCancel = nil
 	}
 	m.watchID = ""
-}
-
-type createProjectExec struct {
-	create   func(io.Reader, io.Writer, io.Writer) (*api.Session, error)
-	in       io.Reader
-	out, err io.Writer
-	session  *api.Session
-}
-
-func (e *createProjectExec) SetStdin(v io.Reader)  { e.in = v }
-func (e *createProjectExec) SetStdout(v io.Writer) { e.out = v }
-func (e *createProjectExec) SetStderr(v io.Writer) { e.err = v }
-func (e *createProjectExec) Run() error {
-	s, err := e.create(e.in, e.out, e.err)
-	e.session = s
-	return err
 }
 
 func (m *model) projectKey(key tea.KeyMsg) tea.Cmd {

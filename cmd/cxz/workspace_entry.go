@@ -75,9 +75,9 @@ func workspaceEntry(ctx context.Context, client api.SessionsClient, c *xli.Comma
 }
 
 func projectTUI(ctx context.Context, resources *resourceclient.Client, c *xli.Command, p *api.Project, selected string, trust bool) error {
-	return tui.RunProject(ctx, resources, p, selected, func(alias string, input io.Reader, output, errOutput io.Writer) (*api.Session, error) {
-		// Bubble Tea has restored the terminal before this callback. Account
-		// selection and official OAuth may temporarily own it, then return here.
+	return tui.RunProject(ctx, resources, p, selected, func(ctx context.Context, alias string, input io.Reader, output, errOutput io.Writer) (*api.Session, error) {
+		// The dashboard owns the terminal. Provider processes use pipes; all
+		// progress and authentication output stays inside its workflow view.
 		oldIn, oldOut, oldErr := c.ReadCloser, c.Writer, c.ErrWriter
 		c.ReadCloser = io.NopCloser(input)
 		if f, ok := input.(io.ReadCloser); ok {
@@ -91,9 +91,10 @@ func projectTUI(ctx context.Context, resources *resourceclient.Client, c *xli.Co
 		}
 		r := &api.ProjectRequest{Workspace: p.Id, NewSession: true, Account: alias, Agent: a.GetAgent(), Model: settings.From(ctx).Model(a.GetAgent()), TrustConfig: trust, ClientId: core.ID()}
 		return openWithProjectLogin(ctx, r, true, func(ctx context.Context, r *api.ProjectRequest) (*api.Session, error) { return resources.Open(ctx, r) }, func(ctx context.Context, alias, key string) error {
+			fmt.Fprintln(errOutput, "Session login required. Open the provider URL below and paste the returned code here.")
 			return projectAccountWorkflow(ctx, resources, c, a, "login", p.Id, false, key)
-		}, c.ErrWriter)
-	}, func(alias string, input io.Reader, output, errOutput io.Writer) error {
+		})
+	}, func(ctx context.Context, alias, sessionID string, input io.Reader, output, errOutput io.Writer) error {
 		oldIn, oldOut, oldErr := c.ReadCloser, c.Writer, c.ErrWriter
 		c.ReadCloser = io.NopCloser(input)
 		if f, ok := input.(io.ReadCloser); ok {
@@ -104,6 +105,19 @@ func projectTUI(ctx context.Context, resources *resourceclient.Client, c *xli.Co
 		a, err := resources.Account(ctx, alias)
 		if err != nil {
 			return err
+		}
+		if sessionID != "" {
+			s, err := resources.Get(ctx, &api.SessionRef{Id: sessionID})
+			if err != nil {
+				return err
+			}
+			if s.Account != alias || s.Agent != a.GetAgent() || s.ProjectId != p.Id {
+				return fmt.Errorf("session does not belong to this project/account")
+			}
+			if s.State != "stopped" && s.State != "failed" {
+				return fmt.Errorf("stop this session before logging in again; its agent may be using these credentials")
+			}
+			return projectAccountWorkflow(ctx, resources, c, a, "login", p.Id, false, s.CreateId)
 		}
 		return registeredAccountWorkflow(ctx, resources, c, a, "login", p.Id, false)
 	})
