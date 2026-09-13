@@ -195,13 +195,19 @@ reset 시각이 지나도 100%로 추정하지 않고 refresh를 표시한다.
 로딩이며 서버의 원본 저널 재생/SQLite projection 자체를 바꾼 것은 아니다.
 
 Markdown fenced/indented 코드 블록은 본문 폭 전체의 검정 배경과 내부 한 칸 여백으로
-표시한다. 도움말 짝수 행 키캡은 #303030이며 256색/16색 터미널에서는 각각 236/8번
-색을 명시한다. 16색 팔레트의 밝은 검정까지 순수 검정으로 설정한 터미널은 팔레트
-설정을 변경해야 구분된다.
+표시한다. 도움말은 감지된 색 프로필을 표시한다. True Color에서는 홀수/짝수 키캡을
+#000000/#101010, ` + ` 연결부를 #080808/#181818로 표시한다. 256색/16색에서는
+키캡과 연결부를 모두 검정으로 통일한다. 감지는 TERM/COLORTERM/TTY 등 환경정보를
+사용하므로 tmux/SSH가 실제 지원보다 낮은 정보를 전달할 수 있다. /help·/usage 등
+로컬 출력 블록 위에는 대화와 구분하는 선을 표시한다.
 
 ### 모델·추론 강도
 
-`/model` 또는 `/effort`로 모델 ID와 해당 모델이 보고한 강도 목록을 확인한다.
+`/model` 또는 `/effort`는 로컬 선택 오버레이를 연다. ↑/↓ 선택, Enter 적용,
+Esc 취소, 하단 fuzzy 검색을 지원하며 최대 7개 선택지를 표시한다. 여는 동작은
+읽기 전용이며 일반 채팅으로 전송하지 않는다. tail 밖에 있는 현재 run의 capability도
+History에서 조회한다. 현재 run의 모델 제어 지원 기록이 없으면 업데이트 안내만
+표시하고, 인자를 붙인 설정 명령도 전송하지 않는다.
 `/model <id>` → `/effort <level>`로 설정하며 `/effort default`로 기본 강도로 복귀한다.
 강도를 지정한 상태에서 모델을 바꾸려면 먼저 `/effort default`를 실행한다.
 명령별 예제와 제한은 `/help model`, `/help effort`에 있다.
@@ -214,7 +220,8 @@ Markdown fenced/indented 코드 블록은 본문 폭 전체의 검정 배경과 
   flag settings로 전달할 수 없는 session-only max effort는 명시적으로 거절한다.
   모델 목록의 실시간 재조회 API는 확인되지 않아 초기화 스냅샷임을 표시한다.
 - Codex는 [공식 app-server model/list](https://learn.chatgpt.com/docs/app-server#list-models-modellist)를
-  시작 시·조회 명령·idle 매분 호출하고 모든 페이지를 합친다. 선택은 다음 turn/start의
+  시작 시·idle 매분 호출하고 모든 페이지를 합친다. TUI 선택기는 기록된 목록을 읽는다.
+  선택은 다음 turn/start의
   model/effort에 전달한다. 기본값 복귀도 보고된 기본값을 사용한다.
 - 실행 중인 CLI 버전/계정/공급자 정책에 따른 지원 범위를 유지한다. 확인된 선택은
   런타임 저널에 남아 resume 시 복원되고 TUI 상태바에 반영된다. 리소스의 최초 생성
@@ -223,6 +230,16 @@ Markdown fenced/indented 코드 블록은 본문 폭 전체의 검정 배경과 
   사용자 로그인 계정이나 모델 호출은 하지 않았다. Codex 변경은 프로토콜 fixture로 검증했다.
 
 ### quota 진단 로그 공유
+
+클라이언트만 교체해도 기존 manager/프로젝트 서버/supervisor의 코드는 그대로다.
+일반 up은 살아 있는 프로젝트 서버를 재사용한다. 최신 로컬 바이너리를 설치하는
+`./cxz install --recreate`는 manager와 공유 도구 바이너리를 갱신하지만 기존 프로젝트
+프로세스는 종료하지 않는다. 이후 `./cxz project recreate .`로 프로젝트 런타임까지
+교체할 수 있다. **프로젝트 recreate는 writable layer 삭제와 편집기 연결 해제를
+수반한다.** 워크스페이스/named volume은 유지되지만 컨테이너 안에만 있는 파일은
+먼저 보관해야 한다. 기존 세션이 중단 상태이면 TUI의 Ctrl+R로 재개한다.
+quota 이벤트가 전혀 없고 /model이 입력 대화로 기록되는 조합은 구형 supervisor가
+실행 중인 상황과 일치한다. 단순히 polling 주기를 기다리는 것으로 해결되지 않는다.
 
 먼저 대화창에서 `/usage`를 실행해 Account quota 상태와 마지막 조회 시각을 확인한다.
 추가 진단에는 아래처럼 **payload를 제외한** 이벤트 메타데이터만 추출한다(jq 필요).

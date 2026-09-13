@@ -10,18 +10,7 @@ import (
 )
 
 func (m *model) modelCommand(text string) tea.Cmd {
-	s := m.current()
-	if s == nil {
-		return nil
-	}
-	if len(strings.Fields(text)) > 1 {
-		return m.action("send", text)
-	}
-	m.recordLocal("/model", m.modelReport())
-	if s.State == "idle" {
-		return m.action("send", text)
-	}
-	return nil
+	return m.openModelPicker(text)
 }
 
 func (m *model) modelReport() string {

@@ -5,6 +5,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/muesli/termenv"
 )
 
 type commandHelp struct {
@@ -30,16 +31,17 @@ var commandHelpEntries = []commandHelp{
 func helpKeycaps(keys string, row int) string {
 	bg := lipgloss.CompleteColor{TrueColor: "#000000", ANSI256: "0", ANSI: "0"}
 	if row%2 == 1 {
-		bg = lipgloss.CompleteColor{TrueColor: "#303030", ANSI256: "236", ANSI: "8"}
+		bg = lipgloss.CompleteColor{TrueColor: "#101010", ANSI256: "0", ANSI: "0"}
 	}
 	style := lipgloss.NewStyle().Foreground(lipgloss.Color("#E6E6E6")).Background(bg)
+	separator := style.Background(lipgloss.CompleteColor{TrueColor: map[bool]string{true: "#181818", false: "#080808"}[row%2 == 1], ANSI256: "0", ANSI: "0"})
 	alternatives := strings.Split(keys, " / ")
 	for i, chord := range alternatives {
 		parts := strings.Split(chord, "+")
 		for j, key := range parts {
 			parts[j] = style.Render(" " + key + " ")
 		}
-		alternatives[i] = strings.Join(parts, " + ")
+		alternatives[i] = strings.Join(parts, separator.Render(" + "))
 	}
 	return strings.Join(alternatives, " / ")
 }
@@ -60,7 +62,8 @@ func helpView(width int, topics ...string) string {
 		}
 		return indentBlock(ansi.Hardwrap("Unknown help topic: "+safeText(topic)+"\nUse /help to list commands; for example /help answer.", w, true))
 	}
-	lines := []string{lavender.Bold(true).Render("cxz /help"), muted.Render("Details and examples: /help <command> · e.g. /help answer")}
+	profile := map[termenv.Profile]string{termenv.TrueColor: "24-bit True Color", termenv.ANSI256: "256 colors", termenv.ANSI: "16 colors", termenv.Ascii: "no color"}[lipgloss.ColorProfile()]
+	lines := []string{lavender.Bold(true).Render("cxz /help"), muted.Render("Detected color profile: " + profile), muted.Render("Details and examples: /help <command> · e.g. /help answer")}
 	category := ""
 	for _, entry := range commandHelpEntries {
 		if category != entry.category {

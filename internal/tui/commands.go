@@ -125,7 +125,8 @@ func (m *model) commandOverlay(view string) string {
 	return strings.Join(rows, "\n")
 }
 
-func (m *model) localCommandView(id string) string {
+func (m *model) localCommandView(id string) (out string) {
+	defer func() { out = indentBlock(muted.Render(strings.Repeat("─", max(1, m.view.Width-2)))) + "\n" + out }()
 	command := m.localOutput[id]
 	if command == "/model" {
 		return localReport(m.modelReport(), m.view.Width)
