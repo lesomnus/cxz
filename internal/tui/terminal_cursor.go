@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/charmbracelet/x/term"
@@ -113,6 +114,20 @@ func (m *model) anchorCursor() {
 	x, y, ok := 0, 0, false
 	if m.width >= 40 && m.height >= 14 {
 		switch {
+		case m.questionDialog != nil:
+			q := m.questionDialog.questions[m.questionDialog.page]
+			if !q.Other || m.questionDialog.row != len(q.Options) || m.questionDialog.sending {
+				break
+			}
+			copy := *m
+			d := *m.questionDialog
+			d.other = append([]textinput.Model(nil), d.other...)
+			for i := range d.other {
+				d.other[i].Cursor.Style = cursorProbeStyle
+			}
+			copy.questionDialog = &d
+			copy.pulse = 0
+			x, y, ok = widgetCursor(copy.questionOverlay(copy.conversationView()))
 		case m.accountView:
 			copy := *m
 			copy.accountAlias.Cursor.Blink = false
@@ -122,7 +137,7 @@ func (m *model) anchorCursor() {
 			copy.accountName.Cursor.Style = cursorProbeStyle
 			copy.accountSearch.Cursor.Style = cursorProbeStyle
 			x, y, ok = widgetCursor(copy.accountScreen())
-		case !m.projectView && !m.focusList && !m.focusApproval && m.report == nil && m.modelPicker == nil && m.restartConfirm == nil:
+		case !m.projectView && !m.focusList && !m.focusApproval && m.report == nil && m.modelPicker == nil && m.restartConfirm == nil && m.questionDialog == nil:
 			copy := m.input
 			copy.Cursor.Blink = false
 			copy.Cursor.Style = cursorProbeStyle
