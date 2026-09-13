@@ -1,5 +1,15 @@
 # CLI 입력 계약
 
+## 컨텍스트 사용률
+
+세션 하단 status bar에는 기존 quota 옆에 컨텍스트 사용률을 `⣄35%`처럼 표시한다.
+11%마다 아래에서부터 점을 하나씩 채우며 88%부터 8점이 모두 찬다. 숫자는 99%까지만 표시한다.
+미보고 상태는 `⠀—`이며 compact/새 run 이후에는 새 snapshot을 기다린다.
+Codex는 CLI의 baseline 12,000 토큰 보정 기준을 따른 마지막 tokenUsage snapshot,
+Claude는 마지막 assistant 메시지의 input+cache-read+cache-write와 해당 모델의 contextWindow를 사용한다.
+누적 billing usage는 쓰지 않으며 `/context`를 자동 전송하지 않는다. `/context` 상세 출력은 변경하지 않는다.
+Claude는 새 supervisor의 `context/message` 이벤트가 필요하므로 공유 runtime 업데이트 후 에이전트를 재시작해야 한다.
+
 ## 백틱 경로 힌트
 
 대화 입력창에서 **백틱 뒤 `/` 또는 `~`**를 입력하면 해당 프로젝트 컨테이너의 경로 힌트가 뜬다.

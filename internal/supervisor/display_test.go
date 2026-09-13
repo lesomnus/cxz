@@ -26,6 +26,20 @@ func displaySupervisor(t *testing.T, provider string) (*Supervisor, *sink) {
 	return s, input
 }
 
+func TestClaudeContextUsageEvent(t *testing.T) {
+	s, _ := displaySupervisor(t, "claude")
+	s.consume([]byte(`{"type":"assistant","message":{"model":"claude-test","usage":{"input_tokens":12,"cache_read_input_tokens":100},"content":[{"type":"text","text":"private reply"}]}}`))
+	for _, e := range s.log.All() {
+		if e.Kind == "usage" && e.Text == "context/message" {
+			if !bytes.Contains(e.Payload, []byte(`"input_tokens":12`)) || bytes.Contains(e.Payload, []byte("private reply")) {
+				t.Fatal(string(e.Payload))
+			}
+			return
+		}
+	}
+	t.Fatal("missing context usage event")
+}
+
 func TestNativeCompaction(t *testing.T) {
 	for _, provider := range []string{"claude", "codex"} {
 		s, input := displaySupervisor(t, provider)

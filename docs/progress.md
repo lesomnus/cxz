@@ -1,5 +1,16 @@
 # 구현 진행 상황
 
+## 2026-09-13 — 하단 컨텍스트 점자 사용률
+
+- provider별 계산을 agentview.ContextPercent로 분리하고 status bar에 심볼+숫자만 추가했다.
+- 아래부터 11%마다 점 하나, 88%부터 8점, 숫자는 99% 상한. 미보고는 `⠀—`.
+- Codex CLI protocol의 12,000 baseline 보정과 마지막 tokenUsage를 사용한다.
+  기준: https://github.com/openai/codex/blob/main/codex-rs/protocol/src/protocol.rs
+- Claude supervisor는 assistant 메시지의 model/usage만 별도 이벤트로 전달한다. TUI는
+  마지막 메시지 입력/cache 토큰과 modelUsage.contextWindow를 결합하며 누적 토큰은 사용하지 않는다.
+- compact/run 변경 시 이전 값 무효화. /context 동작 유지. provider 계산/점자 경계/이벤트 전달 회귀 테스트 추가.
+- 전체 Go 테스트·vet 및 agentview/TUI/supervisor race 검사 통과. 실제 로그인된 agent에 대한 live 테스트는 수행하지 않았다.
+
 ## 2026-09-13 — Wisp 상주 경로 조회
 
 - xli `cxz wisp` 명령 및 Go 기반 읽기 전용 디렉터리 조회 프로토콜을 추가했다.

@@ -200,7 +200,12 @@ func (m *model) sessionScreen() string {
 	}
 	// Reserve identity space before giving remaining cells to quota.
 	identityWidth := min(ansi.StringWidth(info), max(24, min(48, width/2)))
-	quota := m.quotaStatus(time.Now(), max(1, width-identityWidth-3))
+	context := muted.Render(m.contextStatus())
+	quota := m.quotaStatus(time.Now(), max(1, width-identityWidth-ansi.StringWidth(context)-4))
+	if quota != "" {
+		quota += " "
+	}
+	quota += context
 	leftWidth := max(8, width-ansi.StringWidth(quota)-3)
 	info = clip(info, leftWidth)
 	info += strings.Repeat(" ", max(1, width-1-ansi.StringWidth(info)-ansi.StringWidth(quota))) + quota + " "
