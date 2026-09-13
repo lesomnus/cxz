@@ -1,5 +1,25 @@
 # 구현 진행 상황
 
+## 2026-09-13 — provider별 compact quota status bar
+
+- quota 공통 Window에 bucket ID/name과 기간 label을 보존한다. 전체 `/usage` label은
+  그대로 두고 status bar에서만 provider별 표시 대상을 선택한다.
+- Codex는 현재 모델과 bucket ID/name이 정확히 일치하면 해당 한도를 우선 표시한다
+  (대소문자·구분자 차이만 정규화). 일치하지 않으면 일반 `codex` bucket을 표시한다.
+  나머지는 적용 여부를 추정하거나 버리지 않고 `+N limits`로 접는다. N은 quota window 수다.
+  default 모델은 현재 run의 provider catalog에서 확인하며 다른 run의 설정은 사용하지 않는다.
+- Claude는 `5h`, `wk`를 우선 표시하고 추가 한도는 접는다. 숫자·bar 색상 임계값·stale
+  표시·기간 포맷은 공통이다. Codex 모델 이름은 quota 영역에서 반복하지 않는다.
+- identity 영역을 먼저 확보하고 남은 폭에 quota를 배치한다. 공간이 부족하면 bar를
+  8→4→0칸으로 줄인 뒤 window를 추가로 접는다. 잔여율/기간/reset의 중간을 잘라
+  부분 정보로 표시하지 않는다. `5h0m`→`5h`, `2d0h`→`2d`; 오른쪽 한 칸 유지.
+- 일반 Codex/Spark 선택, default catalog와 run 격리, 8~100칸 폭 적응, 세션 identity
+  보존과 기존 색상·stale 회귀 테스트를 검증한다. 로컬 CLI 업데이트로 적용되며
+  runtime 변경이나 에이전트 restart는 필요 없다.
+- `go test ./...`, `go test -race ./internal/tui ./internal/agentview`,
+  `go vet ./...`, `git diff --check` 통과.
+
+
 ## 2026-09-13 — Codex 비동기 질문 다이얼로그와 실제 로그인 검증
 
 - 사용자 이벤트의 `agentMessage.delivery=async`, `item.questions`를 확인했다.

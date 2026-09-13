@@ -35,7 +35,7 @@ func TestQuotaBarThresholds(t *testing.T) {
 			t.Fatalf("bar color lost: %q", got)
 		}
 		plain := ansi.Strip(got)
-		if !strings.HasSuffix(plain, " 5h 1h0m") || ansi.StringWidth(got) != len([]rune(plain)) {
+		if !strings.HasSuffix(plain, " 5h 1h") || ansi.StringWidth(got) != len([]rune(plain)) {
 			t.Fatalf("layout changed: %q", got)
 		}
 	}

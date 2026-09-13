@@ -1,5 +1,16 @@
 # CLI 입력 계약
 
+## Status bar quota
+
+Codex의 status bar는 현재 모델과 일치하는 모델별 한도를 우선 표시하고, 일치하는
+한도가 없으면 일반 Codex 한도를 표시한다. Claude는 `5h · wk`를 우선 표시한다.
+선택되지 않았거나 화면 폭 때문에 생략한 한도는 `+N limits`로 나타낸다. 전체 내역은
+`/usage`에서 확인한다. 접힌 한도가 현재 모델에 적용되지 않는다고 단정하는 표시는 아니다.
+
+모델 이름을 quota에서 반복하지 않으며, 화면이 좁으면 bar부터 줄이거나 생략한다.
+세션 식별 정보 공간과 오른쪽 한 칸 여백은 우선 확보한다.
+
+
 ## Codex 비동기 질문
 
 Codex의 `agentMessage`에 `delivery: async`와 `questions`가 있으면 선택 다이얼로그가
