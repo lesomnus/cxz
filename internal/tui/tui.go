@@ -86,6 +86,7 @@ type model struct {
 	fullPermission       map[string]string
 	localReports         map[string]string
 	historyTimes         []int64
+	historyPositions     []float64 // stable journal coordinates, not loaded-line offsets
 	lastPromptStart      int
 	lastPromptEnd        int
 	latestPrompt         string
@@ -293,6 +294,7 @@ func (m *model) render() {
 	s := m.current()
 	if s == nil {
 		m.historyTimes = nil
+		m.historyPositions = nil
 		m.latestPrompt = ""
 		m.lastPromptStart, m.lastPromptEnd = -1, -1
 		m.view.SetContent(indentBlock(ansi.Hardwrap("No sessions. Ctrl+N creates one from an existing workspace directory.", max(1, m.view.Width-2), true)))
@@ -303,9 +305,15 @@ func (m *model) render() {
 	}
 	var lines []string
 	var times []int64
+	var sequences []uint64
+	var sequence uint64
 	promptBlock := -1
 	m.latestPrompt = ""
-	add := func(text string, stamp int64) { lines = append(lines, text); times = append(times, stamp) }
+	add := func(text string, stamp int64) {
+		lines = append(lines, text)
+		times = append(times, stamp)
+		sequences = append(sequences, sequence)
+	}
 	var usage *api.Event
 	var started int64
 	replyIndex := -1
@@ -323,6 +331,7 @@ func (m *model) render() {
 			add(m.localCommandView(s.Id), 0)
 			helped = true
 		}
+		sequence = e.Seq
 		if e.Kind == "input" {
 			contextTurns[e.RunId] = strings.TrimSpace(e.Text) == "/context"
 		}
@@ -401,14 +410,18 @@ func (m *model) render() {
 		add("  ", 0)
 	}
 	m.historyTimes = nil
+	m.historyPositions = nil
 	m.lastPromptStart, m.lastPromptEnd = -1, -1
 	for i, block := range lines {
 		if i > 0 {
 			m.historyTimes = append(m.historyTimes, 0)
+			m.historyPositions = append(m.historyPositions, float64(sequences[i]))
 		}
 		start := len(m.historyTimes)
-		for range strings.Split(block, "\n") {
+		rows := strings.Split(block, "\n")
+		for row := range rows {
 			m.historyTimes = append(m.historyTimes, times[i])
+			m.historyPositions = append(m.historyPositions, float64(sequences[i])+float64(row)/float64(len(rows)))
 		}
 		if i == promptBlock {
 			m.lastPromptStart = start

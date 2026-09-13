@@ -2,14 +2,67 @@ package tui
 
 import (
 	"bytes"
+	"fmt"
 	"strings"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/lesomnus/cxz/api"
 	"github.com/muesli/termenv"
 )
+
+func TestScrollTrackStableAcrossHistoryPages(t *testing.T) {
+	m := conversationModel()
+	m.width = 100
+	page := func(start, end uint64) []*api.Event {
+		var events []*api.Event
+		for seq := start + 1; seq <= end; seq++ {
+			events = append(events, &api.Event{Seq: seq, Kind: "assistant", Text: fmt.Sprintf("response %d\nsecond line", seq)})
+		}
+		return events
+	}
+	m.applyHistoryPage(historyPage{id: "s", start: 256, initial: true, events: page(256, 384)})
+	m.view.SetYOffset(5)
+	before := ansi.Strip(m.scrollTrack())
+	for _, start := range []uint64{128, 0} {
+		m.applyHistoryPage(historyPage{id: "s", start: start, end: start + 128, events: page(start, start+128)})
+		if got := ansi.Strip(m.scrollTrack()); got != before {
+			t.Fatalf("prepend moved handle:\n%s\n%s", before, got)
+		}
+	}
+	previous := strings.Index(ansi.Strip(m.scrollTrack()), "◆︎")
+	for m.view.YOffset > 0 {
+		m.view.SetYOffset(max(0, m.view.YOffset-7))
+		next := strings.Index(ansi.Strip(m.scrollTrack()), "◆︎")
+		if next > previous {
+			t.Fatal("scrolling up moved handle right")
+		}
+		previous = next
+	}
+	if previous != 0 {
+		t.Fatal("oldest endpoint")
+	}
+	m.view.GotoBottom()
+	if !strings.HasSuffix(ansi.Strip(m.scrollTrack()), "◆︎") {
+		t.Fatal("latest endpoint")
+	}
+}
+
+func TestScrollTrackPastIsBrighter(t *testing.T) {
+	profile := lipgloss.ColorProfile()
+	lipgloss.SetColorProfile(termenv.TrueColor)
+	t.Cleanup(func() { lipgloss.SetColorProfile(profile) })
+	m := conversationModel()
+	m.width = 21
+	m.view.SetContent(strings.Repeat("line\n", 100))
+	m.view.SetYOffset((m.view.TotalLineCount() - m.view.Height) / 2)
+	bar := m.scrollTrack()
+	if !strings.HasPrefix(bar, muted.Render(strings.Repeat("─", 10))) || !strings.HasSuffix(bar, zeroStyle.Render(strings.Repeat("─", 10))) {
+		t.Fatalf("missing distinct track colors: %q", bar)
+	}
+}
 
 func TestScrollTrackWidthAndPositions(t *testing.T) {
 	m := conversationModel()
