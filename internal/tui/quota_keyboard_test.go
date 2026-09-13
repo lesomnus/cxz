@@ -34,6 +34,18 @@ func TestKittyUnicodeCommit(t *testing.T) {
 	}
 }
 
+func TestKittyBackwardWord(t *testing.T) {
+	r := keyboardReader{}
+	out, _ := r.translate([]byte("\x1b[127;5u"), true)
+	if string(out) != "\x17" {
+		t.Fatalf("Ctrl+Backspace: %q", out)
+	}
+	out, _ = r.translate([]byte("\x1b[200~\x1b[127;5u\x1b[201~"), true)
+	if bytes.Contains(out, []byte{23}) {
+		t.Fatal("interpreted pasted word deletion")
+	}
+}
+
 func TestQuotaBarThresholds(t *testing.T) {
 	old := lipgloss.ColorProfile()
 	lipgloss.SetColorProfile(termenv.TrueColor)

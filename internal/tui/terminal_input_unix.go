@@ -153,7 +153,7 @@ func (r *keyboardReader) kittyKey(seq []byte) ([]byte, bool) {
 		case key == '?':
 			key = 127
 		case key == 127:
-			key = 8
+			key = 23 // Ctrl+Backspace: backward word deletion (Ctrl+W).
 		case key == '2':
 			key = 0
 		case key >= '3' && key <= '7':

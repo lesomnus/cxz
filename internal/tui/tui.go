@@ -1147,6 +1147,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.renameKey(v)
 		}
 		if !m.projectView && !m.creating && !m.focusApproval {
+			if m.deletePathWord(v) {
+				return m, nil
+			}
 			if handled, cmd := m.pathHintKey(v); handled {
 				return m, cmd
 			}
