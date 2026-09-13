@@ -71,12 +71,83 @@ func TestChipOtherDeleteAndLiteralInput(t *testing.T) {
 	token := d.other[0].Value()
 	m.Update(tea.KeyMsg{Type: tea.KeyLeft})
 	m.Update(questionKeyMsg("t"))
-	if d.other[0].Value() != "t"+token {
-		t.Fatal("t must type literally outside menu")
+	if d.other[0].Value() != token {
+		t.Fatal("selected chip t must set text mode without typing")
 	}
-	m.Update(tea.KeyMsg{Type: tea.KeyDelete})
+	m.Update(questionKeyMsg("d"))
+	if d.other[0].Value() != "" {
+		t.Fatal("d must remove whole Other chip")
+	}
+	m.Update(questionKeyMsg("t"))
 	if d.other[0].Value() != "t" {
-		t.Fatal("delete must remove whole Other chip")
+		t.Fatal("unselected t must remain literal")
+	}
+}
+
+func TestSelectedChipDirectFileAndCancel(t *testing.T) {
+	for _, cancel := range []string{"", "t", "d"} {
+		m := conversationModel()
+		m.client = &pasteClient{}
+		m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("a\nb\nc\nd"), Paste: true})
+		token := m.input.Value()
+		m.Update(tea.KeyMsg{Type: tea.KeyLeft})
+		_, upload := m.Update(questionKeyMsg("f"))
+		if upload == nil || m.pasteDialog != nil {
+			t.Fatal("f must upload directly without opening a preview")
+		}
+		if cancel != "" {
+			m.Update(questionKeyMsg(cancel))
+		}
+		m.Update(upload())
+		if m.pastes[token].file != (cancel == "") {
+			t.Fatal("late upload changed cancelled file mode")
+		}
+	}
+}
+
+func TestDeletedChipsDoNotReappearInPreview(t *testing.T) {
+	for _, method := range []string{"d", "backspace", "menu"} {
+		m := conversationModel()
+		m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("a\nb\nc\nd"), Paste: true})
+		if method == "menu" {
+			m.openPastes()
+			m.Update(questionKeyMsg("d"))
+		} else {
+			m.Update(tea.KeyMsg{Type: tea.KeyLeft})
+			if method == "d" {
+				m.Update(questionKeyMsg("d"))
+			} else {
+				m.Update(tea.KeyMsg{Type: tea.KeyBackspace})
+			}
+		}
+		m.Update(tea.KeyMsg{Type: tea.KeyCtrlP})
+		if m.pasteDialog != nil {
+			t.Fatalf("%s resurrected a deleted chip", method)
+		}
+	}
+}
+
+func TestSelectedChipPastedShortcutIsLiteral(t *testing.T) {
+	m := conversationModel()
+	m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("a\nb\nc\nd"), Paste: true})
+	token := m.input.Value()
+	m.Update(tea.KeyMsg{Type: tea.KeyLeft})
+	m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("d"), Paste: true})
+	if m.input.Value() != "d"+token {
+		t.Fatal("pasted d executed deletion")
+	}
+}
+
+func TestDirectChipUploadFailure(t *testing.T) {
+	m := conversationModel()
+	m.client = &pasteClient{fail: true}
+	m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("a\nb\nc\nd"), Paste: true})
+	token := m.input.Value()
+	m.Update(tea.KeyMsg{Type: tea.KeyLeft})
+	_, upload := m.Update(questionKeyMsg("f"))
+	m.Update(upload())
+	if m.input.Value() != token || m.pastes[token].file || !strings.Contains(m.notice, "Upload failed") {
+		t.Fatal("upload failure must preserve draft and report error")
 	}
 }
 
