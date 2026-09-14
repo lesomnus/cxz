@@ -32,40 +32,6 @@ type redactSent struct {
 type secretFiles interface {
 	PutSecret(context.Context, context.Context, *api.Project, string, []byte) (string, error)
 	DeleteSecret(context.Context, context.Context, *api.Project, string) error
-	ClearSecrets(context.Context, context.Context, *api.Project, string) error
-}
-
-type secretRun struct {
-	id, run string
-	project *api.Project
-}
-
-func (m *model) cleanFinishedSecrets() tea.Cmd {
-	var cmds []tea.Cmd
-	for key, r := range m.redactionFiles {
-		ended := false
-		for _, s := range m.sessions {
-			if s.Id != r.id {
-				continue
-			}
-			ended = s.RunId != r.run || s.State == "stopped" || s.State == "failed"
-			break
-		}
-		if !ended {
-			continue
-		}
-		delete(m.redactionFiles, key)
-		pool, lifetime := m.redactStore, m.ctx
-		if pool != nil {
-			cmds = append(cmds, func() tea.Msg {
-				ctx, cancel := context.WithTimeout(lifetime, 3*time.Second)
-				defer cancel()
-				_ = pool.ClearSecrets(lifetime, ctx, r.project, key)
-				return nil
-			})
-		}
-	}
-	return tea.Batch(cmds...)
 }
 
 func (m *model) openRedact() {
@@ -164,7 +130,7 @@ func (m *model) redactOverlay(view string) string {
 	if n == 0 {
 		zeros = len(count)
 	}
-	rows := []string{accent.Render("Secret · @redact"), "", "[" + strings.Repeat("*", min(3, n)) + strings.Repeat(" ", 3-min(3, n)) + "] " + muted.Render(count[:zeros]) + count[zeros:] + caret, "", muted.Render("Enter insert chip · Ctrl+X clear · Esc cancel"), muted.Render("Only the temporary file path is sent. Expires after 15 minutes."), muted.Render("The agent can read this file; its output may expose the secret.")}
+	rows := []string{accent.Render("Secret · @redact"), "", "[" + strings.Repeat("*", min(3, n)) + strings.Repeat(" ", 3-min(3, n)) + "] " + muted.Render(count[:zeros]) + count[zeros:] + caret, "", muted.Render("Enter insert chip · Ctrl+X clear · Esc cancel"), muted.Render("Only the file path is sent. Host tmpfs · sweep after 8 hours idle."), muted.Render("The agent can read this file; its output may expose the secret.")}
 	return overlayBox(view, rows, m.width, true)
 }
 func (m *model) hasRedactions(text string) bool {
@@ -240,10 +206,6 @@ func (m *model) sendRedactions(draft string) tea.Cmd {
 		m.redactStore = m.wisp
 	}
 	pool, lifetime, client, id, run := m.redactStore, m.ctx, m.client, s.Id, s.RunId
-	if m.redactionFiles == nil {
-		m.redactionFiles = map[string]secretRun{}
-	}
-	m.redactionFiles[id+"/"+run] = secretRun{id: id, run: run, project: target}
 	m.redactSending = true
 	m.notice = "Preparing secret file…"
 	m.input.Reset()

@@ -170,6 +170,9 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 	}
 	if s.manager != nil {
 		updatesCtx, cancelUpdates := context.WithCancel(ctx)
+		secretsDone := make(chan struct{})
+		go func() { defer close(secretsDone); s.manager.RunSecretSweep(updatesCtx) }()
+		defer func() { cancelUpdates(); <-secretsDone }()
 		updatesDone := make(chan struct{})
 		go func() { defer close(updatesDone); s.manager.RunUpdates(updatesCtx) }()
 		defer func() { cancelUpdates(); <-updatesDone }()

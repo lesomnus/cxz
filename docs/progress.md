@@ -1,5 +1,17 @@
 # 구현 진행 상황
 
+## 2026-09-14 — 호스트 tmpfs와 8시간 idle sweep
+
+- manager는 엔진 호스트 `/dev/shm/cxz-<owner>`를 bind mount하고, 프로젝트별 하위 경로를
+  `/cxz/secrets`에 연결한다. 일반 디스크 fallback 없이 실제 tmpfs/마운트 옵션을 확인한다.
+- 15분 타이머·TUI 종료·세션 종료 삭제를 제거했다. manager 시작/매시간과 wisp 시작 시
+  `max(atime, mtime)` 기준 8시간 지난 파일을 sweep한다. strictatime은 요구하지 않는다.
+- 랜덤 디렉터리는 충돌 재시도가 있는 8자리 hex. 0700/0600 및 원문 비노출은 유지한다.
+- 실제 Docker에서 원본 컨테이너를 정지한 뒤 다른 새 컨테이너에서 같은 파일을 확인했다.
+  사용 중인 컨테이너는 변경하지 않았다. 기존 설치는 manager와 project의 mount 교체가 필요하다.
+- OS 재부팅은 수행하지 않았다. 호스트 tmpfs 수명·마이그레이션/신뢰 한계는 docs/redact.md 참고.
+- 전체 Go 테스트·vet·wisp/TUI/workspace/containerterm race 검사와 실제 Docker 수명 테스트 통과.
+
 ## 2026-09-14 — 문장 중간 `@redact` 인라인 명령
 
 - 입력 시작/공백 뒤 `@`에서 인라인 명령 오버레이를 표시한다. fuzzy 필터·Tab 완성·Enter 선택·Esc 닫기를 지원한다.

@@ -31,7 +31,8 @@ func TestDockerWisp(t *testing.T) {
 	if image == "" {
 		image = "alpine:latest"
 	}
-	b, err := dockerx.Run(ctx, "run", "-d", "--tmpfs", "/cxz/secrets:rw,nosuid,nodev,noexec,size=1048576,mode=1777", "--label", "cxz.owner="+owner, "--label", "cxz.project="+project, image, "sleep", "90")
+	hostSecretRoot := "/dev/shm/cxz-wisp-test-" + owner
+	b, err := dockerx.Run(ctx, "run", "-d", "-e", "CXZ_SECRET_STORAGE=host-tmpfs", "-v", hostSecretRoot+":/cxz/secrets", "--label", "cxz.owner="+owner, "--label", "cxz.project="+project, image, "sleep", "90")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -44,6 +45,9 @@ func TestDockerWisp(t *testing.T) {
 		}
 	}()
 	if _, err := dockerx.Run(ctx, "exec", id, "mkdir", "-p", "/cxz/tools"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := dockerx.Run(ctx, "exec", id, "chmod", "1777", "/cxz/secrets"); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := dockerx.Run(ctx, "cp", bin, id+":/cxz/tools/cxz"); err != nil {
@@ -113,16 +117,26 @@ func TestDockerWisp(t *testing.T) {
 		t.Fatal(err)
 	}
 	pool.Close()
-	removed := false
-	for i := 0; i < 20; i++ {
-		if _, err = dockerx.Run(ctx, "exec", id, "test", "-e", secretPath); err != nil {
-			removed = true
-			break
-		}
-		time.Sleep(50 * time.Millisecond)
+	if len(filepath.Base(filepath.Dir(secretPath))) != 8 {
+		t.Fatal("secret name is not 8 characters")
 	}
-	if !removed {
-		t.Fatal("helper disconnect retained secret")
+	if _, err = dockerx.Run(ctx, "stop", id); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = dockerx.Run(ctx, "run", "--rm", "--label", "cxz.owner="+owner, "-v", hostSecretRoot+":/cxz/secrets", image, "test", "-f", secretPath); err != nil {
+		t.Fatal("secret lost after all containers stopped", err)
+	}
+	if _, err = dockerx.Run(ctx, "start", id); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = dockerx.Run(ctx, "exec", id, "rm", secretPath); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = dockerx.Run(ctx, "exec", id, "rmdir", filepath.Dir(secretPath)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = dockerx.Run(ctx, "run", "--rm", "--label", "cxz.owner="+owner, "-v", "/dev/shm:/host-shm", image, "rmdir", "/host-shm/"+filepath.Base(hostSecretRoot)); err != nil {
+		t.Fatal(err)
 	}
 	p.Id = "wrong"
 	if _, err := pool.Paths(ctx, ctx, p, "/", nil); err == nil {

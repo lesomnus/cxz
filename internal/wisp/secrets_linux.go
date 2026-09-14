@@ -4,22 +4,21 @@ package wisp
 
 import (
 	"crypto/rand"
-	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"golang.org/x/sys/unix"
+	"os"
 	"sync"
 	"time"
 )
 
 const SecretRoot = "/cxz/secrets"
 const MaxSecretBytes = 64 * 1024
-const SecretTTL = 15 * time.Minute
+const DefaultSecretMaxIdle = 8 * time.Hour
 
 type secretFile struct {
 	session, name string
 	root, dir     int
-	timer         *time.Timer
 }
 type secretStore struct {
 	mu    sync.Mutex
@@ -27,6 +26,9 @@ type secretStore struct {
 }
 
 func secretRoot() (int, error) {
+	if os.Getenv("CXZ_SECRET_STORAGE") != "host-tmpfs" {
+		return -1, fmt.Errorf("host secret mount unavailable; recreate project with the updated manager")
+	}
 	return checkedSecretRoot(SecretRoot)
 }
 
@@ -51,14 +53,19 @@ func (s *secretStore) put(session string, body []byte) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	var random [16]byte
-	if _, err = rand.Read(random[:]); err != nil {
-		unix.Close(root)
-		return "", fmt.Errorf("secret allocation failed")
+	var name string
+	for attempt := 0; attempt < 64; attempt++ {
+		var random [4]byte
+		if _, err = rand.Read(random[:]); err != nil {
+			break
+		}
+		name = hex.EncodeToString(random[:])
+		err = unix.Mkdirat(root, name, 0700)
+		if err != unix.EEXIST {
+			break
+		}
 	}
-	hash := sha256.Sum256([]byte(session))
-	name := hex.EncodeToString(hash[:6]) + "-" + hex.EncodeToString(random[:])
-	if err = unix.Mkdirat(root, name, 0700); err != nil {
+	if err != nil {
 		unix.Close(root)
 		return "", fmt.Errorf("secret allocation failed")
 	}
@@ -90,23 +97,19 @@ func (s *secretStore) put(session string, body []byte) (string, error) {
 		return "", fmt.Errorf("secret write failed")
 	}
 	path := SecretRoot + "/" + name + "/value"
-	s.track(path, f, SecretTTL)
+	s.track(path, f)
 	return path, nil
 }
 
-func (s *secretStore) track(path string, f *secretFile, ttl time.Duration) {
+func (s *secretStore) track(path string, f *secretFile) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.files == nil {
 		s.files = map[string]*secretFile{}
 	}
 	s.files[path] = f
-	f.timer = time.AfterFunc(ttl, func() { s.drop(path) })
 }
 func (f *secretFile) remove() {
-	if f.timer != nil {
-		f.timer.Stop()
-	}
 	unix.Unlinkat(f.dir, "value", 0)
 	unix.Close(f.dir)
 	unix.Unlinkat(f.root, f.name, unix.AT_REMOVEDIR)
@@ -126,7 +129,8 @@ func (s *secretStore) clear(session string) {
 	for path, f := range s.files {
 		if session == "" || f.session == session {
 			delete(s.files, path)
-			f.remove()
+			unix.Close(f.dir)
+			unix.Close(f.root)
 		}
 	}
 }

@@ -96,6 +96,10 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string) error 
 	if e = m.checkpoint(ctx, p, "resources"); e != nil {
 		return e
 	}
+	secretSource, e := m.prepareSecretRoot(p)
+	if e != nil {
+		return e
+	}
 	for _, name := range []string{p.Network} {
 		if e = dockerx.EnsureResource(ctx, "network", name, m.Owner, p.ID); e != nil {
 			return e
@@ -125,6 +129,7 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string) error 
 	env["CXZ_PROJECT_ID"] = p.ID
 	env["CXZ_STATE"] = "/cxz/state/data"
 	env["GH_CONFIG_DIR"] = githubauth.ConfigDir
+	env["CXZ_SECRET_STORAGE"] = "host-tmpfs"
 	cfg["containerEnv"] = env
 	mounts, _ := cfg["mounts"].([]any)
 	mounts = append(mounts, "type=volume,source="+p.Volume+",target=/cxz/state", "type=volume,source="+m.ToolsVolume+",target=/cxz/tools,readonly")
@@ -208,9 +213,9 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string) error 
 		}
 		devNetworks["cxz"] = nil
 		dev["networks"] = devNetworks
-		dev["environment"] = map[string]string{"CXZ_PROJECT_ID": p.ID, "CXZ_STATE": "/cxz/state/data", "GH_CONFIG_DIR": githubauth.ConfigDir}
+		dev["environment"] = map[string]string{"CXZ_PROJECT_ID": p.ID, "CXZ_STATE": "/cxz/state/data", "GH_CONFIG_DIR": githubauth.ConfigDir, "CXZ_SECRET_STORAGE": "host-tmpfs"}
 		dev["volumes"] = []any{map[string]any{"type": "volume", "source": p.Volume, "target": "/cxz/state"}, map[string]any{"type": "volume", "source": m.ToolsVolume, "target": "/cxz/tools", "read_only": true}}
-		dev["tmpfs"] = []any{"/cxz/secrets:rw,nosuid,nodev,noexec,size=1048576,mode=1777"}
+		dev["volumes"] = append(dev["volumes"].([]any), map[string]any{"type": "bind", "source": secretSource, "target": "/cxz/secrets"})
 		override := map[string]any{"name": "cxz-" + m.Owner[:12] + "-" + p.ID, "services": services, "networks": map[string]any{"cxz": map[string]any{"external": true, "name": p.Network}}, "volumes": map[string]any{p.Volume: map[string]any{"external": true, "name": p.Volume}, m.ToolsVolume: map[string]any{"external": true, "name": m.ToolsVolume}}}
 		cp := filepath.Join(m.Root, "projects", p.ID, "compose.json")
 		if e = core.WriteJSON(cp, override); e != nil {
@@ -219,7 +224,7 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string) error 
 		cfg["dockerComposeFile"] = append(files, cp)
 	} else {
 		runArgs, _ := cfg["runArgs"].([]any)
-		runArgs = append(runArgs, "--network", p.Network, "--tmpfs", "/cxz/secrets:rw,nosuid,nodev,noexec,size=1048576,mode=1777")
+		runArgs = append(runArgs, "--network", p.Network, "--mount", "type=bind,source="+secretSource+",target=/cxz/secrets")
 		cfg["runArgs"] = runArgs
 	}
 	configPath := filepath.Join(m.Root, "projects", p.ID, "devcontainer.json")

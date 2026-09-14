@@ -20,7 +20,7 @@ func (p *WispPool) secret(lifetime, ctx context.Context, project *api.Project, r
 	if err != nil {
 		return wisp.Response{}, err
 	}
-	if !c.secrets {
+	if !c.secrets || c.secretPolicy != "idle-8h" {
 		return wisp.Response{}, fmt.Errorf("wisp secret support unavailable; update project runtime")
 	}
 	select {

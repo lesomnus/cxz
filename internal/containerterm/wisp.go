@@ -20,12 +20,13 @@ type WispPool struct {
 	clients map[string]*wispClient
 }
 type wispClient struct {
-	secrets bool
-	gate    chan struct{}
-	enc     *json.Encoder
-	dec     *json.Decoder
-	stop    context.CancelFunc
-	done    chan struct{}
+	secrets      bool
+	secretPolicy string
+	gate         chan struct{}
+	enc          *json.Encoder
+	dec          *json.Decoder
+	stop         context.CancelFunc
+	done         chan struct{}
 }
 
 func (p *WispPool) Close() {
@@ -165,6 +166,7 @@ func openWisp(lifetime, ctx context.Context, p *api.Project) (*wispClient, error
 		var hello wisp.Response
 		err := client.dec.Decode(&hello)
 		client.secrets = hello.Secrets
+		client.secretPolicy = hello.SecretPolicy
 		if err == nil && hello.Version != wisp.Version {
 			err = fmt.Errorf("incompatible wisp protocol")
 		}

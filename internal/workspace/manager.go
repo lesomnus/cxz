@@ -72,6 +72,13 @@ func New(db *sql.DB, root string) (*Manager, error) {
 		if p.ID != filepath.Base(filepath.Dir(file)) {
 			return nil, fmt.Errorf("project manifest identity mismatch")
 		}
+		// Recreate only empty host-tmpfs directories after an engine-host reboot.
+		// Older installations without the host mount remain readable until upgrade.
+		if _, err := os.Stat("/cxz/host-secrets"); err == nil {
+			if _, err = m.prepareSecretRoot(&p); err != nil {
+				return nil, err
+			}
+		}
 		if p.Job.State == "running" {
 			p.Job.State = "interrupted"
 			p.Error = "manager stopped during " + p.Job.Step + "; retry cxz project up (prompts are never resent)"

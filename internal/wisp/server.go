@@ -11,6 +11,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"strings"
+	"time"
 	"unicode"
 	"unicode/utf8"
 )
@@ -31,20 +32,22 @@ type Request struct {
 	Secret    []byte
 }
 type Response struct {
-	Version    int
-	Entries    []Entry
-	Done       bool
-	Truncated  bool
-	Error      string
-	Secrets    bool
-	SecretPath string
+	Version      int
+	Entries      []Entry
+	Done         bool
+	Truncated    bool
+	Error        string
+	Secrets      bool
+	SecretPolicy string
+	SecretPath   string
 }
 
 func Serve(in io.Reader, out io.Writer) error {
 	enc := json.NewEncoder(out)
 	store := &secretStore{}
 	defer store.clear("")
-	if err := enc.Encode(Response{Version: Version, Secrets: true}); err != nil {
+	_ = SweepSecrets("/cxz/secrets", time.Now())
+	if err := enc.Encode(Response{Version: Version, Secrets: true, SecretPolicy: "idle-8h"}); err != nil {
 		return err
 	}
 	scan := bufio.NewScanner(in)
