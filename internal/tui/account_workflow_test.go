@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os/exec"
 	"strings"
 	"testing"
 	"time"
@@ -14,6 +15,49 @@ import (
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/resource"
 )
+
+func TestWorkflowProcessExitDoesNotWaitForMoreInput(t *testing.T) {
+	for _, provider := range []string{"claude", "codex"} {
+		t.Run(provider, func(t *testing.T) {
+			m := projectModel()
+			m.createProjectSession = func(ctx context.Context, _ string, _ string, in io.Reader, out, errOut io.Writer) (*api.Session, error) {
+				script := `printf 'Login successful.\n'`
+				if provider == "claude" {
+					script = `IFS= read -r code; test "$code" = 'fixture#state' || exit 1; printf 'Login successful.\n'`
+				}
+				cmd := exec.CommandContext(ctx, "sh", "-c", script)
+				cmd.Stdin, cmd.Stdout, cmd.Stderr = in, out, errOut
+				if err := cmd.Run(); err != nil {
+					return nil, err
+				}
+				return &api.Session{Id: "created"}, nil
+			}
+			batch := m.startAccountWorkflow("main", provider, "", true)().(tea.BatchMsg)
+			f := m.workflow
+			defer f.close()
+			done := make(chan tea.Msg, 1)
+			go func() { done <- batch[0]() }()
+			if provider == "claude" {
+				f.input.SetValue("fixture#state")
+				m.Update(m.workflowKey(tea.KeyMsg{Type: tea.KeyEnter})())
+			}
+			select {
+			case msg := <-done:
+				if result := msg.(workflowDone); result.err != nil {
+					t.Fatal(result.err)
+				}
+				m.Update(msg)
+				if m.workflow != nil || m.wantID != "created" {
+					t.Fatal("login did not attach session")
+				}
+			case <-time.After(time.Second):
+				f.close()
+				<-done
+				t.Fatal("exited login process blocked waiting for input EOF")
+			}
+		})
+	}
+}
 
 func TestWorkflowStaysInAppAndPipesSecret(t *testing.T) {
 	m := projectModel()

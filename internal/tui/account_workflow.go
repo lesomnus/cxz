@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -17,8 +18,8 @@ import (
 type accountWorkflow struct {
 	ctx                              context.Context
 	cancel                           context.CancelFunc
-	in                               *io.PipeWriter
-	reader                           *io.PipeReader
+	in                               *os.File
+	reader                           *os.File
 	updates                          chan tea.Msg
 	input                            textinput.Model
 	alias, provider, output, message string
@@ -70,7 +71,16 @@ func (w workflowWriter) Write(p []byte) (int, error) {
 
 func (m *model) startAccountWorkflow(alias, provider, sessionID string, create bool) tea.Cmd {
 	ctx, cancel := context.WithCancel(m.ctx)
-	r, w := io.Pipe()
+	// Pass a real descriptor to exec.Cmd.Stdin. With io.Pipe, os/exec owns a
+	// copying goroutine and Wait waits for its Read to finish even after the
+	// login process exits. The UI keeps that input open until workflowDone,
+	// causing a circular wait (including browser-only Codex login).
+	r, w, err := os.Pipe()
+	if err != nil {
+		cancel()
+		m.notice = "Could not open login input pipe"
+		return nil
+	}
 	f := &accountWorkflow{ctx: ctx, cancel: cancel, reader: r, in: w, updates: make(chan tea.Msg, 16), alias: alias, provider: provider, create: create, started: time.Now(), input: textinput.New()}
 	f.input.EchoMode = textinput.EchoNone
 	f.input.CharLimit = 8192

@@ -96,7 +96,11 @@ func projectTUI(ctx context.Context, resources *resourceclient.Client, c *xli.Co
 		r := &api.ProjectRequest{Workspace: projectID, NewSession: true, Account: alias, Agent: a.GetAgent(), Model: settings.From(ctx).Model(a.GetAgent()), TrustConfig: trust && projectID == p.Id, ClientId: core.ID()}
 		return openWithProjectLogin(ctx, r, true, func(ctx context.Context, r *api.ProjectRequest) (*api.Session, error) { return resources.Open(ctx, r) }, func(ctx context.Context, alias, key string) error {
 			fmt.Fprintln(errOutput, "Session login required. Open the provider URL below and paste the returned code here.")
-			return projectAccountWorkflow(ctx, resources, c, a, "login", projectID, false, key)
+			if err := projectAccountWorkflow(ctx, resources, c, a, "login", projectID, false, key); err != nil {
+				return err
+			}
+			fmt.Fprintln(errOutput, "Authentication completed; starting agent session…")
+			return nil
 		})
 	}, func(ctx context.Context, projectID, alias, sessionID string, input io.Reader, output, errOutput io.Writer) error {
 		oldIn, oldOut, oldErr := c.ReadCloser, c.Writer, c.ErrWriter

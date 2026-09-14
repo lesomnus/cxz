@@ -1,5 +1,19 @@
 # 구현 진행 상황
 
+## 2026-09-14 — 로그인 성공 후 TUI 순환 대기 수정
+
+- TUI가 제공한 `io.PipeReader`를 `exec.Cmd.Stdin`에 연결하면 os/exec의 복사 goroutine이
+  추가 입력을 기다리고, `cmd.Wait`는 자식 종료 후에도 그 goroutine을 기다렸다.
+  TUI는 workflow 완료 후 pipe를 닫으므로 `Login successful` 이후 순환 대기가 생겼다.
+- workflow 입력을 `os.Pipe`의 실제 파일 descriptor로 전달해 불필요한 stdin 복사 goroutine을
+  없앴다. 취소·완료 시 양쪽 descriptor 정리는 유지한다. Claude 코드 입력과 Codex 브라우저
+  로그인 모두 테스트 프로세스로 수정 전 hang을 재현했고 수정 후 세션 attach까지 확인했다.
+- 로그인 프로세스가 정상 종료한 뒤 `Authentication completed; starting agent session…`을
+  출력한다. 성공 문구 자체를 읽어서 인증 성공으로 판정하거나 프로세스를 강제 종료하지 않는다.
+- Esc 후 새 생성 요청은 다른 creation key의 독립 credential 공간을 사용하므로 기존 미완료
+  요청의 인증을 임의로 복제하지 않는다. 실제 사용자 OAuth 계정으로 재로그인은 수행하지 않았다.
+- 전체 Go 테스트·vet·TUI/CLI race 검사 통과. TUI/CLI 바이너리 업데이트로 적용되며 컨테이너 재생성은 필요 없다.
+
 ## 2026-09-14 — 로그인 URL 표시·복사 수정
 
 - auth 화면의 좌우 여백을 제거하고 URL은 안내 문구와 분리하여 전체 폭으로 표시한다.
