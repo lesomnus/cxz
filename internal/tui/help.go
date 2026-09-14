@@ -13,7 +13,7 @@ type commandHelp struct {
 }
 
 var commandHelpEntries = []commandHelp{
-	{"Permissions", "redact", "Insert a secret without placing it in chat", "Opens hidden input: Enter inserts a [Redacted] chip, Ctrl+X clears and Esc cancels. Submit the composer to create a 0600 file in the container's dedicated tmpfs and send only its path. No normal paste preview or attachment is available. Limit: 64 KiB per secret, 15 minute file lifetime while wisp runs; leaving the TUI removes its files on helper EOF. Missing tmpfs fails closed: recreate the project first. This is not protection from the agent, other processes with the same UID, container root or the host. Reading or echoing the secret can expose it to provider context and logs. Avoid doing so; use the file in a tool without printing it. tmpfs may swap; host swap policy is separate. Secrets are not saved in drafts and must be reentered after failure or restart.", "/redact\n/help redact"},
+	{"Inline commands", "@redact", "Insert a secret inside your message", "Type @ at the start of input or after whitespace to show inline commands. Enter on @redact opens hidden input; Tab completes its name. Enter in the dialog replaces only that command with a [Redacted] chip, preserving surrounding text. Ctrl+X clears the secret; Esc restores the draft and cursor. Emails, backtick literals and freshly pasted text do not activate inline commands. Normal Enter remains newline; Ctrl+S sends the message. At send time, a 0600 file is created in the container's dedicated tmpfs and only its path is sent. Limit: 64 KiB per secret, 15 minute file lifetime while wisp runs. Missing tmpfs fails closed and requires project recreation. There is no normal paste preview or attachment. The agent, same-UID processes and root can read the file; agent output can expose it to provider context or logs. tmpfs may swap. Secrets are not saved in drafts; reenter after failure or restart.", "Use this token: @redact\n/help redact"},
 	{"Session", "terminal", "Open the container terminal", "Opens a session-local container shell below the conversation (up to 24 rows). Ctrl+backtick opens it, focuses a visible panel, or folds a focused panel. Folding and session switching preserve the shell while this TUI stays attached. Click the composer to return without folding. Collapse is always clickable on the upper-right rule, even when a terminal application captures mouse input. Wheel or Alt+PgUp/PgDown browses shell history; click/drag the bottom track to seek. History is frozen while browsing so new output does not move it. The right end, Ctrl+End while browsing, or typing returns to live output. Alternate-screen applications keep their own wheel handling. Ctrl+C, Tab and other keys go to the shell while focused. Requires local Docker CLI access to the manager's engine. This is a remote-user workspace shell, not the agent's private authentication HOME. Exit code 0 automatically folds the panel and returns to chat. Nonzero exits keep the panel visible. Reopen an exited panel to start a new shell. Leaving cxz closes the terminal connection; persistence across detach is not provided.", "/terminal\n/help terminal"},
 	{"Inspection", "paste", "Preview or attach pasted text", "Pastes longer than 800 characters or three lines become indivisible chips. Full original text, including newlines, is sent by default. Left/Right selects a chip, then moves outside it. While selected, t chooses full-text mode, f uploads a private text file to session storage without opening a dialog, and d or Backspace/Delete removes the chip. Enter or Ctrl+P opens its preview. With no chip selected, t/f/d type normally. Pasted characters never execute these shortcuts. In the preview, Up/Down selects a paste, PgUp/PgDn scrolls, and t/f/d change mode or remove it. Escape closes the preview. Only chips still present in the current input are listed; deleted or sent chips are not restored from the cache. File mode sends its path and a read instruction, not the full text. Mode changes do not submit a message. Login codes and secret answers are excluded. Each paste/file is limited to 1 MiB; the 32 MiB memory cache is lost on detach. Uploaded files remain with session data after a chip is removed.", "/paste\n/help paste"},
 	{"Inspection", "background", "Inspect background tasks", "Shows current-run provider task status, completion summaries and output paths in a live read-only overlay. Claude task snapshots are authoritative; launch results do not mark background work complete. Output files are not read automatically. Older telemetry loads separately from the transcript. Providers without task telemetry are not guessed from command text.", "/background"},
@@ -59,7 +59,7 @@ func helpView(width int, topics ...string) string {
 	}
 	if topic != "" {
 		for _, entry := range commandHelpEntries {
-			if entry.name == topic {
+			if strings.TrimPrefix(entry.name, "@") == strings.TrimPrefix(topic, "@") {
 				return indentBlock(ansi.Hardwrap(lavender.Bold(true).Render("cxz /help "+topic)+"\n\n"+
 					strong.Render(entry.summary)+"\n"+muted.Render(entry.detail)+"\n\n"+
 					accent.Render("Examples")+"\n"+entry.example+"\n\n"+muted.Render("Submit with ")+helpKeycaps("Ctrl+S", 0), w, true))
@@ -76,7 +76,11 @@ func helpView(width int, topics ...string) string {
 			category = entry.category
 			lines = append(lines, "", accent.Bold(true).Render(category))
 		}
-		lines = append(lines, "/"+entry.name+"  "+muted.Render(entry.summary))
+		name := entry.name
+		if !strings.HasPrefix(name, "@") {
+			name = "/" + name
+		}
+		lines = append(lines, name+"  "+muted.Render(entry.summary))
 	}
 	shortcuts := []struct{ category, keys, text string }{
 		{"Input", "Ctrl+S", "Send message or command"},

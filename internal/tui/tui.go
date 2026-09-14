@@ -24,6 +24,7 @@ import (
 )
 
 type model struct {
+	inlineDismissed         string
 	redactDialog            *redactDialog
 	redactions              map[string]*redaction
 	redactSending           bool
@@ -667,7 +668,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.redactSending = false
 		m.pruneRedactions()
 		if v.err != nil {
-			m.notice = v.err.Error() + "; reenter the secret with /redact"
+			m.notice = v.err.Error() + "; reenter the secret with @redact"
 		} else {
 			m.notice = "send · accepted (secret file expires in 15 minutes)"
 		}
@@ -685,6 +686,11 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 	next, cmd := m.update(msg)
+	if k, ok := msg.(tea.KeyMsg); ok && k.Paste {
+		if token := m.inlineContext(); token != nil {
+			m.inlineDismissed = token.signature
+		}
+	}
 	m.pruneRedactions()
 	cmd = tea.Batch(cmd, m.cleanFinishedSecrets())
 	if _, ok := msg.(listing); ok {
@@ -1256,6 +1262,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if handled, cmd := m.commandKey(v); handled {
 				return m, cmd
 			}
+			if m.inlineKey(v) {
+				return m, nil
+			}
 		}
 		if v.String() == "ctrl+q" {
 			if m.panelVisible() {
@@ -1365,12 +1374,13 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			text := strings.TrimSpace(m.input.Value())
 			if text == "/redact" {
-				m.openRedact()
+				m.input.Reset()
+				m.notice = "Use @redact inside your message, then Enter"
 				return m, nil
 			}
 			if strings.HasPrefix(text, "/redact ") || strings.HasPrefix(text, "/redact\n") || strings.HasPrefix(text, "/redact\t") {
 				m.input.Reset()
-				m.notice = "Use /redact without arguments; enter the secret only in its dialog"
+				m.notice = "Use @redact inside your message; enter the secret only in its dialog"
 				return m, nil
 			}
 			if m.hasRedactions(text) {
