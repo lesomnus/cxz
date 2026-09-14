@@ -24,26 +24,48 @@ type Entry struct {
 	LinkTarget string
 	Symlink    bool
 }
-type Request struct{ Path string }
+type Request struct {
+	Path      string
+	Operation string
+	Session   string
+	Secret    []byte
+}
 type Response struct {
-	Version   int
-	Entries   []Entry
-	Done      bool
-	Truncated bool
-	Error     string
+	Version    int
+	Entries    []Entry
+	Done       bool
+	Truncated  bool
+	Error      string
+	Secrets    bool
+	SecretPath string
 }
 
 func Serve(in io.Reader, out io.Writer) error {
 	enc := json.NewEncoder(out)
-	if err := enc.Encode(Response{Version: Version}); err != nil {
+	store := &secretStore{}
+	defer store.clear("")
+	if err := enc.Encode(Response{Version: Version, Secrets: true}); err != nil {
 		return err
 	}
 	scan := bufio.NewScanner(in)
+	scan.Buffer(make([]byte, 4096), 256*1024)
 	for scan.Scan() {
 		var req Request
 		if err := json.Unmarshal(scan.Bytes(), &req); err != nil {
+			clear(scan.Bytes())
+			clear(req.Secret)
 			return fmt.Errorf("invalid wisp request")
 		}
+		clear(scan.Bytes())
+		if req.Operation != "" {
+			response := store.handle(req)
+			clear(req.Secret)
+			if err := enc.Encode(response); err != nil {
+				return err
+			}
+			continue
+		}
+		clear(req.Secret)
 		if err := list(req.Path, enc.Encode); err != nil {
 			return err
 		}

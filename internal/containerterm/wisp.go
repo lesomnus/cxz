@@ -20,11 +20,12 @@ type WispPool struct {
 	clients map[string]*wispClient
 }
 type wispClient struct {
-	gate chan struct{}
-	enc  *json.Encoder
-	dec  *json.Decoder
-	stop context.CancelFunc
-	done chan struct{}
+	secrets bool
+	gate    chan struct{}
+	enc     *json.Encoder
+	dec     *json.Decoder
+	stop    context.CancelFunc
+	done    chan struct{}
 }
 
 func (p *WispPool) Close() {
@@ -36,9 +37,9 @@ func (p *WispPool) Close() {
 	p.clients = nil
 }
 
-func (p *WispPool) Paths(lifetime, ctx context.Context, project *api.Project, dir string, emit func(PathListing)) (PathListing, error) {
+func (p *WispPool) client(lifetime, ctx context.Context, project *api.Project) (*wispClient, error) {
 	if project == nil || project.Id == "" || project.ContainerId == "" || project.RemoteUser == "" {
-		return PathListing{}, fmt.Errorf("project container unavailable")
+		return nil, fmt.Errorf("project container unavailable")
 	}
 	key := project.Id + "/" + project.ContainerId + "/" + project.RemoteUser
 	p.mu.Lock()
@@ -69,6 +70,11 @@ func (p *WispPool) Paths(lifetime, ctx context.Context, project *api.Project, di
 		}
 	}
 	p.mu.Unlock()
+	return c, err
+}
+
+func (p *WispPool) Paths(lifetime, ctx context.Context, project *api.Project, dir string, emit func(PathListing)) (PathListing, error) {
+	c, err := p.client(lifetime, ctx, project)
 	if err != nil {
 		return PathListing{}, err
 	}
@@ -158,6 +164,7 @@ func openWisp(lifetime, ctx context.Context, p *api.Project) (*wispClient, error
 	go func() {
 		var hello wisp.Response
 		err := client.dec.Decode(&hello)
+		client.secrets = hello.Secrets
 		if err == nil && hello.Version != wisp.Version {
 			err = fmt.Errorf("incompatible wisp protocol")
 		}
