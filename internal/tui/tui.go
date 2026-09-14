@@ -24,6 +24,11 @@ import (
 )
 
 type model struct {
+	redactDialog            *redactDialog
+	redactions              map[string]*redaction
+	redactSending           bool
+	redactionFiles          map[string]secretRun
+	redactStore             secretFiles
 	pathHints               *pathHints
 	pathHintGeneration      uint64
 	pathHintDismissed       string
@@ -239,6 +244,12 @@ func RunProject(ctx context.Context, c api.SessionsClient, project *api.Project,
 	p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithContext(ctx), tea.WithMouseCellMotion(), tea.WithOutput(m.cursorOutput), tea.WithInput(keyboardInput(os.Stdin)))
 	m.program = p
 	_, e := p.Run()
+	if m.redactDialog != nil {
+		clear(m.redactDialog.body)
+	}
+	for _, r := range m.redactions {
+		clear(r.body)
+	}
 	cancel()
 	m.clearPathHints()
 	if m.wisp != nil {
@@ -646,6 +657,22 @@ func (m *model) action(kind, text string) tea.Cmd {
 	}
 }
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if v, ok := msg.(redactSent); ok {
+		for _, token := range v.tokens {
+			if r := m.redactions[token]; r != nil {
+				clear(r.body)
+				delete(m.redactions, token)
+			}
+		}
+		m.redactSending = false
+		m.pruneRedactions()
+		if v.err != nil {
+			m.notice = v.err.Error() + "; reenter the secret with /redact"
+		} else {
+			m.notice = "send · accepted (secret file expires in 15 minutes)"
+		}
+		return m, nil
+	}
 	var activity tea.Cmd
 	switch msg.(type) {
 	case tea.KeyMsg, tea.MouseMsg:
@@ -658,6 +685,8 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 	next, cmd := m.update(msg)
+	m.pruneRedactions()
+	cmd = tea.Batch(cmd, m.cleanFinishedSecrets())
 	if _, ok := msg.(listing); ok {
 		cmd = tea.Batch(cmd, m.watchResources())
 	}
@@ -690,6 +719,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.receivePathHints(v)
 		return m, nil
 	case tea.KeyMsg:
+		if m.redactDialog != nil {
+			return m, m.redactKey(v)
+		}
 		if v.Type == tea.KeyF20 && !v.Paste {
 			return m, m.toggleTerminal()
 		}
@@ -1332,6 +1364,18 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.input.Focus()
 			}
 			text := strings.TrimSpace(m.input.Value())
+			if text == "/redact" {
+				m.openRedact()
+				return m, nil
+			}
+			if strings.HasPrefix(text, "/redact ") || strings.HasPrefix(text, "/redact\n") || strings.HasPrefix(text, "/redact\t") {
+				m.input.Reset()
+				m.notice = "Use /redact without arguments; enter the secret only in its dialog"
+				return m, nil
+			}
+			if m.hasRedactions(text) {
+				return m, m.sendRedactions(text)
+			}
 			if text == "/paste" {
 				return m, m.openPastes()
 			}

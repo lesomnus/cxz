@@ -26,6 +26,7 @@ var slashCommands = []slashCommand{
 	{"/background", "Inspect provider background tasks"},
 	{"/paste", "Preview pasted text or attach it as a file"},
 	{"/terminal", "Open container terminal; Ctrl+` folds it"},
+	{"/redact", "Insert a secret chip; send only a temporary container file path"},
 }
 
 func (m *model) commandHints() []slashCommand {

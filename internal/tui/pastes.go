@@ -15,6 +15,7 @@ import (
 )
 
 type pastedText struct {
+	secret            bool
 	token, body, path string
 	owner             string
 	file              bool
@@ -29,6 +30,9 @@ type chipSelection struct {
 
 // Cursor offsets are rune offsets, including logical newlines (not soft wraps).
 func (m *model) chipInput() (string, int, func(int), func(string), bool) {
+	if m.redactDialog != nil {
+		return "", 0, nil, nil, false
+	}
 	if m.workflow != nil || m.projectView || m.accountView || m.creating || m.renaming || m.report != nil || m.modelPicker != nil || m.restartConfirm != nil {
 		return "", 0, nil, nil, false
 	}
@@ -77,6 +81,10 @@ func (m *model) chipKey(k tea.KeyMsg) (bool, tea.Cmd) {
 		return false, nil
 	}
 	if sel != nil {
+		if p := m.pastes[sel.token]; p != nil && p.secret && (key == "t" || key == "f" || key == "enter" || key == "ctrl+p") {
+			m.notice = "Secret chip · d deletes · preview and attachment disabled"
+			return true, nil
+		}
 		switch key {
 		case "t":
 			p := m.pastes[sel.token]
@@ -281,6 +289,9 @@ func (m *model) sendPastes(draft, text string) tea.Cmd {
 func decoratePastes(text string, items map[string]*pastedText) string {
 	var pairs []string
 	for token, p := range items {
+		if p.secret {
+			continue
+		}
 		if p.file {
 			// Match the label and unique ID, not the entire chip: metadata may
 			// wrap onto another display row. The two labels have equal width.
@@ -321,6 +332,9 @@ func expandPastes(text string, items map[string]*pastedText) string {
 	// One pass: pasted source may itself contain text resembling another chip.
 	var pairs []string
 	for token, p := range items {
+		if p.secret {
+			continue
+		}
 		value := p.body
 		if p.file {
 			value = fmt.Sprintf("[Attached text file: %s — read this file for the full content]", p.path)
@@ -468,6 +482,9 @@ func (m *model) openPastes() tea.Cmd {
 		first := -1
 		token := ""
 		for candidate := range m.pastes {
+			if m.pastes[candidate].secret {
+				continue
+			}
 			if i := strings.Index(text, candidate); i >= 0 && (first < 0 || i < first) {
 				first = i
 				token = candidate

@@ -31,7 +31,7 @@ func TestDockerWisp(t *testing.T) {
 	if image == "" {
 		image = "alpine:latest"
 	}
-	b, err := dockerx.Run(ctx, "run", "-d", "--label", "cxz.owner="+owner, "--label", "cxz.project="+project, image, "sleep", "90")
+	b, err := dockerx.Run(ctx, "run", "-d", "--tmpfs", "/cxz/secrets:rw,nosuid,nodev,noexec,size=1048576,mode=1777", "--label", "cxz.owner="+owner, "--label", "cxz.project="+project, image, "sleep", "90")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -80,11 +80,49 @@ func TestDockerWisp(t *testing.T) {
 		t.Fatal("dead connection reused")
 	}
 	p.RemoteUser = "65534"
+	secretPath, err := pool.PutSecret(ctx, ctx, p, "session/run", []byte("fixture-secret\nsecond line"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := dockerx.Run(ctx, "exec", "--user", "65534", id, "cat", secretPath)
+	if err != nil || string(data) != "fixture-secret\nsecond line" {
+		t.Fatal("secret content mismatch")
+	}
+	mode, err := dockerx.Run(ctx, "exec", id, "stat", "-c", "%a", secretPath)
+	if err != nil || strings.TrimSpace(string(mode)) != "600" {
+		t.Fatal("secret file permissions", err)
+	}
+	mode, err = dockerx.Run(ctx, "exec", id, "stat", "-c", "%a", filepath.Dir(secretPath))
+	if err != nil || strings.TrimSpace(string(mode)) != "700" {
+		t.Fatal("secret directory permissions", err)
+	}
+	if err = pool.DeleteSecret(ctx, ctx, p, secretPath); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = dockerx.Run(ctx, "exec", id, "test", "-e", secretPath); err == nil {
+		t.Fatal("secret not deleted")
+	}
 	if _, err := pool.Paths(ctx, ctx, p, "/root", nil); err == nil {
 		t.Fatal("nonroot accessed root home")
 	}
 	if _, err := pool.Paths(ctx, ctx, p, "/tmp", nil); err != nil {
 		t.Fatal("nonroot lookup", err)
+	}
+	secretPath, err = pool.PutSecret(ctx, ctx, p, "session/disconnect", []byte("ephemeral"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	pool.Close()
+	removed := false
+	for i := 0; i < 20; i++ {
+		if _, err = dockerx.Run(ctx, "exec", id, "test", "-e", secretPath); err != nil {
+			removed = true
+			break
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	if !removed {
+		t.Fatal("helper disconnect retained secret")
 	}
 	p.Id = "wrong"
 	if _, err := pool.Paths(ctx, ctx, p, "/", nil); err == nil {

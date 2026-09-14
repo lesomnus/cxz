@@ -1,5 +1,18 @@
 # 구현 진행 상황
 
+## 2026-09-14 — `/redact` 비밀 chip 및 전용 tmpfs
+
+- 숨김 입력 모달(문자 수·깜빡이는 표시·Ctrl+X·Esc)과 원자적 `[Redacted]` chip을 추가했다.
+  원문은 일반 paste/preview/attachment/저장 draft에 넣지 않는다. 전송 시 wisp에 직접 전달하고
+  대화 API에는 `(secret placed at /cxz/secrets/...)` 경로만 한 번 치환하여 보낸다.
+- 새 Docker/Compose 프로젝트에 1 MiB `nosuid,nodev,noexec` tmpfs를 마운트한다.
+  wisp capability 및 실제 filesystem 확인 후 0700 디렉터리/0600 파일을 생성한다.
+  기존 컨테이너는 명시적 재생성이 필요하며 일반 디스크 fallback은 없다.
+- 15분 TTL, 전송 실패·관측된 세션 종료/새 run·helper EOF 정리를 추가했다.
+  동일 UID/root 접근, agent 출력 노출, swap 및 helper 강제 종료 한계는 docs/redact.md에 명시했다.
+- 전체 Go 테스트, vet, TUI/containerterm/wisp race 검사 통과.
+  실제 Docker 비-root 파일 생성·권한·읽기·삭제·연결 종료 정리 테스트 통과.
+
 ## 2026-09-13 — 리소스 폴링 및 원격 이벤트 조회 부하 감소
 
 - 매초 TUI 전체 목록 refresh를 제거하고 named payday Watch + 150ms coalescing/single-flight로 전환했다.
