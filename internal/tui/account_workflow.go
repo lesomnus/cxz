@@ -102,6 +102,22 @@ func (m *model) startAccountWorkflow(alias, provider, sessionID string, create b
 func (m *model) workflowKey(k tea.KeyMsg) tea.Cmd {
 	f := m.workflow
 	switch k.String() {
+	case "ctrl+y":
+		_, link := workflowAuthOutput(f.output, max(1, m.width))
+		if link == "" {
+			f.message = "No complete login URL received yet"
+			return nil
+		}
+		if m.cursorOutput == nil {
+			f.message = "Clipboard output unavailable; use the clickable URL"
+			return nil
+		}
+		if _, err := io.WriteString(m.cursorOutput, ansi.SetSystemClipboard(link)); err != nil {
+			f.message = "Could not request clipboard copy"
+		} else {
+			f.message = "URL copy requested · requires terminal OSC 52 clipboard support"
+		}
+		return nil
 	case "esc", "ctrl+c":
 		f.canceling = true
 		f.message = "Canceling; waiting for operation to stop…"
@@ -136,16 +152,14 @@ func (m *model) workflowKey(k tea.KeyMsg) tea.Cmd {
 
 func (m *model) workflowScreen() string {
 	f := m.workflow
-	width := max(1, m.width-4)
+	width := max(1, m.width)
 	title := "Account login"
 	if f.create {
 		title = "Preparing agent session"
 	}
 	frames := []rune("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏")
 	rows := []string{brand.Render("cxz · " + title), providerLabel(f.provider) + " · " + pickerLabel(f.alias), "", accent.Render(fmt.Sprintf("%c %s · %s", frames[m.pulse%len(frames)], title, time.Since(f.started).Round(time.Second))), ""}
-	// Strip provider control sequences: child processes never own this terminal.
-	text := ansi.Hardwrap(safeText(ansi.Strip(f.output)), width, true)
-	output := strings.Split(text, "\n")
+	output, link := workflowAuthOutput(f.output, width)
 	capacity := max(1, m.height-12)
 	f.offset = min(f.offset, max(0, len(output)-capacity))
 	end := len(output) - f.offset
@@ -172,10 +186,13 @@ func (m *model) workflowScreen() string {
 		rows = append(rows, muted.Render(instruction))
 	}
 	rows = append(rows, muted.Render("Esc cancel · PgUp/PgDn scroll · credentials are not added to chat history"))
+	if link != "" {
+		rows = append(rows, accent.Render("Ctrl+Y copy full login URL · click any URL row to open"))
+	}
 	for len(rows) < m.height {
 		rows = append(rows, "")
 	}
-	return screen(indentBlock(strings.Join(rows, "\n")), m.width, m.height)
+	return screen(strings.Join(rows, "\n"), m.width, m.height)
 }
 
 func (m *model) loginSessions() []*api.Session {
