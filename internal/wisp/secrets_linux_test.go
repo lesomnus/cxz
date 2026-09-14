@@ -14,7 +14,7 @@ func TestSecretRootRejectsDiskAndSymlinks(t *testing.T) {
 	root := t.TempDir()
 	if fd, err := checkedSecretRoot(root); err == nil {
 		unix.Close(fd)
-		t.Fatal("accepted ordinary directory")
+		t.Fatal("accepted disk")
 	}
 	link := filepath.Join(root, "link")
 	if err := os.Symlink(root, link); err != nil {
@@ -25,55 +25,56 @@ func TestSecretRootRejectsDiskAndSymlinks(t *testing.T) {
 		t.Fatal("accepted symlink")
 	}
 }
-func TestSecretExpiryAndScopedCleanup(t *testing.T) {
-	store := &secretStore{}
-	defer store.clear("")
+func TestSecretSweepIdleAndClosePersistence(t *testing.T) {
 	root := t.TempDir()
-	create := func(name, session string, ttl time.Duration) string {
-		t.Helper()
+	now := time.Now()
+	old := now.Add(-9 * time.Hour)
+	create := func(name string, at, mt time.Time) string {
 		dir := filepath.Join(root, name)
 		if err := os.Mkdir(dir, 0700); err != nil {
 			t.Fatal(err)
 		}
 		path := filepath.Join(dir, "value")
-		if err := os.WriteFile(path, []byte("test"), 0600); err != nil {
+		if err := os.WriteFile(path, []byte("fixture"), 0600); err != nil {
 			t.Fatal(err)
 		}
-		rootFD, err := unix.Open(root, unix.O_RDONLY|unix.O_DIRECTORY, 0)
-		if err != nil {
+		if err := os.Chtimes(path, at, mt); err != nil {
 			t.Fatal(err)
 		}
-		dirFD, err := unix.Open(dir, unix.O_RDONLY|unix.O_DIRECTORY, 0)
-		if err != nil {
-			t.Fatal(err)
-		}
-		store.track(path, &secretFile{session: session, name: name, root: rootFD, dir: dirFD}, ttl)
 		return path
 	}
-	first := create("first", "s1", time.Hour)
-	second := create("second", "s2", time.Hour)
-	store.clear("s1")
-	if _, err := os.Stat(first); !os.IsNotExist(err) {
-		t.Fatal("session secret retained")
+	expired := create("12345678", old, old)
+	read := create("12345679", now, old)
+	written := create("1234567a", old, now)
+	unrelated := create("unrelated", old, old)
+	rootFD, _ := unix.Open(root, unix.O_RDONLY|unix.O_DIRECTORY, 0)
+	dirFD, _ := unix.Open(filepath.Dir(read), unix.O_RDONLY|unix.O_DIRECTORY, 0)
+	store := &secretStore{}
+	store.track(read, &secretFile{session: "s", name: "12345679", root: rootFD, dir: dirFD})
+	store.clear("")
+	if _, err := os.Stat(read); err != nil {
+		t.Fatal("disconnect deleted file")
 	}
-	if _, err := os.Stat(second); err != nil {
-		t.Fatal("other session removed")
-	}
-	unrelated := filepath.Join(root, "unrelated")
-	if err := os.WriteFile(unrelated, nil, 0600); err != nil {
+	fd, err := unix.Open(root, unix.O_RDONLY|unix.O_DIRECTORY, 0)
+	if err != nil {
 		t.Fatal(err)
 	}
-	store.drop(unrelated)
-	if _, err := os.Stat(unrelated); err != nil {
-		t.Fatal("untracked path removed")
+	if err = sweepSecretFD(fd, now); err != nil {
+		t.Fatal(err)
 	}
-	expires := create("expires", "s3", 10*time.Millisecond)
-	deadline := time.Now().Add(time.Second)
-	for time.Now().Before(deadline) {
-		if _, err := os.Stat(expires); os.IsNotExist(err) {
-			return
+	if _, err = os.Stat(expired); !os.IsNotExist(err) {
+		t.Fatal("old file retained")
+	}
+	for _, path := range []string{read, written, unrelated} {
+		if _, err := os.Stat(path); err != nil {
+			t.Fatal("unexpected deletion", path)
 		}
-		time.Sleep(5 * time.Millisecond)
 	}
-	t.Fatal("TTL did not remove file")
+	fd, _ = unix.Open(root, unix.O_RDONLY|unix.O_DIRECTORY, 0)
+	if err = sweepSecretFD(fd, now.Add(9*time.Hour)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = os.Stat(read); !os.IsNotExist(err) {
+		t.Fatal("restart sweep did not expire file")
+	}
 }

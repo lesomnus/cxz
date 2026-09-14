@@ -11,6 +11,7 @@ import (
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/dockerx"
 	"github.com/lesomnus/cxz/internal/transport"
+	"github.com/lesomnus/cxz/internal/wisp"
 	"io"
 	"net"
 	"net/url"
@@ -131,6 +132,10 @@ func Install(ctx context.Context, root, workspaceRoot, image string, recreate bo
 		}
 	}
 	previousImage := v.Image
+	secretRoot, e := wisp.HostSecretRoot(v.Owner)
+	if e != nil {
+		return e
+	}
 	v.Image = image
 	// Pull/inspect the replacement before removing a healthy manager. A typo or
 	// unavailable release must not cause avoidable downtime.
@@ -180,6 +185,9 @@ func Install(ctx context.Context, root, workspaceRoot, image string, recreate bo
 	}
 	args := []string{"run", "-d", "--name", v.Container, "--restart", "unless-stopped", "--label", "cxz.role=daemon", "--label", "cxz.owner=" + v.Owner, "--mount", "type=volume,source=" + v.StateVolume + ",target=/var/lib/cxz", "--mount", "type=volume,source=" + v.ToolsVolume + ",target=/cxz/tools", "--mount", "type=bind,source=" + workspaceRoot + ",target=" + workspaceRoot, "-e", "CXZ_OWNER=" + v.Owner, "-e", "CXZ_WORKSPACE_ROOT=" + workspaceRoot, "-e", "CXZ_TOOLS_VOLUME=" + v.ToolsVolume, "-e", "CXZ_MANAGER_IMAGE=" + image, "-e", "CXZ_MANAGER_CONTAINER=" + v.Container}
 	args = append(args, "-e", "CXZ_HOST_UID="+strconv.Itoa(os.Getuid()), "-e", "CXZ_HOST_GID="+strconv.Itoa(os.Getgid()))
+	// -v recreates this installation's empty directory after host reboot;
+	// projects validate it is backed by the engine host's real tmpfs.
+	args = append(args, "-v", secretRoot+":"+wisp.HostSecretsMount)
 	if value := os.Getenv("CXZ_AUTO_UPDATE"); value != "" {
 		args = append(args, "-e", "CXZ_AUTO_UPDATE="+value)
 	}

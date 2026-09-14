@@ -1,80 +1,76 @@
-# `@redact`: temporary secret files
+# `@redact`: host-tmpfs secret files
 
-Type `@` at the start of the composer or after whitespace to show inline commands.
-For example, type `foo @redact`, then press Enter to open hidden input. Tab
-completes the command name; Esc dismisses the list. The hidden-input overlay accepts typing or pasted
-text (including pasted newlines), shows only a character count, and never previews
-the value. Enter replaces only `@redact` with `[Redacted]` in the composer;
-surrounding text is preserved and the cursor moves just after the chip. Subsequent
-chips have numbered labels. Ctrl+X clears the hidden input, Esc restores the
-original draft and cursor. Email addresses, backtick literals and newly pasted
-text do not automatically activate the list. Normal Enter remains newline;
-Ctrl+S sends the message. `/redact` is no longer advertised as a slash command.
-The chip is atomic:
-delete it normally or select it and press `d`. `t`, `f`, and paste preview cannot
-convert or reveal a secret chip. `/help redact` describes the feature in the TUI.
+Type `@` at the start of input or after whitespace to show inline commands.
+For example, `foo @redact` + Enter opens hidden input. Tab completes the command;
+Esc dismisses. Enter in the dialog replaces only the command with `[Redacted]`,
+preserving surrounding text. Ctrl+X clears; Esc restores the draft/cursor.
+Emails, backtick literals and newly pasted text do not activate the list.
+Normal Enter remains newline; Ctrl+S sends. `/help redact` describes the feature.
 
-On composer submission, cxz sends the secret directly to wisp over its Docker
-exec stdin connection, not the manager API. Wisp creates a random private
-directory and a `value` file. cxz replaces the chip in one pass with:
+On send, cxz transfers the secret directly to wisp over Docker exec stdin, not
+the manager API. It sends only this replacement to the conversation/journal:
 
 ```
-(secret placed at /cxz/secrets/<random-directory>/value)
+(secret placed at /cxz/secrets/1a2b3c4d/value)
 ```
 
-Only that replacement reaches the conversation API/journal. Ordinary paste
-contents are not recursively interpreted as secret chips. Each chip is bound to
-its original session/run. Limits: 64 KiB per secret and 16 unsent secret chips.
-Hidden input and pending bytes live only in the TUI process, not saved drafts,
-attachments or account storage. Secret buffers are cleared on cancellation,
-deletion, successful send, failed send and normal TUI exit where feasible; Go's
-allocator, terminal input buffers and copies prevent guaranteed memory erasure.
+The random directory name is 8 hexadecimal characters; exclusive creation retries
+collisions. Directories are 0700 and files 0600, owned by the project remote user.
+Limits are 64 KiB per secret and 16 unsent chips. Secret chips cannot be converted
+to normal paste text, previewed or attached. Unsent values remain only in TUI
+memory and are lost on exit. Go/terminal buffers prevent guaranteed memory erasure.
 
-## Container setup
+## Storage and lifetime
 
-New image/Dockerfile and Compose projects mount a dedicated 1 MiB tmpfs at
-`/cxz/secrets`, with `nosuid,nodev,noexec` and root directory mode `1777`. Each
-random child directory is `0700`, and each secret file is `0600`, owned by the
-project remote user. Wisp checks filesystem type and mount flags before receiving
-a secret from the client and again before creating it. Directory-relative file
-descriptors, exclusive creation and no-follow flags avoid following a substituted
-leaf symlink. Cleanup touches only files allocated by that helper.
+- Docker engine host source: `/dev/shm/cxz-<installation-owner>/<project-id>`.
+  Projects bind it to `/cxz/secrets`; the manager binds the installation root to
+  `/cxz/host-secrets`. The real filesystem is checked for tmpfs with nodev,
+  nosuid and noexec. No disk fallback or host mount-namespace modification.
+- Files survive TUI, agent and manager exit, and project container stop/removal/
+  recreation, while the same installation/project identity is retained.
+- The old 15-minute creation TTL and disconnect/session-stop deletion are removed.
+- The manager sweeps at startup and hourly, including orphaned project directories.
+  Wisp also sweeps its project directory when started. Files older than **8 hours**
+  by the later of atime/mtime are deleted. Directory metadata checks do not read
+  the secret contents. No strictatime requirement: atime is only an approximate
+  usage signal under relatime/noatime, so actively used files can still expire.
+- With everything stopped, no sweep runs. Old files are removed on next startup.
+  The Docker engine host's OS reboot clears its tmpfs. With Docker Desktop this
+  refers to the Linux engine VM, not the client OS. tmpfs can still swap.
+- Failed writes/submission attempts clean up their allocated files; accepted sends
+  retain them. A lost send reply can mean the message was accepted despite cleanup.
+- Cleanup only visits cxz's 8-hex-character directories and regular `value` files,
+  without following symlinks or recursively removing unrelated contents.
 
-Existing containers require recreation to acquire the mount; updating the binary
-or restarting the agent cannot add it. Old wisp versions are rejected before
-secret transfer. Missing or incorrectly configured tmpfs is an error, never a
-disk-backed fallback. Update manager/runtime before recreating. Container
-recreation removes its writable layer: preserve important files outside workspace
-mounts first. cxz does not recreate containers automatically for `@redact`.
+## Upgrade
 
-## Lifetime and limits of protection
+Update/recreate the manager to add the host bind mount, then recreate project
+containers to replace their old per-container tmpfs mount with the host bind.
+Old wisp retention policies are refused before sending new secrets. Preserve
+important writable-layer data before container recreation. Existing files in the
+old per-container tmpfs are not automatically migrated and disappear with it.
+After host reboot, manager startup restores empty known project directories.
+Uninstall/purge or changing installation/project identity is not a retention promise.
+The host tmpfs shares the engine host's `/dev/shm` capacity; the former per-project
+1 MiB mount limit no longer applies.
 
-- Files expire 15 minutes after creation while wisp is running. They are **not**
-  deleted at turn completion, because background tools may still need them.
-- Failed transmission attempts clean up allocated files and never automatically
-  retry the conversation. Enter the secret again after failure. A lost send reply
-  can still mean the agent accepted the message; its file may already be removed.
-- Observed stopped/failed sessions or changed run IDs trigger scoped cleanup.
-  Normal helper stdin EOF (including a tested TUI connection close) removes all
-  files allocated by that helper. Files do not persist across normal detach.
-- A killed/frozen helper cannot enforce its timer. Stop the project container to
-  discard its tmpfs if cleanup cannot run. Unlinking also cannot revoke copies or
-  descriptors already held by another process.
-- This avoids accidental secret inclusion in prompts; **it does not isolate the
-  secret from the agent, other sessions running as the same UID, container root,
-  or the Docker host**. An agent reading/printing the value can put it in tool
-  output, provider context and logs. Prefer tools consuming the file without
-  displaying its contents; this feature cannot enforce that behavior.
-- tmpfs may swap. Host swap encryption/disablement, core-dump policy, terminal
-  recording, clipboard history and provider handling are outside this feature.
-- Current wisp transport needs Docker access to the manager's engine, like path
-  hints and the embedded terminal; this is not a remote-only secret RPC API.
+## Trust boundary and validation
 
-Tests cover masked input, no paste expansion/preview, one-pass path replacement,
-send failure cleanup, old-runtime refusal before transfer, tmpfs/symlink checks,
-TTL and session-scoped deletion. The opt-in Docker fixture verifies non-root
-creation, contents, permissions, explicit deletion and connection-EOF cleanup:
+This prevents accidental raw-secret inclusion in prompts, not access by the agent,
+same-UID sessions, container root or Docker host. Reading/printing secrets can put
+them in provider context and logs. Prefer tools consuming the file without output.
+Host swap policy, core dumps, clipboard history and recordings are outside scope.
+
+Tests cover input privacy, path-only replacement, failed-send cleanup, policy
+negotiation, filesystem/symlink checks, idle timestamps and survival on helper exit.
+The opt-in Docker test stops the original container and checks the same host-tmpfs
+file from a newly created container, then cleans up its isolated fixture:
 
 ```
 CXZ_TERMINAL_DOCKER_TEST=1 go test ./internal/containerterm -run '^TestDockerWisp$' -v
 ```
+
+Docker also supports tmpfs-backed named volumes with its local driver options:
+[docker volume create](https://docs.docker.com/reference/cli/docker/volume/create/).
+This implementation deliberately binds an independently existing host tmpfs rather
+than relying on the lifetime of a Docker-managed tmpfs mount.

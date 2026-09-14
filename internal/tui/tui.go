@@ -28,7 +28,6 @@ type model struct {
 	redactDialog            *redactDialog
 	redactions              map[string]*redaction
 	redactSending           bool
-	redactionFiles          map[string]secretRun
 	redactStore             secretFiles
 	pathHints               *pathHints
 	pathHintGeneration      uint64
@@ -670,7 +669,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if v.err != nil {
 			m.notice = v.err.Error() + "; reenter the secret with @redact"
 		} else {
-			m.notice = "send · accepted (secret file expires in 15 minutes)"
+			m.notice = "send · accepted (secret files swept after 8 hours idle)"
 		}
 		return m, nil
 	}
@@ -692,7 +691,6 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 	m.pruneRedactions()
-	cmd = tea.Batch(cmd, m.cleanFinishedSecrets())
 	if _, ok := msg.(listing); ok {
 		cmd = tea.Batch(cmd, m.watchResources())
 	}

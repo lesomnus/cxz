@@ -2,7 +2,16 @@
 
 package wisp
 
+import (
+	"fmt"
+	"time"
+)
+
 const MaxSecretBytes = 64 * 1024
+const DefaultSecretMaxIdle = 8 * time.Hour
+
+func CheckSecretRoot(string) error         { return fmt.Errorf("secret tmpfs requires Linux") }
+func SweepSecrets(string, time.Time) error { return fmt.Errorf("secret tmpfs requires Linux") }
 
 type secretStore struct{}
 
