@@ -15,8 +15,10 @@ import (
 )
 
 type redactDialog struct {
-	body    []rune
-	id, run string
+	draft              string
+	start, end, cursor int
+	body               []rune
+	id, run            string
 }
 type redaction struct {
 	body    []byte
@@ -75,8 +77,11 @@ func (m *model) openRedact() {
 	if s == nil || m.creating {
 		return
 	}
-	m.input.Reset()
-	m.redactDialog = &redactDialog{id: s.Id, run: s.RunId}
+	value, pos, _, _, ok := m.chipInput()
+	if !ok {
+		return
+	}
+	m.redactDialog = &redactDialog{id: s.Id, run: s.RunId, draft: value, start: pos, end: pos, cursor: pos}
 }
 func (m *model) redactKey(k tea.KeyMsg) tea.Cmd {
 	d := m.redactDialog
@@ -98,6 +103,10 @@ func (m *model) redactKey(k tea.KeyMsg) tea.Cmd {
 	case "esc":
 		clear(d.body)
 		m.redactDialog = nil
+		m.setPathInput(d.draft, d.cursor)
+		if token := m.inlineContext(); token != nil {
+			m.inlineDismissed = token.signature
+		}
 	case "ctrl+x":
 		clear(d.body)
 		d.body = d.body[:0]
@@ -120,8 +129,15 @@ func (m *model) redactKey(k tea.KeyMsg) tea.Cmd {
 		for n := 2; m.pastes[token] != nil; n++ {
 			token = fmt.Sprintf("[Redacted %d]", n)
 		}
-		m.input.InsertString(token)
-		if !strings.Contains(m.input.Value(), token) {
+		if m.input.Value() != d.draft {
+			m.notice = "Draft changed; cancel and select @redact again"
+			return nil
+		}
+		r := []rune(d.draft)
+		value := string(r[:d.start]) + token + string(r[d.end:])
+		m.setPathInput(value, d.start+len([]rune(token)))
+		if m.input.Value() != value {
+			m.setPathInput(d.draft, d.cursor)
 			m.notice = "Could not insert secret chip"
 			return nil
 		}
@@ -148,7 +164,7 @@ func (m *model) redactOverlay(view string) string {
 	if n == 0 {
 		zeros = len(count)
 	}
-	rows := []string{accent.Render("Secret · /redact"), "", "[" + strings.Repeat("*", min(3, n)) + strings.Repeat(" ", 3-min(3, n)) + "] " + muted.Render(count[:zeros]) + count[zeros:] + caret, "", muted.Render("Enter insert chip · Ctrl+X clear · Esc cancel"), muted.Render("Only the temporary file path is sent. Expires after 15 minutes."), muted.Render("The agent can read this file; its output may expose the secret.")}
+	rows := []string{accent.Render("Secret · @redact"), "", "[" + strings.Repeat("*", min(3, n)) + strings.Repeat(" ", 3-min(3, n)) + "] " + muted.Render(count[:zeros]) + count[zeros:] + caret, "", muted.Render("Enter insert chip · Ctrl+X clear · Esc cancel"), muted.Render("Only the temporary file path is sent. Expires after 15 minutes."), muted.Render("The agent can read this file; its output may expose the secret.")}
 	return overlayBox(view, rows, m.width, true)
 }
 func (m *model) hasRedactions(text string) bool {
@@ -202,7 +218,7 @@ func (m *model) sendRedactions(draft string) tea.Cmd {
 				for _, b := range bodies {
 					clear(b)
 				}
-				m.notice = "Secret expired; remove chip and use /redact again"
+				m.notice = "Secret expired; remove chip and use @redact again"
 				return nil
 			}
 			bodies[token] = append([]byte(nil), r.body...)

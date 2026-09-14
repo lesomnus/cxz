@@ -1,9 +1,16 @@
-# `/redact`: temporary secret files
+# `@redact`: temporary secret files
 
-Submit `/redact` with Ctrl+S. Its hidden-input overlay accepts typing or pasted
+Type `@` at the start of the composer or after whitespace to show inline commands.
+For example, type `foo @redact`, then press Enter to open hidden input. Tab
+completes the command name; Esc dismisses the list. The hidden-input overlay accepts typing or pasted
 text (including pasted newlines), shows only a character count, and never previews
-the value. Enter inserts `[Redacted]` into the composer; subsequent chips have
-numbered labels. Ctrl+X clears the hidden input, Esc cancels. The chip is atomic:
+the value. Enter replaces only `@redact` with `[Redacted]` in the composer;
+surrounding text is preserved and the cursor moves just after the chip. Subsequent
+chips have numbered labels. Ctrl+X clears the hidden input, Esc restores the
+original draft and cursor. Email addresses, backtick literals and newly pasted
+text do not automatically activate the list. Normal Enter remains newline;
+Ctrl+S sends the message. `/redact` is no longer advertised as a slash command.
+The chip is atomic:
 delete it normally or select it and press `d`. `t`, `f`, and paste preview cannot
 convert or reveal a secret chip. `/help redact` describes the feature in the TUI.
 
@@ -38,7 +45,7 @@ or restarting the agent cannot add it. Old wisp versions are rejected before
 secret transfer. Missing or incorrectly configured tmpfs is an error, never a
 disk-backed fallback. Update manager/runtime before recreating. Container
 recreation removes its writable layer: preserve important files outside workspace
-mounts first. cxz does not recreate containers automatically for `/redact`.
+mounts first. cxz does not recreate containers automatically for `@redact`.
 
 ## Lifetime and limits of protection
 

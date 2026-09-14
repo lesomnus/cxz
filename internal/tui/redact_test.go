@@ -92,14 +92,14 @@ func TestRedactSendFailureDeletesFiles(t *testing.T) {
 
 func TestRedactHiddenChipAndDeletion(t *testing.T) {
 	m := conversationModel()
-	m.input.SetValue("/redact")
-	m.Update(tea.KeyMsg{Type: tea.KeyCtrlS})
+	m.input.SetValue("@redact")
+	m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	if m.redactDialog == nil {
 		t.Fatal("missing modal")
 	}
 	secret := "private-secret\nline two\nline three\nline four"
 	m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(secret), Paste: true})
-	if strings.Contains(m.View(), "private-secret") || len(m.pastes) != 0 || m.input.Value() != "" {
+	if strings.Contains(m.View(), "private-secret") || len(m.pastes) != 0 || m.input.Value() != "@redact" {
 		t.Fatal("secret leaked into composer or paste")
 	}
 	m.Update(tea.KeyMsg{Type: tea.KeyEnter})

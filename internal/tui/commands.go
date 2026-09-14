@@ -26,7 +26,6 @@ var slashCommands = []slashCommand{
 	{"/background", "Inspect provider background tasks"},
 	{"/paste", "Preview pasted text or attach it as a file"},
 	{"/terminal", "Open container terminal; Ctrl+` folds it"},
-	{"/redact", "Insert a secret chip; send only a temporary container file path"},
 }
 
 func (m *model) commandHints() []slashCommand {
@@ -105,6 +104,9 @@ func (m *model) commandKey(k tea.KeyMsg) (bool, tea.Cmd) {
 func (m *model) commandOverlay(view string) string {
 	if m.pathHints != nil {
 		return m.pathHintOverlay(view)
+	}
+	if _, hints := m.inlineHints(); len(hints) > 0 {
+		return overlayBox(view, []string{accent.Render("› " + hints[0].name + "  " + hints[0].description)}, m.width)
 	}
 	hints := m.commandHints()
 	if len(hints) == 0 {
