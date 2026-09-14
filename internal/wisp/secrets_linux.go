@@ -35,14 +35,30 @@ func secretRoot() (int, error) {
 func checkedSecretRoot(path string) (int, error) {
 	fd, err := unix.Open(path, unix.O_RDONLY|unix.O_DIRECTORY|unix.O_NOFOLLOW|unix.O_CLOEXEC, 0)
 	if err != nil {
-		return -1, fmt.Errorf("secret tmpfs unavailable; recreate project with /cxz/secrets tmpfs")
+		return -1, fmt.Errorf("cannot open secret storage %q: %w", path, err)
 	}
 	var fs unix.Statfs_t
-	if unix.Fstatfs(fd, &fs) != nil || fs.Type != unix.TMPFS_MAGIC || fs.Flags&(unix.ST_NODEV|unix.ST_NOSUID|unix.ST_NOEXEC) != (unix.ST_NODEV|unix.ST_NOSUID|unix.ST_NOEXEC) {
+	if err := unix.Fstatfs(fd, &fs); err != nil {
 		unix.Close(fd)
-		return -1, fmt.Errorf("secret storage must be tmpfs with nodev,nosuid,noexec; recreate project")
+		return -1, fmt.Errorf("cannot inspect secret filesystem %q: %w", path, err)
+	}
+	if err := validateSecretFilesystem(&fs); err != nil {
+		unix.Close(fd)
+		return -1, fmt.Errorf("secret storage %q: %w", path, err)
 	}
 	return fd, nil
+}
+
+func validateSecretFilesystem(fs *unix.Statfs_t) error {
+	// Host /dev/shm mount flags vary by distribution. We require RAM-backed
+	// storage, not nodev/nosuid/noexec inherited from the old private tmpfs.
+	if fs.Type != unix.TMPFS_MAGIC {
+		return fmt.Errorf("expected tmpfs, found filesystem type %#x; check the Docker engine host /dev/shm mount", fs.Type)
+	}
+	if fs.Flags&unix.ST_RDONLY != 0 {
+		return fmt.Errorf("tmpfs is read-only")
+	}
+	return nil
 }
 
 func (s *secretStore) put(session string, body []byte) (string, error) {
