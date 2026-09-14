@@ -1,5 +1,14 @@
 # 구현 진행 상황
 
+## 2026-09-14 — 호스트 tmpfs 옵션 과잉 검사 수정
+
+- private tmpfs에서 쓰던 nodev/nosuid/noexec 필수 검사가 호스트 bind mount에도 남아
+  정상 tmpfs를 사용하는 일부 호스트에서 manager 시작을 막았다. writable tmpfs만 요구하도록 수정했다.
+- filesystem 조회 실패·실제 타입 불일치·read-only 오류를 구분하고 타입/경로를 표시한다.
+  무조건 재생성하라는 반복 안내는 제거했다. 디스크 fallback 및 symlink 거부는 유지한다.
+- noexec 등이 없는 tmpfs를 허용하고 디스크/read-only는 거부하는 회귀 테스트를 추가했다.
+- 전체 Go 테스트·vet·wisp/workspace race 검사 통과. 사용자 호스트 자체의 mount 옵션은 직접 확인하지 않았다.
+
 ## 2026-09-14 — 호스트 tmpfs와 8시간 idle sweep
 
 - manager는 엔진 호스트 `/dev/shm/cxz-<owner>`를 bind mount하고, 프로젝트별 하위 경로를

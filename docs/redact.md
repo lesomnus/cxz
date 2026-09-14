@@ -24,8 +24,9 @@ memory and are lost on exit. Go/terminal buffers prevent guaranteed memory erasu
 
 - Docker engine host source: `/dev/shm/cxz-<installation-owner>/<project-id>`.
   Projects bind it to `/cxz/secrets`; the manager binds the installation root to
-  `/cxz/host-secrets`. The real filesystem is checked for tmpfs with nodev,
-  nosuid and noexec. No disk fallback or host mount-namespace modification.
+  `/cxz/host-secrets`. The real filesystem must be writable tmpfs. Host
+  nodev/nosuid/noexec flags are not required; their defaults vary across systems.
+  No disk fallback or host mount-namespace modification.
 - Files survive TUI, agent and manager exit, and project container stop/removal/
   recreation, while the same installation/project identity is retained.
 - The old 15-minute creation TTL and disconnect/session-stop deletion are removed.

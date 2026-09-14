@@ -18,7 +18,7 @@ func (m *Manager) prepareSecretRoot(p *Project) (string, error) {
 		return "", fmt.Errorf("invalid project secret directory")
 	}
 	if err = wisp.CheckSecretRoot(wisp.HostSecretsMount); err != nil {
-		return "", fmt.Errorf("host secret tmpfs unavailable; update/recreate the cxz manager: %w", err)
+		return "", fmt.Errorf("host secret storage unavailable: %w", err)
 	}
 	if err = os.Chmod(wisp.HostSecretsMount, 0700); err != nil {
 		return "", err

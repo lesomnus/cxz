@@ -10,6 +10,21 @@ import (
 	"time"
 )
 
+func TestHostTmpfsDoesNotRequireHardeningFlags(t *testing.T) {
+	for _, flags := range []int64{0, unix.ST_NOSUID, unix.ST_NODEV | unix.ST_NOSUID, unix.ST_NODEV | unix.ST_NOSUID | unix.ST_NOEXEC} {
+		fs := unix.Statfs_t{Type: unix.TMPFS_MAGIC, Flags: flags}
+		if err := validateSecretFilesystem(&fs); err != nil {
+			t.Fatal(flags, err)
+		}
+	}
+	if err := validateSecretFilesystem(&unix.Statfs_t{Type: unix.EXT4_SUPER_MAGIC}); err == nil {
+		t.Fatal("disk accepted")
+	}
+	if err := validateSecretFilesystem(&unix.Statfs_t{Type: unix.TMPFS_MAGIC, Flags: unix.ST_RDONLY}); err == nil {
+		t.Fatal("read-only accepted")
+	}
+}
+
 func TestSecretRootRejectsDiskAndSymlinks(t *testing.T) {
 	root := t.TempDir()
 	if fd, err := checkedSecretRoot(root); err == nil {
