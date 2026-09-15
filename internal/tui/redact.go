@@ -25,8 +25,9 @@ type redaction struct {
 	id, run string
 }
 type redactSent struct {
-	err    error
-	tokens []string
+	id, request string
+	err         error
+	tokens      []string
 }
 
 type secretFiles interface {
@@ -206,9 +207,11 @@ func (m *model) sendRedactions(draft string) tea.Cmd {
 		m.redactStore = m.wisp
 	}
 	pool, lifetime, client, id, run := m.redactStore, m.ctx, m.client, s.Id, s.RunId
+	request := core.ID()
 	m.redactSending = true
 	m.notice = "Preparing secret file…"
 	m.input.Reset()
+	m.queueInput(id, run, request, draft)
 	return func() tea.Msg {
 		tokens := make([]string, 0, len(bodies))
 		for token := range bodies {
@@ -228,7 +231,7 @@ func (m *model) sendRedactions(draft string) tea.Cmd {
 			for _, path := range paths {
 				_ = pool.DeleteSecret(lifetime, cleanup, target, path)
 			}
-			return redactSent{err: err, tokens: tokens}
+			return redactSent{err: err, tokens: tokens, id: id, request: request}
 		}
 		for token, body := range bodies {
 			path, err := pool.PutSecret(lifetime, ctx, target, id+"/"+run, body)
@@ -242,10 +245,10 @@ func (m *model) sendRedactions(draft string) tea.Cmd {
 			pairs = append(pairs, token, "(secret placed at "+path+")")
 		}
 		text := strings.NewReplacer(pairs...).Replace(draft)
-		_, err := client.Send(ctx, &api.Input{SessionId: id, RunId: run, ClientId: core.ID(), Text: text})
+		_, err := client.Send(ctx, &api.Input{SessionId: id, RunId: run, ClientId: request, Text: text})
 		if err != nil {
 			return fail(fmt.Errorf("secret message send failed; not retried automatically"))
 		}
-		return redactSent{tokens: tokens}
+		return redactSent{tokens: tokens, id: id, request: request}
 	}
 }

@@ -48,7 +48,6 @@ func (m *model) backToProject() {
 	m.creating = false
 	m.focusList = false
 	m.focusApproval = false
-	m.fullPermission = nil
 	m.interruptKey = ""
 	m.approvalOffset = 0
 	m.deletingID = ""

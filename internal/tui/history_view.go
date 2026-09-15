@@ -54,6 +54,11 @@ func (m *model) scrollStatus() string {
 	return fmt.Sprintf("%s %d–%d/%d · %s · track: journal · Ctrl+End latest", label, start+1, min(len(m.historyTimes), start+m.view.Height), len(m.historyTimes), stamp)
 }
 
+type promptSpan struct {
+	start, end int
+	text       string
+}
+
 func (m *model) conversationView() string {
 	rows := strings.Split(m.view.View(), "\n")
 	if m.activeWork() && m.view.AtBottom() && len(rows) > 0 {
@@ -62,8 +67,16 @@ func (m *model) conversationView() string {
 		index := min(len(rows)-1, max(0, len(m.historyTimes)-m.view.YOffset-1))
 		rows[index] = indentBlock(accent.Render(string(frames[m.pulse%len(frames)])) + " " + muted.Render(clip(m.workingLabel(time.Now()), max(1, m.width-4))))
 	}
-	if m.latestPrompt != "" && m.lastPromptEnd > 0 && m.lastPromptEnd <= m.view.YOffset {
-		prompt := strings.Split(ansi.Hardwrap(safeText(m.latestPrompt), max(1, m.width-2), true), "\n")
+	pinned := ""
+	for _, span := range m.promptSpans {
+		if span.end <= m.view.YOffset {
+			pinned = span.text
+		} else {
+			break
+		}
+	}
+	if pinned != "" {
+		prompt := strings.Split(ansi.Hardwrap(safeText(pinned), max(1, m.width-2), true), "\n")
 		for i := 0; i < min(2, min(len(prompt), len(rows))); i++ {
 			prefix := "  "
 			if i == 0 {

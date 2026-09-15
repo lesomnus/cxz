@@ -24,6 +24,8 @@ import (
 )
 
 type model struct {
+	pendingInputs           map[string][]*api.Event
+	promptSpans             []promptSpan
 	inlineDismissed         string
 	redactDialog            *redactDialog
 	redactions              map[string]*redaction
@@ -159,9 +161,10 @@ type disconnected struct {
 	err error
 }
 type result struct {
-	text      string
-	err       error
-	sessionID string
+	inputSession, inputRequest string
+	text                       string
+	err                        error
+	sessionID                  string
 }
 type tick time.Time
 type pulseTick struct{}
@@ -359,7 +362,9 @@ func (m *model) watch() {
 			}
 			batch, err := m.client.History(ctx, &api.WatchRequest{SessionId: id, AfterSeq: start})
 			if err != nil {
-				m.program.Send(disconnected{id, err})
+				if ctx.Err() == nil {
+					m.program.Send(disconnected{id, err})
+				}
 				return
 			}
 			for _, e := range batch.Events {
@@ -387,6 +392,7 @@ func (m *model) watch() {
 	}()
 }
 func (m *model) render() {
+	m.promptSpans = nil
 	m.updateQuota()
 	m.workingSince = 0
 	follow := m.view.AtBottom()
@@ -407,6 +413,7 @@ func (m *model) render() {
 	var sequences []uint64
 	var sequence uint64
 	promptBlock := -1
+	promptBlocks := map[int]string{}
 	m.latestPrompt = ""
 	add := func(text string, stamp int64) {
 		lines = append(lines, text)
@@ -432,7 +439,8 @@ func (m *model) render() {
 	}
 	toolApprovals := map[string]*api.Event{}
 	pairedApprovals := map[*api.Event]bool{}
-	for _, e := range m.events[s.Id] {
+	events := m.transcriptEvents(s.Id)
+	for _, e := range events {
 		if e.Kind == "tool_call" && e.RequestId != "" && !question(e) && !m.hiddenEvents[e] {
 			if activity, ok := agentview.ToolView(s.Agent, e.Text, e.Payload); ok {
 				toolCalls[e.RunId+"/"+e.RequestId] = activity
@@ -447,7 +455,7 @@ func (m *model) render() {
 			decisions[e.RunId+"/"+e.RequestId] = e.Text
 		}
 	}
-	for _, e := range m.events[s.Id] {
+	for _, e := range events {
 		if e.Kind != "approval" || question(e) {
 			continue
 		}
@@ -464,12 +472,14 @@ func (m *model) render() {
 			}
 		}
 	}
-	for _, e := range m.events[s.Id] {
+	for _, e := range events {
 		if showHelp && !helped && e.Seq > helpAfter {
 			add(m.localCommandView(s.Id), 0)
 			helped = true
 		}
-		sequence = e.Seq
+		if e.Seq > 0 {
+			sequence = e.Seq
+		}
 		if e.Kind == "input" {
 			contextTurns[e.RunId] = strings.TrimSpace(e.Text) == "/context"
 		}
@@ -567,10 +577,14 @@ func (m *model) render() {
 				text = approvalLine(s, e, state, max(1, m.view.Width))
 			}
 			if text != "" {
+				if m.isPendingInput(e) {
+					text = muted.Render(ansi.Strip(text))
+				}
 				add(text, e.TimeMs)
 				if e.Kind == "input" {
 					promptBlock = len(lines) - 1
 					m.latestPrompt = e.Text
+					promptBlocks[promptBlock] = e.Text
 				}
 				if e.Kind == "assistant" {
 					replyIndex = len(lines) - 1
@@ -608,6 +622,9 @@ func (m *model) render() {
 			m.lastPromptStart = start
 			m.lastPromptEnd = len(m.historyTimes)
 		}
+		if text, ok := promptBlocks[i]; ok {
+			m.promptSpans = append(m.promptSpans, promptSpan{start: start, end: len(m.historyTimes), text: text})
+		}
 	}
 	m.view.SetContent(strings.Join(lines, "\n\n"))
 	if follow {
@@ -633,10 +650,14 @@ func (m *model) action(kind, text string) tea.Cmd {
 		return nil
 	}
 	id, run := s.Id, s.RunId
+	clientID := core.ID()
+	if kind == "send" {
+		m.queueInput(id, run, clientID, text)
+	}
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(m.ctx, 30*time.Second)
 		defer cancel()
-		ctrl := &api.Control{SessionId: id, RunId: run, ClientId: core.ID()}
+		ctrl := &api.Control{SessionId: id, RunId: run, ClientId: clientID}
 		var e error
 		var receipt *api.Receipt
 		switch kind {
@@ -653,11 +674,19 @@ func (m *model) action(kind, text string) tea.Cmd {
 		if receipt != nil {
 			message += " · " + receipt.Status
 		}
-		return result{text: message, err: e}
+		r := result{text: message, err: e}
+		if kind == "send" {
+			r.inputSession, r.inputRequest = id, clientID
+		}
+		return r
 	}
 }
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if v, ok := msg.(redactSent); ok {
+		if v.err != nil {
+			m.removePendingInput(v.id, v.request)
+			m.render()
+		}
 		for _, token := range v.tokens {
 			if r := m.redactions[token]; r != nil {
 				clear(r.body)
@@ -1150,6 +1179,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.syncQuestion()
 		return m, m.autoApprove()
 	case received:
+		if v.event.Kind == "input" {
+			m.removePendingInput(v.id, v.event.RequestId)
+		}
 		if v.event.Seq > m.cursor[v.id] {
 			m.captureContext(v.id, v.event)
 			if s := m.current(); s != nil && s.Id == v.id && (v.event.Kind == "turn_end" || v.event.Kind == "input") {
@@ -1199,6 +1231,10 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, m.refresh()
 	case result:
+		if v.err != nil && v.inputRequest != "" {
+			m.removePendingInput(v.inputSession, v.inputRequest)
+			m.render()
+		}
 		m.busy = false
 		if v.err != nil {
 			m.notice = v.err.Error()
