@@ -1,5 +1,18 @@
 # 구현 진행 상황
 
+## 2026-09-15 — permission 유지·즉시 입력 표시·직전 입력 고정
+
+- 프로젝트 뷰 진입 시 fullPermission 전체 초기화를 제거했다. 같은 TUI/같은 run 설정은 프로젝트를
+  오가도 유지한다. 실제 연결 실패·run 변경·재시작·승인 실패 시의 안전 초기화는 유지한다.
+  탐색으로 취소된 초기 History 요청은 disconnect로 잘못 보고하지 않는다.
+- 일반 입력·paste·redact 전송 시 RPC 전에 로컬 echo를 어두운 색으로 표시한다.
+  서버 input 이벤트를 request ID로 대응시켜 정상 색으로 바꾸고 중복 행은 만들지 않는다.
+  로컬 echo는 journal/sequence cursor에 넣지 않으며, 전송 실패 시 제거한다. redact는 chip만 표시한다.
+- 상단 고정 입력은 전체의 마지막 입력이 아니라 현재 viewport 위로 완전히 벗어난 가장 가까운 입력을
+  선택한다. 입력 3이 보이는 중 입력 2를 고정하는 사례 및 기존 최대 2줄 배경 스타일을 검증했다.
+- 프로젝트 왕복·run 변경, RPC 실행 전 echo, 색만 바뀌는 확인 처리, 동일 문장 연속 전송·실패 테스트 추가.
+- 전체 Go 테스트·vet·TUI race 검사 통과. TUI 바이너리 업데이트만 필요하며 manager/컨테이너 재생성은 불필요하다.
+
 ## 2026-09-14 — 호스트 tmpfs 옵션 과잉 검사 수정
 
 - private tmpfs에서 쓰던 nodev/nosuid/noexec 필수 검사가 호스트 bind mount에도 남아
