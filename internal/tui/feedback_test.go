@@ -31,7 +31,7 @@ func TestAccountFormArrowNavigation(t *testing.T) {
 func TestAutomaticApprovalDoesNotFlashPending(t *testing.T) {
 	m := conversationModel()
 	s := m.current()
-	m.fullPermission = map[string]string{s.Id: s.RunId}
+	s.PermissionMode = "full"
 	p := &api.Event{Kind: "approval", Text: "Bash", RequestId: "request", RunId: s.RunId, Seq: 1}
 	s.Pending = []*api.Event{p}
 	m.events[s.Id] = []*api.Event{p}
@@ -52,7 +52,7 @@ func TestAutomaticApprovalDoesNotFlashPending(t *testing.T) {
 	if !strings.Contains(ansi.Strip(m.view.View()), "[✓] Bash") {
 		t.Fatal(m.view.View())
 	}
-	delete(m.fullPermission, s.Id)
+	s.PermissionMode = "ask"
 	m.events[s.Id] = []*api.Event{p}
 	m.render()
 	if m.selectedApproval() != p || !strings.Contains(ansi.Strip(m.view.View()), "[ ] Bash") {

@@ -23,7 +23,7 @@ func (m *model) restartLayout(height int) ([]string, []restartButton) {
 		label = s.Alias
 	}
 	body := []string{accent.Bold(true).Render("Restart agent · " + label)}
-	text := "Active work stops; pending approvals are cleared.\nSession history and login stay. Automatic approval resets.\nThis does not update the runtime or recreate the container."
+	text := "Active work stops; pending approvals are cleared.\nSession history, login and permission policy stay.\nThis does not update the runtime or recreate the container."
 	body = append(body, strings.Split(ansi.Hardwrap(text, m.width-4, true), "\n")...)
 	body = append(body, muted.Render("Tab / Shift+Tab / arrows choose · Enter select · Esc cancel"))
 	button := func(label string, selected bool) string {

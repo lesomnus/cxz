@@ -110,7 +110,7 @@ background 이벤트/프로세스 상태가 있으면 적용하지 않는다. �
 업데이트는 기존 session/account/auth binding과 provider 대화 이력을 유지하는 resume이다.
 새 프로세스 초기화 실패 시 이전 실행 파일로 복구한다. runtime 중단에 대비한 transaction을
 세션 디렉터리에 저장하며 재기동/주기 검사에서 복구한다. 실패한 버전과 실패한 복구 재시도는
-24시간 간격으로 제한한다. `/permission full`처럼 run 단위 설정은 일반 재시작처럼 초기화된다.
+24시간 간격으로 제한한다. 세션에 저장한 `/permission full|ask` 정책은 재시작 후에도 유지된다.
 gh는 cxz-managed wrapper의 실행 파일 링크만 원자적으로 교체하고 에이전트를 재시작하지 않는다.
 이미지에 설치된 사용자 gh 및 과거 고정 경로 wrapper는 자동 교체 대상이 아니다.
 
@@ -558,12 +558,19 @@ Claude 실행 시 --tools를 넘기지 않아 기본 도구를 사용한다. 내
 위해 --disable-slash-commands도 제거하되 설정 소스/MCP/hook 격리와 수동 승인 정책은
 유지한다. 공급자별 profile 설정은 TODO.md에 후속 과제로 기록했다.
 
-/permission full은 현재 보고 있는 세션의 run에 대해 이 TUI가 연결된 동안 알려진
-도구·명령·파일·권한 요청을 자동 승인한다. 이미 대기 중인 요청도 포함한다. 질문과
-미지원 요청은 수동으로 남긴다. /permission ask로 해제한다. 연결 단절, run 교체,
-승인 오류, 프로젝트 복귀, 앱 종료 시 해제되며 서버/공급자 설정으로 저장하지 않는다.
-정상 Reply RPC를 사용해 run/request identity 검사를 유지하고 이미 전송한 결정은
-되돌리지 않는다. 모호한 실패는 자동 재시도하지 않는다.
+/permission full은 해당 세션의 자동 승인 정책을 supervisor 저널에 저장한다.
+이미 대기 중인 요청과 이후의 알려진 도구·명령·파일·권한 요청은 supervisor가 처리한다.
+다른 세션을 보거나 TUI를 종료해도 자동 승인은 계속된다. manager 재시작과
+supervisor 재시작/resume, 세션 볼륨을 유지한 컨테이너 재생성 후에도 정책을 복원한다.
+새 세션은 ask로 시작하며 계정이 같아도 정책을 상속하지 않는다.
+질문·미지원 요청은 수동으로 남긴다. /permission ask는 수동 승인 정책을 저장하며
+이미 전송한 결정은 되돌리지 않는다. 실행은 기존 run/request 검사와 저널 기록을
+공유하고 모호한 전송 실패는 자동 재시도하지 않는다. 공급자 sandbox 설정은 바꾸지 않는다.
+
+TUI는 Permission RPC와 상태 표시만 담당한다. 실제 프로세스 수명과 승인 처리는
+프로젝트 runtime/supervisor에 속한다. Wisp는 경로 탐색 등 연결형 workspace helper다.
+이 변경은 manager/runtime 업데이트와 기존 supervisor 재시작이 필요하다.
+이전 TUI의 로컬 full 설정은 옮기지 않으므로 업데이트한 세션에서 한 번 다시 설정한다.
 
 PgUp/PgDn·마우스 휠로 스크롤하고 Ctrl+Home/End로 처음/최신 위치로 이동한다.
 스크롤 중 L 시작–끝/전체와 해당 이벤트의 로컬 시각을 표시한다. 줄 번호는 현재

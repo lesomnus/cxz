@@ -14,9 +14,10 @@ import (
 
 type recordingClient struct {
 	api.SessionsClient
-	inputs     []*api.Input
-	answers    []*api.Answer
-	interrupts []*api.Control
+	inputs      []*api.Input
+	answers     []*api.Answer
+	interrupts  []*api.Control
+	permissions []*api.PermissionInput
 }
 
 func TestDiagnosticAndAuthenticationHint(t *testing.T) {
@@ -106,4 +107,9 @@ func TestTerminalOutputAndReplay(t *testing.T) {
 	if len(m.events["s"]) != 1 || !strings.Contains(m.view.View(), "hello") {
 		t.Fatal("duplicate replay or missing text")
 	}
+}
+
+func (c *recordingClient) Permission(_ context.Context, r *api.PermissionInput, _ ...grpc.CallOption) (*api.Receipt, error) {
+	c.permissions = append(c.permissions, r)
+	return &api.Receipt{ClientId: r.ClientId, Status: "accepted"}, nil
 }

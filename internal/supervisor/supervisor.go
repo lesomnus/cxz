@@ -72,11 +72,15 @@ type record struct {
 }
 
 func Replay(events []core.Event) core.Snapshot {
-	s := core.Snapshot{State: "stopped"}
+	s := core.Snapshot{State: "stopped", PermissionMode: "ask"}
 	p := map[string]core.Event{}
 	for _, e := range events {
 		s.LastSeq = e.Seq
 		switch e.Kind {
+		case "permission":
+			if e.Text == "ask" || e.Text == "full" {
+				s.PermissionMode = e.Text
+			}
 		case "state":
 			s.State = e.Text
 			if s.RunID != e.RunID {
@@ -128,12 +132,12 @@ func Run(ctx context.Context, root, id string) error {
 	}
 	defer l.Close()
 	old := Replay(l.All())
-	s := &Supervisor{session: session, log: l, snap: core.Snapshot{State: "starting", RunID: core.ID(), VendorID: old.VendorID}, pending: map[string]core.Event{}, receipts: map[string]record{}, done: make(chan struct{})}
+	s := &Supervisor{session: session, log: l, snap: core.Snapshot{State: "starting", RunID: core.ID(), VendorID: old.VendorID, PermissionMode: old.PermissionMode}, pending: map[string]core.Event{}, receipts: map[string]record{}, done: make(chan struct{})}
 	for _, v := range l.All() {
 		if v.Kind == "setting" {
 			s.restoreSetting(v.Text, v.Payload)
 		}
-		if v.Kind == "intent" || v.Kind == "receipt" {
+		if v.Kind == "intent" || v.Kind == "receipt" || (v.Kind == "permission" && v.RequestID != "") {
 			var r record
 			if json.Unmarshal(v.Payload, &r) == nil {
 				s.receipts[r.Command.ClientID] = r
@@ -338,6 +342,9 @@ func (s *Supervisor) event(kind, text, id string, payload any, raw []byte) core.
 		panic(fmt.Sprintf("journal durability failure: %v", err))
 	}
 	s.snap.LastSeq = e.Seq
+	if kind == "permission" {
+		s.snap.PermissionMode = text
+	}
 	if kind == "state" {
 		s.snap.State = text
 	}
@@ -371,6 +378,7 @@ func (s *Supervisor) consume(raw []byte) {
 			s.kill()
 			panic(fmt.Sprintf("journal durability failure: %v", err))
 		}
+		s.approvePending()
 	}()
 	s.event("raw", "", "", nil, raw)
 	if s.codex != nil {
@@ -515,6 +523,10 @@ func (s *Supervisor) consume(raw []byte) {
 func (s *Supervisor) execute(op string, c core.Command) (core.Receipt, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	return s.executeLocked(op, c)
+}
+
+func (s *Supervisor) executeLocked(op string, c core.Command) (core.Receipt, error) {
 	receipt := core.Receipt{ClientID: c.ClientID}
 	if c.ClientID == "" {
 		return receipt, errors.New("client_id required")
@@ -530,6 +542,9 @@ func (s *Supervisor) execute(op string, c core.Command) (core.Receipt, error) {
 	}
 	if c.RunID != s.snap.RunID {
 		return receipt, errors.New("stale run_id; refresh session")
+	}
+	if op == "permission" {
+		return s.setPermission(c)
 	}
 	if op == "update-stop" {
 		if reason := s.updateReason(time.Now(), s.processesQuiet()); reason != "" {

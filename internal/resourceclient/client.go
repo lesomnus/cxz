@@ -50,7 +50,7 @@ func (c *Client) view(ctx context.Context, s *resource.Session, opts ...grpc.Cal
 		}
 	}
 	st := s.GetStatus()
-	v := &api.Session{Id: s.GetRuntimeId(), Title: s.GetName(), Agent: s.GetAgent(), Model: s.GetModel(), CreateId: s.GetClientId(), ProjectId: p.GetRuntimeId(), Workspace: p.GetWorkspace(), State: st.GetState(), RunId: st.GetRunId(), VendorId: st.GetVendorId(), LastSeq: st.GetLastSeq()}
+	v := &api.Session{Id: s.GetRuntimeId(), Title: s.GetName(), Agent: s.GetAgent(), Model: s.GetModel(), CreateId: s.GetClientId(), ProjectId: p.GetRuntimeId(), Workspace: p.GetWorkspace(), State: st.GetState(), PermissionMode: st.GetPermissionMode(), RunId: st.GetRunId(), VendorId: st.GetVendorId(), LastSeq: st.GetLastSeq()}
 	v.ProjectName = p.GetName()
 	v.Alias = s.GetAlias()
 	v.ProjectAlias = p.GetAlias()
@@ -212,4 +212,8 @@ func (c *Client) History(ctx context.Context, r *api.WatchRequest, opts ...grpc.
 		v.Events = append(v.Events, event(r.SessionId, e))
 	}
 	return v, nil
+}
+
+func (c *Client) Permission(ctx context.Context, r *api.PermissionInput, opts ...grpc.CallOption) (*api.Receipt, error) {
+	return receipt(c.sessions.Permission(ctx, resource.SessionPermissionRequest_builder{Ref: sr(r.SessionId), RunId: &r.RunId, ClientId: &r.ClientId, Mode: &r.Mode}.Build(), opts...))
 }

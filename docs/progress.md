@@ -1,5 +1,19 @@
 # 구현 진행 상황
 
+## 2026-09-19 — 세션 supervisor의 영속 자동 승인 정책
+
+- TUI의 자동 Reply 실행과 로컬 fullPermission 상태를 제거했다. Permission RPC는 세션 supervisor에
+  ask/full 정책을 저장하며, resource status와 TUI는 서버의 저장된 값을 표시한다.
+- supervisor가 기존·신규 지원 요청을 처리한다. 질문과 미지원 요청은 수동으로 남으며,
+  승인 요청 저널을 확정한 뒤 기존 Reply 경로의 intent/receipt와 run/request 검사를 사용한다.
+- full은 세션 전환·TUI 종료·manager 종료와 무관하며 supervisor 재시작과 SQLite 재구성 후에도 복원된다.
+  새 세션은 ask로 시작하고 같은 계정의 다른 세션에 정책이 전파되지 않는다.
+- 결정적 에이전트 fixture 통합 테스트로 manager가 꺼진 동안 자동 승인·작업 완료,
+  supervisor 재시작·DB 재구성 후 복원, 세션 격리 및 정책 RPC를 검증했다.
+- 전체 Go race 테스트, go vet, payday 생성 코드 검사와 runtime 프로토콜 재생성 일치 검사를 통과했다.
+- 기존 환경은 manager/runtime 업데이트와 supervisor 재시작이 필요하다. 이전 TUI의 로컬 full은
+  저장되지 않았으므로 업데이트 후 한 번 다시 설정한다. Wisp의 workspace helper 역할은 유지한다.
+
 ## 2026-09-15 — permission 유지·즉시 입력 표시·직전 입력 고정
 
 - 프로젝트 뷰 진입 시 fullPermission 전체 초기화를 제거했다. 같은 TUI/같은 run 설정은 프로젝트를

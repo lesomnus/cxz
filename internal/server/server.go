@@ -337,7 +337,7 @@ func (s *Server) snapshot(ctx context.Context, m core.Session) (*api.Session, er
 		}
 		snap.Pending = nil
 	}
-	v := &api.Session{Id: m.ID, Workspace: m.Workspace, Title: m.Title, CreatedAt: m.CreatedAt, State: snap.State, RunId: snap.RunID, VendorId: snap.VendorID, LastSeq: snap.LastSeq, Agent: m.Kind, ProjectId: m.ProjectID, Model: m.Model, CreateId: m.CreateID, Account: m.Account, AuthBackend: m.AuthBackend, AuthBinding: m.AuthBinding}
+	v := &api.Session{Id: m.ID, Workspace: m.Workspace, Title: m.Title, CreatedAt: m.CreatedAt, State: snap.State, PermissionMode: snap.PermissionMode, RunId: snap.RunID, VendorId: snap.VendorID, LastSeq: snap.LastSeq, Agent: m.Kind, ProjectId: m.ProjectID, Model: m.Model, CreateId: m.CreateID, Account: m.Account, AuthBackend: m.AuthBackend, AuthBinding: m.AuthBinding}
 	if v.Agent == "" {
 		v.Agent = "claude"
 	}

@@ -15,7 +15,7 @@ func TestAsyncQuestionModalWhileIdle(t *testing.T) {
 	m.current().Agent = "codex"
 	p := &api.Event{Kind: "approval", RunId: "run", RequestId: "async:call", Text: agentview.CodexAsyncQuestion, Payload: []byte(`{"item":{"id":"call","type":"agentMessage","delivery":"async","questions":[{"title":"Theme?","options":["Light","Dark"]}]}}`)}
 	m.current().Pending = []*api.Event{p}
-	m.fullPermission = map[string]string{"s": "run"}
+	m.current().PermissionMode = "full"
 	m.syncQuestion()
 	if m.questionDialog == nil || automaticApproval(p) {
 		t.Fatal("async question missing or auto-approved")

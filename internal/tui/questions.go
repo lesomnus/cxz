@@ -155,7 +155,7 @@ func (m *model) questionNext() tea.Cmd {
 	if s != nil && s.Id == d.id && s.RunId == d.run {
 		for _, p := range s.Pending {
 			if p.RequestId == d.request {
-				cmd := m.replyApproval(p, true, answers, false)
+				cmd := m.replyApproval(p, true, answers)
 				if cmd != nil {
 					d.sending = true
 					d.message = "Sending answer…"

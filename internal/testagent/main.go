@@ -31,6 +31,7 @@ func main() {
 		emit(map[string]any{"type": "result", "subtype": "success", "session_id": vendor, "result": text})
 	}
 	pending := ""
+	requests := 0
 	sc := bufio.NewScanner(os.Stdin)
 	for sc.Scan() {
 		var v struct {
@@ -80,7 +81,11 @@ func main() {
 					tool = "AskUserQuestion"
 					input = map[string]any{"questions": []any{map[string]any{"question": "Choose a color", "options": []any{map[string]any{"label": "Blue"}, map[string]any{"label": "Green"}}}}}
 				}
-				emit(map[string]any{"type": "control_request", "request_id": "request-1", "request": map[string]any{"subtype": "can_use_tool", "tool_name": tool, "input": input}})
+				if pending == "approval delayed" {
+					time.Sleep(700 * time.Millisecond)
+				}
+				requests++
+				emit(map[string]any{"type": "control_request", "request_id": fmt.Sprintf("request-%d", requests), "request": map[string]any{"subtype": "can_use_tool", "tool_name": tool, "input": input}})
 			case v.Message.Content == "slow":
 				go func() { time.Sleep(2 * time.Second); finish("slow complete") }()
 			case v.Message.Content == "wait":

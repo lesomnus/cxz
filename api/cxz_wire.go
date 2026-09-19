@@ -202,28 +202,29 @@ func (x *SessionRef) GetId() string {
 }
 
 type Session struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Workspace     string                 `protobuf:"bytes,2,opt,name=workspace,proto3" json:"workspace,omitempty"`
-	Title         string                 `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
-	State         string                 `protobuf:"bytes,4,opt,name=state,proto3" json:"state,omitempty"`
-	RunId         string                 `protobuf:"bytes,5,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
-	VendorId      string                 `protobuf:"bytes,6,opt,name=vendor_id,json=vendorId,proto3" json:"vendor_id,omitempty"`
-	CreatedAt     int64                  `protobuf:"varint,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	LastSeq       uint64                 `protobuf:"varint,8,opt,name=last_seq,json=lastSeq,proto3" json:"last_seq,omitempty"`
-	Pending       []*Event               `protobuf:"bytes,9,rep,name=pending,proto3" json:"pending,omitempty"`
-	Agent         string                 `protobuf:"bytes,10,opt,name=agent,proto3" json:"agent,omitempty"`
-	ProjectId     string                 `protobuf:"bytes,11,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
-	Model         string                 `protobuf:"bytes,12,opt,name=model,proto3" json:"model,omitempty"`
-	CreateId      string                 `protobuf:"bytes,13,opt,name=create_id,json=createId,proto3" json:"create_id,omitempty"`
-	ProjectName   string                 `protobuf:"bytes,14,opt,name=project_name,json=projectName,proto3" json:"project_name,omitempty"`
-	ProjectAlias  string                 `protobuf:"bytes,15,opt,name=project_alias,json=projectAlias,proto3" json:"project_alias,omitempty"`
-	Account       string                 `protobuf:"bytes,16,opt,name=account,proto3" json:"account,omitempty"`
-	AuthBackend   string                 `protobuf:"bytes,17,opt,name=auth_backend,json=authBackend,proto3" json:"auth_backend,omitempty"`
-	AuthBinding   string                 `protobuf:"bytes,18,opt,name=auth_binding,json=authBinding,proto3" json:"auth_binding,omitempty"`
-	Alias         string                 `protobuf:"bytes,19,opt,name=alias,proto3" json:"alias,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Id             string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Workspace      string                 `protobuf:"bytes,2,opt,name=workspace,proto3" json:"workspace,omitempty"`
+	Title          string                 `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
+	State          string                 `protobuf:"bytes,4,opt,name=state,proto3" json:"state,omitempty"`
+	RunId          string                 `protobuf:"bytes,5,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	VendorId       string                 `protobuf:"bytes,6,opt,name=vendor_id,json=vendorId,proto3" json:"vendor_id,omitempty"`
+	CreatedAt      int64                  `protobuf:"varint,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	LastSeq        uint64                 `protobuf:"varint,8,opt,name=last_seq,json=lastSeq,proto3" json:"last_seq,omitempty"`
+	Pending        []*Event               `protobuf:"bytes,9,rep,name=pending,proto3" json:"pending,omitempty"`
+	Agent          string                 `protobuf:"bytes,10,opt,name=agent,proto3" json:"agent,omitempty"`
+	ProjectId      string                 `protobuf:"bytes,11,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
+	Model          string                 `protobuf:"bytes,12,opt,name=model,proto3" json:"model,omitempty"`
+	CreateId       string                 `protobuf:"bytes,13,opt,name=create_id,json=createId,proto3" json:"create_id,omitempty"`
+	ProjectName    string                 `protobuf:"bytes,14,opt,name=project_name,json=projectName,proto3" json:"project_name,omitempty"`
+	ProjectAlias   string                 `protobuf:"bytes,15,opt,name=project_alias,json=projectAlias,proto3" json:"project_alias,omitempty"`
+	Account        string                 `protobuf:"bytes,16,opt,name=account,proto3" json:"account,omitempty"`
+	AuthBackend    string                 `protobuf:"bytes,17,opt,name=auth_backend,json=authBackend,proto3" json:"auth_backend,omitempty"`
+	AuthBinding    string                 `protobuf:"bytes,18,opt,name=auth_binding,json=authBinding,proto3" json:"auth_binding,omitempty"`
+	Alias          string                 `protobuf:"bytes,19,opt,name=alias,proto3" json:"alias,omitempty"`
+	PermissionMode string                 `protobuf:"bytes,20,opt,name=permission_mode,json=permissionMode,proto3" json:"permission_mode,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *Session) Reset() {
@@ -385,6 +386,13 @@ func (x *Session) GetAuthBinding() string {
 func (x *Session) GetAlias() string {
 	if x != nil {
 		return x.Alias
+	}
+	return ""
+}
+
+func (x *Session) GetPermissionMode() string {
+	if x != nil {
+		return x.PermissionMode
 	}
 	return ""
 }
@@ -1533,6 +1541,74 @@ func (x *ProjectList) GetProjects() []*Project {
 	return nil
 }
 
+type PermissionInput struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	RunId         string                 `protobuf:"bytes,2,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	ClientId      string                 `protobuf:"bytes,3,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
+	Mode          string                 `protobuf:"bytes,4,opt,name=mode,proto3" json:"mode,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PermissionInput) Reset() {
+	*x = PermissionInput{}
+	mi := &file_cxz_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PermissionInput) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PermissionInput) ProtoMessage() {}
+
+func (x *PermissionInput) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PermissionInput.ProtoReflect.Descriptor instead.
+func (*PermissionInput) Descriptor() ([]byte, []int) {
+	return file_cxz_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *PermissionInput) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+func (x *PermissionInput) GetRunId() string {
+	if x != nil {
+		return x.RunId
+	}
+	return ""
+}
+
+func (x *PermissionInput) GetClientId() string {
+	if x != nil {
+		return x.ClientId
+	}
+	return ""
+}
+
+func (x *PermissionInput) GetMode() string {
+	if x != nil {
+		return x.Mode
+	}
+	return ""
+}
+
 var File_cxz_proto protoreflect.FileDescriptor
 
 const file_cxz_proto_rawDesc = "" +
@@ -1550,7 +1626,7 @@ const file_cxz_proto_rawDesc = "" +
 	"\fauth_binding\x18\b \x01(\tR\vauthBinding\"\x1c\n" +
 	"\n" +
 	"SessionRef\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"\xa5\x04\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"\xce\x04\n" +
 	"\aSession\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1c\n" +
 	"\tworkspace\x18\x02 \x01(\tR\tworkspace\x12\x14\n" +
@@ -1573,7 +1649,8 @@ const file_cxz_proto_rawDesc = "" +
 	"\aaccount\x18\x10 \x01(\tR\aaccount\x12!\n" +
 	"\fauth_backend\x18\x11 \x01(\tR\vauthBackend\x12!\n" +
 	"\fauth_binding\x18\x12 \x01(\tR\vauthBinding\x12\x14\n" +
-	"\x05alias\x18\x13 \x01(\tR\x05alias\"?\n" +
+	"\x05alias\x18\x13 \x01(\tR\x05alias\x12'\n" +
+	"\x0fpermission_mode\x18\x14 \x01(\tR\x0epermissionMode\"?\n" +
 	"\vSessionList\x120\n" +
 	"\bsessions\x18\x01 \x03(\v2\x14.cxz.runtime.SessionR\bsessions\"n\n" +
 	"\x05Input\x12\x1d\n" +
@@ -1676,11 +1753,19 @@ const file_cxz_proto_rawDesc = "" +
 	"\x11provision_attempt\x18\f \x01(\x04R\x10provisionAttempt\x12\x14\n" +
 	"\x05alias\x18\r \x01(\tR\x05alias\"?\n" +
 	"\vProjectList\x120\n" +
-	"\bprojects\x18\x01 \x03(\v2\x14.cxz.runtime.ProjectR\bprojects2\xb1\a\n" +
+	"\bprojects\x18\x01 \x03(\v2\x14.cxz.runtime.ProjectR\bprojects\"x\n" +
+	"\x0fPermissionInput\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x15\n" +
+	"\x06run_id\x18\x02 \x01(\tR\x05runId\x12\x1b\n" +
+	"\tclient_id\x18\x03 \x01(\tR\bclientId\x12\x12\n" +
+	"\x04mode\x18\x04 \x01(\tR\x04mode2\xf3\a\n" +
 	"\bSessions\x12:\n" +
 	"\x06Create\x12\x1a.cxz.runtime.CreateRequest\x1a\x14.cxz.runtime.Session\x124\n" +
 	"\x04List\x12\x12.cxz.runtime.Empty\x1a\x18.cxz.runtime.SessionList\x124\n" +
-	"\x03Get\x12\x17.cxz.runtime.SessionRef\x1a\x14.cxz.runtime.Session\x120\n" +
+	"\x03Get\x12\x17.cxz.runtime.SessionRef\x1a\x14.cxz.runtime.Session\x12@\n" +
+	"\n" +
+	"Permission\x12\x1c.cxz.runtime.PermissionInput\x1a\x14.cxz.runtime.Receipt\x120\n" +
 	"\x04Send\x12\x12.cxz.runtime.Input\x1a\x14.cxz.runtime.Receipt\x12?\n" +
 	"\x06Attach\x12\x1c.cxz.runtime.AttachmentInput\x1a\x17.cxz.runtime.Attachment\x12<\n" +
 	"\bActivity\x12\x1a.cxz.runtime.ActivityInput\x1a\x14.cxz.runtime.Receipt\x12L\n" +
@@ -1707,7 +1792,7 @@ func file_cxz_proto_rawDescGZIP() []byte {
 	return file_cxz_proto_rawDescData
 }
 
-var file_cxz_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
+var file_cxz_proto_msgTypes = make([]protoimpl.MessageInfo, 21)
 var file_cxz_proto_goTypes = []any{
 	(*Empty)(nil),             // 0: cxz.runtime.Empty
 	(*CreateRequest)(nil),     // 1: cxz.runtime.CreateRequest
@@ -1729,6 +1814,7 @@ var file_cxz_proto_goTypes = []any{
 	(*ProjectRequest)(nil),    // 17: cxz.runtime.ProjectRequest
 	(*Project)(nil),           // 18: cxz.runtime.Project
 	(*ProjectList)(nil),       // 19: cxz.runtime.ProjectList
+	(*PermissionInput)(nil),   // 20: cxz.runtime.PermissionInput
 }
 var file_cxz_proto_depIdxs = []int32{
 	15, // 0: cxz.runtime.Session.pending:type_name -> cxz.runtime.Event
@@ -1738,37 +1824,39 @@ var file_cxz_proto_depIdxs = []int32{
 	1,  // 4: cxz.runtime.Sessions.Create:input_type -> cxz.runtime.CreateRequest
 	0,  // 5: cxz.runtime.Sessions.List:input_type -> cxz.runtime.Empty
 	2,  // 6: cxz.runtime.Sessions.Get:input_type -> cxz.runtime.SessionRef
-	5,  // 7: cxz.runtime.Sessions.Send:input_type -> cxz.runtime.Input
-	6,  // 8: cxz.runtime.Sessions.Attach:input_type -> cxz.runtime.AttachmentInput
-	8,  // 9: cxz.runtime.Sessions.Activity:input_type -> cxz.runtime.ActivityInput
-	9,  // 10: cxz.runtime.Sessions.UpdateAgent:input_type -> cxz.runtime.AgentUpdateInput
-	11, // 11: cxz.runtime.Sessions.Reply:input_type -> cxz.runtime.Answer
-	12, // 12: cxz.runtime.Sessions.Interrupt:input_type -> cxz.runtime.Control
-	12, // 13: cxz.runtime.Sessions.Resume:input_type -> cxz.runtime.Control
-	12, // 14: cxz.runtime.Sessions.Stop:input_type -> cxz.runtime.Control
-	14, // 15: cxz.runtime.Sessions.Watch:input_type -> cxz.runtime.WatchRequest
-	14, // 16: cxz.runtime.Sessions.History:input_type -> cxz.runtime.WatchRequest
-	17, // 17: cxz.runtime.Sessions.Open:input_type -> cxz.runtime.ProjectRequest
-	0,  // 18: cxz.runtime.Sessions.Projects:input_type -> cxz.runtime.Empty
-	17, // 19: cxz.runtime.Sessions.Down:input_type -> cxz.runtime.ProjectRequest
-	3,  // 20: cxz.runtime.Sessions.Create:output_type -> cxz.runtime.Session
-	4,  // 21: cxz.runtime.Sessions.List:output_type -> cxz.runtime.SessionList
-	3,  // 22: cxz.runtime.Sessions.Get:output_type -> cxz.runtime.Session
-	13, // 23: cxz.runtime.Sessions.Send:output_type -> cxz.runtime.Receipt
-	7,  // 24: cxz.runtime.Sessions.Attach:output_type -> cxz.runtime.Attachment
-	13, // 25: cxz.runtime.Sessions.Activity:output_type -> cxz.runtime.Receipt
-	10, // 26: cxz.runtime.Sessions.UpdateAgent:output_type -> cxz.runtime.AgentUpdateStatus
-	13, // 27: cxz.runtime.Sessions.Reply:output_type -> cxz.runtime.Receipt
-	13, // 28: cxz.runtime.Sessions.Interrupt:output_type -> cxz.runtime.Receipt
-	3,  // 29: cxz.runtime.Sessions.Resume:output_type -> cxz.runtime.Session
-	13, // 30: cxz.runtime.Sessions.Stop:output_type -> cxz.runtime.Receipt
-	15, // 31: cxz.runtime.Sessions.Watch:output_type -> cxz.runtime.Event
-	16, // 32: cxz.runtime.Sessions.History:output_type -> cxz.runtime.EventBatch
-	3,  // 33: cxz.runtime.Sessions.Open:output_type -> cxz.runtime.Session
-	19, // 34: cxz.runtime.Sessions.Projects:output_type -> cxz.runtime.ProjectList
-	13, // 35: cxz.runtime.Sessions.Down:output_type -> cxz.runtime.Receipt
-	20, // [20:36] is the sub-list for method output_type
-	4,  // [4:20] is the sub-list for method input_type
+	20, // 7: cxz.runtime.Sessions.Permission:input_type -> cxz.runtime.PermissionInput
+	5,  // 8: cxz.runtime.Sessions.Send:input_type -> cxz.runtime.Input
+	6,  // 9: cxz.runtime.Sessions.Attach:input_type -> cxz.runtime.AttachmentInput
+	8,  // 10: cxz.runtime.Sessions.Activity:input_type -> cxz.runtime.ActivityInput
+	9,  // 11: cxz.runtime.Sessions.UpdateAgent:input_type -> cxz.runtime.AgentUpdateInput
+	11, // 12: cxz.runtime.Sessions.Reply:input_type -> cxz.runtime.Answer
+	12, // 13: cxz.runtime.Sessions.Interrupt:input_type -> cxz.runtime.Control
+	12, // 14: cxz.runtime.Sessions.Resume:input_type -> cxz.runtime.Control
+	12, // 15: cxz.runtime.Sessions.Stop:input_type -> cxz.runtime.Control
+	14, // 16: cxz.runtime.Sessions.Watch:input_type -> cxz.runtime.WatchRequest
+	14, // 17: cxz.runtime.Sessions.History:input_type -> cxz.runtime.WatchRequest
+	17, // 18: cxz.runtime.Sessions.Open:input_type -> cxz.runtime.ProjectRequest
+	0,  // 19: cxz.runtime.Sessions.Projects:input_type -> cxz.runtime.Empty
+	17, // 20: cxz.runtime.Sessions.Down:input_type -> cxz.runtime.ProjectRequest
+	3,  // 21: cxz.runtime.Sessions.Create:output_type -> cxz.runtime.Session
+	4,  // 22: cxz.runtime.Sessions.List:output_type -> cxz.runtime.SessionList
+	3,  // 23: cxz.runtime.Sessions.Get:output_type -> cxz.runtime.Session
+	13, // 24: cxz.runtime.Sessions.Permission:output_type -> cxz.runtime.Receipt
+	13, // 25: cxz.runtime.Sessions.Send:output_type -> cxz.runtime.Receipt
+	7,  // 26: cxz.runtime.Sessions.Attach:output_type -> cxz.runtime.Attachment
+	13, // 27: cxz.runtime.Sessions.Activity:output_type -> cxz.runtime.Receipt
+	10, // 28: cxz.runtime.Sessions.UpdateAgent:output_type -> cxz.runtime.AgentUpdateStatus
+	13, // 29: cxz.runtime.Sessions.Reply:output_type -> cxz.runtime.Receipt
+	13, // 30: cxz.runtime.Sessions.Interrupt:output_type -> cxz.runtime.Receipt
+	3,  // 31: cxz.runtime.Sessions.Resume:output_type -> cxz.runtime.Session
+	13, // 32: cxz.runtime.Sessions.Stop:output_type -> cxz.runtime.Receipt
+	15, // 33: cxz.runtime.Sessions.Watch:output_type -> cxz.runtime.Event
+	16, // 34: cxz.runtime.Sessions.History:output_type -> cxz.runtime.EventBatch
+	3,  // 35: cxz.runtime.Sessions.Open:output_type -> cxz.runtime.Session
+	19, // 36: cxz.runtime.Sessions.Projects:output_type -> cxz.runtime.ProjectList
+	13, // 37: cxz.runtime.Sessions.Down:output_type -> cxz.runtime.Receipt
+	21, // [21:38] is the sub-list for method output_type
+	4,  // [4:21] is the sub-list for method input_type
 	4,  // [4:4] is the sub-list for extension type_name
 	4,  // [4:4] is the sub-list for extension extendee
 	0,  // [0:4] is the sub-list for field type_name
@@ -1785,7 +1873,7 @@ func file_cxz_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_cxz_proto_rawDesc), len(file_cxz_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   20,
+			NumMessages:   21,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

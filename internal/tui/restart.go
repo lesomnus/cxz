@@ -52,7 +52,6 @@ func (m *model) confirmRestart() tea.Cmd {
 		return nil
 	}
 	m.restartBusy = true
-	delete(m.fullPermission, s.Id)
 	m.notice = "Restarting agent…"
 	client, parent := m.client, m.ctx
 	return func() tea.Msg {

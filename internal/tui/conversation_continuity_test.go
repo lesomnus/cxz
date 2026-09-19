@@ -17,9 +17,9 @@ func TestFullPermissionSurvivesProjectNavigation(t *testing.T) {
 	s := m.current()
 	s.ProjectId = "p1"
 	m.project = &api.Project{Id: "p1"}
-	m.fullPermission = map[string]string{s.Id: s.RunId}
+	s.PermissionMode = "full"
 	m.backToProject()
-	if m.fullPermission[s.Id] != s.RunId {
+	if s.PermissionMode != "full" {
 		t.Fatal("navigation reset permission")
 	}
 	other := &api.Session{Id: "other", ProjectId: "p2", RunId: "other-run", State: "idle"}
@@ -28,14 +28,14 @@ func TestFullPermissionSurvivesProjectNavigation(t *testing.T) {
 	m.project = &api.Project{Id: "p1"}
 	m.projectView = false
 	m.Update(listing{sessions: []*api.Session{s, other}})
-	if m.fullPermission[s.Id] != s.RunId {
+	if s.PermissionMode != "full" {
 		t.Fatal("return lost permission")
 	}
 	next := proto.Clone(s).(*api.Session)
 	next.RunId = "replacement"
 	m.Update(listing{sessions: []*api.Session{next}})
-	if m.fullPermission[s.Id] != "" {
-		t.Fatal("permission survived run change")
+	if m.current().PermissionMode != "full" {
+		t.Fatal("permission lost on run change")
 	}
 }
 

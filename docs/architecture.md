@@ -145,6 +145,20 @@ worktrees or share edits. cxz provides independent session configuration, histor
 HOME, cache and temporary storage, not source-file conflict resolution or a
 security boundary against processes sharing the container's OS user.
 
+### Session permission policy
+
+The TUI is a client of the running session, not its approval executor. A dedicated
+Permission RPC saves `ask` or `full` to the supervisor journal, and the resource
+status reports the saved mode. The manager routes that RPC to the project runtime.
+The supervisor handles supported pending/future approvals in `full`, through the
+same durable command path as manual replies, independently of attached clients.
+Questions and unknown methods remain pending for an explicit answer.
+
+The mode belongs to the session rather than its current run. Restart/resume,
+manager replacement and recreation with preserved session storage retain it;
+a new session starts in `ask`. A stale run cannot change the policy. Wisp is a
+connection-scoped workspace helper and does not own agent processes or policy.
+
 ## 3. Agent integration
 
 ### Protocol first, pty second
