@@ -50,7 +50,7 @@ func TestRestartConfirmedAndLocallyRouted(t *testing.T) {
 	m := conversationModel()
 	c := &restartClient{run: "run", state: "working"}
 	m.client = c
-	m.fullPermission = map[string]string{"s": "run"}
+	m.current().PermissionMode = "full"
 	for _, text := range []string{"/restart confirm", "/restart nonsense", "/restart cancel", "/restart"} {
 		m.input.SetValue(text)
 		_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyCtrlS})
@@ -60,7 +60,7 @@ func TestRestartConfirmedAndLocallyRouted(t *testing.T) {
 	}
 	m.Update(tea.KeyMsg{Type: tea.KeyShiftTab})
 	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
-	if cmd == nil || !m.restartBusy || m.fullPermission["s"] != "" {
+	if cmd == nil || !m.restartBusy || m.current().PermissionMode != "full" {
 		t.Fatal("restart not armed safely")
 	}
 	if m.restartCommand("/restart") != nil {

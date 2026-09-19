@@ -374,14 +374,15 @@ func (b0 Session_builder) Build() *Session {
 }
 
 type SessionStatus struct {
-	state               protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_State    string                 `protobuf:"bytes,1,opt,name=state"`
-	xxx_hidden_RunId    string                 `protobuf:"bytes,2,opt,name=run_id,json=runId"`
-	xxx_hidden_VendorId string                 `protobuf:"bytes,3,opt,name=vendor_id,json=vendorId"`
-	xxx_hidden_LastSeq  uint64                 `protobuf:"varint,4,opt,name=last_seq,json=lastSeq"`
-	xxx_hidden_Pending  *[]*SessionEvent       `protobuf:"bytes,5,rep,name=pending"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	state                     protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_State          string                 `protobuf:"bytes,1,opt,name=state"`
+	xxx_hidden_RunId          string                 `protobuf:"bytes,2,opt,name=run_id,json=runId"`
+	xxx_hidden_VendorId       string                 `protobuf:"bytes,3,opt,name=vendor_id,json=vendorId"`
+	xxx_hidden_LastSeq        uint64                 `protobuf:"varint,4,opt,name=last_seq,json=lastSeq"`
+	xxx_hidden_Pending        *[]*SessionEvent       `protobuf:"bytes,5,rep,name=pending"`
+	xxx_hidden_PermissionMode string                 `protobuf:"bytes,6,opt,name=permission_mode,json=permissionMode"`
+	unknownFields             protoimpl.UnknownFields
+	sizeCache                 protoimpl.SizeCache
 }
 
 func (x *SessionStatus) Reset() {
@@ -446,6 +447,13 @@ func (x *SessionStatus) GetPending() []*SessionEvent {
 	return nil
 }
 
+func (x *SessionStatus) GetPermissionMode() string {
+	if x != nil {
+		return x.xxx_hidden_PermissionMode
+	}
+	return ""
+}
+
 func (x *SessionStatus) SetState(v string) {
 	x.xxx_hidden_State = v
 }
@@ -466,14 +474,19 @@ func (x *SessionStatus) SetPending(v []*SessionEvent) {
 	x.xxx_hidden_Pending = &v
 }
 
+func (x *SessionStatus) SetPermissionMode(v string) {
+	x.xxx_hidden_PermissionMode = v
+}
+
 type SessionStatus_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	State    string
-	RunId    string
-	VendorId string
-	LastSeq  uint64
-	Pending  []*SessionEvent
+	State          string
+	RunId          string
+	VendorId       string
+	LastSeq        uint64
+	Pending        []*SessionEvent
+	PermissionMode string
 }
 
 func (b0 SessionStatus_builder) Build() *SessionStatus {
@@ -485,6 +498,7 @@ func (b0 SessionStatus_builder) Build() *SessionStatus {
 	x.xxx_hidden_VendorId = b.VendorId
 	x.xxx_hidden_LastSeq = b.LastSeq
 	x.xxx_hidden_Pending = &b.Pending
+	x.xxx_hidden_PermissionMode = b.PermissionMode
 	return m0
 }
 
@@ -667,13 +681,14 @@ const file_cxz_session_proto_rawDesc = "" +
 	"\x02id\x1a\x05\n" +
 	"\x03ref\x1a\t\n" +
 	"\aproject\x1a\b\n" +
-	"\x06listed 2(\xc8\x01:\x00*\x00\"\xa1\x01\n" +
+	"\x06listed 2(\xc8\x01:\x00*\x00\"\xca\x01\n" +
 	"\rSessionStatus\x12\x14\n" +
 	"\x05state\x18\x01 \x01(\tR\x05state\x12\x15\n" +
 	"\x06run_id\x18\x02 \x01(\tR\x05runId\x12\x1b\n" +
 	"\tvendor_id\x18\x03 \x01(\tR\bvendorId\x12\x19\n" +
 	"\blast_seq\x18\x04 \x01(\x04R\alastSeq\x12+\n" +
-	"\apending\x18\x05 \x03(\v2\x11.cxz.SessionEventR\apending\"\xb1\x01\n" +
+	"\apending\x18\x05 \x03(\v2\x11.cxz.SessionEventR\apending\x12'\n" +
+	"\x0fpermission_mode\x18\x06 \x01(\tR\x0epermissionMode\"\xb1\x01\n" +
 	"\fSessionEvent\x12\x15\n" +
 	"\x06run_id\x18\x01 \x01(\tR\x05runId\x12\x10\n" +
 	"\x03seq\x18\x02 \x01(\x04R\x03seq\x12\x17\n" +

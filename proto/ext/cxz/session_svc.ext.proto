@@ -7,6 +7,7 @@ service SessionService {
   rpc Resume(SessionControl) returns (Session);
   rpc Stop(SessionControl) returns (Session);
   rpc Interrupt(SessionControl) returns (SessionReceipt);
+  rpc Permission(SessionPermissionRequest) returns (SessionReceipt);
   rpc Send(SessionSendRequest) returns (SessionReceipt);
   rpc Attach(SessionAttachRequest) returns (SessionAttachment);
   rpc Activity(SessionActivityRequest) returns (SessionReceipt);
@@ -34,3 +35,5 @@ message SessionReplyRequest {
 message SessionReceipt { string client_id = 1; string status = 2; }
 message SessionEventsRequest { SessionRef ref = 1; uint64 after_seq = 2; string client_id = 3; }
 message SessionEventBatch { repeated SessionEvent events = 1; }
+
+message SessionPermissionRequest { SessionRef ref = 1; string run_id = 2; string client_id = 3; string mode = 4; }

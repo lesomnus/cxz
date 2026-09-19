@@ -16,20 +16,13 @@ import (
 
 type approvalResult struct {
 	id, run, request string
-	automatic        bool
 	err              error
 }
 
 func question(p *api.Event) bool {
 	return p.Text == "AskUserQuestion" || p.Text == "item/tool/requestUserInput" || p.Text == agentview.CodexAsyncQuestion
 }
-func automaticApproval(p *api.Event) bool {
-	switch p.Text {
-	case "Bash", "Read", "Edit", "Write", "Glob", "Grep", "item/commandExecution/requestApproval", "item/fileChange/requestApproval", "item/permissions/requestApproval":
-		return true
-	}
-	return false // Unknown methods and questions remain manual.
-}
+func automaticApproval(p *api.Event) bool { return core.AutomaticApproval(p.Text) }
 func permissionState(state string) bool {
 	return state == "idle" || state == "working" || state == "waiting_input"
 }
@@ -47,10 +40,10 @@ func (m *model) selectedApproval() *api.Event {
 	return pending[0]
 }
 
-// Suppress only auto-eligible requests for this attached run. Do not invent an
-// allowed result: the transcript displays it once provider resolution arrives.
+// Suppress transient requests handled by the supervisor. Only a durable
+// approval_resolved event is displayed as an allowed result.
 func (m *model) hiddenAutoApproval(s *api.Session, p *api.Event) bool {
-	return s != nil && s.RunId != "" && m.fullPermission[s.Id] == s.RunId && (p.RunId == "" || p.RunId == s.RunId) && permissionState(s.State) && automaticApproval(p) && !m.projectView && !m.accountView
+	return s != nil && s.RunId != "" && s.PermissionMode == "full" && (p.RunId == "" || p.RunId == s.RunId) && permissionState(s.State) && automaticApproval(p) && !m.projectView && !m.accountView
 }
 func (m *model) visibleApprovals(s *api.Session) []*api.Event {
 	var out []*api.Event
@@ -63,7 +56,7 @@ func (m *model) visibleApprovals(s *api.Session) []*api.Event {
 	}
 	return out
 }
-func (m *model) replyApproval(p *api.Event, allow bool, answers string, automatic bool) tea.Cmd {
+func (m *model) replyApproval(p *api.Event, allow bool, answers string) tea.Cmd {
 	s := m.current()
 	if s == nil || p == nil {
 		m.notice = "No pending approval"
@@ -92,21 +85,15 @@ func (m *model) replyApproval(p *api.Event, allow bool, answers string, automati
 		ctx, cancel := context.WithTimeout(m.ctx, 30*time.Second)
 		defer cancel()
 		_, err := m.client.Reply(ctx, &api.Answer{SessionId: id, RunId: run, RequestId: request, ClientId: core.ID(), Allow: allow, AnswersJson: answers})
-		return approvalResult{id: id, run: run, request: request, automatic: automatic, err: err}
+		return approvalResult{id: id, run: run, request: request, err: err}
 	}
 }
-func (m *model) autoApprove() tea.Cmd {
-	s := m.current()
-	if s == nil || s.RunId == "" || !permissionState(s.State) || m.fullPermission[s.Id] != s.RunId || m.projectView || m.accountView {
-		return nil
-	}
-	for _, p := range s.Pending {
-		if automaticApproval(p) && !m.approvalSent[s.Id+"/"+s.RunId+"/"+p.RequestId] {
-			return m.replyApproval(p, true, "", true)
-		}
-	}
-	return nil
+
+type permissionResult struct {
+	id, run, mode string
+	err           error
 }
+
 func (m *model) permissionCommand(text string) tea.Cmd {
 	s := m.current()
 	if s == nil {
@@ -115,24 +102,33 @@ func (m *model) permissionCommand(text string) tea.Cmd {
 	}
 	parts := strings.Fields(text)
 	if len(parts) != 2 || (parts[1] != "full" && parts[1] != "ask") {
-		m.recordLocal("/permission", "Usage: /permission full | ask\nFull automatically approves known tool/command/file/permission requests for this session run while this TUI is connected. Questions still require answers.")
-		return nil
-	}
-	if m.fullPermission == nil {
-		m.fullPermission = map[string]string{}
-	}
-	if parts[1] == "ask" {
-		delete(m.fullPermission, s.Id)
-		m.recordLocal("/permission", "Manual approval enabled. Already dispatched decisions cannot be retracted.")
+		m.recordLocal("/permission", "Usage: /permission full | ask\nThe session supervisor saves this policy and applies it even while this TUI is closed. Questions still require answers.")
 		return nil
 	}
 	if s.RunId == "" || !permissionState(s.State) {
-		m.recordLocal("/permission", "Session must be idle, working or waiting_input before enabling full permission.")
+		m.recordLocal("/permission", "Resume the session before changing its permission mode.")
 		return nil
 	}
-	m.fullPermission[s.Id] = s.RunId
-	m.recordLocal("/permission", "FULL permission enabled for this session run while attached. Pending and future known tool/command/file/permission requests may execute without confirmation. Questions and unknown requests stay manual. /permission ask disables it. Disconnect/restart resets it.")
-	return m.autoApprove()
+	if m.permissionUpdating[s.Id] {
+		m.notice = "Permission update pending"
+		return nil
+	}
+	if m.permissionUpdating == nil {
+		m.permissionUpdating = map[string]bool{}
+	}
+	m.permissionUpdating[s.Id] = true
+	id, run, mode := s.Id, s.RunId, parts[1]
+	requestID := core.ID()
+	m.notice = "Saving session permission mode…"
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(m.ctx, 10*time.Second)
+		defer cancel()
+		receipt, err := m.client.Permission(ctx, &api.PermissionInput{SessionId: id, RunId: run, ClientId: requestID, Mode: mode})
+		if err == nil && (receipt == nil || receipt.Status != "accepted") {
+			err = fmt.Errorf("permission update was not confirmed")
+		}
+		return permissionResult{id: id, run: run, mode: mode, err: err}
+	}
 }
 func (m *model) recordLocal(command, text string) {
 	if command == "/context" || command == "/usage" || command == "/help" || strings.HasPrefix(command, "/help ") {
@@ -198,9 +194,9 @@ func (m *model) approvalKey(k tea.KeyMsg) tea.Cmd {
 			}
 		}
 	case "enter", "f2":
-		return m.replyApproval(p, true, "", false)
+		return m.replyApproval(p, true, "")
 	case "backspace", "f3":
-		return m.replyApproval(p, false, "", false)
+		return m.replyApproval(p, false, "")
 	case "f4":
 		return m.action("interrupt", "")
 	case "ctrl+r":
@@ -299,8 +295,11 @@ func (m *model) approvalDetails() {
 }
 
 func (m *model) fullPermissionNotice() string {
-	if s := m.current(); s != nil && s.RunId != "" && m.fullPermission[s.Id] == s.RunId {
-		return "FULL permission · /permission ask"
+	if s := m.current(); s != nil && s.RunId != "" && s.PermissionMode == "full" {
+		if !permissionState(s.State) {
+			return "FULL saved · " + pickerLabel(safeText(s.State))
+		}
+		return "FULL · background approval · /permission ask"
 	}
 	return ""
 }

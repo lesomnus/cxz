@@ -6,6 +6,7 @@ service Sessions {
   rpc Create(CreateRequest) returns (Session);
   rpc List(Empty) returns (SessionList);
   rpc Get(SessionRef) returns (Session);
+  rpc Permission(PermissionInput) returns (Receipt);
   rpc Send(Input) returns (Receipt);
   rpc Attach(AttachmentInput) returns (Attachment);
   rpc Activity(ActivityInput) returns (Receipt);
@@ -37,6 +38,7 @@ message Session {
   string auth_backend = 17;
   string auth_binding = 18;
   string alias = 19;
+  string permission_mode = 20;
 }
 message SessionList { repeated Session sessions = 1; }
 message Input { string session_id = 1; string run_id = 2; string client_id = 3; string text = 4; }
@@ -75,3 +77,5 @@ message Project {
  string alias = 13;
 }
 message ProjectList { repeated Project projects = 1; }
+
+message PermissionInput { string session_id = 1; string run_id = 2; string client_id = 3; string mode = 4; }

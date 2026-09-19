@@ -184,7 +184,7 @@ resource database and survives server/container restarts; back up state volumes.
 | Ctrl+R | Explicitly resume stopped/offline session |
 | PageUp / PageDown / mouse wheel | Scroll; Ctrl+Home first line, Ctrl+End follow latest |
 | `/approval` | Inspect the selected request's complete payload |
-| `/permission full`, `/permission ask` | Auto/manual tool approval for the current attached session run |
+| `/permission full`, `/permission ask` | Saved session policy: background automatic/manual tool approval |
 | `/stop` | Terminate selected agent |
 | `/restart` | Confirm/Cancel dialog to restart this session's agent; Tab/arrows select, Enter applies, Esc cancels |
 | Ctrl+C | Detach; agent continues |
@@ -313,14 +313,22 @@ three seconds to confirm. F4 remains a direct interrupt shortcut.
 Claude uses its default tool set (`--tools` is omitted). This does not enable
 automatic approval. Configurable agent profiles are tracked in [TODO.md](TODO.md).
 
-`/permission full` immediately allows existing and future **known tool, command,
-file and permission requests** for the current run while viewing this session in
-this TUI. It does not invent question answers or allow unknown protocol requests.
-`/permission ask` restores manual approval; decisions already sent cannot be
-retracted. Disconnect, run replacement, approval failure, returning to the project
-or exiting the TUI disables this local mode. It is not persisted or a change to
-the vendor's sandbox/permission configuration. Decisions still use normal Reply
-RPCs with run/request identities; ambiguous failures are never automatically retried.
+`/permission full` saves automatic approval for this session in its durable
+journal. The supervisor handles existing and future **known tool, command, file
+and permission requests**, including when another session is viewed or every TUI
+is closed. The policy survives agent restart/resume and container recreation with
+preserved session data. New sessions default to `ask`; another session's policy
+is never inherited. Questions and unknown protocol requests still need a reply.
+`/permission ask` saves manual approval again; decisions already dispatched cannot
+be retracted. Neither mode changes the vendor sandbox configuration. Automatic
+and manual decisions share the same run/request validation and durable delivery
+tracking; ambiguous delivery is never automatically retried.
+
+The TUI only sends the dedicated Permission RPC and displays server state. The
+manager routes requests; the project runtime and session supervisor own execution.
+Wisp remains a connection-scoped workspace helper, not the session daemon. Update
+the manager/runtime and restart existing supervisors to use the new policy RPC.
+Old TUI-local full settings are not migrated; enable full once on the updated session.
 
 While scrolling, the notice row displays rendered line range/total and the source
 event timestamp in local time. Line numbers start at the session's first loaded

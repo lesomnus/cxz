@@ -385,6 +385,78 @@ func TestLifecycle(t *testing.T) {
 	}
 	send("after resume")
 	await("idle")
+
+	// No TUI or event watcher participates in these approvals. Policy travels
+	// through payday and is owned by the independently running supervisor.
+	send("approval full-pending")
+	s = await("waiting_input")
+	enable := &api.PermissionInput{SessionId: id, RunId: s.RunId, ClientId: core.ID(), Mode: "full"}
+	if r, err := client.Permission(ctx, enable); err != nil || r.Status != "accepted" {
+		t.Fatal("permission RPC", r, err)
+	}
+	s = await("idle")
+	if s.PermissionMode != "full" {
+		t.Fatal("policy missing from resource projection")
+	}
+	if _, err := client.Permission(ctx, enable); err != nil {
+		t.Fatal("permission retry", err)
+	}
+	// Another session retains manual approval, even with the same account.
+	second, e = client.Resume(ctx, &api.Control{SessionId: second.Id, RunId: second.RunId, ClientId: core.ID()})
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer func() {
+		var processes map[string]int
+		raw, _ := os.ReadFile(filepath.Join(core.Dir(state, second.Id), "pid.json"))
+		_ = json.Unmarshal(raw, &processes)
+		if processes["agent"] > 0 {
+			_ = syscall.Kill(-processes["agent"], syscall.SIGKILL)
+		}
+		if processes["supervisor"] > 0 {
+			_ = syscall.Kill(processes["supervisor"], syscall.SIGKILL)
+		}
+	}()
+	if _, err := client.Send(ctx, &api.Input{SessionId: second.Id, RunId: second.RunId, ClientId: core.ID(), Text: "approval isolated"}); err != nil {
+		t.Fatal(err)
+	}
+	deadline := time.Now().Add(5 * time.Second)
+	var other *api.Session
+	for time.Now().Before(deadline) {
+		other, _ = client.Get(ctx, &api.SessionRef{Id: second.Id})
+		if other != nil && other.State == "waiting_input" {
+			break
+		}
+		time.Sleep(30 * time.Millisecond)
+	}
+	if other == nil || other.State != "waiting_input" || other.PermissionMode == "full" || len(other.Pending) != 1 {
+		t.Fatal("session policy leaked", other)
+	}
+	if _, err := client.Reply(ctx, &api.Answer{SessionId: other.Id, RunId: other.RunId, ClientId: core.ID(), RequestId: other.Pending[0].RequestId}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := client.Stop(ctx, &api.Control{SessionId: second.Id, RunId: second.RunId, ClientId: core.ID()}); err != nil {
+		t.Fatal(err)
+	}
+	before = get()
+	send("approval delayed")
+	killDaemon()
+	time.Sleep(1100 * time.Millisecond)
+	start()
+	s = await("idle")
+	if s.RunId != before.RunId || s.PermissionMode != "full" {
+		t.Fatal("detached policy or process lost")
+	}
+	detached := readUntil(before.LastSeq, func(e *api.Event) bool { return e.Kind == "turn_end" })
+	allowed := false
+	for _, e := range detached {
+		if e.Kind == "assistant" && e.Text == "approval delayed: allow" {
+			allowed = true
+		}
+	}
+	if !allowed {
+		t.Fatal("supervisor did not approve with manager and client disconnected")
+	}
 	// SIGKILL of the supervisor must also cancel a shell grandchild, not only
 	// the agent itself. The liveness guardian owns the same process-group boundary.
 	before = get()
@@ -403,6 +475,12 @@ func TestLifecycle(t *testing.T) {
 		t.Fatal(e)
 	}
 	s = get()
+	if s.PermissionMode != "full" {
+		t.Fatal("supervisor restart lost permission")
+	}
+	send("approval after-policy-resume")
+	s = await("idle")
+	s = get()
 	if _, e = client.Stop(ctx, &api.Control{SessionId: id, RunId: s.RunId, ClientId: core.ID()}); e != nil {
 		t.Fatal(e)
 	}
@@ -419,6 +497,9 @@ func TestLifecycle(t *testing.T) {
 	}
 	start()
 	restored := get()
+	if restored.PermissionMode != "full" {
+		t.Fatal("SQLite rebuild lost permission policy")
+	}
 	if restored.AuthBinding != binding || restored.AuthBackend != accounts.ProjectLocalOAuth {
 		t.Fatal("auth strategy lost on reconstruction", restored)
 	}

@@ -36,11 +36,12 @@ type Event struct {
 	Raw       []byte          `json:"raw,omitempty"` // Base64 preserves the exact vendor bytes.
 }
 type Snapshot struct {
-	State    string  `json:"state"`
-	RunID    string  `json:"run_id"`
-	VendorID string  `json:"vendor_id"`
-	LastSeq  uint64  `json:"last_seq"`
-	Pending  []Event `json:"pending"`
+	PermissionMode string  `json:"permission_mode"`
+	State          string  `json:"state"`
+	RunID          string  `json:"run_id"`
+	VendorID       string  `json:"vendor_id"`
+	LastSeq        uint64  `json:"last_seq"`
+	Pending        []Event `json:"pending"`
 }
 type Command struct {
 	Busy       bool                       `json:"busy,omitempty"`

@@ -75,7 +75,7 @@ func (m *model) workingLabel(now time.Time) string {
 			if question(p) {
 				activity = "waiting for answer"
 			}
-		} else if m.fullPermission[s.Id] != s.RunId || s.RunId == "" {
+		} else if s.PermissionMode != "full" || s.RunId == "" {
 			activity = "waiting for input"
 		}
 	}

@@ -310,3 +310,11 @@ func (s SessionServer) Events(r *resource.SessionEventsRequest, stream grpc.Serv
 	}
 	return s.shared.runtime.Watch(&api.WatchRequest{SessionId: v.GetRuntimeId(), AfterSeq: r.GetAfterSeq(), ClientId: r.GetClientId()}, &eventStream{ServerStreamingServer: stream, layer: s.Layer, id: v.GetRuntimeId(), last: v.GetStatus().GetLastSeq()})
 }
+
+func (s SessionServer) Permission(ctx context.Context, r *resource.SessionPermissionRequest) (*resource.SessionReceipt, error) {
+	v, err := s.resolve(ctx, r.GetRef())
+	if err != nil {
+		return nil, err
+	}
+	return receipt(s.shared.runtime.Permission(ctx, &api.PermissionInput{SessionId: v.GetRuntimeId(), RunId: r.GetRunId(), ClientId: r.GetClientId(), Mode: r.GetMode()}))
+}

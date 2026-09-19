@@ -13,7 +13,7 @@ import (
 func TestActivityRowStableAcrossAutoApprovalStates(t *testing.T) {
 	m := conversationModel()
 	s := m.current()
-	m.fullPermission = map[string]string{s.Id: s.RunId}
+	s.PermissionMode = "full"
 	started := time.Now().Add(-21 * time.Second).UnixMilli()
 	m.events[s.Id] = []*api.Event{{Seq: 1, RunId: s.RunId, Kind: "input", Text: "Edit files", TimeMs: started}}
 	for i := 0; i < 30; i++ {

@@ -22,6 +22,8 @@ func eventView(s *api.Session, e *api.Event, width int) (out string) {
 	}
 	wrap := func(text string) string { return ansi.Hardwrap(safeText(text), max(1, width), true) }
 	switch e.Kind {
+	case "permission":
+		return teal.Render(wrap("Permission · " + e.Text + " · saved for this session"))
 	case "state":
 		return ""
 	case "update":

@@ -19,7 +19,7 @@ func sessionStatus(v *api.Session) *resource.SessionStatus {
 	for _, e := range v.Pending {
 		pending = append(pending, event(e))
 	}
-	return resource.SessionStatus_builder{State: v.State, RunId: v.RunId, VendorId: v.VendorId, LastSeq: v.LastSeq, Pending: pending}.Build()
+	return resource.SessionStatus_builder{State: v.State, PermissionMode: v.PermissionMode, RunId: v.RunId, VendorId: v.VendorId, LastSeq: v.LastSeq, Pending: pending}.Build()
 }
 func projectStatus(v *api.Project) *resource.ProjectStatus {
 	return resource.ProjectStatus_builder{State: v.State, ContainerId: v.ContainerId, RemoteUser: v.RemoteUser, RemoteWorkspace: v.RemoteWorkspace, ProvisionState: v.ProvisionState, ProvisionStep: v.ProvisionStep, ProvisionAttempt: v.ProvisionAttempt, Error: v.Error}.Build()

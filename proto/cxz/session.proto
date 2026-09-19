@@ -47,6 +47,7 @@ message SessionStatus {
   string vendor_id = 3;
   uint64 last_seq = 4;
   repeated SessionEvent pending = 5;
+  string permission_mode = 6;
 }
 
 message SessionEvent {

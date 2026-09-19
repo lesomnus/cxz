@@ -123,7 +123,7 @@ type model struct {
 	interruptUntil          time.Time
 	interruptKey            string
 	approvalSent            map[string]bool
-	fullPermission          map[string]string
+	permissionUpdating      map[string]bool
 	localReports            map[string]string
 	historyTimes            []int64
 	historyPositions        []float64 // stable journal coordinates, not loaded-line offsets
@@ -675,7 +675,7 @@ func safeText(s string) string {
 }
 func (m *model) action(kind, text string) tea.Cmd {
 	if kind == "allow" || kind == "deny" || kind == "answer" {
-		return m.replyApproval(m.selectedApproval(), kind != "deny", text, false)
+		return m.replyApproval(m.selectedApproval(), kind != "deny", text)
 	}
 	s := m.current()
 	if s == nil {
@@ -949,6 +949,16 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case pulseTick:
 		m.pulse++
 		return m, pulseTimer()
+	case permissionResult:
+		delete(m.permissionUpdating, v.id)
+		if current := m.current(); current != nil && current.Id == v.id && current.RunId == v.run {
+			if v.err != nil {
+				m.notice = "Permission update failed; refresh to check the saved policy: " + v.err.Error()
+			} else {
+				m.notice = "Permission " + v.mode + " saved for this session"
+			}
+		}
+		return m, m.refresh()
 	case approvalResult:
 		if d := m.questionDialog; d != nil && d.id == v.id && d.run == v.run && d.request == v.request {
 			if v.err == nil {
@@ -960,7 +970,6 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 		if v.err != nil {
-			delete(m.fullPermission, v.id)
 			m.notice = "Approval failed; not retried. " + v.err.Error()
 		} else {
 			for _, s := range m.sessions {
@@ -974,9 +983,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					s.Pending = pending
 				}
 			}
-			if !v.automatic {
-				m.notice = "Approval decision sent"
-			}
+			m.notice = "Approval decision sent"
 		}
 		if m.focusApproval {
 			m.focusApproval = false
@@ -984,7 +991,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.resize()
 		m.render()
-		return m, tea.Batch(m.refresh(), m.autoApprove())
+		return m, m.refresh()
 	case tea.MouseMsg:
 		if m.filePreviewMouse(v) {
 			return m, nil
@@ -1154,7 +1161,6 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case listing:
 		m.resourceRefreshRunning = false
 		if v.err != nil {
-			m.fullPermission = nil
 			m.notice = "daemon disconnected; reconnecting (commands are not retried)"
 			return m, nil
 		}
@@ -1200,11 +1206,6 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.notice = "Selected approval resolved; review the next request before deciding"
 			}
 		}
-		for _, s := range m.sessions {
-			if m.fullPermission[s.Id] != "" && (m.fullPermission[s.Id] != s.RunId || !permissionState(s.State)) {
-				delete(m.fullPermission, s.Id)
-			}
-		}
 		if m.selectedApproval() == nil {
 			m.approvalOffset = 0
 			if m.focusApproval {
@@ -1215,7 +1216,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.resize()
 		m.render()
 		m.syncQuestion()
-		return m, m.autoApprove()
+		return m, nil
 	case received:
 		m.receiveEvent(v, true)
 	case caughtUp:
@@ -1234,7 +1235,6 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			c.report.text = "Disconnected while querying context. Reopen /context after reconnecting."
 			m.contextCapture = nil
 		}
-		delete(m.fullPermission, v.id)
 		if m.watchID == v.id {
 			m.watchID = ""
 			m.notice = "event connection lost; reconnecting from saved cursor"
@@ -1244,7 +1244,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if v.err != nil {
 			m.notice = v.err.Error()
 		} else {
-			m.notice = "Agent restarted · same session · manual approval"
+			m.notice = "Agent restarted · same session · saved permission policy"
 		}
 		return m, m.refresh()
 	case result:
@@ -1608,6 +1608,13 @@ func (m *model) receiveEvent(v received, repaint bool) {
 	}
 	if v.event.Seq > m.cursor[v.id] {
 		m.captureContext(v.id, v.event)
+		if v.event.Kind == "permission" && (v.event.Text == "ask" || v.event.Text == "full") {
+			for _, session := range m.sessions {
+				if session.Id == v.id && session.RunId == v.event.RunId && v.event.Seq >= session.LastSeq {
+					session.PermissionMode = v.event.Text
+				}
+			}
+		}
 		if s := m.current(); s != nil && s.Id == v.id && (v.event.Kind == "turn_end" || v.event.Kind == "input") {
 			m.interruptUntil = time.Time{}
 			m.interruptKey = ""

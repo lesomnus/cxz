@@ -91,49 +91,43 @@ func TestApprovalFocusAndDecisionIdentity(t *testing.T) {
 	}
 }
 
-func TestPermissionScopeAndUnknownRequests(t *testing.T) {
+func TestPermissionCommandOnlyConfiguresSupervisor(t *testing.T) {
 	m := conversationModel()
 	c := m.client.(*recordingClient)
-	m.current().Pending = []*api.Event{{RequestId: "tool", Text: "Bash"}, {RequestId: "question", Text: "AskUserQuestion"}, {RequestId: "unknown", Text: "new/vendor/method"}}
-	m.input.SetValue("/permission full")
-	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyCtrlS})
-	if cmd == nil {
-		t.Fatal("full did not approve pending tool")
+	m.current().Pending = []*api.Event{{RequestId: "tool", Text: "Bash"}, {RequestId: "question", Text: "AskUserQuestion"}}
+	cmd := m.permissionCommand("/permission full")
+	if cmd == nil || m.current().PermissionMode == "full" {
+		t.Fatal("missing RPC or optimistic full policy")
 	}
 	msg := cmd()
-	if len(c.inputs) != 0 || len(c.answers) != 1 || !c.answers[0].Allow {
-		t.Fatal("incorrect full permission effect")
+	if len(c.inputs) != 0 || len(c.answers) != 0 || len(c.permissions) != 1 || c.permissions[0].Mode != "full" {
+		t.Fatal("TUI approved a tool or sent a prompt")
 	}
-	if m.autoApprove() != nil {
-		t.Fatal("duplicate/question/unknown request auto-approved")
-	}
+	// Switching sessions before the reply must not change the other session.
+	original := m.current()
+	m.sessions = append(m.sessions, &api.Session{Id: "other", RunId: "r2", State: "idle"})
+	m.selected = 1
 	m.Update(msg)
-	if m.autoApprove() != nil {
-		t.Fatal("question auto-approved")
+	if m.current().PermissionMode == "full" || original.PermissionMode == "full" {
+		t.Fatal("receipt changed policy before a server snapshot")
 	}
-	m.approvalID = "question"
-	if m.replyApproval(m.selectedApproval(), true, "", false) != nil {
-		t.Fatal("invented answer")
-	}
-	m.current().RunId = "new-run"
-	m.current().Pending = []*api.Event{{RequestId: "new", Text: "Bash"}}
-	if m.autoApprove() != nil {
-		t.Fatal("permission leaked across runs")
-	}
-	m.permissionCommand("/permission full")
+	m.selected = 0
+	original.PermissionMode = "full"
 	m.Update(disconnected{id: "s"})
-	if m.autoApprove() != nil || m.fullPermission["s"] != "" {
-		t.Fatal("disconnect retained full permission")
+	if original.PermissionMode != "full" {
+		t.Fatal("disconnect changed server policy")
 	}
-	m.permissionCommand("/permission full")
-	m.permissionCommand("/permission ask")
-	if m.autoApprove() != nil {
-		t.Fatal("ask failed")
-	}
-	m.fullPermission = map[string]string{"s": "new-run"}
 	m.Update(approvalResult{id: "s", err: errors.New("unknown outcome")})
-	if m.fullPermission["s"] != "" || !strings.Contains(m.notice, "not retried") {
-		t.Fatal("failed decision did not fail closed")
+	if original.PermissionMode != "full" {
+		t.Fatal("manual reply error changed server policy")
+	}
+	cmd = m.permissionCommand("/permission ask")
+	if cmd == nil {
+		t.Fatal("ask not routed")
+	}
+	cmd()
+	if len(c.permissions) != 2 || c.permissions[1].Mode != "ask" {
+		t.Fatal("ask missing")
 	}
 }
 

@@ -29,6 +29,7 @@ const (
 	SessionService_Resume_FullMethodName      = "/cxz.SessionService/Resume"
 	SessionService_Stop_FullMethodName        = "/cxz.SessionService/Stop"
 	SessionService_Interrupt_FullMethodName   = "/cxz.SessionService/Interrupt"
+	SessionService_Permission_FullMethodName  = "/cxz.SessionService/Permission"
 	SessionService_Send_FullMethodName        = "/cxz.SessionService/Send"
 	SessionService_Attach_FullMethodName      = "/cxz.SessionService/Attach"
 	SessionService_Activity_FullMethodName    = "/cxz.SessionService/Activity"
@@ -69,6 +70,7 @@ type SessionServiceClient interface {
 	Resume(ctx context.Context, in *SessionControl, opts ...grpc.CallOption) (*Session, error)
 	Stop(ctx context.Context, in *SessionControl, opts ...grpc.CallOption) (*Session, error)
 	Interrupt(ctx context.Context, in *SessionControl, opts ...grpc.CallOption) (*SessionReceipt, error)
+	Permission(ctx context.Context, in *SessionPermissionRequest, opts ...grpc.CallOption) (*SessionReceipt, error)
 	Send(ctx context.Context, in *SessionSendRequest, opts ...grpc.CallOption) (*SessionReceipt, error)
 	Attach(ctx context.Context, in *SessionAttachRequest, opts ...grpc.CallOption) (*SessionAttachment, error)
 	Activity(ctx context.Context, in *SessionActivityRequest, opts ...grpc.CallOption) (*SessionReceipt, error)
@@ -196,6 +198,16 @@ func (c *sessionServiceClient) Interrupt(ctx context.Context, in *SessionControl
 	return out, nil
 }
 
+func (c *sessionServiceClient) Permission(ctx context.Context, in *SessionPermissionRequest, opts ...grpc.CallOption) (*SessionReceipt, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SessionReceipt)
+	err := c.cc.Invoke(ctx, SessionService_Permission_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *sessionServiceClient) Send(ctx context.Context, in *SessionSendRequest, opts ...grpc.CallOption) (*SessionReceipt, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SessionReceipt)
@@ -306,6 +318,7 @@ type SessionServiceServer interface {
 	Resume(context.Context, *SessionControl) (*Session, error)
 	Stop(context.Context, *SessionControl) (*Session, error)
 	Interrupt(context.Context, *SessionControl) (*SessionReceipt, error)
+	Permission(context.Context, *SessionPermissionRequest) (*SessionReceipt, error)
 	Send(context.Context, *SessionSendRequest) (*SessionReceipt, error)
 	Attach(context.Context, *SessionAttachRequest) (*SessionAttachment, error)
 	Activity(context.Context, *SessionActivityRequest) (*SessionReceipt, error)
@@ -353,6 +366,9 @@ func (UnimplementedSessionServiceServer) Stop(context.Context, *SessionControl) 
 }
 func (UnimplementedSessionServiceServer) Interrupt(context.Context, *SessionControl) (*SessionReceipt, error) {
 	return nil, status.Error(codes.Unimplemented, "method Interrupt not implemented")
+}
+func (UnimplementedSessionServiceServer) Permission(context.Context, *SessionPermissionRequest) (*SessionReceipt, error) {
+	return nil, status.Error(codes.Unimplemented, "method Permission not implemented")
 }
 func (UnimplementedSessionServiceServer) Send(context.Context, *SessionSendRequest) (*SessionReceipt, error) {
 	return nil, status.Error(codes.Unimplemented, "method Send not implemented")
@@ -569,6 +585,24 @@ func _SessionService_Interrupt_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SessionService_Permission_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SessionPermissionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionServiceServer).Permission(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SessionService_Permission_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionServiceServer).Permission(ctx, req.(*SessionPermissionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _SessionService_Send_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SessionSendRequest)
 	if err := dec(in); err != nil {
@@ -730,6 +764,10 @@ var SessionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Interrupt",
 			Handler:    _SessionService_Interrupt_Handler,
+		},
+		{
+			MethodName: "Permission",
+			Handler:    _SessionService_Permission_Handler,
 		},
 		{
 			MethodName: "Send",
