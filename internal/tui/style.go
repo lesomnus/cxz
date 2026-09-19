@@ -98,6 +98,13 @@ func (m *model) resize() {
 		return
 	}
 	follow := m.view.AtBottom()
+	if m.terminalWidth > 0 {
+		available := m.terminalWidth - m.contentOffset()
+		m.width = min(maxViewWidth, available)
+		if m.previewVisible() && available >= 140 {
+			m.width = min(m.width, available-52)
+		}
+	}
 	m.input.SetWidth(max(2, m.width-2))
 	rows := 0
 	for _, line := range strings.Split(m.input.Value(), "\n") {
@@ -110,7 +117,7 @@ func (m *model) resize() {
 	m.input, _ = m.input.Update(nil)
 	m.view.Width = max(1, m.width)
 	// Blank separator + status (2), composer border (2), session information (1).
-	m.view.Height = max(1, m.height-m.input.Height()-5-m.approvalHeight()-m.terminalHeight())
+	m.view.Height = max(1, m.height-m.input.Height()-5-m.approvalHeight()-m.terminalHeight()-m.previewHeight())
 	if p := m.terminal(); p != nil && p.session != nil && m.terminalHeight() > 0 {
 		p.session.Resize(m.width, m.terminalHeight()-2)
 	}
@@ -213,12 +220,16 @@ func (m *model) sessionScreen() string {
 	if !m.view.AtBottom() {
 		track = m.scrollTrack()
 	}
+	preview := ""
+	if h := m.previewHeight(); h > 0 {
+		preview = m.previewRows(width, h) + "\n"
+	}
 	composer := m.input
 	modal := m.redactDialog != nil || m.terminalFocused() || m.panelFocus || m.report != nil || m.modelPicker != nil || m.restartConfirm != nil || m.questionDialog != nil || m.pasteDialog != nil
 	if modal {
 		composer.Blur()
 	}
-	body := m.redactOverlay(m.pasteOverlay(m.questionOverlay(m.restartOverlay(m.reportView(m.modelPickerOverlay(m.commandOverlay(m.conversationView()))))))) + "\n" + track + "\n" + clip("  "+status, width) + "\n" + box +
+	body := m.redactOverlay(m.pasteOverlay(m.questionOverlay(m.restartOverlay(m.reportView(m.modelPickerOverlay(m.commandOverlay(m.conversationView()))))))) + "\n" + track + "\n" + clip("  "+status, width) + "\n" + box + preview +
 		frame(m.decorateInputPastes(composer.View()), width, !modal && !m.focusList && !m.focusApproval && m.pathHints == nil) + "\n"
 	if m.terminalHeight() > 0 {
 		body += m.terminalView() + "\n"

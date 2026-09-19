@@ -70,8 +70,47 @@ func (m *model) updateQuota() {
 		m.quotaWindows, m.quotaState = nil, "waiting"
 		return
 	}
-	m.quotaWindows, m.quotaState = quotaSnapshot(s.Agent, s.RunId, m.events[s.Id])
+	events := m.events[s.Id]
+	run := s.RunId
+	if s.Agent == "claude" && s.Account != "" {
+		events = nil
+		sessions := m.allSessions
+		if len(sessions) == 0 {
+			sessions = m.sessions
+		}
+		for _, peer := range sessions {
+			if peer.Agent != s.Agent || peer.Account != s.Account {
+				continue
+			}
+			for _, e := range m.events[peer.Id] {
+				if (e.Kind == "usage" || e.Kind == "usage_status") && (e.RunId == "" || e.RunId == peer.RunId) {
+					events = append(events, e)
+				}
+			}
+		}
+		sort.SliceStable(events, func(i, j int) bool { return events[i].TimeMs < events[j].TimeMs })
+		run = ""
+	}
+	m.quotaWindows, m.quotaState = quotaSnapshot(s.Agent, run, events)
 	m.quotaState = quotaPendingState(m.quotaState, s.RunId, m.events[s.Id], time.Now())
+	if s.Agent == "claude" && s.Account != "" {
+		if m.accountQuotas == nil {
+			m.accountQuotas = map[string][]agentview.Window{}
+		}
+		previous := m.accountQuotas[s.Account]
+		if len(m.quotaWindows) == 0 {
+			m.quotaWindows = previous
+		} else {
+			for i, w := range m.quotaWindows {
+				for _, old := range previous {
+					if w.Key == old.Key && old.Observed.After(w.Observed) {
+						m.quotaWindows[i] = old
+					}
+				}
+			}
+			m.accountQuotas[s.Account] = append([]agentview.Window(nil), m.quotaWindows...)
+		}
+	}
 }
 
 func quotaPendingState(state, run string, events []*api.Event, now time.Time) string {
@@ -94,7 +133,7 @@ func quotaSnapshot(provider, run string, events []*api.Event) ([]agentview.Windo
 	state := "waiting"
 	windows := map[string]agentview.Window{}
 	for _, e := range events {
-		if e.RunId != "" && e.RunId != run {
+		if run != "" && e.RunId != "" && e.RunId != run {
 			continue
 		}
 		if e.Kind == "usage_status" {
@@ -111,7 +150,19 @@ func quotaSnapshot(provider, run string, events []*api.Event) ([]agentview.Windo
 		if e.Kind != "usage" {
 			continue
 		}
+		loaded := agentview.Quota(provider, e.Text, e.Payload)
 		all, prefix := agentview.QuotaReplacement(provider, e.Text, e.Payload)
+		if provider == "claude" && all && len(loaded) == 0 && len(windows) > 0 {
+			state = "unavailable"
+			continue
+		}
+		previous := windows
+		if all {
+			previous = map[string]agentview.Window{}
+			for key, w := range windows {
+				previous[key] = w
+			}
+		}
 		if all {
 			clear(windows)
 		} else if prefix != "" {
@@ -121,7 +172,6 @@ func quotaSnapshot(provider, run string, events []*api.Event) ([]agentview.Windo
 				}
 			}
 		}
-		loaded := agentview.Quota(provider, e.Text, e.Payload)
 		if len(loaded) > 0 {
 			state = "available"
 		} else if all || prefix != "" {
@@ -130,6 +180,22 @@ func quotaSnapshot(provider, run string, events []*api.Event) ([]agentview.Windo
 		for _, w := range loaded {
 			if e.TimeMs > 0 {
 				w.Observed = time.UnixMilli(e.TimeMs)
+			}
+			if observed, ok := fields(e.Payload).number("_cxz_observed_ms"); ok && observed > 0 {
+				w.Observed = time.UnixMilli(int64(observed))
+			}
+			if old, ok := previous[w.Key]; ok {
+				if old.Observed.After(w.Observed) {
+					windows[w.Key] = old
+					continue
+				}
+				if w.Remaining == nil && (w.Reset.IsZero() || w.Reset.Equal(old.Reset)) {
+					w.Remaining = old.Remaining
+					w.Observed = old.Observed
+				}
+				if w.Reset.IsZero() {
+					w.Reset = old.Reset
+				}
 			}
 			windows[w.Key] = w
 		}
@@ -164,7 +230,7 @@ func (m *model) quotaStatus(now time.Time, width int) string {
 				value += " " + quotaBarStyle(*w.Remaining).Render(quotaBarWidth(*w.Remaining, cells))
 			}
 		}
-		if m.quotaState == "error" || m.quotaState == "timeout" || w.Observed.IsZero() || now.Sub(w.Observed) > 2*time.Minute {
+		if m.quotaState == "error" || m.quotaState == "timeout" || m.quotaState == "unavailable" || w.Observed.IsZero() || now.Sub(w.Observed) > 2*time.Minute {
 			value = "~" + value
 		}
 		return value + " " + safeText(w.Label) + " " + quotaCountdown(w.Reset, now)

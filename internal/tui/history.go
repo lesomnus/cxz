@@ -10,6 +10,12 @@ import (
 
 const historyPageSize uint64 = 128
 
+type caughtUp struct {
+	id     string
+	events []*api.Event
+	epoch  uint64
+}
+
 type historyPage struct {
 	id      string
 	events  []*api.Event

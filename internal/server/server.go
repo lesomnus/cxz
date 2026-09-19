@@ -22,6 +22,7 @@ import (
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/journal"
+	"github.com/lesomnus/cxz/internal/quotashare"
 	"github.com/lesomnus/cxz/internal/settings"
 	"github.com/lesomnus/cxz/internal/supervisor"
 	"github.com/lesomnus/cxz/internal/transport"
@@ -105,6 +106,11 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 			return err
 		}
 		defer broker.Close()
+		quota, err := quotashare.Start(root, quotashare.Socket, s.manager.AuthorizeQuota)
+		if err != nil {
+			return err
+		}
+		defer quota.Close()
 	}
 	// Manifests survive rebuilding the derived SQLite database.
 	dirs, e := os.ReadDir(filepath.Join(root, "sessions"))

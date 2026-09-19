@@ -24,6 +24,7 @@ import (
 )
 
 type model struct {
+	filePreview             *filePreview
 	pendingInputs           map[string][]*api.Event
 	promptSpans             []promptSpan
 	inlineDismissed         string
@@ -78,6 +79,7 @@ type model struct {
 	aliasInput              textinput.Model
 	usageReports            map[string]string
 	usageGeneration         map[string]uint64
+	accountQuotas           map[string][]agentview.Window
 	quotaWindows            []agentview.Window
 	quotaState              string
 	modelPicker             *modelPicker
@@ -375,6 +377,28 @@ func (m *model) watch() {
 			}
 			m.program.Send(historyPage{id: id, events: batch.Events, start: start, initial: true, epoch: epoch})
 		}
+		// Replay the accumulated journal in pages, rendering once per page.
+		// Only the selected conversation is subscribed; other agents keep running.
+		for after < last {
+			batch, err := m.client.History(ctx, &api.WatchRequest{SessionId: id, AfterSeq: after})
+			if err != nil {
+				if ctx.Err() == nil {
+					m.program.Send(disconnected{id, err})
+				}
+				return
+			}
+			before := after
+			for _, e := range batch.Events {
+				after = max(after, e.Seq)
+			}
+			if after == before {
+				break
+			}
+			if ctx.Err() != nil {
+				return
+			}
+			m.program.Send(caughtUp{id: id, events: batch.Events, epoch: epoch})
+		}
 		stream, e := m.client.Watch(ctx, &api.WatchRequest{SessionId: id, AfterSeq: after, ClientId: activityID})
 		if e == nil {
 			for {
@@ -429,6 +453,7 @@ func (m *model) render() {
 	decisions := map[string]string{}
 	toolCalls := map[string]agentview.ToolActivity{}
 	toolResults := map[string]*api.Event{}
+	toolOutput := map[string]string{}
 	backgroundTools := map[string]agentview.BackgroundTask{}
 	for run, state := range m.backgroundStates() {
 		for _, task := range state.Tasks {
@@ -447,6 +472,10 @@ func (m *model) render() {
 			} else {
 				toolCalls[e.RunId+"/"+e.RequestId] = agentview.ToolActivity{Kind: "tool", Description: e.Text}
 			}
+		}
+		if e.Kind == "tool_output" && e.RequestId != "" {
+			key := e.RunId + "/" + e.RequestId
+			toolOutput[key] = outputTail(toolOutput[key] + e.Text)
 		}
 		if e.Kind == "tool_result" && e.RequestId != "" {
 			toolResults[e.RunId+"/"+e.RequestId] = e
@@ -546,6 +575,9 @@ func (m *model) render() {
 						}
 					}
 					text = indentBlock(toolActivityStateBody(activity, result, max(1, m.view.Width), state))
+					if activity.Kind == "command" && result == nil && e.RunId == s.RunId && m.activeWork() && toolOutput[key] != "" {
+						text += "\n" + liveOutputView(toolOutput[key], m.view.Width)
+					}
 					if task, ok := backgroundTools[key]; ok {
 						state = task.Status
 						if task.Active {
@@ -954,6 +986,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.render()
 		return m, tea.Batch(m.refresh(), m.autoApprove())
 	case tea.MouseMsg:
+		if m.filePreviewMouse(v) {
+			return m, nil
+		}
 		m.lastUIInput = time.Now()
 		if v.X < m.contentOffset() || v.X >= m.contentOffset()+m.width || m.panelFocus {
 			return m, nil
@@ -993,6 +1028,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		if !m.projectView && !m.accountView && v.Y < m.view.Height {
+			if v.Button == tea.MouseButtonLeft && v.Action == tea.MouseActionPress && m.openFilePreview(v.Y) {
+				return m, nil
+			}
 			m.view, _ = m.view.Update(v)
 			return m, m.loadOlderHistory()
 		}
@@ -1179,39 +1217,18 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.syncQuestion()
 		return m, m.autoApprove()
 	case received:
-		if v.event.Kind == "input" {
-			m.removePendingInput(v.id, v.event.RequestId)
+		m.receiveEvent(v, true)
+	case caughtUp:
+		if v.epoch != m.watchEpoch {
+			return m, nil
 		}
-		if v.event.Seq > m.cursor[v.id] {
-			m.captureContext(v.id, v.event)
-			if s := m.current(); s != nil && s.Id == v.id && (v.event.Kind == "turn_end" || v.event.Kind == "input") {
-				m.interruptUntil = time.Time{}
-				m.interruptKey = ""
-			}
-			m.cursor[v.id] = v.event.Seq
-			m.events[v.id] = append(m.events[v.id], v.event)
-			if p := m.modelPicker; p != nil && !p.loading && p.id == v.id && p.run == v.event.RunId && v.event.Kind == "models" {
-				var catalog modelCatalog
-				if json.Unmarshal(v.event.Payload, &catalog) == nil {
-					selected := ""
-					options := p.options()
-					if p.selected < len(options) {
-						selected = options[p.selected]
-					}
-					p.catalog = &catalog
-					p.selected = 0
-					for i, option := range p.options() {
-						if option == selected {
-							p.selected = i
-							break
-						}
-					}
-				}
-			}
-			if s := m.current(); s != nil && s.Id == v.id {
-				m.render()
-			}
+		for _, e := range v.events {
+			m.receiveEvent(received{v.id, e}, false)
 		}
+		if current := m.current(); current != nil && current.Id == v.id {
+			m.render()
+		}
+		return m, nil
 	case disconnected:
 		if c := m.contextCapture; c != nil && c.id == v.id {
 			c.report.text = "Disconnected while querying context. Reopen /context after reconnecting."
@@ -1583,4 +1600,40 @@ func authHint(s *api.Session, e *api.Event) string {
 		}
 	}
 	return ""
+}
+
+func (m *model) receiveEvent(v received, repaint bool) {
+	if v.event.Kind == "input" {
+		m.removePendingInput(v.id, v.event.RequestId)
+	}
+	if v.event.Seq > m.cursor[v.id] {
+		m.captureContext(v.id, v.event)
+		if s := m.current(); s != nil && s.Id == v.id && (v.event.Kind == "turn_end" || v.event.Kind == "input") {
+			m.interruptUntil = time.Time{}
+			m.interruptKey = ""
+		}
+		m.cursor[v.id] = v.event.Seq
+		m.events[v.id] = append(m.events[v.id], v.event)
+		if p := m.modelPicker; p != nil && !p.loading && p.id == v.id && p.run == v.event.RunId && v.event.Kind == "models" {
+			var catalog modelCatalog
+			if json.Unmarshal(v.event.Payload, &catalog) == nil {
+				selected := ""
+				options := p.options()
+				if p.selected < len(options) {
+					selected = options[p.selected]
+				}
+				p.catalog = &catalog
+				p.selected = 0
+				for i, option := range p.options() {
+					if option == selected {
+						p.selected = i
+						break
+					}
+				}
+			}
+		}
+		if s := m.current(); s != nil && s.Id == v.id && repaint && v.event.Kind != "raw" {
+			m.render()
+		}
+	}
 }

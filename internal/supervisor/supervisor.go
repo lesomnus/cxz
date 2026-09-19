@@ -47,6 +47,14 @@ type Supervisor struct {
 	batch            []core.Event
 	buffering        bool
 	codex            *codexProtocol
+	quotaSocket      string
+	quotaChecking    bool
+	quotaWorkers     sync.WaitGroup
+	quotaFallbackAt  time.Time
+	quotaRoot        string
+	quotaToken       string
+	quotaLease       string
+	quotaObserved    int64
 	quotaDisabled    bool
 	quotaRequested   time.Time
 	modelOptions     []agentview.ModelOption
@@ -131,6 +139,13 @@ func Run(ctx context.Context, root, id string) error {
 				s.receipts[r.Command.ClientID] = r
 			}
 		}
+	}
+	defer s.quotaWorkers.Wait()
+	s.quotaRoot = root
+	var runtime struct{ Token string }
+	if raw, err := os.ReadFile(filepath.Join(filepath.Dir(root), "runtime.json")); err == nil {
+		_ = json.Unmarshal(raw, &runtime)
+		s.quotaToken = runtime.Token
 	}
 	s.event("state", "starting", "", nil, nil)
 	args := claudeArgs()
@@ -263,10 +278,18 @@ func Run(ctx context.Context, root, id string) error {
 	}
 	quotaTick := time.NewTicker(time.Minute)
 	defer quotaTick.Stop()
+	sharedQuotaTick := time.NewTicker(5 * time.Second)
+	defer sharedQuotaTick.Stop()
 	for {
 		select {
 		case <-s.done:
 			return nil
+		case <-sharedQuotaTick.C:
+			s.mu.Lock()
+			if s.codex == nil && (s.snap.State == "idle" || s.snap.State == "working" || s.snap.State == "waiting_input") {
+				s.readClaudeQuota()
+			}
+			s.mu.Unlock()
 		case <-quotaTick.C:
 			s.mu.Lock()
 			s.expireSetting()
@@ -409,7 +432,7 @@ func (s *Supervisor) consume(raw []byte) {
 		if v.Response.RequestID == "cxz-quota" {
 			s.quotaRequested = time.Time{}
 			if v.Response.Subtype == "success" {
-				s.event("usage", "get_usage", "", v.Response.Response, nil)
+				s.publishClaudeQuota(v.Response.Response)
 			} else if text := strings.ToLower(v.Response.Error); strings.Contains(text, "unsupported") || strings.Contains(text, "unknown control") {
 				s.quotaDisabled = true
 				s.event("usage_status", "unsupported", "", nil, nil)

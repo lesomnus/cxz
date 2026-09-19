@@ -224,6 +224,10 @@ func (m *model) wideScreen(content string) string {
 	if m.panelVisible() {
 		left = strings.Split(m.panelScreen(), "\n")
 	}
+	right := []string{}
+	if width := m.previewSideWidth(); width > 0 {
+		right = strings.Split(m.previewRows(width, m.height), "\n")
+	}
 	main := strings.Split(content, "\n")
 	lines := make([]string, max(0, m.height))
 	for i := range lines {
@@ -236,6 +240,9 @@ func (m *model) wideScreen(content string) string {
 		}
 		if i < len(main) {
 			line += main[i]
+		}
+		if i < len(right) {
+			line += strings.Repeat(" ", max(0, m.contentOffset()+m.width+2-ansi.StringWidth(line))) + right[i]
 		}
 		line = clip(line, m.terminalWidth)
 		lines[i] = line + strings.Repeat(" ", max(0, m.terminalWidth-ansi.StringWidth(line)))
