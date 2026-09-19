@@ -72,12 +72,23 @@ func (m *model) reportView(view string) string {
 	p.offset = max(0, min(p.offset, max(0, len(lines)-capacity)))
 	content := []string{accent.Bold(true).Render(p.title)}
 	content = append(content, lines[p.offset:min(len(lines), p.offset+capacity)]...)
-	content = append(content, muted.Render("↑/↓ · PgUp/PgDn scroll · Esc close"))
+	footer := "↑/↓ · PgUp/PgDn scroll · Esc close"
+	if p.title == "/logs" || p.title == "/logs project" {
+		footer = "↑/↓ · PgUp/PgDn · Home/End · r refresh · Esc close"
+		if m.width < 60 {
+			footer = "↑↓ PgUp/Dn · r refresh · Esc"
+		}
+	}
+	content = append(content, muted.Render(footer))
 	return overlayBox(view, content, m.width, true)
 }
 
 func (m *model) reportKey(k tea.KeyMsg) tea.Cmd {
 	switch k.String() {
+	case "r":
+		if m.report.title == "/logs" || m.report.title == "/logs project" {
+			return m.loadLogs()
+		}
 	case "esc", "ctrl+q":
 		m.report = nil
 	case "ctrl+c":

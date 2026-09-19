@@ -4,8 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/lesomnus/cxz/internal/logview"
+	"io"
 	"os/exec"
 	"sync"
+	"time"
 
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/dockerx"
@@ -16,8 +19,9 @@ import (
 // Requests are serialized per helper; cancelled lookups are drained so that
 // their remaining frames cannot become the next request's response.
 type WispPool struct {
-	mu      sync.Mutex
-	clients map[string]*wispClient
+	mu          sync.Mutex
+	clients     map[string]*wispClient
+	diagnostics map[string]*logview.Buffer
 }
 type wispClient struct {
 	secrets      bool
@@ -65,7 +69,19 @@ func (p *WispPool) client(lifetime, ctx context.Context, project *api.Project) (
 				delete(p.clients, k)
 			}
 		}
-		c, err = openWisp(lifetime, ctx, project)
+		if p.diagnostics == nil {
+			p.diagnostics = map[string]*logview.Buffer{}
+		}
+		log := p.diagnostics[project.Id]
+		if log == nil {
+			log = &logview.Buffer{}
+			p.diagnostics[project.Id] = log
+		}
+		fmt.Fprintf(log, "%s starting workspace helper\n", time.Now().Format(time.RFC3339))
+		c, err = openWisp(lifetime, ctx, project, log)
+		if err != nil {
+			fmt.Fprintf(log, "wisp start failed: %v\n", err)
+		}
 		if err == nil {
 			p.clients[key] = c
 		}
@@ -133,7 +149,7 @@ func (p *WispPool) Paths(lifetime, ctx context.Context, project *api.Project, di
 	}
 }
 
-func openWisp(lifetime, ctx context.Context, p *api.Project) (*wispClient, error) {
+func openWisp(lifetime, ctx context.Context, p *api.Project, stderr ...io.Writer) (*wispClient, error) {
 	c, err := dockerx.Inspect(ctx, p.ContainerId)
 	if err != nil {
 		return nil, err
@@ -143,6 +159,9 @@ func openWisp(lifetime, ctx context.Context, p *api.Project) (*wispClient, error
 	}
 	procCtx, stop := context.WithCancel(lifetime)
 	cmd := exec.CommandContext(procCtx, "docker", "exec", "-i", "--user", p.RemoteUser, c.ID, "/cxz/tools/cxz", "wisp")
+	if len(stderr) > 0 {
+		cmd.Stderr = stderr[0]
+	}
 	in, err := cmd.StdinPipe()
 	if err != nil {
 		stop()
@@ -160,7 +179,14 @@ func openWisp(lifetime, ctx context.Context, p *api.Project) (*wispClient, error
 		return nil, err
 	}
 	client := &wispClient{gate: make(chan struct{}, 1), enc: json.NewEncoder(in), dec: json.NewDecoder(out), stop: stop, done: make(chan struct{})}
-	go func() { _ = cmd.Wait(); in.Close(); close(client.done) }()
+	go func() {
+		err := cmd.Wait()
+		if len(stderr) > 0 {
+			fmt.Fprintf(stderr[0], "%s workspace helper exited: %v\n", time.Now().Format(time.RFC3339), err)
+		}
+		in.Close()
+		close(client.done)
+	}()
 	ready := make(chan error, 1)
 	go func() {
 		var hello wisp.Response
@@ -183,4 +209,15 @@ func openWisp(lifetime, ctx context.Context, p *api.Project) (*wispClient, error
 		}
 		return client, nil
 	}
+}
+
+// Logs observes helpers started by this TUI; stdio protocol bodies are never logged.
+func (p *WispPool) Logs(project string) string {
+	p.mu.Lock()
+	log := p.diagnostics[project]
+	p.mu.Unlock()
+	if log == nil {
+		return "No Wisp diagnostics collected by this TUI for this project. Earlier/other TUI connections have no shared Wisp log."
+	}
+	return log.String()
 }
