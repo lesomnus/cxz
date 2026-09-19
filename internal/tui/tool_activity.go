@@ -64,7 +64,7 @@ func toolActivityStateBody(activity agentview.ToolActivity, result *api.Event, w
 		if text == "" {
 			text = activity.Description
 		}
-		rows := strings.Split(ansi.Wrap(safeText(text), max(1, width-12), ""), "\n")
+		rows := strings.Split(ansi.Wrap(highlightCode(text, "bash"), max(1, width-12), ""), "\n")
 		for i, row := range rows[:min(2, len(rows))] {
 			if i == 1 && len(rows) > 2 {
 				row = clip(row, max(1, width-14)) + "…"

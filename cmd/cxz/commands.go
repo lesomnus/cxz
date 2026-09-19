@@ -22,6 +22,7 @@ import (
 	"github.com/lesomnus/xli"
 	"github.com/lesomnus/xli/arg"
 	"github.com/lesomnus/xli/flg"
+	"github.com/lesomnus/xli/mode"
 	"github.com/lesomnus/xli/tab"
 )
 
@@ -118,7 +119,7 @@ func newRoot(state string) *xli.Command {
 	root := &xli.Command{Name: "cxz", Brief: "Persistent coding-agent sessions in owned devcontainers",
 		Synop: "Flags precede positional arguments: cxz account add codex work; cxz session new --account work .\nCtrl-C detaches the TUI; stop terminates the agent. Foreign containers are never adopted.",
 		Flags: flg.Flags{stringFlag("state", "Private client/runtime state directory", state)},
-		Handler: xli.Chain(xli.OnRunPass(func(ctx context.Context, c *xli.Command, next xli.Next) error {
+		Handler: xli.Chain(xli.On(mode.Run, func(ctx context.Context, c *xli.Command, next xli.Next) error {
 			if err := validateInvocation(c); err != nil {
 				return err
 			}
@@ -127,7 +128,9 @@ func newRoot(state string) *xli.Command {
 				return err
 			}
 			return next(context.WithValue(ctx, stateKey{}, path))
-		}), onRun(func(_ context.Context, c *xli.Command) error { return c.PrintHelp(c.Writer) })),
+		}), withClient(func(ctx context.Context, client api.SessionsClient, _ *xli.Command) error {
+			return tui.Run(ctx, client)
+		})),
 	}
 	root.Commands = xli.Commands{
 		{Name: "install", Brief: "Start background Docker manager", Flags: flg.Flags{stringFlag("workspace-root", "Engine-visible workspace root", ""), stringFlag("image", "Manager image (default: build from this binary)", ""), switchFlag("recreate", "Replace owned manager, preserving data")}, Handler: onRun(func(ctx context.Context, c *xli.Command) error {

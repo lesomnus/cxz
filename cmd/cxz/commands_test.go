@@ -25,7 +25,7 @@ func TestHelpWithoutInstallation(t *testing.T) {
 	t.Setenv("DOCKER_HOST", "tcp://invalid.invalid:1")
 	state := filepath.Join(t.TempDir(), "must-not-be-created")
 	root := newRoot(state)
-	cases := [][]string{nil, {"--help"}, {"completion", "zsh"}}
+	cases := [][]string{{"--help"}, {"completion", "zsh"}}
 	var visit func(*xli.Command, []string)
 	visit = func(parent *xli.Command, path []string) {
 		for _, c := range parent.Commands {
@@ -325,6 +325,16 @@ func TestAliases(t *testing.T) {
 		got := xlitest.Run(t, root, alias.name)
 		if got.Err != nil || !called {
 			t.Fatalf("%s: %+v", alias.name, got)
+		}
+	}
+}
+
+func TestRootDefaultsToTUIConnection(t *testing.T) {
+	state := filepath.Join(t.TempDir(), "missing")
+	for _, args := range [][]string{nil, {"--state", state}, {"tui"}} {
+		got := xlitest.Run(t, newRoot(state), args...)
+		if got.Err == nil || !strings.Contains(got.Err.Error(), "cxz is not installed") {
+			t.Fatalf("%v: %+v", args, got)
 		}
 	}
 }

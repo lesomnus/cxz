@@ -209,6 +209,11 @@ func (m *model) questionKey(k tea.KeyMsg) tea.Cmd {
 		return nil
 	case "enter", " ":
 		if d.row < len(q.Options) {
+			if d.selected[d.page][d.row] && (!q.Multi || k.String() == "enter") {
+				d.row = n
+				d.offset = 0
+				return nil
+			}
 			value := !d.selected[d.page][d.row]
 			if !q.Multi {
 				value = true

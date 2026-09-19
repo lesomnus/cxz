@@ -81,7 +81,7 @@ bin/cxz up --no-attach --format json .      # prepare project only; no Account r
 bin/cxz it .                               # newest session in this workspace
 bin/cxz session new --account work-codex .  # new conversation; stop an active one first
 bin/cxz session attach PROJECT             # or SESSION_ID
-bin/cxz tui                        # also: watch
+bin/cxz                            # open TUI (also: tui, watch)
 bin/cxz project exec PROJECT -- go test ./...
 bin/cxz project shell PROJECT
 bin/cxz project down .                     # remove owned containers; preserve workspace/volumes

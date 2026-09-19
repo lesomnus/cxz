@@ -203,6 +203,14 @@ func (c *codexProtocol) consume(raw []byte) {
 		s.event("turn_end", state, "", v.Params, nil)
 		s.event("state", "idle", "", nil, nil)
 		c.readQuota()
+	case "item/commandExecution/outputDelta":
+		var output struct {
+			ItemID string `json:"itemId"`
+			Delta  string `json:"delta"`
+		}
+		if json.Unmarshal(v.Params, &output) == nil && output.ItemID != "" && output.Delta != "" {
+			s.event("tool_output", output.Delta, output.ItemID, nil, nil)
+		}
 	case "item/started":
 		if p.Item.Type == "commandExecution" || p.Item.Type == "fileChange" {
 			s.event("tool_call", p.Item.Command, p.Item.ID, v.Params, nil)
