@@ -26,6 +26,8 @@ import (
 )
 
 type model struct {
+	noticeLogs              []noticeLog
+	lastLoggedNotice        string
 	filePreview             *filePreview
 	pendingInputs           map[string][]*api.Event
 	promptSpans             []promptSpan
@@ -716,6 +718,13 @@ func (m *model) action(kind, text string) tea.Cmd {
 	}
 }
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	defer m.rememberNotice()
+	if v, ok := msg.(logsResult); ok {
+		if m.report == v.report {
+			m.report.text = v.text
+		}
+		return m, nil
+	}
 	if v, ok := msg.(redactSent); ok {
 		if v.err != nil {
 			m.removePendingInput(v.id, v.request)
@@ -957,7 +966,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if v.err != nil {
 				m.notice = "Permission update failed; refresh to check the saved policy: " + v.err.Error()
 				if status.Code(v.err) == codes.Unimplemented {
-					m.notice = "Permission RPC unavailable: update cxz on the host, run cxz install --recreate, then cxz project recreate WORKSPACE (replaces container; writable layer lost). See docs/cli.md."
+					m.notice = "Permission RPC unavailable: update cxz on the host, run cxz install --recreate, then cxz project recreate WORKSPACE (replaces container; writable layer lost). See docs/cli.md.\nRPC error: " + v.err.Error()
 				}
 			} else {
 				m.notice = "Permission " + v.mode + " saved for this session"
@@ -1501,6 +1510,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			localName := strings.Fields(text)[0]
 			if localName == "/terminal" {
 				return m, m.toggleTerminal()
+			}
+			if localName == "/logs" {
+				return m, m.logsCommand(text)
 			}
 			if localName == "/background" {
 				m.openReport("/background", "")

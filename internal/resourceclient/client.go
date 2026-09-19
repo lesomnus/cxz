@@ -217,3 +217,11 @@ func (c *Client) History(ctx context.Context, r *api.WatchRequest, opts ...grpc.
 func (c *Client) Permission(ctx context.Context, r *api.PermissionInput, opts ...grpc.CallOption) (*api.Receipt, error) {
 	return receipt(c.sessions.Permission(ctx, resource.SessionPermissionRequest_builder{Ref: sr(r.SessionId), RunId: &r.RunId, ClientId: &r.ClientId, Mode: &r.Mode}.Build(), opts...))
 }
+
+func (c *Client) Logs(ctx context.Context, r *api.LogsRequest, opts ...grpc.CallOption) (*api.LogsReply, error) {
+	v, err := c.sessions.Logs(ctx, resource.SessionLogsRequest_builder{Ref: sr(r.SessionId), Project: &r.Project}.Build(), opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &api.LogsReply{Text: v.GetText()}, nil
+}

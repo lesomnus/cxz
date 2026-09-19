@@ -184,6 +184,7 @@ resource database and survives server/container restarts; back up state volumes.
 | Ctrl+R | Explicitly resume stopped/offline session |
 | PageUp / PageDown / mouse wheel | Scroll; Ctrl+Home first line, Ctrl+End follow latest |
 | `/approval` | Inspect the selected request's complete payload |
+| `/logs`, `/logs project` | Scrollable session/project diagnostics; `r` refreshes |
 | `/permission full`, `/permission ask` | Saved session policy: background automatic/manual tool approval |
 | `/stop` | Terminate selected agent |
 | `/restart` | Confirm/Cancel dialog to restart this session's agent; Tab/arrows select, Enter applies, Esc cancels |

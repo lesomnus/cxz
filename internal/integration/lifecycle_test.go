@@ -528,6 +528,16 @@ func TestLifecycle(t *testing.T) {
 			t.Fatalf("child process race in %s", name)
 		}
 	}
+	// Logs traverse the public payday API, including on a stopped session.
+	for _, project := range []bool{false, true} {
+		report, err := client.Logs(ctx, &api.LogsRequest{SessionId: id, Project: project})
+		if err != nil || !strings.Contains(report.Text, "supervisor") || !strings.Contains(report.Text, "[permission]") {
+			t.Fatalf("logs unavailable: %v %v", report, err)
+		}
+	}
+	if get().LastSeq != restored.LastSeq {
+		t.Fatal("reading logs mutated the journal")
+	}
 	// Delete a live session through payday, then restart without resurrecting it.
 	if _, e = client.Resume(ctx, &api.Control{SessionId: id, RunId: restored.RunId, ClientId: core.ID()}); e != nil {
 		t.Fatal(e)

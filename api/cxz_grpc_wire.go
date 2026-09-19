@@ -22,6 +22,7 @@ const (
 	Sessions_Create_FullMethodName      = "/cxz.runtime.Sessions/Create"
 	Sessions_List_FullMethodName        = "/cxz.runtime.Sessions/List"
 	Sessions_Get_FullMethodName         = "/cxz.runtime.Sessions/Get"
+	Sessions_Logs_FullMethodName        = "/cxz.runtime.Sessions/Logs"
 	Sessions_Permission_FullMethodName  = "/cxz.runtime.Sessions/Permission"
 	Sessions_Send_FullMethodName        = "/cxz.runtime.Sessions/Send"
 	Sessions_Attach_FullMethodName      = "/cxz.runtime.Sessions/Attach"
@@ -45,6 +46,7 @@ type SessionsClient interface {
 	Create(ctx context.Context, in *CreateRequest, opts ...grpc.CallOption) (*Session, error)
 	List(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*SessionList, error)
 	Get(ctx context.Context, in *SessionRef, opts ...grpc.CallOption) (*Session, error)
+	Logs(ctx context.Context, in *LogsRequest, opts ...grpc.CallOption) (*LogsReply, error)
 	Permission(ctx context.Context, in *PermissionInput, opts ...grpc.CallOption) (*Receipt, error)
 	Send(ctx context.Context, in *Input, opts ...grpc.CallOption) (*Receipt, error)
 	Attach(ctx context.Context, in *AttachmentInput, opts ...grpc.CallOption) (*Attachment, error)
@@ -93,6 +95,16 @@ func (c *sessionsClient) Get(ctx context.Context, in *SessionRef, opts ...grpc.C
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Session)
 	err := c.cc.Invoke(ctx, Sessions_Get_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) Logs(ctx context.Context, in *LogsRequest, opts ...grpc.CallOption) (*LogsReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LogsReply)
+	err := c.cc.Invoke(ctx, Sessions_Logs_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -255,6 +267,7 @@ type SessionsServer interface {
 	Create(context.Context, *CreateRequest) (*Session, error)
 	List(context.Context, *Empty) (*SessionList, error)
 	Get(context.Context, *SessionRef) (*Session, error)
+	Logs(context.Context, *LogsRequest) (*LogsReply, error)
 	Permission(context.Context, *PermissionInput) (*Receipt, error)
 	Send(context.Context, *Input) (*Receipt, error)
 	Attach(context.Context, *AttachmentInput) (*Attachment, error)
@@ -287,6 +300,9 @@ func (UnimplementedSessionsServer) List(context.Context, *Empty) (*SessionList, 
 }
 func (UnimplementedSessionsServer) Get(context.Context, *SessionRef) (*Session, error) {
 	return nil, status.Error(codes.Unimplemented, "method Get not implemented")
+}
+func (UnimplementedSessionsServer) Logs(context.Context, *LogsRequest) (*LogsReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method Logs not implemented")
 }
 func (UnimplementedSessionsServer) Permission(context.Context, *PermissionInput) (*Receipt, error) {
 	return nil, status.Error(codes.Unimplemented, "method Permission not implemented")
@@ -401,6 +417,24 @@ func _Sessions_Get_Handler(srv interface{}, ctx context.Context, dec func(interf
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SessionsServer).Get(ctx, req.(*SessionRef))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_Logs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LogsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).Logs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_Logs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).Logs(ctx, req.(*LogsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -668,6 +702,10 @@ var Sessions_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Get",
 			Handler:    _Sessions_Get_Handler,
+		},
+		{
+			MethodName: "Logs",
+			Handler:    _Sessions_Logs_Handler,
 		},
 		{
 			MethodName: "Permission",

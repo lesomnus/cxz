@@ -3610,6 +3610,11 @@ func (s interceptSession) Interrupt(ctx context.Context, req *resource.SessionCo
 		resource.SessionService_Interrupt_FullMethodName, req, s.SessionServiceServer.Interrupt)
 }
 
+func (s interceptSession) Logs(ctx context.Context, req *resource.SessionLogsRequest) (*resource.SessionLogsReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
+		resource.SessionService_Logs_FullMethodName, req, s.SessionServiceServer.Logs)
+}
+
 func (s interceptSession) Permission(ctx context.Context, req *resource.SessionPermissionRequest) (*resource.SessionReceipt, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
 		resource.SessionService_Permission_FullMethodName, req, s.SessionServiceServer.Permission)
@@ -4802,6 +4807,19 @@ func dispatch(ctx context.Context, s resource.Server, op *pdpb.Op) (*anypb.Any, 
 		}
 
 		res, err := s.Session().Interrupt(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.SessionService_Logs_FullMethodName:
+		v := &resource.SessionLogsRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Session().Logs(ctx, v)
 		if err != nil {
 			return nil, err
 		}

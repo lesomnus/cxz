@@ -18,13 +18,14 @@ var slashCommands = []slashCommand{
 	{"/answer", "Reply to a pending question"},
 	{"/stop", "Stop agent"},
 	{"/restart", "Restart this session's agent (confirmation required)"},
-	{"/permission", "full: auto-approve this run · ask: manual"},
+	{"/permission", "full: background automatic approval · ask: manual"},
 	{"/approval", "Inspect selected approval payload"},
 	{"/details", "Inspect latest tool result"},
 	{"/model", "Provider model catalog or model selection"},
 	{"/effort", "Provider reasoning strength"},
 	{"/background", "Inspect provider background tasks"},
 	{"/paste", "Preview pasted text or attach it as a file"},
+	{"/logs", "Scrollable diagnostics; add project for all project sources"},
 	{"/terminal", "Open container terminal; Ctrl+` folds it"},
 }
 

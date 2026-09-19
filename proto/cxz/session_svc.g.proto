@@ -38,6 +38,7 @@ service SessionService {
   rpc Resume(SessionControl) returns (Session);
   rpc Stop(SessionControl) returns (Session);
   rpc Interrupt(SessionControl) returns (SessionReceipt);
+  rpc Logs(SessionLogsRequest) returns (SessionLogsReply);
   rpc Permission(SessionPermissionRequest) returns (SessionReceipt);
   rpc Send(SessionSendRequest) returns (SessionReceipt);
   rpc Attach(SessionAttachRequest) returns (SessionAttachment);
@@ -239,6 +240,15 @@ message SessionControl {
 message SessionReceipt {
   string client_id = 1;
   string status = 2;
+}
+
+message SessionLogsRequest {
+  SessionRef ref = 1;
+  bool project = 2;
+}
+
+message SessionLogsReply {
+  string text = 1;
 }
 
 message SessionPermissionRequest {

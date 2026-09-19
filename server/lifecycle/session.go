@@ -318,3 +318,15 @@ func (s SessionServer) Permission(ctx context.Context, r *resource.SessionPermis
 	}
 	return receipt(s.shared.runtime.Permission(ctx, &api.PermissionInput{SessionId: v.GetRuntimeId(), RunId: r.GetRunId(), ClientId: r.GetClientId(), Mode: r.GetMode()}))
 }
+
+func (s SessionServer) Logs(ctx context.Context, r *resource.SessionLogsRequest) (*resource.SessionLogsReply, error) {
+	v, err := s.resolve(ctx, r.GetRef())
+	if err != nil {
+		return nil, err
+	}
+	out, err := s.shared.runtime.Logs(ctx, &api.LogsRequest{SessionId: v.GetRuntimeId(), Project: r.GetProject()})
+	if err != nil {
+		return nil, err
+	}
+	return resource.SessionLogsReply_builder{Text: &out.Text}.Build(), nil
+}

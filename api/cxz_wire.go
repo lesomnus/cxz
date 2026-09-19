@@ -1609,6 +1609,102 @@ func (x *PermissionInput) GetMode() string {
 	return ""
 }
 
+type LogsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	Project       bool                   `protobuf:"varint,2,opt,name=project,proto3" json:"project,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LogsRequest) Reset() {
+	*x = LogsRequest{}
+	mi := &file_cxz_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LogsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LogsRequest) ProtoMessage() {}
+
+func (x *LogsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LogsRequest.ProtoReflect.Descriptor instead.
+func (*LogsRequest) Descriptor() ([]byte, []int) {
+	return file_cxz_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *LogsRequest) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+func (x *LogsRequest) GetProject() bool {
+	if x != nil {
+		return x.Project
+	}
+	return false
+}
+
+type LogsReply struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Text          string                 `protobuf:"bytes,1,opt,name=text,proto3" json:"text,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LogsReply) Reset() {
+	*x = LogsReply{}
+	mi := &file_cxz_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LogsReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LogsReply) ProtoMessage() {}
+
+func (x *LogsReply) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LogsReply.ProtoReflect.Descriptor instead.
+func (*LogsReply) Descriptor() ([]byte, []int) {
+	return file_cxz_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *LogsReply) GetText() string {
+	if x != nil {
+		return x.Text
+	}
+	return ""
+}
+
 var File_cxz_proto protoreflect.FileDescriptor
 
 const file_cxz_proto_rawDesc = "" +
@@ -1759,11 +1855,18 @@ const file_cxz_proto_rawDesc = "" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x15\n" +
 	"\x06run_id\x18\x02 \x01(\tR\x05runId\x12\x1b\n" +
 	"\tclient_id\x18\x03 \x01(\tR\bclientId\x12\x12\n" +
-	"\x04mode\x18\x04 \x01(\tR\x04mode2\xf3\a\n" +
+	"\x04mode\x18\x04 \x01(\tR\x04mode\"F\n" +
+	"\vLogsRequest\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x18\n" +
+	"\aproject\x18\x02 \x01(\bR\aproject\"\x1f\n" +
+	"\tLogsReply\x12\x12\n" +
+	"\x04text\x18\x01 \x01(\tR\x04text2\xad\b\n" +
 	"\bSessions\x12:\n" +
 	"\x06Create\x12\x1a.cxz.runtime.CreateRequest\x1a\x14.cxz.runtime.Session\x124\n" +
 	"\x04List\x12\x12.cxz.runtime.Empty\x1a\x18.cxz.runtime.SessionList\x124\n" +
-	"\x03Get\x12\x17.cxz.runtime.SessionRef\x1a\x14.cxz.runtime.Session\x12@\n" +
+	"\x03Get\x12\x17.cxz.runtime.SessionRef\x1a\x14.cxz.runtime.Session\x128\n" +
+	"\x04Logs\x12\x18.cxz.runtime.LogsRequest\x1a\x16.cxz.runtime.LogsReply\x12@\n" +
 	"\n" +
 	"Permission\x12\x1c.cxz.runtime.PermissionInput\x1a\x14.cxz.runtime.Receipt\x120\n" +
 	"\x04Send\x12\x12.cxz.runtime.Input\x1a\x14.cxz.runtime.Receipt\x12?\n" +
@@ -1792,7 +1895,7 @@ func file_cxz_proto_rawDescGZIP() []byte {
 	return file_cxz_proto_rawDescData
 }
 
-var file_cxz_proto_msgTypes = make([]protoimpl.MessageInfo, 21)
+var file_cxz_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
 var file_cxz_proto_goTypes = []any{
 	(*Empty)(nil),             // 0: cxz.runtime.Empty
 	(*CreateRequest)(nil),     // 1: cxz.runtime.CreateRequest
@@ -1815,6 +1918,8 @@ var file_cxz_proto_goTypes = []any{
 	(*Project)(nil),           // 18: cxz.runtime.Project
 	(*ProjectList)(nil),       // 19: cxz.runtime.ProjectList
 	(*PermissionInput)(nil),   // 20: cxz.runtime.PermissionInput
+	(*LogsRequest)(nil),       // 21: cxz.runtime.LogsRequest
+	(*LogsReply)(nil),         // 22: cxz.runtime.LogsReply
 }
 var file_cxz_proto_depIdxs = []int32{
 	15, // 0: cxz.runtime.Session.pending:type_name -> cxz.runtime.Event
@@ -1824,39 +1929,41 @@ var file_cxz_proto_depIdxs = []int32{
 	1,  // 4: cxz.runtime.Sessions.Create:input_type -> cxz.runtime.CreateRequest
 	0,  // 5: cxz.runtime.Sessions.List:input_type -> cxz.runtime.Empty
 	2,  // 6: cxz.runtime.Sessions.Get:input_type -> cxz.runtime.SessionRef
-	20, // 7: cxz.runtime.Sessions.Permission:input_type -> cxz.runtime.PermissionInput
-	5,  // 8: cxz.runtime.Sessions.Send:input_type -> cxz.runtime.Input
-	6,  // 9: cxz.runtime.Sessions.Attach:input_type -> cxz.runtime.AttachmentInput
-	8,  // 10: cxz.runtime.Sessions.Activity:input_type -> cxz.runtime.ActivityInput
-	9,  // 11: cxz.runtime.Sessions.UpdateAgent:input_type -> cxz.runtime.AgentUpdateInput
-	11, // 12: cxz.runtime.Sessions.Reply:input_type -> cxz.runtime.Answer
-	12, // 13: cxz.runtime.Sessions.Interrupt:input_type -> cxz.runtime.Control
-	12, // 14: cxz.runtime.Sessions.Resume:input_type -> cxz.runtime.Control
-	12, // 15: cxz.runtime.Sessions.Stop:input_type -> cxz.runtime.Control
-	14, // 16: cxz.runtime.Sessions.Watch:input_type -> cxz.runtime.WatchRequest
-	14, // 17: cxz.runtime.Sessions.History:input_type -> cxz.runtime.WatchRequest
-	17, // 18: cxz.runtime.Sessions.Open:input_type -> cxz.runtime.ProjectRequest
-	0,  // 19: cxz.runtime.Sessions.Projects:input_type -> cxz.runtime.Empty
-	17, // 20: cxz.runtime.Sessions.Down:input_type -> cxz.runtime.ProjectRequest
-	3,  // 21: cxz.runtime.Sessions.Create:output_type -> cxz.runtime.Session
-	4,  // 22: cxz.runtime.Sessions.List:output_type -> cxz.runtime.SessionList
-	3,  // 23: cxz.runtime.Sessions.Get:output_type -> cxz.runtime.Session
-	13, // 24: cxz.runtime.Sessions.Permission:output_type -> cxz.runtime.Receipt
-	13, // 25: cxz.runtime.Sessions.Send:output_type -> cxz.runtime.Receipt
-	7,  // 26: cxz.runtime.Sessions.Attach:output_type -> cxz.runtime.Attachment
-	13, // 27: cxz.runtime.Sessions.Activity:output_type -> cxz.runtime.Receipt
-	10, // 28: cxz.runtime.Sessions.UpdateAgent:output_type -> cxz.runtime.AgentUpdateStatus
-	13, // 29: cxz.runtime.Sessions.Reply:output_type -> cxz.runtime.Receipt
-	13, // 30: cxz.runtime.Sessions.Interrupt:output_type -> cxz.runtime.Receipt
-	3,  // 31: cxz.runtime.Sessions.Resume:output_type -> cxz.runtime.Session
-	13, // 32: cxz.runtime.Sessions.Stop:output_type -> cxz.runtime.Receipt
-	15, // 33: cxz.runtime.Sessions.Watch:output_type -> cxz.runtime.Event
-	16, // 34: cxz.runtime.Sessions.History:output_type -> cxz.runtime.EventBatch
-	3,  // 35: cxz.runtime.Sessions.Open:output_type -> cxz.runtime.Session
-	19, // 36: cxz.runtime.Sessions.Projects:output_type -> cxz.runtime.ProjectList
-	13, // 37: cxz.runtime.Sessions.Down:output_type -> cxz.runtime.Receipt
-	21, // [21:38] is the sub-list for method output_type
-	4,  // [4:21] is the sub-list for method input_type
+	21, // 7: cxz.runtime.Sessions.Logs:input_type -> cxz.runtime.LogsRequest
+	20, // 8: cxz.runtime.Sessions.Permission:input_type -> cxz.runtime.PermissionInput
+	5,  // 9: cxz.runtime.Sessions.Send:input_type -> cxz.runtime.Input
+	6,  // 10: cxz.runtime.Sessions.Attach:input_type -> cxz.runtime.AttachmentInput
+	8,  // 11: cxz.runtime.Sessions.Activity:input_type -> cxz.runtime.ActivityInput
+	9,  // 12: cxz.runtime.Sessions.UpdateAgent:input_type -> cxz.runtime.AgentUpdateInput
+	11, // 13: cxz.runtime.Sessions.Reply:input_type -> cxz.runtime.Answer
+	12, // 14: cxz.runtime.Sessions.Interrupt:input_type -> cxz.runtime.Control
+	12, // 15: cxz.runtime.Sessions.Resume:input_type -> cxz.runtime.Control
+	12, // 16: cxz.runtime.Sessions.Stop:input_type -> cxz.runtime.Control
+	14, // 17: cxz.runtime.Sessions.Watch:input_type -> cxz.runtime.WatchRequest
+	14, // 18: cxz.runtime.Sessions.History:input_type -> cxz.runtime.WatchRequest
+	17, // 19: cxz.runtime.Sessions.Open:input_type -> cxz.runtime.ProjectRequest
+	0,  // 20: cxz.runtime.Sessions.Projects:input_type -> cxz.runtime.Empty
+	17, // 21: cxz.runtime.Sessions.Down:input_type -> cxz.runtime.ProjectRequest
+	3,  // 22: cxz.runtime.Sessions.Create:output_type -> cxz.runtime.Session
+	4,  // 23: cxz.runtime.Sessions.List:output_type -> cxz.runtime.SessionList
+	3,  // 24: cxz.runtime.Sessions.Get:output_type -> cxz.runtime.Session
+	22, // 25: cxz.runtime.Sessions.Logs:output_type -> cxz.runtime.LogsReply
+	13, // 26: cxz.runtime.Sessions.Permission:output_type -> cxz.runtime.Receipt
+	13, // 27: cxz.runtime.Sessions.Send:output_type -> cxz.runtime.Receipt
+	7,  // 28: cxz.runtime.Sessions.Attach:output_type -> cxz.runtime.Attachment
+	13, // 29: cxz.runtime.Sessions.Activity:output_type -> cxz.runtime.Receipt
+	10, // 30: cxz.runtime.Sessions.UpdateAgent:output_type -> cxz.runtime.AgentUpdateStatus
+	13, // 31: cxz.runtime.Sessions.Reply:output_type -> cxz.runtime.Receipt
+	13, // 32: cxz.runtime.Sessions.Interrupt:output_type -> cxz.runtime.Receipt
+	3,  // 33: cxz.runtime.Sessions.Resume:output_type -> cxz.runtime.Session
+	13, // 34: cxz.runtime.Sessions.Stop:output_type -> cxz.runtime.Receipt
+	15, // 35: cxz.runtime.Sessions.Watch:output_type -> cxz.runtime.Event
+	16, // 36: cxz.runtime.Sessions.History:output_type -> cxz.runtime.EventBatch
+	3,  // 37: cxz.runtime.Sessions.Open:output_type -> cxz.runtime.Session
+	19, // 38: cxz.runtime.Sessions.Projects:output_type -> cxz.runtime.ProjectList
+	13, // 39: cxz.runtime.Sessions.Down:output_type -> cxz.runtime.Receipt
+	22, // [22:40] is the sub-list for method output_type
+	4,  // [4:22] is the sub-list for method input_type
 	4,  // [4:4] is the sub-list for extension type_name
 	4,  // [4:4] is the sub-list for extension extendee
 	0,  // [0:4] is the sub-list for field type_name
@@ -1873,7 +1980,7 @@ func file_cxz_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_cxz_proto_rawDesc), len(file_cxz_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   21,
+			NumMessages:   23,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
