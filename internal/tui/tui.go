@@ -17,6 +17,8 @@ import (
 	"github.com/lesomnus/cxz/internal/resourceclient"
 	"github.com/lesomnus/cxz/internal/settings"
 	"github.com/lesomnus/cxz/resource"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"os"
 	"path/filepath"
 	"strings"
@@ -954,6 +956,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if current := m.current(); current != nil && current.Id == v.id && current.RunId == v.run {
 			if v.err != nil {
 				m.notice = "Permission update failed; refresh to check the saved policy: " + v.err.Error()
+				if status.Code(v.err) == codes.Unimplemented {
+					m.notice = "Permission RPC unavailable: update cxz on the host, run cxz install --recreate, then cxz project recreate WORKSPACE (replaces container; writable layer lost). See docs/cli.md."
+				}
 			} else {
 				m.notice = "Permission " + v.mode + " saved for this session"
 			}

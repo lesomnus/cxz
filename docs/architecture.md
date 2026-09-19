@@ -156,7 +156,7 @@ Questions and unknown methods remain pending for an explicit answer.
 
 The mode belongs to the session rather than its current run. Restart/resume,
 manager replacement and recreation with preserved session storage retain it;
-a new session starts in `ask`. A stale run cannot change the policy. Wisp is a
+sessions without a saved policy start in `full`; explicitly saved `ask` is preserved. A stale run cannot change the policy. Wisp is a
 connection-scoped workspace helper and does not own agent processes or policy.
 
 ## 3. Agent integration

@@ -14,10 +14,28 @@ func permissionRequest(provider, name, id string) []byte {
 	}
 	return []byte(fmt.Sprintf(`{"id":%q,"method":%q,"params":{"itemId":"tool","permissions":{"network":{"enabled":true}}}}`, id, name))
 }
+func TestDefaultPermissionApprovesWithoutAnyClient(t *testing.T) {
+	for _, provider := range []string{"claude", "codex"} {
+		t.Run(provider, func(t *testing.T) {
+			s, wire := displaySupervisor(t, provider)
+			s.snap = Replay([]core.Event{{Kind: "state", Text: "idle", RunID: "run"}})
+			tool := "Bash"
+			if provider == "codex" {
+				tool = "item/commandExecution/requestApproval"
+			}
+			s.consume(permissionRequest(provider, tool, "default"))
+			if len(s.pending) != 0 || wire.Len() == 0 {
+				t.Fatal("default policy required manual approval")
+			}
+		})
+	}
+}
+
 func TestSupervisorApprovesWithoutAnyClient(t *testing.T) {
 	for _, provider := range []string{"claude", "codex"} {
 		t.Run(provider, func(t *testing.T) {
 			s, wire := displaySupervisor(t, provider)
+			s.snap.PermissionMode = "ask"
 			tool := "Bash"
 			question := "AskUserQuestion"
 			if provider == "codex" {
@@ -26,7 +44,7 @@ func TestSupervisorApprovesWithoutAnyClient(t *testing.T) {
 			}
 			s.consume(permissionRequest(provider, tool, "pending"))
 			if len(s.pending) != 1 || wire.Len() != 0 {
-				t.Fatal("default must be manual")
+				t.Fatal("manual mode must leave approval pending")
 			}
 			command := core.Command{RunID: "run", ClientID: "enable", Text: "full"}
 			if r, err := s.execute("permission", command); err != nil || r.Status != "accepted" {
@@ -83,8 +101,8 @@ func TestPermissionValidationAndReplay(t *testing.T) {
 	if restored.PermissionMode != "full" {
 		t.Fatal("restart lost policy")
 	}
-	if Replay(nil).PermissionMode != "ask" {
-		t.Fatal("legacy session must default to ask")
+	if Replay(nil).PermissionMode != "full" {
+		t.Fatal("unset policy must default to full")
 	}
 	s.snap.State = "idle"
 	s.execute("permission", core.Command{RunID: "run", ClientID: "two", Text: "ask"})

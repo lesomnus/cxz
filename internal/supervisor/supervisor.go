@@ -72,7 +72,7 @@ type record struct {
 }
 
 func Replay(events []core.Event) core.Snapshot {
-	s := core.Snapshot{State: "stopped", PermissionMode: "ask"}
+	s := core.Snapshot{State: "stopped", PermissionMode: "full"}
 	p := map[string]core.Event{}
 	for _, e := range events {
 		s.LastSeq = e.Seq

@@ -292,6 +292,16 @@ func TestLifecycle(t *testing.T) {
 	if !hello || !quota {
 		t.Fatal("journal or quota missing after compaction")
 	}
+	if get().PermissionMode != "full" {
+		t.Fatal("new session must default to full")
+	}
+	beforeDefaultApproval := get().LastSeq
+	send("approval default-full")
+	readUntil(beforeDefaultApproval, func(v *api.Event) bool { return v.Kind == "turn_end" })
+	s = await("idle")
+	if _, err := client.Permission(ctx, &api.PermissionInput{SessionId: id, RunId: s.RunId, ClientId: core.ID(), Mode: "ask"}); err != nil {
+		t.Fatal(err)
+	}
 	send("approval allow")
 	s = await("waiting_input")
 	if len(s.Pending) != 1 {
@@ -401,7 +411,7 @@ func TestLifecycle(t *testing.T) {
 	if _, err := client.Permission(ctx, enable); err != nil {
 		t.Fatal("permission retry", err)
 	}
-	// Another session retains manual approval, even with the same account.
+	// Another session can use manual approval independently, even with the same account.
 	second, e = client.Resume(ctx, &api.Control{SessionId: second.Id, RunId: second.RunId, ClientId: core.ID()})
 	if e != nil {
 		t.Fatal(e)
@@ -417,6 +427,9 @@ func TestLifecycle(t *testing.T) {
 			_ = syscall.Kill(processes["supervisor"], syscall.SIGKILL)
 		}
 	}()
+	if _, err := client.Permission(ctx, &api.PermissionInput{SessionId: second.Id, RunId: second.RunId, ClientId: core.ID(), Mode: "ask"}); err != nil {
+		t.Fatal(err)
+	}
 	if _, err := client.Send(ctx, &api.Input{SessionId: second.Id, RunId: second.RunId, ClientId: core.ID(), Text: "approval isolated"}); err != nil {
 		t.Fatal(err)
 	}

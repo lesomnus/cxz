@@ -562,7 +562,8 @@ Claude 실행 시 --tools를 넘기지 않아 기본 도구를 사용한다. 내
 이미 대기 중인 요청과 이후의 알려진 도구·명령·파일·권한 요청은 supervisor가 처리한다.
 다른 세션을 보거나 TUI를 종료해도 자동 승인은 계속된다. manager 재시작과
 supervisor 재시작/resume, 세션 볼륨을 유지한 컨테이너 재생성 후에도 정책을 복원한다.
-새 세션은 ask로 시작하며 계정이 같아도 정책을 상속하지 않는다.
+새 세션과 정책 기록이 없는 기존 세션은 full로 시작한다. 명시적으로 저장한 ask는 유지하며
+계정이 같아도 다른 세션의 정책을 상속하지 않는다.
 질문·미지원 요청은 수동으로 남긴다. /permission ask는 수동 승인 정책을 저장하며
 이미 전송한 결정은 되돌리지 않는다. 실행은 기존 run/request 검사와 저널 기록을
 공유하고 모호한 전송 실패는 자동 재시도하지 않는다. 공급자 sandbox 설정은 바꾸지 않는다.
@@ -570,7 +571,15 @@ supervisor 재시작/resume, 세션 볼륨을 유지한 컨테이너 재생성 �
 TUI는 Permission RPC와 상태 표시만 담당한다. 실제 프로세스 수명과 승인 처리는
 프로젝트 runtime/supervisor에 속한다. Wisp는 경로 탐색 등 연결형 workspace helper다.
 이 변경은 manager/runtime 업데이트와 기존 supervisor 재시작이 필요하다.
-이전 TUI의 로컬 full 설정은 옮기지 않으므로 업데이트한 세션에서 한 번 다시 설정한다.
+이전 TUI의 로컬 설정은 옮기지 않는다. 저장된 정책이 없으면 기본값 full을 사용한다.
+
+`unknown method Permission`은 요청을 받은 manager 또는 프로젝트 runtime이 구버전이라
+새 RPC를 제공하지 않는다는 뜻이다. 호스트에서 최신 cxz 바이너리로
+`cxz install --recreate` 후 `cxz project recreate WORKSPACE`를 실행한다.
+install만으로는 살아 있는 프로젝트 runtime/supervisor가 교체되지 않는다.
+project recreate는 워크스페이스와 named volume을 유지하지만 컨테이너 writable layer를
+삭제하고 편집기 연결을 끊는다. 컨테이너 내부에만 있는 파일은 먼저 보관한다.
+중단 상태로 남은 세션은 TUI에서 Ctrl+R로 재개한다.
 
 PgUp/PgDn·마우스 휠로 스크롤하고 Ctrl+Home/End로 처음/최신 위치로 이동한다.
 스크롤 중 L 시작–끝/전체와 해당 이벤트의 로컬 시각을 표시한다. 줄 번호는 현재

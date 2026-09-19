@@ -317,8 +317,8 @@ automatic approval. Configurable agent profiles are tracked in [TODO.md](TODO.md
 journal. The supervisor handles existing and future **known tool, command, file
 and permission requests**, including when another session is viewed or every TUI
 is closed. The policy survives agent restart/resume and container recreation with
-preserved session data. New sessions default to `ask`; another session's policy
-is never inherited. Questions and unknown protocol requests still need a reply.
+preserved session data. New sessions and sessions without a saved policy default to `full`; an explicitly
+saved `ask` remains manual. Another session's policy is never inherited. Questions and unknown protocol requests still need a reply.
 `/permission ask` saves manual approval again; decisions already dispatched cannot
 be retracted. Neither mode changes the vendor sandbox configuration. Automatic
 and manual decisions share the same run/request validation and durable delivery
