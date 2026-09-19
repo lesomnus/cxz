@@ -202,6 +202,13 @@ func (m *model) workflowScreen() string {
 	for len(rows) < m.height {
 		rows = append(rows, "")
 	}
+	for i, row := range rows {
+		// Only validated URL rows from workflowAuthOutput carry hyperlinks.
+		// Keep those flush left for copying; inset all other login content.
+		if !strings.Contains(row, "\x1b]8;") {
+			rows[i] = indentBlock(row)
+		}
+	}
 	return screen(strings.Join(rows, "\n"), m.width, m.height)
 }
 

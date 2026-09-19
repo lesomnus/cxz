@@ -18,7 +18,9 @@ func workflowAuthOutput(raw string, width int) ([]string, string) {
 	text := safeText(ansi.Strip(raw))
 	var rows []string
 	latest := ""
-	plain := func(s string) { rows = append(rows, strings.Split(ansi.Hardwrap(s, max(1, width), true), "\n")...) }
+	// Reserve the screen's normal left margin for prose, but let URL rows
+	// use the full width so selecting wrapped text does not copy padding.
+	plain := func(s string) { rows = append(rows, strings.Split(ansi.Hardwrap(s, max(1, width-2), true), "\n")...) }
 	lines := strings.Split(text, "\n")
 	for n, line := range lines {
 		matches := authURLPattern.FindAllStringIndex(line, -1)
