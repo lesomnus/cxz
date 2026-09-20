@@ -55,7 +55,7 @@ func TestWindowsEditHelpAndEditorFailure(t *testing.T) {
 	if result.Err == nil || !strings.Contains(result.Err.Error(), "draft kept") {
 		t.Fatal(result)
 	}
-	if _, err := os.Stat(filepath.Join(root, "settings.jsonm")); !os.IsNotExist(err) {
+	if _, err := os.Stat(filepath.Join(root, "settings.jsonc")); !os.IsNotExist(err) {
 		t.Fatal("failed editor changed settings", err)
 	}
 }

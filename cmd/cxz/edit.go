@@ -33,7 +33,7 @@ func editSettings(root string, open func(string) error) (bool, *filemap.Bundle, 
 		initial = withSchema
 	}
 	// Invalid existing settings still open as-is so the user can repair them.
-	tmp, err := os.CreateTemp(root, ".cxz-edit-*.jsonm")
+	tmp, err := os.CreateTemp(root, ".cxz-edit-*.jsonc")
 	if err != nil {
 		return false, nil, err
 	}

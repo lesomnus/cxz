@@ -31,7 +31,7 @@ func (c Config) Validate() error {
 	return nil
 }
 
-// Snapshot reads only the explicitly selected override, relative to settings.jsonm.
+// Snapshot reads only the explicitly selected override, relative to settings.jsonc.
 func (c Config) Snapshot(root string) (Spec, error) {
 	if err := c.Validate(); err != nil {
 		return Spec{}, err

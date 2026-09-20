@@ -18,7 +18,7 @@ func TestEditSettingsPreservesInvalidAndConcurrentEdits(t *testing.T) {
 		t.Run(kind, func(t *testing.T) {
 			root := t.TempDir()
 			original := []byte("{\"claude_model\":\"old\"}\n")
-			path := filepath.Join(root, "settings.jsonm")
+			path := filepath.Join(root, "settings.jsonc")
 			if err := os.WriteFile(path, original, 0600); err != nil {
 				t.Fatal(err)
 			}
@@ -79,7 +79,7 @@ func TestEditClientSettingsOfflineAndLockConflict(t *testing.T) {
 	if err == nil || changed {
 		t.Fatal("concurrent writer was allowed")
 	}
-	current, err := os.ReadFile(filepath.Join(root, "settings.jsonm"))
+	current, err := os.ReadFile(filepath.Join(root, "settings.jsonc"))
 	if err != nil || string(current) != string(cfg) {
 		t.Fatal("settings overwritten", err)
 	}
@@ -102,7 +102,7 @@ func TestFirstEditCreatesExamplesAndKeepsComments(t *testing.T) {
 		if err != nil || cfg.Connections != nil || cfg.Schema != settings.SchemaReference {
 			t.Fatal("examples became active", cfg, err)
 		}
-		if filepath.Ext(p) != ".jsonm" {
+		if filepath.Ext(p) != ".jsonc" {
 			t.Fatal("wrong editor draft extension", p)
 		}
 		schema, err := os.ReadFile(filepath.Join(filepath.Dir(p), cfg.Schema))
@@ -114,7 +114,7 @@ func TestFirstEditCreatesExamplesAndKeepsComments(t *testing.T) {
 	if err != nil || !changed || bundle != nil {
 		t.Fatal(changed, bundle, err)
 	}
-	path := filepath.Join(root, "settings.jsonm")
+	path := filepath.Join(root, "settings.jsonc")
 	first, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatal(err)

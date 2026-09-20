@@ -29,26 +29,23 @@ type Config struct {
 }
 
 const (
-	Filename       = "settings.jsonm"
+	Filename       = "settings.jsonc"
 	LegacyFilename = "settings.json"
 )
 
 func Path(root string) string { return filepath.Join(root, Filename) }
 
-// Read prefers the current filename, falling back to the legacy file without
-// modifying it. When neither exists, the returned path is the new filename.
+// Read prefers jsonc, then the briefly used jsonm name, then the original json
+// file, without modifying any of them. If none exists, return the current path.
 func Read(root string) ([]byte, string, error) {
-	path := Path(root)
-	b, err := os.ReadFile(path)
-	if !os.IsNotExist(err) {
-		return b, path, err
+	for _, name := range []string{Filename, "settings.jsonm", LegacyFilename} {
+		path := filepath.Join(root, name)
+		b, err := os.ReadFile(path)
+		if !os.IsNotExist(err) {
+			return b, path, err
+		}
 	}
-	legacy := filepath.Join(root, LegacyFilename)
-	b, err = os.ReadFile(legacy)
-	if os.IsNotExist(err) {
-		return nil, path, err
-	}
-	return b, legacy, err
+	return nil, Path(root), os.ErrNotExist
 }
 
 type key struct{}
