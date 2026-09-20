@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/lesomnus/cxz/internal/core"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -246,12 +247,31 @@ func (m *model) selectPanelProject(r panelRow) {
 	m.accountView = false
 }
 
+var projectStyleSequence = regexp.MustCompile(`\x1b\[[0-9;:]*m`)
+
+func projectBackground(line string) string {
+	profile := lipgloss.ColorProfile()
+	if profile.Name() == "Ascii" {
+		return line
+	}
+	background := "\x1b[" + profile.Color("#252525").Sequence(true) + "m"
+	if profile.Name() == "ANSI" {
+		// Preserve a visible gray fill when only the 16-color palette is available.
+		background = "\x1b[100m"
+	}
+	// Child labels end with SGR resets, and some badges set their own background.
+	// Restore the panel background after every generated style change, including
+	// resets before the padded spaces, then reset at the actual panel boundary.
+	line = projectStyleSequence.ReplaceAllStringFunc(line, func(style string) string { return style + background })
+	return background + line + "\x1b[0m"
+}
+
 func (m *model) panelScreen() string {
 	width := projectPanelWidth
 	if !m.panelVisible() {
 		width = m.width
 		if m.terminalWidth > 0 {
-			width = min(maxViewWidth, m.terminalWidth)
+			width = m.terminalWidth
 		}
 	}
 	rows := m.panelRows()
@@ -311,10 +331,9 @@ func (m *model) panelScreen() string {
 	if m.panelVisible() && m.panelFocus {
 		lines[m.height-1] = accent.Render(strings.Repeat("─", max(0, width)))
 	}
-	background := lipgloss.NewStyle().Background(lipgloss.Color("#10202b"))
 	for i := range lines {
 		line := clip(lines[i], width)
-		lines[i] = background.Render(line + strings.Repeat(" ", max(0, width-ansi.StringWidth(line))))
+		lines[i] = projectBackground(line + strings.Repeat(" ", max(0, width-ansi.StringWidth(line))))
 	}
 	return screen(strings.Join(lines, "\n"), width, m.height)
 }

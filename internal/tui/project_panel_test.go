@@ -12,6 +12,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/charmbracelet/x/vt"
 	"github.com/lesomnus/cxz/api"
 )
 
@@ -293,9 +294,49 @@ func TestProjectNavigatorHasBackgroundAndOnlyFocusedSideBottomRule(t *testing.T)
 			if strings.Contains(plain, "─") != (width == 200 && focus) {
 				t.Fatal("incorrect focus rule")
 			}
-			if !strings.Contains(rendered, "48;2;16;32;43") {
+			if !strings.Contains(rendered, "48;2;36;36;36") {
 				t.Fatal("background missing")
 			}
+		}
+	}
+}
+
+func TestNavigatorBackgroundCoversEveryTerminalCell(t *testing.T) {
+	profile := lipgloss.ColorProfile()
+	lipgloss.SetColorProfile(termenv.TrueColor)
+	defer lipgloss.SetColorProfile(profile)
+	for _, width := range []int{80, 150, 200} {
+		for _, focused := range []bool{false, true} {
+			m := panelModel()
+			m.Update(tea.WindowSizeMsg{Width: width, Height: 30})
+			m.panelFocus = focused
+			if width < 171 {
+				m.projectView = true
+			}
+			terminal := vt.NewEmulator(width, m.height)
+			terminal.WriteString(strings.ReplaceAll(m.View(), "\n", "\r\n"))
+			panelWidth := width
+			if width >= 171 {
+				panelWidth = projectPanelWidth
+			}
+			for y := 0; y < m.height; y++ {
+				for x := 0; x < panelWidth; x++ {
+					cell := terminal.CellAt(x, y)
+					if cell == nil || cell.Style.Bg == nil {
+						t.Fatalf("unpainted cell %d,%d at width %d focus %v", x, y, width, focused)
+					}
+					r, g, b, _ := cell.Style.Bg.RGBA()
+					if r != 0x2424 || g != 0x2424 || b != 0x2424 {
+						t.Fatalf("wrong background at %d,%d: %x %x %x", x, y, r, g, b)
+					}
+				}
+			}
+			if width >= 171 {
+				if cell := terminal.CellAt(projectPanelWidth, 0); cell != nil && cell.Style.Bg != nil {
+					t.Fatal("panel background leaked into gap")
+				}
+			}
+			terminal.Close()
 		}
 	}
 }
