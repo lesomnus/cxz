@@ -73,7 +73,7 @@ func TestPreviewMouseAndKeyboardSharePayloadAndBorders(t *testing.T) {
 	for _, width := range []int{30, 80, 180} {
 		text := ansi.Strip(m.previewRows(width, 8))
 		rows := strings.Split(text, "\n")
-		if len(rows) != 8 || !strings.HasPrefix(rows[0], "╭● ") || !strings.HasPrefix(rows[7], "╰") {
+		if len(rows) != 8 || strings.TrimSpace(rows[0]) != "" || !strings.Contains(rows[1], "Write") || !strings.Contains(rows[7], "─") {
 			t.Fatal(text)
 		}
 		for _, row := range rows {

@@ -155,9 +155,9 @@ func (m *model) panelKey(k tea.KeyMsg) tea.Cmd {
 	case "end":
 		m.panelIndex = max(0, len(rows)-1)
 	case "pgup":
-		m.panelIndex = max(0, m.panelIndex-max(1, m.height-9))
+		m.panelIndex = max(0, m.panelIndex-max(1, m.height-10))
 	case "pgdown":
-		m.panelIndex = min(max(0, len(rows)-1), m.panelIndex+max(1, m.height-9))
+		m.panelIndex = min(max(0, len(rows)-1), m.panelIndex+max(1, m.height-10))
 	case "left":
 		for m.panelIndex > 0 && rows[m.panelIndex].session != nil {
 			m.panelIndex--
@@ -247,14 +247,18 @@ func (m *model) selectPanelProject(r panelRow) {
 	m.accountView = false
 }
 
-var projectStyleSequence = regexp.MustCompile(`\x1b\[[0-9;:]*m`)
+var panelStyleSequence = regexp.MustCompile(`\x1b\[[0-9;:]*m`)
 
-func projectBackground(line string) string {
+func panelBackground(line string) string {
 	profile := lipgloss.ColorProfile()
 	if profile.Name() == "Ascii" {
 		return line
 	}
-	background := "\x1b[" + profile.Color("#252525").Sequence(true) + "m"
+	// Neutral dark gray #303030. Emit exact RGB instead of rounded conversion.
+	background := "\x1b[48;2;48;48;48m"
+	if profile.Name() == "ANSI256" {
+		background = "\x1b[48;5;236m"
+	}
 	if profile.Name() == "ANSI" {
 		// Preserve a visible gray fill when only the 16-color palette is available.
 		background = "\x1b[100m"
@@ -262,7 +266,7 @@ func projectBackground(line string) string {
 	// Child labels end with SGR resets, and some badges set their own background.
 	// Restore the panel background after every generated style change, including
 	// resets before the padded spaces, then reset at the actual panel boundary.
-	line = projectStyleSequence.ReplaceAllStringFunc(line, func(style string) string { return style + background })
+	line = panelStyleSequence.ReplaceAllStringFunc(line, func(style string) string { return style + background })
 	return background + line + "\x1b[0m"
 }
 
@@ -275,9 +279,9 @@ func (m *model) panelScreen() string {
 		}
 	}
 	rows := m.panelRows()
-	capacity := max(1, m.height-9)
+	capacity := max(1, m.height-10)
 	start := max(0, min(m.panelIndex-capacity+3, len(rows)-capacity))
-	lines := []string{accent.Bold(true).Render("Projects"), muted.Render("↑/↓ select · Enter open"), ""}
+	lines := []string{"", accent.Bold(true).Render("Projects"), muted.Render("↑/↓ select · Enter open"), ""}
 	if len(rows) == 0 {
 		lines = append(lines, "No projects")
 	}
@@ -328,12 +332,12 @@ func (m *model) panelScreen() string {
 	for len(lines) < m.height {
 		lines = append(lines, "")
 	}
-	if m.panelVisible() && m.panelFocus {
-		lines[m.height-1] = accent.Render(strings.Repeat("─", max(0, width)))
-	}
 	for i := range lines {
-		line := clip(lines[i], width)
-		lines[i] = projectBackground(line + strings.Repeat(" ", max(0, width-ansi.StringWidth(line))))
+		line := clip(lines[i], max(1, width-2))
+		lines[i] = panelBackground(" " + line + strings.Repeat(" ", max(0, width-2-ansi.StringWidth(line))) + " ")
+	}
+	if m.panelVisible() && m.panelFocus {
+		lines[m.height-1] = panelBackground(accent.Render(strings.Repeat("─", max(0, width))))
 	}
 	return screen(strings.Join(lines, "\n"), width, m.height)
 }
