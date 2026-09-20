@@ -104,7 +104,23 @@ func TestLifecycle(t *testing.T) {
 			t.Fatalf("file mapping CLI: %v %s", err, out)
 		}
 	}
-	filesCommand("add", "--agent", "claude", source, "${AGENT_CONFIG_DIR}/CLAUDE.md")
+	editor := filepath.Join(root, "editor")
+	if err := os.WriteFile(editor, []byte("#!/bin/sh\ncat \"$CXZ_EDIT_FIXTURE\" > \"$1\"\n"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	editedConfig, err := json.Marshal(map[string]any{"files": []map[string]string{{"src": source, "dst": "${AGENT_CONFIG_DIR}/CLAUDE.md", "agent": "claude"}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	fixture := filepath.Join(root, "edited-settings.json")
+	if err = os.WriteFile(fixture, editedConfig, 0600); err != nil {
+		t.Fatal(err)
+	}
+	editCmd := exec.CommandContext(ctx, bin, "--state", state, "edit")
+	editCmd.Env = append(os.Environ(), "VISUAL="+editor, "CXZ_EDIT_FIXTURE="+fixture)
+	if out, err := editCmd.CombinedOutput(); err != nil {
+		t.Fatalf("edit and sync: %v %s", err, out)
+	}
 	checkInstructions := func(key, want string) {
 		t.Helper()
 		target := filepath.Join(accounts.Config(accounts.SessionRoot(state, key), "test-claude"), "CLAUDE.md")

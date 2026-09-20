@@ -96,27 +96,35 @@ func fileMappingsCommand() *xli.Command {
 			if err := settings.Save(root, cfg); err != nil {
 				return err
 			}
-			data, err := json.Marshal(bundle)
+			out, err := publishFileMappings(ctx, root, bundle)
 			if err != nil {
 				return err
-			}
-			ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
-			defer cancel()
-			conn, err := server.Dial(root)
-			if err != nil {
-				return fmt.Errorf("mapping saved locally; publish with cxz config files sync after connecting to the manager: %w", err)
-			}
-			defer conn.Close()
-			out, err := resourceclient.New(conn).FileMappings(ctx, &api.FileMappingsInput{Bundle: data})
-			if status.Code(err) == codes.Unimplemented {
-				return fmt.Errorf("mapping saved locally; update cxz on the host, manager, and project runtimes, then run cxz config files sync")
-			}
-			if err != nil {
-				return fmt.Errorf("mapping saved locally; publishing failed (retry cxz config files sync): %w", err)
 			}
 			return writeOutput(c, out)
 		})
 		group.Commands = append(group.Commands, c)
 	}
 	return group
+}
+
+func publishFileMappings(ctx context.Context, root string, bundle filemap.Bundle) (*api.Receipt, error) {
+	data, err := json.Marshal(bundle)
+	if err != nil {
+		return nil, err
+	}
+	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
+	defer cancel()
+	conn, err := server.Dial(root)
+	if err != nil {
+		return nil, fmt.Errorf("mapping saved locally; publish with cxz config files sync after connecting to the manager: %w", err)
+	}
+	defer conn.Close()
+	out, err := resourceclient.New(conn).FileMappings(ctx, &api.FileMappingsInput{Bundle: data})
+	if status.Code(err) == codes.Unimplemented {
+		return nil, fmt.Errorf("mapping saved locally; update cxz on the host, manager, and project runtimes, then run cxz config files sync")
+	}
+	if err != nil {
+		return nil, fmt.Errorf("mapping saved locally; publishing failed (retry cxz config files sync): %w", err)
+	}
+	return out, nil
 }
