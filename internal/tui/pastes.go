@@ -81,7 +81,7 @@ func (m *model) chipKey(k tea.KeyMsg) (bool, tea.Cmd) {
 		return false, nil
 	}
 	if sel != nil {
-		if p := m.pastes[sel.token]; p != nil && p.secret && (key == "t" || key == "f" || key == "enter" || key == "ctrl+p") {
+		if p := m.pastes[sel.token]; p != nil && p.secret && (key == "t" || key == "f" || key == "enter") {
 			m.notice = "Secret chip · d deletes · preview and attachment disabled"
 			return true, nil
 		}
@@ -115,7 +115,7 @@ func (m *model) chipKey(k tea.KeyMsg) (bool, tea.Cmd) {
 			}
 			m.notice = d.message
 			return true, cmd
-		case "enter", "ctrl+p":
+		case "enter":
 			cmd := m.openPastes()
 			if d := m.pasteDialog; d != nil {
 				for i, token := range d.tokens {

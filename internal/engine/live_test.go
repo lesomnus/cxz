@@ -1,6 +1,8 @@
 package engine
 
 import (
+	"archive/tar"
+	"bytes"
 	"context"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/dockerx"
@@ -46,6 +48,35 @@ func TestLiveManagedEngine(t *testing.T) {
 	}
 	if _, err := dockerx.Run(ctx, "exec", e.Name(), "docker", "volume", "create", "cxz-test-cache"); err != nil {
 		t.Fatal(err)
+	}
+	// Build an isolated scratch image to populate the disposable engine's cache.
+	var archive bytes.Buffer
+	tw := tar.NewWriter(&archive)
+	for name, body := range map[string]string{"Dockerfile": "FROM scratch\nCOPY fixture /fixture\n", "fixture": "cxz test"} {
+		if err := tw.WriteHeader(&tar.Header{Name: name, Mode: 0600, Size: int64(len(body))}); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := tw.Write([]byte(body)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := tw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := dockerx.Input(ctx, &archive, "exec", "-i", e.Name(), "docker", "build", "-t", "cxz-cache-test", "-"); err != nil {
+		t.Fatal(err)
+	}
+	info, err := e.Info(ctx)
+	if err != nil || info.State != "running" || info.BuildCache == "" {
+		t.Fatal(info, err)
+	}
+	if _, err := e.PruneBuildCache(ctx); err != nil {
+		t.Fatal(err)
+	}
+	for _, resource := range []struct{ kind, name string }{{"image", "cxz-cache-test"}, {"volume", "cxz-test-cache"}} {
+		if _, err := dockerx.Run(ctx, "exec", e.Name(), "docker", resource.kind, "inspect", resource.name); err != nil {
+			t.Fatal("prune removed retained resource", err)
+		}
 	}
 	if err := e.Down(ctx); err != nil {
 		t.Fatal(err)

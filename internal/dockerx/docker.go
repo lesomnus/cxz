@@ -42,7 +42,11 @@ type Container struct {
 		Image  string
 		User   string
 	}
-	State           struct{ Running bool }
+	State struct {
+		Running bool
+		Status  string
+		Health  struct{ Status string }
+	}
 	NetworkSettings struct {
 		Networks map[string]struct{ IPAddress string }
 	}

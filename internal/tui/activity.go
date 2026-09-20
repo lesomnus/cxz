@@ -16,7 +16,7 @@ func (m *model) reportActivity() tea.Cmd {
 		return nil
 	}
 	m.lastActivityReport = time.Now()
-	busy := m.redactDialog != nil || m.redactSending || m.input.Value() != "" || m.busy || m.workflow != nil || m.creating || m.renaming || m.restartConfirm != nil || m.pasteDialog != nil || time.Since(m.lastUIInput) < 10*time.Second
+	busy := m.settingsPage != nil || m.redactDialog != nil || m.redactSending || m.input.Value() != "" || m.busy || m.workflow != nil || m.creating || m.renaming || m.restartConfirm != nil || m.pasteDialog != nil || time.Since(m.lastUIInput) < 10*time.Second
 	r := &api.ActivityInput{SessionId: s.Id, RunId: s.RunId, ClientId: m.activityID, Busy: busy}
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(m.ctx, 3*time.Second)

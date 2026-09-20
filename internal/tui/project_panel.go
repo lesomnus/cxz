@@ -328,7 +328,7 @@ func (m *model) panelScreen() string {
 	if m.panelError != "" {
 		status = m.panelError
 	}
-	lines = append(lines, muted.Render("n new · a accounts"), muted.Render("s stop · d delete"), muted.Render("Esc/Ctrl+Q return · Ctrl+C detach"), muted.Render("Agents keep running"), warning.Render(pickerLabel(status)))
+	lines = append(lines, muted.Render("n new · a accounts"), muted.Render("s stop · d delete"), muted.Render("Ctrl+P settings"), muted.Render("Esc/Ctrl+Q return · Ctrl+C detach"), muted.Render("Agents keep running"), warning.Render(pickerLabel(status)))
 	for len(lines) < m.height {
 		lines = append(lines, "")
 	}
