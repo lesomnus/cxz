@@ -30,6 +30,7 @@ type Project struct {
 }
 type Runtime struct{ ProjectID, Workspace, Token, Claude, Codex string }
 type Manager struct {
+	filesMu                                                   sync.Mutex
 	opsMu                                                     sync.Mutex
 	writeMu                                                   sync.Mutex
 	ops                                                       map[string]*sync.Mutex
@@ -464,6 +465,9 @@ func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (result *api.
 	}
 	if e != nil {
 		return nil, fmt.Errorf("project runtime not ready: %w", e)
+	}
+	if e = m.syncFileMappings(ctx, client); e != nil {
+		return nil, e
 	}
 	if r.PrepareOnly {
 		p.Job.State, p.Job.Step = "complete", "ready"

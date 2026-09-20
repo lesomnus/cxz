@@ -225,3 +225,11 @@ func (c *Client) Logs(ctx context.Context, r *api.LogsRequest, opts ...grpc.Call
 	}
 	return &api.LogsReply{Text: v.GetText()}, nil
 }
+
+func (c *Client) FileMappings(ctx context.Context, r *api.FileMappingsInput, opts ...grpc.CallOption) (*api.Receipt, error) {
+	out, err := c.projects.FileMappings(ctx, resource.FileMappingsRequest_builder{Bundle: r.Bundle}.Build(), opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &api.Receipt{Status: out.GetStatus()}, nil
+}

@@ -26,6 +26,7 @@ const (
 	ProjectService_Erase_FullMethodName          = "/cxz.ProjectService/Erase"
 	ProjectService_List_FullMethodName           = "/cxz.ProjectService/List"
 	ProjectService_Watch_FullMethodName          = "/cxz.ProjectService/Watch"
+	ProjectService_FileMappings_FullMethodName   = "/cxz.ProjectService/FileMappings"
 	ProjectService_Up_FullMethodName             = "/cxz.ProjectService/Up"
 	ProjectService_Down_FullMethodName           = "/cxz.ProjectService/Down"
 	ProjectService_Recreate_FullMethodName       = "/cxz.ProjectService/Recreate"
@@ -60,6 +61,7 @@ type ProjectServiceClient interface {
 	// once in that first message and once as a change that happened while it was
 	// being read -- and that is harmless for the same reason.
 	Watch(ctx context.Context, in *ProjectWatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ProjectWatchResponse], error)
+	FileMappings(ctx context.Context, in *FileMappingsRequest, opts ...grpc.CallOption) (*FileMappingsReply, error)
 	// Provision/start a registered workspace. This never creates a conversation.
 	Up(ctx context.Context, in *ProjectUpRequest, opts ...grpc.CallOption) (*Project, error)
 	// Remove owned containers, retaining the resource, workspace and volumes.
@@ -157,6 +159,16 @@ func (c *projectServiceClient) Watch(ctx context.Context, in *ProjectWatchReques
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type ProjectService_WatchClient = grpc.ServerStreamingClient[ProjectWatchResponse]
 
+func (c *projectServiceClient) FileMappings(ctx context.Context, in *FileMappingsRequest, opts ...grpc.CallOption) (*FileMappingsReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(FileMappingsReply)
+	err := c.cc.Invoke(ctx, ProjectService_FileMappings_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *projectServiceClient) Up(ctx context.Context, in *ProjectUpRequest, opts ...grpc.CallOption) (*Project, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Project)
@@ -225,6 +237,7 @@ type ProjectServiceServer interface {
 	// once in that first message and once as a change that happened while it was
 	// being read -- and that is harmless for the same reason.
 	Watch(*ProjectWatchRequest, grpc.ServerStreamingServer[ProjectWatchResponse]) error
+	FileMappings(context.Context, *FileMappingsRequest) (*FileMappingsReply, error)
 	// Provision/start a registered workspace. This never creates a conversation.
 	Up(context.Context, *ProjectUpRequest) (*Project, error)
 	// Remove owned containers, retaining the resource, workspace and volumes.
@@ -263,6 +276,9 @@ func (UnimplementedProjectServiceServer) List(context.Context, *ProjectListReque
 }
 func (UnimplementedProjectServiceServer) Watch(*ProjectWatchRequest, grpc.ServerStreamingServer[ProjectWatchResponse]) error {
 	return status.Error(codes.Unimplemented, "method Watch not implemented")
+}
+func (UnimplementedProjectServiceServer) FileMappings(context.Context, *FileMappingsRequest) (*FileMappingsReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method FileMappings not implemented")
 }
 func (UnimplementedProjectServiceServer) Up(context.Context, *ProjectUpRequest) (*Project, error) {
 	return nil, status.Error(codes.Unimplemented, "method Up not implemented")
@@ -416,6 +432,24 @@ func _ProjectService_Watch_Handler(srv interface{}, stream grpc.ServerStream) er
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type ProjectService_WatchServer = grpc.ServerStreamingServer[ProjectWatchResponse]
 
+func _ProjectService_FileMappings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FileMappingsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).FileMappings(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_FileMappings_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).FileMappings(ctx, req.(*FileMappingsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ProjectService_Up_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ProjectUpRequest)
 	if err := dec(in); err != nil {
@@ -518,6 +552,10 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "List",
 			Handler:    _ProjectService_List_Handler,
+		},
+		{
+			MethodName: "FileMappings",
+			Handler:    _ProjectService_FileMappings_Handler,
 		},
 		{
 			MethodName: "Up",

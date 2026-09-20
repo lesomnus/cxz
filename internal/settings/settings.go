@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/filemap"
 	"io"
 	"os"
 	"path/filepath"
@@ -15,9 +16,10 @@ import (
 )
 
 type Config struct {
-	Agent       string `json:"agent,omitempty"`
-	ClaudeModel string `json:"claude_model,omitempty"`
-	CodexModel  string `json:"codex_model,omitempty"`
+	Files       []filemap.Mapping `json:"files,omitempty"`
+	Agent       string            `json:"agent,omitempty"`
+	ClaudeModel string            `json:"claude_model,omitempty"`
+	CodexModel  string            `json:"codex_model,omitempty"`
 }
 type key struct{}
 
@@ -36,6 +38,14 @@ func ValidateModel(v string) error {
 	return nil
 }
 func (c Config) Validate() error {
+	for _, f := range c.Files {
+		if f.Src == "" {
+			return fmt.Errorf("file source required")
+		}
+		if err := filemap.ValidateMappingDestination(f.Dst, f.Agent); err != nil {
+			return err
+		}
+	}
 	if c.Agent != "" && c.Agent != "claude" && c.Agent != "codex" {
 		return fmt.Errorf("agent must be claude or codex")
 	}

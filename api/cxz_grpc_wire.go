@@ -19,30 +19,32 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Sessions_Create_FullMethodName      = "/cxz.runtime.Sessions/Create"
-	Sessions_List_FullMethodName        = "/cxz.runtime.Sessions/List"
-	Sessions_Get_FullMethodName         = "/cxz.runtime.Sessions/Get"
-	Sessions_Logs_FullMethodName        = "/cxz.runtime.Sessions/Logs"
-	Sessions_Permission_FullMethodName  = "/cxz.runtime.Sessions/Permission"
-	Sessions_Send_FullMethodName        = "/cxz.runtime.Sessions/Send"
-	Sessions_Attach_FullMethodName      = "/cxz.runtime.Sessions/Attach"
-	Sessions_Activity_FullMethodName    = "/cxz.runtime.Sessions/Activity"
-	Sessions_UpdateAgent_FullMethodName = "/cxz.runtime.Sessions/UpdateAgent"
-	Sessions_Reply_FullMethodName       = "/cxz.runtime.Sessions/Reply"
-	Sessions_Interrupt_FullMethodName   = "/cxz.runtime.Sessions/Interrupt"
-	Sessions_Resume_FullMethodName      = "/cxz.runtime.Sessions/Resume"
-	Sessions_Stop_FullMethodName        = "/cxz.runtime.Sessions/Stop"
-	Sessions_Watch_FullMethodName       = "/cxz.runtime.Sessions/Watch"
-	Sessions_History_FullMethodName     = "/cxz.runtime.Sessions/History"
-	Sessions_Open_FullMethodName        = "/cxz.runtime.Sessions/Open"
-	Sessions_Projects_FullMethodName    = "/cxz.runtime.Sessions/Projects"
-	Sessions_Down_FullMethodName        = "/cxz.runtime.Sessions/Down"
+	Sessions_FileMappings_FullMethodName = "/cxz.runtime.Sessions/FileMappings"
+	Sessions_Create_FullMethodName       = "/cxz.runtime.Sessions/Create"
+	Sessions_List_FullMethodName         = "/cxz.runtime.Sessions/List"
+	Sessions_Get_FullMethodName          = "/cxz.runtime.Sessions/Get"
+	Sessions_Logs_FullMethodName         = "/cxz.runtime.Sessions/Logs"
+	Sessions_Permission_FullMethodName   = "/cxz.runtime.Sessions/Permission"
+	Sessions_Send_FullMethodName         = "/cxz.runtime.Sessions/Send"
+	Sessions_Attach_FullMethodName       = "/cxz.runtime.Sessions/Attach"
+	Sessions_Activity_FullMethodName     = "/cxz.runtime.Sessions/Activity"
+	Sessions_UpdateAgent_FullMethodName  = "/cxz.runtime.Sessions/UpdateAgent"
+	Sessions_Reply_FullMethodName        = "/cxz.runtime.Sessions/Reply"
+	Sessions_Interrupt_FullMethodName    = "/cxz.runtime.Sessions/Interrupt"
+	Sessions_Resume_FullMethodName       = "/cxz.runtime.Sessions/Resume"
+	Sessions_Stop_FullMethodName         = "/cxz.runtime.Sessions/Stop"
+	Sessions_Watch_FullMethodName        = "/cxz.runtime.Sessions/Watch"
+	Sessions_History_FullMethodName      = "/cxz.runtime.Sessions/History"
+	Sessions_Open_FullMethodName         = "/cxz.runtime.Sessions/Open"
+	Sessions_Projects_FullMethodName     = "/cxz.runtime.Sessions/Projects"
+	Sessions_Down_FullMethodName         = "/cxz.runtime.Sessions/Down"
 )
 
 // SessionsClient is the client API for Sessions service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SessionsClient interface {
+	FileMappings(ctx context.Context, in *FileMappingsInput, opts ...grpc.CallOption) (*Receipt, error)
 	Create(ctx context.Context, in *CreateRequest, opts ...grpc.CallOption) (*Session, error)
 	List(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*SessionList, error)
 	Get(ctx context.Context, in *SessionRef, opts ...grpc.CallOption) (*Session, error)
@@ -69,6 +71,16 @@ type sessionsClient struct {
 
 func NewSessionsClient(cc grpc.ClientConnInterface) SessionsClient {
 	return &sessionsClient{cc}
+}
+
+func (c *sessionsClient) FileMappings(ctx context.Context, in *FileMappingsInput, opts ...grpc.CallOption) (*Receipt, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Receipt)
+	err := c.cc.Invoke(ctx, Sessions_FileMappings_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *sessionsClient) Create(ctx context.Context, in *CreateRequest, opts ...grpc.CallOption) (*Session, error) {
@@ -264,6 +276,7 @@ func (c *sessionsClient) Down(ctx context.Context, in *ProjectRequest, opts ...g
 // All implementations must embed UnimplementedSessionsServer
 // for forward compatibility.
 type SessionsServer interface {
+	FileMappings(context.Context, *FileMappingsInput) (*Receipt, error)
 	Create(context.Context, *CreateRequest) (*Session, error)
 	List(context.Context, *Empty) (*SessionList, error)
 	Get(context.Context, *SessionRef) (*Session, error)
@@ -292,6 +305,9 @@ type SessionsServer interface {
 // pointer dereference when methods are called.
 type UnimplementedSessionsServer struct{}
 
+func (UnimplementedSessionsServer) FileMappings(context.Context, *FileMappingsInput) (*Receipt, error) {
+	return nil, status.Error(codes.Unimplemented, "method FileMappings not implemented")
+}
 func (UnimplementedSessionsServer) Create(context.Context, *CreateRequest) (*Session, error) {
 	return nil, status.Error(codes.Unimplemented, "method Create not implemented")
 }
@@ -365,6 +381,24 @@ func RegisterSessionsServer(s grpc.ServiceRegistrar, srv SessionsServer) {
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&Sessions_ServiceDesc, srv)
+}
+
+func _Sessions_FileMappings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FileMappingsInput)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).FileMappings(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_FileMappings_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).FileMappings(ctx, req.(*FileMappingsInput))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _Sessions_Create_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -691,6 +725,10 @@ var Sessions_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "cxz.runtime.Sessions",
 	HandlerType: (*SessionsServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "FileMappings",
+			Handler:    _Sessions_FileMappings_Handler,
+		},
 		{
 			MethodName: "Create",
 			Handler:    _Sessions_Create_Handler,

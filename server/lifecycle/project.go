@@ -208,3 +208,14 @@ func (s ProjectServer) InspectForeign(ctx context.Context, _ *resource.InspectFo
 	}
 	return resource.InspectForeignResponse_builder{Items: items}.Build(), nil
 }
+
+func (s ProjectServer) FileMappings(ctx context.Context, r *resource.FileMappingsRequest) (*resource.FileMappingsReply, error) {
+	if err := s.effect(); err != nil {
+		return nil, err
+	}
+	out, err := s.shared.runtime.FileMappings(ctx, &api.FileMappingsInput{Bundle: r.GetBundle()})
+	if err != nil {
+		return nil, err
+	}
+	return resource.FileMappingsReply_builder{Status: &out.Status}.Build(), nil
+}

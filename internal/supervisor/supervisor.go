@@ -23,6 +23,7 @@ import (
 
 	"github.com/lesomnus/cxz/internal/agentview"
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/filemap"
 	"github.com/lesomnus/cxz/internal/journal"
 )
 
@@ -187,6 +188,10 @@ func Run(ctx context.Context, root, id string) error {
 	}
 	auth, err := accounts.LaunchSession(root, session, os.Environ())
 	if err != nil {
+		return err
+	}
+	home := filepath.Join(accounts.Dir(accounts.SessionRoot(root, session.CreateID), session.Account), "home")
+	if err := filemap.Apply(root, session.Kind, auth.ConfigDir, home, session.Workspace); err != nil {
 		return err
 	}
 	args = append(args, auth.Args...)

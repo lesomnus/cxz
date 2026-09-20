@@ -58,5 +58,6 @@ func settingsCommand() *xli.Command {
 			return writeOutput(c, cfg)
 		})})
 	}
+	c.Commands = append(c.Commands, fileMappingsCommand())
 	return c
 }
