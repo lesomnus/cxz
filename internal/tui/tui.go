@@ -26,6 +26,12 @@ import (
 )
 
 type model struct {
+	recordingError          string
+	recordingTask           *debugSave
+	debugRecorder           *debugRecorder
+	recordingPending        *debugArchive
+	recordingSaving         bool
+	lastRecording           string
 	toolSelector            *toolSelector
 	noticeLogs              []noticeLog
 	lastLoggedNotice        string
@@ -252,10 +258,16 @@ func RunProject(ctx context.Context, c api.SessionsClient, project *api.Project,
 	if len(login) > 0 {
 		m.loginAccount = login[0]
 	}
+	m.debugRecorder = &debugRecorder{}
 	m.cursorOutput = &cursorWriter{out: os.Stdout, keyboard: extendedKeyboard}
-	p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithContext(ctx), tea.WithMouseCellMotion(), tea.WithOutput(m.cursorOutput), tea.WithInput(keyboardInput(os.Stdin)))
+	p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithContext(ctx), tea.WithMouseCellMotion(), tea.WithOutput(m.cursorOutput), tea.WithInput(recordedKeyboardInput(os.Stdin, m.debugRecorder)))
 	m.program = p
 	_, e := p.Run()
+	if path, err := m.finishRecording(); err != nil {
+		fmt.Fprintln(os.Stderr, "Could not save debug recording:", err)
+	} else if path != "" {
+		fmt.Fprintln(os.Stderr, "Debug recording saved:", path)
+	}
 	if m.redactDialog != nil {
 		clear(m.redactDialog.body)
 	}
@@ -728,6 +740,14 @@ func (m *model) action(kind, text string) tea.Cmd {
 	}
 }
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	defer m.debugUpdate(msg)()
+	if r, ok := msg.(recordingSaved); ok {
+		m.receiveRecording(r)
+		return m, nil
+	}
+	if k, ok := msg.(tea.KeyMsg); ok && k.Type == tea.KeyF9 && !k.Paste {
+		return m, m.toggleRecording()
+	}
 	defer m.rememberNotice()
 	if v, ok := msg.(memoryTargets); ok {
 		m.receiveMemoryTargets(v)
@@ -1557,6 +1577,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if localName == "/view" {
 				return m, m.viewCommand(text)
 			}
+			if localName == "/record" {
+				return m, m.recordCommand(text)
+			}
 			if localName == "/memory" {
 				return m, m.openMemory(m.current())
 			}
@@ -1641,6 +1664,11 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 func (m *model) View() (out string) {
+	start := time.Now()
+	defer func() {
+		out = m.recordingBadge(out)
+		m.debugRecorder.Add(debugEvent{Kind: "render", Duration: time.Since(start).Microseconds(), Count: len(out)})
+	}()
 	if m.memoryPage != nil {
 		return m.memoryScreen()
 	}

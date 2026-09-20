@@ -54,6 +54,7 @@ func withClient(fn clientFunc) xli.Handler {
 			return err
 		}
 		ctx = settings.With(ctx, cfg)
+		ctx = tui.WithRecordingDirectory(ctx, filepath.Join(root, "recordings"))
 		if _, err := transport.Load(root); os.IsNotExist(err) {
 			if os.Getenv("CXZ_PROJECT_ID") == "" {
 				if _, err := os.Stat(server.Socket(root)); os.IsNotExist(err) {

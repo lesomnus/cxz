@@ -20,6 +20,7 @@ const extendedKeyboard = true
 // CSI messages borrow a reused buffer and cannot safely be inspected in Update.
 // Embedding the file preserves raw mode, cancellation and terminal detection.
 type keyboardReader struct {
+	recorder *debugRecorder
 	*os.File
 	paste          bool
 	kittyConfirmed bool
@@ -27,6 +28,9 @@ type keyboardReader struct {
 }
 
 func keyboardInput(file *os.File) io.Reader { return &keyboardReader{File: file} }
+func recordedKeyboardInput(file *os.File, r *debugRecorder) io.Reader {
+	return &keyboardReader{File: file, recorder: r}
+}
 
 var keyboardSequences = [][]byte{
 	[]byte("\x1b[13;5u"), []byte("\x1b[27;5;13~"),
@@ -64,6 +68,8 @@ func (r *keyboardReader) translate(data []byte, final bool) (out, pending []byte
 			_, size = utf8.DecodeRune(data)
 		}
 		seq := data[:size]
+		before := len(out)
+		wasPaste := r.paste
 		if translated, ok := r.kittyKey(seq); !r.paste && ok {
 			out = append(out, translated...)
 		} else if !r.paste && (bytes.Equal(seq, keyboardSequences[0]) || bytes.Equal(seq, keyboardSequences[1])) {
@@ -76,6 +82,10 @@ func (r *keyboardReader) translate(data []byte, final bool) (out, pending []byte
 		}
 		if bytes.Equal(seq, keyboardSequences[3]) {
 			r.paste = false
+		}
+		r.recorder.navigation(seq, out[before:], wasPaste)
+		if !wasPaste && !debugNavigation.Match(seq) && bytes.HasPrefix(seq, []byte("\x1b[")) {
+			r.recorder.Add(debugEvent{Kind: "terminal_protocol", Type: "csi", Count: len(seq)})
 		}
 		data = data[size:]
 	}
@@ -116,6 +126,9 @@ func (r *keyboardReader) kittyKey(seq []byte) ([]byte, bool) {
 	if key >= 57399 && key <= 57416 {
 		key = int("0123456789./*-+\r=,"[key-57399])
 	}
+	if key >= 57350 && key <= 57357 {
+		key += 57417 - 57350
+	}
 	if key >= 57417 && key <= 57426 && mod&^7 == 0 {
 		keys := []string{"1D", "1C", "1A", "1B", "5~", "6~", "1H", "1F", "2~", "3~"}
 		legacy := keys[key-57417]
@@ -126,6 +139,9 @@ func (r *keyboardReader) kittyKey(seq []byte) ([]byte, bool) {
 			return []byte("\x1b[" + legacy), true
 		}
 		return []byte("\x1b[" + legacy[:1] + ";" + strconv.Itoa(mod+1) + legacy[1:]), true
+	}
+	if key == 57372 && mod == 0 {
+		return []byte("\x1b[20~"), true
 	}
 	if key == 13 && mod == 4 {
 		return []byte{'\x13'}, true
@@ -213,6 +229,7 @@ func (r *keyboardReader) Read(p []byte) (int, error) {
 		out = append(out, extra...)
 	}
 	if len(pending) > 0 {
+		r.recorder.Add(debugEvent{Kind: "terminal_fragment", Type: "timeout_flush", Count: len(pending)})
 		extra, _ := r.translate(pending, true)
 		out = append(out, extra...)
 	}

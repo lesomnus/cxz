@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
@@ -47,6 +48,8 @@ var (
 
 func newComposer() textarea.Model {
 	input := textarea.New()
+	input.KeyMap.WordBackward = key.NewBinding(key.WithKeys("ctrl+left", "alt+left", "alt+b"))
+	input.KeyMap.WordForward = key.NewBinding(key.WithKeys("ctrl+right", "alt+right", "alt+f"))
 	input.Cursor.Style = inputCursorStyle
 	input.Placeholder = "Ask a question… (Ctrl+S to send · /help)"
 	input.Prompt = "› "
