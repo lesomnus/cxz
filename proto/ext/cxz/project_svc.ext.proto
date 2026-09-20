@@ -4,6 +4,7 @@ import "cxz/project.proto";
 option go_package = "github.com/lesomnus/cxz/resource";
 
 service ProjectService {
+ rpc Docker(DockerRequest) returns (DockerReply);
   rpc FileMappings(FileMappingsRequest) returns (FileMappingsReply);
   // Provision/start a registered workspace. This never creates a conversation.
   rpc Up(ProjectUpRequest) returns (Project);
@@ -37,3 +38,7 @@ message ForeignContainer { string container_id = 1; string workspace = 2; string
 
 message FileMappingsRequest { bytes bundle = 1; }
 message FileMappingsReply { string status = 1; }
+
+message DockerRequest { string action = 1; bytes spec = 2; }
+
+message DockerReply { string status = 1; }

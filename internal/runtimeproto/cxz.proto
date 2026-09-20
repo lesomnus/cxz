@@ -3,6 +3,7 @@ package cxz.runtime;
 option go_package = "github.com/lesomnus/cxz/api;api";
 
 service Sessions {
+ rpc Docker(DockerInput) returns (Receipt);
   rpc FileMappings(FileMappingsInput) returns (Receipt);
   rpc Create(CreateRequest) returns (Session);
   rpc List(Empty) returns (SessionList);
@@ -86,3 +87,5 @@ message LogsRequest { string session_id = 1; bool project = 2; }
 message LogsReply { string text = 1; }
 
 message FileMappingsInput { bytes bundle = 1; }
+
+message DockerInput { string action = 1; bytes spec = 2; }
