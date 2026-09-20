@@ -15,7 +15,11 @@ import (
 )
 
 func highlightCode(source, language string) string {
-	source = safeText(source)
+	// Read output includes tabs between line numbers and file contents. Width
+	// measurement ignores tabs, while the terminal (or a parent style) expands
+	// them, pushing a padded border onto the next row. Expand before wrapping
+	// and measuring, using the same four-space display width as our UI styles.
+	source = strings.ReplaceAll(safeText(source), "\t", "    ")
 	if lipgloss.ColorProfile().Name() == "Ascii" {
 		return source
 	}
