@@ -1,4 +1,6 @@
 {
+  "$schema": "./settings.schema.json",
+
   // cxz settings: JSON with // comments, /* block comments */, and trailing commas.
   // Examples below are disabled. Uncomment only the settings you want to use.
   // Changes to connections take effect the next time you open the TUI.

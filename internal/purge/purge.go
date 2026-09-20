@@ -40,7 +40,7 @@ type Plan struct {
 }
 
 var localNames = map[string]bool{
-	"file-mappings.json": true, "installation.json": true, "settings.json": true, "cxz.db": true, "cxz.db-wal": true, "cxz.db-shm": true,
+	"file-mappings.json": true, "installation.json": true, "settings.json": true, "settings.jsonm": true, "settings.schema.json": true, "cxz.db": true, "cxz.db-wal": true, "cxz.db-shm": true,
 	"resources.db": true, "resources.db-wal": true, "resources.db-shm": true,
 	"sessions": true, "projects": true, "run": true, "accounts": true, "central": true,
 	"daemon.lock": true, "install.lock": true,

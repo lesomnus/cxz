@@ -9,7 +9,7 @@ Open the configuration directly in your editor:
 cxz edit
 ```
 
-This opens `<state>/settings.json` (normally `~/.local/state/cxz/settings.json`)
+This opens `<state>/settings.jsonm` (normally `~/.local/state/cxz/settings.jsonm`)
 using `$VISUAL`, then `$EDITOR`, or an installed `nano`/`vim`/`vi`. Editor arguments
 such as `code --wait` are supported. New files start with commented examples;
 line/block comments and trailing commas are accepted. For example:
@@ -80,7 +80,7 @@ refresh that shared file.
 
 Source changes are **not watched automatically**. Removing the source after a
 successful sync does not remove the stored snapshot. All configuration/file
-mapping commands use the host's local `settings.json`; publishing replaces the
+mapping commands use the host's local `settings.jsonm`; publishing replaces the
 installation's complete mapping bundle. A second client should use the same
 mapping configuration before syncing.
 

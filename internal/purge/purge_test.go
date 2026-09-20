@@ -63,8 +63,10 @@ func setup(t *testing.T) (string, *fakeDocker) {
 	if err := core.WriteJSON(filepath.Join(root, "installation.json"), transport.Installation{Owner: testOwner, Container: "manager", StateVolume: "state", ToolsVolume: "tools"}); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(root, "settings.json"), []byte("{}"), 0600); err != nil {
-		t.Fatal(err)
+	for _, name := range []string{"settings.json", "settings.jsonm", "settings.schema.json"} {
+		if err := os.WriteFile(filepath.Join(root, name), []byte("{}"), 0600); err != nil {
+			t.Fatal(err)
+		}
 	}
 	f := &fakeDocker{items: map[string]map[string]any{
 		"container:manager-id": {"Id": "manager-id", "Name": "/manager", "Config": map[string]any{"Labels": map[string]string{"cxz.owner": testOwner}}},

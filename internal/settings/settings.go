@@ -19,6 +19,7 @@ import (
 )
 
 type Config struct {
+	Schema      string            `json:"$schema,omitempty"`
 	Connections *Connections      `json:"connections,omitempty"`
 	Docker      engine.Config     `json:"docker,omitempty"`
 	Files       []filemap.Mapping `json:"files,omitempty"`
@@ -26,6 +27,30 @@ type Config struct {
 	ClaudeModel string            `json:"claude_model,omitempty"`
 	CodexModel  string            `json:"codex_model,omitempty"`
 }
+
+const (
+	Filename       = "settings.jsonm"
+	LegacyFilename = "settings.json"
+)
+
+func Path(root string) string { return filepath.Join(root, Filename) }
+
+// Read prefers the current filename, falling back to the legacy file without
+// modifying it. When neither exists, the returned path is the new filename.
+func Read(root string) ([]byte, string, error) {
+	path := Path(root)
+	b, err := os.ReadFile(path)
+	if !os.IsNotExist(err) {
+		return b, path, err
+	}
+	legacy := filepath.Join(root, LegacyFilename)
+	b, err = os.ReadFile(legacy)
+	if os.IsNotExist(err) {
+		return nil, path, err
+	}
+	return b, legacy, err
+}
+
 type key struct{}
 
 func With(ctx context.Context, c Config) context.Context { return context.WithValue(ctx, key{}, c) }
@@ -69,32 +94,36 @@ func (c Config) Validate() error {
 }
 func Load(root string) (Config, error) {
 	var c Config
-	b, err := os.ReadFile(filepath.Join(root, "settings.json"))
+	b, path, err := Read(root)
 	if os.IsNotExist(err) {
 		return c, nil
 	}
 	if err != nil {
 		return c, err
 	}
-	return Parse(b)
+	c, err = Parse(b)
+	if err != nil {
+		return c, fmt.Errorf("%s: %w", path, err)
+	}
+	return c, nil
 }
 
 func Parse(b []byte) (Config, error) {
 	standard, err := hujson.Standardize(bytes.Clone(b))
 	if err != nil {
-		return Config{}, fmt.Errorf("invalid settings.json: %w", err)
+		return Config{}, fmt.Errorf("invalid settings: %w", err)
 	}
 	if !bytes.HasPrefix(bytes.TrimSpace(standard), []byte("{")) {
-		return Config{}, fmt.Errorf("settings.json must contain one JSON object")
+		return Config{}, fmt.Errorf("settings must contain one JSON object")
 	}
 	var c Config
 	d := json.NewDecoder(bytes.NewReader(standard))
 	d.DisallowUnknownFields()
 	if err = d.Decode(&c); err != nil {
-		return c, fmt.Errorf("invalid settings.json: %w", err)
+		return c, fmt.Errorf("invalid settings: %w", err)
 	}
 	if err = d.Decode(new(any)); err != io.EOF {
-		return c, fmt.Errorf("settings.json must contain one JSON object")
+		return c, fmt.Errorf("settings must contain one JSON object")
 	}
 	return c, c.Validate()
 }
@@ -106,8 +135,7 @@ func Save(root string, c Config) error {
 	if err := os.MkdirAll(root, 0700); err != nil {
 		return err
 	}
-	path := filepath.Join(root, "settings.json")
-	original, err := os.ReadFile(path)
+	original, _, err := Read(root)
 	if os.IsNotExist(err) {
 		original = Template()
 	} else if err != nil {
@@ -117,9 +145,15 @@ func Save(root string, c Config) error {
 	if err != nil {
 		return err
 	}
+	if c.Schema == "" {
+		c.Schema = SchemaReference
+	}
 	updated, err := updateDocument(original, previous, c)
 	if err != nil {
 		return err
 	}
-	return core.WriteFile(path, updated)
+	if err = EnsureSchema(root); err != nil {
+		return err
+	}
+	return core.WriteFile(Path(root), updated)
 }

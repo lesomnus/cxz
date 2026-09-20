@@ -17,16 +17,23 @@ func editSettings(root string, open func(string) error) (bool, *filemap.Bundle, 
 	if err := os.MkdirAll(root, 0700); err != nil {
 		return false, nil, err
 	}
-	path := filepath.Join(root, "settings.json")
-	original, err := os.ReadFile(path)
+	if err := settings.EnsureSchema(root); err != nil {
+		return false, nil, fmt.Errorf("prepare settings schema: %w", err)
+	}
+	path := settings.Path(root)
+	original, source, err := settings.Read(root)
 	if err != nil && !os.IsNotExist(err) {
 		return false, nil, err
 	}
+	existed := err == nil
 	initial := original
 	if len(initial) == 0 {
 		initial = settings.Template()
+	} else if withSchema, err := settings.WithSchema(initial); err == nil {
+		initial = withSchema
 	}
-	tmp, err := os.CreateTemp(root, ".cxz-edit-*.json")
+	// Invalid existing settings still open as-is so the user can repair them.
+	tmp, err := os.CreateTemp(root, ".cxz-edit-*.jsonm")
 	if err != nil {
 		return false, nil, err
 	}
@@ -57,7 +64,7 @@ func editSettings(root string, open func(string) error) (bool, *filemap.Bundle, 
 	if err != nil {
 		return fail(err)
 	}
-	if bytes.Equal(edited, original) {
+	if existed && source == path && bytes.Equal(edited, original) {
 		return false, nil, nil
 	}
 	cfg, err := settings.Parse(edited)
@@ -73,11 +80,11 @@ func editSettings(root string, open func(string) error) (bool, *filemap.Bundle, 
 		return fail(err)
 	}
 	defer lock.Close()
-	current, err := os.ReadFile(path)
+	current, currentSource, err := settings.Read(root)
 	if err != nil && !os.IsNotExist(err) {
 		return fail(err)
 	}
-	if !bytes.Equal(current, original) {
+	if currentSource != source || (err == nil) != existed || !bytes.Equal(current, original) {
 		return fail(fmt.Errorf("settings changed while the editor was open; reopen cxz edit"))
 	}
 	if err = os.Chmod(draft, 0600); err != nil {
