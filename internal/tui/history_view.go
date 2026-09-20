@@ -75,7 +75,7 @@ func (m *model) conversationView() string {
 			break
 		}
 	}
-	if pinned != "" {
+	if pinned != "" && !m.selectingTools() {
 		prompt := strings.Split(ansi.Hardwrap(safeText(pinned), max(1, m.width-2), true), "\n")
 		for i := 0; i < min(2, min(len(prompt), len(rows))); i++ {
 			prefix := "  "
@@ -90,5 +90,6 @@ func (m *model) conversationView() string {
 			rows[i] = pinnedPrompt.Render(text + strings.Repeat(" ", max(0, m.width-ansi.StringWidth(text))))
 		}
 	}
+	m.toolSelectorView(rows)
 	return strings.Join(rows, "\n")
 }

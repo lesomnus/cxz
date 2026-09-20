@@ -52,6 +52,7 @@ func liveOutputView(text string, width int) string {
 type filePreview struct {
 	session, title, source, language string
 	offset                           int
+	focused                          bool
 	rendered                         string
 	width                            int
 }
@@ -113,23 +114,36 @@ func (m *model) previewHeight() int {
 func (m *model) previewRows(width, height int) string {
 	p := m.filePreview
 	if p.width != width || p.rendered == "" {
-		p.rendered = ansi.Hardwrap(highlightCode(p.source, p.language), max(1, width-2), true)
+		p.rendered = ansi.Hardwrap(highlightCode(p.source, p.language), max(1, width-4), true)
 		p.width = width
 	}
 	rows := strings.Split(p.rendered, "\n")
 	count := max(0, height-2)
 	p.offset = max(0, min(p.offset, max(0, len(rows)-count)))
-	title := clip(safeText(p.title), max(1, width-5))
-	header := teal.Render(title + strings.Repeat(" ", max(1, width-3-ansi.StringWidth(title))) + "[×]")
+	border := teal
+	focus := ""
+	if p.focused && m.previewInteraction() {
+		border = accent
+		focus = "● "
+	}
+	title := clip(focus+safeText(p.title), max(1, width-7))
+	header := border.Render("╭" + title + strings.Repeat("─", max(0, width-5-ansi.StringWidth(title))) + "[×]╮")
 	body := []string{header}
+	inner := max(1, width-4)
 	for i := 0; i < count; i++ {
 		line := ""
 		if p.offset+i < len(rows) {
 			line = rows[p.offset+i]
 		}
-		body = append(body, " "+line)
+		line = clip(line, inner)
+		body = append(body, border.Render("│")+" "+line+strings.Repeat(" ", max(0, inner-ansi.StringWidth(line)))+" "+border.Render("│"))
 	}
-	body = append(body, muted.Render(clip(fmt.Sprintf("%d–%d/%d · scroll · click × to close", p.offset+1, min(len(rows), p.offset+count), len(rows)), width)))
+	hint := "click to focus"
+	if p.focused && m.previewInteraction() {
+		hint = "↑↓ scroll · x close · Tab back"
+	}
+	footer := clip(fmt.Sprintf("%d–%d/%d · %s", p.offset+1, min(len(rows), p.offset+count), len(rows), hint), max(1, width-2))
+	body = append(body, border.Render("╰"+footer+strings.Repeat("─", max(0, width-2-ansi.StringWidth(footer)))+"╯"))
 	return strings.Join(body, "\n")
 }
 func (m *model) openFilePreview(y int) bool {
@@ -137,35 +151,9 @@ func (m *model) openFilePreview(y int) bool {
 	if index < 0 || index >= len(m.historyPositions) {
 		return false
 	}
-	seq := uint64(math.Floor(m.historyPositions[index]))
-	s := m.current()
-	if s == nil {
-		return false
-	}
-	for _, e := range m.events[s.Id] {
-		if e.Seq != seq || (e.Kind != "tool_call" && e.Kind != "tool_result") {
-			continue
-		}
-		candidate := e
-		if s.Agent == "codex" {
-			for _, result := range m.events[s.Id] {
-				if result.Kind == "tool_result" && result.RunId == e.RunId && result.RequestId == e.RequestId {
-					candidate = result
-				}
-			}
-		}
-		p := previewFor(s.Agent, candidate)
-		if p == nil {
-			return false
-		}
-		p.session = s.Id
-		m.filePreview = p
-		m.resize()
-		m.render()
-		return true
-	}
-	return false
+	return m.openPreviewSequence(uint64(math.Floor(m.historyPositions[index])))
 }
+
 func (m *model) filePreviewMouse(v tea.MouseMsg) bool {
 	if !m.previewVisible() || m.questionDialog != nil || m.report != nil || m.modelPicker != nil || m.restartConfirm != nil || m.pasteDialog != nil || m.redactDialog != nil {
 		return false
@@ -179,7 +167,16 @@ func (m *model) filePreviewMouse(v tea.MouseMsg) bool {
 		height = m.height
 	}
 	if height < 2 || v.X < x || v.X >= x+width || v.Y < y || v.Y >= y+height {
+		if v.Button == tea.MouseButtonLeft && v.Action == tea.MouseActionPress {
+			m.filePreview.focused = false
+			m.toolSelector = nil
+			m.input.Focus()
+		}
 		return false
+	}
+	if v.Button == tea.MouseButtonLeft && v.Action == tea.MouseActionPress {
+		m.filePreview.focused = true
+		m.input.Blur()
 	}
 	switch v.Button {
 	case tea.MouseButtonWheelUp:
@@ -188,9 +185,7 @@ func (m *model) filePreviewMouse(v tea.MouseMsg) bool {
 		m.filePreview.offset += 3
 	case tea.MouseButtonLeft:
 		if v.Action == tea.MouseActionPress && v.Y == y && v.X >= x+width-3 {
-			m.filePreview = nil
-			m.resize()
-			m.render()
+			m.closeFilePreview()
 		}
 	}
 	return true

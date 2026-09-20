@@ -195,6 +195,9 @@ func (m *model) sessionScreen() string {
 	} else if s := m.current(); s != nil && s.State != "working" && s.State != "idle" && s.State != "waiting_input" {
 		status = warning.Render(pickerLabel(s.State)) + " · " + status
 	}
+	if m.selectingTools() && !(m.previewVisible() && m.filePreview.focused) {
+		status = accent.Render("/view · ↑/↓ select · Enter open · Esc input")
+	}
 	box := m.approvalBox()
 	if background := m.backgroundStatus(); background != "" {
 		status = background + " · " + status
