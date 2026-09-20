@@ -24,6 +24,8 @@ const (
 	Sessions_Create_FullMethodName       = "/cxz.runtime.Sessions/Create"
 	Sessions_List_FullMethodName         = "/cxz.runtime.Sessions/List"
 	Sessions_Get_FullMethodName          = "/cxz.runtime.Sessions/Get"
+	Sessions_CopyMemory_FullMethodName   = "/cxz.runtime.Sessions/CopyMemory"
+	Sessions_Memory_FullMethodName       = "/cxz.runtime.Sessions/Memory"
 	Sessions_Logs_FullMethodName         = "/cxz.runtime.Sessions/Logs"
 	Sessions_Permission_FullMethodName   = "/cxz.runtime.Sessions/Permission"
 	Sessions_Send_FullMethodName         = "/cxz.runtime.Sessions/Send"
@@ -50,6 +52,8 @@ type SessionsClient interface {
 	Create(ctx context.Context, in *CreateRequest, opts ...grpc.CallOption) (*Session, error)
 	List(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*SessionList, error)
 	Get(ctx context.Context, in *SessionRef, opts ...grpc.CallOption) (*Session, error)
+	CopyMemory(ctx context.Context, in *CopyMemoryRequest, opts ...grpc.CallOption) (*Receipt, error)
+	Memory(ctx context.Context, in *MemoryRequest, opts ...grpc.CallOption) (*MemoryReply, error)
 	Logs(ctx context.Context, in *LogsRequest, opts ...grpc.CallOption) (*LogsReply, error)
 	Permission(ctx context.Context, in *PermissionInput, opts ...grpc.CallOption) (*Receipt, error)
 	Send(ctx context.Context, in *Input, opts ...grpc.CallOption) (*Receipt, error)
@@ -119,6 +123,26 @@ func (c *sessionsClient) Get(ctx context.Context, in *SessionRef, opts ...grpc.C
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Session)
 	err := c.cc.Invoke(ctx, Sessions_Get_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) CopyMemory(ctx context.Context, in *CopyMemoryRequest, opts ...grpc.CallOption) (*Receipt, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Receipt)
+	err := c.cc.Invoke(ctx, Sessions_CopyMemory_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) Memory(ctx context.Context, in *MemoryRequest, opts ...grpc.CallOption) (*MemoryReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(MemoryReply)
+	err := c.cc.Invoke(ctx, Sessions_Memory_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -293,6 +317,8 @@ type SessionsServer interface {
 	Create(context.Context, *CreateRequest) (*Session, error)
 	List(context.Context, *Empty) (*SessionList, error)
 	Get(context.Context, *SessionRef) (*Session, error)
+	CopyMemory(context.Context, *CopyMemoryRequest) (*Receipt, error)
+	Memory(context.Context, *MemoryRequest) (*MemoryReply, error)
 	Logs(context.Context, *LogsRequest) (*LogsReply, error)
 	Permission(context.Context, *PermissionInput) (*Receipt, error)
 	Send(context.Context, *Input) (*Receipt, error)
@@ -332,6 +358,12 @@ func (UnimplementedSessionsServer) List(context.Context, *Empty) (*SessionList, 
 }
 func (UnimplementedSessionsServer) Get(context.Context, *SessionRef) (*Session, error) {
 	return nil, status.Error(codes.Unimplemented, "method Get not implemented")
+}
+func (UnimplementedSessionsServer) CopyMemory(context.Context, *CopyMemoryRequest) (*Receipt, error) {
+	return nil, status.Error(codes.Unimplemented, "method CopyMemory not implemented")
+}
+func (UnimplementedSessionsServer) Memory(context.Context, *MemoryRequest) (*MemoryReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method Memory not implemented")
 }
 func (UnimplementedSessionsServer) Logs(context.Context, *LogsRequest) (*LogsReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method Logs not implemented")
@@ -485,6 +517,42 @@ func _Sessions_Get_Handler(srv interface{}, ctx context.Context, dec func(interf
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SessionsServer).Get(ctx, req.(*SessionRef))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_CopyMemory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CopyMemoryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).CopyMemory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_CopyMemory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).CopyMemory(ctx, req.(*CopyMemoryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_Memory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MemoryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).Memory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_Memory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).Memory(ctx, req.(*MemoryRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -778,6 +846,14 @@ var Sessions_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Get",
 			Handler:    _Sessions_Get_Handler,
+		},
+		{
+			MethodName: "CopyMemory",
+			Handler:    _Sessions_CopyMemory_Handler,
+		},
+		{
+			MethodName: "Memory",
+			Handler:    _Sessions_Memory_Handler,
 		},
 		{
 			MethodName: "Logs",

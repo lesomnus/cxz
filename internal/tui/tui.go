@@ -91,6 +91,7 @@ type model struct {
 	modelPicker             *modelPicker
 	modelPickerEpoch        uint64
 	settingsPage            *settingsPage
+	memoryPage              *memoryPage
 	report                  *reportOverlay
 	contextCapture          *contextCapture
 	hiddenEvents            map[*api.Event]bool
@@ -728,6 +729,18 @@ func (m *model) action(kind, text string) tea.Cmd {
 }
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	defer m.rememberNotice()
+	if v, ok := msg.(memoryTargets); ok {
+		m.receiveMemoryTargets(v)
+		return m, nil
+	}
+	if v, ok := msg.(memoryCopied); ok {
+		m.receiveMemoryCopied(v)
+		return m, nil
+	}
+	if v, ok := msg.(memoryResult); ok {
+		m.receiveMemory(v)
+		return m, nil
+	}
 	if v, ok := msg.(settingsResult); ok {
 		m.receiveSettings(v)
 		return m, nil
@@ -787,6 +800,14 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if m.memoryPage != nil {
+		switch v := msg.(type) {
+		case tea.KeyMsg:
+			return m, m.memoryKey(v)
+		case tea.MouseMsg:
+			return m, m.memoryMouse(v)
+		}
+	}
 	if m.settingsPage != nil {
 		switch v := msg.(type) {
 		case tea.KeyMsg:
@@ -1536,6 +1557,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if localName == "/view" {
 				return m, m.viewCommand(text)
 			}
+			if localName == "/memory" {
+				return m, m.openMemory(m.current())
+			}
 			if localName == "/settings" {
 				return m, m.openSettings()
 			}
@@ -1617,6 +1641,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 func (m *model) View() (out string) {
+	if m.memoryPage != nil {
+		return m.memoryScreen()
+	}
 	if m.settingsPage != nil {
 		return m.settingsScreen()
 	}

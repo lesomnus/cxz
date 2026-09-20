@@ -8,6 +8,8 @@ service Sessions {
   rpc Create(CreateRequest) returns (Session);
   rpc List(Empty) returns (SessionList);
   rpc Get(SessionRef) returns (Session);
+  rpc CopyMemory(CopyMemoryRequest) returns (Receipt);
+  rpc Memory(MemoryRequest) returns (MemoryReply);
   rpc Logs(LogsRequest) returns (LogsReply);
   rpc Permission(PermissionInput) returns (Receipt);
   rpc Send(Input) returns (Receipt);
@@ -89,3 +91,8 @@ message LogsReply { string text = 1; }
 message FileMappingsInput { bytes bundle = 1; }
 
 message DockerInput { string action = 1; bytes spec = 2; }
+
+message MemoryRequest { string session_id = 1; string path = 2; }
+message MemoryReply { bytes data = 1; }
+
+message CopyMemoryRequest { string session_id = 1; string path = 2; string target_id = 3; string target_path = 4; }

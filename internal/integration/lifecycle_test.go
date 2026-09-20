@@ -6,6 +6,7 @@ import (
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/memoryview"
 	"github.com/lesomnus/cxz/internal/resourceclient"
 	"github.com/lesomnus/cxz/internal/server"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
@@ -587,6 +588,37 @@ func TestLifecycle(t *testing.T) {
 	}
 	if get().LastSeq != restored.LastSeq {
 		t.Fatal("reading logs mutated the journal")
+	}
+	// Retained profiles remain accessible through the public resource API while
+	// agents are stopped. Alias resolution must preserve source/target identity.
+	memoryPath := "projects/old/memory/MEMORY.md"
+	memoryFile := filepath.Join(accounts.Config(accounts.SessionRoot(state, restored.CreateId), restored.Account), memoryPath)
+	if e = os.MkdirAll(filepath.Dir(memoryFile), 0700); e != nil {
+		t.Fatal(e)
+	}
+	if e = os.WriteFile(memoryFile, []byte("retained note"), 0600); e != nil {
+		t.Fatal(e)
+	}
+	memory, e := client.Memory(ctx, &api.MemoryRequest{SessionId: restored.Alias, Path: memoryPath})
+	if e != nil {
+		t.Fatal(e)
+	}
+	var memoryPage memoryview.Page
+	if e = json.Unmarshal(memory.Data, &memoryPage); e != nil || memoryPage.Content != "retained note" {
+		t.Fatal(memoryPage, e)
+	}
+	if _, e = client.CopyMemory(ctx, &api.CopyMemoryRequest{SessionId: restored.Alias, Path: memoryPath, TargetId: second.Id, TargetPath: "projects/renamed/memory/MEMORY.md"}); e != nil {
+		t.Fatal(e)
+	}
+	memory, e = client.Memory(ctx, &api.MemoryRequest{SessionId: second.Id, Path: "projects/renamed/memory/MEMORY.md"})
+	if e != nil {
+		t.Fatal(e)
+	}
+	if e = json.Unmarshal(memory.Data, &memoryPage); e != nil || memoryPage.Content != "retained note" {
+		t.Fatal(memoryPage, e)
+	}
+	if get().LastSeq != restored.LastSeq || get().VendorId != restored.VendorId {
+		t.Fatal("memory browsing/copy changed conversation identity")
 	}
 	// Delete a live session through payday, then restart without resurrecting it.
 	if _, e = client.Resume(ctx, &api.Control{SessionId: id, RunId: restored.RunId, ClientId: core.ID()}); e != nil {

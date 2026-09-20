@@ -80,7 +80,7 @@ func pathTokenAt(value string, cursor int) (pathToken, bool) {
 }
 
 func (m *model) pathContext() (pathToken, string, bool) {
-	if m.program == nil || m.ctx == nil || m.ctx.Err() != nil || m.view.Height < 4 || m.terminalFocused() || m.panelFocus || m.questionDialog != nil || m.pasteDialog != nil {
+	if m.memoryPage != nil || m.settingsPage != nil || m.program == nil || m.ctx == nil || m.ctx.Err() != nil || m.view.Height < 4 || m.terminalFocused() || m.panelFocus || m.questionDialog != nil || m.pasteDialog != nil {
 		return pathToken{}, "", false
 	}
 	value, pos, _, _, ok := m.chipInput()

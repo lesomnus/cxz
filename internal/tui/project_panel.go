@@ -175,6 +175,12 @@ func (m *model) panelKey(k tea.KeyMsg) tea.Cmd {
 		m.selectPanelProject(r)
 		m.panelFocus = false
 		return m.projectAction(k)
+	case "m":
+		if len(rows) == 0 || rows[m.panelIndex].session == nil {
+			m.notice = "Select a session to inspect retained agent data."
+			return nil
+		}
+		return m.openMemory(rows[m.panelIndex].session)
 	case "s":
 		if len(rows) == 0 || rows[m.panelIndex].session == nil {
 			m.notice = "Select a session to stop."
@@ -328,7 +334,7 @@ func (m *model) panelScreen() string {
 	if m.panelError != "" {
 		status = m.panelError
 	}
-	lines = append(lines, muted.Render("n new · a accounts"), muted.Render("s stop · d delete"), muted.Render("Ctrl+P settings"), muted.Render("Esc/Ctrl+Q return · Ctrl+C detach"), muted.Render("Agents keep running"), warning.Render(pickerLabel(status)))
+	lines = append(lines, muted.Render("n new · a accounts"), muted.Render("s stop · d delete"), muted.Render("m memory · Ctrl+P settings"), muted.Render("Esc/Ctrl+Q return · Ctrl+C detach"), muted.Render("Agents keep running"), warning.Render(pickerLabel(status)))
 	for len(lines) < m.height {
 		lines = append(lines, "")
 	}

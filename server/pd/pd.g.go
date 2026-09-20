@@ -3620,6 +3620,16 @@ func (s interceptSession) Interrupt(ctx context.Context, req *resource.SessionCo
 		resource.SessionService_Interrupt_FullMethodName, req, s.SessionServiceServer.Interrupt)
 }
 
+func (s interceptSession) CopyMemory(ctx context.Context, req *resource.SessionCopyMemoryRequest) (*resource.SessionReceipt, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
+		resource.SessionService_CopyMemory_FullMethodName, req, s.SessionServiceServer.CopyMemory)
+}
+
+func (s interceptSession) Memory(ctx context.Context, req *resource.SessionMemoryRequest) (*resource.SessionMemoryReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
+		resource.SessionService_Memory_FullMethodName, req, s.SessionServiceServer.Memory)
+}
+
 func (s interceptSession) Logs(ctx context.Context, req *resource.SessionLogsRequest) (*resource.SessionLogsReply, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
 		resource.SessionService_Logs_FullMethodName, req, s.SessionServiceServer.Logs)
@@ -4843,6 +4853,32 @@ func dispatch(ctx context.Context, s resource.Server, op *pdpb.Op) (*anypb.Any, 
 		}
 
 		res, err := s.Session().Interrupt(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.SessionService_CopyMemory_FullMethodName:
+		v := &resource.SessionCopyMemoryRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Session().CopyMemory(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.SessionService_Memory_FullMethodName:
+		v := &resource.SessionMemoryRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Session().Memory(ctx, v)
 		if err != nil {
 			return nil, err
 		}
