@@ -182,7 +182,7 @@ func TestPinnedPromptFullRowBackground(t *testing.T) {
 	profile := lipgloss.ColorProfile()
 	lipgloss.SetColorProfile(termenv.TrueColor)
 	defer lipgloss.SetColorProfile(profile)
-	const background = "48;2;3;30;44m"
+	const background = "48;5;236m"
 	for _, width := range []int{40, 80, 123} {
 		m := conversationModel()
 		m.Update(tea.WindowSizeMsg{Width: width, Height: 24})
@@ -198,10 +198,7 @@ func TestPinnedPromptFullRowBackground(t *testing.T) {
 				if ansi.StringWidth(row) != width || !strings.Contains(row, background) {
 					t.Fatalf("width %d row %d not fully highlighted: %q", width, i, row)
 				}
-				// Content padding stays painted; the two-column outer margin does not.
-				painted := strings.SplitN(row, background, 2)[1]
-				painted = strings.SplitN(painted, "\x1b[0m", 2)[0]
-				if ansi.StringWidth(painted) != width-2 || !strings.HasSuffix(row, "\x1b[0m  ") {
+				if !strings.HasSuffix(row, "\x1b[0m") {
 					t.Fatalf("unpainted padding: %q", row)
 				}
 			} else if strings.Contains(row, background) {
@@ -209,8 +206,8 @@ func TestPinnedPromptFullRowBackground(t *testing.T) {
 			}
 		}
 		m.view.GotoTop()
-		if strings.Contains(m.View(), background) {
-			t.Fatal("prompt still highlighted when not pinned")
+		if !strings.Contains(m.View(), background) {
+			t.Fatal("ordinary user prompt missing background")
 		}
 	}
 }
@@ -234,7 +231,7 @@ func TestMarkdownAndCodeSafety(t *testing.T) {
 			t.Fatal(want, plain)
 		}
 	}
-	if strings.Contains(plain, "```") || strings.Contains(view, "secret") || !strings.Contains(view, "48;2;0;0;0") {
+	if strings.Contains(plain, "```") || strings.Contains(view, "secret") || !strings.Contains(view, "48;5;238") {
 		t.Fatal(view)
 	}
 	for _, row := range strings.Split(view, "\n") {
@@ -301,7 +298,7 @@ func TestCursorAnchorWithoutColors(t *testing.T) {
 func TestGFMAndResponseCache(t *testing.T) {
 	raw := "| name | value |\n| --- | --- |\n| one | two |\n\n- [x] done\n\n~~removed~~"
 	view := ansi.Strip(markdownView(raw, 60))
-	for _, want := range []string{"name │ value", "one │ two", "☑ done", "removed"} {
+	for _, want := range []string{"name value", "one  two", "━━━━ ━━━━━", "☑ done", "removed"} {
 		if !strings.Contains(view, want) {
 			t.Fatal(want, view)
 		}

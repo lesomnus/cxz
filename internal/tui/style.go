@@ -31,7 +31,6 @@ var (
 	teal             = lipgloss.NewStyle().Foreground(lipgloss.Color("#07898f"))
 	lavender         = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#7255A0", Dark: "#C9B6EE"})
 	blue             = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#42758B", Dark: "#ACD6EB"})
-	pinnedPrompt     = lipgloss.NewStyle().Foreground(lipgloss.Color("#ACD6EB")).Background(lipgloss.Color("#031e2c"))
 	peach            = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#A35D52", Dark: "#F2B8A7"})
 	failure          = lipgloss.NewStyle().Foreground(lipgloss.Color("#F26D78"))
 	claude           = lipgloss.NewStyle().Foreground(lipgloss.Color("#D97757")).Bold(true)

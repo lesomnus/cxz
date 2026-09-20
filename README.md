@@ -91,6 +91,12 @@ your terminal theme; the displayed reference HEX is not a theme measurement.
 Use `cxz terminal-info --plain` for a shareable text report. No installation or
 manager connection is required.
 
+Conversation user-message rows use ANSI 236 across the conversation width.
+Markdown code blocks use ANSI 238 with syntax highlighting; explicit fence
+languages take priority, while unlabeled blocks use best-effort content detection
+and fall back to plaintext. GFM tables align and wrap cells without outer borders,
+with an ANSI 22 heavy header rule separated by one space between columns.
+
 Select a session in the project list and press **m** (or use `/memory`) to
 [browse retained agent memory and history](docs/agent-memory.md), even after
 the project container stops. Press **c** to copy selected data to another session.

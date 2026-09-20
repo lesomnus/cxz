@@ -13,6 +13,11 @@ import (
 func TestTimestampedInput(t *testing.T) {
 	stamp := time.Date(2026, 9, 12, 2, 34, 0, 0, time.Local).UnixMilli()
 	got := ansi.Strip(eventView(&api.Session{}, &api.Event{Kind: "input", TimeMs: stamp, Text: "Rolem..\nIpsum..."}, 40))
+	rows := strings.Split(got, "\n")
+	for i := range rows {
+		rows[i] = strings.TrimRight(rows[i], " ")
+	}
+	got = strings.Join(rows, "\n")
 	if got != "  09-12 02:34\n> Rolem..\n  Ipsum..." {
 		t.Fatalf("input formatting: %q", got)
 	}
