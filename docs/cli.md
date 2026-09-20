@@ -1,5 +1,10 @@
 # CLI 입력 계약
 
+Linux/Windows 공통 원격 접속: `cxz connect [--token-file FILE] [--session SESSION] ENDPOINT`.
+엔드포인트는 `ssh://user@host[:port]` 또는 `tcp://host:port`이며, Linux 호스트의 기존
+설치에 `cxz expose --token-file FILE --listen tcp://127.0.0.1:7349`로 TCP 전달기를 열 수 있다.
+설정과 지원 범위는 [원격 접속](remote.md)을 참고한다.
+
 목록 갱신은 변경 구독과 30초 안전 갱신을 사용한다. 매초 전체 목록/외부 컨테이너 탐색을 반복하지 않는다.
 서버 측 동기화와 남아 있는 heartbeat의 범위는 [리소스 갱신과 부하](resource-refresh.md)를 참고한다.
 

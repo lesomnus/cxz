@@ -56,7 +56,7 @@ jobs:
           printf '%s\n' "ghcr.io/$GITHUB_REPOSITORY@$IMAGE_DIGEST" > dist/manager-image.txt
           args=()
           if [[ "$RELEASE_VERSION" == *-* ]]; then args+=(--prerelease); fi
-          gh release create "$RELEASE_VERSION" --verify-tag --generate-notes "${args[@]}" dist/*.tar.gz dist/SHA256SUMS dist/manager-image.txt
+          gh release create "$RELEASE_VERSION" --verify-tag --generate-notes "${args[@]}" dist/*.tar.gz dist/*.zip dist/SHA256SUMS dist/manager-image.txt
   notes:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04

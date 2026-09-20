@@ -165,7 +165,7 @@ func (m *model) accountKey(key tea.KeyMsg) tea.Cmd {
 		alias := choices[m.accountIndex].GetAlias()
 		if key.String() == "l" {
 			if m.loginAccount == nil {
-				m.notice = "Login requires the project navigator with login support (cxz up)."
+				m.notice = "Log in on the daemon host with cxz up, then reconnect here."
 				return nil
 			}
 			if choices[m.accountIndex].GetAgent() == "claude" {

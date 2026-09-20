@@ -13,6 +13,7 @@ import (
 
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/dockerx"
+	"github.com/lesomnus/cxz/internal/transport"
 	"github.com/lesomnus/cxz/internal/wisp"
 )
 
@@ -65,6 +66,9 @@ func ListPaths(ctx context.Context, p *api.Project, dir string) (PathListing, er
 
 // StreamPaths emits cumulative, immutable snapshots before the lookup finishes.
 func StreamPaths(ctx context.Context, p *api.Project, dir string, emit func(PathListing)) (PathListing, error) {
+	if err := transport.LocalOnly(ctx, "workspace path lookup"); err != nil {
+		return PathListing{}, err
+	}
 	if p == nil || p.Id == "" || p.ContainerId == "" || p.RemoteUser == "" {
 		return PathListing{}, fmt.Errorf("project container unavailable")
 	}

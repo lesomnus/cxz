@@ -91,6 +91,11 @@ your terminal theme; the displayed reference HEX is not a theme measurement.
 Use `cxz terminal-info --plain` for a shareable text report. No installation or
 manager connection is required.
 
+Linux and Windows can use `cxz connect ssh://user@host` to open the same TUI on a
+remote Linux installation. Authenticated `tcp://host:port` connections are also
+supported through `cxz expose`. See [remote connections and Windows builds](docs/remote.md)
+for setup, transport security and the remaining host-local helper features.
+
 Conversation user-message rows use ANSI 236 across the conversation width.
 Markdown code blocks use ANSI 238 with syntax highlighting; explicit fence
 languages take priority, while unlabeled blocks use best-effort content detection

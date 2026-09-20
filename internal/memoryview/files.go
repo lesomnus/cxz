@@ -1,3 +1,5 @@
+//go:build linux
+
 // Package memoryview reads retained agent instructions, memory and native history.
 package memoryview
 
@@ -14,26 +16,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/lesomnus/cxz/internal/accounts"
-	"github.com/lesomnus/cxz/internal/core"
 )
-
-const FileLimit = 256 * 1024
-const EntryLimit = 1000
-
-type Query struct {
-	Session core.Session
-	Path    string
-}
-type Entry struct {
-	Name      string
-	Directory bool
-	Size      int64
-}
-type Page struct {
-	Path, Location, Content, Note string
-	Directory, Truncated          bool
-	Entries                       []Entry
-}
 
 func allowed(agent, name string) bool {
 	names := []string{"skills", "rules", "memories", "memory", "history.jsonl"}

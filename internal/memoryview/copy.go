@@ -1,3 +1,5 @@
+//go:build linux
+
 package memoryview
 
 import (
@@ -17,10 +19,6 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-type CopyQuery struct {
-	Source, Target   core.Session
-	Path, TargetPath string
-}
 type copyEntry struct {
 	path, content string
 	directory     bool

@@ -1,3 +1,5 @@
+//go:build !windows
+
 package main
 
 import (
@@ -135,6 +137,14 @@ func newRoot(state string) *xli.Command {
 		})),
 	}
 	root.Commands = xli.Commands{
+		connectCommand(),
+		{Name: "expose", Brief: "Forward the installed daemon over authenticated plaintext TCP (VPN/tunnel)", Flags: flg.Flags{stringFlag("listen", "TCP listen endpoint", "tcp://127.0.0.1:7349"), stringFlag("token-file", "Remote access token file (32+ bytes)", os.Getenv("CXZ_TOKEN_FILE"))}, Handler: onRun(func(ctx context.Context, c *xli.Command) error {
+			token, err := transport.ReadToken(flg.MustGet[string](c, "token-file"))
+			if err != nil {
+				return err
+			}
+			return transport.Expose(ctx, stateFrom(ctx), flg.MustGet[string](c, "listen"), token, c.ErrWriter)
+		})},
 		{Name: "terminal-info", Brief: "Inspect local terminal environment and interactive color palette", Flags: flg.Flags{switchFlag("plain", "Print environment and palette codes without interactive UI")}, Handler: onRun(func(ctx context.Context, c *xli.Command) error {
 			return tui.RunTerminalInfo(ctx, c.ReadCloser, c.Writer, flg.MustGet[bool](c, "plain"))
 		})},
@@ -197,6 +207,9 @@ func internalCommands() xli.Commands {
 		return &xli.Command{Name: name, Category: "Internal runtime", Brief: "Internal process entrypoint", Args: args, Handler: onRun(fn)}
 	}
 	return xli.Commands{
+		makeCmd("_connect", nil, func(ctx context.Context, c *xli.Command) error {
+			return transport.ConnectBridge(ctx, stateFrom(ctx), c.ReadCloser, c.Writer)
+		}),
 		makeCmd("_ready", nil, func(ctx context.Context, _ *xli.Command) error {
 			conn, err := server.Dial(stateFrom(ctx))
 			if err != nil {

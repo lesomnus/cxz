@@ -12,6 +12,7 @@ import (
 
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/dockerx"
+	"github.com/lesomnus/cxz/internal/transport"
 	"github.com/lesomnus/cxz/internal/wisp"
 )
 
@@ -150,6 +151,9 @@ func (p *WispPool) Paths(lifetime, ctx context.Context, project *api.Project, di
 }
 
 func openWisp(lifetime, ctx context.Context, p *api.Project, stderr ...io.Writer) (*wispClient, error) {
+	if err := transport.LocalOnly(ctx, "workspace helper (path completion / secrets)"); err != nil {
+		return nil, err
+	}
 	c, err := dockerx.Inspect(ctx, p.ContainerId)
 	if err != nil {
 		return nil, err

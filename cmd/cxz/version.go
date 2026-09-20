@@ -1,3 +1,5 @@
+//go:build !windows
+
 package main
 
 import (
@@ -11,10 +13,6 @@ import (
 	"runtime"
 	"runtime/debug"
 )
-
-// Set by release/Bake builds. Source builds also read the Go VCS metadata.
-var version = "dev"
-var buildRevision string
 
 func releaseCommands() xli.Commands {
 	return xli.Commands{

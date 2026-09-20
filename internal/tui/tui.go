@@ -16,11 +16,11 @@ import (
 	"github.com/lesomnus/cxz/internal/dockerx"
 	"github.com/lesomnus/cxz/internal/resourceclient"
 	"github.com/lesomnus/cxz/internal/settings"
+	"github.com/lesomnus/cxz/internal/transport"
 	"github.com/lesomnus/cxz/resource"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 )
@@ -1547,20 +1547,22 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.creating = false
 				m.input.Placeholder = "message"
 				return m, func() tea.Msg {
-					path, e := filepath.Abs(text)
+					path, e := workspacePath(m.ctx, text)
 					if e != nil {
 						return result{err: e}
 					}
 					ctx, cancel := context.WithTimeout(m.ctx, 30*time.Minute)
 					defer cancel()
-					if os.Getenv("CXZ_PROJECT_ID") != "" {
+					if os.Getenv("CXZ_PROJECT_ID") != "" && !transport.IsRemote(m.ctx) {
 						s, e := m.client.Create(ctx, &api.CreateRequest{Workspace: path, Agent: kind, Model: settings.From(m.ctx).Model(kind), ClientId: core.ID(), Account: account})
 						if e != nil {
 							return result{err: e}
 						}
 						return result{text: "session created", sessionID: s.Id}
 					}
-					path, e = dockerx.EnginePath(path)
+					if !transport.IsRemote(m.ctx) {
+						path, e = dockerx.EnginePath(path)
+					}
 					if e != nil {
 						return result{err: e}
 					}
