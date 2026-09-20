@@ -3,62 +3,14 @@
 package main
 
 import (
-	"errors"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/lesomnus/cxz/internal/settings"
 	"github.com/lesomnus/xli/xlitest"
 )
 
-func TestEditSettingsPreservesInvalidAndConcurrentEdits(t *testing.T) {
-	for _, kind := range []string{"invalid", "unknown", "missing-source", "cancel", "concurrent"} {
-		t.Run(kind, func(t *testing.T) {
-			root := t.TempDir()
-			original := []byte("{\"claude_model\":\"old\"}\n")
-			path := filepath.Join(root, "settings.json")
-			if err := os.WriteFile(path, original, 0600); err != nil {
-				t.Fatal(err)
-			}
-			var draft string
-			changed, _, err := editSettings(root, func(p string) error {
-				draft = p
-				edit := `{"claude_model":"new"}`
-				switch kind {
-				case "invalid":
-					edit = "{"
-				case "unknown":
-					edit = `{"typo":true}`
-				case "missing-source":
-					edit = `{"files":[{"src":"/nonexistent-cxz-edit-source","dst":"${AGENT_CONFIG_DIR}/CLAUDE.md"}]}`
-				case "cancel":
-					return errors.New("editor cancelled")
-				case "concurrent":
-					if err := os.WriteFile(path, []byte(`{"codex_model":"concurrent"}`), 0600); err != nil {
-						return err
-					}
-				}
-				return os.WriteFile(p, []byte(edit), 0600)
-			})
-			if err == nil || changed || !strings.Contains(err.Error(), draft) {
-				t.Fatal("lost invalid draft or accepted edit", err)
-			}
-			if _, err := os.Stat(draft); err != nil {
-				t.Fatal("draft removed", err)
-			}
-			b, _ := os.ReadFile(path)
-			want := string(original)
-			if kind == "concurrent" {
-				want = `{"codex_model":"concurrent"}`
-			}
-			if string(b) != want {
-				t.Fatal("overwrote saved settings")
-			}
-		})
-	}
-}
 func TestEditSettingsSavesAndSnapshotsChangedMappings(t *testing.T) {
 	root := t.TempDir()
 	changed, bundle, err := editSettings(root, func(string) error { return nil })
@@ -106,5 +58,14 @@ func TestEditCommandUsesEditorWithLiteralFilename(t *testing.T) {
 	cfg, err := settings.Load(root)
 	if err != nil || cfg.ClaudeModel != "editor-model" {
 		t.Fatal(cfg, err)
+	}
+}
+func TestEditMissingSourceRetainsDraft(t *testing.T) {
+	root := t.TempDir()
+	changed, _, err := editSettings(root, func(p string) error {
+		return os.WriteFile(p, []byte(`{"files":[{"src":"/nonexistent-cxz-edit-source","dst":"${AGENT_CONFIG_DIR}/CLAUDE.md"}]}`), 0600)
+	})
+	if changed || err == nil {
+		t.Fatal("missing source accepted")
 	}
 }

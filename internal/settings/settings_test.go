@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"testing"
 )
 
@@ -22,7 +23,7 @@ func TestSettings(t *testing.T) {
 		t.Fatal(got, err)
 	}
 	st, err := os.Stat(filepath.Join(root, "settings.json"))
-	if err != nil || st.Mode().Perm() != 0600 {
+	if err != nil || (runtime.GOOS != "windows" && st.Mode().Perm() != 0600) {
 		t.Fatal("unsafe settings mode", err)
 	}
 	for _, value := range []string{"bad\nmodel", "--injected", "model name"} {

@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -65,7 +66,7 @@ func validateDestination(dst, agent string, directory bool) error {
 			break
 		}
 	}
-	if !filepath.IsAbs(rest) || strings.Contains(rest, "$") || filepath.Clean(rest) == "/" {
+	if !path.IsAbs(rest) || strings.Contains(rest, "$") || path.Clean(rest) == "/" {
 		return fmt.Errorf("dst must be an absolute file path or start with ${AGENT_CONFIG_DIR}/, ${SESSION_HOME}/, or ${WORKSPACE}/")
 	}
 	return nil
