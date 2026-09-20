@@ -71,12 +71,12 @@ and `cxz version` provide diagnostics. See [operations and releases](docs/operat
 for retry behavior, model settings, versioned installation, updates and rollback.
 
 Use `cxz edit` to edit model defaults and host file mappings in your editor.
-New settings files contain disabled, commented examples. `settings.jsonm` accepts
+New settings files contain disabled, commented examples. `settings.jsonc` accepts
 line/block comments and trailing commas; CLI preference updates keep comments.
 `cxz edit` writes the embedded schema beside the settings file and connects it
-through `$schema` for editor completions. Legacy `settings.json` is read until
-the next save migrates it. See [editor setup](docs/remote.md) for JSON-with-comments
-mode and Windows paths.
+through `$schema` for editor completions. Legacy `settings.jsonm` and
+`settings.json` are read until the next save migrates them. See
+[editor setup](docs/remote.md) for JSON-with-comments mode and Windows paths.
 The Windows frontend also provides `cxz edit` for local connections and model
 preferences; it uses `VISUAL`/`EDITOR` or Notepad. Host settings are applied on Linux.
 Files such as `CLAUDE.md` can target `${AGENT_CONFIG_DIR}/CLAUDE.md` in each session.
@@ -101,7 +101,7 @@ manager connection is required.
 
 Linux and Windows can use `cxz connect ssh://user@host` to open the same TUI on a
 remote Linux installation. Authenticated `tcp://host:port` connections are also
-supported through `cxz expose`. Named `connections` in `settings.jsonm` appear
+supported through `cxz expose`. Named `connections` in `settings.jsonc` appear
 together in the project panel as `project1 via work`; `default` sets its initial
 focus. Use `local://` for the local installation alongside remote targets. See [remote connections and Windows builds](docs/remote.md)
 for setup, transport security and the remaining host-local helper features.

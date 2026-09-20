@@ -7,7 +7,7 @@ needed for a remote conversation.
 
 ## All connections in one project view
 
-Edit `settings.jsonm` with `cxz edit` on Linux or Windows. JSON comments (`//`,
+Edit `settings.jsonc` with `cxz edit` on Linux or Windows. JSON comments (`//`,
 `/* ... */`) and trailing commas are supported. Connections are keyed by name
 alongside a `default` selection:
 
@@ -44,7 +44,7 @@ $env:EDITOR = 'code --wait'
 Editor commands use Windows command syntax; quote an executable path containing
 spaces. Both executable and `.cmd`/batch editors are supported. Unless overridden
 with `--state`, `CXZ_STATE` or `XDG_STATE_HOME`, the file is under
-`$env:USERPROFILE\.local\state\cxz\settings.jsonm`. Directory selection follows
+`$env:USERPROFILE\.local\state\cxz\settings.jsonc`. Directory selection follows
 `--state` > `CXZ_STATE` > `XDG_STATE_HOME/cxz` > the home-directory default.
 
 The first edit starts with commented examples for connections, model defaults,
@@ -62,18 +62,13 @@ including Windows paths with spaces. No daemon or schema download is required.
 The schema provides descriptions, completions and validation in compatible
 editors; cxz still validates the configuration on save.
 
-Associate `*.jsonm` with your editor's JSON with Comments mode. For VS Code,
-add this to the **editor's** settings (not the cxz file):
+VS Code recognizes the `.jsonc` extension as JSON with Comments without a
+custom file association.
 
-```json
-"files.associations": {
-  "*.jsonm": "jsonc"
-}
-```
-
-The old `settings.json` is read when `settings.jsonm` is absent. The next
-successful `cxz edit` or CLI preference save writes `settings.jsonm`, preserving
-the old file as a backup. When both exist, only `settings.jsonm` is used.
+When `settings.jsonc` is absent, cxz reads `settings.jsonm`, then the original
+`settings.json`. The next successful `cxz edit` or CLI preference save writes
+`settings.jsonc`, preserving the old file as a backup. When multiple files
+exist, the first in that order is used.
 
 The editor opens a temporary draft. Invalid JSON, unknown settings, editor
 failure and concurrent updates leave the saved file intact and report the

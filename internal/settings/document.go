@@ -10,7 +10,7 @@ import (
 	"github.com/tailscale/hujson"
 )
 
-//go:embed template.jsonm
+//go:embed template.jsonc
 var initialDocument string
 
 // Template contains disabled examples and a local schema reference. All runtime

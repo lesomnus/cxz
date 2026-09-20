@@ -17,7 +17,7 @@ import (
 )
 
 func editCommand() *xli.Command {
-	return &xli.Command{Name: "edit", Brief: "Edit local settings.jsonm using VISUAL/EDITOR or Notepad", Handler: xli.OnRun(func(ctx context.Context, c *xli.Command, _ xli.Next) error {
+	return &xli.Command{Name: "edit", Brief: "Edit local settings.jsonc using VISUAL/EDITOR or Notepad", Handler: xli.OnRun(func(ctx context.Context, c *xli.Command, _ xli.Next) error {
 		root := c
 		for root.HasParent() {
 			root = root.Parent()

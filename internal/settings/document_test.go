@@ -54,7 +54,7 @@ func TestSaveSeedsAndRetainsExamples(t *testing.T) {
 	if err := Save(root, cfg); err != nil {
 		t.Fatal(err)
 	}
-	b, err := os.ReadFile(filepath.Join(root, "settings.jsonm"))
+	b, err := os.ReadFile(filepath.Join(root, "settings.jsonc"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -70,7 +70,7 @@ func TestSaveSeedsAndRetainsExamples(t *testing.T) {
 }
 func TestSavePreservesUnrelatedAndUnsetComments(t *testing.T) {
 	root := t.TempDir()
-	path := filepath.Join(root, "settings.jsonm")
+	path := filepath.Join(root, "settings.jsonc")
 	original := []byte(`// header
 {
  // model explanation
@@ -122,7 +122,7 @@ func TestSavePreservesUnrelatedAndUnsetComments(t *testing.T) {
 
 func TestUnsetRemovesCaseVariantsAndDuplicates(t *testing.T) {
 	root := t.TempDir()
-	if err := os.WriteFile(filepath.Join(root, "settings.jsonm"), []byte(`{"CLAUDE_MODEL":"first","claude_model":"last"}`), 0600); err != nil {
+	if err := os.WriteFile(filepath.Join(root, "settings.jsonc"), []byte(`{"CLAUDE_MODEL":"first","claude_model":"last"}`), 0600); err != nil {
 		t.Fatal(err)
 	}
 	cfg, err := Load(root)

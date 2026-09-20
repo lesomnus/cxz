@@ -8,8 +8,15 @@ import (
 )
 
 func TestLegacySettingsMigrationAndPrecedence(t *testing.T) {
+	for _, name := range []string{LegacyFilename, "settings.jsonm"} {
+		t.Run(name, func(t *testing.T) { testLegacySettingsMigration(t, name) })
+	}
+}
+
+func testLegacySettingsMigration(t *testing.T, name string) {
+	t.Helper()
 	root := t.TempDir()
-	legacy := filepath.Join(root, LegacyFilename)
+	legacy := filepath.Join(root, name)
 	original := []byte("{\n // My model.\n \"claude_model\":\"legacy\",\n}\n")
 	if err := os.WriteFile(legacy, original, 0600); err != nil {
 		t.Fatal(err)
@@ -45,5 +52,18 @@ func TestLegacySettingsMigrationAndPrecedence(t *testing.T) {
 	}
 	if _, err := Load(root); err == nil {
 		t.Fatal("invalid primary silently fell back to old preferences")
+	}
+}
+
+func TestSettingsFilenamePrecedence(t *testing.T) {
+	root := t.TempDir()
+	for _, name := range []string{LegacyFilename, "settings.jsonm", Filename} {
+		if err := os.WriteFile(filepath.Join(root, name), []byte(`{"claude_model":"`+name+`"}`), 0600); err != nil {
+			t.Fatal(err)
+		}
+		cfg, err := Load(root)
+		if err != nil || cfg.ClaudeModel != name {
+			t.Fatal("newer filename not preferred", name, cfg, err)
+		}
 	}
 }

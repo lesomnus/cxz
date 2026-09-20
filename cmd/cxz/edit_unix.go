@@ -16,7 +16,7 @@ import (
 )
 
 func editCommand() *xli.Command {
-	return &xli.Command{Name: "edit", Brief: "Edit settings.jsonm in $VISUAL/$EDITOR; validate and sync changed settings", Handler: onRun(func(ctx context.Context, c *xli.Command) error {
+	return &xli.Command{Name: "edit", Brief: "Edit settings.jsonc in $VISUAL/$EDITOR; validate and sync changed settings", Handler: onRun(func(ctx context.Context, c *xli.Command) error {
 		root := stateFrom(ctx)
 		previous, _ := settings.Load(root)
 		changed, bundle, err := editSettings(root, func(path string) error { return openSettingsEditor(ctx, c, path) })

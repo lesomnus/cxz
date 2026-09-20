@@ -17,7 +17,7 @@ is preserved. Use `cxz edit` to customize it:
 }
 ```
 
-`compose` is optional; its path is relative to `settings.jsonm`, or absolute / `~/`.
+`compose` is optional; its path is relative to `settings.jsonc`, or absolute / `~/`.
 The file is a Compose override for the **shared engine**, with service name `dind`:
 
 ```yaml

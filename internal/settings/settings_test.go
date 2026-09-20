@@ -23,7 +23,7 @@ func TestSettings(t *testing.T) {
 	if err != nil || !reflect.DeepEqual(got, c) {
 		t.Fatal(got, err)
 	}
-	st, err := os.Stat(filepath.Join(root, "settings.jsonm"))
+	st, err := os.Stat(filepath.Join(root, "settings.jsonc"))
 	if err != nil || (runtime.GOOS != "windows" && st.Mode().Perm() != 0600) {
 		t.Fatal("unsafe settings mode", err)
 	}
@@ -33,7 +33,7 @@ func TestSettings(t *testing.T) {
 		}
 	}
 	for _, raw := range []string{`{"agent":"other"}`, `{"token":"secret"}`, `{} {}`} {
-		if err = os.WriteFile(filepath.Join(root, "settings.jsonm"), []byte(raw), 0600); err != nil {
+		if err = os.WriteFile(filepath.Join(root, "settings.jsonc"), []byte(raw), 0600); err != nil {
 			t.Fatal(err)
 		}
 		if _, err = Load(root); err == nil {
