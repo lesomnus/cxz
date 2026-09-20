@@ -84,6 +84,11 @@ Select a session in the project list and press **m** (or use `/memory`) to
 [browse retained agent memory and history](docs/agent-memory.md), even after
 the project container stops. Press **c** to copy selected data to another session.
 
+When startup needs configuration trust, cxz shows a compact inline **Exit / Trust**
+choice. Other interactive command errors remain visible until Exit is selected.
+Use `cxz up -x WORKSPACE` (or `--exit-on-error`) to return errors immediately;
+noninteractive and structured-output commands never open these prompts.
+
 The remote user must have write permission on the host workspace. Explicit
 `remoteUser` settings are respected; cxz does not silently change repository file
 ownership or remap an existing user's UID. Adjust the devcontainer for a host UID

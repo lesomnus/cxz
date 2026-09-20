@@ -39,9 +39,9 @@ type clientFunc func(context.Context, api.SessionsClient, *xli.Command) error
 func onRun(fn commandFunc) xli.Handler {
 	return xli.OnRun(func(ctx context.Context, c *xli.Command, _ xli.Next) error {
 		if err := validateInvocation(c); err != nil {
-			return err
+			return handleCommandError(ctx, c, err)
 		}
-		return fn(ctx, c)
+		return handleCommandError(ctx, c, fn(ctx, c))
 	})
 }
 
@@ -119,7 +119,7 @@ func agentArg() *arg.Mono[string, agentParser] {
 func newRoot(state string) *xli.Command {
 	root := &xli.Command{Name: "cxz", Brief: "Persistent coding-agent sessions in owned devcontainers",
 		Synop: "Flags precede positional arguments: cxz account add codex work; cxz session new --account work .\nCtrl-C detaches the TUI; stop terminates the agent. Foreign containers are never adopted.",
-		Flags: flg.Flags{stringFlag("state", "Private client/runtime state directory", state)},
+		Flags: flg.Flags{stringFlag("state", "Private client/runtime state directory", state), &flg.Switch{Name: "exit-on-error", Alias: 'x', Brief: "Return errors immediately without interactive error recovery", Default: ptr(false)}},
 		Handler: xli.Chain(xli.On(mode.Run, func(ctx context.Context, c *xli.Command, next xli.Next) error {
 			if err := validateInvocation(c); err != nil {
 				return err
@@ -168,6 +168,7 @@ func newRoot(state string) *xli.Command {
 	root.Commands = append(root.Commands, xli.NewCmdCompletion())
 	reorganizeCommands(root)
 	bindProjectCompletions(root)
+	bindErrorFlags(root)
 	return root
 }
 
