@@ -294,7 +294,7 @@ func TestProjectNavigatorHasBackgroundAndOnlyFocusedSideBottomRule(t *testing.T)
 			if strings.Contains(plain, "─") != (width == 200 && focus) {
 				t.Fatal("incorrect focus rule")
 			}
-			if !strings.Contains(rendered, "48;2;36;36;36") {
+			if !strings.Contains(rendered, "48;2;48;48;48") {
 				t.Fatal("background missing")
 			}
 		}
@@ -326,7 +326,7 @@ func TestNavigatorBackgroundCoversEveryTerminalCell(t *testing.T) {
 						t.Fatalf("unpainted cell %d,%d at width %d focus %v", x, y, width, focused)
 					}
 					r, g, b, _ := cell.Style.Bg.RGBA()
-					if r != 0x2424 || g != 0x2424 || b != 0x2424 {
+					if r != 0x3030 || g != 0x3030 || b != 0x3030 {
 						t.Fatalf("wrong background at %d,%d: %x %x %x", x, y, r, g, b)
 					}
 				}
@@ -338,5 +338,24 @@ func TestNavigatorBackgroundCoversEveryTerminalCell(t *testing.T) {
 			}
 			terminal.Close()
 		}
+	}
+}
+
+func TestProjectPanelOneCellPadding(t *testing.T) {
+	m := panelModel()
+	m.panelFocus = true
+	rows := strings.Split(ansi.Strip(m.panelScreen()), "\n")
+	if strings.TrimSpace(rows[0]) != "" {
+		t.Fatal("top padding missing")
+	}
+	for i, row := range rows[:len(rows)-1] {
+		if !strings.HasPrefix(row, " ") || !strings.HasSuffix(row, " ") {
+			t.Fatalf("side padding missing on row %d: %q", i, row)
+		}
+	}
+	m.panelFocus = false
+	rows = strings.Split(ansi.Strip(m.panelScreen()), "\n")
+	if strings.TrimSpace(rows[len(rows)-1]) != "" {
+		t.Fatal("bottom padding missing")
 	}
 }

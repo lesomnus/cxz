@@ -9,6 +9,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/charmbracelet/x/vt"
 	"github.com/lesomnus/cxz/api"
 	"github.com/muesli/termenv"
 )
@@ -48,7 +49,7 @@ func TestFilePreviewLayoutAndScrolling(t *testing.T) {
 	m.width = 80
 	m.resize()
 	m.render()
-	if m.previewHeight() != 8 || m.previewSideWidth() != 0 {
+	if m.previewHeight() != 10 || m.previewSideWidth() != 0 {
 		t.Fatal("narrow preview dimensions")
 	}
 	view := strings.Split(ansi.Strip(m.View()), "\n")
@@ -56,7 +57,7 @@ func TestFilePreviewLayoutAndScrolling(t *testing.T) {
 		t.Fatalf("height %d != %d", len(view), m.height)
 	}
 	top := m.view.Height + 2 + m.approvalHeight()
-	if !strings.Contains(view[top], "Write") || !strings.Contains(view[top+8], "╭") {
+	if !strings.Contains(view[top+1], "Write") || !strings.Contains(view[top+10], "╭") {
 		t.Fatalf("panel not above composer: %q", view)
 	}
 	if !m.filePreviewMouse(tea.MouseMsg{X: 5, Y: top + 2, Button: tea.MouseButtonWheelDown}) || m.filePreview.offset != 3 {
@@ -64,7 +65,7 @@ func TestFilePreviewLayoutAndScrolling(t *testing.T) {
 	}
 	// The header close hitbox must match the rendered row on narrow screens.
 	saved := m.filePreview
-	if !m.filePreviewMouse(tea.MouseMsg{X: 79, Y: top, Button: tea.MouseButtonLeft, Action: tea.MouseActionPress}) || m.filePreview != nil {
+	if !m.filePreviewMouse(tea.MouseMsg{X: 77, Y: top + 1, Button: tea.MouseButtonLeft, Action: tea.MouseActionPress}) || m.filePreview != nil {
 		t.Fatal("narrow close hitbox")
 	}
 	m.filePreview = saved
@@ -78,8 +79,8 @@ func TestFilePreviewLayoutAndScrolling(t *testing.T) {
 	if !strings.Contains(ansi.Strip(m.View()), "Write · main.go") {
 		t.Fatal("missing side preview")
 	}
-	x := m.contentOffset() + m.width + 2 + m.previewSideWidth() - 1
-	if !m.filePreviewMouse(tea.MouseMsg{X: x, Y: 0, Button: tea.MouseButtonLeft, Action: tea.MouseActionPress}) || m.filePreview != nil {
+	x := m.contentOffset() + m.width + 2 + m.previewSideWidth() - 3
+	if !m.filePreviewMouse(tea.MouseMsg{X: x, Y: 1, Button: tea.MouseButtonLeft, Action: tea.MouseActionPress}) || m.filePreview != nil {
 		t.Fatal("close")
 	}
 }
@@ -216,6 +217,52 @@ func TestReadPreviewExpandsTabsBeforeMeasuring(t *testing.T) {
 			if m.filePreview.source != source {
 				t.Fatal("display normalization changed recorded source")
 			}
+		}
+	}
+}
+
+func TestPreviewBackgroundPaddingAndFocusRule(t *testing.T) {
+	profile := lipgloss.ColorProfile()
+	lipgloss.SetColorProfile(termenv.TrueColor)
+	defer lipgloss.SetColorProfile(profile)
+	for _, width := range []int{40, 80} {
+		for _, focused := range []bool{false, true} {
+			m := conversationModel()
+			m.filePreview = &filePreview{session: "s", title: "Read · demo.py", source: "1\tprint(\"한글\")\n2\t# comment", language: "demo.py", focused: focused}
+			rendered := m.previewRows(width, 10)
+			rows := strings.Split(ansi.Strip(rendered), "\n")
+			if strings.TrimSpace(rows[0]) != "" || strings.ContainsAny(rendered, "╭╮╰╯") {
+				t.Fatal("top padding or outer border")
+			}
+			if focused != strings.Contains(rows[9], "─") {
+				t.Fatal("wrong focus indicator")
+			}
+			for i, row := range rows[:9] {
+				if !strings.HasPrefix(row, " ") || !strings.HasSuffix(row, " ") {
+					t.Fatalf("missing side padding at row %d: %q", i, row)
+				}
+			}
+			terminal := vt.NewEmulator(width, 10)
+			terminal.WriteString(strings.ReplaceAll(rendered, "\n", "\r\n"))
+			for y := 0; y < 10; y++ {
+				for x := 0; x < width; x++ {
+					cell := terminal.CellAt(x, y)
+					// The emulator stores a wide grapheme's style on its leading cell.
+					if cell != nil && cell.Width == 0 && x > 0 {
+						if leading := terminal.CellAt(x-1, y); leading != nil && leading.Width == 2 {
+							cell = leading
+						}
+					}
+					if cell == nil || cell.Style.Bg == nil {
+						t.Fatal("unpainted preview cell", x, y)
+					}
+					r, g, b, _ := cell.Style.Bg.RGBA()
+					if r != 0x3030 || g != 0x3030 || b != 0x3030 {
+						t.Fatal("preview color differs from #303030", x, y)
+					}
+				}
+			}
+			terminal.Close()
 		}
 	}
 }
