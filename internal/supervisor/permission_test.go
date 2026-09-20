@@ -31,6 +31,45 @@ func TestDefaultPermissionApprovesWithoutAnyClient(t *testing.T) {
 	}
 }
 
+func TestFullPermissionApprovesClaudeSearchToolsWithoutClient(t *testing.T) {
+	for _, tool := range []string{"WebSearch", "WebFetch", "ToolSearch"} {
+		t.Run(tool, func(t *testing.T) {
+			s, wire := displaySupervisor(t, "claude")
+			s.snap.PermissionMode = "ask"
+			request := []byte(fmt.Sprintf(`{"type":"control_request","request_id":"search","request":{"subtype":"can_use_tool","tool_name":%q,"input":{"query":"image index verification"}}}`, tool))
+			s.consume(request)
+			if len(s.pending) != 1 || wire.Len() != 0 {
+				t.Fatal("ask must wait for approval")
+			}
+			if _, err := s.execute("permission", core.Command{RunID: "run", ClientID: "enable", Text: "full"}); err != nil {
+				t.Fatal(err)
+			}
+			if len(s.pending) != 0 || wire.Len() == 0 {
+				t.Fatal("full did not resolve pending search")
+			}
+			var reply struct {
+				Response struct {
+					Response struct {
+						Behavior string         `json:"behavior"`
+						Input    map[string]any `json:"updatedInput"`
+					} `json:"response"`
+				} `json:"response"`
+			}
+			if err := json.Unmarshal(wire.Bytes(), &reply); err != nil {
+				t.Fatal(err)
+			}
+			if reply.Response.Response.Behavior != "allow" || reply.Response.Response.Input["query"] != "image index verification" {
+				t.Fatal("invalid tool approval", wire.String())
+			}
+			wire.Reset()
+			s.consume(permissionRequest("claude", tool, "future"))
+			if len(s.pending) != 0 || wire.Len() == 0 {
+				t.Fatal("future search required a client")
+			}
+		})
+	}
+}
+
 func TestSupervisorApprovesWithoutAnyClient(t *testing.T) {
 	for _, provider := range []string{"claude", "codex"} {
 		t.Run(provider, func(t *testing.T) {
