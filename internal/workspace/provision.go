@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/goccy/go-yaml"
+	"github.com/lesomnus/cxz/internal/configtrust"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/distribution"
 	"github.com/lesomnus/cxz/internal/dockerx"
@@ -436,7 +437,7 @@ func CheckTrust(cfg map[string]any, trusted bool) error {
 	}
 	walk(cfg, "")
 	if len(findings) > 0 {
-		return fmt.Errorf("devcontainer configuration requires explicit trust:\n%s\ninspect these settings and explicitly pass --trust-config if trusted (configuration values omitted)", strings.Join(findings, "\n"))
+		return &configtrust.Required{Findings: findings}
 	}
 	return nil
 }

@@ -287,11 +287,14 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 	call, cancel := context.WithTimeout(ctx, 30*time.Minute)
 	defer cancel()
 	if projectEntry {
-		if err := prepareWithProgress(call, c.ErrWriter, func(ctx context.Context) (*api.Project, error) {
-			return resources.ResolveProject(ctx, path)
-		}, func() error { _, err := resources.Open(call, request); return err }, time.Second); err != nil {
+		_, err := withConfigTrust(call, request, interactiveErrors(c), func(ctx context.Context, r *api.ProjectRequest) (*api.Session, error) {
+			err := prepareWithProgress(ctx, c.ErrWriter, func(ctx context.Context) (*api.Project, error) { return resources.ResolveProject(ctx, path) }, func() error { _, err := resources.Open(ctx, r); return err }, time.Second)
+			return nil, err
+		}, trustPrompt(c))
+		if err != nil {
 			return err
 		}
+
 		p, err := resources.ResolveProject(call, path)
 		if err != nil {
 			return err
@@ -299,10 +302,17 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 		if detach || !terminal(c) {
 			return writeOutput(c, p)
 		}
-		return projectTUI(ctx, resources, c, p, "", trust)
+		return projectTUI(ctx, resources, c, p, "", request.TrustConfig)
 	}
-	s, e := openWithProjectLogin(call, request, terminal(c), func(ctx context.Context, r *api.ProjectRequest) (*api.Session, error) {
-		return client.Open(ctx, r)
+	s, e := openWithProjectLogin(call, request, terminal(c) && !exitOnError(c), func(ctx context.Context, r *api.ProjectRequest) (*api.Session, error) {
+		return withConfigTrust(ctx, r, interactiveErrors(c), func(ctx context.Context, r *api.ProjectRequest) (*api.Session, error) {
+			if !terminal(c) || exitOnError(c) {
+				return client.Open(ctx, r)
+			}
+			var session *api.Session
+			err := sessionProgress(ctx, c.ErrWriter, func() error { var err error; session, err = client.Open(ctx, r); return err })
+			return session, err
+		}, trustPrompt(c))
 	}, func(ctx context.Context, alias, key string) error {
 		a, err := resources.Account(ctx, alias)
 		if err != nil {
@@ -310,7 +320,7 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 		}
 		fmt.Fprintln(c.ErrWriter, "cxz: workspace ready; starting project account login, then connecting the session")
 		return projectAccountWorkflow(ctx, resources, c, a, "login", request.Workspace, false, key)
-	}, c.ErrWriter)
+	})
 	if e != nil {
 		return e
 	}
@@ -321,7 +331,7 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 	if err != nil {
 		return err
 	}
-	return projectTUI(ctx, resources, c, p, s.Id, trust)
+	return projectTUI(ctx, resources, c, p, s.Id, request.TrustConfig)
 }
 func attach(ctx context.Context, client api.SessionsClient, arg string) error {
 	c, cancel := context.WithTimeout(ctx, 15*time.Second)
