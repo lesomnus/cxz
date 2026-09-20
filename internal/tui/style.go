@@ -115,7 +115,7 @@ func (m *model) resize() {
 	// Populate its new content, then let the widget re-anchor its scroll offset.
 	_ = m.input.View()
 	m.input, _ = m.input.Update(nil)
-	m.view.Width = max(1, m.width)
+	m.view.Width = max(1, m.width-2)
 	// Blank separator + status (2), composer border (2), session information (1).
 	m.view.Height = max(1, m.height-m.input.Height()-5-m.approvalHeight()-m.terminalHeight()-m.previewHeight())
 	if p := m.terminal(); p != nil && p.session != nil && m.terminalHeight() > 0 {
@@ -225,7 +225,11 @@ func (m *model) sessionScreen() string {
 	}
 	preview := ""
 	if h := m.previewHeight(); h > 0 {
-		preview = m.previewRows(width, h) + "\n"
+		rows := strings.Split(m.previewRows(max(1, width-4), h), "\n")
+		for i := range rows {
+			rows[i] = "  " + rows[i] + "  "
+		}
+		preview = strings.Join(rows, "\n") + "\n"
 	}
 	composer := m.input
 	modal := m.redactDialog != nil || m.terminalFocused() || m.panelFocus || m.report != nil || m.modelPicker != nil || m.restartConfirm != nil || m.questionDialog != nil || m.pasteDialog != nil || m.selectingTools() || (m.previewVisible() && m.filePreview.focused)

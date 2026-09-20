@@ -65,7 +65,7 @@ func (m *model) conversationView() string {
 		frames := []rune("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏")
 		// render reserves a final transcript row for this transient indicator.
 		index := min(len(rows)-1, max(0, len(m.historyTimes)-m.view.YOffset-1))
-		rows[index] = indentBlock(accent.Render(string(frames[m.pulse%len(frames)])) + " " + muted.Render(clip(m.workingLabel(time.Now()), max(1, m.width-4))))
+		rows[index] = indentBlock(accent.Render(string(frames[m.pulse%len(frames)])) + " " + muted.Render(clip(m.workingLabel(time.Now()), max(1, m.view.Width-4))))
 	}
 	pinned := ""
 	for _, span := range m.promptSpans {
@@ -76,7 +76,7 @@ func (m *model) conversationView() string {
 		}
 	}
 	if pinned != "" && !m.selectingTools() {
-		prompt := strings.Split(ansi.Hardwrap(safeText(pinned), max(1, m.width-2), true), "\n")
+		prompt := strings.Split(ansi.Hardwrap(safeText(pinned), max(1, m.view.Width-2), true), "\n")
 		for i := 0; i < min(2, min(len(prompt), len(rows))); i++ {
 			prefix := "  "
 			if i == 0 {
@@ -84,12 +84,15 @@ func (m *model) conversationView() string {
 			}
 			text := prefix + prompt[i]
 			if i == 1 && len(prompt) > 2 {
-				text = clip(text+" …", m.width)
+				text = clip(text+" …", m.view.Width)
 			}
-			text = clip(text, m.width)
-			rows[i] = pinnedPrompt.Render(text + strings.Repeat(" ", max(0, m.width-ansi.StringWidth(text))))
+			text = clip(text, m.view.Width)
+			rows[i] = pinnedPrompt.Render(text + strings.Repeat(" ", max(0, m.view.Width-ansi.StringWidth(text))))
 		}
 	}
 	m.toolSelectorView(rows)
+	for i, row := range rows {
+		rows[i] = row + strings.Repeat(" ", max(0, m.width-ansi.StringWidth(row)))
+	}
 	return strings.Join(rows, "\n")
 }

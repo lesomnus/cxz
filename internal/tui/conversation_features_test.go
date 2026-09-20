@@ -198,10 +198,10 @@ func TestPinnedPromptFullRowBackground(t *testing.T) {
 				if ansi.StringWidth(row) != width || !strings.Contains(row, background) {
 					t.Fatalf("width %d row %d not fully highlighted: %q", width, i, row)
 				}
-				// Padding must be inside the background span, before its reset.
+				// Content padding stays painted; the two-column outer margin does not.
 				painted := strings.SplitN(row, background, 2)[1]
 				painted = strings.SplitN(painted, "\x1b[0m", 2)[0]
-				if ansi.StringWidth(painted) != width {
+				if ansi.StringWidth(painted) != width-2 || !strings.HasSuffix(row, "\x1b[0m  ") {
 					t.Fatalf("unpainted padding: %q", row)
 				}
 			} else if strings.Contains(row, background) {
