@@ -14,7 +14,7 @@ import (
 	"github.com/yuin/goldmark/text"
 )
 
-var codeStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#FFFFFF")).Background(lipgloss.Color("#000000"))
+var codeStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#FFFFFF")).Background(lipgloss.Color("238"))
 var markdownParser = goldmark.New(goldmark.WithExtensions(extension.GFM)).Parser()
 
 type renderedResponse struct {
@@ -69,10 +69,15 @@ func markdownView(raw string, width int) string {
 			segment := n.Lines().At(i)
 			b.Write(segment.Value(source))
 		}
-		rows := strings.Split(ansi.Hardwrap(strings.TrimRight(b.String(), "\n"), max(1, width-1), true), "\n")
+		language := ""
+		if fence, ok := n.(*ast.FencedCodeBlock); ok {
+			language = string(fence.Language(source))
+		}
+		code := highlightCode(strings.TrimRight(b.String(), "\n"), language)
+		rows := strings.Split(ansi.Hardwrap(code, max(1, width-1), true), "\n")
 		for i := range rows {
 			line := clip(" "+rows[i], max(1, width))
-			rows[i] = codeStyle.Render(line + strings.Repeat(" ", max(0, width-ansi.StringWidth(line))))
+			rows[i] = indexedBackground(line+strings.Repeat(" ", max(0, width-ansi.StringWidth(line))), 238)
 		}
 		return strings.Join(rows, "\n") + "\n\n"
 	}
@@ -110,18 +115,16 @@ func markdownView(raw string, width int) string {
 				return "☑ "
 			}
 			return "☐ "
-		case *extast.TableHeader, *extast.TableRow:
-			var cells []string
-			for c := n.FirstChild(); c != nil; c = c.NextSibling() {
-				cells = append(cells, render(c))
-			}
-			row := strings.Join(cells, " │ ")
-			if _, ok := n.(*extast.TableHeader); ok {
-				row = strong.Render(row)
-			}
-			return row + "\n"
 		case *extast.Table:
-			return children(n) + "\n"
+			var rows [][]string
+			for row := n.FirstChild(); row != nil; row = row.NextSibling() {
+				var cells []string
+				for cell := row.FirstChild(); cell != nil; cell = cell.NextSibling() {
+					cells = append(cells, children(cell))
+				}
+				rows = append(rows, cells)
+			}
+			return markdownTable(rows, v.Alignments, width) + "\n\n"
 		case *ast.ListItem:
 			prefix := "• "
 			if list, ok := n.Parent().(*ast.List); ok && list.IsOrdered() {

@@ -20,7 +20,7 @@ func TestFencedCodeBlockBackgroundAndPadding(t *testing.T) {
 	}
 	for _, row := range rows {
 		plain := ansi.Strip(row)
-		if ansi.StringWidth(row) != 20 || !strings.HasPrefix(plain, " ") || !strings.Contains(row, "48;2;0;0;0") {
+		if ansi.StringWidth(row) != 20 || !strings.HasPrefix(plain, " ") || !strings.Contains(row, "48;5;238") {
 			t.Fatalf("unfilled code row: %q", row)
 		}
 	}

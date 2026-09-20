@@ -61,6 +61,12 @@ type promptSpan struct {
 
 func (m *model) conversationView() string {
 	rows := strings.Split(m.view.View(), "\n")
+	promptRows := map[int]bool{}
+	for _, span := range m.promptSpans {
+		for row := max(0, span.start+1-m.view.YOffset); row < min(len(rows), span.end-m.view.YOffset); row++ {
+			promptRows[row] = true
+		}
+	}
 	if m.activeWork() && m.view.AtBottom() && len(rows) > 0 {
 		frames := []rune("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏")
 		// render reserves a final transcript row for this transient indicator.
@@ -87,12 +93,16 @@ func (m *model) conversationView() string {
 				text = clip(text+" …", m.view.Width)
 			}
 			text = clip(text, m.view.Width)
-			rows[i] = pinnedPrompt.Render(text + strings.Repeat(" ", max(0, m.view.Width-ansi.StringWidth(text))))
+			rows[i] = blue.Render(text)
+			promptRows[i] = true
 		}
 	}
 	m.toolSelectorView(rows)
 	for i, row := range rows {
 		rows[i] = row + strings.Repeat(" ", max(0, m.width-ansi.StringWidth(row)))
+		if promptRows[i] {
+			rows[i] = indexedBackground(rows[i], 236)
+		}
 	}
 	return strings.Join(rows, "\n")
 }

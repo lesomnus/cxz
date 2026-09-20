@@ -48,7 +48,8 @@ func eventView(s *api.Session, e *api.Event, width int) (out string) {
 			if i == 0 {
 				prefix = "> "
 			}
-			text[i] = blue.Render(prefix + text[i])
+			line := blue.Render(prefix + text[i])
+			text[i] = indexedBackground(line+strings.Repeat(" ", max(0, width-ansi.StringWidth(line))), 236)
 		}
 		return timestamp.Render("  "+stamp) + "\n" + strings.Join(text, "\n")
 	case "assistant":

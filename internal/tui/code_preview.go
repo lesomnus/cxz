@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"regexp"
 	"strings"
 
 	"github.com/alecthomas/chroma/v2/lexers"
@@ -23,14 +24,58 @@ func highlightCode(source, language string) string {
 	if lipgloss.ColorProfile().Name() == "Ascii" {
 		return source
 	}
+	if language == "" {
+		language = detectCodeLanguage(source)
+	}
 	if lexer := lexers.Match(language); lexer != nil {
 		language = lexer.Config().Name
 	}
 	var out strings.Builder
-	if err := quick.Highlight(&out, source, language, "terminal16m", "dracula"); err != nil {
+	formatter := "terminal16m"
+	if lipgloss.ColorProfile().Name() == "ANSI256" {
+		formatter = "terminal256"
+	} else if lipgloss.ColorProfile().Name() == "ANSI" {
+		formatter = "terminal16"
+	}
+	if err := quick.Highlight(&out, source, language, formatter, "dracula"); err != nil {
 		return source
 	}
 	return strings.TrimSuffix(out.String(), "\n")
+}
+
+// Many bundled lexers have no content analyser. Recognize distinctive common
+// snippet syntax first; ambiguous prose remains plaintext. Explicit fence names
+// (including text/plaintext) always take precedence over detection.
+var codeLanguageHints = []struct {
+	language string
+	pattern  *regexp.Regexp
+}{
+	{"python", regexp.MustCompile(`(?m)^#![^\n]*\bpython[0-9.]*\b|^\s*(?:async\s+)?def\s+\w+\([^\n]*\)\s*(?:->[^\n]+)?:`)},
+	{"bash", regexp.MustCompile(`(?m)^#![^\n]*\b(?:bash|sh|zsh)\b|^\s*(?:export\s+[A-Za-z_]\w*=|(?:curl|docker|git|go|npm|kubectl)\s+[\w-]+)`)},
+	{"go", regexp.MustCompile(`(?m)^package\s+\w+\s*$|^func\s+(?:\([^\n]+\)\s*)?\w+\(`)},
+	{"typescript", regexp.MustCompile(`(?m)^\s*(?:export\s+)?(?:interface\s+\w+\s*\{|type\s+\w+\s*=)`)},
+	{"javascript", regexp.MustCompile(`(?m)^\s*(?:export\s+)?(?:async\s+)?function\s+\w+\(|^\s*(?:const|let)\s+\w+\s*=`)},
+	{"diff", regexp.MustCompile(`(?m)^diff --git |^@@ -\d+`)},
+	{"dockerfile", regexp.MustCompile(`(?m)^FROM\s+\S+`)},
+	{"sql", regexp.MustCompile(`(?im)^\s*(?:SELECT\s+.+\s+FROM\s|CREATE\s+TABLE\s|INSERT\s+INTO\s)`)},
+	{"yaml", regexp.MustCompile(`(?m)^[A-Za-z_][\w.-]*:\s*(?:\n|[\w'"\[\{])`)},
+}
+
+func detectCodeLanguage(source string) string {
+	sample := source[:min(len(source), 65536)]
+	trimmed := strings.TrimSpace(sample)
+	if (strings.HasPrefix(trimmed, "{") || strings.HasPrefix(trimmed, "[")) && json.Valid([]byte(trimmed)) {
+		return "json"
+	}
+	for _, hint := range codeLanguageHints {
+		if hint.pattern.MatchString(sample) {
+			return hint.language
+		}
+	}
+	if lexer := lexers.Analyse(sample); lexer != nil {
+		return lexer.Config().Name
+	}
+	return "plaintext"
 }
 
 // Keep a bounded tail even when a process emits a single enormous line.
