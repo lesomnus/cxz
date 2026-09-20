@@ -32,7 +32,7 @@ type settingsResult struct {
 }
 
 var settingsActions = []struct{ label, action string }{
-	{"Refresh", "info"}, {"Start / apply saved settings", "up"}, {"Stop shared engine", "down"}, {"Clear unused build cache", "prune"},
+	{"Refresh", "info"}, {"Activate", "up"}, {"Clear unused build cache", "prune"},
 }
 
 const settingsActionRow = 7
@@ -101,6 +101,9 @@ func (m *model) receiveSettings(r settingsResult) {
 	if r.infoErr != nil {
 		p.statusError = "Status unavailable: " + r.infoErr.Error() + "\nUpdate the host manager if this operation is unavailable."
 	}
+	if !m.settingsEnabled(p.selected) {
+		m.moveSetting(1)
+	}
 }
 func (m *model) pollSettings() tea.Cmd {
 	p := m.settingsPage
@@ -109,29 +112,51 @@ func (m *model) pollSettings() tea.Cmd {
 	}
 	return m.settingsRequest("info")
 }
+
+// Resolve the toggle from the latest reported engine state.
+func (m *model) settingsAction(index int) (string, string) {
+	if index == 1 && m.settingsPage.loaded && m.settingsPage.info.State == "running" {
+		return "Deactivate", "down"
+	}
+	a := settingsActions[index]
+	return a.label, a.action
+}
+
+func (m *model) moveSetting(direction int) {
+	p := m.settingsPage
+	for step := 1; step <= len(settingsActions); step++ {
+		index := (p.selected + direction*step + len(settingsActions)) % len(settingsActions)
+		if m.settingsEnabled(index) {
+			p.selected = index
+			m.revealSetting()
+			return
+		}
+	}
+}
+
 func (m *model) settingsEnabled(index int) bool {
 	p := m.settingsPage
-	if p == nil || p.loading || p.busy {
+	if p == nil || index < 0 || index >= len(settingsActions) || p.loading || p.busy {
 		return false
 	}
 	if index == 0 {
 		return true
 	}
-	if !p.loaded {
+	if !p.loaded || p.statusError != "" {
 		return false
 	}
 	if index == 1 {
-		return p.info.Mode == "dind"
+		return p.info.State == "running" || p.info.Mode == "dind"
 	}
-	return p.info.State == "running" || index == 2 && p.info.State == "stopped"
+	return p.info.State == "running"
 }
 func (m *model) activateSetting() tea.Cmd {
 	p := m.settingsPage
 	if !m.settingsEnabled(p.selected) {
 		return nil
 	}
-	action := settingsActions[p.selected].action
-	if action == "down" || action == "prune" || action == "up" && p.info.State == "running" {
+	_, action := m.settingsAction(p.selected)
+	if action == "down" || action == "prune" {
 		p.confirm = action
 		p.confirmYes = false
 		return nil
@@ -169,11 +194,9 @@ func (m *model) settingsKey(k tea.KeyMsg) tea.Cmd {
 		}
 		return nil
 	case "up", "shift+tab":
-		p.selected = (p.selected + len(settingsActions) - 1) % len(settingsActions)
-		m.revealSetting()
+		m.moveSetting(-1)
 	case "down", "tab":
-		p.selected = (p.selected + 1) % len(settingsActions)
-		m.revealSetting()
+		m.moveSetting(1)
 	case "enter":
 		return m.activateSetting()
 	case "r":
@@ -224,7 +247,7 @@ func (m *model) settingsMouse(v tea.MouseMsg) tea.Cmd {
 			return nil
 		}
 		index := v.Y + p.offset - settingsActionRow
-		if index >= 0 && index < len(settingsActions) {
+		if m.settingsEnabled(index) {
 			p.selected = index
 			return m.activateSetting()
 		}
@@ -240,7 +263,7 @@ func (m *model) settingsWidth() int {
 func (m *model) settingsConfirmation() ([]string, int, int) {
 	p := m.settingsPage
 	width := max(1, m.settingsWidth()-4)
-	text := map[string]string{"down": "Stop Docker for all projects? Images and volumes will be retained.", "prune": "Remove unused build cache from the shared Docker engine? Images and volumes will be retained.", "up": "Apply saved Docker settings? Changes may restart workloads in the shared engine."}[p.confirm]
+	text := map[string]string{"down": "Deactivate Docker for all projects? Images and volumes will be retained.", "prune": "Remove unused build cache from the shared Docker engine? Images and volumes will be retained."}[p.confirm]
 	lines := []string{"", accent.Bold(true).Render("Confirm action"), ""}
 	lines = append(lines, strings.Split(ansi.Hardwrap(text, width, true), "\n")...)
 	lines = append(lines, "")
@@ -286,10 +309,11 @@ func (m *model) settingsScreen() string {
 		}
 	}
 	lines := []string{"", accent.Bold(true).Render("Settings · shared Docker"), "Mode: " + mode + "   Status: " + state, "Image: " + image, "Endpoint: " + endpoint, "Build cache: " + cache, ""}
-	for i, a := range settingsActions {
-		label := "  [ " + a.label + " ]"
-		if p.selected == i {
-			label = "› [ " + a.label + " ]"
+	for i := range settingsActions {
+		name, _ := m.settingsAction(i)
+		label := "  [ " + name + " ]"
+		if p.selected == i && m.settingsEnabled(i) {
+			label = "› [ " + name + " ]"
 		}
 		line := clip(label, inner)
 		if !m.settingsEnabled(i) {

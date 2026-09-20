@@ -80,7 +80,9 @@ no effect on the engine.
 
 Open TUI settings with **Ctrl+P** from the conversation or project list
 (or `/settings`). Status and build cache usage refresh every ten seconds.
-Buttons refresh, start/apply saved settings, stop the shared engine, or clear
-unused build cache. Stop, cache cleanup and applying settings to a running
-engine require confirmation. Cleanup retains images and volumes. Esc or Ctrl+P
+Buttons refresh, activate/deactivate the shared engine, or clear unused build
+cache. The toggle shows Activate while stopped and Deactivate while running.
+Disabled buttons cannot be selected with the keyboard or mouse. Deactivation
+and cache cleanup require confirmation. To apply changed configuration to an
+already running engine, use `cxz docker up`. Cleanup retains images and volumes. Esc or Ctrl+P
 returns to the previous view. Opening settings does not start Docker.

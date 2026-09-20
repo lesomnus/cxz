@@ -18,6 +18,7 @@ type settingsClient struct {
 	api.SessionsClient
 	calls []*api.DockerInput
 	fail  bool
+	state string
 }
 
 func (c *settingsClient) Docker(_ context.Context, r *api.DockerInput, _ ...grpc.CallOption) (*api.Receipt, error) {
@@ -26,8 +27,18 @@ func (c *settingsClient) Docker(_ context.Context, r *api.DockerInput, _ ...grpc
 		return nil, errors.New("unsupported manager")
 	}
 	if r.Action == "info" {
-		b, _ := json.Marshal(engine.Info{Mode: "dind", State: "running", Image: "docker:29-dind", BuildCache: "20MB", Reclaimable: "10MB"})
+		state := c.state
+		if state == "" {
+			state = "running"
+		}
+		b, _ := json.Marshal(engine.Info{Mode: "dind", State: state, Image: "docker:29-dind", BuildCache: "20MB", Reclaimable: "10MB"})
 		return &api.Receipt{Status: string(b)}, nil
+	}
+	if r.Action == "up" {
+		c.state = "running"
+	}
+	if r.Action == "down" {
+		c.state = "not running"
 	}
 	return &api.Receipt{Status: "Done"}, nil
 }
@@ -46,7 +57,7 @@ func TestSettingsShortcutAndMaintenance(t *testing.T) {
 	if !p.loaded || p.info.BuildCache != "20MB" {
 		t.Fatal(p)
 	}
-	p.selected = 3
+	p.selected = 2
 	if cmd = m.activateSetting(); cmd != nil || p.confirm != "prune" || p.confirmYes {
 		t.Fatal("missing cancel-first confirmation")
 	}
@@ -109,5 +120,83 @@ func TestSettingsErrorsResizeAndProjectEntry(t *testing.T) {
 	m.Update(tea.KeyMsg{Type: tea.KeyEsc})
 	if !m.projectView {
 		t.Fatal("project navigation lost")
+	}
+}
+
+func TestSettingsEngineToggle(t *testing.T) {
+	m := conversationModel()
+	c := &settingsClient{state: "not running"}
+	m.client = c
+	m.Update(m.openSettings()())
+	p := m.settingsPage
+	p.selected = 1
+	if text := ansi.Strip(m.View()); !strings.Contains(text, "[ Activate ]") || strings.Contains(text, "Deactivate") {
+		t.Fatal(text)
+	}
+	cmd := m.activateSetting()
+	if cmd == nil {
+		t.Fatal("Activate did not start engine")
+	}
+	if strings.Contains(ansi.Strip(m.View()), "› [") {
+		t.Fatal("busy buttons show selection")
+	}
+	m.Update(cmd())
+	if c.calls[1].Action != "up" || len(c.calls[1].Spec) != 0 {
+		t.Fatal(c.calls[1])
+	}
+	if text := ansi.Strip(m.View()); !strings.Contains(text, "[ Deactivate ]") || strings.Contains(text, "[ Activate ]") {
+		t.Fatal(text)
+	}
+	if cmd = m.activateSetting(); cmd != nil || p.confirm != "down" || p.confirmYes {
+		t.Fatal("deactivation lacks confirmation")
+	}
+	m.settingsKey(tea.KeyMsg{Type: tea.KeyTab})
+	m.Update(m.settingsKey(tea.KeyMsg{Type: tea.KeyEnter})())
+	if c.calls[3].Action != "down" || p.info.State != "not running" {
+		t.Fatal(c.calls, p.info)
+	}
+	if text := ansi.Strip(m.View()); !strings.Contains(text, "[ Activate ]") {
+		t.Fatal(text)
+	}
+}
+
+func TestSettingsSkipDisabledButtons(t *testing.T) {
+	m := conversationModel()
+	m.settingsPage = &settingsPage{loaded: true, info: engine.Info{Mode: "dind", State: "not running"}}
+	p := m.settingsPage
+	// Forward and backward wrap must skip cache cleanup while inactive.
+	for _, key := range []tea.KeyType{tea.KeyDown, tea.KeyTab} {
+		p.selected = 1
+		m.settingsKey(tea.KeyMsg{Type: key})
+		if p.selected != 0 {
+			t.Fatalf("%v selected disabled action %d", key, p.selected)
+		}
+	}
+	for _, key := range []tea.KeyType{tea.KeyUp, tea.KeyShiftTab} {
+		p.selected = 0
+		m.settingsKey(tea.KeyMsg{Type: key})
+		if p.selected != 1 {
+			t.Fatalf("%v selected disabled action %d", key, p.selected)
+		}
+	}
+	m.settingsMouse(tea.MouseMsg{X: 3, Y: settingsActionRow + 2, Button: tea.MouseButtonLeft, Action: tea.MouseActionPress})
+	if p.selected != 1 || p.confirm != "" {
+		t.Fatal("disabled mouse click selected action")
+	}
+	// A poll can disable the selected action; focus must move to an enabled one.
+	p.info.State = "running"
+	p.selected = 2
+	m.receiveSettings(settingsResult{page: p, request: p.request, action: "info", info: engine.Info{Mode: "off", State: "not running"}})
+	if p.selected != 0 {
+		t.Fatal("focus stayed on newly disabled action")
+	}
+	m.settingsKey(tea.KeyMsg{Type: tea.KeyDown})
+	if p.selected != 0 {
+		t.Fatal("mode off exposed an action")
+	}
+	p.loading = true
+	m.settingsKey(tea.KeyMsg{Type: tea.KeyUp})
+	if p.selected != 0 || strings.Contains(ansi.Strip(m.View()), "› [") {
+		t.Fatal("loading permits disabled selection")
 	}
 }
