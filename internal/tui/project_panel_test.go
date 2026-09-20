@@ -3,6 +3,9 @@ package tui
 import (
 	"context"
 	"fmt"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/muesli/termenv"
+	"google.golang.org/grpc"
 	"io"
 	"strings"
 	"testing"
@@ -178,5 +181,121 @@ func TestNarrowNavigatorOpensOtherProjectSession(t *testing.T) {
 	m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	if m.panelFocus || m.projectView || m.current().Id != "other-session" || m.drafts["s"] != "saved draft" {
 		t.Fatal("narrow selection did not open destination")
+	}
+}
+
+func TestNavigatorEntryFocusesRequestedProject(t *testing.T) {
+	m := conversationModel()
+	target := &api.Project{Id: "target", Name: "Z target"}
+	m.initializeNavigation(target, "")
+	m.updatePanel(listing{projects: []*api.Project{{Id: "first", Name: "A first"}, target}, projectsLoaded: true, sessions: []*api.Session{{Id: "child", ProjectId: "target"}}})
+	if !m.panelFocus || !m.projectView || m.panelRows()[m.panelIndex].key() != "p:target" {
+		t.Fatal("startup did not select workspace project")
+	}
+	m.panelKey(tea.KeyMsg{Type: tea.KeyEnter})
+	if !m.panelFocus || m.panelRows()[m.panelIndex].key() != "s:child" {
+		t.Fatal("project opened an obsolete screen")
+	}
+	m.panelKey(tea.KeyMsg{Type: tea.KeyEnter})
+	if m.projectView || m.panelFocus || m.current().Id != "child" {
+		t.Fatal("session not opened")
+	}
+}
+
+type navigatorClient struct {
+	api.SessionsClient
+	stopped, deleted string
+	run              string
+}
+
+func (c *navigatorClient) Stop(_ context.Context, r *api.Control, _ ...grpc.CallOption) (*api.Receipt, error) {
+	c.stopped = r.SessionId
+	c.run = r.RunId
+	return &api.Receipt{}, nil
+}
+func (c *navigatorClient) DeleteSession(_ context.Context, id string) error {
+	c.deleted = id
+	return nil
+}
+
+func TestNavigatorActionsUseSelectedSessionAndProject(t *testing.T) {
+	for _, width := range []int{80, 200} {
+		m := panelModel()
+		m.Update(tea.WindowSizeMsg{Width: width, Height: 30})
+		m.focusPanel()
+		c := &navigatorClient{}
+		m.client = c
+		for i, r := range m.panelRows() {
+			if r.session != nil && r.session.Id == "other-session" {
+				m.panelIndex = i
+			}
+		}
+		stop := m.panelKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'s'}})
+		stop()
+		if c.stopped != "other-session" || c.run != "other-run" || m.current().Id != "s" {
+			t.Fatal("stop targeted viewed session")
+		}
+		m.busy = false
+		m.panelKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}})
+		m.panelIndex = 0
+		confirm := m.panelKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+		confirm()
+		if c.deleted != "other-session" {
+			t.Fatal("delete target drifted")
+		}
+		m.busy = false
+		for i, r := range m.panelRows() {
+			if r.project.Id == "other" && r.session == nil {
+				m.panelIndex = i
+			}
+		}
+		m.panelKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
+		if !m.accountView || m.project.Id != "other" {
+			t.Fatal("accounts targeted original project")
+		}
+		m.accountKey(tea.KeyMsg{Type: tea.KeyEsc})
+		if !m.panelFocus || m.accountView {
+			t.Fatal("accounts did not return to navigator")
+		}
+		m.createProjectSession = func(_ context.Context, project, account string, _ io.Reader, _ io.Writer, _ io.Writer) (*api.Session, error) {
+			if project != "other" {
+				t.Error("creation targeted original project")
+			}
+			return &api.Session{Id: "new"}, nil
+		}
+		m.panelKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}})
+		if !m.accountChoosing || !m.accountView || m.project.Id != "other" {
+			t.Fatal("new session did not open account choice")
+		}
+		cmd := m.startAccountWorkflow("main", "codex", "", true)
+		batch := cmd().(tea.BatchMsg)
+		if done := batch[0]().(workflowDone); done.err != nil {
+			t.Fatal(done.err)
+		}
+		m.workflow.close()
+	}
+}
+
+func TestProjectNavigatorHasBackgroundAndOnlyFocusedSideBottomRule(t *testing.T) {
+	profile := lipgloss.ColorProfile()
+	lipgloss.SetColorProfile(termenv.TrueColor)
+	defer lipgloss.SetColorProfile(profile)
+	m := panelModel()
+	for _, width := range []int{80, 200} {
+		m.Update(tea.WindowSizeMsg{Width: width, Height: 30})
+		for _, focus := range []bool{false, true} {
+			m.panelFocus = focus
+			rendered := m.panelScreen()
+			plain := ansi.Strip(rendered)
+			if strings.ContainsAny(plain, "╭╮╰╯│") {
+				t.Fatal("outer border remains")
+			}
+			if strings.Contains(plain, "─") != (width == 200 && focus) {
+				t.Fatal("incorrect focus rule")
+			}
+			if !strings.Contains(rendered, "48;2;16;32;43") {
+				t.Fatal("background missing")
+			}
+		}
 	}
 }

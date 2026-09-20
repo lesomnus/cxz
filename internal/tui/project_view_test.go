@@ -21,7 +21,8 @@ func (c *projectClient) DeleteSession(_ context.Context, id string) error {
 	return nil
 }
 func projectModel() *model {
-	return &model{ctx: context.Background(), client: &projectClient{}, project: &api.Project{Id: "p", Name: "Project", Workspace: "/work", State: "running"}, projectView: true, input: textarea.New(), view: viewport.New(80, 15), width: 100, height: 25, events: map[string][]*api.Event{}, cursor: map[string]uint64{}}
+	p := &api.Project{Id: "p", Name: "Project", Workspace: "/work", State: "running"}
+	return &model{panelProjects: []*api.Project{p}, ctx: context.Background(), client: &projectClient{}, project: p, projectView: true, input: textarea.New(), view: viewport.New(80, 15), width: 100, height: 25, events: map[string][]*api.Event{}, cursor: map[string]uint64{}}
 }
 func TestProjectScopeAndLatest(t *testing.T) {
 	m := projectModel()
@@ -33,6 +34,7 @@ func TestProjectScopeAndLatest(t *testing.T) {
 	if input[0].Id != "old" {
 		t.Fatal("mutated caller inventory")
 	}
+	m.Update(tea.KeyMsg{Type: tea.KeyDown})
 	m.Update(tea.KeyMsg{Type: tea.KeyDown})
 	m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	if m.projectView || m.current().Id != "old" {
@@ -50,6 +52,7 @@ func TestProjectScopeAndLatest(t *testing.T) {
 func TestProjectDeleteConfirmation(t *testing.T) {
 	m := projectModel()
 	m.sessions = []*api.Session{{Id: "target", ProjectId: "p"}, {Id: "other", ProjectId: "p"}}
+	m.panelIndex = 1
 	m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("d")})
 	if m.deletingID != "target" {
 		t.Fatal("missing confirmation")
@@ -59,7 +62,7 @@ func TestProjectDeleteConfirmation(t *testing.T) {
 		t.Fatal("deleted on cancel")
 	}
 	m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("d")})
-	m.selected = 1
+	m.panelIndex = 2
 	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("y")})
 	if cmd == nil {
 		t.Fatal("missing delete")

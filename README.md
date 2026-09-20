@@ -17,7 +17,7 @@ CGO_ENABLED=0 go build -o bin/cxz ./cmd/cxz
 bin/cxz install --workspace-root /absolute/directory/containing/your/projects
 bin/cxz account add codex personal-codex
 bin/cxz account login personal-codex   # central Codex login; no project needed
-bin/cxz up .                          # project dashboard; n creates a session
+bin/cxz up .                          # project list focused on this workspace; n creates a session
 ```
 
 `install` builds and starts a background Docker manager, waits for its API, and
@@ -171,7 +171,7 @@ resource database and survives server/container restarts; back up state volumes.
 | ↑/↓, Enter (project) | Select a session and open its view |
 | s (project) | Stop selected session before starting another (one live session per project) |
 | d / Delete, then y (project) | Stop and remove selected session; archived journal retained |
-| Ctrl+Q (session) | Return to project view without stopping the agent |
+| Ctrl+Q (session) | Focus the project/session list without stopping the agent |
 | Tab / Shift+Tab (session) | Forward / reverse: pending approvals → input → bottom session selector |
 | Enter / Backspace (approval focus) | Allow / deny selected request; Enter opens a dialog for questions |
 | Ctrl+S | Send message (Ctrl+Enter also works with compatible terminal encoding) |
@@ -191,9 +191,11 @@ resource database and survives server/container restarts; back up state volumes.
 | `/restart` | Confirm/Cancel dialog to restart this session's agent; Tab/arrows select, Enter applies, Esc cancels |
 | Ctrl+C | Detach; agent continues |
 
-The dashboard groups workspace details and session cards; the conversation view
+The project list provides n (new session), a (accounts), s (stop) and d (delete).
+`cxz up` focuses the current workspace in this list. Project rows lead to their
+sessions; there is no separate project dashboard. The conversation view
 keeps tool activity above a growing, rounded message editor. Drafts are retained
-per session while this TUI is open, including trips back to the project view.
+per session while this TUI is open, including trips back to the project list.
 Escape does not discard a conversation draft. The composer and its borders keep
 the terminal's background (including the current input line). Use at least
 40 × 14 cells. The composer spans the terminal width. User messages show local
