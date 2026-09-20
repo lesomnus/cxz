@@ -75,6 +75,10 @@ Files such as `CLAUDE.md` can target `${AGENT_CONFIG_DIR}/CLAUDE.md` in each ses
 See [host file mappings](docs/file-mappings.md) for destination variables, sync,
 and application on agent restart.
 
+cxz can also provide a [shared Docker engine](docs/managed-docker.md). Configure
+`docker.mode: "dind"` through `cxz edit`, with an optional Compose override for
+the engine. `cxz docker up/down/status` manages it independently of projects.
+
 The remote user must have write permission on the host workspace. Explicit
 `remoteUser` settings are respected; cxz does not silently change repository file
 ownership or remap an existing user's UID. Adjust the devcontainer for a host UID

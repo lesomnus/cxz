@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/engine"
 	"github.com/lesomnus/cxz/internal/filemap"
 	"io"
 	"os"
@@ -16,6 +17,7 @@ import (
 )
 
 type Config struct {
+	Docker      engine.Config     `json:"docker,omitempty"`
 	Files       []filemap.Mapping `json:"files,omitempty"`
 	Agent       string            `json:"agent,omitempty"`
 	ClaudeModel string            `json:"claude_model,omitempty"`
@@ -38,6 +40,9 @@ func ValidateModel(v string) error {
 	return nil
 }
 func (c Config) Validate() error {
+	if err := c.Docker.Validate(); err != nil {
+		return err
+	}
 	for _, f := range c.Files {
 		if f.Src == "" {
 			return fmt.Errorf("file source required")

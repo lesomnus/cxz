@@ -122,9 +122,19 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string) error 
 	if _, e = dockerx.Run(ctx, "run", "--rm", "--label", "cxz.owner="+m.Owner, "--label", "cxz.project="+p.ID, "--entrypoint", "chmod", "--mount", "type=volume,source="+p.Volume+",target=/cxz/state", m.Image, "1777", "/cxz/state"); e != nil {
 		return e
 	}
+	dockerHost, err := m.ensureDocker(ctx, p)
+	if err != nil {
+		return err
+	}
 	env := map[string]any{}
 	if v, ok := cfg["containerEnv"].(map[string]any); ok {
 		env = v
+	}
+	if dockerHost != "" {
+		env["DOCKER_HOST"] = dockerHost
+		env["DOCKER_CONTEXT"] = ""
+		env["DOCKER_TLS_VERIFY"] = ""
+		env["DOCKER_CERT_PATH"] = ""
 	}
 	env["CXZ_PROJECT_ID"] = p.ID
 	env["CXZ_STATE"] = "/cxz/state/data"
@@ -214,6 +224,13 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string) error 
 		devNetworks["cxz"] = nil
 		dev["networks"] = devNetworks
 		dev["environment"] = map[string]string{"CXZ_PROJECT_ID": p.ID, "CXZ_STATE": "/cxz/state/data", "GH_CONFIG_DIR": githubauth.ConfigDir, "CXZ_SECRET_STORAGE": "host-tmpfs"}
+		if dockerHost != "" {
+			de := dev["environment"].(map[string]string)
+			de["DOCKER_HOST"] = dockerHost
+			de["DOCKER_CONTEXT"] = ""
+			de["DOCKER_TLS_VERIFY"] = ""
+			de["DOCKER_CERT_PATH"] = ""
+		}
 		dev["volumes"] = []any{map[string]any{"type": "volume", "source": p.Volume, "target": "/cxz/state"}, map[string]any{"type": "volume", "source": m.ToolsVolume, "target": "/cxz/tools", "read_only": true}}
 		dev["volumes"] = append(dev["volumes"].([]any), map[string]any{"type": "bind", "source": secretSource, "target": "/cxz/secrets"})
 		override := map[string]any{"name": "cxz-" + m.Owner[:12] + "-" + p.ID, "services": services, "networks": map[string]any{"cxz": map[string]any{"external": true, "name": p.Network}}, "volumes": map[string]any{p.Volume: map[string]any{"external": true, "name": p.Volume}, m.ToolsVolume: map[string]any{"external": true, "name": m.ToolsVolume}}}
@@ -336,6 +353,11 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string) error 
 	// Expose the project-scoped client without replacing an image-provided cxz.
 	if _, e = dockerx.Run(ctx, "exec", "--user", "root", p.ContainerID, "sh", "-c", "if ! command -v cxz >/dev/null 2>&1; then mkdir -p /usr/local/bin && ln -s /cxz/tools/cxz /usr/local/bin/cxz; fi"); e != nil {
 		return e
+	}
+	if dockerHost != "" {
+		if _, e = dockerx.Run(ctx, "exec", "--user", "root", p.ContainerID, "sh", "-c", `test -x /cxz/tools/docker || { echo 'update cxz install --recreate to install Docker tools' >&2; exit 1; }; mkdir -p /usr/local/bin /usr/local/lib/docker/cli-plugins; if ! command -v docker >/dev/null 2>&1; then ln -s /cxz/tools/docker /usr/local/bin/docker; fi; for plugin in docker-compose docker-buildx; do if [ ! -e /usr/local/lib/docker/cli-plugins/$plugin ]; then ln -s /cxz/tools/docker-cli-plugins/$plugin /usr/local/lib/docker/cli-plugins/$plugin; fi; done`); e != nil {
+			return e
+		}
 	}
 	// The runtime reads binary choices on each Create. Its lifetime is not the
 	// docker exec connection; _boot only starts a detached, independently locked process.

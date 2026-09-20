@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/dockerx"
+	"github.com/lesomnus/cxz/internal/engine"
 	"github.com/lesomnus/cxz/internal/transport"
 	"github.com/lesomnus/cxz/internal/wisp"
 	"io"
@@ -180,7 +181,7 @@ func Install(ctx context.Context, root, workspaceRoot, image string, recreate bo
 	}
 	// Existing credentials stay on the daemon/project volumes. Only the helper
 	// binary is refreshed, via atomic rename so running project processes survive.
-	if _, e = dockerx.Run(ctx, "run", "--rm", "--label", "cxz.owner="+v.Owner, "--entrypoint", "sh", "--mount", "type=volume,source="+v.ToolsVolume+",target=/cxz/tools", image, "-c", "cp /usr/local/bin/cxz /cxz/tools/cxz.next && chmod 755 /cxz/tools/cxz.next && mv /cxz/tools/cxz.next /cxz/tools/cxz"); e != nil {
+	if _, e = dockerx.Run(ctx, "run", "--rm", "--label", "cxz.owner="+v.Owner, "--entrypoint", "sh", "--mount", "type=volume,source="+v.ToolsVolume+",target=/cxz/tools", image, "-c", "cp /usr/local/bin/cxz /cxz/tools/cxz.next && chmod 755 /cxz/tools/cxz.next && mv /cxz/tools/cxz.next /cxz/tools/cxz && cp /usr/local/bin/docker /cxz/tools/docker.next && chmod 755 /cxz/tools/docker.next && mv /cxz/tools/docker.next /cxz/tools/docker && mkdir -p /cxz/tools/docker-cli-plugins && for plugin in docker-compose docker-buildx; do cp /usr/local/libexec/docker/cli-plugins/$plugin /cxz/tools/docker-cli-plugins/$plugin.next && mv /cxz/tools/docker-cli-plugins/$plugin.next /cxz/tools/docker-cli-plugins/$plugin || exit 1; done"); e != nil {
 		return e
 	}
 	args := []string{"run", "-d", "--name", v.Container, "--restart", "unless-stopped", "--label", "cxz.role=daemon", "--label", "cxz.owner=" + v.Owner, "--mount", "type=volume,source=" + v.StateVolume + ",target=/var/lib/cxz", "--mount", "type=volume,source=" + v.ToolsVolume + ",target=/cxz/tools", "--mount", "type=bind,source=" + workspaceRoot + ",target=" + workspaceRoot, "-e", "CXZ_OWNER=" + v.Owner, "-e", "CXZ_WORKSPACE_ROOT=" + workspaceRoot, "-e", "CXZ_TOOLS_VOLUME=" + v.ToolsVolume, "-e", "CXZ_MANAGER_IMAGE=" + image, "-e", "CXZ_MANAGER_CONTAINER=" + v.Container}
@@ -251,6 +252,9 @@ func Uninstall(ctx context.Context, root string) error {
 	}
 	if c.Config.Labels["cxz.owner"] != v.Owner {
 		return fmt.Errorf("refusing unowned daemon")
+	}
+	if e = (engine.Engine{Owner: v.Owner}).Down(ctx); e != nil {
+		return e
 	}
 	if _, e = dockerx.Run(ctx, "rm", "-f", c.ID); e != nil {
 		return e

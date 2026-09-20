@@ -32,6 +32,7 @@ service ProjectService {
   // once in that first message and once as a change that happened while it was
   // being read -- and that is harmless for the same reason.
   rpc Watch(ProjectWatchRequest) returns (stream ProjectWatchResponse);
+  rpc Docker(DockerRequest) returns (DockerReply);
   rpc FileMappings(FileMappingsRequest) returns (FileMappingsReply);
   // Provision/start a registered workspace. This never creates a conversation.
   rpc Up(ProjectUpRequest) returns (Project);
@@ -209,6 +210,15 @@ message ProjectWatchItem {
   // Empty in the first message, which is not something anybody asked for -- it
   // is what is already there.
   string action = 3 [features.field_presence = IMPLICIT];
+}
+
+message DockerRequest {
+  string action = 1;
+  bytes spec = 2;
+}
+
+message DockerReply {
+  string status = 1;
 }
 
 message FileMappingsRequest {

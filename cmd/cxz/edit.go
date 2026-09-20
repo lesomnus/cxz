@@ -17,8 +17,9 @@ import (
 )
 
 func editCommand() *xli.Command {
-	return &xli.Command{Name: "edit", Brief: "Edit settings.json in $VISUAL/$EDITOR; validate and sync changed file mappings", Handler: onRun(func(ctx context.Context, c *xli.Command) error {
+	return &xli.Command{Name: "edit", Brief: "Edit settings.json in $VISUAL/$EDITOR; validate and sync changed settings", Handler: onRun(func(ctx context.Context, c *xli.Command) error {
 		root := stateFrom(ctx)
+		previous, _ := settings.Load(root)
 		changed, bundle, err := editSettings(root, func(path string) error { return openSettingsEditor(ctx, c, path) })
 		if err != nil {
 			return err
@@ -28,6 +29,19 @@ func editCommand() *xli.Command {
 			return nil
 		}
 		fmt.Fprintln(c.Writer, "Saved", filepath.Join(root, "settings.json"))
+		current, err := settings.Load(root)
+		if err != nil {
+			return err
+		}
+		if current.Docker != previous.Docker {
+			out, err := publishDocker(ctx, root, "save")
+			if err != nil {
+				return err
+			}
+			if err := writeOutput(c, out); err != nil {
+				return err
+			}
+		}
 		if bundle != nil {
 			out, err := publishFileMappings(ctx, root, *bundle)
 			if err != nil {
@@ -118,6 +132,11 @@ func editSettings(root string, open func(string) error) (bool, *filemap.Bundle, 
 		return fail(err)
 	}
 	previous, oldErr := settings.Parse(original)
+	if cfg.Docker != previous.Docker {
+		if _, err := cfg.Docker.Snapshot(root); err != nil {
+			return fail(err)
+		}
+	}
 	var bundle *filemap.Bundle
 	if (oldErr != nil && len(cfg.Files) > 0) || !slices.Equal(previous.Files, cfg.Files) {
 		b, err := filemap.Snapshot(cfg.Files)

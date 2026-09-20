@@ -30,6 +30,7 @@ type Project struct {
 }
 type Runtime struct{ ProjectID, Workspace, Token, Claude, Codex string }
 type Manager struct {
+	dockerMu                                                  sync.Mutex
 	filesMu                                                   sync.Mutex
 	opsMu                                                     sync.Mutex
 	writeMu                                                   sync.Mutex
