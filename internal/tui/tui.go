@@ -285,7 +285,7 @@ func (m *model) refresh() tea.Cmd {
 	}
 	m.resourceRefreshRunning = true
 	m.lastResourceRefresh = time.Now()
-	panel := m.panelVisible()
+	panel := m.panelVisible() || m.panelFocus
 	projectID := ""
 	if m.project != nil {
 		projectID = m.project.Id
@@ -1140,12 +1140,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.terminalWidth = v.Width
 		m.width = min(v.Width, maxViewWidth)
 		m.height = v.Height
-		if !m.panelVisible() {
-			if m.panelFocus && !m.projectView && !m.accountView {
-				m.input.Focus()
-			}
-			m.panelFocus = false
-		}
+
 		m.resize()
 		m.render()
 	case tick:
@@ -1288,7 +1283,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.refresh()
 	case tea.KeyMsg:
 		m.lastUIInput = time.Now()
-		if m.panelFocus && m.panelVisible() {
+		if m.panelFocus {
 			return m, m.panelKey(v)
 		}
 		if m.previewInteraction() {
@@ -1348,11 +1343,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 		if v.String() == "ctrl+q" {
-			if m.panelVisible() {
-				m.focusPanel()
-				return m, m.refresh()
-			}
-			m.backToProject()
+			m.focusPanel()
 			return m, m.refresh()
 		}
 		if m.projectView && !m.creating {
@@ -1615,6 +1606,9 @@ func (m *model) View() (out string) {
 	}
 	if m.width > 0 && (m.width < 40 || m.height < 14) {
 		return screen("cxz\nResize terminal to 40 × 14 or larger.\nCtrl+C detach", m.width, m.height)
+	}
+	if m.panelFocus && !m.panelVisible() {
+		return m.panelScreen()
 	}
 	if m.accountView {
 		return m.accountScreen()

@@ -43,8 +43,8 @@ func TestProjectScopeAndLatest(t *testing.T) {
 	m.watchID = "old"
 	m.input.SetValue("unsent")
 	m.Update(tea.KeyMsg{Type: tea.KeyCtrlQ})
-	if !m.projectView || !canceled || m.watchID != "" || m.input.Value() != "" {
-		t.Fatal("did not return to project safely")
+	if !m.panelFocus || m.projectView || canceled || m.watchID != "old" || m.input.Value() != "unsent" {
+		t.Fatal("navigator changed the underlying conversation")
 	}
 }
 func TestProjectDeleteConfirmation(t *testing.T) {

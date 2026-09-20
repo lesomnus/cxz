@@ -24,7 +24,7 @@ func TestMultilineComposerAndDraft(t *testing.T) {
 		t.Fatalf("paste/newline: %q", m.input.Value())
 	}
 	m.Update(tea.KeyMsg{Type: tea.KeyCtrlQ})
-	m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m.Update(tea.KeyMsg{Type: tea.KeyEsc})
 	if m.input.Value() != "한글\ncode\nlast" {
 		t.Fatal("draft lost")
 	}
