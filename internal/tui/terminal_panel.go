@@ -124,7 +124,7 @@ func (m *model) toggleTerminal() tea.Cmd {
 		if project == nil {
 			return terminalOpened{id: id, err: fmt.Errorf("project container unavailable")}
 		}
-		t, err := containerterm.Open(m.ctx, project, width, height, func() {
+		t, err := containerterm.Open(m.contextFor(projectID), m.localProject(project), width, height, func() {
 			if m.program != nil {
 				m.program.Send(terminalChanged{id})
 			}

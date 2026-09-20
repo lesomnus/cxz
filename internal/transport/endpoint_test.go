@@ -130,3 +130,16 @@ func TestAuthenticatedTCPProxyUnaryAndWatch(t *testing.T) {
 		conn.Close()
 	}
 }
+
+func TestLocalEndpointParsing(t *testing.T) {
+	for _, raw := range []string{"local://", "local:///tmp/another-state", "unix:///tmp/cxz.sock"} {
+		if _, err := ParseEndpoint(raw); err != nil {
+			t.Fatal(raw, err)
+		}
+	}
+	for _, raw := range []string{"unix://", "unix://host/socket", "unix:relative", "local://host", "unix:///tmp/a?token=secret", "local://#fragment"} {
+		if _, err := ParseEndpoint(raw); err == nil {
+			t.Fatal("accepted", raw)
+		}
+	}
+}

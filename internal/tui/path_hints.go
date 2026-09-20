@@ -153,9 +153,10 @@ func (m *model) fetchPathHints(d pathHintDue) tea.Cmd {
 	if m.wisp == nil {
 		m.wisp = &containerterm.WispPool{}
 	}
-	pool, lifetime := m.wisp, m.ctx
+	pool, lifetime := m.wisp, m.contextFor(projectID)
+	target = m.localProject(target)
 	program := m.program
-	ctx, cancel := context.WithTimeout(m.ctx, 4*time.Second)
+	ctx, cancel := context.WithTimeout(lifetime, 4*time.Second)
 	p.cancel = cancel
 	return func() tea.Msg {
 		defer cancel()

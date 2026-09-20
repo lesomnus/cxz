@@ -9,6 +9,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/logview"
+	"github.com/lesomnus/cxz/internal/transport"
 )
 
 type noticeLog struct {
@@ -89,6 +90,12 @@ func (m *model) loadLogs() tea.Cmd {
 	m.report = &next
 	p = m.report
 	client, ctx, id, pool := m.client, m.ctx, s.Id, m.wisp
+	helperProjectID := projectID
+	if !transport.IsRemote(m.contextFor(s.Id)) {
+		helperProjectID = m.localProject(&api.Project{Id: projectID}).Id
+	} else {
+		pool = nil
+	}
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 		defer cancel()
@@ -97,7 +104,7 @@ func (m *model) loadLogs() tea.Cmd {
 		if project {
 			wisp := "No Wisp helper diagnostics collected by this TUI. Historical Wisp logs were not persisted."
 			if pool != nil {
-				wisp = pool.Logs(projectID)
+				wisp = pool.Logs(helperProjectID)
 			}
 			report.Add("Wisp · this TUI's project connections", wisp)
 		}

@@ -66,6 +66,10 @@ type model struct {
 	terminalWidth           int
 	panelFocus              bool
 	panelWantKey            string
+	panelWantConnection     string
+	accountConnection       string
+	creationConnection      string
+	accountRequest          uint64
 	panelIndex              int
 	panelProjects           []*api.Project
 	allSessions             []*api.Session
@@ -190,6 +194,7 @@ func pulseTimer() tea.Cmd {
 }
 
 type accountListing struct {
+	request  uint64
 	accounts []*resource.Account
 	err      error
 }
@@ -202,29 +207,32 @@ func (m *model) accountNotice() string {
 	return "Account: " + a.GetAlias() + " · " + a.GetAgent() + " · " + a.GetAuthBackend() + " (Tab changes; Enter creates)"
 }
 func (m *model) loadAccounts() tea.Cmd {
+	m.accountRequest++
+	request := m.accountRequest
+	service := m.accountClient()
+	if service == nil {
+		if c, ok := m.client.(*resourceclient.Client); ok {
+			service = c.Accounts
+		}
+	}
+	lifetime := m.contextFor(m.connectionRef())
 	return func() tea.Msg {
-		service := m.accountService
 		if service == nil {
-			if c, ok := m.client.(*resourceclient.Client); ok {
-				service = c.Accounts
-			}
+			return accountListing{request: request, err: fmt.Errorf("Account service unavailable")}
 		}
-		if service == nil {
-			return accountListing{}
-		}
-		ctx, cancel := context.WithTimeout(m.ctx, 5*time.Second)
+		ctx, cancel := context.WithTimeout(lifetime, 5*time.Second)
 		defer cancel()
 		var all []*resource.Account
 		after := ""
 		for {
 			p, err := service.List(ctx, resource.AccountListRequest_builder{Size: 200, After: after}.Build())
 			if err != nil {
-				return accountListing{err: err}
+				return accountListing{request: request, err: err}
 			}
 			all = append(all, p.GetItems()...)
 			after = p.GetNext()
 			if after == "" {
-				return accountListing{accounts: all}
+				return accountListing{request: request, accounts: all}
 			}
 		}
 	}
@@ -236,10 +244,13 @@ func Run(ctx context.Context, c api.SessionsClient) error {
 func RunSelected(ctx context.Context, c api.SessionsClient, id string) error {
 	var project *api.Project
 	if id != "" {
-		s, err := c.Get(ctx, &api.SessionRef{Id: id})
+		check, cancel := context.WithTimeout(ctx, 15*time.Second)
+		defer cancel()
+		s, err := c.Get(check, &api.SessionRef{Id: id})
 		if err != nil {
 			return err
 		}
+		id = s.Id
 		project = &api.Project{Id: s.ProjectId, Name: s.ProjectName, Alias: s.ProjectAlias, Workspace: s.Workspace}
 	}
 	return RunProject(ctx, c, project, id, nil)
@@ -1157,6 +1168,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 	case accountListing:
+		if v.request != m.accountRequest {
+			return m, nil
+		}
 		if !m.creating && !m.accountView {
 			return m, nil
 		}
@@ -1260,6 +1274,20 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.updatePanel(v)
 		if v.project != nil && (m.project == nil || m.project.Id == v.project.Id) {
 			m.project = v.project
+		}
+		if m.wantID != "" {
+			for _, s := range v.sessions {
+				if s.Id == m.wantID {
+					m.project = &api.Project{Id: s.ProjectId, Name: s.ProjectName, Alias: s.ProjectAlias, Workspace: s.Workspace}
+					for _, p := range m.panelProjects {
+						if p.Id == s.ProjectId {
+							m.project = p
+							break
+						}
+					}
+					break
+				}
+			}
 		}
 		m.sessions = ProjectSessions(v.sessions, m.project)
 		for i, s := range m.sessions {
@@ -1445,6 +1473,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.startRename()
 			}
 		case "ctrl+n":
+			m.creationConnection = m.connectionRef()
 			m.creating = true
 			m.focusList = false
 			m.input.SetValue("")
@@ -1530,7 +1559,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.input.Reset()
 				return m, m.sendPastes(draft, text)
 			}
-			if m.creating && m.project != nil {
+			if m.creating && m.project != nil && m.project.Workspace != "" {
 				text = m.project.Workspace
 			}
 			if text == "" {
@@ -1546,27 +1575,28 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				kind, account := a.GetAgent(), a.GetAlias()
 				m.creating = false
 				m.input.Placeholder = "message"
+				lifetime := m.contextFor(m.creationConnection)
 				return m, func() tea.Msg {
-					path, e := workspacePath(m.ctx, text)
+					path, e := workspacePath(lifetime, text)
 					if e != nil {
 						return result{err: e}
 					}
-					ctx, cancel := context.WithTimeout(m.ctx, 30*time.Minute)
+					ctx, cancel := context.WithTimeout(lifetime, 30*time.Minute)
 					defer cancel()
-					if os.Getenv("CXZ_PROJECT_ID") != "" && !transport.IsRemote(m.ctx) {
-						s, e := m.client.Create(ctx, &api.CreateRequest{Workspace: path, Agent: kind, Model: settings.From(m.ctx).Model(kind), ClientId: core.ID(), Account: account})
+					if os.Getenv("CXZ_PROJECT_ID") != "" && !transport.IsRemote(lifetime) {
+						s, e := m.client.Create(ctx, &api.CreateRequest{Workspace: path, Agent: kind, Model: settings.From(lifetime).Model(kind), ClientId: core.ID(), Account: account})
 						if e != nil {
 							return result{err: e}
 						}
 						return result{text: "session created", sessionID: s.Id}
 					}
-					if !transport.IsRemote(m.ctx) {
+					if !transport.IsRemote(lifetime) {
 						path, e = dockerx.EnginePath(path)
 					}
 					if e != nil {
 						return result{err: e}
 					}
-					s, e := m.client.Open(ctx, &api.ProjectRequest{Workspace: path, Agent: kind, Model: settings.From(m.ctx).Model(kind), NewSession: true, ClientId: core.ID(), Account: account})
+					s, e := m.client.Open(ctx, &api.ProjectRequest{Workspace: path, Agent: kind, Model: settings.From(lifetime).Model(kind), NewSession: true, ClientId: core.ID(), Account: account})
 					if e != nil {
 						return result{err: e}
 					}

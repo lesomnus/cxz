@@ -3,6 +3,12 @@
 Linux/Windows 공통 원격 접속: `cxz connect [--token-file FILE] [--session SESSION] ENDPOINT`.
 엔드포인트는 `ssh://user@host[:port]` 또는 `tcp://host:port`이며, Linux 호스트의 기존
 설치에 `cxz expose --token-file FILE --listen tcp://127.0.0.1:7349`로 TCP 전달기를 열 수 있다.
+`settings.json`의 `connections`에 이름별 `target`과 `default`를 지정하면 기본
+TUI에 모든 연결의 프로젝트·세션을 함께 표시한다 (`project1 via work`).
+`cxz connect work`는 work에 초기 포커스하고, URL을 직접 주면 그 연결만 연다.
+`local://`는 설치된 로컬 manager를 자동 탐색하고,
+`unix://${STATE}/run/daemon.sock`는 foreground daemon의 소켓을 직접 사용한다.
+`cxz expose`는 독립 릴레이이므로 manager 재시작이나 `install --expose`가 필요 없다.
 설정과 지원 범위는 [원격 접속](remote.md)을 참고한다.
 
 목록 갱신은 변경 구독과 30초 안전 갱신을 사용한다. 매초 전체 목록/외부 컨테이너 탐색을 반복하지 않는다.

@@ -85,7 +85,7 @@ func TestKeyboardControls(t *testing.T) {
 		t.Fatal("replayed input on disconnection")
 	}
 	m.Update(tea.KeyMsg{Type: tea.KeyCtrlN})
-	m.Update(accountListing{accounts: []*resource.Account{resource.Account_builder{Alias: "personal", Agent: "claude"}.Build(), resource.Account_builder{Alias: "work", Agent: "codex"}.Build()}})
+	m.Update(accountListing{request: m.accountRequest, accounts: []*resource.Account{resource.Account_builder{Alias: "personal", Agent: "claude"}.Build(), resource.Account_builder{Alias: "work", Agent: "codex"}.Build()}})
 	m.Update(tea.KeyMsg{Type: tea.KeyTab})
 	if m.accounts[m.accountIndex].GetAlias() != "work" || !m.creating || !strings.Contains(m.notice, "work · codex") {
 		t.Fatal("account selection lost")

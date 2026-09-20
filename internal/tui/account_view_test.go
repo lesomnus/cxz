@@ -93,7 +93,7 @@ func TestAccountViewValidationAndLogin(t *testing.T) {
 	m := projectModel()
 	m.accountService = &accountViewService{}
 	m.openAccounts(false)
-	m.Update(accountListing{accounts: []*resource.Account{resource.Account_builder{Alias: "main", Agent: "codex"}.Build()}})
+	m.Update(accountListing{request: m.accountRequest, accounts: []*resource.Account{resource.Account_builder{Alias: "main", Agent: "codex"}.Build()}})
 	m.loginAccount = func(context.Context, string, string, string, io.Reader, io.Writer, io.Writer) error { return nil }
 	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("l")})
 	if cmd == nil || !m.busy {
@@ -141,7 +141,7 @@ func TestComposerTransparent(t *testing.T) {
 func TestAccountSearch(t *testing.T) {
 	m := projectModel()
 	m.openAccounts(true)
-	m.Update(accountListing{accounts: []*resource.Account{
+	m.Update(accountListing{request: m.accountRequest, accounts: []*resource.Account{
 		resource.Account_builder{Alias: "personal", Name: "Home", Agent: "claude"}.Build(),
 		resource.Account_builder{Alias: "work", Name: "Company", Agent: "codex"}.Build(),
 	}})

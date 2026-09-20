@@ -17,6 +17,7 @@ import (
 )
 
 type Config struct {
+	Connections *Connections      `json:"connections,omitempty"`
 	Docker      engine.Config     `json:"docker,omitempty"`
 	Files       []filemap.Mapping `json:"files,omitempty"`
 	Agent       string            `json:"agent,omitempty"`
@@ -40,6 +41,11 @@ func ValidateModel(v string) error {
 	return nil
 }
 func (c Config) Validate() error {
+	if c.Connections != nil {
+		if err := c.Connections.Validate(); err != nil {
+			return err
+		}
+	}
 	if err := c.Docker.Validate(); err != nil {
 		return err
 	}

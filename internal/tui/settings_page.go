@@ -13,6 +13,7 @@ import (
 )
 
 type settingsPage struct {
+	connection                          string
 	info                                engine.Info
 	loaded, loading, busy, inputFocused bool
 	selected, offset                    int
@@ -38,7 +39,7 @@ var settingsActions = []struct{ label, action string }{
 const settingsActionRow = 7
 
 func (m *model) openSettings() tea.Cmd {
-	m.settingsPage = &settingsPage{inputFocused: m.input.Focused()}
+	m.settingsPage = &settingsPage{inputFocused: m.input.Focused(), connection: m.connectionRef()}
 	m.input.Blur()
 	return m.settingsRequest("info")
 }
@@ -55,7 +56,7 @@ func (m *model) settingsRequest(action string) tea.Cmd {
 	if action != "info" {
 		p.message = "Working…"
 	}
-	client, ctx := m.client, m.ctx
+	client, ctx := m.client, m.contextFor(p.connection)
 	return func() tea.Msg {
 		timeout := 20 * time.Second
 		if action != "info" {
@@ -325,7 +326,7 @@ func (m *model) settingsScreen() string {
 			cache = p.info.BuildCache + " · reclaimable " + p.info.Reclaimable
 		}
 	}
-	lines := []string{"", accent.Bold(true).Render("Settings · Docker & diagnostics"), "Mode: " + mode + "   Status: " + state, "Image: " + image, "Endpoint: " + endpoint, "Build cache: " + cache, ""}
+	lines := []string{"", accent.Bold(true).Render("Settings · Docker & diagnostics" + m.connectionLabel(p.connection)), "Mode: " + mode + "   Status: " + state, "Image: " + image, "Endpoint: " + endpoint, "Build cache: " + cache, ""}
 	for i := range settingsActions {
 		name, _ := m.settingsAction(i)
 		label := "  [ " + name + " ]"
