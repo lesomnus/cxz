@@ -99,12 +99,12 @@ func TestProjectPanelFocusAndSessionSwitch(t *testing.T) {
 	}
 	m.Update(tea.KeyMsg{Type: tea.KeyCtrlQ})
 	m.Update(tea.WindowSizeMsg{Width: 150, Height: 30})
-	if m.panelFocus || !m.input.Focused() {
-		t.Fatal("hidden panel retained focus")
+	if !m.panelFocus || m.input.Focused() || !strings.Contains(ansi.Strip(m.View()), "Projects") {
+		t.Fatal("narrow navigation lost focus or project list")
 	}
 	m.Update(tea.KeyMsg{Type: tea.KeyCtrlQ})
-	if !m.projectView {
-		t.Fatal("narrow Ctrl+Q must retain project view navigation")
+	if m.panelFocus || m.projectView || !m.input.Focused() {
+		t.Fatal("narrow Ctrl+Q did not return to conversation")
 	}
 }
 
@@ -122,5 +122,61 @@ func TestWorkflowReceivesSelectedProject(t *testing.T) {
 	batch := cmd().(tea.BatchMsg)
 	if done := batch[0]().(workflowDone); done.err != nil {
 		t.Fatal(done.err)
+	}
+}
+
+func TestProjectNavigatorPreservesFocusAcrossResponsiveLayouts(t *testing.T) {
+	m := panelModel()
+	m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
+	m.input.SetValue("unfinished draft")
+	canceled := false
+	m.watchCancel = func() { canceled = true }
+	m.Update(tea.KeyMsg{Type: tea.KeyCtrlQ})
+	if !m.panelFocus || m.projectView || canceled {
+		t.Fatal("opening navigator left the conversation")
+	}
+	for i, r := range m.panelRows() {
+		if r.session != nil && r.session.Id == "other-session" {
+			m.panelIndex = i
+		}
+	}
+	selected := m.panelRows()[m.panelIndex].key()
+	for _, width := range []int{80, 200, 150, 171, 80} {
+		m.Update(tea.WindowSizeMsg{Width: width, Height: 30})
+		if !m.panelFocus || m.input.Focused() || m.panelRows()[m.panelIndex].key() != selected || m.current().Id != "s" || m.input.Value() != "unfinished draft" {
+			t.Fatal("resize lost navigation state", width)
+		}
+		view := ansi.Strip(m.View())
+		if !strings.Contains(view, "Projects") || !strings.Contains(view, "maple") {
+			t.Fatal("missing shared navigator", width)
+		}
+		if width < 171 && strings.Contains(view, "unfinished draft") {
+			t.Fatal("composer visible under full-screen navigator")
+		}
+		for _, row := range strings.Split(view, "\n") {
+			if ansi.StringWidth(row) != width {
+				t.Fatal("layout width", width, ansi.StringWidth(row))
+			}
+		}
+	}
+	m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	if m.panelFocus || !m.input.Focused() || m.current().Id != "s" || m.input.Value() != "unfinished draft" {
+		t.Fatal("return did not preserve conversation")
+	}
+}
+
+func TestNarrowNavigatorOpensOtherProjectSession(t *testing.T) {
+	m := panelModel()
+	m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
+	m.input.SetValue("saved draft")
+	m.Update(tea.KeyMsg{Type: tea.KeyCtrlQ})
+	for i, r := range m.panelRows() {
+		if r.session != nil && r.session.Id == "other-session" {
+			m.panelIndex = i
+		}
+	}
+	m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	if m.panelFocus || m.projectView || m.current().Id != "other-session" || m.drafts["s"] != "saved draft" {
+		t.Fatal("narrow selection did not open destination")
 	}
 }

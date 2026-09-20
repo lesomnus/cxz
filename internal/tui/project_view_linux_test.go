@@ -172,7 +172,7 @@ func TestProjectSessionTerminalNavigation(t *testing.T) {
 		for _, stage := range []struct{ want, key string }{
 			{"session  stopped", "a"}, {"No accounts yet", "n"},
 			{"Create account", "\x1b"}, {"No accounts yet", "\x1b"},
-			{"cxz · project", "\r"}, {"quota", "\x11"}, {"cxz · project", "\x03"},
+			{"cxz · project", "\r"}, {"quota", "\x11"}, {"Projects", "\x03"},
 		} {
 			var output strings.Builder
 			buf := make([]byte, 4096)
@@ -214,7 +214,7 @@ func TestProjectSessionTerminalNavigation(t *testing.T) {
 	if err != nil || !reflect.DeepEqual(before, after) {
 		t.Fatal("terminal was not restored", err)
 	}
-	if !m.projectView {
-		t.Fatal("Ctrl+Q did not return to project")
+	if !m.panelFocus || m.projectView {
+		t.Fatal("Ctrl+Q did not open project navigator")
 	}
 }

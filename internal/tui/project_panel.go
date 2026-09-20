@@ -161,6 +161,13 @@ func (m *model) panelKey(k tea.KeyMsg) tea.Cmd {
 }
 
 func (m *model) panelScreen() string {
+	width := projectPanelWidth
+	if !m.panelVisible() {
+		width = m.width
+		if m.terminalWidth > 0 {
+			width = min(maxViewWidth, m.terminalWidth)
+		}
+	}
 	rows := m.panelRows()
 	capacity := max(1, m.height-6)
 	start := max(0, min(m.panelIndex-capacity+3, len(rows)-capacity))
@@ -180,7 +187,7 @@ func (m *model) panelScreen() string {
 		if r.project.Alias != "" && r.project.Alias != label {
 			label += " · " + r.project.Alias
 		}
-		label = clip(pickerLabel(label), projectPanelWidth-5)
+		label = clip(pickerLabel(label), width-5)
 		line := lavender.Render(label)
 		if s := r.session; s != nil {
 			name := s.Alias
@@ -212,8 +219,8 @@ func (m *model) panelScreen() string {
 	if m.panelError != "" {
 		footer = m.panelError
 	}
-	lines = append(lines, muted.Render(clip(footer, projectPanelWidth-2)))
-	return frame(strings.Join(lines, "\n"), projectPanelWidth, m.panelFocus)
+	lines = append(lines, muted.Render(clip(footer, width-2)))
+	return frame(strings.Join(lines, "\n"), width, m.panelFocus)
 }
 
 func (m *model) wideScreen(content string) string {
@@ -225,7 +232,7 @@ func (m *model) wideScreen(content string) string {
 		left = strings.Split(m.panelScreen(), "\n")
 	}
 	right := []string{}
-	if width := m.previewSideWidth(); width > 0 {
+	if width := m.previewSideWidth(); width > 0 && !(m.panelFocus && !m.panelVisible()) {
 		right = strings.Split(m.previewRows(width, m.height), "\n")
 	}
 	main := strings.Split(content, "\n")
