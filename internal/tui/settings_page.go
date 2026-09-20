@@ -32,7 +32,7 @@ type settingsResult struct {
 }
 
 var settingsActions = []struct{ label, action string }{
-	{"Refresh", "info"}, {"Activate", "up"}, {"Clear unused build cache", "prune"},
+	{"Refresh", "info"}, {"Activate", "up"}, {"Clear unused build cache", "prune"}, {"Start debug recording", "record"},
 }
 
 const settingsActionRow = 7
@@ -115,6 +115,17 @@ func (m *model) pollSettings() tea.Cmd {
 
 // Resolve the toggle from the latest reported engine state.
 func (m *model) settingsAction(index int) (string, string) {
+	if index == 3 {
+		label := "Start debug recording"
+		if m.debugRecorder.Active() {
+			label = "Stop recording and save"
+		} else if m.recordingSaving {
+			label = "Saving recording…"
+		} else if m.recordingPending != nil {
+			label = "Retry saving recording"
+		}
+		return label, "record"
+	}
 	if index == 1 && m.settingsPage.loaded && m.settingsPage.info.State == "running" {
 		return "Deactivate", "down"
 	}
@@ -136,6 +147,9 @@ func (m *model) moveSetting(direction int) {
 
 func (m *model) settingsEnabled(index int) bool {
 	p := m.settingsPage
+	if index == 3 {
+		return !m.recordingSaving
+	}
 	if p == nil || index < 0 || index >= len(settingsActions) || p.loading || p.busy {
 		return false
 	}
@@ -156,6 +170,9 @@ func (m *model) activateSetting() tea.Cmd {
 		return nil
 	}
 	_, action := m.settingsAction(p.selected)
+	if action == "record" {
+		return m.toggleRecording()
+	}
 	if action == "down" || action == "prune" {
 		p.confirm = action
 		p.confirmYes = false
@@ -308,7 +325,7 @@ func (m *model) settingsScreen() string {
 			cache = p.info.BuildCache + " · reclaimable " + p.info.Reclaimable
 		}
 	}
-	lines := []string{"", accent.Bold(true).Render("Settings · shared Docker"), "Mode: " + mode + "   Status: " + state, "Image: " + image, "Endpoint: " + endpoint, "Build cache: " + cache, ""}
+	lines := []string{"", accent.Bold(true).Render("Settings · Docker & diagnostics"), "Mode: " + mode + "   Status: " + state, "Image: " + image, "Endpoint: " + endpoint, "Build cache: " + cache, ""}
 	for i := range settingsActions {
 		name, _ := m.settingsAction(i)
 		label := "  [ " + name + " ]"
@@ -337,6 +354,15 @@ func (m *model) settingsScreen() string {
 	}
 	if p.statusError != "" {
 		lines = append(lines, "", p.statusError)
+	}
+	if m.debugRecorder.Active() {
+		lines = append(lines, "Recording TUI debug events · F9 stops and saves.")
+	}
+	if m.recordingError != "" {
+		lines = append(lines, "Recording save failed: "+m.recordingError)
+	}
+	if m.lastRecording != "" {
+		lines = append(lines, "Last recording: "+m.lastRecording)
 	}
 	if p.message != "" {
 		lines = append(lines, "", p.message)

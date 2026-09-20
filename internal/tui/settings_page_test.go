@@ -164,39 +164,42 @@ func TestSettingsSkipDisabledButtons(t *testing.T) {
 	m := conversationModel()
 	m.settingsPage = &settingsPage{loaded: true, info: engine.Info{Mode: "dind", State: "not running"}}
 	p := m.settingsPage
-	// Forward and backward wrap must skip cache cleanup while inactive.
 	for _, key := range []tea.KeyType{tea.KeyDown, tea.KeyTab} {
 		p.selected = 1
 		m.settingsKey(tea.KeyMsg{Type: key})
-		if p.selected != 0 {
-			t.Fatalf("%v selected disabled action %d", key, p.selected)
+		if p.selected != 3 {
+			t.Fatal("did not skip disabled cache action", p.selected)
 		}
 	}
 	for _, key := range []tea.KeyType{tea.KeyUp, tea.KeyShiftTab} {
-		p.selected = 0
+		p.selected = 3
 		m.settingsKey(tea.KeyMsg{Type: key})
 		if p.selected != 1 {
-			t.Fatalf("%v selected disabled action %d", key, p.selected)
+			t.Fatal("did not skip disabled cache action", p.selected)
 		}
 	}
 	m.settingsMouse(tea.MouseMsg{X: 3, Y: settingsActionRow + 2, Button: tea.MouseButtonLeft, Action: tea.MouseActionPress})
 	if p.selected != 1 || p.confirm != "" {
 		t.Fatal("disabled mouse click selected action")
 	}
-	// A poll can disable the selected action; focus must move to an enabled one.
 	p.info.State = "running"
 	p.selected = 2
 	m.receiveSettings(settingsResult{page: p, request: p.request, action: "info", info: engine.Info{Mode: "off", State: "not running"}})
-	if p.selected != 0 {
-		t.Fatal("focus stayed on newly disabled action")
+	if p.selected != 3 {
+		t.Fatal("focus stayed on disabled action")
 	}
 	m.settingsKey(tea.KeyMsg{Type: tea.KeyDown})
 	if p.selected != 0 {
-		t.Fatal("mode off exposed an action")
+		t.Fatal("did not wrap to refresh")
 	}
+	// Local recording remains accessible even if Docker is loading/unavailable.
 	p.loading = true
 	m.settingsKey(tea.KeyMsg{Type: tea.KeyUp})
-	if p.selected != 0 || strings.Contains(ansi.Strip(m.View()), "› [") {
-		t.Fatal("loading permits disabled selection")
+	if p.selected != 3 || !m.settingsEnabled(3) {
+		t.Fatal("recording depends on Docker")
+	}
+	m.recordingSaving = true
+	if strings.Contains(ansi.Strip(m.View()), "› [") {
+		t.Fatal("busy buttons show selection")
 	}
 }

@@ -80,6 +80,10 @@ cxz enables a [shared Docker engine](docs/managed-docker.md) by default. Explici
 `cxz docker up/down/status` manages it independently of projects. In the TUI,
 **Ctrl+P** opens status, start/stop and unused build-cache cleanup controls.
 
+For input or rendering problems, **F9** or the **Ctrl+P** recording button starts
+a [TUI diagnostic recording](docs/debug-recording.md). Stop to save a local JSONL
+file; `/record status` shows its full path. Input text is excluded.
+
 Select a session in the project list and press **m** (or use `/memory`) to
 [browse retained agent memory and history](docs/agent-memory.md), even after
 the project container stops. Press **c** to copy selected data to another session.

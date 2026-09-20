@@ -10,4 +10,6 @@ import (
 // Ctrl+S remains available when a terminal cannot distinguish modified Enter.
 func keyboardInput(file *os.File) io.Reader { return file }
 
+func recordedKeyboardInput(file *os.File, _ *debugRecorder) io.Reader { return file }
+
 const extendedKeyboard = false
