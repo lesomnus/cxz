@@ -3,6 +3,7 @@ package settings
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 )
 
@@ -17,7 +18,7 @@ func TestSettings(t *testing.T) {
 		t.Fatal(err)
 	}
 	got, err := Load(root)
-	if err != nil || got != c {
+	if err != nil || !reflect.DeepEqual(got, c) {
 		t.Fatal(got, err)
 	}
 	st, err := os.Stat(filepath.Join(root, "settings.json"))

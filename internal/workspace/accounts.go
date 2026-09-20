@@ -67,6 +67,9 @@ func (m *Manager) ResumeSession(ctx context.Context, r *api.Control) (*api.Sessi
 			if err = m.connectAccount(ctx, p, v.Account, v.AuthBackend); err != nil {
 				return nil, err
 			}
+			if err = m.syncFileMappings(ctx, client); err != nil {
+				return nil, err
+			}
 			return client.Resume(ctx, r)
 		}
 	}

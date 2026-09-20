@@ -4,6 +4,7 @@ import "cxz/project.proto";
 option go_package = "github.com/lesomnus/cxz/resource";
 
 service ProjectService {
+  rpc FileMappings(FileMappingsRequest) returns (FileMappingsReply);
   // Provision/start a registered workspace. This never creates a conversation.
   rpc Up(ProjectUpRequest) returns (Project);
   // Remove owned containers, retaining the resource, workspace and volumes.
@@ -33,3 +34,6 @@ message ProjectRecreateRequest {
 message InspectForeignRequest {}
 message InspectForeignResponse { repeated ForeignContainer items = 1; }
 message ForeignContainer { string container_id = 1; string workspace = 2; string name = 3; }
+
+message FileMappingsRequest { bytes bundle = 1; }
+message FileMappingsReply { string status = 1; }

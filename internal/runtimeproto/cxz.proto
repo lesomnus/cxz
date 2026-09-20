@@ -3,6 +3,7 @@ package cxz.runtime;
 option go_package = "github.com/lesomnus/cxz/api;api";
 
 service Sessions {
+  rpc FileMappings(FileMappingsInput) returns (Receipt);
   rpc Create(CreateRequest) returns (Session);
   rpc List(Empty) returns (SessionList);
   rpc Get(SessionRef) returns (Session);
@@ -83,3 +84,5 @@ message PermissionInput { string session_id = 1; string run_id = 2; string clien
 
 message LogsRequest { string session_id = 1; bool project = 2; }
 message LogsReply { string text = 1; }
+
+message FileMappingsInput { bytes bundle = 1; }

@@ -70,6 +70,11 @@ session's model; reconnect/resume preserves it. `cxz manager doctor`, `cxz proje
 and `cxz version` provide diagnostics. See [operations and releases](docs/operations.md)
 for retry behavior, model settings, versioned installation, updates and rollback.
 
+Host instruction files and directories can be copied into each session with
+`cxz config files add --agent claude ~/instructions/CLAUDE.md '${AGENT_CONFIG_DIR}/CLAUDE.md'`.
+See [host file mappings](docs/file-mappings.md) for destination variables, sync,
+and application on agent restart.
+
 The remote user must have write permission on the host workspace. Explicit
 `remoteUser` settings are respected; cxz does not silently change repository file
 ownership or remap an existing user's UID. Adjust the devcontainer for a host UID

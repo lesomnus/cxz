@@ -232,7 +232,7 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 		return e
 	}
 	opts := grpcx.ServerOptions(ctx)
-	opts = append(opts, grpc.MaxRecvMsgSize(1024*1024), grpc.MaxSendMsgSize(20*1024*1024))
+	opts = append(opts, grpc.MaxRecvMsgSize(8*1024*1024), grpc.MaxSendMsgSize(20*1024*1024))
 	g := grpc.NewServer(opts...)
 	resource.RegisterServer(g, resources)
 	if os.Getenv("CXZ_PROJECT_ID") != "" {
@@ -246,7 +246,7 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 		}
 		defer tcp.Close()
 		projectOptions := grpcx.ServerOptions(ctx)
-		projectOptions = append(projectOptions, grpc.MaxRecvMsgSize(1024*1024), grpc.MaxSendMsgSize(24*1024*1024), grpc.ChainUnaryInterceptor(func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+		projectOptions = append(projectOptions, grpc.MaxRecvMsgSize(8*1024*1024), grpc.MaxSendMsgSize(24*1024*1024), grpc.ChainUnaryInterceptor(func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 			if e := transport.RequireToken(ctx, runtime.Token); e != nil {
 				return nil, status.Error(codes.Unauthenticated, e.Error())
 			}

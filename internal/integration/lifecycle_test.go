@@ -92,6 +92,27 @@ func TestLifecycle(t *testing.T) {
 	}
 	defer killDaemon()
 	start()
+	source := filepath.Join(root, "CLAUDE.md")
+	initialInstructions := strings.Repeat("shared instructions\n", 60000)
+	if err := os.WriteFile(source, []byte(initialInstructions), 0600); err != nil {
+		t.Fatal(err)
+	}
+	filesCommand := func(args ...string) {
+		t.Helper()
+		cmd := exec.CommandContext(ctx, bin, append([]string{"--state", state, "config", "files"}, args...)...)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("file mapping CLI: %v %s", err, out)
+		}
+	}
+	filesCommand("add", "--agent", "claude", source, "${AGENT_CONFIG_DIR}/CLAUDE.md")
+	checkInstructions := func(key, want string) {
+		t.Helper()
+		target := filepath.Join(accounts.Config(accounts.SessionRoot(state, key), "test-claude"), "CLAUDE.md")
+		data, err := os.ReadFile(target)
+		if err != nil || string(data) != want {
+			t.Fatalf("mapped instructions missing or stale for %s: %v", key, err)
+		}
+	}
 	if e = client.EnsureAccount(ctx, "test-claude", "claude"); e != nil {
 		t.Fatal(e)
 	}
@@ -122,6 +143,7 @@ func TestLifecycle(t *testing.T) {
 	if s.Model != "fixture-model" || s.Account != "test-claude" {
 		t.Fatal("model missing from session")
 	}
+	checkInstructions(create.ClientId, initialInstructions)
 	binding := s.AuthBinding
 	// Exercise generated Payday maintenance RPCs through the real runtime and
 	// fixture supervisor. An ineligible update must not restart this run.
@@ -186,6 +208,7 @@ func TestLifecycle(t *testing.T) {
 	if second.Id == id {
 		t.Fatal("concurrent sessions merged")
 	}
+	checkInstructions("second", initialInstructions)
 	duplicateProcess := exec.CommandContext(ctx, bin, "--state", state, "_supervise", id)
 	if err := duplicateProcess.Run(); err == nil {
 		t.Fatal("same session started twice")
@@ -196,10 +219,20 @@ func TestLifecycle(t *testing.T) {
 	if first, err := client.Get(ctx, &api.SessionRef{Id: id}); err != nil || first.State != "idle" {
 		t.Fatalf("stopping second affected first: %v %v", first, err)
 	}
+	if err := os.WriteFile(source, []byte("updated instructions"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	filesCommand("sync")
+	// Publishing does not mutate a running session's instructions.
+	checkInstructions(create.ClientId, initialInstructions)
+	if err := os.Remove(source); err != nil {
+		t.Fatal(err)
+	}
 	second, e = client.Resume(ctx, &api.Control{SessionId: second.Id, RunId: second.RunId, ClientId: "resume-second"})
 	if e != nil {
 		t.Fatalf("resume alongside first: %v", e)
 	}
+	checkInstructions("second", "updated instructions")
 	if _, e = client.Stop(ctx, &api.Control{SessionId: second.Id, RunId: second.RunId, ClientId: "stop-second-again"}); e != nil {
 		t.Fatal(e)
 	}
@@ -383,6 +416,7 @@ func TestLifecycle(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
+	checkInstructions(create.ClientId, "updated instructions")
 	if s.RunId == old.RunId || s.VendorId != old.VendorId || len(s.Pending) != 0 || s.Model != "fixture-model" || s.Account != "test-claude" {
 		t.Fatalf("bad resumed snapshot: %v", s)
 	}

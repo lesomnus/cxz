@@ -3365,6 +3365,11 @@ func (s interceptProject) Watch(req *resource.ProjectWatchRequest, out grpc.Serv
 		resource.ProjectService_Watch_FullMethodName, req, out, s.ProjectServiceServer.Watch)
 }
 
+func (s interceptProject) FileMappings(ctx context.Context, req *resource.FileMappingsRequest) (*resource.FileMappingsReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_FileMappings_FullMethodName, req, s.ProjectServiceServer.FileMappings)
+}
+
 func (s interceptProject) Up(ctx context.Context, req *resource.ProjectUpRequest) (*resource.Project, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
 		resource.ProjectService_Up_FullMethodName, req, s.ProjectServiceServer.Up)
@@ -4326,6 +4331,19 @@ func dispatch(ctx context.Context, s resource.Server, op *pdpb.Op) (*anypb.Any, 
 		}
 
 		res, err := s.Project().List(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.ProjectService_FileMappings_FullMethodName:
+		v := &resource.FileMappingsRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().FileMappings(ctx, v)
 		if err != nil {
 			return nil, err
 		}
