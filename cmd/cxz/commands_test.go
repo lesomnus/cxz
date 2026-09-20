@@ -48,6 +48,17 @@ func TestHelpWithoutInstallation(t *testing.T) {
 	}
 }
 
+func TestTerminalInfoWithoutInstallation(t *testing.T) {
+	state := filepath.Join(t.TempDir(), "absent")
+	got := xlitest.Run(t, newRoot(state), "terminal-info", "--plain")
+	if got.Err != nil || !strings.Contains(got.Stdout, "TERM=") || !strings.Contains(got.Stdout, "235 #262626") {
+		t.Fatalf("%+v", got)
+	}
+	if _, err := os.Stat(state); !os.IsNotExist(err) {
+		t.Fatal("terminal diagnostics touched state")
+	}
+}
+
 func TestValidationBeforeConnection(t *testing.T) {
 	cases := []struct {
 		args []string
