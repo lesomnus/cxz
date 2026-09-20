@@ -29,6 +29,8 @@ const (
 	SessionService_Resume_FullMethodName      = "/cxz.SessionService/Resume"
 	SessionService_Stop_FullMethodName        = "/cxz.SessionService/Stop"
 	SessionService_Interrupt_FullMethodName   = "/cxz.SessionService/Interrupt"
+	SessionService_CopyMemory_FullMethodName  = "/cxz.SessionService/CopyMemory"
+	SessionService_Memory_FullMethodName      = "/cxz.SessionService/Memory"
 	SessionService_Logs_FullMethodName        = "/cxz.SessionService/Logs"
 	SessionService_Permission_FullMethodName  = "/cxz.SessionService/Permission"
 	SessionService_Send_FullMethodName        = "/cxz.SessionService/Send"
@@ -71,6 +73,8 @@ type SessionServiceClient interface {
 	Resume(ctx context.Context, in *SessionControl, opts ...grpc.CallOption) (*Session, error)
 	Stop(ctx context.Context, in *SessionControl, opts ...grpc.CallOption) (*Session, error)
 	Interrupt(ctx context.Context, in *SessionControl, opts ...grpc.CallOption) (*SessionReceipt, error)
+	CopyMemory(ctx context.Context, in *SessionCopyMemoryRequest, opts ...grpc.CallOption) (*SessionReceipt, error)
+	Memory(ctx context.Context, in *SessionMemoryRequest, opts ...grpc.CallOption) (*SessionMemoryReply, error)
 	Logs(ctx context.Context, in *SessionLogsRequest, opts ...grpc.CallOption) (*SessionLogsReply, error)
 	Permission(ctx context.Context, in *SessionPermissionRequest, opts ...grpc.CallOption) (*SessionReceipt, error)
 	Send(ctx context.Context, in *SessionSendRequest, opts ...grpc.CallOption) (*SessionReceipt, error)
@@ -194,6 +198,26 @@ func (c *sessionServiceClient) Interrupt(ctx context.Context, in *SessionControl
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SessionReceipt)
 	err := c.cc.Invoke(ctx, SessionService_Interrupt_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionServiceClient) CopyMemory(ctx context.Context, in *SessionCopyMemoryRequest, opts ...grpc.CallOption) (*SessionReceipt, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SessionReceipt)
+	err := c.cc.Invoke(ctx, SessionService_CopyMemory_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionServiceClient) Memory(ctx context.Context, in *SessionMemoryRequest, opts ...grpc.CallOption) (*SessionMemoryReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SessionMemoryReply)
+	err := c.cc.Invoke(ctx, SessionService_Memory_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -330,6 +354,8 @@ type SessionServiceServer interface {
 	Resume(context.Context, *SessionControl) (*Session, error)
 	Stop(context.Context, *SessionControl) (*Session, error)
 	Interrupt(context.Context, *SessionControl) (*SessionReceipt, error)
+	CopyMemory(context.Context, *SessionCopyMemoryRequest) (*SessionReceipt, error)
+	Memory(context.Context, *SessionMemoryRequest) (*SessionMemoryReply, error)
 	Logs(context.Context, *SessionLogsRequest) (*SessionLogsReply, error)
 	Permission(context.Context, *SessionPermissionRequest) (*SessionReceipt, error)
 	Send(context.Context, *SessionSendRequest) (*SessionReceipt, error)
@@ -379,6 +405,12 @@ func (UnimplementedSessionServiceServer) Stop(context.Context, *SessionControl) 
 }
 func (UnimplementedSessionServiceServer) Interrupt(context.Context, *SessionControl) (*SessionReceipt, error) {
 	return nil, status.Error(codes.Unimplemented, "method Interrupt not implemented")
+}
+func (UnimplementedSessionServiceServer) CopyMemory(context.Context, *SessionCopyMemoryRequest) (*SessionReceipt, error) {
+	return nil, status.Error(codes.Unimplemented, "method CopyMemory not implemented")
+}
+func (UnimplementedSessionServiceServer) Memory(context.Context, *SessionMemoryRequest) (*SessionMemoryReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method Memory not implemented")
 }
 func (UnimplementedSessionServiceServer) Logs(context.Context, *SessionLogsRequest) (*SessionLogsReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method Logs not implemented")
@@ -601,6 +633,42 @@ func _SessionService_Interrupt_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SessionService_CopyMemory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SessionCopyMemoryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionServiceServer).CopyMemory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SessionService_CopyMemory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionServiceServer).CopyMemory(ctx, req.(*SessionCopyMemoryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SessionService_Memory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SessionMemoryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionServiceServer).Memory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SessionService_Memory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionServiceServer).Memory(ctx, req.(*SessionMemoryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _SessionService_Logs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SessionLogsRequest)
 	if err := dec(in); err != nil {
@@ -798,6 +866,14 @@ var SessionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Interrupt",
 			Handler:    _SessionService_Interrupt_Handler,
+		},
+		{
+			MethodName: "CopyMemory",
+			Handler:    _SessionService_CopyMemory_Handler,
+		},
+		{
+			MethodName: "Memory",
+			Handler:    _SessionService_Memory_Handler,
 		},
 		{
 			MethodName: "Logs",

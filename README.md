@@ -80,6 +80,10 @@ cxz enables a [shared Docker engine](docs/managed-docker.md) by default. Explici
 `cxz docker up/down/status` manages it independently of projects. In the TUI,
 **Ctrl+P** opens status, start/stop and unused build-cache cleanup controls.
 
+Select a session in the project list and press **m** (or use `/memory`) to
+[browse retained agent memory and history](docs/agent-memory.md), even after
+the project container stops. Press **c** to copy selected data to another session.
+
 The remote user must have write permission on the host workspace. Explicit
 `remoteUser` settings are respected; cxz does not silently change repository file
 ownership or remap an existing user's UID. Adjust the devcontainer for a host UID

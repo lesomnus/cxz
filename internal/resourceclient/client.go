@@ -241,3 +241,19 @@ func (c *Client) Docker(ctx context.Context, r *api.DockerInput, opts ...grpc.Ca
 	}
 	return &api.Receipt{Status: out.GetStatus()}, nil
 }
+
+func (c *Client) Memory(ctx context.Context, r *api.MemoryRequest, opts ...grpc.CallOption) (*api.MemoryReply, error) {
+	out, err := c.sessions.Memory(ctx, resource.SessionMemoryRequest_builder{Ref: sr(r.SessionId), Path: &r.Path}.Build(), opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &api.MemoryReply{Data: out.GetData()}, nil
+}
+
+func (c *Client) CopyMemory(ctx context.Context, r *api.CopyMemoryRequest, opts ...grpc.CallOption) (*api.Receipt, error) {
+	out, err := c.sessions.CopyMemory(ctx, resource.SessionCopyMemoryRequest_builder{Ref: sr(r.SessionId), Path: &r.Path, Target: sr(r.TargetId), TargetPath: &r.TargetPath}.Build(), opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &api.Receipt{Status: out.GetStatus()}, nil
+}

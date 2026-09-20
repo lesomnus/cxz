@@ -330,3 +330,29 @@ func (s SessionServer) Logs(ctx context.Context, r *resource.SessionLogsRequest)
 	}
 	return resource.SessionLogsReply_builder{Text: &out.Text}.Build(), nil
 }
+
+func (s SessionServer) Memory(ctx context.Context, r *resource.SessionMemoryRequest) (*resource.SessionMemoryReply, error) {
+	v, err := s.resolve(ctx, r.GetRef())
+	if err != nil {
+		return nil, err
+	}
+	out, err := s.shared.runtime.Memory(ctx, &api.MemoryRequest{SessionId: v.GetRuntimeId(), Path: r.GetPath()})
+	if err != nil {
+		return nil, err
+	}
+	return resource.SessionMemoryReply_builder{Data: out.Data}.Build(), nil
+}
+
+func (s SessionServer) CopyMemory(ctx context.Context, r *resource.SessionCopyMemoryRequest) (*resource.SessionReceipt, error) {
+	s.shared.transition.RLock()
+	defer s.shared.transition.RUnlock()
+	source, err := s.resolve(ctx, r.GetRef())
+	if err != nil {
+		return nil, err
+	}
+	target, err := s.resolve(ctx, r.GetTarget())
+	if err != nil {
+		return nil, err
+	}
+	return receipt(s.shared.runtime.CopyMemory(ctx, &api.CopyMemoryRequest{SessionId: source.GetRuntimeId(), Path: r.GetPath(), TargetId: target.GetRuntimeId(), TargetPath: r.GetTargetPath()}))
+}
