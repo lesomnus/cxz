@@ -1,3 +1,5 @@
+//go:build !windows
+
 package main
 
 import (
@@ -14,9 +16,6 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-type displayedError struct{ error }
-
-func (e *displayedError) Unwrap() error { return e.error }
 func exitOnError(c *xli.Command) bool {
 	for c != nil {
 		if value, _ := flg.Get[bool](c, "exit-on-error"); value {

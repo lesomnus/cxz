@@ -38,25 +38,7 @@ func Load(root string) (Installation, error) {
 func Socket(root string) string { return filepath.Join(root, "run", "daemon.sock") }
 func Dial(root string) (*grpc.ClientConn, error) {
 	return grpc.NewClient("passthrough:///cxz", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(24*1024*1024)), grpc.WithContextDialer(func(ctx context.Context, _ string) (net.Conn, error) {
-		if install, e := Load(root); e == nil {
-			cmd := exec.Command("docker", "exec", "-i", install.Container, "/usr/local/bin/cxz", "--state", "/var/lib/cxz", "_bridge")
-			in, e := cmd.StdinPipe()
-			if e != nil {
-				return nil, e
-			}
-			out, e := cmd.StdoutPipe()
-			if e != nil {
-				in.Close()
-				return nil, e
-			}
-			if e = cmd.Start(); e != nil {
-				in.Close()
-				out.Close()
-				return nil, e
-			}
-			return &pipeConn{Reader: out, Writer: in, cmd: cmd}, nil
-		}
-		return (&net.Dialer{}).DialContext(ctx, "unix", Socket(root))
+		return LocalConnection(ctx, root)
 	}))
 }
 

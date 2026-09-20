@@ -15,6 +15,7 @@ import (
 	"github.com/creack/pty"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/dockerx"
+	"github.com/lesomnus/cxz/internal/transport"
 )
 
 // Session belongs to one attached TUI, not to an agent's authentication HOME.
@@ -35,6 +36,9 @@ type Session struct {
 }
 
 func Open(ctx context.Context, p *api.Project, width, height int, notify func()) (*Session, error) {
+	if err := transport.LocalOnly(ctx, "container terminal"); err != nil {
+		return nil, err
+	}
 	if p == nil || p.Id == "" || p.ContainerId == "" || p.RemoteUser == "" || p.RemoteWorkspace == "" {
 		return nil, fmt.Errorf("project container information unavailable; refresh the project")
 	}

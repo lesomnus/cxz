@@ -95,7 +95,9 @@ func TestCursorWriterTerminalResize(t *testing.T) {
 			select {
 			case got := <-m.sizes:
 				if got != (sizeSnapshot{min(width, maxViewWidth), height, width, height}) {
-					t.Fatalf("want fullscreen %dx%d, got %+v", width, height, got)
+					// Repeated SIGWINCH notifications can leave a snapshot of the
+					// previous size queued. Wait for the requested size, bounded by ctx.
+					continue
 				}
 				return
 			case <-tick.C:

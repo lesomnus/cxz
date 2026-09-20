@@ -10,6 +10,10 @@ import (
 	"syscall"
 )
 
+type displayedError struct{ error }
+
+func (e *displayedError) Unwrap() error { return e.error }
+
 func main() {
 	if err := run(); err != nil {
 		var shown *displayedError
