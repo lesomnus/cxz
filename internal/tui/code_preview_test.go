@@ -191,3 +191,31 @@ func TestQuotaCacheSurvivesTailHistoryGap(t *testing.T) {
 		t.Fatal("cached quota crossed accounts")
 	}
 }
+
+func TestReadPreviewExpandsTabsBeforeMeasuring(t *testing.T) {
+	profile := lipgloss.ColorProfile()
+	defer lipgloss.SetColorProfile(profile)
+	source := "1\t#!/usr/bin/env python3\n2\t\"\"\"간단한 데모 스크립트.\"\"\"\n3\t\n4\timport sys\n5\tdef greet():\n6\t\tprint(\"안녕하세요\")"
+	for _, color := range []termenv.Profile{termenv.Ascii, termenv.TrueColor} {
+		lipgloss.SetColorProfile(color)
+		for _, width := range []int{40, 80, 132} {
+			m := conversationModel()
+			m.filePreview = &filePreview{session: "s", title: "Read · /tmp/demo/greet.py", source: source, language: "greet.py", focused: true}
+			rows := strings.Split(m.previewRows(width, 8), "\n")
+			if len(rows) != 8 {
+				t.Fatal("preview changed height")
+			}
+			for _, row := range rows {
+				if strings.Contains(row, "\t") {
+					t.Fatalf("unmeasured tab reaches terminal: %q", row)
+				}
+				if ansi.StringWidth(row) != width {
+					t.Fatalf("row width %d != %d: %q", ansi.StringWidth(row), width, row)
+				}
+			}
+			if m.filePreview.source != source {
+				t.Fatal("display normalization changed recorded source")
+			}
+		}
+	}
+}
