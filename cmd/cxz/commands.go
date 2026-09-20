@@ -55,6 +55,9 @@ func withClient(fn clientFunc) xli.Handler {
 		if err != nil {
 			return err
 		}
+		if (c.Name == "cxz" || c.Name == "tui") && cfg.Connections != nil {
+			return runConfigured(ctx, root, cfg, "", "")
+		}
 		ctx = settings.With(ctx, cfg)
 		ctx = tui.WithRecordingDirectory(ctx, filepath.Join(root, "recordings"))
 		if _, err := transport.Load(root); os.IsNotExist(err) {

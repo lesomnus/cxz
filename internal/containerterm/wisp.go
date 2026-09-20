@@ -44,6 +44,9 @@ func (p *WispPool) Close() {
 }
 
 func (p *WispPool) client(lifetime, ctx context.Context, project *api.Project) (*wispClient, error) {
+	if err := transport.LocalOnly(ctx, "workspace helper"); err != nil {
+		return nil, err
+	}
 	if project == nil || project.Id == "" || project.ContainerId == "" || project.RemoteUser == "" {
 		return nil, fmt.Errorf("project container unavailable")
 	}

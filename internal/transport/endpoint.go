@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -24,6 +25,9 @@ type remoteKey struct{}
 
 func WithRemote(ctx context.Context) context.Context {
 	return context.WithValue(ctx, remoteKey{}, true)
+}
+func WithLocal(ctx context.Context) context.Context {
+	return context.WithValue(ctx, remoteKey{}, false)
 }
 func IsRemote(ctx context.Context) bool { v, _ := ctx.Value(remoteKey{}).(bool); return v }
 func LocalOnly(ctx context.Context, operation string) error {
@@ -42,6 +46,16 @@ func ParseEndpoint(raw string) (Endpoint, error) {
 		return Endpoint{}, fmt.Errorf("invalid remote endpoint")
 	}
 	e := Endpoint{Scheme: u.Scheme, Address: u.Host, Binary: "cxz"}
+	if u.Scheme == "unix" || u.Scheme == "local" {
+		if u.Host != "" || u.User != nil || u.RawQuery != "" || u.Fragment != "" || u.Opaque != "" || strings.ContainsAny(u.Path, "\x00\r\n") {
+			return e, fmt.Errorf("invalid local endpoint")
+		}
+		if u.Scheme == "unix" && !strings.HasPrefix(u.Path, "/") {
+			return e, fmt.Errorf("unix endpoint requires an absolute socket path")
+		}
+		e.Address = u.Path
+		return e, nil
+	}
 	if u.Fragment != "" || u.Opaque != "" || (u.Path != "" && u.Path != "/") {
 		return e, fmt.Errorf("endpoint must use ssh://[user@]host[:port] or tcp://host:port")
 	}
@@ -97,7 +111,7 @@ func ParseEndpoint(raw string) (Endpoint, error) {
 			return e, fmt.Errorf("invalid TCP port")
 		}
 	default:
-		return e, fmt.Errorf("unsupported endpoint scheme; use ssh:// or tcp://")
+		return e, fmt.Errorf("unsupported endpoint scheme; use ssh://, tcp://, local:// or unix:///path")
 	}
 	return e, nil
 }
@@ -150,13 +164,26 @@ func DialEndpoint(raw, token string) (*grpc.ClientConn, error) {
 		}
 		return Remote("passthrough:///"+e.Address, token)
 	}
+	if e.Scheme == "local" {
+		return nil, fmt.Errorf("local:// requires a client state directory")
+	}
+	if e.Scheme == "unix" {
+		return grpc.NewClient("passthrough:///cxz-unix", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(24*1024*1024)), grpc.WithContextDialer(func(ctx context.Context, _ string) (net.Conn, error) {
+			return (&net.Dialer{}).DialContext(ctx, "unix", e.Address)
+		}))
+	}
 	return grpc.NewClient("passthrough:///cxz-ssh", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(24*1024*1024)), grpc.WithContextDialer(func(ctx context.Context, _ string) (net.Conn, error) {
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
 		cmd := exec.Command("ssh", e.SSHArguments()...)
-		cmd.Stderr = os.Stderr
-		return commandConnection(cmd)
+		diagnostics := &connectionDiagnostics{}
+		cmd.Stderr = diagnostics
+		conn, err := commandConnection(cmd)
+		if err != nil {
+			return nil, err
+		}
+		return &diagnosticConnection{Conn: conn, diagnostics: diagnostics}, nil
 	}))
 }
 
@@ -206,4 +233,45 @@ func ConnectBridge(ctx context.Context, root string, in io.Reader, out io.Writer
 	case <-ctx.Done():
 		return ctx.Err()
 	}
+}
+
+// Capture a bounded tail of SSH diagnostics for the connection error instead of
+// printing asynchronous reconnect failures into the frontend's terminal.
+type connectionDiagnostics struct {
+	mu   sync.Mutex
+	tail []byte
+}
+
+func (d *connectionDiagnostics) Write(p []byte) (int, error) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	n := len(p)
+	if len(p) > 2048 {
+		p = p[len(p)-2048:]
+	}
+	d.tail = append(d.tail, p...)
+	if len(d.tail) > 2048 {
+		d.tail = d.tail[len(d.tail)-2048:]
+	}
+	return n, nil
+}
+func (d *connectionDiagnostics) String() string {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return strings.TrimSpace(string(d.tail))
+}
+
+type diagnosticConnection struct {
+	net.Conn
+	diagnostics *connectionDiagnostics
+}
+
+func (c *diagnosticConnection) Read(p []byte) (int, error) {
+	n, err := c.Conn.Read(p)
+	if err != nil {
+		if detail := c.diagnostics.String(); detail != "" {
+			err = fmt.Errorf("SSH: %s: %w", detail, err)
+		}
+	}
+	return n, err
 }

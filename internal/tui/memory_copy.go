@@ -80,7 +80,7 @@ func (m *model) receiveMemoryTargets(r memoryTargets) {
 		return
 	}
 	for _, s := range r.sessions {
-		if s.Id == p.session.Id || s.Agent != p.session.Agent {
+		if s.Id == p.session.Id || s.Agent != p.session.Agent || m.connectionName(s.Id) != m.connectionName(p.session.Id) {
 			continue
 		}
 		switch s.State {

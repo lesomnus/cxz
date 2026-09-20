@@ -206,7 +206,8 @@ func (m *model) sendRedactions(draft string) tea.Cmd {
 	if m.redactStore == nil {
 		m.redactStore = m.wisp
 	}
-	pool, lifetime, client, id, run := m.redactStore, m.ctx, m.client, s.Id, s.RunId
+	pool, lifetime, client, id, run := m.redactStore, m.contextFor(s.Id), m.client, s.Id, s.RunId
+	target = m.localProject(target)
 	request := core.ID()
 	m.redactSending = true
 	m.notice = "Preparing secret file…"

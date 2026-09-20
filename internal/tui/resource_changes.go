@@ -58,7 +58,8 @@ func (m *model) watchResources() tea.Cmd {
 	m.resourceWatchGeneration++
 	generation := m.resourceWatchGeneration
 	m.resourceWatchSignature = signature
-	if len(projects)+len(sessions) == 0 {
+	empty, _ := m.client.(interface{ WatchEmpty() bool })
+	if len(projects)+len(sessions) == 0 && (empty == nil || !empty.WatchEmpty()) {
 		m.resourcesWatching = false
 		return nil
 	}

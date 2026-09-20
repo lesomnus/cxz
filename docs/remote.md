@@ -5,6 +5,72 @@ The manager, wasp, agent processes and devcontainers run on Linux. The same
 frontend rather than server/install commands. No local Docker installation is
 needed for a remote conversation.
 
+## All connections in one project view
+
+Edit the existing `settings.json` with `cxz edit` on Linux. The format remains
+JSON; connections are keyed by name alongside a `default` selection:
+
+```json
+{
+  "connections": {
+    "default": "work",
+    "work": { "target": "ssh://work" },
+    "home": { "target": "local://" },
+    "vpn": {
+      "target": "tcp://home-vpn:7349",
+      "token_file": "${STATE}/tokens/home"
+    }
+  }
+}
+```
+
+Run `cxz` or `cxz tui` on Linux, or `cxz` on Windows, to see every configured
+connection. On Windows, edit `settings.json` in the client state directory
+directly; that frontend does not yet include `cxz edit`. Existing settings fields
+such as `files`, `docker` and model preferences can remain in the same file.
+Connection changes apply the next time the TUI starts.
+
+Projects display as `project1 via work`, with their sessions underneath.
+`default` chooses the initial focus and the fallback for an unqualified session
+reference; it does not hide other connections. If omitted, the alphabetically
+first connection is selected. `cxz connect home` opens the same combined view
+with home initially focused. `cxz connect --session SESSION work` selects a
+session ID or alias on work; a qualified `work::SESSION` reference can also be
+used.
+
+Each connection loads and subscribes independently. An unreachable host does not
+delay projects from another host. Failed connections retry; previously loaded
+projects remain visible with an offline marker. Empty/connecting connections
+have a row, so they can still be selected for accounts, settings or a new
+workspace. IDs are scoped within the frontend, so equal IDs on different daemons
+do not share drafts, event history or pending approvals.
+
+Accounts, new sessions and Ctrl+P Docker settings target the selected connection
+(or the current conversation when the project panel is not focused).
+An open settings/accounts view retains that target. Memory copy targets are
+limited to stopped sessions for the same agent on the same connection; copying
+between daemon hosts is not implemented.
+
+Targets:
+
+- `ssh://work` uses the `Host work` entry in the client's SSH config.
+- `local://` discovers the installation for the client's `--state` directory.
+  With `cxz install`, this normally bridges to the manager inside Docker: the
+  manager's Unix socket need not be mounted on the host. An alternative local
+  installation can use `local:///absolute/state/directory`.
+- `unix://${STATE}/run/daemon.sock` connects directly to a Unix socket, useful
+  with a foreground `cxz serve`. `${STATE}` expands to the local client state
+  directory; it is not the remote host's state. Local Docker and Unix socket
+  targets are intended for Linux clients.
+- `tcp://host:port` requires `token_file`. Relative token paths resolve against
+  the client state directory; `${STATE}` also works in token paths. Token
+  contents are never stored in settings.
+
+Without `connections`, Linux `cxz` retains its existing local-installation
+behavior. CLI management commands such as `cxz up`, `install` and
+`project recreate` continue to target the local installation. Passing a URL
+to `cxz connect` opens just that endpoint.
+
 ## SSH
 
 Update the **host CLI** on the Linux daemon host so it provides `_connect`, then:
@@ -40,7 +106,8 @@ cxz expose --token-file ~/.config/cxz-remote.token --listen tcp://127.0.0.1:7349
 
 The parent directory of the token file must already exist. Keep the forwarder
 running (or supervise it as a service). It preserves the local manager's database,
-socket and lifecycle. Ctrl+C stops only the forwarder. By default it listens on
+socket and lifecycle. It can be stopped and restarted without restarting the
+manager or agents; `cxz install --expose` is not needed. Ctrl+C stops only the forwarder. By default it listens on
 loopback; choose an explicit host/VPN interface to accept connections there.
 
 Copy the token securely to the client, then:
@@ -59,8 +126,10 @@ rotating the token. A token must have at least 32 non-whitespace bytes.
 
 Both frontends accept `CXZ_ENDPOINT` as the default for `cxz connect` and
 `CXZ_TOKEN_FILE` as the default token path. The Windows frontend also uses these
-when invoked with no command. Linux `cxz` without a command still opens its local
-installation. `--state` is always the **local client** settings/recordings
+when invoked with no command (an endpoint environment variable overrides the
+configured combined view in that case). Without the environment variable,
+Windows `cxz` uses the configured connections. Linux `cxz` uses configured
+connections when present, otherwise its local installation. `--state` is always the **local client** settings/recordings
 directory; SSH's `?state=...` selects the daemon host's installation.
 
 ## Remote functionality and boundaries

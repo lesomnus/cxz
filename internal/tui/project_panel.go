@@ -32,6 +32,9 @@ func (r panelRow) key() string {
 }
 
 func (m *model) initializeNavigation(project *api.Project, id string) {
+	if c, ok := m.client.(interface{ DefaultConnection() string }); ok && project == nil && id == "" {
+		m.panelWantConnection = c.DefaultConnection()
+	}
 	m.project = project
 	m.projectView = id == ""
 	m.panelFocus = m.projectView
@@ -96,6 +99,17 @@ func (m *model) updatePanel(v listing) {
 	if m.panelWantKey != "" {
 		key = m.panelWantKey
 	}
+	if m.panelWantConnection != "" {
+		for _, r := range rows {
+			if m.connectionName(r.project.Id) == m.panelWantConnection {
+				key = r.key()
+				if r.project.State != "connection" {
+					m.panelWantConnection = ""
+				}
+				break
+			}
+		}
+	}
 	m.panelIndex = max(0, min(m.panelIndex, len(rows)-1))
 	for i, r := range rows {
 		if r.key() == key {
@@ -134,6 +148,7 @@ func (m *model) panelKey(k tea.KeyMsg) tea.Cmd {
 		return m.projectAction(k)
 	}
 	rows := m.panelRows()
+	m.panelWantConnection = ""
 	switch k.String() {
 	case "ctrl+c":
 		return tea.Quit
@@ -211,6 +226,11 @@ func (m *model) panelKey(k tea.KeyMsg) tea.Cmd {
 				m.panelIndex++
 			} else {
 				m.notice = "No sessions yet. Press n to create one."
+				if c, ok := m.client.(interface{ ConnectionError(string) string }); ok {
+					if err := c.ConnectionError(r.project.Id); err != "" {
+						m.notice = err
+					}
+				}
 			}
 			return nil
 		}
@@ -325,6 +345,9 @@ func (m *model) panelScreen() string {
 		lines = append(lines, "")
 	}
 	status := m.notice
+	if c, ok := m.client.(interface{ ConnectionStatus() string }); ok && status == "" {
+		status = c.ConnectionStatus()
+	}
 	if m.busy {
 		status = "Working…"
 	}

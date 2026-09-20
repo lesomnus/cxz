@@ -97,10 +97,14 @@ func (m *model) projectAction(key tea.KeyMsg) tea.Cmd {
 		if m.createProjectSession != nil {
 			return m.openAccounts(true)
 		}
+		m.creationConnection = m.connectionRef()
 		m.creating = true
 		m.input.SetValue(m.project.Workspace)
+		if m.project.Workspace == "" {
+			m.input.Placeholder = "absolute workspace path; Enter creates, Esc cancels"
+		}
 		m.notice = "Loading accounts…"
-		return m.loadAccounts()
+		return tea.Batch(m.input.Focus(), m.loadAccounts())
 
 	}
 	return nil

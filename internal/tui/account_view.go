@@ -20,6 +20,9 @@ type accountSaved struct {
 type accountLoggedIn struct{ err error }
 
 func (m *model) openAccounts(choose bool) tea.Cmd {
+	m.accountConnection = m.connectionRef()
+	m.accounts = nil
+	m.accountIndex = 0
 	m.accountView, m.accountChoosing, m.accountLoading = true, choose, true
 	m.accountAdding = false
 	m.loginChoosing = false
@@ -118,7 +121,8 @@ func (m *model) accountKey(key tea.KeyMsg) tea.Cmd {
 				m.notice = err.Error()
 				return nil
 			}
-			if m.accountService == nil {
+			service := m.accountClient()
+			if service == nil {
 				m.notice = "Account service unavailable"
 				return nil
 			}
@@ -126,7 +130,7 @@ func (m *model) accountKey(key tea.KeyMsg) tea.Cmd {
 			return func() tea.Msg {
 				ctx, cancel := context.WithTimeout(m.ctx, 10*time.Second)
 				defer cancel()
-				a, err := m.accountService.Add(ctx, resource.AccountAddRequest_builder{Alias: alias, Name: name, Agent: agent}.Build())
+				a, err := service.Add(ctx, resource.AccountAddRequest_builder{Alias: alias, Name: name, Agent: agent}.Build())
 				return accountSaved{a, err}
 			}
 		}
@@ -192,7 +196,7 @@ func (m *model) accountKey(key tea.KeyMsg) tea.Cmd {
 
 func (m *model) accountScreen() string {
 	width := max(1, m.width-4)
-	rows := []string{brand.Render("cxz · accounts"), muted.Render("Isolated authentication profiles · Esc / Ctrl+Q returns to project"), ""}
+	rows := []string{brand.Render("cxz · accounts" + m.connectionLabel(m.accountConnection)), muted.Render("Isolated authentication profiles · Esc / Ctrl+Q returns to project"), ""}
 	if m.loginChoosing {
 		rows = append(rows, strong.Render("Choose a session to log in · "+pickerLabel(m.loginAlias)))
 		sessions := m.loginSessions()

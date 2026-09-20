@@ -93,7 +93,9 @@ manager connection is required.
 
 Linux and Windows can use `cxz connect ssh://user@host` to open the same TUI on a
 remote Linux installation. Authenticated `tcp://host:port` connections are also
-supported through `cxz expose`. See [remote connections and Windows builds](docs/remote.md)
+supported through `cxz expose`. Named `connections` in `settings.json` appear
+together in the project panel as `project1 via work`; `default` sets its initial
+focus. Use `local://` for the local installation alongside remote targets. See [remote connections and Windows builds](docs/remote.md)
 for setup, transport security and the remaining host-local helper features.
 
 Conversation user-message rows use ANSI 236 across the conversation width.
