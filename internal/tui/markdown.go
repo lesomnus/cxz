@@ -14,7 +14,7 @@ import (
 	"github.com/yuin/goldmark/text"
 )
 
-var codeStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#FFFFFF")).Background(lipgloss.Color("238"))
+var codeStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("252")).Background(lipgloss.Color("238"))
 var markdownParser = goldmark.New(goldmark.WithExtensions(extension.GFM)).Parser()
 
 type renderedResponse struct {

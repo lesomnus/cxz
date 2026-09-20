@@ -86,7 +86,7 @@ func TestConversationAlignmentAndSummaryPlacement(t *testing.T) {
 	for _, agent := range []string{"claude", "codex"} {
 		got := eventView(&api.Session{Agent: agent}, &api.Event{Kind: "assistant", Text: "reply"}, 80)
 		if !strings.HasSuffix(got, "\n  "+answer.Render("reply")) {
-			t.Fatal("answer must use neutral white")
+			t.Fatal("answer must use the conversation text style")
 		}
 	}
 }
