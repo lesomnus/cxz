@@ -79,6 +79,7 @@ func (m *model) accountKey(key tea.KeyMsg) tea.Cmd {
 			m.accountAdding = false
 		} else {
 			m.accountView = false
+			m.panelFocus = m.projectView
 		}
 		m.notice = ""
 		return nil
@@ -164,7 +165,7 @@ func (m *model) accountKey(key tea.KeyMsg) tea.Cmd {
 		alias := choices[m.accountIndex].GetAlias()
 		if key.String() == "l" {
 			if m.loginAccount == nil {
-				m.notice = "Login requires the workspace dashboard (cxz up)."
+				m.notice = "Login requires the project navigator with login support (cxz up)."
 				return nil
 			}
 			if choices[m.accountIndex].GetAgent() == "claude" {
@@ -177,7 +178,7 @@ func (m *model) accountKey(key tea.KeyMsg) tea.Cmd {
 			return m.startAccountWorkflow(alias, choices[m.accountIndex].GetAgent(), "", false)
 		}
 		if !m.accountChoosing {
-			m.notice = "Press l to log in. Esc returns to project; n adds an account."
+			m.notice = "Press l to log in. Esc returns to Projects; n adds an account."
 			return nil
 		}
 		if m.createProjectSession == nil {

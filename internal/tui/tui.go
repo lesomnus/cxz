@@ -59,6 +59,7 @@ type model struct {
 	wisp                    *containerterm.WispPool
 	terminalWidth           int
 	panelFocus              bool
+	panelWantKey            string
 	panelIndex              int
 	panelProjects           []*api.Project
 	allSessions             []*api.Session
@@ -241,8 +242,7 @@ func RunProject(ctx context.Context, c api.SessionsClient, project *api.Project,
 	defer cancel()
 	input := newComposer()
 	m := &model{ctx: ctx, client: c, input: input, view: viewport.New(80, 15), events: map[string][]*api.Event{}, cursor: map[string]uint64{}, width: 100, height: 30, wantID: id}
-	m.project = project
-	m.projectView = project != nil && id == ""
+	m.initializeNavigation(project, id)
 	m.createProjectSession = create
 	if resources, ok := c.(*resourceclient.Client); ok {
 		m.accountService = resources.Accounts
@@ -1276,6 +1276,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.notice = v.text
 			if v.sessionID != "" {
 				m.wantID = v.sessionID
+				m.panelFocus = false
 				m.projectView = false
 				m.accountView = false
 			}
@@ -1283,7 +1284,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.refresh()
 	case tea.KeyMsg:
 		m.lastUIInput = time.Now()
-		if m.panelFocus {
+		if m.panelFocus && !m.accountView && m.workflow == nil && !m.creating {
 			return m, m.panelKey(v)
 		}
 		if m.previewInteraction() {
@@ -1347,7 +1348,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.refresh()
 		}
 		if m.projectView && !m.creating {
-			return m, m.projectKey(v)
+			return m, m.panelKey(v)
 		}
 		if m.focusApproval && v.String() != "tab" && v.String() != "shift+tab" && v.String() != "ctrl+c" {
 			return m, m.approvalKey(v)
@@ -1607,14 +1608,14 @@ func (m *model) View() (out string) {
 	if m.width > 0 && (m.width < 40 || m.height < 14) {
 		return screen("cxz\nResize terminal to 40 × 14 or larger.\nCtrl+C detach", m.width, m.height)
 	}
-	if m.panelFocus && !m.panelVisible() {
+	if (m.panelFocus || m.projectView) && !m.accountView && !m.creating && !m.panelVisible() {
 		return m.panelScreen()
 	}
 	if m.accountView {
 		return m.accountScreen()
 	}
-	if m.projectView {
-		return m.projectScreen()
+	if m.projectView && !m.creating {
+		return screen(indentBlock("Select a session from Projects.\n\nn new session · a accounts"), m.width, m.height)
 	}
 	return m.sessionScreen()
 }

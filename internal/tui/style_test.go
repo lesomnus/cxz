@@ -16,6 +16,7 @@ func TestMultilineComposerAndDraft(t *testing.T) {
 	m.input = newComposer()
 	m.sessions = []*api.Session{{Id: "s", ProjectId: "p"}}
 	m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	// A bracketed paste is one rune event, even when it contains newlines.
 	m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("한글\ncode"), Paste: true})
 	m.Update(tea.KeyMsg{Type: tea.KeyCtrlJ})

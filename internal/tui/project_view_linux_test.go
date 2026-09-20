@@ -170,9 +170,9 @@ func TestProjectSessionTerminalNavigation(t *testing.T) {
 	navigated := make(chan error, 1)
 	go func() {
 		for _, stage := range []struct{ want, key string }{
-			{"session  stopped", "a"}, {"No accounts yet", "n"},
+			{"stopped", "a"}, {"No accounts yet", "n"},
 			{"Create account", "\x1b"}, {"No accounts yet", "\x1b"},
-			{"cxz · project", "\r"}, {"quota", "\x11"}, {"Projects", "\x03"},
+			{"Projects", "\r\r"}, {"quota", "\x11"}, {"Projects", "\x03"},
 		} {
 			var output strings.Builder
 			buf := make([]byte, 4096)

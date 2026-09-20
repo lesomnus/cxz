@@ -20,7 +20,7 @@ import (
 
 func workspaceEntryCommands() xli.Commands {
 	up := newProjectCommand("up")
-	up.Brief = "Prepare workspace and open its project dashboard (no session created)"
+	up.Brief = "Prepare workspace and focus its project in the project list (no session created)"
 	var flags flg.Flags
 	for _, f := range up.Flags {
 		if f.Info().Name == "no-attach" {
@@ -70,7 +70,7 @@ func workspaceEntry(ctx context.Context, client api.SessionsClient, c *xli.Comma
 	}
 	sessions := tui.ProjectSessions(list.Sessions, p)
 	if len(sessions) == 0 {
-		return fmt.Errorf("project has no sessions; run cxz up to create one from its dashboard")
+		return fmt.Errorf("project has no sessions; run cxz up and press n in the project list to create one")
 	}
 	return projectTUI(ctx, resources, c, p, sessions[0].Id, false)
 }
@@ -80,7 +80,7 @@ func projectTUI(ctx context.Context, resources *resourceclient.Client, c *xli.Co
 		if err := installer.SyncGitHub(ctx, stateFrom(ctx), errOutput); err != nil {
 			return nil, err
 		}
-		// The dashboard owns the terminal. Provider processes use pipes; all
+		// The project navigator owns the terminal. Provider processes use pipes; all
 		// progress and authentication output stays inside its workflow view.
 		oldIn, oldOut, oldErr := c.ReadCloser, c.Writer, c.ErrWriter
 		c.ReadCloser = io.NopCloser(input)
