@@ -228,7 +228,7 @@ func (m *model) sessionScreen() string {
 		preview = m.previewRows(width, h) + "\n"
 	}
 	composer := m.input
-	modal := m.redactDialog != nil || m.terminalFocused() || m.panelFocus || m.report != nil || m.modelPicker != nil || m.restartConfirm != nil || m.questionDialog != nil || m.pasteDialog != nil
+	modal := m.redactDialog != nil || m.terminalFocused() || m.panelFocus || m.report != nil || m.modelPicker != nil || m.restartConfirm != nil || m.questionDialog != nil || m.pasteDialog != nil || m.selectingTools() || (m.previewVisible() && m.filePreview.focused)
 	if modal {
 		composer.Blur()
 	}
