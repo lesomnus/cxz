@@ -24,7 +24,7 @@ func editSettings(root string, open func(string) error) (bool, *filemap.Bundle, 
 	}
 	initial := original
 	if len(initial) == 0 {
-		initial = []byte("{\n  \"files\": []\n}\n")
+		initial = settings.Template()
 	}
 	tmp, err := os.CreateTemp(root, ".cxz-edit-*.json")
 	if err != nil {
@@ -57,7 +57,7 @@ func editSettings(root string, open func(string) error) (bool, *filemap.Bundle, 
 	if err != nil {
 		return fail(err)
 	}
-	if bytes.Equal(edited, initial) {
+	if bytes.Equal(edited, original) {
 		return false, nil, nil
 	}
 	cfg, err := settings.Parse(edited)

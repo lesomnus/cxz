@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"os"
 	"path/filepath"
@@ -83,5 +84,54 @@ func TestEditClientSettingsOfflineAndLockConflict(t *testing.T) {
 	}
 	if _, err = os.Stat(draft); err != nil {
 		t.Fatal("conflicting draft removed", err)
+	}
+}
+
+func TestFirstEditCreatesExamplesAndKeepsComments(t *testing.T) {
+	root := t.TempDir()
+	changed, bundle, err := editSettings(root, func(p string) error {
+		b, err := os.ReadFile(p)
+		if err != nil {
+			return err
+		}
+		if !strings.Contains(string(b), "//") || !strings.Contains(string(b), "ssh://work") {
+			t.Fatal("first draft has no examples")
+		}
+		cfg, err := settings.Parse(b)
+		if err != nil || cfg.Connections != nil {
+			t.Fatal("examples became active", cfg, err)
+		}
+		return nil
+	})
+	if err != nil || !changed || bundle != nil {
+		t.Fatal(changed, bundle, err)
+	}
+	path := filepath.Join(root, "settings.json")
+	first, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	changed, _, err = editSettings(root, func(string) error { return nil })
+	if err != nil || changed {
+		t.Fatal("unmodified existing file was rewritten", err)
+	}
+	changed, _, err = editSettings(root, func(p string) error {
+		b, err := os.ReadFile(p)
+		if err != nil {
+			return err
+		}
+		b = bytes.Replace(b, []byte("// \"codex_model\": \"\""), []byte("\"codex_model\": \"test-model\""), 1)
+		return os.WriteFile(p, b, 0600)
+	})
+	if err != nil || !changed {
+		t.Fatal(changed, err)
+	}
+	cfg, err := settings.Load(root)
+	if err != nil || cfg.CodexModel != "test-model" {
+		t.Fatal(cfg, err)
+	}
+	after, _ := os.ReadFile(path)
+	if !bytes.Contains(after, []byte("ssh://work")) || bytes.Equal(first, after) {
+		t.Fatal("comments lost or edited setting discarded")
 	}
 }

@@ -15,8 +15,12 @@ cxz project logs --tail 200 PROJECT       # devcontainer provisioning log
 cxz version
 ```
 
-설정은 해당 `--state`의 `settings.json`에 0600으로 저장한다. 인증정보와 권한 정책은
-이 설정에 넣을 수 없다. CLI 명시 값 > client 설정 > vendor 기본값 순서다.
+설정은 해당 `--state`의 `settings.json`에 저장한다(Linux 파일 모드 0600).
+Windows 기본 경로는 `%USERPROFILE%\.local\state\cxz\settings.json`이다.
+디렉터리 우선순위는 `--state` > `CXZ_STATE` > `XDG_STATE_HOME/cxz` > 홈 디렉터리 기본값이다.
+처음 `cxz edit`를 열면 연결·모델·파일 공유·Docker 예시가 비활성 주석으로 들어간다.
+`//`, `/* ... */` 주석과 마지막 쉼표를 지원하며, CLI 설정 변경도 관련 없는 주석을 보존한다.
+인증정보와 권한 정책은 이 설정에 넣을 수 없다. CLI 명시 값 > client 설정 > vendor 기본값 순서다.
 새 세션의 agent는 선택한 Account로 결정한다. `project up`은 기존 Account/vendor/model을 유지한다.
 모델은 세션 생성 시 고정된다. 기존 대화의 모델을 몰래 바꾸지 않으며 변경은 명시적으로
 기존 세션을 stop한 뒤 새 세션을 만든다. 사용 가능한 모델은 vendor 계정에 따라 다르다.

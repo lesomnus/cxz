@@ -3,12 +3,14 @@
 package settings
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/engine"
 	"github.com/lesomnus/cxz/internal/filemap"
+	"github.com/tailscale/hujson"
 	"io"
 	"os"
 	"path/filepath"
@@ -78,12 +80,15 @@ func Load(root string) (Config, error) {
 }
 
 func Parse(b []byte) (Config, error) {
-	if !strings.HasPrefix(strings.TrimSpace(string(b)), "{") {
+	standard, err := hujson.Standardize(bytes.Clone(b))
+	if err != nil {
+		return Config{}, fmt.Errorf("invalid settings.json: %w", err)
+	}
+	if !bytes.HasPrefix(bytes.TrimSpace(standard), []byte("{")) {
 		return Config{}, fmt.Errorf("settings.json must contain one JSON object")
 	}
 	var c Config
-	var err error
-	d := json.NewDecoder(strings.NewReader(string(b)))
+	d := json.NewDecoder(bytes.NewReader(standard))
 	d.DisallowUnknownFields()
 	if err = d.Decode(&c); err != nil {
 		return c, fmt.Errorf("invalid settings.json: %w", err)
@@ -93,6 +98,7 @@ func Parse(b []byte) (Config, error) {
 	}
 	return c, c.Validate()
 }
+
 func Save(root string, c Config) error {
 	if err := c.Validate(); err != nil {
 		return err
@@ -100,5 +106,20 @@ func Save(root string, c Config) error {
 	if err := os.MkdirAll(root, 0700); err != nil {
 		return err
 	}
-	return core.WriteJSON(filepath.Join(root, "settings.json"), c)
+	path := filepath.Join(root, "settings.json")
+	original, err := os.ReadFile(path)
+	if os.IsNotExist(err) {
+		original = Template()
+	} else if err != nil {
+		return err
+	}
+	previous, err := Parse(original)
+	if err != nil {
+		return err
+	}
+	updated, err := updateDocument(original, previous, c)
+	if err != nil {
+		return err
+	}
+	return core.WriteFile(path, updated)
 }

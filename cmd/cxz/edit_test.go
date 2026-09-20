@@ -14,7 +14,7 @@ import (
 func TestEditSettingsSavesAndSnapshotsChangedMappings(t *testing.T) {
 	root := t.TempDir()
 	changed, bundle, err := editSettings(root, func(string) error { return nil })
-	if err != nil || changed || bundle != nil {
+	if err != nil || !changed || bundle != nil {
 		t.Fatal(changed, bundle, err)
 	}
 	// Model-only editing stays offline, even with the default empty files array.

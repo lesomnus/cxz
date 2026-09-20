@@ -7,8 +7,9 @@ needed for a remote conversation.
 
 ## All connections in one project view
 
-Edit the existing `settings.json` with `cxz edit` on Linux or Windows. The format remains
-JSON; connections are keyed by name alongside a `default` selection:
+Edit the existing `settings.json` with `cxz edit` on Linux or Windows. The
+filename remains `settings.json`; JSON comments (`//`, `/* ... */`) and trailing
+commas are supported. Connections are keyed by name alongside a `default` selection:
 
 ```json
 {
@@ -42,7 +43,15 @@ $env:EDITOR = 'code --wait'
 Editor commands use Windows command syntax; quote an executable path containing
 spaces. Both executable and `.cmd`/batch editors are supported. Unless overridden
 with `--state`, `CXZ_STATE` or `XDG_STATE_HOME`, the file is under
-`$env:USERPROFILE\.local\state\cxz\settings.json`.
+`$env:USERPROFILE\.local\state\cxz\settings.json`. Directory selection follows
+`--state` > `CXZ_STATE` > `XDG_STATE_HOME/cxz` > the home-directory default.
+
+The first edit starts with commented examples for connections, model defaults,
+file mappings and shared Docker. The examples are disabled until uncommented.
+Closing the editor successfully saves that initial file even if it was not
+changed. Existing settings keep their contents; `config set`/`unset` preserves
+unrelated settings and comments. Use your editor's JSON with Comments mode if
+its strict JSON mode marks the examples as errors.
 
 The editor opens a temporary draft. Invalid JSON, unknown settings, editor
 failure and concurrent updates leave the saved file intact and report the

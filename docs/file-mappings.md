@@ -11,7 +11,8 @@ cxz edit
 
 This opens `<state>/settings.json` (normally `~/.local/state/cxz/settings.json`)
 using `$VISUAL`, then `$EDITOR`, or an installed `nano`/`vim`/`vi`. Editor arguments
-such as `code --wait` are supported. For example:
+such as `code --wait` are supported. New files start with commented examples;
+line/block comments and trailing commas are accepted. For example:
 
 ```json
 {
