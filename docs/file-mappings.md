@@ -3,11 +3,44 @@
 Copy host files or directory contents into agent containers. Mappings are global
 within one cxz installation, with an optional `claude` or `codex` filter.
 
+Open the configuration directly in your editor:
+
+```sh
+cxz edit
+```
+
+This opens `<state>/settings.json` (normally `~/.local/state/cxz/settings.json`)
+using `$VISUAL`, then `$EDITOR`, or an installed `nano`/`vim`/`vi`. Editor arguments
+such as `code --wait` are supported. For example:
+
+```json
+{
+  "claude_model": "sonnet",
+  "files": [
+    {
+      "src": "~/instructions/CLAUDE.md",
+      "dst": "${AGENT_CONFIG_DIR}/CLAUDE.md",
+      "agent": "claude"
+    },
+    {
+      "src": "~/instructions/AGENTS.md",
+      "dst": "${AGENT_CONFIG_DIR}/AGENTS.md",
+      "agent": "codex"
+    }
+  ]
+}
+```
+
+Save and exit to validate the configuration. Changed mappings are snapshotted
+and published automatically; model-only changes are saved without contacting the
+server. Unchanged edits do nothing. Invalid edits, editor failures, and concurrent
+configuration changes preserve the original and report the retained draft path.
+A publication failure leaves valid local settings saved for a later sync.
+
+`cxz config files ls`, `add`, and `remove` remain available for scripts. For example:
+
 ```sh
 cxz config files add --agent claude ~/instructions/CLAUDE.md '${AGENT_CONFIG_DIR}/CLAUDE.md'
-cxz config files add --agent codex ~/instructions/AGENTS.md '${AGENT_CONFIG_DIR}/AGENTS.md'
-cxz config files add --agent claude ~/instructions/commands '${AGENT_CONFIG_DIR}/commands'
-cxz config files ls
 ```
 
 Quote destinations containing variables so your shell does not expand them.

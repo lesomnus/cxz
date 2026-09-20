@@ -63,6 +63,15 @@ func Load(root string) (Config, error) {
 	if err != nil {
 		return c, err
 	}
+	return Parse(b)
+}
+
+func Parse(b []byte) (Config, error) {
+	if !strings.HasPrefix(strings.TrimSpace(string(b)), "{") {
+		return Config{}, fmt.Errorf("settings.json must contain one JSON object")
+	}
+	var c Config
+	var err error
 	d := json.NewDecoder(strings.NewReader(string(b)))
 	d.DisallowUnknownFields()
 	if err = d.Decode(&c); err != nil {

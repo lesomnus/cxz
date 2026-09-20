@@ -70,8 +70,8 @@ session's model; reconnect/resume preserves it. `cxz manager doctor`, `cxz proje
 and `cxz version` provide diagnostics. See [operations and releases](docs/operations.md)
 for retry behavior, model settings, versioned installation, updates and rollback.
 
-Host instruction files and directories can be copied into each session with
-`cxz config files add --agent claude ~/instructions/CLAUDE.md '${AGENT_CONFIG_DIR}/CLAUDE.md'`.
+Use `cxz edit` to edit model defaults and host file mappings in your editor.
+Files such as `CLAUDE.md` can target `${AGENT_CONFIG_DIR}/CLAUDE.md` in each session.
 See [host file mappings](docs/file-mappings.md) for destination variables, sync,
 and application on agent restart.
 
