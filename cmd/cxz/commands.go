@@ -135,6 +135,9 @@ func newRoot(state string) *xli.Command {
 		})),
 	}
 	root.Commands = xli.Commands{
+		{Name: "terminal-info", Brief: "Inspect local terminal environment and interactive color palette", Flags: flg.Flags{switchFlag("plain", "Print environment and palette codes without interactive UI")}, Handler: onRun(func(ctx context.Context, c *xli.Command) error {
+			return tui.RunTerminalInfo(ctx, c.ReadCloser, c.Writer, flg.MustGet[bool](c, "plain"))
+		})},
 		{Name: "install", Brief: "Start background Docker manager", Flags: flg.Flags{stringFlag("workspace-root", "Engine-visible workspace root", ""), stringFlag("image", "Manager image (default: build from this binary)", ""), switchFlag("recreate", "Replace owned manager, preserving data")}, Handler: onRun(func(ctx context.Context, c *xli.Command) error {
 			return installer.Install(ctx, stateFrom(ctx), flg.MustGet[string](c, "workspace-root"), flg.MustGet[string](c, "image"), flg.MustGet[bool](c, "recreate"), c.ErrWriter)
 		})},

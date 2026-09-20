@@ -84,6 +84,13 @@ For input or rendering problems, **F9** or the **Ctrl+P** recording button start
 a [TUI diagnostic recording](docs/debug-recording.md). Stop to save a local JSONL
 file; `/record status` shows its full path. Input text is excluded.
 
+`cxz terminal-info` shows the local terminal environment and an interactive
+256-color palette. Use arrows or click a swatch to select its ANSI code, and
+**Tab** to switch to explicit RGB swatches and HEX codes. ANSI colors depend on
+your terminal theme; the displayed reference HEX is not a theme measurement.
+Use `cxz terminal-info --plain` for a shareable text report. No installation or
+manager connection is required.
+
 Select a session in the project list and press **m** (or use `/memory`) to
 [browse retained agent memory and history](docs/agent-memory.md), even after
 the project container stops. Press **c** to copy selected data to another session.
