@@ -10,16 +10,33 @@ import (
 	"github.com/tailscale/hujson"
 )
 
-//go:embed template.jsonc
+//go:embed template.jsonm
 var initialDocument string
 
-// Template contains disabled examples and has exactly the same values as Config{}.
+// Template contains disabled examples and a local schema reference. All runtime
+// preferences retain their defaults.
 func Template() []byte { return []byte(initialDocument) }
+
+// WithSchema adds the bundled schema reference while preserving comments and
+// any existing custom schema reference.
+func WithSchema(original []byte) ([]byte, error) {
+	before, err := Parse(original)
+	if err != nil {
+		return nil, err
+	}
+	after := before
+	if after.Schema == "" {
+		after.Schema = SchemaReference
+	}
+	return updateDocument(original, before, after)
+}
 
 // Update only changed top-level settings. Unrelated subtrees retain their
 // comments; comments around a removed preference are kept beside the next one.
 func updateDocument(original []byte, before, after Config) ([]byte, error) {
-	doc, err := hujson.Parse(original)
+	// Formatting an AST can reuse its input buffer. Keep the caller's original
+	// bytes intact for the editor's concurrent-change check.
+	doc, err := hujson.Parse(bytes.Clone(original))
 	if err != nil {
 		return nil, err
 	}

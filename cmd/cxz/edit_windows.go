@@ -17,7 +17,7 @@ import (
 )
 
 func editCommand() *xli.Command {
-	return &xli.Command{Name: "edit", Brief: "Edit local settings.json using VISUAL/EDITOR or Notepad", Handler: xli.OnRun(func(ctx context.Context, c *xli.Command, _ xli.Next) error {
+	return &xli.Command{Name: "edit", Brief: "Edit local settings.jsonm using VISUAL/EDITOR or Notepad", Handler: xli.OnRun(func(ctx context.Context, c *xli.Command, _ xli.Next) error {
 		root := c
 		for root.HasParent() {
 			root = root.Parent()
@@ -31,7 +31,7 @@ func editCommand() *xli.Command {
 			return err
 		}
 		if changed {
-			fmt.Fprintln(c.Writer, "Saved", filepath.Join(state, "settings.json"))
+			fmt.Fprintln(c.Writer, "Saved", settings.Path(state))
 		} else {
 			fmt.Fprintln(c.Writer, "No changes.")
 		}

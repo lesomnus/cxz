@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"slices"
 	"strings"
 
@@ -17,7 +16,7 @@ import (
 )
 
 func editCommand() *xli.Command {
-	return &xli.Command{Name: "edit", Brief: "Edit settings.json in $VISUAL/$EDITOR; validate and sync changed settings", Handler: onRun(func(ctx context.Context, c *xli.Command) error {
+	return &xli.Command{Name: "edit", Brief: "Edit settings.jsonm in $VISUAL/$EDITOR; validate and sync changed settings", Handler: onRun(func(ctx context.Context, c *xli.Command) error {
 		root := stateFrom(ctx)
 		previous, _ := settings.Load(root)
 		changed, bundle, err := editSettings(root, func(path string) error { return openSettingsEditor(ctx, c, path) })
@@ -28,7 +27,7 @@ func editCommand() *xli.Command {
 			fmt.Fprintln(c.Writer, "No changes.")
 			return nil
 		}
-		fmt.Fprintln(c.Writer, "Saved", filepath.Join(root, "settings.json"))
+		fmt.Fprintln(c.Writer, "Saved", settings.Path(root))
 		current, err := settings.Load(root)
 		if err != nil {
 			return err

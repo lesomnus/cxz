@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -17,7 +18,7 @@ func TestEditSettingsPreservesInvalidAndConcurrentEdits(t *testing.T) {
 		t.Run(kind, func(t *testing.T) {
 			root := t.TempDir()
 			original := []byte("{\"claude_model\":\"old\"}\n")
-			path := filepath.Join(root, "settings.json")
+			path := filepath.Join(root, "settings.jsonm")
 			if err := os.WriteFile(path, original, 0600); err != nil {
 				t.Fatal(err)
 			}
@@ -78,7 +79,7 @@ func TestEditClientSettingsOfflineAndLockConflict(t *testing.T) {
 	if err == nil || changed {
 		t.Fatal("concurrent writer was allowed")
 	}
-	current, err := os.ReadFile(filepath.Join(root, "settings.json"))
+	current, err := os.ReadFile(filepath.Join(root, "settings.jsonm"))
 	if err != nil || string(current) != string(cfg) {
 		t.Fatal("settings overwritten", err)
 	}
@@ -98,15 +99,22 @@ func TestFirstEditCreatesExamplesAndKeepsComments(t *testing.T) {
 			t.Fatal("first draft has no examples")
 		}
 		cfg, err := settings.Parse(b)
-		if err != nil || cfg.Connections != nil {
+		if err != nil || cfg.Connections != nil || cfg.Schema != settings.SchemaReference {
 			t.Fatal("examples became active", cfg, err)
+		}
+		if filepath.Ext(p) != ".jsonm" {
+			t.Fatal("wrong editor draft extension", p)
+		}
+		schema, err := os.ReadFile(filepath.Join(filepath.Dir(p), cfg.Schema))
+		if err != nil || !json.Valid(schema) {
+			t.Fatal("editor schema unavailable before editor opened", err)
 		}
 		return nil
 	})
 	if err != nil || !changed || bundle != nil {
 		t.Fatal(changed, bundle, err)
 	}
-	path := filepath.Join(root, "settings.json")
+	path := filepath.Join(root, "settings.jsonm")
 	first, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatal(err)
@@ -133,5 +141,74 @@ func TestFirstEditCreatesExamplesAndKeepsComments(t *testing.T) {
 	after, _ := os.ReadFile(path)
 	if !bytes.Contains(after, []byte("ssh://work")) || bytes.Equal(first, after) {
 		t.Fatal("comments lost or edited setting discarded")
+	}
+}
+
+func TestEditMigratesLegacySettingsAndDetectsBothWriters(t *testing.T) {
+	for _, concurrent := range []string{"none", "legacy", "primary"} {
+		t.Run(concurrent, func(t *testing.T) {
+			root := t.TempDir()
+			legacy := filepath.Join(root, settings.LegacyFilename)
+			original := []byte("{\n // keep\n \"claude_model\":\"legacy\",\n}\n")
+			if err := os.WriteFile(legacy, original, 0600); err != nil {
+				t.Fatal(err)
+			}
+			var draft string
+			changed, bundle, err := editSettings(root, func(p string) error {
+				draft = p
+				switch concurrent {
+				case "legacy":
+					return os.WriteFile(legacy, []byte(`{"codex_model":"concurrent"}`), 0600)
+				case "primary":
+					// Even equal bytes in a newly created primary represent a new writer.
+					return os.WriteFile(settings.Path(root), original, 0600)
+				}
+				return nil
+			})
+			if concurrent != "none" {
+				if err == nil || changed || !strings.Contains(err.Error(), "settings changed") {
+					t.Fatal("migration overwrote a concurrent writer", changed, err)
+				}
+				if _, err := os.Stat(draft); err != nil {
+					t.Fatal("conflicting draft removed", err)
+				}
+				return
+			}
+			if err != nil || !changed || bundle != nil {
+				t.Fatal(changed, bundle, err)
+			}
+			cfg, err := settings.Load(root)
+			if err != nil || cfg.ClaudeModel != "legacy" || cfg.Schema != settings.SchemaReference {
+				t.Fatal(cfg, err)
+			}
+			old, err := os.ReadFile(legacy)
+			if err != nil || !bytes.Equal(old, original) {
+				t.Fatal("legacy backup modified", err)
+			}
+			current, err := os.ReadFile(settings.Path(root))
+			if err != nil || !bytes.Contains(current, []byte("// keep")) {
+				t.Fatal("migration lost comments", err)
+			}
+		})
+	}
+}
+
+func TestEditRefreshesSchemaWithoutChangingSettings(t *testing.T) {
+	root := t.TempDir()
+	if _, _, err := editSettings(root, func(string) error { return nil }); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, settings.SchemaFilename), []byte(`{}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	changed, _, err := editSettings(root, func(p string) error {
+		b, err := os.ReadFile(filepath.Join(filepath.Dir(p), settings.SchemaFilename))
+		if err != nil || !bytes.Contains(b, []byte(`"properties"`)) {
+			t.Fatal("old schema not refreshed before editing", err)
+		}
+		return nil
+	})
+	if err != nil || changed {
+		t.Fatal("schema refresh rewrote user preferences", changed, err)
 	}
 }

@@ -1,0 +1,133 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "cxz settings",
+  "description": "Local cxz client preferences. Comments and trailing commas are supported. Host file mappings and Docker settings are applied on the Linux daemon host.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Editor schema reference. cxz edit refreshes settings.schema.json from the current binary.",
+      "default": "./settings.schema.json"
+    },
+    "connections": {
+      "type": ["object", "null"],
+      "description": "Named connections shown together in the project view. Changes apply when the TUI next starts. Omit to use the local installation on Linux.",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "properties": {
+        "default": {
+          "type": "string",
+          "description": "Name of the connection to focus initially. Must refer to a configured connection. Empty or omitted selects the alphabetically first connection.",
+          "examples": ["work"]
+        }
+      },
+      "patternProperties": {
+        "^(?!default$)[a-zA-Z0-9][a-zA-Z0-9_-]{0,39}$": {
+          "$ref": "#/definitions/connection"
+        }
+      },
+      "if": { "required": ["default"] },
+      "then": { "minProperties": 2 },
+      "examples": [{"default": "work", "work": {"target": "ssh://work"}}]
+    },
+    "claude_model": { "$ref": "#/definitions/model" },
+    "codex_model": { "$ref": "#/definitions/model" },
+    "agent": {
+      "type": "string",
+      "enum": ["", "claude", "codex"],
+      "deprecated": true,
+      "description": "Legacy global preference. New sessions use the agent belonging to the selected account."
+    },
+    "files": {
+      "type": ["array", "null"],
+      "description": "Copy host files or directories into agent sessions before startup. Edit and publish these mappings on the Linux daemon host.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["src", "dst"],
+        "properties": {
+          "src": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Host file or directory to copy. Supports ~/; relative paths use the host CLI working directory.",
+            "examples": ["~/CLAUDE.md"]
+          },
+          "dst": {
+            "type": "string",
+            "maxLength": 4096,
+            "pattern": "^(?:/|\\$\\{(?:AGENT_CONFIG_DIR|SESSION_HOME|WORKSPACE)\\}(?:/|$))",
+            "description": "Absolute container path, or a path starting with ${AGENT_CONFIG_DIR}, ${SESSION_HOME}, or ${WORKSPACE}. Use forward slashes; parent traversal (..) and / itself are not allowed.",
+            "examples": ["${AGENT_CONFIG_DIR}/CLAUDE.md"]
+          },
+          "agent": {
+            "type": "string",
+            "enum": ["", "claude", "codex"],
+            "description": "Apply to this agent only. Empty or omitted applies to both agents."
+          }
+        }
+      }
+    },
+    "docker": {
+      "type": "object",
+      "description": "Shared Docker engine settings. Edit these on the Linux daemon host; Windows only saves them locally.",
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["", "dind", "off"],
+          "default": "dind",
+          "description": "dind enables the shared engine; off disables it. Empty or omitted uses dind."
+        },
+        "image": {
+          "type": "string",
+          "pattern": "^(?!-)[^ $\\t\\r\\n\\u0000]*$",
+          "default": "docker:29-dind",
+          "description": "Docker-in-Docker image. Empty or omitted uses docker:29-dind."
+        },
+        "compose": {
+          "type": "string",
+          "description": "Optional Compose override containing only services.dind. Relative paths use this settings directory; absolute and ~/ paths are also supported.",
+          "examples": ["docker.override.yaml"]
+        }
+      }
+    }
+  },
+  "definitions": {
+    "model": {
+      "type": "string",
+      "maxLength": 200,
+      "pattern": "^(?!-)[^\\s\\u0000-\\u001f\\u007f-\\u009f]*$",
+      "description": "Default model ID or alias for new sessions. Empty or omitted keeps the provider default. Maximum 200 bytes; no whitespace, control characters, or leading hyphen."
+    },
+    "connection": {
+      "type": "object",
+      "required": ["target"],
+      "additionalProperties": false,
+      "properties": {
+        "target": {
+          "type": "string",
+          "pattern": "^(ssh|tcp|local|unix)://",
+          "description": "ssh://[user@]host[:port] uses SSH config aliases and needs no expose relay. tcp://host:port needs cxz expose and token_file. local:// discovers a local Linux installation; unix:///path uses a direct socket. ${STATE} expands to this client's state directory.",
+          "examples": ["ssh://work", "local://", "unix://${STATE}/run/daemon.sock", "tcp://home-vpn:7349"]
+        },
+        "token_file": {
+          "type": "string",
+          "description": "Required for TCP only. Path to the token file, never the token itself. Relative paths use the client state directory; ${STATE} is supported.",
+          "examples": ["${STATE}/tokens/home"]
+        }
+      },
+      "if": {
+        "required": ["target"],
+        "properties": { "target": { "pattern": "^tcp://" } }
+      },
+      "then": {
+        "required": ["token_file"],
+        "properties": { "token_file": { "minLength": 1 } }
+      },
+      "else": {
+        "properties": { "token_file": { "maxLength": 0 } }
+      }
+    }
+  }
+}

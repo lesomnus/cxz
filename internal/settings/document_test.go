@@ -11,7 +11,7 @@ import (
 
 func TestCommentedSettingsAndDisabledTemplate(t *testing.T) {
 	cfg, err := Parse(Template())
-	if err != nil || !reflect.DeepEqual(cfg, Config{}) {
+	if err != nil || !reflect.DeepEqual(cfg, Config{Schema: SchemaReference}) {
 		t.Fatal("template changes defaults", cfg, err)
 	}
 	source := []byte(`// Leading comment
@@ -42,7 +42,7 @@ func TestCommentedSettingsAndDisabledTemplate(t *testing.T) {
 }
 func TestSaveSeedsAndRetainsExamples(t *testing.T) {
 	root := t.TempDir()
-	cfg := Config{ClaudeModel: "first"}
+	cfg := Config{Schema: SchemaReference, ClaudeModel: "first"}
 	if err := Save(root, cfg); err != nil {
 		t.Fatal(err)
 	}
@@ -54,7 +54,7 @@ func TestSaveSeedsAndRetainsExamples(t *testing.T) {
 	if err := Save(root, cfg); err != nil {
 		t.Fatal(err)
 	}
-	b, err := os.ReadFile(filepath.Join(root, "settings.json"))
+	b, err := os.ReadFile(filepath.Join(root, "settings.jsonm"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -70,7 +70,7 @@ func TestSaveSeedsAndRetainsExamples(t *testing.T) {
 }
 func TestSavePreservesUnrelatedAndUnsetComments(t *testing.T) {
 	root := t.TempDir()
-	path := filepath.Join(root, "settings.json")
+	path := filepath.Join(root, "settings.jsonm")
 	original := []byte(`// header
 {
  // model explanation
@@ -89,6 +89,7 @@ func TestSavePreservesUnrelatedAndUnsetComments(t *testing.T) {
 		t.Fatal(err)
 	}
 	cfg.ClaudeModel = "new"
+	cfg.Schema = SchemaReference
 	if err := Save(root, cfg); err != nil {
 		t.Fatal(err)
 	}
@@ -121,7 +122,7 @@ func TestSavePreservesUnrelatedAndUnsetComments(t *testing.T) {
 
 func TestUnsetRemovesCaseVariantsAndDuplicates(t *testing.T) {
 	root := t.TempDir()
-	if err := os.WriteFile(filepath.Join(root, "settings.json"), []byte(`{"CLAUDE_MODEL":"first","claude_model":"last"}`), 0600); err != nil {
+	if err := os.WriteFile(filepath.Join(root, "settings.jsonm"), []byte(`{"CLAUDE_MODEL":"first","claude_model":"last"}`), 0600); err != nil {
 		t.Fatal(err)
 	}
 	cfg, err := Load(root)
