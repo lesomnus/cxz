@@ -16,7 +16,13 @@ func (m *Manager) Docker(ctx context.Context, r *api.DockerInput) (*api.Receipt,
 	switch r.Action {
 	case "save", "up":
 		var spec engine.Spec
-		if err := json.Unmarshal(r.Spec, &spec); err != nil {
+		if len(r.Spec) == 0 && r.Action == "up" {
+			var err error
+			spec, err = e.Load()
+			if err != nil {
+				return nil, err
+			}
+		} else if err := json.Unmarshal(r.Spec, &spec); err != nil {
 			return nil, err
 		}
 		if spec.Mode == "dind" {
@@ -53,6 +59,16 @@ func (m *Manager) Docker(ctx context.Context, r *api.DockerInput) (*api.Receipt,
 			return nil, err
 		}
 		return &api.Receipt{Status: "Docker engine removed; cache volume retained"}, nil
+	case "info":
+		info, err := e.Info(ctx)
+		if err != nil {
+			return nil, err
+		}
+		data, err := json.Marshal(info)
+		return &api.Receipt{Status: string(data)}, err
+	case "prune":
+		text, err := e.PruneBuildCache(ctx)
+		return &api.Receipt{Status: text}, err
 	case "status":
 		status, err := e.Status(ctx)
 		return &api.Receipt{Status: status}, err

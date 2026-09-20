@@ -4,7 +4,8 @@ cxz can run one Docker-in-Docker engine shared by its projects. Images, build
 cache, and inner Docker volumes live in a separate named volume. Project down or
 recreation retains the shared engine and its data.
 
-Use `cxz edit` to enable it (the default for existing installations is off):
+DinD is enabled by default when no mode is saved. Explicit `"mode": "off"`
+is preserved. Use `cxz edit` to customize it:
 
 ```json
 {
@@ -76,3 +77,10 @@ mounted into the shared engine.
 Manager uninstall removes the owned engine container and retains its cache
 volume/network. Purge can remove those owned resources explicitly. TUI exit has
 no effect on the engine.
+
+Open TUI settings with **Ctrl+P** from the conversation or project list
+(or `/settings`). Status and build cache usage refresh every ten seconds.
+Buttons refresh, start/apply saved settings, stop the shared engine, or clear
+unused build cache. Stop, cache cleanup and applying settings to a running
+engine require confirmation. Cleanup retains images and volumes. Esc or Ctrl+P
+returns to the previous view. Opening settings does not start Docker.

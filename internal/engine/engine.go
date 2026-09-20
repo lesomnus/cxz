@@ -26,13 +26,19 @@ func (e Engine) Load() (Spec, error) {
 	var s Spec
 	b, err := os.ReadFile(filepath.Join(e.dir(), "settings.json"))
 	if os.IsNotExist(err) {
-		return Spec{Mode: "off"}, nil
+		return Spec{Mode: "dind", Image: "docker:29-dind"}, nil
 	}
 	if err != nil {
 		return s, err
 	}
 	if err = json.Unmarshal(b, &s); err != nil {
 		return s, err
+	}
+	if s.Mode == "" {
+		s.Mode = "dind"
+	}
+	if s.Image == "" {
+		s.Image = "docker:29-dind"
 	}
 	return s, s.Validate()
 }

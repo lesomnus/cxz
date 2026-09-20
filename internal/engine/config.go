@@ -38,7 +38,7 @@ func (c Config) Snapshot(root string) (Spec, error) {
 	}
 	s := Spec{Mode: c.Mode, Image: c.Image}
 	if s.Mode == "" {
-		s.Mode = "off"
+		s.Mode = "dind"
 	}
 	if s.Image == "" {
 		s.Image = "docker:29-dind"

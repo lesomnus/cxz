@@ -158,7 +158,7 @@ func TestDeletedChipsDoNotReappearInPreview(t *testing.T) {
 				m.Update(tea.KeyMsg{Type: tea.KeyBackspace})
 			}
 		}
-		m.Update(tea.KeyMsg{Type: tea.KeyCtrlP})
+		m.openPastes()
 		if m.pasteDialog != nil {
 			t.Fatalf("%s resurrected a deleted chip", method)
 		}
@@ -224,7 +224,7 @@ func TestPasteChipTextAndFile(t *testing.T) {
 	if token == body || !strings.HasPrefix(token, "[Paste ") || expandPastes(token, m.pastes) != body {
 		t.Fatal("paste was not losslessly collapsed")
 	}
-	m.Update(tea.KeyMsg{Type: tea.KeyCtrlP})
+	m.openPastes()
 	if m.pasteDialog == nil {
 		t.Fatal("no paste modal")
 	}

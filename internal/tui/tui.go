@@ -90,6 +90,7 @@ type model struct {
 	quotaState              string
 	modelPicker             *modelPicker
 	modelPickerEpoch        uint64
+	settingsPage            *settingsPage
 	report                  *reportOverlay
 	contextCapture          *contextCapture
 	hiddenEvents            map[*api.Event]bool
@@ -727,6 +728,10 @@ func (m *model) action(kind, text string) tea.Cmd {
 }
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	defer m.rememberNotice()
+	if v, ok := msg.(settingsResult); ok {
+		m.receiveSettings(v)
+		return m, nil
+	}
 	if v, ok := msg.(logsResult); ok {
 		if m.report == v.report {
 			m.report.text = v.text
@@ -782,6 +787,18 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if m.settingsPage != nil {
+		switch v := msg.(type) {
+		case tea.KeyMsg:
+			return m, m.settingsKey(v)
+		case tea.MouseMsg:
+			return m, m.settingsMouse(v)
+		}
+	}
+	if k, ok := msg.(tea.KeyMsg); ok && k.Type == tea.KeyCtrlP && !k.Paste && m.workflow == nil && m.redactDialog == nil && m.questionDialog == nil && m.pasteDialog == nil && m.restartConfirm == nil {
+		return m, m.openSettings()
+	}
+
 	switch v := msg.(type) {
 	case terminalOpened:
 		if p := m.terminals[v.id]; p != nil {
@@ -1145,7 +1162,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.render()
 	case tick:
 		m.watch()
-		return m, tea.Batch(timer(), m.periodicRefresh(), m.reportActivity())
+		return m, tea.Batch(timer(), m.periodicRefresh(), m.reportActivity(), m.pollSettings())
 	case resourcesChanged:
 		if v.generation != m.resourceWatchGeneration {
 			return m, nil
@@ -1304,9 +1321,6 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if m.capturePaste(v) {
 			return m, nil
-		}
-		if v.String() == "ctrl+p" && m.workflow == nil && !m.accountView && !m.projectView {
-			return m, m.openPastes()
 		}
 		if m.workflow != nil {
 			return m, m.workflowKey(v)
@@ -1522,6 +1536,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if localName == "/view" {
 				return m, m.viewCommand(text)
 			}
+			if localName == "/settings" {
+				return m, m.openSettings()
+			}
 			if localName == "/logs" {
 				return m, m.logsCommand(text)
 			}
@@ -1600,6 +1617,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 func (m *model) View() (out string) {
+	if m.settingsPage != nil {
+		return m.settingsScreen()
+	}
 	defer func() { out = m.wideScreen(out) }()
 	m.anchorCursor()
 	if m.workflow != nil {
