@@ -81,6 +81,11 @@ func WriteJSON(path string, v any) error {
 	if e != nil {
 		return e
 	}
+	return WriteFile(path, b)
+}
+
+// WriteFile replaces a private file after syncing its contents.
+func WriteFile(path string, b []byte) error {
 	f, e := os.CreateTemp(filepath.Dir(path), ".cxz-write-*")
 	if e != nil {
 		return e

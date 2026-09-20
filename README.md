@@ -71,6 +71,8 @@ and `cxz version` provide diagnostics. See [operations and releases](docs/operat
 for retry behavior, model settings, versioned installation, updates and rollback.
 
 Use `cxz edit` to edit model defaults and host file mappings in your editor.
+New settings files contain disabled, commented examples. `settings.json` accepts
+line/block comments and trailing commas; CLI preference updates keep comments.
 The Windows frontend also provides `cxz edit` for local connections and model
 preferences; it uses `VISUAL`/`EDITOR` or Notepad. Host settings are applied on Linux.
 Files such as `CLAUDE.md` can target `${AGENT_CONFIG_DIR}/CLAUDE.md` in each session.

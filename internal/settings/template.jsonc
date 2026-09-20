@@ -1,0 +1,52 @@
+{
+  // cxz settings: JSON with // comments, /* block comments */, and trailing commas.
+  // Examples below are disabled. Uncomment only the settings you want to use.
+  // Changes to connections take effect the next time you open the TUI.
+
+  // Show every connection's projects together, e.g. "project1 via work".
+  // "default" chooses the initial focus; it does not hide other connections.
+  // SSH targets use Host aliases from your local SSH config.
+  // "connections": {
+  //   "default": "work",
+  //   "work": { "target": "ssh://work" },
+  //   "home": { "target": "ssh://home" },
+  // },
+
+  // Additional targets you can add inside "connections":
+  //   "local": { "target": "local://" },
+  //   "socket": { "target": "unix://${STATE}/run/daemon.sock" },
+  //   "vpn": {
+  //     "target": "tcp://home-vpn:7349",
+  //     "token_file": "${STATE}/tokens/home"
+  //   },
+  // local:// discovers the local Linux installation; unix:// uses a direct socket.
+  // ${STATE} is this client's state directory. Relative token paths also use it.
+  // TCP needs cxz expose on the host; use a trusted VPN or tunnel. SSH needs neither.
+  // Put only a token file path here, never the token or an agent login credential.
+
+  // Defaults for new sessions. An empty string keeps the provider's default.
+  // Set these to a model ID or alias accepted by your provider.
+  // "claude_model": "",
+  // "codex_model": "",
+
+  // Host settings below are applied by cxz on the Linux daemon host.
+  // Windows cxz edit saves local preferences; it does not publish host settings.
+
+  // Copy a host file into the private Claude configuration directory.
+  // Directories can also be copied. Destinations can use ${AGENT_CONFIG_DIR},
+  // ${SESSION_HOME}, or ${WORKSPACE}. "agent" may be "claude", "codex", or omitted.
+  // "files": [
+  //   {
+  //     "src": "~/CLAUDE.md",
+  //     "dst": "${AGENT_CONFIG_DIR}/CLAUDE.md",
+  //     "agent": "claude"
+  //   }
+  // ],
+
+  // Shared Docker-in-Docker is enabled by default; use "off" to disable it.
+  // Optional "compose": "docker.override.yaml" loads a services.dind override
+  // relative to this settings file, or from an absolute / ~/ path.
+  // "docker": {
+  //   "mode": "dind"
+  // },
+}
