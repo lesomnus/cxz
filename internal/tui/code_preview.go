@@ -170,8 +170,8 @@ func (m *model) filePreviewMouse(v tea.MouseMsg) bool {
 	if !m.previewVisible() || m.questionDialog != nil || m.report != nil || m.modelPicker != nil || m.restartConfirm != nil || m.pasteDialog != nil || m.redactDialog != nil {
 		return false
 	}
-	width, height := m.width, m.previewHeight()
-	x, y := m.contentOffset(), m.view.Height+2+m.approvalHeight()
+	width, height := max(1, m.width-4), m.previewHeight()
+	x, y := m.contentOffset()+2, m.view.Height+2+m.approvalHeight()
 	if side := m.previewSideWidth(); side > 0 {
 		x = m.contentOffset() + m.width + 2
 		y = 0
