@@ -7,7 +7,7 @@ needed for a remote conversation.
 
 ## All connections in one project view
 
-Edit the existing `settings.json` with `cxz edit` on Linux. The format remains
+Edit the existing `settings.json` with `cxz edit` on Linux or Windows. The format remains
 JSON; connections are keyed by name alongside a `default` selection:
 
 ```json
@@ -25,10 +25,30 @@ JSON; connections are keyed by name alongside a `default` selection:
 ```
 
 Run `cxz` or `cxz tui` on Linux, or `cxz` on Windows, to see every configured
-connection. On Windows, edit `settings.json` in the client state directory
-directly; that frontend does not yet include `cxz edit`. Existing settings fields
-such as `files`, `docker` and model preferences can remain in the same file.
-Connection changes apply the next time the TUI starts.
+connection. Existing settings fields such as `files`, `docker` and model
+preferences can remain in the same file. Connection changes apply the next time
+the TUI starts.
+
+On Windows, `cxz edit` edits the local client's settings without requiring Docker
+or a live daemon. It uses `VISUAL`, then `EDITOR`, and otherwise opens Notepad.
+With Notepad, save and close the document, then press Enter in the terminal.
+For VS Code, set its wait option so editing finishes before validation:
+
+```powershell
+$env:EDITOR = 'code --wait'
+.\cxz.exe edit
+```
+
+Editor commands use Windows command syntax; quote an executable path containing
+spaces. Both executable and `.cmd`/batch editors are supported. Unless overridden
+with `--state`, `CXZ_STATE` or `XDG_STATE_HOME`, the file is under
+`$env:USERPROFILE\.local\state\cxz\settings.json`.
+
+The editor opens a temporary draft. Invalid JSON, unknown settings, editor
+failure and concurrent updates leave the saved file intact and report the
+recoverable draft path. Windows saves connection/model preferences locally;
+it does not publish Docker overrides or file mappings to any remote connection.
+Edit those host settings with `cxz edit` on the Linux daemon host.
 
 Projects display as `project1 via work`, with their sessions underneath.
 `default` chooses the initial focus and the fallback for an unqualified session

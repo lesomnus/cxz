@@ -9,6 +9,10 @@ TUI에 모든 연결의 프로젝트·세션을 함께 표시한다 (`project1 v
 `local://`는 설치된 로컬 manager를 자동 탐색하고,
 `unix://${STATE}/run/daemon.sock`는 foreground daemon의 소켓을 직접 사용한다.
 `cxz expose`는 독립 릴레이이므로 manager 재시작이나 `install --expose`가 필요 없다.
+Windows에서도 `cxz edit`로 로컬 설정을 편집한다. `VISUAL` → `EDITOR` → 메모장
+순서로 선택하며, 메모장은 저장·닫기 후 터미널에서 Enter를 눌러 완료한다.
+VS Code는 `$env:EDITOR = 'code --wait'`로 지정한다. Docker/file mapping 설정의
+실제 적용은 Linux 호스트에서 수행한다.
 설정과 지원 범위는 [원격 접속](remote.md)을 참고한다.
 
 목록 갱신은 변경 구독과 30초 안전 갱신을 사용한다. 매초 전체 목록/외부 컨테이너 탐색을 반복하지 않는다.
