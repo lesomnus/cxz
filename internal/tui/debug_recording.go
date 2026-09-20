@@ -36,18 +36,21 @@ type debugState struct {
 	Chip         bool   `json:"chip_selected"`
 }
 type debugEvent struct {
-	ErrorCode  string      `json:"error_code,omitempty"`
-	At         int64       `json:"elapsed_us"`
-	Kind       string      `json:"kind"`
-	Type       string      `json:"type,omitempty"`
-	Key        string      `json:"key,omitempty"`
-	Binding    string      `json:"binding,omitempty"`
-	Sequence   string      `json:"sequence,omitempty"`
-	Translated string      `json:"translated,omitempty"`
-	Before     *debugState `json:"before,omitempty"`
-	After      *debugState `json:"after,omitempty"`
-	Duration   int64       `json:"duration_us,omitempty"`
-	Count      int         `json:"count,omitempty"`
+	Wait       int64             `json:"wait_us,omitempty"`
+	IO         int64             `json:"io_us,omitempty"`
+	Metrics    map[string]uint64 `json:"metrics,omitempty"`
+	ErrorCode  string            `json:"error_code,omitempty"`
+	At         int64             `json:"elapsed_us"`
+	Kind       string            `json:"kind"`
+	Type       string            `json:"type,omitempty"`
+	Key        string            `json:"key,omitempty"`
+	Binding    string            `json:"binding,omitempty"`
+	Sequence   string            `json:"sequence,omitempty"`
+	Translated string            `json:"translated,omitempty"`
+	Before     *debugState       `json:"before,omitempty"`
+	After      *debugState       `json:"after,omitempty"`
+	Duration   int64             `json:"duration_us,omitempty"`
+	Count      int               `json:"count,omitempty"`
 }
 type debugArchive struct {
 	Started     time.Time         `json:"started"`
@@ -331,7 +334,7 @@ func (m *model) toggleRecording() tea.Cmd {
 		m.debugRecorder.Start()
 		m.recordingError = ""
 		m.notice = "Debug recording started · F9 stops and saves"
-		return nil
+		return m.performanceCommand()
 	}
 	m.recordingSaving = true
 	a, ctx := m.recordingPending, m.ctx

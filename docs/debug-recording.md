@@ -23,6 +23,16 @@ This is a diagnostic trace, not a screen video. While enabled, it records:
   composer cursor positions and input length before and after updates.
 - TUI event types, selected RPC error codes, update/render durations and rendered
   byte counts.
+- Transcript rebuild duration and row count (`transcript_render`).
+- Actual terminal writes (`terminal_write`): total `duration_us`, serialization
+  lock `wait_us`, underlying writer `io_us`, bytes written and an error category.
+  Screen contents are excluded. Completion means the OS/writer accepted the
+  bytes, not that the remote terminal finished painting them.
+- About once per second, runtime heap bytes, cumulative allocated bytes and GC
+  cycles, and goroutine count (`performance`). Its `wait_us` measures delivery
+  delay from a sample ready on a command goroutine to processing by the UI loop.
+  Samples can be less frequent when the UI is blocked. These are Go runtime
+  metrics, not process RSS or CPU utilization.
 - OS, architecture, Go/build version, terminal identification and whether SSH or
   tmux is present. Sessions are represented by recording-local numbers.
 
