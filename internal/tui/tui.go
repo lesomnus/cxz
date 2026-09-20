@@ -26,6 +26,7 @@ import (
 )
 
 type model struct {
+	toolSelector            *toolSelector
 	noticeLogs              []noticeLog
 	lastLoggedNotice        string
 	filePreview             *filePreview
@@ -663,7 +664,14 @@ func (m *model) render() {
 		}
 	}
 	m.view.SetContent(strings.Join(lines, "\n\n"))
-	if follow {
+	if m.selectingTools() {
+		for _, t := range m.toolTargets() {
+			if t.seq == m.toolSelector.seq {
+				m.revealTool(t.row)
+				break
+			}
+		}
+	} else if follow {
 		m.view.GotoBottom()
 	}
 }
@@ -1283,6 +1291,14 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.panelFocus && m.panelVisible() {
 			return m, m.panelKey(v)
 		}
+		if m.previewInteraction() {
+			if m.previewVisible() && m.filePreview.focused {
+				return m, m.filePreviewKey(v)
+			}
+			if m.selectingTools() {
+				return m, m.toolSelectorKey(v)
+			}
+		}
 		if m.pasteDialog != nil {
 			return m, m.pasteKey(v)
 		}
@@ -1510,6 +1526,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			localName := strings.Fields(text)[0]
 			if localName == "/terminal" {
 				return m, m.toggleTerminal()
+			}
+			if localName == "/view" {
+				return m, m.viewCommand(text)
 			}
 			if localName == "/logs" {
 				return m, m.logsCommand(text)
