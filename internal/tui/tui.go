@@ -259,7 +259,7 @@ func RunProject(ctx context.Context, c api.SessionsClient, project *api.Project,
 		m.loginAccount = login[0]
 	}
 	m.debugRecorder = &debugRecorder{}
-	m.cursorOutput = &cursorWriter{out: os.Stdout, keyboard: extendedKeyboard}
+	m.cursorOutput = &cursorWriter{out: os.Stdout, keyboard: extendedKeyboard, recorder: m.debugRecorder}
 	p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithContext(ctx), tea.WithMouseCellMotion(), tea.WithOutput(m.cursorOutput), tea.WithInput(recordedKeyboardInput(os.Stdin, m.debugRecorder)))
 	m.program = p
 	_, e := p.Run()
@@ -435,6 +435,10 @@ func (m *model) watch() {
 	}()
 }
 func (m *model) render() {
+	start := time.Now()
+	defer func() {
+		m.debugRecorder.Add(debugEvent{Kind: "transcript_render", Duration: time.Since(start).Microseconds(), Count: len(m.historyPositions)})
+	}()
 	m.promptSpans = nil
 	m.updateQuota()
 	m.workingSince = 0
@@ -741,6 +745,9 @@ func (m *model) action(kind, text string) tea.Cmd {
 }
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	defer m.debugUpdate(msg)()
+	if tick, ok := msg.(performanceTick); ok {
+		return m, m.performanceUpdate(tick)
+	}
 	if r, ok := msg.(recordingSaved); ok {
 		m.receiveRecording(r)
 		return m, nil

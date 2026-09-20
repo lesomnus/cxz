@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/lipgloss"
@@ -21,6 +22,8 @@ import (
 // after writes only while our alternate screen is active. tea.Exec/OAuth writes
 // are untouched after the renderer leaves the alternate screen.
 type cursorWriter struct {
+	writeMu            sync.Mutex
+	recorder           *debugRecorder
 	mu                 sync.Mutex
 	out                io.Writer
 	x, y               int
@@ -60,8 +63,13 @@ func (w *cursorWriter) position(x, y int, enabled bool) {
 	w.x, w.y, w.enabled = x, y, enabled
 }
 func (w *cursorWriter) Write(p []byte) (int, error) {
+	start := time.Now()
+	w.writeMu.Lock()
+	defer w.writeMu.Unlock()
+	locked := time.Now()
 	w.mu.Lock()
-	defer w.mu.Unlock()
+	x, y, enabled := w.x, w.y, w.enabled
+	w.mu.Unlock()
 	buf := p
 	// Keyboard stacks belong to each screen: push AFTER entering, pop BEFORE
 	// leaving. tea.Exec also leaves/re-enters, keeping OAuth subprocesses legacy.
@@ -75,13 +83,19 @@ func (w *cursorWriter) Write(p []byte) (int, error) {
 	if bytes.Contains(p, []byte("\x1b[?1049l")) {
 		w.alternate = false
 	}
-	if w.alternate && w.enabled {
-		buf = append(append([]byte{}, buf...), []byte(ansi.CursorPosition(w.x+1, w.y+1))...)
+	if w.alternate && enabled {
+		buf = append(append([]byte{}, buf...), []byte(ansi.CursorPosition(x+1, y+1))...)
 	}
+	writeStart := time.Now()
 	n, err := w.out.Write(buf)
 	if n < len(buf) && err == nil {
 		err = io.ErrShortWrite
 	}
+	errorCode := ""
+	if err != nil {
+		errorCode = "write_failed"
+	}
+	w.recorder.Add(debugEvent{Kind: "terminal_write", Duration: time.Since(start).Microseconds(), Wait: locked.Sub(start).Microseconds(), IO: time.Since(writeStart).Microseconds(), Count: n, ErrorCode: errorCode})
 	return min(n, len(p)), err
 }
 
