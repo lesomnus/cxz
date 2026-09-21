@@ -331,13 +331,17 @@ func TestNavigatorBackgroundCoversEveryTerminalCell(t *testing.T) {
 				panelWidth = width
 			}
 			for y := 0; y < m.height; y++ {
+				gray := uint32(0x3030)
+				if focused && y == 4+m.panelIndex {
+					gray = 0x4444
+				}
 				for x := 0; x < panelWidth; x++ {
 					cell := terminal.CellAt(x, y)
 					if cell == nil || cell.Style.Bg == nil {
 						t.Fatalf("unpainted cell %d,%d at width %d focus %v", x, y, width, focused)
 					}
 					r, g, b, _ := cell.Style.Bg.RGBA()
-					if r != 0x3030 || g != 0x3030 || b != 0x3030 {
+					if r != gray || g != gray || b != gray {
 						t.Fatalf("wrong background at %d,%d: %x %x %x", x, y, r, g, b)
 					}
 				}

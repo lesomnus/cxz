@@ -117,8 +117,8 @@ func TestWindowsUnicodePasteRepeatAndKeyRelease(t *testing.T) {
 }
 
 func TestWindowsMouseAndResizeBridge(t *testing.T) {
-	msgs := decodedTerminalMessages(t, strings.NewReader("\x1b[<0;4;5M\x1b[<0;4;5m\x1b[<64;4;5M\x1b[8;30;100t"))
-	if len(msgs) != 4 {
+	msgs := decodedTerminalMessages(t, strings.NewReader("\x1b[<0;4;5M\x1b[<0;4;5m\x1b[<64;4;5M\x1b[<35;4;5M\x1b[8;30;100t"))
+	if len(msgs) != 5 {
 		t.Fatal(msgs)
 	}
 	click := msgs[0].(tea.MouseMsg)
@@ -131,7 +131,10 @@ func TestWindowsMouseAndResizeBridge(t *testing.T) {
 	if wheel := msgs[2].(tea.MouseMsg); wheel.Button != tea.MouseButtonWheelUp {
 		t.Fatal(wheel)
 	}
-	if resize := msgs[3].(tea.WindowSizeMsg); resize.Width != 100 || resize.Height != 30 {
+	if hover := msgs[3].(tea.MouseMsg); hover.X != 3 || hover.Y != 4 || hover.Button != tea.MouseButtonNone || hover.Action != tea.MouseActionMotion {
+		t.Fatal(hover)
+	}
+	if resize := msgs[4].(tea.WindowSizeMsg); resize.Width != 100 || resize.Height != 30 {
 		t.Fatal(resize)
 	}
 }

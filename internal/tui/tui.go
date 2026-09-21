@@ -71,6 +71,7 @@ type model struct {
 	creationConnection      string
 	accountRequest          uint64
 	panelIndex              int
+	panelHoverY             int // Screen row; zero means no hovered item.
 	panelProjects           []*api.Project
 	allSessions             []*api.Session
 	panelError              string
@@ -273,7 +274,7 @@ func RunProject(ctx context.Context, c api.SessionsClient, project *api.Project,
 	m.debugRecorder = &debugRecorder{}
 	m.cursorOutput = &cursorWriter{out: os.Stdout, keyboard: extendedKeyboard, recorder: m.debugRecorder}
 	in := recordedKeyboardInput(os.Stdin, m.debugRecorder)
-	p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithContext(ctx), tea.WithMouseCellMotion(), tea.WithOutput(m.cursorOutput), tea.WithInput(in))
+	p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithContext(ctx), tea.WithMouseAllMotion(), tea.WithOutput(m.cursorOutput), tea.WithInput(in))
 	m.program = p
 	_, e := runKeyboardProgram(ctx, p, in, m.debugRecorder)
 	if path, err := m.finishRecording(); err != nil {
@@ -842,6 +843,14 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch v := msg.(type) {
+	case tea.KeyMsg, tea.WindowSizeMsg, tea.BlurMsg:
+		m.panelHoverY = 0
+	case tea.MouseMsg:
+		if handled, cmd := m.panelMouse(v); handled {
+			return m, cmd
+		}
+	}
 	if m.memoryPage != nil {
 		switch v := msg.(type) {
 		case tea.KeyMsg:
