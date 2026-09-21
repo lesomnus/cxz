@@ -1,5 +1,5 @@
-// Package selfupdate builds cxz in an isolated Docker checkout and replaces the
-// local executable. It does not connect to cxz daemons or recreate projects.
+// Package selfupdate builds or downloads cxz and replaces the local executable.
+// It does not connect to cxz daemons or recreate projects.
 package selfupdate
 
 import (
@@ -32,7 +32,7 @@ func ValidateRef(ref string) error {
 }
 
 type Artifact struct {
-	Path, Revision string
+	Path, Revision, Version string
 }
 
 // Build exports to the Docker client's filesystem, including with a remote
@@ -70,6 +70,7 @@ func build(ctx context.Context, work, ref string, out io.Writer, run func(*exec.
 	if !validRevision.MatchString(a.Revision) {
 		return Artifact{}, fmt.Errorf("build returned an invalid source revision")
 	}
+	a.Version = "source-" + a.Revision[:12]
 	if err := ValidateArtifact(a); err != nil {
 		return Artifact{}, err
 	}
