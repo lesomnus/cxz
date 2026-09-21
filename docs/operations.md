@@ -79,9 +79,10 @@ Compose 파일도 같은 진단을 제공한다. 해당 설정을 직접 확인�
 
 ## 릴리스와 설치
 
-현재 대상은 **Linux amd64/arm64**다. arm64는 cross-build 검증과 실제 실행 검증을 구분한다.
+현재 대상은 **Linux amd64/arm64**와 **Windows amd64/arm64 프론트엔드**다.
+arm64는 cross-build 검증과 실제 실행 검증을 구분한다.
 Go 버전은 `go.mod`를 따른다. `bash scripts/release.sh vX.Y.Z`가 `dist/`에 아키텍처별
-tar.gz, raw binary, `SHA256SUMS`를 만든다. 압축 메타데이터는 고정하지만 빌드 입력 전체의
+Linux tar.gz, Windows ZIP, raw binary, `SHA256SUMS`를 만든다. 압축 메타데이터는 고정하지만 빌드 입력 전체의
 재현성을 보장하는 공급망 attestation을 대체하지는 않는다.
 
 GitHub Actions CI는 test/race/vet/proto 재생성/cross-build를 실행한다. 버전 tag push는
@@ -91,6 +92,11 @@ workflow 구현은 [GitHub 공식 이미지 배포 안내](https://docs.github.c
 게시에는 저장소 Actions 및 `contents:write`, `packages:write`가 필요하다. 최초 GHCR package가
 비공개이면 공개 배포를 위해 소유자가 가시성을 설정해야 한다. 로컬 빌드 성공만으로 원격
 게시 완료를 뜻하지 않는다.
+
+main push의 Linux 검사와 Windows 프론트엔드 검사가 모두 성공하면 `edge` prerelease에
+바이너리와 체크섬을 게시한다. `edge` tag와 파일은 최신 성공한 main 빌드로 갱신된다.
+이 빌드의 `cxz version`에는 `source-<커밋 SHA 앞 12자리>`가 표시된다.
+버전 릴리스는 그대로 유지되며, 이 채널을 GitHub의 정식 latest release로 지정하지 않는다.
 
 게시된 release의 해당 아키텍처 tar.gz와 SHA256SUMS를 내려받고 체크섬을 비교한 뒤
 빈 임시 디렉터리에 압축을 푼다. 검증한 `cxz`를 사용자 PATH에 설치한다. manager-image.txt의
@@ -108,7 +114,7 @@ cxz session new --account work-codex .
 
 ## 업데이트와 롤백
 
-소스에서 직접 빌드하고 로컬 실행 파일과 설치된 manager를 함께 갱신하려면:
+Linux에서 소스를 직접 빌드하고 로컬 실행 파일과 설치된 manager를 함께 갱신하려면:
 
 ```sh
 cxz self-update                       # lesomnus/cxz의 main
@@ -147,10 +153,24 @@ Linux에서는 같은 `--state`에 등록된 로컬 manager가 있으면 **새 �
 CLI 교체 후 manager 갱신이 실패하면 두 결과를 구분해 출력한다. 이때 같은 `--state`로
 `cxz install --recreate`를 재시도한다.
 
-Windows에서는 프론트엔드 실행 파일만 갱신한다. 이 명령의 소스 빌드에는 Windows에서도
-Docker CLI·Buildx와 접근 가능한 Linux builder가 필요하다. 일반 원격 TUI 사용에는 여전히
-로컬 Docker가 필요 없다. 원격 Linux 호스트 자체를 갱신하려면 그 호스트에서
-`cxz self-update`를 실행한다.
+Windows에서는 Docker·Git·Go 없이 프론트엔드 실행 파일만 다운로드해서 갱신한다:
+
+```powershell
+cxz self-update                      # CI 검사가 통과하고 게시된 최신 main 빌드
+cxz self-update --ref vX.Y.Z          # Windows ZIP이 게시된 릴리스 태그
+```
+
+main은 `edge` GitHub release의 현재 Windows 아키텍처 ZIP과 `SHA256SUMS`를 HTTPS로 받는다.
+체크섬과 GitHub asset digest(제공되는 경우), Go 빌드의 모듈·플랫폼·clean revision,
+새 실행 파일의 `version`을 검증한 뒤 실행 중인 `cxz.exe`를 `cxz.previous.exe`로 옮기고
+새 실행 파일을 설치한다. 외부 압축 도구나 인증된 GitHub CLI도 필요 없다.
+파일 누락·다운로드 실패·게시 중 체크섬 불일치가 생기면 기존 실행 파일을 유지하며,
+Docker 소스 빌드로 전환하지 않는다. CI 게시 중 실패했다면 완료 후 재시도한다.
+Windows의 `--ref`는 main과 게시된 버전 태그만 지원한다. 임의 브랜치·커밋의 소스 빌드는
+Linux 호스트에서 수행한다. 이미 켜져 있는 다른 TUI는 계속 이전 실행 파일을 사용하므로
+새 버전은 다음 실행부터 적용된다. 이전 백업을 사용하는 프로세스가 남아 있으면 다음 교체를
+거부하므로 해당 프로세스를 종료한 뒤 재시도한다.
+원격 Linux 호스트 자체를 갱신하려면 그 호스트에서 `cxz self-update`를 실행한다.
 
 직전 CLI는 보관된 실행 파일로 복원할 수 있다. manager 이미지만 갱신하거나 되돌리는
 기존 명령도 유지한다:

@@ -38,6 +38,62 @@ jobs:
       - run: go tool pd gen --check .
       - run: bash scripts/release.sh v0.0.0-ci
       - run: dist/linux-amd64/cxz version
+  frontend-downloads:
+    needs: [test, windows-frontend]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: go.mod
+          cache: true
+      - run: bash scripts/release.sh edge
+      - name: Publish downloadable main builds
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if ! gh release view edge >/dev/null 2>&1; then
+            gh release create edge --target "$GITHUB_SHA" --prerelease --latest=false \
+              --title 'Latest main build' --notes 'Binaries from the latest successfully tested main build. Download SHA256SUMS alongside the archive to verify it.'
+          fi
+          gh release upload edge --clobber dist/*.tar.gz dist/*.zip dist/SHA256SUMS
+          gh api --method PATCH "repos/$GITHUB_REPOSITORY/git/refs/tags/edge" \
+            -f sha="$GITHUB_SHA" -F force=true >/dev/null
+          gh release edit edge --target "$GITHUB_SHA"
+  windows-update:
+    needs: frontend-downloads
+    runs-on: windows-2025
+    timeout-minutes: 10
+    steps:
+      - name: Update the published frontend without external build tools
+        shell: pwsh
+        run: |
+          $work = Join-Path $env:RUNNER_TEMP 'cxz-live-update'
+          New-Item -ItemType Directory -Path $work | Out-Null
+          $base = "https://github.com/$env:GITHUB_REPOSITORY/releases/download/edge"
+          $name = 'cxz-edge-windows-amd64.zip'
+          $archive = Join-Path $work $name
+          Invoke-WebRequest "$base/$name" -OutFile $archive
+          $sums = (Invoke-WebRequest "$base/SHA256SUMS").Content
+          $expected = ($sums -split "`n" | Where-Object { $_.EndsWith("  $name") }) -split '\s+'
+          if ((Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected[0]) {
+            throw 'Bootstrap archive checksum mismatch'
+          }
+          Expand-Archive $archive -DestinationPath (Join-Path $work 'bin')
+          $exe = Join-Path $work 'bin/cxz.exe'
+          $env:PATH = Join-Path $work 'empty-path'
+          New-Item -ItemType Directory -Path $env:PATH | Out-Null
+          & $exe --state (Join-Path $work 'state') self-update
+          if ($LASTEXITCODE -ne 0) { throw 'Docker-free self-update failed' }
+          if (!(Test-Path (Join-Path $work 'bin/cxz.previous.exe'))) { throw 'Missing previous executable' }
+          $version = & $exe version
+          if ($LASTEXITCODE -ne 0 -or !$version.Contains("source-$($env:GITHUB_SHA.Substring(0, 12))")) {
+            throw "Unexpected updated version: $version"
+          }
   image:
     needs: test
     runs-on: ubuntu-24.04

@@ -70,7 +70,7 @@ session's model; reconnect/resume preserves it. `cxz manager doctor`, `cxz proje
 and `cxz version` provide diagnostics. See [operations and releases](docs/operations.md)
 for retry behavior, model settings, versioned installation, updates and rollback.
 
-`cxz self-update` fetches `main` from this repository and builds it in Docker,
+On Linux, `cxz self-update` fetches `main` from this repository and builds it in Docker,
 then updates the local executable and its installed Linux manager. Use `--ref`
 for a branch/tag/commit or `--client-only` to skip the manager. Docker Buildx and
 a Linux builder are required; host Git/Go are not. Builds are verified before
@@ -80,6 +80,13 @@ continue. On Linux, a Docker root installer handles protected locations such as
 verifying that Docker sees the same installation directory. See
 [source updates](docs/operations.md#업데이트와-롤백) for Windows, remote builders
 and recovery.
+
+On Windows, `cxz self-update` downloads the latest successfully tested `main`
+build from the `edge` GitHub release. It needs no Docker, Git or Go. The archive's
+SHA-256 checksum, executable platform, build information and version are checked
+before replacing `cxz.exe`; `cxz.previous.exe` keeps the old binary. Use
+`--ref vX.Y.Z` for a published release tag. Remote managers are updated separately
+on their Linux host.
 
 Use `cxz edit` to edit model defaults and host file mappings in your editor.
 New settings files contain disabled, commented examples. `settings.jsonc` accepts

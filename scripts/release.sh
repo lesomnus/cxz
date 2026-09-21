@@ -1,21 +1,25 @@
 #!/usr/bin/env bash
 set -euo pipefail
 # Build Linux runtimes and Windows remote frontends.
-version=${1:?usage: bash scripts/release.sh vX.Y.Z[-prerelease] [output-directory]}
+version=${1:?usage: bash scripts/release.sh vX.Y.Z[-prerelease]|edge [output-directory]}
 output=${2:-dist}
-if [[ ! "$version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?$ ]]; then
+if [[ "$version" != edge && ! "$version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?$ ]]; then
   echo 'invalid version' >&2
   exit 1
+fi
+build_version=$version
+if [[ "$version" == edge ]]; then
+  build_version="source-$(git rev-parse --short=12 HEAD)"
 fi
 mkdir -p "$output"
 for arch in amd64 arm64; do
   mkdir -p "$output/linux-$arch"
-  CGO_ENABLED=0 GOOS=linux GOARCH="$arch" go build -trimpath -ldflags="-s -w -X main.version=$version" -o "$output/linux-$arch/cxz" ./cmd/cxz
+  CGO_ENABLED=0 GOOS=linux GOARCH="$arch" go build -trimpath -ldflags="-s -w -X main.version=$build_version" -o "$output/linux-$arch/cxz" ./cmd/cxz
   tar --sort=name --mtime=@0 --owner=0 --group=0 --numeric-owner -C "$output/linux-$arch" -cf - cxz | gzip -n > "$output/cxz-$version-linux-$arch.tar.gz"
 done
 for arch in amd64 arm64; do
   mkdir -p "$output/windows-$arch"
-  CGO_ENABLED=0 GOOS=windows GOARCH="$arch" go build -trimpath -ldflags="-s -w -X main.version=$version" -o "$output/windows-$arch/cxz.exe" ./cmd/cxz
+  CGO_ENABLED=0 GOOS=windows GOARCH="$arch" go build -trimpath -ldflags="-s -w -X main.version=$build_version" -o "$output/windows-$arch/cxz.exe" ./cmd/cxz
   python3 - "$output/windows-$arch/cxz.exe" "$output/cxz-$version-windows-$arch.zip" <<'PY'
 import sys, zipfile
 from pathlib import Path
