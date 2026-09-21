@@ -402,7 +402,9 @@ it은 세션 화면을 선택해 열 뿐 중지된 agent를 자동 재개하지 
 프로젝트 목록은 프로젝트와 그 아래 세션 행을 표시하고 선택한 행을 강조한다.
 세션 화면은 대화 본문, 승인/스크롤 상태, 여러 줄 입력창, 단축키 안내를 분리한다.
 Enter/Alt-Enter/Ctrl-J는 줄바꿈, Ctrl-Enter/Ctrl-S는 전송, Ctrl-X는 입력 지우기다.
-Ctrl-Enter는 CSI-u 또는 xterm modified-Enter를 보내는 터미널에서 구분된다. 기존 CR만
+Windows 빌드는 콘솔 이벤트의 Ctrl 상태로 Enter를 구분하므로 별도 키보드 프로토콜 설정 없이
+Ctrl-Enter로 전송한다. 왼쪽/오른쪽 Ctrl과 숫자 키패드 Enter도 처리하며 입력 모드는 종료 시 복원한다.
+Unix에서는 CSI-u 또는 xterm modified-Enter를 보내는 터미널에서 구분된다. 기존 CR만
 보내는 터미널에서는 Enter와 구분할 수 없으므로 Ctrl-S를 사용한다. Kitty 전체 키보드
 프로토콜을 강제로 켜지는 않는다. 여러 줄 붙여넣기는 전송하지 않고 편집기에 남는다.
 Esc는 대화 초안을 지우지 않는다. 선택/생성/승인 화면의 Enter 동작은 그대로다.
@@ -658,7 +660,8 @@ PgUp/PgDn·마우스 휠로 스크롤하고 Ctrl+Home/End로 처음/최신 위�
 
 에이전트 응답의 시작은 indicator 열의 `• CLAUDE` / `• CODEX`로 구분한다.
 대답 본문의 두 칸 들여쓰기는 유지한다. 기본 전송 안내는 Ctrl-S다. Ctrl-Enter는
-터미널이 구분된 시퀀스를 보낼 때만 동작하며 cxz가 확장 키보드 모드를 자동 활성화하지는 않는다.
+Windows 콘솔에서는 modifier 정보로, Unix에서는 구분된 키 시퀀스로 처리한다.
+Unix TUI는 alternate screen에 있는 동안 Kitty disambiguation 모드를 요청한다.
 
 응답 프로토콜의 text에는 확정적 Markdown 형식 표시가 없다. 문법이 발견되면
 CommonMark/GFM으로 렌더링한다. 제목/목록/표/강조/코드를 지원하고 백틱 코드 구간은

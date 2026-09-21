@@ -289,8 +289,8 @@ are reserved for indicators; other content is indented (except the composer).
 Session information occupies a single
 bottom line; persistent shortcut rows are hidden. Type `/help` to display local
 shortcut help in the conversation without sending a prompt to the agent.
-Enter inserts a newline; Ctrl+Enter sends on terminals emitting CSI-u or xterm
-modified-Enter sequences. Ctrl+S is the portable send alternative (legacy
+Enter inserts a newline; Ctrl+Enter sends in the native Windows console, or on
+Unix terminals emitting CSI-u or xterm modified-Enter sequences. Ctrl+S is the portable send alternative (legacy
 terminals cannot distinguish Ctrl+Enter from Enter). Paste never submits.
 Typing `/` overlays fuzzy-matched command hints above the editor: arrows select,
 Tab completes, Ctrl+Enter/Ctrl+S executes, Esc dismisses. A blank row separates
@@ -435,6 +435,11 @@ mode is restored before exit or an external login and requested again on return.
 Terminals/multiplexers that do not deliver extended keys may still send the same
 CR for Enter and Ctrl+Enter; use Ctrl+S there. The actual terminal/IME still needs
 local verification; automated tests exercise the protocol bytes through a PTY.
+Windows reads the console's modifier flags directly, including left/right Ctrl
+and keypad Enter. Console records are decoded without passing Unicode through
+the system ANSI code page; mouse, resize and bracketed paste events are retained.
+Input mode is restored and the reader stops when the TUI exits. Windows CI injects
+native console key records to verify Ctrl+Enter, ordinary Enter and Unicode input.
 
 Only quota bars change color as remaining quota drops: at or below 50% pastel
 peach, 30% coral, and 15% pink-red. Above 50% the existing muted color remains;

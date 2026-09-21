@@ -19,7 +19,8 @@ func ConfirmRecreate(ctx context.Context, in io.Reader, out io.Writer, target st
 	if file, ok := in.(*os.File); ok {
 		in = keyboardInput(file)
 	}
-	_, err := tea.NewProgram(m, tea.WithContext(ctx), tea.WithInput(in), tea.WithOutput(out)).Run()
+	p := tea.NewProgram(m, tea.WithContext(ctx), tea.WithInput(in), tea.WithOutput(out))
+	_, err := runKeyboardProgram(ctx, p, in, nil)
 	if err != nil {
 		return err
 	}
