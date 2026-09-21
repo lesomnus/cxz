@@ -260,29 +260,29 @@ func TestHistoryOpeningEndsOnExhaustionOrError(t *testing.T) {
 	}
 }
 
-func TestHistorySkeletonUsesThreeCompactParagraphs(t *testing.T) {
+func TestHistorySkeletonUsesOneCompactParagraph(t *testing.T) {
 	profile := lipgloss.ColorProfile()
 	defer lipgloss.SetColorProfile(profile)
-	for _, colors := range []termenv.Profile{termenv.Ascii, termenv.ANSI256} {
+	for _, colors := range []termenv.Profile{termenv.Ascii, termenv.ANSI256, termenv.TrueColor} {
 		lipgloss.SetColorProfile(colors)
 		for _, width := range []int{40, 80, 200} {
 			rows := strings.Split(historySkeleton(width, 60, 1), "\n")
 			paragraphs, bars := 0, 0
 			previous := false
 			for y, row := range rows {
-				bar := strings.Contains(row, "░") || strings.Contains(row, "\x1b[48;5;235m")
+				bar := strings.ContainsAny(row, "░▒▓█") || strings.Contains(row, "\x1b[48;2;")
 				if bar {
 					bars++
 					if !previous {
 						paragraphs++
 					}
-					if y >= 13 || ansi.StringWidth(row) > min(width, 66) {
+					if y >= 5 || ansi.StringWidth(row) > min(width, 66) {
 						t.Fatal("skeleton filled the viewport instead of a compact area at the top")
 					}
 				}
 				previous = bar
 			}
-			if paragraphs != 3 || bars != 9 || len(rows) != 60 {
+			if paragraphs != 1 || bars != 3 || len(rows) != 60 {
 				t.Fatalf("skeleton layout: %d paragraphs, %d bars, %d viewport rows", paragraphs, bars, len(rows))
 			}
 		}

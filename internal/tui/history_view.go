@@ -120,26 +120,53 @@ func (m *model) conversationView() string {
 func historySkeleton(width, height, pulse int) string {
 	rows := make([]string, max(0, height))
 	inner := max(1, min(64, width-4))
-	band := max(3, inner/6)
-	position := (pulse*3)%(inner+band) - band
-	// Three short paragraphs at the top; leave the rest of the viewport empty.
-	for y := 0; y < min(len(rows), 13); y++ {
-		if y == 0 {
-			rows[y] = "  " + muted.Render(clip("Loading conversation…", inner))
-			continue
+	if len(rows) > 0 {
+		rows[0] = "  " + muted.Render(clip("Loading conversation…", inner))
+	}
+	color := lipgloss.ColorProfile().Name() != "Ascii"
+	front, tail := 4.0, max(14.0, float64(inner)*0.4)
+	head := math.Mod(float64(pulse)*1.5+front, float64(inner)+front+tail) - front
+	// A fixed ordered pattern avoids random flicker as the light passes over it.
+	dither := [4][4]int{{0, 8, 2, 10}, {12, 4, 14, 6}, {3, 11, 1, 9}, {15, 7, 13, 5}}
+	shades := [...]rune{' ', '░', '▒', '▓', '█'}
+	// One short paragraph at the top; leave the rest of the viewport empty.
+	for row, percent := range []int{90, 75, 50} {
+		y := row + 2
+		if y >= len(rows) {
+			break
 		}
-		part := (y - 1) % 4
-		if part == 0 {
-			continue
+		var line strings.Builder
+		line.WriteString("  ")
+		lastFG, lastBG := -1, -1
+		for x := 0; x < max(1, inner*percent/100); x++ {
+			distance := head - float64(x)
+			span := tail
+			if distance < 0 {
+				span = front
+			}
+			// Smooth both ends, with a much longer fade behind the moving peak.
+			level := max(0.0, 1-math.Abs(distance)/span)
+			level = level * level * (3 - 2*level)
+			coverage := min(4, int(level*4+(float64(dither[row%4][x%4])+0.5)/16))
+			glyph := shades[coverage]
+			if color {
+				fg := 38 + int(math.Round(58*level))
+				bg := 38 + int(math.Round(29*level))
+				if fg != lastFG || bg != lastBG {
+					// Emit RGB directly: SSH often reports ANSI256 even when the
+					// terminal supports the intermediate shades needed for this fade.
+					fmt.Fprintf(&line, "\x1b[38;2;%d;%d;%dm\x1b[48;2;%d;%d;%dm", fg, fg, fg, bg, bg, bg)
+					lastFG, lastBG = fg, bg
+				}
+			} else if glyph == ' ' {
+				glyph = '░'
+			}
+			line.WriteRune(glyph)
 		}
-		length := max(1, inner*[]int{0, 90, 75, 50}[part]/100)
-		left := min(length, max(0, position))
-		right := min(length, max(left, position+band))
-		if lipgloss.ColorProfile().Name() == "Ascii" {
-			rows[y] = "  " + strings.Repeat("░", left) + strings.Repeat("▒", right-left) + strings.Repeat("░", length-right)
-		} else {
-			rows[y] = "  " + indexedBackground(strings.Repeat(" ", left), 235) + indexedBackground(strings.Repeat(" ", right-left), 237) + indexedBackground(strings.Repeat(" ", length-right), 235)
+		if color {
+			line.WriteString("\x1b[0m")
 		}
+		rows[y] = line.String()
 	}
 	return screen(strings.Join(rows, "\n"), width, height)
 }
