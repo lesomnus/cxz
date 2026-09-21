@@ -3,6 +3,7 @@ import fcntl
 import hashlib
 import json
 import os
+import select
 import shutil
 import signal
 import stat
@@ -10,11 +11,43 @@ import sys
 import tempfile
 
 
+cancelled = False
+input_buffer = b""
+input_fd = sys.stdin.fileno()
+os.set_blocking(input_fd, False)
+
+
 def interrupted(_signal, _frame):
-    raise RuntimeError("installation cancelled")
+    # Do not inject an exception into an arbitrary filesystem/buffer operation:
+    # cleanup state may not yet be recorded when the signal arrives.
+    global cancelled
+    cancelled = True
 
 
 signal.signal(signal.SIGTERM, interrupted)
+
+
+def check_cancelled():
+    if cancelled:
+        raise RuntimeError("installation cancelled")
+
+
+def read_client(size):
+    global input_buffer
+    check_cancelled()
+    while not input_buffer:
+        ready, _, _ = select.select([input_fd], [], [], 0.1)
+        check_cancelled()
+        if not ready:
+            continue
+        try:
+            input_buffer = os.read(input_fd, max(size, 4096))
+        except BlockingIOError:
+            continue
+        if not input_buffer:
+            return b""
+    chunk, input_buffer = input_buffer[:size], input_buffer[size:]
+    return chunk
 
 
 def reply(stage, **values):
@@ -22,10 +55,15 @@ def reply(stage, **values):
 
 
 def message():
-    line = sys.stdin.buffer.readline(4096)
-    if not line or len(line) >= 4096:
-        raise RuntimeError("installation client disconnected or sent an invalid request")
-    return json.loads(line)
+    line = bytearray()
+    for _ in range(4096):
+        value = read_client(1)
+        if value == b"\n":
+            return json.loads(line)
+        if not value:
+            break
+        line.extend(value)
+    raise RuntimeError("installation client disconnected or sent an invalid request")
 
 
 def digest(stream):
@@ -106,7 +144,7 @@ def install():
                 received = hashlib.sha256()
                 remaining = size
                 while remaining:
-                    chunk = sys.stdin.buffer.read(min(remaining, 1024 * 1024))
+                    chunk = read_client(min(remaining, 1024 * 1024))
                     if not chunk:
                         raise RuntimeError("executable transfer interrupted")
                     output.write(chunk)
@@ -115,6 +153,7 @@ def install():
                 if received.hexdigest() != checksum:
                     raise RuntimeError("transferred executable checksum differs")
                 finish_file(output, original)
+            check_cancelled()
 
             if identity(os.stat(name, follow_symlinks=False)) != identity(original) or digest(old) != expected:
                 raise RuntimeError("executable changed during the build")
@@ -129,6 +168,7 @@ def install():
             try:
                 # Persist the backup before making the new executable visible.
                 os.fsync(dirfd)
+                check_cancelled()
                 os.replace(candidate, name)
                 changed = True
                 os.fsync(dirfd)
