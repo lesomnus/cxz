@@ -128,6 +128,9 @@ func (m *model) applyHistoryPage(page historyPage) bool {
 	}
 	if page.err != nil {
 		delete(m.historyOpening, page.id)
+		if m.historyShimmer != nil && m.historyShimmer.id == page.id {
+			m.historyShimmer = nil
+		}
 		m.notice = "History: " + page.err.Error()
 		return true
 	}
