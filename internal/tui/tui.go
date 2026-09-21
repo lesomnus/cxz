@@ -115,6 +115,7 @@ type model struct {
 	historyLoading          map[string]uint64 // End sequence of each in-flight older page.
 	historyStart            map[string]uint64
 	historyOpening          map[string]bool // Keep loading through pages containing only bookkeeping events.
+	historyShimmer          *historyShimmer
 	watchCancel             context.CancelFunc
 	watchID                 string
 	watchEpoch              uint64

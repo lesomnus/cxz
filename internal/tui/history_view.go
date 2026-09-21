@@ -64,11 +64,49 @@ type promptSpan struct {
 	text       string
 }
 
-func (m *model) conversationView() string {
-	if s := m.current(); s != nil && m.historyOpening[s.Id] && m.watchID == s.Id && len(m.pendingInputs[s.Id]) == 0 {
-		if _, help := m.localHelp[s.Id]; !help {
-			return historySkeleton(m.width, m.view.Height, m.pulse)
+// pulseTimer ticks every 100 ms: one complete sweep takes two seconds.
+const historySkeletonCycleTicks = 20
+
+type historyShimmer struct {
+	id         string
+	cycleStart int
+}
+
+func (m *model) historySkeletonView() (string, bool) {
+	s := m.current()
+	if s == nil || m.watchID != s.Id || len(m.pendingInputs[s.Id]) > 0 {
+		m.historyShimmer = nil
+		return "", false
+	}
+	if _, help := m.localHelp[s.Id]; help {
+		m.historyShimmer = nil
+		return "", false
+	}
+	if m.historyShimmer != nil && m.historyShimmer.id != s.Id {
+		m.historyShimmer = nil
+	}
+	if m.historyShimmer == nil {
+		if !m.historyOpening[s.Id] {
+			return "", false
 		}
+		// Start at the first visible frame, independent of the global spinner.
+		m.historyShimmer = &historyShimmer{id: s.Id, cycleStart: m.pulse}
+	}
+	elapsed := m.pulse - m.historyShimmer.cycleStart
+	if elapsed >= historySkeletonCycleTicks {
+		if !m.historyOpening[s.Id] {
+			m.historyShimmer = nil
+			return "", false
+		}
+		m.historyShimmer.cycleStart += elapsed / historySkeletonCycleTicks * historySkeletonCycleTicks
+		elapsed %= historySkeletonCycleTicks
+	}
+	return historySkeleton(m.width, m.view.Height, elapsed), true
+}
+
+func (m *model) conversationView() string {
+	if skeleton, visible := m.historySkeletonView(); visible {
+		return skeleton
 	}
 	rows := strings.Split(m.view.View(), "\n")
 	promptRows := map[int]bool{}
@@ -125,7 +163,8 @@ func historySkeleton(width, height, pulse int) string {
 	}
 	color := lipgloss.ColorProfile().Name() != "Ascii"
 	front, tail := 4.0, max(14.0, float64(inner)*0.4)
-	head := math.Mod(float64(pulse)*1.5+front, float64(inner)+front+tail) - front
+	phase := float64(pulse%historySkeletonCycleTicks) / float64(historySkeletonCycleTicks-1)
+	head := phase*(float64(inner)+front+tail) - front
 	// A fixed ordered pattern avoids random flicker as the light passes over it.
 	dither := [4][4]int{{0, 8, 2, 10}, {12, 4, 14, 6}, {3, 11, 1, 9}, {15, 7, 13, 5}}
 	shades := [...]rune{' ', '░', '▒', '▓', '█'}

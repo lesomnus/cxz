@@ -145,6 +145,7 @@ func TestInitialHistorySkeletonLifecycle(t *testing.T) {
 			m.Update(tea.WindowSizeMsg{Width: width, Height: 24})
 			m.historyOpening = map[string]bool{"s": true}
 			m.watchID, m.watchEpoch = "s", 2
+			m.pulse = 7
 			before := m.conversationView()
 			if !strings.Contains(ansi.Strip(before), "Loading conversation") || strings.Contains(before, "Start a conversation") {
 				t.Fatal("missing initial skeleton")
@@ -167,12 +168,23 @@ func TestInitialHistorySkeletonLifecycle(t *testing.T) {
 				t.Fatal("stale watcher cleared the skeleton")
 			}
 			m.applyHistoryPage(historyPage{id: "s", initial: true, epoch: 2, events: []*api.Event{{Seq: 1, Kind: "assistant", Text: "Loaded answer"}}})
-			if m.historyOpening["s"] || !strings.Contains(m.conversationView(), "Loaded answer") {
-				t.Fatal("skeleton did not yield to loaded content")
+			if m.historyOpening["s"] || !strings.Contains(m.conversationView(), "Loading conversation") {
+				t.Fatal("a ready conversation interrupted the current sweep or kept fetching history")
+			}
+			for frame := 2; frame <= historySkeletonCycleTicks; frame++ {
+				m.Update(pulseTick{})
+				visible := m.conversationView()
+				if frame < historySkeletonCycleTicks && !strings.Contains(visible, "Loading conversation") {
+					t.Fatal("skeleton ended before the visible cycle finished")
+				}
+			}
+			if !strings.Contains(m.conversationView(), "Loaded answer") {
+				t.Fatal("finished sweep did not reveal the ready conversation")
 			}
 			m.historyOpening["s"] = true
+			m.conversationView()
 			m.Update(disconnected{id: "s", err: errors.New("offline")})
-			if m.historyOpening["s"] {
+			if m.historyOpening["s"] || strings.Contains(m.conversationView(), "Loading conversation") {
 				t.Fatal("failed initial load left the skeleton active")
 			}
 		}
@@ -211,9 +223,45 @@ func TestHistorySkeletonWaitsThroughBookkeepingPages(t *testing.T) {
 	if m.historyOpening["s"] || !m.view.AtBottom() || m.historyLoading["s"] != 0 || m.cursor["s"] != 513 {
 		t.Fatal("conversation arrival did not end opening at the latest position or stop eager paging")
 	}
+	for range historySkeletonCycleTicks {
+		m.Update(pulseTick{})
+	}
 	m.view.GotoTop()
 	if !strings.Contains(m.conversationView(), "Actual conversation") {
 		t.Fatal("loaded conversation was not revealed")
+	}
+}
+
+func TestHistorySkeletonFinishesCurrentCycleWhileEventsContinue(t *testing.T) {
+	m := conversationModel()
+	m.historyOpening = map[string]bool{"s": true}
+	m.watchID, m.watchEpoch = "s", 2
+	m.conversationView()
+	// The network takes longer than one sweep. Finish the second visible sweep
+	// after content arrives, without starting another sweep or pausing input.
+	for range historySkeletonCycleTicks + 5 {
+		m.Update(pulseTick{})
+		if !strings.Contains(m.conversationView(), "Loading conversation") {
+			t.Fatal("skeleton ended while history was still loading")
+		}
+	}
+	m.Update(historyPage{id: "s", initial: true, epoch: 2, events: []*api.Event{{Seq: 1, Kind: "assistant", Text: "Loaded answer"}}})
+	m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("draft during sweep")})
+	m.Update(received{id: "s", event: &api.Event{Seq: 2, Kind: "assistant", Text: "Live follow-up"}})
+	// Resizing must preserve the remaining time in the current cycle.
+	m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
+	if m.historyOpening["s"] || m.cursor["s"] != 2 || m.input.Value() != "draft during sweep" {
+		t.Fatal("finishing the sweep blocked history, live events, or input")
+	}
+	for frame := 5; frame < historySkeletonCycleTicks; frame++ {
+		if !strings.Contains(m.conversationView(), "Loading conversation") {
+			t.Fatal("conversation appeared before the second sweep finished")
+		}
+		m.Update(pulseTick{})
+	}
+	visible := m.conversationView()
+	if strings.Contains(visible, "Loading conversation") || !strings.Contains(visible, "Loaded answer") || !strings.Contains(visible, "Live follow-up") {
+		t.Fatal("finished sweep did not reveal the latest conversation")
 	}
 }
 
@@ -223,6 +271,7 @@ func TestHistoryOpeningSurvivesSessionSwitch(t *testing.T) {
 	m.historyOpening = map[string]bool{"s": true}
 	m.watchID, m.watchEpoch = "s", 2
 	m.Update(historyPage{id: "s", initial: true, epoch: 2, start: 256, events: []*api.Event{{Seq: 384, Kind: "state"}}})
+	m.conversationView()
 	m.selected, m.watchID = 1, "other"
 	m.Update(historyPage{id: "s", start: 128, end: 256, events: []*api.Event{{Seq: 256, Kind: "state"}}})
 	m.render()
@@ -243,11 +292,20 @@ func TestHistoryOpeningEndsOnExhaustionOrError(t *testing.T) {
 		m.historyOpening = map[string]bool{"s": true}
 		m.watchID, m.watchEpoch = "s", 2
 		m.Update(historyPage{id: "s", initial: true, epoch: 2, start: 128, events: []*api.Event{{Seq: 256, Kind: "state"}}})
+		m.conversationView()
 		page := historyPage{id: "s", start: 0, end: 128, events: []*api.Event{{Seq: 128, Kind: "state"}}}
 		if fail {
 			page.err = errors.New("offline")
 		}
 		m.Update(page)
+		if !fail {
+			if !strings.Contains(m.conversationView(), "Loading conversation") {
+				t.Fatal("an empty history interrupted the current sweep")
+			}
+			for range historySkeletonCycleTicks {
+				m.Update(pulseTick{})
+			}
+		}
 		if m.historyOpening["s"] || strings.Contains(m.conversationView(), "Loading conversation") || m.historyLoading["s"] != 0 {
 			t.Fatal("exhaustion or failure left the skeleton active")
 		}
