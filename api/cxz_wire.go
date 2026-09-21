@@ -2017,6 +2017,50 @@ func (x *BackgroundReply) GetData() []byte {
 	return nil
 }
 
+type DevcontainerInput struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Spec          []byte                 `protobuf:"bytes,1,opt,name=spec,proto3" json:"spec,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DevcontainerInput) Reset() {
+	*x = DevcontainerInput{}
+	mi := &file_cxz_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DevcontainerInput) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DevcontainerInput) ProtoMessage() {}
+
+func (x *DevcontainerInput) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DevcontainerInput.ProtoReflect.Descriptor instead.
+func (*DevcontainerInput) Descriptor() ([]byte, []int) {
+	return file_cxz_proto_rawDescGZIP(), []int{29}
+}
+
+func (x *DevcontainerInput) GetSpec() []byte {
+	if x != nil {
+		return x.Spec
+	}
+	return nil
+}
+
 var File_cxz_proto protoreflect.FileDescriptor
 
 const file_cxz_proto_rawDesc = "" +
@@ -2194,9 +2238,11 @@ const file_cxz_proto_rawDesc = "" +
 	"targetPath\"@\n" +
 	"\x0fBackgroundReply\x12\x19\n" +
 	"\blast_seq\x18\x01 \x01(\x04R\alastSeq\x12\x12\n" +
-	"\x04data\x18\x02 \x01(\fR\x04data2\xf6\n" +
-	"\n" +
-	"\bSessions\x128\n" +
+	"\x04data\x18\x02 \x01(\fR\x04data\"'\n" +
+	"\x11DevcontainerInput\x12\x12\n" +
+	"\x04spec\x18\x01 \x01(\fR\x04spec2\xbc\v\n" +
+	"\bSessions\x12D\n" +
+	"\fDevcontainer\x12\x1e.cxz.runtime.DevcontainerInput\x1a\x14.cxz.runtime.Receipt\x128\n" +
 	"\x06Docker\x12\x18.cxz.runtime.DockerInput\x1a\x14.cxz.runtime.Receipt\x12D\n" +
 	"\fFileMappings\x12\x1e.cxz.runtime.FileMappingsInput\x1a\x14.cxz.runtime.Receipt\x12:\n" +
 	"\x06Create\x12\x1a.cxz.runtime.CreateRequest\x1a\x14.cxz.runtime.Session\x124\n" +
@@ -2236,7 +2282,7 @@ func file_cxz_proto_rawDescGZIP() []byte {
 	return file_cxz_proto_rawDescData
 }
 
-var file_cxz_proto_msgTypes = make([]protoimpl.MessageInfo, 29)
+var file_cxz_proto_msgTypes = make([]protoimpl.MessageInfo, 30)
 var file_cxz_proto_goTypes = []any{
 	(*Empty)(nil),             // 0: cxz.runtime.Empty
 	(*CreateRequest)(nil),     // 1: cxz.runtime.CreateRequest
@@ -2267,60 +2313,63 @@ var file_cxz_proto_goTypes = []any{
 	(*MemoryReply)(nil),       // 26: cxz.runtime.MemoryReply
 	(*CopyMemoryRequest)(nil), // 27: cxz.runtime.CopyMemoryRequest
 	(*BackgroundReply)(nil),   // 28: cxz.runtime.BackgroundReply
+	(*DevcontainerInput)(nil), // 29: cxz.runtime.DevcontainerInput
 }
 var file_cxz_proto_depIdxs = []int32{
 	15, // 0: cxz.runtime.Session.pending:type_name -> cxz.runtime.Event
 	3,  // 1: cxz.runtime.SessionList.sessions:type_name -> cxz.runtime.Session
 	15, // 2: cxz.runtime.EventBatch.events:type_name -> cxz.runtime.Event
 	18, // 3: cxz.runtime.ProjectList.projects:type_name -> cxz.runtime.Project
-	24, // 4: cxz.runtime.Sessions.Docker:input_type -> cxz.runtime.DockerInput
-	23, // 5: cxz.runtime.Sessions.FileMappings:input_type -> cxz.runtime.FileMappingsInput
-	1,  // 6: cxz.runtime.Sessions.Create:input_type -> cxz.runtime.CreateRequest
-	0,  // 7: cxz.runtime.Sessions.List:input_type -> cxz.runtime.Empty
-	2,  // 8: cxz.runtime.Sessions.Get:input_type -> cxz.runtime.SessionRef
-	27, // 9: cxz.runtime.Sessions.CopyMemory:input_type -> cxz.runtime.CopyMemoryRequest
-	25, // 10: cxz.runtime.Sessions.Memory:input_type -> cxz.runtime.MemoryRequest
-	21, // 11: cxz.runtime.Sessions.Logs:input_type -> cxz.runtime.LogsRequest
-	20, // 12: cxz.runtime.Sessions.Permission:input_type -> cxz.runtime.PermissionInput
-	5,  // 13: cxz.runtime.Sessions.Send:input_type -> cxz.runtime.Input
-	6,  // 14: cxz.runtime.Sessions.Attach:input_type -> cxz.runtime.AttachmentInput
-	8,  // 15: cxz.runtime.Sessions.Activity:input_type -> cxz.runtime.ActivityInput
-	9,  // 16: cxz.runtime.Sessions.UpdateAgent:input_type -> cxz.runtime.AgentUpdateInput
-	11, // 17: cxz.runtime.Sessions.Reply:input_type -> cxz.runtime.Answer
-	12, // 18: cxz.runtime.Sessions.Interrupt:input_type -> cxz.runtime.Control
-	12, // 19: cxz.runtime.Sessions.Resume:input_type -> cxz.runtime.Control
-	12, // 20: cxz.runtime.Sessions.Stop:input_type -> cxz.runtime.Control
-	14, // 21: cxz.runtime.Sessions.Watch:input_type -> cxz.runtime.WatchRequest
-	14, // 22: cxz.runtime.Sessions.History:input_type -> cxz.runtime.WatchRequest
-	2,  // 23: cxz.runtime.Sessions.Background:input_type -> cxz.runtime.SessionRef
-	17, // 24: cxz.runtime.Sessions.Open:input_type -> cxz.runtime.ProjectRequest
-	0,  // 25: cxz.runtime.Sessions.Projects:input_type -> cxz.runtime.Empty
-	17, // 26: cxz.runtime.Sessions.Down:input_type -> cxz.runtime.ProjectRequest
-	13, // 27: cxz.runtime.Sessions.Docker:output_type -> cxz.runtime.Receipt
-	13, // 28: cxz.runtime.Sessions.FileMappings:output_type -> cxz.runtime.Receipt
-	3,  // 29: cxz.runtime.Sessions.Create:output_type -> cxz.runtime.Session
-	4,  // 30: cxz.runtime.Sessions.List:output_type -> cxz.runtime.SessionList
-	3,  // 31: cxz.runtime.Sessions.Get:output_type -> cxz.runtime.Session
-	13, // 32: cxz.runtime.Sessions.CopyMemory:output_type -> cxz.runtime.Receipt
-	26, // 33: cxz.runtime.Sessions.Memory:output_type -> cxz.runtime.MemoryReply
-	22, // 34: cxz.runtime.Sessions.Logs:output_type -> cxz.runtime.LogsReply
-	13, // 35: cxz.runtime.Sessions.Permission:output_type -> cxz.runtime.Receipt
-	13, // 36: cxz.runtime.Sessions.Send:output_type -> cxz.runtime.Receipt
-	7,  // 37: cxz.runtime.Sessions.Attach:output_type -> cxz.runtime.Attachment
-	13, // 38: cxz.runtime.Sessions.Activity:output_type -> cxz.runtime.Receipt
-	10, // 39: cxz.runtime.Sessions.UpdateAgent:output_type -> cxz.runtime.AgentUpdateStatus
-	13, // 40: cxz.runtime.Sessions.Reply:output_type -> cxz.runtime.Receipt
-	13, // 41: cxz.runtime.Sessions.Interrupt:output_type -> cxz.runtime.Receipt
-	3,  // 42: cxz.runtime.Sessions.Resume:output_type -> cxz.runtime.Session
-	13, // 43: cxz.runtime.Sessions.Stop:output_type -> cxz.runtime.Receipt
-	15, // 44: cxz.runtime.Sessions.Watch:output_type -> cxz.runtime.Event
-	16, // 45: cxz.runtime.Sessions.History:output_type -> cxz.runtime.EventBatch
-	28, // 46: cxz.runtime.Sessions.Background:output_type -> cxz.runtime.BackgroundReply
-	3,  // 47: cxz.runtime.Sessions.Open:output_type -> cxz.runtime.Session
-	19, // 48: cxz.runtime.Sessions.Projects:output_type -> cxz.runtime.ProjectList
-	13, // 49: cxz.runtime.Sessions.Down:output_type -> cxz.runtime.Receipt
-	27, // [27:50] is the sub-list for method output_type
-	4,  // [4:27] is the sub-list for method input_type
+	29, // 4: cxz.runtime.Sessions.Devcontainer:input_type -> cxz.runtime.DevcontainerInput
+	24, // 5: cxz.runtime.Sessions.Docker:input_type -> cxz.runtime.DockerInput
+	23, // 6: cxz.runtime.Sessions.FileMappings:input_type -> cxz.runtime.FileMappingsInput
+	1,  // 7: cxz.runtime.Sessions.Create:input_type -> cxz.runtime.CreateRequest
+	0,  // 8: cxz.runtime.Sessions.List:input_type -> cxz.runtime.Empty
+	2,  // 9: cxz.runtime.Sessions.Get:input_type -> cxz.runtime.SessionRef
+	27, // 10: cxz.runtime.Sessions.CopyMemory:input_type -> cxz.runtime.CopyMemoryRequest
+	25, // 11: cxz.runtime.Sessions.Memory:input_type -> cxz.runtime.MemoryRequest
+	21, // 12: cxz.runtime.Sessions.Logs:input_type -> cxz.runtime.LogsRequest
+	20, // 13: cxz.runtime.Sessions.Permission:input_type -> cxz.runtime.PermissionInput
+	5,  // 14: cxz.runtime.Sessions.Send:input_type -> cxz.runtime.Input
+	6,  // 15: cxz.runtime.Sessions.Attach:input_type -> cxz.runtime.AttachmentInput
+	8,  // 16: cxz.runtime.Sessions.Activity:input_type -> cxz.runtime.ActivityInput
+	9,  // 17: cxz.runtime.Sessions.UpdateAgent:input_type -> cxz.runtime.AgentUpdateInput
+	11, // 18: cxz.runtime.Sessions.Reply:input_type -> cxz.runtime.Answer
+	12, // 19: cxz.runtime.Sessions.Interrupt:input_type -> cxz.runtime.Control
+	12, // 20: cxz.runtime.Sessions.Resume:input_type -> cxz.runtime.Control
+	12, // 21: cxz.runtime.Sessions.Stop:input_type -> cxz.runtime.Control
+	14, // 22: cxz.runtime.Sessions.Watch:input_type -> cxz.runtime.WatchRequest
+	14, // 23: cxz.runtime.Sessions.History:input_type -> cxz.runtime.WatchRequest
+	2,  // 24: cxz.runtime.Sessions.Background:input_type -> cxz.runtime.SessionRef
+	17, // 25: cxz.runtime.Sessions.Open:input_type -> cxz.runtime.ProjectRequest
+	0,  // 26: cxz.runtime.Sessions.Projects:input_type -> cxz.runtime.Empty
+	17, // 27: cxz.runtime.Sessions.Down:input_type -> cxz.runtime.ProjectRequest
+	13, // 28: cxz.runtime.Sessions.Devcontainer:output_type -> cxz.runtime.Receipt
+	13, // 29: cxz.runtime.Sessions.Docker:output_type -> cxz.runtime.Receipt
+	13, // 30: cxz.runtime.Sessions.FileMappings:output_type -> cxz.runtime.Receipt
+	3,  // 31: cxz.runtime.Sessions.Create:output_type -> cxz.runtime.Session
+	4,  // 32: cxz.runtime.Sessions.List:output_type -> cxz.runtime.SessionList
+	3,  // 33: cxz.runtime.Sessions.Get:output_type -> cxz.runtime.Session
+	13, // 34: cxz.runtime.Sessions.CopyMemory:output_type -> cxz.runtime.Receipt
+	26, // 35: cxz.runtime.Sessions.Memory:output_type -> cxz.runtime.MemoryReply
+	22, // 36: cxz.runtime.Sessions.Logs:output_type -> cxz.runtime.LogsReply
+	13, // 37: cxz.runtime.Sessions.Permission:output_type -> cxz.runtime.Receipt
+	13, // 38: cxz.runtime.Sessions.Send:output_type -> cxz.runtime.Receipt
+	7,  // 39: cxz.runtime.Sessions.Attach:output_type -> cxz.runtime.Attachment
+	13, // 40: cxz.runtime.Sessions.Activity:output_type -> cxz.runtime.Receipt
+	10, // 41: cxz.runtime.Sessions.UpdateAgent:output_type -> cxz.runtime.AgentUpdateStatus
+	13, // 42: cxz.runtime.Sessions.Reply:output_type -> cxz.runtime.Receipt
+	13, // 43: cxz.runtime.Sessions.Interrupt:output_type -> cxz.runtime.Receipt
+	3,  // 44: cxz.runtime.Sessions.Resume:output_type -> cxz.runtime.Session
+	13, // 45: cxz.runtime.Sessions.Stop:output_type -> cxz.runtime.Receipt
+	15, // 46: cxz.runtime.Sessions.Watch:output_type -> cxz.runtime.Event
+	16, // 47: cxz.runtime.Sessions.History:output_type -> cxz.runtime.EventBatch
+	28, // 48: cxz.runtime.Sessions.Background:output_type -> cxz.runtime.BackgroundReply
+	3,  // 49: cxz.runtime.Sessions.Open:output_type -> cxz.runtime.Session
+	19, // 50: cxz.runtime.Sessions.Projects:output_type -> cxz.runtime.ProjectList
+	13, // 51: cxz.runtime.Sessions.Down:output_type -> cxz.runtime.Receipt
+	28, // [28:52] is the sub-list for method output_type
+	4,  // [4:28] is the sub-list for method input_type
 	4,  // [4:4] is the sub-list for extension type_name
 	4,  // [4:4] is the sub-list for extension extendee
 	0,  // [0:4] is the sub-list for field type_name
@@ -2337,7 +2386,7 @@ func file_cxz_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_cxz_proto_rawDesc), len(file_cxz_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   29,
+			NumMessages:   30,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -150,6 +150,9 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 			}
 		}
 		if err == nil && p.State == "running" && !changed {
+			if _, err := syncDevcontainer(ctx, client, stateFrom(ctx), settings.From(ctx)); err != nil {
+				return err
+			}
 			if err = installer.SyncGitHub(ctx, stateFrom(ctx), c.ErrWriter, p); err != nil {
 				return err
 			}
@@ -255,6 +258,9 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 		if err = resources.CheckOpen(ctx, request); err != nil {
 			return err
 		}
+	}
+	if _, err := syncDevcontainer(ctx, client, stateFrom(ctx), cfg); err != nil {
+		return err
 	}
 	if command == "recreate" && !yes {
 		projects, e := client.Projects(ctx, &api.Empty{})

@@ -16,6 +16,8 @@ import (
 	"time"
 
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/projectconfig"
+	"github.com/lesomnus/cxz/internal/settings"
 	"github.com/lesomnus/cxz/resource"
 	"github.com/lesomnus/xli"
 	"github.com/lesomnus/xli/arg"
@@ -137,6 +139,7 @@ type projectStub struct {
 	requests     chan any
 	mutations    *atomic.Int32
 	unregistered *atomic.Bool
+	overrides    chan projectconfig.Spec
 }
 type accountStub struct {
 	resource.UnimplementedAccountServiceServer
@@ -181,6 +184,17 @@ func (s projectStub) Up(context.Context, *resource.ProjectUpRequest) (*resource.
 	}
 	return testProject(), nil
 }
+
+func (s projectStub) Devcontainer(_ context.Context, r *resource.DevcontainerRequest) (*resource.DevcontainerReply, error) {
+	var spec projectconfig.Spec
+	if err := json.Unmarshal(r.GetSpec(), &spec); err != nil {
+		return nil, err
+	}
+	if len(spec.Compose) > 0 && s.overrides != nil {
+		s.overrides <- spec
+	}
+	return &resource.DevcontainerReply{}, nil
+}
 func (s projectStub) List(context.Context, *resource.ProjectListRequest) (*resource.ProjectListResponse, error) {
 	if s.unregistered != nil && s.unregistered.Load() {
 		return &resource.ProjectListResponse{}, nil
@@ -217,7 +231,8 @@ func TestCommandsReachAPI(t *testing.T) {
 	resource.RegisterAuthBindingServiceServer(server, bindingStub{})
 	mutations := &atomic.Int32{}
 	unregistered := &atomic.Bool{}
-	resource.RegisterProjectServiceServer(server, projectStub{requests: stub.requests, mutations: mutations, unregistered: unregistered})
+	overrides := make(chan projectconfig.Spec, 4)
+	resource.RegisterProjectServiceServer(server, projectStub{requests: stub.requests, mutations: mutations, unregistered: unregistered, overrides: overrides})
 	go server.Serve(listener)
 	defer server.Stop()
 	table := xlitest.Run(t, newRoot(root), "project", "ls")
@@ -256,6 +271,25 @@ func TestCommandsReachAPI(t *testing.T) {
 				t.Fatalf("up %v (attempt %d): %+v; mutations %d", tc.args, i, got, mutations.Load())
 			}
 		}
+	}
+	if err := os.WriteFile(settings.Path(root), []byte(`{"devcontainer":{"compose":"override.yaml"}}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	unregistered.Store(true)
+	for _, source := range []string{"/first", "/edited"} {
+		if err := os.WriteFile(filepath.Join(root, "override.yaml"), []byte("services:\n  dev:\n    volumes:\n      - "+source+":/workspaces\n"), 0600); err != nil {
+			t.Fatal(err)
+		}
+		got := xlitest.Run(t, newRoot(root), "up", "project-name")
+		if got.Err != nil || len(overrides) != 1 || len(stub.requests) != 0 {
+			t.Fatal("up must publish overrides without creating a session", got)
+		}
+		if spec := <-overrides; !strings.Contains(string(spec.Compose), source) {
+			t.Fatal("up did not reread external override", spec)
+		}
+	}
+	if err := os.Remove(settings.Path(root)); err != nil {
+		t.Fatal(err)
 	}
 	run := func(args ...string) xlitest.Result {
 		t.Helper()

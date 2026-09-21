@@ -10,6 +10,7 @@ import (
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/engine"
 	"github.com/lesomnus/cxz/internal/filemap"
+	"github.com/lesomnus/cxz/internal/projectconfig"
 	"github.com/tailscale/hujson"
 	"io"
 	"os"
@@ -19,13 +20,14 @@ import (
 )
 
 type Config struct {
-	Schema      string            `json:"$schema,omitempty"`
-	Connections *Connections      `json:"connections,omitempty"`
-	Docker      engine.Config     `json:"docker,omitempty"`
-	Files       []filemap.Mapping `json:"files,omitempty"`
-	Agent       string            `json:"agent,omitempty"`
-	ClaudeModel string            `json:"claude_model,omitempty"`
-	CodexModel  string            `json:"codex_model,omitempty"`
+	Schema       string               `json:"$schema,omitempty"`
+	Connections  *Connections         `json:"connections,omitempty"`
+	Docker       engine.Config        `json:"docker,omitempty"`
+	Devcontainer projectconfig.Config `json:"devcontainer,omitempty"`
+	Files        []filemap.Mapping    `json:"files,omitempty"`
+	Agent        string               `json:"agent,omitempty"`
+	ClaudeModel  string               `json:"claude_model,omitempty"`
+	CodexModel   string               `json:"codex_model,omitempty"`
 }
 
 const (
@@ -65,6 +67,9 @@ func ValidateModel(v string) error {
 	return nil
 }
 func (c Config) Validate() error {
+	if err := c.Devcontainer.Validate(); err != nil {
+		return err
+	}
 	if c.Connections != nil {
 		if err := c.Connections.Validate(); err != nil {
 			return err

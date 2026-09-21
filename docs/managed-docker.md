@@ -18,7 +18,9 @@ is preserved. Use `cxz edit` to customize it:
 ```
 
 `compose` is optional; its path is relative to `settings.jsonc`, or absolute / `~/`.
-The file is a Compose override for the **shared engine**, with service name `dind`:
+The file is a Compose override for the **shared engine**, with service name `dind`.
+For project containers, use [`devcontainer.compose`](devcontainer-overrides.md)
+instead; it supports inline Compose objects and file paths.
 
 ```yaml
 services:

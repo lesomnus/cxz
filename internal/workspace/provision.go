@@ -20,7 +20,7 @@ import (
 	"strings"
 )
 
-func (m *Manager) provision(ctx context.Context, p *Project, kind string) error {
+func (m *Manager) provision(ctx context.Context, p *Project, kind, composeOverride string) error {
 	var e error
 	if e = m.checkpoint(ctx, p, "configuration"); e != nil {
 		return e
@@ -163,14 +163,12 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string) error 
 		p.RemoteWorkspace = strings.ReplaceAll(v, "${localWorkspaceFolderBasename}", filepath.Base(p.Workspace))
 	}
 	cfg["workspaceFolder"] = p.RemoteWorkspace
-	files := []any{}
-	switch v := cfg["dockerComposeFile"].(type) {
-	case string:
-		files = append(files, abspath(v))
-	case []any:
-		for _, f := range v {
-			files = append(files, abspath(f))
-		}
+	files, e := composeFiles(cfg, base)
+	if e != nil {
+		return e
+	}
+	if composeOverride != "" {
+		files = append(files, composeOverride)
 	}
 	if len(files) > 0 {
 		// The CLI's string-mount conversion gives Compose volumes a project
