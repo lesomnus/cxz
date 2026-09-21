@@ -55,11 +55,11 @@ func TestTerminalCursorOnlyMovementAndScroll(t *testing.T) {
 	if m.terminalView() != frozen {
 		t.Fatal("new output moved history viewport")
 	}
-	m.terminalMouse(tea.MouseMsg{X: 0, Y: m.height - 2, Action: tea.MouseActionPress, Button: tea.MouseButtonLeft})
+	m.terminalMouse(tea.MouseMsg{X: m.contentOffset(), Y: m.height - 2, Action: tea.MouseActionPress, Button: tea.MouseButtonLeft})
 	if p.scroll == nil || p.scroll.top != 0 {
 		t.Fatal("track start did not reach oldest row")
 	}
-	m.terminalMouse(tea.MouseMsg{X: m.width - 1, Y: m.height - 2, Action: tea.MouseActionPress, Button: tea.MouseButtonLeft})
+	m.terminalMouse(tea.MouseMsg{X: m.contentOffset() + m.width - 1, Y: m.height - 2, Action: tea.MouseActionPress, Button: tea.MouseButtonLeft})
 	if p.scroll != nil || !strings.Contains(m.terminalView(), "new output after scroll") {
 		t.Fatal("track end did not return to live output")
 	}
@@ -122,7 +122,7 @@ func TestTerminalPanelFocusAndLayout(t *testing.T) {
 		if got := ansi.Strip(lines[row]); ansi.StringWidth(got) != m.width || strings.HasPrefix(got, " ") || strings.HasSuffix(got, " ") {
 			t.Fatalf("terminal separator not full width at %d: %q", row, got)
 		}
-		m.Update(tea.MouseMsg{X: 1, Y: row, Action: tea.MouseActionPress, Button: tea.MouseButtonLeft})
+		m.Update(tea.MouseMsg{X: m.contentOffset() + 1, Y: row, Action: tea.MouseActionPress, Button: tea.MouseButtonLeft})
 		if !p.focused || !p.open {
 			t.Fatal("separator click activated a button")
 		}

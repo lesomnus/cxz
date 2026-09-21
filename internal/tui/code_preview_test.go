@@ -60,12 +60,12 @@ func TestFilePreviewLayoutAndScrolling(t *testing.T) {
 	if !strings.Contains(view[top+1], "Write") || !strings.Contains(view[top+10], "╭") {
 		t.Fatalf("panel not above composer: %q", view)
 	}
-	if !m.filePreviewMouse(tea.MouseMsg{X: 5, Y: top + 2, Button: tea.MouseButtonWheelDown}) || m.filePreview.offset != 3 {
+	if !m.filePreviewMouse(tea.MouseMsg{X: m.contentOffset() + 5, Y: top + 2, Button: tea.MouseButtonWheelDown}) || m.filePreview.offset != 3 {
 		t.Fatal("scroll")
 	}
 	// The header close hitbox must match the rendered row on narrow screens.
 	saved := m.filePreview
-	if !m.filePreviewMouse(tea.MouseMsg{X: 75, Y: top + 1, Button: tea.MouseButtonLeft, Action: tea.MouseActionPress}) || m.filePreview != nil {
+	if !m.filePreviewMouse(tea.MouseMsg{X: m.contentOffset() + m.width - 5, Y: top + 1, Button: tea.MouseButtonLeft, Action: tea.MouseActionPress}) || m.filePreview != nil {
 		t.Fatal("narrow close hitbox")
 	}
 	m.filePreview = saved
@@ -281,19 +281,19 @@ func TestInlinePreviewOuterMargins(t *testing.T) {
 		terminal := vt.NewEmulator(width, m.height)
 		terminal.WriteString(strings.ReplaceAll(m.View(), "\n", "\r\n"))
 		for y := top; y < top+m.previewHeight(); y++ {
-			for x := 0; x < width; x++ {
+			for x := m.contentOffset(); x < m.contentOffset()+m.width; x++ {
 				cell := terminal.CellAt(x, y)
 				if cell == nil {
 					t.Fatal("missing cell", x, y)
 				}
-				margin := x < 2 || x >= width-2
+				margin := x < m.contentOffset()+2 || x >= m.contentOffset()+m.width-2
 				if margin != (cell.Style.Bg == nil) {
 					t.Fatal("incorrect preview margin background", x, y)
 				}
 			}
 		}
 		terminal.Close()
-		if m.filePreviewMouse(tea.MouseMsg{X: 1, Y: top + 2, Button: tea.MouseButtonWheelDown}) || m.filePreview.offset != 0 {
+		if m.filePreviewMouse(tea.MouseMsg{X: m.contentOffset() + 1, Y: top + 2, Button: tea.MouseButtonWheelDown}) || m.filePreview.offset != 0 {
 			t.Fatal("margin received preview scroll")
 		}
 	}

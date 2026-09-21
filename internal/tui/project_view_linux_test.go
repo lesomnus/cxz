@@ -87,14 +87,14 @@ func TestCursorWriterTerminalResize(t *testing.T) {
 			t.Errorf("TUI shutdown: %v", err)
 		}
 	}()
-	check := func(width, height int, resize bool) {
+	check := func(width, height, contentWidth int, resize bool) {
 		t.Helper()
 		tick := time.NewTicker(20 * time.Millisecond)
 		defer tick.Stop()
 		for {
 			select {
 			case got := <-m.sizes:
-				if got != (sizeSnapshot{min(width, maxViewWidth), height, width, height}) {
+				if got != (sizeSnapshot{contentWidth, height, width, height}) {
 					// Repeated SIGWINCH notifications can leave a snapshot of the
 					// previous size queued. Wait for the requested size, bounded by ctx.
 					continue
@@ -113,13 +113,13 @@ func TestCursorWriterTerminalResize(t *testing.T) {
 			}
 		}
 	}
-	check(117, 37, false)
+	check(117, 37, 86, false)
 	setSize(143, 45)
-	check(143, 45, true)
+	check(143, 45, 106, true)
 	setSize(200, 45)
-	check(200, 45, true)
+	check(200, 45, 133, true)
 	setSize(63, 19)
-	check(63, 19, true)
+	check(63, 19, 63, true)
 }
 
 type screenClient struct{ projectClient }
@@ -172,9 +172,9 @@ func TestProjectSessionTerminalNavigation(t *testing.T) {
 	navigated := make(chan error, 1)
 	go func() {
 		for _, stage := range []struct{ want, key string }{
-			{"stopped", "a"}, {"No accounts yet", "n"},
+			{"Projects", "a"}, {"No accounts yet", "n"},
 			{"Create account", "\x1b"}, {"No accounts yet", "\x1b"},
-			{"Projects", "\r\r"}, {"quota", "\x11"}, {"Projects", "\x03"},
+			{"Select a session", "\r\r"}, {"quota", "\x11"}, {"›", "\x03"},
 		} {
 			var output strings.Builder
 			buf := make([]byte, 4096)

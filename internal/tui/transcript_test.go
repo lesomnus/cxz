@@ -58,10 +58,10 @@ func TestEdgeToEdgeComposer(t *testing.T) {
 		m.projectView = false
 		m.Update(tea.WindowSizeMsg{Width: width, Height: 24})
 		found := false
-		for _, line := range strings.Split(ansi.Strip(m.View()), "\n") {
+		for _, line := range strings.Split(ansi.Strip(m.sessionScreen()), "\n") {
 			if strings.HasPrefix(line, "╭") {
 				found = true
-				if ansi.StringWidth(line) != width || !strings.HasSuffix(line, "╮") {
+				if ansi.StringWidth(line) != m.width || !strings.HasSuffix(line, "╮") {
 					t.Fatalf("composer has margin: %q", line)
 				}
 			}

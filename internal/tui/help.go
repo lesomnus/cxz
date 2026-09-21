@@ -99,7 +99,7 @@ func helpView(width int, topics ...string) string {
 		{"Navigation", "PgUp / PgDn", "Scroll transcript (mouse wheel also works)"},
 		{"Navigation", "Ctrl+End", "Follow latest output"},
 		{"Navigation", "r", "Rename selected session; Enter saves, Esc cancels"},
-		{"Navigation", "Ctrl+Q", "Project list: n new, a accounts, s stop, d delete; sidebar or full view"},
+		{"Navigation", "Ctrl+Q", "Focus project list: n new, a accounts, s stop, d delete"},
 		{"Navigation", "Ctrl+P", "Open settings · shared Docker status and maintenance"},
 		{"Navigation", "Ctrl+N", "Create session"},
 		{"Approval controls", "↑ / ↓", "Select pending request (approval focus)"},

@@ -20,7 +20,8 @@ func conversationModel() *model {
 	m.input = newComposer()
 	m.sessions = []*api.Session{{Id: "s", ProjectId: "p", RunId: "run", Agent: "claude", State: "idle"}}
 	m.client = &recordingClient{}
-	m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
+	// Keep an 80-column conversation beside the compact project panel.
+	m.Update(tea.WindowSizeMsg{Width: 110, Height: 24})
 	return m
 }
 
@@ -137,7 +138,7 @@ func TestHistoryStickyPromptAndWorkingIndicator(t *testing.T) {
 	m.current().State = "working"
 	m.render()
 	m.view.GotoBottom()
-	before := ansi.Strip(m.View())
+	before := ansi.Strip(m.sessionScreen())
 	rows := strings.Split(before, "\n")
 	if strings.TrimRight(rows[0], " ") != "> First prompt" || !strings.HasPrefix(rows[1], "  second line") || !strings.Contains(before, "⠋") || strings.Contains(before, "[working]") {
 		t.Fatal(before)
@@ -159,7 +160,7 @@ func TestHistoryStickyPromptAndWorkingIndicator(t *testing.T) {
 	if !m.view.AtBottom() {
 		t.Fatal("did not follow latest")
 	}
-	m.Update(tea.MouseMsg{X: 2, Y: 2, Button: tea.MouseButtonWheelUp, Action: tea.MouseActionPress})
+	m.Update(tea.MouseMsg{X: m.contentOffset() + 2, Y: 2, Button: tea.MouseButtonWheelUp, Action: tea.MouseActionPress})
 	if m.view.AtBottom() {
 		t.Fatal("mouse wheel did not scroll")
 	}
@@ -255,7 +256,7 @@ func TestTerminalCursorAnchor(t *testing.T) {
 	m.input.SetValue("한글 ㄱ")
 	m.resize()
 	m.View()
-	if !w.enabled || w.x != 10 || w.y != 20 {
+	if !w.enabled || w.x != m.contentOffset()+10 || w.y != 20 {
 		t.Fatal("bad Unicode IME anchor", w.x, w.y, w.enabled)
 	}
 	w.Write([]byte("\x1b[?1049hframe"))
@@ -271,7 +272,7 @@ func TestTerminalCursorAnchor(t *testing.T) {
 		m.input.SetValue(input)
 		m.resize()
 		m.View()
-		if !w.enabled || w.x < 3 || w.x >= 79 || w.y < 24-m.input.Height()-2 || w.y >= 22 {
+		if !w.enabled || w.x < m.contentOffset()+3 || w.x >= m.contentOffset()+m.width-1 || w.y < 24-m.input.Height()-2 || w.y >= 22 {
 			t.Fatal(fmt.Sprint("wrapped cursor outside composer: ", w.x, w.y), fmt.Sprintf("%q", m.input.View()))
 		}
 	}
@@ -287,7 +288,7 @@ func TestCursorAnchorWithoutColors(t *testing.T) {
 	m.input.SetValue("ㄱ")
 	m.resize()
 	view := m.View()
-	if !m.cursorOutput.enabled || m.cursorOutput.x != 5 {
+	if !m.cursorOutput.enabled || m.cursorOutput.x != m.contentOffset()+5 {
 		t.Fatal("NO_COLOR lost IME anchor")
 	}
 	if strings.Contains(view, "\x1b") {

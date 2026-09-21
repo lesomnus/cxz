@@ -41,7 +41,7 @@ func TestRenameAndAliasSlot(t *testing.T) {
 	m.input = newComposer()
 	m.sessions = []*api.Session{{Id: "s", Alias: "oak", Agent: "codex"}}
 	m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
-	bar := func() string { rows := strings.Split(ansi.Strip(m.View()), "\n"); return rows[len(rows)-1] }
+	bar := func() string { rows := strings.Split(ansi.Strip(m.sessionScreen()), "\n"); return rows[len(rows)-1] }
 	if !strings.HasPrefix(bar(), " oak      codex") {
 		t.Fatal(bar())
 	}
