@@ -110,7 +110,8 @@ exist, the first in that order is used.
 The editor opens a temporary draft. Invalid JSON, unknown settings, editor
 failure and concurrent updates leave the saved file intact and report the
 recoverable draft path. Windows saves connection/model preferences locally;
-it does not publish Docker overrides or file mappings to any remote connection.
+it does not publish Docker overrides, `devcontainer.compose` overrides, or file
+mappings to any remote connection. Configure and publish these on the Linux host.
 Edit those host settings with `cxz edit` on the Linux daemon host.
 
 Projects display as `project1 via work`, with their sessions underneath.

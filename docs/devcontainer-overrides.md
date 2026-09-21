@@ -1,10 +1,99 @@
 # Project Compose overrides
 
-Project containers use the Compose files listed in their `devcontainer.json`.
-Add an override after the base file to merge extra mounts into the development
-service. There is currently no cxz setting that applies a project Compose
-override globally. `docker.compose` in `cxz edit` configures the separate
+Use `cxz edit` on the Linux daemon host to set `devcontainer.compose`. It accepts
+an inline Compose object or a YAML/JSON file path. The host CLI snapshots the
+contents and publishes them to the manager, where they survive TUI exit and
+manager restart. `cxz up`, `project up/new/recreate` and `session new` reread and
+publish the settings, including edits to an external override file.
+
+This configures project containers. `docker.compose` configures the separate
 [shared Docker engine](managed-docker.md), whose service is named `dind`.
+
+## Inline configuration
+
+```jsonc
+{
+  "devcontainer": {
+    "compose": {
+      "services": {
+        "${DEVCONTAINER_SERVICE}": {
+          "volumes": [
+            {
+              "type": "bind",
+              "source": "${HOME}/workspaces",
+              "target": "/workspaces",
+              "bind": { "create_host_path": false }
+            }
+          ]
+        }
+      }
+    }
+  }
+}
+```
+
+`${DEVCONTAINER_SERVICE}` selects the `service` from each project's
+`devcontainer.json`; a literal service name such as `dev` is also supported.
+Do not specify both the placeholder and the same literal service in one override.
+`${HOME}` in override values expands to the home of the Linux user running the
+host CLI, before publishing. Escaped `$${HOME}` and other Compose variables keep
+their usual Compose meaning. Create the source directory first.
+
+## File configuration
+
+```jsonc
+{
+  "devcontainer": {
+    "compose": "project.override.yaml"
+  }
+}
+```
+
+Paths are relative to the directory containing `settings.jsonc`. Absolute paths,
+`~/` and `${HOME}` paths also work. YAML and JSON files must contain one Compose
+object, up to 256 KiB. For example, `project.override.yaml`:
+
+```yaml
+services:
+  ${DEVCONTAINER_SERVICE}:
+    volumes:
+      - type: bind
+        source: ${HOME}/workspaces
+        target: /workspaces
+        bind:
+          create_host_path: false
+```
+
+## Application and compatibility
+
+Projects must use `dockerComposeFile`. Image/Dockerfile-only configurations fail
+with an explanation if a Compose override is configured; it is never silently
+ignored. No project source files are modified. Merge order is the project's
+Compose files, then the user override, then cxz's internal runtime configuration.
+cxz's ownership labels, runtime mounts and connection settings retain priority.
+Relative paths inside the override follow Compose's normal first-file rule:
+they are relative to the project's first Compose file, not the settings directory.
+
+`cxz edit` saves and publishes changed settings. `cxz up WORKSPACE` also rereads
+and publishes them, then creates a new project container or reuses the running
+one. Existing containers are not automatically replaced. Use
+`cxz project recreate WORKSPACE` to apply changed mounts; recreation replaces the
+writable layer and disconnects editors, retaining source and named volumes.
+The manager checks the combined Compose configuration and elevated-setting trust
+before removing a container. Removing `devcontainer.compose` clears the saved
+override the next time settings are published; existing containers still need
+recreation to remove its effects.
+
+TUI project preparation/recreation uses the manager's last published snapshot.
+Windows/remote frontend editing remains local: publish host settings using cxz on
+the Linux daemon host. Update the host CLI and run `cxz install --recreate` once
+to install a manager that supports this feature. Older managers explicitly reject
+configured overrides instead of silently ignoring them.
+
+## Project-local alternative
+
+Project containers also use all Compose files listed in their `devcontainer.json`.
+Add an override after the base file to merge extra mounts into one project only.
 
 For example, keep the project's other devcontainer settings and change its
 `dockerComposeFile` to:

@@ -387,6 +387,10 @@ cxz --format json project ls
 new/up/recreate의 `--agent`는 Account/기존 세션에서 결정하므로 선택 옵션이며,
 명시하면 일치 여부를 검사한다. `--model`은 새 세션의 agent별 설정 또는 vendor 기본값,
 `--config`는 자동 탐색, `--name`/`--alias`는 프로젝트 기본값을 사용한다.
+`cxz edit`의 `devcontainer.compose`에는 프로젝트용 Compose override를 객체 또는
+YAML/JSON 파일 경로로 지정할 수 있다. 호스트 CLI가 준비 명령마다 내용을 manager에
+저장하며 새 컨테이너 또는 명시적으로 재생성한 컨테이너에 적용한다.
+설정 예시와 변수는 [프로젝트 Compose override](devcontainer-overrides.md)를 참고한다.
 `--no-attach`, `--trust-config`, `--yes`는 명시적인 동작/신뢰/확인 스위치다.
 조건부 필수인 옵션은 대화형 선택이나 재접속을 위해 positional로 바꾸지 않았다.
 

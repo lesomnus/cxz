@@ -230,3 +230,14 @@ func (s ProjectServer) Docker(ctx context.Context, r *resource.DockerRequest) (*
 	}
 	return resource.DockerReply_builder{Status: &out.Status}.Build(), nil
 }
+
+func (s ProjectServer) Devcontainer(ctx context.Context, r *resource.DevcontainerRequest) (*resource.DevcontainerReply, error) {
+	if err := s.effect(); err != nil {
+		return nil, err
+	}
+	out, err := s.shared.runtime.Devcontainer(ctx, &api.DevcontainerInput{Spec: r.GetSpec()})
+	if err != nil {
+		return nil, err
+	}
+	return resource.DevcontainerReply_builder{Status: &out.Status}.Build(), nil
+}

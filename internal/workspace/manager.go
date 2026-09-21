@@ -25,6 +25,7 @@ import (
 type Project struct {
 	ID, Workspace, Name, Config, ContainerID, Network, Volume, Token, RemoteWorkspace, RemoteUser, Error string
 	Trusted                                                                                              bool
+	ComposeOverrideDigest                                                                                string
 	Sessions                                                                                             []*api.Session
 	Job                                                                                                  ProvisionJob
 }
@@ -379,6 +380,10 @@ func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (result *api.
 	if e = preflight(p); e != nil {
 		return nil, e
 	}
+	composeOverride, composeDigest, e := m.prepareComposeOverride(ctx, p)
+	if e != nil {
+		return nil, e
+	}
 	p.Job.Attempt++
 	if e = m.checkpoint(ctx, p, "inventory"); e != nil {
 		return nil, e
@@ -425,6 +430,10 @@ func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (result *api.
 		}
 		p.ContainerID = ""
 	}
+	if p.ContainerID != "" && p.ComposeOverrideDigest != composeDigest {
+		return nil, fmt.Errorf("devcontainer.compose changed; run cxz project recreate to apply it to the existing container")
+	}
+	p.ComposeOverrideDigest = composeDigest
 	if e = m.save(ctx, p); e != nil {
 		return nil, e
 	}
@@ -435,7 +444,7 @@ func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (result *api.
 	if kind == "" {
 		kind = "claude"
 	}
-	if e = m.provision(ctx, p, kind); e != nil {
+	if e = m.provision(ctx, p, kind, composeOverride); e != nil {
 		p.Error = e.Error()
 		_ = m.save(context.WithoutCancel(ctx), p)
 		return nil, e

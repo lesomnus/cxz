@@ -3,6 +3,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -34,6 +35,15 @@ func editCommand() *xli.Command {
 		}
 		if current.Docker != previous.Docker {
 			out, err := publishDocker(ctx, root, "save")
+			if err != nil {
+				return err
+			}
+			if err := writeOutput(c, out); err != nil {
+				return err
+			}
+		}
+		if !bytes.Equal(current.Devcontainer.Compose, previous.Devcontainer.Compose) {
+			out, err := publishDevcontainer(ctx, root, current)
 			if err != nil {
 				return err
 			}
@@ -79,6 +89,11 @@ func openSettingsEditor(ctx context.Context, c *xli.Command, path string) error 
 
 func prepareSettingsEdit(root string, original []byte, cfg settings.Config) (*filemap.Bundle, error) {
 	previous, oldErr := settings.Parse(original)
+	if !bytes.Equal(cfg.Devcontainer.Compose, previous.Devcontainer.Compose) {
+		if _, err := cfg.Devcontainer.Snapshot(root); err != nil {
+			return nil, err
+		}
+	}
 	if cfg.Docker != previous.Docker {
 		if _, err := cfg.Docker.Snapshot(root); err != nil {
 			return nil, err

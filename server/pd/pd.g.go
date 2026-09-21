@@ -3365,6 +3365,11 @@ func (s interceptProject) Watch(req *resource.ProjectWatchRequest, out grpc.Serv
 		resource.ProjectService_Watch_FullMethodName, req, out, s.ProjectServiceServer.Watch)
 }
 
+func (s interceptProject) Devcontainer(ctx context.Context, req *resource.DevcontainerRequest) (*resource.DevcontainerReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_Devcontainer_FullMethodName, req, s.ProjectServiceServer.Devcontainer)
+}
+
 func (s interceptProject) Docker(ctx context.Context, req *resource.DockerRequest) (*resource.DockerReply, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
 		resource.ProjectService_Docker_FullMethodName, req, s.ProjectServiceServer.Docker)
@@ -4351,6 +4356,19 @@ func dispatch(ctx context.Context, s resource.Server, op *pdpb.Op) (*anypb.Any, 
 		}
 
 		res, err := s.Project().List(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.ProjectService_Devcontainer_FullMethodName:
+		v := &resource.DevcontainerRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().Devcontainer(ctx, v)
 		if err != nil {
 			return nil, err
 		}

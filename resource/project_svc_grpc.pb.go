@@ -26,6 +26,7 @@ const (
 	ProjectService_Erase_FullMethodName          = "/cxz.ProjectService/Erase"
 	ProjectService_List_FullMethodName           = "/cxz.ProjectService/List"
 	ProjectService_Watch_FullMethodName          = "/cxz.ProjectService/Watch"
+	ProjectService_Devcontainer_FullMethodName   = "/cxz.ProjectService/Devcontainer"
 	ProjectService_Docker_FullMethodName         = "/cxz.ProjectService/Docker"
 	ProjectService_FileMappings_FullMethodName   = "/cxz.ProjectService/FileMappings"
 	ProjectService_Up_FullMethodName             = "/cxz.ProjectService/Up"
@@ -62,6 +63,7 @@ type ProjectServiceClient interface {
 	// once in that first message and once as a change that happened while it was
 	// being read -- and that is harmless for the same reason.
 	Watch(ctx context.Context, in *ProjectWatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ProjectWatchResponse], error)
+	Devcontainer(ctx context.Context, in *DevcontainerRequest, opts ...grpc.CallOption) (*DevcontainerReply, error)
 	Docker(ctx context.Context, in *DockerRequest, opts ...grpc.CallOption) (*DockerReply, error)
 	FileMappings(ctx context.Context, in *FileMappingsRequest, opts ...grpc.CallOption) (*FileMappingsReply, error)
 	// Provision/start a registered workspace. This never creates a conversation.
@@ -161,6 +163,16 @@ func (c *projectServiceClient) Watch(ctx context.Context, in *ProjectWatchReques
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type ProjectService_WatchClient = grpc.ServerStreamingClient[ProjectWatchResponse]
 
+func (c *projectServiceClient) Devcontainer(ctx context.Context, in *DevcontainerRequest, opts ...grpc.CallOption) (*DevcontainerReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DevcontainerReply)
+	err := c.cc.Invoke(ctx, ProjectService_Devcontainer_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *projectServiceClient) Docker(ctx context.Context, in *DockerRequest, opts ...grpc.CallOption) (*DockerReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DockerReply)
@@ -249,6 +261,7 @@ type ProjectServiceServer interface {
 	// once in that first message and once as a change that happened while it was
 	// being read -- and that is harmless for the same reason.
 	Watch(*ProjectWatchRequest, grpc.ServerStreamingServer[ProjectWatchResponse]) error
+	Devcontainer(context.Context, *DevcontainerRequest) (*DevcontainerReply, error)
 	Docker(context.Context, *DockerRequest) (*DockerReply, error)
 	FileMappings(context.Context, *FileMappingsRequest) (*FileMappingsReply, error)
 	// Provision/start a registered workspace. This never creates a conversation.
@@ -289,6 +302,9 @@ func (UnimplementedProjectServiceServer) List(context.Context, *ProjectListReque
 }
 func (UnimplementedProjectServiceServer) Watch(*ProjectWatchRequest, grpc.ServerStreamingServer[ProjectWatchResponse]) error {
 	return status.Error(codes.Unimplemented, "method Watch not implemented")
+}
+func (UnimplementedProjectServiceServer) Devcontainer(context.Context, *DevcontainerRequest) (*DevcontainerReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method Devcontainer not implemented")
 }
 func (UnimplementedProjectServiceServer) Docker(context.Context, *DockerRequest) (*DockerReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method Docker not implemented")
@@ -448,6 +464,24 @@ func _ProjectService_Watch_Handler(srv interface{}, stream grpc.ServerStream) er
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type ProjectService_WatchServer = grpc.ServerStreamingServer[ProjectWatchResponse]
 
+func _ProjectService_Devcontainer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DevcontainerRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).Devcontainer(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_Devcontainer_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).Devcontainer(ctx, req.(*DevcontainerRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ProjectService_Docker_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DockerRequest)
 	if err := dec(in); err != nil {
@@ -586,6 +620,10 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "List",
 			Handler:    _ProjectService_List_Handler,
+		},
+		{
+			MethodName: "Devcontainer",
+			Handler:    _ProjectService_Devcontainer_Handler,
 		},
 		{
 			MethodName: "Docker",

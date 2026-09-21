@@ -19,6 +19,7 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
+	Sessions_Devcontainer_FullMethodName = "/cxz.runtime.Sessions/Devcontainer"
 	Sessions_Docker_FullMethodName       = "/cxz.runtime.Sessions/Docker"
 	Sessions_FileMappings_FullMethodName = "/cxz.runtime.Sessions/FileMappings"
 	Sessions_Create_FullMethodName       = "/cxz.runtime.Sessions/Create"
@@ -48,6 +49,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SessionsClient interface {
+	Devcontainer(ctx context.Context, in *DevcontainerInput, opts ...grpc.CallOption) (*Receipt, error)
 	Docker(ctx context.Context, in *DockerInput, opts ...grpc.CallOption) (*Receipt, error)
 	FileMappings(ctx context.Context, in *FileMappingsInput, opts ...grpc.CallOption) (*Receipt, error)
 	Create(ctx context.Context, in *CreateRequest, opts ...grpc.CallOption) (*Session, error)
@@ -79,6 +81,16 @@ type sessionsClient struct {
 
 func NewSessionsClient(cc grpc.ClientConnInterface) SessionsClient {
 	return &sessionsClient{cc}
+}
+
+func (c *sessionsClient) Devcontainer(ctx context.Context, in *DevcontainerInput, opts ...grpc.CallOption) (*Receipt, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Receipt)
+	err := c.cc.Invoke(ctx, Sessions_Devcontainer_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *sessionsClient) Docker(ctx context.Context, in *DockerInput, opts ...grpc.CallOption) (*Receipt, error) {
@@ -324,6 +336,7 @@ func (c *sessionsClient) Down(ctx context.Context, in *ProjectRequest, opts ...g
 // All implementations must embed UnimplementedSessionsServer
 // for forward compatibility.
 type SessionsServer interface {
+	Devcontainer(context.Context, *DevcontainerInput) (*Receipt, error)
 	Docker(context.Context, *DockerInput) (*Receipt, error)
 	FileMappings(context.Context, *FileMappingsInput) (*Receipt, error)
 	Create(context.Context, *CreateRequest) (*Session, error)
@@ -357,6 +370,9 @@ type SessionsServer interface {
 // pointer dereference when methods are called.
 type UnimplementedSessionsServer struct{}
 
+func (UnimplementedSessionsServer) Devcontainer(context.Context, *DevcontainerInput) (*Receipt, error) {
+	return nil, status.Error(codes.Unimplemented, "method Devcontainer not implemented")
+}
 func (UnimplementedSessionsServer) Docker(context.Context, *DockerInput) (*Receipt, error) {
 	return nil, status.Error(codes.Unimplemented, "method Docker not implemented")
 }
@@ -445,6 +461,24 @@ func RegisterSessionsServer(s grpc.ServiceRegistrar, srv SessionsServer) {
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&Sessions_ServiceDesc, srv)
+}
+
+func _Sessions_Devcontainer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DevcontainerInput)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).Devcontainer(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_Devcontainer_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).Devcontainer(ctx, req.(*DevcontainerInput))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _Sessions_Docker_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -861,6 +895,10 @@ var Sessions_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "cxz.runtime.Sessions",
 	HandlerType: (*SessionsServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Devcontainer",
+			Handler:    _Sessions_Devcontainer_Handler,
+		},
 		{
 			MethodName: "Docker",
 			Handler:    _Sessions_Docker_Handler,
