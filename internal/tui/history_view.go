@@ -65,7 +65,7 @@ type promptSpan struct {
 }
 
 func (m *model) conversationView() string {
-	if s := m.current(); s != nil && m.historyOpening && m.watchID == s.Id && len(m.events[s.Id]) == 0 && len(m.pendingInputs[s.Id]) == 0 {
+	if s := m.current(); s != nil && m.historyOpening[s.Id] && m.watchID == s.Id && len(m.pendingInputs[s.Id]) == 0 {
 		if _, help := m.localHelp[s.Id]; !help {
 			return historySkeleton(m.width, m.view.Height, m.pulse)
 		}
@@ -119,19 +119,20 @@ func (m *model) conversationView() string {
 
 func historySkeleton(width, height, pulse int) string {
 	rows := make([]string, max(0, height))
-	inner := max(1, width-4)
+	inner := max(1, min(64, width-4))
 	band := max(3, inner/6)
 	position := (pulse*3)%(inner+band) - band
-	for y := range rows {
+	// Three short paragraphs at the top; leave the rest of the viewport empty.
+	for y := 0; y < min(len(rows), 13); y++ {
 		if y == 0 {
 			rows[y] = "  " + muted.Render(clip("Loading conversation…", inner))
 			continue
 		}
-		part := (y - 1) % 7
-		if part == 0 || part == 6 {
+		part := (y - 1) % 4
+		if part == 0 {
 			continue
 		}
-		length := max(1, inner*[]int{0, 25, 90, 75, 85, 50, 0}[part]/100)
+		length := max(1, inner*[]int{0, 90, 75, 50}[part]/100)
 		left := min(length, max(0, position))
 		right := min(length, max(left, position+band))
 		if lipgloss.ColorProfile().Name() == "Ascii" {

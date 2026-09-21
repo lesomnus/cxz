@@ -114,7 +114,7 @@ type model struct {
 	cursor                  map[string]uint64
 	historyLoading          map[string]uint64 // End sequence of each in-flight older page.
 	historyStart            map[string]uint64
-	historyOpening          bool
+	historyOpening          map[string]bool // Keep loading through pages containing only bookkeeping events.
 	watchCancel             context.CancelFunc
 	watchID                 string
 	watchEpoch              uint64
@@ -394,7 +394,12 @@ func (m *model) watch() {
 	after := m.cursor[id]
 	last := s.LastSeq
 	agent, width := s.Agent, max(1, m.view.Width)
-	m.historyOpening = after == 0 && last > 0
+	if after == 0 && last > 0 {
+		if m.historyOpening == nil {
+			m.historyOpening = map[string]bool{}
+		}
+		m.historyOpening[id] = true
+	}
 	go func() {
 		if after == 0 && last > 0 {
 			start := uint64(0)
@@ -484,6 +489,7 @@ func (m *model) render() {
 	var times []int64
 	var sequences []uint64
 	var sequence uint64
+	conversationReady := false
 	promptBlock := -1
 	promptBlocks := map[int]string{}
 	m.latestPrompt = ""
@@ -657,6 +663,14 @@ func (m *model) render() {
 				text = approvalLine(s, e, state, max(1, m.view.Width))
 			}
 			if text != "" {
+				if e.Seq > 0 {
+					switch e.Kind {
+					case "input", "assistant":
+						conversationReady = conversationReady || strings.TrimSpace(e.Text) != ""
+					case "tool_call", "tool_result", "approval":
+						conversationReady = true
+					}
+				}
 				if m.isPendingInput(e) {
 					text = muted.Render(ansi.Strip(text))
 				}
@@ -674,6 +688,10 @@ func (m *model) render() {
 		if hint := authHint(s, e); hint != "" {
 			add(indentBlock(warning.Render(ansi.Hardwrap(safeText(hint), max(1, m.view.Width-2), true))), e.TimeMs)
 		}
+	}
+	if start, loaded := m.historyStart[s.Id]; loaded && m.historyOpening[s.Id] && (conversationReady || start == 0) {
+		delete(m.historyOpening, s.Id)
+		follow = true
 	}
 	if showHelp && !helped {
 		add(m.localCommandView(s.Id), 0)
@@ -1045,7 +1063,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.backgroundLoading[v.id] = true
 		}
 		if v.err == nil && m.current() != nil && m.current().Id == v.id {
-			// Warm one older page immediately, then keep a viewport-sized runway.
+			// Find conversation content first, then keep a viewport-sized runway.
 			return m, tea.Batch(m.requestOlderHistory(v.initial), background)
 		}
 		return m, background
@@ -1255,7 +1273,13 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.render()
 	case tick:
 		m.watch()
-		return m, tea.Batch(timer(), m.periodicRefresh(), m.reportActivity(), m.pollSettings())
+		var history tea.Cmd
+		if m.historyOpening[m.watchID] {
+			// Resume an unfinished opening when returning to a session whose
+			// previous page arrived while another conversation was selected.
+			history = m.loadOlderHistory()
+		}
+		return m, tea.Batch(timer(), m.periodicRefresh(), m.reportActivity(), m.pollSettings(), history)
 	case resourcesChanged:
 		if v.generation != m.resourceWatchGeneration {
 			return m, nil
@@ -1378,7 +1402,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if m.watchID == v.id {
 			m.watchID = ""
-			m.historyOpening = false
+			delete(m.historyOpening, v.id)
 			m.notice = "event connection lost; reconnecting from saved cursor"
 		}
 	case restartFinished:
