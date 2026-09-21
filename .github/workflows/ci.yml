@@ -23,6 +23,37 @@ jobs:
       - run: go build -o cxz.exe ./cmd/cxz
       - run: .\cxz.exe version
       - run: .\cxz.exe terminal-info --plain
+      - name: Install the Windows frontend and register its Terminal profile
+        shell: pwsh
+        run: |
+          $originalUserPath = [Environment]::GetEnvironmentVariable('Path', 'User')
+          .\cxz.exe self-install
+          if ($LASTEXITCODE -ne 0) { throw 'User installation failed' }
+          $installed = Join-Path $env:LOCALAPPDATA 'Programs\cxz\cxz.exe'
+          if ((Get-FileHash $installed).Hash -ne (Get-FileHash .\cxz.exe).Hash) {
+            throw 'Installed executable differs from the source build'
+          }
+          $installedPath = [Environment]::GetEnvironmentVariable('Path', 'User')
+          if (!$installedPath.StartsWith($originalUserPath)) { throw 'Existing user PATH changed' }
+          & $installed windows-install
+          if ($LASTEXITCODE -ne 0) { throw 'Repeated installation failed' }
+          if ([Environment]::GetEnvironmentVariable('Path', 'User') -ne $installedPath) {
+            throw 'Repeated installation changed user PATH'
+          }
+          $state = Join-Path $env:RUNNER_TEMP 'cxz client state 한글'
+          & $installed --state $state integration add windows-terminal
+          if ($LASTEXITCODE -ne 0) { throw 'Terminal registration failed' }
+          & $installed --state $state integration add windows-terminal
+          if ($LASTEXITCODE -ne 0) { throw 'Repeated Terminal registration failed' }
+          $fragment = Join-Path $env:LOCALAPPDATA 'Microsoft\Windows Terminal\Fragments\cxz\cxz.json'
+          $profiles = (Get-Content -Raw $fragment | ConvertFrom-Json).profiles
+          if ($profiles.Count -ne 1 -or $profiles[0].name -ne 'cxz') { throw 'Unexpected Terminal profiles' }
+          $status = & $installed integration ls
+          if ($LASTEXITCODE -ne 0 -or !($status -match '^windows-terminal  registered')) { throw 'Registration status missing' }
+          & $installed integration remove windows-terminal
+          if ($LASTEXITCODE -ne 0 -or (Test-Path $fragment)) { throw 'Terminal removal failed' }
+          $status = & $installed integration ls
+          if ($LASTEXITCODE -ne 0 -or !($status -match '^windows-terminal  not registered')) { throw 'Removal status missing' }
   test:
     runs-on: ubuntu-24.04
     timeout-minutes: 20

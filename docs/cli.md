@@ -20,6 +20,15 @@ VS Code는 `$env:EDITOR = 'code --wait'`로 지정한다. Docker/file mapping �
 `main`이며, Windows에서는 프론트엔드만 갱신한다. 자세한 조건과 복구 방법은
 [소스 업데이트](operations.md#업데이트와-롤백)를 참고한다.
 
+Windows에서는 `cxz self-install` (`cxz windows-install`도 동일)로 현재 실행 파일을
+사용자 Programs 폴더의 `cxz\cxz.exe`에 복사하고 사용자 PATH에 등록한다.
+기본 위치는 `%LOCALAPPDATA%\Programs\cxz\cxz.exe`이며 관리자 권한은 필요 없다.
+설정 디렉터리는 유지하며, 기존 터미널은 완전히 종료하고 다시 열어야 새 PATH를 받는다.
+설치한 실행 파일에서 `cxz integration add windows-terminal`을 실행하면 Windows Terminal에
+cxz 프로필을 등록·갱신한다. `cxz integration ls`로 확인하고
+`cxz integration remove windows-terminal`로 해제한다.
+자세한 사용법은 [Windows 사용자 설치](remote.md#windows-user-installation-and-terminal-profile)를 참고한다.
+
 목록 갱신은 변경 구독과 30초 안전 갱신을 사용한다. 매초 전체 목록/외부 컨테이너 탐색을 반복하지 않는다.
 서버 측 동기화와 남아 있는 heartbeat의 범위는 [리소스 갱신과 부하](resource-refresh.md)를 참고한다.
 
