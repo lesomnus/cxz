@@ -56,16 +56,16 @@ func runSelfUpdate(ctx context.Context, c *xli.Command) error {
 	if err != nil {
 		return err
 	}
-	replacement, err := selfupdate.Prepare(executable)
-	if err != nil {
-		return err
-	}
-	defer replacement.Close()
 	work, err := os.MkdirTemp("", "cxz-source-update-")
 	if err != nil {
 		return err
 	}
 	defer os.RemoveAll(work)
+	replacement, err := selfupdate.PrepareWithDocker(ctx, executable, work, c.ErrWriter)
+	if err != nil {
+		return err
+	}
+	defer replacement.Close()
 	fmt.Fprintf(c.ErrWriter, "Building cxz from lesomnus/cxz at %s for %s/%s…\n", ref, runtime.GOOS, runtime.GOARCH)
 	artifact, err := selfupdate.Build(ctx, work, ref, c.ErrWriter)
 	if err != nil {
@@ -86,7 +86,7 @@ func runSelfUpdate(ctx context.Context, c *xli.Command) error {
 	}
 	if err != nil {
 		if changed {
-			return fmt.Errorf("CLI updated, but directory sync failed; manager refresh was skipped: %w", err)
+			return fmt.Errorf("CLI updated, but installation did not finish cleanly; manager refresh was skipped: %w", err)
 		}
 		return fmt.Errorf("replace executable: %w", err)
 	}

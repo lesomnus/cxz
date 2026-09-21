@@ -14,11 +14,37 @@ type Replacement struct {
 	Target, Previous, Candidate string
 	lock                        *os.File
 	original                    os.FileInfo
+	apply                       func() (bool, error)
+	close                       func()
 }
 
 // Prepare checks directory permissions and locks the resolved executable before
 // an expensive build. A link in PATH keeps pointing at its original target.
 func Prepare(target string) (*Replacement, error) {
+	r, err := resolveReplacement(target)
+	if err != nil {
+		return nil, err
+	}
+	path := r.Target
+	lock, err := core.Lock(filepath.Join(filepath.Dir(path), "."+filepath.Base(path)+".update.lock"))
+	if err != nil {
+		return nil, fmt.Errorf("lock executable for update (write access to %s is required): %w", filepath.Dir(path), err)
+	}
+	f, err := os.CreateTemp(filepath.Dir(path), ".cxz-update-*.exe")
+	if err != nil {
+		lock.Close()
+		return nil, err
+	}
+	if err := f.Close(); err != nil {
+		os.Remove(f.Name())
+		lock.Close()
+		return nil, err
+	}
+	r.Candidate, r.lock = f.Name(), lock
+	return r, nil
+}
+
+func resolveReplacement(target string) (*Replacement, error) {
 	path, err := filepath.EvalSymlinks(target)
 	if err != nil {
 		return nil, err
@@ -34,30 +60,23 @@ func Prepare(target string) (*Replacement, error) {
 	if !st.Mode().IsRegular() {
 		return nil, fmt.Errorf("executable is not a regular file: %s", path)
 	}
-	lock, err := core.Lock(filepath.Join(filepath.Dir(path), "."+filepath.Base(path)+".update.lock"))
-	if err != nil {
-		return nil, fmt.Errorf("lock executable for update (write access to %s is required): %w", filepath.Dir(path), err)
-	}
-	f, err := os.CreateTemp(filepath.Dir(path), ".cxz-update-*.exe")
-	if err != nil {
-		lock.Close()
-		return nil, err
-	}
-	if err := f.Close(); err != nil {
-		os.Remove(f.Name())
-		lock.Close()
-		return nil, err
-	}
 	previous := path + ".previous"
 	if strings.EqualFold(filepath.Ext(path), ".exe") {
 		previous = strings.TrimSuffix(path, filepath.Ext(path)) + ".previous.exe"
 	}
-	return &Replacement{Target: path, Previous: previous, Candidate: f.Name(), lock: lock, original: st}, nil
+	return &Replacement{Target: path, Previous: previous, original: st}, nil
 }
 
+func (r *Replacement) UsesDocker() bool { return r.apply != nil }
+
 func (r *Replacement) Close() {
+	if r.close != nil {
+		r.close()
+	}
 	os.Remove(r.Candidate)
-	r.lock.Close()
+	if r.lock != nil {
+		r.lock.Close()
+	}
 }
 
 func (r *Replacement) Stage(source string) error {
@@ -73,6 +92,9 @@ func (r *Replacement) Apply() (changed bool, err error) {
 	}
 	if !os.SameFile(current, r.original) || current.Size() != r.original.Size() || !current.ModTime().Equal(r.original.ModTime()) {
 		return false, fmt.Errorf("executable changed during the build; retry self-update")
+	}
+	if r.apply != nil {
+		return r.apply()
 	}
 	if err := r.replace(); err != nil {
 		return false, err

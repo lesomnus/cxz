@@ -75,8 +75,11 @@ then updates the local executable and its installed Linux manager. Use `--ref`
 for a branch/tag/commit or `--client-only` to skip the manager. Docker Buildx and
 a Linux builder are required; host Git/Go are not. Builds are verified before
 replacement and the previous executable is retained. Running project sessions
-continue. See [source updates](docs/operations.md#업데이트와-롤백) for permissions,
-Windows, remote builders and recovery.
+continue. On Linux, a Docker root installer handles protected locations such as
+`/usr/local/bin` automatically, preserving file ownership and permissions after
+verifying that Docker sees the same installation directory. See
+[source updates](docs/operations.md#업데이트와-롤백) for Windows, remote builders
+and recovery.
 
 Use `cxz edit` to edit model defaults and host file mappings in your editor.
 New settings files contain disabled, commented examples. `settings.jsonc` accepts
