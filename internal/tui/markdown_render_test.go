@@ -83,6 +83,9 @@ func TestMarkdownTableBordersAndWrapping(t *testing.T) {
 		if strings.ContainsAny(plain, "│┌┐└┘|") || !strings.Contains(view, "38;5;22m") || !strings.Contains(plain, "━ ━") {
 			t.Fatal("table borders", view)
 		}
+		if !strings.Contains(view, "38;5;240m") || !strings.Contains(plain, "─ ─") || strings.Count(plain, "─") != strings.Count(plain, "━") {
+			t.Fatal("data rows need one thin gray divider, matching the header columns", view)
+		}
 		for _, row := range strings.Split(view, "\n") {
 			if ansi.StringWidth(row) > width {
 				t.Fatal("table overflow", row)
@@ -106,7 +109,8 @@ func TestUserMessageBackgroundReachesConversationEdges(t *testing.T) {
 		m.view.GotoTop()
 		terminal := vt.NewEmulator(m.width, 24)
 		terminal.WriteString(strings.ReplaceAll(m.conversationView(), "\n", "\r\n"))
-		for y := 1; y <= 2; y++ {
+		// Top padding, timestamp, two input rows, and bottom padding share the fill.
+		for y := 0; y <= 4; y++ {
 			for x := 0; x < m.width; x++ {
 				cell := terminal.CellAt(x, y)
 				if cell != nil && cell.Width == 0 {
@@ -120,6 +124,9 @@ func TestUserMessageBackgroundReachesConversationEdges(t *testing.T) {
 					t.Fatal("wrong user background")
 				}
 			}
+		}
+		if cell := terminal.CellAt(0, 5); cell != nil && cell.Style.Bg != nil {
+			t.Fatal("user background leaked past bottom padding")
 		}
 		terminal.Close()
 	}

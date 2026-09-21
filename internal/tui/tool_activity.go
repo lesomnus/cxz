@@ -10,6 +10,60 @@ import (
 	"github.com/lesomnus/cxz/internal/agentview"
 )
 
+// Tool events are immutable journal entries. Cache by event identity and the
+// context that changes their presentation, keeping live output outside the cache.
+type toolActivityKey struct {
+	event *api.Event
+	agent string
+}
+
+type cachedToolActivity struct {
+	activity agentview.ToolActivity
+	ok       bool
+}
+
+type toolRenderKey struct {
+	event, result *api.Event
+	agent, state  string
+	width         int
+	background    bool
+}
+
+func (m *model) cachedToolView(agent string, e *api.Event) (agentview.ToolActivity, bool) {
+	key := toolActivityKey{e, agent}
+	if cached, ok := m.toolActivities[key]; ok {
+		return cached.activity, cached.ok
+	}
+	activity, ok := agentview.ToolView(agent, e.Text, e.Payload)
+	if m.toolActivities == nil {
+		m.toolActivities = map[toolActivityKey]cachedToolActivity{}
+	}
+	m.toolActivities[key] = cachedToolActivity{activity, ok}
+	return activity, ok
+}
+
+func (m *model) cachedToolBody(agent string, e *api.Event, activity agentview.ToolActivity, result *api.Event, width int, state string, background bool) string {
+	if result != nil && !background {
+		state = "" // A completed result determines its own status.
+	}
+	key := toolRenderKey{e, result, agent, state, width, background}
+	if body, ok := m.renderedTools[key]; ok {
+		return body
+	}
+	if background {
+		result = nil
+	}
+	body := toolActivityStateBody(activity, result, width, state)
+	if background {
+		body += " · background"
+	}
+	if m.renderedTools == nil {
+		m.renderedTools = map[toolRenderKey]string{}
+	}
+	m.renderedTools[key] = body
+	return body
+}
+
 func toolActivityView(activity agentview.ToolActivity, result *api.Event, width int) string {
 	return indentBlock(toolActivityBody(activity, result, width))
 }

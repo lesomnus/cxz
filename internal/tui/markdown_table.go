@@ -91,12 +91,16 @@ func markdownTable(rows [][]string, alignments []extast.Alignment, width int) st
 				}
 				output = append(output, line)
 			}
-			if rowIndex == 0 {
+			if rowIndex == 0 || rowIndex < len(rows)-1 {
+				glyph, color := "─", 240
+				if rowIndex == 0 {
+					glyph, color = "━", 22
+				}
 				parts := make([]string, len(widths))
 				for i, w := range widths {
-					parts[i] = strings.Repeat("━", w)
+					parts[i] = strings.Repeat(glyph, w)
 					if lipgloss.ColorProfile().Name() != "Ascii" {
-						parts[i] = "\x1b[38;5;22m" + parts[i] + "\x1b[0m"
+						parts[i] = fmt.Sprintf("\x1b[38;5;%dm%s\x1b[0m", color, parts[i])
 					}
 				}
 				output = append(output, strings.Join(parts, " "))

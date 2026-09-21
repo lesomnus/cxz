@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
 )
 
@@ -51,7 +52,11 @@ func (m *model) scrollStatus() string {
 	if s := m.current(); s != nil && m.historyStart[s.Id] > 0 {
 		label = "loaded L"
 	}
-	return fmt.Sprintf("%s %d–%d/%d · %s · track: journal · Ctrl+End latest", label, start+1, min(len(m.historyTimes), start+m.view.Height), len(m.historyTimes), stamp)
+	loading := ""
+	if s := m.current(); s != nil && m.historyLoading[s.Id] > 0 {
+		loading = " · loading earlier…"
+	}
+	return fmt.Sprintf("%s %d–%d/%d%s · %s · track: journal · Ctrl+End latest", label, start+1, min(len(m.historyTimes), start+m.view.Height), len(m.historyTimes), loading, stamp)
 }
 
 type promptSpan struct {
@@ -60,10 +65,15 @@ type promptSpan struct {
 }
 
 func (m *model) conversationView() string {
+	if s := m.current(); s != nil && m.historyOpening && m.watchID == s.Id && len(m.events[s.Id]) == 0 && len(m.pendingInputs[s.Id]) == 0 {
+		if _, help := m.localHelp[s.Id]; !help {
+			return historySkeleton(m.width, m.view.Height, m.pulse)
+		}
+	}
 	rows := strings.Split(m.view.View(), "\n")
 	promptRows := map[int]bool{}
 	for _, span := range m.promptSpans {
-		for row := max(0, span.start+1-m.view.YOffset); row < min(len(rows), span.end-m.view.YOffset); row++ {
+		for row := max(0, span.start-m.view.YOffset); row < min(len(rows), span.end-m.view.YOffset); row++ {
 			promptRows[row] = true
 		}
 	}
@@ -105,4 +115,30 @@ func (m *model) conversationView() string {
 		}
 	}
 	return strings.Join(rows, "\n")
+}
+
+func historySkeleton(width, height, pulse int) string {
+	rows := make([]string, max(0, height))
+	inner := max(1, width-4)
+	band := max(3, inner/6)
+	position := (pulse*3)%(inner+band) - band
+	for y := range rows {
+		if y == 0 {
+			rows[y] = "  " + muted.Render(clip("Loading conversation…", inner))
+			continue
+		}
+		part := (y - 1) % 7
+		if part == 0 || part == 6 {
+			continue
+		}
+		length := max(1, inner*[]int{0, 25, 90, 75, 85, 50, 0}[part]/100)
+		left := min(length, max(0, position))
+		right := min(length, max(left, position+band))
+		if lipgloss.ColorProfile().Name() == "Ascii" {
+			rows[y] = "  " + strings.Repeat("░", left) + strings.Repeat("▒", right-left) + strings.Repeat("░", length-right)
+		} else {
+			rows[y] = "  " + indexedBackground(strings.Repeat(" ", left), 235) + indexedBackground(strings.Repeat(" ", right-left), 237) + indexedBackground(strings.Repeat(" ", length-right), 235)
+		}
+	}
+	return screen(strings.Join(rows, "\n"), width, height)
 }

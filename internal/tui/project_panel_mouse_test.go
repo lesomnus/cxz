@@ -137,3 +137,30 @@ func TestPanelMouseScrolledRowsAndHoverReset(t *testing.T) {
 		t.Fatal("click changed a pending action")
 	}
 }
+
+func TestConversationClickRestoresFocusFromPanel(t *testing.T) {
+	for _, width := range []int{80, 200} {
+		for _, composer := range []bool{false, true} {
+			m := panelModel()
+			m.Update(tea.WindowSizeMsg{Width: width, Height: 30})
+			m.input.SetValue("draft")
+			m.Update(tea.KeyMsg{Type: tea.KeyCtrlQ})
+			x, y := m.contentOffset()+3, 2
+			if composer {
+				y = m.height - 4
+			}
+			m.Update(tea.MouseMsg{X: x, Y: y, Action: tea.MouseActionMotion})
+			if !m.panelFocus || m.input.Focused() {
+				t.Fatal("hover stole focus from project navigation")
+			}
+			m.Update(tea.MouseMsg{X: x, Y: y, Button: tea.MouseButtonLeft, Action: tea.MouseActionPress})
+			if m.panelFocus || !m.input.Focused() || m.input.Value() != "draft" || m.current().Id != "s" {
+				t.Fatal("conversation click did not preserve the session and return focus")
+			}
+			m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("!")})
+			if m.input.Value() != "draft!" {
+				t.Fatal("typing still routed to project navigation")
+			}
+		}
+	}
+}

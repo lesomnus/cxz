@@ -28,9 +28,10 @@ func TestHistoryRecordingMeasuresPayloadAndFirstRenderWithoutContent(t *testing.
 	if err != nil {
 		t.Fatal(err)
 	}
-	m.applyHistoryPage(historyPage{id: "s", initial: true, events: page.Events, started: started})
+	prepared := m.prepareHistoryPage(context.Background(), historyPage{id: "s", initial: true, events: page.Events, started: started}, "claude", m.view.Width)
+	m.applyHistoryPage(prepared)
 	archive := m.debugRecorder.Stop()
-	var rpc, render bool
+	var rpc, render, preparation bool
 	for _, event := range archive.Events {
 		if event.Kind == "history_rpc" {
 			rpc = event.Count == 1 && event.Bytes == proto.Size(page) && event.Type == "initial"
@@ -38,9 +39,12 @@ func TestHistoryRecordingMeasuresPayloadAndFirstRenderWithoutContent(t *testing.
 		if event.Kind == "history_first_render" {
 			render = event.Duration > 0
 		}
+		if event.Kind == "history_prepare" {
+			preparation = event.Count == 1
+		}
 	}
 	data, _ := json.Marshal(archive.Events)
-	if !rpc || !render || strings.Contains(string(data), "PRIVATE") {
+	if !rpc || !render || !preparation || strings.Contains(string(data), "PRIVATE") {
 		t.Fatal(string(data))
 	}
 }
