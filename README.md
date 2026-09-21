@@ -105,7 +105,9 @@ through `$schema` for editor completions. Legacy `settings.jsonm` and
 [editor setup](docs/remote.md) for JSON-with-comments mode and Windows paths.
 The Windows frontend also provides `cxz edit` for local connections and model
 preferences; it uses `VISUAL`/`EDITOR` or Notepad. Host settings are applied on Linux.
-Files such as `CLAUDE.md` can target `${AGENT_CONFIG_DIR}/CLAUDE.md` in each session.
+Use `cxz edit share CLAUDE.md` to edit a file in the installation's shared source
+directory (`share/` beside `settings.jsonc`). Nested paths create directories as
+needed. Map `${CXZ_SHARE_DIR}/CLAUDE.md` to `${AGENT_CONFIG_DIR}/CLAUDE.md` in each session.
 See [host file mappings](docs/file-mappings.md) for destination variables, sync,
 and application on agent restart.
 

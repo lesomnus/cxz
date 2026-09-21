@@ -29,7 +29,7 @@ func TestSnapshotAndSessionCopies(t *testing.T) {
 	put(t, filepath.Join(src, "CLAUDE.md"), "shared instructions")
 	put(t, filepath.Join(src, "commands", "review.md"), "review")
 	mappings := []Mapping{{Src: filepath.Join(src, "CLAUDE.md"), Dst: "${AGENT_CONFIG_DIR}/CLAUDE.md", Agent: "claude"}, {Src: filepath.Join(src, "commands"), Dst: "${AGENT_CONFIG_DIR}/commands", Agent: "claude"}, {Src: filepath.Join(src, "CLAUDE.md"), Dst: "${AGENT_CONFIG_DIR}/AGENTS.md", Agent: "codex"}, {Src: filepath.Join(src, "CLAUDE.md"), Dst: "${SESSION_HOME}/notes"}, {Src: filepath.Join(src, "CLAUDE.md"), Dst: "${WORKSPACE}/notes"}}
-	b, e := Snapshot(mappings)
+	b, e := Snapshot(t.TempDir(), mappings)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -70,7 +70,7 @@ func TestSnapshotAndSessionCopies(t *testing.T) {
 			t.Fatal(e)
 		}
 	}
-	b, e = Snapshot(mappings)
+	b, e = Snapshot(t.TempDir(), mappings)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -89,7 +89,7 @@ func TestRejectInvalidMappings(t *testing.T) {
 	if e := os.Symlink(filepath.Join(src, "file"), filepath.Join(src, "link")); e != nil {
 		t.Fatal(e)
 	}
-	if _, e := Snapshot([]Mapping{{Src: src, Dst: "${WORKSPACE}/files"}}); e == nil {
+	if _, e := Snapshot(t.TempDir(), []Mapping{{Src: src, Dst: "${WORKSPACE}/files"}}); e == nil {
 		t.Fatal("followed source symlink")
 	}
 	b := Bundle{Files: []File{{Dst: "${WORKSPACE}/x", Content: []byte(strings.Repeat("x", Limit+1))}}}
@@ -120,11 +120,11 @@ func TestRejectInvalidMappings(t *testing.T) {
 func TestDirectoryToAgentConfigRoot(t *testing.T) {
 	src := t.TempDir()
 	put(t, filepath.Join(src, "CLAUDE.md"), "instructions")
-	b, err := Snapshot([]Mapping{{Src: src, Dst: "${AGENT_CONFIG_DIR}", Agent: "claude"}})
+	b, err := Snapshot(t.TempDir(), []Mapping{{Src: src, Dst: "${AGENT_CONFIG_DIR}", Agent: "claude"}})
 	if err != nil || len(b.Files) != 1 || b.Files[0].Dst != "${AGENT_CONFIG_DIR}/CLAUDE.md" {
 		t.Fatal(b, err)
 	}
-	if _, err = Snapshot([]Mapping{{Src: filepath.Join(src, "CLAUDE.md"), Dst: "${AGENT_CONFIG_DIR}"}}); err == nil {
+	if _, err = Snapshot(t.TempDir(), []Mapping{{Src: filepath.Join(src, "CLAUDE.md"), Dst: "${AGENT_CONFIG_DIR}"}}); err == nil {
 		t.Fatal("file may not replace config root")
 	}
 }

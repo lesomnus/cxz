@@ -13,6 +13,10 @@ Windows에서도 `cxz edit`로 로컬 설정을 편집한다. `VISUAL` → `EDIT
 순서로 선택하며, 메모장은 저장·닫기 후 터미널에서 Enter를 눌러 완료한다.
 VS Code는 `$env:EDITOR = 'code --wait'`로 지정한다. Docker/file mapping 설정의
 실제 적용은 Linux 호스트에서 수행한다.
+`cxz edit share CLAUDE.md` 또는 `cxz edit share foo/bar/baz.txt`는
+`<state>/share/` 아래 공용 파일을 편집하며 필요한 디렉터리를 만든다.
+`files[].src`에서 `${CXZ_SHARE_DIR}`로 이 디렉터리를 지정할 수 있다.
+Linux에서는 매핑된 공용 파일을 저장하면 다시 전송하며 다음 에이전트 시작 때 적용한다.
 설정과 지원 범위는 [원격 접속](remote.md)을 참고한다.
 
 `cxz self-update [--ref BRANCH_OR_TAG_OR_COMMIT] [--client-only]`는 Docker에서 소스를

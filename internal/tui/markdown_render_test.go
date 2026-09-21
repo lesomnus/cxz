@@ -13,6 +13,40 @@ import (
 	"github.com/muesli/termenv"
 )
 
+func TestMarkdownListHangingIndent(t *testing.T) {
+	profile := lipgloss.ColorProfile()
+	t.Cleanup(func() { lipgloss.SetColorProfile(profile) })
+	for _, profile := range []termenv.Profile{termenv.Ascii, termenv.ANSI256, termenv.TrueColor} {
+		lipgloss.SetColorProfile(profile)
+		for _, tc := range []struct {
+			source string
+			width  int
+			want   string
+		}{
+			{"- foo abcdefghi\n- baz", 10, "• foo abcd\n  efghi\n• baz"},
+			{"- foo\n  bar\n- baz", 10, "• foo\n  bar\n• baz"},
+			{"9. abcdefghijk\n10. bazxyz", 10, "9. abcdefg\n   hijk\n10. bazxyz"},
+			{"- parent\n  - abcdefghijk\n- next", 10, "• parent\n  • abcdef\n    ghijk\n• next"},
+			{"- **한글한글한글**", 10, "• 한글한글\n  한글"},
+			{"> - abcdefghijk", 10, "│ • abcdef\n│   ghijk"},
+		} {
+			view := markdownView(tc.source, tc.width)
+			plainRows := strings.Split(ansi.Strip(view), "\n")
+			for i := range plainRows {
+				plainRows[i] = strings.TrimRight(plainRows[i], " ")
+			}
+			if got := strings.Join(plainRows, "\n"); got != tc.want {
+				t.Fatalf("%s: %q at width %d\ngot  %q\nwant %q", profile.Name(), tc.source, tc.width, got, tc.want)
+			}
+			for _, row := range strings.Split(view, "\n") {
+				if ansi.StringWidth(row) > tc.width {
+					t.Fatal("list overflow", row)
+				}
+			}
+		}
+	}
+}
+
 func TestMarkdownDetectedSyntaxAndIndexedBackground(t *testing.T) {
 	old := lipgloss.ColorProfile()
 	defer lipgloss.SetColorProfile(old)

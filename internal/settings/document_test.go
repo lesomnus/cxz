@@ -58,7 +58,7 @@ func TestSaveSeedsAndRetainsExamples(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, example := range []string{"ssh://work", "tcp://home-vpn:7349", "~/CLAUDE.md", `${STATE}`, "docker", "claude_model"} {
+	for _, example := range []string{"ssh://work", "tcp://home-vpn:7349", "${CXZ_SHARE_DIR}/CLAUDE.md", `${STATE}`, "docker", "claude_model"} {
 		if !strings.Contains(string(b), example) {
 			t.Fatal("example lost", example, string(b))
 		}

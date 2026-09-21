@@ -34,12 +34,14 @@
   // Host settings below are applied by cxz on the Linux daemon host.
   // Windows cxz edit saves local preferences; it does not publish host settings.
 
-  // Copy a host file into the private Claude configuration directory.
+  // Edit shared project files with: cxz edit share CLAUDE.md
+  // ${CXZ_SHARE_DIR} is the share/ directory beside this settings file.
+  // Copy a shared file into the private Claude configuration directory.
   // Directories can also be copied. Destinations can use ${AGENT_CONFIG_DIR},
   // ${SESSION_HOME}, or ${WORKSPACE}. "agent" may be "claude", "codex", or omitted.
   // "files": [
   //   {
-  //     "src": "~/CLAUDE.md",
+  //     "src": "${CXZ_SHARE_DIR}/CLAUDE.md",
   //     "dst": "${AGENT_CONFIG_DIR}/CLAUDE.md",
   //     "agent": "claude"
   //   }

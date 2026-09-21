@@ -86,3 +86,21 @@ func TestWindowsEditRetainsHostSettingsWithoutOpeningHostPaths(t *testing.T) {
 		t.Fatal(changed, bundle, err)
 	}
 }
+
+func TestWindowsEditShareCommand(t *testing.T) {
+	root := filepath.Join(t.TempDir(), "state 한글 with spaces & %CXZ_CANARY%")
+	script := filepath.Join(t.TempDir(), "share editor.cmd")
+	if err := os.WriteFile(script, []byte("@echo off\r\n> \"%~1\" echo shared instructions\r\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("CXZ_CANARY", "must-not-expand")
+	t.Setenv("VISUAL", `"`+script+`"`)
+	got := xlitest.Run(t, newRoot(root), "edit", "share", "foo/bar/baz.txt")
+	if got.Err != nil {
+		t.Fatal(got)
+	}
+	b, err := os.ReadFile(filepath.Join(root, "share", "foo", "bar", "baz.txt"))
+	if err != nil || strings.TrimSpace(string(b)) != "shared instructions" {
+		t.Fatal(string(b), err)
+	}
+}

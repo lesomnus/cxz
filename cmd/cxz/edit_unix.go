@@ -16,8 +16,12 @@ import (
 	"github.com/lesomnus/xli"
 )
 
+func localEditHandler(fn func(context.Context, *xli.Command) error) xli.Handler {
+	return onRun(fn)
+}
+
 func editCommand() *xli.Command {
-	return &xli.Command{Name: "edit", Brief: "Edit settings.jsonc in $VISUAL/$EDITOR; validate and sync changed settings", Commands: xli.Commands{{Name: "docker-compose", Brief: "Edit the project's shared Compose override file", Handler: onRun(func(ctx context.Context, c *xli.Command) error {
+	return &xli.Command{Name: "edit", Brief: "Edit settings.jsonc in $VISUAL/$EDITOR; validate and sync changed settings", Commands: xli.Commands{editShareCommand(), {Name: "docker-compose", Brief: "Edit the project's shared Compose override file", Handler: onRun(func(ctx context.Context, c *xli.Command) error {
 		root := stateFrom(ctx)
 		path, changed, err := editDockerCompose(root, func(path string) error { return openSettingsEditor(ctx, c, path) })
 		if err != nil {
@@ -125,7 +129,7 @@ func prepareSettingsEdit(root string, original []byte, cfg settings.Config) (*fi
 	}
 	var bundle *filemap.Bundle
 	if (oldErr != nil && len(cfg.Files) > 0) || !slices.Equal(previous.Files, cfg.Files) {
-		b, err := filemap.Snapshot(cfg.Files)
+		b, err := filemap.Snapshot(root, cfg.Files)
 		if err != nil {
 			return nil, err
 		}
@@ -146,4 +150,23 @@ func selectedComposeFileMissing(root string, cfg settings.Config) bool {
 	}
 	_, err = os.Stat(path)
 	return os.IsNotExist(err)
+}
+
+func finishSharedEdit(ctx context.Context, c *xli.Command, root, path string) error {
+	cfg, err := settings.Load(root)
+	if err != nil {
+		return fmt.Errorf("shared file saved; cannot load mappings: %w", err)
+	}
+	bundle, err := sharedEditMappings(root, path, cfg.Files)
+	if err != nil {
+		return fmt.Errorf("shared file saved; sync mappings with cxz config files sync after correcting sources: %w", err)
+	}
+	if bundle == nil {
+		return nil
+	}
+	out, err := publishFileMappings(ctx, root, *bundle)
+	if err != nil {
+		return err
+	}
+	return writeOutput(c, out)
 }
