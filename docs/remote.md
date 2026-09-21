@@ -2,8 +2,45 @@
 
 The manager, wasp, agent processes and devcontainers run on Linux. The same
 `connect` command runs on Linux and Windows; the Windows binary contains the
-frontend rather than server/install commands. No local Docker installation is
+frontend rather than server/manager installation commands. No local Docker installation is
 needed for a remote conversation.
+
+## Windows user installation and Terminal profile
+
+From a source build or extracted download, run:
+
+```powershell
+.\cxz.exe self-install
+```
+
+`windows-install` is an alias for `self-install`. The command copies the running
+frontend to the current user's Programs known folder, normally
+`%LOCALAPPDATA%\Programs\cxz\cxz.exe`, and appends that directory to the **user**
+PATH. It does not require administrator rights, Docker, Git or Go. Existing PATH
+entries and environment-variable references are preserved, and repeated calls
+do not add duplicate entries. Running it from the installed executable only
+checks PATH. Reinstalling from a different build retains `cxz.previous.exe` using
+the same replacement/locking mechanism as `self-update`.
+
+Restart Windows Terminal and your shell to pick up the new PATH. Existing
+processes retain their environment; until restarted, run the installed executable
+by its full path. Settings stay in the existing client state directory.
+
+```powershell
+cxz integration add windows-terminal
+cxz integration ls
+cxz integration remove windows-terminal
+```
+
+Registration writes a [Windows Terminal JSON fragment](https://learn.microsoft.com/en-us/windows/terminal/json-fragment-extensions)
+at `%LOCALAPPDATA%\Microsoft\Windows Terminal\Fragments\cxz\cxz.json`. The `cxz`
+profile launches the registering executable by its absolute path, with the
+selected `--state` directory, and starts in `%USERPROFILE%`. Run registration
+from the installed executable after `self-install`. Repeating `add` updates the
+same profile, including when its executable or state directory changes. `remove`
+deletes only this fragment; Windows Terminal's main settings file is not edited.
+Reopen Windows Terminal to see the profile in the new-tab menu. Self-installation
+and profile registration are Windows frontend commands and make no daemon calls.
 
 ## All connections in one project view
 
