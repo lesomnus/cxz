@@ -31,10 +31,13 @@ The directory must exist under the installed root. `session new .` uses its
 a base Debian devcontainer with non-root `vscode` user. Multiple configurations
 prompt in a terminal; scripts pass `--config`. Image, Dockerfile, Compose,
 features and hooks delegate to the official devcontainer CLI.
-Use `devcontainer.compose` in `cxz edit` for an inline or file-based
+Use `cxz edit docker-compose` for a shared
 [project Compose override](docs/devcontainer-overrides.md), including additional
-host mounts. `${HOME}` expands on the Linux host CLI and `${DEVCONTAINER_SERVICE}`
-selects the project's development service. Existing containers need recreation.
+host mounts. It edits `docker-compose.yaml` beside `settings.jsonc`; set
+`devcontainer.compose` only to choose another path. Compose `include` can load
+additional files. `${HOME}` expands on the Linux host CLI and
+`${DEVCONTAINER_SERVICE}` selects the project's development service.
+Existing containers need recreation.
 
 Register separate profiles for personal/company subscriptions:
 

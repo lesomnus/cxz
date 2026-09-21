@@ -1,57 +1,22 @@
 # Project Compose overrides
 
-Use `cxz edit` on the Linux daemon host to set `devcontainer.compose`. It accepts
-an inline Compose object or a YAML/JSON file path. The host CLI snapshots the
-contents and publishes them to the manager, where they survive TUI exit and
-manager restart. `cxz up`, `project up/new/recreate` and `session new` reread and
-publish the settings, including edits to an external override file.
+Run this on the Linux daemon host:
 
-This configures project containers. `docker.compose` configures the separate
+```sh
+cxz edit docker-compose
+```
+
+It opens `docker-compose.yaml` beside `settings.jsonc` in `$VISUAL` / `$EDITOR`,
+creating a file with commented examples if needed. The default file is optional:
+if it is absent, empty, or contains only `services: {}`, no override is applied.
+The settings file does not need an entry for this default path.
+
+This configures project containers. `docker.compose` still configures the separate
 [shared Docker engine](managed-docker.md), whose service is named `dind`.
 
-## Inline configuration
+## Mount a host directory
 
-```jsonc
-{
-  "devcontainer": {
-    "compose": {
-      "services": {
-        "${DEVCONTAINER_SERVICE}": {
-          "volumes": [
-            {
-              "type": "bind",
-              "source": "${HOME}/workspaces",
-              "target": "/workspaces",
-              "bind": { "create_host_path": false }
-            }
-          ]
-        }
-      }
-    }
-  }
-}
-```
-
-`${DEVCONTAINER_SERVICE}` selects the `service` from each project's
-`devcontainer.json`; a literal service name such as `dev` is also supported.
-Do not specify both the placeholder and the same literal service in one override.
-`${HOME}` in override values expands to the home of the Linux user running the
-host CLI, before publishing. Escaped `$${HOME}` and other Compose variables keep
-their usual Compose meaning. Create the source directory first.
-
-## File configuration
-
-```jsonc
-{
-  "devcontainer": {
-    "compose": "project.override.yaml"
-  }
-}
-```
-
-Paths are relative to the directory containing `settings.jsonc`. Absolute paths,
-`~/` and `${HOME}` paths also work. YAML and JSON files must contain one Compose
-object, up to 256 KiB. For example, `project.override.yaml`:
+Replace the default template with:
 
 ```yaml
 services:
@@ -64,31 +29,94 @@ services:
           create_host_path: false
 ```
 
+`${DEVCONTAINER_SERVICE}` selects the `service` from each project's
+`devcontainer.json`; a literal service name such as `dev` is also supported.
+Do not specify both the placeholder and the same literal service in one override.
+Compose variables such as `${HOME}` are resolved using the environment of the
+Linux user running the host CLI and the override directory's optional `.env` file.
+The host environment takes precedence. Use `$${NAME}` for a literal `${NAME}`.
+Create the source directory first.
+
+## Choose a different file
+
+Only if needed, set a single path using `cxz edit`:
+
+```jsonc
+{
+  "devcontainer": {
+    "compose": "~/cxz/project-compose.yaml"
+  }
+}
+```
+
+`cxz edit docker-compose` then edits that file. Relative setting paths are based
+on the directory containing `settings.jsonc`; absolute paths, `~/` and `${HOME}`
+also work. A missing explicitly configured file is an error during project
+preparation; the editor creates it. Removing this setting restores the default
+path. The selected YAML/JSON file and its resolved snapshot each have a 256 KiB
+limit.
+
+## Include other files
+
+The override uses Compose's `include` syntax:
+
+```yaml
+include:
+  - ./compose-mounts.yaml
+  - ./compose-services.yaml
+```
+
+Each included file resolves its own relative paths from its directory.
+To merge a base and an override for the same included service, use one entry
+with an ordered `path` list:
+
+```yaml
+include:
+  - path:
+      - ./shared/base.yaml
+      - ./shared/local.yaml
+```
+
+cxz uses Compose's loader to resolve local includes, interpolation and relative
+paths before publishing. The manager receives the resolved contents, so it does
+not need the original Compose files. Relative bind sources and build paths in the
+main override are based on that override's directory; paths in included files
+use their respective directories. Referenced bind directories, build contexts
+and other runtime files must still exist where Docker/the manager can access them.
+
 ## Application and compatibility
 
 Projects must use `dockerComposeFile`. Image/Dockerfile-only configurations fail
-with an explanation if a Compose override is configured; it is never silently
-ignored. No project source files are modified. Merge order is the project's
-Compose files, then the user override, then cxz's internal runtime configuration.
-cxz's ownership labels, runtime mounts and connection settings retain priority.
-Relative paths inside the override follow Compose's normal first-file rule:
-they are relative to the project's first Compose file, not the settings directory.
+with an explanation if a Compose override is configured. No project source files
+are modified. Merge order is the project's Compose files, then the user override,
+then cxz's internal runtime configuration. cxz's ownership labels, runtime mounts
+and connection settings retain priority.
 
-`cxz edit` saves and publishes changed settings. `cxz up WORKSPACE` also rereads
-and publishes them, then creates a new project container or reuses the running
-one. Existing containers are not automatically replaced. Use
+`cxz edit docker-compose` validates the draft before saving and publishes the
+resolved override. Invalid edits leave the original untouched and retain a draft
+for recovery. `cxz up`, `project up/new/recreate` and `session new` also reread and
+publish the file and its includes. Editing included files separately therefore
+takes effect on the next preparation command. Snapshots survive TUI exit and
+manager restart.
+
+Existing containers are not automatically replaced. Use
 `cxz project recreate WORKSPACE` to apply changed mounts; recreation replaces the
 writable layer and disconnects editors, retaining source and named volumes.
 The manager checks the combined Compose configuration and elevated-setting trust
-before removing a container. Removing `devcontainer.compose` clears the saved
-override the next time settings are published; existing containers still need
-recreation to remove its effects.
+before removing a container. Emptying the override (or removing the default file)
+clears its saved snapshot the next time settings are published; existing
+containers still need recreation to remove its effects.
 
 TUI project preparation/recreation uses the manager's last published snapshot.
 Windows/remote frontend editing remains local: publish host settings using cxz on
 the Linux daemon host. Update the host CLI and run `cxz install --recreate` once
-to install a manager that supports this feature. Older managers explicitly reject
-configured overrides instead of silently ignoring them.
+to install a manager that supports project overrides. Older managers explicitly
+reject configured overrides instead of silently ignoring them.
+
+Old inline `devcontainer.compose` objects are retained for migration only. Run
+`cxz edit docker-compose` to move one into the default YAML file and change the
+setting to its path. If that file already exists, neither version is overwritten;
+merge the contents and change the setting manually using `cxz edit`.
 
 ## Project-local alternative
 
@@ -147,5 +175,6 @@ containers started by the project also need `/workspaces` as a bind source,
 mount the same host directory at `/workspaces` in the shared engine's `dind`
 override too; bind sources there are resolved inside that engine.
 
-References: [Compose merge rules](https://docs.docker.com/compose/how-tos/multiple-compose-files/merge/)
+References: [Compose merge rules](https://docs.docker.com/compose/how-tos/multiple-compose-files/merge/),
+[Compose include](https://docs.docker.com/reference/compose-file/include/)
 and [variable interpolation](https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/).

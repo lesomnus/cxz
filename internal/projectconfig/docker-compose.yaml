@@ -1,0 +1,22 @@
+# Shared overrides for cxz project containers. No override is active by default.
+# Edit with: cxz edit docker-compose
+# Relative paths and includes are resolved from this file's directory.
+# ${HOME} uses the Linux host environment; ${DEVCONTAINER_SERVICE} selects the
+# service named in each project's devcontainer.json.
+#
+# services:
+#   ${DEVCONTAINER_SERVICE}:
+#     volumes:
+#       - type: bind
+#         source: ${HOME}/workspaces
+#         target: /workspaces
+#         bind:
+#           create_host_path: false
+#
+# include:
+#   - ./compose-extra.yaml
+# For multiple files overriding the same service, use one include entry:
+# include:
+#   - path: [./compose-base.yaml, ./compose-local.yaml]
+# Keep only one services key when enabling the example above.
+services: {}
