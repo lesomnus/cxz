@@ -55,7 +55,11 @@ func (m *model) cachedToolBody(agent string, e *api.Event, activity agentview.To
 	}
 	body := toolActivityStateBody(activity, result, width, state)
 	if background {
-		body += " · background"
+		const badge = " · background"
+		rows := strings.Split(body, "\n")
+		last := len(rows) - 1
+		rows[last] = clip(rows[last], max(1, width-2-ansi.StringWidth(badge))) + badge
+		body = strings.Join(rows, "\n")
 	}
 	if m.renderedTools == nil {
 		m.renderedTools = map[toolRenderKey]string{}
@@ -118,13 +122,18 @@ func toolActivityStateBody(activity agentview.ToolActivity, result *api.Event, w
 		if text == "" {
 			text = activity.Description
 		}
-		rows := strings.Split(ansi.Wrap(highlightCode(text, "bash"), max(1, width-12), ""), "\n")
+		header := prefix + " Bash · "
+		// Reserve the transcript indent and the entire header before wrapping.
+		// Wrapping again after adding the header can turn two preview rows into
+		// three and leave an operator by itself on the extra row.
+		commandWidth := max(1, width-2-ansi.StringWidth(header))
+		rows := strings.Split(ansi.Wrap(highlightCode(text, "bash"), commandWidth, ""), "\n")
 		for i, row := range rows[:min(2, len(rows))] {
 			if i == 1 && len(rows) > 2 {
-				row = clip(row, max(1, width-14)) + "…"
+				row = ansi.Truncate(row, max(0, commandWidth-1), "") + "…"
 			}
 			if i == 0 {
-				lines = append(lines, prefix+" Bash · "+row)
+				lines = append(lines, header+row)
 			} else {
 				lines = append(lines, "    "+row)
 			}
@@ -165,7 +174,11 @@ func toolActivityStateBody(activity agentview.ToolActivity, result *api.Event, w
 		lines = append(lines, prefix+" Files · Δ?")
 	}
 	for i, line := range lines {
-		lines[i] = ansi.Wrap(line, max(1, width-2), "")
+		if activity.Kind == "command" {
+			lines[i] = clip(line, max(1, width-2))
+		} else {
+			lines[i] = ansi.Wrap(line, max(1, width-2), "")
+		}
 	}
 	return strings.Join(lines, "\n")
 }
