@@ -112,8 +112,9 @@ type model struct {
 	width, height           int
 	events                  map[string][]*api.Event
 	cursor                  map[string]uint64
-	historyLoading          map[string]bool
+	historyLoading          map[string]uint64 // End sequence of each in-flight older page.
 	historyStart            map[string]uint64
+	historyOpening          bool
 	watchCancel             context.CancelFunc
 	watchID                 string
 	watchEpoch              uint64
@@ -161,6 +162,8 @@ type model struct {
 	backgroundErrors        map[string]string
 	cursorOutput            *cursorWriter
 	renderedResponses       map[*api.Event]renderedResponse
+	toolActivities          map[toolActivityKey]cachedToolActivity
+	renderedTools           map[toolRenderKey]string
 	program                 *tea.Program
 	pastes                  map[string]*pastedText
 	pasteSelection          *chipSelection
@@ -390,6 +393,8 @@ func (m *model) watch() {
 	epoch := m.watchEpoch
 	after := m.cursor[id]
 	last := s.LastSeq
+	agent, width := s.Agent, max(1, m.view.Width)
+	m.historyOpening = after == 0 && last > 0
 	go func() {
 		if after == 0 && last > 0 {
 			start := uint64(0)
@@ -410,7 +415,11 @@ func (m *model) watch() {
 			if ctx.Err() != nil {
 				return
 			}
-			m.program.Send(historyPage{id: id, events: batch.Events, start: start, initial: true, epoch: epoch, started: started})
+			page := m.prepareHistoryPage(ctx, historyPage{id: id, events: batch.Events, start: start, initial: true, epoch: epoch, started: started}, agent, width)
+			if ctx.Err() != nil {
+				return
+			}
+			m.program.Send(page)
 		}
 		// Replay the accumulated journal in pages, rendering once per page.
 		// Only the selected conversation is subscribed; other agents keep running.
@@ -506,7 +515,7 @@ func (m *model) render() {
 	events := m.transcriptEvents(s.Id)
 	for _, e := range events {
 		if e.Kind == "tool_call" && e.RequestId != "" && !question(e) && !m.hiddenEvents[e] {
-			if activity, ok := agentview.ToolView(s.Agent, e.Text, e.Payload); ok {
+			if activity, ok := m.cachedToolView(s.Agent, e); ok {
 				toolCalls[e.RunId+"/"+e.RequestId] = activity
 			} else {
 				toolCalls[e.RunId+"/"+e.RequestId] = agentview.ToolActivity{Kind: "tool", Description: e.Text}
@@ -593,8 +602,15 @@ func (m *model) render() {
 			started = 0
 			replyIndex = -1
 		} else {
-			text := eventViewCached(m, s, e, max(1, m.view.Width))
 			key := e.RunId + "/" + e.RequestId
+			_, pairedCall := toolCalls[key]
+			if e.Kind == "tool_result" && pairedCall || e.Kind == "approval" && pairedApprovals[e] {
+				continue
+			}
+			text := ""
+			if e.Kind != "tool_call" || !pairedCall {
+				text = eventViewCached(m, s, e, max(1, m.view.Width))
+			}
 			if e.Kind == "tool_call" {
 				if activity, ok := toolCalls[key]; ok {
 					state := toolInitialState(s.Agent, e)
@@ -609,15 +625,13 @@ func (m *model) render() {
 					}
 					result := toolResults[key]
 					if result != nil && s.Agent == "codex" {
-						if final, ok := agentview.ToolView(s.Agent, result.Text, result.Payload); ok {
+						if final, ok := m.cachedToolView(s.Agent, result); ok {
 							activity = final
 						}
 					}
-					text = indentBlock(toolActivityStateBody(activity, result, max(1, m.view.Width), state))
-					if activity.Kind == "command" && result == nil && e.RunId == s.RunId && m.activeWork() && toolOutput[key] != "" {
-						text += "\n" + liveOutputView(toolOutput[key], m.view.Width)
-					}
+					background := false
 					if task, ok := backgroundTools[key]; ok {
+						background = true
 						state = task.Status
 						if task.Active {
 							state = "working"
@@ -625,19 +639,14 @@ func (m *model) render() {
 						if !task.Active && (state == "working" || state == "running") {
 							state = "pending"
 						}
-						text = indentBlock(toolActivityStateBody(activity, nil, max(1, m.view.Width), state) + " · background")
+					}
+					text = indentBlock(m.cachedToolBody(s.Agent, e, activity, result, max(1, m.view.Width), state, background))
+					if !background && activity.Kind == "command" && result == nil && e.RunId == s.RunId && m.activeWork() && toolOutput[key] != "" {
+						text += "\n" + liveOutputView(toolOutput[key], m.view.Width)
 					}
 				}
 			}
-			if e.Kind == "tool_result" {
-				if _, ok := toolCalls[key]; ok {
-					continue
-				}
-			}
 			if e.Kind == "approval" {
-				if pairedApprovals[e] {
-					continue
-				}
 				state := decisions[e.RunId+"/"+e.RequestId]
 				if state == "" {
 					if m.hiddenAutoApproval(s, e) {
@@ -850,6 +859,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if handled, cmd := m.panelMouse(v); handled {
 			return m, cmd
 		}
+		m.focusConversationMouse(v)
 	}
 	if m.memoryPage != nil {
 		switch v := msg.(type) {
@@ -1024,7 +1034,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case modelCatalogLoaded:
 		return m, m.acceptModelCatalog(v)
 	case historyPage:
-		m.applyHistoryPage(v)
+		if !m.applyHistoryPage(v) {
+			return m, nil
+		}
 		background := m.loadBackgroundHistory(v)
 		if background != nil {
 			if m.backgroundLoading == nil {
@@ -1032,8 +1044,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.backgroundLoading[v.id] = true
 		}
-		if v.err == nil && m.view.TotalLineCount() <= m.view.Height {
-			return m, tea.Batch(m.loadOlderHistory(), background)
+		if v.err == nil && m.current() != nil && m.current().Id == v.id {
+			// Warm one older page immediately, then keep a viewport-sized runway.
+			return m, tea.Batch(m.requestOlderHistory(v.initial), background)
 		}
 		return m, background
 	case backgroundHistory:
@@ -1152,7 +1165,10 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 			m.view, _ = m.view.Update(v)
-			return m, m.loadOlderHistory()
+			if v.Button == tea.MouseButtonWheelUp || v.Button == tea.MouseButtonWheelDown {
+				return m, m.loadOlderHistory()
+			}
+			return m, nil
 		}
 		return m, nil
 	case renameResult:
@@ -1362,6 +1378,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if m.watchID == v.id {
 			m.watchID = ""
+			m.historyOpening = false
 			m.notice = "event connection lost; reconnecting from saved cursor"
 		}
 	case restartFinished:

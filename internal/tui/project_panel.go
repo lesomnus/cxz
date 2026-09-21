@@ -200,6 +200,24 @@ func (m *model) focusPanel() {
 	}
 }
 
+func (m *model) focusConversationMouse(v tea.MouseMsg) {
+	if !m.panelFocus || !m.panelVisible() || m.projectView || m.accountView || m.creating ||
+		m.workflow != nil || m.settingsPage != nil || m.memoryPage != nil || m.busy || m.deletingID != "" ||
+		v.Action != tea.MouseActionPress || v.Button != tea.MouseButtonLeft ||
+		v.X < m.contentOffset() || v.X >= m.contentOffset()+m.width || v.Y < 0 || v.Y >= m.height {
+		return
+	}
+	m.panelFocus, m.focusList, m.focusApproval = false, false, false
+	m.toolSelector = nil
+	if m.filePreview != nil {
+		m.filePreview.focused = false
+	}
+	if p := m.terminal(); p != nil {
+		p.focused = false
+	}
+	m.input.Focus()
+}
+
 func (m *model) panelKey(k tea.KeyMsg) tea.Cmd {
 	if k.Paste {
 		return nil

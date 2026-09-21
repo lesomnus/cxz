@@ -117,7 +117,11 @@ func (m *model) resize() {
 	// Populate its new content, then let the widget re-anchor its scroll offset.
 	_ = m.input.View()
 	m.input, _ = m.input.Update(nil)
-	m.view.Width = max(1, m.width-2)
+	viewWidth := max(1, m.width-2)
+	if m.view.Width != viewWidth {
+		m.renderedTools = nil
+	}
+	m.view.Width = viewWidth
 	// Blank separator + status (2), composer border (2), session information (1).
 	m.view.Height = max(1, m.height-m.input.Height()-5-m.approvalHeight()-m.terminalHeight()-m.previewHeight())
 	if p := m.terminal(); p != nil && p.session != nil && m.terminalHeight() > 0 {

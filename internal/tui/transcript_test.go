@@ -18,7 +18,7 @@ func TestTimestampedInput(t *testing.T) {
 		rows[i] = strings.TrimRight(rows[i], " ")
 	}
 	got = strings.Join(rows, "\n")
-	if got != "  09-12 02:34\n> Rolem..\n  Ipsum..." {
+	if got != "\n  09-12 02:34\n> Rolem..\n  Ipsum...\n" {
 		t.Fatalf("input formatting: %q", got)
 	}
 	got = ansi.Strip(eventView(&api.Session{}, &api.Event{Kind: "input", TimeMs: stamp, Text: strings.Repeat("한글", 20)}, 16))

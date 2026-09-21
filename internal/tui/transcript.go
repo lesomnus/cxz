@@ -43,15 +43,19 @@ func eventView(s *api.Session, e *api.Event, width int) (out string) {
 			stamp = time.UnixMilli(e.TimeMs).Local().Format("01-02 15:04")
 		}
 		text := strings.Split(ansi.Hardwrap(safeText(e.Text), max(1, width-2), true), "\n")
-		for i := range text {
+		rows := []string{"", timestamp.Render(clip("  "+stamp, width))}
+		for i, line := range text {
 			prefix := "  "
 			if i == 0 {
 				prefix = "> "
 			}
-			line := blue.Render(prefix + text[i])
-			text[i] = indexedBackground(line+strings.Repeat(" ", max(0, width-ansi.StringWidth(line))), 236)
+			rows = append(rows, blue.Render(prefix+line))
 		}
-		return timestamp.Render("  "+stamp) + "\n" + strings.Join(text, "\n")
+		rows = append(rows, "")
+		for i, line := range rows {
+			rows[i] = indexedBackground(line+strings.Repeat(" ", max(0, width-ansi.StringWidth(line))), 236)
+		}
+		return strings.Join(rows, "\n")
 	case "assistant":
 		name := strings.ToUpper(pickerLabel(safeText(s.Agent)))
 		style := lavender.Bold(true)
