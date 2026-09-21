@@ -233,16 +233,28 @@ func TestCommandsReachAPI(t *testing.T) {
 			t.Fatal("started preparation before validating account", got.Stderr)
 		}
 	}
-	unregistered.Store(true)
-	prepared := xlitest.Run(t, newRoot(root), "up", "--no-attach", "--format", "json", "project-name")
-	if prepared.Err != nil || mutations.Load() != 2 || len(stub.requests) != 0 {
-		t.Fatal("new project up must only Add/Up", prepared, mutations.Load())
-	}
-	mutations.Store(0)
-	for i := 0; i < 2; i++ {
-		got := xlitest.Run(t, newRoot(root), "up", "--no-attach", "--format", "json", "project-name")
-		if got.Err != nil || !strings.Contains(got.Stdout, `"id":"project-name"`) || len(stub.requests) != 0 || mutations.Load() != 0 {
-			t.Fatal("up created a session or required account", got)
+	for _, tc := range []struct {
+		args []string
+		want string
+	}{
+		{[]string{"up", "project-name"}, "Project \"project-name\" is ready.\nRun cxz to view projects and sessions in the TUI.\n"},
+		{[]string{"up", "--format", "json", "project-name"}, `"id":"project-name"`},
+		{[]string{"--format", "json", "up", "project-name"}, `"id":"project-name"`},
+		{[]string{"up", "--no-attach", "--format", "json", "project-name"}, `"id":"project-name"`},
+		{[]string{"up", "--no-attach", "project-name"}, "project-name"},
+		{[]string{"up", "--format", "table", "project-name"}, "project-name"},
+	} {
+		unregistered.Store(true)
+		for i := 0; i < 2; i++ {
+			mutations.Store(0)
+			got := xlitest.Run(t, newRoot(root), tc.args...)
+			wantMutations := int32(0)
+			if i == 0 {
+				wantMutations = 2 // Register and prepare only, without a session.
+			}
+			if got.Err != nil || !strings.Contains(got.Stdout, tc.want) || len(stub.requests) != 0 || mutations.Load() != wantMutations {
+				t.Fatalf("up %v (attempt %d): %+v; mutations %d", tc.args, i, got, mutations.Load())
+			}
 		}
 	}
 	run := func(args ...string) xlitest.Result {
