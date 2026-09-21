@@ -15,9 +15,11 @@ func (s *Server) History(ctx context.Context, r *api.WatchRequest) (*api.EventBa
 	if e != nil {
 		return nil, e
 	}
-	if _, e = s.snapshot(ctx, m); e != nil {
+	p, e := s.lockProjection(ctx, m)
+	if e != nil {
 		return nil, e
 	}
+	p.mu.Unlock()
 	rows, e := s.db.QueryContext(ctx, "SELECT data FROM events WHERE session_id=? AND seq>? ORDER BY seq LIMIT 128", r.SessionId, r.AfterSeq)
 	if e != nil {
 		return nil, e

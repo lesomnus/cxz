@@ -154,7 +154,8 @@ type model struct {
 	latestPrompt            string
 	pulse                   int
 	workingSince            int64
-	backgroundHistory       map[string][]*api.Event
+	backgroundSnapshots     map[string]backgroundSnapshot
+	watchContext            context.Context
 	backgroundLoading       map[string]bool
 	backgroundErrors        map[string]string
 	cursorOutput            *cursorWriter
@@ -382,6 +383,7 @@ func (m *model) watch() {
 	id := s.Id
 	ctx, cancel := context.WithCancel(m.ctx)
 	m.watchCancel = cancel
+	m.watchContext = ctx
 	m.watchID = id
 	m.watchEpoch++
 	epoch := m.watchEpoch
@@ -393,7 +395,8 @@ func (m *model) watch() {
 			if last > historyPageSize {
 				start = last - historyPageSize
 			}
-			batch, err := m.client.History(ctx, &api.WatchRequest{SessionId: id, AfterSeq: start})
+			started := time.Now()
+			batch, err := m.fetchHistory(ctx, id, start, "initial")
 			if err != nil {
 				if ctx.Err() == nil {
 					m.program.Send(disconnected{id, err})
@@ -406,12 +409,12 @@ func (m *model) watch() {
 			if ctx.Err() != nil {
 				return
 			}
-			m.program.Send(historyPage{id: id, events: batch.Events, start: start, initial: true, epoch: epoch})
+			m.program.Send(historyPage{id: id, events: batch.Events, start: start, initial: true, epoch: epoch, started: started})
 		}
 		// Replay the accumulated journal in pages, rendering once per page.
 		// Only the selected conversation is subscribed; other agents keep running.
 		for after < last {
-			batch, err := m.client.History(ctx, &api.WatchRequest{SessionId: id, AfterSeq: after})
+			batch, err := m.fetchHistory(ctx, id, after, "catch_up")
 			if err != nil {
 				if ctx.Err() == nil {
 					m.program.Send(disconnected{id, err})
@@ -1028,13 +1031,15 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if v.epoch != 0 && v.epoch != m.watchEpoch {
 			return m, nil
 		}
-		if m.backgroundHistory == nil {
-			m.backgroundHistory = map[string][]*api.Event{}
+		if m.backgroundSnapshots == nil {
+			m.backgroundSnapshots = map[string]backgroundSnapshot{}
 		}
 		if m.backgroundErrors == nil {
 			m.backgroundErrors = map[string]string{}
 		}
-		m.backgroundHistory[v.id] = v.events
+		if v.err == nil {
+			m.backgroundSnapshots[v.id] = v.snapshot
+		}
 		delete(m.backgroundLoading, v.id)
 		delete(m.backgroundErrors, v.id)
 		if v.err != nil {

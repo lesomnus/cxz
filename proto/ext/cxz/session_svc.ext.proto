@@ -18,6 +18,7 @@ service SessionService {
   rpc Reply(SessionReplyRequest) returns (SessionReceipt);
   // Journal replay is not payday Watch: it is cursor-ordered event history.
   rpc History(SessionEventsRequest) returns (SessionEventBatch);
+  rpc Background(SessionBackgroundRequest) returns (SessionBackgroundReply);
   rpc Events(SessionEventsRequest) returns (stream SessionEvent);
 }
 message SessionControl { SessionRef ref = 1; string run_id = 2; string client_id = 3; }
@@ -48,3 +49,6 @@ message SessionMemoryRequest { SessionRef ref = 1; string path = 2; }
 message SessionMemoryReply { bytes data = 1; }
 
 message SessionCopyMemoryRequest { SessionRef ref = 1; string path = 2; SessionRef target = 3; string target_path = 4; }
+
+message SessionBackgroundRequest { SessionRef ref = 1; }
+message SessionBackgroundReply { uint64 last_seq = 1; bytes data = 2; }

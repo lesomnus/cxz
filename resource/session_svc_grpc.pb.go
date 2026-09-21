@@ -39,6 +39,7 @@ const (
 	SessionService_UpdateAgent_FullMethodName = "/cxz.SessionService/UpdateAgent"
 	SessionService_Reply_FullMethodName       = "/cxz.SessionService/Reply"
 	SessionService_History_FullMethodName     = "/cxz.SessionService/History"
+	SessionService_Background_FullMethodName  = "/cxz.SessionService/Background"
 	SessionService_Events_FullMethodName      = "/cxz.SessionService/Events"
 )
 
@@ -84,6 +85,7 @@ type SessionServiceClient interface {
 	Reply(ctx context.Context, in *SessionReplyRequest, opts ...grpc.CallOption) (*SessionReceipt, error)
 	// Journal replay is not payday Watch: it is cursor-ordered event history.
 	History(ctx context.Context, in *SessionEventsRequest, opts ...grpc.CallOption) (*SessionEventBatch, error)
+	Background(ctx context.Context, in *SessionBackgroundRequest, opts ...grpc.CallOption) (*SessionBackgroundReply, error)
 	Events(ctx context.Context, in *SessionEventsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SessionEvent], error)
 }
 
@@ -304,6 +306,16 @@ func (c *sessionServiceClient) History(ctx context.Context, in *SessionEventsReq
 	return out, nil
 }
 
+func (c *sessionServiceClient) Background(ctx context.Context, in *SessionBackgroundRequest, opts ...grpc.CallOption) (*SessionBackgroundReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SessionBackgroundReply)
+	err := c.cc.Invoke(ctx, SessionService_Background_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *sessionServiceClient) Events(ctx context.Context, in *SessionEventsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SessionEvent], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	stream, err := c.cc.NewStream(ctx, &SessionService_ServiceDesc.Streams[1], SessionService_Events_FullMethodName, cOpts...)
@@ -365,6 +377,7 @@ type SessionServiceServer interface {
 	Reply(context.Context, *SessionReplyRequest) (*SessionReceipt, error)
 	// Journal replay is not payday Watch: it is cursor-ordered event history.
 	History(context.Context, *SessionEventsRequest) (*SessionEventBatch, error)
+	Background(context.Context, *SessionBackgroundRequest) (*SessionBackgroundReply, error)
 	Events(*SessionEventsRequest, grpc.ServerStreamingServer[SessionEvent]) error
 	mustEmbedUnimplementedSessionServiceServer()
 }
@@ -435,6 +448,9 @@ func (UnimplementedSessionServiceServer) Reply(context.Context, *SessionReplyReq
 }
 func (UnimplementedSessionServiceServer) History(context.Context, *SessionEventsRequest) (*SessionEventBatch, error) {
 	return nil, status.Error(codes.Unimplemented, "method History not implemented")
+}
+func (UnimplementedSessionServiceServer) Background(context.Context, *SessionBackgroundRequest) (*SessionBackgroundReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method Background not implemented")
 }
 func (UnimplementedSessionServiceServer) Events(*SessionEventsRequest, grpc.ServerStreamingServer[SessionEvent]) error {
 	return status.Error(codes.Unimplemented, "method Events not implemented")
@@ -813,6 +829,24 @@ func _SessionService_History_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SessionService_Background_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SessionBackgroundRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionServiceServer).Background(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SessionService_Background_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionServiceServer).Background(ctx, req.(*SessionBackgroundRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _SessionService_Events_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(SessionEventsRequest)
 	if err := stream.RecvMsg(m); err != nil {
@@ -906,6 +940,10 @@ var SessionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "History",
 			Handler:    _SessionService_History_Handler,
+		},
+		{
+			MethodName: "Background",
+			Handler:    _SessionService_Background_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

@@ -330,6 +330,10 @@ func TestLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	background, err := client.Background(ctx, &api.SessionRef{Id: id})
+	if err != nil || background.LastSeq < beforeCompact || !json.Valid(background.Data) {
+		t.Fatal("background snapshot RPC", background, err)
+	}
 	hello, quota := false, false
 	for _, event := range postCompact.Events {
 		if event.Kind == "input" && event.Text == "hello" {

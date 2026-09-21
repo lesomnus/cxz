@@ -21,7 +21,6 @@ import (
 
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/core"
-	"github.com/lesomnus/cxz/internal/journal"
 	"github.com/lesomnus/cxz/internal/quotashare"
 	"github.com/lesomnus/cxz/internal/settings"
 	"github.com/lesomnus/cxz/internal/supervisor"
@@ -43,6 +42,7 @@ type Server struct {
 	api.UnimplementedSessionsServer
 	mu                     sync.Mutex
 	projectionMu           sync.Mutex
+	projections            map[string]*sessionProjection
 	root, agent, configDir string
 	db                     *sql.DB
 	manager                *workspace.Manager
@@ -95,6 +95,7 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 		if e != nil {
 			return e
 		}
+		defer s.manager.Close()
 		broker, err := accounts.StartBroker(root, accounts.BrokerSocket, func(ctx context.Context, account string) error {
 			bin, err := distribution.Ensure(ctx, "/cxz/tools", "codex", "", true)
 			if err != nil {
@@ -293,41 +294,12 @@ func pbEvent(e core.Event) *api.Event {
 	return &api.Event{SessionId: e.SessionID, RunId: e.RunID, Seq: e.Seq, TimeMs: e.TimeMS, Kind: e.Kind, Text: e.Text, RequestId: e.RequestID, Payload: e.Payload}
 }
 func (s *Server) snapshot(ctx context.Context, m core.Session) (*api.Session, error) {
-	// Serialize read/advance so another reader cannot advance SQLite between this
-	// reader's journal snapshot and its sequence consistency check.
-	s.projectionMu.Lock()
-	defer s.projectionMu.Unlock()
-	events, e := journal.Read(filepath.Join(core.Dir(s.root, m.ID), "events.jsonl"))
-	if e != nil {
-		return nil, e
+	p, err := s.lockProjection(ctx, m)
+	if err != nil {
+		return nil, err
 	}
-	snap := supervisor.Replay(events)
-	var last uint64
-	if e = s.db.QueryRowContext(ctx, "SELECT COALESCE(MAX(seq),0) FROM events WHERE session_id=?", m.ID).Scan(&last); e != nil {
-		return nil, e
-	}
-	if last > uint64(len(events)) {
-		return nil, errors.New("journal is shorter than committed projection; refusing silent data loss")
-	}
-	if last < uint64(len(events)) {
-		tx, e := s.db.BeginTx(ctx, nil)
-		if e != nil {
-			return nil, e
-		}
-		defer tx.Rollback()
-		for _, v := range events[last:] {
-			b, e := json.Marshal(v)
-			if e != nil {
-				return nil, e
-			}
-			if _, e = tx.ExecContext(ctx, "INSERT OR IGNORE INTO events VALUES(?,?,?)", m.ID, v.Seq, b); e != nil {
-				return nil, e
-			}
-		}
-		if e = tx.Commit(); e != nil {
-			return nil, e
-		}
-	}
+	snap := p.snapshot
+	p.mu.Unlock()
 	var live core.Snapshot
 	if supervisor.Call(ctx, s.root, m.ID, "status", nil, &live) == nil {
 		snap = live

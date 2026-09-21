@@ -30,6 +30,8 @@ type Project struct {
 }
 type Runtime struct{ ProjectID, Workspace, Token, Claude, Codex string }
 type Manager struct {
+	historyMu                                                 sync.Mutex
+	historyClients                                            map[string]*historyConnection
 	dockerMu                                                  sync.Mutex
 	filesMu                                                   sync.Mutex
 	opsMu                                                     sync.Mutex

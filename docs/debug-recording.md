@@ -24,6 +24,13 @@ This is a diagnostic trace, not a screen video. While enabled, it records:
 - TUI event types, selected RPC error codes, update/render durations and rendered
   byte counts.
 - Transcript rebuild duration and row count (`transcript_render`).
+- History requests (`history_rpc`): purpose (`initial`, `older`, `catch_up`, or
+  `background`), request duration, event count, protobuf payload `bytes`, and
+  status code. Payload bytes exclude SSH/TCP framing and are not network traffic
+  measurements. Conversation content and identifiers are excluded.
+- Initial history request through first-page transcript rendering
+  (`history_first_render`), including message delivery to the UI. This is not
+  the time the terminal finishes displaying the page.
 - Actual terminal writes (`terminal_write`): total `duration_us`, serialization
   lock `wait_us`, underlying writer `io_us`, bytes written and an error category.
   Screen contents are excluded. Completion means the OS/writer accepted the

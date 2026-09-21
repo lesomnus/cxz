@@ -214,6 +214,14 @@ func (c *Client) History(ctx context.Context, r *api.WatchRequest, opts ...grpc.
 	return v, nil
 }
 
+func (c *Client) Background(ctx context.Context, r *api.SessionRef, opts ...grpc.CallOption) (*api.BackgroundReply, error) {
+	v, err := c.sessions.Background(ctx, resource.SessionBackgroundRequest_builder{Ref: sr(r.Id)}.Build(), opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &api.BackgroundReply{LastSeq: v.GetLastSeq(), Data: v.GetData()}, nil
+}
+
 func (c *Client) Permission(ctx context.Context, r *api.PermissionInput, opts ...grpc.CallOption) (*api.Receipt, error) {
 	return receipt(c.sessions.Permission(ctx, resource.SessionPermissionRequest_builder{Ref: sr(r.SessionId), RunId: &r.RunId, ClientId: &r.ClientId, Mode: &r.Mode}.Build(), opts...))
 }

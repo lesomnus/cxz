@@ -22,6 +22,7 @@ service Sessions {
   rpc Stop(Control) returns (Receipt);
   rpc Watch(WatchRequest) returns (stream Event);
   rpc History(WatchRequest) returns (EventBatch);
+  rpc Background(SessionRef) returns (BackgroundReply);
   rpc Open(ProjectRequest) returns (Session);
   rpc Projects(Empty) returns (ProjectList);
   rpc Down(ProjectRequest) returns (Receipt);
@@ -96,3 +97,5 @@ message MemoryRequest { string session_id = 1; string path = 2; }
 message MemoryReply { bytes data = 1; }
 
 message CopyMemoryRequest { string session_id = 1; string path = 2; string target_id = 3; string target_path = 4; }
+
+message BackgroundReply { uint64 last_seq = 1; bytes data = 2; }

@@ -478,6 +478,10 @@ packages. Definitions are in `proto/cxz`; lifecycle extensions are in
   `Resume/Send/Reply/Interrupt/Stop` controls their runs.
 - Resource `Watch` subscribes to explicit resource refs. `Events/History` is the
   separate, durable conversation journal with sequence cursors.
+- Runtime history reads incrementally project committed journal suffixes into
+  SQLite; complete manager cache pages avoid runtime RPCs. Background task state
+  uses one reduced snapshot instead of downloading old conversation pages.
+  See [resource refresh and conversation loading](docs/resource-refresh.md).
 
 Both resources are payday `global` entities: no fabricated tenant or user.
 Project Patch permits only name/alias/description with optimistic version checks.

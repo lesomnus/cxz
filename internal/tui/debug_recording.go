@@ -36,6 +36,7 @@ type debugState struct {
 	Chip         bool   `json:"chip_selected"`
 }
 type debugEvent struct {
+	Bytes      int               `json:"bytes,omitempty"`
 	Wait       int64             `json:"wait_us,omitempty"`
 	IO         int64             `json:"io_us,omitempty"`
 	Metrics    map[string]uint64 `json:"metrics,omitempty"`
