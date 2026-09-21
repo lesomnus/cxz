@@ -56,7 +56,7 @@ func TestRestartModalMouseAndNarrowLayout(t *testing.T) {
 			}
 			// Clicking outside, scrolling, and releasing a button must do nothing.
 			m.Update(tea.MouseMsg{X: 0, Y: 0, Button: tea.MouseButtonLeft, Action: tea.MouseActionPress})
-			m.Update(tea.MouseMsg{X: 2, Y: buttons[0].y, Button: tea.MouseButtonLeft, Action: tea.MouseActionRelease})
+			m.Update(tea.MouseMsg{X: m.contentOffset() + 2, Y: buttons[0].y, Button: tea.MouseButtonLeft, Action: tea.MouseActionRelease})
 			if m.restartConfirm == nil || len(c.calls) != 0 {
 				t.Fatal("unexpected effect")
 			}
@@ -64,7 +64,7 @@ func TestRestartModalMouseAndNarrowLayout(t *testing.T) {
 			if confirm {
 				b = buttons[0]
 			}
-			_, cmd := m.Update(tea.MouseMsg{X: b.x, Y: b.y, Button: tea.MouseButtonLeft, Action: tea.MouseActionPress})
+			_, cmd := m.Update(tea.MouseMsg{X: m.contentOffset() + b.x, Y: b.y, Button: tea.MouseButtonLeft, Action: tea.MouseActionPress})
 			if m.restartConfirm != nil || (cmd != nil) != confirm {
 				t.Fatal("button did not activate")
 			}

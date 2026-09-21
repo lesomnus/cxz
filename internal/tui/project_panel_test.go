@@ -43,12 +43,20 @@ func panelModel() *model {
 	return m
 }
 
-func TestWideViewCapAndBlankRemainder(t *testing.T) {
-	for _, width := range []int{80, 133, 150, 170, 171, 200, 300} {
+func TestResponsiveViewWidthsAndBlankRemainder(t *testing.T) {
+	for _, size := range []struct{ terminal, content, panel int }{
+		{40, 40, 0}, {69, 69, 0}, {70, 40, 28}, {80, 50, 28},
+		{100, 70, 28}, {133, 98, 33}, {144, 106, 36}, {150, 112, 36},
+		{170, 132, 36}, {171, 133, 36}, {200, 133, 36}, {300, 133, 36},
+	} {
+		width := size.terminal
 		m := panelModel()
 		m.Update(tea.WindowSizeMsg{Width: width, Height: 30})
-		if m.width != min(width, 133) || m.panelVisible() != (width >= 171) {
+		if m.width != size.content || m.panelVisible() != (size.panel > 0) {
 			t.Fatal("wrong breakpoint", width)
+		}
+		if size.panel > 0 && m.contentOffset() != size.panel+2 {
+			t.Fatal("wrong panel width or gap", width, m.contentOffset())
 		}
 		for _, view := range []string{"session", "project", "accounts"} {
 			m.projectView = view == "project"
@@ -133,6 +141,9 @@ func TestProjectNavigatorPreservesFocusAcrossResponsiveLayouts(t *testing.T) {
 	m := panelModel()
 	m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m.input.SetValue("unfinished draft")
+	if view := ansi.Strip(m.View()); !strings.Contains(view, "Projects") || !strings.Contains(view, "unfinished draft") || !m.input.Focused() {
+		t.Fatal("compact panel must remain visible while composing", view)
+	}
 	canceled := false
 	m.watchCancel = func() { canceled = true }
 	m.Update(tea.KeyMsg{Type: tea.KeyCtrlQ})
@@ -145,7 +156,7 @@ func TestProjectNavigatorPreservesFocusAcrossResponsiveLayouts(t *testing.T) {
 		}
 	}
 	selected := m.panelRows()[m.panelIndex].key()
-	for _, width := range []int{80, 200, 150, 171, 80} {
+	for _, width := range []int{80, 200, 69, 70, 150, 171, 80} {
 		m.Update(tea.WindowSizeMsg{Width: width, Height: 30})
 		if !m.panelFocus || m.input.Focused() || m.panelRows()[m.panelIndex].key() != selected || m.current().Id != "s" || m.input.Value() != "unfinished draft" {
 			t.Fatal("resize lost navigation state", width)
@@ -154,8 +165,8 @@ func TestProjectNavigatorPreservesFocusAcrossResponsiveLayouts(t *testing.T) {
 		if !strings.Contains(view, "Projects") || !strings.Contains(view, "maple") {
 			t.Fatal("missing shared navigator", width)
 		}
-		if width < 171 && strings.Contains(view, "unfinished draft") {
-			t.Fatal("composer visible under full-screen navigator")
+		if strings.Contains(view, "unfinished draft") != (width >= 70) {
+			t.Fatal("conversation visibility does not match available space", width)
 		}
 		for _, row := range strings.Split(view, "\n") {
 			if ansi.StringWidth(row) != width {
@@ -220,7 +231,7 @@ func (c *navigatorClient) DeleteSession(_ context.Context, id string) error {
 }
 
 func TestNavigatorActionsUseSelectedSessionAndProject(t *testing.T) {
-	for _, width := range []int{80, 200} {
+	for _, width := range []int{69, 80, 200} {
 		m := panelModel()
 		m.Update(tea.WindowSizeMsg{Width: width, Height: 30})
 		m.focusPanel()
@@ -282,7 +293,7 @@ func TestProjectNavigatorHasBackgroundAndOnlyFocusedSideBottomRule(t *testing.T)
 	lipgloss.SetColorProfile(termenv.TrueColor)
 	defer lipgloss.SetColorProfile(profile)
 	m := panelModel()
-	for _, width := range []int{80, 200} {
+	for _, width := range []int{69, 80, 200} {
 		m.Update(tea.WindowSizeMsg{Width: width, Height: 30})
 		for _, focus := range []bool{false, true} {
 			m.panelFocus = focus
@@ -291,7 +302,7 @@ func TestProjectNavigatorHasBackgroundAndOnlyFocusedSideBottomRule(t *testing.T)
 			if strings.ContainsAny(plain, "╭╮╰╯│") {
 				t.Fatal("outer border remains")
 			}
-			if strings.Contains(plain, "─") != (width == 200 && focus) {
+			if strings.Contains(plain, "─") != (width >= 70 && focus) {
 				t.Fatal("incorrect focus rule")
 			}
 			if !strings.Contains(rendered, "48;2;48;48;48") {
@@ -305,19 +316,19 @@ func TestNavigatorBackgroundCoversEveryTerminalCell(t *testing.T) {
 	profile := lipgloss.ColorProfile()
 	lipgloss.SetColorProfile(termenv.TrueColor)
 	defer lipgloss.SetColorProfile(profile)
-	for _, width := range []int{80, 150, 200} {
+	for _, width := range []int{69, 80, 150, 200} {
 		for _, focused := range []bool{false, true} {
 			m := panelModel()
 			m.Update(tea.WindowSizeMsg{Width: width, Height: 30})
 			m.panelFocus = focused
-			if width < 171 {
+			if width < 70 {
 				m.projectView = true
 			}
 			terminal := vt.NewEmulator(width, m.height)
 			terminal.WriteString(strings.ReplaceAll(m.View(), "\n", "\r\n"))
-			panelWidth := width
-			if width >= 171 {
-				panelWidth = projectPanelWidth
+			panelWidth := m.panelWidth()
+			if width < 70 {
+				panelWidth = width
 			}
 			for y := 0; y < m.height; y++ {
 				for x := 0; x < panelWidth; x++ {
@@ -331,8 +342,8 @@ func TestNavigatorBackgroundCoversEveryTerminalCell(t *testing.T) {
 					}
 				}
 			}
-			if width >= 171 {
-				if cell := terminal.CellAt(projectPanelWidth, 0); cell != nil && cell.Style.Bg != nil {
+			if panelWidth < width {
+				if cell := terminal.CellAt(panelWidth, 0); cell != nil && cell.Style.Bg != nil {
 					t.Fatal("panel background leaked into gap")
 				}
 			}

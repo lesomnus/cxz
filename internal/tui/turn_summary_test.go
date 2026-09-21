@@ -70,7 +70,7 @@ func TestConversationAlignmentAndSummaryPlacement(t *testing.T) {
 		{Kind: "turn_end", Text: "completed", TimeMs: 2500, Payload: []byte(`{"costUSD":0.1}`)},
 	}
 	m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
-	text := ansi.Strip(m.View())
+	text := ansi.Strip(m.sessionScreen())
 	if !strings.Contains(text, "\n> prompt") {
 		t.Fatal("prompt left margin remains", text)
 	}

@@ -225,7 +225,7 @@ func TestQuotaFooterAndStaleness(t *testing.T) {
 	for _, width := range []int{40, 80, 140} {
 		m.Update(tea.WindowSizeMsg{Width: width, Height: 24})
 		rows := strings.Split(m.View(), "\n")
-		footer := ansi.Strip(ansi.Cut(rows[len(rows)-1], 0, min(width, maxViewWidth)))
+		footer := ansi.Strip(ansi.Cut(rows[len(rows)-1], m.contentOffset(), m.contentOffset()+m.width))
 		if ansi.StringWidth(rows[len(rows)-1]) != width || !strings.HasSuffix(footer, " ") || strings.HasSuffix(footer, "  ") {
 			t.Fatal("footer not right aligned")
 		}

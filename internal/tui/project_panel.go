@@ -17,6 +17,7 @@ import (
 
 const maxViewWidth = 133
 const projectPanelWidth = 36
+const minProjectPanelWidth = 28
 const projectPanelGap = 2
 
 type panelRow struct {
@@ -50,11 +51,14 @@ func (m *model) initializeNavigation(project *api.Project, id string) {
 }
 
 func (m *model) panelVisible() bool {
-	return m.terminalWidth >= maxViewWidth+projectPanelWidth+projectPanelGap && m.height >= 14
+	return m.terminalWidth >= 40+minProjectPanelWidth+projectPanelGap && m.height >= 14
+}
+func (m *model) panelWidth() int {
+	return min(projectPanelWidth, max(minProjectPanelWidth, m.terminalWidth/4))
 }
 func (m *model) contentOffset() int {
 	if m.panelVisible() {
-		return projectPanelWidth + projectPanelGap
+		return m.panelWidth() + projectPanelGap
 	}
 	return 0
 }
@@ -297,7 +301,7 @@ func panelBackground(line string) string {
 }
 
 func (m *model) panelScreen() string {
-	width := projectPanelWidth
+	width := m.panelWidth()
 	if !m.panelVisible() {
 		width = m.width
 		if m.terminalWidth > 0 {
@@ -357,7 +361,7 @@ func (m *model) panelScreen() string {
 	if m.panelError != "" {
 		status = m.panelError
 	}
-	lines = append(lines, muted.Render("n new · a accounts"), muted.Render("s stop · d delete"), muted.Render("m memory · Ctrl+P settings"), muted.Render("Esc/Ctrl+Q return · Ctrl+C detach"), muted.Render("Agents keep running"), warning.Render(pickerLabel(status)))
+	lines = append(lines, muted.Render("n new · a accounts"), muted.Render("s stop · d delete"), muted.Render("m memory · Ctrl+P settings"), muted.Render("Esc/Ctrl+Q return"), muted.Render("Ctrl+C detach · agents run"), warning.Render(pickerLabel(status)))
 	for len(lines) < m.height {
 		lines = append(lines, "")
 	}
