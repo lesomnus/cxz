@@ -335,7 +335,7 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 	}
 	return projectTUI(ctx, resources, c, p, s.Id, request.TrustConfig)
 }
-func attach(ctx context.Context, client api.SessionsClient, arg string) error {
+func attach(ctx context.Context, client api.SessionsClient, command *xli.Command, arg string) error {
 	c, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
 	list, e := client.List(c, &api.Empty{})
@@ -345,7 +345,7 @@ func attach(ctx context.Context, client api.SessionsClient, arg string) error {
 	projectID := ""
 	for _, s := range list.Sessions {
 		if arg != "" && s.Alias == arg {
-			return tui.RunSelected(ctx, client, s.Id)
+			return localTUI(ctx, client, command, s.Id)
 		}
 	}
 	if arg != "" {
@@ -378,9 +378,9 @@ func attach(ctx context.Context, client api.SessionsClient, arg string) error {
 		return fmt.Errorf("ambiguous session; use a session id from cxz session ls")
 	}
 	if len(matches) > 1 && arg == "" && os.Getenv("CXZ_PROJECT_ID") == "" {
-		return tui.Run(ctx, client)
+		return localTUI(ctx, client, command, "")
 	}
-	return tui.RunSelected(ctx, client, matches[0].Id)
+	return localTUI(ctx, client, command, matches[0].Id)
 }
 
 func projectExec(ctx context.Context, client api.SessionsClient, c *xli.Command) error {

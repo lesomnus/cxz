@@ -135,8 +135,8 @@ func newRoot(state string) *xli.Command {
 				return err
 			}
 			return next(context.WithValue(ctx, stateKey{}, path))
-		}), withClient(func(ctx context.Context, client api.SessionsClient, _ *xli.Command) error {
-			return tui.Run(ctx, client)
+		}), withClient(func(ctx context.Context, client api.SessionsClient, c *xli.Command) error {
+			return localTUI(ctx, client, c, "")
 		})),
 	}
 	root.Commands = xli.Commands{
@@ -165,10 +165,10 @@ func newRoot(state string) *xli.Command {
 	root.Commands = append(root.Commands, accountInternalCommands()...)
 	root.Commands = append(root.Commands,
 		&xli.Command{Name: "attach", Aliases: []string{"it"}, Brief: "Attach TUI to session/project", Args: arg.Args{projectArg("TARGET", true)}, Handler: withClient(func(ctx context.Context, client api.SessionsClient, c *xli.Command) error {
-			return attach(ctx, client, arg.MustGet[string](c, "TARGET"))
+			return attach(ctx, client, c, arg.MustGet[string](c, "TARGET"))
 		})},
-		&xli.Command{Name: "tui", Aliases: []string{"watch"}, Brief: "Open multi-project TUI", Handler: withClient(func(ctx context.Context, client api.SessionsClient, _ *xli.Command) error {
-			return tui.Run(ctx, client)
+		&xli.Command{Name: "tui", Aliases: []string{"watch"}, Brief: "Open multi-project TUI", Handler: withClient(func(ctx context.Context, client api.SessionsClient, c *xli.Command) error {
+			return localTUI(ctx, client, c, "")
 		})},
 	)
 	for _, name := range []string{"shell", "exec"} {
