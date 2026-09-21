@@ -78,8 +78,9 @@ jobs:
           $name = 'cxz-edge-windows-amd64.zip'
           $archive = Join-Path $work $name
           Invoke-WebRequest "$base/$name" -OutFile $archive
-          $sums = (Invoke-WebRequest "$base/SHA256SUMS").Content
-          $expected = ($sums -split "`n" | Where-Object { $_.EndsWith("  $name") }) -split '\s+'
+          $sums = Join-Path $work 'SHA256SUMS'
+          Invoke-WebRequest "$base/SHA256SUMS" -OutFile $sums
+          $expected = (Get-Content $sums | Where-Object { $_.EndsWith("  $name") }) -split '\s+'
           if ((Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected[0]) {
             throw 'Bootstrap archive checksum mismatch'
           }
