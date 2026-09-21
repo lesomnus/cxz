@@ -45,7 +45,7 @@ func (m *model) requestOlderHistory(warm bool) tea.Cmd {
 	}
 	// Start several screens before the loaded edge, leaving time for remote I/O
 	// and Markdown preparation while the user continues scrolling locally.
-	if !warm && m.view.YOffset > 6*m.view.Height {
+	if !warm && !m.historyOpening[s.Id] && m.view.YOffset > 6*m.view.Height {
 		return nil
 	}
 	id, end := s.Id, m.historyStart[s.Id]
@@ -126,10 +126,8 @@ func (m *model) applyHistoryPage(page historyPage) bool {
 	if !page.initial && page.end != m.historyStart[page.id] {
 		return false
 	}
-	if page.initial && m.watchID == page.id {
-		m.historyOpening = false
-	}
 	if page.err != nil {
+		delete(m.historyOpening, page.id)
 		m.notice = "History: " + page.err.Error()
 		return true
 	}
@@ -178,8 +176,9 @@ func (m *model) applyHistoryPage(page historyPage) bool {
 	}
 	if s := m.current(); s != nil && s.Id == page.id {
 		height, offset := m.view.TotalLineCount(), m.view.YOffset
+		opening := m.historyOpening[page.id]
 		m.render()
-		if page.initial {
+		if page.initial || opening {
 			m.view.GotoBottom()
 			if !page.started.IsZero() {
 				m.debugRecorder.Add(debugEvent{Kind: "history_first_render", Duration: time.Since(page.started).Microseconds(), Count: len(page.events)})

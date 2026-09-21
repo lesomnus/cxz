@@ -143,7 +143,8 @@ func TestInitialHistorySkeletonLifecycle(t *testing.T) {
 		for _, width := range []int{40, 80, 200} {
 			m := conversationModel()
 			m.Update(tea.WindowSizeMsg{Width: width, Height: 24})
-			m.historyOpening, m.watchID, m.watchEpoch = true, "s", 2
+			m.historyOpening = map[string]bool{"s": true}
+			m.watchID, m.watchEpoch = "s", 2
 			before := m.conversationView()
 			if !strings.Contains(ansi.Strip(before), "Loading conversation") || strings.Contains(before, "Start a conversation") {
 				t.Fatal("missing initial skeleton")
@@ -162,17 +163,127 @@ func TestInitialHistorySkeletonLifecycle(t *testing.T) {
 				}
 			}
 			m.applyHistoryPage(historyPage{id: "s", initial: true, epoch: 1})
-			if !m.historyOpening {
+			if !m.historyOpening["s"] {
 				t.Fatal("stale watcher cleared the skeleton")
 			}
 			m.applyHistoryPage(historyPage{id: "s", initial: true, epoch: 2, events: []*api.Event{{Seq: 1, Kind: "assistant", Text: "Loaded answer"}}})
-			if m.historyOpening || !strings.Contains(m.conversationView(), "Loaded answer") {
+			if m.historyOpening["s"] || !strings.Contains(m.conversationView(), "Loaded answer") {
 				t.Fatal("skeleton did not yield to loaded content")
 			}
-			m.historyOpening = true
+			m.historyOpening["s"] = true
 			m.Update(disconnected{id: "s", err: errors.New("offline")})
-			if m.historyOpening {
+			if m.historyOpening["s"] {
 				t.Fatal("failed initial load left the skeleton active")
+			}
+		}
+	}
+}
+
+func TestHistorySkeletonWaitsThroughBookkeepingPages(t *testing.T) {
+	m := conversationModel()
+	m.historyOpening = map[string]bool{"s": true}
+	m.watchID, m.watchEpoch = "s", 2
+	// An event queued by an earlier watcher must not expose the empty transcript.
+	m.Update(received{id: "s", event: &api.Event{Seq: 513, Kind: "usage"}})
+	if !strings.Contains(m.conversationView(), "Loading conversation") {
+		t.Fatal("a queued bookkeeping event replaced the skeleton")
+	}
+	var tail []*api.Event
+	for seq := uint64(385); seq <= 512; seq++ {
+		tail = append(tail, &api.Event{Seq: seq, Kind: "state", Text: "idle"})
+	}
+	m.Update(historyPage{id: "s", initial: true, epoch: 2, start: 384, events: tail})
+	if !m.historyOpening["s"] || m.historyLoading["s"] != 384 || !strings.Contains(m.conversationView(), "Loading conversation") {
+		t.Fatal("an invisible tail page ended loading before any conversation arrived")
+	}
+	var updates []*api.Event
+	for seq := uint64(257); seq <= 384; seq++ {
+		updates = append(updates, &api.Event{Seq: seq, Kind: "update", Text: "agent update completed"})
+	}
+	m.Update(historyPage{id: "s", end: 384, start: 256, events: updates})
+	if m.view.YOffset <= 6*m.view.Height {
+		t.Fatal("fixture must exceed the normal prefetch runway")
+	}
+	if !m.historyOpening["s"] || m.historyLoading["s"] != 256 || !strings.Contains(m.conversationView(), "Loading conversation") {
+		t.Fatal("visible bookkeeping stopped loading or replaced the skeleton")
+	}
+	m.Update(historyPage{id: "s", end: 256, start: 128, events: []*api.Event{{Seq: 256, Kind: "assistant", Text: "Actual conversation"}}})
+	if m.historyOpening["s"] || !m.view.AtBottom() || m.historyLoading["s"] != 0 || m.cursor["s"] != 513 {
+		t.Fatal("conversation arrival did not end opening at the latest position or stop eager paging")
+	}
+	m.view.GotoTop()
+	if !strings.Contains(m.conversationView(), "Actual conversation") {
+		t.Fatal("loaded conversation was not revealed")
+	}
+}
+
+func TestHistoryOpeningSurvivesSessionSwitch(t *testing.T) {
+	m := conversationModel()
+	m.sessions = append(m.sessions, &api.Session{Id: "other", Agent: "claude"})
+	m.historyOpening = map[string]bool{"s": true}
+	m.watchID, m.watchEpoch = "s", 2
+	m.Update(historyPage{id: "s", initial: true, epoch: 2, start: 256, events: []*api.Event{{Seq: 384, Kind: "state"}}})
+	m.selected, m.watchID = 1, "other"
+	m.Update(historyPage{id: "s", start: 128, end: 256, events: []*api.Event{{Seq: 256, Kind: "state"}}})
+	m.render()
+	if strings.Contains(m.conversationView(), "Loading conversation") || m.historyLoading["s"] != 0 {
+		t.Fatal("inactive session affected the selected conversation or kept fetching")
+	}
+	m.selected, m.watchID = 0, "s"
+	m.render()
+	m.Update(tick(time.Now()))
+	if !strings.Contains(m.conversationView(), "Loading conversation") || m.historyLoading["s"] != 128 {
+		t.Fatal("returning to an unfinished history load did not resume the skeleton and paging")
+	}
+}
+
+func TestHistoryOpeningEndsOnExhaustionOrError(t *testing.T) {
+	for _, fail := range []bool{false, true} {
+		m := conversationModel()
+		m.historyOpening = map[string]bool{"s": true}
+		m.watchID, m.watchEpoch = "s", 2
+		m.Update(historyPage{id: "s", initial: true, epoch: 2, start: 128, events: []*api.Event{{Seq: 256, Kind: "state"}}})
+		page := historyPage{id: "s", start: 0, end: 128, events: []*api.Event{{Seq: 128, Kind: "state"}}}
+		if fail {
+			page.err = errors.New("offline")
+		}
+		m.Update(page)
+		if m.historyOpening["s"] || strings.Contains(m.conversationView(), "Loading conversation") || m.historyLoading["s"] != 0 {
+			t.Fatal("exhaustion or failure left the skeleton active")
+		}
+		if fail && !strings.Contains(m.notice, "offline") {
+			t.Fatal("history error was not surfaced")
+		}
+		if !fail && !strings.Contains(m.conversationView(), "Start a conversation") {
+			t.Fatal("an empty journal did not yield to the empty conversation view")
+		}
+	}
+}
+
+func TestHistorySkeletonUsesThreeCompactParagraphs(t *testing.T) {
+	profile := lipgloss.ColorProfile()
+	defer lipgloss.SetColorProfile(profile)
+	for _, colors := range []termenv.Profile{termenv.Ascii, termenv.ANSI256} {
+		lipgloss.SetColorProfile(colors)
+		for _, width := range []int{40, 80, 200} {
+			rows := strings.Split(historySkeleton(width, 60, 1), "\n")
+			paragraphs, bars := 0, 0
+			previous := false
+			for y, row := range rows {
+				bar := strings.Contains(row, "░") || strings.Contains(row, "\x1b[48;5;235m")
+				if bar {
+					bars++
+					if !previous {
+						paragraphs++
+					}
+					if y >= 13 || ansi.StringWidth(row) > min(width, 66) {
+						t.Fatal("skeleton filled the viewport instead of a compact area at the top")
+					}
+				}
+				previous = bar
+			}
+			if paragraphs != 3 || bars != 9 || len(rows) != 60 {
+				t.Fatalf("skeleton layout: %d paragraphs, %d bars, %d viewport rows", paragraphs, bars, len(rows))
 			}
 		}
 	}
