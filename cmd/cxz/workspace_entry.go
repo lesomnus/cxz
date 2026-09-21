@@ -22,11 +22,11 @@ import (
 
 func workspaceEntryCommands() xli.Commands {
 	up := newProjectCommand("up")
-	up.Brief = "Prepare workspace and focus its project in the project list (no session created)"
+	up.Brief = "Prepare workspace and print TUI guidance (no session created)"
 	var flags flg.Flags
 	for _, f := range up.Flags {
 		if f.Info().Name == "no-attach" {
-			f.(*flg.Switch).Brief = "Print project data without opening TUI (see --format)"
+			f.(*flg.Switch).Brief = "Print project data instead of TUI guidance (see --format)"
 		}
 		if f.Info().Name != "account" && f.Info().Name != "model" {
 			flags = append(flags, f)
@@ -38,6 +38,22 @@ func workspaceEntryCommands() xli.Commands {
 	down.Args[0].(*arg.String).Default = ptr(".")
 	it.Args[0].(*arg.String).Default = ptr(".")
 	return xli.Commands{up, down, it}
+}
+
+func workspaceReady(c *xli.Command, p *api.Project) error {
+	if flg.MustGet[bool](c, "no-attach") {
+		return writeOutput(c, p)
+	}
+	for cur := c; ; cur = cur.Parent() {
+		if _, set := flg.Get[string](cur, "format"); set {
+			return writeOutput(c, p)
+		}
+		if !cur.HasParent() {
+			break
+		}
+	}
+	_, err := fmt.Fprintf(c.Writer, "Project %q is ready.\nRun cxz to view projects and sessions in the TUI.\n", p.Name)
+	return err
 }
 
 func workspaceEntry(ctx context.Context, client api.SessionsClient, c *xli.Command) error {
@@ -72,7 +88,7 @@ func workspaceEntry(ctx context.Context, client api.SessionsClient, c *xli.Comma
 	}
 	sessions := tui.ProjectSessions(list.Sessions, p)
 	if len(sessions) == 0 {
-		return fmt.Errorf("project has no sessions; run cxz up and press n in the project list to create one")
+		return fmt.Errorf("project has no sessions; run cxz and press n in the project list to create one")
 	}
 	return projectTUI(ctx, resources, c, p, sessions[0].Id, false)
 }

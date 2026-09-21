@@ -17,7 +17,8 @@ CGO_ENABLED=0 go build -o bin/cxz ./cmd/cxz
 bin/cxz install --workspace-root /absolute/directory/containing/your/projects
 bin/cxz account add codex personal-codex
 bin/cxz account login personal-codex   # central Codex login; no project needed
-bin/cxz up .                          # project list focused on this workspace; n creates a session
+bin/cxz up .                          # prepare the project container and return
+bin/cxz                               # open the project list; n creates a session
 ```
 
 `install` builds and starts a background Docker manager, waits for its API, and
@@ -30,6 +31,8 @@ The directory must exist under the installed root. `session new .` uses its
 a base Debian devcontainer with non-root `vscode` user. Multiple configurations
 prompt in a terminal; scripts pass `--config`. Image, Dockerfile, Compose,
 features and hooks delegate to the official devcontainer CLI.
+See [project Compose overrides](docs/devcontainer-overrides.md) for additional
+host mounts and the distinction from shared Docker engine settings.
 
 Register separate profiles for personal/company subscriptions:
 
@@ -145,8 +148,8 @@ ownership or remap an existing user's UID. Adjust the devcontainer for a host UI
 other than the default image's 1000 when necessary.
 
 ```sh
-bin/cxz up .                               # project information + session list
-bin/cxz up --no-attach --format json .      # prepare project only; no Account required
+bin/cxz up .                               # prepare project, then print TUI guidance
+bin/cxz up --format json .                 # prepare project and print data; no Account required
 bin/cxz it .                               # newest session in this workspace
 bin/cxz session new --account work-codex .  # new conversation; stop an active one first
 bin/cxz session attach PROJECT             # or SESSION_ID
@@ -261,8 +264,8 @@ resource database and survives server/container restarts; back up state volumes.
 | Ctrl+C | Detach; agent continues |
 
 The project list provides n (new session), a (accounts), s (stop) and d (delete).
-`cxz up` focuses the current workspace in this list. Project rows lead to their
-sessions; there is no separate project dashboard. The conversation view
+`cxz up` prepares the workspace and returns; run `cxz` to open this list.
+Project rows lead to their sessions; there is no separate project dashboard. The conversation view
 keeps tool activity above a growing, rounded message editor. Drafts are retained
 per session while this TUI is open, including trips back to the project list.
 Escape does not discard a conversation draft. The composer and its borders keep

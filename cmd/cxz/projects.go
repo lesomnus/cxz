@@ -153,10 +153,7 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 			if err = installer.SyncGitHub(ctx, stateFrom(ctx), c.ErrWriter, p); err != nil {
 				return err
 			}
-			if flg.MustGet[bool](c, "no-attach") || !terminal(c) {
-				return writeOutput(c, p)
-			}
-			return projectTUI(ctx, resources, c, p, "", flg.MustGet[bool](c, "trust-config"))
+			return workspaceReady(c, p)
 		}
 	}
 	if command == "down" {
@@ -301,10 +298,7 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 		if err != nil {
 			return err
 		}
-		if detach || !terminal(c) {
-			return writeOutput(c, p)
-		}
-		return projectTUI(ctx, resources, c, p, "", request.TrustConfig)
+		return workspaceReady(c, p)
 	}
 	s, e := openWithProjectLogin(call, request, terminal(c) && !exitOnError(c), func(ctx context.Context, r *api.ProjectRequest) (*api.Session, error) {
 		return withConfigTrust(ctx, r, interactiveErrors(c), func(ctx context.Context, r *api.ProjectRequest) (*api.Session, error) {
