@@ -10,7 +10,7 @@ type BackgroundTask struct {
 	Status      string `json:"status"`
 	Summary     string `json:"summary"`
 	OutputFile  string `json:"output_file"`
-	Active      bool   `json:"-"`
+	Active      bool   `json:"active"`
 }
 
 type backgroundEvent struct {

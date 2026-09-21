@@ -2,7 +2,11 @@ package tui
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 	"sort"
 	"strings"
 	"time"
@@ -13,41 +17,41 @@ import (
 )
 
 type backgroundHistory struct {
-	id     string
-	epoch  uint64
-	events []*api.Event
-	err    error
+	id       string
+	epoch    uint64
+	snapshot backgroundSnapshot
+	err      error
 }
 
-// Backfill telemetry only: old transcript rows remain lazily loaded.
+type backgroundSnapshot struct {
+	lastSeq uint64
+	states  map[string]*agentview.BackgroundState
+}
+
+// One reduced snapshot replaces paging through the entire transcript. Older
+// servers report unavailable telemetry instead of silently starting a full replay.
 func (m *model) loadBackgroundHistory(p historyPage) tea.Cmd {
 	if !p.initial || p.start == 0 || p.err != nil || (p.epoch != 0 && p.epoch != m.watchEpoch) {
 		return nil
 	}
+	parent := m.watchContext
+	if parent == nil {
+		parent = m.ctx
+	}
 	return func() tea.Msg {
-		ctx, cancel := context.WithTimeout(m.ctx, 30*time.Second)
+		ctx, cancel := context.WithTimeout(parent, 10*time.Second)
 		defer cancel()
 		out := backgroundHistory{id: p.id, epoch: p.epoch}
-		for end := p.start; end > 0; {
-			start := uint64(0)
-			if end > historyPageSize {
-				start = end - historyPageSize
-			}
-			batch, err := m.client.History(ctx, &api.WatchRequest{SessionId: p.id, AfterSeq: start})
-			if err != nil {
-				out.err = err
-				return out
-			}
-			if batch == nil || len(batch.Events) == 0 {
-				out.err = fmt.Errorf("journal page unavailable")
-				return out
-			}
-			for _, e := range batch.Events {
-				if e.Seq > start && e.Seq <= end && e.Kind == "background" {
-					out.events = append(out.events, e)
-				}
-			}
-			end = start
+		started := time.Now()
+		reply, err := m.client.Background(ctx, &api.SessionRef{Id: p.id})
+		m.debugRecorder.Add(debugEvent{Kind: "history_rpc", Type: "background", Duration: time.Since(started).Microseconds(), Bytes: proto.Size(reply), ErrorCode: status.Code(err).String()})
+		if status.Code(err) == codes.Unimplemented {
+			err = fmt.Errorf("background snapshot unavailable: update the manager and project runtime")
+		}
+		out.err = err
+		if err == nil && reply != nil {
+			out.snapshot.lastSeq = reply.LastSeq
+			out.err = json.Unmarshal(reply.Data, &out.snapshot.states)
 		}
 		return out
 	}
@@ -59,9 +63,20 @@ func (m *model) backgroundStates() map[string]*agentview.BackgroundState {
 	if s == nil {
 		return out
 	}
-	events := append([]*api.Event{}, m.backgroundHistory[s.Id]...)
+	snapshot := m.backgroundSnapshots[s.Id]
+	for run, state := range snapshot.states {
+		if state == nil {
+			continue
+		}
+		copy := &agentview.BackgroundState{Snapshot: state.Snapshot, Tasks: map[string]agentview.BackgroundTask{}}
+		for id, task := range state.Tasks {
+			copy.Tasks[id] = task
+		}
+		out[run] = copy
+	}
+	var events []*api.Event
 	for _, e := range m.events[s.Id] {
-		if e.Kind == "background" {
+		if e.Kind == "background" && (e.Seq == 0 || e.Seq > snapshot.lastSeq) {
 			events = append(events, e)
 		}
 	}
@@ -88,7 +103,7 @@ func (m *model) backgroundStatus() string {
 	state := m.backgroundStates()[s.RunId]
 	if state == nil {
 		if m.backgroundLoading[s.Id] {
-			return muted.Render("background · loading history · /background")
+			return muted.Render("background · loading state · /background")
 		}
 		return ""
 	}
@@ -136,10 +151,10 @@ func (m *model) backgroundReport() string {
 		}
 	}
 	if m.backgroundLoading[s.Id] {
-		lines = append(lines, "", "Loading older task telemetry…")
+		lines = append(lines, "", "Loading background task state…")
 	}
 	if err := m.backgroundErrors[s.Id]; err != "" {
-		lines = append(lines, "", "Older telemetry incomplete: "+err)
+		lines = append(lines, "", "Background state unavailable: "+err)
 	}
 	return strings.Join(append(lines, "", "Output paths are metadata only; files are not fetched. Raw events remain in the journal."), "\n")
 }

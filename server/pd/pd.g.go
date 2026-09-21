@@ -3670,6 +3670,11 @@ func (s interceptSession) History(ctx context.Context, req *resource.SessionEven
 		resource.SessionService_History_FullMethodName, req, s.SessionServiceServer.History)
 }
 
+func (s interceptSession) Background(ctx context.Context, req *resource.SessionBackgroundRequest) (*resource.SessionBackgroundReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
+		resource.SessionService_Background_FullMethodName, req, s.SessionServiceServer.Background)
+}
+
 func (s interceptSession) Events(req *resource.SessionEventsRequest, out grpc.ServerStreamingServer[resource.SessionEvent]) error {
 	return grpcx.RunStream(s.stream, s.SessionServiceServer,
 		resource.SessionService_Events_FullMethodName, req, out, s.SessionServiceServer.Events)
@@ -4983,6 +4988,19 @@ func dispatch(ctx context.Context, s resource.Server, op *pdpb.Op) (*anypb.Any, 
 		}
 
 		res, err := s.Session().History(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.SessionService_Background_FullMethodName:
+		v := &resource.SessionBackgroundRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Session().Background(ctx, v)
 		if err != nil {
 			return nil, err
 		}

@@ -223,6 +223,14 @@ func (c *Client) History(ctx context.Context, in *api.WatchRequest, opts ...grpc
 	return reply, err
 }
 
+func (c *Client) Background(ctx context.Context, in *api.SessionRef, opts ...grpc.CallOption) (*api.BackgroundReply, error) {
+	_, id, client, err := c.route(ctx, in.Id)
+	if err != nil {
+		return nil, err
+	}
+	return client.Background(ctx, &api.SessionRef{Id: id}, opts...)
+}
+
 func (c *Client) Open(ctx context.Context, in *api.ProjectRequest, opts ...grpc.CallOption) (*api.Session, error) {
 	name, id, client, err := c.route(ctx, in.Workspace)
 	if err != nil {

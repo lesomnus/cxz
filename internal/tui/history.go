@@ -2,6 +2,8 @@ package tui
 
 import (
 	"context"
+	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -17,6 +19,7 @@ type caughtUp struct {
 }
 
 type historyPage struct {
+	started time.Time
 	id      string
 	events  []*api.Event
 	start   uint64
@@ -45,7 +48,7 @@ func (m *model) loadOlderHistory() tea.Cmd {
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(m.ctx, 10*time.Second)
 		defer cancel()
-		batch, err := m.client.History(ctx, &api.WatchRequest{SessionId: id, AfterSeq: start})
+		batch, err := m.fetchHistory(ctx, id, start, "older")
 		page := historyPage{id: id, start: start, end: end, err: err}
 		if batch != nil {
 			for _, e := range batch.Events {
@@ -98,9 +101,24 @@ func (m *model) applyHistoryPage(page historyPage) {
 		m.render()
 		if page.initial {
 			m.view.GotoBottom()
+			if !page.started.IsZero() {
+				m.debugRecorder.Add(debugEvent{Kind: "history_first_render", Duration: time.Since(page.started).Microseconds(), Count: len(page.events)})
+			}
 		} else {
 			// Preserve the previously visible line when older content is prepended.
 			m.view.SetYOffset(offset + m.view.TotalLineCount() - height)
 		}
 	}
+}
+
+// Bytes is the encoded protobuf payload size, not SSH/TCP traffic or compression.
+func (m *model) fetchHistory(ctx context.Context, id string, after uint64, purpose string) (*api.EventBatch, error) {
+	started := time.Now()
+	batch, err := m.client.History(ctx, &api.WatchRequest{SessionId: id, AfterSeq: after})
+	count := 0
+	if batch != nil {
+		count = len(batch.Events)
+	}
+	m.debugRecorder.Add(debugEvent{Kind: "history_rpc", Type: purpose, Duration: time.Since(started).Microseconds(), Count: count, Bytes: proto.Size(batch), ErrorCode: status.Code(err).String()})
+	return batch, err
 }

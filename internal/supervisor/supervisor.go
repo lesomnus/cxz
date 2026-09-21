@@ -15,6 +15,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -73,8 +74,16 @@ type record struct {
 }
 
 func Replay(events []core.Event) core.Snapshot {
-	s := core.Snapshot{State: "stopped", PermissionMode: "full"}
+	return ReplayFrom(core.Snapshot{State: "stopped", PermissionMode: "full"}, events)
+}
+
+// ReplayFrom advances a previously committed projection without revisiting its
+// old events. Pending approvals are copied so callers retain an immutable snapshot.
+func ReplayFrom(s core.Snapshot, events []core.Event) core.Snapshot {
 	p := map[string]core.Event{}
+	for _, e := range s.Pending {
+		p[e.RequestID] = e
+	}
 	for _, e := range events {
 		s.LastSeq = e.Seq
 		switch e.Kind {
@@ -96,11 +105,11 @@ func Replay(events []core.Event) core.Snapshot {
 			delete(p, e.RequestID)
 		}
 	}
-	for _, e := range events {
-		if v, ok := p[e.RequestID]; ok && v.Seq == e.Seq {
-			s.Pending = append(s.Pending, e)
-		}
+	s.Pending = nil
+	for _, e := range p {
+		s.Pending = append(s.Pending, e)
 	}
+	sort.Slice(s.Pending, func(i, j int) bool { return s.Pending[i].Seq < s.Pending[j].Seq })
 	return s
 }
 func Run(ctx context.Context, root, id string) error {

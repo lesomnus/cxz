@@ -304,11 +304,26 @@ func (s *eventStream) Send(e *api.Event) error {
 	return s.ServerStreamingServer.Send(event(e))
 }
 func (s SessionServer) Events(r *resource.SessionEventsRequest, stream grpc.ServerStreamingServer[resource.SessionEvent]) error {
-	v, err := s.resolve(stream.Context(), r.GetRef())
+	if err := s.effect(); err != nil {
+		return err
+	}
+	v, err := s.Get(stream.Context(), resource.SessionGetRequest_builder{Ref: r.GetRef(), Select: resource.SessionSelect_builder{All: ptr(true)}.Build()}.Build())
 	if err != nil {
 		return err
 	}
 	return s.shared.runtime.Watch(&api.WatchRequest{SessionId: v.GetRuntimeId(), AfterSeq: r.GetAfterSeq(), ClientId: r.GetClientId()}, &eventStream{ServerStreamingServer: stream, layer: s.Layer, id: v.GetRuntimeId(), last: v.GetStatus().GetLastSeq()})
+}
+
+func (s SessionServer) Background(ctx context.Context, r *resource.SessionBackgroundRequest) (*resource.SessionBackgroundReply, error) {
+	v, err := s.Get(ctx, resource.SessionGetRequest_builder{Ref: r.GetRef(), Select: resource.SessionSelect_builder{All: ptr(true)}.Build()}.Build())
+	if err != nil {
+		return nil, err
+	}
+	reply, err := s.shared.runtime.Background(ctx, &api.SessionRef{Id: v.GetRuntimeId()})
+	if err != nil {
+		return nil, err
+	}
+	return resource.SessionBackgroundReply_builder{LastSeq: &reply.LastSeq, Data: reply.Data}.Build(), nil
 }
 
 func (s SessionServer) Permission(ctx context.Context, r *resource.SessionPermissionRequest) (*resource.SessionReceipt, error) {

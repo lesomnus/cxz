@@ -8,16 +8,34 @@ import (
 )
 
 func (m *Manager) History(ctx context.Context, r *api.WatchRequest) (*api.EventBatch, error) {
-	c, client, e := m.ClientFor(ctx, r.SessionId)
+	// A complete immutable range needs neither Docker inspection nor an RPC.
+	cached, err := m.cachedHistory(ctx, r)
+	if err != nil {
+		return nil, err
+	}
+	complete := len(cached.Events) == 128
+	for i, e := range cached.Events {
+		complete = complete && e.Seq == r.AfterSeq+uint64(i)+1
+	}
+	if complete {
+		return cached, nil
+	}
+	c, e := m.historyClient(ctx, r.SessionId)
 	if e == nil {
 		q, cancel := context.WithTimeout(ctx, 2*time.Second)
-		batch, err := client.History(q, r)
+		batch, err := c.client.History(q, r)
 		cancel()
-		c.Close()
 		if err == nil {
 			return batch, m.cache(ctx, batch)
 		}
+		if ctx.Err() == nil {
+			m.dropHistoryClient(c)
+		}
 	}
+	return cached, nil
+}
+
+func (m *Manager) cachedHistory(ctx context.Context, r *api.WatchRequest) (*api.EventBatch, error) {
 	rows, e := m.DB.QueryContext(ctx, "SELECT data FROM events WHERE session_id=? AND seq>? ORDER BY seq LIMIT 128", r.SessionId, r.AfterSeq)
 	if e != nil {
 		return nil, e

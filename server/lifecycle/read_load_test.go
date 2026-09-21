@@ -2,6 +2,8 @@ package lifecycle
 
 import (
 	"context"
+	"fmt"
+	"io"
 	"net"
 	"path/filepath"
 	"sync/atomic"
@@ -28,6 +30,17 @@ func (f *countedRuntime) ResourceSnapshot(ctx context.Context) (*api.ProjectList
 	return f.fixture.ResourceSnapshot(ctx)
 }
 
+func (f *countedRuntime) Watch(r *api.WatchRequest, s grpc.ServerStreamingServer[api.Event]) error {
+	return s.Send(&api.Event{SessionId: r.SessionId, Seq: r.AfterSeq + 1, Kind: "assistant", Text: "tail"})
+}
+
+func (f *countedRuntime) Background(_ context.Context, r *api.SessionRef) (*api.BackgroundReply, error) {
+	if r.Id != f.s.Id {
+		return nil, fmt.Errorf("wrong session: %s", r.Id)
+	}
+	return &api.BackgroundReply{LastSeq: 123, Data: []byte(`{"run":{"Tasks":{}}}`)}, nil
+}
+
 func TestResourceReadsAndSubscriptionsDoNotPollRuntime(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
 	defer cancel()
@@ -36,7 +49,7 @@ func TestResourceReadsAndSubscriptionsDoNotPollRuntime(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer db.Close()
-	f := &countedRuntime{fixture: &fixture{p: &api.Project{Id: "project", Workspace: "/workspace", State: "running"}, s: &api.Session{Id: "session", ProjectId: "project", Agent: "codex", Account: "work", CreateId: "create", RunId: "run", State: "idle"}}}
+	f := &countedRuntime{fixture: &fixture{p: &api.Project{Id: "project", Workspace: "/workspace", State: "running"}, s: &api.Session{Id: "0123456789abcdef01234567", ProjectId: "project", Agent: "codex", Account: "work", CreateId: "create", RunId: "run", State: "idle"}}}
 	f.s.AuthBackend = accounts.ProjectLocalOAuth
 	f.s.AuthBinding = accounts.BindingID(f.p.Id, f.s.Account, f.s.AuthBackend)
 	stack, err := Build(ctx, db, f)
@@ -76,6 +89,25 @@ func TestResourceReadsAndSubscriptionsDoNotPollRuntime(t *testing.T) {
 	}
 	if f.snapshots.Load() != 1 {
 		t.Fatal("runtime reconciliation on reads", f.snapshots.Load())
+	}
+	for range 3 {
+		events, err := c.Watch(ctx, &api.WatchRequest{SessionId: f.s.Id, AfterSeq: 123})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if event, err := events.Recv(); err != nil || event.Seq != 124 {
+			t.Fatal(event, err)
+		}
+		if _, err := events.Recv(); err != io.EOF {
+			t.Fatal(err)
+		}
+		background, err := c.Background(ctx, &api.SessionRef{Id: f.s.Id})
+		if err != nil || background.LastSeq != 123 || string(background.Data) != `{"run":{"Tasks":{}}}` {
+			t.Fatal(background, err)
+		}
+	}
+	if f.snapshots.Load() != 1 {
+		t.Fatal("event subscription rescanned project inventory", f.snapshots.Load())
 	}
 	changed := make(chan struct{}, 8)
 	done := make(chan error, 1)

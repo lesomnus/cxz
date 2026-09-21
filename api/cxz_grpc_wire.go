@@ -38,6 +38,7 @@ const (
 	Sessions_Stop_FullMethodName         = "/cxz.runtime.Sessions/Stop"
 	Sessions_Watch_FullMethodName        = "/cxz.runtime.Sessions/Watch"
 	Sessions_History_FullMethodName      = "/cxz.runtime.Sessions/History"
+	Sessions_Background_FullMethodName   = "/cxz.runtime.Sessions/Background"
 	Sessions_Open_FullMethodName         = "/cxz.runtime.Sessions/Open"
 	Sessions_Projects_FullMethodName     = "/cxz.runtime.Sessions/Projects"
 	Sessions_Down_FullMethodName         = "/cxz.runtime.Sessions/Down"
@@ -66,6 +67,7 @@ type SessionsClient interface {
 	Stop(ctx context.Context, in *Control, opts ...grpc.CallOption) (*Receipt, error)
 	Watch(ctx context.Context, in *WatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[Event], error)
 	History(ctx context.Context, in *WatchRequest, opts ...grpc.CallOption) (*EventBatch, error)
+	Background(ctx context.Context, in *SessionRef, opts ...grpc.CallOption) (*BackgroundReply, error)
 	Open(ctx context.Context, in *ProjectRequest, opts ...grpc.CallOption) (*Session, error)
 	Projects(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ProjectList, error)
 	Down(ctx context.Context, in *ProjectRequest, opts ...grpc.CallOption) (*Receipt, error)
@@ -278,6 +280,16 @@ func (c *sessionsClient) History(ctx context.Context, in *WatchRequest, opts ...
 	return out, nil
 }
 
+func (c *sessionsClient) Background(ctx context.Context, in *SessionRef, opts ...grpc.CallOption) (*BackgroundReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BackgroundReply)
+	err := c.cc.Invoke(ctx, Sessions_Background_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *sessionsClient) Open(ctx context.Context, in *ProjectRequest, opts ...grpc.CallOption) (*Session, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Session)
@@ -331,6 +343,7 @@ type SessionsServer interface {
 	Stop(context.Context, *Control) (*Receipt, error)
 	Watch(*WatchRequest, grpc.ServerStreamingServer[Event]) error
 	History(context.Context, *WatchRequest) (*EventBatch, error)
+	Background(context.Context, *SessionRef) (*BackgroundReply, error)
 	Open(context.Context, *ProjectRequest) (*Session, error)
 	Projects(context.Context, *Empty) (*ProjectList, error)
 	Down(context.Context, *ProjectRequest) (*Receipt, error)
@@ -400,6 +413,9 @@ func (UnimplementedSessionsServer) Watch(*WatchRequest, grpc.ServerStreamingServ
 }
 func (UnimplementedSessionsServer) History(context.Context, *WatchRequest) (*EventBatch, error) {
 	return nil, status.Error(codes.Unimplemented, "method History not implemented")
+}
+func (UnimplementedSessionsServer) Background(context.Context, *SessionRef) (*BackgroundReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method Background not implemented")
 }
 func (UnimplementedSessionsServer) Open(context.Context, *ProjectRequest) (*Session, error) {
 	return nil, status.Error(codes.Unimplemented, "method Open not implemented")
@@ -766,6 +782,24 @@ func _Sessions_History_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Sessions_Background_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SessionRef)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).Background(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_Background_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).Background(ctx, req.(*SessionRef))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Sessions_Open_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ProjectRequest)
 	if err := dec(in); err != nil {
@@ -898,6 +932,10 @@ var Sessions_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "History",
 			Handler:    _Sessions_History_Handler,
+		},
+		{
+			MethodName: "Background",
+			Handler:    _Sessions_Background_Handler,
 		},
 		{
 			MethodName: "Open",

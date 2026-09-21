@@ -59,6 +59,9 @@ func (d *daemon) Docker(_ context.Context, r *api.DockerInput, _ ...grpc.CallOpt
 func (d *daemon) History(_ context.Context, r *api.WatchRequest, _ ...grpc.CallOption) (*api.EventBatch, error) {
 	return &api.EventBatch{Events: []*api.Event{{SessionId: r.SessionId, Text: "hello"}}}, nil
 }
+func (d *daemon) Background(_ context.Context, r *api.SessionRef, _ ...grpc.CallOption) (*api.BackgroundReply, error) {
+	return &api.BackgroundReply{LastSeq: 55, Data: []byte(r.Id)}, nil
+}
 func (d *daemon) CopyMemory(_ context.Context, r *api.CopyMemoryRequest, _ ...grpc.CallOption) (*api.Receipt, error) {
 	d.record("copy:" + r.SessionId + ":" + r.TargetId)
 	return &api.Receipt{}, nil
@@ -123,6 +126,10 @@ func TestDuplicateIDsRouteToSelectedDaemon(t *testing.T) {
 	batch, err := c.History(ctx, &api.WatchRequest{SessionId: "work::same"})
 	if err != nil || batch.Events[0].SessionId != "work::same" {
 		t.Fatal(batch, err)
+	}
+	bg, err := c.Background(ctx, &api.SessionRef{Id: "work::same"})
+	if err != nil || bg.LastSeq != 55 || string(bg.Data) != "same" {
+		t.Fatal(bg, err)
 	}
 	watch, err := c.Watch(ctx, &api.WatchRequest{SessionId: "home::same"})
 	if err != nil {
