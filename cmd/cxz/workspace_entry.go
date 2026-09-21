@@ -93,6 +93,13 @@ func workspaceEntry(ctx context.Context, client api.SessionsClient, c *xli.Comma
 	return projectTUI(ctx, resources, c, p, sessions[0].Id, false)
 }
 
+func localTUI(ctx context.Context, client api.SessionsClient, c *xli.Command, selected string) error {
+	if resources, ok := client.(*resourceclient.Client); ok && os.Getenv("CXZ_PROJECT_ID") == "" {
+		return projectTUI(ctx, resources, c, nil, selected, false)
+	}
+	return tui.RunSelected(ctx, client, selected)
+}
+
 func projectTUI(ctx context.Context, resources *resourceclient.Client, c *xli.Command, p *api.Project, selected string, trust bool) error {
 	return tui.RunProject(ctx, resources, p, selected, func(ctx context.Context, projectID, alias string, input io.Reader, output, errOutput io.Writer) (*api.Session, error) {
 		if err := installer.SyncGitHub(ctx, stateFrom(ctx), errOutput); err != nil {
@@ -111,7 +118,7 @@ func projectTUI(ctx context.Context, resources *resourceclient.Client, c *xli.Co
 		if err != nil {
 			return nil, err
 		}
-		r := &api.ProjectRequest{Workspace: projectID, NewSession: true, Account: alias, Agent: a.GetAgent(), Model: settings.From(ctx).Model(a.GetAgent()), TrustConfig: trust && projectID == p.Id, ClientId: core.ID()}
+		r := &api.ProjectRequest{Workspace: projectID, NewSession: true, Account: alias, Agent: a.GetAgent(), Model: settings.From(ctx).Model(a.GetAgent()), TrustConfig: trust && p != nil && projectID == p.Id, ClientId: core.ID()}
 		return openWithProjectLogin(ctx, r, true, func(ctx context.Context, r *api.ProjectRequest) (*api.Session, error) { return resources.Open(ctx, r) }, func(ctx context.Context, alias, key string) error {
 			fmt.Fprintln(errOutput, "Session login required. Open the provider URL below and paste the returned code here.")
 			if err := projectAccountWorkflow(ctx, resources, c, a, "login", projectID, false, key); err != nil {

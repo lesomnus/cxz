@@ -13,6 +13,9 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/settings"
+	"github.com/lesomnus/cxz/internal/transport"
 )
 
 type accountWorkflow struct {
@@ -70,7 +73,7 @@ func (w workflowWriter) Write(p []byte) (int, error) {
 }
 
 func (m *model) startAccountWorkflow(alias, provider, sessionID string, create bool) tea.Cmd {
-	ctx, cancel := context.WithCancel(m.ctx)
+	ctx, cancel := context.WithCancel(m.contextFor(m.accountConnection))
 	// Pass a real descriptor to exec.Cmd.Stdin. With io.Pipe, os/exec owns a
 	// copying goroutine and Wait waits for its Read to finish even after the
 	// login process exits. The UI keeps that input open until workflowDone,
@@ -91,6 +94,24 @@ func (m *model) startAccountWorkflow(alias, provider, sessionID string, create b
 	projectID := ""
 	if m.project != nil {
 		projectID = m.project.Id
+	}
+	if create && creator == nil {
+		// Remote frontends create through the selected manager. Existing projects
+		// already have an identity; do not reinterpret their paths on the client.
+		client := m.client
+		workspace := ""
+		if m.project != nil {
+			workspace = m.project.Workspace
+		}
+		inProject := os.Getenv("CXZ_PROJECT_ID") != "" && !transport.IsRemote(ctx)
+		creator = func(ctx context.Context, projectID, alias string, _ io.Reader, _, _ io.Writer) (*api.Session, error) {
+			ctx, cancel := context.WithTimeout(ctx, 30*time.Minute)
+			defer cancel()
+			if inProject {
+				return client.Create(ctx, &api.CreateRequest{Workspace: workspace, Agent: provider, Model: settings.From(ctx).Model(provider), ClientId: core.ID(), Account: alias})
+			}
+			return client.Open(ctx, &api.ProjectRequest{Workspace: projectID, NewSession: true, Agent: provider, Model: settings.From(ctx).Model(provider), ClientId: core.ID(), Account: alias})
+		}
 	}
 	work := func() tea.Msg {
 		defer r.Close()
@@ -233,10 +254,6 @@ func (m *model) loginTargetKey(k tea.KeyMsg) tea.Cmd {
 		m.loginIndex = min(len(sessions), m.loginIndex+1)
 	case "enter":
 		if m.loginIndex == len(sessions) {
-			if m.createProjectSession == nil {
-				m.notice = "Session creation unavailable"
-				return nil
-			}
 			m.loginChoosing = false
 			return m.startAccountWorkflow(m.loginAlias, "claude", "", true)
 		}

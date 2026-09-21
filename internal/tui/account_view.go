@@ -32,6 +32,7 @@ func (m *model) openAccounts(choose bool) tea.Cmd {
 	m.accountSearch.Placeholder = "alias / name / provider / number"
 	m.accountSearch.CharLimit = 100
 	m.notice = "Loading accounts…"
+	m.input.Blur()
 	return m.loadAccounts()
 }
 
@@ -85,6 +86,9 @@ func (m *model) accountKey(key tea.KeyMsg) tea.Cmd {
 			m.panelFocus = m.projectView
 		}
 		m.notice = ""
+		if !m.accountView && !m.panelFocus {
+			return m.input.Focus()
+		}
 		return nil
 	}
 	if m.accountAdding {
@@ -183,10 +187,6 @@ func (m *model) accountKey(key tea.KeyMsg) tea.Cmd {
 		}
 		if !m.accountChoosing {
 			m.notice = "Press l to log in. Esc returns to Projects; n adds an account."
-			return nil
-		}
-		if m.createProjectSession == nil {
-			m.notice = "Session creation unavailable"
 			return nil
 		}
 		return m.startAccountWorkflow(alias, choices[m.accountIndex].GetAgent(), "", true)

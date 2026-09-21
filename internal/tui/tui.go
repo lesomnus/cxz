@@ -1429,6 +1429,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.panelFocus = false
 				m.projectView = false
 				m.accountView = false
+				return m, tea.Batch(m.input.Focus(), m.refresh())
 			}
 		}
 		return m, m.refresh()
@@ -1530,6 +1531,10 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.startRename()
 			}
 		case "ctrl+n":
+			if m.project != nil && m.project.State != "connection" {
+				m.backToProject()
+				return m, m.projectAction(v)
+			}
 			m.creationConnection = m.connectionRef()
 			m.creating = true
 			m.focusList = false

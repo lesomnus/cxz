@@ -94,7 +94,7 @@ func (m *model) projectAction(key tea.KeyMsg) tea.Cmd {
 	case "a":
 		return m.openAccounts(false)
 	case "ctrl+n", "n":
-		if m.createProjectSession != nil {
+		if m.project != nil && m.project.State != "connection" {
 			return m.openAccounts(true)
 		}
 		m.creationConnection = m.connectionRef()
