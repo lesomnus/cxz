@@ -108,13 +108,48 @@ cxz session new --account work-codex .
 
 ## 업데이트와 롤백
 
+소스에서 직접 빌드하고 로컬 실행 파일과 설치된 manager를 함께 갱신하려면:
+
+```sh
+cxz self-update                       # lesomnus/cxz의 main
+cxz self-update --ref vX.Y.Z          # 브랜치, 태그 또는 전체 커밋 SHA
+cxz self-update --client-only         # 실행 파일만 갱신
+```
+
+Docker CLI·Buildx와 Linux builder가 필요하다. Git과 Go는 빌드 컨테이너에 있으므로
+호스트에 설치할 필요가 없다. 소스는 전용 checkout에서 fetch하고 해당 커밋을 빌드한다.
+사용자의 작업 디렉터리는 변경하지 않으며 Go 모듈·빌드 캐시는 Docker builder에서 재사용한다.
+빌드는 특권 컨테이너나 호스트 bind mount를 요구하지 않는다. 원격 Docker builder를 써도
+빌드 결과는 Docker **클라이언트** 쪽으로 내려받는다.
+
+교체 전에 Go 빌드 정보의 모듈·플랫폼·커밋과 새 실행 파일의 `version` 실행을 확인한다.
+빌드·검증 실패 시 기존 실행 파일을 유지하고, 성공하면 기존 파일을 `cxz.previous`
+(Windows는 `cxz.previous.exe`)로 보관한다. 설치 디렉터리에 쓰기 권한이 필요하며
+권한이 없으면 빌드 전에 오류를 반환한다. Docker 사용 권한으로 호스트 파일 권한을 우회하지 않는다.
+PATH의 심볼릭 링크는 유지하고 실제 대상 파일을 갱신한다.
+
+Linux에서는 같은 `--state`에 등록된 로컬 manager가 있으면 **새 실행 파일**의
+`install --recreate`를 실행한다. manager가 없으면 새로 설치하지 않는다. 설정에 등록된
+원격 connection이나 프로젝트 컨테이너는 갱신 대상에 포함하지 않는다. manager 갱신 중에도
+기존 프로젝트의 wasp·agent는 계속 실행되며, 새 runtime은 다음 명시적 project recreate 때 적용된다.
+CLI 교체 후 manager 갱신이 실패하면 두 결과를 구분해 출력한다. 이때 같은 `--state`로
+`cxz install --recreate`를 재시도한다.
+
+Windows에서는 프론트엔드 실행 파일만 갱신한다. 이 명령의 소스 빌드에는 Windows에서도
+Docker CLI·Buildx와 접근 가능한 Linux builder가 필요하다. 일반 원격 TUI 사용에는 여전히
+로컬 Docker가 필요 없다. 원격 Linux 호스트 자체를 갱신하려면 그 호스트에서
+`cxz self-update`를 실행한다.
+
+직전 CLI는 보관된 실행 파일로 복원할 수 있다. manager 이미지만 갱신하거나 되돌리는
+기존 명령도 유지한다:
+
 ```sh
 cxz manager update ghcr.io/lesomnus/cxz:vX.Y.Z
 cxz manager doctor
 cxz manager rollback
 ```
 
-업데이트는 명시한 버전/digest만 사용하고 다운로드가 실패하면 기존 manager를 제거하지 않는다.
+`manager update`는 명시한 버전/digest만 사용하고 다운로드가 실패하면 기존 manager를 제거하지 않는다.
 client locator에 이전 이미지가 기록된다. rollback은 그 이미지로 manager를 교체하며
 workspace, project container, named volumes를 삭제하지 않는다. client binary는 별도로
 이전 검증본을 보관/복원한다. 프로젝트의 이미 실행 중인 runtime/supervisor는 그대로 살아 있어

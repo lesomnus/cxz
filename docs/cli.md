@@ -15,6 +15,11 @@ VS Code는 `$env:EDITOR = 'code --wait'`로 지정한다. Docker/file mapping �
 실제 적용은 Linux 호스트에서 수행한다.
 설정과 지원 범위는 [원격 접속](remote.md)을 참고한다.
 
+`cxz self-update [--ref BRANCH_OR_TAG_OR_COMMIT] [--client-only]`는 Docker에서 소스를
+빌드해 로컬 실행 파일과 설치된 Linux manager를 갱신한다. 기본 소스는 `lesomnus/cxz`의
+`main`이며, Windows에서는 프론트엔드만 갱신한다. 자세한 조건과 복구 방법은
+[소스 업데이트](operations.md#업데이트와-롤백)를 참고한다.
+
 목록 갱신은 변경 구독과 30초 안전 갱신을 사용한다. 매초 전체 목록/외부 컨테이너 탐색을 반복하지 않는다.
 서버 측 동기화와 남아 있는 heartbeat의 범위는 [리소스 갱신과 부하](resource-refresh.md)를 참고한다.
 

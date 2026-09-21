@@ -41,7 +41,8 @@ type Plan struct {
 
 var localNames = map[string]bool{
 	"file-mappings.json": true, "installation.json": true, "settings.json": true, "settings.jsonm": true, "settings.jsonc": true, "settings.schema.json": true, "cxz.db": true, "cxz.db-wal": true, "cxz.db-shm": true,
-	"resources.db": true, "resources.db-wal": true, "resources.db-shm": true,
+	"self-update.lock": true,
+	"resources.db":     true, "resources.db-wal": true, "resources.db-shm": true,
 	"sessions": true, "projects": true, "run": true, "accounts": true, "central": true,
 	"daemon.lock": true, "install.lock": true,
 }
@@ -247,7 +248,7 @@ func Execute(ctx context.Context, p Plan, selected map[string]bool, d Docker, ou
 			}
 		}
 	}()
-	for _, name := range []string{"install.lock", "daemon.lock"} {
+	for _, name := range []string{"install.lock", "daemon.lock", "self-update.lock"} {
 		if _, err := os.Stat(p.Root); os.IsNotExist(err) {
 			break
 		}
@@ -278,7 +279,7 @@ func Execute(ctx context.Context, p Plan, selected map[string]bool, d Docker, ou
 				if e.Type()&os.ModeSymlink != 0 {
 					return nil
 				}
-				if !e.IsDir() && strings.HasSuffix(e.Name(), ".lock") && e.Name() != "install.lock" && e.Name() != "daemon.lock" {
+				if !e.IsDir() && strings.HasSuffix(e.Name(), ".lock") && e.Name() != "install.lock" && e.Name() != "daemon.lock" && e.Name() != "self-update.lock" {
 					f, err := core.Lock(path)
 					if err != nil {
 						return err
@@ -364,7 +365,7 @@ func sameTargets(a, b []Target) bool {
 		}
 	}
 	for _, t := range b {
-		if t.Kind == "local" && (filepath.Base(t.Name) == "install.lock" || filepath.Base(t.Name) == "daemon.lock") {
+		if t.Kind == "local" && (filepath.Base(t.Name) == "install.lock" || filepath.Base(t.Name) == "daemon.lock" || filepath.Base(t.Name) == "self-update.lock") {
 			delete(expected, key(t))
 			continue
 		}
