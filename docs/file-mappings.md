@@ -3,7 +3,21 @@
 Copy host files or directory contents into agent containers. Mappings are global
 within one cxz installation, with an optional `claude` or `codex` filter.
 
-Open the configuration directly in your editor:
+Keep common project files in cxz's shared source directory:
+
+```sh
+cxz edit share CLAUDE.md
+cxz edit share foo/bar/baz.txt
+```
+
+These commands open ordinary files in `<state>/share/` (normally
+`~/.local/state/cxz/share/`), creating missing files and parent directories.
+The directory is shared by projects in this cxz installation and follows
+`--state`, `CXZ_STATE`, and `XDG_STATE_HOME`. Editor arguments and filenames
+with spaces are supported. Paths passed to `edit share` must stay within this
+directory. Editing an unmapped file needs no daemon connection.
+
+Then open the configuration directly in your editor:
 
 ```sh
 cxz edit
@@ -19,7 +33,7 @@ line/block comments and trailing commas are accepted. For example:
   "claude_model": "sonnet",
   "files": [
     {
-      "src": "~/instructions/CLAUDE.md",
+      "src": "${CXZ_SHARE_DIR}/CLAUDE.md",
       "dst": "${AGENT_CONFIG_DIR}/CLAUDE.md",
       "agent": "claude"
     },
@@ -54,7 +68,12 @@ Quote destinations containing variables so your shell does not expand them.
 | `/absolute/path` | An explicit container path, writable by the agent's OS user |
 
 `src` is a path on the machine running the command, not on the Docker engine.
-Relative paths are resolved when registered; `~/` is supported. A source file
+`${CXZ_SHARE_DIR}` resolves to that installation's shared source directory when
+files are snapshotted. Its literal spelling remains in `settings.jsonc`; no shell
+environment variable needs to be set. It can name an individual file, a nested
+directory, or the whole shared directory. It is a source variable; destination
+variables in the table above are resolved separately inside the session.
+Other relative paths are resolved when registered; `~/` is supported. A source file
 copies to the exact `dst` path. A source directory copies its contents under
 `dst`, retaining relative names; a directory can target `${AGENT_CONFIG_DIR}`
 itself. Empty directories are not copied. Only regular
@@ -63,7 +82,11 @@ The bundle is limited to 512 files and 2 MiB of file contents. Destination files
 are private to the container user (0600, or 0700 for executable source files).
 
 `add` replaces the mapping with the same destination and agent filter, then
-publishes a snapshot of all registered sources. To publish later source edits:
+publishes a snapshot of all registered sources. On Linux, saving with
+`cxz edit share PATH` also publishes the registered mappings when that file is
+mapped, either individually or through its parent directory. Changes apply at
+the next agent start, just like other file mappings. To publish edits made with
+another editor:
 
 ```sh
 cxz config files sync
@@ -83,6 +106,10 @@ successful sync does not remove the stored snapshot. All configuration/file
 mapping commands use the host's local `settings.jsonc`; publishing replaces the
 installation's complete mapping bundle. A second client should use the same
 mapping configuration before syncing.
+
+Windows `cxz edit share` uses `VISUAL`/`EDITOR` or Notepad and saves locally.
+For a remote connection, the source directory and publication belong to the Linux
+daemon host; the frontend does not upload its local shared directory implicitly.
 
 To stop copying a mapping:
 

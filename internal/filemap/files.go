@@ -72,22 +72,14 @@ func validateDestination(dst, agent string, directory bool) error {
 	return nil
 }
 
-func Snapshot(mappings []Mapping) (Bundle, error) {
+func Snapshot(root string, mappings []Mapping) (Bundle, error) {
 	var bundle Bundle
 	total := 0
 	for _, m := range mappings {
 		if err := ValidateMappingDestination(m.Dst, m.Agent); err != nil {
 			return bundle, err
 		}
-		src := m.Src
-		if strings.HasPrefix(src, "~/") {
-			home, err := os.UserHomeDir()
-			if err != nil {
-				return bundle, err
-			}
-			src = filepath.Join(home, src[2:])
-		}
-		src, err := filepath.Abs(src)
+		src, err := SourcePath(root, m.Src)
 		if err != nil {
 			return bundle, err
 		}

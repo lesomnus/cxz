@@ -50,8 +50,8 @@
           "src": {
             "type": "string",
             "minLength": 1,
-            "description": "Host file or directory to copy. Supports ~/; relative paths use the host CLI working directory.",
-            "examples": ["~/CLAUDE.md"]
+            "description": "Host file or directory to copy. ${CXZ_SHARE_DIR} resolves to share/ beside settings.jsonc (edit files with cxz edit share PATH). Supports ~/; other relative paths use the host CLI working directory.",
+            "examples": ["${CXZ_SHARE_DIR}/CLAUDE.md", "~/CLAUDE.md"]
           },
           "dst": {
             "type": "string",

@@ -16,8 +16,12 @@ import (
 	"github.com/lesomnus/xli/flg"
 )
 
+func localEditHandler(fn func(context.Context, *xli.Command) error) xli.Handler {
+	return xli.OnRun(func(ctx context.Context, c *xli.Command, _ xli.Next) error { return fn(ctx, c) })
+}
+
 func editCommand() *xli.Command {
-	return &xli.Command{Name: "edit", Brief: "Edit local settings.jsonc using VISUAL/EDITOR or Notepad", Commands: xli.Commands{{Name: "docker-compose", Brief: "Edit the local project Compose override file", Handler: xli.OnRun(func(ctx context.Context, c *xli.Command, _ xli.Next) error {
+	return &xli.Command{Name: "edit", Brief: "Edit local settings.jsonc using VISUAL/EDITOR or Notepad", Commands: xli.Commands{editShareCommand(), {Name: "docker-compose", Brief: "Edit the local project Compose override file", Handler: xli.OnRun(func(ctx context.Context, c *xli.Command, _ xli.Next) error {
 		root := c
 		for root.HasParent() {
 			root = root.Parent()
@@ -63,6 +67,11 @@ func editCommand() *xli.Command {
 // Editing frontend settings never reads host paths or connects to a daemon.
 func prepareSettingsEdit(_ string, _ []byte, _ settings.Config) (*filemap.Bundle, error) {
 	return nil, nil
+}
+
+func finishSharedEdit(_ context.Context, c *xli.Command, _, _ string) error {
+	fmt.Fprintln(c.Writer, "Saved locally; publish host file mappings using cxz on the Linux daemon host.")
+	return nil
 }
 
 func openSettingsEditor(ctx context.Context, c *xli.Command, path string) error {

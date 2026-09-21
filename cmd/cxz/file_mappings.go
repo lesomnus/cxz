@@ -74,16 +74,12 @@ func fileMappingsCommand() *xli.Command {
 				}
 				if c.Name == "add" {
 					src := arg.MustGet[string](c, "SRC")
-					if strings.HasPrefix(src, "~/") {
-						home, err := os.UserHomeDir()
+					if !strings.Contains(src, filemap.ShareVariable) {
+						var err error
+						src, err = filemap.SourcePath(root, src)
 						if err != nil {
 							return err
 						}
-						src = filepath.Join(home, src[2:])
-					}
-					src, err = filepath.Abs(src)
-					if err != nil {
-						return err
 					}
 					files = append(files, filemap.Mapping{Src: src, Dst: dst, Agent: agent})
 				} else if !found {
@@ -91,7 +87,7 @@ func fileMappingsCommand() *xli.Command {
 				}
 				cfg.Files = files
 			}
-			bundle, err := filemap.Snapshot(cfg.Files)
+			bundle, err := filemap.Snapshot(root, cfg.Files)
 			if err != nil {
 				return err
 			}

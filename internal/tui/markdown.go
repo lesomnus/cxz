@@ -55,15 +55,15 @@ func markdownView(raw string, width int) string {
 	if !formatted {
 		return answer.Render(ansi.Hardwrap(string(source), max(1, width), true))
 	}
-	var render func(ast.Node) string
-	children := func(n ast.Node) string {
+	var render func(ast.Node, int) string
+	children := func(n ast.Node, width int) string {
 		var b strings.Builder
 		for c := n.FirstChild(); c != nil; c = c.NextSibling() {
-			b.WriteString(render(c))
+			b.WriteString(render(c, width))
 		}
 		return b.String()
 	}
-	blockCode := func(n ast.Node) string {
+	blockCode := func(n ast.Node, width int) string {
 		var b strings.Builder
 		for i := 0; i < n.Lines().Len(); i++ {
 			segment := n.Lines().At(i)
@@ -81,7 +81,7 @@ func markdownView(raw string, width int) string {
 		}
 		return strings.Join(rows, "\n") + "\n\n"
 	}
-	render = func(n ast.Node) string {
+	render = func(n ast.Node, width int) string {
 		switch v := n.(type) {
 		case *ast.Text:
 			s := string(v.Segment.Value(source))
@@ -94,22 +94,22 @@ func markdownView(raw string, width int) string {
 		case *ast.CodeSpan:
 			return codeStyle.Render(strings.ReplaceAll(string(v.Text(source)), "\n", " "))
 		case *ast.FencedCodeBlock, *ast.CodeBlock:
-			return blockCode(n)
+			return blockCode(n, width)
 		case *ast.Heading:
-			return strong.Render(children(n)) + "\n\n"
+			return strong.Render(children(n, width)) + "\n\n"
 		case *ast.Emphasis:
 			if v.Level == 2 {
-				return strong.Render(children(n))
+				return strong.Render(children(n, width))
 			}
-			return lipgloss.NewStyle().Italic(true).Render(children(n))
+			return lipgloss.NewStyle().Italic(true).Render(children(n, width))
 		case *ast.Link:
-			return children(n) + " (" + safeText(string(v.Destination)) + ")"
+			return children(n, width) + " (" + safeText(string(v.Destination)) + ")"
 		case *ast.Image:
-			return "[image: " + children(n) + "]" // No remote fetch.
+			return "[image: " + children(n, width) + "]" // No remote fetch.
 		case *ast.AutoLink:
 			return string(v.URL(source))
 		case *extast.Strikethrough:
-			return lipgloss.NewStyle().Strikethrough(true).Render(children(n))
+			return lipgloss.NewStyle().Strikethrough(true).Render(children(n, width))
 		case *extast.TaskCheckBox:
 			if v.IsChecked {
 				return "☑ "
@@ -120,7 +120,7 @@ func markdownView(raw string, width int) string {
 			for row := n.FirstChild(); row != nil; row = row.NextSibling() {
 				var cells []string
 				for cell := row.FirstChild(); cell != nil; cell = cell.NextSibling() {
-					cells = append(cells, children(cell))
+					cells = append(cells, children(cell, width))
 				}
 				rows = append(rows, cells)
 			}
@@ -134,23 +134,28 @@ func markdownView(raw string, width int) string {
 				}
 				prefix = fmt.Sprintf("%d. ", i)
 			}
-			content := strings.TrimRight(children(n), "\n")
-			return prefix + strings.ReplaceAll(content, "\n", "\n"+strings.Repeat(" ", ansi.StringWidth(prefix))) + "\n"
+			indent := strings.Repeat(" ", ansi.StringWidth(prefix))
+			bodyWidth := max(1, width-ansi.StringWidth(prefix))
+			content := strings.TrimRight(children(n, bodyWidth), "\n")
+			content = ansi.Hardwrap(content, bodyWidth, true)
+			return prefix + strings.ReplaceAll(content, "\n", "\n"+indent) + "\n"
 		case *ast.List:
-			return children(n) + "\n"
+			return children(n, width) + "\n"
 		case *ast.Blockquote:
-			return "│ " + strings.ReplaceAll(strings.TrimRight(children(n), "\n"), "\n", "\n│ ") + "\n\n"
+			bodyWidth := max(1, width-2)
+			content := ansi.Hardwrap(strings.TrimRight(children(n, bodyWidth), "\n"), bodyWidth, true)
+			return "│ " + strings.ReplaceAll(content, "\n", "\n│ ") + "\n\n"
 		case *ast.ThematicBreak:
 			return muted.Render(strings.Repeat("─", min(20, max(0, width-2)))) + "\n\n"
 		case *ast.Paragraph:
-			return children(n) + "\n\n"
+			return children(n, width) + "\n\n"
 		case *ast.TextBlock:
-			return children(n) + "\n"
+			return children(n, width) + "\n"
 		case *ast.HTMLBlock, *ast.RawHTML:
 			return "" // Never interpret embedded terminal/HTML instructions.
 		default:
-			return children(n)
+			return children(n, width)
 		}
 	}
-	return answer.Render(ansi.Hardwrap(strings.TrimRight(render(doc), "\n"), max(1, width), true))
+	return answer.Render(ansi.Hardwrap(strings.TrimRight(render(doc, max(1, width)), "\n"), max(1, width), true))
 }
