@@ -1,15 +1,94 @@
 package tui
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 
 	"github.com/charmbracelet/bubbles/cursor"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/agentview"
 	"github.com/muesli/termenv"
 )
+
+func TestCommandSummaryStaysWithinTwoRows(t *testing.T) {
+	profile := lipgloss.ColorProfile()
+	t.Cleanup(func() { lipgloss.SetColorProfile(profile) })
+	commands := []string{
+		"./" + strings.Repeat("x", 24) + " next command",
+		`cd /go/pkg/mod/github.com/lesomnus/sqlite3-wasm@v0.0.0-20260907051834-c375b662b25b && ls; grep -rn "time\.\|_txlock\|Query()" --include='*.go' . | grep -v _test | head -20`,
+		`cd /go/pkg/mod/github.com/lesomnus/sqlite3-wasm@v0.0.0-20260907051834-c375b662b25b && sed -n 1,25p time.go; grep -rn "time.Time" -A6 driver/conn.go | sed -n 1,30p`,
+		"echo 한글🙂\n\tprintf '%s' 'second command'\necho third",
+		"echo " + strings.Repeat("x", 250),
+	}
+	for _, profile := range []termenv.Profile{termenv.Ascii, termenv.ANSI256, termenv.TrueColor} {
+		lipgloss.SetColorProfile(profile)
+		for width := 38; width <= 133; width++ {
+			for _, command := range commands {
+				body := toolActivityBody(agentview.ToolActivity{Kind: "command", Command: command}, &api.Event{}, width)
+				rows := strings.Split(ansi.Strip(body), "\n")
+				if len(rows) > 2 {
+					t.Fatalf("command rewrapped at width %d (%s): %q", width, profile.Name(), rows)
+				}
+				for _, row := range rows {
+					if ansi.StringWidth(row) > width-2 || strings.Contains(row, "……") {
+						t.Fatalf("command overflow or repeated truncation at width %d: %q", width, row)
+					}
+				}
+				m := &model{}
+				body = m.cachedToolBody("claude", &api.Event{}, agentview.ToolActivity{Kind: "command", Command: command}, nil, width, "working", true)
+				rows = strings.Split(ansi.Strip(body), "\n")
+				if len(rows) > 2 || !strings.HasSuffix(body, " · background") {
+					t.Fatalf("background command lost its row limit or badge: %q", rows)
+				}
+				for _, row := range rows {
+					if ansi.StringWidth(row) > width-2 {
+						t.Fatalf("background badge overflows at width %d: %q", width, row)
+					}
+				}
+			}
+		}
+	}
+}
+
+func TestLongCommandsKeepTranscriptAlignmentAfterResize(t *testing.T) {
+	profile := lipgloss.ColorProfile()
+	lipgloss.SetColorProfile(termenv.TrueColor)
+	t.Cleanup(func() { lipgloss.SetColorProfile(profile) })
+	m := conversationModel()
+	command := "cd /go/pkg/mod/github.com/lesomnus/sqlite3-wasm@v0.0.0-20260907051834-c375b662b25b && " + strings.Repeat("ls; ", 80)
+	payload, err := json.Marshal(map[string]string{"command": command})
+	if err != nil {
+		t.Fatal(err)
+	}
+	m.events["s"] = []*api.Event{
+		{Seq: 1, RunId: "run", RequestId: "one", Kind: "tool_call", Text: "Bash", Payload: payload},
+		{Seq: 2, RunId: "run", RequestId: "one", Kind: "tool_result"},
+		{Seq: 3, RunId: "run", RequestId: "two", Kind: "tool_call", Text: "Bash", Payload: payload},
+		{Seq: 4, RunId: "run", RequestId: "two", Kind: "tool_result"},
+	}
+	for _, width := range []int{69, 80, 110, 133, 170, 200, 80} {
+		m.Update(tea.WindowSizeMsg{Width: width, Height: 30})
+		if m.view.TotalLineCount() != 5 || len(m.historyPositions) != 5 {
+			t.Fatalf("two previews and their separator changed height at width %d: %q", width, ansi.Strip(m.view.View()))
+		}
+		count := 0
+		for _, row := range strings.Split(ansi.Strip(m.View()), "\n") {
+			if i := strings.Index(row, "[✓] Bash"); i >= 0 {
+				count++
+				if ansi.StringWidth(row[:i]) != m.contentOffset()+2 {
+					t.Fatalf("tool moved horizontally at width %d: %q", width, row)
+				}
+			}
+		}
+		if count != 2 {
+			t.Fatal("tool disappeared after resize", width, count)
+		}
+	}
+}
 
 func TestFileSummaryCorrelatesInterleavedResults(t *testing.T) {
 	m := conversationModel()
