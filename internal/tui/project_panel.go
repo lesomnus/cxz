@@ -19,6 +19,8 @@ const maxViewWidth = 133
 const projectPanelWidth = 36
 const minProjectPanelWidth = 28
 const projectPanelGap = 2
+const projectPanelHeaderRows = 4
+const projectPanelFooterRows = 6
 
 type panelRow struct {
 	project *api.Project
@@ -56,11 +58,71 @@ func (m *model) panelVisible() bool {
 func (m *model) panelWidth() int {
 	return min(projectPanelWidth, max(minProjectPanelWidth, m.terminalWidth/4))
 }
+func (m *model) panelScreenWidth() int {
+	if m.panelVisible() {
+		return m.panelWidth()
+	}
+	if m.terminalWidth > 0 {
+		return m.terminalWidth
+	}
+	return m.width
+}
 func (m *model) contentOffset() int {
 	if m.panelVisible() {
 		return m.panelWidth() + projectPanelGap
 	}
 	return 0
+}
+
+func (m *model) panelRange(count int) (start, end int) {
+	capacity := max(1, m.height-projectPanelHeaderRows-projectPanelFooterRows)
+	start = max(0, min(m.panelIndex-capacity+3, count-capacity))
+	return start, min(count, start+capacity)
+}
+
+func (m *model) panelMouse(v tea.MouseMsg) (bool, tea.Cmd) {
+	m.panelHoverY = 0
+	if m.height < 14 || m.width < 40 || m.settingsPage != nil || m.memoryPage != nil ||
+		m.workflow != nil || m.accountView || m.creating || m.redactDialog != nil ||
+		m.questionDialog != nil || m.pasteDialog != nil || m.restartConfirm != nil || m.modelPicker != nil || m.report != nil {
+		return false, nil
+	}
+	if !m.panelVisible() && !m.panelFocus && !m.projectView {
+		return false, nil
+	}
+	if v.X < 0 || v.X >= m.panelScreenWidth() || v.Y < 0 || v.Y >= m.height {
+		return false, nil
+	}
+	// Never let a click behind an in-progress action change its target.
+	if m.busy || m.deletingID != "" {
+		return true, nil
+	}
+	rows := m.panelRows()
+	start, end := m.panelRange(len(rows))
+	index := start + v.Y - projectPanelHeaderRows
+	onItem := v.Y >= projectPanelHeaderRows && index < end
+	if onItem {
+		m.panelHoverY = v.Y
+	}
+	switch {
+	case v.Action == tea.MouseActionPress && v.Button == tea.MouseButtonLeft:
+		m.focusPanel()
+		if onItem {
+			m.panelIndex = index
+			return true, m.panelKey(tea.KeyMsg{Type: tea.KeyEnter})
+		}
+	case v.Button == tea.MouseButtonWheelUp || v.Button == tea.MouseButtonWheelDown:
+		if !m.panelFocus {
+			m.focusPanel()
+		}
+		m.panelWantConnection = ""
+		delta := 3
+		if v.Button == tea.MouseButtonWheelUp {
+			delta = -delta
+		}
+		m.panelIndex = max(0, min(max(0, len(rows)-1), m.panelIndex+delta))
+	}
+	return true, nil
 }
 
 func (m *model) panelRows() []panelRow {
@@ -280,18 +342,26 @@ func (m *model) selectPanelProject(r panelRow) {
 var panelStyleSequence = regexp.MustCompile(`\x1b\[[0-9;:]*m`)
 
 func panelBackground(line string) string {
+	return panelRowBackground(line, 236)
+}
+
+// Use ANSI grayscale indices so RGB and 256-color terminals show the same fill.
+func panelRowBackground(line string, shade int) string {
 	profile := lipgloss.ColorProfile()
 	if profile.Name() == "Ascii" {
 		return line
 	}
-	// Neutral dark gray #303030. Emit exact RGB instead of rounded conversion.
-	background := "\x1b[48;2;48;48;48m"
+	gray := 8 + (shade-232)*10
+	background := fmt.Sprintf("\x1b[48;2;%d;%d;%dm", gray, gray, gray)
 	if profile.Name() == "ANSI256" {
-		background = "\x1b[48;5;236m"
+		background = fmt.Sprintf("\x1b[48;5;%dm", shade)
 	}
 	if profile.Name() == "ANSI" {
 		// Preserve a visible gray fill when only the 16-color palette is available.
 		background = "\x1b[100m"
+		if shade == 238 {
+			background = "\x1b[47m"
+		}
 	}
 	// Child labels end with SGR resets, and some badges set their own background.
 	// Restore the panel background after every generated style change, including
@@ -301,21 +371,14 @@ func panelBackground(line string) string {
 }
 
 func (m *model) panelScreen() string {
-	width := m.panelWidth()
-	if !m.panelVisible() {
-		width = m.width
-		if m.terminalWidth > 0 {
-			width = m.terminalWidth
-		}
-	}
+	width := m.panelScreenWidth()
 	rows := m.panelRows()
-	capacity := max(1, m.height-10)
-	start := max(0, min(m.panelIndex-capacity+3, len(rows)-capacity))
+	start, end := m.panelRange(len(rows))
 	lines := []string{"", accent.Bold(true).Render("Projects"), muted.Render("↑/↓ select · Enter open"), ""}
 	if len(rows) == 0 {
 		lines = append(lines, "No projects")
 	}
-	for i := start; i < min(len(rows), start+capacity); i++ {
+	for i := start; i < end; i++ {
 		r := rows[i]
 		label := r.project.Name
 		if label == "" {
@@ -341,11 +404,10 @@ func (m *model) panelScreen() string {
 		}
 		if i == m.panelIndex && m.panelFocus {
 			prefix = "› "
-			line = accent.Bold(true).Render(ansi.Strip(line))
 		}
 		lines = append(lines, prefix+line)
 	}
-	for len(lines) < m.height-6 {
+	for len(lines) < m.height-projectPanelFooterRows {
 		lines = append(lines, "")
 	}
 	status := m.notice
@@ -367,7 +429,16 @@ func (m *model) panelScreen() string {
 	}
 	for i := range lines {
 		line := clip(lines[i], max(1, width-2))
-		lines[i] = panelBackground(" " + line + strings.Repeat(" ", max(0, width-2-ansi.StringWidth(line))) + " ")
+		shade := 236
+		if i >= projectPanelHeaderRows && i < projectPanelHeaderRows+end-start {
+			if i == m.panelHoverY {
+				shade = 237
+			}
+			if m.panelFocus && i == projectPanelHeaderRows+m.panelIndex-start {
+				shade = 238
+			}
+		}
+		lines[i] = panelRowBackground(" "+line+strings.Repeat(" ", max(0, width-2-ansi.StringWidth(line)))+" ", shade)
 	}
 	if m.panelVisible() && m.panelFocus {
 		lines[m.height-1] = panelBackground(accent.Render(strings.Repeat("─", max(0, width))))
