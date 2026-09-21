@@ -52,21 +52,11 @@
   //   "mode": "dind"
   // },
 
-  // Project Compose override: an inline Compose object OR a YAML/JSON file path.
-  // This requires a Compose-based devcontainer (dockerComposeFile).
-  // File paths are relative to this settings directory, or absolute / ~/ paths.
-  // ${HOME} is expanded by the Linux host CLI before publishing to the manager.
-  // ${DEVCONTAINER_SERVICE} selects the service named in devcontainer.json.
-  // "devcontainer": {
-  //   "compose": {
-  //     "services": {
-  //       "${DEVCONTAINER_SERVICE}": {
-  //         "volumes": ["${HOME}/workspaces:/workspaces"]
-  //       }
-  //     }
-  //   }
-  // },
-  // Or: "devcontainer": { "compose": "project.override.yaml" },
-  // cxz edit publishes changes; cxz up rereads and publishes file contents too.
-  // Existing containers need explicit project recreation to apply changes.
+  // Edit project container overrides with: cxz edit docker-compose
+  // Default file: docker-compose.yaml beside this settings file. If absent,
+  // no override is applied. The Compose file can include other Compose files.
+  // Only set this preference to use a different file (relative, absolute or ~/).
+  // "devcontainer": { "compose": "~/cxz/docker-compose.yaml" },
+  // Compose-based devcontainers use the manager's last published snapshot.
+  // cxz up rereads the file and its includes. Existing containers need recreation.
 }

@@ -17,7 +17,27 @@ import (
 )
 
 func editCommand() *xli.Command {
-	return &xli.Command{Name: "edit", Brief: "Edit local settings.jsonc using VISUAL/EDITOR or Notepad", Handler: xli.OnRun(func(ctx context.Context, c *xli.Command, _ xli.Next) error {
+	return &xli.Command{Name: "edit", Brief: "Edit local settings.jsonc using VISUAL/EDITOR or Notepad", Commands: xli.Commands{{Name: "docker-compose", Brief: "Edit the local project Compose override file", Handler: xli.OnRun(func(ctx context.Context, c *xli.Command, _ xli.Next) error {
+		root := c
+		for root.HasParent() {
+			root = root.Parent()
+		}
+		state, err := filepath.Abs(flg.MustGet[string](root, "state"))
+		if err != nil {
+			return err
+		}
+		path, changed, err := editDockerCompose(state, func(path string) error { return openSettingsEditor(ctx, c, path) })
+		if err != nil {
+			return err
+		}
+		if changed {
+			fmt.Fprintln(c.Writer, "Saved", path)
+		} else {
+			fmt.Fprintln(c.Writer, "No changes:", path)
+		}
+		fmt.Fprintln(c.Writer, "Saved locally; publish host settings using cxz on the Linux daemon host.")
+		return nil
+	})}}, Handler: xli.OnRun(func(ctx context.Context, c *xli.Command, _ xli.Next) error {
 		root := c
 		for root.HasParent() {
 			root = root.Parent()

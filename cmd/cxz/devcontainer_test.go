@@ -37,7 +37,7 @@ func (s *devcontainerSink) Devcontainer(_ context.Context, r *api.DevcontainerIn
 func TestPublishDevcontainerSnapshotsAndCompatibility(t *testing.T) {
 	root := t.TempDir()
 	sink := &devcontainerSink{}
-	cfg := settings.Config{Devcontainer: projectconfig.Config{Compose: json.RawMessage(`"override.yaml"`)}}
+	cfg := settings.Config{Devcontainer: projectconfig.Config{Compose: "override.yaml"}}
 	for _, source := range []string{"/first", "/edited"} {
 		if err := os.WriteFile(filepath.Join(root, "override.yaml"), []byte("services:\n  dev:\n    volumes:\n      - "+source+":/workspaces\n"), 0600); err != nil {
 			t.Fatal(err)
@@ -68,7 +68,7 @@ func TestPublishDevcontainerSnapshotsAndCompatibility(t *testing.T) {
 	}
 }
 
-func TestEditRejectsUnreadableDevcontainerOverride(t *testing.T) {
+func TestEditRejectsInvalidDevcontainerOverride(t *testing.T) {
 	root := t.TempDir()
 	if err := settings.Save(root, settings.Config{ClaudeModel: "keep"}); err != nil {
 		t.Fatal(err)
@@ -77,8 +77,11 @@ func TestEditRejectsUnreadableDevcontainerOverride(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if err := os.WriteFile(filepath.Join(root, "bad.yaml"), []byte("services: [broken"), 0600); err != nil {
+		t.Fatal(err)
+	}
 	changed, _, err := editSettings(root, func(path string) error {
-		return os.WriteFile(path, []byte(`{"devcontainer":{"compose":"missing.yaml"}}`), 0600)
+		return os.WriteFile(path, []byte(`{"devcontainer":{"compose":"bad.yaml"}}`), 0600)
 	})
 	if err == nil || changed || !strings.Contains(err.Error(), "draft kept") {
 		t.Fatal(changed, err)
@@ -86,5 +89,19 @@ func TestEditRejectsUnreadableDevcontainerOverride(t *testing.T) {
 	after, err := os.ReadFile(settings.Path(root))
 	if err != nil || string(after) != string(before) {
 		t.Fatal("invalid override replaced saved settings", err)
+	}
+}
+
+func TestEditSelectsComposePathBeforeFileExists(t *testing.T) {
+	root := t.TempDir()
+	changed, _, err := editSettings(root, func(path string) error {
+		return os.WriteFile(path, []byte(`{"devcontainer":{"compose":"custom/compose.yaml"}}`), 0600)
+	})
+	if err != nil || !changed {
+		t.Fatal(changed, err)
+	}
+	path, changed, err := editDockerCompose(root, func(string) error { return nil })
+	if err != nil || !changed || path != filepath.Join(root, "custom", "compose.yaml") {
+		t.Fatal(path, changed, err)
 	}
 }

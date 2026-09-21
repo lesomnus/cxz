@@ -34,7 +34,7 @@ func TestComposeOverridePreflightAndMerge(t *testing.T) {
 		}
 	}
 	write("devcontainer.json", `{"dockerComposeFile":"compose.yaml","service":"editor"}`)
-	write("compose.yaml", "services:\n  editor:\n    image: alpine\n    volumes:\n      - ..:/workspace\n      - /original:/workspaces\n      - cache:/cache\nvolumes:\n  cache: {}\n")
+	write("compose.yaml", "services:\n  editor:\n    image: alpine\n    command: [sleep, infinity]\n    volumes:\n      - ..:/workspace\n      - /original:/workspaces\n      - cache:/cache\nvolumes:\n  cache: {}\n")
 	m := &Manager{Root: filepath.Join(root, "manager"), Owner: "123456789012345678901234"}
 	p := &Project{ID: "project", Workspace: filepath.Dir(configDir)}
 	set := func(raw string) {
@@ -56,6 +56,7 @@ func TestComposeOverridePreflightAndMerge(t *testing.T) {
 		Services map[string]struct {
 			Volumes     []struct{ Source, Target string }
 			Environment map[string]string
+			Command     []string
 		}
 	}
 	if err = json.Unmarshal(data, &result); err != nil {
@@ -68,6 +69,47 @@ func TestComposeOverridePreflightAndMerge(t *testing.T) {
 	}
 	if len(mounts) != 3 || mounts["/workspace"] != p.Workspace || mounts["/workspaces"] != "/host/workspaces" || mounts["/cache"] != "cache" || dev.Environment["USER_OPTION"] != "kept" {
 		t.Fatalf("wrong merge: %s", data)
+	}
+	// Resolve local includes before transfer. The manager must be able to merge
+	// the snapshot after those files are gone, without resetting base commands
+	// or interpolating host values again in its own environment.
+	host := t.TempDir()
+	if err := os.WriteFile(filepath.Join(host, "mounts.yaml"), []byte("services:\n  ${DEVCONTAINER_SERVICE}:\n    volumes:\n      - ./src:/workspaces\n    environment:\n      VALUE: ${CXZ_TEST_COMPOSE_VALUE}\n      LITERAL: $${CXZ_TEST_COMPOSE_VALUE}\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("CXZ_TEST_COMPOSE_VALUE", "host-$value")
+	snapshot, err := projectconfig.SnapshotFile(filepath.Join(host, projectconfig.Filename), []byte("include: [./mounts.yaml]\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = projectconfig.Save(m.Root, snapshot); err != nil {
+		t.Fatal(err)
+	}
+	if err = os.Remove(filepath.Join(host, "mounts.yaml")); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("CXZ_TEST_COMPOSE_VALUE", "manager-value")
+	path, _, err = m.prepareComposeOverride(context.Background(), p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err = dockerx.Run(context.Background(), "compose", "-f", filepath.Join(configDir, "compose.yaml"), "-f", path, "config", "--format", "json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = json.Unmarshal(data, &result); err != nil {
+		t.Fatal(err)
+	}
+	dev = result.Services["editor"]
+	for _, mount := range dev.Volumes {
+		mounts[mount.Target] = mount.Source
+	}
+	// Recent Compose versions serialize dollars escaped for another Compose load;
+	// older versions output the literal values instead.
+	value := dev.Environment["VALUE"]
+	literal := dev.Environment["LITERAL"]
+	if mounts["/workspaces"] != filepath.Join(host, "src") || strings.Join(dev.Command, " ") != "sleep infinity" || (value != "host-$$value" && value != "host-$value") || (literal != "$${CXZ_TEST_COMPOSE_VALUE}" && literal != "${CXZ_TEST_COMPOSE_VALUE}") {
+		t.Fatalf("include changed paths, commands or interpolation: %s", data)
 	}
 	set(`{"services":{"${DEVCONTAINER_SERVICE}":{"privileged":true}}}`)
 	if _, _, err = m.prepareComposeOverride(context.Background(), p); err == nil || !strings.Contains(err.Error(), "requires explicit trust") {

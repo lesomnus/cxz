@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func TestInlineAndFileSnapshots(t *testing.T) {
+func TestFileSnapshots(t *testing.T) {
 	root := t.TempDir()
 	home := filepath.Join(root, "home with spaces")
 	t.Setenv("HOME", home)
@@ -21,13 +21,16 @@ func TestInlineAndFileSnapshots(t *testing.T) {
 		t.Fatal(err)
 	}
 	var first Spec
-	for _, raw := range []string{inline, `"override.yaml"`, string(mustJSON(t, path))} {
-		spec, err := (Config{Compose: json.RawMessage(raw)}).Snapshot(root)
+	if err := os.WriteFile(filepath.Join(root, "override.json"), []byte(inline), 0600); err != nil {
+		t.Fatal(err)
+	}
+	for _, raw := range []string{"override.yaml", "override.json", path} {
+		spec, err := (Config{Compose: raw}).Snapshot(root)
 		if err != nil {
 			t.Fatal(err)
 		}
 		if first.Compose != nil && !reflect.DeepEqual(spec, first) {
-			t.Fatal("file and inline contents differ")
+			t.Fatal("YAML and JSON file contents differ")
 		}
 		first = spec
 		b, err := spec.Render("actual-dev")
@@ -36,7 +39,7 @@ func TestInlineAndFileSnapshots(t *testing.T) {
 		}
 		var v struct {
 			Services map[string]struct {
-				Volumes     []string
+				Volumes     []struct{ Source, Target string }
 				Environment map[string]string
 			}
 		}
@@ -44,7 +47,7 @@ func TestInlineAndFileSnapshots(t *testing.T) {
 			t.Fatal(err)
 		}
 		dev := v.Services["actual-dev"]
-		if len(v.Services) != 1 || dev.Volumes[0] != home+"/workspaces:/workspaces" || dev.Environment["LITERAL"] != "$${HOME}" || dev.Environment["OTHER"] != "${UNRELATED:-default}" {
+		if len(v.Services) != 1 || dev.Volumes[0].Source != home+"/workspaces" || dev.Volumes[0].Target != "/workspaces" || dev.Environment["LITERAL"] != "$${HOME}" || dev.Environment["OTHER"] != "default" {
 			t.Fatalf("incorrect expansion: %s", b)
 		}
 		if !strings.Contains(string(spec.Compose), ServiceVariable) {
@@ -73,18 +76,10 @@ func TestInlineAndFileSnapshots(t *testing.T) {
 	}
 }
 
-func mustJSON(t *testing.T, value any) []byte {
-	t.Helper()
-	b, err := json.Marshal(value)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return b
-}
-
 func TestInvalidOverridesAndServiceCollision(t *testing.T) {
-	for _, raw := range []string{`""`, `42`, `[]`, `{"services":[]}`, `{"services":{"dev":null}}`, `{"services":{"dev":"wrong"}}`} {
-		if err := (Config{Compose: json.RawMessage(raw)}).Validate(); err == nil {
+	for _, raw := range []string{`"   "`, `42`, `[]`, `{"services":[]}`, `{"services":{"dev":null}}`, `{"services":{"dev":"wrong"}}`} {
+		var cfg Config
+		if err := json.Unmarshal([]byte(`{"compose":`+raw+`}`), &cfg); err == nil {
 			t.Fatal("accepted invalid override", raw)
 		}
 	}
@@ -98,7 +93,7 @@ func TestInvalidOverridesAndServiceCollision(t *testing.T) {
 		if err := os.WriteFile(filepath.Join(root, "bad.yaml"), []byte(content), 0600); err != nil {
 			t.Fatal(err)
 		}
-		if _, err := (Config{Compose: json.RawMessage(`"bad.yaml"`)}).Snapshot(root); err == nil {
+		if _, err := (Config{Compose: "bad.yaml"}).Snapshot(root); err == nil {
 			t.Fatal("accepted invalid file", content[:min(len(content), 70)])
 		}
 	}
@@ -109,14 +104,14 @@ func TestInvalidOverridesAndServiceCollision(t *testing.T) {
 	if _, err := spec.Render(""); err == nil {
 		t.Fatal("missing service accepted")
 	}
-	if _, err := (Config{Compose: json.RawMessage(`"missing.yaml"`)}).Snapshot(root); err == nil {
+	if _, err := (Config{Compose: "missing.yaml"}).Snapshot(root); err == nil {
 		t.Fatal("missing file ignored")
 	}
 }
 
 func TestResourceOnlyOverride(t *testing.T) {
 	raw := `{"volumes":{"go.cache.mod":{"external":true,"name":"go.cache.mod"}}}`
-	spec, err := (Config{Compose: json.RawMessage(raw)}).Snapshot(t.TempDir())
+	spec, err := SnapshotFile(filepath.Join(t.TempDir(), Filename), []byte(raw))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -131,7 +126,7 @@ func TestHomePathAndFileRefresh(t *testing.T) {
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
 	for _, path := range []string{"~/override.yaml", "${HOME}/override.yaml"} {
-		cfg := Config{Compose: mustJSON(t, path)}
+		cfg := Config{Compose: path}
 		for _, image := range []string{"first", "second"} {
 			if err := os.WriteFile(filepath.Join(home, "override.yaml"), []byte("services:\n  dev:\n    image: "+image+"\n"), 0600); err != nil {
 				t.Fatal(err)

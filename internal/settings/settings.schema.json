@@ -74,21 +74,10 @@
       "description": "Project container settings, published by the Linux host CLI. Compose overrides apply to new or explicitly recreated Compose-based devcontainers.",
       "properties": {
         "compose": {
-          "description": "Compose override: an inline object or a YAML/JSON file path (relative to this settings directory, absolute, or ~/). ${HOME} in values expands on the Linux host CLI. The services key ${DEVCONTAINER_SERVICE} selects the project's development service. Requires dockerComposeFile; image/Dockerfile-only devcontainers are not supported.",
-          "oneOf": [
-            { "type": "null" },
-            { "type": "string", "minLength": 1, "examples": ["project.override.yaml", "~/project.override.yaml"] },
-            {
-              "type": "object",
-              "properties": {
-                "services": {
-                  "type": "object",
-                  "additionalProperties": { "type": "object" }
-                }
-              },
-              "examples": [{"services":{"${DEVCONTAINER_SERVICE}":{"volumes":["${HOME}/workspaces:/workspaces"]}}}]
-            }
-          ]
+          "type": "string",
+          "description": "Optional path to the project Compose override. Defaults to docker-compose.yaml beside settings.jsonc; edit with cxz edit docker-compose. Relative paths use this settings directory; absolute, ~/ and ${HOME} paths work. The file may include other local Compose files.",
+          "default": "docker-compose.yaml",
+          "examples": ["~/cxz/docker-compose.yaml"]
         }
       }
     },
