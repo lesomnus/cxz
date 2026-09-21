@@ -177,6 +177,22 @@ func TestContainersOnlyRetainsState(t *testing.T) {
 	}
 }
 
+func TestPurgeRefusesActiveSourceUpdate(t *testing.T) {
+	root, f := setup(t)
+	lock, err := core.Lock(filepath.Join(root, "self-update.lock"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer lock.Close()
+	p, err := Discover(context.Background(), root, f.run)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := Execute(context.Background(), p, map[string]bool{"containers": true}, f.run, io.Discard); err == nil || len(f.removed) != 0 {
+		t.Fatal("purge raced a pending manager update", err)
+	}
+}
+
 func TestPartialFailureRetainsLocator(t *testing.T) {
 	root, f := setup(t)
 	ctx := context.Background()

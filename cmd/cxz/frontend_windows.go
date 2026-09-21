@@ -18,7 +18,7 @@ func newRoot(state string) *xli.Command {
 		return runRemote(ctx, flg.MustGet[string](c, "state"), os.Getenv("CXZ_ENDPOINT"), os.Getenv("CXZ_TOKEN_FILE"), "")
 	})}
 	plain := false
-	root.Commands = xli.Commands{connectCommand(), editCommand(),
+	root.Commands = xli.Commands{connectCommand(), editCommand(), selfUpdateCommand(),
 		{Name: "terminal-info", Brief: "Inspect terminal environment and interactive palette", Flags: flg.Flags{&flg.Switch{Name: "plain", Brief: "Print a text report", Default: &plain}}, Handler: xli.OnRun(func(ctx context.Context, c *xli.Command, _ xli.Next) error {
 			return tui.RunTerminalInfo(ctx, c.ReadCloser, c.Writer, flg.MustGet[bool](c, "plain"))
 		})},
