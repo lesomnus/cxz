@@ -91,7 +91,7 @@ func helpView(width int, topics ...string) string {
 		{"Input", "Ctrl+← / Ctrl+→", "Move by word (Alt+←/→ also supported)"},
 		{"Navigation", "F9", "Start/stop debug recording and save"},
 		{"Input", "Ctrl+S", "Send message or command"},
-		{"Input", "Ctrl+Enter", "Send message or command (Kitty keyboard protocol)"},
+		{"Input", "Ctrl+Enter", "Send message or command (Windows console / Kitty protocol)"},
 		{"Input", "Enter / Alt+Enter / Ctrl+J", "Newline"},
 		{"Input", "Ctrl+X", "Clear draft"},
 		{"Navigation", "Tab / Shift+Tab", "Next / previous focus: approvals → input → sessions"},

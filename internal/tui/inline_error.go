@@ -17,7 +17,8 @@ func InlineError(ctx context.Context, in io.Reader, out io.Writer, message strin
 	if file, ok := in.(*os.File); ok {
 		in = keyboardInput(file)
 	}
-	_, err := tea.NewProgram(m, tea.WithContext(ctx), tea.WithInput(in), tea.WithOutput(out)).Run()
+	p := tea.NewProgram(m, tea.WithContext(ctx), tea.WithInput(in), tea.WithOutput(out))
+	_, err := runKeyboardProgram(ctx, p, in, nil)
 	return m.accepted, err
 }
 
