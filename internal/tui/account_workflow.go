@@ -13,9 +13,12 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/settings"
 	"github.com/lesomnus/cxz/internal/transport"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type accountWorkflow struct {
@@ -104,13 +107,43 @@ func (m *model) startAccountWorkflow(alias, provider, sessionID string, create b
 			workspace = m.project.Workspace
 		}
 		inProject := os.Getenv("CXZ_PROJECT_ID") != "" && !transport.IsRemote(ctx)
-		creator = func(ctx context.Context, projectID, alias string, _ io.Reader, _, _ io.Writer) (*api.Session, error) {
+		creator = func(ctx context.Context, projectID, alias string, input io.Reader, output, _ io.Writer) (*api.Session, error) {
 			ctx, cancel := context.WithTimeout(ctx, 30*time.Minute)
 			defer cancel()
-			if inProject {
-				return client.Create(ctx, &api.CreateRequest{Workspace: workspace, Agent: provider, Model: settings.From(ctx).Model(provider), ClientId: core.ID(), Account: alias})
+			key, model := core.ID(), settings.From(ctx).Model(provider)
+			open := func() (*api.Session, error) {
+				if inProject {
+					return client.Create(ctx, &api.CreateRequest{Workspace: workspace, Agent: provider, Model: model, ClientId: key, Account: alias})
+				}
+				return client.Open(ctx, &api.ProjectRequest{Workspace: projectID, NewSession: true, Agent: provider, Model: model, ClientId: key, Account: alias})
 			}
-			return client.Open(ctx, &api.ProjectRequest{Workspace: projectID, NewSession: true, Agent: provider, Model: settings.From(ctx).Model(provider), ClientId: core.ID(), Account: alias})
+			s, err := open()
+			_, loginKey, required := accounts.RequiredProjectLogin(err, alias, key)
+			if err == nil || !required || provider != "claude" || loginKey != key {
+				return s, err
+			}
+			login, ok := client.(accounts.SessionLoginClient)
+			if !ok {
+				return nil, fmt.Errorf("session login unavailable; update cxz on the daemon host and recreate its manager and project runtime")
+			}
+			fmt.Fprintln(output, "Session login required. Open the provider URL below and paste the returned code here.")
+			// startAccountWorkflow supplies a real, closeable pipe. Closing it when
+			// login finishes also releases a pending input read on Windows.
+			reader, ok := input.(io.ReadCloser)
+			if !ok {
+				return nil, fmt.Errorf("session login input unavailable")
+			}
+			if err := login.LoginSession(ctx, projectID, alias, loginKey, reader, output); err != nil {
+				if status.Code(err) == codes.Unimplemented {
+					return nil, fmt.Errorf("session login RPC unavailable: update cxz on the daemon host, run cxz install --recreate, then cxz project recreate WORKSPACE")
+				}
+				return nil, err
+			}
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
+			fmt.Fprintln(output, "Authentication completed; starting agent session…")
+			return open() // Same creation key and settings, exactly one retry.
 		}
 	}
 	work := func() tea.Msg {

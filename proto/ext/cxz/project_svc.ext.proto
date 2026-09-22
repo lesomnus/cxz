@@ -1,9 +1,13 @@
 edition = "2023";
 package cxz;
 import "cxz/project.proto";
+import "cxz/account_svc.g.proto";
 option go_package = "github.com/lesomnus/cxz/resource";
 
 service ProjectService {
+  // Ephemeral login transport. First frame identifies the session profile;
+  // subsequent frames carry stdin only. These frames are never journaled.
+  rpc SessionLogin(stream ProjectLoginRequest) returns (stream ProjectLoginOutput);
   // Read immediate directory entries inside the project's container as its remote user.
   rpc Paths(ProjectPathsRequest) returns (stream ProjectPathsReply);
  rpc Devcontainer(DevcontainerRequest) returns (DevcontainerReply);
@@ -18,6 +22,14 @@ service ProjectService {
   // Foreign inventory is not part of the registered Project resource list.
   rpc InspectForeign(InspectForeignRequest) returns (InspectForeignResponse);
 }
+
+message ProjectLoginRequest {
+  ProjectRef ref = 1;
+  AccountRef account = 2;
+  string session_key = 3;
+  bytes input = 4;
+}
+message ProjectLoginOutput { bytes output = 1; }
 
 message ProjectPathsRequest { ProjectRef ref = 1; string path = 2; }
 // Each reply appends entries; the final reply also reports truncation.

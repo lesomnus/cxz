@@ -479,6 +479,9 @@ view in selection mode; an empty list offers account creation. Add a provider
 (Claude/Codex), alias and optional display name, then confirm Create account.
 Provider names use their brand colors in a six-cell slot, keeping selector arrows fixed.
 `/` focuses search by alias/name/provider/number; Enter selects in new-session mode.
+Creating a Claude session prompts for login inline when needed, including configured
+connections and remote SSH/TCP frontends. The project runtime runs the provider's
+login, and completion retries creation once with the same session profile.
 `l` runs the existing login workflow and returns to accounts (Claude: current
 project; Codex default: central). Registration alone does not authenticate.
 

@@ -223,8 +223,14 @@ policies, quota, tool previews, retained memory and Docker settings use the remo
 gRPC API. Recordings and terminal diagnostics describe the **client** terminal
 and are saved locally. Workspace paths entered in remote mode must be absolute
 Linux paths on the daemon host; the client does not resolve them against a
-Windows drive or its current directory. Provider accounts/logins should be set
-up on the daemon host before attaching remotely.
+Windows drive or its current directory. Claude accounts can be registered and
+used to create sessions in the TUI; when login is required, the provider URL and
+hidden code input appear inline, then creation resumes automatically. The login
+process runs in the project runtime and keeps credentials in that session's
+profile. Canceling or disconnecting stops login. This requires an updated client,
+manager and project runtime; upgrade older installations on the daemon host with
+`cxz install --recreate` and `cxz project recreate WORKSPACE` after updating cxz.
+Central Codex login and explicit relogin of existing sessions still run on the host.
 
 Container path completion (backtick followed by `/` or `~/`) uses the selected
 project's remote manager over the same SSH/TCP connection. The manager streams
@@ -239,7 +245,7 @@ containers do not need recreation when their shared tools already include Wisp.
 The existing embedded container terminal and secret helper still depend on direct
 local Docker access. In remote mode they report
 that host-local access is required, rather than touching the client's Docker
-engine. Interactive provider login is also performed on the host. File-based
+engine. File-based
 memory browsing/copying and log retrieval already go through the daemon and work
 remotely. Path browsing does not provide a remote PTY or secret-helper RPC.
 

@@ -74,6 +74,14 @@ cxz account add --auth-backend project-local-oauth claude work-claude
   `account login --session SESSION_ALIAS ACCOUNT`를 사용한다.
   중앙 인증이나 손상된 기존 인증 파일에는 자동 프로젝트 로그인을 실행하지 않는다.
   이 흐름에는 CLI와 프로젝트 runtime 양쪽의 새 버전이 필요하다.
+- 기본 `cxz`, 연결 목록과 `cxz connect`에서도 Claude 계정 선택 후 새 세션에 로그인이
+  필요하면 TUI에 URL과 숨김 코드 입력을 표시한다. 로그인 성공 후 같은 생성 요청 키로
+  한 번만 재시도한다. `ProjectService.SessionLogin` 양방향 스트림으로 manager를 거쳐
+  프로젝트 runtime의 공식 CLI에 연결하므로 Windows도 로컬 Docker 없이 사용할 수 있다.
+  취소/연결 종료 시 로그인 프로세스를 취소하며 URL/코드를 resource audit나 대화 journal에
+  기록하지 않는다. 계정 또는 프로젝트를 입력 중에 바꿀 수 없고, 실행 중인 세션 프로필의
+  잠금을 우회하지 않는다. 중앙 Codex 로그인에는 이 흐름을 적용하지 않는다.
+  클라이언트·manager·프로젝트 runtime 업데이트가 필요하다.
 - `project-local-oauth`라는 backend ID는 유지하지만 인증 원본은 **세션별**이다.
   사용자가 공식 CLI 인증을 직접 완료한다. 같은 Account여도 새 세션마다 별도로 로그인한다.
   `account login/status --session SESSION_ALIAS ACCOUNT`는 해당 세션을 대상으로 한다.
