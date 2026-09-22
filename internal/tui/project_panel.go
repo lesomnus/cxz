@@ -22,6 +22,8 @@ const projectPanelGap = 2
 const projectPanelHeaderRows = 4
 const projectPanelFooterRows = 7
 
+var panelSeparatorStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("238"))
+
 type panelRow struct {
 	project *api.Project
 	session *api.Session
@@ -74,10 +76,32 @@ func (m *model) contentOffset() int {
 	return 0
 }
 
-func (m *model) panelRange(count int) (start, end int) {
+// Keep navigation indices tied to real items. Decorative separators occupy
+// screen rows only, shared by rendering, scrolling and mouse hit testing.
+func panelLayout(rows []panelRow) []int {
+	var layout []int
+	for i, row := range rows {
+		if i > 0 && row.session == nil {
+			layout = append(layout, -1)
+		}
+		layout = append(layout, i)
+	}
+	return layout
+}
+
+func (m *model) panelPosition(layout []int) int {
+	for i, item := range layout {
+		if item == m.panelIndex {
+			return i
+		}
+	}
+	return 0
+}
+
+func (m *model) panelRange(layout []int) (start, end int) {
 	capacity := max(1, m.height-projectPanelHeaderRows-projectPanelFooterRows)
-	start = max(0, min(m.panelIndex-capacity+3, count-capacity))
-	return start, min(count, start+capacity)
+	start = max(0, min(m.panelPosition(layout)-capacity+3, len(layout)-capacity))
+	return start, min(len(layout), start+capacity)
 }
 
 func (m *model) panelMouse(v tea.MouseMsg) (bool, tea.Cmd) {
@@ -97,14 +121,22 @@ func (m *model) panelMouse(v tea.MouseMsg) (bool, tea.Cmd) {
 		return true, nil
 	}
 	rows := m.panelRows()
-	start, end := m.panelRange(len(rows))
-	index := start + v.Y - projectPanelHeaderRows
-	onItem := v.Y >= projectPanelHeaderRows && index < end
+	layout := panelLayout(rows)
+	start, end := m.panelRange(layout)
+	position := start + v.Y - projectPanelHeaderRows
+	index := -1
+	if v.Y >= projectPanelHeaderRows && position < end {
+		index = layout[position]
+	}
+	onItem := index >= 0
 	if onItem {
 		m.panelHoverY = v.Y
 	}
 	switch {
 	case v.Action == tea.MouseActionPress && v.Button == tea.MouseButtonLeft:
+		if v.Y >= projectPanelHeaderRows && position < end && !onItem {
+			return true, nil // The divider never selects or activates an item.
+		}
 		m.focusPanel()
 		if onItem {
 			m.panelIndex = index
@@ -261,10 +293,20 @@ func (m *model) panelKey(k tea.KeyMsg) tea.Cmd {
 		m.panelIndex = 0
 	case "end":
 		m.panelIndex = max(0, len(rows)-1)
-	case "pgup":
-		m.panelIndex = max(0, m.panelIndex-max(1, m.height-projectPanelHeaderRows-projectPanelFooterRows))
-	case "pgdown":
-		m.panelIndex = min(max(0, len(rows)-1), m.panelIndex+max(1, m.height-projectPanelHeaderRows-projectPanelFooterRows))
+	case "pgup", "pgdown":
+		layout := panelLayout(rows)
+		if len(layout) == 0 {
+			break
+		}
+		direction := 1
+		if k.String() == "pgup" {
+			direction = -1
+		}
+		position := max(0, min(len(layout)-1, m.panelPosition(layout)+direction*max(1, m.height-projectPanelHeaderRows-projectPanelFooterRows)))
+		if layout[position] < 0 {
+			position += direction
+		}
+		m.panelIndex = layout[position]
 	case "left":
 		for m.panelIndex > 0 && rows[m.panelIndex].session != nil {
 			m.panelIndex--
@@ -401,7 +443,8 @@ func panelRowBackground(line string, shade int) string {
 func (m *model) panelScreen() string {
 	width := m.panelScreenWidth()
 	rows := m.panelRows()
-	start, end := m.panelRange(len(rows))
+	layout := panelLayout(rows)
+	start, end := m.panelRange(layout)
 	lines := []string{"", accent.Bold(true).Render("Projects"), muted.Render("↑/↓ select · Enter open"), ""}
 	if m.deletingID != "" {
 		lines[2] = warning.Render(workingSpinner(m.pulse) + " Deleting session…")
@@ -412,7 +455,12 @@ func (m *model) panelScreen() string {
 	if len(rows) == 0 {
 		lines = append(lines, "No projects")
 	}
-	for i := start; i < end; i++ {
+	for position := start; position < end; position++ {
+		i := layout[position]
+		if i < 0 {
+			lines = append(lines, panelSeparatorStyle.Render(strings.Repeat("─", max(0, width-2))))
+			continue
+		}
 		r := rows[i]
 		label := r.project.Name
 		via := m.connectionLabel(r.project.Id)
@@ -475,10 +523,11 @@ func (m *model) panelScreen() string {
 		line := clip(lines[i], max(1, width-2))
 		shade := 236
 		if i >= projectPanelHeaderRows && i < projectPanelHeaderRows+end-start {
-			if i == m.panelHoverY {
+			item := layout[start+i-projectPanelHeaderRows]
+			if item >= 0 && i == m.panelHoverY {
 				shade = 237
 			}
-			if m.panelFocus && i == projectPanelHeaderRows+m.panelIndex-start {
+			if item >= 0 && m.panelFocus && item == m.panelIndex {
 				shade = 238
 			}
 		}

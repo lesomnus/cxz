@@ -161,6 +161,7 @@ type model struct {
 	localReports            map[string]string
 	historyTimes            []int64
 	historyPositions        []float64 // stable journal coordinates, not loaded-line offsets
+	workingToolRows         map[int]bool
 	restartConfirm          *restartConfirmation
 	questionDialog          *questionDialog
 	questionSeen            map[string]bool
@@ -494,7 +495,9 @@ func (m *model) render() {
 	}()
 	m.promptSpans = nil
 	m.codeButtons = nil
+	m.workingToolRows = nil
 	copyBlocks := map[int][]codeButton{}
+	toolBlocks := map[int]bool{}
 	m.updateQuota()
 	m.workingSince = 0
 	follow := m.view.AtBottom()
@@ -700,6 +703,9 @@ func (m *model) render() {
 					text = muted.Render(ansi.Strip(text))
 				}
 				add(text, e.TimeMs)
+				if e.RunId == s.RunId && (e.Kind == "tool_call" || e.Kind == "tool_result") {
+					toolBlocks[len(lines)-1] = true
+				}
 				if e.Kind == "input" {
 					promptBlock = len(lines) - 1
 					m.latestPrompt = e.Text
@@ -743,6 +749,12 @@ func (m *model) render() {
 		}
 		rows := strings.Split(block, "\n")
 		for row := range rows {
+			if toolBlocks[i] && strings.HasPrefix(ansi.Strip(rows[row]), "  [•]") {
+				if m.workingToolRows == nil {
+					m.workingToolRows = map[int]bool{}
+				}
+				m.workingToolRows[start+row] = true
+			}
 			m.historyTimes = append(m.historyTimes, times[i])
 			m.historyPositions = append(m.historyPositions, float64(sequences[i])+float64(row)/float64(len(rows)))
 		}

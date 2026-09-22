@@ -110,6 +110,15 @@ func (m *model) conversationView() string {
 	}
 	m.acknowledgeSession()
 	rows := strings.Split(m.view.View(), "\n")
+	// Blink only the dot in visible running-tool headers. The cached transcript,
+	// its geometry and tool previews stay unchanged between animation frames.
+	if m.pulse/5%2 == 1 {
+		for i, row := range rows {
+			if m.workingToolRows[m.view.YOffset+i] {
+				rows[i] = strings.Replace(row, "[•]", "[ ]", 1)
+			}
+		}
+	}
 	promptRows := map[int]bool{}
 	for _, span := range m.promptSpans {
 		for row := max(0, span.start-m.view.YOffset); row < min(len(rows), span.end-m.view.YOffset); row++ {
