@@ -12,10 +12,19 @@
 - 컨테이너 식별자가 바뀌면 이전 helper를 종료한다. 종료된 연결은 다음 조회에서 다시 연다.
 - TUI 종료 시 연결을 닫는다. 포트 공개, root 승격, credential 전달은 없다.
 
+원격 연결에서는 TUI가 `ProjectService.Paths` 스트림 RPC로 선택한 연결의 프로젝트
+ID와 디렉터리만 보낸다. manager가 저장한 컨테이너/remote user 정보를 사용하고,
+요청마다 manager 소유권과 실행 상태를 검증한다. manager 안의 프로젝트별 Wisp
+연결을 재사용하며 manager 종료 시 닫는다. 클라이언트의 Docker나 파일 시스템은
+조회하지 않는다. SSH와 TCP, Windows 프론트엔드 모두 같은 RPC를 사용한다.
+경로 조회 중 전체 프로젝트 inventory를 갱신하지 않는다.
+
 ## 내부 프로토콜
 
 JSON Lines로 hello(protocol version), 경로 요청, entry 응답, done/error를 전달한다.
 공개 payday 리소스 API를 대체하는 API가 아니라 TUI와 컨테이너 사이 전용 transport다.
+원격 탐색에서는 manager가 이 stdio 프로토콜을 공개 `ProjectService.Paths`의
+항목 batch 스트림으로 변환한다. 파일 종류, 링크 대상과 2,048개 제한을 유지한다.
 stdout은 프로토콜 전용이며 stderr를 경로 데이터로 해석하지 않는다.
 
 동일 연결의 요청은 직렬화한다. 입력 변경으로 취소한 요청은 소비자에게 전달하지 않고

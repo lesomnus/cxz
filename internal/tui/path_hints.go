@@ -12,6 +12,9 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/containerterm"
+	"github.com/lesomnus/cxz/internal/transport"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type pathToken struct {
@@ -143,6 +146,9 @@ func (m *model) fetchPathHints(d pathHintDue) tea.Cmd {
 		return nil
 	}
 	projectID, parent, generation := s.ProjectId, p.token.parent, p.generation
+	lifetime := m.contextFor(projectID)
+	remote := transport.IsRemote(lifetime)
+	client, _ := m.client.(containerterm.PathClient)
 	var target *api.Project
 	for _, candidate := range append([]*api.Project{m.project}, m.panelProjects...) {
 		if candidate != nil && candidate.Id == projectID && candidate.ContainerId != "" && candidate.RemoteUser != "" {
@@ -150,24 +156,34 @@ func (m *model) fetchPathHints(d pathHintDue) tea.Cmd {
 			break
 		}
 	}
-	if m.wisp == nil {
+	if !remote && m.wisp == nil {
 		m.wisp = &containerterm.WispPool{}
 	}
-	pool, lifetime := m.wisp, m.contextFor(projectID)
+	pool := m.wisp
 	target = m.localProject(target)
 	program := m.program
 	ctx, cancel := context.WithTimeout(lifetime, 4*time.Second)
 	p.cancel = cancel
 	return func() tea.Msg {
 		defer cancel()
-		if target == nil {
-			return pathHintResult{generation: generation, err: fmt.Errorf("project metadata unavailable; refresh project view")}
-		}
-		listing, err := pool.Paths(lifetime, ctx, target, parent, func(listing containerterm.PathListing) {
+		emit := func(listing containerterm.PathListing) {
 			if ctx.Err() == nil && program != nil {
 				program.Send(pathHintResult{generation: generation, listing: listing, partial: true})
 			}
-		})
+		}
+		var listing containerterm.PathListing
+		var err error
+		if remote {
+			if client == nil {
+				err = status.Error(codes.Unimplemented, "remote container path browsing unavailable")
+			} else {
+				listing, err = client.Paths(ctx, projectID, parent, emit)
+			}
+		} else if target == nil {
+			err = fmt.Errorf("project metadata unavailable; refresh project view")
+		} else {
+			listing, err = pool.Paths(lifetime, ctx, target, parent, emit)
+		}
 		return pathHintResult{generation: generation, listing: listing, err: err}
 	}
 }
@@ -354,11 +370,19 @@ func (m *model) pathHintOverlay(view string) string {
 		content = append(content, muted.Render("Loading directory…"))
 	} else if p.err != nil {
 		message := "Directory unavailable · check container and permissions"
-		if strings.Contains(p.err.Error(), "wisp") {
+		if strings.Contains(p.err.Error(), "wisp unavailable") || strings.Contains(p.err.Error(), "wisp disconnected") {
 			message = "Wisp unavailable · update project runtime or reopen path hints"
 		}
 		if strings.Contains(p.err.Error(), "metadata unavailable") {
 			message = "Project metadata unavailable · refresh project view"
+		}
+		switch status.Code(p.err) {
+		case codes.Unimplemented:
+			message = "Update remote manager · cxz install --recreate"
+		case codes.Unavailable:
+			message = "Remote connection unavailable · reconnect and retry"
+		case codes.DeadlineExceeded:
+			message = "Directory lookup timed out · reopen path hints to retry"
 		}
 		content = append(content, warning.Render(message))
 	} else {

@@ -497,6 +497,8 @@ packages. Definitions are in `proto/cxz`; lifecycle extensions are in
 
 - `ProjectService.Add/Get/List/Watch` registers and reads workspace resources;
   `Up/Down/Recreate` controls their owned containers. Up does not create a session.
+  `Paths` streams container directory entries for remote path completion as the
+  project's remote user, through the selected SSH/TCP connection.
 - `SessionService.Add/Get/List/Watch` manages conversation resources;
   `Resume/Send/Reply/Interrupt/Stop` controls their runs.
 - Resource `Watch` subscribes to explicit resource refs. `Events/History` is the

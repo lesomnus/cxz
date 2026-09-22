@@ -191,7 +191,7 @@ func TestRecordingStatusPositionAndBlink(t *testing.T) {
 	start := m.debugRecorder.generation()
 	on := ansi.Strip(m.recordingLabel(start))
 	off := ansi.Strip(m.recordingLabel(start.Add(time.Second)))
-	if on != "⬤ REC" || strings.TrimSpace(off) != "REC" || strings.Contains(off, "⬤") || ansi.StringWidth(on) != ansi.StringWidth(off) || m.recordingLabel(start) != m.recordingLabel(start.Add(2*time.Second)) {
+	if on != "⬤ REC " || strings.TrimSpace(off) != "REC" || strings.Contains(off, "⬤") || ansi.StringWidth(on) != ansi.StringWidth(off) || m.recordingLabel(start) != m.recordingLabel(start.Add(2*time.Second)) {
 		t.Fatal("blink changes label/width", on, off)
 	}
 	for _, preview := range []bool{false, true} {
@@ -202,7 +202,7 @@ func TestRecordingStatusPositionAndBlink(t *testing.T) {
 		}
 		rows := strings.Split(ansi.Strip(m.sessionScreen()), "\n")
 		y := m.height - m.input.Height() - 4 - m.terminalHeight()
-		if !strings.HasSuffix(rows[y], "REC") || !strings.Contains(rows[y+1], "╭") {
+		if !strings.HasSuffix(rows[y], "REC ") || !strings.Contains(rows[y+1], "╭") {
 			t.Fatal("recording not immediately above input", rows)
 		}
 		if strings.Contains(rows[len(rows)-1], "REC") {

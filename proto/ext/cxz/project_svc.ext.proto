@@ -4,6 +4,8 @@ import "cxz/project.proto";
 option go_package = "github.com/lesomnus/cxz/resource";
 
 service ProjectService {
+  // Read immediate directory entries inside the project's container as its remote user.
+  rpc Paths(ProjectPathsRequest) returns (stream ProjectPathsReply);
  rpc Devcontainer(DevcontainerRequest) returns (DevcontainerReply);
  rpc Docker(DockerRequest) returns (DockerReply);
   rpc FileMappings(FileMappingsRequest) returns (FileMappingsReply);
@@ -15,6 +17,17 @@ service ProjectService {
   rpc Recreate(ProjectRecreateRequest) returns (Project);
   // Foreign inventory is not part of the registered Project resource list.
   rpc InspectForeign(InspectForeignRequest) returns (InspectForeignResponse);
+}
+
+message ProjectPathsRequest { ProjectRef ref = 1; string path = 2; }
+// Each reply appends entries; the final reply also reports truncation.
+message ProjectPathsReply { repeated ProjectPathEntry entries = 1; bool truncated = 2; }
+message ProjectPathEntry {
+  string name = 1;
+  bool directory = 2;
+  bool executable = 3;
+  bool symlink = 4;
+  string link_target = 5;
 }
 
 message ProjectUpRequest {
