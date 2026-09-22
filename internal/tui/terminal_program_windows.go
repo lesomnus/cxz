@@ -37,7 +37,9 @@ func runKeyboardProgram(ctx context.Context, p *tea.Program, in io.Reader, out i
 		return nil, fmt.Errorf("prepare keyboard: %w", err)
 	}
 	defer windows.SetConsoleMode(handle, original)
-	tea.WithInput(nil)(p)
+	// Keep Bubble Tea's byte reader inert without using nil: RestoreTerminal
+	// unconditionally recreates that reader and would otherwise dereference nil.
+	tea.WithInput(bytes.NewReader(nil))(p)
 	tea.WithOutput(&cursorWriter{out: out, win32Keyboard: true})(p)
 	readCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
