@@ -134,7 +134,7 @@ func (c *Client) concurrentOpen(ctx context.Context, project, agent, model, acco
 	return nil
 }
 func (c *Client) Down(ctx context.Context, r *api.ProjectRequest, opts ...grpc.CallOption) (*api.Receipt, error) {
-	// Resolve without registering a new resource as a side effect of deletion.
+	// Resolve without registering a new resource as a side effect of shutdown.
 	ps, err := c.Projects(ctx, &api.Empty{}, opts...)
 	if err != nil {
 		return nil, err

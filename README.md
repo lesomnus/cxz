@@ -163,13 +163,20 @@ bin/cxz session attach PROJECT             # or SESSION_ID
 bin/cxz                            # open TUI (also: tui, watch)
 bin/cxz project exec PROJECT -- go test ./...
 bin/cxz project shell PROJECT
-bin/cxz project down .                     # remove owned containers; preserve workspace/volumes
-bin/cxz down .                             # remove project + sessions from use; retain source/volumes
+bin/cxz down .                             # remove owned containers; retain project, sessions and history
+bin/cxz project down .                     # same preservation behavior as cxz down
 bin/cxz project up .                       # recreate + resume; never replay old prompts
 bin/cxz project recreate --yes .           # writable layer lost; editors disconnect
 bin/cxz install --recreate         # replace manager, keep project processes/data
 bin/cxz uninstall                  # remove manager only; projects/data remain
 ```
+
+`cxz down` stops running agents and removes the project's owned containers,
+while retaining its registration, sessions, conversation history, workspace
+source and named volumes. After `cxz up`, open `cxz` to view the same sessions;
+use Ctrl+R or `cxz session resume SESSION` to continue one. `cxz up` only prepares
+the containers and does not automatically resume agents. Files stored only in
+a container's writable layer are removed with the container.
 
 Inside an owned project, `cxz session attach`, `cxz session ls` and session controls are scoped to that
 project. No manager Docker socket or credential directory is mounted there.
@@ -541,7 +548,7 @@ back up the full state volumes, not just transcripts.
   Codex may give a previously empty thread a new vendor ID: no transcript exists
   until its first turn. This exception requires no recorded send intent.
 - A crash may leave `delivery_unknown`; there is no exactly-once side-effect
-  guarantee. Inspect history before repeating a task. `project down` collects final
+  guarantee. Inspect history before repeating a task. `down` / `project down` collects final
   history; abrupt loss can leave manager history incomplete until `project up` recovers.
 - Foreign `project recreate` requires confirmation: writable layer lost, editors detached,
   workspace/named volumes retained. Host initialization/elevated settings require

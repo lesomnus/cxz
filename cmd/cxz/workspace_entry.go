@@ -33,7 +33,7 @@ func workspaceEntryCommands() xli.Commands {
 		}
 	}
 	up.Flags = append(flags, formatFlag())
-	down := &xli.Command{Name: "down", Brief: "Delete workspace project and sessions; retain source and named volumes", Args: arg.Args{projectArg("WORKSPACE", true)}, Flags: flg.Flags{formatFlag()}, Handler: withClient(workspaceEntry)}
+	down := &xli.Command{Name: "down", Brief: "Remove owned containers; retain project, sessions, history and volumes", Args: arg.Args{projectArg("WORKSPACE", true)}, Flags: flg.Flags{formatFlag()}, Handler: withClient(workspaceEntry)}
 	it := &xli.Command{Name: "it", Brief: "Open the workspace's newest session (does not create one)", Args: arg.Args{projectArg("WORKSPACE", true)}, Handler: withClient(workspaceEntry)}
 	down.Args[0].(*arg.String).Default = ptr(".")
 	it.Args[0].(*arg.String).Default = ptr(".")
@@ -74,10 +74,10 @@ func workspaceEntry(ctx context.Context, client api.SessionsClient, c *xli.Comma
 		return err
 	}
 	if c.Name == "down" {
-		if err := resources.DeleteProject(ctx, p.Id); err != nil {
+		if _, err := resources.Down(ctx, &api.ProjectRequest{Workspace: p.Id, ClientId: core.ID()}); err != nil {
 			return err
 		}
-		return writeOutput(c, map[string]any{"project": p.Id, "status": "deleted", "retained": "workspace source, named volumes and archived journals"})
+		return writeOutput(c, map[string]any{"project": p.Id, "status": "stopped", "retained": "project, sessions, conversation history, workspace source and named volumes"})
 	}
 	if !terminal(c) {
 		return fmt.Errorf("it requires an interactive terminal; use cxz session get SESSION for data")

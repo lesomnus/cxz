@@ -377,7 +377,7 @@ cxz --format json project ls
 | `install` | `--image` 생략 시 현재 바이너리로 빌드. `--workspace-root`는 기존 설치/실행 환경에서 결정하며 결정 불가 시 오류. `--recreate` 기본 false |
 | `uninstall` | 인자 없음. manager만 제거하고 프로젝트와 볼륨 보존 |
 | `up [WORKSPACE]` | 기본 `.`. 프로젝트 컨테이너를 준비한 뒤 `cxz`로 TUI를 열라는 안내를 출력하고 종료. 이미 실행 중이면 재준비하지 않음. 세션 생성/Account/로그인 요구 없음. `--format json\|table` 또는 `--no-attach` 명시 시 안내 대신 프로젝트 정보 출력 |
-| `down [WORKSPACE]` | 기본 `.`. 소유 컨테이너 정리 후 프로젝트·세션을 사용 목록에서 삭제. 워크스페이스 소스/이름 있는 볼륨/저널은 보존 |
+| `down [WORKSPACE]` | 기본 `.`. 실행 중인 agent를 중지하고 소유 컨테이너 정리. 프로젝트 등록·세션·대화 기록·워크스페이스 소스·이름 있는 볼륨은 보존 |
 | `it [WORKSPACE]` | 기본 `.`. 해당 프로젝트의 가장 최근 생성 세션 화면. 다른 프로젝트 세션은 제외하고 생성 시각 동률은 ID로 고정 정렬. 프로젝트/세션이 없으면 오류이며 자동 생성하지 않음 |
 | `manager serve` | foreground 서버. `--agent`는 Claude 실행 파일 경로이며 기본 `claude`; 계정의 agent 선택이 아님 |
 | `manager update IMAGE` | 이미지 필수. 명시적 tag/digest 필요, latest 거부 |
@@ -390,7 +390,7 @@ cxz --format json project ls
 | `project set PROJECT` | 대상 필수이며 `--name`, `--alias` 중 하나 이상 필수 |
 | `session new [WORKSPACE]` | 경로 기본 `.`. 새 세션의 `--account`는 터미널에서 선택, 비대화형에서는 필수 |
 | `project up [WORKSPACE]`, `project recreate [WORKSPACE]` | 경로 기본 `.`. 기존 세션 계정 유지; 새 세션이면 계정 선택/명시 필요. recreate는 대화형 확인 또는 `--yes` 필요 |
-| `project down [WORKSPACE]` | 경로 기본 `.`. 컨테이너만 내리고 등록·세션은 유지하는 저수준 동작. 최상위 down과 다름 |
+| `project down [WORKSPACE]` | 경로 기본 `.`. 최상위 `down`과 같이 컨테이너를 내리고 등록·세션·대화 기록을 보존 |
 | `session attach [TARGET]` , `tui` (`watch`) | 대상 생략 시 선택/TUI. tui는 인자 없음 |
 | `project shell PROJECT [COMMAND...]` | 대상 필수, 명령 기본 sh |
 | `project exec PROJECT COMMAND...` | 대상과 실행 명령 모두 필수. `project exec PROJECT -- COMMAND...`로 옵션 전달 가능 |
@@ -773,7 +773,13 @@ Ctrl+Q로 프로젝트 패널에 포커스를 준 뒤 세션 행에서 r로 alia
 working/idle 등 state 이벤트는 본문에 누적하지 않고 현재 세션 상태 영역을 갱신한다.
 원본 이벤트 저장과 재접속 cursor는 바꾸지 않는다.
 
-삭제는 payday Listed=false를 영속 tombstone으로 보관하는 논리 삭제다. 일반 목록·Get·
+`cxz down` 후 `cxz up`하면 기존 프로젝트와 세션을 같은 ID·alias로 계속 확인할 수 있다.
+`up`은 컨테이너만 준비하며 agent를 자동으로 재개하지 않는다. `cxz`에서 기존 대화를 열고
+Ctrl+R 또는 `cxz session resume SESSION`으로 이어간다. 컨테이너 writable layer에만
+저장한 파일은 `down` 시 제거되며, 워크스페이스 소스와 이름 있는 볼륨은 유지된다.
+
+TUI/API에서 명시적으로 요청한 삭제는 payday Listed=false를 영속 tombstone으로 보관하는
+논리 삭제다. `down`은 이 삭제를 수행하지 않는다. 삭제된 항목은 일반 목록·Get·
 세션 제어에서 제외하며 재시작/상태 동기화가 복원하지 않는다. up으로 같은 workspace를
 명시적으로 다시 등록할 수 있지만 이전 세션은 복원하지 않는다. 볼륨과 보관된 저널은
 삭제하지 않는다. 복구 UI는 없으며 resources.db를 수동 제거·재구축하면 tombstone도
