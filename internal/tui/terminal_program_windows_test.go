@@ -139,7 +139,7 @@ func TestWindowsConsoleInputProgram(t *testing.T) {
 			t.Fatal("restore console", err)
 		}
 		// Emulate ConHost's VT-input records for a paste larger than both the
-		// console reader's 64-record batch and the decoder's 4096-byte read.
+		// console reader's 1024-record batch and the decoder's 4096-byte read.
 		body := strings.Repeat("한글🙂 long paste\r\n", 512)
 		wire := "\x1b[200~" + body + "\x1b[201~" + win32Key(13, '\n', 8, 1, 1)
 		var records []coninput.InputRecord
@@ -156,7 +156,7 @@ func TestWindowsConsoleInputProgram(t *testing.T) {
 			case key := <-m.keys:
 				if i == 0 && (!key.Paste || string(key.Runes) != body) {
 					cancel()
-					t.Fatal("long console paste was split or changed")
+					t.Fatalf("long console paste was split or changed: paste=%v len=%d prefix=%q", key.Paste, len(key.Runes), string(key.Runes[:min(80, len(key.Runes))]))
 				}
 				if i == 1 && (key.Paste || key.String() != "ctrl+s") {
 					cancel()
@@ -195,6 +195,7 @@ func TestWindowsConsoleRecordSerialization(t *testing.T) {
 	for _, char := range "\x1b[201~" {
 		r.encode(coninput.KeyEventRecord{KeyDown: true, RepeatCount: 1, Char: char})
 	}
+	r.decoder.write(&r.buffer, r.raw.Bytes(), true)
 	msgs := decodedTerminalMessages(t, strings.NewReader(r.buffer.String()))
 	if len(msgs) != 1 {
 		t.Fatal(msgs)
@@ -203,8 +204,10 @@ func TestWindowsConsoleRecordSerialization(t *testing.T) {
 		t.Fatal("pasted Enter became a submit", key)
 	}
 	r.buffer.Reset()
+	r.raw.Reset()
 	r.encode(coninput.KeyEventRecord{KeyDown: true, RepeatCount: 1, Char: 0xd83d})
 	r.encode(coninput.KeyEventRecord{KeyDown: true, RepeatCount: 1, Char: 0xde42})
+	r.decoder.write(&r.buffer, r.raw.Bytes(), true)
 	msgs = decodedTerminalMessages(t, strings.NewReader(r.buffer.String()))
 	if len(msgs) != 1 || string(msgs[0].(tea.KeyMsg).Runes) != "🙂" {
 		t.Fatal(msgs)

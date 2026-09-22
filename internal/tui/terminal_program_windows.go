@@ -80,11 +80,14 @@ func runKeyboardProgram(ctx context.Context, p *tea.Program, in io.Reader, out i
 // Pass the console's raw VT text through as UTF-8. Serialize only actual native
 // keys to Win32 sequences so their modifiers survive the incremental decoder.
 type windowsConsoleInput struct {
-	ctx     context.Context
-	handle  windows.Handle
-	buffer  bytes.Buffer
-	text    consoleUTF16
-	buttons coninput.ButtonState
+	ctx      context.Context
+	handle   windows.Handle
+	buffer   bytes.Buffer
+	raw      bytes.Buffer
+	text     consoleUTF16
+	decoder  consoleVTDecoder
+	buttons  coninput.ButtonState
+	lastRead time.Time
 }
 
 func (r *windowsConsoleInput) Read(p []byte) (int, error) {
@@ -95,11 +98,16 @@ func (r *windowsConsoleInput) Read(p []byte) (int, error) {
 		if r.ctx.Err() != nil {
 			return 0, io.EOF
 		}
-		records, err := coninput.PeekNConsoleInputs(r.handle, 64)
+		// Drain pasted text in batches without waiting for the batch to fill.
+		records, err := coninput.PeekNConsoleInputs(r.handle, 1024)
 		if err != nil {
 			return 0, err
 		}
 		if len(records) == 0 {
+			if len(r.decoder.pending) > 0 && time.Since(r.lastRead) >= uv.DefaultEscTimeout {
+				r.decoder.write(&r.buffer, nil, true)
+				continue
+			}
 			select {
 			case <-r.ctx.Done():
 				return 0, io.EOF
@@ -114,6 +122,9 @@ func (r *windowsConsoleInput) Read(p []byte) (int, error) {
 		for _, record := range records {
 			r.encode(record.Unwrap())
 		}
+		r.lastRead = time.Now()
+		r.decoder.write(&r.buffer, r.raw.Bytes(), false)
+		r.raw.Reset()
 	}
 	return r.buffer.Read(p)
 }
@@ -132,20 +143,20 @@ func (r *windowsConsoleInput) encode(event coninput.EventRecord) {
 		// Expand repeats explicitly: raw Unicode (VK=0) is decoded as text.
 		for i := uint16(0); i < e.RepeatCount; i++ {
 			if vk == 0 {
-				r.text.write(&r.buffer, e.Char)
+				r.text.write(&r.raw, e.Char)
 				continue
 			}
-			fmt.Fprintf(&r.buffer, "\x1b[%d;%d;%d;1;%d;1_", vk, e.VirtualScanCode, e.Char, e.ControlKeyState)
+			fmt.Fprintf(&r.raw, "\x1b[%d;%d;%d;1;%d;1_", vk, e.VirtualScanCode, e.Char, e.ControlKeyState)
 		}
 	case coninput.WindowBufferSizeEventRecord:
-		fmt.Fprintf(&r.buffer, "\x1b[8;%d;%dt", e.Size.Y, e.Size.X)
+		fmt.Fprintf(&r.raw, "\x1b[8;%d;%dt", e.Size.Y, e.Size.X)
 	case coninput.MouseEventRecord:
 		r.encodeMouse(e)
 	case coninput.FocusEventRecord:
 		if e.SetFocus {
-			r.buffer.WriteString("\x1b[I")
+			r.raw.WriteString("\x1b[I")
 		} else {
-			r.buffer.WriteString("\x1b[O")
+			r.raw.WriteString("\x1b[O")
 		}
 	}
 }
@@ -193,5 +204,5 @@ func (r *windowsConsoleInput) encodeMouse(e coninput.MouseEventRecord) {
 	code := ansi.EncodeMouseButton(button, motion, state&coninput.SHIFT_PRESSED != 0,
 		state&(coninput.LEFT_ALT_PRESSED|coninput.RIGHT_ALT_PRESSED) != 0,
 		state&(coninput.LEFT_CTRL_PRESSED|coninput.RIGHT_CTRL_PRESSED) != 0)
-	r.buffer.WriteString(ansi.MouseSgr(code, int(e.MousePositon.X), int(e.MousePositon.Y), release))
+	r.raw.WriteString(ansi.MouseSgr(code, int(e.MousePositon.X), int(e.MousePositon.Y), release))
 }
