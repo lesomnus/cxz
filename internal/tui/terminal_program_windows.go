@@ -19,7 +19,7 @@ import (
 // Own console input while the program runs, keeping the native modifier bits.
 // Feeding bytes back through Bubble Tea v1 would lose Unicode to its ACP reader,
 // so decode using Ultraviolet and deliver typed messages directly to the model.
-func runKeyboardProgram(ctx context.Context, p *tea.Program, in io.Reader, recorder *debugRecorder) (tea.Model, error) {
+func runKeyboardProgram(ctx context.Context, p *tea.Program, in io.Reader, out io.Writer, recorder *debugRecorder) (tea.Model, error) {
 	file, ok := in.(*os.File)
 	if !ok {
 		return p.Run()
@@ -29,12 +29,16 @@ func runKeyboardProgram(ctx context.Context, p *tea.Program, in io.Reader, recor
 	if err := windows.GetConsoleMode(handle, &original); err != nil {
 		return p.Run()
 	}
-	mode := uint32(windows.ENABLE_WINDOW_INPUT | windows.ENABLE_MOUSE_INPUT | windows.ENABLE_EXTENDED_FLAGS)
+	// Without VT input, ConHost strips bracketed-paste boundaries and turns a
+	// paste into thousands of individual keystrokes. Win32 input mode on the
+	// output preserves Ctrl+Enter and other native modifiers alongside VT paste.
+	mode := uint32(windows.ENABLE_WINDOW_INPUT | windows.ENABLE_MOUSE_INPUT | windows.ENABLE_EXTENDED_FLAGS | windows.ENABLE_VIRTUAL_TERMINAL_INPUT)
 	if err := windows.SetConsoleMode(handle, mode); err != nil {
 		return nil, fmt.Errorf("prepare keyboard: %w", err)
 	}
 	defer windows.SetConsoleMode(handle, original)
 	tea.WithInput(nil)(p)
+	tea.WithOutput(&cursorWriter{out: out, win32Keyboard: true})(p)
 	readCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	input := &windowsConsoleInput{ctx: readCtx, handle: handle}
@@ -71,12 +75,13 @@ func runKeyboardProgram(ctx context.Context, p *tea.Program, in io.Reader, recor
 	return model, err
 }
 
-// Serialize native records to Win32 input sequences for the shared, incremental
-// decoder. It handles surrogate pairs, split sequences and bracketed paste.
+// Pass the console's raw VT text through as UTF-8. Serialize only actual native
+// keys to Win32 sequences so their modifiers survive the incremental decoder.
 type windowsConsoleInput struct {
 	ctx     context.Context
 	handle  windows.Handle
 	buffer  bytes.Buffer
+	text    consoleUTF16
 	buttons coninput.ButtonState
 }
 
@@ -124,6 +129,10 @@ func (r *windowsConsoleInput) encode(event coninput.EventRecord) {
 		}
 		// Expand repeats explicitly: raw Unicode (VK=0) is decoded as text.
 		for i := uint16(0); i < e.RepeatCount; i++ {
+			if vk == 0 {
+				r.text.write(&r.buffer, e.Char)
+				continue
+			}
 			fmt.Fprintf(&r.buffer, "\x1b[%d;%d;%d;1;%d;1_", vk, e.VirtualScanCode, e.Char, e.ControlKeyState)
 		}
 	case coninput.WindowBufferSizeEventRecord:

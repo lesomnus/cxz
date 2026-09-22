@@ -25,7 +25,7 @@ func RunTerminalInfo(ctx context.Context, in io.Reader, out io.Writer, plain boo
 		in = keyboardInput(f)
 	}
 	p := tea.NewProgram(m, tea.WithContext(ctx), tea.WithInput(in), tea.WithOutput(out), tea.WithAltScreen(), tea.WithMouseCellMotion())
-	_, err := runKeyboardProgram(ctx, p, in, nil)
+	_, err := runKeyboardProgram(ctx, p, in, out, nil)
 	return err
 }
 

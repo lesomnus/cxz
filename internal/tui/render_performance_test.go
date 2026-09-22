@@ -7,10 +7,37 @@ import (
 	"strings"
 	"testing"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/lesomnus/cxz/api"
 	"github.com/muesli/termenv"
 )
+
+func BenchmarkLongPaste(b *testing.B) {
+	body := []rune(strings.Repeat("한글 text ", 512))
+	for _, atomic := range []bool{false, true} {
+		name := "individual_keys"
+		if atomic {
+			name = "bracketed_paste"
+		}
+		b.Run(name, func(b *testing.B) {
+			b.ReportAllocs()
+			b.SetBytes(int64(len(string(body))))
+			for b.Loop() {
+				m := conversationModel()
+				if atomic {
+					m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: body, Paste: true})
+					m.View()
+				} else {
+					for _, char := range body {
+						m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{char}})
+						m.View()
+					}
+				}
+			}
+		})
+	}
+}
 
 func BenchmarkConversationFrame(b *testing.B) {
 	profile := lipgloss.ColorProfile()

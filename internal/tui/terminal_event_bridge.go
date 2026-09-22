@@ -1,12 +1,36 @@
 package tui
 
 import (
+	"bytes"
 	"strings"
 	"unicode"
+	"unicode/utf16"
 
 	tea "github.com/charmbracelet/bubbletea"
 	uv "github.com/charmbracelet/ultraviolet"
 )
+
+// consoleUTF16 decodes the raw VT stream synthesized by the Windows console
+// (VK=0) without wrapping every character in another Win32 escape sequence.
+// Preserve a high surrogate across input batches so emoji remain one rune.
+type consoleUTF16 struct{ high rune }
+
+func (d *consoleUTF16) write(out *bytes.Buffer, char rune) {
+	if d.high != 0 {
+		high := d.high
+		d.high = 0
+		if char >= 0xdc00 && char <= 0xdfff {
+			out.WriteRune(utf16.DecodeRune(high, char))
+			return
+		}
+		out.WriteRune('\ufffd')
+	}
+	if char >= 0xd800 && char <= 0xdbff {
+		d.high = char
+		return
+	}
+	out.WriteRune(char)
+}
 
 // Keep modifier information until we reach the application's key bindings.
 // Bubble Tea v1's native Windows decoder discards Ctrl on VK_RETURN, while its
