@@ -8,6 +8,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	uv "github.com/charmbracelet/ultraviolet"
+	"github.com/charmbracelet/x/ansi"
 )
 
 // consoleUTF16 decodes the raw VT stream synthesized by the Windows console
@@ -30,6 +31,59 @@ func (d *consoleUTF16) write(out *bytes.Buffer, char rune) {
 		return
 	}
 	out.WriteRune(char)
+}
+
+// ConHost can itself encode VK=0 text as Win32 input sequences. Unwrap those
+// before Ultraviolet: its deserializer counts encoded and decoded bytes together,
+// which loses pending paste boundaries when a serialized stream spans reads.
+type consoleVTDecoder struct {
+	pending []byte
+	text    consoleUTF16
+}
+
+func (d *consoleVTDecoder) write(out *bytes.Buffer, data []byte, final bool) {
+	data = append(d.pending, data...)
+	d.pending = nil
+	const prefix = "\x1b[0;"
+	for len(data) > 0 {
+		start := bytes.IndexByte(data, '\x1b')
+		if start < 0 {
+			out.Write(data)
+			return
+		}
+		out.Write(data[:start])
+		data = data[start:]
+		if len(data) < len(prefix) && bytes.HasPrefix([]byte(prefix), data) && !final {
+			d.pending = append(d.pending, data...)
+			return
+		}
+		if !bytes.HasPrefix(data, []byte(prefix)) {
+			out.WriteByte(data[0])
+			data = data[1:]
+			continue
+		}
+		p := ansi.GetParser()
+		seq, _, n, state := ansi.DecodeSequence(data, 0, p)
+		if state != ansi.NormalState && !final && len(data) < 64 {
+			ansi.PutParser(p)
+			d.pending = append(d.pending, data...)
+			return
+		}
+		if state == ansi.NormalState && p.Command() == '_' {
+			char, _ := p.Param(2, 0)
+			down, _ := p.Param(3, 0)
+			repeat, _ := p.Param(5, 1)
+			if down == 1 {
+				for range repeat {
+					d.text.write(out, rune(char))
+				}
+			}
+		} else {
+			out.Write(seq)
+		}
+		ansi.PutParser(p)
+		data = data[n:]
+	}
 }
 
 // Keep modifier information until we reach the application's key bindings.

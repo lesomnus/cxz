@@ -41,26 +41,57 @@ func TestWindowsLongBracketedPasteIsOneUpdate(t *testing.T) {
 	// Ctrl+Enter after it must still submit. VT mode nests native key sequences
 	// inside the VK=0 stream, unlike direct WriteConsoleInputW key records.
 	body += "\x1b[13;5u"
-	for _, chunk := range []int{7, 64, 4096} {
-		t.Run(fmt.Sprint(chunk), func(t *testing.T) {
-			wire := decodedWindowsText("\x1b[200~" + body + "\x1b[201~" + win32Key(13, '\n', 8, 1, 1))
-			msgs := decodedTerminalMessages(t, chunkedTerminalInput{strings.NewReader(wire), chunk})
-			if len(msgs) != 2 {
-				t.Fatalf("paste became %d messages, want one paste and one submit", len(msgs))
-			}
-			key, ok := msgs[0].(tea.KeyMsg)
-			if !ok || !key.Paste || string(key.Runes) != body {
-				t.Fatal("paste boundaries or contents lost")
-			}
-			m := conversationModel()
-			m.Update(key)
-			if len(m.pastes) != 1 || expandPastes(m.input.Value(), m.pastes) != body {
-				t.Fatal("long paste did not become one lossless chip")
-			}
-			if key, ok := msgs[1].(tea.KeyMsg); !ok || key.String() != "ctrl+s" || key.Paste {
-				t.Fatal("Ctrl+Enter after paste did not retain its modifiers")
-			}
-		})
+	for _, chunk := range []int{1, 7, 64, 4096} {
+		for _, serialized := range []bool{false, true} {
+			t.Run(fmt.Sprintf("%d/serialized=%v", chunk, serialized), func(t *testing.T) {
+				wire := decodedWindowsText("\x1b[200~" + body + "\x1b[201~" + win32Key(13, '\n', 8, 1, 1))
+				if serialized {
+					var encoded strings.Builder
+					for _, char := range utf16.Encode([]rune(wire)) {
+						encoded.WriteString(win32Key(0, rune(char), 0, 1, 1))
+					}
+					wire = encoded.String()
+				}
+				var decoder consoleVTDecoder
+				var normalized bytes.Buffer
+				for len(wire) > 0 {
+					n := min(len(wire), chunk)
+					decoder.write(&normalized, []byte(wire[:n]), false)
+					wire = wire[n:]
+				}
+				decoder.write(&normalized, nil, true)
+				msgs := decodedTerminalMessages(t, chunkedTerminalInput{&normalized, chunk})
+				if len(msgs) != 2 {
+					t.Fatalf("paste became %d messages, want one paste and one submit", len(msgs))
+				}
+				key, ok := msgs[0].(tea.KeyMsg)
+				if !ok || !key.Paste || string(key.Runes) != body {
+					t.Fatal("paste boundaries or contents lost")
+				}
+				m := conversationModel()
+				m.Update(key)
+				if len(m.pastes) != 1 || expandPastes(m.input.Value(), m.pastes) != body {
+					t.Fatal("long paste did not become one lossless chip")
+				}
+				if key, ok := msgs[1].(tea.KeyMsg); !ok || key.String() != "ctrl+s" || key.Paste {
+					t.Fatal("Ctrl+Enter after paste did not retain its modifiers")
+				}
+			})
+		}
+	}
+}
+
+func TestWindowsConsoleVTIncompleteEscapeAndOtherSequences(t *testing.T) {
+	for _, wire := range []string{"\x1b", "\x1b[", "\x1b[0;", "\x1b[0;32mtext", "\x1b[<0;4;5M"} {
+		var d consoleVTDecoder
+		var out bytes.Buffer
+		for _, char := range []byte(wire) {
+			d.write(&out, []byte{char}, false)
+		}
+		d.write(&out, nil, true)
+		if out.String() != wire || len(d.pending) != 0 {
+			t.Fatalf("changed or swallowed non-Win32 input %q: %q", wire, out.String())
+		}
 	}
 }
 
