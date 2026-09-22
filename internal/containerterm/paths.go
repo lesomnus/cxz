@@ -23,6 +23,12 @@ type PathListing struct {
 	Truncated bool
 }
 
+// PathClient streams cumulative snapshots for a project on the selected daemon.
+// The daemon resolves container identity and user; callers supply only a project ID.
+type PathClient interface {
+	Paths(context.Context, string, string, func(PathListing)) (PathListing, error)
+}
+
 // Arguments are passed as argv, never interpolated into shell source. Only
 // immediate entry names/types are read; no file contents or recursive walk.
 const listPathsScript = `

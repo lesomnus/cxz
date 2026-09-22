@@ -26,6 +26,7 @@ const (
 	ProjectService_Erase_FullMethodName          = "/cxz.ProjectService/Erase"
 	ProjectService_List_FullMethodName           = "/cxz.ProjectService/List"
 	ProjectService_Watch_FullMethodName          = "/cxz.ProjectService/Watch"
+	ProjectService_Paths_FullMethodName          = "/cxz.ProjectService/Paths"
 	ProjectService_Devcontainer_FullMethodName   = "/cxz.ProjectService/Devcontainer"
 	ProjectService_Docker_FullMethodName         = "/cxz.ProjectService/Docker"
 	ProjectService_FileMappings_FullMethodName   = "/cxz.ProjectService/FileMappings"
@@ -63,6 +64,8 @@ type ProjectServiceClient interface {
 	// once in that first message and once as a change that happened while it was
 	// being read -- and that is harmless for the same reason.
 	Watch(ctx context.Context, in *ProjectWatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ProjectWatchResponse], error)
+	// Read immediate directory entries inside the project's container as its remote user.
+	Paths(ctx context.Context, in *ProjectPathsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ProjectPathsReply], error)
 	Devcontainer(ctx context.Context, in *DevcontainerRequest, opts ...grpc.CallOption) (*DevcontainerReply, error)
 	Docker(ctx context.Context, in *DockerRequest, opts ...grpc.CallOption) (*DockerReply, error)
 	FileMappings(ctx context.Context, in *FileMappingsRequest, opts ...grpc.CallOption) (*FileMappingsReply, error)
@@ -163,6 +166,25 @@ func (c *projectServiceClient) Watch(ctx context.Context, in *ProjectWatchReques
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type ProjectService_WatchClient = grpc.ServerStreamingClient[ProjectWatchResponse]
 
+func (c *projectServiceClient) Paths(ctx context.Context, in *ProjectPathsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ProjectPathsReply], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &ProjectService_ServiceDesc.Streams[1], ProjectService_Paths_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[ProjectPathsRequest, ProjectPathsReply]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type ProjectService_PathsClient = grpc.ServerStreamingClient[ProjectPathsReply]
+
 func (c *projectServiceClient) Devcontainer(ctx context.Context, in *DevcontainerRequest, opts ...grpc.CallOption) (*DevcontainerReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DevcontainerReply)
@@ -261,6 +283,8 @@ type ProjectServiceServer interface {
 	// once in that first message and once as a change that happened while it was
 	// being read -- and that is harmless for the same reason.
 	Watch(*ProjectWatchRequest, grpc.ServerStreamingServer[ProjectWatchResponse]) error
+	// Read immediate directory entries inside the project's container as its remote user.
+	Paths(*ProjectPathsRequest, grpc.ServerStreamingServer[ProjectPathsReply]) error
 	Devcontainer(context.Context, *DevcontainerRequest) (*DevcontainerReply, error)
 	Docker(context.Context, *DockerRequest) (*DockerReply, error)
 	FileMappings(context.Context, *FileMappingsRequest) (*FileMappingsReply, error)
@@ -302,6 +326,9 @@ func (UnimplementedProjectServiceServer) List(context.Context, *ProjectListReque
 }
 func (UnimplementedProjectServiceServer) Watch(*ProjectWatchRequest, grpc.ServerStreamingServer[ProjectWatchResponse]) error {
 	return status.Error(codes.Unimplemented, "method Watch not implemented")
+}
+func (UnimplementedProjectServiceServer) Paths(*ProjectPathsRequest, grpc.ServerStreamingServer[ProjectPathsReply]) error {
+	return status.Error(codes.Unimplemented, "method Paths not implemented")
 }
 func (UnimplementedProjectServiceServer) Devcontainer(context.Context, *DevcontainerRequest) (*DevcontainerReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method Devcontainer not implemented")
@@ -463,6 +490,17 @@ func _ProjectService_Watch_Handler(srv interface{}, stream grpc.ServerStream) er
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type ProjectService_WatchServer = grpc.ServerStreamingServer[ProjectWatchResponse]
+
+func _ProjectService_Paths_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(ProjectPathsRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(ProjectServiceServer).Paths(m, &grpc.GenericServerStream[ProjectPathsRequest, ProjectPathsReply]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type ProjectService_PathsServer = grpc.ServerStreamingServer[ProjectPathsReply]
 
 func _ProjectService_Devcontainer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DevcontainerRequest)
@@ -654,6 +692,11 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "Watch",
 			Handler:       _ProjectService_Watch_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "Paths",
+			Handler:       _ProjectService_Paths_Handler,
 			ServerStreams: true,
 		},
 	},

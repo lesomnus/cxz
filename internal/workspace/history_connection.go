@@ -64,6 +64,7 @@ func (m *Manager) dropHistoryClient(c *historyConnection) {
 }
 
 func (m *Manager) Close() {
+	m.paths.Close()
 	m.historyMu.Lock()
 	defer m.historyMu.Unlock()
 	for id, c := range m.historyClients {

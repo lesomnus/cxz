@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/containerterm"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/dockerx"
 	"github.com/lesomnus/cxz/internal/resourceclient"
@@ -31,6 +32,7 @@ type Project struct {
 }
 type Runtime struct{ ProjectID, Workspace, Token, Claude, Codex string }
 type Manager struct {
+	paths                                                     containerterm.WispPool
 	historyMu                                                 sync.Mutex
 	historyClients                                            map[string]*historyConnection
 	dockerMu                                                  sync.Mutex

@@ -8,9 +8,77 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/containerterm"
+	"github.com/lesomnus/cxz/internal/transport"
 	"github.com/muesli/termenv"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
+
+type remotePathClient struct {
+	api.SessionsClient
+	project, path string
+	err           error
+}
+
+func (c *remotePathClient) Paths(ctx context.Context, project, path string, _ func(containerterm.PathListing)) (containerterm.PathListing, error) {
+	c.project, c.path = project, path
+	if ctx.Err() != nil {
+		return containerterm.PathListing{}, ctx.Err()
+	}
+	return containerterm.PathListing{Entries: []containerterm.PathEntry{{Name: "remote", Directory: true}}}, c.err
+}
+
+func TestRemotePathHintsCaptureSessionAndCancel(t *testing.T) {
+	m := pathModel()
+	m.ctx = transport.WithRemote(m.ctx)
+	c := &remotePathClient{}
+	m.client = c
+	m.current().ProjectId = "work::project"
+	m.current().Id = "work::session"
+	m.project, m.panelProjects = nil, nil // Remote metadata is resolved by the daemon.
+	m.input.SetValue("`/")
+	m.syncPathHints()
+	m.program = nil // Commands return results directly in this test.
+	cmd := m.fetchPathHints(pathHintDue{m.pathHints.generation})
+	m.current().ProjectId = "home::project"
+	m.current().Id = "home::session"
+	result := cmd().(pathHintResult)
+	if result.err != nil || len(result.listing.Entries) != 1 || c.project != "work::project" || c.path != "/" || m.wisp != nil {
+		t.Fatal("remote lookup used local helper or changed targets", result, c)
+	}
+	m.receivePathHints(result)
+	if got := m.pathOptions(); len(got) != 1 || got[0].text != "/remote/" {
+		t.Fatal(got)
+	}
+	cmd = m.fetchPathHints(pathHintDue{m.pathHints.generation})
+	m.clearPathHints()
+	result = cmd().(pathHintResult)
+	if result.err != context.Canceled {
+		t.Fatal("dismissal did not cancel remote lookup", result.err)
+	}
+	m.receivePathHints(result)
+	if m.pathHints != nil {
+		t.Fatal("late remote result reopened dismissed hints")
+	}
+}
+
+func TestRemotePathHintsExplainOldDaemon(t *testing.T) {
+	m := pathModel()
+	m.ctx = transport.WithRemote(m.ctx)
+	m.client = &remotePathClient{err: status.Error(codes.Unimplemented, "unknown method Paths")}
+	m.input.SetValue("`/")
+	m.syncPathHints()
+	m.program = nil
+	result := m.fetchPathHints(pathHintDue{m.pathHints.generation})().(pathHintResult)
+	result.listing = containerterm.PathListing{}
+	m.receivePathHints(result)
+	view := m.pathHintOverlay(strings.Repeat("row\n", 15))
+	if !strings.Contains(view, "Update remote manager") || !strings.Contains(view, "cxz install --recreate") || strings.Contains(view, "Directory unavailable") {
+		t.Fatal(view)
+	}
+}
 
 func TestPathTokensRequireBackticks(t *testing.T) {
 	for _, value := range []string{"/", "~", "/help", "http://example.com/path", "`/tmp`", "`~/foo` 그리고", "`word /tmp"} {

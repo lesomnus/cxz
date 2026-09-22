@@ -226,12 +226,22 @@ Linux paths on the daemon host; the client does not resolve them against a
 Windows drive or its current directory. Provider accounts/logins should be set
 up on the daemon host before attaching remotely.
 
-The existing embedded container terminal, workspace path completion and secret
-helper still depend on direct local Docker access. In remote mode they report
+Container path completion (backtick followed by `/` or `~/`) uses the selected
+project's remote manager over the same SSH/TCP connection. The manager streams
+directory entries from that project's container as its configured remote user;
+`/` is the container root and `~/` is that user's home. No client Docker is needed,
+including on Windows. Typing another directory or dismissing completion cancels
+the previous lookup. Update both the frontend and remote manager for this feature;
+an older manager displays `Update remote manager · cxz install --recreate`.
+Run that command on the daemon host with an updated cxz binary. Existing project
+containers do not need recreation when their shared tools already include Wisp.
+
+The existing embedded container terminal and secret helper still depend on direct
+local Docker access. In remote mode they report
 that host-local access is required, rather than touching the client's Docker
 engine. Interactive provider login is also performed on the host. File-based
 memory browsing/copying and log retrieval already go through the daemon and work
-remotely. This change does not add a remote PTY/helper RPC.
+remotely. Path browsing does not provide a remote PTY or secret-helper RPC.
 
 ## Builds
 

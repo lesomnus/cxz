@@ -32,6 +32,8 @@ service ProjectService {
   // once in that first message and once as a change that happened while it was
   // being read -- and that is harmless for the same reason.
   rpc Watch(ProjectWatchRequest) returns (stream ProjectWatchResponse);
+  // Read immediate directory entries inside the project's container as its remote user.
+  rpc Paths(ProjectPathsRequest) returns (stream ProjectPathsReply);
   rpc Devcontainer(DevcontainerRequest) returns (DevcontainerReply);
   rpc Docker(DockerRequest) returns (DockerReply);
   rpc FileMappings(FileMappingsRequest) returns (FileMappingsReply);
@@ -211,6 +213,25 @@ message ProjectWatchItem {
   // Empty in the first message, which is not something anybody asked for -- it
   // is what is already there.
   string action = 3 [features.field_presence = IMPLICIT];
+}
+
+message ProjectPathsRequest {
+  ProjectRef ref = 1;
+  string path = 2;
+}
+
+// Each reply appends entries; the final reply also reports truncation.
+message ProjectPathsReply {
+  repeated ProjectPathEntry entries = 1;
+  bool truncated = 2;
+}
+
+message ProjectPathEntry {
+  string name = 1;
+  bool directory = 2;
+  bool executable = 3;
+  bool symlink = 4;
+  string link_target = 5;
 }
 
 message DevcontainerRequest {
