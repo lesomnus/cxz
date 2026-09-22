@@ -242,12 +242,19 @@ an older manager displays `Update remote manager · cxz install --recreate`.
 Run that command on the daemon host with an updated cxz binary. Existing project
 containers do not need recreation when their shared tools already include Wisp.
 
-The existing embedded container terminal and secret helper still depend on direct
-local Docker access. In remote mode they report
-that host-local access is required, rather than touching the client's Docker
-engine. File-based
-memory browsing/copying and log retrieval already go through the daemon and work
-remotely. Path browsing does not provide a remote PTY or secret-helper RPC.
+The embedded container terminal (`Ctrl+backtick` or `/terminal`) uses a bidirectional
+RPC over the same connection. The selected project's manager starts the shell as
+its configured remote user in its remote workspace and forwards raw PTY output,
+input, and resizes. Windows clients need no Docker. Folding the panel or switching
+sessions retains the shell; detaching or losing the connection closes its PTY.
+Terminal bytes are not written to conversation journals or resource audits.
+Update both the frontend and manager; on the daemon host, run an updated cxz binary
+with `cxz install --recreate`. Project containers need no recreation for terminal
+support. Older managers display an upgrade instruction when opening the panel.
+
+The secret helper still requires direct local Docker access and reports that
+requirement in remote mode. File-based memory browsing/copying and log retrieval
+already go through the daemon and work remotely.
 
 ## Builds
 

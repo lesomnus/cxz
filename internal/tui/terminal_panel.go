@@ -107,9 +107,22 @@ func (m *model) toggleTerminal() tea.Cmd {
 	p.err = nil
 	p.scroll = nil
 	id, projectID, width, height := s.Id, s.ProjectId, m.width, max(1, m.terminalHeight()-2)
+	client, lifetime, program := m.client, m.contextFor(projectID), m.program
+	notify := func() {
+		if program != nil {
+			program.Send(terminalChanged{id})
+		}
+	}
 	return func() tea.Msg {
-		ctx, cancel := context.WithTimeout(m.ctx, 5*time.Second)
-		projects, err := m.client.Projects(ctx, &api.Empty{})
+		if remote, ok := client.(containerterm.TerminalClient); ok {
+			terminal, err := remote.OpenTerminal(lifetime, projectID, width, height)
+			if err != nil {
+				return terminalOpened{id: id, err: err}
+			}
+			return terminalOpened{id: id, session: containerterm.Attach(terminal, width, height, notify)}
+		}
+		ctx, cancel := context.WithTimeout(lifetime, 5*time.Second)
+		projects, err := client.Projects(ctx, &api.Empty{})
 		cancel()
 		if err != nil {
 			return terminalOpened{id: id, err: err}
@@ -124,11 +137,7 @@ func (m *model) toggleTerminal() tea.Cmd {
 		if project == nil {
 			return terminalOpened{id: id, err: fmt.Errorf("project container unavailable")}
 		}
-		t, err := containerterm.Open(m.contextFor(projectID), m.localProject(project), width, height, func() {
-			if m.program != nil {
-				m.program.Send(terminalChanged{id})
-			}
-		})
+		t, err := containerterm.Open(lifetime, m.localProject(project), width, height, notify)
 		return terminalOpened{id: id, session: t, err: err}
 	}
 }
