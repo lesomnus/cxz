@@ -93,7 +93,7 @@ func (m *model) toolSelectorKey(k tea.KeyMsg) tea.Cmd {
 		return nil
 	}
 	switch k.String() {
-	case "ctrl+c":
+	case "ctrl+d":
 		return tea.Quit
 	case "esc", "x", "tab":
 		m.toolSelector = nil
@@ -257,6 +257,7 @@ func (m *model) openPreviewSequence(seq uint64) bool {
 	p.session = m.current().Id
 	p.focused = true
 	m.filePreview = p
+	m.textSelection = nil
 	m.input.Blur()
 	m.focusApproval = false
 	m.resize()
@@ -285,12 +286,14 @@ func (m *model) filePreviewKey(k tea.KeyMsg) tea.Cmd {
 		return nil
 	}
 	p := m.filePreview
-	page := max(1, m.previewHeight()-4)
+	page := max(1, m.previewHeight()-previewFrameRows)
 	if m.previewSideWidth() > 0 {
-		page = max(1, m.height-4)
+		page = max(1, min(m.height, previewContentRows+previewFrameRows)-previewFrameRows)
 	}
 	switch k.String() {
 	case "ctrl+c":
+		m.copyText(p.source)
+	case "ctrl+d":
 		return tea.Quit
 	case "x", "esc":
 		m.closeFilePreview()

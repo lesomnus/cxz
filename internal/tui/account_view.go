@@ -48,7 +48,7 @@ func (m *model) accountChoices() []*resource.Account {
 }
 
 func (m *model) accountKey(key tea.KeyMsg) tea.Cmd {
-	if key.String() == "ctrl+c" {
+	if key.String() == "ctrl+d" {
 		return tea.Quit
 	}
 	if m.busy {

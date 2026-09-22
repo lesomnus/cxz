@@ -15,7 +15,7 @@ func TestFencedCodeBlockBackgroundAndPadding(t *testing.T) {
 	t.Cleanup(func() { lipgloss.SetColorProfile(profile) })
 	text := markdownView("```go\nx := 1\n\n世界\n```", 20)
 	rows := strings.Split(text, "\n")
-	if len(rows) != 3 {
+	if len(rows) != 5 {
 		t.Fatalf("unexpected code rows: %q", text)
 	}
 	for _, row := range rows {

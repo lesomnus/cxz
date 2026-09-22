@@ -140,11 +140,11 @@ func TestHistoryStickyPromptAndWorkingIndicator(t *testing.T) {
 	m.view.GotoBottom()
 	before := ansi.Strip(m.sessionScreen())
 	rows := strings.Split(before, "\n")
-	if strings.TrimRight(rows[0], " ") != "> First prompt" || !strings.HasPrefix(rows[1], "  second line") || !strings.Contains(before, "⠋") || strings.Contains(before, "[working]") {
+	if strings.TrimRight(rows[0], " ") != "> First prompt" || !strings.HasPrefix(rows[1], "  second line") || !strings.Contains(before, "⣟") || strings.Contains(before, "[working]") {
 		t.Fatal(before)
 	}
 	m.Update(pulseTick{})
-	if !strings.Contains(m.View(), "⠙") {
+	if !strings.Contains(m.View(), "⣯") {
 		t.Fatal("spinner did not animate")
 	}
 	m.Update(tea.KeyMsg{Type: tea.KeyPgUp})
@@ -167,7 +167,7 @@ func TestHistoryStickyPromptAndWorkingIndicator(t *testing.T) {
 	m.view.GotoBottom()
 	m.current().State = "idle"
 	m.render()
-	if strings.Contains(m.View(), "⠙") || strings.Contains(m.View(), "[idle]") {
+	if strings.Contains(m.View(), "⣯") || strings.Contains(m.View(), "[idle]") {
 		t.Fatal("idle indicator remains")
 	}
 	m.view.GotoTop()

@@ -94,7 +94,7 @@ func (m *model) panelMouse(v tea.MouseMsg) (bool, tea.Cmd) {
 		return false, nil
 	}
 	// Never let a click behind an in-progress action change its target.
-	if m.busy || m.deletingID != "" {
+	if m.busy || m.deletingID != "" || m.renaming {
 		return true, nil
 	}
 	rows := m.panelRows()
@@ -202,7 +202,7 @@ func (m *model) focusPanel() {
 
 func (m *model) focusConversationMouse(v tea.MouseMsg) {
 	if !m.panelFocus || !m.panelVisible() || m.projectView || m.accountView || m.creating ||
-		m.workflow != nil || m.settingsPage != nil || m.memoryPage != nil || m.busy || m.deletingID != "" ||
+		m.workflow != nil || m.settingsPage != nil || m.memoryPage != nil || m.busy || m.deletingID != "" || m.renaming ||
 		v.Action != tea.MouseActionPress || v.Button != tea.MouseButtonLeft ||
 		v.X < m.contentOffset() || v.X >= m.contentOffset()+m.width || v.Y < 0 || v.Y >= m.height {
 		return
@@ -222,7 +222,7 @@ func (m *model) panelKey(k tea.KeyMsg) tea.Cmd {
 	if k.Paste {
 		return nil
 	}
-	if k.String() == "ctrl+c" {
+	if k.String() == "ctrl+d" {
 		return tea.Quit
 	}
 	if m.busy {
@@ -234,7 +234,7 @@ func (m *model) panelKey(k tea.KeyMsg) tea.Cmd {
 	rows := m.panelRows()
 	m.panelWantConnection = ""
 	switch k.String() {
-	case "ctrl+c":
+	case "ctrl+d":
 		return tea.Quit
 	case "esc", "ctrl+q":
 		if m.projectView {
@@ -274,6 +274,12 @@ func (m *model) panelKey(k tea.KeyMsg) tea.Cmd {
 		m.selectPanelProject(r)
 		m.panelFocus = false
 		return m.projectAction(k)
+	case "r":
+		if len(rows) == 0 || rows[m.panelIndex].session == nil {
+			m.notice = "Select a session to rename."
+			return nil
+		}
+		return m.renameSession(rows[m.panelIndex].session)
 	case "m":
 		if len(rows) == 0 || rows[m.panelIndex].session == nil {
 			m.notice = "Select a session to inspect retained agent data."
@@ -399,6 +405,10 @@ func (m *model) panelScreen() string {
 	for i := start; i < end; i++ {
 		r := rows[i]
 		label := r.project.Name
+		via := m.connectionLabel(r.project.Id)
+		if via != "" {
+			label = strings.TrimSuffix(label, via)
+		}
 		if label == "" {
 			label = r.project.Alias
 		}
@@ -408,13 +418,20 @@ func (m *model) panelScreen() string {
 		if r.project.Alias != "" && r.project.Alias != label {
 			label += " · " + r.project.Alias
 		}
-		line := lavender.Render(clip(pickerLabel(label), max(1, width-4)))
+		line := lavender.Render(pickerLabel(label))
+		if via != "" {
+			line += metricStyle.Render(" via " + pickerLabel(strings.TrimPrefix(via, " via ")))
+		}
 		if s := r.session; s != nil {
 			name := s.Alias
 			if name == "" {
 				name = s.Id
 			}
-			line = "  " + pickerLabel(name) + " · " + providerLabel(s.Agent) + " · " + pickerLabel(s.State)
+			sessionName := pickerLabel(name)
+			if m.renaming && m.renameID == s.Id {
+				sessionName = m.aliasInput.View()
+			}
+			line = "  " + sessionName + " · " + providerLabel(s.Agent) + " · " + pickerLabel(s.State)
 		}
 		prefix := "  "
 		if current := m.current(); current != nil && !m.projectView && r.session != nil && current.Id == r.session.Id {
@@ -441,7 +458,7 @@ func (m *model) panelScreen() string {
 	if m.panelError != "" {
 		status = m.panelError
 	}
-	lines = append(lines, muted.Render("n new · a accounts"), muted.Render("s stop · d delete"), muted.Render("m memory · Ctrl+P settings"), muted.Render("Esc/Ctrl+Q return"), muted.Render("Ctrl+C detach · agents run"), warning.Render(pickerLabel(status)))
+	lines = append(lines, muted.Render("n new · a accounts"), muted.Render("r rename · s stop · d del"), muted.Render("m memory · Ctrl+P settings"), muted.Render("Esc/Ctrl+Q return"), muted.Render("Ctrl+D detach · agents run"), warning.Render(pickerLabel(status)))
 	for len(lines) < m.height {
 		lines = append(lines, "")
 	}
@@ -474,7 +491,7 @@ func (m *model) wideScreen(content string) string {
 	}
 	right := []string{}
 	if width := m.previewSideWidth(); width > 0 && !((m.panelFocus || m.projectView) && !m.accountView && !m.creating && !m.panelVisible()) {
-		right = strings.Split(m.previewRows(width, m.height), "\n")
+		right = strings.Split(m.previewRows(width, min(m.height, previewContentRows+previewFrameRows)), "\n")
 	}
 	main := strings.Split(content, "\n")
 	lines := make([]string, max(0, m.height))

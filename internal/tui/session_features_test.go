@@ -33,32 +33,27 @@ func (c *featuresClient) History(context.Context, *api.WatchRequest, ...grpc.Cal
 	c.pages = c.pages[1:]
 	return p, nil
 }
-func TestRenameAndAliasSlot(t *testing.T) {
+func TestRenameInProjectPanel(t *testing.T) {
 	m := projectModel()
 	c := &featuresClient{}
 	m.client = c
 	m.projectView = false
 	m.input = newComposer()
-	m.sessions = []*api.Session{{Id: "s", Alias: "oak", Agent: "codex"}}
+	m.sessions = []*api.Session{{Id: "s", ProjectId: "p", Alias: "oak", Agent: "codex"}}
 	m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
-	bar := func() string { rows := strings.Split(ansi.Strip(m.sessionScreen()), "\n"); return rows[len(rows)-1] }
-	if !strings.HasPrefix(bar(), " oak      codex") {
-		t.Fatal(bar())
+	panel := func() string { return ansi.Strip(m.panelScreen()) }
+	if !strings.Contains(panel(), "oak · codex") {
+		t.Fatal(panel())
 	}
-	m.Update(tea.KeyMsg{Type: tea.KeyTab})
-	if !strings.HasPrefix(bar(), "›oak      codex") {
-		t.Fatal(bar())
-	}
+	m.Update(tea.KeyMsg{Type: tea.KeyCtrlQ})
 	m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("r")})
 	if !m.renaming || !m.aliasInput.Focused() {
 		t.Fatal("editor not focused")
 	}
 	for _, word := range []string{"oak", "orchard"} {
 		m.aliasInput.SetValue(word)
-		line := bar()
-		idx := strings.Index(line, "codex")
-		if idx < 0 || ansi.StringWidth(line[:idx]) != 10 {
-			t.Fatal("editor moved footer columns", line)
+		if !strings.Contains(panel(), word) {
+			t.Fatal("panel editor lost alias", panel())
 		}
 	}
 	m.aliasInput.SetValue("ab")
@@ -76,11 +71,11 @@ func TestRenameAndAliasSlot(t *testing.T) {
 	c.renameErr = nil
 	_, cmd = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	m.Update(cmd())
-	if m.renaming || !m.focusList || m.current().Alias != "clover" || c.renamed != "s" {
+	if m.renaming || !m.panelFocus || m.current().Alias != "clover" || c.renamed != "s" {
 		t.Fatal("rename failed")
 	}
-	if !strings.HasPrefix(bar(), "›clover   codex") {
-		t.Fatal(bar())
+	if !strings.Contains(panel(), "clover · codex") {
+		t.Fatal(panel())
 	}
 }
 

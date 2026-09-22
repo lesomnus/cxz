@@ -91,7 +91,7 @@ func TestKeyboardControls(t *testing.T) {
 		t.Fatal("account selection lost")
 	}
 	m.Update(tea.KeyMsg{Type: tea.KeyEsc})
-	_, cmd = m.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
+	_, cmd = m.Update(tea.KeyMsg{Type: tea.KeyCtrlD})
 	if _, ok := cmd().(tea.QuitMsg); !ok {
 		t.Fatal("quit must detach")
 	}

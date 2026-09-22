@@ -95,7 +95,7 @@ func (m *model) prepareHistoryPage(ctx context.Context, page historyPage, agent 
 			return page
 		}
 		if e.Kind == "assistant" {
-			page.prepared[e] = renderedResponse{source: e.Text, agent: agent, width: width, body: eventView(&api.Session{Agent: agent}, e, width)}
+			page.prepared[e] = renderResponse(agent, e.Text, width)
 		}
 		if e.Kind == "tool_call" && !question(e) {
 			activity, ok := prepared.cachedToolView(agent, e)

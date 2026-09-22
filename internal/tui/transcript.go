@@ -57,18 +57,7 @@ func eventView(s *api.Session, e *api.Event, width int) (out string) {
 		}
 		return strings.Join(rows, "\n")
 	case "assistant":
-		name := strings.ToUpper(pickerLabel(safeText(s.Agent)))
-		style := lavender.Bold(true)
-		switch s.Agent {
-		case "claude":
-			style = claude
-		case "codex":
-			style = codex
-		}
-		if name == "" {
-			name = "AGENT"
-		}
-		return style.Render("•") + " " + style.Render(name) + "\n" + indentBlock(markdownView(e.Text, width))
+		return renderResponse(s.Agent, e.Text, width+2).body
 	case "approval":
 		return strings.TrimPrefix(approvalLine(s, e, "requested", width+2), "  ")
 	case "approval_resolved":

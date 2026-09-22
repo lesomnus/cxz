@@ -26,6 +26,9 @@ import (
 )
 
 type model struct {
+	textSelection           *transcriptSelection
+	codeButtons             []codeButton
+	codeHover               *codeButton
 	recordingError          string
 	recordingTask           *debugSave
 	debugRecorder           *debugRecorder
@@ -471,6 +474,8 @@ func (m *model) render() {
 		m.debugRecorder.Add(debugEvent{Kind: "transcript_render", Duration: time.Since(start).Microseconds(), Count: len(m.historyPositions)})
 	}()
 	m.promptSpans = nil
+	m.codeButtons = nil
+	copyBlocks := map[int][]codeButton{}
 	m.updateQuota()
 	m.workingSince = 0
 	follow := m.view.AtBottom()
@@ -683,6 +688,7 @@ func (m *model) render() {
 				}
 				if e.Kind == "assistant" {
 					replyIndex = len(lines) - 1
+					copyBlocks[replyIndex] = m.renderedResponses[e].buttons
 				}
 			}
 		}
@@ -712,6 +718,10 @@ func (m *model) render() {
 			m.historyPositions = append(m.historyPositions, float64(sequences[i]))
 		}
 		start := len(m.historyTimes)
+		for _, button := range copyBlocks[i] {
+			button.y += start
+			m.codeButtons = append(m.codeButtons, button)
+		}
 		rows := strings.Split(block, "\n")
 		for row := range rows {
 			m.historyTimes = append(m.historyTimes, times[i])
@@ -871,10 +881,36 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if k, ok := msg.(tea.KeyMsg); ok && !k.Paste && !m.terminalFocused() {
+		switch k.String() {
+		case "ctrl+d":
+			return m, tea.Quit
+		case "ctrl+c":
+			m.copyFocusedText()
+			return m, nil
+		case "esc":
+			if m.previewInteraction() && m.selectionValid() && m.textSelection.text() != "" {
+				m.textSelection = nil
+				return m, nil
+			}
+		}
+	}
+
 	switch v := msg.(type) {
 	case tea.KeyMsg, tea.WindowSizeMsg, tea.BlurMsg:
 		m.panelHoverY = 0
+		m.codeHover = nil
+		if m.filePreview != nil {
+			m.filePreview.hover = ""
+		}
 	case tea.MouseMsg:
+		m.codeHover = nil
+		if m.filePreview != nil {
+			m.filePreview.hover = ""
+		}
+		if m.selectionMouse(v) {
+			return m, nil
+		}
 		if handled, cmd := m.panelMouse(v); handled {
 			return m, cmd
 		}
@@ -1167,7 +1203,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 		}
-		if m.modelPicker != nil {
+		if m.modelPicker != nil || m.pasteDialog != nil || m.redactDialog != nil {
 			return m, nil
 		}
 		if m.focusApproval && v.Y >= m.view.Height && v.Y < m.height-m.input.Height()-3-m.terminalHeight() {
@@ -1180,9 +1216,13 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		if !m.projectView && !m.accountView && v.Y < m.view.Height {
+			if m.codeBlockMouse(v) {
+				return m, nil
+			}
 			if v.Button == tea.MouseButtonLeft && v.Action == tea.MouseActionPress && m.openFilePreview(v.Y) {
 				return m, nil
 			}
+			m.beginSelection(v)
 			m.view, _ = m.view.Update(v)
 			if v.Button == tea.MouseButtonWheelUp || v.Button == tea.MouseButtonWheelDown {
 				return m, m.loadOlderHistory()
@@ -1196,13 +1236,14 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.notice = v.err.Error()
 			return m, nil
 		}
-		for _, s := range m.sessions {
+		for _, s := range append(append([]*api.Session(nil), m.sessions...), m.allSessions...) {
 			if s.Id == v.id {
 				s.Alias = v.alias
 			}
 		}
 		m.renaming = false
-		m.focusList = true
+		m.aliasInput.Blur()
+		m.focusList = false
 		m.notice = "alias updated"
 		return m, m.refresh()
 	case usageLoaded:
@@ -1435,6 +1476,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.refresh()
 	case tea.KeyMsg:
 		m.lastUIInput = time.Now()
+		if m.renaming {
+			return m, m.renameKey(v)
+		}
 		if m.panelFocus && !m.accountView && m.workflow == nil && !m.creating {
 			return m, m.panelKey(v)
 		}
@@ -1498,11 +1542,11 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.projectView && !m.creating {
 			return m, m.panelKey(v)
 		}
-		if m.focusApproval && v.String() != "tab" && v.String() != "shift+tab" && v.String() != "ctrl+c" {
+		if m.focusApproval && v.String() != "tab" && v.String() != "shift+tab" && v.String() != "ctrl+d" {
 			return m, m.approvalKey(v)
 		}
 		switch v.String() {
-		case "ctrl+c":
+		case "ctrl+d":
 			return m, tea.Quit
 		case "pgup", "pgdown":
 			m.view, _ = m.view.Update(v)
@@ -1782,7 +1826,7 @@ func (m *model) View() (out string) {
 		return m.workflowScreen()
 	}
 	if m.width > 0 && (m.width < 40 || m.height < 14) {
-		return screen("cxz\nResize terminal to 40 × 14 or larger.\nCtrl+C detach", m.width, m.height)
+		return screen("cxz\nResize terminal to 40 × 14 or larger.\nCtrl+D detach", m.width, m.height)
 	}
 	if (m.panelFocus || m.projectView) && !m.accountView && !m.creating && !m.panelVisible() {
 		return m.panelScreen()

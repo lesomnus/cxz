@@ -60,10 +60,10 @@ func TestMarkdownDetectedSyntaxAndIndexedBackground(t *testing.T) {
 			if profile == termenv.ANSI256 && strings.Contains(view, "38;2;") {
 				t.Fatal("truecolor on ANSI256")
 			}
-			terminal := vt.NewEmulator(40, 5)
+			terminal := vt.NewEmulator(40, 6)
 			terminal.WriteString(strings.ReplaceAll(view, "\n", "\r\n"))
 			foregrounds := map[string]bool{}
-			for y := 0; y < 3; y++ {
+			for y := 0; y < 5; y++ {
 				for x := 0; x < 40; x++ {
 					cell := terminal.CellAt(x, y)
 					if cell != nil && cell.Width == 0 {

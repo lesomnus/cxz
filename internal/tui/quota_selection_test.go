@@ -71,7 +71,7 @@ func TestQuotaIdentitySpaceAndCountdown(t *testing.T) {
 	m.width = 80
 	rows := strings.Split(ansi.Strip(m.sessionScreen()), "\n")
 	last := rows[len(rows)-1]
-	if !strings.Contains(last, "pulse") || !strings.Contains(last, "codex/default") || !strings.Contains(last, "main") || !strings.HasSuffix(last, " ") {
+	if strings.Contains(last, "pulse") || strings.Contains(last, "codex/default") || strings.Contains(last, "main") || !strings.Contains(last, "36%") || !strings.HasSuffix(last, " ") {
 		t.Fatal(last)
 	}
 	if quotaCountdown(now.Add(5*time.Hour), now) != "5h" || quotaCountdown(now.Add(48*time.Hour), now) != "2d" {

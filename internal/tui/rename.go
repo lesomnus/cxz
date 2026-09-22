@@ -17,7 +17,10 @@ type renameResult struct {
 }
 
 func (m *model) startRename() tea.Cmd {
-	s := m.current()
+	return m.renameSession(m.current())
+}
+
+func (m *model) renameSession(s *api.Session) tea.Cmd {
 	if s == nil {
 		return nil
 	}
@@ -25,9 +28,10 @@ func (m *model) startRename() tea.Cmd {
 	m.aliasInput.Cursor.Style = inputCursorStyle
 	m.aliasInput.Prompt = ""
 	m.aliasInput.CharLimit = 7
-	m.aliasInput.Width = 6
+	m.aliasInput.Width = 8
 	m.aliasInput.SetValue(s.Alias)
 	m.aliasInput.CursorEnd()
+	m.textSelection = nil
 	m.input.Blur()
 	m.renaming = true
 	m.renameID = s.Id
@@ -36,7 +40,7 @@ func (m *model) startRename() tea.Cmd {
 }
 
 func (m *model) renameKey(k tea.KeyMsg) tea.Cmd {
-	if k.String() == "ctrl+c" {
+	if k.String() == "ctrl+d" {
 		return tea.Quit
 	}
 	if m.renameBusy {
@@ -45,6 +49,7 @@ func (m *model) renameKey(k tea.KeyMsg) tea.Cmd {
 	switch k.String() {
 	case "esc":
 		m.renaming = false
+		m.aliasInput.Blur()
 		m.notice = "rename canceled"
 		return nil
 	case "enter":

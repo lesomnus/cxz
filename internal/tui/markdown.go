@@ -2,6 +2,8 @@ package tui
 
 import (
 	"fmt"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
@@ -20,6 +22,7 @@ var markdownParser = goldmark.New(goldmark.WithExtensions(extension.GFM)).Parser
 type renderedResponse struct {
 	source, agent, body string
 	width               int
+	buttons             []codeButton
 }
 
 func eventViewCached(m *model, s *api.Session, e *api.Event, width int) string {
@@ -32,14 +35,44 @@ func eventViewCached(m *model, s *api.Session, e *api.Event, width int) string {
 	if m.renderedResponses == nil {
 		m.renderedResponses = map[*api.Event]renderedResponse{}
 	}
-	body := eventView(s, e, width)
-	m.renderedResponses[e] = renderedResponse{source: e.Text, agent: s.Agent, body: body, width: width}
-	return body
+	response := renderResponse(s.Agent, e.Text, width)
+	m.renderedResponses[e] = response
+	return response.body
 }
 
 // Protocol text has no Markdown MIME hint. Parse CommonMark when structural
 // syntax is present. Never render HTML, OSC links or fetch external images.
 func markdownView(raw string, width int) string {
+	body, _ := markdownContent(raw, width)
+	return body
+}
+
+func renderResponse(agent, raw string, width int) renderedResponse {
+	body, buttons := markdownContent(raw, max(1, width-2))
+	name := strings.ToUpper(pickerLabel(safeText(agent)))
+	style := lavender.Bold(true)
+	switch agent {
+	case "claude":
+		style = claude
+	case "codex":
+		style = codex
+	}
+	if name == "" {
+		name = "AGENT"
+	}
+	for i := range buttons {
+		buttons[i].x += 2
+		buttons[i].y++
+	}
+	return renderedResponse{source: raw, agent: agent, width: width, body: style.Render("•") + " " + style.Render(name) + "\n" + indentBlock(body), buttons: buttons}
+}
+
+// Internal zero-width markers survive ANSI-aware wrapping through nested lists
+// and quotes. Remove them before caching/display; remote control sequences have
+// already been stripped. Copy hitboxes therefore follow the actual layout.
+var codeButtonMarker = regexp.MustCompile("\x1b]cxz-copy;([0-9]+)\x07")
+
+func markdownContent(raw string, width int) (string, []codeButton) {
 	source := []byte(safeText(raw))
 	doc := markdownParser.Parse(text.NewReader(source))
 	formatted := false
@@ -53,7 +86,7 @@ func markdownView(raw string, width int) string {
 		return ast.WalkContinue, nil
 	})
 	if !formatted {
-		return answer.Render(ansi.Hardwrap(string(source), max(1, width), true))
+		return answer.Render(ansi.Hardwrap(string(source), max(1, width), true)), nil
 	}
 	var render func(ast.Node, int) string
 	children := func(n ast.Node, width int) string {
@@ -63,6 +96,7 @@ func markdownView(raw string, width int) string {
 		}
 		return b.String()
 	}
+	var sources []string
 	blockCode := func(n ast.Node, width int) string {
 		var b strings.Builder
 		for i := 0; i < n.Lines().Len(); i++ {
@@ -79,6 +113,11 @@ func markdownView(raw string, width int) string {
 			line := clip(" "+rows[i], max(1, width))
 			rows[i] = indexedBackground(line+strings.Repeat(" ", max(0, width-ansi.StringWidth(line))), 238)
 		}
+		id := len(sources)
+		sources = append(sources, b.String())
+		header := strings.Repeat(" ", max(0, width-3)) + fmt.Sprintf("\x1b]cxz-copy;%d\a", id) + " ⧉ "
+		rows = append([]string{indexedBackground(header, 238)}, rows...)
+		rows = append(rows, indexedBackground(strings.Repeat(" ", max(1, width)), 238))
 		return strings.Join(rows, "\n") + "\n\n"
 	}
 	render = func(n ast.Node, width int) string {
@@ -157,5 +196,26 @@ func markdownView(raw string, width int) string {
 			return children(n, width)
 		}
 	}
-	return answer.Render(ansi.Hardwrap(strings.TrimRight(render(doc, max(1, width)), "\n"), max(1, width), true))
+	view := answer.Render(ansi.Hardwrap(strings.TrimRight(render(doc, max(1, width)), "\n"), max(1, width), true))
+	if len(sources) == 0 {
+		return view, nil
+	}
+	rows := strings.Split(view, "\n")
+	var buttons []codeButton
+	for y, row := range rows {
+		for {
+			loc := codeButtonMarker.FindStringSubmatchIndex(row)
+			if loc == nil {
+				break
+			}
+			id, _ := strconv.Atoi(row[loc[2]:loc[3]])
+			x := ansi.StringWidth(row[:loc[0]])
+			if id < len(sources) && x+3 <= width {
+				buttons = append(buttons, codeButton{x: x, y: y, source: sources[id]})
+			}
+			row = row[:loc[0]] + row[loc[1]:]
+		}
+		rows[y] = row
+	}
+	return strings.Join(rows, "\n"), buttons
 }

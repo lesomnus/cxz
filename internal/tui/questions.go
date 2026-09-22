@@ -172,7 +172,7 @@ func (m *model) questionNext() tea.Cmd {
 
 func (m *model) questionKey(k tea.KeyMsg) tea.Cmd {
 	d := m.questionDialog
-	if d.sending && k.String() != "esc" && k.String() != "ctrl+c" {
+	if d.sending && k.String() != "esc" && k.String() != "ctrl+d" {
 		return nil
 	}
 	q := d.questions[d.page]
@@ -184,7 +184,7 @@ func (m *model) questionKey(k tea.KeyMsg) tea.Cmd {
 	case "esc", "ctrl+q":
 		m.closeQuestion()
 		return nil
-	case "ctrl+c":
+	case "ctrl+d":
 		return tea.Quit
 	case "ctrl+s":
 		return m.questionNext()

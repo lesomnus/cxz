@@ -186,7 +186,7 @@ func (m *model) settingsKey(k tea.KeyMsg) tea.Cmd {
 	if k.Paste {
 		return nil
 	}
-	if k.String() == "ctrl+c" {
+	if k.String() == "ctrl+d" {
 		return tea.Quit
 	}
 	if p.confirm != "" {

@@ -251,7 +251,7 @@ resource database and survives server/container restarts; back up state volumes.
 | s (project) | Stop selected session before starting another (one live session per project) |
 | d / Delete, then y (project) | Stop and remove selected session; archived journal retained |
 | Ctrl+Q (session) | Focus the project/session list without stopping the agent |
-| Tab / Shift+Tab (session) | Forward / reverse: pending approvals → input → bottom session selector |
+| Tab / Shift+Tab (session) | Forward / reverse: pending approvals → input |
 | Enter / Backspace (approval focus) | Allow / deny selected request; Enter opens a dialog for questions |
 | Ctrl+S | Send message (Ctrl+Enter also works with compatible terminal encoding) |
 | Enter / Alt+Enter / Ctrl+J | Insert newline (multiline paste stays in the editor) |
@@ -268,9 +268,18 @@ resource database and survives server/container restarts; back up state volumes.
 | `/permission full`, `/permission ask` | Saved session policy: background automatic/manual tool approval |
 | `/stop` | Terminate selected agent |
 | `/restart` | Confirm/Cancel dialog to restart this session's agent; Tab/arrows select, Enter applies, Esc cancels |
-| Ctrl+C | Detach; agent continues |
+| Ctrl+C | Copy dragged conversation selection, focused tool contents, or report (terminal OSC 52) |
+| Ctrl+D | Detach; agent continues (outside the focused container shell) |
 
-The project list provides n (new session), a (accounts), s (stop) and d (delete).
+Tool previews reserve 16 content rows, reducing their height in small terminals.
+The header's ⧉ copies the full recorded content; both ⧉ and × highlight on hover.
+Markdown code blocks have a padding row above and below, with a ⧉ copy button
+in the upper-right corner. Copies preserve original code rather than screen wrapping.
+The input footer shows quota/context only; session identity stays in the project panel.
+F9 diagnostic recording covers this TUI across session switches, not just one agent
+session. A red `⬤ RED` appears above the input, with only the dot blinking each second.
+
+The project list provides n (new session), a (accounts), r (rename), s (stop) and d (delete).
 `cxz up` prepares the workspace and returns; run `cxz` to open this list.
 Project rows lead to their sessions; there is no separate project dashboard. The conversation view
 keeps tool activity above a growing, rounded message editor. Drafts are retained
@@ -324,7 +333,7 @@ and Claude's experimental `get_usage`/rate-limit events. It refreshes at startup
 after turns and every minute; unsupported versions degrade without failing turns.
 Aliases are globally unique,
 random 3–7-letter English words, stored in payday/SQLite and assigned to existing
-sessions on reconciliation. In session selection mode (Tab), press `r` to edit;
+sessions on reconciliation. In the project panel (Ctrl+Q), select a session and press `r` to edit;
 Enter saves and returns to selection, Esc cancels. Custom aliases accept 3–7
 lowercase letters. Session commands also accept aliases. Deleting a session
 releases its alias while retaining the journal. The curated word pool is finite;
@@ -333,7 +342,7 @@ The composer starts with `>` on row 0 and dim single-digit line numbers afterwar
 `1 … 9, 0, 1 …`. The two-cell gutter never grows.
 
 Pending approvals have their own box above the composer. Tab follows physical
-order (approvals → composer → bottom session bar); Shift+Tab reverses it. Arrows
+order (approvals → composer); Shift+Tab reverses it. Arrows
 select, Enter allows and Backspace denies. PgUp/PgDn, Ctrl+Up/Down, Ctrl+Home/End
 and the mouse wheel scroll the focused request without truncating its content.
 Provider-specific titles/commands/reasons appear before the full native payload.

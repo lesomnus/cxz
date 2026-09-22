@@ -174,7 +174,7 @@ func TestProjectSessionTerminalNavigation(t *testing.T) {
 		for _, stage := range []struct{ want, key string }{
 			{"Projects", "a"}, {"No accounts yet", "n"},
 			{"Create account", "\x1b"}, {"No accounts yet", "\x1b"},
-			{"Select a session", "\r\r"}, {"quota", "\x11"}, {"›", "\x03"},
+			{"Select a session", "\r\r"}, {"quota", "\x11"}, {"›", "\x04"},
 		} {
 			var output strings.Builder
 			buf := make([]byte, 4096)
