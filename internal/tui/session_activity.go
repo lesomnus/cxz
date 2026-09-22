@@ -113,7 +113,7 @@ func (m *model) receiveCompletion(v completionChecked) {
 }
 
 func (m *model) sessionIndicator(s *api.Session) string {
-	if workingState(s.State) || len(m.pendingInputs[s.Id]) > 0 {
+	if workingState(s.State) || len(m.pendingInputs[s.Id]) > 0 || m.hasActiveBackground(s) {
 		return accent.Render(workingSpinner(m.pulse))
 	}
 	if a := m.sessionActivity[s.Id]; a != nil && a.done > a.seen {
