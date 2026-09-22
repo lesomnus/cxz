@@ -335,9 +335,18 @@ func TestCommandsReachAPI(t *testing.T) {
 	if (<-stub.requests).(*api.ProjectRequest).Workspace != "project-name" {
 		t.Fatal("wrong project")
 	}
-	run("down", "pn")
-	if (<-stub.requests).(*resource.ProjectRef).GetRuntimeId() != "project-name" {
-		t.Fatal("top-level down did not delete resolved project")
+	got = run("down", "pn")
+	down, ok := (<-stub.requests).(*api.ProjectRequest)
+	if !ok || down.Workspace != "project-name" || down.ClientId == "" {
+		t.Fatal("top-level down must stop the resolved project without deleting it", down)
+	}
+	var stopped struct {
+		Project  string `json:"project"`
+		Status   string `json:"status"`
+		Retained string `json:"retained"`
+	}
+	if err := json.Unmarshal([]byte(got.Stdout), &stopped); err != nil || stopped.Project != "project-name" || stopped.Status != "stopped" || !strings.Contains(stopped.Retained, "sessions, conversation history") {
+		t.Fatal("down must report retained sessions and history", got.Stdout, err)
 	}
 	completion := xlitest.Complete(t, newRoot(root), "project up ")
 	if completion.Err != nil || !completion.Has("pn") || !completion.Has("project-name") {
