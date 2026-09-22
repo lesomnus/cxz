@@ -248,9 +248,9 @@ func TestNavigatorActionsUseSelectedSessionAndProject(t *testing.T) {
 			t.Fatal("stop targeted viewed session")
 		}
 		m.busy = false
-		m.panelKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}})
-		m.panelIndex = 0
-		confirm := m.panelKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+		m.panelKey(tea.KeyMsg{Type: tea.KeyCtrlX})
+		confirm := m.panelKey(tea.KeyMsg{Type: tea.KeyCtrlX})
+		m.panelIndex = 0 // Once submitted, navigation must not change the RPC target.
 		confirm()
 		if c.deleted != "other-session" {
 			t.Fatal("delete target drifted")

@@ -53,23 +53,27 @@ func TestProjectDeleteConfirmation(t *testing.T) {
 	m := projectModel()
 	m.sessions = []*api.Session{{Id: "target", ProjectId: "p"}, {Id: "other", ProjectId: "p"}}
 	m.panelIndex = 1
-	m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("d")})
-	if m.deletingID != "target" {
+	m.Update(tea.KeyMsg{Type: tea.KeyCtrlX})
+	if m.deleteConfirm == nil || m.deleteConfirm.id != "target" || m.busy {
 		t.Fatal("missing confirmation")
 	}
 	m.Update(tea.KeyMsg{Type: tea.KeyEsc})
-	if len(m.client.(*projectClient).deleted) != 0 {
+	if len(m.client.(*projectClient).deleted) != 0 || m.deleteConfirm != nil {
 		t.Fatal("deleted on cancel")
 	}
-	m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("d")})
+	m.Update(tea.KeyMsg{Type: tea.KeyCtrlX})
 	m.panelIndex = 2
-	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("y")})
+	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyCtrlX})
+	if cmd != nil || m.deleteConfirm == nil || m.deleteConfirm.id != "other" {
+		t.Fatal("changed selection reused confirmation")
+	}
+	_, cmd = m.Update(tea.KeyMsg{Type: tea.KeyCtrlX})
 	if cmd == nil {
 		t.Fatal("missing delete")
 	}
-	cmd()
-	if got := m.client.(*projectClient).deleted; len(got) != 1 || got[0] != "target" {
-		t.Fatal("deleted changed selection", got)
+	m.Update(cmd())
+	if got := m.client.(*projectClient).deleted; len(got) != 1 || got[0] != "other" || len(m.sessions) != 1 || m.sessions[0].Id != "target" {
+		t.Fatal("did not remove confirmed session", got)
 	}
 }
 func TestEmptyProjectAndCreatedSession(t *testing.T) {

@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -129,12 +130,11 @@ func TestPanelMouseScrolledRowsAndHoverReset(t *testing.T) {
 	if m.panelHoverY != 0 {
 		t.Fatal("resize left a stale hover")
 	}
-	// A pending deletion must retain its selected target despite mouse input.
-	selected := m.panelIndex
-	m.deletingID = target
+	// A click cancels the first deletion key and navigates normally.
+	m.deleteConfirm = &sessionDeleteConfirmation{id: target, until: time.Now().Add(3 * time.Second)}
 	m.Update(tea.MouseMsg{X: 2, Y: 4, Button: tea.MouseButtonLeft, Action: tea.MouseActionPress})
-	if m.panelIndex != selected || m.deletingID != target || m.panelHoverY != 0 {
-		t.Fatal("click changed a pending action")
+	if m.deleteConfirm != nil {
+		t.Fatal("click left a deletion armed")
 	}
 }
 

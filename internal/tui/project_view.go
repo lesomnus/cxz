@@ -2,10 +2,8 @@ package tui
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"sort"
-	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/lesomnus/cxz/api"
@@ -48,7 +46,7 @@ func (m *model) backToProject() {
 	m.focusApproval = false
 	m.interruptKey = ""
 	m.approvalOffset = 0
-	m.deletingID = ""
+	m.deleteConfirm = nil
 	m.wantID = ""
 	m.input.Reset()
 	if m.watchCancel != nil {
@@ -64,31 +62,6 @@ func (m *model) projectAction(key tea.KeyMsg) tea.Cmd {
 	}
 	if m.busy {
 		return nil
-	}
-	if m.deletingID != "" {
-		if key.String() == "esc" || key.String() == "n" {
-			m.deletingID = ""
-			m.notice = "deletion canceled"
-			return nil
-		}
-		if key.String() != "y" {
-			return nil
-		}
-		id := m.deletingID
-		m.deletingID = ""
-		m.busy = true
-		return func() tea.Msg {
-			c, ok := m.client.(interface {
-				DeleteSession(context.Context, string) error
-			})
-			if !ok {
-				return result{err: fmt.Errorf("session deletion unsupported")}
-			}
-			ctx, cancel := context.WithTimeout(m.ctx, 35*time.Second)
-			defer cancel()
-			err := c.DeleteSession(ctx, id)
-			return result{text: "session deleted; journal retained", err: err}
-		}
 	}
 	switch key.String() {
 	case "a":
