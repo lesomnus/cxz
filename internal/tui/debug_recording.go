@@ -364,28 +364,41 @@ func (m *model) receiveRecording(r recordingSaved) {
 	m.lastRecording = r.path
 	m.notice = "Debug recording saved: " + r.path
 }
-func (m *model) recordingBadge(view string) string {
-	label := ""
+func (m *model) recordingLabel(now time.Time) string {
 	switch {
 	case m.debugRecorder.Active():
-		label = "● REC · F9 stop"
+		dot := "⬤"
+		if int(now.Sub(m.debugRecorder.generation())/time.Second)%2 != 0 {
+			dot = strings.Repeat(" ", ansi.StringWidth(dot))
+		}
+		return failure.Render(dot + " RED")
 	case m.recordingSaving:
-		label = "Saving debug recording…"
+		return warning.Render("Saving debug recording…")
 	case m.recordingPending != nil:
-		label = "Recording unsaved · F9 retry"
+		return warning.Render("Recording unsaved · F9 retry")
 	}
+	return ""
+}
+
+func (m *model) recordingStatusRow(status string, width int) string {
+	label := m.recordingLabel(time.Now())
 	if label == "" {
+		return clip(status, width)
+	}
+	label = clip(label, width)
+	available := max(0, width-ansi.StringWidth(label)-1)
+	line := ansi.Truncate(status, available, "…")
+	return line + strings.Repeat(" ", max(0, width-ansi.StringWidth(line)-ansi.StringWidth(label))) + label
+}
+
+func (m *model) recordingBadge(view string) string {
+	// The conversation uses its status row above the input. Other screens have
+	// no composer, so keep the recording state visible in their final row.
+	if (!m.projectView || m.creating) && (!m.panelFocus || m.panelVisible() || m.creating) && !m.accountView && m.workflow == nil && m.settingsPage == nil && m.memoryPage == nil && m.width >= 40 && m.height >= 14 {
 		return view
 	}
 	rows := strings.Split(view, "\n")
-	if len(rows) == 0 {
-		return view
-	}
-	width := m.settingsWidth()
-	label = clip(label, width)
-	available := max(0, width-ansi.StringWidth(label)-1)
-	line := clip(rows[len(rows)-1], available)
-	rows[len(rows)-1] = line + strings.Repeat(" ", max(0, width-ansi.StringWidth(line)-ansi.StringWidth(label))) + warning.Render(label)
+	rows[len(rows)-1] = m.recordingStatusRow(rows[len(rows)-1], m.settingsWidth())
 	return strings.Join(rows, "\n")
 }
 

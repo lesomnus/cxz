@@ -59,7 +59,7 @@ func (m *model) backToProject() {
 }
 
 func (m *model) projectAction(key tea.KeyMsg) tea.Cmd {
-	if key.String() == "ctrl+c" {
+	if key.String() == "ctrl+d" {
 		return tea.Quit
 	}
 	if m.busy {

@@ -32,7 +32,7 @@ func TestControlWordMovementAndRecordingPrivacy(t *testing.T) {
 	m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("SECRET-PASTE"), Paste: true})
 	m.notice = "credential from server: SECRET-NOTICE"
 	view := m.View()
-	if !strings.Contains(ansi.Strip(view), "REC") {
+	if !strings.Contains(ansi.Strip(view), "RED") {
 		t.Fatal("missing visible recording status")
 	}
 	m.Update(m.toggleRecording()())

@@ -135,6 +135,13 @@ func (m *model) anchorCursor() {
 				x, y, ok = pos.X, m.terminalTop()+1+pos.Y, p.session.CursorVisible.Load()
 			}
 		case m.panelFocus:
+			if m.renaming {
+				copy := *m
+				copy.aliasInput.Cursor.Blink = false
+				copy.aliasInput.Cursor.Style = cursorProbeStyle
+				x, y, ok = widgetCursor(copy.panelScreen())
+				x -= m.contentOffset()
+			}
 		case m.pasteDialog != nil:
 		case m.workflow != nil:
 			// The workflow owns its masked input; never anchor to the hidden form.

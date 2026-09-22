@@ -116,7 +116,7 @@ func (m *model) memoryKey(k tea.KeyMsg) tea.Cmd {
 		return nil
 	}
 	switch k.String() {
-	case "ctrl+c":
+	case "ctrl+d":
 		if p.cancel != nil {
 			p.cancel()
 		}

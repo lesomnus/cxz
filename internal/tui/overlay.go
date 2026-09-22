@@ -91,7 +91,7 @@ func (m *model) reportKey(k tea.KeyMsg) tea.Cmd {
 		}
 	case "esc", "ctrl+q":
 		m.report = nil
-	case "ctrl+c":
+	case "ctrl+d":
 		return tea.Quit
 	case "up":
 		m.report.offset = max(0, m.report.offset-1)

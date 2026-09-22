@@ -162,7 +162,7 @@ func (m *model) modelPickerKey(key tea.KeyMsg) tea.Cmd {
 		}
 		m.modelPicker = nil
 		return nil
-	case "ctrl+c":
+	case "ctrl+d":
 		if p.cancel != nil {
 			p.cancel()
 		}

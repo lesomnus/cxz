@@ -73,7 +73,7 @@ func TestPreviewMouseAndKeyboardSharePayloadAndBorders(t *testing.T) {
 	for _, width := range []int{30, 80, 180} {
 		text := ansi.Strip(m.previewRows(width, 8))
 		rows := strings.Split(text, "\n")
-		if len(rows) != 8 || strings.TrimSpace(rows[0]) != "" || !strings.Contains(rows[1], "Write") || !strings.Contains(rows[7], "─") {
+		if len(rows) != 8 || !strings.Contains(rows[0], "Write") || !strings.Contains(rows[1], "package main") || !strings.Contains(rows[7], "─") {
 			t.Fatal(text)
 		}
 		for _, row := range rows {
@@ -86,7 +86,7 @@ func TestPreviewMouseAndKeyboardSharePayloadAndBorders(t *testing.T) {
 	if m.filePreview.focused || !m.input.Focused() {
 		t.Fatal("Tab did not leave preview")
 	}
-	top := m.view.Height + 2 + m.approvalHeight()
+	top := m.view.Height + 1 + m.approvalHeight()
 	m.filePreviewMouse(tea.MouseMsg{X: m.contentOffset() + 4, Y: top + 2, Button: tea.MouseButtonLeft, Action: tea.MouseActionPress})
 	if !m.filePreview.focused {
 		t.Fatal("click did not focus")

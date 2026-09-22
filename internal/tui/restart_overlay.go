@@ -68,7 +68,7 @@ func (m *model) restartKey(k tea.KeyMsg) tea.Cmd {
 	switch k.String() {
 	case "esc", "ctrl+q":
 		return m.cancelRestart()
-	case "ctrl+c":
+	case "ctrl+d":
 		m.restartConfirm = nil
 		return tea.Quit
 	case "tab", "shift+tab", "left", "right", "up", "down":

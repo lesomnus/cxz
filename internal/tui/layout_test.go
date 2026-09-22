@@ -32,7 +32,7 @@ func TestFixedMetricPositions(t *testing.T) {
 	}
 }
 
-func TestLocalHelpAndBottomSessionBar(t *testing.T) {
+func TestLocalHelpAndQuotaOnlyFooter(t *testing.T) {
 	m := projectModel()
 	c := &recordingClient{}
 	m.client = c
@@ -41,8 +41,8 @@ func TestLocalHelpAndBottomSessionBar(t *testing.T) {
 	m.sessions = []*api.Session{{Id: "s", Agent: "codex", Account: "work", Title: "Example", State: "idle"}}
 	m.Update(tea.WindowSizeMsg{Width: 100, Height: 30})
 	lines := strings.Split(ansi.Strip(m.View()), "\n")
-	if len(lines) != 30 || !strings.Contains(lines[len(lines)-1], "codex · work") {
-		t.Fatal("session bar is not at bottom", strings.Join(lines, "\n"))
+	if len(lines) != 30 || strings.Contains(lines[len(lines)-1], "codex") || strings.Contains(lines[len(lines)-1], "work") || strings.Contains(lines[len(lines)-1], "Example") {
+		t.Fatal("footer must omit session identity", strings.Join(lines, "\n"))
 	}
 	if strings.Contains(m.View(), "F4 interrupt") || strings.Contains(lines[0], "cxz · sessions") {
 		t.Fatal("static shortcuts/header remain")

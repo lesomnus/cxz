@@ -164,29 +164,6 @@ func screen(s string, width, height int) string {
 
 func (m *model) sessionScreen() string {
 	width := max(1, m.width)
-	info := " -------"
-	if s := m.current(); s != nil {
-		agent := pickerLabel(s.Agent)
-		if model := m.selectedModelLabel(); model != "" {
-			agent += "/" + model
-		}
-		title := pickerLabel(s.Title)
-		if title == "" {
-			title = "Untitled"
-		}
-		alias := fmt.Sprintf("%-7s", clip(pickerLabel(safeText(s.Alias)), 7))
-		if s.Alias == "" {
-			alias = "-------"
-		}
-		if m.renaming {
-			alias = m.aliasInput.View()
-		}
-		indicator := " "
-		if m.focusList {
-			indicator = accent.Render("›")
-		}
-		info = indicator + accent.Render(alias) + "  " + blue.Render(agent) + " · " + lavender.Render(pickerLabel(s.Account)) + " · " + title
-	}
 	status := warning.Render(pickerLabel(m.notice))
 	if !m.view.AtBottom() {
 		status = muted.Render(m.scrollStatus())
@@ -214,17 +191,13 @@ func (m *model) sessionScreen() string {
 	if box != "" {
 		box += "\n"
 	}
-	// Reserve identity space before giving remaining cells to quota.
-	identityWidth := min(ansi.StringWidth(info), max(24, min(48, width/2)))
 	context := muted.Render(m.contextStatus())
-	quota := m.quotaStatus(time.Now(), max(1, width-identityWidth-ansi.StringWidth(context)-4))
+	quota := m.quotaStatus(time.Now(), max(1, width-ansi.StringWidth(context)-3))
 	if quota != "" {
 		quota += " "
 	}
 	quota += context
-	leftWidth := max(8, width-ansi.StringWidth(quota)-3)
-	info = clip(info, leftWidth)
-	info += strings.Repeat(" ", max(1, width-1-ansi.StringWidth(info)-ansi.StringWidth(quota))) + quota + " "
+	info := strings.Repeat(" ", max(0, width-1-ansi.StringWidth(quota))) + quota + " "
 	track := ""
 	if !m.view.AtBottom() {
 		track = m.scrollTrack()
@@ -242,7 +215,7 @@ func (m *model) sessionScreen() string {
 	if modal {
 		composer.Blur()
 	}
-	body := m.redactOverlay(m.pasteOverlay(m.questionOverlay(m.restartOverlay(m.reportView(m.modelPickerOverlay(m.commandOverlay(m.conversationView()))))))) + "\n" + track + "\n" + clip("  "+status, width) + "\n" + box + preview +
+	body := m.redactOverlay(m.pasteOverlay(m.questionOverlay(m.restartOverlay(m.reportView(m.modelPickerOverlay(m.commandOverlay(m.conversationView()))))))) + "\n" + track + "\n" + box + preview + m.recordingStatusRow("  "+status, width) + "\n" +
 		frame(m.decorateInputPastes(composer.View()), width, !modal && !m.focusList && !m.focusApproval && m.pathHints == nil) + "\n"
 	if m.terminalHeight() > 0 {
 		body += m.terminalView() + "\n"

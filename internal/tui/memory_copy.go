@@ -110,7 +110,7 @@ func (m *model) receiveMemoryCopied(r memoryCopied) {
 func (m *model) memoryCopyKey(k tea.KeyMsg) tea.Cmd {
 	p := m.memoryPage
 	c := p.copy
-	if k.String() == "ctrl+c" && !k.Paste {
+	if k.String() == "ctrl+d" && !k.Paste {
 		return tea.Quit
 	}
 	if k.String() == "esc" && !k.Paste {

@@ -9,16 +9,14 @@ import (
 )
 
 func (m *model) cycleFocus(reverse bool) tea.Cmd {
-	// Physical top-to-bottom order: approvals, composer, bottom session bar.
-	order := []string{"input", "session"}
+	// The project panel owns session navigation; Tab cycles approvals and input.
+	order := []string{"input"}
 	if m.selectedApproval() != nil {
 		order = append([]string{"approval"}, order...)
 	}
 	current := "input"
 	if m.focusApproval {
 		current = "approval"
-	} else if m.focusList {
-		current = "session"
 	}
 	index := 0
 	for i, name := range order {
@@ -31,7 +29,7 @@ func (m *model) cycleFocus(reverse bool) tea.Cmd {
 		step = len(order) - 1
 	}
 	next := order[(index+step)%len(order)]
-	m.focusApproval, m.focusList = next == "approval", next == "session"
+	m.focusApproval, m.focusList = next == "approval", false
 	if m.focusApproval {
 		m.approvalID = m.selectedApproval().RequestId
 	}

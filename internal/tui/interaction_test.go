@@ -37,9 +37,9 @@ func TestFocusPhysicalOrderAndReverse(t *testing.T) {
 		if pending {
 			m.current().Pending = []*api.Event{{RequestId: "r", Text: "Bash"}}
 		}
-		order := []string{"session", "input"}
+		order := []string{"input"}
 		if pending {
-			order = []string{"session", "approval", "input"}
+			order = []string{"approval", "input"}
 		}
 		focus := func() string {
 			if m.focusList {

@@ -102,6 +102,7 @@ type filePreview struct {
 	session, title, source, language string
 	offset                           int
 	focused                          bool
+	hover                            string
 	rendered                         string
 	width                            int
 }
@@ -154,11 +155,15 @@ func (m *model) previewSideWidth() int {
 	}
 	return min(80, remaining)
 }
+
+const previewContentRows = 16
+const previewFrameRows = 3 // Title, scroll hint, focus rule.
+
 func (m *model) previewHeight() int {
 	if !m.previewVisible() || m.previewSideWidth() > 0 {
 		return 0
 	}
-	return min(10, max(0, m.height-m.input.Height()-5-m.approvalHeight()-m.terminalHeight()-4))
+	return min(previewContentRows+previewFrameRows, max(0, m.height-m.input.Height()-5-m.approvalHeight()-m.terminalHeight()-1))
 }
 func (m *model) previewRows(width, height int) string {
 	p := m.filePreview
@@ -168,12 +173,12 @@ func (m *model) previewRows(width, height int) string {
 		p.width = width
 	}
 	rows := strings.Split(p.rendered, "\n")
-	count := max(0, height-4)
+	count := min(previewContentRows, max(0, height-previewFrameRows))
 	p.offset = max(0, min(p.offset, max(0, len(rows)-count)))
 	focused := p.focused && m.previewInteraction()
-	title := clip(safeText(p.title), max(1, inner-4))
-	header := title + strings.Repeat(" ", max(1, inner-3-ansi.StringWidth(title))) + "[×]"
-	body := []string{"", teal.Render(header)}
+	title := clip(safeText(p.title), max(1, inner-8))
+	header := title + strings.Repeat(" ", max(1, inner-7-ansi.StringWidth(title))) + " ⧉  [×]"
+	body := []string{teal.Render(header)}
 	for i := 0; i < count; i++ {
 		line := ""
 		if p.offset+i < len(rows) {
@@ -183,7 +188,7 @@ func (m *model) previewRows(width, height int) string {
 	}
 	hint := "click to focus"
 	if focused {
-		hint = "↑↓ scroll · x close · Tab back"
+		hint = "↑↓ scroll · Ctrl+C copy · x close · Tab back"
 	}
 	body = append(body, muted.Render(fmt.Sprintf("%d–%d/%d · %s", p.offset+1, min(len(rows), p.offset+count), len(rows), hint)), "")
 	if height <= 0 {
@@ -196,6 +201,10 @@ func (m *model) previewRows(width, height int) string {
 	for i, line := range body {
 		line = clip(line, inner)
 		body[i] = panelBackground(" " + line + strings.Repeat(" ", max(0, inner-ansi.StringWidth(line))) + " ")
+	}
+	if len(body) > 0 {
+		body[0] = overlayButton(body[0], width-8, " ⧉ ", p.hover == "copy", 236)
+		body[0] = overlayButton(body[0], width-4, "[×]", p.hover == "close", 236)
 	}
 	if focused {
 		body[len(body)-1] = panelBackground(accent.Render(strings.Repeat("─", max(0, width))))
@@ -216,13 +225,14 @@ func (m *model) filePreviewMouse(v tea.MouseMsg) bool {
 		return false
 	}
 	width, height := max(1, m.width-4), m.previewHeight()
-	x, y := m.contentOffset()+2, m.view.Height+2+m.approvalHeight()
+	x, y := m.contentOffset()+2, m.view.Height+1+m.approvalHeight()
 	if side := m.previewSideWidth(); side > 0 {
 		x = m.contentOffset() + m.width + 2
 		y = 0
 		width = side
-		height = m.height
+		height = min(m.height, previewContentRows+previewFrameRows)
 	}
+	m.filePreview.hover = ""
 	if height < 2 || v.X < x || v.X >= x+width || v.Y < y || v.Y >= y+height {
 		if v.Button == tea.MouseButtonLeft && v.Action == tea.MouseActionPress {
 			m.filePreview.focused = false
@@ -231,8 +241,16 @@ func (m *model) filePreviewMouse(v tea.MouseMsg) bool {
 		}
 		return false
 	}
+	if v.Y == y {
+		if v.X >= x+width-8 && v.X < x+width-5 {
+			m.filePreview.hover = "copy"
+		} else if v.X >= x+width-4 && v.X < x+width-1 {
+			m.filePreview.hover = "close"
+		}
+	}
 	if v.Button == tea.MouseButtonLeft && v.Action == tea.MouseActionPress {
 		m.filePreview.focused = true
+		m.textSelection = nil
 		m.input.Blur()
 	}
 	switch v.Button {
@@ -241,8 +259,13 @@ func (m *model) filePreviewMouse(v tea.MouseMsg) bool {
 	case tea.MouseButtonWheelDown:
 		m.filePreview.offset += 3
 	case tea.MouseButtonLeft:
-		if v.Action == tea.MouseActionPress && v.Y == y+1 && v.X >= x+width-4 && v.X < x+width-1 {
-			m.closeFilePreview()
+		if v.Action == tea.MouseActionPress {
+			switch m.filePreview.hover {
+			case "copy":
+				m.copyText(m.filePreview.source)
+			case "close":
+				m.closeFilePreview()
+			}
 		}
 	}
 	return true

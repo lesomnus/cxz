@@ -116,7 +116,7 @@ func (m *model) conversationView() string {
 		}
 	}
 	if m.activeWork() && m.view.AtBottom() && len(rows) > 0 {
-		frames := []rune("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏")
+		frames := []rune("⣟⣯⣷⣾⣽⣻⢿⡿")
 		// render reserves a final transcript row for this transient indicator.
 		index := min(len(rows)-1, max(0, len(m.historyTimes)-m.view.YOffset-1))
 		rows[index] = indentBlock(accent.Render(string(frames[m.pulse%len(frames)])) + " " + muted.Render(clip(m.workingLabel(time.Now()), max(1, m.view.Width-4))))
@@ -152,6 +152,8 @@ func (m *model) conversationView() string {
 			rows[i] = indexedBackground(rows[i], 236)
 		}
 	}
+	m.codeButtonView(rows, promptRows)
+	m.selectionView(rows)
 	return strings.Join(rows, "\n")
 }
 
