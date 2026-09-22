@@ -20,7 +20,7 @@ const projectPanelWidth = 36
 const minProjectPanelWidth = 28
 const projectPanelGap = 2
 const projectPanelHeaderRows = 4
-const projectPanelFooterRows = 6
+const projectPanelFooterRows = 7
 
 type panelRow struct {
 	project *api.Project
@@ -93,8 +93,7 @@ func (m *model) panelMouse(v tea.MouseMsg) (bool, tea.Cmd) {
 	if v.X < 0 || v.X >= m.panelScreenWidth() || v.Y < 0 || v.Y >= m.height {
 		return false, nil
 	}
-	// Never let a click behind an in-progress action change its target.
-	if m.busy || m.deletingID != "" || m.renaming {
+	if m.busy || m.renaming {
 		return true, nil
 	}
 	rows := m.panelRows()
@@ -188,6 +187,7 @@ func (m *model) updatePanel(v listing) {
 			break
 		}
 	}
+	m.validateDeleteSelection()
 }
 
 func (m *model) focusPanel() {
@@ -206,7 +206,7 @@ func (m *model) focusPanel() {
 
 func (m *model) focusConversationMouse(v tea.MouseMsg) {
 	if !m.panelFocus || !m.panelVisible() || m.projectView || m.accountView || m.creating ||
-		m.workflow != nil || m.settingsPage != nil || m.memoryPage != nil || m.busy || m.deletingID != "" || m.renaming ||
+		m.workflow != nil || m.settingsPage != nil || m.memoryPage != nil || m.busy || m.renaming ||
 		v.Action != tea.MouseActionPress || v.Button != tea.MouseButtonLeft ||
 		v.X < m.contentOffset() || v.X >= m.contentOffset()+m.width || v.Y < 0 || v.Y >= m.height {
 		return
@@ -226,14 +226,14 @@ func (m *model) panelKey(k tea.KeyMsg) tea.Cmd {
 	if k.Paste {
 		return nil
 	}
+	if k.String() != "ctrl+x" {
+		m.deleteConfirm = nil
+	}
 	if k.String() == "ctrl+d" {
 		return tea.Quit
 	}
 	if m.busy {
 		return nil
-	}
-	if m.deletingID != "" {
-		return m.projectAction(k)
 	}
 	rows := m.panelRows()
 	m.panelWantConnection = ""
@@ -262,9 +262,9 @@ func (m *model) panelKey(k tea.KeyMsg) tea.Cmd {
 	case "end":
 		m.panelIndex = max(0, len(rows)-1)
 	case "pgup":
-		m.panelIndex = max(0, m.panelIndex-max(1, m.height-10))
+		m.panelIndex = max(0, m.panelIndex-max(1, m.height-projectPanelHeaderRows-projectPanelFooterRows))
 	case "pgdown":
-		m.panelIndex = min(max(0, len(rows)-1), m.panelIndex+max(1, m.height-10))
+		m.panelIndex = min(max(0, len(rows)-1), m.panelIndex+max(1, m.height-projectPanelHeaderRows-projectPanelFooterRows))
 	case "left":
 		for m.panelIndex > 0 && rows[m.panelIndex].session != nil {
 			m.panelIndex--
@@ -308,12 +308,8 @@ func (m *model) panelKey(k tea.KeyMsg) tea.Cmd {
 			_, err := m.client.Stop(ctx, &api.Control{SessionId: id, RunId: run, ClientId: core.ID()})
 			return result{text: "session stopped", err: err}
 		}
-	case "d", "delete":
-		if len(rows) == 0 || rows[m.panelIndex].session == nil {
-			m.notice = "Select a session to delete."
-			return nil
-		}
-		m.deletingID = rows[m.panelIndex].session.Id
+	case "ctrl+x":
+		return m.confirmSessionDelete(time.Now())
 	case "enter":
 		if len(rows) == 0 {
 			return nil
@@ -407,6 +403,12 @@ func (m *model) panelScreen() string {
 	rows := m.panelRows()
 	start, end := m.panelRange(len(rows))
 	lines := []string{"", accent.Bold(true).Render("Projects"), muted.Render("↑/↓ select · Enter open"), ""}
+	if m.deletingID != "" {
+		lines[2] = warning.Render(workingSpinner(m.pulse) + " Deleting session…")
+	} else if d := m.deleteConfirm; d != nil && time.Now().Before(d.until) {
+		seconds := int(time.Until(d.until).Seconds()) + 1
+		lines[2] = warning.Render(fmt.Sprintf("Ctrl+X again · delete (%ds)", seconds))
+	}
 	if len(rows) == 0 {
 		lines = append(lines, "No projects")
 	}
@@ -465,10 +467,7 @@ func (m *model) panelScreen() string {
 	if m.busy {
 		status = "Working…"
 	}
-	if m.deletingID != "" {
-		status = fmt.Sprintf("Delete %.8s? y/N · stops agent; journal retained", m.deletingID)
-	}
-	lines = append(lines, muted.Render("n new · a accounts"), muted.Render("r rename · s stop · d del"), muted.Render("m memory · Ctrl+P settings"), muted.Render("Esc/Ctrl+Q return"), muted.Render("Ctrl+D detach · agents run"), warning.Render(pickerLabel(status)))
+	lines = append(lines, muted.Render("n new · a accounts"), muted.Render("r rename · s stop"), muted.Render("Ctrl+X twice · delete"), muted.Render("m memory · Ctrl+P settings"), muted.Render("Esc/Ctrl+Q return"), muted.Render("Ctrl+D detach · agents run"), warning.Render(pickerLabel(status)))
 	for len(lines) < m.height {
 		lines = append(lines, "")
 	}

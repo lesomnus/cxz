@@ -256,7 +256,7 @@ resource database and survives server/container restarts; back up state volumes.
 | a (project) | Open account view; n adds, l logs in, / searches, Esc returns |
 | ↑/↓, Enter (project) | Select a session and open its view |
 | s (project) | Stop selected session before starting another (one live session per project) |
-| d / Delete, then y (project) | Stop and remove selected session; archived journal retained |
+| Ctrl+X twice within 3s (project) | Stop and remove selected session; archived journal retained |
 | Ctrl+Q (session) | Focus the project/session list without stopping the agent |
 | Tab / Shift+Tab (session) | Forward / reverse: pending approvals → input |
 | Enter / Backspace (approval focus) | Allow / deny selected request; Enter opens a dialog for questions |

@@ -89,6 +89,7 @@ type model struct {
 	panelError              string
 	projectView             bool
 	deletingID              string
+	deleteConfirm           *sessionDeleteConfirmation
 	busy                    bool
 	createProjectSession    ProjectCreator
 	ctx                     context.Context
@@ -817,6 +818,7 @@ func (m *model) action(kind, text string) tea.Cmd {
 }
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	defer m.debugUpdate(msg)()
+	m.updateDeleteConfirmation(msg, time.Now())
 	if tick, ok := msg.(performanceTick); ok {
 		return m, m.performanceUpdate(tick)
 	}
@@ -1166,6 +1168,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case completionChecked:
 		m.receiveCompletion(v)
 		return m, nil
+	case sessionDeleted:
+		m.receiveSessionDeleted(v)
+		return m, m.refresh()
 	case pulseTick:
 		m.pulse++
 		return m, pulseTimer()
