@@ -900,6 +900,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch v := msg.(type) {
 	case tea.KeyMsg, tea.WindowSizeMsg, tea.BlurMsg:
+		if d := m.questionDialog; d != nil {
+			d.hovering = false
+		}
 		m.panelHoverY = 0
 		m.codeHover = nil
 		if m.filePreview != nil {
@@ -909,6 +912,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.errorDialog.hover = ""
 		}
 	case tea.MouseMsg:
+		if m.questionHeight() > 0 && m.pasteDialog == nil {
+			return m, m.questionMouse(v)
+		}
 		if handled, cmd := m.errorMouse(v); handled {
 			return m, cmd
 		}
@@ -977,7 +983,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.redactDialog != nil {
 			return m, m.redactKey(v)
 		}
-		if v.Type == tea.KeyF20 && !v.Paste {
+		if v.Type == tea.KeyF20 && !v.Paste && m.questionDialog == nil {
 			return m, m.toggleTerminal()
 		}
 		if m.terminalFocused() {
@@ -1164,7 +1170,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case approvalResult:
 		if d := m.questionDialog; d != nil && d.id == v.id && d.run == v.run && d.request == v.request {
 			if v.err == nil {
-				m.questionDialog = nil
+				m.closeQuestion()
 			} else {
 				d.sending = false
 				d.message = "Answer failed: " + v.err.Error() + ". Not retried automatically."
@@ -1204,15 +1210,6 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		v.X -= m.contentOffset()
 		if m.composerStatusMouse(v) {
-			return m, nil
-		}
-		if m.questionDialog != nil {
-			if v.Button == tea.MouseButtonWheelUp {
-				m.questionDialog.offset -= 3
-			}
-			if v.Button == tea.MouseButtonWheelDown {
-				m.questionDialog.offset += 3
-			}
 			return m, nil
 		}
 		if m.restartConfirm != nil {
@@ -1331,6 +1328,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 	case tea.WindowSizeMsg:
+		if d := m.questionDialog; d != nil {
+			d.reveal = true
+		}
 		m.terminalWidth = v.Width
 		m.width = min(v.Width, maxViewWidth)
 		m.height = v.Height

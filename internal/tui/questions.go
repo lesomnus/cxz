@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textinput"
@@ -12,15 +11,19 @@ import (
 )
 
 type questionDialog struct {
-	id, run, request  string
-	questions         []agentview.Question
-	selected          [][]bool
-	other             []textinput.Model
-	otherSelected     []bool
-	page, row, offset int
-	message           string
-	sending           bool
-	pastes            map[string]*pastedText
+	id, run, request               string
+	questions                      []agentview.Question
+	selected                       [][]bool
+	other                          []textinput.Model
+	otherSelected                  []bool
+	page, row, offset              int
+	hoverRow                       int
+	hovering, reveal               bool
+	previewSource, previewRendered string
+	previewWidth                   int
+	message                        string
+	sending                        bool
+	pastes                         map[string]*pastedText
 }
 
 func (m *model) openQuestion(p *api.Event) tea.Cmd {
@@ -46,7 +49,7 @@ func (m *model) openQuestion(p *api.Event) tea.Cmd {
 		m.showError("Cannot open question form: " + err.Error() + ". /approval shows the raw request.")
 		return nil
 	}
-	d := &questionDialog{id: s.Id, run: s.RunId, request: p.RequestId, questions: qs}
+	d := &questionDialog{id: s.Id, run: s.RunId, request: p.RequestId, questions: qs, reveal: true}
 	for _, q := range qs {
 		d.selected = append(d.selected, make([]bool, len(q.Options)))
 		in := textinput.New()
@@ -61,6 +64,18 @@ func (m *model) openQuestion(p *api.Event) tea.Cmd {
 		d.otherSelected = append(d.otherSelected, false)
 	}
 	m.questionDialog = d
+	m.focusApproval, m.focusList = false, false
+	m.toolSelector, m.textSelection, m.pathHints = nil, nil, nil
+	if p := m.terminal(); p != nil {
+		p.focused = false
+	}
+	if m.filePreview != nil {
+		m.filePreview.focused = false
+	}
+	if m.errorDialog != nil {
+		m.errorDialog.focused = false
+	}
+	m.input.Blur()
 	if m.questionSeen == nil {
 		m.questionSeen = map[string]bool{}
 	}
@@ -76,6 +91,7 @@ func (m *model) openQuestion(p *api.Event) tea.Cmd {
 
 func (m *model) closeQuestion() {
 	m.questionDialog = nil
+	m.input.Focus()
 	m.resize()
 }
 
@@ -95,7 +111,7 @@ func (m *model) syncQuestion() {
 			m.notice = "Question no longer pending"
 		}
 	}
-	if s == nil || m.panelFocus || m.projectView || m.accountView || m.questionDialog != nil || m.report != nil || m.modelPicker != nil || m.restartConfirm != nil {
+	if s == nil || m.settingsPage != nil || m.memoryPage != nil || m.panelFocus || m.projectView || m.accountView || m.questionDialog != nil || m.report != nil || m.modelPicker != nil || m.restartConfirm != nil {
 		return
 	}
 	for _, p := range s.Pending {
@@ -143,6 +159,7 @@ func (m *model) questionNext() tea.Cmd {
 		d.page++
 		d.row = 0
 		d.offset = 0
+		d.reveal = true
 		d.message = ""
 		return nil
 	}
@@ -172,8 +189,13 @@ func (m *model) questionNext() tea.Cmd {
 
 func (m *model) questionKey(k tea.KeyMsg) tea.Cmd {
 	d := m.questionDialog
-	if d.sending && k.String() != "esc" && k.String() != "ctrl+d" {
-		return nil
+	d.hovering = false
+	if d.sending {
+		switch k.String() {
+		case "esc", "ctrl+d", "pgup", "pgdown", "ctrl+pgup", "ctrl+pgdown", "alt+pgup", "alt+pgdown", "ctrl+home", "ctrl+end":
+		default:
+			return nil
+		}
 	}
 	q := d.questions[d.page]
 	n := d.count()
@@ -201,17 +223,42 @@ func (m *model) questionKey(k tea.KeyMsg) tea.Cmd {
 		d.row = (d.row + n + 2) % (n + 3)
 	case "down", "tab":
 		d.row = (d.row + 1) % (n + 3)
-	case "pgup":
-		d.offset -= 5
+	case "ctrl+pgup", "ctrl+pgdown", "alt+pgup", "alt+pgdown":
+		key := tea.KeyMsg{Type: tea.KeyPgDown}
+		if strings.HasSuffix(k.String(), "pgup") {
+			key.Type = tea.KeyPgUp
+		}
+		m.view, _ = m.view.Update(key)
+		return m.loadOlderHistory()
+	case "ctrl+home":
+		m.view.GotoTop()
+		return m.loadOlderHistory()
+	case "ctrl+end":
+		m.view.GotoBottom()
 		return nil
-	case "pgdown":
-		d.offset += 5
+	case "pgup", "pgdown":
+		delta := max(1, m.questionHeight()-questionChromeRows)
+		if k.String() == "pgup" {
+			delta = -delta
+		}
+		m.scrollQuestion(delta)
+		return nil
+	case "home", "end":
+		if q.Other && d.row == len(q.Options) {
+			goto input
+		}
+		d.offset = 0
+		if k.String() == "end" {
+			d.offset = int(^uint(0) >> 1)
+		}
+		d.reveal = false
+		m.questionLayout()
 		return nil
 	case "enter", " ":
 		if d.row < len(q.Options) {
 			if d.selected[d.page][d.row] && (!q.Multi || k.String() == "enter") {
 				d.row = n
-				d.offset = 0
+				d.reveal = true
 				return nil
 			}
 			value := !d.selected[d.page][d.row]
@@ -244,7 +291,7 @@ func (m *model) questionKey(k tea.KeyMsg) tea.Cmd {
 	default:
 		goto input
 	}
-	d.offset = 0
+	d.reveal = true
 	return nil
 input:
 	if q.Other && d.row == len(q.Options) {
@@ -267,115 +314,6 @@ input:
 		return cmd
 	}
 	return nil
-}
-
-func (m *model) questionOverlay(view string) string {
-	if m.pasteDialog != nil {
-		return view
-	}
-	d := m.questionDialog
-	if d == nil {
-		return view
-	}
-	q := d.questions[d.page]
-	width := max(1, m.width-6)
-	lines := []string{accent.Bold(true).Render(fmt.Sprintf("Question %d/%d · %s", d.page+1, len(d.questions), safeText(q.Header)))}
-	add := func(s string) { lines = append(lines, strings.Split(ansi.Hardwrap(s, width, true), "\n")...) }
-	add(safeText(q.Text))
-	mode := "Choose one"
-	if q.Multi {
-		mode = "Choose one or more"
-	}
-	add(muted.Render(mode))
-	add("")
-	focus := len(lines)
-	for i, o := range q.Options {
-		marker := "[ ]"
-		if !q.Multi {
-			marker = "○"
-		}
-		if d.selected[d.page][i] {
-			marker = "[✓]"
-			if !q.Multi {
-				marker = "●"
-			}
-		}
-		prefix := "  "
-		if i == d.row {
-			prefix = "› "
-			focus = len(lines)
-		}
-		label := prefix + marker + " " + safeText(o.Label)
-		if d.selected[d.page][i] {
-			label = magenta.Bold(true).Render(label)
-		} else if i == d.row {
-			label = accent.Render(label)
-		}
-		add(label)
-		if o.Description != "" {
-			add(muted.Render("    " + safeText(o.Description)))
-		}
-		if i == d.row && o.Preview != "" {
-			add(questionPreview(o.Preview, width))
-		}
-	}
-	if q.Other {
-		in := d.other[d.page]
-		in.Width = max(1, width-10)
-		in.Blur()
-		prefix := "  "
-		if d.row == len(q.Options) {
-			prefix = "› "
-			focus = len(lines)
-			in.Focus()
-			in.Cursor.Blink = m.pulse%10 >= 5
-		}
-		label := prefix + "Other: "
-		if d.otherSelected[d.page] {
-			label = magenta.Render(label)
-		} else if d.row == len(q.Options) {
-			label = accent.Render(label)
-		}
-		add(label + m.decorateInputPastes(in.View()))
-	}
-	n := d.count()
-	add("")
-	buttonLine := ""
-	for i, label := range []string{"Next", "Back", "Cancel"} {
-		if i == 0 && d.page == len(d.questions)-1 {
-			label = "Submit"
-		}
-		prefix := "  "
-		if d.row == n+i {
-			prefix = "› "
-			label = accent.Reverse(true).Render("[ " + label + " ]")
-		} else {
-			label = "[ " + label + " ]"
-		}
-		button := prefix + label
-		if buttonLine != "" && ansi.StringWidth(buttonLine+" "+button) > width {
-			add(buttonLine)
-			buttonLine = ""
-		}
-		if d.row == n+i {
-			focus = len(lines)
-		}
-		if buttonLine != "" {
-			buttonLine += " "
-		}
-		buttonLine += button
-	}
-	add(buttonLine)
-	add("")
-	height := max(1, len(strings.Split(view, "\n"))-4)
-	start := max(0, focus-height+2) + d.offset
-	start = max(0, min(start, max(0, len(lines)-height)))
-	body := append([]string{}, lines[start:min(len(lines), start+height)]...)
-	body = append(body, muted.Render("↑/↓ Tab move · Space/Enter choose · Ctrl+S next/submit · Esc close"))
-	if d.message != "" {
-		body = append(body, warning.Render(safeText(d.message)))
-	}
-	return overlayBox(view, body, m.width, true)
 }
 
 // Align the preview with option descriptions, not with the list indicator.
