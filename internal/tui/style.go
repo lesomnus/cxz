@@ -120,8 +120,13 @@ func (m *model) resize() {
 	viewWidth := max(1, m.width-2)
 	if m.view.Width != viewWidth {
 		m.renderedTools = nil
+		m.renderedInputs = nil
+		m.renderedSummaries = nil
 	}
 	m.view.Width = viewWidth
+	if m.liveRenderWidth != nil {
+		m.liveRenderWidth.Store(int64(viewWidth))
+	}
 	// Blank separator + status (2), composer border (2), session information (1).
 	m.view.Height = max(1, m.height-m.input.Height()-5-m.approvalHeight()-m.terminalHeight()-m.previewHeight()-m.errorHeight()-m.questionHeight())
 	if p := m.terminal(); p != nil && p.session != nil && m.terminalHeight() > 0 {

@@ -67,3 +67,21 @@ func TestClaudeEmptyResultKeepsKnownLimits(t *testing.T) {
 		t.Fatal(got)
 	}
 }
+
+func TestContextStatusInvalidatesWhenOlderLimitsArrive(t *testing.T) {
+	m := conversationModel()
+	s := m.current()
+	usage := &api.Event{RunId: s.RunId, Kind: "usage", Text: "context/message", Payload: []byte(`{"model":"x","usage":{"input_tokens":110000}}`)}
+	m.events[s.Id] = []*api.Event{usage}
+	if got := m.contextStatus(); got != "⠀—" {
+		t.Fatal(got)
+	}
+	m.events[s.Id] = []*api.Event{{RunId: s.RunId, Kind: "turn_end", Payload: []byte(`{"modelUsage":{"x":{"contextWindow":1000000}}}`)}, usage}
+	if got := m.contextStatus(); got != "⡀11%" {
+		t.Fatal("older limits did not invalidate cached status", got)
+	}
+	m.contextReports = map[string]contextReportSnapshot{s.Id: {run: s.RunId, seq: 100, percent: 35}}
+	if got := m.contextStatus(); got != "⣄35%" {
+		t.Fatal("explicit report did not invalidate cached status", got)
+	}
+}

@@ -26,6 +26,9 @@ type renderedResponse struct {
 }
 
 func eventViewCached(m *model, s *api.Session, e *api.Event, width int) string {
+	if e.Kind == "input" {
+		return m.cachedInput(s, e, width)
+	}
 	if e.Kind != "assistant" {
 		return eventView(s, e, width)
 	}
