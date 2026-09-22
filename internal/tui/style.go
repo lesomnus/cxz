@@ -112,7 +112,7 @@ func (m *model) resize() {
 	for _, line := range strings.Split(m.input.Value(), "\n") {
 		rows += max(1, (ansi.StringWidth(line)+max(1, m.width-4)-1)/max(1, m.width-4))
 	}
-	m.input.SetHeight(min(max(2, rows), min(6, max(1, m.height/4))))
+	m.input.SetHeight(min(max(2, rows), min(6, max(1, m.height/4), max(1, m.height-6-m.errorHeight()))))
 	// SetValue/SetHeight alone do not reveal a cursor below the old viewport.
 	// Populate its new content, then let the widget re-anchor its scroll offset.
 	_ = m.input.View()
@@ -123,7 +123,7 @@ func (m *model) resize() {
 	}
 	m.view.Width = viewWidth
 	// Blank separator + status (2), composer border (2), session information (1).
-	m.view.Height = max(1, m.height-m.input.Height()-5-m.approvalHeight()-m.terminalHeight()-m.previewHeight())
+	m.view.Height = max(1, m.height-m.input.Height()-5-m.approvalHeight()-m.terminalHeight()-m.previewHeight()-m.errorHeight())
 	if p := m.terminal(); p != nil && p.session != nil && m.terminalHeight() > 0 {
 		p.session.Resize(m.width, m.terminalHeight()-2)
 	}
@@ -193,11 +193,11 @@ func (m *model) sessionScreen() string {
 		preview = strings.Join(rows, "\n") + "\n"
 	}
 	composer := m.input
-	modal := m.redactDialog != nil || m.terminalFocused() || m.panelFocus || m.report != nil || m.modelPicker != nil || m.restartConfirm != nil || m.questionDialog != nil || m.pasteDialog != nil || m.selectingTools() || (m.previewVisible() && m.filePreview.focused)
+	modal := m.errorFocused() || m.redactDialog != nil || m.terminalFocused() || m.panelFocus || m.report != nil || m.modelPicker != nil || m.restartConfirm != nil || m.questionDialog != nil || m.pasteDialog != nil || m.selectingTools() || (m.previewVisible() && m.filePreview.focused)
 	if modal {
 		composer.Blur()
 	}
-	body := m.redactOverlay(m.pasteOverlay(m.questionOverlay(m.restartOverlay(m.reportView(m.modelPickerOverlay(m.commandOverlay(m.conversationView()))))))) + "\n" + track + "\n" + box + preview + m.recordingStatusRow("  "+status, width) + "\n" +
+	body := m.redactOverlay(m.pasteOverlay(m.questionOverlay(m.restartOverlay(m.reportView(m.modelPickerOverlay(m.commandOverlay(m.conversationView()))))))) + "\n" + track + "\n" + box + preview + strings.Repeat("\n", m.errorHeight()) + m.recordingStatusRow("  "+status, width) + "\n" +
 		frame(m.decorateInputPastes(composer.View()), width, !modal && !m.focusList && !m.focusApproval && m.pathHints == nil) + "\n"
 	if m.terminalHeight() > 0 {
 		body += m.terminalView() + "\n"

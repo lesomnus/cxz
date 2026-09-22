@@ -8,8 +8,8 @@ import (
 )
 
 func (m *model) navigationNotice() string {
-	if m.panelError != "" {
-		return m.panelError
+	if m.errorDialog != nil && m.notice == m.errorDialog.text {
+		return ""
 	}
 	return m.notice
 }

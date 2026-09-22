@@ -356,7 +356,7 @@ func (m *model) receiveRecording(r recordingSaved) {
 	m.recordingTask = nil
 	if r.err != nil {
 		m.recordingError = r.err.Error()
-		m.notice = "Recording save failed: " + r.err.Error() + " · F9 retries"
+		m.showError("Recording save failed: " + r.err.Error() + " · F9 retries")
 		return
 	}
 	m.recordingPending = nil

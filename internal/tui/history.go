@@ -131,7 +131,7 @@ func (m *model) applyHistoryPage(page historyPage) bool {
 		if m.historyShimmer != nil && m.historyShimmer.id == page.id {
 			m.historyShimmer = nil
 		}
-		m.notice = "History: " + page.err.Error()
+		m.showError("History: " + page.err.Error())
 		return true
 	}
 	if m.renderedResponses == nil {

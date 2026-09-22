@@ -127,7 +127,7 @@ func (m *model) accountKey(key tea.KeyMsg) tea.Cmd {
 			}
 			service := m.accountClient()
 			if service == nil {
-				m.notice = "Account service unavailable"
+				m.showError("Account service unavailable")
 				return nil
 			}
 			m.busy = true
@@ -254,7 +254,7 @@ func (m *model) accountScreen() string {
 			rows = append(rows, muted.Render("Enter creates session with selected account"))
 		}
 	}
-	status := m.notice
+	status := m.navigationNotice()
 	if m.busy {
 		status = "Working… " + status
 	} else if m.accountLoading {

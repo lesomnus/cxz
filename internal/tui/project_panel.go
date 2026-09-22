@@ -156,7 +156,11 @@ func (m *model) updatePanel(v listing) {
 	}
 	m.allSessions = v.sessions
 	if v.projectsErr != nil {
-		m.panelError = "Project list unavailable: " + v.projectsErr.Error()
+		message := "Project list unavailable: " + v.projectsErr.Error()
+		if m.panelError != message {
+			m.showError(message)
+		}
+		m.panelError = message
 	} else if v.projectsLoaded || v.projects != nil {
 		m.panelProjects = v.projects
 		m.panelError = ""
@@ -245,6 +249,10 @@ func (m *model) panelKey(k tea.KeyMsg) tea.Cmd {
 		if !m.projectView && !m.accountView {
 			return m.input.Focus()
 		}
+	case "tab", "shift+tab":
+		if m.errorVisible() {
+			m.focusError()
+		}
 	case "up":
 		m.panelIndex = max(0, m.panelIndex-1)
 	case "down":
@@ -318,7 +326,7 @@ func (m *model) panelKey(k tea.KeyMsg) tea.Cmd {
 				m.notice = "No sessions yet. Press n to create one."
 				if c, ok := m.client.(interface{ ConnectionError(string) string }); ok {
 					if err := c.ConnectionError(r.project.Id); err != "" {
-						m.notice = err
+						m.showError(err)
 					}
 				}
 			}
@@ -431,7 +439,10 @@ func (m *model) panelScreen() string {
 			if m.renaming && m.renameID == s.Id {
 				sessionName = m.aliasInput.View()
 			}
-			line = "  " + sessionName + " · " + providerLabel(s.Agent) + " · " + pickerLabel(s.State)
+			line = "  " + m.sessionIndicator(s) + " " + clip(sessionName, max(1, width-19)) + " · " + providerLabel(s.Agent)
+			if s.State != "idle" && !workingState(s.State) && s.State != "" {
+				line += " · " + pickerLabel(s.State)
+			}
 		}
 		prefix := "  "
 		if current := m.current(); current != nil && !m.projectView && r.session != nil && current.Id == r.session.Id {

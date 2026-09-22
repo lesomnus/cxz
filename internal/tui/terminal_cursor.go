@@ -128,6 +128,7 @@ func (m *model) anchorCursor() {
 	x, y, ok := 0, 0, false
 	if m.width >= 40 && m.height >= 14 {
 		switch {
+		case m.errorFocused():
 		case m.redactDialog != nil:
 		case m.terminalFocused():
 			if p := m.terminal(); p.session != nil && p.scroll == nil {

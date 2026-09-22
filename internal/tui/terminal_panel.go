@@ -58,7 +58,7 @@ func (m *model) terminalHeight() int {
 	if p == nil || !p.open || m.projectView || m.accountView || m.workflow != nil {
 		return 0
 	}
-	available := m.height - m.input.Height() - 5 - m.approvalHeight() - 4
+	available := m.height - m.input.Height() - 5 - m.approvalHeight() - m.errorHeight() - 4
 	if available < 4 {
 		return 0
 	}
