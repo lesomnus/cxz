@@ -439,7 +439,7 @@ func (m *model) panelScreen() string {
 			if m.renaming && m.renameID == s.Id {
 				sessionName = m.aliasInput.View()
 			}
-			line = "  " + m.sessionIndicator(s) + " " + clip(sessionName, max(1, width-19)) + " · " + providerLabel(s.Agent)
+			line = m.sessionIndicator(s) + " " + clip(sessionName, max(1, width-17)) + " · " + providerLabel(s.Agent)
 			if s.State != "idle" && !workingState(s.State) && s.State != "" {
 				line += " · " + pickerLabel(s.State)
 			}

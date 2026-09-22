@@ -33,6 +33,8 @@ type model struct {
 	contextStatusCache      *contextStatusCache
 	errorDialog             *errorDialog
 	sessionActivity         map[string]*sessionActivity
+	sessionBackground       map[string]*sessionBackgroundCheck
+	backgroundStateCache    map[string]backgroundStateCache
 	textSelection           *transcriptSelection
 	codeButtons             []codeButton
 	codeHover               *codeButton
@@ -1145,14 +1147,11 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if v.epoch != 0 && v.epoch != m.watchEpoch {
 			return m, nil
 		}
-		if m.backgroundSnapshots == nil {
-			m.backgroundSnapshots = map[string]backgroundSnapshot{}
-		}
 		if m.backgroundErrors == nil {
 			m.backgroundErrors = map[string]string{}
 		}
 		if v.err == nil {
-			m.backgroundSnapshots[v.id] = v.snapshot
+			m.storeBackgroundSnapshot(v.id, v.snapshot)
 		}
 		delete(m.backgroundLoading, v.id)
 		delete(m.backgroundErrors, v.id)
@@ -1161,6 +1160,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.render()
 		return m, nil
+	case sessionBackgroundChecked:
+		m.receiveSessionBackground(v)
+		return m, m.refreshSessionBackground()
 	case completionChecked:
 		m.receiveCompletion(v)
 		return m, nil
@@ -1462,7 +1464,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.resize()
 		m.render()
 		m.syncQuestion()
-		return m, completion
+		return m, tea.Batch(completion, m.refreshSessionBackground())
 	case received:
 		m.receiveEvent(v, true)
 	case caughtUp:

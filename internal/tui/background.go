@@ -38,13 +38,18 @@ func (m *model) loadBackgroundHistory(p historyPage) tea.Cmd {
 	if parent == nil {
 		parent = m.ctx
 	}
+	return m.fetchBackground(parent, p.id, p.epoch)
+}
+
+func (m *model) fetchBackground(parent context.Context, id string, epoch uint64) tea.Cmd {
+	client, recorder := m.client, m.debugRecorder
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(parent, 10*time.Second)
 		defer cancel()
-		out := backgroundHistory{id: p.id, epoch: p.epoch}
+		out := backgroundHistory{id: id, epoch: epoch}
 		started := time.Now()
-		reply, err := m.client.Background(ctx, &api.SessionRef{Id: p.id})
-		m.debugRecorder.Add(debugEvent{Kind: "history_rpc", Type: "background", Duration: time.Since(started).Microseconds(), Bytes: proto.Size(reply), ErrorCode: status.Code(err).String()})
+		reply, err := client.Background(ctx, &api.SessionRef{Id: id})
+		recorder.Add(debugEvent{Kind: "history_rpc", Type: "background", Duration: time.Since(started).Microseconds(), Bytes: proto.Size(reply), ErrorCode: status.Code(err).String()})
 		if status.Code(err) == codes.Unimplemented {
 			err = fmt.Errorf("background snapshot unavailable: update the manager and project runtime")
 		}
@@ -58,12 +63,48 @@ func (m *model) loadBackgroundHistory(p historyPage) tea.Cmd {
 }
 
 func (m *model) backgroundStates() map[string]*agentview.BackgroundState {
-	out := map[string]*agentview.BackgroundState{}
 	s := m.current()
 	if s == nil {
-		return out
+		return nil
 	}
-	snapshot := m.backgroundSnapshots[s.Id]
+	return m.backgroundStatesFor(s.Id)
+}
+
+type backgroundStateKey struct {
+	snapshotSeq uint64
+	count       int
+	first, last *api.Event
+}
+
+type backgroundStateCache struct {
+	key    backgroundStateKey
+	states map[string]*agentview.BackgroundState
+}
+
+func (m *model) storeBackgroundSnapshot(id string, snapshot backgroundSnapshot) {
+	if old, ok := m.backgroundSnapshots[id]; ok && old.lastSeq > snapshot.lastSeq {
+		return
+	}
+	if m.backgroundSnapshots == nil {
+		m.backgroundSnapshots = map[string]backgroundSnapshot{}
+	}
+	m.backgroundSnapshots[id] = snapshot
+	delete(m.backgroundStateCache, id)
+}
+
+// Spinner frames reuse the reduced state. Only new journal entries, older pages,
+// or a newer server snapshot require replaying provider background telemetry.
+func (m *model) backgroundStatesFor(id string) map[string]*agentview.BackgroundState {
+	snapshot := m.backgroundSnapshots[id]
+	history := m.events[id]
+	key := backgroundStateKey{snapshotSeq: snapshot.lastSeq, count: len(history)}
+	if len(history) > 0 {
+		key.first, key.last = history[0], history[len(history)-1]
+	}
+	if cached, ok := m.backgroundStateCache[id]; ok && cached.key == key {
+		return cached.states
+	}
+	out := map[string]*agentview.BackgroundState{}
 	for run, state := range snapshot.states {
 		if state == nil {
 			continue
@@ -75,7 +116,7 @@ func (m *model) backgroundStates() map[string]*agentview.BackgroundState {
 		out[run] = copy
 	}
 	var events []*api.Event
-	for _, e := range m.events[s.Id] {
+	for _, e := range history {
 		if e.Kind == "background" && (e.Seq == 0 || e.Seq > snapshot.lastSeq) {
 			events = append(events, e)
 		}
@@ -92,7 +133,26 @@ func (m *model) backgroundStates() map[string]*agentview.BackgroundState {
 		}
 		out[e.RunId].Apply(e.Payload)
 	}
+	if m.backgroundStateCache == nil {
+		m.backgroundStateCache = map[string]backgroundStateCache{}
+	}
+	m.backgroundStateCache[id] = backgroundStateCache{key: key, states: out}
 	return out
+}
+
+func (m *model) hasActiveBackground(s *api.Session) bool {
+	if s.State != "idle" && !workingState(s.State) {
+		return false
+	}
+	state := m.backgroundStatesFor(s.Id)[s.RunId]
+	if state != nil {
+		for _, task := range state.Tasks {
+			if task.Active {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (m *model) backgroundStatus() string {
