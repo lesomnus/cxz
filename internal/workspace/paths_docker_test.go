@@ -3,6 +3,7 @@ package workspace
 import (
 	"context"
 	"database/sql"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -65,7 +66,7 @@ func TestDockerManagerPaths(t *testing.T) {
 	}
 	defer m.Close()
 	m.Owner = owner
-	if err := m.save(ctx, &Project{ID: project, ContainerID: id, RemoteUser: "browse"}); err != nil {
+	if err := m.save(ctx, &Project{ID: project, ContainerID: id, RemoteUser: "browse", RemoteWorkspace: "/browse"}); err != nil {
 		t.Fatal(err)
 	}
 	for range 2 {
@@ -88,9 +89,31 @@ func TestDockerManagerPaths(t *testing.T) {
 	if _, err := m.Paths(ctx, project, "/root/", nil); err == nil {
 		t.Fatal("lookup ran as root instead of remote user")
 	}
+	terminal, err := m.OpenTerminal(ctx, project, 80, 24)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer terminal.Close()
+	if _, err := io.WriteString(terminal, "printf 'user=%s\\ndir=%s\\n' \"$(id -u)\" \"$PWD\"; stty size; exit\r"); err != nil {
+		t.Fatal(err)
+	}
+	output, _ := io.ReadAll(terminal) // A PTY may return EIO at normal shell exit.
+	if err := terminal.Wait(); err != nil {
+		t.Fatal(err, string(output))
+	}
+	for _, want := range []string{"user=1001", "dir=/browse", "24 80"} {
+		if !strings.Contains(string(output), want) {
+			t.Fatalf("terminal missing %q: %s", want, output)
+		}
+	}
 	m.Owner = "foreign"
 	if _, err := m.Paths(ctx, project, "/", nil); err == nil {
 		t.Fatal("cached helper bypassed manager ownership")
+	}
+	if terminal, err := m.OpenTerminal(ctx, project, 80, 24); err == nil {
+		terminal.Close()
+		terminal.Wait()
+		t.Fatal("terminal bypassed manager ownership")
 	}
 	m.Owner = owner
 	if _, err := dockerx.Run(ctx, "stop", id); err != nil {
@@ -98,5 +121,8 @@ func TestDockerManagerPaths(t *testing.T) {
 	}
 	if _, err := m.Paths(ctx, project, "/", nil); status.Code(err) != codes.FailedPrecondition {
 		t.Fatal("stopped project lookup", err)
+	}
+	if _, err := m.OpenTerminal(ctx, project, 80, 24); status.Code(err) != codes.FailedPrecondition {
+		t.Fatal("stopped project terminal", err)
 	}
 }

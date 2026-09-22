@@ -5,6 +5,9 @@ import "cxz/account_svc.g.proto";
 option go_package = "github.com/lesomnus/cxz/resource";
 
 service ProjectService {
+  // Ephemeral PTY on the manager host. First frame identifies a project and size;
+  // later frames carry input or a resize. Terminal bytes are never journaled.
+  rpc Terminal(stream ProjectTerminalRequest) returns (stream ProjectTerminalReply);
   // Ephemeral login transport. First frame identifies the session profile;
   // subsequent frames carry stdin only. These frames are never journaled.
   rpc SessionLogin(stream ProjectLoginRequest) returns (stream ProjectLoginOutput);
@@ -21,6 +24,19 @@ service ProjectService {
   rpc Recreate(ProjectRecreateRequest) returns (Project);
   // Foreign inventory is not part of the registered Project resource list.
   rpc InspectForeign(InspectForeignRequest) returns (InspectForeignResponse);
+}
+
+message ProjectTerminalRequest {
+  ProjectRef ref = 1;
+  uint32 columns = 2;
+  uint32 rows = 3;
+  bytes input = 4;
+}
+message ProjectTerminalReply {
+  bool ready = 1;
+  bytes output = 2;
+  bool exited = 3;
+  string error = 4;
 }
 
 message ProjectLoginRequest {

@@ -26,6 +26,7 @@ const (
 	ProjectService_Erase_FullMethodName          = "/cxz.ProjectService/Erase"
 	ProjectService_List_FullMethodName           = "/cxz.ProjectService/List"
 	ProjectService_Watch_FullMethodName          = "/cxz.ProjectService/Watch"
+	ProjectService_Terminal_FullMethodName       = "/cxz.ProjectService/Terminal"
 	ProjectService_SessionLogin_FullMethodName   = "/cxz.ProjectService/SessionLogin"
 	ProjectService_Paths_FullMethodName          = "/cxz.ProjectService/Paths"
 	ProjectService_Devcontainer_FullMethodName   = "/cxz.ProjectService/Devcontainer"
@@ -65,6 +66,9 @@ type ProjectServiceClient interface {
 	// once in that first message and once as a change that happened while it was
 	// being read -- and that is harmless for the same reason.
 	Watch(ctx context.Context, in *ProjectWatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ProjectWatchResponse], error)
+	// Ephemeral PTY on the manager host. First frame identifies a project and size;
+	// later frames carry input or a resize. Terminal bytes are never journaled.
+	Terminal(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ProjectTerminalRequest, ProjectTerminalReply], error)
 	// Ephemeral login transport. First frame identifies the session profile;
 	// subsequent frames carry stdin only. These frames are never journaled.
 	SessionLogin(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ProjectLoginRequest, ProjectLoginOutput], error)
@@ -170,9 +174,22 @@ func (c *projectServiceClient) Watch(ctx context.Context, in *ProjectWatchReques
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type ProjectService_WatchClient = grpc.ServerStreamingClient[ProjectWatchResponse]
 
+func (c *projectServiceClient) Terminal(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ProjectTerminalRequest, ProjectTerminalReply], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &ProjectService_ServiceDesc.Streams[1], ProjectService_Terminal_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[ProjectTerminalRequest, ProjectTerminalReply]{ClientStream: stream}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type ProjectService_TerminalClient = grpc.BidiStreamingClient[ProjectTerminalRequest, ProjectTerminalReply]
+
 func (c *projectServiceClient) SessionLogin(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ProjectLoginRequest, ProjectLoginOutput], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &ProjectService_ServiceDesc.Streams[1], ProjectService_SessionLogin_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &ProjectService_ServiceDesc.Streams[2], ProjectService_SessionLogin_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +202,7 @@ type ProjectService_SessionLoginClient = grpc.BidiStreamingClient[ProjectLoginRe
 
 func (c *projectServiceClient) Paths(ctx context.Context, in *ProjectPathsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ProjectPathsReply], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &ProjectService_ServiceDesc.Streams[2], ProjectService_Paths_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &ProjectService_ServiceDesc.Streams[3], ProjectService_Paths_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -300,6 +317,9 @@ type ProjectServiceServer interface {
 	// once in that first message and once as a change that happened while it was
 	// being read -- and that is harmless for the same reason.
 	Watch(*ProjectWatchRequest, grpc.ServerStreamingServer[ProjectWatchResponse]) error
+	// Ephemeral PTY on the manager host. First frame identifies a project and size;
+	// later frames carry input or a resize. Terminal bytes are never journaled.
+	Terminal(grpc.BidiStreamingServer[ProjectTerminalRequest, ProjectTerminalReply]) error
 	// Ephemeral login transport. First frame identifies the session profile;
 	// subsequent frames carry stdin only. These frames are never journaled.
 	SessionLogin(grpc.BidiStreamingServer[ProjectLoginRequest, ProjectLoginOutput]) error
@@ -346,6 +366,9 @@ func (UnimplementedProjectServiceServer) List(context.Context, *ProjectListReque
 }
 func (UnimplementedProjectServiceServer) Watch(*ProjectWatchRequest, grpc.ServerStreamingServer[ProjectWatchResponse]) error {
 	return status.Error(codes.Unimplemented, "method Watch not implemented")
+}
+func (UnimplementedProjectServiceServer) Terminal(grpc.BidiStreamingServer[ProjectTerminalRequest, ProjectTerminalReply]) error {
+	return status.Error(codes.Unimplemented, "method Terminal not implemented")
 }
 func (UnimplementedProjectServiceServer) SessionLogin(grpc.BidiStreamingServer[ProjectLoginRequest, ProjectLoginOutput]) error {
 	return status.Error(codes.Unimplemented, "method SessionLogin not implemented")
@@ -513,6 +536,13 @@ func _ProjectService_Watch_Handler(srv interface{}, stream grpc.ServerStream) er
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type ProjectService_WatchServer = grpc.ServerStreamingServer[ProjectWatchResponse]
+
+func _ProjectService_Terminal_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(ProjectServiceServer).Terminal(&grpc.GenericServerStream[ProjectTerminalRequest, ProjectTerminalReply]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type ProjectService_TerminalServer = grpc.BidiStreamingServer[ProjectTerminalRequest, ProjectTerminalReply]
 
 func _ProjectService_SessionLogin_Handler(srv interface{}, stream grpc.ServerStream) error {
 	return srv.(ProjectServiceServer).SessionLogin(&grpc.GenericServerStream[ProjectLoginRequest, ProjectLoginOutput]{ServerStream: stream})
@@ -723,6 +753,12 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 			StreamName:    "Watch",
 			Handler:       _ProjectService_Watch_Handler,
 			ServerStreams: true,
+		},
+		{
+			StreamName:    "Terminal",
+			Handler:       _ProjectService_Terminal_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
 		},
 		{
 			StreamName:    "SessionLogin",

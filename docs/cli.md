@@ -114,9 +114,12 @@ IME 위치를 위한 실제 커서 좌표는 계속 동기화한다. 새 셸의 
 authentication HOME은 사용하지 않는다. 이 터미널 명령은 에이전트 approval을 거치지 않는
 직접 사용자 명령이다. 입력·출력은 대화 이벤트 저널에 기록하지 않는다.
 
-현재 transport는 로컬 Docker CLI의 `exec -it`이며, cxz manager와 같은 Docker engine에 접근해야
-한다. 실행 전에 실제 container ID·project/owner label·running 상태를 확인한다. 원격 manager만
-접근 가능한 환경에서 별도의 terminal RPC relay는 제공하지 않는다. cxz detach 시 연결을 닫으므로
+터미널은 프로젝트가 속한 manager에서 Docker `exec -it`으로 열고, 기존 SSH/TCP/Unix 연결의
+양방향 RPC로 입력·출력·크기 변경을 전달한다. Windows를 포함한 프론트에는 Docker가 필요 없다.
+manager는 등록된 프로젝트에서 container ID·remote user·workspace를 조회하고 실제 owner/project
+label과 running 상태를 확인한다. 사용하려면 프론트와 manager를 함께 업데이트해야 한다.
+구버전 manager는 호스트에서 `cxz install --recreate`를 실행하라는 안내를 표시한다. 이 기능 때문에
+프로젝트 컨테이너를 재생성할 필요는 없다. cxz detach 시 연결을 닫으므로
 앱 재접속을 넘는 셸 복구는 지원하지 않는다. 의도적으로 분리한 백그라운드 프로세스까지 종료를
 보장하지 않으므로 필요하면 셸에서 먼저 종료한다. 접기는 종료가 아니다.
 
