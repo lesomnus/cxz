@@ -163,7 +163,7 @@ func (m *model) previewHeight() int {
 	if !m.previewVisible() || m.previewSideWidth() > 0 {
 		return 0
 	}
-	return min(previewContentRows+previewFrameRows, max(0, m.height-m.input.Height()-5-m.approvalHeight()-m.terminalHeight()-1))
+	return min(previewContentRows+previewFrameRows, max(0, m.height-m.input.Height()-5-m.approvalHeight()-m.terminalHeight()-m.errorHeight()-1))
 }
 func (m *model) previewRows(width, height int) string {
 	p := m.filePreview

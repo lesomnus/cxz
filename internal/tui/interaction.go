@@ -9,10 +9,13 @@ import (
 )
 
 func (m *model) cycleFocus(reverse bool) tea.Cmd {
-	// The project panel owns session navigation; Tab cycles approvals and input.
+	// The project panel owns session navigation; Tab cycles visible composer panels.
 	order := []string{"input"}
-	if m.selectedApproval() != nil {
+	if m.approvalHeight() > 0 {
 		order = append([]string{"approval"}, order...)
+	}
+	if m.errorVisible() {
+		order = append(order, "error")
 	}
 	current := "input"
 	if m.focusApproval {
@@ -32,6 +35,10 @@ func (m *model) cycleFocus(reverse bool) tea.Cmd {
 	m.focusApproval, m.focusList = next == "approval", false
 	if m.focusApproval {
 		m.approvalID = m.selectedApproval().RequestId
+	}
+	if next == "error" {
+		m.focusError()
+		return nil
 	}
 	if next == "input" {
 		return m.input.Focus()

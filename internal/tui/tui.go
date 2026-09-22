@@ -26,6 +26,8 @@ import (
 )
 
 type model struct {
+	errorDialog             *errorDialog
+	sessionActivity         map[string]*sessionActivity
 	textSelection           *transcriptSelection
 	codeButtons             []codeButton
 	codeHover               *codeButton
@@ -846,7 +848,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.redactSending = false
 		m.pruneRedactions()
 		if v.err != nil {
-			m.notice = v.err.Error() + "; reenter the secret with @redact"
+			m.showError(v.err.Error() + "; reenter the secret with @redact")
 		} else {
 			m.notice = "send · accepted (secret files swept after 8 hours idle)"
 		}
@@ -903,7 +905,13 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.filePreview != nil {
 			m.filePreview.hover = ""
 		}
+		if m.errorDialog != nil {
+			m.errorDialog.hover = ""
+		}
 	case tea.MouseMsg:
+		if handled, cmd := m.errorMouse(v); handled {
+			return m, cmd
+		}
 		m.codeHover = nil
 		if m.filePreview != nil {
 			m.filePreview.hover = ""
@@ -930,6 +938,15 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.settingsKey(v)
 		case tea.MouseMsg:
 			return m, m.settingsMouse(v)
+		}
+	}
+	if k, ok := msg.(tea.KeyMsg); ok {
+		if m.errorFocused() {
+			return m, m.errorKey(k)
+		}
+		if !k.Paste && k.String() == "tab" && m.errorVisible() && m.accountView && !m.accountAdding && !m.loginChoosing {
+			m.focusError()
+			return m, nil
 		}
 	}
 	if k, ok := msg.(tea.KeyMsg); ok && k.Type == tea.KeyCtrlP && !k.Paste && m.workflow == nil && m.redactDialog == nil && m.questionDialog == nil && m.pasteDialog == nil && m.restartConfirm == nil {
@@ -1020,11 +1037,11 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 			if v.err != nil {
-				m.notice = "Upload failed; original text retained: " + v.err.Error()
+				m.showError("Upload failed; original text retained: " + v.err.Error())
 				return m, nil
 			}
 			if v.path == "" {
-				m.notice = "Upload returned no path; original text retained."
+				m.showError("Upload returned no path; original text retained.")
 				return m, nil
 			}
 			p.path, p.file = v.path, true
@@ -1124,6 +1141,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.render()
 		return m, nil
+	case completionChecked:
+		m.receiveCompletion(v)
+		return m, nil
 	case pulseTick:
 		m.pulse++
 		return m, pulseTimer()
@@ -1135,6 +1155,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if status.Code(v.err) == codes.Unimplemented {
 					m.notice = "Permission RPC unavailable: update cxz on the host, run cxz install --recreate, then cxz project recreate WORKSPACE (replaces container; writable layer lost). See docs/cli.md.\nRPC error: " + v.err.Error()
 				}
+				m.showError(m.notice)
 			} else {
 				m.notice = "Permission " + v.mode + " saved for this session"
 			}
@@ -1151,7 +1172,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 		if v.err != nil {
-			m.notice = "Approval failed; not retried. " + v.err.Error()
+			m.showError("Approval failed; not retried. " + v.err.Error())
 		} else {
 			for _, s := range m.sessions {
 				if s.Id == v.id && s.RunId == v.run {
@@ -1236,7 +1257,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case renameResult:
 		m.renameBusy = false
 		if v.err != nil {
-			m.notice = v.err.Error()
+			m.showError(v.err.Error())
 			return m, nil
 		}
 		for _, s := range append(append([]*api.Session(nil), m.sessions...), m.allSessions...) {
@@ -1270,7 +1291,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.accountLoading = false
 		if v.err != nil {
-			m.notice = v.err.Error()
+			m.showError(v.err.Error())
 			return m, nil
 		}
 		alias := ""
@@ -1292,7 +1313,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case accountSaved:
 		m.busy = false
 		if v.err != nil {
-			m.notice = v.err.Error()
+			m.showError(v.err.Error())
 			return m, nil
 		}
 		m.accountAdding = false
@@ -1306,7 +1327,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.busy = false
 		m.notice = "Login completed."
 		if v.err != nil {
-			m.notice = v.err.Error()
+			m.showError(v.err.Error())
 		}
 		return m, nil
 	case tea.WindowSizeMsg:
@@ -1371,6 +1392,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.wantID != "" {
 			old = m.wantID
 		}
+		completion := m.observeSessions(v.sessions)
 		m.updatePanel(v)
 		if v.project != nil && (m.project == nil || m.project.Id == v.project.Id) {
 			m.project = v.project
@@ -1426,7 +1448,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.resize()
 		m.render()
 		m.syncQuestion()
-		return m, nil
+		return m, completion
 	case received:
 		m.receiveEvent(v, true)
 	case caughtUp:
@@ -1453,7 +1475,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case restartFinished:
 		m.restartBusy = false
 		if v.err != nil {
-			m.notice = v.err.Error()
+			m.showError(v.err.Error())
 		} else {
 			m.notice = "Agent restarted · same session · saved permission policy"
 		}
@@ -1465,7 +1487,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.busy = false
 		if v.err != nil {
-			m.notice = v.err.Error()
+			m.showError(v.err.Error())
 		} else {
 			m.notice = v.text
 			if v.sessionID != "" {
@@ -1824,6 +1846,7 @@ func (m *model) View() (out string) {
 		return m.settingsScreen()
 	}
 	defer func() { out = m.wideScreen(out) }()
+	defer func() { out = m.errorOverlay(out) }()
 	m.anchorCursor()
 	if m.workflow != nil {
 		return m.workflowScreen()

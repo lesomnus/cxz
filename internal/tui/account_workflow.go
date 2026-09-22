@@ -84,7 +84,7 @@ func (m *model) startAccountWorkflow(alias, provider, sessionID string, create b
 	r, w, err := os.Pipe()
 	if err != nil {
 		cancel()
-		m.notice = "Could not open login input pipe"
+		m.showError("Could not open login input pipe")
 		return nil
 	}
 	f := &accountWorkflow{ctx: ctx, cancel: cancel, reader: r, in: w, updates: make(chan tea.Msg, 16), alias: alias, provider: provider, create: create, started: time.Now(), input: textinput.New()}

@@ -12,11 +12,11 @@ import (
 // send display styling, line numbers added by the UI, or viewport truncation.
 func (m *model) copyText(text string) {
 	if m.cursorOutput == nil {
-		m.notice = "Clipboard output unavailable"
+		m.showError("Clipboard output unavailable")
 		return
 	}
 	if _, err := io.WriteString(m.cursorOutput, ansi.SetSystemClipboard(text)); err != nil {
-		m.notice = "Could not request clipboard copy: " + err.Error()
+		m.showError("Could not request clipboard copy: " + err.Error())
 		return
 	}
 	m.notice = "Copy requested · requires terminal OSC 52 clipboard support"
@@ -122,6 +122,10 @@ func (m *model) selectionView(rows []string) {
 	}
 }
 func (m *model) copyFocusedText() {
+	if m.errorFocused() {
+		m.copyText(m.errorDialog.text)
+		return
+	}
 	if m.workflow != nil || m.redactDialog != nil || m.questionDialog != nil || m.settingsPage != nil || m.memoryPage != nil || m.accountView || m.projectView || m.panelFocus {
 		return
 	}

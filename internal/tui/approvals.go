@@ -67,7 +67,7 @@ func (m *model) replyApproval(p *api.Event, allow bool, answers string) tea.Cmd 
 	}
 	if answers != "" {
 		if _, _, err := core.DecodeAnswers(answers); err != nil {
-			m.notice = err.Error()
+			m.showError(err.Error())
 			return nil
 		}
 	}
@@ -211,7 +211,14 @@ func (m *model) approvalHeight() int {
 	if m.selectedApproval() == nil {
 		return 0
 	}
-	return min(12, max(5, m.height/3))
+	height := min(12, max(5, m.height/3))
+	if m.errorHeight() > 0 {
+		height = min(height, max(0, m.height-m.input.Height()-6-m.errorHeight()))
+	}
+	if height < 3 {
+		return 0
+	}
+	return height
 }
 func (m *model) approvalBox() string {
 	if m.questionDialog != nil {
@@ -223,6 +230,9 @@ func (m *model) approvalBox() string {
 	}
 	s := m.current()
 	height := m.approvalHeight()
+	if height < 3 {
+		return ""
+	}
 	index := 0
 	pending := m.visibleApprovals(s)
 	for i, v := range pending {

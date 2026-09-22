@@ -43,7 +43,7 @@ func (m *model) openQuestion(p *api.Event) tea.Cmd {
 	}
 	qs, err := agentview.Questions(s.Agent, p.Text, p.Payload)
 	if err != nil {
-		m.notice = "Cannot open question form: " + err.Error() + ". /approval shows the raw request."
+		m.showError("Cannot open question form: " + err.Error() + ". /approval shows the raw request.")
 		return nil
 	}
 	d := &questionDialog{id: s.Id, run: s.RunId, request: p.RequestId, questions: qs}
