@@ -156,7 +156,7 @@ func (m *model) updatePanel(v listing) {
 	}
 	m.allSessions = v.sessions
 	if v.projectsErr != nil {
-		m.panelError = "Project list unavailable"
+		m.panelError = "Project list unavailable: " + v.projectsErr.Error()
 	} else if v.projectsLoaded || v.projects != nil {
 		m.panelProjects = v.projects
 		m.panelError = ""
@@ -445,18 +445,17 @@ func (m *model) panelScreen() string {
 	for len(lines) < m.height-projectPanelFooterRows {
 		lines = append(lines, "")
 	}
-	status := m.notice
-	if c, ok := m.client.(interface{ ConnectionStatus() string }); ok && status == "" {
-		status = c.ConnectionStatus()
+	status := ""
+	// The standalone project page has no composer. The sidebar leaves notices
+	// to the conversation's status row so errors appear only once.
+	if !m.panelVisible() {
+		status = m.navigationNotice()
 	}
 	if m.busy {
 		status = "Working…"
 	}
 	if m.deletingID != "" {
 		status = fmt.Sprintf("Delete %.8s? y/N · stops agent; journal retained", m.deletingID)
-	}
-	if m.panelError != "" {
-		status = m.panelError
 	}
 	lines = append(lines, muted.Render("n new · a accounts"), muted.Render("r rename · s stop · d del"), muted.Render("m memory · Ctrl+P settings"), muted.Render("Esc/Ctrl+Q return"), muted.Render("Ctrl+D detach · agents run"), warning.Render(pickerLabel(status)))
 	for len(lines) < m.height {
@@ -491,7 +490,7 @@ func (m *model) wideScreen(content string) string {
 	}
 	right := []string{}
 	if width := m.previewSideWidth(); width > 0 && !((m.panelFocus || m.projectView) && !m.accountView && !m.creating && !m.panelVisible()) {
-		right = strings.Split(m.previewRows(width, min(m.height, previewContentRows+previewFrameRows)), "\n")
+		right = strings.Split(m.previewRows(width, m.height), "\n")
 	}
 	main := strings.Split(content, "\n")
 	lines := make([]string, max(0, m.height))

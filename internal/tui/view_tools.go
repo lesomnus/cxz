@@ -288,7 +288,7 @@ func (m *model) filePreviewKey(k tea.KeyMsg) tea.Cmd {
 	p := m.filePreview
 	page := max(1, m.previewHeight()-previewFrameRows)
 	if m.previewSideWidth() > 0 {
-		page = max(1, min(m.height, previewContentRows+previewFrameRows)-previewFrameRows)
+		page = max(1, m.height-previewFrameRows)
 	}
 	switch k.String() {
 	case "ctrl+c":

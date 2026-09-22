@@ -105,15 +105,15 @@ func TestPreviewSixteenRowsAndCopyCloseButtons(t *testing.T) {
 			w, h := max(1, m.width-4), m.previewHeight()
 			x, y := m.contentOffset()+2, m.view.Height+1+m.approvalHeight()
 			if side := m.previewSideWidth(); side > 0 {
-				w, h = side, 19
+				w, h = side, m.height
 				x, y = m.contentOffset()+m.width+2, 0
 			}
 			rows := strings.Split(ansi.Strip(m.previewRows(w, h)), "\n")
-			if h != 19 || len(rows) != 19 || !strings.Contains(rows[0], "Write") || !strings.Contains(rows[17], "/") || !strings.Contains(rows[18], "─") {
+			if len(rows) != h || !strings.Contains(rows[0], "Write") || !strings.Contains(rows[h-2], "/") || !strings.Contains(rows[h-1], "─") {
 				t.Fatal("fixed preview rows", rows)
 			}
 			if source == "one line" {
-				for _, row := range rows[2:17] {
+				for _, row := range rows[2 : h-2] {
 					if strings.TrimSpace(row) != "" {
 						t.Fatal("short source not padded", rows)
 					}
@@ -191,7 +191,7 @@ func TestRecordingStatusPositionAndBlink(t *testing.T) {
 	start := m.debugRecorder.generation()
 	on := ansi.Strip(m.recordingLabel(start))
 	off := ansi.Strip(m.recordingLabel(start.Add(time.Second)))
-	if on != "⬤ RED" || strings.TrimSpace(off) != "RED" || strings.Contains(off, "⬤") || ansi.StringWidth(on) != ansi.StringWidth(off) || m.recordingLabel(start) != m.recordingLabel(start.Add(2*time.Second)) {
+	if on != "⬤ REC" || strings.TrimSpace(off) != "REC" || strings.Contains(off, "⬤") || ansi.StringWidth(on) != ansi.StringWidth(off) || m.recordingLabel(start) != m.recordingLabel(start.Add(2*time.Second)) {
 		t.Fatal("blink changes label/width", on, off)
 	}
 	for _, preview := range []bool{false, true} {
@@ -202,10 +202,10 @@ func TestRecordingStatusPositionAndBlink(t *testing.T) {
 		}
 		rows := strings.Split(ansi.Strip(m.sessionScreen()), "\n")
 		y := m.height - m.input.Height() - 4 - m.terminalHeight()
-		if !strings.HasSuffix(rows[y], "RED") || !strings.Contains(rows[y+1], "╭") {
+		if !strings.HasSuffix(rows[y], "REC") || !strings.Contains(rows[y+1], "╭") {
 			t.Fatal("recording not immediately above input", rows)
 		}
-		if strings.Contains(rows[len(rows)-1], "RED") {
+		if strings.Contains(rows[len(rows)-1], "REC") {
 			t.Fatal("recording overwrote quota")
 		}
 	}

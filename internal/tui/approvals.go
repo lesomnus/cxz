@@ -295,11 +295,8 @@ func (m *model) approvalDetails() {
 }
 
 func (m *model) fullPermissionNotice() string {
-	if s := m.current(); s != nil && s.RunId != "" && s.PermissionMode == "full" {
-		if !permissionState(s.State) {
-			return "FULL saved · " + pickerLabel(safeText(s.State))
-		}
-		return "FULL · background approval · /permission ask"
+	if s := m.current(); s != nil && s.PermissionMode == "full" {
+		return "FULL"
 	}
 	return ""
 }

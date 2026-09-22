@@ -173,7 +173,7 @@ func (m *model) previewRows(width, height int) string {
 		p.width = width
 	}
 	rows := strings.Split(p.rendered, "\n")
-	count := min(previewContentRows, max(0, height-previewFrameRows))
+	count := max(0, height-previewFrameRows)
 	p.offset = max(0, min(p.offset, max(0, len(rows)-count)))
 	focused := p.focused && m.previewInteraction()
 	title := clip(safeText(p.title), max(1, inner-8))
@@ -230,7 +230,7 @@ func (m *model) filePreviewMouse(v tea.MouseMsg) bool {
 		x = m.contentOffset() + m.width + 2
 		y = 0
 		width = side
-		height = min(m.height, previewContentRows+previewFrameRows)
+		height = m.height
 	}
 	m.filePreview.hover = ""
 	if height < 2 || v.X < x || v.X >= x+width || v.Y < y || v.Y >= y+height {
