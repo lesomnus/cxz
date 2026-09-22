@@ -3,7 +3,6 @@ package tui
 import (
 	"context"
 	"encoding/binary"
-	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -73,6 +72,11 @@ func TestWindowsConsoleInputProgram(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer file.Close()
+	output, err := os.OpenFile("CONOUT$", os.O_RDWR, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer output.Close()
 	handle := windows.Handle(file.Fd())
 	var before uint32
 	if err := windows.GetConsoleMode(handle, &before); err != nil {
@@ -82,9 +86,12 @@ func TestWindowsConsoleInputProgram(t *testing.T) {
 	for run := 0; run < 2; run++ {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		m := &windowsKeyProbe{ready: make(chan struct{}), keys: make(chan tea.KeyMsg, 16)}
-		p := tea.NewProgram(m, tea.WithContext(ctx), tea.WithInput(keyboardInput(file)), tea.WithOutput(io.Discard), tea.WithoutRenderer(), tea.WithoutSignalHandler())
+		// Render to the isolated console so Win32 input mode is enabled through
+		// exactly the same output lifecycle as the real TUI. VT input alone
+		// would reduce Ctrl+Enter to LF when ConHost translates these records.
+		p := tea.NewProgram(m, tea.WithContext(ctx), tea.WithInput(keyboardInput(file)), tea.WithOutput(output), tea.WithoutSignalHandler())
 		done := make(chan error, 1)
-		go func() { _, err := runKeyboardProgram(ctx, p, file, io.Discard, nil); done <- err }()
+		go func() { _, err := runKeyboardProgram(ctx, p, file, output, nil); done <- err }()
 		select {
 		case <-m.ready:
 		case <-ctx.Done():
@@ -122,6 +129,14 @@ func TestWindowsConsoleInputProgram(t *testing.T) {
 				cancel()
 				t.Fatal("console key not delivered", tc.want)
 			}
+		}
+		if err := p.ReleaseTerminal(); err != nil {
+			cancel()
+			t.Fatal("release console", err)
+		}
+		if err := p.RestoreTerminal(); err != nil {
+			cancel()
+			t.Fatal("restore console", err)
 		}
 		// Emulate ConHost's VT-input records for a paste larger than both the
 		// console reader's 64-record batch and the decoder's 4096-byte read.
