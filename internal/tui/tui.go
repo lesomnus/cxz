@@ -1182,6 +1182,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		v.X -= m.contentOffset()
+		if m.composerStatusMouse(v) {
+			return m, nil
+		}
 		if m.questionDialog != nil {
 			if v.Button == tea.MouseButtonWheelUp {
 				m.questionDialog.offset -= 3
@@ -1835,7 +1838,11 @@ func (m *model) View() (out string) {
 		return m.accountScreen()
 	}
 	if m.projectView && !m.creating {
-		return screen(indentBlock("Select a session from Projects.\n\nn new session · a accounts"), m.width, m.height)
+		body := indentBlock("Select a session from Projects.\n\nn new session · a accounts")
+		if notice := m.navigationNotice(); notice != "" {
+			body += "\n\n" + indentBlock(warning.Render(ansi.Hardwrap(safeText(notice), max(1, m.width-4), true)))
+		}
+		return screen(body, m.width, m.height)
 	}
 	return m.sessionScreen()
 }

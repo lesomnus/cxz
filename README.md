@@ -271,13 +271,17 @@ resource database and survives server/container restarts; back up state volumes.
 | Ctrl+C | Copy dragged conversation selection, focused tool contents, or report (terminal OSC 52) |
 | Ctrl+D | Detach; agent continues (outside the focused container shell) |
 
-Tool previews reserve 16 content rows, reducing their height in small terminals.
+Inline tool previews reserve 16 content rows, reducing their height in small terminals.
+On wide screens, the right preview panel uses the full terminal height.
 The header's ⧉ copies the full recorded content; both ⧉ and × highlight on hover.
 Markdown code blocks have a padding row above and below, with a ⧉ copy button
 in the upper-right corner. Copies preserve original code rather than screen wrapping.
-The input footer shows quota/context only; session identity stays in the project panel.
+The input footer shows only FULL on the left when enabled, with quota/context on the right;
+session identity stays in the project panel. Click a notice above the input to copy
+its full message, including lines hidden by truncation. Notices are not duplicated
+in the project sidebar.
 F9 diagnostic recording covers this TUI across session switches, not just one agent
-session. A red `⬤ RED` appears above the input, with only the dot blinking each second.
+session. A red `⬤ REC` appears above the input, with only the dot blinking each second.
 
 The project list provides n (new session), a (accounts), r (rename), s (stop) and d (delete).
 `cxz up` prepares the workspace and returns; run `cxz` to open this list.

@@ -371,7 +371,7 @@ func (m *model) recordingLabel(now time.Time) string {
 		if int(now.Sub(m.debugRecorder.generation())/time.Second)%2 != 0 {
 			dot = strings.Repeat(" ", ansi.StringWidth(dot))
 		}
-		return failure.Render(dot + " RED")
+		return failure.Render(dot + " REC")
 	case m.recordingSaving:
 		return warning.Render("Saving debug recording…")
 	case m.recordingPending != nil:

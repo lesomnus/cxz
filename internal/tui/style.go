@@ -164,40 +164,22 @@ func screen(s string, width, height int) string {
 
 func (m *model) sessionScreen() string {
 	width := max(1, m.width)
-	status := warning.Render(pickerLabel(m.notice))
-	if !m.view.AtBottom() {
-		status = muted.Render(m.scrollStatus())
-		if m.fullPermissionNotice() != "" {
-			status = warning.Render("FULL · ") + status
-		}
-	} else if full := m.fullPermissionNotice(); full != "" {
-		status = warning.Render(full)
-		if m.notice != "" {
-			status += " · " + warning.Render(pickerLabel(m.notice))
-		}
-	} else if s := m.current(); s != nil && s.State != "working" && s.State != "idle" && s.State != "waiting_input" {
-		status = warning.Render(pickerLabel(s.State)) + " · " + status
-	}
-	if m.selectingTools() && !(m.previewVisible() && m.filePreview.focused) {
-		status = accent.Render("/view · ↑/↓ select · Enter open · Esc input")
-	}
+	status, _, _ := m.composerStatus()
 	box := m.approvalBox()
-	if background := m.backgroundStatus(); background != "" {
-		status = background + " · " + status
-	}
-	if s := m.current(); s != nil && s.State == "waiting_input" && m.interruptKey == s.Id+"/"+s.RunId && time.Now().Before(m.interruptUntil) {
-		status = warning.Render("Esc again to interrupt (3s)")
-	}
 	if box != "" {
 		box += "\n"
 	}
+	permission := ""
+	if full := m.fullPermissionNotice(); full != "" {
+		permission = " " + warning.Render(full)
+	}
 	context := muted.Render(m.contextStatus())
-	quota := m.quotaStatus(time.Now(), max(1, width-ansi.StringWidth(context)-3))
+	quota := m.quotaStatus(time.Now(), max(1, width-ansi.StringWidth(permission)-ansi.StringWidth(context)-3))
 	if quota != "" {
 		quota += " "
 	}
 	quota += context
-	info := strings.Repeat(" ", max(0, width-1-ansi.StringWidth(quota))) + quota + " "
+	info := permission + strings.Repeat(" ", max(1, width-1-ansi.StringWidth(permission)-ansi.StringWidth(quota))) + quota + " "
 	track := ""
 	if !m.view.AtBottom() {
 		track = m.scrollTrack()
