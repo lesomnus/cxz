@@ -1,6 +1,7 @@
 edition = "2023";
 package cxz;
 
+import "cxz/account_svc.g.proto";
 import "cxz/project.proto";
 import "google/protobuf/timestamp.proto";
 import "patch/patch.proto";
@@ -32,6 +33,9 @@ service ProjectService {
   // once in that first message and once as a change that happened while it was
   // being read -- and that is harmless for the same reason.
   rpc Watch(ProjectWatchRequest) returns (stream ProjectWatchResponse);
+  // Ephemeral login transport. First frame identifies the session profile;
+  // subsequent frames carry stdin only. These frames are never journaled.
+  rpc SessionLogin(stream ProjectLoginRequest) returns (stream ProjectLoginOutput);
   // Read immediate directory entries inside the project's container as its remote user.
   rpc Paths(ProjectPathsRequest) returns (stream ProjectPathsReply);
   rpc Devcontainer(DevcontainerRequest) returns (DevcontainerReply);
@@ -213,6 +217,17 @@ message ProjectWatchItem {
   // Empty in the first message, which is not something anybody asked for -- it
   // is what is already there.
   string action = 3 [features.field_presence = IMPLICIT];
+}
+
+message ProjectLoginRequest {
+  ProjectRef ref = 1;
+  AccountRef account = 2;
+  string session_key = 3;
+  bytes input = 4;
+}
+
+message ProjectLoginOutput {
+  bytes output = 1;
 }
 
 message ProjectPathsRequest {

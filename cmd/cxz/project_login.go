@@ -9,9 +9,6 @@ import (
 
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/accounts"
-	"google.golang.org/genproto/googleapis/rpc/errdetails"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -32,20 +29,8 @@ func openWithProjectLogin(ctx context.Context, request *api.ProjectRequest, inte
 	if err == nil {
 		return s, nil
 	}
-	alias := ""
-	creationKey := request.ClientId
-	st := status.Convert(err)
-	if st.Code() == codes.FailedPrecondition {
-		for _, detail := range st.Details() {
-			if info, ok := detail.(*errdetails.ErrorInfo); ok && info.Domain == "cxz.auth" && info.Reason == "PROJECT_LOGIN_REQUIRED" {
-				alias = info.Metadata["account"]
-				if key := info.Metadata["session_key"]; key != "" {
-					creationKey = key
-				}
-			}
-		}
-	}
-	if accounts.Validate(alias, "claude") != nil || (request.Account != "" && request.Account != alias) {
+	alias, creationKey, required := accounts.RequiredProjectLogin(err, request.Account, request.ClientId)
+	if !required {
 		return nil, err
 	}
 	if !interactive {
