@@ -34,6 +34,12 @@ func (m *model) showError(text string) {
 }
 
 func (m *model) errorVisible() bool {
+	// On minimal screens the question already carries its submission error.
+	// Keep the full error for later rather than leave an invisible modal owning
+	// the keyboard. Both panels remain visible when there is room for them.
+	if m.questionDialog != nil && m.height-m.input.Height()-5 < errorDialogRows+questionChromeRows+2 {
+		return false
+	}
 	return m.errorDialog != nil && m.width >= 40 && m.height >= 14 &&
 		m.settingsPage == nil && m.memoryPage == nil && m.workflow == nil
 }

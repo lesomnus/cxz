@@ -148,7 +148,7 @@ func (m *model) anchorCursor() {
 			// The workflow owns its masked input; never anchor to the hidden form.
 		case m.questionDialog != nil:
 			q := m.questionDialog.questions[m.questionDialog.page]
-			if !q.Other || m.questionDialog.row != len(q.Options) || m.questionDialog.sending {
+			if !q.Other || m.questionDialog.activeRow() != len(q.Options) || m.questionDialog.row != len(q.Options) || m.questionDialog.sending {
 				break
 			}
 			copy := *m
@@ -159,7 +159,8 @@ func (m *model) anchorCursor() {
 			}
 			copy.questionDialog = &d
 			copy.pulse = 0
-			x, y, ok = widgetCursor(copy.questionOverlay(copy.conversationView()))
+			x, y, ok = widgetCursor(copy.questionPanel())
+			y += m.view.Height + 1
 		case m.accountView:
 			copy := *m
 			copy.accountAlias.Cursor.Blink = false

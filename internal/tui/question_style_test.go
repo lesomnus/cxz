@@ -28,13 +28,13 @@ func TestQuestionPreviewBoxAlignment(t *testing.T) {
 func TestQuestionButtonsAndPendingSpace(t *testing.T) {
 	m := questionModel()
 	m.resize()
-	before := m.view.Height
+	before, approvalHeight := m.view.Height, m.approvalHeight()
 	if m.approvalHeight() == 0 {
 		t.Fatal("missing initial pending panel")
 	}
 	m.openQuestion(m.selectedApproval())
-	if m.approvalBox() != "" || m.approvalHeight() != 0 || m.view.Height <= before {
-		t.Fatal("pending panel space not reclaimed")
+	if m.approvalBox() != "" || m.approvalHeight() != 0 || m.view.Height+m.questionHeight() != before+approvalHeight {
+		t.Fatal("question did not reserve its own space")
 	}
 	view := ansi.Strip(m.sessionScreen())
 	found := false
@@ -72,8 +72,8 @@ func TestQuestionMagentaAndTextCheckboxes(t *testing.T) {
 	d.page = 1
 	d.selected[1][0] = true
 	d.row = 1
-	view := m.questionOverlay(strings.Repeat("\n", 20))
-	for _, want := range []string{magenta.Bold(true).Render("  [✓] X"), accent.Render("› [ ] Y")} {
+	view := m.questionPanel()
+	for _, want := range []string{magenta.Bold(true).Render("  [✓] X"), "› [ ] Y", "\x1b[48;5;238m"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("missing selected color: %q", view)
 		}

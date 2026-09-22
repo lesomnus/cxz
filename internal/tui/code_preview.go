@@ -163,7 +163,7 @@ func (m *model) previewHeight() int {
 	if !m.previewVisible() || m.previewSideWidth() > 0 {
 		return 0
 	}
-	return min(previewContentRows+previewFrameRows, max(0, m.height-m.input.Height()-5-m.approvalHeight()-m.terminalHeight()-m.errorHeight()-1))
+	return min(previewContentRows+previewFrameRows, max(0, m.height-m.input.Height()-5-m.approvalHeight()-m.terminalHeight()-m.errorHeight()-m.questionHeight()-1))
 }
 func (m *model) previewRows(width, height int) string {
 	p := m.filePreview
@@ -225,7 +225,7 @@ func (m *model) filePreviewMouse(v tea.MouseMsg) bool {
 		return false
 	}
 	width, height := max(1, m.width-4), m.previewHeight()
-	x, y := m.contentOffset()+2, m.view.Height+1+m.approvalHeight()
+	x, y := m.contentOffset()+2, m.view.Height+1+m.approvalHeight()+m.questionHeight()
 	if side := m.previewSideWidth(); side > 0 {
 		x = m.contentOffset() + m.width + 2
 		y = 0

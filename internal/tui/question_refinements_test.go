@@ -12,9 +12,9 @@ func TestOtherDraftAndStableRows(t *testing.T) {
 	m.syncQuestion()
 	d := m.questionDialog
 	d.row = len(d.questions[0].Options)
-	base := ansi.Strip(m.questionOverlay(strings.Repeat("\n", 40)))
+	base := ansi.Strip(m.questionPanel())
 	m.questionKey(questionKeyMsg(strings.Repeat("한글", 100)))
-	filled := ansi.Strip(m.questionOverlay(strings.Repeat("\n", 40)))
+	filled := ansi.Strip(m.questionPanel())
 	buttonRow := func(view string) int {
 		for i, row := range strings.Split(view, "\n") {
 			if strings.Contains(row, "[ Next ]") {

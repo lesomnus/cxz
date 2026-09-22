@@ -123,7 +123,7 @@ func (m *model) resize() {
 	}
 	m.view.Width = viewWidth
 	// Blank separator + status (2), composer border (2), session information (1).
-	m.view.Height = max(1, m.height-m.input.Height()-5-m.approvalHeight()-m.terminalHeight()-m.previewHeight()-m.errorHeight())
+	m.view.Height = max(1, m.height-m.input.Height()-5-m.approvalHeight()-m.terminalHeight()-m.previewHeight()-m.errorHeight()-m.questionHeight())
 	if p := m.terminal(); p != nil && p.session != nil && m.terminalHeight() > 0 {
 		p.session.Resize(m.width, m.terminalHeight()-2)
 	}
@@ -197,7 +197,16 @@ func (m *model) sessionScreen() string {
 	if modal {
 		composer.Blur()
 	}
-	body := m.redactOverlay(m.pasteOverlay(m.questionOverlay(m.restartOverlay(m.reportView(m.modelPickerOverlay(m.commandOverlay(m.conversationView()))))))) + "\n" + track + "\n" + box + preview + strings.Repeat("\n", m.errorHeight()) + m.recordingStatusRow("  "+status, width) + "\n" +
+	conversation := m.restartOverlay(m.reportView(m.modelPickerOverlay(m.commandOverlay(m.conversationView()))))
+	body := ""
+	if question := m.questionPanel(); question != "" {
+		// Question reserves its own rows. Nested paste previews can still use
+		// the combined region without hiding the composer or losing its draft.
+		body = m.redactOverlay(m.pasteOverlay(conversation+"\n"+track+"\n"+question)) + "\n"
+	} else {
+		body = m.redactOverlay(m.pasteOverlay(conversation)) + "\n" + track + "\n"
+	}
+	body += box + preview + strings.Repeat("\n", m.errorHeight()) + m.recordingStatusRow("  "+status, width) + "\n" +
 		frame(m.decorateInputPastes(composer.View()), width, !modal && !m.focusList && !m.focusApproval && m.pathHints == nil) + "\n"
 	if m.terminalHeight() > 0 {
 		body += m.terminalView() + "\n"

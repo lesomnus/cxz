@@ -58,7 +58,7 @@ func TestInteractiveQuestionAnswers(t *testing.T) {
 		t.Fatalf("%+v", a)
 	}
 	m.Update(result)
-	if m.questionDialog != nil || m.input.Value() != "draft 한글" {
+	if m.questionDialog != nil || m.input.Value() != "draft 한글" || !m.input.Focused() {
 		t.Fatal("composer/dialog state")
 	}
 }
@@ -107,13 +107,13 @@ func TestQuestionPreviewScroll(t *testing.T) {
 	m.syncQuestion()
 	d := m.questionDialog
 	d.questions[0].Options[0].Preview = strings.Repeat("long preview\n", 80) + "LAST PREVIEW LINE"
-	d.offset = 80
-	view := m.questionOverlay(strings.Repeat("\n", 12))
-	if len(strings.Split(view, "\n")) != 13 || ansi.StringWidth(strings.Split(view, "\n")[0]) > m.width {
+	m.scrollQuestion(80)
+	view := m.questionPanel()
+	if len(strings.Split(view, "\n")) != m.questionHeight() || ansi.StringWidth(strings.Split(view, "\n")[0]) > m.width {
 		t.Fatal("viewport changed")
 	}
-	d.offset = -10000
-	view = ansi.Strip(m.questionOverlay(strings.Repeat("\n", 12)))
+	m.scrollQuestion(-10000)
+	view = ansi.Strip(m.questionPanel())
 	if !strings.Contains(view, "무엇을?") {
 		t.Fatal("cannot scroll to beginning")
 	}
