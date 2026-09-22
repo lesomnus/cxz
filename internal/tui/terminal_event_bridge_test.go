@@ -1,16 +1,86 @@
 package tui
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
 	"strings"
 	"testing"
 	"time"
+	"unicode/utf16"
 
 	tea "github.com/charmbracelet/bubbletea"
 	uv "github.com/charmbracelet/ultraviolet"
+	"github.com/charmbracelet/x/ansi"
 )
+
+// With VT input enabled, ConHost returns the VT stream as UTF-16 key records
+// with VK=0. Use the console reader's streaming UTF-16 decoder, including pairs.
+func decodedWindowsText(text string) string {
+	var wire bytes.Buffer
+	var decoder consoleUTF16
+	for _, char := range utf16.Encode([]rune(text)) {
+		decoder.write(&wire, rune(char))
+	}
+	return wire.String()
+}
+
+type chunkedTerminalInput struct {
+	io.Reader
+	size int
+}
+
+func (r chunkedTerminalInput) Read(p []byte) (int, error) {
+	return r.Reader.Read(p[:min(len(p), r.size)])
+}
+
+func TestWindowsLongBracketedPasteIsOneUpdate(t *testing.T) {
+	body := strings.Repeat("한글🙂 text\r\n", 512)
+	// Shortcut-looking text inside the paste must remain literal; the real
+	// Ctrl+Enter after it must still submit. VT mode nests native key sequences
+	// inside the VK=0 stream, unlike direct WriteConsoleInputW key records.
+	body += "\x1b[13;5u"
+	for _, chunk := range []int{7, 64, 4096} {
+		t.Run(fmt.Sprint(chunk), func(t *testing.T) {
+			wire := decodedWindowsText("\x1b[200~" + body + "\x1b[201~" + win32Key(13, '\n', 8, 1, 1))
+			msgs := decodedTerminalMessages(t, chunkedTerminalInput{strings.NewReader(wire), chunk})
+			if len(msgs) != 2 {
+				t.Fatalf("paste became %d messages, want one paste and one submit", len(msgs))
+			}
+			key, ok := msgs[0].(tea.KeyMsg)
+			if !ok || !key.Paste || string(key.Runes) != body {
+				t.Fatal("paste boundaries or contents lost")
+			}
+			m := conversationModel()
+			m.Update(key)
+			if len(m.pastes) != 1 || expandPastes(m.input.Value(), m.pastes) != body {
+				t.Fatal("long paste did not become one lossless chip")
+			}
+			if key, ok := msgs[1].(tea.KeyMsg); !ok || key.String() != "ctrl+s" || key.Paste {
+				t.Fatal("Ctrl+Enter after paste did not retain its modifiers")
+			}
+		})
+	}
+}
+
+func TestWindowsKeyboardProtocolLifecycle(t *testing.T) {
+	var out bytes.Buffer
+	w := &cursorWriter{out: &out, win32Keyboard: true}
+	// Both the alternate-screen TUI and inline dialogs use the bracketed-paste
+	// lifecycle. Exercise release/restore as well as the final shutdown.
+	for range 2 {
+		for _, part := range []string{ansi.SetBracketedPasteMode, "frame", ansi.ResetBracketedPasteMode} {
+			if n, err := w.Write([]byte(part)); err != nil || n != len(part) {
+				t.Fatal(n, err)
+			}
+		}
+	}
+	want := strings.Repeat(ansi.SetWin32InputMode+ansi.SetBracketedPasteMode+"frame"+ansi.ResetBracketedPasteMode+ansi.ResetWin32InputMode, 2)
+	if out.String() != want {
+		t.Fatalf("unbalanced Windows keyboard protocol: %q", out.String())
+	}
+}
 
 func win32Key(vk int, char rune, modifiers, down, repeat int) string {
 	return fmt.Sprintf("\x1b[%d;0;%d;%d;%d;%d_", vk, char, down, modifiers, repeat)

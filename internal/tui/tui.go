@@ -293,7 +293,7 @@ func RunProject(ctx context.Context, c api.SessionsClient, project *api.Project,
 	in := recordedKeyboardInput(os.Stdin, m.debugRecorder)
 	p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithContext(ctx), tea.WithMouseAllMotion(), tea.WithOutput(m.cursorOutput), tea.WithInput(in))
 	m.program = p
-	_, e := runKeyboardProgram(ctx, p, in, m.debugRecorder)
+	_, e := runKeyboardProgram(ctx, p, in, m.cursorOutput, m.debugRecorder)
 	if path, err := m.finishRecording(); err != nil {
 		fmt.Fprintln(os.Stderr, "Could not save debug recording:", err)
 	} else if path != "" {

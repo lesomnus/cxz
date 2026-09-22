@@ -9,6 +9,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-func runKeyboardProgram(_ context.Context, p *tea.Program, _ io.Reader, _ *debugRecorder) (tea.Model, error) {
+func runKeyboardProgram(_ context.Context, p *tea.Program, _ io.Reader, _ io.Writer, _ *debugRecorder) (tea.Model, error) {
 	return p.Run()
 }

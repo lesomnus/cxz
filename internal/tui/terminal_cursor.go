@@ -29,6 +29,7 @@ type cursorWriter struct {
 	x, y               int
 	enabled, alternate bool
 	keyboard           bool
+	win32Keyboard      bool
 }
 
 var _ term.File = (*cursorWriter)(nil)
@@ -76,6 +77,13 @@ func (w *cursorWriter) Write(p []byte) (int, error) {
 	if w.keyboard {
 		buf = bytes.ReplaceAll(buf, []byte("\x1b[?1049h"), []byte("\x1b[?1049h\x1b[>1u\x1b[?u"))
 		buf = bytes.ReplaceAll(buf, []byte("\x1b[?1049l"), []byte("\x1b[<u\x1b[?1049l"))
+	}
+	if w.win32Keyboard {
+		// Follow the renderer's input lifecycle, including inline views and
+		// release/restore around child processes. Both protocols are disabled
+		// before the console's original mode is restored on exit.
+		buf = bytes.ReplaceAll(buf, []byte(ansi.SetBracketedPasteMode), []byte(ansi.SetWin32InputMode+ansi.SetBracketedPasteMode))
+		buf = bytes.ReplaceAll(buf, []byte(ansi.ResetBracketedPasteMode), []byte(ansi.ResetBracketedPasteMode+ansi.ResetWin32InputMode))
 	}
 	if bytes.Contains(p, []byte("\x1b[?1049h")) {
 		w.alternate = true

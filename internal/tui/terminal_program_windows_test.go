@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"unicode/utf16"
 	"unsafe"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -83,12 +84,17 @@ func TestWindowsConsoleInputProgram(t *testing.T) {
 		m := &windowsKeyProbe{ready: make(chan struct{}), keys: make(chan tea.KeyMsg, 16)}
 		p := tea.NewProgram(m, tea.WithContext(ctx), tea.WithInput(keyboardInput(file)), tea.WithOutput(io.Discard), tea.WithoutRenderer(), tea.WithoutSignalHandler())
 		done := make(chan error, 1)
-		go func() { _, err := runKeyboardProgram(ctx, p, file, nil); done <- err }()
+		go func() { _, err := runKeyboardProgram(ctx, p, file, io.Discard, nil); done <- err }()
 		select {
 		case <-m.ready:
 		case <-ctx.Done():
 			cancel()
 			t.Fatal("console startup timed out")
+		}
+		var during uint32
+		if err := windows.GetConsoleMode(handle, &during); err != nil || during&windows.ENABLE_VIRTUAL_TERMINAL_INPUT == 0 {
+			cancel()
+			t.Fatal("bracketed paste would be stripped", during, err)
 		}
 		for _, tc := range []struct {
 			key  coninput.KeyEventRecord
@@ -115,6 +121,35 @@ func TestWindowsConsoleInputProgram(t *testing.T) {
 			case <-ctx.Done():
 				cancel()
 				t.Fatal("console key not delivered", tc.want)
+			}
+		}
+		// Emulate ConHost's VT-input records for a paste larger than both the
+		// console reader's 64-record batch and the decoder's 4096-byte read.
+		body := strings.Repeat("한글🙂 long paste\r\n", 512)
+		wire := "\x1b[200~" + body + "\x1b[201~" + win32Key(13, '\n', 8, 1, 1)
+		var records []coninput.InputRecord
+		for _, char := range utf16.Encode([]rune(wire)) {
+			records = append(records, consoleKeyRecord(coninput.KeyEventRecord{KeyDown: true, RepeatCount: 1, Char: rune(char)}))
+		}
+		var written uint32
+		if result, _, err := write.Call(uintptr(handle), uintptr(unsafe.Pointer(&records[0])), uintptr(len(records)), uintptr(unsafe.Pointer(&written))); result == 0 || int(written) != len(records) {
+			cancel()
+			t.Fatal("WriteConsoleInput paste", written, err)
+		}
+		for i := range 2 {
+			select {
+			case key := <-m.keys:
+				if i == 0 && (!key.Paste || string(key.Runes) != body) {
+					cancel()
+					t.Fatal("long console paste was split or changed")
+				}
+				if i == 1 && (key.Paste || key.String() != "ctrl+s") {
+					cancel()
+					t.Fatal("Ctrl+Enter lost after console paste", key.String())
+				}
+			case <-ctx.Done():
+				cancel()
+				t.Fatal("long console paste not delivered")
 			}
 		}
 		p.Quit()
