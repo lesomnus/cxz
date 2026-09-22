@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/agentview"
 )
 
@@ -25,7 +26,41 @@ func contextBadge(percent int, known bool) string {
 	return fmt.Sprintf("%c%d%%", r, percent)
 }
 
+type contextStatusKey struct {
+	id, run, agent string
+	count          int
+	first, last    *api.Event
+	report         contextReportSnapshot
+	reported       bool
+}
+type contextStatusCache struct {
+	key  contextStatusKey
+	text string
+}
+
+// Cursor/spinner frames should not reparse the provider's potentially large
+// result JSON. Journal entries are immutable; appends, prepends, run switches,
+// and an explicit /context report invalidate this snapshot.
 func (m *model) contextStatus() string {
+	s := m.current()
+	if s == nil {
+		return contextBadge(0, false)
+	}
+	events := m.events[s.Id]
+	key := contextStatusKey{id: s.Id, run: s.RunId, agent: s.Agent, count: len(events)}
+	key.report, key.reported = m.contextReports[s.Id]
+	if len(events) > 0 {
+		key.first, key.last = events[0], events[len(events)-1]
+	}
+	if cache := m.contextStatusCache; cache != nil && cache.key == key {
+		return cache.text
+	}
+	text := m.computeContextStatus()
+	m.contextStatusCache = &contextStatusCache{key: key, text: text}
+	return text
+}
+
+func (m *model) computeContextStatus() string {
 	s := m.current()
 	if s == nil {
 		return contextBadge(0, false)

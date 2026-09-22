@@ -22,10 +22,15 @@ import (
 	"google.golang.org/grpc/status"
 	"os"
 	"strings"
+	"sync/atomic"
 	"time"
 )
 
 type model struct {
+	liveRenderWidth         *atomic.Int64
+	renderedInputs          map[inputRenderKey]string
+	renderedSummaries       map[summaryRenderKey]string
+	contextStatusCache      *contextStatusCache
 	errorDialog             *errorDialog
 	sessionActivity         map[string]*sessionActivity
 	textSelection           *transcriptSelection
@@ -400,6 +405,11 @@ func (m *model) watch() {
 	after := m.cursor[id]
 	last := s.LastSeq
 	agent, width := s.Agent, max(1, m.view.Width)
+	if m.liveRenderWidth == nil {
+		m.liveRenderWidth = &atomic.Int64{}
+		m.liveRenderWidth.Store(int64(width))
+	}
+	renderWidth := m.liveRenderWidth
 	if after == 0 && last > 0 {
 		if m.historyOpening == nil {
 			m.historyOpening = map[string]bool{}
@@ -452,18 +462,22 @@ func (m *model) watch() {
 			if ctx.Err() != nil {
 				return
 			}
-			m.program.Send(caughtUp{id: id, events: batch.Events, epoch: epoch})
+			page := m.prepareHistoryPage(ctx, historyPage{events: batch.Events}, agent, int(renderWidth.Load()))
+			if ctx.Err() != nil {
+				return
+			}
+			m.program.Send(caughtUp{id: id, events: batch.Events, epoch: epoch, prepared: &page})
 		}
 		stream, e := m.client.Watch(ctx, &api.WatchRequest{SessionId: id, AfterSeq: after, ClientId: activityID})
 		if e == nil {
-			for {
-				v, err := stream.Recv()
-				if err != nil {
-					e = err
-					break
+			e = collectLiveEvents(ctx, stream, func(events []*api.Event) {
+				start := time.Now()
+				page := m.prepareHistoryPage(ctx, historyPage{events: events}, agent, int(renderWidth.Load()))
+				m.debugRecorder.Add(debugEvent{Kind: "live_batch", Duration: time.Since(start).Microseconds(), Count: len(events)})
+				if ctx.Err() == nil {
+					m.program.Send(caughtUp{id: id, events: events, epoch: epoch, prepared: &page})
 				}
-				m.program.Send(received{id, v})
-			}
+			})
 		}
 		if ctx.Err() == nil {
 			m.program.Send(disconnected{id, e})
@@ -605,7 +619,7 @@ func (m *model) render() {
 			usage = e
 		}
 		if e.Kind == "turn_end" {
-			if text := turnSummary(e, usage, started, max(1, m.view.Width)); text != "" {
+			if text := m.cachedSummary(e, usage, started, max(1, m.view.Width)); text != "" {
 				if replyIndex >= 0 {
 					lines[replyIndex] += "\n\n" + text
 				} else {
@@ -1455,10 +1469,15 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if v.epoch != m.watchEpoch {
 			return m, nil
 		}
+		if v.prepared != nil {
+			m.mergePreparedHistory(*v.prepared)
+		}
+		changed := false
 		for _, e := range v.events {
+			changed = changed || (e.Seq > m.cursor[v.id] && e.Kind != "raw")
 			m.receiveEvent(received{v.id, e}, false)
 		}
-		if current := m.current(); current != nil && current.Id == v.id {
+		if current := m.current(); changed && current != nil && current.Id == v.id {
 			m.render()
 		}
 		return m, nil

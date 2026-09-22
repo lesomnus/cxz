@@ -13,9 +13,10 @@ import (
 const historyPageSize uint64 = 128
 
 type caughtUp struct {
-	id     string
-	events []*api.Event
-	epoch  uint64
+	id       string
+	events   []*api.Event
+	epoch    uint64
+	prepared *historyPage
 }
 
 type historyPage struct {
@@ -30,6 +31,8 @@ type historyPage struct {
 	prepared       map[*api.Event]renderedResponse
 	toolActivities map[toolActivityKey]cachedToolActivity
 	toolBodies     map[toolRenderKey]string
+	inputBodies    map[inputRenderKey]string
+	summaries      map[summaryRenderKey]string
 }
 
 // Journal sequence numbers are contiguous. The existing ascending History API
@@ -89,10 +92,24 @@ func (m *model) prepareHistoryPage(ctx context.Context, page historyPage, agent 
 			results[e.RunId+"/"+e.RequestId] = e
 		}
 	}
+	var turnStarted int64
+	var usage *api.Event
 	for _, e := range page.events {
 		if err := ctx.Err(); err != nil {
 			page.err = err
 			return page
+		}
+		switch e.Kind {
+		case "input":
+			turnStarted, usage = e.TimeMs, nil
+			prepared.cachedInput(&api.Session{Agent: agent}, e, width)
+		case "usage":
+			if e.Text == "thread/tokenUsage/updated" {
+				usage = e
+			}
+		case "turn_end":
+			prepared.cachedSummary(e, usage, turnStarted, width)
+			turnStarted, usage = 0, nil
 		}
 		if e.Kind == "assistant" {
 			page.prepared[e] = renderResponse(agent, e.Text, width)
@@ -112,6 +129,7 @@ func (m *model) prepareHistoryPage(ctx context.Context, page historyPage, agent 
 		}
 	}
 	page.toolActivities, page.toolBodies = prepared.toolActivities, prepared.renderedTools
+	page.inputBodies, page.summaries = prepared.renderedInputs, prepared.renderedSummaries
 	m.debugRecorder.Add(debugEvent{Kind: "history_prepare", Duration: time.Since(started).Microseconds(), Count: len(page.prepared) + len(page.toolBodies)})
 	return page
 }
@@ -134,26 +152,7 @@ func (m *model) applyHistoryPage(page historyPage) bool {
 		m.showError("History: " + page.err.Error())
 		return true
 	}
-	if m.renderedResponses == nil {
-		m.renderedResponses = map[*api.Event]renderedResponse{}
-	}
-	for e, prepared := range page.prepared {
-		m.renderedResponses[e] = prepared
-	}
-	if m.toolActivities == nil {
-		m.toolActivities = map[toolActivityKey]cachedToolActivity{}
-	}
-	for key, activity := range page.toolActivities {
-		m.toolActivities[key] = activity
-	}
-	if m.renderedTools == nil {
-		m.renderedTools = map[toolRenderKey]string{}
-	}
-	for key, body := range page.toolBodies {
-		if key.width == max(1, m.view.Width) {
-			m.renderedTools[key] = body
-		}
-	}
+	m.mergePreparedHistory(page)
 	if m.historyStart == nil {
 		m.historyStart = map[string]uint64{}
 	}
@@ -206,4 +205,46 @@ func (m *model) fetchHistory(ctx context.Context, id string, after uint64, purpo
 	}
 	m.debugRecorder.Add(debugEvent{Kind: "history_rpc", Type: purpose, Duration: time.Since(started).Microseconds(), Count: count, Bytes: proto.Size(batch), ErrorCode: status.Code(err).String()})
 	return batch, err
+}
+
+// Merge only on the UI goroutine. A resize while work was in flight invalidates
+// size-dependent rows naturally through their cache keys.
+func (m *model) mergePreparedHistory(page historyPage) {
+	if m.renderedResponses == nil {
+		m.renderedResponses = map[*api.Event]renderedResponse{}
+	}
+	for e, prepared := range page.prepared {
+		m.renderedResponses[e] = prepared
+	}
+	if m.toolActivities == nil {
+		m.toolActivities = map[toolActivityKey]cachedToolActivity{}
+	}
+	for key, activity := range page.toolActivities {
+		m.toolActivities[key] = activity
+	}
+	if m.renderedTools == nil {
+		m.renderedTools = map[toolRenderKey]string{}
+	}
+	for key, body := range page.toolBodies {
+		if key.width == max(1, m.view.Width) {
+			m.renderedTools[key] = body
+		}
+	}
+
+	if m.renderedInputs == nil {
+		m.renderedInputs = map[inputRenderKey]string{}
+	}
+	for key, body := range page.inputBodies {
+		if key.width == max(1, m.view.Width) {
+			m.renderedInputs[key] = body
+		}
+	}
+	if m.renderedSummaries == nil {
+		m.renderedSummaries = map[summaryRenderKey]string{}
+	}
+	for key, body := range page.summaries {
+		if key.width == max(1, m.view.Width) {
+			m.renderedSummaries[key] = body
+		}
+	}
 }
