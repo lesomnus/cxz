@@ -26,7 +26,7 @@ func TestDiagnosticAndAuthenticationHint(t *testing.T) {
 	m := &model{sessions: []*api.Session{s}, view: viewport.New(120, 20), events: map[string][]*api.Event{"s": {e}}}
 	m.render()
 	text := m.view.View()
-	if !strings.Contains(text, "authentication failed") || !strings.Contains(text, "cxz account login --project project work-codex") {
+	if !strings.Contains(text, "authentication failed") || !strings.Contains(text, "cxz account login --session s work-codex") {
 		t.Fatal(text)
 	}
 	if authHint(s, &api.Event{Kind: "assistant", Text: "401"}) != "" {
