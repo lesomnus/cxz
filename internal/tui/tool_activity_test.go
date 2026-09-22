@@ -14,6 +14,41 @@ import (
 	"github.com/muesli/termenv"
 )
 
+func TestWorkingToolDotBlinksWithoutRebuildingTranscript(t *testing.T) {
+	m := conversationModel()
+	m.current().State = "working"
+	m.events["s"] = []*api.Event{
+		{Seq: 1, RunId: "run", Kind: "input", Text: "literal [•] Bash"},
+		{Seq: 2, RunId: "run", Kind: "tool_call", RequestId: "running", Text: "Bash", Payload: []byte(`{"command":"printf '[•]'"}`)},
+		{Seq: 3, RunId: "run", Kind: "approval", RequestId: "permission", Text: "Bash", Payload: []byte(`{"tool_use_id":"running"}`)},
+		{Seq: 4, RunId: "run", Kind: "approval_resolved", RequestId: "permission", Text: "allowed"},
+		{Seq: 5, RunId: "run", Kind: "tool_call", RequestId: "queued", Text: "Read", Payload: []byte(`{"file_path":"queued.txt"}`)},
+	}
+	m.render()
+	baseline, tools := m.view.View(), len(m.renderedTools)
+	on := ansi.Strip(m.conversationView())
+	for range 5 { // The 100 ms tick changes the blink phase every half second.
+		m.Update(pulseTick{})
+	}
+	off := ansi.Strip(m.conversationView())
+	if !strings.Contains(on, "[•] Bash · printf '[•]'") || !strings.Contains(off, "[ ] Bash · printf '[•]'") {
+		t.Fatalf("only the running header dot should blink:\non: %s\noff: %s", on, off)
+	}
+	for _, frame := range []string{on, off} {
+		if !strings.Contains(frame, "literal [•] Bash") || !strings.Contains(frame, "[ ] Read queued.txt") {
+			t.Fatal("animation changed user text or queued tool state", frame)
+		}
+	}
+	if m.view.View() != baseline || len(m.renderedTools) != tools || ansi.StringWidth(on) != ansi.StringWidth(off) {
+		t.Fatal("blink rebuilt or resized the cached transcript")
+	}
+	m.events["s"] = append(m.events["s"], &api.Event{Seq: 6, RunId: "run", Kind: "tool_result", RequestId: "running"})
+	m.render()
+	if len(m.workingToolRows) != 0 || !strings.Contains(ansi.Strip(m.conversationView()), "[✓] Bash") {
+		t.Fatal("completed tool kept blinking")
+	}
+}
+
 func TestCommandSummaryStaysWithinTwoRows(t *testing.T) {
 	profile := lipgloss.ColorProfile()
 	t.Cleanup(func() { lipgloss.SetColorProfile(profile) })

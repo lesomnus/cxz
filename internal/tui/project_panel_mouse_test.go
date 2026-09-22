@@ -9,10 +9,50 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/charmbracelet/x/vt"
 	"github.com/lesomnus/cxz/api"
 	"github.com/muesli/termenv"
 )
+
+func TestPanelSeparatorsDoNotBecomeNavigationTargets(t *testing.T) {
+	for _, width := range []int{69, 80, 200} {
+		m := panelModel()
+		m.Update(tea.WindowSizeMsg{Width: width, Height: 30})
+		m.panelFocus, m.panelIndex = true, 1
+		lines := strings.Split(ansi.Strip(m.panelScreen()), "\n")
+		if strings.TrimSpace(lines[6]) != strings.Repeat("─", m.panelScreenWidth()-2) || strings.Count(strings.Join(lines[4:9], "\n"), "─") != m.panelScreenWidth()-2 {
+			t.Fatal("missing separator between project groups", lines[4:9])
+		}
+		m.Update(tea.MouseMsg{X: 2, Y: 6, Action: tea.MouseActionMotion})
+		if m.panelHoverY != 0 {
+			t.Fatal("divider has an item hover")
+		}
+		m.Update(tea.MouseMsg{X: 2, Y: 6, Button: tea.MouseButtonLeft, Action: tea.MouseActionPress})
+		if m.panelIndex != 1 || m.current().Id != "s" {
+			t.Fatal("divider click activated a project or session")
+		}
+		m.Update(tea.KeyMsg{Type: tea.KeyDown})
+		if m.panelIndex != 2 {
+			t.Fatal("keyboard selected the decorative row")
+		}
+		m.Update(tea.KeyMsg{Type: tea.KeyUp})
+		if m.panelIndex != 1 {
+			t.Fatal("up did not cross the divider")
+		}
+		// Opening the first session changes the active project; the second
+		// session is now one screen row lower because of the divider.
+		m.Update(tea.MouseMsg{X: 2, Y: 5, Button: tea.MouseButtonLeft, Action: tea.MouseActionPress})
+		if m.current().Id != "other-session" {
+			t.Fatal("first session did not open")
+		}
+		m.focusPanel()
+		m.Update(tea.MouseMsg{X: 2, Y: 8, Button: tea.MouseButtonLeft, Action: tea.MouseActionPress})
+		if m.current().Id != "s" {
+			t.Fatal("divider shifted the session click target")
+		}
+	}
+}
 
 func TestPanelRowHighlightsPreserveTextStyle(t *testing.T) {
 	profile := lipgloss.ColorProfile()
@@ -109,8 +149,9 @@ func TestPanelMouseScrolledRowsAndHoverReset(t *testing.T) {
 		t.Fatal("wheel did not move through the project list", m.panelIndex)
 	}
 	rows := m.panelRows()
-	start, _ := m.panelRange(len(rows))
-	target := rows[start+1].session.Id
+	layout := panelLayout(rows)
+	start, _ := m.panelRange(layout)
+	target := rows[layout[start+1]].session.Id
 	m.Update(tea.MouseMsg{X: 2, Y: 5, Button: tea.MouseButtonLeft, Action: tea.MouseActionPress})
 	if m.current().Id != target {
 		t.Fatal("click ignored the scrolled list offset")

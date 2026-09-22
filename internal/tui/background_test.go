@@ -33,6 +33,12 @@ func TestBackgroundLaunchIsNotCompletion(t *testing.T) {
 	if !strings.Contains(m.backgroundStatus(), "background 1") || m.activeWork() {
 		t.Fatal("background must remain visible independently of idle foreground")
 	}
+	for _, pulse := range []int{0, 1, 8} {
+		m.pulse = pulse
+		if !strings.HasPrefix(ansi.Strip(m.backgroundStatus()), workingSpinner(pulse)+" background 1") {
+			t.Fatal("background status does not use the shared eight-dot spinner")
+		}
+	}
 	m.events["s"] = append(m.events["s"], bgEvent(4, `{"type":"system","subtype":"background_tasks_changed","tasks":[]}`))
 	m.render()
 	if m.backgroundStatus() != "" || strings.Contains(ansi.Strip(m.view.View()), "[✓] Bash") {

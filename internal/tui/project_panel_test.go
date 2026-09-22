@@ -28,6 +28,14 @@ func TestPanelLongListAndDeletedProjects(t *testing.T) {
 	if m.panelIndex != 79 || !strings.Contains(ansi.Strip(m.panelScreen()), "Project 79") {
 		t.Fatal("last project inaccessible")
 	}
+	m.Update(tea.KeyMsg{Type: tea.KeyPgUp})
+	if m.panelIndex != 69 || !strings.Contains(ansi.Strip(m.panelScreen()), "› Project 69") {
+		t.Fatal("page up did not account for divider rows", m.panelIndex)
+	}
+	m.Update(tea.KeyMsg{Type: tea.KeyPgDown})
+	if m.panelIndex != 79 || !strings.Contains(ansi.Strip(m.panelScreen()), "› Project 79") {
+		t.Fatal("page down selected a divider or hid the cursor", m.panelIndex)
+	}
 	m.updatePanel(listing{projectsLoaded: true})
 	if len(m.panelRows()) != 0 || m.panelIndex != 0 {
 		t.Fatal("deleted projects retained")
@@ -302,7 +310,7 @@ func TestProjectNavigatorHasBackgroundAndOnlyFocusedSideBottomRule(t *testing.T)
 			if strings.ContainsAny(plain, "╭╮╰╯│") {
 				t.Fatal("outer border remains")
 			}
-			if strings.Contains(plain, "─") != (width >= 70 && focus) {
+			if strings.Contains(strings.Split(plain, "\n")[m.height-1], "─") != (width >= 70 && focus) {
 				t.Fatal("incorrect focus rule")
 			}
 			if !strings.Contains(rendered, "48;2;48;48;48") {
@@ -332,7 +340,7 @@ func TestNavigatorBackgroundCoversEveryTerminalCell(t *testing.T) {
 			}
 			for y := 0; y < m.height; y++ {
 				gray := uint32(0x3030)
-				if focused && y == 4+m.panelIndex {
+				if focused && y == projectPanelHeaderRows+m.panelPosition(panelLayout(m.panelRows())) {
 					gray = 0x4444
 				}
 				for x := 0; x < panelWidth; x++ {

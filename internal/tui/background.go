@@ -176,8 +176,7 @@ func (m *model) backgroundStatus() string {
 	if n == 0 {
 		return ""
 	}
-	frames := []rune("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏")
-	return accent.Render(fmt.Sprintf("%c background %d · /background", frames[m.pulse%len(frames)], n))
+	return accent.Render(fmt.Sprintf("%s background %d · /background", workingSpinner(m.pulse), n))
 }
 
 func (m *model) backgroundReport() string {
