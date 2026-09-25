@@ -50,7 +50,10 @@ type Container struct {
 	NetworkSettings struct {
 		Networks map[string]struct{ IPAddress string }
 	}
-	Mounts     []struct{ Source, Destination, Type, Name string }
+	Mounts []struct {
+		Source, Destination, Type, Name string
+		RW                              bool
+	}
 	HostConfig struct {
 		Privileged  bool
 		NetworkMode string

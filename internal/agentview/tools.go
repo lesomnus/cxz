@@ -43,6 +43,14 @@ func ToolView(provider, name string, raw []byte) (ToolActivity, bool) {
 			return ToolActivity{Kind: "command", Command: p.text("command"), Description: p.text("description")}, true
 		case "Read":
 			return ToolActivity{Kind: "read", Files: []FileActivity{{Path: p.text("file_path"), Action: "read"}}}, true
+		case "Skill":
+			description := "Skill"
+			for _, key := range []string{"skill", "args"} {
+				if value := strings.TrimSpace(p.text(key)); value != "" {
+					description += " " + value
+				}
+			}
+			return ToolActivity{Kind: "tool", Description: description}, true
 		}
 	}
 	if provider == "codex" {

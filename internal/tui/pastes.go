@@ -15,6 +15,7 @@ import (
 )
 
 type pastedText struct {
+	attachment        *fileUpload
 	secret            bool
 	token, body, path string
 	owner             string
@@ -81,6 +82,11 @@ func (m *model) chipKey(k tea.KeyMsg) (bool, tea.Cmd) {
 		return false, nil
 	}
 	if sel != nil {
+		if p := m.pastes[sel.token]; p != nil && p.attachment != nil {
+			if handled, cmd := m.fileChipKey(p, key); handled {
+				return true, cmd
+			}
+		}
 		if p := m.pastes[sel.token]; p != nil && p.secret && (key == "t" || key == "f" || key == "enter") {
 			m.notice = "Secret chip · d deletes · preview and attachment disabled"
 			return true, nil
@@ -289,7 +295,7 @@ func (m *model) sendPastes(draft, text string) tea.Cmd {
 func decoratePastes(text string, items map[string]*pastedText) string {
 	var pairs []string
 	for token, p := range items {
-		if p.secret {
+		if p.secret || p.attachment != nil {
 			continue
 		}
 		if p.file {
@@ -338,6 +344,9 @@ func expandPastes(text string, items map[string]*pastedText) string {
 		value := p.body
 		if p.file {
 			value = fmt.Sprintf("[Attached text file: %s — read this file for the full content]", p.path)
+			if p.attachment != nil {
+				value = fmt.Sprintf("[Attached file: %s — read this file for the content]", p.path)
+			}
 		}
 		pairs = append(pairs, token, value)
 	}
@@ -348,6 +357,9 @@ func expandPastes(text string, items map[string]*pastedText) string {
 }
 
 func (m *model) capturePaste(k tea.KeyMsg) bool {
+	if m.hostFilePaste(k) {
+		return false
+	}
 	if !k.Paste || m.workflow != nil || m.projectView || m.accountView || m.creating {
 		return false
 	}
@@ -522,6 +534,11 @@ func (m *model) pasteKey(k tea.KeyMsg) tea.Cmd {
 		return nil
 	}
 	p := m.pastes[d.tokens[d.index]]
+	if p.attachment != nil {
+		if handled, cmd := m.fileChipKey(p, k.String()); handled {
+			return cmd
+		}
+	}
 	switch k.String() {
 	case "up":
 		d.index = max(0, d.index-1)
@@ -589,6 +606,9 @@ func (m *model) pasteOverlay(view string) string {
 			mode = "file"
 		}
 		label := fmt.Sprintf("%d · %d lines · %dB · %s", i+1, strings.Count(p.body, "\n")+1, len(p.body), mode)
+		if p.attachment != nil {
+			label = p.fileChip()
+		}
 		if i == d.index {
 			label = accent.Render("› " + label)
 		} else {
@@ -599,9 +619,20 @@ func (m *model) pasteOverlay(view string) string {
 	rows = append(rows, muted.Render(d.message), "")
 	p := m.pastes[d.tokens[d.index]]
 	if d.previewToken != p.token || d.previewWidth != width {
-		d.preview = strings.Split(ansi.Hardwrap(safeText(p.body), width, true), "\n")
+		text := p.body
+		if u := p.attachment; u != nil {
+			text = u.name + "\n" + attachmentSize(u.size) + "\n" + p.path
+			if u.err != nil {
+				text += "\n" + u.err.Error()
+			}
+		}
+		d.preview = strings.Split(ansi.Hardwrap(safeText(text), width, true), "\n")
 		d.previewToken = p.token
 		d.previewWidth = width
+	}
+	if p.attachment != nil {
+		rows[0] = accent.Render("File attachment · details")
+		rows[1] = muted.Render("↑/↓ select · f retry failed upload · d remove from draft")
 	}
 	preview := d.preview
 	capacity := max(1, m.view.Height-len(rows)-2)

@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/assets"
 	"github.com/lesomnus/cxz/internal/ent"
 	"github.com/lesomnus/cxz/internal/ent/migrate"
 	"github.com/lesomnus/cxz/resource"
@@ -26,6 +27,7 @@ import (
 
 type Runtime interface {
 	api.SessionsServer
+	assets.Uploader
 	RegisterProject(context.Context, string, string) (*api.Project, error)
 	ResourceSnapshot(context.Context) (*api.ProjectList, *api.SessionList, error)
 }

@@ -97,6 +97,10 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind, composeOverri
 	if e = m.checkpoint(ctx, p, "resources"); e != nil {
 		return e
 	}
+	assetSource, e := m.prepareAssetRoot(ctx, p)
+	if e != nil {
+		return e
+	}
 	secretSource, e := m.prepareSecretRoot(p)
 	if e != nil {
 		return e
@@ -231,7 +235,7 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind, composeOverri
 			de["DOCKER_CERT_PATH"] = ""
 		}
 		dev["volumes"] = []any{map[string]any{"type": "volume", "source": p.Volume, "target": "/cxz/state"}, map[string]any{"type": "volume", "source": m.ToolsVolume, "target": "/cxz/tools", "read_only": true}}
-		dev["volumes"] = append(dev["volumes"].([]any), map[string]any{"type": "bind", "source": secretSource, "target": "/cxz/secrets"})
+		dev["volumes"] = append(dev["volumes"].([]any), map[string]any{"type": "bind", "source": secretSource, "target": "/cxz/secrets"}, map[string]any{"type": "bind", "source": assetSource, "target": "/cxz/assets", "read_only": true})
 		override := map[string]any{"name": "cxz-" + m.Owner[:12] + "-" + p.ID, "services": services, "networks": map[string]any{"cxz": map[string]any{"external": true, "name": p.Network}}, "volumes": map[string]any{p.Volume: map[string]any{"external": true, "name": p.Volume}, m.ToolsVolume: map[string]any{"external": true, "name": m.ToolsVolume}}}
 		cp := filepath.Join(m.Root, "projects", p.ID, "compose.json")
 		if e = core.WriteJSON(cp, override); e != nil {
@@ -240,7 +244,7 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind, composeOverri
 		cfg["dockerComposeFile"] = append(files, cp)
 	} else {
 		runArgs, _ := cfg["runArgs"].([]any)
-		runArgs = append(runArgs, "--network", p.Network, "--mount", "type=bind,source="+secretSource+",target=/cxz/secrets")
+		runArgs = append(runArgs, "--network", p.Network, "--mount", "type=bind,source="+secretSource+",target=/cxz/secrets", "--mount", "type=bind,source="+assetSource+",target=/cxz/assets,readonly")
 		cfg["runArgs"] = runArgs
 	}
 	configPath := filepath.Join(m.Root, "projects", p.ID, "devcontainer.json")

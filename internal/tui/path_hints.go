@@ -3,6 +3,7 @@ package tui
 import (
 	"context"
 	"fmt"
+	"runtime"
 	"sort"
 	"strings"
 	"time"
@@ -20,6 +21,8 @@ import (
 type pathToken struct {
 	start, end          int
 	text, parent, query string
+	host                bool
+	quote               string
 }
 type pathHints struct {
 	key, signature   string
@@ -49,37 +52,32 @@ type pathOption struct {
 func pathTokenAt(value string, cursor int) (pathToken, bool) {
 	r := []rune(value)
 	cursor = min(max(0, cursor), len(r))
-	opening := -1
-	for i := 0; i < cursor; i++ {
-		if r[i] == '`' {
-			if opening < 0 {
-				opening = i
-			} else {
-				opening = -1
+	for _, token := range backtickTokens(value) {
+		if cursor < token.start || cursor > token.end {
+			continue
+		}
+		text := string(r[token.start:cursor])
+		for i := cursor; i < token.end; i++ {
+			if r[i] == '\n' || r[i] == '\r' {
+				token.end = i
+				break
 			}
 		}
+		if strings.HasPrefix(text, "!") {
+			parent, query, quote, ok := hostHintPath(text[1:])
+			return pathToken{start: token.start, end: token.end, text: text, parent: parent, query: query, host: true, quote: quote}, ok
+		}
+		if text == "" || strings.ContainsAny(text, "\n\r") || !(strings.HasPrefix(text, "/") || text == "~" || strings.HasPrefix(text, "~/")) {
+			return pathToken{}, false
+		}
+		parent, query := "~/", ""
+		if text != "~" {
+			slash := strings.LastIndex(text, "/")
+			parent, query = text[:slash+1], text[slash+1:]
+		}
+		return pathToken{start: token.start, end: token.end, text: text, parent: parent, query: query}, true
 	}
-	if opening < 0 {
-		return pathToken{}, false
-	}
-	start := opening + 1
-	text := string(r[start:cursor])
-	if text == "" || !(strings.HasPrefix(text, "/") || text == "~" || strings.HasPrefix(text, "~/")) {
-		return pathToken{}, false
-	}
-	if strings.ContainsAny(text, "\n\r") {
-		return pathToken{}, false
-	}
-	end := cursor
-	for end < len(r) && r[end] != '`' && r[end] != '\n' && r[end] != '\r' {
-		end++
-	}
-	parent, query := "~/", ""
-	if text != "~" {
-		slash := strings.LastIndex(text, "/")
-		parent, query = text[:slash+1], text[slash+1:]
-	}
-	return pathToken{start: start, end: end, text: text, parent: parent, query: query}, true
+	return pathToken{}, false
 }
 
 func (m *model) pathContext() (pathToken, string, bool) {
@@ -121,7 +119,7 @@ func (m *model) syncPathHints() tea.Cmd {
 		m.clearPathHints()
 		return nil
 	}
-	key := scope + ":" + token.parent
+	key := fmt.Sprintf("%s:%t:%s", scope, token.host, token.parent)
 	if p := m.pathHints; p != nil && p.key == key {
 		if p.signature != signature {
 			p.selected, p.offset = 0, 0
@@ -144,6 +142,16 @@ func (m *model) fetchPathHints(d pathHintDue) tea.Cmd {
 	s := m.current()
 	if s == nil {
 		return nil
+	}
+	if p.token.host {
+		parent, generation := p.token.parent, p.generation
+		ctx, cancel := context.WithTimeout(m.ctx, 4*time.Second)
+		p.cancel = cancel
+		return func() tea.Msg {
+			defer cancel()
+			listing, err := readHostPaths(ctx, parent)
+			return pathHintResult{generation: generation, listing: listing, err: err}
+		}
 	}
 	projectID, parent, generation := s.ProjectId, p.token.parent, p.generation
 	lifetime := m.contextFor(projectID)
@@ -223,7 +231,11 @@ func (m *model) pathOptions() []pathOption {
 		}
 		name := entry.Name
 		if entry.Directory {
-			name += "/"
+			separator := "/"
+			if p.token.host && runtime.GOOS == "windows" && strings.Contains(p.token.parent, `\`) {
+				separator = `\`
+			}
+			name += separator
 		}
 		paths = append(paths, pathOption{text: p.token.parent + name, entry: entry})
 	}
@@ -295,7 +307,16 @@ func (m *model) completePathOption(option pathOption, closeQuote bool) {
 		m.notice = "Path contains a backtick; type it explicitly"
 		return
 	}
+	if token.host {
+		replacement = "!" + token.quote + replacement
+	}
+	if token.host && option.entry.Directory {
+		closeQuote = false
+	}
 	if closeQuote {
+		if token.host {
+			replacement += token.quote
+		}
 		replacement += "`"
 		if token.end < len(r) && r[token.end] == '`' {
 			token.end++
@@ -333,8 +354,15 @@ func (m *model) pathHintOverlay(view string) string {
 		return view
 	}
 	content := []string{muted.Render("Container paths · ↑/↓ choose · Tab browse · Enter finish · Esc close")}
+	if p.token.host {
+		content[0] = muted.Render("Host files (cxz client) · ↑/↓ choose · Tab browse · Enter attach · Esc close")
+	}
 	if p.listing.Truncated {
-		content[0] = warning.Render("First 2048 entries · Tab complete · Esc close")
+		scope := "Container paths"
+		if p.token.host {
+			scope = "Host files (cxz client)"
+		}
+		content[0] = warning.Render(scope + " · First 2048 entries · Tab browse · Esc close")
 	}
 	if len(options) > 0 {
 		p.selected = max(0, min(p.selected, len(options)-1))
@@ -384,6 +412,9 @@ func (m *model) pathHintOverlay(view string) string {
 		case codes.DeadlineExceeded:
 			message = "Directory lookup timed out · reopen path hints to retry"
 		}
+		if p.token.host {
+			message = "Host directory unavailable · check client path and permissions"
+		}
 		content = append(content, warning.Render(message))
 	} else {
 		content = append(content, muted.Render("No matching entries"))
@@ -419,12 +450,23 @@ func (m *model) deletePathWord(k tea.KeyMsg) bool {
 	if !ok || pos <= token.start {
 		return false
 	}
+	boundary := token.start
+	if token.host {
+		boundary++
+	}
+	if pos <= boundary {
+		return false
+	}
+	separators := "/"
+	if token.host && runtime.GOOS == "windows" {
+		separators += `\`
+	}
 	r := []rune(value)
 	start := pos
-	if r[start-1] == '/' {
+	if strings.ContainsRune(separators, r[start-1]) {
 		start--
 	}
-	for start > token.start && r[start-1] != '/' && !unicode.IsSpace(r[start-1]) {
+	for start > boundary && !strings.ContainsRune(separators, r[start-1]) && !unicode.IsSpace(r[start-1]) {
 		start--
 	}
 	if start == pos {

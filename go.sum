@@ -95,6 +95,8 @@ github.com/go-viper/mapstructure/v2 v2.4.0 h1:EBsztssimR/CONLSZZ04E8qAkxNYq4Qp9L
 github.com/go-viper/mapstructure/v2 v2.4.0/go.mod h1:oJDH3BJKyqBA2TXFhDsKDGDTlndYOZ6rGS0BRZIxGhM=
 github.com/goccy/go-yaml v1.19.2 h1:PmFC1S6h8ljIz6gMRBopkjP1TVT7xuwrButHID66PoM=
 github.com/goccy/go-yaml v1.19.2/go.mod h1:XBurs7gK8ATbW4ZPGKgcbrY1Br56PdM69F7LkFRi1kA=
+github.com/gofrs/flock v0.13.0 h1:95JolYOvGMqeH31+FC7D2+uULf6mG61mEZ/A8dRYMzw=
+github.com/gofrs/flock v0.13.0/go.mod h1:jxeyy9R1auM5S6JYDBhDt+E2TCo7DkratH4Pgi8P+Z0=
 github.com/golang/protobuf v1.5.4 h1:i7eJL8qZTpSEXOPTxNKhASYpMn+8e5Q6AdndVa1dWek=
 github.com/golang/protobuf v1.5.4/go.mod h1:lnTiLA8Wa4RWRcIUkrtSVa5nRhsEGBg48fD6rSs7xps=
 github.com/google/go-cmp v0.7.0 h1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8=
@@ -117,6 +119,8 @@ github.com/kr/pretty v0.3.1 h1:flRD4NNwYAUpkphVc1HcthR4KEIFJ65n8Mw5qdRn3LE=
 github.com/kr/pretty v0.3.1/go.mod h1:hoEshYVHaxMs3cyo3Yncou5ZscifuDolrwPKZanG3xk=
 github.com/kr/text v0.2.0 h1:5Nx0Ya0ZqY2ygV366QzturHI13Jq95ApcVaJBhpS+AY=
 github.com/kr/text v0.2.0/go.mod h1:eLer722TekiGuMkidMxC/pM04lWEeraHUUmBw8l2grE=
+github.com/lesomnus/flob v0.0.0-20260915164944-39bf5f81924f h1:wgxRL1RvBu5G6NAyEiFPuR8WalYIo4LnyVeClSNeLDA=
+github.com/lesomnus/flob v0.0.0-20260915164944-39bf5f81924f/go.mod h1:fZCkpUttk+/7q+nAuwnVZkbBWjcq3cWniWtz4lY8Dig=
 github.com/lesomnus/mkot v0.0.0-20260907012347-f3fd02e2da01 h1:/oPs75uiFFRx2hGAKBKIY2cLvli7p1UcBwik+OJeHXg=
 github.com/lesomnus/mkot v0.0.0-20260907012347-f3fd02e2da01/go.mod h1:HSDWJzaO+oYgDxC9i+bxP1XYMkLSh08zwIwNt63xSTc=
 github.com/lesomnus/mkot/mkotx v0.0.0-20260801183340-9c83100aa7c2 h1:XQezJO+CgPWNddmuIDqXzLV3GvAJYieP3LGG5D+Leac=

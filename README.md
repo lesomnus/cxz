@@ -352,6 +352,16 @@ exhaustion is reported explicitly without falling back to numeric identifiers.
 The composer starts with `>` on row 0 and dim single-digit line numbers afterward:
 `1 … 9, 0, 1 …`. The two-cell gutter never grows.
 
+Type a backtick followed by `!` anywhere in the composer, then drop or paste a
+host file path. For example: ``Compare `!/home/me/report.pdf` with this result.``
+After a 300 ms pause (or a closing backtick), a valid path becomes a file chip.
+Host paths refer to the machine running the cxz client; ordinary backtick paths
+continue to browse the session container. Bare paths are never auto-attached.
+File chips show a five-cell upload bar, then a compact size. Attachments are
+stored by the daemon in a shared CAS with session namespaces and exposed through
+a project-specific read-only mount. See [file attachments](docs/file-attachments.md)
+for client/SSH behavior and the required mount on existing projects.
+
 Pending approvals have their own box above the composer. Tab follows physical
 order (approvals → composer); Shift+Tab reverses it. Arrows
 select, Enter allows and Backspace denies. PgUp/PgDn, Ctrl+Up/Down, Ctrl+Home/End
@@ -368,6 +378,19 @@ PgUp/PgDn or the wheel scroll long content. JSON is not required; the advanced
 `/answer {"question text or id":"answer"}` form remains available.
 The provider-neutral question model lives in `internal/agentview/questions.go`;
 original provider payloads stay in the journal and remain accessible via `/approval`.
+
+The TUI plays distinct sounds when a session finishes a turn or a new question or
+manual approval needs attention, including sessions outside the current view.
+Startup history, repeated snapshots and automatically handled approvals are silent.
+Sounds are bundled WAV files: macOS uses `afplay`, Linux tries `paplay` then
+`aplay`, and Windows uses PowerShell's `System.Media.SoundPlayer`. No additional
+Go dependency is needed; Linux audio requires one of those playback utilities.
+SSH sessions (`SSH_CONNECTION`, `SSH_CLIENT` or `SSH_TTY`) use the terminal bell
+directly. Missing tools, unavailable audio and playback failures fall back to the
+bell, with a three-second audio timeout. Alerts run asynchronously. Terminal
+settings determine whether the bell makes a sound or flashes; OS mute cannot be
+detected when the playback command succeeds.
+
 Previews have their own indented border; confirmed selections use softened magenta,
 while focus and buttons keep the green accent. Other drafts survive choosing a
 different radio option and are sent only while selected. Buttons have a blank

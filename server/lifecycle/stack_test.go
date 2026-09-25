@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/accounts"
+	"github.com/lesomnus/cxz/internal/assets"
 	"github.com/lesomnus/cxz/resource"
 	"github.com/lesomnus/payday/config"
 	_ "github.com/lesomnus/payday/config/dbsqlite3"
@@ -20,6 +21,7 @@ import (
 
 type fixture struct {
 	api.UnimplementedSessionsServer
+	assets.Uploader
 	p      *api.Project
 	s      *api.Session
 	resume *api.Control

@@ -6,6 +6,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/notification"
 )
 
 // Read state belongs to this frontend, keyed by the full connection/session ID.
@@ -14,6 +15,8 @@ type sessionActivity struct {
 	run, state          string
 	lastSeq, done, seen uint64
 	checking            bool
+	notified            uint64
+	pendingAlerts       map[pendingAlertKey]bool
 }
 
 type completionChecked struct {
@@ -40,7 +43,9 @@ func (m *model) observeSessions(sessions []*api.Session) tea.Cmd {
 	for _, s := range sessions {
 		a := m.sessionActivity[s.Id]
 		if a == nil {
-			m.sessionActivity[s.Id] = &sessionActivity{run: s.RunId, state: s.State, lastSeq: s.LastSeq, seen: s.LastSeq}
+			a = &sessionActivity{run: s.RunId, state: s.State, lastSeq: s.LastSeq, seen: s.LastSeq, notified: s.LastSeq}
+			a.observePending(s)
+			m.sessionActivity[s.Id] = a
 			continue
 		}
 		if s.LastSeq < a.lastSeq {
@@ -48,16 +53,33 @@ func (m *model) observeSessions(sessions []*api.Session) tea.Cmd {
 		}
 		if a.run != s.RunId {
 			// Resuming the agent does not acknowledge its previous reply.
+			from := a.lastSeq
 			a.run, a.state, a.lastSeq, a.checking = s.RunId, s.State, s.LastSeq, false
+			a.notified, a.pendingAlerts = from, map[pendingAlertKey]bool{}
+			if a.observePending(s) {
+				cmds = append(cmds, requestSound(notification.Attention))
+			}
+			// A new run can finish before its first resource snapshot arrives.
+			if s.State == "idle" && s.LastSeq > from && m.client != nil {
+				a.lastSeq, a.checking = from, true
+				cmds = append(cmds, m.checkCompletion(s.Id, s.RunId, from, s.LastSeq))
+			}
 			continue
+		}
+		if a.observePending(s) {
+			cmds = append(cmds, requestSound(notification.Attention))
 		}
 		if workingState(a.state) && s.State == "idle" && s.LastSeq > a.seen {
 			a.done = s.LastSeq
 		}
+		if workingState(a.state) && s.State == "idle" && s.LastSeq > a.notified {
+			a.notified = s.LastSeq
+			cmds = append(cmds, requestSound(notification.Complete))
+		}
 		// Resource updates are coalesced. A short turn can begin and end between
 		// two idle snapshots. Inspect only the new range in that case; unrelated
 		// quota, permission, or updater events must never create a '+' marker.
-		if !a.checking && a.state == "idle" && s.State == "idle" && s.LastSeq > a.lastSeq && s.LastSeq > a.seen && a.done <= a.seen && m.client != nil {
+		if !a.checking && a.state == "idle" && s.State == "idle" && s.LastSeq > a.lastSeq && s.LastSeq > a.notified && m.client != nil {
 			a.checking = true
 			cmds = append(cmds, m.checkCompletion(s.Id, s.RunId, a.lastSeq, s.LastSeq))
 		} else if !a.checking {
@@ -100,16 +122,21 @@ func (m *model) checkCompletion(id, run string, from, end uint64) tea.Cmd {
 	}
 }
 
-func (m *model) receiveCompletion(v completionChecked) {
+func (m *model) receiveCompletion(v completionChecked) tea.Cmd {
 	a := m.sessionActivity[v.id]
 	if a == nil || a.run != v.run || !a.checking || a.lastSeq != v.from {
-		return
+		return nil
 	}
 	a.checking = false
 	if v.err == nil {
 		a.lastSeq = v.end
 		a.done = max(a.done, v.done)
+		if v.done > a.notified {
+			a.notified = v.done
+			return requestSound(notification.Complete)
+		}
 	}
+	return nil
 }
 
 func (m *model) sessionIndicator(s *api.Session) string {
