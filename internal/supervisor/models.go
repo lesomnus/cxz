@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lesomnus/cxz/internal/agentview"
 	"github.com/lesomnus/cxz/internal/core"
 )
 
@@ -15,7 +16,14 @@ func (s *Supervisor) publishModels() {
 	if source == "" {
 		source = map[bool]string{true: "model/list", false: "initialize"}[s.codex != nil]
 	}
-	s.event("models", "catalog", "", map[string]any{"models": s.modelOptions, "model": s.session.Model, "effort": s.effort, "source": source}, nil)
+	state := map[string]any{"models": s.modelOptions, "model": s.session.Model, "effort": s.effort, "source": source}
+	if s.codex == nil {
+		state["effective_model"], state["effective_effort"] = s.appliedModel, s.appliedEffort
+		if s.appliedModel != "" {
+			state["source"] = source + " + get_settings"
+		}
+	}
+	s.event("models", "catalog", "", state, nil)
 }
 
 func isSettingCommand(text string) bool {
@@ -33,6 +41,7 @@ func (s *Supervisor) readModels() {
 		if err := s.write(map[string]any{"type": "control_request", "request_id": "cxz-models", "request": map[string]any{"subtype": "list_models"}}); err != nil {
 			s.event("models_status", "unavailable", "", nil, nil)
 		}
+		s.readClaudeSettings("")
 		return
 	}
 	if err := s.write(rpc("cxz-models", "model/list", map[string]any{"limit": 100, "includeHidden": false})); err != nil {
@@ -72,6 +81,7 @@ func (s *Supervisor) configure(c core.Command) (core.Receipt, error) {
 		return r, fmt.Errorf("usage: %s <value>", f[0])
 	}
 	name, value := strings.TrimPrefix(f[0], "/"), f[1]
+	selected, hasSelected := agentview.SelectedModel(s.modelOptions, s.session.Model, s.appliedModel)
 	if name == "model" && s.effort != "" {
 		return r, fmt.Errorf("reset /effort default before changing models")
 	}
@@ -84,9 +94,9 @@ func (s *Supervisor) configure(c core.Command) (core.Receipt, error) {
 			if name == "model" && option.Default {
 				valid = true
 			}
-			if name == "effort" && (option.ID == s.session.Model || s.session.Model == "" && option.Default) && option.DefaultEffort != "" {
-				valid = true
-			}
+		}
+		if name == "effort" && hasSelected && selected.DefaultEffort != "" {
+			valid = true
 		}
 		if !valid {
 			return r, fmt.Errorf("provider has not reported a default; select an explicit catalog value")
@@ -98,16 +108,12 @@ func (s *Supervisor) configure(c core.Command) (core.Receipt, error) {
 			if name == "model" && m.ID == value {
 				valid = true
 			}
-			if name == "effort" && (m.ID == s.session.Model || s.session.Model == "" && m.Default) && slices.Contains(m.Efforts, value) {
-				valid = true
-			}
+		}
+		if name == "effort" && hasSelected && slices.Contains(selected.Efforts, value) {
+			valid = true
 		}
 		if !valid {
 			return r, fmt.Errorf("value not reported for this model by provider; use /model, select a model before /effort")
-		}
-		// Claude's flag settings layer cannot represent session-only max effort.
-		if s.codex == nil && name == "effort" && value == "max" {
-			return r, fmt.Errorf("this Claude control transport cannot apply session-only max effort")
 		}
 	}
 	rec := record{Op: "send", Command: c, Status: "delivery_unknown"}

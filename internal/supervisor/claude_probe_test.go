@@ -24,7 +24,7 @@ func TestInstalledClaudeQuotaControl(t *testing.T) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, "claude", claudeArgs()...)
+	cmd := exec.CommandContext(ctx, "claude", claudeRunArgs("", "max", "")...)
 	cmd.Dir = t.TempDir()
 	for _, v := range os.Environ() {
 		key, _, _ := strings.Cut(v, "=")
@@ -53,6 +53,7 @@ func TestInstalledClaudeQuotaControl(t *testing.T) {
 	}
 	scanner := bufio.NewScanner(out)
 	scanner.Buffer(make([]byte, 4096), 1024*1024)
+	var modelRequest map[string]any
 	for scanner.Scan() {
 		var v struct {
 			Type     string `json:"type"`
@@ -73,16 +74,22 @@ func TestInstalledClaudeQuotaControl(t *testing.T) {
 			raw, _ := json.Marshal(v.Response.Response)
 			models := agentview.Models("claude", raw)
 			t.Logf("initialization catalog models=%d", len(models))
-			request := map[string]any{"subtype": "set_model", "model": "default"}
+			modelRequest = map[string]any{"subtype": "set_model", "model": "default"}
 			for _, model := range models {
 				if slices.Contains(model.Efforts, "low") {
-					request["model"] = model.ID
+					modelRequest["model"] = model.ID
 					break
 				}
 			}
-			if err := encoder.Encode(map[string]any{"type": "control_request", "request_id": "model", "request": request}); err != nil {
+			if err := encoder.Encode(map[string]any{"type": "control_request", "request_id": "restored-effort", "request": map[string]any{"subtype": "get_settings"}}); err != nil {
 				t.Fatal(err)
 			}
+		} else if v.Response.RequestID == "restored-effort" {
+			var applied struct{ Effort string }
+			if json.Unmarshal(v.Response.Response["applied"], &applied) != nil || applied.Effort != "max" {
+				t.Fatal("launch flag did not restore session-only max effort")
+			}
+			_ = encoder.Encode(map[string]any{"type": "control_request", "request_id": "model", "request": modelRequest})
 		} else if v.Response.RequestID == "model" {
 			if v.Response.Subtype != "success" {
 				t.Fatal("set_model rejected")
@@ -101,7 +108,33 @@ func TestInstalledClaudeQuotaControl(t *testing.T) {
 			if !bytes.Contains(raw, []byte(`"effortLevel":"low"`)) {
 				t.Fatal("effort not reflected in settings")
 			}
-			t.Log("set_model and effort flag control acknowledged; low effort present in settings")
+			var applied struct{ Effort string }
+			if json.Unmarshal(v.Response.Response["applied"], &applied) != nil || applied.Effort != "low" {
+				t.Fatal("low effort was acknowledged without being applied")
+			}
+			_ = encoder.Encode(map[string]any{"type": "control_request", "request_id": "max-effort", "request": map[string]any{"subtype": "apply_flag_settings", "settings": map[string]any{"effortLevel": "max"}}})
+		} else if v.Response.RequestID == "max-effort" {
+			if v.Response.Subtype != "success" {
+				t.Fatal("max effort rejected")
+			}
+			_ = encoder.Encode(map[string]any{"type": "control_request", "request_id": "max-settings", "request": map[string]any{"subtype": "get_settings"}})
+		} else if v.Response.RequestID == "max-settings" {
+			var applied struct{ Effort string }
+			if json.Unmarshal(v.Response.Response["applied"], &applied) != nil || applied.Effort != "max" {
+				t.Fatal("session-only max effort was not applied")
+			}
+			_ = encoder.Encode(map[string]any{"type": "control_request", "request_id": "reset-effort", "request": map[string]any{"subtype": "apply_flag_settings", "settings": map[string]any{"effortLevel": nil}}})
+		} else if v.Response.RequestID == "reset-effort" {
+			if v.Response.Subtype != "success" {
+				t.Fatal("effort reset rejected")
+			}
+			_ = encoder.Encode(map[string]any{"type": "control_request", "request_id": "reset-settings", "request": map[string]any{"subtype": "get_settings"}})
+		} else if v.Response.RequestID == "reset-settings" {
+			var applied struct{ Effort string }
+			if json.Unmarshal(v.Response.Response["applied"], &applied) != nil || applied.Effort == "" || applied.Effort == "max" {
+				t.Fatal("effort reset did not restore the model default")
+			}
+			t.Log("max launch flag, low/max control, and default reset verified through get_settings.applied")
 			_ = encoder.Encode(map[string]any{"type": "control_request", "request_id": "models", "request": map[string]any{"subtype": "list_models"}})
 		} else if v.Response.RequestID == "models" {
 			if v.Response.Subtype != "success" {

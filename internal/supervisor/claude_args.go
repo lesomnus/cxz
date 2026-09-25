@@ -8,6 +8,22 @@ func claudeArgs() []string {
 	return []string{"-p", "--input-format", "stream-json", "--output-format", "stream-json", "--verbose", "--permission-mode", "manual", "--permission-prompts", "host", "--permission-prompt-tool", "stdio", "--setting-sources=", "--strict-mcp-config", "--mcp-config", `{"mcpServers":{}}`, "--settings", `{"permissions":{"defaultMode":"manual","allow":[],"deny":[],"ask":["Bash","Edit","Write"]},"disableAllHooks":true}`}
 }
 
+func claudeRunArgs(model, effort, resume string) []string {
+	args := claudeArgs()
+	if resume != "" {
+		args = append(args, "--resume", resume)
+	}
+	if model != "" {
+		args = append(args, "--model", model)
+	}
+	if effort != "" {
+		// Session-only levels such as max are not persisted by Claude's
+		// settings layer. Restore cxz's journaled choice as a launch flag.
+		args = append(args, "--effort", effort)
+	}
+	return args
+}
+
 func (s *Supervisor) readClaudeQuota() {
 	// Ask the already authenticated process; never read/refresh OAuth tokens in
 	// the TUI. Older CLIs can reject this experimental control without harming a turn.
