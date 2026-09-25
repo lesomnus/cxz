@@ -58,6 +58,11 @@ func TestProviderModelSettings(t *testing.T) {
 						t.Fatal("sent during pending update")
 					}
 					s.consume([]byte(fmt.Sprintf(`{"type":"control_response","response":{"subtype":"success","request_id":"cxz-setting-%s","response":{}}}`, c.ClientID)))
+					effort := "low"
+					if text == "/effort high" {
+						effort = "high"
+					}
+					claudeSettingsReply(t, s, "test", effort)
 				}
 				before := input.Len()
 				if _, err := s.execute("send", c); err != nil || input.Len() != before {

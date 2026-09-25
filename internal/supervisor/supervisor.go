@@ -65,6 +65,11 @@ type Supervisor struct {
 	modelSource      string
 	modelPages       []agentview.ModelOption
 	effort           string
+	appliedModel     string
+	appliedEffort    string
+	settingsSequence uint64
+	settingsRequest  string
+	settingsFor      string
 	settingPending   string
 }
 type record struct {
@@ -162,24 +167,7 @@ func Run(ctx context.Context, root, id string) error {
 		s.quotaToken = runtime.Token
 	}
 	s.event("state", "starting", "", nil, nil)
-	args := claudeArgs()
-	if old.VendorID != "" {
-		args = append(args, "--resume", old.VendorID)
-	}
-	if s.session.Model != "" {
-		args = append(args, "--model", s.session.Model)
-	}
-	if s.effort != "" {
-		for i := 0; i+1 < len(args); i++ {
-			if args[i] == "--settings" {
-				var settings map[string]any
-				_ = json.Unmarshal([]byte(args[i+1]), &settings)
-				settings["effortLevel"] = s.effort
-				b, _ := json.Marshal(settings)
-				args[i+1] = string(b)
-			}
-		}
-	}
+	args := claudeRunArgs(s.session.Model, s.effort, old.VendorID)
 	if session.Kind == "codex" {
 		// Codex does not persist an empty thread until its first turn. Starting
 		// a fresh empty thread is safe only when no send intent ever existed.
@@ -435,6 +423,10 @@ func (s *Supervisor) consume(raw []byte) {
 			s.event("compact", "completed", "", json.RawMessage(raw), nil)
 		}
 	case "control_response":
+		if strings.HasPrefix(v.Response.RequestID, "cxz-settings-") {
+			s.receiveClaudeSettings(v.Response.RequestID, v.Response.Subtype == "success", v.Response.Response)
+			return
+		}
 		if v.Response.RequestID == "cxz-models" {
 			if v.Response.Subtype == "success" {
 				s.modelOptions = agentview.Models("claude", v.Response.Response)
@@ -448,7 +440,23 @@ func (s *Supervisor) consume(raw []byte) {
 			return
 		}
 		if strings.HasPrefix(v.Response.RequestID, "cxz-setting-") {
-			s.finishSetting(strings.TrimPrefix(v.Response.RequestID, "cxz-setting-"), v.Response.Subtype == "success")
+			id := strings.TrimPrefix(v.Response.RequestID, "cxz-setting-")
+			if id != s.settingPending {
+				return
+			}
+			if v.Response.Subtype == "success" {
+				// A successful control can still be capped or ignored. Persist
+				// effort only after the CLI reports what it actually applied.
+				if fields := strings.Fields(s.receipts[id].Command.Text); len(fields) == 2 && fields[0] == "/effort" {
+					s.readClaudeSettings(id)
+					return
+				}
+				s.appliedModel, s.appliedEffort = "", ""
+			}
+			s.finishSetting(id, v.Response.Subtype == "success")
+			if v.Response.Subtype == "success" {
+				s.readClaudeSettings("")
+			}
 			return
 		}
 		if v.Response.RequestID == "cxz-quota" {

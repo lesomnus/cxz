@@ -6,7 +6,6 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/lesomnus/cxz/internal/agentview"
 )
 
 func (m *model) modelCommand(text string) tea.Cmd {
@@ -25,19 +24,22 @@ func (m *model) modelReport() string {
 			continue
 		}
 		var v struct {
-			Models                []agentview.ModelOption
-			Model, Effort, Source string
+			modelCatalog
+			Source string
 		}
 		if json.Unmarshal(e.Payload, &v) != nil {
 			continue
 		}
-		if v.Model == "" {
+		effort := v.currentEffort()
+		if v.EffectiveModel != "" {
+			v.Model = v.EffectiveModel
+		} else if v.Model == "" {
 			v.Model = "provider default"
 		}
-		if v.Effort == "" {
-			v.Effort = "provider default"
+		if effort == "" {
+			effort = "not reported"
 		}
-		lines = []string{"Model / effort · " + s.Agent, "Selected model: " + v.Model + " · effort: " + v.Effort, "Source: " + v.Source + " (provider-reported snapshot)", "Observed: " + time.UnixMilli(e.TimeMs).Local().Format("01-02 15:04:05"), ""}
+		lines = []string{"Model / effort · " + s.Agent, "Selected model: " + v.Model + " · reasoning: " + effort, "Source: " + v.Source, "Observed: " + time.UnixMilli(e.TimeMs).Local().Format("01-02 15:04:05"), ""}
 		for _, option := range v.Models {
 			lines = append(lines, option.ID+" · "+option.Name, "  effort: "+strings.Join(option.Efforts, ", "))
 		}
@@ -60,15 +62,18 @@ func (m *model) selectedModelLabel() string {
 		if e.Kind != "models" || e.RunId != "" && e.RunId != s.RunId {
 			continue
 		}
-		var v struct{ Model, Effort string }
+		var v modelCatalog
 		if json.Unmarshal(e.Payload, &v) != nil {
 			continue
 		}
-		if v.Model == "" {
+		effort := v.currentEffort()
+		if v.EffectiveModel != "" {
+			v.Model = v.EffectiveModel
+		} else if v.Model == "" {
 			v.Model = "default"
 		}
-		if v.Effort != "" {
-			v.Model += " · " + v.Effort
+		if effort != "" {
+			v.Model += " · " + effort
 		}
 		return pickerLabel(v.Model)
 	}

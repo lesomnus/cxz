@@ -14,9 +14,29 @@ import (
 )
 
 type modelCatalog struct {
-	Models        []agentview.ModelOption
-	Model, Effort string
+	Models          []agentview.ModelOption
+	Model, Effort   string
+	EffectiveModel  string  `json:"effective_model"`
+	EffectiveEffort *string `json:"effective_effort"`
 }
+
+func (c *modelCatalog) selectedModel() (agentview.ModelOption, bool) {
+	return agentview.SelectedModel(c.Models, c.Model, c.EffectiveModel)
+}
+
+func (c *modelCatalog) currentEffort() string {
+	if c.EffectiveEffort != nil {
+		return *c.EffectiveEffort
+	}
+	if c.Effort != "" {
+		return c.Effort
+	}
+	if option, ok := c.selectedModel(); ok {
+		return option.DefaultEffort
+	}
+	return ""
+}
+
 type modelPicker struct {
 	id, run, kind, query, requested, message string
 	epoch                                    uint64
@@ -100,6 +120,16 @@ func (m *model) acceptModelCatalog(v modelCatalogLoaded) tea.Cmd {
 	if p.requested != "" {
 		return m.submitModelChoice(p.requested)
 	}
+	current := p.catalog.Model
+	if p.kind == "/effort" {
+		current = p.catalog.currentEffort()
+	}
+	for i, option := range p.options() {
+		if option == current {
+			p.selected = i
+			break
+		}
+	}
 	return nil
 }
 
@@ -113,12 +143,9 @@ func (p *modelPicker) options() []string {
 			options = append(options, v.ID)
 		}
 	} else {
-		options = append(options, "default")
-		for _, v := range p.catalog.Models {
-			if v.ID == p.catalog.Model || p.catalog.Model == "" && v.Default {
-				options = append(options, v.Efforts...)
-				break
-			}
+		if v, ok := p.catalog.selectedModel(); ok && len(v.Efforts) > 0 {
+			options = append(options, v.Efforts...)
+			options = append(options, "default")
 		}
 	}
 	var matches []string
@@ -202,6 +229,19 @@ func (m *model) modelPickerOverlay(view string) string {
 	rows := strings.Split(view, "\n")
 	width := max(1, m.width-4)
 	lines := []string{accent.Bold(true).Render(p.kind + " · select"), muted.Render("↑/↓ choose · Enter apply · Esc cancel")}
+	if p.kind == "/effort" {
+		lines[0] = accent.Bold(true).Render("/effort · reasoning level")
+		if p.catalog != nil {
+			current := p.catalog.currentEffort()
+			if current == "" {
+				current = "not reported"
+			}
+			if p.catalog.Effort == "" {
+				current += " · model default"
+			}
+			lines = append(lines, "Current: "+safeText(current))
+		}
+	}
 	if p.loading {
 		lines = append(lines, "Reading provider capabilities…")
 	}
@@ -213,14 +253,22 @@ func (m *model) modelPickerOverlay(view string) string {
 	selected := min(p.selected, max(0, len(options)-1))
 	start := max(0, min(selected-max(0, count-3), len(options)-count))
 	for i := start; i < min(len(options), start+count); i++ {
-		line := "  " + safeText(options[i])
+		label := options[i]
+		if p.kind == "/effort" && label == "default" {
+			label = "Model default (reset)"
+		}
+		line := "  " + safeText(label)
 		if i == selected {
-			line = accent.Render("› " + safeText(options[i]))
+			line = accent.Render("› " + safeText(label))
 		}
 		lines = append(lines, line)
 	}
 	if !p.loading && p.catalog != nil && len(options) == 0 {
-		lines = append(lines, "No matching provider choices.")
+		if p.kind == "/effort" && p.query == "" {
+			lines = append(lines, "No reasoning levels reported for the current model.")
+		} else {
+			lines = append(lines, "No matching provider choices.")
+		}
 	}
 	caret := " "
 	if m.pulse%10 < 5 {

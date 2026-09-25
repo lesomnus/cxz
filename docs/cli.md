@@ -585,25 +585,33 @@ Esc 취소, 하단 fuzzy 검색을 지원하며 최대 7개 선택지를 표시�
 읽기 전용이며 일반 채팅으로 전송하지 않는다. tail 밖에 있는 현재 run의 capability도
 History에서 조회한다. 현재 run의 모델 제어 지원 기록이 없으면 업데이트 안내만
 표시하고, 인자를 붙인 설정 명령도 전송하지 않는다.
-`/model <id>` → `/effort <level>`로 설정하며 `/effort default`로 기본 강도로 복귀한다.
+`/effort`는 현재 모델의 reasoning 수준과 실제 적용값을 보여준다. Claude 기본 모델도
+별도 `/model` 선택 없이 지원 수준을 고를 수 있다. `Model default (reset)`은 강도
+선택지 뒤에 있는 초기화 동작이며, 실제 reasoning 수준을 뜻하는 `default` 값이 아니다.
+`/effort <level>`로 설정하며 `/effort default`로 기본 강도로 복귀한다.
 강도를 지정한 상태에서 모델을 바꾸려면 먼저 `/effort default`를 실행한다.
 명령별 예제와 제한은 `/help model`, `/help effort`에 있다.
 
 - 공통 ModelOption으로 Claude의 supportedEffortLevels와 Codex의
-  supportedReasoningEfforts/defaultReasoningEffort를 변환한다. 모델/강도 목록을
-  하드코딩하지 않고 공급자가 보고하지 않은 선택은 거절한다.
-- Claude는 initialize의 모델 목록을 사용하고 set_model/apply_flag_settings로
-  변경한다. 응답 전에는 다음 대화를 차단하며 거절을 성공으로 표시하지 않는다.
-  flag settings로 전달할 수 없는 session-only max effort는 명시적으로 거절한다.
-  모델 목록의 실시간 재조회 API는 확인되지 않아 초기화 스냅샷임을 표시한다.
+  supportedReasoningEfforts/defaultReasoningEffort를 변환한다. Claude의
+  `value: "default"`와 `resolvedModel`을 정규화하여 기본 모델·별칭·실제 모델 ID를
+  같은 방식으로 판별한다. 모델/강도 목록 자체는 공급자가 보고한 범위를 따른다.
+- Claude는 initialize 및 idle 매분 list_models로 모델 목록을 읽고,
+  set_model/apply_flag_settings로 변경한다. get_settings.applied로 실제 모델과
+  reasoning 수준을 읽는다. 강도 변경은 이 값까지 확인한 후 확정하며, 확인 전에는
+  다음 대화를 차단한다. 요청과 적용값이 다르거나 확인할 수 없으면 성공으로 저장하지
+  않는다. 설정 변경 전에 보낸 조회 응답은 새 선택을 덮어쓸 수 없다.
 - Codex는 [공식 app-server model/list](https://learn.chatgpt.com/docs/app-server#list-models-modellist)를
   시작 시·idle 매분 호출하고 모든 페이지를 합친다. TUI 선택기는 기록된 목록을 읽는다.
   선택은 다음 turn/start의
   model/effort에 전달한다. 기본값 복귀도 보고된 기본값을 사용한다.
-- 실행 중인 CLI 버전/계정/공급자 정책에 따른 지원 범위를 유지한다. 확인된 선택은
-  런타임 저널에 남아 resume 시 복원되고 TUI 상태바에 반영된다. 리소스의 최초 생성
+- 실행 중인 CLI 버전/계정/공급자 정책에 따른 지원 범위를 유지한다. cxz가 확인된 선택을
+  기존 런타임 저널에 저장하고 resume 시 Claude의 `--effort`로 복원하므로, CLI가
+  세션 내에서만 유지하는 `max`도 보존된다. 설정 선호값과 실제 적용값은 구분하여
+  TUI 선택기·상태바에는 확인된 적용값을 표시한다. 리소스의 최초 생성
   model 값과 실행 중 선택은 구분한다. 이전 프로세스에는 새 코드가 자동 적용되지 않는다.
-- 실제 설치 Claude의 빈 프로필로 모델 선택·effort 반영·get_settings를 검증했다.
+- 실제 설치 Claude의 빈 프로필로 모델 선택, max 시작 옵션, low/max 변경 및 기본값
+  복귀가 get_settings.applied에 반영되는 것을 검증했다.
   사용자 로그인 계정이나 모델 호출은 하지 않았다. Codex 변경은 프로토콜 fixture로 검증했다.
 
 ### 작업 내용 키보드 탐색
