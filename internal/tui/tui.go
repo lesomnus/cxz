@@ -14,6 +14,7 @@ import (
 	"github.com/lesomnus/cxz/internal/containerterm"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/dockerx"
+	"github.com/lesomnus/cxz/internal/notification"
 	"github.com/lesomnus/cxz/internal/resourceclient"
 	"github.com/lesomnus/cxz/internal/settings"
 	"github.com/lesomnus/cxz/internal/transport"
@@ -27,6 +28,7 @@ import (
 )
 
 type model struct {
+	alertPlayer             *notification.Player
 	liveRenderWidth         *atomic.Int64
 	renderedInputs          map[inputRenderKey]string
 	renderedSummaries       map[summaryRenderKey]string
@@ -56,6 +58,7 @@ type model struct {
 	redactSending           bool
 	redactStore             secretFiles
 	pathHints               *pathHints
+	hostFileCheck           *hostFileCheck
 	pathHintGeneration      uint64
 	pathHintDismissed       string
 	terminals               map[string]*terminalPanel
@@ -902,6 +905,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 	m.pruneRedactions()
+	m.pruneFileUploads()
 	if _, ok := msg.(listing); ok {
 		cmd = tea.Batch(cmd, m.watchResources())
 	}
@@ -909,7 +913,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.resourceRefreshAgain = false
 		cmd = tea.Batch(cmd, m.refresh())
 	}
-	return next, tea.Batch(activity, cmd, m.syncPathHints())
+	return next, tea.Batch(activity, cmd, m.syncHostFiles(), m.syncPathHints())
 }
 
 func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -1004,6 +1008,10 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case terminalChanged:
 		m.closeSuccessfulTerminal(v.id)
 		return m, nil
+	case hostFileDue:
+		return m, m.checkHostFiles(v)
+	case hostFileChecked:
+		return m, m.receiveHostFiles(v)
 	case pathHintDue:
 		return m, m.fetchPathHints(v)
 	case pathHintResult:
@@ -1050,6 +1058,15 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 		return m.Update(v.result)
+	case fileUploadProgress:
+		if v.item.attachment == v.upload && m.pastes[v.item.token] == v.item {
+			v.upload.received = v.received
+			m.updateFileChip(v.item)
+		}
+		return m, nil
+	case fileUploadDone:
+		m.receiveFileUpload(v)
+		return m, nil
 	case pasteUploaded:
 		v.dialog.busy = false
 		if v.dialog.direct {
@@ -1178,8 +1195,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.receiveSessionBackground(v)
 		return m, m.refreshSessionBackground()
 	case completionChecked:
-		m.receiveCompletion(v)
-		return m, nil
+		return m, m.receiveCompletion(v)
+	case soundRequested:
+		return m, m.playNotification(v.sound)
 	case sessionDeleted:
 		m.receiveSessionDeleted(v)
 		return m, m.refresh()
@@ -1706,6 +1724,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.input.Focus()
 			}
 			text := strings.TrimSpace(m.input.Value())
+			if !m.fileAttachmentsReady(text) {
+				return m, nil
+			}
 			if text == "/redact" {
 				m.input.Reset()
 				m.notice = "Use @redact inside your message, then Enter"

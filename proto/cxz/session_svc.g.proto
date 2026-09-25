@@ -44,6 +44,7 @@ service SessionService {
   rpc Permission(SessionPermissionRequest) returns (SessionReceipt);
   rpc Send(SessionSendRequest) returns (SessionReceipt);
   rpc Attach(SessionAttachRequest) returns (SessionAttachment);
+  rpc Upload(stream SessionUploadRequest) returns (SessionAttachment);
   rpc Activity(SessionActivityRequest) returns (SessionReceipt);
   rpc UpdateAgent(SessionUpdateRequest) returns (SessionUpdateStatus);
   rpc Reply(SessionReplyRequest) returns (SessionReceipt);
@@ -292,6 +293,16 @@ message SessionAttachRequest {
 
 message SessionAttachment {
   string path = 1;
+}
+
+// The first message contains the header; subsequent messages contain only bytes.
+// Closing the stream completes the upload. No upload IDs or resumable state.
+message SessionUploadRequest {
+  SessionRef ref = 1;
+  string run_id = 2;
+  string name = 3;
+  int64 size = 4;
+  bytes content = 5;
 }
 
 message SessionActivityRequest {

@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/assets"
 	"github.com/lesomnus/cxz/internal/core"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -43,6 +44,41 @@ func (s *Server) Attach(ctx context.Context, r *api.AttachmentInput) (*api.Attac
 		return nil, status.Error(codes.Internal, "cannot persist session attachment")
 	}
 	return &api.Attachment{Path: path}, nil
+}
+
+func (s *Server) UploadAttachment(ctx context.Context, r assets.Upload, src io.Reader) (string, error) {
+	var v *api.Session
+	var err error
+	if s.manager != nil {
+		v, err = s.manager.AttachmentSession(ctx, r.SessionID)
+	} else {
+		v, err = s.Get(ctx, &api.SessionRef{Id: r.SessionID})
+	}
+	if err != nil {
+		return "", err
+	}
+	if r.RunID == "" || r.RunID != v.RunId {
+		return "", status.Error(codes.FailedPrecondition, "session run changed; attach the file to the current session")
+	}
+	project := v.ProjectId
+	if s.manager == nil {
+		project = "local"
+	} else if err = s.manager.CheckAssetMount(ctx, project); err != nil {
+		return "", status.Error(codes.FailedPrecondition, err.Error())
+	}
+	vault := filepath.Join(s.root, "assets")
+	path, err := assets.Add(ctx, vault, project, r.SessionID, r.Name, r.Size, src)
+	if err != nil {
+		return "", fmt.Errorf("attachment upload: %w", err)
+	}
+	if s.manager != nil {
+		relative, err := filepath.Rel(assets.ExportRoot(vault, project), path)
+		if err != nil {
+			return "", err
+		}
+		path = filepath.ToSlash(filepath.Join(assets.MountPath, relative))
+	}
+	return path, nil
 }
 
 // Content-addressed, immutable, private files in the session's durable volume.

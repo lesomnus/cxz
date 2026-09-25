@@ -13,6 +13,7 @@ service SessionService {
   rpc Permission(SessionPermissionRequest) returns (SessionReceipt);
   rpc Send(SessionSendRequest) returns (SessionReceipt);
   rpc Attach(SessionAttachRequest) returns (SessionAttachment);
+  rpc Upload(stream SessionUploadRequest) returns (SessionAttachment);
   rpc Activity(SessionActivityRequest) returns (SessionReceipt);
   rpc UpdateAgent(SessionUpdateRequest) returns (SessionUpdateStatus);
   rpc Reply(SessionReplyRequest) returns (SessionReceipt);
@@ -25,6 +26,12 @@ message SessionControl { SessionRef ref = 1; string run_id = 2; string client_id
 message SessionSendRequest { SessionRef ref = 1; string run_id = 2; string client_id = 3; string text = 4; }
 message SessionAttachRequest { SessionRef ref = 1; string run_id = 2; bytes content = 3; }
 message SessionAttachment { string path = 1; }
+// The first message contains the header; subsequent messages contain only bytes.
+// Closing the stream completes the upload. No upload IDs or resumable state.
+message SessionUploadRequest {
+  SessionRef ref = 1; string run_id = 2; string name = 3; int64 size = 4;
+  bytes content = 5;
+}
 message SessionActivityRequest { SessionRef ref = 1; string run_id = 2; string client_id = 3; bool busy = 4; }
 message SessionUpdateRequest { SessionRef ref = 1; string run_id = 2; string binary = 3; bool apply = 4; }
 message SessionUpdateStatus { bool ready = 1; string reason = 2; string binary = 3; string state = 4; }

@@ -13,6 +13,7 @@ type commandHelp struct {
 }
 
 var commandHelpEntries = []commandHelp{
+	{"Inline commands", "attach", "Attach a host file inside your message", "Type a backtick immediately followed by !, then drop, paste or type an absolute host file path. Host means the computer running the cxz client. After 300 ms without changes, readable files become chips at that position. A closing backtick triggers an immediate check. Plain paths are never automatically uploaded; backticks without ! keep browsing the session container. Host suggestions read the client filesystem: Tab browses, Enter opens a directory or finishes a file. Multiple quoted paths are supported in one marker. Incomplete or missing paths stay editable; Ctrl+S waits until references have become chips and uploads have finished. Chips use the Usage progress bar, then a size of at most five characters. Left/Right selects a chip, Enter shows details, f retries, and d removes it. Each regular file is limited to 1 GiB. Existing projects need the read-only asset mount. Uploaded files remain available after chip removal.", "Compare `!/home/me/report.pdf` with the current result.\nWindows: `!\"C:\\Users\\me\\My Report.pdf\"`\n/help attach"},
 	{"Inspection", "record", "Record TUI diagnostics", "F9 or /record toggles debug recording; a button is also available in Ctrl+P settings. Stop saves a private JSONL file under the client state directory’s recordings folder; settings or /record status shows its full path. Recording covers this TUI process across session switches, with a red REC label above the input and a dot that blinks every second. It includes sanitized navigation sequences, decoded key categories, focus and cursor changes, async event types and render timing. Typed/pasted text, conversation content, credentials and raw screen output are excluded. Up to 12000 recent events are retained, with a dropped-event count. Leaving the TUI also saves an active recording. Failed saves retain the recording for retry while the TUI stays open.", "/record"},
 	{"Inspection", "memory", "Browse retained agent data", "Opens a read-only file browser for the selected session’s saved memory, instructions and native history. From the project list, select a session and press m, including stopped sessions. Enter opens; Left/Backspace goes up; arrows, PgUp/PgDn and Home/End browse; r refreshes; Esc returns. Profiles are addressed by creation ID, independently of project names. Press c on a file or folder to choose a stopped session of the same agent, edit its destination path relative to the agent profile, and confirm the copy. Existing destinations are never overwritten. Stored authentication files and symlinks are excluded. The manager reads retained project volumes even when project containers are stopped, without starting an agent. Files are limited to 256 KiB per preview and directories to 1000 entries. Copies are limited to 1000 entries / 16 MiB, with the same per-file limit. Copying does not alter login credentials or conversation resume identity.", "/memory"},
 	{"Settings", "settings", "Shared Docker status and maintenance", "Ctrl+P opens settings from the conversation or project list. Shows the shared engine status and build cache usage, refreshed every ten seconds. Activate starts the engine with the manager’s saved settings; the same button becomes Deactivate while running. Disabled buttons are skipped by keyboard navigation. Deactivate and cache cleanup require confirmation; cleanup removes unused build cache only. Images and volumes are retained. Esc or Ctrl+P returns. Edit configuration with cxz edit.", "/settings"},
@@ -74,7 +75,7 @@ func helpView(width int, topics ...string) string {
 	}
 	profile := map[termenv.Profile]string{termenv.TrueColor: "24-bit True Color", termenv.ANSI256: "256 colors", termenv.ANSI: "16 colors", termenv.Ascii: "no color"}[lipgloss.ColorProfile()]
 	lines := []string{lavender.Bold(true).Render("cxz /help"), muted.Render("Detected color profile: " + profile), muted.Render("Details and examples: /help <command> · e.g. /help answer")}
-	lines = append(lines, muted.Render("Container paths: backtick + / or ~ · arrows select · Tab browses · Enter completes and closes · Esc dismisses"))
+	lines = append(lines, muted.Render("Paths: backtick + / or ~ for container · backtick + ! for host attachments · Tab browses · Enter finishes"))
 	category := ""
 	for _, entry := range commandHelpEntries {
 		if category != entry.category {
@@ -82,7 +83,9 @@ func helpView(width int, topics ...string) string {
 			lines = append(lines, "", accent.Bold(true).Render(category))
 		}
 		name := entry.name
-		if !strings.HasPrefix(name, "@") {
+		if name == "attach" {
+			name = "`!path`"
+		} else if !strings.HasPrefix(name, "@") {
 			name = "/" + name
 		}
 		lines = append(lines, name+"  "+muted.Render(entry.summary))
