@@ -40,6 +40,8 @@ cxz 프로필을 등록·갱신한다. `cxz integration ls`로 확인하고
 
 세션 하단 status bar에는 기존 quota 옆에 컨텍스트 사용률을 `⣄35%`처럼 표시한다.
 11%마다 아래에서부터 점을 하나씩 채우며 88%부터 8점이 모두 찬다. 숫자는 99%까지만 표시한다.
+점 막대는 사용률 50% 미만이면 회색, 50% 이상 연노랑, 80% 이상 주황, 95% 이상 분홍이다.
+Usage 막대와 같은 색조를 사용하며 퍼센트 숫자는 회색으로 유지한다.
 미보고 상태는 `⠀—`이며 compact/새 run 이후에는 새 snapshot을 기다린다.
 Codex는 CLI의 baseline 12,000 토큰 보정 기준을 따른 마지막 tokenUsage snapshot,
 Claude는 마지막 assistant 메시지의 input+cache-read+cache-write와 해당 모델의 contextWindow를 사용한다.

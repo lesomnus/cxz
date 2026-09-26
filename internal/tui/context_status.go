@@ -2,6 +2,8 @@ package tui
 
 import (
 	"fmt"
+
+	"github.com/charmbracelet/lipgloss"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/agentview"
 )
@@ -23,7 +25,16 @@ func contextBadge(percent int, known bool) string {
 	for _, dot := range dots[:min(8, percent/11)] {
 		r |= dot
 	}
-	return fmt.Sprintf("%c%d%%", r, percent)
+	bar := string(r)
+	switch {
+	case percent >= 95:
+		bar = lipgloss.NewStyle().Foreground(lipgloss.Color("#F49BAA")).Render(bar)
+	case percent >= 80:
+		bar = lipgloss.NewStyle().Foreground(lipgloss.Color("#F5AF98")).Render(bar)
+	case percent >= 50:
+		bar = lipgloss.NewStyle().Foreground(lipgloss.Color("#F5CA9A")).Render(bar)
+	}
+	return fmt.Sprintf("%s%d%%", bar, percent)
 }
 
 type contextStatusKey struct {
