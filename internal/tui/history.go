@@ -135,7 +135,7 @@ func (m *model) prepareHistoryPage(ctx context.Context, page historyPage, agent 
 }
 
 func (m *model) applyHistoryPage(page historyPage) bool {
-	if page.initial && page.epoch != 0 && page.epoch != m.watchEpoch {
+	if page.initial && !m.validSessionWatch(page.id, page.epoch) {
 		return false
 	}
 	if !page.initial && m.historyLoading[page.id] == page.end {

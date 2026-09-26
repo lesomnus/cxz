@@ -16,7 +16,7 @@ type inlineToken struct {
 }
 
 func (m *model) inlineContext() *inlineToken {
-	if m.workflow != nil || m.questionDialog != nil || m.pasteDialog != nil || m.pathHints != nil || m.panelFocus {
+	if m.workflow != nil || m.questionFocused() || m.pasteDialog != nil || m.pathHints != nil || m.panelFocus {
 		return nil
 	}
 	value, pos, _, _, ok := m.chipInput()

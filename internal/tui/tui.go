@@ -118,6 +118,7 @@ type model struct {
 	modelPicker             *modelPicker
 	modelPickerEpoch        uint64
 	settingsPage            *settingsPage
+	sessionArchive          *sessionArchive
 	memoryPage              *memoryPage
 	report                  *reportOverlay
 	contextCapture          *contextCapture
@@ -135,6 +136,9 @@ type model struct {
 	watchCancel             context.CancelFunc
 	watchID                 string
 	watchEpoch              uint64
+	watchSequence           uint64
+	sessionWatches          map[string]*sessionWatch
+	watchBootstrap          chan struct{}
 	wantID                  string
 	accounts                []*resource.Account
 	accountIndex            int
@@ -167,6 +171,7 @@ type model struct {
 	workingToolRows         map[int]bool
 	restartConfirm          *restartConfirmation
 	questionDialog          *questionDialog
+	questionDrafts          map[string]*questionDialog
 	questionSeen            map[string]bool
 	restartBusy             bool
 	lastPromptStart         int
@@ -400,28 +405,13 @@ func (m *model) session(id string) *api.Session {
 	}
 	return nil
 }
-func (m *model) watch() {
-	if m.projectView || m.program == nil {
-		return
-	}
-	if m.activityID == "" {
-		m.activityID = core.ID()
-	}
-	activityID := m.activityID
-	s := m.current()
-	if s == nil || m.watchID == s.Id {
-		return
-	}
-	if m.watchCancel != nil {
-		m.watchCancel()
-	}
+func (m *model) startSessionWatch(s *api.Session) {
 	id := s.Id
 	ctx, cancel := context.WithCancel(m.ctx)
-	m.watchCancel = cancel
-	m.watchContext = ctx
-	m.watchID = id
-	m.watchEpoch++
-	epoch := m.watchEpoch
+	m.watchSequence++
+	epoch := m.watchSequence
+	m.sessionWatches[id] = &sessionWatch{ctx: ctx, cancel: cancel, epoch: epoch, active: true}
+	activityID := m.activityID
 	after := m.cursor[id]
 	last := s.LastSeq
 	agent, width := s.Agent, max(1, m.view.Width)
@@ -437,6 +427,17 @@ func (m *model) watch() {
 		m.historyOpening[id] = true
 	}
 	go func() {
+		select {
+		case m.watchBootstrap <- struct{}{}:
+		case <-ctx.Done():
+			return
+		}
+		bootstrapping := true
+		defer func() {
+			if bootstrapping {
+				<-m.watchBootstrap
+			}
+		}()
 		if after == 0 && last > 0 {
 			start := uint64(0)
 			if last > historyPageSize {
@@ -444,9 +445,27 @@ func (m *model) watch() {
 			}
 			started := time.Now()
 			batch, err := m.fetchHistory(ctx, id, start, "initial")
+			for err == nil && start > 0 && !hasConversationEvents(batch.Events) {
+				end := start
+				start = 0
+				if end > historyPageSize {
+					start = end - historyPageSize
+				}
+				var older *api.EventBatch
+				older, err = m.fetchHistory(ctx, id, start, "initial_older")
+				if err == nil {
+					var prefix []*api.Event
+					for _, event := range older.Events {
+						if event.Seq <= end {
+							prefix = append(prefix, event)
+						}
+					}
+					batch.Events = append(prefix, batch.Events...)
+				}
+			}
 			if err != nil {
 				if ctx.Err() == nil {
-					m.program.Send(disconnected{id, err})
+					m.program.Send(sessionWatchEnded{id: id, epoch: epoch, err: err})
 				}
 				return
 			}
@@ -463,12 +482,12 @@ func (m *model) watch() {
 			m.program.Send(page)
 		}
 		// Replay the accumulated journal in pages, rendering once per page.
-		// Only the selected conversation is subscribed; other agents keep running.
+		// Every listed session keeps its own cursor and subscription.
 		for after < last {
 			batch, err := m.fetchHistory(ctx, id, after, "catch_up")
 			if err != nil {
 				if ctx.Err() == nil {
-					m.program.Send(disconnected{id, err})
+					m.program.Send(sessionWatchEnded{id: id, epoch: epoch, err: err})
 				}
 				return
 			}
@@ -488,6 +507,8 @@ func (m *model) watch() {
 			}
 			m.program.Send(caughtUp{id: id, events: batch.Events, epoch: epoch, prepared: &page})
 		}
+		<-m.watchBootstrap
+		bootstrapping = false
 		stream, e := m.client.Watch(ctx, &api.WatchRequest{SessionId: id, AfterSeq: after, ClientId: activityID})
 		if e == nil {
 			e = collectLiveEvents(ctx, stream, func(events []*api.Event) {
@@ -500,7 +521,7 @@ func (m *model) watch() {
 			})
 		}
 		if ctx.Err() == nil {
-			m.program.Send(disconnected{id, e})
+			m.program.Send(sessionWatchEnded{id: id, epoch: epoch, err: e})
 		}
 	}()
 }
@@ -930,6 +951,17 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if m.sessionArchive != nil {
+		switch v := msg.(type) {
+		case tea.KeyMsg:
+			if v.Type == tea.KeyCtrlD && !v.Paste {
+				return m, tea.Quit
+			}
+			return m, m.sessionArchiveKey(v)
+		case tea.MouseMsg:
+			return m, nil
+		}
+	}
 	if k, ok := msg.(tea.KeyMsg); ok && !k.Paste && !m.terminalFocused() {
 		switch k.String() {
 		case "ctrl+d":
@@ -960,7 +992,14 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case tea.MouseMsg:
 		if m.questionHeight() > 0 && m.pasteDialog == nil {
-			return m, m.questionMouse(v)
+			m.questionDialog.hovering = false
+			l := m.questionLayout()
+			if v.X >= l.x && v.X < l.x+l.width && v.Y >= l.y && v.Y < l.y+l.height {
+				return m, m.questionMouse(v)
+			}
+			if v.Action == tea.MouseActionPress {
+				m.questionDialog.suspended = true
+			}
 		}
 		if handled, cmd := m.errorMouse(v); handled {
 			return m, cmd
@@ -1002,8 +1041,18 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 	}
-	if k, ok := msg.(tea.KeyMsg); ok && k.Type == tea.KeyCtrlP && !k.Paste && m.workflow == nil && m.redactDialog == nil && m.questionDialog == nil && m.pasteDialog == nil && m.restartConfirm == nil {
+	if k, ok := msg.(tea.KeyMsg); ok && k.Type == tea.KeyF19 && !k.Paste && m.workflow == nil && m.redactDialog == nil && m.pasteDialog == nil && m.restartConfirm == nil {
 		return m, m.openSettings()
+	}
+	if k, ok := msg.(tea.KeyMsg); ok && !k.Paste && m.questionDialog != nil && m.pasteDialog == nil && m.redactDialog == nil && k.Type == tea.KeyF6 {
+		d := m.questionDialog
+		d.suspended = !d.suspended
+		m.panelFocus = false
+		if d.suspended {
+			return m, m.input.Focus()
+		}
+		m.focusQuestion()
+		return m, nil
 	}
 
 	switch v := msg.(type) {
@@ -1018,6 +1067,27 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			v.session.Close()
 		}
 		return m, nil
+	case archiveLoaded:
+		if m.sessionArchive == v.page {
+			v.page.loading = false
+			v.page.items = v.items
+			if v.err != nil {
+				v.page.message = v.err.Error()
+			}
+		}
+		return m, nil
+	case archiveRestored:
+		if m.sessionArchive != v.page {
+			return m, m.refresh()
+		}
+		v.page.busy = false
+		if v.err != nil {
+			v.page.message = v.err.Error()
+			return m, nil
+		}
+		m.sessionArchive = nil
+		m.accountView, m.accountChoosing = false, false
+		return m.update(result{sessionID: v.session.Id, text: "Session restored; resume to continue"})
 	case terminalChanged:
 		m.closeSuccessfulTerminal(v.id)
 		return m, nil
@@ -1034,7 +1104,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.redactDialog != nil {
 			return m, m.redactKey(v)
 		}
-		if v.Type == tea.KeyF20 && !v.Paste && m.questionDialog == nil {
+		if v.Type == tea.KeyF20 && !v.Paste && !m.questionFocused() {
 			return m, m.toggleTerminal()
 		}
 		if m.terminalFocused() {
@@ -1188,7 +1258,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, background
 	case backgroundHistory:
-		if v.epoch != 0 && v.epoch != m.watchEpoch {
+		if !m.validSessionWatch(v.id, v.epoch) {
 			return m, nil
 		}
 		if m.backgroundErrors == nil {
@@ -1232,13 +1302,21 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, m.refresh()
 	case approvalResult:
-		if d := m.questionDialog; d != nil && d.id == v.id && d.run == v.run && d.request == v.request {
+		key := v.id + "/" + v.run + "/" + v.request
+		d := m.questionDrafts[key]
+		if current := m.questionDialog; current != nil && current.id == v.id && current.run == v.run && current.request == v.request {
+			d = current
+		}
+		if d != nil {
 			if v.err == nil {
-				m.closeQuestion()
+				delete(m.questionDrafts, key)
+				if m.questionDialog == d {
+					m.closeQuestion()
+				}
 			} else {
 				d.sending = false
 				d.message = "Answer failed: " + v.err.Error() + ". Not retried automatically."
-				delete(m.approvalSent, v.id+"/"+v.run+"/"+v.request)
+				delete(m.approvalSent, key)
 			}
 		}
 		if v.err != nil {
@@ -1516,7 +1594,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case received:
 		m.receiveEvent(v, true)
 	case caughtUp:
-		if v.epoch != m.watchEpoch {
+		if !m.validSessionWatch(v.id, v.epoch) {
 			return m, nil
 		}
 		if v.prepared != nil {
@@ -1531,6 +1609,16 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.render()
 		}
 		return m, nil
+	case sessionWatchEnded:
+		if !m.validSessionWatch(v.id, v.epoch) {
+			return m, nil
+		}
+		if w := m.sessionWatches[v.id]; w != nil {
+			w.cancel()
+			w.active = false
+			w.retryAfter = time.Now().Add(3 * time.Second)
+		}
+		return m.update(disconnected{v.id, v.err})
 	case disconnected:
 		if c := m.contextCapture; c != nil && c.id == v.id {
 			c.report.text = "Disconnected while querying context. Reopen /context after reconnecting."
@@ -1587,6 +1675,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.pasteDialog != nil {
 			return m, m.pasteKey(v)
 		}
+		if v.Type == tea.KeyCtrlP && !v.Paste && m.workflow == nil && m.restartConfirm == nil {
+			return m, m.openPastes()
+		}
 		if handled, cmd := m.chipKey(v); handled {
 			m.resize()
 			return m, cmd
@@ -1597,7 +1688,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.workflow != nil {
 			return m, m.workflowKey(v)
 		}
-		if m.questionDialog != nil {
+		if m.questionFocused() {
 			return m, m.questionKey(v)
 		}
 		if m.restartConfirm != nil {
@@ -1911,6 +2002,9 @@ func (m *model) View() (out string) {
 		out = m.recordingBadge(out)
 		m.debugRecorder.Add(debugEvent{Kind: "render", Duration: time.Since(start).Microseconds(), Count: len(out)})
 	}()
+	if m.sessionArchive != nil {
+		return m.sessionArchiveScreen()
+	}
 	if m.memoryPage != nil {
 		return m.memoryScreen()
 	}

@@ -27,6 +27,9 @@ type questionLayout struct {
 }
 
 func (d *questionDialog) activeRow() int {
+	if d.suspended {
+		return -1
+	}
 	if d.hovering {
 		return d.hoverRow
 	}
@@ -123,7 +126,7 @@ func (m *model) questionLayout() questionLayout {
 		prefix := "  "
 		if active == len(q.Options) {
 			prefix = "› "
-			if d.row == active && !d.sending {
+			if d.row == active && !d.sending && !d.suspended {
 				in.Focus()
 				in.Cursor.Blink = m.pulse%10 >= 5
 			}
@@ -198,7 +201,7 @@ func (m *model) questionPanel() string {
 		buttons += text
 	}
 	rows = append(rows, framed(buttons, false))
-	hint := muted.Render(fmt.Sprintf("%d–%d/%d · PgUp/Dn · Esc close", d.offset+1, min(len(l.lines), d.offset+l.capacity), len(l.lines)))
+	hint := muted.Render(fmt.Sprintf("%d–%d/%d · F6 focus · Ctrl+Q sessions · Esc close", d.offset+1, min(len(l.lines), d.offset+l.capacity), len(l.lines)))
 	if d.message != "" {
 		hint = warning.Render(pickerLabel(d.message))
 	}
@@ -236,6 +239,9 @@ func (m *model) questionMouse(v tea.MouseMsg) tea.Cmd {
 			delta = -delta
 		}
 		m.scrollQuestion(delta)
+	}
+	if v.Action == tea.MouseActionPress {
+		m.focusQuestion()
 	}
 	item := -1
 	row := v.Y - l.y - 1

@@ -105,7 +105,7 @@ func New(db *sql.DB, root string) (*Manager, error) {
 		if m.Container != "" {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			if _, err := dockerx.Run(ctx, "network", "inspect", p.Network); err == nil {
-				if err = dockerx.EnsureResource(ctx, "network", p.Network, m.Owner, p.ID); err != nil {
+				if err = m.ensureProjectNetwork(ctx, &p); err != nil {
 					cancel()
 					return nil, err
 				}
@@ -362,7 +362,7 @@ func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (result *api.
 	if p == nil {
 		h := sha256.Sum256([]byte(path))
 		id := hex.EncodeToString(h[:12])
-		p = &Project{ID: id, Workspace: path, Name: filepath.Base(path), Network: "cxz-" + m.Owner[:12] + "-" + id, Volume: "cxz-" + m.Owner[:12] + "-" + id + "-state", Token: core.ID() + core.ID()}
+		p = &Project{ID: id, Workspace: path, Name: filepath.Base(path), Network: m.sharedNetwork(), Volume: "cxz-" + m.Owner[:12] + "-" + id + "-state", Token: core.ID() + core.ID()}
 	}
 	lock := m.projectLock(p.ID)
 	lock.Lock()
@@ -431,6 +431,9 @@ func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (result *api.
 			return nil, e
 		}
 		p.ContainerID = ""
+	}
+	if r.Recreate && r.Confirmed {
+		p.Network = m.sharedNetwork()
 	}
 	if p.ContainerID != "" && p.ComposeOverrideDigest != composeDigest {
 		return nil, fmt.Errorf("devcontainer.compose changed; run cxz project recreate to apply it to the existing container")

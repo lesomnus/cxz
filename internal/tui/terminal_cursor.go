@@ -154,7 +154,7 @@ func (m *model) anchorCursor() {
 		case m.pasteDialog != nil:
 		case m.workflow != nil:
 			// The workflow owns its masked input; never anchor to the hidden form.
-		case m.questionDialog != nil:
+		case m.questionFocused():
 			q := m.questionDialog.questions[m.questionDialog.page]
 			if !q.Other || m.questionDialog.activeRow() != len(q.Options) || m.questionDialog.row != len(q.Options) || m.questionDialog.sending {
 				break
@@ -178,7 +178,7 @@ func (m *model) anchorCursor() {
 			copy.accountName.Cursor.Style = cursorProbeStyle
 			copy.accountSearch.Cursor.Style = cursorProbeStyle
 			x, y, ok = widgetCursor(copy.accountScreen())
-		case !m.projectView && !m.focusList && !m.focusApproval && m.report == nil && m.modelPicker == nil && m.restartConfirm == nil && m.questionDialog == nil:
+		case !m.projectView && !m.focusList && !m.focusApproval && m.report == nil && m.modelPicker == nil && m.restartConfirm == nil && !m.questionFocused():
 			copy := m.input
 			copy.Cursor.Blink = false
 			copy.Cursor.Style = cursorProbeStyle

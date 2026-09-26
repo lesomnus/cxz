@@ -25,42 +25,11 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind, composeOverri
 	if e = m.checkpoint(ctx, p, "configuration"); e != nil {
 		return e
 	}
-	if p.Config == "" {
-		configs := Discover(p.Workspace)
-		switch len(configs) {
-		case 0:
-			p.Config = filepath.Join(p.Workspace, ".devcontainer", "devcontainer.json")
-			if e = os.MkdirAll(filepath.Dir(p.Config), 0755); e != nil {
-				return e
-			}
-			if e = core.WriteJSON(p.Config, map[string]any{"name": p.Name, "image": "mcr.microsoft.com/devcontainers/base:bookworm", "remoteUser": "vscode"}); e != nil {
-				return e
-			}
-			if e = os.Chmod(p.Config, 0644); e != nil {
-				return e
-			}
-			if uid, err := strconv.Atoi(os.Getenv("CXZ_HOST_UID")); err == nil {
-				gid, err := strconv.Atoi(os.Getenv("CXZ_HOST_GID"))
-				if err != nil {
-					return err
-				}
-				if e = os.Chown(p.Config, uid, gid); e != nil {
-					return e
-				}
-				if e = os.Chown(filepath.Dir(p.Config), uid, gid); e != nil {
-					return e
-				}
-			}
-		case 1:
-			p.Config = configs[0]
-		default:
-			return fmt.Errorf("multiple devcontainer configurations: specify --config (%s)", strings.Join(configs, ", "))
-		}
+	configFile, e := m.provisionConfiguration(p)
+	if e != nil {
+		return e
 	}
-	if !filepath.IsAbs(p.Config) {
-		p.Config = filepath.Join(p.Workspace, p.Config)
-	}
-	raw, e := os.ReadFile(p.Config)
+	raw, e := os.ReadFile(configFile)
 	if e != nil {
 		return e
 	}
@@ -73,9 +42,9 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind, composeOverri
 		return e
 	}
 	if e = CheckTrust(cfg, p.Trusted); e != nil {
-		return fmt.Errorf("configuration %q: %w", p.Config, e)
+		return fmt.Errorf("configuration %q: %w", configFile, e)
 	}
-	base := filepath.Dir(p.Config)
+	base := filepath.Dir(configFile)
 	abspath := func(v any) any {
 		if s, ok := v.(string); ok && !filepath.IsAbs(s) {
 			return filepath.Join(base, s)
@@ -105,10 +74,8 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind, composeOverri
 	if e != nil {
 		return e
 	}
-	for _, name := range []string{p.Network} {
-		if e = dockerx.EnsureResource(ctx, "network", name, m.Owner, p.ID); e != nil {
-			return e
-		}
+	if e = m.ensureProjectNetwork(ctx, p); e != nil {
+		return e
 	}
 	if _, e = dockerx.Run(ctx, "network", "connect", p.Network, m.Container); e != nil {
 		v, ie := dockerx.Inspect(ctx, m.Container)
@@ -271,7 +238,7 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind, composeOverri
 	if e = m.writeRuntime(ctx, p, runtime); e != nil {
 		return e
 	}
-	cmd := exec.CommandContext(ctx, "devcontainer", "up", "--workspace-folder", p.Workspace, "--config", p.Config, "--override-config", configPath, "--id-label", "cxz.owner="+m.Owner, "--id-label", "cxz.project="+p.ID, "--id-label", "devcontainer.local_folder="+p.Workspace, "--mount-workspace-git-root=false", "--update-remote-user-uid-default", "off", "--include-merged-configuration")
+	cmd := exec.CommandContext(ctx, "devcontainer", "up", "--workspace-folder", p.Workspace, "--config", configFile, "--override-config", configPath, "--id-label", "cxz.owner="+m.Owner, "--id-label", "cxz.project="+p.ID, "--id-label", "devcontainer.local_folder="+p.Workspace, "--mount-workspace-git-root=false", "--update-remote-user-uid-default", "off", "--include-merged-configuration")
 	if e = m.checkpoint(ctx, p, "devcontainer-up"); e != nil {
 		return e
 	}

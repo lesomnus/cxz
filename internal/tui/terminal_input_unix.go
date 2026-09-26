@@ -149,6 +149,9 @@ func (r *keyboardReader) kittyKey(seq []byte) ([]byte, bool) {
 	if key == 96 && mod == 4 {
 		return []byte("\x1b[34~"), true
 	} // reserved terminal toggle bridge (F20)
+	if (key == 44 || key == 60) && mod == 5 {
+		return []byte("\x1b[33~"), true
+	} // reserved settings shortcut bridge (F19)
 	if key == 9 && mod == 1 {
 		return []byte("\x1b[Z"), true
 	}

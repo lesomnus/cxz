@@ -35,6 +35,7 @@ service SessionService {
   // once in that first message and once as a change that happened while it was
   // being read -- and that is harmless for the same reason.
   rpc Watch(SessionWatchRequest) returns (stream SessionWatchResponse);
+  rpc Restore(SessionRef) returns (Session);
   rpc Resume(SessionControl) returns (Session);
   rpc Stop(SessionControl) returns (Session);
   rpc Interrupt(SessionControl) returns (SessionReceipt);

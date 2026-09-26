@@ -49,10 +49,6 @@ func (m *model) backToProject() {
 	m.deleteConfirm = nil
 	m.wantID = ""
 	m.input.Reset()
-	if m.watchCancel != nil {
-		m.watchCancel()
-		m.watchCancel = nil
-	}
 	m.watchID = ""
 }
 

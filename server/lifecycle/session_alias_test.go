@@ -94,4 +94,13 @@ func TestSessionAliasPersistenceAndMigration(t *testing.T) {
 	if err != nil || s.GetRuntimeId() != "first" {
 		t.Fatal("alias resolution", err)
 	}
+	for _, alias := range []string{"My_work-2", "a__--", "web-"} {
+		if _, err := stack.Session().Patch(ctx, resource.SessionPatchRequest_builder{Ref: sessionRef("first"), Alias: &alias}.Build()); err != nil {
+			t.Fatal("storage rejected session grammar", alias, err)
+		}
+		got, err := stack.Session().Get(ctx, resource.SessionGetRequest_builder{Ref: resource.SessionRef_builder{Alias: &alias}.Build()}.Build())
+		if err != nil || got.GetRuntimeId() != "first" {
+			t.Fatal("alias lookup lost case or punctuation", alias, err)
+		}
+	}
 }

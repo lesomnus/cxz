@@ -252,7 +252,14 @@ Windows Terminal의 Windows 빌드도 VT 입력을 활성화해 붙여넣기 경
 `/paste`로 미리보기를 연다. `↑/↓`는 paste 선택, `PgUp/PgDn`은 미리보기 스크롤,
 `t`는 원문 전송, `f`는 파일 첨부 전환, `d`는 초안에서 제거, `Esc`는 닫기다.
 /paste 미리보기는 현재 입력에 남아 있는 칩만 표시한다. 삭제/전송한 칩은 캐시에서
-다시 표시하지 않는다. `Ctrl+P`는 공유 Docker 상태와 관리 액션이 있는 설정 화면을 연다.
+다시 표시하지 않는다. `Ctrl+P`는 붙여넣기 chip 상세보기를 열고,
+`Ctrl+Shift+,`는 공유 Docker 상태와 관리 액션이 있는 설정 화면을 연다.
+설정 단축키는 Windows 콘솔/Win32 입력과 Kitty 키보드 프로토콜에서 지원한다.
+Windows Terminal은 기본적으로 같은 키로 자체 설정 파일을 연다. cxz에 전달하려면
+Terminal 설정의 해당 키 바인딩을 해제한다. 최신 `settings.json`의 `keybindings`에
+`{ "id": "unbound", "keys": "ctrl+shift+," }`를 추가할 수 있다.
+[Windows Terminal 키 해제 안내](https://learn.microsoft.com/en-us/windows/terminal/customize-settings/actions#unbind-keys-disable-keybindings)를 참고한다.
+키 전달을 지원하지 않는 환경에서도 `/settings`로 설정 화면을 열 수 있다.
 
 파일 전환은 현재 세션의 runtime 영구 저장소에 업로드한 뒤 적용된다. `[File …]` 칩은
 원문 대신 에이전트가 읽을 수 있는 경로와 읽기 안내를 전송한다. 원문으로 되돌릴 수 있으며,
@@ -794,7 +801,9 @@ Unix TUI는 alternate screen에 있는 동안 Kitty disambiguation 모드를 요
 응답 프로토콜의 text에는 확정적 Markdown 형식 표시가 없다. 문법이 발견되면
 CommonMark/GFM으로 렌더링한다. 제목/목록/표/강조/코드를 지원하고 백틱 코드 구간은
 ANSI 238 배경이다. 코드 블록은 상하 여백 한 줄과 오른쪽 위 ⧉ 복사 버튼을 제공한다.
-화면 폭에 따른 줄바꿈이나 구문강조를 포함하지 않고 코드 원문을 복사한다. HTML·외부 이미지 fetch·OSC 링크 실행은 하지 않으며 원본 journal은 유지한다.
+화면 폭에 따른 줄바꿈이나 구문강조를 포함하지 않고 코드 원문을 복사한다. HTML·외부 이미지 fetch는 하지 않으며 원본 journal은 유지한다.
+HTTP(S) 링크는 전체 목적지를 유지한 OSC 8 하이퍼링크로 출력한다. 줄바꿈된 각 행도
+독립적으로 클릭할 수 있고, 원격 텍스트의 제어 시퀀스는 여전히 제거한다.
 물리 터미널 커서를 위젯의 실제 커서 칸으로 맞춰 IME 후보/조합 위치를 보정한다.
 줄바꿈/한글 셀 너비/스크롤/NO_COLOR를 고려하고 OAuth 화면에는 보정을 적용하지 않는다.
 사용자 OS IME의 미완성 글자 조합은 사용자 터미널에서 재확인이 필요하다.
@@ -804,8 +813,8 @@ ANSI 238 배경이다. 코드 블록은 상하 여백 한 줄과 오른쪽 위 �
 Ctrl+Q로 프로젝트 패널에 포커스를 준 뒤 세션 행에서 r로 alias 편집, Enter 저장, Esc 취소한다. 오류 시
 편집 상태를 유지한다. alias는 payday Session 필드/SQLite unique index로 저장하며
 새 세션과 기존 세션 모두 3–7자 영단어가 무작위 할당된다. 직접 변경은 3–20자로
-소문자 a–z, 숫자, 하이픈을 허용하며 첫 글자는 영문자여야 하고 하이픈은 연속하거나
-끝에 올 수 없다. 언더스코어는 payday alias 문법이 DNS 레이블 호환을 위해 제외한다.
+영문 대소문자, 숫자, 하이픈(-), 언더스코어(_)를 허용하며 첫 글자는 영문자여야 한다.
+대소문자를 보존하고 구분한다. DNS 호스트명이 아닌 세션 식별자이므로 연속/끝 기호도 허용한다.
 상한이 20자인 것은 24자 런타임 ID와 길이만으로 구분하기 위해서다.
 session 명령에도 alias를 사용할 수 있다. 삭제 시 alias는 해제하고
 저널은 보존한다. 단어 풀이 모두 사용 중이면 숫자 접미사를 만들지 않고 오류를 반환한다.
@@ -821,8 +830,13 @@ TUI/API에서 명시적으로 요청한 삭제는 payday Listed=false를 영속 
 논리 삭제다. `down`은 이 삭제를 수행하지 않는다. 삭제된 항목은 일반 목록·Get·
 세션 제어에서 제외하며 재시작/상태 동기화가 복원하지 않는다. up으로 같은 workspace를
 명시적으로 다시 등록할 수 있지만 이전 세션은 복원하지 않는다. 볼륨과 보관된 저널은
-삭제하지 않는다. 복구 UI는 없으며 resources.db를 수동 제거·재구축하면 tombstone도
-잃을 수 있으므로 resource DB를 포함해 백업해야 한다.
+삭제하지 않는다. 프로젝트에서 n/Ctrl+N → 새 세션 계정 선택 → Ctrl+R로 삭제된 세션을
+조회하고 Enter로 복원한다. 같은 세션 ID, 에이전트 대화 ID, 파일, 계정 및 저널에 저장된
+설정을 유지하며 사용 가능한 alias를 새로 할당한다. 복원 직후는 중지 상태이며 명시적으로
+재개한다. 삭제된 프로젝트는 먼저 다시 등록해야 한다. resources.db를 수동 제거·재구축하면
+tombstone도 잃을 수 있으므로 resource DB를 포함해 백업해야 한다.
+영구 정리는 별도 `cxz purge` TUI에서 설치 단위의 삭제 대상을 검토한다.
+세션별 영구 삭제나 원격 TUI 안에서 설치 전체 purge를 실행하는 기능은 제공하지 않는다.
 
 `session new`/`project up`/`project recreate`에서 새 세션의 계정 선택이 필요하면 검색 가능한 TUI를 연다.
 목록에서 ↑/↓(Ctrl-P/Ctrl-N)로 이동하고 Enter로 확정한다. 하단 Search 입력창은
@@ -889,3 +903,32 @@ agent enum, alias, 모델, 이름, 수정값 누락, config 키, 답변 JSON은 
 stderr, `--no-attach`, JSON 출력에서도 오류 화면을 열지 않는다.
 기존 `--trust-config`를 명시하면 신뢰 선택 없이 진행한다.
 Exit 및 실패의 종료 코드는 0이 아니다.
+
+## 세션 전환과 질문 포커스
+
+목록에 있는 모든 세션의 대화 스트림을 세션별 cursor로 계속 구독한다. 비선택 세션은
+대화 캐시만 갱신하며 현재 보이는 대화의 스크롤과 작성 중인 입력을 바꾸지 않는다.
+처음 연결할 때 최근 대화를 읽는 요청은 최대 4개씩 진행한다. 세션 전환은 캐시를 즉시
+표시하며 재구독하지 않는다. 삭제/연결 종료 시 구독을 정리하고 재접속은 저장한 cursor부터
+재개한다. 서버에서 아직 도착하지 않은 이벤트는 정상적으로 후속 갱신된다.
+
+질문은 `F6`로 대화 입력과 포커스를 오갈 수 있고, `Ctrl+Q`로 세션 목록을 탐색할 수 있다.
+질문 밖을 클릭하거나 대화 위에서 휠을 움직여도 포커스가 이동하며 답변 선택과 입력은 남는다.
+질문 패널 클릭, F6 또는 `/answer`로 돌아온다. 다른 세션을 보고 돌아와도 보류 중인
+질문의 초안을 유지한다. Esc/Cancel은 기존처럼 질문 UI를 닫는다.
+
+## 기본 devcontainer와 관리 네트워크
+
+`.devcontainer/devcontainer.json`, `.devcontainer.json` 등 자동 탐색 대상이 없으면
+`mcr.microsoft.com/devcontainers/base:bookworm`과 `vscode` 사용자를 기본으로 쓴다.
+생성 설정은 manager 상태의 `projects/<ID>/default-devcontainer.json`에 저장하며
+워크스페이스 저장소에 파일을 만들지 않는다. 나중에 실제 devcontainer 설정을 추가하면
+다음 준비 시 탐색한다. 명시한 `--config` 파일이 없거나 설정이 잘못되면 오류를 유지한다.
+
+새 프로젝트는 설치당 `cxz-<owner prefix>-workspaces` 네트워크 하나를 공유한다.
+프로젝트마다 별도 cxz bridge/subnet을 할당하지 않으며 manager와 공유 Docker 엔진도
+같은 관리망에 연결한다. 이 망은 프로젝트 간 네트워크 격리를 제공하지 않는다.
+프로젝트 Compose가 선언한 서비스 네트워크는 그대로 둔다. 기존 프로젝트의 저장된 망은
+유지하고, 명시적 `project recreate` 때 공유망으로 전환한다. 기존 네트워크를 일괄 삭제하거나
+호스트 `daemon.json`을 변경하지 않는다. 공유망 최초 생성과 사용자 Compose 네트워크에는
+여전히 Docker의 주소 풀 설정이 적용되므로 LAN/VPN과 겹치지 않는 대역을 호스트에서 설정한다.

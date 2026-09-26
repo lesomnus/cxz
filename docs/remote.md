@@ -129,7 +129,7 @@ have a row, so they can still be selected for accounts, settings or a new
 workspace. IDs are scoped within the frontend, so equal IDs on different daemons
 do not share drafts, event history or pending approvals.
 
-Accounts, new sessions and Ctrl+P Docker settings target the selected connection
+Accounts, new sessions and Ctrl+Shift+, Docker settings target the selected connection
 (or the current conversation when the project panel is not focused).
 An open settings/accounts view retains that target. Memory copy targets are
 limited to stopped sessions for the same agent on the same connection; copying

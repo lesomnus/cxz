@@ -12,7 +12,7 @@ type activityReported struct{}
 
 func (m *model) reportActivity() tea.Cmd {
 	s := m.current()
-	if m.program == nil || s == nil || m.activityID == "" || time.Since(m.lastActivityReport) < 10*time.Second {
+	if m.program == nil || m.projectView || m.accountView || s == nil || m.activityID == "" || time.Since(m.lastActivityReport) < 10*time.Second {
 		return nil
 	}
 	m.lastActivityReport = time.Now()

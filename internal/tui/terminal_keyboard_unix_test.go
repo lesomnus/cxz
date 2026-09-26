@@ -20,6 +20,16 @@ func TestTerminalToggleKittyAndPaste(t *testing.T) {
 	}
 }
 
+func TestSettingsKittyShortcut(t *testing.T) {
+	r := keyboardReader{}
+	for _, seq := range []string{"\x1b[44;6u", "\x1b[60;6u"} {
+		out, pending := r.translate([]byte(seq), true)
+		if string(out) != "\x1b[33~" || len(pending) != 0 {
+			t.Fatal("Ctrl+Shift+, lost", string(out))
+		}
+	}
+}
+
 func TestKittyUnicodeCommit(t *testing.T) {
 	r := keyboardReader{}
 	for _, input := range []string{"한글", "\x1b[54620u\x1b[44544u"} {
