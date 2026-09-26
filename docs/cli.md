@@ -189,7 +189,11 @@ Docker 환경변수/명령 인수에 토큰을 넣지 않는다. Claude/Codex의
 `cxz project recreate WORKSPACE`로 재생성한다. 기존 사용자 gh, GH_CONFIG_DIR 환경변수와 관련된
 차이까지 적용하려면 재생성이 필요하다. 이후 호스트 로그인 변경/로그아웃 후 `cxz up WORKSPACE`는
 해당 실행 중 프로젝트의 credential snapshot을 다시 복사하며, 로그아웃한 인증은 빈 snapshot으로
-제거한다. 다른 프로젝트는 각각 up/재준비할 때 갱신된다. 상시 토큰 갱신 broker는 아니다.
+제거한다. `cxz github sync`는 프로젝트를 하나씩 up 하지 않고 실행 중인 전체 프로젝트에 한 번에
+다시 복사한다. 컨테이너는 건드리지 않으므로 실행 중인 세션은 그대로 유지된다. 호스트에서
+`gh auth refresh -s workflow`처럼 scope를 올린 뒤 이 명령을 쓰면 토큰 하나를 공유하게 되어,
+프로젝트마다 `gh auth login`을 반복해 OAuth 토큰 상한에 걸리는 상황을 피할 수 있다.
+정지된 프로젝트는 각각 up/재준비할 때 갱신된다. 상시 토큰 갱신 broker는 아니다.
 `gh auth setup-git`, SSH 키 전달, 사용자 gitconfig 전체 복사는 자동 수행하지 않는다.
 
 참고: [gh 환경변수](https://cli.github.com/manual/gh_help_environment),
@@ -394,6 +398,7 @@ cxz --format json project ls
 | `account ls`, `backend ls` | 인자 없음 |
 | `account get ACCOUNT`, `binding ls ACCOUNT` | 계정 필수 |
 | `account login ACCOUNT`, `account status ACCOUNT` | 계정 필수. 프로젝트별 OAuth는 `--project` 기본 현재 디렉터리. 중앙 인증은 프로젝트 불필요하며 명시적 `--project` 거부 |
+| `github sync` | 인자 없음. 현재 호스트 gh 자격증명을 manager snapshot과 실행 중인 모든 프로젝트에 다시 복사 |
 | `project add PROJECT` | 등록 대상 필수. `--name`, `--alias`는 자동 결정 가능 |
 | `project set PROJECT` | 대상 필수이며 `--name`, `--alias` 중 하나 이상 필수 |
 | `session new [WORKSPACE]` | 경로 기본 `.`. 새 세션의 `--account`는 터미널에서 선택, 비대화형에서는 필수 |
