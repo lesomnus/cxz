@@ -150,9 +150,15 @@ security boundary against processes sharing the container's OS user.
 The TUI is a client of the running session, not its approval executor. A dedicated
 Permission RPC saves `ask` or `full` to the supervisor journal, and the resource
 status reports the saved mode. The manager routes that RPC to the project runtime.
-The supervisor handles supported pending/future approvals in `full`, through the
+The supervisor handles pending/future approvals in `full`, through the
 same durable command path as manual replies, independently of attached clients.
-Questions and unknown methods remain pending for an explicit answer.
+`full` approves every permission request, whichever tool or method carries it:
+an allowlist would only move the prompt to whatever the provider ships next,
+which is the friction the mode exists to remove, and the container — not the
+name of a tool — is what makes the mode defensible (§7). Questions remain
+pending for an explicit answer, because an answer is content and no policy
+implies one. Codex server calls cxz does not implement are still refused at the
+protocol level rather than approved.
 
 The mode belongs to the session rather than its current run. Restart/resume,
 manager replacement and recreation with preserved session storage retain it;

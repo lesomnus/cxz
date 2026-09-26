@@ -19,9 +19,7 @@ type approvalResult struct {
 	err              error
 }
 
-func question(p *api.Event) bool {
-	return p.Text == "AskUserQuestion" || p.Text == "item/tool/requestUserInput" || p.Text == agentview.CodexAsyncQuestion
-}
+func question(p *api.Event) bool          { return core.Question(p.Text) }
 func automaticApproval(p *api.Event) bool { return core.AutomaticApproval(p.Text) }
 func permissionState(state string) bool {
 	return state == "idle" || state == "working" || state == "waiting_input"
