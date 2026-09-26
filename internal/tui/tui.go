@@ -387,6 +387,19 @@ func (m *model) current() *api.Session {
 	m.selected = min(m.selected, len(m.sessions)-1)
 	return m.sessions[m.selected]
 }
+
+// The project list carries sessions the current project does not, so a lookup
+// by ID has to consult both.
+func (m *model) session(id string) *api.Session {
+	for _, list := range [][]*api.Session{m.sessions, m.allSessions} {
+		for _, s := range list {
+			if s.Id == id {
+				return s
+			}
+		}
+	}
+	return nil
+}
 func (m *model) watch() {
 	if m.projectView || m.program == nil {
 		return
