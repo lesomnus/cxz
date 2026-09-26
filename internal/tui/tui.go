@@ -1302,13 +1302,21 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, m.refresh()
 	case approvalResult:
-		if d := m.questionDialog; d != nil && d.id == v.id && d.run == v.run && d.request == v.request {
+		key := v.id + "/" + v.run + "/" + v.request
+		d := m.questionDrafts[key]
+		if current := m.questionDialog; current != nil && current.id == v.id && current.run == v.run && current.request == v.request {
+			d = current
+		}
+		if d != nil {
 			if v.err == nil {
-				m.closeQuestion()
+				delete(m.questionDrafts, key)
+				if m.questionDialog == d {
+					m.closeQuestion()
+				}
 			} else {
 				d.sending = false
 				d.message = "Answer failed: " + v.err.Error() + ". Not retried automatically."
-				delete(m.approvalSent, v.id+"/"+v.run+"/"+v.request)
+				delete(m.approvalSent, key)
 			}
 		}
 		if v.err != nil {

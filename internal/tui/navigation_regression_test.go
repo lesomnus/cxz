@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"errors"
 	"strings"
 	"testing"
 
@@ -107,6 +108,33 @@ func TestQuestionDraftSurvivesMouseNavigationAndTerminalFocus(t *testing.T) {
 	m.Update(tea.KeyMsg{Type: tea.KeyF6})
 	if !m.questionFocused() || m.terminalFocused() || m.input.Focused() {
 		t.Fatal("F6 did not transfer focus from the terminal back to the question")
+	}
+}
+
+func TestQuestionReplyFinishesAfterSwitchingSessions(t *testing.T) {
+	for _, fail := range []bool{false, true} {
+		m := questionModel()
+		m.syncQuestion()
+		d := m.questionDialog
+		d.sending = true
+		d.other[0].SetValue("retained answer")
+		key := d.id + "/" + d.run + "/" + d.request
+		m.approvalSent = map[string]bool{key: true}
+		m.saveQuestionDraft()
+		m.questionDialog = nil
+		m.sessions = []*api.Session{{Id: "other", ProjectId: "p", Agent: "claude"}}
+		result := approvalResult{id: d.id, run: d.run, request: d.request}
+		if fail {
+			result.err = errors.New("offline")
+		}
+		m.Update(result)
+		if fail {
+			if d.sending || m.approvalSent[key] || !strings.Contains(d.message, "offline") || d.other[0].Value() != "retained answer" {
+				t.Fatal("background answer failure left its draft stuck sending")
+			}
+		} else if m.questionDrafts[key] != nil {
+			t.Fatal("answered question draft was retained")
+		}
 	}
 }
 
