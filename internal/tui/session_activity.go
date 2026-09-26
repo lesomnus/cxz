@@ -90,7 +90,9 @@ func (m *model) observeSessions(sessions []*api.Session) tea.Cmd {
 		}
 		if workingState(a.state) && s.State == "idle" && s.LastSeq > a.notified {
 			a.notified = s.LastSeq
-			cmds = append(cmds, requestSound(notification.Complete))
+			if !m.hasActiveBackground(s) {
+				cmds = append(cmds, requestSound(notification.Complete))
+			}
 		}
 		// Resource updates are coalesced. A short turn can begin and end between
 		// two idle snapshots. Inspect only the new range in that case; unrelated
@@ -149,7 +151,9 @@ func (m *model) receiveCompletion(v completionChecked) tea.Cmd {
 		a.done = max(a.done, v.done)
 		if v.done > a.notified {
 			a.notified = v.done
-			return requestSound(notification.Complete)
+			if !m.hasActiveBackground(m.session(v.id)) {
+				return requestSound(notification.Complete)
+			}
 		}
 	}
 	return nil
