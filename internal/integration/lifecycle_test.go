@@ -21,6 +21,9 @@ import (
 )
 
 func TestLifecycle(t *testing.T) {
+	// The daemon inherits this environment. Running inside a cxz session would
+	// otherwise start it as a project runtime and look for a runtime.json.
+	t.Setenv("CXZ_PROJECT_ID", "")
 	// Short paths are intentional: Linux Unix sockets have a 108-byte path limit.
 	root, e := os.MkdirTemp("", "cxz-it-")
 	if e != nil {
