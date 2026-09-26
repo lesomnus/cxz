@@ -48,7 +48,7 @@ func (m *Manager) Register(ctx context.Context, path, config string) (*api.Proje
 	if len(m.Owner) < 12 {
 		return nil, fmt.Errorf("invalid manager owner")
 	}
-	p := &Project{ID: id, Workspace: path, Name: filepath.Base(path), Config: config, Network: "cxz-" + m.Owner[:12] + "-" + id, Volume: "cxz-" + m.Owner[:12] + "-" + id + "-state", Token: core.ID() + core.ID()}
+	p := &Project{ID: id, Workspace: path, Name: filepath.Base(path), Config: config, Network: m.sharedNetwork(), Volume: "cxz-" + m.Owner[:12] + "-" + id + "-state", Token: core.ID() + core.ID()}
 	if err = m.save(ctx, p); err != nil {
 		return nil, err
 	}

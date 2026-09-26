@@ -5129,7 +5129,7 @@ const file_cxz_session_svc_g_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.SessionRefR\x03ref\"G\n" +
 	"\x16SessionBackgroundReply\x12\x19\n" +
 	"\blast_seq\x18\x01 \x01(\x04R\alastSeq\x12\x12\n" +
-	"\x04data\x18\x02 \x01(\fR\x04data2\xb3\n" +
+	"\x04data\x18\x02 \x01(\fR\x04data2\xdd\n" +
 	"\n" +
 	"\x0eSessionService\x12+\n" +
 	"\x03Add\x12\x16.cxz.SessionAddRequest\x1a\f.cxz.Session\x12+\n" +
@@ -5138,7 +5138,8 @@ const file_cxz_session_svc_g_proto_rawDesc = "" +
 	"\x05Apply\x12\x18.cxz.SessionApplyRequest\x1a\f.cxz.Session\x123\n" +
 	"\x05Erase\x12\x0f.cxz.SessionRef\x1a\x19.cxz.SessionEraseResponse\x129\n" +
 	"\x04List\x12\x17.cxz.SessionListRequest\x1a\x18.cxz.SessionListResponse\x12>\n" +
-	"\x05Watch\x12\x18.cxz.SessionWatchRequest\x1a\x19.cxz.SessionWatchResponse0\x01\x12+\n" +
+	"\x05Watch\x12\x18.cxz.SessionWatchRequest\x1a\x19.cxz.SessionWatchResponse0\x01\x12(\n" +
+	"\aRestore\x12\x0f.cxz.SessionRef\x1a\f.cxz.Session\x12+\n" +
 	"\x06Resume\x12\x13.cxz.SessionControl\x1a\f.cxz.Session\x12)\n" +
 	"\x04Stop\x12\x13.cxz.SessionControl\x1a\f.cxz.Session\x125\n" +
 	"\tInterrupt\x12\x13.cxz.SessionControl\x1a\x13.cxz.SessionReceipt\x12@\n" +
@@ -5251,47 +5252,49 @@ var file_cxz_session_svc_g_proto_depIdxs = []int32{
 	2,  // 41: cxz.SessionService.Erase:input_type -> cxz.SessionRef
 	7,  // 42: cxz.SessionService.List:input_type -> cxz.SessionListRequest
 	10, // 43: cxz.SessionService.Watch:input_type -> cxz.SessionWatchRequest
-	13, // 44: cxz.SessionService.Resume:input_type -> cxz.SessionControl
-	13, // 45: cxz.SessionService.Stop:input_type -> cxz.SessionControl
-	13, // 46: cxz.SessionService.Interrupt:input_type -> cxz.SessionControl
-	15, // 47: cxz.SessionService.CopyMemory:input_type -> cxz.SessionCopyMemoryRequest
-	16, // 48: cxz.SessionService.Memory:input_type -> cxz.SessionMemoryRequest
-	18, // 49: cxz.SessionService.Logs:input_type -> cxz.SessionLogsRequest
-	20, // 50: cxz.SessionService.Permission:input_type -> cxz.SessionPermissionRequest
-	21, // 51: cxz.SessionService.Send:input_type -> cxz.SessionSendRequest
-	22, // 52: cxz.SessionService.Attach:input_type -> cxz.SessionAttachRequest
-	24, // 53: cxz.SessionService.Upload:input_type -> cxz.SessionUploadRequest
-	25, // 54: cxz.SessionService.Activity:input_type -> cxz.SessionActivityRequest
-	26, // 55: cxz.SessionService.UpdateAgent:input_type -> cxz.SessionUpdateRequest
-	28, // 56: cxz.SessionService.Reply:input_type -> cxz.SessionReplyRequest
-	29, // 57: cxz.SessionService.History:input_type -> cxz.SessionEventsRequest
-	31, // 58: cxz.SessionService.Background:input_type -> cxz.SessionBackgroundRequest
-	29, // 59: cxz.SessionService.Events:input_type -> cxz.SessionEventsRequest
-	42, // 60: cxz.SessionService.Add:output_type -> cxz.Session
-	42, // 61: cxz.SessionService.Get:output_type -> cxz.Session
-	42, // 62: cxz.SessionService.Patch:output_type -> cxz.Session
-	42, // 63: cxz.SessionService.Apply:output_type -> cxz.Session
-	6,  // 64: cxz.SessionService.Erase:output_type -> cxz.SessionEraseResponse
-	8,  // 65: cxz.SessionService.List:output_type -> cxz.SessionListResponse
-	11, // 66: cxz.SessionService.Watch:output_type -> cxz.SessionWatchResponse
-	42, // 67: cxz.SessionService.Resume:output_type -> cxz.Session
-	42, // 68: cxz.SessionService.Stop:output_type -> cxz.Session
-	14, // 69: cxz.SessionService.Interrupt:output_type -> cxz.SessionReceipt
-	14, // 70: cxz.SessionService.CopyMemory:output_type -> cxz.SessionReceipt
-	17, // 71: cxz.SessionService.Memory:output_type -> cxz.SessionMemoryReply
-	19, // 72: cxz.SessionService.Logs:output_type -> cxz.SessionLogsReply
-	14, // 73: cxz.SessionService.Permission:output_type -> cxz.SessionReceipt
-	14, // 74: cxz.SessionService.Send:output_type -> cxz.SessionReceipt
-	23, // 75: cxz.SessionService.Attach:output_type -> cxz.SessionAttachment
-	23, // 76: cxz.SessionService.Upload:output_type -> cxz.SessionAttachment
-	14, // 77: cxz.SessionService.Activity:output_type -> cxz.SessionReceipt
-	27, // 78: cxz.SessionService.UpdateAgent:output_type -> cxz.SessionUpdateStatus
-	14, // 79: cxz.SessionService.Reply:output_type -> cxz.SessionReceipt
-	30, // 80: cxz.SessionService.History:output_type -> cxz.SessionEventBatch
-	32, // 81: cxz.SessionService.Background:output_type -> cxz.SessionBackgroundReply
-	43, // 82: cxz.SessionService.Events:output_type -> cxz.SessionEvent
-	60, // [60:83] is the sub-list for method output_type
-	37, // [37:60] is the sub-list for method input_type
+	2,  // 44: cxz.SessionService.Restore:input_type -> cxz.SessionRef
+	13, // 45: cxz.SessionService.Resume:input_type -> cxz.SessionControl
+	13, // 46: cxz.SessionService.Stop:input_type -> cxz.SessionControl
+	13, // 47: cxz.SessionService.Interrupt:input_type -> cxz.SessionControl
+	15, // 48: cxz.SessionService.CopyMemory:input_type -> cxz.SessionCopyMemoryRequest
+	16, // 49: cxz.SessionService.Memory:input_type -> cxz.SessionMemoryRequest
+	18, // 50: cxz.SessionService.Logs:input_type -> cxz.SessionLogsRequest
+	20, // 51: cxz.SessionService.Permission:input_type -> cxz.SessionPermissionRequest
+	21, // 52: cxz.SessionService.Send:input_type -> cxz.SessionSendRequest
+	22, // 53: cxz.SessionService.Attach:input_type -> cxz.SessionAttachRequest
+	24, // 54: cxz.SessionService.Upload:input_type -> cxz.SessionUploadRequest
+	25, // 55: cxz.SessionService.Activity:input_type -> cxz.SessionActivityRequest
+	26, // 56: cxz.SessionService.UpdateAgent:input_type -> cxz.SessionUpdateRequest
+	28, // 57: cxz.SessionService.Reply:input_type -> cxz.SessionReplyRequest
+	29, // 58: cxz.SessionService.History:input_type -> cxz.SessionEventsRequest
+	31, // 59: cxz.SessionService.Background:input_type -> cxz.SessionBackgroundRequest
+	29, // 60: cxz.SessionService.Events:input_type -> cxz.SessionEventsRequest
+	42, // 61: cxz.SessionService.Add:output_type -> cxz.Session
+	42, // 62: cxz.SessionService.Get:output_type -> cxz.Session
+	42, // 63: cxz.SessionService.Patch:output_type -> cxz.Session
+	42, // 64: cxz.SessionService.Apply:output_type -> cxz.Session
+	6,  // 65: cxz.SessionService.Erase:output_type -> cxz.SessionEraseResponse
+	8,  // 66: cxz.SessionService.List:output_type -> cxz.SessionListResponse
+	11, // 67: cxz.SessionService.Watch:output_type -> cxz.SessionWatchResponse
+	42, // 68: cxz.SessionService.Restore:output_type -> cxz.Session
+	42, // 69: cxz.SessionService.Resume:output_type -> cxz.Session
+	42, // 70: cxz.SessionService.Stop:output_type -> cxz.Session
+	14, // 71: cxz.SessionService.Interrupt:output_type -> cxz.SessionReceipt
+	14, // 72: cxz.SessionService.CopyMemory:output_type -> cxz.SessionReceipt
+	17, // 73: cxz.SessionService.Memory:output_type -> cxz.SessionMemoryReply
+	19, // 74: cxz.SessionService.Logs:output_type -> cxz.SessionLogsReply
+	14, // 75: cxz.SessionService.Permission:output_type -> cxz.SessionReceipt
+	14, // 76: cxz.SessionService.Send:output_type -> cxz.SessionReceipt
+	23, // 77: cxz.SessionService.Attach:output_type -> cxz.SessionAttachment
+	23, // 78: cxz.SessionService.Upload:output_type -> cxz.SessionAttachment
+	14, // 79: cxz.SessionService.Activity:output_type -> cxz.SessionReceipt
+	27, // 80: cxz.SessionService.UpdateAgent:output_type -> cxz.SessionUpdateStatus
+	14, // 81: cxz.SessionService.Reply:output_type -> cxz.SessionReceipt
+	30, // 82: cxz.SessionService.History:output_type -> cxz.SessionEventBatch
+	32, // 83: cxz.SessionService.Background:output_type -> cxz.SessionBackgroundReply
+	43, // 84: cxz.SessionService.Events:output_type -> cxz.SessionEvent
+	61, // [61:85] is the sub-list for method output_type
+	37, // [37:61] is the sub-list for method input_type
 	37, // [37:37] is the sub-list for extension type_name
 	37, // [37:37] is the sub-list for extension extendee
 	0,  // [0:37] is the sub-list for field type_name

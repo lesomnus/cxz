@@ -75,7 +75,7 @@ func Build(ctx context.Context, db *sql.DB, r Runtime) (resource.Server, error) 
 		return nil, err
 	}
 	// Publish each committed Sink call, including background projection writes.
-	return resource.Build(sink.WithWatch(w), pd.InterceptBuild([]grpc.UnaryServerInterceptor{w.Unary()}, nil), builder{&shared{runtime: r}}, pd.AuditBuild(), pd.GateBuild())
+	return resource.Build(sessionNamingSink{sink.WithWatch(w)}, pd.InterceptBuild([]grpc.UnaryServerInterceptor{w.Unary()}, nil), builder{&shared{runtime: r}}, pd.AuditBuild(), pd.GateBuild())
 }
 func (s Layer) WithDriver(d dialect.Driver) (resource.Server, error) {
 	next, err := enttx.Rebind(s.Next(), d)

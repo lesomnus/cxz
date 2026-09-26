@@ -24,7 +24,7 @@ func (m *model) selectingTools() bool {
 	return m.toolSelector != nil && s != nil && m.toolSelector.session == s.Id && !m.projectView && !m.accountView
 }
 func (m *model) previewInteraction() bool {
-	return m.workflow == nil && m.questionDialog == nil && m.report == nil && m.modelPicker == nil && m.restartConfirm == nil && m.pasteDialog == nil && m.redactDialog == nil && !m.panelFocus
+	return m.workflow == nil && !m.questionFocused() && m.report == nil && m.modelPicker == nil && m.restartConfirm == nil && m.pasteDialog == nil && m.redactDialog == nil && !m.panelFocus
 }
 
 // Use rendered journal coordinates: hidden paired results are not separate targets.

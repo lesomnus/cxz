@@ -178,7 +178,7 @@ func (m *model) debugState() *debugState {
 		focus = "settings"
 	case m.memoryPage != nil:
 		focus = "memory"
-	case m.questionDialog != nil:
+	case m.questionFocused():
 		focus = "question"
 	case m.pasteDialog != nil:
 		focus = "paste"

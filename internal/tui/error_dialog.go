@@ -49,7 +49,7 @@ func (m *model) errorFocused() bool {
 }
 
 func (m *model) errorInteraction() bool {
-	return m.questionDialog == nil && m.report == nil && m.modelPicker == nil &&
+	return !m.questionFocused() && m.report == nil && m.modelPicker == nil &&
 		m.restartConfirm == nil && m.pasteDialog == nil && m.redactDialog == nil
 }
 

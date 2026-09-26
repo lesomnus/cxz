@@ -111,6 +111,9 @@ func TestDeletionTombstonesSurviveSnapshots(t *testing.T) {
 				}
 			}
 			if kind == "project" {
+				if _, err = stack.Session().Restore(ctx, sessionRef("session")); status.Code(err) != codes.FailedPrecondition {
+					t.Fatal("restored into deleted project", err)
+				}
 				if _, err = stack.Project().Add(ctx, resource.ProjectAddRequest_builder{Workspace: "/work"}.Build()); err != nil {
 					t.Fatal("cannot register removed workspace", err)
 				}
@@ -118,6 +121,27 @@ func TestDeletionTombstonesSurviveSnapshots(t *testing.T) {
 				if err != nil || len(ss.GetItems()) != 0 {
 					t.Fatal("old sessions reappeared", err)
 				}
+			}
+			archived, err := stack.Session().List(ctx, resource.SessionListRequest_builder{Filters: []*resource.SessionFilter{resource.SessionFilter_builder{Listed: ptr(false), Project: projectRef("project")}.Build()}}.Build())
+			if err != nil || len(archived.GetItems()) != 1 {
+				t.Fatal("archive not listed", archived, err)
+			}
+			old := archived.GetItems()[0]
+			restored, err := stack.Session().Restore(ctx, sessionRef("session"))
+			if err != nil || !restored.GetListed() || restored.GetRuntimeId() != old.GetRuntimeId() || restored.GetClientId() != old.GetClientId() || restored.GetAlias() == "" || restored.GetStatus().GetRunId() != old.GetStatus().GetRunId() {
+				t.Fatal("restore lost durable identity", restored, err)
+			}
+			again, err := stack.Session().Restore(ctx, sessionRef("session"))
+			if err != nil || again.GetAlias() != restored.GetAlias() {
+				t.Fatal("restore not idempotent", err)
+			}
+			stack, err = Build(ctx, db, f)
+			if err != nil {
+				t.Fatal(err)
+			}
+			live, err := stack.Session().List(ctx, &resource.SessionListRequest{})
+			if err != nil || len(live.GetItems()) != 1 {
+				t.Fatal("restore did not survive restart", err)
 			}
 		})
 	}

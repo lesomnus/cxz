@@ -26,6 +26,7 @@ const (
 	SessionService_Erase_FullMethodName       = "/cxz.SessionService/Erase"
 	SessionService_List_FullMethodName        = "/cxz.SessionService/List"
 	SessionService_Watch_FullMethodName       = "/cxz.SessionService/Watch"
+	SessionService_Restore_FullMethodName     = "/cxz.SessionService/Restore"
 	SessionService_Resume_FullMethodName      = "/cxz.SessionService/Resume"
 	SessionService_Stop_FullMethodName        = "/cxz.SessionService/Stop"
 	SessionService_Interrupt_FullMethodName   = "/cxz.SessionService/Interrupt"
@@ -72,6 +73,7 @@ type SessionServiceClient interface {
 	// once in that first message and once as a change that happened while it was
 	// being read -- and that is harmless for the same reason.
 	Watch(ctx context.Context, in *SessionWatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SessionWatchResponse], error)
+	Restore(ctx context.Context, in *SessionRef, opts ...grpc.CallOption) (*Session, error)
 	Resume(ctx context.Context, in *SessionControl, opts ...grpc.CallOption) (*Session, error)
 	Stop(ctx context.Context, in *SessionControl, opts ...grpc.CallOption) (*Session, error)
 	Interrupt(ctx context.Context, in *SessionControl, opts ...grpc.CallOption) (*SessionReceipt, error)
@@ -177,6 +179,16 @@ func (c *sessionServiceClient) Watch(ctx context.Context, in *SessionWatchReques
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type SessionService_WatchClient = grpc.ServerStreamingClient[SessionWatchResponse]
+
+func (c *sessionServiceClient) Restore(ctx context.Context, in *SessionRef, opts ...grpc.CallOption) (*Session, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Session)
+	err := c.cc.Invoke(ctx, SessionService_Restore_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
 
 func (c *sessionServiceClient) Resume(ctx context.Context, in *SessionControl, opts ...grpc.CallOption) (*Session, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
@@ -378,6 +390,7 @@ type SessionServiceServer interface {
 	// once in that first message and once as a change that happened while it was
 	// being read -- and that is harmless for the same reason.
 	Watch(*SessionWatchRequest, grpc.ServerStreamingServer[SessionWatchResponse]) error
+	Restore(context.Context, *SessionRef) (*Session, error)
 	Resume(context.Context, *SessionControl) (*Session, error)
 	Stop(context.Context, *SessionControl) (*Session, error)
 	Interrupt(context.Context, *SessionControl) (*SessionReceipt, error)
@@ -425,6 +438,9 @@ func (UnimplementedSessionServiceServer) List(context.Context, *SessionListReque
 }
 func (UnimplementedSessionServiceServer) Watch(*SessionWatchRequest, grpc.ServerStreamingServer[SessionWatchResponse]) error {
 	return status.Error(codes.Unimplemented, "method Watch not implemented")
+}
+func (UnimplementedSessionServiceServer) Restore(context.Context, *SessionRef) (*Session, error) {
+	return nil, status.Error(codes.Unimplemented, "method Restore not implemented")
 }
 func (UnimplementedSessionServiceServer) Resume(context.Context, *SessionControl) (*Session, error) {
 	return nil, status.Error(codes.Unimplemented, "method Resume not implemented")
@@ -613,6 +629,24 @@ func _SessionService_Watch_Handler(srv interface{}, stream grpc.ServerStream) er
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type SessionService_WatchServer = grpc.ServerStreamingServer[SessionWatchResponse]
+
+func _SessionService_Restore_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SessionRef)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionServiceServer).Restore(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SessionService_Restore_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionServiceServer).Restore(ctx, req.(*SessionRef))
+	}
+	return interceptor(ctx, in, info, handler)
+}
 
 func _SessionService_Resume_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SessionControl)
@@ -914,6 +948,10 @@ var SessionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "List",
 			Handler:    _SessionService_List_Handler,
+		},
+		{
+			MethodName: "Restore",
+			Handler:    _SessionService_Restore_Handler,
 		},
 		{
 			MethodName: "Resume",

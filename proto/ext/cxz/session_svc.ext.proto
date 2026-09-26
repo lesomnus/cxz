@@ -4,6 +4,7 @@ import "cxz/session.proto";
 option go_package = "github.com/lesomnus/cxz/resource";
 
 service SessionService {
+  rpc Restore(SessionRef) returns (Session);
   rpc Resume(SessionControl) returns (Session);
   rpc Stop(SessionControl) returns (Session);
   rpc Interrupt(SessionControl) returns (SessionReceipt);

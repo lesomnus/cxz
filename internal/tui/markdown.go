@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -44,7 +45,7 @@ func eventViewCached(m *model, s *api.Session, e *api.Event, width int) string {
 }
 
 // Protocol text has no Markdown MIME hint. Parse CommonMark when structural
-// syntax is present. Never render HTML, OSC links or fetch external images.
+// syntax is present. Strip remote controls and emit our own HTTP(S) hyperlinks.
 func markdownView(raw string, width int) string {
 	body, _ := markdownContent(raw, width)
 	return body
@@ -82,7 +83,7 @@ func markdownContent(raw string, width int) (string, []codeButton) {
 	_ = ast.Walk(doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 		if entering {
 			switch n.(type) {
-			case *ast.Heading, *ast.List, *ast.CodeSpan, *ast.FencedCodeBlock, *ast.CodeBlock, *ast.Emphasis, *ast.Link, *ast.Blockquote, *extast.Table, *extast.Strikethrough:
+			case *ast.Heading, *ast.List, *ast.CodeSpan, *ast.FencedCodeBlock, *ast.CodeBlock, *ast.Emphasis, *ast.Link, *ast.AutoLink, *ast.Blockquote, *extast.Table, *extast.Strikethrough:
 				formatted = true
 			}
 		}
@@ -145,11 +146,12 @@ func markdownContent(raw string, width int) (string, []codeButton) {
 			}
 			return lipgloss.NewStyle().Italic(true).Render(children(n, width))
 		case *ast.Link:
-			return children(n, width) + " (" + safeText(string(v.Destination)) + ")"
+			target := string(v.Destination)
+			return terminalLink(children(n, width)+" ("+target+")", target)
 		case *ast.Image:
 			return "[image: " + children(n, width) + "]" // No remote fetch.
 		case *ast.AutoLink:
-			return string(v.URL(source))
+			return terminalLink(string(v.URL(source)), string(v.URL(source)))
 		case *extast.Strikethrough:
 			return lipgloss.NewStyle().Strikethrough(true).Render(children(n, width))
 		case *extast.TaskCheckBox:
@@ -199,7 +201,7 @@ func markdownContent(raw string, width int) (string, []codeButton) {
 			return children(n, width)
 		}
 	}
-	view := answer.Render(ansi.Hardwrap(strings.TrimRight(render(doc, max(1, width)), "\n"), max(1, width), true))
+	view := balanceLinkRows(answer.Render(ansi.Hardwrap(strings.TrimRight(render(doc, max(1, width)), "\n"), max(1, width), true)))
 	if len(sources) == 0 {
 		return view, nil
 	}
@@ -221,4 +223,40 @@ func markdownContent(raw string, width int) (string, []codeButton) {
 		rows[y] = row
 	}
 	return strings.Join(rows, "\n"), buttons
+}
+
+func terminalLink(label, target string) string {
+	u, err := url.Parse(target)
+	if err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Host == "" || strings.ContainsAny(target, "\x1b\a\r\n") {
+		return label
+	}
+	return ansi.SetHyperlink(target) + label + ansi.ResetHyperlink()
+}
+
+// Each row can be displayed independently by the viewport. Reopen links after
+// wraps so scrolling into the middle still offers the complete destination.
+func balanceLinkRows(view string) string {
+	var out strings.Builder
+	active := ""
+	state := byte(0)
+	for len(view) > 0 {
+		seq, _, n, next := ansi.DecodeSequence(view, state, nil)
+		if n == 0 {
+			break
+		}
+		if strings.HasPrefix(seq, "\x1b]8;") {
+			if seq == ansi.ResetHyperlink() {
+				active = ""
+			} else {
+				active = seq
+			}
+		}
+		if seq == "\n" && active != "" {
+			out.WriteString(ansi.ResetHyperlink() + "\n" + active)
+		} else {
+			out.WriteString(seq)
+		}
+		view, state = view[n:], next
+	}
+	return out.String()
 }
