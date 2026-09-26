@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/lesomnus/cxz/internal/agentview"
+	"github.com/lesomnus/cxz/internal/notification"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"strings"
@@ -55,6 +56,34 @@ func TestBackgroundLaunchIsNotCompletion(t *testing.T) {
 	m.current().RunId = "new"
 	if strings.Contains(m.backgroundReport(), "exit 1") {
 		t.Fatal("cross-run leak")
+	}
+}
+
+// Going idle by handing work to a background task is not a finished turn: the
+// row keeps its spinner, so the completion sound must not contradict it.
+func TestBackgroundLaunchIsSilentUntilTasksEnd(t *testing.T) {
+	idle := func(m *model, events ...*api.Event) (*model, *api.Session) {
+		s := m.current()
+		s.State, s.LastSeq = "working", 1
+		m.observeSessions([]*api.Session{s})
+		m.events[s.Id] = events
+		s.State, s.LastSeq = "idle", 2
+		return m, s
+	}
+	// The same transition without background work still rings.
+	m, _ := idle(conversationModel())
+	expectSound(t, m.observeSessions([]*api.Session{m.current()}), notification.Complete)
+
+	m, s := idle(conversationModel(), bgEvent(2, `{"type":"system","subtype":"task_started","task_id":"bg","tool_use_id":"tool","is_backgrounded":true}`))
+	if m.observeSessions([]*api.Session{s}) != nil {
+		t.Fatal("launching a background task rang the completion sound")
+	}
+	if ansi.Strip(m.sessionIndicator(s)) == "+" {
+		t.Fatal("running background work marked the reply finished")
+	}
+	m.events[s.Id] = append(m.events[s.Id], bgEvent(3, `{"type":"system","subtype":"background_tasks_changed","tasks":[]}`))
+	if ansi.Strip(m.sessionIndicator(s)) != "+" {
+		t.Fatal("finished background work left no unread marker")
 	}
 }
 

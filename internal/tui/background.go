@@ -141,7 +141,7 @@ func (m *model) backgroundStatesFor(id string) map[string]*agentview.BackgroundS
 }
 
 func (m *model) hasActiveBackground(s *api.Session) bool {
-	if s.State != "idle" && !workingState(s.State) {
+	if s == nil || s.State != "idle" && !workingState(s.State) {
 		return false
 	}
 	state := m.backgroundStatesFor(s.Id)[s.RunId]
