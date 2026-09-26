@@ -37,7 +37,7 @@ func (m *model) chipInput() (string, int, func(int), func(string), bool) {
 	if m.workflow != nil || m.projectView || m.accountView || m.creating || m.renaming || m.report != nil || m.modelPicker != nil || m.restartConfirm != nil {
 		return "", 0, nil, nil, false
 	}
-	if d := m.questionDialog; d != nil {
+	if d := m.focusedQuestion(); d != nil {
 		q := d.questions[d.page]
 		if d.sending || q.Secret || !q.Other || d.row != len(q.Options) {
 			return "", 0, nil, nil, false
@@ -65,11 +65,11 @@ func (m *model) chipKey(k tea.KeyMsg) (bool, tea.Cmd) {
 		id = s.Id
 	}
 	page := 0
-	if m.questionDialog != nil {
-		page = m.questionDialog.page
+	if m.focusedQuestion() != nil {
+		page = m.focusedQuestion().page
 	}
 	sel := m.pasteSelection
-	if !ok || sel != nil && (sel.value != value || sel.cursor != pos || sel.question != m.questionDialog || sel.page != page || sel.session != id) {
+	if !ok || sel != nil && (sel.value != value || sel.cursor != pos || sel.question != m.focusedQuestion() || sel.page != page || sel.session != id) {
 		m.pasteSelection = nil
 		sel = nil
 	}
@@ -144,7 +144,7 @@ func (m *model) chipKey(k tea.KeyMsg) (bool, tea.Cmd) {
 			m.pastes[sel.token].upload = nil
 			r := []rune(value)
 			// SetValue may reset the textarea row. Delete using native keys instead.
-			if m.questionDialog == nil {
+			if m.focusedQuestion() == nil {
 				cursor(sel.end)
 				for i := sel.start; i < sel.end; i++ {
 					m.input, _ = m.input.Update(tea.KeyMsg{Type: tea.KeyBackspace})
@@ -152,7 +152,7 @@ func (m *model) chipKey(k tea.KeyMsg) (bool, tea.Cmd) {
 			} else {
 				setValue(string(r[:sel.start]) + string(r[sel.end:]))
 				cursor(sel.start)
-				d := m.questionDialog
+				d := m.focusedQuestion()
 				d.otherSelected[d.page] = strings.TrimSpace(d.other[d.page].Value()) != ""
 			}
 			m.pasteSelection = nil
@@ -183,7 +183,7 @@ func (m *model) chipKey(k tea.KeyMsg) (bool, tea.Cmd) {
 					boundary = start
 				}
 				cursor(boundary)
-				m.pasteSelection = &chipSelection{token: token, value: value, session: id, start: start, end: end, cursor: boundary, question: m.questionDialog, page: page}
+				m.pasteSelection = &chipSelection{token: token, value: value, session: id, start: start, end: end, cursor: boundary, question: m.focusedQuestion(), page: page}
 				if key == "backspace" || key == "delete" {
 					return m.chipKey(k)
 				}
@@ -198,7 +198,7 @@ func (m *model) decorateInputPastes(view string) string {
 	view = decoratePastes(view, m.pastes)
 	if s := m.pasteSelection; s != nil {
 		value, pos, _, _, ok := m.chipInput()
-		if !ok || value != s.value || pos != s.cursor || s.question != m.questionDialog {
+		if !ok || value != s.value || pos != s.cursor || s.question != m.focusedQuestion() {
 			return view
 		}
 		token := decoratePastes(s.token, m.pastes)
@@ -364,7 +364,7 @@ func (m *model) capturePaste(k tea.KeyMsg) bool {
 		return false
 	}
 	text := string(k.Runes)
-	d := m.questionDialog
+	d := m.focusedQuestion()
 	if d != nil {
 		q := d.questions[d.page]
 		if q.Secret || !q.Other || d.row != len(q.Options) || d.sending {
@@ -472,7 +472,7 @@ func (m *model) openPastes() tea.Cmd {
 	if m.report != nil || m.modelPicker != nil || m.restartConfirm != nil {
 		return nil
 	}
-	p := &pasteDialog{question: m.questionDialog}
+	p := &pasteDialog{question: m.focusedQuestion()}
 	if s := m.current(); s != nil {
 		p.session, p.run = s.Id, s.RunId
 	}

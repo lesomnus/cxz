@@ -12,27 +12,21 @@ const (
 )
 
 // Rule states Valid in the words a user gets back when they break it.
-const Rule = "alias must be 3–20 characters: lowercase letters, digits and single hyphens, beginning with a letter"
+const Rule = "alias must be 3–20 characters: letters, digits, hyphens and underscores, beginning with a letter"
 
-// Valid mirrors payday's alias grammar, which the resource layer enforces
-// underneath this one, less that grammar's 63-character limit. Underscore is
-// absent there so that an alias can still be a DNS label, and widening it here
-// would only move the rejection to a less helpful place.
+// Session aliases identify conversations, not DNS hosts. Keep them shorter than
+// runtime IDs so resourceclient can distinguish the two without a lookup.
 func Valid(s string) bool {
 	if len(s) < MinLen || len(s) > MaxLen {
 		return false
 	}
-	if s[0] < 'a' || s[0] > 'z' {
+	letter := func(c byte) bool { return c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' }
+	if !letter(s[0]) {
 		return false
 	}
 	for i := 1; i < len(s); i++ {
 		switch c := s[i]; {
-		case c >= 'a' && c <= 'z', c >= '0' && c <= '9':
-		case c == '-':
-			// Hyphens join nonempty groups: never doubled, never last.
-			if i == len(s)-1 || s[i+1] == '-' {
-				return false
-			}
+		case letter(c), c >= '0' && c <= '9', c == '-', c == '_':
 		default:
 			return false
 		}

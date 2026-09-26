@@ -221,7 +221,7 @@ func (m *model) openFilePreview(y int) bool {
 }
 
 func (m *model) filePreviewMouse(v tea.MouseMsg) bool {
-	if !m.previewVisible() || m.questionDialog != nil || m.report != nil || m.modelPicker != nil || m.restartConfirm != nil || m.pasteDialog != nil || m.redactDialog != nil {
+	if !m.previewVisible() || m.questionFocused() || m.report != nil || m.modelPicker != nil || m.restartConfirm != nil || m.pasteDialog != nil || m.redactDialog != nil {
 		return false
 	}
 	width, height := max(1, m.width-4), m.previewHeight()

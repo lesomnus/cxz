@@ -23,6 +23,7 @@ type questionDialog struct {
 	previewWidth                   int
 	message                        string
 	sending                        bool
+	suspended                      bool
 	pastes                         map[string]*pastedText
 }
 
@@ -44,6 +45,10 @@ func (m *model) openQuestion(p *api.Event) tea.Cmd {
 		m.notice = "Question belongs to an old run"
 		return nil
 	}
+	if d := m.questionDialog; d != nil && d.id == s.Id && d.run == s.RunId && d.request == p.RequestId {
+		m.focusQuestion()
+		return nil
+	}
 	qs, err := agentview.Questions(s.Agent, p.Text, p.Payload)
 	if err != nil {
 		m.showError("Cannot open question form: " + err.Error() + ". /approval shows the raw request.")
@@ -62,6 +67,10 @@ func (m *model) openQuestion(p *api.Event) tea.Cmd {
 		}
 		d.other = append(d.other, in)
 		d.otherSelected = append(d.otherSelected, false)
+	}
+	if old := m.questionDrafts[s.Id+"/"+s.RunId+"/"+p.RequestId]; old != nil {
+		d = old
+		d.suspended = false
 	}
 	m.questionDialog = d
 	m.focusApproval, m.focusList = false, false
@@ -89,10 +98,50 @@ func (m *model) openQuestion(p *api.Event) tea.Cmd {
 	return nil
 }
 
+func (m *model) questionFocused() bool {
+	return m.questionDialog != nil && !m.questionDialog.suspended
+}
+
+func (m *model) focusedQuestion() *questionDialog {
+	if m.questionFocused() {
+		return m.questionDialog
+	}
+	return nil
+}
+
+func (m *model) focusQuestion() {
+	if d := m.questionDialog; d != nil {
+		d.suspended = false
+	}
+	m.panelFocus, m.focusList, m.focusApproval = false, false, false
+	m.input.Blur()
+	if p := m.terminal(); p != nil {
+		p.focused = false
+	}
+	if p := m.filePreview; p != nil {
+		p.focused = false
+	}
+	if p := m.errorDialog; p != nil {
+		p.focused = false
+	}
+}
+
 func (m *model) closeQuestion() {
+	if d := m.questionDialog; d != nil {
+		delete(m.questionDrafts, d.id+"/"+d.run+"/"+d.request)
+	}
 	m.questionDialog = nil
 	m.input.Focus()
 	m.resize()
+}
+
+func (m *model) saveQuestionDraft() {
+	if d := m.questionDialog; d != nil {
+		if m.questionDrafts == nil {
+			m.questionDrafts = map[string]*questionDialog{}
+		}
+		m.questionDrafts[d.id+"/"+d.run+"/"+d.request] = d
+	}
 }
 
 func (m *model) syncQuestion() {
@@ -107,8 +156,14 @@ func (m *model) syncQuestion() {
 			}
 		}
 		if !valid {
-			m.closeQuestion()
-			m.notice = "Question no longer pending"
+			if s == nil || s.Id != d.id {
+				m.saveQuestionDraft()
+				m.questionDialog = nil
+				m.resize()
+			} else {
+				m.closeQuestion()
+				m.notice = "Question no longer pending"
+			}
 		}
 	}
 	if s == nil || m.settingsPage != nil || m.memoryPage != nil || m.panelFocus || m.projectView || m.accountView || m.questionDialog != nil || m.report != nil || m.modelPicker != nil || m.restartConfirm != nil {
@@ -116,6 +171,12 @@ func (m *model) syncQuestion() {
 	}
 	for _, p := range s.Pending {
 		key := s.Id + "/" + s.RunId + "/" + p.RequestId
+		if d := m.questionDrafts[key]; d != nil && !m.approvalSent[key] {
+			m.questionDialog = d
+			d.suspended = true
+			m.resize()
+			return
+		}
 		if question(p) && (p.RunId == "" || p.RunId == s.RunId) && !m.questionSeen[key] && !m.approvalSent[key] {
 			if m.questionSeen == nil {
 				m.questionSeen = map[string]bool{}
@@ -192,7 +253,7 @@ func (m *model) questionKey(k tea.KeyMsg) tea.Cmd {
 	d.hovering = false
 	if d.sending {
 		switch k.String() {
-		case "esc", "ctrl+d", "pgup", "pgdown", "ctrl+pgup", "ctrl+pgdown", "alt+pgup", "alt+pgdown", "ctrl+home", "ctrl+end":
+		case "esc", "ctrl+q", "ctrl+d", "pgup", "pgdown", "ctrl+pgup", "ctrl+pgdown", "alt+pgup", "alt+pgdown", "ctrl+home", "ctrl+end":
 		default:
 			return nil
 		}
@@ -203,7 +264,11 @@ func (m *model) questionKey(k tea.KeyMsg) tea.Cmd {
 		goto input
 	}
 	switch k.String() {
-	case "esc", "ctrl+q":
+	case "ctrl+q":
+		d.suspended = true
+		m.focusPanel()
+		return nil
+	case "esc":
 		m.closeQuestion()
 		return nil
 	case "ctrl+d":

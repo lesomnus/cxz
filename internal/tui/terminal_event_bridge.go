@@ -179,6 +179,9 @@ func terminalEventKey(key uv.KeyPressEvent) (tea.KeyMsg, bool) {
 	if key.Code == '`' && key.Mod == uv.ModCtrl {
 		return tea.KeyMsg{Type: tea.KeyF20}, true
 	}
+	if (key.Code == ',' || key.Code == '<' || key.BaseCode == ',') && key.Mod == uv.ModCtrl|uv.ModShift {
+		return tea.KeyMsg{Type: tea.KeyF19}, true
+	}
 	if key.Mod&uv.ModCtrl != 0 {
 		code := unicode.ToLower(key.Code)
 		switch {

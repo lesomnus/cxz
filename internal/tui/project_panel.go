@@ -108,7 +108,7 @@ func (m *model) panelMouse(v tea.MouseMsg) (bool, tea.Cmd) {
 	m.panelHoverY = 0
 	if m.height < 14 || m.width < 40 || m.settingsPage != nil || m.memoryPage != nil ||
 		m.workflow != nil || m.accountView || m.creating || m.redactDialog != nil ||
-		m.questionDialog != nil || m.pasteDialog != nil || m.restartConfirm != nil || m.modelPicker != nil || m.report != nil {
+		m.questionFocused() || m.pasteDialog != nil || m.restartConfirm != nil || m.modelPicker != nil || m.report != nil {
 		return false, nil
 	}
 	if !m.panelVisible() && !m.panelFocus && !m.projectView {
@@ -237,11 +237,18 @@ func (m *model) focusPanel() {
 }
 
 func (m *model) focusConversationMouse(v tea.MouseMsg) {
-	if !m.panelFocus || !m.panelVisible() || m.projectView || m.accountView || m.creating ||
+	wheel := v.Button == tea.MouseButtonWheelUp || v.Button == tea.MouseButtonWheelDown
+	if (!m.panelFocus && !wheel) || m.projectView || m.accountView || m.creating ||
 		m.workflow != nil || m.settingsPage != nil || m.memoryPage != nil || m.busy || m.renaming ||
-		v.Action != tea.MouseActionPress || v.Button != tea.MouseButtonLeft ||
+		v.Action != tea.MouseActionPress || (!wheel && v.Button != tea.MouseButtonLeft) ||
 		v.X < m.contentOffset() || v.X >= m.contentOffset()+m.width || v.Y < 0 || v.Y >= m.height {
 		return
+	}
+	if wheel && v.Y >= m.view.Height {
+		return
+	}
+	if d := m.questionDialog; d != nil {
+		d.suspended = true
 	}
 	m.panelFocus, m.focusList, m.focusApproval = false, false, false
 	m.toolSelector = nil
@@ -385,6 +392,7 @@ func (m *model) panelKey(k tea.KeyMsg) tea.Cmd {
 
 // Select the command target independently of the original cxz up directory.
 func (m *model) selectPanelProject(r panelRow) {
+	m.saveQuestionDraft()
 	m.backToProject()
 	m.project = r.project
 	sessions := m.allSessions
@@ -515,7 +523,7 @@ func (m *model) panelScreen() string {
 	if m.busy {
 		status = "Working…"
 	}
-	lines = append(lines, muted.Render("n new · a accounts"), muted.Render("r rename · s stop"), muted.Render("Ctrl+X twice · delete"), muted.Render("m memory · Ctrl+P settings"), muted.Render("Esc/Ctrl+Q return"), muted.Render("Ctrl+D detach · agents run"), warning.Render(pickerLabel(status)))
+	lines = append(lines, muted.Render("n new · a accounts"), muted.Render("r rename · s stop"), muted.Render("Ctrl+X twice · delete"), muted.Render("m memory · Ctrl+Shift+, settings"), muted.Render("Esc/Ctrl+Q return"), muted.Render("Ctrl+D detach · agents run"), warning.Render(pickerLabel(status)))
 	for len(lines) < m.height {
 		lines = append(lines, "")
 	}

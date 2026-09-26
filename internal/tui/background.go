@@ -31,10 +31,13 @@ type backgroundSnapshot struct {
 // One reduced snapshot replaces paging through the entire transcript. Older
 // servers report unavailable telemetry instead of silently starting a full replay.
 func (m *model) loadBackgroundHistory(p historyPage) tea.Cmd {
-	if !p.initial || p.start == 0 || p.err != nil || (p.epoch != 0 && p.epoch != m.watchEpoch) {
+	if !p.initial || p.start == 0 || p.err != nil || !m.validSessionWatch(p.id, p.epoch) {
 		return nil
 	}
 	parent := m.watchContext
+	if w := m.sessionWatches[p.id]; w != nil {
+		parent = w.ctx
+	}
 	if parent == nil {
 		parent = m.ctx
 	}

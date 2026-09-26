@@ -205,7 +205,7 @@ func (m *model) settingsKey(k tea.KeyMsg) tea.Cmd {
 		return nil
 	}
 	switch k.String() {
-	case "esc", "ctrl+p":
+	case "esc", "f19":
 		m.settingsPage = nil
 		if p.inputFocused {
 			return m.input.Focus()

@@ -48,7 +48,7 @@ func TestSettingsShortcutAndMaintenance(t *testing.T) {
 	m.client = c
 	m.input.SetValue("draft")
 	m.input.Focus()
-	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyCtrlP})
+	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyF19})
 	if cmd == nil || m.settingsPage == nil || m.input.Focused() {
 		t.Fatal("settings not focused")
 	}
@@ -79,7 +79,7 @@ func TestSettingsShortcutAndMaintenance(t *testing.T) {
 	if len(c.calls) != 3 || c.calls[1].Action != "prune" || len(c.calls[1].Spec) != 0 {
 		t.Fatal(c.calls)
 	}
-	m.Update(tea.KeyMsg{Type: tea.KeyCtrlP})
+	m.Update(tea.KeyMsg{Type: tea.KeyF19})
 	if m.settingsPage != nil || !m.input.Focused() || m.input.Value() != "draft" {
 		t.Fatal("draft/focus lost")
 	}
@@ -91,7 +91,7 @@ func TestSettingsErrorsResizeAndProjectEntry(t *testing.T) {
 	c := &settingsClient{fail: true}
 	m.client = c
 	m.projectView = true
-	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyCtrlP})
+	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyF19})
 	m.Update(cmd())
 	p := m.settingsPage
 	if !strings.Contains(p.statusError, "unsupported manager") {

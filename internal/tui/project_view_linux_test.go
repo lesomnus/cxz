@@ -124,6 +124,10 @@ func TestCursorWriterTerminalResize(t *testing.T) {
 
 type screenClient struct{ projectClient }
 
+func (*screenClient) Activity(context.Context, *api.ActivityInput, ...grpc.CallOption) (*api.Receipt, error) {
+	return &api.Receipt{}, nil
+}
+
 func (*screenClient) List(context.Context, *api.Empty, ...grpc.CallOption) (*api.SessionList, error) {
 	return &api.SessionList{Sessions: []*api.Session{{Id: "session", ProjectId: "p", Agent: "claude", State: "stopped"}}}, nil
 }

@@ -57,6 +57,9 @@ func (m *model) accountKey(key tea.KeyMsg) tea.Cmd {
 	if m.loginChoosing {
 		return m.loginTargetKey(key)
 	}
+	if m.accountChoosing && !m.accountAdding && !m.accountSearching && key.String() == "ctrl+r" && !key.Paste {
+		return m.openSessionArchive()
+	}
 	if m.accountSearching {
 		switch key.String() {
 		case "ctrl+q":
@@ -228,6 +231,7 @@ func (m *model) accountScreen() string {
 	} else {
 		if m.accountChoosing {
 			rows = append(rows, strong.Render("Choose an account for the new session"))
+			rows = append(rows, accent.Render("Ctrl+R · Restore a deleted session"))
 		}
 		if len(m.accounts) == 0 && !m.accountLoading {
 			rows = append(rows, peach.Render("No accounts yet. Press n to add one here."))

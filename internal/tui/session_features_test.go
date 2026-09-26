@@ -56,7 +56,7 @@ func TestRenameInProjectPanel(t *testing.T) {
 			t.Fatal("panel editor lost alias", panel())
 		}
 	}
-	for _, bad := range []string{"ab", "my_work", "2nd", "web-"} {
+	for _, bad := range []string{"ab", "my work", "2nd", "-web"} {
 		m.aliasInput.SetValue(bad)
 		if _, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter}); cmd != nil || !m.renaming {
 			t.Fatal("invalid alias accepted", bad)

@@ -13,14 +13,12 @@ func TestWords(t *testing.T) {
 		}
 		seen[word] = true
 	}
-	for _, good := range []string{"abc", "a1b", "my-work", "web-2", "a-b-c", strings.Repeat("a", MaxLen)} {
+	for _, good := range []string{"ABC", "my_work", "abc-", "a--b", "a__", "abc", "a1b", "my-work", "web-2", "a-b-c", strings.Repeat("a", MaxLen)} {
 		if !Valid(good) {
 			t.Fatal("rejected a legal alias", good)
 		}
 	}
-	// Underscore is excluded by payday so that an alias can be a DNS label; the
-	// rest keep an alias distinguishable from a 24-character runtime ID.
-	for _, bad := range []string{"ab", strings.Repeat("a", MaxLen+1), "ABC", "123", "1abc", "my_work", "-abc", "abc-", "a--b", "a b", "한글", ""} {
+	for _, bad := range []string{"ab", strings.Repeat("a", MaxLen+1), "123", "1abc", "-abc", "a b", "한글", ""} {
 		if Valid(bad) {
 			t.Fatal("accepted an illegal alias", bad)
 		}

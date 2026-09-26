@@ -126,7 +126,7 @@ func (m *model) copyFocusedText() {
 		m.copyText(m.errorDialog.text)
 		return
 	}
-	if m.workflow != nil || m.redactDialog != nil || m.questionDialog != nil || m.settingsPage != nil || m.memoryPage != nil || m.accountView || m.projectView || m.panelFocus {
+	if m.workflow != nil || m.redactDialog != nil || m.questionFocused() || m.settingsPage != nil || m.memoryPage != nil || m.accountView || m.projectView || m.panelFocus {
 		return
 	}
 	switch {
