@@ -35,6 +35,22 @@ func workingSpinner(pulse int) string {
 	return string(frames[pulse%len(frames)])
 }
 
+// A question stalls the turn until it is answered, yet the session stays in a
+// working state. The spinner keeps animating, so the row needs a marker that
+// says the agent is blocked on the user rather than still thinking.
+func (m *model) pendingQuestion(s *api.Session) bool {
+	for _, p := range s.GetPending() {
+		if p == nil || !question(p) || (p.RunId != "" && p.RunId != s.RunId) {
+			continue
+		}
+		// An answer already sent is no longer the user's turn to act on.
+		if !m.approvalSent[s.Id+"/"+s.RunId+"/"+p.RequestId] {
+			return true
+		}
+	}
+	return false
+}
+
 func (m *model) observeSessions(sessions []*api.Session) tea.Cmd {
 	if m.sessionActivity == nil {
 		m.sessionActivity = map[string]*sessionActivity{}
@@ -140,6 +156,13 @@ func (m *model) receiveCompletion(v completionChecked) tea.Cmd {
 }
 
 func (m *model) sessionIndicator(s *api.Session) string {
+	// Blink at the same rate as the composer cursor: one second on, one off.
+	if m.pendingQuestion(s) {
+		if m.pulse%10 < 5 {
+			return warning.Render("?")
+		}
+		return " "
+	}
 	if workingState(s.State) || len(m.pendingInputs[s.Id]) > 0 || m.hasActiveBackground(s) {
 		return accent.Render(workingSpinner(m.pulse))
 	}

@@ -69,6 +69,38 @@ func TestSessionIndicatorsAndReadAcknowledgement(t *testing.T) {
 	}
 }
 
+func TestSessionIndicatorBlinksWhilePendingQuestion(t *testing.T) {
+	m := conversationModel()
+	s := m.current()
+	// A question leaves the session working, so the spinner alone hides it.
+	s.State = "waiting_input"
+	s.Pending = []*api.Event{{RunId: s.RunId, RequestId: "q1", Text: "AskUserQuestion"}}
+	lit := 0
+	for range 10 {
+		if ansi.Strip(m.sessionIndicator(s)) == "?" {
+			lit++
+		}
+		m.Update(pulseTick{})
+	}
+	if lit != 5 {
+		t.Fatal("question marker did not blink for half of the cycle", lit)
+	}
+	s.Pending[0].RunId = "previous"
+	if got := ansi.Strip(m.sessionIndicator(s)); got != workingSpinner(m.pulse) {
+		t.Fatal("question from an older run blocked the spinner", got)
+	}
+	s.Pending[0].RunId = s.RunId
+	m.approvalSent = map[string]bool{s.Id + "/" + s.RunId + "/q1": true}
+	if got := ansi.Strip(m.sessionIndicator(s)); got != workingSpinner(m.pulse) {
+		t.Fatal("answered question kept the marker", got)
+	}
+	s.Pending[0].Text = "Bash"
+	m.approvalSent = nil
+	if got := ansi.Strip(m.sessionIndicator(s)); got != workingSpinner(m.pulse) {
+		t.Fatal("tool approval mistaken for a question", got)
+	}
+}
+
 type completionClient struct {
 	api.SessionsClient
 	events []*api.Event
