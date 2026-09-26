@@ -56,11 +56,20 @@ func TestRenameInProjectPanel(t *testing.T) {
 			t.Fatal("panel editor lost alias", panel())
 		}
 	}
-	m.aliasInput.SetValue("ab")
-	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
-	if cmd != nil || !m.renaming {
-		t.Fatal("invalid alias accepted")
+	for _, bad := range []string{"ab", "my_work", "2nd", "web-"} {
+		m.aliasInput.SetValue(bad)
+		if _, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter}); cmd != nil || !m.renaming {
+			t.Fatal("invalid alias accepted", bad)
+		}
 	}
+	// Digits and hyphens are what the resource layer already stores.
+	m.aliasInput.SetValue("web-2")
+	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m.Update(cmd())
+	if m.renaming || m.current().Alias != "web-2" {
+		t.Fatal("hyphenated alias rejected", m.notice)
+	}
+	m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("r")})
 	m.aliasInput.SetValue("clover")
 	c.renameErr = errors.New("already in use")
 	_, cmd = m.Update(tea.KeyMsg{Type: tea.KeyEnter})

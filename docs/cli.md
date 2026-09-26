@@ -189,7 +189,11 @@ Docker 환경변수/명령 인수에 토큰을 넣지 않는다. Claude/Codex의
 `cxz project recreate WORKSPACE`로 재생성한다. 기존 사용자 gh, GH_CONFIG_DIR 환경변수와 관련된
 차이까지 적용하려면 재생성이 필요하다. 이후 호스트 로그인 변경/로그아웃 후 `cxz up WORKSPACE`는
 해당 실행 중 프로젝트의 credential snapshot을 다시 복사하며, 로그아웃한 인증은 빈 snapshot으로
-제거한다. 다른 프로젝트는 각각 up/재준비할 때 갱신된다. 상시 토큰 갱신 broker는 아니다.
+제거한다. `cxz github sync`는 프로젝트를 하나씩 up 하지 않고 실행 중인 전체 프로젝트에 한 번에
+다시 복사한다. 컨테이너는 건드리지 않으므로 실행 중인 세션은 그대로 유지된다. 호스트에서
+`gh auth refresh -s workflow`처럼 scope를 올린 뒤 이 명령을 쓰면 토큰 하나를 공유하게 되어,
+프로젝트마다 `gh auth login`을 반복해 OAuth 토큰 상한에 걸리는 상황을 피할 수 있다.
+정지된 프로젝트는 각각 up/재준비할 때 갱신된다. 상시 토큰 갱신 broker는 아니다.
 `gh auth setup-git`, SSH 키 전달, 사용자 gitconfig 전체 복사는 자동 수행하지 않는다.
 
 참고: [gh 환경변수](https://cli.github.com/manual/gh_help_environment),
@@ -394,6 +398,7 @@ cxz --format json project ls
 | `account ls`, `backend ls` | 인자 없음 |
 | `account get ACCOUNT`, `binding ls ACCOUNT` | 계정 필수 |
 | `account login ACCOUNT`, `account status ACCOUNT` | 계정 필수. 프로젝트별 OAuth는 `--project` 기본 현재 디렉터리. 중앙 인증은 프로젝트 불필요하며 명시적 `--project` 거부 |
+| `github sync` | 인자 없음. 현재 호스트 gh 자격증명을 manager snapshot과 실행 중인 모든 프로젝트에 다시 복사 |
 | `project add PROJECT` | 등록 대상 필수. `--name`, `--alias`는 자동 결정 가능 |
 | `project set PROJECT` | 대상 필수이며 `--name`, `--alias` 중 하나 이상 필수 |
 | `session new [WORKSPACE]` | 경로 기본 `.`. 새 세션의 `--account`는 터미널에서 선택, 비대화형에서는 필수 |
@@ -747,12 +752,15 @@ Claude 실행 시 --tools를 넘기지 않아 기본 도구를 사용한다. 내
 유지한다. 공급자별 profile 설정은 TODO.md에 후속 과제로 기록했다.
 
 /permission full은 해당 세션의 자동 승인 정책을 supervisor 저널에 저장한다.
-이미 대기 중인 요청과 이후의 알려진 도구·명령·파일·권한 요청은 supervisor가 처리한다.
+이미 대기 중인 요청과 이후의 모든 도구·명령·파일·권한 요청은 도구 이름과 무관하게
+supervisor가 처리한다. 공급자가 나중에 추가하는 도구도 다시 묻지 않는다.
 다른 세션을 보거나 TUI를 종료해도 자동 승인은 계속된다. manager 재시작과
 supervisor 재시작/resume, 세션 볼륨을 유지한 컨테이너 재생성 후에도 정책을 복원한다.
 새 세션과 정책 기록이 없는 기존 세션은 full로 시작한다. 명시적으로 저장한 ask는 유지하며
 계정이 같아도 다른 세션의 정책을 상속하지 않는다.
-질문·미지원 요청은 수동으로 남긴다. /permission ask는 수동 승인 정책을 저장하며
+질문은 답 자체가 내용이라 정책이 대신할 수 없으므로 수동으로 남긴다. cxz가 구현하지
+않은 Codex 서버 호출은 승인 대상이 아니라 프로토콜 수준에서 거절한다.
+/permission ask는 수동 승인 정책을 저장하며
 이미 전송한 결정은 되돌리지 않는다. 실행은 기존 run/request 검사와 저널 기록을
 공유하고 모호한 전송 실패는 자동 재시도하지 않는다. 공급자 sandbox 설정은 바꾸지 않는다.
 
@@ -795,8 +803,11 @@ ANSI 238 배경이다. 코드 블록은 상하 여백 한 줄과 오른쪽 위 �
 화면에서 생략된 부분과 줄바꿈을 포함한 전체 원문을 복사한다. REC 영역은 복사 대상에서 제외한다.
 Ctrl+Q로 프로젝트 패널에 포커스를 준 뒤 세션 행에서 r로 alias 편집, Enter 저장, Esc 취소한다. 오류 시
 편집 상태를 유지한다. alias는 payday Session 필드/SQLite unique index로 저장하며
-새 세션과 기존 세션 모두 3–7자 영단어가 무작위 할당된다. 직접 변경은 소문자 a–z
-3–7자를 허용한다. session 명령에도 alias를 사용할 수 있다. 삭제 시 alias는 해제하고
+새 세션과 기존 세션 모두 3–7자 영단어가 무작위 할당된다. 직접 변경은 3–20자로
+소문자 a–z, 숫자, 하이픈을 허용하며 첫 글자는 영문자여야 하고 하이픈은 연속하거나
+끝에 올 수 없다. 언더스코어는 payday alias 문법이 DNS 레이블 호환을 위해 제외한다.
+상한이 20자인 것은 24자 런타임 ID와 길이만으로 구분하기 위해서다.
+session 명령에도 alias를 사용할 수 있다. 삭제 시 alias는 해제하고
 저널은 보존한다. 단어 풀이 모두 사용 중이면 숫자 접미사를 만들지 않고 오류를 반환한다.
 working/idle 등 state 이벤트는 본문에 누적하지 않고 현재 세션 상태 영역을 갱신한다.
 원본 이벤트 저장과 재접속 cursor는 바꾸지 않는다.
@@ -856,7 +867,8 @@ agent enum, alias, 모델, 이름, 수정값 누락, config 키, 답변 JSON은 
 
 세션의 `/background` 명령은 provider가 보고한 현재 run의 백그라운드 작업을
 모달로 표시한다. 실행 중에는 foreground가 idle이어도 기존 상태 줄에 작업 수가
-8점 점자 스피너와 함께 남는다. Claude의 실행 목록/시작/완료 이벤트를 지원하며, Codex 명령 문자열에서
+8점 점자 스피너와 함께 남는다. 작업을 백그라운드로 넘기며 idle이 된 것은 턴 완료가
+아니므로 완료 사운드를 재생하지 않는다. 읽지 않음 표시는 작업이 끝난 뒤에 나타난다. Claude의 실행 목록/시작/완료 이벤트를 지원하며, Codex 명령 문자열에서
 백그라운드 실행을 추정하지는 않는다. 출력 파일 경로는 표시만 하고 읽지 않는다.
 
 작업 정보는 서버가 관리하는 작업별 요약을 한 번 받아 복구한다. 과거 대화를 모두

@@ -248,6 +248,11 @@ func TestCommandsReachAPI(t *testing.T) {
 			t.Fatal("started preparation before validating account", got.Stderr)
 		}
 	}
+	// Without an installation the snapshot stops at the manager, but the command
+	// must still enumerate projects and report the running ones it would reach.
+	if got := xlitest.Run(t, newRoot(root), "github", "sync"); got.Err != nil || !strings.Contains(got.Stderr, "synced to 1 running project(s)") || strings.Contains(got.Stderr, "next up") {
+		t.Fatalf("github sync: %+v", got)
+	}
 	for _, tc := range []struct {
 		args []string
 		want string
@@ -398,6 +403,8 @@ func TestAliases(t *testing.T) {
 }
 
 func TestRootDefaultsToTUIConnection(t *testing.T) {
+	// A project runtime skips the install guard on purpose; this covers the host.
+	t.Setenv("CXZ_PROJECT_ID", "")
 	state := filepath.Join(t.TempDir(), "missing")
 	for _, args := range [][]string{nil, {"--state", state}, {"tui"}} {
 		got := xlitest.Run(t, newRoot(state), args...)
