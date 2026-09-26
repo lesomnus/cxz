@@ -161,6 +161,7 @@ func newRoot(state string) *xli.Command {
 		root.Commands = append(root.Commands, newProjectCommand(name))
 	}
 	root.Commands = append(root.Commands, projectMetadataCommands())
+	root.Commands = append(root.Commands, githubCommands())
 	root.Commands = append(root.Commands, accountCommands())
 	root.Commands = append(root.Commands, accountInternalCommands()...)
 	root.Commands = append(root.Commands,
