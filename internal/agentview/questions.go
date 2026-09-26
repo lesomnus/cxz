@@ -17,7 +17,8 @@ type Question struct {
 type QuestionOption struct{ Label, Description, Preview string }
 
 // CodexAsyncQuestion is a cxz request type, not a provider JSON-RPC method.
-const CodexAsyncQuestion = "agentMessage/questions"
+// It lives in core, which decides what a permission policy may answer.
+const CodexAsyncQuestion = core.CodexAsyncQuestion
 
 func CodexAsyncQuestions(raw []byte) ([]Question, error) {
 	item := object(raw).child("item")

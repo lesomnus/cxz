@@ -175,11 +175,24 @@ func TestAutomaticDecisionFollowsDurableRequestAndPolicy(t *testing.T) {
 		t.Fatal("decision journal order", policy, request, intent, resolved, receipt)
 	}
 }
-func TestFullDoesNotApproveUnknownClaudeTool(t *testing.T) {
+// Full approves whatever carries the request, so a tool the provider adds later
+// does not reintroduce the prompt the mode exists to remove.
+func TestFullApprovesEveryToolExceptQuestions(t *testing.T) {
+	for _, tool := range []string{"FutureTool", "Agent", "NotebookEdit", "mcp__server__do", ""} {
+		s, wire := displaySupervisor(t, "claude")
+		s.execute("permission", core.Command{RunID: "run", ClientID: "mode", Text: "full"})
+		s.consume(permissionRequest("claude", tool, "any"))
+		if len(s.pending) != 0 || wire.Len() == 0 {
+			t.Fatal("full left a permission request pending", tool)
+		}
+		if s.snap.PermissionMode != "full" {
+			t.Fatal("approval failure fell back to ask", tool)
+		}
+	}
 	s, wire := displaySupervisor(t, "claude")
 	s.execute("permission", core.Command{RunID: "run", ClientID: "mode", Text: "full"})
-	s.consume(permissionRequest("claude", "FutureTool", "unknown"))
+	s.consume(permissionRequest("claude", "AskUserQuestion", "question"))
 	if len(s.pending) != 1 || wire.Len() != 0 {
-		t.Fatal("unknown tool approved")
+		t.Fatal("question answered automatically")
 	}
 }
