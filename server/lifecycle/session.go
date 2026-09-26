@@ -133,7 +133,7 @@ func (s SessionServer) Patch(ctx context.Context, r *resource.SessionPatchReques
 		return nil, closed()
 	}
 	if !r.HasAlias() || !sessionalias.Valid(r.GetAlias()) {
-		return nil, status.Error(codes.InvalidArgument, "alias must contain 3–7 lowercase English letters")
+		return nil, status.Error(codes.InvalidArgument, sessionalias.Rule)
 	}
 	if err := s.effect(); err != nil {
 		return nil, err

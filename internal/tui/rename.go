@@ -27,8 +27,10 @@ func (m *model) renameSession(s *api.Session) tea.Cmd {
 	m.aliasInput = textinput.New()
 	m.aliasInput.Cursor.Style = inputCursorStyle
 	m.aliasInput.Prompt = ""
-	m.aliasInput.CharLimit = 7
-	m.aliasInput.Width = 8
+	m.aliasInput.CharLimit = sessionalias.MaxLen
+	// Match the room the session row gives a name, so a long alias scrolls in the
+	// field instead of being cut off by the renderer.
+	m.aliasInput.Width = max(3, min(sessionalias.MaxLen, m.panelScreenWidth()-17))
 	m.aliasInput.SetValue(s.Alias)
 	m.aliasInput.CursorEnd()
 	m.textSelection = nil
@@ -55,7 +57,7 @@ func (m *model) renameKey(k tea.KeyMsg) tea.Cmd {
 	case "enter":
 		alias := m.aliasInput.Value()
 		if !sessionalias.Valid(alias) {
-			m.notice = "Use 3–7 lowercase English letters"
+			m.notice = sessionalias.Rule
 			return nil
 		}
 		id := m.renameID
