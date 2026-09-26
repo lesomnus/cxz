@@ -1,8 +1,10 @@
 package tui
 
 import (
-	"github.com/lesomnus/cxz/api"
 	"testing"
+
+	"github.com/charmbracelet/x/ansi"
+	"github.com/lesomnus/cxz/api"
 )
 
 func TestContextDots(t *testing.T) {
@@ -10,7 +12,7 @@ func TestContextDots(t *testing.T) {
 		p    int
 		want string
 	}{{0, "⠀0%"}, {10, "⠀10%"}, {11, "⡀11%"}, {22, "⣀22%"}, {35, "⣄35%"}, {44, "⣤44%"}, {55, "⣦55%"}, {66, "⣶66%"}, {77, "⣷77%"}, {88, "⣿88%"}, {100, "⣿99%"}} {
-		if got := contextBadge(tc.p, true); got != tc.want {
+		if got := ansi.Strip(contextBadge(tc.p, true)); got != tc.want {
 			t.Fatal(tc, got)
 		}
 	}
