@@ -63,6 +63,9 @@ func (c *sessionLoginClient) LoginSession(ctx context.Context, project, account,
 }
 
 func TestDefaultSessionCreationLogsInAndRetries(t *testing.T) {
+	// These cases exercise the frontend's Open path. Running inside a cxz session
+	// would otherwise inherit the in-project branch from the ambient environment.
+	t.Setenv("CXZ_PROJECT_ID", "")
 	for _, remote := range []bool{false, true} {
 		t.Run(fmt.Sprint(remote), func(t *testing.T) {
 			m := projectModel()
@@ -109,6 +112,7 @@ func TestDefaultSessionCreationLogsInAndRetries(t *testing.T) {
 }
 
 func TestDefaultSessionLoginStopsOnCancelOrUnrelatedError(t *testing.T) {
+	t.Setenv("CXZ_PROJECT_ID", "")
 	for _, name := range []string{"cancel", "other-account", "invalid-credential", "still-missing"} {
 		t.Run(name, func(t *testing.T) {
 			m := projectModel()
