@@ -398,6 +398,8 @@ func TestAliases(t *testing.T) {
 }
 
 func TestRootDefaultsToTUIConnection(t *testing.T) {
+	// A project runtime skips the install guard on purpose; this covers the host.
+	t.Setenv("CXZ_PROJECT_ID", "")
 	state := filepath.Join(t.TempDir(), "missing")
 	for _, args := range [][]string{nil, {"--state", state}, {"tui"}} {
 		got := xlitest.Run(t, newRoot(state), args...)
