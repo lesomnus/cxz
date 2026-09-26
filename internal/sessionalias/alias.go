@@ -2,12 +2,38 @@ package sessionalias
 
 import "strings"
 
+const (
+	MinLen = 3
+	// A session runtime ID is 24 hexadecimal characters, and every one of them
+	// is also legal in an alias. Staying well short of that length keeps the two
+	// tellable apart by length alone, which is what resourceclient.sr relies on
+	// to decide whether an identifier names an alias or an ID.
+	MaxLen = 20
+)
+
+// Rule states Valid in the words a user gets back when they break it.
+const Rule = "alias must be 3–20 characters: lowercase letters, digits and single hyphens, beginning with a letter"
+
+// Valid mirrors payday's alias grammar, which the resource layer enforces
+// underneath this one, less that grammar's 63-character limit. Underscore is
+// absent there so that an alias can still be a DNS label, and widening it here
+// would only move the rejection to a less helpful place.
 func Valid(s string) bool {
-	if len(s) < 3 || len(s) > 7 {
+	if len(s) < MinLen || len(s) > MaxLen {
 		return false
 	}
-	for _, c := range s {
-		if c < 'a' || c > 'z' {
+	if s[0] < 'a' || s[0] > 'z' {
+		return false
+	}
+	for i := 1; i < len(s); i++ {
+		switch c := s[i]; {
+		case c >= 'a' && c <= 'z', c >= '0' && c <= '9':
+		case c == '-':
+			// Hyphens join nonempty groups: never doubled, never last.
+			if i == len(s)-1 || s[i+1] == '-' {
+				return false
+			}
+		default:
 			return false
 		}
 	}
