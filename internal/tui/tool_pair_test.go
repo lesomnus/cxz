@@ -25,11 +25,11 @@ func TestToolRowPendingWorkingDoneAtOriginalPosition(t *testing.T) {
 			t.Fatal(text)
 		}
 	}
-	check("[ ]")
+	check("○")
 	m.events["s"] = append(m.events["s"], &api.Event{Seq: 4, RunId: "run", RequestId: "permission", Kind: "approval_resolved", Text: "allowed"})
-	check("[•]")
+	check("•")
 	m.events["s"] = append(m.events["s"], &api.Event{Seq: 5, RunId: "run", RequestId: "tool", Kind: "tool_result", Payload: []byte(`{"content":"done"}`)})
-	check("[✓]")
+	check("✓")
 }
 
 func TestQueuedClaudeToolsDoNotStartBeforeTheirOwnApproval(t *testing.T) {
@@ -47,13 +47,13 @@ func TestQueuedClaudeToolsDoNotStartBeforeTheirOwnApproval(t *testing.T) {
 			t.Fatal(text)
 		}
 	}
-	check("[ ]", "[ ]")
+	check("○", "○")
 	m.events["s"] = append(m.events["s"], &api.Event{Seq: 4, RunId: "run", RequestId: "approval1", Kind: "approval_resolved", Text: "allowed"})
-	check("[•]", "[ ]")
+	check("•", "○")
 	m.events["s"] = append(m.events["s"], &api.Event{Seq: 5, RunId: "run", RequestId: "first", Kind: "tool_result", Payload: []byte(`{"content":"done"}`)}, &api.Event{Seq: 6, RunId: "run", RequestId: "approval2", Kind: "approval", Text: "Write", Payload: []byte(`{"tool_use_id":"second"}`)})
-	check("[✓]", "[ ]")
+	check("✓", "○")
 	m.events["s"] = append(m.events["s"], &api.Event{Seq: 7, RunId: "run", RequestId: "approval2", Kind: "approval_resolved", Text: "allowed"})
-	check("[✓]", "[•]")
+	check("✓", "•")
 }
 
 func TestNativeExecutionSignalAndFailureColor(t *testing.T) {
@@ -75,7 +75,7 @@ func TestNativeExecutionSignalAndFailureColor(t *testing.T) {
 	t.Cleanup(func() { lipgloss.SetColorProfile(old) })
 	for _, state := range []string{"failed", "denied", "canceled"} {
 		view := toolActivityStateBody(agentview.ToolActivity{Kind: "tool", Description: "Write"}, nil, 80, state)
-		if !strings.Contains(view, "38;2;242;109;120") || !strings.Contains(ansi.Strip(view), "[×]") {
+		if !strings.Contains(view, "38;2;242;109;120") || !strings.Contains(ansi.Strip(view), "×") {
 			t.Fatal(view)
 		}
 	}
@@ -95,7 +95,7 @@ func TestUnpairedResultAndRunIsolation(t *testing.T) {
 	}
 	m.render()
 	text := ansi.Strip(m.view.View())
-	if !strings.Contains(text, "[ ] Bash") || !strings.Contains(text, "UNPAIRED_RESULT") {
+	if !strings.Contains(text, "○ Bash") || !strings.Contains(text, "UNPAIRED_RESULT") {
 		t.Fatal(text)
 	}
 }
@@ -109,7 +109,7 @@ func TestCodexUsesFinalFileDiffOnOriginalRow(t *testing.T) {
 	}
 	m.render()
 	text := ansi.Strip(m.view.View())
-	if strings.Count(text, "x.go") != 1 || !strings.Contains(text, "[✓] Edit x.go · +1 -1") {
+	if strings.Count(text, "x.go") != 1 || !strings.Contains(text, "✓ Edit x.go · +1 -1") {
 		t.Fatal(text)
 	}
 }

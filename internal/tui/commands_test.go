@@ -62,7 +62,7 @@ func TestTranscriptGutterAndDuration(t *testing.T) {
 		for i, line := range strings.Split(text, "\n") {
 			prefix := "  "
 			if kind == "assistant" && i == 0 {
-				prefix = "• "
+				prefix = " • "
 			}
 			if !strings.HasPrefix(line, prefix) || ansi.StringWidth(line) > 40 {
 				t.Fatal(kind, line)

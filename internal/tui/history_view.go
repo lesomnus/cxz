@@ -116,7 +116,7 @@ func (m *model) conversationView() string {
 	if m.pulse/5%2 == 1 {
 		for i, row := range rows {
 			if m.workingToolRows[m.view.YOffset+i] {
-				rows[i] = strings.Replace(row, "[•]", "[ ]", 1)
+				rows[i] = strings.Replace(row, "•", " ", 1)
 			}
 		}
 	}
@@ -162,6 +162,7 @@ func (m *model) conversationView() string {
 			rows[i] = indexedBackground(rows[i], promptBackground)
 		}
 	}
+	m.toolHoverView(rows, promptRows)
 	m.codeButtonView(rows, promptRows)
 	m.selectionView(rows)
 	return strings.Join(rows, "\n")
