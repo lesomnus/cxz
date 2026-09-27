@@ -278,14 +278,29 @@ func TestLifecycle(t *testing.T) {
 		t.Fatalf("expected %s got %s", state, get().State)
 		return nil
 	}
+	// The state get reports comes from the resource projection, which trails the
+	// supervisor and is not a progress clock either: sessionStatus deliberately
+	// carries the previous sequence forward so output fragments do not invalidate
+	// the resource list. So an idle it reports can predate the last send, leaving
+	// await to return at once and this send to arrive mid-turn. Only the
+	// supervisor knows when a turn is over, so let it be the judge: a refused
+	// precondition is the answer "not yet", not a failure. A refusal writes
+	// nothing, so retrying cannot duplicate a prompt.
 	send := func(text string) *api.Input {
 		t.Helper()
-		s = get()
-		r := &api.Input{SessionId: id, RunId: s.RunId, ClientId: core.ID(), Text: text}
-		if v, e := client.Send(ctx, r); e != nil || v.Status != "accepted" {
-			t.Fatalf("send: %v %v", v, e)
+		deadline := time.Now().Add(8 * time.Second)
+		for {
+			s = get()
+			r := &api.Input{SessionId: id, RunId: s.RunId, ClientId: core.ID(), Text: text}
+			v, e := client.Send(ctx, r)
+			if e == nil && v.GetStatus() == "accepted" {
+				return r
+			}
+			if e == nil || !strings.Contains(e.Error(), "session must be idle") || time.Now().After(deadline) {
+				t.Fatalf("send: %v %v", v, e)
+			}
+			time.Sleep(30 * time.Millisecond)
 		}
-		return r
 	}
 	readUntil := func(after uint64, predicate func(*api.Event) bool) []*api.Event {
 		t.Helper()
