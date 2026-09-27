@@ -53,8 +53,9 @@ func onRun(fn commandFunc) xli.Handler {
 func withClient(fn clientFunc) xli.Handler {
 	return onRun(func(ctx context.Context, c *xli.Command) error {
 		root := stateFrom(ctx)
+		ctx = versionpin.WithClient(ctx, root)
 		if c.Name == "cxz" {
-			ctx = versionpin.WithClient(cxzupdate.WithClient(ctx, root), root)
+			ctx = cxzupdate.WithClient(ctx, root)
 		}
 		cfg, err := settings.Load(root)
 		if err != nil {
