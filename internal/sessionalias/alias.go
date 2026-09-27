@@ -12,21 +12,32 @@ const (
 )
 
 // Rule states Valid in the words a user gets back when they break it.
-const Rule = "alias must be 3–20 characters: letters, digits, hyphens and underscores, beginning with a letter"
+const Rule = "alias must be 3–20 characters: lowercase letters, digits and single hyphens, beginning with a letter"
 
-// Session aliases identify conversations, not DNS hosts. Keep them shorter than
-// runtime IDs so resourceclient can distinguish the two without a lookup.
+// Valid is bounded by what the resource layer will actually store, not by what
+// would read well here: SessionService.Patch puts every alias through payday's
+// slug.ParseAlias. An underscore, a doubled hyphen and a trailing hyphen are
+// rejected there, so accepting them means a rename that fails one hop later. An
+// uppercase letter is worse than rejected -- it is folded, which would leave the
+// stored alias different from the one that was typed.
+//
+// TestAliasSurvivesTheResourceLayer calls that grammar directly and fails if
+// this widens past it again.
 func Valid(s string) bool {
 	if len(s) < MinLen || len(s) > MaxLen {
 		return false
 	}
-	letter := func(c byte) bool { return c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' }
-	if !letter(s[0]) {
+	if s[0] < 'a' || s[0] > 'z' {
 		return false
 	}
 	for i := 1; i < len(s); i++ {
 		switch c := s[i]; {
-		case letter(c), c >= '0' && c <= '9', c == '-', c == '_':
+		case c >= 'a' && c <= 'z', c >= '0' && c <= '9':
+		case c == '-':
+			// Hyphens join nonempty groups: never doubled, never last.
+			if i == len(s)-1 || s[i+1] == '-' {
+				return false
+			}
 		default:
 			return false
 		}
