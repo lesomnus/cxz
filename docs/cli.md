@@ -1,11 +1,11 @@
 # CLI 입력 계약
 
-Linux/Windows 공통 원격 접속: `cxz connect [--token-file FILE] [--session SESSION] ENDPOINT`.
+Linux/Windows 공통 원격 접속: `cxz --endpoint ENDPOINT [--token-file FILE] [--session SESSION]`.
 엔드포인트는 `ssh://user@host[:port]` 또는 `tcp://host:port`이며, Linux 호스트의 기존
 설치에 `cxz expose --token-file FILE --listen tcp://127.0.0.1:7349`로 TCP 전달기를 열 수 있다.
 `settings.jsonc`의 `connections`에 이름별 `target`과 `default`를 지정하면 기본
 TUI에 모든 연결의 프로젝트·세션을 함께 표시한다 (`project1 via work`).
-`cxz connect work`는 work에 초기 포커스하고, URL을 직접 주면 그 연결만 연다.
+`cxz --endpoint work`는 work에 초기 포커스하고, URL을 직접 주면 그 연결만 연다.
 `local://`는 설치된 로컬 manager를 자동 탐색하고,
 `unix://${STATE}/run/daemon.sock`는 foreground daemon의 소켓을 직접 사용한다.
 `cxz expose`는 독립 릴레이이므로 manager 재시작이나 `install --expose`가 필요 없다.
@@ -271,7 +271,7 @@ Windows Terminal의 Windows 빌드도 VT 입력을 활성화해 붙여넣기 경
 
 ## 기본 TUI와 도구 미리보기
 
-인자 없이 `cxz`를 실행하면 `cxz tui`와 같은 TUI를 연다. 도움말은 `cxz --help`다.
+서브커맨드 없이 `cxz`를 실행해야 TUI를 연다. 도움말은 `cxz --help`다.
 Bash 명령은 셸 구문을 강조한다. Write/Edit 또는 Codex 파일 변경 행을 클릭하면
 당시 도구 입력을 미리 본다. 좁은 화면에서는 입력창 위에 최대 6줄, 충분히 넓은
 화면에서는 오른쪽 패널에 표시한다. 패널 위에서 마우스 휠로 스크롤하고 `[×]`로 닫는다.
@@ -337,16 +337,12 @@ login`을 선택한다. 기존 세션의 재로그인은 프로젝트 목록에�
 
 ## 영구 삭제
 
-`cxz purge`는 현재 `--state` 설치의 영구 삭제 체크리스트다. 컨테이너, 프로젝트
-대화/로그인 볼륨, 서버 DB/계정 볼륨, 도구 볼륨, 네트워크, 로컬 상태가 기본 선택된다.
-Space/Enter로 체크를 바꾸고 ↑/↓ 또는 Tab으로 이동한다. PgUp/PgDn으로 정확한
-대상 목록을 확인한 뒤 마지막 Confirm irreversible deletion 버튼에서 Enter로 실행한다.
-Esc/Ctrl-C는 취소한다. 최소 화면 크기는 60 × 20이다.
-
-`cxz purge --dry-run`은 비대화형에서도 삭제 없이 목록만 출력한다. 실제 삭제에는
-대화형 터미널이 필요하며 --yes 우회는 없다. host/client에서 실행하고 native 서버/
-에이전트는 먼저 종료해야 한다. Docker owner label과 리소스 ID를 확인한 뒤 manager,
-프로젝트 컨테이너, 네트워크/볼륨, 로컬 파일 순서로 정리한다.
+`cxz purge --dry-run`은 현재 `--state` 설치의 삭제 대상만 출력한다.
+실제 영구 삭제는 `cxz purge --yes`로 실행한다. TUI 확인 화면은 열지 않는다.
+기본 범주는 containers,projects,state,tools,networks,local 전체이며,
+`--groups containers,projects`처럼 쉼표로 구분해 미리보기와 삭제 대상을 지정한다.
+host/client에서 실행하고 native 서버/에이전트는 먼저 종료해야 한다.
+Docker owner label과 리소스 ID를 재확인하고 기존 정리 순서를 유지한다.
 
 데이터를 남기는 선택이면 로컬 설치 정보도 남겨야 하며, 오류 시 설치 정보는 보존한다.
 파일·볼륨 삭제는 백업 없이는 복구할 수 없다. 소스 워크스페이스, 개인 Claude/Codex
@@ -394,9 +390,8 @@ cxz --format json project ls
 | --- | --- |
 | `install` | `--image` 생략 시 현재 바이너리로 빌드. `--workspace-root`는 기존 설치/실행 환경에서 결정하며 결정 불가 시 오류. `--recreate` 기본 false |
 | `uninstall` | 인자 없음. manager만 제거하고 프로젝트와 볼륨 보존 |
-| `up [WORKSPACE]` | 기본 `.`. 프로젝트 컨테이너를 준비한 뒤 `cxz`로 TUI를 열라는 안내를 출력하고 종료. 이미 실행 중이면 재준비하지 않음. 세션 생성/Account/로그인 요구 없음. `--format json\|table` 또는 `--no-attach` 명시 시 안내 대신 프로젝트 정보 출력 |
+| `up [WORKSPACE]` | 기본 `.`. 프로젝트 컨테이너 준비 후 프로젝트 정보를 출력하고 종료. `--format json\|table` 지원. 세션 생성/Account/로그인 요구 없음 |
 | `down [WORKSPACE]` | 기본 `.`. 실행 중인 agent를 중지하고 소유 컨테이너 정리. 프로젝트 등록·세션·대화 기록·워크스페이스 소스·이름 있는 볼륨은 보존 |
-| `it [WORKSPACE]` | 기본 `.`. 해당 프로젝트의 가장 최근 생성 세션 화면. 다른 프로젝트 세션은 제외하고 생성 시각 동률은 ID로 고정 정렬. 프로젝트/세션이 없으면 오류이며 자동 생성하지 않음 |
 | `manager serve` | foreground 서버. `--agent`는 Claude 실행 파일 경로이며 기본 `claude`; 계정의 agent 선택이 아님 |
 | `manager update IMAGE` | 이미지 필수. 명시적 tag/digest 필요, latest 거부 |
 | `manager rollback`, `version` | 인자 없음. 이전 이미지로 manager 교체 / 버전 출력 |
@@ -407,10 +402,9 @@ cxz --format json project ls
 | `github sync` | 인자 없음. 현재 호스트 gh 자격증명을 manager snapshot과 실행 중인 모든 프로젝트에 다시 복사 |
 | `project add PROJECT` | 등록 대상 필수. `--name`, `--alias`는 자동 결정 가능 |
 | `project set PROJECT` | 대상 필수이며 `--name`, `--alias` 중 하나 이상 필수 |
-| `session new [WORKSPACE]` | 경로 기본 `.`. 새 세션의 `--account`는 터미널에서 선택, 비대화형에서는 필수 |
-| `project up [WORKSPACE]`, `project recreate [WORKSPACE]` | 경로 기본 `.`. 기존 세션 계정 유지; 새 세션이면 계정 선택/명시 필요. recreate는 대화형 확인 또는 `--yes` 필요 |
+| `session new [WORKSPACE]` | 경로 기본 `.`. 새 세션의 `--account`는 항상 필수 |
+| `project up [WORKSPACE]`, `project recreate [WORKSPACE]` | 경로 기본 `.`. 기존 세션 계정 유지; 새 세션이면 `--account` 필요. recreate는 `--yes` 필수 |
 | `project down [WORKSPACE]` | 경로 기본 `.`. 최상위 `down`과 같이 컨테이너를 내리고 등록·세션·대화 기록을 보존 |
-| `session attach [TARGET]` , `tui` (`watch`) | 대상 생략 시 선택/TUI. tui는 인자 없음 |
 | `project shell PROJECT [COMMAND...]` | 대상 필수, 명령 기본 sh |
 | `project exec PROJECT COMMAND...` | 대상과 실행 명령 모두 필수. `project exec PROJECT -- COMMAND...`로 옵션 전달 가능 |
 | `session ls`, `project ls` | 인자 없음 |
@@ -434,7 +428,7 @@ new/up/recreate의 `--agent`는 Account/기존 세션에서 결정하므로 선�
 호스트 CLI가 편집 저장 및 준비 명령마다 포함한 파일까지 읽어 manager에 저장하며,
 새 컨테이너 또는 명시적으로 재생성한 컨테이너에 적용한다.
 설정 예시와 변수는 [프로젝트 Compose override](devcontainer-overrides.md)를 참고한다.
-`--no-attach`, `--trust-config`, `--yes`는 명시적인 동작/신뢰/확인 스위치다.
+`--trust-config`, `--yes`는 명시적인 동작/신뢰/확인 스위치다.
 조건부 필수인 옵션은 대화형 선택이나 재접속을 위해 positional로 바꾸지 않았다.
 
 ### 계정 선택 화면
@@ -451,12 +445,13 @@ Provider 이름은 Claude/Codex 브랜드색을 쓰고 6셀로 고정해 선택 
 최상위 up은 준비 중 서버 체크포인트와 경과 시간을 stderr로 출력한다. devcontainer
 이미지 pull/build 및 hook, 에이전트 설치, runtime 준비를 구분한다. 빠른 단계는
 폴링 사이에 지나갈 수 있고, 오래 걸리는 단계는 10초마다 다시 표시한다. 진행률이나
-상세 빌드 로그를 추정하지 않으며 --no-attach의 JSON stdout에는 섞이지 않는다.
+상세 빌드 로그를 추정하지 않으며 CLI의 JSON stdout에는 섞이지 않는다.
 
-최상위 up은 컨테이너 준비 후 안내만 출력하고 종료하며 TUI를 열지 않는다.
-`--format json`은 `--no-attach` 없이도 프로젝트 JSON을 출력한다. `--no-attach`도
-기존 스크립트 호환을 위해 유지하며 프로젝트 정보를 출력한다.
-프로젝트·세션 목록은 `cxz` 또는 `cxz tui`로 연다.
+최상위 up은 컨테이너 준비 후 프로젝트 정보를 출력하고 종료한다.
+모든 서브커맨드는 TUI를 열지 않는다. `--no-attach`, `it`, `session attach`,
+`tui`, `watch`, `connect`는 제거했다. 프로젝트·세션 목록은 `cxz`로 연다.
+원격 TUI는 `cxz --endpoint NAME_OR_URL`로 열며 `--session`, `--token-file`을 지원한다.
+
 별도 프로젝트 전용 화면은 없으며 같은 목록으로 시작·탐색·세션 관리를 수행한다.
 ↑/↓·Enter로 세션을 열고, n/Ctrl-N은 계정 선택·첫 로그인·새 세션 생성으로 이어진다.
 프로젝트당 실행 세션 하나 제약은 유지하므로 기존 세션을 s로 중지한 뒤 새로 만든다.
@@ -890,18 +885,9 @@ agent enum, alias, 모델, 이름, 수정값 누락, config 키, 답변 JSON은 
 
 ## 시작 오류와 설정 신뢰
 
-터미널에서 프로젝트 준비 중 신뢰 확인이 필요하면 전체 화면으로 전환하지 않고
-기존 출력 아래에 오류 내용과 한 행의 `Exit`, `Trust` 버튼을 표시한다.
-기본 선택은 Exit이며 ←/→ 또는 Tab으로 이동하고 Enter로 선택한다.
-긴 오류는 PgUp/PgDn으로 스크롤한다. Trust를 선택해야만 같은 프로젝트 요청을
-명시적 신뢰 옵션으로 재시도하며, 이 신뢰는 기존 `--trust-config`와 동일하게 저장된다.
-일반 실행 오류는 Exit 버튼으로 닫으며 임의로 명령을 재실행하지 않는다.
-
-`cxz up -x WORKSPACE` 또는 `cxz -x up WORKSPACE`는 오류 복구 화면 없이
-즉시 오류를 반환한다. 긴 이름은 `--exit-on-error`다. 비대화형 입력, 리다이렉트된
-stderr, `--no-attach`, JSON 출력에서도 오류 화면을 열지 않는다.
-기존 `--trust-config`를 명시하면 신뢰 선택 없이 진행한다.
-Exit 및 실패의 종료 코드는 0이 아니다.
+CLI 서브커맨드는 오류를 출력하고 즉시 실패 종료하며 오류/신뢰 TUI를 열지 않는다.
+설정 신뢰가 필요하면 내용을 검토한 뒤 `--trust-config`를 명시해 다시 실행한다.
+`-x`/`--exit-on-error`는 호환 옵션으로 유지하지만 서브커맨드는 기본적으로 즉시 오류를 반환한다.
 
 ## 세션 전환과 질문 포커스
 

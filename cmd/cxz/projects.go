@@ -4,7 +4,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/charmbracelet/x/term"
 	"github.com/lesomnus/cxz/api"
@@ -15,9 +14,7 @@ import (
 	"github.com/lesomnus/cxz/internal/resourceclient"
 	"github.com/lesomnus/cxz/internal/settings"
 	"github.com/lesomnus/cxz/internal/transport"
-	"github.com/lesomnus/cxz/internal/tui"
 	"github.com/lesomnus/cxz/internal/workspace"
-	"github.com/lesomnus/cxz/resource"
 	"github.com/lesomnus/xli"
 	"github.com/lesomnus/xli/arg"
 	"github.com/lesomnus/xli/flg"
@@ -36,39 +33,16 @@ func terminal(c *xli.Command) bool {
 	return ok && term.IsTerminal(f.Fd())
 }
 
-func selectProjectAccount(ctx context.Context, resources *resourceclient.Client, c *xli.Command) (string, error) {
-	if !terminal(c) {
-		return "", fmt.Errorf("%s requires --account to create a session; list profiles with cxz account ls", c.Name)
-	}
-	var choices []*resource.Account
-	after := ""
-	for {
-		page, err := resources.Accounts.List(ctx, resource.AccountListRequest_builder{Size: 200, After: after}.Build())
-		if err != nil {
-			return "", err
-		}
-		choices = append(choices, page.GetItems()...)
-		after = page.GetNext()
-		if after == "" {
-			break
-		}
-	}
-	if len(choices) == 0 {
-		return "", fmt.Errorf("no accounts; run cxz account add codex NAME, then cxz account login NAME")
-	}
-	return tui.SelectAccount(ctx, choices, c.ReadCloser, c.ErrWriter)
-}
-
 func newProjectCommand(name string) *xli.Command {
 	path := projectArg("WORKSPACE", true)
 	path.Default = ptr(".")
-	c := &xli.Command{Name: name, Brief: map[string]string{"up": "Prepare project and attach existing session", "new": "Create project session and attach TUI", "down": "Remove owned containers; retain project, sessions, history and volumes", "recreate": "Replace container; writable layer lost, editors disconnect"}[name], Args: arg.Args{path}, Handler: withClient(projectCommand)}
+	c := &xli.Command{Name: name, Brief: map[string]string{"up": "Prepare project and print result", "new": "Create project session and print result", "down": "Remove owned containers; retain project, sessions, history and volumes", "recreate": "Replace container; writable layer lost, editors disconnect"}[name], Args: arg.Args{path}, Handler: withClient(projectCommand)}
 	if name != "down" {
 		config := stringFlag("config", "Devcontainer configuration", "")
 		config.Handler = flg.OnTab[string](func(_ context.Context, t tab.Tab) error { t.Files(""); return nil })
-		c.Flags = flg.Flags{agentFlag(""), stringFlag("model", "Model ID/alias for a new session (persisted on resume)", ""), config, switchFlag("no-attach", "Print session data without opening TUI (see --format)"), switchFlag("trust-config", "Trust elevated settings and host initialization")}
+		c.Flags = flg.Flags{agentFlag(""), stringFlag("model", "Model ID/alias for a new session (persisted on resume)", ""), config, switchFlag("trust-config", "Trust elevated settings and host initialization")}
 		c.Flags = append(c.Flags, stringFlag("name", "Project display name", ""), stringFlag("alias", "Unique short project handle (generated when omitted)", ""))
-		c.Flags = append(c.Flags, stringFlag("account", "Registered profile; required for new sessions in scripts, selected interactively or inherited on resume", ""))
+		c.Flags = append(c.Flags, stringFlag("account", "Registered profile; required for new sessions", ""))
 	}
 	if name == "recreate" {
 		c.Flags = append(c.Flags, switchFlag("yes", "Confirm writable-layer loss and editor disconnection"))
@@ -178,12 +152,9 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 	agent := flg.MustGet[string](c, "agent")
 	account, _ := flg.Get[string](c, "account")
 	if command == "new" && account == "" {
-		var err error
-		account, err = selectProjectAccount(ctx, client.(*resourceclient.Client), c)
-		if err != nil {
-			return err
-		}
+		return fmt.Errorf("new requires --account; list profiles with cxz account ls")
 	}
+
 	if account != "" {
 		a, err := client.(*resourceclient.Client).Account(ctx, account)
 		if err != nil {
@@ -197,7 +168,6 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 	model, _ := flg.Get[string](c, "model")
 	cfg := settings.From(ctx)
 	config := flg.MustGet[string](c, "config")
-	detach := flg.MustGet[bool](c, "no-attach")
 	trust := flg.MustGet[bool](c, "trust-config")
 	yes := false
 	if command == "recreate" {
@@ -213,19 +183,9 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 		if config == "" {
 			configs := workspace.Discover(local)
 			if len(configs) > 1 {
-				if !terminal(c) {
-					return fmt.Errorf("multiple configurations; pass --config")
-				}
-				for i, configPath := range configs {
-					fmt.Fprintf(c.ErrWriter, "%d) %s\n", i+1, configPath)
-				}
-				fmt.Fprint(c.ErrWriter, "Configuration: ")
-				var n int
-				if _, e = fmt.Fscanln(c.ReadCloser, &n); e != nil || n < 1 || n > len(configs) {
-					return fmt.Errorf("invalid configuration selection")
-				}
-				config = configs[n-1]
+				return fmt.Errorf("multiple configurations; pass --config")
 			}
+
 		}
 	}
 	if config != "" {
@@ -248,17 +208,9 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 	request.PrepareOnly = projectEntry
 	resources := client.(*resourceclient.Client)
 	if err := resources.CheckOpen(ctx, request); err != nil {
-		if !errors.Is(err, resourceclient.ErrAccountRequired) {
-			return err
-		}
-		request.Account, err = selectProjectAccount(ctx, resources, c)
-		if err != nil {
-			return err
-		}
-		if err = resources.CheckOpen(ctx, request); err != nil {
-			return err
-		}
+		return err
 	}
+
 	if _, err := syncDevcontainer(ctx, client, stateFrom(ctx), cfg); err != nil {
 		return err
 	}
@@ -279,13 +231,7 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 				}
 			}
 		}
-		if !terminal(c) {
-			return fmt.Errorf("review targets with cxz project ls, then pass --yes")
-		}
-		if err := tui.ConfirmRecreate(ctx, c.ReadCloser, c.ErrWriter, path); err != nil {
-			return err
-		}
-		yes = true
+		return fmt.Errorf("review targets with cxz project ls, then pass --yes")
 	}
 	request.Confirmed = yes
 	fmt.Fprintln(c.ErrWriter, "cxz: preparing workspace; initial image/agent downloads may take a few minutes")
@@ -326,61 +272,7 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 	if e != nil {
 		return e
 	}
-	if detach || !terminal(c) {
-		return writeOutput(c, s)
-	}
-	p, err := resources.ResolveProject(ctx, s.ProjectId)
-	if err != nil {
-		return err
-	}
-	return projectTUI(ctx, resources, c, p, s.Id, request.TrustConfig)
-}
-func attach(ctx context.Context, client api.SessionsClient, command *xli.Command, arg string) error {
-	c, cancel := context.WithTimeout(ctx, 15*time.Second)
-	defer cancel()
-	list, e := client.List(c, &api.Empty{})
-	if e != nil {
-		return e
-	}
-	projectID := ""
-	for _, s := range list.Sessions {
-		if arg != "" && s.Alias == arg {
-			return localTUI(ctx, client, command, s.Id)
-		}
-	}
-	if arg != "" {
-		if projects, e := client.Projects(c, &api.Empty{}); e == nil {
-			if p, err := projectref.Resolve(projects.Projects, arg); err == nil {
-				projectID = p.Id
-			} else if status.Code(err) != codes.NotFound {
-				return err
-			}
-		}
-	}
-	var matches []*api.Session
-	for _, s := range list.Sessions {
-		if projectID != "" && s.ProjectId == projectID || projectID == "" && (arg == "" || s.Id == arg || strings.HasPrefix(s.Id, arg) || s.ProjectId == arg || s.Title == arg || filepath.Base(s.Workspace) == arg) {
-			matches = append(matches, s)
-		}
-	}
-	if projectID != "" && len(matches) > 1 {
-		for _, s := range matches {
-			if s.State == "idle" || s.State == "working" || s.State == "waiting_input" {
-				matches = []*api.Session{s}
-				break
-			}
-		}
-	}
-	if len(matches) == 0 {
-		return fmt.Errorf("no matching session; use cxz session ls")
-	}
-	if len(matches) > 1 && arg != "" {
-		return fmt.Errorf("ambiguous session; use a session id from cxz session ls")
-	}
-	if len(matches) > 1 && arg == "" && os.Getenv("CXZ_PROJECT_ID") == "" {
-		return localTUI(ctx, client, command, "")
-	}
-	return localTUI(ctx, client, command, matches[0].Id)
+	return writeOutput(c, s)
 }
 
 func projectExec(ctx context.Context, client api.SessionsClient, c *xli.Command) error {

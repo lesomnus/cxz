@@ -22,39 +22,20 @@ import (
 
 func workspaceEntryCommands() xli.Commands {
 	up := newProjectCommand("up")
-	up.Brief = "Prepare workspace and print TUI guidance (no session created)"
+	up.Brief = "Prepare workspace and print project data (no session created)"
 	var flags flg.Flags
 	for _, f := range up.Flags {
-		if f.Info().Name == "no-attach" {
-			f.(*flg.Switch).Brief = "Print project data instead of TUI guidance (see --format)"
-		}
 		if f.Info().Name != "account" && f.Info().Name != "model" {
 			flags = append(flags, f)
 		}
 	}
 	up.Flags = append(flags, formatFlag())
 	down := &xli.Command{Name: "down", Brief: "Remove owned containers; retain project, sessions, history and volumes", Args: arg.Args{projectArg("WORKSPACE", true)}, Flags: flg.Flags{formatFlag()}, Handler: withClient(workspaceEntry)}
-	it := &xli.Command{Name: "it", Brief: "Open the workspace's newest session (does not create one)", Args: arg.Args{projectArg("WORKSPACE", true)}, Handler: withClient(workspaceEntry)}
 	down.Args[0].(*arg.String).Default = ptr(".")
-	it.Args[0].(*arg.String).Default = ptr(".")
-	return xli.Commands{up, down, it}
+	return xli.Commands{up, down}
 }
 
-func workspaceReady(c *xli.Command, p *api.Project) error {
-	if flg.MustGet[bool](c, "no-attach") {
-		return writeOutput(c, p)
-	}
-	for cur := c; ; cur = cur.Parent() {
-		if _, set := flg.Get[string](cur, "format"); set {
-			return writeOutput(c, p)
-		}
-		if !cur.HasParent() {
-			break
-		}
-	}
-	_, err := fmt.Fprintf(c.Writer, "Project %q is ready.\nRun cxz to view projects and sessions in the TUI.\n", p.Name)
-	return err
-}
+func workspaceReady(c *xli.Command, p *api.Project) error { return writeOutput(c, p) }
 
 func workspaceEntry(ctx context.Context, client api.SessionsClient, c *xli.Command) error {
 	path := arg.MustGet[string](c, "WORKSPACE")
@@ -73,24 +54,10 @@ func workspaceEntry(ctx context.Context, client api.SessionsClient, c *xli.Comma
 	if err != nil {
 		return err
 	}
-	if c.Name == "down" {
-		if _, err := resources.Down(ctx, &api.ProjectRequest{Workspace: p.Id, ClientId: core.ID()}); err != nil {
-			return err
-		}
-		return writeOutput(c, map[string]any{"project": p.Id, "status": "stopped", "retained": "project, sessions, conversation history, workspace source and named volumes"})
-	}
-	if !terminal(c) {
-		return fmt.Errorf("it requires an interactive terminal; use cxz session get SESSION for data")
-	}
-	list, err := resources.List(ctx, &api.Empty{})
-	if err != nil {
+	if _, err := resources.Down(ctx, &api.ProjectRequest{Workspace: p.Id, ClientId: core.ID()}); err != nil {
 		return err
 	}
-	sessions := tui.ProjectSessions(list.Sessions, p)
-	if len(sessions) == 0 {
-		return fmt.Errorf("project has no sessions; run cxz and press n in the project list to create one")
-	}
-	return projectTUI(ctx, resources, c, p, sessions[0].Id, false)
+	return writeOutput(c, map[string]any{"project": p.Id, "status": "stopped", "retained": "project, sessions, conversation history, workspace source and named volumes"})
 }
 
 func localTUI(ctx context.Context, client api.SessionsClient, c *xli.Command, selected string) error {

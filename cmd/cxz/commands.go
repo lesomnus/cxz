@@ -61,8 +61,8 @@ func withClient(fn clientFunc) xli.Handler {
 		if err != nil {
 			return err
 		}
-		if (c.Name == "cxz" || c.Name == "tui") && cfg.Connections != nil {
-			return runConfigured(ctx, root, cfg, "", "")
+		if c.Name == "cxz" && (cfg.Connections != nil || flg.MustGet[string](c, "endpoint") != "") {
+			return runRemote(ctx, root, flg.MustGet[string](c, "endpoint"), flg.MustGet[string](c, "token-file"), flg.MustGet[string](c, "session"))
 		}
 		ctx = settings.With(ctx, cfg)
 		ctx = tui.WithRecordingDirectory(ctx, filepath.Join(root, "recordings"))
@@ -131,7 +131,7 @@ func agentArg() *arg.Mono[string, agentParser] {
 func newRoot(state string) *xli.Command {
 	root := &xli.Command{Name: "cxz", Brief: "Persistent coding-agent sessions in owned devcontainers",
 		Synop: "Flags precede positional arguments: cxz account add codex work; cxz session new --account work .\nCtrl-C detaches the TUI; stop terminates the agent. Foreign containers are never adopted.",
-		Flags: flg.Flags{stringFlag("state", "Private client/runtime state directory", state), &flg.Switch{Name: "exit-on-error", Alias: 'x', Brief: "Return errors immediately without interactive error recovery", Default: ptr(false)}},
+		Flags: append(remoteFlags(), stringFlag("state", "Private client/runtime state directory", state), &flg.Switch{Name: "exit-on-error", Alias: 'x', Brief: "Return errors immediately without interactive error recovery", Default: ptr(false)}),
 		Handler: xli.Chain(xli.On(mode.Run, func(ctx context.Context, c *xli.Command, next xli.Next) error {
 			if err := validateInvocation(c); err != nil {
 				return err
@@ -146,7 +146,6 @@ func newRoot(state string) *xli.Command {
 		})),
 	}
 	root.Commands = xli.Commands{
-		connectCommand(),
 		{Name: "expose", Brief: "Forward the installed daemon over authenticated plaintext TCP (VPN/tunnel)", Flags: flg.Flags{stringFlag("listen", "TCP listen endpoint", "tcp://127.0.0.1:7349"), stringFlag("token-file", "Remote access token file (32+ bytes)", os.Getenv("CXZ_TOKEN_FILE"))}, Handler: onRun(func(ctx context.Context, c *xli.Command) error {
 			token, err := transport.ReadToken(flg.MustGet[string](c, "token-file"))
 			if err != nil {
@@ -154,8 +153,8 @@ func newRoot(state string) *xli.Command {
 			}
 			return transport.Expose(ctx, stateFrom(ctx), flg.MustGet[string](c, "listen"), token, c.ErrWriter)
 		})},
-		{Name: "terminal-info", Brief: "Inspect local terminal environment and interactive color palette", Flags: flg.Flags{switchFlag("plain", "Print environment and palette codes without interactive UI")}, Handler: onRun(func(ctx context.Context, c *xli.Command) error {
-			return tui.RunTerminalInfo(ctx, c.ReadCloser, c.Writer, flg.MustGet[bool](c, "plain"))
+		{Name: "terminal-info", Brief: "Print local terminal environment and color palette", Flags: flg.Flags{switchFlag("plain", "Print environment and palette codes without interactive UI")}, Handler: onRun(func(ctx context.Context, c *xli.Command) error {
+			return tui.RunTerminalInfo(ctx, c.ReadCloser, c.Writer, true)
 		})},
 		{Name: "install", Brief: "Start background Docker manager", Flags: flg.Flags{stringFlag("workspace-root", "Engine-visible workspace root", ""), stringFlag("image", "Manager image (default: build from this binary)", ""), switchFlag("recreate", "Replace owned manager, preserving data")}, Handler: onRun(func(ctx context.Context, c *xli.Command) error {
 			return installer.Install(ctx, stateFrom(ctx), flg.MustGet[string](c, "workspace-root"), flg.MustGet[string](c, "image"), flg.MustGet[bool](c, "recreate"), c.ErrWriter)
@@ -170,14 +169,6 @@ func newRoot(state string) *xli.Command {
 	root.Commands = append(root.Commands, githubCommands())
 	root.Commands = append(root.Commands, accountCommands())
 	root.Commands = append(root.Commands, accountInternalCommands()...)
-	root.Commands = append(root.Commands,
-		&xli.Command{Name: "attach", Aliases: []string{"it"}, Brief: "Attach TUI to session/project", Args: arg.Args{projectArg("TARGET", true)}, Handler: withClient(func(ctx context.Context, client api.SessionsClient, c *xli.Command) error {
-			return attach(ctx, client, c, arg.MustGet[string](c, "TARGET"))
-		})},
-		&xli.Command{Name: "tui", Aliases: []string{"watch"}, Brief: "Open multi-project TUI", Handler: withClient(func(ctx context.Context, client api.SessionsClient, c *xli.Command) error {
-			return localTUI(ctx, client, c, "")
-		})},
-	)
 	for _, name := range []string{"shell", "exec"} {
 		c := &xli.Command{Name: name, Brief: map[string]string{"shell": "Open project shell", "exec": "Execute command inside project"}[name], Args: arg.Args{projectArg("PROJECT", false), &arg.Remains{Name: "COMMAND", Optional: name == "shell"}}, Handler: withClient(projectExec)}
 		root.Commands = append(root.Commands, c)

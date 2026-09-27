@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/creack/pty"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/projectconfig"
 	"github.com/lesomnus/cxz/internal/settings"
@@ -54,7 +55,7 @@ func TestHelpWithoutInstallation(t *testing.T) {
 
 func TestTerminalInfoWithoutInstallation(t *testing.T) {
 	state := filepath.Join(t.TempDir(), "absent")
-	got := xlitest.Run(t, newRoot(state), "terminal-info", "--plain")
+	got := xlitest.Run(t, newRoot(state), "terminal-info")
 	if got.Err != nil || !strings.Contains(got.Stdout, "TERM=") || !strings.Contains(got.Stdout, "235 #262626") {
 		t.Fatalf("%+v", got)
 	}
@@ -239,7 +240,7 @@ func TestCommandsReachAPI(t *testing.T) {
 	if table.Err != nil || !strings.Contains(table.Stdout, "ALIAS") || !strings.Contains(table.Stdout, "pn") {
 		t.Fatal("default API table", table)
 	}
-	for _, args := range [][]string{{"project", "up", "--trust-config", "project-name"}, {"project", "recreate", "--trust-config", "--yes", "project-name"}, {"session", "new", "--no-attach", "project-name"}} {
+	for _, args := range [][]string{{"project", "up", "--trust-config", "project-name"}, {"project", "recreate", "--trust-config", "--yes", "project-name"}, {"session", "new", "project-name"}} {
 		got := xlitest.Run(t, newRoot(root), args...)
 		if got.Err == nil || !strings.Contains(got.Err.Error(), "--account") {
 			t.Fatalf("missing account guidance: %v", got.Err)
@@ -257,11 +258,9 @@ func TestCommandsReachAPI(t *testing.T) {
 		args []string
 		want string
 	}{
-		{[]string{"up", "project-name"}, "Project \"project-name\" is ready.\nRun cxz to view projects and sessions in the TUI.\n"},
+		{[]string{"up", "project-name"}, "project-name"},
 		{[]string{"up", "--format", "json", "project-name"}, `"id":"project-name"`},
 		{[]string{"--format", "json", "up", "project-name"}, `"id":"project-name"`},
-		{[]string{"up", "--no-attach", "--format", "json", "project-name"}, `"id":"project-name"`},
-		{[]string{"up", "--no-attach", "project-name"}, "project-name"},
 		{[]string{"up", "--format", "table", "project-name"}, "project-name"},
 	} {
 		unregistered.Store(true)
@@ -300,7 +299,24 @@ func TestCommandsReachAPI(t *testing.T) {
 		t.Helper()
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer cancel()
-		got := (xlitest.Harness{Cmd: newRoot(root), Ctx: ctx}).Run(t, append([]string{"--format", "json"}, args...)...)
+		commandRoot := newRoot(root)
+		if len(args) >= 2 && args[0] == "session" && args[1] == "new" {
+			master, tty, err := pty.Open()
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer master.Close()
+			defer tty.Close()
+			command := commandRoot.Commands.Get("session").Commands.Get("new")
+			command.Handler = xli.Chain(xli.OnRun(func(ctx context.Context, c *xli.Command, next xli.Next) error {
+				c.ReadCloser = tty
+				if !terminal(c) {
+					t.Fatal("expected terminal input")
+				}
+				return next(ctx)
+			}), command.Handler)
+		}
+		got := (xlitest.Harness{Cmd: commandRoot, Ctx: ctx}).Run(t, append([]string{"--format", "json"}, args...)...)
 		if got.Err != nil {
 			t.Fatalf("%v: %v", args, got.Err)
 		}
@@ -315,7 +331,7 @@ func TestCommandsReachAPI(t *testing.T) {
 	if a.GetAlias() != "work-codex" || a.GetAgent() != "codex" || a.GetName() != "Work Codex" || a.GetAuthBackend() != "" {
 		t.Fatal(a)
 	}
-	got := run("session", "new", "--account", "work-codex", "--agent", "codex", "--model", "test-model", "--no-attach", "project-name")
+	got := run("session", "new", "--account", "work-codex", "--agent", "codex", "--model", "test-model", "project-name")
 	req := (<-stub.requests).(*api.ProjectRequest)
 	if req.Agent != "codex" || req.Account != "work-codex" || !req.NewSession || req.Workspace != "project-name" || req.ClientId == "" {
 		t.Fatal(req)
@@ -386,18 +402,11 @@ func TestAgentCompletionWithoutConnection(t *testing.T) {
 	}
 }
 
-func TestAliases(t *testing.T) {
-	for _, alias := range []struct{ name, target string }{{"watch", "tui"}} {
-		root := newRoot("unused")
-		called := false
-		for _, c := range root.Commands {
-			if c.Name == alias.target {
-				c.Handler = onRun(func(_ context.Context, c *xli.Command) error { called = true; return nil })
-			}
-		}
-		got := xlitest.Run(t, root, alias.name)
-		if got.Err != nil || !called {
-			t.Fatalf("%s: %+v", alias.name, got)
+func TestRemovedTUIEntrypoints(t *testing.T) {
+	for _, args := range [][]string{{"it"}, {"attach"}, {"tui"}, {"watch"}, {"connect"}, {"session", "attach"}, {"session", "it"}, {"up", "--no-attach"}, {"project", "up", "--no-attach"}, {"session", "new", "--no-attach"}} {
+		got := xlitest.Run(t, newRoot(t.TempDir()), args...)
+		if got.Err == nil {
+			t.Fatalf("removed entrypoint accepted: %v", args)
 		}
 	}
 }
@@ -406,7 +415,7 @@ func TestRootDefaultsToTUIConnection(t *testing.T) {
 	// A project runtime skips the install guard on purpose; this covers the host.
 	t.Setenv("CXZ_PROJECT_ID", "")
 	state := filepath.Join(t.TempDir(), "missing")
-	for _, args := range [][]string{nil, {"--state", state}, {"tui"}} {
+	for _, args := range [][]string{nil, {"--state", state}} {
 		got := xlitest.Run(t, newRoot(state), args...)
 		if got.Err == nil || !strings.Contains(got.Err.Error(), "cxz is not installed") {
 			t.Fatalf("%v: %+v", args, got)

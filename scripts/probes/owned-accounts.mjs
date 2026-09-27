@@ -46,23 +46,23 @@ try{
  for(const alias of ['personal','work']){await cli('account','add','claude',alias);}
  await cli('account','add','claude','missing');
  project=await json('project','add','--name','Account Test Project','--alias',`account-${run}`,work);
- await assert.rejects(()=>cli('session','new','--account','missing','--no-attach',project.alias));
+ await assert.rejects(()=>cli('session','new','--account','missing',project.alias));
  await cli('account','login','--project',project.alias,'personal');
  await cli('account','status','--project',project.alias,'personal');
  const bindings=await json('binding','ls','personal');assert.equal(bindings.items.length,1);const personalBinding=bindings.items[0].bindingId;assert.equal(bindings.items[0].authBackend,'project-local-oauth');
  await cli('account','login','--project',project.alias,'personal');assert.equal((await json('binding','ls','personal')).items.length,1);
- let personal=await json('session','new','--account','personal','--no-attach',project.alias);assert.equal(personal.account,'personal');
+ let personal=await json('session','new','--account','personal',project.alias);assert.equal(personal.account,'personal');
  assert.equal(personal.auth_binding,personalBinding);assert.equal(personal.auth_backend,'project-local-oauth');
  assert.equal(personal.project_name,'Account Test Project');assert.equal(personal.project_alias,project.alias);
  await cli('project','exec',project.alias,'--','pwd');await cli('project','logs',project.alias);
  await contextCheck(personal,'personal');
  const p=(await json('project','ls')).projects.find(p=>p.id===personal.project_id);
  await docker('exec',p.container_id,'test','!','-e','/cxz/state/data/accounts/work');
- await assert.rejects(()=>cli('project','up','--account','work','--no-attach',project.alias));
+ await assert.rejects(()=>cli('project','up','--account','work',project.alias));
  await assert.rejects(()=>cli('account','login','--project',project.alias,'personal'));
  personal=await stopped(personal);
  await cli('account','login','--project',project.alias,'work');
- let workSession=await json('session','new','--account','work','--no-attach',project.alias);assert.notEqual(workSession.id,personal.id);assert.equal(workSession.account,'work');await contextCheck(workSession,'work');
+ let workSession=await json('session','new','--account','work',project.alias);assert.notEqual(workSession.id,personal.id);assert.equal(workSession.account,'work');await contextCheck(workSession,'work');
  const workBinding=workSession.auth_binding;assert.notEqual(workBinding,personalBinding);
  workSession=await stopped(workSession);
  project=await json('project','set','--name','Renamed Account Project','--alias',`renamed-${run}`,project.alias);
@@ -70,7 +70,7 @@ try{
  await docker('restart',installation.container);
  for(let i=0;i<60;i++){try{await cli('account','get','work');break;}catch{await delay(100);}}
  const oldContainer=(await json('project','ls')).projects.find(p=>p.id===project.id).container_id;
- workSession=await json('project','recreate','--yes','--account','work','--no-attach',project.alias);assert.equal(workSession.account,'work');await contextCheck(workSession,'work');
+ workSession=await json('project','recreate','--yes','--account','work',project.alias);assert.equal(workSession.account,'work');await contextCheck(workSession,'work');
  assert.equal(workSession.auth_binding,workBinding);assert.equal(workSession.auth_backend,'project-local-oauth');
  assert.equal(workSession.project_name,'Renamed Account Project');assert.equal(workSession.project_alias,project.alias);
  assert.notEqual((await json('project','ls')).projects.find(p=>p.id===project.id).container_id,oldContainer);
@@ -78,7 +78,7 @@ try{
  const other=work+'-other';mkdirSync(join(other,'.devcontainer'),{recursive:true});
  writeFileSync(join(other,'.devcontainer/devcontainer.json'),JSON.stringify({image:'alpine:latest',remoteUser:'root'}));
  second=await json('project','add','--alias',`other-${run}`,other);
- await assert.rejects(()=>cli('session','new','--account','work','--no-attach',second.alias));
+ await assert.rejects(()=>cli('session','new','--account','work',second.alias));
  const workBindings=(await json('binding','ls','work')).items;assert.equal(workBindings.length,2);assert.notEqual(workBindings[0].bindingId,workBindings[1].bindingId);
  const otherProject=(await json('project','ls')).projects.find(p=>p.id===second.id);
  await docker('exec',otherProject.container_id,'test','!','-e','/cxz/state/data/accounts/work/config/.credentials.json');

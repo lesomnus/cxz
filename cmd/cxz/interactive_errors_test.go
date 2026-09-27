@@ -5,6 +5,7 @@ package main
 import (
 	"context"
 	"errors"
+	"github.com/creack/pty"
 	"testing"
 
 	"github.com/lesomnus/cxz/api"
@@ -69,5 +70,31 @@ func TestExitOnErrorFlagBeforeAndAfterCommand(t *testing.T) {
 		if result.Err != nil || !reached {
 			t.Fatal(args, result.Err, reached)
 		}
+	}
+}
+
+func TestSubcommandDoesNotOpenErrorUIOnTerminal(t *testing.T) {
+	master, tty, err := pty.Open()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer master.Close()
+	defer tty.Close()
+	root := newRoot(t.TempDir())
+	command := root.Commands.Get("up")
+	want := errors.New("plain CLI failure")
+	command.Handler = onRun(func(_ context.Context, c *xli.Command) error {
+		c.ReadCloser, c.ErrWriter = tty, tty
+		if !terminal(c) {
+			t.Fatal("test requires a terminal")
+		}
+		if interactiveErrors(c) {
+			t.Fatal("subcommand enabled error UI")
+		}
+		return want
+	})
+	got := xlitest.Run(t, root, "up")
+	if !errors.Is(got.Err, want) {
+		t.Fatal(got.Err)
 	}
 }

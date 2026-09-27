@@ -1,6 +1,6 @@
 # Remote TUI and Windows frontend
 
-The manager, wasp, agent processes and devcontainers run on Linux. The same
+The manager, project runtime, session supervisors, agent processes and devcontainers run on Linux. The same
 `connect` command runs on Linux and Windows; the Windows binary contains the
 frontend rather than server/manager installation commands. No local Docker installation is
 needed for a remote conversation.
@@ -63,7 +63,7 @@ alongside a `default` selection:
 }
 ```
 
-Run `cxz` or `cxz tui` on Linux, or `cxz` on Windows, to see every configured
+Run `cxz` on Linux, or `cxz` on Windows, to see every configured
 connection. Existing settings fields such as `files`, `docker` and model
 preferences can remain in the same file. Connection changes apply the next time
 the TUI starts.
@@ -117,8 +117,8 @@ Edit those host settings with `cxz edit` on the Linux daemon host.
 Projects display as `project1 via work`, with their sessions underneath.
 `default` chooses the initial focus and the fallback for an unqualified session
 reference; it does not hide other connections. If omitted, the alphabetically
-first connection is selected. `cxz connect home` opens the same combined view
-with home initially focused. `cxz connect --session SESSION work` selects a
+first connection is selected. `cxz --endpoint home` opens the same combined view
+with home initially focused. `cxz --session SESSION --endpoint work` selects a
 session ID or alias on work; a qualified `work::SESSION` reference can also be
 used.
 
@@ -153,16 +153,16 @@ Targets:
 Without `connections`, Linux `cxz` retains its existing local-installation
 behavior. CLI management commands such as `cxz up`, `install` and
 `project recreate` continue to target the local installation. Passing a URL
-to `cxz connect` opens just that endpoint.
+to `cxz --endpoint` opens just that endpoint.
 
 ## SSH
 
 Update the **host CLI** on the Linux daemon host so it provides `_connect`, then:
 
 ```sh
-cxz connect ssh://user@linux-host
-cxz connect --session SESSION_ALIAS ssh://user@linux-host:2222
-cxz connect 'ssh://work-host?state=/home/user/.local/state/cxz&binary=/usr/local/bin/cxz'
+cxz --endpoint ssh://user@linux-host
+cxz --session SESSION_ALIAS --endpoint ssh://user@linux-host:2222
+cxz --endpoint 'ssh://work-host?state=/home/user/.local/state/cxz&binary=/usr/local/bin/cxz'
 ```
 
 The client runs OpenSSH (`ssh` / `ssh.exe` must be on PATH), honors SSH config
@@ -175,7 +175,7 @@ The remote `_connect` process locates the host's existing cxz installation and
 bridges gRPC through `docker exec` to its manager, or to the local Unix socket
 for a foreground daemon. It does not start another daemon. SSH keeps the transport
 encrypted; no TCP listener or token is needed. Closing the frontend closes its
-SSH process, while sessions continue under wasp.
+SSH process, while sessions continue under their session supervisors.
 
 ## TCP
 
@@ -197,7 +197,7 @@ loopback; choose an explicit host/VPN interface to accept connections there.
 Copy the token securely to the client, then:
 
 ```sh
-cxz connect --token-file ./cxz-remote.token tcp://HOST:7349
+cxz --token-file ./cxz-remote.token --endpoint tcp://HOST:7349
 ```
 
 TCP carries **plaintext gRPC**. Use it on loopback, through a tunnel or on a
@@ -208,7 +208,7 @@ to unary requests and streaming subscriptions. Both sides read the token from a
 file; tokens are not accepted in endpoint URLs. Restart the forwarder after
 rotating the token. A token must have at least 32 non-whitespace bytes.
 
-Both frontends accept `CXZ_ENDPOINT` as the default for `cxz connect` and
+Both frontends accept `CXZ_ENDPOINT` as the default for `cxz --endpoint` and
 `CXZ_TOKEN_FILE` as the default token path. The Windows frontend also uses these
 when invoked with no command (an endpoint environment variable overrides the
 configured combined view in that case). Without the environment variable,
