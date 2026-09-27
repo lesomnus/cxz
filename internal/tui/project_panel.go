@@ -106,6 +106,7 @@ func (m *model) panelRange(layout []int) (start, end int) {
 
 func (m *model) panelMouse(v tea.MouseMsg) (bool, tea.Cmd) {
 	m.panelHoverY = 0
+	m.panelHintHover = ""
 	if m.height < 14 || m.width < 40 || m.settingsPage != nil || m.memoryPage != nil ||
 		m.workflow != nil || m.accountView || m.creating || m.redactDialog != nil ||
 		m.questionFocused() || m.pasteDialog != nil || m.restartConfirm != nil || m.modelPicker != nil || m.report != nil {
@@ -118,6 +119,23 @@ func (m *model) panelMouse(v tea.MouseMsg) (bool, tea.Cmd) {
 		return false, nil
 	}
 	if m.busy || m.renaming {
+		return true, nil
+	}
+	// A footer hint is pressed rather than handled here: sending its key keeps the
+	// click on the same path as the keystroke, including the routing that decides
+	// whether the panel or the conversation owns it.
+	footer := m.panelHints()
+	if row := v.Y - m.panelHintY(0); row >= 0 && row < len(footer) {
+		hint := hintAt(footer[row], v.X-panelHintX)
+		if !hint.actionable() {
+			return true, nil
+		}
+		m.panelHintHover = hint.key
+		if v.Action == tea.MouseActionPress && v.Button == tea.MouseButtonLeft {
+			m.focusPanel()
+			press := hint.press
+			return true, func() tea.Msg { return press }
+		}
 		return true, nil
 	}
 	rows := m.panelRows()
@@ -448,6 +466,40 @@ func panelRowBackground(line string, shade int) string {
 	return background + line + "\x1b[0m"
 }
 
+func runeKey(r rune) tea.KeyMsg { return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}} }
+
+// The footer offers only what the selected row can do: renaming, stopping,
+// inspecting and deleting each need a session, and creating one needs a project.
+// panelKey refuses the same cases with a notice, so this only stops the row from
+// advertising a key that would do nothing. "agents run" is what detaching leaves
+// behind rather than a key, so it is a note.
+//
+// Rows are ordered as drawn; panelHintY turns an index into a screen row.
+func (m *model) panelHints() [][]hintSpec {
+	rows := m.panelRows()
+	noProject := len(rows) == 0
+	noSession := noProject || m.panelIndex < 0 || m.panelIndex >= len(rows) || rows[m.panelIndex].session == nil
+	return [][]hintSpec{
+		{{key: "n", label: "new", press: runeKey('n'), disabled: noProject},
+			{key: "a", label: "accounts", press: runeKey('a'), disabled: noProject}},
+		{{key: "r", label: "rename", press: runeKey('r'), disabled: noSession},
+			{key: "s", label: "stop", press: runeKey('s'), disabled: noSession}},
+		{{key: "Ctrl+X twice", label: "delete", press: tea.KeyMsg{Type: tea.KeyCtrlX}, disabled: noSession}},
+		{{key: "m", label: "memory", press: runeKey('m'), disabled: noSession},
+			// Ctrl+. reaches the TUI as F19; see the terminal key bridge.
+			{key: "Ctrl+.", label: "settings", press: tea.KeyMsg{Type: tea.KeyF19}}},
+		{{key: "Esc/Ctrl+Q", label: "return", press: tea.KeyMsg{Type: tea.KeyEsc}}},
+		{{key: "Ctrl+D", label: "detach", press: tea.KeyMsg{Type: tea.KeyCtrlD}},
+			{label: "agents run", note: true}},
+	}
+}
+
+// The footer is drawn flush to the bottom above the status row, and every panel
+// line carries one leading space, so a hint starts at column 1.
+func (m *model) panelHintY(row int) int { return m.height - projectPanelFooterRows + row }
+
+const panelHintX = 1
+
 func (m *model) panelScreen() string {
 	width := m.panelScreenWidth()
 	rows := m.panelRows()
@@ -523,15 +575,10 @@ func (m *model) panelScreen() string {
 	if m.busy {
 		status = "Working…"
 	}
-	// "agents run" is what detaching leaves behind, not a key, so it stays plain.
-	lines = append(lines,
-		hints(shortcut("n", "new"), shortcut("a", "accounts")),
-		hints(shortcut("r", "rename"), shortcut("s", "stop")),
-		hints(shortcut("Ctrl+X twice", "delete")),
-		hints(shortcut("m", "memory"), shortcut("Ctrl+.", "settings")),
-		hints(shortcut("Esc/Ctrl+Q", "return")),
-		hints(shortcut("Ctrl+D", "detach"), muted.Render("agents run")),
-		warning.Render(pickerLabel(status)))
+	for _, row := range m.panelHints() {
+		lines = append(lines, hintRow(m.panelHintHover, row))
+	}
+	lines = append(lines, warning.Render(pickerLabel(status)))
 	for len(lines) < m.height {
 		lines = append(lines, "")
 	}
