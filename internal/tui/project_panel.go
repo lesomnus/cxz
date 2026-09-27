@@ -523,7 +523,7 @@ func (m *model) panelScreen() string {
 	if m.busy {
 		status = "Working…"
 	}
-	lines = append(lines, muted.Render("n new · a accounts"), muted.Render("r rename · s stop"), muted.Render("Ctrl+X twice · delete"), muted.Render("m memory · Ctrl+Shift+, settings"), muted.Render("Esc/Ctrl+Q return"), muted.Render("Ctrl+D detach · agents run"), warning.Render(pickerLabel(status)))
+	lines = append(lines, muted.Render("n new · a accounts"), muted.Render("r rename · s stop"), muted.Render("Ctrl+X twice · delete"), muted.Render("m memory · Ctrl+. settings"), muted.Render("Esc/Ctrl+Q return"), muted.Render("Ctrl+D detach · agents run"), warning.Render(pickerLabel(status)))
 	for len(lines) < m.height {
 		lines = append(lines, "")
 	}

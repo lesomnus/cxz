@@ -255,12 +255,9 @@ Windows Terminal의 Windows 빌드도 VT 입력을 활성화해 붙여넣기 경
 `t`는 원문 전송, `f`는 파일 첨부 전환, `d`는 초안에서 제거, `Esc`는 닫기다.
 /paste 미리보기는 현재 입력에 남아 있는 칩만 표시한다. 삭제/전송한 칩은 캐시에서
 다시 표시하지 않는다. `Ctrl+P`는 붙여넣기 chip 상세보기를 열고,
-`Ctrl+Shift+,`는 공유 Docker 상태와 관리 액션이 있는 설정 화면을 연다.
+`Ctrl+.`는 공유 Docker 상태와 관리 액션이 있는 설정 화면을 연다.
 설정 단축키는 Windows 콘솔/Win32 입력과 Kitty 키보드 프로토콜에서 지원한다.
-Windows Terminal은 기본적으로 같은 키로 자체 설정 파일을 연다. cxz에 전달하려면
-Terminal 설정의 해당 키 바인딩을 해제한다. 최신 `settings.json`의 `keybindings`에
-`{ "id": "unbound", "keys": "ctrl+shift+," }`를 추가할 수 있다.
-[Windows Terminal 키 해제 안내](https://learn.microsoft.com/en-us/windows/terminal/customize-settings/actions#unbind-keys-disable-keybindings)를 참고한다.
+설정 화면에는 연결된 Manager와 클라이언트의 버전·채널, upstream edge/stable 최신 버전도 표시한다.
 키 전달을 지원하지 않는 환경에서도 `/settings`로 설정 화면을 열 수 있다.
 
 파일 전환은 현재 세션의 runtime 영구 저장소에 업로드한 뒤 적용된다. `[File …]` 칩은

@@ -19,8 +19,8 @@ func TestSettingsKeyDoesNotCapturePastePreview(t *testing.T) {
 	if m.settingsPage != nil || m.pasteDialog == nil {
 		t.Fatal("Ctrl+P did not open the paste preview")
 	}
-	for _, code := range []rune{',', '<'} {
-		key, ok := terminalEventKey(uv.KeyPressEvent{Code: code, Mod: uv.ModCtrl | uv.ModShift})
+	for _, code := range []rune{'.'} {
+		key, ok := terminalEventKey(uv.KeyPressEvent{Code: code, Mod: uv.ModCtrl})
 		if !ok || key.Type != tea.KeyF19 {
 			t.Fatal("settings key lost its modifiers", key)
 		}

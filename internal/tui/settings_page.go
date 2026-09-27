@@ -23,6 +23,9 @@ type settingsPage struct {
 	message, statusError                string
 	confirm                             string
 	confirmYes                          bool
+	upstream                            map[string]string
+	upstreamAt                          time.Time
+	upstreamLoading                     bool
 }
 type settingsResult struct {
 	page         *settingsPage
@@ -37,7 +40,7 @@ var settingsActions = []struct{ label, action string }{
 	{"Refresh", "info"}, {"Activate", "up"}, {"Clear unused build cache", "prune"}, {"Start debug recording", "record"}, {"Automatic frontend updates", "auto-update"},
 }
 
-const settingsActionRow = 7
+const settingsActionRow = 12
 
 func (m *model) openSettings() tea.Cmd {
 	m.settingsPage = &settingsPage{inputFocused: m.input.Focused(), connection: m.connectionRef()}
@@ -209,6 +212,9 @@ func (m *model) activateSetting() tea.Cmd {
 		p.confirmYes = false
 		return nil
 	}
+	if action == "info" {
+		p.upstreamAt = time.Time{}
+	}
 	return m.settingsRequest(action)
 }
 func (m *model) settingsKey(k tea.KeyMsg) tea.Cmd {
@@ -248,6 +254,7 @@ func (m *model) settingsKey(k tea.KeyMsg) tea.Cmd {
 	case "enter":
 		return m.activateSetting()
 	case "r":
+		p.upstreamAt = time.Time{}
 		return m.settingsRequest("info")
 	case "pgdown":
 		p.offset += max(1, m.height-4)
@@ -356,7 +363,7 @@ func (m *model) settingsScreen() string {
 			cache = p.info.BuildCache + " · reclaimable " + p.info.Reclaimable
 		}
 	}
-	lines := []string{"", accent.Bold(true).Render("Settings · Docker & diagnostics" + m.connectionLabel(p.connection)), "Mode: " + mode + "   Status: " + state, "Image: " + image, "Endpoint: " + endpoint, "Build cache: " + cache, ""}
+	lines := []string{"", accent.Bold(true).Render("Settings" + m.connectionLabel(p.connection)), m.settingsClientVersion(), settingsRemoteVersion(p), "Upstream @edge: " + p.upstreamVersion("edge"), "Upstream @stable: " + p.upstreamVersion("stable"), "", "Mode: " + mode + "   Status: " + state, "Image: " + image, "Endpoint: " + endpoint, "Build cache: " + cache, ""}
 	for i := range settingsActions {
 		name, _ := m.settingsAction(i)
 		label := "  [ " + name + " ]"

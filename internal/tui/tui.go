@@ -959,9 +959,16 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.receiveMemory(v)
 		return m, nil
 	}
+	if v, ok := msg.(settingsUpstreamResult); ok {
+		if m.settingsPage == v.page {
+			v.page.upstream = v.versions
+			v.page.upstreamLoading = false
+		}
+		return m, nil
+	}
 	if v, ok := msg.(settingsResult); ok {
 		m.receiveSettings(v)
-		return m, nil
+		return m, m.settingsUpstream()
 	}
 	if v, ok := msg.(logsResult); ok {
 		if m.report == v.report {
