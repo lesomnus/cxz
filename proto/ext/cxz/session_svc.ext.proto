@@ -34,8 +34,8 @@ message SessionUploadRequest {
   bytes content = 5;
 }
 message SessionActivityRequest { SessionRef ref = 1; string run_id = 2; string client_id = 3; bool busy = 4; }
-message SessionUpdateRequest { SessionRef ref = 1; string run_id = 2; string binary = 3; bool apply = 4; }
-message SessionUpdateStatus { bool ready = 1; string reason = 2; string binary = 3; string state = 4; }
+message SessionUpdateRequest { SessionRef ref = 1; string run_id = 2; string binary = 3; bool apply = 4; string supervisor_binary = 5; }
+message SessionUpdateStatus { bool ready = 1; string reason = 2; string binary = 3; string state = 4; string supervisor_binary = 5; string revision = 6; int32 protocol = 7; }
 message SessionReplyRequest {
   SessionRef ref = 1;
   string run_id = 2;

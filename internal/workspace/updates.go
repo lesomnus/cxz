@@ -12,6 +12,7 @@ import (
 
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/cxzupdate"
 	"github.com/lesomnus/cxz/internal/distribution"
 	"github.com/lesomnus/cxz/internal/dockerx"
 	"github.com/lesomnus/cxz/internal/versionpin"
@@ -97,7 +98,10 @@ func (m *Manager) RunUpdates(ctx context.Context) {
 				delete(state.Errors, "publish")
 			}
 		}
-		m.rolloutOne(ctx, &state)
+		if lock, err := core.Lock(filepath.Join(m.Root, "rollout.lock")); err == nil {
+			m.rolloutOne(ctx, &state)
+			lock.Close()
+		}
 		if e := core.WriteJSON(path, state); e != nil {
 			fmt.Fprintln(os.Stderr, "automatic updates: cannot persist queue:", e)
 		}
@@ -116,6 +120,25 @@ func (m *Manager) rolloutOne(ctx context.Context, state *updateState) {
 	projects, e := m.all(ctx)
 	if e != nil {
 		return
+	}
+	// Do not race a detached runtime helper surviving a previous manager.
+	if cxzupdate.Current().Managed() {
+		for _, p := range projects {
+			if p.ContainerID == "" {
+				continue
+			}
+			v, err := dockerx.Owned(ctx, p.ContainerID, m.Owner, p.ID)
+			if err != nil {
+				return
+			}
+			if !v.State.Running {
+				continue
+			}
+			h, err := m.projectHealth(ctx, p, "health", "")
+			if err != nil || h.Lease != "" {
+				return
+			}
+		}
 	}
 	for _, p := range projects {
 		lock := m.projectLock(p.ID)
@@ -163,6 +186,11 @@ func (m *Manager) rolloutOne(ctx context.Context, state *updateState) {
 				}
 				if !probe.Ready {
 					allIdle = false
+				}
+				if policy, err := cxzupdate.Policy(m.Root); err == nil && policy.Active() {
+					if cs, err := cxzupdate.Load(m.Root); err == nil && cs.Release != nil && cs.Release.CanReplace(cxzupdate.Current()) && cs.Release.Revision != probe.Revision && probe.Protocol == cxzupdate.Protocol {
+						continue
+					}
 				}
 				version := state.Versions[s.Agent]
 				if version == binaryVersion(s.Agent, probe.Binary) {

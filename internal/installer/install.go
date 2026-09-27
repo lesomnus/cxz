@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/cxzupdate"
 	"github.com/lesomnus/cxz/internal/dockerx"
 	"github.com/lesomnus/cxz/internal/engine"
 	"github.com/lesomnus/cxz/internal/transport"
@@ -122,8 +123,10 @@ func Install(ctx context.Context, root, workspaceRoot, image string, recreate bo
 	if p.Ready && p.Channel != "" && image == "" {
 		image = p.Image
 	}
-	return InstallLocked(ctx, root, workspaceRoot, image, recreate, out)
+	return InstallLocked(context.WithValue(ctx, installReservationKey{}, true), root, workspaceRoot, image, recreate, out)
 }
+
+type installReservationKey struct{}
 
 // InstallLocked is for the release-switch controller, which holds install.lock
 // across stopping runtimes, replacing the manager and resuming sessions.
@@ -180,6 +183,15 @@ func InstallLocked(ctx context.Context, root, workspaceRoot, image string, recre
 		if old.Config.Labels["cxz.owner"] != v.Owner {
 			return fmt.Errorf("daemon name is occupied by an unowned container")
 		}
+
+		if reserve, _ := ctx.Value(installReservationKey{}).(bool); reserve {
+			reservation, e := cxzupdate.ReserveInstall(ctx, v.Container, v.Owner, image)
+			if e != nil {
+				return e
+			}
+			defer reservation()
+		}
+
 		if !recreate {
 			if old.Config.Image != image || previousRoot != workspaceRoot {
 				return fmt.Errorf("manager image or workspace root differs; use install --recreate (data retained)")

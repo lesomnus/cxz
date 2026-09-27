@@ -318,6 +318,7 @@ message SessionUpdateRequest {
   string run_id = 2;
   string binary = 3;
   bool apply = 4;
+  string supervisor_binary = 5;
 }
 
 message SessionUpdateStatus {
@@ -325,6 +326,9 @@ message SessionUpdateStatus {
   string reason = 2;
   string binary = 3;
   string state = 4;
+  string supervisor_binary = 5;
+  string revision = 6;
+  int32 protocol = 7;
 }
 
 message SessionReplyRequest {

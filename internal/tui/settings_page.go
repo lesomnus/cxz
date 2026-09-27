@@ -9,6 +9,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/cxzupdate"
 	"github.com/lesomnus/cxz/internal/engine"
 )
 
@@ -33,7 +34,7 @@ type settingsResult struct {
 }
 
 var settingsActions = []struct{ label, action string }{
-	{"Refresh", "info"}, {"Activate", "up"}, {"Clear unused build cache", "prune"}, {"Start debug recording", "record"},
+	{"Refresh", "info"}, {"Activate", "up"}, {"Clear unused build cache", "prune"}, {"Start debug recording", "record"}, {"Automatic frontend updates", "auto-update"},
 }
 
 const settingsActionRow = 7
@@ -116,6 +117,15 @@ func (m *model) pollSettings() tea.Cmd {
 
 // Resolve the toggle from the latest reported engine state.
 func (m *model) settingsAction(index int) (string, string) {
+	if index == 4 {
+		if c, ok := cxzupdate.ClientFrom(m.ctx); ok {
+			p, e := cxzupdate.Policy(c.Root)
+			if e == nil && p.Active() {
+				return "Pause frontend updates", "auto-update"
+			}
+		}
+		return "Enable frontend updates", "auto-update"
+	}
 	if index == 3 {
 		label := "Start debug recording"
 		if m.debugRecorder.Active() {
@@ -147,6 +157,10 @@ func (m *model) moveSetting(direction int) {
 }
 
 func (m *model) settingsEnabled(index int) bool {
+	if index == 4 {
+		_, ok := cxzupdate.ClientFrom(m.ctx)
+		return ok
+	}
 	p := m.settingsPage
 	if index == 3 {
 		return !m.recordingSaving
@@ -171,6 +185,22 @@ func (m *model) activateSetting() tea.Cmd {
 		return nil
 	}
 	_, action := m.settingsAction(p.selected)
+	if action == "auto-update" {
+		if c, ok := cxzupdate.ClientFrom(m.ctx); ok {
+			policy, e := cxzupdate.Policy(c.Root)
+			if e == nil {
+				e = cxzupdate.SetPolicy(c.Root, !policy.Active())
+			}
+			if e != nil {
+				p.message = e.Error()
+			} else {
+				p.message = "Frontend update policy saved"
+				m.autoChecked = time.Time{}
+				m.autoCandidate = ""
+			}
+		}
+		return nil
+	}
 	if action == "record" {
 		return m.toggleRecording()
 	}
@@ -342,6 +372,12 @@ func (m *model) settingsScreen() string {
 		lines = append(lines, panelBackground(line+strings.Repeat(" ", max(0, inner-ansi.StringWidth(line)))))
 	}
 	lines = append(lines, accent.Render(strings.Repeat("─", inner)), "", "Configure defaults and overrides with cxz edit.")
+	current := cxzupdate.Current()
+	lines = append(lines, "", "cxz automatic updates", "Frontend running: "+current.Revision, "Frontend state: "+m.autoState.State+" · "+m.autoState.Reason)
+	if m.autoState.Release != nil {
+		lines = append(lines, "Target: "+m.autoState.Release.Revision)
+	}
+	lines = append(lines, "Server policy/status: cxz self-update status --server", "Server and frontend policies are independent.")
 	if selection := m.releaseSelectionText(); selection != "" {
 		lines = append(lines, "", selection)
 	}
