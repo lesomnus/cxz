@@ -69,6 +69,27 @@ also prevent starting compaction during an in-progress Runtime replacement.
 The build and release manifest also advertise schema 2, so schema 1 clients
 reject this release as an automatic update. Deployment requires an explicit
 upgrade path; publishing this as an ordinary compatible edge update is insufficient.
+
+After the schema 2 build is published on main/edge, finish active agent work,
+then run the following on each client and on the host managing the installation:
+
+```sh
+cxz self-update --client-only
+cxz use @edge
+```
+
+The first command installs the new client without the automatic updater's schema
+equality check. The second uses the new client to replace managed components and
+resume sessions; it force-restarts the managed installation on a Linux host.
+A Windows frontend updates only its own installation, so its remote Linux host
+must be upgraded separately. These commands assume the existing selection is
+`@edge`; an exact version pin must be cleared before `self-update`.
+
+Do not delete `cxz.db`, session journals or provider profiles. The new runtime
+reads schema 1 and 2. It adds the retention-floor table when needed and marks the
+state schema 2 before writing checkpoints. Existing project/session metadata is
+preserved and old display records are removed only by the retention policy.
+
 Disabling retention does not reverse the format change. Export/back up state
 before adopting the feature if rollback to a pre-retention release is required.
 
