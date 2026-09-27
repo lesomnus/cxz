@@ -2,8 +2,6 @@ package tui
 
 import (
 	"context"
-	"fmt"
-	"strings"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -33,6 +31,7 @@ func (m *model) contextCommand() tea.Cmd {
 			return nil
 		}
 		m.openReport("/context", "Loading provider context…")
+		m.report.setContext(agentview.ContextReport{Provider: s.Agent, Model: s.Model, Basis: "Native /context snapshot", Note: "Loading provider context…"}, "", 0)
 		id, run, request := s.Id, s.RunId, core.ID()
 		m.contextCapture = &contextCapture{id: id, run: run, request: request, report: m.report}
 		return func() tea.Msg {
@@ -42,44 +41,30 @@ func (m *model) contextCommand() tea.Cmd {
 			return contextSent{request: request, err: err}
 		}
 	}
-	lines := []string{"Context · " + pickerLabel(s.Agent)}
+	m.openReport("/context", "")
+	report := agentview.ContextReport{Provider: s.Agent, Model: s.Model, Basis: "Last reported turn", Note: "Provider has not reported context usage yet. No estimate is substituted."}
+	m.report.setContext(report, "", 0)
+	if s.Agent != "codex" {
+		return nil
+	}
 	events := m.events[s.Id]
 	for i := len(events) - 1; i >= 0; i-- {
 		e := events[i]
+		if e.RunId != s.RunId {
+			continue
+		}
 		if e.Kind == "compact" {
-			lines = append(lines, "Context compacted; waiting for a new token-usage snapshot.")
-			m.recordLocal("/context", strings.Join(lines, "\n"))
+			m.report.contextNote("Context compacted; waiting for a new token-usage snapshot.")
 			return nil
 		}
 		if e.Kind != "usage" || e.Text != "thread/tokenUsage/updated" {
 			continue
 		}
-		u := fields(e.Payload).object("tokenUsage")
-		last := u.object("last")
-		if e.TimeMs > 0 {
-			lines = append(lines, "Provider snapshot · "+time.UnixMilli(e.TimeMs).Local().Format("01-02 15:04"))
-		}
-		used, hasUsed := last.number("totalTokens")
-		window, hasWindow := u.number("modelContextWindow")
-		if hasUsed {
-			lines = append(lines, "Last turn footprint  "+humanCount(used)+" tokens")
-		}
-		if hasWindow && window > 0 {
-			lines = append(lines, "Model context window "+humanCount(window)+" tokens")
-			if hasUsed {
-				lines = append(lines, fmt.Sprintf("Reported utilization %.1f%% · %s tokens headroom", used/window*100, humanCount(max(0, window-used))))
-			}
-		}
-		for _, key := range []string{"inputTokens", "outputTokens", "cachedInputTokens", "reasoningOutputTokens"} {
-			if n, ok := last.number(key); ok {
-				lines = append(lines, fmt.Sprintf("%-21s%s", key, humanCount(n)))
-			}
-		}
-		lines = append(lines, "Last reported turn, not a live token count. System/tool category breakdown is not reported. /compact reduces agent context; the cxz journal is retained.")
-		m.recordLocal("/context", strings.Join(lines, "\n"))
+		report = agentview.ParseCodexContext(e.Payload)
+		report.Model = s.Model
+		m.report.setContext(report, string(e.Payload), e.TimeMs)
 		return nil
 	}
-	m.recordLocal("/context", strings.Join(lines, "\n")+"\nProvider has not reported context usage yet. No estimate is substituted.")
 	return nil
 }
 
@@ -108,18 +93,23 @@ func (m *model) captureContext(id string, e *api.Event) {
 			c.active = true
 			hide = true
 		} else if c.active {
-			c.report.text = "Context query was superseded by another input. No unrelated response was captured."
+			c.report.contextNote("Context query was superseded by another input. No unrelated response was captured.")
 			m.contextCapture = nil
 			return
 		}
 	case "assistant":
 		if c.active {
 			hide = true
-			c.text += e.Text + "\n"
-			c.report.text = c.text
+			if c.text != "" {
+				c.text += "\n"
+			}
+			c.text += e.Text
+			c.report.setContext(agentview.ParseClaudeContext(c.text), c.text, e.TimeMs)
+			c.report.contextNote("Receiving provider context…")
 		}
 	case "turn_end":
 		if c.active {
+			c.report.setContext(agentview.ParseClaudeContext(c.text), c.text, e.TimeMs)
 			if p, ok := agentview.ClaudeContextReport(c.text); ok {
 				if m.contextReports == nil {
 					m.contextReports = make(map[string]contextReportSnapshot)
@@ -128,13 +118,13 @@ func (m *model) captureContext(id string, e *api.Event) {
 			}
 			hide = true
 			if c.text == "" {
-				c.report.text = "No text context report received. Inspect session events for provider details."
+				c.report.contextNote("No text context report received. Inspect session events for provider details.")
 			}
 			m.contextCapture = nil
 		}
 	case "state":
 		if e.Text == "failed" || e.Text == "stopped" || e.Text == "interrupted" {
-			c.report.text = "Context query ended: " + e.Text
+			c.report.contextNote("Context query ended: " + e.Text)
 			m.contextCapture = nil
 		}
 	}

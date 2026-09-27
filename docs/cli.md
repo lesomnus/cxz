@@ -45,10 +45,23 @@ Usage 막대와 같은 색조를 사용하며 퍼센트 숫자는 회색으로 �
 미보고 상태는 `⠀—`이며 compact/새 run 이후에는 새 snapshot을 기다린다.
 Codex는 CLI의 baseline 12,000 토큰 보정 기준을 따른 마지막 tokenUsage snapshot,
 Claude는 마지막 assistant 메시지의 input+cache-read+cache-write와 해당 모델의 contextWindow를 사용한다.
-누적 billing usage는 쓰지 않으며 `/context`를 자동 전송하지 않는다. `/context` 상세 출력은 변경하지 않는다.
+누적 billing usage는 쓰지 않으며 `/context`를 자동 전송하지 않는다.
 Claude의 자동 갱신은 새 supervisor의 `context/message` 이벤트가 필요하므로 공유 runtime 업데이트 후 에이전트를 재시작해야 한다.
 직접 실행한 `/context`의 `Context Usage`/`Model`/`Tokens` 보고서가 알려진 형식이면 명시된 비율도
 status bar에 반영한다. 일반 대화 텍스트는 파싱하지 않으며 다음 입력/compact/새 run에서는 보고서 값을 무효화한다.
+
+`/context`는 Claude·Codex 모두 같은 Summary 화면으로 모델, 수치의 출처와 시각,
+사용 토큰·한도·남은 공간·사용률 막대를 표시한다. Claude는 직접 요청한 native `/context`
+텍스트의 요약과 category 표를 파싱하고, Codex는 현재 run의 마지막 `tokenUsage.last`
+snapshot을 사용한다. Codex의 누적 `total` 값은 컨텍스트로 사용하지 않는다.
+캐시 입력은 입력 토큰의 일부, 추론 출력은 출력 토큰의 일부로 표시하며 중복 합산하지 않는다.
+제공되지 않은 수치·분류는 `Not reported`로 표시한다. 상세 사용률은 사용 토큰/한도의
+단순 비율이므로 baseline 보정이 있는 Codex status bar의 값과 다를 수 있다.
+
+상단 **Summary / Raw** 버튼을 클릭하거나 ←/→, Tab으로 전환한다. Raw는 Claude의
+수신 텍스트 또는 Codex의 원래 usage JSON payload를 보여준다. 각 탭의 스크롤 위치를
+따로 유지하며 Esc로 닫아도 대화 스크롤과 입력 초안은 바뀌지 않는다. 알 수 없는 응답
+형식은 숫자를 추정하지 않고 Raw에서 확인하도록 안내한다.
 
 ## 백틱 경로 힌트
 
@@ -644,7 +657,7 @@ History에서 조회한다. 현재 run의 모델 제어 지원 기록이 없으�
 ### 작업 내용 키보드 탐색
 
 `/view`는 대화에 표시된 작업 줄에 선택자를 표시한다. ↑/↓로 이동하고 Enter로
-클릭과 동일한 내용 패널을 연다. Home/End는 현재 로드한 첫/마지막 작업을 선택한다.
+더블클릭과 동일한 내용 패널을 연다. Home/End는 현재 로드한 첫/마지막 작업을 선택한다.
 첫 작업에서 ↑를 누르면 이전 기록을 요청하고, 로딩 후 다시 ↑로 이전 작업을 선택한다.
 새 이벤트가 도착하거나 화면 크기가 바뀌어도 선택은 같은 저널 이벤트에 남는다.
 
@@ -705,7 +718,10 @@ Markdown·구문 강조는 수신 goroutine에서 준비하며, 완료된 입력
 동시 조회는 최대 4개이며, 변경 없는 상태는 재조회하지 않는다. 종료된 agent나 이전 run의
 작업은 spinner를 유지하지 않는다.
 
-### TUI 진단 로그 오버레이
+#
+작업 상태는 대괄호 없이 `○`, `•`, `✓`, `×`로 표시하며 줄바꿈된 명령의 추가 들여쓰기는 두 칸이다. 작업에 마우스를 올리면 배경으로 강조되고, 단일 클릭·드래그는 텍스트 선택, 더블클릭은 Input/Output 상세 열기로 동작한다. 배경색이 있는 에이전트 헤더는 심볼 왼쪽 한 칸부터 이름 오른쪽 한 칸까지 연속해서 칠한다.
+
+## TUI 진단 로그 오버레이
 
 `/logs`는 현재 세션의 TUI 알림 원문, 저널의 진단·상태·업데이트 기록,
 supervisor 로그와 agent stderr를 보여준다. 긴 오류 문구는 화면 너비에 맞춰

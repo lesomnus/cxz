@@ -151,7 +151,7 @@ func TestScrollableApprovalAndResolvedRow(t *testing.T) {
 	m.Update(received{id: "s", event: &api.Event{Seq: 2, RunId: "run", Kind: "approval_resolved", RequestId: "r", Text: "allowed"}})
 	m.view.GotoTop()
 	text := ansi.Strip(m.view.View())
-	if !strings.Contains(text, "[✓] Bash") || strings.Contains(text, "approval requested") || strings.Contains(text, "approval: allowed") {
+	if !strings.Contains(text, "✓ Bash") || strings.Contains(text, "approval requested") || strings.Contains(text, "approval: allowed") {
 		t.Fatal(text)
 	}
 	if request.Kind != "approval" || !strings.Contains(string(request.Payload), "TAIL") {
@@ -178,7 +178,7 @@ func TestContextAndCompactCommands(t *testing.T) {
 		m := conversationModel()
 		m.current().Agent = agent
 		c := m.client.(*recordingClient)
-		m.events["s"] = []*api.Event{{Kind: "usage", Text: "thread/tokenUsage/updated", Payload: []byte(`{"tokenUsage":{"last":{"totalTokens":2000,"inputTokens":1800},"modelContextWindow":10000}}`)}}
+		m.events["s"] = []*api.Event{{RunId: m.current().RunId, Kind: "usage", Text: "thread/tokenUsage/updated", Payload: []byte(`{"tokenUsage":{"last":{"totalTokens":2000,"inputTokens":1800},"modelContextWindow":10000}}`)}}
 		cmd := m.contextCommand()
 		if agent == "claude" {
 			if cmd == nil {

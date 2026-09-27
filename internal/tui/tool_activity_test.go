@@ -31,11 +31,11 @@ func TestWorkingToolDotBlinksWithoutRebuildingTranscript(t *testing.T) {
 		m.Update(pulseTick{})
 	}
 	off := ansi.Strip(m.conversationView())
-	if !strings.Contains(on, "[•] Bash · printf '[•]'") || !strings.Contains(off, "[ ] Bash · printf '[•]'") {
+	if !strings.Contains(on, "• Bash · printf '[•]'") || !strings.Contains(off, "  Bash · printf '[•]'") {
 		t.Fatalf("only the running header dot should blink:\non: %s\noff: %s", on, off)
 	}
 	for _, frame := range []string{on, off} {
-		if !strings.Contains(frame, "literal [•] Bash") || !strings.Contains(frame, "[ ] Read queued.txt") {
+		if !strings.Contains(frame, "literal [•] Bash") || !strings.Contains(frame, "○ Read queued.txt") {
 			t.Fatal("animation changed user text or queued tool state", frame)
 		}
 	}
@@ -44,7 +44,7 @@ func TestWorkingToolDotBlinksWithoutRebuildingTranscript(t *testing.T) {
 	}
 	m.events["s"] = append(m.events["s"], &api.Event{Seq: 6, RunId: "run", Kind: "tool_result", RequestId: "running"})
 	m.render()
-	if len(m.workingToolRows) != 0 || !strings.Contains(ansi.Strip(m.conversationView()), "[✓] Bash") {
+	if len(m.workingToolRows) != 0 || !strings.Contains(ansi.Strip(m.conversationView()), "✓ Bash") {
 		t.Fatal("completed tool kept blinking")
 	}
 }
@@ -112,7 +112,7 @@ func TestLongCommandsKeepTranscriptAlignmentAfterResize(t *testing.T) {
 		}
 		count := 0
 		for _, row := range strings.Split(ansi.Strip(m.View()), "\n") {
-			if i := strings.Index(row, "[✓] Bash"); i >= 0 {
+			if i := strings.Index(row, "✓ Bash"); i >= 0 {
 				count++
 				if ansi.StringWidth(row[:i]) != m.contentOffset()+2 {
 					t.Fatalf("tool moved horizontally at width %d: %q", width, row)
@@ -135,7 +135,7 @@ func TestFileSummaryCorrelatesInterleavedResults(t *testing.T) {
 	}
 	m.render()
 	text := ansi.Strip(m.view.View())
-	for _, want := range []string{"[✓] Write /tmp/one.go", "+1 content", "[×] Edit /tmp/two.go", "+1 -1 /match"} {
+	for _, want := range []string{"✓ Write /tmp/one.go", "+1 content", "× Edit /tmp/two.go", "+1 -1 /match"} {
 		if !strings.Contains(text, want) {
 			t.Fatal(text)
 		}

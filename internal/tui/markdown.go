@@ -68,7 +68,11 @@ func renderResponse(agent, raw string, width int) renderedResponse {
 		buttons[i].x += 2
 		buttons[i].y++
 	}
-	return renderedResponse{source: raw, agent: agent, width: width, body: style.Render("•") + " " + style.Render(name) + "\n" + indentBlock(body), buttons: buttons}
+	label := "• " + name
+	if _, plain := style.GetBackground().(lipgloss.NoColor); !plain {
+		label = " " + label + " "
+	}
+	return renderedResponse{source: raw, agent: agent, width: width, body: style.Render(label) + "\n" + indentBlock(body), buttons: buttons}
 }
 
 // Internal zero-width markers survive ANSI-aware wrapping through nested lists
