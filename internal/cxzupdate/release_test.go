@@ -204,7 +204,7 @@ func TestDifferentArtifactsAtSameRevisionHaveDistinctPaths(t *testing.T) {
 	if Path("/cxz/tools/cxz-builds", a, "linux/amd64") == Path("/cxz/tools/cxz-builds", b, "linux/amd64") {
 		t.Fatal("same revision aliased different artifacts")
 	}
-	if !ValidBinary(Path("/cxz/tools/cxz-builds", a, "linux/amd64")) {
+	if !ValidBinary(filepath.ToSlash(Path("/cxz/tools/cxz-builds", a, "linux/amd64"))) {
 		t.Fatal("new immutable path rejected")
 	}
 }
