@@ -45,10 +45,23 @@ Usage 막대와 같은 색조를 사용하며 퍼센트 숫자는 회색으로 �
 미보고 상태는 `⠀—`이며 compact/새 run 이후에는 새 snapshot을 기다린다.
 Codex는 CLI의 baseline 12,000 토큰 보정 기준을 따른 마지막 tokenUsage snapshot,
 Claude는 마지막 assistant 메시지의 input+cache-read+cache-write와 해당 모델의 contextWindow를 사용한다.
-누적 billing usage는 쓰지 않으며 `/context`를 자동 전송하지 않는다. `/context` 상세 출력은 변경하지 않는다.
+누적 billing usage는 쓰지 않으며 `/context`를 자동 전송하지 않는다.
 Claude의 자동 갱신은 새 supervisor의 `context/message` 이벤트가 필요하므로 공유 runtime 업데이트 후 에이전트를 재시작해야 한다.
 직접 실행한 `/context`의 `Context Usage`/`Model`/`Tokens` 보고서가 알려진 형식이면 명시된 비율도
 status bar에 반영한다. 일반 대화 텍스트는 파싱하지 않으며 다음 입력/compact/새 run에서는 보고서 값을 무효화한다.
+
+`/context`는 Claude·Codex 모두 같은 Summary 화면으로 모델, 수치의 출처와 시각,
+사용 토큰·한도·남은 공간·사용률 막대를 표시한다. Claude는 직접 요청한 native `/context`
+텍스트의 요약과 category 표를 파싱하고, Codex는 현재 run의 마지막 `tokenUsage.last`
+snapshot을 사용한다. Codex의 누적 `total` 값은 컨텍스트로 사용하지 않는다.
+캐시 입력은 입력 토큰의 일부, 추론 출력은 출력 토큰의 일부로 표시하며 중복 합산하지 않는다.
+제공되지 않은 수치·분류는 `Not reported`로 표시한다. 상세 사용률은 사용 토큰/한도의
+단순 비율이므로 baseline 보정이 있는 Codex status bar의 값과 다를 수 있다.
+
+상단 **Summary / Raw** 버튼을 클릭하거나 ←/→, Tab으로 전환한다. Raw는 Claude의
+수신 텍스트 또는 Codex의 원래 usage JSON payload를 보여준다. 각 탭의 스크롤 위치를
+따로 유지하며 Esc로 닫아도 대화 스크롤과 입력 초안은 바뀌지 않는다. 알 수 없는 응답
+형식은 숫자를 추정하지 않고 Raw에서 확인하도록 안내한다.
 
 ## 백틱 경로 힌트
 
