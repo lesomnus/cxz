@@ -123,6 +123,11 @@ func toolActivityStateBody(activity agentview.ToolActivity, result *api.Event, w
 			text = activity.Description
 		}
 		header := prefix + " Bash · "
+		// Name the interpreter the script was handed to, so the row can spend the
+		// rest of its width on the script rather than on the wrapper.
+		if activity.Shell != "" {
+			header += muted.Render(activity.Shell) + " · "
+		}
 		// Reserve the transcript indent and the entire header before wrapping.
 		// Wrapping again after adding the header can turn two preview rows into
 		// three and leave an operator by itself on the extra row.
