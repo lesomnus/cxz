@@ -682,13 +682,14 @@ func (x *ActivityInput) GetBusy() bool {
 }
 
 type AgentUpdateInput struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
-	RunId         string                 `protobuf:"bytes,2,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
-	Binary        string                 `protobuf:"bytes,3,opt,name=binary,proto3" json:"binary,omitempty"`
-	Apply         bool                   `protobuf:"varint,4,opt,name=apply,proto3" json:"apply,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	SessionId        string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	RunId            string                 `protobuf:"bytes,2,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	Binary           string                 `protobuf:"bytes,3,opt,name=binary,proto3" json:"binary,omitempty"`
+	Apply            bool                   `protobuf:"varint,4,opt,name=apply,proto3" json:"apply,omitempty"`
+	SupervisorBinary string                 `protobuf:"bytes,5,opt,name=supervisor_binary,json=supervisorBinary,proto3" json:"supervisor_binary,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *AgentUpdateInput) Reset() {
@@ -749,14 +750,24 @@ func (x *AgentUpdateInput) GetApply() bool {
 	return false
 }
 
+func (x *AgentUpdateInput) GetSupervisorBinary() string {
+	if x != nil {
+		return x.SupervisorBinary
+	}
+	return ""
+}
+
 type AgentUpdateStatus struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Ready         bool                   `protobuf:"varint,1,opt,name=ready,proto3" json:"ready,omitempty"`
-	Reason        string                 `protobuf:"bytes,2,opt,name=reason,proto3" json:"reason,omitempty"`
-	Binary        string                 `protobuf:"bytes,3,opt,name=binary,proto3" json:"binary,omitempty"`
-	State         string                 `protobuf:"bytes,4,opt,name=state,proto3" json:"state,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Ready            bool                   `protobuf:"varint,1,opt,name=ready,proto3" json:"ready,omitempty"`
+	Reason           string                 `protobuf:"bytes,2,opt,name=reason,proto3" json:"reason,omitempty"`
+	Binary           string                 `protobuf:"bytes,3,opt,name=binary,proto3" json:"binary,omitempty"`
+	State            string                 `protobuf:"bytes,4,opt,name=state,proto3" json:"state,omitempty"`
+	SupervisorBinary string                 `protobuf:"bytes,5,opt,name=supervisor_binary,json=supervisorBinary,proto3" json:"supervisor_binary,omitempty"`
+	Revision         string                 `protobuf:"bytes,6,opt,name=revision,proto3" json:"revision,omitempty"`
+	Protocol         int32                  `protobuf:"varint,7,opt,name=protocol,proto3" json:"protocol,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *AgentUpdateStatus) Reset() {
@@ -815,6 +826,27 @@ func (x *AgentUpdateStatus) GetState() string {
 		return x.State
 	}
 	return ""
+}
+
+func (x *AgentUpdateStatus) GetSupervisorBinary() string {
+	if x != nil {
+		return x.SupervisorBinary
+	}
+	return ""
+}
+
+func (x *AgentUpdateStatus) GetRevision() string {
+	if x != nil {
+		return x.Revision
+	}
+	return ""
+}
+
+func (x *AgentUpdateStatus) GetProtocol() int32 {
+	if x != nil {
+		return x.Protocol
+	}
+	return 0
 }
 
 type Answer struct {
@@ -2124,18 +2156,22 @@ const file_cxz_proto_rawDesc = "" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x15\n" +
 	"\x06run_id\x18\x02 \x01(\tR\x05runId\x12\x1b\n" +
 	"\tclient_id\x18\x03 \x01(\tR\bclientId\x12\x12\n" +
-	"\x04busy\x18\x04 \x01(\bR\x04busy\"v\n" +
+	"\x04busy\x18\x04 \x01(\bR\x04busy\"\xa3\x01\n" +
 	"\x10AgentUpdateInput\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x15\n" +
 	"\x06run_id\x18\x02 \x01(\tR\x05runId\x12\x16\n" +
 	"\x06binary\x18\x03 \x01(\tR\x06binary\x12\x14\n" +
-	"\x05apply\x18\x04 \x01(\bR\x05apply\"o\n" +
+	"\x05apply\x18\x04 \x01(\bR\x05apply\x12+\n" +
+	"\x11supervisor_binary\x18\x05 \x01(\tR\x10supervisorBinary\"\xd4\x01\n" +
 	"\x11AgentUpdateStatus\x12\x14\n" +
 	"\x05ready\x18\x01 \x01(\bR\x05ready\x12\x16\n" +
 	"\x06reason\x18\x02 \x01(\tR\x06reason\x12\x16\n" +
 	"\x06binary\x18\x03 \x01(\tR\x06binary\x12\x14\n" +
-	"\x05state\x18\x04 \x01(\tR\x05state\"\xb3\x01\n" +
+	"\x05state\x18\x04 \x01(\tR\x05state\x12+\n" +
+	"\x11supervisor_binary\x18\x05 \x01(\tR\x10supervisorBinary\x12\x1a\n" +
+	"\brevision\x18\x06 \x01(\tR\brevision\x12\x1a\n" +
+	"\bprotocol\x18\a \x01(\x05R\bprotocol\"\xb3\x01\n" +
 	"\x06Answer\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x15\n" +

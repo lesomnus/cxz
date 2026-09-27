@@ -28,7 +28,7 @@ func selfUpdateCommand() *xli.Command {
 		brief = "Download and update this frontend; no Docker required"
 		refBrief = "Published build: main (latest successful CI build) or a release tag"
 	}
-	return &xli.Command{Name: "self-update", Brief: brief,
+	return &xli.Command{Name: "self-update", Brief: brief, Commands: automaticUpdateCommands(),
 		Flags: flg.Flags{
 			&flg.String{Name: "ref", Brief: refBrief, Default: &ref},
 			&flg.Switch{Name: "client-only", Brief: "Update only this executable; skip the local manager", Default: &clientOnly},

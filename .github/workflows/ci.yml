@@ -18,7 +18,7 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
-      - run: go test ./cmd/cxz ./internal/transport ./internal/core ./internal/settings ./internal/selfupdate ./internal/versionpin
+      - run: go test ./cmd/cxz ./internal/transport ./internal/core ./internal/settings ./internal/selfupdate ./internal/cxzupdate ./internal/versionpin
       - run: go test ./internal/tui -run TestWindows -count=1
       - run: go build -o cxz.exe ./cmd/cxz
       - run: .\cxz.exe version

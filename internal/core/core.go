@@ -9,6 +9,7 @@ import (
 )
 
 type Session struct {
+	Supervisor  string `json:"supervisor,omitempty"`
 	CreateID    string `json:"create_id"`
 	ID          string `json:"id"`
 	Workspace   string `json:"workspace"`

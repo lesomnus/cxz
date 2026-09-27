@@ -170,11 +170,11 @@ func (c *Client) Activity(ctx context.Context, r *api.ActivityInput, opts ...grp
 	return receipt(c.sessions.Activity(ctx, resource.SessionActivityRequest_builder{Ref: sr(r.SessionId), RunId: &r.RunId, ClientId: &r.ClientId, Busy: &r.Busy}.Build(), opts...))
 }
 func (c *Client) UpdateAgent(ctx context.Context, r *api.AgentUpdateInput, opts ...grpc.CallOption) (*api.AgentUpdateStatus, error) {
-	v, e := c.sessions.UpdateAgent(ctx, resource.SessionUpdateRequest_builder{Ref: sr(r.SessionId), RunId: &r.RunId, Binary: &r.Binary, Apply: &r.Apply}.Build(), opts...)
+	v, e := c.sessions.UpdateAgent(ctx, resource.SessionUpdateRequest_builder{Ref: sr(r.SessionId), RunId: &r.RunId, Binary: &r.Binary, Apply: &r.Apply, SupervisorBinary: &r.SupervisorBinary}.Build(), opts...)
 	if e != nil {
 		return nil, e
 	}
-	return &api.AgentUpdateStatus{Ready: v.GetReady(), Reason: v.GetReason(), Binary: v.GetBinary(), State: v.GetState()}, nil
+	return &api.AgentUpdateStatus{Ready: v.GetReady(), Reason: v.GetReason(), Binary: v.GetBinary(), State: v.GetState(), SupervisorBinary: v.GetSupervisorBinary(), Revision: v.GetRevision(), Protocol: v.GetProtocol()}, nil
 }
 func (c *Client) Reply(ctx context.Context, r *api.Answer, opts ...grpc.CallOption) (*api.Receipt, error) {
 	return receipt(c.sessions.Reply(ctx, resource.SessionReplyRequest_builder{Ref: sr(r.SessionId), RunId: &r.RunId, ClientId: &r.ClientId, RequestId: &r.RequestId, Allow: &r.Allow, AnswersJson: &r.AnswersJson}.Build(), opts...))

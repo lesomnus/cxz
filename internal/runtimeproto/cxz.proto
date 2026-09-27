@@ -52,8 +52,8 @@ message Input { string session_id = 1; string run_id = 2; string client_id = 3; 
 message AttachmentInput { string session_id = 1; string run_id = 2; bytes content = 3; }
 message Attachment { string path = 1; }
 message ActivityInput { string session_id = 1; string run_id = 2; string client_id = 3; bool busy = 4; }
-message AgentUpdateInput { string session_id = 1; string run_id = 2; string binary = 3; bool apply = 4; }
-message AgentUpdateStatus { bool ready = 1; string reason = 2; string binary = 3; string state = 4; }
+message AgentUpdateInput { string session_id = 1; string run_id = 2; string binary = 3; bool apply = 4; string supervisor_binary = 5; }
+message AgentUpdateStatus { bool ready = 1; string reason = 2; string binary = 3; string state = 4; string supervisor_binary = 5; string revision = 6; int32 protocol = 7; }
 message Answer {
   string session_id = 1; string run_id = 2; string client_id = 3;
   string request_id = 4; bool allow = 5; string answers_json = 6;

@@ -4020,15 +4020,16 @@ func (b0 SessionActivityRequest_builder) Build() *SessionActivityRequest {
 }
 
 type SessionUpdateRequest struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref         *SessionRef            `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_RunId       *string                `protobuf:"bytes,2,opt,name=run_id,json=runId"`
-	xxx_hidden_Binary      *string                `protobuf:"bytes,3,opt,name=binary"`
-	xxx_hidden_Apply       bool                   `protobuf:"varint,4,opt,name=apply"`
-	XXX_raceDetectHookData protoimpl.RaceDetectHookData
-	XXX_presence           [1]uint32
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	state                       protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ref              *SessionRef            `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_RunId            *string                `protobuf:"bytes,2,opt,name=run_id,json=runId"`
+	xxx_hidden_Binary           *string                `protobuf:"bytes,3,opt,name=binary"`
+	xxx_hidden_Apply            bool                   `protobuf:"varint,4,opt,name=apply"`
+	xxx_hidden_SupervisorBinary *string                `protobuf:"bytes,5,opt,name=supervisor_binary,json=supervisorBinary"`
+	XXX_raceDetectHookData      protoimpl.RaceDetectHookData
+	XXX_presence                [1]uint32
+	unknownFields               protoimpl.UnknownFields
+	sizeCache                   protoimpl.SizeCache
 }
 
 func (x *SessionUpdateRequest) Reset() {
@@ -4090,23 +4091,38 @@ func (x *SessionUpdateRequest) GetApply() bool {
 	return false
 }
 
+func (x *SessionUpdateRequest) GetSupervisorBinary() string {
+	if x != nil {
+		if x.xxx_hidden_SupervisorBinary != nil {
+			return *x.xxx_hidden_SupervisorBinary
+		}
+		return ""
+	}
+	return ""
+}
+
 func (x *SessionUpdateRequest) SetRef(v *SessionRef) {
 	x.xxx_hidden_Ref = v
 }
 
 func (x *SessionUpdateRequest) SetRunId(v string) {
 	x.xxx_hidden_RunId = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 4)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 5)
 }
 
 func (x *SessionUpdateRequest) SetBinary(v string) {
 	x.xxx_hidden_Binary = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 4)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 5)
 }
 
 func (x *SessionUpdateRequest) SetApply(v bool) {
 	x.xxx_hidden_Apply = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 4)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 5)
+}
+
+func (x *SessionUpdateRequest) SetSupervisorBinary(v string) {
+	x.xxx_hidden_SupervisorBinary = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 5)
 }
 
 func (x *SessionUpdateRequest) HasRef() bool {
@@ -4137,6 +4153,13 @@ func (x *SessionUpdateRequest) HasApply() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
 }
 
+func (x *SessionUpdateRequest) HasSupervisorBinary() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
+}
+
 func (x *SessionUpdateRequest) ClearRef() {
 	x.xxx_hidden_Ref = nil
 }
@@ -4156,13 +4179,19 @@ func (x *SessionUpdateRequest) ClearApply() {
 	x.xxx_hidden_Apply = false
 }
 
+func (x *SessionUpdateRequest) ClearSupervisorBinary() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
+	x.xxx_hidden_SupervisorBinary = nil
+}
+
 type SessionUpdateRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Ref    *SessionRef
-	RunId  *string
-	Binary *string
-	Apply  *bool
+	Ref              *SessionRef
+	RunId            *string
+	Binary           *string
+	Apply            *bool
+	SupervisorBinary *string
 }
 
 func (b0 SessionUpdateRequest_builder) Build() *SessionUpdateRequest {
@@ -4171,30 +4200,37 @@ func (b0 SessionUpdateRequest_builder) Build() *SessionUpdateRequest {
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
 	if b.RunId != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 4)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 5)
 		x.xxx_hidden_RunId = b.RunId
 	}
 	if b.Binary != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 4)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 5)
 		x.xxx_hidden_Binary = b.Binary
 	}
 	if b.Apply != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 4)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 5)
 		x.xxx_hidden_Apply = *b.Apply
+	}
+	if b.SupervisorBinary != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 5)
+		x.xxx_hidden_SupervisorBinary = b.SupervisorBinary
 	}
 	return m0
 }
 
 type SessionUpdateStatus struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ready       bool                   `protobuf:"varint,1,opt,name=ready"`
-	xxx_hidden_Reason      *string                `protobuf:"bytes,2,opt,name=reason"`
-	xxx_hidden_Binary      *string                `protobuf:"bytes,3,opt,name=binary"`
-	xxx_hidden_State       *string                `protobuf:"bytes,4,opt,name=state"`
-	XXX_raceDetectHookData protoimpl.RaceDetectHookData
-	XXX_presence           [1]uint32
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	state                       protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ready            bool                   `protobuf:"varint,1,opt,name=ready"`
+	xxx_hidden_Reason           *string                `protobuf:"bytes,2,opt,name=reason"`
+	xxx_hidden_Binary           *string                `protobuf:"bytes,3,opt,name=binary"`
+	xxx_hidden_State            *string                `protobuf:"bytes,4,opt,name=state"`
+	xxx_hidden_SupervisorBinary *string                `protobuf:"bytes,5,opt,name=supervisor_binary,json=supervisorBinary"`
+	xxx_hidden_Revision         *string                `protobuf:"bytes,6,opt,name=revision"`
+	xxx_hidden_Protocol         int32                  `protobuf:"varint,7,opt,name=protocol"`
+	XXX_raceDetectHookData      protoimpl.RaceDetectHookData
+	XXX_presence                [1]uint32
+	unknownFields               protoimpl.UnknownFields
+	sizeCache                   protoimpl.SizeCache
 }
 
 func (x *SessionUpdateStatus) Reset() {
@@ -4259,24 +4295,66 @@ func (x *SessionUpdateStatus) GetState() string {
 	return ""
 }
 
+func (x *SessionUpdateStatus) GetSupervisorBinary() string {
+	if x != nil {
+		if x.xxx_hidden_SupervisorBinary != nil {
+			return *x.xxx_hidden_SupervisorBinary
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *SessionUpdateStatus) GetRevision() string {
+	if x != nil {
+		if x.xxx_hidden_Revision != nil {
+			return *x.xxx_hidden_Revision
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *SessionUpdateStatus) GetProtocol() int32 {
+	if x != nil {
+		return x.xxx_hidden_Protocol
+	}
+	return 0
+}
+
 func (x *SessionUpdateStatus) SetReady(v bool) {
 	x.xxx_hidden_Ready = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 4)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 7)
 }
 
 func (x *SessionUpdateStatus) SetReason(v string) {
 	x.xxx_hidden_Reason = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 4)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 7)
 }
 
 func (x *SessionUpdateStatus) SetBinary(v string) {
 	x.xxx_hidden_Binary = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 4)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 7)
 }
 
 func (x *SessionUpdateStatus) SetState(v string) {
 	x.xxx_hidden_State = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 4)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 7)
+}
+
+func (x *SessionUpdateStatus) SetSupervisorBinary(v string) {
+	x.xxx_hidden_SupervisorBinary = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 7)
+}
+
+func (x *SessionUpdateStatus) SetRevision(v string) {
+	x.xxx_hidden_Revision = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 7)
+}
+
+func (x *SessionUpdateStatus) SetProtocol(v int32) {
+	x.xxx_hidden_Protocol = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 7)
 }
 
 func (x *SessionUpdateStatus) HasReady() bool {
@@ -4307,6 +4385,27 @@ func (x *SessionUpdateStatus) HasState() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
 }
 
+func (x *SessionUpdateStatus) HasSupervisorBinary() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
+}
+
+func (x *SessionUpdateStatus) HasRevision() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
+}
+
+func (x *SessionUpdateStatus) HasProtocol() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
+}
+
 func (x *SessionUpdateStatus) ClearReady() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
 	x.xxx_hidden_Ready = false
@@ -4327,13 +4426,31 @@ func (x *SessionUpdateStatus) ClearState() {
 	x.xxx_hidden_State = nil
 }
 
+func (x *SessionUpdateStatus) ClearSupervisorBinary() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
+	x.xxx_hidden_SupervisorBinary = nil
+}
+
+func (x *SessionUpdateStatus) ClearRevision() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
+	x.xxx_hidden_Revision = nil
+}
+
+func (x *SessionUpdateStatus) ClearProtocol() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
+	x.xxx_hidden_Protocol = 0
+}
+
 type SessionUpdateStatus_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Ready  *bool
-	Reason *string
-	Binary *string
-	State  *string
+	Ready            *bool
+	Reason           *string
+	Binary           *string
+	State            *string
+	SupervisorBinary *string
+	Revision         *string
+	Protocol         *int32
 }
 
 func (b0 SessionUpdateStatus_builder) Build() *SessionUpdateStatus {
@@ -4341,20 +4458,32 @@ func (b0 SessionUpdateStatus_builder) Build() *SessionUpdateStatus {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Ready != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 4)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 7)
 		x.xxx_hidden_Ready = *b.Ready
 	}
 	if b.Reason != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 4)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 7)
 		x.xxx_hidden_Reason = b.Reason
 	}
 	if b.Binary != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 4)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 7)
 		x.xxx_hidden_Binary = b.Binary
 	}
 	if b.State != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 4)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 7)
 		x.xxx_hidden_State = b.State
+	}
+	if b.SupervisorBinary != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 7)
+		x.xxx_hidden_SupervisorBinary = b.SupervisorBinary
+	}
+	if b.Revision != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 7)
+		x.xxx_hidden_Revision = b.Revision
+	}
+	if b.Protocol != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 7)
+		x.xxx_hidden_Protocol = *b.Protocol
 	}
 	return m0
 }
@@ -5100,17 +5229,21 @@ const file_cxz_session_svc_g_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.SessionRefR\x03ref\x12\x15\n" +
 	"\x06run_id\x18\x02 \x01(\tR\x05runId\x12\x1b\n" +
 	"\tclient_id\x18\x03 \x01(\tR\bclientId\x12\x12\n" +
-	"\x04busy\x18\x04 \x01(\bR\x04busy\"~\n" +
+	"\x04busy\x18\x04 \x01(\bR\x04busy\"\xab\x01\n" +
 	"\x14SessionUpdateRequest\x12!\n" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.SessionRefR\x03ref\x12\x15\n" +
 	"\x06run_id\x18\x02 \x01(\tR\x05runId\x12\x16\n" +
 	"\x06binary\x18\x03 \x01(\tR\x06binary\x12\x14\n" +
-	"\x05apply\x18\x04 \x01(\bR\x05apply\"q\n" +
+	"\x05apply\x18\x04 \x01(\bR\x05apply\x12+\n" +
+	"\x11supervisor_binary\x18\x05 \x01(\tR\x10supervisorBinary\"\xd6\x01\n" +
 	"\x13SessionUpdateStatus\x12\x14\n" +
 	"\x05ready\x18\x01 \x01(\bR\x05ready\x12\x16\n" +
 	"\x06reason\x18\x02 \x01(\tR\x06reason\x12\x16\n" +
 	"\x06binary\x18\x03 \x01(\tR\x06binary\x12\x14\n" +
-	"\x05state\x18\x04 \x01(\tR\x05state\"\xc4\x01\n" +
+	"\x05state\x18\x04 \x01(\tR\x05state\x12+\n" +
+	"\x11supervisor_binary\x18\x05 \x01(\tR\x10supervisorBinary\x12\x1a\n" +
+	"\brevision\x18\x06 \x01(\tR\brevision\x12\x1a\n" +
+	"\bprotocol\x18\a \x01(\x05R\bprotocol\"\xc4\x01\n" +
 	"\x13SessionReplyRequest\x12!\n" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.SessionRefR\x03ref\x12\x15\n" +
 	"\x06run_id\x18\x02 \x01(\tR\x05runId\x12\x1b\n" +
