@@ -1,12 +1,17 @@
 # cxz 자동 업데이트
 
-cxz는 **main의 최신 CI 성공 빌드(edge)**를 확인한다. 수정되지 않은 main 계열 빌드에서
+cxz는 선택한 **edge 또는 stable 채널**을 확인한다. edge는 최신 main CI 성공 빌드, stable은 가장 높은 정식 릴리즈 버전이다. 수정되지 않은 main 계열 빌드에서
 기본 활성화되며, 확인 주기는 24시간이다. 서버 적용 큐는 30초마다 안전 여부를 확인한다.
 개발/수정 빌드와 게시된 main의 조상이 아닌 빌드는 자동 교체하지 않는다.
 
 ## 설정과 상태
 
 ```sh
+cxz use @edge       # 즉시 전환·강제 재시작 후 edge 추적
+cxz use @stable     # 즉시 전환·강제 재시작 후 stable 추적
+cxz use v0.1.2      # 버전 고정; 자동 업데이트 차단
+cxz use --unpin     # 이전 채널·정책 복원
+
 cxz self-update status
 cxz self-update check
 cxz self-update disable
@@ -29,7 +34,7 @@ cxz self-update enable --server
 CLI로 관리한다. 기존 `CXZ_AUTO_UPDATE=0`은 Claude/Codex/gh 업데이트 설정이며 cxz 자체
 업데이트 설정과 별개다.
 
-`cxz-update.json`에는 확인 시각, 목표 manifest, 적용 상태와 실패 이유를 저장한다.
+`update-channel.json`에 채널을 저장하고, 채널을 바꾸면 이전 채널의 확인 캐시를 사용하지 않는다. `cxz-update.json`에는 확인 시각, 목표 manifest, 적용 상태와 실패 이유를 저장한다.
 `running`과 `update.release`는 각각 실행 빌드와 준비된 목표다. 목표 파일이 다운로드됐다는
 이유만으로 실행 중인 모든 프로세스가 최신이라고 표시하지 않는다. 실패한 revision은
 24시간 동안 재시도를 보류한다.
@@ -70,11 +75,11 @@ revision별 이름을 사용하고 SHA-256 및 `_build-info`로 플랫폼/revisi
 
 프로토콜과 상태 스키마가 현재 지원하는 버전과 정확히 같을 때만 자동 적용한다.
 게시 순번과 main ancestry를 모두 확인하므로 더 오래된 edge가 로컬의 새 빌드를
-덮어쓰지 않는다. main ancestry 확인 범위는 최근 4096개 commit이다.
+덮어쓰지 않는다. stable은 정식 버전 순서도 비교해 자동 다운그레이드를 막는다. 명시적인 `cxz use @stable` 전환은 다운그레이드를 허용한다. main ancestry 확인 범위는 최근 4096개 commit이다.
 
-서버 artifact 경로는 `/cxz/tools/cxz-builds/releases/<revision>/<platform>/cxz`다.
+서버 artifact 경로는 `/cxz/tools/cxz-builds/releases/<revision>/<platform>/<sha256>/cxz`다.
 각 Runtime은 실제 `/proc/self/exe`를 자신의 상태 디렉터리 `runtime-binaries`에 보존한다.
-실행 중인 바이너리와 rollback 후보는 자동 정리하지 않는다.
+같은 revision의 edge·stable 바이너리도 내용 해시로 구분한다. 기존 경로는 복구 호환성을 위해 계속 허용한다. 실행 중인 바이너리와 rollback 후보는 자동 정리하지 않는다.
 
 Manager helper는 `cxz-<owner prefix>-update` 컨테이너에서 실행하며 설치 상태 볼륨의
 `manager-update.json`과 `rollout.lock`을 사용한다. 기존 컨테이너의 설정·mount·환경·network를
