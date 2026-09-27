@@ -186,14 +186,66 @@ func (m *model) previewForSequence(seq uint64) *filePreview {
 			}
 		}
 	}
-	// Write/Edit show the submitted content/diff, even if the result is just "success".
+	input := &filePreview{source: "Input is not available in the loaded history.", language: "text"}
 	if call != nil {
-		if p := previewFor(s.Agent, call); p != nil && s.Agent != "codex" {
-			return p
+		input = toolInputPreview(s.Agent, call)
+	}
+	output := toolOutputPreview(s.Agent, call, result)
+	title := input.title
+	if output.title != "" {
+		title = output.title
+	}
+	if call != nil {
+		if submitted := previewFor(s.Agent, call); submitted != nil {
+			title = submitted.title
 		}
 	}
+	if title == "" {
+		title = "Tool details"
+	}
+	p := &filePreview{title: title, tabs: &[2]previewTab{
+		{source: input.source, language: input.language},
+		{source: output.source, language: output.language},
+	}}
+	// Preserve the useful default: submitted edits, otherwise the recorded output.
+	tab := 1
+	if result == nil || (call != nil && s.Agent == "claude" && (call.Text == "Write" || call.Text == "Edit")) {
+		tab = 0
+	}
+	p.selectTab(tab)
+	return p
+}
+
+func rawToolPreview(e *api.Event) *filePreview {
+	var value any
+	source := string(e.Payload)
+	if json.Unmarshal(e.Payload, &value) == nil {
+		b, _ := json.MarshalIndent(value, "", "  ")
+		source = string(b)
+	}
+	if source == "" {
+		source = e.Text
+	}
+	return &filePreview{title: e.Text, source: source, language: "json"}
+}
+
+func toolInputPreview(provider string, call *api.Event) *filePreview {
+	if p := previewFor(provider, call); p != nil {
+		return p
+	}
+	root := fields(call.Payload)
+	if provider == "claude" && call.Text == "Bash" {
+		return &filePreview{title: "Bash", source: root.text("command"), language: "bash"}
+	}
+	if provider == "codex" && root.object("item").text("type") == "commandExecution" {
+		return &filePreview{title: "Bash", source: root.object("item").text("command"), language: "bash"}
+	}
+	return rawToolPreview(call)
+}
+
+func toolOutputPreview(provider string, call, result *api.Event) *filePreview {
 	if result != nil {
-		if p := previewFor(s.Agent, result); p != nil {
+		if p := previewFor(provider, result); p != nil {
 			return p
 		}
 		root := fields(result.Payload)
@@ -225,30 +277,16 @@ func (m *model) previewForSequence(seq uint64) *filePreview {
 			}
 		}
 		if root.object("item").text("type") == "commandExecution" {
-			name = "Bash · output"
+			name = "Bash"
 		}
 		if source != "" {
 			return &filePreview{title: name, source: source, language: language}
 		}
-		selected = result
+		return rawToolPreview(result)
 	}
-	if p := previewFor(s.Agent, selected); p != nil {
-		return p
-	}
-	if call != nil && call.Text == "Bash" && result == nil {
-		return &filePreview{title: "Bash · script", source: fields(call.Payload).text("command"), language: "bash"}
-	}
-	var value any
-	source := string(selected.Payload)
-	if json.Unmarshal(selected.Payload, &value) == nil {
-		b, _ := json.MarshalIndent(value, "", "  ")
-		source = string(b)
-	}
-	if source == "" {
-		source = selected.Text
-	}
-	return &filePreview{title: selected.Text + " · " + strings.ReplaceAll(selected.Kind, "_", " "), source: source, language: "json"}
+	return &filePreview{source: "No output available yet.", language: "text"}
 }
+
 func (m *model) openPreviewSequence(seq uint64) bool {
 	p := m.previewForSequence(seq)
 	if p == nil {
@@ -301,6 +339,16 @@ func (m *model) filePreviewKey(k tea.KeyMsg) tea.Cmd {
 		p.focused = false
 		if !m.selectingTools() {
 			m.input.Focus()
+		}
+	case "left":
+		if p.tabs != nil {
+			m.textSelection = nil
+			p.selectTab(0)
+		}
+	case "right":
+		if p.tabs != nil {
+			m.textSelection = nil
+			p.selectTab(1)
 		}
 	case "up":
 		p.offset = max(0, p.offset-1)

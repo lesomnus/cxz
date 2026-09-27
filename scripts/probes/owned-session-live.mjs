@@ -62,7 +62,7 @@ try {
   for(let i=1;i<=2;i++){
     const before=await info();watcher.kill();
     await cli('project','down',project);
-    session=await json('project','up','--agent',kind,'--no-attach',project);
+    session=await json('project','up','--agent',kind,project);
     p=await info();assert.notEqual(p.container_id,before.container_id);assert.equal(session.vendor_id,vendor);
     watch();await delay(500);
     after=await send((memoryOnly?'':'The interrupted shell task is canceled. ')+'Without using tools, repeat the project codename that I provided in my earlier message. Only the codename, please.');

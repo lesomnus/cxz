@@ -31,10 +31,7 @@ func exitOnError(c *xli.Command) bool {
 	return false
 }
 func interactiveErrors(c *xli.Command) bool {
-	if exitOnError(c) || !terminal(c) {
-		return false
-	}
-	if detach, _ := flg.Get[bool](c, "no-attach"); detach {
+	if c.HasParent() || exitOnError(c) || !terminal(c) {
 		return false
 	}
 	if format, _ := flg.Get[string](c, "format"); format == "json" {

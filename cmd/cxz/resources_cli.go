@@ -29,7 +29,7 @@ func reorganizeCommands(root *xli.Command) {
 			c.Name = "ls"
 			c.Brief = "List owned and foreign projects"
 			project.Commands = append(project.Commands, c)
-		case "new", "ls", "get", "send", "reply", "interrupt", "resume", "stop", "events", "attach":
+		case "new", "ls", "get", "send", "reply", "interrupt", "resume", "stop", "events":
 			c.Aliases = nil
 			if c.Name == "ls" {
 				c.Brief = "List sessions"
@@ -88,7 +88,7 @@ func reorganizeCommands(root *xli.Command) {
 			data := g.Name == "config" || g.Name == "backend" || g.Name == "binding" ||
 				(g.Name == "account" && c.Name != "login") ||
 				(g.Name == "project" && c.Name != "logs" && c.Name != "shell" && c.Name != "exec") ||
-				(g.Name == "session" && c.Name != "attach") || (g.Name == "manager" && c.Name == "doctor")
+				g.Name == "session" || (g.Name == "manager" && c.Name == "doctor")
 			if data {
 				c.Flags = append(c.Flags, formatFlag())
 			}
