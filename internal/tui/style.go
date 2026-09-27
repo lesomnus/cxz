@@ -7,6 +7,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/textarea"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
 )
@@ -72,17 +73,73 @@ const (
 	promptBackground = 239
 )
 
+// A hint is one offer in a footer row. It is a value rather than a string so
+// that the renderer and the mouse hit test measure the same thing: text() is the
+// single source of a hint's width, and press is what clicking it sends, which
+// keeps the click on the keyboard's path instead of beside it.
+type hintSpec struct {
+	key, label string
+	press      tea.KeyMsg
+	disabled   bool
+	note       bool // Describes an outcome rather than a key: never a target.
+}
+
 // A key that opens its own label needs no column of its own: colouring the
 // letter in place says "press this" without spending width on repeating it.
 // Anything the label cannot carry -- Ctrl+X, Esc -- keeps the key in front.
-func shortcut(key, label string) string {
-	if len(key) == 1 && label != "" && strings.EqualFold(key, label[:1]) {
-		return accent.Render(label[:1]) + muted.Render(label[1:])
-	}
-	return accent.Render(key) + muted.Render(" "+label)
+func (h hintSpec) folded() bool {
+	return len(h.key) == 1 && h.label != "" && strings.EqualFold(h.key, h.label[:1])
 }
 
-func hints(parts ...string) string { return strings.Join(parts, muted.Render(" · ")) }
+func (h hintSpec) text() string {
+	if h.note || h.folded() {
+		return h.label
+	}
+	return h.key + " " + h.label
+}
+
+func (h hintSpec) render(hovered bool) string {
+	key, label := accent, muted
+	switch {
+	case h.note:
+		return muted.Render(h.label)
+	case h.disabled:
+		// One dim colour for both halves: a disabled offer has no key to press.
+		key, label = zeroStyle, zeroStyle
+	case hovered:
+		key, label = accent.Bold(true), strong
+	}
+	if h.folded() {
+		return key.Render(h.label[:1]) + label.Render(h.label[1:])
+	}
+	return key.Render(h.key) + label.Render(" "+h.label)
+}
+
+const hintSeparator = " · "
+
+func hintRow(hovered string, specs []hintSpec) string {
+	parts := make([]string, 0, len(specs))
+	for _, h := range specs {
+		parts = append(parts, h.render(h.actionable() && h.key == hovered))
+	}
+	return strings.Join(parts, muted.Render(hintSeparator))
+}
+
+func (h hintSpec) actionable() bool { return !h.note && !h.disabled && h.key != "" }
+
+// hintAt reports which hint covers x cells into a row, measuring the same text
+// the row drew. Separators and trailing space belong to no hint.
+func hintAt(specs []hintSpec, x int) hintSpec {
+	at := 0
+	for _, h := range specs {
+		width := ansi.StringWidth(h.text())
+		if x >= at && x < at+width {
+			return h
+		}
+		at += width + len(hintSeparator)
+	}
+	return hintSpec{}
+}
 
 func newComposer() textarea.Model {
 	input := textarea.New()

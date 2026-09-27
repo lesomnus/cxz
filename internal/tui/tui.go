@@ -99,7 +99,8 @@ type model struct {
 	creationConnection      string
 	accountRequest          uint64
 	panelIndex              int
-	panelHoverY             int // Screen row; zero means no hovered item.
+	panelHoverY             int    // Screen row; zero means no hovered item.
+	panelHintHover          string // Footer hint under the pointer, by its key.
 	panelProjects           []*api.Project
 	allSessions             []*api.Session
 	panelError              string
@@ -1066,6 +1067,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			d.hovering = false
 		}
 		m.panelHoverY = 0
+		m.panelHintHover = ""
 		m.codeHover = nil
 		if m.filePreview != nil {
 			m.filePreview.hover = ""
