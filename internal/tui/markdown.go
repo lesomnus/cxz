@@ -17,7 +17,7 @@ import (
 	"github.com/yuin/goldmark/text"
 )
 
-var codeStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("252")).Background(lipgloss.Color("238"))
+var codeStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("252")).Background(lipgloss.Color(fmt.Sprint(codeBackground)))
 var markdownParser = goldmark.New(goldmark.WithExtensions(extension.GFM)).Parser()
 
 type renderedResponse struct {
@@ -115,13 +115,13 @@ func markdownContent(raw string, width int) (string, []codeButton) {
 		rows := strings.Split(ansi.Hardwrap(code, max(1, width-1), true), "\n")
 		for i := range rows {
 			line := clip(" "+rows[i], max(1, width))
-			rows[i] = indexedBackground(line+strings.Repeat(" ", max(0, width-ansi.StringWidth(line))), 238)
+			rows[i] = indexedBackground(line+strings.Repeat(" ", max(0, width-ansi.StringWidth(line))), codeBackground)
 		}
 		id := len(sources)
 		sources = append(sources, b.String())
 		header := strings.Repeat(" ", max(0, width-3)) + fmt.Sprintf("\x1b]cxz-copy;%d\a", id) + " ⧉ "
-		rows = append([]string{indexedBackground(header, 238)}, rows...)
-		rows = append(rows, indexedBackground(strings.Repeat(" ", max(1, width)), 238))
+		rows = append([]string{indexedBackground(header, codeBackground)}, rows...)
+		rows = append(rows, indexedBackground(strings.Repeat(" ", max(1, width)), codeBackground))
 		return strings.Join(rows, "\n") + "\n\n"
 	}
 	render = func(n ast.Node, width int) string {

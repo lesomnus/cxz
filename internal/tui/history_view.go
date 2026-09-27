@@ -159,7 +159,7 @@ func (m *model) conversationView() string {
 	for i, row := range rows {
 		rows[i] = row + strings.Repeat(" ", max(0, m.width-ansi.StringWidth(row)))
 		if promptRows[i] {
-			rows[i] = indexedBackground(rows[i], 236)
+			rows[i] = indexedBackground(rows[i], promptBackground)
 		}
 	}
 	m.codeButtonView(rows, promptRows)

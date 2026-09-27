@@ -53,7 +53,7 @@ func eventView(s *api.Session, e *api.Event, width int) (out string) {
 		}
 		rows = append(rows, "")
 		for i, line := range rows {
-			rows[i] = indexedBackground(line+strings.Repeat(" ", max(0, width-ansi.StringWidth(line))), 236)
+			rows[i] = indexedBackground(line+strings.Repeat(" ", max(0, width-ansi.StringWidth(line))), promptBackground)
 		}
 		return strings.Join(rows, "\n")
 	case "assistant":
