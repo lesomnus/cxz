@@ -175,6 +175,7 @@ func TestAutomaticDecisionFollowsDurableRequestAndPolicy(t *testing.T) {
 		t.Fatal("decision journal order", policy, request, intent, resolved, receipt)
 	}
 }
+
 // Full approves whatever carries the request, so a tool the provider adds later
 // does not reintroduce the prompt the mode exists to remove.
 func TestFullApprovesEveryToolExceptQuestions(t *testing.T) {
