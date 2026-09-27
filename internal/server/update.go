@@ -11,6 +11,7 @@ import (
 
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/cxzupdate"
 	"github.com/lesomnus/cxz/internal/distribution"
 	"github.com/lesomnus/cxz/internal/supervisor"
 	"google.golang.org/grpc/codes"
@@ -59,6 +60,7 @@ func (s *Server) saveAgentManifest(ctx context.Context, m core.Session) error {
 type agentUpdateTransaction struct {
 	Old        core.Session
 	Target     string
+	Supervisor string
 	RecoveryAt time.Time
 }
 
@@ -85,7 +87,7 @@ func (s *Server) UpdateAgent(ctx context.Context, r *api.AgentUpdateInput) (*api
 	if err = supervisor.Call(ctx, s.root, m.ID, "update-status", core.Command{RunID: r.RunId}, &probe); err != nil {
 		return nil, status.Error(codes.FailedPrecondition, "update readiness unavailable; runtime/supervisor may need updating")
 	}
-	out := &api.AgentUpdateStatus{Ready: probe.Ready, Reason: probe.Reason, Binary: probe.Binary, State: probe.State}
+	out := &api.AgentUpdateStatus{Ready: probe.Ready, Reason: probe.Reason, Binary: probe.Binary, State: probe.State, SupervisorBinary: probe.SupervisorBinary, Revision: probe.Revision, Protocol: probe.Protocol}
 	if r.Binary != "" && r.Binary != probe.Binary && validAgentUpdate(m.Kind, r.Binary) {
 		if s.updateQueued == nil {
 			s.updateQueued = map[string]string{}
@@ -95,20 +97,32 @@ func (s *Server) UpdateAgent(ctx context.Context, r *api.AgentUpdateInput) (*api
 			s.updateNotice(ctx, m.ID, r.RunId, "agent update queued · "+m.Kind+" "+strings.Split(strings.TrimPrefix(r.Binary, "/cxz/tools/"), "/")[1])
 		}
 	}
-	if !r.Apply || r.Binary == m.Agent {
+	if r.SupervisorBinary != "" {
+		if probe.Protocol != cxzupdate.Protocol || !cxzupdate.ValidSessionBinary(s.root, probe.SupervisorBinary) {
+			return nil, status.Error(codes.FailedPrecondition, "supervisor bootstrap required")
+		}
+		if err := cxzupdate.CheckSupervisor(ctx, s.root, r.SupervisorBinary); err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+	}
+	target := r.Binary
+	if target == "" {
+		target = m.Agent
+	}
+	if !r.Apply || (target == m.Agent && (r.SupervisorBinary == "" || r.SupervisorBinary == probe.SupervisorBinary)) {
 		return out, nil
 	}
 	if !out.Ready {
 		return out, nil
 	}
-	if !validAgentUpdate(m.Kind, r.Binary) {
+	if target != m.Agent && !validAgentUpdate(m.Kind, target) {
 		return nil, status.Error(codes.InvalidArgument, "binary must be an immutable cxz tools release for this provider")
 	}
-	if st, e := os.Stat(r.Binary); e != nil || !st.Mode().IsRegular() || st.Mode()&0111 == 0 {
+	if st, e := os.Stat(target); e != nil || !st.Mode().IsRegular() || st.Mode()&0111 == 0 {
 		return nil, status.Error(codes.InvalidArgument, "release binary unavailable")
 	}
 	transaction := filepath.Join(core.Dir(s.root, m.ID), "agent-update.json")
-	if err = core.WriteJSON(transaction, agentUpdateTransaction{Old: m, Target: r.Binary}); err != nil {
+	if err = core.WriteJSON(transaction, agentUpdateTransaction{Old: m, Target: target, Supervisor: r.SupervisorBinary}); err != nil {
 		return nil, err
 	}
 	var receipt core.Receipt
@@ -123,7 +137,7 @@ func (s *Server) UpdateAgent(ctx context.Context, r *api.AgentUpdateInput) (*api
 		return out, nil
 	}
 	// Finish or roll back even if the manager's connection disappears.
-	return finishAgentUpdate(ctx, m, r.Binary, transaction, agentUpdateActions{
+	return finishSessionUpdate(ctx, m, target, r.SupervisorBinary, transaction, agentUpdateActions{
 		release: s.awaitSessionRelease,
 		save:    s.saveAgentManifest,
 		launch:  s.launch,
@@ -147,12 +161,18 @@ type agentUpdateActions struct {
 
 // Called with the runtime command fence held and a durable stop intent saved.
 func finishAgentUpdate(ctx context.Context, m core.Session, target, transaction string, a agentUpdateActions) (*api.AgentUpdateStatus, error) {
+	return finishSessionUpdate(ctx, m, target, "", transaction, a)
+}
+func finishSessionUpdate(ctx context.Context, m core.Session, target, supervisorBinary, transaction string, a agentUpdateActions) (*api.AgentUpdateStatus, error) {
 	work, cancel := context.WithTimeout(context.WithoutCancel(ctx), 90*time.Second)
 	defer cancel()
 	old := m
 	err := a.release(work, m)
 	if err == nil {
 		m.Agent = target
+		if supervisorBinary != "" {
+			m.Supervisor = supervisorBinary
+		}
 		err = a.save(work, m)
 	}
 	var updated *api.Session
@@ -165,7 +185,7 @@ func finishAgentUpdate(ctx context.Context, m core.Session, target, transaction 
 	if err == nil {
 		_ = os.Remove(transaction)
 		a.notice(work, m.ID, updated.RunId, "agent update completed")
-		return &api.AgentUpdateStatus{Ready: true, Binary: m.Agent, State: "updated"}, nil
+		return &api.AgentUpdateStatus{Ready: true, Binary: m.Agent, SupervisorBinary: m.Supervisor, State: "updated"}, nil
 	}
 	// Never kill a new run that has already accepted user work on an ambiguous
 	// startup result. Commands are fenced by s.mu until this function returns.
@@ -180,12 +200,12 @@ func finishAgentUpdate(ctx context.Context, m core.Session, target, transaction 
 	}
 	restored, e := a.launch(rollback, old)
 	if e != nil || !initializedAgent(restored) {
-		_ = core.WriteJSON(transaction, agentUpdateTransaction{Old: old, Target: target, RecoveryAt: time.Now()})
+		_ = core.WriteJSON(transaction, agentUpdateTransaction{Old: old, Target: target, Supervisor: supervisorBinary, RecoveryAt: time.Now()})
 		return nil, fmt.Errorf("agent update failed; old version restored but restart failed")
 	}
 	_ = os.Remove(transaction)
 	a.notice(rollback, old.ID, restored.RunId, "agent update failed; previous version restored")
-	return &api.AgentUpdateStatus{Binary: old.Agent, State: "rolled_back", Reason: "new agent failed initialization"}, nil
+	return &api.AgentUpdateStatus{Binary: old.Agent, SupervisorBinary: old.Supervisor, State: "rolled_back", Reason: "new agent failed initialization"}, nil
 }
 
 func (s *Server) runUpdateRecovery(ctx context.Context) {
@@ -196,9 +216,12 @@ func (s *Server) runUpdateRecovery(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			s.mu.Lock()
-			s.recoverAgentUpdates(ctx)
-			s.mu.Unlock()
+			recover := func() { s.mu.Lock(); defer s.mu.Unlock(); s.recoverAgentUpdates(ctx) }
+			if s.updateGate != nil {
+				s.updateGate.Run(recover)
+			} else {
+				recover()
+			}
 		}
 	}
 }
@@ -218,7 +241,7 @@ func (s *Server) recoverAgentUpdates(ctx context.Context) {
 			continue
 		}
 		var tx agentUpdateTransaction
-		if json.Unmarshal(b, &tx) != nil || tx.Old.ID != m.ID || tx.Old.CreateID != m.CreateID || !validAgentUpdate(m.Kind, tx.Target) {
+		if json.Unmarshal(b, &tx) != nil || tx.Old.ID != m.ID || tx.Old.CreateID != m.CreateID || (tx.Target != tx.Old.Agent && !validAgentUpdate(m.Kind, tx.Target)) || (tx.Supervisor != "" && !cxzupdate.ValidSessionBinary(s.root, tx.Supervisor)) {
 			continue
 		}
 		if !tx.RecoveryAt.IsZero() && time.Since(tx.RecoveryAt) < 24*time.Hour {

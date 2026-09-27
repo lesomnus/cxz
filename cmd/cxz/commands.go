@@ -12,6 +12,7 @@ import (
 
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/cxzupdate"
 	"github.com/lesomnus/cxz/internal/installer"
 	"github.com/lesomnus/cxz/internal/memoryview"
 	"github.com/lesomnus/cxz/internal/resourceclient"
@@ -51,6 +52,9 @@ func onRun(fn commandFunc) xli.Handler {
 func withClient(fn clientFunc) xli.Handler {
 	return onRun(func(ctx context.Context, c *xli.Command) error {
 		root := stateFrom(ctx)
+		if c.Name == "cxz" {
+			ctx = cxzupdate.WithClient(ctx, root)
+		}
 		cfg, err := settings.Load(root)
 		if err != nil {
 			return err

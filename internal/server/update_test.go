@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -88,6 +89,38 @@ func TestAgentUpdateCompletionAndRollback(t *testing.T) {
 			}
 			if !reflect.DeepEqual(saved, want) || !reflect.DeepEqual(launched, want) {
 				t.Fatal("session/account metadata changed", saved, launched)
+			}
+		})
+	}
+}
+
+func TestSupervisorOnlyUpdateKeepsAgentAndRollsBackPair(t *testing.T) {
+	for _, fail := range []bool{false, true} {
+		t.Run(fmt.Sprint(fail), func(t *testing.T) {
+			old := core.Session{ID: "session", CreateID: "create", Agent: "same-agent", Supervisor: "old-supervisor", Account: "account", AuthBinding: "binding", Model: "model", Workspace: "workspace"}
+			var launched []core.Session
+			a := agentUpdateActions{release: func(context.Context, core.Session) error { return nil }, save: func(context.Context, core.Session) error { return nil }, notice: func(context.Context, string, string, string) {}, stop: func(context.Context, string) {}, launch: func(_ context.Context, m core.Session) (*api.Session, error) {
+				launched = append(launched, m)
+				if fail && m.Supervisor == "new-supervisor" {
+					return nil, fmt.Errorf("new supervisor failed")
+				}
+				return &api.Session{State: "idle", RunId: "new-run"}, nil
+			}}
+			out, e := finishSessionUpdate(context.Background(), old, old.Agent, "new-supervisor", filepath.Join(t.TempDir(), "tx.json"), a)
+			if e != nil {
+				t.Fatal(e)
+			}
+			want := old
+			want.Supervisor = "new-supervisor"
+			if launched[0] != want {
+				t.Fatal("cxz update changed provider or session identity")
+			}
+			if fail {
+				if len(launched) != 2 || launched[1] != old || out.SupervisorBinary != old.Supervisor || out.State != "rolled_back" {
+					t.Fatal("old pair not restored", launched, out)
+				}
+			} else if len(launched) != 1 || out.State != "updated" {
+				t.Fatal(out)
 			}
 		})
 	}

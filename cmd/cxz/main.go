@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/lesomnus/cxz/internal/cxzupdate"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -40,11 +42,24 @@ func defaultState() (string, error) {
 }
 
 func run() error {
+	cxzupdate.Revision = buildRevision
+	if handled, err := updateInternal(os.Args[1:]); handled {
+		return err
+	}
+	if len(os.Args) == 2 && os.Args[1] == "_build-info" {
+		return json.NewEncoder(os.Stdout).Encode(cxzupdate.Current())
+	}
 	state, err := defaultState()
 	if err != nil {
 		return err
 	}
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
-	return newRoot(state).Run(ctx, os.Args[1:])
+	err = newRoot(state).Run(ctx, os.Args[1:])
+	var restart *cxzupdate.Restart
+	if errors.As(err, &restart) {
+		cancel()
+		return restartFrontend(restart)
+	}
+	return err
 }

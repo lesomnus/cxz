@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/cxzupdate"
 	"github.com/lesomnus/cxz/internal/dockerx"
 	"github.com/lesomnus/cxz/internal/engine"
 	"github.com/lesomnus/cxz/internal/transport"
@@ -149,6 +150,12 @@ func Install(ctx context.Context, root, workspaceRoot, image string, recreate bo
 		if old.Config.Labels["cxz.owner"] != v.Owner {
 			return fmt.Errorf("daemon name is occupied by an unowned container")
 		}
+		reservation, err := cxzupdate.ReserveInstall(ctx, v.Container, v.Owner, image)
+		if err != nil {
+			return err
+		}
+		defer reservation()
+
 		if !recreate {
 			if old.Config.Image != image || previousRoot != workspaceRoot {
 				return fmt.Errorf("manager image or workspace root differs; use install --recreate (data retained)")

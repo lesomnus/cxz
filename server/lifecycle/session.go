@@ -248,11 +248,11 @@ func (s SessionServer) UpdateAgent(ctx context.Context, r *resource.SessionUpdat
 	if e != nil {
 		return nil, e
 	}
-	x, e := s.shared.runtime.UpdateAgent(ctx, &api.AgentUpdateInput{SessionId: v.GetRuntimeId(), RunId: r.GetRunId(), Binary: r.GetBinary(), Apply: r.GetApply()})
+	x, e := s.shared.runtime.UpdateAgent(ctx, &api.AgentUpdateInput{SessionId: v.GetRuntimeId(), RunId: r.GetRunId(), Binary: r.GetBinary(), Apply: r.GetApply(), SupervisorBinary: r.GetSupervisorBinary()})
 	if e != nil {
 		return nil, e
 	}
-	return resource.SessionUpdateStatus_builder{Ready: &x.Ready, Reason: &x.Reason, Binary: &x.Binary, State: &x.State}.Build(), nil
+	return resource.SessionUpdateStatus_builder{Ready: &x.Ready, Reason: &x.Reason, Binary: &x.Binary, State: &x.State, SupervisorBinary: &x.SupervisorBinary, Revision: &x.Revision, Protocol: &x.Protocol}.Build(), nil
 }
 func (s SessionServer) Reply(ctx context.Context, r *resource.SessionReplyRequest) (*resource.SessionReceipt, error) {
 	v, err := s.resolve(ctx, r.GetRef())
