@@ -64,7 +64,9 @@ jobs:
             python3 scripts/update-manifest.py dist "$GITHUB_SHA" "$GITHUB_RUN_NUMBER" "ghcr.io/$GITHUB_REPOSITORY@$IMAGE_DIGEST" "$RELEASE_VERSION"
             assets+=(dist/cxz-update.json dist/auto-update/*)
           fi
-          gh release create "$RELEASE_VERSION" --verify-tag "${args[@]}" "${assets[@]}"
+          gh release create "$RELEASE_VERSION" --draft --verify-tag "${args[@]}" "${assets[@]}"
+          # Stable discovery must never observe a release with missing assets.
+          gh release edit "$RELEASE_VERSION" --draft=false
   notes:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
