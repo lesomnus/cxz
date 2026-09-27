@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/versionpin"
 	"os"
 	"path/filepath"
 	"strings"
@@ -31,6 +32,12 @@ func ClientFrom(ctx context.Context) (Client, bool) {
 	return c, ok
 }
 func Policy(root string) (Config, error) {
+	if p, e := versionpin.Load(root); e != nil {
+		return Config{}, e
+	} else if p.Version != "" {
+		disabled := false
+		return Config{Enabled: &disabled}, nil
+	}
 	var c Config
 	b, e := os.ReadFile(filepath.Join(root, "cxz-update-policy.json"))
 	if os.IsNotExist(e) {
@@ -43,6 +50,11 @@ func Policy(root string) (Config, error) {
 	return c, e
 }
 func SetPolicy(root string, enabled bool) error {
+	if enabled {
+		if e := versionpin.Check(root); e != nil {
+			return e
+		}
+	}
 	if e := os.MkdirAll(root, 0700); e != nil {
 		return e
 	}

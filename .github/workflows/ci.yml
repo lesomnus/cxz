@@ -18,7 +18,7 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
-      - run: go test ./cmd/cxz ./internal/transport ./internal/core ./internal/settings ./internal/selfupdate ./internal/cxzupdate
+      - run: go test ./cmd/cxz ./internal/transport ./internal/core ./internal/settings ./internal/selfupdate ./internal/cxzupdate ./internal/versionpin
       - run: go test ./internal/tui -run TestWindows -count=1
       - run: go build -o cxz.exe ./cmd/cxz
       - run: .\cxz.exe version
@@ -65,6 +65,7 @@ jobs:
           cache: true
       - run: go vet ./...
       - run: go test ./...
+      - run: CXZ_TEST_USE_DOCKER=1 go test ./internal/versionuse -run TestForceProjectReleaseSwitchDocker -v -count=1
       - run: CXZ_TEST_RACE=1 go test -race ./... -count=1
       - run: go run ./tools/genproto && git diff --exit-code -- api
       - run: go tool pd gen --check .

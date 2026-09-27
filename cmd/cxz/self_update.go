@@ -15,6 +15,7 @@ import (
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/selfupdate"
 	"github.com/lesomnus/cxz/internal/transport"
+	"github.com/lesomnus/cxz/internal/versionpin"
 	"github.com/lesomnus/xli"
 	"github.com/lesomnus/xli/flg"
 )
@@ -60,6 +61,9 @@ func runSelfUpdate(ctx context.Context, c *xli.Command) error {
 		return err
 	}
 	defer lock.Close()
+	if err = versionpin.Check(root); err != nil {
+		return err
+	}
 	refreshManager, err := shouldRefreshManager(root, flg.MustGet[bool](c, "client-only"))
 	if err != nil {
 		return err

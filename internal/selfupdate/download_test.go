@@ -87,7 +87,7 @@ func fixtureClient(t *testing.T, release releaseInfo, sums, archive []byte) *htt
 
 // Build a tiny cxz-shaped fixture from a clean Git checkout. This exercises real
 // Go build metadata without depending on the main working tree being clean.
-func cleanExecutableFixture(t *testing.T) []byte {
+func cleanExecutableFixture(t *testing.T, goos string) []byte {
 	t.Helper()
 	src := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(src, "cmd", "cxz"), 0700); err != nil {
@@ -109,7 +109,7 @@ func cleanExecutableFixture(t *testing.T) []byte {
 	} {
 		cmd := exec.Command(args[0], args[1:]...)
 		cmd.Dir = src
-		cmd.Env = append(os.Environ(), "GOWORK=off", "CGO_ENABLED=0")
+		cmd.Env = append(os.Environ(), "GOWORK=off", "CGO_ENABLED=0", "GOOS="+goos)
 		if out, err := cmd.CombinedOutput(); err != nil {
 			t.Fatalf("%v: %v\n%s", args, err, out)
 		}
@@ -122,7 +122,7 @@ func cleanExecutableFixture(t *testing.T) []byte {
 }
 
 func TestWindowsDownloadAndReplacementWithoutBuildTools(t *testing.T) {
-	binary := cleanExecutableFixture(t)
+	binary := cleanExecutableFixture(t, "windows")
 	// Preparation used Go and Git, but the updater itself must use neither.
 	t.Setenv("PATH", t.TempDir())
 	archive := zipFixture(t, "cxz.exe", 0755, binary)
@@ -144,8 +144,10 @@ func TestWindowsDownloadAndReplacementWithoutBuildTools(t *testing.T) {
 			if a.Version != wantVersion {
 				t.Fatal(a)
 			}
-			if out, err := exec.Command(a.Path, "version").CombinedOutput(); err != nil || string(out) != "cxz edge fixture\n" {
-				t.Fatal(string(out), err)
+			if runtime.GOOS == "windows" {
+				if out, err := exec.Command(a.Path, "version").CombinedOutput(); err != nil || string(out) != "cxz edge fixture\n" {
+					t.Fatal(string(out), err)
+				}
 			}
 			target := filepath.Join(t.TempDir(), "cxz.exe")
 			writeTestFile(t, target, "previous executable")
