@@ -629,3 +629,5 @@ Large journals need future segmentation/indexing and retention policy.
 ### 버전 고정
 
 `cxz use v0.1.0`으로 게시된 버전을 설치·고정하고 로컬 관리 구성 요소를 강제로 재시작할 수 있습니다. 진행 중인 작업은 중단됩니다. `cxz use`로 상태를 확인하고 `cxz use --unpin`으로 해제합니다. [범위와 복구 절차](docs/version-pinning.md)를 참고하세요.
+
+`cxz use @edge`는 최신 main 빌드, `cxz use @stable`은 최신 정식 릴리즈 채널을 선택합니다. 명시적인 전환은 즉시 설치·강제 재시작하며, 이후 채널 추적은 자동 업데이트 기능에서 처리합니다.

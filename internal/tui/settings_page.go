@@ -342,6 +342,9 @@ func (m *model) settingsScreen() string {
 		lines = append(lines, panelBackground(line+strings.Repeat(" ", max(0, inner-ansi.StringWidth(line)))))
 	}
 	lines = append(lines, accent.Render(strings.Repeat("─", inner)), "", "Configure defaults and overrides with cxz edit.")
+	if selection := m.releaseSelectionText(); selection != "" {
+		lines = append(lines, "", selection)
+	}
 	if p.loaded && p.info.ConfiguredImage != p.info.Image {
 		lines = append(lines, "Saved image: "+p.info.ConfiguredImage)
 	}

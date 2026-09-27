@@ -141,7 +141,7 @@ func fence(root, generation, phase string) error {
 	return core.WriteJSON(filepath.Join(root, "use-barrier.json"), versionpin.Barrier{Generation: generation, Phase: phase})
 }
 func StopProject(ctx context.Context, root, generation, version string) error {
-	if e := versionpin.Validate(version); e != nil {
+	if e := versionpin.ValidateInstalled(version); e != nil {
 		return e
 	}
 	lock, e := core.Lock(filepath.Join(root, "use-project.lock"))

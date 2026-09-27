@@ -41,7 +41,7 @@ func TestHostSwitchDocker(t *testing.T) {
 	if e = json.Unmarshal(b, &v); e != nil {
 		t.Fatal(e)
 	}
-	p := versionpin.Pin{Version: v.Version, Revision: v.Revision, Image: image, Generation: core.ID()}
+	p := versionpin.Pin{Channel: os.Getenv("CXZ_TEST_USE_CHANNEL"), Version: v.Version, Revision: v.Revision, Image: image, Generation: core.ID()}
 	// A pending local pin avoids copying any real host GitHub credentials.
 	if e = versionpin.Save(root, p); e != nil {
 		t.Fatal(e)
@@ -96,7 +96,7 @@ func TestHostSwitchDocker(t *testing.T) {
 		t.Fatal(e)
 	}
 	var pinned versionpin.Pin
-	if e = json.Unmarshal(b, &pinned); e != nil || !pinned.Ready || pinned.Version != p.Version {
+	if e = json.Unmarshal(b, &pinned); e != nil || !pinned.Ready || pinned.Version != p.Version || pinned.Channel != p.Channel {
 		t.Fatal("server pin", string(b), e)
 	}
 	p.Ready = true
@@ -109,8 +109,13 @@ func TestHostSwitchDocker(t *testing.T) {
 	if e = versionpin.Clear(root); e != nil {
 		t.Fatal(e)
 	}
-	if _, e = os.Stat(filepath.Join(root, "version-pin.json")); !os.IsNotExist(e) {
+	if _, e = os.Stat(filepath.Join(root, "version-pin.json")); p.Channel == "" && !os.IsNotExist(e) {
 		t.Fatal(e)
+	}
+	if p.Channel != "" {
+		if c, e := versionpin.Channel(root); e != nil || c != p.Channel {
+			t.Fatal("channel lost", c, e)
+		}
 	}
 	t.Log("manager replaced; old container retained; server/client pin set and removed; retry idempotent")
 }
