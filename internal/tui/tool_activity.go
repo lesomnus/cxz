@@ -100,16 +100,16 @@ func toolActivityStateBody(activity agentview.ToolActivity, result *api.Event, w
 			status = "failed"
 		}
 	}
-	marker, style := "[ ]", warning
+	marker, style := "○", warning
 	switch status {
 	case "working", "inProgress":
-		marker, style = "[•]", accent
+		marker, style = "•", accent
 	case "pending", "requested":
-		marker, style = "[ ]", warning
+		marker, style = "○", warning
 	case "done", "completed":
-		marker, style = "[✓]", accent
+		marker, style = "✓", accent
 	case "failed", "denied", "declined", "canceled", "cancelled", "stopped", "interrupted":
-		marker, style = "[×]", failure
+		marker, style = "×", failure
 	}
 	prefix := style.Render(marker)
 	positive := func(n int) string { return accent.Render(fmt.Sprintf("+%d", n)) }
@@ -135,7 +135,7 @@ func toolActivityStateBody(activity agentview.ToolActivity, result *api.Event, w
 			if i == 0 {
 				lines = append(lines, header+row)
 			} else {
-				lines = append(lines, "    "+row)
+				lines = append(lines, "  "+row)
 			}
 		}
 	} else if activity.Kind == "tool" {
