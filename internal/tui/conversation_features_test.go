@@ -183,7 +183,7 @@ func TestPinnedPromptFullRowBackground(t *testing.T) {
 	profile := lipgloss.ColorProfile()
 	lipgloss.SetColorProfile(termenv.TrueColor)
 	defer lipgloss.SetColorProfile(profile)
-	const background = "48;5;236m"
+	background := fmt.Sprintf("48;5;%dm", promptBackground)
 	for _, width := range []int{40, 80, 123} {
 		m := conversationModel()
 		m.Update(tea.WindowSizeMsg{Width: width, Height: 24})
@@ -232,7 +232,7 @@ func TestMarkdownAndCodeSafety(t *testing.T) {
 			t.Fatal(want, plain)
 		}
 	}
-	if strings.Contains(plain, "```") || strings.Contains(view, "secret") || !strings.Contains(view, "48;5;238") {
+	if strings.Contains(plain, "```") || strings.Contains(view, "secret") || !strings.Contains(view, fmt.Sprintf("48;5;%d", codeBackground)) {
 		t.Fatal(view)
 	}
 	for _, row := range strings.Split(view, "\n") {

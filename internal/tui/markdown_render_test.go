@@ -54,7 +54,7 @@ func TestMarkdownDetectedSyntaxAndIndexedBackground(t *testing.T) {
 		lipgloss.SetColorProfile(profile)
 		for _, language := range []string{"python", ""} {
 			view := markdownView("```"+language+"\n#!/usr/bin/env python3\ndef greet(name):\n    return \"Hello\"\n```", 40)
-			if !strings.Contains(view, "38;") || !strings.Contains(view, "48;5;238") {
+			if !strings.Contains(view, "38;") || !strings.Contains(view, fmt.Sprintf("48;5;%d", codeBackground)) {
 				t.Fatal("highlight missing", view)
 			}
 			if profile == termenv.ANSI256 && strings.Contains(view, "38;2;") {
@@ -76,8 +76,9 @@ func TestMarkdownDetectedSyntaxAndIndexedBackground(t *testing.T) {
 						foregrounds[fmt.Sprint(cell.Style.Fg)] = true
 					}
 					r, g, b, _ := cell.Style.Bg.RGBA()
-					if r != 0x4444 || g != r || b != r {
-						t.Fatalf("code background %x %x %x", r, g, b)
+					gray := uint32(8+10*(codeBackground-232)) * 0x101
+					if r != gray || g != r || b != r {
+						t.Fatalf("code background %04x %04x %04x, want %04x", r, g, b, gray)
 					}
 				}
 			}
@@ -153,9 +154,11 @@ func TestUserMessageBackgroundReachesConversationEdges(t *testing.T) {
 				if cell == nil || cell.Style.Bg == nil {
 					t.Fatalf("unfilled user cell %d,%d width=%d", x, y, width)
 				}
+				// xterm's grayscale ramp: index 232+n is the gray 8+10n.
+				gray := uint32(8+10*(promptBackground-232)) * 0x101
 				r, g, b, _ := cell.Style.Bg.RGBA()
-				if r != 0x3030 || g != r || b != r {
-					t.Fatal("wrong user background")
+				if r != gray || g != r || b != r {
+					t.Fatalf("wrong user background %04x, want %04x", r, gray)
 				}
 			}
 		}

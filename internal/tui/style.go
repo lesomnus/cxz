@@ -45,6 +45,15 @@ var (
 	selectedRow      = accent.Bold(true)
 )
 
+// Conversation backgrounds stay indexed so the terminal's own palette decides
+// the shade; see indexedBackground. Each is named because it is applied in more
+// than one place that has to agree: a code block paints its header, body and
+// footer, and a prompt is painted both in the transcript and where it is pinned.
+const (
+	codeBackground   = 235
+	promptBackground = 239
+)
+
 func newComposer() textarea.Model {
 	input := textarea.New()
 	input.KeyMap.WordBackward = key.NewBinding(key.WithKeys("ctrl+left", "alt+left", "alt+b"))
