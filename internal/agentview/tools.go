@@ -2,7 +2,10 @@ package agentview
 
 import (
 	"encoding/json"
+	"path"
 	"strings"
+
+	"github.com/mattn/go-shellwords"
 )
 
 // ToolActivity is display-only: native names/payloads still drive execution.
@@ -10,8 +13,51 @@ import (
 // supplies actual hunks. Never read the current file to guess an earlier diff.
 type ToolActivity struct {
 	Kind, Command, Description string
+	Shell                      string // Interpreter Command was handed to, if any.
 	Files                      []FileActivity
 }
+
+// Codex hands a script to a login shell -- /usr/bin/zsh -lc "rg …; git log …" --
+// so the wrapper is the first thing on the row, and the script it carries is
+// highlighted as one quoted string rather than as the commands it contains. Name
+// the shell separately and let Command be the script, which is what a reader is
+// looking for. The original stays in the raw payload the tool preview shows.
+//
+// Only a lone trailing operand qualifies: with a second one the first is $0 and
+// no longer the whole script. Only a short option bundle is read for c, because
+// a long option never means "run this string" -- --no-rcs must not look like one.
+func unwrapShell(command string) (string, string) {
+	words, err := shellwords.NewParser().Parse(command)
+	if err != nil || len(words) < 3 {
+		return "", command
+	}
+	shell := path.Base(words[0])
+	switch shell {
+	case "sh", "bash", "zsh", "dash", "ksh", "ash":
+	default:
+		return "", command
+	}
+	carries := false
+	for i, options := 0, words[1:len(words)-1]; i < len(options); i++ {
+		w := options[i]
+		switch {
+		case w == "-c":
+			carries = true
+		case w == "-o" || w == "+o":
+			i++ // Its value is the option's, not a second operand.
+		case strings.HasPrefix(w, "--"):
+		case strings.HasPrefix(w, "-"):
+			carries = carries || strings.ContainsRune(w[1:], 'c')
+		default:
+			return "", command
+		}
+	}
+	if script := words[len(words)-1]; carries && strings.TrimSpace(script) != "" {
+		return shell, script
+	}
+	return "", command
+}
+
 type FileActivity struct {
 	Path, MovePath, Action string
 	Added, Removed, Lines  int
@@ -40,7 +86,8 @@ func ToolView(provider, name string, raw []byte) (ToolActivity, bool) {
 			}
 			return ToolActivity{Kind: "files", Files: []FileActivity{{Path: p.text("file_path"), Action: "edit", Removed: textLines(old), Added: textLines(next), Measure: measure, PerMatch: string(p["replace_all"]) == "true"}}}, true
 		case "Bash":
-			return ToolActivity{Kind: "command", Command: p.text("command"), Description: p.text("description")}, true
+			shell, script := unwrapShell(p.text("command"))
+			return ToolActivity{Kind: "command", Command: script, Shell: shell, Description: p.text("description")}, true
 		case "Read":
 			return ToolActivity{Kind: "read", Files: []FileActivity{{Path: p.text("file_path"), Action: "read"}}}, true
 		case "Skill":
@@ -57,7 +104,8 @@ func ToolView(provider, name string, raw []byte) (ToolActivity, bool) {
 		item := p.child("item")
 		switch item.text("type") {
 		case "commandExecution":
-			return ToolActivity{Kind: "command", Command: item.text("command")}, true
+			shell, script := unwrapShell(item.text("command"))
+			return ToolActivity{Kind: "command", Command: script, Shell: shell}, true
 		case "fileChange":
 			var changes []struct {
 				Path, Diff string
