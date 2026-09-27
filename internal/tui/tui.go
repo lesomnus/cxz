@@ -1320,7 +1320,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.Update(accountLoggedIn{v.err})
 	case contextSent:
 		if c := m.contextCapture; c != nil && c.request == v.request && v.err != nil {
-			c.report.text = "Context unavailable: " + v.err.Error()
+			c.report.contextNote("Context unavailable: " + v.err.Error())
 			m.contextCapture = nil
 		}
 		return m, nil
@@ -1445,6 +1445,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.restartMouse(v)
 		}
 		if m.report != nil {
+			if m.contextReportMouse(v) {
+				return m, nil
+			}
 			if v.Button == tea.MouseButtonWheelUp {
 				m.report.offset = max(0, m.report.offset-3)
 			}
@@ -1715,7 +1718,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.update(disconnected{v.id, v.err})
 	case disconnected:
 		if c := m.contextCapture; c != nil && c.id == v.id {
-			c.report.text = "Disconnected while querying context. Reopen /context after reconnecting."
+			c.report.contextNote("Disconnected while querying context. Reopen /context after reconnecting.")
 			m.contextCapture = nil
 		}
 		if m.watchID == v.id {

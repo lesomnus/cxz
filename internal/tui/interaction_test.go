@@ -178,7 +178,7 @@ func TestContextAndCompactCommands(t *testing.T) {
 		m := conversationModel()
 		m.current().Agent = agent
 		c := m.client.(*recordingClient)
-		m.events["s"] = []*api.Event{{Kind: "usage", Text: "thread/tokenUsage/updated", Payload: []byte(`{"tokenUsage":{"last":{"totalTokens":2000,"inputTokens":1800},"modelContextWindow":10000}}`)}}
+		m.events["s"] = []*api.Event{{RunId: m.current().RunId, Kind: "usage", Text: "thread/tokenUsage/updated", Payload: []byte(`{"tokenUsage":{"last":{"totalTokens":2000,"inputTokens":1800},"modelContextWindow":10000}}`)}}
 		cmd := m.contextCommand()
 		if agent == "claude" {
 			if cmd == nil {
