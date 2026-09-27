@@ -18,6 +18,7 @@ import (
 	"github.com/lesomnus/cxz/internal/resourceclient"
 	"github.com/lesomnus/cxz/internal/settings"
 	"github.com/lesomnus/cxz/internal/transport"
+	"github.com/lesomnus/cxz/internal/versionpin"
 	"github.com/lesomnus/cxz/resource"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -28,6 +29,9 @@ import (
 )
 
 type model struct {
+	pinGeneration           string
+	pinChecked              time.Time
+	pinRestart              *versionpin.Restart
 	alertPlayer             *notification.Player
 	liveRenderWidth         *atomic.Int64
 	renderedInputs          map[inputRenderKey]string
@@ -289,6 +293,12 @@ func RunProject(ctx context.Context, c api.SessionsClient, project *api.Project,
 	defer cancel()
 	input := newComposer()
 	m := &model{ctx: ctx, client: c, input: input, view: viewport.New(80, 15), events: map[string][]*api.Event{}, cursor: map[string]uint64{}, width: 100, height: 30, wantID: id}
+	if c, ok := versionpin.ClientFrom(ctx); ok {
+		pin, _ := versionpin.Load(c.Root)
+		if pin.Ready {
+			m.pinGeneration = pin.Generation
+		}
+	}
 	m.initializeNavigation(project, id)
 	m.createProjectSession = create
 	if resources, ok := c.(*resourceclient.Client); ok {
@@ -329,6 +339,9 @@ func RunProject(ctx context.Context, c api.SessionsClient, project *api.Project,
 	}
 	if m.watchCancel != nil {
 		m.watchCancel()
+	}
+	if e == nil && m.pinRestart != nil {
+		return m.pinRestart
 	}
 	return e
 }
@@ -1480,6 +1493,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.resize()
 		m.render()
 	case tick:
+		if cmd := m.pinnedRestart(); cmd != nil {
+			return m, cmd
+		}
 		m.watch()
 		var history tea.Cmd
 		if m.historyOpening[m.watchID] {

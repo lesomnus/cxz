@@ -12,6 +12,7 @@ import (
 	"github.com/lesomnus/cxz/internal/dockerx"
 	"github.com/lesomnus/cxz/internal/engine"
 	"github.com/lesomnus/cxz/internal/transport"
+	"github.com/lesomnus/cxz/internal/versionpin"
 	"github.com/lesomnus/cxz/internal/wisp"
 	"io"
 	"net"
@@ -97,6 +98,30 @@ func Install(ctx context.Context, root, workspaceRoot, image string, recreate bo
 		return e
 	}
 	defer lock.Close()
+	p, e := versionpin.Load(root)
+	if e != nil {
+		return e
+	}
+	if p.Version != "" {
+		if !p.Ready {
+			return fmt.Errorf("version switch unfinished; retry cxz use %s", p.Version)
+		}
+		if p.Image == "" {
+			return fmt.Errorf("frontend-only version pin; run cxz use --unpin before installing a manager, then pin again")
+		}
+		if image == "" {
+			image = p.Image
+		}
+		if image != p.Image {
+			return versionpin.Check(root)
+		}
+	}
+	return InstallLocked(ctx, root, workspaceRoot, image, recreate, out)
+}
+
+// InstallLocked is for the release-switch controller, which holds install.lock
+// across stopping runtimes, replacing the manager and resuming sessions.
+func InstallLocked(ctx context.Context, root, workspaceRoot, image string, recreate bool, out io.Writer) error {
 	v, e := transport.Load(root)
 	if e != nil && !os.IsNotExist(e) {
 		return e

@@ -14,6 +14,7 @@ import (
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/distribution"
 	"github.com/lesomnus/cxz/internal/dockerx"
+	"github.com/lesomnus/cxz/internal/versionpin"
 )
 
 type updateJob struct {
@@ -109,6 +110,9 @@ func (m *Manager) RunUpdates(ctx context.Context) {
 }
 
 func (m *Manager) rolloutOne(ctx context.Context, state *updateState) {
+	if versionpin.Pending(m.Root) {
+		return
+	}
 	projects, e := m.all(ctx)
 	if e != nil {
 		return

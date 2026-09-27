@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/lesomnus/cxz/internal/versionpin"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -40,11 +41,20 @@ func defaultState() (string, error) {
 }
 
 func run() error {
+	if handled, e := useInternal(os.Args[1:]); handled {
+		return e
+	}
 	state, err := defaultState()
 	if err != nil {
 		return err
 	}
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
-	return newRoot(state).Run(ctx, os.Args[1:])
+	err = newRoot(state).Run(ctx, os.Args[1:])
+	var restart *versionpin.Restart
+	if errors.As(err, &restart) {
+		cancel()
+		return restartPinnedFrontend(restart.Executable)
+	}
+	return err
 }

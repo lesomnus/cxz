@@ -20,6 +20,7 @@ import (
 	"github.com/lesomnus/cxz/internal/supervisor"
 	"github.com/lesomnus/cxz/internal/transport"
 	"github.com/lesomnus/cxz/internal/tui"
+	"github.com/lesomnus/cxz/internal/versionpin"
 	"github.com/lesomnus/cxz/internal/wisp"
 	"github.com/lesomnus/cxz/internal/workspace"
 	"github.com/lesomnus/xli"
@@ -51,6 +52,9 @@ func onRun(fn commandFunc) xli.Handler {
 func withClient(fn clientFunc) xli.Handler {
 	return onRun(func(ctx context.Context, c *xli.Command) error {
 		root := stateFrom(ctx)
+		if c.Name == "cxz" {
+			ctx = versionpin.WithClient(ctx, root)
+		}
 		cfg, err := settings.Load(root)
 		if err != nil {
 			return err
@@ -181,7 +185,7 @@ func newRoot(state string) *xli.Command {
 	}
 	root.Commands = append(root.Commands, internalCommands()...)
 	root.Commands = append(root.Commands, settingsCommand(), editCommand(), dockerCommand(), doctorCommand(), logsCommand())
-	root.Commands = append(root.Commands, purgeCommand(), selfUpdateCommand())
+	root.Commands = append(root.Commands, purgeCommand(), selfUpdateCommand(), useCommand())
 	root.Commands = append(root.Commands, releaseCommands()...)
 	root.Commands = append(root.Commands, xli.NewCmdCompletion())
 	reorganizeCommands(root)

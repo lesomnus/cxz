@@ -16,6 +16,7 @@ import (
 	"github.com/lesomnus/cxz/internal/dockerx"
 	"github.com/lesomnus/cxz/internal/githubauth"
 	"github.com/lesomnus/cxz/internal/transport"
+	"github.com/lesomnus/cxz/internal/versionpin"
 )
 
 // Only the active credential for each configured host is exported. Neither
@@ -161,6 +162,9 @@ mv -f "$tmp" /var/lib/cxz/host-gh/hosts.yml`
 func readyWithGitHub(ctx context.Context, root string, v transport.Installation, out io.Writer) error {
 	if err := waitReady(ctx, v, out); err != nil {
 		return err
+	}
+	if versionpin.Pending(root) {
+		return nil
 	}
 	return SyncGitHub(ctx, root, out)
 }

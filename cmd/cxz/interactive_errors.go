@@ -5,6 +5,7 @@ package main
 import (
 	"context"
 	"errors"
+	"github.com/lesomnus/cxz/internal/versionpin"
 	"os"
 
 	"github.com/charmbracelet/x/term"
@@ -42,6 +43,11 @@ func interactiveErrors(c *xli.Command) bool {
 	return ok && term.IsTerminal(output.Fd())
 }
 func handleCommandError(ctx context.Context, c *xli.Command, err error) error {
+	var restart *versionpin.Restart
+	if errors.As(err, &restart) {
+		return err
+	}
+
 	var shown *displayedError
 	if err == nil || errors.As(err, &shown) || ctx.Err() != nil || !interactiveErrors(c) {
 		return err
