@@ -21,12 +21,12 @@ function pass(check){console.log(JSON.stringify({check,status:'passed'}));}
 let foreign;let owned;
 try{
   foreign=await docker('run','-d','--name',`cxz-${run}`,'--label',`cxz.probe.run=${run}`,'--label',`devcontainer.local_folder=${workspace}`,'alpine:latest','sleep','infinity');
-  await rejected(()=>cli('project','up','--no-attach',workspace),/foreign container/);
+  await rejected(()=>cli('project','up',workspace),/foreign container/);
   assert(JSON.parse(await docker('inspect',foreign))[0].State.Running);
   pass('foreign up rejected without mutation');
-  await rejected(()=>cli('project','recreate','--no-attach',workspace),/pass --yes/);
+  await rejected(()=>cli('project','recreate',workspace),/pass --yes/);
   pass('noninteractive recreate requires explicit confirmation');
-  const session=JSON.parse(await cli('project','recreate','--yes','--no-attach',workspace));
+  const session=JSON.parse(await cli('project','recreate','--yes',workspace));
   owned=JSON.parse(await cli('project','ls')).projects.find(p=>p.id===session.project_id);
   const v=JSON.parse(await docker('inspect',owned.container_id))[0];
   assert.equal(v.Config.Labels['cxz.owner'],install.owner);assert.equal(v.Config.Labels['cxz.project'],owned.id);
@@ -37,7 +37,7 @@ try{
   await rejected(()=>cli('project','exec',owned.id,'--','cxz','project','ls'),/PermissionDenied/);
   await rejected(()=>cli('project','exec',owned.id,'--','cxz','get','ffffffffffffffffffffffff'),/NotFound/);
   pass('in-container client rejects fleet access and foreign session ids');
-  await rejected(()=>cli('session','new','--agent','codex','--no-attach',workspace),/active claude session/);
+  await rejected(()=>cli('session','new','--agent','codex',workspace),/active claude session/);
   pass('second active agent rejected');
   await cli('project','down',workspace);
   await rejected(()=>docker('inspect',owned.container_id),/no such/i);

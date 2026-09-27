@@ -38,8 +38,8 @@ try{
   writeFileSync(join(work,'.devcontainer/devcontainer.json'),JSON.stringify({image:i===0?'alpine:latest':'node:24-bookworm-slim',remoteUser:i===0?'root':'node',containerEnv:{OPENAI_API_KEY:'synthetic-wrong'}}));
   projects.push(await json('project','add','--alias',`broker-${run}-${i}`,work));
  }
- let a=await json('session','new','--account','work','--no-attach',projects[0].alias);
- let b=await json('session','new','--account','work','--no-attach',projects[1].alias);
+ let a=await json('session','new','--account','work',projects[0].alias);
+ let b=await json('session','new','--account','work',projects[1].alias);
  assert.notEqual(a.auth_binding,b.auth_binding);assert.equal(a.auth_backend,'brokered-access-token');
  console.log('one central login supplies two projects');
  await Promise.all([chat(a,'refresh'),chat(b,'refresh')]);
@@ -47,13 +47,13 @@ try{
  await cli('session','send',a.id,'approval');let pending=await until(a.id,'waiting_input');await cli('session','reply',a.id,pending.pending[0].request_id,'allow');await until(a.id,'idle');
  await cli('session','send',a.id,'wait');await until(a.id,'working');await cli('session','interrupt',a.id);await until(a.id,'idle');
  a=await stop(a);
- let personal=await json('session','new','--account','personal','--no-attach',projects[0].alias);await chat(personal,'refresh');personal=await stop(personal);
+ let personal=await json('session','new','--account','personal',projects[0].alias);await chat(personal,'refresh');personal=await stop(personal);
  a=await json('session','resume',a.id);assert.equal(a.account,'work');await chat(a);
  const before=a.auth_binding;a=await stop(a);
  await docker('restart',installation.container);
  for(let i=0;i<80;i++){try{await cli('account','get','work');break;}catch{await delay(100);}}
  await chat(b,'refresh');
- a=await json('project','recreate','--yes','--account','work','--no-attach',projects[0].alias);assert.equal(a.auth_binding,before);await chat(a,'refresh');
+ a=await json('project','recreate','--yes','--account','work',projects[0].alias);assert.equal(a.auth_binding,before);await chat(a,'refresh');
  console.log('manager restart, project recreation, approvals, interrupt and account-preserving resume');
  const inventory=(await json('project','ls')).projects;
  for(const p of projects){

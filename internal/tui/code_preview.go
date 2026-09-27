@@ -98,13 +98,45 @@ func liveOutputView(text string, width int) string {
 	return strings.Join(rows, "\n")
 }
 
+type previewTab struct {
+	source, language string
+	offset           int
+}
+
 type filePreview struct {
+	tabs                             *[2]previewTab
+	tab                              int
 	session, title, source, language string
 	offset                           int
 	focused                          bool
 	hover                            string
 	rendered                         string
 	width                            int
+}
+
+func (p *filePreview) selectTab(tab int) {
+	if p.tabs == nil {
+		return
+	}
+	p.tabs[p.tab].offset = p.offset
+	p.tab = tab
+	content := p.tabs[tab]
+	p.source, p.language, p.offset = content.source, content.language, content.offset
+	p.rendered = ""
+}
+
+// Positions relative to the panel's left edge; shared by drawing and hit tests.
+func (p *filePreview) tabAt(x, width int) string {
+	if p.tabs == nil || width < 26 {
+		return ""
+	}
+	if x >= 1 && x < 8 {
+		return "input"
+	}
+	if x >= 9 && x < 17 {
+		return "output"
+	}
+	return ""
 }
 
 // Preview the original tool payload, never the current workspace file.
@@ -176,8 +208,12 @@ func (m *model) previewRows(width, height int) string {
 	count := max(0, height-previewFrameRows)
 	p.offset = max(0, min(p.offset, max(0, len(rows)-count)))
 	focused := p.focused && m.previewInteraction()
-	title := clip(safeText(p.title), max(1, inner-8))
-	header := title + strings.Repeat(" ", max(1, inner-7-ansi.StringWidth(title))) + " ⧉  [×]"
+	prefix := ""
+	if p.tabs != nil && width >= 26 {
+		prefix = " Input   Output  "
+	}
+	title := clip(safeText(p.title), max(0, inner-8-len(prefix)))
+	header := prefix + title + strings.Repeat(" ", max(1, inner-7-ansi.StringWidth(prefix+title))) + " ⧉  [×]"
 	body := []string{teal.Render(header)}
 	for i := 0; i < count; i++ {
 		line := ""
@@ -189,6 +225,9 @@ func (m *model) previewRows(width, height int) string {
 	hint := "click to focus"
 	if focused {
 		hint = "↑↓ scroll · Ctrl+C copy · x close · Tab back"
+		if p.tabs != nil {
+			hint = "←→ tabs · " + hint
+		}
 	}
 	body = append(body, muted.Render(fmt.Sprintf("%d–%d/%d · %s", p.offset+1, min(len(rows), p.offset+count), len(rows), hint)), "")
 	if height <= 0 {
@@ -203,6 +242,10 @@ func (m *model) previewRows(width, height int) string {
 		body[i] = panelBackground(" " + line + strings.Repeat(" ", max(0, inner-ansi.StringWidth(line))) + " ")
 	}
 	if len(body) > 0 {
+		if p.tabs != nil && width >= 26 {
+			body[0] = overlayButton(body[0], 1, " Input ", p.tab == 0 || p.hover == "input", 236)
+			body[0] = overlayButton(body[0], 9, " Output ", p.tab == 1 || p.hover == "output", 236)
+		}
 		body[0] = overlayButton(body[0], width-8, " ⧉ ", p.hover == "copy", 236)
 		body[0] = overlayButton(body[0], width-4, "[×]", p.hover == "close", 236)
 	}
@@ -242,6 +285,7 @@ func (m *model) filePreviewMouse(v tea.MouseMsg) bool {
 		return false
 	}
 	if v.Y == y {
+		m.filePreview.hover = m.filePreview.tabAt(v.X-x, width)
 		if v.X >= x+width-8 && v.X < x+width-5 {
 			m.filePreview.hover = "copy"
 		} else if v.X >= x+width-4 && v.X < x+width-1 {
@@ -261,6 +305,10 @@ func (m *model) filePreviewMouse(v tea.MouseMsg) bool {
 	case tea.MouseButtonLeft:
 		if v.Action == tea.MouseActionPress {
 			switch m.filePreview.hover {
+			case "input":
+				m.filePreview.selectTab(0)
+			case "output":
+				m.filePreview.selectTab(1)
 			case "copy":
 				m.copyText(m.filePreview.source)
 			case "close":

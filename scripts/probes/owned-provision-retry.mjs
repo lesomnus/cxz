@@ -20,7 +20,7 @@ async function until(fn){for(let i=0;i<180;i++){try{const v=await fn();if(v)retu
 function pass(check){console.log(JSON.stringify({check,status:'passed'}));}
 let project;
 try {
- const pending=cli('project','up','--no-attach',path).catch(()=>null);
+ const pending=cli('project','up',path).catch(()=>null);
  project=await until(async()=>{const p=JSON.parse(await cli('project','ls')).projects?.find(p=>p.workspace===path);return p?.provision_step==='devcontainer-up'&&p;});
  // Wait for the hook, not just the stage preceding container creation.
  const container=await until(async()=>{const ids=await docker('ps','--no-trunc','-q','--filter',`label=cxz.owner=${installation.owner}`,'--filter',`label=cxz.project=${project.id}`,'--filter',`label=devcontainer.local_folder=${path}`);if(!ids)return null;await docker('exec',ids,'test','-e','/tmp/cxz-retry-hook');return ids;});
@@ -31,7 +31,7 @@ try {
  assert.equal(interrupted.provision_step,'devcontainer-up');assert.equal(interrupted.container_id,container);
  pass('manager kill preserves checkpoint and recovers uncommitted container identity');
  // Concurrent retries converge to one project and one session.
- const sessions=await Promise.all([cli('project','up','--no-attach',path),cli('project','up','--no-attach',path)]);
+ const sessions=await Promise.all([cli('project','up',path),cli('project','up',path)]);
  const [a,b]=sessions.map(JSON.parse);assert.equal(a.id,b.id);
  const after=JSON.parse(await cli('project','ls')).projects.find(p=>p.id===project.id);
  assert.equal(after.container_id,container);assert.equal(after.provision_state,'complete');assert.equal(after.provision_attempt,3);

@@ -6,6 +6,9 @@ The workflow succeeds [cld](https://github.com/lesomnus/cld), following
 [cxz's ownership architecture](docs/architecture.md): foreign containers are
 detected, never adopted.
 
+See the [cxz glossary / 용어집](docs/glossary.md) for Manager, Project runtime,
+Session supervisor, Wisp, and the distinctions between sessions, runs and state.
+
 ## Start
 
 Linux release binaries and checksums: [v0.1.0-rc.1](https://github.com/lesomnus/cxz/releases/tag/v0.1.0-rc.1).
@@ -127,14 +130,10 @@ For input or rendering problems, **F9** or the **Ctrl+P** recording button start
 a [TUI diagnostic recording](docs/debug-recording.md). Stop to save a local JSONL
 file; `/record status` shows its full path. Input text is excluded.
 
-`cxz terminal-info` shows the local terminal environment and an interactive
-256-color palette. Use arrows or click a swatch to select its ANSI code, and
-**Tab** to switch to explicit RGB swatches and HEX codes. ANSI colors depend on
-your terminal theme; the displayed reference HEX is not a theme measurement.
-Use `cxz terminal-info --plain` for a shareable text report. No installation or
-manager connection is required.
+`cxz terminal-info` prints the local terminal environment and palette codes as a
+shareable text report. No installation or manager connection is required.
 
-Linux and Windows can use `cxz connect ssh://user@host` to open the same TUI on a
+Linux and Windows can use `cxz --endpoint ssh://user@host` to open the same TUI on a
 remote Linux installation. Authenticated `tcp://host:port` connections are also
 supported through `cxz expose`. Named `connections` in `settings.jsonc` appear
 together in the project panel as `project1 via work`; `default` sets its initial
@@ -162,12 +161,10 @@ ownership or remap an existing user's UID. Adjust the devcontainer for a host UI
 other than the default image's 1000 when necessary.
 
 ```sh
-bin/cxz up .                               # prepare project, then print TUI guidance
+bin/cxz up .                               # prepare project and print project data
 bin/cxz up --format json .                 # prepare project and print data; no Account required
-bin/cxz it .                               # newest session in this workspace
 bin/cxz session new --account work-codex .  # new conversation; stop an active one first
-bin/cxz session attach PROJECT             # or SESSION_ID
-bin/cxz                            # open TUI (also: tui, watch)
+bin/cxz                            # open TUI; only entrypoint
 bin/cxz project exec PROJECT -- go test ./...
 bin/cxz project shell PROJECT
 bin/cxz down .                             # remove owned containers; retain project, sessions and history
@@ -185,7 +182,7 @@ use Ctrl+R or `cxz session resume SESSION` to continue one. `cxz up` only prepar
 the containers and does not automatically resume agents. Files stored only in
 a container's writable layer are removed with the container.
 
-Inside an owned project, `cxz session attach`, `cxz session ls` and session controls are scoped to that
+Inside an owned project, `cxz`, `cxz session ls` and session controls are scoped to that
 project. No manager Docker socket or credential directory is mounted there.
 Global options precede commands: `cxz --state /private/client-state project up .`.
 Use the same client state for all host commands. Default: `$XDG_STATE_HOME/cxz`
@@ -212,18 +209,22 @@ unauthenticated API to an untrusted network.
 
 ## TUI and scripts
 
-`cxz purge` opens an irreversible-cleanup checklist for the installation selected
-by `--state`. All categories start checked: containers, project data/login
-volumes, manager database/account volume, tool volumes, networks and local state.
-Use Space to toggle, arrows/Tab to navigate, PgUp/PgDn to inspect targets, then
-the final **Confirm irreversible deletion** button. Esc cancels.
-`cxz purge --dry-run` lists targets without modifying anything.
+Only `cxz` without a subcommand opens the TUI. Subcommands print results and
+return errors directly; `--no-attach`, `it`, `session attach`, `tui`, `watch`, and
+`connect` have been removed. Remote TUI options belong to the root command:
+`cxz --endpoint NAME_OR_URL [--session SESSION] [--token-file FILE]`.
+New sessions require `--account`; container recreation requires `--yes`.
+
+`cxz purge --dry-run` lists cleanup targets for the installation selected by
+`--state`. `cxz purge --yes` permanently deletes all cleanup categories.
+Use `--groups containers,projects,state,tools,networks,local` to select categories
+for either preview or deletion; omitted groups default to all categories.
 
 Unlike `uninstall`, purge can delete conversations and credentials permanently.
 Back them up first. Run from the host/client; stop native cxz servers/agents first.
 Owned Docker containers are removed before volumes; owner labels and the inventory
 are rechecked. Partial failures retain the installation locator. If Docker data
-is unchecked, keep local state too so its ownership identity remains available.
+is retained, keep local state too so its ownership identity remains available.
 Workspace sources, personal Claude/Codex login directories, the CLI executable,
 shared images/build caches, and unlabeled Docker resources are never removed.
 Unknown files inside the state directory are reported and preserved; only known
@@ -239,11 +240,11 @@ and are case-normalized. A duplicate explicit alias is rejected.
 
 ```sh
 cxz project add --name "My Web App" --alias web .  # register only; no container
-cxz project up --no-attach web
+cxz project up web
 cxz project set --name "Production Web" --alias prod web
 cxz project exec prod -- pwd
 cxz project logs prod
-cxz session attach prod
+cxz  # select the project/session in the TUI
 cxz project down prod
 # Name/alias can also be supplied during new/up/recreate:
 cxz session new --name "My Web App" --alias web .
@@ -435,6 +436,8 @@ call remain visible. File counts use green `+N` and red `-N`; `/match` means a
 replacement span per occurrence, not a known file-wide total. Write's `+N content`
 is supplied content size, not an inferred net addition. Bash shows the first two
 wrapped command lines; full output and input remain in `/details` and the journal.
+The detail header has Input/Output tabs; use Left/Right while focused or click a
+tab to switch. Each tab keeps its scroll position, and Copy copies the active tab.
 
 Recreate's typed confirmation runs inline without switching to the alternate
 screen. TUI text inputs use a blinking light-green cursor (`#AEFF98`); this does
@@ -509,7 +512,7 @@ percentages, reset times and labels keep their existing styling.
 configuration, resources, devcontainer image/build/hooks, selected agent installation,
 runtime boot/readiness. Fast steps may pass between polls; long steps repeat every
 ten seconds. This is stage reporting, not a percentage or raw Docker build log.
-`--no-attach --format json` keeps stdout clean.
+`--format json` keeps stdout clean.
 
 Project `a` opens accounts without leaving the app. New-session `n` opens the same
 view in selection mode; an empty list offers account creation. Add a provider
