@@ -91,7 +91,7 @@ func TestClaudeContextIsCorrelatedAndJournalRetained(t *testing.T) {
 	for _, e := range events {
 		m.Update(received{id: "s", event: e})
 	}
-	if !strings.Contains(m.report.text, "context breakdown") || strings.Contains(m.report.text, "unrelated") {
+	if !strings.Contains(m.report.context.raw, "context breakdown") || strings.Contains(m.report.context.raw, "unrelated") {
 		t.Fatal("wrong context capture")
 	}
 	if len(m.events["s"]) != 4 || m.hiddenEvents[events[0]] || !m.hiddenEvents[events[2]] {

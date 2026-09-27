@@ -11,6 +11,7 @@ type reportOverlay struct {
 	title, text, id, run string
 	offset               int
 	generation           uint64
+	context              *contextReportView
 }
 
 // A modal overlays existing rows without changing transcript height or scroll.
@@ -59,6 +60,16 @@ func (m *model) reportView(view string) string {
 		return view
 	}
 	body := p.text
+	if c := p.context; c != nil {
+		if c.rawMode {
+			body = c.raw
+			if body == "" {
+				body = "No raw response received yet."
+			}
+		} else {
+			body = c.summary(max(1, m.width-4))
+		}
+	}
 	if p.title == "/background" {
 		body = m.backgroundReport()
 	}
@@ -70,7 +81,17 @@ func (m *model) reportView(view string) string {
 	lines := strings.Split(body, "\n")
 	capacity := max(1, len(strings.Split(view, "\n"))-4)
 	p.offset = max(0, min(p.offset, max(0, len(lines)-capacity)))
-	content := []string{accent.Bold(true).Render(p.title)}
+	title := accent.Bold(true).Render(p.title)
+	if c := p.context; c != nil {
+		summary, raw := "[Summary]", "[Raw]"
+		if c.rawMode {
+			raw = accent.Bold(true).Render(raw)
+		} else {
+			summary = accent.Bold(true).Render(summary)
+		}
+		title = summary + " " + raw + " · Context"
+	}
+	content := []string{title}
 	content = append(content, lines[p.offset:min(len(lines), p.offset+capacity)]...)
 	footer := "↑/↓ · PgUp/PgDn scroll · Esc close"
 	if p.title == "/logs" || p.title == "/logs project" {
@@ -79,11 +100,30 @@ func (m *model) reportView(view string) string {
 			footer = "↑↓ PgUp/Dn · r refresh · Esc"
 		}
 	}
+	if p.context != nil {
+		footer = "←/→ tabs · ↑↓ scroll · Esc close"
+	}
 	content = append(content, muted.Render(footer))
+	if p.context != nil {
+		p.context.headerY = len(strings.Split(view, "\n")) - min(len(content), len(strings.Split(view, "\n"))-2) - 1
+	}
 	return overlayBox(view, content, m.width, true)
 }
 
 func (m *model) reportKey(k tea.KeyMsg) tea.Cmd {
+	if p := m.report; p.context != nil {
+		switch k.String() {
+		case "left", "s":
+			p.contextTab(false)
+			return nil
+		case "right", "r":
+			p.contextTab(true)
+			return nil
+		case "tab", "shift+tab":
+			p.contextTab(!p.context.rawMode)
+			return nil
+		}
+	}
 	switch k.String() {
 	case "r":
 		if m.report.title == "/logs" || m.report.title == "/logs project" {

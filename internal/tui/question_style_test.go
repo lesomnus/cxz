@@ -78,7 +78,7 @@ func TestQuestionMagentaAndTextCheckboxes(t *testing.T) {
 			t.Fatalf("missing selected color: %q", view)
 		}
 	}
-	for state, marker := range map[string]string{"requested": "[ ]", "allowed": "[✓]", "denied": "[×]", "canceled": "[×]"} {
+	for state, marker := range map[string]string{"requested": "○", "allowed": "✓", "denied": "×", "canceled": "×"} {
 		got := ansi.Strip(approvalLine(m.current(), m.selectedApproval(), state, 80))
 		if !strings.Contains(got, marker) {
 			t.Fatal(got)

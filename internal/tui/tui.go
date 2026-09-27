@@ -60,6 +60,9 @@ type model struct {
 	recordingSaving         bool
 	lastRecording           string
 	toolSelector            *toolSelector
+	toolHover               *toolSelector
+	toolClick               *toolClick
+	toolRows                map[int]uint64
 	noticeLogs              []noticeLog
 	lastLoggedNotice        string
 	filePreview             *filePreview
@@ -577,8 +580,10 @@ func (m *model) render() {
 	m.promptSpans = nil
 	m.codeButtons = nil
 	m.workingToolRows = nil
+	m.toolRows = map[int]uint64{}
 	copyBlocks := map[int][]codeButton{}
 	toolBlocks := map[int]bool{}
+	inspectBlocks := map[int]bool{}
 	m.updateQuota()
 	m.workingSince = 0
 	follow := m.view.AtBottom()
@@ -793,6 +798,9 @@ func (m *model) render() {
 					text = muted.Render(ansi.Strip(text))
 				}
 				add(text, e.TimeMs)
+				if e.Kind == "tool_call" || e.Kind == "tool_result" {
+					inspectBlocks[len(lines)-1] = true
+				}
 				if e.RunId == s.RunId && (e.Kind == "tool_call" || e.Kind == "tool_result") {
 					toolBlocks[len(lines)-1] = true
 				}
@@ -839,7 +847,10 @@ func (m *model) render() {
 		}
 		rows := strings.Split(block, "\n")
 		for row := range rows {
-			if toolBlocks[i] && strings.HasPrefix(ansi.Strip(rows[row]), "  [•]") {
+			if inspectBlocks[i] {
+				m.toolRows[start+row] = sequences[i]
+			}
+			if toolBlocks[i] && strings.HasPrefix(ansi.Strip(rows[row]), "  •") {
 				if m.workingToolRows == nil {
 					m.workingToolRows = map[int]bool{}
 				}
@@ -1063,6 +1074,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch v := msg.(type) {
 	case tea.KeyMsg, tea.WindowSizeMsg, tea.BlurMsg:
+		m.toolHover, m.toolClick = nil, nil
 		if d := m.questionDialog; d != nil {
 			d.hovering = false
 		}
@@ -1076,6 +1088,18 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.errorDialog.hover = ""
 		}
 	case tea.MouseMsg:
+		m.toolHover = nil
+		if v.Button != tea.MouseButtonWheelUp && v.Button != tea.MouseButtonWheelDown && v.X >= m.contentOffset() && v.X < m.contentOffset()+m.width && !m.projectView && !m.accountView {
+			if seq := m.toolAtRow(v.Y); seq > 0 {
+				m.toolHover = &toolSelector{m.current().Id, seq}
+			}
+		}
+		if last := m.toolClick; last != nil && v.Action == tea.MouseActionPress && v.Button == tea.MouseButtonLeft && (v.X-m.contentOffset() != last.x || v.Y != last.y) {
+			m.toolClick = nil
+		}
+		if v.Button == tea.MouseButtonWheelUp || v.Button == tea.MouseButtonWheelDown || v.Action == tea.MouseActionMotion && v.Button == tea.MouseButtonLeft {
+			m.toolClick = nil
+		}
 		if m.questionHeight() > 0 && m.pasteDialog == nil {
 			m.questionDialog.hovering = false
 			l := m.questionLayout()
@@ -1092,6 +1116,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.codeHover = nil
 		if m.filePreview != nil {
 			m.filePreview.hover = ""
+		}
+		if sel := m.textSelection; sel != nil && sel.dragging && (v.Action == tea.MouseActionMotion || v.Action == tea.MouseActionRelease) && (v.X-m.contentOffset() != sel.startX || v.Y != sel.startY) {
+			m.toolClick = nil
 		}
 		if m.selectionMouse(v) {
 			return m, nil
@@ -1320,7 +1347,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.Update(accountLoggedIn{v.err})
 	case contextSent:
 		if c := m.contextCapture; c != nil && c.request == v.request && v.err != nil {
-			c.report.text = "Context unavailable: " + v.err.Error()
+			c.report.contextNote("Context unavailable: " + v.err.Error())
 			m.contextCapture = nil
 		}
 		return m, nil
@@ -1445,6 +1472,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.restartMouse(v)
 		}
 		if m.report != nil {
+			if m.contextReportMouse(v) {
+				return m, nil
+			}
 			if v.Button == tea.MouseButtonWheelUp {
 				m.report.offset = max(0, m.report.offset-3)
 			}
@@ -1469,7 +1499,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.codeBlockMouse(v) {
 				return m, nil
 			}
-			if v.Button == tea.MouseButtonLeft && v.Action == tea.MouseActionPress && m.openFilePreview(v.Y) {
+			if m.toolMouse(v, time.Now()) {
 				return m, nil
 			}
 			m.beginSelection(v)
@@ -1715,7 +1745,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.update(disconnected{v.id, v.err})
 	case disconnected:
 		if c := m.contextCapture; c != nil && c.id == v.id {
-			c.report.text = "Disconnected while querying context. Reopen /context after reconnecting."
+			c.report.contextNote("Disconnected while querying context. Reopen /context after reconnecting.")
 			m.contextCapture = nil
 		}
 		if m.watchID == v.id {

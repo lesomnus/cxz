@@ -28,7 +28,7 @@ func TestBackgroundLaunchIsNotCompletion(t *testing.T) {
 		{Seq: 3, RunId: "run", Kind: "tool_result", RequestId: "tool", Payload: []byte(`{"content":"Command running in background"}`)},
 	}
 	m.render()
-	if text := ansi.Strip(m.view.View()); strings.Count(text, "Bash") != 1 || !strings.Contains(text, "[•] Bash") {
+	if text := ansi.Strip(m.view.View()); strings.Count(text, "Bash") != 1 || !strings.Contains(text, "• Bash") {
 		t.Fatal(text)
 	}
 	if !strings.Contains(m.backgroundStatus(), "background 1") || m.activeWork() {
@@ -42,12 +42,12 @@ func TestBackgroundLaunchIsNotCompletion(t *testing.T) {
 	}
 	m.events["s"] = append(m.events["s"], bgEvent(4, `{"type":"system","subtype":"background_tasks_changed","tasks":[]}`))
 	m.render()
-	if m.backgroundStatus() != "" || strings.Contains(ansi.Strip(m.view.View()), "[✓] Bash") {
+	if m.backgroundStatus() != "" || strings.Contains(ansi.Strip(m.view.View()), "✓ Bash") {
 		t.Fatal("empty snapshot fabricated completion")
 	}
 	m.events["s"] = append(m.events["s"], bgEvent(5, `{"type":"system","subtype":"task_notification","task_id":"bg","status":"failed","summary":"exit 1","output_file":"/not/read"}`))
 	m.render()
-	if text := ansi.Strip(m.view.View()); !strings.Contains(text, "[×] Bash") || strings.Count(text, "Bash") != 1 {
+	if text := ansi.Strip(m.view.View()); !strings.Contains(text, "× Bash") || strings.Count(text, "Bash") != 1 {
 		t.Fatal(text)
 	}
 	if !strings.Contains(m.backgroundReport(), "/not/read") {
