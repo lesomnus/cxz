@@ -52,9 +52,7 @@ func onRun(fn commandFunc) xli.Handler {
 func withClient(fn clientFunc) xli.Handler {
 	return onRun(func(ctx context.Context, c *xli.Command) error {
 		root := stateFrom(ctx)
-		if c.Name == "cxz" {
-			ctx = versionpin.WithClient(ctx, root)
-		}
+		ctx = versionpin.WithClient(ctx, root)
 		cfg, err := settings.Load(root)
 		if err != nil {
 			return err
