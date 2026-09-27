@@ -15,6 +15,7 @@ import (
 	"github.com/lesomnus/cxz/internal/settings"
 	"github.com/lesomnus/cxz/internal/transport"
 	"github.com/lesomnus/cxz/internal/tui"
+	"github.com/lesomnus/cxz/internal/versionpin"
 	"github.com/lesomnus/xli"
 	"github.com/lesomnus/xli/arg"
 	"github.com/lesomnus/xli/flg"
@@ -42,6 +43,7 @@ func runRemote(ctx context.Context, state, endpoint, tokenFile, session string) 
 	if err != nil {
 		return err
 	}
+	ctx = versionpin.WithClient(ctx, state)
 	cfg, err := settings.Load(state)
 	if err != nil {
 		return err
