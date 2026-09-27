@@ -57,6 +57,10 @@ var (
 	strong           = lipgloss.NewStyle().Foreground(lipgloss.Color("253")).Bold(true)
 	warning          = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#945600", Dark: "#EBC078"})
 	selectedRow      = accent.Bold(true)
+	// The prompt's stamp sits on promptBackground, not on the terminal's own
+	// background, so it is darker than timestamp and not adaptive: the surface it
+	// has to read against is the same in a light or dark theme.
+	promptTimestamp = lipgloss.NewStyle().Foreground(lipgloss.Color("#23262C"))
 )
 
 // Conversation backgrounds stay indexed so the terminal's own palette decides
@@ -67,6 +71,18 @@ const (
 	codeBackground   = 235
 	promptBackground = 239
 )
+
+// A key that opens its own label needs no column of its own: colouring the
+// letter in place says "press this" without spending width on repeating it.
+// Anything the label cannot carry -- Ctrl+X, Esc -- keeps the key in front.
+func shortcut(key, label string) string {
+	if len(key) == 1 && label != "" && strings.EqualFold(key, label[:1]) {
+		return accent.Render(label[:1]) + muted.Render(label[1:])
+	}
+	return accent.Render(key) + muted.Render(" "+label)
+}
+
+func hints(parts ...string) string { return strings.Join(parts, muted.Render(" · ")) }
 
 func newComposer() textarea.Model {
 	input := textarea.New()

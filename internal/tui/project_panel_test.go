@@ -382,3 +382,42 @@ func TestProjectPanelOneCellPadding(t *testing.T) {
 		t.Fatal("bottom padding missing")
 	}
 }
+
+// The footer spends no width repeating a key that already opens its label: the
+// letter is coloured in place. Keys a label cannot carry keep their own column.
+func TestShortcutMarksTheKeyInPlace(t *testing.T) {
+	old := lipgloss.ColorProfile()
+	lipgloss.SetColorProfile(termenv.TrueColor)
+	defer lipgloss.SetColorProfile(old)
+	if got, want := shortcut("n", "new"), accent.Render("n")+muted.Render("ew"); got != want {
+		t.Fatalf("leading letter not marked as the key: %q", got)
+	}
+	// Ctrl+. cannot be folded into "settings", so it stays in front.
+	if got, want := shortcut("Ctrl+.", "settings"), accent.Render("Ctrl+.")+muted.Render(" settings"); got != want {
+		t.Fatalf("multi-key shortcut lost its prefix: %q", got)
+	}
+	for _, tc := range [][2]string{{"n", "new"}, {"a", "accounts"}, {"Esc/Ctrl+Q", "return"}} {
+		if plain := ansi.Strip(shortcut(tc[0], tc[1])); plain != tc[1] && plain != tc[0]+" "+tc[1] {
+			t.Fatalf("unexpected text for %v: %q", tc, plain)
+		}
+	}
+}
+
+func TestPanelFooterFoldsSingleLetterKeys(t *testing.T) {
+	old := lipgloss.ColorProfile()
+	lipgloss.SetColorProfile(termenv.TrueColor)
+	defer lipgloss.SetColorProfile(old)
+	m := panelModel()
+	m.Update(tea.WindowSizeMsg{Width: 90, Height: 22})
+	plain := ansi.Strip(m.panelScreen())
+	for _, want := range []string{"new · accounts", "rename · stop", "memory · Ctrl+. settings", "Ctrl+D detach · agents run"} {
+		if !strings.Contains(plain, want) {
+			t.Fatalf("missing footer row %q in %q", want, plain)
+		}
+	}
+	for _, gone := range []string{"n new", "a accounts", "r rename", "m memory"} {
+		if strings.Contains(plain, gone) {
+			t.Fatalf("key still spelled beside its label: %q", gone)
+		}
+	}
+}
