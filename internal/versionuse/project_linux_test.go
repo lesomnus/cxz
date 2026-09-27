@@ -48,9 +48,14 @@ func TestForceProjectReleaseSwitchDocker(t *testing.T) {
 			}
 			continue
 		}
-		args := []string{"build", "-o", filepath.Join(dir, build.name)}
+		args := []string{"build", "-buildvcs=false", "-o", filepath.Join(dir, build.name)}
 		if build.version != "" {
-			args = append(args, "-ldflags=-X main.version="+build.version)
+			// Distinct immutable identities model two releases, even in a clean CI checkout.
+			revision := strings.Repeat("1", 40)
+			if build.name == "new" {
+				revision = strings.Repeat("9", 40)
+			}
+			args = append(args, "-ldflags=-X main.version="+build.version+" -X main.buildRevision="+revision)
 		}
 		args = append(args, build.pkg)
 		c := exec.CommandContext(ctx, "go", args...)
