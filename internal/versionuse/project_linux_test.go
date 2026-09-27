@@ -33,11 +33,15 @@ func TestForceProjectReleaseSwitchDocker(t *testing.T) {
 	if os.Getenv("CXZ_TEST_USE_DOCKER") != "1" {
 		t.Skip("set CXZ_TEST_USE_DOCKER=1 for isolated process/release switch verification")
 	}
+	targetVersion := os.Getenv("CXZ_TEST_USE_TARGET_VERSION")
+	if targetVersion == "" {
+		targetVersion = "v0.1.0"
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 	repo, _ := filepath.Abs("../..")
 	dir := t.TempDir()
-	for _, build := range []struct{ name, pkg, version string }{{"new", "./cmd/cxz", "v9.0.0"}, {"old", "./cmd/cxz", "v0.1.0"}, {"fake", "./internal/testagent", ""}, {"driver", "./internal/testuse", ""}} {
+	for _, build := range []struct{ name, pkg, version string }{{"new", "./cmd/cxz", "v9.0.0"}, {"old", "./cmd/cxz", targetVersion}, {"fake", "./internal/testagent", ""}, {"driver", "./internal/testuse", ""}} {
 		args := []string{"build", "-o", filepath.Join(dir, build.name)}
 		if build.version != "" {
 			args = append(args, "-ldflags=-X main.version="+build.version)
@@ -71,13 +75,13 @@ func TestForceProjectReleaseSwitchDocker(t *testing.T) {
 	run("exec", id, "/test/new", "--state", "/cxz/state/data", "_boot")
 	run("exec", id, "/test/driver", "init")
 	gen := core.ID()
-	args := []string{"exec", id, "/test/old", "_use-project", "stop", "/cxz/state/data", gen, "v0.1.0"}
+	args := []string{"exec", id, "/test/old", "_use-project", "stop", "/cxz/state/data", gen, targetVersion}
 	run(args...)
-	run("exec", id, "/test/old", "_use-project", "resume", "/cxz/state/data", gen, "v0.1.0")
+	run("exec", id, "/test/old", "_use-project", "resume", "/cxz/state/data", gen, targetVersion)
 	first := run("exec", id, "/test/driver", "check")
 	// A lost final acknowledgement must not restart an already restored session.
 	run(args...)
-	run("exec", id, "/test/old", "_use-project", "resume", "/cxz/state/data", gen, "v0.1.0")
+	run("exec", id, "/test/old", "_use-project", "resume", "/cxz/state/data", gen, targetVersion)
 	if second := run("exec", id, "/test/driver", "check"); second != first {
 		t.Fatal("duplicate switch restarted the run", first, second)
 	}
@@ -91,8 +95,11 @@ func TestForceProjectReleaseSwitchDocker(t *testing.T) {
 		t.Fatal(e)
 	}
 	actual := run("exec", id, fmt.Sprintf("/proc/%.0f/exe", result["supervisor"]), "--format", "json", "version")
-	if !strings.Contains(actual, `"version":"v0.1.0"`) && !strings.Contains(actual, `"version": "v0.1.0"`) {
-		t.Fatal("wrong supervisor release", actual)
+	var identity struct {
+		Version string `json:"version"`
+	}
+	if e = json.Unmarshal([]byte(actual), &identity); e != nil || identity.Version != targetVersion {
+		t.Fatal("wrong supervisor release", actual, e)
 	}
 
 	t.Log("working agent forced to a new run; account, vendor conversation, model and single input preserved; stopped session and container unchanged")
