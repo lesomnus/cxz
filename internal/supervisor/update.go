@@ -12,6 +12,7 @@ import (
 
 	"github.com/lesomnus/cxz/internal/agentview"
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/cxzupdate"
 )
 
 const UpdateIdlePeriod = 5 * time.Minute
@@ -21,8 +22,10 @@ type updateClient struct {
 	busy bool
 }
 type UpdateStatus struct {
-	Ready                 bool
-	Reason, Binary, State string
+	SupervisorBinary, Revision string
+	Protocol                   int32
+	Ready                      bool
+	Reason, Binary, State      string
 }
 
 func (s *Supervisor) observeUpdateEvent(kind, text, id string) {
@@ -197,7 +200,7 @@ func (s *Supervisor) serveUpdate(w http.ResponseWriter, r *http.Request) bool {
 		json.NewEncoder(w).Encode(core.Receipt{Status: "accepted"})
 	case "/update-status":
 		reason := s.updateReason(time.Now(), s.processesQuiet())
-		json.NewEncoder(w).Encode(UpdateStatus{Ready: reason == "", Reason: reason, Binary: s.session.Agent, State: s.snap.State})
+		json.NewEncoder(w).Encode(UpdateStatus{Ready: reason == "", Reason: reason, Binary: s.session.Agent, State: s.snap.State, SupervisorBinary: s.session.Supervisor, Revision: cxzupdate.Current().Revision, Protocol: cxzupdate.Protocol})
 	}
 	return true
 }

@@ -78,6 +78,13 @@ session's model; reconnect/resume preserves it. `cxz manager doctor`, `cxz proje
 and `cxz version` provide diagnostics. See [operations and releases](docs/operations.md)
 for retry behavior, model settings, versioned installation, updates and rollback.
 
+Unmodified main builds also support automatic edge updates. The manager, project runtimes,
+and idle supervisors update in order; active agent work is preserved. Frontends restart only
+when their UI has no unsaved input or active interaction. Use `cxz self-update status` or
+`cxz self-update disable` to inspect or pause frontend updates; add `--server` on the Linux
+installation host to manage server policy. See [automatic updates](docs/auto-update.md) for
+bootstrap requirements, recovery and limitations.
+
 On Linux, `cxz self-update` fetches `main` from this repository and builds it in Docker,
 then updates the local executable and its installed Linux manager. Use `--ref`
 for a branch/tag/commit or `--client-only` to skip the manager. Docker Buildx and

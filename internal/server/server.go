@@ -21,6 +21,7 @@ import (
 
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/cxzupdate"
 	"github.com/lesomnus/cxz/internal/quotashare"
 	"github.com/lesomnus/cxz/internal/settings"
 	"github.com/lesomnus/cxz/internal/supervisor"
@@ -38,6 +39,7 @@ import (
 )
 
 type Server struct {
+	updateGate   *cxzupdate.Gate
 	updateQueued map[string]string
 	api.UnimplementedSessionsServer
 	mu                     sync.Mutex
@@ -89,7 +91,7 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 	if e = tx.Commit(); e != nil {
 		return e
 	}
-	s := &Server{root: root, agent: agent, configDir: configDir, db: db}
+	s := &Server{root: root, agent: agent, configDir: configDir, db: db, updateGate: cxzupdate.NewGate(root)}
 	if os.Getenv("CXZ_OWNER") != "" {
 		s.manager, e = workspace.New(db, root)
 		if e != nil {
@@ -173,7 +175,7 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 		defer func() { stopObserve(); <-observeDone }()
 	}
 	if s.manager == nil {
-		s.recoverAgentUpdates(ctx)
+		s.updateGate.Run(func() { s.recoverAgentUpdates(ctx) })
 	}
 	if s.manager != nil {
 		updatesCtx, cancelUpdates := context.WithCancel(ctx)
@@ -182,6 +184,9 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 		defer func() { cancelUpdates(); <-secretsDone }()
 		updatesDone := make(chan struct{})
 		go func() { defer close(updatesDone); s.manager.RunUpdates(updatesCtx) }()
+		cxzDone := make(chan struct{})
+		go func() { defer close(cxzDone); s.manager.RunCxzUpdates(updatesCtx) }()
+		defer func() { cancelUpdates(); <-cxzDone }()
 		defer func() { cancelUpdates(); <-updatesDone }()
 	} else {
 		recoveryCtx, cancelRecovery := context.WithCancel(ctx)
@@ -233,7 +238,7 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 		return e
 	}
 	opts := grpcx.ServerOptions(ctx)
-	opts = append(opts, grpc.MaxRecvMsgSize(8*1024*1024), grpc.MaxSendMsgSize(20*1024*1024))
+	opts = append(opts, grpc.ChainUnaryInterceptor(s.updateGate.Unary), grpc.ChainStreamInterceptor(s.updateGate.Stream), grpc.MaxRecvMsgSize(8*1024*1024), grpc.MaxSendMsgSize(20*1024*1024))
 	g := grpc.NewServer(opts...)
 	resource.RegisterServer(g, resources)
 	if os.Getenv("CXZ_PROJECT_ID") != "" {
@@ -247,7 +252,7 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 		}
 		defer tcp.Close()
 		projectOptions := grpcx.ServerOptions(ctx)
-		projectOptions = append(projectOptions, grpc.MaxRecvMsgSize(8*1024*1024), grpc.MaxSendMsgSize(24*1024*1024), grpc.ChainUnaryInterceptor(func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+		projectOptions = append(projectOptions, grpc.ChainUnaryInterceptor(s.updateGate.Unary), grpc.ChainStreamInterceptor(s.updateGate.Stream), grpc.MaxRecvMsgSize(8*1024*1024), grpc.MaxSendMsgSize(24*1024*1024), grpc.ChainUnaryInterceptor(func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 			if e := transport.RequireToken(ctx, runtime.Token); e != nil {
 				return nil, status.Error(codes.Unauthenticated, e.Error())
 			}
@@ -263,6 +268,11 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 		defer projectServer.Stop()
 		go projectServer.Serve(tcp)
 	}
+	maintenance, err := cxzupdate.Maintenance(ctx, root, s.updateGate, s.quietForUpdate)
+	if err != nil {
+		return err
+	}
+	defer maintenance.Close()
 	go func() { <-ctx.Done(); g.Stop() }()
 	e = g.Serve(ln)
 	if ctx.Err() != nil {
@@ -347,9 +357,21 @@ func (s *Server) launch(ctx context.Context, m core.Session) (*api.Session, erro
 	if err := s.awaitSessionRelease(ctx, m); err != nil {
 		return nil, err
 	}
-	exe, e := os.Executable()
-	if e != nil {
-		return nil, e
+	exe := m.Supervisor
+	if exe == "" {
+		var e error
+		exe, e = cxzupdate.PinSelf(s.root)
+		if e != nil {
+			return nil, e
+		}
+		m.Supervisor = exe
+		if e = s.saveAgentManifest(ctx, m); e != nil {
+			return nil, e
+		}
+	} else if cxzupdate.Current().Managed() {
+		if e := cxzupdate.CheckPinned(s.root, exe); e != nil {
+			return nil, e
+		}
 	}
 	log, e := os.OpenFile(filepath.Join(core.Dir(s.root, m.ID), "supervisor.log"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
 	if e != nil {
@@ -651,6 +673,8 @@ func (s *Server) Resume(ctx context.Context, r *api.Control) (*api.Session, erro
 	if r.RunId != v.RunId {
 		return nil, status.Error(codes.FailedPrecondition, "stale run_id")
 	}
+	// Explicitly resuming a stopped session adopts this runtime build.
+	m.Supervisor = ""
 	return s.launch(ctx, m)
 }
 func (s *Server) Watch(r *api.WatchRequest, stream grpc.ServerStreamingServer[api.Event]) error {

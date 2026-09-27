@@ -934,3 +934,11 @@ Exit 및 실패의 종료 코드는 0이 아니다.
 유지하고, 명시적 `project recreate` 때 공유망으로 전환한다. 기존 네트워크를 일괄 삭제하거나
 호스트 `daemon.json`을 변경하지 않는다. 공유망 최초 생성과 사용자 Compose 네트워크에는
 여전히 Docker의 주소 풀 설정이 적용되므로 LAN/VPN과 겹치지 않는 대역을 호스트에서 설정한다.
+
+## cxz 자동 업데이트
+
+`cxz self-update status|check|enable|disable [--server]`는 자동 업데이트의 상태 조회,
+즉시 확인, 활성화/보류를 수행하고 JSON을 출력한다. `--server`는 Linux 호스트의 로컬
+Manager 설치에 적용하며 생략하면 frontend 정책을 관리한다. 일반 수동 `self-update`는
+유지된다. 기본 채널은 main의 최신 성공 CI 빌드(edge)다. 안전한 재시작 조건과 최초 도입
+절차는 [자동 업데이트](auto-update.md)를 참고한다.

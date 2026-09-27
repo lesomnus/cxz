@@ -18,7 +18,7 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
-      - run: go test ./cmd/cxz ./internal/transport ./internal/core ./internal/settings ./internal/selfupdate
+      - run: go test ./cmd/cxz ./internal/transport ./internal/core ./internal/settings ./internal/selfupdate ./internal/cxzupdate
       - run: go test ./internal/tui -run TestWindows -count=1
       - run: go build -o cxz.exe ./cmd/cxz
       - run: .\cxz.exe version
@@ -71,7 +71,7 @@ jobs:
       - run: bash scripts/release.sh v0.0.0-ci
       - run: dist/linux-amd64/cxz version
   frontend-downloads:
-    needs: [test, windows-frontend]
+    needs: [test, windows-frontend, image]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -79,6 +79,8 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
       - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version-file: go.mod
@@ -87,12 +89,28 @@ jobs:
       - name: Publish downloadable main builds
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MANAGER_DIGEST: ${{ needs.image.outputs.digest }}
         run: |
+          python3 scripts/update-manifest.py dist "$GITHUB_SHA" "$GITHUB_RUN_NUMBER" "ghcr.io/$GITHUB_REPOSITORY@$MANAGER_DIGEST"
           if ! gh release view edge >/dev/null 2>&1; then
             gh release create edge --target "$GITHUB_SHA" --prerelease --latest=false \
               --title 'Latest main build' --notes 'Binaries from the latest successfully tested main build. Download SHA256SUMS alongside the archive to verify it.'
           fi
+          verify_dir=$(mktemp -d)
+          trap 'rm -rf "$verify_dir"' EXIT
+          existing_assets=$(gh release view edge --json assets --jq '.assets[].name')
+          for artifact in dist/auto-update/*; do
+            name=$(basename "$artifact")
+            if echo "$existing_assets" | grep -Fxq "$name"; then
+              gh release download edge --pattern "$name" --dir "$verify_dir"
+              cmp "$artifact" "$verify_dir/$name" # a revision asset is immutable
+            else
+              gh release upload edge "$artifact"
+            fi
+          done
           gh release upload edge --clobber dist/*.tar.gz dist/*.zip dist/SHA256SUMS
+          # Publish the manifest last: all assets and the pinned image now exist.
+          gh release upload edge --clobber dist/cxz-update.json
           gh api --method PATCH "repos/$GITHUB_REPOSITORY/git/refs/tags/edge" \
             -f sha="$GITHUB_SHA" -F force=true >/dev/null
           gh release edit edge --target "$GITHUB_SHA"
@@ -128,6 +146,8 @@ jobs:
             throw "Unexpected updated version: $version"
           }
   image:
+    outputs:
+      digest: ${{ fromJSON(steps.manager-image.outputs.metadata).app['containerimage.digest'] }}
     needs: test
     runs-on: ubuntu-24.04
     timeout-minutes: 45
@@ -161,6 +181,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Bake manager image (publish only main pushes)
+        id: manager-image
         uses: docker/bake-action@d3418bd7d0e9324001bca92fa8ba175ea7e6dc9b # v7
         with:
           source: .

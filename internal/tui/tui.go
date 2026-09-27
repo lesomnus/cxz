@@ -13,6 +13,7 @@ import (
 	"github.com/lesomnus/cxz/internal/agentview"
 	"github.com/lesomnus/cxz/internal/containerterm"
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/cxzupdate"
 	"github.com/lesomnus/cxz/internal/dockerx"
 	"github.com/lesomnus/cxz/internal/notification"
 	"github.com/lesomnus/cxz/internal/resourceclient"
@@ -28,6 +29,13 @@ import (
 )
 
 type model struct {
+	autoStarted, autoChecked time.Time
+	autoChecking             bool
+	autoState                cxzupdate.State
+	autoCandidate            string
+	autoRestart              *cxzupdate.Restart
+	autoRestorePosition      float64
+
 	alertPlayer             *notification.Player
 	liveRenderWidth         *atomic.Int64
 	renderedInputs          map[inputRenderKey]string
@@ -289,7 +297,23 @@ func RunProject(ctx context.Context, c api.SessionsClient, project *api.Project,
 	defer cancel()
 	input := newComposer()
 	m := &model{ctx: ctx, client: c, input: input, view: viewport.New(80, 15), events: map[string][]*api.Event{}, cursor: map[string]uint64{}, width: 100, height: 30, wantID: id}
+	m.autoStarted = time.Now()
+	var restore cxzupdate.Resume
+	if frontend, ok := cxzupdate.ClientFrom(ctx); ok {
+		restore, _ = cxzupdate.TakeResume(frontend.Root)
+		if restore.Session != "" {
+			id = restore.Session
+			m.wantID = id
+			m.autoRestorePosition = restore.Position
+		}
+	}
 	m.initializeNavigation(project, id)
+	if restore.Connection != "" {
+		m.panelWantConnection = restore.Connection
+	}
+	if restore.Project != "" && restore.Session == "" {
+		m.panelWantKey = "p:" + restore.Project
+	}
 	m.createProjectSession = create
 	if resources, ok := c.(*resourceclient.Client); ok {
 		m.accountService = resources.Accounts
@@ -329,6 +353,9 @@ func RunProject(ctx context.Context, c api.SessionsClient, project *api.Project,
 	}
 	if m.watchCancel != nil {
 		m.watchCancel()
+	}
+	if e == nil && m.autoRestart != nil {
+		return m.autoRestart
 	}
 	return e
 }
@@ -814,6 +841,15 @@ func (m *model) render() {
 	} else if follow {
 		m.view.GotoBottom()
 	}
+	if m.autoRestorePosition > 0 && len(m.historyPositions) > 0 && m.historyPositions[0] <= m.autoRestorePosition {
+		for i, pos := range m.historyPositions {
+			if pos >= m.autoRestorePosition {
+				m.view.SetYOffset(i)
+				m.autoRestorePosition = 0
+				break
+			}
+		}
+	}
 }
 
 // Agent/tool output is untrusted terminal data, not terminal instructions.
@@ -866,6 +902,20 @@ func (m *model) action(kind, text string) tea.Cmd {
 	}
 }
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if v, ok := msg.(cxzUpdateResult); ok {
+		m.autoChecking = false
+		m.autoState = v.state
+		if v.err == nil {
+			m.autoCandidate = v.path
+		} else {
+			m.autoState.Reason = v.err.Error()
+		}
+		if m.autoCandidate != "" {
+			m.notice = "cxz update ready · restarts after 5 minutes without input or drafts"
+		}
+		return m, nil
+	}
+
 	defer m.debugUpdate(msg)()
 	m.updateDeleteConfirmation(msg, time.Now())
 	if tick, ok := msg.(performanceTick); ok {
@@ -924,6 +974,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var activity tea.Cmd
 	switch msg.(type) {
 	case tea.KeyMsg, tea.MouseMsg:
+		cxzupdate.FrontendReady(m.ctx)
 		// Report the first input immediately after a pause; steady activity is
 		// covered by the heartbeat. Capture the old session before navigation.
 		if time.Since(m.lastUIInput) >= time.Second {
@@ -1254,7 +1305,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if v.err == nil && m.current() != nil && m.current().Id == v.id {
 			// Find conversation content first, then keep a viewport-sized runway.
-			return m, tea.Batch(m.requestOlderHistory(v.initial), background)
+			return m, tea.Batch(m.requestOlderHistory(v.initial || m.autoRestorePosition > 0), background)
 		}
 		return m, background
 	case backgroundHistory:
@@ -1470,6 +1521,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 	case tea.WindowSizeMsg:
+		cxzupdate.FrontendReady(m.ctx)
 		if d := m.questionDialog; d != nil {
 			d.reveal = true
 		}
@@ -1487,7 +1539,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// previous page arrived while another conversation was selected.
 			history = m.loadOlderHistory()
 		}
-		return m, tea.Batch(timer(), m.periodicRefresh(), m.reportActivity(), m.pollSettings(), history)
+		return m, tea.Batch(timer(), m.periodicRefresh(), m.reportActivity(), m.frontendUpdate(), m.pollSettings(), history)
 	case resourcesChanged:
 		if v.generation != m.resourceWatchGeneration {
 			return m, nil

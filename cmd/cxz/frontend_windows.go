@@ -8,6 +8,7 @@ import (
 	"os"
 	"runtime"
 
+	"github.com/lesomnus/cxz/internal/cxzupdate"
 	"github.com/lesomnus/cxz/internal/tui"
 	"github.com/lesomnus/xli"
 	"github.com/lesomnus/xli/flg"
@@ -15,7 +16,7 @@ import (
 
 func newRoot(state string) *xli.Command {
 	root := &xli.Command{Name: "cxz", Brief: "Remote frontend for Linux cxz daemons", Flags: flg.Flags{&flg.String{Name: "state", Brief: "Local client settings and recordings directory", Default: &state}}, Handler: xli.OnRun(func(ctx context.Context, c *xli.Command, _ xli.Next) error {
-		return runRemote(ctx, flg.MustGet[string](c, "state"), os.Getenv("CXZ_ENDPOINT"), os.Getenv("CXZ_TOKEN_FILE"), "")
+		return runRemote(cxzupdate.WithClient(ctx, flg.MustGet[string](c, "state")), flg.MustGet[string](c, "state"), os.Getenv("CXZ_ENDPOINT"), os.Getenv("CXZ_TOKEN_FILE"), "")
 	})}
 	plain := false
 	root.Commands = xli.Commands{connectCommand(), editCommand(), selfUpdateCommand(), selfInstallCommand(), integrationCommand(),

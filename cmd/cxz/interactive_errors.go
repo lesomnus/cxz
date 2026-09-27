@@ -10,6 +10,7 @@ import (
 	"github.com/charmbracelet/x/term"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/configtrust"
+	"github.com/lesomnus/cxz/internal/cxzupdate"
 	"github.com/lesomnus/cxz/internal/tui"
 	"github.com/lesomnus/xli"
 	"github.com/lesomnus/xli/flg"
@@ -42,6 +43,10 @@ func interactiveErrors(c *xli.Command) bool {
 	return ok && term.IsTerminal(output.Fd())
 }
 func handleCommandError(ctx context.Context, c *xli.Command, err error) error {
+	var restart *cxzupdate.Restart
+	if errors.As(err, &restart) {
+		return err
+	}
 	var shown *displayedError
 	if err == nil || errors.As(err, &shown) || ctx.Err() != nil || !interactiveErrors(c) {
 		return err
