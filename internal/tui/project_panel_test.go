@@ -385,21 +385,31 @@ func TestProjectPanelOneCellPadding(t *testing.T) {
 
 // The footer spends no width repeating a key that already opens its label: the
 // letter is coloured in place. Keys a label cannot carry keep their own column.
-func TestShortcutMarksTheKeyInPlace(t *testing.T) {
+func TestHintMarksTheKeyInPlace(t *testing.T) {
 	old := lipgloss.ColorProfile()
 	lipgloss.SetColorProfile(termenv.TrueColor)
 	defer lipgloss.SetColorProfile(old)
-	if got, want := shortcut("n", "new"), accent.Render("n")+muted.Render("ew"); got != want {
+	folded := hintSpec{key: "n", label: "new"}
+	if got, want := folded.render(false), accent.Render("n")+muted.Render("ew"); got != want {
 		t.Fatalf("leading letter not marked as the key: %q", got)
 	}
 	// Ctrl+. cannot be folded into "settings", so it stays in front.
-	if got, want := shortcut("Ctrl+.", "settings"), accent.Render("Ctrl+.")+muted.Render(" settings"); got != want {
+	prefixed := hintSpec{key: "Ctrl+.", label: "settings"}
+	if got, want := prefixed.render(false), accent.Render("Ctrl+.")+muted.Render(" settings"); got != want {
 		t.Fatalf("multi-key shortcut lost its prefix: %q", got)
 	}
-	for _, tc := range [][2]string{{"n", "new"}, {"a", "accounts"}, {"Esc/Ctrl+Q", "return"}} {
-		if plain := ansi.Strip(shortcut(tc[0], tc[1])); plain != tc[1] && plain != tc[0]+" "+tc[1] {
-			t.Fatalf("unexpected text for %v: %q", tc, plain)
+	// text() is what the mouse measures, so it must match what was drawn.
+	for _, h := range []hintSpec{folded, prefixed, {label: "agents run", note: true}} {
+		if plain := ansi.Strip(h.render(false)); plain != h.text() {
+			t.Fatalf("width source disagrees with the drawing: %q vs %q", h.text(), plain)
 		}
+	}
+	off := hintSpec{key: "r", label: "rename", disabled: true}
+	if dim := off.render(false); !strings.Contains(dim, zeroStyle.Render("r")) {
+		t.Fatalf("disabled hint kept the key colour: %q", dim)
+	}
+	if hot := folded.render(true); hot == folded.render(false) || !strings.Contains(hot, strong.Render("ew")) {
+		t.Fatalf("hover left the hint unchanged: %q", hot)
 	}
 }
 
@@ -419,5 +429,75 @@ func TestPanelFooterFoldsSingleLetterKeys(t *testing.T) {
 		if strings.Contains(plain, gone) {
 			t.Fatalf("key still spelled beside its label: %q", gone)
 		}
+	}
+}
+
+// A hint is only offered when the selected row can act on it, and clicking one
+// sends its key so the mouse and the keyboard cannot disagree about the effect.
+func TestPanelFooterHintsHoverClickAndDisable(t *testing.T) {
+	m := panelModel()
+	m.Update(tea.WindowSizeMsg{Width: 90, Height: 22})
+	m.focusPanel()
+	// The footer is drawn into the rows reserved for it, above the status row.
+	if len(m.panelHints()) != projectPanelFooterRows-1 {
+		t.Fatal("footer rows and reserved height disagree", len(m.panelHints()), projectPanelFooterRows)
+	}
+	rows := m.panelRows()
+	session, project := -1, -1
+	for i, r := range rows {
+		if r.session != nil && session < 0 {
+			session = i
+		}
+		if r.session == nil && project < 0 {
+			project = i
+		}
+	}
+	if session < 0 || project < 0 {
+		t.Fatal("fixture needs both a project row and a session row")
+	}
+
+	// "rename" needs a session; a project row must not advertise it.
+	m.panelIndex = project
+	if hintAt(m.panelHints()[1], 0).disabled != true {
+		t.Fatal("rename offered on a project row")
+	}
+	m.panelIndex = session
+	rename := hintAt(m.panelHints()[1], 0)
+	if rename.key != "r" || rename.disabled {
+		t.Fatal("rename not offered on a session row", rename)
+	}
+
+	// Hover follows the pointer and clears when it leaves the row.
+	hover := tea.MouseMsg{X: panelHintX, Y: m.panelHintY(1), Action: tea.MouseActionMotion}
+	if handled, _ := m.panelMouse(hover); !handled || m.panelHintHover != "r" {
+		t.Fatal("hover not tracked", m.panelHintHover)
+	}
+	if _, _ = m.panelMouse(tea.MouseMsg{X: 0, Y: 0, Action: tea.MouseActionMotion}); m.panelHintHover != "" {
+		t.Fatal("hover outlived the pointer")
+	}
+
+	// Clicking sends the key rather than acting directly.
+	click := tea.MouseMsg{X: panelHintX, Y: m.panelHintY(1), Action: tea.MouseActionPress, Button: tea.MouseButtonLeft}
+	_, cmd := m.panelMouse(click)
+	if cmd == nil {
+		t.Fatal("click produced no key")
+	}
+	if got, ok := cmd().(tea.KeyMsg); !ok || got.String() != "r" {
+		t.Fatalf("click sent the wrong key: %#v", cmd())
+	}
+
+	// A disabled hint is inert: no hover, no key.
+	m.panelIndex = project
+	m.panelHintHover = ""
+	if _, cmd := m.panelMouse(click); cmd != nil || m.panelHintHover != "" {
+		t.Fatal("disabled hint reacted to a click")
+	}
+	// The separator and the note belong to no hint.
+	settings := m.panelHints()[3]
+	if gap := hintAt(settings, ansi.StringWidth(settings[0].text())); gap.key != "" {
+		t.Fatal("separator claimed by a hint", gap)
+	}
+	if note := hintAt(m.panelHints()[5], 99); note.actionable() {
+		t.Fatal("trailing space is actionable")
 	}
 }
