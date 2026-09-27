@@ -20,6 +20,8 @@ type caughtUp struct {
 }
 
 type historyPage struct {
+	floor          uint64
+	generation     uint64
 	started        time.Time
 	id             string
 	events         []*api.Event
@@ -38,12 +40,18 @@ type historyPage struct {
 // Journal sequence numbers are contiguous. The existing ascending History API
 // returns at most 128 events, so a sequence window also provides reverse paging.
 func (m *model) loadOlderHistory() tea.Cmd {
+	if cmd := m.requestNewerHistory(false); cmd != nil {
+		return cmd
+	}
 	return m.requestOlderHistory(false)
 }
 
 func (m *model) requestOlderHistory(warm bool) tea.Cmd {
 	s := m.current()
-	if s == nil || m.projectView || m.accountView || m.historyStart[s.Id] == 0 || m.historyLoading[s.Id] > 0 {
+	if s == nil || m.projectView || m.accountView || m.historyStart[s.Id] <= m.historyWindow(s.Id).floor || m.historyLoading[s.Id] > 0 {
+		return nil
+	}
+	if !warm && m.historyWindow(s.Id).detached && m.historyWindow(s.Id).direction > 0 {
 		return nil
 	}
 	// Start several screens before the loaded edge, leaving time for remote I/O
@@ -52,6 +60,7 @@ func (m *model) requestOlderHistory(warm bool) tea.Cmd {
 		return nil
 	}
 	id, end := s.Id, m.historyStart[s.Id]
+	generation := m.historyWindow(id).generation
 	agent, width := s.Agent, max(1, m.view.Width)
 	start := uint64(0)
 	if end > historyPageSize {
@@ -65,8 +74,9 @@ func (m *model) requestOlderHistory(warm bool) tea.Cmd {
 		ctx, cancel := context.WithTimeout(m.ctx, 10*time.Second)
 		defer cancel()
 		batch, err := m.fetchHistory(ctx, id, start, "older")
-		page := historyPage{id: id, start: start, end: end, err: err}
+		page := historyPage{id: id, start: start, end: end, err: err, generation: generation}
 		if batch != nil {
+			page.floor = historyBatchFloor(batch.Events)
 			for _, e := range batch.Events {
 				if e.Seq > start && e.Seq <= end {
 					page.events = append(page.events, e)
@@ -135,6 +145,10 @@ func (m *model) prepareHistoryPage(ctx context.Context, page historyPage, agent 
 }
 
 func (m *model) applyHistoryPage(page historyPage) bool {
+	if !page.initial && page.generation != 0 && page.generation != m.historyWindow(page.id).generation {
+		return false
+	}
+	anchor := m.historyAnchor()
 	if page.initial && !m.validSessionWatch(page.id, page.epoch) {
 		return false
 	}
@@ -152,11 +166,30 @@ func (m *model) applyHistoryPage(page historyPage) bool {
 		m.showError("History: " + page.err.Error())
 		return true
 	}
+	w := m.historyWindow(page.id)
+	m.applyHistoryFloor(page.id, max(page.floor, historyBatchFloor(page.events)))
+	var visible []*api.Event
+	for _, e := range page.events {
+		if e.Seq > w.floor {
+			visible = append(visible, e)
+		}
+	}
+	// Keep the stream high-water mark even when raw bookkeeping is omitted.
+	if page.initial {
+		for _, e := range page.events {
+			m.cursor[page.id] = max(m.cursor[page.id], e.Seq)
+		}
+		w.detached = false
+		w.generation++
+		w.loading = false
+		w.tail = m.cursor[page.id]
+	}
+	page.events = visible
 	m.mergePreparedHistory(page)
 	if m.historyStart == nil {
 		m.historyStart = map[string]uint64{}
 	}
-	m.historyStart[page.id] = page.start
+	m.historyStart[page.id] = max(page.start, w.floor)
 	if page.initial {
 		last := page.start
 		for _, e := range page.events {
@@ -176,6 +209,7 @@ func (m *model) applyHistoryPage(page historyPage) bool {
 	} else {
 		m.events[page.id] = append(page.events, m.events[page.id]...)
 	}
+	trimmed := m.limitHistory(page.id, !page.initial)
 	if s := m.current(); s != nil && s.Id == page.id {
 		height, offset := m.view.TotalLineCount(), m.view.YOffset
 		opening := m.historyOpening[page.id]
@@ -188,6 +222,9 @@ func (m *model) applyHistoryPage(page historyPage) bool {
 		} else {
 			// Preserve the previously visible line when older content is prepended.
 			m.view.SetYOffset(offset + m.view.TotalLineCount() - height)
+			if trimmed {
+				m.restoreHistoryAnchor(anchor)
+			}
 		}
 	}
 	return true

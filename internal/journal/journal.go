@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"sync"
 	"time"
 )
@@ -16,6 +17,7 @@ import (
 type Log struct {
 	mu     sync.Mutex
 	f      *os.File
+	path   string
 	events []core.Event
 }
 
@@ -24,7 +26,7 @@ func Open(path string) (*Log, error) {
 	if e != nil {
 		return nil, e
 	}
-	l := &Log{f: f}
+	l := &Log{f: f, path: path}
 	if e = core.SyncDir(filepath.Dir(path)); e != nil {
 		f.Close()
 		return nil, e
@@ -54,7 +56,7 @@ func Open(path string) (*Log, error) {
 			f.Close()
 			return nil, err
 		}
-		batch, err := decode(b, uint64(len(l.events)))
+		batch, err := decode(b, lastSeq(l.events))
 		if err != nil {
 			f.Close()
 			return nil, fmt.Errorf("corrupt committed record at %d: %w", offset, err)
@@ -87,7 +89,7 @@ func (l *Log) AppendBatch(batch []core.Event) ([]core.Event, error) {
 	}
 	batch = append([]core.Event(nil), batch...)
 	for i := range batch {
-		batch[i].Seq = uint64(len(l.events) + i + 1)
+		batch[i].Seq = lastSeq(l.events) + uint64(i) + 1
 		if batch[i].TimeMS == 0 {
 			batch[i].TimeMS = time.Now().UnixMilli()
 		}
@@ -109,11 +111,9 @@ func (l *Log) AppendBatch(batch []core.Event) ([]core.Event, error) {
 func (l *Log) After(seq uint64, limit int) []core.Event {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	if seq >= uint64(len(l.events)) {
-		return nil
-	}
-	end := min(len(l.events), int(seq)+limit)
-	return append([]core.Event(nil), l.events[int(seq):end]...)
+	start := sort.Search(len(l.events), func(i int) bool { return l.events[i].Seq > seq })
+	end := start + min(len(l.events)-start, max(0, limit))
+	return append([]core.Event(nil), l.events[start:end]...)
 }
 func (l *Log) All() []core.Event { return l.After(0, int(^uint(0)>>1)) }
 func (l *Log) Close() error      { return l.f.Close() }
@@ -138,7 +138,7 @@ func Read(path string) ([]core.Event, error) {
 		if e != nil {
 			return nil, e
 		}
-		batch, e := decode(b, uint64(len(events)))
+		batch, e := decode(b, lastSeq(events))
 		if e != nil {
 			return nil, e
 		}
@@ -162,10 +162,27 @@ func decode(b []byte, after uint64) ([]core.Event, error) {
 	if len(batch) == 0 {
 		return nil, fmt.Errorf("empty committed batch")
 	}
+	if after == 0 && len(batch) == 1 && batch[0].Kind == core.HistoryCheckpointKind {
+		var c core.HistoryCheckpoint
+		if json.Unmarshal(batch[0].Payload, &c) != nil || c.Version != 1 || batch[0].Seq == 0 || c.Snapshot.LastSeq != batch[0].Seq {
+			return nil, fmt.Errorf("invalid history checkpoint")
+		}
+		return batch, nil
+	}
 	for i, v := range batch {
+		if v.Kind == core.HistoryCheckpointKind {
+			return nil, fmt.Errorf("checkpoint must be the first record")
+		}
 		if v.Seq != after+uint64(i)+1 {
 			return nil, fmt.Errorf("noncontiguous journal sequence")
 		}
 	}
 	return batch, nil
+}
+
+func lastSeq(events []core.Event) uint64 {
+	if len(events) == 0 {
+		return 0
+	}
+	return events[len(events)-1].Seq
 }

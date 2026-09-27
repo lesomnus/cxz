@@ -15,6 +15,7 @@ import (
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/cxzupdate"
 	"github.com/lesomnus/cxz/internal/dockerx"
+	"github.com/lesomnus/cxz/internal/historypolicy"
 	"github.com/lesomnus/cxz/internal/notification"
 	"github.com/lesomnus/cxz/internal/resourceclient"
 	"github.com/lesomnus/cxz/internal/settings"
@@ -141,6 +142,8 @@ type model struct {
 	width, height           int
 	events                  map[string][]*api.Event
 	cursor                  map[string]uint64
+	historyWindows          map[string]*historyWindow
+	windowPolicy            *historypolicy.Window
 	historyLoading          map[string]uint64 // End sequence of each in-flight older page.
 	historyStart            map[string]uint64
 	historyOpening          map[string]bool // Keep loading through pages containing only bookkeeping events.
@@ -485,7 +488,7 @@ func (m *model) startSessionWatch(s *api.Session) {
 			}
 			started := time.Now()
 			batch, err := m.fetchHistory(ctx, id, start, "initial")
-			for err == nil && start > 0 && !hasConversationEvents(batch.Events) {
+			for err == nil && start > 0 && historyBatchFloor(batch.Events) == 0 && !hasConversationEvents(batch.Events) {
 				end := start
 				start = 0
 				if end > historyPageSize {
@@ -602,6 +605,10 @@ func (m *model) render() {
 		lines = append(lines, text)
 		times = append(times, stamp)
 		sequences = append(sequences, sequence)
+	}
+	if w := m.historyWindow(s.Id); w.floor > 0 && m.historyStart[s.Id] <= w.floor {
+		sequence = w.floor
+		add(muted.Render("Earlier display history was removed by the size limit. Agent context is preserved."), 0)
 	}
 	var usage *api.Event
 	var started int64
@@ -803,7 +810,7 @@ func (m *model) render() {
 			add(indentBlock(warning.Render(ansi.Hardwrap(safeText(hint), max(1, m.view.Width-2), true))), e.TimeMs)
 		}
 	}
-	if start, loaded := m.historyStart[s.Id]; loaded && m.historyOpening[s.Id] && (conversationReady || start == 0) {
+	if start, loaded := m.historyStart[s.Id]; loaded && m.historyOpening[s.Id] && (conversationReady || start <= m.historyWindow(s.Id).floor) {
 		delete(m.historyOpening, s.Id)
 		follow = true
 	}
@@ -1317,6 +1324,8 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case modelCatalogLoaded:
 		return m, m.acceptModelCatalog(v)
+	case historyWindowPage:
+		return m, m.applyWindowPage(v)
 	case historyPage:
 		if !m.applyHistoryPage(v) {
 			return m, nil
@@ -1464,6 +1473,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.beginSelection(v)
 			m.view, _ = m.view.Update(v)
 			if v.Button == tea.MouseButtonWheelUp || v.Button == tea.MouseButtonWheelDown {
+				if s := m.current(); s != nil {
+					m.historyWindow(s.Id).direction = map[bool]int{true: -1, false: 1}[v.Button == tea.MouseButtonWheelUp]
+				}
 				return m, m.loadOlderHistory()
 			}
 			return m, nil
@@ -1814,12 +1826,18 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+d":
 			return m, tea.Quit
 		case "pgup", "pgdown":
+			if s := m.current(); s != nil {
+				m.historyWindow(s.Id).direction = map[bool]int{true: -1, false: 1}[v.String() == "pgup"]
+			}
 			m.view, _ = m.view.Update(v)
 			return m, m.loadOlderHistory()
 		case "ctrl+end":
 			m.view.GotoBottom()
-			return m, nil
+			return m, m.requestNewerHistory(true)
 		case "ctrl+home":
+			if s := m.current(); s != nil {
+				m.historyWindow(s.Id).direction = -1
+			}
 			m.view.GotoTop()
 			return m, m.loadOlderHistory()
 		case "tab", "shift+tab":
@@ -2117,6 +2135,10 @@ func (m *model) View() (out string) {
 }
 
 func (m *model) receiveEvent(v received, repaint bool) {
+	anchor, follow := m.historyAnchor(), m.view.AtBottom()
+	if floor := core.HistoryFloor(v.event.Kind, v.event.Payload); floor > 0 {
+		m.applyHistoryFloor(v.id, floor)
+	}
 	if v.event.Kind == "input" {
 		m.removePendingInput(v.id, v.event.RequestId)
 	}
@@ -2134,7 +2156,15 @@ func (m *model) receiveEvent(v received, repaint bool) {
 			m.interruptKey = ""
 		}
 		m.cursor[v.id] = v.event.Seq
-		m.events[v.id] = append(m.events[v.id], v.event)
+		w := m.historyWindow(v.id)
+		if !w.detached {
+			w.tail = v.event.Seq
+		}
+		trimmed := false
+		if !w.detached {
+			m.events[v.id] = append(m.events[v.id], v.event)
+			trimmed = m.limitHistory(v.id, false)
+		}
 		if p := m.modelPicker; p != nil && !p.loading && p.id == v.id && p.run == v.event.RunId && v.event.Kind == "models" {
 			var catalog modelCatalog
 			if json.Unmarshal(v.event.Payload, &catalog) == nil {
@@ -2155,6 +2185,9 @@ func (m *model) receiveEvent(v received, repaint bool) {
 		}
 		if s := m.current(); s != nil && s.Id == v.id && repaint && v.event.Kind != "raw" {
 			m.render()
+			if !follow && trimmed {
+				m.restoreHistoryAnchor(anchor)
+			}
 		}
 	}
 }

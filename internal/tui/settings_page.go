@@ -3,6 +3,7 @@ package tui
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/cxzupdate"
 	"github.com/lesomnus/cxz/internal/engine"
+	"github.com/lesomnus/cxz/internal/versionpin"
 )
 
 type settingsPage struct {
@@ -38,6 +40,7 @@ type settingsResult struct {
 
 var settingsActions = []struct{ label, action string }{
 	{"Refresh", "info"}, {"Activate", "up"}, {"Clear unused build cache", "prune"}, {"Start debug recording", "record"}, {"Automatic frontend updates", "auto-update"},
+	{"Server history limit", "history-policy"}, {"Client scroll bytes", "history-window"}, {"Client scroll turns", "history-window"},
 }
 
 const settingsActionRow = 12
@@ -60,6 +63,15 @@ func (m *model) settingsRequest(action string) tea.Cmd {
 	if action != "info" {
 		p.message = "Working…"
 	}
+	var historySpec []byte
+	if action == "history-policy" && p.info.History != nil {
+		next := *p.info.History
+		n, _, _ := next.Limits()
+		value := nextHistoryChoice(int(n)/(1<<20), []int{25, 50, 100, 250, 500, 0})
+		next.Disabled = value == 0
+		next.MaxMiB = value
+		historySpec, _ = json.Marshal(next)
+	}
 	client, ctx := m.client, m.contextFor(p.connection)
 	return func() tea.Msg {
 		timeout := 20 * time.Second
@@ -70,10 +82,13 @@ func (m *model) settingsRequest(action string) tea.Cmd {
 		defer cancel()
 		result := settingsResult{page: p, request: request, action: action}
 		if action != "info" {
-			out, err := client.Docker(ctx, &api.DockerInput{Action: action})
+			out, err := client.Docker(ctx, &api.DockerInput{Action: action, Spec: historySpec})
 			result.err = err
 			if out != nil {
 				result.text = out.Status
+				if action == "history-policy" && err == nil {
+					result.text = "Server history policy saved; running sessions apply it at a safe idle check."
+				}
 			}
 		}
 		out, err := client.Docker(ctx, &api.DockerInput{Action: "info"})
@@ -120,6 +135,9 @@ func (m *model) pollSettings() tea.Cmd {
 
 // Resolve the toggle from the latest reported engine state.
 func (m *model) settingsAction(index int) (string, string) {
+	if index >= 5 && index < len(settingsActions) {
+		return m.historySettingLabel(index), settingsActions[index].action
+	}
 	if index == 4 {
 		if c, ok := cxzupdate.ClientFrom(m.ctx); ok {
 			p, e := cxzupdate.Policy(c.Root)
@@ -160,6 +178,14 @@ func (m *model) moveSetting(direction int) {
 }
 
 func (m *model) settingsEnabled(index int) bool {
+	if index == 6 || index == 7 {
+		_, ok := versionpin.ClientFrom(m.ctx)
+		return ok
+	}
+	if index == 5 {
+		p := m.settingsPage
+		return p != nil && !p.loading && !p.busy && p.info.History != nil && p.statusError == ""
+	}
 	if index == 4 {
 		_, ok := cxzupdate.ClientFrom(m.ctx)
 		return ok
@@ -187,6 +213,9 @@ func (m *model) activateSetting() tea.Cmd {
 	if !m.settingsEnabled(p.selected) {
 		return nil
 	}
+	if p.selected == 6 || p.selected == 7 {
+		return m.changeHistoryWindow(p.selected)
+	}
 	_, action := m.settingsAction(p.selected)
 	if action == "auto-update" {
 		if c, ok := cxzupdate.ClientFrom(m.ctx); ok {
@@ -207,7 +236,7 @@ func (m *model) activateSetting() tea.Cmd {
 	if action == "record" {
 		return m.toggleRecording()
 	}
-	if action == "down" || action == "prune" {
+	if action == "down" || action == "prune" || action == "history-policy" {
 		p.confirm = action
 		p.confirmYes = false
 		return nil
@@ -319,6 +348,14 @@ func (m *model) settingsConfirmation() ([]string, int, int) {
 	p := m.settingsPage
 	width := max(1, m.settingsWidth()-4)
 	text := map[string]string{"down": "Deactivate Docker for all projects? Images and volumes will be retained.", "prune": "Remove unused build cache from the shared Docker engine? Images and volumes will be retained."}[p.confirm]
+	if p.confirm == "history-policy" && p.info.History != nil {
+		n, _, _ := p.info.History.Limits()
+		next := nextHistoryChoice(int(n)/(1<<20), []int{25, 50, 100, 250, 500, 0})
+		text = fmt.Sprintf("Set server history limit to %d MiB per session? Old completed display records will be permanently removed when the limit is exceeded. Provider context is preserved.", next)
+		if next == 0 {
+			text = "Disable automatic display-history pruning on this server? Previously removed records cannot be restored."
+		}
+	}
 	lines := []string{"", accent.Bold(true).Render("Confirm action"), ""}
 	lines = append(lines, strings.Split(ansi.Hardwrap(text, width, true), "\n")...)
 	lines = append(lines, "")
@@ -378,7 +415,7 @@ func (m *model) settingsScreen() string {
 		}
 		lines = append(lines, panelBackground(line+strings.Repeat(" ", max(0, inner-ansi.StringWidth(line)))))
 	}
-	lines = append(lines, accent.Render(strings.Repeat("─", inner)), "", "Configure defaults and overrides with cxz edit.")
+	lines = append(lines, accent.Render(strings.Repeat("─", inner)), "", "Configure defaults and overrides with cxz edit.", "History limits affect cxz display records only; provider context is preserved.", "Server: prune completed turns to 80% of the limit. Client: bound the loaded scroll window.")
 	current := cxzupdate.Current()
 	lines = append(lines, "", "cxz automatic updates", "Frontend running: "+current.Revision, "Frontend state: "+m.autoState.State+" · "+m.autoState.Reason)
 	if m.autoState.Release != nil {

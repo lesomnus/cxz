@@ -62,6 +62,6 @@ func ReadSince(ctx context.Context, path string, previous Cursor) (events []core
 		}
 		events = append(events, batch...)
 		next.Offset += int64(len(line))
-		next.Seq += uint64(len(batch))
+		next.Seq = lastSeq(batch)
 	}
 }

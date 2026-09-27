@@ -25,6 +25,10 @@ func (s *historySource) History(_ context.Context, r *api.WatchRequest, _ ...grp
 	}
 	return b, nil
 }
+func (s *historySource) Docker(context.Context, *api.DockerInput, ...grpc.CallOption) (*api.Receipt, error) {
+	return &api.Receipt{Status: `{"through":0}`}, nil
+}
+
 func (s *historySource) Background(context.Context, *api.SessionRef, ...grpc.CallOption) (*api.BackgroundReply, error) {
 	s.backgrounds++
 	return &api.BackgroundReply{LastSeq: 384, Data: []byte(`{}`)}, nil
@@ -100,5 +104,43 @@ func TestHistoryCacheCompletenessAndTransportReuse(t *testing.T) {
 	// The immutable range remains readable even with the runtime unavailable.
 	if page, err = m.History(ctx, &api.WatchRequest{SessionId: "s"}); err != nil || len(page.Events) != 128 {
 		t.Fatal(page, err)
+	}
+}
+
+func TestHistoryCacheTrimCannotResurrectOldRows(t *testing.T) {
+	db, err := sql.Open("sqlite3", filepath.Join(t.TempDir(), "db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	db.Exec("CREATE TABLE events(session_id TEXT,seq INTEGER,data BLOB,PRIMARY KEY(session_id,seq))")
+	m := &Manager{DB: db}
+	initial := &api.EventBatch{}
+	for i := uint64(1); i <= 20; i++ {
+		initial.Events = append(initial.Events, &api.Event{SessionId: "s", Seq: i, Kind: "assistant", Text: "old"})
+	}
+	if err = m.cache(t.Context(), initial); err != nil {
+		t.Fatal(err)
+	}
+	notice := &api.Event{SessionId: "s", Seq: 21, Kind: "history_trimmed", Payload: []byte(`{"through":15}`)}
+	if err = m.cache(t.Context(), &api.EventBatch{Events: []*api.Event{notice}}); err != nil {
+		t.Fatal(err)
+	}
+	if err = m.cache(t.Context(), initial); err != nil {
+		t.Fatal(err)
+	} // in-flight old response
+	b, err := m.cachedHistory(t.Context(), &api.WatchRequest{SessionId: "s"})
+	if err != nil || len(b.Events) != 7 || b.Events[0].Seq != 15 || b.Events[0].Kind != "history_trimmed" {
+		t.Fatal("deleted history resurrected or missing floor", b, err)
+	}
+	// A stale checkpoint is also forbidden from restoring a lower floor.
+	old := &api.Event{SessionId: "s", Seq: 5, Kind: "history_trimmed", Payload: []byte(`{"through":5}`)}
+	if err = m.cache(t.Context(), &api.EventBatch{Events: []*api.Event{old}}); err != nil {
+		t.Fatal(err)
+	}
+	var n int
+	db.QueryRow("SELECT COUNT(*) FROM events WHERE seq<15").Scan(&n)
+	if n != 0 {
+		t.Fatal("stale boundary inserted")
 	}
 }

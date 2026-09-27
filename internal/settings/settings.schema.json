@@ -10,7 +10,15 @@
       "description": "Editor schema reference. cxz edit refreshes settings.schema.json from the current binary.",
       "default": "./settings.schema.json"
     },
-    "connections": {
+    "history": {
+ "type":"object", "additionalProperties":false,
+ "description":"TUI window limits. Server retention is configured on the connected Manager in Settings.",
+ "properties":{
+ "window_mib":{"type":"integer","minimum":0,"maximum":1024,"default":10},
+ "window_turns":{"type":"integer","minimum":0,"maximum":10000,"default":200}
+ }
+ },
+ "connections": {
       "type": ["object", "null"],
       "description": "Named connections shown together in the project view. Changes apply when the TUI next starts. Omit to use the local installation on Linux.",
       "minProperties": 1,

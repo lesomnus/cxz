@@ -25,13 +25,14 @@ func (m *model) scrollTrack() string {
 		// Rows already visible below it cannot be scrolled past the viewport.
 		// Using the journal tail here makes a tiny upward scroll jump left by
 		// an entire screen (or further when the tail contains hidden events).
-		endCoordinate := m.historyPositions[min(end, len(m.historyPositions)-1)]
+		floor := float64(m.historyWindow(s.Id).floor)
+		endCoordinate := m.historyPositions[min(end, len(m.historyPositions)-1)] - floor
 		if endCoordinate > 0 {
-			coordinate := m.historyPositions[min(max(0, m.view.YOffset), len(m.historyPositions)-1)]
+			coordinate := m.historyPositions[min(max(0, m.view.YOffset), len(m.historyPositions)-1)] - floor
 			position = min(width-1, max(0, int(math.Round(coordinate/endCoordinate*float64(width-1)))))
 			if m.view.AtBottom() {
 				position = width - 1
-			} else if m.view.AtTop() && m.historyStart[s.Id] == 0 {
+			} else if m.view.AtTop() && m.historyStart[s.Id] <= m.historyWindow(s.Id).floor {
 				position = 0
 			}
 		}
@@ -49,7 +50,7 @@ func (m *model) scrollStatus() string {
 		}
 	}
 	label := "L"
-	if s := m.current(); s != nil && m.historyStart[s.Id] > 0 {
+	if s := m.current(); s != nil && m.historyStart[s.Id] > m.historyWindow(s.Id).floor {
 		label = "loaded L"
 	}
 	loading := ""

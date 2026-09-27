@@ -6,6 +6,7 @@ import (
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/journal"
 	"github.com/lesomnus/cxz/internal/memoryview"
 	"github.com/lesomnus/cxz/internal/resourceclient"
 	"github.com/lesomnus/cxz/internal/server"
@@ -630,6 +631,74 @@ func TestLifecycle(t *testing.T) {
 	// Delete a live session through payday, then restart without resurrecting it.
 	if _, e = client.Resume(ctx, &api.Control{SessionId: id, RunId: restored.RunId, ClientId: core.ID()}); e != nil {
 		t.Fatal(e)
+	}
+	// Size-based retention runs in the real supervisor after completed turns,
+	// without stopping the provider. A runtime and supervisor restart must retain
+	// provider identity, profile data and deduplication of a now-pruned command.
+	await("idle")
+	if _, e = client.Docker(ctx, &api.DockerInput{Action: "history-policy", Spec: []byte(`{"max_mib":1}`)}); e != nil {
+		t.Fatal(e)
+	}
+	var prunedRequest *api.Input
+	runBeforeRetention := get().RunId
+	for i := range 8 {
+		request := send("retention " + strings.Repeat("x", 40000))
+		if i == 0 {
+			prunedRequest = request
+		}
+		await("idle")
+	}
+	retained := get()
+	if retained.RunId != runBeforeRetention || retained.VendorId != restored.VendorId {
+		t.Fatal("pruning restarted or replaced provider", retained)
+	}
+	history, err := client.History(ctx, &api.WatchRequest{SessionId: id})
+	if err != nil || len(history.Events) == 0 || history.Events[0].Kind != core.HistoryTrimmedKind {
+		t.Fatal("retention not applied via public RPC", err)
+	}
+	// Idle is visible to projections before the supervisor finishes the atomic
+	// checkpoint replacement. Wait for that maintenance transaction to finish.
+	for deadline := time.Now().Add(8 * time.Second); time.Now().Before(deadline); {
+		info, err := os.Stat(filepath.Join(core.Dir(state, id), "events.jsonl"))
+		if err == nil && info.Size() <= 1<<20 {
+			break
+		}
+		time.Sleep(30 * time.Millisecond)
+	}
+	if info, err := os.Stat(filepath.Join(core.Dir(state, id), "events.jsonl")); err != nil || info.Size() > 1<<20 {
+		events, _ := journal.Read(filepath.Join(core.Dir(state, id), "events.jsonl"))
+		sizes := map[string]int{}
+		for _, e := range events {
+			b, _ := json.Marshal(e)
+			sizes[e.Kind] += len(b)
+		}
+		logs, _ := os.ReadFile(filepath.Join(core.Dir(state, id), "supervisor.log"))
+		var failures []string
+		for _, line := range strings.Split(string(logs), "\n") {
+			if strings.Contains(line, "history retention") {
+				failures = append(failures, line)
+			}
+		}
+		t.Fatal("journal did not shrink", info, err, sizes, failures)
+	}
+	if _, e = client.Stop(ctx, &api.Control{SessionId: id, RunId: retained.RunId, ClientId: core.ID()}); e != nil {
+		t.Fatal(e)
+	}
+	retained = await("stopped")
+	killDaemon()
+	start()
+	if _, e = client.Resume(ctx, &api.Control{SessionId: id, RunId: retained.RunId, ClientId: core.ID()}); e != nil {
+		t.Fatal(e)
+	}
+	afterRetention := await("idle")
+	if afterRetention.VendorId != retained.VendorId || afterRetention.PermissionMode != retained.PermissionMode {
+		t.Fatal("checkpoint lost resume state")
+	}
+	if receipt, e := client.Send(ctx, prunedRequest); e != nil || receipt.Status != "accepted" {
+		t.Fatal("pruned request duplicate was not recognized", receipt, e)
+	}
+	if contents, e := os.ReadFile(memoryFile); e != nil || string(contents) != "retained note" {
+		t.Fatal("provider profile changed", e)
 	}
 	if e = client.DeleteSession(ctx, id); e != nil {
 		t.Fatal("delete live session", e)

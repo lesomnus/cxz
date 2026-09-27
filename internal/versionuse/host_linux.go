@@ -324,7 +324,7 @@ func validateDatabase(root string) error {
 	if e = db.QueryRow("PRAGMA user_version").Scan(&version); e != nil {
 		return e
 	}
-	if version > 1 {
+	if version > 2 {
 		return fmt.Errorf("target release cannot read database schema %d", version)
 	}
 	return nil

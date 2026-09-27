@@ -76,7 +76,7 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 	if e = db.QueryRowContext(ctx, "PRAGMA user_version").Scan(&version); e != nil {
 		return e
 	}
-	if version > 1 {
+	if version > 2 {
 		return fmt.Errorf("unsupported database version %d", version)
 	}
 	tx, e := db.BeginTx(ctx, nil)
@@ -84,7 +84,7 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 		return e
 	}
 	defer tx.Rollback()
-	for _, q := range []string{`CREATE TABLE IF NOT EXISTS sessions(id TEXT PRIMARY KEY, manifest BLOB NOT NULL, create_id TEXT UNIQUE NOT NULL)`, `CREATE TABLE IF NOT EXISTS events(session_id TEXT NOT NULL, seq INTEGER NOT NULL, data BLOB NOT NULL, PRIMARY KEY(session_id,seq))`, `PRAGMA user_version=1`} {
+	for _, q := range []string{`CREATE TABLE IF NOT EXISTS sessions(id TEXT PRIMARY KEY, manifest BLOB NOT NULL, create_id TEXT UNIQUE NOT NULL)`, `CREATE TABLE IF NOT EXISTS events(session_id TEXT NOT NULL, seq INTEGER NOT NULL, data BLOB NOT NULL, PRIMARY KEY(session_id,seq))`, fmt.Sprintf("PRAGMA user_version=%d", max(1, version))} {
 		if _, e = tx.ExecContext(ctx, q); e != nil {
 			return e
 		}
@@ -299,6 +299,12 @@ func (s *Server) manifest(ctx context.Context, id string) (core.Session, error) 
 	return m, json.Unmarshal(b, &m)
 }
 func pbEvent(e core.Event) *api.Event {
+	if e.Kind == core.HistoryCheckpointKind {
+		e.Kind = core.HistoryTrimmedKind
+		e.Text = "Earlier display history was removed by the size limit."
+		e.Payload, _ = json.Marshal(core.HistoryBoundary{Through: e.Seq})
+	}
+
 	if e.Kind == "raw" && agentview.IsBackgroundEvent(e.Raw) {
 		e.Kind, e.Payload = "background", e.Raw
 	}

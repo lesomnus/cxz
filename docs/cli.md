@@ -939,3 +939,5 @@ Exit 및 실패의 종료 코드는 0이 아니다.
 Manager 설치에 적용하며 생략하면 frontend 정책을 관리한다. 일반 수동 `self-update`는
 유지된다. 기본 채널은 main의 최신 성공 CI 빌드(edge)다. 안전한 재시작 조건과 최초 도입
 절차는 [자동 업데이트](auto-update.md)를 참고한다.
+
+대화 기록 용량과 스크롤 범위는 [기록 보존 정책](history-retention.md)을 참고한다. Settings에서 서버 기록 상한과 클라이언트 표시 범위를 각각 설정한다.

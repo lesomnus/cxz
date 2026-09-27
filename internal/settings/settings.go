@@ -10,6 +10,7 @@ import (
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/engine"
 	"github.com/lesomnus/cxz/internal/filemap"
+	"github.com/lesomnus/cxz/internal/historypolicy"
 	"github.com/lesomnus/cxz/internal/projectconfig"
 	"github.com/tailscale/hujson"
 	"io"
@@ -20,6 +21,7 @@ import (
 )
 
 type Config struct {
+	History      historypolicy.Window `json:"history,omitempty"`
 	Schema       string               `json:"$schema,omitempty"`
 	Connections  *Connections         `json:"connections,omitempty"`
 	Docker       engine.Config        `json:"docker,omitempty"`
@@ -67,6 +69,9 @@ func ValidateModel(v string) error {
 	return nil
 }
 func (c Config) Validate() error {
+	if err := c.History.Validate(); err != nil {
+		return err
+	}
 	if err := c.Devcontainer.Validate(); err != nil {
 		return err
 	}
