@@ -187,3 +187,28 @@ func TestGreenBlinkingInputCursor(t *testing.T) {
 		t.Fatal("recreate form too tall")
 	}
 }
+
+// The wrapper is a label, not part of the script, so the row spends its width on
+// the script and highlights it as commands rather than as one quoted string.
+func TestCommandRowNamesTheShellSeparately(t *testing.T) {
+	old := lipgloss.ColorProfile()
+	lipgloss.SetColorProfile(termenv.TrueColor)
+	defer lipgloss.SetColorProfile(old)
+	activity := agentview.ToolActivity{Kind: "command", Shell: "zsh", Command: "rg -n 'x' a.go | head -2"}
+	body := toolActivityBody(activity, &api.Event{}, 76)
+	plain := ansi.Strip(body)
+	if !strings.Contains(plain, "Bash · zsh · rg -n 'x' a.go | head -2") {
+		t.Fatalf("shell not named beside the script: %q", plain)
+	}
+	if strings.Contains(plain, "/usr/bin") || strings.Contains(plain, "-lc") {
+		t.Fatal("wrapper leaked into the row", plain)
+	}
+	// The script is highlighted as bash: the quoted argument is a string, not the
+	// whole command, which is what happens when a wrapper hides it.
+	if !strings.Contains(body, highlightCode("rg -n 'x' a.go | head -2", "bash")) {
+		t.Fatalf("script was not highlighted as commands: %q", body)
+	}
+	if bare := ansi.Strip(toolActivityBody(agentview.ToolActivity{Kind: "command", Command: "go build ./..."}, &api.Event{}, 76)); !strings.Contains(bare, "Bash · go build ./...") {
+		t.Fatalf("unwrapped command grew a shell label: %q", bare)
+	}
+}
