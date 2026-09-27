@@ -34,7 +34,7 @@ func ClientFrom(ctx context.Context) (Client, bool) {
 func Policy(root string) (Config, error) {
 	if p, e := versionpin.Load(root); e != nil {
 		return Config{}, e
-	} else if p.Version != "" {
+	} else if p.Pinned() || (p.Version != "" && !p.Ready) {
 		disabled := false
 		return Config{Enabled: &disabled}, nil
 	}
@@ -88,7 +88,7 @@ func ClientCandidate(ctx context.Context, c Client) (State, string, error) {
 	}
 	if !s.Release.CanReplace(Current()) {
 		s.State = "waiting"
-		s.Reason = "running revision is not an ancestor of published edge; automatic downgrade refused"
+		s.Reason = "selected channel cannot replace the running build; automatic downgrade refused"
 		_ = Save(c.Root, s)
 		return s, "", nil
 	}

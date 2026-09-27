@@ -30,3 +30,23 @@ func TestPinRestartWaitsForCompleteSwitch(t *testing.T) {
 		t.Fatal("same generation restarted repeatedly")
 	}
 }
+
+func TestSettingsShowsChannelOrFixedVersion(t *testing.T) {
+	root := t.TempDir()
+	m := model{ctx: versionpin.WithClient(context.Background(), root)}
+	if got := m.releaseSelectionText(); got != "cxz update channel: @edge" {
+		t.Fatal(got)
+	}
+	if e := versionpin.Save(root, versionpin.Pin{Version: "v0.1.2", Channel: "stable", Ready: true}); e != nil {
+		t.Fatal(e)
+	}
+	if got := m.releaseSelectionText(); got != "cxz update channel: @stable" {
+		t.Fatal(got)
+	}
+	if e := versionpin.Save(root, versionpin.Pin{Version: "v0.1.0", Ready: true}); e != nil {
+		t.Fatal(e)
+	}
+	if got := m.releaseSelectionText(); got != "cxz release pinned: v0.1.0" {
+		t.Fatal(got)
+	}
+}

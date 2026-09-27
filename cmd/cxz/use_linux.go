@@ -19,11 +19,13 @@ func prepareUseBackend(ctx context.Context, root string, p versionpin.Pin, out i
 	} else if e != nil {
 		return nil, e
 	}
-	image, e := selfupdate.ManagerImage(ctx, p.Version)
-	if e != nil {
-		return nil, e
+	if p.Image == "" {
+		image, e := selfupdate.ManagerImage(ctx, p.Version)
+		if e != nil {
+			return nil, e
+		}
+		p.Image = image
 	}
-	p.Image = image
 	tx, e := versionuse.Prepare(ctx, root, p, out)
 	if e != nil {
 		return nil, e

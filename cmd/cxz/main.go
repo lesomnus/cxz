@@ -44,6 +44,11 @@ func defaultState() (string, error) {
 
 func run() error {
 	cxzupdate.Revision = buildRevision
+	cxzupdate.Version = version
+	if len(os.Args) == 2 && os.Args[1] == "_use-capabilities" {
+		fmt.Println(`{"channels":1}`)
+		return nil
+	}
 	if handled, e := useInternal(os.Args[1:]); handled {
 		return e
 	}

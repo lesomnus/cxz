@@ -31,3 +31,19 @@ func TestReleasePinOverridesAutomaticPolicy(t *testing.T) {
 		t.Fatal("unpin did not restore default policy", e)
 	}
 }
+
+func TestChannelSelectionEnablesAutomaticPolicy(t *testing.T) {
+	root := t.TempDir()
+	if e := versionpin.Save(root, versionpin.Pin{Version: "v0.1.2", Channel: "stable", Ready: true}); e != nil {
+		t.Fatal(e)
+	}
+	if p, e := Policy(root); e != nil || !p.Active() {
+		t.Fatal("channel was treated as fixed pin", e)
+	}
+	if e := SetPolicy(root, false); e != nil {
+		t.Fatal(e)
+	}
+	if c, e := versionpin.Channel(root); e != nil || c != "stable" {
+		t.Fatal("pause discarded channel", c, e)
+	}
+}

@@ -93,3 +93,34 @@ func BenchmarkLiveTranscriptRender(b *testing.B) {
 
 	}
 }
+
+// A session that streamed a lot of command output keeps thousands of tool_output
+// events while its transcript stays a few rows long. Render must not fold chunks
+// it cannot display: that cost is invisible in a short session and stalls the
+// event loop, spinner included, in a long one.
+func BenchmarkStreamedOutputHistory(b *testing.B) {
+	for _, chunks := range []int{2000, 8000} {
+		b.Run(fmt.Sprint(chunks), func(b *testing.B) {
+			m := conversationModel()
+			m.current().State = "working"
+			events := []*api.Event{
+				{Seq: 1, RunId: "previous", Kind: "input", Text: "run the tests"},
+				{Seq: 2, RunId: "previous", Kind: "tool_call", RequestId: "t", Text: "Bash", Payload: []byte(`{"command":"go test ./..."}`)},
+			}
+			for i := 0; i < chunks; i++ {
+				events = append(events, &api.Event{Seq: uint64(i + 3), RunId: "previous", Kind: "tool_output", RequestId: "t", Text: "ok  \tgithub.com/lesomnus/cxz/internal/tui\t0.093s\n"})
+			}
+			m.events["s"] = append(events,
+				&api.Event{Seq: uint64(chunks + 3), RunId: "previous", Kind: "tool_result", RequestId: "t", Payload: []byte(`{"content":"done"}`)},
+				&api.Event{Seq: uint64(chunks + 4), RunId: "previous", Kind: "turn_end", Text: "completed"})
+			m.render()
+			b.ReportAllocs()
+			b.ResetTimer()
+			for b.Loop() {
+				m.render()
+			}
+			b.StopTimer()
+			b.ReportMetric(float64(len(m.historyPositions)), "rows")
+		})
+	}
+}

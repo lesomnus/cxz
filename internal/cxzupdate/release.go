@@ -20,6 +20,9 @@ import (
 	"time"
 
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/releasechannel"
+	"github.com/lesomnus/cxz/internal/versionpin"
+	"golang.org/x/mod/semver"
 )
 
 const Protocol = 1
@@ -33,8 +36,10 @@ var hashPattern = regexp.MustCompile(`^[a-f0-9]{64}$`)
 
 // Revision is set for image builds that do not carry VCS metadata.
 var Revision string
+var Version string
 
 type Build struct {
+	Version  string `json:"version,omitempty"`
 	Revision string `json:"revision"`
 	Platform string `json:"platform"`
 	Protocol int    `json:"protocol"`
@@ -44,7 +49,7 @@ type Build struct {
 }
 
 func Current() Build {
-	b := Build{Revision: Revision, Platform: runtime.GOOS + "/" + runtime.GOARCH, Protocol: Protocol, Schema: Schema, PID: os.Getpid()}
+	b := Build{Version: Version, Revision: Revision, Platform: runtime.GOOS + "/" + runtime.GOARCH, Protocol: Protocol, Schema: Schema, PID: os.Getpid()}
 	if info, ok := debug.ReadBuildInfo(); ok {
 		for _, v := range info.Settings {
 			if v.Key == "vcs.revision" && b.Revision == "" {
@@ -70,6 +75,8 @@ type Asset struct {
 	SHA256 string `json:"sha256"`
 }
 type Release struct {
+	Version   string           `json:"version,omitempty"`
+	Tag       string           `json:"tag,omitempty"`
 	Revision  string           `json:"revision"`
 	Ancestors []string         `json:"ancestors,omitempty"`
 	Sequence  int64            `json:"sequence"`
@@ -80,6 +87,16 @@ type Release struct {
 }
 
 func (r Release) Validate() error {
+	if r.Tag != "" {
+		if r.Tag == "edge" {
+			if len(r.Revision) != 40 || r.Version != "source-"+r.Revision[:12] {
+				return fmt.Errorf("invalid edge version")
+			}
+		} else if !releasechannel.StableTag(r.Tag) || r.Version != r.Tag {
+			return fmt.Errorf("invalid stable version")
+		}
+	}
+
 	if !revisionPattern.MatchString(r.Revision) || r.Sequence <= 0 || r.Protocol != Protocol || r.Schema != Schema {
 		return fmt.Errorf("release requires a compatible protocol and state schema")
 	}
@@ -112,6 +129,9 @@ func Fetch(ctx context.Context) (Release, error) {
 	if e = json.Unmarshal(b, &r); e != nil {
 		return r, e
 	}
+	if r.Tag != "" && r.Tag != "edge" {
+		return r, fmt.Errorf("edge manifest tag mismatch")
+	}
 	return r, r.Validate()
 }
 func download(ctx context.Context, url string, limit int64) ([]byte, error) {
@@ -141,7 +161,11 @@ func executableName(platform string) string {
 	return "cxz"
 }
 func Path(root string, r Release, platform string) string {
-	return filepath.Join(root, "releases", r.Revision, strings.ReplaceAll(platform, "/", "-"), executableName(platform))
+	parts := []string{root, "releases", r.Revision, strings.ReplaceAll(platform, "/", "-")}
+	if r.Tag != "" {
+		parts = append(parts, r.Assets[platform].SHA256)
+	}
+	return filepath.Join(append(parts, executableName(platform))...)
 }
 func Verify(path, checksum string) error {
 	f, e := os.Open(path)
@@ -177,7 +201,11 @@ func Stage(ctx context.Context, root string, r Release, platform string) (string
 	if _, e := os.Lstat(path); !os.IsNotExist(e) {
 		return "", fmt.Errorf("immutable release path exists but is invalid: %s", path)
 	}
-	b, e := download(ctx, "https://github.com/lesomnus/cxz/releases/download/edge/"+a.Name, 512<<20)
+	tag := r.Tag
+	if tag == "" {
+		tag = "edge"
+	}
+	b, e := download(ctx, releasechannel.DownloadBase+tag+"/"+a.Name, 512<<20)
 	if e != nil {
 		return "", e
 	}
@@ -226,7 +254,7 @@ func CheckBinary(ctx context.Context, path string, r Release, platform string) e
 		return e
 	}
 	var v Build
-	if json.Unmarshal(b, &v) != nil || v.Revision != r.Revision || v.Platform != platform || v.Protocol != r.Protocol || v.Schema != r.Schema || v.Dirty {
+	if json.Unmarshal(b, &v) != nil || v.Revision != r.Revision || v.Platform != platform || v.Protocol != r.Protocol || v.Schema != r.Schema || v.Dirty || (r.Version != "" && v.Version != r.Version) {
 		return fmt.Errorf("candidate build identity mismatch")
 	}
 	return nil
@@ -234,11 +262,19 @@ func CheckBinary(ctx context.Context, path string, r Release, platform string) e
 
 // ValidBinary restricts persisted supervisor targets to immutable releases.
 func ValidBinary(path string) bool {
-	p := strings.Split(strings.TrimPrefix(path, "/cxz/tools/cxz-builds/releases/"), "/")
-	return strings.HasPrefix(path, "/cxz/tools/cxz-builds/releases/") && len(p) == 3 && revisionPattern.MatchString(p[0]) && (p[1] == "linux-amd64" || p[1] == "linux-arm64") && p[2] == "cxz"
+	prefix := "/cxz/tools/cxz-builds/releases/"
+	if !strings.HasPrefix(path, prefix) {
+		return false
+	}
+	p := strings.Split(strings.TrimPrefix(path, prefix), "/")
+	if len(p) != 3 && len(p) != 4 {
+		return false
+	}
+	return revisionPattern.MatchString(p[0]) && (p[1] == "linux-amd64" || p[1] == "linux-arm64") && p[len(p)-1] == "cxz" && (len(p) == 3 || hashPattern.MatchString(p[2]))
 }
 
 type State struct {
+	Channel         string    `json:"channel,omitempty"`
 	CheckedAt       time.Time `json:"checked_at"`
 	FailedAt        time.Time `json:"failed_at,omitempty"`
 	FailedRevision  string    `json:"failed_revision,omitempty"`
@@ -268,18 +304,45 @@ func Check(ctx context.Context, root string, force bool) (State, error) {
 	if e != nil {
 		return s, e
 	}
+	channel, e := versionpin.Channel(root)
+	if e != nil {
+		return s, e
+	}
+	if s.Channel == "" {
+		s.Channel = "edge"
+	}
+	if s.Channel != channel {
+		s = State{Channel: channel}
+	}
 	s.Running = Current()
 	if !force && time.Since(s.CheckedAt) < Interval {
 		return s, nil
 	}
-	r, e := Fetch(ctx)
+	var r Release
+	if channel == "edge" {
+		r, e = Fetch(ctx)
+	} else {
+		var published releasechannel.Release
+		published, e = releasechannel.Resolve(ctx, channel)
+		if e == nil {
+			b, _ := json.Marshal(published)
+			e = json.Unmarshal(b, &r)
+			if e == nil {
+				e = r.Validate()
+			}
+		}
+	}
 	s.CheckedAt = time.Now()
 	if e != nil {
 		s.Reason = e.Error()
 		_ = Save(root, s)
 		return s, e
 	}
-	if r.Sequence < s.AppliedSequence || (s.Release != nil && r.Sequence < s.Release.Sequence) {
+	regresses := r.Sequence < s.AppliedSequence || (s.Release != nil && r.Sequence < s.Release.Sequence)
+	if channel == "stable" {
+		regresses = s.Release != nil && (semver.Compare(r.Version, s.Release.Version) < 0 || (r.Version == s.Release.Version && r.Revision != s.Release.Revision))
+	}
+	if regresses {
 		s.Reason = "older publication ignored"
 		return s, Save(root, s)
 	}
@@ -299,6 +362,10 @@ func (s State) RetryAllowed() bool {
 // A clean local build can be newer than edge. Publication sequence alone cannot
 // order a previously unseen executable, so require main ancestry as well.
 func (r Release) CanReplace(b Build) bool {
+	if r.Tag != "" && r.Tag != "edge" && semver.IsValid(b.Version) && r.Revision != b.Revision && semver.Compare(r.Version, b.Version) <= 0 {
+		return false
+	}
+
 	if r.Revision == b.Revision {
 		return true
 	}
