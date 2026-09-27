@@ -625,3 +625,7 @@ for results. Web/IDE UI, roster authentication, central login brokering, automat
 release updates, dotfile/SSH forwarding and encrypted off-host backup remain
 separate work. This is not every cld convenience feature or the full web MVP.
 Large journals need future segmentation/indexing and retention policy.
+
+### 버전 고정
+
+`cxz use v0.1.0`으로 게시된 버전을 설치·고정하고 로컬 관리 구성 요소를 강제로 재시작할 수 있습니다. 진행 중인 작업은 중단됩니다. `cxz use`로 상태를 확인하고 `cxz use --unpin`으로 해제합니다. [범위와 복구 절차](docs/version-pinning.md)를 참고하세요.

@@ -1,8 +1,10 @@
 package selfupdate
 
 import (
+	"archive/tar"
 	"archive/zip"
 	"bytes"
+	"compress/gzip"
 	"context"
 	"crypto/sha256"
 	"debug/buildinfo"
@@ -53,17 +55,31 @@ func DownloadWindows(ctx context.Context, work, ref string, out io.Writer) (Arti
 }
 
 func downloadWindows(ctx context.Context, client *http.Client, work, ref, arch string, out io.Writer) (Artifact, error) {
+	return downloadPlatform(ctx, client, work, ref, "windows", arch, out)
+}
+
+// DownloadRelease fetches prebuilt, verified release binaries on either supported OS.
+func DownloadRelease(ctx context.Context, work, version, goos, arch string, out io.Writer) (Artifact, error) {
+	return downloadPlatform(ctx, &http.Client{Timeout: 10 * time.Minute}, work, version, goos, arch, out)
+}
+func downloadPlatform(ctx context.Context, client *http.Client, work, ref, goos, arch string, out io.Writer) (Artifact, error) {
+	if goos != "linux" && goos != "windows" {
+		return Artifact{}, fmt.Errorf("unsupported platform")
+	}
+	if e := os.MkdirAll(work, 0700); e != nil {
+		return Artifact{}, e
+	}
 	if err := ValidateDownloadRef(ref); err != nil {
 		return Artifact{}, err
 	}
 	if arch != "amd64" && arch != "arm64" {
-		return Artifact{}, fmt.Errorf("no published Windows build for %s", arch)
+		return Artifact{}, fmt.Errorf("no published %s build for %s", goos, arch)
 	}
 	tag := ref
 	if tag == "main" {
 		tag = "edge"
 	}
-	fmt.Fprintf(out, "Downloading cxz %s for windows/%s from GitHub…\n", ref, arch)
+	fmt.Fprintf(out, "Downloading cxz %s for %s/%s from GitHub…\n", ref, goos, arch)
 	metadata, err := fetchReleaseFile(ctx, client, releaseAPI+url.PathEscape(tag), 2<<20)
 	if err != nil {
 		return Artifact{}, fmt.Errorf("published build %q unavailable (main requires a successful CI publication): %w", ref, err)
@@ -75,7 +91,11 @@ func downloadWindows(ctx context.Context, client *http.Client, work, ref, arch s
 	if release.Draft || release.Tag != tag {
 		return Artifact{}, fmt.Errorf("release metadata does not match published tag %q", tag)
 	}
-	name := "cxz-" + tag + "-windows-" + arch + ".zip"
+	extension := ".zip"
+	if goos == "linux" {
+		extension = ".tar.gz"
+	}
+	name := "cxz-" + tag + "-" + goos + "-" + arch + extension
 	archive, err := findReleaseAsset(release, name)
 	if err != nil {
 		return Artifact{}, err
@@ -106,8 +126,14 @@ func downloadWindows(ctx context.Context, client *http.Client, work, ref, arch s
 	if err := checkAssetDigest(data, archive.Digest); err != nil {
 		return Artifact{}, err
 	}
-	path := filepath.Join(work, "cxz.exe")
-	if err := unpackWindowsArchive(data, path); err != nil {
+	binary := "cxz.exe"
+	unpack := unpackWindowsArchive
+	if goos == "linux" {
+		binary = "cxz"
+		unpack = unpackLinuxArchive
+	}
+	path := filepath.Join(work, binary)
+	if err := unpack(data, path); err != nil {
 		return Artifact{}, err
 	}
 	a := Artifact{Path: path, Version: tag}
@@ -122,7 +148,7 @@ func downloadWindows(ctx context.Context, client *http.Client, work, ref, arch s
 	}
 	// ValidateArtifact verifies module, native platform and clean build metadata
 	// before the command executes the candidate or replaces the installed image.
-	if err := ValidateArtifact(a); err != nil {
+	if err := ValidatePlatform(a, goos, arch); err != nil {
 		return Artifact{}, err
 	}
 	if tag == "edge" {
@@ -257,4 +283,56 @@ func unpackWindowsArchive(data []byte, path string) (err error) {
 		return err
 	}
 	return output.Close()
+}
+
+func unpackLinuxArchive(data []byte, path string) (err error) {
+	gzipReader, e := gzip.NewReader(bytes.NewReader(data))
+	if e != nil {
+		return e
+	}
+	defer gzipReader.Close()
+	tr := tar.NewReader(gzipReader)
+	header, e := tr.Next()
+	if e != nil {
+		return e
+	}
+	if header.Name != "cxz" || header.Typeflag != tar.TypeReg || header.Size <= 0 || header.Size > maxExecutableSize {
+		return fmt.Errorf("Linux archive must contain only a regular cxz within the size limit")
+	}
+	f, e := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0700)
+	if e != nil {
+		return e
+	}
+	defer func() {
+		f.Close()
+		if err != nil {
+			os.Remove(path)
+		}
+	}()
+	if _, e = io.Copy(f, tr); e != nil {
+		return e
+	}
+	if _, e = tr.Next(); e != io.EOF {
+		return fmt.Errorf("unexpected extra archive entry")
+	}
+	if e = f.Sync(); e != nil {
+		return e
+	}
+	return f.Close()
+}
+
+// ManagerImage resolves the immutable image published alongside a version tag.
+func ManagerImage(ctx context.Context, version string) (string, error) {
+	if !releaseTag.MatchString(version) {
+		return "", fmt.Errorf("release tag required")
+	}
+	b, e := fetchReleaseFile(ctx, &http.Client{Timeout: time.Minute}, releaseDownloads+url.PathEscape(version)+"/manager-image.txt", 4096)
+	if e != nil {
+		return "", e
+	}
+	image := strings.TrimSpace(string(b))
+	if !regexp.MustCompile(`^ghcr\.io/lesomnus/cxz@sha256:[a-f0-9]{64}$`).MatchString(image) {
+		return "", fmt.Errorf("invalid pinned manager image")
+	}
+	return image, nil
 }
