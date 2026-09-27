@@ -13,6 +13,7 @@ import (
 	"github.com/lesomnus/cxz/internal/dockerx"
 	"github.com/lesomnus/cxz/internal/engine"
 	"github.com/lesomnus/cxz/internal/transport"
+	"github.com/lesomnus/cxz/internal/versionpin"
 	"github.com/lesomnus/cxz/internal/wisp"
 	"io"
 	"net"
@@ -98,6 +99,32 @@ func Install(ctx context.Context, root, workspaceRoot, image string, recreate bo
 		return e
 	}
 	defer lock.Close()
+	p, e := versionpin.Load(root)
+	if e != nil {
+		return e
+	}
+	if p.Version != "" {
+		if !p.Ready {
+			return fmt.Errorf("version switch unfinished; retry cxz use %s", p.Version)
+		}
+		if p.Image == "" {
+			return fmt.Errorf("frontend-only version pin; run cxz use --unpin before installing a manager, then pin again")
+		}
+		if image == "" {
+			image = p.Image
+		}
+		if image != p.Image {
+			return versionpin.Check(root)
+		}
+	}
+	return InstallLocked(context.WithValue(ctx, installReservationKey{}, true), root, workspaceRoot, image, recreate, out)
+}
+
+type installReservationKey struct{}
+
+// InstallLocked is for the release-switch controller, which holds install.lock
+// across stopping runtimes, replacing the manager and resuming sessions.
+func InstallLocked(ctx context.Context, root, workspaceRoot, image string, recreate bool, out io.Writer) error {
 	v, e := transport.Load(root)
 	if e != nil && !os.IsNotExist(e) {
 		return e
@@ -150,11 +177,14 @@ func Install(ctx context.Context, root, workspaceRoot, image string, recreate bo
 		if old.Config.Labels["cxz.owner"] != v.Owner {
 			return fmt.Errorf("daemon name is occupied by an unowned container")
 		}
-		reservation, err := cxzupdate.ReserveInstall(ctx, v.Container, v.Owner, image)
-		if err != nil {
-			return err
+
+		if reserve, _ := ctx.Value(installReservationKey{}).(bool); reserve {
+			reservation, e := cxzupdate.ReserveInstall(ctx, v.Container, v.Owner, image)
+			if e != nil {
+				return e
+			}
+			defer reservation()
 		}
-		defer reservation()
 
 		if !recreate {
 			if old.Config.Image != image || previousRoot != workspaceRoot {

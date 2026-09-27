@@ -56,7 +56,8 @@ jobs:
           printf '%s\n' "ghcr.io/$GITHUB_REPOSITORY@$IMAGE_DIGEST" > dist/manager-image.txt
           args=()
           if [[ "$RELEASE_VERSION" == *-* ]]; then args+=(--prerelease); fi
-          gh release create "$RELEASE_VERSION" --verify-tag --generate-notes "${args[@]}" dist/*.tar.gz dist/*.zip dist/SHA256SUMS dist/manager-image.txt
+          if test -f "docs/releases/$RELEASE_VERSION.md"; then args+=(--notes-file "docs/releases/$RELEASE_VERSION.md"); else args+=(--generate-notes); fi
+          gh release create "$RELEASE_VERSION" --verify-tag "${args[@]}" dist/*.tar.gz dist/*.zip dist/SHA256SUMS dist/manager-image.txt
   notes:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
@@ -72,5 +73,6 @@ jobs:
           for file in docs/releases/v*.md; do
             test -f "$file" || continue
             version=$(basename "$file" .md)
+            gh release view "$version" >/dev/null 2>&1 || continue
             gh release edit "$version" --notes-file "$file"
           done

@@ -77,7 +77,8 @@ func build(ctx context.Context, work, ref string, out io.Writer, run func(*exec.
 	return a, nil
 }
 
-func ValidateArtifact(a Artifact) error {
+func ValidateArtifact(a Artifact) error { return ValidatePlatform(a, runtime.GOOS, runtime.GOARCH) }
+func ValidatePlatform(a Artifact, goos, arch string) error {
 	info, err := buildinfo.ReadFile(a.Path)
 	if err != nil {
 		return fmt.Errorf("read built executable: %w", err)
@@ -89,8 +90,8 @@ func ValidateArtifact(a Artifact) error {
 	for _, v := range info.Settings {
 		values[v.Key] = v.Value
 	}
-	if values["GOOS"] != runtime.GOOS || values["GOARCH"] != runtime.GOARCH {
-		return fmt.Errorf("built executable platform differs from %s/%s", runtime.GOOS, runtime.GOARCH)
+	if values["GOOS"] != goos || values["GOARCH"] != arch {
+		return fmt.Errorf("built executable platform differs from %s/%s", goos, arch)
 	}
 	if !validRevision.MatchString(a.Revision) || values["vcs.revision"] != a.Revision || values["vcs.modified"] != "false" {
 		return fmt.Errorf("built executable does not match the clean source revision %s", a.Revision)
