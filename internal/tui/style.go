@@ -23,12 +23,26 @@ func providerLabel(provider string) string {
 	}
 }
 
+// The greens form three steps of brightness, and the brightest one answers only
+// one question: where does typing go right now. Nothing else uses it, so a
+// focused border, a focused prompt and the cursor are the lightest thing on
+// screen. accent stays one step down and keeps everything it already marked --
+// spinners, cursors in lists, unread markers, rules -- none of which is focus.
+// Named so that the places painting a green surface, and the tests reading one
+// back, cannot drift from the step they meant.
+const (
+	focusGreen  = "#AEFF98"
+	accentGreen = "#24d17c"
+	quietGreen  = "#07898f"
+)
+
 var (
-	accent           = lipgloss.NewStyle().Foreground(lipgloss.Color("#24d17c"))
+	focus            = lipgloss.NewStyle().Foreground(lipgloss.Color(focusGreen))
+	accent           = lipgloss.NewStyle().Foreground(lipgloss.Color(accentGreen))
 	magenta          = lipgloss.NewStyle().Foreground(lipgloss.Color("#ED79D4"))
-	inputCursorStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#AEFF98"))
-	brand            = lipgloss.NewStyle().Foreground(lipgloss.Color("#aeff98")).Background(lipgloss.Color("#000000")).Bold(true)
-	teal             = lipgloss.NewStyle().Foreground(lipgloss.Color("#07898f"))
+	inputCursorStyle = focus
+	brand            = lipgloss.NewStyle().Foreground(lipgloss.Color(accentGreen)).Background(lipgloss.Color("#000000")).Bold(true)
+	teal             = lipgloss.NewStyle().Foreground(lipgloss.Color(quietGreen))
 	lavender         = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#7255A0", Dark: "#C9B6EE"})
 	blue             = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#42758B", Dark: "#ACD6EB"})
 	peach            = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#A35D52", Dark: "#F2B8A7"})
@@ -64,7 +78,7 @@ func newComposer() textarea.Model {
 	input.MaxWidth = 0
 	input.SetWidth(92)
 	input.SetHeight(3)
-	input.FocusedStyle.Prompt = accent
+	input.FocusedStyle.Prompt = focus
 	input.BlurredStyle.Prompt = muted
 	input.FocusedStyle.CursorLine = lipgloss.NewStyle()
 	input.BlurredStyle.CursorLine = lipgloss.NewStyle()
@@ -144,7 +158,7 @@ func clip(s string, width int) string {
 func frame(body string, width int, highlighted bool) string {
 	border := teal
 	if highlighted {
-		border = accent
+		border = focus
 	}
 	style := lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Width(max(1, width-2))
 	// Lip Gloss 1.x emits empty SGR parameters when both border colors are

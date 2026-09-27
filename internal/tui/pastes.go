@@ -202,7 +202,8 @@ func (m *model) decorateInputPastes(view string) string {
 			return view
 		}
 		token := decoratePastes(s.token, m.pastes)
-		style := lipgloss.NewStyle().Foreground(lipgloss.Color("#031e2c")).Background(lipgloss.Color("#aeff98"))
+		// One step below the focus green: a selected chip is not where typing goes.
+		style := lipgloss.NewStyle().Foreground(lipgloss.Color("#031e2c")).Background(lipgloss.Color(accentGreen))
 		lines := strings.Split(view, "\n")
 		remaining := token
 		for i, line := range lines {
