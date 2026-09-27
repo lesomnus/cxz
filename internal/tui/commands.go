@@ -29,7 +29,7 @@ var slashCommands = []slashCommand{
 	{"/logs", "Scrollable diagnostics; add project for all project sources"},
 	{"/memory", "Browse retained agent memory, instructions and history"},
 	{"/record", "Start/stop diagnostic recording · F9"},
-	{"/settings", "Shared Docker status and maintenance · Ctrl+Shift+,"},
+	{"/settings", "Shared Docker status and maintenance · Ctrl+."},
 	{"/terminal", "Open container terminal; Ctrl+` folds it"},
 }
 

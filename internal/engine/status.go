@@ -8,6 +8,11 @@ import (
 )
 
 type Info struct {
+	CXZVersion      string `json:"cxz_version,omitempty"`
+	CXZRevision     string `json:"cxz_revision,omitempty"`
+	CXZChannel      string `json:"cxz_channel,omitempty"`
+	CXZPin          string `json:"cxz_pin,omitempty"`
+	CXZError        string `json:"cxz_error,omitempty"`
 	Mode            string `json:"mode"`
 	State           string `json:"state"`
 	Health          string `json:"health,omitempty"`

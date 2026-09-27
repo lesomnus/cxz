@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/cxzupdate"
 	"github.com/lesomnus/cxz/internal/engine"
+	"github.com/lesomnus/cxz/internal/versionpin"
 )
 
 func (m *Manager) dockerEngine() engine.Engine { return engine.Engine{Root: m.Root, Owner: m.Owner} }
@@ -63,6 +65,19 @@ func (m *Manager) Docker(ctx context.Context, r *api.DockerInput) (*api.Receipt,
 		info, err := e.Info(ctx)
 		if err != nil {
 			return nil, err
+		}
+		build := cxzupdate.Current()
+		info.CXZVersion, info.CXZRevision = build.Version, build.Revision
+		channel, channelErr := versionpin.Channel(m.Root)
+		info.CXZChannel = channel
+		if channelErr != nil {
+			info.CXZError = channelErr.Error()
+		}
+		pin, pinErr := versionpin.Load(m.Root)
+		if pinErr != nil {
+			info.CXZError = pinErr.Error()
+		} else if pin.Pinned() {
+			info.CXZPin = pin.Version
 		}
 		data, err := json.Marshal(info)
 		return &api.Receipt{Status: string(data)}, err
