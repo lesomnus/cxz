@@ -1,7 +1,12 @@
 # Wisp
 
 `cxz wisp`는 컨테이너 remote user 권한으로 실행하는 내부 workspace helper다.
-첫 적용 범위는 읽기 전용 경로 탐색이다. 에이전트 supervisor, 인증, 대화, 터미널 PTY는 변경하지 않는다.
+현재 경로 탐색과 `@redact` 임시 비밀 파일 처리를 담당한다. 에이전트 프로세스와
+대화 실행은 Session supervisor가 관리한다. 구성요소의 구분은 [용어집](glossary.md)을 참고한다.
+
+`secret/check`, `secret/put`, `secret/delete`, `secret/clear` 요청으로 비밀 파일을
+처리하며, 시작 시 오래된 파일을 정리한다. 연결 종료와 비밀 파일의 수명은 별개다.
+저장 위치·보존 정책·접근 범위는 [@redact](redact.md)를 참고한다.
 
 ## 연결과 수명
 

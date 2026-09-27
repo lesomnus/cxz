@@ -16,27 +16,18 @@ import (
 	"github.com/lesomnus/cxz/internal/transport"
 	"github.com/lesomnus/cxz/internal/tui"
 	"github.com/lesomnus/cxz/internal/versionpin"
-	"github.com/lesomnus/xli"
-	"github.com/lesomnus/xli/arg"
 	"github.com/lesomnus/xli/flg"
 	"google.golang.org/grpc"
 )
 
-func connectCommand() *xli.Command {
-	endpoint := os.Getenv("CXZ_ENDPOINT")
-	tokenFile := os.Getenv("CXZ_TOKEN_FILE")
-	session := ""
-	return &xli.Command{Name: "connect", Brief: "Open all configured connections, or connect to NAME / ENDPOINT", Args: arg.Args{&arg.String{Name: "ENDPOINT", Optional: true, Default: &endpoint}}, Flags: flg.Flags{
-		&flg.String{Name: "token-file", Brief: "TCP bearer token file (or CXZ_TOKEN_FILE)", Default: &tokenFile},
-		&flg.String{Name: "session", Brief: "Initially select a remote session ID or alias", Default: &session},
-	}, Handler: xli.OnRun(func(ctx context.Context, c *xli.Command, _ xli.Next) error {
-		root := c
-		for root.HasParent() {
-			root = root.Parent()
-		}
-		return runRemote(ctx, flg.MustGet[string](root, "state"), arg.MustGet[string](c, "ENDPOINT"), flg.MustGet[string](c, "token-file"), flg.MustGet[string](c, "session"))
-	})}
+func remoteFlags() flg.Flags {
+	return flg.Flags{
+		&flg.String{Name: "endpoint", Brief: "Remote connection name or endpoint (or CXZ_ENDPOINT)", Default: remoteDefault(os.Getenv("CXZ_ENDPOINT"))},
+		&flg.String{Name: "token-file", Brief: "TCP bearer token file (or CXZ_TOKEN_FILE)", Default: remoteDefault(os.Getenv("CXZ_TOKEN_FILE"))},
+		&flg.String{Name: "session", Brief: "Initially selected remote session ID or alias", Default: remoteDefault("")},
+	}
 }
+func remoteDefault(v string) *string { return &v }
 
 func runRemote(ctx context.Context, state, endpoint, tokenFile, session string) error {
 	state, err := filepath.Abs(state)
@@ -57,7 +48,7 @@ func runRemote(ctx context.Context, state, endpoint, tokenFile, session string) 
 		}
 	}
 	if endpoint == "" {
-		return fmt.Errorf("remote endpoint required: cxz connect ssh://user@host (or set CXZ_ENDPOINT)")
+		return fmt.Errorf("remote endpoint required: cxz --endpoint ssh://user@host (or set CXZ_ENDPOINT)")
 	}
 	e, err := transport.ParseEndpoint(endpoint)
 	if err != nil {

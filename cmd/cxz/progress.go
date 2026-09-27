@@ -75,7 +75,7 @@ func provisionDescription(step string) string {
 }
 
 // Status is sampled from persisted server checkpoints, not a guessed percentage.
-// Only stderr is used; --no-attach structured stdout stays machine-readable.
+// Only stderr is used; structured stdout stays machine-readable.
 func prepareWithProgress(ctx context.Context, out io.Writer, resolve func(context.Context) (*api.Project, error), open func() error, interval time.Duration) error {
 	started := time.Now()
 	fmt.Fprintln(out, "cxz: configuration checks passed; requesting workspace preparation")

@@ -5,7 +5,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"os"
 	"runtime"
 
 	"github.com/lesomnus/cxz/internal/cxzupdate"
@@ -16,13 +15,13 @@ import (
 )
 
 func newRoot(state string) *xli.Command {
-	root := &xli.Command{Name: "cxz", Brief: "Remote frontend for Linux cxz daemons", Flags: flg.Flags{&flg.String{Name: "state", Brief: "Local client settings and recordings directory", Default: &state}}, Handler: xli.OnRun(func(ctx context.Context, c *xli.Command, _ xli.Next) error {
-		return runRemote(versionpin.WithClient(cxzupdate.WithClient(ctx, flg.MustGet[string](c, "state")), flg.MustGet[string](c, "state")), flg.MustGet[string](c, "state"), os.Getenv("CXZ_ENDPOINT"), os.Getenv("CXZ_TOKEN_FILE"), "")
+	root := &xli.Command{Name: "cxz", Brief: "Remote frontend for Linux cxz daemons", Flags: append(remoteFlags(), &flg.String{Name: "state", Brief: "Local client settings and recordings directory", Default: &state}), Handler: xli.OnRun(func(ctx context.Context, c *xli.Command, _ xli.Next) error {
+		return runRemote(versionpin.WithClient(cxzupdate.WithClient(ctx, flg.MustGet[string](c, "state")), flg.MustGet[string](c, "state")), flg.MustGet[string](c, "state"), flg.MustGet[string](c, "endpoint"), flg.MustGet[string](c, "token-file"), flg.MustGet[string](c, "session"))
 	})}
 	plain := false
-	root.Commands = xli.Commands{connectCommand(), editCommand(), selfUpdateCommand(), useCommand(), selfInstallCommand(), integrationCommand(),
-		{Name: "terminal-info", Brief: "Inspect terminal environment and interactive palette", Flags: flg.Flags{&flg.Switch{Name: "plain", Brief: "Print a text report", Default: &plain}}, Handler: xli.OnRun(func(ctx context.Context, c *xli.Command, _ xli.Next) error {
-			return tui.RunTerminalInfo(ctx, c.ReadCloser, c.Writer, flg.MustGet[bool](c, "plain"))
+	root.Commands = xli.Commands{editCommand(), selfUpdateCommand(), useCommand(), selfInstallCommand(), integrationCommand(),
+		{Name: "terminal-info", Brief: "Print terminal environment and palette codes", Flags: flg.Flags{&flg.Switch{Name: "plain", Brief: "Print a text report", Default: &plain}}, Handler: xli.OnRun(func(ctx context.Context, c *xli.Command, _ xli.Next) error {
+			return tui.RunTerminalInfo(ctx, c.ReadCloser, c.Writer, true)
 		})},
 		{Name: "version", Brief: "Print frontend version", Handler: xli.OnRun(func(_ context.Context, c *xli.Command, _ xli.Next) error {
 			_, err := fmt.Fprintf(c.Writer, "cxz %s %s/%s (remote frontend)\n", version, runtime.GOOS, runtime.GOARCH)

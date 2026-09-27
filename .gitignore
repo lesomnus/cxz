@@ -5,3 +5,8 @@
 /.cxz-test-workspaces/
 *.test
 coverage.out
+
+# Local executable and self-update artifacts
+/cxz
+/cxz.previous
+/.cxz.update.lock
