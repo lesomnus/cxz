@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/cxzupdate"
+	"github.com/lesomnus/cxz/internal/versionpin"
 	"github.com/lesomnus/xli"
 	"github.com/lesomnus/xli/flg"
 	"os"
@@ -16,7 +17,7 @@ func automaticUpdateCommands() xli.Commands {
 	var commands xli.Commands
 	for _, name := range []string{"status", "check", "enable", "disable"} {
 		server := false
-		commands = append(commands, &xli.Command{Name: name, Brief: map[string]string{"status": "Print cxz automatic update state", "check": "Check the latest successful main build without restarting", "enable": "Enable cxz automatic updates", "disable": "Pause cxz automatic updates"}[name], Flags: flg.Flags{&flg.Switch{Name: "server", Brief: "Operate on the locally installed manager instead of this frontend", Default: &server}}, Handler: xli.OnRun(func(ctx context.Context, c *xli.Command, _ xli.Next) error {
+		commands = append(commands, &xli.Command{Name: name, Brief: map[string]string{"status": "Print cxz automatic update state", "check": "Check the selected release channel without restarting", "enable": "Enable cxz automatic updates", "disable": "Pause cxz automatic updates"}[name], Flags: flg.Flags{&flg.Switch{Name: "server", Brief: "Operate on the locally installed manager instead of this frontend", Default: &server}}, Handler: xli.OnRun(func(ctx context.Context, c *xli.Command, _ xli.Next) error {
 			root := c
 			for root.HasParent() {
 				root = root.Parent()
@@ -73,6 +74,10 @@ func localUpdateCommand(ctx context.Context, root, action string) ([]byte, error
 	if e != nil {
 		return nil, e
 	}
-	b, e := json.MarshalIndent(map[string]any{"channel": "edge", "enabled": policy.Active(), "running": cxzupdate.Current(), "update": state}, "", "  ")
+	channel, e := versionpin.Channel(root)
+	if e != nil {
+		return nil, e
+	}
+	b, e := json.MarshalIndent(map[string]any{"channel": channel, "enabled": policy.Active(), "running": cxzupdate.Current(), "update": state}, "", "  ")
 	return append(b, '\n'), e
 }

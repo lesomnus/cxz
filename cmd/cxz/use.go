@@ -12,6 +12,7 @@ import (
 	"github.com/lesomnus/xli/flg"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"time"
@@ -26,7 +27,7 @@ type useBackend struct {
 func useCommand() *xli.Command {
 	selected := ""
 	unpin := false
-	return &xli.Command{Name: "use", Brief: "Pin a published cxz release and force restart its components (active work is interrupted)", Args: arg.Args{&arg.String{Name: "VERSION", Optional: true, Default: &selected}}, Flags: flg.Flags{&flg.Switch{Name: "unpin", Brief: "Remove the version pin without restarting", Default: &unpin}}, Handler: xli.OnRun(func(ctx context.Context, c *xli.Command, _ xli.Next) error {
+	return &xli.Command{Name: "use", Brief: "Select @edge/@stable or pin VERSION; force restart components (active work is interrupted)", Args: arg.Args{&arg.String{Name: "VERSION", Optional: true, Default: &selected}}, Flags: flg.Flags{&flg.Switch{Name: "unpin", Brief: "Remove the version pin without restarting", Default: &unpin}}, Handler: xli.OnRun(func(ctx context.Context, c *xli.Command, _ xli.Next) error {
 		rootCmd := c
 		for rootCmd.HasParent() {
 			rootCmd = rootCmd.Parent()
@@ -41,14 +42,14 @@ func useCommand() *xli.Command {
 			return fmt.Errorf("--unpin does not accept VERSION")
 		}
 		if version == "" && !clear {
-			p, e := versionpin.Load(root)
+			p, e := useStatus(root)
 			if e != nil {
 				return e
 			}
 			return json.NewEncoder(c.Writer).Encode(p)
 		}
 		if !clear {
-			if e = versionpin.Validate(version); e != nil {
+			if e = versionpin.ValidateSelection(version); e != nil {
 				return e
 			}
 		}
@@ -66,6 +67,11 @@ func useCommand() *xli.Command {
 		}
 		defer installation.Close()
 		if clear {
+			if p, e := loadUsePlan(root); e == nil {
+				return fmt.Errorf("unfinished switch; retry cxz use %s", p.Requested)
+			} else if !os.IsNotExist(e) {
+				return e
+			}
 			if e = clearUseBackend(ctx, root); e != nil {
 				return e
 			}
@@ -78,7 +84,12 @@ func useCommand() *xli.Command {
 		return runUse(ctx, root, version, c.ErrWriter, c.Writer)
 	})}
 }
-func runUse(ctx context.Context, root, version string, progress, out io.Writer) error {
+func runUse(ctx context.Context, root, requested string, progress, out io.Writer) error {
+	plan, e := resolveUsePlan(ctx, root, requested)
+	if e != nil {
+		return e
+	}
+	version := plan.Pin.Version
 	work, e := os.MkdirTemp("", "cxz-use-")
 	if e != nil {
 		return e
@@ -93,7 +104,12 @@ func runUse(ctx context.Context, root, version string, progress, out io.Writer) 
 		return e
 	}
 	defer replacement.Close()
-	a, e := selfupdate.DownloadRelease(ctx, work, version, runtime.GOOS, runtime.GOARCH, progress)
+	var a selfupdate.Artifact
+	if plan.Release != nil {
+		a, e = selfupdate.DownloadChannel(ctx, work, runtime.GOOS, runtime.GOARCH, *plan.Release, progress)
+	} else {
+		a, e = selfupdate.DownloadRelease(ctx, work, version, runtime.GOOS, runtime.GOARCH, progress)
+	}
 	if e != nil {
 		return e
 	}
@@ -104,7 +120,27 @@ func runUse(ctx context.Context, root, version string, progress, out io.Writer) 
 	if e = verifyUpdatedExecutable(ctx, a, work); e != nil {
 		return e
 	}
-	pin := versionpin.Pin{Version: version, Revision: a.Revision, Generation: core.ID(), At: time.Now()}
+	if plan.Release != nil {
+		probe, cancel := context.WithTimeout(ctx, 10*time.Second)
+		b, err := exec.CommandContext(probe, a.Path, "_use-capabilities").Output()
+		cancel()
+		var caps struct {
+			Channels int `json:"channels"`
+		}
+		if err != nil || json.Unmarshal(b, &caps) != nil || caps.Channels != 1 {
+			return fmt.Errorf("target release does not support channel selection")
+		}
+	}
+	pin := plan.Pin
+	pin.Revision = a.Revision
+	if pin.Generation == "" {
+		pin.Generation = core.ID()
+		pin.At = time.Now()
+	}
+	plan.Pin = pin
+	if e = core.WriteJSON(usePlanPath(root), plan); e != nil {
+		return e
+	}
 	backend, e := prepareUseBackend(ctx, root, pin, progress)
 	if e != nil {
 		return e
@@ -117,7 +153,7 @@ func runUse(ctx context.Context, root, version string, progress, out io.Writer) 
 	}
 	if backend != nil {
 		if e = backend.apply(ctx); e != nil {
-			return fmt.Errorf("version switch incomplete; retry cxz use %s: %w", version, e)
+			return fmt.Errorf("version switch incomplete; retry cxz use %s: %w", requested, e)
 		}
 	}
 	// Every target process is serving before notifying local frontends.
@@ -125,7 +161,7 @@ func runUse(ctx context.Context, root, version string, progress, out io.Writer) 
 		replacement.Previous = replacement.Target + ".previous-" + pin.Generation + ".exe"
 	}
 	if _, e = replacement.Apply(); e != nil {
-		return fmt.Errorf("server switch completed but client replacement failed; retry cxz use %s: %w", version, e)
+		return fmt.Errorf("server switch completed but client replacement failed; retry cxz use %s: %w", requested, e)
 	}
 	pin.Ready = true
 	if e = versionpin.Save(root, pin); e != nil {
@@ -136,5 +172,12 @@ func runUse(ctx context.Context, root, version string, progress, out io.Writer) 
 			return e
 		}
 	}
-	return json.NewEncoder(out).Encode(pin)
+	if e = os.Remove(usePlanPath(root)); e != nil {
+		return e
+	}
+	status, e := useStatus(root)
+	if e != nil {
+		return e
+	}
+	return json.NewEncoder(out).Encode(status)
 }

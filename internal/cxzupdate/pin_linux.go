@@ -2,6 +2,8 @@ package cxzupdate
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"github.com/lesomnus/cxz/internal/core"
@@ -10,8 +12,22 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 )
+
+var mappedDigest = sync.OnceValues(func() (string, error) {
+	f, e := os.Open("/proc/self/exe")
+	if e != nil {
+		return "", e
+	}
+	defer f.Close()
+	h := sha256.New()
+	if _, e = io.Copy(h, f); e != nil {
+		return "", e
+	}
+	return hex.EncodeToString(h.Sum(nil)), nil
+})
 
 // PinSelf preserves the actual mapped image even after its original pathname was
 // atomically replaced. Rollback must not resolve a mutable tools symlink.
@@ -20,7 +36,11 @@ func PinSelf(root string) (string, error) {
 	if !b.Managed() {
 		return os.Executable()
 	}
-	path := filepath.Join(root, "runtime-binaries", b.Revision, "cxz")
+	sum, e := mappedDigest()
+	if e != nil {
+		return "", e
+	}
+	path := filepath.Join(root, "runtime-binaries", b.Revision, sum, "cxz")
 	if st, e := os.Stat(path); e == nil && st.Mode().IsRegular() {
 		return path, nil
 	}
@@ -64,7 +84,7 @@ func ValidSessionBinary(root, path string) bool {
 		return false
 	}
 	p := strings.Split(strings.TrimPrefix(path, prefix), "/")
-	return len(p) == 2 && revisionPattern.MatchString(p[0]) && p[1] == "cxz" && filepath.Clean(path) == path
+	return (len(p) == 2 || len(p) == 3) && revisionPattern.MatchString(p[0]) && p[len(p)-1] == "cxz" && (len(p) == 2 || hashPattern.MatchString(p[1])) && filepath.Clean(path) == path
 }
 func CheckPinned(root, path string) error {
 	if !ValidSessionBinary(root, path) {
@@ -134,9 +154,9 @@ func CheckSupervisor(ctx context.Context, root, path string) error {
 	if json.Unmarshal(b, &build) != nil || !build.Managed() || build.Platform != Current().Platform || build.Protocol != Protocol || build.Schema != Schema {
 		return fmt.Errorf("supervisor build is incompatible")
 	}
-	expected := filepath.Base(filepath.Dir(path))
+	expected := strings.Split(strings.TrimPrefix(path, filepath.Join(root, "runtime-binaries")+"/"), "/")[0]
 	if ValidBinary(path) {
-		expected = filepath.Base(filepath.Dir(filepath.Dir(path)))
+		expected = strings.Split(strings.TrimPrefix(path, "/cxz/tools/cxz-builds/releases/"), "/")[0]
 	}
 	if build.Revision != expected {
 		return fmt.Errorf("supervisor revision does not match immutable path")

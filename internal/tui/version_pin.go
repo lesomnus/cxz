@@ -24,3 +24,25 @@ func (m *model) pinnedRestart() tea.Cmd {
 	m.pinRestart = &versionpin.Restart{Executable: c.Executable}
 	return tea.Quit
 }
+
+func (m *model) releaseSelectionText() string {
+	c, ok := versionpin.ClientFrom(m.ctx)
+	if !ok {
+		return ""
+	}
+	p, e := versionpin.Load(c.Root)
+	if e != nil {
+		return "cxz release selection unavailable: " + e.Error()
+	}
+	if p.Version != "" && !p.Ready {
+		return "cxz release switching: " + p.Selection()
+	}
+	if p.Pinned() {
+		return "cxz release pinned: " + p.Version
+	}
+	channel, e := versionpin.Channel(c.Root)
+	if e != nil {
+		return "cxz channel unavailable: " + e.Error()
+	}
+	return "cxz update channel: @" + channel
+}

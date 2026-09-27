@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Publish immutable cxz executables and a pinned edge update manifest."""
+"""Publish immutable executables and a complete channel release snapshot."""
 import hashlib
 import json
 import pathlib
@@ -16,6 +16,10 @@ if not re.fullmatch(r"ghcr.io/lesomnus/cxz@sha256:[a-f0-9]{64}", image):
     raise SystemExit("manager image must be pinned by digest")
 if int(sequence) <= 0:
     raise SystemExit("invalid CI publication sequence")
+tag = sys.argv[5] if len(sys.argv) > 5 else "edge"
+if tag != "edge" and not re.fullmatch(r"v[0-9]+\.[0-9]+\.[0-9]+", tag):
+    raise SystemExit("channel manifests require edge or a stable tag")
+version = "source-" + revision[:12] if tag == "edge" else tag
 output = root / "auto-update"
 output.mkdir(exist_ok=True)
 assets = {}
@@ -30,6 +34,6 @@ for system in ("linux", "windows"):
             "name": name, "sha256": hashlib.sha256(target.read_bytes()).hexdigest()
         }
 ancestors = subprocess.check_output(["git", "rev-list", "--max-count=4096", revision], text=True).splitlines()[1:]
-manifest = dict(ancestors=ancestors, revision=revision, sequence=int(sequence), protocol=1, schema=1,
+manifest = dict(tag=tag, version=version, ancestors=ancestors, revision=revision, sequence=int(sequence), protocol=1, schema=1,
                 image=image, assets=assets)
 (root / "cxz-update.json").write_text(json.dumps(manifest, indent=2) + "\n")

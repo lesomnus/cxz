@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"github.com/lesomnus/cxz/internal/versionpin"
 	"io"
 	"net/http"
 	"os"
@@ -148,5 +149,62 @@ func TestPublishedBuildCannotDowngradeUnknownLocalRevision(t *testing.T) {
 	}
 	if !r.CanReplace(Build{Revision: r.Revision}) {
 		t.Fatal("current build rejected")
+	}
+}
+
+func TestStablePolicyResolvesStableAndResetsEdgeCache(t *testing.T) {
+	root := t.TempDir()
+	if e := versionpin.Save(root, versionpin.Pin{Version: "v0.1.2", Channel: "stable", Ready: true}); e != nil {
+		t.Fatal(e)
+	}
+	old := testRelease(nil)
+	old.Sequence = 9999
+	if e := Save(root, State{Channel: "edge", CheckedAt: time.Now(), AppliedSequence: 9999, Release: &old}); e != nil {
+		t.Fatal(e)
+	}
+	stable := testRelease(nil)
+	stable.Tag = "v0.2.0"
+	stable.Version = stable.Tag
+	stable.Sequence = 1
+	previous := http.DefaultTransport
+	t.Cleanup(func() { http.DefaultTransport = previous })
+	http.DefaultTransport = roundTrip(func(r *http.Request) (*http.Response, error) {
+		var body string
+		switch r.URL.Path {
+		case "/repos/lesomnus/cxz/releases":
+			body = `[{"tag_name":"v0.2.0"},{"tag_name":"v0.1.2"}]`
+		case "/lesomnus/cxz/releases/download/v0.2.0/cxz-update.json":
+			body = string(mustJSON(t, stable))
+		default:
+			t.Fatalf("unexpected channel request %s", r.URL)
+		}
+		return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(body)), Header: http.Header{}}, nil
+	})
+	got, e := Check(context.Background(), root, false)
+	if e != nil || got.Channel != "stable" || got.Release.Version != "v0.2.0" {
+		t.Fatal(got, e)
+	}
+	current := Build{Version: "v0.3.0", Revision: strings.Repeat("a", 40)}
+	stable.Ancestors = []string{current.Revision}
+	if stable.CanReplace(current) {
+		t.Fatal("stable downgrade allowed despite version floor")
+	}
+	current.Version = "v0.1.2"
+	if !stable.CanReplace(current) {
+		t.Fatal("forward stable rejected")
+	}
+}
+func TestDifferentArtifactsAtSameRevisionHaveDistinctPaths(t *testing.T) {
+	a := testRelease([]byte("edge binary"))
+	a.Tag = "edge"
+	a.Version = "source-" + a.Revision[:12]
+	b := testRelease([]byte("stable binary"))
+	b.Tag = "v0.2.0"
+	b.Version = b.Tag
+	if Path("/cxz/tools/cxz-builds", a, "linux/amd64") == Path("/cxz/tools/cxz-builds", b, "linux/amd64") {
+		t.Fatal("same revision aliased different artifacts")
+	}
+	if !ValidBinary(Path("/cxz/tools/cxz-builds", a, "linux/amd64")) {
+		t.Fatal("new immutable path rejected")
 	}
 }

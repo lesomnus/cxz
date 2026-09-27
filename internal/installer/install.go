@@ -103,7 +103,10 @@ func Install(ctx context.Context, root, workspaceRoot, image string, recreate bo
 	if e != nil {
 		return e
 	}
-	if p.Version != "" {
+	if p.Version != "" && !p.Ready {
+		return versionpin.Check(root)
+	}
+	if p.Pinned() {
 		if !p.Ready {
 			return fmt.Errorf("version switch unfinished; retry cxz use %s", p.Version)
 		}
@@ -116,6 +119,9 @@ func Install(ctx context.Context, root, workspaceRoot, image string, recreate bo
 		if image != p.Image {
 			return versionpin.Check(root)
 		}
+	}
+	if p.Ready && p.Channel != "" && image == "" {
+		image = p.Image
 	}
 	return InstallLocked(context.WithValue(ctx, installReservationKey{}, true), root, workspaceRoot, image, recreate, out)
 }
@@ -222,6 +228,11 @@ func InstallLocked(ctx context.Context, root, workspaceRoot, image string, recre
 		return e
 	}
 	args := []string{"run", "-d", "--name", v.Container, "--restart", "unless-stopped", "--label", "cxz.role=daemon", "--label", "cxz.owner=" + v.Owner, "--mount", "type=volume,source=" + v.StateVolume + ",target=/var/lib/cxz", "--mount", "type=volume,source=" + v.ToolsVolume + ",target=/cxz/tools", "--mount", "type=bind,source=" + workspaceRoot + ",target=" + workspaceRoot, "-e", "CXZ_OWNER=" + v.Owner, "-e", "CXZ_WORKSPACE_ROOT=" + workspaceRoot, "-e", "CXZ_TOOLS_VOLUME=" + v.ToolsVolume, "-e", "CXZ_MANAGER_IMAGE=" + image, "-e", "CXZ_MANAGER_CONTAINER=" + v.Container}
+	if p, e := versionpin.Load(root); e != nil {
+		return e
+	} else if p.Channel != "" {
+		args = append(args, "-e", "CXZ_UPDATE_CHANNEL="+p.Channel)
+	}
 	args = append(args, "-e", "CXZ_HOST_UID="+strconv.Itoa(os.Getuid()), "-e", "CXZ_HOST_GID="+strconv.Itoa(os.Getgid()))
 	// -v recreates this installation's empty directory after host reboot;
 	// projects validate it is backed by the engine host's real tmpfs.

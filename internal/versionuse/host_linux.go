@@ -49,7 +49,7 @@ func policy(ctx context.Context, v transport.Installation, p versionpin.Pin, act
 }
 func Clear(ctx context.Context, root string) error {
 	if tx, e := Load(root); e == nil && tx.Phase != "complete" {
-		return fmt.Errorf("version switch unfinished; retry cxz use %s", tx.Pin.Version)
+		return fmt.Errorf("version switch unfinished; retry cxz use %s", tx.Pin.Selection())
 	} else if e != nil && !os.IsNotExist(e) {
 		return e
 	}
@@ -87,8 +87,8 @@ func Prepare(ctx context.Context, root string, p versionpin.Pin, out io.Writer) 
 		return nil, e
 	}
 	if previous.Phase != "" && previous.Phase != "complete" {
-		if previous.Pin.Version != p.Version || previous.Pin.Revision != p.Revision || previous.Pin.Image != p.Image {
-			return nil, fmt.Errorf("unfinished switch to %s; retry that exact release first", previous.Pin.Version)
+		if previous.Pin.Version != p.Version || previous.Pin.Revision != p.Revision || previous.Pin.Image != p.Image || previous.Pin.Channel != p.Channel {
+			return nil, fmt.Errorf("unfinished switch to %s; retry that exact release first", previous.Pin.Selection())
 		}
 		return &previous, nil
 	}
@@ -262,7 +262,7 @@ func Apply(ctx context.Context, root string, tx *Transaction, out io.Writer) err
 		}
 		// installer recreates only the manager and publishes tools atomically.
 		if e = installer.InstallLocked(ctx, root, v.WorkspaceRoot, p.Image, true, out); e != nil {
-			return fmt.Errorf("manager installation failed; previous manager retained as %s; retry cxz use %s: %w", backup, p.Version, e)
+			return fmt.Errorf("manager installation failed; previous manager retained as %s; retry cxz use %s: %w", backup, p.Selection(), e)
 		}
 		tx.Phase = "resuming"
 		if e = save(root, *tx); e != nil {

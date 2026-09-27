@@ -93,7 +93,7 @@ func (m *Manager) cxzUpdateStep(ctx context.Context) {
 	r := *s.Release
 	if !r.CanReplace(cxzupdate.Current()) {
 		s.State = "waiting"
-		s.Reason = "running revision is not an ancestor of published edge"
+		s.Reason = "selected channel cannot replace the running build"
 		_ = cxzupdate.Save(m.Root, s)
 		return
 	}

@@ -373,11 +373,14 @@ func (m *model) settingsScreen() string {
 	}
 	lines = append(lines, accent.Render(strings.Repeat("─", inner)), "", "Configure defaults and overrides with cxz edit.")
 	current := cxzupdate.Current()
-	lines = append(lines, "", "cxz updates · edge (latest successful main CI)", "Frontend running: "+current.Revision, "Frontend state: "+m.autoState.State+" · "+m.autoState.Reason)
+	lines = append(lines, "", "cxz automatic updates", "Frontend running: "+current.Revision, "Frontend state: "+m.autoState.State+" · "+m.autoState.Reason)
 	if m.autoState.Release != nil {
 		lines = append(lines, "Target: "+m.autoState.Release.Revision)
 	}
 	lines = append(lines, "Server policy/status: cxz self-update status --server", "Server and frontend policies are independent.")
+	if selection := m.releaseSelectionText(); selection != "" {
+		lines = append(lines, "", selection)
+	}
 	if p.loaded && p.info.ConfiguredImage != p.info.Image {
 		lines = append(lines, "Saved image: "+p.info.ConfiguredImage)
 	}
