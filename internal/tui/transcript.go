@@ -43,7 +43,7 @@ func eventView(s *api.Session, e *api.Event, width int) (out string) {
 			stamp = time.UnixMilli(e.TimeMs).Local().Format("01-02 15:04")
 		}
 		text := strings.Split(ansi.Hardwrap(safeText(e.Text), max(1, width-2), true), "\n")
-		rows := []string{"", timestamp.Render(clip("  "+stamp, width))}
+		rows := []string{"", promptTimestamp.Render(clip("  "+stamp, width))}
 		for i, line := range text {
 			prefix := "  "
 			if i == 0 {
