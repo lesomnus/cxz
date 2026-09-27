@@ -103,6 +103,23 @@ func TestCommandOutputTailAndCompletion(t *testing.T) {
 	if len(outputTail(strings.Repeat("x", 100000))) > 32768 {
 		t.Fatal("unbounded tail")
 	}
+	// Only a running command of the current run can show streamed output. Render
+	// folds chunks for that case alone, so both of these must stay silent.
+	running := []byte(`{"item":{"type":"commandExecution","command":"echo test","status":"inProgress"}}`)
+	for _, tc := range []struct{ run, state, text string }{
+		{"previous", "working", "stale"},
+		{"run", "idle", "quiet"},
+	} {
+		m.current().State = tc.state
+		m.events["s"] = []*api.Event{
+			{Seq: 1, RunId: tc.run, Kind: "tool_call", RequestId: "c", Payload: running},
+			{Seq: 2, RunId: tc.run, Kind: "tool_output", RequestId: "c", Text: tc.text + "\n"},
+		}
+		m.render()
+		if strings.Contains(ansi.Strip(m.view.View()), tc.text) {
+			t.Fatal("streamed output shown outside a live command", tc.run, tc.state)
+		}
+	}
 }
 func TestSelectedQuestionOptionMovesToSubmit(t *testing.T) {
 	m := questionModel()

@@ -586,6 +586,7 @@ func (m *model) render() {
 	toolCalls := map[string]agentview.ToolActivity{}
 	toolResults := map[string]*api.Event{}
 	toolOutput := map[string]string{}
+	liveOutput := m.activeWork()
 	backgroundTools := map[string]agentview.BackgroundTask{}
 	for run, state := range m.backgroundStates() {
 		for _, task := range state.Tasks {
@@ -605,7 +606,11 @@ func (m *model) render() {
 				toolCalls[e.RunId+"/"+e.RequestId] = agentview.ToolActivity{Kind: "tool", Description: e.Text}
 			}
 		}
-		if e.Kind == "tool_output" && e.RequestId != "" {
+		// Streamed output is only ever shown beneath a still-running tool of the
+		// current run, yet a long session keeps every chunk it ever received. Fold
+		// only what can be displayed: the rest costs a concatenation per chunk
+		// whose result is discarded, which is invisible until the history is large.
+		if e.Kind == "tool_output" && e.RequestId != "" && liveOutput && e.RunId == s.RunId {
 			key := e.RunId + "/" + e.RequestId
 			toolOutput[key] = outputTail(toolOutput[key] + e.Text)
 		}
@@ -725,7 +730,7 @@ func (m *model) render() {
 						}
 					}
 					text = indentBlock(m.cachedToolBody(s.Agent, e, activity, result, max(1, m.view.Width), state, background))
-					if !background && activity.Kind == "command" && result == nil && e.RunId == s.RunId && m.activeWork() && toolOutput[key] != "" {
+					if !background && activity.Kind == "command" && result == nil && e.RunId == s.RunId && liveOutput && toolOutput[key] != "" {
 						text += "\n" + liveOutputView(toolOutput[key], m.view.Width)
 					}
 				}
