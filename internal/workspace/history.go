@@ -4,11 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/historypolicy"
 	"time"
 )
 
 func (m *Manager) History(ctx context.Context, r *api.WatchRequest) (*api.EventBatch, error) {
-	// A complete immutable range needs neither Docker inspection nor an RPC.
+	// Refresh the retention floor at most once a minute; old cached pages must
+	// not outlive a missed/offline trim notification.
+	m.refreshHistoryFloor(ctx, r.SessionId)
+	// Complete retained ranges still reuse their cached payload.
 	cached, err := m.cachedHistory(ctx, r)
 	if err != nil {
 		return nil, err
@@ -62,7 +67,35 @@ func (m *Manager) cache(ctx context.Context, batch *api.EventBatch) error {
 		return e
 	}
 	defer tx.Rollback()
+	floors := map[string]uint64{}
 	for _, v := range batch.Events {
+		floor, ok := floors[v.SessionId]
+		if !ok {
+			floor, e = historypolicy.Floor(ctx, tx, v.SessionId)
+			if e != nil {
+				return e
+			}
+		}
+		if n := core.HistoryFloor(v.Kind, v.Payload); n > floor {
+			if e = historypolicy.AdvanceFloor(ctx, tx, v.SessionId, n); e != nil {
+				return e
+			}
+			floor = n
+			marker := &api.Event{SessionId: v.SessionId, RunId: v.RunId, Seq: n, Kind: core.HistoryTrimmedKind, Text: "Earlier display history was removed by the size limit.", Payload: v.Payload}
+			data, err := json.Marshal(marker)
+			if err != nil {
+				return err
+			}
+			if _, err = tx.ExecContext(ctx, "INSERT OR REPLACE INTO events VALUES(?,?,?)", v.SessionId, n, data); err != nil {
+				return err
+			}
+		}
+		floors[v.SessionId] = floor
+	}
+	for _, v := range batch.Events {
+		if v.Seq <= floors[v.SessionId] && (v.Kind != core.HistoryTrimmedKind || core.HistoryFloor(v.Kind, v.Payload) < floors[v.SessionId]) {
+			continue
+		}
 		b, e := json.Marshal(v)
 		if e != nil {
 			return e
@@ -77,4 +110,36 @@ func (m *Manager) cache(ctx context.Context, batch *api.EventBatch) error {
 // CacheEvents commits streamed events before acknowledging them to the TUI.
 func (m *Manager) CacheEvents(ctx context.Context, batch *api.EventBatch) error {
 	return m.cache(ctx, batch)
+}
+
+// A small metadata RPC keeps caches consistent even when no TUI was attached at
+// the moment of compaction. Failure leaves offline cached history readable.
+func (m *Manager) refreshHistoryFloor(ctx context.Context, id string) {
+	c, err := m.historyClient(ctx, id)
+	if err != nil {
+		return
+	}
+	m.historyMu.Lock()
+	if c.checked == nil {
+		c.checked = map[string]time.Time{}
+	}
+	if time.Since(c.checked[id]) < time.Minute {
+		m.historyMu.Unlock()
+		return
+	}
+	c.checked[id] = time.Now()
+	m.historyMu.Unlock()
+	spec, _ := json.Marshal(&api.SessionRef{Id: id})
+	q, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+	reply, err := c.client.Docker(q, &api.DockerInput{Action: "history-floor", Spec: spec})
+	if err != nil || reply == nil {
+		return
+	}
+	var boundary core.HistoryBoundary
+	if json.Unmarshal([]byte(reply.Status), &boundary) != nil || boundary.Through == 0 {
+		return
+	}
+	payload, _ := json.Marshal(boundary)
+	_ = m.cache(ctx, &api.EventBatch{Events: []*api.Event{{SessionId: id, Seq: boundary.Through, Kind: core.HistoryTrimmedKind, Payload: payload}}})
 }

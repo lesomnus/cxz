@@ -127,14 +127,14 @@ func TestDatabasePreflightDoesNotDowngrade(t *testing.T) {
 		t.Fatal(e)
 	}
 	defer db.Close()
-	if _, e = db.Exec("PRAGMA user_version=2"); e != nil {
+	if _, e = db.Exec("PRAGMA user_version=3"); e != nil {
 		t.Fatal(e)
 	}
 	if e = validateDatabase(root); e == nil {
 		t.Fatal("newer schema accepted")
 	}
 	var v int
-	if e = db.QueryRow("PRAGMA user_version").Scan(&v); e != nil || v != 2 {
+	if e = db.QueryRow("PRAGMA user_version").Scan(&v); e != nil || v != 3 {
 		t.Fatal("schema modified", v, e)
 	}
 }

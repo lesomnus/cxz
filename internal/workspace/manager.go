@@ -252,6 +252,7 @@ func (m *Manager) Sessions(ctx context.Context) (*api.SessionList, error) {
 		if e == nil {
 			for _, s := range list.Sessions {
 				s.ProjectId = p.ID
+				m.refreshHistoryFloor(ctx, s.Id)
 			}
 			before, _ := json.Marshal(p.Sessions)
 			after, _ := json.Marshal(list.Sessions)
@@ -483,7 +484,7 @@ func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (result *api.
 	if e != nil {
 		return nil, fmt.Errorf("project runtime not ready: %w", e)
 	}
-	if e = m.syncFileMappings(ctx, client); e != nil {
+	if e = m.syncRuntimePreferences(ctx, client); e != nil {
 		return nil, e
 	}
 	if r.PrepareOnly {

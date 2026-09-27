@@ -40,7 +40,7 @@ func useDownload(t *testing.T, body string) {
 	})
 }
 func TestReleaseRejectsUnpinnedAndIncompatibleArtifacts(t *testing.T) {
-	for _, mutate := range []func(*Release){func(r *Release) { r.Image = "ghcr.io/lesomnus/cxz:edge" }, func(r *Release) { r.Protocol++ }, func(r *Release) { r.Schema++ }, func(r *Release) { r.Revision = "../../cxz" }, func(r *Release) { r.Sequence = 0 }, func(r *Release) { a := r.Assets["linux/amd64"]; a.Name = "../cxz"; r.Assets["linux/amd64"] = a }} {
+	for _, mutate := range []func(*Release){func(r *Release) { r.Image = "ghcr.io/lesomnus/cxz:edge" }, func(r *Release) { r.Protocol++ }, func(r *Release) { r.Schema++ }, func(r *Release) { r.Schema = 1 }, func(r *Release) { r.Revision = "../../cxz" }, func(r *Release) { r.Sequence = 0 }, func(r *Release) { a := r.Assets["linux/amd64"]; a.Name = "../cxz"; r.Assets["linux/amd64"] = a }} {
 		r := testRelease(nil)
 		mutate(&r)
 		if r.Validate() == nil {

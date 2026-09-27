@@ -13,6 +13,8 @@ import (
 	"time"
 )
 
+const StateSchema = 2
+
 const DownloadBase = "https://github.com/lesomnus/cxz/releases/download/"
 const APIBase = "https://api.github.com/repos/lesomnus/cxz/releases"
 
@@ -39,7 +41,7 @@ func StableTag(tag string) bool {
 	return semver.IsValid(tag) && semver.Canonical(tag) == tag && semver.Prerelease(tag) == ""
 }
 func (r Release) Validate() error {
-	if !revision.MatchString(r.Revision) || r.Sequence <= 0 || r.Protocol != 1 || r.Schema != 1 {
+	if !revision.MatchString(r.Revision) || r.Sequence <= 0 || r.Protocol != 1 || r.Schema != StateSchema {
 		return fmt.Errorf("invalid or incompatible release identity")
 	}
 	if r.Tag != "edge" && !StableTag(r.Tag) {

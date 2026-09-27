@@ -73,6 +73,7 @@ type Supervisor struct {
 	settingPending   string
 }
 type record struct {
+	Digest  string       `json:"digest,omitempty"`
 	Op      string       `json:"op"`
 	Command core.Command `json:"command"`
 	Status  string       `json:"status"`
@@ -92,6 +93,15 @@ func ReplayFrom(s core.Snapshot, events []core.Event) core.Snapshot {
 	for _, e := range events {
 		s.LastSeq = e.Seq
 		switch e.Kind {
+		case core.HistoryCheckpointKind:
+			var checkpoint core.HistoryCheckpoint
+			if json.Unmarshal(e.Payload, &checkpoint) == nil {
+				s = checkpoint.Snapshot
+				p = map[string]core.Event{}
+				for _, v := range s.Pending {
+					p[v.RequestID] = v
+				}
+			}
 		case "permission":
 			if e.Text == "ask" || e.Text == "full" {
 				s.PermissionMode = e.Text
@@ -148,7 +158,7 @@ func Run(ctx context.Context, root, id string) error {
 	defer l.Close()
 	old := Replay(l.All())
 	s := &Supervisor{session: session, log: l, snap: core.Snapshot{State: "starting", RunID: core.ID(), VendorID: old.VendorID, PermissionMode: old.PermissionMode}, pending: map[string]core.Event{}, receipts: map[string]record{}, done: make(chan struct{})}
-	for _, v := range l.All() {
+	for _, v := range resumeEvents(l.All()) {
 		if v.Kind == "setting" {
 			s.restoreSetting(v.Text, v.Payload)
 		}
@@ -167,6 +177,9 @@ func Run(ctx context.Context, root, id string) error {
 		s.quotaToken = runtime.Token
 	}
 	s.event("state", "starting", "", nil, nil)
+	if events := l.All(); len(events) > 0 && events[0].Kind == core.HistoryCheckpointKind {
+		s.event(core.HistoryTrimmedKind, "Earlier display history was removed by the size limit.", "", core.HistoryBoundary{Through: events[0].Seq}, nil)
+	}
 	args := claudeRunArgs(s.session.Model, s.effort, old.VendorID)
 	if session.Kind == "codex" {
 		// Codex does not persist an empty thread until its first turn. Starting
@@ -298,6 +311,7 @@ func Run(ctx context.Context, root, id string) error {
 			s.mu.Unlock()
 		case <-quotaTick.C:
 			s.mu.Lock()
+			s.maintainHistory(root)
 			s.expireSetting()
 			if !s.quotaDisabled && (s.snap.State == "idle" || s.snap.State == "working" || s.snap.State == "waiting_input") {
 				if s.codex != nil {
@@ -373,6 +387,10 @@ func (s *Supervisor) consume(raw []byte) {
 	s.buffering = true
 	s.batch = nil
 	defer func() {
+		completed := false
+		for _, e := range s.batch {
+			completed = completed || e.Kind == "turn_end"
+		}
 		_, err := s.log.AppendBatch(s.batch)
 		s.buffering = false
 		s.batch = nil
@@ -381,6 +399,9 @@ func (s *Supervisor) consume(raw []byte) {
 			panic(fmt.Sprintf("journal durability failure: %v", err))
 		}
 		s.approvePending()
+		if completed && s.quotaRoot != "" {
+			s.maintainHistory(s.quotaRoot)
+		}
 	}()
 	s.event("raw", "", "", nil, raw)
 	if s.codex != nil {
@@ -556,7 +577,7 @@ func (s *Supervisor) executeLocked(op string, c core.Command) (core.Receipt, err
 	if old, ok := s.receipts[c.ClientID]; ok {
 		a, _ := json.Marshal(old.Command)
 		b, _ := json.Marshal(c)
-		if old.Op != op || !bytes.Equal(a, b) {
+		if old.Op != op || (old.Digest != "" && old.Digest != commandDigest(c)) || (old.Digest == "" && !bytes.Equal(a, b)) {
 			return receipt, errors.New("client_id reused with different command")
 		}
 		receipt.Status = old.Status

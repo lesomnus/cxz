@@ -3,12 +3,14 @@ package workspace
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/lesomnus/cxz/api"
 	"google.golang.org/grpc"
 )
 
 type historyConnection struct {
+	checked                   map[string]time.Time
 	project, container, token string
 	conn                      *grpc.ClientConn
 	client                    api.SessionsClient

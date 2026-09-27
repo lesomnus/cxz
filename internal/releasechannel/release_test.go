@@ -28,7 +28,7 @@ func TestStableUsesSemverAcrossPages(t *testing.T) {
 	}
 }
 func TestManifestRejectsMixedAndUnsafeArtifacts(t *testing.T) {
-	r := Release{Version: "source-" + strings.Repeat("a", 12), Tag: "edge", Revision: strings.Repeat("a", 40), Sequence: 1, Protocol: 1, Schema: 1, Image: "ghcr.io/lesomnus/cxz@sha256:" + strings.Repeat("b", 64), Assets: map[string]Asset{}}
+	r := Release{Version: "source-" + strings.Repeat("a", 12), Tag: "edge", Revision: strings.Repeat("a", 40), Sequence: 1, Protocol: 1, Schema: StateSchema, Image: "ghcr.io/lesomnus/cxz@sha256:" + strings.Repeat("b", 64), Assets: map[string]Asset{}}
 	for _, p := range []string{"linux/amd64", "linux/arm64", "windows/amd64", "windows/arm64"} {
 		name := "cxz-" + r.Revision + "-" + strings.ReplaceAll(p, "/", "-")
 		if strings.HasPrefix(p, "windows") {
@@ -39,6 +39,11 @@ func TestManifestRejectsMixedAndUnsafeArtifacts(t *testing.T) {
 	if e := r.Validate(); e != nil {
 		t.Fatal(e)
 	}
+	r.Schema = 1
+	if r.Validate() == nil {
+		t.Fatal("pre-retention schema accepted as compatible")
+	}
+	r.Schema = StateSchema
 	r.Version = "source-" + strings.Repeat("d", 12)
 	if r.Validate() == nil {
 		t.Fatal("mixed revision accepted")

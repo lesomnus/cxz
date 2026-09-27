@@ -34,6 +34,6 @@ for system in ("linux", "windows"):
             "name": name, "sha256": hashlib.sha256(target.read_bytes()).hexdigest()
         }
 ancestors = subprocess.check_output(["git", "rev-list", "--max-count=4096", revision], text=True).splitlines()[1:]
-manifest = dict(tag=tag, version=version, ancestors=ancestors, revision=revision, sequence=int(sequence), protocol=1, schema=1,
+manifest = dict(tag=tag, version=version, ancestors=ancestors, revision=revision, sequence=int(sequence), protocol=1, schema=2,
                 image=image, assets=assets)
 (root / "cxz-update.json").write_text(json.dumps(manifest, indent=2) + "\n")

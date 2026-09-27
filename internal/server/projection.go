@@ -9,6 +9,7 @@ import (
 
 	"github.com/lesomnus/cxz/internal/agentview"
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/historypolicy"
 	"github.com/lesomnus/cxz/internal/journal"
 	"github.com/lesomnus/cxz/internal/supervisor"
 )
@@ -16,6 +17,7 @@ import (
 type sessionProjection struct {
 	mu         sync.Mutex
 	cursor     journal.Cursor
+	floor      uint64
 	snapshot   core.Snapshot
 	background map[string]*agentview.BackgroundState
 }
@@ -55,21 +57,31 @@ func (s *Server) lockProjection(ctx context.Context, m core.Session) (*sessionPr
 	if last < p.cursor.Seq && !reset {
 		return nil, errors.New("event projection changed unexpectedly; restart to rebuild from journal")
 	}
-	if last < next.Seq {
+	var floor uint64
+	if reset && len(events) > 0 && events[0].Kind == core.HistoryCheckpointKind {
+		floor = events[0].Seq
+	}
+	if last < next.Seq || floor > 0 {
 		tx, err := s.db.BeginTx(ctx, nil)
 		if err != nil {
 			return nil, err
 		}
 		defer tx.Rollback()
+		if floor > 0 {
+			if err = historypolicy.AdvanceFloor(ctx, tx, m.ID, floor); err != nil {
+				return nil, err
+			}
+		}
+
 		for _, e := range events {
-			if e.Seq <= last {
+			if e.Seq <= last && e.Seq != floor {
 				continue
 			}
 			b, err := json.Marshal(e)
 			if err != nil {
 				return nil, err
 			}
-			if _, err = tx.ExecContext(ctx, "INSERT INTO events VALUES(?,?,?)", m.ID, e.Seq, b); err != nil {
+			if _, err = tx.ExecContext(ctx, "INSERT OR REPLACE INTO events VALUES(?,?,?)", m.ID, e.Seq, b); err != nil {
 				return nil, err
 			}
 		}
@@ -91,6 +103,9 @@ func (s *Server) lockProjection(ctx context.Context, m core.Session) (*sessionPr
 			p.background[e.RunID] = &agentview.BackgroundState{}
 		}
 		p.background[e.RunID].Apply(v.Payload)
+	}
+	if floor > 0 {
+		p.floor = floor
 	}
 	p.cursor = next
 	ok = true

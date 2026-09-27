@@ -7,6 +7,7 @@ import (
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/cxzupdate"
 	"github.com/lesomnus/cxz/internal/engine"
+	"github.com/lesomnus/cxz/internal/historypolicy"
 	"github.com/lesomnus/cxz/internal/versionpin"
 )
 
@@ -16,6 +17,8 @@ func (m *Manager) Docker(ctx context.Context, r *api.DockerInput) (*api.Receipt,
 	defer m.dockerMu.Unlock()
 	e := m.dockerEngine()
 	switch r.Action {
+	case "history-policy":
+		return m.historyPolicy(ctx, r.Spec)
 	case "save", "up":
 		var spec engine.Spec
 		if len(r.Spec) == 0 && r.Action == "up" {
@@ -65,6 +68,12 @@ func (m *Manager) Docker(ctx context.Context, r *api.DockerInput) (*api.Receipt,
 		info, err := e.Info(ctx)
 		if err != nil {
 			return nil, err
+		}
+		policy, policyErr := historypolicy.Load(m.Root)
+		if policyErr == nil {
+			info.History = &policy
+		} else {
+			info.HistoryError = policyErr.Error()
 		}
 		build := cxzupdate.Current()
 		info.CXZVersion, info.CXZRevision = build.Version, build.Revision
