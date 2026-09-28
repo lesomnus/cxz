@@ -31,6 +31,7 @@ import (
 )
 
 type model struct {
+	bottomButtonHover        bool
 	pinGeneration            string
 	pinChecked               time.Time
 	pinRestart               *versionpin.Restart
@@ -1046,6 +1047,10 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg.(type) {
+	case tea.KeyMsg, tea.MouseMsg, tea.WindowSizeMsg:
+		m.bottomButtonHover = false
+	}
 	if m.sessionArchive != nil {
 		switch v := msg.(type) {
 		case tea.KeyMsg:
@@ -1496,6 +1501,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		if !m.projectView && !m.accountView && v.Y < m.view.Height {
+			if handled, cmd := m.bottomButtonMouse(v); handled {
+				return m, cmd
+			}
 			if m.codeBlockMouse(v) {
 				return m, nil
 			}
@@ -1864,8 +1872,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.view, _ = m.view.Update(v)
 			return m, m.loadOlderHistory()
 		case "ctrl+end":
-			m.view.GotoBottom()
-			return m, m.requestNewerHistory(true)
+			return m, m.goToLatest()
 		case "ctrl+home":
 			if s := m.current(); s != nil {
 				m.historyWindow(s.Id).direction = -1
