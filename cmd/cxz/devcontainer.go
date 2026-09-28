@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/projectconfig"
 	"github.com/lesomnus/cxz/internal/resourceclient"
 	"github.com/lesomnus/cxz/internal/server"
 	"github.com/lesomnus/cxz/internal/settings"
@@ -29,10 +30,13 @@ func syncDevcontainer(ctx context.Context, client api.SessionsClient, root strin
 	defer cancel()
 	out, err := client.Devcontainer(ctx, &api.DevcontainerInput{Spec: data})
 	if status.Code(err) == codes.Unimplemented {
-		if len(spec.Compose) == 0 {
+		if len(spec.Compose) == 0 && spec.Template == nil {
 			return &api.Receipt{}, nil // No override to lose on older managers.
 		}
 		return nil, fmt.Errorf("devcontainer overrides require an updated manager; run cxz install --recreate, then retry cxz up")
+	}
+	if err == nil && spec.Template != nil && (out == nil || out.Status != projectconfig.TemplateReceipt) {
+		return nil, fmt.Errorf("default devcontainer templates require an updated manager; run cxz install --recreate, then retry cxz up")
 	}
 	return out, err
 }

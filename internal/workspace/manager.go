@@ -380,10 +380,16 @@ func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (result *api.
 	if r.Agent != "" && r.Agent != "claude" && r.Agent != "codex" {
 		return nil, fmt.Errorf("agent must be claude or codex")
 	}
-	if e = preflight(p); e != nil {
+	configFile, e := m.provisionConfiguration(p)
+	if e != nil {
 		return nil, e
 	}
-	composeOverride, composeDigest, e := m.prepareComposeOverride(ctx, p)
+	configured := *p
+	configured.Config = configFile
+	if e = preflight(&configured); e != nil {
+		return nil, e
+	}
+	composeOverride, composeDigest, e := m.prepareComposeOverride(ctx, &configured)
 	if e != nil {
 		return nil, e
 	}
@@ -450,7 +456,7 @@ func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (result *api.
 	if kind == "" {
 		kind = "claude"
 	}
-	if e = m.provision(ctx, p, kind, composeOverride); e != nil {
+	if e = m.provision(ctx, p, kind, composeOverride, configFile); e != nil {
 		p.Error = e.Error()
 		_ = m.save(context.WithoutCancel(ctx), p)
 		return nil, e

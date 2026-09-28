@@ -32,6 +32,7 @@ import (
 
 type model struct {
 	bottomButtonHover        bool
+	sessionNavigation        sessionNavigation
 	pinGeneration            string
 	pinChecked               time.Time
 	pinRestart               *versionpin.Restart
@@ -940,6 +941,7 @@ func (m *model) action(kind, text string) tea.Cmd {
 	}
 }
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	defer m.observeSessionNavigation()()
 	if v, ok := msg.(cxzUpdateResult); ok {
 		m.autoChecking = false
 		m.autoState = v.state
@@ -1050,6 +1052,11 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg.(type) {
 	case tea.KeyMsg, tea.MouseMsg, tea.WindowSizeMsg:
 		m.bottomButtonHover = false
+	}
+	if k, ok := msg.(tea.KeyMsg); ok {
+		if handled, cmd := m.sessionNavigationKey(k); handled {
+			return m, cmd
+		}
 	}
 	if m.sessionArchive != nil {
 		switch v := msg.(type) {

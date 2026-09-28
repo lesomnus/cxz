@@ -47,3 +47,37 @@ func TestDevcontainerSettingsPersistAndClear(t *testing.T) {
 		t.Fatal("project runtime accepted host settings", err)
 	}
 }
+
+func TestDefaultTemplatePersistsAcrossServerRestart(t *testing.T) {
+	root := t.TempDir()
+	s := &Server{manager: &workspace.Manager{Root: root}}
+	spec := projectconfig.Spec{Template: &projectconfig.DefaultTemplate{Files: map[string]projectconfig.TemplateFile{
+		"devcontainer.json": {Data: []byte(`{"name":"${cxz:projectName}","image":"alpine"}`)},
+	}}}
+	b, _ := json.Marshal(spec)
+	receipt, err := s.Devcontainer(context.Background(), &api.DevcontainerInput{Spec: b})
+	if err != nil || receipt.Status != projectconfig.TemplateReceipt {
+		t.Fatal(receipt, err)
+	}
+	saved, err := projectconfig.Load(root)
+	if err != nil || saved.Template == nil {
+		t.Fatal(saved, err)
+	}
+	spec.Template.Files["../escape"] = projectconfig.TemplateFile{Data: []byte("bad")}
+	b, _ = json.Marshal(spec)
+	if _, err := s.Devcontainer(context.Background(), &api.DevcontainerInput{Spec: b}); err == nil {
+		t.Fatal("unsafe template saved")
+	}
+	saved, err = projectconfig.Load(root)
+	if err != nil || len(saved.Template.Files) != 1 {
+		t.Fatal("invalid edit replaced snapshot", err)
+	}
+	s = &Server{manager: &workspace.Manager{Root: root}}
+	if _, err := s.Devcontainer(context.Background(), &api.DevcontainerInput{Spec: []byte(`{}`)}); err != nil {
+		t.Fatal(err)
+	}
+	saved, err = projectconfig.Load(root)
+	if err != nil || saved.Template != nil {
+		t.Fatal("template not removed", err)
+	}
+}
