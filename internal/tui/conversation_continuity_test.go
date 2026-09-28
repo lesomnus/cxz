@@ -47,7 +47,7 @@ func TestPendingInputImmediateAndReconciled(t *testing.T) {
 	c := &recordingClient{}
 	m.client = c
 	cmd := m.action("send", "hello immediately")
-	if cmd == nil || len(c.inputs) != 0 || !strings.Contains(ansi.Strip(m.view.View()), "> hello immediately") {
+	if cmd == nil || len(c.inputs) != 0 || !strings.Contains(ansi.Strip(m.view.View()), "❯ hello immediately") {
 		t.Fatal("no local echo before RPC")
 	}
 	pending := m.pendingInputs["s"][0]
@@ -59,7 +59,7 @@ func TestPendingInputImmediateAndReconciled(t *testing.T) {
 	confirmed.Seq = 1
 	m.Update(received{id: "s", event: confirmed})
 	after := m.view.View()
-	if len(m.pendingInputs["s"]) != 0 || strings.Count(ansi.Strip(after), "> hello immediately") != 1 {
+	if len(m.pendingInputs["s"]) != 0 || strings.Count(ansi.Strip(after), "❯ hello immediately") != 1 {
 		t.Fatal("duplicate echo")
 	}
 	if ansi.Strip(before) != ansi.Strip(after) || before == after {
@@ -97,12 +97,12 @@ func TestPinPromptImmediatelyBeforeViewport(t *testing.T) {
 	for i, want := range []string{"prompt one", "prompt two"} {
 		m.view.SetYOffset(m.promptSpans[i+1].start - 3)
 		view := ansi.Strip(m.conversationView())
-		if !strings.HasPrefix(view, "> "+want) || !strings.Contains(view, "> "+[]string{"prompt two", "prompt three"}[i]) {
+		if !strings.HasPrefix(view, "❯ "+want) || !strings.Contains(view, "❯ "+[]string{"prompt two", "prompt three"}[i]) {
 			t.Fatal("wrong sticky predecessor", view)
 		}
 	}
 	m.view.GotoTop()
-	if strings.Count(ansi.Strip(m.conversationView()), "> prompt one") != 1 {
+	if strings.Count(ansi.Strip(m.conversationView()), "❯ prompt one") != 1 {
 		t.Fatal("visible prompt duplicated")
 	}
 }
