@@ -5,9 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/lesomnus/cxz/internal/releasechannel"
+	"github.com/lesomnus/cxz/internal/selfupdate"
 	"github.com/lesomnus/cxz/internal/versionpin"
+	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"runtime/debug"
 	"strings"
 )
@@ -83,4 +86,32 @@ func useStatus(root string) (any, error) {
 		Following string            `json:"following"`
 		Running   map[string]string `json:"running"`
 	}{p, selection, mode, p.Pinned(), channel, map[string]string{"version": version, "revision": revision}}, nil
+}
+
+// Cache the verified executable before persisting a transaction. A resumed
+// transaction must retain its original release even after edge moves on.
+func downloadUseChannel(ctx context.Context, root string, plan usePlan, out io.Writer) (selfupdate.Artifact, usePlan, error) {
+	for attempt := 0; ; attempt++ {
+		r := *plan.Release
+		if err := r.Validate(); err != nil {
+			return selfupdate.Artifact{}, plan, err
+		}
+		dir := filepath.Join(root, "use-downloads", r.Revision, runtime.GOOS+"-"+runtime.GOARCH, r.Assets[runtime.GOOS+"/"+runtime.GOARCH].SHA256)
+		if err := os.MkdirAll(dir, 0700); err != nil {
+			return selfupdate.Artifact{}, plan, err
+		}
+		a, err := selfupdate.DownloadChannel(ctx, dir, runtime.GOOS, runtime.GOARCH, r, out)
+		if err == nil || attempt != 0 || plan.Requested != "@edge" || plan.Pin.Generation != "" || !releasechannel.IsNotFound(err) {
+			return a, plan, err
+		}
+		latest, err := releasechannel.Resolve(ctx, "edge")
+		if err != nil {
+			return a, plan, err
+		}
+		if latest.Revision == r.Revision || latest.Sequence < r.Sequence {
+			return a, plan, fmt.Errorf("edge asset unavailable after manifest refresh")
+		}
+		plan.Release = &latest
+		plan.Pin = versionpin.Pin{Channel: "edge", Version: latest.Version, Revision: latest.Revision, Image: latest.Image}
+	}
 }

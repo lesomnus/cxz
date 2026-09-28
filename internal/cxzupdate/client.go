@@ -86,13 +86,31 @@ func ClientCandidate(ctx context.Context, c Client) (State, string, error) {
 	if s.Release == nil || s.Release.Revision == Current().Revision || !s.RetryAllowed() {
 		return s, "", nil
 	}
-	if !s.Release.CanReplace(Current()) {
-		s.State = "waiting"
-		s.Reason = "selected channel cannot replace the running build; automatic downgrade refused"
-		_ = Save(c.Root, s)
-		return s, "", nil
+	path := ""
+	for attempt := 0; attempt < 2; attempt++ {
+		if !s.Release.CanReplace(Current()) {
+			s.State = "waiting"
+			s.Reason = "selected channel cannot replace the running build; automatic downgrade refused"
+			_ = Save(c.Root, s)
+			return s, "", nil
+		}
+		path, e = Stage(ctx, filepath.Join(c.Root, "cxz"), *s.Release, Current().Platform)
+		if attempt != 0 || !EdgeAssetMissing(*s.Release, e) {
+			break
+		}
+		previous := s.Release.Revision
+		s, e = Check(ctx, c.Root, true)
+		if e != nil {
+			return s, "", e
+		}
+		if s.Release == nil || s.Release.Revision == Current().Revision || !s.RetryAllowed() {
+			return s, "", nil
+		}
+		if s.Release.Revision == previous {
+			e = fmt.Errorf("edge asset unavailable after manifest refresh")
+			break
+		}
 	}
-	path, e := Stage(ctx, filepath.Join(c.Root, "cxz"), *s.Release, Current().Platform)
 	if e == nil {
 		e = CheckBinary(ctx, path, *s.Release, Current().Platform)
 	}
