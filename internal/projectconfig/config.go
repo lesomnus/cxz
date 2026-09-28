@@ -65,7 +65,8 @@ func (c Config) MarshalJSON() ([]byte, error) {
 // Spec stores the resolved override, including included Compose files. It never
 // depends on a client-local filename after publication to the manager.
 type Spec struct {
-	Compose json.RawMessage `json:"compose,omitempty"`
+	Template *DefaultTemplate `json:"template,omitempty"`
+	Compose  json.RawMessage  `json:"compose,omitempty"`
 }
 
 func (c Config) Validate() error {
@@ -103,6 +104,15 @@ func (c Config) Path(root string) (string, error) {
 }
 
 func (c Config) Snapshot(root string) (Spec, error) {
+	spec, err := c.snapshotCompose(root)
+	if err != nil {
+		return Spec{}, err
+	}
+	spec.Template, err = snapshotTemplate(root)
+	return spec, err
+}
+
+func (c Config) snapshotCompose(root string) (Spec, error) {
 	if len(c.LegacyInline) > 0 {
 		return Spec{}, fmt.Errorf("inline devcontainer.compose is no longer supported; run cxz edit docker-compose to move it into %s", Filename)
 	}
@@ -218,6 +228,9 @@ func SnapshotFile(path string, b []byte) (Spec, error) {
 }
 
 func (s Spec) Validate() error {
+	if err := s.Template.Validate(); err != nil {
+		return err
+	}
 	if len(s.Compose) == 0 {
 		return nil
 	}

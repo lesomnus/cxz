@@ -945,7 +945,10 @@ CLI 서브커맨드는 오류를 출력하고 즉시 실패 종료하며 오류/
 ## 기본 devcontainer와 관리 네트워크
 
 `.devcontainer/devcontainer.json`, `.devcontainer.json` 등 자동 탐색 대상이 없으면
-`mcr.microsoft.com/devcontainers/base:bookworm`과 `vscode` 사용자를 기본으로 쓴다.
+호스트의 `settings.jsonc` 옆 `devcontainer/devcontainer.json`을 기본 템플릿으로 사용한다.
+`${cxz:projectName}`으로 레포 이름(없으면 디렉터리명)을 사용할 수 있다.
+[사용자 기본 템플릿](default-devcontainer.md)에 경로와 적용 방법을 설명한다.
+사용자 템플릿도 없으면 `mcr.microsoft.com/devcontainers/base:bookworm`과 `vscode` 사용자를 기본으로 쓴다.
 생성 설정은 manager 상태의 `projects/<ID>/default-devcontainer.json`에 저장하며
 워크스페이스 저장소에 파일을 만들지 않는다. 나중에 실제 devcontainer 설정을 추가하면
 다음 준비 시 탐색한다. 명시한 `--config` 파일이 없거나 설정이 잘못되면 오류를 유지한다.
