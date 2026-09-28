@@ -5,6 +5,8 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
+	"github.com/lesomnus/cxz/internal/releasechannel"
 	"github.com/lesomnus/cxz/internal/versionpin"
 	"io"
 	"net/http"
@@ -206,5 +208,21 @@ func TestDifferentArtifactsAtSameRevisionHaveDistinctPaths(t *testing.T) {
 	}
 	if !ValidBinary(filepath.ToSlash(Path("/cxz/tools/cxz-builds", a, "linux/amd64"))) {
 		t.Fatal("new immutable path rejected")
+	}
+}
+
+func TestOnlyMissingEdgeAssetsTriggerRefresh(t *testing.T) {
+	r := testRelease(nil)
+	if !EdgeAssetMissing(r, &releasechannel.HTTPError{StatusCode: 404}) {
+		t.Fatal("edge 404 not recognized")
+	}
+	for _, err := range []error{nil, fmt.Errorf("checksum mismatch"), &releasechannel.HTTPError{StatusCode: 500}} {
+		if EdgeAssetMissing(r, err) {
+			t.Fatal("unrelated failure triggered refresh", err)
+		}
+	}
+	r.Tag = "v0.1.0"
+	if EdgeAssetMissing(r, &releasechannel.HTTPError{StatusCode: 404}) {
+		t.Fatal("stable release changed")
 	}
 }

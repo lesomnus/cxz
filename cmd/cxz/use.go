@@ -106,7 +106,7 @@ func runUse(ctx context.Context, root, requested string, progress, out io.Writer
 	defer replacement.Close()
 	var a selfupdate.Artifact
 	if plan.Release != nil {
-		a, e = selfupdate.DownloadChannel(ctx, work, runtime.GOOS, runtime.GOARCH, *plan.Release, progress)
+		a, plan, e = downloadUseChannel(ctx, root, plan, progress)
 	} else {
 		a, e = selfupdate.DownloadRelease(ctx, work, version, runtime.GOOS, runtime.GOARCH, progress)
 	}
@@ -175,6 +175,7 @@ func runUse(ctx context.Context, root, requested string, progress, out io.Writer
 	if e = os.Remove(usePlanPath(root)); e != nil {
 		return e
 	}
+	_ = os.RemoveAll(filepath.Join(root, "use-downloads"))
 	status, e := useStatus(root)
 	if e != nil {
 		return e

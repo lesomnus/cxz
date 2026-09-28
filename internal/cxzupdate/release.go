@@ -142,6 +142,7 @@ func download(ctx context.Context, url string, limit int64) ([]byte, error) {
 	if e != nil {
 		return nil, e
 	}
+	req.Header.Set("Cache-Control", "no-cache")
 	c := &http.Client{Timeout: 5 * time.Minute}
 	resp, e := c.Do(req)
 	if e != nil {
@@ -149,7 +150,7 @@ func download(ctx context.Context, url string, limit int64) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("release download: HTTP %d", resp.StatusCode)
+		return nil, &releasechannel.HTTPError{StatusCode: resp.StatusCode}
 	}
 	b, e := io.ReadAll(io.LimitReader(resp.Body, limit+1))
 	if e == nil && int64(len(b)) > limit {
@@ -378,4 +379,10 @@ func (r Release) CanReplace(b Build) bool {
 		}
 	}
 	return false
+}
+
+// EdgeAssetMissing indicates a stale edge publication, never a stable release
+// failure. Callers must refresh the whole release before staging a replacement.
+func EdgeAssetMissing(r Release, err error) bool {
+	return (r.Tag == "" || r.Tag == "edge") && releasechannel.IsNotFound(err)
 }
