@@ -47,7 +47,7 @@ func eventView(s *api.Session, e *api.Event, width int) (out string) {
 		for i, line := range text {
 			prefix := "  "
 			if i == 0 {
-				prefix = "> "
+				prefix = "❯ "
 			}
 			rows = append(rows, blue.Render(prefix+line))
 		}

@@ -144,7 +144,7 @@ func (m *model) conversationView() string {
 		for i := 0; i < min(2, min(len(prompt), len(rows))); i++ {
 			prefix := "  "
 			if i == 0 {
-				prefix = "> "
+				prefix = "❯ "
 			}
 			text := prefix + prompt[i]
 			if i == 1 && len(prompt) > 2 {

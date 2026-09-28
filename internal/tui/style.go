@@ -147,10 +147,10 @@ func newComposer() textarea.Model {
 	input.KeyMap.WordForward = key.NewBinding(key.WithKeys("ctrl+right", "alt+f"))
 	input.Cursor.Style = inputCursorStyle
 	input.Placeholder = "Ask a question… (Ctrl+S to send · /help)"
-	input.Prompt = "› "
+	input.Prompt = "❯ "
 	input.SetPromptFunc(2, func(line int) string {
 		if line == 0 {
-			return "> "
+			return "❯ "
 		}
 		return timestamp.Render(fmt.Sprintf("%d ", line%10))
 	})
