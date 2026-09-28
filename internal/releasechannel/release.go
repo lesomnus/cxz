@@ -4,6 +4,7 @@ package releasechannel
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"golang.org/x/mod/semver"
 	"io"
@@ -74,6 +75,17 @@ func (r Release) Validate() error {
 	}
 	return nil
 }
+
+// HTTPError lets update callers distinguish publication races from checksum,
+// compatibility, and transport failures.
+type HTTPError struct{ StatusCode int }
+
+func (e *HTTPError) Error() string { return fmt.Sprintf("release request: HTTP %d", e.StatusCode) }
+func IsNotFound(err error) bool {
+	var e *HTTPError
+	return errors.As(err, &e) && e.StatusCode == http.StatusNotFound
+}
+
 func Fetch(ctx context.Context, location string, limit int64) ([]byte, error) {
 	return fetch(ctx, &http.Client{Timeout: 5 * time.Minute}, location, limit)
 }
@@ -83,6 +95,7 @@ func fetch(ctx context.Context, client *http.Client, location string, limit int6
 		return nil, e
 	}
 	req.Header.Set("User-Agent", "cxz-release-channel")
+	req.Header.Set("Cache-Control", "no-cache")
 	c := *client
 	c.CheckRedirect = func(r *http.Request, via []*http.Request) error {
 		if r.URL.Scheme != "https" || len(via) >= 10 {
@@ -96,7 +109,7 @@ func fetch(ctx context.Context, client *http.Client, location string, limit int6
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("release request: HTTP %d", resp.StatusCode)
+		return nil, &HTTPError{StatusCode: resp.StatusCode}
 	}
 	b, e := io.ReadAll(io.LimitReader(resp.Body, limit+1))
 	if e == nil && int64(len(b)) > limit {

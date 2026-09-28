@@ -171,6 +171,12 @@ func (m *Manager) cxzUpdateStep(ctx context.Context) {
 			return
 		}
 		binary, err := cxzupdate.Stage(work, "/cxz/tools/cxz-builds", r, h.Build.Platform)
+		if cxzupdate.EdgeAssetMissing(r, err) {
+			// Refresh before the next rollout tick. A newer manager must be scheduled
+			// before any project runtime can move to the new release.
+			_, _ = cxzupdate.Check(work, m.Root, true)
+			return
+		}
 		if err == nil {
 			var b []byte
 			b, err = dockerx.Run(work, "exec", "--user", p.RemoteUser, p.ContainerID, binary, "_build-info")
