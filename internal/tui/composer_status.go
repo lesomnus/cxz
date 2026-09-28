@@ -31,6 +31,10 @@ func (m *model) composerStatus() (text, message string, column int) {
 		text = accent.Render("/view · ↑/↓ select · Enter open · Esc input")
 		message = ""
 	}
+	if m.download != nil {
+		text = accent.Render("Downloading " + attachmentSize(m.download.received) + " · /download --cancel")
+		message = ""
+	}
 	if background := m.backgroundStatus(); background != "" {
 		text = background + " · " + text
 		column += ansi.StringWidth(background + " · ")

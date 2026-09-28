@@ -60,7 +60,7 @@ func (m *model) frontendIdle(now time.Time) bool {
 	if m.autoStarted.IsZero() || now.Sub(m.autoStarted) < cxzupdate.IdlePeriod || now.Sub(m.lastUIInput) < cxzupdate.IdlePeriod {
 		return false
 	}
-	if m.input.Value() != "" || m.busy || m.creating || m.renaming || m.renameBusy || m.restartBusy || m.deletingID != "" || m.workflow != nil || m.redactDialog != nil || m.redactSending || m.pasteDialog != nil || m.questionDialog != nil || m.restartConfirm != nil || m.modelPicker != nil || m.settingsPage != nil || m.memoryPage != nil || m.report != nil || m.errorDialog != nil || m.sessionArchive != nil || m.accountView || m.focusApproval {
+	if m.download != nil || m.input.Value() != "" || m.busy || m.creating || m.renaming || m.renameBusy || m.restartBusy || m.deletingID != "" || m.workflow != nil || m.redactDialog != nil || m.redactSending || m.pasteDialog != nil || m.questionDialog != nil || m.restartConfirm != nil || m.modelPicker != nil || m.settingsPage != nil || m.memoryPage != nil || m.report != nil || m.errorDialog != nil || m.sessionArchive != nil || m.accountView || m.focusApproval {
 		return false
 	}
 	if len(m.terminals) > 0 || m.recordingSaving || m.recordingPending != nil || m.recordingTask != nil {
