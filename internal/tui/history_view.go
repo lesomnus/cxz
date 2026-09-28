@@ -165,6 +165,7 @@ func (m *model) conversationView() string {
 	m.toolHoverView(rows, promptRows)
 	m.codeButtonView(rows, promptRows)
 	m.selectionView(rows)
+	m.bottomButtonView(rows)
 	return strings.Join(rows, "\n")
 }
 
