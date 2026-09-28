@@ -20,9 +20,10 @@ import (
 
 type devcontainerSink struct {
 	api.SessionsClient
-	spec  projectconfig.Spec
-	err   error
-	calls int
+	spec    projectconfig.Spec
+	err     error
+	calls   int
+	receipt string
 }
 
 func (s *devcontainerSink) Devcontainer(_ context.Context, r *api.DevcontainerInput, _ ...grpc.CallOption) (*api.Receipt, error) {
@@ -31,7 +32,11 @@ func (s *devcontainerSink) Devcontainer(_ context.Context, r *api.DevcontainerIn
 	if err := json.Unmarshal(r.Spec, &s.spec); err != nil {
 		return nil, err
 	}
-	return &api.Receipt{Status: "saved"}, s.err
+	receipt := s.receipt
+	if receipt == "" {
+		receipt = "saved"
+	}
+	return &api.Receipt{Status: receipt}, s.err
 }
 
 func TestPublishDevcontainerSnapshotsAndCompatibility(t *testing.T) {
@@ -103,5 +108,26 @@ func TestEditSelectsComposePathBeforeFileExists(t *testing.T) {
 	path, changed, err := editDockerCompose(root, func(string) error { return nil })
 	if err != nil || !changed || path != filepath.Join(root, "custom", "compose.yaml") {
 		t.Fatal(path, changed, err)
+	}
+}
+
+func TestPublishDefaultTemplateRequiresManagerSupport(t *testing.T) {
+	root := t.TempDir()
+	dir := filepath.Join(root, projectconfig.TemplateDirectory)
+	os.MkdirAll(dir, 0700)
+	os.WriteFile(filepath.Join(dir, "devcontainer.json"), []byte(`{"image":"alpine","name":"${cxz:projectName}"}`), 0600)
+	sink := &devcontainerSink{}
+	// An old manager accepts the JSON but ignores the new field. Do not silently
+	// report success just because the RPC itself exists.
+	if _, err := syncDevcontainer(context.Background(), sink, root, settings.Config{}); err == nil || !strings.Contains(err.Error(), "updated manager") {
+		t.Fatal("old manager silently discarded template", err)
+	}
+	sink.receipt = projectconfig.TemplateReceipt
+	if _, err := syncDevcontainer(context.Background(), sink, root, settings.Config{}); err != nil || sink.spec.Template == nil {
+		t.Fatal("template not published", err)
+	}
+	os.RemoveAll(dir)
+	if _, err := syncDevcontainer(context.Background(), sink, root, settings.Config{}); err != nil || sink.spec.Template != nil {
+		t.Fatal("removed template not cleared", err)
 	}
 }
