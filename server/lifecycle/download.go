@@ -50,3 +50,7 @@ func (w downloadStreamWriter) Write(data []byte) (int, error) {
 	}
 	return total, nil
 }
+
+func (w downloadStreamWriter) SetDownloadSize(size int64) error {
+	return w.stream.Send(resource.ProjectDownloadReply_builder{TotalSize: &size}.Build())
+}

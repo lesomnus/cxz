@@ -949,6 +949,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case downloadProgress:
 		if m.download == v.job {
 			m.download.received = v.received
+			m.download.total = v.total
+			m.download.started = v.started
+			m.download.transferred = v.transferred
 		}
 		return m, nil
 	}
