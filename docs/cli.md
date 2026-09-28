@@ -934,6 +934,14 @@ CLI 서브커맨드는 오류를 출력하고 즉시 실패 종료하며 오류/
 
 ## 세션 전환과 질문 포커스
 
+`Alt+←`는 이전에 방문한 세션, `Alt+→`는 다음 세션으로 이동한다. 프로젝트가 달라도
+이동하며, 설정·작업 상세·프로젝트 목록 등 다른 화면은 기록에 들어가지 않는다.
+뒤로 이동한 뒤 다른 세션을 열면 앞으로 기록은 초기화된다. 연속해서 같은 세션을
+여는 것은 중복 기록하지 않으며 삭제된 세션은 건너뛴다. 방문 기록은 현재 TUI 실행 중
+최대 100개만 메모리에 유지하며, 이동 시 세션별 입력 초안을 보존한다.
+터미널 셸 포커스와 입력 중인 생성/인증/확인 대화상자에서는 기존 키 처리를 유지한다.
+입력창의 단어 이동은 `Ctrl+←/→` 또는 `Alt+B/F`를 사용한다.
+
 목록에 있는 모든 세션의 대화 스트림을 세션별 cursor로 계속 구독한다. 비선택 세션은
 대화 캐시만 갱신하며 현재 보이는 대화의 스크롤과 작성 중인 입력을 바꾸지 않는다.
 처음 연결할 때 최근 대화를 읽는 요청은 최대 4개씩 진행한다. 세션 전환은 캐시를 즉시
@@ -948,7 +956,10 @@ CLI 서브커맨드는 오류를 출력하고 즉시 실패 종료하며 오류/
 ## 기본 devcontainer와 관리 네트워크
 
 `.devcontainer/devcontainer.json`, `.devcontainer.json` 등 자동 탐색 대상이 없으면
-`mcr.microsoft.com/devcontainers/base:bookworm`과 `vscode` 사용자를 기본으로 쓴다.
+호스트의 `settings.jsonc` 옆 `devcontainer/devcontainer.json`을 기본 템플릿으로 사용한다.
+`${cxz:projectName}`으로 레포 이름(없으면 디렉터리명)을 사용할 수 있다.
+[사용자 기본 템플릿](default-devcontainer.md)에 경로와 적용 방법을 설명한다.
+사용자 템플릿도 없으면 `mcr.microsoft.com/devcontainers/base:bookworm`과 `vscode` 사용자를 기본으로 쓴다.
 생성 설정은 manager 상태의 `projects/<ID>/default-devcontainer.json`에 저장하며
 워크스페이스 저장소에 파일을 만들지 않는다. 나중에 실제 devcontainer 설정을 추가하면
 다음 준비 시 탐색한다. 명시한 `--config` 파일이 없거나 설정이 잘못되면 오류를 유지한다.

@@ -91,7 +91,7 @@ func helpView(width int, topics ...string) string {
 		lines = append(lines, name+"  "+muted.Render(entry.summary))
 	}
 	shortcuts := []struct{ category, keys, text string }{
-		{"Input", "Ctrl+← / Ctrl+→", "Move by word (Alt+←/→ also supported)"},
+		{"Input", "Ctrl+← / Ctrl+→", "Move by word (Alt+B/F also supported)"},
 		{"Navigation", "F9", "Start/stop debug recording and save"},
 		{"Input", "Ctrl+S", "Send message or command"},
 		{"Input", "Ctrl+Enter", "Send message or command (Windows console / Kitty protocol)"},
@@ -99,6 +99,7 @@ func helpView(width int, topics ...string) string {
 		{"Input", "Ctrl+X", "Clear draft"},
 		{"Inspection", "Ctrl+C", "Copy dragged conversation selection, focused tool content, or report (OSC 52)"},
 		{"Navigation", "Tab / Shift+Tab", "Next / previous focus: approvals → input"},
+		{"Navigation", "Alt+← / Alt+→", "Back/forward through visited sessions"},
 		{"Navigation", "↑ / ↓", "Select project/session (panel focus) or slash hint"},
 		{"Navigation", "PgUp / PgDn", "Scroll transcript (mouse wheel also works)"},
 		{"Navigation", "Ctrl+End", "Follow latest output"},
