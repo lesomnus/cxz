@@ -67,3 +67,30 @@ func TestDownloadRelativePathHintsUseProjectWorkspace(t *testing.T) {
 		t.Fatal(options)
 	}
 }
+
+func TestDownloadProgressMetrics(t *testing.T) {
+	now := time.Now()
+	job := &fileDownload{total: 1000, received: 500, started: now.Add(-2 * time.Second)}
+	got := job.progress(now)
+	for _, want := range []string{"[━━━━━─────] 50%", "250B/s", "ETA 2s"} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("missing %q in %q", want, got)
+		}
+	}
+	job.received = 0
+	if got := job.progress(now); !strings.Contains(got, "ETA —") || strings.Contains(got, "NaN") {
+		t.Fatal(got)
+	}
+	job.total = 0
+	if got := job.progress(now); !strings.Contains(got, "100%") {
+		t.Fatal(got)
+	}
+	job.total = -1
+	if got := job.progress(now); !strings.Contains(got, "—%") {
+		t.Fatal(got)
+	}
+	job.transferred = true
+	if got := job.progress(now); !strings.Contains(got, "saving…") {
+		t.Fatal(got)
+	}
+}

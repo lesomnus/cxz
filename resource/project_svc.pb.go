@@ -3169,6 +3169,7 @@ func (b0 ProjectDownloadRequest_builder) Build() *ProjectDownloadRequest {
 type ProjectDownloadReply struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Data        []byte                 `protobuf:"bytes,1,opt,name=data"`
+	xxx_hidden_TotalSize   int64                  `protobuf:"varint,2,opt,name=total_size,json=totalSize"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
 	XXX_presence           [1]uint32
 	unknownFields          protoimpl.UnknownFields
@@ -3207,12 +3208,24 @@ func (x *ProjectDownloadReply) GetData() []byte {
 	return nil
 }
 
+func (x *ProjectDownloadReply) GetTotalSize() int64 {
+	if x != nil {
+		return x.xxx_hidden_TotalSize
+	}
+	return 0
+}
+
 func (x *ProjectDownloadReply) SetData(v []byte) {
 	if v == nil {
 		v = []byte{}
 	}
 	x.xxx_hidden_Data = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 1)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 2)
+}
+
+func (x *ProjectDownloadReply) SetTotalSize(v int64) {
+	x.xxx_hidden_TotalSize = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 2)
 }
 
 func (x *ProjectDownloadReply) HasData() bool {
@@ -3222,15 +3235,28 @@ func (x *ProjectDownloadReply) HasData() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
 }
 
+func (x *ProjectDownloadReply) HasTotalSize() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
+}
+
 func (x *ProjectDownloadReply) ClearData() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
 	x.xxx_hidden_Data = nil
 }
 
+func (x *ProjectDownloadReply) ClearTotalSize() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_TotalSize = 0
+}
+
 type ProjectDownloadReply_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Data []byte
+	Data      []byte
+	TotalSize *int64
 }
 
 func (b0 ProjectDownloadReply_builder) Build() *ProjectDownloadReply {
@@ -3238,8 +3264,12 @@ func (b0 ProjectDownloadReply_builder) Build() *ProjectDownloadReply {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Data != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 1)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 2)
 		x.xxx_hidden_Data = b.Data
+	}
+	if b.TotalSize != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 2)
+		x.xxx_hidden_TotalSize = *b.TotalSize
 	}
 	return m0
 }
@@ -4640,9 +4670,11 @@ const file_cxz_project_svc_g_proto_rawDesc = "" +
 	"linkTarget\"O\n" +
 	"\x16ProjectDownloadRequest\x12!\n" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.ProjectRefR\x03ref\x12\x12\n" +
-	"\x04path\x18\x02 \x01(\tR\x04path\"*\n" +
+	"\x04path\x18\x02 \x01(\tR\x04path\"I\n" +
 	"\x14ProjectDownloadReply\x12\x12\n" +
-	"\x04data\x18\x01 \x01(\fR\x04data\")\n" +
+	"\x04data\x18\x01 \x01(\fR\x04data\x12\x1d\n" +
+	"\n" +
+	"total_size\x18\x02 \x01(\x03R\ttotalSize\")\n" +
 	"\x13DevcontainerRequest\x12\x12\n" +
 	"\x04spec\x18\x01 \x01(\fR\x04spec\"+\n" +
 	"\x11DevcontainerReply\x12\x16\n" +

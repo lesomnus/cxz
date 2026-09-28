@@ -1,10 +1,12 @@
 package containerterm
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io"
 	"os/exec"
+	"strconv"
 	"strings"
 
 	"github.com/lesomnus/cxz/api"
@@ -14,6 +16,16 @@ import (
 
 type DownloadClient interface {
 	Download(context.Context, string, string, io.Writer) error
+}
+
+// DownloadSizeWriter receives the source size before any file bytes.
+type DownloadSizeWriter interface{ SetDownloadSize(int64) error }
+
+func ReportDownloadSize(dst io.Writer, size int64) error {
+	if w, ok := dst.(DownloadSizeWriter); ok {
+		return w.SetDownloadSize(size)
+	}
+	return nil
 }
 
 func ValidDownloadPath(path string) bool {
@@ -35,10 +47,11 @@ case "$file" in
   ;;
 esac
 [ -f "$file" ] && [ -r "$file" ] || exit 3
+stat -Lc %s -- "$file"
 exec cat -- "$file"
 `
 
-// No PTY: stdout is the original byte stream, and the path is a separate argv.
+// No PTY: stdout carries a size header followed by unmodified file bytes.
 func DownloadFile(ctx context.Context, p *api.Project, path string, dst io.Writer) error {
 	if err := transport.LocalOnly(ctx, "container file download"); err != nil {
 		return err
@@ -56,13 +69,49 @@ func DownloadFile(ctx context.Context, p *api.Project, path string, dst io.Write
 	if !c.State.Running || c.Config.Labels["cxz.project"] != p.Id || c.Config.Labels["cxz.owner"] == "" {
 		return fmt.Errorf("refusing download from unowned or stopped container")
 	}
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	cmd := exec.CommandContext(ctx, "docker", "exec", "--user", p.RemoteUser, "--workdir", p.RemoteWorkspace, c.ID, "sh", "-c", downloadScript, "cxz-download", path)
-	cmd.Stdout = dst
-	if err := cmd.Run(); err != nil {
-		if ctx.Err() != nil {
-			return ctx.Err()
-		}
+	pipe, err := cmd.StdoutPipe()
+	if err != nil {
+		return err
+	}
+	if err = cmd.Start(); err != nil {
+		return err
+	}
+	err = receiveDownload(pipe, dst)
+	if err != nil {
+		cancel()
+	}
+	waitErr := cmd.Wait()
+	if err != nil {
+		return err
+	}
+	if waitErr != nil {
+		return fmt.Errorf("download failed: %w", waitErr)
+	}
+	return nil
+}
+
+func receiveDownload(src io.Reader, dst io.Writer) error {
+	reader := bufio.NewReaderSize(src, 128)
+	header, err := reader.ReadSlice('\n')
+	if err != nil {
 		return fmt.Errorf("download failed: source must be a readable regular file: %w", err)
+	}
+	size, err := strconv.ParseInt(strings.TrimSpace(string(header)), 10, 64)
+	if err != nil || size < 0 {
+		return fmt.Errorf("invalid download size")
+	}
+	if err = ReportDownloadSize(dst, size); err != nil {
+		return err
+	}
+	n, err := io.Copy(dst, reader)
+	if err != nil {
+		return err
+	}
+	if n != size {
+		return fmt.Errorf("source size changed during download: expected %d bytes, received %d", size, n)
 	}
 	return nil
 }

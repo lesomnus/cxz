@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/containerterm"
 	"github.com/lesomnus/cxz/internal/resourceclient"
 	"github.com/lesomnus/cxz/resource"
 	"github.com/lesomnus/payday/config"
@@ -37,6 +38,9 @@ func (f *downloadRuntime) Download(ctx context.Context, project, path string, w 
 		<-ctx.Done()
 		close(f.cancelled)
 		return ctx.Err()
+	}
+	if err := containerterm.ReportDownloadSize(w, int64(len(f.data))); err != nil {
+		return err
 	}
 	_, err := w.Write(f.data)
 	return err
@@ -72,9 +76,12 @@ func TestDownloadRPCStreamsBinaryAndCancels(t *testing.T) {
 	}
 	defer conn.Close()
 	client := resourceclient.New(conn)
-	var out bytes.Buffer
+	out := sizeBuffer{size: -1}
 	if err := client.Download(ctx, "project", "/file", &out); err != nil || !bytes.Equal(out.Bytes(), f.data) {
 		t.Fatal("binary transfer failed", err)
+	}
+	if out.size != int64(len(f.data)) {
+		t.Fatal("size metadata lost", out.size)
 	}
 	if err := client.Download(ctx, "project", "denied", io.Discard); status.Code(err) != codes.PermissionDenied {
 		t.Fatal(err)
@@ -94,3 +101,10 @@ func TestDownloadRPCStreamsBinaryAndCancels(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+type sizeBuffer struct {
+	bytes.Buffer
+	size int64
+}
+
+func (b *sizeBuffer) SetDownloadSize(size int64) error { b.size = size; return nil }
