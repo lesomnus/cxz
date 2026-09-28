@@ -13,6 +13,8 @@ service ProjectService {
   rpc SessionLogin(stream ProjectLoginRequest) returns (stream ProjectLoginOutput);
   // Read immediate directory entries inside the project's container as its remote user.
   rpc Paths(ProjectPathsRequest) returns (stream ProjectPathsReply);
+  // Stream a regular file as the project remote user; never journal file contents.
+  rpc Download(ProjectDownloadRequest) returns (stream ProjectDownloadReply);
  rpc Devcontainer(DevcontainerRequest) returns (DevcontainerReply);
  rpc Docker(DockerRequest) returns (DockerReply);
   rpc FileMappings(FileMappingsRequest) returns (FileMappingsReply);
@@ -87,3 +89,6 @@ message DockerReply { string status = 1; }
 
 message DevcontainerRequest { bytes spec = 1; }
 message DevcontainerReply { string status = 1; }
+
+message ProjectDownloadRequest { ProjectRef ref = 1; string path = 2; }
+message ProjectDownloadReply { bytes data = 1; }

@@ -3063,6 +3063,187 @@ func (b0 ProjectPathEntry_builder) Build() *ProjectPathEntry {
 	return m0
 }
 
+type ProjectDownloadRequest struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ref         *ProjectRef            `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Path        *string                `protobuf:"bytes,2,opt,name=path"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *ProjectDownloadRequest) Reset() {
+	*x = ProjectDownloadRequest{}
+	mi := &file_cxz_project_svc_g_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ProjectDownloadRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ProjectDownloadRequest) ProtoMessage() {}
+
+func (x *ProjectDownloadRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_project_svc_g_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *ProjectDownloadRequest) GetRef() *ProjectRef {
+	if x != nil {
+		return x.xxx_hidden_Ref
+	}
+	return nil
+}
+
+func (x *ProjectDownloadRequest) GetPath() string {
+	if x != nil {
+		if x.xxx_hidden_Path != nil {
+			return *x.xxx_hidden_Path
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *ProjectDownloadRequest) SetRef(v *ProjectRef) {
+	x.xxx_hidden_Ref = v
+}
+
+func (x *ProjectDownloadRequest) SetPath(v string) {
+	x.xxx_hidden_Path = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 2)
+}
+
+func (x *ProjectDownloadRequest) HasRef() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Ref != nil
+}
+
+func (x *ProjectDownloadRequest) HasPath() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
+}
+
+func (x *ProjectDownloadRequest) ClearRef() {
+	x.xxx_hidden_Ref = nil
+}
+
+func (x *ProjectDownloadRequest) ClearPath() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_Path = nil
+}
+
+type ProjectDownloadRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Ref  *ProjectRef
+	Path *string
+}
+
+func (b0 ProjectDownloadRequest_builder) Build() *ProjectDownloadRequest {
+	m0 := &ProjectDownloadRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Ref = b.Ref
+	if b.Path != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 2)
+		x.xxx_hidden_Path = b.Path
+	}
+	return m0
+}
+
+type ProjectDownloadReply struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Data        []byte                 `protobuf:"bytes,1,opt,name=data"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *ProjectDownloadReply) Reset() {
+	*x = ProjectDownloadReply{}
+	mi := &file_cxz_project_svc_g_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ProjectDownloadReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ProjectDownloadReply) ProtoMessage() {}
+
+func (x *ProjectDownloadReply) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_project_svc_g_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *ProjectDownloadReply) GetData() []byte {
+	if x != nil {
+		return x.xxx_hidden_Data
+	}
+	return nil
+}
+
+func (x *ProjectDownloadReply) SetData(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_Data = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 1)
+}
+
+func (x *ProjectDownloadReply) HasData() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *ProjectDownloadReply) ClearData() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_Data = nil
+}
+
+type ProjectDownloadReply_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Data []byte
+}
+
+func (b0 ProjectDownloadReply_builder) Build() *ProjectDownloadReply {
+	m0 := &ProjectDownloadReply{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.Data != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 1)
+		x.xxx_hidden_Data = b.Data
+	}
+	return m0
+}
+
 type DevcontainerRequest struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Spec        []byte                 `protobuf:"bytes,1,opt,name=spec"`
@@ -3074,7 +3255,7 @@ type DevcontainerRequest struct {
 
 func (x *DevcontainerRequest) Reset() {
 	*x = DevcontainerRequest{}
-	mi := &file_cxz_project_svc_g_proto_msgTypes[20]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3086,7 +3267,7 @@ func (x *DevcontainerRequest) String() string {
 func (*DevcontainerRequest) ProtoMessage() {}
 
 func (x *DevcontainerRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_project_svc_g_proto_msgTypes[20]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3152,7 +3333,7 @@ type DevcontainerReply struct {
 
 func (x *DevcontainerReply) Reset() {
 	*x = DevcontainerReply{}
-	mi := &file_cxz_project_svc_g_proto_msgTypes[21]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3164,7 +3345,7 @@ func (x *DevcontainerReply) String() string {
 func (*DevcontainerReply) ProtoMessage() {}
 
 func (x *DevcontainerReply) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_project_svc_g_proto_msgTypes[21]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3231,7 +3412,7 @@ type DockerRequest struct {
 
 func (x *DockerRequest) Reset() {
 	*x = DockerRequest{}
-	mi := &file_cxz_project_svc_g_proto_msgTypes[22]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3243,7 +3424,7 @@ func (x *DockerRequest) String() string {
 func (*DockerRequest) ProtoMessage() {}
 
 func (x *DockerRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_project_svc_g_proto_msgTypes[22]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3341,7 +3522,7 @@ type DockerReply struct {
 
 func (x *DockerReply) Reset() {
 	*x = DockerReply{}
-	mi := &file_cxz_project_svc_g_proto_msgTypes[23]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3353,7 +3534,7 @@ func (x *DockerReply) String() string {
 func (*DockerReply) ProtoMessage() {}
 
 func (x *DockerReply) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_project_svc_g_proto_msgTypes[23]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3419,7 +3600,7 @@ type FileMappingsRequest struct {
 
 func (x *FileMappingsRequest) Reset() {
 	*x = FileMappingsRequest{}
-	mi := &file_cxz_project_svc_g_proto_msgTypes[24]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3431,7 +3612,7 @@ func (x *FileMappingsRequest) String() string {
 func (*FileMappingsRequest) ProtoMessage() {}
 
 func (x *FileMappingsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_project_svc_g_proto_msgTypes[24]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3497,7 +3678,7 @@ type FileMappingsReply struct {
 
 func (x *FileMappingsReply) Reset() {
 	*x = FileMappingsReply{}
-	mi := &file_cxz_project_svc_g_proto_msgTypes[25]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3509,7 +3690,7 @@ func (x *FileMappingsReply) String() string {
 func (*FileMappingsReply) ProtoMessage() {}
 
 func (x *FileMappingsReply) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_project_svc_g_proto_msgTypes[25]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3579,7 +3760,7 @@ type ProjectUpRequest struct {
 
 func (x *ProjectUpRequest) Reset() {
 	*x = ProjectUpRequest{}
-	mi := &file_cxz_project_svc_g_proto_msgTypes[26]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3591,7 +3772,7 @@ func (x *ProjectUpRequest) String() string {
 func (*ProjectUpRequest) ProtoMessage() {}
 
 func (x *ProjectUpRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_project_svc_g_proto_msgTypes[26]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3775,7 +3956,7 @@ type ProjectControl struct {
 
 func (x *ProjectControl) Reset() {
 	*x = ProjectControl{}
-	mi := &file_cxz_project_svc_g_proto_msgTypes[27]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3787,7 +3968,7 @@ func (x *ProjectControl) String() string {
 func (*ProjectControl) ProtoMessage() {}
 
 func (x *ProjectControl) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_project_svc_g_proto_msgTypes[27]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3882,7 +4063,7 @@ type ProjectRecreateRequest struct {
 
 func (x *ProjectRecreateRequest) Reset() {
 	*x = ProjectRecreateRequest{}
-	mi := &file_cxz_project_svc_g_proto_msgTypes[28]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3894,7 +4075,7 @@ func (x *ProjectRecreateRequest) String() string {
 func (*ProjectRecreateRequest) ProtoMessage() {}
 
 func (x *ProjectRecreateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_project_svc_g_proto_msgTypes[28]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4103,7 +4284,7 @@ type InspectForeignRequest struct {
 
 func (x *InspectForeignRequest) Reset() {
 	*x = InspectForeignRequest{}
-	mi := &file_cxz_project_svc_g_proto_msgTypes[29]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4115,7 +4296,7 @@ func (x *InspectForeignRequest) String() string {
 func (*InspectForeignRequest) ProtoMessage() {}
 
 func (x *InspectForeignRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_project_svc_g_proto_msgTypes[29]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4147,7 +4328,7 @@ type InspectForeignResponse struct {
 
 func (x *InspectForeignResponse) Reset() {
 	*x = InspectForeignResponse{}
-	mi := &file_cxz_project_svc_g_proto_msgTypes[30]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4159,7 +4340,7 @@ func (x *InspectForeignResponse) String() string {
 func (*InspectForeignResponse) ProtoMessage() {}
 
 func (x *InspectForeignResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_project_svc_g_proto_msgTypes[30]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4210,7 +4391,7 @@ type ForeignContainer struct {
 
 func (x *ForeignContainer) Reset() {
 	*x = ForeignContainer{}
-	mi := &file_cxz_project_svc_g_proto_msgTypes[31]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4222,7 +4403,7 @@ func (x *ForeignContainer) String() string {
 func (*ForeignContainer) ProtoMessage() {}
 
 func (x *ForeignContainer) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_project_svc_g_proto_msgTypes[31]
+	mi := &file_cxz_project_svc_g_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4456,7 +4637,12 @@ const file_cxz_project_svc_g_proto_rawDesc = "" +
 	"executable\x12\x18\n" +
 	"\asymlink\x18\x04 \x01(\bR\asymlink\x12\x1f\n" +
 	"\vlink_target\x18\x05 \x01(\tR\n" +
-	"linkTarget\")\n" +
+	"linkTarget\"O\n" +
+	"\x16ProjectDownloadRequest\x12!\n" +
+	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.ProjectRefR\x03ref\x12\x12\n" +
+	"\x04path\x18\x02 \x01(\tR\x04path\"*\n" +
+	"\x14ProjectDownloadReply\x12\x12\n" +
+	"\x04data\x18\x01 \x01(\fR\x04data\")\n" +
 	"\x13DevcontainerRequest\x12\x12\n" +
 	"\x04spec\x18\x01 \x01(\fR\x04spec\"+\n" +
 	"\x11DevcontainerReply\x12\x16\n" +
@@ -4492,7 +4678,7 @@ const file_cxz_project_svc_g_proto_rawDesc = "" +
 	"\x10ForeignContainer\x12!\n" +
 	"\fcontainer_id\x18\x01 \x01(\tR\vcontainerId\x12\x1c\n" +
 	"\tworkspace\x18\x02 \x01(\tR\tworkspace\x12\x12\n" +
-	"\x04name\x18\x03 \x01(\tR\x04name2\xd4\a\n" +
+	"\x04name\x18\x03 \x01(\tR\x04name2\x9a\b\n" +
 	"\x0eProjectService\x12+\n" +
 	"\x03Add\x12\x16.cxz.ProjectAddRequest\x1a\f.cxz.Project\x12+\n" +
 	"\x03Get\x12\x16.cxz.ProjectGetRequest\x1a\f.cxz.Project\x12/\n" +
@@ -4503,7 +4689,8 @@ const file_cxz_project_svc_g_proto_rawDesc = "" +
 	"\x05Watch\x12\x18.cxz.ProjectWatchRequest\x1a\x19.cxz.ProjectWatchResponse0\x01\x12F\n" +
 	"\bTerminal\x12\x1b.cxz.ProjectTerminalRequest\x1a\x19.cxz.ProjectTerminalReply(\x010\x01\x12E\n" +
 	"\fSessionLogin\x12\x18.cxz.ProjectLoginRequest\x1a\x17.cxz.ProjectLoginOutput(\x010\x01\x12;\n" +
-	"\x05Paths\x12\x18.cxz.ProjectPathsRequest\x1a\x16.cxz.ProjectPathsReply0\x01\x12@\n" +
+	"\x05Paths\x12\x18.cxz.ProjectPathsRequest\x1a\x16.cxz.ProjectPathsReply0\x01\x12D\n" +
+	"\bDownload\x12\x1b.cxz.ProjectDownloadRequest\x1a\x19.cxz.ProjectDownloadReply0\x01\x12@\n" +
 	"\fDevcontainer\x12\x18.cxz.DevcontainerRequest\x1a\x16.cxz.DevcontainerReply\x12.\n" +
 	"\x06Docker\x12\x12.cxz.DockerRequest\x1a\x10.cxz.DockerReply\x12@\n" +
 	"\fFileMappings\x12\x18.cxz.FileMappingsRequest\x1a\x16.cxz.FileMappingsReply\x12)\n" +
@@ -4512,7 +4699,7 @@ const file_cxz_project_svc_g_proto_rawDesc = "" +
 	"\bRecreate\x12\x1b.cxz.ProjectRecreateRequest\x1a\f.cxz.Project\x12I\n" +
 	"\x0eInspectForeign\x12\x1a.cxz.InspectForeignRequest\x1a\x1b.cxz.InspectForeignResponseB\"Z github.com/lesomnus/cxz/resourceb\beditionsp\xe8\a"
 
-var file_cxz_project_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 32)
+var file_cxz_project_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 34)
 var file_cxz_project_svc_g_proto_goTypes = []any{
 	(*ProjectAddRequest)(nil),      // 0: cxz.ProjectAddRequest
 	(*ProjectGetRequest)(nil),      // 1: cxz.ProjectGetRequest
@@ -4534,88 +4721,93 @@ var file_cxz_project_svc_g_proto_goTypes = []any{
 	(*ProjectPathsRequest)(nil),    // 17: cxz.ProjectPathsRequest
 	(*ProjectPathsReply)(nil),      // 18: cxz.ProjectPathsReply
 	(*ProjectPathEntry)(nil),       // 19: cxz.ProjectPathEntry
-	(*DevcontainerRequest)(nil),    // 20: cxz.DevcontainerRequest
-	(*DevcontainerReply)(nil),      // 21: cxz.DevcontainerReply
-	(*DockerRequest)(nil),          // 22: cxz.DockerRequest
-	(*DockerReply)(nil),            // 23: cxz.DockerReply
-	(*FileMappingsRequest)(nil),    // 24: cxz.FileMappingsRequest
-	(*FileMappingsReply)(nil),      // 25: cxz.FileMappingsReply
-	(*ProjectUpRequest)(nil),       // 26: cxz.ProjectUpRequest
-	(*ProjectControl)(nil),         // 27: cxz.ProjectControl
-	(*ProjectRecreateRequest)(nil), // 28: cxz.ProjectRecreateRequest
-	(*InspectForeignRequest)(nil),  // 29: cxz.InspectForeignRequest
-	(*InspectForeignResponse)(nil), // 30: cxz.InspectForeignResponse
-	(*ForeignContainer)(nil),       // 31: cxz.ForeignContainer
-	(*timestamppb.Timestamp)(nil),  // 32: google.protobuf.Timestamp
-	(*ProjectStatus)(nil),          // 33: cxz.ProjectStatus
-	(*patchpb.Patch)(nil),          // 34: patch.Patch
-	(*Project)(nil),                // 35: cxz.Project
-	(*AccountRef)(nil),             // 36: cxz.AccountRef
+	(*ProjectDownloadRequest)(nil), // 20: cxz.ProjectDownloadRequest
+	(*ProjectDownloadReply)(nil),   // 21: cxz.ProjectDownloadReply
+	(*DevcontainerRequest)(nil),    // 22: cxz.DevcontainerRequest
+	(*DevcontainerReply)(nil),      // 23: cxz.DevcontainerReply
+	(*DockerRequest)(nil),          // 24: cxz.DockerRequest
+	(*DockerReply)(nil),            // 25: cxz.DockerReply
+	(*FileMappingsRequest)(nil),    // 26: cxz.FileMappingsRequest
+	(*FileMappingsReply)(nil),      // 27: cxz.FileMappingsReply
+	(*ProjectUpRequest)(nil),       // 28: cxz.ProjectUpRequest
+	(*ProjectControl)(nil),         // 29: cxz.ProjectControl
+	(*ProjectRecreateRequest)(nil), // 30: cxz.ProjectRecreateRequest
+	(*InspectForeignRequest)(nil),  // 31: cxz.InspectForeignRequest
+	(*InspectForeignResponse)(nil), // 32: cxz.InspectForeignResponse
+	(*ForeignContainer)(nil),       // 33: cxz.ForeignContainer
+	(*timestamppb.Timestamp)(nil),  // 34: google.protobuf.Timestamp
+	(*ProjectStatus)(nil),          // 35: cxz.ProjectStatus
+	(*patchpb.Patch)(nil),          // 36: patch.Patch
+	(*Project)(nil),                // 37: cxz.Project
+	(*AccountRef)(nil),             // 38: cxz.AccountRef
 }
 var file_cxz_project_svc_g_proto_depIdxs = []int32{
-	32, // 0: cxz.ProjectAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	33, // 1: cxz.ProjectAddRequest.status:type_name -> cxz.ProjectStatus
+	34, // 0: cxz.ProjectAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	35, // 1: cxz.ProjectAddRequest.status:type_name -> cxz.ProjectStatus
 	2,  // 2: cxz.ProjectGetRequest.ref:type_name -> cxz.ProjectRef
 	3,  // 3: cxz.ProjectGetRequest.select:type_name -> cxz.ProjectSelect
 	2,  // 4: cxz.ProjectPatchRequest.ref:type_name -> cxz.ProjectRef
-	32, // 5: cxz.ProjectPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	33, // 6: cxz.ProjectPatchRequest.status:type_name -> cxz.ProjectStatus
+	34, // 5: cxz.ProjectPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	35, // 6: cxz.ProjectPatchRequest.status:type_name -> cxz.ProjectStatus
 	2,  // 7: cxz.ProjectApplyRequest.ref:type_name -> cxz.ProjectRef
-	34, // 8: cxz.ProjectApplyRequest.patch:type_name -> patch.Patch
+	36, // 8: cxz.ProjectApplyRequest.patch:type_name -> patch.Patch
 	9,  // 9: cxz.ProjectListRequest.filters:type_name -> cxz.ProjectFilter
-	35, // 10: cxz.ProjectListResponse.items:type_name -> cxz.Project
+	37, // 10: cxz.ProjectListResponse.items:type_name -> cxz.Project
 	2,  // 11: cxz.ProjectFilter.ref:type_name -> cxz.ProjectRef
 	9,  // 12: cxz.ProjectWatchRequest.filters:type_name -> cxz.ProjectFilter
 	12, // 13: cxz.ProjectWatchResponse.items:type_name -> cxz.ProjectWatchItem
-	35, // 14: cxz.ProjectWatchItem.value:type_name -> cxz.Project
+	37, // 14: cxz.ProjectWatchItem.value:type_name -> cxz.Project
 	2,  // 15: cxz.ProjectTerminalRequest.ref:type_name -> cxz.ProjectRef
 	2,  // 16: cxz.ProjectLoginRequest.ref:type_name -> cxz.ProjectRef
-	36, // 17: cxz.ProjectLoginRequest.account:type_name -> cxz.AccountRef
+	38, // 17: cxz.ProjectLoginRequest.account:type_name -> cxz.AccountRef
 	2,  // 18: cxz.ProjectPathsRequest.ref:type_name -> cxz.ProjectRef
 	19, // 19: cxz.ProjectPathsReply.entries:type_name -> cxz.ProjectPathEntry
-	2,  // 20: cxz.ProjectUpRequest.ref:type_name -> cxz.ProjectRef
-	2,  // 21: cxz.ProjectControl.ref:type_name -> cxz.ProjectRef
-	2,  // 22: cxz.ProjectRecreateRequest.ref:type_name -> cxz.ProjectRef
-	31, // 23: cxz.InspectForeignResponse.items:type_name -> cxz.ForeignContainer
-	0,  // 24: cxz.ProjectService.Add:input_type -> cxz.ProjectAddRequest
-	1,  // 25: cxz.ProjectService.Get:input_type -> cxz.ProjectGetRequest
-	4,  // 26: cxz.ProjectService.Patch:input_type -> cxz.ProjectPatchRequest
-	5,  // 27: cxz.ProjectService.Apply:input_type -> cxz.ProjectApplyRequest
-	2,  // 28: cxz.ProjectService.Erase:input_type -> cxz.ProjectRef
-	7,  // 29: cxz.ProjectService.List:input_type -> cxz.ProjectListRequest
-	10, // 30: cxz.ProjectService.Watch:input_type -> cxz.ProjectWatchRequest
-	13, // 31: cxz.ProjectService.Terminal:input_type -> cxz.ProjectTerminalRequest
-	15, // 32: cxz.ProjectService.SessionLogin:input_type -> cxz.ProjectLoginRequest
-	17, // 33: cxz.ProjectService.Paths:input_type -> cxz.ProjectPathsRequest
-	20, // 34: cxz.ProjectService.Devcontainer:input_type -> cxz.DevcontainerRequest
-	22, // 35: cxz.ProjectService.Docker:input_type -> cxz.DockerRequest
-	24, // 36: cxz.ProjectService.FileMappings:input_type -> cxz.FileMappingsRequest
-	26, // 37: cxz.ProjectService.Up:input_type -> cxz.ProjectUpRequest
-	27, // 38: cxz.ProjectService.Down:input_type -> cxz.ProjectControl
-	28, // 39: cxz.ProjectService.Recreate:input_type -> cxz.ProjectRecreateRequest
-	29, // 40: cxz.ProjectService.InspectForeign:input_type -> cxz.InspectForeignRequest
-	35, // 41: cxz.ProjectService.Add:output_type -> cxz.Project
-	35, // 42: cxz.ProjectService.Get:output_type -> cxz.Project
-	35, // 43: cxz.ProjectService.Patch:output_type -> cxz.Project
-	35, // 44: cxz.ProjectService.Apply:output_type -> cxz.Project
-	6,  // 45: cxz.ProjectService.Erase:output_type -> cxz.ProjectEraseResponse
-	8,  // 46: cxz.ProjectService.List:output_type -> cxz.ProjectListResponse
-	11, // 47: cxz.ProjectService.Watch:output_type -> cxz.ProjectWatchResponse
-	14, // 48: cxz.ProjectService.Terminal:output_type -> cxz.ProjectTerminalReply
-	16, // 49: cxz.ProjectService.SessionLogin:output_type -> cxz.ProjectLoginOutput
-	18, // 50: cxz.ProjectService.Paths:output_type -> cxz.ProjectPathsReply
-	21, // 51: cxz.ProjectService.Devcontainer:output_type -> cxz.DevcontainerReply
-	23, // 52: cxz.ProjectService.Docker:output_type -> cxz.DockerReply
-	25, // 53: cxz.ProjectService.FileMappings:output_type -> cxz.FileMappingsReply
-	35, // 54: cxz.ProjectService.Up:output_type -> cxz.Project
-	35, // 55: cxz.ProjectService.Down:output_type -> cxz.Project
-	35, // 56: cxz.ProjectService.Recreate:output_type -> cxz.Project
-	30, // 57: cxz.ProjectService.InspectForeign:output_type -> cxz.InspectForeignResponse
-	41, // [41:58] is the sub-list for method output_type
-	24, // [24:41] is the sub-list for method input_type
-	24, // [24:24] is the sub-list for extension type_name
-	24, // [24:24] is the sub-list for extension extendee
-	0,  // [0:24] is the sub-list for field type_name
+	2,  // 20: cxz.ProjectDownloadRequest.ref:type_name -> cxz.ProjectRef
+	2,  // 21: cxz.ProjectUpRequest.ref:type_name -> cxz.ProjectRef
+	2,  // 22: cxz.ProjectControl.ref:type_name -> cxz.ProjectRef
+	2,  // 23: cxz.ProjectRecreateRequest.ref:type_name -> cxz.ProjectRef
+	33, // 24: cxz.InspectForeignResponse.items:type_name -> cxz.ForeignContainer
+	0,  // 25: cxz.ProjectService.Add:input_type -> cxz.ProjectAddRequest
+	1,  // 26: cxz.ProjectService.Get:input_type -> cxz.ProjectGetRequest
+	4,  // 27: cxz.ProjectService.Patch:input_type -> cxz.ProjectPatchRequest
+	5,  // 28: cxz.ProjectService.Apply:input_type -> cxz.ProjectApplyRequest
+	2,  // 29: cxz.ProjectService.Erase:input_type -> cxz.ProjectRef
+	7,  // 30: cxz.ProjectService.List:input_type -> cxz.ProjectListRequest
+	10, // 31: cxz.ProjectService.Watch:input_type -> cxz.ProjectWatchRequest
+	13, // 32: cxz.ProjectService.Terminal:input_type -> cxz.ProjectTerminalRequest
+	15, // 33: cxz.ProjectService.SessionLogin:input_type -> cxz.ProjectLoginRequest
+	17, // 34: cxz.ProjectService.Paths:input_type -> cxz.ProjectPathsRequest
+	20, // 35: cxz.ProjectService.Download:input_type -> cxz.ProjectDownloadRequest
+	22, // 36: cxz.ProjectService.Devcontainer:input_type -> cxz.DevcontainerRequest
+	24, // 37: cxz.ProjectService.Docker:input_type -> cxz.DockerRequest
+	26, // 38: cxz.ProjectService.FileMappings:input_type -> cxz.FileMappingsRequest
+	28, // 39: cxz.ProjectService.Up:input_type -> cxz.ProjectUpRequest
+	29, // 40: cxz.ProjectService.Down:input_type -> cxz.ProjectControl
+	30, // 41: cxz.ProjectService.Recreate:input_type -> cxz.ProjectRecreateRequest
+	31, // 42: cxz.ProjectService.InspectForeign:input_type -> cxz.InspectForeignRequest
+	37, // 43: cxz.ProjectService.Add:output_type -> cxz.Project
+	37, // 44: cxz.ProjectService.Get:output_type -> cxz.Project
+	37, // 45: cxz.ProjectService.Patch:output_type -> cxz.Project
+	37, // 46: cxz.ProjectService.Apply:output_type -> cxz.Project
+	6,  // 47: cxz.ProjectService.Erase:output_type -> cxz.ProjectEraseResponse
+	8,  // 48: cxz.ProjectService.List:output_type -> cxz.ProjectListResponse
+	11, // 49: cxz.ProjectService.Watch:output_type -> cxz.ProjectWatchResponse
+	14, // 50: cxz.ProjectService.Terminal:output_type -> cxz.ProjectTerminalReply
+	16, // 51: cxz.ProjectService.SessionLogin:output_type -> cxz.ProjectLoginOutput
+	18, // 52: cxz.ProjectService.Paths:output_type -> cxz.ProjectPathsReply
+	21, // 53: cxz.ProjectService.Download:output_type -> cxz.ProjectDownloadReply
+	23, // 54: cxz.ProjectService.Devcontainer:output_type -> cxz.DevcontainerReply
+	25, // 55: cxz.ProjectService.Docker:output_type -> cxz.DockerReply
+	27, // 56: cxz.ProjectService.FileMappings:output_type -> cxz.FileMappingsReply
+	37, // 57: cxz.ProjectService.Up:output_type -> cxz.Project
+	37, // 58: cxz.ProjectService.Down:output_type -> cxz.Project
+	37, // 59: cxz.ProjectService.Recreate:output_type -> cxz.Project
+	32, // 60: cxz.ProjectService.InspectForeign:output_type -> cxz.InspectForeignResponse
+	43, // [43:61] is the sub-list for method output_type
+	25, // [25:43] is the sub-list for method input_type
+	25, // [25:25] is the sub-list for extension type_name
+	25, // [25:25] is the sub-list for extension extendee
+	0,  // [0:25] is the sub-list for field type_name
 }
 
 func init() { file_cxz_project_svc_g_proto_init() }
@@ -4637,7 +4829,7 @@ func file_cxz_project_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_cxz_project_svc_g_proto_rawDesc), len(file_cxz_project_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   32,
+			NumMessages:   34,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

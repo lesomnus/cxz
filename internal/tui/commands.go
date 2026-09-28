@@ -25,6 +25,7 @@ var slashCommands = []slashCommand{
 	{"/effort", "Provider reasoning strength"},
 	{"/background", "Inspect provider background tasks"},
 	{"/paste", "Preview pasted text or attach it as a file"},
+	{"/download", "Save a container file to your local Downloads folder"},
 	{"/view", "Select tool rows with arrows and open their contents"},
 	{"/logs", "Scrollable diagnostics; add project for all project sources"},
 	{"/memory", "Browse retained agent memory, instructions and history"},

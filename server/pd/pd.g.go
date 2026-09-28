@@ -3370,6 +3370,11 @@ func (s interceptProject) Paths(req *resource.ProjectPathsRequest, out grpc.Serv
 		resource.ProjectService_Paths_FullMethodName, req, out, s.ProjectServiceServer.Paths)
 }
 
+func (s interceptProject) Download(req *resource.ProjectDownloadRequest, out grpc.ServerStreamingServer[resource.ProjectDownloadReply]) error {
+	return grpcx.RunStream(s.stream, s.ProjectServiceServer,
+		resource.ProjectService_Download_FullMethodName, req, out, s.ProjectServiceServer.Download)
+}
+
 func (s interceptProject) Devcontainer(ctx context.Context, req *resource.DevcontainerRequest) (*resource.DevcontainerReply, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
 		resource.ProjectService_Devcontainer_FullMethodName, req, s.ProjectServiceServer.Devcontainer)
