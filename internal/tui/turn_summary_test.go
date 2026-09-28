@@ -71,7 +71,7 @@ func TestConversationAlignmentAndSummaryPlacement(t *testing.T) {
 	}
 	m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
 	text := ansi.Strip(m.sessionScreen())
-	if !strings.Contains(text, "\n> prompt") {
+	if !strings.Contains(text, "\n❯ prompt") {
 		t.Fatal("prompt left margin remains", text)
 	}
 	transcript := ansi.Strip(m.view.View())

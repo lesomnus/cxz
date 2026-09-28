@@ -117,7 +117,7 @@ func TestComposerNumbers(t *testing.T) {
 	input.SetValue("first\nsecond\nthird\n4\n5\n6\n7\n8\n9\n10\n11\n12")
 	input.SetHeight(12)
 	text := ansi.Strip(input.View())
-	for _, want := range []string{"> first", "1 second", "2 third", "9 10", "0 11", "1 12"} {
+	for _, want := range []string{"❯ first", "1 second", "2 third", "9 10", "0 11", "1 12"} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("missing %q: %s", want, text)
 		}
