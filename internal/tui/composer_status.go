@@ -32,7 +32,7 @@ func (m *model) composerStatus() (text, message string, column int) {
 		message = ""
 	}
 	if m.download != nil {
-		text = accent.Render("Downloading " + attachmentSize(m.download.received) + " · /download --cancel")
+		text = accent.Render(m.download.progress(time.Now()))
 		message = ""
 	}
 	if background := m.backgroundStatus(); background != "" {

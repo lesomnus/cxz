@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 
+	"github.com/lesomnus/cxz/internal/containerterm"
 	"github.com/lesomnus/cxz/resource"
 )
 
@@ -22,7 +23,15 @@ func (c *Client) Download(ctx context.Context, project, path string, dst io.Writ
 		if err != nil {
 			return err
 		}
+		if reply.HasTotalSize() {
+			if err := containerterm.ReportDownloadSize(dst, reply.GetTotalSize()); err != nil {
+				return err
+			}
+		}
 		b := reply.GetData()
+		if len(b) == 0 {
+			continue
+		}
 		n, err := dst.Write(b)
 		if err != nil {
 			return err

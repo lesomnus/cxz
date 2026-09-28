@@ -18,7 +18,12 @@ func TestDownloadScriptPreservesBytesAndLiteralPaths(t *testing.T) {
 	os.WriteFile(filepath.Join(dir, name), data, 0600)
 	cmd := exec.Command("sh", "-c", downloadScript, "download", name)
 	cmd.Dir = dir
-	got, err := cmd.Output()
+	raw, err := cmd.Output()
+	var out bytes.Buffer
+	if err == nil {
+		err = receiveDownload(bytes.NewReader(raw), &out)
+	}
+	got := out.Bytes()
 	if err != nil || !bytes.Equal(got, data) {
 		t.Fatal(got, err)
 	}
@@ -29,5 +34,18 @@ func TestDownloadScriptPreservesBytesAndLiteralPaths(t *testing.T) {
 		if _, err := exec.Command("sh", "-c", downloadScript, "download", name).Output(); err == nil {
 			t.Fatal("non-file accepted", name)
 		}
+	}
+}
+
+func TestDownloadSizeHeaderValidation(t *testing.T) {
+	for _, raw := range []string{"", "-1\n", "oops\n", "2\nx", "0\nx", string(bytes.Repeat([]byte{'9'}, 256)) + "\n"} {
+		var out bytes.Buffer
+		if err := receiveDownload(bytes.NewBufferString(raw), &out); err == nil {
+			t.Fatalf("accepted %q", raw)
+		}
+	}
+	var out bytes.Buffer
+	if err := receiveDownload(bytes.NewBufferString("0\n"), &out); err != nil || out.Len() != 0 {
+		t.Fatal(err)
 	}
 }
