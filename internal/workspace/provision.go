@@ -20,13 +20,9 @@ import (
 	"strings"
 )
 
-func (m *Manager) provision(ctx context.Context, p *Project, kind, composeOverride string) error {
+func (m *Manager) provision(ctx context.Context, p *Project, kind, composeOverride, configFile string) error {
 	var e error
 	if e = m.checkpoint(ctx, p, "configuration"); e != nil {
-		return e
-	}
-	configFile, e := m.provisionConfiguration(p)
-	if e != nil {
 		return e
 	}
 	raw, e := os.ReadFile(configFile)
@@ -412,7 +408,7 @@ func CheckTrust(cfg map[string]any, trusted bool) error {
 }
 
 // Validate all readable configuration before a confirmed recreate removes a
-// container. Missing default configuration is generated later during provision.
+// container. Open resolves and snapshots fallback templates before this check.
 func preflight(p *Project) error {
 	file := p.Config
 	if file == "" {
