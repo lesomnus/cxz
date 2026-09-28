@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/projectconfig"
 )
 
 func configurationPath(p *Project) (string, error) {
@@ -32,6 +33,13 @@ func (m *Manager) provisionConfiguration(p *Project) (string, error) {
 	file, err := configurationPath(p)
 	if err != nil || file != "" {
 		return file, err
+	}
+	spec, err := projectconfig.Load(m.Root)
+	if err != nil {
+		return "", err
+	}
+	if spec.Template != nil {
+		return m.materializeTemplate(p, spec.Template)
 	}
 	file = filepath.Join(m.Root, "projects", p.ID, "default-devcontainer.json")
 	if err := os.MkdirAll(filepath.Dir(file), 0700); err != nil {

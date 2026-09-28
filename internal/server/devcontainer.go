@@ -21,5 +21,8 @@ func (s *Server) Devcontainer(_ context.Context, r *api.DevcontainerInput) (*api
 	if err := projectconfig.Save(s.manager.Root, spec); err != nil {
 		return nil, err
 	}
+	if spec.Template != nil {
+		return &api.Receipt{Status: projectconfig.TemplateReceipt}, nil
+	}
 	return &api.Receipt{Status: "Devcontainer settings saved; applies to new or explicitly recreated project containers"}, nil
 }
