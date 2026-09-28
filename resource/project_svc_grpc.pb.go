@@ -29,6 +29,7 @@ const (
 	ProjectService_Terminal_FullMethodName       = "/cxz.ProjectService/Terminal"
 	ProjectService_SessionLogin_FullMethodName   = "/cxz.ProjectService/SessionLogin"
 	ProjectService_Paths_FullMethodName          = "/cxz.ProjectService/Paths"
+	ProjectService_Download_FullMethodName       = "/cxz.ProjectService/Download"
 	ProjectService_Devcontainer_FullMethodName   = "/cxz.ProjectService/Devcontainer"
 	ProjectService_Docker_FullMethodName         = "/cxz.ProjectService/Docker"
 	ProjectService_FileMappings_FullMethodName   = "/cxz.ProjectService/FileMappings"
@@ -74,6 +75,8 @@ type ProjectServiceClient interface {
 	SessionLogin(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ProjectLoginRequest, ProjectLoginOutput], error)
 	// Read immediate directory entries inside the project's container as its remote user.
 	Paths(ctx context.Context, in *ProjectPathsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ProjectPathsReply], error)
+	// Stream a regular file as the project remote user; never journal file contents.
+	Download(ctx context.Context, in *ProjectDownloadRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ProjectDownloadReply], error)
 	Devcontainer(ctx context.Context, in *DevcontainerRequest, opts ...grpc.CallOption) (*DevcontainerReply, error)
 	Docker(ctx context.Context, in *DockerRequest, opts ...grpc.CallOption) (*DockerReply, error)
 	FileMappings(ctx context.Context, in *FileMappingsRequest, opts ...grpc.CallOption) (*FileMappingsReply, error)
@@ -219,6 +222,25 @@ func (c *projectServiceClient) Paths(ctx context.Context, in *ProjectPathsReques
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type ProjectService_PathsClient = grpc.ServerStreamingClient[ProjectPathsReply]
 
+func (c *projectServiceClient) Download(ctx context.Context, in *ProjectDownloadRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ProjectDownloadReply], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &ProjectService_ServiceDesc.Streams[4], ProjectService_Download_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[ProjectDownloadRequest, ProjectDownloadReply]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type ProjectService_DownloadClient = grpc.ServerStreamingClient[ProjectDownloadReply]
+
 func (c *projectServiceClient) Devcontainer(ctx context.Context, in *DevcontainerRequest, opts ...grpc.CallOption) (*DevcontainerReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DevcontainerReply)
@@ -325,6 +347,8 @@ type ProjectServiceServer interface {
 	SessionLogin(grpc.BidiStreamingServer[ProjectLoginRequest, ProjectLoginOutput]) error
 	// Read immediate directory entries inside the project's container as its remote user.
 	Paths(*ProjectPathsRequest, grpc.ServerStreamingServer[ProjectPathsReply]) error
+	// Stream a regular file as the project remote user; never journal file contents.
+	Download(*ProjectDownloadRequest, grpc.ServerStreamingServer[ProjectDownloadReply]) error
 	Devcontainer(context.Context, *DevcontainerRequest) (*DevcontainerReply, error)
 	Docker(context.Context, *DockerRequest) (*DockerReply, error)
 	FileMappings(context.Context, *FileMappingsRequest) (*FileMappingsReply, error)
@@ -375,6 +399,9 @@ func (UnimplementedProjectServiceServer) SessionLogin(grpc.BidiStreamingServer[P
 }
 func (UnimplementedProjectServiceServer) Paths(*ProjectPathsRequest, grpc.ServerStreamingServer[ProjectPathsReply]) error {
 	return status.Error(codes.Unimplemented, "method Paths not implemented")
+}
+func (UnimplementedProjectServiceServer) Download(*ProjectDownloadRequest, grpc.ServerStreamingServer[ProjectDownloadReply]) error {
+	return status.Error(codes.Unimplemented, "method Download not implemented")
 }
 func (UnimplementedProjectServiceServer) Devcontainer(context.Context, *DevcontainerRequest) (*DevcontainerReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method Devcontainer not implemented")
@@ -561,6 +588,17 @@ func _ProjectService_Paths_Handler(srv interface{}, stream grpc.ServerStream) er
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type ProjectService_PathsServer = grpc.ServerStreamingServer[ProjectPathsReply]
+
+func _ProjectService_Download_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(ProjectDownloadRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(ProjectServiceServer).Download(m, &grpc.GenericServerStream[ProjectDownloadRequest, ProjectDownloadReply]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type ProjectService_DownloadServer = grpc.ServerStreamingServer[ProjectDownloadReply]
 
 func _ProjectService_Devcontainer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DevcontainerRequest)
@@ -769,6 +807,11 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "Paths",
 			Handler:       _ProjectService_Paths_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "Download",
+			Handler:       _ProjectService_Download_Handler,
 			ServerStreams: true,
 		},
 	},

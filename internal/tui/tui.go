@@ -31,6 +31,7 @@ import (
 )
 
 type model struct {
+	download                 *fileDownload
 	bottomButtonHover        bool
 	sessionNavigation        sessionNavigation
 	pinGeneration            string
@@ -941,6 +942,16 @@ func (m *model) action(kind, text string) tea.Cmd {
 	}
 }
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch v := msg.(type) {
+	case downloadDone:
+		m.receiveDownload(v)
+		return m, nil
+	case downloadProgress:
+		if m.download == v.job {
+			m.download.received = v.received
+		}
+		return m, nil
+	}
 	defer m.observeSessionNavigation()()
 	if v, ok := msg.(cxzUpdateResult); ok {
 		m.autoChecking = false
@@ -2048,6 +2059,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.action("answer", strings.TrimPrefix(text, "/answer "))
 			}
 			localName := strings.Fields(text)[0]
+			if localName == "/download" {
+				return m, m.downloadCommand(text)
+			}
 			if localName == "/terminal" {
 				return m, m.toggleTerminal()
 			}

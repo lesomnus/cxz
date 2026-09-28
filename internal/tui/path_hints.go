@@ -3,6 +3,7 @@ package tui
 import (
 	"context"
 	"fmt"
+	"path"
 	"runtime"
 	"sort"
 	"strings"
@@ -22,6 +23,7 @@ type pathToken struct {
 	start, end          int
 	text, parent, query string
 	host                bool
+	download            bool
 	quote               string
 }
 type pathHints struct {
@@ -52,6 +54,37 @@ type pathOption struct {
 func pathTokenAt(value string, cursor int) (pathToken, bool) {
 	r := []rune(value)
 	cursor = min(max(0, cursor), len(r))
+	if strings.HasPrefix(value, "/download ") && cursor >= len([]rune("/download ")) {
+		start := len([]rune("/download "))
+		end := len(r)
+		for start < end && r[start] == ' ' {
+			start++
+		}
+		quote := ""
+		if start < end && (r[start] == '`' || r[start] == '"' || r[start] == '\'') {
+			quote = string(r[start])
+			start++
+		}
+		if quote != "" && end > start && string(r[end-1]) == quote {
+			end--
+		}
+		if cursor < start || cursor > end {
+			return pathToken{}, false
+		}
+		text := string(r[start:cursor])
+		if strings.ContainsAny(text, "\r\n") || strings.HasPrefix(text, "--") {
+			return pathToken{}, false
+		}
+		parent, query := "", text
+		if text == "~" {
+			parent = "~/"
+			query = ""
+		} else if i := strings.LastIndex(text, "/"); i >= 0 {
+			parent, query = text[:i+1], text[i+1:]
+		}
+		return pathToken{start: start, end: end, text: text, parent: parent, query: query, quote: quote, download: true}, true
+	}
+
 	for _, token := range backtickTokens(value) {
 		if cursor < token.start || cursor > token.end {
 			continue
@@ -161,6 +194,9 @@ func (m *model) fetchPathHints(d pathHintDue) tea.Cmd {
 	for _, candidate := range append([]*api.Project{m.project}, m.panelProjects...) {
 		if candidate != nil && candidate.Id == projectID && candidate.ContainerId != "" && candidate.RemoteUser != "" {
 			target = &api.Project{Id: candidate.Id, ContainerId: candidate.ContainerId, RemoteUser: candidate.RemoteUser}
+			if p.token.download && !strings.HasPrefix(parent, "/") && !strings.HasPrefix(parent, "~") {
+				parent = path.Join(candidate.RemoteWorkspace, parent)
+			}
 			break
 		}
 	}
@@ -303,6 +339,7 @@ func (m *model) completePathOption(option pathOption, closeQuote bool) {
 		return
 	}
 	replacement := option.text
+	completedDownload := token.download && closeQuote && !option.entry.Directory
 	if strings.ContainsRune(replacement, '`') {
 		m.notice = "Path contains a backtick; type it explicitly"
 		return
@@ -311,6 +348,15 @@ func (m *model) completePathOption(option pathOption, closeQuote bool) {
 		replacement = "!" + token.quote + replacement
 	}
 	if token.host && option.entry.Directory {
+		closeQuote = false
+	}
+	if token.download {
+		if closeQuote && !option.entry.Directory && token.quote != "" {
+			replacement += token.quote
+			if token.end < len(r) && string(r[token.end]) == token.quote {
+				token.end++
+			}
+		}
 		closeQuote = false
 	}
 	if closeQuote {
@@ -326,6 +372,12 @@ func (m *model) completePathOption(option pathOption, closeQuote bool) {
 	value := string(r[:token.start]) + replacement + string(r[token.end:])
 	pos := token.start + cursor
 	m.setPathInput(value, pos)
+	if completedDownload {
+		if next, scope, ok := m.pathContext(); ok {
+			m.pathHintDismissed = pathSignature(scope, next)
+		}
+		m.clearPathHints()
+	}
 }
 
 func (m *model) setPathInput(value string, pos int) {
