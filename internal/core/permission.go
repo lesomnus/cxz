@@ -1,5 +1,8 @@
 package core
 
+// CodexElicitation requests MCP form input or URL-flow confirmation.
+const CodexElicitation = "mcpServer/elicitation/request"
+
 // CodexAsyncQuestion is a cxz request type, not a provider JSON-RPC method.
 const CodexAsyncQuestion = "agentMessage/questions"
 
@@ -8,7 +11,7 @@ const CodexAsyncQuestion = "agentMessage/questions"
 // them; an answer is content, and nothing about the session implies it.
 func Question(name string) bool {
 	switch name {
-	case "AskUserQuestion", "item/tool/requestUserInput", CodexAsyncQuestion:
+	case "AskUserQuestion", "item/tool/requestUserInput", CodexAsyncQuestion, CodexElicitation:
 		return true
 	}
 	return false
