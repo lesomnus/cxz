@@ -1,643 +1,130 @@
 # cxz
 
-Claude Code and Codex in **cxz-owned devcontainers**, with durable history and a
-reconnecting TUI. Go + xli CLI + payday gRPC + SQLite + Bubble Tea. Linux first.
-The workflow succeeds [cld](https://github.com/lesomnus/cld), following
-[cxz's ownership architecture](docs/architecture.md): foreign containers are
-detected, never adopted.
+Run **Claude Code and Codex in devcontainers cxz owns**, with durable history and
+a TUI you can walk away from.
 
-See the [cxz glossary / 용어집](docs/glossary.md) for Manager, Project runtime,
-Session supervisor, Wisp, and the distinctions between sessions, runs and state.
+The agent runs on the server, not in your terminal. Close the terminal, lose the
+network, replace the manager — the conversation continues and is waiting where you
+left it. Every session gets its own agent configuration, HOME, cache and login, so
+a personal and a company subscription can work in the same repository without
+seeing each other.
 
-## Start
+Go + [xli](https://github.com/lesomnus/xli) CLI + payday gRPC + SQLite + Bubble
+Tea. Linux hosts the containers; a Windows or Linux client can drive it remotely.
 
-Linux release binaries and checksums: [v0.1.0-rc.1](https://github.com/lesomnus/cxz/releases/tag/v0.1.0-rc.1).
-This is a prerelease; Claude's second repeated-recreation memory check and native
-arm64 runtime acceptance remain unverified. See its release notes before use.
+Successor to [cld](https://github.com/lesomnus/cld).
 
-```sh
-CGO_ENABLED=0 go build -o bin/cxz ./cmd/cxz
-bin/cxz install --workspace-root /absolute/directory/containing/your/projects
-bin/cxz account add codex personal-codex
-bin/cxz account login personal-codex   # central Codex login; no project needed
-bin/cxz up .                          # prepare the project container and return
-bin/cxz                               # open the project list; n creates a session
-```
+## Requirements
 
-`install` builds and starts a background Docker manager, waits for its API, and
-returns. The host needs Docker and cxz; Node, devcontainer CLI and agent binaries
-are managed in containers. `manager serve` is a **foreground, blocking development
-server**, not the normal installation command.
+- **Host:** Linux with Docker. Nothing else — Node, the devcontainer CLI and the
+  agent binaries are managed inside containers.
+- **Client (optional):** Windows or Linux, connecting over SSH or authenticated
+  TCP. Needs neither Docker nor Go.
 
-The directory must exist under the installed root. `session new .` uses its
-`devcontainer.json`, not an existing VS Code container. Missing configuration gets
-a base Debian devcontainer with non-root `vscode` user. Multiple configurations
-prompt in a terminal; scripts pass `--config`. Image, Dockerfile, Compose,
-features and hooks delegate to the official devcontainer CLI.
-Use `cxz edit docker-compose` for a shared
-[project Compose override](docs/devcontainer-overrides.md), including additional
-host mounts. It edits `docker-compose.yaml` beside `settings.jsonc`; set
-`devcontainer.compose` only to choose another path. Compose `include` can load
-additional files. `${HOME}` expands on the Linux host CLI and
-`${DEVCONTAINER_SERVICE}` selects the project's development service.
-Existing containers need recreation.
-
-Register separate profiles for personal/company subscriptions:
+## Install
 
 ```sh
-bin/cxz account add --name "Company Codex" codex work-codex
-bin/cxz account login work-codex
-bin/cxz account ls
-bin/cxz backend ls             # supported agent/auth workflow mappings
-bin/cxz binding ls work-codex   # metadata only; no tokens
-bin/cxz session new --account work-codex .
+CGO_ENABLED=0 go build -o cxz ./cmd/cxz
+./cxz install --workspace-root /absolute/path/holding/your/projects
 ```
 
-Account is an agent authentication profile, not a cxz user/tenant. The manager's
-resource DB holds profile metadata. Codex defaults to central login: log in once
-per account, then supply access tokens to its connected projects. Claude keeps
-independent logins for **every session**, including sessions using the same account.
-Interactive session creation opens the login flow. To log in again, stop only that
-session and use `account login --session SESSION_ALIAS ACCOUNT`.
-Rotating refresh tokens are never copied across sessions or projects.
-Host credentials are never imported implicitly. Account and agent are fixed for each session;
-resume/recreate preserves them. Missing login fails instead of falling back to
-environment credentials. Interactive `session new` and TUI Ctrl+N offer account selection;
-scripts must pass `--account` when creating a session. Multiple Claude/Codex sessions
-may run in the same workspace. Each has independent configuration, history, HOME,
-cache and temporary directories; cxz does not create worktrees or coordinate edits.
-See [Account design and boundaries](docs/accounts.md).
+Prebuilt binaries and checksums are on the
+[releases page](https://github.com/lesomnus/cxz/releases).
 
-`Account.auth_backend` selects the authentication strategy; `Session.auth_binding`
-fixes the concrete authentication association. Codex defaults to
-`brokered-access-token`; Claude defaults to `project-local-oauth`. Codex also
-supports explicitly selected `project-local-oauth`. Existing accounts keep their
-selected backend. API keys remain unsupported. Central OAuth login and refresh
-are delegated to official Codex; cxz does not implement OAuth endpoints.
+`install` builds a manager image, starts it in the background, waits for its API
+and returns. Projects must live under the workspace root you give it.
 
-The account determines the agent; a conflicting explicit `--agent` is rejected.
-Use `cxz config set codex-model MODEL_ID` or `session new --model MODEL_ID .` for a new
-session's model; reconnect/resume preserves it. `cxz manager doctor`, `cxz project logs PROJECT`
-and `cxz version` provide diagnostics. See [operations and releases](docs/operations.md)
-for retry behavior, model settings, versioned installation, updates and rollback.
-
-Unmodified main builds also support automatic edge updates. The manager, project runtimes,
-and idle supervisors update in order; active agent work is preserved. Frontends restart only
-when their UI has no unsaved input or active interaction. Use `cxz self-update status` or
-`cxz self-update disable` to inspect or pause frontend updates; add `--server` on the Linux
-installation host to manage server policy. See [automatic updates](docs/auto-update.md) for
-bootstrap requirements, recovery and limitations.
-
-On Linux, `cxz self-update` fetches `main` from this repository and builds it in Docker,
-then updates the local executable and its installed Linux manager. Use `--ref`
-for a branch/tag/commit or `--client-only` to skip the manager. Docker Buildx and
-a Linux builder are required; host Git/Go are not. Builds are verified before
-replacement and the previous executable is retained. Running project sessions
-continue. On Linux, a Docker root installer handles protected locations such as
-`/usr/local/bin` automatically, preserving file ownership and permissions after
-verifying that Docker sees the same installation directory. See
-[source updates](docs/operations.md#업데이트와-롤백) for Windows, remote builders
-and recovery.
-
-On Windows, `cxz self-update` downloads the latest successfully tested `main`
-build from the `edge` GitHub release. It needs no Docker, Git or Go. The archive's
-SHA-256 checksum, executable platform, build information and version are checked
-before replacing `cxz.exe`; `cxz.previous.exe` keeps the old binary. Use
-`--ref vX.Y.Z` for a published release tag. Remote managers are updated separately
-on their Linux host.
-
-Use `cxz edit` to edit model defaults and host file mappings in your editor.
-New settings files contain disabled, commented examples. `settings.jsonc` accepts
-line/block comments and trailing commas; CLI preference updates keep comments.
-`cxz edit` writes the embedded schema beside the settings file and connects it
-through `$schema` for editor completions. Legacy `settings.jsonm` and
-`settings.json` are read until the next save migrates them. See
-[editor setup](docs/remote.md) for JSON-with-comments mode and Windows paths.
-The Windows frontend also provides `cxz edit` for local connections and model
-preferences; it uses `VISUAL`/`EDITOR` or Notepad. Host settings are applied on Linux.
-Use `cxz edit share CLAUDE.md` to edit a file in the installation's shared source
-directory (`share/` beside `settings.jsonc`). Nested paths create directories as
-needed. Map `${CXZ_SHARE_DIR}/CLAUDE.md` to `${AGENT_CONFIG_DIR}/CLAUDE.md` in each session.
-See [host file mappings](docs/file-mappings.md) for destination variables, sync,
-and application on agent restart.
-
-cxz enables a [shared Docker engine](docs/managed-docker.md) by default. Explicit
-`docker.mode: "off"` is preserved. Use `cxz edit` for an optional Compose override.
-`cxz docker up/down/status` manages it independently of projects. In the TUI,
-**Ctrl+P** opens status, start/stop and unused build-cache cleanup controls.
-
-For input or rendering problems, **F9** or the **Ctrl+P** recording button starts
-a [TUI diagnostic recording](docs/debug-recording.md). Stop to save a local JSONL
-file; `/record status` shows its full path. Input text is excluded.
-
-`cxz terminal-info` prints the local terminal environment and palette codes as a
-shareable text report. No installation or manager connection is required.
-
-Linux and Windows can use `cxz --endpoint ssh://user@host` to open the same TUI on a
-remote Linux installation. Authenticated `tcp://host:port` connections are also
-supported through `cxz expose`. Named `connections` in `settings.jsonc` appear
-together in the project panel as `project1 via work`; `default` sets its initial
-focus. Use `local://` for the local installation alongside remote targets. See [remote connections and Windows builds](docs/remote.md)
-for setup, transport security and the remaining host-local helper features.
-
-Conversation user-message rows use ANSI 236 across the conversation width.
-Markdown code blocks use ANSI 238 with syntax highlighting; explicit fence
-languages take priority, while unlabeled blocks use best-effort content detection
-and fall back to plaintext. GFM tables align and wrap cells without outer borders,
-with an ANSI 22 heavy header rule separated by one space between columns.
-
-Select a session in the project list and press **m** (or use `/memory`) to
-[browse retained agent memory and history](docs/agent-memory.md), even after
-the project container stops. Press **c** to copy selected data to another session.
-
-When startup needs configuration trust, cxz shows a compact inline **Exit / Trust**
-choice. Other interactive command errors remain visible until Exit is selected.
-Use `cxz up -x WORKSPACE` (or `--exit-on-error`) to return errors immediately;
-noninteractive and structured-output commands never open these prompts.
-
-The remote user must have write permission on the host workspace. Explicit
-`remoteUser` settings are respected; cxz does not silently change repository file
-ownership or remap an existing user's UID. Adjust the devcontainer for a host UID
-other than the default image's 1000 when necessary.
+## Quick start
 
 ```sh
-bin/cxz up .                               # prepare project and print project data
-bin/cxz up --format json .                 # prepare project and print data; no Account required
-bin/cxz session new --account work-codex .  # new conversation; stop an active one first
-bin/cxz                            # open TUI; only entrypoint
-bin/cxz project exec PROJECT -- go test ./...
-bin/cxz project shell PROJECT
-bin/cxz down .                             # remove owned containers; retain project, sessions and history
-bin/cxz project down .                     # same preservation behavior as cxz down
-bin/cxz project up .                       # recreate + resume; never replay old prompts
-bin/cxz project recreate --yes .           # writable layer lost; editors disconnect
-bin/cxz install --recreate         # replace manager, keep project processes/data
-bin/cxz uninstall                  # remove manager only; projects/data remain
+cxz account add codex personal    # register an authentication profile
+cxz account login personal        # Codex logs in once, centrally
+cxz up .                          # prepare this project's container
+cxz                               # open the TUI
 ```
 
-`cxz down` stops running agents and removes the project's owned containers,
-while retaining its registration, sessions, conversation history, workspace
-source and named volumes. After `cxz up`, open `cxz` to view the same sessions;
-use Ctrl+R or `cxz session resume SESSION` to continue one. `cxz up` only prepares
-the containers and does not automatically resume agents. Files stored only in
-a container's writable layer are removed with the container.
+Then, in the TUI: `n` creates a session, `Enter` opens it, type, `Ctrl+S` sends.
 
-Inside an owned project, `cxz`, `cxz session ls` and session controls are scoped to that
-project. No manager Docker socket or credential directory is mounted there.
-Global options precede commands: `cxz --state /private/client-state project up .`.
-Use the same client state for all host commands. Default: `$XDG_STATE_HOME/cxz`
-or `~/.local/state/cxz`; this stores an installation locator, not the named volumes.
+`Ctrl+D` detaches and the agent keeps working. Run `cxz` again whenever.
 
-The CLI uses `lesomnus/xli`: command flags must precede positional arguments.
-Use `cxz session new --account work-codex .`, not `cxz session new . --account work-codex` (the old ordering is
-now rejected). Each command has generated `--help`; help and completion need no
-running manager. Enable zsh completion with `source <(bin/cxz completion zsh)`.
-`project exec PROJECT -- COMMAND...` preserves everything after `--` as command arguments.
-For local development, use `cxz manager serve --agent /path/to/claude` (default: `claude`).
-Root-level `--agent`, the unused `--claude-config`, and the disabled project-wide
-`login` command are removed; authenticate with `cxz account login ACCOUNT`.
-See the [complete CLI argument audit](docs/cli.md).
+What each step does:
 
-### Remote Docker
+1. **An account is an authentication profile**, not a cxz user. Codex logs in once
+   and its token is supplied to projects; Claude logs in per session.
+2. **`cxz up` prepares, it does not start an agent.** It uses the directory's
+   `devcontainer.json`, or a plain Debian devcontainer if there is none.
+3. **`cxz` with no subcommand is the TUI**, and the only way in. Subcommands print
+   and exit.
 
-Binds resolve on the engine. In this development environment install with
-`--workspace-root /workspaces`; the known `/workspace` alias is translated to the
-shared `/workspaces/...` path. Unknown nonshared paths fail closed. The installer
-supports Unix Docker sockets and reachable non-TLS TCP engines. SSH/TLS endpoint
-setup and cross-OS client builds are not implemented. Never expose Docker's
-unauthenticated API to an untrusted network.
+## Concepts
 
-## TUI and scripts
-
-Only `cxz` without a subcommand opens the TUI. Subcommands print results and
-return errors directly; `--no-attach`, `it`, `session attach`, `tui`, `watch`, and
-`connect` have been removed. Remote TUI options belong to the root command:
-`cxz --endpoint NAME_OR_URL [--session SESSION] [--token-file FILE]`.
-New sessions require `--account`; container recreation requires `--yes`.
-
-`cxz purge --dry-run` lists cleanup targets for the installation selected by
-`--state`. `cxz purge --yes` permanently deletes all cleanup categories.
-Use `--groups containers,projects,state,tools,networks,local` to select categories
-for either preview or deletion; omitted groups default to all categories.
-
-Unlike `uninstall`, purge can delete conversations and credentials permanently.
-Back them up first. Run from the host/client; stop native cxz servers/agents first.
-Owned Docker containers are removed before volumes; owner labels and the inventory
-are rechecked. Partial failures retain the installation locator. If Docker data
-is retained, keep local state too so its ownership identity remains available.
-Workspace sources, personal Claude/Codex login directories, the CLI executable,
-shared images/build caches, and unlabeled Docker resources are never removed.
-Unknown files inside the state directory are reported and preserved; only known
-cxz children are deleted, not the state directory itself. This does not clean
-other cxz installations or revoke OAuth tokens at the provider.
-
-Projects have a display `name` and a unique short `alias`. The default name is
-the workspace directory name. Like cld, short names remain short, multi-word
-names use initials (`my-web-app` → `mwa`), and long single words are truncated.
-Collisions get a stable ID-derived suffix; existing aliases are not reassigned.
-Explicit aliases follow payday's lowercase-letter/alphanumeric/hyphen grammar
-and are case-normalized. A duplicate explicit alias is rejected.
-
-```sh
-cxz project add --name "My Web App" --alias web .  # register only; no container
-cxz project up web
-cxz project set --name "Production Web" --alias prod web
-cxz project exec prod -- pwd
-cxz project logs prod
-cxz  # select the project/session in the TUI
-cxz project down prod
-# Name/alias can also be supplied during new/up/recreate:
-cxz session new --name "My Web App" --alias web .
-```
-
-`cxz project ls` exposes both fields; the TUI shows alias and display name. Project
-arguments accept an exact ID/path, then an alias, then an unambiguous display
-name, in that order. Display names can contain spaces and need not be unique.
-Shell completion offers handles for project/up/new/down/recreate/attach/exec/shell/login/logs.
-Renaming does not change the project/session/container identity, and changing a
-display name does not implicitly change its alias. Metadata lives in the payday
-resource database and survives server/container restarts; back up state volumes.
-
-| Key | Action |
+| | |
 |---|---|
-| n / Ctrl+N (project) | Select Account and create a session; first project login runs if needed |
-| a (project) | Open account view; n adds, l logs in, / searches, Esc returns |
-| ↑/↓, Enter (project) | Select a session and open its view |
-| s (project) | Stop selected session before starting another (one live session per project) |
-| Ctrl+X twice within 3s (project) | Stop and remove selected session; archived journal retained |
-| Ctrl+Q (session) | Focus the project/session list without stopping the agent |
-| Tab / Shift+Tab (session) | Forward / reverse: pending approvals → input |
-| Enter / Backspace (approval focus) | Allow / deny selected request; Enter opens a dialog for questions |
-| Ctrl+S | Send message (Ctrl+Enter also works with compatible terminal encoding) |
-| Enter / Alt+Enter / Ctrl+J | Insert newline (multiline paste stays in the editor) |
-| Ctrl+X (session) | Clear the current draft |
-| F2 / F3 | Allow / deny pending approval |
-| `/answer` | Open/reopen the selected pending question dialog |
-| F4 | Interrupt active turn |
-| Esc twice within 3 seconds | Confirm interruption of the active turn |
-| Ctrl+R | Explicitly resume stopped/offline session |
-| PageUp / PageDown / mouse wheel | Scroll; Ctrl+Home first line, Ctrl+End follow latest |
-| `/approval` | Inspect the selected request's complete payload |
-| `/view` | Select tool rows with ↑/↓; Enter opens a focused content preview |
-| `/logs`, `/logs project` | Scrollable session/project diagnostics; `r` refreshes |
-| `/permission full`, `/permission ask` | Saved session policy: background automatic/manual tool approval |
-| `/stop` | Terminate selected agent |
-| `/restart` | Confirm/Cancel dialog to restart this session's agent; Tab/arrows select, Enter applies, Esc cancels |
-| Ctrl+C | Copy dragged conversation selection, focused tool contents, or report (terminal OSC 52) |
-| Ctrl+D | Detach; agent continues (outside the focused container shell) |
+| **Installation** | One manager, its containers, volumes and ownership identity. |
+| **Project** | A registered workspace directory plus the container cxz owns for it. |
+| **Session** | One conversation: its own agent, account, configuration and history. |
+| **Run** | One agent process serving a session. Resuming starts a new run; the conversation carries on. |
+| **Account** | An agent authentication profile. Fixed for a session once created. |
 
-Inline tool previews reserve 16 content rows, reducing their height in small terminals.
-On wide screens, the right preview panel uses the full terminal height.
-The header's ⧉ copies the full recorded content; both ⧉ and × highlight on hover.
-Markdown code blocks have a padding row above and below, with a ⧉ copy button
-in the upper-right corner. Copies preserve original code rather than screen wrapping.
-The input footer shows only FULL on the left when enabled, with quota/context on the right;
-session identity stays in the project panel. Click a notice above the input to copy
-its full message, including lines hidden by truncation. Notices are not duplicated
-in the project sidebar.
-F9 diagnostic recording covers this TUI across session switches, not just one agent
-session. A red `⬤ REC` appears above the input, with only the dot blinking each second.
+Full list in the [glossary](docs/glossary.md).
 
-The project list provides n (new session), a (accounts), r (rename), s (stop) and d (delete).
-`cxz up` prepares the workspace and returns; run `cxz` to open this list.
-Project rows lead to their sessions; there is no separate project dashboard. The conversation view
-keeps tool activity above a growing, rounded message editor. Drafts are retained
-per session while this TUI is open, including trips back to the project list.
-Escape does not discard a conversation draft. The composer and its borders keep
-the terminal's background (including the current input line). Use at least
-40 × 14 cells. The composer spans the terminal width. User messages show local
-timestamps instead of a YOU label; Claude/Codex speaker badges and pastel tool
-colors distinguish output. State events never accumulate in the transcript. Only
-`working` animates a braille spinner in the live conversation. `idle` is silent;
-`waiting_input` uses the pending-request box; starting/stopping/stopped/interrupted/
-failed conditions remain visible in notices. All state events remain in the journal.
-Reply text is white; only speaker labels retain agent branding. User timestamps
-are dimmed and the first-line `>` starts at the left edge. Completed-turn JSON is
-replaced by a dim metrics footer after a blank line: duration, cost, then tokens.
-Duration starts immediately after the two indicator cells and uses `00:00:00 ◷`
-(zero units are darker). Cost is compact: `$0.1`; below $0.10 it uses cents (`¢1.2`).
-Nonzero amounts below 0.05 cents show `¢<.1`; `/usage` retains four-decimal USD totals.
-Token symbols follow the values: ↑ input / ↓ output / ↺ cache read / ⊕ cache write /
-∑ total. Missing values are omitted; ≈◷ denotes measured request-to-completion time.
-Codex metrics use per-turn usage, never cumulative thread totals.
-Apart from the clock, metrics use five-cell slots (three numeric cells and two
-unit cells) with one separating cell, e.g. `1.2k↑`. Numeric counts are right-aligned;
-cost keeps its leading currency symbol. The first two columns
-are reserved for indicators; other content is indented (except the composer).
-Session information occupies a single
-bottom line; persistent shortcut rows are hidden. Type `/help` to display local
-shortcut help in the conversation without sending a prompt to the agent.
-Enter inserts a newline; Ctrl+Enter sends in the native Windows console, or on
-Unix terminals emitting CSI-u or xterm modified-Enter sequences. Ctrl+S is the portable send alternative (legacy
-terminals cannot distinguish Ctrl+Enter from Enter). Paste never submits.
-Typing `/` overlays fuzzy-matched command hints above the editor: arrows select,
-Tab completes, Ctrl+Enter/Ctrl+S executes, Esc dismisses. A blank row separates
-the overlay from history. It shows at most seven items, with a two-item scroll
-margin on either side where available. `/context` invokes Claude's native report
-or displays Codex's latest reported context footprint/window. `/compact` invokes
-native Claude compaction or Codex `thread/compact/start`; it requires an idle
-session and preserves the cxz journal. `/usage` reads the full session journal and reports
-tokens, cost and elapsed time with per-metric coverage. Claude cumulative costs
-are counted once per run, not repeatedly per turn. This is not account quota or billing.
-
-The status bar starts with one reserved selection cell and a seven-cell session
-alias, followed by agent/model, ◉ account and title (no state badges). The right
-side shows provider-reported **remaining** account quota, eight-cell bars, window
-labels and reset countdowns, with one cell of right padding. Missing quota shows
-`quota waiting`, `unsupported`, `unavailable` or `error`; `/usage` explains the
-reason. Old snapshots carry `~`,
-and expired windows show `refresh` rather than assuming they reset to 100%.
-Telemetry uses the already authenticated provider process: Codex rate-limit RPCs
-and Claude's experimental `get_usage`/rate-limit events. It refreshes at startup,
-after turns and every minute; unsupported versions degrade without failing turns.
-Aliases are globally unique,
-random 3–7-letter English words, stored in payday/SQLite and assigned to existing
-sessions on reconciliation. In the project panel (Ctrl+Q), select a session and press `r` to edit;
-Enter saves and returns to selection, Esc cancels. Custom aliases accept 3–7
-lowercase letters. Session commands also accept aliases. Deleting a session
-releases its alias while retaining the journal. The curated word pool is finite;
-exhaustion is reported explicitly without falling back to numeric identifiers.
-The composer starts with `>` on row 0 and dim single-digit line numbers afterward:
-`1 … 9, 0, 1 …`. The two-cell gutter never grows.
-
-Type a backtick followed by `!` anywhere in the composer, then drop or paste a
-host file path. For example: ``Compare `!/home/me/report.pdf` with this result.``
-After a 300 ms pause (or a closing backtick), a valid path becomes a file chip.
-Host paths refer to the machine running the cxz client; ordinary backtick paths
-continue to browse the session container. Bare paths are never auto-attached.
-File chips show a five-cell upload bar, then a compact size. Attachments are
-stored by the daemon in a shared CAS with session namespaces and exposed through
-a project-specific read-only mount. See [file attachments](docs/file-attachments.md)
-for client/SSH behavior and the required mount on existing projects.
-
-Pending approvals have their own box above the composer. Tab follows physical
-order (approvals → composer); Shift+Tab reverses it. Arrows
-select, Enter allows and Backspace denies. PgUp/PgDn, Ctrl+Up/Down, Ctrl+Home/End
-and the mouse wheel scroll the focused request without truncating its content.
-Provider-specific titles/commands/reasons appear before the full native payload.
-`/approval` shows the full selected
-payload in the conversation. Questions open a focused dialog automatically;
-`/answer` (or Enter on a pending question) reopens it after dismissal. Arrows/Tab
-move, Space/Enter selects an option, and Other accepts free text. Claude supports
-multiple selections and option previews; Codex questions use its native question
-IDs and Other policy. Next/Back navigates questions; Submit sends all answers
-together (Ctrl+S is next/submit). Esc/Cancel closes without rejecting the request.
-PgUp/PgDn or the wheel scroll long content. JSON is not required; the advanced
-`/answer {"question text or id":"answer"}` form remains available.
-The provider-neutral question model lives in `internal/agentview/questions.go`;
-original provider payloads stay in the journal and remain accessible via `/approval`.
-
-The TUI plays distinct sounds when a session finishes a turn or a new question or
-manual approval needs attention, including sessions outside the current view.
-Startup history, repeated snapshots and automatically handled approvals are silent.
-Sounds are bundled WAV files: macOS uses `afplay`, Linux tries `paplay` then
-`aplay`, and Windows uses PowerShell's `System.Media.SoundPlayer`. No additional
-Go dependency is needed; Linux audio requires one of those playback utilities.
-SSH sessions (`SSH_CONNECTION`, `SSH_CLIENT` or `SSH_TTY`) use the terminal bell
-directly. Missing tools, unavailable audio and playback failures fall back to the
-bell, with a three-second audio timeout. Alerts run asynchronously. Terminal
-settings determine whether the bell makes a sound or flashes; OS mute cannot be
-detected when the playback command succeeds.
-
-Previews have their own indented border; confirmed selections use softened magenta,
-while focus and buttons keep the green accent. Other drafts survive choosing a
-different radio option and are sent only while selected. Buttons have a blank
-row above and below. Multi-select and approval markers use `[ ]`, `[✓]`, and `[×]` for denial.
-Navigation buttons share a row when space permits (Left/Right also moves between
-buttons). The pending panel is hidden while the question dialog is open.
-Replies retain `{selected: [...], other: "..."}` per question through the runtime.
-Claude receives its native string answer plus annotations preserving exact
-selections/Other and the selected single-choice preview. Codex receives native
-answer arrays. Non-secret Other text is trimmed; an exact option match becomes
-that selection without duplication. The explicit CLI string-map reply remains
-available. This structured dialog path requires updated runtime and supervisor
-code as well as the CLI; restart the agent after updating the project runtime.
-Do not purge data to upgrade.
-After a decision, focus returns to input to avoid approving the next request with
-a repeated Enter. A blank row separates the conversation from the notice area.
-Resolved approvals update the original checkbox row in place, with separate
-allowed/denied/canceled colors. Tool results use compact summaries;
-`/details` shows the latest full tool input/result (including its matching call
-when loaded), and `session events` retains all events. Tool activity uses a shared
-display model: Claude Write/Edit and Codex fileChange show file paths and change
-counts without printing file bodies. Claude Write counts supplied content lines;
-Edit counts replacement spans, and replace_all reports per-match counts with an
-unknown total. Codex unified diff hunks provide added/deleted line counts. These
-are request counts until the provider reports completion; missing diffs are not
-estimated. Shell calls show a compact command/description instead of raw JSON.
-Paired tool calls/results occupy the original request row, updating its marker:
-`[ ]` requested/queued, `[•]` active, `[✓]` completed, `[×]` failed/denied/canceled.
-Claude tool requests alone do not imply execution: `[•]` requires that tool's
-approval or a native execution signal (Codex `inProgress`). Without that evidence,
-the row stays `[ ]` until a result arrives. Failure markers use red `#F26D78`.
-Approval rows merge only when native tool IDs explicitly identify the same call;
-unmatched approvals keep just a checkbox and tool name. Results without a loaded
-call remain visible. File counts use green `+N` and red `-N`; `/match` means a
-replacement span per occurrence, not a known file-wide total. Write's `+N content`
-is supplied content size, not an inferred net addition. Bash shows the first two
-wrapped command lines; full output and input remain in `/details` and the journal.
-The detail header has Input/Output tabs; use Left/Right while focused or click a
-tab to switch. Each tab keeps its scroll position, and Copy copies the active tab.
-
-Recreate's typed confirmation runs inline without switching to the alternate
-screen. TUI text inputs use a blinking light-green cursor (`#9ef01a`); this does
-not change the surrounding shell's cursor settings.
-Reply metrics begin with completion time (`MM-DD HH:MM / duration …`). The working
-spinner includes elapsed time and an Esc interrupt hint; press Esc twice within
-three seconds to confirm. F4 remains a direct interrupt shortcut.
-
-Claude uses its default tool set (`--tools` is omitted). This does not enable
-automatic approval. Configurable agent profiles are tracked in [TODO.md](TODO.md).
-
-`/permission full` saves automatic approval for this session in its durable
-journal. The supervisor handles existing and future **known tool, command, file
-and permission requests**, including when another session is viewed or every TUI
-is closed. The policy survives agent restart/resume and container recreation with
-preserved session data. New sessions and sessions without a saved policy default to `full`; an explicitly
-saved `ask` remains manual. Another session's policy is never inherited. Questions and unknown protocol requests still need a reply.
-`/permission ask` saves manual approval again; decisions already dispatched cannot
-be retracted. Neither mode changes the vendor sandbox configuration. Automatic
-and manual decisions share the same run/request validation and durable delivery
-tracking; ambiguous delivery is never automatically retried.
-
-The TUI only sends the dedicated Permission RPC and displays server state. The
-manager routes requests; the project runtime and session supervisor own execution.
-Wisp remains a connection-scoped workspace helper, not the session daemon. Update
-the manager/runtime and restart existing supervisors to use the new policy RPC.
-Old TUI-local full settings are not migrated; enable full once on the updated session.
-
-While scrolling, the notice row displays rendered line range/total and the source
-event timestamp in local time. Line numbers start at the session's first loaded
-event and change when the terminal width changes; a multiline event shares its
-timestamp. The TUI retains all streamed events instead of dropping the oldest
-2,000-event overflow, so large sessions consume more client memory. New output
-does not pull you away from history. If your latest prompt is above the viewport,
-up to two prompt lines are pinned over its top edge with a full-width dark brand
-background. Ctrl+End follows new output. The TUI fills the terminal and follows
-terminal size changes.
-
-Assistant text is parsed as CommonMark/GFM when structural Markdown syntax is
-found; plain text remains plain. Headings, lists, emphasis, tables and code are
-rendered locally; inline/fenced code uses a black background. HTML is not rendered,
-images are not fetched and escape sequences are stripped. The current
-[Claude text block](https://github.com/anthropics/claude-agent-sdk-python/blob/main/src/claude_agent_sdk/types.py)
-and [Codex agentMessage schema](https://github.com/openai/codex/blob/main/codex-rs/app-server-protocol/schema/typescript/v2/ThreadItem.ts)
-do not provide a Markdown MIME discriminator, so detection is heuristic.
-
-The alternate-screen output adapter repositions the physical terminal cursor at
-the input widget's Unicode-aware cursor cell, including wrapped/scrolled drafts.
-This fixes the bottom-row cursor anchor used by IME preedit/candidate windows;
-actual composition behavior still depends on the terminal and OS IME. OAuth's
-temporary terminal ownership is left untouched.
-
-Assistant headers start with `• CLAUDE` / `• CODEX` in the indicator gutter;
-answer text stays indented by two cells. On Unix, cxz requests Kitty keyboard
-disambiguation and queries the enabled flags while the TUI owns the alternate
-screen. Ctrl+Enter sends alongside Ctrl+S; Enter remains a newline. Keyboard
-mode is restored before exit or an external login and requested again on return.
-Terminals/multiplexers that do not deliver extended keys may still send the same
-CR for Enter and Ctrl+Enter; use Ctrl+S there. The actual terminal/IME still needs
-local verification; automated tests exercise the protocol bytes through a PTY.
-Windows reads the console's modifier flags directly, including left/right Ctrl
-and keypad Enter. Console records are decoded without passing Unicode through
-the system ANSI code page; mouse, resize and bracketed paste events are retained.
-Input mode is restored and the reader stops when the TUI exits. Windows CI injects
-native console key records to verify Ctrl+Enter, ordinary Enter and Unicode input.
-
-Only quota bars change color as remaining quota drops: at or below 50% pastel
-peach, 30% coral, and 15% pink-red. Above 50% the existing muted color remains;
-percentages, reset times and labels keep their existing styling.
-
-`cxz up` prints elapsed time and observed server provisioning checkpoints to stderr:
-configuration, resources, devcontainer image/build/hooks, selected agent installation,
-runtime boot/readiness. Fast steps may pass between polls; long steps repeat every
-ten seconds. This is stage reporting, not a percentage or raw Docker build log.
-`--format json` keeps stdout clean.
-
-Project `a` opens accounts without leaving the app. New-session `n` opens the same
-view in selection mode; an empty list offers account creation. Add a provider
-(Claude/Codex), alias and optional display name, then confirm Create account.
-Provider names use their brand colors in a six-cell slot, keeping selector arrows fixed.
-`/` focuses search by alias/name/provider/number; Enter selects in new-session mode.
-Creating a Claude session prompts for login inline when needed, including configured
-connections and remote SSH/TCP frontends. The project runtime runs the provider's
-login, and completion retries creation once with the same session profile.
-`l` runs the existing login workflow and returns to accounts (Claude: current
-project; Codex default: central). Registration alone does not authenticate.
-
-Data commands (table by default; use `--format json` for scripts): `session ls`, `project ls`, `session get ID`, `session send ID TEXT`,
-`session reply ID REQUEST_ID allow|deny [ANSWERS_JSON]`, `session interrupt ID`, `session resume ID`,
-`session stop ID`, `session events ID [AFTER_SEQ]`. TUI event connections retry by cursor;
-mutations are never blindly retried. Session APIs accept idempotency keys.
-
-## Resource API
-
-The server uses payday's generated resource framework, not only its config
-packages. Definitions are in `proto/cxz`; lifecycle extensions are in
-`proto/ext/cxz`. `go tool pd gen .` generates `resource/`, `internal/ent/`,
-`server/bare/` and `server/pd/`. The handwritten application layer is
-`server/lifecycle/` (generated Sink → publish interceptor → lifecycle → audit/gate).
-
-- `ProjectService.Add/Get/List/Watch` registers and reads workspace resources;
-  `Up/Down/Recreate` controls their owned containers. Up does not create a session.
-  `Paths` streams container directory entries for remote path completion as the
-  project's remote user, through the selected SSH/TCP connection.
-- `SessionService.Add/Get/List/Watch` manages conversation resources;
-  `Resume/Send/Reply/Interrupt/Stop` controls their runs.
-- Resource `Watch` subscribes to explicit resource refs. `Events/History` is the
-  separate, durable conversation journal with sequence cursors.
-- Runtime history reads incrementally project committed journal suffixes into
-  SQLite; complete manager cache pages avoid runtime RPCs. Background task state
-  uses one reduced snapshot instead of downloading old conversation pages.
-  See [resource refresh and conversation loading](docs/resource-refresh.md).
-
-Both resources are payday `global` entities: no fabricated tenant or user.
-Project Patch permits only name/alias/description with optimistic version checks.
-Other general Patch/Apply/Erase is closed; runtime status is not caller-writable.
-CLI/TUI and manager-to-project traffic use `cxz.ProjectService` and
-`cxz.SessionService`. The API has no version suffix or compatibility aliases.
-`api/` and `internal/runtimeproto/` define internal runtime view models in the
-separate `cxz.runtime` namespace; that service is not registered publicly.
-Runtime session/vendor IDs and journals are separate from payday resource IDs.
-
-`resources.db` stores ent resources and payday audit rows; `cxz.db` retains the
-runtime registry/event cache during this migration. Resource state is imported
-from existing manifests/journals. Custom resource metadata and audit history cannot be rebuilt from them:
-back up the full state volumes, not just transcripts.
-
-## Persistence and boundaries
-
-- One active agent per canonical workspace. Project supervisors are independent
-  of the manager and UI. Manager replacement reconnects project networks.
-- Host client → manager's private socket through Docker exec stdio → project
-  network + capability → scoped runtime → supervisor. No host port is published.
-  Project TCP is authenticated, not encrypted; the Docker operator is trusted.
-- Project state/transcripts use named volumes; checksum-verified tools are shared
-  read-only. Back up these volumes **and workspace contents**. SQLite alone is not
-  a backup. The fsynced journal/manifests are authoritative for runtime recovery;
-  SQLite resource/audit history should also be backed up.
-- Container loss ends its processes. `project up`/`session resume` creates a new run and resumes
-  the vendor conversation. Stale approvals fail and old prompts are not replayed.
-  Codex may give a previously empty thread a new vendor ID: no transcript exists
-  until its first turn. This exception requires no recorded send intent.
-- A crash may leave `delivery_unknown`; there is no exactly-once side-effect
-  guarantee. Inspect history before repeating a task. `down` / `project down` collects final
-  history; abrupt loss can leave manager history incomplete until `project up` recovers.
-- Foreign `project recreate` requires confirmation: writable layer lost, editors detached,
-  workspace/named volumes retained. Host initialization/elevated settings require
-  `--trust-config`. That flag trusts the configuration; it is not a hostile-code sandbox.
-- Codex uses `untrusted` approval policy without a nested sandbox inside its owned
-  devcontainer. Vendor permission requests are manually surfaced in the TUI.
-  Raw journals may contain private source and secrets. Do not publish them.
-
-## Verification and scope
-
-### Docker Bake and edge images
-
-CI follows cld's two-stage Bake flow: `build` exports static amd64/arm64 binaries,
-then `app` packages them with `internal/installer/image.Dockerfile`. The same
-Dockerfile is embedded in the standalone install command; releases use Bake too.
-
-After tests pass, main pushes publish `ghcr.io/lesomnus/cxz:edge` and
-`ghcr.io/lesomnus/cxz:sha-COMMIT_SHA` for `linux/amd64` and `linux/arm64`.
-PRs build without registry login or publication. `edge` is a moving development
-tag; use a recorded image digest when you need an exact build.
+## Commands you will actually use
 
 ```sh
-TAG=edge BUILD_HASH=$(git rev-parse HEAD) docker buildx bake build
-# Local native smoke test (the example assumes an amd64 engine):
-TAG=local docker buildx bake app --set app.platform=linux/amd64 --load
-docker run --rm ghcr.io/lesomnus/cxz:local version
-# Explicit publication, with registry credentials and both binaries prepared:
-TAG=edge BUILD_HASH=$(git rev-parse HEAD) docker buildx bake app --push
+cxz                                   # the TUI
+cxz up .                              # prepare a project
+cxz down .                            # remove its containers, keep everything else
+cxz project exec web -- go test ./...  # run something in the container
+cxz project shell web
+cxz session new --account personal .   # start a conversation from a script
+cxz project ls                        # add --format json for scripts
+cxz --endpoint ssh://user@host        # the same TUI, someone else's installation
 ```
 
-The build context excludes workspace state and credentials. Tests run in CI on
-the runner, not inside the Docker build. Root `Dockerfile` compiles source;
-`docker-bake.hcl` defines output, platforms, tags and image metadata.
+Flags come before positional arguments. Every command has `--help`, and help works
+without a running manager.
 
-### Tests
+## Keys worth knowing
 
-```sh
-go test ./...
-CXZ_TEST_RACE=1 go test -race ./internal/... -count=1
-go vet ./...
-go run ./tools/genproto
-go tool pd gen --check .
-# Uses an explicitly selected disposable, authenticated owned project and live usage:
-node scripts/probes/owned-session-live.mjs CLIENT_STATE PROJECT codex ACCOUNT
-```
+| | |
+|---|---|
+| `n` / `a` | New session / accounts (project list) |
+| `Ctrl+Q` | Back to the project list; the agent keeps running |
+| `Ctrl+S` | Send. `Enter` inserts a newline |
+| `Tab` | Between pending approvals and the composer |
+| `F2` / `F3` | Allow / deny an approval |
+| `F4` or `Esc` `Esc` | Interrupt the turn |
+| `Ctrl+End` | Jump to the latest output |
+| `Ctrl+D` | Detach |
+| `/help` | Shortcut help, without prompting the agent |
 
-Pinned: Claude 2.1.267, Codex 0.154.0, devcontainer CLI 0.89.0. Codex integration
-follows its generated schema and official [app-server protocol](https://learn.chatgpt.com/docs/app-server).
-See [progress](docs/progress.md) and [cld-parity acceptance](docs/plans/cld-parity.md)
-for results. Web/IDE UI, roster authentication, central login brokering, automatic
-release updates, dotfile/SSH forwarding and encrypted off-host backup remain
-separate work. This is not every cld convenience feature or the full web MVP.
-Large journals need future segmentation/indexing and retention policy.
+Everything else: [the TUI](docs/tui.md).
 
-### 버전 고정
+## Documentation
 
-`cxz use v0.1.0`으로 게시된 버전을 설치·고정하고 로컬 관리 구성 요소를 강제로 재시작할 수 있습니다. 진행 중인 작업은 중단됩니다. `cxz use`로 상태를 확인하고 `cxz use --unpin`으로 해제합니다. [범위와 복구 절차](docs/version-pinning.md)를 참고하세요.
+**Setting up** — [installation](docs/installation.md) ·
+[accounts](docs/accounts.md) · [settings](docs/settings.md) ·
+[containers and Docker](docs/docker.md) · [remote access](docs/remote.md)
 
-`cxz use @edge`는 최신 main 빌드, `cxz use @stable`은 최신 정식 릴리즈 채널을 선택합니다. 명시적인 전환은 즉시 설치·강제 재시작하며, 이후 채널 추적은 자동 업데이트 기능에서 처리합니다.
+**Using it** — [projects and sessions](docs/projects.md) ·
+[the TUI](docs/tui.md) · [approvals and questions](docs/approvals.md) ·
+[skills](docs/skills.md) · [MCP](docs/mcp.md) · [memory](docs/memory.md) ·
+[auxiliary AI](docs/auxiliary-ai.md) · [CLI reference](docs/cli.md)
+
+**Running it** — [updates and versions](docs/updates.md) ·
+[history and retention](docs/history.md) · [security](docs/security.md)
+
+**Internals** — [architecture](docs/architecture.md) · [glossary](docs/glossary.md)
+· [development](docs/development.md)
+
+Index: [docs/README.md](docs/README.md).
+
+## Limits worth knowing before you rely on it
+
+- **One live session per project at a time.** Stop one to start another.
+- **Journals hold your source and may hold secrets.** Do not publish them.
+- **Back up the state volumes and your workspace.** SQLite alone is not a backup.
+- **Crashes can leave a tool call in an unknown state.** There is no exactly-once
+  guarantee; check the history before repeating a task.
+- Claude runs with its default tool set. cxz does not sandbox the agent beyond the
+  devcontainer it owns.

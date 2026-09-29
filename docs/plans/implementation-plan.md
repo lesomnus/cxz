@@ -6,7 +6,7 @@
 > [cld-parity 완료 기준](cld-parity.md)이 이전 로컬 TUI 범위를 대체한다.
 > 사용자 인증과 웹 UI는 남겨 둔다.
 > 아래 P0–P6는 장기 제품 계획이며 이번 작업의 완료 조건과 같지 않다.
-> 구체적인 진행/검증 결과는 [진행 문서](../progress.md), 사용법은
+> 구체적인 진행/검증 결과는 git 히스토리, 사용법은
 > [README](../../README.md)를 따른다. Docker manager가 공식 CLI로 프로젝트를
 > 생성하며, 외부 개발 컨테이너의 편입은 지원하지 않는다.
 
@@ -229,7 +229,7 @@ P0에 의존한다. Go 모듈·빌드·fixture runner와 supervisor/journal/첫 
 후속 실사용 보강으로 durable provisioning checkpoint, 시작/조회 inventory reconcile,
 client 설정·모델, 진단, 버전 배포/rollback을 구현하고 `v0.1.0-rc.1`을 게시했다.
 Claude 반복 복구 및 native arm64 인수 검증은 남아 있다. 상세 검증 상태는
-[진행 기록](../progress.md), 절차는 [운영 문서](../operations.md)를 따른다.
+git 히스토리를 참고하고, 절차는 [운영 문서](../updates.md)를 따른다.
 Docker event watch 자체는 미구현이며 현재는 시작과 조회/재접속 시 실제 inventory를 사용한다.
 
 P1에 의존한다. `cxz project up`, 프로젝트 등록, 이름 volume, release cache, 컨테이너 소유 label,
