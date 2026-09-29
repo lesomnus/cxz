@@ -2,7 +2,9 @@ package lifecycle
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/auxiliary"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/resource"
 	"google.golang.org/grpc/codes"
@@ -58,6 +60,7 @@ func (s SessionServer) Erase(ctx context.Context, ref *resource.SessionRef) (*re
 	if err != nil {
 		return nil, err
 	}
+	forgetAuxiliary(ctx, s.shared.runtime, v.GetRuntimeId())
 	return resource.SessionEraseResponse_builder{Erased: ptr(true)}.Build(), nil
 }
 
@@ -89,6 +92,7 @@ func (s ProjectServer) Erase(ctx context.Context, ref *resource.ProjectRef) (*re
 			return nil, e
 		}
 		for _, v := range page.GetItems() {
+			forgetAuxiliary(ctx, s.shared.runtime, v.GetRuntimeId())
 			if _, e = s.Next().Session().Patch(ctx, resource.SessionPatchRequest_builder{Ref: sessionRef(v.GetRuntimeId()), Listed: ptr(false), AliasNull: ptr(true), DateUpdatedForce: ptr(true)}.Build()); e != nil {
 				return nil, e
 			}
@@ -107,4 +111,11 @@ func (s ProjectServer) Erase(ctx context.Context, ref *resource.ProjectRef) (*re
 		return nil, err
 	}
 	return resource.ProjectEraseResponse_builder{Erased: ptr(true)}.Build(), nil
+}
+
+func forgetAuxiliary(ctx context.Context, r interface {
+	Docker(context.Context, *api.DockerInput) (*api.Receipt, error)
+}, id string) {
+	b, _ := json.Marshal(auxiliary.Request{Action: "forget", Session: id})
+	_, _ = r.Docker(ctx, &api.DockerInput{Action: "auxiliary", Spec: b})
 }

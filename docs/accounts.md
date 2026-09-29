@@ -1,6 +1,10 @@
 # Agent Accounts
 
 Account는 cxz 사용자 인증이나 tenant가 아니라 Claude/Codex 구독 로그인 프로필이다.
+
+보조 AI 작업의 전용 인증과 사용 방법은
+[보조 AI 작업](auxiliary-ai.md)을 참고한다.
+
 `Project → Session → Account`로 연결하고, 같은 Project의 여러 대화가 서로 다른
 Account를 사용할 수 있다. 같은 workspace에서 Claude/Codex 및 같은 Account의
 여러 세션을 동시에 실행할 수 있다. 소스 충돌 해결과 worktree 선택은 에이전트/사용자

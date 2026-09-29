@@ -306,6 +306,11 @@ func (m *model) sessionScreen() string {
 		preview = strings.Join(rows, "\n") + "\n"
 	}
 	composer := m.input
+	if !m.creating {
+		if hint := m.suggestion(); hint != "" {
+			composer.Placeholder = "AI: " + safeText(hint) + " (Alt+G to use)"
+		}
+	}
 	modal := m.errorFocused() || m.redactDialog != nil || m.terminalFocused() || m.panelFocus || m.report != nil || m.modelPicker != nil || m.restartConfirm != nil || m.questionFocused() || m.pasteDialog != nil || m.selectingTools() || (m.previewVisible() && m.filePreview.focused)
 	if modal {
 		composer.Blur()
