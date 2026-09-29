@@ -307,8 +307,8 @@ func (m *model) sessionScreen() string {
 	}
 	composer := m.input
 	if !m.creating {
-		if hint := m.suggestion(); hint != "" {
-			composer.Placeholder = "AI: " + safeText(hint) + " (Alt+G to use)"
+		if hint := m.suggestionGhost(); hint != "" {
+			composer.Placeholder = safeText(hint)
 		}
 	}
 	modal := m.errorFocused() || m.redactDialog != nil || m.terminalFocused() || m.panelFocus || m.report != nil || m.modelPicker != nil || m.restartConfirm != nil || m.questionFocused() || m.pasteDialog != nil || m.selectingTools() || (m.previewVisible() && m.filePreview.focused)

@@ -13,8 +13,8 @@ type slashCommand struct{ name, description string }
 var slashCommands = []slashCommand{
 	{"/help", "Categories, shortcuts and command examples"},
 	{"/context", "Inspect current context"},
-	{"/summary", "AI summary, next-message suggestion and auxiliary usage"},
-	{"/suggest", "Copy the current AI suggestion; review before sending"},
+	{"/summary", "Summary below the response; on or off for this session, or once while off"},
+	{"/suggest", "Ghost suggestion; on or off for this session, or once while off"},
 	{"/compact", "Compact agent context"},
 	{"/usage", "Session tokens, cost and time"},
 	{"/answer", "Reply to a pending question"},
