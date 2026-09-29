@@ -255,7 +255,7 @@ func TestCommandsReachAPI(t *testing.T) {
 		}
 	}
 	for _, confirmed := range []bool{false, true} {
-		args := []string{"project", "rm"}
+		args := []string{"project", "purge"}
 		if confirmed {
 			args = append(args, "--yes")
 		}

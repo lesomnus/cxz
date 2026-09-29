@@ -15,8 +15,8 @@ cxz session new --account personal .                # start a conversation
 cxz down .                                          # remove containers
 cxz project up web                                  # recreate and resume
 cxz project recreate --yes web                      # rebuild from configuration
-cxz project rm web                                 # preview permanent removal
-cxz project rm --yes web                           # permanently remove this project
+cxz project purge web                                 # preview permanent removal
+cxz project purge --yes web                           # permanently remove this project
 ```
 
 What survives what:
@@ -26,7 +26,7 @@ What survives what:
 | `down` | gone | gone | kept | kept | kept |
 | `project up` | new | new | kept | kept | kept |
 | `project recreate` | new | **gone** | kept | kept | kept |
-| `project rm --yes` | gone | gone | **gone** | owned project volumes **gone** | **gone** |
+| `project purge --yes` | gone | gone | **gone** | owned project volumes **gone** | **gone** |
 | `uninstall` | kept | kept | kept | kept | kept |
 | `purge` | gone | gone | **gone** | **gone** | **gone** |
 
@@ -128,8 +128,9 @@ provider. **Back up before running it.**
 
 ## Permanently removing one project
 
-On the manager host, run `cxz project rm PROJECT` to review the target, then
-`cxz project rm --yes PROJECT` to confirm. Flags come before the project argument.
+On the manager host, run `cxz project purge PROJECT` to review the target, then
+`cxz project purge --yes PROJECT` to confirm. Flags come before the project argument.
+Unlike installation-wide `cxz purge`, `cxz project purge` targets one project.
 Use an alias, runtime ID, unambiguous display name, or workspace path. Archived
 projects can also be removed by ID or path without bringing them up again.
 
