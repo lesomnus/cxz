@@ -48,6 +48,7 @@ func (m *model) clearHistoryRenderCaches() {
 	m.renderedInputs = nil
 	m.renderedSummaries = nil
 	m.contextStatusCache = nil
+	m.quotaParses = nil
 	if len(m.hiddenEvents) > 0 {
 		keep := map[*api.Event]bool{}
 		for _, events := range m.events {

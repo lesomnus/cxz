@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"encoding/json"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -76,5 +78,42 @@ func TestQuotaIdentitySpaceAndCountdown(t *testing.T) {
 	}
 	if quotaCountdown(now.Add(5*time.Hour), now) != "5h" || quotaCountdown(now.Add(48*time.Hour), now) != "2d" {
 		t.Fatal("zero units retained")
+	}
+}
+
+// updateQuota runs inside every transcript rebuild and reads every usage event
+// of every session sharing the account. The payloads never change, so the parse
+// is remembered against the event; remembering it must not change the answer.
+func TestQuotaParseCacheMatchesAFreshParse(t *testing.T) {
+	payload := func(percent float64, at int64) []byte {
+		raw, _ := json.Marshal(map[string]any{
+			"type":       "usage",
+			"rateLimits": map[string]any{"five_hour": map[string]any{"status": "allowed", "usedPercent": percent, "resetsAt": at}},
+		})
+		return raw
+	}
+	events := []*api.Event{
+		{Seq: 1, RunId: "run", Kind: "usage", Text: "usage", Payload: payload(10, 1764000000), TimeMs: 1000},
+		{Seq: 2, RunId: "run", Kind: "usage_status", Text: "polling", TimeMs: 1500},
+		{Seq: 3, RunId: "run", Kind: "usage", Text: "usage", Payload: payload(40, 1764000000), TimeMs: 2000},
+	}
+	m := conversationModel()
+	wantWindows, wantState := quotaSnapshot("claude", "run", events, parseQuotaEvent)
+	for i := range 2 { // Second pass reads the cache the first one filled.
+		gotWindows, gotState := quotaSnapshot("claude", "run", events, m.cachedQuotaParse)
+		if gotState != wantState {
+			t.Fatalf("pass %d: state %q, want %q", i, gotState, wantState)
+		}
+		if !reflect.DeepEqual(gotWindows, wantWindows) {
+			t.Fatalf("pass %d: windows %+v, want %+v", i, gotWindows, wantWindows)
+		}
+	}
+	if len(m.quotaParses) != 2 {
+		t.Fatalf("usage events not remembered: %d", len(m.quotaParses))
+	}
+	// Trimming the window drops the events, so their parses must go with them.
+	m.clearHistoryRenderCaches()
+	if m.quotaParses != nil {
+		t.Fatal("parses outlived the events they were keyed on")
 	}
 }
