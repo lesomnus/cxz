@@ -28,7 +28,7 @@ var slashCommands = []slashCommand{
 	{"/download", "Save a container file to your local Downloads folder"},
 	{"/view", "Select tool rows with arrows and open their contents"},
 	{"/logs", "Scrollable diagnostics; add project for all project sources"},
-	{"/memory", "Browse retained agent memory, instructions and history"},
+	{"/memory", "Browse shared project memory and saved snapshots"},
 	{"/record", "Start/stop diagnostic recording · F9"},
 	{"/settings", "Shared Docker status and maintenance · Ctrl+."},
 	{"/terminal", "Open container terminal; Ctrl+` folds it"},

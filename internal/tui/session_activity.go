@@ -181,7 +181,7 @@ func (m *model) sessionIndicator(s *api.Session) string {
 func (m *model) acknowledgeSession() {
 	s := m.current()
 	if s == nil || m.projectView || m.accountView || m.creating || m.panelFocus ||
-		m.settingsPage != nil || m.memoryPage != nil || m.workflow != nil ||
+		m.settingsPage != nil || (m.memoryPage != nil || m.library != nil) || m.workflow != nil ||
 		!m.previewInteraction() || m.errorFocused() || m.terminalFocused() || m.focusApproval ||
 		m.focusList || m.selectingTools() || (m.previewVisible() && m.filePreview.focused) ||
 		!m.view.AtBottom() || m.historyOpening[s.Id] {

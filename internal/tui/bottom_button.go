@@ -6,7 +6,7 @@ import (
 )
 
 func (m *model) bottomButton() (x, y int, label string) {
-	if m.current() == nil || m.projectView || m.accountView || m.settingsPage != nil || m.memoryPage != nil || !m.previewInteraction() || m.errorFocused() || m.historyShimmer != nil || m.historyOpening[m.watchID] || m.view.Height < 1 {
+	if m.current() == nil || m.projectView || m.accountView || m.settingsPage != nil || (m.memoryPage != nil || m.library != nil) || !m.previewInteraction() || m.errorFocused() || m.historyShimmer != nil || m.historyOpening[m.watchID] || m.view.Height < 1 {
 		return 0, 0, ""
 	}
 	if m.view.AtBottom() && !m.historyWindow(m.current().Id).detached {

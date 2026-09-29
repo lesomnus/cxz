@@ -16,6 +16,7 @@ import (
 	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/dockerx"
+	"github.com/lesomnus/cxz/internal/memorylib"
 	"github.com/lesomnus/cxz/internal/memoryview"
 )
 
@@ -128,6 +129,28 @@ func TestLiveRetainedMemoryWithoutProjectContainer(t *testing.T) {
 	var page memoryview.Page
 	if err = json.Unmarshal(out.Data, &page); err != nil || page.Content != "saved across projects and accounts" || !strings.HasPrefix(page.Location, "volume:") {
 		t.Fatal(page, err)
+	}
+	// Shared memory helpers drop to the retained session UID before creating files.
+	if _, err = m.Library(ctx, source.Id, memorylib.Request{Action: "import"}); err != nil {
+		t.Fatal(err)
+	}
+	shared, err := m.Library(ctx, source.Id, memorylib.Request{Action: "read"})
+	if err != nil || len(shared.Documents) != 1 {
+		t.Fatal(shared, err)
+	}
+	saved, err := m.Library(ctx, source.Id, memorylib.Request{Action: "snapshot", Name: "Retained memory"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = m.Library(ctx, target.Id, memorylib.Request{Action: "read", ID: saved.Memory.ID}); err == nil {
+		t.Fatal("cross-project library read accepted")
+	}
+	if _, err = m.Library(ctx, source.Id, memorylib.Request{Action: "update", Document: "handoff.md", Content: "pending"}); err != nil {
+		t.Fatal(err)
+	}
+	shared, err = m.Library(ctx, source.Id, memorylib.Request{Action: "read", Document: "handoff.md"})
+	if err != nil || shared.Content != "pending" {
+		t.Fatal(shared, err)
 	}
 	copyReq := &api.CopyMemoryRequest{SessionId: source.Id, Path: "projects/old/memory", TargetId: target.Id, TargetPath: "projects/new/memory"}
 	if _, err = m.CopyMemory(ctx, copyReq); err != nil {

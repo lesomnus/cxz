@@ -41,7 +41,7 @@ func (m *model) errorVisible() bool {
 		return false
 	}
 	return m.errorDialog != nil && m.width >= 40 && m.height >= 14 &&
-		m.settingsPage == nil && m.memoryPage == nil && m.workflow == nil
+		m.settingsPage == nil && (m.memoryPage == nil && m.library == nil) && m.workflow == nil
 }
 
 func (m *model) errorFocused() bool {

@@ -9,6 +9,7 @@ service SessionService {
   rpc Stop(SessionControl) returns (Session);
   rpc Interrupt(SessionControl) returns (SessionReceipt);
   rpc CopyMemory(SessionCopyMemoryRequest) returns (SessionReceipt);
+  rpc Library(SessionLibraryRequest) returns (SessionMemoryReply);
   rpc Memory(SessionMemoryRequest) returns (SessionMemoryReply);
   rpc Logs(SessionLogsRequest) returns (SessionLogsReply);
   rpc Permission(SessionPermissionRequest) returns (SessionReceipt);
@@ -60,3 +61,5 @@ message SessionCopyMemoryRequest { SessionRef ref = 1; string path = 2; SessionR
 
 message SessionBackgroundRequest { SessionRef ref = 1; }
 message SessionBackgroundReply { uint64 last_seq = 1; bytes data = 2; }
+
+message SessionLibraryRequest { SessionRef ref = 1; bytes request = 2; }

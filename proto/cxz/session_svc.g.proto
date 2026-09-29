@@ -40,6 +40,7 @@ service SessionService {
   rpc Stop(SessionControl) returns (Session);
   rpc Interrupt(SessionControl) returns (SessionReceipt);
   rpc CopyMemory(SessionCopyMemoryRequest) returns (SessionReceipt);
+  rpc Library(SessionLibraryRequest) returns (SessionMemoryReply);
   rpc Memory(SessionMemoryRequest) returns (SessionMemoryReply);
   rpc Logs(SessionLogsRequest) returns (SessionLogsReply);
   rpc Permission(SessionPermissionRequest) returns (SessionReceipt);
@@ -254,13 +255,18 @@ message SessionCopyMemoryRequest {
   string target_path = 4;
 }
 
-message SessionMemoryRequest {
+message SessionLibraryRequest {
   SessionRef ref = 1;
-  string path = 2;
+  bytes request = 2;
 }
 
 message SessionMemoryReply {
   bytes data = 1;
+}
+
+message SessionMemoryRequest {
+  SessionRef ref = 1;
+  string path = 2;
 }
 
 message SessionLogsRequest {
