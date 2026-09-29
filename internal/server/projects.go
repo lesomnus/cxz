@@ -52,3 +52,10 @@ func (s *Server) watchRemote(r *api.WatchRequest, stream grpc.ServerStreamingSer
 		}
 	}
 }
+
+func (s *Server) RemoveProject(ctx context.Context, id string, sessions []string) error {
+	if s.manager == nil {
+		return status.Error(codes.PermissionDenied, "project removal is only available through the installed manager")
+	}
+	return s.manager.RemoveProject(ctx, id, sessions)
+}

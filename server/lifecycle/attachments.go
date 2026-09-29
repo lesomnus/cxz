@@ -19,6 +19,8 @@ func (s SessionServer) Upload(stream grpc.ClientStreamingServer[resource.Session
 		return status.Error(codes.InvalidArgument, "file upload must start with a header")
 	}
 	ctx := stream.Context()
+	s.shared.transition.RLock()
+	defer s.shared.transition.RUnlock()
 	session, err := s.resolve(ctx, header.GetRef())
 	if err != nil {
 		return err

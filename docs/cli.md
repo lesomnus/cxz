@@ -58,6 +58,8 @@ cxz project set --name NAME --alias ALIAS PROJECT
 cxz project up PROJECT              # recreate and resume
 cxz project recreate --yes PROJECT  # rebuild; writable layer lost
 cxz project down PROJECT
+cxz project rm PROJECT              # preview permanent removal
+cxz project rm --yes PROJECT        # delete this project and its owned data
 cxz project ls                      # owned and foreign projects
 cxz project logs PROJECT            # provisioning output
 cxz project shell PROJECT

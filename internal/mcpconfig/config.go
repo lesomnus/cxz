@@ -280,3 +280,21 @@ func SaveRuntime(root string, s Snapshot) error {
 	}
 	return core.WriteJSON(RuntimePath(root), s)
 }
+
+// ForgetProject removes overrides without modifying global server definitions.
+func ForgetProject(root, project string) error {
+	l := flock.New(filepath.Join(root, "mcp.lock"))
+	if err := l.Lock(); err != nil {
+		return err
+	}
+	defer l.Unlock()
+	c, err := Load(root)
+	if err != nil {
+		return err
+	}
+	if _, ok := c.Projects[project]; !ok {
+		return nil
+	}
+	delete(c.Projects, project)
+	return core.WriteJSON(filepath.Join(root, "mcp.json"), c)
+}

@@ -15,6 +15,8 @@ cxz session new --account personal .                # start a conversation
 cxz down .                                          # remove containers
 cxz project up web                                  # recreate and resume
 cxz project recreate --yes web                      # rebuild from configuration
+cxz project rm web                                 # preview permanent removal
+cxz project rm --yes web                           # permanently remove this project
 ```
 
 What survives what:
@@ -24,6 +26,7 @@ What survives what:
 | `down` | gone | gone | kept | kept | kept |
 | `project up` | new | new | kept | kept | kept |
 | `project recreate` | new | **gone** | kept | kept | kept |
+| `project rm --yes` | gone | gone | **gone** | owned project volumes **gone** | **gone** |
 | `uninstall` | kept | kept | kept | kept | kept |
 | `purge` | gone | gone | **gone** | **gone** | **gone** |
 
@@ -122,3 +125,29 @@ reported and left alone.
 
 Purge does not touch other cxz installations and does not revoke tokens at the
 provider. **Back up before running it.**
+
+## Permanently removing one project
+
+On the manager host, run `cxz project rm PROJECT` to review the target, then
+`cxz project rm --yes PROJECT` to confirm. Flags come before the project argument.
+Use an alias, runtime ID, unambiguous display name, or workspace path. Archived
+projects can also be removed by ID or path without bringing them up again.
+
+Removal stops the project's agents by removing its owned containers, then deletes
+its cxz-owned volumes and dedicated networks. It also removes project/session
+registry rows, related audit records, cached conversations, memories and snapshots
+inside the project volume, attachment references, derived summary/suggestion
+content, project MCP/skill overrides, and project token-supply grants.
+
+Host workspace sources, global accounts and logins, global MCP/skill definitions,
+other projects, the shared workspace network, shared Docker engine/images/build
+cache, and unlabelled user-managed volumes/networks are preserved. Docker resources
+must have both matching `cxz.owner` and `cxz.project` labels. Foreign endpoints or
+volumes still in use cause an error; fix the reported conflict and repeat the same
+command. Cleanup is not atomic: some containers or volumes may already be gone,
+but registration remains available for retries until cleanup succeeds. Small
+content-free guards can remain to reject late events/auxiliary work.
+
+Registering the same directory after successful removal starts a fresh project;
+old sessions and memory do not return. Existing backups are unaffected. This is
+logical deletion, not secure erasure of free disk blocks.

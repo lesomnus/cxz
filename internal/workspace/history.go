@@ -62,6 +62,8 @@ func (m *Manager) cachedHistory(ctx context.Context, r *api.WatchRequest) (*api.
 }
 
 func (m *Manager) cache(ctx context.Context, batch *api.EventBatch) error {
+	m.writeMu.Lock()
+	defer m.writeMu.Unlock()
 	tx, e := m.DB.BeginTx(ctx, nil)
 	if e != nil {
 		return e
@@ -69,6 +71,9 @@ func (m *Manager) cache(ctx context.Context, batch *api.EventBatch) error {
 	defer tx.Rollback()
 	floors := map[string]uint64{}
 	for _, v := range batch.Events {
+		if m.removedSessions[v.SessionId] {
+			continue
+		}
 		floor, ok := floors[v.SessionId]
 		if !ok {
 			floor, e = historypolicy.Floor(ctx, tx, v.SessionId)
@@ -93,6 +98,9 @@ func (m *Manager) cache(ctx context.Context, batch *api.EventBatch) error {
 		floors[v.SessionId] = floor
 	}
 	for _, v := range batch.Events {
+		if m.removedSessions[v.SessionId] {
+			continue
+		}
 		if v.Seq <= floors[v.SessionId] && (v.Kind != core.HistoryTrimmedKind || core.HistoryFloor(v.Kind, v.Payload) < floors[v.SessionId]) {
 			continue
 		}
@@ -112,8 +120,16 @@ func (m *Manager) CacheEvents(ctx context.Context, batch *api.EventBatch) error 
 	if err := m.cache(ctx, batch); err != nil {
 		return err
 	}
+	m.writeMu.Lock()
+	defer m.writeMu.Unlock()
 	if c, e := m.auxiliaryController(); e == nil {
-		c.Observe(batch.Events)
+		var live []*api.Event
+		for _, v := range batch.Events {
+			if !m.removedSessions[v.SessionId] {
+				live = append(live, v)
+			}
+		}
+		c.Observe(live)
 	}
 	return nil
 }

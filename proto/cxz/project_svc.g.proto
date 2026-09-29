@@ -33,6 +33,8 @@ service ProjectService {
   // once in that first message and once as a change that happened while it was
   // being read -- and that is harmless for the same reason.
   rpc Watch(ProjectWatchRequest) returns (stream ProjectWatchResponse);
+  // Permanently remove one project and its owned data, preserving workspace sources.
+  rpc Remove(ProjectRemoveRequest) returns (ProjectRemoveReply);
   // Ephemeral PTY on the manager host. First frame identifies a project and size;
   // later frames carry input or a resize. Terminal bytes are never journaled.
   rpc Terminal(stream ProjectTerminalRequest) returns (stream ProjectTerminalReply);
@@ -222,6 +224,16 @@ message ProjectWatchItem {
   // Empty in the first message, which is not something anybody asked for -- it
   // is what is already there.
   string action = 3 [features.field_presence = IMPLICIT];
+}
+
+message ProjectRemoveRequest {
+  string target = 1;
+  bool confirmed = 2;
+}
+
+message ProjectRemoveReply {
+  Project project = 1;
+  bool removed = 2;
 }
 
 message ProjectTerminalRequest {

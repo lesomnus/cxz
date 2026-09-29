@@ -116,3 +116,32 @@ func (r *sizedReader) Read(p []byte) (int, error) {
 	}
 	return n, err
 }
+
+// RemoveSession drops this session's attachment references. Other sessions' links
+// keep shared blobs alive; flob reclaims blobs with no remaining references.
+func RemoveSession(ctx context.Context, root, project, session string) error {
+	if !ValidID(project) || !ValidID(session) {
+		return fmt.Errorf("invalid attachment scope")
+	}
+	r, err := os.OpenRoot(root)
+	if os.IsNotExist(err) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	defer r.Close()
+	if err := r.RemoveAll(filepath.Join("exports", project, session)); err != nil {
+		return err
+	}
+	store := NewStores(root).Use(session).(flob.OsStore)
+	for info, err := range store.Walk(ctx) {
+		if err != nil {
+			return err
+		}
+		if err := store.Erase(ctx, info.Digest()); err != nil {
+			return err
+		}
+	}
+	return nil
+}

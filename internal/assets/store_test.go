@@ -126,3 +126,39 @@ func TestInvalidAttachmentPaths(t *testing.T) {
 		t.Fatal("accepted scope traversal")
 	}
 }
+
+func TestRemoveSessionPreservesOtherAttachmentLinks(t *testing.T) {
+	root := t.TempDir()
+	ctx := t.Context()
+	for _, id := range []string{"one", "two"} {
+		if _, err := Add(ctx, root, "project", id, "shared.txt", 6, strings.NewReader("shared")); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := RemoveSession(ctx, root, "project", "one"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(ExportRoot(root, "project"), "one")); !os.IsNotExist(err) {
+		t.Fatal(err)
+	}
+	var count int
+	for _, err := range NewStores(root).Use("one").(flob.OsStore).Walk(ctx) {
+		if err != nil {
+			t.Fatal(err)
+		}
+		count++
+	}
+	if count != 0 {
+		t.Fatal("removed attachment retained in CAS")
+	}
+	files, err := filepath.Glob(filepath.Join(ExportRoot(root, "project"), "two", "*", "shared.txt"))
+	if err != nil || len(files) != 1 {
+		t.Fatal(files, err)
+	}
+	if body, err := os.ReadFile(files[0]); err != nil || string(body) != "shared" {
+		t.Fatal(string(body), err)
+	}
+	if err := RemoveSession(ctx, root, "project", "one"); err != nil {
+		t.Fatal(err)
+	}
+}

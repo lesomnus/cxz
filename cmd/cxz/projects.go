@@ -355,5 +355,34 @@ func projectMetadataCommands() *xli.Command {
 		})}
 		parent.Commands = append(parent.Commands, c)
 	}
+	parent.Commands = append(parent.Commands, projectRemoveCommand())
 	return parent
+}
+
+func projectRemoveCommand() *xli.Command {
+	return &xli.Command{Name: "rm", Brief: "Permanently delete one project and its owned data; keep workspace sources", Args: arg.Args{projectArg("PROJECT", false)}, Flags: flg.Flags{switchFlag("yes", "Confirm permanent deletion of sessions, history, memory and owned volumes")}, Handler: withClient(func(ctx context.Context, client api.SessionsClient, c *xli.Command) error {
+		target := arg.MustGet[string](c, "PROJECT")
+		if st, err := os.Stat(target); err == nil && st.IsDir() {
+			var err error
+			target, err = dockerx.EnginePath(target)
+			if err != nil {
+				return err
+			}
+		}
+		confirmed := flg.MustGet[bool](c, "yes")
+		out, err := client.(*resourceclient.Client).RemoveProject(ctx, target, confirmed)
+		if err != nil {
+			return err
+		}
+		p := out.GetProject()
+		if !confirmed {
+			fmt.Fprintf(c.ErrWriter, "Target: %s %s (%s)\n", p.GetRuntimeId(), p.GetWorkspace(), p.GetName())
+			return fmt.Errorf("project rm permanently deletes this project's sessions, history, memory and owned resources; workspace sources and shared accounts are kept; pass --yes to confirm")
+		}
+		if !out.GetRemoved() {
+			return fmt.Errorf("manager did not confirm project removal")
+		}
+		fmt.Fprintf(c.Writer, "Removed project %s. Workspace sources preserved: %s\n", p.GetRuntimeId(), p.GetWorkspace())
+		return nil
+	})}
 }
