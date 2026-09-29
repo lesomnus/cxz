@@ -11,6 +11,8 @@ import (
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/dockerx"
 	"github.com/lesomnus/cxz/internal/historypolicy"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func (m *Manager) syncHistoryPolicy(ctx context.Context, client api.SessionsClient) error {
@@ -71,12 +73,31 @@ func (m *Manager) historyPolicy(ctx context.Context, spec []byte) (*api.Receipt,
 	return &api.Receipt{Status: string(b)}, err
 }
 
+// A project runtime older than the manager routes an action it does not know
+// to the manager path it never has, and answers with that failed precondition;
+// one older still does not serve the call at all.
+func unsupportedByRuntime(err error) bool {
+	switch status.Code(err) {
+	case codes.FailedPrecondition, codes.Unimplemented:
+		return true
+	}
+	return false
+}
+
+// Every preference here lands at the next agent start rather than in the
+// running container, so a runtime that cannot take one must not decide whether
+// the project can be used. Refusing took the whole project down -- no resume,
+// no new session -- and project runtimes only update once their sessions fall
+// quiet, which a stopped session waiting to be resumed cannot bring about.
 func (m *Manager) syncRuntimePreferences(ctx context.Context, client api.SessionsClient, project string) error {
-	if err := m.syncFileMappings(ctx, client); err != nil {
-		return err
+	for _, push := range []func() error{
+		func() error { return m.syncFileMappings(ctx, client) },
+		func() error { return m.syncHistoryPolicy(ctx, client) },
+		func() error { return m.syncMCP(ctx, client, project) },
+	} {
+		if err := push(); err != nil && !unsupportedByRuntime(err) {
+			return err
+		}
 	}
-	if err := m.syncHistoryPolicy(ctx, client); err != nil {
-		return err
-	}
-	return m.syncMCP(ctx, client, project)
+	return nil
 }
