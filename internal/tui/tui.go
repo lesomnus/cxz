@@ -31,6 +31,8 @@ import (
 )
 
 type model struct {
+	library                  *libraryPage
+	seedMemory               string
 	download                 *fileDownload
 	bottomButtonHover        bool
 	sessionNavigation        sessionNavigation
@@ -964,6 +966,30 @@ func (m *model) action(kind, text string) tea.Cmd {
 }
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch v := msg.(type) {
+	case libraryResult:
+		return m, m.receiveLibrary(v)
+	case memorySeed:
+		if m.library != v.page || m.library.generation != v.generation {
+			return m, nil
+		}
+		m.library.loading = false
+		if v.err != nil {
+			m.library.message = v.err.Error()
+			return m, nil
+		}
+		if v.data.Memory == nil {
+			m.library.message = "Memory snapshot unavailable"
+			return m, nil
+		}
+		m.seedMemory = v.data.Memory.ID
+		m.project = v.project
+		m.library = nil
+		m.openAccounts(true)
+		m.accountConnection = v.project.Id
+		return m, m.loadAccounts()
+	}
+
+	switch v := msg.(type) {
 	case downloadDone:
 		m.receiveDownload(v)
 		return m, nil
@@ -1179,6 +1205,14 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.focusConversationMouse(v)
 	}
+	if m.library != nil {
+		switch v := msg.(type) {
+		case tea.KeyMsg:
+			return m, m.libraryKey(v)
+		case tea.MouseMsg:
+			return m, m.libraryMouse(v)
+		}
+	}
 	if m.memoryPage != nil {
 		switch v := msg.(type) {
 		case tea.KeyMsg:
@@ -1389,6 +1423,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.workflow.close()
 		m.workflow = nil
 		if v.flow.create {
+			if v.err != nil {
+				m.seedMemory = v.flow.seed
+			}
 			r := result{text: "session created", err: v.err}
 			if v.session != nil && v.err == nil {
 				r.sessionID = v.session.Id
@@ -1665,7 +1702,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// previous page arrived while another conversation was selected.
 			history = m.loadOlderHistory()
 		}
-		return m, tea.Batch(timer(), m.periodicRefresh(), m.reportActivity(), m.frontendUpdate(), m.pollSettings(), history)
+		return m, tea.Batch(timer(), m.periodicRefresh(), m.reportActivity(), m.frontendUpdate(), m.pollSettings(), m.pollLibrary(), history)
 	case resourcesChanged:
 		if v.generation != m.resourceWatchGeneration {
 			return m, nil
@@ -2190,6 +2227,9 @@ func (m *model) View() (out string) {
 	}()
 	if m.sessionArchive != nil {
 		return m.sessionArchiveScreen()
+	}
+	if m.library != nil {
+		return m.libraryScreen()
 	}
 	if m.memoryPage != nil {
 		return m.memoryScreen()

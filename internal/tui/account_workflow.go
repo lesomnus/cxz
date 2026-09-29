@@ -15,6 +15,7 @@ import (
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/memorylib"
 	"github.com/lesomnus/cxz/internal/settings"
 	"github.com/lesomnus/cxz/internal/transport"
 	"google.golang.org/grpc/codes"
@@ -29,6 +30,7 @@ type accountWorkflow struct {
 	updates                          chan tea.Msg
 	input                            textinput.Model
 	alias, provider, output, message string
+	seed                             string
 	create, sending, canceling       bool
 	started                          time.Time
 	offset                           int
@@ -146,6 +148,13 @@ func (m *model) startAccountWorkflow(alias, provider, sessionID string, create b
 			return open() // Same creation key and settings, exactly one retry.
 		}
 	}
+	seed := ""
+	if create {
+		seed = m.seedMemory
+		f.seed = seed
+		m.seedMemory = ""
+	}
+	libraryClient, _ := m.client.(memorylib.Client)
 	work := func() tea.Msg {
 		defer r.Close()
 		defer w.Close()
@@ -154,6 +163,16 @@ func (m *model) startAccountWorkflow(alias, provider, sessionID string, create b
 		var err error
 		if create {
 			s, err = creator(ctx, projectID, alias, r, out, out)
+			if err == nil && seed != "" {
+				if libraryClient == nil {
+					err = fmt.Errorf("new session created but shared memory unavailable")
+				} else {
+					_, err = libraryClient.Library(ctx, s.Id, memorylib.Request{Action: "fork", ID: seed})
+					if err != nil {
+						err = fmt.Errorf("session %s created, but memory could not be loaded: %w", s.Id, err)
+					}
+				}
+			}
 		} else {
 			err = login(ctx, projectID, alias, sessionID, r, out, out)
 		}

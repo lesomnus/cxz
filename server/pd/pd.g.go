@@ -3645,6 +3645,11 @@ func (s interceptSession) CopyMemory(ctx context.Context, req *resource.SessionC
 		resource.SessionService_CopyMemory_FullMethodName, req, s.SessionServiceServer.CopyMemory)
 }
 
+func (s interceptSession) Library(ctx context.Context, req *resource.SessionLibraryRequest) (*resource.SessionMemoryReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
+		resource.SessionService_Library_FullMethodName, req, s.SessionServiceServer.Library)
+}
+
 func (s interceptSession) Memory(ctx context.Context, req *resource.SessionMemoryRequest) (*resource.SessionMemoryReply, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
 		resource.SessionService_Memory_FullMethodName, req, s.SessionServiceServer.Memory)
@@ -4917,6 +4922,19 @@ func dispatch(ctx context.Context, s resource.Server, op *pdpb.Op) (*anypb.Any, 
 		}
 
 		res, err := s.Session().CopyMemory(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.SessionService_Library_FullMethodName:
+		v := &resource.SessionLibraryRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Session().Library(ctx, v)
 		if err != nil {
 			return nil, err
 		}

@@ -15,6 +15,7 @@ import (
 	"github.com/lesomnus/cxz/internal/cxzupdate"
 	"github.com/lesomnus/cxz/internal/installer"
 	"github.com/lesomnus/cxz/internal/mcpruntime"
+	"github.com/lesomnus/cxz/internal/memorylib"
 	"github.com/lesomnus/cxz/internal/memoryview"
 	"github.com/lesomnus/cxz/internal/resourceclient"
 	"github.com/lesomnus/cxz/internal/server"
@@ -224,6 +225,9 @@ func internalCommands() xli.Commands {
 			return err
 		}),
 		makeCmd("wisp", nil, func(ctx context.Context, _ *xli.Command) error { return wisp.Serve(os.Stdin, os.Stdout) }),
+		makeCmd("_memory-library", nil, func(ctx context.Context, _ *xli.Command) error {
+			return memorylib.Serve(ctx, stateFrom(ctx), os.Stdin, os.Stdout)
+		}),
 		makeCmd("_memory-copy", nil, func(ctx context.Context, _ *xli.Command) error {
 			return memoryview.ServeCopy(ctx, stateFrom(ctx), "/cxz/target/data", os.Stdin, os.Stdout)
 		}),

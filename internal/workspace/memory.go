@@ -24,6 +24,9 @@ func (m *Manager) memoryHelper(ctx context.Context, project, entry string, input
 	mounts = append(mounts, memoryMount{volume: m.ToolsVolume, target: "/cxz/tools"})
 	name := "cxz-memory-" + core.ID()
 	args := []string{"run", "--rm", "-i", "--name", name, "--network", "none", "--read-only", "--cap-drop", "ALL", "--cap-add", "DAC_OVERRIDE", "--cap-add", "CHOWN", "--security-opt", "no-new-privileges", "--label", "cxz.owner=" + m.Owner, "--label", "cxz.project=" + project}
+	if entry == "_memory-library" {
+		args = append(args, "--cap-add", "SETUID", "--cap-add", "SETGID")
+	}
 	for _, v := range mounts {
 		// Reads must never recreate a missing or adopt a foreign volume.
 		b, err := dockerx.Run(ctx, "volume", "inspect", v.volume)
