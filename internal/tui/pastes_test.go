@@ -3,7 +3,6 @@ package tui
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 	"testing"
 
@@ -68,14 +67,14 @@ func TestSelectedChipHighlightPreservesLayout(t *testing.T) {
 		if ansi.Strip(before) != ansi.Strip(after) {
 			t.Fatal("highlight changed layout")
 		}
-		// A selected chip is not where typing goes, so it paints the accent step
+		// A selected chip is not where typing goes, so it paints the quiet step
 		// rather than the focus green. Derive it instead of repeating the sequence.
-		var r, g, b uint8
-		if _, err := fmt.Sscanf(accentGreen, "#%02x%02x%02x", &r, &g, &b); err != nil {
-			t.Fatal(err)
-		}
-		if chip := fmt.Sprintf("48;2;%d;%d;%d", r, g, b); !strings.Contains(after, chip) {
+		chip := sgr(lipgloss.NewStyle().Background(lipgloss.Color(accentGreen)))
+		if !strings.Contains(after, chip) {
 			t.Fatalf("missing chip highlight at width %d: %q", width, after)
+		}
+		if focused := sgr(lipgloss.NewStyle().Background(lipgloss.Color(focusGreen))); strings.Contains(after, focused) {
+			t.Fatalf("chip took the focus step at width %d: %q", width, after)
 		}
 	}
 }

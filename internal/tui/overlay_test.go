@@ -23,7 +23,8 @@ func TestOverlayFocusBorder(t *testing.T) {
 	}
 	m := conversationModel()
 	m.openReport("/usage", "report")
-	top := accent.Render("╭" + strings.Repeat("─", m.width-2) + "╮")
+	// A modal holding the keyboard takes the focus step, as the composer does.
+	top := focus.Render("╭" + strings.Repeat("─", m.width-2) + "╮")
 	if !strings.Contains(m.reportView(view), top) {
 		t.Fatal("report modal lacks focused border")
 	}

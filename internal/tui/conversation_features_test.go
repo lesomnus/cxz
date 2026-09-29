@@ -25,6 +25,13 @@ func conversationModel() *model {
 	return m
 }
 
+// The SGR parameters a style actually emits. Reading the palette through the
+// same conversion the screen uses keeps a test from repeating a hex value, and
+// from tripping over the unit of rounding that conversion can introduce.
+func sgr(style lipgloss.Style) string {
+	return strings.TrimPrefix(strings.SplitN(style.Render("x"), "m", 2)[0], "\x1b[")
+}
+
 func TestProviderFixedBrandSlots(t *testing.T) {
 	old := lipgloss.ColorProfile()
 	lipgloss.SetColorProfile(termenv.TrueColor)
