@@ -74,7 +74,7 @@ func (m *model) changeHistoryWindow(index int) tea.Cmd {
 	}
 	m.windowPolicy = &p
 	for id := range m.events {
-		m.limitHistory(id, m.historyWindow(id).detached)
+		m.limitHistory(id, m.historyWindow(id).detached, m.readerAnchor(id))
 	}
 	m.render()
 	m.settingsPage.message = "Client history window saved. Provider context is unchanged."

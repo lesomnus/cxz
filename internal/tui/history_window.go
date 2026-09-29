@@ -102,8 +102,11 @@ func (m *model) applyHistoryFloor(id string, floor uint64) {
 }
 
 // Bound by whole input turns. One oversized turn remains intact. Browsing older
-// pages evicts the newer end; live following evicts the older end.
-func (m *model) limitHistory(id string, older bool) bool {
+// pages evicts the newer end; live following evicts the older end. keep is the
+// journal coordinate the reader is looking at, or zero when nobody is: the turn
+// holding it is never evicted, so a page fetched on their behalf cannot take
+// the ground they are standing on.
+func (m *model) limitHistory(id string, older bool, keep float64) bool {
 	events := m.events[id]
 	p := m.windowPreference()
 	maxBytes, maxTurns := p.Limits()
@@ -167,12 +170,32 @@ func (m *model) limitHistory(id string, older bool) bool {
 		return false
 	}
 	starts = append(starts, len(events))
+	// The turn the reader is in: eviction stops at it from either side. Reaching
+	// the budget then costs the surplus page instead of their place in the
+	// conversation, and the events between are not silently skipped.
+	held := -1
+	if keep > 0 {
+		for i := len(starts) - 2; i >= 0; i-- {
+			if float64(events[starts[i]].Seq) <= keep {
+				held = i
+				break
+			}
+		}
+	}
 	lo, hi := 0, len(starts)-1
+shrink:
 	for hi-lo > 1 && (hi-lo > maxTurns || bytes[starts[hi]]-bytes[starts[lo]] > maxBytes) {
-		if older {
+		dropOlder := lo+1 <= hi-1 && (held < 0 || lo+1 <= held)
+		dropNewer := hi-1 >= lo+1 && (held < 0 || hi-1 >= held+1)
+		switch {
+		case dropNewer && (older || !dropOlder):
 			hi--
-		} else {
+		case dropOlder:
 			lo++
+		default:
+			// Only the reader's own turn is left to give up. Keep it, as an
+			// oversized single turn is already kept whole.
+			break shrink
 		}
 	}
 	from, to := starts[lo], starts[hi]
@@ -182,7 +205,7 @@ func (m *model) limitHistory(id string, older bool) bool {
 	w.measured = 0
 	w.first = nil
 	w.last = nil
-	if older && to < len(events) {
+	if to < len(events) {
 		w.detached = true
 		w.tail = events[to-1].Seq
 	}
@@ -203,6 +226,16 @@ func (m *model) limitHistory(id string, older bool) bool {
 		Events: to - from, Turns: hi - lo, Bytes: bytes[to] - bytes[from],
 	})
 	return true
+}
+
+// Where the reader is, when they are reading this session. Eviction driven by
+// their own scrolling must not move them; eviction driven by live output still
+// has to keep the newest events, so that path passes nothing.
+func (m *model) readerAnchor(id string) float64 {
+	if s := m.current(); s == nil || s.Id != id {
+		return 0
+	}
+	return m.historyAnchor()
 }
 func (m *model) historyAnchor() float64 {
 	if len(m.historyPositions) == 0 {
@@ -304,7 +337,13 @@ func (m *model) applyWindowPage(result historyWindowPage) tea.Cmd {
 	w.tail = last
 	w.detached = last < m.cursor[p.id]
 	m.mergePreparedHistory(p)
-	m.limitHistory(p.id, false)
+	// Latest takes the reader to the tail on purpose, and has already dropped
+	// the rows their old coordinate pointed at.
+	keep := 0.0
+	if !result.latest {
+		keep = m.readerAnchor(p.id)
+	}
+	m.limitHistory(p.id, false, keep)
 	if s := m.current(); s != nil && s.Id == p.id {
 		m.render()
 		if result.latest {

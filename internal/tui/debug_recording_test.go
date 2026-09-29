@@ -155,7 +155,7 @@ func TestTranscriptRenderRecordsWhatItWalked(t *testing.T) {
 	}
 	m.debugRecorder = &debugRecorder{}
 	m.debugRecorder.Start()
-	m.limitHistory("s", false)
+	m.limitHistory("s", false, 0)
 	m.render()
 	var found *debugEvent
 	for _, e := range m.debugRecorder.Stop().Events {

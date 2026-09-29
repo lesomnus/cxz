@@ -209,7 +209,11 @@ func (m *model) applyHistoryPage(page historyPage) bool {
 	} else {
 		m.events[page.id] = append(page.events, m.events[page.id]...)
 	}
-	trimmed := m.limitHistory(page.id, !page.initial)
+	keep := 0.0
+	if !page.initial {
+		keep = m.readerAnchor(page.id)
+	}
+	trimmed := m.limitHistory(page.id, !page.initial, keep)
 	if s := m.current(); s != nil && s.Id == page.id {
 		height, offset := m.view.TotalLineCount(), m.view.YOffset
 		opening := m.historyOpening[page.id]
