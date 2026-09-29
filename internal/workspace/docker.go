@@ -17,6 +17,8 @@ func (m *Manager) Docker(ctx context.Context, r *api.DockerInput) (*api.Receipt,
 	defer m.dockerMu.Unlock()
 	e := m.dockerEngine()
 	switch r.Action {
+	case "mcp":
+		return m.mcp(ctx, r.Spec)
 	case "history-policy":
 		return m.historyPolicy(ctx, r.Spec)
 	case "save", "up":

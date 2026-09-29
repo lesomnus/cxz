@@ -9,6 +9,7 @@ import (
 	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/internal/agentview"
 	"github.com/lesomnus/cxz/internal/distribution"
+	"github.com/lesomnus/cxz/internal/mcpruntime"
 	"net"
 	"net/url"
 	"os"
@@ -40,6 +41,7 @@ import (
 )
 
 type Server struct {
+	mcpRuntime   *mcpruntime.Runtime
 	updateGate   *cxzupdate.Gate
 	updateQueued map[string]string
 	api.UnimplementedSessionsServer
@@ -115,6 +117,14 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 			return err
 		}
 		defer quota.Close()
+	}
+	if s.manager == nil {
+		broker, err := mcpruntime.Start(root)
+		if err != nil {
+			return err
+		}
+		s.mcpRuntime = broker
+		defer broker.Close()
 	}
 	// Manifests survive rebuilding the derived SQLite database.
 	dirs, e := os.ReadDir(filepath.Join(root, "sessions"))

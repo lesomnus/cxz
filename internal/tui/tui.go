@@ -1023,6 +1023,10 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 	}
+	if v, ok := msg.(mcpResult); ok {
+		m.receiveMCP(v)
+		return m, nil
+	}
 	if v, ok := msg.(settingsResult); ok {
 		m.receiveSettings(v)
 		return m, m.settingsUpstream()
