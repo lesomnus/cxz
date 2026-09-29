@@ -22,12 +22,14 @@ func ApprovalView(provider, name string, raw []byte) Approval {
 			title = "Files"
 		case "item/permissions/requestApproval":
 			title = "Permissions"
+		case CodexElicitation:
+			title = "MCP · " + p.text("serverName")
 		case "item/tool/requestUserInput", CodexAsyncQuestion:
 			title = "Question"
 		}
 	}
 	var lines []string
-	for _, key := range []string{"description", "reason", "command", "cwd"} {
+	for _, key := range []string{"message", "url", "description", "reason", "command", "cwd"} {
 		if text := p.text(key); text != "" {
 			lines = append(lines, key+": "+text)
 		}

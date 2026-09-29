@@ -10,9 +10,10 @@ import (
 // Question is a provider-neutral form. Key remains the native reply key:
 // Claude uses the question text; Codex uses the stable question ID.
 type Question struct {
-	Key, Header, Text    string
-	Multi, Other, Secret bool
-	Options              []QuestionOption
+	Key, Header, Text           string
+	Multi, Other, Secret        bool
+	Optional, ElicitationAction bool
+	Options                     []QuestionOption
 }
 type QuestionOption struct{ Label, Description, Preview string }
 
@@ -54,6 +55,9 @@ func CodexAsyncQuestions(raw []byte) ([]Question, error) {
 func Questions(provider, method string, raw []byte) ([]Question, error) {
 	if provider == "codex" && method == CodexAsyncQuestion {
 		return CodexAsyncQuestions(raw)
+	}
+	if provider == "codex" && method == CodexElicitation {
+		return ElicitationQuestions(raw)
 	}
 	root := object(raw)
 	var body fields
@@ -125,6 +129,9 @@ func EncodeQuestionAnswers(qs []Question, selections [][]bool, other []string) (
 }
 
 func NormalizeAnswers(qs []Question, values map[string]core.AnswerSelection) (map[string]core.AnswerSelection, error) {
+	if ElicitationDismissed(qs, values) {
+		return map[string]core.AnswerSelection{qs[0].Key: values[qs[0].Key]}, nil
+	}
 	if len(values) != len(qs) {
 		return nil, fmt.Errorf("answer every question")
 	}
@@ -167,7 +174,7 @@ func NormalizeAnswers(qs []Question, values map[string]core.AnswerSelection) (ma
 		if clean.Other != "" {
 			count++
 		}
-		if count == 0 || (!q.Multi && count != 1) {
+		if (count == 0 && !q.Optional) || (!q.Multi && count > 1) {
 			return nil, fmt.Errorf("answer question %d before submitting", i+1)
 		}
 		out[q.Key] = clean
