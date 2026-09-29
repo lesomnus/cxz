@@ -694,6 +694,17 @@ func (s *Supervisor) executeLocked(op string, c core.Command) (core.Receipt, err
 	}
 	r := record{Op: op, Command: c, Status: "delivery_unknown"}
 	asyncReply := op == "reply" && s.pending[c.RequestID].Text == agentview.CodexAsyncQuestion
+	resolved := map[bool]string{true: "allowed", false: "denied"}[c.Allow]
+	if s.codex != nil && op == "reply" && s.pending[c.RequestID].Text == agentview.CodexElicitation {
+		reply := wire.(map[string]any)["result"].(map[string]any)
+		switch reply["action"] {
+		case "decline":
+			resolved = "denied"
+		case "cancel":
+			resolved = "canceled"
+		}
+	}
+
 	s.event("intent", op, c.ClientID, r, nil)
 	s.receipts[c.ClientID] = r
 	switch op {
@@ -702,7 +713,7 @@ func (s *Supervisor) executeLocked(op string, c core.Command) (core.Receipt, err
 		s.event("state", "working", "", nil, nil)
 	case "reply":
 		delete(s.pending, c.RequestID)
-		s.event("approval_resolved", map[bool]string{true: "allowed", false: "denied"}[c.Allow], c.RequestID, nil, nil)
+		s.event("approval_resolved", resolved, c.RequestID, nil, nil)
 		if asyncReply {
 			if c.Allow {
 				s.event("state", "working", "", nil, nil)
