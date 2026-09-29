@@ -41,12 +41,23 @@ running is refused as busy rather than corrupting the profile.
 
 ## Results
 
-```
-/summary          latest result, status, suggestion, and its own usage
-Alt+G, /suggest   copy the current suggestion into the composer
-```
+| Command | Behavior |
+|---|---|
+| `/summary on`, `/summary off` | Save automatic summary preference for this session |
+| `/suggest on`, `/suggest off` | Save automatic suggestion preference for this session |
+| `/summary`, `/suggest` | Generate once while off; do nothing while on |
 
-An empty composer shows the current suggestion as a hint.
+Session preferences override the defaults in AI tasks and survive reconnection.
+Turning automation off keeps the configured account/model available for one-shot use.
+`on` applies to future completed turns. `off` cancels a running call containing that
+ task, including a combined call. One-shot generation does not change preferences.
+
+Summaries appear directly below the final response without a dialog. Suggestions
+appear as ghost text in the empty composer and hide as soon as you type. Loading
+uses animated dots; suggestion loading uses the same placeholder color.
+
+A one-shot request reads at most 2048 retained events from an idle session and
+requires the final turn's user input and response to be present.
 
 `Alt+G` re-checks with the server that the suggestion is still valid before copying
 it. **You review and send it yourself** — nothing is ever sent on your behalf. A
@@ -58,12 +69,14 @@ when the configuration changes. When there is no sensible next step, it is simpl
 empty.
 
 Summary and suggestion are generated in one call when they share an account, model
-and effort.
+and effort. Separate calls include an available same-turn summary. A manual
+suggestion requested while summary generation is running queues behind that call
+and reuses its result without regenerating the summary.
 
 ## What gets collected
 
 The manager collects new user inputs and completed turns **from the moment you
-enable it**. Earlier conversation is not processed in bulk. After a restart, only
+configure a profile**; only enabled tasks generate automatically. Earlier conversation is not processed in bulk. After a restart, only
 events since the current manager started become new tasks. A session seen for the
 first time starts from its last 512 events, so a turn already long in flight is
 picked up from the next one instead.
@@ -89,6 +102,7 @@ and these numbers do not promise a particular cost saving.
 | Context sent to the model | 32 KiB plus fixed instructions |
 | Structured model reply | 12 KiB |
 | Retained recent turns | 48 KiB of JSON, or 64 turns |
+| Inline summaries | Last 32 per session, at most 4 KiB each |
 | Derived state | 256 sessions, least recently used evicted |
 | Concurrency | 4 tasks, serial per account, 32 sessions running or queued |
 | Time | 3 minutes per task; 15 minutes for a dedicated login |
@@ -110,7 +124,7 @@ A task never waits for the source session and never blocks it. Failures are not
 retried automatically, and a paid call whose outcome is unknown after a manager
 restart is not re-sent.
 
-Usage is reported separately, using only what the provider returned. It is never
+Usage is available through `cxz ai status SESSION_ID`, using only what the provider returned. It is never
 added to the original turn's metrics.
 
 Deleting a session cleans up its derived context and results. The account's

@@ -34,7 +34,12 @@ import (
 type model struct {
 	elicitationRequest       string
 	elicitationChoice        int
+	auxiliarySummaries       map[string][]auxiliary.Summary
 	auxiliaryJobs            map[string]*auxiliary.Job
+	auxiliaryConfigs         map[string]auxiliary.SessionConfig
+	auxiliaryVersions        map[string]uint64
+	auxiliaryPending         map[string]bool
+	auxiliaryLoadingRows     map[int]bool
 	auxiliaryPolling         bool
 	auxiliaryChecked         time.Time
 	auxiliaryError           string
@@ -607,10 +612,12 @@ func (m *model) render() {
 	m.promptSpans = nil
 	m.codeButtons = nil
 	m.workingToolRows = nil
+	m.auxiliaryLoadingRows = nil
 	m.toolRows = map[int]uint64{}
 	copyBlocks := map[int][]codeButton{}
 	toolBlocks := map[int]bool{}
 	inspectBlocks := map[int]bool{}
+	auxiliaryBlocks := map[int]bool{}
 	m.updateQuota()
 	m.workingSince = 0
 	follow := m.view.AtBottom()
@@ -754,6 +761,10 @@ func (m *model) render() {
 					add(text, e.TimeMs)
 				}
 			}
+			if text, loading := m.inlineSummary(e); text != "" {
+				auxiliaryBlocks[len(lines)] = loading
+				add(text, e.TimeMs)
+			}
 			usage = nil
 			started = 0
 			replyIndex = -1
@@ -874,6 +885,12 @@ func (m *model) render() {
 		}
 		rows := strings.Split(block, "\n")
 		for row := range rows {
+			if auxiliaryBlocks[i] {
+				if m.auxiliaryLoadingRows == nil {
+					m.auxiliaryLoadingRows = map[int]bool{}
+				}
+				m.auxiliaryLoadingRows[start+row] = true
+			}
 			if inspectBlocks[i] {
 				m.toolRows[start+row] = sequences[i]
 			}
@@ -2158,12 +2175,8 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if localName == "/memory" {
 				return m, m.openMemory(m.current())
 			}
-			if localName == "/summary" {
-				m.showSummary()
-				return m, nil
-			}
-			if localName == "/suggest" {
-				return m, m.applySuggestion()
+			if localName == "/summary" || localName == "/suggest" {
+				return m, m.auxiliaryCommand(text)
 			}
 			if localName == "/settings" {
 				return m, m.openSettings()
