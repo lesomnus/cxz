@@ -46,7 +46,7 @@ func hostFileTokens(value string) []backtickToken {
 }
 
 func (m *model) hostFilesEnabled() bool {
-	if !m.previewInteraction() || m.errorFocused() || m.memoryPage != nil || m.settingsPage != nil || m.terminalFocused() || !m.input.Focused() || m.current() == nil {
+	if !m.previewInteraction() || m.errorFocused() || (m.memoryPage != nil || m.library != nil) || m.settingsPage != nil || m.terminalFocused() || !m.input.Focused() || m.current() == nil {
 		return false
 	}
 	_, _, _, _, ok := m.chipInput()

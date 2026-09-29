@@ -107,7 +107,7 @@ func (m *model) panelRange(layout []int) (start, end int) {
 func (m *model) panelMouse(v tea.MouseMsg) (bool, tea.Cmd) {
 	m.panelHoverY = 0
 	m.panelHintHover = ""
-	if m.height < 14 || m.width < 40 || m.settingsPage != nil || m.memoryPage != nil ||
+	if m.height < 14 || m.width < 40 || m.settingsPage != nil || (m.memoryPage != nil || m.library != nil) ||
 		m.workflow != nil || m.accountView || m.creating || m.redactDialog != nil ||
 		m.questionFocused() || m.pasteDialog != nil || m.restartConfirm != nil || m.modelPicker != nil || m.report != nil {
 		return false, nil
@@ -257,7 +257,7 @@ func (m *model) focusPanel() {
 func (m *model) focusConversationMouse(v tea.MouseMsg) {
 	wheel := v.Button == tea.MouseButtonWheelUp || v.Button == tea.MouseButtonWheelDown
 	if (!m.panelFocus && !wheel) || m.projectView || m.accountView || m.creating ||
-		m.workflow != nil || m.settingsPage != nil || m.memoryPage != nil || m.busy || m.renaming ||
+		m.workflow != nil || m.settingsPage != nil || (m.memoryPage != nil || m.library != nil) || m.busy || m.renaming ||
 		v.Action != tea.MouseActionPress || (!wheel && v.Button != tea.MouseButtonLeft) ||
 		v.X < m.contentOffset() || v.X >= m.contentOffset()+m.width || v.Y < 0 || v.Y >= m.height {
 		return

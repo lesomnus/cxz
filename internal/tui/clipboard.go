@@ -44,7 +44,7 @@ type transcriptSelection struct {
 
 func (m *model) selectionValid() bool {
 	s, current := m.textSelection, m.current()
-	return s != nil && current != nil && s.session == current.Id && s.offset == m.view.YOffset && s.width == m.width && !m.projectView && !m.accountView && m.previewInteraction() && m.settingsPage == nil && m.memoryPage == nil && !m.terminalFocused()
+	return s != nil && current != nil && s.session == current.Id && s.offset == m.view.YOffset && s.width == m.width && !m.projectView && !m.accountView && m.previewInteraction() && m.settingsPage == nil && (m.memoryPage == nil && m.library == nil) && !m.terminalFocused()
 }
 func (s *transcriptSelection) bounds() (x1, y1, x2, y2 int) {
 	x1, y1, x2, y2 = s.startX, s.startY, s.endX, s.endY
@@ -126,7 +126,7 @@ func (m *model) copyFocusedText() {
 		m.copyText(m.errorDialog.text)
 		return
 	}
-	if m.workflow != nil || m.redactDialog != nil || m.questionFocused() || m.settingsPage != nil || m.memoryPage != nil || m.accountView || m.projectView || m.panelFocus {
+	if m.workflow != nil || m.redactDialog != nil || m.questionFocused() || m.settingsPage != nil || (m.memoryPage != nil || m.library != nil) || m.accountView || m.projectView || m.panelFocus {
 		return
 	}
 	switch {
