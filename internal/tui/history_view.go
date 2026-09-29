@@ -148,6 +148,11 @@ func (m *model) conversationView() string {
 			}
 		}
 	}
+	for i := range rows {
+		if m.auxiliaryLoadingRows[m.view.YOffset+i] {
+			rows[i] = indentBlock(muted.Render(clip("Summary "+auxiliaryDots(m.pulse), max(1, m.view.Width-2))))
+		}
+	}
 	promptRows := map[int]bool{}
 	for _, span := range m.promptSpans {
 		for row := max(0, span.start-m.view.YOffset); row < min(len(rows), span.end-m.view.YOffset); row++ {
