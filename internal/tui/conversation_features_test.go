@@ -149,7 +149,7 @@ func TestHistoryStickyPromptAndWorkingIndicator(t *testing.T) {
 	}
 	m.Update(tea.KeyMsg{Type: tea.KeyPgUp})
 	offset := m.view.YOffset
-	if m.view.AtBottom() || !strings.Contains(m.View(), "L ") || !strings.Contains(m.View(), "01-01") {
+	if m.view.AtBottom() || !strings.Contains(m.View(), "2/2 · ") || !strings.Contains(m.View(), "01-01") {
 		t.Fatal("missing scroll position/time", m.View())
 	}
 	m.Update(received{id: "s", event: &api.Event{Seq: 3, Kind: "assistant", Text: "Later response", TimeMs: 3000}})

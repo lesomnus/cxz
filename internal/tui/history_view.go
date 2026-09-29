@@ -3,6 +3,7 @@ package tui
 import (
 	"fmt"
 	"math"
+	"strconv"
 	"strings"
 	"time"
 
@@ -40,6 +41,23 @@ func (m *model) scrollTrack() string {
 	return muted.Render(strings.Repeat("─", position)) + muted.Render("◆︎") + zeroStyle.Render(strings.Repeat("─", width-position-1))
 }
 
+func thousands(n int) string {
+	digits := strconv.Itoa(n)
+	var b strings.Builder
+	for i, digit := range digits {
+		if i > 0 && (len(digits)-i)%3 == 0 {
+			b.WriteByte(',')
+		}
+		b.WriteRune(digit)
+	}
+	return b.String()
+}
+
+// Loaded rows are not a position in the conversation: the window slides as
+// pages are evicted, so the same event moves between row numbers and their
+// total falls and rises while scrolling. Report the journal coordinate the
+// track already draws, counted from the oldest retained event. Only the
+// journal itself moves it, so scrolling back never raises it.
 func (m *model) scrollStatus() string {
 	start := m.view.YOffset
 	stamp := "local"
@@ -49,15 +67,25 @@ func (m *model) scrollStatus() string {
 			break
 		}
 	}
-	label := "L"
-	if s := m.current(); s != nil && m.historyStart[s.Id] > m.historyWindow(s.Id).floor {
-		label = "loaded L"
+	position := ""
+	if s := m.current(); s != nil && len(m.historyPositions) > 0 {
+		floor := m.historyWindow(s.Id).floor
+		tail := max(s.LastSeq, m.cursor[s.Id])
+		// The journal reaches at least as far as what is loaded from it.
+		if events := m.events[s.Id]; len(events) > 0 {
+			tail = max(tail, events[len(events)-1].Seq)
+		}
+		if tail > floor {
+			total := int(tail - floor)
+			at := m.historyPositions[min(max(0, start), len(m.historyPositions)-1)]
+			position = thousands(min(total, max(1, int(math.Floor(at))-int(floor)))) + "/" + thousands(total) + " · "
+		}
 	}
 	loading := ""
 	if s := m.current(); s != nil && m.historyLoading[s.Id] > 0 {
-		loading = " · loading earlier…"
+		loading = "loading earlier… · "
 	}
-	return fmt.Sprintf("%s %d–%d/%d%s · %s · track: journal · Ctrl+End latest", label, start+1, min(len(m.historyTimes), start+m.view.Height), len(m.historyTimes), loading, stamp)
+	return fmt.Sprintf("%s%s%s · Ctrl+End latest", position, loading, stamp)
 }
 
 type promptSpan struct {
