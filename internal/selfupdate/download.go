@@ -187,10 +187,18 @@ func fetchReleaseFile(ctx context.Context, client *http.Client, location string,
 	if strings.HasPrefix(location, releaseAPI) {
 		req.Header.Set("Accept", "application/vnd.github+json")
 		req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
+		// Explicit opt-in only: never reuse account/gh credentials implicitly.
+		// This token is confined to our release metadata endpoint.
+		if token := strings.TrimSpace(os.Getenv("CXZ_GITHUB_TOKEN")); token != "" {
+			req.Header.Set("Authorization", "Bearer "+token)
+		}
 	}
 	// Preserve the caller's transport, but reject a downgrade on asset redirects.
 	copy := *client
 	copy.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		// Go may preserve Authorization on same-host/subdomain redirects.
+		// Release asset/CDN requests must never receive the metadata token.
+		req.Header.Del("Authorization")
 		if req.URL.Scheme != "https" || len(via) >= 10 {
 			return fmt.Errorf("unsafe or excessive download redirects")
 		}
@@ -202,6 +210,10 @@ func fetchReleaseFile(ctx context.Context, client *http.Client, location string,
 	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
+		if (res.StatusCode == http.StatusForbidden || res.StatusCode == http.StatusTooManyRequests) &&
+			res.Header.Get("X-RateLimit-Remaining") == "0" {
+			return nil, fmt.Errorf("GitHub download: %s (API rate limit exhausted; retry later or set CXZ_GITHUB_TOKEN for release metadata requests)", res.Status)
+		}
 		return nil, fmt.Errorf("GitHub download: %s", res.Status)
 	}
 	if res.ContentLength > limit {
