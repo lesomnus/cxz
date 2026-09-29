@@ -12,8 +12,12 @@ invoke provider compact, rollback or thread deletion.
   Supervisor. Stopped sessions are checked after they are resumed.
 - Client: a loaded window of 200 turns or 10 MiB of encoded event data, whichever
   is reached first. Scrolling up loads retained older pages and evicts the newer
-  end of the window. Scrolling down loads newer pages. Ctrl+End returns to the
-  latest history. Live reception keeps its own cursor while older pages are open.
+  end of the window. Scrolling down loads newer pages and evicts the older end.
+  Eviction driven by scrolling stops at the turn on screen: when a page cannot
+  be held alongside it, the surplus page is given up instead of the reader's
+  place, and the next scroll fetches the rest. Ctrl+End returns to the latest
+  history. Live reception keeps its own cursor while older pages are open, and
+  keeps the newest events regardless of where the reader is.
 - Settings (Ctrl+.) has separate server disk and local client window controls.
   Server choices are 25/50/100/250/500 MiB or unlimited, with confirmation before
   changing the policy. Client choices are 5/10/20/50 MiB and 100/200/500/1000 turns.
