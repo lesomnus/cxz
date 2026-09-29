@@ -11,6 +11,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/agentview"
+	"github.com/lesomnus/cxz/internal/auxiliary"
 	"github.com/lesomnus/cxz/internal/containerterm"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/cxzupdate"
@@ -31,6 +32,10 @@ import (
 )
 
 type model struct {
+	auxiliaryJobs            map[string]*auxiliary.Job
+	auxiliaryPolling         bool
+	auxiliaryChecked         time.Time
+	auxiliaryError           string
 	library                  *libraryPage
 	seedMemory               string
 	download                 *fileDownload
@@ -1049,6 +1054,10 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 	}
+	if v, ok := msg.(auxiliaryResult); ok {
+		m.receiveAuxiliary(v)
+		return m, nil
+	}
 	if v, ok := msg.(mcpResult); ok {
 		m.receiveMCP(v)
 		return m, nil
@@ -1702,7 +1711,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// previous page arrived while another conversation was selected.
 			history = m.loadOlderHistory()
 		}
-		return m, tea.Batch(timer(), m.periodicRefresh(), m.reportActivity(), m.frontendUpdate(), m.pollSettings(), m.pollLibrary(), history)
+		return m, tea.Batch(timer(), m.periodicRefresh(), m.reportActivity(), m.frontendUpdate(), m.pollSettings(), m.pollLibrary(), m.pollAuxiliary(), history)
 	case resourcesChanged:
 		if v.generation != m.resourceWatchGeneration {
 			return m, nil
@@ -2012,6 +2021,11 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+x":
 			m.input.Reset()
 			return m, nil
+		case "alt+g":
+			if !m.focusList && !m.creating {
+				return m, m.applySuggestion()
+			}
+			return m, nil
 		case "alt+enter", "ctrl+j":
 			if !m.focusList && !m.creating {
 				m.input.InsertString("\n")
@@ -2138,6 +2152,13 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			if localName == "/memory" {
 				return m, m.openMemory(m.current())
+			}
+			if localName == "/summary" {
+				m.showSummary()
+				return m, nil
+			}
+			if localName == "/suggest" {
+				return m, m.applySuggestion()
 			}
 			if localName == "/settings" {
 				return m, m.openSettings()

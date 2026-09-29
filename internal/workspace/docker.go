@@ -13,6 +13,9 @@ import (
 
 func (m *Manager) dockerEngine() engine.Engine { return engine.Engine{Root: m.Root, Owner: m.Owner} }
 func (m *Manager) Docker(ctx context.Context, r *api.DockerInput) (*api.Receipt, error) {
+	if r.Action == "auxiliary" {
+		return m.auxiliaryRequest(ctx, r.Spec)
+	}
 	m.dockerMu.Lock()
 	defer m.dockerMu.Unlock()
 	e := m.dockerEngine()

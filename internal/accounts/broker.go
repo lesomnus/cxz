@@ -29,6 +29,7 @@ type Token struct {
 }
 type Grant struct {
 	Socket, Capability, Project, Account, Binding, AccountID string
+	Scope                                                    string `json:"scope,omitempty"`
 }
 type tokenRequest struct {
 	PreviousAccountID string `json:"previousAccountId"`
@@ -198,11 +199,11 @@ func ReadGrant(root, account string) (Grant, error) {
 	if json.Unmarshal(raw, &g) != nil || g.Account != account || g.Capability == "" || g.AccountID == "" || g.Socket == "" {
 		return g, fmt.Errorf("invalid token supply grant")
 	}
-	_, err = ResolveBinding("codex", BrokeredAccessToken, g.Project, account, g.Binding)
+	err = validateGrantBinding(g)
 	return g, err
 }
 func InstallGrant(root string, g Grant) error {
-	if _, err := ResolveBinding("codex", BrokeredAccessToken, g.Project, g.Account, g.Binding); err != nil {
+	if err := validateGrantBinding(g); err != nil {
 		return err
 	}
 	if g.Socket != BrokerSocket || len(g.Capability) != 64 || g.AccountID == "" {
@@ -220,11 +221,21 @@ func capabilityPath(root, capability string) string {
 	return filepath.Join(root, "central", "grants", fmt.Sprintf("%x.json", sha256.Sum256([]byte(capability))))
 }
 func IssueGrant(root, project, account string) (Grant, error) {
+	return issueGrant(root, project, account, "")
+}
+func IssueAuxiliaryGrant(root, account string) (Grant, error) {
+	return issueGrant(root, "", account, "auxiliary")
+}
+func issueGrant(root, project, account, scope string) (Grant, error) {
 	token, err := CentralToken(root, account)
 	if err != nil {
 		return Grant{}, err
 	}
 	spec, err := (brokered{}).Binding(project, account)
+	if scope == "auxiliary" {
+		spec = BindingSpec{ID: AuxiliaryBindingID(account)}
+		err = Validate(account, "codex")
+	}
 	if err != nil {
 		return Grant{}, err
 	}
@@ -232,7 +243,7 @@ func IssueGrant(root, project, account string) (Grant, error) {
 	path := filepath.Join(root, "central", "bindings", spec.ID+".json")
 	var g Grant
 	if raw, e := os.ReadFile(path); e == nil {
-		if json.Unmarshal(raw, &g) != nil || g.AccountID != token.AccountID || g.Project != project || g.Account != account || g.Binding != spec.ID || len(g.Capability) != 64 {
+		if json.Unmarshal(raw, &g) != nil || g.Scope != scope || g.AccountID != token.AccountID || g.Project != project || g.Account != account || g.Binding != spec.ID || len(g.Capability) != 64 {
 			return g, fmt.Errorf("central binding identity mismatch")
 		}
 	} else if !os.IsNotExist(e) {
@@ -242,7 +253,7 @@ func IssueGrant(root, project, account string) (Grant, error) {
 		if _, err = rand.Read(secret[:]); err != nil {
 			return g, err
 		}
-		g = Grant{BrokerSocket, fmt.Sprintf("%x", secret), project, account, spec.ID, token.AccountID}
+		g = Grant{BrokerSocket, fmt.Sprintf("%x", secret), project, account, spec.ID, token.AccountID, scope}
 	}
 	for _, dir := range []string{filepath.Dir(path), filepath.Dir(capabilityPath(root, g.Capability))} {
 		if err := os.MkdirAll(dir, 0700); err != nil {
@@ -291,7 +302,7 @@ func StartBroker(root, socket string, refresh func(context.Context, string) erro
 		}
 		var g Grant
 		raw, err := os.ReadFile(capabilityPath(root, capability))
-		if err != nil || json.Unmarshal(raw, &g) != nil || g.Capability != capability {
+		if err != nil || json.Unmarshal(raw, &g) != nil || g.Capability != capability || validateGrantBinding(g) != nil {
 			fail()
 			return
 		}
@@ -338,9 +349,12 @@ func FetchToken(ctx context.Context, root, account, project, binding, previous s
 	if err != nil {
 		return Token{}, err
 	}
-	if g.Project != project || g.Binding != binding || (previous != "" && previous != g.AccountID) {
+	if g.Scope != "" || g.Project != project || g.Binding != binding || (previous != "" && previous != g.AccountID) {
 		return Token{}, fmt.Errorf("token request account/binding mismatch")
 	}
+	return fetchGrantToken(ctx, g, previous, refresh)
+}
+func fetchGrantToken(ctx context.Context, g Grant, previous string, refresh bool) (Token, error) {
 	transport := &http.Transport{DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
 		return (&net.Dialer{}).DialContext(ctx, "unix", g.Socket)
 	}}
@@ -361,4 +375,59 @@ func FetchToken(ctx context.Context, root, account, project, binding, previous s
 		return Token{}, fmt.Errorf("central authentication failed; check account login")
 	}
 	return token, nil
+}
+
+// Auxiliary grants cannot be used by a project or vice versa.
+func AuxiliaryBindingID(account string) string {
+	return BindingID("", account, "auxiliary:"+BrokeredAccessToken)
+}
+func validateGrantBinding(g Grant) error {
+	if g.Scope == "auxiliary" {
+		if e := Validate(g.Account, "codex"); e != nil {
+			return e
+		}
+		if g.Project != "" || g.Binding != AuxiliaryBindingID(g.Account) {
+			return fmt.Errorf("auxiliary binding mismatch")
+		}
+		return nil
+	}
+	if g.Scope != "" {
+		return fmt.Errorf("unknown token grant scope")
+	}
+	_, err := ResolveBinding("codex", BrokeredAccessToken, g.Project, g.Account, g.Binding)
+	return err
+}
+func FetchAuxiliaryToken(ctx context.Context, root, account, previous string, refresh bool) (Token, error) {
+	g, e := ReadGrant(root, account)
+	if e != nil {
+		return Token{}, e
+	}
+	if g.Scope != "auxiliary" || validateGrantBinding(g) != nil || (previous != "" && g.AccountID != previous) {
+		return Token{}, fmt.Errorf("auxiliary token grant mismatch")
+	}
+	return fetchGrantToken(ctx, g, previous, refresh)
+}
+
+// RevokeAuxiliaryGrant removes cxz token-supply authorization, not the central
+// OAuth login or already-issued provider access tokens.
+func RevokeAuxiliaryGrant(root, account string) error {
+	if err := Validate(account, "codex"); err != nil {
+		return err
+	}
+	path := filepath.Join(root, "central", "bindings", AuxiliaryBindingID(account)+".json")
+	b, err := os.ReadFile(path)
+	if os.IsNotExist(err) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	var g Grant
+	if json.Unmarshal(b, &g) != nil || g.Scope != "auxiliary" || g.Account != account || validateGrantBinding(g) != nil {
+		return fmt.Errorf("invalid auxiliary binding")
+	}
+	if err = os.Remove(capabilityPath(root, g.Capability)); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	return os.Remove(path)
 }

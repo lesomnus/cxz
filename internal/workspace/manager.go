@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/auxiliary"
 	"github.com/lesomnus/cxz/internal/containerterm"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/dockerx"
@@ -32,6 +33,10 @@ type Project struct {
 }
 type Runtime struct{ ProjectID, Workspace, Token, Claude, Codex string }
 type Manager struct {
+	auxStop                                                   context.CancelFunc
+	auxDone                                                   chan struct{}
+	auxMu                                                     sync.Mutex
+	aux                                                       *auxiliary.Controller
 	paths                                                     containerterm.WispPool
 	historyMu                                                 sync.Mutex
 	historyClients                                            map[string]*historyConnection
