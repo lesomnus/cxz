@@ -30,6 +30,9 @@ This is a diagnostic trace, not a screen video. While enabled, it records:
   boundaries and never below a single turn, so `turns` says whether the size
   limit could apply at all. Counting is proportional to the events, so it runs
   only while a recording is active.
+- Quota recomputation (`quota_update`): duration and the usage `events` it read.
+  It runs inside every transcript rebuild but reads across every session sharing
+  the account, so its cost does not follow the rebuild's own event count.
 - History requests (`history_rpc`): purpose (`initial`, `older`, `catch_up`, or
   `background`), request duration, event count, protobuf payload `bytes`, and
   status code. Payload bytes exclude SSH/TCP framing and are not network traffic

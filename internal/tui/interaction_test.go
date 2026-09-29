@@ -261,7 +261,7 @@ func TestQuotaAvailabilityDiagnostics(t *testing.T) {
 		{Kind: "usage_status", Text: "error"},
 		{Kind: "usage", Text: "get_usage", Payload: []byte(`{"rate_limits":{"five_hour":{"utilization":30}}}`)},
 	}
-	windows, state := quotaSnapshot("claude", "run", events)
+	windows, state := quotaSnapshot("claude", "run", events, parseQuotaEvent)
 	if state != "available" || len(windows) != 1 || *windows[0].Remaining != 70 {
 		t.Fatal("quota did not recover")
 	}
