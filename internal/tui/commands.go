@@ -112,7 +112,7 @@ func (m *model) commandOverlay(view string) string {
 		return m.pathHintOverlay(view)
 	}
 	if _, hints := m.inlineHints(); len(hints) > 0 {
-		return overlayBox(view, []string{accent.Render("› " + hints[0].name + "  " + hints[0].description)}, m.width)
+		return overlayBox(view, []string{focus.Render("› " + hints[0].name + "  " + hints[0].description)}, m.width)
 	}
 	hints := m.commandHints()
 	if len(hints) == 0 {
@@ -136,7 +136,7 @@ func (m *model) commandOverlay(view string) string {
 		style := muted
 		if start+i == selected {
 			text = "› " + c.name + "  " + c.description
-			style = accent
+			style = focus
 		}
 		content = append(content, style.Render(text))
 	}

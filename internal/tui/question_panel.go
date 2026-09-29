@@ -98,7 +98,7 @@ func (m *model) questionLayout() questionLayout {
 			if d.selected[d.page][i] {
 				row = magenta.Bold(true).Render(row)
 			} else if i == active {
-				row = accent.Render(row)
+				row = focus.Render(row)
 			}
 			add(row, i)
 		}
@@ -135,7 +135,7 @@ func (m *model) questionLayout() questionLayout {
 		if d.otherSelected[d.page] {
 			label = magenta.Render(label)
 		} else if active == len(q.Options) {
-			label = accent.Render(label)
+			label = focus.Render(label)
 		}
 		add(label+m.decorateInputPastes(in.View()), len(q.Options))
 	}

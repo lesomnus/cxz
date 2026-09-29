@@ -380,7 +380,7 @@ func (m *model) settingsConfirmation() ([]string, int, int) {
 	for i, label := range []string{"Cancel", "Confirm"} {
 		line := "  [ " + label + " ]"
 		if (i == 1) == p.confirmYes {
-			line = accent.Bold(true).Render("› [ " + label + " ]")
+			line = focus.Bold(true).Render("› [ " + label + " ]")
 		}
 		lines = append(lines, panelBackground(line+strings.Repeat(" ", max(0, width-ansi.StringWidth(line)))))
 	}
@@ -430,7 +430,7 @@ func (m *model) settingsScreen() string {
 		if !m.settingsEnabled(i) {
 			line = muted.Render(line)
 		} else if p.selected == i {
-			line = accent.Bold(true).Render(line)
+			line = focus.Bold(true).Render(line)
 		}
 		lines = append(lines, panelBackground(line+strings.Repeat(" ", max(0, inner-ansi.StringWidth(line)))))
 	}
