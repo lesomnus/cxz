@@ -93,7 +93,7 @@ processes with the same user and full container filesystem access.
 
 A runtime restart does not terminate agents. Bridges reconnect on the next
 request and repeat only MCP initialization. In-flight calls receive an
-unknown-outcome error and are never automatically replayed. Stateful external
+unknown-outcome error and are never automatically replayed. Messages through the local bridge are limited to 4 MiB. Stateful external
 servers lose their in-memory state; resource subscriptions are not restored.
 `mcp restart` disconnects a selected local MCP so the next request reconnects;
 it preserves the agent's launch configuration and does not apply new activation

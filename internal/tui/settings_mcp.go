@@ -277,6 +277,13 @@ func (m *model) mcpScreen() string {
 		if session.Pending {
 			label = "Settings pending restart"
 		}
+		if p.selected >= 0 && p.selected < len(p.result.Entries) {
+			status := session.Servers[p.result.Entries[p.selected].ID]
+			if status == "" {
+				status = "not in this launch"
+			}
+			label += " · " + status
+		}
 		lines = append(lines, safeText(session.Title)+": "+label)
 	}
 	if p.busy {
