@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/auxiliary"
+	"slices"
 	"strings"
 	"time"
 )
@@ -22,6 +24,7 @@ type auxiliaryPage struct {
 	message  string
 }
 type auxiliaryResult struct {
+	version                     uint64
 	page                        *auxiliaryPage
 	connection, session, action string
 	reply                       auxiliary.Reply
@@ -42,13 +45,14 @@ func (m *model) auxiliaryRequest(r auxiliary.Request, p *auxiliaryPage) tea.Cmd 
 	if action == "apply" {
 		r.Action = "status"
 	}
+	version := m.auxiliaryVersions[connection+"/"+r.Session]
 	ctx, client := m.contextFor(connection), m.client
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(ctx, 90*time.Second)
 		defer cancel()
 		b, _ := json.Marshal(r)
 		out, e := client.Docker(ctx, &api.DockerInput{Action: "auxiliary", Spec: b})
-		v := auxiliaryResult{page: p, connection: connection, session: r.Session, action: action, err: e}
+		v := auxiliaryResult{version: version, page: p, connection: connection, session: r.Session, action: action, err: e}
 		if e == nil {
 			v.err = json.Unmarshal([]byte(out.Status), &v.reply)
 		}
@@ -82,7 +86,16 @@ func (m *model) receiveAuxiliary(v auxiliaryResult) {
 		}
 		return
 	}
-	m.auxiliaryPolling = false
+	if v.action == "status" {
+		m.auxiliaryPolling = false
+	}
+	key := v.connection + "/" + v.session
+	if v.version != m.auxiliaryVersions[key] {
+		return
+	}
+	if v.action == "session" {
+		delete(m.auxiliaryPending, key)
+	}
 	if v.connection != m.connectionRef() {
 		return
 	}
@@ -91,10 +104,32 @@ func (m *model) receiveAuxiliary(v auxiliaryResult) {
 	}
 	if v.err != nil {
 		m.auxiliaryError = v.err.Error()
+		if v.action == "session" {
+			if j := m.auxiliaryJobs[key]; j != nil && j.ID == "pending" {
+				j.Status = "failed"
+				j.Error = v.err.Error()
+			}
+			m.notice = safeText(v.err.Error())
+			m.render()
+		}
 		return
 	}
 	m.auxiliaryError = ""
-	old := m.auxiliaryJobs[v.connection+"/"+v.session]
+	old := m.auxiliaryJobs[key]
+	changedSummaries := !slices.Equal(m.auxiliarySummaries[key], v.reply.Summaries)
+	if m.auxiliarySummaries == nil {
+		m.auxiliarySummaries = map[string][]auxiliary.Summary{}
+	}
+	m.auxiliarySummaries[key] = v.reply.Summaries
+	if v.action == "session" && v.reply.Message != "" {
+		m.notice = safeText(v.reply.Message)
+	}
+	if v.reply.SessionConfig != nil {
+		if m.auxiliaryConfigs == nil {
+			m.auxiliaryConfigs = map[string]auxiliary.SessionConfig{}
+		}
+		m.auxiliaryConfigs[key] = *v.reply.SessionConfig
+	}
 	m.auxiliaryJobs[v.connection+"/"+v.session] = v.reply.Job
 	if v.action == "apply" {
 		if current := m.current(); current != nil && current.Id == v.session && m.input.Value() == "" {
@@ -106,17 +141,21 @@ func (m *model) receiveAuxiliary(v auxiliaryResult) {
 				m.notice = "No current AI suggestion"
 			}
 		}
-	} else if j := v.reply.Job; j != nil && j.Status == "completed" && (old == nil || old.ID != j.ID || old.Status != "completed") {
-		m.notice = "AI summary/suggestion ready · /summary"
+	}
+	if current := m.current(); current != nil && current.Id == v.session && (changedSummaries || !sameAuxiliaryJob(old, v.reply.Job)) {
+		m.render()
 	}
 
 }
 func (m *model) pollAuxiliary() tea.Cmd {
-	if m.auxiliaryPolling || time.Since(m.auxiliaryChecked) < 5*time.Second || m.ctx == nil {
+	if m.auxiliaryPolling || time.Since(m.auxiliaryChecked) < time.Second || m.ctx == nil {
 		return nil
 	}
 	s := m.current()
 	if s == nil {
+		return nil
+	}
+	if m.auxiliaryPending[m.connectionRef()+"/"+s.Id] {
 		return nil
 	}
 	m.auxiliaryPolling = true
@@ -133,7 +172,7 @@ func (m *model) auxiliaryJob() *auxiliary.Job {
 func (m *model) suggestion() string {
 	s := m.current()
 	j := m.auxiliaryJob()
-	if s == nil || j == nil || j.Status != "completed" || j.Run != s.RunId || s.State != "idle" || len(m.pendingInputs[s.Id]) > 0 {
+	if s == nil || j == nil || (j.Status != "completed" && !(auxiliaryLoading(j) && !j.SuggestionRequested)) || j.Run != s.RunId || s.State != "idle" || len(m.pendingInputs[s.Id]) > 0 {
 		return ""
 	}
 	for _, e := range m.events[s.Id] {
@@ -153,24 +192,6 @@ func (m *model) applySuggestion() tea.Cmd {
 		return nil
 	}
 	return m.auxiliaryRequest(auxiliary.Request{Action: "apply", Session: s.Id}, nil)
-}
-func (m *model) showSummary() {
-	text := "No auxiliary result. Enable tasks in Settings → AI tasks. Only new completed turns are processed."
-	if j := m.auxiliaryJob(); j != nil {
-		text = fmt.Sprintf("AI-generated · %s · turn %d\n\n%s", j.Status, j.Turn, j.Summary)
-		if j.Suggestion != "" {
-			text += "\n\nSuggested next message:\n" + j.Suggestion + "\n\nUse /suggest or Alt+G with an empty composer to copy."
-		}
-		if j.Error != "" {
-			text += "\n\n" + j.Error
-		}
-		for _, u := range j.Usage {
-			text += "\n\nAuxiliary usage · " + u.Account + " · " + u.Model + " · " + u.Task + "\n" + string(u.Data)
-		}
-	} else if m.auxiliaryError != "" {
-		text = m.auxiliaryError
-	}
-	m.openReport("/summary", safeText(text))
 }
 func (m *model) auxiliaryKey(k tea.KeyMsg) tea.Cmd {
 	p := m.settingsPage.auxiliary
@@ -248,9 +269,9 @@ func (m *model) auxiliaryScreen() string {
 	} else {
 		for i, profile := range []auxiliary.Profile{p.config.Summary, p.config.Suggestion} {
 			name := []string{"Summary", "Next-message suggestion"}[i]
-			state := "Off"
+			state := "Default off"
 			if profile.Enabled {
-				state = "On"
+				state = "Default on"
 			}
 			line := fmt.Sprintf("  %-24s %s · %s · %s · %s", name, state, profile.Account, profile.Model, profile.Effort)
 			if i == p.selected {
@@ -258,13 +279,13 @@ func (m *model) auxiliaryScreen() string {
 			}
 			lines = append(lines, line)
 		}
-		lines = append(lines, "", "Enter edit · Space enable/disable · r refresh · Esc back")
+		lines = append(lines, "", "Enter edit · Space change default · r refresh · Esc back")
 	}
 	var names []string
 	for _, a := range m.accounts {
 		names = append(names, a.GetAlias()+" ("+a.GetAgent()+")")
 	}
-	lines = append(lines, "", "Accounts: "+strings.Join(names, ", "), "Local OAuth: run cxz ai login ACCOUNT on the Manager host.", "Central Codex: use cxz account login ACCOUNT.", "Checkpoint uses the summary account, or suggestion account when summary is off.", "View /summary; Alt+G copies a suggestion into an empty composer.")
+	lines = append(lines, "", "Accounts: "+strings.Join(names, ", "), "Local OAuth: run cxz ai login ACCOUNT on the Manager host.", "Central Codex: use cxz account login ACCOUNT.", "Checkpoint uses the summary account, or suggestion account when summary is off.", "/summary and /suggest: on/off per session, or once while off. Alt+G accepts the ghost.")
 	if p.busy {
 		lines = append(lines, "Checking account/model…")
 	}
@@ -273,4 +294,149 @@ func (m *model) auxiliaryScreen() string {
 		lines[i] = "  " + clip(lines[i], max(1, m.settingsWidth()-4))
 	}
 	return screen(strings.Join(lines, "\n"), m.settingsWidth(), m.height)
+}
+
+func sameAuxiliaryJob(a, b *auxiliary.Job) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	return a.ID == b.ID && a.Status == b.Status && a.Summary == b.Summary && a.Suggestion == b.Suggestion && a.Error == b.Error && a.SummaryRequested == b.SummaryRequested && a.SuggestionRequested == b.SuggestionRequested
+}
+func auxiliaryDots(pulse int) string {
+	n := pulse / 4 % 4
+	return strings.Repeat(".", n) + strings.Repeat(" ", 3-n)
+}
+func auxiliaryLoading(j *auxiliary.Job) bool {
+	return j != nil && (j.Status == "queued" || j.Status == "running")
+}
+func (m *model) inlineSummary(e *api.Event) (string, bool) {
+	j := m.auxiliaryJob()
+	text := ""
+	if s := m.current(); s != nil {
+		for _, summary := range m.auxiliarySummaries[m.connectionRef()+"/"+s.Id] {
+			if summary.Run == e.RunId && summary.Turn == e.Seq {
+				text = summary.Text
+				break
+			}
+		}
+	}
+	if j == nil || j.Run != e.RunId || j.Turn != e.Seq {
+		j = &auxiliary.Job{}
+	}
+	if j.Summary != "" {
+		text = j.Summary
+	}
+	if j.Summary == "" && j.SummaryRequested {
+		if auxiliaryLoading(j) {
+			return indentBlock(muted.Render("Summary ...")), true
+		}
+		if j.Error != "" {
+			text = j.Error
+		}
+	}
+	if text == "" {
+		return "", false
+	}
+	return indentBlock(muted.Render(ansi.Hardwrap("Summary · "+safeText(text), max(1, m.view.Width-2), true))), false
+}
+func (m *model) suggestionGhost() string {
+	if m.input.Value() != "" {
+		return ""
+	}
+	j, s := m.auxiliaryJob(), m.current()
+	if j != nil && s != nil && j.Run == s.RunId && s.State == "idle" && len(m.pendingInputs[s.Id]) == 0 {
+		for _, e := range m.events[s.Id] {
+			if e.Kind == "input" && e.Seq > j.Turn {
+				return ""
+			}
+		}
+		if auxiliaryLoading(j) && j.SuggestionRequested {
+			return "Suggestion " + auxiliaryDots(m.pulse)
+		}
+		if j.Status == "failed" && j.SuggestionRequested && j.Error != "" {
+			return "Suggestion · " + safeText(j.Error)
+		}
+	}
+	return m.suggestion()
+}
+func (m *model) auxiliaryCommand(text string) tea.Cmd {
+	fields := strings.Fields(text)
+	task := "summary"
+	if fields[0] == "/suggest" {
+		task = "suggestion"
+	}
+	if len(fields) > 2 || len(fields) == 2 && fields[1] != "on" && fields[1] != "off" {
+		m.notice = "Usage: " + fields[0] + " [on|off]"
+		return nil
+	}
+	s := m.current()
+	if s == nil {
+		m.notice = "Select a session first"
+		return nil
+	}
+	key := m.connectionRef() + "/" + s.Id
+	if m.auxiliaryPending[key] {
+		return nil
+	}
+	r := auxiliary.Request{Action: "session", Session: s.Id, Task: task}
+	if len(fields) == 2 {
+		enabled := fields[1] == "on"
+		r.Enabled = &enabled
+	} else {
+		cfg, known := m.auxiliaryConfigs[key]
+		enabled := known && (task == "summary" && cfg.Summary || task == "suggestion" && cfg.Suggestion)
+		if !enabled {
+			if s.State != "idle" || len(m.pendingInputs[s.Id]) > 0 {
+				m.notice = "Wait for the final response"
+				return nil
+			}
+			if old := m.auxiliaryJob(); auxiliaryLoading(old) {
+				if task == "summary" && old.SummaryRequested || task == "suggestion" && old.SuggestionRequested {
+					return nil
+				}
+				queued := *old
+				if task == "summary" {
+					queued.SummaryRequested = true
+				} else {
+					queued.SuggestionRequested = true
+				}
+				m.auxiliaryJobs[key] = &queued
+				m.render()
+			} else {
+				// Immediate presentation while the server validates/fetches the source.
+				for i := len(m.events[s.Id]) - 1; i >= 0; i-- {
+					e := m.events[s.Id][i]
+					if e.Kind == "input" {
+						break
+					}
+					if e.Kind == "turn_end" && e.Text == "completed" && e.RunId == s.RunId {
+						j := &auxiliary.Job{ID: "pending", Run: e.RunId, Turn: e.Seq, Status: "queued", SummaryRequested: task == "summary", SuggestionRequested: task == "suggestion"}
+						if old := m.auxiliaryJob(); old != nil && old.Turn == e.Seq && old.Run == e.RunId {
+							if task != "summary" {
+								j.Summary = old.Summary
+							}
+							if task != "suggestion" {
+								j.Suggestion = old.Suggestion
+							}
+						}
+						if m.auxiliaryJobs == nil {
+							m.auxiliaryJobs = map[string]*auxiliary.Job{}
+						}
+						m.auxiliaryJobs[key] = j
+						m.render()
+						break
+					}
+				}
+			}
+		}
+	}
+	if m.auxiliaryVersions == nil {
+		m.auxiliaryVersions = map[string]uint64{}
+	}
+	if m.auxiliaryPending == nil {
+		m.auxiliaryPending = map[string]bool{}
+	}
+	m.auxiliaryVersions[key]++
+	m.auxiliaryPending[key] = true
+	return m.auxiliaryRequest(r, nil)
 }
