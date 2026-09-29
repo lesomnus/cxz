@@ -19,6 +19,8 @@ func (m *Manager) Docker(ctx context.Context, r *api.DockerInput) (*api.Receipt,
 	switch r.Action {
 	case "mcp":
 		return m.mcp(ctx, r.Spec)
+	case "skills":
+		return m.skills(ctx, r.Spec)
 	case "history-policy":
 		return m.historyPolicy(ctx, r.Spec)
 	case "save", "up":

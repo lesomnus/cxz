@@ -179,7 +179,7 @@ func newRoot(state string) *xli.Command {
 		root.Commands = append(root.Commands, newSessionCommand(name))
 	}
 	root.Commands = append(root.Commands, internalCommands()...)
-	root.Commands = append(root.Commands, mcpCommand(), settingsCommand(), editCommand(), dockerCommand(), doctorCommand(), logsCommand())
+	root.Commands = append(root.Commands, mcpCommand(), skillCommand(), settingsCommand(), editCommand(), dockerCommand(), doctorCommand(), logsCommand())
 	root.Commands = append(root.Commands, purgeCommand(), selfUpdateCommand(), useCommand())
 	root.Commands = append(root.Commands, releaseCommands()...)
 	root.Commands = append(root.Commands, xli.NewCmdCompletion())
