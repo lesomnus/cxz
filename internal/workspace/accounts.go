@@ -56,7 +56,7 @@ func (m *Manager) ResumeSession(ctx context.Context, r *api.Control) (*api.Sessi
 			defer conn.Close()
 			v, err := client.Get(ctx, &api.SessionRef{Id: r.SessionId})
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("resume: read project runtime session: %w", err)
 			}
 			if liveSession(v) {
 				return v, nil
@@ -68,9 +68,13 @@ func (m *Manager) ResumeSession(ctx context.Context, r *api.Control) (*api.Sessi
 				return nil, err
 			}
 			if err = m.syncRuntimePreferences(ctx, client, p.ID); err != nil {
-				return nil, err
+				return nil, fmt.Errorf("resume: sync project runtime preferences: %w", err)
 			}
-			return client.Resume(ctx, r)
+			out, err := client.Resume(ctx, r)
+			if err != nil {
+				return nil, fmt.Errorf("resume: project runtime Resume RPC: %w", err)
+			}
+			return out, nil
 		}
 	}
 	return nil, status.Error(codes.NotFound, "session not found")

@@ -120,7 +120,9 @@ func Install(ctx context.Context, root, workspaceRoot, image string, recreate bo
 			return versionpin.Check(root)
 		}
 	}
-	if p.Ready && p.Channel != "" && image == "" {
+	// A channel image records the last selection, not a version pin. Explicit
+	// recreation (including self-update) must build from the current executable.
+	if p.Ready && p.Channel != "" && image == "" && !recreate {
 		image = p.Image
 	}
 	return InstallLocked(context.WithValue(ctx, installReservationKey{}, true), root, workspaceRoot, image, recreate, out)
