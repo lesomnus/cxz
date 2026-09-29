@@ -73,6 +73,14 @@ const (
 	promptBackground = 239
 )
 
+// Columns of promptBackground kept to the left of the cursor, so the fill does
+// not end where the cursor begins. The transcript and the pinned row both draw
+// the prompt and have to indent by the same amount.
+const (
+	promptIndent     = 1
+	promptIndentText = " "
+)
+
 // A hint is one offer in a footer row. It is a value rather than a string so
 // that the renderer and the mouse hit test measure the same thing: text() is the
 // single source of a hint's width, and press is what clicking it sends, which

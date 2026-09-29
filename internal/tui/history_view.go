@@ -140,11 +140,11 @@ func (m *model) conversationView() string {
 		}
 	}
 	if pinned != "" && !m.selectingTools() {
-		prompt := strings.Split(ansi.Hardwrap(safeText(pinned), max(1, m.view.Width-2), true), "\n")
+		prompt := strings.Split(ansi.Hardwrap(safeText(pinned), max(1, m.view.Width-promptIndent-2), true), "\n")
 		for i := 0; i < min(2, min(len(prompt), len(rows))); i++ {
-			prefix := "  "
+			prefix := promptIndentText + "  "
 			if i == 0 {
-				prefix = "❯ "
+				prefix = promptIndentText + "❯ "
 			}
 			text := prefix + prompt[i]
 			if i == 1 && len(prompt) > 2 {

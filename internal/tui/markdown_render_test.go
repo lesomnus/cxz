@@ -168,3 +168,54 @@ func TestUserMessageBackgroundReachesConversationEdges(t *testing.T) {
 		terminal.Close()
 	}
 }
+
+// The fill reaches the edge of the conversation, so a cursor drawn against it
+// has nothing between the two. One column of fill stays to its left, and that
+// column belongs to the message rather than to the gap beside the panel.
+func TestPromptCursorKeepsAColumnOfFillToItsLeft(t *testing.T) {
+	old := lipgloss.ColorProfile()
+	lipgloss.SetColorProfile(termenv.ANSI256)
+	defer lipgloss.SetColorProfile(old)
+	m := conversationModel()
+	m.Update(tea.WindowSizeMsg{Width: 120, Height: 20})
+	m.events["s"] = []*api.Event{{Seq: 1, Kind: "input", Text: "hello"}, {Seq: 2, Kind: "assistant", Text: "world"}}
+	m.render()
+	m.view.GotoTop()
+	if m.contentOffset() == 0 {
+		t.Fatal("fixture needs a visible panel")
+	}
+	terminal := vt.NewEmulator(m.terminalWidth, 20)
+	terminal.WriteString(strings.ReplaceAll(m.View(), "\n", "\r\n"))
+	filled := func(x, y int) bool {
+		cell := terminal.CellAt(x, y)
+		if cell == nil || cell.Style.Bg == nil {
+			return false
+		}
+		r, _, _, _ := cell.Style.Bg.RGBA()
+		return r == uint32(8+10*(promptBackground-232))*0x101
+	}
+	at := func(x, y int) string {
+		if cell := terminal.CellAt(x, y); cell != nil {
+			return cell.Content
+		}
+		return ""
+	}
+	edge := m.contentOffset()
+	cursor := -1
+	for y := 0; y < 8 && cursor < 0; y++ {
+		if at(edge+promptIndent, y) == "❯" {
+			cursor = y
+		}
+	}
+	if cursor < 0 {
+		t.Fatal("cursor is not one column inside the conversation edge")
+	}
+	if !filled(edge, cursor) || at(edge, cursor) != " " {
+		t.Fatalf("column left of the cursor is not blank fill: %q", at(edge, cursor))
+	}
+	// The block did not move outward to make room: the gap beside the panel is
+	// untouched, and the fill still starts where the conversation does.
+	if filled(edge-1, cursor) {
+		t.Fatal("fill reached into the gap beside the panel")
+	}
+}

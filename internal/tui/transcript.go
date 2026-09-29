@@ -42,12 +42,14 @@ func eventView(s *api.Session, e *api.Event, width int) (out string) {
 		if e.TimeMs > 0 {
 			stamp = time.UnixMilli(e.TimeMs).Local().Format("01-02 15:04")
 		}
-		text := strings.Split(ansi.Hardwrap(safeText(e.Text), max(1, width-2), true), "\n")
-		rows := []string{"", promptTimestamp.Render(clip("  "+stamp, width))}
+		// The fill reaches the edge of the conversation, so a cursor drawn against
+		// it has nothing between the two. Keep one column of the fill to its left.
+		text := strings.Split(ansi.Hardwrap(safeText(e.Text), max(1, width-promptIndent-2), true), "\n")
+		rows := []string{"", promptTimestamp.Render(clip(promptIndentText+"  "+stamp, width))}
 		for i, line := range text {
-			prefix := "  "
+			prefix := promptIndentText + "  "
 			if i == 0 {
-				prefix = "❯ "
+				prefix = promptIndentText + "❯ "
 			}
 			rows = append(rows, blue.Render(prefix+line))
 		}
