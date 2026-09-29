@@ -4,7 +4,9 @@ A **project** is a registered workspace directory plus the container cxz owns fo
 it. A **session** is one conversation inside that project, with its own agent,
 account, configuration and history.
 
-Removing containers removes neither.
+Removing containers removes neither. After `down`, the project and its sessions
+are hidden from the TUI project list. The project remains in `cxz project ls`;
+run `cxz project up PROJECT` to show the project again.
 
 ## Lifecycle
 

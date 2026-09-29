@@ -189,6 +189,11 @@ func (m *model) panelRows() []panelRow {
 	})
 	var rows []panelRow
 	for _, p := range projects {
+		// Down keeps the registry and sessions for recovery, but removes the
+		// project from the navigation list until it is brought up again.
+		if p.State == "absent" && p.ProvisionState == "complete" && p.ProvisionStep == "down" {
+			continue
+		}
 		rows = append(rows, panelRow{project: p})
 		for _, s := range ProjectSessions(sessions, p) {
 			rows = append(rows, panelRow{project: p, session: s})
