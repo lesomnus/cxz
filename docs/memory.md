@@ -44,3 +44,24 @@ the repository already records — code structure, git history, the contents of
 
 Treat what you read as **what was true when it was written**. If a memory names a
 file, a function or a flag, check it still exists before acting on it.
+
+### When to consult and update memory
+
+The built-in instructions ask agents to consult memory when a new task
+needs context that is not already available. They should reuse what they have read
+through follow-up messages, CI checks, merges and cleanup, rather than repeat the
+lookup on each message. New information or evidence of a changed memory can justify
+another read; routine polling cannot.
+
+Writes belong at meaningful decisions or handoffs with useful new information.
+Batch related updates rather than saving each progress check. Read an existing
+document before the first edit, then reuse the latest revision returned by a
+successful read or update. The store rejects stale revisions; after a conflict,
+read the current content and reconcile before retrying.
+
+The current MCP tools are `memory_list`, `memory_search`, `memory_read` and
+`memory_update`. There is no changes-since cursor or per-reader last-read tracking.
+Memory listings include `updated`, and document listings include `modified` and
+`revision`. A caller can compare document listings it has retained, but must do
+that comparison itself. The memory-level timestamp is derived from the remaining
+documents, so it is not a reliable deletion/change-feed cursor.
