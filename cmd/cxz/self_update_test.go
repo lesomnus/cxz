@@ -72,3 +72,22 @@ func TestSelfUpdateRefreshesOnlyInstalledLocalManager(t *testing.T) {
 		t.Fatal("client-only refreshed manager", refresh, err)
 	}
 }
+
+func TestSelfUpdateRejectsStaleManagerSuccess(t *testing.T) {
+	for _, tc := range []struct {
+		name, body, want string
+		ok               bool
+	}{
+		{"updated", `{"running":{"revision":"new"}}`, "new", true},
+		{"cached channel image", `{"running":{"revision":"old"}}`, "new", false},
+		{"missing identity", `{}`, "new", false},
+		{"invalid response", `not json`, "new", false},
+		{"empty expected", `{"running":{"revision":""}}`, "", false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if err := checkManagerRevision([]byte(tc.body), tc.want); (err == nil) != tc.ok {
+				t.Fatalf("verification error: %v", err)
+			}
+		})
+	}
+}
