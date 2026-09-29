@@ -501,3 +501,59 @@ func TestPanelFooterHintsHoverClickAndDisable(t *testing.T) {
 		t.Fatal("trailing space is actionable")
 	}
 }
+
+func TestPanelHidesDownProjectAndRestoresItAfterUp(t *testing.T) {
+	m := panelModel()
+	running := &api.Project{Id: "running", Name: "A running", State: "running"}
+	target := &api.Project{Id: "target", Name: "Z target", State: "running"}
+	sessions := []*api.Session{{Id: "saved", ProjectId: "target", State: "stopped"}}
+	update := func(p *api.Project) {
+		m.updatePanel(listing{projects: []*api.Project{running, p}, projectsLoaded: true, sessions: sessions})
+	}
+	update(target)
+	m.panelIndex = 2 // Selected session belongs to the project being taken down.
+	down := *target
+	down.State, down.ProvisionState, down.ProvisionStep = "absent", "complete", "down"
+	update(&down)
+	rows := m.panelRows()
+	if len(rows) != 1 || rows[0].project.Id != "running" || m.panelIndex != 0 {
+		t.Fatal("down project/session still selectable", rows, m.panelIndex)
+	}
+	if len(m.panelProjects) != 2 || len(m.allSessions) != 1 {
+		t.Fatal("hiding navigation discarded retained metadata")
+	}
+	if view := m.panelScreen(); strings.Contains(ansi.Strip(view), "Z target") {
+		t.Fatal("down project still rendered", view)
+	}
+	update(target)
+	rows = m.panelRows()
+	if len(rows) != 3 || rows[2].session.Id != "saved" {
+		t.Fatal("up did not restore saved session navigation", rows)
+	}
+	// The empty list remains safe for keyboard navigation.
+	m.updatePanel(listing{projects: []*api.Project{&down}, projectsLoaded: true, sessions: sessions})
+	if len(m.panelRows()) != 0 || m.panelIndex != 0 {
+		t.Fatal("hidden-only list selection", m.panelIndex)
+	}
+	m.focusPanel()
+	m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+}
+
+func TestPanelKeepsProjectsThatWereNotExplicitlyDowned(t *testing.T) {
+	for _, p := range []*api.Project{
+		{Id: "registered", State: "absent"},
+		{Id: "stopped", State: "stopped"},
+		{Id: "failed", State: "absent", ProvisionState: "failed", ProvisionStep: "configuration"},
+		{Id: "starting", State: "absent", ProvisionState: "running", ProvisionStep: "inventory"},
+		{Id: "restarted", State: "running", ProvisionState: "complete", ProvisionStep: "down"},
+		{Id: "remote", State: "connection"},
+	} {
+		t.Run(p.Id, func(t *testing.T) {
+			m := panelModel()
+			m.updatePanel(listing{projects: []*api.Project{p}, projectsLoaded: true})
+			if rows := m.panelRows(); len(rows) != 1 || rows[0].project.Id != p.Id {
+				t.Fatal("unrelated project hidden", rows)
+			}
+		})
+	}
+}
