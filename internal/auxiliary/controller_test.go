@@ -193,3 +193,19 @@ func TestRepeatedFailureDoesNotGrowContextWithoutLimit(t *testing.T) {
 		t.Fatal("unbounded failure history", len(b), e)
 	}
 }
+
+func TestRestartDoesNotRegeneratePrunedHistory(t *testing.T) {
+	root := t.TempDir()
+	c, _ := New(root, func(context.Context, Input) (Output, error) { t.Error("replayed old history"); return Output{}, nil })
+	defer c.Close()
+	// Simulate an old enabled config, with derived session state evicted by retention.
+	c.config = Config{Summary: profile(), Since: 1}
+	old := events("evicted", 10, "old paid call", "old result")
+	for _, e := range old {
+		e.TimeMs = time.Now().Add(-time.Minute).UnixMilli()
+	}
+	c.Observe(old)
+	if j, _ := c.Status("evicted"); j != nil {
+		t.Fatal("restart regenerated evicted turn")
+	}
+}

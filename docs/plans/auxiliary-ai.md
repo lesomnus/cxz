@@ -47,7 +47,7 @@ access token을 공급받는다. 원본 프로젝트의 capability를 가져다 
 도구 차단, 입출력 크기와 실행 시간은 cxz 실행기가 제한한다.
 
 현재 `accounts.IssueGrant`와 `ResolveBinding`은 Project × Account를 전제로 한다.
-구현 시 auxiliary 범위를 명시적으로 모델링하고, 발급·설치·조회·폐기에서 같은
+auxiliary 범위를 명시적으로 모델링하고, 발급·설치·조회·폐기에서 같은
 범위를 검증한다. 임의의 프로젝트 이름으로 보조 작업을 위장하지 않는다. 토큰과
 capability는 설정 응답, 작업 기록, provider 출력, 명령행 인자에 포함하지 않는다.
 중앙 credential과 refresh 소유권은 기존 broker에 남긴다.
@@ -109,10 +109,10 @@ Manager가 설정과 작업 수명, 중복 방지, 세션별 checkpoint를 소�
 표시와 명시적인 추천 적용만 담당한다. 여러 클라이언트가 같은 턴을 보고 있어도
 한 번만 생성한다. 클라이언트 연결 종료가 원본 세션에 영향을 주지 않는다.
 
-실행 위치의 제안은 Manager가 관리하는 별도 helper 컨테이너다. 프로젝트 workspace,
+실행 위치는 Manager가 관리하는 별도 helper 컨테이너다. 프로젝트 workspace,
 프로젝트 상태 볼륨과 Docker socket을 마운트하지 않고, 필요한 텍스트와 해당 Account의
-보조 인증만 전달한다. provider 실행 파일 공급과 로그인 스트림 경로는 구현 단계에서
-확정한다. 이 컨테이너를 Session supervisor와 혼동하지 않는다.
+보조 인증만 전달한다. provider 실행 파일은 기존 distribution 캐시로 공급하고 로그인은 Manager 호스트의
+CLI 표준 입출력으로 연결한다. 이 컨테이너를 Session supervisor와 혼동하지 않는다.
 
 초기 실행기는 text-only다. provider의 도구와 MCP를 비활성화하고, 예상치 못한 도구·승인
 요청은 거부한다. 지시문에 '도구를 쓰지 말라'고 적는 것만으로 제한을 구현하지 않는다.

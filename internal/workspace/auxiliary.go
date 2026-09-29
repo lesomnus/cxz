@@ -188,6 +188,7 @@ func (b *limitedAuxBuffer) Write(p []byte) (int, error) {
 // Observe independently of frontend connections. Only new turns since task
 // activation are eligible; first discovery reads a bounded recent event window.
 func (m *Manager) StartAuxiliary(ctx context.Context) {
+	_, _ = m.auxiliaryController()
 	ctx, cancel := context.WithCancel(ctx)
 	m.auxStop = cancel
 	m.auxDone = make(chan struct{})
