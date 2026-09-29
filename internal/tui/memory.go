@@ -33,7 +33,7 @@ type memoryResult struct {
 	err     error
 }
 
-func (m *model) openMemory(s *api.Session) tea.Cmd {
+func (m *model) openAgentMemory(s *api.Session) tea.Cmd {
 	if s == nil {
 		m.notice = "Select a session to inspect retained agent data."
 		return nil

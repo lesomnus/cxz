@@ -190,7 +190,7 @@ func (m *model) debugState() *debugState {
 		focus = "account_workflow"
 	case m.settingsPage != nil:
 		focus = "settings"
-	case m.memoryPage != nil:
+	case (m.memoryPage != nil || m.library != nil):
 		focus = "memory"
 	case m.questionFocused():
 		focus = "question"
@@ -408,7 +408,7 @@ func (m *model) recordingStatusRow(status string, width int) string {
 func (m *model) recordingBadge(view string) string {
 	// The conversation uses its status row above the input. Other screens have
 	// no composer, so keep the recording state visible in their final row.
-	if (!m.projectView || m.creating) && (!m.panelFocus || m.panelVisible() || m.creating) && !m.accountView && m.workflow == nil && m.settingsPage == nil && m.memoryPage == nil && m.width >= 40 && m.height >= 14 {
+	if (!m.projectView || m.creating) && (!m.panelFocus || m.panelVisible() || m.creating) && !m.accountView && m.workflow == nil && m.settingsPage == nil && (m.memoryPage == nil && m.library == nil) && m.width >= 40 && m.height >= 14 {
 		return view
 	}
 	rows := strings.Split(view, "\n")

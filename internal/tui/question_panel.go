@@ -39,7 +39,7 @@ func (d *questionDialog) activeRow() int {
 // Reserve space below the transcript. Optional terminal/tool panels consume the
 // remaining space, and even the smallest supported screen keeps transcript rows.
 func (m *model) questionHeight() int {
-	if m.questionDialog == nil || m.projectView || m.accountView || m.workflow != nil || m.settingsPage != nil || m.memoryPage != nil {
+	if m.questionDialog == nil || m.projectView || m.accountView || m.workflow != nil || m.settingsPage != nil || (m.memoryPage != nil || m.library != nil) {
 		return 0
 	}
 	available := m.height - m.input.Height() - 5 - m.errorHeight()

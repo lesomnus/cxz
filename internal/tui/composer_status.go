@@ -47,7 +47,7 @@ func (m *model) composerStatus() (text, message string, column int) {
 }
 
 func (m *model) composerStatusMouse(v tea.MouseMsg) bool {
-	if (m.projectView && !m.creating) || m.accountView || m.workflow != nil || m.settingsPage != nil || m.memoryPage != nil || m.width < 40 || m.height < 14 {
+	if (m.projectView && !m.creating) || m.accountView || m.workflow != nil || m.settingsPage != nil || (m.memoryPage != nil || m.library != nil) || m.width < 40 || m.height < 14 {
 		return false
 	}
 	if v.Y != m.height-m.input.Height()-m.terminalHeight()-4 {

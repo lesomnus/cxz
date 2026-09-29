@@ -166,7 +166,7 @@ func (m *model) syncQuestion() {
 			}
 		}
 	}
-	if s == nil || m.settingsPage != nil || m.memoryPage != nil || m.panelFocus || m.projectView || m.accountView || m.questionDialog != nil || m.report != nil || m.modelPicker != nil || m.restartConfirm != nil {
+	if s == nil || m.settingsPage != nil || (m.memoryPage != nil || m.library != nil) || m.panelFocus || m.projectView || m.accountView || m.questionDialog != nil || m.report != nil || m.modelPicker != nil || m.restartConfirm != nil {
 		return
 	}
 	for _, p := range s.Pending {
