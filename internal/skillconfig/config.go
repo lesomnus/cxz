@@ -353,3 +353,17 @@ func ApplyRuntime(root, agent, config, home, workspace string) error {
 	}
 	return filemap.ApplyBundle(b, agent, config, home, workspace)
 }
+
+// ForgetProject leaves global skill definitions and shared files intact.
+// The manager serializes this with other skill configuration changes.
+func ForgetProject(root, project string) error {
+	c, err := Load(root)
+	if err != nil {
+		return err
+	}
+	if _, ok := c.Projects[project]; !ok {
+		return nil
+	}
+	delete(c.Projects, project)
+	return save(root, c)
+}

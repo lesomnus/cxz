@@ -364,7 +364,9 @@ func (c *Controller) Forget(id string) error {
 		f()
 	}
 	delete(c.active, id)
-	_ = os.Remove(c.preferencePath(id))
+	if err := os.Remove(c.preferencePath(id)); err != nil && !os.IsNotExist(err) {
+		return err
+	}
 	return c.save(id, State{Deleted: true})
 }
 func (c *Controller) Close() {

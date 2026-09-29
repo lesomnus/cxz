@@ -212,6 +212,11 @@ func (s projectStub) Erase(_ context.Context, r *resource.ProjectRef) (*resource
 	return resource.ProjectEraseResponse_builder{Erased: ptr(true)}.Build(), nil
 }
 
+func (s projectStub) Remove(_ context.Context, r *resource.ProjectRemoveRequest) (*resource.ProjectRemoveReply, error) {
+	s.requests <- r
+	return resource.ProjectRemoveReply_builder{Project: testProject(), Removed: ptr(r.GetConfirmed())}.Build(), nil
+}
+
 func TestCommandsReachAPI(t *testing.T) {
 	root, err := os.MkdirTemp("", "cxz-cli-")
 	if err != nil {
@@ -247,6 +252,26 @@ func TestCommandsReachAPI(t *testing.T) {
 		}
 		if strings.Contains(got.Stderr, "preparing workspace") || mutations.Load() != 0 {
 			t.Fatal("started preparation before validating account", got.Stderr)
+		}
+	}
+	for _, confirmed := range []bool{false, true} {
+		args := []string{"project", "rm"}
+		if confirmed {
+			args = append(args, "--yes")
+		}
+		args = append(args, "project-name")
+		got := xlitest.Run(t, newRoot(root), args...)
+		if confirmed && got.Err != nil || !confirmed && (got.Err == nil || !strings.Contains(got.Err.Error(), "--yes")) {
+			t.Fatalf("remove confirmation: %+v", got)
+		}
+		select {
+		case raw := <-stub.requests:
+			req, ok := raw.(*resource.ProjectRemoveRequest)
+			if !ok || req.GetConfirmed() != confirmed || req.GetTarget() != "project-name" {
+				t.Fatal(raw)
+			}
+		default:
+			t.Fatal("remove did not reach RPC")
 		}
 	}
 	// Without an installation the snapshot stops at the manager, but the command

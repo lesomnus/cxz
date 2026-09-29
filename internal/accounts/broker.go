@@ -431,3 +431,37 @@ func RevokeAuxiliaryGrant(root, account string) error {
 	}
 	return os.Remove(path)
 }
+
+// RevokeProjectGrants removes token-supply capabilities, preserving central logins.
+func RevokeProjectGrants(root, project string) error {
+	paths, err := filepath.Glob(filepath.Join(root, "central", "bindings", "*.json"))
+	if err != nil {
+		return err
+	}
+	for _, path := range paths {
+		b, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		var g Grant
+		if err := json.Unmarshal(b, &g); err != nil {
+			return err
+		}
+		if g.Project != project {
+			continue
+		}
+		if err := validateGrantBinding(g); err != nil {
+			return err
+		}
+		if filepath.Base(path) != g.Binding+".json" {
+			return fmt.Errorf("binding filename mismatch")
+		}
+		if err := os.Remove(capabilityPath(root, g.Capability)); err != nil && !os.IsNotExist(err) {
+			return err
+		}
+		if err := os.Remove(path); err != nil {
+			return err
+		}
+	}
+	return nil
+}

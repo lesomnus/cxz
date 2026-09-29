@@ -3365,6 +3365,11 @@ func (s interceptProject) Watch(req *resource.ProjectWatchRequest, out grpc.Serv
 		resource.ProjectService_Watch_FullMethodName, req, out, s.ProjectServiceServer.Watch)
 }
 
+func (s interceptProject) Remove(ctx context.Context, req *resource.ProjectRemoveRequest) (*resource.ProjectRemoveReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_Remove_FullMethodName, req, s.ProjectServiceServer.Remove)
+}
+
 func (s interceptProject) Paths(req *resource.ProjectPathsRequest, out grpc.ServerStreamingServer[resource.ProjectPathsReply]) error {
 	return grpcx.RunStream(s.stream, s.ProjectServiceServer,
 		resource.ProjectService_Paths_FullMethodName, req, out, s.ProjectServiceServer.Paths)
@@ -4376,6 +4381,19 @@ func dispatch(ctx context.Context, s resource.Server, op *pdpb.Op) (*anypb.Any, 
 		}
 
 		res, err := s.Project().List(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.ProjectService_Remove_FullMethodName:
+		v := &resource.ProjectRemoveRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().Remove(ctx, v)
 		if err != nil {
 			return nil, err
 		}

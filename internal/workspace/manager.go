@@ -33,6 +33,7 @@ type Project struct {
 }
 type Runtime struct{ ProjectID, Workspace, Token, Claude, Codex string }
 type Manager struct {
+	removedSessions                                           map[string]bool // protected by writeMu; rejects late frames after removal
 	auxStop                                                   context.CancelFunc
 	auxDone                                                   chan struct{}
 	auxMu                                                     sync.Mutex

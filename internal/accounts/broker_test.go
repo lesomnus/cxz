@@ -150,3 +150,37 @@ printf '%s' '{"tokens":{"id_token":"e30.eyJzdWIiOiJ1c2VyLW90aGVyIn0.synthetic","
 		t.Fatal("existing login overwritten", err)
 	}
 }
+
+func TestRevokeProjectGrantsPreservesOtherScopes(t *testing.T) {
+	root := t.TempDir()
+	seedCentral(t, root, "work", "subject-work", "synthetic-token")
+	target, err := IssueGrant(root, "project-a", "work")
+	if err != nil {
+		t.Fatal(err)
+	}
+	other, err := IssueGrant(root, "project-b", "work")
+	if err != nil {
+		t.Fatal(err)
+	}
+	aux, err := IssueAuxiliaryGrant(root, "work")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := RevokeProjectGrants(root, "project-a"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(capabilityPath(root, target.Capability)); !os.IsNotExist(err) {
+		t.Fatal("target capability retained", err)
+	}
+	for _, g := range []Grant{other, aux} {
+		if _, err := os.Stat(capabilityPath(root, g.Capability)); err != nil {
+			t.Fatal("other grant removed", err)
+		}
+	}
+	if _, err := CentralToken(root, "work"); err != nil {
+		t.Fatal("central login removed", err)
+	}
+	if err := RevokeProjectGrants(root, "project-a"); err != nil {
+		t.Fatal(err)
+	}
+}

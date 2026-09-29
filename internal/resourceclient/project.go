@@ -150,3 +150,7 @@ func (c *Client) Down(ctx context.Context, r *api.ProjectRequest, opts ...grpc.C
 	}
 	return &api.Receipt{ClientId: r.ClientId, Status: "stopped"}, nil
 }
+
+func (c *Client) RemoveProject(ctx context.Context, target string, confirmed bool) (*resource.ProjectRemoveReply, error) {
+	return c.projects.Remove(ctx, resource.ProjectRemoveRequest_builder{Target: &target, Confirmed: &confirmed}.Build())
+}
