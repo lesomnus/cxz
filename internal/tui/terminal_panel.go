@@ -150,7 +150,7 @@ func (m *model) terminalView() string {
 		return ""
 	}
 	p := m.terminal()
-	header := teal.Render(strings.Repeat("─", max(0, m.width-ansi.StringWidth(terminalFold)))) + teal.Render(terminalFold)
+	header := accent.Render(strings.Repeat("─", max(0, m.width-ansi.StringWidth(terminalFold)))) + accent.Render(terminalFold)
 	body := ""
 	if p.starting {
 		body = "  Preparing container terminal…"

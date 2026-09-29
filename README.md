@@ -440,7 +440,7 @@ The detail header has Input/Output tabs; use Left/Right while focused or click a
 tab to switch. Each tab keeps its scroll position, and Copy copies the active tab.
 
 Recreate's typed confirmation runs inline without switching to the alternate
-screen. TUI text inputs use a blinking light-green cursor (`#AEFF98`); this does
+screen. TUI text inputs use a blinking light-green cursor (`#9ef01a`); this does
 not change the surrounding shell's cursor settings.
 Reply metrics begin with completion time (`MM-DD HH:MM / duration …`). The working
 spinner includes elapsed time and an Esc interrupt hint; press Esc twice within

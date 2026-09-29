@@ -23,18 +23,18 @@ func eventView(s *api.Session, e *api.Event, width int) (out string) {
 	wrap := func(text string) string { return ansi.Hardwrap(safeText(text), max(1, width), true) }
 	switch e.Kind {
 	case "permission":
-		return teal.Render(wrap("Permission · " + e.Text + " · saved for this session"))
+		return accent.Render(wrap("Permission · " + e.Text + " · saved for this session"))
 	case "state":
 		return ""
 	case "update":
-		return teal.Render(wrap("↻ " + e.Text))
+		return accent.Render(wrap("↻ " + e.Text))
 	case "setting":
 		var v struct{ Value string }
 		_ = json.Unmarshal(e.Payload, &v)
 		if v.Value == "" {
 			v.Value = "default"
 		}
-		return teal.Render(wrap("✓ " + e.Text + " · " + v.Value))
+		return accent.Render(wrap("✓ " + e.Text + " · " + v.Value))
 	case "setting_status":
 		return muted.Render(wrap("Settings · " + e.Text))
 	case "input":
@@ -79,7 +79,7 @@ func eventView(s *api.Session, e *api.Event, width int) (out string) {
 		}
 		return muted.Render(clip(toolResultSummary(e), width))
 	case "compact":
-		return teal.Render(wrap("◇ Context compacted · journal retained"))
+		return accent.Render(wrap("◇ Context compacted · journal retained"))
 	case "turn_end":
 		return turnSummary(e, nil, 0, width)
 	case "diagnostic", "stderr":
