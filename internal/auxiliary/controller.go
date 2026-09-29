@@ -152,7 +152,7 @@ func (c *Controller) Cancel(id string) error {
 func (c *Controller) Observe(events []*api.Event) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	if c.closed || !c.config.Active() {
+	if c.closed || !c.config.Configured() {
 		return
 	}
 	for _, e := range events {
@@ -164,6 +164,10 @@ func (c *Controller) Observe(events []*api.Event) {
 		}
 		s, err := c.load(e.SessionId)
 		if err != nil || s.Deleted || e.Seq <= s.Seen {
+			continue
+		}
+		cfg, err := c.sessionConfig(e.SessionId)
+		if err != nil {
 			continue
 		}
 		s.Seen = e.Seq
@@ -194,19 +198,9 @@ func (c *Controller) Observe(events []*api.Event) {
 					s.Gap = true
 				}
 				s.Current = Turn{}
-				if len(c.active) >= 32 && c.active[e.SessionId] == nil {
-					s.Job = &Job{Status: "failed", Error: "Auxiliary queue is full"}
-				} else {
-					j := Job{ID: core.ID(), Session: e.SessionId, Run: e.RunId, Turn: e.Seq, Revision: c.config.Revision, Status: "queued"}
-					s.Job = &j
-					if c.save(e.SessionId, s) == nil {
-						if f := c.active[e.SessionId]; f != nil {
-							f()
-						}
-						ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
-						c.active[e.SessionId] = cancel
-						c.wg.Add(1)
-						go func(id string, state State, cfg Config) { defer c.wg.Done(); c.execute(ctx, cancel, id, state, cfg) }(e.SessionId, s, c.config)
+				if cfg.Active() && e.TimeMs >= cfg.Since {
+					if err := c.start(e.SessionId, &s, cfg); err != nil {
+						s.Job = &Job{Run: e.RunId, Turn: e.Seq, Revision: cfg.Revision, Status: "failed", Error: err.Error(), SummaryRequested: cfg.Summary.Enabled, SuggestionRequested: cfg.Suggestion.Enabled}
 					}
 				}
 			}
@@ -244,12 +238,27 @@ func (c *Controller) execute(ctx context.Context, cancel context.CancelFunc, id 
 		}
 		s.Job.Usage = usage
 		current.Job = s.Job
+		if cfg.Revision == c.config.Revision {
+			rememberSummary(&current, s.Job)
+		}
 		if err == nil {
 			current.Checkpoint = s.Checkpoint
 			current.Through = s.Through
 			current.Recent = s.Recent
 		}
+		pending := current.PendingTask
+		current.PendingTask = ""
 		_ = c.save(id, current)
+		if pending != "" && ctx.Err() == nil && cfg.Revision == c.config.Revision && !c.closed {
+			next := c.config
+			next.Summary.Enabled = pending == "summary"
+			next.Suggestion.Enabled = pending == "suggestion"
+			if e := c.start(id, &current, next); e != nil {
+				current.Job.Status = "failed"
+				current.Job.Error = e.Error()
+				_ = c.save(id, current)
+			}
+		}
 	}()
 	select {
 	case c.slots <- struct{}{}:
@@ -260,12 +269,20 @@ func (c *Controller) execute(ctx context.Context, cancel context.CancelFunc, id 
 	}
 	c.mu.Lock()
 	current, e := c.load(id)
-	if e == nil && current.Job != nil && current.Job.ID == s.Job.ID {
+	ready := e == nil && current.Job != nil && current.Job.ID == s.Job.ID && current.Job.Status == "queued" && ctx.Err() == nil
+	if ready {
 		current.Job.Status = "running"
-		_ = c.save(id, current)
+		err = c.save(id, current)
 	}
 	c.mu.Unlock()
+	if !ready || err != nil {
+		return
+	}
+
 	call := func(p Profile, task, text string) (Output, error) {
+		if err := ctx.Err(); err != nil {
+			return Output{}, err
+		}
 		if len(text) > MaxInput {
 			return Output{}, fmt.Errorf("auxiliary input exceeds budget")
 		}
@@ -319,8 +336,21 @@ func (c *Controller) execute(ctx context.Context, cancel context.CancelFunc, id 
 			return
 		}
 		s.Job.Summary = o.Summary
+		// Publish the summary immediately, even while a separate suggestion runs.
+		c.mu.Lock()
+		current, e := c.load(id)
+		if e == nil && current.Job != nil && current.Job.ID == s.Job.ID && current.Job.Status == "running" {
+			current.Job.Summary = o.Summary
+			rememberSummary(&current, current.Job)
+			_ = c.save(id, current)
+		}
+		c.mu.Unlock()
 	}
 	if cfg.Suggestion.Enabled {
+		if s.Job.Summary != "" {
+			context := "\nSummary of this turn (generated, not authoritative):\n" + Clip(s.Job.Summary, 4<<10)
+			text = Clip(text, MaxInput-len(context)) + context
+		}
 		o, e := call(cfg.Suggestion, "suggestion", text)
 		err = e
 		s.Job.Suggestion = o.Suggestion
@@ -334,6 +364,7 @@ func (c *Controller) Forget(id string) error {
 		f()
 	}
 	delete(c.active, id)
+	_ = os.Remove(c.preferencePath(id))
 	return c.save(id, State{Deleted: true})
 }
 func (c *Controller) Close() {

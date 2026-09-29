@@ -75,6 +75,24 @@ func (m *Manager) auxiliaryRequest(ctx context.Context, b []byte) (*api.Receipt,
 		var o auxiliary.Output
 		o, e = m.runAuxiliary(ctx, auxiliary.Input{Profile: r.Profile, Task: "models"})
 		out.Models = o.Models
+	case "session":
+		if r.Session == "" {
+			return nil, fmt.Errorf("select a session")
+		}
+		if r.Enabled != nil {
+			e = c.SetSession(r.Session, r.Task, *r.Enabled)
+		} else {
+			var cfg auxiliary.SessionConfig
+			cfg, e = c.SessionConfig(r.Session)
+			enabled := r.Task == "summary" && cfg.Summary || r.Task == "suggestion" && cfg.Suggestion
+			if e == nil && !enabled {
+				e = m.generateAuxiliary(ctx, c, r.Session, r.Task)
+			}
+		}
+		out.Job, _ = c.Status(r.Session)
+		if e == nil && r.Enabled != nil {
+			out.Message = fmt.Sprintf("%s %s · this session", r.Task, map[bool]string{true: "on", false: "off"}[*r.Enabled])
+		}
 	case "status":
 		out.Job, e = c.Status(r.Session)
 	case "forget":
@@ -90,6 +108,17 @@ func (m *Manager) auxiliaryRequest(ctx context.Context, b []byte) (*api.Receipt,
 	}
 	if e != nil {
 		return nil, e
+	}
+	if r.Session != "" {
+		cfg, err := c.SessionConfig(r.Session)
+		if err != nil {
+			return nil, err
+		}
+		out.SessionConfig = &cfg
+		out.Summaries, err = c.Summaries(r.Session)
+		if err != nil {
+			return nil, err
+		}
 	}
 	b, e = json.Marshal(out)
 	return &api.Receipt{Status: string(b)}, e
@@ -204,7 +233,7 @@ func (m *Manager) StartAuxiliary(ctx context.Context) {
 			case <-ticker.C:
 			}
 			c, e := m.auxiliaryController()
-			if e != nil || !c.Config().Active() {
+			if e != nil || !c.Config().Configured() {
 				continue
 			}
 			projects, e := m.all(ctx)
@@ -262,4 +291,64 @@ func (m *Manager) StartAuxiliary(ctx context.Context) {
 			}
 		}
 	}()
+}
+
+// Only an explicit one-shot request reads old turns. Automatic observation never
+// replays them. Fetch at most 2048 retained events, with a bounded RPC deadline.
+func (m *Manager) generateAuxiliary(ctx context.Context, c *auxiliary.Controller, id, task string) error {
+	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+	conn, client, err := m.ClientFor(ctx, id)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	events, err := auxiliaryHistory(ctx, client, id)
+	if err != nil {
+		return err
+	}
+	return c.Generate(id, task, events)
+}
+
+func auxiliaryHistory(ctx context.Context, client api.SessionsClient, id string) ([]*api.Event, error) {
+	session, err := client.Get(ctx, &api.SessionRef{Id: id})
+	if err != nil {
+		return nil, err
+	}
+	if session.State != "idle" {
+		return nil, fmt.Errorf("wait for the session's final response")
+	}
+	var events []*api.Event
+	cursor := uint64(0)
+	if session.LastSeq > 2048 {
+		cursor = session.LastSeq - 2048
+	}
+	for page := 0; page < 16 && cursor < session.LastSeq; page++ {
+		batch, err := client.History(ctx, &api.WatchRequest{SessionId: id, AfterSeq: cursor})
+		if err != nil {
+			return nil, err
+		}
+		if len(batch.Events) == 0 {
+			break
+		}
+		next := batch.Events[len(batch.Events)-1].Seq
+		if next <= cursor {
+			break
+		}
+		for _, event := range batch.Events {
+			switch event.Kind {
+			case "input", "assistant", "tool_call", "turn_end":
+				events = append(events, &api.Event{SessionId: event.SessionId, RunId: event.RunId, Seq: event.Seq, Kind: event.Kind, Text: auxiliary.Clip(event.Text, 8<<10)})
+			}
+		}
+		cursor = next
+	}
+	current, err := client.Get(ctx, &api.SessionRef{Id: id})
+	if err != nil {
+		return nil, err
+	}
+	if current.State != "idle" || current.RunId != session.RunId || current.LastSeq != session.LastSeq {
+		return nil, fmt.Errorf("conversation changed; retry after the final response")
+	}
+	return events, nil
 }
