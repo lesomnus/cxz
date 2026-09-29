@@ -578,7 +578,21 @@ func (m *model) startSessionWatch(s *api.Session) {
 func (m *model) render() {
 	start := time.Now()
 	defer func() {
-		m.debugRecorder.Add(debugEvent{Kind: "transcript_render", Duration: time.Since(start).Microseconds(), Count: len(m.historyPositions)})
+		// The row count is what survived the window; the cost is what render walked
+		// to produce it, which is every loaded event. Without both, a rebuild that
+		// is slow cannot be told from one that is merely large. Summing is itself
+		// proportional to the events, so only do it while a recording runs.
+		e := debugEvent{Kind: "transcript_render", Duration: time.Since(start).Microseconds(), Count: len(m.historyPositions)}
+		if s := m.current(); s != nil && m.debugRecorder.recording() {
+			for _, loaded := range m.events[s.Id] {
+				e.Events++
+				e.Bytes += len(loaded.Text) + len(loaded.Payload)
+			}
+			// The window trims on turn boundaries and never below one turn, so a
+			// single enormous turn keeps everything however large it grows.
+			e.Turns = m.historyWindow(s.Id).measuredTurns
+		}
+		m.debugRecorder.Add(e)
 	}()
 	m.promptSpans = nil
 	m.codeButtons = nil
