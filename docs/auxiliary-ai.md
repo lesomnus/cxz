@@ -9,9 +9,18 @@ Both are **off by default**.
 
 ## Turning them on
 
-`Ctrl+.` → **AI tasks**. `Enter` edits, `Tab` moves between fields, `Ctrl+L` lists
-the models and effort levels that account supports, `Ctrl+S` validates and
-activates, `Space` toggles.
+`Ctrl+.` → **AI tasks** → select a task → `Enter`.
+Choose a registered account, complete its login in the TUI, then choose a model
+and effort from the provider's catalog. Use ↑/↓ (or Tab) and Enter at each step.
+Selecting an effort validates and enables the task; **Provider default** leaves
+reasoning effort to the provider. Esc cancels setup without changing the saved
+profile. Space toggles an already configured task.
+
+Login opens on the selected Manager, including from a Windows client over SSH.
+The TUI shows the provider URL and accepts the returned Claude code; Ctrl+Y copies
+the login URL. Cancellation returns to account selection. Empty catalogs and
+errors stay visible with `r` to retry; no model names need to be typed.
+Both the client and Manager must support the auxiliary login RPC.
 
 An unsupported model or effort, or a failed login, is reported as an error — it
 never silently falls back to another account. The first use takes a while, because
@@ -24,15 +33,15 @@ session's credentials are never copied, even when both use the same subscription
 
 - A **central Codex account** reuses its existing `cxz account login`, supplied
   through an auxiliary binding distinct from any project's.
-- **Claude**, and Codex accounts on `project-local-oauth`, need a dedicated login on
-  the **manager host**:
+- **Claude**, and Codex accounts on `project-local-oauth`, need a dedicated login, provided by the same TUI setup flow.
+  The host-side CLI remains available as an alternative:
 
   ```sh
   cxz ai login work
   ```
 
-  Connecting from Windows over SSH, run the login on the Linux host. Configuration,
-  status, model listing and results all work from the Windows TUI.
+  Run that CLI command on the Linux Manager host. The TUI flow works remotely
+  without opening a separate SSH shell.
 
 Profiles live in a per-account Docker volume belonging to the installation.
 Authentication persists between tasks, and tasks for one account run one at a time.

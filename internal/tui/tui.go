@@ -1073,6 +1073,19 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 	}
+	if v, ok := msg.(auxiliaryAccounts); ok {
+		if m.settingsPage != nil && m.settingsPage.auxiliary == v.page {
+			v.page.busy = false
+			if v.err != nil {
+				v.page.message = v.err.Error()
+			} else {
+				v.page.accounts = v.accounts
+				v.page.choice = 0
+				v.page.message = ""
+			}
+		}
+		return m, nil
+	}
 	if v, ok := msg.(auxiliaryResult); ok {
 		m.receiveAuxiliary(v)
 		return m, nil
@@ -1247,6 +1260,11 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.memoryKey(v)
 		case tea.MouseMsg:
 			return m, m.memoryMouse(v)
+		}
+	}
+	if m.workflow != nil && m.workflow.auxiliary != nil {
+		if k, ok := msg.(tea.KeyMsg); ok {
+			return m, m.workflowKey(k)
 		}
 	}
 	if m.settingsPage != nil {
@@ -1450,6 +1468,18 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.workflow.close()
 		m.workflow = nil
+		if p := v.flow.auxiliary; p != nil {
+			m.busy = false
+			if m.settingsPage == nil || m.settingsPage.auxiliary != p {
+				return m, nil
+			}
+			if v.err != nil {
+				p.message = v.err.Error()
+				return m, nil
+			}
+			p.step, p.choice, p.models = "model", 0, nil
+			return m, m.auxiliaryRequest(auxiliary.Request{Action: "models", Profile: p.draft}, p)
+		}
 		if v.flow.create {
 			if v.err != nil {
 				m.seedMemory = v.flow.seed
@@ -2272,6 +2302,9 @@ func (m *model) View() (out string) {
 	}
 	if m.memoryPage != nil {
 		return m.memoryScreen()
+	}
+	if m.workflow != nil && m.workflow.auxiliary != nil {
+		return m.workflowScreen()
 	}
 	if m.settingsPage != nil {
 		return m.settingsScreen()

@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/agentview"
 	"github.com/lesomnus/cxz/internal/auxiliary"
+	"github.com/lesomnus/cxz/resource"
 	"slices"
 	"strings"
 	"time"
@@ -19,8 +20,11 @@ type auxiliaryPage struct {
 	selected int
 	busy     bool
 	editing  bool
-	field    int
-	inputs   []textinput.Model
+	step     string
+	choice   int
+	draft    auxiliary.Profile
+	models   []agentview.ModelOption
+	accounts []*resource.Account
 	message  string
 }
 type auxiliaryResult struct {
@@ -33,7 +37,7 @@ type auxiliaryResult struct {
 
 func (m *model) openAuxiliary() tea.Cmd {
 	m.settingsPage.auxiliary = &auxiliaryPage{}
-	return tea.Batch(m.auxiliaryRequest(auxiliary.Request{Action: "list"}, m.settingsPage.auxiliary), m.loadAccounts())
+	return m.auxiliaryRequest(auxiliary.Request{Action: "list"}, m.settingsPage.auxiliary)
 }
 func (m *model) auxiliaryRequest(r auxiliary.Request, p *auxiliaryPage) tea.Cmd {
 	connection := m.connectionRef()
@@ -72,11 +76,12 @@ func (m *model) receiveAuxiliary(v auxiliaryResult) {
 		}
 		p.config = v.reply.Config
 		if v.action == "models" {
-			var lines []string
-			for _, model := range v.reply.Models {
-				lines = append(lines, model.ID+" · "+strings.Join(model.Efforts, ", "))
+			p.models = v.reply.Models
+			p.step, p.choice = "model", 0
+			p.message = ""
+			if len(p.models) == 0 {
+				p.message = "No models available. Press r to retry or Esc to choose another account."
 			}
-			p.message = strings.Join(lines, "\n")
 		} else {
 			p.editing = false
 			p.message = "New completed turns use these settings; no historical backfill."
@@ -195,12 +200,16 @@ func (m *model) applySuggestion() tea.Cmd {
 }
 func (m *model) auxiliaryKey(k tea.KeyMsg) tea.Cmd {
 	p := m.settingsPage.auxiliary
-	if k.Paste && !p.editing {
+	if k.Paste {
 		return nil
 	}
-	if k.String() == "esc" && !k.Paste {
+	if k.String() == "esc" {
+		if p.busy {
+			return nil
+		}
 		if p.editing {
 			p.editing = false
+			p.message = ""
 		} else {
 			m.settingsPage.auxiliary = nil
 		}
@@ -209,48 +218,61 @@ func (m *model) auxiliaryKey(k tea.KeyMsg) tea.Cmd {
 	if p.busy {
 		return nil
 	}
-	task := "summary"
-	profile := p.config.Summary
+	task, profile := "summary", p.config.Summary
 	if p.selected == 1 {
-		task = "suggestion"
-		profile = p.config.Suggestion
+		task, profile = "suggestion", p.config.Suggestion
 	}
 	if p.editing {
-		if !k.Paste && (k.String() == "tab" || k.String() == "shift+tab") {
-			p.inputs[p.field].Blur()
-			d := 1
-			if k.String() == "shift+tab" {
-				d = -1
+		choices := p.choices()
+		switch k.String() {
+		case "up", "shift+tab":
+			p.choice = max(0, p.choice-1)
+		case "down", "tab":
+			p.choice = min(max(0, len(choices)-1), p.choice+1)
+		case "r":
+			if p.step == "account" {
+				return m.loadAuxiliaryAccounts(p)
 			}
-			p.field = (p.field + d + 3) % 3
-			return p.inputs[p.field].Focus()
+			if p.step == "model" {
+				return m.auxiliaryRequest(auxiliary.Request{Action: "models", Profile: p.draft}, p)
+			}
+		case "enter":
+			if p.choice >= len(choices) {
+				return nil
+			}
+			switch p.step {
+			case "account":
+				a := p.accounts[p.choice]
+				p.draft = auxiliary.Profile{Enabled: true, Account: a.GetAlias(), Agent: a.GetAgent(), Backend: a.GetAuthBackend()}
+				m.accountConnection = m.settingsPage.connection
+				return m.startAccountWorkflow(a.GetAlias(), a.GetAgent(), "", false, p)
+			case "model":
+				p.draft.Model, p.draft.Effort = p.models[p.choice].ID, ""
+				p.step, p.choice = "effort", 0
+			case "effort":
+				p.draft.Effort = ""
+				if p.choice > 0 {
+					p.draft.Effort = choices[p.choice]
+				}
+				return m.auxiliaryRequest(auxiliary.Request{Action: "put", Task: task, Profile: p.draft}, p)
+			}
 		}
-		if !k.Paste && k.String() == "ctrl+s" {
-			return m.auxiliaryRequest(auxiliary.Request{Action: "put", Task: task, Profile: auxiliary.Profile{Enabled: true, Account: strings.TrimSpace(p.inputs[0].Value()), Model: strings.TrimSpace(p.inputs[1].Value()), Effort: strings.TrimSpace(p.inputs[2].Value())}}, p)
-		}
-		if !k.Paste && k.String() == "ctrl+l" {
-			return m.auxiliaryRequest(auxiliary.Request{Action: "models", Profile: auxiliary.Profile{Account: strings.TrimSpace(p.inputs[0].Value())}}, p)
-		}
-		var cmd tea.Cmd
-		p.inputs[p.field], cmd = p.inputs[p.field].Update(k)
-		return cmd
+		return nil
 	}
 	switch k.String() {
 	case "up", "down", "tab":
 		p.selected = 1 - p.selected
 	case "enter", "e":
 		p.editing = true
-		p.field = 0
-		p.inputs = nil
-		for _, value := range []string{profile.Account, profile.Model, profile.Effort} {
-			v := textinput.New()
-			v.CharLimit = 150
-			v.Width = max(10, m.settingsWidth()-8)
-			v.SetValue(value)
-			p.inputs = append(p.inputs, v)
-		}
-		return p.inputs[0].Focus()
+		p.step = "account"
+		p.choice = 0
+		p.message = ""
+		p.draft = auxiliary.Profile{}
+		return m.loadAuxiliaryAccounts(p)
 	case " ":
+		if profile.Account == "" {
+			return m.auxiliaryKey(tea.KeyMsg{Type: tea.KeyEnter})
+		}
 		profile.Enabled = !profile.Enabled
 		return m.auxiliaryRequest(auxiliary.Request{Action: "put", Task: task, Profile: profile}, p)
 	case "r":
@@ -258,14 +280,86 @@ func (m *model) auxiliaryKey(k tea.KeyMsg) tea.Cmd {
 	}
 	return nil
 }
+func (p *auxiliaryPage) choices() []string {
+	var out []string
+	switch p.step {
+	case "account":
+		for _, a := range p.accounts {
+			out = append(out, a.GetAlias()+" · "+a.GetAgent()+" · "+a.GetName())
+		}
+	case "model":
+		for _, v := range p.models {
+			out = append(out, v.ID+" · "+v.Name)
+		}
+	case "effort":
+		out = append(out, "Provider default")
+		for _, v := range p.models {
+			if v.ID == p.draft.Model {
+				out = append(out, v.Efforts...)
+				break
+			}
+		}
+	}
+	return out
+}
+
+type auxiliaryAccounts struct {
+	page     *auxiliaryPage
+	accounts []*resource.Account
+	err      error
+}
+
+func (m *model) loadAuxiliaryAccounts(p *auxiliaryPage) tea.Cmd {
+	p.busy = true
+	service := m.accountClient()
+	if c, ok := m.client.(interface {
+		AccountClient(string) resource.AccountServiceClient
+	}); ok {
+		service = c.AccountClient(m.settingsPage.connection)
+	}
+	ctx := m.contextFor(m.settingsPage.connection)
+	return func() tea.Msg {
+		if service == nil {
+			return auxiliaryAccounts{page: p, err: fmt.Errorf("Account service unavailable")}
+		}
+		ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+		defer cancel()
+		var all []*resource.Account
+		after := ""
+		for {
+			page, err := service.List(ctx, resource.AccountListRequest_builder{Size: 200, After: after}.Build())
+			if err != nil {
+				return auxiliaryAccounts{page: p, err: err}
+			}
+			all = append(all, page.GetItems()...)
+			if page.GetNext() == "" {
+				break
+			}
+			after = page.GetNext()
+		}
+		return auxiliaryAccounts{page: p, accounts: all}
+	}
+}
+
 func (m *model) auxiliaryScreen() string {
 	p := m.settingsPage.auxiliary
 	lines := []string{"", accent.Bold(true).Render("AI tasks" + m.connectionLabel(m.settingsPage.connection)), ""}
 	if p.editing {
-		for i, label := range []string{"Account alias", "Model", "Effort (empty: provider default)"} {
-			lines = append(lines, label, p.inputs[i].View())
+		lines = append(lines, "Select "+p.step+" · "+p.draft.Account)
+		choices := p.choices()
+		capacity := max(1, m.height-12)
+		start := max(0, p.choice-capacity+1)
+		for i := start; i < min(len(choices), start+capacity); i++ {
+			line := "  " + safeText(choices[i])
+			if i == p.choice {
+				line = focus.Render("› " + safeText(choices[i]))
+			}
+			lines = append(lines, line)
 		}
-		lines = append(lines, "Tab field · Ctrl+L list models · Ctrl+S validate and enable · Esc cancel")
+		if len(choices) == 0 && p.step == "account" {
+			lines = append(lines, "No accounts. Add an account in Settings → Accounts, then press r.")
+		}
+		lines = append(lines, "↑/↓ select · Enter continue / save effort · r retry · Esc cancel")
 	} else {
 		for i, profile := range []auxiliary.Profile{p.config.Summary, p.config.Suggestion} {
 			name := []string{"Summary", "Next-message suggestion"}[i]
@@ -281,11 +375,7 @@ func (m *model) auxiliaryScreen() string {
 		}
 		lines = append(lines, "", "Enter edit · Space change default · r refresh · Esc back")
 	}
-	var names []string
-	for _, a := range m.accounts {
-		names = append(names, a.GetAlias()+" ("+a.GetAgent()+")")
-	}
-	lines = append(lines, "", "Accounts: "+strings.Join(names, ", "), "Local OAuth: run cxz ai login ACCOUNT on the Manager host.", "Central Codex: use cxz account login ACCOUNT.", "Checkpoint uses the summary account, or suggestion account when summary is off.", "/summary and /suggest: on/off per session, or once while off. Alt+G accepts the ghost.")
+	lines = append(lines, "", "Checkpoint uses the summary account, or suggestion account when summary is off.", "/summary and /suggest: on/off per session, or once while off.")
 	if p.busy {
 		lines = append(lines, "Checking account/model…")
 	}

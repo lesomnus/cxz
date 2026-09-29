@@ -40,6 +40,8 @@ service ProjectService {
   rpc Terminal(stream ProjectTerminalRequest) returns (stream ProjectTerminalReply);
   // Ephemeral login transport. First frame identifies the session profile;
   // subsequent frames carry stdin only. These frames are never journaled.
+  // Dedicated auxiliary account login; transient and never journaled.
+  rpc AuxiliaryLogin(stream ProjectLoginRequest) returns (stream ProjectLoginOutput);
   rpc SessionLogin(stream ProjectLoginRequest) returns (stream ProjectLoginOutput);
   // Read immediate directory entries inside the project's container as its remote user.
   rpc Paths(ProjectPathsRequest) returns (stream ProjectPathsReply);
