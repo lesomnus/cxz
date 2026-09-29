@@ -105,3 +105,11 @@ values. MCP tool payloads are not separately logged by the runtime.
 
 The manager stores `mcp.json`; project runtimes store `mcp-runtime.json` and each
 session's `mcp-launch.json`. Existing databases need no migration or deletion.
+
+The manager pushes the resolved configuration to a project before resuming or
+creating a session, alongside file mappings and the history policy. All three
+apply at the next agent start, so a project runtime older than the manager --
+one that does not yet know the push -- is skipped rather than treated as a
+failure. Refusing there would leave the project unusable, and project runtimes
+only update once their sessions fall quiet. The configuration lands when the
+runtime updates.
