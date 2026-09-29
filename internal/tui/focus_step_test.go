@@ -5,13 +5,15 @@ import (
 	"testing"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/agentview"
 	"github.com/muesli/termenv"
 )
 
-// The bright green answers one question: is this where the keyboard is. A list
-// cursor and a footer hint under the pointer both answer yes, so they carry it
-// rather than the step the rest of the green chrome sits on.
+// The bright green marks what is live: where the keyboard is, and what is
+// running. A list cursor, a footer hint under the pointer and a working spinner
+// all qualify, so they carry it rather than the step the rest of the green
+// chrome sits on.
 func TestCursorAndHoverTakeTheFocusStep(t *testing.T) {
 	profile := lipgloss.ColorProfile()
 	lipgloss.SetColorProfile(termenv.TrueColor)
@@ -30,6 +32,10 @@ func TestCursorAndHoverTakeTheFocusStep(t *testing.T) {
 	}
 
 	m := conversationModel()
+	if spinner := m.sessionIndicator(&api.Session{Id: "s", State: "working"}); !strings.Contains(spinner, bright) {
+		t.Fatalf("a working spinner is not on the focus step: %q", spinner)
+	}
+
 	m.modelPicker = &modelPicker{id: "s", run: "run", kind: "/model", catalog: &modelCatalog{
 		Models: []agentview.ModelOption{{ID: "first"}, {ID: "second"}},
 	}}
