@@ -41,25 +41,42 @@ func historyBatchFloor(events []*api.Event) uint64 {
 	}
 	return n
 }
-func (m *model) clearHistoryRenderCaches() {
-	m.renderedResponses = nil
-	m.renderedTools = nil
-	m.toolActivities = nil
-	m.renderedInputs = nil
-	m.renderedSummaries = nil
-	m.contextStatusCache = nil
-	m.quotaParses = nil
-	if len(m.hiddenEvents) > 0 {
-		keep := map[*api.Event]bool{}
-		for _, events := range m.events {
-			for _, e := range events {
-				if m.hiddenEvents[e] {
-					keep[e] = true
-				}
-			}
+func pruneCache[K comparable, V any](cache map[K]V, loaded func(K) bool) {
+	for key := range cache {
+		if !loaded(key) {
+			delete(cache, key)
 		}
-		m.hiddenEvents = keep
 	}
+}
+
+// Trimming removes events from one end of the window; the rows of every event
+// that survives are still valid. Discarding them all would re-render the whole
+// window on the UI goroutine, including the page that was just prepared off it,
+// so keep what is still loaded and drop only the rest.
+func (m *model) dropUnloadedRenderCaches() {
+	loaded := make(map[*api.Event]bool, m.loadedEvents())
+	for _, events := range m.events {
+		for _, e := range events {
+			loaded[e] = true
+		}
+	}
+	keep := func(e *api.Event) bool { return e == nil || loaded[e] }
+	pruneCache(m.renderedResponses, keep)
+	pruneCache(m.renderedInputs, func(k inputRenderKey) bool { return keep(k.event) })
+	pruneCache(m.renderedSummaries, func(k summaryRenderKey) bool { return keep(k.event) && keep(k.usage) })
+	pruneCache(m.toolActivities, func(k toolActivityKey) bool { return keep(k.event) })
+	pruneCache(m.renderedTools, func(k toolRenderKey) bool { return keep(k.event) && keep(k.result) })
+	pruneCache(m.quotaParses, func(k quotaParseKey) bool { return keep(k.event) })
+	pruneCache(m.hiddenEvents, keep)
+	// A single entry whose key carries the window edges: it revalidates itself.
+	m.contextStatusCache = nil
+}
+func (m *model) loadedEvents() int {
+	n := 0
+	for _, events := range m.events {
+		n += len(events)
+	}
+	return n
 }
 func (m *model) applyHistoryFloor(id string, floor uint64) {
 	w := m.historyWindow(id)
@@ -81,7 +98,7 @@ func (m *model) applyHistoryFloor(id string, floor uint64) {
 		m.historyStart = map[string]uint64{}
 	}
 	m.historyStart[id] = max(m.historyStart[id], floor)
-	m.clearHistoryRenderCaches()
+	m.dropUnloadedRenderCaches()
 }
 
 // Bound by whole input turns. One oversized turn remains intact. Browsing older
@@ -176,7 +193,15 @@ func (m *model) limitHistory(id string, older bool) bool {
 	if from > 0 {
 		m.historyStart[id] = max(w.floor, m.events[id][0].Seq-1)
 	}
-	m.clearHistoryRenderCaches()
+	started := time.Now()
+	m.dropUnloadedRenderCaches()
+	// A trim is what makes the loaded row count fall while paging; record it so
+	// a slow rebuild next to it has a visible cause.
+	m.debugRecorder.Add(debugEvent{
+		Kind: "history_trim", Type: map[bool]string{true: "newer", false: "older"}[older],
+		Duration: time.Since(started).Microseconds(), Count: len(events) - (to - from),
+		Events: to - from, Turns: hi - lo, Bytes: bytes[to] - bytes[from],
+	})
 	return true
 }
 func (m *model) historyAnchor() float64 {
