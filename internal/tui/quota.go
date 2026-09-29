@@ -65,6 +65,7 @@ func quotaBarStyle(percent float64) lipgloss.Style {
 }
 
 func (m *model) updateQuota() {
+	start := time.Now()
 	s := m.current()
 	if s == nil {
 		m.quotaWindows, m.quotaState = nil, "waiting"
@@ -72,6 +73,11 @@ func (m *model) updateQuota() {
 	}
 	events := m.events[s.Id]
 	run := s.RunId
+	// This runs inside every transcript rebuild but reads across sessions, so its
+	// cost does not follow the rebuild's own event count and was invisible there.
+	defer func() {
+		m.debugRecorder.Add(debugEvent{Kind: "quota_update", Duration: time.Since(start).Microseconds(), Events: len(events)})
+	}()
 	if s.Agent == "claude" && s.Account != "" {
 		events = nil
 		sessions := m.allSessions
@@ -91,7 +97,7 @@ func (m *model) updateQuota() {
 		sort.SliceStable(events, func(i, j int) bool { return events[i].TimeMs < events[j].TimeMs })
 		run = ""
 	}
-	m.quotaWindows, m.quotaState = quotaSnapshot(s.Agent, run, events)
+	m.quotaWindows, m.quotaState = quotaSnapshot(s.Agent, run, events, m.cachedQuotaParse)
 	m.quotaState = quotaPendingState(m.quotaState, s.RunId, m.events[s.Id], time.Now())
 	if s.Agent == "claude" && s.Account != "" {
 		if m.accountQuotas == nil {
@@ -129,7 +135,46 @@ func quotaPendingState(state, run string, events []*api.Event, now time.Time) st
 	return state
 }
 
-func quotaSnapshot(provider, run string, events []*api.Event) ([]agentview.Window, string) {
+// A usage payload never changes, but updateQuota runs on every render and walks
+// every usage event of every session sharing the account, parsing each one three
+// times. Remember the parse against the event, as the transcript does.
+type quotaParseKey struct {
+	event    *api.Event
+	provider string
+}
+
+type quotaParse struct {
+	windows    []agentview.Window
+	all        bool
+	prefix     string
+	observedMs int64
+}
+
+func parseQuotaEvent(provider string, e *api.Event) quotaParse {
+	p := quotaParse{windows: agentview.Quota(provider, e.Text, e.Payload)}
+	p.all, p.prefix = agentview.QuotaReplacement(provider, e.Text, e.Payload)
+	if observed, ok := fields(e.Payload).number("_cxz_observed_ms"); ok && observed > 0 {
+		p.observedMs = int64(observed)
+	}
+	return p
+}
+
+func (m *model) cachedQuotaParse(provider string, e *api.Event) quotaParse {
+	key := quotaParseKey{e, provider}
+	if p, ok := m.quotaParses[key]; ok {
+		return p
+	}
+	p := parseQuotaEvent(provider, e)
+	if m.quotaParses == nil {
+		m.quotaParses = map[quotaParseKey]quotaParse{}
+	}
+	m.quotaParses[key] = p
+	return p
+}
+
+// parse is how a usage event is read; callers that run once, like the /usage
+// report, pass parseQuotaEvent and keep nothing.
+func quotaSnapshot(provider, run string, events []*api.Event, parse func(string, *api.Event) quotaParse) ([]agentview.Window, string) {
 	state := "waiting"
 	windows := map[string]agentview.Window{}
 	for _, e := range events {
@@ -150,8 +195,8 @@ func quotaSnapshot(provider, run string, events []*api.Event) ([]agentview.Windo
 		if e.Kind != "usage" {
 			continue
 		}
-		loaded := agentview.Quota(provider, e.Text, e.Payload)
-		all, prefix := agentview.QuotaReplacement(provider, e.Text, e.Payload)
+		parsed := parse(provider, e)
+		loaded, all, prefix := parsed.windows, parsed.all, parsed.prefix
 		if provider == "claude" && all && len(loaded) == 0 && len(windows) > 0 {
 			state = "unavailable"
 			continue
@@ -181,8 +226,8 @@ func quotaSnapshot(provider, run string, events []*api.Event) ([]agentview.Windo
 			if e.TimeMs > 0 {
 				w.Observed = time.UnixMilli(e.TimeMs)
 			}
-			if observed, ok := fields(e.Payload).number("_cxz_observed_ms"); ok && observed > 0 {
-				w.Observed = time.UnixMilli(int64(observed))
+			if parsed.observedMs > 0 {
+				w.Observed = time.UnixMilli(parsed.observedMs)
 			}
 			if old, ok := previous[w.Key]; ok {
 				if old.Observed.After(w.Observed) {
@@ -254,7 +299,7 @@ func (m *model) quotaStatus(now time.Time, width int) string {
 }
 
 func quotaHistoryReport(provider, run string, events []*api.Event) string {
-	windows, state := quotaSnapshot(provider, run, events)
+	windows, state := quotaSnapshot(provider, run, events, parseQuotaEvent)
 	state = quotaPendingState(state, run, events, time.Now())
 	report := "Account quota · " + provider + " · " + state + "\n"
 	switch state {

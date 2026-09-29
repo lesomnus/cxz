@@ -107,6 +107,7 @@ type model struct {
 	panelIndex              int
 	panelHoverY             int    // Screen row; zero means no hovered item.
 	panelHintHover          string // Footer hint under the pointer, by its key.
+	quotaParses             map[quotaParseKey]quotaParse
 	panelProjects           []*api.Project
 	allSessions             []*api.Session
 	panelError              string
