@@ -27,6 +27,20 @@ After you decide, focus returns to the composer. That is deliberate: a second
 Resolved approvals update their original row in place, with distinct colours for
 allowed, denied and cancelled.
 
+## MCP confirmations
+
+A fieldless MCP permission prompt (for example, “Allow cxz_memory to run
+memory_read?”) is a decision, not a question. FULL mode accepts it in the session
+supervisor, including without a connected TUI.
+
+In ASK mode the approval box shows **Accept**, **Decline**, and **Cancel**. Click a
+button to send immediately; there is no separate Submit step. With the box focused,
+`1`/`2`/`3` send the corresponding choice, or use `←`/`→` then `Enter`.
+
+MCP forms that request actual field values still use the question dialog. URL-flow
+confirmations use the same three buttons, but remain manual even in FULL mode:
+complete the external flow before accepting. `/approval` shows the original payload.
+
 ## Questions
 
 A question opens a focused dialog by itself. Dismissing it does not answer it —

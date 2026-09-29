@@ -3,13 +3,14 @@ package supervisor
 import (
 	"encoding/json"
 	"github.com/lesomnus/cxz/internal/core"
+	"strings"
 	"testing"
 )
 
 const memoryElicitation = `{"id":"mcp-1","method":"mcpServer/elicitation/request","params":{"threadId":"thread","serverName":"cxz_memory","mode":"form","message":"Allow memory_list?","requestedSchema":{"type":"object","properties":{}}}}`
 
 func TestCodexMCPElicitationRequiresExplicitResponse(t *testing.T) {
-	for _, mode := range []string{"ask", "full"} {
+	for _, mode := range []string{"ask"} {
 		for _, action := range []string{"Accept", "Decline", "Cancel"} {
 			t.Run(mode+action, func(t *testing.T) {
 				s, input := displaySupervisor(t, "codex")
@@ -97,5 +98,53 @@ func TestCodexElicitationServerResolution(t *testing.T) {
 	}
 	if _, err := s.execute("reply", core.Command{RunID: "run", ClientID: "late", RequestID: `"mcp-1"`, Allow: true}); err == nil {
 		t.Fatal("stale request accepted")
+	}
+}
+
+func TestCodexFullApprovesFieldlessMCPConfirmation(t *testing.T) {
+	s, input := displaySupervisor(t, "codex")
+	s.snap.PermissionMode = "full"
+	s.consume([]byte(memoryElicitation))
+	if len(s.pending) != 0 || s.snap.State == "waiting_input" {
+		t.Fatal("confirmation still pending")
+	}
+	var wire struct {
+		ID     string
+		Result struct {
+			Action  string
+			Content map[string]any
+		}
+	}
+	if err := json.Unmarshal(input.Bytes(), &wire); err != nil {
+		t.Fatal(err)
+	}
+	if wire.ID != "mcp-1" || wire.Result.Action != "accept" || wire.Result.Content == nil || len(wire.Result.Content) != 0 {
+		t.Fatal(input.String())
+	}
+	n := input.Len()
+	s.approvePending()
+	if input.Len() != n {
+		t.Fatal("duplicate automatic reply")
+	}
+}
+func TestCodexFullKeepsMCPContentAndURLPending(t *testing.T) {
+	form := strings.Replace(memoryElicitation, `"properties":{}`, `"properties":{"note":{"type":"string"}}`, 1)
+	url := `{"id":"mcp-1","method":"mcpServer/elicitation/request","params":{"threadId":"thread","serverName":"external","mode":"url","message":"Login","url":"https://example.com/auth"}}`
+	for _, raw := range []string{form, url, strings.Replace(memoryElicitation, `"properties":{}`, `"properties":{},"required":["missing"]`, 1)} {
+		s, input := displaySupervisor(t, "codex")
+		s.snap.PermissionMode = "full"
+		s.consume([]byte(raw))
+		if len(s.pending) != 1 || input.Len() != 0 {
+			t.Fatal("invented form content or URL completion", raw, input.String())
+		}
+	}
+}
+func TestSwitchingToFullResolvesPendingConfirmation(t *testing.T) {
+	s, input := displaySupervisor(t, "codex")
+	s.snap.PermissionMode = "ask"
+	s.consume([]byte(memoryElicitation))
+	_, err := s.execute("permission", core.Command{RunID: "run", ClientID: "full", Text: "full"})
+	if err != nil || len(s.pending) != 0 || !strings.Contains(input.String(), `"action":"accept"`) {
+		t.Fatal(err, input.String())
 	}
 }

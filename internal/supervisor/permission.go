@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/lesomnus/cxz/internal/agentview"
 	"github.com/lesomnus/cxz/internal/core"
 )
 
@@ -34,7 +35,7 @@ func (s *Supervisor) approvePending() {
 	}
 	var pending []core.Event
 	for _, p := range s.pending {
-		if p.RunID == s.snap.RunID && core.AutomaticApproval(p.Text) {
+		if p.RunID == s.snap.RunID && agentview.AutomaticApproval(p.Text, p.Payload) {
 			pending = append(pending, p)
 		}
 	}
@@ -46,7 +47,11 @@ func (s *Supervisor) approvePending() {
 		if _, exists := s.receipts[id]; exists {
 			continue
 		}
-		receipt, err := s.executeLocked("reply", core.Command{RunID: s.snap.RunID, ClientID: id, RequestID: p.RequestID, Allow: true})
+		cmd := core.Command{RunID: s.snap.RunID, ClientID: id, RequestID: p.RequestID, Allow: true}
+		if p.Text == agentview.CodexElicitation {
+			cmd.Selections = agentview.ElicitationSelection("Accept")
+		}
+		receipt, err := s.executeLocked("reply", cmd)
 		if err != nil {
 			// Keep malformed requests visible instead of silently hiding them in full mode.
 			s.event("permission", "ask", "", nil, nil)

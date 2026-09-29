@@ -6,8 +6,10 @@ const CodexElicitation = "mcpServer/elicitation/request"
 // CodexAsyncQuestion is a cxz request type, not a provider JSON-RPC method.
 const CodexAsyncQuestion = "agentMessage/questions"
 
+// Payload-aware callers use agentview.QuestionRequest and AutomaticApproval to
+// distinguish fieldless MCP confirmation from actual form input.
 // Question reports whether a pending request asks the user for content rather
-// than for a decision. A decision has two answers and a policy can hold one of
+// than for a decision. A decision has fixed answers and a policy can hold one of
 // them; an answer is content, and nothing about the session implies it.
 func Question(name string) bool {
 	switch name {

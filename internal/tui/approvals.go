@@ -19,8 +19,8 @@ type approvalResult struct {
 	err              error
 }
 
-func question(p *api.Event) bool          { return core.Question(p.Text) }
-func automaticApproval(p *api.Event) bool { return core.AutomaticApproval(p.Text) }
+func question(p *api.Event) bool          { return agentview.QuestionRequest(p.Text, p.Payload) }
+func automaticApproval(p *api.Event) bool { return agentview.AutomaticApproval(p.Text, p.Payload) }
 func permissionState(state string) bool {
 	return state == "idle" || state == "working" || state == "waiting_input"
 }
@@ -62,6 +62,14 @@ func (m *model) replyApproval(p *api.Event, allow bool, answers string) tea.Cmd 
 	}
 	if allow && question(p) && answers == "" {
 		return m.openQuestion(p)
+	}
+	if answers == "" && p.Text == agentview.CodexElicitation && agentview.ElicitationButtons(p.Payload) {
+		action := "Decline"
+		if allow {
+			action = "Accept"
+		}
+		b, _ := json.Marshal(agentview.ElicitationSelection(action))
+		answers = string(b)
 	}
 	if answers != "" {
 		if _, _, err := core.DecodeAnswers(answers); err != nil {
@@ -158,6 +166,9 @@ func (m *model) approvalKey(k tea.KeyMsg) tea.Cmd {
 		return m.input.Focus()
 	}
 	s := m.current()
+	if handled, cmd := m.elicitationKey(p, k); handled {
+		return cmd
+	}
 	switch k.String() {
 	case "esc":
 		return m.confirmInterrupt(time.Now())
@@ -239,6 +250,10 @@ func (m *model) approvalBox() string {
 		}
 	}
 	view := agentview.ApprovalView(s.Agent, p.Text, p.Payload)
+	if m.elicitationDecision(p) {
+		qs, _ := agentview.ElicitationQuestions(p.Payload)
+		view.Detail = qs[0].Text
+	}
 	if question(p) {
 		if qs, err := agentview.Questions(s.Agent, p.Text, p.Payload); err == nil {
 			view.Title = "Question"
@@ -275,7 +290,11 @@ func (m *model) approvalBox() string {
 	if m.focusApproval {
 		footer = fmt.Sprintf("L%d/%d · ", m.approvalOffset+1, len(details)) + footer
 	}
-	rows = append(rows, muted.Render(clip("  "+footer, max(1, m.width-2))))
+	if m.elicitationDecision(p) {
+		rows = append(rows, m.elicitationButtonRow(p))
+	} else {
+		rows = append(rows, muted.Render(clip("  "+footer, max(1, m.width-2))))
+	}
 	for len(rows) < height-2 {
 		rows = append(rows, "")
 	}

@@ -194,3 +194,34 @@ func ElicitationResponse(raw []byte, allow bool, values map[string]core.AnswerSe
 	result["content"] = content
 	return result, nil
 }
+
+// ElicitationButtons identifies decisions that need no text/form fields. URL
+// confirmations also use buttons, but cannot be completed by the FULL policy.
+func ElicitationButtons(raw []byte) bool {
+	p, err := readElicitation(raw)
+	if err != nil {
+		return false
+	}
+	if p.Mode == "url" {
+		return true
+	}
+	qs, err := ElicitationQuestions(raw)
+	if err != nil || len(qs) != 1 {
+		return false
+	}
+	_, err = ElicitationResponse(raw, true, ElicitationSelection("Accept"), nil)
+	return err == nil
+}
+func ElicitationSelection(action string) map[string]core.AnswerSelection {
+	return map[string]core.AnswerSelection{elicitationActionKey: {Selected: []string{action}}}
+}
+func QuestionRequest(name string, raw []byte) bool {
+	return core.Question(name) && !(name == CodexElicitation && ElicitationButtons(raw))
+}
+func AutomaticApproval(name string, raw []byte) bool {
+	if name == CodexElicitation {
+		p, err := readElicitation(raw)
+		return err == nil && p.Mode == "form" && ElicitationButtons(raw)
+	}
+	return core.AutomaticApproval(name)
+}

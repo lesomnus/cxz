@@ -75,3 +75,23 @@ func TestElicitationEmptyFormAndRemoteSchema(t *testing.T) {
 		}
 	}
 }
+
+func TestMCPDecisionClassificationUsesPayload(t *testing.T) {
+	for _, tt := range []struct {
+		raw           string
+		buttons, auto bool
+	}{
+		{`{"params":{"mode":"form","requestedSchema":{"type":"object","properties":{}}}}`, true, true},
+		{`{"params":{"mode":"url","url":"https://example.com"}}`, true, false},
+		{form, false, false},
+		{`{"params":{"mode":"form","requestedSchema":{"type":"object","properties":{"optional":{"type":"string"}}}}}`, false, false},
+		{`{"params":{"mode":"form","requestedSchema":{"type":"object","properties":{},"required":["missing"]}}}`, false, false},
+		{`{"params":{"mode":"form","requestedSchema":{"type":"object","minProperties":1}}}`, false, false},
+		{`{"params":{"mode":"unknown"}}`, false, false},
+	} {
+		raw := []byte(tt.raw)
+		if ElicitationButtons(raw) != tt.buttons || AutomaticApproval(CodexElicitation, raw) != tt.auto || QuestionRequest(CodexElicitation, raw) == tt.buttons {
+			t.Fatal(tt)
+		}
+	}
+}
