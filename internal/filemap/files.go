@@ -196,6 +196,12 @@ func Apply(root, agent, config, home, workspace string) error {
 	if err != nil {
 		return err
 	}
+	return ApplyBundle(b, agent, config, home, workspace)
+}
+
+// ApplyBundle writes files a caller assembled itself, reusing the same
+// destination resolution, duplicate check and symlink refusal.
+func ApplyBundle(b Bundle, agent, config, home, workspace string) error {
 	replace := strings.NewReplacer("${AGENT_CONFIG_DIR}", config, "${SESSION_HOME}", home, "${WORKSPACE}", workspace)
 	seen := map[string]bool{}
 	var resolved []File

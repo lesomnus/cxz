@@ -27,6 +27,7 @@ import (
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/filemap"
 	"github.com/lesomnus/cxz/internal/journal"
+	"github.com/lesomnus/cxz/internal/skillconfig"
 )
 
 type Supervisor struct {
@@ -218,6 +219,9 @@ func Run(ctx context.Context, root, id string) error {
 		return err
 	}
 	home := filepath.Join(accounts.Dir(accounts.SessionRoot(root, session.CreateID), session.Account), "home")
+	if err := skillconfig.ApplyRuntime(root, session.Kind, auth.ConfigDir, home, session.Workspace); err != nil {
+		return err
+	}
 	if err := filemap.Apply(root, session.Kind, auth.ConfigDir, home, session.Workspace); err != nil {
 		return err
 	}
