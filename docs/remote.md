@@ -1,268 +1,72 @@
-# Remote TUI and Windows frontend
+# Remote access
 
-The manager, project runtime, session supervisors, agent processes and devcontainers run on Linux. The same
-`connect` command runs on Linux and Windows; the Windows binary contains the
-frontend rather than server/manager installation commands. No local Docker installation is
-needed for a remote conversation.
+The containers live on a Linux host. The TUI does not have to.
 
-## Windows user installation and Terminal profile
-
-From a source build or extracted download, run:
-
-```powershell
-.\cxz.exe self-install
+```sh
+cxz --endpoint ssh://user@host          # over SSH
+cxz --endpoint tcp://host:7349 --token-file FILE
+cxz --endpoint work                     # a named connection
+cxz --endpoint local://                 # the local installation
 ```
 
-`windows-install` is an alias for `self-install`. The command copies the running
-frontend to the current user's Programs known folder, normally
-`%LOCALAPPDATA%\Programs\cxz\cxz.exe`, and appends that directory to the **user**
-PATH. It does not require administrator rights, Docker, Git or Go. Existing PATH
-entries and environment-variable references are preserved, and repeated calls
-do not add duplicate entries. Running it from the installed executable only
-checks PATH. Reinstalling from a different build retains `cxz.previous.exe` using
-the same replacement/locking mechanism as `self-update`.
+A remote frontend is the same TUI against someone else's manager. It needs neither
+Docker nor Go — a Windows client is a single executable.
 
-Restart Windows Terminal and your shell to pick up the new PATH. Existing
-processes retain their environment; until restarted, run the installed executable
-by its full path. Settings stay in the existing client state directory.
+## Named connections
 
-```powershell
-cxz integration add windows-terminal
-cxz integration ls
-cxz integration remove windows-terminal
-```
-
-Registration writes a [Windows Terminal JSON fragment](https://learn.microsoft.com/en-us/windows/terminal/json-fragment-extensions)
-at `%LOCALAPPDATA%\Microsoft\Windows Terminal\Fragments\cxz\cxz.json`. The `cxz`
-profile launches the registering executable by its absolute path, with the
-selected `--state` directory, and starts in `%USERPROFILE%`. Run registration
-from the installed executable after `self-install`. Repeating `add` updates the
-same profile, including when its executable or state directory changes. `remove`
-deletes only this fragment; Windows Terminal's main settings file is not edited.
-Reopen Windows Terminal to see the profile in the new-tab menu. Self-installation
-and profile registration are Windows frontend commands and make no daemon calls.
-
-## All connections in one project view
-
-Edit `settings.jsonc` with `cxz edit` on Linux or Windows. JSON comments (`//`,
-`/* ... */`) and trailing commas are supported. Connections are keyed by name
-alongside a `default` selection:
-
-```json
-{
-  "$schema": "./settings.schema.json",
-  "connections": {
-    "default": "work",
-    "work": { "target": "ssh://work" },
-    "home": { "target": "local://" },
-    "vpn": {
-      "target": "tcp://home-vpn:7349",
-      "token_file": "${STATE}/tokens/home"
-    }
-  }
+```jsonc
+// settings.jsonc
+"connections": {
+  "default": "work",
+  "entries": {
+    "work": { "target": "ssh://me@build-host" },
+    "home": { "target": "tcp://192.168.1.10:7349", "tokenFile": "~/.cxz-home-token" },
+  },
 }
 ```
 
-Run `cxz` on Linux, or `cxz` on Windows, to see every configured
-connection. Existing settings fields such as `files`, `docker` and model
-preferences can remain in the same file. Connection changes apply the next time
-the TUI starts.
+With connections configured, plain `cxz` shows **every** connection's projects and
+sessions in one panel, labelled `project1 via work`. `default` decides the initial
+focus. `cxz --endpoint work` focuses that one; giving a URL directly opens only it.
 
-On Windows, `cxz edit` edits the local client's settings without requiring Docker
-or a live daemon. It uses `VISUAL`, then `EDITOR`, and otherwise opens Notepad.
-With Notepad, save and close the document, then press Enter in the terminal.
-For VS Code, set its wait option so editing finishes before validation:
+Use `local://` alongside remote targets to keep your own installation in the list.
 
-```powershell
-$env:EDITOR = 'code --wait'
-.\cxz.exe edit
-```
+## TCP forwarding
 
-Editor commands use Windows command syntax; quote an executable path containing
-spaces. Both executable and `.cmd`/batch editors are supported. Unless overridden
-with `--state`, `CXZ_STATE` or `XDG_STATE_HOME`, the file is under
-`$env:USERPROFILE\.local\state\cxz\settings.jsonc`. Directory selection follows
-`--state` > `CXZ_STATE` > `XDG_STATE_HOME/cxz` > the home-directory default.
-
-The first edit starts with commented examples for connections, model defaults,
-file mappings and shared Docker. The examples are disabled until uncommented.
-Closing the editor successfully saves that initial file even if it was not
-changed. Existing settings keep their preferences and comments; `config
-set`/`unset` also preserves unrelated settings and comments.
-
-`cxz edit` extracts the bundled JSON Schema to `<state>/settings.schema.json`
-before opening the editor and refreshes it when the binary's schema changes.
-The initial file contains `"$schema": "./settings.schema.json"`; editing an
-existing file also adds this reference if missing. A custom `$schema` is kept.
-The relative reference works for both the temporary draft and the saved file,
-including Windows paths with spaces. No daemon or schema download is required.
-The schema provides descriptions, completions and validation in compatible
-editors; cxz still validates the configuration on save.
-
-VS Code recognizes the `.jsonc` extension as JSON with Comments without a
-custom file association.
-
-When `settings.jsonc` is absent, cxz reads `settings.jsonm`, then the original
-`settings.json`. The next successful `cxz edit` or CLI preference save writes
-`settings.jsonc`, preserving the old file as a backup. When multiple files
-exist, the first in that order is used.
-
-The editor opens a temporary draft. Invalid JSON, unknown settings, editor
-failure and concurrent updates leave the saved file intact and report the
-recoverable draft path. Windows saves connection/model preferences locally;
-it does not publish Docker overrides, `devcontainer.compose` overrides, or file
-mappings to any remote connection. Configure and publish these on the Linux host.
-Edit those host settings with `cxz edit` on the Linux daemon host.
-
-Projects display as `project1 via work`, with their sessions underneath.
-`default` chooses the initial focus and the fallback for an unqualified session
-reference; it does not hide other connections. If omitted, the alphabetically
-first connection is selected. `cxz --endpoint home` opens the same combined view
-with home initially focused. `cxz --session SESSION --endpoint work` selects a
-session ID or alias on work; a qualified `work::SESSION` reference can also be
-used.
-
-Each connection loads and subscribes independently. An unreachable host does not
-delay projects from another host. Failed connections retry; previously loaded
-projects remain visible with an offline marker. Empty/connecting connections
-have a row, so they can still be selected for accounts, settings or a new
-workspace. IDs are scoped within the frontend, so equal IDs on different daemons
-do not share drafts, event history or pending approvals.
-
-Accounts, new sessions and Ctrl+. Docker settings target the selected connection
-(or the current conversation when the project panel is not focused).
-An open settings/accounts view retains that target. Memory copy targets are
-limited to stopped sessions for the same agent on the same connection; copying
-between daemon hosts is not implemented.
-
-Targets:
-
-- `ssh://work` uses the `Host work` entry in the client's SSH config.
-- `local://` discovers the installation for the client's `--state` directory.
-  With `cxz install`, this normally bridges to the manager inside Docker: the
-  manager's Unix socket need not be mounted on the host. An alternative local
-  installation can use `local:///absolute/state/directory`.
-- `unix://${STATE}/run/daemon.sock` connects directly to a Unix socket, useful
-  with a foreground `cxz serve`. `${STATE}` expands to the local client state
-  directory; it is not the remote host's state. Local Docker and Unix socket
-  targets are intended for Linux clients.
-- `tcp://host:port` requires `token_file`. Relative token paths resolve against
-  the client state directory; `${STATE}` also works in token paths. Token
-  contents are never stored in settings.
-
-Without `connections`, Linux `cxz` retains its existing local-installation
-behavior. CLI management commands such as `cxz up`, `install` and
-`project recreate` continue to target the local installation. Passing a URL
-to `cxz --endpoint` opens just that endpoint.
-
-## SSH
-
-Update the **host CLI** on the Linux daemon host so it provides `_connect`, then:
+SSH needs no server-side setup. For TCP, open a relay on the host:
 
 ```sh
-cxz --endpoint ssh://user@linux-host
-cxz --session SESSION_ALIAS --endpoint ssh://user@linux-host:2222
-cxz --endpoint 'ssh://work-host?state=/home/user/.local/state/cxz&binary=/usr/local/bin/cxz'
+cxz expose --token-file FILE --listen tcp://127.0.0.1:7349
 ```
 
-The client runs OpenSSH (`ssh` / `ssh.exe` must be on PATH), honors SSH config
-aliases, keys, agent and known-host policy, and uses batch authentication without
-a PTY. Set up access with normal `ssh` first. Passwords embedded in URLs are
-rejected; there is no password prompt inside the TUI. `state` and `binary` are
-optional URL query parameters and must be URL-encoded where necessary.
+`expose` is an independent relay — it does not require restarting the manager or
+reinstalling.
 
-The remote `_connect` process locates the host's existing cxz installation and
-bridges gRPC through `docker exec` to its manager, or to the local Unix socket
-for a foreground daemon. It does not start another daemon. SSH keeps the transport
-encrypted; no TCP listener or token is needed. Closing the frontend closes its
-SSH process, while sessions continue under their session supervisors.
+**TCP is authenticated, not encrypted.** The token proves who you are; it does not
+hide what you send. Run it over a VPN or an SSH tunnel, never across the open
+internet. Binding to `127.0.0.1` and tunnelling is the safe default.
 
-## TCP
+## What stays on the host
 
-On the Linux host, generate a private access token once, then run a foreground
-forwarder for the existing installation:
+Some things are host-local by nature and are unavailable or reduced over a remote
+connection:
 
-```sh
-umask 077
-openssl rand -hex 32 > ~/.config/cxz-remote.token
-cxz expose --token-file ~/.config/cxz-remote.token --listen tcp://127.0.0.1:7349
-```
+- **Host file attachments** come from the machine running the *client*, and are
+  uploaded to the daemon.
+- **Container path completion** runs on the host through a project helper, reached
+  by an RPC — the client's own filesystem is never browsed.
+- **Server settings and the manager's own update policy** are managed on the Linux
+  host. Attaching a frontend does not change them; `--server` on the host does.
 
-The parent directory of the token file must already exist. Keep the forwarder
-running (or supervise it as a service). It preserves the local manager's database,
-socket and lifecycle. It can be stopped and restarted without restarting the
-manager or agents; `cxz install --expose` is not needed. Ctrl+C stops only the forwarder. By default it listens on
-loopback; choose an explicit host/VPN interface to accept connections there.
+## Windows
 
-Copy the token securely to the client, then:
+The Windows frontend provides the TUI, `cxz edit` for local settings and model
+preferences, `cxz self-update`, and connection management. It uses `VISUAL`,
+`EDITOR`, then Notepad.
 
-```sh
-cxz --token-file ./cxz-remote.token --endpoint tcp://HOST:7349
-```
+It reads console modifier flags directly, so `Ctrl+Enter` works without the
+terminal-capability guesswork Unix needs, and it decodes console records without
+passing Unicode through the system code page.
 
-TCP carries **plaintext gRPC**. Use it on loopback, through a tunnel or on a
-trusted VPN; use SSH for encrypted access over an untrusted network. The bearer
-token grants full access to this cxz installation, including mutations; it is
-not an agent credential or a project-scoped capability. Authentication applies
-to unary requests and streaming subscriptions. Both sides read the token from a
-file; tokens are not accepted in endpoint URLs. Restart the forwarder after
-rotating the token. A token must have at least 32 non-whitespace bytes.
-
-Both frontends accept `CXZ_ENDPOINT` as the default for `cxz --endpoint` and
-`CXZ_TOKEN_FILE` as the default token path. The Windows frontend also uses these
-when invoked with no command (an endpoint environment variable overrides the
-configured combined view in that case). Without the environment variable,
-Windows `cxz` uses the configured connections. Linux `cxz` uses configured
-connections when present, otherwise its local installation. `--state` is always the **local client** settings/recordings
-directory; SSH's `?state=...` selects the daemon host's installation.
-
-## Remote functionality and boundaries
-
-Project/session browsing, conversation streaming, send/interrupt/stop, permission
-policies, quota, tool previews, retained memory and Docker settings use the remote
-gRPC API. Recordings and terminal diagnostics describe the **client** terminal
-and are saved locally. Workspace paths entered in remote mode must be absolute
-Linux paths on the daemon host; the client does not resolve them against a
-Windows drive or its current directory. Claude accounts can be registered and
-used to create sessions in the TUI; when login is required, the provider URL and
-hidden code input appear inline, then creation resumes automatically. The login
-process runs in the project runtime and keeps credentials in that session's
-profile. Canceling or disconnecting stops login. This requires an updated client,
-manager and project runtime; upgrade older installations on the daemon host with
-`cxz install --recreate` and `cxz project recreate WORKSPACE` after updating cxz.
-Central Codex login and explicit relogin of existing sessions still run on the host.
-
-Container path completion (backtick followed by `/` or `~/`) uses the selected
-project's remote manager over the same SSH/TCP connection. The manager streams
-directory entries from that project's container as its configured remote user;
-`/` is the container root and `~/` is that user's home. No client Docker is needed,
-including on Windows. Typing another directory or dismissing completion cancels
-the previous lookup. Update both the frontend and remote manager for this feature;
-an older manager displays `Update remote manager · cxz install --recreate`.
-Run that command on the daemon host with an updated cxz binary. Existing project
-containers do not need recreation when their shared tools already include Wisp.
-
-The embedded container terminal (`Ctrl+backtick` or `/terminal`) uses a bidirectional
-RPC over the same connection. The selected project's manager starts the shell as
-its configured remote user in its remote workspace and forwards raw PTY output,
-input, and resizes. Windows clients need no Docker. Folding the panel or switching
-sessions retains the shell; detaching or losing the connection closes its PTY.
-Terminal bytes are not written to conversation journals or resource audits.
-Update both the frontend and manager; on the daemon host, run an updated cxz binary
-with `cxz install --recreate`. Project containers need no recreation for terminal
-support. Older managers display an upgrade instruction when opening the panel.
-
-The secret helper still requires direct local Docker access and reports that
-requirement in remote mode. File-based memory browsing/copying and log retrieval
-already go through the daemon and work remotely.
-
-## Builds
-
-```sh
-GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -o cxz.exe ./cmd/cxz
-GOOS=windows GOARCH=arm64 CGO_ENABLED=0 go build -o cxz-arm64.exe ./cmd/cxz
-```
-
-Release scripts build Linux amd64/arm64 runtime archives and Windows amd64/arm64
-frontend ZIPs, all covered by `SHA256SUMS`. CI includes a native Windows frontend
-build and command/transport tests. Linux container images remain Linux-only.
+Host-side settings still apply on Linux. A remote manager updates separately, on its
+own host.
