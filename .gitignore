@@ -6,7 +6,9 @@
 *.test
 coverage.out
 
-# Local executable and self-update artifacts
+# Local executable and self-update artifacts. GOOS=windows writes the .exe
+# suffix, which the bare name does not cover.
 /cxz
+/cxz.exe
 /cxz.previous
 /.cxz.update.lock
