@@ -30,6 +30,8 @@ type Client interface {
 	Library(context.Context, string, Request) (Reply, error)
 }
 type Request struct {
+	Cursor   string   `json:"cursor,omitempty"`
+	Limit    int      `json:"limit,omitempty"`
 	Action   string   `json:"action,omitempty"`
 	IDs      []string `json:"ids,omitempty"`
 	ID       string   `json:"id,omitempty"`
@@ -61,13 +63,18 @@ type Document struct {
 	Deleted  bool      `json:"deleted,omitempty"`
 }
 type Reply struct {
-	Location  string     `json:"location"`
-	Memories  []Memory   `json:"memories,omitempty"`
-	Memory    *Memory    `json:"memory,omitempty"`
-	Documents []Document `json:"documents,omitempty"`
-	Content   string     `json:"content,omitempty"`
-	Revision  string     `json:"revision,omitempty"`
-	Message   string     `json:"message,omitempty"`
+	Changes       []Change   `json:"changes,omitempty"`
+	Cursor        string     `json:"cursor,omitempty"`
+	HasMore       bool       `json:"has_more,omitempty"`
+	Baseline      bool       `json:"baseline,omitempty"`
+	ResetRequired bool       `json:"reset_required,omitempty"`
+	Location      string     `json:"location"`
+	Memories      []Memory   `json:"memories,omitempty"`
+	Memory        *Memory    `json:"memory,omitempty"`
+	Documents     []Document `json:"documents,omitempty"`
+	Content       string     `json:"content,omitempty"`
+	Revision      string     `json:"revision,omitempty"`
+	Message       string     `json:"message,omitempty"`
 }
 type Store struct {
 	root    string
@@ -273,6 +280,8 @@ func (s *Store) Do(ctx context.Context, q Request) (Reply, error) {
 		dir = "trash/" + dir
 	}
 	switch q.Action {
+	case "changes":
+		return s.changes(ctx, r, q)
 	case "init":
 		return out, nil
 	case "list", "search":

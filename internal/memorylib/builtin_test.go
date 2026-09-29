@@ -97,7 +97,7 @@ func TestBuiltinActivationAndRuntimeSessions(t *testing.T) {
 	}
 	defer cs.Close()
 	tools, e := cs.ListTools(ctx, nil)
-	if e != nil || len(tools.Tools) != 4 {
+	if e != nil || len(tools.Tools) != 5 {
 		t.Fatal(tools, e)
 	}
 }

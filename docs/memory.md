@@ -59,9 +59,33 @@ document before the first edit, then reuse the latest revision returned by a
 successful read or update. The store rejects stale revisions; after a conflict,
 read the current content and reconcile before retrying.
 
-The current MCP tools are `memory_list`, `memory_search`, `memory_read` and
-`memory_update`. There is no changes-since cursor or per-reader last-read tracking.
-Memory listings include `updated`, and document listings include `modified` and
-`revision`. A caller can compare document listings it has retained, but must do
-that comparison itself. The memory-level timestamp is derived from the remaining
-documents, so it is not a reliable deletion/change-feed cursor.
+### Discovering changes
+
+The MCP tools are `memory_list`, `memory_search`, `memory_read`, `memory_update`
+and `memory_changes`. When a refresh is useful, call `memory_changes` with the
+cursor retained from the previous call, then read only relevant changed documents.
+This is an explicit refresh mechanism, not a request to poll on every message.
+
+Omitting `cursor` starts a metadata baseline of current memories and documents.
+Save the returned opaque `cursor`; while `has_more` is true, request the next page
+with that cursor. `limit` defaults to 100 and accepts 1–500 entries. Baseline pages
+have `baseline: true`. Later calls return `changes` with `kind` (`created`,
+`updated`, or `deleted`), `memory_id`, `revision`, and `document` for document
+entries. An absent document identifies memory metadata, including its `name`.
+Treat created/updated entries as upserts and deleted entries as removals. Document
+bodies are never included. Changes occurring during baseline pagination are
+returned after the baseline, so callers should drain all `has_more` pages.
+
+Cursors are project-scoped and survive process restarts. Each reader retains its
+own cursor; reading a document does not advance it, and another reader's refresh
+does not consume changes. The server compares content hashes on refresh, including
+host edits with unchanged timestamps, and persists the latest observed state.
+This is not an audit log: multiple edits can coalesce, and a file created and
+removed between observations need not appear.
+
+The index retains at most 4,096 deleted-item markers. If a cursor predates an
+evicted marker, or its index was recreated, the response has
+`reset_required: true`. Discard cached metadata and start a new baseline without
+a cursor. This makes deletion retention bounded without silently missing changes.
+The hidden `.changes.json` index contains metadata and hashes, never document
+bodies; it should not be manually edited.
