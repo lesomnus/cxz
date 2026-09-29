@@ -2,7 +2,7 @@ package mcpruntime
 
 import (
 	"bufio"
-"bytes"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -72,7 +72,10 @@ func Bridge(ctx context.Context, root, session, server string, in io.Reader, out
 	var init, initialized []byte
 	initializedOK := false
 	send := func(w io.Writer, b []byte) error {
- b=bytes.TrimRight(b,"\r\n") _, e := w.Write(append(append([]byte(nil), b...), '\n')); return e }
+		b = bytes.TrimRight(b, "\r\n")
+		_, e := w.Write(append(append([]byte(nil), b...), '\n'))
+		return e
+	}
 	failure := func(id json.RawMessage) error {
 		b, _ := json.Marshal(map[string]any{"jsonrpc": "2.0", "id": id, "error": map[string]any{"code": -32000, "message": "MCP connection interrupted. The operation outcome may be unknown; verify state before retrying. A later request reconnects without restarting the agent."}})
 		return send(out, b)
