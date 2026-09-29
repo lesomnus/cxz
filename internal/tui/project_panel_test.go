@@ -6,6 +6,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/termenv"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/proto"
 	"io"
 	"strings"
 	"testing"
@@ -512,9 +513,9 @@ func TestPanelHidesDownProjectAndRestoresItAfterUp(t *testing.T) {
 	}
 	update(target)
 	m.panelIndex = 2 // Selected session belongs to the project being taken down.
-	down := *target
+	down := proto.Clone(target).(*api.Project)
 	down.State, down.ProvisionState, down.ProvisionStep = "absent", "complete", "down"
-	update(&down)
+	update(down)
 	rows := m.panelRows()
 	if len(rows) != 1 || rows[0].project.Id != "running" || m.panelIndex != 0 {
 		t.Fatal("down project/session still selectable", rows, m.panelIndex)
@@ -531,7 +532,7 @@ func TestPanelHidesDownProjectAndRestoresItAfterUp(t *testing.T) {
 		t.Fatal("up did not restore saved session navigation", rows)
 	}
 	// The empty list remains safe for keyboard navigation.
-	m.updatePanel(listing{projects: []*api.Project{&down}, projectsLoaded: true, sessions: sessions})
+	m.updatePanel(listing{projects: []*api.Project{down}, projectsLoaded: true, sessions: sessions})
 	if len(m.panelRows()) != 0 || m.panelIndex != 0 {
 		t.Fatal("hidden-only list selection", m.panelIndex)
 	}
