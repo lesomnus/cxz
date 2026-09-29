@@ -1521,7 +1521,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if v.err != nil {
 				m.notice = "Permission update failed; refresh to check the saved policy: " + v.err.Error()
 				if status.Code(v.err) == codes.Unimplemented {
-					m.notice = "Permission RPC unavailable: update cxz on the host, run cxz install --recreate, then cxz project recreate WORKSPACE (replaces container; writable layer lost). See docs/cli.md.\nRPC error: " + v.err.Error()
+					m.notice = "Permission RPC unavailable: update cxz on the host, run cxz install --recreate, then cxz project recreate WORKSPACE (replaces container; writable layer lost). See docs/updates.md.\nRPC error: " + v.err.Error()
 				}
 				m.showError(m.notice)
 			} else {

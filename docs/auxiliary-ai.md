@@ -1,101 +1,134 @@
-# 보조 AI 작업
+# Auxiliary AI
 
-Settings → **AI tasks**에서 요약(Summary)과 다음 입력 추천(Next-message suggestion)을
-각각 Account, model, effort와 자동 실행 기본값을 지정한다. 기본값은 모두 꺼짐이다.
-세션별 `/summary on/off`, `/suggest on/off` 설정이 있으면 전역 기본값보다 우선한다. Enter로 편집,
-Tab으로 필드 이동, Ctrl+L로 해당 계정의 모델·effort 목록 조회,
-Ctrl+S로 검증 후 활성화, Space로 활성화/비활성화를 전환한다.
+Two optional background tasks that read a conversation and produce something short:
+a **summary** of what has happened, and a **suggestion** for what you might send
+next.
 
-원본 에이전트의 계정·모델과 별도로 선택할 수 있다. 지원하지 않는 모델이나 effort,
-인증 실패는 오류로 표시하며 다른 계정으로 바꾸지 않는다. 최초 사용 시 Manager가
-공식 에이전트 CLI를 준비하므로 모델 목록 조회에 시간이 걸릴 수 있다.
+They run on their own account and model, separate from the agent doing the work.
+Both are **off by default**.
 
-## 인증
+## Turning them on
 
-- 중앙 Codex Account는 기존 `cxz account login ACCOUNT` 로그인을 재사용한다.
-  프로젝트와 구별되는 auxiliary binding/capability로 토큰을 공급한다.
-- Claude와 `project-local-oauth` Codex Account는 **Manager 호스트**에서
-  `cxz ai login ACCOUNT`로 보조 작업 전용 로그인을 완료한다. 원본 세션 인증을
-  복사하지 않는다. 같은 구독 계정을 사용해도 보조 프로필은 독립적이다.
-- `cxz ai login ACCOUNT`는 중앙 Codex Account인 경우 중앙 로그인 명령으로 연결한다.
-  Windows에서 SSH remote를 사용하는 경우 로그인은 연결된 Linux 호스트에서 실행한다.
-  설정·상태·모델 조회와 결과 보기는 Windows TUI에서도 사용할 수 있다.
+`Ctrl+.` → **AI tasks**. `Enter` edits, `Tab` moves between fields, `Ctrl+L` lists
+the models and effort levels that account supports, `Ctrl+S` validates and
+activates, `Space` toggles.
 
-프로필은 Manager 설치에 속한 Account별 전용 Docker volume에 보관한다. 인증은
-작업 사이에 유지하며 같은 Account의 작업은 직렬 실행한다. 로그인과 모델 실행은
-같은 프로필 잠금을 사용하므로 실행 중 재로그인은 busy 오류로 거부될 수 있다.
+An unsupported model or effort, or a failed login, is reported as an error — it
+never silently falls back to another account. The first use takes a while, because
+the manager has to prepare the official agent CLI.
 
-## 결과
+## Authentication
 
-Manager가 프로필 설정 이후의 새 사용자 입력과 완료 턴을 수집한다.
-자동 생성은 해당 세션에서 켜진 작업에만 실행한다. 재시작 후에는
-현재 Manager가 시작된 이후의 이벤트만 새 작업으로 처리한다. TUI 연결이 끊겨도
-수집은 계속되며, 여러 클라이언트가 같은 턴을 보아도 중복 생성하지 않는다.
-활성화 이전 대화의 일괄 생성은 하지 않는다. 처음 발견한 세션은 최근 512개 이벤트에서
-시작하므로 이미 오래 실행 중인 턴의 입력이 범위 밖이면 그 다음 턴부터 처리한다.
+Auxiliary tasks authenticate **separately from your sessions**. The original
+session's credentials are never copied, even when both use the same subscription.
 
-- `/summary on` / `/summary off`: 현재 세션의 자동 요약을 켜거나 끈다.
-- `/summary`: 꺼져 있으면 마지막 완료 응답의 요약을 1회 생성한다. 켜져 있으면 아무 작업도 하지 않는다.
-- `/suggest on` / `/suggest off`: 현재 세션의 자동 추천을 켜거나 끈다.
-- `/suggest`: 꺼져 있으면 1회 추천을 생성한다. 켜져 있으면 아무 작업도 하지 않는다.
-- 요약과 로딩은 최종 응답 바로 아래에 표시한다. 별도 다이얼로그를 열지 않는다.
-- 추천과 로딩은 빈 입력창에 동일한 placeholder 색상의 ghost로 표시한다. 한 글자라도 입력하면 숨긴다.
-- 로딩은 점이 늘어나는 애니메이션이며 스피너를 사용하지 않는다.
-- **Alt+G**는 추천이 여전히 유효한지 서버에서 확인하고 빈 입력창에 복사한다.
-  사용자가 검토하고 직접 전송해야 한다. Alt+Enter의 기존 줄바꿈 동작은 유지한다.
+- A **central Codex account** reuses its existing `cxz account login`, supplied
+  through an auxiliary binding distinct from any project's.
+- **Claude**, and Codex accounts on `project-local-oauth`, need a dedicated login on
+  the **manager host**:
 
-1회 실행도 Settings에 지정한 계정·모델을 사용한다. 전역 자동 실행을 꺼도 설정은
-유지되므로 1회 실행이나 세션별 활성화에 사용할 수 있다. `on`은 앞으로 완료되는 턴에
-적용하며 이전 응답을 소급 생성하지 않는다. 세션별 선택은 재접속·Manager 재시작 후에도
-유지되고 다른 세션에 영향을 주지 않는다. `off`는 해당 작업이 포함된 진행 중 호출을
-취소한다. 요약·추천을 함께 생성 중이었다면 그 호출 전체가 취소된다.
+  ```sh
+  cxz ai login work
+  ```
 
-1회 실행은 idle 세션에서 보존 중인 최근 최대 2048개 이벤트를 조회한다. 마지막 턴의
-사용자 입력과 최종 응답이 모두 있어야 하며, 작업 중이거나 보존 범위 밖이면 이유를
-표시한다. 1회 실행은 자동 설정을 변경하지 않는다. 실패를 자동 재시도하지 않는다.
+  Connecting from Windows over SSH, run the login on the Linux host. Configuration,
+  status, model listing and results all work from the Windows TUI.
 
-새 입력, 다른 Run, 설정 변경으로 오래된 추천은 적용할 수 없게 된다. 조회 중 사용자가
-입력한 초안도 덮어쓰지 않는다. 추천할 다음 작업이 없으면 추천은 빈 값일 수 있다.
-요약과 추천의 계정·모델·effort가 같고 둘 다 켜져 있으면 한 번의 호출로 생성해 입력
-문맥의 중복 전송을 줄인다. 설정이 다르면 요약부터 표시하고 같은 턴의 요약을 추천의
-문맥에 포함한다. 별도로 1회 생성할 때도 같은 턴의 요약이 있으면 재사용한다. 요약 생성 중 `/suggest`를
-실행하면 요약을 중복 호출하지 않고 완료 직후 추천을 이어서 생성한다.
+Profiles live in a per-account Docker volume belonging to the installation.
+Authentication persists between tasks, and tasks for one account run one at a time.
+Login and model execution share a profile lock, so logging in again while a task is
+running is refused as busy rather than corrupting the profile.
 
-## 문맥과 제한
+## Results
 
-매 작업은 새 provider 대화로 시작한다. 원본 Session별 checkpoint와 최근 사용자
-입력·에이전트 최종 응답을 cxz가 구성해 전달한다. 도구 결과와 reasoning은 제외하고,
-도구 실행 전의 중간 설명도 제외한다. 원본 에이전트의 대화·메모리는 수정하지 않는다.
+| Command | Behavior |
+|---|---|
+| `/summary on`, `/summary off` | Save automatic summary preference for this session |
+| `/suggest on`, `/suggest off` | Save automatic suggestion preference for this session |
+| `/summary`, `/suggest` | Generate once while off; do nothing while on |
 
-현재는 tokenizer 없이 **UTF-8 byte 상한**으로 제한한다. token 수나 구독 비용
-절감률을 보장하는 값은 아니다.
+Session preferences override the defaults in AI tasks and survive reconnection.
+Turning automation off keeps the configured account/model available for one-shot use.
+`on` applies to future completed turns. `off` cancels a running call containing that
+ task, including a combined call. One-shot generation does not change preferences.
 
-| 항목 | 현재 제한 |
-| --- | --- |
-| 사용자 입력 / 최종 응답 | 각각 8 KiB, 초과 시 누락 표시 |
-| 최근 턴의 checkpoint 갱신 기준 | JSON 20 KiB 또는 32턴 초과 |
-| checkpoint | 6 KiB |
-| 모델에 전달할 대화 문맥 | 32 KiB + 고정 지시문 |
-| 구조화된 모델 응답 | 12 KiB |
-| 보관하는 최근 턴 | JSON 48 KiB / 64턴, 실패가 반복되어도 무한 증가하지 않음 |
-| 인라인 요약 보관 | 세션당 최근 32개, 각각 4 KiB; 다음 턴이 시작돼도 유지 |
-| 파생 상태 보관 | 최대 256세션, 오래 사용하지 않은 것부터 정리 |
-| 실행 | 최대 4개 작업, Account별 직렬, 실행 중/대기 중 세션 최대 32개 |
-| 시간 | 작업당 최대 3분; 전용 로그인 최대 15분 |
+Summaries appear directly below the final response without a dialog. Suggestions
+appear as ghost text in the empty composer and hide as soon as you type. Loading
+uses animated dots; suggestion loading uses the same placeholder color.
 
-checkpoint는 예산을 넘을 때만 갱신하고, 실패 시 기존 checkpoint를 유지한다.
-요약이 활성화되어 있으면 요약 프로필, 아니면 추천 프로필로 갱신한다. 저장 한도로
-이전 턴이 제외되면 문맥이 불완전하다는 안내를 모델에 전달한다. 긴 한국어 대화 등에서
-실제 지연·품질·사용량을 측정하며 이 기본값을 조정할 수 있다.
+A one-shot request reads at most 2048 retained events from an idle session and
+requires the final turn's user input and response to be present.
 
-실행기는 전용 helper 컨테이너를 사용한다. 원본 workspace·프로젝트 상태와 Docker
-socket을 마운트하지 않는다. 도구·MCP를 비활성화하고 예상하지 못한 요청은 거부한다.
-소스 세션의 실행은 기다리지 않는다. 실패를 자동 반복하거나 Manager 재시작 후 완료
-여부가 불명확한 유료 호출을 재전송하지 않는다.
+`Alt+G` re-checks with the server that the suggestion is still valid before copying
+it. **You review and send it yourself** — nothing is ever sent on your behalf. A
+draft you have already typed is never overwritten, and `Alt+Enter` keeps inserting a
+newline.
 
-사용량은 공급자가 알려준 값만 `cxz ai status SESSION_ID`에서 별도로 확인한다. 원본 turn metric에 합산하지 않는다.
-원본 세션을 삭제하면 파생 문맥·결과도 정리한다. Account의 전용 로그인 프로필은
-다른 세션의 보조 작업에서도 쓰므로 세션 삭제와 함께 지우지 않는다.
+A suggestion becomes inapplicable when you send new input, when the run changes, or
+when the configuration changes. When there is no sensible next step, it is simply
+empty.
+
+Summary and suggestion are generated in one call when they share an account, model
+and effort. Separate calls include an available same-turn summary. A manual
+suggestion requested while summary generation is running queues behind that call
+and reuses its result without regenerating the summary.
+
+## What gets collected
+
+The manager collects new user inputs and completed turns **from the moment you
+configure a profile**; only enabled tasks generate automatically. Earlier conversation is not processed in bulk. After a restart, only
+events since the current manager started become new tasks. A session seen for the
+first time starts from its last 512 events, so a turn already long in flight is
+picked up from the next one instead.
+
+Collection continues while no TUI is attached, and several clients watching the same
+turn do not produce duplicates.
+
+## Context and limits
+
+Every task starts a fresh provider conversation. cxz assembles the context: a
+per-session checkpoint plus recent user inputs and the agent's final replies. Tool
+results, reasoning, and the agent's interim commentary before running a tool are all
+excluded. The original conversation and its memory are never modified.
+
+Limits are **UTF-8 byte** budgets, not token counts — there is no tokenizer here,
+and these numbers do not promise a particular cost saving.
+
+| | |
+|---|---|
+| User input / final reply | 8 KiB each; truncation is marked |
+| Checkpoint refresh trigger | over 20 KiB of JSON, or 32 turns |
+| Checkpoint | 6 KiB |
+| Context sent to the model | 32 KiB plus fixed instructions |
+| Structured model reply | 12 KiB |
+| Retained recent turns | 48 KiB of JSON, or 64 turns |
+| Inline summaries | Last 32 per session, at most 4 KiB each |
+| Derived state | 256 sessions, least recently used evicted |
+| Concurrency | 4 tasks, serial per account, 32 sessions running or queued |
+| Time | 3 minutes per task; 15 minutes for a dedicated login |
+
+A checkpoint is refreshed only when the budget is exceeded, and a failed refresh
+keeps the old one. When the storage limit drops older turns, the model is told the
+context is incomplete rather than left to assume otherwise.
+
+These defaults exist to be measured and adjusted — long conversations, and Korean
+text in particular, are where they will need revisiting.
+
+## Isolation
+
+Tasks run in a dedicated helper container. It does **not** mount your workspace,
+your project state, or the Docker socket. Tools and MCP are disabled, and unexpected
+requests are refused.
+
+A task never waits for the source session and never blocks it. Failures are not
+retried automatically, and a paid call whose outcome is unknown after a manager
+restart is not re-sent.
+
+Usage is available through `cxz ai status SESSION_ID`, using only what the provider returned. It is never
+added to the original turn's metrics.
+
+Deleting a session cleans up its derived context and results. The account's
+auxiliary login profile stays — other sessions use it.
 
 ## CLI
 
@@ -103,16 +136,14 @@ socket을 마운트하지 않는다. 도구·MCP를 비활성화하고 예상하
 cxz ai list
 cxz ai models work
 cxz ai login work
-cxz ai set summary --account work --model MODEL --effort EFFORT
-cxz ai set suggestion --account work --model MODEL --effort EFFORT
+cxz ai set summary    --account work --model MODEL [--effort EFFORT]
+cxz ai set suggestion --account work --model MODEL [--effort EFFORT]
 cxz ai disable suggestion
 cxz ai status SESSION_ID
 cxz ai cancel SESSION_ID
 ```
 
-model/effort는 `cxz ai models`에서 확인한 값을 사용한다. effort를 생략하면 공급자의
-기본값을 사용한다. `cancel`은 보조 작업만 취소한다.
+Use values from `cxz ai models`. Omitting `--effort` takes the provider's default.
+`cancel` cancels the auxiliary task only, never the conversation.
 
-공유 메모리 compact는 [#36](https://github.com/lesomnus/cxz/issues/36)의 별도 기능이며
-이번 기능에 포함되지 않는다. 인증·문맥의 설계 배경은
-[보조 AI 작업 설계](plans/auxiliary-ai.md)를 참고한다.
+Design notes: [plans/auxiliary-ai.md](plans/auxiliary-ai.md) (Korean).
