@@ -124,6 +124,9 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Update the published frontend without external build tools
+        env:
+          # Shared runner IPs can exhaust the anonymous release-metadata quota.
+          CXZ_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: pwsh
         run: |
           $work = Join-Path $env:RUNNER_TEMP 'cxz-live-update'

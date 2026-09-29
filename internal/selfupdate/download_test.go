@@ -274,3 +274,75 @@ func TestDownloadRefRequiresPublishedBuild(t *testing.T) {
 		}
 	}
 }
+
+func TestReleaseMetadataTokenIsExplicitAndDoesNotReachDownloads(t *testing.T) {
+	t.Setenv("CXZ_GITHUB_TOKEN", "metadata-test-token")
+	for _, location := range []string{releaseAPI + "edge", releaseDownloads + "edge/SHA256SUMS", "https://api.github.com.example.invalid/repos/lesomnus/cxz/releases/tags/edge"} {
+		client := &http.Client{Transport: releaseTransport(func(req *http.Request) (*http.Response, error) {
+			want := ""
+			if location == releaseAPI+"edge" {
+				want = "Bearer metadata-test-token"
+			}
+			if got := req.Header.Get("Authorization"); got != want {
+				t.Fatal("incorrect credential scope", req.URL.Host)
+			}
+			return response(req, http.StatusOK, []byte("ok")), nil
+		})}
+		if _, err := fetchReleaseFile(t.Context(), client, location, 1024); err != nil {
+			t.Fatal(err)
+		}
+	}
+	t.Setenv("CXZ_GITHUB_TOKEN", "")
+	t.Setenv("GH_TOKEN", "unrelated-gh-token")
+	t.Setenv("GITHUB_TOKEN", "unrelated-actions-token")
+	client := &http.Client{Transport: releaseTransport(func(req *http.Request) (*http.Response, error) {
+		if req.Header.Get("Authorization") != "" {
+			t.Fatal("implicitly reused unrelated token")
+		}
+		return response(req, http.StatusOK, []byte("ok")), nil
+	})}
+	if _, err := fetchReleaseFile(t.Context(), client, releaseAPI+"edge", 1024); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestReleaseMetadataTokenStrippedOnRedirect(t *testing.T) {
+	t.Setenv("CXZ_GITHUB_TOKEN", "metadata-test-token")
+	for _, target := range []string{"https://api.github.com/redirected", "https://assets.api.github.com/redirected", "https://release-assets.githubusercontent.com/asset"} {
+		t.Run(target, func(t *testing.T) {
+			requests := 0
+			client := &http.Client{Transport: releaseTransport(func(req *http.Request) (*http.Response, error) {
+				requests++
+				if requests == 1 {
+					if req.Header.Get("Authorization") == "" {
+						t.Fatal("missing metadata token")
+					}
+					res := response(req, http.StatusFound, nil)
+					res.Header.Set("Location", target)
+					return res, nil
+				}
+				if req.Header.Get("Authorization") != "" {
+					t.Fatal("token leaked on redirect")
+				}
+				return response(req, http.StatusOK, []byte("ok")), nil
+			})}
+			if _, err := fetchReleaseFile(t.Context(), client, releaseAPI+"edge", 1024); err != nil {
+				t.Fatal(err)
+			}
+			if requests != 2 {
+				t.Fatal(requests)
+			}
+		})
+	}
+}
+func TestReleaseRateLimitDiagnostic(t *testing.T) {
+	client := &http.Client{Transport: releaseTransport(func(req *http.Request) (*http.Response, error) {
+		res := response(req, http.StatusForbidden, nil)
+		res.Header.Set("X-RateLimit-Remaining", "0")
+		return res, nil
+	})}
+	_, err := fetchReleaseFile(t.Context(), client, releaseAPI+"edge", 1024)
+	if err == nil || !strings.Contains(err.Error(), "API rate limit exhausted") {
+		t.Fatal(err)
+	}
+}
