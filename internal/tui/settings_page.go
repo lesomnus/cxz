@@ -16,6 +16,7 @@ import (
 )
 
 type settingsPage struct {
+	mcp                                 *mcpPage
 	connection                          string
 	info                                engine.Info
 	loaded, loading, busy, inputFocused bool
@@ -40,7 +41,7 @@ type settingsResult struct {
 
 var settingsActions = []struct{ label, action string }{
 	{"Refresh", "info"}, {"Activate", "up"}, {"Clear unused build cache", "prune"}, {"Start debug recording", "record"}, {"Automatic frontend updates", "auto-update"},
-	{"Server history limit", "history-policy"}, {"Client scroll bytes", "history-window"}, {"Client scroll turns", "history-window"},
+	{"Server history limit", "history-policy"}, {"Client scroll bytes", "history-window"}, {"Client scroll turns", "history-window"}, {"MCP servers", "mcp"},
 }
 
 const settingsActionRow = 12
@@ -127,6 +128,9 @@ func (m *model) receiveSettings(r settingsResult) {
 }
 func (m *model) pollSettings() tea.Cmd {
 	p := m.settingsPage
+	if p != nil && p.mcp != nil {
+		return nil
+	}
 	if p == nil || p.confirm != "" || time.Since(p.lastRefresh) < 10*time.Second {
 		return nil
 	}
@@ -135,7 +139,7 @@ func (m *model) pollSettings() tea.Cmd {
 
 // Resolve the toggle from the latest reported engine state.
 func (m *model) settingsAction(index int) (string, string) {
-	if index >= 5 && index < len(settingsActions) {
+	if index >= 5 && index <= 7 {
 		return m.historySettingLabel(index), settingsActions[index].action
 	}
 	if index == 4 {
@@ -206,10 +210,16 @@ func (m *model) settingsEnabled(index int) bool {
 	if index == 1 {
 		return p.info.State == "running" || p.info.Mode == "dind"
 	}
+	if index == 8 {
+		return true
+	}
 	return p.info.State == "running"
 }
 func (m *model) activateSetting() tea.Cmd {
 	p := m.settingsPage
+	if p.selected == 8 {
+		return m.openMCP()
+	}
 	if !m.settingsEnabled(p.selected) {
 		return nil
 	}
@@ -248,6 +258,9 @@ func (m *model) activateSetting() tea.Cmd {
 }
 func (m *model) settingsKey(k tea.KeyMsg) tea.Cmd {
 	p := m.settingsPage
+	if p.mcp != nil {
+		return m.mcpKey(k)
+	}
 	if k.Paste {
 		return nil
 	}
@@ -304,6 +317,9 @@ func (m *model) revealSetting() {
 }
 func (m *model) settingsMouse(v tea.MouseMsg) tea.Cmd {
 	p := m.settingsPage
+	if p.mcp != nil {
+		return m.mcpMouse(v)
+	}
 	if p.confirm != "" {
 		if v.Button == tea.MouseButtonLeft && v.Action == tea.MouseActionPress {
 			_, cancelRow, yesRow := m.settingsConfirmation()
@@ -373,6 +389,9 @@ func (m *model) settingsConfirmation() ([]string, int, int) {
 }
 func (m *model) settingsScreen() string {
 	p := m.settingsPage
+	if p.mcp != nil {
+		return m.mcpScreen()
+	}
 	width := m.settingsWidth()
 	inner := max(1, width-4)
 	if p.confirm != "" {

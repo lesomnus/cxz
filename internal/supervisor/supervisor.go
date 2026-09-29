@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/lesomnus/cxz/internal/accounts"
+	"github.com/lesomnus/cxz/internal/mcpruntime"
 	"io"
 	"net"
 	"net/http"
@@ -29,6 +30,7 @@ import (
 )
 
 type Supervisor struct {
+	mcpInstructions  string
 	lastActivity     time.Time
 	updateClients    map[string]updateClient
 	updateTools      map[string]bool
@@ -195,6 +197,21 @@ func Run(ctx context.Context, root, id string) error {
 		}
 		s.codex = &codexProtocol{s: s}
 		args = []string{"app-server", "--listen", "stdio://"}
+	}
+	if session.ProjectID != "" {
+		launch, err := mcpruntime.Prepare(root, session.ID)
+		if err != nil {
+			return err
+		}
+		exe, err := os.Executable()
+		if err != nil {
+			return err
+		}
+		args = mcpArgs(args, session.Kind, exe, root, session.ID, launch.Config)
+		s.mcpInstructions = mcpruntime.Instructions(launch.Config)
+		if session.Kind != "codex" && s.mcpInstructions != "" {
+			args = append(args, "--append-system-prompt", s.mcpInstructions)
+		}
 	}
 	auth, err := accounts.LaunchSession(root, session, os.Environ())
 	if err != nil {

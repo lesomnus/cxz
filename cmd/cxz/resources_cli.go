@@ -85,7 +85,7 @@ func reorganizeCommands(root *xli.Command) {
 			g.Flags = append(g.Flags, formatFlag())
 		}
 		for _, c := range g.Commands {
-			data := g.Name == "config" || g.Name == "backend" || g.Name == "binding" ||
+			data := g.Name == "mcp" || g.Name == "config" || g.Name == "backend" || g.Name == "binding" ||
 				(g.Name == "account" && c.Name != "login") ||
 				(g.Name == "project" && c.Name != "logs" && c.Name != "shell" && c.Name != "exec") ||
 				g.Name == "session" || (g.Name == "manager" && c.Name == "doctor")
