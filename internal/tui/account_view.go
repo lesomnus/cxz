@@ -200,7 +200,13 @@ func (m *model) accountKey(key tea.KeyMsg) tea.Cmd {
 
 func (m *model) accountScreen() string {
 	width := max(1, m.width-4)
-	rows := []string{brand.Render("cxz · accounts" + m.connectionLabel(m.accountConnection)), muted.Render("Isolated authentication profiles · Esc / Ctrl+Q returns to project"), ""}
+	// Keys read as they do in the project panel: the letter is coloured inside
+	// the word it opens, and only a key the word cannot carry sits in front.
+	rows := []string{
+		brand.Render("cxz · accounts" + m.connectionLabel(m.accountConnection)),
+		muted.Render("Isolated authentication profiles"+hintSeparator) + hintRow("", []hintSpec{{key: "Esc/Ctrl+Q", label: "projects"}}),
+		"",
+	}
 	if m.loginChoosing {
 		rows = append(rows, strong.Render("Choose a session to log in · "+pickerLabel(m.loginAlias)))
 		sessions := m.loginSessions()
@@ -211,28 +217,28 @@ func (m *model) accountScreen() string {
 				label = pickerLabel(sessions[i].Alias) + " · " + pickerLabel(sessions[i].State)
 			}
 			if i == m.loginIndex {
-				label = accent.Render("› " + label)
+				label = focus.Render("› " + label)
 			} else {
 				label = "  " + label
 			}
 			rows = append(rows, label)
 		}
-		rows = append(rows, "", muted.Render("↑/↓ Tab select · Enter continue · Esc back"))
+		rows = append(rows, "", hintRow("", []hintSpec{{key: "↑/↓ Tab", label: "select"}, {key: "Enter", label: "continue"}, {key: "Esc", label: "back"}}))
 	} else if m.accountAdding {
 		m.accountAlias.Width, m.accountName.Width = max(1, width-16), max(1, width-16)
 		fields := []string{"Provider     " + providerLabel(m.accountAgent) + "  ←/→", "Alias        " + m.accountAlias.View(), "Display name " + m.accountName.View(), "[ Create account ]"}
 		for i, field := range fields {
 			if i == m.accountField {
-				rows = append(rows, accent.Render("› "+field))
+				rows = append(rows, focus.Render("› "+field))
 			} else {
 				rows = append(rows, "  "+field)
 			}
 		}
-		rows = append(rows, "", muted.Render("↑/↓ or Tab / Shift+Tab move · Enter next / create · Esc cancel"))
+		rows = append(rows, "", hintRow("", []hintSpec{{key: "↑/↓ Tab/Shift+Tab", label: "move"}, {key: "Enter", label: "next / create"}, {key: "Esc", label: "cancel"}}))
 	} else {
 		if m.accountChoosing {
 			rows = append(rows, strong.Render("Choose an account for the new session"))
-			rows = append(rows, accent.Render("Ctrl+R · Restore a deleted session"))
+			rows = append(rows, hintRow("", []hintSpec{{key: "Ctrl+R", label: "restore a deleted session"}}))
 		}
 		if len(m.accounts) == 0 && !m.accountLoading {
 			rows = append(rows, peach.Render("No accounts yet. Press n to add one here."))
@@ -244,7 +250,7 @@ func (m *model) accountScreen() string {
 			a := choices[i]
 			label := fmt.Sprintf("%s · %s · %s", pickerLabel(a.GetAlias()), providerLabel(a.GetAgent()), pickerLabel(a.GetName()))
 			if i == m.accountIndex {
-				label = accent.Render("› " + label)
+				label = focus.Render("› " + label)
 			} else {
 				label = "  " + label
 			}
@@ -254,9 +260,11 @@ func (m *model) accountScreen() string {
 			rows = append(rows, muted.Render("No matching accounts"))
 		}
 		m.accountSearch.Width = max(1, width-10)
-		rows = append(rows, "", "Search: "+m.accountSearch.View(), muted.Render("↑/↓ select · n add · l login"), muted.Render("/ search · r reload · Esc back"))
+		rows = append(rows, "", "Search: "+m.accountSearch.View(),
+			hintRow("", []hintSpec{{key: "↑/↓", label: "select"}, {key: "n", label: "new account"}, {key: "l", label: "login"}}),
+			hintRow("", []hintSpec{{key: "/", label: "search"}, {key: "r", label: "reload"}, {key: "Esc", label: "back"}}))
 		if m.accountChoosing {
-			rows = append(rows, muted.Render("Enter creates session with selected account"))
+			rows = append(rows, hintRow("", []hintSpec{{key: "Enter", label: "create session with selected account"}}))
 		}
 	}
 	status := m.navigationNotice()
