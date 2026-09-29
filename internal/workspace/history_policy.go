@@ -71,9 +71,12 @@ func (m *Manager) historyPolicy(ctx context.Context, spec []byte) (*api.Receipt,
 	return &api.Receipt{Status: string(b)}, err
 }
 
-func (m *Manager) syncRuntimePreferences(ctx context.Context, client api.SessionsClient) error {
+func (m *Manager) syncRuntimePreferences(ctx context.Context, client api.SessionsClient, project string) error {
 	if err := m.syncFileMappings(ctx, client); err != nil {
 		return err
 	}
-	return m.syncHistoryPolicy(ctx, client)
+	if err := m.syncHistoryPolicy(ctx, client); err != nil {
+		return err
+	}
+	return m.syncMCP(ctx, client, project)
 }

@@ -490,7 +490,7 @@ func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (result *api.
 	if e != nil {
 		return nil, fmt.Errorf("project runtime not ready: %w", e)
 	}
-	if e = m.syncRuntimePreferences(ctx, client); e != nil {
+	if e = m.syncRuntimePreferences(ctx, client, p.ID); e != nil {
 		return nil, e
 	}
 	if r.PrepareOnly {
