@@ -895,6 +895,12 @@ func (m *model) render() {
 		}
 	} else if follow {
 		m.view.GotoBottom()
+	} else {
+		// SetContent pulls the offset back only when it passes the last line,
+		// not the last line the view can scroll to. A transcript that grew
+		// shorter under the reader, as live output folding back up does, would
+		// otherwise stop partway down the screen.
+		m.view.SetYOffset(m.view.YOffset)
 	}
 	if m.autoRestorePosition > 0 && len(m.historyPositions) > 0 && m.historyPositions[0] <= m.autoRestorePosition {
 		for i, pos := range m.historyPositions {

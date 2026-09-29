@@ -231,6 +231,12 @@ func (m *model) resize() {
 	}
 	// Blank separator + status (2), composer border (2), session information (1).
 	m.view.Height = max(1, m.height-m.input.Height()-5-m.approvalHeight()-m.terminalHeight()-m.previewHeight()-m.errorHeight()-m.questionHeight())
+	// Height is a plain field, so growing it leaves an offset that was valid
+	// pointing past the end: the conversation stops partway down the view, and
+	// the next rebuild reads that as following the bottom and jumps there.
+	// Re-applying the offset clamps it, holding the last row against the bottom
+	// and revealing the rows the taller view has room for above it.
+	m.view.SetYOffset(m.view.YOffset)
 	if p := m.terminal(); p != nil && p.session != nil && m.terminalHeight() > 0 {
 		p.session.Resize(m.width, m.terminalHeight()-2)
 	}
