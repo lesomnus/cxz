@@ -12,6 +12,7 @@ import (
 	"github.com/lesomnus/cxz/internal/distribution"
 	"github.com/lesomnus/cxz/internal/dockerx"
 	"io"
+	"os"
 	"os/exec"
 	"time"
 )
@@ -179,6 +180,16 @@ func (m *Manager) runAuxiliary(ctx context.Context, in auxiliary.Input) (auxilia
 	return out, e
 }
 func (m *Manager) AuxiliaryLogin(ctx context.Context, p auxiliary.Profile, r io.Reader, w, errw io.Writer) error {
+	if p.Backend == accounts.BrokeredAccessToken {
+		if p.Agent != "codex" {
+			return fmt.Errorf("central login requires Codex")
+		}
+		bin, err := distribution.Ensure(ctx, "/cxz/tools", p.Agent, "", false)
+		if err != nil {
+			return err
+		}
+		return accounts.CentralLogin(ctx, accounts.LoginRequest{Root: m.Root, Account: p.Account, Binary: bin, Env: os.Environ(), Input: r, Output: w, Error: errw})
+	}
 	args, bin, e := m.auxiliaryArgs(ctx, p)
 	if e != nil {
 		return e

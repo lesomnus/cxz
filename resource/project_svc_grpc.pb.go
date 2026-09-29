@@ -28,6 +28,7 @@ const (
 	ProjectService_Watch_FullMethodName          = "/cxz.ProjectService/Watch"
 	ProjectService_Remove_FullMethodName         = "/cxz.ProjectService/Remove"
 	ProjectService_Terminal_FullMethodName       = "/cxz.ProjectService/Terminal"
+	ProjectService_AuxiliaryLogin_FullMethodName = "/cxz.ProjectService/AuxiliaryLogin"
 	ProjectService_SessionLogin_FullMethodName   = "/cxz.ProjectService/SessionLogin"
 	ProjectService_Paths_FullMethodName          = "/cxz.ProjectService/Paths"
 	ProjectService_Download_FullMethodName       = "/cxz.ProjectService/Download"
@@ -75,6 +76,8 @@ type ProjectServiceClient interface {
 	Terminal(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ProjectTerminalRequest, ProjectTerminalReply], error)
 	// Ephemeral login transport. First frame identifies the session profile;
 	// subsequent frames carry stdin only. These frames are never journaled.
+	// Dedicated auxiliary account login; transient and never journaled.
+	AuxiliaryLogin(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ProjectLoginRequest, ProjectLoginOutput], error)
 	SessionLogin(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ProjectLoginRequest, ProjectLoginOutput], error)
 	// Read immediate directory entries inside the project's container as its remote user.
 	Paths(ctx context.Context, in *ProjectPathsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ProjectPathsReply], error)
@@ -203,9 +206,22 @@ func (c *projectServiceClient) Terminal(ctx context.Context, opts ...grpc.CallOp
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type ProjectService_TerminalClient = grpc.BidiStreamingClient[ProjectTerminalRequest, ProjectTerminalReply]
 
+func (c *projectServiceClient) AuxiliaryLogin(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ProjectLoginRequest, ProjectLoginOutput], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &ProjectService_ServiceDesc.Streams[2], ProjectService_AuxiliaryLogin_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[ProjectLoginRequest, ProjectLoginOutput]{ClientStream: stream}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type ProjectService_AuxiliaryLoginClient = grpc.BidiStreamingClient[ProjectLoginRequest, ProjectLoginOutput]
+
 func (c *projectServiceClient) SessionLogin(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ProjectLoginRequest, ProjectLoginOutput], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &ProjectService_ServiceDesc.Streams[2], ProjectService_SessionLogin_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &ProjectService_ServiceDesc.Streams[3], ProjectService_SessionLogin_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -218,7 +234,7 @@ type ProjectService_SessionLoginClient = grpc.BidiStreamingClient[ProjectLoginRe
 
 func (c *projectServiceClient) Paths(ctx context.Context, in *ProjectPathsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ProjectPathsReply], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &ProjectService_ServiceDesc.Streams[3], ProjectService_Paths_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &ProjectService_ServiceDesc.Streams[4], ProjectService_Paths_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -237,7 +253,7 @@ type ProjectService_PathsClient = grpc.ServerStreamingClient[ProjectPathsReply]
 
 func (c *projectServiceClient) Download(ctx context.Context, in *ProjectDownloadRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ProjectDownloadReply], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &ProjectService_ServiceDesc.Streams[4], ProjectService_Download_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &ProjectService_ServiceDesc.Streams[5], ProjectService_Download_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -359,6 +375,8 @@ type ProjectServiceServer interface {
 	Terminal(grpc.BidiStreamingServer[ProjectTerminalRequest, ProjectTerminalReply]) error
 	// Ephemeral login transport. First frame identifies the session profile;
 	// subsequent frames carry stdin only. These frames are never journaled.
+	// Dedicated auxiliary account login; transient and never journaled.
+	AuxiliaryLogin(grpc.BidiStreamingServer[ProjectLoginRequest, ProjectLoginOutput]) error
 	SessionLogin(grpc.BidiStreamingServer[ProjectLoginRequest, ProjectLoginOutput]) error
 	// Read immediate directory entries inside the project's container as its remote user.
 	Paths(*ProjectPathsRequest, grpc.ServerStreamingServer[ProjectPathsReply]) error
@@ -411,6 +429,9 @@ func (UnimplementedProjectServiceServer) Remove(context.Context, *ProjectRemoveR
 }
 func (UnimplementedProjectServiceServer) Terminal(grpc.BidiStreamingServer[ProjectTerminalRequest, ProjectTerminalReply]) error {
 	return status.Error(codes.Unimplemented, "method Terminal not implemented")
+}
+func (UnimplementedProjectServiceServer) AuxiliaryLogin(grpc.BidiStreamingServer[ProjectLoginRequest, ProjectLoginOutput]) error {
+	return status.Error(codes.Unimplemented, "method AuxiliaryLogin not implemented")
 }
 func (UnimplementedProjectServiceServer) SessionLogin(grpc.BidiStreamingServer[ProjectLoginRequest, ProjectLoginOutput]) error {
 	return status.Error(codes.Unimplemented, "method SessionLogin not implemented")
@@ -606,6 +627,13 @@ func _ProjectService_Terminal_Handler(srv interface{}, stream grpc.ServerStream)
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type ProjectService_TerminalServer = grpc.BidiStreamingServer[ProjectTerminalRequest, ProjectTerminalReply]
+
+func _ProjectService_AuxiliaryLogin_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(ProjectServiceServer).AuxiliaryLogin(&grpc.GenericServerStream[ProjectLoginRequest, ProjectLoginOutput]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type ProjectService_AuxiliaryLoginServer = grpc.BidiStreamingServer[ProjectLoginRequest, ProjectLoginOutput]
 
 func _ProjectService_SessionLogin_Handler(srv interface{}, stream grpc.ServerStream) error {
 	return srv.(ProjectServiceServer).SessionLogin(&grpc.GenericServerStream[ProjectLoginRequest, ProjectLoginOutput]{ServerStream: stream})
@@ -835,6 +863,12 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "Terminal",
 			Handler:       _ProjectService_Terminal_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+		{
+			StreamName:    "AuxiliaryLogin",
+			Handler:       _ProjectService_AuxiliaryLogin_Handler,
 			ServerStreams: true,
 			ClientStreams: true,
 		},

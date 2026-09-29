@@ -23,6 +23,7 @@ import (
 )
 
 type accountWorkflow struct {
+	auxiliary                        *auxiliaryPage
 	ctx                              context.Context
 	cancel                           context.CancelFunc
 	in                               *os.File
@@ -77,7 +78,7 @@ func (w workflowWriter) Write(p []byte) (int, error) {
 	}
 }
 
-func (m *model) startAccountWorkflow(alias, provider, sessionID string, create bool) tea.Cmd {
+func (m *model) startAccountWorkflow(alias, provider, sessionID string, create bool, aux ...*auxiliaryPage) tea.Cmd {
 	ctx, cancel := context.WithCancel(m.contextFor(m.accountConnection))
 	// Pass a real descriptor to exec.Cmd.Stdin. With io.Pipe, os/exec owns a
 	// copying goroutine and Wait waits for its Read to finish even after the
@@ -90,6 +91,9 @@ func (m *model) startAccountWorkflow(alias, provider, sessionID string, create b
 		return nil
 	}
 	f := &accountWorkflow{ctx: ctx, cancel: cancel, reader: r, in: w, updates: make(chan tea.Msg, 16), alias: alias, provider: provider, create: create, started: time.Now(), input: textinput.New()}
+	if len(aux) > 0 {
+		f.auxiliary = aux[0]
+	}
 	f.input.EchoMode = textinput.EchoNone
 	f.input.CharLimit = 8192
 	f.input.Focus()
@@ -155,13 +159,21 @@ func (m *model) startAccountWorkflow(alias, provider, sessionID string, create b
 		m.seedMemory = ""
 	}
 	libraryClient, _ := m.client.(memorylib.Client)
+	auxClient, auxOK := m.client.(accounts.AuxiliaryLoginClient)
 	work := func() tea.Msg {
 		defer r.Close()
 		defer w.Close()
 		out := workflowWriter{f}
 		var s *api.Session
 		var err error
-		if create {
+		if f.auxiliary != nil {
+			client, ok := auxClient, auxOK
+			if !ok {
+				err = fmt.Errorf("auxiliary login unavailable; update the client and Manager")
+			} else {
+				err = client.LoginAuxiliary(ctx, alias, r, out)
+			}
+		} else if create {
 			s, err = creator(ctx, projectID, alias, r, out, out)
 			if err == nil && seed != "" {
 				if libraryClient == nil {
@@ -237,6 +249,9 @@ func (m *model) workflowScreen() string {
 	f := m.workflow
 	width := max(1, m.width)
 	title := "Account login"
+	if f.auxiliary != nil {
+		title = "AI task account login"
+	}
 	if f.create {
 		title = "Preparing agent session"
 	}

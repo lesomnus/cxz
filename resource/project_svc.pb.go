@@ -4924,7 +4924,7 @@ const file_cxz_project_svc_g_proto_rawDesc = "" +
 	"\x10ForeignContainer\x12!\n" +
 	"\fcontainer_id\x18\x01 \x01(\tR\vcontainerId\x12\x1c\n" +
 	"\tworkspace\x18\x02 \x01(\tR\tworkspace\x12\x12\n" +
-	"\x04name\x18\x03 \x01(\tR\x04name2\xd8\b\n" +
+	"\x04name\x18\x03 \x01(\tR\x04name2\xa1\t\n" +
 	"\x0eProjectService\x12+\n" +
 	"\x03Add\x12\x16.cxz.ProjectAddRequest\x1a\f.cxz.Project\x12+\n" +
 	"\x03Get\x12\x16.cxz.ProjectGetRequest\x1a\f.cxz.Project\x12/\n" +
@@ -4934,7 +4934,8 @@ const file_cxz_project_svc_g_proto_rawDesc = "" +
 	"\x04List\x12\x17.cxz.ProjectListRequest\x1a\x18.cxz.ProjectListResponse\x12>\n" +
 	"\x05Watch\x12\x18.cxz.ProjectWatchRequest\x1a\x19.cxz.ProjectWatchResponse0\x01\x12<\n" +
 	"\x06Remove\x12\x19.cxz.ProjectRemoveRequest\x1a\x17.cxz.ProjectRemoveReply\x12F\n" +
-	"\bTerminal\x12\x1b.cxz.ProjectTerminalRequest\x1a\x19.cxz.ProjectTerminalReply(\x010\x01\x12E\n" +
+	"\bTerminal\x12\x1b.cxz.ProjectTerminalRequest\x1a\x19.cxz.ProjectTerminalReply(\x010\x01\x12G\n" +
+	"\x0eAuxiliaryLogin\x12\x18.cxz.ProjectLoginRequest\x1a\x17.cxz.ProjectLoginOutput(\x010\x01\x12E\n" +
 	"\fSessionLogin\x12\x18.cxz.ProjectLoginRequest\x1a\x17.cxz.ProjectLoginOutput(\x010\x01\x12;\n" +
 	"\x05Paths\x12\x18.cxz.ProjectPathsRequest\x1a\x16.cxz.ProjectPathsReply0\x01\x12D\n" +
 	"\bDownload\x12\x1b.cxz.ProjectDownloadRequest\x1a\x19.cxz.ProjectDownloadReply0\x01\x12@\n" +
@@ -5026,37 +5027,39 @@ var file_cxz_project_svc_g_proto_depIdxs = []int32{
 	10, // 32: cxz.ProjectService.Watch:input_type -> cxz.ProjectWatchRequest
 	13, // 33: cxz.ProjectService.Remove:input_type -> cxz.ProjectRemoveRequest
 	15, // 34: cxz.ProjectService.Terminal:input_type -> cxz.ProjectTerminalRequest
-	17, // 35: cxz.ProjectService.SessionLogin:input_type -> cxz.ProjectLoginRequest
-	19, // 36: cxz.ProjectService.Paths:input_type -> cxz.ProjectPathsRequest
-	22, // 37: cxz.ProjectService.Download:input_type -> cxz.ProjectDownloadRequest
-	24, // 38: cxz.ProjectService.Devcontainer:input_type -> cxz.DevcontainerRequest
-	26, // 39: cxz.ProjectService.Docker:input_type -> cxz.DockerRequest
-	28, // 40: cxz.ProjectService.FileMappings:input_type -> cxz.FileMappingsRequest
-	30, // 41: cxz.ProjectService.Up:input_type -> cxz.ProjectUpRequest
-	31, // 42: cxz.ProjectService.Down:input_type -> cxz.ProjectControl
-	32, // 43: cxz.ProjectService.Recreate:input_type -> cxz.ProjectRecreateRequest
-	33, // 44: cxz.ProjectService.InspectForeign:input_type -> cxz.InspectForeignRequest
-	39, // 45: cxz.ProjectService.Add:output_type -> cxz.Project
-	39, // 46: cxz.ProjectService.Get:output_type -> cxz.Project
-	39, // 47: cxz.ProjectService.Patch:output_type -> cxz.Project
-	39, // 48: cxz.ProjectService.Apply:output_type -> cxz.Project
-	6,  // 49: cxz.ProjectService.Erase:output_type -> cxz.ProjectEraseResponse
-	8,  // 50: cxz.ProjectService.List:output_type -> cxz.ProjectListResponse
-	11, // 51: cxz.ProjectService.Watch:output_type -> cxz.ProjectWatchResponse
-	14, // 52: cxz.ProjectService.Remove:output_type -> cxz.ProjectRemoveReply
-	16, // 53: cxz.ProjectService.Terminal:output_type -> cxz.ProjectTerminalReply
-	18, // 54: cxz.ProjectService.SessionLogin:output_type -> cxz.ProjectLoginOutput
-	20, // 55: cxz.ProjectService.Paths:output_type -> cxz.ProjectPathsReply
-	23, // 56: cxz.ProjectService.Download:output_type -> cxz.ProjectDownloadReply
-	25, // 57: cxz.ProjectService.Devcontainer:output_type -> cxz.DevcontainerReply
-	27, // 58: cxz.ProjectService.Docker:output_type -> cxz.DockerReply
-	29, // 59: cxz.ProjectService.FileMappings:output_type -> cxz.FileMappingsReply
-	39, // 60: cxz.ProjectService.Up:output_type -> cxz.Project
-	39, // 61: cxz.ProjectService.Down:output_type -> cxz.Project
-	39, // 62: cxz.ProjectService.Recreate:output_type -> cxz.Project
-	34, // 63: cxz.ProjectService.InspectForeign:output_type -> cxz.InspectForeignResponse
-	45, // [45:64] is the sub-list for method output_type
-	26, // [26:45] is the sub-list for method input_type
+	17, // 35: cxz.ProjectService.AuxiliaryLogin:input_type -> cxz.ProjectLoginRequest
+	17, // 36: cxz.ProjectService.SessionLogin:input_type -> cxz.ProjectLoginRequest
+	19, // 37: cxz.ProjectService.Paths:input_type -> cxz.ProjectPathsRequest
+	22, // 38: cxz.ProjectService.Download:input_type -> cxz.ProjectDownloadRequest
+	24, // 39: cxz.ProjectService.Devcontainer:input_type -> cxz.DevcontainerRequest
+	26, // 40: cxz.ProjectService.Docker:input_type -> cxz.DockerRequest
+	28, // 41: cxz.ProjectService.FileMappings:input_type -> cxz.FileMappingsRequest
+	30, // 42: cxz.ProjectService.Up:input_type -> cxz.ProjectUpRequest
+	31, // 43: cxz.ProjectService.Down:input_type -> cxz.ProjectControl
+	32, // 44: cxz.ProjectService.Recreate:input_type -> cxz.ProjectRecreateRequest
+	33, // 45: cxz.ProjectService.InspectForeign:input_type -> cxz.InspectForeignRequest
+	39, // 46: cxz.ProjectService.Add:output_type -> cxz.Project
+	39, // 47: cxz.ProjectService.Get:output_type -> cxz.Project
+	39, // 48: cxz.ProjectService.Patch:output_type -> cxz.Project
+	39, // 49: cxz.ProjectService.Apply:output_type -> cxz.Project
+	6,  // 50: cxz.ProjectService.Erase:output_type -> cxz.ProjectEraseResponse
+	8,  // 51: cxz.ProjectService.List:output_type -> cxz.ProjectListResponse
+	11, // 52: cxz.ProjectService.Watch:output_type -> cxz.ProjectWatchResponse
+	14, // 53: cxz.ProjectService.Remove:output_type -> cxz.ProjectRemoveReply
+	16, // 54: cxz.ProjectService.Terminal:output_type -> cxz.ProjectTerminalReply
+	18, // 55: cxz.ProjectService.AuxiliaryLogin:output_type -> cxz.ProjectLoginOutput
+	18, // 56: cxz.ProjectService.SessionLogin:output_type -> cxz.ProjectLoginOutput
+	20, // 57: cxz.ProjectService.Paths:output_type -> cxz.ProjectPathsReply
+	23, // 58: cxz.ProjectService.Download:output_type -> cxz.ProjectDownloadReply
+	25, // 59: cxz.ProjectService.Devcontainer:output_type -> cxz.DevcontainerReply
+	27, // 60: cxz.ProjectService.Docker:output_type -> cxz.DockerReply
+	29, // 61: cxz.ProjectService.FileMappings:output_type -> cxz.FileMappingsReply
+	39, // 62: cxz.ProjectService.Up:output_type -> cxz.Project
+	39, // 63: cxz.ProjectService.Down:output_type -> cxz.Project
+	39, // 64: cxz.ProjectService.Recreate:output_type -> cxz.Project
+	34, // 65: cxz.ProjectService.InspectForeign:output_type -> cxz.InspectForeignResponse
+	46, // [46:66] is the sub-list for method output_type
+	26, // [26:46] is the sub-list for method input_type
 	26, // [26:26] is the sub-list for extension type_name
 	26, // [26:26] is the sub-list for extension extendee
 	0,  // [0:26] is the sub-list for field type_name

@@ -37,3 +37,8 @@ func RequiredProjectLogin(err error, account, fallbackKey string) (alias, key st
 	}
 	return "", "", false
 }
+
+// AuxiliaryLoginClient authenticates a dedicated helper profile on the selected Manager.
+type AuxiliaryLoginClient interface {
+	LoginAuxiliary(context.Context, string, io.ReadCloser, io.Writer) error
+}
