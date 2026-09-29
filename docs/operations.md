@@ -149,7 +149,11 @@ Windows에서는 기존처럼 설치 디렉터리에 직접 쓸 수 있어야 �
 Linux에서는 같은 `--state`에 등록된 로컬 manager가 있으면 **새 실행 파일**의
 `install --recreate`를 실행한다. manager가 없으면 새로 설치하지 않는다. 설정에 등록된
 원격 connection이나 프로젝트 컨테이너는 갱신 대상에 포함하지 않는다. manager 갱신 중에도
-기존 프로젝트의 session supervisor·agent는 계속 실행되며, 새 runtime은 다음 명시적 project recreate 때 적용된다.
+기존 프로젝트의 session supervisor·agent는 계속 실행된다. 프로젝트 runtime 갱신은 자동 업데이트
+rollout 또는 명시적 project recreate로 별도 진행된다.
+`@edge`/`@stable`에서 `install --recreate`는 채널 선택 당시의 이전 이미지를 재사용하지 않고
+현재 CLI로 manager 이미지를 빌드한다. 명시적 `--image`와 고정 릴리스는 해당 이미지를 유지한다.
+`self-update`는 설치된 manager 바이너리의 revision까지 확인한 뒤 성공을 출력한다.
 CLI 교체 후 manager 갱신이 실패하면 두 결과를 구분해 출력한다. 이때 같은 `--state`로
 `cxz install --recreate`를 재시도한다.
 

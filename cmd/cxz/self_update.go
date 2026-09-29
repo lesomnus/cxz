@@ -124,7 +124,10 @@ func runSelfUpdate(ctx context.Context, c *xli.Command) error {
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("local CLI updated, but manager refresh failed; retry cxz --state %q install --recreate: %w", root, err)
 	}
-	fmt.Fprintln(c.Writer, "Local manager updated. Running project runtimes take the new binary on their next recreate.")
+	if err := verifyRefreshedManager(ctx, root, artifact.Revision); err != nil {
+		return fmt.Errorf("local CLI updated, but manager version verification failed: %w", err)
+	}
+	fmt.Fprintln(c.Writer, "Local manager updated and version verified. Existing project runtimes are updated separately by automatic rollout or explicit project recreation.")
 	return nil
 }
 
@@ -172,4 +175,28 @@ func matchesUpdatedVersion(output []byte, expected string) bool {
 	}
 	fields := strings.Fields(string(output))
 	return len(fields) >= 2 && fields[0] == "cxz" && fields[1] == expected
+}
+
+// The policy helper runs the installed container binary, independently of the
+// host CLI, so an installer that reused an old image cannot report success.
+func verifyRefreshedManager(ctx context.Context, root, revision string) error {
+	b, err := serverUpdateCommand(ctx, root, "status")
+	if err != nil {
+		return err
+	}
+	return checkManagerRevision(b, revision)
+}
+func checkManagerRevision(b []byte, revision string) error {
+	var state struct {
+		Running struct {
+			Revision string `json:"revision"`
+		} `json:"running"`
+	}
+	if err := json.Unmarshal(b, &state); err != nil {
+		return err
+	}
+	if revision == "" || state.Running.Revision != revision {
+		return fmt.Errorf("installed manager revision %q; expected %q", state.Running.Revision, revision)
+	}
+	return nil
 }
