@@ -216,7 +216,16 @@ func (m *model) questionNext() tea.Cmd {
 		d.message = "Choose an option or enter an answer first"
 		return nil
 	}
-	if d.page < len(d.questions)-1 {
+	dismiss := false
+	q := d.questions[d.page]
+	if q.ElicitationAction {
+		for i, selected := range d.selected[d.page] {
+			if selected && (q.Options[i].Label == "Decline" || q.Options[i].Label == "Cancel") {
+				dismiss = true
+			}
+		}
+	}
+	if !dismiss && d.page < len(d.questions)-1 {
 		d.page++
 		d.row = 0
 		d.offset = 0

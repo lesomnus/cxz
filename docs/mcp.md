@@ -113,3 +113,23 @@ one that does not yet know the push -- is skipped rather than treated as a
 failure. Refusing there would leave the project unusable, and project runtimes
 only update once their sessions fall quiet. The configuration lands when the
 runtime updates.
+
+### Codex MCP prompts
+
+Codex app-server `mcpServer/elicitation/request` calls appear in the existing
+question panel with the server name and message. Choose Accept, Decline, or
+Cancel. For form requests, Accept advances through the schema fields; optional
+fields may be left blank. Boolean and single-choice values use options; numbers
+and arrays use JSON input. Responses are checked against the requested schema
+before being sent. Remote schema references are not fetched. For URL requests,
+open the displayed URL yourself and accept after completing that flow; cxz does
+not open URLs or claim authentication succeeded.
+
+MCP elicitations remain visible in `/permission full`: the permission policy does
+not invent form input or complete a URL flow. Decline/Cancel discard partial form
+input. Escape only closes the local panel and leaves the request pending. Codex
+resolution notifications remove requests that are no longer answerable. Unknown
+modes can still be declined through the approval controls; the extended
+`openai/form` capability is not advertised.
+
+Protocol reference: [Codex app-server MCP elicitation](https://learn.chatgpt.com/docs/app-server#mcp-server-elicitation-requests).

@@ -152,7 +152,7 @@ func (c *codexProtocol) consume(raw []byte) {
 			} else {
 				_ = s.write(map[string]any{"id": v.ID, "result": token})
 			}
-		case "item/commandExecution/requestApproval", "item/fileChange/requestApproval", "item/permissions/requestApproval", "item/tool/requestUserInput":
+		case agentview.CodexElicitation, "item/commandExecution/requestApproval", "item/fileChange/requestApproval", "item/permissions/requestApproval", "item/tool/requestUserInput":
 			p := s.event("approval", v.Method, id, map[string]any{"method": v.Method, "id": v.ID, "params": v.Params}, nil)
 			s.pending[id] = p
 			s.event("state", "waiting_input", "", nil, nil)
@@ -178,6 +178,24 @@ func (c *codexProtocol) consume(raw []byte) {
 	}
 	_ = json.Unmarshal(v.Params, &p)
 	switch v.Method {
+	case "serverRequest/resolved":
+		var resolved struct {
+			RequestID json.RawMessage `json:"requestId"`
+		}
+		if json.Unmarshal(v.Params, &resolved) == nil {
+			request := string(resolved.RequestID)
+			if _, ok := s.pending[request]; ok {
+				delete(s.pending, request)
+				s.event("approval_resolved", "canceled", request, nil, nil)
+				if !s.hasBlockingPending() && s.snap.State == "waiting_input" {
+					state := "idle"
+					if c.turn != "" {
+						state = "working"
+					}
+					s.event("state", state, "", nil, nil)
+				}
+			}
+		}
 	case "turn/started":
 		c.turn = p.Turn.ID
 		s.event("state", "working", "", nil, nil)
@@ -319,6 +337,12 @@ func (c *codexProtocol) command(op string, v core.Command) (any, error) {
 		}
 		result := map[string]any{}
 		switch r.Method {
+		case agentview.CodexElicitation:
+			var err error
+			result, err = agentview.ElicitationResponse(p.Payload, v.Allow, v.Selections, v.Answers)
+			if err != nil {
+				return nil, err
+			}
 		case "item/tool/requestUserInput":
 			var selections map[string]core.AnswerSelection
 			if v.Allow && len(v.Selections) > 0 {
