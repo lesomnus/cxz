@@ -118,7 +118,7 @@ func (m *purgeModel) View() string {
 		}
 		line := fmt.Sprintf("%s%s %s (%d)", marker, check, g.Label, n)
 		if m.focus == i {
-			line = accent.Render(line)
+			line = focus.Render(line)
 		}
 		b.WriteString(line + "\n")
 	}

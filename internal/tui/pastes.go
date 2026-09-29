@@ -613,7 +613,7 @@ func (m *model) pasteOverlay(view string) string {
 			label = p.fileChip()
 		}
 		if i == d.index {
-			label = accent.Render("› " + label)
+			label = focus.Render("› " + label)
 		} else {
 			label = "  " + label
 		}

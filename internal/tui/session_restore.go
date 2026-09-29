@@ -102,7 +102,7 @@ func (m *model) sessionArchiveScreen() string {
 		}
 		label := "  " + pickerLabel(name)
 		if i == p.selected {
-			label = accent.Render("› " + pickerLabel(name))
+			label = focus.Render("› " + pickerLabel(name))
 		}
 		rows = append(rows, clip(label, max(1, m.width-4)), muted.Render(fmt.Sprintf("  %s · %s · %s", providerLabel(s.Agent), pickerLabel(s.Account), time.UnixMilli(s.CreatedAt).Local().Format("2006-01-02 15:04"))))
 	}

@@ -259,7 +259,7 @@ func (m *model) modelPickerOverlay(view string) string {
 		}
 		line := "  " + safeText(label)
 		if i == selected {
-			line = accent.Render("› " + safeText(label))
+			line = focus.Render("› " + safeText(label))
 		}
 		lines = append(lines, line)
 	}

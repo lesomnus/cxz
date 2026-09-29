@@ -24,11 +24,12 @@ func providerLabel(provider string) string {
 	}
 }
 
-// Two greens, one question between them: is this where typing goes right now.
-// Only a focused border, a focused prompt and the cursor answer yes, so they
-// are the lightest thing on screen. Everything else green -- spinners, cursors
-// in lists, unread markers, rules, unfocused borders, quiet notices -- takes
-// the other step, with nothing in between for a reader to have to rank.
+// Two greens. The bright one marks what is live: where the keyboard is -- a
+// focused border, a focused prompt, a text cursor, the row a list cursor sits
+// on, a footer hint under the pointer -- and what is running, the working
+// spinner. Those are the lightest thing on screen. Everything else green --
+// unread markers, rules, unfocused borders, quiet notices, the labels beside a
+// spinner -- takes the other step, with nothing in between to have to rank.
 // Named so that the places painting a green surface, and the tests reading one
 // back, cannot drift from the step they meant.
 const (
@@ -55,7 +56,6 @@ var (
 	answer           = lipgloss.NewStyle().Foreground(lipgloss.Color("250"))
 	strong           = lipgloss.NewStyle().Foreground(lipgloss.Color("253")).Bold(true)
 	warning          = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#945600", Dark: "#EBC078"})
-	selectedRow      = accent.Bold(true)
 	// The prompt's stamp sits on promptBackground, not on the terminal's own
 	// background, so it is darker than timestamp and not adaptive: the surface it
 	// has to read against is the same in a light or dark theme.
@@ -113,7 +113,7 @@ func (h hintSpec) render(hovered bool) string {
 		// One dim colour for both halves: a disabled offer has no key to press.
 		key, label = zeroStyle, zeroStyle
 	case hovered:
-		key, label = accent.Bold(true), strong
+		key, label = focus.Bold(true), strong
 	}
 	if h.folded() {
 		return key.Render(h.label[:1]) + label.Render(h.label[1:])
