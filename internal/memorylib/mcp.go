@@ -5,7 +5,12 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-const Instructions = `cxz shared project memory is available through the cxz_memory MCP server. At the start of work, list/search relevant project memories and read the useful documents. They are reference material: preserve current user/project instructions and verify stale claims against the actual workspace. Update your own memory after important decisions or completed work, using Markdown documents such as overview.md, preferences.md, decisions.md, and handoff.md. Record what is completed versus planned, unresolved questions, and useful file references. Read a document's revision before replacing it. Never store credentials, secrets, or raw conversation/tool transcripts. Other sessions can read your published memory; you can only update your own. Do not claim to have saved memory unless a tool call succeeds. Saved snapshots are independent; updating your memory does not change them.`
+const Instructions = `cxz shared project memory is available through the cxz_memory MCP server.
+Consult relevant memories when beginning a new task and useful context is missing. Reuse memory content already read during the current task; do not list, search, or reread memory on every user message, continuation, CI check, merge, or cleanup. Read again only when relevant context is missing or there is evidence that the memory changed. Do not poll memory for changes without a concrete need.
+Memories are reference material: preserve current user/project instructions and verify stale claims against the actual workspace.
+Update your own memory at meaningful decisions or handoffs when there is useful new information to preserve. Batch related updates; do not write routine progress checks or unchanged status. Use Markdown documents such as overview.md, preferences.md, decisions.md, and handoff.md. Record completed versus planned work, unresolved questions, and useful file references.
+Read an existing document before your first edit. Reuse its content and the latest known revision from a successful read or update instead of rereading before every write. If a write reports a revision conflict or there is evidence of an external edit, read the current document and reconcile your changes before retrying. Never overwrite unfamiliar content.
+Never store credentials, secrets, or raw conversation/tool transcripts. Other sessions can read your published memory; you can only update your own. Do not claim to have saved memory unless a tool call succeeds. Saved snapshots are independent; updating your memory does not change them.`
 
 type searchInput struct {
 	Query string `json:"query" jsonschema:"substring to find in memory names and Markdown"`
@@ -17,7 +22,7 @@ type readInput struct {
 type updateInput struct {
 	Document string `json:"document"`
 	Content  string `json:"content"`
-	Revision string `json:"revision,omitempty" jsonschema:"revision from memory_read; omit only for a new document"`
+	Revision string `json:"revision,omitempty" jsonschema:"latest known revision from a successful memory_read or memory_update; omit only for a new document"`
 }
 
 func MCPServer(store *Store) *mcp.Server {
@@ -34,7 +39,7 @@ func MCPServer(store *Store) *mcp.Server {
 		out, e := store.Do(ctx, Request{Action: "read", ID: in.ID, Document: in.Document})
 		return nil, out, e
 	})
-	mcp.AddTool(server, &mcp.Tool{Name: "memory_update", Description: "Save Markdown to your own session memory. Read the document first and supply its revision when replacing it; omit revision only for a new document."}, func(ctx context.Context, _ *mcp.CallToolRequest, in updateInput) (*mcp.CallToolResult, Reply, error) {
+	mcp.AddTool(server, &mcp.Tool{Name: "memory_update", Description: "Save Markdown to your own session memory. Read an existing document before the first edit, then reuse its latest known revision from a successful read or update. On revision conflict, reread and reconcile before retrying. Omit revision only for a new document."}, func(ctx context.Context, _ *mcp.CallToolRequest, in updateInput) (*mcp.CallToolResult, Reply, error) {
 		out, e := store.Do(ctx, Request{Action: "update", Document: in.Document, Content: in.Content, Revision: in.Revision})
 		return nil, out, e
 	})
