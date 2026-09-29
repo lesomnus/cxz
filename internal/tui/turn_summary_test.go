@@ -71,8 +71,9 @@ func TestConversationAlignmentAndSummaryPlacement(t *testing.T) {
 	}
 	m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
 	text := ansi.Strip(m.sessionScreen())
-	if !strings.Contains(text, "\n❯ prompt") {
-		t.Fatal("prompt left margin remains", text)
+	// One column of the fill stays left of the cursor; the reply keeps two.
+	if !strings.Contains(text, "\n ❯ prompt") {
+		t.Fatal("cursor lost its column of fill", text)
 	}
 	transcript := ansi.Strip(m.view.View())
 	rows := strings.Split(transcript, "\n")

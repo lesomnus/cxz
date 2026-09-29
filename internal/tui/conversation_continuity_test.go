@@ -97,7 +97,7 @@ func TestPinPromptImmediatelyBeforeViewport(t *testing.T) {
 	for i, want := range []string{"prompt one", "prompt two"} {
 		m.view.SetYOffset(m.promptSpans[i+1].start - 3)
 		view := ansi.Strip(m.conversationView())
-		if !strings.HasPrefix(view, "❯ "+want) || !strings.Contains(view, "❯ "+[]string{"prompt two", "prompt three"}[i]) {
+		if !strings.HasPrefix(view, " ❯ "+want) || !strings.Contains(view, " ❯ "+[]string{"prompt two", "prompt three"}[i]) {
 			t.Fatal("wrong sticky predecessor", view)
 		}
 	}
