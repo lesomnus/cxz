@@ -117,6 +117,7 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 			return err
 		}
 		defer quota.Close()
+		s.manager.StartAuxiliary(ctx)
 	}
 	if s.manager == nil {
 		broker, err := mcpruntime.Start(root)

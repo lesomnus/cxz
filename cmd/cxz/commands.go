@@ -171,6 +171,7 @@ func newRoot(state string) *xli.Command {
 	root.Commands = append(root.Commands, githubCommands())
 	root.Commands = append(root.Commands, accountCommands())
 	root.Commands = append(root.Commands, accountInternalCommands()...)
+	root.Commands = append(root.Commands, aiInternalCommands()...)
 	for _, name := range []string{"shell", "exec"} {
 		c := &xli.Command{Name: name, Brief: map[string]string{"shell": "Open project shell", "exec": "Execute command inside project"}[name], Args: arg.Args{projectArg("PROJECT", false), &arg.Remains{Name: "COMMAND", Optional: name == "shell"}}, Handler: withClient(projectExec)}
 		root.Commands = append(root.Commands, c)
@@ -179,7 +180,7 @@ func newRoot(state string) *xli.Command {
 		root.Commands = append(root.Commands, newSessionCommand(name))
 	}
 	root.Commands = append(root.Commands, internalCommands()...)
-	root.Commands = append(root.Commands, mcpCommand(), skillCommand(), settingsCommand(), editCommand(), dockerCommand(), doctorCommand(), logsCommand())
+	root.Commands = append(root.Commands, aiCommand(), mcpCommand(), skillCommand(), settingsCommand(), editCommand(), dockerCommand(), doctorCommand(), logsCommand())
 	root.Commands = append(root.Commands, purgeCommand(), selfUpdateCommand(), useCommand())
 	root.Commands = append(root.Commands, releaseCommands()...)
 	root.Commands = append(root.Commands, xli.NewCmdCompletion())

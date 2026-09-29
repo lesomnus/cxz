@@ -109,7 +109,13 @@ func (m *Manager) cache(ctx context.Context, batch *api.EventBatch) error {
 
 // CacheEvents commits streamed events before acknowledging them to the TUI.
 func (m *Manager) CacheEvents(ctx context.Context, batch *api.EventBatch) error {
-	return m.cache(ctx, batch)
+	if err := m.cache(ctx, batch); err != nil {
+		return err
+	}
+	if c, e := m.auxiliaryController(); e == nil {
+		c.Observe(batch.Events)
+	}
+	return nil
 }
 
 // A small metadata RPC keeps caches consistent even when no TUI was attached at
