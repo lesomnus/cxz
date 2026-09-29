@@ -90,6 +90,14 @@ func (m *Manager) mcp(ctx context.Context, spec []byte) (*api.Receipt, error) {
 				conn.Close()
 				if err == nil {
 					_ = json.Unmarshal([]byte(reply.Status), &out.Sessions)
+					cfg, e := mcpconfig.Load(m.Root)
+					if e != nil {
+						return nil, e
+					}
+					desired := cfg.Resolve(r.Project).Digest()
+					for i := range out.Sessions {
+						out.Sessions[i].Pending = out.Sessions[i].LaunchDigest != desired
+					}
 				} else {
 					out.Message += " Runtime status unavailable."
 				}

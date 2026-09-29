@@ -33,6 +33,9 @@ func (s *Server) mcpState(ctx context.Context) (*api.Receipt, error) {
 		}
 		launch, e := mcpruntime.ReadLaunch(s.root, session.ID)
 		v := mcpconfig.SessionStatus{ID: session.ID, Title: session.Title, Pending: e != nil || launch.Config.Digest() != desired.Digest(), Servers: map[string]string{}}
+		if e == nil {
+			v.LaunchDigest = launch.Config.Digest()
+		}
 		for id, def := range launch.Config.Servers {
 			status := "not connected"
 			if def.Kind == "http" {
