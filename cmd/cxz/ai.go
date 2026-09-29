@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/auxiliary"
-	"github.com/lesomnus/cxz/internal/mcpconfig"
 	"github.com/lesomnus/xli"
 	"github.com/lesomnus/xli/arg"
 	"github.com/lesomnus/xli/flg"
@@ -47,7 +46,8 @@ func aiCommand() *xli.Command {
 			}
 			request, cancel := context.WithTimeout(ctx, 2*time.Minute)
 			defer cancel()
-			client, closeClient, e := mcpConnect(request, c, &mcpconfig.Request{})
+			project := ""
+			client, closeClient, e := configConnect(request, c, &project, &q.Session)
 			if e != nil {
 				return e
 			}

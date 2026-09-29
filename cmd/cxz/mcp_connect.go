@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/lesomnus/cxz/api"
-	"github.com/lesomnus/cxz/internal/mcpconfig"
 	"github.com/lesomnus/cxz/internal/multiclient"
 	"github.com/lesomnus/cxz/internal/resourceclient"
 	"github.com/lesomnus/cxz/internal/settings"
@@ -15,7 +14,10 @@ import (
 	"runtime"
 )
 
-func mcpConnect(ctx context.Context, c *xli.Command, r *mcpconfig.Request) (api.SessionsClient, func(), error) {
+// configConnect picks the connection a project belongs to, so a command that
+// names a project reaches the installation holding it rather than the default.
+// project and session are rewritten to the names that connection knows.
+func configConnect(ctx context.Context, c *xli.Command, project, session *string) (api.SessionsClient, func(), error) {
 	root, e := filepath.Abs(flg.MustGet[string](c, "state"))
 	if e != nil {
 		return nil, nil, e
@@ -26,8 +28,8 @@ func mcpConnect(ctx context.Context, c *xli.Command, r *mcpconfig.Request) (api.
 	}
 	selected := flg.MustGet[string](c, "endpoint")
 	tokenFile := flg.MustGet[string](c, "token-file")
-	projectSource, project := multiclient.Split(r.Project)
-	sessionSource, session := multiclient.Split(r.Session)
+	projectSource, projectName := multiclient.Split(*project)
+	sessionSource, sessionName := multiclient.Split(*session)
 	if projectSource != "" {
 		selected = projectSource
 	}
@@ -35,10 +37,9 @@ func mcpConnect(ctx context.Context, c *xli.Command, r *mcpconfig.Request) (api.
 		selected = cfg.Connections.DefaultName()
 	}
 	if sessionSource != "" && sessionSource != selected {
-		return nil, nil, fmt.Errorf("MCP project and session belong to different connections")
+		return nil, nil, fmt.Errorf("project and session belong to different connections")
 	}
-	r.Project = project
-	r.Session = session
+	*project, *session = projectName, sessionName
 	endpoint := selected
 	if cfg.Connections != nil {
 		if entry, ok := cfg.Connections.Entries[selected]; ok {

@@ -61,7 +61,7 @@ func mcpCommand() *xli.Command {
 				}
 				r.Action = "enable"
 			}
-			client, closeClient, e := mcpConnect(ctx, c, &r)
+			client, closeClient, e := configConnect(ctx, c, &r.Project, &r.Session)
 			if e != nil {
 				return e
 			}
