@@ -123,7 +123,7 @@ func TestHistoryWindowBytesEvictsRenderCaches(t *testing.T) {
 	m.events["s"] = events
 	kept := events[len(events)-1]
 	m.renderedResponses = map[*api.Event]renderedResponse{events[1]: {body: "old cached output"}, kept: {body: "still loaded"}}
-	if !m.limitHistory("s", false) || len(m.events["s"]) != 9 {
+	if !m.limitHistory("s", false, 0) || len(m.events["s"]) != 9 {
 		t.Fatal("byte limit failed", len(m.events["s"]))
 	}
 	// Only evicted events lose their rows. Re-rendering the survivors would
@@ -137,7 +137,7 @@ func TestHistoryWindowBytesEvictsRenderCaches(t *testing.T) {
 	// One active/oversized turn is kept whole instead of breaking tool pairs.
 	m.events["s"] = events[:3]
 	m.events["s"][1].Text = strings.Repeat("x", 2*historypolicy.MiB)
-	m.limitHistory("s", false)
+	m.limitHistory("s", false, 0)
 	if len(m.events["s"]) != 3 {
 		t.Fatal("oversized turn was split")
 	}
@@ -159,7 +159,7 @@ func TestHistoryWindowDoesNotSplitSteeredTurn(t *testing.T) {
 	events := windowTurns(1)
 	events = append(events, &api.Event{Seq: 4, Kind: "input", Text: "start active turn"}, &api.Event{Seq: 5, Kind: "tool_call", RequestId: "active"}, &api.Event{Seq: 6, Kind: "input", Text: "steer active turn"}, &api.Event{Seq: 7, Kind: "assistant", Text: strings.Repeat("x", historypolicy.MiB)})
 	m.events["s"] = events
-	m.limitHistory("s", false)
+	m.limitHistory("s", false, 0)
 	if len(m.events["s"]) != 4 || m.events["s"][0].Seq != 4 || m.events["s"][1].RequestId != "active" {
 		t.Fatal("active turn/tool pair split", len(m.events["s"]))
 	}

@@ -2241,7 +2241,7 @@ func (m *model) receiveEvent(v received, repaint bool) {
 		trimmed := false
 		if !w.detached {
 			m.events[v.id] = append(m.events[v.id], v.event)
-			trimmed = m.limitHistory(v.id, false)
+			trimmed = m.limitHistory(v.id, false, 0)
 		}
 		if p := m.modelPicker; p != nil && !p.loading && p.id == v.id && p.run == v.event.RunId && v.event.Kind == "models" {
 			var catalog modelCatalog
