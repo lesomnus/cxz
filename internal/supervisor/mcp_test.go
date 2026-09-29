@@ -1,7 +1,9 @@
 package supervisor
 
 import (
+	"bytes"
 	"encoding/json"
+	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/mcpconfig"
 	"strings"
 	"testing"
@@ -31,5 +33,26 @@ func TestMCPAdapterOnlyPublishesResolvedServers(t *testing.T) {
 		if a == "--mcp-config" && empty[i+1] != `{"mcpServers":{}}` {
 			t.Fatal(empty)
 		}
+	}
+}
+
+type mcpBuffer struct{ bytes.Buffer }
+
+func (*mcpBuffer) Close() error { return nil }
+func TestMCPDisabledClearsInstructionsOnCodexResume(t *testing.T) {
+	out := &mcpBuffer{}
+	s := &Supervisor{session: core.Session{ProjectID: "P"}, snap: core.Snapshot{VendorID: "old-thread"}, stdin: out, modelDisabled: true}
+	c := &codexProtocol{s: s}
+	c.startThread()
+	var request struct {
+		Method string
+		Params map[string]any
+	}
+	if e := json.Unmarshal(out.Bytes(), &request); e != nil {
+		t.Fatal(e)
+	}
+	value, ok := request.Params["developerInstructions"]
+	if request.Method != "thread/resume" || !ok || value != "" {
+		t.Fatal(request)
 	}
 }

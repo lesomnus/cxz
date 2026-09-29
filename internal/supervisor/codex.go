@@ -243,7 +243,7 @@ func (c *codexProtocol) startThread() {
 	c.s.readModels()
 	s := c.s
 	params := map[string]any{"cwd": s.session.Workspace, "approvalPolicy": "untrusted", "sandbox": "danger-full-access", "experimentalRawEvents": false, "persistExtendedHistory": true}
-	if s.mcpInstructions != "" {
+	if s.session.ProjectID != "" || s.mcpInstructions != "" {
 		params["developerInstructions"] = s.mcpInstructions
 	}
 	method := "thread/start"
