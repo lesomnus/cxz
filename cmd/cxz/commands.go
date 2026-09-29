@@ -14,6 +14,7 @@ import (
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/cxzupdate"
 	"github.com/lesomnus/cxz/internal/installer"
+	"github.com/lesomnus/cxz/internal/mcpruntime"
 	"github.com/lesomnus/cxz/internal/memoryview"
 	"github.com/lesomnus/cxz/internal/resourceclient"
 	"github.com/lesomnus/cxz/internal/server"
@@ -177,7 +178,7 @@ func newRoot(state string) *xli.Command {
 		root.Commands = append(root.Commands, newSessionCommand(name))
 	}
 	root.Commands = append(root.Commands, internalCommands()...)
-	root.Commands = append(root.Commands, settingsCommand(), editCommand(), dockerCommand(), doctorCommand(), logsCommand())
+	root.Commands = append(root.Commands, mcpCommand(), settingsCommand(), editCommand(), dockerCommand(), doctorCommand(), logsCommand())
 	root.Commands = append(root.Commands, purgeCommand(), selfUpdateCommand(), useCommand())
 	root.Commands = append(root.Commands, releaseCommands()...)
 	root.Commands = append(root.Commands, xli.NewCmdCompletion())
@@ -228,6 +229,9 @@ func internalCommands() xli.Commands {
 		}),
 		makeCmd("_memory-read", nil, func(ctx context.Context, _ *xli.Command) error {
 			return memoryview.Serve(ctx, stateFrom(ctx), os.Stdin, os.Stdout)
+		}),
+		makeCmd("_mcp-bridge", arg.Args{stringArg("SESSION", false), stringArg("SERVER", false)}, func(ctx context.Context, c *xli.Command) error {
+			return mcpruntime.Bridge(ctx, stateFrom(ctx), arg.MustGet[string](c, "SESSION"), arg.MustGet[string](c, "SERVER"), os.Stdin, os.Stdout)
 		}),
 		makeCmd("_boot", nil, func(ctx context.Context, _ *xli.Command) error { return workspace.Boot(stateFrom(ctx)) }),
 		makeCmd("_bridge", nil, func(ctx context.Context, _ *xli.Command) error { return transport.Bridge(stateFrom(ctx)) }),

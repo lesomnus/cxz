@@ -189,6 +189,10 @@ func TestSettingsSkipDisabledButtons(t *testing.T) {
 		t.Fatal("focus stayed on disabled action")
 	}
 	m.settingsKey(tea.KeyMsg{Type: tea.KeyDown})
+	if p.selected != 8 {
+		t.Fatal("MCP settings must remain available while Docker is stopped")
+	}
+	m.settingsKey(tea.KeyMsg{Type: tea.KeyDown})
 	if p.selected != 0 {
 		t.Fatal("did not wrap to refresh")
 	}
