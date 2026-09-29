@@ -179,7 +179,7 @@ func (m *model) backgroundStatus() string {
 	if n == 0 {
 		return ""
 	}
-	return accent.Render(fmt.Sprintf("%s background %d · /background", workingSpinner(m.pulse), n))
+	return focus.Render(workingSpinner(m.pulse)) + accent.Render(fmt.Sprintf(" background %d · /background", n))
 }
 
 func (m *model) backgroundReport() string {

@@ -28,7 +28,7 @@ func (m *model) restartLayout(height int) ([]string, []restartButton) {
 	body = append(body, muted.Render("Tab / Shift+Tab / arrows choose · Enter select · Esc cancel"))
 	button := func(label string, selected bool) string {
 		if selected {
-			return accent.Reverse(true).Bold(true).Render(label)
+			return focus.Reverse(true).Bold(true).Render(label)
 		}
 		return muted.Render(label)
 	}

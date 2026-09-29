@@ -147,7 +147,7 @@ func (m *model) toolSelectorView(rows []string) {
 		row := t.row - m.view.YOffset
 		if row >= 0 && row < len(rows) {
 			text := strings.TrimPrefix(ansi.Strip(rows[row]), "  ")
-			rows[row] = accent.Bold(true).Render(clip("› "+text, m.view.Width))
+			rows[row] = focus.Bold(true).Render(clip("› "+text, m.view.Width))
 		}
 		break
 	}
