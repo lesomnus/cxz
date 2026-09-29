@@ -1,5 +1,3 @@
-//go:build !windows
-
 package main
 
 import (
@@ -13,19 +11,22 @@ import (
 	"github.com/lesomnus/xli/flg"
 	"io"
 	"os"
+	"time"
 )
 
 func mcpCommand() *xli.Command {
-	c := commandGroup("mcp", "Manage MCP servers and project activation (no agent restart)")
+	c := &xli.Command{Name: "mcp", Brief: "Manage MCP servers and project activation (no agent restart)", Handler: xli.OnRun(func(_ context.Context, c *xli.Command, _ xli.Next) error { return c.PrintHelp(c.Writer) })}
 	for _, op := range []string{"list", "add", "remove", "enable", "disable", "inherit", "logs", "restart"} {
-		command := &xli.Command{Name: op, Brief: map[string]string{"list": "List registrations and effective activation", "add": "Register or replace an external MCP from a private JSON file", "remove": "Remove an external MCP registration", "enable": "Enable globally by default or for one project", "disable": "Disable globally by default or for one project", "logs": "Read the selected session MCP stderr", "restart": "Reconnect the selected session MCP without restarting its agent", "inherit": "Restore a project's global default"}[op], Flags: flg.Flags{stringFlag("project", "Project ID or path (omit for global defaults)", ""), stringFlag("session", "Session ID for logs/restart", "")}}
+		command := &xli.Command{Name: op, Brief: map[string]string{"list": "List registrations and effective activation", "add": "Register or replace an external MCP from a private JSON file", "remove": "Remove an external MCP registration", "enable": "Enable globally by default or for one project", "disable": "Disable globally by default or for one project", "logs": "Read the selected session MCP stderr", "restart": "Reconnect the selected session MCP without restarting its agent", "inherit": "Restore a project's global default"}[op], Flags: flg.Flags{mcpStringFlag("project", "Project ID or path (omit for global defaults)", ""), mcpStringFlag("session", "Session ID for logs/restart", "")}}
 		if op != "list" {
-			command.Args = arg.Args{stringArg("ID", false)}
+			command.Args = arg.Args{mcpStringArg("ID", false)}
 		}
 		if op == "add" {
-			command.Args = append(command.Args, stringArg("FILE", false))
+			command.Args = append(command.Args, mcpStringArg("FILE", false))
 		}
-		command.Handler = withClient(func(ctx context.Context, client api.SessionsClient, c *xli.Command) error {
+		command.Handler = xli.OnRun(func(ctx context.Context, c *xli.Command, _ xli.Next) error {
+			ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+			defer cancel()
 			r := mcpconfig.Request{Session: flg.MustGet[string](c, "session"), Action: c.Name, Project: flg.MustGet[string](c, "project")}
 			if c.Name != "list" {
 				r.ID = arg.MustGet[string](c, "ID")
@@ -60,6 +61,11 @@ func mcpCommand() *xli.Command {
 				}
 				r.Action = "enable"
 			}
+			client, closeClient, e := mcpConnect(ctx, c, &r)
+			if e != nil {
+				return e
+			}
+			defer closeClient()
 			b, _ := json.Marshal(r)
 			out, e := client.Docker(ctx, &api.DockerInput{Action: "mcp", Spec: b})
 			if e != nil {
@@ -69,9 +75,16 @@ func mcpCommand() *xli.Command {
 			if e = json.Unmarshal([]byte(out.Status), &reply); e != nil {
 				return e
 			}
-			return writeOutput(c, reply)
+			return mcpOutput(c, reply)
 		})
 		c.Commands = append(c.Commands, command)
 	}
 	return c
+}
+
+func mcpStringFlag(name, brief, value string) *flg.String {
+	return &flg.String{Name: name, Brief: brief, Default: &value}
+}
+func mcpStringArg(name string, optional bool) *arg.String {
+	return &arg.String{Name: name, Optional: optional}
 }
