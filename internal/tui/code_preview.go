@@ -214,7 +214,7 @@ func (m *model) previewRows(width, height int) string {
 	}
 	title := clip(safeText(p.title), max(0, inner-8-len(prefix)))
 	header := prefix + title + strings.Repeat(" ", max(1, inner-7-ansi.StringWidth(prefix+title))) + " ⧉  [×]"
-	body := []string{teal.Render(header)}
+	body := []string{accent.Render(header)}
 	for i := 0; i < count; i++ {
 		line := ""
 		if p.offset+i < len(rows) {

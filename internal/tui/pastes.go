@@ -202,8 +202,10 @@ func (m *model) decorateInputPastes(view string) string {
 			return view
 		}
 		token := decoratePastes(s.token, m.pastes)
-		// One step below the focus green: a selected chip is not where typing goes.
-		style := lipgloss.NewStyle().Foreground(lipgloss.Color("#031e2c")).Background(lipgloss.Color(accentGreen))
+		// The quiet step: a selected chip is not where typing goes. That step is
+		// dark enough to be a surface, so the label on it is light rather than
+		// the near-black the brighter green used to carry.
+		style := lipgloss.NewStyle().Foreground(lipgloss.Color("#FFFFFF")).Background(lipgloss.Color(accentGreen))
 		lines := strings.Split(view, "\n")
 		remaining := token
 		for i, line := range lines {

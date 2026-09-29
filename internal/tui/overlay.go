@@ -24,9 +24,12 @@ func overlayBox(view string, content []string, width int, focused ...bool) strin
 	if len(content) > len(rows)-2 {
 		content = content[:len(rows)-2]
 	}
-	border := teal
+	// A modal holding the keyboard is where input goes, so it takes the focus
+	// step; a passive hint list stays on the quiet one. The two greens used to
+	// be three, and both branches landed on the middle one.
+	border := accent
 	if len(focused) > 0 && focused[0] {
-		border = accent
+		border = focus
 	}
 	box := []string{border.Render("╭" + strings.Repeat("─", width-2) + "╮")}
 	for _, line := range content {

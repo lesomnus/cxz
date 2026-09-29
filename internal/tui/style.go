@@ -24,17 +24,16 @@ func providerLabel(provider string) string {
 	}
 }
 
-// The greens form three steps of brightness, and the brightest one answers only
-// one question: where does typing go right now. Nothing else uses it, so a
-// focused border, a focused prompt and the cursor are the lightest thing on
-// screen. accent stays one step down and keeps everything it already marked --
-// spinners, cursors in lists, unread markers, rules -- none of which is focus.
+// Two greens, one question between them: is this where typing goes right now.
+// Only a focused border, a focused prompt and the cursor answer yes, so they
+// are the lightest thing on screen. Everything else green -- spinners, cursors
+// in lists, unread markers, rules, unfocused borders, quiet notices -- takes
+// the other step, with nothing in between for a reader to have to rank.
 // Named so that the places painting a green surface, and the tests reading one
 // back, cannot drift from the step they meant.
 const (
-	focusGreen  = "#AEFF98"
-	accentGreen = "#24d17c"
-	quietGreen  = "#07898f"
+	focusGreen  = "#9ef01a"
+	accentGreen = "#4f772d"
 )
 
 var (
@@ -43,7 +42,6 @@ var (
 	magenta          = lipgloss.NewStyle().Foreground(lipgloss.Color("#ED79D4"))
 	inputCursorStyle = focus
 	brand            = lipgloss.NewStyle().Foreground(lipgloss.Color(accentGreen)).Background(lipgloss.Color("#000000")).Bold(true)
-	teal             = lipgloss.NewStyle().Foreground(lipgloss.Color(quietGreen))
 	lavender         = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#7255A0", Dark: "#C9B6EE"})
 	blue             = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#42758B", Dark: "#ACD6EB"})
 	peach            = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#A35D52", Dark: "#F2B8A7"})
@@ -246,7 +244,7 @@ func clip(s string, width int) string {
 }
 
 func frame(body string, width int, highlighted bool) string {
-	border := teal
+	border := accent
 	if highlighted {
 		border = focus
 	}

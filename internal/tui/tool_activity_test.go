@@ -175,11 +175,14 @@ func TestGreenBlinkingInputCursor(t *testing.T) {
 	in := newComposer()
 	in.Cursor.SetChar("x")
 	in.Cursor.Blink = false
-	if in.Cursor.Mode() != cursor.CursorBlink || !strings.Contains(in.Cursor.View(), "38;2;174;255;152") {
+	// The cursor is the plainest answer to "where does typing go", so it carries
+	// the focus step. Derive it rather than repeating the sequence.
+	green := sgr(focus)
+	if in.Cursor.Mode() != cursor.CursorBlink || !strings.Contains(in.Cursor.View(), green) {
 		t.Fatal("cursor not green/blinking")
 	}
 	in.Cursor.Blink = true
-	if strings.Contains(in.Cursor.View(), "38;2;174;255;152") {
+	if strings.Contains(in.Cursor.View(), green) {
 		t.Fatal("cursor color persists in blink-off phase")
 	}
 	confirm := newRecreateConfirmation()
