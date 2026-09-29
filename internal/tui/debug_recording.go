@@ -52,6 +52,8 @@ type debugEvent struct {
 	After      *debugState       `json:"after,omitempty"`
 	Duration   int64             `json:"duration_us,omitempty"`
 	Count      int               `json:"count,omitempty"`
+	Events     int               `json:"events,omitempty"`
+	Turns      int               `json:"turns,omitempty"`
 }
 type debugArchive struct {
 	Started     time.Time         `json:"started"`
@@ -88,6 +90,18 @@ func (r *debugRecorder) Start() {
 	r.dropped = 0
 	r.sessions = map[string]int{}
 }
+
+// Measuring what a recording wants to know can cost as much as the thing being
+// measured, so a caller may ask first and gather it only while one is running.
+func (r *debugRecorder) recording() bool {
+	if r == nil {
+		return false
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.active
+}
+
 func (r *debugRecorder) Add(e debugEvent) {
 	if r == nil {
 		return

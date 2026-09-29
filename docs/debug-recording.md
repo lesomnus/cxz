@@ -23,7 +23,13 @@ This is a diagnostic trace, not a screen video. While enabled, it records:
   composer cursor positions and input length before and after updates.
 - TUI event types, selected RPC error codes, update/render durations and rendered
   byte counts.
-- Transcript rebuild duration and row count (`transcript_render`).
+- Transcript rebuild duration, row count, and what the rebuild walked to produce
+  it: loaded `events`, their `bytes`, and the `turns` the history window measured
+  (`transcript_render`). Rows are what survived the window, so on their own they
+  cannot tell a slow rebuild from a large one. The window trims on turn
+  boundaries and never below a single turn, so `turns` says whether the size
+  limit could apply at all. Counting is proportional to the events, so it runs
+  only while a recording is active.
 - History requests (`history_rpc`): purpose (`initial`, `older`, `catch_up`, or
   `background`), request duration, event count, protobuf payload `bytes`, and
   status code. Payload bytes exclude SSH/TCP framing and are not network traffic

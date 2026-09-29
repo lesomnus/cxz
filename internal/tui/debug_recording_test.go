@@ -11,6 +11,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/lesomnus/cxz/api"
 )
 
 func TestControlWordMovementAndRecordingPrivacy(t *testing.T) {
@@ -134,5 +135,47 @@ func TestRecordingButtonWithoutDockerAndSingleSaveOnExit(t *testing.T) {
 	var header debugArchive
 	if err = json.Unmarshal([]byte(strings.Split(string(b), "\n")[0]), &header); err != nil || header.Format != 1 {
 		t.Fatal("invalid archive", err)
+	}
+}
+
+// A slow transcript rebuild and a large one look the same with only a row
+// count: the rows are what survived the window, while the cost is every loaded
+// event. Record both, and the turn count, since the window cannot trim below a
+// single turn however large it grows.
+func TestTranscriptRenderRecordsWhatItWalked(t *testing.T) {
+	// The walk is proportional to the events, so it is gated on a live recording.
+	if (*debugRecorder)(nil).recording() || new(debugRecorder).recording() {
+		t.Fatal("an idle recorder would make render pay to measure itself")
+	}
+	m := conversationModel()
+	m.events["s"] = []*api.Event{
+		{Seq: 1, RunId: "run", Kind: "input", Text: "hello"},
+		{Seq: 2, RunId: "run", Kind: "tool_output", RequestId: "t", Text: "0123456789"},
+		{Seq: 3, RunId: "run", Kind: "assistant", Text: "hi"},
+	}
+	m.debugRecorder = &debugRecorder{}
+	m.debugRecorder.Start()
+	m.limitHistory("s", false)
+	m.render()
+	var found *debugEvent
+	for _, e := range m.debugRecorder.Stop().Events {
+		if e.Kind == "transcript_render" {
+			found = &e
+		}
+	}
+	if found == nil {
+		t.Fatal("no transcript_render recorded")
+	}
+	if found.Events != 3 {
+		t.Fatalf("walked events not recorded: %d", found.Events)
+	}
+	if found.Bytes != len("hello")+len("0123456789")+len("hi") {
+		t.Fatalf("walked bytes not recorded: %d", found.Bytes)
+	}
+	if found.Turns == 0 {
+		t.Fatal("window turns not recorded")
+	}
+	if found.Count == 0 {
+		t.Fatal("row count was lost")
 	}
 }
