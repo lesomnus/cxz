@@ -47,10 +47,11 @@ type Entry struct {
 	Effective bool   `json:"effective"`
 }
 type SessionStatus struct {
-	ID      string            `json:"id"`
-	Title   string            `json:"title"`
-	Pending bool              `json:"pending"`
-	Servers map[string]string `json:"servers"`
+	LaunchDigest string            `json:"launch_digest,omitempty"`
+	ID           string            `json:"id"`
+	Title        string            `json:"title"`
+	Pending      bool              `json:"pending"`
+	Servers      map[string]string `json:"servers"`
 }
 type Reply struct {
 	Log      string          `json:"log,omitempty"`
