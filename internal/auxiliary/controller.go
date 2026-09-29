@@ -16,18 +16,19 @@ import (
 
 type Runner func(context.Context, Input) (Output, error)
 type Controller struct {
-	wg     sync.WaitGroup
-	closed bool
-	mu     sync.Mutex
-	root   string
-	run    Runner
-	config Config
-	active map[string]context.CancelFunc
-	slots  chan struct{}
+	wg      sync.WaitGroup
+	closed  bool
+	started int64
+	mu      sync.Mutex
+	root    string
+	run     Runner
+	config  Config
+	active  map[string]context.CancelFunc
+	slots   chan struct{}
 }
 
 func New(root string, run Runner) (*Controller, error) {
-	c := &Controller{root: filepath.Join(root, "auxiliary"), run: run, active: map[string]context.CancelFunc{}, slots: make(chan struct{}, 4)}
+	c := &Controller{root: filepath.Join(root, "auxiliary"), started: time.Now().UnixMilli(), run: run, active: map[string]context.CancelFunc{}, slots: make(chan struct{}, 4)}
 	if err := os.MkdirAll(c.root, 0700); err != nil {
 		return nil, err
 	}
@@ -155,7 +156,7 @@ func (c *Controller) Observe(events []*api.Event) {
 		return
 	}
 	for _, e := range events {
-		if e.TimeMs < c.config.Since {
+		if e.TimeMs < max(c.config.Since, c.started) {
 			continue
 		}
 		if e.Kind != "input" && e.Kind != "assistant" && e.Kind != "tool_call" && e.Kind != "turn_end" {
