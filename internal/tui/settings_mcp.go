@@ -259,7 +259,7 @@ func (m *model) mcpScreen() string {
 			}
 			line := fmt.Sprintf("  %s  %s · %s · %s", check, v.Server.Name, v.Server.Kind, source)
 			if i == p.selected {
-				line = accent.Render("›" + line[1:])
+				line = focus.Render("›" + line[1:])
 			}
 			lines = append(lines, line)
 		}

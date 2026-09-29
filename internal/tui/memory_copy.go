@@ -224,7 +224,7 @@ func (m *model) memoryCopyScreen() string {
 		for i := c.offset; i < min(len(c.targets), c.offset+capacity); i++ {
 			label := "  " + safeText(memorySessionLabel(c.targets[i]))
 			if i == c.selected {
-				label = accent.Render("› " + safeText(memorySessionLabel(c.targets[i])))
+				label = focus.Render("› " + safeText(memorySessionLabel(c.targets[i])))
 			}
 			actions[len(lines)] = i
 			lines = append(lines, clip(label, inner))
@@ -238,9 +238,9 @@ func (m *model) memoryCopyScreen() string {
 		lines = append(lines, "To: "+safeText(memorySessionLabel(c.targets[c.selected])), "Destination: "+safeText(c.input.Value()), "", "Copy without changing login or conversation identity?", "")
 		cancel, confirm := "[ Cancel ]", "[ Copy ]"
 		if c.confirm {
-			confirm = accent.Render("› " + confirm)
+			confirm = focus.Render("› " + confirm)
 		} else {
-			cancel = accent.Render("› " + cancel)
+			cancel = focus.Render("› " + cancel)
 		}
 		actions[len(lines)] = -1
 		lines = append(lines, cancel)

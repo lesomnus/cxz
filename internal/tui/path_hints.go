@@ -428,7 +428,7 @@ func (m *model) pathHintOverlay(view string) string {
 			name := safeText(strings.TrimPrefix(o.text, p.token.parent))
 			marker := "  "
 			if idx == p.selected {
-				marker = accent.Render("› ")
+				marker = focus.Render("› ")
 			}
 			style := lipgloss.NewStyle()
 			if o.entry.Directory {
