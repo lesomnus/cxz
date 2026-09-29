@@ -110,6 +110,27 @@ func TestTrimKeepsRowsOfEventsStillLoaded(t *testing.T) {
 	}
 }
 
+// The loaded window slides as pages are evicted, so its row numbers say
+// nothing about where the reader is: the same event moves between them and
+// their total falls and rises. The reported position is a journal coordinate,
+// so an eviction that changes the loaded size must not move it.
+func TestScrollPositionSurvivesWindowEviction(t *testing.T) {
+	position := func(m *model) string { return strings.SplitN(m.scrollStatus(), " · ", 2)[0] }
+	m, start := windowAtLimit(t, 8192)
+	m.view.SetYOffset(m.view.TotalLineCount() / 2)
+	before, rows := position(m), m.view.TotalLineCount()
+	if !strings.HasSuffix(before, "/8,320") {
+		t.Fatal("position is not counted over the whole journal:", before)
+	}
+	m.applyHistoryPage(historyPage{id: "s", start: start - 128, end: start, events: trimFixture(start-128, 128)})
+	if m.view.TotalLineCount() == rows {
+		t.Fatal("the page was applied without evicting, so the window was not at its limit")
+	}
+	if after := position(m); after != before {
+		t.Fatalf("eviction moved the reported position: %s to %s", before, after)
+	}
+}
+
 func BenchmarkOlderPageAtWindowLimit(b *testing.B) {
 	profile := lipgloss.ColorProfile()
 	lipgloss.SetColorProfile(termenv.TrueColor)
