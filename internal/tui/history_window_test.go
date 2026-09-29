@@ -121,9 +121,18 @@ func TestHistoryWindowBytesEvictsRenderCaches(t *testing.T) {
 		}
 	}
 	m.events["s"] = events
-	m.renderedResponses = map[*api.Event]renderedResponse{events[1]: {body: "old cached output"}}
-	if !m.limitHistory("s", false) || len(m.events["s"]) != 9 || m.renderedResponses != nil {
-		t.Fatal("byte limit or cache eviction failed", len(m.events["s"]))
+	kept := events[len(events)-1]
+	m.renderedResponses = map[*api.Event]renderedResponse{events[1]: {body: "old cached output"}, kept: {body: "still loaded"}}
+	if !m.limitHistory("s", false) || len(m.events["s"]) != 9 {
+		t.Fatal("byte limit failed", len(m.events["s"]))
+	}
+	// Only evicted events lose their rows. Re-rendering the survivors would
+	// redo the whole window on the UI goroutine at every trim.
+	if _, ok := m.renderedResponses[events[1]]; ok {
+		t.Fatal("cached rows outlived the event they were keyed on")
+	}
+	if m.renderedResponses[kept].body != "still loaded" {
+		t.Fatal("trimming discarded rows of an event that is still loaded")
 	}
 	// One active/oversized turn is kept whole instead of breaking tool pairs.
 	m.events["s"] = events[:3]

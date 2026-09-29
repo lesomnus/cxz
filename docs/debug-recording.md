@@ -33,6 +33,11 @@ This is a diagnostic trace, not a screen video. While enabled, it records:
 - Quota recomputation (`quota_update`): duration and the usage `events` it read.
   It runs inside every transcript rebuild but reads across every session sharing
   the account, so its cost does not follow the rebuild's own event count.
+- Window eviction (`history_trim`): which end was dropped (`older` while paging
+  back, `newer` while following), how many events went (`count`) and what is left
+  (`events`, `turns`, `bytes`). This is why the loaded row count falls while
+  scrolling back, and it is the point at which rows of evicted events are
+  released, so a rebuild next to it has a visible cause.
 - History requests (`history_rpc`): purpose (`initial`, `older`, `catch_up`, or
   `background`), request duration, event count, protobuf payload `bytes`, and
   status code. Payload bytes exclude SSH/TCP framing and are not network traffic

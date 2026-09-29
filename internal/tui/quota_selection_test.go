@@ -112,8 +112,8 @@ func TestQuotaParseCacheMatchesAFreshParse(t *testing.T) {
 		t.Fatalf("usage events not remembered: %d", len(m.quotaParses))
 	}
 	// Trimming the window drops the events, so their parses must go with them.
-	m.clearHistoryRenderCaches()
-	if m.quotaParses != nil {
+	m.dropUnloadedRenderCaches()
+	if len(m.quotaParses) != 0 {
 		t.Fatal("parses outlived the events they were keyed on")
 	}
 }
