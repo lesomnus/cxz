@@ -2,7 +2,9 @@ package lifecycle
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/auxiliary"
 	"github.com/lesomnus/cxz/resource"
 	"github.com/lesomnus/payday/slug"
 	"google.golang.org/grpc"
@@ -224,7 +226,27 @@ func (s ProjectServer) Docker(ctx context.Context, r *resource.DockerRequest) (*
 	if err := s.effect(); err != nil {
 		return nil, err
 	}
-	out, err := s.shared.runtime.Docker(ctx, &api.DockerInput{Action: r.GetAction(), Spec: r.GetSpec()})
+	spec := r.GetSpec()
+	if r.GetAction() == "auxiliary" {
+		var q auxiliary.Request
+		if len(spec) > 16384 || json.Unmarshal(spec, &q) != nil {
+			return nil, status.Error(codes.InvalidArgument, "invalid auxiliary request")
+		}
+		if q.Action == "put" || q.Action == "models" || q.Action == "login-info" {
+			if q.Profile.Account != "" {
+				a, e := s.Next().Account().Get(ctx, resource.AccountGetRequest_builder{Ref: accountRef(q.Profile.Account), Select: resource.AccountSelect_builder{All: ptr(true)}.Build()}.Build())
+				if e != nil {
+					return nil, e
+				}
+				q.Profile.Agent = a.GetAgent()
+				q.Profile.Backend = a.GetAuthBackend()
+			} else if q.Profile.Enabled || q.Action != "put" {
+				return nil, status.Error(codes.InvalidArgument, "select a registered account")
+			}
+		}
+		spec, _ = json.Marshal(q)
+	}
+	out, err := s.shared.runtime.Docker(ctx, &api.DockerInput{Action: r.GetAction(), Spec: spec})
 	if err != nil {
 		return nil, err
 	}

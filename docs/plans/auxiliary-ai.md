@@ -1,6 +1,7 @@
 # 보조 AI 작업: 인증과 제한된 세션 문맥
 
-상태: 설계. 이 문서의 보조 작업 실행기와 설정 UI는 아직 구현되지 않았다.
+상태: 초기 구현 포함. 사용 방법과 현재의 구체적인 제한은
+[보조 AI 작업](../auxiliary-ai.md)을 참고한다. 아래는 설계 배경과 검증 방향이다.
 추적: [#27](https://github.com/lesomnus/cxz/issues/27).
 공유 메모리 compact는 [#36](https://github.com/lesomnus/cxz/issues/36)에서 별도로 구현한다.
 
@@ -154,3 +155,16 @@ checkpoint 교체 충돌과 실패, Manager 재시작, 사용자 입력 보존�
 
 이 파일들은 재사용할 경계의 참고 자료다. 기존 Supervisor의 프로젝트 접근 권한을
 그대로 보조 실행기에 넘기지는 않는다.
+
+## 초기 구현에서 확정한 사항
+
+- Manager가 helper 컨테이너와 5초 간격 수집을 관리한다. helper에는 전용 인증
+  volume과 읽기 전용 tools volume만 전달한다.
+- 전용 로그인은 Manager 호스트의 `cxz ai login`에서 공식 CLI의 표준 입출력을
+  연결한다. Windows 원격 클라이언트의 로그인은 호스트에서 수행한다.
+- Settings에서 Account/model/effort를 검증한 뒤 활성화한다. checkpoint는 활성화된
+  요약 프로필, 없으면 추천 프로필을 따른다.
+- 현재 예산은 추정 token 값 대신 엄격한 byte 상한이다. 구독을 사용한 지연·품질
+  측정과 기본값 최적화는 아직 수행하지 않았다.
+- `/summary`와 입력창 힌트로 결과를 표시하고 Alt+G 또는 `/suggest`로 명시적으로
+  적용한다. 적용 직전 서버 상태와 로컬 초안을 다시 확인한다.

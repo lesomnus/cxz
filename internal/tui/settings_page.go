@@ -16,6 +16,7 @@ import (
 )
 
 type settingsPage struct {
+	auxiliary                           *auxiliaryPage
 	mcp                                 *mcpPage
 	connection                          string
 	info                                engine.Info
@@ -41,7 +42,7 @@ type settingsResult struct {
 
 var settingsActions = []struct{ label, action string }{
 	{"Refresh", "info"}, {"Activate", "up"}, {"Clear unused build cache", "prune"}, {"Start debug recording", "record"}, {"Automatic frontend updates", "auto-update"},
-	{"Server history limit", "history-policy"}, {"Client scroll bytes", "history-window"}, {"Client scroll turns", "history-window"}, {"MCP servers", "mcp"},
+	{"Server history limit", "history-policy"}, {"Client scroll bytes", "history-window"}, {"Client scroll turns", "history-window"}, {"MCP servers", "mcp"}, {"AI tasks", "auxiliary"},
 }
 
 const settingsActionRow = 12
@@ -128,7 +129,7 @@ func (m *model) receiveSettings(r settingsResult) {
 }
 func (m *model) pollSettings() tea.Cmd {
 	p := m.settingsPage
-	if p != nil && p.mcp != nil {
+	if p != nil && (p.mcp != nil || p.auxiliary != nil) {
 		return nil
 	}
 	if p == nil || p.confirm != "" || time.Since(p.lastRefresh) < 10*time.Second {
@@ -210,13 +211,16 @@ func (m *model) settingsEnabled(index int) bool {
 	if index == 1 {
 		return p.info.State == "running" || p.info.Mode == "dind"
 	}
-	if index == 8 {
+	if index == 8 || index == 9 {
 		return true
 	}
 	return p.info.State == "running"
 }
 func (m *model) activateSetting() tea.Cmd {
 	p := m.settingsPage
+	if p.selected == 9 {
+		return m.openAuxiliary()
+	}
 	if p.selected == 8 {
 		return m.openMCP()
 	}
@@ -258,6 +262,9 @@ func (m *model) activateSetting() tea.Cmd {
 }
 func (m *model) settingsKey(k tea.KeyMsg) tea.Cmd {
 	p := m.settingsPage
+	if p.auxiliary != nil {
+		return m.auxiliaryKey(k)
+	}
 	if p.mcp != nil {
 		return m.mcpKey(k)
 	}
@@ -317,6 +324,9 @@ func (m *model) revealSetting() {
 }
 func (m *model) settingsMouse(v tea.MouseMsg) tea.Cmd {
 	p := m.settingsPage
+	if p.auxiliary != nil {
+		return nil
+	}
 	if p.mcp != nil {
 		return m.mcpMouse(v)
 	}
@@ -389,6 +399,9 @@ func (m *model) settingsConfirmation() ([]string, int, int) {
 }
 func (m *model) settingsScreen() string {
 	p := m.settingsPage
+	if p.auxiliary != nil {
+		return m.auxiliaryScreen()
+	}
 	if p.mcp != nil {
 		return m.mcpScreen()
 	}

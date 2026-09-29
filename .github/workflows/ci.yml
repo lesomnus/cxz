@@ -73,6 +73,7 @@ jobs:
       - run: go vet ./...
       - run: go test ./...
       - run: CXZ_TEST_USE_DOCKER=1 go test ./internal/versionuse -run TestForceProjectReleaseSwitchDocker -v -count=1
+      - run: CXZ_TEST_USE_DOCKER=1 go test ./internal/auxiliary -run TestAuxiliaryHelperDocker -v -count=1
       - run: CXZ_TEST_RACE=1 go test -race ./... -count=1
       - run: go run ./tools/genproto && git diff --exit-code -- api
       - run: go tool pd gen --check .
