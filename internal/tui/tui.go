@@ -32,6 +32,8 @@ import (
 )
 
 type model struct {
+	elicitationRequest       string
+	elicitationChoice        int
 	auxiliaryJobs            map[string]*auxiliary.Job
 	auxiliaryPolling         bool
 	auxiliaryChecked         time.Time
@@ -1582,6 +1584,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if m.modelPicker != nil || m.pasteDialog != nil || m.redactDialog != nil {
 			return m, nil
+		}
+		if handled, cmd := m.elicitationMouse(v); handled {
+			return m, cmd
 		}
 		if m.focusApproval && v.Y >= m.view.Height && v.Y < m.height-m.input.Height()-3-m.terminalHeight() {
 			switch v.Button {
