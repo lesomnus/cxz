@@ -140,7 +140,7 @@ func TestHistoryStickyPromptAndWorkingIndicator(t *testing.T) {
 	m.view.GotoBottom()
 	before := ansi.Strip(m.sessionScreen())
 	rows := strings.Split(before, "\n")
-	if strings.TrimRight(rows[0], " ") != "❯ First prompt" || !strings.HasPrefix(rows[1], "  second line") || !strings.Contains(before, "⣟") || strings.Contains(before, "[working]") {
+	if strings.TrimRight(rows[0], " ") != " ❯ First prompt" || !strings.HasPrefix(rows[1], "   second line") || !strings.Contains(before, "⣟") || strings.Contains(before, "[working]") {
 		t.Fatal(before)
 	}
 	m.Update(pulseTick{})
