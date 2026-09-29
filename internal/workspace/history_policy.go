@@ -94,6 +94,7 @@ func (m *Manager) syncRuntimePreferences(ctx context.Context, client api.Session
 		func() error { return m.syncFileMappings(ctx, client) },
 		func() error { return m.syncHistoryPolicy(ctx, client) },
 		func() error { return m.syncMCP(ctx, client, project) },
+		func() error { return m.syncSkills(ctx, client, project) },
 	} {
 		if err := push(); err != nil && !unsupportedByRuntime(err) {
 			return err
