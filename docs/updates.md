@@ -55,7 +55,7 @@ What waits for what:
 | | Replaced when |
 |---|---|
 | **Manager** | Every running session in the installation is safely idle |
-| **Project runtime** | That project's sessions are safely idle |
+| **Project runtime** | That project's sessions are safely idle, or an explicit `project recreate` |
 | **Supervisor / agent** | That session has been safely idle for five minutes |
 | **TUI** | Five minutes without input, and no draft, modal, attachment or in-flight request |
 
@@ -78,6 +78,10 @@ or commit; `--client-only` skips the manager. Docker Buildx and a Linux builder 
 required; host Git and Go are not. Builds are verified before replacement and the
 previous executable is kept. Running sessions continue.
 
+`self-update` checks the **installed manager's own revision** before reporting
+success, by asking the container binary rather than trusting the host CLI. An
+installer that reused a cached image cannot report a successful update.
+
 Protected locations such as `/usr/local/bin` are handled by a Docker root installer,
 which preserves ownership and permissions after confirming Docker sees the same
 directory.
@@ -86,6 +90,15 @@ On **Windows**, `cxz self-update` downloads the latest tested `main` build from 
 `edge` release. No Docker, Git or Go. Checksum, platform, build information and
 version are checked before replacing `cxz.exe`, and `cxz.previous.exe` keeps the old
 one. `--ref vX.Y.Z` takes a published tag.
+
+## Rebuilding the manager image
+
+On `@edge` or `@stable`, `install --recreate` builds the manager image with the
+**current** CLI rather than reusing the image from when the channel was selected. An
+explicit `--image`, and a pinned release, keep the image they name.
+
+That distinction matters after a `self-update`: without it, refreshing the manager
+could quietly reinstall the version you were trying to leave.
 
 ## Pinning
 
