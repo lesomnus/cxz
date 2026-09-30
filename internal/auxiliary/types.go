@@ -65,6 +65,7 @@ type Request struct {
 	Session string  `json:"session,omitempty"`
 }
 type Reply struct {
+	NeedsLogin    bool                    `json:"needs_login,omitempty"`
 	Summaries     []Summary               `json:"summaries,omitempty"`
 	SessionConfig *SessionConfig          `json:"session_config,omitempty"`
 	Owner         string                  `json:"owner,omitempty"`
@@ -124,6 +125,7 @@ type Usage struct {
 	Data    json.RawMessage `json:"data,omitempty"`
 }
 type Output struct {
+	NeedsLogin bool                    `json:"needs_login,omitempty"`
 	Summary    string                  `json:"summary"`
 	Suggestion string                  `json:"suggestion"`
 	Checkpoint string                  `json:"checkpoint"`

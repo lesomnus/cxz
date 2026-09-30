@@ -16,16 +16,17 @@ import (
 )
 
 type auxiliaryPage struct {
-	config   auxiliary.Config
-	selected int
-	busy     bool
-	editing  bool
-	step     string
-	choice   int
-	draft    auxiliary.Profile
-	models   []agentview.ModelOption
-	accounts []*resource.Account
-	message  string
+	loginIfNeeded bool
+	config        auxiliary.Config
+	selected      int
+	busy          bool
+	editing       bool
+	step          string
+	choice        int
+	draft         auxiliary.Profile
+	models        []agentview.ModelOption
+	accounts      []*resource.Account
+	message       string
 }
 type auxiliaryResult struct {
 	version                     uint64
@@ -63,19 +64,29 @@ func (m *model) auxiliaryRequest(r auxiliary.Request, p *auxiliaryPage) tea.Cmd 
 		return v
 	}
 }
-func (m *model) receiveAuxiliary(v auxiliaryResult) {
+func (m *model) receiveAuxiliary(v auxiliaryResult) tea.Cmd {
 	if v.page != nil {
 		if m.settingsPage == nil || m.settingsPage.auxiliary != v.page {
-			return
+			return nil
 		}
 		p := v.page
 		p.busy = false
+		autoLogin := p.loginIfNeeded
+		p.loginIfNeeded = false
 		if v.err != nil {
 			p.message = v.err.Error()
-			return
+			return nil
 		}
 		p.config = v.reply.Config
 		if v.action == "models" {
+			if v.reply.NeedsLogin {
+				p.models = nil
+				if autoLogin {
+					return m.loginAuxiliaryAccount(p)
+				}
+				p.message = "Account needs login. Press l to log in or Esc to cancel."
+				return nil
+			}
 			p.models = v.reply.Models
 			p.step, p.choice = "model", 0
 			p.message = ""
@@ -89,20 +100,20 @@ func (m *model) receiveAuxiliary(v auxiliaryResult) {
 				p.message = v.reply.Message
 			}
 		}
-		return
+		return nil
 	}
 	if v.action == "status" {
 		m.auxiliaryPolling = false
 	}
 	key := v.connection + "/" + v.session
 	if v.version != m.auxiliaryVersions[key] {
-		return
+		return nil
 	}
 	if v.action == "session" {
 		delete(m.auxiliaryPending, key)
 	}
 	if v.connection != m.connectionRef() {
-		return
+		return nil
 	}
 	if m.auxiliaryJobs == nil {
 		m.auxiliaryJobs = map[string]*auxiliary.Job{}
@@ -117,7 +128,7 @@ func (m *model) receiveAuxiliary(v auxiliaryResult) {
 			m.notice = safeText(v.err.Error())
 			m.render()
 		}
-		return
+		return nil
 	}
 	m.auxiliaryError = ""
 	old := m.auxiliaryJobs[key]
@@ -151,6 +162,7 @@ func (m *model) receiveAuxiliary(v auxiliaryResult) {
 		m.render()
 	}
 
+	return nil
 }
 func (m *model) pollAuxiliary() tea.Cmd {
 	if m.auxiliaryPolling || time.Since(m.auxiliaryChecked) < time.Second || m.ctx == nil {
@@ -229,6 +241,10 @@ func (m *model) auxiliaryKey(k tea.KeyMsg) tea.Cmd {
 			p.choice = max(0, p.choice-1)
 		case "down", "tab":
 			p.choice = min(max(0, len(choices)-1), p.choice+1)
+		case "l":
+			if p.step == "model" {
+				return m.loginAuxiliaryAccount(p)
+			}
 		case "r":
 			if p.step == "account" {
 				return m.loadAuxiliaryAccounts(p)
@@ -244,8 +260,10 @@ func (m *model) auxiliaryKey(k tea.KeyMsg) tea.Cmd {
 			case "account":
 				a := p.accounts[p.choice]
 				p.draft = auxiliary.Profile{Enabled: true, Account: a.GetAlias(), Agent: a.GetAgent(), Backend: a.GetAuthBackend()}
-				m.accountConnection = m.settingsPage.connection
-				return m.startAccountWorkflow(a.GetAlias(), a.GetAgent(), "", false, p)
+				p.step, p.choice, p.models = "model", 0, nil
+				p.loginIfNeeded = true
+				p.message = ""
+				return m.auxiliaryRequest(auxiliary.Request{Action: "models", Profile: p.draft}, p)
 			case "model":
 				p.draft.Model, p.draft.Effort = p.models[p.choice].ID, ""
 				p.step, p.choice = "effort", 0
@@ -280,6 +298,12 @@ func (m *model) auxiliaryKey(k tea.KeyMsg) tea.Cmd {
 	}
 	return nil
 }
+func (m *model) loginAuxiliaryAccount(p *auxiliaryPage) tea.Cmd {
+	p.loginIfNeeded = false
+	m.accountConnection = m.settingsPage.connection
+	return m.startAccountWorkflow(p.draft.Account, p.draft.Agent, "", false, p)
+}
+
 func (p *auxiliaryPage) choices() []string {
 	var out []string
 	switch p.step {
@@ -359,7 +383,7 @@ func (m *model) auxiliaryScreen() string {
 		if len(choices) == 0 && p.step == "account" {
 			lines = append(lines, "No accounts. Add an account in Settings → Accounts, then press r.")
 		}
-		lines = append(lines, "↑/↓ select · Enter continue / save effort · r retry · Esc cancel")
+		lines = append(lines, "↑/↓ select · Enter continue / save effort · r retry · l log in (model step) · Esc cancel")
 	} else {
 		for i, profile := range []auxiliary.Profile{p.config.Summary, p.config.Suggestion} {
 			name := []string{"Summary", "Next-message suggestion"}[i]
