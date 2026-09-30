@@ -51,6 +51,9 @@ func Serve(ctx context.Context, root string, r io.Reader, w io.Writer) error {
 	}
 	auth, e := backend.Launch(root, p.Account, os.Environ())
 	if e != nil {
+		if q.Input.Task == "models" && p.Backend == accounts.ProjectLocalOAuth {
+			return json.NewEncoder(w).Encode(Output{NeedsLogin: true})
+		}
 		return fmt.Errorf("auxiliary account %s needs login: run cxz ai login %s on the Manager host", p.Account, p.Account)
 	}
 	dir, e := os.MkdirTemp("", "cxz-auxiliary-")

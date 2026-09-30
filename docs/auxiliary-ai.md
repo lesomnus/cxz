@@ -10,8 +10,10 @@ Both are **off by default**.
 ## Turning them on
 
 `Ctrl+.` → **AI tasks** → select a task → `Enter`.
-Choose a registered account, complete its login in the TUI, then choose a model
-and effort from the provider's catalog. Use ↑/↓ (or Tab) and Enter at each step.
+Choose a registered account, then choose a model and effort from the provider's
+catalog. Setup first tries the account's stored auxiliary authentication; login
+opens only when that profile needs credentials. Summary and suggestion share
+authentication when they use the same account on the same Manager. Use ↑/↓ (or Tab) and Enter at each step.
 Selecting an effort validates and enables the task; **Provider default** leaves
 reasoning effort to the provider. Esc cancels setup without changing the saved
 profile. Space toggles an already configured task.
@@ -19,7 +21,10 @@ profile. Space toggles an already configured task.
 Login opens on the selected Manager, including from a Windows client over SSH.
 The TUI shows the provider URL and accepts the returned Claude code; Ctrl+Y copies
 the login URL. Cancellation returns to account selection. Empty catalogs and
-errors stay visible with `r` to retry; no model names need to be typed.
+errors stay visible with `r` to retry; no model names need to be typed. At the
+model step, `l` explicitly logs in again (for example, after credentials are revoked).
+Catalog discovery does not generate a model response or prove that a stored token
+will be accepted for generation; normal provider refresh still applies.
 Both the client and Manager must support the auxiliary login RPC.
 
 An unsupported model or effort, or a failed login, is reported as an error — it

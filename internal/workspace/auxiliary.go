@@ -50,6 +50,9 @@ func (m *Manager) auxiliaryRequest(ctx context.Context, b []byte) (*api.Receipt,
 			if e != nil {
 				return nil, e
 			}
+			if o.NeedsLogin {
+				return nil, fmt.Errorf("auxiliary account needs login")
+			}
 			if e = auxiliary.ValidateModel(r.Profile, o.Models); e != nil {
 				return nil, e
 			}
@@ -76,6 +79,7 @@ func (m *Manager) auxiliaryRequest(ctx context.Context, b []byte) (*api.Receipt,
 		var o auxiliary.Output
 		o, e = m.runAuxiliary(ctx, auxiliary.Input{Profile: r.Profile, Task: "models"})
 		out.Models = o.Models
+		out.NeedsLogin = o.NeedsLogin
 	case "session":
 		if r.Session == "" {
 			return nil, fmt.Errorf("select a session")
@@ -162,6 +166,11 @@ func (m *Manager) runAuxiliary(ctx context.Context, in auxiliary.Input) (auxilia
 	}
 	q := auxiliary.HelperInput{Input: in, Binary: bin}
 	if in.Profile.Backend == accounts.BrokeredAccessToken {
+		if in.Task == "models" {
+			if _, err := accounts.CentralToken(m.Root, in.Profile.Account); err != nil {
+				return auxiliary.Output{NeedsLogin: true}, nil
+			}
+		}
 		g, e := accounts.IssueAuxiliaryGrant(m.Root, in.Profile.Account)
 		if e != nil {
 			return auxiliary.Output{}, e

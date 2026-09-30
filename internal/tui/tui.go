@@ -1087,8 +1087,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	if v, ok := msg.(auxiliaryResult); ok {
-		m.receiveAuxiliary(v)
-		return m, nil
+		return m, m.receiveAuxiliary(v)
 	}
 	if v, ok := msg.(mcpResult); ok {
 		m.receiveMCP(v)
