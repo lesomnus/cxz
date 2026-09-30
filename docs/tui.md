@@ -133,7 +133,12 @@ window's size and what evicts from it.
 
 ## Status bar
 
-Left: a selection cell, the session alias, agent and model, `◉` account, title.
+Left: the model the agent is running, and its reasoning level once the provider
+confirms one — `opus-4-6 · high`. Before any confirmation it is the model the
+session was created with, with no effort shown rather than a guessed one.
+
+Permission mode is not here. It is a policy saved on the server and read back,
+not something that changes while you type; `/permission` reports it.
 
 Right: provider-reported **remaining** account quota — percentage, an eight-cell
 bar, the window label and a reset countdown. Bars colour only as quota drops: pastel

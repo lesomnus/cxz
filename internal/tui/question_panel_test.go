@@ -258,13 +258,13 @@ func TestQuestionSmallScreensOtherPanelsAndCancel(t *testing.T) {
 		m := questionModel()
 		m.Update(tea.WindowSizeMsg{Width: size[0], Height: size[1]})
 		m.input.SetValue("saved\ndraft\nwith lines")
-		m.current().PermissionMode = "full"
+		m.current().Model = "sonnet-4-5"
 		m.terminals = map[string]*terminalPanel{"s": {open: true, focused: true}}
 		m.filePreview = &filePreview{session: "s", source: "file", title: "Read", focused: true}
 		m.showError("previous operation failed")
 		m.openQuestion(m.selectedApproval())
 		rows := strings.Split(ansi.Strip(m.View()), "\n")
-		if len(rows) != size[1] || m.view.Height < 1 || !strings.Contains(rows[len(rows)-1], "FULL") || !strings.Contains(strings.Join(rows, "\n"), "[ Cancel ]") {
+		if len(rows) != size[1] || m.view.Height < 1 || !strings.Contains(rows[len(rows)-1], "sonnet-4-5") || !strings.Contains(strings.Join(rows, "\n"), "[ Cancel ]") {
 			t.Fatal("question or composer displaced by another panel", size, rows)
 		}
 		for _, row := range rows {

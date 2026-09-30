@@ -109,7 +109,7 @@ func TestErrorDialogGeometryAndClipboard(t *testing.T) {
 
 func TestErrorDialogFixedContentAndReceiptIsolation(t *testing.T) {
 	m := conversationModel()
-	m.current().PermissionMode = "full"
+	m.current().Model = "sonnet-4-5"
 	m.showError("one short error")
 	rows := strings.Split(ansi.Strip(m.errorRows(40)), "\n")
 	if len(rows) != errorDialogRows || strings.TrimSpace(rows[2]) != "" || strings.TrimSpace(rows[3]) != "" {
@@ -167,7 +167,7 @@ func TestErrorDialogWithApprovalsAndProjectView(t *testing.T) {
 
 func TestErrorDialogResizeAndTerminal(t *testing.T) {
 	m := conversationModel()
-	m.current().PermissionMode = "full"
+	m.current().Model = "sonnet-4-5"
 	m.terminals = map[string]*terminalPanel{"s": {open: true}}
 	m.filePreview = &filePreview{session: "s", title: "Read", source: "source"}
 	m.showError(strings.Repeat("long error\n", 60))
@@ -176,7 +176,7 @@ func TestErrorDialogResizeAndTerminal(t *testing.T) {
 	for _, size := range [][2]int{{240, 50}, {40, 14}, {110, 36}, {240, 24}} {
 		m.Update(tea.WindowSizeMsg{Width: size[0], Height: size[1]})
 		rows := strings.Split(ansi.Strip(m.View()), "\n")
-		if len(rows) != size[1] || !strings.Contains(rows[size[1]-1], "FULL") {
+		if len(rows) != size[1] || !strings.Contains(rows[size[1]-1], "sonnet-4-5") {
 			t.Fatal("error + terminal + preview displaced footer", size, rows)
 		}
 		x, y, width := m.errorBounds()

@@ -13,12 +13,15 @@ import (
 	"github.com/muesli/termenv"
 )
 
-func TestPermissionLabelStaysInFooter(t *testing.T) {
+// The composer's left slot says what is about to run. It has to survive every
+// width and state without pushing the quota off the right edge, and it must not
+// appear twice -- the transcript above it is not the place for it.
+func TestAgentStatusStaysInFooter(t *testing.T) {
 	for _, width := range []int{40, 110, 240} {
 		for _, state := range []string{"working", "stopped"} {
 			m := conversationModel()
 			m.Update(tea.WindowSizeMsg{Width: width, Height: 36})
-			m.current().PermissionMode = "full"
+			m.current().Model = "sonnet-4-5"
 			m.current().State = state
 			m.events["s"] = []*api.Event{{Seq: 1, Kind: "assistant", Text: strings.Repeat("history\n", 60)}}
 			m.render()
@@ -30,17 +33,33 @@ func TestPermissionLabelStaysInFooter(t *testing.T) {
 				}
 				rows := strings.Split(ansi.Strip(m.sessionScreen()), "\n")
 				footer := rows[len(rows)-1]
-				if !strings.HasPrefix(footer, " FULL ") || ansi.StringWidth(footer) > m.width || strings.Count(strings.Join(rows, "\n"), "FULL") != 1 {
-					t.Fatal("permission label missing, duplicated, or displaced quota", rows)
-				}
-				if strings.Contains(strings.Join(rows, "\n"), "background approval") || strings.Contains(strings.Join(rows, "\n"), "/permission ask") {
-					t.Fatal("verbose permission hint remains")
+				if !strings.HasPrefix(footer, " sonnet-4-5 ") || ansi.StringWidth(footer) > m.width || strings.Count(strings.Join(rows, "\n"), "sonnet-4-5") != 1 {
+					t.Fatal("model missing, duplicated, or displaced quota", rows)
 				}
 			}
-			m.current().PermissionMode = "ask"
-			if strings.Contains(m.sessionScreen(), "FULL") {
-				t.Fatal("FULL remained after switching to ask")
+			// A reasoning level appears only once the provider confirms one.
+			m.events["s"] = append(m.events["s"], &api.Event{Seq: 2, RunId: "run", Kind: "models",
+				Payload: []byte(`{"model":"opus-4-6","effective_effort":"high","models":[{"id":"opus-4-6"}]}`)})
+			m.render()
+			footer := strings.Split(ansi.Strip(m.sessionScreen()), "\n")
+			if last := footer[len(footer)-1]; !strings.HasPrefix(last, " opus-4-6 · high ") {
+				t.Fatal("confirmed model and effort not shown", last)
 			}
+		}
+	}
+}
+
+// Permission mode is a policy saved on the server and read back, not something
+// that changes while you type. It left the footer; nothing should put it back.
+func TestPermissionModeIsNotInTheFooter(t *testing.T) {
+	m := conversationModel()
+	m.current().Model = "sonnet-4-5"
+	m.current().PermissionMode = "full"
+	m.render()
+	screen := strings.Join(strings.Split(ansi.Strip(m.sessionScreen()), "\n"), "\n")
+	for _, unwanted := range []string{"FULL", "background approval", "/permission ask"} {
+		if strings.Contains(screen, unwanted) {
+			t.Fatalf("permission mode is back in the conversation view: %q", unwanted)
 		}
 	}
 }
