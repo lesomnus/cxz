@@ -82,10 +82,18 @@ type Store struct {
 }
 
 func key(s string) string { h := sha256.Sum256([]byte(s)); return hex.EncodeToString(h[:12]) }
+
+// Dir is where one project's memory documents live. Hashing the project id keeps
+// the directory name a fixed shape whatever the workspace path was.
+func Dir(root, project string) string { return filepath.Join(root, "memories", key(project)) }
+
+// SnapshotID is the document set a session publishes as its own.
+func SnapshotID(session string) string { return "session-" + key(session) }
+
 func New(root string, session core.Session) *Store {
-	return &Store{filepath.Join(root, "memories", key(session.ProjectID)), session}
+	return &Store{Dir(root, session.ProjectID), session}
 }
-func (s *Store) OwnID() string { return "session-" + key(s.Session.ID) }
+func (s *Store) OwnID() string { return SnapshotID(s.Session.ID) }
 
 var validID = regexp.MustCompile(`^(session|saved)-[a-f0-9]{24}$`)
 var validDoc = regexp.MustCompile(`^[\pL\pN][\pL\pN _.-]{0,120}\.md$`)

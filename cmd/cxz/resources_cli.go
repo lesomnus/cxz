@@ -77,6 +77,9 @@ func reorganizeCommands(root *xli.Command) {
 			keep = append(keep, c)
 		}
 	}
+	// Session purge is registered here rather than at the root, where the name
+	// already belongs to the whole-installation purge.
+	session.Commands = append(session.Commands, sessionPurgeCommand())
 	root.Commands = append(keep, project, session, manager)
 	root.Synop = "Flags precede positional arguments: cxz account add codex work; cxz session new --account work .\nUse --format json on data commands for scripts. Ctrl-C detaches the TUI."
 	// Parent pointers are attached by xli later; traverse with explicit scope.

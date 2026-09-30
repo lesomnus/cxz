@@ -21,7 +21,7 @@ Needs at least 40 × 14 cells. Follows terminal resizes.
 | `r` | Rename the selected session |
 | `s` | Stop it |
 | `m` | Browse its retained memory and history |
-| `Ctrl+X` twice within 3s | Stop and delete it; the journal is kept |
+| `Ctrl+X` twice within 3s | Stop and delete it; the journal is kept. `cxz session purge` destroys it |
 | `Ctrl+.` | Settings |
 
 **Conversation**

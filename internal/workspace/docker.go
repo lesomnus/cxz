@@ -16,6 +16,11 @@ func (m *Manager) Docker(ctx context.Context, r *api.DockerInput) (*api.Receipt,
 	if r.Action == "auxiliary" {
 		return m.auxiliaryRequest(ctx, r.Spec)
 	}
+	// Purge talks to one project runtime and must not serialise behind an engine
+	// operation that could be rebuilding another.
+	if r.Action == "session-purge" {
+		return m.PurgeSession(ctx, r.Spec)
+	}
 	m.dockerMu.Lock()
 	defer m.dockerMu.Unlock()
 	e := m.dockerEngine()

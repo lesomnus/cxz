@@ -227,6 +227,9 @@ func (s ProjectServer) Docker(ctx context.Context, r *resource.DockerRequest) (*
 		return nil, err
 	}
 	spec := r.GetSpec()
+	if r.GetAction() == "session-purge" {
+		return s.purgeSession(ctx, spec)
+	}
 	if r.GetAction() == "auxiliary" {
 		var q auxiliary.Request
 		if len(spec) > 16384 || json.Unmarshal(spec, &q) != nil {

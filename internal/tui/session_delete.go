@@ -118,7 +118,7 @@ func (m *model) receiveSessionDeleted(v sessionDeleted) {
 			break
 		}
 	}
-	m.notice = "session deleted; journal retained"
+	m.notice = "session deleted; journal retained (cxz session purge to destroy it)"
 	m.resize()
 	m.render()
 }

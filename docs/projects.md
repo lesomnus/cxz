@@ -30,6 +30,7 @@ What survives what:
 | `project recreate` | new | **gone** | kept | kept | kept |
 | `project purge --yes` | gone | gone | **gone** | owned project volumes **gone** | **gone** |
 | `uninstall` | kept | kept | kept | kept | kept |
+| `session purge` | kept | kept | **gone for one session** | kept | kept |
 | `purge` | gone | gone | **gone** | **gone** | **gone** |
 
 `up` prepares and returns — it never starts an agent and never replays an old
@@ -103,9 +104,43 @@ Inside an owned project, `cxz` and `cxz session ls` are scoped to that project
 only. No manager socket and no credential directory is mounted there — an agent
 cannot reach your other projects or accounts.
 
+## Deleting a session
+
+Deleting a session (`Ctrl+X` twice in the TUI) stops its agent, releases its alias
+and stops listing it. It does **not** delete the conversation: the journal, the
+agent profile behind it and the session's uploads all stay, so a delete you regret
+costs you a listing and nothing else.
+
+`cxz session purge` is the other half, and the only command that destroys one
+conversation:
+
+```sh
+cxz session purge --dry-run lamp   # what it would delete, and how many bytes
+cxz session purge --yes lamp       # delete it
+```
+
+It stops the agent, then unlinks the journal, the agent profile and its
+credentials, the agent's own transcript, the memory documents the session
+published, its attachments, and finally the session record itself including its
+title and alias. A purged session is not a tombstone — it is gone from every
+listing and every read.
+
+Purge runs from the host client. It is refused inside a project container, where it
+could not reach the attachments the manager holds — and where an agent must not be
+able to delete the history it can read.
+
+What a session purge leaves alone: files the agent wrote in your workspace,
+attachment bytes another session still references, the project itself, and log
+lines elsewhere that mention the session id. The reply lists these rather than
+implying more was deleted than was.
+
+`--dry-run` measures the same targets the real run deletes and changes nothing, so
+the byte total it prints is the one you lose. Purge is re-runnable: an interrupted
+purge leaves less data than before, never a live session missing its journal.
+
 ## Purge
 
-`purge` is the only command that deletes conversations and credentials.
+`cxz purge` deletes a whole installation — every conversation and every credential.
 
 ```sh
 cxz purge --dry-run                                  # list what would go

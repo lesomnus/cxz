@@ -369,6 +369,25 @@ func (c *Controller) Forget(id string) error {
 	}
 	return c.save(id, State{Deleted: true})
 }
+
+// Purge leaves nothing, where Forget leaves a tombstone. Forget's tombstone
+// exists to stop generation for a session that is still listed; a purged session
+// is not listed anywhere, so the record itself is the thing to remove.
+func (c *Controller) Purge(id string) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if f := c.active[id]; f != nil {
+		f()
+	}
+	delete(c.active, id)
+	for _, path := range []string{c.preferencePath(id), c.path(id)} {
+		if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+			return err
+		}
+	}
+	return nil
+}
+
 func (c *Controller) Close() {
 	c.mu.Lock()
 	c.closed = true

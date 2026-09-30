@@ -17,6 +17,9 @@ func (s *Server) Docker(ctx context.Context, r *api.DockerInput) (*api.Receipt, 
 	if s.manager == nil && r.Action == "mcp-control" {
 		return s.mcpControl(ctx, r.Spec)
 	}
+	if s.manager == nil && r.Action == "session-purge" {
+		return s.purgeSession(ctx, r.Spec)
+	}
 	if s.manager == nil && r.Action == "mcp-state" {
 		return s.mcpState(ctx)
 	}

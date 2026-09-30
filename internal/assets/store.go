@@ -94,6 +94,43 @@ func Add(ctx context.Context, root, project, session, name string, size int64, s
 	return dest, nil
 }
 
+// Forget removes one session's uploads: the published links first, then every
+// blob the session's flob namespace claims. Order matters because an export is
+// a hard link to the blob, so the blob cannot be the last reference until the
+// link is gone. flob reclaims a shared blob only when the namespace letting go
+// held its final reference, so a file two sessions uploaded survives the first
+// purge and disappears with the second.
+func Forget(ctx context.Context, root, project, session string) error {
+	if !ValidID(project) || !ValidID(session) {
+		return fmt.Errorf("invalid attachment scope")
+	}
+	if err := os.RemoveAll(filepath.Join(ExportRoot(root, project), session)); err != nil {
+		return err
+	}
+	store := NewStores(root).Use(session)
+	walker, ok := flob.AsWalker(store)
+	if !ok {
+		return fmt.Errorf("asset storage cannot inventory a session's blobs")
+	}
+	var digests []flob.Digest
+	for info, err := range walker.Walk(ctx) {
+		if err != nil {
+			// A namespace that never received an upload has nothing to walk.
+			if errors.Is(err, os.ErrNotExist) {
+				return nil
+			}
+			return err
+		}
+		digests = append(digests, info.Digest())
+	}
+	for _, d := range digests {
+		if err := store.Erase(ctx, d); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // Reject short, oversized or cancelled streams before flob commits any blob.
 type sizedReader struct {
 	ctx       context.Context
