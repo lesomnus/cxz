@@ -282,17 +282,14 @@ func (m *model) sessionScreen() string {
 	if box != "" {
 		box += "\n"
 	}
-	permission := ""
-	if full := m.fullPermissionNotice(); full != "" {
-		permission = " " + warning.Render(full)
-	}
+	agent := m.agentStatus()
 	context := muted.Render(m.contextStatus())
-	quota := m.quotaStatus(time.Now(), max(1, width-ansi.StringWidth(permission)-ansi.StringWidth(context)-3))
+	quota := m.quotaStatus(time.Now(), max(1, width-ansi.StringWidth(agent)-ansi.StringWidth(context)-3))
 	if quota != "" {
 		quota += " "
 	}
 	quota += context
-	info := permission + strings.Repeat(" ", max(1, width-1-ansi.StringWidth(permission)-ansi.StringWidth(quota))) + quota + " "
+	info := agent + strings.Repeat(" ", max(1, width-1-ansi.StringWidth(agent)-ansi.StringWidth(quota))) + quota + " "
 	track := ""
 	if !m.view.AtBottom() {
 		track = m.scrollTrack()

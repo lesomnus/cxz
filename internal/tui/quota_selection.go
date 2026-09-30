@@ -69,32 +69,55 @@ func statusQuotaWindows(provider, model string, all []agentview.Window) ([]agent
 // Resolve provider default through the current run's catalog, not its display
 // label (which may also include effort). The latest confirmed catalog wins.
 func (m *model) quotaModel() string {
+	model, _ := m.modelStatus()
+	return model
+}
+
+// modelStatus reads the newest catalog this run confirmed, so one walk answers
+// both what the quota belongs to and what the composer shows. Without a
+// catalog, the model the session was created with is all there is to say, and
+// the reasoning level is unknown rather than assumed.
+func (m *model) modelStatus() (model, effort string) {
 	s := m.current()
 	if s == nil {
-		return ""
+		return "", ""
 	}
-	model := s.Model
+	model = s.Model
 	for i := len(m.events[s.Id]) - 1; i >= 0; i-- {
 		e := m.events[s.Id][i]
 		if e.Kind != "models" || e.RunId != "" && e.RunId != s.RunId {
 			continue
 		}
-		var v struct {
-			Model  string
-			Models []agentview.ModelOption
-		}
+		var v modelCatalog
 		if json.Unmarshal(e.Payload, &v) != nil {
 			continue
 		}
+		effort = v.currentEffort()
 		model = v.Model
 		if model == "" || model == "default" {
 			for _, o := range v.Models {
 				if o.Default {
-					return o.ID
+					return o.ID, effort
 				}
 			}
 		}
-		return model
+		return model, effort
 	}
-	return model
+	return model, ""
+}
+
+// The composer's left slot says what is about to run: the model, and the
+// reasoning level when the provider reports one. Permission mode used to sit
+// here, but it is a policy saved once and read back from the server -- not
+// something that changes under the reader while they type.
+func (m *model) agentStatus() string {
+	model, effort := m.modelStatus()
+	if model == "" {
+		return ""
+	}
+	out := " " + accent.Render(pickerLabel(model))
+	if effort != "" && effort != "default" {
+		out += muted.Render(" · " + pickerLabel(effort))
+	}
+	return out
 }

@@ -321,13 +321,6 @@ func (m *model) approvalDetails() {
 	m.recordLocal("/approval", p.Text+"\n"+detail)
 }
 
-func (m *model) fullPermissionNotice() string {
-	if s := m.current(); s != nil && s.PermissionMode == "full" {
-		return "FULL"
-	}
-	return ""
-}
-
 func localReport(text string, width int) string {
 	return indentBlock(ansi.Hardwrap(safeText(text), max(1, width-2), true))
 }
