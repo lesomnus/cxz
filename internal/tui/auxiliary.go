@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/x/ansi"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/agentview"
 	"github.com/lesomnus/cxz/internal/auxiliary"
@@ -427,7 +426,7 @@ func (m *model) inlineSummary(e *api.Event) (string, bool) {
 	if text == "" {
 		return "", false
 	}
-	return indentBlock(muted.Render(ansi.Hardwrap("Summary · "+safeText(text), max(1, m.view.Width-2), true))), false
+	return indentBlock(muted.Render("Summary") + "\n" + markdownView(text, max(1, m.view.Width-2))), false
 }
 func (m *model) suggestionGhost() string {
 	if m.input.Value() != "" {

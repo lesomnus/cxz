@@ -239,7 +239,7 @@ func TestMarkdownAndCodeSafety(t *testing.T) {
 			t.Fatal(want, plain)
 		}
 	}
-	if strings.Contains(plain, "```") || strings.Contains(view, "secret") || !strings.Contains(view, fmt.Sprintf("48;5;%d", codeBackground)) {
+	if strings.Contains(plain, "```") || strings.Contains(view, "secret") || !strings.Contains(view, "\x1b[48;2;43;43;43m") {
 		t.Fatal(view)
 	}
 	for _, row := range strings.Split(view, "\n") {

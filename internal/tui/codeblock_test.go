@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 
@@ -21,7 +20,7 @@ func TestFencedCodeBlockBackgroundAndPadding(t *testing.T) {
 	}
 	for _, row := range rows {
 		plain := ansi.Strip(row)
-		if ansi.StringWidth(row) != 20 || !strings.HasPrefix(plain, " ") || !strings.Contains(row, fmt.Sprintf("48;5;%d", codeBackground)) {
+		if ansi.StringWidth(row) != 20 || !strings.HasPrefix(plain, " ") || !strings.Contains(row, "\x1b[48;2;43;43;43m") {
 			t.Fatalf("unfilled code row: %q", row)
 		}
 	}
