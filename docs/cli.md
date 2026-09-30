@@ -204,12 +204,17 @@ See [remote access](remote.md).
 ## Destructive
 
 ```sh
+cxz session purge --dry-run SESSION
+cxz session purge --yes SESSION
 cxz purge --dry-run
 cxz purge --yes [--groups containers,projects,state,tools,networks,local]
 ```
 
-The only command that deletes conversations and credentials. See
-[projects and sessions](projects.md#purge).
+The only two commands that delete conversations. `session purge` destroys one —
+journal, agent profile, uploads, memories and the record itself; deleting a session
+keeps all of that. `purge` does the whole installation, credentials included. Both
+refuse to run without `--yes`, and `--dry-run` reports the exact targets. See
+[projects and sessions](projects.md#deleting-a-session).
 
 ## Development
 

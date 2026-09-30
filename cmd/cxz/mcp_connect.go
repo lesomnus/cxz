@@ -14,11 +14,28 @@ import (
 	"runtime"
 )
 
+// inheritedFlag reads a flag from whichever ancestor declares it. The connection
+// flags live on the root command, and reading them off the subcommand instead
+// panics rather than falling back, so the walk has to stop where the flag is
+// actually defined rather than where the value happens to be set.
+func inheritedFlag(c *xli.Command, name string) string {
+	for cur := c; cur != nil; {
+		if cur.GetFlags().Get(name) != nil {
+			return flg.MustGet[string](cur, name)
+		}
+		if !cur.HasParent() {
+			return ""
+		}
+		cur = cur.Parent()
+	}
+	return ""
+}
+
 // configConnect picks the connection a project belongs to, so a command that
 // names a project reaches the installation holding it rather than the default.
 // project and session are rewritten to the names that connection knows.
 func configConnect(ctx context.Context, c *xli.Command, project, session *string) (api.SessionsClient, func(), error) {
-	root, e := filepath.Abs(flg.MustGet[string](c, "state"))
+	root, e := filepath.Abs(inheritedFlag(c, "state"))
 	if e != nil {
 		return nil, nil, e
 	}
@@ -26,8 +43,8 @@ func configConnect(ctx context.Context, c *xli.Command, project, session *string
 	if e != nil {
 		return nil, nil, e
 	}
-	selected := flg.MustGet[string](c, "endpoint")
-	tokenFile := flg.MustGet[string](c, "token-file")
+	selected := inheritedFlag(c, "endpoint")
+	tokenFile := inheritedFlag(c, "token-file")
 	projectSource, projectName := multiclient.Split(*project)
 	sessionSource, sessionName := multiclient.Split(*session)
 	if projectSource != "" {

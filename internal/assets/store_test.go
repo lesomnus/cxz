@@ -77,6 +77,75 @@ func TestSessionAssetsPreserveNamesAndShareContent(t *testing.T) {
 	}
 }
 
+// Purging a session must reclaim the bytes only it held, and must not reclaim
+// bytes a surviving session still points at -- content-addressed storage means
+// two sessions that uploaded the same file share one blob.
+func TestForgettingOneSessionKeepsWhatAnotherStillHolds(t *testing.T) {
+	root := t.TempDir()
+	ctx := t.Context()
+	put := func(session, body string) string {
+		t.Helper()
+		path, err := Add(ctx, root, "project", session, "note.txt", int64(len(body)), strings.NewReader(body))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return path
+	}
+	shared := put("one", "shared")
+	sharedAgain := put("two", "shared")
+	onlyMine := put("one", "mine alone")
+	// Read the store the way an operator would: is this content still on disk
+	// anywhere under cas, whatever namespace or shard holds it?
+	stored := func(body string) bool {
+		t.Helper()
+		found := false
+		err := filepath.WalkDir(filepath.Join(root, "cas"), func(path string, d os.DirEntry, err error) error {
+			if err != nil || d.IsDir() {
+				return err
+			}
+			data, err := os.ReadFile(path)
+			if err != nil {
+				return err
+			}
+			if string(data) == body {
+				found = true
+			}
+			return nil
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return found
+	}
+	if err := Forget(ctx, root, "project", "one"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(shared); !os.IsNotExist(err) {
+		t.Fatal("purged session kept its export", err)
+	}
+	if _, err := os.Stat(onlyMine); !os.IsNotExist(err) {
+		t.Fatal("purged session kept its export", err)
+	}
+	if _, err := os.Stat(sharedAgain); err != nil {
+		t.Fatal("purging one session broke another's export", err)
+	}
+	if !stored("shared") {
+		t.Fatal("reclaimed a blob another session still references")
+	}
+	if stored("mine alone") {
+		t.Fatal("left the purged session's only blob behind")
+	}
+	// Purge is re-runnable, and a session that never uploaded has nothing to lose.
+	for _, session := range []string{"one", "three"} {
+		if err := Forget(ctx, root, "project", session); err != nil {
+			t.Fatal(session, err)
+		}
+	}
+	if _, err := os.Stat(sharedAgain); err != nil {
+		t.Fatal("a re-run reached into a surviving session", err)
+	}
+}
+
 type failedReader struct{}
 
 func (failedReader) Read([]byte) (int, error) { return 0, fmt.Errorf("connection lost") }

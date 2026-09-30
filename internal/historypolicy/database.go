@@ -17,6 +17,17 @@ func Floor(ctx context.Context, tx *sql.Tx, id string) (uint64, error) {
 	}
 	return n, err
 }
+
+// ForgetFloor drops a purged session's floor. Leaving it would silently trim the
+// history of any later session that happened to reuse the id.
+func ForgetFloor(ctx context.Context, tx *sql.Tx, id string) error {
+	if _, err := tx.ExecContext(ctx, "CREATE TABLE IF NOT EXISTS history_floors(session_id TEXT PRIMARY KEY, seq INTEGER NOT NULL)"); err != nil {
+		return err
+	}
+	_, err := tx.ExecContext(ctx, "DELETE FROM history_floors WHERE session_id=?", id)
+	return err
+}
+
 func AdvanceFloor(ctx context.Context, tx *sql.Tx, id string, n uint64) error {
 	old, err := Floor(ctx, tx, id)
 	if err != nil || old >= n {

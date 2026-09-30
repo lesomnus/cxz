@@ -268,7 +268,10 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 			if e := transport.RequireToken(ctx, runtime.Token); e != nil {
 				return nil, status.Error(codes.Unauthenticated, e.Error())
 			}
-			return handler(ctx, req)
+			// Holding the project token is what identifies the manager. The local
+			// socket next to it is reachable from inside the container, so the two
+			// surfaces cannot be trusted with the same things.
+			return handler(context.WithValue(ctx, managerAuthorityKey{}, true), req)
 		}), grpc.ChainStreamInterceptor(func(srv any, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 			if e := transport.RequireToken(stream.Context(), runtime.Token); e != nil {
 				return status.Error(codes.Unauthenticated, e.Error())
