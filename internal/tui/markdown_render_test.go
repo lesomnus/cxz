@@ -52,9 +52,13 @@ func TestMarkdownDetectedSyntaxAndIndexedBackground(t *testing.T) {
 	defer lipgloss.SetColorProfile(old)
 	for _, profile := range []termenv.Profile{termenv.ANSI256, termenv.TrueColor} {
 		lipgloss.SetColorProfile(profile)
+		background := fmt.Sprintf("48;5;%d", codeBackground)
+		if profile == termenv.TrueColor {
+			background = "48;2;43;43;43"
+		}
 		for _, language := range []string{"python", ""} {
 			view := markdownView("```"+language+"\n#!/usr/bin/env python3\ndef greet(name):\n    return \"Hello\"\n```", 40)
-			if !strings.Contains(view, "38;") || !strings.Contains(view, fmt.Sprintf("48;5;%d", codeBackground)) {
+			if !strings.Contains(view, "38;") || !strings.Contains(view, background) {
 				t.Fatal("highlight missing", view)
 			}
 			if profile == termenv.ANSI256 && strings.Contains(view, "38;2;") {
@@ -77,6 +81,9 @@ func TestMarkdownDetectedSyntaxAndIndexedBackground(t *testing.T) {
 					}
 					r, g, b, _ := cell.Style.Bg.RGBA()
 					gray := uint32(8+10*(codeBackground-232)) * 0x101
+					if profile == termenv.TrueColor {
+						gray = 43 * 0x101
+					}
 					if r != gray || g != r || b != r {
 						t.Fatalf("code background %04x %04x %04x, want %04x", r, g, b, gray)
 					}

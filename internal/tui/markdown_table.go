@@ -19,6 +19,16 @@ func indexedBackground(line string, index int) string {
 	return background + panelStyleSequence.ReplaceAllStringFunc(line, func(style string) string { return style + background }) + "\x1b[0m"
 }
 
+// Truecolor code fill sits between the old gray (38) and sidebar gray (48).
+// Retain the darker indexed fallback where the palette has no intermediate shade.
+func codeRowBackground(line string) string {
+	if lipgloss.ColorProfile().Name() != "TrueColor" {
+		return indexedBackground(line, codeBackground)
+	}
+	background := "\x1b[48;2;43;43;43m"
+	return background + panelStyleSequence.ReplaceAllStringFunc(line, func(style string) string { return style + background }) + "\x1b[0m"
+}
+
 func markdownTable(rows [][]string, alignments []extast.Alignment, width int) string {
 	if len(rows) == 0 || len(alignments) == 0 {
 		return ""

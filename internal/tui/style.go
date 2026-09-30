@@ -62,13 +62,13 @@ var (
 	promptTimestamp = lipgloss.NewStyle().Foreground(lipgloss.Color("#23262C"))
 )
 
-// Conversation backgrounds stay indexed so the terminal's own palette decides
-// the shade; see indexedBackground. Each is named because it is applied in more
-// than one place that has to agree: a code block paints its header, body and
-// footer, and a prompt is painted both in the transcript and where it is pinned.
+// Code uses an intermediate truecolor gray, with an indexed fallback.
+// Prompt fills stay indexed and agree between transcript and pinned rows.
 const (
-	codeBackground   = 235
-	promptBackground = 239
+	// ANSI256 cannot represent a shade between 235 and the panel's 236.
+	codeBackground      = 235
+	codeBackgroundColor = "#2B2B2B"
+	promptBackground    = 239
 )
 
 // Columns of promptBackground kept to the left of the cursor, so the fill does

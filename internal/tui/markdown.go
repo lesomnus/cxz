@@ -119,13 +119,13 @@ func markdownContent(raw string, width int) (string, []codeButton) {
 		rows := strings.Split(ansi.Hardwrap(code, max(1, width-1), true), "\n")
 		for i := range rows {
 			line := clip(" "+rows[i], max(1, width))
-			rows[i] = indexedBackground(line+strings.Repeat(" ", max(0, width-ansi.StringWidth(line))), codeBackground)
+			rows[i] = codeRowBackground(line + strings.Repeat(" ", max(0, width-ansi.StringWidth(line))))
 		}
 		id := len(sources)
 		sources = append(sources, b.String())
 		header := strings.Repeat(" ", max(0, width-3)) + fmt.Sprintf("\x1b]cxz-copy;%d\a", id) + " ⧉ "
-		rows = append([]string{indexedBackground(header, codeBackground)}, rows...)
-		rows = append(rows, indexedBackground(strings.Repeat(" ", max(1, width)), codeBackground))
+		rows = append([]string{codeRowBackground(header)}, rows...)
+		rows = append(rows, codeRowBackground(strings.Repeat(" ", max(1, width))))
 		return strings.Join(rows, "\n") + "\n\n"
 	}
 	render = func(n ast.Node, width int) string {
@@ -139,7 +139,11 @@ func markdownContent(raw string, width int) (string, []codeButton) {
 		case *ast.String:
 			return string(v.Value)
 		case *ast.CodeSpan:
-			return codeStyle.Render(strings.ReplaceAll(string(v.Text(source)), "\n", " "))
+			style := codeStyle
+			if lipgloss.ColorProfile().Name() == "TrueColor" {
+				style = style.Background(lipgloss.Color(codeBackgroundColor))
+			}
+			return style.Render(strings.ReplaceAll(string(v.Text(source)), "\n", " "))
 		case *ast.FencedCodeBlock, *ast.CodeBlock:
 			return blockCode(n, width)
 		case *ast.Heading:
