@@ -2072,6 +2072,15 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+x":
 			m.input.Reset()
 			return m, nil
+		case "right":
+			if !m.focusList && !m.creating && m.input.Value() == "" {
+				if text := m.suggestion(); text != "" {
+					m.input.SetValue(safeText(text))
+					m.input.CursorEnd()
+					m.resize()
+					return m, nil
+				}
+			}
 		case "alt+g":
 			if !m.focusList && !m.creating {
 				return m, m.applySuggestion()
