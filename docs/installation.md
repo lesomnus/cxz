@@ -46,8 +46,9 @@ Use the same state directory for every command against one installation.
 Dockerfiles, Compose, features and lifecycle hooks to the official devcontainer
 CLI. It does not reuse a container VS Code already started.
 
-- **No configuration**: you get a plain Debian devcontainer with a non-root
-  `vscode` user.
+- **No configuration**: you get the installation's
+  [default devcontainer](docker.md#the-default-devcontainer) — your own template
+  if you wrote one, otherwise the built-in one.
 - **Several configurations**: interactive runs ask; scripts pass `--config`.
 - **Changed configuration**: existing containers need recreating before it applies.
 

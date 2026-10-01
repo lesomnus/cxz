@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -22,9 +23,20 @@ func TestMissingDevcontainerUsesManagedDefault(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var cfg map[string]string
+	var cfg map[string]any
 	if json.Unmarshal(data, &cfg) != nil || cfg["image"] == "" || cfg["workspaceMount"] == "" {
 		t.Fatal("incomplete default config", string(data))
+	}
+	// The built-in default is a template, so it is rendered like one: the name
+	// resolves and cxz binds the workspace the template deliberately omits.
+	if cfg["name"] != filepath.Base(workspace) {
+		t.Fatal("project name not substituted", string(data))
+	}
+	if cfg["workspaceFolder"] != "/workspaces/"+filepath.Base(workspace) {
+		t.Fatal("workspace folder not filled in", string(data))
+	}
+	if mount, _ := cfg["workspaceMount"].(string); !strings.Contains(mount, "source="+workspace+",") {
+		t.Fatal("workspace not bound", string(data))
 	}
 	entries, _ := os.ReadDir(workspace)
 	if len(entries) != 0 || p.Config != "" {

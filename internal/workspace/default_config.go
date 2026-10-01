@@ -2,11 +2,9 @@ package workspace
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/projectconfig"
 )
 
@@ -38,18 +36,15 @@ func (m *Manager) provisionConfiguration(p *Project) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if spec.Template != nil {
-		return m.materializeTemplate(p, spec.Template)
+	// The installation's template and the built-in one materialize through the
+	// same path, so the fallback is a devcontainer anyone can read rather than a
+	// literal, and both obey the same rules. p.Config stays empty either way, so
+	// adding a real devcontainer later is still discovered.
+	template := spec.Template
+	if template == nil {
+		if template, err = projectconfig.Builtin(); err != nil {
+			return "", err
+		}
 	}
-	file = filepath.Join(m.Root, "projects", p.ID, "default-devcontainer.json")
-	if err := os.MkdirAll(filepath.Dir(file), 0700); err != nil {
-		return "", err
-	}
-	// Leave Config empty so adding a real devcontainer later is discovered.
-	err = core.WriteJSON(file, map[string]any{
-		"name": p.Name, "image": "mcr.microsoft.com/devcontainers/base:bookworm", "remoteUser": "vscode",
-		"workspaceFolder": "/workspaces/" + filepath.Base(p.Workspace),
-		"workspaceMount":  "source=" + p.Workspace + ",target=/workspaces/" + filepath.Base(p.Workspace) + ",type=bind",
-	})
-	return file, err
+	return m.materializeTemplate(p, template)
 }

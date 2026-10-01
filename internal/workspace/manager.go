@@ -395,7 +395,7 @@ func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (result *api.
 	if e = preflight(&configured); e != nil {
 		return nil, e
 	}
-	composeOverride, composeDigest, e := m.prepareComposeOverride(ctx, &configured)
+	override, e := m.prepareComposeOverride(ctx, &configured)
 	if e != nil {
 		return nil, e
 	}
@@ -448,10 +448,10 @@ func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (result *api.
 	if r.Recreate && r.Confirmed {
 		p.Network = m.sharedNetwork()
 	}
-	if p.ContainerID != "" && p.ComposeOverrideDigest != composeDigest {
+	if p.ContainerID != "" && p.ComposeOverrideDigest != override.Digest {
 		return nil, fmt.Errorf("devcontainer.compose changed; run cxz project recreate to apply it to the existing container")
 	}
-	p.ComposeOverrideDigest = composeDigest
+	p.ComposeOverrideDigest = override.Digest
 	if e = m.save(ctx, p); e != nil {
 		return nil, e
 	}
@@ -462,7 +462,7 @@ func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (result *api.
 	if kind == "" {
 		kind = "claude"
 	}
-	if e = m.provision(ctx, p, kind, composeOverride, configFile); e != nil {
+	if e = m.provision(ctx, p, kind, override, configFile); e != nil {
 		p.Error = e.Error()
 		_ = m.save(context.WithoutCancel(ctx), p)
 		return nil, e
