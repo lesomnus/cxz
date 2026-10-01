@@ -199,8 +199,12 @@ func TestConversationClickRestoresFocusFromPanel(t *testing.T) {
 				t.Fatal("conversation click did not preserve the session and return focus")
 			}
 			m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("!")})
-			if m.input.Value() != "draft!" {
-				t.Fatal("typing still routed to project navigation")
+			want := "draft!"
+			if composer {
+				want = "!draft"
+			}
+			if m.input.Value() != want {
+				t.Fatalf("typing after click: got %q want %q", m.input.Value(), want)
 			}
 		}
 	}

@@ -94,6 +94,8 @@ func helpView(width int, topics ...string) string {
 		lines = append(lines, name+"  "+muted.Render(entry.summary))
 	}
 	shortcuts := []struct{ category, keys, text string }{
+		{"Input", "Shift+arrows / mouse drag", "Select composer text; click to place cursor"},
+		{"Input", "Ctrl+C / Ctrl+X", "Copy / cut selected composer text; Esc clears selection"},
 		{"Input", "Ctrl+← / Ctrl+→", "Move by word (Alt+B/F also supported)"},
 		{"Navigation", "F9", "Start/stop debug recording and save"},
 		{"Input", "Ctrl+S", "Send message or command"},

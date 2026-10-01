@@ -135,6 +135,8 @@ type model struct {
 	sessions                []*api.Session
 	selected                int
 	input                   textarea.Model
+	composerSelection       *composerSelection
+	composerLayout          *composerLayout
 	drafts                  map[string]string
 	localHelp               map[string]uint64
 	localOutput             map[string]string
@@ -1182,6 +1184,10 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.copyFocusedText()
 			return m, nil
 		case "esc":
+			if m.composerAvailable() && !m.panelFocus && !m.focusList && m.selectedComposerText() != "" {
+				m.composerSelection = nil
+				return m, nil
+			}
 			if m.previewInteraction() && m.selectionValid() && m.textSelection.text() != "" {
 				m.textSelection = nil
 				return m, nil
@@ -1236,6 +1242,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if sel := m.textSelection; sel != nil && sel.dragging && (v.Action == tea.MouseActionMotion || v.Action == tea.MouseActionRelease) && (v.X-m.contentOffset() != sel.startX || v.Y != sel.startY) {
 			m.toolClick = nil
+		}
+		if m.composerMouse(v) {
+			return m, nil
 		}
 		if m.selectionMouse(v) {
 			return m, nil
@@ -1952,6 +1961,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if v.Type == tea.KeyCtrlP && !v.Paste && m.workflow == nil && m.restartConfirm == nil {
 			return m, m.openPastes()
+		}
+		if handled, cmd := m.composerKey(v); handled {
+			return m, cmd
 		}
 		if handled, cmd := m.chipKey(v); handled {
 			m.resize()
