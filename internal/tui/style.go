@@ -188,6 +188,8 @@ func (m *model) saveDraft() {
 }
 
 func (m *model) restoreDraft() {
+	m.composerSelection = nil
+	m.composerLayout = nil
 	m.interruptKey = ""
 	m.approvalOffset = 0
 	m.input.Reset()
@@ -322,7 +324,7 @@ func (m *model) sessionScreen() string {
 		body = m.redactOverlay(m.pasteOverlay(conversation)) + "\n" + track + "\n"
 	}
 	body += box + preview + strings.Repeat("\n", m.errorHeight()) + m.recordingStatusRow("  "+status, width) + "\n" +
-		frame(m.decorateInputPastes(composer.View()), width, !modal && !m.focusList && !m.focusApproval && m.pathHints == nil) + "\n"
+		frame(m.composerSelectionView(m.decorateInputPastes(composer.View())), width, !modal && !m.focusList && !m.focusApproval && m.pathHints == nil) + "\n"
 	if m.terminalHeight() > 0 {
 		body += m.terminalView() + "\n"
 	}

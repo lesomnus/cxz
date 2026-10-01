@@ -94,6 +94,7 @@ func (m *model) beginSelection(v tea.MouseMsg) {
 		return
 	}
 	m.textSelection = nil
+	m.composerSelection = nil
 	rows := strings.Split(m.conversationView(), "\n")
 	if v.Y < 0 || v.Y >= len(rows) {
 		return
@@ -130,6 +131,8 @@ func (m *model) copyFocusedText() {
 		return
 	}
 	switch {
+	case m.composerAvailable() && !m.focusList && !m.focusApproval && m.selectedComposerText() != "":
+		m.copyText(m.selectedComposerText())
 	case m.previewVisible() && m.filePreview.focused && m.previewInteraction():
 		m.copyText(m.filePreview.source)
 	case m.report != nil:
