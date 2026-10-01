@@ -73,6 +73,10 @@ uses animated dots; suggestion loading uses the same placeholder color.
 A one-shot request reads at most 2048 retained events from an idle session and
 requires the final turn's user input and response to be present.
 
+Press `Right` while the composer is empty to copy the visible suggestion into an
+editable draft, with the cursor at the end. This does not send it. Loading dots
+and error messages are not accepted; existing input keeps normal cursor movement.
+
 `Alt+G` re-checks with the server that the suggestion is still valid before copying
 it. **You review and send it yourself** — nothing is ever sent on your behalf. A
 draft you have already typed is never overwritten, and `Alt+Enter` keeps inserting a
