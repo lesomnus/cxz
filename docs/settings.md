@@ -29,6 +29,10 @@ them.
 - **Docker** — the shared engine's mode. See [containers and Docker](docker.md).
 - **File mappings** — below.
 
+Two directories sit beside `settings.jsonc` rather than inside it: `share/`
+(below) and `devcontainer/`, your
+[default devcontainer template](docker.md#your-own-default-template).
+
 ## The shared source directory
 
 `share/`, beside `settings.jsonc`, is where you keep files you want delivered into
