@@ -145,9 +145,9 @@ func TestDefaultComposeTemplateWithHostOverride(t *testing.T) {
 	if err := preflight(&configured); err != nil {
 		t.Fatal(err)
 	}
-	override, digest, err := m.prepareComposeOverride(context.Background(), &configured)
-	if err != nil || override == "" || len(digest) != 64 {
-		t.Fatal(override, digest, err)
+	override, err := m.prepareComposeOverride(context.Background(), &configured)
+	if err != nil || override.ComposeFile == "" || len(override.Digest) != 64 {
+		t.Fatal(override, err)
 	}
 	if p.Config != "" {
 		t.Fatal("fallback pinned into project")

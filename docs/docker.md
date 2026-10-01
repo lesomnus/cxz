@@ -20,10 +20,20 @@ Dockerfiles, Compose, features and lifecycle hooks to the official devcontainer
 CLI. Projects without one fall back, in this order:
 
 1. your **default template**, if the installation has one;
-2. a plain Debian devcontainer with a non-root `vscode` user. Deliberately
-   boring: enough to run an agent, nothing opinionated about your toolchain.
+2. the **built-in default**, which is itself a template:
+   [`internal/projectconfig/devcontainer/`](../internal/projectconfig/devcontainer/).
+   Read it rather than taking this page's word for it — it is a real
+   `devcontainer.json`, comments and all, embedded into the binary. It names a
+   Go development image, a non-root remote user, shared caches for the module
+   and build directories, and modest CPU/memory limits.
 
 Either way, changes need a `cxz project recreate`.
+
+The built-in default is a template so that there is one code path and one set of
+rules: whatever this page says about templates below is equally true of it, and
+replacing it for your installation means putting your own template where cxz
+looks first. There is no command that copies it out — read it in the repository
+and write the version you want.
 
 ### Your own default template
 
@@ -79,6 +89,9 @@ shape for a directory of several. Create the files yourself; `cxz up` validates
 and publishes them, and refuses with an explanation if the manager predates the
 feature.
 
+The built-in default is the worked example — it is a template, under
+[`internal/projectconfig/devcontainer/`](../internal/projectconfig/devcontainer/).
+
 ### Not the same as the shared Compose override
 
 A `docker-compose.yaml` **inside** `devcontainer/` is part of your default
@@ -103,6 +116,23 @@ without editing each repository's devcontainer.
 - Set `devcontainer.compose` only to point at a different path.
 
 Existing containers need recreating.
+
+### Projects that do not use Compose
+
+The override is written as Compose because most devcontainers are. An image or
+Dockerfile devcontainer never invokes Compose, so cxz translates the override
+for it instead: the development service's `volumes` become devcontainer mounts
+and its `environment` becomes `containerEnv`. Both spellings of a volume work,
+short (`/host/src:/workspaces:ro`) and long, and a source that is not a path is
+treated as a named volume exactly as Compose would.
+
+Anything with no equivalent is **refused by name** rather than dropped — a
+sidecar service, `privileged`, a `command`, a top-level `networks` block. An
+override that quietly did less than it says would be worse than one that does
+not start, and the fix is to give that project a Compose devcontainer of its own.
+
+cxz's own environment (`CXZ_STATE` and friends) is applied after the override, so
+an override cannot redefine it.
 
 ## The shared Docker engine
 

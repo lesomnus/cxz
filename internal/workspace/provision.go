@@ -20,7 +20,7 @@ import (
 	"strings"
 )
 
-func (m *Manager) provision(ctx context.Context, p *Project, kind, composeOverride, configFile string) error {
+func (m *Manager) provision(ctx context.Context, p *Project, kind string, override Override, configFile string) error {
 	var e error
 	if e = m.checkpoint(ctx, p, "configuration"); e != nil {
 		return e
@@ -98,6 +98,11 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind, composeOverri
 	if v, ok := cfg["containerEnv"].(map[string]any); ok {
 		env = v
 	}
+	// The shared override is applied before cxz's own keys below, so a project
+	// cannot be handed a devcontainer whose override redefined CXZ_STATE.
+	for name, value := range override.Image.Env {
+		env[name] = value
+	}
 	if dockerHost != "" {
 		env["DOCKER_HOST"] = dockerHost
 		env["DOCKER_CONTEXT"] = ""
@@ -110,6 +115,11 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind, composeOverri
 	env["CXZ_SECRET_STORAGE"] = "host-tmpfs"
 	cfg["containerEnv"] = env
 	mounts, _ := cfg["mounts"].([]any)
+	for _, mount := range override.Image.Mounts {
+		mounts = append(mounts, mount)
+	}
+	// cxz's own two go last, and the Compose path below strips exactly those two
+	// again because Compose declares them itself.
 	mounts = append(mounts, "type=volume,source="+p.Volume+",target=/cxz/state", "type=volume,source="+m.ToolsVolume+",target=/cxz/tools,readonly")
 	cfg["mounts"] = mounts
 	hooks := map[string]any{}
@@ -134,8 +144,8 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind, composeOverri
 	if e != nil {
 		return e
 	}
-	if composeOverride != "" {
-		files = append(files, composeOverride)
+	if override.ComposeFile != "" {
+		files = append(files, override.ComposeFile)
 	}
 	if len(files) > 0 {
 		// The CLI's string-mount conversion gives Compose volumes a project
