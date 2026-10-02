@@ -97,6 +97,8 @@ func helpView(width int, topics ...string) string {
 		{"Input", "Shift+arrows / mouse drag", "Select composer text; click to place cursor"},
 		{"Input", "Ctrl+C / Ctrl+X", "Copy / cut selected composer text; Esc clears selection"},
 		{"Input", "Ctrl+← / Ctrl+→", "Move by word (Alt+B/F also supported)"},
+		{"Input", "Ctrl+Shift+← / →", "Select by word"},
+		{"Input", "Home / End", "Start/end of the visible row; again steps to the next row"},
 		{"Navigation", "F9", "Start/stop debug recording and save"},
 		{"Input", "Ctrl+S", "Send message or command"},
 		{"Input", "Ctrl+Enter", "Send message or command (Windows console / Kitty protocol)"},

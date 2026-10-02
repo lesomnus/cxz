@@ -42,6 +42,9 @@ Needs at least 40 × 14 cells. Follows terminal resizes.
 | `Ctrl+D` | Detach |
 | `PgUp` `PgDn`, wheel | Scroll |
 | `Ctrl+Home` / `Ctrl+End` | First line / follow the latest |
+| `Home` / `End` | Start / end of the row you can see; again steps to the next row |
+| `Shift` + arrows | Select by character or row |
+| `Ctrl+Shift+←` / `→` | Select by word |
 
 Paste never submits, however it arrives.
 
