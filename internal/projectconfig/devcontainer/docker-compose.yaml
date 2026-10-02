@@ -1,0 +1,43 @@
+# Compose for the default devcontainer. Named volumes here are per project:
+# Compose prefixes them with its own project name, which cxz derives from the
+# project, so shell history and caches do not run together across projects.
+#
+# ${cxz:workspace} is the workspace path on the host. It is needed because this
+# file is materialized outside the workspace, so the `..` a repository's own
+# .devcontainer would use points at the wrong directory.
+services:
+  dev:
+    image: ghcr.io/lesomnus/dev-golang:1.27
+    command: sleep infinity
+
+    user: "1000"
+    environment:
+      - SHELL=/bin/zsh
+
+    volumes:
+      # The image reads HISTFILE=/commandhistory/.zsh_history, so without this
+      # the history of every shell opened through cxz dies with the container.
+      - command.history:/commandhistory
+      - go.cache.mod:/home/hypnos/go/pkg/mod
+      - go.cache.bin:/home/hypnos/.cache/go-build
+
+      - ${cxz:workspace}:/workspace
+
+    # Deliberately absent, unlike this repository's own .devcontainer:
+    # privileged, which the shared Docker engine makes unnecessary, and a bind
+    # of ${HOME}/workspaces, which would let an agent read every other project.
+    # Add either per installation through the shared Compose override.
+    deploy:
+      resources:
+        limits:
+          cpus: "4"
+          memory: 8G
+          pids: 2048
+        reservations:
+          cpus: "2"
+          memory: 4G
+
+volumes:
+  command.history:
+  go.cache.mod:
+  go.cache.bin:

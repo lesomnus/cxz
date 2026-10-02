@@ -24,19 +24,21 @@ func TestMissingDevcontainerUsesManagedDefault(t *testing.T) {
 		t.Fatal(err)
 	}
 	var cfg map[string]any
-	if json.Unmarshal(data, &cfg) != nil || cfg["image"] == "" || cfg["workspaceMount"] == "" {
+	if json.Unmarshal(data, &cfg) != nil || cfg["dockerComposeFile"] == nil {
 		t.Fatal("incomplete default config", string(data))
 	}
-	// The built-in default is a template, so it is rendered like one: the name
-	// resolves and cxz binds the workspace the template deliberately omits.
+	// The built-in default is a template, so it is rendered like one.
 	if cfg["name"] != filepath.Base(workspace) {
 		t.Fatal("project name not substituted", string(data))
 	}
-	if cfg["workspaceFolder"] != "/workspaces/"+filepath.Base(workspace) {
-		t.Fatal("workspace folder not filled in", string(data))
+	// The Compose file travels beside the materialized devcontainer.json and
+	// carries the real workspace path, since it sits outside the workspace.
+	compose, err := os.ReadFile(filepath.Join(filepath.Dir(file), cfg["dockerComposeFile"].(string)))
+	if err != nil {
+		t.Fatal("Compose file not materialized beside the config", err)
 	}
-	if mount, _ := cfg["workspaceMount"].(string); !strings.Contains(mount, "source="+workspace+",") {
-		t.Fatal("workspace not bound", string(data))
+	if !strings.Contains(string(compose), workspace+":") {
+		t.Fatal("workspace not bound into the Compose file", string(compose))
 	}
 	entries, _ := os.ReadDir(workspace)
 	if len(entries) != 0 || p.Config != "" {
