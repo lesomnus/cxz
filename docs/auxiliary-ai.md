@@ -70,6 +70,18 @@ Summaries appear directly below the final response without a dialog. Suggestions
 appear as ghost text in the empty composer and hide as soon as you type. Loading
 uses animated dots; suggestion loading uses the same placeholder color.
 
+A summary is at most five short bullet lines — goal, current state, what remains,
+what is blocked — in its own words rather than the reply's sentences, so it is
+read at a glance instead of re-read. A suggestion is one imperative line you can
+send as it stands. Both use the language of your recent messages.
+
+The instructions behind that are one Markdown file,
+[internal/auxiliary/instructions.md](../internal/auxiliary/instructions.md),
+embedded in the binary. Every task shares it; the task name in the message
+decides which fields of the reply are filled. The numbers it states are
+substituted from the same constants that enforce the limits below, so the prompt
+cannot ask for a reply that would then be rejected for its size.
+
 A one-shot request reads at most 2048 retained events from an idle session and
 requires the final turn's user input and response to be present.
 
@@ -118,7 +130,8 @@ and these numbers do not promise a particular cost saving.
 | Checkpoint refresh trigger | over 20 KiB of JSON, or 32 turns |
 | Checkpoint | 6 KiB |
 | Context sent to the model | 32 KiB plus fixed instructions |
-| Structured model reply | 12 KiB |
+| Structured model reply | 12 KiB; 6 KiB per summary, 2 KiB per suggestion |
+| Asked of the model | 5 bullets of 120 characters, 500 characters of suggestion |
 | Retained recent turns | 48 KiB of JSON, or 64 turns |
 | Inline summaries | Last 32 per session, at most 4 KiB each |
 | Derived state | 256 sessions, least recently used evicted |

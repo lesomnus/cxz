@@ -266,7 +266,7 @@ func decodeOutput(text string) (Output, error) {
 	if e := json.Unmarshal([]byte(text), &o); e != nil {
 		return o, fmt.Errorf("auxiliary response was not valid structured output")
 	}
-	if len(o.Checkpoint) > CheckpointLimit || len(o.Summary) > 6000 || len(o.Suggestion) > 2000 {
+	if len(o.Checkpoint) > CheckpointLimit || len(o.Summary) > SummaryLimit || len(o.Suggestion) > SuggestionLimit {
 		return Output{}, fmt.Errorf("auxiliary response exceeded field limits")
 	}
 	o.Usage = nil
