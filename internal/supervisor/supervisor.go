@@ -285,12 +285,7 @@ func Run(ctx context.Context, root, id string) error {
 	go srv.Serve(ln)
 	go func() {
 		defer close(s.done)
-		sc := bufio.NewScanner(out)
-		sc.Buffer(make([]byte, 64*1024), 16*1024*1024)
-		for sc.Scan() {
-			s.consume(append([]byte(nil), sc.Bytes()...))
-		}
-		if sc.Err() != nil {
+		if s.read(out) != nil {
 			s.kill()
 		}
 		waitErr := s.cmd.Wait()
@@ -400,6 +395,69 @@ func (s *Supervisor) clearPending() {
 		s.event("approval_resolved", "canceled", id, nil, nil)
 		delete(s.pending, id)
 	}
+}
+
+// MaxLineBytes bounds one message from the agent. A message this large is a
+// malfunction rather than a long answer, so the bound exists to stop a runaway
+// stream from filling the journal, not to trim replies. It is the budget this
+// reader has always had: an image a tool read comes back base64-encoded on this
+// stream, which is the one thing here that legitimately runs to megabytes.
+const MaxLineBytes = 16 << 20
+
+// read consumes the agent's stream one line at a time, up to MaxLineBytes. A
+// bufio.Scanner used to do this, but it discards the oversized line and then
+// stops scanning, so one bad message killed the agent and left no record of
+// what had arrived. Here the bytes that were read are journaled and the
+// truncation is reported before the stream is abandoned: the rest of that line
+// cannot be parsed, and resuming mid-line would feed the projection garbage.
+// Only a read failure or an overflow is an error; EOF is the agent exiting.
+func (s *Supervisor) read(out io.Reader) error {
+	r := bufio.NewReaderSize(out, 64*1024)
+	for {
+		line, overflow, err := readLine(r, MaxLineBytes)
+		line = bytes.TrimRight(line, "\r\n")
+		if overflow {
+			s.recordOverflow(line)
+			return fmt.Errorf("agent message exceeds %d bytes; recorded %d and stopped reading", MaxLineBytes, len(line))
+		}
+		if len(line) > 0 {
+			s.consume(line)
+		}
+		if err != nil {
+			if err == io.EOF {
+				return nil
+			}
+			return err
+		}
+	}
+}
+
+// readLine reads through the next newline, reporting overflow instead of
+// silently cutting: the caller has to know that what it holds is a fragment.
+func readLine(r *bufio.Reader, limit int) ([]byte, bool, error) {
+	var line []byte
+	for {
+		chunk, err := r.ReadSlice('\n')
+		if len(line)+len(chunk) > limit {
+			// ReadSlice aliases the reader's buffer, so the fragment is copied.
+			return append(line, chunk[:limit-len(line)]...), true, nil
+		}
+		line = append(line, chunk...)
+		if err == bufio.ErrBufferFull {
+			continue
+		}
+		return line, false, err
+	}
+}
+
+// recordOverflow keeps the fragment in the journal as the vendor bytes it is,
+// and states the truncation where a reader will see it. The raw event is not
+// parsed by anyone, so an incomplete JSON object is stored, not projected.
+func (s *Supervisor) recordOverflow(fragment []byte) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.event("raw", "", "", nil, fragment)
+	s.event("diagnostic", fmt.Sprintf("agent message exceeded %d bytes; the first %d were recorded and the session stopped reading", MaxLineBytes, len(fragment)), "", nil, nil)
 }
 func (s *Supervisor) consume(raw []byte) {
 	s.mu.Lock()
