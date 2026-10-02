@@ -184,3 +184,90 @@ func TestComposerSelectionGraphemesAndModal(t *testing.T) {
 		t.Fatal("mouse reached composer through settings")
 	}
 }
+
+// Word-wise selection has to agree with word-wise motion: whatever ctrl+left
+// walks over is what ctrl+shift+left takes.
+func TestComposerWordSelection(t *testing.T) {
+	m := conversationModel()
+	m.input.SetValue("alpha beta gamma")
+	m.resize()
+	m.input.CursorEnd()
+	m.Update(tea.KeyMsg{Type: tea.KeyCtrlShiftLeft})
+	if got := m.selectedComposerText(); got != "gamma" {
+		t.Fatalf("one word back selected %q", got)
+	}
+	m.Update(tea.KeyMsg{Type: tea.KeyCtrlShiftLeft})
+	if got := m.selectedComposerText(); got != "beta gamma" {
+		t.Fatalf("two words back selected %q", got)
+	}
+	// Coming back the other way shrinks the same selection rather than starting
+	// a new one in the other direction.
+	m.Update(tea.KeyMsg{Type: tea.KeyCtrlShiftRight})
+	if got := m.selectedComposerText(); got != " gamma" {
+		t.Fatalf("forward shrink selected %q", got)
+	}
+	// A plain word move is still a move, and it drops the selection.
+	m.Update(tea.KeyMsg{Type: tea.KeyCtrlLeft})
+	if m.selectedComposerText() != "" {
+		t.Fatal("word motion kept a selection")
+	}
+}
+
+// Home and End address the row on screen. A wrapped draft is one line in the
+// value and several rows in the view, so walking it needs the view's idea of an
+// edge, and a second press has to move rather than sit there.
+func TestComposerHomeEndFollowVisibleRows(t *testing.T) {
+	m := conversationModel()
+	// Long enough to wrap whatever width the composer settles on, and a second
+	// line behind it so a row edge is not also a line edge.
+	m.input.SetValue(strings.Repeat("alpha beta gamma delta ", 8) + "zeta\nsecond line here")
+	m.resize()
+	rows := m.composerRows()
+	if len(rows) < 4 || rows[1].line != 0 {
+		t.Fatal("fixture did not wrap", rows)
+	}
+	press := func(k tea.KeyType) int {
+		m.Update(tea.KeyMsg{Type: k})
+		return composerPosition(m.input)
+	}
+	m.setComposerPosition(rows[0].start + 10)
+	if got := press(tea.KeyHome); got != rows[0].start {
+		t.Fatal("home left the row start", got)
+	}
+	// The first row ends mid line, so its last position is the one that still
+	// draws on it: the position after it is where the next row begins.
+	if got := press(tea.KeyEnd); got != rows[0].end-1 {
+		t.Fatal("end did not stop at the visible row end", got)
+	}
+	if got := press(tea.KeyEnd); got != rows[1].end-1 {
+		t.Fatal("end again did not step to the next row", got)
+	}
+	if got := press(tea.KeyHome); got != rows[1].start {
+		t.Fatal("home did not return to this row's start", got)
+	}
+	if got := press(tea.KeyHome); got != rows[0].start {
+		t.Fatal("home again did not step to the previous row", got)
+	}
+	if got := press(tea.KeyHome); got != rows[0].start {
+		t.Fatal("home ran off the front of the draft", got)
+	}
+	// The last row of a line owns the position after its last character: no row
+	// starts there, so the cursor still draws on it.
+	last := rows[len(rows)-1]
+	m.setComposerPosition(last.start)
+	if got := press(tea.KeyEnd); got != last.end {
+		t.Fatal("end short of the final row", got)
+	}
+	if got := press(tea.KeyEnd); got != last.end {
+		t.Fatal("end ran off the back of the draft", got)
+	}
+	// An edge key is a move, so it collapses a selection like the arrows do.
+	m.Update(tea.KeyMsg{Type: tea.KeyShiftLeft})
+	if m.selectedComposerText() == "" {
+		t.Fatal("no selection to collapse")
+	}
+	press(tea.KeyHome)
+	if m.selectedComposerText() != "" {
+		t.Fatal("home kept a selection")
+	}
+}
