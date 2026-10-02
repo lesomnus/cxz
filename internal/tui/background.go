@@ -171,15 +171,22 @@ func (m *model) backgroundStatus() string {
 		return ""
 	}
 	n := 0
-	for _, t := range state.Tasks {
+	// A background task carries no start time, so its own identity sets the
+	// phase. Map order is not an identity, so the lowest active id is taken:
+	// the phase has to hold still between frames or the spinner stutters.
+	first := ""
+	for id, t := range state.Tasks {
 		if t.Active {
+			if first == "" || id < first {
+				first = id
+			}
 			n++
 		}
 	}
 	if n == 0 {
 		return ""
 	}
-	return focus.Render(workingSpinner(m.pulse)) + accent.Render(fmt.Sprintf(" background %d · /background", n))
+	return running.Render(workingSpinner(m.pulse+spinnerKeyPhase(first))) + accent.Render(fmt.Sprintf(" background %d · /background", n))
 }
 
 func (m *model) backgroundReport() string {

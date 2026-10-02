@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"hash/fnv"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -30,9 +31,37 @@ func workingState(state string) bool {
 	return state == "working" || state == "waiting_input"
 }
 
-func workingSpinner(pulse int) string {
+func workingSpinner(step int) string {
 	frames := []rune("⣟⣯⣷⣾⣽⣻⢿⡿")
-	return string(frames[pulse%len(frames)])
+	return string(frames[step%len(frames)])
+}
+
+// Every spinner advances on the one pulse, so the screen repaints once for all
+// of them, but each starts from its own phase. Two spinners that began at
+// different moments stepping in lockstep reads as a single animation rather
+// than two things working, and the eye notices before the mind does.
+//
+// The phase is bounded so it stays an index on a 32-bit int, and stays
+// non-negative so the frame lookup cannot run off the front of the list.
+const spinnerPulseMs = 100
+const spinnerPhases = 1 << 10
+
+// spinnerPhase derives the phase from when the work began: a spinner that
+// starts now starts on its first frame.
+func spinnerPhase(startMs int64) int {
+	if startMs <= 0 {
+		return 0
+	}
+	return int(startMs / spinnerPulseMs % spinnerPhases)
+}
+
+// spinnerKeyPhase is for work that carries no start time of its own. The phase
+// is arbitrary but stable, which is all the eye needs to read two spinners as
+// two things.
+func spinnerKeyPhase(key string) int {
+	h := fnv.New32a()
+	_, _ = h.Write([]byte(key))
+	return int(h.Sum32() % spinnerPhases)
 }
 
 // A question stalls the turn until it is answered, yet the session stays in a
@@ -168,7 +197,7 @@ func (m *model) sessionIndicator(s *api.Session) string {
 		return " "
 	}
 	if workingState(s.State) || len(m.pendingInputs[s.Id]) > 0 || m.hasActiveBackground(s) {
-		return focus.Render(workingSpinner(m.pulse))
+		return running.Render(workingSpinner(m.pulse + spinnerPhase(s.CreatedAt)))
 	}
 	if a := m.sessionActivity[s.Id]; a != nil && a.done > a.seen {
 		return accent.Render("+")
@@ -189,5 +218,27 @@ func (m *model) acknowledgeSession() {
 	}
 	if a := m.sessionActivity[s.Id]; a != nil {
 		a.seen = max(a.seen, m.cursor[s.Id])
+	}
+}
+
+// terminalFocus records whether this window holds the keyboard and repaints what
+// has already copied a style. The two greens rank what is live, so a background
+// window keeping the bright one reads as "typing goes here" from across a
+// screen, which it does not.
+func (m *model) terminalFocus(blurred bool) {
+	if m.blurred == blurred {
+		return
+	}
+	m.blurred = blurred
+	keyboardStep(blurred)
+	m.input.Cursor.Style = inputCursorStyle
+	m.aliasInput.Cursor.Style = inputCursorStyle
+	m.accountSearch.Cursor.Style = inputCursorStyle
+	m.accountAlias.Cursor.Style = inputCursorStyle
+	m.accountName.Cursor.Style = inputCursorStyle
+	if d := m.questionDialog; d != nil {
+		for i := range d.other {
+			d.other[i].Cursor.Style = inputCursorStyle
+		}
 	}
 }

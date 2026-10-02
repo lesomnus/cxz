@@ -217,6 +217,8 @@ type model struct {
 	lastPromptEnd           int
 	latestPrompt            string
 	pulse                   int
+	blinkFrom               int
+	blurred                 bool
 	workingSince            int64
 	backgroundSnapshots     map[string]backgroundSnapshot
 	watchContext            context.Context
@@ -361,7 +363,9 @@ func RunProject(ctx context.Context, c api.SessionsClient, project *api.Project,
 	m.debugRecorder = &debugRecorder{}
 	m.cursorOutput = &cursorWriter{out: os.Stdout, keyboard: extendedKeyboard, recorder: m.debugRecorder}
 	in := recordedKeyboardInput(os.Stdin, m.debugRecorder)
-	p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithContext(ctx), tea.WithMouseAllMotion(), tea.WithOutput(m.cursorOutput), tea.WithInput(in))
+	// Focus reporting is what lets the bright green mean the keyboard: without
+	// it a window left in the background still claims to hold it.
+	p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithContext(ctx), tea.WithMouseAllMotion(), tea.WithReportFocus(), tea.WithOutput(m.cursorOutput), tea.WithInput(in))
 	m.program = p
 	_, e := runKeyboardProgram(ctx, p, in, m.cursorOutput, m.debugRecorder)
 	if path, err := m.finishRecording(); err != nil {
@@ -450,7 +454,7 @@ func (m *model) refresh() tea.Cmd {
 }
 func timer() tea.Cmd { return tea.Tick(time.Second, func(t time.Time) tea.Msg { return tick(t) }) }
 func (m *model) Init() tea.Cmd {
-	return tea.Batch(m.refresh(), m.watchResources(), timer(), textarea.Blink, pulseTimer())
+	return tea.Batch(m.refresh(), m.watchResources(), timer(), pulseTimer())
 }
 func (m *model) current() *api.Session {
 	if len(m.sessions) == 0 {
@@ -991,6 +995,20 @@ func (m *model) action(kind, text string) tea.Cmd {
 	}
 }
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	// Terminal focus decides what the bright green is allowed to claim, so it is
+	// read before any branch below can consume the message. Styles already
+	// copied into live widgets are repainted here; widgets built later read the
+	// step they are built under.
+	switch msg.(type) {
+	case tea.FocusMsg:
+		m.terminalFocus(false)
+	case tea.BlurMsg:
+		m.terminalFocus(true)
+	case tea.KeyMsg:
+		// Typing restarts the blink phase. A cursor that happens to be blinked
+		// off at the moment a character lands reads as lag.
+		m.blinkFrom = m.pulse
+	}
 	switch v := msg.(type) {
 	case libraryResult:
 		return m, m.receiveLibrary(v)
@@ -1554,6 +1572,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.refresh()
 	case pulseTick:
 		m.pulse++
+		// One second on, one off, like every other blink on screen. A background
+		// window holds the cursor still: there is nothing to type into.
+		m.input.Cursor.Blink = !m.blurred && (m.pulse-m.blinkFrom)%10 >= 5
 		return m, pulseTimer()
 	case permissionResult:
 		delete(m.permissionUpdating, v.id)
@@ -2314,6 +2335,11 @@ func (m *model) View() (out string) {
 		out = m.recordingBadge(out)
 		m.debugRecorder.Add(debugEvent{Kind: "render", Duration: time.Since(start).Microseconds(), Count: len(out)})
 	}()
+	// The step the keyboard marks belongs to whoever is drawing, so it is set
+	// from this model rather than left wherever the last focus change put it.
+	// terminalFocus still runs on the change itself, to repaint the widgets that
+	// hold a copy of the style instead of reading it.
+	keyboardStep(m.blurred)
 	if m.sessionArchive != nil {
 		return m.sessionArchiveScreen()
 	}
