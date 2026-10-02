@@ -34,11 +34,20 @@ func TestBackgroundLaunchIsNotCompletion(t *testing.T) {
 	if !strings.Contains(m.backgroundStatus(), "background 1") || m.activeWork() {
 		t.Fatal("background must remain visible independently of idle foreground")
 	}
+	seen := map[string]bool{}
 	for _, pulse := range []int{0, 1, 8} {
 		m.pulse = pulse
-		if !strings.HasPrefix(ansi.Strip(m.backgroundStatus()), workingSpinner(pulse)+" background 1") {
+		text := ansi.Strip(m.backgroundStatus())
+		frame := spinnerFrame(text)
+		if frame == "" || !strings.HasPrefix(text, frame+" background 1") {
 			t.Fatal("background status does not use the shared eight-dot spinner")
 		}
+		seen[frame] = true
+	}
+	// Eight frames, so pulse 0 and 8 are the same one and pulse 1 is not: the
+	// phase offsets the spinner without changing the rate it turns.
+	if len(seen) != 2 {
+		t.Fatal("spinner did not turn with the pulse", seen)
 	}
 	m.events["s"] = append(m.events["s"], bgEvent(4, `{"type":"system","subtype":"background_tasks_changed","tasks":[]}`))
 	m.render()

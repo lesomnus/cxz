@@ -91,6 +91,14 @@ State changes do not accumulate in the transcript. Only `working` animates a
 spinner; `idle` is silent, and stopping, failing or interrupting shows up in the
 notice row. All of it stays in the journal regardless.
 
+Every spinner turns at the same rate but starts from its own phase, taken from
+when that work began, so two of them read as two things working rather than one
+animation. The bright green marks where the keyboard is; while the terminal
+window itself is blurred it steps back to the quiet green, since the keyboard is
+then not in cxz at all. A spinner stays bright either way — the work continues
+in a window you are not looking at — and the composer cursor holds still instead
+of blinking.
+
 A finished turn ends in a dim metrics footer: duration, cost, then tokens with
 `↑` input, `↓` output, `↺` cache read, `⊕` cache write, `∑` total. Missing values
 are omitted rather than guessed. Costs below ten cents switch to `¢`. Claude

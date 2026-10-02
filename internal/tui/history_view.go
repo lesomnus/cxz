@@ -148,9 +148,13 @@ func (m *model) conversationView() string {
 			}
 		}
 	}
+	dots := 0
+	if j := m.auxiliaryJob(); j != nil {
+		dots = spinnerKeyPhase(j.ID)
+	}
 	for i := range rows {
 		if m.auxiliaryLoadingRows[m.view.YOffset+i] {
-			rows[i] = indentBlock(muted.Render(clip("Summary "+auxiliaryDots(m.pulse), max(1, m.view.Width-2))))
+			rows[i] = indentBlock(muted.Render(clip("Summary "+auxiliaryDots(m.pulse+dots), max(1, m.view.Width-2))))
 		}
 	}
 	promptRows := map[int]bool{}
@@ -162,7 +166,7 @@ func (m *model) conversationView() string {
 	if m.activeWork() && m.view.AtBottom() && len(rows) > 0 {
 		// render reserves a final transcript row for this transient indicator.
 		index := min(len(rows)-1, max(0, len(m.historyTimes)-m.view.YOffset-1))
-		rows[index] = indentBlock(focus.Render(workingSpinner(m.pulse)) + " " + muted.Render(clip(m.workingLabel(time.Now()), max(1, m.view.Width-4))))
+		rows[index] = indentBlock(running.Render(workingSpinner(m.pulse+spinnerPhase(m.workingSince))) + " " + muted.Render(clip(m.workingLabel(time.Now()), max(1, m.view.Width-4))))
 	}
 	pinned := ""
 	for _, span := range m.promptSpans {

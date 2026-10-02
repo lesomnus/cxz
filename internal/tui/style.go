@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/bubbles/cursor"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
@@ -38,7 +39,15 @@ const (
 )
 
 var (
+	// focus and inputCursorStyle mark where the keyboard is, so they step back to
+	// the quiet green while the terminal window itself is blurred: the keyboard
+	// is then not in this application at all, and claiming it is a lie the eye
+	// reads from across the screen. keyboardStep reassigns them on a focus
+	// change rather than per frame, so a widget built later picks up the step it
+	// is built under. running means what it says and never steps back, since
+	// work continues in a window you are not looking at.
 	focus            = lipgloss.NewStyle().Foreground(lipgloss.Color(focusGreen))
+	running          = lipgloss.NewStyle().Foreground(lipgloss.Color(focusGreen))
 	accent           = lipgloss.NewStyle().Foreground(lipgloss.Color(accentGreen))
 	magenta          = lipgloss.NewStyle().Foreground(lipgloss.Color("#ED79D4"))
 	inputCursorStyle = focus
@@ -61,6 +70,18 @@ var (
 	// has to read against is the same in a light or dark theme.
 	promptTimestamp = lipgloss.NewStyle().Foreground(lipgloss.Color("#23262C"))
 )
+
+// keyboardStep moves every mark that means "the keyboard is here" between the
+// two greens. Called only when the terminal's focus changes, so a frame costs
+// nothing and widgets constructed afterwards inherit the current step; the live
+// ones carry a copy of the style, so they are repainted by their owner.
+func keyboardStep(blurred bool) {
+	step := lipgloss.NewStyle().Foreground(lipgloss.Color(focusGreen))
+	if blurred {
+		step = lipgloss.NewStyle().Foreground(lipgloss.Color(accentGreen))
+	}
+	focus, inputCursorStyle = step, step
+}
 
 // Code uses an intermediate truecolor gray, with an indexed fallback.
 // Prompt fills stay indexed and agree between transcript and pinned rows.
@@ -152,6 +173,11 @@ func newComposer() textarea.Model {
 	input.KeyMap.WordBackward = key.NewBinding(key.WithKeys("ctrl+left", "alt+b"))
 	input.KeyMap.WordForward = key.NewBinding(key.WithKeys("ctrl+right", "alt+f"))
 	input.Cursor.Style = inputCursorStyle
+	// The widget's own blink is a self-rescheduling chain: it needs every tick to
+	// reach it and the next command to be run, so any branch of Update that
+	// consumes a tick stops the cursor until something refocuses the input. The
+	// shared pulse cannot stop, so the phase is driven from there instead.
+	input.Cursor.SetMode(cursor.CursorStatic)
 	input.Placeholder = "Ask a question… (Ctrl+S to send · /help)"
 	input.Prompt = "❯ "
 	input.SetPromptFunc(2, func(line int) string {

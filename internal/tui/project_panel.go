@@ -512,7 +512,7 @@ func (m *model) panelScreen() string {
 	start, end := m.panelRange(layout)
 	lines := []string{"", accent.Bold(true).Render("Projects"), muted.Render("↑/↓ select · Enter open"), ""}
 	if m.deletingID != "" {
-		lines[2] = warning.Render(workingSpinner(m.pulse) + " Deleting session…")
+		lines[2] = warning.Render(workingSpinner(m.pulse+spinnerKeyPhase(m.deletingID)) + " Deleting session…")
 	} else if d := m.deleteConfirm; d != nil && time.Now().Before(d.until) {
 		seconds := int(time.Until(d.until).Seconds()) + 1
 		lines[2] = warning.Render(fmt.Sprintf("Ctrl+X again · delete (%ds)", seconds))

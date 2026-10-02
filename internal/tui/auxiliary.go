@@ -415,8 +415,8 @@ func sameAuxiliaryJob(a, b *auxiliary.Job) bool {
 	}
 	return a.ID == b.ID && a.Status == b.Status && a.Summary == b.Summary && a.Suggestion == b.Suggestion && a.Error == b.Error && a.SummaryRequested == b.SummaryRequested && a.SuggestionRequested == b.SuggestionRequested
 }
-func auxiliaryDots(pulse int) string {
-	n := pulse / 4 % 4
+func auxiliaryDots(step int) string {
+	n := step / 4 % 4
 	return strings.Repeat(".", n) + strings.Repeat(" ", 3-n)
 }
 func auxiliaryLoading(j *auxiliary.Job) bool {
@@ -464,7 +464,7 @@ func (m *model) suggestionGhost() string {
 			}
 		}
 		if auxiliaryLoading(j) && j.SuggestionRequested {
-			return "Suggestion " + auxiliaryDots(m.pulse)
+			return "Suggestion " + auxiliaryDots(m.pulse+spinnerKeyPhase(j.ID))
 		}
 		if j.Status == "failed" && j.SuggestionRequested && j.Error != "" {
 			return "Suggestion · " + safeText(j.Error)
