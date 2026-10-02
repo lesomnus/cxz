@@ -348,7 +348,7 @@ func (c *Controller) execute(ctx context.Context, cancel context.CancelFunc, id 
 	}
 	if cfg.Suggestion.Enabled {
 		if s.Job.Summary != "" {
-			context := "\nSummary of this turn (generated, not authoritative):\n" + Clip(s.Job.Summary, 4<<10)
+			context := "\nSummary of this turn (generated, not authoritative):\n" + Clip(s.Job.Summary, RetainedSummaryLimit)
 			text = Clip(text, MaxInput-len(context)) + context
 		}
 		o, e := call(cfg.Suggestion, "suggestion", text)

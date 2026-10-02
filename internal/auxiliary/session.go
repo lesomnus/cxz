@@ -248,7 +248,7 @@ func rememberSummary(s *State, j *Job) {
 	if j.Summary == "" {
 		return
 	}
-	v := Summary{Run: j.Run, Turn: j.Turn, Text: Clip(j.Summary, 4<<10)}
+	v := Summary{Run: j.Run, Turn: j.Turn, Text: Clip(j.Summary, RetainedSummaryLimit)}
 	for i := range s.Summaries {
 		if s.Summaries[i].Run == v.Run && s.Summaries[i].Turn == v.Turn {
 			s.Summaries[i] = v
