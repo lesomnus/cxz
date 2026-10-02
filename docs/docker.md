@@ -25,8 +25,8 @@ CLI. Projects without one fall back, in this order:
    Read it rather than taking this page's word for it — it is a real
    `devcontainer.json` and `docker-compose.yaml`, comments and all, embedded
    into the binary. It is Compose-based, like this repository's own
-   `.devcontainer`: a Go development image, a non-root user, per-project volumes
-   for shell history and the Go module and build caches, and CPU/memory limits.
+   `.devcontainer`: a Go development image, a non-root user, CPU/memory limits,
+   per-project shell history and machine-wide Go module and build caches.
 
 Either way, changes need a `cxz project recreate`.
 
@@ -103,11 +103,32 @@ An image or `build` template is simpler: leave `workspaceFolder` and
 `workspaceMount` out and cxz binds the workspace for you. It never rewrites
 either for a Compose template, where the mount is the Compose file's business.
 
-Compose also gives you **per-project volumes for free**. Compose prefixes a
-named volume with its project name, which cxz derives from the project, so
-`go.cache.mod` above becomes `cxz-<owner>-<project>_go.cache.mod`. A devcontainer
-`mounts` entry does the opposite: `type=volume,source=NAME` is a literal Docker
-volume name, shared by every project that names it.
+#### Choosing a volume's scope
+
+Compose decides scope by how a volume is declared, and the default uses both:
+
+```yaml
+volumes:
+  command.history:            # per project: Compose prefixes it
+  go.cache.mod:
+    name: cxz-go-cache-mod    # one for the machine: the name escapes the prefix
+```
+
+A bare declaration becomes `cxz-<owner>-<project>_command.history`, so each
+project keeps its own. A pinned `name:` is used verbatim, so every project
+sharing that name shares the volume — which is what a content-addressed cache
+wants and what shell history does not.
+
+Compose **creates** a pinned volume if it is missing. Only `external: true`
+demands that it already exist, which would make a project fail to start on a
+fresh machine, so the default does not use it. A devcontainer `mounts` entry
+(`type=volume,source=NAME`) behaves like a pinned name — verbatim, created on
+demand, shared by every project naming it — which is why an image-based template
+cannot get per-project volumes this way.
+
+These volumes carry Compose's labels, not cxz's, so `cxz purge` leaves them
+alongside everything else it did not label. Remove them with `docker volume rm`
+if you want them gone.
 
 Limits: 256 files and 1 MiB total, regular files only — no symlinks, since they
 could not be snapshotted meaningfully. The executable bit is preserved, so
