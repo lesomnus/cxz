@@ -130,7 +130,7 @@ and these numbers do not promise a particular cost saving.
 | Checkpoint refresh trigger | over 20 KiB of JSON, or 32 turns |
 | Checkpoint | 6 KiB |
 | Context sent to the model | 32 KiB plus fixed instructions |
-| Structured model reply | 12 KiB; a summary over 6 KiB or a suggestion over 2 KiB is clipped |
+| Structured model reply | 1 MiB; refused past that |
 | Asked of the model | 5 bullets of 120 characters, 500 characters of suggestion |
 | Retained recent turns | 48 KiB of JSON, or 64 turns |
 | Inline summaries | Last 32 per session, at most 4 KiB each |
@@ -138,10 +138,16 @@ and these numbers do not promise a particular cost saving.
 | Concurrency | 4 tasks, serial per account, 32 sessions running or queued |
 | Time | 3 minutes per task; 15 minutes for a dedicated login |
 
-A summary or suggestion that overshoots its budget is shown clipped, marked
-`[truncated]`, rather than reported as a failure — it is text you read, and what
-arrived is still worth reading. Only the checkpoint is refused when it is too
-large, because it is fed back as context instead of displayed.
+What the model is asked for and what is accepted are far apart on purpose. A
+summary twice the length it was asked for is still a summary, so it is shown as
+it came; overshooting a budget never costs you the reply. Past 1 MiB a reply is
+refused, because it is one JSON object and half of one cannot be read — that is
+the bound against a malfunction, not against a long answer. Anything in between
+is shown, clipped at the limit and marked `[truncated]` if it ever gets there.
+
+The checkpoint is the exception: it is refused when too large, because it is fed
+back as context for every later turn instead of displayed, and a truncated one
+would quietly rot what the model is told.
 
 A checkpoint is refreshed only when the budget is exceeded, and a failed refresh
 keeps the old one. When the storage limit drops older turns, the model is told the

@@ -64,11 +64,14 @@ func Provider(ctx context.Context, bin, dir string, auth accounts.LaunchAuth, in
 	var thread string
 	total := 0
 	scanner := bufio.NewScanner(stdout)
-	scanner.Buffer(make([]byte, 4096), 256<<10)
+	// The reply arrives as one line, so a line has to hold MaxOutput with room
+	// for the envelope around it; otherwise the stream would break below the
+	// limit the reply is actually measured against.
+	scanner.Buffer(make([]byte, 64<<10), MaxOutput+64<<10)
 	for scanner.Scan() {
 		raw := scanner.Bytes()
 		total += len(raw)
-		if total > 2<<20 {
+		if total > 4*MaxOutput {
 			return out, fmt.Errorf("provider output limit exceeded")
 		}
 		var v struct {

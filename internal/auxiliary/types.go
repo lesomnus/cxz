@@ -139,15 +139,24 @@ type Input struct {
 }
 
 const MaxInput = 32 << 10
-const MaxOutput = 12 << 10
 const RecentLimit = 20 << 10
 
-// Hard limits, in UTF-8 bytes: a field past one of these is thrown away, and a
-// summary past the retained one keeps only its first part in the session's
-// history. The prompt is told to stay inside them; see instructions.go.
+// MaxOutput bounds one structured reply. A reply this large is a malfunction
+// rather than a long answer, so the bound is deliberately far above anything the
+// prompt asks for: overshooting a budget by a line must never cost the reply.
+// It is the one limit that has to refuse rather than clip, because the reply is
+// a single JSON object and half of one cannot be read.
+const MaxOutput = 1 << 20
+
+// Hard limits, in UTF-8 bytes. Summary and suggestion are clipped and marked at
+// theirs, so what arrived is still shown. The checkpoint is refused at its own,
+// because it is fed back as context for every later turn instead of displayed,
+// and the retained one bounds the copy of a summary kept in session history for
+// a later suggestion to read. The prompt is told to stay well inside all of
+// them; see instructions.go.
 const CheckpointLimit = 6 << 10
-const SummaryLimit = 6000
-const SuggestionLimit = 2000
+const SummaryLimit = MaxOutput
+const SuggestionLimit = MaxOutput
 const RetainedSummaryLimit = 4 << 10
 
 func Clip(s string, n int) string {
