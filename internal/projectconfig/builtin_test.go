@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+
+	"github.com/goccy/go-yaml"
 )
 
 // The built-in default now goes through the same validation and rendering as a
@@ -45,11 +47,35 @@ func TestBuiltinDevcontainerIsAValidTemplate(t *testing.T) {
 	if !strings.Contains(compose, "/host/my-project:/"+strings.TrimPrefix(cfg["workspaceFolder"].(string), "/")) {
 		t.Fatal("workspace not bound into the Compose file", compose)
 	}
-	// Named volumes are what make history and caches per project: Compose
-	// prefixes them. A literal external name would share them installation-wide.
-	for _, volume := range []string{"command.history", "go.cache.mod", "go.cache.bin"} {
-		if !strings.Contains(compose, volume) {
-			t.Fatal("default lost its", volume, "volume")
+	// Volume scope is deliberate and opposite for the two kinds. Compose prefixes
+	// a bare declaration with the project, so shell history stays per project; a
+	// pinned name escapes that prefix, so a content-addressed cache is one cache
+	// for the machine. Getting either backwards is silent until it bites.
+	var declared struct {
+		Volumes map[string]struct {
+			Name     string `yaml:"name"`
+			External bool   `yaml:"external"`
+		} `yaml:"volumes"`
+	}
+	if err = yaml.Unmarshal([]byte(compose), &declared); err != nil {
+		t.Fatal(err)
+	}
+	for volume, want := range map[string]string{
+		"command.history": "",
+		"go.cache.mod":    "cxz-go-cache-mod",
+		"go.cache.bin":    "cxz-go-cache-build",
+	} {
+		got, exists := declared.Volumes[volume]
+		if !exists {
+			t.Fatal("default lost its", volume, "volume", declared.Volumes)
+		}
+		if got.Name != want {
+			t.Fatal(volume, "pinned name is", got.Name, "want", want)
+		}
+		// Compose creates a pinned volume but refuses a missing external one, so
+		// external would make a fresh machine fail to start a project.
+		if got.External {
+			t.Fatal(volume, "is external; a fresh machine would have no such volume")
 		}
 	}
 	// It is still a devcontainer anyone can read, comments and all.

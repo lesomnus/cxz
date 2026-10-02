@@ -1,10 +1,11 @@
-# Compose for the default devcontainer. Named volumes here are per project:
-# Compose prefixes them with its own project name, which cxz derives from the
-# project, so shell history and caches do not run together across projects.
+# Compose for the default devcontainer.
 #
 # ${cxz:workspace} is the workspace path on the host. It is needed because this
 # file is materialized outside the workspace, so the `..` a repository's own
 # .devcontainer would use points at the wrong directory.
+#
+# Volume scope is chosen per volume at the bottom of this file: a bare
+# declaration is per project, a pinned `name:` is shared by every project.
 services:
   dev:
     image: ghcr.io/lesomnus/dev-golang:1.27
@@ -38,6 +39,14 @@ services:
           memory: 4G
 
 volumes:
+  # Bare: Compose prefixes it with the project, so each project keeps its own
+  # shell history rather than interleaving with every other one.
   command.history:
+
+  # Pinned: `name:` escapes that prefix, so these are one cache for the whole
+  # machine, which is what a content-addressed cache wants. Compose creates a
+  # pinned volume if it is missing; only `external: true` would demand it exist.
   go.cache.mod:
+    name: cxz-go-cache-mod
   go.cache.bin:
+    name: cxz-go-cache-build
