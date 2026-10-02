@@ -8,6 +8,18 @@ Recovery after a crash or a container replacement is driven by the journal and t
 manifests beside it, both fsynced. SQLite holds projections and caches built from
 them; it is not the source of truth and not a backup.
 
+## One message
+
+A single message from the agent is bounded at **16 MiB**. A reply is nothing like
+that large; what reaches megabytes is an image a tool read, which comes back
+base64-encoded on the same stream. The bound is there to stop a runaway stream
+from filling the journal, never to trim an answer: anything under it is recorded
+whole.
+
+Past it, the bytes that did arrive are kept as the vendor record, the truncation
+is reported as a diagnostic in the transcript, and the session stops reading. It
+does not resume from the middle of a message it cannot parse.
+
 ## Two independent budgets
 
 | | Where | Default | What it bounds |
