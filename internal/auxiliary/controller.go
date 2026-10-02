@@ -287,6 +287,13 @@ func (c *Controller) execute(ctx context.Context, cancel context.CancelFunc, id 
 			return Output{}, fmt.Errorf("auxiliary input exceeds budget")
 		}
 		o, e := c.run(ctx, Input{p, task, text})
+		// An overlong summary or suggestion is clipped rather than thrown away.
+		// Both are text a person reads, so showing it with its truncation marked
+		// beats reporting a failure for a reply that did arrive. The checkpoint
+		// is the exception, because it is fed back as context instead of read;
+		// the branch that consumes it refuses a truncated one below.
+		o.Summary = Clip(o.Summary, SummaryLimit)
+		o.Suggestion = Clip(o.Suggestion, SuggestionLimit)
 		if e == nil && (task == "summary" || task == "combined") && o.Summary == "" {
 			e = fmt.Errorf("provider returned an empty summary")
 		}
@@ -308,8 +315,12 @@ func (c *Controller) execute(ctx context.Context, cancel context.CancelFunc, id 
 			err = e
 			return
 		}
-		if o.Checkpoint == "" || len(o.Checkpoint) > CheckpointLimit {
-			err = fmt.Errorf("invalid checkpoint output")
+		if o.Checkpoint == "" {
+			err = fmt.Errorf("provider returned an empty checkpoint")
+			return
+		}
+		if len(o.Checkpoint) > CheckpointLimit {
+			err = fmt.Errorf("checkpoint of %d bytes exceeds the %d byte limit", len(o.Checkpoint), CheckpointLimit)
 			return
 		}
 		s.Checkpoint = o.Checkpoint

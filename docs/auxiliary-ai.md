@@ -130,13 +130,18 @@ and these numbers do not promise a particular cost saving.
 | Checkpoint refresh trigger | over 20 KiB of JSON, or 32 turns |
 | Checkpoint | 6 KiB |
 | Context sent to the model | 32 KiB plus fixed instructions |
-| Structured model reply | 12 KiB; 6 KiB per summary, 2 KiB per suggestion |
+| Structured model reply | 12 KiB; a summary over 6 KiB or a suggestion over 2 KiB is clipped |
 | Asked of the model | 5 bullets of 120 characters, 500 characters of suggestion |
 | Retained recent turns | 48 KiB of JSON, or 64 turns |
 | Inline summaries | Last 32 per session, at most 4 KiB each |
 | Derived state | 256 sessions, least recently used evicted |
 | Concurrency | 4 tasks, serial per account, 32 sessions running or queued |
 | Time | 3 minutes per task; 15 minutes for a dedicated login |
+
+A summary or suggestion that overshoots its budget is shown clipped, marked
+`[truncated]`, rather than reported as a failure — it is text you read, and what
+arrived is still worth reading. Only the checkpoint is refused when it is too
+large, because it is fed back as context instead of displayed.
 
 A checkpoint is refreshed only when the budget is exceeded, and a failed refresh
 keeps the old one. When the storage limit drops older turns, the model is told the
