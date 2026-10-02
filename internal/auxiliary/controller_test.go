@@ -153,6 +153,66 @@ func TestBoundedUTF8AndValidation(t *testing.T) {
 	if _, e := decodeOutput(`{"summary":"ok","suggestion":"","checkpoint":"","usage":{"cost":999}}`); e != nil {
 		t.Fatal(e)
 	}
+	long := `{"summary":"` + strings.Repeat("x", SummaryLimit+10) + `","suggestion":"","checkpoint":""}`
+	if _, e := decodeOutput(long); e != nil {
+		t.Fatal("decoding refused a long field instead of leaving its limit to the consumer:", e)
+	}
+}
+
+// A reply that overshoots a field limit used to be discarded whole and reported
+// as a failure, even when the oversized field was one the task never reads. What
+// arrived is shown instead, clipped, with the truncation marked.
+func TestOverlongReplyIsClippedNotDiscarded(t *testing.T) {
+	c, _ := New(t.TempDir(), func(context.Context, Input) (Output, error) {
+		return Output{
+			Summary:    strings.Repeat("요", SummaryLimit/3+100),
+			Suggestion: strings.Repeat("x", SuggestionLimit+500),
+			Checkpoint: strings.Repeat("c", CheckpointLimit+500),
+		}, nil
+	})
+	defer c.Close()
+	_, _ = c.Save("summary", profile())
+	_, _ = c.Save("suggestion", profile())
+	c.Observe(events("a", 1, "ask", "reply"))
+	j := waitJob(t, c, "a", "completed")
+	if len(j.Summary) > SummaryLimit || len(j.Suggestion) > SuggestionLimit {
+		t.Fatal("not clipped:", len(j.Summary), len(j.Suggestion))
+	}
+	if !utf8.ValidString(j.Summary) {
+		t.Fatal("clip split a rune")
+	}
+	for _, text := range []string{j.Summary, j.Suggestion} {
+		if !strings.HasSuffix(text, "[truncated]") {
+			t.Fatal("truncation was not marked:", text[max(0, len(text)-40):])
+		}
+	}
+}
+
+// The checkpoint is the one field fed back as context instead of read, so a
+// truncated one would quietly rot what every later turn is told. It stays
+// strict, and a refusal keeps the checkpoint that was already there.
+func TestOverlongCheckpointIsRefused(t *testing.T) {
+	c, _ := New(t.TempDir(), func(_ context.Context, in Input) (Output, error) {
+		if in.Task == "checkpoint" {
+			return Output{Checkpoint: strings.Repeat("c", CheckpointLimit+1)}, nil
+		}
+		return Output{Summary: "ok"}, nil
+	})
+	defer c.Close()
+	_, _ = c.Save("summary", profile())
+	c.Observe(events("a", 1, strings.Repeat("a", 7000), strings.Repeat("b", 7000)))
+	waitJob(t, c, "a", "completed")
+	c.Observe(events("a", 4, strings.Repeat("c", 7000), strings.Repeat("d", 7000)))
+	j := waitJob(t, c, "a", "failed")
+	if !strings.Contains(j.Error, "exceeds") {
+		t.Fatal("unhelpful refusal:", j.Error)
+	}
+	c.mu.Lock()
+	s, e := c.load("a")
+	c.mu.Unlock()
+	if e != nil || s.Checkpoint != "" {
+		t.Fatal("kept a truncated checkpoint", e, len(s.Checkpoint))
+	}
 }
 
 func TestHistoryDoesNotBackfillAndForgetClearsDerivedData(t *testing.T) {
