@@ -28,25 +28,36 @@ func TestBuiltinDevcontainerIsAValidTemplate(t *testing.T) {
 	if cfg["name"] != "my-project" {
 		t.Fatal("project name not substituted", cfg["name"])
 	}
-	// Left out of the file on purpose so cxz binds the real workspace; a default
-	// that hard-coded them would mount the wrong directory.
-	if cfg["workspaceFolder"] != "/workspaces/my-project" {
-		t.Fatal("workspace folder not filled in", cfg["workspaceFolder"])
+	// The default is Compose, like this repository's own devcontainer, so the
+	// workspace is the Compose file's business and cxz must not fill in a mount.
+	if cfg["dockerComposeFile"] == nil || cfg["service"] == "" || cfg["workspaceFolder"] == "" {
+		t.Fatal("Compose default needs a file, a service and a workspace folder", cfg)
 	}
-	if mount, _ := cfg["workspaceMount"].(string); !strings.Contains(mount, "source=/host/my-project,") {
-		t.Fatal("workspace not bound", cfg["workspaceMount"])
+	if cfg["workspaceMount"] != nil {
+		t.Fatal("cxz overrode a Compose template's own mount", cfg["workspaceMount"])
 	}
-	if cfg["image"] == nil && cfg["build"] == nil && cfg["dockerFile"] == nil {
-		t.Fatal("default must build or name an image", cfg)
+	// The one thing a Compose template cannot do without substitution: name the
+	// workspace. It is materialized outside it, so `..` would be the snapshot.
+	compose := string(files["docker-compose.yaml"].Data)
+	if strings.Contains(compose, WorkspaceVariable) {
+		t.Fatal("workspace variable survived rendering", compose)
 	}
-	// The remote user has to be able to write the workspace, so the default
-	// naming one is the whole reason it works unprivileged.
-	if remote, _ := cfg["remoteUser"].(string); remote == "" {
-		t.Fatal("default must name a remote user", cfg)
+	if !strings.Contains(compose, "/host/my-project:/"+strings.TrimPrefix(cfg["workspaceFolder"].(string), "/")) {
+		t.Fatal("workspace not bound into the Compose file", compose)
+	}
+	// Named volumes are what make history and caches per project: Compose
+	// prefixes them. A literal external name would share them installation-wide.
+	for _, volume := range []string{"command.history", "go.cache.mod", "go.cache.bin"} {
+		if !strings.Contains(compose, volume) {
+			t.Fatal("default lost its", volume, "volume")
+		}
 	}
 	// It is still a devcontainer anyone can read, comments and all.
 	if !strings.Contains(string(builtin.Files["devcontainer.json"].Data), "//") {
 		t.Fatal("embedded default lost its comments")
+	}
+	if !strings.Contains(string(builtin.Files["docker-compose.yaml"].Data), "#") {
+		t.Fatal("embedded Compose file lost its comments")
 	}
 }
 

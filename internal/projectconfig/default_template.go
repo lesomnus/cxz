@@ -11,11 +11,17 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/goccy/go-yaml"
 	"github.com/tailscale/hujson"
 )
 
 const TemplateDirectory = "devcontainer"
 const ProjectNameVariable = "${cxz:projectName}"
+
+// WorkspaceVariable is the host path of the workspace. A Compose template needs
+// it because the template is materialized outside the workspace, so the usual
+// relative bind would point at the snapshot instead of the sources.
+const WorkspaceVariable = "${cxz:workspace}"
 const TemplateReceipt = "Default devcontainer template saved"
 const MaxTemplateBytes = 1024 * 1024
 const maxTemplateFiles = 256
@@ -231,11 +237,12 @@ func (t *DefaultTemplate) Render(projectName, workspace string) (map[string]Temp
 	if err != nil {
 		return nil, err
 	}
+	substitute := strings.NewReplacer(ProjectNameVariable, projectName, WorkspaceVariable, workspace)
 	var replace func(any) any
 	replace = func(v any) any {
 		switch x := v.(type) {
 		case string:
-			return strings.ReplaceAll(x, ProjectNameVariable, projectName)
+			return substitute.Replace(x)
 		case []any:
 			for i := range x {
 				x[i] = replace(x[i])
@@ -249,6 +256,8 @@ func (t *DefaultTemplate) Render(projectName, workspace string) (map[string]Temp
 	}
 	replace(cfg)
 	// Image/build defaults must bind the actual workspace, never the snapshot.
+	// A Compose template mounts the workspace itself, which is what
+	// ${cxz:workspace} is for.
 	if cfg["dockerComposeFile"] == nil {
 		folder, _ := cfg["workspaceFolder"].(string)
 		if folder == "" {
@@ -270,5 +279,74 @@ func (t *DefaultTemplate) Render(projectName, workspace string) (map[string]Temp
 	f := files["devcontainer.json"]
 	f.Data = b
 	files["devcontainer.json"] = f
+	// A template's Compose files need the same substitution, or a Compose
+	// template could not name the workspace at all: the template is
+	// materialized outside it, so a relative bind would point at the snapshot.
+	// Values are placed through the YAML parser rather than into the text, so a
+	// path containing a quote or a colon cannot rewrite the document.
+	for _, name := range composeNames(cfg) {
+		file, exists := files[name]
+		if !exists {
+			continue
+		}
+		var doc any
+		if err := yaml.Unmarshal(file.Data, &doc); err != nil {
+			return nil, fmt.Errorf("template %s: %w", name, err)
+		}
+		rendered, err := yaml.Marshal(replaceYAML(doc, substitute))
+		if err != nil {
+			return nil, fmt.Errorf("template %s: %w", name, err)
+		}
+		file.Data = rendered
+		files[name] = file
+	}
 	return files, nil
+}
+
+// composeNames lists the template-relative Compose files. Absolute paths and
+// native devcontainer variables belong to the devcontainer CLI, and
+// validateReferences has already refused anything relative that is not here.
+func composeNames(cfg map[string]any) []string {
+	var raw []any
+	switch v := cfg["dockerComposeFile"].(type) {
+	case nil:
+		return nil
+	case string:
+		raw = []any{v}
+	case []any:
+		raw = v
+	}
+	var out []string
+	for _, value := range raw {
+		if name, ok := value.(string); ok && !strings.Contains(name, "${") && !filepath.IsAbs(name) {
+			out = append(out, path.Clean(name))
+		}
+	}
+	return out
+}
+
+// goccy/go-yaml decodes mappings as map[string]any, so the walk mirrors the JSON
+// one. Keys are substituted too: a service name may carry the project name.
+func replaceYAML(v any, substitute *strings.Replacer) any {
+	switch x := v.(type) {
+	case string:
+		return substitute.Replace(x)
+	case []any:
+		for i := range x {
+			x[i] = replaceYAML(x[i], substitute)
+		}
+	case map[string]any:
+		out := make(map[string]any, len(x))
+		for k, value := range x {
+			out[substitute.Replace(k)] = replaceYAML(value, substitute)
+		}
+		return out
+	case map[any]any:
+		out := make(map[any]any, len(x))
+		for k, value := range x {
+			out[replaceYAML(k, substitute)] = replaceYAML(value, substitute)
+		}
+		return out
+	}
+	return v
 }

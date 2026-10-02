@@ -129,7 +129,7 @@ func TestDefaultComposeTemplateWithHostOverride(t *testing.T) {
 	spec := projectconfig.Spec{
 		Template: &projectconfig.DefaultTemplate{Files: map[string]projectconfig.TemplateFile{
 			"devcontainer.json": {Data: []byte(`{"name":"${cxz:projectName}","dockerComposeFile":"compose.yaml","service":"dev","workspaceFolder":"/workspace"}`)},
-			"compose.yaml":      {Data: []byte("services:\n  dev:\n    image: alpine\n    command: [sleep, infinity]\n")},
+			"compose.yaml":      {Data: []byte("services:\n  dev:\n    image: alpine\n    command: [sleep, infinity]\n    volumes:\n      - ${cxz:workspace}:/workspace\n")},
 		}},
 		Compose: json.RawMessage(`{"services":{"${DEVCONTAINER_SERVICE}":{"environment":{"FROM_OVERRIDE":"yes"}}}}`),
 	}
@@ -144,6 +144,16 @@ func TestDefaultComposeTemplateWithHostOverride(t *testing.T) {
 	configured.Config = file
 	if err := preflight(&configured); err != nil {
 		t.Fatal(err)
+	}
+	// A Compose template mounts the workspace itself, so the materialized file
+	// has to carry the real host path rather than a relative bind into the
+	// snapshot it was written beside.
+	compose, err := os.ReadFile(filepath.Join(filepath.Dir(file), "compose.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(compose), p.Workspace+":/workspace") {
+		t.Fatal("workspace variable not substituted into the Compose file", string(compose))
 	}
 	override, err := m.prepareComposeOverride(context.Background(), &configured)
 	if err != nil || override.ComposeFile == "" || len(override.Digest) != 64 {

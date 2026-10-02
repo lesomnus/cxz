@@ -5,25 +5,10 @@
 // there. See docs/docker.md.
 //
 // ${cxz:projectName} is the repository name from remote.origin.url, falling
-// back to the directory name. workspaceFolder and workspaceMount are left out
-// on purpose: cxz binds the real workspace itself.
+// back to the directory name.
 {
 	"name": "${cxz:projectName}",
-	"image": "ghcr.io/lesomnus/dev-golang:1.27",
-	"remoteUser": "hypnos",
-	"containerEnv": {
-		"SHELL": "/bin/zsh"
-	},
-	// Content-addressed caches and shell history are shared across projects on
-	// purpose -- that sharing is the point of a cache. Deliberately absent: the
-	// repository's own privileged: true, which the shared Docker engine makes
-	// unnecessary, and its ${HOME}/workspaces bind, which would let an agent
-	// read every other project. Add the latter per installation through the
-	// shared Compose override if you want it.
-	"mounts": [
-		"type=volume,source=cxz-command-history,target=/commandhistory",
-		"type=volume,source=cxz-go-mod,target=/home/hypnos/go/pkg/mod",
-		"type=volume,source=cxz-go-build,target=/home/hypnos/.cache/go-build"
-	],
-	"runArgs": ["--cpus", "4", "--memory", "8g", "--pids-limit", "2048"]
+	"dockerComposeFile": "docker-compose.yaml",
+	"service": "dev",
+	"workspaceFolder": "/workspace"
 }

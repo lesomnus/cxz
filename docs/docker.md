@@ -23,9 +23,10 @@ CLI. Projects without one fall back, in this order:
 2. the **built-in default**, which is itself a template:
    [`internal/projectconfig/devcontainer/`](../internal/projectconfig/devcontainer/).
    Read it rather than taking this page's word for it — it is a real
-   `devcontainer.json`, comments and all, embedded into the binary. It names a
-   Go development image, a non-root remote user, shared caches for the module
-   and build directories, and modest CPU/memory limits.
+   `devcontainer.json` and `docker-compose.yaml`, comments and all, embedded
+   into the binary. It is Compose-based, like this repository's own
+   `.devcontainer`: a Go development image, a non-root user, per-project volumes
+   for shell history and the Go module and build caches, and CPU/memory limits.
 
 Either way, changes need a `cxz project recreate`.
 
@@ -46,7 +47,7 @@ one. Create `devcontainer/` beside `settings.jsonc` in your state directory
 ├── settings.jsonc
 └── devcontainer/
     ├── devcontainer.json      # required
-    ├── Dockerfile             # whatever it references, in here too
+    ├── docker-compose.yaml    # or a Dockerfile, or neither
     └── post-create.sh
 ```
 
@@ -63,22 +64,50 @@ are left for the devcontainer CLI to resolve, so they are not checked here. A
 Compose template additionally needs `service` and `workspaceFolder`, since cxz
 cannot infer either.
 
-`${cxz:projectName}` expands to the project's name — the repository name from
-`remote.origin.url`, falling back to the directory name. It is substituted in
-string values throughout `devcontainer.json`, which is what makes one template
-usable by every project:
+Two variables make one template usable by every project. Both are substituted
+in `devcontainer.json` and in the template's own Compose files:
+
+| | |
+|---|---|
+| `${cxz:projectName}` | the repository name from `remote.origin.url`, falling back to the directory name |
+| `${cxz:workspace}` | the workspace path on the host |
 
 ```jsonc
 {
   "name": "${cxz:projectName}",
-  "build": { "dockerfile": "Dockerfile" },
-  "remoteUser": "vscode"
+  "dockerComposeFile": "docker-compose.yaml",
+  "service": "dev",
+  "workspaceFolder": "/workspace"
 }
 ```
 
-Leave `workspaceFolder` and `workspaceMount` out and cxz binds the real
-workspace for you. It never rewrites them for a Compose template, where the mount
-is the Compose file's business.
+```yaml
+services:
+  dev:
+    image: ghcr.io/you/dev:latest
+    command: sleep infinity
+    volumes:
+      - ${cxz:workspace}:/workspace
+      - go.cache.mod:/home/you/go/pkg/mod
+volumes:
+  go.cache.mod:
+```
+
+**A Compose template must mount the workspace itself**, and `${cxz:workspace}`
+is how. The template is materialized outside the workspace, so the `..` a
+repository's own `.devcontainer` would use points at the snapshot instead of your
+sources. Values are substituted through the YAML parser rather than into the
+text, so a path containing a quote or a colon cannot rewrite the document.
+
+An image or `build` template is simpler: leave `workspaceFolder` and
+`workspaceMount` out and cxz binds the workspace for you. It never rewrites
+either for a Compose template, where the mount is the Compose file's business.
+
+Compose also gives you **per-project volumes for free**. Compose prefixes a
+named volume with its project name, which cxz derives from the project, so
+`go.cache.mod` above becomes `cxz-<owner>-<project>_go.cache.mod`. A devcontainer
+`mounts` entry does the opposite: `type=volume,source=NAME` is a literal Docker
+volume name, shared by every project that names it.
 
 Limits: 256 files and 1 MiB total, regular files only — no symlinks, since they
 could not be snapshotted meaningfully. The executable bit is preserved, so
@@ -94,11 +123,13 @@ The built-in default is the worked example — it is a template, under
 
 ### Not the same as the shared Compose override
 
-A `docker-compose.yaml` **inside** `devcontainer/` is part of your default
-template, used only by projects that have no devcontainer of their own. The
-`docker-compose.yaml` **beside** `settings.jsonc` is the shared override below,
-applied to every project including those with their own devcontainer. Same
-filename, different jobs.
+Both the built-in default and most templates have a `docker-compose.yaml`, so the
+filename appears twice with two different jobs:
+
+| | |
+|---|---|
+| **inside** `devcontainer/` | part of the template; used only by projects with no devcontainer of their own |
+| **beside** `settings.jsonc` | the shared override below; layered onto every project, including those with their own devcontainer |
 
 ## The shared Compose override
 
@@ -119,12 +150,13 @@ Existing containers need recreating.
 
 ### Projects that do not use Compose
 
-The override is written as Compose because most devcontainers are. An image or
-Dockerfile devcontainer never invokes Compose, so cxz translates the override
-for it instead: the development service's `volumes` become devcontainer mounts
-and its `environment` becomes `containerEnv`. Both spellings of a volume work,
-short (`/host/src:/workspaces:ro`) and long, and a source that is not a path is
-treated as a named volume exactly as Compose would.
+The override is written as Compose because most devcontainers are, including the
+default. A project whose own devcontainer is image- or Dockerfile-based never
+invokes Compose, so cxz translates the override for it instead: the development
+service's `volumes` become devcontainer mounts and its `environment` becomes
+`containerEnv`. Both spellings of a volume work, short (`/host/src:/workspaces:ro`)
+and long, and a source that is not a path is treated as a named volume exactly as
+Compose would.
 
 Anything with no equivalent is **refused by name** rather than dropped — a
 sidecar service, `privileged`, a `command`, a top-level `networks` block. An
