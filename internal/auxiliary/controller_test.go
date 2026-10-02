@@ -153,9 +153,15 @@ func TestBoundedUTF8AndValidation(t *testing.T) {
 	if _, e := decodeOutput(`{"summary":"ok","suggestion":"","checkpoint":"","usage":{"cost":999}}`); e != nil {
 		t.Fatal(e)
 	}
-	long := `{"summary":"` + strings.Repeat("x", SummaryLimit+10) + `","suggestion":"","checkpoint":""}`
+	// Overshooting a prompt budget many times over is still a reply, not an
+	// error: only the whole reply passing MaxOutput is refused, and only because
+	// half a JSON object cannot be read.
+	long := `{"summary":"` + strings.Repeat("x", SummaryBudget*20) + `","suggestion":"","checkpoint":""}`
 	if _, e := decodeOutput(long); e != nil {
 		t.Fatal("decoding refused a long field instead of leaving its limit to the consumer:", e)
+	}
+	if _, e := decodeOutput(`{"summary":"` + strings.Repeat("x", MaxOutput) + `"}`); e == nil {
+		t.Fatal("a reply past MaxOutput was accepted")
 	}
 }
 
