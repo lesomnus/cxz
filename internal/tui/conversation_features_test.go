@@ -341,3 +341,47 @@ func TestApprovalConversationPreview(t *testing.T) {
 	}
 	t.Log("\n" + view)
 }
+
+// The pinned prompt says which message you are reading the answer to. Clicking
+// it goes there, and the rows that answer to a click are the rows that were
+// drawn: the two cannot be computed separately or they drift apart.
+func TestPinnedPromptClickReturnsToTheInput(t *testing.T) {
+	m := conversationModel()
+	m.events["s"] = []*api.Event{
+		{Seq: 1, Kind: "input", Text: "the question", TimeMs: 1000},
+		{Seq: 2, Kind: "assistant", Text: strings.Repeat("an answer line\n", 80), TimeMs: 2000},
+	}
+	m.render()
+	m.view.GotoBottom()
+	if len(m.promptSpans) == 0 || m.view.YOffset == 0 {
+		t.Fatal("fixture did not scroll past the input", len(m.promptSpans), m.view.YOffset)
+	}
+	span, rows := m.pinnedPrompt(m.view.Height)
+	if rows == 0 {
+		t.Fatal("no prompt pinned while scrolled past one")
+	}
+	if !strings.Contains(ansi.Strip(m.sessionScreen()), "❯ the question") {
+		t.Fatal("pinned prompt not drawn")
+	}
+	// A click below the pinned rows is still a transcript click.
+	if m.pinnedPromptMouse(tea.MouseMsg{Y: rows, Button: tea.MouseButtonLeft, Action: tea.MouseActionPress}) {
+		t.Fatal("a click past the pinned rows was taken as one")
+	}
+	if m.pinnedPromptMouse(tea.MouseMsg{Y: 0, Button: tea.MouseButtonWheelDown, Action: tea.MouseActionPress}) {
+		t.Fatal("a wheel event was taken as a click")
+	}
+	if !m.pinnedPromptMouse(tea.MouseMsg{Y: 0, Button: tea.MouseButtonLeft, Action: tea.MouseActionPress}) {
+		t.Fatal("the pinned prompt did not take the click")
+	}
+	if m.view.YOffset != span.start {
+		t.Fatal("click landed at", m.view.YOffset, "want the input's row", span.start)
+	}
+	// Arriving there, the input itself is on screen and nothing is pinned over
+	// it any more.
+	if _, rows := m.pinnedPrompt(m.view.Height); rows != 0 {
+		t.Fatal("still pinned after returning to the input")
+	}
+	if !strings.Contains(ansi.Strip(m.sessionScreen()), "the question") {
+		t.Fatal("the input is not visible where the click landed")
+	}
+}

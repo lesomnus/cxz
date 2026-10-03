@@ -93,6 +93,26 @@ type promptSpan struct {
 	text       string
 }
 
+// pinnedPrompt is the input whose own rows have scrolled above the viewport,
+// and how many rows of it are drawn over the top of the transcript. The rows it
+// reports are the rows the renderer draws and the rows a click can land on, so
+// what is clickable cannot drift from what is visible.
+func (m *model) pinnedPrompt(height int) (promptSpan, int) {
+	var pinned promptSpan
+	found := false
+	for _, span := range m.promptSpans {
+		if span.end > m.view.YOffset {
+			break
+		}
+		pinned, found = span, true
+	}
+	if !found || pinned.text == "" || m.selectingTools() {
+		return promptSpan{}, 0
+	}
+	lines := strings.Count(ansi.Hardwrap(safeText(pinned.text), max(1, m.view.Width-promptIndent-2), true), "\n") + 1
+	return pinned, min(2, min(lines, height))
+}
+
 // pulseTimer ticks every 100 ms: one complete sweep takes two seconds.
 const historySkeletonCycleTicks = 20
 
@@ -168,17 +188,10 @@ func (m *model) conversationView() string {
 		index := min(len(rows)-1, max(0, len(m.historyTimes)-m.view.YOffset-1))
 		rows[index] = indentBlock(running.Render(workingSpinner(m.pulse+spinnerPhase(m.workingSince))) + " " + muted.Render(clip(m.workingLabel(time.Now()), max(1, m.view.Width-4))))
 	}
-	pinned := ""
-	for _, span := range m.promptSpans {
-		if span.end <= m.view.YOffset {
-			pinned = span.text
-		} else {
-			break
-		}
-	}
-	if pinned != "" && !m.selectingTools() {
-		prompt := strings.Split(ansi.Hardwrap(safeText(pinned), max(1, m.view.Width-promptIndent-2), true), "\n")
-		for i := 0; i < min(2, min(len(prompt), len(rows))); i++ {
+	pinned, pinnedRows := m.pinnedPrompt(len(rows))
+	if pinnedRows > 0 {
+		prompt := strings.Split(ansi.Hardwrap(safeText(pinned.text), max(1, m.view.Width-promptIndent-2), true), "\n")
+		for i := 0; i < pinnedRows; i++ {
 			prefix := promptIndentText + "  "
 			if i == 0 {
 				prefix = promptIndentText + "❯ "

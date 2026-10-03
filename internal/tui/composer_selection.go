@@ -395,3 +395,31 @@ func (m *model) composerSelectionView(view string) string {
 	}
 	return strings.Join(rows, "\n")
 }
+
+// composerScrollbar marks where the draft is when it stops fitting. The composer
+// grows to six rows and then holds, so past that the rest of a long message is
+// off screen with nothing on screen to say so. The bar reads the same layout the
+// selection and the cursor read, so it cannot disagree with them about where the
+// draft is.
+func (m *model) composerScrollbar(view string) string {
+	rows := strings.Split(view, "\n")
+	layout := m.composerRows()
+	if len(layout) <= len(rows) || len(rows) == 0 || m.width < 4 {
+		return view
+	}
+	offset := min(m.composerScroll(layout), len(layout)-len(rows))
+	visible, total := len(rows), len(layout)
+	size := max(1, visible*visible/total)
+	span := max(1, total-visible)
+	start := min(visible-size, (offset*(visible-size)+span/2)/span)
+	width := m.width - 3
+	for y, row := range rows {
+		bar := zeroStyle.Render("│")
+		if y >= start && y < start+size {
+			bar = muted.Render("│")
+		}
+		text := ansi.Cut(row, 0, width)
+		rows[y] = text + strings.Repeat(" ", max(0, width-ansi.StringWidth(text))) + bar
+	}
+	return strings.Join(rows, "\n")
+}

@@ -18,15 +18,29 @@ func (m *model) toolAtRow(y int) uint64 {
 	if y < 0 || y >= m.view.Height || m.current() == nil || !m.previewInteraction() {
 		return 0
 	}
-	// The pinned prompt replaces the first one or two visible history rows.
-	if y < 2 && !m.selectingTools() {
-		for _, span := range m.promptSpans {
-			if span.end <= m.view.YOffset {
-				return 0
-			}
-		}
+	// The pinned prompt replaces the first history rows it needs, and a tool
+	// underneath one of them is not the thing being pointed at.
+	if _, rows := m.pinnedPrompt(m.view.Height); y < rows {
+		return 0
 	}
 	return m.toolRows[m.view.YOffset+y]
+}
+
+// pinnedPromptMouse sends the view back to the input pinned at the top. Those
+// rows are a signpost saying which message you are reading the answer to;
+// clicking a signpost should take you to what it names.
+func (m *model) pinnedPromptMouse(v tea.MouseMsg) bool {
+	if v.Action != tea.MouseActionPress || v.Button != tea.MouseButtonLeft || m.current() == nil {
+		return false
+	}
+	span, rows := m.pinnedPrompt(m.view.Height)
+	if rows == 0 || v.Y < 0 || v.Y >= rows {
+		return false
+	}
+	m.textSelection = nil
+	m.toolClick = nil
+	m.view.SetYOffset(max(0, span.start))
+	return true
 }
 func (m *model) toolMouse(v tea.MouseMsg, now time.Time) bool {
 	seq := m.toolAtRow(v.Y)

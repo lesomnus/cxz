@@ -350,7 +350,7 @@ func (m *model) sessionScreen() string {
 		body = m.redactOverlay(m.pasteOverlay(conversation)) + "\n" + track + "\n"
 	}
 	body += box + preview + strings.Repeat("\n", m.errorHeight()) + m.recordingStatusRow("  "+status, width) + "\n" +
-		frame(m.composerSelectionView(m.decorateInputPastes(composer.View())), width, !modal && !m.focusList && !m.focusApproval && m.pathHints == nil) + "\n"
+		frame(m.composerScrollbar(m.composerSelectionView(m.decorateInputPastes(composer.View()))), width, !modal && !m.focusList && !m.focusApproval && m.pathHints == nil) + "\n"
 	if m.terminalHeight() > 0 {
 		body += m.terminalView() + "\n"
 	}
