@@ -381,6 +381,7 @@ type SessionStatus struct {
 	xxx_hidden_LastSeq        uint64                 `protobuf:"varint,4,opt,name=last_seq,json=lastSeq"`
 	xxx_hidden_Pending        *[]*SessionEvent       `protobuf:"bytes,5,rep,name=pending"`
 	xxx_hidden_PermissionMode string                 `protobuf:"bytes,6,opt,name=permission_mode,json=permissionMode"`
+	xxx_hidden_Queued         string                 `protobuf:"bytes,7,opt,name=queued"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
 }
@@ -454,6 +455,13 @@ func (x *SessionStatus) GetPermissionMode() string {
 	return ""
 }
 
+func (x *SessionStatus) GetQueued() string {
+	if x != nil {
+		return x.xxx_hidden_Queued
+	}
+	return ""
+}
+
 func (x *SessionStatus) SetState(v string) {
 	x.xxx_hidden_State = v
 }
@@ -478,6 +486,10 @@ func (x *SessionStatus) SetPermissionMode(v string) {
 	x.xxx_hidden_PermissionMode = v
 }
 
+func (x *SessionStatus) SetQueued(v string) {
+	x.xxx_hidden_Queued = v
+}
+
 type SessionStatus_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -487,6 +499,7 @@ type SessionStatus_builder struct {
 	LastSeq        uint64
 	Pending        []*SessionEvent
 	PermissionMode string
+	Queued         string
 }
 
 func (b0 SessionStatus_builder) Build() *SessionStatus {
@@ -499,6 +512,7 @@ func (b0 SessionStatus_builder) Build() *SessionStatus {
 	x.xxx_hidden_LastSeq = b.LastSeq
 	x.xxx_hidden_Pending = &b.Pending
 	x.xxx_hidden_PermissionMode = b.PermissionMode
+	x.xxx_hidden_Queued = b.Queued
 	return m0
 }
 
@@ -681,14 +695,15 @@ const file_cxz_session_proto_rawDesc = "" +
 	"\x02id\x1a\x05\n" +
 	"\x03ref\x1a\t\n" +
 	"\aproject\x1a\b\n" +
-	"\x06listed 2(\xc8\x01:\x00*\x00\"\xca\x01\n" +
+	"\x06listed 2(\xc8\x01:\x00*\x00\"\xe2\x01\n" +
 	"\rSessionStatus\x12\x14\n" +
 	"\x05state\x18\x01 \x01(\tR\x05state\x12\x15\n" +
 	"\x06run_id\x18\x02 \x01(\tR\x05runId\x12\x1b\n" +
 	"\tvendor_id\x18\x03 \x01(\tR\bvendorId\x12\x19\n" +
 	"\blast_seq\x18\x04 \x01(\x04R\alastSeq\x12+\n" +
 	"\apending\x18\x05 \x03(\v2\x11.cxz.SessionEventR\apending\x12'\n" +
-	"\x0fpermission_mode\x18\x06 \x01(\tR\x0epermissionMode\"\xb1\x01\n" +
+	"\x0fpermission_mode\x18\x06 \x01(\tR\x0epermissionMode\x12\x16\n" +
+	"\x06queued\x18\a \x01(\tR\x06queued\"\xb1\x01\n" +
 	"\fSessionEvent\x12\x15\n" +
 	"\x06run_id\x18\x01 \x01(\tR\x05runId\x12\x10\n" +
 	"\x03seq\x18\x02 \x01(\x04R\x03seq\x12\x17\n" +

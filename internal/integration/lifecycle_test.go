@@ -283,9 +283,10 @@ func TestLifecycle(t *testing.T) {
 	// carries the previous sequence forward so output fragments do not invalidate
 	// the resource list. So an idle it reports can predate the last send, leaving
 	// await to return at once and this send to arrive mid-turn. Only the
-	// supervisor knows when a turn is over, so let it be the judge: a refused
-	// precondition is the answer "not yet", not a failure. A refusal writes
-	// nothing, so retrying cannot duplicate a prompt.
+	// supervisor knows when a turn is over, so let it be the judge: a message
+	// that arrives mid-turn is queued rather than refused, and goes out when
+	// the turn ends. Retrying the same client id returns the same receipt, so
+	// neither answer can duplicate a prompt.
 	send := func(text string) *api.Input {
 		t.Helper()
 		deadline := time.Now().Add(8 * time.Second)
@@ -293,10 +294,10 @@ func TestLifecycle(t *testing.T) {
 			s = get()
 			r := &api.Input{SessionId: id, RunId: s.RunId, ClientId: core.ID(), Text: text}
 			v, e := client.Send(ctx, r)
-			if e == nil && v.GetStatus() == "accepted" {
+			if e == nil && (v.GetStatus() == "accepted" || v.GetStatus() == "queued") {
 				return r
 			}
-			if e == nil || !strings.Contains(e.Error(), "session must be idle") || time.Now().After(deadline) {
+			if e == nil || !strings.Contains(e.Error(), "already waiting") || time.Now().After(deadline) {
 				t.Fatalf("send: %v %v", v, e)
 			}
 			time.Sleep(30 * time.Millisecond)
@@ -419,8 +420,48 @@ func TestLifecycle(t *testing.T) {
 	if _, err := client.Reply(ctx, structured); err != nil {
 		t.Fatal("structured reply retry", err)
 	}
+	// A message sent into a running turn waits in cxz until the agent can take
+	// it. The slot belongs to the session, not to a frontend, so it comes back
+	// over the resource API and any client sees the same one waiting.
+	beforeQueue := get().LastSeq
+	send("slow")
+	s = await("working")
+	queued := &api.Input{SessionId: id, RunId: s.RunId, ClientId: core.ID(), Text: "sent mid turn"}
+	if v, e := client.Send(ctx, queued); e != nil || v.GetStatus() != "queued" {
+		t.Fatalf("mid-turn send: %v %v", v, e)
+	}
+	awaitQueued := func(want string) {
+		t.Helper()
+		deadline := time.Now().Add(8 * time.Second)
+		for time.Now().Before(deadline) {
+			if get().Queued == want {
+				return
+			}
+			time.Sleep(30 * time.Millisecond)
+		}
+		t.Fatalf("the waiting message is %q, want %q", get().Queued, want)
+	}
+	awaitQueued("sent mid turn")
+	// One slot, so the second message is refused rather than silently dropped.
+	if _, e = client.Send(ctx, &api.Input{SessionId: id, RunId: s.RunId, ClientId: core.ID(), Text: "and another"}); e == nil {
+		t.Fatal("a second message was accepted into a full slot")
+	}
+	readUntil(beforeQueue, func(v *api.Event) bool { return v.Kind == "input" && v.Text == "sent mid turn" })
+	await("idle")
+	awaitQueued("")
 	send("wait")
 	s = await("working")
+	// Cancelling takes the message back before the agent ever sees it.
+	if v, e := client.Send(ctx, &api.Input{SessionId: id, RunId: s.RunId, ClientId: core.ID(), Text: "never sent"}); e != nil || v.GetStatus() != "queued" {
+		t.Fatalf("queueing before cancel: %v %v", v, e)
+	}
+	if v, e := client.Send(ctx, &api.Input{SessionId: id, RunId: s.RunId, ClientId: core.ID(), Cancel: true}); e != nil || v.GetStatus() != "accepted" {
+		t.Fatalf("cancel: %v %v", v, e)
+	}
+	awaitQueued("")
+	if _, e = client.Send(ctx, &api.Input{SessionId: id, RunId: s.RunId, ClientId: core.ID(), Cancel: true}); e == nil {
+		t.Fatal("cancelling nothing reported success")
+	}
 	if _, e = client.Interrupt(ctx, &api.Control{SessionId: id, RunId: s.RunId, ClientId: core.ID()}); e != nil {
 		t.Fatal(e)
 	}

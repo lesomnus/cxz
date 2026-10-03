@@ -1,9 +1,33 @@
 package tui
 
 import (
-	"github.com/lesomnus/cxz/api"
+	"context"
 	"time"
+
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/core"
 )
+
+// cancelQueued takes back the message the agent has not taken. It is the one
+// thing in this UI that reaches into a session's state without being a message,
+// so it says what happened rather than leaving the row to vanish silently.
+func (m *model) cancelQueued() tea.Cmd {
+	s := m.current()
+	if s == nil {
+		return nil
+	}
+	id, run, text := s.Id, s.RunId, s.Queued
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(m.ctx, 30*time.Second)
+		defer cancel()
+		_, err := m.client.Send(ctx, &api.Input{SessionId: id, RunId: run, ClientId: core.ID(), Cancel: true})
+		if err != nil {
+			return result{err: err}
+		}
+		return result{text: "the waiting message was taken back", inputText: text, status: "unqueued"}
+	}
+}
 
 func (m *model) queueInput(id, run, request, text string) {
 	if m.pendingInputs == nil {

@@ -50,7 +50,7 @@ func (c *Client) view(ctx context.Context, s *resource.Session, opts ...grpc.Cal
 		}
 	}
 	st := s.GetStatus()
-	v := &api.Session{Id: s.GetRuntimeId(), Title: s.GetName(), Agent: s.GetAgent(), Model: s.GetModel(), CreateId: s.GetClientId(), ProjectId: p.GetRuntimeId(), Workspace: p.GetWorkspace(), State: st.GetState(), PermissionMode: st.GetPermissionMode(), RunId: st.GetRunId(), VendorId: st.GetVendorId(), LastSeq: st.GetLastSeq()}
+	v := &api.Session{Id: s.GetRuntimeId(), Title: s.GetName(), Agent: s.GetAgent(), Model: s.GetModel(), CreateId: s.GetClientId(), ProjectId: p.GetRuntimeId(), Workspace: p.GetWorkspace(), State: st.GetState(), PermissionMode: st.GetPermissionMode(), RunId: st.GetRunId(), VendorId: st.GetVendorId(), LastSeq: st.GetLastSeq(), Queued: st.GetQueued()}
 	v.ProjectName = p.GetName()
 	v.Alias = s.GetAlias()
 	v.ProjectAlias = p.GetAlias()
@@ -164,7 +164,7 @@ func (c *Client) Interrupt(ctx context.Context, r *api.Control, opts ...grpc.Cal
 	return receipt(c.sessions.Interrupt(ctx, control(r), opts...))
 }
 func (c *Client) Send(ctx context.Context, r *api.Input, opts ...grpc.CallOption) (*api.Receipt, error) {
-	return receipt(c.sessions.Send(ctx, resource.SessionSendRequest_builder{Ref: sr(r.SessionId), RunId: &r.RunId, ClientId: &r.ClientId, Text: &r.Text}.Build(), opts...))
+	return receipt(c.sessions.Send(ctx, resource.SessionSendRequest_builder{Ref: sr(r.SessionId), RunId: &r.RunId, ClientId: &r.ClientId, Text: &r.Text, Cancel: &r.Cancel}.Build(), opts...))
 }
 func (c *Client) Activity(ctx context.Context, r *api.ActivityInput, opts ...grpc.CallOption) (*api.Receipt, error) {
 	return receipt(c.sessions.Activity(ctx, resource.SessionActivityRequest_builder{Ref: sr(r.SessionId), RunId: &r.RunId, ClientId: &r.ClientId, Busy: &r.Busy}.Build(), opts...))

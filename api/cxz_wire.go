@@ -223,6 +223,7 @@ type Session struct {
 	AuthBinding    string                 `protobuf:"bytes,18,opt,name=auth_binding,json=authBinding,proto3" json:"auth_binding,omitempty"`
 	Alias          string                 `protobuf:"bytes,19,opt,name=alias,proto3" json:"alias,omitempty"`
 	PermissionMode string                 `protobuf:"bytes,20,opt,name=permission_mode,json=permissionMode,proto3" json:"permission_mode,omitempty"`
+	Queued         string                 `protobuf:"bytes,21,opt,name=queued,proto3" json:"queued,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -397,6 +398,13 @@ func (x *Session) GetPermissionMode() string {
 	return ""
 }
 
+func (x *Session) GetQueued() string {
+	if x != nil {
+		return x.Queued
+	}
+	return ""
+}
+
 type SessionList struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Sessions      []*Session             `protobuf:"bytes,1,rep,name=sessions,proto3" json:"sessions,omitempty"`
@@ -447,6 +455,7 @@ type Input struct {
 	RunId         string                 `protobuf:"bytes,2,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
 	ClientId      string                 `protobuf:"bytes,3,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
 	Text          string                 `protobuf:"bytes,4,opt,name=text,proto3" json:"text,omitempty"`
+	Cancel        bool                   `protobuf:"varint,5,opt,name=cancel,proto3" json:"cancel,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -507,6 +516,13 @@ func (x *Input) GetText() string {
 		return x.Text
 	}
 	return ""
+}
+
+func (x *Input) GetCancel() bool {
+	if x != nil {
+		return x.Cancel
+	}
+	return false
 }
 
 type AttachmentInput struct {
@@ -2110,7 +2126,7 @@ const file_cxz_proto_rawDesc = "" +
 	"\fauth_binding\x18\b \x01(\tR\vauthBinding\"\x1c\n" +
 	"\n" +
 	"SessionRef\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"\xce\x04\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"\xe6\x04\n" +
 	"\aSession\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1c\n" +
 	"\tworkspace\x18\x02 \x01(\tR\tworkspace\x12\x14\n" +
@@ -2134,15 +2150,17 @@ const file_cxz_proto_rawDesc = "" +
 	"\fauth_backend\x18\x11 \x01(\tR\vauthBackend\x12!\n" +
 	"\fauth_binding\x18\x12 \x01(\tR\vauthBinding\x12\x14\n" +
 	"\x05alias\x18\x13 \x01(\tR\x05alias\x12'\n" +
-	"\x0fpermission_mode\x18\x14 \x01(\tR\x0epermissionMode\"?\n" +
+	"\x0fpermission_mode\x18\x14 \x01(\tR\x0epermissionMode\x12\x16\n" +
+	"\x06queued\x18\x15 \x01(\tR\x06queued\"?\n" +
 	"\vSessionList\x120\n" +
-	"\bsessions\x18\x01 \x03(\v2\x14.cxz.runtime.SessionR\bsessions\"n\n" +
+	"\bsessions\x18\x01 \x03(\v2\x14.cxz.runtime.SessionR\bsessions\"\x86\x01\n" +
 	"\x05Input\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x15\n" +
 	"\x06run_id\x18\x02 \x01(\tR\x05runId\x12\x1b\n" +
 	"\tclient_id\x18\x03 \x01(\tR\bclientId\x12\x12\n" +
-	"\x04text\x18\x04 \x01(\tR\x04text\"a\n" +
+	"\x04text\x18\x04 \x01(\tR\x04text\x12\x16\n" +
+	"\x06cancel\x18\x05 \x01(\bR\x06cancel\"a\n" +
 	"\x0fAttachmentInput\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x15\n" +
