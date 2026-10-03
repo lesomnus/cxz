@@ -261,3 +261,61 @@ func TestInlineCodeSitsOnBlack(t *testing.T) {
 		}
 	}
 }
+
+// A row is drawn on its own by the viewport, so a code span that wrapped has to
+// carry its background onto the rows after the first. It used to stop at the
+// newline, leaving the rest of the span looking like prose.
+func TestWrappedInlineCodeKeepsItsBackground(t *testing.T) {
+	old := lipgloss.ColorProfile()
+	lipgloss.SetColorProfile(termenv.TrueColor)
+	t.Cleanup(func() { lipgloss.SetColorProfile(old) })
+	const width = 30
+	// One unbreakable token, longer than two rows, so the middle row is nothing
+	// but code and the edges are unambiguous.
+	code := "a_long_inline_code_span_that_will_not_fit_on_one_row"
+	view := markdownView("prose before `"+code+"` after", width)
+	rows := strings.Split(view, "\n")
+	if len(rows) < 3 {
+		t.Fatal("fixture did not wrap the span", rows)
+	}
+	terminal := vt.NewEmulator(width, len(rows)+1)
+	terminal.WriteString(strings.ReplaceAll(view, "\n", "\r\n"))
+	defer terminal.Close()
+	black := func(x, y int) bool {
+		cell := terminal.CellAt(x, y)
+		if cell == nil || cell.Style.Bg == nil {
+			return false
+		}
+		r, g, b, _ := cell.Style.Bg.RGBA()
+		return r == 0 && g == 0 && b == 0
+	}
+	first := ansi.Strip(rows[0])
+	if !black(len(first)-1, 0) {
+		t.Fatal("the span lost its background on the row it starts")
+	}
+	if black(0, 0) {
+		t.Fatal("prose before the span took the code background")
+	}
+	// The middle row is span and nothing else, which is the row that used to
+	// come out unstyled.
+	middle := ansi.Strip(rows[1])
+	for x := range len(middle) {
+		if !black(x, 1) {
+			t.Fatalf("cell %d of the wrapped row (%q) lost the code background", x, middle)
+		}
+	}
+	// The span still ends where it ends, and the prose after it is prose.
+	last := ansi.Strip(rows[2])
+	at := strings.Index(last, " after")
+	if at <= 0 {
+		t.Fatal("fixture lost its trailing prose:", last)
+	}
+	if !black(at-1, 2) {
+		t.Fatal("the span lost its background on the row it ends")
+	}
+	for x := at; x < at+len(" after"); x++ {
+		if black(x, 2) {
+			t.Fatalf("the background ran past the end of the span at cell %d of %q", x, last)
+		}
+	}
+}

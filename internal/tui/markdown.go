@@ -208,7 +208,7 @@ func markdownContent(raw string, width int) (string, []codeButton) {
 			return children(n, width)
 		}
 	}
-	view := balanceLinkRows(answer.Render(ansi.Hardwrap(strings.TrimRight(render(doc, max(1, width)), "\n"), max(1, width), true)))
+	view := answer.Render(balanceRows(ansi.Hardwrap(strings.TrimRight(render(doc, max(1, width)), "\n"), max(1, width), true)))
 	if len(sources) == 0 {
 		return view, nil
 	}
@@ -240,26 +240,46 @@ func terminalLink(label, target string) string {
 	return ansi.SetHyperlink(target) + label + ansi.ResetHyperlink()
 }
 
-// Each row can be displayed independently by the viewport. Reopen links after
-// wraps so scrolling into the middle still offers the complete destination.
-func balanceLinkRows(view string) string {
+// Each row can be displayed independently by the viewport, so a row has to
+// carry everything it needs: a link reopened after a wrap still offers the
+// complete destination when scrolled into the middle, and an inline code span
+// that wrapped keeps its background on the rows after the first instead of
+// losing it at the newline.
+//
+// Styles arriving here are one combined SGR per span, closed by a reset, which
+// is what the renderer above and Lip Gloss both emit, so the last one seen is
+// the active one. This runs before the outer style is applied, so a reopened
+// span sits after that style on its row rather than being overridden by it.
+func balanceRows(view string) string {
 	var out strings.Builder
-	active := ""
+	link, style := "", ""
 	state := byte(0)
 	for len(view) > 0 {
 		seq, _, n, next := ansi.DecodeSequence(view, state, nil)
 		if n == 0 {
 			break
 		}
-		if strings.HasPrefix(seq, "\x1b]8;") {
+		switch {
+		case strings.HasPrefix(seq, "\x1b]8;"):
+			link = seq
 			if seq == ansi.ResetHyperlink() {
-				active = ""
-			} else {
-				active = seq
+				link = ""
+			}
+		case strings.HasPrefix(seq, "\x1b[") && strings.HasSuffix(seq, "m"):
+			style = seq
+			if seq == "\x1b[0m" || seq == "\x1b[m" {
+				style = ""
 			}
 		}
-		if seq == "\n" && active != "" {
-			out.WriteString(ansi.ResetHyperlink() + "\n" + active)
+		if seq == "\n" && (link != "" || style != "") {
+			closing := ""
+			if style != "" {
+				closing = "\x1b[0m"
+			}
+			if link != "" {
+				closing += ansi.ResetHyperlink()
+			}
+			out.WriteString(closing + "\n" + style + link)
 		} else {
 			out.WriteString(seq)
 		}
