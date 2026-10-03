@@ -30,6 +30,25 @@ func WithLocal(ctx context.Context) context.Context {
 	return context.WithValue(ctx, remoteKey{}, false)
 }
 func IsRemote(ctx context.Context) bool { v, _ := ctx.Value(remoteKey{}).(bool); return v }
+
+type schemeKey struct{}
+
+// WithScheme records how the client reached the daemon. Remoteness answers one
+// question -- can this client reach the engine itself -- and the scheme answers
+// another that it cannot: whether the link is one a secret may travel over. A
+// ssh connection is encrypted by ssh; the exposed TCP surface is authenticated
+// plaintext meant for a tunnel, and cannot be told apart from a local client on
+// the daemon side, so the client is where that decision has to be made.
+func WithScheme(ctx context.Context, scheme string) context.Context {
+	return context.WithValue(ctx, schemeKey{}, scheme)
+}
+func Scheme(ctx context.Context) string { v, _ := ctx.Value(schemeKey{}).(string); return v }
+
+// Confidential reports whether the connection keeps what crosses it from the
+// network: a local client never puts it there, and ssh encrypts it.
+func Confidential(ctx context.Context) bool {
+	return !IsRemote(ctx) || Scheme(ctx) == "ssh"
+}
 func LocalOnly(ctx context.Context, operation string) error {
 	if IsRemote(ctx) {
 		return fmt.Errorf("%s requires host-local Docker access; run cxz on the daemon host", operation)

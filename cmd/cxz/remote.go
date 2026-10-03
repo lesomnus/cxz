@@ -75,6 +75,7 @@ func runRemote(ctx context.Context, state, endpoint, tokenFile, session string) 
 	}
 	ctx = settings.With(ctx, cfg)
 	ctx = tui.WithRecordingDirectory(ctx, filepath.Join(state, "recordings"))
+	ctx = transport.WithScheme(ctx, e.Scheme)
 	if e.Scheme == "ssh" || e.Scheme == "tcp" {
 		ctx = transport.WithRemote(ctx)
 	}
@@ -116,7 +117,7 @@ func configuredSources(state string, cfg settings.Config) []multiclient.Source {
 			}
 			return resourceclient.New(conn), conn, nil
 		}
-		sources = append(sources, multiclient.Source{Name: name, Remote: endpoint.Scheme == "ssh" || endpoint.Scheme == "tcp", Open: open})
+		sources = append(sources, multiclient.Source{Name: name, Scheme: endpoint.Scheme, Remote: endpoint.Scheme == "ssh" || endpoint.Scheme == "tcp", Open: open})
 	}
 	return sources
 }
