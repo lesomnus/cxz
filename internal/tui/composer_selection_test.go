@@ -272,9 +272,9 @@ func TestComposerHomeEndFollowVisibleRows(t *testing.T) {
 	}
 }
 
-// The composer stops growing at six rows, so a longer draft continues off
-// screen. The bar is the only thing that says so, and where it sits has to
-// agree with the rows the widget is actually showing.
+// The composer stops growing, so a longer draft continues off screen. The bar
+// is the only thing that says so, and where it sits has to agree with the rows
+// the widget is actually showing.
 func TestComposerScrollbarTracksTheDraft(t *testing.T) {
 	old := lipgloss.ColorProfile()
 	lipgloss.SetColorProfile(termenv.TrueColor)
@@ -287,7 +287,9 @@ func TestComposerScrollbarTracksTheDraft(t *testing.T) {
 			t.Fatal("a draft that fits drew a scrollbar:", row)
 		}
 	}
-	m.input.SetValue(strings.Repeat("a line of draft\n", 12) + "last")
+	m.input.SetValue(strings.Repeat("a line of draft\n", 20) + "last")
+	// SetValue leaves the cursor at the end, and the view follows the cursor.
+	m.setComposerPosition(0)
 	m.resize()
 	thumb, track := muted.Render("│"), zeroStyle.Render("│")
 	bar := func() []bool {
@@ -317,8 +319,8 @@ func TestComposerScrollbarTracksTheDraft(t *testing.T) {
 	if end[0] || !end[len(end)-1] {
 		t.Fatal("thumb is not at the bottom of a draft scrolled to its end:", end)
 	}
-	// The thumb is a proportion of the draft, not a single cell: six rows of
-	// thirteen is about half the bar.
+	// The thumb is a proportion of the draft, not a single cell: the rows on
+	// screen out of the rows there are.
 	size := 0
 	for _, on := range end {
 		if on {
@@ -411,9 +413,13 @@ func TestComposerReservesTheScrollbarColumn(t *testing.T) {
 		bar := strings.HasSuffix(rows[0], muted.Render("│")) || strings.HasSuffix(rows[0], zeroStyle.Render("│"))
 		return m.input.Width(), width, bar
 	}
-	// Five rows fit; seven do not, so the bar appears between these two.
-	fitsText, fitsRow, fitsBar := measure(5)
-	overText, overRow, overBar := measure(7)
+	// Ask the composer where it stops growing, then take a draft on either side
+	// of that, so the fixture does not restate the limit.
+	m.input.SetValue(strings.Repeat(line+"\n", 40) + line)
+	m.resize()
+	grown := m.input.Height()
+	fitsText, fitsRow, fitsBar := measure(grown - 1)
+	overText, overRow, overBar := measure(grown + 2)
 	if fitsBar || !overBar {
 		t.Fatal("the bar did not appear exactly when the draft outgrew the composer", fitsBar, overBar)
 	}
@@ -429,8 +435,8 @@ func TestComposerReservesTheScrollbarColumn(t *testing.T) {
 	}
 	// Wrapping is computed against the same width the widget is given, so the
 	// row count the composer reports matches what it draws.
-	if got := len(m.composerRows()); got != 7 {
-		t.Fatal("draft of seven lines wrapped into", got, "rows")
+	if got := len(m.composerRows()); got != grown+2 {
+		t.Fatal("draft of", grown+2, "lines wrapped into", got, "rows")
 	}
 }
 
@@ -476,5 +482,58 @@ func TestComposerShiftEdgeSelection(t *testing.T) {
 	m.Update(tea.KeyMsg{Type: tea.KeyEnd})
 	if m.selectedComposerText() != "" {
 		t.Fatal("a plain edge key kept the selection")
+	}
+}
+
+// Filling a row puts the cursor on the next one, before there is any text on
+// it: the widget wraps a line that exactly fits onto a second row, and words
+// wrap before the edge. A composer sized by arithmetic over the draft misses
+// both, comes up a row short on the keystroke that fills a row, and leaves the
+// row being typed on off screen.
+func TestComposerGrowsOntoTheRowBeingTypedOn(t *testing.T) {
+	m := conversationModel()
+	wrap := m.input.Width()
+	for rows := 1; rows <= 4; rows++ {
+		for _, edge := range []int{-1, 0, 1} {
+			draft := strings.Repeat("x", rows*wrap+edge)
+			m.input.SetValue(draft)
+			m.setComposerPosition(len(draft))
+			m.resize()
+			layout := m.composerRows()
+			if m.input.Height() < len(layout) {
+				t.Fatal("a draft of", len(draft), "cells wraps to", len(layout), "rows, composer shows", m.input.Height())
+			}
+			probe := m.input
+			probe.Focus()
+			probe.Cursor.Blink = false
+			probe.Cursor.Style = cursorProbeStyle
+			_, row, ok := widgetCursor(probe.View())
+			if !ok {
+				t.Fatal("a draft of", len(draft), "cells hid the cursor")
+			}
+			if row != len(layout)-1 {
+				t.Fatal("a draft of", len(draft), "cells drew the cursor on row", row, "of", len(layout))
+			}
+		}
+	}
+}
+
+// The composer grows to maxComposerRows and then scrolls instead, and leaves
+// the conversation the larger share of a screen too short for that many.
+func TestComposerGrowsToTwelveRows(t *testing.T) {
+	m := conversationModel()
+	m.Update(tea.WindowSizeMsg{Width: 110, Height: 60})
+	m.input.SetValue(strings.Repeat("a line of draft\n", 30) + "last")
+	m.setComposerPosition(0)
+	m.resize()
+	if got := m.input.Height(); got != maxComposerRows {
+		t.Fatal("the composer grew to", got, "rows, want", maxComposerRows)
+	}
+	m.Update(tea.WindowSizeMsg{Width: 110, Height: 24})
+	if got := m.input.Height(); got != 8 {
+		t.Fatal("on a 24-row screen the composer took", got, "rows, want a third of it")
+	}
+	if m.view.Height < m.input.Height() {
+		t.Fatal("the composer took more of the screen than the conversation:", m.input.Height(), m.view.Height)
 	}
 }

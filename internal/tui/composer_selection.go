@@ -447,10 +447,10 @@ func (m *model) scrollComposer(down bool) bool {
 const composerWheelRows = 3
 
 // composerScrollbar marks where the draft is when it stops fitting. The composer
-// grows to six rows and then holds, so past that the rest of a long message is
-// off screen with nothing on screen to say so. The bar reads the same layout the
-// selection and the cursor read, so it cannot disagree with them about where the
-// draft is.
+// grows to maxComposerRows and then holds, so past that the rest of a long
+// message is off screen with nothing on screen to say so. The bar reads the same
+// layout the selection and the cursor read, so it cannot disagree with them
+// about where the draft is.
 func (m *model) composerScrollbar(view string) string {
 	rows := strings.Split(view, "\n")
 	layout := m.composerRows()
@@ -487,3 +487,8 @@ func (m *model) composerScrollbar(view string) string {
 // composerBarCells is the width the scrollbar column holds, reserved at all
 // times so the draft's wrapping does not depend on whether it is scrollable.
 const composerBarCells = 1
+
+// maxComposerRows is how far the composer grows before it scrolls instead. The
+// conversation keeps the rest of the screen, so a short terminal holds the
+// composer to a third of it and reaches this only when there is room.
+const maxComposerRows = 12
