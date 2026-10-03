@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="787.08" height="380.8" viewBox="0 0 787.08 380.8" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,'DejaVu Sans Mono',monospace" font-size="14">
+<title>The cxz project list</title>
+<rect width="554.4" height="380.8" rx="5.6" fill="#101317"/>
+<g>
+<rect x="8.4" y="8.4" width="537.6" height="72.8" fill="#303030"/>
+<rect x="8.4" y="81.2" width="537.6" height="18.2" fill="#444444"/>
+<rect x="8.4" y="99.4" width="537.6" height="273" fill="#303030"/>
+</g>
+<g xml:space="preserve" fill="#d4d4d4">
+<text x="16.8" y="40.6" textLength="67.2" lengthAdjust="spacing" fill="#4f772c" font-weight="bold">Projects</text>
+<text x="16.8" y="58.8" textLength="193.2" lengthAdjust="spacing" fill="#969ba8">↑/↓ select · Enter open</text>
+<text x="16.8" y="95.2" textLength="8.4" lengthAdjust="spacing">›</text>
+<text x="33.6" y="95.2" textLength="58.8" lengthAdjust="spacing" fill="#c9b6ee">Project</text>
+<text x="33.6" y="113.4" textLength="8.4" lengthAdjust="spacing" fill="#9ef01a">⣟</text>
+<text x="50.4" y="113.4" textLength="58.8" lengthAdjust="spacing">notes ·</text>
+<text x="117.6" y="113.4" textLength="42" lengthAdjust="spacing" fill="#ffffff" font-weight="bold">codex</text>
+<text x="16.8" y="131.6" textLength="100.8" lengthAdjust="spacing">•   layout ·</text>
+<text x="126" y="131.6" textLength="50.4" lengthAdjust="spacing" fill="#d97757" font-weight="bold">claude</text>
+<text x="16.8" y="149.8" textLength="520.8" lengthAdjust="spacing" fill="#444444">──────────────────────────────────────────────────────────────</text>
+<text x="33.6" y="168" textLength="50.4" lengthAdjust="spacing" fill="#c9b6ee">roster</text>
+<text x="50.4" y="186.2" textLength="58.8" lengthAdjust="spacing">flaky ·</text>
+<text x="117.6" y="186.2" textLength="42" lengthAdjust="spacing" fill="#ffffff" font-weight="bold">codex</text>
+<text x="176.4" y="186.2" textLength="75.6" lengthAdjust="spacing">· stopped</text>
+<text x="50.4" y="204.4" textLength="67.2" lengthAdjust="spacing">schema ·</text>
+<text x="126" y="204.4" textLength="50.4" lengthAdjust="spacing" fill="#d97757" font-weight="bold">claude</text>
+<text x="16.8" y="259" textLength="8.4" lengthAdjust="spacing" fill="#4f772c">n</text>
+<text x="25.2" y="259" textLength="33.6" lengthAdjust="spacing" fill="#969ba8">ew ·</text>
+<text x="67.2" y="259" textLength="8.4" lengthAdjust="spacing" fill="#4f772c">a</text>
+<text x="75.6" y="259" textLength="58.8" lengthAdjust="spacing" fill="#969ba8">ccounts</text>
+<text x="16.8" y="277.2" textLength="50.4" lengthAdjust="spacing" fill="#30343b">rename</text>
+<text x="75.6" y="277.2" textLength="8.4" lengthAdjust="spacing" fill="#969ba8">·</text>
+<text x="92.4" y="277.2" textLength="33.6" lengthAdjust="spacing" fill="#30343b">stop</text>
+<text x="16.8" y="295.4" textLength="159.6" lengthAdjust="spacing" fill="#30343b">Ctrl+X twice delete</text>
+<text x="16.8" y="313.6" textLength="50.4" lengthAdjust="spacing" fill="#30343b">memory</text>
+<text x="75.6" y="313.6" textLength="8.4" lengthAdjust="spacing" fill="#969ba8">·</text>
+<text x="92.4" y="313.6" textLength="50.4" lengthAdjust="spacing" fill="#4f772c">Ctrl+.</text>
+<text x="151.2" y="313.6" textLength="67.2" lengthAdjust="spacing" fill="#969ba8">settings</text>
+<text x="16.8" y="331.8" textLength="84" lengthAdjust="spacing" fill="#4f772c">Esc/Ctrl+Q</text>
+<text x="109.2" y="331.8" textLength="50.4" lengthAdjust="spacing" fill="#969ba8">return</text>
+<text x="16.8" y="350" textLength="50.4" lengthAdjust="spacing" fill="#4f772c">Ctrl+D</text>
+<text x="75.6" y="350" textLength="159.6" lengthAdjust="spacing" fill="#969ba8">detach · agents run</text>
+</g>
+<g fill="#6b7280" font-size="11.9">
+<text x="571.2" y="131.6">a session · cxz session ls</text>
+<path d="M554.4 127.4L561.96 127.4L567.84 127.4" fill="none" stroke="#6b7280" stroke-width=".5"/>
+<text x="571.2" y="168">a project · cxz project ls</text>
+<path d="M554.4 163.8L561.96 163.8L567.84 163.8" fill="none" stroke="#6b7280" stroke-width=".5"/>
+<text x="571.2" y="259">keys for the list</text>
+<path d="M554.4 254.8L561.96 254.8L567.84 254.8" fill="none" stroke="#6b7280" stroke-width=".5"/>
+</g>
+</svg>

@@ -19,6 +19,7 @@ start. This is the map of everything else.
 |---|---|
 | [projects.md](projects.md) | Lifecycle, what survives what, names and aliases, purge |
 | [tui.md](tui.md) | Keys, slash commands, reading a conversation, scrolling, attachments |
+| [screens.md](screens.md) | Each screen drawn and labelled, and what each part maps to on the CLI |
 | [approvals.md](approvals.md) | The approval box, question dialogs, permission modes |
 | [skills.md](skills.md) | The Agent Skills library and per-project scope |
 | [mcp.md](mcp.md) | MCP registrations, global defaults, project activation |
