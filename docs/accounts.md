@@ -96,3 +96,31 @@ an account.
 Creating a Claude session prompts for login inline when it needs one, including
 over SSH and TCP frontends. The project runtime runs the provider's own login and
 creation is retried once with the same session profile.
+
+## Host Git configuration
+
+On the Linux Manager host, `cxz gitconfig sync` refreshes global Git settings in
+all running project containers. No agent restart or project recreation is needed:
+subsequent Git commands, including commands from isolated session HOMEs, read the
+new settings. Stopped projects receive the saved snapshot at their next `up`.
+`cxz up` also snapshots host settings automatically.
+
+The snapshot reads `$XDG_CONFIG_HOME/git/config` (default `~/.config/git/config`)
+and `~/.gitconfig` in Git's order, or `$GIT_CONFIG_GLOBAL` when set. Referenced
+`include.path` and `includeIf.*.path` files are copied recursively, with include
+paths rewritten to container copies. Conditions remain conditions: host-specific
+`gitdir:` patterns may need adapting to container paths. Other path-valued options
+(signing keys, hooks, executables and credential helpers) are copied as settings;
+the referenced files/programs are not installed by this command.
+
+Each project keeps an immutable snapshot in `/cxz/state/data/host-git`, selected
+by an atomic `active.config` include from `/etc/gitconfig`. Unchanged snapshots
+reuse their generation. Existing container system settings are preserved;
+container global and repository-local settings can still override these defaults.
+Earlier generations remain in project state so concurrent Git reads can finish.
+This copies configuration, not the host Git credential store; `cxz github sync`
+remains the separate command for GitHub CLI credentials.
+
+Run the command on the remote Linux host when using a Windows SSH frontend. A
+project that fails to sync is reported, while other running projects are still
+attempted. No successful all-project message is printed on partial failure.

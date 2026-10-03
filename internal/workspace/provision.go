@@ -290,6 +290,9 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string, overri
 	if _, e = dockerx.Owned(ctx, p.ContainerID, m.Owner, p.ID); e != nil {
 		return e
 	}
+	if e = m.installGitConfig(ctx, p); e != nil {
+		return e
+	}
 	if e = m.checkpoint(ctx, p, "agent-tools"); e != nil {
 		return e
 	}
@@ -299,6 +302,9 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string, overri
 	}
 	libc, _ := dockerx.Run(ctx, "exec", p.ContainerID, "sh", "-c", "ls /lib/ld-musl-*.so.1 2>/dev/null || true")
 	if e = m.installGitHub(ctx, p, strings.TrimSpace(string(platform))); e != nil {
+		return e
+	}
+	if e = m.installGitConfig(ctx, p); e != nil {
 		return e
 	}
 	if e = m.checkpoint(ctx, p, "agent-tools"); e != nil {

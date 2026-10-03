@@ -69,7 +69,7 @@ func localTUI(ctx context.Context, client api.SessionsClient, c *xli.Command, se
 
 func projectTUI(ctx context.Context, resources *resourceclient.Client, c *xli.Command, p *api.Project, selected string, trust bool) error {
 	return tui.RunProject(ctx, resources, p, selected, func(ctx context.Context, projectID, alias string, input io.Reader, output, errOutput io.Writer) (*api.Session, error) {
-		if err := installer.SyncGitHub(ctx, stateFrom(ctx), errOutput); err != nil {
+		if err := installer.SyncHostConfig(ctx, stateFrom(ctx), errOutput); err != nil {
 			return nil, err
 		}
 		// The project navigator owns the terminal. Provider processes use pipes; all
