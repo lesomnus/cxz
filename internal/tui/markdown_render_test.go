@@ -226,3 +226,38 @@ func TestPromptCursorKeepsAColumnOfFillToItsLeft(t *testing.T) {
 		t.Fatal("fill reached into the gap beside the panel")
 	}
 }
+
+// Inline code is a few cells inside a sentence. It sits on black so it reads as
+// a separate thing at that size; a code block keeps its own lighter shade,
+// which is a panel and does not need the contrast.
+func TestInlineCodeSitsOnBlack(t *testing.T) {
+	old := lipgloss.ColorProfile()
+	t.Cleanup(func() { lipgloss.SetColorProfile(old) })
+	for _, profile := range []termenv.Profile{termenv.ANSI256, termenv.TrueColor} {
+		lipgloss.SetColorProfile(profile)
+		inline := markdownView("a sentence with `code` in it", 40)
+		terminal := vt.NewEmulator(40, 3)
+		terminal.WriteString(strings.ReplaceAll(inline, "\n", "\r\n"))
+		found := false
+		for x := 0; x < 40; x++ {
+			cell := terminal.CellAt(x, 0)
+			if cell == nil || cell.Content != "c" || cell.Style.Bg == nil {
+				continue
+			}
+			r, g, b, _ := cell.Style.Bg.RGBA()
+			if r != 0 || g != 0 || b != 0 {
+				t.Fatalf("inline code background %04x %04x %04x, want black", r, g, b)
+			}
+			found = true
+		}
+		terminal.Close()
+		if !found {
+			t.Fatal("inline code was not rendered on a background at all:", profile)
+		}
+		// The block shade is a different decision and stays where it was.
+		block := markdownView("```\ncode\n```", 40)
+		if !strings.Contains(block, fmt.Sprintf("48;5;%d", codeBackground)) && !strings.Contains(block, "48;2;43;43;43") {
+			t.Fatal("code block lost its own background")
+		}
+	}
+}

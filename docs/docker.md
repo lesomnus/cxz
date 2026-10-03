@@ -30,6 +30,37 @@ CLI. Projects without one fall back, in this order:
 
 Either way, changes need a `cxz project recreate`.
 
+### Seeing what applies
+
+Your `.devcontainer` is read, never written. What runs is that file with cxz's
+own keys added and its Compose override merged after yours, and all of it lands
+in cxz's state directory rather than in your repository. To read the result
+instead of inferring it:
+
+```sh
+cxz devcontainer render            # the project in this directory
+cxz devcontainer render PROJECT
+```
+
+It writes a directory and prints the path:
+
+```
+/tmp/cxz-devcontainer-1864239057
+  devcontainer.json              what cxz passed to the devcontainer CLI
+  source/devcontainer.json       the project's own configuration
+  compose/01-docker-compose.yaml a Compose file from the project's devcontainer
+  compose/02-compose.user.json   the installation's shared Compose override
+  compose/03-compose.json        cxz's own override, merged last
+  compose/resolved.yaml          the merge, as Compose resolves it
+  sources.txt                    where each file came from
+```
+
+The numbers are the merge order, and `resolved.yaml` is where a question like
+"which name did my cache volume end up with" is actually answered. These are the
+files cxz handed the CLI, read back rather than rendered again, so the project
+has to have been started at least once; before that there is no answer to give,
+only a guess.
+
 The built-in default is a template so that there is one code path and one set of
 rules: whatever this page says about templates below is equally true of it, and
 replacing it for your installation means putting your own template where cxz

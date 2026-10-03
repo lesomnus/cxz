@@ -116,11 +116,18 @@ Registering and logging in are separate. See [accounts](accounts.md).
 cxz edit                            # settings.jsonc
 cxz edit docker-compose             # the shared Compose override
 cxz edit share PATH                 # a file in the shared source directory
+cxz devcontainer render [PROJECT]   # write out the devcontainer in effect
 cxz config show
 cxz config set claude-model ID
 cxz config unset codex-model
 cxz config files                    # host file mappings
 ```
+
+`devcontainer render` answers "what is actually applied". It writes the
+configuration cxz handed the devcontainer CLI, every Compose file in merge order
+and their merged result into a directory, then prints its path. Your
+`.devcontainer` is read, never written; see
+[the shared Compose override](docker.md#the-shared-compose-override).
 
 ## Skills and MCP
 

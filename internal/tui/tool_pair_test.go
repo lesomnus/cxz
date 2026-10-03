@@ -75,13 +75,13 @@ func TestNativeExecutionSignalAndFailureColor(t *testing.T) {
 	t.Cleanup(func() { lipgloss.SetColorProfile(old) })
 	for _, state := range []string{"failed", "denied", "canceled"} {
 		view := toolActivityStateBody(agentview.ToolActivity{Kind: "tool", Description: "Write"}, nil, 80, state)
-		if !strings.Contains(view, "38;2;242;109;120") || !strings.Contains(ansi.Strip(view), "×") {
+		if !strings.Contains(view, sgr(failure)) || !strings.Contains(ansi.Strip(view), "×") {
 			t.Fatal(view)
 		}
 	}
 	for _, state := range []string{"denied", "canceled"} {
 		view := approvalLine(&api.Session{Agent: "claude"}, &api.Event{Text: "Write"}, state, 80)
-		if !strings.Contains(view, "38;2;242;109;120") {
+		if !strings.Contains(view, sgr(failure)) {
 			t.Fatal(view)
 		}
 	}

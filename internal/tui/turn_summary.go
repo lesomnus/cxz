@@ -166,7 +166,11 @@ func turnSummary(e, usageEvent *api.Event, started int64, width int) string {
 		if detail != "" {
 			status += " · " + detail
 		}
-		lines = append(lines, peach.Render(ansi.Hardwrap(status, max(1, width), true)))
+		statusStyle := peach
+		if e.Text == "failed" {
+			statusStyle = failure
+		}
+		lines = append(lines, statusStyle.Render(ansi.Hardwrap(status, max(1, width), true)))
 	}
 	// Wrap at fixed-cell boundaries; never shift symbols with numeric magnitude.
 	row := ""

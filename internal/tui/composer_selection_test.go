@@ -184,3 +184,146 @@ func TestComposerSelectionGraphemesAndModal(t *testing.T) {
 		t.Fatal("mouse reached composer through settings")
 	}
 }
+
+// Word-wise selection has to agree with word-wise motion: whatever ctrl+left
+// walks over is what ctrl+shift+left takes.
+func TestComposerWordSelection(t *testing.T) {
+	m := conversationModel()
+	m.input.SetValue("alpha beta gamma")
+	m.resize()
+	m.input.CursorEnd()
+	m.Update(tea.KeyMsg{Type: tea.KeyCtrlShiftLeft})
+	if got := m.selectedComposerText(); got != "gamma" {
+		t.Fatalf("one word back selected %q", got)
+	}
+	m.Update(tea.KeyMsg{Type: tea.KeyCtrlShiftLeft})
+	if got := m.selectedComposerText(); got != "beta gamma" {
+		t.Fatalf("two words back selected %q", got)
+	}
+	// Coming back the other way shrinks the same selection rather than starting
+	// a new one in the other direction.
+	m.Update(tea.KeyMsg{Type: tea.KeyCtrlShiftRight})
+	if got := m.selectedComposerText(); got != " gamma" {
+		t.Fatalf("forward shrink selected %q", got)
+	}
+	// A plain word move is still a move, and it drops the selection.
+	m.Update(tea.KeyMsg{Type: tea.KeyCtrlLeft})
+	if m.selectedComposerText() != "" {
+		t.Fatal("word motion kept a selection")
+	}
+}
+
+// Home and End address the row on screen. A wrapped draft is one line in the
+// value and several rows in the view, so walking it needs the view's idea of an
+// edge, and a second press has to move rather than sit there.
+func TestComposerHomeEndFollowVisibleRows(t *testing.T) {
+	m := conversationModel()
+	// Long enough to wrap whatever width the composer settles on, and a second
+	// line behind it so a row edge is not also a line edge.
+	m.input.SetValue(strings.Repeat("alpha beta gamma delta ", 8) + "zeta\nsecond line here")
+	m.resize()
+	rows := m.composerRows()
+	if len(rows) < 4 || rows[1].line != 0 {
+		t.Fatal("fixture did not wrap", rows)
+	}
+	press := func(k tea.KeyType) int {
+		m.Update(tea.KeyMsg{Type: k})
+		return composerPosition(m.input)
+	}
+	m.setComposerPosition(rows[0].start + 10)
+	if got := press(tea.KeyHome); got != rows[0].start {
+		t.Fatal("home left the row start", got)
+	}
+	// The first row ends mid line, so its last position is the one that still
+	// draws on it: the position after it is where the next row begins.
+	if got := press(tea.KeyEnd); got != rows[0].end-1 {
+		t.Fatal("end did not stop at the visible row end", got)
+	}
+	if got := press(tea.KeyEnd); got != rows[1].end-1 {
+		t.Fatal("end again did not step to the next row", got)
+	}
+	if got := press(tea.KeyHome); got != rows[1].start {
+		t.Fatal("home did not return to this row's start", got)
+	}
+	if got := press(tea.KeyHome); got != rows[0].start {
+		t.Fatal("home again did not step to the previous row", got)
+	}
+	if got := press(tea.KeyHome); got != rows[0].start {
+		t.Fatal("home ran off the front of the draft", got)
+	}
+	// The last row of a line owns the position after its last character: no row
+	// starts there, so the cursor still draws on it.
+	last := rows[len(rows)-1]
+	m.setComposerPosition(last.start)
+	if got := press(tea.KeyEnd); got != last.end {
+		t.Fatal("end short of the final row", got)
+	}
+	if got := press(tea.KeyEnd); got != last.end {
+		t.Fatal("end ran off the back of the draft", got)
+	}
+	// An edge key is a move, so it collapses a selection like the arrows do.
+	m.Update(tea.KeyMsg{Type: tea.KeyShiftLeft})
+	if m.selectedComposerText() == "" {
+		t.Fatal("no selection to collapse")
+	}
+	press(tea.KeyHome)
+	if m.selectedComposerText() != "" {
+		t.Fatal("home kept a selection")
+	}
+}
+
+// The composer stops growing at six rows, so a longer draft continues off
+// screen. The bar is the only thing that says so, and where it sits has to
+// agree with the rows the widget is actually showing.
+func TestComposerScrollbarTracksTheDraft(t *testing.T) {
+	old := lipgloss.ColorProfile()
+	lipgloss.SetColorProfile(termenv.TrueColor)
+	t.Cleanup(func() { lipgloss.SetColorProfile(old) })
+	m := conversationModel()
+	m.input.SetValue("one\ntwo\nthree")
+	m.resize()
+	if got := m.composerScrollbar(m.input.View()); got != m.input.View() {
+		t.Fatal("a draft that fits got a scrollbar")
+	}
+	m.input.SetValue(strings.Repeat("a line of draft\n", 12) + "last")
+	m.resize()
+	thumb, track := muted.Render("│"), zeroStyle.Render("│")
+	bar := func() []bool {
+		var out []bool
+		for _, row := range strings.Split(m.composerScrollbar(m.input.View()), "\n") {
+			switch {
+			case strings.HasSuffix(row, thumb):
+				out = append(out, true)
+			case strings.HasSuffix(row, track):
+				out = append(out, false)
+			default:
+				t.Fatal("row carries no scrollbar cell:", row)
+			}
+			if w := ansi.StringWidth(row); w != m.width-2 {
+				t.Fatal("scrollbar row is", w, "cells, want", m.width-2)
+			}
+		}
+		return out
+	}
+	top := bar()
+	if len(top) != m.input.Height() || !top[0] || top[len(top)-1] {
+		t.Fatal("thumb is not at the top of an unscrolled draft:", top)
+	}
+	m.setComposerPosition(len([]rune(m.input.Value())))
+	m.resize()
+	end := bar()
+	if end[0] || !end[len(end)-1] {
+		t.Fatal("thumb is not at the bottom of a draft scrolled to its end:", end)
+	}
+	// The thumb is a proportion of the draft, not a single cell: six rows of
+	// thirteen is about half the bar.
+	size := 0
+	for _, on := range end {
+		if on {
+			size++
+		}
+	}
+	if size < 2 || size >= len(end) {
+		t.Fatal("thumb covers", size, "of", len(end), "rows")
+	}
+}

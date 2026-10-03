@@ -42,6 +42,12 @@ Needs at least 40 × 14 cells. Follows terminal resizes.
 | `Ctrl+D` | Detach |
 | `PgUp` `PgDn`, wheel | Scroll |
 | `Ctrl+Home` / `Ctrl+End` | First line / follow the latest |
+| `Home` / `End` | Start / end of the row you can see; again steps to the next row |
+| `Shift` + arrows | Select by character or row |
+| `Ctrl+Shift+←` / `→` | Select by word |
+
+The composer grows to six rows and then holds; past that a bar on its right edge
+shows where in the draft you are.
 
 Paste never submits, however it arrives.
 
@@ -130,6 +136,7 @@ the rest is in `/details`, which has Input and Output tabs with independent scro
 The TUI loads the last 128 events first and pages backwards as you scroll. New
 output never pulls you away from where you are reading. If your latest prompt has
 scrolled off the top, up to two of its lines stay pinned over the top edge.
+Clicking those pinned lines scrolls back to that message.
 
 The status row while scrolling shows a journal coordinate — `5,842/9,284`, counted
 from the oldest retained event — not loaded line numbers. The loaded window slides

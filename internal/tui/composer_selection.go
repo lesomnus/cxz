@@ -115,6 +115,62 @@ func (m *model) deleteComposerSelection() bool {
 	m.setPathInput(string(r[:a])+string(r[b:]), a)
 	return true
 }
+
+// Home and End work on the row you can see rather than the line behind it: a
+// wrapped draft is one line in the value and several rows on screen, and a key
+// that jumps past what is visible is a key you cannot aim with. Pressing again
+// on an edge steps to the neighbouring row's edge, so the pair walks the draft
+// instead of doing nothing on the second press.
+func (m *model) composerRowEdge(forward bool) {
+	rows := m.composerRows()
+	if len(rows) == 0 {
+		return
+	}
+	pos := composerPosition(m.input)
+	i := composerRowIndex(rows, pos)
+	target := rows[i].start
+	if forward {
+		target = composerRowEnd(rows, i)
+	}
+	if target == pos {
+		switch {
+		case forward && i+1 < len(rows):
+			target = composerRowEnd(rows, i+1)
+		case !forward && i > 0:
+			target = rows[i-1].start
+		}
+	}
+	m.setComposerPosition(target)
+}
+
+// composerRowIndex answers the question the widget answers when it draws: which
+// row does this position appear on. A position on a wrap boundary belongs to the
+// row that starts there, and one on a line's trailing newline to the row that
+// ends there.
+func composerRowIndex(rows []composerRow, pos int) int {
+	for i, row := range rows {
+		if pos < row.end {
+			return i
+		}
+		if i+1 < len(rows) && pos < rows[i+1].start {
+			return i
+		}
+	}
+	return len(rows) - 1
+}
+
+// composerRowEnd is the last position that still renders on the row. A soft wrap
+// has no character of its own, so the position after a wrapped row's last
+// character is also the position before the next row's first, and the widget
+// draws it there; stopping one short keeps End on the row it was pressed on.
+func composerRowEnd(rows []composerRow, i int) int {
+	row := rows[i]
+	if i+1 < len(rows) && rows[i+1].line == row.line {
+		return max(row.start, row.end-1)
+	}
+	return row.end
+}
+
 func composerGraphemeMove(value string, pos int, forward bool) int {
 	g := uniseg.NewGraphemes(value)
 	start := 0
@@ -135,7 +191,12 @@ func (m *model) composerKey(k tea.KeyMsg) (bool, tea.Cmd) {
 	if !m.composerAvailable() || m.panelFocus || m.focusList || m.focusApproval {
 		return false, nil
 	}
-	moves := map[string]tea.KeyType{"shift+left": tea.KeyLeft, "shift+right": tea.KeyRight, "shift+up": tea.KeyUp, "shift+down": tea.KeyDown}
+	// Word-wise selection reuses the widget's own word motion, so what
+	// ctrl+left selects is exactly what ctrl+left would have walked over.
+	moves := map[string]tea.KeyType{
+		"shift+left": tea.KeyLeft, "shift+right": tea.KeyRight, "shift+up": tea.KeyUp, "shift+down": tea.KeyDown,
+		"ctrl+shift+left": tea.KeyCtrlLeft, "ctrl+shift+right": tea.KeyCtrlRight,
+	}
 	if direction, ok := moves[k.String()]; ok && !k.Paste {
 		if !m.composerSelectionValid() {
 			m.composerSelection = &composerSelection{value: m.input.Value(), session: m.composerSession(), anchor: composerPosition(m.input)}
@@ -150,6 +211,15 @@ func (m *model) composerKey(k tea.KeyMsg) (bool, tea.Cmd) {
 		// Bounds expand partial chip selections to whole objects.
 		s.head = composerPosition(m.input)
 		s.dragging = false
+		m.resize()
+		return true, nil
+	}
+	if edge := k.String(); (edge == "home" || edge == "end") && !k.Paste {
+		m.composerSelection = nil
+		m.pasteSelection = nil
+		m.composerRowEdge(edge == "end")
+		// A chip's label can wrap, so a row edge can land inside one object.
+		m.snapChipCursor()
 		m.resize()
 		return true, nil
 	}
@@ -322,6 +392,34 @@ func (m *model) composerSelectionView(view string) string {
 			right++
 		}
 		rows[y] = ansi.Cut(rows[y], 0, left) + indexedBackground(ansi.Cut(rows[y], left, right), 240) + ansi.Cut(rows[y], right, ansi.StringWidth(rows[y]))
+	}
+	return strings.Join(rows, "\n")
+}
+
+// composerScrollbar marks where the draft is when it stops fitting. The composer
+// grows to six rows and then holds, so past that the rest of a long message is
+// off screen with nothing on screen to say so. The bar reads the same layout the
+// selection and the cursor read, so it cannot disagree with them about where the
+// draft is.
+func (m *model) composerScrollbar(view string) string {
+	rows := strings.Split(view, "\n")
+	layout := m.composerRows()
+	if len(layout) <= len(rows) || len(rows) == 0 || m.width < 4 {
+		return view
+	}
+	offset := min(m.composerScroll(layout), len(layout)-len(rows))
+	visible, total := len(rows), len(layout)
+	size := max(1, visible*visible/total)
+	span := max(1, total-visible)
+	start := min(visible-size, (offset*(visible-size)+span/2)/span)
+	width := m.width - 3
+	for y, row := range rows {
+		bar := zeroStyle.Render("│")
+		if y >= start && y < start+size {
+			bar = muted.Render("│")
+		}
+		text := ansi.Cut(row, 0, width)
+		rows[y] = text + strings.Repeat(" ", max(0, width-ansi.StringWidth(text))) + bar
 	}
 	return strings.Join(rows, "\n")
 }
