@@ -278,12 +278,15 @@ function Conversation({
         active?.abort();
       }
     };
+    const offline = () => active?.abort();
+    window.addEventListener("offline", offline);
     document.addEventListener("visibilitychange", resume);
     return () => {
       canceled = true;
       active?.abort();
       clearTimeout(timer);
       document.removeEventListener("visibilitychange", resume);
+      window.removeEventListener("offline", offline);
     };
   }, [c, id]);
   useEffect(() => {
@@ -484,7 +487,9 @@ function Approval({
   const [other, setOther] = useState<Record<string, string>>({});
   const elicitation = e.text === "mcpServer/elicitation/request";
   const p = payload(e);
-  const requiresForm = elicitation && p.params?.requestedSchema;
+  const requiresForm =
+    (elicitation && p.params?.requestedSchema) ||
+    e.text === "agentMessage/questions";
   return (
     <section className="approval">
       <h3>{approvalTitle(e)}</h3>
@@ -531,8 +536,8 @@ function Approval({
       ))}
       {requiresForm && (
         <p>
-          This MCP form is not supported in the web client yet. Complete it in
-          the TUI.
+          This request form is not supported in the web client yet. Complete it
+          in the TUI.
         </p>
       )}
       <div className="buttons">

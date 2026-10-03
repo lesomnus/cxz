@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 test("mobile sign-in, conversation, questions, drafts and sign-out", async ({
   page,
+  context,
 }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
@@ -34,6 +35,15 @@ test("mobile sign-in, conversation, questions, drafts and sign-out", async ({
   await expect(
     page.getByRole("textbox", { name: "Message", exact: true }),
   ).toHaveValue("");
+  await expect(
+    page.locator("article.input").filter({ hasText: "초안 preserved" }),
+  ).toHaveCount(1);
+  await context.setOffline(true);
+  await expect(page.getByText(/Disconnected · retrying/)).toBeVisible();
+  await context.setOffline(false);
+  await expect(page.getByText(/claude · idle · Live/)).toBeVisible({
+    timeout: 15000,
+  });
   await expect(
     page.locator("article.input").filter({ hasText: "초안 preserved" }),
   ).toHaveCount(1);
