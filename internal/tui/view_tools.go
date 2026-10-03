@@ -8,6 +8,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/agentview"
 )
 
 type toolSelector struct {
@@ -165,7 +166,20 @@ func (m *model) previewForSequence(seq uint64) *filePreview {
 			break
 		}
 	}
-	if selected == nil || (selected.Kind != "tool_call" && selected.Kind != "tool_result") {
+	if selected == nil {
+		return nil
+	}
+	if selected.Kind == "approval" {
+		approval := agentview.ApprovalView(s.Agent, selected.Text, selected.Payload)
+		state := "No resolution recorded in loaded history."
+		for _, e := range m.events[s.Id] {
+			if selected.RequestId != "" && e.Kind == "approval_resolved" && e.RequestId == selected.RequestId && e.RunId == selected.RunId && e.Seq > selected.Seq {
+				state = e.Text
+			}
+		}
+		return &filePreview{title: "Approval · " + approval.Title, source: "Approval status: " + state + "\nThis is an approval record, not a tool execution result.\n\n" + approval.Detail, language: "text"}
+	}
+	if selected.Kind != "tool_call" && selected.Kind != "tool_result" {
 		return nil
 	}
 	if selected.Kind == "tool_call" {

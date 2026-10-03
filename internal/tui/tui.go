@@ -842,7 +842,7 @@ func (m *model) render() {
 					text = muted.Render(ansi.Strip(text))
 				}
 				add(text, e.TimeMs)
-				if e.Kind == "tool_call" || e.Kind == "tool_result" {
+				if e.Kind == "tool_call" || e.Kind == "tool_result" || e.Kind == "approval" {
 					inspectBlocks[len(lines)-1] = true
 				}
 				if e.RunId == s.RunId && (e.Kind == "tool_call" || e.Kind == "tool_result") {
