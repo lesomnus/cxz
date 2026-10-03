@@ -222,6 +222,22 @@ not start, and the fix is to give that project a Compose devcontainer of its own
 cxz's own environment (`CXZ_STATE` and friends) is applied after the override, so
 an override cannot redefine it.
 
+### When a build stops before it starts
+
+Compose delegates builds to buildx bake, and bake refuses to read a file outside
+the Compose project directory unless the build grants it:
+
+```
+additional privileges requested: pass "--allow=fs.read=/tmp/devcontainercli-root/..."
+```
+
+The devcontainer CLI wraps every Compose devcontainer in a generated Dockerfile
+under its own temporary directory — that is how it adds features and the
+base-image stage label — so the grant is always missing. cxz turns the check off
+for the CLI it runs, since the grant cannot be passed from outside: the CLI
+invokes Compose, and `compose build` takes no `--allow`. An older cxz fails here
+on recent Docker; `cxz install --recreate` applies the fix.
+
 ## The shared Docker engine
 
 On by default, so an agent can build and run containers without reaching your host

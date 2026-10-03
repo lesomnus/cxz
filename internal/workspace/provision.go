@@ -12,6 +12,7 @@ import (
 	"github.com/lesomnus/cxz/internal/dockerx"
 	"github.com/lesomnus/cxz/internal/githubauth"
 	"github.com/tailscale/hujson"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -19,6 +20,62 @@ import (
 	"strconv"
 	"strings"
 )
+
+// provisionTail is the last thing the devcontainer CLI said before it gave up.
+// The CLI reports a failed child command without the output of that child, and
+// the output is the only part that says why, so an error that stops at "inspect
+// the log" sends every reader on the same round trip. Node stack frames are
+// dropped: they name the CLI's own internals, never the cause.
+func provisionTail(path string) string {
+	const window = 16 << 10
+	f, err := os.Open(path)
+	if err != nil {
+		return "; inspect project provision.log"
+	}
+	defer f.Close()
+	info, err := f.Stat()
+	if err != nil {
+		return "; inspect project provision.log"
+	}
+	b := make([]byte, min(window, info.Size()))
+	if _, err = f.ReadAt(b, max(0, info.Size()-int64(len(b)))); err != nil && err != io.EOF {
+		return "; inspect project provision.log"
+	}
+	var kept []string
+	for _, line := range strings.Split(string(b), "\n") {
+		line = strings.TrimRight(line, "\r")
+		if strings.TrimSpace(line) == "" || strings.HasPrefix(line, "    at ") {
+			continue
+		}
+		if len(line) > 300 {
+			line = line[:300] + "…"
+		}
+		kept = append(kept, "  "+line)
+	}
+	if len(kept) == 0 {
+		return "; inspect project provision.log"
+	}
+	return "; the last lines of its output were:\n" + strings.Join(kept[max(0, len(kept)-6):], "\n")
+}
+
+// provisionEnv is what the devcontainer CLI runs with.
+//
+// Docker Compose now delegates builds to buildx bake, and bake refuses to read
+// a file outside the Compose project directory unless the build explicitly
+// grants it. The CLI wraps every Compose devcontainer in a generated Dockerfile
+// under its own temporary directory -- that is how it adds features and the
+// base-image stage label -- and points build.dockerfile at that absolute path,
+// so the grant is always missing and the build stops with "additional
+// privileges requested" before it starts. cxz cannot pass the grant: the CLI
+// invokes Compose, not cxz, and compose build takes no --allow.
+//
+// Turning the check off is scoped to this child process. What it would protect
+// is the manager container's own filesystem from a build reading outside its
+// context, and the inputs here are the CLI's generated Dockerfile plus a
+// configuration the project already had to be trusted to use.
+func provisionEnv(project string) []string {
+	return []string{"COMPOSE_PROJECT_NAME=" + project, "BUILDX_BAKE_ENTITLEMENTS_FS=0"}
+}
 
 func (m *Manager) provision(ctx context.Context, p *Project, kind string, override Override, configFile string) error {
 	var e error
@@ -248,7 +305,7 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string, overri
 	if e = m.checkpoint(ctx, p, "devcontainer-up"); e != nil {
 		return e
 	}
-	cmd.Env = append(os.Environ(), "COMPOSE_PROJECT_NAME=cxz-"+m.Owner[:12]+"-"+p.ID)
+	cmd.Env = append(os.Environ(), provisionEnv("cxz-"+m.Owner[:12]+"-"+p.ID)...)
 	var stdout bytes.Buffer
 	log, e := os.OpenFile(filepath.Join(m.Root, "projects", p.ID, "provision.log"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
 	if e != nil {
@@ -259,7 +316,7 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string, overri
 	e = cmd.Run()
 	log.Close()
 	if e != nil {
-		return fmt.Errorf("devcontainer up failed: %w; inspect project provision.log", e)
+		return fmt.Errorf("devcontainer up failed: %w%s", e, provisionTail(filepath.Join(m.Root, "projects", p.ID, "provision.log")))
 	}
 	var result struct {
 		ContainerID     string `json:"containerId"`
