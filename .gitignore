@@ -12,3 +12,9 @@ coverage.out
 /cxz.exe
 /cxz.previous
 /.cxz.update.lock
+
+# Browser dependencies; the embedded production build is checked in.
+/ts/node_modules/
+/ts/coverage/
+/ts/test-results/
+/ts/playwright-report/

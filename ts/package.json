@@ -1,0 +1,31 @@
+{
+  "name": "cxz-web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit && vite build",
+    "test": "vitest run src",
+    "test:browser": "playwright test",
+    "format": "prettier --write src vite.config.ts playwright.config.ts e2e"
+  },
+  "dependencies": {
+    "@bufbuild/protobuf": "2.12.1",
+    "@connectrpc/connect": "2.1.2",
+    "@connectrpc/connect-web": "2.1.2",
+    "@lesomnus/payday": "0.0.5",
+    "dompurify": "3.4.16",
+    "marked": "16.4.1",
+    "react": "19.2.0",
+    "react-dom": "19.2.0"
+  },
+  "devDependencies": {
+    "@bufbuild/protoc-gen-es": "2.13.0",
+    "@playwright/test": "1.58.2",
+    "@types/react": "19.2.2",
+    "@types/react-dom": "19.2.2",
+    "prettier": "3.6.2",
+    "typescript": "5.9.3",
+    "vite": "7.3.6",
+    "vitest": "5.0.3"
+  }
+}
