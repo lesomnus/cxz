@@ -2,6 +2,7 @@ package webui
 
 import (
 	"context"
+	"crypto/sha256"
 	"io"
 	"net"
 	"net/http"
@@ -126,3 +127,39 @@ func TestBrowserConnect(t *testing.T) {
 type roundTripFunc func(*http.Request) (*http.Response, error)
 
 func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
+
+func TestSessionRevocationCancelsActiveRequests(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	key := sha256.Sum256([]byte("cookie"))
+	a := &browserAuth{sessions: map[[32]byte]browserSession{key: {ctx: ctx, cancel: cancel}}}
+	s, ok := a.session("cookie")
+	if !ok {
+		t.Fatal("session missing")
+	}
+	a.mu.Lock()
+	a.revoke(key)
+	a.mu.Unlock()
+	select {
+	case <-s.ctx.Done():
+	default:
+		t.Fatal("active stream context was not canceled")
+	}
+	if _, ok := a.session("cookie"); ok {
+		t.Fatal("revoked session accepted")
+	}
+}
+
+func TestConfigRequiresHTTPSAndExplicitCredentials(t *testing.T) {
+	c := Config{Listen: "127.0.0.1:0", Origin: "https://example.test", Certificate: "cert", Key: "key", Token: strings.Repeat("a", 32)}
+	for _, origin := range []string{"http://example.test", "https://user@example.test", "https://example.test/path", "https://example.test?query=1", "https://example.test#fragment"} {
+		bad := c
+		bad.Origin = origin
+		if bad.Validate() == nil {
+			t.Fatalf("accepted %s", origin)
+		}
+	}
+	c.Token = "short"
+	if c.Validate() == nil {
+		t.Fatal("accepted short token")
+	}
+}
