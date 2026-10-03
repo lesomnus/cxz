@@ -282,8 +282,10 @@ func TestComposerScrollbarTracksTheDraft(t *testing.T) {
 	m := conversationModel()
 	m.input.SetValue("one\ntwo\nthree")
 	m.resize()
-	if got := m.composerScrollbar(m.input.View()); got != m.input.View() {
-		t.Fatal("a draft that fits got a scrollbar")
+	for _, row := range strings.Split(m.composerScrollbar(m.input.View()), "\n") {
+		if strings.Contains(row, "│") {
+			t.Fatal("a draft that fits drew a scrollbar:", row)
+		}
 	}
 	m.input.SetValue(strings.Repeat("a line of draft\n", 12) + "last")
 	m.resize()
@@ -384,5 +386,50 @@ func TestComposerWheelScrollsTheDraft(t *testing.T) {
 	m.resize()
 	if wheel(m.height-m.input.Height()-1, tea.MouseButtonWheelDown) {
 		t.Fatal("scrolled a draft that fits")
+	}
+}
+
+// The bar's column is reserved whether or not a bar is in it. Taking the cell
+// only once the draft outgrows the composer rewraps the text on the keystroke
+// that caused it, which reads as the editor stumbling.
+func TestComposerReservesTheScrollbarColumn(t *testing.T) {
+	old := lipgloss.ColorProfile()
+	lipgloss.SetColorProfile(termenv.TrueColor)
+	t.Cleanup(func() { lipgloss.SetColorProfile(old) })
+	m := conversationModel()
+	line := "a line of draft " + strings.Repeat("x", 50)
+	measure := func(n int) (int, int, bool) {
+		m.input.SetValue(strings.Repeat(line+"\n", n-1) + line)
+		m.resize()
+		rows := strings.Split(m.composerScrollbar(m.input.View()), "\n")
+		width := 0
+		for _, row := range rows {
+			if w := ansi.StringWidth(row); w > width {
+				width = w
+			}
+		}
+		bar := strings.HasSuffix(rows[0], muted.Render("│")) || strings.HasSuffix(rows[0], zeroStyle.Render("│"))
+		return m.input.Width(), width, bar
+	}
+	// Five rows fit; seven do not, so the bar appears between these two.
+	fitsText, fitsRow, fitsBar := measure(5)
+	overText, overRow, overBar := measure(7)
+	if fitsBar || !overBar {
+		t.Fatal("the bar did not appear exactly when the draft outgrew the composer", fitsBar, overBar)
+	}
+	if fitsText != overText {
+		t.Fatal("the text width changed with the bar:", fitsText, "then", overText)
+	}
+	if fitsRow != overRow {
+		t.Fatal("the rendered width changed with the bar:", fitsRow, "then", overRow)
+	}
+	// The reserved cell is inside the frame's content, not beyond it.
+	if overRow != m.width-2 {
+		t.Fatal("rows are", overRow, "cells, want", m.width-2)
+	}
+	// Wrapping is computed against the same width the widget is given, so the
+	// row count the composer reports matches what it draws.
+	if got := len(m.composerRows()); got != 7 {
+		t.Fatal("draft of seven lines wrapped into", got, "rows")
 	}
 }

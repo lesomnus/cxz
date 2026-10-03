@@ -237,10 +237,15 @@ func (m *model) resize() {
 			m.width = min(m.width, available-52)
 		}
 	}
-	m.input.SetWidth(max(2, m.width-2))
+	// The scrollbar's column is reserved whether or not a bar is in it. Taking
+	// the cell only once the draft outgrows the composer would rewrap the text
+	// at the moment a line is added, which reads as the editor stumbling over
+	// the keystroke that caused it.
+	m.input.SetWidth(max(2, m.width-2-composerBarCells))
 	rows := 0
 	for _, line := range strings.Split(m.input.Value(), "\n") {
-		rows += max(1, (ansi.StringWidth(line)+max(1, m.width-4)-1)/max(1, m.width-4))
+		wrap := max(1, m.width-4-composerBarCells)
+		rows += max(1, (ansi.StringWidth(line)+wrap-1)/wrap)
 	}
 	m.input.SetHeight(min(max(2, rows), min(6, max(1, m.height/4), max(1, m.height-6-m.errorHeight()))))
 	// SetValue/SetHeight alone do not reveal a cursor below the old viewport.
