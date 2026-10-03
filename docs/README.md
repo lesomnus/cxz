@@ -25,7 +25,8 @@ start. This is the map of everything else.
 | [memory.md](memory.md) | Retained agent data and shared project memory |
 | [auxiliary-ai.md](auxiliary-ai.md) | Background summaries and next-message suggestions |
 | [cli.md](cli.md) | Every command |
-| [client-features.md](client-features.md) | CLI/TUI feature inventory, mobile web scope proposals, and tracked client differences |
+| [feature-spec.md](feature-spec.md) | Stable feature IDs and client-independent behavioral contracts |
+| [client-support.md](client-support.md) | Current CLI, TUI and web support, partial implementations and gaps |
 
 ## Running it
 
@@ -44,6 +45,10 @@ start. This is the map of everything else.
 | [development.md](development.md) | Building, tests, images, diagnostic recordings |
 
 ## Records
+
+The [mobile web plan](plans/mobile-web.md) records the VPN/HTTPS direction,
+proposed delivery scope, open decisions and acceptance scenarios. It references
+feature IDs; current support is tracked separately in the matrix above.
 
 `plans/` and `releases/` hold planning notes and release notes, some in Korean.
 They record what was intended at a point in time; the pages above are the
