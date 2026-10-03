@@ -11,6 +11,7 @@ import (
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/containerterm"
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/transport"
 	"github.com/lesomnus/cxz/internal/wisp"
 )
 
@@ -28,6 +29,24 @@ type redactSent struct {
 	id, request string
 	err         error
 	tokens      []string
+}
+
+// secretStore picks who writes the file. A client on the daemon host does it
+// itself through a helper it starts, which keeps the secret on one machine. A
+// client that reached the daemon from elsewhere cannot start that helper, so the
+// manager is asked to -- but only over a link that does not expose the secret on
+// the way, which rules out the authenticated-plaintext TCP surface.
+func (m *model) secretStore(ctx context.Context) secretFiles {
+	if m.redactStore != nil {
+		return m.redactStore
+	}
+	if !transport.IsRemote(ctx) {
+		return m.wisp
+	}
+	if !transport.Confidential(ctx) {
+		return nil
+	}
+	return managerSecrets{client: m.client}
 }
 
 type secretFiles interface {
@@ -203,10 +222,14 @@ func (m *model) sendRedactions(draft string) tea.Cmd {
 	if m.wisp == nil {
 		m.wisp = &containerterm.WispPool{}
 	}
-	if m.redactStore == nil {
-		m.redactStore = m.wisp
+	lifetime := m.contextFor(s.Id)
+	store := m.secretStore(lifetime)
+	if store == nil {
+		m.notice = "Secrets over an exposed TCP connection would cross the network in the clear; connect over ssh:// or on the daemon host"
+		m.showError(m.notice)
+		return nil
 	}
-	pool, lifetime, client, id, run := m.redactStore, m.contextFor(s.Id), m.client, s.Id, s.RunId
+	pool, client, id, run := store, m.client, s.Id, s.RunId
 	target = m.localProject(target)
 	request := core.ID()
 	m.redactSending = true

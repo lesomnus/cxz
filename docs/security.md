@@ -53,6 +53,20 @@ running as that user in that project can read it** — including the agent.
 
 `@redact` protects the durable record. It does not protect the running container.
 
+### Which connection may carry one
+
+The helper that writes the file runs in the project container, reached through
+the engine. A client on the daemon host starts it itself, so the secret never
+goes near a network. A client connected over `ssh://` cannot, so the manager is
+asked to write the file instead — the secret crosses the ssh connection, which
+encrypts it.
+
+Over the exposed TCP surface it is refused. That link is authenticated
+**plaintext**, intended for a tunnel, and cannot be told apart from a local
+client on the daemon side, so the refusal is the client's: connect over
+`ssh://`, or put a tunnel under the TCP endpoint and use it for the shell as
+well.
+
 ## Diagnostic recordings
 
 `F9` recordings contain sanitized navigation sequences, decoded key categories,

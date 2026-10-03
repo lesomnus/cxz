@@ -143,3 +143,29 @@ func TestLocalEndpointParsing(t *testing.T) {
 		}
 	}
 }
+
+// Remoteness and confidentiality are two questions. A client on the daemon host
+// can write a secret itself; an ssh client cannot, but its link is encrypted;
+// the exposed TCP surface is authenticated plaintext and must not carry one.
+func TestConfidentialFollowsTheScheme(t *testing.T) {
+	ctx := context.Background()
+	for _, c := range []struct {
+		name         string
+		ctx          context.Context
+		remote, safe bool
+	}{
+		{"unmarked", ctx, false, true},
+		{"local", WithLocal(ctx), false, true},
+		{"unix", WithScheme(WithLocal(ctx), "unix"), false, true},
+		{"ssh", WithScheme(WithRemote(ctx), "ssh"), true, true},
+		{"tcp", WithScheme(WithRemote(ctx), "tcp"), true, false},
+		{"remote of unknown scheme", WithRemote(ctx), true, false},
+	} {
+		if got := IsRemote(c.ctx); got != c.remote {
+			t.Fatal(c.name, "remote is", got)
+		}
+		if got := Confidential(c.ctx); got != c.safe {
+			t.Fatal(c.name, "confidential is", got)
+		}
+	}
+}

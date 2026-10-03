@@ -22,8 +22,11 @@ import (
 )
 
 type Source struct {
-	Name     string
-	Remote   bool
+	Name   string
+	Remote bool
+	// Scheme is the endpoint's, kept so an operation can ask what the link is
+	// rather than only whether it is remote.
+	Scheme   string
 	Client   api.SessionsClient
 	Open     func() (api.SessionsClient, io.Closer, error)
 	wake     chan struct{}
@@ -88,10 +91,15 @@ type routeKey struct{}
 func (c *Client) ContextFor(ctx context.Context, ref string) context.Context {
 	name := c.ConnectionName(ref)
 	ctx = context.WithValue(ctx, routeKey{}, name)
-	if s := c.sources[name]; s != nil && !s.Remote {
-		return transport.WithLocal(ctx)
+	s := c.sources[name]
+	if s == nil {
+		return transport.WithRemote(ctx)
 	}
-	return transport.WithRemote(ctx)
+	ctx = transport.WithScheme(ctx, s.Scheme)
+	if s.Remote {
+		return transport.WithRemote(ctx)
+	}
+	return transport.WithLocal(ctx)
 }
 func (c *Client) routeName(ctx context.Context, ref string) (string, string) {
 	name, id := Split(ref)
