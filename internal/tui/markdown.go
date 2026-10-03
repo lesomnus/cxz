@@ -17,7 +17,10 @@ import (
 	"github.com/yuin/goldmark/text"
 )
 
-var codeStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("252")).Background(lipgloss.Color(fmt.Sprint(codeBackground)))
+// Inline code is a few cells inside a sentence, not a panel: the shade a code
+// block uses reads as a smudge at that size, so it sits on black, which no
+// theme can mistake for prose. Blocks keep their own shade; see codeBackground.
+var codeStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("252")).Background(lipgloss.Color("#000000"))
 var markdownParser = goldmark.New(goldmark.WithExtensions(extension.GFM)).Parser()
 
 type renderedResponse struct {
@@ -139,11 +142,7 @@ func markdownContent(raw string, width int) (string, []codeButton) {
 		case *ast.String:
 			return string(v.Value)
 		case *ast.CodeSpan:
-			style := codeStyle
-			if lipgloss.ColorProfile().Name() == "TrueColor" {
-				style = style.Background(lipgloss.Color(codeBackgroundColor))
-			}
-			return style.Render(strings.ReplaceAll(string(v.Text(source)), "\n", " "))
+			return codeStyle.Render(strings.ReplaceAll(string(v.Text(source)), "\n", " "))
 		case *ast.FencedCodeBlock, *ast.CodeBlock:
 			return blockCode(n, width)
 		case *ast.Heading:

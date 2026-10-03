@@ -1677,6 +1677,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if handled, cmd := m.bottomButtonMouse(v); handled {
 				return m, cmd
 			}
+			if m.pinnedPromptMouse(v) {
+				return m, nil
+			}
 			if m.codeBlockMouse(v) {
 				return m, nil
 			}

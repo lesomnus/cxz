@@ -271,3 +271,59 @@ func TestComposerHomeEndFollowVisibleRows(t *testing.T) {
 		t.Fatal("home kept a selection")
 	}
 }
+
+// The composer stops growing at six rows, so a longer draft continues off
+// screen. The bar is the only thing that says so, and where it sits has to
+// agree with the rows the widget is actually showing.
+func TestComposerScrollbarTracksTheDraft(t *testing.T) {
+	old := lipgloss.ColorProfile()
+	lipgloss.SetColorProfile(termenv.TrueColor)
+	t.Cleanup(func() { lipgloss.SetColorProfile(old) })
+	m := conversationModel()
+	m.input.SetValue("one\ntwo\nthree")
+	m.resize()
+	if got := m.composerScrollbar(m.input.View()); got != m.input.View() {
+		t.Fatal("a draft that fits got a scrollbar")
+	}
+	m.input.SetValue(strings.Repeat("a line of draft\n", 12) + "last")
+	m.resize()
+	thumb, track := muted.Render("│"), zeroStyle.Render("│")
+	bar := func() []bool {
+		var out []bool
+		for _, row := range strings.Split(m.composerScrollbar(m.input.View()), "\n") {
+			switch {
+			case strings.HasSuffix(row, thumb):
+				out = append(out, true)
+			case strings.HasSuffix(row, track):
+				out = append(out, false)
+			default:
+				t.Fatal("row carries no scrollbar cell:", row)
+			}
+			if w := ansi.StringWidth(row); w != m.width-2 {
+				t.Fatal("scrollbar row is", w, "cells, want", m.width-2)
+			}
+		}
+		return out
+	}
+	top := bar()
+	if len(top) != m.input.Height() || !top[0] || top[len(top)-1] {
+		t.Fatal("thumb is not at the top of an unscrolled draft:", top)
+	}
+	m.setComposerPosition(len([]rune(m.input.Value())))
+	m.resize()
+	end := bar()
+	if end[0] || !end[len(end)-1] {
+		t.Fatal("thumb is not at the bottom of a draft scrolled to its end:", end)
+	}
+	// The thumb is a proportion of the draft, not a single cell: six rows of
+	// thirteen is about half the bar.
+	size := 0
+	for _, on := range end {
+		if on {
+			size++
+		}
+	}
+	if size < 2 || size >= len(end) {
+		t.Fatal("thumb covers", size, "of", len(end), "rows")
+	}
+}
