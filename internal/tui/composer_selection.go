@@ -439,22 +439,36 @@ const composerWheelRows = 3
 func (m *model) composerScrollbar(view string) string {
 	rows := strings.Split(view, "\n")
 	layout := m.composerRows()
-	if len(layout) <= len(rows) || len(rows) == 0 || m.width < 4 {
+	if len(rows) == 0 || m.width < 4 {
 		return view
 	}
-	offset := min(m.composerScroll(layout), len(layout)-len(rows))
-	visible, total := len(rows), len(layout)
-	size := max(1, visible*visible/total)
-	span := max(1, total-visible)
-	start := min(visible-size, (offset*(visible-size)+span/2)/span)
-	width := m.width - 3
+	// The column is always there; a bar is in it only when the draft runs past
+	// what the composer shows. Reserving it means the text never rewraps as the
+	// bar arrives, which is what made adding a line feel like a stutter.
+	start, size := 0, 0
+	if len(layout) > len(rows) {
+		offset := min(m.composerScroll(layout), len(layout)-len(rows))
+		visible, total := len(rows), len(layout)
+		size = max(1, visible*visible/total)
+		span := max(1, total-visible)
+		start = min(visible-size, (offset*(visible-size)+span/2)/span)
+	}
+	width := m.width - 2 - composerBarCells
 	for y, row := range rows {
-		bar := zeroStyle.Render("│")
-		if y >= start && y < start+size {
+		bar := " "
+		switch {
+		case size == 0:
+		case y >= start && y < start+size:
 			bar = muted.Render("│")
+		default:
+			bar = zeroStyle.Render("│")
 		}
 		text := ansi.Cut(row, 0, width)
 		rows[y] = text + strings.Repeat(" ", max(0, width-ansi.StringWidth(text))) + bar
 	}
 	return strings.Join(rows, "\n")
 }
+
+// composerBarCells is the width the scrollbar column holds, reserved at all
+// times so the draft's wrapping does not depend on whether it is scrollable.
+const composerBarCells = 1

@@ -48,7 +48,8 @@ Needs at least 40 × 14 cells. Follows terminal resizes.
 
 The composer grows to six rows and then holds; past that a bar on its right edge
 shows where in the draft you are, and the wheel over the composer moves through
-it.
+it. The bar's column is reserved whether or not a bar is in it, so adding a line
+never rewraps what is already written.
 
 Paste never submits, however it arrives.
 
