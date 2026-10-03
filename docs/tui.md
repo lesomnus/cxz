@@ -44,6 +44,7 @@ Needs at least 40 × 14 cells. Follows terminal resizes.
 | `Ctrl+Home` / `Ctrl+End` | First line / follow the latest |
 | `Home` / `End` | Start / end of the row you can see; again steps to the next row |
 | `Shift` + arrows | Select by character or row |
+| `Shift` + `Home` / `End` | Select to the start / end of the visible row |
 | `Ctrl+Shift+←` / `→` | Select by word |
 
 The composer grows to six rows and then holds; past that a bar on its right edge
