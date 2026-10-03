@@ -98,6 +98,7 @@ func helpView(width int, topics ...string) string {
 		{"Input", "Ctrl+C / Ctrl+X", "Copy / cut selected composer text; Esc clears selection"},
 		{"Input", "Ctrl+← / Ctrl+→", "Move by word (Alt+B/F also supported)"},
 		{"Input", "Ctrl+Shift+← / →", "Select by word"},
+		{"Input", "Shift+Home / End", "Select to the start/end of the visible row"},
 		{"Input", "Home / End", "Start/end of the visible row; again steps to the next row"},
 		{"Input", "Wheel over the composer", "Move through a draft taller than six rows"},
 		{"Navigation", "Click the pinned prompt", "Scroll back to the message it names"},

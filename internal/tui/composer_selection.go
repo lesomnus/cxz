@@ -187,6 +187,22 @@ func composerGraphemeMove(value string, pos int, forward bool) int {
 	return start
 }
 
+// extendComposerSelection is a move with the anchor kept. The move runs through
+// the same code the unshifted key would use, so a selection can never cover
+// something the cursor could not have reached by itself.
+func (m *model) extendComposerSelection(move func()) {
+	if !m.composerSelectionValid() {
+		m.composerSelection = &composerSelection{value: m.input.Value(), session: m.composerSession(), anchor: composerPosition(m.input)}
+	}
+	s := m.composerSelection
+	m.pasteSelection = nil
+	move()
+	// Bounds expand partial chip selections to whole objects.
+	s.head = composerPosition(m.input)
+	s.dragging = false
+	m.resize()
+}
+
 func (m *model) composerKey(k tea.KeyMsg) (bool, tea.Cmd) {
 	if !m.composerAvailable() || m.panelFocus || m.focusList || m.focusApproval {
 		return false, nil
@@ -198,20 +214,19 @@ func (m *model) composerKey(k tea.KeyMsg) (bool, tea.Cmd) {
 		"ctrl+shift+left": tea.KeyCtrlLeft, "ctrl+shift+right": tea.KeyCtrlRight,
 	}
 	if direction, ok := moves[k.String()]; ok && !k.Paste {
-		if !m.composerSelectionValid() {
-			m.composerSelection = &composerSelection{value: m.input.Value(), session: m.composerSession(), anchor: composerPosition(m.input)}
-		}
-		s := m.composerSelection
-		m.pasteSelection = nil
-		if direction == tea.KeyLeft || direction == tea.KeyRight {
-			m.setComposerPosition(composerGraphemeMove(m.input.Value(), composerPosition(m.input), direction == tea.KeyRight))
-		} else {
-			m.input, _ = m.input.Update(tea.KeyMsg{Type: direction})
-		}
-		// Bounds expand partial chip selections to whole objects.
-		s.head = composerPosition(m.input)
-		s.dragging = false
-		m.resize()
+		m.extendComposerSelection(func() {
+			if direction == tea.KeyLeft || direction == tea.KeyRight {
+				m.setComposerPosition(composerGraphemeMove(m.input.Value(), composerPosition(m.input), direction == tea.KeyRight))
+			} else {
+				m.input, _ = m.input.Update(tea.KeyMsg{Type: direction})
+			}
+		})
+		return true, nil
+	}
+	// Shift turns the edge keys into a selection to the same place they move to,
+	// including the second press that steps to the neighbouring row.
+	if forward, ok := map[string]bool{"shift+home": false, "shift+end": true}[k.String()]; ok && !k.Paste {
+		m.extendComposerSelection(func() { m.composerRowEdge(forward) })
 		return true, nil
 	}
 	if edge := k.String(); (edge == "home" || edge == "end") && !k.Paste {

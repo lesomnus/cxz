@@ -433,3 +433,48 @@ func TestComposerReservesTheScrollbarColumn(t *testing.T) {
 		t.Fatal("draft of seven lines wrapped into", got, "rows")
 	}
 }
+
+// Shift turns the edge keys into a selection to the place they move to, which
+// means the row you can see rather than the line behind it, and a second press
+// reaching the neighbouring row.
+func TestComposerShiftEdgeSelection(t *testing.T) {
+	m := conversationModel()
+	m.input.SetValue(strings.Repeat("alpha beta gamma delta ", 8) + "zeta\nsecond line here")
+	m.resize()
+	rows := m.composerRows()
+	if len(rows) < 3 || rows[1].line != 0 {
+		t.Fatal("fixture did not wrap", rows)
+	}
+	value := []rune(m.input.Value())
+	from := rows[0].start + 8
+	m.setComposerPosition(from)
+	m.resize()
+	m.Update(tea.KeyMsg{Type: tea.KeyShiftEnd})
+	if got, want := m.selectedComposerText(), string(value[from:composerRowEnd(rows, 0)]); got != want {
+		t.Fatalf("shift+end selected %q, want %q", got, want)
+	}
+	m.Update(tea.KeyMsg{Type: tea.KeyShiftEnd})
+	if got, want := m.selectedComposerText(), string(value[from:composerRowEnd(rows, 1)]); got != want {
+		t.Fatalf("a second shift+end selected %q, want through the next row", got)
+	}
+	// Coming back shrinks the same selection rather than starting another, and
+	// crossing the anchor selects the other side of it.
+	m.Update(tea.KeyMsg{Type: tea.KeyShiftHome})
+	if got, want := m.selectedComposerText(), string(value[from:rows[1].start]); got != want {
+		t.Fatalf("shift+home selected %q, want %q", got, want)
+	}
+	m.Update(tea.KeyMsg{Type: tea.KeyShiftHome})
+	if got, want := m.selectedComposerText(), string(value[rows[0].start:from]); got != want {
+		t.Fatalf("crossing the anchor selected %q, want %q", got, want)
+	}
+	// The start of the draft is as far as it goes, and it holds there.
+	m.Update(tea.KeyMsg{Type: tea.KeyShiftHome})
+	if got, want := m.selectedComposerText(), string(value[rows[0].start:from]); got != want {
+		t.Fatalf("running off the front changed the selection to %q", got)
+	}
+	// Without shift the same key is a move, so it drops the selection.
+	m.Update(tea.KeyMsg{Type: tea.KeyEnd})
+	if m.selectedComposerText() != "" {
+		t.Fatal("a plain edge key kept the selection")
+	}
+}
