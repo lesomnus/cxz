@@ -16,6 +16,28 @@ concurrency:
   # Finish main publication/cleanup before the next publisher can start.
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
+  web:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: go.mod
+          cache: true
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: ts/package-lock.json
+      - run: npm ci --prefix ts
+      - run: go tool pd gen --check --ts .
+      - run: npm run --prefix ts build
+      - run: test -z "$(git status --porcelain -- ts/gen internal/webui/assets)"
+      - run: npm run --prefix ts test
+      - run: npx playwright install --with-deps chromium
+        working-directory: ts
+      - run: npm run --prefix ts test:browser
   windows-frontend:
     runs-on: windows-2025
     timeout-minutes: 20

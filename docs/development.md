@@ -125,3 +125,30 @@ the pages in this directory are the reference for how things work.
 Web and IDE interfaces, roster authentication, dotfile and SSH forwarding, and
 encrypted off-host backup are separate work. Large journals will eventually need
 segmentation and indexing.
+
+## Web client
+
+The pinned payday Go module provides Connect/gRPC-Web serving. `ts/` contains
+its generated TypeScript contracts and the React client, using payday
+Store/Queries. To regenerate, build and test:
+
+```sh
+npm ci --prefix ts
+go tool pd gen --ts .
+npm run --prefix ts build
+npm run --prefix ts test
+cd ts
+npx playwright install --with-deps chromium
+npm run test:browser
+```
+
+Commit `ts/gen/` and `internal/webui/assets/` after changes. The latter is the
+production build embedded in the Go binary: Go-only builds and source-based
+self-updates need no Node toolchain. CI rebuilds and rejects asset/schema drift.
+Keep generated files untouched by formatting tools. `npm run --prefix ts format`
+formats authored client source only.
+
+Playwright launches an opt-in TLS gateway fixture backed by in-memory gRPC
+services; it does not start Docker or call a real agent. See
+`internal/webui/browser_test.go` and `ts/e2e/`. Ordinary `go test ./...` skips
+that long-running fixture. See [web.md](web.md) for actual gateway usage.

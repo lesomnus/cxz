@@ -24,10 +24,21 @@ Draft PR; the checklist records implemented work, not promised support.
 - [x] Confirm payday transport support and record implementation boundaries.
 - [x] HTTPS gateway, browser authentication and Connect integration tests.
 - [x] Generated TypeScript client and mobile project/session navigation.
-- [ ] Conversation history/streaming, sending, approvals and questions.
-- [ ] Reconnection, mobile checks, build/CI and usage documentation.
+- [x] Conversation history/streaming, sending, approvals and basic questions.
+- [x] Reconnection, mobile checks, build/CI and usage documentation.
 
 The first release targets private VPN HTTPS and one same-origin connection.
 Native apps, external hosting/multiple connections, uploads, downloads and
 full Settings parity remain follow-up work. Support documentation must label
 these gaps explicitly.
+
+## Validation and remaining parity
+
+Go suite, gateway race test, TypeScript build/unit tests and a Chromium mobile
+flow pass locally. The browser test uses actual HTTPS/Connect against a fixture
+Manager, not paid agents. CI also verifies generated contracts and embedded
+assets. Device Safari and a live VPN deployment have not been exercised.
+
+See `docs/web.md` for the precise first-version support matrix. Specialized
+MCP/async question forms, formatted usage metrics and full tool input/output
+presentation remain follow-ups; raw event inspection is available now.
