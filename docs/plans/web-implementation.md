@@ -23,7 +23,7 @@ Draft PR; the checklist records implemented work, not promised support.
 
 - [x] Confirm payday transport support and record implementation boundaries.
 - [x] HTTPS gateway, browser authentication and Connect integration tests.
-- [ ] Generated TypeScript client and mobile project/session navigation.
+- [x] Generated TypeScript client and mobile project/session navigation.
 - [ ] Conversation history/streaming, sending, approvals and questions.
 - [ ] Reconnection, mobile checks, build/CI and usage documentation.
 
