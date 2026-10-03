@@ -2,11 +2,16 @@
 
 ## User-visible changes
 
-Update the relevant feature ID in [the client inventory](client-features.md) in
-the same PR as a user-visible behavior change. Record CLI/TUI and web support
-separately, link the implementation, and explain any intentional platform gap.
-The web column currently contains proposals, not shipped functionality. Use the
-shared behavior scenarios there when validating equivalent client operations.
+For a user-visible behavior change, update the stable feature ID in the
+[feature specification](feature-spec.md) and the affected CLI/TUI/web cells in
+the [support matrix](client-support.md) in the same PR. Link implementation
+evidence and explain partial support or platform gaps; an open PR or a server
+RPC does not count as an implemented client feature.
+
+Update the [mobile web plan](plans/mobile-web.md) only when delivery scope,
+sequencing or open design decisions change. Keep proposed priorities out of the
+support matrix. Use the specification's shared contracts and the plan's mobile
+acceptance scenarios when validating equivalent client operations.
 
 ## Building
 
