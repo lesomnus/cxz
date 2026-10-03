@@ -7,8 +7,9 @@ import (
 )
 
 type codeButton struct {
-	x, y   int // Column and absolute transcript row.
-	source string
+	x, y                                int // Column and absolute transcript row.
+	source                              string
+	contentX, contentWidth, contentRows int
 }
 
 func (m *model) codeButtonVisible(b codeButton) bool {

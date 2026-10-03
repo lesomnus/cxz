@@ -69,6 +69,7 @@ func renderResponse(agent, raw string, width int) renderedResponse {
 	}
 	for i := range buttons {
 		buttons[i].x += 2
+		buttons[i].contentX += 2
 		buttons[i].y++
 	}
 	label := "• " + name
@@ -108,6 +109,7 @@ func markdownContent(raw string, width int) (string, []codeButton) {
 		return b.String()
 	}
 	var sources []string
+	var codeWidths, codeHeights []int
 	blockCode := func(n ast.Node, width int) string {
 		var b strings.Builder
 		for i := 0; i < n.Lines().Len(); i++ {
@@ -126,6 +128,8 @@ func markdownContent(raw string, width int) (string, []codeButton) {
 		}
 		id := len(sources)
 		sources = append(sources, b.String())
+		codeWidths = append(codeWidths, width)
+		codeHeights = append(codeHeights, len(rows))
 		header := strings.Repeat(" ", max(0, width-3)) + fmt.Sprintf("\x1b]cxz-copy;%d\a", id) + " ⧉ "
 		rows = append([]string{codeRowBackground(header)}, rows...)
 		rows = append(rows, codeRowBackground(strings.Repeat(" ", max(1, width))))
@@ -223,7 +227,7 @@ func markdownContent(raw string, width int) (string, []codeButton) {
 			id, _ := strconv.Atoi(row[loc[2]:loc[3]])
 			x := ansi.StringWidth(row[:loc[0]])
 			if id < len(sources) && x+3 <= width {
-				buttons = append(buttons, codeButton{x: x, y: y, source: sources[id]})
+				buttons = append(buttons, codeButton{x: x, y: y, source: sources[id], contentX: x - max(0, codeWidths[id]-3) + 1, contentWidth: max(0, codeWidths[id]-1), contentRows: codeHeights[id]})
 			}
 			row = row[:loc[0]] + row[loc[1]:]
 		}
