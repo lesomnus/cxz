@@ -100,7 +100,7 @@ func helpView(width int, topics ...string) string {
 		{"Input", "Ctrl+Shift+← / →", "Select by word"},
 		{"Input", "Shift+Home / End", "Select to the start/end of the visible row"},
 		{"Input", "Home / End", "Start/end of the visible row; again steps to the next row"},
-		{"Input", "Wheel over the composer", "Move through a draft taller than six rows"},
+		{"Input", "Wheel over the composer", "Move through a draft taller than the composer"},
 		{"Navigation", "Click the pinned prompt", "Scroll back to the message it names"},
 		{"Navigation", "F9", "Start/stop debug recording and save"},
 		{"Input", "Ctrl+S", "Send message or command"},

@@ -242,12 +242,13 @@ func (m *model) resize() {
 	// at the moment a line is added, which reads as the editor stumbling over
 	// the keystroke that caused it.
 	m.input.SetWidth(max(2, m.width-2-composerBarCells))
-	rows := 0
-	for _, line := range strings.Split(m.input.Value(), "\n") {
-		wrap := max(1, m.width-4-composerBarCells)
-		rows += max(1, (ansi.StringWidth(line)+wrap-1)/wrap)
-	}
-	m.input.SetHeight(min(max(2, rows), min(6, max(1, m.height/4), max(1, m.height-6-m.errorHeight()))))
+	// Ask the widget how its draft wraps instead of estimating it. A line that
+	// exactly fills the width occupies two rows -- the cursor sits on the second,
+	// past the last character -- and words wrap before the edge, so an estimate
+	// runs short exactly as a row is filled and leaves the row being typed on
+	// off screen.
+	rows := len(m.composerRows())
+	m.input.SetHeight(min(max(2, rows), min(maxComposerRows, max(1, m.height/3), max(1, m.height-6-m.errorHeight()))))
 	// SetValue/SetHeight alone do not reveal a cursor below the old viewport.
 	// Populate its new content, then let the widget re-anchor its scroll offset.
 	_ = m.input.View()
