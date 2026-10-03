@@ -135,7 +135,7 @@ func (m *Manager) renderProjectDevcontainer(ctx context.Context, p *Project) (de
 		out.Note = "The merged result is unavailable: " + err.Error()
 		return out, nil
 	}
-	return out, add("compose/resolved.yaml", "docker compose config", "the merge of the files above, as Compose resolves it: the values that actually take effect", resolved)
+	return out, add(devcontainerrender.ResolvedCompose, "docker compose config", "the merge of the files above, as Compose resolves it: the values that actually take effect", resolved)
 }
 
 // resolvedCompose merges exactly the file list the devcontainer CLI is given,
