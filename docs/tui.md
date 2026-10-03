@@ -31,7 +31,7 @@ Needs at least 40 × 14 cells. Follows terminal resizes.
 | `Ctrl+S` | Send |
 | `Enter`, `Alt+Enter`, `Ctrl+J` | Newline |
 | `Ctrl+Enter` | Send, where the terminal can distinguish it |
-| `Ctrl+X` | Clear the draft |
+| `Ctrl+X` | Clear the draft; with nothing to clear, take back the message waiting to be sent |
 | `Tab` / `Shift+Tab` | Between pending approvals and the composer |
 | `F2` / `F3` | Allow / deny the pending approval |
 | `F4` | Interrupt the turn |
@@ -58,6 +58,27 @@ On Unix, `Ctrl+Enter` needs a terminal that emits CSI-u or xterm modified-Enter
 sequences. Where it does not, `Enter` and `Ctrl+Enter` are the same byte — use
 `Ctrl+S`. Windows reads console modifier flags directly and does not have this
 problem.
+
+## Sending while the agent works
+
+`Ctrl+S` during a turn does not bounce. cxz takes the message and holds it, and
+the row above the composer says it is waiting; it reaches the agent at the first
+moment that agent can take one. Claude takes it when its turn ends. Codex takes
+it into the turn already running, at its next step, so it usually lands within
+seconds.
+
+One message waits at a time. A second is refused and comes straight back to the
+composer, so nothing you typed is lost. `Ctrl+X` with an empty composer takes
+the waiting one back and returns it to the composer as well.
+
+The message is the session's, not this window's: another frontend on the same
+session shows the same one waiting, and detaching does not lose it. Interrupting
+drops it — you interrupted to change direction — and says so rather than
+delivering it the moment the turn stops.
+
+It is not in the conversation until the agent has it. That is also where the
+journal records it, so reading the transcript later shows the message where the
+agent actually saw it rather than where it was typed.
 
 ## Slash commands
 

@@ -340,7 +340,7 @@ func (s *Server) snapshot(ctx context.Context, m core.Session) (*api.Session, er
 		}
 		snap.Pending = nil
 	}
-	v := &api.Session{Id: m.ID, Workspace: m.Workspace, Title: m.Title, CreatedAt: m.CreatedAt, State: snap.State, PermissionMode: snap.PermissionMode, RunId: snap.RunID, VendorId: snap.VendorID, LastSeq: snap.LastSeq, Agent: m.Kind, ProjectId: m.ProjectID, Model: m.Model, CreateId: m.CreateID, Account: m.Account, AuthBackend: m.AuthBackend, AuthBinding: m.AuthBinding}
+	v := &api.Session{Id: m.ID, Workspace: m.Workspace, Title: m.Title, CreatedAt: m.CreatedAt, State: snap.State, PermissionMode: snap.PermissionMode, RunId: snap.RunID, VendorId: snap.VendorID, LastSeq: snap.LastSeq, Queued: snap.Queued, Agent: m.Kind, ProjectId: m.ProjectID, Model: m.Model, CreateId: m.CreateID, Account: m.Account, AuthBackend: m.AuthBackend, AuthBinding: m.AuthBinding}
 	if v.Agent == "" {
 		v.Agent = "claude"
 	}
@@ -634,6 +634,10 @@ func (s *Server) Send(ctx context.Context, r *api.Input) (*api.Receipt, error) {
 		}
 		defer c.Close()
 		return client.Send(ctx, r)
+	}
+	// Cancelling takes back what is waiting; it is not a message of its own.
+	if r.Cancel {
+		return s.command(ctx, r.SessionId, "unqueue", core.Command{RunID: r.RunId, ClientID: r.ClientId})
 	}
 	return s.command(ctx, r.SessionId, "send", core.Command{RunID: r.RunId, ClientID: r.ClientId, Text: r.Text})
 }

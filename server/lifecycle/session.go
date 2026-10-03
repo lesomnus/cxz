@@ -222,7 +222,7 @@ func (s SessionServer) Send(ctx context.Context, r *resource.SessionSendRequest)
 	if err != nil {
 		return nil, err
 	}
-	return receipt(s.shared.runtime.Send(ctx, &api.Input{SessionId: v.GetRuntimeId(), RunId: r.GetRunId(), ClientId: r.GetClientId(), Text: r.GetText()}))
+	return receipt(s.shared.runtime.Send(ctx, &api.Input{SessionId: v.GetRuntimeId(), RunId: r.GetRunId(), ClientId: r.GetClientId(), Text: r.GetText(), Cancel: r.GetCancel()}))
 }
 
 func (s SessionServer) Attach(ctx context.Context, r *resource.SessionAttachRequest) (*resource.SessionAttachment, error) {

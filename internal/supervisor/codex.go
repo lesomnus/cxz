@@ -16,6 +16,10 @@ type codexProtocol struct {
 	token        func(previous string, refresh bool) (accounts.Token, error)
 	asyncSeen    map[string]bool
 	asyncReplies map[string]core.Event
+	// Steering is the one write whose acceptance is not implied by writing it:
+	// the turn it names can end first. Until Codex answers, the message is
+	// still waiting rather than said.
+	steering map[string]core.Command
 }
 
 func rpc(id, method string, params any) any {
@@ -79,6 +83,18 @@ func (c *codexProtocol) consume(raw []byte) {
 		} else if len(v.Error) > 0 && string(v.Error) != "null" {
 			s.event("usage_status", "error", "", nil, nil)
 		}
+		return
+	}
+	if steered, ok := c.steering[id]; ok {
+		delete(c.steering, id)
+		if len(v.Error) > 0 && string(v.Error) != "null" {
+			// The turn it was written into ended first. The message is still in
+			// the slot, so it goes out as the next turn instead of being lost
+			// or turning this into a failed turn.
+			s.event("diagnostic", "Codex would not take the message into the running turn; it waits for the next one", steered.ClientID, v.Error, nil)
+			return
+		}
+		s.event("input", steered.Text, steered.ClientID, nil, nil)
 		return
 	}
 	if len(v.Error) > 0 && string(v.Error) != "null" {
@@ -282,13 +298,28 @@ func (c *codexProtocol) command(op string, v core.Command) (any, error) {
 	s := c.s
 	switch op {
 	case "send":
-		if s.snap.State != "idle" || strings.TrimSpace(v.Text) == "" {
-			return nil, fmt.Errorf("session must be idle and text nonempty")
+		if strings.TrimSpace(v.Text) == "" {
+			return nil, fmt.Errorf("text required")
+		}
+		input := []any{map[string]any{"type": "text", "text": v.Text, "text_elements": []any{}}}
+		if s.snap.State != "idle" {
+			// Codex takes input into the turn it is already running, delivered
+			// at its next step rather than after the whole loop. A turn that is
+			// not running yet -- starting up, or just ended -- has nothing to
+			// append to, so that message waits instead.
+			if c.turn == "" {
+				return nil, errQueueInput
+			}
+			if c.steering == nil {
+				c.steering = map[string]core.Command{}
+			}
+			c.steering[`"`+v.ClientID+`"`] = v
+			return rpc(v.ClientID, "turn/steer", map[string]any{"threadId": s.snap.VendorID, "turnId": c.turn, "expectedTurnId": c.turn, "input": input}), nil
 		}
 		if strings.TrimSpace(v.Text) == "/compact" {
 			return rpc(v.ClientID, "thread/compact/start", map[string]any{"threadId": s.snap.VendorID}), nil
 		}
-		params := map[string]any{"threadId": s.snap.VendorID, "input": []any{map[string]any{"type": "text", "text": v.Text, "text_elements": []any{}}}}
+		params := map[string]any{"threadId": s.snap.VendorID, "input": input}
 		model, effort := s.session.Model, s.effort
 		for _, option := range s.modelOptions {
 			if option.ID == model || model == "" && option.Default {

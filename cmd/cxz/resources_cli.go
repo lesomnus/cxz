@@ -29,7 +29,7 @@ func reorganizeCommands(root *xli.Command) {
 			c.Name = "ls"
 			c.Brief = "List owned and foreign projects"
 			project.Commands = append(project.Commands, c)
-		case "new", "ls", "get", "send", "reply", "interrupt", "resume", "stop", "events":
+		case "new", "ls", "get", "send", "cancel", "reply", "interrupt", "resume", "stop", "events":
 			c.Aliases = nil
 			if c.Name == "ls" {
 				c.Brief = "List sessions"

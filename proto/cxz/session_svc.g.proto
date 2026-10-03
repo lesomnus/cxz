@@ -285,11 +285,13 @@ message SessionPermissionRequest {
   string mode = 4;
 }
 
+// cancel takes back the message waiting to be sent, instead of sending text.
 message SessionSendRequest {
   SessionRef ref = 1;
   string run_id = 2;
   string client_id = 3;
   string text = 4;
+  bool cancel = 5;
 }
 
 message SessionAttachRequest {

@@ -251,6 +251,8 @@ type disconnected struct {
 }
 type result struct {
 	inputSession, inputRequest string
+	inputText                  string
+	status                     string
 	text                       string
 	err                        error
 	sessionID                  string
@@ -989,7 +991,8 @@ func (m *model) action(kind, text string) tea.Cmd {
 		}
 		r := result{text: message, err: e}
 		if kind == "send" {
-			r.inputSession, r.inputRequest = id, clientID
+			r.inputSession, r.inputRequest, r.inputText = id, clientID, text
+			r.status = receipt.GetStatus()
 		}
 		return r
 	}
@@ -1124,7 +1127,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	if v, ok := msg.(redactSent); ok {
-		if v.err != nil {
+		// A queued message is not in the conversation yet; the composer status
+		// row says it is waiting, so the echo would be saying it twice.
+		if v.err != nil || v.status == "queued" {
 			m.removePendingInput(v.id, v.request)
 			m.render()
 		}
@@ -1138,6 +1143,8 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.pruneRedactions()
 		if v.err != nil {
 			m.showError(v.err.Error() + "; reenter the secret with @redact")
+		} else if v.status == "queued" {
+			m.notice = "send · waiting for the agent (secret files swept after 8 hours idle)"
 		} else {
 			m.notice = "send · accepted (secret files swept after 8 hours idle)"
 		}
@@ -1946,9 +1953,17 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, m.refresh()
 	case result:
-		if v.err != nil && v.inputRequest != "" {
+		// A queued message has not entered the conversation yet: the composer
+		// status row is where it waits, so the transcript's echo of it goes.
+		if v.inputRequest != "" && (v.err != nil || v.status == "queued") {
 			m.removePendingInput(v.inputSession, v.inputRequest)
 			m.render()
+		}
+		// A refused message is the user's text, not ours to drop. It goes back
+		// where it was typed, unless something has been typed since.
+		if (v.err != nil || v.status == "unqueued") && v.inputText != "" && strings.TrimSpace(m.input.Value()) == "" && !m.creating {
+			m.input.SetValue(v.inputText)
+			m.resize()
 		}
 		m.busy = false
 		if v.err != nil {
@@ -2106,6 +2121,12 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+r":
 			return m, m.action("resume", "")
 		case "ctrl+x":
+			// The same key clears what you are writing. With nothing to clear it
+			// takes back the message that is waiting, which is the other draft
+			// you have -- the one cxz is holding for the agent.
+			if s := m.current(); m.input.Value() == "" && s != nil && s.Queued != "" {
+				return m, m.cancelQueued()
+			}
 			m.input.Reset()
 			return m, nil
 		case "right":

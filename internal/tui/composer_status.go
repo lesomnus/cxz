@@ -39,6 +39,15 @@ func (m *model) composerStatus() (text, message string, column int) {
 		text = background + " · " + text
 		column += ansi.StringWidth(background + " · ")
 	}
+	// A message cxz is holding is not in the conversation yet, so it is said
+	// here rather than drawn into the transcript it has not entered. Every
+	// frontend reads it from the session, so a second window shows it too.
+	if s := m.current(); s != nil && s.Queued != "" && m.view.AtBottom() {
+		prefix := accent.Render("waiting to send") + muted.Render(" · Ctrl+X cancel · ")
+		text = prefix + muted.Render(pickerLabel(safeText(s.Queued)))
+		message = s.Queued
+		column = ansi.StringWidth(prefix)
+	}
 	if s := m.current(); s != nil && s.State == "waiting_input" && m.interruptKey == s.Id+"/"+s.RunId && time.Now().Before(m.interruptUntil) {
 		text = warning.Render("Esc again to interrupt (3s)")
 		message = ""
