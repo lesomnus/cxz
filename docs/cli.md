@@ -105,6 +105,7 @@ cxz account status ALIAS
 cxz backend ls                                 # available auth strategies
 cxz binding ls ALIAS                           # project bindings; metadata only
 cxz github sync                                # host gh credentials into projects
+cxz gitconfig sync                             # refresh host Git settings in all running projects
 ```
 
 Registering and logging in are separate. See [accounts](accounts.md).

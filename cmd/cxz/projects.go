@@ -127,7 +127,7 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 			if _, err := syncDevcontainer(ctx, client, stateFrom(ctx), settings.From(ctx)); err != nil {
 				return err
 			}
-			if err = installer.SyncGitHub(ctx, stateFrom(ctx), c.ErrWriter, p); err != nil {
+			if err = installer.SyncHostConfig(ctx, stateFrom(ctx), c.ErrWriter, p); err != nil {
 				return err
 			}
 			return workspaceReady(c, p)
@@ -146,7 +146,7 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 		}
 		return writeOutput(c, r)
 	}
-	if err := installer.SyncGitHub(ctx, stateFrom(ctx), c.ErrWriter); err != nil {
+	if err := installer.SyncHostConfig(ctx, stateFrom(ctx), c.ErrWriter); err != nil {
 		return err
 	}
 	agent := flg.MustGet[string](c, "agent")

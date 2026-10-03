@@ -166,5 +166,5 @@ func readyWithGitHub(ctx context.Context, root string, v transport.Installation,
 	if versionpin.Pending(root) {
 		return nil
 	}
-	return SyncGitHub(ctx, root, out)
+	return SyncHostConfig(ctx, root, out)
 }
