@@ -46,9 +46,11 @@ message Session {
   string auth_binding = 18;
   string alias = 19;
   string permission_mode = 20;
+  // The one message waiting for an agent that cannot take it yet.
+  string queued = 21;
 }
 message SessionList { repeated Session sessions = 1; }
-message Input { string session_id = 1; string run_id = 2; string client_id = 3; string text = 4; }
+message Input { string session_id = 1; string run_id = 2; string client_id = 3; string text = 4; bool cancel = 5; }
 message AttachmentInput { string session_id = 1; string run_id = 2; bytes content = 3; }
 message Attachment { string path = 1; }
 message ActivityInput { string session_id = 1; string run_id = 2; string client_id = 3; bool busy = 4; }

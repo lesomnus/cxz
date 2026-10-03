@@ -25,7 +25,8 @@ service SessionService {
   rpc Events(SessionEventsRequest) returns (stream SessionEvent);
 }
 message SessionControl { SessionRef ref = 1; string run_id = 2; string client_id = 3; }
-message SessionSendRequest { SessionRef ref = 1; string run_id = 2; string client_id = 3; string text = 4; }
+// cancel takes back the message waiting to be sent, instead of sending text.
+message SessionSendRequest { SessionRef ref = 1; string run_id = 2; string client_id = 3; string text = 4; bool cancel = 5; }
 message SessionAttachRequest { SessionRef ref = 1; string run_id = 2; bytes content = 3; }
 message SessionAttachment { string path = 1; }
 // The first message contains the header; subsequent messages contain only bytes.

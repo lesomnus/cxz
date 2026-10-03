@@ -113,8 +113,17 @@ func ReplayFrom(s core.Snapshot, events []core.Event) core.Snapshot {
 			s.State = e.Text
 			if s.RunID != e.RunID {
 				p = map[string]core.Event{}
+				// A message waiting for the previous run is not waiting for
+				// this one: the agent it was addressed to is gone.
+				s.Queued, s.QueuedID = "", ""
 			}
 			s.RunID = e.RunID
+		case "queued":
+			s.Queued, s.QueuedID = e.Text, e.RequestID
+		case "input":
+			if e.RequestID == s.QueuedID {
+				s.Queued, s.QueuedID = "", ""
+			}
 		case "vendor":
 			s.VendorID = e.Text
 		case "approval":
@@ -180,6 +189,12 @@ func Run(ctx context.Context, root, id string) error {
 		s.quotaToken = runtime.Token
 	}
 	s.event("state", "starting", "", nil, nil)
+	// A message was waiting for an agent that no longer exists. This run is not
+	// the one it was addressed to, so it is not delivered -- but it was the
+	// user's text, and it is not going to vanish without being said.
+	if old.Queued != "" {
+		s.event("diagnostic", fmt.Sprintf("the message waiting to be sent did not survive the restart: %q", old.Queued), "", nil, nil)
+	}
 	if events := l.All(); len(events) > 0 && events[0].Kind == core.HistoryCheckpointKind {
 		s.event(core.HistoryTrimmedKind, "Earlier display history was removed by the size limit.", "", core.HistoryBoundary{Through: events[0].Seq}, nil)
 	}
@@ -380,6 +395,14 @@ func (s *Supervisor) event(kind, text, id string, payload any, raw []byte) core.
 	if kind == "state" {
 		s.snap.State = text
 	}
+	// The live projection has to agree with ReplayFrom, which is what a restart
+	// reads: the slot is the journal's, not a field that only this process has.
+	if kind == "queued" {
+		s.snap.Queued, s.snap.QueuedID = text, id
+	}
+	if kind == "input" && id == s.snap.QueuedID {
+		s.snap.Queued, s.snap.QueuedID = "", ""
+	}
 	return e
 }
 func (s *Supervisor) write(v any) error {
@@ -478,6 +501,7 @@ func (s *Supervisor) consume(raw []byte) {
 			panic(fmt.Sprintf("journal durability failure: %v", err))
 		}
 		s.approvePending()
+		s.deliverQueued()
 		if completed && s.quotaRoot != "" {
 			s.maintainHistory(s.quotaRoot)
 		}
@@ -675,6 +699,9 @@ func (s *Supervisor) executeLocked(op string, c core.Command) (core.Receipt, err
 		op = "stop"
 		s.event("update", "applying agent update", "", nil, nil)
 	}
+	if op == "unqueue" {
+		return s.unqueue(c)
+	}
 	if op == "send" {
 		if isSettingCommand(c.Text) {
 			return s.configure(c)
@@ -682,19 +709,34 @@ func (s *Supervisor) executeLocked(op string, c core.Command) (core.Receipt, err
 		if s.settingPending != "" {
 			return receipt, errors.New("model/effort update pending; wait for confirmation")
 		}
+		if c.Text == "" {
+			return receipt, errors.New("text required")
+		}
+		// One slot: what is waiting stays one nameable thing that can be shown
+		// and cancelled. Delivery of that message is the exception, since it is
+		// the slot emptying rather than a second message arriving.
+		if s.snap.Queued != "" && s.snap.QueuedID != c.ClientID {
+			return receipt, errors.New("a message is already waiting for the agent; cancel it or wait")
+		}
 	}
 	var wire any
 	if s.codex != nil {
 		var err error
 		wire, err = s.codex.command(op, c)
+		if errors.Is(err, errQueueInput) {
+			return s.enqueue(c)
+		}
 		if err != nil {
 			return receipt, err
 		}
 	} else {
 		switch op {
 		case "send":
-			if s.snap.State != "idle" || c.Text == "" {
-				return receipt, errors.New("session must be idle and text nonempty")
+			// Claude takes one message per turn, so a message sent into a turn
+			// waits for its end. The wait is cxz's, not the agent's: the CLI
+			// would queue it too, but once written it cannot be taken back.
+			if s.snap.State != "idle" {
+				return s.enqueue(c)
 			}
 			wire = map[string]any{"type": "user", "session_id": "", "parent_tool_use_id": nil, "message": map[string]any{"role": "user", "content": c.Text}}
 		case "reply":
@@ -771,8 +813,18 @@ func (s *Supervisor) executeLocked(op string, c core.Command) (core.Receipt, err
 	s.receipts[c.ClientID] = r
 	switch op {
 	case "send":
+		// A steered message is not in the conversation until Codex says it took
+		// it, so it stays in the slot and the journal records it as waiting.
+		if s.codex != nil && s.codex.steering[`"`+c.ClientID+`"`].ClientID != "" {
+			s.event("queued", c.Text, c.ClientID, nil, nil)
+			break
+		}
 		s.event("input", c.Text, c.ClientID, nil, nil)
-		s.event("state", "working", "", nil, nil)
+		// A turn waiting on an approval is still waiting on it: saying "working"
+		// here would bury the approval the session is blocked on.
+		if s.snap.State != "working" && s.snap.State != "waiting_input" {
+			s.event("state", "working", "", nil, nil)
+		}
 	case "reply":
 		delete(s.pending, c.RequestID)
 		s.event("approval_resolved", resolved, c.RequestID, nil, nil)
@@ -786,9 +838,13 @@ func (s *Supervisor) executeLocked(op string, c core.Command) (core.Receipt, err
 	case "interrupt":
 		s.interrupted = true
 		s.clearPending()
+		// You interrupted to change direction, so a message written for the old
+		// one is not what you want delivered the moment the turn stops.
+		s.dropQueued("the turn was interrupted")
 		s.event("state", "working", "", nil, nil)
 	case "stop":
 		s.stopping = true
+		s.dropQueued("the agent was stopped")
 		s.event("state", "stopping", "", nil, nil)
 	}
 	if wire != nil {

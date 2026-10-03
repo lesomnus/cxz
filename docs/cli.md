@@ -80,6 +80,7 @@ cxz session new --account ACCOUNT [--model ID] [--name NAME] [--alias ALIAS] WOR
 cxz session ls
 cxz session get ID
 cxz session send ID "text"
+cxz session cancel ID                # take back a message the agent has not taken
 cxz session reply ID REQUEST_ID allow|deny [ANSWERS_JSON]
 cxz session interrupt ID
 cxz session resume ID
@@ -89,6 +90,12 @@ cxz session events ID [AFTER_SEQ]
 
 `--account` is required from a script; interactive runs offer a picker. Sessions
 accept their alias anywhere an ID is taken.
+
+`send` into a running turn is not refused: cxz holds the message and reports
+`queued`, then gives it to the agent at the first moment it can take one. Only
+one message waits at a time — a second is refused while the first is still
+waiting — and `session cancel` takes it back. `session get` shows what is
+waiting. See [sending while the agent works](tui.md#sending-while-the-agent-works).
 
 Event streams reconnect by cursor. Mutations are never retried blindly; these APIs
 accept an idempotency key so retrying is your decision.

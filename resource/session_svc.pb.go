@@ -3372,12 +3372,14 @@ func (b0 SessionPermissionRequest_builder) Build() *SessionPermissionRequest {
 	return m0
 }
 
+// cancel takes back the message waiting to be sent, instead of sending text.
 type SessionSendRequest struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Ref         *SessionRef            `protobuf:"bytes,1,opt,name=ref"`
 	xxx_hidden_RunId       *string                `protobuf:"bytes,2,opt,name=run_id,json=runId"`
 	xxx_hidden_ClientId    *string                `protobuf:"bytes,3,opt,name=client_id,json=clientId"`
 	xxx_hidden_Text        *string                `protobuf:"bytes,4,opt,name=text"`
+	xxx_hidden_Cancel      bool                   `protobuf:"varint,5,opt,name=cancel"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
 	XXX_presence           [1]uint32
 	unknownFields          protoimpl.UnknownFields
@@ -3446,23 +3448,35 @@ func (x *SessionSendRequest) GetText() string {
 	return ""
 }
 
+func (x *SessionSendRequest) GetCancel() bool {
+	if x != nil {
+		return x.xxx_hidden_Cancel
+	}
+	return false
+}
+
 func (x *SessionSendRequest) SetRef(v *SessionRef) {
 	x.xxx_hidden_Ref = v
 }
 
 func (x *SessionSendRequest) SetRunId(v string) {
 	x.xxx_hidden_RunId = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 4)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 5)
 }
 
 func (x *SessionSendRequest) SetClientId(v string) {
 	x.xxx_hidden_ClientId = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 4)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 5)
 }
 
 func (x *SessionSendRequest) SetText(v string) {
 	x.xxx_hidden_Text = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 4)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 5)
+}
+
+func (x *SessionSendRequest) SetCancel(v bool) {
+	x.xxx_hidden_Cancel = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 5)
 }
 
 func (x *SessionSendRequest) HasRef() bool {
@@ -3493,6 +3507,13 @@ func (x *SessionSendRequest) HasText() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
 }
 
+func (x *SessionSendRequest) HasCancel() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
+}
+
 func (x *SessionSendRequest) ClearRef() {
 	x.xxx_hidden_Ref = nil
 }
@@ -3512,6 +3533,11 @@ func (x *SessionSendRequest) ClearText() {
 	x.xxx_hidden_Text = nil
 }
 
+func (x *SessionSendRequest) ClearCancel() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
+	x.xxx_hidden_Cancel = false
+}
+
 type SessionSendRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -3519,6 +3545,7 @@ type SessionSendRequest_builder struct {
 	RunId    *string
 	ClientId *string
 	Text     *string
+	Cancel   *bool
 }
 
 func (b0 SessionSendRequest_builder) Build() *SessionSendRequest {
@@ -3527,16 +3554,20 @@ func (b0 SessionSendRequest_builder) Build() *SessionSendRequest {
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
 	if b.RunId != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 4)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 5)
 		x.xxx_hidden_RunId = b.RunId
 	}
 	if b.ClientId != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 4)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 5)
 		x.xxx_hidden_ClientId = b.ClientId
 	}
 	if b.Text != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 4)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 5)
 		x.xxx_hidden_Text = b.Text
+	}
+	if b.Cancel != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 5)
+		x.xxx_hidden_Cancel = *b.Cancel
 	}
 	return m0
 }
@@ -5313,12 +5344,13 @@ const file_cxz_session_svc_g_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.SessionRefR\x03ref\x12\x15\n" +
 	"\x06run_id\x18\x02 \x01(\tR\x05runId\x12\x1b\n" +
 	"\tclient_id\x18\x03 \x01(\tR\bclientId\x12\x12\n" +
-	"\x04mode\x18\x04 \x01(\tR\x04mode\"\x7f\n" +
+	"\x04mode\x18\x04 \x01(\tR\x04mode\"\x97\x01\n" +
 	"\x12SessionSendRequest\x12!\n" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.SessionRefR\x03ref\x12\x15\n" +
 	"\x06run_id\x18\x02 \x01(\tR\x05runId\x12\x1b\n" +
 	"\tclient_id\x18\x03 \x01(\tR\bclientId\x12\x12\n" +
-	"\x04text\x18\x04 \x01(\tR\x04text\"j\n" +
+	"\x04text\x18\x04 \x01(\tR\x04text\x12\x16\n" +
+	"\x06cancel\x18\x05 \x01(\bR\x06cancel\"j\n" +
 	"\x14SessionAttachRequest\x12!\n" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.SessionRefR\x03ref\x12\x15\n" +
 	"\x06run_id\x18\x02 \x01(\tR\x05runId\x12\x18\n" +

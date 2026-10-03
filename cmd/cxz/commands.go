@@ -177,7 +177,7 @@ func newRoot(state string) *xli.Command {
 		c := &xli.Command{Name: name, Brief: map[string]string{"shell": "Open project shell", "exec": "Execute command inside project"}[name], Args: arg.Args{projectArg("PROJECT", false), &arg.Remains{Name: "COMMAND", Optional: name == "shell"}}, Handler: withClient(projectExec)}
 		root.Commands = append(root.Commands, c)
 	}
-	for _, name := range []string{"ls", "projects", "get", "send", "reply", "interrupt", "resume", "stop", "events", "_new-local"} {
+	for _, name := range []string{"ls", "projects", "get", "send", "cancel", "reply", "interrupt", "resume", "stop", "events", "_new-local"} {
 		root.Commands = append(root.Commands, newSessionCommand(name))
 	}
 	root.Commands = append(root.Commands, internalCommands()...)
@@ -258,7 +258,7 @@ func internalCommands() xli.Commands {
 }
 
 func newSessionCommand(name string) *xli.Command {
-	c := &xli.Command{Name: name, Brief: map[string]string{"ls": "List sessions as JSON", "projects": "List owned and foreign projects as JSON", "get": "Get session status", "send": "Send one message", "reply": "Answer a pending approval/question", "interrupt": "Interrupt active turn", "resume": "Explicitly resume session", "stop": "Terminate session agent", "events": "Stream journal events", "_new-local": "Internal local integration entrypoint"}[name], Handler: withClient(sessionCommand)}
+	c := &xli.Command{Name: name, Brief: map[string]string{"ls": "List sessions as JSON", "projects": "List owned and foreign projects as JSON", "get": "Get session status", "send": "Send one message", "cancel": "Take back the message waiting to be sent", "reply": "Answer a pending approval/question", "interrupt": "Interrupt active turn", "resume": "Explicitly resume session", "stop": "Terminate session agent", "events": "Stream journal events", "_new-local": "Internal local integration entrypoint"}[name], Handler: withClient(sessionCommand)}
 	if name == "_new-local" {
 		c.Category = "Internal runtime"
 		c.Args = arg.Args{stringArg("ACCOUNT", false), stringArg("WORKSPACE", false), stringArg("TITLE", true)}
@@ -327,6 +327,8 @@ func sessionCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 			result = s
 		case "send":
 			result, err = client.Send(call, &api.Input{SessionId: id, RunId: s.RunId, ClientId: control.ClientId, Text: arg.MustGet[string](c, "TEXT")})
+		case "cancel":
+			result, err = client.Send(call, &api.Input{SessionId: id, RunId: s.RunId, ClientId: control.ClientId, Cancel: true})
 		case "reply":
 			result, err = client.Reply(call, &api.Answer{SessionId: id, RunId: s.RunId, ClientId: control.ClientId, RequestId: arg.MustGet[string](c, "REQUEST"), Allow: arg.MustGet[string](c, "DECISION") == "allow", AnswersJson: arg.MustGet[string](c, "ANSWERS_JSON")})
 		case "interrupt":

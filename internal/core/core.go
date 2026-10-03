@@ -41,6 +41,11 @@ type Snapshot struct {
 	VendorID       string  `json:"vendor_id"`
 	LastSeq        uint64  `json:"last_seq"`
 	Pending        []Event `json:"pending"`
+	// One message may wait for an agent that cannot take it yet. It is part of
+	// the projection rather than a client's memory, so every frontend sees the
+	// same one waiting, and a supervisor restart does not lose it.
+	Queued   string `json:"queued,omitempty"`
+	QueuedID string `json:"queued_id,omitempty"`
 }
 type Command struct {
 	Busy       bool                       `json:"busy,omitempty"`

@@ -27,6 +27,7 @@ type redaction struct {
 }
 type redactSent struct {
 	id, request string
+	status      string
 	err         error
 	tokens      []string
 }
@@ -269,10 +270,10 @@ func (m *model) sendRedactions(draft string) tea.Cmd {
 			pairs = append(pairs, token, "(secret placed at "+path+")")
 		}
 		text := strings.NewReplacer(pairs...).Replace(draft)
-		_, err := client.Send(ctx, &api.Input{SessionId: id, RunId: run, ClientId: request, Text: text})
+		receipt, err := client.Send(ctx, &api.Input{SessionId: id, RunId: run, ClientId: request, Text: text})
 		if err != nil {
 			return fail(fmt.Errorf("secret message send failed; not retried automatically"))
 		}
-		return redactSent{tokens: tokens, id: id, request: request}
+		return redactSent{tokens: tokens, id: id, request: request, status: receipt.GetStatus()}
 	}
 }

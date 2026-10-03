@@ -18,6 +18,10 @@ type recordingClient struct {
 	answers     []*api.Answer
 	interrupts  []*api.Control
 	permissions []*api.PermissionInput
+	// What the server says about a send: "queued" when it is holding the
+	// message, or an error when it is already holding one.
+	status  string
+	sendErr error
 }
 
 func TestDiagnosticAndAuthenticationHint(t *testing.T) {
@@ -36,7 +40,14 @@ func TestDiagnosticAndAuthenticationHint(t *testing.T) {
 
 func (c *recordingClient) Send(_ context.Context, r *api.Input, _ ...grpc.CallOption) (*api.Receipt, error) {
 	c.inputs = append(c.inputs, r)
-	return &api.Receipt{Status: "accepted"}, nil
+	if c.sendErr != nil {
+		return nil, c.sendErr
+	}
+	status := c.status
+	if status == "" {
+		status = "accepted"
+	}
+	return &api.Receipt{Status: status}, nil
 }
 func (c *recordingClient) Reply(_ context.Context, r *api.Answer, _ ...grpc.CallOption) (*api.Receipt, error) {
 	c.answers = append(c.answers, r)
