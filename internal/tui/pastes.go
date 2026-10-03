@@ -524,6 +524,9 @@ func (m *model) openPastes() tea.Cmd {
 
 func (m *model) pasteKey(k tea.KeyMsg) tea.Cmd {
 	d := m.pasteDialog
+	if k.Paste {
+		return nil
+	}
 	if k.String() == "esc" {
 		m.pasteDialog = nil
 		return nil
@@ -543,6 +546,8 @@ func (m *model) pasteKey(k tea.KeyMsg) tea.Cmd {
 		}
 	}
 	switch k.String() {
+	case "r":
+		m.expandPaste(d, p)
 	case "up":
 		d.index = max(0, d.index-1)
 		d.offset = 0
@@ -594,13 +599,65 @@ func (m *model) pasteKey(k tea.KeyMsg) tea.Cmd {
 	return nil
 }
 
+// Expand only the occurrence selected in the preview, leaving other drafts
+// and cached copies of the same paste intact.
+func (m *model) expandPaste(d *pasteDialog, p *pastedText) {
+	if p.attachment != nil || p.secret {
+		return
+	}
+	value := m.input.Value()
+	if d.question != nil {
+		value = d.question.other[d.page].Value()
+	}
+	start := 0
+	for _, token := range d.tokens[:d.index+1] {
+		i := strings.Index(value[start:], token)
+		if i < 0 {
+			d.message = "Paste is no longer present in this input."
+			return
+		}
+		start += i + len(token)
+	}
+	start -= len(p.token)
+	next := value[:start] + p.body + value[start+len(p.token):]
+	pos := utf8.RuneCountInString(value[:start] + p.body)
+	if d.question != nil {
+		in := &d.question.other[d.page]
+		oldPos := in.Position()
+		in.SetValue(next)
+		if in.Value() != next {
+			in.SetValue(value)
+			in.SetCursor(oldPos)
+			d.message = "This input cannot hold the original text; paste chip retained."
+			return
+		}
+		in.SetCursor(pos)
+		d.question.otherSelected[d.page] = strings.TrimSpace(next) != ""
+	} else {
+		oldPos := composerPosition(m.input)
+		m.input.SetValue(next)
+		if m.input.Value() != next {
+			m.input.SetValue(value)
+			m.setComposerPosition(oldPos)
+			d.message = "This input cannot hold the original text; paste chip retained."
+			return
+		}
+		m.setComposerPosition(pos)
+	}
+	m.pasteSelection = nil
+	m.composerSelection = nil
+	m.pasteDialog = nil
+	m.notice = "Paste expanded into editable text."
+	m.resize()
+}
+
 func (m *model) pasteOverlay(view string) string {
 	d := m.pasteDialog
 	if d == nil {
 		return view
 	}
 	width := max(1, m.width-4)
-	rows := []string{accent.Render("Pasted text · preview"), muted.Render("↑/↓ select · t send as full text · f send as file · d remove from draft"), muted.Render("Esc back (nothing sent yet)"), ""}
+	rows := []string{accent.Render("Pasted text · preview"), muted.Render("↑/↓ select · t send as full text · f send as file · r expand into input · d remove"), muted.Render("Esc back (nothing sent yet)"), ""}
 	start := max(0, d.index-1)
 	for i := start; i < min(len(d.tokens), start+3); i++ {
 		p := m.pastes[d.tokens[i]]

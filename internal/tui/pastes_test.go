@@ -14,6 +14,81 @@ import (
 	"google.golang.org/grpc"
 )
 
+func TestPastePreviewExpandSelectedOccurrence(t *testing.T) {
+	m := conversationModel()
+	body := "한글\nsecond\nthird\nlast"
+	m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(body), Paste: true})
+	token := m.input.Value()
+	m.pastes[token].file = true
+	m.pastes[token].path = "/retained/paste.txt"
+	m.input.SetValue("앞 " + token + "\n중간 " + token + " 뒤")
+	m.Update(tea.KeyMsg{Type: tea.KeyCtrlP})
+	m.Update(tea.KeyMsg{Type: tea.KeyDown})
+	m.Update(questionKeyMsg("r"))
+	want := "앞 " + token + "\n중간 " + body + " 뒤"
+	if m.input.Value() != want || m.pasteDialog != nil {
+		t.Fatalf("expand: %q, dialog=%v", m.input.Value(), m.pasteDialog)
+	}
+	if composerPosition(m.input) != len([]rune("앞 "+token+"\n중간 "+body)) {
+		t.Fatal("cursor did not follow expanded text")
+	}
+	if m.pastes[token].path != "/retained/paste.txt" || !m.pastes[token].file {
+		t.Fatal("expanding one occurrence changed the remaining chip")
+	}
+	m.Update(questionKeyMsg("!"))
+	if m.input.Value() != "앞 "+token+"\n중간 "+body+"! 뒤" {
+		t.Fatal("expanded text is not editable at the restored cursor")
+	}
+}
+
+func TestPastePreviewExpandPreservesDraftOnLimit(t *testing.T) {
+	m := conversationModel()
+	m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(strings.Repeat("한", 900)), Paste: true})
+	token := m.input.Value()
+	m.input.CharLimit = 100
+	beforePos := composerPosition(m.input)
+	m.Update(tea.KeyMsg{Type: tea.KeyCtrlP})
+	m.Update(questionKeyMsg("r"))
+	if m.input.Value() != token || composerPosition(m.input) != beforePos || m.pasteDialog == nil || m.pasteDialog.message == "" {
+		t.Fatal("oversized expansion must retain chip and explain the limit")
+	}
+}
+
+func TestPastePreviewPastedShortcutDoesNotExpand(t *testing.T) {
+	m := conversationModel()
+	m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("a\nb\nc\nd"), Paste: true})
+	token := m.input.Value()
+	m.Update(tea.KeyMsg{Type: tea.KeyCtrlP})
+	m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("r"), Paste: true})
+	if m.input.Value() != token || m.pasteDialog == nil {
+		t.Fatal("pasted r activated preview shortcut")
+	}
+}
+
+func TestPastePreviewExpandQuestion(t *testing.T) {
+	for _, multiline := range []bool{false, true} {
+		m := questionModel()
+		m.syncQuestion()
+		d := m.questionDialog
+		d.row = len(d.questions[0].Options)
+		body := strings.Repeat("한", 900)
+		if multiline {
+			body = "a\nb\nc\nd"
+		}
+		m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(body), Paste: true})
+		token := d.other[0].Value()
+		m.Update(tea.KeyMsg{Type: tea.KeyCtrlP})
+		m.Update(questionKeyMsg("r"))
+		if multiline {
+			if d.other[0].Value() != token || m.pasteDialog == nil {
+				t.Fatal("single-line question input must not lose original newlines")
+			}
+		} else if d.other[0].Value() != body || !d.otherSelected[0] || m.pasteDialog != nil {
+			t.Fatal("question expansion did not update its Other input")
+		}
+	}
+}
+
 func TestFileChipLabelStableAcrossCursorBlink(t *testing.T) {
 	old := lipgloss.ColorProfile()
 	lipgloss.SetColorProfile(termenv.TrueColor)
