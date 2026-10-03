@@ -24,7 +24,7 @@ func (m *Manager) renderDevcontainer(ctx context.Context, spec []byte) (*api.Rec
 	if err := json.Unmarshal(spec, &r); err != nil {
 		return nil, err
 	}
-	p, err := m.resolve(ctx, r.Project)
+	p, err := m.resolveNearest(ctx, r.Project)
 	if err != nil {
 		return nil, err
 	}
@@ -37,6 +37,26 @@ func (m *Manager) renderDevcontainer(ctx context.Context, spec []byte) (*api.Rec
 		return nil, err
 	}
 	return &api.Receipt{Status: string(b)}, nil
+}
+
+// resolveNearest accepts the directory the question was asked from, which is
+// usually inside a workspace rather than at its root -- a .devcontainer
+// directory is exactly where someone wonders which devcontainer is in effect.
+// Only a registered workspace matches, so walking up cannot widen the answer,
+// and the reply names the project it settled on.
+func (m *Manager) resolveNearest(ctx context.Context, handle string) (*Project, error) {
+	p, err := m.resolve(ctx, handle)
+	if err == nil || !filepath.IsAbs(handle) {
+		return p, err
+	}
+	for dir := filepath.Dir(handle); ; dir = filepath.Dir(dir) {
+		if found, e := m.resolve(ctx, dir); e == nil {
+			return found, nil
+		}
+		if parent := filepath.Dir(dir); parent == dir {
+			return nil, err // The original error names what was actually asked for.
+		}
+	}
 }
 
 func (m *Manager) renderProjectDevcontainer(ctx context.Context, p *Project) (devcontainerrender.Reply, error) {
