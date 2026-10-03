@@ -59,6 +59,29 @@ document before the first edit, then reuse the latest revision returned by a
 successful read or update. The store rejects stale revisions; after a conflict,
 read the current content and reconcile before retrying.
 
+Prefer updating a topic document over adding a new document for each PR, CI result,
+merge, or conflict resolution. Temporary information should carry an ordinary
+Markdown review condition and a cleanup action near the relevant item, for example:
+
+```markdown
+- Temporary workaround: restart the helper after changing the account.
+  - Review when: the authentication fix is merged, deployed, and verified.
+  - Cleanup: remove the workaround; retain the final account configuration guidance.
+```
+
+Use an observable task state where possible. If none is useful, record a review
+date (for example, `Review after: 2026-11-01`) and what to verify at that time.
+Enduring preferences and decisions do not need arbitrary expiry dates.
+
+These are review reminders, not machine-enforced metadata or automatic deletion
+rules. Ask the agent conversationally to clean up memory, or let it review relevant
+conditions while already updating that document. It should verify current evidence,
+remove obsolete temporary details, and consolidate completed work while preserving
+valid decisions and unresolved questions. Uncertain items remain with a note about
+what needs checking. Conditions do not justify polling or scanning unrelated memory.
+The usual ownership and revision checks still apply; this introduces no scheduler,
+schema change, or separate AI compaction task.
+
 ### Discovering changes
 
 The MCP tools are `memory_list`, `memory_search`, `memory_read`, `memory_update`
