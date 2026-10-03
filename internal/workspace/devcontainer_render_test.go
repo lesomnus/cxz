@@ -2,6 +2,7 @@ package workspace
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -152,5 +153,45 @@ func TestRenderReplySurvivesTheWire(t *testing.T) {
 	}
 	if !strings.Contains(string(decoded.Files[0].Data), "CXZ_PROJECT_ID") {
 		t.Fatal("the configuration cxz applies is not what was returned")
+	}
+}
+
+// The question gets asked from wherever you are in a repository, which is often
+// a subdirectory -- .devcontainer most of all. Only a registered workspace
+// matches, so walking up finds the project without widening the answer.
+func TestRenderResolvesFromASubdirectory(t *testing.T) {
+	db, err := sql.Open("sqlite3", filepath.Join(t.TempDir(), "db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	if _, err = db.Exec(`CREATE TABLE projects(id TEXT PRIMARY KEY,data BLOB NOT NULL)`); err != nil {
+		t.Fatal(err)
+	}
+	m := &Manager{DB: db, Root: t.TempDir(), Owner: strings.Repeat("o", 24)}
+	workspace := t.TempDir()
+	p := &Project{ID: "abc", Name: "demo", Workspace: workspace}
+	b, err := json.Marshal(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = db.Exec("INSERT INTO projects(id,data) VALUES(?,?)", p.ID, b); err != nil {
+		t.Fatal(err)
+	}
+	inside := filepath.Join(workspace, ".devcontainer", "deep")
+	if err = os.MkdirAll(inside, 0700); err != nil {
+		t.Fatal(err)
+	}
+	for _, handle := range []string{workspace, inside, "abc", "demo"} {
+		got, err := m.resolveNearest(t.Context(), handle)
+		if err != nil || got.ID != p.ID {
+			t.Fatal("did not resolve", handle, err)
+		}
+	}
+	// A path outside every workspace is still an error, and it names what was
+	// asked for rather than the root it gave up at.
+	_, err = m.resolveNearest(t.Context(), filepath.Join(t.TempDir(), "elsewhere"))
+	if err == nil || !strings.Contains(err.Error(), "elsewhere") {
+		t.Fatal("unregistered path not reported as asked:", err)
 	}
 }

@@ -38,9 +38,13 @@ in cxz's state directory rather than in your repository. To read the result
 instead of inferring it:
 
 ```sh
-cxz devcontainer render            # the project in this directory
+cxz devcontainer render            # the project this directory belongs to
 cxz devcontainer render PROJECT
 ```
+
+With no argument it resolves the project from the current directory, walking up
+until it finds a registered workspace — so it works from `.devcontainer` or any
+other subdirectory, and prints which project answered.
 
 It writes a directory and prints the path:
 

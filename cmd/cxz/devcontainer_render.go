@@ -25,7 +25,9 @@ func devcontainerCommand() *xli.Command {
 		Flags: flg.Flags{mcpStringFlag("out", "Directory to write into (default: a new temporary directory)", "")},
 	}
 	render.Handler = xli.OnRun(func(ctx context.Context, c *xli.Command, _ xli.Next) error {
-		target := arg.MustGet[string](c, "PROJECT")
+		// An optional argument may be absent, and MustGet panics on absent
+		// rather than falling back to a zero value.
+		target, _ := arg.Get[string](c, "PROJECT")
 		if target == "" {
 			cwd, err := os.Getwd()
 			if err != nil {
@@ -132,6 +134,9 @@ func printRenderedDevcontainer(c *xli.Command, dir string, reply devcontainerren
 	for _, f := range reply.Files {
 		fmt.Fprintf(c.Writer, "  %-30s %s\n", f.Name, f.Role)
 	}
+	// Which project answered, since the directory the command ran in only has
+	// to be somewhere inside its workspace.
+	fmt.Fprintf(c.Writer, "\n%s · %s\n", reply.Name, reply.Workspace)
 	if reply.Note != "" {
 		fmt.Fprintln(c.Writer, "\n"+reply.Note)
 	}

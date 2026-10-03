@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/lesomnus/cxz/internal/devcontainerrender"
+	"github.com/lesomnus/xli/xlitest"
 )
 
 func renderReply() devcontainerrender.Reply {
@@ -69,5 +70,21 @@ func TestRenderedDevcontainerRefusesEscapingPaths(t *testing.T) {
 func TestRenderedDevcontainerNeedsFiles(t *testing.T) {
 	if _, err := writeRenderedDevcontainer("", devcontainerrender.Reply{}); err == nil {
 		t.Fatal("wrote an empty report")
+	}
+}
+
+// The argument is optional, so the handler has to survive its absence: reading
+// an absent argument with MustGet panics instead of returning a zero value,
+// which is how `cxz devcontainer render` with no argument crashed.
+func TestRenderWithoutAnArgumentReportsRatherThanPanics(t *testing.T) {
+	state := filepath.Join(t.TempDir(), "absent")
+	for _, args := range [][]string{{"devcontainer", "render"}, {"devcontainer", "render", "."}} {
+		got := xlitest.Run(t, newRoot(state), args...)
+		if got.Err == nil {
+			t.Fatal("reported success without a manager:", args)
+		}
+		if strings.Contains(got.Err.Error(), "arg not set") {
+			t.Fatal("absent argument reached the handler as a failure:", got.Err)
+		}
 	}
 }
