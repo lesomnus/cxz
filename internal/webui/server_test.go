@@ -1,0 +1,128 @@
+package webui
+
+import (
+	"context"
+	"io"
+	"net"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+	"testing/fstest"
+
+	"connectrpc.com/connect"
+	"github.com/lesomnus/cxz/resource"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/test/bufconn"
+	"google.golang.org/protobuf/proto"
+)
+
+type testSessions struct {
+	resource.UnimplementedSessionServiceServer
+}
+
+func (*testSessions) Send(_ context.Context, r *resource.SessionSendRequest) (*resource.SessionReceipt, error) {
+	return resource.SessionReceipt_builder{ClientId: proto.String(r.GetClientId()), Status: proto.String(r.GetText())}.Build(), nil
+}
+func (*testSessions) Events(r *resource.SessionEventsRequest, s grpc.ServerStreamingServer[resource.SessionEvent]) error {
+	return s.Send(resource.SessionEvent_builder{Seq: r.GetAfterSeq() + 1, Text: "안녕"}.Build())
+}
+func TestBrowserConnect(t *testing.T) {
+	ln := bufconn.Listen(1 << 20)
+	g := grpc.NewServer()
+	resource.RegisterSessionServiceServer(g, &testSessions{})
+	go g.Serve(ln)
+	defer g.Stop()
+	conn, err := grpc.NewClient("passthrough:///test", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) { return ln.Dial() }))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Close()
+	c := Config{Listen: "127.0.0.1:0", Origin: "https://cxz.test", Certificate: "cert", Key: "key", Token: strings.Repeat("a", 32)}
+	h, closeHandler, err := Handler(c, conn, fstest.MapFS{"index.html": {Data: []byte("cxz")}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer closeHandler()
+	request := func(path, body, origin string, cookie *http.Cookie) *httptest.ResponseRecorder {
+		r := httptest.NewRequest("POST", "https://cxz.test"+path, strings.NewReader(body))
+		r.Header.Set("Origin", origin)
+		if cookie != nil {
+			r.AddCookie(cookie)
+		}
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, r)
+		return w
+	}
+	for _, tc := range []struct {
+		path, body, origin string
+		code               int
+	}{
+		{"/auth/login", `{"token":"wrong"}`, c.Origin, 401},
+		{"/auth/login", `{"token":"` + c.Token + `"}`, "https://evil.test", 403},
+		{"/auth/login", `{"token":"` + c.Token + `"}`, "", 403},
+		{"/cxz.SessionService/Send", `{}`, c.Origin, 401},
+	} {
+		if w := request(tc.path, tc.body, tc.origin, nil); w.Code != tc.code {
+			t.Fatalf("%s: %d %s", tc.path, w.Code, w.Body)
+		}
+	}
+	w := request("/auth/login", `{"token":"`+c.Token+`"}`, c.Origin, nil)
+	if w.Code != 204 {
+		t.Fatal(w.Body.String())
+	}
+	cookie := w.Result().Cookies()[0]
+	if !cookie.Secure || !cookie.HttpOnly || cookie.SameSite != http.SameSiteStrictMode {
+		t.Fatal("unsafe cookie")
+	}
+	// Exercise actual Connect framing and protobuf conversion, not a mocked RPC.
+	server := httptest.NewServer(h)
+	defer server.Close()
+	client := &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		r.Host = "cxz.test"
+		r.Header.Set("Origin", c.Origin)
+		r.AddCookie(cookie)
+		return http.DefaultTransport.RoundTrip(r)
+	})}
+	send := connect.NewClient[resource.SessionSendRequest, resource.SessionReceipt](client, server.URL+"/cxz.SessionService/Send", connect.WithProtoJSON())
+	reply, err := send.CallUnary(context.Background(), connect.NewRequest(resource.SessionSendRequest_builder{ClientId: proto.String("once"), Text: proto.String("hello")}.Build()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if reply.Msg.GetClientId() != "once" || reply.Msg.GetStatus() != "hello" {
+		t.Fatal(reply.Msg)
+	}
+	events := connect.NewClient[resource.SessionEventsRequest, resource.SessionEvent](client, server.URL+"/cxz.SessionService/Events")
+	stream, err := events.CallServerStream(context.Background(), connect.NewRequest(resource.SessionEventsRequest_builder{AfterSeq: proto.Uint64(41)}.Build()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !stream.Receive() || stream.Msg().GetSeq() != 42 || stream.Msg().GetText() != "안녕" {
+		t.Fatalf("stream: %v", stream.Err())
+	}
+	if stream.Receive() || stream.Err() != nil {
+		t.Fatalf("end: %v", stream.Err())
+	}
+	if w := request("/auth/logout", "", c.Origin, cookie); w.Code != 204 {
+		t.Fatal(w.Code)
+	}
+	if w := request("/cxz.SessionService/Send", "{}", c.Origin, cookie); w.Code != 401 {
+		t.Fatal("logout did not revoke access")
+	}
+	r, _ := http.NewRequest("GET", server.URL+"/", nil)
+	r.Host = "evil.test"
+	res, err := http.DefaultClient.Do(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer res.Body.Close()
+	io.Copy(io.Discard, res.Body)
+	if res.StatusCode != 403 {
+		t.Fatal("host not checked")
+	}
+}
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
