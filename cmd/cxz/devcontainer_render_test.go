@@ -73,12 +73,37 @@ func TestRenderedDevcontainerNeedsFiles(t *testing.T) {
 	}
 }
 
-// The argument is optional, so the handler has to survive its absence: reading
-// an absent argument with MustGet panics instead of returning a zero value,
-// which is how `cxz devcontainer render` with no argument crashed.
-func TestRenderWithoutAnArgumentReportsRatherThanPanics(t *testing.T) {
+// The merged Compose file is the piece people read on its own, so it goes to
+// stdout to be piped. Both the file written by render and the file printed here
+// are the same one, named in one place.
+func TestComposePrintsTheMergedFile(t *testing.T) {
+	reply := renderReply()
+	merged := []byte("services:\n  dev:\n    image: resolved\n")
+	reply.Files = append(reply.Files, devcontainerrender.File{
+		Name: devcontainerrender.ResolvedCompose, Source: "docker compose config", Role: "the merge", Data: merged,
+	})
+	dir, err := writeRenderedDevcontainer(filepath.Join(t.TempDir(), "render"), reply)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err := os.ReadFile(filepath.Join(dir, filepath.FromSlash(devcontainerrender.ResolvedCompose)))
+	if err != nil {
+		t.Fatal("render did not write the file the printer names:", err)
+	}
+	if string(b) != string(merged) {
+		t.Fatal("the written file is not what was returned")
+	}
+}
+
+// Both forms have to survive an absent argument -- reading an absent one with
+// MustGet panics rather than returning a zero value, which is how render with
+// no argument crashed -- and neither may report success without a manager.
+func TestDevcontainerCommandsWithoutAnArgument(t *testing.T) {
 	state := filepath.Join(t.TempDir(), "absent")
-	for _, args := range [][]string{{"devcontainer", "render"}, {"devcontainer", "render", "."}} {
+	for _, args := range [][]string{
+		{"devcontainer", "render"}, {"devcontainer", "render", "."},
+		{"devcontainer", "docker-compose"}, {"devcontainer", "docker-compose", "."},
+	} {
 		got := xlitest.Run(t, newRoot(state), args...)
 		if got.Err == nil {
 			t.Fatal("reported success without a manager:", args)

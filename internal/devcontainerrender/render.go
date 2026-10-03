@@ -6,6 +6,10 @@ package devcontainerrender
 
 const MaxBytes = 1 << 20
 
+// ResolvedCompose names the merged Compose configuration in a reply. The client
+// prints that one file on request, so both sides have to agree on its name.
+const ResolvedCompose = "compose/resolved.yaml"
+
 type Request struct {
 	Project string `json:"project"`
 }

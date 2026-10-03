@@ -59,6 +59,12 @@ It writes a directory and prints the path:
   sources.txt                    where each file came from
 ```
 
+For the merged Compose configuration alone, on stdout:
+
+```sh
+cxz devcontainer docker-compose | yq '.services.dev.volumes'
+```
+
 The numbers are the merge order, and `resolved.yaml` is where a question like
 "which name did my cache volume end up with" is actually answered. These are the
 files cxz handed the CLI, read back rather than rendered again, so the project

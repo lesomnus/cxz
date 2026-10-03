@@ -25,41 +25,8 @@ func devcontainerCommand() *xli.Command {
 		Flags: flg.Flags{mcpStringFlag("out", "Directory to write into (default: a new temporary directory)", "")},
 	}
 	render.Handler = xli.OnRun(func(ctx context.Context, c *xli.Command, _ xli.Next) error {
-		// An optional argument may be absent, and MustGet panics on absent
-		// rather than falling back to a zero value.
-		target, _ := arg.Get[string](c, "PROJECT")
-		if target == "" {
-			cwd, err := os.Getwd()
-			if err != nil {
-				return err
-			}
-			target = cwd
-		}
-		// A path has to be translated to what the engine sees; a project id or
-		// name is already the manager's own handle for it.
-		if st, err := os.Stat(target); err == nil && st.IsDir() {
-			if target, err = dockerx.EnginePath(target); err != nil {
-				return err
-			}
-		}
-		ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
-		defer cancel()
-		session := ""
-		client, closeClient, err := configConnect(ctx, c, &target, &session)
+		reply, err := fetchRenderedDevcontainer(ctx, c)
 		if err != nil {
-			return err
-		}
-		defer closeClient()
-		spec, err := json.Marshal(devcontainerrender.Request{Project: target})
-		if err != nil {
-			return err
-		}
-		out, err := client.Docker(ctx, &api.DockerInput{Action: "devcontainer-render", Spec: spec})
-		if err != nil {
-			return err
-		}
-		var reply devcontainerrender.Reply
-		if err = json.Unmarshal([]byte(out.Status), &reply); err != nil {
 			return err
 		}
 		dir, err := writeRenderedDevcontainer(flg.MustGet[string](c, "out"), reply)
@@ -68,12 +35,83 @@ func devcontainerCommand() *xli.Command {
 		}
 		return printRenderedDevcontainer(c, dir, reply)
 	})
+	// The merged Compose file is the one piece people read on its own -- a
+	// volume's final name, an overridden image -- so it is available on stdout
+	// to pipe, rather than only as a file in a directory. It sits beside render
+	// rather than under it: a command cannot take an optional argument and have
+	// subcommands, and "render docker-compose PROJECT" would be ambiguous about
+	// which of the two the word is anyway.
+	compose := &xli.Command{
+		Name:  "docker-compose",
+		Brief: "Print the merged Compose configuration in effect, as Compose resolves it",
+		Synop: "The merge of the project's Compose files, the installation's shared override\nand cxz's own, in that order. This is the same file cxz devcontainer render\nwrites as compose/resolved.yaml.",
+		Args:  arg.Args{mcpStringArg("PROJECT", true)},
+	}
+	compose.Handler = xli.OnRun(func(ctx context.Context, c *xli.Command, _ xli.Next) error {
+		reply, err := fetchRenderedDevcontainer(ctx, c)
+		if err != nil {
+			return err
+		}
+		for _, f := range reply.Files {
+			if f.Name == devcontainerrender.ResolvedCompose {
+				_, err = c.Writer.Write(f.Data)
+				return err
+			}
+		}
+		if reply.Note != "" {
+			return fmt.Errorf("no merged Compose configuration: %s", reply.Note)
+		}
+		return fmt.Errorf("no merged Compose configuration for %s", reply.Workspace)
+	})
 	return &xli.Command{
 		Name:     "devcontainer",
 		Brief:    "Inspect the devcontainer configuration cxz applies to a project",
-		Commands: xli.Commands{render},
+		Commands: xli.Commands{render, compose},
 		Handler:  xli.OnRun(func(_ context.Context, c *xli.Command, _ xli.Next) error { return c.PrintHelp(c.Writer) }),
 	}
+}
+
+// fetchRenderedDevcontainer asks the manager what the project is running under.
+// The project argument is optional: without one the current directory is used,
+// and the manager walks up from it to the workspace that owns it.
+func fetchRenderedDevcontainer(ctx context.Context, c *xli.Command) (devcontainerrender.Reply, error) {
+	var reply devcontainerrender.Reply
+	// An optional argument may be absent, and MustGet panics on absent rather
+	// than falling back to a zero value.
+	target, _ := arg.Get[string](c, "PROJECT")
+	if target == "" {
+		cwd, err := os.Getwd()
+		if err != nil {
+			return reply, err
+		}
+		target = cwd
+	}
+	// A path has to be translated to what the engine sees; a project id or name
+	// is already the manager's own handle for it.
+	if st, err := os.Stat(target); err == nil && st.IsDir() {
+		var err error
+		if target, err = dockerx.EnginePath(target); err != nil {
+			return reply, err
+		}
+	}
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	session := ""
+	client, closeClient, err := configConnect(ctx, c, &target, &session)
+	if err != nil {
+		return reply, err
+	}
+	defer closeClient()
+	spec, err := json.Marshal(devcontainerrender.Request{Project: target})
+	if err != nil {
+		return reply, err
+	}
+	out, err := client.Docker(ctx, &api.DockerInput{Action: "devcontainer-render", Spec: spec})
+	if err != nil {
+		return reply, err
+	}
+	err = json.Unmarshal([]byte(out.Status), &reply)
+	return reply, err
 }
 
 // writeRenderedDevcontainer lays the files out as a directory you can open,

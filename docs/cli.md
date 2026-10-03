@@ -117,6 +117,7 @@ cxz edit                            # settings.jsonc
 cxz edit docker-compose             # the shared Compose override
 cxz edit share PATH                 # a file in the shared source directory
 cxz devcontainer render [PROJECT]   # write out the devcontainer in effect
+cxz devcontainer docker-compose [PROJECT]   # print the merged Compose configuration
 cxz config show
 cxz config set claude-model ID
 cxz config unset codex-model
@@ -128,6 +129,8 @@ configuration cxz handed the devcontainer CLI, every Compose file in merge order
 and their merged result into a directory, then prints its path. Your
 `.devcontainer` is read, never written; see
 [the shared Compose override](docker.md#the-shared-compose-override).
+`devcontainer docker-compose` prints just the merged Compose configuration, for
+piping into `yq` or a diff.
 
 ## Skills and MCP
 
