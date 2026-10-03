@@ -41,11 +41,16 @@ func (c Config) Validate() error {
 	return nil
 }
 
+type browserSession struct {
+	ctx    context.Context
+	cancel context.CancelFunc
+}
+
 type browserAuth struct {
 	origin   string
 	token    [32]byte
 	mu       sync.Mutex
-	sessions map[[32]byte]time.Time
+	sessions map[[32]byte]browserSession
 }
 
 // Handler uses payday's transcoder; all RPCs still run in the installed Manager.
@@ -63,8 +68,15 @@ func Handler(c Config, conn grpc.ClientConnInterface, assets fs.FS) (http.Handle
 		return nil, nil, err
 	}
 	mux.Handle("/", http.FileServer(http.FS(assets)))
-	auth := &browserAuth{origin: c.Origin, token: sha256.Sum256([]byte(c.Token)), sessions: make(map[[32]byte]time.Time)}
-	return auth.wrap(mux), g.Stop, nil
+	auth := &browserAuth{origin: c.Origin, token: sha256.Sum256([]byte(c.Token)), sessions: make(map[[32]byte]browserSession)}
+	return auth.wrap(mux), func() {
+		auth.mu.Lock()
+		for k := range auth.sessions {
+			auth.revoke(k)
+		}
+		auth.mu.Unlock()
+		g.Stop()
+	}, nil
 }
 
 func (a *browserAuth) wrap(next http.Handler) http.Handler {
@@ -92,7 +104,7 @@ func (a *browserAuth) wrap(next http.Handler) http.Handler {
 		if r.URL.Path == "/auth/logout" && r.Method == http.MethodPost {
 			a.mu.Lock()
 			if c, e := r.Cookie(cookieName); e == nil {
-				delete(a.sessions, sha256.Sum256([]byte(c.Value)))
+				a.revoke(sha256.Sum256([]byte(c.Value)))
 			}
 			a.mu.Unlock()
 			http.SetCookie(w, &http.Cookie{Name: cookieName, Path: "/", Secure: true, HttpOnly: true, SameSite: http.SameSiteStrictMode, MaxAge: -1})
@@ -101,10 +113,20 @@ func (a *browserAuth) wrap(next http.Handler) http.Handler {
 		}
 		if pdweb.Rpc(r) || strings.HasPrefix(r.URL.Path, "/cxz.") || r.URL.Path == "/auth/status" {
 			c, err := r.Cookie(cookieName)
-			if err != nil || !a.valid(c.Value) {
+			if err != nil {
 				http.Error(w, "sign in required", http.StatusUnauthorized)
 				return
 			}
+			session, ok := a.session(c.Value)
+			if !ok {
+				http.Error(w, "sign in required", http.StatusUnauthorized)
+				return
+			}
+			ctx, cancel := context.WithCancel(r.Context())
+			defer cancel()
+			stop := context.AfterFunc(session.ctx, cancel)
+			defer stop()
+			r = r.WithContext(ctx)
 			if r.URL.Path == "/auth/status" {
 				w.WriteHeader(http.StatusNoContent)
 				return
@@ -113,16 +135,27 @@ func (a *browserAuth) wrap(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
-func (a *browserAuth) valid(s string) bool {
+
+// revoke is called with the session mutex held and cancels active streams too.
+func (a *browserAuth) revoke(key [32]byte) {
+	if s, ok := a.sessions[key]; ok {
+		s.cancel()
+		delete(a.sessions, key)
+	}
+}
+func (a *browserAuth) session(value string) (browserSession, bool) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	key := sha256.Sum256([]byte(s))
-	expiry, ok := a.sessions[key]
-	if !ok || !time.Now().Before(expiry) {
-		delete(a.sessions, key)
-		return false
+	key := sha256.Sum256([]byte(value))
+	s, ok := a.sessions[key]
+	if !ok {
+		return browserSession{}, false
 	}
-	return true
+	if s.ctx.Err() != nil {
+		a.revoke(key)
+		return browserSession{}, false
+	}
+	return s, true
 }
 func (a *browserAuth) login(w http.ResponseWriter, r *http.Request) {
 	var req struct {
@@ -147,8 +180,8 @@ func (a *browserAuth) login(w http.ResponseWriter, r *http.Request) {
 	a.mu.Lock()
 	now := time.Now()
 	for k, t := range a.sessions {
-		if !now.Before(t) {
-			delete(a.sessions, k)
+		if t.ctx.Err() != nil {
+			a.revoke(k)
 		}
 	}
 	if len(a.sessions) >= 128 {
@@ -157,9 +190,10 @@ func (a *browserAuth) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if c, e := r.Cookie(cookieName); e == nil {
-		delete(a.sessions, sha256.Sum256([]byte(c.Value)))
+		a.revoke(sha256.Sum256([]byte(c.Value)))
 	}
-	a.sessions[sha256.Sum256([]byte(value))] = now.Add(lifetime)
+	sessionCtx, cancel := context.WithDeadline(context.Background(), now.Add(lifetime))
+	a.sessions[sha256.Sum256([]byte(value))] = browserSession{sessionCtx, cancel}
 	a.mu.Unlock()
 	http.SetCookie(w, &http.Cookie{Name: cookieName, Value: value, Path: "/", Secure: true, HttpOnly: true, SameSite: http.SameSiteStrictMode, MaxAge: int(lifetime.Seconds())})
 	w.WriteHeader(http.StatusNoContent)

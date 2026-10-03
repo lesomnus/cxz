@@ -242,3 +242,11 @@ A foreground server, for developing cxz itself. Not how you install it.
 Commands beginning with `_`, plus `wisp`, are internal: cxz invokes them inside
 containers. They are not a supported interface and their arguments change without
 notice.
+
+## Web gateway (Linux host)
+
+`cxz web --origin https://host:7350 --tls-cert CERT --tls-key KEY
+--access-token-file TOKEN [--listen HOST:PORT]` serves the mobile web client
+and authenticated payday Connect endpoint for the installed local Manager.
+Default listen address: `127.0.0.1:7350`. All other flags shown are required.
+See [web.md](web.md) for setup, authentication and supported operations.
