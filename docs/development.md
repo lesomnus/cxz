@@ -1,5 +1,13 @@
 # Development
 
+## User-visible changes
+
+Update the relevant feature ID in [the client inventory](client-features.md) in
+the same PR as a user-visible behavior change. Record CLI/TUI and web support
+separately, link the implementation, and explain any intentional platform gap.
+The web column currently contains proposals, not shipped functionality. Use the
+shared behavior scenarios there when validating equivalent client operations.
+
 ## Building
 
 ```sh

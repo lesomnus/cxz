@@ -25,6 +25,7 @@ start. This is the map of everything else.
 | [memory.md](memory.md) | Retained agent data and shared project memory |
 | [auxiliary-ai.md](auxiliary-ai.md) | Background summaries and next-message suggestions |
 | [cli.md](cli.md) | Every command |
+| [client-features.md](client-features.md) | CLI/TUI feature inventory, mobile web scope proposals, and tracked client differences |
 
 ## Running it
 
