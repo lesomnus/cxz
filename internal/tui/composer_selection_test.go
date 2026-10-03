@@ -327,3 +327,62 @@ func TestComposerScrollbarTracksTheDraft(t *testing.T) {
 		t.Fatal("thumb covers", size, "of", len(end), "rows")
 	}
 }
+
+// The wheel over the composer moves through the draft. The widget's view follows
+// its cursor, so the cursor is what moves, and everything that reads a position
+// -- the scrollbar, the selection, the cursor itself -- stays in agreement.
+func TestComposerWheelScrollsTheDraft(t *testing.T) {
+	m := conversationModel()
+	m.input.SetValue(strings.Repeat("a line of draft\n", 12) + "last")
+	m.resize()
+	m.setComposerPosition(5)
+	m.resize()
+	top := m.height - m.input.Height() - 2 - m.terminalHeight()
+	x := m.contentOffset() + 4
+	wheel := func(y int, button tea.MouseButton) bool {
+		return m.composerMouse(tea.MouseMsg{X: x, Y: y, Button: button, Action: tea.MouseActionPress})
+	}
+	row := func() int { return composerRowIndex(m.composerRows(), composerPosition(m.input)) }
+	if !wheel(top+1, tea.MouseButtonWheelDown) {
+		t.Fatal("the composer did not take the wheel")
+	}
+	if row() != 3 {
+		t.Fatal("a notch moved to row", row(), "want three rows down")
+	}
+	// The column is held, the way an arrow key holds it.
+	rows := m.composerRows()
+	if got := composerPosition(m.input) - rows[row()].start; got != 5 {
+		t.Fatal("column became", got, "want 5")
+	}
+	// The view follows, which is the point of scrolling at all.
+	before := m.composerScroll(rows)
+	for range 3 {
+		wheel(top+1, tea.MouseButtonWheelDown)
+	}
+	if m.composerScroll(m.composerRows()) <= before {
+		t.Fatal("the visible rows did not move")
+	}
+	// Both ends stop, and say so rather than swallowing the event.
+	for range 10 {
+		wheel(top+1, tea.MouseButtonWheelDown)
+	}
+	if wheel(top+1, tea.MouseButtonWheelDown) {
+		t.Fatal("scrolled past the end of the draft")
+	}
+	for range 10 {
+		wheel(top+1, tea.MouseButtonWheelUp)
+	}
+	if wheel(top+1, tea.MouseButtonWheelUp) || row() != 0 {
+		t.Fatal("scrolled past the start of the draft, at row", row())
+	}
+	// Outside the composer it is someone else's event, and a draft that fits has
+	// nothing to scroll.
+	if wheel(0, tea.MouseButtonWheelDown) {
+		t.Fatal("took a wheel event from the conversation")
+	}
+	m.input.SetValue("short")
+	m.resize()
+	if wheel(m.height-m.input.Height()-1, tea.MouseButtonWheelDown) {
+		t.Fatal("scrolled a draft that fits")
+	}
+}
