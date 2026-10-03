@@ -47,7 +47,8 @@ Needs at least 40 × 14 cells. Follows terminal resizes.
 | `Ctrl+Shift+←` / `→` | Select by word |
 
 The composer grows to six rows and then holds; past that a bar on its right edge
-shows where in the draft you are.
+shows where in the draft you are, and the wheel over the composer moves through
+it.
 
 Paste never submits, however it arrives.
 

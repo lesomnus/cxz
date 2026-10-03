@@ -335,6 +335,10 @@ func (m *model) composerMouse(v tea.MouseMsg) bool {
 	}
 	top := m.height - m.input.Height() - 2 - m.terminalHeight()
 	x, y := v.X-m.contentOffset()-3, v.Y-top
+	inside := y >= 0 && y < m.input.Height() && v.X >= m.contentOffset()+1 && v.X < m.contentOffset()+m.width-1
+	if v.Button == tea.MouseButtonWheelUp || v.Button == tea.MouseButtonWheelDown {
+		return inside && m.scrollComposer(v.Button == tea.MouseButtonWheelDown)
+	}
 	dragging := m.composerSelectionValid() && m.composerSelection.dragging
 	if dragging && (v.Action == tea.MouseActionMotion || v.Action == tea.MouseActionRelease) {
 		s := m.composerSelection
@@ -395,6 +399,37 @@ func (m *model) composerSelectionView(view string) string {
 	}
 	return strings.Join(rows, "\n")
 }
+
+// scrollComposer moves the view by rows under the wheel. The widget has no
+// scroll of its own -- its view follows the cursor -- so the cursor is what
+// moves, which also keeps the scrollbar, the selection and the cursor reading
+// one position rather than three. A draft that fits has nothing to scroll, and
+// says so, rather than swallowing the event.
+func (m *model) scrollComposer(down bool) bool {
+	rows := m.composerRows()
+	if len(rows) <= m.input.Height() {
+		return false
+	}
+	step := -composerWheelRows
+	if down {
+		step = composerWheelRows
+	}
+	pos := composerPosition(m.input)
+	from := composerRowIndex(rows, pos)
+	to := max(0, min(len(rows)-1, from+step))
+	if to == from {
+		return false
+	}
+	m.composerSelection = nil
+	m.pasteSelection = nil
+	// Hold the column where there is one to hold, the way an arrow key does.
+	m.setComposerPosition(min(rows[to].start+pos-rows[from].start, composerRowEnd(rows, to)))
+	m.snapChipCursor()
+	m.resize()
+	return true
+}
+
+const composerWheelRows = 3
 
 // composerScrollbar marks where the draft is when it stops fitting. The composer
 // grows to six rows and then holds, so past that the rest of a long message is
