@@ -73,6 +73,28 @@ The build context excludes workspace state and credentials. Tests run on the CI
 runner, not inside the Docker build. `docker-bake.hcl` defines outputs, platforms,
 tags and image metadata.
 
+## Documentation figures
+
+The figures in [screens.md](screens.md) are the TUI's own output. A fixture model
+is rendered the way the screen is rendered, and `internal/ansisvg` turns the
+escape sequences into an SVG of the same grid — text, a few kilobytes, diffable,
+and in the colours the terminal shows.
+
+```sh
+go test ./internal/tui -run TestDocumentationFigures            # are they current?
+go test ./internal/tui -run TestDocumentationFigures -figures   # rewrite them
+go test ./internal/tui -run TestDocumentationFigures -v         # also print the screens
+```
+
+Without `-figures` the test fails when a figure no longer matches what the code
+draws, which is the point: a page cannot keep showing a screen that is gone. The
+fixtures take nothing from the clock that the figure would show — timestamps are
+fixed, the spinner's phase comes from a fixed session, and the quota countdown is
+derived from the moment the figure is drawn — so a rerun produces the same bytes.
+
+Labels name a row by what it says rather than by counting, so adding a line to a
+figure does not silently move every label onto the wrong component.
+
 ## Diagnostic recordings
 
 `F9`, or the button in `Ctrl+.` settings, records what the TUI did. `/record status`

@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1296.54" height="635.6" viewBox="0 0 1296.54 635.6" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,'DejaVu Sans Mono',monospace" font-size="14">
+<title>A cxz session holding a pending approval</title>
+<rect width="1008" height="635.6" rx="5.6" fill="#101317"/>
+<g>
+<rect x="8.4" y="8.4" width="243.6" height="618.8" fill="#303030"/>
+<rect x="268.8" y="8.4" width="730.8" height="18.2" fill="#4e4e4e"/>
+<rect x="285.6" y="172.2" width="697.2" height="54.6" fill="#2b2b2b"/>
+<rect x="294" y="554.4" width="8.4" height="18.2" fill="#9ef01a"/>
+</g>
+<g xml:space="preserve" fill="#d4d4d4">
+<text x="277.2" y="22.4" textLength="420" lengthAdjust="spacing" fill="#acd6eb">❯ Why does the composer stutter when a line wraps?</text>
+<text x="16.8" y="40.6" textLength="67.2" lengthAdjust="spacing" fill="#4f772c" font-weight="bold">Projects</text>
+<text x="285.6" y="40.6" textLength="8.4" lengthAdjust="spacing" fill="#4f772c">✓</text>
+<text x="302.4" y="40.6" textLength="235.2" lengthAdjust="spacing">Edit internal/tui/style.go ·</text>
+<text x="546" y="40.6" textLength="16.8" lengthAdjust="spacing" fill="#4f772c">+1</text>
+<text x="571.2" y="40.6" textLength="16.8" lengthAdjust="spacing" fill="#f39baa">-1</text>
+<text x="16.8" y="58.8" textLength="193.2" lengthAdjust="spacing" fill="#969ba8">↑/↓ select · Enter open</text>
+<text x="268.8" y="77" textLength="67.2" lengthAdjust="spacing" fill="#d97757" font-weight="bold">• CLAUDE</text>
+<text x="33.6" y="95.2" textLength="58.8" lengthAdjust="spacing" fill="#c9b6ee">Project</text>
+<text x="285.6" y="95.2" textLength="117.6" lengthAdjust="spacing" fill="#bcbcbc">The height was</text>
+<text x="411.6" y="95.2" textLength="75.6" lengthAdjust="spacing" fill="#dadada" font-weight="bold">estimated</text>
+<text x="495.6" y="95.2" textLength="176.4" lengthAdjust="spacing">rather than measured:</text>
+<text x="33.6" y="113.4" textLength="8.4" lengthAdjust="spacing" fill="#9ef01a">⣟</text>
+<text x="50.4" y="113.4" textLength="58.8" lengthAdjust="spacing">notes ·</text>
+<text x="117.6" y="113.4" textLength="42" lengthAdjust="spacing" fill="#ffffff" font-weight="bold">codex</text>
+<text x="16.8" y="131.6" textLength="100.8" lengthAdjust="spacing">•   layout ·</text>
+<text x="126" y="131.6" textLength="50.4" lengthAdjust="spacing" fill="#d97757" font-weight="bold">claude</text>
+<text x="285.6" y="131.6" textLength="344.4" lengthAdjust="spacing" fill="#bcbcbc">• a row that fills exactly takes two rows</text>
+<text x="285.6" y="149.8" textLength="235.2" lengthAdjust="spacing" fill="#bcbcbc">• words wrap before the edge</text>
+<text x="966" y="186.2" textLength="8.4" lengthAdjust="spacing" fill="#bcbcbc">⧉</text>
+<text x="294" y="204.4" textLength="33.6" lengthAdjust="spacing" fill="#f8f8f2">rows</text>
+<text x="336" y="204.4" textLength="16.8" lengthAdjust="spacing" fill="#ff79c6">:=</text>
+<text x="361.2" y="204.4" textLength="25.2" lengthAdjust="spacing" fill="#8be9fd" font-style="italic">len</text>
+<text x="386.4" y="204.4" textLength="25.2" lengthAdjust="spacing" fill="#f8f8f2">(m.</text>
+<text x="411.6" y="204.4" textLength="100.8" lengthAdjust="spacing" fill="#50fa7b">composerRows</text>
+<text x="512.4" y="204.4" textLength="25.2" lengthAdjust="spacing" fill="#f8f8f2">())</text>
+<text x="285.6" y="259" textLength="109.2" lengthAdjust="spacing" fill="#616975">03-04 14:32 /</text>
+<text x="403.2" y="259" textLength="16.8" lengthAdjust="spacing" fill="#30343b">00</text>
+<text x="420" y="259" textLength="8.4" lengthAdjust="spacing" fill="#616975">:</text>
+<text x="428.4" y="259" textLength="16.8" lengthAdjust="spacing" fill="#30343b">00</text>
+<text x="445.2" y="259" textLength="42" lengthAdjust="spacing" fill="#616975">:42 ◷</text>
+<text x="495.6" y="259" textLength="243.6" lengthAdjust="spacing">¢7.3   18k↑ 1.2k↓ 120k↺ 3.1k⊕</text>
+<text x="285.6" y="295.4" textLength="50.4" lengthAdjust="spacing" fill="#ebc078">○ Bash</text>
+<text x="285.6" y="331.8" textLength="697.2" lengthAdjust="spacing" fill="#969ba8">───────────────────────────────────────────────────────────────────────────────────</text>
+<text x="285.6" y="350" textLength="193.2" lengthAdjust="spacing" fill="#ebc078">Pending approvals · 1/1</text>
+<text x="268.8" y="368.2" textLength="50.4" lengthAdjust="spacing">› Bash</text>
+<text x="285.6" y="386.4" textLength="294" lengthAdjust="spacing" fill="#969ba8">description: run the composer tests</text>
+<text x="285.6" y="404.6" textLength="260.4" lengthAdjust="spacing" fill="#969ba8">command: go test ./internal/tui</text>
+<text x="285.6" y="441" textLength="8.4" lengthAdjust="spacing" fill="#969ba8">{</text>
+<text x="302.4" y="459.2" textLength="302.4" lengthAdjust="spacing" fill="#969ba8">"command": "go test ./internal/tui",</text>
+<text x="302.4" y="477.4" textLength="327.6" lengthAdjust="spacing" fill="#969ba8">"description": "run the composer tests"</text>
+<text x="285.6" y="495.6" textLength="243.6" lengthAdjust="spacing" fill="#969ba8">Tab focus · /approval details</text>
+<text x="16.8" y="513.8" textLength="8.4" lengthAdjust="spacing" fill="#4f772c">n</text>
+<text x="25.2" y="513.8" textLength="33.6" lengthAdjust="spacing" fill="#969ba8">ew ·</text>
+<text x="67.2" y="513.8" textLength="8.4" lengthAdjust="spacing" fill="#4f772c">a</text>
+<text x="75.6" y="513.8" textLength="58.8" lengthAdjust="spacing" fill="#969ba8">ccounts</text>
+<text x="285.6" y="513.8" textLength="697.2" lengthAdjust="spacing" fill="#969ba8">───────────────────────────────────────────────────────────────────────────────────</text>
+<text x="16.8" y="532" textLength="50.4" lengthAdjust="spacing" fill="#30343b">rename</text>
+<text x="75.6" y="532" textLength="8.4" lengthAdjust="spacing" fill="#969ba8">·</text>
+<text x="92.4" y="532" textLength="33.6" lengthAdjust="spacing" fill="#30343b">stop</text>
+<text x="16.8" y="550.2" textLength="159.6" lengthAdjust="spacing" fill="#30343b">Ctrl+X twice delete</text>
+<text x="268.8" y="550.2" textLength="730.8" lengthAdjust="spacing" fill="#9ef01a">╭─────────────────────────────────────────────────────────────────────────────────────╮</text>
+<text x="16.8" y="568.4" textLength="50.4" lengthAdjust="spacing" fill="#30343b">memory</text>
+<text x="75.6" y="568.4" textLength="8.4" lengthAdjust="spacing" fill="#969ba8">·</text>
+<text x="92.4" y="568.4" textLength="50.4" lengthAdjust="spacing" fill="#4f772c">Ctrl+.</text>
+<text x="151.2" y="568.4" textLength="67.2" lengthAdjust="spacing" fill="#969ba8">settings</text>
+<text x="268.8" y="568.4" textLength="16.8" lengthAdjust="spacing" fill="#9ef01a">│❯</text>
+<text x="294" y="568.4" textLength="8.4" lengthAdjust="spacing" fill="#101317">A</text>
+<text x="302.4" y="568.4" textLength="327.6" lengthAdjust="spacing" fill="#585858">sk a question… (Ctrl+S to send · /help)</text>
+<text x="991.2" y="568.4" textLength="8.4" lengthAdjust="spacing" fill="#9ef01a">│</text>
+<text x="16.8" y="586.6" textLength="84" lengthAdjust="spacing" fill="#4f772c">Esc/Ctrl+Q</text>
+<text x="109.2" y="586.6" textLength="50.4" lengthAdjust="spacing" fill="#969ba8">return</text>
+<text x="268.8" y="586.6" textLength="8.4" lengthAdjust="spacing" fill="#9ef01a">│</text>
+<text x="277.2" y="586.6" textLength="8.4" lengthAdjust="spacing" fill="#555b65">1</text>
+<text x="991.2" y="586.6" textLength="8.4" lengthAdjust="spacing" fill="#9ef01a">│</text>
+<text x="16.8" y="604.8" textLength="50.4" lengthAdjust="spacing" fill="#4f772c">Ctrl+D</text>
+<text x="75.6" y="604.8" textLength="159.6" lengthAdjust="spacing" fill="#969ba8">detach · agents run</text>
+<text x="268.8" y="604.8" textLength="730.8" lengthAdjust="spacing" fill="#9ef01a">╰─────────────────────────────────────────────────────────────────────────────────────╯</text>
+<text x="277.2" y="623" textLength="126" lengthAdjust="spacing" fill="#4f772c">claude-opus-4-6</text>
+<text x="411.6" y="623" textLength="50.4" lengthAdjust="spacing" fill="#969ba8">· high</text>
+<text x="596.4" y="623" textLength="25.2" lengthAdjust="spacing" fill="#969ba8">42%</text>
+<text x="630" y="623" textLength="67.2" lengthAdjust="spacing" fill="#f5ca9a">⣿⣿⣿⣄⣀⣀⣀⣀</text>
+<text x="705.6" y="623" textLength="117.6" lengthAdjust="spacing">5h 3h58m · 88%</text>
+<text x="831.6" y="623" textLength="67.2" lengthAdjust="spacing" fill="#969ba8">⣿⣿⣿⣿⣿⣿⣿⣀</text>
+<text x="907.2" y="623" textLength="58.8" lengthAdjust="spacing">wk 4d4h</text>
+<text x="974.4" y="623" textLength="16.8" lengthAdjust="spacing" fill="#969ba8">⠀—</text>
+</g>
+<g fill="#6b7280" font-size="11.9">
+<text x="1024.8" y="295.4">the request · cxz session get</text>
+<path d="M1008 291.2L1015.56 291.2L1021.44 291.2" fill="none" stroke="#6b7280" stroke-width=".5"/>
+<text x="1024.8" y="495.6">allow or deny · cxz session reply</text>
+<path d="M1008 491.4L1015.56 491.4L1021.44 491.4" fill="none" stroke="#6b7280" stroke-width=".5"/>
+</g>
+</svg>

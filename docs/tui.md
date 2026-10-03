@@ -3,6 +3,9 @@
 `cxz` with no subcommand opens the TUI, and it is the only way in. Subcommands
 print and exit; there is no `attach`, no `watch`, no `connect`.
 
+[Screens, part by part](screens.md) draws each screen and maps its parts to the
+commands that reach the same thing.
+
 Everything here is local rendering and input. The agent, its history and its
 pending requests live on the server, so detaching changes nothing about the
 conversation and two frontends can watch the same session.
@@ -71,6 +74,11 @@ completes, `Esc` dismisses.
 | `/details` | The latest full tool input and result |
 | `/approval` | The selected request's complete payload |
 | `/answer` | Reopen the pending question dialog |
+| `/model`, `/effort` | The provider's model catalogue and reasoning strength |
+| `/background` | Provider background tasks |
+| `/paste`, `/download` | Preview a paste or attach it as a file; save a container file locally |
+| `/terminal` | A container terminal; `` Ctrl+` `` folds it |
+| `/settings` | The same page as `Ctrl+.` |
 | `/usage` | Tokens, cost and elapsed time from the whole journal |
 | `/context` | The agent's own context report |
 | `/compact` | Native compaction; needs an idle session, keeps the cxz journal |
@@ -120,13 +128,13 @@ A tool call and its result share one row, and the marker changes in place:
 
 | | |
 |---|---|
-| `[ ]` | Requested or queued |
-| `[•]` | Running |
-| `[✓]` | Completed |
-| `[×]` | Failed, denied or cancelled |
+| `○` | Requested or queued |
+| `•` | Running |
+| `✓` | Completed |
+| `×` | Failed, denied or cancelled |
 
-`[•]` requires evidence — an approval, or the provider saying so. A Claude request
-on its own does not imply execution, so the row stays `[ ]` until something
+`•` requires evidence — an approval, or the provider saying so. A Claude request
+on its own does not imply execution, so the row stays `○` until something
 confirms it.
 
 File edits show paths and change counts, never file bodies: green `+N`, red `-N`.

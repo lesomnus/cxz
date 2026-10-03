@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280.58" height="526.4" viewBox="0 0 1280.58 526.4" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,'DejaVu Sans Mono',monospace" font-size="14">
+<title>A cxz session: the project panel, a conversation, the composer and the status bar</title>
+<rect width="1008" height="526.4" rx="5.6" fill="#101317"/>
+<g>
+<rect x="8.4" y="8.4" width="243.6" height="509.6" fill="#303030"/>
+<rect x="268.8" y="8.4" width="730.8" height="72.8" fill="#4e4e4e"/>
+<rect x="285.6" y="281.4" width="697.2" height="54.6" fill="#2b2b2b"/>
+<rect x="478.8" y="445.2" width="8.4" height="18.2" fill="#9ef01a"/>
+</g>
+<g xml:space="preserve" fill="#d4d4d4">
+<text x="16.8" y="40.6" textLength="67.2" lengthAdjust="spacing" fill="#4f772c" font-weight="bold">Projects</text>
+<text x="294" y="40.6" textLength="92.4" lengthAdjust="spacing" fill="#23262c">03-04 14:32</text>
+<text x="16.8" y="58.8" textLength="193.2" lengthAdjust="spacing" fill="#969ba8">↑/↓ select · Enter open</text>
+<text x="277.2" y="58.8" textLength="420" lengthAdjust="spacing" fill="#acd6eb">❯ Why does the composer stutter when a line wraps?</text>
+<text x="33.6" y="95.2" textLength="58.8" lengthAdjust="spacing" fill="#c9b6ee">Project</text>
+<text x="33.6" y="113.4" textLength="8.4" lengthAdjust="spacing" fill="#9ef01a">⣟</text>
+<text x="50.4" y="113.4" textLength="58.8" lengthAdjust="spacing">notes ·</text>
+<text x="117.6" y="113.4" textLength="42" lengthAdjust="spacing" fill="#ffffff" font-weight="bold">codex</text>
+<text x="285.6" y="113.4" textLength="8.4" lengthAdjust="spacing" fill="#4f772c">✓</text>
+<text x="302.4" y="113.4" textLength="218.4" lengthAdjust="spacing">Read internal/tui/style.go</text>
+<text x="16.8" y="131.6" textLength="100.8" lengthAdjust="spacing">•   layout ·</text>
+<text x="126" y="131.6" textLength="50.4" lengthAdjust="spacing" fill="#d97757" font-weight="bold">claude</text>
+<text x="285.6" y="149.8" textLength="8.4" lengthAdjust="spacing" fill="#4f772c">✓</text>
+<text x="302.4" y="149.8" textLength="235.2" lengthAdjust="spacing">Edit internal/tui/style.go ·</text>
+<text x="546" y="149.8" textLength="16.8" lengthAdjust="spacing" fill="#4f772c">+1</text>
+<text x="571.2" y="149.8" textLength="16.8" lengthAdjust="spacing" fill="#f39baa">-1</text>
+<text x="268.8" y="186.2" textLength="67.2" lengthAdjust="spacing" fill="#d97757" font-weight="bold">• CLAUDE</text>
+<text x="285.6" y="204.4" textLength="117.6" lengthAdjust="spacing" fill="#bcbcbc">The height was</text>
+<text x="411.6" y="204.4" textLength="75.6" lengthAdjust="spacing" fill="#dadada" font-weight="bold">estimated</text>
+<text x="495.6" y="204.4" textLength="176.4" lengthAdjust="spacing">rather than measured:</text>
+<text x="285.6" y="240.8" textLength="344.4" lengthAdjust="spacing" fill="#bcbcbc">• a row that fills exactly takes two rows</text>
+<text x="285.6" y="259" textLength="235.2" lengthAdjust="spacing" fill="#bcbcbc">• words wrap before the edge</text>
+<text x="966" y="295.4" textLength="8.4" lengthAdjust="spacing" fill="#bcbcbc">⧉</text>
+<text x="294" y="313.6" textLength="33.6" lengthAdjust="spacing" fill="#f8f8f2">rows</text>
+<text x="336" y="313.6" textLength="16.8" lengthAdjust="spacing" fill="#ff79c6">:=</text>
+<text x="361.2" y="313.6" textLength="25.2" lengthAdjust="spacing" fill="#8be9fd" font-style="italic">len</text>
+<text x="386.4" y="313.6" textLength="25.2" lengthAdjust="spacing" fill="#f8f8f2">(m.</text>
+<text x="411.6" y="313.6" textLength="100.8" lengthAdjust="spacing" fill="#50fa7b">composerRows</text>
+<text x="512.4" y="313.6" textLength="25.2" lengthAdjust="spacing" fill="#f8f8f2">())</text>
+<text x="285.6" y="368.2" textLength="109.2" lengthAdjust="spacing" fill="#616975">03-04 14:32 /</text>
+<text x="403.2" y="368.2" textLength="16.8" lengthAdjust="spacing" fill="#30343b">00</text>
+<text x="420" y="368.2" textLength="8.4" lengthAdjust="spacing" fill="#616975">:</text>
+<text x="428.4" y="368.2" textLength="16.8" lengthAdjust="spacing" fill="#30343b">00</text>
+<text x="445.2" y="368.2" textLength="42" lengthAdjust="spacing" fill="#616975">:42 ◷</text>
+<text x="495.6" y="368.2" textLength="243.6" lengthAdjust="spacing">¢7.3   18k↑ 1.2k↓ 120k↺ 3.1k⊕</text>
+<text x="16.8" y="404.6" textLength="8.4" lengthAdjust="spacing" fill="#4f772c">n</text>
+<text x="25.2" y="404.6" textLength="33.6" lengthAdjust="spacing" fill="#969ba8">ew ·</text>
+<text x="67.2" y="404.6" textLength="8.4" lengthAdjust="spacing" fill="#4f772c">a</text>
+<text x="75.6" y="404.6" textLength="58.8" lengthAdjust="spacing" fill="#969ba8">ccounts</text>
+<text x="16.8" y="422.8" textLength="50.4" lengthAdjust="spacing" fill="#30343b">rename</text>
+<text x="75.6" y="422.8" textLength="8.4" lengthAdjust="spacing" fill="#969ba8">·</text>
+<text x="92.4" y="422.8" textLength="33.6" lengthAdjust="spacing" fill="#30343b">stop</text>
+<text x="16.8" y="441" textLength="159.6" lengthAdjust="spacing" fill="#30343b">Ctrl+X twice delete</text>
+<text x="268.8" y="441" textLength="730.8" lengthAdjust="spacing" fill="#9ef01a">╭─────────────────────────────────────────────────────────────────────────────────────╮</text>
+<text x="16.8" y="459.2" textLength="50.4" lengthAdjust="spacing" fill="#30343b">memory</text>
+<text x="75.6" y="459.2" textLength="8.4" lengthAdjust="spacing" fill="#969ba8">·</text>
+<text x="92.4" y="459.2" textLength="50.4" lengthAdjust="spacing" fill="#4f772c">Ctrl+.</text>
+<text x="151.2" y="459.2" textLength="67.2" lengthAdjust="spacing" fill="#969ba8">settings</text>
+<text x="268.8" y="459.2" textLength="16.8" lengthAdjust="spacing" fill="#9ef01a">│❯</text>
+<text x="294" y="459.2" textLength="184.8" lengthAdjust="spacing">run the composer tests</text>
+<text x="991.2" y="459.2" textLength="8.4" lengthAdjust="spacing" fill="#9ef01a">│</text>
+<text x="16.8" y="477.4" textLength="84" lengthAdjust="spacing" fill="#4f772c">Esc/Ctrl+Q</text>
+<text x="109.2" y="477.4" textLength="50.4" lengthAdjust="spacing" fill="#969ba8">return</text>
+<text x="268.8" y="477.4" textLength="8.4" lengthAdjust="spacing" fill="#9ef01a">│</text>
+<text x="277.2" y="477.4" textLength="8.4" lengthAdjust="spacing" fill="#555b65">1</text>
+<text x="991.2" y="477.4" textLength="8.4" lengthAdjust="spacing" fill="#9ef01a">│</text>
+<text x="16.8" y="495.6" textLength="50.4" lengthAdjust="spacing" fill="#4f772c">Ctrl+D</text>
+<text x="75.6" y="495.6" textLength="159.6" lengthAdjust="spacing" fill="#969ba8">detach · agents run</text>
+<text x="268.8" y="495.6" textLength="730.8" lengthAdjust="spacing" fill="#9ef01a">╰─────────────────────────────────────────────────────────────────────────────────────╯</text>
+<text x="277.2" y="513.8" textLength="126" lengthAdjust="spacing" fill="#4f772c">claude-opus-4-6</text>
+<text x="411.6" y="513.8" textLength="50.4" lengthAdjust="spacing" fill="#969ba8">· high</text>
+<text x="596.4" y="513.8" textLength="25.2" lengthAdjust="spacing" fill="#969ba8">42%</text>
+<text x="630" y="513.8" textLength="67.2" lengthAdjust="spacing" fill="#f5ca9a">⣿⣿⣿⣄⣀⣀⣀⣀</text>
+<text x="705.6" y="513.8" textLength="117.6" lengthAdjust="spacing">5h 3h58m · 88%</text>
+<text x="831.6" y="513.8" textLength="67.2" lengthAdjust="spacing" fill="#969ba8">⣿⣿⣿⣿⣿⣿⣿⣀</text>
+<text x="907.2" y="513.8" textLength="58.8" lengthAdjust="spacing">wk 4d4h</text>
+<text x="974.4" y="513.8" textLength="16.8" lengthAdjust="spacing" fill="#969ba8">⠀—</text>
+</g>
+<g fill="#6b7280" font-size="11.9">
+<text x="1024.8" y="40.6">project panel · cxz project ls</text>
+<path d="M1008 36.4L1015.56 36.4L1021.44 36.4" fill="none" stroke="#6b7280" stroke-width=".5"/>
+<text x="1024.8" y="58.8">your message · cxz session send</text>
+<path d="M1008 54.6L1015.56 54.6L1021.44 54.6" fill="none" stroke="#6b7280" stroke-width=".5"/>
+<text x="1024.8" y="113.4">a session · cxz session ls</text>
+<path d="M1008 109.2L1015.56 109.2L1021.44 109.2" fill="none" stroke="#6b7280" stroke-width=".5"/>
+<text x="1024.8" y="130.9">tool activity · /details</text>
+<path d="M1008 109.2L1015.56 109.2L1021.44 126.7" fill="none" stroke="#6b7280" stroke-width=".5"/>
+<text x="1024.8" y="186.2">agent reply</text>
+<path d="M1008 182L1015.56 182L1021.44 182" fill="none" stroke="#6b7280" stroke-width=".5"/>
+<text x="1024.8" y="313.6">code block · Ctrl+C copies</text>
+<path d="M1008 309.4L1015.56 309.4L1021.44 309.4" fill="none" stroke="#6b7280" stroke-width=".5"/>
+<text x="1024.8" y="368.2">turn metrics · /usage</text>
+<path d="M1008 364L1015.56 364L1021.44 364" fill="none" stroke="#6b7280" stroke-width=".5"/>
+<text x="1024.8" y="459.2">composer · Ctrl+S sends</text>
+<path d="M1008 455L1015.56 455L1021.44 455" fill="none" stroke="#6b7280" stroke-width=".5"/>
+<text x="1024.8" y="513.8">model · /model</text>
+<path d="M1008 509.6L1015.56 509.6L1021.44 509.6" fill="none" stroke="#6b7280" stroke-width=".5"/>
+</g>
+</svg>
