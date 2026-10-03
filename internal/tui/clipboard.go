@@ -40,6 +40,31 @@ type transcriptSelection struct {
 	startX, startY, endX, endY int
 	dragging                   bool
 	rows                       []string
+	codeRows                   map[int]codeSelectionRow
+}
+
+type codeSelectionRow struct {
+	start, end int
+	omit       bool // The copy-button header and bottom padding have no source text.
+}
+
+func (m *model) selectionCodeRows(rows []string) map[int]codeSelectionRow {
+	result := map[int]codeSelectionRow{}
+	for _, b := range m.codeButtons {
+		first := max(0, m.view.YOffset-b.y)
+		last := min(b.contentRows+1, m.view.YOffset+len(rows)-1-b.y)
+		for i := first; i <= last; i++ {
+			row := b.y + i - m.view.YOffset
+			probe := b
+			probe.y += i
+			if !m.codeButtonVisible(probe) {
+				continue
+			}
+			end := min(b.contentX+b.contentWidth, ansi.StringWidth(strings.TrimRight(ansi.Strip(rows[row]), " ")))
+			result[row] = codeSelectionRow{start: b.contentX, end: max(b.contentX, end), omit: i == 0 || i == b.contentRows+1}
+		}
+	}
+	return result
 }
 
 func (m *model) selectionValid() bool {
@@ -65,12 +90,22 @@ func (s *transcriptSelection) columns(row int) (int, int) {
 	if row == y2 {
 		end = x2
 	}
+	if code, ok := s.codeRows[row]; ok {
+		if code.omit {
+			return 0, 0
+		}
+		start = max(start, code.start)
+		end = min(end, code.end)
+	}
 	return start, max(start, end)
 }
 func (s *transcriptSelection) text() string {
 	_, y1, _, y2 := s.bounds()
 	var rows []string
 	for y := y1; y <= y2 && y < len(s.rows); y++ {
+		if code, ok := s.codeRows[y]; ok && code.omit {
+			continue
+		}
 		start, end := s.columns(y)
 		rows = append(rows, strings.TrimRight(ansi.Strip(ansi.Cut(s.rows[y], start, end)), " "))
 	}
@@ -99,7 +134,7 @@ func (m *model) beginSelection(v tea.MouseMsg) {
 	if v.Y < 0 || v.Y >= len(rows) {
 		return
 	}
-	m.textSelection = &transcriptSelection{session: m.current().Id, offset: m.view.YOffset, width: m.width, startX: v.X, endX: v.X, startY: v.Y, endY: v.Y, dragging: true, rows: rows}
+	m.textSelection = &transcriptSelection{session: m.current().Id, offset: m.view.YOffset, width: m.width, startX: v.X, endX: v.X, startY: v.Y, endY: v.Y, dragging: true, rows: rows, codeRows: m.selectionCodeRows(rows)}
 }
 func (m *model) selectionView(rows []string) {
 	if !m.selectionValid() {

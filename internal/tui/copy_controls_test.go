@@ -184,6 +184,59 @@ func TestConversationSelectionCopyAndDetach(t *testing.T) {
 	}
 }
 
+func TestCodeBlockDragExcludesDisplayPadding(t *testing.T) {
+	for _, prefix := range []string{"", "> ", "  "} {
+		for _, width := range []int{60, 110, 240} {
+			for _, reverse := range []bool{false, true} {
+				m := conversationModel()
+				m.Update(tea.WindowSizeMsg{Width: width, Height: 32})
+				raw := prefix + "```python\n" + prefix + "if ready:\n" + prefix + "    print(\"한글\")\n" + prefix + "\n" + prefix + "done()\n" + prefix + "```"
+				if prefix == "  " {
+					raw = "- nested\n\n" + raw
+				}
+				m.events["s"] = []*api.Event{{Kind: "assistant", Seq: 1, Text: raw}}
+				m.render()
+				m.view.GotoTop()
+				b := m.codeButtons[0]
+				// Include both padding rows and all horizontal display padding.
+				x1, y1, x2, y2 := 0, b.y, m.width, b.y+b.contentRows+1
+				if reverse {
+					x1, y1, x2, y2 = x2, y2, x1, y1
+				}
+				m.beginSelection(tea.MouseMsg{X: x1, Y: y1, Button: tea.MouseButtonLeft, Action: tea.MouseActionPress})
+				m.selectionMouse(tea.MouseMsg{X: m.contentOffset() + x2, Y: y2, Button: tea.MouseButtonLeft, Action: tea.MouseActionRelease})
+				want := "if ready:\n    print(\"한글\")\n\ndone()"
+				if got := m.textSelection.text(); got != want {
+					t.Fatalf("prefix=%q width=%d reverse=%v: %q", prefix, width, reverse, got)
+				}
+				start, _ := m.textSelection.columns(b.y + 2)
+				if start != b.contentX {
+					t.Fatal("highlight includes display padding or removes source indentation")
+				}
+				var out bytes.Buffer
+				m.cursorOutput = &cursorWriter{out: &out}
+				m.copyFocusedText()
+				if !strings.Contains(out.String(), ansi.SetSystemClipboard(want)) {
+					t.Fatal("clipboard differs from selected code")
+				}
+			}
+		}
+	}
+}
+
+func TestCodeBlockPartialSelectionAfterScroll(t *testing.T) {
+	m := conversationModel()
+	m.events["s"] = []*api.Event{{Kind: "assistant", Seq: 1, Text: "```text\nfirst line\n    second line\n" + strings.Repeat("more\n", 40) + "```"}}
+	m.render()
+	b := m.codeButtons[0]
+	m.view.SetYOffset(b.y + 1)
+	m.beginSelection(tea.MouseMsg{X: b.contentX + 6, Y: 0, Button: tea.MouseButtonLeft, Action: tea.MouseActionPress})
+	m.selectionMouse(tea.MouseMsg{X: m.contentOffset() + b.contentX + 10, Y: 1, Button: tea.MouseButtonLeft, Action: tea.MouseActionRelease})
+	if got := m.textSelection.text(); got != "line\n    second" {
+		t.Fatalf("partial scrolled selection: %q", got)
+	}
+}
+
 func TestRecordingStatusPositionAndBlink(t *testing.T) {
 	m := conversationModel()
 	m.Update(tea.WindowSizeMsg{Width: 110, Height: 36})
