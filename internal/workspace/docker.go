@@ -21,6 +21,12 @@ func (m *Manager) Docker(ctx context.Context, r *api.DockerInput) (*api.Receipt,
 	if r.Action == "session-purge" {
 		return m.PurgeSession(ctx, r.Spec)
 	}
+	// Reading back what a project runs under is not an engine operation, and
+	// waiting behind one that is rebuilding another project would make the
+	// answer arrive long after the question stopped being interesting.
+	if r.Action == "devcontainer-render" {
+		return m.renderDevcontainer(ctx, r.Spec)
+	}
 	m.dockerMu.Lock()
 	defer m.dockerMu.Unlock()
 	e := m.dockerEngine()
