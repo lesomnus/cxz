@@ -4,6 +4,14 @@ Agents ask for two different things: **permission to act**, and **an answer to a
 question**. Both are server state — they outlive the TUI, and any frontend attached
 to the session sees them.
 
+Standalone approval records in the conversation can be double-clicked to inspect
+their original request and recorded resolution, including after completion. A
+single click still starts text selection. MCP records show the server name and a
+compact request message; the preview includes the full message and raw payload.
+The check mark means permission was granted, not that the tool executed
+successfully. If the resolution is absent from loaded history, the preview says
+so rather than inferring that the request is still pending.
+
 ## The approval box
 
 Pending approvals get their own box above the composer. `Tab` moves into it in

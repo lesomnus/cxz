@@ -98,8 +98,13 @@ func approvalLine(s *api.Session, e *api.Event, state string, width int) string 
 	case "canceled":
 		icon, style = "×", failure
 	}
-	title := agentview.ApprovalView(s.Agent, e.Text, nil).Title
-	if question(e) {
+	approval := agentview.ApprovalView(s.Agent, e.Text, e.Payload)
+	title := approval.Title
+	if approval.Summary != "" {
+		title += " · " + strings.Join(strings.Fields(safeText(approval.Summary)), " ")
+		title = clip(safeText(title), max(1, width-4))
+	}
+	if question(e) && !(s.Agent == "codex" && e.Text == agentview.CodexElicitation) {
 		if state == "allowed" {
 			state = "answered"
 		}

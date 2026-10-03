@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-type Approval struct{ Title, Detail string }
+type Approval struct{ Title, Summary, Detail string }
 
 func ApprovalView(provider, name string, raw []byte) Approval {
 	root := object(raw)
@@ -23,7 +23,10 @@ func ApprovalView(provider, name string, raw []byte) Approval {
 		case "item/permissions/requestApproval":
 			title = "Permissions"
 		case CodexElicitation:
-			title = "MCP · " + p.text("serverName")
+			title = "MCP"
+			if server := strings.TrimSpace(p.text("serverName")); server != "" {
+				title += " · " + server
+			}
 		case "item/tool/requestUserInput", CodexAsyncQuestion:
 			title = "Question"
 		}
@@ -47,7 +50,11 @@ func ApprovalView(provider, name string, raw []byte) Approval {
 	if len(lines) > 0 {
 		detail = strings.Join(lines, "\n") + "\n\n" + detail
 	}
-	return Approval{Title: title, Detail: detail}
+	summary := ""
+	if provider == "codex" && name == CodexElicitation {
+		summary = p.text("message")
+	}
+	return Approval{Title: title, Summary: summary, Detail: detail}
 }
 
 type fields map[string]json.RawMessage
