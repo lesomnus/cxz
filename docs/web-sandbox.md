@@ -29,7 +29,7 @@ from the same Go toolchain that compiled the module.
 
 The Scenario selector opens one of the sample sessions:
 
-- Korean and English answers with Markdown, tables, checklists and code.
+- English answers with Markdown, tables, checklists and code.
 - Long history exceeding the UI's 2,000-event window.
 - An approval question using the regular answer controls.
 - A simulated usage-limit/error case.

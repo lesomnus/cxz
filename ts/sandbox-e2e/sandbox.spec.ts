@@ -9,7 +9,7 @@ test("WASM sandbox reuses the UI without backend, credentials or provider calls"
     if (/\/auth\/|\/cxz\./.test(r.url())) backend.push(r.url());
   });
   await page.goto("/sandbox.html");
-  await expect(page.getByRole("heading", { name: "현재 상태" })).toBeVisible({
+  await expect(page.getByRole("heading", { name: "Current status" })).toBeVisible({
     timeout: 45000,
   });
   await expect(page.locator("body")).toHaveJSProperty(
@@ -17,7 +17,7 @@ test("WASM sandbox reuses the UI without backend, credentials or provider calls"
     await page.evaluate(() => document.documentElement.clientWidth),
   );
   const message = page.getByRole("textbox", { name: "Message", exact: true });
-  await message.fill("테스트 메시지");
+  await message.fill("Test message");
   await page.getByRole("button", { name: "Send", exact: true }).click();
   await expect(
     page.locator("summary").filter({ hasText: "Sample tasks completed" }),
@@ -25,7 +25,7 @@ test("WASM sandbox reuses the UI without backend, credentials or provider calls"
   // Shared pending-question UI sends the same Reply RPC through the WASM transport.
   await page.getByLabel("Scenario", { exact: true }).selectOption("session-4");
   await expect(
-    page.getByText("어떤 환경을 미리 볼까요? / Which environment?", {
+    page.getByText("Which environment?", {
       exact: true,
     }),
   ).toBeVisible();

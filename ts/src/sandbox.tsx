@@ -8,8 +8,8 @@ import "./sandbox.css";
 import workerURL from "./sandbox-worker.ts?worker&url";
 
 const scenarios = [
-  "Korean conversation",
-  "English conversation",
+  "Project checklist",
+  "Conversation",
   "Long history",
   "Approval question",
   "Simulated error",

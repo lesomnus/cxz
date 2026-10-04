@@ -55,24 +55,24 @@ func New(seed uint64, delay time.Duration) *Server {
 		id := fmt.Sprintf("project-%d", i+1)
 		s.projects = append(s.projects, resource.Project_builder{Id: []byte(fmt.Sprintf("project-%08d", i+1)), RuntimeId: id, Alias: id, Name: name, Listed: true, Status: resource.ProjectStatus_builder{State: "running"}.Build()}.Build())
 	}
-	for i, name := range []string{"Korean conversation", "English conversation", "Long history", "Approval question", "Simulated error", "Seeded random work", "Stopped session", "Other project"} {
+	for i, name := range []string{"Project checklist", "Conversation", "Long history", "Approval question", "Simulated error", "Seeded random work", "Stopped session", "Other project"} {
 		id := fmt.Sprintf("session-%d", i+1)
 		agent := "claude"
 		if i%2 == 1 {
 			agent = "codex"
 		}
-		st := &session{scenario: []string{"ko", "en", "long", "approval", "error", "random", "stopped", "en"}[i], seen: map[string]bool{}}
+		st := &session{scenario: []string{"checklist", "conversation", "long", "approval", "error", "random", "stopped", "conversation"}[i], seen: map[string]bool{}}
 		project := s.projects[0]
 		if i == 7 {
 			project = s.projects[1]
 		}
 		st.value = resource.Session_builder{Id: []byte(fmt.Sprintf("session-%08d", i+1)), RuntimeId: id, Alias: id, Name: name, Agent: agent, Listed: true, Project: project, Status: resource.SessionStatus_builder{State: "idle", RunId: id + "-run-1", PermissionMode: "default"}.Build()}.Build()
 		s.sessions = append(s.sessions, st)
-		s.event(st, "input", "이 프로젝트의 상태를 알려줘. Show the current state.", "", nil)
+		s.event(st, "input", "Show the current state of this project.", "", nil)
 		s.event(st, "assistant", answer(st.scenario), "", nil)
 		if st.scenario == "long" {
 			for n := 0; n < 2100; n++ {
-				s.event(st, "assistant", fmt.Sprintf("History item %04d — 스크롤과 긴 기록을 확인합니다.", n+1), "", nil)
+				s.event(st, "assistant", fmt.Sprintf("History item %04d — Check scrolling through a long conversation.", n+1), "", nil)
 			}
 		}
 		if st.scenario == "approval" {
@@ -399,14 +399,14 @@ func (s *Server) respond(st *session, generation uint64) {
 	s.state(st, "idle")
 }
 func answer(scenario string) string {
-	if scenario == "ko" {
-		return "## 현재 상태\n\n웹 화면을 검토할 준비가 됐습니다. **실제 파일이나 계정은 사용하지 않았습니다.**\n\n- [x] 레이아웃 확인\n- [ ] 작은 화면 확인\n\n```go\nfmt.Println(\"안녕, sandbox!\")\n```\n\n> 다음에는 승인 화면을 확인해 볼 수 있습니다."
+	if scenario == "checklist" {
+		return "## Current status\n\nThe web preview is ready for review. **No real files or accounts were used.**\n\n- [x] Check the layout\n- [ ] Check small screens\n\n```go\nfmt.Println(\"Hello, sandbox!\")\n```\n\n> Next, you can review the approval screen."
 	}
 	return "## Preview ready\n\nThis is a **simulated response** from the sandbox agent.\n\n| Task | Result |\n| --- | --- |\n| Layout | Ready |\n| Tests | Fixture only |\n\n```typescript\nconst greeting = \"Hello, sandbox!\";\nconsole.log(greeting);\n```\n\nTry another message, an approval, or a narrow viewport."
 }
 func (s *Server) approval(st *session) {
 	id := fmt.Sprintf("question-%d", st.value.GetStatus().GetLastSeq()+1)
-	s.event(st, "approval", "item/tool/requestUserInput", id, []byte(`{"params":{"questions":[{"id":"environment","question":"어떤 환경을 미리 볼까요? / Which environment?","isOther":true,"options":[{"label":"Development","description":"Preview the development layout"},{"label":"Production","description":"Preview the production layout"}]}]}}`))
+	s.event(st, "approval", "item/tool/requestUserInput", id, []byte(`{"params":{"questions":[{"id":"environment","question":"Which environment?","isOther":true,"options":[{"label":"Development","description":"Preview the development layout"},{"label":"Production","description":"Preview the production layout"}]}]}}`))
 	st.value.GetStatus().SetPending([]*resource.SessionEvent{st.events[len(st.events)-1]})
 	s.state(st, "waiting")
 }
