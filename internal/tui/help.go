@@ -117,14 +117,16 @@ func helpView(width int, topics ...string) string {
 		{"Navigation", "Ctrl+Q", "Focus project list: n new, a accounts, s stop"},
 		{"Navigation", "Ctrl+X twice", "Delete selected session in project panel within 3s; stops agent, retains journal"},
 		{"Navigation", "Ctrl+.", "Open settings · shared Docker status and maintenance"},
-		{"Navigation", "Ctrl+N", "Create session"},
+		{"Navigation", "Ctrl+N", "Create session; project title hover + opens the same picker"},
+		{"Navigation", "?", "Open help from the project panel"},
+		{"Navigation", "m", "Browse selected session memory in the project panel"},
 		{"Approval controls", "↑ / ↓", "Select pending request (approval focus)"},
 		{"Approval controls", "PgUp / PgDn", "Scroll full request (approval focus)"},
 		{"Approval controls", "Enter / Backspace", "Allow / deny (approval focus)"},
 		{"Approval controls", "F2 / F3", "Allow / deny selected request"},
 		{"Agent controls", "Esc", "Press twice within 3s to interrupt current turn"},
 		{"Agent controls", "F4", "Interrupt current turn immediately"},
-		{"Agent controls", "Ctrl+R", "Resume stopped session"},
+		{"Agent controls", "Ctrl+R", "Resume stopped session; yellow dot blinks until the request finishes"},
 		{"Agent controls", "Ctrl+D", "Detach; agent continues"},
 	}
 	for i, shortcut := range shortcuts {

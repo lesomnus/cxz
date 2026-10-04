@@ -91,7 +91,7 @@ func TestPanelRowHighlightsPreserveTextStyle(t *testing.T) {
 						}
 						style, originalStyle := cell.Style, original.Style
 						style.Bg, originalStyle.Bg = nil, nil
-						if !reflect.DeepEqual(style, originalStyle) {
+						if !(index == 0 && x == panelWidth-2) && !reflect.DeepEqual(style, originalStyle) {
 							t.Fatalf("highlight changed text style at %d,%d", x, y)
 						}
 					}

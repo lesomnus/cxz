@@ -18,7 +18,7 @@ linked guides explain existing behavior; correct these documents when code chang
 | NAV-02 | Session navigation | Open and switch sessions, retain each draft, and navigate session-only back/forward history. |
 | SES-01 | Session creation | Choose workspace, account and supported model; complete required provider authentication before starting a session. |
 | SES-02 | Names and aliases | Change supported project/session metadata without changing resource identity. Validate aliases and report ambiguous targets. |
-| SES-03 | Session lifecycle | Distinguish interrupting a turn, stopping an agent, resuming, confirmed restart, and client detach. Detach must leave server work running. |
+| SES-03 | Session lifecycle | Distinguish interrupting a turn, stopping an agent, resuming, confirmed restart, and client detach. Detach must leave server work running. Interactive clients show when a resume request is pending. |
 | SES-04 | Session removal | Distinguish ordinary session removal/archive from permanent purge; explain retained data and confirm destructive scope. |
 | PRJ-01 | Project lifecycle | Register, provision, start, down, recreate and purge owned projects with explicit workspace, container and data consequences. |
 | PRJ-02 | Devcontainer configuration | Resolve project configuration, default templates and project-name variables; expose the effective rendered configuration. |

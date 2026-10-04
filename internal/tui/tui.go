@@ -119,7 +119,8 @@ type model struct {
 	creationConnection      string
 	accountRequest          uint64
 	panelIndex              int
-	panelHoverY             int    // Screen row; zero means no hovered item.
+	panelHoverY             int // Screen row; zero means no hovered item.
+	resumePending           map[string]bool
 	panelHintHover          string // Footer hint under the pointer, by its key.
 	quotaParses             map[quotaParseKey]quotaParse
 	panelProjects           []*api.Project
@@ -250,6 +251,7 @@ type disconnected struct {
 	err error
 }
 type result struct {
+	resumeSession              string
 	inputSession, inputRequest string
 	inputText                  string
 	status                     string
@@ -965,6 +967,15 @@ func (m *model) action(kind, text string) tea.Cmd {
 		return nil
 	}
 	id, run := s.Id, s.RunId
+	if kind == "resume" {
+		if m.resumePending[id] {
+			return nil
+		}
+		if m.resumePending == nil {
+			m.resumePending = map[string]bool{}
+		}
+		m.resumePending[id] = true
+	}
 	clientID := core.ID()
 	if kind == "send" {
 		m.queueInput(id, run, clientID, text)
@@ -990,6 +1001,9 @@ func (m *model) action(kind, text string) tea.Cmd {
 			message += " · " + receipt.Status
 		}
 		r := result{text: message, err: e}
+		if kind == "resume" {
+			r.resumeSession = id
+		}
 		if kind == "send" {
 			r.inputSession, r.inputRequest, r.inputText = id, clientID, text
 			r.status = receipt.GetStatus()
@@ -1953,6 +1967,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, m.refresh()
 	case result:
+		delete(m.resumePending, v.resumeSession)
 		// A queued message has not entered the conversation yet: the composer
 		// status row is where it waits, so the transcript's echo of it goes.
 		if v.inputRequest != "" && (v.err != nil || v.status == "queued") {
@@ -1984,7 +1999,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.renaming {
 			return m, m.renameKey(v)
 		}
-		if m.panelFocus && !m.accountView && m.workflow == nil && !m.creating {
+		if m.panelFocus && m.report == nil && !m.accountView && m.workflow == nil && !m.creating {
 			return m, m.panelKey(v)
 		}
 		if m.previewInteraction() {
@@ -2389,7 +2404,7 @@ func (m *model) View() (out string) {
 		return screen("cxz\nResize terminal to 40 × 14 or larger.\nCtrl+D detach", m.width, m.height)
 	}
 	if (m.panelFocus || m.projectView) && !m.accountView && !m.creating && !m.panelVisible() {
-		return m.panelScreen()
+		return m.reportView(m.panelScreen())
 	}
 	if m.accountView {
 		return m.accountScreen()
@@ -2399,7 +2414,10 @@ func (m *model) View() (out string) {
 		if notice := m.navigationNotice(); notice != "" {
 			body += "\n\n" + indentBlock(warning.Render(ansi.Hardwrap(safeText(notice), max(1, m.width-4), true)))
 		}
-		return screen(body, m.width, m.height)
+		if m.report != nil {
+			body += strings.Repeat("\n", m.height)
+		}
+		return m.reportView(screen(body, m.width, m.height))
 	}
 	return m.sessionScreen()
 }

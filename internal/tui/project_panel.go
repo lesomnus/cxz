@@ -20,7 +20,7 @@ const projectPanelWidth = 36
 const minProjectPanelWidth = 28
 const projectPanelGap = 2
 const projectPanelHeaderRows = 4
-const projectPanelFooterRows = 7
+const projectPanelFooterRows = 4
 
 var panelSeparatorStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("238"))
 
@@ -158,6 +158,9 @@ func (m *model) panelMouse(v tea.MouseMsg) (bool, tea.Cmd) {
 		m.focusPanel()
 		if onItem {
 			m.panelIndex = index
+			if rows[index].session == nil && rows[index].project.State != "connection" && v.X == m.panelScreenWidth()-2 {
+				return true, m.panelKey(runeKey('n'))
+			}
 			return true, m.panelKey(tea.KeyMsg{Type: tea.KeyEnter})
 		}
 	case v.Button == tea.MouseButtonWheelUp || v.Button == tea.MouseButtonWheelDown:
@@ -300,6 +303,9 @@ func (m *model) panelKey(k tea.KeyMsg) tea.Cmd {
 	rows := m.panelRows()
 	m.panelWantConnection = ""
 	switch k.String() {
+	case "?":
+		m.openReport("/help", "")
+		return nil
 	case "ctrl+d":
 		return tea.Quit
 	case "esc", "ctrl+q":
@@ -473,29 +479,12 @@ func panelRowBackground(line string, shade int) string {
 
 func runeKey(r rune) tea.KeyMsg { return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}} }
 
-// The footer offers only what the selected row can do: renaming, stopping,
-// inspecting and deleting each need a session, and creating one needs a project.
-// panelKey refuses the same cases with a notice, so this only stops the row from
-// advertising a key that would do nothing. "agents run" is what detaching leaves
-// behind rather than a key, so it is a note.
-//
-// Rows are ordered as drawn; panelHintY turns an index into a screen row.
+// Keep the footer compact; the full shortcuts remain available in /help.
 func (m *model) panelHints() [][]hintSpec {
-	rows := m.panelRows()
-	noProject := len(rows) == 0
-	noSession := noProject || m.panelIndex < 0 || m.panelIndex >= len(rows) || rows[m.panelIndex].session == nil
 	return [][]hintSpec{
-		{{key: "n", label: "new", press: runeKey('n'), disabled: noProject},
-			{key: "a", label: "accounts", press: runeKey('a'), disabled: noProject}},
-		{{key: "r", label: "rename", press: runeKey('r'), disabled: noSession},
-			{key: "s", label: "stop", press: runeKey('s'), disabled: noSession}},
-		{{key: "Ctrl+X twice", label: "delete", press: tea.KeyMsg{Type: tea.KeyCtrlX}, disabled: noSession}},
-		{{key: "m", label: "memory", press: runeKey('m'), disabled: noSession},
-			// Ctrl+. reaches the TUI as F19; see the terminal key bridge.
-			{key: "Ctrl+.", label: "settings", press: tea.KeyMsg{Type: tea.KeyF19}}},
-		{{key: "Esc/Ctrl+Q", label: "return", press: tea.KeyMsg{Type: tea.KeyEsc}}},
-		{{key: "Ctrl+D", label: "detach", press: tea.KeyMsg{Type: tea.KeyCtrlD}},
-			{label: "agents run", note: true}},
+		{{key: "n", label: "new", press: runeKey('n'), disabled: len(m.panelRows()) == 0}},
+		{{key: "?", label: "help", press: runeKey('?')}},
+		{{key: "Ctrl+D", label: "detach", press: tea.KeyMsg{Type: tea.KeyCtrlD}}},
 	}
 }
 
@@ -565,6 +554,11 @@ func (m *model) panelScreen() string {
 		}
 		if i == m.panelIndex && m.panelFocus {
 			prefix = "› "
+		}
+		if r.session == nil && r.project.State != "connection" && projectPanelHeaderRows+position-start == m.panelHoverY {
+			labelWidth := max(0, width-5)
+			line = clip(line, labelWidth)
+			line += strings.Repeat(" ", max(0, labelWidth-ansi.StringWidth(line))) + accent.Render("+")
 		}
 		lines = append(lines, prefix+line)
 	}

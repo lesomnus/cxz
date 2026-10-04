@@ -189,6 +189,13 @@ func (m *model) receiveCompletion(v completionChecked) tea.Cmd {
 }
 
 func (m *model) sessionIndicator(s *api.Session) string {
+	if m.resumePending[s.Id] {
+		if m.pulse%10 < 5 {
+			return warning.Render("●")
+		}
+		return " "
+	}
+
 	// Blink at the same rate as the composer cursor: one second on, one off.
 	if m.pendingQuestion(s) {
 		if m.pulse%10 < 5 {
