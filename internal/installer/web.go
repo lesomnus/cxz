@@ -107,7 +107,9 @@ func webArgs(v transport.Installation, cfg webconfig.Config) ([]string, error) {
 	if host != "" {
 		publish = net.JoinHostPort(host, port) + ":7350"
 	}
-	args := []string{"run", "-d", "--name", v.Container + "-web", "--restart", "unless-stopped", "--label", "cxz.role=web", "--label", "cxz.owner=" + v.Owner, "--read-only", "--cap-drop=ALL", "--security-opt=no-new-privileges", "--publish", publish, "--mount", "type=volume,source=" + v.StateVolume + ",target=/var/lib/cxz/run,volume-subpath=run,readonly"}
+	// Host-owned 0600 keys need DAC_OVERRIDE for container root. All mounts and
+	// the root filesystem remain read-only; no other capabilities are granted.
+	args := []string{"run", "-d", "--name", v.Container + "-web", "--restart", "unless-stopped", "--label", "cxz.role=web", "--label", "cxz.owner=" + v.Owner, "--read-only", "--cap-drop=ALL", "--cap-add=DAC_OVERRIDE", "--security-opt=no-new-privileges", "--publish", publish, "--mount", "type=volume,source=" + v.StateVolume + ",target=/var/lib/cxz/run,volume-subpath=run,readonly"}
 	for _, pair := range [][2]string{{cfg.Certificate, "certificate.pem"}, {cfg.Key, "key.pem"}, {cfg.TokenFile, "token"}} {
 		args = append(args, "--mount", "type=bind,source="+pair[0]+",target=/web/"+pair[1]+",readonly")
 	}
@@ -184,7 +186,8 @@ func replaceWeb(ctx context.Context, v transport.Installation, cfg webconfig.Con
 		}
 		select {
 		case <-probeCtx.Done():
-			return rollback(fmt.Errorf("web did not become ready: %w", err))
+			logs, _ := dockerx.Run(ctx, "logs", "--tail", "15", name)
+			return rollback(fmt.Errorf("web did not become ready: %w; logs: %.2000s", err, logs))
 		case <-time.After(200 * time.Millisecond):
 		}
 	}
@@ -207,10 +210,10 @@ func UninstallWeb(ctx context.Context, root string) error {
 	if err != nil {
 		return err
 	}
-	return removeWeb(ctx, root, v)
+	return removeWeb(ctx, v)
 }
 
-func removeWeb(ctx context.Context, root string, v transport.Installation) error {
+func removeWeb(ctx context.Context, v transport.Installation) error {
 	c, exists, err := findWeb(ctx, v)
 	if err != nil {
 		return err
@@ -220,9 +223,5 @@ func removeWeb(ctx context.Context, root string, v transport.Installation) error
 			return err
 		}
 	}
-	err = os.Remove(filepath.Join(root, "web-installation.json"))
-	if os.IsNotExist(err) {
-		return nil
-	}
-	return err
+	return nil
 }

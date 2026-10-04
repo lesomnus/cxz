@@ -31,6 +31,9 @@ func readWebConfig(ctx context.Context, c *xli.Command) (webconfig.Config, error
 	optional := path == ""
 	if optional {
 		path = filepath.Join(stateFrom(ctx), "web.json")
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			path = filepath.Join(stateFrom(ctx), "web-installation.json")
+		}
 	}
 	cfg, err := webconfig.Load(path, optional)
 	if err != nil {

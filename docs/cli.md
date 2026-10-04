@@ -257,3 +257,11 @@ notice.
 and authenticated payday Connect endpoint for the installed local Manager.
 Default listen address: `127.0.0.1:7350`. All other flags shown are required.
 See [web.md](web.md) for setup, authentication and supported operations.
+
+### Installed web gateway
+
+`cxz install web [--config FILE]` installs/reconfigures the persistent web
+container. `cxz uninstall web` removes it without deleting configuration or
+credentials. `cxz web` runs the same gateway in the foreground. Both startup
+commands accept `--listen`, `--origin`, `--tls-cert`, `--tls-key` and
+`--access-token-file`, overriding `STATE/web.json`. See [web](web.md).
