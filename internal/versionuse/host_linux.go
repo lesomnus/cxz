@@ -278,6 +278,9 @@ func Apply(ctx context.Context, root string, tx *Transaction, out io.Writer) err
 				return e
 			}
 		}
+		if e = installer.RefreshWebLocked(ctx, root, out); e != nil {
+			return e
+		}
 		p.Ready = true
 		if e = policy(ctx, v, p, "save"); e != nil {
 			return e
