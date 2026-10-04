@@ -125,7 +125,13 @@ func Install(ctx context.Context, root, workspaceRoot, image string, recreate bo
 	if p.Ready && p.Channel != "" && image == "" && !recreate {
 		image = p.Image
 	}
-	return InstallLocked(context.WithValue(ctx, installReservationKey{}, true), root, workspaceRoot, image, recreate, out)
+	if err := InstallLocked(context.WithValue(ctx, installReservationKey{}, true), root, workspaceRoot, image, recreate, out); err != nil {
+		return err
+	}
+	if recreate {
+		return RefreshWebLocked(ctx, root, out)
+	}
+	return nil
 }
 
 type installReservationKey struct{}
@@ -302,6 +308,9 @@ func Uninstall(ctx context.Context, root string) error {
 	}
 	if c.Config.Labels["cxz.owner"] != v.Owner {
 		return fmt.Errorf("refusing unowned daemon")
+	}
+	if e = removeWeb(ctx, root, v); e != nil {
+		return e
 	}
 	if e = (engine.Engine{Owner: v.Owner}).Down(ctx); e != nil {
 		return e
