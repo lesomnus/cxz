@@ -196,8 +196,16 @@ func (m *model) sessionIndicator(s *api.Session) string {
 		}
 		return " "
 	}
-	if workingState(s.State) || len(m.pendingInputs[s.Id]) > 0 || m.hasActiveBackground(s) {
+	if workingState(s.State) || len(m.pendingInputs[s.Id]) > 0 {
 		return running.Render(workingSpinner(m.pulse + spinnerPhase(s.CreatedAt)))
+	}
+	// A background task outliving its turn still spins -- something is running --
+	// but on the quiet green. The agent is idle: it is not reading, not writing,
+	// and ready for the next message. Keeping the bright green here would rank a
+	// finished turn with a live one in the column where a glance picks the
+	// session to go back to.
+	if m.hasActiveBackground(s) {
+		return accent.Render(workingSpinner(m.pulse + spinnerPhase(s.CreatedAt)))
 	}
 	if a := m.sessionActivity[s.Id]; a != nil && a.done > a.seen {
 		return accent.Render("+")

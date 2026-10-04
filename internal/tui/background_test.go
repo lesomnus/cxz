@@ -11,8 +11,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/lesomnus/cxz/api"
+	"github.com/muesli/termenv"
 	"google.golang.org/grpc"
 )
 
@@ -93,6 +95,38 @@ func TestBackgroundLaunchIsSilentUntilTasksEnd(t *testing.T) {
 	m.events[s.Id] = append(m.events[s.Id], bgEvent(3, `{"type":"system","subtype":"background_tasks_changed","tasks":[]}`))
 	if ansi.Strip(m.sessionIndicator(s)) != "+" {
 		t.Fatal("finished background work left no unread marker")
+	}
+}
+
+// The spinner a background task leaves behind says something is running, not
+// that the agent has the turn. The two greens are how the session column ranks
+// those, so this one takes the quiet step and the bright one keeps meaning that
+// a session is working.
+func TestBackgroundOnlySpinnerTakesTheQuietStep(t *testing.T) {
+	profile := lipgloss.ColorProfile()
+	lipgloss.SetColorProfile(termenv.TrueColor)
+	t.Cleanup(func() { lipgloss.SetColorProfile(profile) })
+	bright, quiet := sgr(running), sgr(accent)
+	if bright == quiet {
+		t.Fatal("the two greens render the same")
+	}
+
+	m := conversationModel()
+	s := m.current()
+	s.State = "idle"
+	m.events[s.Id] = []*api.Event{bgEvent(2, `{"type":"system","subtype":"task_started","task_id":"bg","tool_use_id":"tool","is_backgrounded":true}`)}
+	row := m.sessionIndicator(s)
+	if got, want := ansi.Strip(row), workingSpinner(m.pulse+spinnerPhase(s.CreatedAt)); got != want {
+		t.Fatal("background work left the row without its spinner:", got)
+	}
+	if !strings.Contains(row, quiet) || strings.Contains(row, bright) {
+		t.Fatalf("a background-only spinner is not on the quiet step: %q", row)
+	}
+
+	// An agent working outranks whatever its background tasks are doing.
+	s.State = "working"
+	if row = m.sessionIndicator(s); !strings.Contains(row, bright) {
+		t.Fatalf("a working session lost the focus step: %q", row)
 	}
 }
 

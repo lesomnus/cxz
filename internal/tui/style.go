@@ -27,10 +27,12 @@ func providerLabel(provider string) string {
 
 // Two greens. The bright one marks what is live: where the keyboard is -- a
 // focused border, a focused prompt, a text cursor, the row a list cursor sits
-// on, a footer hint under the pointer -- and what is running, the working
-// spinner. Those are the lightest thing on screen. Everything else green --
-// unread markers, rules, unfocused borders, quiet notices, the labels beside a
-// spinner -- takes the other step, with nothing in between to have to rank.
+// on, a footer hint under the pointer -- and what is running, the spinner of an
+// agent that has the turn. Those are the lightest thing on screen. Everything
+// else green -- unread markers, rules, unfocused borders, quiet notices, the
+// labels beside a spinner, the spinner of a session left spinning by a
+// background task alone -- takes the other step, with nothing in between to
+// have to rank.
 // Named so that the places painting a green surface, and the tests reading one
 // back, cannot drift from the step they meant.
 const (
