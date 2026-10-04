@@ -16,6 +16,7 @@ Needs at least 40 × 14 cells. Follows terminal resizes.
 | | |
 |---|---|
 | `n`, `Ctrl+N` | New session: pick an account, log in if needed |
+| `?` | Open the same help dialog as `/help` |
 | `a` | Accounts |
 | `↑` `↓`, `Enter` | Select and open a session |
 | `r` | Rename the selected session |
@@ -23,6 +24,10 @@ Needs at least 40 × 14 cells. Follows terminal resizes.
 | `m` | Browse its retained memory and history |
 | `Ctrl+X` twice within 3s | Stop and delete it; the journal is kept. `cxz session purge` destroys it |
 | `Ctrl+.` | Settings |
+
+The sidebar footer shows only **new**, **? help**, and **Ctrl+D detach**.
+Hover a project title to reveal **+** on its right; click it to open the
+new-session account picker for that project. Other shortcuts remain available.
 
 **Conversation**
 
@@ -36,7 +41,7 @@ Needs at least 40 × 14 cells. Follows terminal resizes.
 | `F2` / `F3` | Allow / deny the pending approval |
 | `F4` | Interrupt the turn |
 | `Esc` twice within 3s | Confirm the interruption |
-| `Ctrl+R` | Resume a stopped session |
+| `Ctrl+R` | Resume a stopped session; a yellow dot blinks beside it until the request finishes |
 | `Ctrl+Q` | Back to the project list; the agent keeps running |
 | `Ctrl+C` | Copy the selection, a focused tool's contents, or a report |
 | `Ctrl+D` | Detach |

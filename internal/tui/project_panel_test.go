@@ -30,7 +30,7 @@ func TestPanelLongListAndDeletedProjects(t *testing.T) {
 		t.Fatal("last project inaccessible")
 	}
 	m.Update(tea.KeyMsg{Type: tea.KeyPgUp})
-	if m.panelIndex != 69 || !strings.Contains(ansi.Strip(m.panelScreen()), "› Project 69") {
+	if m.panelIndex != 68 || !strings.Contains(ansi.Strip(m.panelScreen()), "› Project 68") {
 		t.Fatal("page up did not account for divider rows", m.panelIndex)
 	}
 	m.Update(tea.KeyMsg{Type: tea.KeyPgDown})
@@ -414,93 +414,69 @@ func TestHintMarksTheKeyInPlace(t *testing.T) {
 	}
 }
 
-func TestPanelFooterFoldsSingleLetterKeys(t *testing.T) {
-	old := lipgloss.ColorProfile()
-	lipgloss.SetColorProfile(termenv.TrueColor)
-	defer lipgloss.SetColorProfile(old)
-	m := panelModel()
-	m.Update(tea.WindowSizeMsg{Width: 90, Height: 22})
-	plain := ansi.Strip(m.panelScreen())
-	for _, want := range []string{"new · accounts", "rename · stop", "memory · Ctrl+. settings", "Ctrl+D detach · agents run"} {
-		if !strings.Contains(plain, want) {
-			t.Fatalf("missing footer row %q in %q", want, plain)
+func TestPanelCompactFooterAndHelp(t *testing.T) {
+	for _, width := range []int{60, 90} {
+		m := panelModel()
+		m.Update(tea.WindowSizeMsg{Width: width, Height: 22})
+		m.projectView = true
+		m.focusPanel()
+		plain := ansi.Strip(m.panelScreen())
+		for _, want := range []string{"new", "? help", "Ctrl+D detach"} {
+			if !strings.Contains(plain, want) {
+				t.Fatalf("missing %q", want)
+			}
 		}
-	}
-	for _, gone := range []string{"n new", "a accounts", "r rename", "m memory"} {
-		if strings.Contains(plain, gone) {
-			t.Fatalf("key still spelled beside its label: %q", gone)
+		for _, gone := range []string{"accounts", "rename", "settings", "agents run"} {
+			if strings.Contains(plain, gone) {
+				t.Fatalf("obsolete hint %q", gone)
+			}
+		}
+		if len(m.panelHints()) != projectPanelFooterRows-1 {
+			t.Fatal("footer height mismatch")
+		}
+		_, cmd := m.panelMouse(tea.MouseMsg{X: panelHintX, Y: m.panelHintY(1), Action: tea.MouseActionPress, Button: tea.MouseButtonLeft})
+		if cmd == nil {
+			t.Fatal("help click ignored")
+		}
+		m.Update(cmd())
+		if m.report == nil || m.report.title != "/help" || !strings.Contains(ansi.Strip(m.View()), "cxz /help") {
+			t.Fatalf("help not displayed width=%d report=%+v view=%q", width, m.report, ansi.Strip(m.View()))
+		}
+		m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+		if m.report != nil {
+			t.Fatal("help cannot close")
+		}
+		m.panelProjects = nil
+		m.sessions = nil
+		m.allSessions = nil
+		if !m.panelHints()[0][0].disabled {
+			t.Fatal("new enabled without project")
 		}
 	}
 }
 
-// A hint is only offered when the selected row can act on it, and clicking one
-// sends its key so the mouse and the keyboard cannot disagree about the effect.
-func TestPanelFooterHintsHoverClickAndDisable(t *testing.T) {
+func TestProjectHoverAddSession(t *testing.T) {
 	m := panelModel()
-	m.Update(tea.WindowSizeMsg{Width: 90, Height: 22})
-	m.focusPanel()
-	// The footer is drawn into the rows reserved for it, above the status row.
-	if len(m.panelHints()) != projectPanelFooterRows-1 {
-		t.Fatal("footer rows and reserved height disagree", len(m.panelHints()), projectPanelFooterRows)
-	}
+	m.input.SetValue("keep draft")
 	rows := m.panelRows()
-	session, project := -1, -1
-	for i, r := range rows {
-		if r.session != nil && session < 0 {
-			session = i
+	layout := panelLayout(rows)
+	for pos, index := range layout {
+		if index < 0 || rows[index].session != nil || rows[index].project.Id != "other" {
+			continue
 		}
-		if r.session == nil && project < 0 {
-			project = i
+		y := projectPanelHeaderRows + pos
+		m.panelMouse(tea.MouseMsg{X: 4, Y: y, Action: tea.MouseActionMotion})
+		line := ansi.Strip(strings.Split(m.panelScreen(), "\n")[y])
+		if !strings.HasSuffix(strings.TrimRight(line, " "), "+") {
+			t.Fatal("hover lacks add button", line)
 		}
+		_, cmd := m.panelMouse(tea.MouseMsg{X: m.panelScreenWidth() - 2, Y: y, Action: tea.MouseActionPress, Button: tea.MouseButtonLeft})
+		if cmd == nil || !m.accountView || !m.accountChoosing || m.project.Id != "other" {
+			t.Fatal("wrong add-session target")
+		}
+		return
 	}
-	if session < 0 || project < 0 {
-		t.Fatal("fixture needs both a project row and a session row")
-	}
-
-	// "rename" needs a session; a project row must not advertise it.
-	m.panelIndex = project
-	if hintAt(m.panelHints()[1], 0).disabled != true {
-		t.Fatal("rename offered on a project row")
-	}
-	m.panelIndex = session
-	rename := hintAt(m.panelHints()[1], 0)
-	if rename.key != "r" || rename.disabled {
-		t.Fatal("rename not offered on a session row", rename)
-	}
-
-	// Hover follows the pointer and clears when it leaves the row.
-	hover := tea.MouseMsg{X: panelHintX, Y: m.panelHintY(1), Action: tea.MouseActionMotion}
-	if handled, _ := m.panelMouse(hover); !handled || m.panelHintHover != "r" {
-		t.Fatal("hover not tracked", m.panelHintHover)
-	}
-	if _, _ = m.panelMouse(tea.MouseMsg{X: 0, Y: 0, Action: tea.MouseActionMotion}); m.panelHintHover != "" {
-		t.Fatal("hover outlived the pointer")
-	}
-
-	// Clicking sends the key rather than acting directly.
-	click := tea.MouseMsg{X: panelHintX, Y: m.panelHintY(1), Action: tea.MouseActionPress, Button: tea.MouseButtonLeft}
-	_, cmd := m.panelMouse(click)
-	if cmd == nil {
-		t.Fatal("click produced no key")
-	}
-	if got, ok := cmd().(tea.KeyMsg); !ok || got.String() != "r" {
-		t.Fatalf("click sent the wrong key: %#v", cmd())
-	}
-
-	// A disabled hint is inert: no hover, no key.
-	m.panelIndex = project
-	m.panelHintHover = ""
-	if _, cmd := m.panelMouse(click); cmd != nil || m.panelHintHover != "" {
-		t.Fatal("disabled hint reacted to a click")
-	}
-	// The separator and the note belong to no hint.
-	settings := m.panelHints()[3]
-	if gap := hintAt(settings, ansi.StringWidth(settings[0].text())); gap.key != "" {
-		t.Fatal("separator claimed by a hint", gap)
-	}
-	if note := hintAt(m.panelHints()[5], 99); note.actionable() {
-		t.Fatal("trailing space is actionable")
-	}
+	t.Fatal("missing project fixture")
 }
 
 func TestPanelHidesDownProjectAndRestoresItAfterUp(t *testing.T) {
