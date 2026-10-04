@@ -101,6 +101,7 @@ support belong in the other two documents, linked above.
 | Feature ID | Proposal and reason |
 |---|---|
 | WEB-06 | Deferred design; do not infer support from existing desktop named connections |
+| WEB-07 | Developer tooling: separate WASM design preview with shared UI and simulated agents; does not replace production integration tests |
 
 ## Design decisions before implementation
 

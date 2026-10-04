@@ -152,3 +152,9 @@ updates do not require Node on the deployment host.
 
 The broader feature contracts and support matrix are tracked separately in
 PR #78; this page describes only the implementation shipped by the web PR.
+
+## UI development without a server
+
+Use the [WASM design sandbox](web-sandbox.md) to preview the same UI with
+simulated sessions, approvals and tool progress. It is a separate development
+entry point and is not included in the installed web gateway.
