@@ -10,6 +10,11 @@ does completion:
 source <(cxz completion zsh)
 ```
 
+The root help groups `project`, `session`, `account`, and `binding` under
+**Resources**, corresponding to the Project, Session, Account, and AuthBinding
+resources. This is a help/completion category; command paths stay the same
+(for example, `cxz project ls`).
+
 ## Two rules that catch people
 
 **Flags come before positional arguments.**
