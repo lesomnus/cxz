@@ -90,6 +90,7 @@ linked guides explain existing behavior; correct these documents when code chang
 | WEB-04 | Mobile interaction | Support phone viewports, touch, soft keyboard, accessible controls and background/resume without keyboard-only required actions. |
 | WEB-05 | Installable web app and notifications | Support home-screen installation and completion/approval push with explicit permissions, subscription lifecycle and notification-content policy. |
 | WEB-06 | Additional mobile connection modes | Evaluate multiple Managers, direct SSH and native shell integration separately; desktop connection support does not establish mobile support. |
+| WEB-07 | Design sandbox | Preview the shared web UI with isolated simulated sessions and timed fake-agent events, reproducible seeds and reset. No real accounts, tools or project mutations; distinguish design fixtures from production integration tests. |
 
 ## Shared contracts
 

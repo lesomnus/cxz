@@ -1,4 +1,4 @@
-import { createClient } from "@connectrpc/connect";
+import { createClient, type Transport } from "@connectrpc/connect";
 import { createConnectTransport } from "@connectrpc/connect-web";
 import { Store } from "@lesomnus/payday/store";
 import { Queries } from "@lesomnus/payday/query";
@@ -16,12 +16,17 @@ export class Connection {
   readonly projects;
   readonly sessions;
   readonly drafts = new Map<string, string>();
-  constructor(readonly baseUrl = location.origin) {
-    this.transport = createConnectTransport({
-      baseUrl,
-      fetch: (input, init) =>
-        fetch(input, { ...init, credentials: "same-origin" }),
-    });
+  constructor(
+    readonly baseUrl = location.origin,
+    transport?: Transport,
+  ) {
+    this.transport =
+      transport ??
+      createConnectTransport({
+        baseUrl,
+        fetch: (input, init) =>
+          fetch(input, { ...init, credentials: "same-origin" }),
+      });
     this.store = Store.open(entities, {
       name: "cxz",
       identity: crypto.randomUUID(),

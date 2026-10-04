@@ -152,3 +152,9 @@ Playwright launches an opt-in TLS gateway fixture backed by in-memory gRPC
 services; it does not start Docker or call a real agent. See
 `internal/webui/browser_test.go` and `ts/e2e/`. Ordinary `go test ./...` skips
 that long-running fixture. See [web.md](web.md) for actual gateway usage.
+
+## Browser-only design sandbox
+
+`npm run --prefix ts sandbox` builds the Go/WASM fake backend and opens the shared
+web UI without Docker or accounts. See [web design sandbox](web-sandbox.md) for
+scenarios, reset/seed controls, static builds and test boundaries.

@@ -6,7 +6,12 @@
     "build": "tsc --noEmit && vite build",
     "test": "vitest run src",
     "test:browser": "playwright test",
-    "format": "prettier --write src vite.config.ts playwright.config.ts e2e"
+    "format": "prettier --write src vite.config.ts vite.sandbox.config.ts playwright.config.ts playwright.sandbox.config.ts e2e sandbox-e2e scripts",
+    "sandbox:prepare": "node scripts/build-sandbox.mjs",
+    "sandbox": "npm run sandbox:prepare && vite --config vite.sandbox.config.ts --open /sandbox.html",
+    "sandbox:serve": "vite --config vite.sandbox.config.ts",
+    "sandbox:build": "npm run sandbox:prepare && tsc --noEmit && vite build --config vite.sandbox.config.ts",
+    "test:sandbox": "playwright test --config playwright.sandbox.config.ts"
   },
   "dependencies": {
     "@bufbuild/protobuf": "2.12.1",
@@ -20,6 +25,7 @@
   },
   "devDependencies": {
     "@bufbuild/protoc-gen-es": "2.13.0",
+    "@lesomnus/grpc-dgram": "0.0.1",
     "@playwright/test": "1.58.2",
     "@types/react": "19.2.2",
     "@types/react-dom": "19.2.2",
