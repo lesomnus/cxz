@@ -49,7 +49,7 @@ linked guides explain existing behavior; correct these documents when code chang
 
 | ID | Capability | Behavioral contract |
 |---|---|---|
-| AUTH-01 | Manager connection | Select and identify the connected Manager using a supported authenticated transport; distinguish local-client state from server state. |
+| AUTH-01 | Manager connection | Select and identify the connected Manager using a supported authenticated transport; inspect saved connections without contacting servers. Support explicit client-loopback SSH port forwarding with a visible foreground lifetime, preserving remote work on disconnect; do not imply that forwarding changes HTTPS identity. Distinguish local-client state from server state. |
 | AUTH-02 | Agent accounts | Register, list, authenticate and inspect accounts while respecting provider-specific central/project/session credential bindings. |
 | APPROVAL-01 | Approval decisions and inspection | List pending approvals, inspect original requests, and allow/deny the intended session/run/request. Retain inspectable completed approval records; approval is not execution success. |
 | APPROVAL-02 | Questions | Support provider choices, supported multiselect, Other text, navigation and explicit submission. Canceling a dialog must not become denial. |

@@ -16,12 +16,12 @@ Docker nor Go — a Windows client is a single executable.
 
 ```jsonc
 // settings.jsonc
-"connections": {
-  "default": "work",
-  "entries": {
+{
+  "connections": {
+    "default": "work",
     "work": { "target": "ssh://me@build-host" },
-    "home": { "target": "tcp://192.168.1.10:7349", "tokenFile": "~/.cxz-home-token" },
-  },
+    "home": { "target": "tcp://192.168.1.10:7349", "token_file": "home-token" }
+  }
 }
 ```
 
@@ -30,6 +30,59 @@ sessions in one panel, labelled `project1 via work`. `default` decides the initi
 focus. `cxz --endpoint work` focuses that one; giving a URL directly opens only it.
 
 Use `local://` alongside remote targets to keep your own installation in the list.
+
+## Inspect connections and tunnel a port
+
+These commands run on Windows and Linux clients:
+
+```sh
+cxz connection ls
+cxz connection ls --format json
+cxz connection tunnel work
+cxz connection tunnel --local-port 7443 --remote-port 7350 work
+```
+
+`ls` reads local `settings.jsonc`, showing sorted names, configured targets,
+the effective default and whether SSH tunnelling is supported. It does not
+connect to any server, read bearer-token files or display credentials. Use
+`cxz edit` to add or change connections. With no explicit default, the first
+name alphabetically is the effective default, matching the TUI.
+
+`tunnel` requires a saved `ssh://` connection and the system OpenSSH client
+(`ssh.exe` on Windows). It forwards `127.0.0.1:7350` on your client to
+`127.0.0.1:7350` on that SSH host by default. The optional port flags must precede
+the connection name. Other connection types are rejected. The SSH endpoint's
+username, SSH port and host alias are reused, including ordinary SSH config
+identity files/ProxyJump. Its remote cxz `binary` and `state` query parameters
+are irrelevant to port forwarding; no remote command is run.
+
+The process remains in the foreground: keep the terminal open, and use Ctrl+C
+to close the tunnel. Closing it leaves remote agents and the web server running.
+SSH authentication/host-key errors and occupied local ports are reported by SSH.
+Like the existing SSH connection, it uses batch authentication: configure a key
+or ssh-agent and verify the host using ordinary `ssh` first. No passwords are
+stored or prompted for by cxz. Existing multiplexed SSH sessions are not used,
+so closing this command closes its own forwarding process.
+
+The opening message means a connection attempt, not proof that the remote web
+server is running. SSH tests the destination when a browser opens the forwarded
+port; a stopped web server still produces a connection failure then.
+
+### HTTPS over the tunnel
+
+A tunnel forwards bytes; it does not terminate TLS or rewrite HTTP Host/Origin.
+To browse `https://localhost:7350`, the remote web gateway must have
+`origin: https://localhost:7350` and a certificate for `localhost` that the
+Windows browser trusts. Configure this on the remote host and start/reconfigure
+the gateway using [web setup](web.md). A certificate for only a VPN hostname
+will not validate for localhost, and cxz rejects a mismatched origin.
+
+If keeping the existing VPN hostname and certificate, map that hostname to
+`127.0.0.1` on the client and open the existing origin through a tunnel on the
+same local port. Choose either addressing arrangement consistently; cxz does
+not change certificates, hosts files or web configuration automatically.
+Changing the local port also changes the browser origin. Tunnel setup does not
+start/install the remote web server or bypass its browser token login.
 
 ## TCP forwarding
 
