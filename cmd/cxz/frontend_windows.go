@@ -19,7 +19,7 @@ func newRoot(state string) *xli.Command {
 		return runRemote(versionpin.WithClient(cxzupdate.WithClient(ctx, flg.MustGet[string](c, "state")), flg.MustGet[string](c, "state")), flg.MustGet[string](c, "state"), flg.MustGet[string](c, "endpoint"), flg.MustGet[string](c, "token-file"), flg.MustGet[string](c, "session"))
 	})}
 	plain := false
-	root.Commands = xli.Commands{aiCommand(), mcpCommand(), skillCommand(), editCommand(), devcontainerCommand(), selfUpdateCommand(), useCommand(), selfInstallCommand(), integrationCommand(),
+	root.Commands = xli.Commands{connectionCommand(), aiCommand(), mcpCommand(), skillCommand(), editCommand(), devcontainerCommand(), selfUpdateCommand(), useCommand(), selfInstallCommand(), integrationCommand(),
 		{Name: "terminal-info", Brief: "Print terminal environment and palette codes", Flags: flg.Flags{&flg.Switch{Name: "plain", Brief: "Print a text report", Default: &plain}}, Handler: xli.OnRun(func(ctx context.Context, c *xli.Command, _ xli.Next) error {
 			return tui.RunTerminalInfo(ctx, c.ReadCloser, c.Writer, true)
 		})},

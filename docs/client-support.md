@@ -62,7 +62,7 @@ explained in the mobile plan; it remains Not implemented in the web column.
 
 | ID | CLI | TUI | Web |
 |---|---|---|---|
-| AUTH-01 | Supported: endpoint and named-connection flags; transport/platform limits apply | Supported: same connection routing and identity display | Not implemented |
+| AUTH-01 | Supported: endpoint/named-connection flags, `connection ls` and foreground SSH `connection tunnel` on Windows/Linux; HTTPS identity remains unchanged | Supported: same connection routing and identity display | Not implemented |
 | AUTH-02 | Supported: account/backend/binding commands; provider/platform limits apply | Partial: Accounts and login workflows, no full backend/binding administration UI | Not implemented |
 | APPROVAL-01 | Partial: `session get/events/reply`; raw inspection only | Partial: pending `/approval` and decisions; completed row inspection pending #79 | Not implemented |
 | APPROVAL-02 | Partial: `session reply` structured JSON, no question UI | Supported: `/answer` structured questions | Not implemented |

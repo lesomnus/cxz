@@ -258,6 +258,19 @@ and authenticated payday Connect endpoint for the installed local Manager.
 Default listen address: `127.0.0.1:7350`. All other flags shown are required.
 See [web.md](web.md) for setup, authentication and supported operations.
 
+### Client connections
+
+```sh
+cxz connection ls [--format table|json]
+cxz connection tunnel [--local-port 7350] [--remote-port 7350] NAME
+```
+
+Available on Windows and Linux. Listing is local and shows the effective default;
+tunnelling uses the saved SSH connection and binds only client IPv4 loopback.
+Ctrl+C closes the foreground tunnel without stopping server work. Ports must be
+1–65535. See [remote access](remote.md#inspect-connections-and-tunnel-a-port),
+including HTTPS origin/certificate requirements.
+
 ### Installed web gateway
 
 `cxz install web [--config FILE]` installs/reconfigures the persistent web
