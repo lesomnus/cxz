@@ -309,7 +309,7 @@ func Uninstall(ctx context.Context, root string) error {
 	if c.Config.Labels["cxz.owner"] != v.Owner {
 		return fmt.Errorf("refusing unowned daemon")
 	}
-	if e = removeWeb(ctx, root, v); e != nil {
+	if e = removeWeb(ctx, v); e != nil {
 		return e
 	}
 	if e = (engine.Engine{Owner: v.Owner}).Down(ctx); e != nil {
