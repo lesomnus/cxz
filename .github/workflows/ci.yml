@@ -103,7 +103,7 @@ jobs:
       - run: bash scripts/release.sh v0.0.0-ci
       - run: dist/linux-amd64/cxz version
   frontend-downloads:
-    needs: [test, windows-frontend, image]
+    needs: [test, windows-frontend, web, image]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -184,7 +184,7 @@ jobs:
   image:
     outputs:
       digest: ${{ fromJSON(steps.manager-image.outputs.metadata).app['containerimage.digest'] }}
-    needs: test
+    needs: [test, web]
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     permissions:
