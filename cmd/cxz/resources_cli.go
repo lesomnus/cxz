@@ -108,8 +108,5 @@ func reorganizeCommands(root *xli.Command) {
 	}
 	managerGroup.Commands = remaining
 	root.Commands = append(root.Commands, workspaceEntryCommands()...)
-	// Group the public commands backed by declared resources in help/completion.
-	for _, name := range []string{"project", "session", "account", "binding"} {
-		root.Commands.Get(name).Category = "Resources"
-	}
+	categorizeCommands(root)
 }
