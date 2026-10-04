@@ -72,7 +72,7 @@ func TestValidationBeforeConnection(t *testing.T) {
 		{[]string{"session", "new", ".", "--agent", "codex"}, xli.ErrFlagAfterArg},
 		{[]string{"session", "get"}, xli.ErrNeedArgs},
 		{[]string{"session", "stop", "id", "extra"}, xli.ErrTooManyArgs},
-		{[]string{"install", "unexpected"}, xli.ErrTooManyArgs},
+		{[]string{"install", "unexpected"}, xli.ErrUnknownCmd},
 		{[]string{"unknown"}, xli.ErrUnknownCmd},
 		{[]string{"session", "new", "--unknown"}, xli.ErrUnknownFlag},
 		{[]string{"session", "new", "--agent", "invalid", "."}, nil},

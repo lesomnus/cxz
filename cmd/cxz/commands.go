@@ -158,10 +158,10 @@ func newRoot(state string) *xli.Command {
 		{Name: "terminal-info", Brief: "Print local terminal environment and color palette", Flags: flg.Flags{switchFlag("plain", "Print environment and palette codes without interactive UI")}, Handler: onRun(func(ctx context.Context, c *xli.Command) error {
 			return tui.RunTerminalInfo(ctx, c.ReadCloser, c.Writer, true)
 		})},
-		{Name: "install", Brief: "Start background Docker manager", Flags: flg.Flags{stringFlag("workspace-root", "Engine-visible workspace root", ""), stringFlag("image", "Manager image (default: build from this binary)", ""), switchFlag("recreate", "Replace owned manager, preserving data")}, Handler: onRun(func(ctx context.Context, c *xli.Command) error {
+		{Name: "install", Commands: xli.Commands{installWebCommand()}, Brief: "Start background Docker manager", Flags: flg.Flags{stringFlag("workspace-root", "Engine-visible workspace root", ""), stringFlag("image", "Manager image (default: build from this binary)", ""), switchFlag("recreate", "Replace owned manager, preserving data")}, Handler: onRun(func(ctx context.Context, c *xli.Command) error {
 			return installer.Install(ctx, stateFrom(ctx), flg.MustGet[string](c, "workspace-root"), flg.MustGet[string](c, "image"), flg.MustGet[bool](c, "recreate"), c.ErrWriter)
 		})},
-		{Name: "uninstall", Brief: "Remove manager; retain projects and volumes", Handler: onRun(func(ctx context.Context, _ *xli.Command) error { return installer.Uninstall(ctx, stateFrom(ctx)) })},
+		{Name: "uninstall", Commands: xli.Commands{uninstallWebCommand()}, Brief: "Remove manager; retain projects and volumes", Handler: onRun(func(ctx context.Context, _ *xli.Command) error { return installer.Uninstall(ctx, stateFrom(ctx)) })},
 		{Name: "serve", Brief: "Run foreground development server", Flags: flg.Flags{stringFlag("agent", "Claude executable (not Account agent selection)", "claude")}, Handler: onRun(serveCommand)},
 	}
 	for _, name := range []string{"up", "new", "recreate", "down"} {

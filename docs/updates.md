@@ -24,8 +24,8 @@ It needs no Go and no source build tools.
 
 **Choosing a channel explicitly is immediate and forceful.** On a Linux host it
 replaces and restarts the frontend, the manager, running project runtimes and
-running session supervisors and agents. It does not wait for idle, so **work in
-progress is interrupted**. Conversations reopen with their history in a new run and
+running session supervisors and agents, plus an installed running web gateway.
+It does not wait for idle, so **work in progress is interrupted**. Conversations reopen with their history in a new run and
 the last input is not resent. Sessions already stopped stay stopped. Project
 containers and data volumes are not recreated. It does not change the provider CLI
 versions.
@@ -76,7 +76,10 @@ On **Linux**, `cxz self-update` fetches `main` and builds it in Docker, then
 replaces the local executable and the installed manager. `--ref` takes a branch, tag
 or commit; `--client-only` skips the manager. Docker Buildx and a Linux builder are
 required; host Git and Go are not. Builds are verified before replacement and the
-previous executable is kept. Running sessions continue.
+previous executable is kept. Running sessions continue. An installed, running
+web container is then recreated using the updated Manager image; its saved web
+configuration is preserved. Browser users sign in again, but agents continue.
+Stopped or absent web containers stay stopped/absent. See [web setup](web.md).
 
 `self-update` checks the **installed manager's own revision** before reporting
 success, by asking the container binary rather than trusting the host CLI. An

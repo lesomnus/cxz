@@ -83,7 +83,7 @@ linked guides explain existing behavior; correct these documents when code chang
 | OPS-06 | Diagnostics | Inspect session/project/Manager diagnostics and provisioning logs with source identity and bounded presentation. |
 | OPS-07 | Container terminal | Provide shell/exec access where supported, distinguish shell lifecycle from agent lifecycle and disclose connection requirements. |
 | OPS-08 | Frontend integration | Provide platform-specific diagnostic recording, terminal diagnostics, completion and terminal registration; do not treat these as server features. |
-| OPS-09 | Installation lifecycle | Install/uninstall Manager and purge installation-owned resources with explicit destructive scope. |
+| OPS-09 | Installation lifecycle | Install/uninstall Manager and an optional persistent HTTPS web gateway; web settings accept file defaults and CLI overrides. Host self-update/version switching refreshes a running gateway while preserving settings and agent work (version switching still interrupts agents by its own contract). Purge installation-owned resources with explicit destructive scope. |
 | WEB-01 | Browser access | Provide HTTPS, trusted certificate handling, browser authentication/logout and expired-session handling. Transport and auth details require design. |
 | WEB-02 | Browser reconnection | Recover from suspension/disconnection using event cursors and current state; handle history gaps without stopping agents or resolving requests. |
 | WEB-03 | Browser mutation recovery | Recover an unknown send/decision outcome without duplicate execution or applying a decision to a new run; do not blindly retry. |

@@ -96,7 +96,7 @@ explained in the mobile plan; it remains Not implemented in the web column.
 | OPS-06 | Supported: Manager/project logs and doctor commands | Supported: `/logs` session/project reports | Not implemented |
 | OPS-07 | Supported: `project shell/exec` with required host Docker access | Supported: `/terminal` with required local Docker access; no persistence after detach | Not implemented |
 | OPS-08 | Partial: `terminal-info`, completion, Windows integration commands; no TUI recording command | Partial: `/record`/F9; shell completion and terminal registration remain CLI | Not implemented |
-| OPS-09 | Supported: installation/uninstallation and purge on supported host | Not implemented: no installation-wide administration UI | Not implemented |
+| OPS-09 | Supported: Manager and optional web gateway installation/uninstallation; web JSON settings and running-gateway refresh on host self-update/use; purge on supported host | Not implemented: no installation-wide administration UI | Not implemented |
 | WEB-01 | N/A: browser-specific requirement | N/A: browser-specific requirement | Not implemented |
 | WEB-02 | N/A: browser-specific requirement | N/A: browser-specific requirement | Not implemented |
 | WEB-03 | N/A: browser-specific requirement | N/A: browser-specific requirement | Not implemented |

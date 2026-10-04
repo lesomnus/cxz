@@ -4,41 +4,98 @@ The first web client is for **HTTPS inside a private VPN**, served from the
 same origin as its RPC endpoint. It operates existing sessions in the installed
 local Manager. It is not a replacement for every TUI or CLI feature.
 
-## Start the gateway
+## Install a background gateway
 
-Build or install a cxz version containing this feature on the Manager host.
-Create a random browser token (separate from provider credentials) once:
-
-```sh
-mkdir -p ~/.config/cxz
-(umask 077; openssl rand -hex 32 > ~/.config/cxz/web-token)
-```
-
-Obtain a TLS certificate trusted by the phone for the VPN hostname. Run:
+On the Linux Manager host, install/update cxz and the Manager first. Create a
+browser token once, separate from provider credentials:
 
 ```sh
-cxz web \
-  --listen 0.0.0.0:7350 \
-  --origin https://cxz.example.vpn:7350 \
-  --tls-cert /path/to/certificate.pem \
-  --tls-key /path/to/private-key.pem \
-  --access-token-file ~/.config/cxz/web-token
+mkdir -p ~/.local/state/cxz
+(umask 077; openssl rand -hex 32 > ~/.local/state/cxz/web-token)
 ```
 
-Replace the hostname and certificate paths with your own. Open the exact
-`--origin` URL on the phone and paste the token into **Web access token**.
-The certificate must match that hostname and be trusted by the browser. Limit
-network access to your VPN. The default listener is loopback; the example binds
-all interfaces and therefore relies on the host's VPN/firewall configuration.
-The foreground gateway is a Linux-host command; Windows can use the web client
-in a browser. It connects to the local installed Manager via the same transport
-as the CLI. Named SSH connections and cross-origin gateways are not supported
-in this first UI.
+Create `~/.local/state/cxz/web.json` (the default state directory):
 
-Ctrl+C stops only the gateway. Manager, project runtimes and agents continue.
-Restarting the gateway invalidates browser logins; reconnect and sign in again.
-A persistent service/process manager can run this foreground command. It is not
-yet installed as a service or automatically restarted after a binary update.
+```json
+{
+  "listen": "127.0.0.1:7350",
+  "origin": "https://cxz.example.vpn:7350",
+  "tls_cert": "/absolute/path/to/certificate.pem",
+  "tls_key": "/absolute/path/to/private-key.pem",
+  "access_token_file": "web-token"
+}
+```
+
+Use a certificate trusted by the phone for that exact VPN hostname. Change
+`listen` to your host's VPN IP and port to allow phone access; `127.0.0.1` only
+accepts local connections. `0.0.0.0:7350` listens on all interfaces and requires
+firewall rules restricting access to the VPN.
+
+```sh
+cxz install web
+```
+
+This creates `<manager-container>-web`, using the installed Manager's image,
+with Docker's `unless-stopped` restart policy. It survives terminal closure and
+host reboot. The container serves both the embedded UI and payday Connect API.
+It mounts only the Manager state volume's `run` subdirectory and the certificate,
+key and token files, read-only; it receives no Docker socket or database mount.
+Those files must exist on both the command host and the Docker engine host at
+the configured absolute paths. This matches a normal host-local Docker install;
+remote engines need explicitly shared files. The Manager must already be running.
+
+Open the exact `origin` URL on the phone and paste the token file's contents into
+**Web access token**. Windows can use the browser, but installation runs on Linux.
+
+## Configuration and lifecycle
+
+Both `cxz web` and `cxz install web` accept the same configuration:
+
+```sh
+cxz install web --config /path/to/web.json --listen 192.0.2.10:7350
+cxz web --config /path/to/web.json
+```
+
+- Default file: `STATE/web.json`, where `STATE` follows `--state`, `CXZ_STATE`,
+  `$XDG_STATE_HOME/cxz`, then `~/.local/state/cxz`.
+- `--config` selects a different JSON file. Unknown keys are rejected.
+- Explicit `--listen`, `--origin`, `--tls-cert`, `--tls-key` and
+  `--access-token-file` override file values.
+- Relative file paths in JSON resolve against the JSON file's directory;
+  relative command-line paths resolve against the current directory. Use absolute
+  paths rather than `~` inside JSON.
+- Successful installation saves the resolved settings in
+  `STATE/web-installation.json`. These contain file paths, never token/key values.
+  If no default `web.json` exists, subsequent commands reuse this saved configuration.
+- Re-run `cxz install web` after changing configuration, renewing certificate files
+  or rotating the token. It replaces/starts the web container. An invalid local
+  certificate or token is rejected before stopping the old gateway.
+
+`cxz self-update` on the Manager host refreshes a running installed web container
+after the Manager, using the same image. `cxz use VERSION`, `cxz use @edge` and
+`cxz use @stable` also refresh it as part of the host version switch. Missing or
+stopped web containers are not started by updates. `--client-only` and Windows
+frontend updates do not update a remote gateway. A foreground `cxz web` process
+is not managed by these commands; background automatic Manager rollout is also
+separate from this host-command integration.
+
+A target image must support `cxz web`; uninstall the web gateway before selecting
+an older release without that command. Installation checks this before replacing
+the gateway. If startup fails, the previous container is restored when possible,
+and the update reports failure rather than claiming the web update succeeded.
+Manager/agent versions are not rolled back by a web failure. A version switch
+that fails here remains retryable using the same `cxz use` command.
+
+```sh
+cxz uninstall web        # removes only web; configuration/token/certificates remain
+cxz install web          # installs it again from configuration
+cxz uninstall            # removes web and Manager; retains projects and data
+```
+
+Use `docker logs <manager-container>-web` for startup diagnostics and
+`docker stop <manager-container>-web` to temporarily stop it. A gateway restart
+invalidates browser logins; sign in again. It does not stop agent turns.
+`cxz web` still runs in the foreground; Ctrl+C stops only that gateway.
 
 ## First-version support
 

@@ -17,6 +17,13 @@ devcontainer CLI, Claude Code or Codex — those live in containers cxz manages.
 `cxz manager serve` runs the same server in the foreground. That is for developing
 cxz itself, not for installing it.
 
+## Optional web gateway
+
+`cxz install web` installs a separate background HTTPS container for mobile and
+browser access. Configure `STATE/web.json` first; see [web setup](web.md) for
+certificates, token login, configuration precedence and update behavior.
+`cxz uninstall web` removes only that container and retains its configuration.
+
 ## The workspace root
 
 Every project must resolve to a path under `--workspace-root`. Bind mounts are
@@ -91,7 +98,7 @@ cxz version
 ## Removing it
 
 ```sh
-cxz uninstall           # removes the manager; projects, volumes and history stay
+cxz uninstall           # removes the manager and optional web gateway; projects, volumes and history stay
 cxz purge --dry-run     # lists everything deletable
 ```
 

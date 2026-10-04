@@ -270,3 +270,11 @@ tunnelling uses the saved SSH connection and binds only client IPv4 loopback.
 Ctrl+C closes the foreground tunnel without stopping server work. Ports must be
 1–65535. See [remote access](remote.md#inspect-connections-and-tunnel-a-port),
 including HTTPS origin/certificate requirements.
+
+### Installed web gateway
+
+`cxz install web [--config FILE]` installs/reconfigures the persistent web
+container. `cxz uninstall web` removes it without deleting configuration or
+credentials. `cxz web` runs the same gateway in the foreground. Both startup
+commands accept `--listen`, `--origin`, `--tls-cert`, `--tls-key` and
+`--access-token-file`, overriding `STATE/web.json`. See [web](web.md).
