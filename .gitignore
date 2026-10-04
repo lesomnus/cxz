@@ -18,3 +18,7 @@ coverage.out
 /ts/coverage/
 /ts/test-results/
 /ts/playwright-report/
+
+# Browser-only design sandbox build artifacts.
+/ts/.sandbox/
+/ts/dist-sandbox/
