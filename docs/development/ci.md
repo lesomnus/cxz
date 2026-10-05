@@ -6,11 +6,18 @@ changes retain the existing workflow filters.
 
 ## Build and cache ownership
 
-`test`, `web`, `windows-frontend`, and `build` each own a Go cache. Keys include the
+`test`, `race`, `web`, `windows-frontend`, and `build` each own a Go cache. Keys include the
 runner OS/architecture, job name, Go module files, and commit. A new commit restores
 the latest compatible cache for that job, then saves the populated result. This
 prevents a fast web job from permanently supplying an incomplete cache to Go tests
 or cross-platform release builds. Race tests still use `-count=1`.
+
+The `race` job runs the full race suite independently of ordinary tests, Docker
+integration tests, and generated-code checks. Its explicit Bash shell retains
+pipeline failure detection while streaming Go JSON events to the log and a
+seven-day `race-test-timings` artifact. The job summary lists slow packages and
+tests; package durations overlap and parent tests include their subtests, so these
+rows must not be summed.
 
 The `build` job runs in parallel with tests. It builds Linux and Windows binaries
 for amd64 and arm64 once, including the source revision, and packages the download
