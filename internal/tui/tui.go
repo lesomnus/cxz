@@ -86,6 +86,9 @@ type model struct {
 	pendingInputs           map[string][]*api.Event
 	promptSpans             []promptSpan
 	inlineDismissed         string
+	mentionDismissed        string
+	mentionSignature        string
+	mentionSelected         int
 	redactDialog            *redactDialog
 	redactions              map[string]*redaction
 	redactSending           bool
@@ -1180,6 +1183,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	next, cmd := m.update(msg)
 	if k, ok := msg.(tea.KeyMsg); ok && k.Paste {
+		if token := m.mentionContext(); token != nil {
+			m.mentionDismissed = token.signature
+		}
 		if token := m.inlineContext(); token != nil {
 			m.inlineDismissed = token.signature
 		}
@@ -1197,6 +1203,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if mouse, ok := msg.(tea.MouseMsg); ok && m.mentionMouse(mouse) {
+		return m, nil
+	}
 	switch msg.(type) {
 	case tea.KeyMsg, tea.MouseMsg, tea.WindowSizeMsg:
 		m.bottomButtonHover = false
@@ -2072,6 +2081,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			if handled, cmd := m.pathHintKey(v); handled {
 				return m, cmd
+			}
+			if m.mentionKey(v) {
+				return m, nil
 			}
 			if handled, cmd := m.commandKey(v); handled {
 				return m, cmd

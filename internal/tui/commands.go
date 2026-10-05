@@ -115,6 +115,9 @@ func (m *model) commandKey(k tea.KeyMsg) (bool, tea.Cmd) {
 // Replace the bottom visible transcript rows, without touching scroll position
 // or saved events. The composer and status line never move for this overlay.
 func (m *model) commandOverlay(view string) string {
+	if overlay, ok := m.mentionOverlay(view); ok {
+		return overlay
+	}
 	if m.pathHints != nil {
 		return m.pathHintOverlay(view)
 	}
