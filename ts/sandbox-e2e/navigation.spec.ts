@@ -222,7 +222,32 @@ test("prompt ticks never reverse through first measurements and cache page repla
     let reverse = 0,
       checked = 0,
       pages = 0;
-    for (const direction of [-1, 1])
+    // Cache measurement may start a rebase near the end of a wheel sample.
+    // Compare completed positions instead of assuming 200ms finishes it.
+    const waitForRebase = async () => {
+      const deadline = performance.now() + 2000;
+      let settledFrames = 0;
+      while (settledFrames < 3) {
+        await new Promise(requestAnimationFrame);
+        const nodes = [
+          document.querySelector<HTMLElement>(".scroll-thumb")!,
+          ...rail.querySelectorAll<HTMLElement>(".scroll-marker"),
+        ];
+        const settled = nodes.every(
+          (node) =>
+            Math.abs(
+              parseFloat(getComputedStyle(node).top) -
+                Number(node.dataset.targetTop),
+            ) < 0.1,
+        );
+        settledFrames = settled ? settledFrames + 1 : 0;
+        if (performance.now() > deadline)
+          throw new Error(
+            "Scrollbar rebase did not settle after wheel movement",
+          );
+      }
+    };
+    for (const direction of [-1, 1]) {
       for (let step = 0; step < 80; step++) {
         const before = snapshot();
         el.dispatchEvent(
@@ -233,6 +258,7 @@ test("prompt ticks never reverse through first measurements and cache page repla
           }),
         );
         await new Promise((resolve) => setTimeout(resolve, 200));
+        await waitForRebase();
         const after = snapshot();
         if (after.first !== before.first || after.last !== before.last) pages++;
         for (const [id, old] of before.markers) {
@@ -276,6 +302,7 @@ test("prompt ticks never reverse through first measurements and cache page repla
           }
         }
       }
+    }
     return {
       reverse,
       checked,
