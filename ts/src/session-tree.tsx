@@ -63,9 +63,8 @@ export function SessionTreeGroup({
                   <span className="session-alias">
                     {s.alias || s.runtimeId}
                   </span>
-                  <span className="session-model">
-                    {s.model || <AgentBrand agent={s.agent} />}
-                  </span>
+                  <AgentBrand agent={s.agent} />
+                  {s.model && <span className="session-model">{s.model}</span>}
                 </span>
               </span>
             </Button>
