@@ -20,6 +20,7 @@ import { sessionInfo } from "./session-info";
 import { ModelSettings, modelCatalog } from "./model-settings";
 import { UsageInfo } from "./usage-info";
 import { Button } from "./button";
+import { AgentBrand } from "./agent-brand";
 import { SessionTreeGroup } from "./session-tree";
 import { Transcript } from "./transcript";
 export { Button } from "./button";
@@ -769,7 +770,8 @@ function Conversation({
         <div>
           <strong>{s?.alias || s?.runtimeId || "Session"}</strong>
           <small>
-            {s?.agent} · {s?.status?.state} · {status}
+            <AgentBrand agent={s?.agent ?? ""} /> · {s?.status?.state} ·{" "}
+            {status}
           </small>
         </div>
       </header>
@@ -955,7 +957,7 @@ const EventView = React.memo(function EventView({
     return (
       <article data-seq={e.seq.toString()}>
         <small>
-          {agent ? agent[0].toUpperCase() + agent.slice(1) : "Agent"}
+          <AgentBrand agent={agent} />
         </small>
         <Markdown text={e.text} />
         <Button

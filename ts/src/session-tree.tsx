@@ -5,6 +5,7 @@ import type { Session } from "../gen/cxz/session_pb";
 import { SessionService } from "../gen/cxz/session_svc_pb";
 import { ref } from "./connection";
 import { Button } from "./button";
+import { AgentBrand } from "./agent-brand";
 
 export function SessionTreeGroup({
   project,
@@ -62,7 +63,9 @@ export function SessionTreeGroup({
                   <span className="session-alias">
                     {s.alias || s.runtimeId}
                   </span>
-                  <span className="session-model">{s.model || s.agent}</span>
+                  <span className="session-model">
+                    {s.model || <AgentBrand agent={s.agent} />}
+                  </span>
                 </span>
               </span>
             </Button>

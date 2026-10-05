@@ -41,9 +41,17 @@ test("mobile sign-in, conversation, questions, drafts and sign-out", async ({
   await context.setOffline(true);
   await expect(page.getByText(/Disconnected · retrying/)).toBeVisible();
   await context.setOffline(false);
-  await expect(page.getByText(/claude · idle · Live/)).toBeVisible({
-    timeout: 15000,
-  });
+  await expect(
+    page
+      .locator(".conversation > header")
+      .getByRole("img", { name: "Claude", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator(".conversation > header small")).toContainText(
+    "· idle · Live",
+    {
+      timeout: 15000,
+    },
+  );
   await expect(
     page.locator("article.input").filter({ hasText: "초안 preserved" }),
   ).toHaveCount(1);

@@ -15,6 +15,7 @@
   --composer-overhang: 4px;
   --muted: #a0a0a0;
   --hover: #282828;
+  --agent-logo-size: 14px;
 }
 * {
   box-sizing: border-box;
@@ -239,6 +240,26 @@ header strong {
 }
 .conversation > header small {
   margin: 2px 0 0;
+}
+.agent-brand {
+  display: inline-flex;
+  height: var(--agent-logo-size);
+  align-items: center;
+  vertical-align: text-bottom;
+  color: #fff;
+  line-height: 0;
+  flex-shrink: 0;
+}
+.agent-brand > span,
+.agent-brand svg {
+  display: block;
+  width: var(--agent-logo-size);
+  height: var(--agent-logo-size);
+}
+.agent-brand img {
+  display: block;
+  width: auto;
+  height: var(--agent-logo-size);
 }
 .transcript-area {
   flex: 1;
