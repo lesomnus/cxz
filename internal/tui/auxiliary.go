@@ -233,12 +233,8 @@ func (m *model) auxiliaryKey(k tea.KeyMsg) tea.Cmd {
 	if p.busy {
 		return nil
 	}
-	task, profile := "summary", p.config.Summary
-	if p.selected == 1 {
-		task, profile = "suggestion", p.config.Suggestion
-	} else if p.selected == 2 {
-		task, profile = "title", p.config.Title
-	}
+	task := p.task()
+	profile := map[string]auxiliary.Profile{"summary": p.config.Summary, "suggestion": p.config.Suggestion, "title": p.config.Title}[task]
 	if p.editing {
 		choices := p.choices()
 		switch k.String() {
@@ -263,7 +259,14 @@ func (m *model) auxiliaryKey(k tea.KeyMsg) tea.Cmd {
 			}
 			switch p.step {
 			case "account":
-				a := p.accounts[p.choice]
+				// A profile another task already uses needs no catalog and no
+				// login probe: that task validated it, and the point of copying
+				// it whole is that the two end up equal field for field.
+				if reuse := p.reusable(task); p.choice < len(reuse) {
+					p.draft = reuse[p.choice].profile
+					return m.auxiliaryRequest(auxiliary.Request{Action: "put", Task: task, Profile: p.draft}, p)
+				}
+				a := p.accounts[p.choice-len(p.reusable(task))]
 				p.draft = auxiliary.Profile{Enabled: true, Account: a.GetAlias(), Agent: a.GetAgent(), Backend: a.GetAuthBackend()}
 				p.step, p.choice, p.models = "model", 0, nil
 				p.loginIfNeeded = true
@@ -313,10 +316,64 @@ func (m *model) loginAuxiliaryAccount(p *auxiliaryPage) tea.Cmd {
 	return m.startAccountWorkflow(p.draft.Account, p.draft.Agent, "", false, p)
 }
 
+// task is which row the page is on, named rather than numbered so the wizard
+// and the list cannot disagree about what is being edited.
+func (p *auxiliaryPage) task() string {
+	return []string{"summary", "suggestion", "title"}[min(max(0, p.selected), 2)]
+}
+
+// auxiliaryReuse is another task's profile, offered as one choice. Summary and
+// suggestion are generated in a single call when their profiles are equal --
+// every field, not only the model -- so picking the other task's profile from a
+// list is both fewer keystrokes than walking the wizard and the only way to be
+// sure the two really match.
+type auxiliaryReuse struct {
+	from    string
+	profile auxiliary.Profile
+}
+
+func (r auxiliaryReuse) label() string {
+	where := r.profile.Account + "/" + r.profile.Model
+	if r.profile.Effort != "" {
+		where += "/" + r.profile.Effort
+	}
+	return "use " + where + " from " + r.from
+}
+
+// reusable lists the profiles the other tasks already use, most useful first:
+// for summary or suggestion, the other half of the pair that can share a call
+// comes before the title's. A profile without a model was never configured, and
+// a duplicate of one already listed would be the same choice twice.
+func (p *auxiliaryPage) reusable(task string) []auxiliaryReuse {
+	order := map[string][]string{
+		"summary":    {"suggestion", "title"},
+		"suggestion": {"summary", "title"},
+		"title":      {"summary", "suggestion"},
+	}[task]
+	named := map[string]auxiliary.Profile{"summary": p.config.Summary, "suggestion": p.config.Suggestion, "title": p.config.Title}
+	labels := map[string]string{"summary": "Summary", "suggestion": "Next-message suggestion", "title": "Session title"}
+	var out []auxiliaryReuse
+	for _, other := range order {
+		profile := named[other]
+		if profile.Account == "" || profile.Model == "" {
+			continue
+		}
+		profile.Enabled = true
+		if slices.ContainsFunc(out, func(v auxiliaryReuse) bool { return v.profile == profile }) {
+			continue
+		}
+		out = append(out, auxiliaryReuse{from: labels[other], profile: profile})
+	}
+	return out
+}
+
 func (p *auxiliaryPage) choices() []string {
 	var out []string
 	switch p.step {
 	case "account":
+		for _, v := range p.reusable(p.task()) {
+			out = append(out, v.label())
+		}
 		for _, a := range p.accounts {
 			out = append(out, a.GetAlias()+" · "+a.GetAgent()+" · "+a.GetName())
 		}
@@ -407,6 +464,14 @@ func (m *model) auxiliaryScreen() string {
 			lines = append(lines, line)
 		}
 		lines = append(lines, "", "Enter edit · Space change default · r refresh · Esc back")
+	}
+	// Whether the pair shares a call is not visible in the rows above -- the
+	// profiles have to be equal in every field, and two rows that read alike can
+	// still differ -- so the one thing it changes is stated.
+	if p.config.Summary.Enabled && p.config.Summary == p.config.Suggestion {
+		lines = append(lines, "", accent.Render("Summary and suggestion share a profile: one call per turn, one copy of the conversation."))
+	} else if p.config.Summary.Enabled && p.config.Suggestion.Enabled {
+		lines = append(lines, "", muted.Render("Summary and suggestion differ: a call each. Edit one and choose \"use … from …\" to share a call."))
 	}
 	lines = append(lines, "", "Checkpoint uses the summary account, or suggestion account when summary is off.", "/summary and /suggest: on/off per session, or once while off.")
 	if p.busy {
