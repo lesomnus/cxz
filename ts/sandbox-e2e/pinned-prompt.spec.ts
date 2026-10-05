@@ -16,7 +16,20 @@ async function openLong(page: import("@playwright/test").Page) {
   ).toBeVisible();
 }
 
-test("latest preceding input remains pinned above fades and jumps to its virtual row", async ({
+async function reveal(page: import("@playwright/test").Page) {
+  const box = (await page.locator(".transcript").boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + 16);
+  await expect
+    .poll(() =>
+      page
+        .getByRole("button", { name: "Jump to user message" })
+        .boundingBox()
+        .then((pinned) => pinned!.y),
+    )
+    .toBeCloseTo(box.y, 0);
+}
+
+test("preceding input peeks below the title without following scroll and reveals on approach", async ({
   page,
 }) => {
   await openLong(page);
@@ -28,12 +41,55 @@ test("latest preceding input remains pinned above fades and jumps to its virtual
     .locator(".pinned-prompt")
     .getAttribute("data-pinned-seq"))!;
   await expect(pane.locator(`[data-row="${seq}"]`)).toHaveCount(0);
-  const areaTop = (await pane.boundingBox())!.y;
-  expect((await pinned.boundingBox())!.y).toBeCloseTo(areaTop, 0);
-  await pane.evaluate((el) => (el.scrollTop -= 200));
+  const area = (await pane.boundingBox())!;
+  await page.mouse.move(area.x + area.width / 2, area.y + area.height / 2);
   await expect
-    .poll(() => pinned.boundingBox().then((box) => box!.y))
-    .toBeCloseTo(areaTop, 0);
+    .poll(async () => {
+      const box = (await pinned.boundingBox())!;
+      return box.y + box.height - area.y;
+    })
+    .toBeCloseTo(8, 0);
+  // Sample every animation frame during actual smoothed wheel motion. Neither
+  // the reveal layer nor its visible bottom edge follows the virtual canvas.
+  const motion = await pane.evaluate(async (el) => {
+    const overlay = document.querySelector<HTMLElement>(".pinned-prompt")!;
+    const button = overlay.querySelector("button")!;
+    const samples: { overlay: number; bottom: number; scroll: number }[] = [];
+    el.dispatchEvent(
+      new WheelEvent("wheel", {
+        bubbles: true,
+        cancelable: true,
+        deltaY: -200,
+      }),
+    );
+    for (let i = 0; i < 20; i++) {
+      await new Promise(requestAnimationFrame);
+      samples.push({
+        overlay: overlay.getBoundingClientRect().top,
+        bottom: button.getBoundingClientRect().bottom,
+        scroll: el.scrollTop,
+      });
+    }
+    return samples;
+  });
+  expect(motion[0].scroll - motion.at(-1)!.scroll).toBeGreaterThan(20);
+  for (const sample of motion) {
+    expect(sample.overlay).toBeCloseTo(area.y, 1);
+    expect(sample.bottom).toBeCloseTo(area.y + 8, 1);
+  }
+  expect(
+    await pinned.evaluate((el) => {
+      const box = el.getBoundingClientRect();
+      return !el.contains(
+        document.elementFromPoint(
+          box.left + 25,
+          document.querySelector(".transcript-area")!.getBoundingClientRect()
+            .top - 2,
+        ),
+      );
+    }),
+  ).toBe(true);
+  await reveal(page);
   const belowFade = await pinned.evaluate((el) => {
     const fade = document.querySelector<HTMLElement>(".transcript-fade-top")!;
     fade.style.pointerEvents = "auto";
@@ -45,6 +101,7 @@ test("latest preceding input remains pinned above fades and jumps to its virtual
     return above;
   });
   expect(belowFade).toBe(true);
+  await reveal(page);
   await pinned.click();
   const original = pane.locator(`article.input[data-seq="${seq}"]`);
   await expect(original).toBeVisible();
@@ -65,7 +122,11 @@ test("latest preceding input remains pinned above fades and jumps to its virtual
       ),
     )
     .toBeLessThan(BigInt(seq));
+  await page.mouse.move(10, 10);
   await pinned.focus();
+  await expect
+    .poll(() => pinned.boundingBox().then((box) => box!.y))
+    .toBeCloseTo(area.y, 0);
   const previous = (await page
     .locator(".pinned-prompt")
     .getAttribute("data-pinned-seq"))!;
@@ -107,6 +168,7 @@ test("an input preceding the cached window is found and can be loaded on demand"
     (await page.locator(".pinned-prompt").getAttribute("data-pinned-seq"))!,
   );
   expect(seq).toBeLessThan(first);
+  await reveal(page);
   await pinned.click();
   await expect(pane.locator(`article.input[data-seq="${seq}"]`)).toBeVisible();
   expect(
@@ -131,6 +193,7 @@ test("a long pinned input stays bounded and its own wheel does not move the tran
     "idle",
   );
   const pane = page.locator(".transcript");
+  await reveal(page);
   const box = (await pinned.boundingBox())!,
     area = (await pane.boundingBox())!;
   expect(box.height).toBeLessThanOrEqual(Math.min(180, area.height * 0.25) + 1);

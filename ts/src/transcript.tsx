@@ -12,6 +12,7 @@ import {
 
 import type { SessionEvent } from "../gen/cxz/session_pb";
 import { VirtualMessages } from "./virtual-messages";
+import { Button } from "./button";
 import type { MessageMap } from "./virtual-layout";
 
 type Geometry = {
@@ -86,6 +87,8 @@ export function Transcript({
   newer: () => void;
 }) {
   const content = useRef<HTMLDivElement>(null);
+  const pinnedButton = useRef<HTMLDivElement>(null);
+  const [prompt, setPrompt] = useState<SessionEvent>();
   const track = useRef<HTMLDivElement>(null);
   const thumb = useRef<HTMLDivElement>(null);
   const offsets = useRef<{ id: string; y: number }[]>([]);
@@ -550,7 +553,7 @@ export function Transcript({
             follow={follow}
             render={render}
             precedingPrompt={precedingPrompt}
-            jumpToPrompt={jumpToPrompt}
+            onPromptChange={setPrompt}
             changed={(nextMap) => {
               mapping.current = nextMap;
               offsets.current = nextMap.markers;
@@ -564,6 +567,36 @@ export function Transcript({
         className="transcript-fade transcript-fade-bottom"
         aria-hidden="true"
       />
+      {prompt && (
+        <div
+          className="pinned-prompt"
+          ref={pinnedButton}
+          data-pinned-seq={prompt.seq.toString()}
+          style={
+            {
+              "--prompt-height": `${Math.min(180, (view.viewport || 720) * 0.25)}px`,
+            } as React.CSSProperties
+          }
+        >
+          <div
+            className="pinned-prompt-proximity"
+            aria-hidden="true"
+            onPointerDown={() =>
+              pinnedButton.current
+                ?.querySelector("button")
+                ?.focus({ preventScroll: true })
+            }
+          />
+          <Button
+            type="button"
+            aria-label="Jump to user message"
+            onClick={() => jumpToPrompt(prompt.seq.toString())}
+          >
+            <small>❯ You</small>
+            <span className="message-body">{prompt.text}</span>
+          </Button>
+        </div>
+      )}
       {navigation}
       <div className="scroll-track" ref={track} aria-hidden={view.max === 0}>
         <div className="scroll-markers">

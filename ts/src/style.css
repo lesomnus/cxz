@@ -307,22 +307,46 @@ header strong {
 }
 .pinned-prompt {
   position: absolute;
-  left: 0;
-  right: 0;
+  top: 0;
+  left: 50%;
+  width: min(var(--conversation-width), calc(100% - 52px));
+  height: var(--prompt-height);
+  transform: translateX(-50%);
   z-index: 2;
   overflow: hidden;
-  border-radius: 8px;
+  pointer-events: none;
+}
+.pinned-prompt-proximity {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 28px;
+  pointer-events: auto;
 }
 .pinned-prompt > button {
+  position: relative;
   display: block;
   width: 100%;
   padding: 10px 12px;
-  max-height: inherit;
+  max-height: var(--prompt-height);
   overflow: auto;
+  overscroll-behavior: contain;
   text-align: left;
   font-size: 1rem;
   background: #222;
   scrollbar-width: thin;
+  border-radius: 0 0 8px 8px;
+  pointer-events: auto;
+  transform: translateY(calc(-100% + 8px));
+  transition: transform 180ms ease-out;
+}
+.pinned-prompt:hover > button,
+.pinned-prompt:focus-within > button {
+  transform: translateY(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .pinned-prompt > button {
+    transition: none;
+  }
 }
 .pinned-prompt .button-content {
   display: block;

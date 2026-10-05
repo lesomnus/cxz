@@ -15,7 +15,6 @@ import {
   type MessageMap,
   type RowKnot,
 } from "./virtual-layout";
-import { Button } from "./button";
 
 export function VirtualMessages({
   pane,
@@ -24,7 +23,7 @@ export function VirtualMessages({
   render,
   changed,
   precedingPrompt,
-  jumpToPrompt,
+  onPromptChange,
 }: {
   pane: React.RefObject<HTMLDivElement | null>;
   events: SessionEvent[];
@@ -32,7 +31,7 @@ export function VirtualMessages({
   render: (event: SessionEvent) => React.ReactNode;
   changed: (mapping: MessageMap) => void;
   precedingPrompt: SessionEvent | undefined;
-  jumpToPrompt: (seq: string) => void;
+  onPromptChange: (prompt: SessionEvent | undefined) => void;
 }) {
   const root = useRef<HTMLDivElement>(null);
   const sizes = useRef(new Map<string, number>());
@@ -51,9 +50,7 @@ export function VirtualMessages({
   const anchor = useRef<{ id: string; offset: number } | null>(null);
   const observer = useRef<ResizeObserver | null>(null);
   const width = useRef(0);
-  const pinned = useRef<HTMLDivElement>(null);
   const lastPrompt = useRef<SessionEvent | undefined>(undefined);
-  const [pinnedHeight, setPinnedHeight] = useState(0);
 
   function remember() {
     const el = pane.current;
@@ -186,21 +183,9 @@ export function VirtualMessages({
           ? remembered
           : undefined));
   if (prompt) lastPrompt.current = prompt;
-  const nextPrompt = layout.rows.find(
-    (row) => row.prompt && row.top + 6 >= viewport.top,
-  );
-  const push = nextPrompt
-    ? Math.min(0, nextPrompt.top + 6 - viewport.top - pinnedHeight)
-    : 0;
   useLayoutEffect(() => {
-    const el = pinned.current;
-    if (!el) return;
-    const measure = () => setPinnedHeight(el.getBoundingClientRect().height);
-    measure();
-    const resize = new ResizeObserver(measure);
-    resize.observe(el);
-    return () => resize.disconnect();
-  }, [prompt?.seq]);
+    onPromptChange(prompt);
+  }, [prompt, onPromptChange]);
   return (
     <div
       className="virtual-messages"
@@ -239,28 +224,6 @@ export function VirtualMessages({
           </div>
         );
       })}
-      {prompt && (
-        <div
-          className="pinned-prompt"
-          ref={pinned}
-          data-pinned-seq={prompt.seq.toString()}
-          style={{
-            top: viewport.top + push,
-            maxHeight: Math.min(180, viewport.height * 0.25),
-            visibility:
-              pinnedHeight > 0 && push <= -pinnedHeight ? "hidden" : undefined,
-          }}
-        >
-          <Button
-            type="button"
-            aria-label="Jump to user message"
-            onClick={() => jumpToPrompt(prompt.seq.toString())}
-          >
-            <small>❯ You</small>
-            <span className="message-body">{prompt.text}</span>
-          </Button>
-        </div>
-      )}
     </div>
   );
 }

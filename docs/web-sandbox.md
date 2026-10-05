@@ -109,9 +109,13 @@ message-to-pixel map; a fixed total height and visible-message
 anchor prevent jumps during measurement, resizing and page replacement. The
 conversation follows new events only while actually at the bottom. Paging stops
 at the server's retained history boundary. The latest user input preceding the
-reading position stays pinned at the top and can be clicked to return to its
-original position, including when its row has left the cache. It is an overlay
-and contributes no height to the virtual transcript.
+reading position sits in a fixed overlay below the title, outside the scrolling
+canvas. Only its bottom 8px shows until the pointer approaches the top 28px of the
+conversation column or the button receives keyboard focus; it then slides down
+in 180ms. Touching the approach area focuses and reveals it. Long inputs are
+bounded to 180px or 25% of the viewport and scroll independently. Clicking returns
+to the original position, including when its row has left the cache. The overlay
+contributes no height to the virtual transcript and never tracks scroll offsets.
 
 The accepted handle/marker experience, numeric parameters, restoration steps and
 regression checks are recorded in [the scroll experience contract](web-conversation-scroll.md).
