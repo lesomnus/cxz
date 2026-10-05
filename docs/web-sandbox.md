@@ -62,8 +62,10 @@ upward while the current row stays in place. Keyboard navigation, Escape and
 outside-click dismissal are supported.
 
 The icon-only send button sits on the right of a toolbar above the text input,
-inside a zero-padding wrapper. Its darker background and border frame the input;
-their side and bottom borders overlap. Ctrl+Enter sends, with a hover shortcut.
+inside a zero-padding wrapper. The 28px toolbar has equal 2px top, bottom and right
+gaps around its 32px-wide, 24px-high Send button. The wrapper is narrower than the
+input, which extends 4px past each side while retaining its width. Their bottom
+borders overlap. Ctrl+Enter sends, with a hover shortcut.
 Quota uses the TUI's eight Braille cells at the same font size as Model/Effort;
 its intrinsic width and a separate gap keep it clear of the context donut. Hover
 reveals the reset time. Context

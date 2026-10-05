@@ -8,6 +8,7 @@
   --space: 4px;
   --conversation-width: 600px;
   --composer-radius: 10px;
+  --composer-overhang: 4px;
   --muted: #a0a0a0;
   --hover: #282828;
 }
@@ -368,8 +369,8 @@ pre {
 }
 .composer-wrapper {
   position: relative;
-  width: calc(100% + var(--composer-radius) + var(--composer-radius));
-  margin-inline: calc(-1 * var(--composer-radius));
+  width: calc(100% + 2 * (var(--composer-radius) - var(--composer-overhang)));
+  margin-inline: calc(var(--composer-overhang) - var(--composer-radius));
   padding: 0;
   border: 1px solid #2c2c2c;
   background: #191919;
@@ -379,13 +380,13 @@ pre {
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  min-height: 36px;
-  padding: 2px 6px;
+  min-height: 28px;
+  padding: 2px;
 }
 .composer-input {
   position: relative;
-  width: calc(100% + 2px);
-  margin: 0 -1px -1px;
+  width: calc(100% + 2px + 2 * var(--composer-overhang));
+  margin: 0 calc(-1px - var(--composer-overhang)) -1px;
   border: 1px solid #3a3a3a;
   background: #222;
   border-radius: var(--composer-radius);
@@ -413,8 +414,9 @@ pre {
 }
 .composer .send {
   width: 32px;
-  height: 32px;
-  padding: 6px;
+  height: 24px;
+  min-height: 24px;
+  padding: 3px 6px;
   background: transparent;
   color: inherit;
 }

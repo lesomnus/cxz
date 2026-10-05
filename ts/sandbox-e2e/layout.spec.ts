@@ -56,8 +56,18 @@ test("compact monochrome workspace, aligned composer and release-triggered butto
   expect(sendBox.x + sendBox.width).toBeLessThan(box.x + box.width);
   expect(sendBox.y + sendBox.height).toBeLessThan(box.y);
   const wrapperBox = (await page.locator(".composer-wrapper").boundingBox())!;
-  expect(box.x).toBe(wrapperBox.x);
-  expect(box.width).toBe(wrapperBox.width);
+  expect(box.width).toBe(
+    (await page.locator(".composer").boundingBox())!.width + 20,
+  );
+  expect(wrapperBox.x - box.x).toBe(4);
+  expect(box.x + box.width - wrapperBox.x - wrapperBox.width).toBe(4);
+  const toolbarBox = (await page.locator(".composer-toolbar").boundingBox())!;
+  expect(toolbarBox.height).toBe(28);
+  expect(sendBox.width).toBe(32);
+  expect(sendBox.height).toBe(24);
+  expect(sendBox.y - toolbarBox.y).toBe(2);
+  expect(toolbarBox.y + toolbarBox.height - sendBox.y - sendBox.height).toBe(2);
+  expect(toolbarBox.x + toolbarBox.width - sendBox.x - sendBox.width).toBe(2);
   expect(box.y + box.height).toBe(wrapperBox.y + wrapperBox.height);
   await expect(page.locator(".composer-wrapper")).toHaveCSS("padding", "0px");
   await expect(page.locator(".composer-wrapper")).toHaveCSS(
