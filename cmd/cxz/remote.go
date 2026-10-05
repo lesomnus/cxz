@@ -25,15 +25,26 @@ func remoteFlags() flg.Flags {
 		&flg.String{Name: "endpoint", Brief: "Remote connection name or endpoint (or CXZ_ENDPOINT)", Default: remoteDefault(os.Getenv("CXZ_ENDPOINT"))},
 		&flg.String{Name: "token-file", Brief: "TCP bearer token file (or CXZ_TOKEN_FILE)", Default: remoteDefault(os.Getenv("CXZ_TOKEN_FILE"))},
 		&flg.String{Name: "session", Brief: "Initially selected remote session ID or alias", Default: remoteDefault("")},
+		&flg.Switch{Name: "no-enroll", Brief: "Do not obtain or renew a client certificate over an SSH connection", Default: remoteSwitch(false)},
 	}
 }
 func remoteDefault(v string) *string { return &v }
+func remoteSwitch(v bool) *bool      { return &v }
 
-func runRemote(ctx context.Context, state, endpoint, tokenFile, session string) error {
+type remoteOptions struct {
+	endpoint, tokenFile, session string
+	// noEnroll keeps this invocation from obtaining or renewing a certificate
+	// over ssh. The automatic path writes durable credentials on a host, so
+	// there has to be a way to say no without editing configuration.
+	noEnroll bool
+}
+
+func runRemote(ctx context.Context, state string, o remoteOptions) error {
 	state, err := filepath.Abs(state)
 	if err != nil {
 		return err
 	}
+	endpoint, tokenFile, session := o.endpoint, o.tokenFile, o.session
 	ctx = versionpin.WithClient(ctx, state)
 	cfg, err := settings.Load(state)
 	if err != nil {
@@ -41,10 +52,10 @@ func runRemote(ctx context.Context, state, endpoint, tokenFile, session string) 
 	}
 	if cfg.Connections != nil {
 		if endpoint == "" {
-			return runConfigured(ctx, state, cfg, "", session)
+			return runConfigured(ctx, state, cfg, "", session, o)
 		}
 		if _, ok := cfg.Connections.Entries[endpoint]; ok {
-			return runConfigured(ctx, state, cfg, endpoint, session)
+			return runConfigured(ctx, state, cfg, endpoint, session, o)
 		}
 	}
 	if endpoint == "" {
@@ -95,37 +106,38 @@ func dialConnection(state, endpoint, token string) (*grpc.ClientConn, error) {
 		}
 		return transport.Dial(state)
 	}
-	return transport.DialEndpoint(endpoint, token)
+	return transport.DialEndpoint(endpoint, token, nil)
 }
-func configuredSources(state string, cfg settings.Config) []multiclient.Source {
+func configuredSources(ctx context.Context, state string, cfg settings.Config, o remoteOptions, out io.Writer) []multiclient.Source {
 	var sources []multiclient.Source
 	for _, name := range cfg.Connections.Names() {
-		entry := cfg.Connections.Entries[name].Resolve(state)
-		endpoint, _ := transport.ParseEndpoint(entry.Target)
+		name, entry := name, cfg.Connections.Entries[name]
+		endpoint, _ := transport.ParseEndpoint(entry.Resolve(state).Target)
 		open := func() (api.SessionsClient, io.Closer, error) {
-			token := ""
-			if endpoint.Scheme == "tcp" {
-				var err error
-				token, err = transport.ReadToken(entry.TokenFile)
-				if err != nil {
-					return nil, nil, err
-				}
-			}
-			conn, err := dialConnection(state, entry.Target, token)
+			_, conn, err := openConnection(ctx, state, name, entry, !o.noEnroll, out)
 			if err != nil {
 				return nil, nil, err
 			}
 			return resourceclient.New(conn), conn, nil
 		}
-		sources = append(sources, multiclient.Source{Name: name, Scheme: endpoint.Scheme, Remote: endpoint.Scheme == "ssh" || endpoint.Scheme == "tcp", Open: open})
+		// The scheme is what this client will use, decided from what it holds
+		// rather than from the target alone, so an enrolled ssh connection is
+		// reported as the mtls connection it becomes. A connection that falls
+		// back to ssh at dial time keeps saying mtls, which changes nothing it
+		// is consulted for: both are confidential links.
+		scheme, _ := connectionTransport(state, name, entry.Resolve(state).Target)
+		if scheme == "" {
+			scheme = endpoint.Scheme
+		}
+		sources = append(sources, multiclient.Source{Name: name, Scheme: scheme, Remote: scheme == "ssh" || scheme == "tcp" || scheme == "mtls", Open: open})
 	}
 	return sources
 }
-func runConfigured(ctx context.Context, state string, cfg settings.Config, selected, session string) error {
+func runConfigured(ctx context.Context, state string, cfg settings.Config, selected, session string, o remoteOptions) error {
 	if selected == "" {
 		selected = cfg.Connections.DefaultName()
 	}
-	client := multiclient.New(ctx, configuredSources(state, cfg), selected)
+	client := multiclient.New(ctx, configuredSources(ctx, state, cfg, o, os.Stderr), selected)
 	defer client.Close()
 	ctx = settings.With(ctx, cfg)
 	ctx = tui.WithRecordingDirectory(ctx, filepath.Join(state, "recordings"))

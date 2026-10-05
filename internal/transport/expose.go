@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"slices"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -32,9 +33,26 @@ func (rawCodec) Unmarshal(b []byte, v any) error {
 }
 
 func authenticatedProxy(conn *grpc.ClientConn, token string) *grpc.Server {
-	return grpc.NewServer(grpc.ForceServerCodec(rawCodec{}), grpc.MaxRecvMsgSize(8*1024*1024), grpc.MaxSendMsgSize(24*1024*1024), grpc.UnknownServiceHandler(func(_ any, downstream grpc.ServerStream) error {
-		if RequireToken(downstream.Context(), token) != nil {
+	return proxyServer(conn, func(ctx context.Context) error {
+		if RequireToken(ctx, token) != nil {
 			return status.Error(codes.Unauthenticated, "invalid remote access token")
+		}
+		return nil
+	})
+}
+
+// proxyServer forwards whatever it is asked for: raw protobuf bytes, any
+// method, client and server streams alike, so a client reaches the same surface
+// it would reach locally and a version it does not know about still passes
+// through. authorize is how a transport that does not authenticate its peer
+// itself gets a say; mutual TLS has already had one, and passes nil.
+func proxyServer(conn *grpc.ClientConn, authorize func(context.Context) error, opts ...grpc.ServerOption) *grpc.Server {
+	opts = append([]grpc.ServerOption{grpc.ForceServerCodec(rawCodec{}), grpc.MaxRecvMsgSize(8 * 1024 * 1024), grpc.MaxSendMsgSize(24 * 1024 * 1024)}, opts...)
+	return grpc.NewServer(slices.Concat(opts, []grpc.ServerOption{grpc.UnknownServiceHandler(func(_ any, downstream grpc.ServerStream) error {
+		if authorize != nil {
+			if err := authorize(downstream.Context()); err != nil {
+				return err
+			}
 		}
 		method, ok := grpc.MethodFromServerStream(downstream)
 		if !ok {
@@ -102,7 +120,7 @@ func authenticatedProxy(conn *grpc.ClientConn, token string) *grpc.Server {
 		case err := <-responses:
 			return err
 		}
-	}))
+	})})...)
 }
 
 // Expose forwards an existing local installation; no second runtime/DB is opened.

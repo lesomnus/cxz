@@ -16,7 +16,7 @@ import (
 )
 
 func connectionCommand() *xli.Command {
-	group := &xli.Command{Name: "connection", Brief: "Inspect saved connections and open SSH port tunnels", Handler: xli.OnRun(func(_ context.Context, c *xli.Command, _ xli.Next) error { return c.PrintHelp(c.Writer) })}
+	group := &xli.Command{Name: "connection", Brief: "Inspect saved connections, enroll this client and open SSH port tunnels", Handler: xli.OnRun(func(_ context.Context, c *xli.Command, _ xli.Next) error { return c.PrintHelp(c.Writer) })}
 	group.Commands = xli.Commands{
 		{Name: "ls", Brief: "List locally configured connections without connecting", Flags: flg.Flags{&flg.String{Name: "format", Brief: "Output format: table or json", Default: remoteDefault("table")}}, Handler: xli.OnRun(connectionList)},
 		{Name: "tunnel", Brief: "Forward localhost to an SSH connection's remote loopback port; Ctrl+C closes it", Args: arg.Args{&arg.String{Name: "NAME"}}, Flags: flg.Flags{
@@ -24,6 +24,7 @@ func connectionCommand() *xli.Command {
 			&flg.String{Name: "remote-port", Brief: "Port on the SSH host's 127.0.0.1", Default: remoteDefault("7350")},
 		}, Handler: xli.OnRun(connectionTunnel)},
 	}
+	group.Commands = append(group.Commands, enrollCommands()...)
 	return group
 }
 func connectionSettings(c *xli.Command) (settings.Config, string, error) {
@@ -53,22 +54,29 @@ func connectionList(_ context.Context, c *xli.Command, _ xli.Next) error {
 	if format != "table" && format != "json" {
 		return fmt.Errorf("format must be table or json")
 	}
-	cfg, _, err := connectionSettings(c)
+	cfg, state, err := connectionSettings(c)
 	if err != nil {
 		return err
 	}
 	type row struct {
-		Name    string `json:"name"`
-		Target  string `json:"target"`
-		Default bool   `json:"default"`
-		Tunnel  bool   `json:"tunnel"`
+		Name      string `json:"name"`
+		Target    string `json:"target"`
+		Default   bool   `json:"default"`
+		Tunnel    bool   `json:"tunnel"`
+		Transport string `json:"transport"`
+		Detail    string `json:"transport_detail,omitempty"`
 	}
 	rows := []row{}
 	if cfg.Connections != nil {
 		for _, name := range cfg.Connections.Names() {
 			entry := cfg.Connections.Entries[name]
 			e, _ := transport.ParseEndpoint(entry.Resolve("/client-state").Target)
-			rows = append(rows, row{name, entry.Target, name == cfg.Connections.DefaultName(), e.Scheme == "ssh"})
+			// The target is what was configured; the transport is what this
+			// client will actually use, which for an enrolled ssh connection is
+			// mutual TLS. Reporting only the target would describe a channel
+			// that carries nothing but the enrollment.
+			scheme, detail := connectionTransport(state, name, entry.Resolve(state).Target)
+			rows = append(rows, row{name, entry.Target, name == cfg.Connections.DefaultName(), e.Scheme == "ssh", scheme, detail})
 		}
 	}
 	if format == "json" {
@@ -79,7 +87,7 @@ func connectionList(_ context.Context, c *xli.Command, _ xli.Next) error {
 		return err
 	}
 	w := tabwriter.NewWriter(c.Writer, 0, 4, 2, ' ', 0)
-	fmt.Fprintln(w, "NAME\tTARGET\tDEFAULT\tTUNNEL")
+	fmt.Fprintln(w, "NAME\tTARGET\tDEFAULT\tTUNNEL\tTRANSPORT")
 	for _, r := range rows {
 		def, tunnel := "-", "-"
 		if r.Default {
@@ -88,7 +96,11 @@ func connectionList(_ context.Context, c *xli.Command, _ xli.Next) error {
 		if r.Tunnel {
 			tunnel = "ssh"
 		}
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", r.Name, r.Target, def, tunnel)
+		carrier := r.Transport
+		if r.Detail != "" {
+			carrier += " (" + r.Detail + ")"
+		}
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n", r.Name, r.Target, def, tunnel, carrier)
 	}
 	return w.Flush()
 }

@@ -64,7 +64,7 @@ func withClient(fn clientFunc) xli.Handler {
 			return err
 		}
 		if c.Name == "cxz" && (cfg.Connections != nil || flg.MustGet[string](c, "endpoint") != "") {
-			return runRemote(ctx, root, flg.MustGet[string](c, "endpoint"), flg.MustGet[string](c, "token-file"), flg.MustGet[string](c, "session"))
+			return runRemote(ctx, root, remoteOptions{endpoint: flg.MustGet[string](c, "endpoint"), tokenFile: flg.MustGet[string](c, "token-file"), session: flg.MustGet[string](c, "session"), noEnroll: flg.MustGet[bool](c, "no-enroll")})
 		}
 		ctx = settings.With(ctx, cfg)
 		ctx = tui.WithRecordingDirectory(ctx, filepath.Join(root, "recordings"))
@@ -148,13 +148,7 @@ func newRoot(state string) *xli.Command {
 		})),
 	}
 	root.Commands = xli.Commands{
-		{Name: "expose", Brief: "Forward the installed daemon over authenticated plaintext TCP (VPN/tunnel)", Flags: flg.Flags{stringFlag("listen", "TCP listen endpoint", "tcp://127.0.0.1:7349"), stringFlag("token-file", "Remote access token file (32+ bytes)", os.Getenv("CXZ_TOKEN_FILE"))}, Handler: onRun(func(ctx context.Context, c *xli.Command) error {
-			token, err := transport.ReadToken(flg.MustGet[string](c, "token-file"))
-			if err != nil {
-				return err
-			}
-			return transport.Expose(ctx, stateFrom(ctx), flg.MustGet[string](c, "listen"), token, c.ErrWriter)
-		})},
+		exposeCommand(),
 		{Name: "terminal-info", Brief: "Print local terminal environment and color palette", Flags: flg.Flags{switchFlag("plain", "Print environment and palette codes without interactive UI")}, Handler: onRun(func(ctx context.Context, c *xli.Command) error {
 			return tui.RunTerminalInfo(ctx, c.ReadCloser, c.Writer, true)
 		})},
@@ -169,6 +163,7 @@ func newRoot(state string) *xli.Command {
 	}
 	root.Commands = append(root.Commands, projectMetadataCommands())
 	root.Commands = append(root.Commands, devcontainerCommand(), webCommand(), internalWebCommand(), connectionCommand())
+	root.Commands = append(root.Commands, pkiInternalCommands()...)
 	root.Commands = append(root.Commands, githubCommands(), gitconfigCommands())
 	root.Commands = append(root.Commands, accountCommands())
 	root.Commands = append(root.Commands, accountInternalCommands()...)

@@ -9,7 +9,7 @@ import (
 )
 
 func TestConnectionsRoundTrip(t *testing.T) {
-	raw := []byte(`{"connections":{"default":"work","work":{"target":"ssh://work"},"home":{"target":"local://"},"dev":{"target":"unix://${STATE}/run/daemon.sock"},"vpn":{"target":"tcp://home:7349","token_file":"tokens/home"}}}`)
+	raw := []byte(`{"connections":{"default":"work","work":{"target":"ssh://work"},"home":{"target":"local://"},"dev":{"target":"unix://${STATE}/run/daemon.sock"},"lan":{"target":"mtls://10.0.0.5:7349"},"vpn":{"target":"tcp://home:7349","token_file":"tokens/home"}}}`)
 	cfg, err := Parse(raw)
 	if err != nil {
 		t.Fatal(err)
@@ -44,6 +44,10 @@ func TestInvalidConnections(t *testing.T) {
 		`{"work":{"target":"unix://${UNKNOWN}/socket"}}`,
 		`{"work":{"target":"unix://host/socket"}}`,
 		`{"work":{"target":"local://host"}}`,
+		// mtls carries a certificate, not a token, and needs a port to dial.
+		`{"work":{"target":"mtls://host:7349","token_file":"unused"}}`,
+		`{"work":{"target":"mtls://host"}}`,
+		`{"work":{"target":"mtls://user@host:7349"}}`,
 	} {
 		if _, err := Parse([]byte(`{"connections":` + raw + `}`)); err == nil {
 			t.Error("accepted", raw)

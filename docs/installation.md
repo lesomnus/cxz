@@ -17,6 +17,15 @@ devcontainer CLI, Claude Code or Codex — those live in containers cxz manages.
 `cxz manager serve` runs the same server in the foreground. That is for developing
 cxz itself, not for installing it.
 
+## The installation root
+
+The manager creates a self-signed root in its state volume the first time it
+starts, and never replaces it — not on `install --recreate`, not on a version
+switch. It is what signs certificates for clients that connect with `mtls://`,
+and what those clients pin. Nothing else uses it, and nothing outside the manager
+holds its private key. `cxz expose status` prints its fingerprint; see
+[remote access](remote.md#mutual-tls-on-your-own-network).
+
 ## Optional web gateway
 
 `cxz web up` installs a separate background container for browser access. With

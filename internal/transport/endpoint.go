@@ -45,9 +45,10 @@ func WithScheme(ctx context.Context, scheme string) context.Context {
 func Scheme(ctx context.Context) string { v, _ := ctx.Value(schemeKey{}).(string); return v }
 
 // Confidential reports whether the connection keeps what crosses it from the
-// network: a local client never puts it there, and ssh encrypts it.
+// network: a local client never puts it there, ssh encrypts it, and mtls is TLS
+// to a peer whose certificate this installation signed.
 func Confidential(ctx context.Context) bool {
-	return !IsRemote(ctx) || Scheme(ctx) == "ssh"
+	return !IsRemote(ctx) || Scheme(ctx) == "ssh" || Scheme(ctx) == "mtls"
 }
 func LocalOnly(ctx context.Context, operation string) error {
 	if IsRemote(ctx) {
@@ -76,7 +77,7 @@ func ParseEndpoint(raw string) (Endpoint, error) {
 		return e, nil
 	}
 	if u.Fragment != "" || u.Opaque != "" || (u.Path != "" && u.Path != "/") {
-		return e, fmt.Errorf("endpoint must use ssh://[user@]host[:port] or tcp://host:port")
+		return e, fmt.Errorf("endpoint must use ssh://[user@]host[:port], mtls://host:port or tcp://host:port")
 	}
 	q, err := url.ParseQuery(u.RawQuery)
 	if err != nil {
@@ -117,40 +118,49 @@ func ParseEndpoint(raw string) (Endpoint, error) {
 				return e, fmt.Errorf("unknown SSH endpoint option %q", key)
 			}
 		}
-	case "tcp":
+	case "tcp", "mtls":
 		if u.User != nil || len(q) != 0 {
-			return e, fmt.Errorf("TCP endpoint cannot contain credentials or query options; use --token-file")
+			return e, fmt.Errorf("%s endpoint cannot contain credentials or query options", u.Scheme)
 		}
 		host, port, err := net.SplitHostPort(u.Host)
 		if err != nil || host == "" {
-			return e, fmt.Errorf("TCP endpoint requires host:port")
+			return e, fmt.Errorf("%s endpoint requires host:port", u.Scheme)
 		}
 		n, err := strconv.Atoi(port)
 		if err != nil || n < 1 || n > 65535 {
-			return e, fmt.Errorf("invalid TCP port")
+			return e, fmt.Errorf("invalid %s port", u.Scheme)
 		}
 	default:
-		return e, fmt.Errorf("unsupported endpoint scheme; use ssh://, tcp://, local:// or unix:///path")
+		return e, fmt.Errorf("unsupported endpoint scheme; use ssh://, mtls://, tcp://, local:// or unix:///path")
 	}
 	return e, nil
 }
 
 func shellArgument(s string) string { return "'" + strings.ReplaceAll(s, "'", `'"'"'`) + "'" }
-func (e Endpoint) SSHArguments() []string {
-	args := []string{"-T", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10", "-o", "ServerAliveInterval=15", "-o", "ServerAliveCountMax=3"}
+
+// SSHCommand runs one cxz command on the SSH host, with the same options and
+// the same remote binary and state the connection itself uses. Enrollment goes
+// through here: the channel that already authenticates both ends is what makes
+// a certificate handed back over it trustworthy.
+func (e Endpoint) SSHCommand(args ...string) []string {
+	options := []string{"-T", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10", "-o", "ServerAliveInterval=15", "-o", "ServerAliveCountMax=3"}
 	if e.Port != "" {
-		args = append(args, "-p", e.Port)
+		options = append(options, "-p", e.Port)
 	}
 	if e.User != "" {
-		args = append(args, "-l", e.User)
+		options = append(options, "-l", e.User)
 	}
 	command := shellArgument(e.Binary)
 	if e.State != "" {
 		command += " --state " + shellArgument(e.State)
 	}
-	command += " _connect"
-	return append(args, "--", e.Address, command)
+	for _, a := range args {
+		command += " " + shellArgument(a)
+	}
+	return append(options, "--", e.Address, command)
 }
+
+func (e Endpoint) SSHArguments() []string { return e.SSHCommand("_connect") }
 
 func ReadToken(path string) (string, error) {
 	if path == "" {
@@ -172,10 +182,19 @@ func ReadToken(path string) (string, error) {
 	return token, nil
 }
 
-func DialEndpoint(raw, token string) (*grpc.ClientConn, error) {
+// DialEndpoint opens a connection to one endpoint. The credential it needs
+// depends on the scheme: a token for the plaintext TCP surface, a client
+// certificate for mtls, and nothing for ssh, which authenticates itself.
+func DialEndpoint(raw, token string, id *Identity) (*grpc.ClientConn, error) {
 	e, err := ParseEndpoint(raw)
 	if err != nil {
 		return nil, err
+	}
+	if e.Scheme == "mtls" {
+		if id == nil {
+			return nil, fmt.Errorf("mtls connections require an enrolled client certificate; run cxz connection enroll")
+		}
+		return DialMutual(e.Address, *id)
 	}
 	if e.Scheme == "tcp" {
 		if token == "" {

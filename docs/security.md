@@ -32,6 +32,37 @@ history before repeating a task.
 - A capability is a secret proving access to a specific project or account. Public
   IDs and aliases are not capabilities.
 
+### Reaching the manager from another machine
+
+Three links, and what each one proves:
+
+| | Who is proven | Encrypted | Credential |
+|---|---|---|---|
+| `ssh://` | both, by ssh | yes | your ssh key and the host key |
+| `mtls://` | both, by certificate | yes | a certificate this installation signed |
+| `tcp://` | the client only | **no** | a bearer token, sent on every call |
+
+The installation holds one self-signed root, created with the manager, kept in its
+state volume and never replaced. It signs two things: the relay's own certificate,
+and a certificate per client. Verification ignores names and checks the chain and
+the extended key usage, so a client certificate cannot be presented as the relay
+and an address change breaks nothing.
+
+The relay that listens is a separate container. It is given the manager's socket
+and its own leaf, both read-only, and never the root's private key — a process on
+a network cannot issue credentials. Signing and revoking happen inside the
+manager, on the host.
+
+**Any valid client certificate is the installation's owner.** There is one
+capability, not per-project scoping, exactly as with the TCP token. What a
+certificate adds is that it expires (30 days) and can be refused individually:
+`cxz expose revoke SERIAL` applies from the next handshake on the running relay,
+without restarting it or disturbing other clients. A lost laptop is one revoke
+rather than a token rotation for everyone.
+
+Enrollment over ssh carries no secret: the key is generated on the client and
+stays there, and only a certificate request and a certificate cross the channel.
+
 ## Journals contain your source
 
 Raw journals hold everything the agent saw and did, including file contents it read
@@ -61,10 +92,14 @@ goes near a network. A client connected over `ssh://` cannot, so the manager is
 asked to write the file instead — the secret crosses the ssh connection, which
 encrypts it.
 
-Over the exposed TCP surface it is refused. That link is authenticated
+A client connected over `mtls://` is in the same position as an ssh one: the
+link is TLS to a peer whose certificate this installation signed, so the manager
+is asked to write the file and the secret is encrypted on the way.
+
+Over the exposed plaintext TCP surface it is refused. That link is authenticated
 **plaintext**, intended for a tunnel, and cannot be told apart from a local
-client on the daemon side, so the refusal is the client's: connect over
-`ssh://`, or put a tunnel under the TCP endpoint and use it for the shell as
+client on the daemon side, so the refusal is the client's: connect over `ssh://`
+or `mtls://`, or put a tunnel under the TCP endpoint and use it for the shell as
 well.
 
 ## Diagnostic recordings

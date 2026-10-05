@@ -22,6 +22,21 @@ func Run(ctx context.Context, args ...string) ([]byte, error) {
 	}
 	return b, nil
 }
+
+// Output is Input with the command's stdout kept: a docker exec that pipes
+// something in and reads something back, such as a certificate request.
+func Output(ctx context.Context, in io.Reader, args ...string) ([]byte, error) {
+	c := exec.CommandContext(ctx, "docker", args...)
+	c.Stdin = in
+	var errout bytes.Buffer
+	c.Stderr = &errout
+	b, e := c.Output()
+	if e != nil {
+		return nil, fmt.Errorf("docker %s: %w: %.4000s", args[0], e, errout.String())
+	}
+	return b, nil
+}
+
 func Input(ctx context.Context, in io.Reader, args ...string) error {
 	c := exec.CommandContext(ctx, "docker", args...)
 	c.Stdin = in

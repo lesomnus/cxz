@@ -24,7 +24,7 @@ func TestUnixEndpoint(t *testing.T) {
 	healthpb.RegisterHealthServer(backend, health.NewServer())
 	go backend.Serve(ln)
 	defer backend.Stop()
-	conn, err := DialEndpoint("unix://"+socket, "")
+	conn, err := DialEndpoint("unix://"+socket, "", nil)
 	if err != nil {
 		t.Fatal(err)
 	}

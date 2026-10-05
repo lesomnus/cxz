@@ -52,7 +52,7 @@ func TestSSHGRPCOverProcessPipes(t *testing.T) {
 	}
 	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
 	t.Setenv("CXZ_TEST_SSH_BACKEND", ln.Addr().String())
-	conn, err := DialEndpoint("ssh://user@fixture:2222?state=%2Ftmp%2Fspace+path", "")
+	conn, err := DialEndpoint("ssh://user@fixture:2222?state=%2Ftmp%2Fspace+path", "", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
