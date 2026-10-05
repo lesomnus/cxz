@@ -5,8 +5,10 @@ package websandbox
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"math/rand/v2"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -32,6 +34,7 @@ type Server struct {
 }
 type session struct {
 	value      *resource.Session
+	effort     string
 	scenario   string
 	events     []*resource.SessionEvent
 	generation uint64
@@ -61,17 +64,21 @@ func New(seed uint64, delay time.Duration) *Server {
 		if i%2 == 1 {
 			agent = "codex"
 		}
-		st := &session{scenario: []string{"checklist", "conversation", "long", "approval", "error", "random", "stopped", "conversation"}[i], seen: map[string]bool{}}
+		st := &session{effort: "high", scenario: []string{"checklist", "conversation", "long", "approval", "error", "random", "stopped", "conversation"}[i], seen: map[string]bool{}}
 		project := s.projects[0]
 		if i == 7 {
 			project = s.projects[1]
 		}
-		st.value = resource.Session_builder{Id: []byte(fmt.Sprintf("session-%08d", i+1)), RuntimeId: id, Alias: id, Name: name, Agent: agent, Listed: true, Project: project, Status: resource.SessionStatus_builder{State: "idle", RunId: id + "-run-1", PermissionMode: "default"}.Build()}.Build()
+		st.value = resource.Session_builder{Id: []byte(fmt.Sprintf("session-%08d", i+1)), RuntimeId: id, Alias: id, Name: name, Agent: agent, Model: "sandbox-" + agent, Listed: true, Project: project, Status: resource.SessionStatus_builder{State: "idle", RunId: id + "-run-1", PermissionMode: "default"}.Build()}.Build()
 		s.sessions = append(s.sessions, st)
+		s.telemetry(st)
 		s.event(st, "input", "Show the current state of this project.", "", nil)
 		s.event(st, "assistant", answer(st.scenario), "", nil)
 		if st.scenario == "long" {
 			for n := 0; n < 2100; n++ {
+				if n%40 == 0 {
+					s.event(st, "input", fmt.Sprintf("Review history batch %d.", n/40+1), "", nil)
+				}
 				s.event(st, "assistant", fmt.Sprintf("History item %04d — Check scrolling through a long conversation.", n+1), "", nil)
 			}
 		}
@@ -86,6 +93,44 @@ func New(seed uint64, delay time.Duration) *Server {
 		}
 	}
 	return s
+}
+
+// Seed provider-shaped snapshots so the shared composer can preview its status
+// row. These are simulated values, not real account quota or model capacity.
+func (s *Server) telemetry(st *session) {
+	emit := func(kind, text string, value any) {
+		raw, _ := json.Marshal(value)
+		s.event(st, kind, text, "", raw)
+	}
+	s.models(st)
+	reset := time.Now().Add(time.Hour).Unix()
+	if st.value.GetAgent() == "codex" {
+		emit("usage", "account/rateLimits/updated", map[string]any{"rateLimits": map[string]any{"primary": map[string]any{"usedPercent": 30, "windowDurationMins": 300, "resetsAt": reset}}})
+		emit("usage", "thread/tokenUsage/updated", map[string]any{"tokenUsage": map[string]any{"last": map[string]any{"totalTokens": 24000}, "modelContextWindow": 128000}})
+		return
+	}
+	emit("usage", "get_usage", map[string]any{"rate_limits": map[string]any{"five_hour": map[string]any{"utilization": 30, "resets_at": time.Unix(reset, 0).UTC().Format(time.RFC3339)}}})
+	emit("usage", "context/message", map[string]any{"model": st.value.GetModel(), "usage": map[string]any{"input_tokens": 4000, "cache_read_input_tokens": 20000}})
+	emit("turn_end", "completed", map[string]any{"modelUsage": map[string]any{st.value.GetModel(): map[string]any{"contextWindow": 200000}}})
+}
+
+// Deliberately simulated choices, shaped like the provider capability catalog.
+func (s *Server) models(st *session) {
+	model := "sandbox-" + st.value.GetAgent()
+	effective := st.value.GetModel()
+	if effective == "" {
+		effective = model
+	}
+	effort := st.effort
+	if effort == "" {
+		effort = "high"
+	}
+	choices := []map[string]any{
+		{"id": model, "name": "Sandbox standard", "efforts": []string{"low", "medium", "high"}, "default_effort": "high", "default": true},
+		{"id": model + "-compact", "name": "Sandbox compact", "efforts": []string{"low", "high"}, "default_effort": "high"},
+	}
+	raw, _ := json.Marshal(map[string]any{"models": choices, "model": st.value.GetModel(), "effort": st.effort, "effective_model": effective, "effective_effort": effort, "source": "sandbox"})
+	s.event(st, "models", "catalog", "", raw)
 }
 func (s *Server) Close() { s.cancel() }
 func (s *Server) Register(r grpc.ServiceRegistrar) {
@@ -337,6 +382,40 @@ func (x *Sessions) Send(_ context.Context, r *resource.SessionSendRequest) (*res
 	}
 	if strings.TrimSpace(r.GetText()) == "" || len(r.GetText()) > 65536 {
 		return nil, status.Error(codes.InvalidArgument, "enter 1–65536 bytes of text")
+	}
+	fields := strings.Fields(r.GetText())
+	if fields[0] == "/model" || fields[0] == "/effort" {
+		if len(fields) != 2 {
+			return nil, status.Error(codes.InvalidArgument, "choose a model or effort value")
+		}
+		value := fields[1]
+		if value == "default" {
+			value = ""
+		}
+		model := "sandbox-" + st.value.GetAgent()
+		if fields[0] == "/model" {
+			if st.effort != "" {
+				return nil, status.Error(codes.FailedPrecondition, "reset /effort default before changing models")
+			}
+			if value != "" && value != model && value != model+"-compact" {
+				return nil, status.Error(codes.InvalidArgument, "model not in catalog")
+			}
+			st.value.SetModel(value)
+		} else {
+			efforts := []string{"low", "medium", "high"}
+			if strings.HasSuffix(st.value.GetModel(), "-compact") {
+				efforts = []string{"low", "high"}
+			}
+			if value != "" && !slices.Contains(efforts, value) {
+				return nil, status.Error(codes.InvalidArgument, "effort not supported by model")
+			}
+			st.effort = value
+		}
+		remember(st, r.GetClientId())
+		raw, _ := json.Marshal(map[string]string{"value": value})
+		s.event(st, "setting", strings.TrimPrefix(fields[0], "/"), r.GetClientId(), raw)
+		s.models(st)
+		return receipt(r.GetClientId()), nil
 	}
 	remember(st, r.GetClientId())
 	st.turn++

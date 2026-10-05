@@ -77,3 +77,15 @@ it("reconciles only events newer than the pending snapshot across runs", () => {
   expect(pendingAfter([pending], [resolved, next], 1n)).toEqual([next]);
   expect(pendingAfter([], [pending, resolved], 2n)).toEqual([]);
 });
+
+it("pages toward older history without evicting the newly fetched records", () => {
+  const old = Array.from({ length: MAX_EVENTS }, (_, i) =>
+    event(BigInt(i + 129)),
+  );
+  const incoming = Array.from({ length: 129 }, (_, i) => event(BigInt(i + 1)));
+  const result = mergeEvents(old, incoming, "older");
+  expect(result).toHaveLength(MAX_EVENTS);
+  expect(result[0].seq).toBe(1n);
+  expect(result.at(-1)!.seq).toBe(BigInt(MAX_EVENTS));
+  expect(new Set(result.map((e) => e.seq)).size).toBe(MAX_EVENTS);
+});

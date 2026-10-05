@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { start, type Sandbox } from "@lesomnus/payday/sandbox";
 import { Provider } from "@lesomnus/payday/react";
-import { Workspace } from "./app";
+import { Button, Workspace } from "./app";
 import { Connection } from "./connection";
 import "./sandbox.css";
 import workerURL from "./sandbox-worker.ts?worker&url";
@@ -115,7 +115,7 @@ function SandboxApp() {
             <option value="1200">Slow</option>
           </select>
         </label>
-        <button onClick={() => void reset()}>Reset sandbox</button>
+        <Button onClick={() => void reset()}>Reset sandbox</Button>
       </header>
       {error && <p role="alert">{error}</p>}
       {loading && <p role="status">{loading}</p>}

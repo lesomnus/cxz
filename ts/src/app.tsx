@@ -1,4 +1,10 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Provider, useQuery } from "@lesomnus/payday/react";
 import { ProjectService } from "../gen/cxz/project_svc_pb";
 import { SessionService } from "../gen/cxz/session_svc_pb";
@@ -15,7 +21,37 @@ import {
 } from "./journal";
 import { marked } from "marked";
 import DOMPurify from "dompurify";
+import { mergeMetadata } from "./session-metadata";
+import { sessionInfo } from "./session-info";
+import { ModelSettings, modelCatalog } from "./model-settings";
+import { UsageInfo } from "./usage-info";
+import { Button } from "./button";
+import { SessionTreeGroup } from "./session-tree";
+import { Transcript } from "./transcript";
+export { Button } from "./button";
 import "./style.css";
+
+function ResourceIcon({ kind }: { kind: "sessions" | "projects" }) {
+  return (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {kind === "sessions" ? (
+        <path d="M5 4h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6 3V6a2 2 0 0 1 2-2Z" />
+      ) : (
+        <path d="M3 7V5a2 2 0 0 1 2-2h5l3 3h6a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" />
+      )}
+    </svg>
+  );
+}
 
 function Markdown({ text }: { text: string }) {
   return (
@@ -76,7 +112,7 @@ export function App() {
               required
             />
           </label>
-          <button disabled={busy}>Connect</button>
+          <Button disabled={busy}>Connect</Button>
         </form>
         <p role="alert">{error}</p>
         <small>{location.origin}</small>
@@ -99,91 +135,142 @@ export function Workspace({
   initialSession?: string;
   exitLabel?: string;
 }) {
-  const [project, setProject] = useState("");
+  const [resource, setResource] = useState<"sessions" | "projects">("sessions");
   const [session, setSession] = useState(initialSession);
   const [after, setAfter] = useState("");
-  const [sessionAfter, setSessionAfter] = useState("");
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const projects = useQuery(ProjectService.method.list, {
     filters: [{ listed: true }],
     size: 50,
     after,
   });
-  const sessions = useQuery(SessionService.method.list, {
-    filters: [{ listed: true, ...(project ? { project: ref(project) } : {}) }],
-    size: 50,
-    after: sessionAfter,
-  });
   const [error, setError] = useState("");
   return (
-    <div className={`workspace ${session ? "conversation-open" : ""}`}>
-      <aside>
+    <div
+      className={`workspace ${session && resource === "sessions" ? "conversation-open" : ""}`}
+    >
+      <nav className="resource-sidebar" aria-label="Resources">
+        <span className="brand" aria-label="cxz">
+          cxz
+        </span>
+        {(["sessions", "projects"] as const).map((view) => (
+          <Button
+            key={view}
+            className={`resource-link ${resource === view ? "active" : ""}`}
+            aria-label={`${view === "sessions" ? "Sessions" : "Projects"} view`}
+            aria-current={resource === view ? "page" : undefined}
+            title={view === "sessions" ? "Sessions" : "Projects"}
+            onClick={() => setResource(view)}
+          >
+            <ResourceIcon kind={view} />
+            <span>{view === "sessions" ? "Sessions" : "Projects"}</span>
+          </Button>
+        ))}
+      </nav>
+      <aside
+        className="resource-panel"
+        aria-label={resource === "sessions" ? "Session list" : "Project list"}
+      >
         <header>
-          <strong>cxz</strong>
-          <button onClick={() => logout().catch((e) => setError(String(e)))}>
+          <strong>{resource === "sessions" ? "Sessions" : "Projects"}</strong>
+          <Button onClick={() => logout().catch((e) => setError(String(e)))}>
             {exitLabel}
-          </button>
+          </Button>
         </header>
         <p className="muted">{new URL(c.baseUrl).host}</p>
-        <h2>Projects</h2>
-        <button
-          className={!project ? "active" : ""}
-          onClick={() => {
-            setProject("");
-            setSessionAfter("");
-          }}
-        >
-          All projects
-        </button>
-        {projects.data?.items.map((p) => (
-          <button
-            key={p.runtimeId}
-            className={project === p.runtimeId ? "active" : ""}
-            onClick={() => {
-              setProject(p.runtimeId);
-              setSessionAfter("");
-            }}
-          >
-            {p.name || p.alias}
-            <small>{p.status?.state}</small>
-          </button>
-        ))}
-        {after && <button onClick={() => setAfter("")}>First projects</button>}
+        {resource === "sessions" ? (
+          <div className="session-tree" aria-label="Projects and sessions">
+            {projects.data?.items.map((p) => (
+              <SessionTreeGroup
+                key={p.runtimeId}
+                project={p}
+                selected={session}
+                open={!collapsed.has(p.runtimeId)}
+                toggle={() =>
+                  setCollapsed((old) => {
+                    const next = new Set(old);
+                    if (next.has(p.runtimeId)) next.delete(p.runtimeId);
+                    else next.add(p.runtimeId);
+                    return next;
+                  })
+                }
+                select={setSession}
+              />
+            ))}
+          </div>
+        ) : (
+          projects.data?.items.map((p) => (
+            <Button
+              key={p.runtimeId}
+              onClick={() => {
+                setCollapsed((old) => {
+                  const next = new Set(old);
+                  next.delete(p.runtimeId);
+                  return next;
+                });
+                setResource("sessions");
+                setSession("");
+              }}
+            >
+              {p.name || p.alias}
+            </Button>
+          ))
+        )}
+        {after && <Button onClick={() => setAfter("")}>First projects</Button>}
         {projects.data?.next && (
-          <button onClick={() => setAfter(projects.data!.next)}>
+          <Button onClick={() => setAfter(projects.data!.next)}>
             More projects →
-          </button>
+          </Button>
         )}
-        <h2>Sessions</h2>
-        {sessions.data?.items.map((s) => (
-          <button
-            key={s.runtimeId}
-            className={session === s.runtimeId ? "active" : ""}
-            onClick={() => setSession(s.runtimeId)}
-          >
-            {s.name || s.alias}
-            <small>
-              {s.agent} · {s.status?.state}
-            </small>
-          </button>
-        ))}
-        {sessionAfter && (
-          <button onClick={() => setSessionAfter("")}>First sessions</button>
+        {(projects.error || error) && (
+          <p role="alert">{String(projects.error || error)}</p>
         )}
-        {sessions.data?.next && (
-          <button onClick={() => setSessionAfter(sessions.data!.next)}>
-            More sessions →
-          </button>
-        )}
-        {projects.error || sessions.error || error ? (
-          <p role="alert">
-            {String(projects.error || sessions.error || error)}
-          </p>
-        ) : null}
-        {sessions.state === "pending" && !sessions.data && (
-          <p>Loading sessions…</p>
+        {projects.state === "pending" && !projects.data && (
+          <p className="muted">Loading projects…</p>
         )}
       </aside>
-      {session ? (
+      {resource === "projects" ? (
+        <main className="resource-view">
+          <header>
+            <div>
+              <strong>Projects</strong>
+              <small>Select a project to browse its sessions.</small>
+            </div>
+          </header>
+          <div className="resource-view-content">
+            {projects.data?.items.map((p) => (
+              <Button
+                className="project-row"
+                key={p.runtimeId}
+                onClick={() => {
+                  setCollapsed((old) => {
+                    const next = new Set(old);
+                    next.delete(p.runtimeId);
+                    return next;
+                  });
+                  setSession("");
+                  setResource("sessions");
+                }}
+              >
+                <ResourceIcon kind="projects" />
+                <span>
+                  <strong>{p.name || p.alias}</strong>
+                  <small>
+                    {p.workspace || p.alias} · {p.status?.state}
+                  </small>
+                </span>
+                <span aria-hidden="true">→</span>
+              </Button>
+            ))}
+            {projects.state === "pending" && !projects.data && (
+              <p className="muted">Loading projects…</p>
+            )}
+            {projects.data && !projects.data.items.length && (
+              <p className="muted">No projects yet.</p>
+            )}
+          </div>
+        </main>
+      ) : session ? (
         <Conversation
           key={session}
           c={c}
@@ -213,6 +300,11 @@ function Conversation({
     select: { all: true, project: { all: true } },
   });
   const [events, setEvents] = useState<SessionEvent[]>([]);
+  const [metadata, setMetadata] = useState<SessionEvent[]>([]);
+  const catalogRun = useRef("");
+  const composerWrapper = useRef<HTMLDivElement>(null);
+  const tension = useRef(0);
+  const composerInput = useRef<HTMLDivElement>(null);
   const [pending, setPending] = useState<SessionEvent[]>([]);
   const [gap, setGap] = useState(false);
   const [status, setStatus] = useState("Connecting…");
@@ -222,6 +314,39 @@ function Conversation({
   const [follow, setFollow] = useState(true);
   const pane = useRef<HTMLDivElement>(null);
   const lock = useRef(false);
+  const historyRequest = useRef<AbortController | null>(null);
+  const floor = useRef(0n);
+  const latestSeq = useRef(0n);
+  const detached = useRef(false);
+  const eventsRef = useRef(events);
+  eventsRef.current = events;
+  const followRef = useRef(follow);
+  followRef.current = follow;
+  const anchor = useRef<{ seq: string; offset: number } | null>(null);
+  function rememberMetadata(rows: SessionEvent[]) {
+    setMetadata((old) => mergeMetadata(old, rows));
+  }
+  function updateShadow() {
+    const el = pane.current,
+      input = composerInput.current;
+    const wrapper = composerWrapper.current;
+    if (!el || !input || !wrapper) return;
+    const depth = Math.max(0, el.scrollHeight - el.scrollTop - el.clientHeight);
+    const pull = Math.min(1, Math.abs(tension.current) / 20);
+    const length =
+      Math.min(input.offsetHeight, depth / 2) + input.offsetHeight * pull;
+    wrapper.style.setProperty("--shadow-length", `${length}px`);
+    wrapper.style.setProperty(
+      "--shadow-opacity",
+      String(Math.min(1, depth / input.offsetHeight + pull)),
+    );
+  }
+  useEffect(
+    () => () => {
+      historyRequest.current?.abort();
+    },
+    [],
+  );
   useEffect(() => {
     c.drafts.set(id, draft);
   }, [c, id, draft]);
@@ -241,11 +366,16 @@ function Conversation({
         );
         if (canceled) return;
         setPending(snapshot.status?.pending ?? []);
+        const snapshotSeq = snapshot.status?.lastSeq ?? 0n;
+        if (snapshotSeq > latestSeq.current) latestSeq.current = snapshotSeq;
+        if (cursor === 0n && latestSeq.current > BigInt(MAX_EVENTS))
+          cursor = latestSeq.current - BigInt(MAX_EVENTS);
         const history = await c.sessions.history(
           { ref: ref(id), afterSeq: cursor },
           { signal },
         );
         if (canceled) return;
+        rememberMetadata(history.events);
         if (history.events.length) {
           if (cursor > 0n && history.events[0].seq > cursor + 1n) setGap(true);
           cursor = history.events.at(-1)!.seq;
@@ -256,7 +386,9 @@ function Conversation({
               snapshot.status?.lastSeq ?? 0n,
             ),
           );
-          setEvents((old) => mergeEvents(old, history.events));
+          setEvents((old) =>
+            detached.current ? old : mergeEvents(old, history.events),
+          );
         }
         setStatus("Live");
         for await (const e of c.sessions.events(
@@ -264,8 +396,12 @@ function Conversation({
           { signal },
         )) {
           if (canceled) return;
+          rememberMetadata([e]);
           cursor = e.seq > cursor ? e.seq : cursor;
-          setEvents((old) => mergeEvents(old, [e]));
+          if (cursor > latestSeq.current) latestSeq.current = cursor;
+          if (!followRef.current && eventsRef.current.length >= MAX_EVENTS)
+            detached.current = true;
+          setEvents((old) => (detached.current ? old : mergeEvents(old, [e])));
           setPending((old) => pendingAfter(old, [e]));
         }
       } catch (e) {
@@ -292,11 +428,196 @@ function Conversation({
       window.removeEventListener("offline", offline);
     };
   }, [c, id]);
-  useEffect(() => {
-    if (follow && pane.current)
-      pane.current.scrollTop = pane.current.scrollHeight;
+  useLayoutEffect(() => {
+    const el = pane.current;
+    if (!el) return;
+    if (anchor.current) {
+      const saved = anchor.current;
+      const node = el.querySelector<HTMLElement>(`[data-seq="${saved.seq}"]`);
+      if (node) {
+        const delta =
+          node.getBoundingClientRect().top -
+          el.getBoundingClientRect().top -
+          saved.offset;
+        el.scrollTop += delta;
+        el.dispatchEvent(new CustomEvent("history-shift", { detail: delta }));
+      }
+      anchor.current = null;
+    } else if (follow) el.scrollTop = el.scrollHeight;
+    updateShadow();
   }, [events, follow]);
+  function saveAnchor() {
+    const el = pane.current;
+    if (!el) return;
+    const top = el.getBoundingClientRect().top;
+    const node = [...el.querySelectorAll<HTMLElement>("[data-seq]")].find(
+      (item) => item.getBoundingClientRect().bottom > top,
+    );
+    if (node)
+      anchor.current = {
+        seq: node.dataset.seq!,
+        offset: node.getBoundingClientRect().top - top,
+      };
+  }
+  async function loadHistory(direction: "older" | "newer", goLatest = false) {
+    if (historyRequest.current) {
+      if (!goLatest) return;
+      historyRequest.current.abort();
+      historyRequest.current = null;
+    }
+    const old = eventsRef.current;
+    if (!old.length) return;
+    const first = old[0].seq,
+      last = old.at(-1)!.seq;
+    if (
+      !goLatest &&
+      (direction === "older"
+        ? first <= floor.current + 1n
+        : last >= latestSeq.current)
+    )
+      return;
+    if (goLatest && last >= latestSeq.current) {
+      detached.current = false;
+      setFollow(true);
+      if (pane.current) pane.current.scrollTop = pane.current.scrollHeight;
+      return;
+    }
+    const controller = new AbortController();
+    historyRequest.current = controller;
+    try {
+      let cursor = goLatest
+        ? latestSeq.current > BigInt(MAX_EVENTS)
+          ? latestSeq.current - BigInt(MAX_EVENTS)
+          : 0n
+        : direction === "older"
+          ? first > 129n
+            ? first - 129n
+            : 0n
+          : last;
+      let incoming: SessionEvent[] = [];
+      do {
+        const page = await c.sessions.history(
+          { ref: ref(id), afterSeq: cursor },
+          { signal: controller.signal },
+        );
+        const rows =
+          direction === "older" && !goLatest
+            ? page.events.filter((e) => e.seq < first)
+            : page.events;
+        incoming = mergeEvents(incoming, rows);
+        const next = page.events.at(-1)?.seq ?? cursor;
+        if (!goLatest || next <= cursor || next >= latestSeq.current) break;
+        cursor = next;
+      } while (!controller.signal.aborted);
+      if (controller.signal.aborted) return;
+      if (!incoming.length) {
+        if (direction === "older") floor.current = first - 1n;
+        return;
+      }
+      if (!goLatest) saveAnchor();
+      const next = goLatest
+        ? incoming
+        : mergeEvents(eventsRef.current, incoming, direction);
+      detached.current = next.at(-1)!.seq < latestSeq.current;
+      setEvents(next);
+      setFollow(goLatest);
+    } catch (e) {
+      if (!controller.signal.aborted)
+        setError(`Cannot load history: ${String(e)}`);
+    } finally {
+      if (historyRequest.current === controller) historyRequest.current = null;
+    }
+  }
   const s = current.data;
+  const combined = useMemo(
+    () =>
+      [
+        ...new Map([...events, ...metadata].map((e) => [e.seq, e])).values(),
+      ].sort((a, b) => (a.seq < b.seq ? -1 : a.seq > b.seq ? 1 : 0)),
+    [events, metadata],
+  );
+  const info = useMemo(() => sessionInfo(s, combined), [s, combined]);
+  const catalog = useMemo(() => modelCatalog(s, combined), [s, combined]);
+  // A long transcript's model catalog may precede its retained event window.
+  // Read history like the TUI; never send an unsupported slash command to chat.
+  useEffect(() => {
+    const run = s?.status?.runId;
+    if (!run || !events.length || catalog || catalogRun.current === run) return;
+    catalogRun.current = run;
+    const controller = new AbortController();
+    void (async () => {
+      let afterSeq = 0n;
+      while (!controller.signal.aborted) {
+        const page = await c.sessions.history(
+          { ref: ref(id), afterSeq },
+          { signal: controller.signal },
+        );
+        rememberMetadata(page.events);
+        const next = page.events.at(-1)?.seq ?? afterSeq;
+        if (next <= afterSeq || next >= latestSeq.current) break;
+        afterSeq = next;
+      }
+    })().catch((e) => {
+      if (!controller.signal.aborted)
+        setError(`Cannot read model choices: ${String(e)}`);
+    });
+    return () => controller.abort();
+  }, [c, id, s?.status?.runId, events.length > 0]);
+  useEffect(() => {
+    if (!composerInput.current) return;
+    const resize = new ResizeObserver(updateShadow);
+    resize.observe(composerInput.current);
+    return () => resize.disconnect();
+  }, []);
+  async function changeSetting(kind: "model" | "effort", value: string) {
+    if (!catalog || s?.status?.state !== "idle") return;
+    await action(async (session) => {
+      async function apply(name: "model" | "effort", choice: string) {
+        const command = control(session);
+        let afterSeq = latestSeq.current;
+        const receipt = await c.sessions.send({
+          ...command,
+          text: `/${name} ${choice}`,
+        });
+        if (receipt.status === "accepted") return;
+        if (receipt.status === "rejected")
+          throw new Error("Provider rejected the setting");
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 20000);
+        try {
+          while (!controller.signal.aborted) {
+            const page = await c.sessions.history(
+              { ref: ref(id), afterSeq },
+              { signal: controller.signal },
+            );
+            rememberMetadata(page.events);
+            for (const event of page.events) {
+              if (event.requestId !== command.clientId) continue;
+              if (event.kind === "setting" && event.text === name) return;
+              if (
+                event.kind === "setting_status" &&
+                event.text.startsWith("rejected")
+              )
+                throw new Error(event.text);
+              if (
+                event.kind === "receipt" &&
+                payload(event).status === "rejected"
+              )
+                throw new Error("Provider rejected the setting");
+            }
+            afterSeq = page.events.at(-1)?.seq ?? afterSeq;
+            await new Promise((resolve) => setTimeout(resolve, 100));
+          }
+          throw new Error("Provider has not confirmed the setting");
+        } finally {
+          clearTimeout(timeout);
+        }
+      }
+      // The runtime requires clearing an explicit effort before changing models.
+      if (kind === "model" && catalog.effort) await apply("effort", "default");
+      await apply(kind, value);
+    });
+  }
   async function action(fn: (s: Session) => Promise<unknown>) {
     if (lock.current || !s) return;
     lock.current = true;
@@ -327,6 +648,7 @@ function Conversation({
     await action(async (s) => {
       await c.sessions.send({ ...control(s), text: sent });
       setDraft((old) => (old === sent ? "" : old));
+      if (detached.current) await loadHistory("newer", true);
       setFollow(true);
     });
   }
@@ -348,67 +670,56 @@ function Conversation({
   return (
     <main className="conversation">
       <header>
-        <button onClick={back} aria-label="Back to sessions">
+        <Button onClick={back} aria-label="Back to sessions">
           ←
-        </button>
+        </Button>
         <div>
-          <strong>{s?.name || s?.alias || "Session"}</strong>
+          <strong>{s?.alias || s?.runtimeId || "Session"}</strong>
           <small>
             {s?.agent} · {s?.status?.state} · {status}
           </small>
         </div>
-        <details className="actions">
-          <summary>Actions</summary>
-          <button
-            disabled={busy}
-            onClick={() => action((s) => c.sessions.interrupt(control(s)))}
-          >
-            Interrupt turn
-          </button>
-          <button
-            disabled={busy}
-            onClick={() =>
-              action((s) =>
-                c.queries.call(SessionService.method.stop, control(s)),
-              )
-            }
-          >
-            Stop session
-          </button>
-          <button
-            disabled={busy}
-            onClick={() =>
-              action((s) =>
-                c.queries.call(SessionService.method.resume, control(s)),
-              )
-            }
-          >
-            Resume session
-          </button>
-        </details>
       </header>
-      <div
-        className="transcript"
-        ref={pane}
+      <Transcript
+        pane={pane}
+        onTension={(stretch) => {
+          tension.current = stretch;
+          updateShadow();
+        }}
+        older={() => void loadHistory("older")}
+        newer={() => void loadHistory("newer")}
         onScroll={() => {
           const el = pane.current!;
-          setFollow(el.scrollHeight - el.scrollTop - el.clientHeight < 100);
+          updateShadow();
+          setFollow(
+            !detached.current &&
+              el.scrollHeight - el.scrollTop - el.clientHeight < 100,
+          );
         }}
       >
-        <p className="muted">
-          Retained history · up to {MAX_EVENTS} recent events in this view
-          {gap && " · Some events were removed by retention while disconnected"}
-        </p>
+        {gap && (
+          <p className="muted history-note">
+            Earlier history is no longer available.
+          </p>
+        )}
         {events
-          .filter((e) => !["state", "approval_resolved"].includes(e.kind))
+          .filter(
+            (e) =>
+              !["state", "approval_resolved", "models", "usage"].includes(
+                e.kind,
+              ),
+          )
           .map((e) => (
             <EventView key={e.seq.toString()} e={e} agent={s?.agent ?? ""} />
           ))}
-      </div>
+      </Transcript>
       {!follow && (
-        <button className="bottom" onClick={() => setFollow(true)}>
+        <Button
+          className="bottom"
+          onClick={() => void loadHistory("newer", true)}
+        >
           ↓ Latest
-        </button>
+        </Button>
       )}
       <section className="pending">
         {pending.map((e) => (
@@ -427,14 +738,67 @@ function Conversation({
         </p>
       )}
       <form className="composer" onSubmit={send}>
-        <textarea
-          aria-label="Message"
-          placeholder="Continue the conversation…"
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          rows={3}
-        />
-        <button disabled={busy || !s || !draft.trim()}>Send</button>
+        <div className="composer-wrapper" ref={composerWrapper}>
+          <div className="composer-toolbar">
+            <span className="send-control">
+              <Button
+                className="send"
+                type="submit"
+                aria-label="Send"
+                aria-keyshortcuts="Control+Enter"
+                aria-describedby="send-shortcut"
+                disabled={busy || !s || !draft.trim()}
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M12 19V5m-6 6 6-6 6 6" />
+                </svg>
+              </Button>
+              <span id="send-shortcut" className="send-shortcut" role="tooltip">
+                ctrl+enter
+              </span>
+            </span>
+          </div>
+          <div className="composer-input" ref={composerInput}>
+            <textarea
+              aria-label="Message"
+              placeholder="Continue the conversation…"
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (
+                  e.ctrlKey &&
+                  e.key === "Enter" &&
+                  !e.nativeEvent.isComposing
+                ) {
+                  e.preventDefault();
+                  if (!busy && s && draft.trim())
+                    e.currentTarget.form?.requestSubmit();
+                }
+              }}
+              rows={3}
+            />
+          </div>
+        </div>
+        <div className="composer-meta" aria-label="Session information">
+          <ModelSettings
+            session={s}
+            info={info}
+            catalog={catalog}
+            busy={busy}
+            change={(kind, value) => void changeSetting(kind, value)}
+          />
+          <UsageInfo info={info} />
+        </div>
       </form>
     </main>
   );
@@ -442,26 +806,29 @@ function Conversation({
 function EventView({ e, agent }: { e: SessionEvent; agent: string }) {
   if (e.kind === "assistant")
     return (
-      <article>
-        <small>{agent.toUpperCase()}</small>
+      <article data-seq={e.seq.toString()}>
+        <small>
+          {agent ? agent[0].toUpperCase() + agent.slice(1) : "Agent"}
+        </small>
         <Markdown text={e.text} />
-        <button
+        <Button
           className="copy"
           onClick={() => navigator.clipboard.writeText(e.text).catch(() => {})}
         >
           Copy
-        </button>
+        </Button>
       </article>
     );
   if (e.kind === "input")
     return (
-      <article className="input">
+      <article className="input" data-seq={e.seq.toString()}>
         <small>❯ You</small>
-        <p>{e.text}</p>
+        <p className="message-body">{e.text}</p>
       </article>
     );
   return (
     <details
+      data-seq={e.seq.toString()}
       className={e.kind === "diagnostic" || e.kind === "stderr" ? "error" : ""}
     >
       <summary>
@@ -544,7 +911,7 @@ function Approval({
         </p>
       )}
       <div className="buttons">
-        <button
+        <Button
           disabled={
             busy ||
             !!requiresForm ||
@@ -571,10 +938,10 @@ function Approval({
           }
         >
           {qs.length ? "Submit answers" : "Allow"}
-        </button>
-        <button disabled={busy} onClick={() => reply(e, false)}>
+        </Button>
+        <Button disabled={busy} onClick={() => reply(e, false)}>
           Deny
-        </button>
+        </Button>
       </div>
     </section>
   );

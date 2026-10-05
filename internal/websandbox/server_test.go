@@ -54,6 +54,7 @@ func TestSeededJobsAndIsolation(t *testing.T) {
 		s := New(seed, time.Millisecond)
 		defer s.Close()
 		x := &Sessions{S: s}
+		untouched := history(t, x, "session-1")
 		send(t, x, "session-6", "once")
 		send(t, x, "session-6", "once")
 		idle(t, x, "session-6")
@@ -70,7 +71,8 @@ func TestSeededJobsAndIsolation(t *testing.T) {
 		if inputs != 2 {
 			t.Fatalf("duplicate send created %d inputs", inputs)
 		}
-		if len(history(t, x, "session-1")) != 2 {
+		other := history(t, x, "session-1")
+		if len(other) != len(untouched) || other[len(other)-1].GetSeq() != untouched[len(untouched)-1].GetSeq() {
 			t.Fatal("cross-session event leak")
 		}
 		return tools
@@ -160,5 +162,51 @@ func TestApprovalFilteringAndBoundedHistory(t *testing.T) {
 	batch.GetEvents()[0].SetText("external edit")
 	if strings.Contains(history(t, x, "session-3")[maxEvents-1].GetText(), "external edit") {
 		t.Fatal("RPC response aliases state")
+	}
+}
+
+func TestModelControlsDoNotStartChatAndUseModelEfforts(t *testing.T) {
+	s := New(1, time.Millisecond)
+	defer s.Close()
+	x := &Sessions{S: s}
+	configure := func(text, client string) error {
+		_, err := x.Send(t.Context(), resource.SessionSendRequest_builder{Ref: ref("session-1"), Text: proto.String(text), ClientId: proto.String(client)}.Build())
+		return err
+	}
+	if err := configure("/model sandbox-claude-compact", "blocked"); status.Code(err) != codes.FailedPrecondition {
+		t.Fatalf("explicit effort must be cleared: %v", err)
+	}
+	for _, command := range []string{"/effort default", "/model sandbox-claude-compact", "/effort low"} {
+		if err := configure(command, command); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := configure("/effort low", "/effort low"); err != nil {
+		t.Fatal(err)
+	}
+	if err := configure("/effort medium", "unsupported"); status.Code(err) != codes.InvalidArgument {
+		t.Fatalf("compact model accepted unsupported effort: %v", err)
+	}
+	if err := configure("/model invented", "unknown"); status.Code(err) != codes.FailedPrecondition {
+		t.Fatalf("model changed without clearing effort: %v", err)
+	}
+	var inputs, settings int
+	for _, e := range history(t, x, "session-1") {
+		if e.GetKind() == "input" {
+			inputs++
+		}
+		if e.GetKind() == "setting" {
+			settings++
+		}
+	}
+	if inputs != 1 || settings != 3 {
+		t.Fatalf("settings created chat or duplicate event: inputs=%d settings=%d", inputs, settings)
+	}
+	v, err := x.Get(t.Context(), resource.SessionGetRequest_builder{Ref: ref("session-1")}.Build())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if v.GetModel() != "sandbox-claude-compact" || v.GetStatus().GetState() != "idle" {
+		t.Fatal("model control started a turn or failed to apply")
 	}
 }

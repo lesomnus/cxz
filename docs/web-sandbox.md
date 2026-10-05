@@ -30,17 +30,60 @@ from the same Go toolchain that compiled the module.
 The Scenario selector opens one of the sample sessions:
 
 - English answers with Markdown, tables, checklists and code.
-- Long history exceeding the UI's 2,000-event window.
+- Long history exceeding the UI's 2,000-event window, with periodic user prompts
+  to preview scrollbar markers.
 - An approval question using the regular answer controls.
 - A simulated usage-limit/error case.
 - Seeded random tool activity followed by a canned response.
-- A stopped session to exercise resume and stop.
-- A session in a second project to check project filtering.
+- A stopped session to review its status indicator.
+- A session in a second project to check grouped project/session navigation.
 
 Send any text to trigger timed tool events and a preset response. Tools only
-produce fixture events; they never run commands or edit files. Interrupt/stop
-cancel delayed work. Resume creates a new fake run. Approval answers resolve the
-pending question; sending again in that scenario asks another question.
+produce fixture events; they never run commands or edit files. Approval answers
+resolve the pending question; sending again in that scenario asks another question.
+Model/effort dropdowns use simulated provider catalogs and settings commands;
+changing settings does not start a chat turn. Stop/resume and interrupt remain
+available in the fixture RPCs, with lifecycle behavior covered by Go tests.
+
+The resource sidebar switches between Sessions and Projects. Sessions follow
+project/session ordering, without directory icons or branch decoration. Each
+session shows a title, then a monospace alias and model, with a TUI-style activity
+or question indicator. Buttons have no borders and transparent backgrounds until
+hover; pressing uniformly scales their content, capped at 4px along its longest
+edge, and actions trigger on release.
+
+The fixed-width model/effort fields use the current run's provider catalog. Settings
+require an idle session. A model change clears explicit effort first, awaiting
+provider confirmation before applying the model. Missing capabilities disable the
+selectors rather than treating slash commands as chat prompts. Only values open
+styled dropdowns; labels stay inert. The current value overlays its exact original
+text position, separated from other choices. At the screen bottom, choices expand
+upward while the current row stays in place. Keyboard navigation, Escape and
+outside-click dismissal are supported.
+
+The icon-only send button sits on the right of a toolbar above the text input,
+inside a zero-padding wrapper. Its darker background and border frame the input;
+their side and bottom borders overlap. Ctrl+Enter sends, with a hover shortcut.
+Quota uses the TUI's eight Braille cells at the same font size as Model/Effort;
+its intrinsic width and a separate gap keep it clear of the context donut. Hover
+reveals the reset time. Context
+is a donut with a used/capacity token popover. These are simulated snapshots, not
+real account limits. Status snapshots are retained separately from the rendered
+history window. The input extends one corner radius beyond each conversation
+edge. User and assistant headings align, with more padding on message contents.
+The fade above the wrapper uses the page background color. It grows smoothly
+with hidden content below the viewport, up to the input height. Edge tension adds
+up to another input height, then recedes when released.
+
+The conversation hides native scrollbars. Hover reveals a handle and user-prompt
+ticks; approaching the handle widens it. Its local range is capped at twelve
+viewport heights. Prompt ticks and the handle share the same range-rebase
+animation, with stable event identities. During edge tension, the handle stays
+pinned while prompt ticks continue to move in phase with the passing transcript.
+Dragging beyond either end applies a saturating spring while accelerating
+scrolling through adjacent ranges. Older/newer journal pages replace
+the opposite end of the 2,000-event rendering window, preserving the visible
+message's position. Paging stops at the server's retained history boundary.
 
 **Reset sandbox** recreates the entire Worker, discarding drafts, history and
 pending work, and applies the Seed and Pace controls. Identical seeds and the same
@@ -59,7 +102,11 @@ npm run --prefix ts test:sandbox
 The first builds a standalone static preview into `ts/dist-sandbox`; the second
 uses Playwright Chromium to test that build (install the Playwright browser and
 OS dependencies first). It covers real WASM RPC, sending, approval, long history,
-stop/resume, reset and seed replay without HTTP RPC/auth requests.
+model/effort selection, reset and seed replay without HTTP RPC/auth requests.
+Desktop checks also cover project/session ordering, heading/input alignment,
+Ctrl+Enter, fixed field positions, quota/context popovers, bounded button press
+scaling, background fades with tension, overlapping input borders, scrollbar prompt phase
+at both edges, hover/stretch and older/latest paging.
 
 Serve a static build at the origin root, preserving its Worker/WASM assets and
 application/wasm MIME type. `npx vite preview --config vite.sandbox.config.ts`

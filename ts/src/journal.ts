@@ -3,12 +3,16 @@ export const MAX_EVENTS = 2000;
 export function mergeEvents(
   previous: SessionEvent[],
   incoming: SessionEvent[],
+  edge: "older" | "newer" = "newer",
 ) {
   const map = new Map(previous.map((e) => [e.seq, e]));
   for (const e of incoming) map.set(e.seq, e);
-  return [...map.values()]
-    .sort((a, b) => (a.seq < b.seq ? -1 : a.seq > b.seq ? 1 : 0))
-    .slice(-MAX_EVENTS);
+  const sorted = [...map.values()].sort((a, b) =>
+    a.seq < b.seq ? -1 : a.seq > b.seq ? 1 : 0,
+  );
+  return edge === "older"
+    ? sorted.slice(0, MAX_EVENTS)
+    : sorted.slice(-MAX_EVENTS);
 }
 export function payload(e: SessionEvent): Record<string, any> {
   try {
