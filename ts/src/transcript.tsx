@@ -12,7 +12,7 @@ import {
 
 import type { SessionEvent } from "../gen/cxz/session_pb";
 import { VirtualMessages } from "./virtual-messages";
-import { Button } from "./button";
+import { PinnedPrompt } from "./pinned-prompt";
 import type { MessageMap } from "./virtual-layout";
 
 type Geometry = {
@@ -87,7 +87,6 @@ export function Transcript({
   newer: () => void;
 }) {
   const content = useRef<HTMLDivElement>(null);
-  const pinnedButton = useRef<HTMLDivElement>(null);
   const [pinned, setPinned] = useState<{
     prompt: SessionEvent | undefined;
     peek: number;
@@ -149,8 +148,9 @@ export function Transcript({
     }
     el.dispatchEvent(new Event("scroll-jump"));
     callbacks.current.onNavigate();
-    el.scrollTop = Math.max(0, map.origin + row.top + 6);
+    el.scrollTop = Math.max(0, map.origin + row.top + 6 - 18);
     scrolled();
+    el.dispatchEvent(new CustomEvent("reading-anchor", { detail: seq }));
     el.focus({ preventScroll: true });
   }
   useLayoutEffect(() => {
@@ -581,39 +581,15 @@ export function Transcript({
         aria-hidden="true"
       />
       {prompt && (
-        <div
-          className="pinned-prompt"
-          ref={pinnedButton}
-          data-pinned-seq={prompt.seq.toString()}
-          data-available={peek > 0}
-          inert={peek === 0}
-          aria-hidden={peek === 0}
-          style={
-            {
-              "--prompt-peek": `${8 * peek}px`,
-              opacity: peek,
-              "--prompt-height": `${Math.min(180, (view.viewport || 720) * 0.25)}px`,
-            } as React.CSSProperties
-          }
-        >
-          <div
-            className="pinned-prompt-proximity"
-            aria-hidden="true"
-            onPointerDown={() =>
-              pinnedButton.current
-                ?.querySelector("button")
-                ?.focus({ preventScroll: true })
-            }
-          />
-          <Button
-            type="button"
-            aria-label="Jump to user message"
-            onClick={() => jumpToPrompt(prompt.seq.toString())}
-          >
-            <small>❯ You</small>
-            <span className="message-body">{prompt.text}</span>
-          </Button>
-        </div>
+        <PinnedPrompt
+          prompt={prompt}
+          peek={peek}
+          height={Math.min(180, (view.viewport || 720) * 0.25)}
+          jump={(seq) => {
+            jumpToPrompt(seq);
+            pane.current?.focus({ preventScroll: true });
+          }}
+        />
       )}
       <div className="scroll-track" ref={track} aria-hidden={view.max === 0}>
         <div className="scroll-markers">

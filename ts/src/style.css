@@ -346,9 +346,13 @@ header strong {
   transform: translateY(calc(-100% + var(--prompt-peek)));
   transition: transform 180ms ease-out;
 }
-.pinned-prompt[data-available="true"]:hover > button,
-.pinned-prompt[data-available="true"]:focus-within > button {
+.pinned-prompt[data-expanded="true"] > button {
   transform: translateY(0);
+}
+.pinned-prompt[data-dismissed="true"],
+.pinned-prompt[data-dismissed="true"] > button {
+  transition: none;
+  animation: none;
 }
 @media (prefers-reduced-motion: reduce) {
   .pinned-prompt,

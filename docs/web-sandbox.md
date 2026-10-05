@@ -124,9 +124,14 @@ its bottom edge (up to 8px) and opacity fade in together. Missing edges impose
 no limit.
 The hidden overlay cannot capture clicks or focus. Approaching the top 28px of
 the conversation column or focusing the available button slides the box down
-in 180ms. Touching the approach area focuses and reveals it. Long inputs are
+in 180ms. Once expanded it stays open for at least three seconds, even after
+the pointer leaves; leaving after that minimum grants one more second. Returning
+cancels the pending close. Focus keeps it expanded too. Touching the approach
+area focuses and reveals it. Long inputs are
 bounded to 180px or 25% of the viewport and scroll independently. Clicking returns
-to the original position, including when its row has left the cache. The overlay
+to the original position with 18px above the input, preserving that gap through
+row measurement. Clicks dismiss the overlay instantly, bypassing hold timers and
+fade animations, including while an uncached input loads. The overlay
 contributes no height to the virtual transcript and never tracks scroll offsets.
 
 The accepted handle/marker experience, numeric parameters, restoration steps and

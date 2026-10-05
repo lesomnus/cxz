@@ -102,13 +102,30 @@ test("preceding input peeks below the title without following scroll and reveals
   });
   expect(belowFade).toBe(true);
   await reveal(page);
+  await pinned.evaluate((el) =>
+    el.addEventListener(
+      "click",
+      () => {
+        requestAnimationFrame(() => {
+          const overlay = document.querySelector<HTMLElement>(".pinned-prompt");
+          document.querySelector<HTMLElement>(
+            ".transcript",
+          )!.dataset.dismissedOpacity = overlay
+            ? getComputedStyle(overlay).opacity
+            : "0";
+        });
+      },
+      { once: true },
+    ),
+  );
   await pinned.click();
+  await expect(pane).toHaveAttribute("data-dismissed-opacity", "0");
   const original = pane.locator(`article.input[data-seq="${seq}"]`);
   await expect(original).toBeVisible();
   await expect
     .poll(async () =>
       Math.abs(
-        (await original.boundingBox())!.y - (await pane.boundingBox())!.y,
+        (await original.boundingBox())!.y - (await pane.boundingBox())!.y - 18,
       ),
     )
     .toBeLessThan(1);
@@ -135,6 +152,46 @@ test("preceding input peeks below the title without following scroll and reveals
     pane.locator(`article.input[data-seq="${previous}"]`),
   ).toBeVisible();
   expect(await pane.locator("[data-row]").count()).toBeLessThan(40);
+});
+
+test("the expanded input holds for three seconds, grants a leave delay and cancels closing on return", async ({
+  page,
+}) => {
+  await openLong(page);
+  const overlay = page.locator(".pinned-prompt");
+  const button = overlay.locator("button");
+  await reveal(page);
+  await expect(overlay).toHaveAttribute("data-expanded", "true");
+  await page.mouse.move(10, 10);
+  await page.waitForTimeout(2000);
+  await expect(overlay).toHaveAttribute("data-expanded", "true");
+  await expect(overlay).toHaveAttribute("data-expanded", "false", {
+    timeout: 2000,
+  });
+  await expect
+    .poll(async () => {
+      const box = (await button.boundingBox())!;
+      return (
+        box.y +
+        box.height -
+        (await page.locator(".transcript").boundingBox())!.y
+      );
+    })
+    .toBeCloseTo(8, 0);
+  await reveal(page);
+  await page.waitForTimeout(3100);
+  await page.mouse.move(10, 10);
+  await page.waitForTimeout(600);
+  await expect(overlay).toHaveAttribute("data-expanded", "true");
+  await reveal(page);
+  await page.waitForTimeout(500);
+  await expect(overlay).toHaveAttribute("data-expanded", "true");
+  await page.mouse.move(10, 10);
+  await page.waitForTimeout(600);
+  await expect(overlay).toHaveAttribute("data-expanded", "true");
+  await expect(overlay).toHaveAttribute("data-expanded", "false", {
+    timeout: 1500,
+  });
 });
 
 test("the preceding input only peeks after the nearest visible input clears the top", async ({
@@ -315,10 +372,22 @@ test("a long pinned input stays bounded and its own wheel does not move the tran
   const message = page.getByRole("textbox", { name: "Message", exact: true });
   await message.fill(text);
   await message.press("Control+Enter");
+  // Finish the streamed response before resizing; this test exercises the
+  // bounded overlay and nested wheel, independently of concurrent send/resize.
+  await expect(
+    page.getByRole("heading", { name: "Preview ready", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator(".conversation header small")).toContainText(
+    "idle",
+  );
   const pinned = page.getByRole("button", { name: "Jump to user message" });
   // The tall input remains partly visible at the latest position in a tall
   // viewport. A shorter viewport fits inside its response, clearing the input.
   await page.setViewportSize({ width: 1440, height: 600 });
+  await page.locator(".transcript").evaluate((el) => {
+    el.scrollTop = el.scrollHeight;
+    window.scrollTo(0, 0);
+  });
   await expect(pinned).toContainText("Pinned input line 100");
   await expect(page.locator(".conversation header small")).toContainText(
     "idle",

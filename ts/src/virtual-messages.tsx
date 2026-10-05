@@ -48,6 +48,7 @@ export function VirtualMessages({
   const latest = useRef({ layout, follow, changed });
   latest.current = { layout, follow, changed };
   const anchor = useRef<{ id: string; offset: number } | null>(null);
+  const jumpAnchor = useRef<{ id: string; top: number } | null>(null);
   const observer = useRef<ResizeObserver | null>(null);
   const width = useRef(0);
   const lastPrompt = useRef<SessionEvent | undefined>(undefined);
@@ -56,7 +57,14 @@ export function VirtualMessages({
     const el = pane.current;
     if (!el) return;
     const rows = latest.current.layout.rows;
+    const preferred = jumpAnchor.current;
+    const target =
+      preferred && el.scrollTop === preferred.top
+        ? rows.find((row) => row.id === preferred.id)
+        : undefined;
+    if (!target) jumpAnchor.current = null;
     const row =
+      target ??
       rows[rowAt(rows, Math.max(0, el.scrollTop - root.current!.offsetTop))];
     anchor.current = row
       ? { id: row.id, offset: row.top + root.current!.offsetTop - el.scrollTop }
@@ -96,11 +104,30 @@ export function VirtualMessages({
     observer.current.observe(el);
     for (const row of root.current!.querySelectorAll<HTMLElement>("[data-row]"))
       observer.current.observe(row);
+    const anchored = (event: Event) => {
+      const id = (event as CustomEvent<string>).detail;
+      const row = latest.current.layout.rows.find((row) => row.id === id);
+      if (!row) return;
+      // A jump leaves a small gap above the target. Preserve that target's
+      // position through measurement, instead of anchoring the row above it.
+      jumpAnchor.current = { id, top: el.scrollTop };
+      anchor.current = {
+        id,
+        offset: row.top + root.current!.offsetTop - el.scrollTop,
+      };
+    };
+    const resetAnchor = () => {
+      jumpAnchor.current = null;
+    };
+    el.addEventListener("reading-anchor", anchored);
+    el.addEventListener("scroll-jump", resetAnchor);
     el.addEventListener("scroll", remember);
     el.addEventListener("reading-move", remember);
     remember();
     return () => {
       observer.current?.disconnect();
+      el.removeEventListener("reading-anchor", anchored);
+      el.removeEventListener("scroll-jump", resetAnchor);
       el.removeEventListener("scroll", remember);
       el.removeEventListener("reading-move", remember);
     };
@@ -119,6 +146,8 @@ export function VirtualMessages({
       else if (row)
         el.scrollTop =
           row.top + root.current!.offsetTop - anchor.current!.offset;
+      if (jumpAnchor.current && row?.id === jumpAnchor.current.id)
+        jumpAnchor.current.top = el.scrollTop;
       const delta = el.scrollTop - before;
       if (delta)
         el.dispatchEvent(new CustomEvent("history-shift", { detail: delta }));
