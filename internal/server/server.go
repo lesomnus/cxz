@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/internal/agentview"
+	"github.com/lesomnus/cxz/internal/conversation"
 	"github.com/lesomnus/cxz/internal/distribution"
 	"github.com/lesomnus/cxz/internal/mcpruntime"
 	"net"
@@ -167,6 +168,15 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 	resources, e := lifecycle.Build(ctx, resourceDB, s)
 	if e != nil {
 		return fmt.Errorf("build payday resource server: %w", e)
+	}
+	if s.manager != nil {
+		registry, err := conversation.StartRegistry(conversation.Socket, s.manager.AuthorizeConversation, func(ctx context.Context, project string) ([]conversation.Session, error) {
+			return conversation.RegistryFromResources(ctx, project, resources.Session().List)
+		})
+		if err != nil {
+			return err
+		}
+		defer registry.Close()
 	}
 	if s.manager == nil {
 		observeCtx, stopObserve := context.WithCancel(ctx)
