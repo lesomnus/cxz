@@ -46,6 +46,7 @@ func newProjectCommand(name string) *xli.Command {
 	}
 	if name == "recreate" {
 		c.Flags = append(c.Flags, switchFlag("yes", "Confirm writable-layer loss and editor disconnection"))
+		c.Brief += "; " + allProjects + " replaces every running project"
 	}
 	return c
 }
@@ -103,6 +104,12 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 	command := c.Name
 	projectEntry := command == "up" && c.Parent().Name == "cxz"
 	path := arg.MustGet[string](c, "WORKSPACE")
+	if isAllProjects(path) {
+		if command != "recreate" {
+			return fmt.Errorf("%s is accepted only by cxz project recreate", path)
+		}
+		return recreateAllProjects(ctx, client, c)
+	}
 	if projectEntry {
 		target := path
 		if st, err := os.Stat(target); err == nil && st.IsDir() {
