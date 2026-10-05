@@ -85,6 +85,9 @@ func panelLayout(rows []panelRow) []int {
 			layout = append(layout, -1)
 		}
 		layout = append(layout, i)
+		if row.session != nil {
+			layout = append(layout, i)
+		}
 	}
 	return layout
 }
@@ -101,6 +104,9 @@ func (m *model) panelPosition(layout []int) int {
 func (m *model) panelRange(layout []int) (start, end int) {
 	capacity := max(1, m.height-projectPanelHeaderRows-projectPanelFooterRows)
 	start = max(0, min(m.panelPosition(layout)-capacity+3, len(layout)-capacity))
+	if start > 0 && layout[start] >= 0 && layout[start] == layout[start-1] {
+		start--
+	}
 	return start, min(len(layout), start+capacity)
 }
 
@@ -548,12 +554,23 @@ func (m *model) panelScreen() string {
 				line += " · " + pickerLabel(s.State)
 			}
 		}
+		continuation := r.session != nil && position > 0 && layout[position-1] == i
+		if r.session != nil && !continuation {
+			title := strings.TrimSpace(r.session.Title)
+			if title == "" {
+				title = "Untitled"
+			}
+			line = ansi.Truncate(pickerLabel(title), max(1, width-4), "...")
+		}
 		prefix := "  "
 		if current := m.current(); current != nil && !m.projectView && r.session != nil && current.Id == r.session.Id {
 			prefix = "• "
 		}
 		if i == m.panelIndex && m.panelFocus {
 			prefix = "› "
+		}
+		if continuation {
+			prefix = "  "
 		}
 		if r.session == nil && r.project.State != "connection" && projectPanelHeaderRows+position-start == m.panelHoverY {
 			labelWidth := max(0, width-5)
@@ -586,7 +603,8 @@ func (m *model) panelScreen() string {
 		shade := 236
 		if i >= projectPanelHeaderRows && i < projectPanelHeaderRows+end-start {
 			item := layout[start+i-projectPanelHeaderRows]
-			if item >= 0 && i == m.panelHoverY {
+			hoverPosition := start + m.panelHoverY - projectPanelHeaderRows
+			if item >= 0 && m.panelHoverY >= projectPanelHeaderRows && hoverPosition >= 0 && hoverPosition < len(layout) && layout[hoverPosition] == item {
 				shade = 237
 			}
 			if item >= 0 && m.panelFocus && item == m.panelIndex {

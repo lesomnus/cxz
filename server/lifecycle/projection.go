@@ -166,8 +166,8 @@ func (s Layer) saveSession(ctx context.Context, v *api.Session, clientID string)
 			return nil, e
 		}
 	}
-	if old.GetStatus().GetLastSeq() > state.GetLastSeq() || (old.GetListed() && proto.Equal(old.GetStatus(), state)) {
+	if old.GetStatus().GetLastSeq() > state.GetLastSeq() || (old.GetListed() && proto.Equal(old.GetStatus(), state) && old.GetName() == v.Title) {
 		return old, nil
 	}
-	return srv.Patch(ctx, resource.SessionPatchRequest_builder{Ref: ref, Status: state, Listed: ptr(true), DateUpdatedForce: ptr(true)}.Build())
+	return srv.Patch(ctx, resource.SessionPatchRequest_builder{Ref: ref, Name: ptr(v.Title), Status: state, Listed: ptr(true), DateUpdatedForce: ptr(true)}.Build())
 }

@@ -13,6 +13,7 @@ type slashCommand struct{ name, description string }
 var slashCommands = []slashCommand{
 	{"/help", "Categories, shortcuts and command examples"},
 	{"/context", "Inspect current context"},
+	{"/title", "Generate or manually set the session title"},
 	{"/summary", "Summary below the response; on or off for this session, or once while off"},
 	{"/suggest", "Ghost suggestion; on or off for this session, or once while off"},
 	{"/compact", "Compact agent context"},

@@ -2286,6 +2286,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if localName == "/memory" {
 				return m, m.openMemory(m.current())
 			}
+			if localName == "/title" {
+				return m, m.titleCommand(text)
+			}
 			if localName == "/summary" || localName == "/suggest" {
 				return m, m.auxiliaryCommand(text)
 			}

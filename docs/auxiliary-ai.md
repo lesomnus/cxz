@@ -1,11 +1,11 @@
 # Auxiliary AI
 
-Two optional background tasks that read a conversation and produce something short:
+Three optional background tasks that read a conversation and produce something short:
 a **summary** of what has happened, and a **suggestion** for what you might send
-next.
+next, and a **session title** for the project sidebar.
 
 They run on their own account and model, separate from the agent doing the work.
-Both are **off by default**.
+All are **off by default**.
 
 ## Turning them on
 
@@ -189,3 +189,26 @@ Use values from `cxz ai models`. Omitting `--effort` takes the provider's defaul
 `cancel` cancels the auxiliary task only, never the conversation.
 
 Design notes: [plans/auxiliary-ai.md](plans/auxiliary-ai.md) (Korean).
+
+## Session titles
+
+Configure **Session title** in AI tasks with the same account/model/effort picker.
+For sessions created after enabling it, the first user input generates a draft;
+the third successfully completed turn generates the final title. Failed turns do
+not count. Titles do not periodically change afterward. Existing sessions are
+not automatically renamed.
+
+The English prompt requests a short title in the conversation's language. Only
+bounded user requests and final answers from up to three turns are included;
+available turn summaries can replace final answers. Tool output is excluded.
+Naming uses separate, short auxiliary requests and shares existing account login.
+
+Use `/title` to regenerate from retained completed conversation, or `/title set My title` to assign a title without AI. Both end automatic naming for that session.
+The CLI equivalents are `cxz ai title SESSION` and `cxz ai title SESSION --text "My title"`. Generation needs a configured title profile and an idle session;
+manual naming does not. `cxz ai status SESSION` includes title errors and state.
+
+The TUI sidebar uses two rows per session: title, then the existing alias/agent/state
+line. Empty titles display **Untitled**; long titles end with `...`. Titles persist
+across Manager restarts and are independent of the session alias and UUID. No DB
+reset is required. Background inventory reconciliation also publishes titles of
+sessions that are not currently open (normally within 30 seconds).

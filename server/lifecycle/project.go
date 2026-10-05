@@ -253,6 +253,24 @@ func (s ProjectServer) Docker(ctx context.Context, r *resource.DockerRequest) (*
 	if err != nil {
 		return nil, err
 	}
+	// Publish completed title metadata on the existing auxiliary status path,
+	// without scanning project runtimes or waiting for inventory reconciliation.
+	if r.GetAction() == "auxiliary" {
+		var q auxiliary.Request
+		var reply auxiliary.Reply
+		if json.Unmarshal(spec, &q) == nil && json.Unmarshal([]byte(out.Status), &reply) == nil && q.Session != "" && reply.Title != nil && reply.Title.Text != "" {
+			ref := sessionRef(q.Session)
+			current, e := s.Next().Session().Get(ctx, resource.SessionGetRequest_builder{Ref: ref, Select: resource.SessionSelect_builder{All: ptr(true)}.Build()}.Build())
+			if e != nil {
+				return nil, e
+			}
+			if current.GetName() != reply.Title.Text {
+				if _, e := s.Next().Session().Patch(ctx, resource.SessionPatchRequest_builder{Ref: ref, Name: ptr(reply.Title.Text), DateUpdatedForce: ptr(true)}.Build()); e != nil {
+					return nil, e
+				}
+			}
+		}
+	}
 	return resource.DockerReply_builder{Status: &out.Status}.Build(), nil
 }
 

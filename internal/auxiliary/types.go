@@ -18,14 +18,18 @@ type Profile struct {
 	Effort  string `json:"effort,omitempty"`
 }
 type Config struct {
+	Title      Profile `json:"title"`
+	TitleSince int64   `json:"title_since"`
 	Since      int64   `json:"since"`
 	Revision   string  `json:"revision"`
 	Summary    Profile `json:"summary"`
 	Suggestion Profile `json:"suggestion"`
 }
 
-func (c Config) Configured() bool { return c.Summary.Account != "" || c.Suggestion.Account != "" }
-func (c Config) Active() bool     { return c.Summary.Enabled || c.Suggestion.Enabled }
+func (c Config) Configured() bool {
+	return c.Summary.Account != "" || c.Suggestion.Account != "" || c.Title.Account != ""
+}
+func (c Config) Active() bool { return c.Summary.Enabled || c.Suggestion.Enabled }
 func (p Profile) Validate() error {
 	if !p.Enabled && p.Account == "" {
 		return nil
@@ -58,6 +62,7 @@ func ValidateModel(p Profile, models []agentview.ModelOption) error {
 }
 
 type Request struct {
+	Text    string  `json:"text,omitempty"`
 	Action  string  `json:"action"`
 	Enabled *bool   `json:"enabled,omitempty"`
 	Task    string  `json:"task,omitempty"`
@@ -65,6 +70,7 @@ type Request struct {
 	Session string  `json:"session,omitempty"`
 }
 type Reply struct {
+	Title         *TitleState             `json:"title,omitempty"`
 	NeedsLogin    bool                    `json:"needs_login,omitempty"`
 	Summaries     []Summary               `json:"summaries,omitempty"`
 	SessionConfig *SessionConfig          `json:"session_config,omitempty"`
@@ -125,6 +131,7 @@ type Usage struct {
 	Data    json.RawMessage `json:"data,omitempty"`
 }
 type Output struct {
+	Title      string                  `json:"title"`
 	NeedsLogin bool                    `json:"needs_login,omitempty"`
 	Summary    string                  `json:"summary"`
 	Suggestion string                  `json:"suggestion"`

@@ -189,7 +189,7 @@ func TestPanelSessionIndicatorSpacing(t *testing.T) {
 		m.Update(tea.WindowSizeMsg{Width: width, Height: 24})
 		m.focusPanel()
 		text := ansi.Strip(m.panelScreen())
-		if !strings.Contains(text, "\n › ⣟ cedar · claude") {
+		if !strings.Contains(text, "\n › Untitled") || !strings.Contains(text, "\n   ⣟ cedar · claude") {
 			t.Fatal("session indentation or cursor gap is wrong", width, text)
 		}
 	}
