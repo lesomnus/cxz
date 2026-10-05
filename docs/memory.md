@@ -112,3 +112,11 @@ evicted marker, or its index was recreated, the response has
 a cursor. This makes deletion retention bounded without silently missing changes.
 The hidden `.changes.json` index contains metadata and hashes, never document
 bodies; it should not be manually edited.
+
+## Referencing session conversations
+
+The same built-in MCP server also exposes `session_lookup`, `conversation_search`,
+and `conversation_read` for retained conversations in this project. Search returns
+metadata only; read selected events inline or export a fixed JSONL snapshot for
+local tools. See [conversation tools](conversation-tools.md) for UUID/alias handling,
+time filters, limits, retention and runtime update requirements.

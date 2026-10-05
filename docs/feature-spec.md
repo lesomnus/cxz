@@ -64,6 +64,7 @@ linked guides explain existing behavior; correct these documents when code chang
 | MEM-02 | Memory lifecycle | Snapshot, copy, combine, rename, import native Markdown, start from memory, trash, restore and permanently remove with ownership and revision checks. |
 | MEM-03 | Native agent data | Browse original provider memory/history separately from shared cxz Markdown. |
 | MEM-04 | Memory maintenance | Maintain topic documents, review temporary information against recorded conditions and preserve valid decisions. This is agent guidance, not automatic deletion or a separate compact UI. |
+| MEM-05 | Cross-session conversation reference | Resolve project session aliases to UUIDs; search retained events by text/RE2 and time using metadata-only results, then read selected events or export bounded JSONL snapshots. Preserve retention boundaries and secret-file references. |
 | MCP-01 | MCP configuration | Register/remove servers; manage global activation defaults and independent project overrides/inheritance. |
 | MCP-02 | MCP operations | Inspect server logs and reconnect the selected session MCP without implicitly restarting its agent. |
 | SKILL-01 | Skills configuration | Manage skill registrations and global/project activation/inheritance; source files remain on the configured host. |
