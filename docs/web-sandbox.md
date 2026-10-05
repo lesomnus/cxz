@@ -110,9 +110,11 @@ anchor prevent jumps during measurement, resizing and page replacement. The
 conversation follows new events only while actually at the bottom. Paging stops
 at the server's retained history boundary. The latest user input preceding the
 reading position sits in a fixed overlay below the title, outside the scrolling
-canvas. It stays hidden while a visible user input box straddles the upper edge
-or is within 24px of it. Across 24–56px of clearance, its bottom edge (up to 8px)
-and opacity fade in together; it fully peeks if no input box is currently visible.
+canvas. It uses equal clearance above and below the upper edge: the bottom of
+the last passing user input and the top of the next visible input. Either edge
+within 96px hides it, including a straddling input. Across 96–128px of clearance,
+its bottom edge (up to 8px) and opacity fade in together. Missing edges impose
+no limit.
 The hidden overlay cannot capture clicks or focus. Approaching the top 28px of
 the conversation column or focusing the available button slides the box down
 in 180ms. Touching the approach area focuses and reveals it. Long inputs are

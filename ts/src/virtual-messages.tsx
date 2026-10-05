@@ -184,18 +184,23 @@ export function VirtualMessages({
           ? remembered
           : undefined));
   if (prompt) lastPrompt.current = prompt;
-  // A partially visible input occupies the top edge too. Only expose the
-  // preceding input once every visible input box has cleared the approach area.
+  // Apply the same clearance on both sides of the top edge: the next visible
+  // input's top and the last passing input's bottom. Partial inputs leave no gap.
   const closest = layout.rows.find(
     (row) =>
       row.prompt &&
       row.top + row.height - 6 > viewport.offset &&
       row.top + 6 < viewport.offset + viewport.height,
   );
-  const gap = closest
+  const nextGap = closest
     ? Math.max(0, closest.top + 6 - viewport.offset)
     : Infinity;
-  const progress = Math.max(0, Math.min(1, (gap - 24) / 32));
+  const previousRow = promptIndex >= 0 ? layout.rows[promptIndex] : undefined;
+  const previousGap = previousRow
+    ? Math.max(0, viewport.offset - (previousRow.top + previousRow.height - 6))
+    : Infinity;
+  const gap = Math.min(nextGap, previousGap);
+  const progress = Math.max(0, Math.min(1, (gap - 96) / 32));
   const peek = progress * progress * (3 - 2 * progress);
   useLayoutEffect(() => {
     onPromptChange(prompt, peek);

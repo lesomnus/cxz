@@ -183,7 +183,7 @@ test("the preceding input only peeks after the nearest visible input clears the 
   ).toBe(true);
   await page.mouse.move(10, 10);
   // A large distance change must fade, rather than appearing in one frame.
-  await gap(56);
+  await gap(129);
   const samples = await overlay.evaluate(async (el) => {
     const opacity: number[] = [];
     for (let i = 0; i < 16; i++) {
@@ -201,22 +201,67 @@ test("the preceding input only peeks after the nearest visible input clears the 
       return box.y + box.height - area.y;
     })
     .toBeCloseTo(8, 0);
-  await gap(40);
+  await gap(112);
   await expect
     .poll(() => overlay.evaluate((el) => Number(getComputedStyle(el).opacity)))
-    .toBeCloseTo(0.5, 2);
+    .toBeCloseTo(0.5, 1);
   await expect
     .poll(async () => {
       const box = (await button.boundingBox())!;
       return box.y + box.height - area.y;
     })
     .toBeCloseTo(4, 0);
-  await gap(23);
+  await gap(95);
   await expect(overlay).toHaveAttribute("inert", "");
   await expect(overlay).toHaveCSS("opacity", "0");
   // When the input still straddles the upper edge, its predecessor stays hidden.
   await gap(-10);
   await expect(overlay).toHaveAttribute("data-available", "false");
+  await expect(overlay).toHaveCSS("opacity", "0");
+  // Moving downward past the same input uses its bottom edge, with the same
+  // 96..128px ramp as the next input's top edge. No next input is required.
+  async function past(pixels: number) {
+    await input.evaluate((el, pixels) => {
+      const pane = el.closest(".transcript")!;
+      pane.scrollTop +=
+        el.getBoundingClientRect().bottom -
+        pane.getBoundingClientRect().top +
+        pixels;
+      pane.dispatchEvent(new Event("reading-move"));
+    }, pixels);
+    await expect
+      .poll(
+        async () =>
+          (await pane.boundingBox())!.y -
+          (await input.boundingBox())!.y -
+          (await input.boundingBox())!.height,
+      )
+      .toBeCloseTo(pixels, 0);
+  }
+  await past(95);
+  await expect(overlay).toHaveAttribute("data-pinned-seq", seq);
+  await expect(overlay).toHaveAttribute("inert", "");
+  await expect(overlay).toHaveCSS("opacity", "0");
+  await past(112);
+  await expect
+    .poll(() => overlay.evaluate((el) => Number(getComputedStyle(el).opacity)))
+    .toBeCloseTo(0.5, 1);
+  await expect
+    .poll(async () => {
+      const box = (await button.boundingBox())!;
+      return box.y + box.height - area.y;
+    })
+    .toBeCloseTo(4, 0);
+  await past(129);
+  await expect(overlay).toHaveCSS("opacity", "1");
+  await expect
+    .poll(async () => {
+      const box = (await button.boundingBox())!;
+      return box.y + box.height - area.y;
+    })
+    .toBeCloseTo(8, 0);
+  await past(95);
+  await expect(overlay).toHaveAttribute("inert", "");
   await expect(overlay).toHaveCSS("opacity", "0");
 });
 
