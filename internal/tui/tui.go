@@ -138,6 +138,7 @@ type model struct {
 	input                   textarea.Model
 	composerSelection       *composerSelection
 	composerLayout          *composerLayout
+	showInputWhitespace     bool
 	drafts                  map[string]string
 	localHelp               map[string]uint64
 	localOutput             map[string]string

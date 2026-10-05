@@ -207,6 +207,10 @@ func (m *model) composerKey(k tea.KeyMsg) (bool, tea.Cmd) {
 	if !m.composerAvailable() || m.panelFocus || m.focusList || m.focusApproval {
 		return false, nil
 	}
+	if !k.Paste && k.String() == "alt+w" {
+		m.showInputWhitespace = !m.showInputWhitespace
+		return true, nil
+	}
 	// Word-wise selection reuses the widget's own word motion, so what
 	// ctrl+left selects is exactly what ctrl+left would have walked over.
 	moves := map[string]tea.KeyType{
