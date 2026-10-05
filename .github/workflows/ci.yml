@@ -12,8 +12,8 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: cxz-ci-${{ github.ref }}
-  # Finish main publication/cleanup before the next publisher can start.
+  group: cxz-ci-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  # Cancel superseded PR checks; main validation runs independently.
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   web:
@@ -24,7 +24,16 @@ jobs:
       - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version-file: go.mod
-          cache: true
+          cache: false
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+            ~\AppData\Local\go-build
+          key: go-v2-${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-${{ hashFiles('go.mod', 'go.sum') }}-${{ github.sha }}
+          restore-keys: |
+            go-v2-${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-${{ hashFiles('go.mod', 'go.sum') }}-
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 24
@@ -49,7 +58,16 @@ jobs:
       - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version-file: go.mod
-          cache: true
+          cache: false
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+            ~\AppData\Local\go-build
+          key: go-v2-${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-${{ hashFiles('go.mod', 'go.sum') }}-${{ github.sha }}
+          restore-keys: |
+            go-v2-${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-${{ hashFiles('go.mod', 'go.sum') }}-
       - run: go test ./cmd/cxz ./internal/transport ./internal/core ./internal/settings ./internal/selfupdate ./internal/cxzupdate ./internal/versionpin
       - run: go test ./internal/tui -run TestWindows -count=1
       - run: go build -o cxz.exe ./cmd/cxz
@@ -94,7 +112,16 @@ jobs:
       - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version-file: go.mod
-          cache: true
+          cache: false
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+            ~\AppData\Local\go-build
+          key: go-v2-${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-${{ hashFiles('go.mod', 'go.sum') }}-${{ github.sha }}
+          restore-keys: |
+            go-v2-${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-${{ hashFiles('go.mod', 'go.sum') }}-
       - run: go vet ./...
       - run: go test ./...
       - run: CXZ_TEST_USE_DOCKER=1 go test ./internal/versionuse -run TestForceProjectReleaseSwitchDocker -v -count=1
@@ -104,96 +131,42 @@ jobs:
       - run: go run ./tools/genproto && git diff --exit-code -- api
       - run: go tool pd gen --check .
       - run: python3 -m unittest discover -s scripts -p 'test_*.py'
-      - run: bash scripts/release.sh v0.0.0-ci
-      - run: dist/linux-amd64/cxz version
-  frontend-downloads:
-    needs: [test, windows-frontend, web, image]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+  build:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    permissions:
-      contents: write
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-        with:
-          fetch-depth: 0
       - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version-file: go.mod
-          cache: true
+          cache: false
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+            ~\AppData\Local\go-build
+          key: go-v2-${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-${{ hashFiles('go.mod', 'go.sum') }}-${{ github.sha }}
+          restore-keys: |
+            go-v2-${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-${{ hashFiles('go.mod', 'go.sum') }}-
       - run: bash scripts/release.sh edge
-      - name: Publish downloadable main builds
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          MANAGER_DIGEST: ${{ needs.image.outputs.digest }}
-        run: |
-          python3 scripts/update-manifest.py dist "$GITHUB_SHA" "$GITHUB_RUN_NUMBER" "ghcr.io/$GITHUB_REPOSITORY@$MANAGER_DIGEST"
-          if ! gh release view edge >/dev/null 2>&1; then
-            gh release create edge --target "$GITHUB_SHA" --prerelease --latest=false \
-              --title 'Latest main build' --notes 'Binaries from the latest successfully tested main build. Download SHA256SUMS alongside the archive to verify it.'
-          fi
-          verify_dir=$(mktemp -d)
-          trap 'rm -rf "$verify_dir"' EXIT
-          existing_assets=$(gh release view edge --json assets --jq '.assets[].name')
-          for artifact in dist/auto-update/*; do
-            name=$(basename "$artifact")
-            if echo "$existing_assets" | grep -Fxq "$name"; then
-              gh release download edge --pattern "$name" --dir "$verify_dir"
-              cmp "$artifact" "$verify_dir/$name" # a revision asset is immutable
-            else
-              gh release upload edge "$artifact"
-            fi
-          done
-          gh release upload edge --clobber dist/*.tar.gz dist/*.zip dist/SHA256SUMS
-          # Publish the manifest last: all assets and the pinned image now exist.
-          gh release upload edge --clobber dist/cxz-update.json
-          gh api --method PATCH "repos/$GITHUB_REPOSITORY/git/refs/tags/edge" \
-            -f sha="$GITHUB_SHA" -F force=true >/dev/null
-          gh release edit edge --target "$GITHUB_SHA"
-          python3 scripts/prune-edge-assets.py dist/cxz-update.json
-  windows-update:
-    needs: frontend-downloads
-    runs-on: windows-2025
-    timeout-minutes: 10
-    steps:
-      - name: Update the published frontend without external build tools
-        env:
-          # Shared runner IPs can exhaust the anonymous release-metadata quota.
-          CXZ_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        shell: pwsh
-        run: |
-          $work = Join-Path $env:RUNNER_TEMP 'cxz-live-update'
-          New-Item -ItemType Directory -Path $work | Out-Null
-          $base = "https://github.com/$env:GITHUB_REPOSITORY/releases/download/edge"
-          $name = 'cxz-edge-windows-amd64.zip'
-          $archive = Join-Path $work $name
-          Invoke-WebRequest "$base/$name" -OutFile $archive
-          $sums = Join-Path $work 'SHA256SUMS'
-          Invoke-WebRequest "$base/SHA256SUMS" -OutFile $sums
-          $expected = (Get-Content $sums | Where-Object { $_.EndsWith("  $name") }) -split '\s+'
-          if ((Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected[0]) {
-            throw 'Bootstrap archive checksum mismatch'
-          }
-          Expand-Archive $archive -DestinationPath (Join-Path $work 'bin')
-          $exe = Join-Path $work 'bin/cxz.exe'
-          $env:PATH = Join-Path $work 'empty-path'
-          New-Item -ItemType Directory -Path $env:PATH | Out-Null
-          & $exe --state (Join-Path $work 'state') self-update
-          if ($LASTEXITCODE -ne 0) { throw 'Docker-free self-update failed' }
-          if (!(Test-Path (Join-Path $work 'bin/cxz.previous.exe'))) { throw 'Missing previous executable' }
-          $version = & $exe version
-          if ($LASTEXITCODE -ne 0 -or !$version.Contains("source-$($env:GITHUB_SHA.Substring(0, 12))")) {
-            throw "Unexpected updated version: $version"
-          }
+      - run: dist/linux-amd64/cxz version
+      # Tar preserves executable permissions across artifact upload/download.
+      - run: tar -cf release-artifacts.tar dist
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-artifacts
+          path: release-artifacts.tar
+          retention-days: 3
+          compression-level: 0
   image:
     outputs:
       digest: ${{ fromJSON(steps.manager-image.outputs.metadata).app['containerimage.digest'] }}
-    needs: [test, web]
+    needs: build
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     permissions:
       contents: read
-      packages: write
     env:
       REPO: ghcr.io/${{ github.repository }}
       TAG: edge
@@ -205,30 +178,26 @@ jobs:
       - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
       - name: Set source build version
         run: echo "APP_VERSION=source-${GITHUB_SHA:0:12}" >> "$GITHUB_ENV"
-      - name: Bake binaries
-        uses: docker/bake-action@d3418bd7d0e9324001bca92fa8ba175ea7e6dc9b # v7
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          source: .
-          targets: build
-          set: |
-            build.cache-from=type=gha,scope=cxz-build
-            build.cache-to=type=gha,scope=cxz-build,mode=max
+          name: release-artifacts
+      - run: tar -xf release-artifacts.tar
       - name: Check native binary
         run: dist/linux-amd64/cxz version
-      - name: Login to GHCR
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Bake manager image (publish only main pushes)
+      - name: Validate manager image
         id: manager-image
         uses: docker/bake-action@d3418bd7d0e9324001bca92fa8ba175ea7e6dc9b # v7
         with:
           source: .
           targets: app
-          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          push: false
           set: |
             app.cache-from=type=gha,scope=cxz-app
             app.cache-to=type=gha,scope=cxz-app,mode=max
+  publish:
+    needs: [test, windows-frontend, web, image]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+      packages: write
+    uses: ./.github/workflows/publish-edge.yml
