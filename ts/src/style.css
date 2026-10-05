@@ -10,6 +10,7 @@
   --composer-radius: 15px;
   --wrapper-radius: 10px;
   --control-inset: 2px;
+  --control-inline-inset: 6px;
   --composer-extension: 10px;
   --composer-overhang: 4px;
   --muted: #a0a0a0;
@@ -387,7 +388,7 @@ pre {
   flex-shrink: 0;
   width: min(var(--conversation-width), calc(100% - 52px));
   margin: 0 auto;
-  padding: 8px 0 max(12px, env(safe-area-inset-bottom));
+  padding: 0 0 max(12px, env(safe-area-inset-bottom));
 }
 .composer-wrapper {
   position: relative;
@@ -872,7 +873,7 @@ summary:hover {
   right: 0;
   z-index: 1;
   pointer-events: none;
-  max-height: 45%;
+  max-height: 80%;
   transition:
     height 180ms ease-out,
     opacity 180ms ease-out;
@@ -901,7 +902,7 @@ summary:hover {
 }
 .setting-trigger {
   display: block;
-  padding: var(--control-inset);
+  padding: var(--control-inset) var(--control-inline-inset);
   min-height: calc(20px + 2 * var(--control-inset));
   height: calc(20px + 2 * var(--control-inset));
   width: 100%;
@@ -944,7 +945,7 @@ summary:hover {
   flex-shrink: 0;
 }
 .setting-current .meta-value {
-  max-width: calc(var(--value-width) - 2 * var(--control-inset));
+  max-width: calc(var(--value-width) - 2 * var(--control-inline-inset));
 }
 .setting-divider {
   height: 1px;
@@ -960,7 +961,7 @@ summary:hover {
 .setting-menu button {
   display: block;
   min-height: calc(20px + 2 * var(--control-inset));
-  padding: var(--control-inset);
+  padding: var(--control-inset) var(--control-inline-inset);
   width: 100%;
   text-align: left;
   font-size: inherit;

@@ -10,19 +10,30 @@ export function scrollRange(
   max: number,
   viewport: number,
   previous?: ScrollRange,
+  previousTop?: number,
 ): ScrollRange {
   const span = Math.min(max, viewport * SCROLL_WINDOW_SCREENS);
+  // Page insertion/eviction and measured row heights change coordinates, not
+  // the reading position. Keep their coordinate-adjusted mapping in place.
+  if (previous?.span === span && top === previousTop) return previous;
   if (
     previous &&
     previous.span === span &&
-    previous.start <= max - span &&
     top >= previous.start &&
     top <= previous.start + span &&
     (top >= previous.start + span * 0.2 || previous.start === 0) &&
     (top <= previous.start + span * 0.8 || previous.start + span >= max)
   )
     return previous;
-  return { start: clamp(top - span / 2, 0, Math.max(0, max - span)), span };
+  let start = clamp(top - span / 2, 0, Math.max(0, max - span));
+  if (previous?.span === span && previousTop !== undefined) {
+    // A changing cache boundary must never rebase against the user's movement.
+    start =
+      top > previousTop
+        ? Math.max(previous.start, start)
+        : Math.min(previous.start, start);
+  }
+  return { start, span };
 }
 
 // Keep the handle pinned to its dragged edge while prompt ticks advance with

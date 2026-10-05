@@ -99,3 +99,188 @@ test("wheel movement is quick and monotonic, lands exactly and respects reduced 
   });
   expect(handled).toBe(false);
 });
+
+test("outward wheel gestures never flash Latest without moving", async ({
+  page,
+}) => {
+  await page.goto("/sandbox.html");
+  await expect(
+    page.getByRole("heading", { name: "Current status" }),
+  ).toBeVisible({ timeout: 45000 });
+  const pane = page.locator(".transcript");
+  expect(await pane.evaluate((el) => el.scrollHeight - el.clientHeight)).toBe(
+    0,
+  );
+  const flashed = async (deltas: number[]) =>
+    pane.evaluate(async (el, deltas) => {
+      let flashes = 0;
+      const observer = new MutationObserver((records) => {
+        for (const record of records)
+          for (const node of record.addedNodes) {
+            if (
+              node instanceof HTMLElement &&
+              (node.matches(".bottom") || node.querySelector(".bottom"))
+            )
+              flashes++;
+          }
+      });
+      observer.observe(el.parentElement!, { childList: true, subtree: true });
+      for (const deltaY of deltas) {
+        el.dispatchEvent(
+          new WheelEvent("wheel", { bubbles: true, cancelable: true, deltaY }),
+        );
+        for (let frame = 0; frame < 8; frame++)
+          await new Promise<void>((resolve) =>
+            requestAnimationFrame(() => resolve()),
+          );
+      }
+      observer.disconnect();
+      return flashes;
+    }, deltas);
+  expect(await flashed([300, -300, 8, -8])).toBe(0);
+  await page.getByLabel("Scenario", { exact: true }).selectOption("session-3");
+  await expect(
+    page.getByText("History item 2100", { exact: false }),
+  ).toBeVisible();
+  expect(await flashed([300, 300, 8, 3000])).toBe(0);
+  await expect(page.getByRole("button", { name: "↓ Latest" })).toHaveCount(0);
+});
+
+test("ordinary movement extends the fade in the direction content leaves", async ({
+  page,
+}) => {
+  await openLong(page);
+  const pane = page.locator(".transcript");
+  await pane.evaluate(
+    (el) => (el.scrollTop = (el.scrollHeight - el.clientHeight) / 2),
+  );
+  await page.waitForTimeout(900);
+  for (const direction of [-1, 1]) {
+    const fade = page.locator(
+      direction < 0 ? ".transcript-fade-bottom" : ".transcript-fade-top",
+    );
+    const baseline = await fade.evaluate(
+      (el) => el.getBoundingClientRect().height,
+    );
+    await pane.evaluate(
+      (el, deltaY) =>
+        el.dispatchEvent(
+          new WheelEvent("wheel", { bubbles: true, cancelable: true, deltaY }),
+        ),
+      direction * 300,
+    );
+    await expect
+      .poll(() => fade.evaluate((el) => el.getBoundingClientRect().height), {
+        intervals: [16, 32, 50],
+      })
+      .toBeGreaterThan(baseline + 10);
+    await expect
+      .poll(() => fade.evaluate((el) => el.getBoundingClientRect().height))
+      .toBeLessThan(baseline + 1);
+  }
+});
+
+test("prompt ticks never reverse through first measurements and cache page replacement", async ({
+  page,
+}) => {
+  await openLong(page);
+  const pane = page.locator(".transcript");
+  const result = await pane.evaluate(async (el) => {
+    const rail = document.querySelector<HTMLElement>(".scroll-track")!;
+    const snapshot = () => ({
+      top: el.scrollTop,
+      start: Number(
+        document.querySelector<HTMLElement>(".scroll-thumb")!.dataset.start,
+      ),
+      thumb: Number(
+        document.querySelector<HTMLElement>(".scroll-thumb")!.dataset.targetTop,
+      ),
+      first:
+        document.querySelector<HTMLElement>(".virtual-messages")!.dataset
+          .first!,
+      last: document.querySelector<HTMLElement>(".virtual-messages")!.dataset
+        .last!,
+      markers: new Map(
+        [...rail.querySelectorAll<HTMLElement>(".scroll-marker")].map(
+          (node) => [
+            node.dataset.prompt!,
+            {
+              target: Number(node.dataset.targetTop),
+              displayed: parseFloat(getComputedStyle(node).top),
+            },
+          ],
+        ),
+      ),
+    });
+    const initial = snapshot();
+    let worst: unknown = null;
+    let reverse = 0,
+      checked = 0,
+      pages = 0;
+    for (const direction of [-1, 1])
+      for (let step = 0; step < 80; step++) {
+        const before = snapshot();
+        el.dispatchEvent(
+          new WheelEvent("wheel", {
+            bubbles: true,
+            cancelable: true,
+            deltaY: direction * 1200,
+          }),
+        );
+        await new Promise((resolve) => setTimeout(resolve, 200));
+        const after = snapshot();
+        if (after.first !== before.first || after.last !== before.last) pages++;
+        for (const [id, old] of before.markers) {
+          const next = after.markers.get(id);
+          if (
+            !next ||
+            old.target < 0 ||
+            old.target > rail.clientHeight ||
+            next.target < 0 ||
+            next.target > rail.clientHeight
+          )
+            continue;
+          checked++;
+          const delta = Math.max(
+            direction * (next.target - old.target),
+            direction * (next.displayed - old.displayed),
+          );
+          if (delta > reverse) {
+            reverse = delta;
+            worst = {
+              direction,
+              step,
+              id,
+              old,
+              next,
+              before: {
+                top: before.top,
+                start: before.start,
+                thumb: before.thumb,
+                first: before.first,
+                last: before.last,
+              },
+              after: {
+                top: after.top,
+                start: after.start,
+                thumb: after.thumb,
+                first: after.first,
+                last: after.last,
+              },
+            };
+          }
+        }
+      }
+    return {
+      reverse,
+      checked,
+      pages,
+      initial: initial.first,
+      final: snapshot().first,
+      worst,
+    };
+  });
+  expect(result.checked).toBeGreaterThan(40);
+  expect(result.pages).toBeGreaterThan(2);
+  expect(result.reverse, JSON.stringify(result)).toBeLessThan(1);
+});

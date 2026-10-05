@@ -6,7 +6,15 @@ import React, {
   useState,
 } from "react";
 import type { SessionEvent } from "../gen/cxz/session_pb";
-import { messageLayout, rowAt, visibleRows } from "./virtual-layout";
+import {
+  messageLayout,
+  messageMap,
+  ROW_UNITS,
+  rowAt,
+  visibleRows,
+  type MessageMap,
+  type RowKnot,
+} from "./virtual-layout";
 
 export function VirtualMessages({
   pane,
@@ -19,10 +27,12 @@ export function VirtualMessages({
   events: SessionEvent[];
   follow: React.RefObject<boolean>;
   render: (event: SessionEvent) => React.ReactNode;
-  changed: (markers: { id: string; y: number }[]) => void;
+  changed: (mapping: MessageMap) => void;
 }) {
   const root = useRef<HTMLDivElement>(null);
   const sizes = useRef(new Map<string, number>());
+  const knots = useRef(new Map<string, RowKnot>());
+  const mapping = useRef<MessageMap | null>(null);
   const expanded = useRef(new Map<string, boolean>());
   const [revision, setRevision] = useState(0);
   const [viewport, setViewport] = useState({ top: 0, height: 800 });
@@ -81,18 +91,22 @@ export function VirtualMessages({
     for (const row of root.current!.querySelectorAll<HTMLElement>("[data-row]"))
       observer.current.observe(row);
     el.addEventListener("scroll", remember);
+    el.addEventListener("reading-move", remember);
     remember();
     return () => {
       observer.current?.disconnect();
       el.removeEventListener("scroll", remember);
+      el.removeEventListener("reading-move", remember);
     };
   }, []);
   useLayoutEffect(() => {
     const el = pane.current;
     if (!el) return;
     const old = previous.current;
+    const before = el.scrollTop;
+    const oldMap = mapping.current;
+    const beforeMapped = oldMap?.toLogical(before);
     if (old !== layout || (follow.current && !anchor.current)) {
-      const before = el.scrollTop;
       const row =
         anchor.current && layout.rows.find((r) => r.id === anchor.current!.id);
       if (follow.current) el.scrollTop = el.scrollHeight;
@@ -109,11 +123,37 @@ export function VirtualMessages({
       if (!active.has(id)) sizes.current.delete(id);
     for (const id of expanded.current.keys())
       if (!active.has(id)) expanded.current.delete(id);
-    changed(
-      layout.rows
-        .filter((r) => r.prompt)
-        .map((r) => ({ id: r.id, y: r.top + root.current!.offsetTop + 6 })),
+    for (const id of knots.current.keys())
+      if (!active.has(id)) knots.current.delete(id);
+    // Preserve the reading fraction when its row is measured or reflows. A
+    // monotonic piecewise map keeps both ends exact and dragging invertible.
+    if (oldMap && beforeMapped !== undefined && !follow.current) {
+      const index = rowAt(oldMap.rows, before - oldMap.origin);
+      const oldRow = oldMap.rows[index];
+      const row = oldRow && layout.rows.find((r) => r.id === oldRow.id);
+      const fraction = (beforeMapped - oldMap.origin) / ROW_UNITS - index;
+      const offset = row && el.scrollTop - root.current!.offsetTop - row.top;
+      if (
+        row &&
+        offset! > 0 &&
+        offset! < row.height &&
+        fraction > 0 &&
+        fraction < 1
+      )
+        knots.current.set(row.id, { offset: offset!, fraction });
+    }
+    const nextMap = messageMap(
+      layout.rows,
+      root.current!.offsetTop,
+      knots.current,
     );
+    mapping.current = nextMap;
+    if (beforeMapped !== undefined) {
+      const delta = nextMap.toLogical(el.scrollTop) - beforeMapped;
+      if (Math.abs(delta) > 0.001)
+        el.dispatchEvent(new CustomEvent("mapping-shift", { detail: delta }));
+    }
+    changed(nextMap);
     remember();
   }, [layout, follow]);
   const { start, end } = visibleRows(

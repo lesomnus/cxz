@@ -12,9 +12,11 @@ import {
 
 import type { SessionEvent } from "../gen/cxz/session_pb";
 import { VirtualMessages } from "./virtual-messages";
+import type { MessageMap } from "./virtual-layout";
 
 type Geometry = {
   top: number;
+  mappedTop: number;
   max: number;
   viewport: number;
   height: number;
@@ -24,6 +26,7 @@ type Geometry = {
 };
 const empty: Geometry = {
   top: 0,
+  mappedTop: 0,
   max: 0,
   viewport: 0,
   height: 0,
@@ -57,6 +60,7 @@ export function Transcript({
   onScroll,
   onNavigate,
   onTension,
+  onMotion,
   older,
   newer,
 }: {
@@ -69,6 +73,7 @@ export function Transcript({
   onScroll: (reading: boolean) => void;
   onNavigate: () => void;
   onTension: (stretch: number) => void;
+  onMotion: (motion: number) => void;
   older: () => void;
   newer: () => void;
 }) {
@@ -76,11 +81,14 @@ export function Transcript({
   const track = useRef<HTMLDivElement>(null);
   const thumb = useRef<HTMLDivElement>(null);
   const offsets = useRef<{ id: string; y: number }[]>([]);
+  const mapping = useRef<MessageMap | null>(null);
   const geometry = useRef(empty);
   const drag = useRef<Drag | null>(null);
   const raf = useRef(0);
   const wheelRaf = useRef(0);
   const rangeRaf = useRef(0);
+  const motionRaf = useRef(0);
+  const motion = useRef({ top: 0, time: 0, strength: 0 });
   const rangeMotion = useRef<RangeMotion | null>(null);
   const [rangeFrame, setRangeFrame] = useState<RangeMotion | null>(null);
   const wheel = useRef<{ target: number; time: number; top: number } | null>(
@@ -90,8 +98,30 @@ export function Transcript({
   const [near, setNear] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [stretch, setStretch] = useState(0);
-  const callbacks = useRef({ onScroll, onNavigate, onTension, older, newer });
-  callbacks.current = { onScroll, onNavigate, onTension, older, newer };
+  const callbacks = useRef({
+    onScroll,
+    onNavigate,
+    onTension,
+    onMotion,
+    older,
+    newer,
+  });
+  callbacks.current = {
+    onScroll,
+    onNavigate,
+    onTension,
+    onMotion,
+    older,
+    newer,
+  };
+
+  function fadeMotion(time: number) {
+    const sample = motion.current;
+    const strength = sample.strength * Math.exp(-(time - sample.time) / 110);
+    callbacks.current.onMotion(Math.abs(strength) < 0.01 ? 0 : strength);
+    if (Math.abs(strength) >= 0.01)
+      motionRaf.current = requestAnimationFrame(fadeMotion);
+  }
 
   function stopRangeMotion() {
     cancelAnimationFrame(rangeRaf.current);
@@ -167,13 +197,16 @@ export function Transcript({
       rail = track.current;
     if (!el || !rail) return;
     const max = Math.max(0, el.scrollHeight - el.clientHeight);
+    const mappedTop = mapping.current?.toLogical(el.scrollTop) ?? el.scrollTop;
+    const mappedMax = mapping.current?.toLogical(max) ?? max;
     const range =
       drag.current?.range ??
       scrollRange(
-        el.scrollTop,
-        max,
+        mappedTop,
+        mappedMax,
         el.clientHeight,
-        rebase ? undefined : geometry.current.range,
+        rebase || follow.current ? undefined : geometry.current.range,
+        geometry.current.mappedTop,
       );
     const height = rail.clientHeight;
     const size = clamp(
@@ -183,7 +216,7 @@ export function Transcript({
     );
     // Stable event IDs preserve the same DOM nodes through range rebasing.
     // Keep off-rail ticks mounted so incoming/outgoing markers animate too.
-    const markerStart = markerRangeStart(el.scrollTop, range);
+    const markerStart = markerRangeStart(mappedTop, range);
     const markers = offsets.current.map(({ id, y }) => ({
       id,
       top: ((y - markerStart) / (range.span + el.clientHeight || 1)) * height,
@@ -200,6 +233,7 @@ export function Transcript({
       beginRangeMotion();
     geometry.current = {
       top: el.scrollTop,
+      mappedTop,
       max,
       viewport: el.clientHeight,
       height,
@@ -216,6 +250,26 @@ export function Transcript({
     callbacks.current.onScroll(!!(drag.current || wheel.current));
   }
   function scrolled() {
+    const el = pane.current;
+    if (!el) return;
+    // Programmatic wheel/drag frames precede the browser's native scroll event.
+    // Publish their anchor now so a ResizeObserver cannot restore a stale frame.
+    el.dispatchEvent(new Event("reading-move"));
+    const sample = motion.current;
+    const delta = el.scrollTop - sample.top;
+    if (delta && sample.time && !follow.current) {
+      const time = performance.now();
+      sample.strength = clamp(
+        delta / clamp(time - sample.time, 16, 48) / 1.5,
+        -1,
+        1,
+      );
+      sample.time = time;
+      callbacks.current.onMotion(sample.strength);
+      cancelAnimationFrame(motionRaf.current);
+      motionRaf.current = requestAnimationFrame(fadeMotion);
+    } else if (!sample.time) sample.time = performance.now();
+    sample.top = el.scrollTop;
     if (
       wheel.current &&
       Math.abs(pane.current!.scrollTop - wheel.current.top) > 1
@@ -223,8 +277,6 @@ export function Transcript({
       stopWheel();
     measure();
     callbacks.current.onScroll(!!(drag.current || wheel.current));
-    const el = pane.current;
-    if (!el) return;
     if (el.scrollTop < el.clientHeight * 2) callbacks.current.older();
     if (el.scrollHeight - el.scrollTop - el.clientHeight < el.clientHeight * 2)
       callbacks.current.newer();
@@ -238,13 +290,20 @@ export function Transcript({
     resize.observe(inner);
     const shifted = (event: Event) => {
       const delta = (event as CustomEvent<number>).detail;
-      if (drag.current) drag.current.range.start += delta;
-      else geometry.current.range.start += delta;
+      geometry.current.top += delta;
+      motion.current.top += delta;
       if (wheel.current) {
         wheel.current.target += delta;
         wheel.current.top += delta;
       }
-      readOffsets();
+      // VirtualMessages publishes the matching prompt offsets immediately after
+      // this event; measuring now would mix new coordinates with old markers.
+    };
+    const mappedShift = (event: Event) => {
+      const delta = (event as CustomEvent<number>).detail;
+      geometry.current.mappedTop += delta;
+      if (drag.current) drag.current.range.start += delta;
+      else geometry.current.range.start += delta;
     };
     const wheeled = (event: WheelEvent) => {
       if (
@@ -284,7 +343,6 @@ export function Transcript({
         return;
       }
       event.preventDefault();
-      callbacks.current.onNavigate();
       const delta =
         event.deltaY *
         (event.deltaMode === 1
@@ -297,6 +355,8 @@ export function Transcript({
         0,
         el.scrollHeight - el.clientHeight,
       );
+      if (target === (wheel.current?.target ?? el.scrollTop)) return;
+      callbacks.current.onNavigate();
       const running = !!wheel.current;
       wheel.current = {
         target,
@@ -306,20 +366,29 @@ export function Transcript({
       if (!running) wheelRaf.current = requestAnimationFrame(animateWheel);
     };
     const interrupted = () => stopWheel();
+    const jumped = () => {
+      stopWheel();
+      cancelAnimationFrame(motionRaf.current);
+      motion.current = { top: el.scrollTop, time: 0, strength: 0 };
+      callbacks.current.onMotion(0);
+    };
     el.addEventListener("history-shift", shifted);
+    el.addEventListener("mapping-shift", mappedShift);
     el.addEventListener("wheel", wheeled, { passive: false });
     el.addEventListener("pointerdown", interrupted);
     el.addEventListener("keydown", interrupted);
-    el.addEventListener("scroll-jump", interrupted);
+    el.addEventListener("scroll-jump", jumped);
     return () => {
       resize.disconnect();
       el.removeEventListener("history-shift", shifted);
+      el.removeEventListener("mapping-shift", mappedShift);
       el.removeEventListener("wheel", wheeled);
       el.removeEventListener("pointerdown", interrupted);
       el.removeEventListener("keydown", interrupted);
-      el.removeEventListener("scroll-jump", interrupted);
+      el.removeEventListener("scroll-jump", jumped);
       stopWheel();
       cancelAnimationFrame(rangeRaf.current);
+      cancelAnimationFrame(motionRaf.current);
       rangeMotion.current = null;
       cancelAnimationFrame(raf.current);
       drag.current = null;
@@ -344,13 +413,22 @@ export function Transcript({
     d.lastTime = time;
     if (outside) {
       if (d.edge !== Math.sign(outside))
-        el.scrollTop = d.range.start + (outside > 0 ? d.range.span : 0);
+        el.scrollTop =
+          mapping.current?.toNative(
+            d.range.start + (outside > 0 ? d.range.span : 0),
+          ) ?? 0;
       el.scrollTop += pull.speed * dt;
     } else {
       if (d.edge)
-        d.range = resumeRange(el.scrollTop, bounded / travel, d.range.span);
+        d.range = resumeRange(
+          mapping.current?.toLogical(el.scrollTop) ?? el.scrollTop,
+          bounded / travel,
+          d.range.span,
+        );
       const target = clamp(
-        d.range.start + (bounded / travel) * d.range.span,
+        mapping.current?.toNative(
+          d.range.start + (bounded / travel) * d.range.span,
+        ) ?? 0,
         0,
         g.max,
       );
@@ -400,7 +478,7 @@ export function Transcript({
     }
   }
   const position = view.range.span
-    ? clamp((view.top - view.range.start) / view.range.span, 0, 1) *
+    ? clamp((view.mappedTop - view.range.start) / view.range.span, 0, 1) *
       (view.height - view.thumb)
     : 0;
   const animated = (target: number, from: number | undefined) =>
@@ -438,8 +516,9 @@ export function Transcript({
             events={events}
             follow={follow}
             render={render}
-            changed={(markers) => {
-              offsets.current = markers;
+            changed={(nextMap) => {
+              mapping.current = nextMap;
+              offsets.current = nextMap.markers;
               readOffsets();
             }}
           />
@@ -478,7 +557,9 @@ export function Transcript({
           aria-valuenow={Math.round(view.top)}
           tabIndex={view.max > 0 ? 0 : -1}
           data-range={Math.round(view.range.span)}
-          data-start={Math.round(view.range.start)}
+          data-start={Math.round(
+            mapping.current?.toNative(view.range.start) ?? view.range.start,
+          )}
           data-stretch={Math.abs(stretch).toFixed(2)}
           data-target-top={position + stretch}
           style={{
@@ -507,7 +588,8 @@ export function Transcript({
               offset: e.clientY - bounds.top,
               pointer: e.clientY,
               range: resumeRange(
-                pane.current!.scrollTop,
+                mapping.current?.toLogical(pane.current!.scrollTop) ??
+                  pane.current!.scrollTop,
                 fraction,
                 geometry.current.range.span,
               ),

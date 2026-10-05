@@ -297,6 +297,7 @@ function Conversation({
   const [metadata, setMetadata] = useState<SessionEvent[]>([]);
   const catalogRun = useRef("");
   const tension = useRef(0);
+  const scrollMotion = useRef(0);
   const composerInput = useRef<HTMLDivElement>(null);
   const [pending, setPending] = useState<SessionEvent[]>([]);
   const [gap, setGap] = useState(false);
@@ -334,9 +335,13 @@ function Conversation({
     const top =
       eventsRef.current[0]?.seq > floor.current + 1n ? 1 : ramp(el.scrollTop);
     const topPull = Math.min(1, Math.max(0, tension.current) / 20);
+    // Content moves upwards as scrollTop increases. Extend its outgoing fade
+    // during ordinary movement; elastic pulls produce a much longer veil.
+    const topMotion = Math.max(0, scrollMotion.current);
+    const bottomMotion = Math.max(0, -scrollMotion.current);
     area.style.setProperty(
       "--bottom-fade-height",
-      `${input.offsetHeight * (bottom + pull)}px`,
+      `${input.offsetHeight * (bottom + 0.8 * bottomMotion + 3.5 * pull)}px`,
     );
     area.style.setProperty(
       "--bottom-fade-opacity",
@@ -344,7 +349,7 @@ function Conversation({
     );
     area.style.setProperty(
       "--top-fade-height",
-      `${input.offsetHeight * (0.45 * top + 0.5 * topPull)}px`,
+      `${input.offsetHeight * (0.45 * top + 0.8 * topMotion + 3.5 * topPull)}px`,
     );
     area.style.setProperty(
       "--top-fade-opacity",
@@ -700,6 +705,10 @@ function Conversation({
         }
         onTension={(stretch) => {
           tension.current = stretch;
+          updateShadow();
+        }}
+        onMotion={(motion) => {
+          scrollMotion.current = motion;
           updateShadow();
         }}
         older={() => void loadHistory("older")}

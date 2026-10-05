@@ -1,7 +1,13 @@
 import { create } from "@bufbuild/protobuf";
 import { describe, expect, it } from "vitest";
 import { SessionEventSchema } from "../gen/cxz/session_pb";
-import { messageLayout, rowAt, visibleRows } from "./virtual-layout";
+import {
+  messageLayout,
+  messageMap,
+  ROW_UNITS,
+  rowAt,
+  visibleRows,
+} from "./virtual-layout";
 
 const events = Array.from({ length: 2000 }, (_, i) =>
   create(SessionEventSchema, {
@@ -42,4 +48,57 @@ describe("variable height message window", () => {
       "9007199254740993",
     );
   });
+});
+
+it("maps variable pixel heights to stable message positions and back monotonically", () => {
+  const layout = messageLayout(
+    events.slice(0, 4),
+    new Map([
+      ["1", 300],
+      ["2", 50],
+      ["3", 500],
+    ]),
+  );
+  const map = messageMap(
+    layout.rows,
+    12,
+    new Map([["3", { offset: 120, fraction: 0.4 }]]),
+  );
+  let last = -Infinity;
+  for (let pixel = 0; pixel < layout.total + 24; pixel += 3) {
+    const logical = map.toLogical(pixel);
+    expect(logical).toBeGreaterThan(last);
+    expect(map.toNative(logical)).toBeCloseTo(pixel, 8);
+    last = logical;
+  }
+  expect(map.toLogical(12 + layout.rows[2].top + 120)).toBe(
+    12 + 2.4 * ROW_UNITS,
+  );
+});
+
+it("keeps prompt positions and the reading fraction fixed when its row height changes", () => {
+  const old = messageLayout(
+    events.slice(0, 4),
+    new Map([
+      ["1", 100],
+      ["2", 100],
+    ]),
+  );
+  const next = messageLayout(
+    events.slice(0, 4),
+    new Map([
+      ["1", 1000],
+      ["2", 280],
+    ]),
+  );
+  const before = messageMap(old.rows, 12, new Map());
+  const after = messageMap(
+    next.rows,
+    12,
+    new Map([["2", { offset: 40, fraction: 0.4 }]]),
+  );
+  expect(after.markers).toEqual(before.markers);
+  expect(after.toLogical(12 + next.rows[1].top + 40)).toBe(
+    before.toLogical(12 + old.rows[1].top + 40),
+  );
 });

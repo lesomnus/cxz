@@ -79,3 +79,18 @@ it("advances prompt mapping only for content passing a pinned drag edge", () => 
   // Prepending history shifts both the transcript and mapping coordinates equally.
   expect(markerRangeStart(8200, { start: 2000, span: 6000 })).toBe(2200);
 });
+
+it("keeps page and height corrections from reversing a moving window", () => {
+  const range = { start: 20000, span: 9600 };
+  // Coordinate shifts are already applied to both the viewport and its range.
+  expect(scrollRange(29500, 30000, 800, range, 29500)).toEqual(range);
+  // A reduced cache tail cannot pull the mapping backwards while moving down.
+  expect(
+    scrollRange(29600, 30000, 800, range, 29500).start,
+  ).toBeGreaterThanOrEqual(range.start);
+  const shifted = { start: -4000, span: 9600 };
+  // Prefix eviction can place the local mapping before the cached first row.
+  expect(
+    scrollRange(5000, 40000, 800, shifted, 5100).start,
+  ).toBeLessThanOrEqual(shifted.start);
+});
