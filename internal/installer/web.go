@@ -2,7 +2,9 @@ package installer
 
 import (
 	"context"
+	"crypto/x509"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	"io"
 	"net"
@@ -16,6 +18,7 @@ import (
 	"github.com/lesomnus/cxz/internal/dockerx"
 	"github.com/lesomnus/cxz/internal/transport"
 	"github.com/lesomnus/cxz/internal/webconfig"
+	"github.com/lesomnus/cxz/internal/webui"
 )
 
 // InstallWeb shares only the Manager's run directory, never its database or Docker socket.
@@ -67,12 +70,12 @@ func RefreshWebLocked(ctx context.Context, root string, out io.Writer) error {
 	if !old.State.Running {
 		return nil
 	}
-	// No-op after a successful retry; changing configuration is explicit install web.
+	// No-op after a successful retry; changing configuration is explicit web up.
 	if old.Config.Image == v.Image {
 		return nil
 	}
 	if err = replaceWeb(ctx, v, cfg, out); err != nil {
-		return fmt.Errorf("Manager updated but web update failed; retry cxz install web: %w", err)
+		return fmt.Errorf("Manager updated but web update failed; retry cxz web up: %w", err)
 	}
 	return nil
 }
@@ -103,6 +106,12 @@ func webArgs(v transport.Installation, cfg webconfig.Config) ([]string, error) {
 	if host != "" && net.ParseIP(host) == nil {
 		return nil, fmt.Errorf("installed web listen host must be an IP address")
 	}
+	// The gateway binds every interface of its own network namespace, so this
+	// publish address is the only thing deciding whether it can be reached from
+	// a network -- and therefore the only place a plaintext origin can be gated.
+	if cfg.Certificate == "" && !webui.Loopback(host) {
+		return nil, fmt.Errorf("a plaintext gateway must publish on a loopback address, not %q; configure an https origin with tls_cert and tls_key to serve a network", cfg.Listen)
+	}
 	publish := port + ":7350"
 	if host != "" {
 		publish = net.JoinHostPort(host, port) + ":7350"
@@ -110,10 +119,17 @@ func webArgs(v transport.Installation, cfg webconfig.Config) ([]string, error) {
 	// Host-owned 0600 keys need DAC_OVERRIDE for container root. All mounts and
 	// the root filesystem remain read-only; no other capabilities are granted.
 	args := []string{"run", "-d", "--name", v.Container + "-web", "--restart", "unless-stopped", "--label", "cxz.role=web", "--label", "cxz.owner=" + v.Owner, "--read-only", "--cap-drop=ALL", "--cap-add=DAC_OVERRIDE", "--security-opt=no-new-privileges", "--publish", publish, "--mount", "type=volume,source=" + v.StateVolume + ",target=/var/lib/cxz/run,volume-subpath=run,readonly"}
-	for _, pair := range [][2]string{{cfg.Certificate, "certificate.pem"}, {cfg.Key, "key.pem"}, {cfg.TokenFile, "token"}} {
+	mounts := [][2]string{{cfg.TokenFile, "token"}}
+	if cfg.Certificate != "" {
+		mounts = append(mounts, [2]string{cfg.Certificate, "certificate.pem"}, [2]string{cfg.Key, "key.pem"})
+	}
+	for _, pair := range mounts {
 		args = append(args, "--mount", "type=bind,source="+pair[0]+",target=/web/"+pair[1]+",readonly")
 	}
-	args = append(args, v.Image, "--state", "/var/lib/cxz", "-x", "web", "--listen", "0.0.0.0:7350", "--origin", cfg.Origin, "--tls-cert", "/web/certificate.pem", "--tls-key", "/web/key.pem", "--access-token-file", "/web/token")
+	args = append(args, v.Image, "--state", "/var/lib/cxz", "-x", "_web-serve", "--listen", "0.0.0.0:7350", "--origin", cfg.Origin, "--access-token-file", "/web/token")
+	if cfg.Certificate != "" {
+		args = append(args, "--tls-cert", "/web/certificate.pem", "--tls-key", "/web/key.pem")
+	}
 	return args, nil
 }
 
@@ -130,7 +146,7 @@ func replaceWeb(ctx context.Context, v transport.Installation, cfg webconfig.Con
 		return err
 	}
 	// Validate the target image and command before disrupting a working gateway.
-	if _, err = dockerx.Run(ctx, "run", "--rm", "--entrypoint", "/usr/local/bin/cxz", v.Image, "web", "--help"); err != nil {
+	if _, err = dockerx.Run(ctx, "run", "--rm", "--entrypoint", "/usr/local/bin/cxz", v.Image, "_web-serve", "--help"); err != nil {
 		return fmt.Errorf("target image does not support web: %w", err)
 	}
 	name := v.Container + "-web"
@@ -178,9 +194,9 @@ func replaceWeb(ctx context.Context, v transport.Installation, cfg webconfig.Con
 	probeCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
 	defer cancel()
 	for {
-		// Probe HTTPS through the container itself. This is a startup check; browsers
-		// still verify the configured certificate normally.
-		_, err = dockerx.Run(probeCtx, "exec", name, "curl", "--silent", "--show-error", "--fail", "--insecure", "--max-time", "2", "--header", "Host: "+origin.Host, "https://127.0.0.1:7350/")
+		// Probe through the container itself, on the scheme it serves. This is a
+		// startup check; browsers still verify a configured certificate normally.
+		_, err = dockerx.Run(probeCtx, "exec", name, "curl", "--silent", "--show-error", "--fail", "--insecure", "--max-time", "2", "--header", "Host: "+origin.Host, origin.Scheme+"://127.0.0.1:7350/")
 		if err == nil {
 			break
 		}
@@ -196,8 +212,74 @@ func replaceWeb(ctx context.Context, v transport.Installation, cfg webconfig.Con
 			return fmt.Errorf("web updated; remove retained container %s: %w", backup, err)
 		}
 	}
-	fmt.Fprintf(out, "cxz web installed: %s · %s\n", name, cfg.Origin)
+	fmt.Fprintf(out, "cxz web up: %s · %s\n", name, cfg.Origin)
 	return nil
+}
+
+// WebState is everything the host can say about the gateway without asking a
+// browser: what it would serve, what is actually running, and whether the two
+// still agree with the Manager it forwards to.
+type WebState struct {
+	ConfigPath        string `json:"config_path,omitempty"`
+	Origin            string `json:"origin,omitempty"`
+	Listen            string `json:"published,omitempty"`
+	TLS               bool   `json:"tls"`
+	TokenFile         string `json:"token_file,omitempty"`
+	TokenPresent      bool   `json:"token_present"`
+	CertificateExpiry string `json:"certificate_expires,omitempty"`
+	Container         string `json:"container,omitempty"`
+	State             string `json:"state"`
+	Image             string `json:"image,omitempty"`
+	ManagerImage      string `json:"manager_image,omitempty"`
+	NeedsRefresh      bool   `json:"needs_refresh"`
+}
+
+// WebStatus reports rather than fails: a host with no Manager, no configuration
+// or no container is a state to read, not an error to recover from. Only a
+// question that cannot be answered -- a broken Docker, an unowned container of
+// the same name -- is returned as one.
+func WebStatus(ctx context.Context, root string, cfg webconfig.Config, configPath string) (WebState, error) {
+	s := WebState{ConfigPath: configPath, Origin: cfg.Origin, Listen: cfg.Listen, TLS: cfg.Certificate != "", TokenFile: cfg.TokenFile, State: "not installed"}
+	if cfg.TokenFile != "" {
+		_, err := os.Stat(cfg.TokenFile)
+		s.TokenPresent = err == nil
+	}
+	if cfg.Certificate != "" {
+		if leaf, err := readLeaf(cfg.Certificate); err == nil {
+			s.CertificateExpiry = leaf.NotAfter.UTC().Format(time.RFC3339)
+		}
+	}
+	v, err := transport.Load(root)
+	if err != nil {
+		s.State = "Manager is not installed"
+		return s, nil
+	}
+	s.Container, s.ManagerImage = v.Container+"-web", v.Image
+	c, exists, err := findWeb(ctx, v)
+	if err != nil {
+		return s, err
+	}
+	if !exists {
+		return s, nil
+	}
+	s.State, s.Image = c.State.Status, c.Config.Image
+	// A gateway left behind by a version switch serves last version's UI against
+	// this version's Manager, which is the one skew a reader cannot see.
+	s.NeedsRefresh = c.State.Running && c.Config.Image != v.Image
+	return s, nil
+}
+
+func readLeaf(path string) (*x509.Certificate, error) {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	for block, rest := pem.Decode(b); block != nil; block, rest = pem.Decode(rest) {
+		if block.Type == "CERTIFICATE" {
+			return x509.ParseCertificate(block.Bytes)
+		}
+	}
+	return nil, fmt.Errorf("no certificate in %s", path)
 }
 
 func UninstallWeb(ctx context.Context, root string) error {

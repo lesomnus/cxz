@@ -1,24 +1,55 @@
-# Mobile web client
+# Web client
 
-The first web client is for **HTTPS inside a private VPN**, served from the
-same origin as its RPC endpoint. It operates existing sessions in the installed
-local Manager. It is not a replacement for every TUI or CLI feature.
+A browser client served from the same origin as its RPC endpoint. It operates
+existing sessions in the installed local Manager, and is not a replacement for
+every TUI or CLI feature.
 
-## Install a background gateway
+## A browser on this desktop
 
-On the Linux Manager host, install/update cxz and the Manager first. Create a
-browser token once, separate from provider credentials:
+On the Linux Manager host, with the Manager already running:
 
 ```sh
-mkdir -p ~/.local/state/cxz
-(umask 077; openssl rand -hex 32 > ~/.local/state/cxz/web-token)
+cxz web up
 ```
 
-Create `~/.local/state/cxz/web.json` (the default state directory):
+With nothing configured that writes two files and prints where to go:
+
+```
+Generated ~/.local/state/cxz/web-token
+Generated ~/.local/state/cxz/web.json
+cxz web up: cxz-manager-web · http://127.0.0.1:7350
+Open http://127.0.0.1:7350 and sign in with the token in ~/.local/state/cxz/web-token
+```
+
+There is no certificate to make, no hostname to pick and no trust store to
+touch, because **a loopback origin is already a secure context**: Chrome and
+Firefox give `http://127.0.0.1` the same treatment as HTTPS, including the
+`__Host-` session cookie this gateway signs in with. The bytes TLS would have
+protected never reach a network.
+
+`127.0.0.1` rather than `localhost` is deliberate. `localhost` resolves to `::1`
+first on many systems, and an SSH tunnel binds IPv4 loopback only, so the one
+spelling works in both places.
+
+Plaintext is confined to that case. An `http` origin must name a loopback
+address, and a gateway with no certificate is refused on a published address a
+network can reach — `cxz web up --listen 0.0.0.0:7350` fails rather than putting
+an unencrypted gateway on your LAN.
+
+## Reaching it from another machine
+
+Two ways, and the first needs nothing new:
+
+- **An SSH tunnel.** `cxz connection tunnel work` forwards `127.0.0.1:7350` on
+  your client to the same address on the host, so the loopback origin matches on
+  both ends and SSH encrypts the hop. See
+  [remote access](remote.md#browsing-through-the-tunnel).
+- **HTTPS on a reachable address**, for a device that cannot tunnel, such as a
+  phone on a private VPN. That needs a certificate the device trusts:
 
 ```json
 {
-  "listen": "127.0.0.1:7350",
+  "listen": "192.0.2.10:7350",
   "origin": "https://cxz.example.vpn:7350",
   "tls_cert": "/absolute/path/to/certificate.pem",
   "tls_key": "/absolute/path/to/private-key.pem",
@@ -26,34 +57,39 @@ Create `~/.local/state/cxz/web.json` (the default state directory):
 }
 ```
 
-Use a certificate trusted by the phone for that exact VPN hostname. Change
-`listen` to your host's VPN IP and port to allow phone access; `127.0.0.1` only
-accepts local connections. `0.0.0.0:7350` listens on all interfaces and requires
-firewall rules restricting access to the VPN.
+Use a certificate for that exact hostname. `0.0.0.0:7350` listens on every
+interface and requires firewall rules restricting access to the VPN. cxz does
+not issue certificates or install them into any trust store.
+
+## What `web up` creates
+
+`<manager-container>-web`, using the installed Manager's image, with Docker's
+`unless-stopped` restart policy. It survives terminal closure and host reboot,
+and serves both the embedded UI and the payday Connect API. It mounts only the
+Manager state volume's `run` subdirectory, the token file, and the certificate
+and key when those are configured, all read-only; it receives no Docker socket
+and no database mount. Configured files must exist on both the command host and
+the Docker engine host at the same absolute paths — a normal host-local Docker
+install satisfies this; remote engines need the files explicitly shared.
 
 ```sh
-cxz install web
+cxz web status           # container, origin, token, image skew
+cxz web down             # remove the container; configuration and token stay
 ```
 
-This creates `<manager-container>-web`, using the installed Manager's image,
-with Docker's `unless-stopped` restart policy. It survives terminal closure and
-host reboot. The container serves both the embedded UI and payday Connect API.
-It mounts only the Manager state volume's `run` subdirectory and the certificate,
-key and token files, read-only; it receives no Docker socket or database mount.
-Those files must exist on both the command host and the Docker engine host at
-the configured absolute paths. This matches a normal host-local Docker install;
-remote engines need explicitly shared files. The Manager must already be running.
-
-Open the exact `origin` URL on the phone and paste the token file's contents into
-**Web access token**. Windows can use the browser, but installation runs on Linux.
+`status` answers "is it up, what does it serve, and is it current" without
+`docker inspect`. It reports the gateway's image against the Manager's: after a
+version switch that could not refresh it, the gateway serves the previous
+version's UI against this version's Manager, which is the one skew a browser
+cannot show you.
 
 ## Configuration and lifecycle
 
-Both `cxz web` and `cxz install web` accept the same configuration:
+`web up`, `web serve` and `web status` read the same configuration:
 
 ```sh
-cxz install web --config /path/to/web.json --listen 192.0.2.10:7350
-cxz web --config /path/to/web.json
+cxz web up --config /path/to/web.json --listen 192.0.2.10:7350
+cxz web serve --config /path/to/web.json
 ```
 
 - Default file: `STATE/web.json`, where `STATE` follows `--state`, `CXZ_STATE`,
@@ -67,7 +103,11 @@ cxz web --config /path/to/web.json
 - Successful installation saves the resolved settings in
   `STATE/web-installation.json`. These contain file paths, never token/key values.
   If no default `web.json` exists, subsequent commands reuse this saved configuration.
-- Re-run `cxz install web` after changing configuration, renewing certificate files
+- `web up` generates `STATE/web.json` and `STATE/web-token` only when neither
+  default file exists, and never overwrites either one: a token already pasted
+  into a browser keeps working. A `--config` path that does not exist is an
+  error, not a cue to generate one.
+- Re-run `cxz web up` after changing configuration, renewing certificate files
   or rotating the token. It replaces/starts the web container. An invalid local
   certificate or token is rejected before stopping the old gateway.
 
@@ -75,27 +115,28 @@ cxz web --config /path/to/web.json
 after the Manager, using the same image. `cxz use VERSION`, `cxz use @edge` and
 `cxz use @stable` also refresh it as part of the host version switch. Missing or
 stopped web containers are not started by updates. `--client-only` and Windows
-frontend updates do not update a remote gateway. A foreground `cxz web` process
-is not managed by these commands; background automatic Manager rollout is also
+frontend updates do not update a remote gateway. A foreground `cxz web serve`
+process is not managed by these commands; background automatic Manager rollout is also
 separate from this host-command integration.
 
-A target image must support `cxz web`; uninstall the web gateway before selecting
-an older release without that command. Installation checks this before replacing
+A target image must support this gateway; take it down with `cxz web down`
+before selecting a release that predates the command it starts. Installation checks this before replacing
 the gateway. If startup fails, the previous container is restored when possible,
 and the update reports failure rather than claiming the web update succeeded.
 Manager/agent versions are not rolled back by a web failure. A version switch
 that fails here remains retryable using the same `cxz use` command.
 
 ```sh
-cxz uninstall web        # removes only web; configuration/token/certificates remain
-cxz install web          # installs it again from configuration
+cxz web down             # removes only web; configuration/token/certificates remain
+cxz web up               # creates it again from configuration
 cxz uninstall            # removes web and Manager; retains projects and data
 ```
 
 Use `docker logs <manager-container>-web` for startup diagnostics and
-`docker stop <manager-container>-web` to temporarily stop it. A gateway restart
-invalidates browser logins; sign in again. It does not stop agent turns.
-`cxz web` still runs in the foreground; Ctrl+C stops only that gateway.
+`docker stop <manager-container>-web` to temporarily stop it; `cxz web status`
+reports either state. A gateway restart invalidates browser logins; sign in
+again. It does not stop agent turns. `cxz web serve` runs the same gateway in
+this terminal for developing cxz itself, and Ctrl+C stops only that gateway.
 
 ## First-version support
 

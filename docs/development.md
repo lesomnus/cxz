@@ -140,6 +140,7 @@ npm run --prefix ts test
 cd ts
 npx playwright install --with-deps chromium
 npm run test:browser
+npm run test:browser:plaintext
 ```
 
 Commit `ts/gen/` and `internal/webui/assets/` after changes. The latter is the
@@ -148,10 +149,14 @@ self-updates need no Node toolchain. CI rebuilds and rejects asset/schema drift.
 Keep generated files untouched by formatting tools. `npm run --prefix ts format`
 formats authored client source only.
 
-Playwright launches an opt-in TLS gateway fixture backed by in-memory gRPC
-services; it does not start Docker or call a real agent. See
-`internal/webui/browser_test.go` and `ts/e2e/`. Ordinary `go test ./...` skips
-that long-running fixture. See [web.md](web.md) for actual gateway usage.
+Playwright launches an opt-in gateway fixture backed by in-memory gRPC services;
+it does not start Docker or call a real agent. See
+`internal/webui/browser_test.go` and `ts/e2e/`. `test:browser:plaintext` runs the
+same fixture over loopback http, which is the desktop gateway's own transport:
+what it checks is a browser rule rather than ours, that Chrome treats
+`http://127.0.0.1` as a secure context and so keeps the `__Host-` session
+cookie. Ordinary `go test ./...` skips both fixtures. See [web.md](web.md) for
+actual gateway usage.
 
 ## Browser-only design sandbox
 

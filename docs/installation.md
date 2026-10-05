@@ -19,10 +19,13 @@ cxz itself, not for installing it.
 
 ## Optional web gateway
 
-`cxz install web` installs a separate background HTTPS container for mobile and
-browser access. Configure `STATE/web.json` first; see [web setup](web.md) for
-certificates, token login, configuration precedence and update behavior.
-`cxz uninstall web` removes only that container and retains its configuration.
+`cxz web up` installs a separate background container for browser access. With
+nothing configured it writes its own configuration and token and serves
+`http://127.0.0.1:7350`, which a desktop browser treats as a secure origin;
+reaching it from another machine needs an `https` origin and a certificate. See
+[web setup](web.md) for token login, configuration precedence and update
+behaviour. `cxz web down` removes only that container and retains its
+configuration.
 
 ## The workspace root
 

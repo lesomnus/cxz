@@ -17,9 +17,9 @@ import (
 type Config struct {
 	Listen      string `json:"listen"`
 	Origin      string `json:"origin"`
-	Certificate string `json:"tls_cert"`
-	Key         string `json:"tls_key"`
-	TokenFile   string `json:"access_token_file"`
+	Certificate string `json:"tls_cert,omitempty"`
+	Key         string `json:"tls_key,omitempty"`
+	TokenFile   string `json:"access_token_file,omitempty"`
 }
 
 func Load(path string, optional bool) (Config, error) {
@@ -62,8 +62,12 @@ func (c Config) Runtime() (webui.Config, error) {
 	if err = v.Validate(); err != nil {
 		return v, err
 	}
-	if _, err = tls.LoadX509KeyPair(c.Certificate, c.Key); err != nil {
-		return v, fmt.Errorf("web TLS: %w", err)
+	// Validate has already refused a certificate paired with an http origin, and
+	// a missing one paired with https, so an empty pair here means plaintext.
+	if c.Certificate != "" {
+		if _, err = tls.LoadX509KeyPair(c.Certificate, c.Key); err != nil {
+			return v, fmt.Errorf("web TLS: %w", err)
+		}
 	}
 	for _, p := range []string{c.Certificate, c.Key, c.TokenFile} {
 		if strings.ContainsAny(p, ",\n\r") {

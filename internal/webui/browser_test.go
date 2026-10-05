@@ -34,7 +34,13 @@ func TestBrowserFixture(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer conn.Close()
+	// The plaintext variant is the desktop path, and what it has to prove is a
+	// browser question: that Chrome gives http://127.0.0.1 a secure context and
+	// so accepts the __Host- session cookie there. Only a browser can answer it.
 	c := Config{Listen: "127.0.0.1:18081", Origin: "https://127.0.0.1:18081", Certificate: "fixture", Key: "fixture", Token: strings.Repeat("a", 32)}
+	if os.Getenv("CXZ_WEB_FIXTURE_PLAINTEXT") == "1" {
+		c = Config{Listen: "127.0.0.1:18082", Origin: "http://127.0.0.1:18082", Token: strings.Repeat("a", 32)}
+	}
 	h, stop, err := Handler(c, conn, Assets())
 	if err != nil {
 		t.Fatal(err)
@@ -46,7 +52,11 @@ func TestBrowserFixture(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s.StartTLS()
+	if c.plaintext() {
+		s.Start()
+	} else {
+		s.StartTLS()
+	}
 	defer s.Close()
 	t.Log("web fixture ready")
 	time.Sleep(10 * time.Minute)

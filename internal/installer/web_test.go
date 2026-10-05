@@ -46,7 +46,7 @@ func TestWebContainerIsolation(t *testing.T) {
 		t.Fatal(err)
 	}
 	joined := strings.Join(args, " ")
-	for _, want := range []string{"--restart unless-stopped", "--publish 127.0.0.1:7350:7350", "volume-subpath=run,readonly", "--read-only", "--cap-drop=ALL", "cxz.role=web", "--state /var/lib/cxz -x web"} {
+	for _, want := range []string{"--restart unless-stopped", "--publish 127.0.0.1:7350:7350", "volume-subpath=run,readonly", "--read-only", "--cap-drop=ALL", "cxz.role=web", "--state /var/lib/cxz -x _web-serve"} {
 		if !strings.Contains(joined, want) {
 			t.Fatalf("missing %s in %s", want, joined)
 		}
@@ -65,6 +65,37 @@ func TestWebContainerIsolation(t *testing.T) {
 		c.Listen = bad
 		if _, err = webArgs(v, c); err == nil {
 			t.Fatalf("accepted %s", bad)
+		}
+	}
+}
+
+// A plaintext gateway carries no certificate to mount or name, and is only safe
+// because the port it is published on cannot be reached from a network. The
+// publish address is where that has to be checked: inside its own namespace the
+// gateway binds every interface.
+func TestPlaintextWebPublishesOnlyOnLoopback(t *testing.T) {
+	v, c, _ := webFixture(t)
+	c.Certificate, c.Key = "", ""
+	c.Origin = "http://127.0.0.1:7350"
+	args, err := webArgs(v, c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	joined := strings.Join(args, " ")
+	for _, want := range []string{"--publish 127.0.0.1:7350:7350", "target=/web/token,readonly", "--origin http://127.0.0.1:7350"} {
+		if !strings.Contains(joined, want) {
+			t.Fatalf("missing %s in %s", want, joined)
+		}
+	}
+	for _, bad := range []string{"--tls-cert", "--tls-key", "certificate.pem", "key.pem"} {
+		if strings.Contains(joined, bad) {
+			t.Fatalf("plaintext gateway still carries %s: %s", bad, joined)
+		}
+	}
+	for _, exposed := range []string{"0.0.0.0:7350", "192.0.2.10:7350", ":7350"} {
+		c.Listen = exposed
+		if _, err = webArgs(v, c); err == nil {
+			t.Fatalf("published plaintext on %s", exposed)
 		}
 	}
 }

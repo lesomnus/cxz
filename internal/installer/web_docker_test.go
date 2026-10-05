@@ -179,6 +179,41 @@ func TestWebDocker(t *testing.T) {
 	if _, found, err := findWeb(ctx, v); err != nil || found {
 		t.Fatalf("web still installed: %v", err)
 	}
+
+	// The same gateway with no certificate: the desktop default. Nothing is
+	// mounted for TLS, the readiness probe follows the origin's scheme, and a
+	// browser signs in over the loopback port exactly as it does over HTTPS.
+	plain := c
+	plain.Certificate, plain.Key = "", ""
+	plain.Origin = "http://" + plain.Listen
+	if err = InstallWeb(ctx, root, plain, io.Discard); err != nil {
+		t.Fatal(err)
+	}
+	gateway, _, err := findWeb(ctx, v)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, mount := range gateway.Mounts {
+		if strings.Contains(mount.Destination, "certificate.pem") || strings.Contains(mount.Destination, "key.pem") {
+			t.Fatalf("plaintext gateway mounted TLS material: %+v", mount)
+		}
+	}
+	plainRequest := func(path string, extra ...string) ([]byte, error) {
+		args := []string{"exec", v.Container + "-web", "curl", "--silent", "--show-error", "--fail", "--header", "Host: " + plain.Listen, "--header", "Origin: " + plain.Origin, "http://127.0.0.1:7350" + path}
+		return dockerx.Run(ctx, append(args, extra...)...)
+	}
+	if b, err = plainRequest("/auth/login", "--include", "--header", "Content-Type: application/json", "--data", fmt.Sprintf(`{"token":%q}`, strings.Repeat("a", 64))); err != nil {
+		t.Fatalf("plaintext login: %v %s", err, b)
+	}
+	if !strings.Contains(strings.ToLower(string(b)), "set-cookie:") {
+		t.Fatalf("plaintext login set no cookie: %s", b)
+	}
+	if strings.Contains(strings.ToLower(string(b)), "strict-transport-security") {
+		t.Fatalf("plaintext gateway promised HSTS: %s", b)
+	}
+	if err = UninstallWeb(ctx, root); err != nil {
+		t.Fatal(err)
+	}
 	if _, err = dockerx.Run(ctx, "exec", v.Container, "cxz", "--state", "/var/lib/cxz", "_ready"); err != nil {
 		t.Fatal("uninstall interrupted Manager", err)
 	}
