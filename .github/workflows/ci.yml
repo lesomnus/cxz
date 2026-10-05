@@ -185,10 +185,11 @@ jobs:
       - run: tar -cf release-artifacts.tar dist
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: release-artifacts
+          name: release-artifacts.tar
           path: release-artifacts.tar
           retention-days: 3
-          compression-level: 0
+          # Already a tar: avoid redundant ZIP wrapping and extraction.
+          archive: false
   image:
     outputs:
       digest: ${{ fromJSON(steps.manager-image.outputs.metadata).app['containerimage.digest'] }}
@@ -210,7 +211,8 @@ jobs:
         run: echo "APP_VERSION=source-${GITHUB_SHA:0:12}" >> "$GITHUB_ENV"
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: release-artifacts
+          name: release-artifacts.tar
+          skip-decompress: true
       - run: tar -xf release-artifacts.tar
       - name: Check native binary
         run: dist/linux-amd64/cxz version
