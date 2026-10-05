@@ -21,7 +21,9 @@ rows must not be summed.
 
 The `build` job runs in parallel with tests. It builds Linux and Windows binaries
 for amd64 and arm64 once, including the source revision, and packages the download
-archives and checksums. An artifact tar preserves executable permissions. Image
+archives and checksums. An artifact tar preserves executable permissions. It is uploaded directly as
+`release-artifacts.tar` with `archive: false` and downloaded with
+`skip-decompress: true`, avoiding an unnecessary ZIP layer. Image
 validation and publication consume that same artifact; they do not compile Go
 again. The artifact is retained for three days; reruns after expiry need the build
 job rerun too.
