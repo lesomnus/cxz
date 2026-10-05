@@ -11,7 +11,10 @@ All are **off by default**.
 
 `Ctrl+.` → **AI tasks** → select a task → `Enter`.
 Choose a registered account, then choose a model and effort from the provider's
-catalog. Setup first tries the account's stored auxiliary authentication; login
+catalog. The account list starts with what the other tasks already use —
+`use work1/sonnet-4-6/medium from Summary` — which copies that profile whole and
+saves in one step, with no catalog lookup and no login probe, because the task it
+came from already validated it. Setup first tries the account's stored auxiliary authentication; login
 opens only when that profile needs credentials. Summary and suggestion share
 authentication when they use the same account on the same Manager. Use ↑/↓ (or Tab) and Enter at each step.
 Selecting an effort validates and enables the task; **Provider default** leaves
@@ -99,9 +102,25 @@ when the configuration changes. When there is no sensible next step, it is simpl
 empty.
 
 Summary and suggestion are generated in one call when they share an account, model
-and effort. Separate calls include an available same-turn summary. A manual
+and effort — one provider process and **one copy of the conversation** instead of
+two, which is where the saving is. Equality is the whole profile, and the agent
+and backend always come from the account, so the one that surprises people is
+effort: the same account and model at a different reasoning level is two calls.
+Picking `use … from …` when configuring the second task is the way to be sure,
+and the AI tasks screen says which of the two you have:
+
+```
+Summary and suggestion share a profile: one call per turn, one copy of the conversation.
+Summary and suggestion differ: a call each. Edit one and choose "use … from …" to share a call.
+```
+
+Separate calls include an available same-turn summary. A manual
 suggestion requested while summary generation is running queues behind that call
 and reuses its result without regenerating the summary.
+
+The session title is always its own call: it runs on its own schedule and reads
+different input, so sharing its profile with another task saves keystrokes but
+not tokens.
 
 ## What gets collected
 
