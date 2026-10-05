@@ -1,8 +1,8 @@
 import openaiBlossom from "./assets/brands/openai-blossom.svg?raw";
-import claudeLogo from "./assets/brands/claude-one-color.svg";
+import claudeLogo from "./assets/brands/claude-spark-white.svg";
 
-// Keep the official artwork intact; the Blossom source uses currentColor.
-// Provenance and brand usage conditions live beside the SVG files.
+// Blossom uses its original currentColor; Claude keeps the white Spark path
+// extracted from the official lockup. Provenance/conditions accompany the SVGs.
 export function AgentBrand({ agent }: { agent: string }) {
   if (agent !== "codex" && agent !== "claude")
     return <>{agent ? agent[0].toUpperCase() + agent.slice(1) : "Agent"}</>;
@@ -24,7 +24,7 @@ export function AgentBrand({ agent }: { agent: string }) {
           src={claudeLogo}
           alt=""
           aria-hidden="true"
-          width="64.092"
+          width="14"
           height="14"
         />
       )}

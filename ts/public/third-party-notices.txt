@@ -29,8 +29,10 @@ Third-party trademarks
 OpenAI and the Blossom mark belong to OpenAI.
 https://openai.com/brand/
 
-Claude and the Claude logo belong to Anthropic. The SVG is the unmodified
-One-color variant from the official Anthropic press kit. Trademark usage
+Claude and the Claude logo belong to Anthropic. The displayed white Spark SVG
+is derived from the official press kit's One-color lockup: the original white
+Spark path is retained, the wordmark omitted, and the canvas narrowed to the
+symbol. It is not an official standalone monochrome variant. Trademark usage
 is subject to Anthropic approval; download availability is not approval.
 https://anthropic.com/press-kit
 https://www.anthropic.com/legal/trademark-guidelines
