@@ -55,7 +55,7 @@ explained in the mobile plan; it remains Not implemented in the web column.
 | INPUT-04 | N/A: no conversation composer | Supported: path hints and previews | Not implemented |
 | FILE-01 | Not implemented: no user-facing attachment command | Supported: host-file references and upload chips | Not implemented |
 | FILE-02 | Not implemented: no user-facing download command | Supported: `/download` and transfer progress/cancel | Not implemented |
-| INPUT-05 | Not implemented: no user-facing redact command | Supported: `@redact` on supported local/SSH transports; plaintext TCP refused | Not implemented |
+| INPUT-05 | Not implemented: no user-facing redact command | Supported: `/@redact` on supported local/SSH transports; plaintext TCP refused | Not implemented |
 | INPUT-06 | External: shell/terminal text input; no cxz STT | External: OS/terminal text input; Win+H observed working, no cxz STT | Not implemented |
 
 ## Approvals, questions, and authentication

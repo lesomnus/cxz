@@ -12,7 +12,7 @@ mean.
 | **Project runtime** | The project devcontainer | The session API and execution management for one project. Internal entry point `cxz _project`. |
 | **Session supervisor** | The project devcontainer | Owns one session's agent process, protocol I/O, approvals, state and journal. Internal entry point `cxz _supervise SESSION`. A separate process from the manager and the TUI. |
 | **Agent** | The project devcontainer, a child of the supervisor | Claude Code or Codex itself. Claude over a headless stream, Codex over `codex app-server`. |
-| **Wisp** | The project devcontainer, as the remote user | A helper for container path browsing and `@redact` temporary files. Not a session daemon — it does not run conversations. Lives as long as the connection that opened it. |
+| **Wisp** | The project devcontainer, as the remote user | A helper for container path browsing and `/@redact` temporary files. Not a session daemon — it does not run conversations. Lives as long as the connection that opened it. |
 | **Token broker** | Manager side | Supplies a central Codex account's access token to the projects that account is bound to. |
 | **Shared Docker engine** | A Docker-in-Docker container | The engine projects use for their own Docker work. Separate from your host daemon, with its own images, cache and volumes. |
 

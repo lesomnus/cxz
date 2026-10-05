@@ -40,9 +40,9 @@ and commands it ran. They can contain secrets your code contains.
 **Do not publish them.** That includes pasting them into issues. `/details` and the
 transcript show abbreviated views; `cxz session events` does not.
 
-## @redact
+## /@redact
 
-`@redact` keeps a secret out of the journal. You reference a value, the helper
+`/@redact` keeps a secret out of the journal. You reference a value, the helper
 writes it to a temporary file inside the container with the remote user's
 permissions, and the journal records the reference — not the value.
 
@@ -51,7 +51,7 @@ helper start and by explicit deletion, not when the TUI closes. It lives inside 
 project container, readable by the project's remote user, which means **anything
 running as that user in that project can read it** — including the agent.
 
-`@redact` protects the durable record. It does not protect the running container.
+`/@redact` protects the durable record. It does not protect the running container.
 
 ### Which connection may carry one
 

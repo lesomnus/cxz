@@ -34,6 +34,7 @@ var slashCommands = []slashCommand{
 	{"/record", "Start/stop diagnostic recording · F9"},
 	{"/settings", "Shared Docker status and maintenance · Ctrl+."},
 	{"/terminal", "Open container terminal; Ctrl+` folds it"},
+	{"/@redact", "Insert a secret chip inside your message"},
 }
 
 func (m *model) commandHints() []slashCommand {
@@ -76,6 +77,9 @@ func fuzzyScore(name, query string) int {
 }
 
 func (m *model) commandKey(k tea.KeyMsg) (bool, tea.Cmd) {
+	if token, hints := m.inlineHints(); token != nil && len(hints) > 0 {
+		return false, nil
+	}
 	hints := m.commandHints()
 	if len(hints) > 0 {
 		m.hintSelected = max(0, min(m.hintSelected, len(hints)-1))

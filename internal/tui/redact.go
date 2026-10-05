@@ -117,7 +117,7 @@ func (m *model) redactKey(k tea.KeyMsg) tea.Cmd {
 			token = fmt.Sprintf("[Redacted %d]", n)
 		}
 		if m.input.Value() != d.draft {
-			m.notice = "Draft changed; cancel and select @redact again"
+			m.notice = "Draft changed; cancel and select /@redact again"
 			return nil
 		}
 		r := []rune(d.draft)
@@ -151,7 +151,7 @@ func (m *model) redactOverlay(view string) string {
 	if n == 0 {
 		zeros = len(count)
 	}
-	rows := []string{accent.Render("Secret · @redact"), "", "[" + strings.Repeat("*", min(3, n)) + strings.Repeat(" ", 3-min(3, n)) + "] " + muted.Render(count[:zeros]) + count[zeros:] + caret, "", muted.Render("Enter insert chip · Ctrl+X clear · Esc cancel"), muted.Render("Only the file path is sent. Host tmpfs · sweep after 8 hours idle."), muted.Render("The agent can read this file; its output may expose the secret.")}
+	rows := []string{accent.Render("Secret · /@redact"), "", "[" + strings.Repeat("*", min(3, n)) + strings.Repeat(" ", 3-min(3, n)) + "] " + muted.Render(count[:zeros]) + count[zeros:] + caret, "", muted.Render("Enter insert chip · Ctrl+X clear · Esc cancel"), muted.Render("Only the file path is sent. Host tmpfs · sweep after 8 hours idle."), muted.Render("The agent can read this file; its output may expose the secret.")}
 	return overlayBox(view, rows, m.width, true)
 }
 func (m *model) hasRedactions(text string) bool {
@@ -205,7 +205,7 @@ func (m *model) sendRedactions(draft string) tea.Cmd {
 				for _, b := range bodies {
 					clear(b)
 				}
-				m.notice = "Secret expired; remove chip and use @redact again"
+				m.notice = "Secret expired; remove chip and use /@redact again"
 				return nil
 			}
 			bodies[token] = append([]byte(nil), r.body...)
