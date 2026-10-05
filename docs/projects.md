@@ -17,6 +17,7 @@ cxz session new --account personal .                # start a conversation
 cxz down .                                          # remove containers
 cxz project up web                                  # recreate and resume
 cxz project recreate --yes web                      # rebuild from configuration
+cxz project recreate --yes @all                     # rebuild every running project
 cxz project purge web                                 # preview permanent removal
 cxz project purge --yes web                           # permanently remove this project
 ```
@@ -38,6 +39,15 @@ prompt. Use `Ctrl+R` in the TUI or `cxz session resume` to continue a conversati
 
 Files that exist only in a container's writable layer die with the container.
 `recreate` detaches any editor attached to the old container.
+
+`recreate @all` applies a configuration change everywhere — a new shared Compose
+override, a new default devcontainer, a new image — without naming each project.
+It targets the **running** owned projects only, in workspace order, and prepares
+each without opening a session, so nothing that was down comes up and no agents
+are started. Run it without `--yes` first: it lists exactly which containers it
+would replace and how many projects it is skipping, and does nothing else. If one
+project fails to rebuild, the others are still attempted and the command reports
+which failed; retry that one by name.
 
 `cxz up` prints provisioning checkpoints to stderr — configuration, resources,
 image build, hooks, agent installation, runtime readiness — with long steps

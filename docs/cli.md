@@ -66,6 +66,7 @@ cxz project add --name NAME --alias ALIAS WORKSPACE
 cxz project set --name NAME --alias ALIAS PROJECT
 cxz project up PROJECT              # recreate and resume
 cxz project recreate --yes PROJECT  # rebuild; writable layer lost
+cxz project recreate --yes @all     # rebuild every running owned project
 cxz project down PROJECT
 cxz project purge PROJECT              # preview permanent removal
 cxz project purge --yes PROJECT        # delete this project and its owned data
@@ -78,6 +79,20 @@ cxz project exec PROJECT -- COMMAND...
 `up` prepares and returns without creating a session or starting an agent.
 `recreate` requires `--yes` because the writable layer is lost and attached editors
 disconnect.
+
+`@all` is the one target that is not a project. It recreates every **running**
+owned project, one after another, and prepares them without opening sessions —
+recreating a dozen projects does not start a dozen agents. Projects that are
+stopped are left alone; they read the current configuration when they next come
+up. Foreign containers are never touched. Without `--yes` it lists the targets
+and changes nothing. A project that fails is named and the rest are still
+attempted, and the command then fails, so a partial pass is not reported as a
+pass. Per-project flags (`--config`, `--name`, `--alias`, `--agent`) and
+session flags (`--account`, `--model`) are refused with `@all`.
+
+`!all` is accepted for the same thing, but needs quoting: interactive bash and
+zsh read a leading `!` as a history event. `@all` is the spelling to type, and
+matches `cxz use @edge`.
 
 A `PROJECT` argument resolves as exact ID or path, then alias, then an unambiguous
 display name.
