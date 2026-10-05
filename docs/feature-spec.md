@@ -70,6 +70,7 @@ linked guides explain existing behavior; correct these documents when code chang
 | SKILL-01 | Skills configuration | Manage skill registrations and global/project activation/inheritance; source files remain on the configured host. |
 | AI-01 | Auxiliary profiles | Configure task account, authentication, model, effort and enabled state. Reuse the appropriate auxiliary auth and never silently switch profiles. |
 | AI-02 | Summaries and suggestions | Show inline summaries and suggestion drafts with loading/errors. Preserve per-session on/off and one-shot behavior; accepting a suggestion does not send it. |
+| AI-04 | Session titles | Generate a draft on first input and finalize after three successful turns; allow manual naming/regeneration and preserve alias/UUID identity. |
 | AI-03 | Auxiliary operations | Inspect derived task status/usage and cancel derived work independently of the source agent turn. |
 
 ## Settings, operations, and platform differences

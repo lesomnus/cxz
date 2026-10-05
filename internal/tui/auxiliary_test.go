@@ -59,3 +59,18 @@ func TestAltEnterStillInsertsNewline(t *testing.T) {
 		t.Fatal(m.input.Value())
 	}
 }
+
+func TestTitleTaskUsesThirdProfile(t *testing.T) {
+	m := conversationModel()
+	p := &auxiliaryPage{}
+	m.settingsPage = &settingsPage{auxiliary: p}
+	m.auxiliaryKey(tea.KeyMsg{Type: tea.KeyDown})
+	m.auxiliaryKey(tea.KeyMsg{Type: tea.KeyDown})
+	if p.selected != 2 {
+		t.Fatal("title task unreachable")
+	}
+	m.auxiliaryKey(tea.KeyMsg{Type: tea.KeyEnter})
+	if !p.editing || p.step != "account" {
+		t.Fatalf("wrong task: %+v", p)
+	}
+}

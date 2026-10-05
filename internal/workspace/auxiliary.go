@@ -60,12 +60,12 @@ func (m *Manager) auxiliaryRequest(ctx context.Context, b []byte) (*api.Receipt,
 		old := out.Config
 		out.Config, e = c.Save(r.Task, r.Profile)
 		if e == nil {
-			for _, p := range []auxiliary.Profile{old.Summary, old.Suggestion} {
+			for _, p := range []auxiliary.Profile{old.Summary, old.Suggestion, old.Title} {
 				if !p.Enabled || p.Backend != accounts.BrokeredAccessToken {
 					continue
 				}
 				needed := false
-				for _, next := range []auxiliary.Profile{out.Config.Summary, out.Config.Suggestion} {
+				for _, next := range []auxiliary.Profile{out.Config.Summary, out.Config.Suggestion, out.Config.Title} {
 					needed = needed || (next.Enabled && next.Account == p.Account)
 				}
 				if !needed {
@@ -98,6 +98,27 @@ func (m *Manager) auxiliaryRequest(ctx context.Context, b []byte) (*api.Receipt,
 		if e == nil && r.Enabled != nil {
 			out.Message = fmt.Sprintf("%s %s · this session", r.Task, map[bool]string{true: "on", false: "off"}[*r.Enabled])
 		}
+	case "title":
+		if _, err := m.Get(ctx, r.Session); err != nil {
+			return nil, err
+		}
+		if r.Text != "" {
+			e = c.SetTitle(r.Session, r.Text)
+		} else {
+			conn, client, err := m.ClientFor(ctx, r.Session)
+			if err != nil {
+				return nil, err
+			}
+			defer conn.Close()
+			events, err := auxiliaryHistory(ctx, client, r.Session)
+			if err != nil {
+				return nil, err
+			}
+			e = c.GenerateTitle(r.Session, events)
+		}
+		title, _ := c.Title(r.Session)
+		out.Title = &title
+		out.Message = "Session title updated or queued"
 	case "status":
 		out.Job, e = c.Status(r.Session)
 	case "forget":
@@ -119,6 +140,8 @@ func (m *Manager) auxiliaryRequest(ctx context.Context, b []byte) (*api.Receipt,
 		if err != nil {
 			return nil, err
 		}
+		title, _ := c.Title(r.Session)
+		out.Title = &title
 		out.SessionConfig = &cfg
 		out.Summaries, err = c.Summaries(r.Session)
 		if err != nil {
@@ -275,6 +298,7 @@ func (m *Manager) StartAuxiliary(ctx context.Context) {
 				if e == nil {
 					for _, s := range list.Sessions {
 						alive[s.Id] = true
+						c.SeedTitle(s)
 						cursor, ok := cursors[s.Id]
 						if !ok {
 							cursor = c.Cursor(s.Id)

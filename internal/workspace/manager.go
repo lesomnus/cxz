@@ -280,6 +280,13 @@ func (m *Manager) Sessions(ctx context.Context) (*api.SessionList, error) {
 		out.Sessions = append(out.Sessions, p.Sessions...)
 		lock.Unlock()
 	}
+	if c, err := m.auxiliaryController(); err == nil {
+		for _, v := range out.Sessions {
+			if title, e := c.Title(v.Id); e == nil && title.Text != "" {
+				v.Title = title.Text
+			}
+		}
+	}
 	return out, nil
 }
 func (m *Manager) Get(ctx context.Context, id string) (*api.Session, error) {

@@ -209,7 +209,7 @@ func Provider(ctx context.Context, bin, dir string, auth accounts.LaunchAuth, in
 				if thread == "" {
 					return out, fmt.Errorf("missing auxiliary thread")
 				}
-				params := map[string]any{"threadId": thread, "input": []any{map[string]any{"type": "text", "text": "Task: " + in.Task + "\n" + in.Text}}, "outputSchema": map[string]any{"type": "object", "properties": map[string]any{"summary": map[string]string{"type": "string"}, "suggestion": map[string]string{"type": "string"}, "checkpoint": map[string]string{"type": "string"}}, "required": []string{"summary", "suggestion", "checkpoint"}, "additionalProperties": false}}
+				params := map[string]any{"threadId": thread, "input": []any{map[string]any{"type": "text", "text": "Task: " + in.Task + "\n" + in.Text}}, "outputSchema": map[string]any{"type": "object", "properties": map[string]any{"title": map[string]string{"type": "string"}, "summary": map[string]string{"type": "string"}, "suggestion": map[string]string{"type": "string"}, "checkpoint": map[string]string{"type": "string"}}, "required": []string{"summary", "suggestion", "checkpoint", "title"}, "additionalProperties": false}}
 				if in.Profile.Effort != "" {
 					params["effort"] = in.Profile.Effort
 				}

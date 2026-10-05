@@ -21,14 +21,14 @@ func TestPanelSeparatorsDoNotBecomeNavigationTargets(t *testing.T) {
 		m.Update(tea.WindowSizeMsg{Width: width, Height: 30})
 		m.panelFocus, m.panelIndex = true, 1
 		lines := strings.Split(ansi.Strip(m.panelScreen()), "\n")
-		if strings.TrimSpace(lines[6]) != strings.Repeat("─", m.panelScreenWidth()-2) || strings.Count(strings.Join(lines[4:9], "\n"), "─") != m.panelScreenWidth()-2 {
-			t.Fatal("missing separator between project groups", lines[4:9])
+		if strings.TrimSpace(lines[7]) != strings.Repeat("─", m.panelScreenWidth()-2) || strings.Count(strings.Join(lines[4:11], "\n"), "─") != m.panelScreenWidth()-2 {
+			t.Fatal("missing separator between project groups", lines[4:11])
 		}
-		m.Update(tea.MouseMsg{X: 2, Y: 6, Action: tea.MouseActionMotion})
+		m.Update(tea.MouseMsg{X: 2, Y: 7, Action: tea.MouseActionMotion})
 		if m.panelHoverY != 0 {
 			t.Fatal("divider has an item hover")
 		}
-		m.Update(tea.MouseMsg{X: 2, Y: 6, Button: tea.MouseButtonLeft, Action: tea.MouseActionPress})
+		m.Update(tea.MouseMsg{X: 2, Y: 7, Button: tea.MouseButtonLeft, Action: tea.MouseActionPress})
 		if m.panelIndex != 1 || m.current().Id != "s" {
 			t.Fatal("divider click activated a project or session")
 		}
@@ -47,7 +47,7 @@ func TestPanelSeparatorsDoNotBecomeNavigationTargets(t *testing.T) {
 			t.Fatal("first session did not open")
 		}
 		m.focusPanel()
-		m.Update(tea.MouseMsg{X: 2, Y: 8, Button: tea.MouseButtonLeft, Action: tea.MouseActionPress})
+		m.Update(tea.MouseMsg{X: 2, Y: 10, Button: tea.MouseButtonLeft, Action: tea.MouseActionPress})
 		if m.current().Id != "s" {
 			t.Fatal("divider shifted the session click target")
 		}
@@ -206,6 +206,38 @@ func TestConversationClickRestoresFocusFromPanel(t *testing.T) {
 			if m.input.Value() != want {
 				t.Fatalf("typing after click: got %q want %q", m.input.Value(), want)
 			}
+		}
+	}
+}
+
+func TestPanelSessionTitleTwoRowsAndTruncation(t *testing.T) {
+	m := panelModel()
+	m.Update(tea.WindowSizeMsg{Width: 110, Height: 30})
+	m.current().Title = strings.Repeat("Title ", 40)
+	rows := m.panelRows()
+	layout := panelLayout(rows)
+	for i, row := range rows {
+		if row.session != nil {
+			n := 0
+			for _, item := range layout {
+				if item == i {
+					n++
+				}
+			}
+			if n != 2 {
+				t.Fatal("session must occupy two rows")
+			}
+		}
+	}
+	text := ansi.Strip(m.panelScreen())
+	if !strings.Contains(text, "Title Title") || !strings.Contains(text, "...") || !strings.Contains(text, "Untitled") {
+		t.Fatal(text)
+	}
+	for _, y := range []int{5, 6} {
+		m.focusPanel()
+		m.Update(tea.MouseMsg{X: 2, Y: y, Button: tea.MouseButtonLeft, Action: tea.MouseActionPress})
+		if m.current().Id != "other-session" {
+			t.Fatal("both title and metadata should open session", y)
 		}
 	}
 }

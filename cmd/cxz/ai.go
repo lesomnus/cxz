@@ -13,11 +13,14 @@ import (
 )
 
 func aiCommand() *xli.Command {
-	cmd := &xli.Command{Name: "ai", Brief: "Configure auxiliary summaries and follow-up suggestions", Handler: xli.OnRun(func(_ context.Context, c *xli.Command, _ xli.Next) error { return c.PrintHelp(c.Writer) })}
-	for _, op := range []string{"list", "set", "disable", "models", "login", "status", "cancel"} {
+	cmd := &xli.Command{Name: "ai", Brief: "Configure auxiliary summaries, suggestions and session titles", Handler: xli.OnRun(func(_ context.Context, c *xli.Command, _ xli.Next) error { return c.PrintHelp(c.Writer) })}
+	for _, op := range []string{"list", "set", "disable", "models", "login", "status", "cancel", "title"} {
 		c := &xli.Command{Name: op}
 		if op != "list" {
 			c.Args = arg.Args{mcpStringArg("TARGET", false)}
+		}
+		if op == "title" {
+			c.Flags = flg.Flags{mcpStringFlag("text", "Manual title (empty: generate)", "")}
 		}
 		if op == "set" {
 			c.Flags = flg.Flags{mcpStringFlag("account", "Registered account", ""), mcpStringFlag("model", "Provider model", ""), mcpStringFlag("effort", "Provider effort (empty: default)", "")}
@@ -41,6 +44,9 @@ func aiCommand() *xli.Command {
 			case "login":
 				q.Action = "login-info"
 				q.Profile.Account = target
+			case "title":
+				q.Session = target
+				q.Text = flg.MustGet[string](c, "text")
 			case "status", "cancel":
 				q.Session = target
 			}

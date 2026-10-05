@@ -119,7 +119,7 @@ func (m *model) receiveAuxiliary(v auxiliaryResult) tea.Cmd {
 	}
 	if v.err != nil {
 		m.auxiliaryError = v.err.Error()
-		if v.action == "session" {
+		if v.action == "session" || v.action == "title" {
 			if j := m.auxiliaryJobs[key]; j != nil && j.ID == "pending" {
 				j.Status = "failed"
 				j.Error = v.err.Error()
@@ -130,6 +130,10 @@ func (m *model) receiveAuxiliary(v auxiliaryResult) tea.Cmd {
 		return nil
 	}
 	m.auxiliaryError = ""
+	if v.action == "title" {
+		m.notice = v.reply.Message
+		return m.refresh()
+	}
 	old := m.auxiliaryJobs[key]
 	changedSummaries := !slices.Equal(m.auxiliarySummaries[key], v.reply.Summaries)
 	if m.auxiliarySummaries == nil {
@@ -232,6 +236,8 @@ func (m *model) auxiliaryKey(k tea.KeyMsg) tea.Cmd {
 	task, profile := "summary", p.config.Summary
 	if p.selected == 1 {
 		task, profile = "suggestion", p.config.Suggestion
+	} else if p.selected == 2 {
+		task, profile = "title", p.config.Title
 	}
 	if p.editing {
 		choices := p.choices()
@@ -278,7 +284,11 @@ func (m *model) auxiliaryKey(k tea.KeyMsg) tea.Cmd {
 	}
 	switch k.String() {
 	case "up", "down", "tab":
-		p.selected = 1 - p.selected
+		if k.String() == "up" {
+			p.selected = (p.selected + 2) % 3
+		} else {
+			p.selected = (p.selected + 1) % 3
+		}
 	case "enter", "e":
 		p.editing = true
 		p.step = "account"
@@ -384,8 +394,8 @@ func (m *model) auxiliaryScreen() string {
 		}
 		lines = append(lines, "↑/↓ select · Enter continue / save effort · r retry · l log in (model step) · Esc cancel")
 	} else {
-		for i, profile := range []auxiliary.Profile{p.config.Summary, p.config.Suggestion} {
-			name := []string{"Summary", "Next-message suggestion"}[i]
+		for i, profile := range []auxiliary.Profile{p.config.Summary, p.config.Suggestion, p.config.Title} {
+			name := []string{"Summary", "Next-message suggestion", "Session title"}[i]
 			state := "Default off"
 			if profile.Enabled {
 				state = "Default on"
@@ -551,5 +561,25 @@ func (m *model) auxiliaryCommand(text string) tea.Cmd {
 	}
 	m.auxiliaryVersions[key]++
 	m.auxiliaryPending[key] = true
+	return m.auxiliaryRequest(r, nil)
+}
+
+func (m *model) titleCommand(text string) tea.Cmd {
+	s := m.current()
+	if s == nil {
+		m.notice = "Select a session first"
+		return nil
+	}
+	r := auxiliary.Request{Action: "title", Session: s.Id}
+	args := strings.TrimSpace(strings.TrimPrefix(text, "/title"))
+	if args != "" {
+		if !strings.HasPrefix(args, "set ") || strings.TrimSpace(strings.TrimPrefix(args, "set ")) == "" {
+			m.notice = "Usage: /title or /title set <title>"
+			return nil
+		}
+		r.Text = strings.TrimSpace(strings.TrimPrefix(args, "set "))
+	}
+	m.input.Reset()
+	m.resize()
 	return m.auxiliaryRequest(r, nil)
 }

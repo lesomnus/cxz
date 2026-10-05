@@ -16,19 +16,20 @@ import (
 
 type Runner func(context.Context, Input) (Output, error)
 type Controller struct {
-	wg      sync.WaitGroup
-	closed  bool
-	started int64
-	mu      sync.Mutex
-	root    string
-	run     Runner
-	config  Config
-	active  map[string]context.CancelFunc
-	slots   chan struct{}
+	wg          sync.WaitGroup
+	closed      bool
+	started     int64
+	mu          sync.Mutex
+	root        string
+	run         Runner
+	config      Config
+	active      map[string]context.CancelFunc
+	titleActive map[string]context.CancelFunc
+	slots       chan struct{}
 }
 
 func New(root string, run Runner) (*Controller, error) {
-	c := &Controller{root: filepath.Join(root, "auxiliary"), started: time.Now().UnixMilli(), run: run, active: map[string]context.CancelFunc{}, slots: make(chan struct{}, 4)}
+	c := &Controller{root: filepath.Join(root, "auxiliary"), started: time.Now().UnixMilli(), run: run, active: map[string]context.CancelFunc{}, titleActive: map[string]context.CancelFunc{}, slots: make(chan struct{}, 4)}
 	if err := os.MkdirAll(c.root, 0700); err != nil {
 		return nil, err
 	}
@@ -54,6 +55,11 @@ func (c *Controller) Save(task string, p Profile) (Config, error) {
 		n.Summary = p
 	case "suggestion":
 		n.Suggestion = p
+	case "title":
+		n.Title = p
+		if p.Enabled && (!c.config.Title.Enabled || n.TitleSince == 0) {
+			n.TitleSince = time.Now().UnixMilli()
+		}
 	default:
 		return n, fmt.Errorf("unknown auxiliary task")
 	}
@@ -63,6 +69,9 @@ func (c *Controller) Save(task string, p Profile) (Config, error) {
 		return c.config, e
 	}
 	c.config = n
+	for _, cancel := range c.titleActive {
+		cancel()
+	}
 	for _, cancel := range c.active {
 		cancel()
 	}
@@ -137,6 +146,9 @@ func (c *Controller) Cancel(id string) error {
 	if f := c.active[id]; f != nil {
 		f()
 	}
+	if f := c.titleActive[id]; f != nil {
+		f()
+	}
 	s, e := c.load(id)
 	if e != nil {
 		return e
@@ -155,6 +167,7 @@ func (c *Controller) Observe(events []*api.Event) {
 	if c.closed || !c.config.Configured() {
 		return
 	}
+	c.observeTitles(events)
 	for _, e := range events {
 		if e.TimeMs < max(c.config.Since, c.started) {
 			continue
@@ -375,6 +388,17 @@ func (c *Controller) Forget(id string) error {
 		f()
 	}
 	delete(c.active, id)
+	if f := c.titleActive[id]; f != nil {
+		f()
+	}
+	delete(c.titleActive, id)
+	title, err := c.loadTitle(id)
+	if err != nil {
+		return err
+	}
+	if err := c.saveTitle(id, TitleState{Text: title.Text, Phase: "final", Manual: true}); err != nil {
+		return err
+	}
 	if err := os.Remove(c.preferencePath(id)); err != nil && !os.IsNotExist(err) {
 		return err
 	}
@@ -391,7 +415,11 @@ func (c *Controller) Purge(id string) error {
 		f()
 	}
 	delete(c.active, id)
-	for _, path := range []string{c.preferencePath(id), c.path(id)} {
+	if f := c.titleActive[id]; f != nil {
+		f()
+	}
+	delete(c.titleActive, id)
+	for _, path := range []string{c.preferencePath(id), c.path(id), c.titlePath(id)} {
 		if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
 			return err
 		}
@@ -402,6 +430,9 @@ func (c *Controller) Purge(id string) error {
 func (c *Controller) Close() {
 	c.mu.Lock()
 	c.closed = true
+	for _, f := range c.titleActive {
+		f()
+	}
 	for _, f := range c.active {
 		f()
 	}
