@@ -68,21 +68,34 @@ The opening message means a connection attempt, not proof that the remote web
 server is running. SSH tests the destination when a browser opens the forwarded
 port; a stopped web server still produces a connection failure then.
 
-### HTTPS over the tunnel
+### Browsing through the tunnel
 
 A tunnel forwards bytes; it does not terminate TLS or rewrite HTTP Host/Origin.
-To browse `https://localhost:7350`, the remote web gateway must have
-`origin: https://localhost:7350` and a certificate for `localhost` that the
-Windows browser trusts. Configure this on the remote host and start/reconfigure
-the gateway using [web setup](web.md). A certificate for only a VPN hostname
-will not validate for localhost, and cxz rejects a mismatched origin.
+The browser must therefore ask for the exact origin the remote gateway is
+configured with.
 
-If keeping the existing VPN hostname and certificate, map that hostname to
-`127.0.0.1` on the client and open the existing origin through a tunnel on the
-same local port. Choose either addressing arrangement consistently; cxz does
-not change certificates, hosts files or web configuration automatically.
-Changing the local port also changes the browser origin. Tunnel setup does not
-start/install the remote web server or bypass its browser token login.
+A gateway left at its default makes that automatic. `cxz web up` serves
+`http://127.0.0.1:7350`, the tunnel's own default forwards `127.0.0.1:7350` to
+`127.0.0.1:7350`, and both ends spell the origin the same way, so
+`http://127.0.0.1:7350` in the browser matches with nothing to configure and no
+certificate to trust. SSH encrypts the hop.
+
+Two things still break the match:
+
+- **A different local port.** `--local-port 7443` makes the browser's origin
+  `127.0.0.1:7443`, which the gateway refuses. Change the gateway's `origin` and
+  `listen` to the same port, or keep the ports equal.
+- **`localhost` instead of `127.0.0.1`.** The tunnel binds IPv4 loopback only,
+  and browsers try `::1` for `localhost` first. Use the IP literal.
+
+For an HTTPS gateway, the remote `origin` must be the URL you type and its
+certificate must cover that name, so browsing `https://localhost:7350` needs
+`origin: https://localhost:7350` and a certificate for `localhost` that the
+client trusts. Keeping a VPN hostname and certificate instead means mapping that
+hostname to `127.0.0.1` on the client and tunnelling on the same port. Choose
+one arrangement consistently; cxz does not change certificates, hosts files or
+web configuration automatically. Tunnel setup does not start the remote gateway
+or bypass its browser token login.
 
 ## TCP forwarding
 

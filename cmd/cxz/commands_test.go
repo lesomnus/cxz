@@ -72,7 +72,10 @@ func TestValidationBeforeConnection(t *testing.T) {
 		{[]string{"session", "new", ".", "--agent", "codex"}, xli.ErrFlagAfterArg},
 		{[]string{"session", "get"}, xli.ErrNeedArgs},
 		{[]string{"session", "stop", "id", "extra"}, xli.ErrTooManyArgs},
-		{[]string{"install", "unexpected"}, xli.ErrUnknownCmd},
+		// A group with subcommands, so the unknown word is a command rather than
+		// a stray argument. `install` carried the web subcommand until the
+		// gateway moved to its own group, and is now a leaf on every platform.
+		{[]string{"connection", "unexpected"}, xli.ErrUnknownCmd},
 		{[]string{"unknown"}, xli.ErrUnknownCmd},
 		{[]string{"session", "new", "--unknown"}, xli.ErrUnknownFlag},
 		{[]string{"session", "new", "--agent", "invalid", "."}, nil},

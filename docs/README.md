@@ -12,7 +12,7 @@ start. This is the map of everything else.
 | [settings.md](settings.md) | `cxz edit`, `settings.jsonc`, shared sources, file mappings |
 | [docker.md](docker.md) | What cxz creates, the shared engine, Compose overrides, remote engines |
 | [remote.md](remote.md) | SSH and TCP frontends, named connections, Windows |
-| [web.md](web.md) | Mobile browser client, VPN HTTPS setup, current support |
+| [web.md](web.md) | Browser client: loopback desktop setup, VPN HTTPS, current support |
 
 ## Using it
 

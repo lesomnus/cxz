@@ -6,6 +6,7 @@
     "build": "tsc --noEmit && vite build",
     "test": "vitest run src",
     "test:browser": "playwright test",
+    "test:browser:plaintext": "playwright test --config playwright.plaintext.config.ts",
     "format": "prettier --write src vite.config.ts vite.sandbox.config.ts playwright.config.ts playwright.sandbox.config.ts e2e sandbox-e2e scripts",
     "sandbox:prepare": "node scripts/build-sandbox.mjs",
     "sandbox": "npm run sandbox:prepare && vite --config vite.sandbox.config.ts --open /sandbox.html",

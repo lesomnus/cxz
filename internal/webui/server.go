@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -27,13 +28,39 @@ const lifetime = 12 * time.Hour
 
 type Config struct{ Listen, Origin, Certificate, Key, Token string }
 
+// Loopback reports a host the browser can only reach on this machine. It is the
+// one place plaintext is allowed: Chrome and Firefox already treat
+// http://127.0.0.1 as a secure context, so the UI keeps every API that needs
+// one, and the bytes TLS would protect never reach a network. A name resolving
+// elsewhere is not this, so only the literals are accepted.
+func Loopback(host string) bool {
+	if host == "localhost" {
+		return true
+	}
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
+}
+
 func (c Config) Validate() error {
 	u, err := url.Parse(c.Origin)
-	if err != nil || u.Scheme != "https" || u.Host == "" || u.User != nil || u.Path != "" || u.RawQuery != "" || u.Fragment != "" {
-		return fmt.Errorf("origin must be https://host[:port] without a path")
+	if err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Host == "" || u.User != nil || u.Path != "" || u.RawQuery != "" || u.Fragment != "" {
+		return fmt.Errorf("origin must be https://host[:port], or http://127.0.0.1[:port], without a path")
 	}
-	if c.Listen == "" || c.Certificate == "" || c.Key == "" {
-		return fmt.Errorf("listen, tls-cert and tls-key are required")
+	if c.Listen == "" {
+		return fmt.Errorf("listen is required")
+	}
+	// Whether the listener is reachable from a network is not visible here: the
+	// installed gateway binds every interface inside its own namespace and is
+	// published to one host address. Each caller gates the address it owns.
+	if u.Scheme == "http" {
+		if !Loopback(u.Hostname()) {
+			return fmt.Errorf("origin %q must use https; http is accepted only for a loopback address", c.Origin)
+		}
+		if c.Certificate != "" || c.Key != "" {
+			return fmt.Errorf("an http origin serves no certificate; use an https origin or drop tls-cert and tls-key")
+		}
+	} else if c.Certificate == "" || c.Key == "" {
+		return fmt.Errorf("an https origin requires tls-cert and tls-key")
 	}
 	if len(c.Token) < 32 {
 		return fmt.Errorf("web access token must contain at least 32 bytes")
@@ -41,16 +68,22 @@ func (c Config) Validate() error {
 	return nil
 }
 
+func (c Config) plaintext() bool { return c.Certificate == "" && c.Key == "" }
+
 type browserSession struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 }
 
 type browserAuth struct {
-	origin   string
-	token    [32]byte
-	mu       sync.Mutex
-	sessions map[[32]byte]browserSession
+	origin string
+	// transport is whether TLS carries this origin. HSTS is a promise about a
+	// host, and a loopback gateway must not make it: it is ignored over
+	// plaintext today, and would outlive this installation if it were not.
+	transport bool
+	token     [32]byte
+	mu        sync.Mutex
+	sessions  map[[32]byte]browserSession
 }
 
 // Handler uses payday's transcoder; all RPCs still run in the installed Manager.
@@ -68,7 +101,7 @@ func Handler(c Config, conn grpc.ClientConnInterface, assets fs.FS) (http.Handle
 		return nil, nil, err
 	}
 	mux.Handle("/", http.FileServer(http.FS(assets)))
-	auth := &browserAuth{origin: c.Origin, token: sha256.Sum256([]byte(c.Token)), sessions: make(map[[32]byte]browserSession)}
+	auth := &browserAuth{origin: c.Origin, transport: !c.plaintext(), token: sha256.Sum256([]byte(c.Token)), sessions: make(map[[32]byte]browserSession)}
 	return auth.wrap(mux), func() {
 		auth.mu.Lock()
 		for k := range auth.sessions {
@@ -85,7 +118,9 @@ func (a *browserAuth) wrap(next http.Handler) http.Handler {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("Referrer-Policy", "no-referrer")
 		w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'")
-		w.Header().Set("Strict-Transport-Security", "max-age=31536000")
+		if a.transport {
+			w.Header().Set("Strict-Transport-Security", "max-age=31536000")
+		}
 		r.Body = http.MaxBytesReader(w, r.Body, 8<<20)
 		// Exact host and origin binding also protects authenticated Connect GETs.
 		u, _ := url.Parse(a.origin)
@@ -215,7 +250,11 @@ func Serve(ctx context.Context, c Config, conn grpc.ClientConnInterface, assets 
 		case <-done:
 		}
 	}()
-	err = s.ListenAndServeTLS(c.Certificate, c.Key)
+	if c.plaintext() {
+		err = s.ListenAndServe()
+	} else {
+		err = s.ListenAndServeTLS(c.Certificate, c.Key)
+	}
 	if errors.Is(err, http.ErrServerClosed) {
 		return nil
 	}

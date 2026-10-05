@@ -261,11 +261,24 @@ notice.
 
 ## Web gateway (Linux host)
 
-`cxz web --origin https://host:7350 --tls-cert CERT --tls-key KEY
---access-token-file TOKEN [--listen HOST:PORT]` serves the mobile web client
-and authenticated payday Connect endpoint for the installed local Manager.
-Default listen address: `127.0.0.1:7350`. All other flags shown are required.
-See [web.md](web.md) for setup, authentication and supported operations.
+```sh
+cxz web up                          # create or reconfigure the background gateway
+cxz web down                        # remove the container; configuration and token stay
+cxz web status [--format table|json]
+cxz web serve                       # foreground, for developing cxz itself
+```
+
+`web up` with nothing configured writes `STATE/web.json` and `STATE/web-token`
+and serves `http://127.0.0.1:7350`. Browsers treat a loopback origin as secure,
+so that path needs no certificate and no trust store. Serving any other address
+requires an `https` origin with `tls_cert` and `tls_key`; a plaintext gateway is
+refused on an address a network can reach.
+
+All four accept `--config`, and the three that serve also accept `--listen`,
+`--origin`, `--tls-cert`, `--tls-key` and `--access-token-file`, overriding
+`STATE/web.json`. `status` reads the file alone, since an override would
+describe something other than what is running. See [web.md](web.md) for
+authentication, update behaviour and supported operations.
 
 ### Client connections
 
@@ -277,13 +290,6 @@ cxz connection tunnel [--local-port 7350] [--remote-port 7350] NAME
 Available on Windows and Linux. Listing is local and shows the effective default;
 tunnelling uses the saved SSH connection and binds only client IPv4 loopback.
 Ctrl+C closes the foreground tunnel without stopping server work. Ports must be
-1–65535. See [remote access](remote.md#inspect-connections-and-tunnel-a-port),
-including HTTPS origin/certificate requirements.
-
-### Installed web gateway
-
-`cxz install web [--config FILE]` installs/reconfigures the persistent web
-container. `cxz uninstall web` removes it without deleting configuration or
-credentials. `cxz web` runs the same gateway in the foreground. Both startup
-commands accept `--listen`, `--origin`, `--tls-cert`, `--tls-key` and
-`--access-token-file`, overriding `STATE/web.json`. See [web](web.md).
+1–65535. A tunnel to a loopback gateway needs no certificate: both ends are
+`127.0.0.1:7350`, so the origin already matches. See
+[remote access](remote.md#inspect-connections-and-tunnel-a-port).

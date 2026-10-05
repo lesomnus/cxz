@@ -151,15 +151,40 @@ func TestSessionRevocationCancelsActiveRequests(t *testing.T) {
 
 func TestConfigRequiresHTTPSAndExplicitCredentials(t *testing.T) {
 	c := Config{Listen: "127.0.0.1:0", Origin: "https://example.test", Certificate: "cert", Key: "key", Token: strings.Repeat("a", 32)}
-	for _, origin := range []string{"http://example.test", "https://user@example.test", "https://example.test/path", "https://example.test?query=1", "https://example.test#fragment"} {
+	for _, origin := range []string{"http://example.test", "http://192.0.2.10:7350", "https://user@example.test", "https://example.test/path", "https://example.test?query=1", "https://example.test#fragment"} {
 		bad := c
 		bad.Origin = origin
 		if bad.Validate() == nil {
 			t.Fatalf("accepted %s", origin)
 		}
 	}
+	if bad := (Config{Listen: "127.0.0.1:0", Origin: "https://example.test", Token: strings.Repeat("a", 32)}); bad.Validate() == nil {
+		t.Fatal("accepted an https origin with no certificate")
+	}
 	c.Token = "short"
 	if c.Validate() == nil {
 		t.Fatal("accepted short token")
+	}
+}
+
+// Plaintext is the desktop path: the browser already treats a loopback origin
+// as secure, so no certificate exists to serve -- and one configured alongside
+// it would mean the origin and the transport disagree.
+func TestLoopbackOriginServesPlaintextWithoutACertificate(t *testing.T) {
+	for _, origin := range []string{"http://127.0.0.1:7350", "http://localhost:7350", "http://[::1]:7350"} {
+		c := Config{Listen: "127.0.0.1:7350", Origin: origin, Token: strings.Repeat("a", 32)}
+		if err := c.Validate(); err != nil {
+			t.Fatalf("%s: %v", origin, err)
+		}
+		if !c.plaintext() {
+			t.Fatalf("%s is not plaintext", origin)
+		}
+		c.Certificate, c.Key = "cert", "key"
+		if c.Validate() == nil {
+			t.Fatalf("%s accepted a certificate", origin)
+		}
+	}
+	if Loopback("example.test") || Loopback("192.0.2.10") || Loopback("") {
+		t.Fatal("a routable host was read as loopback")
 	}
 }
