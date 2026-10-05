@@ -57,6 +57,7 @@ explained in the mobile plan; it remains Not implemented in the web column.
 | FILE-02 | Not implemented: no user-facing download command | Supported: `/download` and transfer progress/cancel | Not implemented |
 | INPUT-05 | Not implemented: no user-facing redact command | Supported: `/@redact` on supported local/SSH transports; plaintext TCP refused | Not implemented |
 | INPUT-06 | External: shell/terminal text input; no cxz STT | External: OS/terminal text input; Win+H observed working, no cxz STT | Not implemented |
+| INPUT-07 | N/A: shell supplies text | Supported: `@` alias grid with filtering, keyboard/mouse selection and title preview | Not implemented |
 
 ## Approvals, questions, and authentication
 

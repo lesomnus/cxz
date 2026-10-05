@@ -8,9 +8,20 @@ post-compaction context. Existing Markdown memory tools are unchanged.
 
 Ask an agent, for example: “Refer to what we discussed in @seal five minutes ago.”
 `@seal` and “session seal” are natural-language references to alias `seal`; tool
-arguments contain no `@`. Session mention autocomplete is not part of this change.
-The TUI's secret inline command is now **`/@redact`**. Bare `@` no longer opens the
-inline command hint; `/` completion also lists `/@redact`.
+arguments contain no `@`.
+
+In the TUI composer, type `@` to see other listed sessions in the current project.
+Aliases appear in a responsive grid; typing filters them with fuzzy matching.
+Arrow keys select a cell, PgUp/PgDown move a page, Enter/Tab insert the alias,
+and Esc dismisses. Mouse hover, click and wheel also work. The selected entry's
+title and agent appear below the grid. Sessions from other projects/connections
+and the current session are excluded. This uses the existing session list;
+it does not read conversations or call an AI model.
+
+Completion inserts ordinary `@alias` text, not a permanent UUID reference. The
+agent resolves it when using the tools. Email addresses, backtick code, slash
+commands and pasted mentions do not automatically open the picker.
+The secret inline command remains **`/@redact`**; `/` completion lists it.
 
 ## Find, search, then read
 

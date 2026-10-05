@@ -44,6 +44,7 @@ linked guides explain existing behavior; correct these documents when code chang
 | FILE-02 | File downloads | Download a regular container file, report transfer progress and allow cancellation. Destination handling is client-specific. |
 | INPUT-05 | Secret input | Collect a secret separately from ordinary prompt text and send a protected file reference. Enforce transport rules; do not degrade silently to plain prompt text. |
 | INPUT-06 | External text input | Accept text produced by OS keyboard/dictation facilities where the environment supports them. cxz does not promise its own STT engine. |
+| INPUT-07 | Session mentions | Discover other listed sessions within the current project, filter by alias and insert a plain-text mention without sending the draft or reading conversation bodies. |
 
 ## Approvals, questions, and authentication
 

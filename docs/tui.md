@@ -88,6 +88,11 @@ agent actually saw it rather than where it was typed.
 
 ## Slash commands
 
+Typing `@` shows a grid of other session aliases in the current project.
+Type to filter; arrow keys select, Enter/Tab insert, and Esc closes. Mouse hover,
+click and wheel work too. The selected session's title and agent appear below
+the grid. Completion only inserts text; it never sends the message.
+
 Typing `/` overlays fuzzy-matched hints above the composer: arrows select, `Tab`
 completes, `Esc` dismisses.
 
