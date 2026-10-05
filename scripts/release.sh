@@ -7,6 +7,7 @@ if [[ "$version" != edge && ! "$version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9
   echo 'invalid version' >&2
   exit 1
 fi
+revision=$(git rev-parse HEAD)
 build_version=$version
 if [[ "$version" == edge ]]; then
   build_version="source-$(git rev-parse --short=12 HEAD)"
@@ -14,12 +15,12 @@ fi
 mkdir -p "$output"
 for arch in amd64 arm64; do
   mkdir -p "$output/linux-$arch"
-  CGO_ENABLED=0 GOOS=linux GOARCH="$arch" go build -trimpath -ldflags="-s -w -X main.version=$build_version" -o "$output/linux-$arch/cxz" ./cmd/cxz
+  CGO_ENABLED=0 GOOS=linux GOARCH="$arch" go build -trimpath -ldflags="-s -w -X main.version=$build_version -X main.buildRevision=$revision" -o "$output/linux-$arch/cxz" ./cmd/cxz
   tar --sort=name --mtime=@0 --owner=0 --group=0 --numeric-owner -C "$output/linux-$arch" -cf - cxz | gzip -n > "$output/cxz-$version-linux-$arch.tar.gz"
 done
 for arch in amd64 arm64; do
   mkdir -p "$output/windows-$arch"
-  CGO_ENABLED=0 GOOS=windows GOARCH="$arch" go build -trimpath -ldflags="-s -w -X main.version=$build_version" -o "$output/windows-$arch/cxz.exe" ./cmd/cxz
+  CGO_ENABLED=0 GOOS=windows GOARCH="$arch" go build -trimpath -ldflags="-s -w -X main.version=$build_version -X main.buildRevision=$revision" -o "$output/windows-$arch/cxz.exe" ./cmd/cxz
   python3 - "$output/windows-$arch/cxz.exe" "$output/cxz-$version-windows-$arch.zip" <<'PY'
 import sys, zipfile
 from pathlib import Path
