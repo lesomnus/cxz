@@ -17,7 +17,7 @@ export function VirtualMessages({
 }: {
   pane: React.RefObject<HTMLDivElement | null>;
   events: SessionEvent[];
-  follow: boolean;
+  follow: React.RefObject<boolean>;
   render: (event: SessionEvent) => React.ReactNode;
   changed: (markers: { id: string; y: number }[]) => void;
 }) {
@@ -91,11 +91,11 @@ export function VirtualMessages({
     const el = pane.current;
     if (!el) return;
     const old = previous.current;
-    if (old !== layout || (follow && !anchor.current)) {
+    if (old !== layout || (follow.current && !anchor.current)) {
       const before = el.scrollTop;
       const row =
         anchor.current && layout.rows.find((r) => r.id === anchor.current!.id);
-      if (follow) el.scrollTop = el.scrollHeight;
+      if (follow.current) el.scrollTop = el.scrollHeight;
       else if (row)
         el.scrollTop =
           row.top + root.current!.offsetTop - anchor.current!.offset;

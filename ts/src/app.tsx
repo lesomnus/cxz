@@ -439,6 +439,7 @@ function Conversation({
     };
   }, [c, id]);
   async function loadHistory(direction: "older" | "newer", goLatest = false) {
+    if (goLatest) pane.current?.dispatchEvent(new Event("scroll-jump"));
     if (historyRequest.current) {
       if (!goLatest) return;
       historyRequest.current.abort();
@@ -638,6 +639,7 @@ function Conversation({
       await c.sessions.send({ ...control(s), text: sent });
       setDraft((old) => (old === sent ? "" : old));
       if (detached.current) await loadHistory("newer", true);
+      pane.current?.dispatchEvent(new Event("scroll-jump"));
       setFollow(true);
       if (pane.current) pane.current.scrollTop = pane.current.scrollHeight;
     });
@@ -673,7 +675,11 @@ function Conversation({
       <Transcript
         pane={pane}
         events={visibleEvents}
-        follow={follow}
+        follow={followRef}
+        onNavigate={() => {
+          followRef.current = false;
+          setFollow(false);
+        }}
         render={(e) => <EventView e={e} agent={s?.agent ?? ""} />}
         notice={
           gap && (
@@ -682,29 +688,33 @@ function Conversation({
             </p>
           )
         }
+        navigation={
+          !follow && (
+            <Button
+              className="bottom"
+              onClick={() => void loadHistory("newer", true)}
+            >
+              ↓ Latest
+            </Button>
+          )
+        }
         onTension={(stretch) => {
           tension.current = stretch;
           updateShadow();
         }}
         older={() => void loadHistory("older")}
         newer={() => void loadHistory("newer")}
-        onScroll={() => {
+        onScroll={(reading) => {
           const el = pane.current!;
           updateShadow();
-          setFollow(
+          const next =
+            !reading &&
             !detached.current &&
-              el.scrollHeight - el.scrollTop - el.clientHeight < 1,
-          );
+            el.scrollHeight - el.scrollTop - el.clientHeight < 1;
+          followRef.current = next;
+          setFollow(next);
         }}
       />
-      {!follow && (
-        <Button
-          className="bottom"
-          onClick={() => void loadHistory("newer", true)}
-        >
-          ↓ Latest
-        </Button>
-      )}
       <section className="pending">
         {pending.map((e) => (
           <Approval

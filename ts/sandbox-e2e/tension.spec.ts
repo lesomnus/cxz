@@ -33,7 +33,7 @@ test("both pinned edges advance prompt phase and extend the background fade with
       .poll(() =>
         thumb.evaluate((el) =>
           Math.abs(
-            parseFloat(getComputedStyle(el).top) - parseFloat(el.style.top),
+            parseFloat(getComputedStyle(el).top) - Number(el.dataset.targetTop),
           ),
         ),
       )
@@ -66,6 +66,21 @@ test("both pinned edges advance prompt phase and extend the background fade with
       .poll(async () => Number(await thumb.getAttribute("data-stretch")))
       .toBeGreaterThan(15);
     await expect.poll(fade).toBeGreaterThan(light + 15);
+    const area = (await page.locator(".transcript-area").boundingBox())!;
+    const stretched = (await thumb.boundingBox())!;
+    expect(stretched.y).toBeGreaterThanOrEqual(area.y);
+    expect(stretched.y + stretched.height).toBeLessThanOrEqual(
+      area.y + area.height,
+    );
+    expect(
+      await page
+        .locator(".scroll-track")
+        .evaluate((el) => Number(getComputedStyle(el).zIndex)),
+    ).toBeGreaterThan(
+      await page
+        .locator(".transcript-fade-bottom")
+        .evaluate((el) => Number(getComputedStyle(el).zIndex)),
+    );
     if (direction > 0) await expect.poll(topFade).toBeGreaterThan(topLight + 5);
     const phase = await page.evaluate(() => {
       const marker = document.querySelector<HTMLElement>(".scroll-marker")!;

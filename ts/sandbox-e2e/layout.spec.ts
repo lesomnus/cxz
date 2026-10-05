@@ -77,10 +77,10 @@ test("compact monochrome workspace, aligned composer and release-triggered butto
   await expect(send).toHaveCSS("border-top-width", "0px");
   await expect(page.locator(".composer-wrapper")).toHaveCSS(
     "border-radius",
-    "5px",
+    "10px",
   );
-  await expect(composer).toHaveCSS("border-radius", "5px");
-  await expect(send).toHaveCSS("border-radius", "2px");
+  await expect(composer).toHaveCSS("border-radius", "15px");
+  await expect(send).toHaveCSS("border-radius", "7px");
   const message = page.getByRole("textbox", { name: "Message", exact: true });
   await message.fill("Release to send");
   await send.hover();

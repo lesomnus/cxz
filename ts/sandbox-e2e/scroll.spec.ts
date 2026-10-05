@@ -90,27 +90,35 @@ test("grouped sessions, shortcut, stable fields and elastic local scrollbar", as
   expect(Number(await thumb.getAttribute("data-stretch"))).toBeLessThanOrEqual(
     20,
   );
-  const animationStart = await page.evaluate(() => {
-    const rail = document.querySelector(".scroll-track")!;
-    const marker = [
-      ...rail.querySelectorAll<HTMLElement>(".scroll-marker"),
-    ].find(
-      (el) =>
-        parseFloat(getComputedStyle(el).top) > 0 &&
-        parseFloat(getComputedStyle(el).top) < rail.clientHeight,
-    )!;
-    (window as any).savedPromptMarker = marker;
-    return {
-      id: marker.dataset.prompt!,
-      marker: parseFloat(getComputedStyle(marker).top),
-      thumb: parseFloat(
-        getComputedStyle(document.querySelector(".scroll-thumb")!).top,
-      ),
-    };
+  await page.evaluate(() => {
+    // Sample on release itself: accelerated scrolling continues between tool calls.
+    document.querySelector(".scroll-thumb")!.addEventListener(
+      "pointerup",
+      () => {
+        const rail = document.querySelector(".scroll-track")!;
+        const marker = [
+          ...rail.querySelectorAll<HTMLElement>(".scroll-marker"),
+        ].find(
+          (el) =>
+            parseFloat(getComputedStyle(el).top) > 0 &&
+            parseFloat(getComputedStyle(el).top) < rail.clientHeight,
+        )!;
+        (window as any).savedPromptMarker = marker;
+        (window as any).promptAnimationStart = {
+          id: marker.dataset.prompt!,
+          marker: parseFloat(getComputedStyle(marker).top),
+          thumb: parseFloat(
+            getComputedStyle(document.querySelector(".scroll-thumb")!).top,
+          ),
+        };
+      },
+      { capture: true, once: true },
+    );
   });
   await page.mouse.up();
   await expect(thumb).toHaveAttribute("data-stretch", "0.00");
-  const animation = await page.evaluate(async (before) => {
+  const animation = await page.evaluate(async () => {
+    const before = (window as any).promptAnimationStart;
     await new Promise<void>((resolve) =>
       requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
     );
@@ -122,14 +130,15 @@ test("grouped sessions, shortcut, stable fields and elastic local scrollbar", as
       sameNode: marker === (window as any).savedPromptMarker,
       markerProgress:
         (parseFloat(getComputedStyle(marker).top) - before.marker) /
-        (parseFloat(marker.style.top) - before.marker),
+        (Number(marker.dataset.targetTop) - before.marker),
       thumbProgress:
         (parseFloat(getComputedStyle(thumb).top) - before.thumb) /
-        (parseFloat(thumb.style.top) - before.thumb),
+        (Number(thumb.dataset.targetTop) - before.thumb),
     };
-  }, animationStart);
+  });
   expect(animation.sameNode).toBe(true);
   expect(animation.markerProgress).toBeGreaterThan(0);
+  expect(animation.markerProgress).toBeLessThan(1);
   expect(
     Math.abs(animation.markerProgress - animation.thumbProgress),
   ).toBeLessThan(0.12);

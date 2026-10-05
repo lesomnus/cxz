@@ -156,16 +156,20 @@ function ValueMenu({
   useLayoutEffect(() => {
     if (!open || !root.current || !menu.current) return;
     const rect = root.current.getBoundingClientRect();
-    const height = 28 + 16 + 13 + options.length * 28;
+    const inset = parseFloat(
+      getComputedStyle(root.current).getPropertyValue("--control-inset"),
+    );
+    const chrome = rect.height + 2 * inset + 13;
+    const height = chrome + options.length * rect.height;
     const upwards = rect.top + height > window.innerHeight;
     setUp(upwards);
     menu.current.style.setProperty(
       "--menu-width",
-      `${Math.max(rect.width + 16, Math.min(label === "Model" ? 240 : 140, window.innerWidth - rect.left))}px`,
+      `${Math.max(rect.width + 2 * inset, Math.min(label === "Model" ? 240 : 140, window.innerWidth - rect.left))}px`,
     );
     menu.current.style.setProperty(
       "--options-height",
-      `${Math.max(28, Math.min(240, (upwards ? rect.bottom : window.innerHeight - rect.top) - 57))}px`,
+      `${Math.max(rect.height, Math.min(240, (upwards ? rect.bottom : window.innerHeight - rect.top) - chrome))}px`,
     );
     menu.current
       .querySelector<HTMLButtonElement>("[role=option]")

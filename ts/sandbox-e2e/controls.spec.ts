@@ -53,9 +53,19 @@ test("provider dropdowns, quota popovers, aligned headings and bounded press/sha
   await page.locator(".model-field .meta-label").click();
   await expect(page.getByRole("listbox")).toHaveCount(0);
   const currentBefore = (await model.locator(".meta-value").boundingBox())!;
+  const baseline = (await page
+    .locator(".model-field .meta-label")
+    .boundingBox())!;
+  expect(
+    Math.abs(
+      currentBefore.y + currentBefore.height - baseline.y - baseline.height,
+    ),
+  ).toBeLessThan(0.1);
+  await expect(model).toHaveCSS("padding", "2px");
   await model.click();
   const choices = page.getByRole("listbox", { name: "Model choices" });
   await expect(choices).toBeVisible();
+  await expect(choices).toHaveCSS("padding", "2px");
   const currentAfter = (await choices
     .locator(".setting-current .meta-value")
     .boundingBox())!;
@@ -71,6 +81,8 @@ test("provider dropdowns, quota popovers, aligned headings and bounded press/sha
   expect(menuBox.y + menuBox.height).toBeLessThanOrEqual(1000);
   const selectedRow = choices.getByRole("option", { selected: true });
   const otherRow = choices.getByRole("option", { selected: false }).first();
+  await otherRow.hover();
+  await expect(otherRow).toHaveCSS("color", "rgb(255, 255, 255)");
   expect((await selectedRow.boundingBox())!.width).toBe(
     (await otherRow.boundingBox())!.width,
   );
@@ -176,6 +188,53 @@ test("provider dropdowns, quota popovers, aligned headings and bounded press/sha
       return Math.abs(v.length - v.height);
     })
     .toBeLessThan(1);
+  const layers = await page
+    .locator(".transcript-fade-bottom")
+    .evaluate((fade) => {
+      const bounds = fade.getBoundingClientRect();
+      const within = (node: HTMLElement) => {
+        const box = node.getBoundingClientRect();
+        return (
+          box.top + box.height / 2 > bounds.top &&
+          box.top + box.height / 2 < bounds.bottom
+        );
+      };
+      const body = [
+        ...document.querySelectorAll<HTMLElement>(".markdown > p"),
+      ].find(within)!;
+      const control = [
+        ...document.querySelectorAll<HTMLElement>(
+          ".transcript small, .transcript .copy",
+        ),
+      ].find(within)!;
+      const hit = (node: HTMLElement) => {
+        const box = node.getBoundingClientRect();
+        return document.elementFromPoint(
+          box.left + 3,
+          box.top + box.height / 2,
+        );
+      };
+      const previous = fade.style.pointerEvents;
+      fade.style.pointerEvents = "auto";
+      const bodyBelow = hit(body) === fade;
+      const controlAbove = control.contains(hit(control));
+      fade.style.pointerEvents = previous;
+      return { bodyBelow, controlAbove };
+    });
+  expect(layers).toEqual({ bodyBelow: true, controlAbove: true });
+  const latest = page.getByRole("button", { name: "↓ Latest" });
+  expect(
+    await latest.evaluate((el) => {
+      const box = el.getBoundingClientRect();
+      const area = el.closest(".transcript-area")!.getBoundingClientRect();
+      return (
+        box.bottom <= area.bottom &&
+        document
+          .elementFromPoint(box.left + box.width / 2, box.top + box.height / 2)
+          ?.closest("button") === el
+      );
+    }),
+  ).toBe(true);
   await page.screenshot({
     path: "test-results/sandbox-input-shadow.png",
     fullPage: true,

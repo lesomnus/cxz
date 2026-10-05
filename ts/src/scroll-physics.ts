@@ -1,4 +1,5 @@
 export const SCROLL_WINDOW_SCREENS = 12;
+export const ELASTIC_RESERVE = 20;
 export type ScrollRange = { start: number; span: number };
 export const clamp = (n: number, low: number, high: number) =>
   Math.max(low, Math.min(high, n));
@@ -35,10 +36,31 @@ export function markerRangeStart(top: number, range: ScrollRange) {
 export function edgePull(distance: number, viewport: number) {
   const pull = Math.max(0, Math.abs(distance));
   return {
-    stretch: Math.sign(distance) * 20 * (1 - Math.exp(-pull / 80)),
+    stretch: Math.sign(distance) * ELASTIC_RESERVE * (1 - Math.exp(-pull / 80)),
     speed:
       Math.sign(distance) *
       viewport *
       Math.min(16, Math.pow(pull / 60, 1.4) * 2),
   };
+}
+
+// Re-enter the rail at the current reading position, rather than the position
+// from before accelerated scrolling crossed the local window's edge.
+export function resumeRange(
+  top: number,
+  fraction: number,
+  span: number,
+): ScrollRange {
+  return { start: top - fraction * span, span };
+}
+
+// Short, non-overshooting wheel response. Finish exactly on the requested pixel.
+export function smoothStep(
+  top: number,
+  target: number,
+  elapsed: number,
+  response = 24,
+) {
+  const next = top + (target - top) * (1 - Math.exp(-elapsed / response));
+  return Math.abs(target - next) < 1 ? target : next;
 }

@@ -58,7 +58,9 @@ provider confirmation before applying the model. Missing capabilities disable th
 selectors rather than treating slash commands as chat prompts. Only values open
 styled dropdowns; labels stay inert. The current value overlays its exact original
 text position, separated from other choices, with the same full-width row and
-padding as the other options. At the screen bottom, choices expand
+padding as the other options. Menus, value triggers and the composer toolbar share
+a narrow 2px inset token. Trigger padding keeps value/label text baselines aligned;
+hovered values brighten. At the screen bottom, choices expand
 upward while the current row stays in place. Keyboard navigation, Escape and
 outside-click dismissal are supported.
 
@@ -66,25 +68,37 @@ The icon-only send button sits on the right of a toolbar above the text input,
 inside a zero-padding wrapper. The 28px toolbar has equal 2px top, bottom and right
 gaps around its 32px-wide, 24px-high Send button. The wrapper is narrower than the
 input, which extends 4px past each side while retaining its width. Their bottom
-borders overlap. Wrapper/input corners are 5px; the inset Send corner is 2px. Ctrl+Enter sends, with a hover shortcut.
+borders overlap. Wrapper corners are 10px, input corners are 15px, and the inset
+Send corner is 7px to share the wrapper corner center. Ctrl+Enter sends, with a hover shortcut.
 Quota uses the TUI's eight Braille cells at the same font size as Model/Effort;
 its intrinsic width and a separate gap keep it clear of the context donut. Hover
 reveals the reset time. Context
 is a donut with a used/capacity token popover. These are simulated snapshots, not
 real account limits. Status snapshots are retained separately from the rendered
-history window. The input extends 10px beyond each conversation edge. User and assistant headings align, with more padding on message contents.
+history window. The input extends 10px beyond each conversation edge. User and
+assistant headings align, with more padding on message contents.
 Both viewport fades use the page background color and sit behind the composer.
 The bottom fade starts with a smooth opacity/height ramp, up to the input height.
 Edge tension adds up to another input height, then recedes when released. A shorter
-top fade indicates earlier history and grows with downward edge tension.
+top fade indicates earlier history and grows with downward edge tension. Scroll
+controls, message headings, Copy buttons and disclosure controls paint above the
+fades; the fades affect message bodies without covering other controls. Latest
+navigation sits inside the viewport, avoiding overlap as the composer grows.
 
 The conversation hides native scrollbars. Hover reveals a handle and user-prompt
 ticks; approaching the handle widens it. Its local range is capped at twelve
 viewport heights. Prompt ticks and the handle share the same range-rebase
-animation, with stable event identities. During edge tension, the handle stays
+animation on one clock, with stable event identities. Height measurement retargets
+that clock without restarting an individual marker. During edge tension, the handle stays
 pinned while prompt ticks continue to move in phase with the passing transcript.
+A 20px elastic reserve keeps even the fully stretched handle inside the viewport.
 Dragging beyond either end applies a saturating spring while accelerating
-scrolling through adjacent ranges. History arrives in 128-event pages, starting
+scrolling through adjacent ranges. Returning to the rail starts at the current
+reading position, including on the first drag; manual gestures pause live follow
+immediately. Large wheel steps and handle movement use short, non-overshooting
+interpolation, settling on the exact target; OS trackpad motion stays native.
+Reduced-motion preference, nested scrolling and explicit navigation are respected.
+History arrives in 128-event pages, starting
 near the latest 256 events, with a cache capped at 512. Only visible messages and
 six extra messages on either side are mounted. Measured variable heights drive
 virtual positioning and prompt ticks; a fixed total height and visible-message
@@ -114,7 +128,8 @@ Desktop checks also cover project/session ordering, heading/input alignment,
 Ctrl+Enter, fixed field positions, quota/context popovers, bounded button press
 scaling, background fades with tension, overlapping input borders, scrollbar prompt phase
 at both edges, hover/stretch, near-bottom scroll stability, resizing and full
-backward/forward history paging with bounded DOM and cache.
+backward/forward history paging with bounded DOM and cache, first-drag return,
+elastic handle bounds and wheel response/settling.
 
 Serve a static build at the origin root, preserving its Worker/WASM assets and
 application/wasm MIME type. `npx vite preview --config vite.sandbox.config.ts`

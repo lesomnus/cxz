@@ -7,7 +7,9 @@
   font-size: 14px;
   --space: 4px;
   --conversation-width: 600px;
-  --composer-radius: 5px;
+  --composer-radius: 15px;
+  --wrapper-radius: 10px;
+  --control-inset: 2px;
   --composer-extension: 10px;
   --composer-overhang: 4px;
   --muted: #a0a0a0;
@@ -241,6 +243,7 @@ header strong {
   flex: 1;
   min-height: 0;
   position: relative;
+  isolation: isolate;
 }
 .transcript {
   height: 100%;
@@ -275,6 +278,12 @@ header strong {
   max-width: var(--conversation-width);
   margin: 0 auto;
   overflow-wrap: anywhere;
+}
+.transcript-row > article > small,
+.transcript-row .copy,
+.transcript-row summary {
+  position: relative;
+  z-index: 2;
 }
 .history-note {
   font-size: 0.7rem;
@@ -389,14 +398,14 @@ pre {
   padding: 0;
   border: 1px solid #2c2c2c;
   background: #191919;
-  border-radius: var(--composer-radius);
+  border-radius: var(--wrapper-radius);
 }
 .composer-toolbar {
   display: flex;
   justify-content: flex-end;
   align-items: center;
   min-height: 28px;
-  padding: 2px;
+  padding: var(--control-inset);
 }
 .composer-input {
   position: relative;
@@ -428,7 +437,10 @@ pre {
   color: #909090;
 }
 .composer .send {
-  border-radius: max(0px, calc(var(--composer-radius) - 3px));
+  border-radius: max(
+    0px,
+    calc(var(--wrapper-radius) - 1px - var(--control-inset))
+  );
   width: 32px;
   height: 24px;
   min-height: 24px;
@@ -471,7 +483,7 @@ pre {
 .composer-meta {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   gap: 4px 12px;
   flex-wrap: wrap;
   padding-top: 8px;
@@ -582,7 +594,7 @@ summary:hover {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  bottom: 180px;
+  bottom: 8px;
   background: #303030;
   box-shadow: 0 4px 16px #0005;
 }
@@ -777,8 +789,9 @@ summary:hover {
 .scroll-track {
   position: absolute;
   right: 8px;
-  top: 8px;
-  bottom: 8px;
+  top: calc(8px + var(--elastic-reserve, 20px));
+  bottom: calc(8px + var(--elastic-reserve, 20px));
+  z-index: 3;
   width: 26px;
   pointer-events: none;
 }
@@ -833,14 +846,6 @@ summary:hover {
 .scroll-dragging .scroll-thumb {
   cursor: grabbing;
 }
-.transcript-area:not(.scroll-dragging) .scroll-thumb {
-  transition: top 160ms ease-out;
-}
-.transcript-area:not(.scroll-dragging) .scroll-marker {
-  transition:
-    top 160ms ease-out,
-    opacity 160ms;
-}
 .scroll-markers {
   position: absolute;
   inset: 0 0 0 -8px;
@@ -892,13 +897,13 @@ summary:hover {
   position: relative;
   flex: 1;
   min-width: 0;
-  height: 20px;
+  height: calc(20px + 2 * var(--control-inset));
 }
 .setting-trigger {
   display: block;
-  padding: 0;
-  min-height: 20px;
-  height: 20px;
+  padding: var(--control-inset);
+  min-height: calc(20px + 2 * var(--control-inset));
+  height: calc(20px + 2 * var(--control-inset));
   width: 100%;
   font-size: inherit;
   line-height: 20px;
@@ -919,12 +924,12 @@ summary:hover {
 .setting-menu {
   position: absolute;
   z-index: 6;
-  top: -12px;
-  left: -6px;
+  top: calc(-1 * var(--control-inset));
+  left: calc(-1 * var(--control-inset));
   display: flex;
   flex-direction: column;
   width: var(--menu-width, 180px);
-  padding: 8px 0;
+  padding: var(--control-inset);
   border-radius: 6px;
   background: #242424;
   outline: 1px solid #3a3a3a;
@@ -932,14 +937,14 @@ summary:hover {
 }
 .setting-menu.opens-up {
   top: auto;
-  bottom: -12px;
+  bottom: calc(-1 * var(--control-inset));
   flex-direction: column-reverse;
 }
 .setting-current {
   flex-shrink: 0;
 }
 .setting-current .meta-value {
-  max-width: var(--value-width);
+  max-width: calc(var(--value-width) - 2 * var(--control-inset));
 }
 .setting-divider {
   height: 1px;
@@ -954,8 +959,8 @@ summary:hover {
 }
 .setting-menu button {
   display: block;
-  min-height: 28px;
-  padding: 4px 6px;
+  min-height: calc(20px + 2 * var(--control-inset));
+  padding: var(--control-inset);
   width: 100%;
   text-align: left;
   font-size: inherit;
@@ -967,6 +972,10 @@ summary:hover {
   white-space: nowrap;
   text-overflow: ellipsis;
   transform-origin: left center;
+}
+.setting-trigger:not(:disabled):hover,
+.setting-menu button:not(:disabled):hover {
+  color: #fff;
 }
 .context-popover {
   flex: 0 0 18px;

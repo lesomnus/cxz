@@ -4,6 +4,8 @@ import {
   scrollRange,
   markerRangeStart,
   SCROLL_WINDOW_SCREENS,
+  resumeRange,
+  smoothStep,
 } from "./scroll-physics";
 import { quotaDots } from "./session-info";
 
@@ -36,6 +38,29 @@ describe("bounded scroll handle", () => {
     expect(edgePull(10000, 800).stretch).toBeLessThanOrEqual(20);
     expect(edgePull(10000, 800).speed).toBeLessThanOrEqual(800 * 16);
   });
+});
+
+it("returns from either elastic edge without jumping back to the original window", () => {
+  for (const fraction of [0.01, 0.99]) {
+    const range = resumeRange(42000, fraction, 9600);
+    expect(range.start + fraction * range.span).toBe(42000);
+    expect(range.start + (fraction + 0.005) * range.span).toBeCloseTo(42048);
+  }
+});
+it("smooths quickly without overshoot and lands exactly at the target in either direction", () => {
+  for (const target of [600, -600]) {
+    let top = smoothStep(0, target, 16);
+    expect(Math.abs(top)).toBeGreaterThan(250);
+    expect(Math.abs(top)).toBeLessThan(600);
+    for (let frame = 0; frame < 12; frame++) {
+      const next = smoothStep(top, target, 16);
+      expect(Math.abs(next - target)).toBeLessThanOrEqual(
+        Math.abs(top - target),
+      );
+      top = next;
+    }
+    expect(top).toBe(target);
+  }
 });
 it("uses the TUI quota cells, including its visible empty baseline", () => {
   expect(quotaDots(0)).toBe("⣀⣀⣀⣀⣀⣀⣀⣀");
