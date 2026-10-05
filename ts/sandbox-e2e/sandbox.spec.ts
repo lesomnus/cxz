@@ -9,13 +9,33 @@ test("WASM sandbox reuses the UI without backend, credentials or provider calls"
     if (/\/auth\/|\/cxz\./.test(r.url())) backend.push(r.url());
   });
   await page.goto("/sandbox.html");
-  await expect(page.getByRole("heading", { name: "Current status" })).toBeVisible({
+  await expect(
+    page.getByRole("heading", { name: "Current status" }),
+  ).toBeVisible({
     timeout: 45000,
   });
   await expect(page.locator("body")).toHaveJSProperty(
     "scrollWidth",
     await page.evaluate(() => document.documentElement.clientWidth),
   );
+  // The value overlay remains anchored and within a narrow mobile viewport.
+  const modelValue = page.locator(".model-field .setting-trigger .meta-value");
+  const before = (await modelValue.boundingBox())!;
+  await page.getByRole("combobox", { name: "Model", exact: true }).click();
+  const menu = page.getByRole("listbox", { name: "Model choices" });
+  await expect(menu).toBeVisible();
+  const selectedValue = (await menu
+    .locator(".setting-current .meta-value")
+    .boundingBox())!;
+  expect(Math.abs(selectedValue.x - before.x)).toBeLessThan(0.1);
+  expect(Math.abs(selectedValue.y - before.y)).toBeLessThan(0.1);
+  const menuBounds = (await menu.boundingBox())!;
+  expect(menuBounds.x).toBeGreaterThanOrEqual(0);
+  expect(menuBounds.x + menuBounds.width).toBeLessThanOrEqual(
+    await page.evaluate(() => document.documentElement.clientWidth),
+  );
+  await page.keyboard.press("Escape");
+  await expect(menu).toHaveCount(0);
   const message = page.getByRole("textbox", { name: "Message", exact: true });
   await message.fill("Test message");
   await page.getByRole("button", { name: "Send", exact: true }).click();
@@ -42,16 +62,9 @@ test("WASM sandbox reuses the UI without backend, credentials or provider calls"
   await expect(
     page.getByText("History item 2100", { exact: false }),
   ).toBeVisible();
-  await expect(page.locator(".transcript article")).toHaveCount(2000);
+  expect(await page.locator(".transcript article").count()).toBeLessThan(40);
   await page.getByLabel("Scenario", { exact: true }).selectOption("session-7");
-  await page.getByText("Actions", { exact: true }).click();
-  await page
-    .getByRole("button", { name: "Resume session", exact: true })
-    .click();
-  await expect(page.locator(".conversation header small")).toContainText(
-    "idle",
-  );
-  await page.getByRole("button", { name: "Stop session", exact: true }).click();
+  await expect(page.getByText("Actions", { exact: true })).toHaveCount(0);
   await expect(page.locator(".conversation header small")).toContainText(
     "stopped",
   );

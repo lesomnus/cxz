@@ -31,4 +31,8 @@ copyFileSync(
   join(goroot, "lib", "wasm", "wasm_exec.js"),
   join(out, "wasm_exec.js"),
 );
+copyFileSync(
+  join(root, "ts", "public", "third-party-notices.txt"),
+  join(out, "third-party-notices.txt"),
+);
 console.log("Sandbox WASM ready. Fake services only; no accounts or Docker.");
