@@ -31,7 +31,7 @@ export function VirtualMessages({
   render: (event: SessionEvent) => React.ReactNode;
   changed: (mapping: MessageMap) => void;
   precedingPrompt: SessionEvent | undefined;
-  onPromptChange: (prompt: SessionEvent | undefined) => void;
+  onPromptChange: (prompt: SessionEvent | undefined, peek: number) => void;
 }) {
   const root = useRef<HTMLDivElement>(null);
   const sizes = useRef(new Map<string, number>());
@@ -39,7 +39,7 @@ export function VirtualMessages({
   const mapping = useRef<MessageMap | null>(null);
   const expanded = useRef(new Map<string, boolean>());
   const [revision, setRevision] = useState(0);
-  const [viewport, setViewport] = useState({ top: 0, height: 800 });
+  const [viewport, setViewport] = useState({ top: 0, offset: 0, height: 800 });
   const layout = useMemo(
     () => messageLayout(events, sizes.current),
     [events, revision],
@@ -63,6 +63,7 @@ export function VirtualMessages({
       : null;
     setViewport({
       top: Math.max(0, el.scrollTop - root.current!.offsetTop),
+      offset: el.scrollTop - root.current!.offsetTop,
       height: el.clientHeight,
     });
   }
@@ -183,9 +184,22 @@ export function VirtualMessages({
           ? remembered
           : undefined));
   if (prompt) lastPrompt.current = prompt;
+  // A partially visible input occupies the top edge too. Only expose the
+  // preceding input once every visible input box has cleared the approach area.
+  const closest = layout.rows.find(
+    (row) =>
+      row.prompt &&
+      row.top + row.height - 6 > viewport.offset &&
+      row.top + 6 < viewport.offset + viewport.height,
+  );
+  const gap = closest
+    ? Math.max(0, closest.top + 6 - viewport.offset)
+    : Infinity;
+  const progress = Math.max(0, Math.min(1, (gap - 24) / 32));
+  const peek = progress * progress * (3 - 2 * progress);
   useLayoutEffect(() => {
-    onPromptChange(prompt);
-  }, [prompt, onPromptChange]);
+    onPromptChange(prompt, peek);
+  }, [prompt, peek, onPromptChange]);
   return (
     <div
       className="virtual-messages"

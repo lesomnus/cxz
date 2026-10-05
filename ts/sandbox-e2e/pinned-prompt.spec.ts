@@ -137,6 +137,89 @@ test("preceding input peeks below the title without following scroll and reveals
   expect(await pane.locator("[data-row]").count()).toBeLessThan(40);
 });
 
+test("the preceding input only peeks after the nearest visible input clears the top", async ({
+  page,
+}) => {
+  await openLong(page);
+  const pane = page.locator(".transcript");
+  const overlay = page.locator(".pinned-prompt");
+  const seq = (await overlay.getAttribute("data-pinned-seq"))!;
+  await reveal(page);
+  await page.getByRole("button", { name: "Jump to user message" }).click();
+  const input = pane.locator(`article.input[data-seq="${seq}"]`);
+  await expect(input).toBeVisible();
+  await page.mouse.move(10, 10);
+  async function gap(pixels: number) {
+    await input.evaluate((el, pixels) => {
+      const pane = el.closest(".transcript")!;
+      pane.scrollTop +=
+        el.getBoundingClientRect().top -
+        pane.getBoundingClientRect().top -
+        pixels;
+      pane.dispatchEvent(new Event("reading-move"));
+    }, pixels);
+    await expect
+      .poll(
+        async () =>
+          (await input.boundingBox())!.y - (await pane.boundingBox())!.y,
+      )
+      .toBeCloseTo(pixels, 0);
+  }
+  await gap(12);
+  await expect(overlay).toHaveAttribute("data-available", "false");
+  await expect(overlay).toHaveCSS("opacity", "0");
+  const area = (await pane.boundingBox())!;
+  await page.mouse.move(area.x + area.width / 2, area.y + 16);
+  expect(
+    await overlay.evaluate(
+      (el) =>
+        !el.contains(
+          document.elementFromPoint(
+            el.getBoundingClientRect().left + 25,
+            el.getBoundingClientRect().top + 16,
+          ),
+        ),
+    ),
+  ).toBe(true);
+  await page.mouse.move(10, 10);
+  // A large distance change must fade, rather than appearing in one frame.
+  await gap(56);
+  const samples = await overlay.evaluate(async (el) => {
+    const opacity: number[] = [];
+    for (let i = 0; i < 16; i++) {
+      await new Promise(requestAnimationFrame);
+      opacity.push(Number(getComputedStyle(el).opacity));
+    }
+    return opacity;
+  });
+  expect(samples.some((value) => value > 0 && value < 1)).toBe(true);
+  await expect(overlay).toHaveCSS("opacity", "1");
+  const button = overlay.locator("button");
+  await expect
+    .poll(async () => {
+      const box = (await button.boundingBox())!;
+      return box.y + box.height - area.y;
+    })
+    .toBeCloseTo(8, 0);
+  await gap(40);
+  await expect
+    .poll(() => overlay.evaluate((el) => Number(getComputedStyle(el).opacity)))
+    .toBeCloseTo(0.5, 2);
+  await expect
+    .poll(async () => {
+      const box = (await button.boundingBox())!;
+      return box.y + box.height - area.y;
+    })
+    .toBeCloseTo(4, 0);
+  await gap(23);
+  await expect(overlay).toHaveAttribute("inert", "");
+  await expect(overlay).toHaveCSS("opacity", "0");
+  // When the input still straddles the upper edge, its predecessor stays hidden.
+  await gap(-10);
+  await expect(overlay).toHaveAttribute("data-available", "false");
+  await expect(overlay).toHaveCSS("opacity", "0");
+});
+
 test("an input preceding the cached window is found and can be loaded on demand", async ({
   page,
 }) => {
@@ -188,6 +271,9 @@ test("a long pinned input stays bounded and its own wheel does not move the tran
   await message.fill(text);
   await message.press("Control+Enter");
   const pinned = page.getByRole("button", { name: "Jump to user message" });
+  // The tall input remains partly visible at the latest position in a tall
+  // viewport. A shorter viewport fits inside its response, clearing the input.
+  await page.setViewportSize({ width: 1440, height: 600 });
   await expect(pinned).toContainText("Pinned input line 100");
   await expect(page.locator(".conversation header small")).toContainText(
     "idle",

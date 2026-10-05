@@ -88,7 +88,17 @@ export function Transcript({
 }) {
   const content = useRef<HTMLDivElement>(null);
   const pinnedButton = useRef<HTMLDivElement>(null);
-  const [prompt, setPrompt] = useState<SessionEvent>();
+  const [pinned, setPinned] = useState<{
+    prompt: SessionEvent | undefined;
+    peek: number;
+  }>({ prompt: undefined, peek: 0 });
+  const { prompt, peek } = pinned;
+  const promptChanged = React.useCallback(
+    (prompt: SessionEvent | undefined, peek: number) => {
+      setPinned({ prompt, peek });
+    },
+    [],
+  );
   const track = useRef<HTMLDivElement>(null);
   const thumb = useRef<HTMLDivElement>(null);
   const offsets = useRef<{ id: string; y: number }[]>([]);
@@ -553,7 +563,7 @@ export function Transcript({
             follow={follow}
             render={render}
             precedingPrompt={precedingPrompt}
-            onPromptChange={setPrompt}
+            onPromptChange={promptChanged}
             changed={(nextMap) => {
               mapping.current = nextMap;
               offsets.current = nextMap.markers;
@@ -572,8 +582,13 @@ export function Transcript({
           className="pinned-prompt"
           ref={pinnedButton}
           data-pinned-seq={prompt.seq.toString()}
+          data-available={peek > 0}
+          inert={peek === 0}
+          aria-hidden={peek === 0}
           style={
             {
+              "--prompt-peek": `${8 * peek}px`,
+              opacity: peek,
               "--prompt-height": `${Math.min(180, (view.viewport || 720) * 0.25)}px`,
             } as React.CSSProperties
           }
