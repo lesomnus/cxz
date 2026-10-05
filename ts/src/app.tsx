@@ -309,6 +309,13 @@ function Conversation({
   const pane = useRef<HTMLDivElement>(null);
   const lock = useRef(false);
   const historyRequest = useRef<AbortController | null>(null);
+  const [precedingPrompt, setPrecedingPrompt] = useState<{
+    before: bigint;
+    through: bigint;
+    event?: SessionEvent;
+  }>();
+  const precedingRef = useRef<typeof precedingPrompt>(undefined);
+  const [jumpTarget, setJumpTarget] = useState<string>();
   const floor = useRef(0n);
   const latestSeq = useRef(0n);
   const detached = useRef(false);
@@ -316,6 +323,87 @@ function Conversation({
   eventsRef.current = events;
   const followRef = useRef(follow);
   followRef.current = follow;
+  const firstSeq = events[0]?.seq;
+  useEffect(() => {
+    if (firstSeq === undefined) return;
+    const known = precedingRef.current;
+    if (known && known.before <= firstSeq && firstSeq <= known.through) return;
+    const through =
+      events.find((event) => event.kind === "input")?.seq ??
+      events.at(-1)!.seq + 1n;
+    const remember = (event?: SessionEvent) => {
+      const next = { before: firstSeq, through, event };
+      precedingRef.current = next;
+      setPrecedingPrompt(next);
+    };
+    const controller = new AbortController();
+    // Resolve just the prompt preceding the cached window, retaining one event.
+    // This read-only lookup does not prepend rows or change scrollbar geometry.
+    void (async () => {
+      let before = firstSeq;
+      while (before > 0n && !controller.signal.aborted) {
+        const afterSeq = before > 129n ? before - 129n : 0n;
+        const page = await c.sessions.history(
+          { ref: ref(id), afterSeq },
+          { signal: controller.signal },
+        );
+        if (controller.signal.aborted) return;
+        const prompt = [...page.events]
+          .reverse()
+          .find((event) => event.seq < before && event.kind === "input");
+        if (prompt) {
+          remember(prompt);
+          return;
+        }
+        if (
+          afterSeq === 0n ||
+          !page.events.length ||
+          page.events[0].seq > afterSeq + 1n
+        )
+          break;
+        before = afterSeq + 1n;
+      }
+      if (!controller.signal.aborted) remember();
+    })().catch((e) => {
+      if (!controller.signal.aborted)
+        setError(`Cannot load preceding input: ${String(e)}`);
+    });
+    return () => controller.abort();
+  }, [c, id, firstSeq]);
+
+  async function showPrompt(seq: string) {
+    historyRequest.current?.abort();
+    const controller = new AbortController();
+    historyRequest.current = controller;
+    pane.current?.dispatchEvent(new Event("scroll-jump"));
+    followRef.current = false;
+    setFollow(false);
+    try {
+      const target = BigInt(seq);
+      const page = await c.sessions.history(
+        { ref: ref(id), afterSeq: target - 1n },
+        { signal: controller.signal },
+      );
+      if (controller.signal.aborted) return;
+      if (
+        !page.events.some(
+          (event) => event.seq === target && event.kind === "input",
+        )
+      ) {
+        setError("This input is no longer available in retained history.");
+        return;
+      }
+      detached.current = page.events.at(-1)!.seq < latestSeq.current;
+      rememberMetadata(page.events);
+      setEvents(page.events);
+      setJumpTarget(seq);
+    } catch (e) {
+      if (!controller.signal.aborted)
+        setError(`Cannot open input: ${String(e)}`);
+    } finally {
+      if (historyRequest.current === controller) historyRequest.current = null;
+    }
+  }
 
   function rememberMetadata(rows: SessionEvent[]) {
     setMetadata((old) => mergeMetadata(old, rows));
@@ -335,13 +423,14 @@ function Conversation({
     const top =
       eventsRef.current[0]?.seq > floor.current + 1n ? 1 : ramp(el.scrollTop);
     const topPull = Math.min(1, Math.max(0, tension.current) / 20);
+    const bottomPull = tension.current > 0 ? 0.75 * pull : pull;
     // Content moves upwards as scrollTop increases. Extend its outgoing fade
     // during ordinary movement; elastic pulls produce a much longer veil.
     const topMotion = Math.max(0, scrollMotion.current);
     const bottomMotion = Math.max(0, -scrollMotion.current);
     area.style.setProperty(
       "--bottom-fade-height",
-      `${input.offsetHeight * (bottom + 0.8 * bottomMotion + 3.5 * pull)}px`,
+      `${input.offsetHeight * (bottom + 0.8 * bottomMotion + 3.5 * bottomPull)}px`,
     );
     area.style.setProperty(
       "--bottom-fade-opacity",
@@ -681,6 +770,17 @@ function Conversation({
         pane={pane}
         events={visibleEvents}
         follow={followRef}
+        precedingPrompt={
+          firstSeq !== undefined &&
+          precedingPrompt &&
+          precedingPrompt.before <= firstSeq &&
+          firstSeq <= precedingPrompt.through
+            ? precedingPrompt.event
+            : undefined
+        }
+        jumpTarget={jumpTarget}
+        onPromptJump={(seq) => void showPrompt(seq)}
+        onJumped={() => setJumpTarget(undefined)}
         onNavigate={() => {
           followRef.current = false;
           setFollow(false);

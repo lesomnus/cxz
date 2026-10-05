@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   clamp,
   edgePull,
@@ -61,6 +61,10 @@ export function Transcript({
   onNavigate,
   onTension,
   onMotion,
+  precedingPrompt,
+  jumpTarget,
+  onPromptJump,
+  onJumped,
   older,
   newer,
 }: {
@@ -74,6 +78,10 @@ export function Transcript({
   onNavigate: () => void;
   onTension: (stretch: number) => void;
   onMotion: (motion: number) => void;
+  precedingPrompt: SessionEvent | undefined;
+  jumpTarget: string | undefined;
+  onPromptJump: (seq: string) => void;
+  onJumped: () => void;
   older: () => void;
   newer: () => void;
 }) {
@@ -114,6 +122,31 @@ export function Transcript({
     older,
     newer,
   };
+
+  function jumpToPrompt(seq: string) {
+    const el = pane.current;
+    const map = mapping.current;
+    const row = map?.rows.find((row) => row.id === seq);
+    if (!el || !map) return;
+    if (!row) {
+      onPromptJump(seq);
+      return;
+    }
+    el.dispatchEvent(new Event("scroll-jump"));
+    callbacks.current.onNavigate();
+    el.scrollTop = Math.max(0, map.origin + row.top + 6);
+    scrolled();
+    el.focus({ preventScroll: true });
+  }
+  useLayoutEffect(() => {
+    if (
+      jumpTarget &&
+      mapping.current?.rows.some((row) => row.id === jumpTarget)
+    ) {
+      jumpToPrompt(jumpTarget);
+      onJumped();
+    }
+  }, [jumpTarget, events]);
 
   function fadeMotion(time: number) {
     const sample = motion.current;
@@ -516,6 +549,8 @@ export function Transcript({
             events={events}
             follow={follow}
             render={render}
+            precedingPrompt={precedingPrompt}
+            jumpToPrompt={jumpToPrompt}
             changed={(nextMap) => {
               mapping.current = nextMap;
               offsets.current = nextMap.markers;

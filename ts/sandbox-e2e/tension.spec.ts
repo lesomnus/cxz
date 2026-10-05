@@ -81,7 +81,12 @@ test("both pinned edges advance prompt phase and extend the background fade with
         .locator(".transcript-fade-bottom")
         .evaluate((el) => Number(getComputedStyle(el).zIndex)),
     );
-    if (direction > 0) await expect.poll(topFade).toBeGreaterThan(topLight + 5);
+    if (direction > 0) {
+      await expect.poll(topFade).toBeGreaterThan(topLight + 5);
+      await expect
+        .poll(async () => (await topFade()) - (await fade()))
+        .toBeGreaterThan(15);
+    }
     const phase = await page.evaluate(() => {
       const marker = document.querySelector<HTMLElement>(".scroll-marker")!;
       return {
