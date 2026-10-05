@@ -20,6 +20,7 @@ require (
 	github.com/gofrs/flock v0.13.0
 	github.com/google/jsonschema-go v0.4.3
 	github.com/google/uuid v1.6.0
+	github.com/lesomnus/bed v0.0.0-20261005233837-ea558f957b45
 	github.com/lesomnus/flob v0.0.0-20260915164944-39bf5f81924f
 	github.com/lesomnus/grpc-dgram v0.0.0-20260808164022-d993065403e1
 	github.com/lesomnus/otx v0.0.0-20260807173743-977a5687d6ba
@@ -32,7 +33,6 @@ require (
 	github.com/protobuf-orm/ent v0.0.0-20260906224055-1575ccbff508
 	github.com/protobuf-orm/protobuf-orm v0.0.0-20260906212449-04c0cd58f10a
 	github.com/protobuf-orm/protoc-gen-orm-ent/runtime v0.0.0-20260907034345-a9bdc5357d7d
-	github.com/rivo/uniseg v0.4.7
 	github.com/tailscale/hujson v0.0.0-20260727124030-b80ff77dac4f
 	github.com/yuin/goldmark v1.7.8
 	golang.org/x/mod v0.40.0
@@ -94,6 +94,7 @@ require (
 	github.com/protobuf-orm/protoc-gen-orm-ent v0.0.0-20260906232518-fa1777a2628d // indirect
 	github.com/protobuf-orm/protoc-gen-orm-go v0.0.0-20260906213448-03adaf8cb0fc // indirect
 	github.com/protobuf-orm/protoc-gen-orm-service v0.0.0-20260906213434-46a5916d5339 // indirect
+	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.1 // indirect
 	github.com/segmentio/asm v1.1.3 // indirect
 	github.com/segmentio/encoding v0.5.4 // indirect

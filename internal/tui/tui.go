@@ -4,11 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/lesomnus/bed"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/agentview"
 	"github.com/lesomnus/cxz/internal/auxiliary"
@@ -138,10 +138,7 @@ type model struct {
 	client                  api.SessionsClient
 	sessions                []*api.Session
 	selected                int
-	input                   textarea.Model
-	composerSelection       *composerSelection
-	composerLayout          *composerLayout
-	showInputWhitespace     bool
+	input                   bed.Model
 	drafts                  map[string]string
 	localHelp               map[string]uint64
 	localOutput             map[string]string
@@ -1022,6 +1019,10 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// copied into live widgets are repainted here; widgets built later read the
 	// step they are built under.
 	switch msg.(type) {
+	case bed.CopyMsg:
+		m.copyText(string(msg.(bed.CopyMsg)))
+		return m, nil
+
 	case tea.FocusMsg:
 		m.terminalFocus(false)
 	case tea.BlurMsg:
@@ -1235,7 +1236,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		case "esc":
 			if m.composerAvailable() && !m.panelFocus && !m.focusList && m.selectedComposerText() != "" {
-				m.composerSelection = nil
+				m.input.ClearSelection()
 				return m, nil
 			}
 			if m.previewInteraction() && m.selectionValid() && m.textSelection.text() != "" {
@@ -2386,7 +2387,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	if !m.focusList {
 		before := m.input.Value()
-		m.input, cmd = m.input.Update(msg)
+		m.input, cmd = m.input.UpdateText(msg)
 		if _, ok := msg.(tea.KeyMsg); ok {
 			m.snapChipCursor()
 		}
