@@ -147,6 +147,7 @@ type model struct {
 	hintDismissed           bool
 	renaming                bool
 	renameBusy              bool
+	renameProject           bool
 	renameID                string
 	aliasInput              textinput.Model
 	usageReports            map[string]string
@@ -1725,6 +1726,23 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.showError(v.err.Error())
 			return m, nil
 		}
+		if v.project {
+			title := v.alias + m.connectionLabel(v.id)
+			for _, p := range append(append([]*api.Project(nil), m.panelProjects...), m.project) {
+				if p != nil && p.Id == v.id {
+					p.Name = title
+				}
+			}
+			for _, session := range append(append([]*api.Session(nil), m.sessions...), m.allSessions...) {
+				if session.ProjectId == v.id {
+					session.ProjectName = title
+				}
+			}
+			m.renaming = false
+			m.aliasInput.Blur()
+			m.notice = "project title updated"
+			return m, m.refresh()
+		}
 		for _, s := range append(append([]*api.Session(nil), m.sessions...), m.allSessions...) {
 			if s.Id == v.id {
 				s.Alias = v.alias
@@ -2066,6 +2084,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.focusPanel()
 			return m, m.refresh()
 		}
+		if v.String() == "f2" && !m.creating {
+			return m, m.startProjectRename()
+		}
 		if m.projectView && !m.creating {
 			return m, m.panelKey(v)
 		}
@@ -2128,10 +2149,6 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.input.SetValue("")
 			m.input.Placeholder = "message"
 			return m, nil
-		case "f2":
-			return m, m.action("allow", "")
-		case "f3":
-			return m, m.action("deny", "")
 		case "f4":
 			return m, m.action("interrupt", "")
 		case "ctrl+r":

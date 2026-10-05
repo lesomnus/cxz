@@ -47,9 +47,9 @@ func (m *model) elicitationKey(p *api.Event, k tea.KeyMsg) (bool, tea.Cmd) {
 		m.elicitationChoice = (index + 2) % 3
 	case "right":
 		m.elicitationChoice = (index + 1) % 3
-	case "1", "f2":
+	case "1":
 		return true, m.decideElicitation(p, 0)
-	case "2", "f3", "backspace":
+	case "2", "backspace":
 		return true, m.decideElicitation(p, 1)
 	case "3":
 		return true, m.decideElicitation(p, 2)

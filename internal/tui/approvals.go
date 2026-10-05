@@ -202,9 +202,9 @@ func (m *model) approvalKey(k tea.KeyMsg) tea.Cmd {
 				break
 			}
 		}
-	case "enter", "f2":
+	case "enter":
 		return m.replyApproval(p, true, "")
-	case "backspace", "f3":
+	case "backspace":
 		return m.replyApproval(p, false, "")
 	case "f4":
 		return m.action("interrupt", "")
