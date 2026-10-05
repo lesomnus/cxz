@@ -29,5 +29,6 @@ func newRoot(state string) *xli.Command {
 		})},
 		xli.NewCmdCompletion(),
 	}
+	categorizeCommands(root)
 	return root
 }

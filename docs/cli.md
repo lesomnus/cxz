@@ -10,6 +10,15 @@ does completion:
 source <(cxz completion zsh)
 ```
 
+Root help and completion group commands by purpose. **Resources** contains
+`project`, `session`, `account`, `binding`, and the locally configured `connection`.
+**Workspace** contains workspace lifecycle, web access, and configuration commands.
+**Integration** contains `devcontainer`, `github`, `gitconfig`, `docker`, and
+shell `completion`.
+`version` belongs to **Installation**, while the development diagnostic
+`terminal-info` belongs to **Internal runtime**. Categories do not change command
+paths (for example, `cxz project ls`).
+
 ## Two rules that catch people
 
 **Flags come before positional arguments.**

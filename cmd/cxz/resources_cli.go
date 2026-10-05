@@ -108,4 +108,5 @@ func reorganizeCommands(root *xli.Command) {
 	}
 	managerGroup.Commands = remaining
 	root.Commands = append(root.Commands, workspaceEntryCommands()...)
+	categorizeCommands(root)
 }
