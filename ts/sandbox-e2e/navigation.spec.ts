@@ -114,17 +114,20 @@ test("outward wheel gestures never flash Latest without moving", async ({
   const flashed = async (deltas: number[]) =>
     pane.evaluate(async (el, deltas) => {
       let flashes = 0;
+      const slot = document.querySelector(".latest-slot")!;
       const observer = new MutationObserver((records) => {
         for (const record of records)
-          for (const node of record.addedNodes) {
-            if (
-              node instanceof HTMLElement &&
-              (node.matches(".bottom") || node.querySelector(".bottom"))
-            )
-              flashes++;
-          }
+          if (
+            record.oldValue === "true" ||
+            slot.getAttribute("data-visible") === "true"
+          )
+            flashes++;
       });
-      observer.observe(el.parentElement!, { childList: true, subtree: true });
+      observer.observe(slot, {
+        attributes: true,
+        attributeFilter: ["data-visible"],
+        attributeOldValue: true,
+      });
       for (const deltaY of deltas) {
         el.dispatchEvent(
           new WheelEvent("wheel", { bubbles: true, cancelable: true, deltaY }),
@@ -143,7 +146,9 @@ test("outward wheel gestures never flash Latest without moving", async ({
     page.getByText("History item 2100", { exact: false }),
   ).toBeVisible();
   expect(await flashed([300, 300, 8, 3000])).toBe(0);
-  await expect(page.getByRole("button", { name: "↓ Latest" })).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Latest", exact: true }),
+  ).toHaveCount(0);
 });
 
 test("ordinary movement extends the fade in the direction content leaves", async ({

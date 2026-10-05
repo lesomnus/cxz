@@ -142,3 +142,35 @@ Reduced motion에서는 전환 없이 즉시 펼친다. 높이는 180px와 뷰 �
 때의 비노출과 hit-test, 양쪽 거리 중간의 반투명/4px 노출과 왕복, 거리 변화의 중간 프레임 fade도
 검증한다. 이 레이어의 표시 방식은 앞서
 기록한 핸들/막대의 좌표, 장력과 공통 애니메이션 계산을 변경하지 않는다.
+
+## Latest 툴바 오버레이
+
+Latest는 대화 뷰 안에 떠 있는 텍스트 버튼 대신 composer 툴바 중앙의 아래 화살표다.
+Send와 같은 폭64px/높이24px/radius7px/transparent 배경/hover#363636을 공유한다.
+절대 위치 오버레이여서 flex 공간을 차지하지 않고, 이후 그 자리에 일반 툴바 버튼이
+배치돼도 위에 표시된다. 기존 툴바28px/입력창 크기/Send 우측2px 여백은 유지한다.
+
+처음과 최신 위치에서는 숨김이다. 과거 방향으로96px 스크롤하면 나타나고, 표시 중
+최신 방향으로96px 스크롤하면 숨는다. 숨긴 뒤 다시 과거 방향으로96px 스크롤하면
+나타난다. 숨김에서는 음수 scrollTop delta, 표시 중에는 양수 delta를 누적하며 작은
+역방향 이동은 그 양을 빼고0에서 멈춘다. 임계값을
+넘어 상태가 바뀌면 누적량을0으로 재설정한다. 따라서 같은 방향으로 계속 이동할 때
+버튼이 반복해서 켜졌다 꺼지거나 작은 방향 반전마다 깜빡이지 않는다.
+
+`Transcript.scrolled()`는 기존 motion.top을 기준으로 실제 native 픽셀 delta만
+`onReadingMove`에 전달한다. `history-shift`가 이 기준 위치를 함께 보정하므로 캐시
+페이지/row 재측정/anchor 복원의 좌표 변경은 이동량으로 세지 않는다. native scroll
+이벤트가 중복 전달되면 delta0이며, 장력 상태나 onMotion의 감쇠 자체도 이동량이 아니다.
+핸들/막대의 좌표 계산과 공통 애니메이션 물리는 바꾸지 않는다.
+
+클립된 중앙 slot 안에서 버튼이 입력창 뒤의 translateY28px/opacity0 위치에서
+translateY0/opacity1로180ms ease-out 전환된다. 숨긴 slot은 inert/aria-hidden이며
+버튼이 입력창을 덮거나 클릭/focus를 가로채지 않는다. Reduced motion에서는 즉시
+전환한다. 클릭은 type=button으로 최신 기록을 불러와 live follow를 재개하고,
+작성 중인 draft를 보내거나 지우지 않는다.
+
+`latest-toolbar.spec.ts`는 실제 휠80px에서는 비노출, 누적100px에서 중간 전환 frame,
+반대 방향80px/작은 역방향20px/추가37px의 누적 전환, 다시 위100px의 노출, 위치/크기/
+hover 일치, 같은 자리의 다른 버튼 위 hit-test, 입력/Send의 위치 보존과 draft 유지/
+최신 복귀를 검증한다. `navigation.spec.ts`의 경계 wheel 검사는 DOM 생성 대신 slot의
+표시 속성 변경을 감시해 한 프레임의 잘못된 노출도 검출한다.

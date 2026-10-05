@@ -468,6 +468,7 @@ pre {
   border-radius: var(--wrapper-radius);
 }
 .composer-toolbar {
+  position: relative;
   display: flex;
   justify-content: flex-end;
   align-items: center;
@@ -503,20 +504,50 @@ pre {
 .composer textarea::placeholder {
   color: #909090;
 }
-.composer .send {
+.composer .toolbar-button {
   border-radius: max(
     0px,
     calc(var(--wrapper-radius) - 1px - var(--control-inset))
   );
-  width: 32px;
+  width: 64px;
   height: 24px;
   min-height: 24px;
   padding: 3px 6px;
   background: transparent;
   color: inherit;
 }
-.composer .send:not(:disabled):hover {
+.composer .toolbar-button:not(:disabled):hover {
   background: #363636;
+}
+.latest-slot {
+  position: absolute;
+  inset: 0 auto 0 50%;
+  transform: translateX(-50%);
+  width: 64px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
+}
+.latest-button {
+  position: absolute;
+  top: var(--control-inset);
+  left: 0;
+  transform: translateY(28px);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform 180ms ease-out,
+    opacity 180ms ease-out;
+}
+.latest-slot[data-visible="true"] .latest-button {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+@media (prefers-reduced-motion: reduce) {
+  .latest-button {
+    transition: none;
+  }
 }
 .send-control {
   position: relative;
@@ -655,15 +686,6 @@ summary:hover {
   width: min(var(--conversation-width), calc(100% - 32px));
   margin: 4px auto;
   font-size: 0.85rem;
-}
-.bottom {
-  z-index: 2;
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: 8px;
-  background: #303030;
-  box-shadow: 0 4px 16px #0005;
 }
 .resource-view {
   overflow: auto;

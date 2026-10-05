@@ -112,6 +112,7 @@ test("both pinned edges advance prompt phase and extend the background fade with
     await expect(thumb).toHaveAttribute("data-stretch", "0.00");
     await expect.poll(fade).toBeCloseTo(baseline, 0);
   }
-  await page.getByRole("button", { name: "↓ Latest" }).click();
+  await pane.evaluate((el) => (el.scrollTop -= 120));
+  await page.getByRole("button", { name: "Latest", exact: true }).click();
   await expect.poll(fade).toBe(0);
 });

@@ -67,7 +67,7 @@ outside-click dismissal are supported.
 
 The icon-only send button sits on the right of a toolbar above the text input,
 inside a zero-padding wrapper. The 28px toolbar has equal 2px top, bottom and right
-gaps around its 32px-wide, 24px-high Send button. The wrapper is narrower than the
+gaps around its 64px-wide, 24px-high Send button. The wrapper is narrower than the
 input, which extends 4px past each side while retaining its width. Their bottom
 borders overlap. Wrapper corners are 10px, input corners are 15px, and the inset
 Send corner is 7px to share the wrapper corner center. Ctrl+Enter sends, with a hover shortcut.
@@ -86,7 +86,14 @@ top fade indicates earlier history and grows with downward edge tension; in that
 direction the opposite bottom fade uses 75% of the tension contribution. Scroll
 controls, message headings, Copy buttons and disclosure controls paint above the
 fades; the fades affect message bodies without covering other controls. Latest
-navigation sits inside the viewport, avoiding overlap as the composer grows.
+navigation is an icon-only down arrow in the center of the composer toolbar,
+sharing Send's 64×24px borderless button style. Its absolute overlay occupies no
+layout space and stays above future toolbar controls. It slides up from behind
+the input in 180ms after 96px of upward reading movement, and slides back down
+after 96px of downward movement. Small reversals consume the accumulated distance
+without toggling it. At the latest position it hides and resets; hidden controls
+cannot capture clicks or focus. Cache insertion/eviction and row measurement are
+excluded from movement, and reduced motion switches immediately.
 
 The conversation hides native scrollbars. Hover reveals a handle and user-prompt
 ticks; approaching the handle widens it. Its local range is capped at twelve

@@ -306,6 +306,13 @@ function Conversation({
   const [draft, setDraft] = useState(c.drafts.get(id) ?? "");
   const [busy, setBusy] = useState(false);
   const [follow, setFollow] = useState(true);
+  const [latestShown, setLatestShown] = useState(false);
+  const latestTravel = useRef({ shown: false, distance: 0 });
+  useEffect(() => {
+    if (!follow) return;
+    latestTravel.current = { shown: false, distance: 0 };
+    setLatestShown(false);
+  }, [follow]);
   const pane = useRef<HTMLDivElement>(null);
   const lock = useRef(false);
   const historyRequest = useRef<AbortController | null>(null);
@@ -793,16 +800,20 @@ function Conversation({
             </p>
           )
         }
-        navigation={
-          !follow && (
-            <Button
-              className="bottom"
-              onClick={() => void loadHistory("newer", true)}
-            >
-              ↓ Latest
-            </Button>
-          )
-        }
+        onReadingMove={(delta) => {
+          if (followRef.current) return;
+          const travel = latestTravel.current;
+          // Measure from the furthest position in the opposite direction. Small
+          // reversals consume the accumulated distance instead of toggling UI.
+          travel.distance = Math.max(
+            0,
+            travel.distance + (travel.shown ? delta : -delta),
+          );
+          if (travel.distance < 96) return;
+          travel.shown = !travel.shown;
+          travel.distance = 0;
+          setLatestShown(travel.shown);
+        }}
         onTension={(stretch) => {
           tension.current = stretch;
           updateShadow();
@@ -843,9 +854,36 @@ function Conversation({
       <form className="composer" onSubmit={send}>
         <div className="composer-wrapper">
           <div className="composer-toolbar">
+            <span
+              className="latest-slot"
+              data-visible={!follow && latestShown}
+              inert={follow || !latestShown}
+              aria-hidden={follow || !latestShown}
+            >
+              <Button
+                className="toolbar-button latest-button"
+                type="button"
+                aria-label="Latest"
+                onClick={() => void loadHistory("newer", true)}
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M12 5v14m-6-6 6 6 6-6" />
+                </svg>
+              </Button>
+            </span>
             <span className="send-control">
               <Button
-                className="send"
+                className="toolbar-button send"
                 type="submit"
                 aria-label="Send"
                 aria-keyshortcuts="Control+Enter"

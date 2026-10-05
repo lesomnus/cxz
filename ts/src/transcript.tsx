@@ -57,11 +57,11 @@ export function Transcript({
   follow,
   render,
   notice,
-  navigation,
   onScroll,
   onNavigate,
   onTension,
   onMotion,
+  onReadingMove,
   precedingPrompt,
   jumpTarget,
   onPromptJump,
@@ -74,11 +74,11 @@ export function Transcript({
   follow: React.RefObject<boolean>;
   render: (event: SessionEvent) => React.ReactNode;
   notice: React.ReactNode;
-  navigation: React.ReactNode;
   onScroll: (reading: boolean) => void;
   onNavigate: () => void;
   onTension: (stretch: number) => void;
   onMotion: (motion: number) => void;
+  onReadingMove: (delta: number) => void;
   precedingPrompt: SessionEvent | undefined;
   jumpTarget: string | undefined;
   onPromptJump: (seq: string) => void;
@@ -124,6 +124,7 @@ export function Transcript({
     onNavigate,
     onTension,
     onMotion,
+    onReadingMove,
     older,
     newer,
   });
@@ -132,6 +133,7 @@ export function Transcript({
     onNavigate,
     onTension,
     onMotion,
+    onReadingMove,
     older,
     newer,
   };
@@ -323,6 +325,7 @@ export function Transcript({
       stopWheel();
     measure();
     callbacks.current.onScroll(!!(drag.current || wheel.current));
+    if (delta) callbacks.current.onReadingMove(delta);
     if (el.scrollTop < el.clientHeight * 2) callbacks.current.older();
     if (el.scrollHeight - el.scrollTop - el.clientHeight < el.clientHeight * 2)
       callbacks.current.newer();
@@ -612,7 +615,6 @@ export function Transcript({
           </Button>
         </div>
       )}
-      {navigation}
       <div className="scroll-track" ref={track} aria-hidden={view.max === 0}>
         <div className="scroll-markers">
           {view.markers.map(({ id, top }) => (

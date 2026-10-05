@@ -71,7 +71,7 @@ test("virtual messages preserve small tail scrolls and anchors across resize", a
     )
     .toBeLessThan(1);
   expect(await pane.locator("[data-seq]").count()).toBeLessThan(40);
-  await page.getByRole("button", { name: "↓ Latest" }).click();
+  await page.getByRole("button", { name: "Latest", exact: true }).click();
   await expect.poll(remaining).toBeLessThan(1);
   await expect(
     page.getByText("History item 2100", { exact: false }),

@@ -224,11 +224,11 @@ test("provider dropdowns, quota popovers, aligned headings and bounded press/sha
       return { bodyBelow, controlAbove };
     });
   expect(layers).toEqual({ bodyBelow: true, controlAbove: true });
-  const latest = page.getByRole("button", { name: "↓ Latest" });
+  const latest = page.getByRole("button", { name: "Latest", exact: true });
   expect(
     await latest.evaluate((el) => {
       const box = el.getBoundingClientRect();
-      const area = el.closest(".transcript-area")!.getBoundingClientRect();
+      const area = el.closest(".composer-toolbar")!.getBoundingClientRect();
       return (
         box.bottom <= area.bottom &&
         document
@@ -241,6 +241,6 @@ test("provider dropdowns, quota popovers, aligned headings and bounded press/sha
     path: "test-results/sandbox-input-shadow.png",
     fullPage: true,
   });
-  await page.getByRole("button", { name: "↓ Latest" }).click();
+  await page.getByRole("button", { name: "Latest", exact: true }).click();
   await expect.poll(async () => (await shadow()).opacity).toBe(0);
 });
