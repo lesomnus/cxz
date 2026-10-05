@@ -16,7 +16,7 @@ import (
 
 func newRoot(state string) *xli.Command {
 	root := &xli.Command{Name: "cxz", Brief: "Remote frontend for Linux cxz daemons", Flags: append(remoteFlags(), &flg.String{Name: "state", Brief: "Local client settings and recordings directory", Default: &state}), Handler: xli.OnRun(func(ctx context.Context, c *xli.Command, _ xli.Next) error {
-		return runRemote(versionpin.WithClient(cxzupdate.WithClient(ctx, flg.MustGet[string](c, "state")), flg.MustGet[string](c, "state")), flg.MustGet[string](c, "state"), flg.MustGet[string](c, "endpoint"), flg.MustGet[string](c, "token-file"), flg.MustGet[string](c, "session"))
+		return runRemote(versionpin.WithClient(cxzupdate.WithClient(ctx, flg.MustGet[string](c, "state")), flg.MustGet[string](c, "state")), flg.MustGet[string](c, "state"), remoteOptions{endpoint: flg.MustGet[string](c, "endpoint"), tokenFile: flg.MustGet[string](c, "token-file"), session: flg.MustGet[string](c, "session"), noEnroll: flg.MustGet[bool](c, "no-enroll")})
 	})}
 	plain := false
 	root.Commands = xli.Commands{connectionCommand(), aiCommand(), mcpCommand(), skillCommand(), editCommand(), devcontainerCommand(), selfUpdateCommand(), useCommand(), selfInstallCommand(), integrationCommand(),

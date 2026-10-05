@@ -129,7 +129,10 @@ func Install(ctx context.Context, root, workspaceRoot, image string, recreate bo
 		return err
 	}
 	if recreate {
-		return RefreshWebLocked(ctx, root, out)
+		if err := RefreshWebLocked(ctx, root, out); err != nil {
+			return err
+		}
+		return RefreshRelayLocked(ctx, root, out)
 	}
 	return nil
 }

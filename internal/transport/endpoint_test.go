@@ -38,7 +38,7 @@ func TestEndpointValidation(t *testing.T) {
 	if !strings.Contains(args[len(args)-1], `'"'"'`) || args[len(args)-2] != "host" {
 		t.Fatal(args)
 	}
-	if _, err := DialEndpoint("tcp://127.0.0.1:7349", ""); err == nil {
+	if _, err := DialEndpoint("tcp://127.0.0.1:7349", "", nil); err == nil {
 		t.Fatal("missing token accepted")
 	}
 }
@@ -82,7 +82,7 @@ func TestAuthenticatedTCPProxyUnaryAndWatch(t *testing.T) {
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 	defer cancel()
 	for _, credential := range []string{"wrong", token} {
-		conn, err := DialEndpoint("tcp://"+ln.Addr().String(), credential)
+		conn, err := DialEndpoint("tcp://"+ln.Addr().String(), credential, nil)
 		if err != nil {
 			t.Fatal(err)
 		}

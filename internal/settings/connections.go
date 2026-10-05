@@ -88,6 +88,17 @@ func (c Connections) Validate() error {
 	}
 	return nil
 }
+
+// Entry is a lookup that does not panic on a nil Connections, which is the
+// state of a client that has configured none.
+func (c *Connections) Entry(name string) (Connection, bool) {
+	if c == nil {
+		return Connection{}, false
+	}
+	v, ok := c.Entries[name]
+	return v, ok
+}
+
 func (c Connections) Names() []string {
 	names := make([]string, 0, len(c.Entries))
 	for name := range c.Entries {

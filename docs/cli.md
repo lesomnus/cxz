@@ -239,9 +239,27 @@ cxz terminal-info                   # terminal environment and palette; no manag
 
 ```sh
 cxz --endpoint ssh://user@host
+cxz --endpoint mtls://host:7349             # needs cxz connection enroll
 cxz --endpoint tcp://host:7349 --token-file FILE
-cxz expose --token-file FILE --listen tcp://127.0.0.1:7349
+cxz --no-enroll                             # never enroll or renew over SSH this run
 ```
+
+On the manager host:
+
+```sh
+cxz expose up [--listen 0.0.0.0:7349]       # background mutual-TLS relay
+cxz expose down
+cxz expose status [--format table|json]
+cxz expose ca                               # the installation root, for a client to pin
+cxz expose sign --label NAME                # sign a certificate request from stdin
+cxz expose revoke SERIAL
+cxz expose --token-file FILE --listen tcp://127.0.0.1:7349   # foreground plaintext relay
+```
+
+`expose up` runs a relay container that accepts only certificates this
+installation signed and has not revoked; the root's private key stays with the
+manager. An enrolled client connects with `mtls://`, and an SSH connection
+enrolls itself on first use. See [remote access](remote.md#mutual-tls-on-your-own-network).
 
 See [remote access](remote.md).
 
@@ -299,6 +317,11 @@ authentication, update behaviour and supported operations.
 
 ```sh
 cxz connection ls [--format table|json]
+cxz connection enroll NAME                  # obtain this client's certificate over SSH
+cxz connection enroll --csr NAME            # ...or print a request to sign by hand
+cxz connection enroll --certificate F --ca F NAME
+cxz connection check NAME                   # dial the relay now and report what answered
+cxz connection forget NAME                  # delete the local certificate
 cxz connection tunnel [--local-port 7350] [--remote-port 7350] NAME
 ```
 
