@@ -71,8 +71,9 @@ func TestKeyboardControls(t *testing.T) {
 	if len(c.inputs) != 1 || c.inputs[0].Text != "hello" || c.inputs[0].RunId != "run" {
 		t.Fatal("bad send")
 	}
-	for _, k := range []tea.KeyType{tea.KeyF2, tea.KeyF3, tea.KeyF4} {
-		if k == tea.KeyF3 {
+	for _, k := range []tea.KeyType{tea.KeyEnter, tea.KeyBackspace, tea.KeyF4} {
+		m.focusApproval = true
+		if k == tea.KeyBackspace {
 			m.sessions[0].Pending = []*api.Event{{RequestId: "permission-deny"}}
 		}
 		_, cmd = m.Update(tea.KeyMsg{Type: k})
@@ -84,6 +85,7 @@ func TestKeyboardControls(t *testing.T) {
 	if len(c.answers) != 2 || !c.answers[0].Allow || c.answers[1].Allow || c.answers[0].RequestId != "permission" || len(c.interrupts) != 1 {
 		t.Fatal("bad approval/interrupt mapping")
 	}
+	m.focusApproval = false
 	m.input.SetValue(`/answer {"question":"Blue"}`)
 	m.sessions[0].Pending = []*api.Event{{RequestId: "question", Text: "AskUserQuestion"}}
 	_, cmd = m.Update(tea.KeyMsg{Type: tea.KeyCtrlS})

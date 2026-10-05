@@ -365,3 +365,21 @@ func (c *Client) refreshSource(ctx context.Context, ref string) {
 		}
 	}
 }
+
+func (c *Client) RenameProject(ctx context.Context, ref, title string) error {
+	_, id, client, err := c.route(ctx, ref)
+	if err != nil {
+		return err
+	}
+	r, ok := client.(interface {
+		RenameProject(context.Context, string, string) error
+	})
+	if !ok {
+		return fmt.Errorf("project rename unavailable; update the client")
+	}
+	if err := r.RenameProject(ctx, id, title); err != nil {
+		return err
+	}
+	c.refreshSource(ctx, ref)
+	return nil
+}

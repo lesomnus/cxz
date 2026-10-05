@@ -309,6 +309,8 @@ func (m *model) panelKey(k tea.KeyMsg) tea.Cmd {
 	rows := m.panelRows()
 	m.panelWantConnection = ""
 	switch k.String() {
+	case "f2":
+		return m.startProjectRename()
 	case "?":
 		m.openReport("/help", "")
 		return nil
@@ -546,13 +548,16 @@ func (m *model) panelScreen() string {
 				name = s.Id
 			}
 			sessionName := pickerLabel(name)
-			if m.renaming && m.renameID == s.Id {
+			if m.renaming && !m.renameProject && m.renameID == s.Id {
 				sessionName = m.aliasInput.View()
 			}
 			line = m.sessionIndicator(s) + " " + clip(sessionName, max(1, width-17)) + " · " + providerLabel(s.Agent)
 			if s.State != "idle" && !workingState(s.State) && s.State != "" {
 				line += " · " + pickerLabel(s.State)
 			}
+		}
+		if r.session == nil && m.renaming && m.renameProject && m.renameID == r.project.Id {
+			line = m.aliasInput.View()
 		}
 		continuation := r.session != nil && position > 0 && layout[position-1] == i
 		if r.session != nil && !continuation {
@@ -572,7 +577,7 @@ func (m *model) panelScreen() string {
 		if continuation {
 			prefix = "  "
 		}
-		if r.session == nil && r.project.State != "connection" && projectPanelHeaderRows+position-start == m.panelHoverY {
+		if !m.renaming && r.session == nil && r.project.State != "connection" && projectPanelHeaderRows+position-start == m.panelHoverY {
 			labelWidth := max(0, width-5)
 			line = clip(line, labelWidth)
 			line += strings.Repeat(" ", max(0, labelWidth-ansi.StringWidth(line))) + accent.Render("+")

@@ -38,7 +38,7 @@ new-session account picker for that project. Other shortcuts remain available.
 | `Ctrl+Enter` | Send, where the terminal can distinguish it |
 | `Ctrl+X` | Clear the draft; with nothing to clear, take back the message waiting to be sent |
 | `Tab` / `Shift+Tab` | Between pending approvals and the composer |
-| `F2` / `F3` | Allow / deny the pending approval |
+| `F2` | Edit the selected project title; Enter saves, Esc cancels |
 | `F4` | Interrupt the turn |
 | `Esc` twice within 3s | Confirm the interruption |
 | `Ctrl+R` | Resume a stopped session; a yellow dot blinks beside it until the request finishes |

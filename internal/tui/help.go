@@ -125,7 +125,7 @@ func helpView(width int, topics ...string) string {
 		{"Approval controls", "↑ / ↓", "Select pending request (approval focus)"},
 		{"Approval controls", "PgUp / PgDn", "Scroll full request (approval focus)"},
 		{"Approval controls", "Enter / Backspace", "Allow / deny (approval focus)"},
-		{"Approval controls", "F2 / F3", "Allow / deny selected request"},
+		{"Navigation", "F2", "Edit project title; Enter saves, Esc cancels"},
 		{"Agent controls", "Esc", "Press twice within 3s to interrupt current turn"},
 		{"Agent controls", "F4", "Interrupt current turn immediately"},
 		{"Agent controls", "Ctrl+R", "Resume stopped session; yellow dot blinks until the request finishes"},

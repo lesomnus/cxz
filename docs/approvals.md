@@ -22,7 +22,6 @@ physical order (approvals, then composer); `Shift+Tab` reverses.
 | `↑` `↓` | Select a request |
 | `Enter` | Allow. On a question, opens its dialog |
 | `Backspace` | Deny |
-| `F2` / `F3` | Allow / deny without focusing the box |
 | `PgUp` `PgDn`, `Ctrl+↑` `Ctrl+↓`, wheel | Scroll the focused request |
 
 The box shows a provider-specific title, command and reason first, then the full
