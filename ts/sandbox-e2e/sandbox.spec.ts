@@ -62,7 +62,7 @@ test("WASM sandbox reuses the UI without backend, credentials or provider calls"
   await expect(
     page.getByText("History item 2100", { exact: false }),
   ).toBeVisible();
-  await expect(page.locator(".transcript article")).toHaveCount(2000);
+  expect(await page.locator(".transcript article").count()).toBeLessThan(40);
   await page.getByLabel("Scenario", { exact: true }).selectOption("session-7");
   await expect(page.getByText("Actions", { exact: true })).toHaveCount(0);
   await expect(page.locator(".conversation header small")).toContainText(

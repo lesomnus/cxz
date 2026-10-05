@@ -7,7 +7,8 @@
   font-size: 14px;
   --space: 4px;
   --conversation-width: 600px;
-  --composer-radius: 10px;
+  --composer-radius: 5px;
+  --composer-extension: 10px;
   --composer-overhang: 4px;
   --muted: #a0a0a0;
   --hover: #282828;
@@ -257,22 +258,32 @@ header strong {
   max-width: var(--conversation-width);
   margin: 0 auto;
 }
-.transcript-content > article,
-.transcript-content > details,
+.virtual-messages {
+  position: relative;
+  overflow: clip;
+}
+.transcript-row {
+  position: absolute;
+  width: 100%;
+  display: flow-root;
+  padding-block: 6px;
+}
+.transcript-row > article,
+.transcript-row > details,
 .history-note {
   width: 100%;
   max-width: var(--conversation-width);
-  margin: 12px auto;
+  margin: 0 auto;
   overflow-wrap: anywhere;
 }
 .history-note {
   font-size: 0.7rem;
   margin-top: 0;
 }
-.transcript-content > article {
+.transcript-row > article {
   padding: 0 12px;
 }
-.transcript-content > .input {
+.transcript-row > .input {
   background: #222;
   border-radius: 8px;
   padding: 10px 12px;
@@ -362,6 +373,8 @@ pre {
   margin-left: 6px;
 }
 .composer {
+  position: relative;
+  z-index: 2;
   flex-shrink: 0;
   width: min(var(--conversation-width), calc(100% - 52px));
   margin: 0 auto;
@@ -369,8 +382,10 @@ pre {
 }
 .composer-wrapper {
   position: relative;
-  width: calc(100% + 2 * (var(--composer-radius) - var(--composer-overhang)));
-  margin-inline: calc(var(--composer-overhang) - var(--composer-radius));
+  width: calc(
+    100% + 2 * (var(--composer-extension) - var(--composer-overhang))
+  );
+  margin-inline: calc(var(--composer-overhang) - var(--composer-extension));
   padding: 0;
   border: 1px solid #2c2c2c;
   background: #191919;
@@ -413,6 +428,7 @@ pre {
   color: #909090;
 }
 .composer .send {
+  border-radius: max(0px, calc(var(--composer-radius) - 3px));
   width: 32px;
   height: 24px;
   min-height: 24px;
@@ -479,7 +495,7 @@ pre {
 }
 .model-info > .setting-field {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   min-width: 0;
   white-space: nowrap;
 }
@@ -845,20 +861,28 @@ summary:hover {
   }
 }
 
-.composer-wrapper::before {
-  content: "";
+.transcript-fade {
   position: absolute;
-  z-index: 1;
-  pointer-events: none;
-  bottom: 100%;
   left: 0;
   right: 0;
-  height: var(--shadow-length, 0px);
-  opacity: var(--shadow-opacity, 0);
-  background: linear-gradient(to top, var(--background), transparent);
+  z-index: 1;
+  pointer-events: none;
+  max-height: 45%;
   transition:
-    height 120ms ease-out,
-    opacity 120ms ease-out;
+    height 180ms ease-out,
+    opacity 180ms ease-out;
+}
+.transcript-fade-bottom {
+  bottom: 0;
+  height: var(--bottom-fade-height, 0px);
+  opacity: var(--bottom-fade-opacity, 0);
+  background: linear-gradient(to top, var(--background), transparent);
+}
+.transcript-fade-top {
+  top: 0;
+  height: var(--top-fade-height, 0px);
+  opacity: var(--top-fade-opacity, 0);
+  background: linear-gradient(to bottom, var(--background), transparent);
 }
 .setting-field {
   align-items: center;
@@ -870,8 +894,7 @@ summary:hover {
   min-width: 0;
   height: 20px;
 }
-.setting-trigger,
-.setting-current {
+.setting-trigger {
   display: block;
   padding: 0;
   min-height: 20px;
@@ -896,12 +919,12 @@ summary:hover {
 .setting-menu {
   position: absolute;
   z-index: 6;
-  top: -8px;
-  left: -4px;
+  top: -12px;
+  left: -6px;
   display: flex;
   flex-direction: column;
   width: var(--menu-width, 180px);
-  padding: 8px 4px;
+  padding: 8px 0;
   border-radius: 6px;
   background: #242424;
   outline: 1px solid #3a3a3a;
@@ -909,19 +932,14 @@ summary:hover {
 }
 .setting-menu.opens-up {
   top: auto;
-  bottom: -8px;
+  bottom: -12px;
   flex-direction: column-reverse;
 }
 .setting-current {
-  width: var(--value-width);
   flex-shrink: 0;
 }
-.setting-current:focus-visible {
-  outline: none;
-}
-.setting-current:focus-visible .meta-value {
-  text-decoration: underline;
-  text-underline-offset: 3px;
+.setting-current .meta-value {
+  max-width: var(--value-width);
 }
 .setting-divider {
   height: 1px;
@@ -934,7 +952,7 @@ summary:hover {
   overflow: auto;
   scrollbar-width: thin;
 }
-.setting-options button {
+.setting-menu button {
   display: block;
   min-height: 28px;
   padding: 4px 6px;
@@ -943,7 +961,7 @@ summary:hover {
   font-size: inherit;
   line-height: 20px;
 }
-.setting-options .button-content {
+.setting-menu .button-content {
   justify-content: flex-start;
   overflow: hidden;
   white-space: nowrap;
@@ -997,7 +1015,7 @@ summary:hover {
   transition: stroke-dasharray 160ms ease-out;
 }
 @media (prefers-reduced-motion: reduce) {
-  .composer-wrapper::before,
+  .transcript-fade,
   .meta-tooltip,
   .context-fill {
     transition: none;

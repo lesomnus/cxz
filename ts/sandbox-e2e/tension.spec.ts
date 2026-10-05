@@ -24,8 +24,8 @@ test("both pinned edges advance prompt phase and extend the background fade with
   );
   const fade = () =>
     page
-      .locator(".composer-wrapper")
-      .evaluate((el) => parseFloat(getComputedStyle(el, "::before").height));
+      .locator(".transcript-fade-bottom")
+      .evaluate((el) => parseFloat(getComputedStyle(el).height));
   await expect.poll(fade).toBeGreaterThan(100);
   const baseline = await fade();
   for (const direction of [-1, 1]) {
@@ -56,11 +56,17 @@ test("both pinned edges advance prompt phase and extend the background fade with
       .toBeGreaterThan(5);
     await expect.poll(fade).toBeGreaterThan(baseline + 20);
     const light = await fade();
+    const topFade = () =>
+      page
+        .locator(".transcript-fade-top")
+        .evaluate((el) => parseFloat(getComputedStyle(el).height));
+    const topLight = await topFade();
     await page.mouse.move(x, edge + direction * 160);
     await expect
       .poll(async () => Number(await thumb.getAttribute("data-stretch")))
       .toBeGreaterThan(15);
     await expect.poll(fade).toBeGreaterThan(light + 15);
+    if (direction > 0) await expect.poll(topFade).toBeGreaterThan(topLight + 5);
     const phase = await page.evaluate(() => {
       const marker = document.querySelector<HTMLElement>(".scroll-marker")!;
       return {

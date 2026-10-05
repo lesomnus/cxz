@@ -148,7 +148,10 @@ test("grouped sessions, shortcut, stable fields and elastic local scrollbar", as
       ),
     )
     .toBeLessThan(BigInt(first!));
-  await expect(page.locator(".transcript [data-seq]")).toHaveCount(2000);
+  expect(await page.locator(".transcript [data-seq]").count()).toBeLessThan(60);
+  expect(
+    Number(await page.locator(".virtual-messages").getAttribute("data-cached")),
+  ).toBeLessThanOrEqual(512);
   await page.getByRole("button", { name: "↓ Latest" }).click();
   await expect(
     page.getByText("History item 2100", { exact: false }),

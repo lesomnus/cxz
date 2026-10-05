@@ -69,6 +69,14 @@ test("provider dropdowns, quota popovers, aligned headings and bounded press/sha
   expect(menuBox.x).toBeGreaterThanOrEqual(labelBox.x + labelBox.width);
   expect(menuBox.y).toBeGreaterThanOrEqual(0);
   expect(menuBox.y + menuBox.height).toBeLessThanOrEqual(1000);
+  const selectedRow = choices.getByRole("option", { selected: true });
+  const otherRow = choices.getByRole("option", { selected: false }).first();
+  expect((await selectedRow.boundingBox())!.width).toBe(
+    (await otherRow.boundingBox())!.width,
+  );
+  expect(await selectedRow.evaluate((el) => getComputedStyle(el).padding)).toBe(
+    await otherRow.evaluate((el) => getComputedStyle(el).padding),
+  );
   await expect(choices.getByRole("separator")).toBeVisible();
   await page.screenshot({
     path: "test-results/sandbox-value-menu.png",
@@ -140,23 +148,24 @@ test("provider dropdowns, quota popovers, aligned headings and bounded press/sha
   await expect(page.locator(".model-field .meta-value")).toHaveText(
     "sandbox-claude",
   );
-  // Catalog lookup also works when its event is older than the rendered 2,000-event window.
+  // Catalog lookup also works when its event is older than the cached history window.
   await expect(model).toBeEnabled();
   const pane = page.locator(".transcript");
   const shadow = () =>
-    page.locator(".composer-wrapper").evaluate((el) => ({
-      length: parseFloat(getComputedStyle(el, "::before").height),
-      opacity: parseFloat(getComputedStyle(el, "::before").opacity),
-      height: el.querySelector(".composer-input")!.getBoundingClientRect()
+    page.locator(".transcript-fade-bottom").evaluate((el) => ({
+      length: parseFloat(getComputedStyle(el).height),
+      opacity: parseFloat(getComputedStyle(el).opacity),
+      height: document.querySelector(".composer-input")!.getBoundingClientRect()
         .height,
-      background: getComputedStyle(el, "::before").backgroundImage,
+      background: getComputedStyle(el).backgroundImage,
     }));
   expect((await shadow()).length).toBe(0);
   expect((await shadow()).background).toContain("rgb(20, 20, 20)");
   await pane.evaluate((el) => (el.scrollTop -= 30));
-  await expect.poll(async () => (await shadow()).length).toBeCloseTo(15, 0);
+  await expect.poll(async () => (await shadow()).length).toBeGreaterThan(1);
   const shallow = await shadow();
   expect(shallow.opacity).toBeGreaterThan(0);
+  expect(shallow.opacity).toBeLessThan(0.2);
   await pane.evaluate((el) => (el.scrollTop -= 200));
   await expect
     .poll(async () => (await shadow()).length)

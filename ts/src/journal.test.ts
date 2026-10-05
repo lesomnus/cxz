@@ -19,7 +19,7 @@ describe("journal recovery", () => {
       ).map((e) => e.seq),
     ).toEqual([n, n + 1n, n + 2n]);
   });
-  it("bounds the rendered history", () => {
+  it("bounds cached history independently of rendered rows", () => {
     const result = mergeEvents(
       [],
       Array.from({ length: MAX_EVENTS + 100 }, (_, i) => event(BigInt(i))),

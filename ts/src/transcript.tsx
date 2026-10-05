@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   clamp,
   edgePull,
@@ -6,6 +6,9 @@ import {
   markerRangeStart,
   type ScrollRange,
 } from "./scroll-physics";
+
+import type { SessionEvent } from "../gen/cxz/session_pb";
+import { VirtualMessages } from "./virtual-messages";
 
 type Geometry = {
   top: number;
@@ -37,14 +40,20 @@ type Drag = {
 
 export function Transcript({
   pane,
-  children,
+  events,
+  follow,
+  render,
+  notice,
   onScroll,
   onTension,
   older,
   newer,
 }: {
   pane: React.RefObject<HTMLDivElement | null>;
-  children: React.ReactNode;
+  events: SessionEvent[];
+  follow: boolean;
+  render: (event: SessionEvent) => React.ReactNode;
+  notice: React.ReactNode;
   onScroll: () => void;
   onTension: (stretch: number) => void;
   older: () => void;
@@ -104,13 +113,6 @@ export function Transcript({
   function readOffsets() {
     const el = pane.current;
     if (!el) return;
-    const top = el.getBoundingClientRect().top;
-    offsets.current = [
-      ...el.querySelectorAll<HTMLElement>("article.input"),
-    ].map((node) => ({
-      id: node.dataset.seq!,
-      y: node.getBoundingClientRect().top - top + el.scrollTop,
-    }));
     measure();
     callbacks.current.onScroll();
   }
@@ -123,7 +125,6 @@ export function Transcript({
     if (el.scrollHeight - el.scrollTop - el.clientHeight < el.clientHeight * 2)
       callbacks.current.newer();
   }
-  useLayoutEffect(readOffsets, [children]);
   useEffect(() => {
     const el = pane.current,
       inner = content.current;
@@ -230,9 +231,24 @@ export function Transcript({
         onScroll={scrolled}
       >
         <div className="transcript-content" ref={content}>
-          {children}
+          {notice}
+          <VirtualMessages
+            pane={pane}
+            events={events}
+            follow={follow}
+            render={render}
+            changed={(markers) => {
+              offsets.current = markers;
+              readOffsets();
+            }}
+          />
         </div>
       </div>
+      <div className="transcript-fade transcript-fade-top" aria-hidden="true" />
+      <div
+        className="transcript-fade transcript-fade-bottom"
+        aria-hidden="true"
+      />
       <div className="scroll-track" ref={track} aria-hidden={view.max === 0}>
         <div className="scroll-markers">
           {view.markers.map(({ id, top }) => (

@@ -30,7 +30,7 @@ from the same Go toolchain that compiled the module.
 The Scenario selector opens one of the sample sessions:
 
 - English answers with Markdown, tables, checklists and code.
-- Long history exceeding the UI's 2,000-event window, with periodic user prompts
+- Long history exceeding the UI's 512-event cache, with periodic user prompts
   to preview scrollbar markers.
 - An approval question using the regular answer controls.
 - A simulated usage-limit/error case.
@@ -57,7 +57,8 @@ require an idle session. A model change clears explicit effort first, awaiting
 provider confirmation before applying the model. Missing capabilities disable the
 selectors rather than treating slash commands as chat prompts. Only values open
 styled dropdowns; labels stay inert. The current value overlays its exact original
-text position, separated from other choices. At the screen bottom, choices expand
+text position, separated from other choices, with the same full-width row and
+padding as the other options. At the screen bottom, choices expand
 upward while the current row stays in place. Keyboard navigation, Escape and
 outside-click dismissal are supported.
 
@@ -65,17 +66,17 @@ The icon-only send button sits on the right of a toolbar above the text input,
 inside a zero-padding wrapper. The 28px toolbar has equal 2px top, bottom and right
 gaps around its 32px-wide, 24px-high Send button. The wrapper is narrower than the
 input, which extends 4px past each side while retaining its width. Their bottom
-borders overlap. Ctrl+Enter sends, with a hover shortcut.
+borders overlap. Wrapper/input corners are 5px; the inset Send corner is 2px. Ctrl+Enter sends, with a hover shortcut.
 Quota uses the TUI's eight Braille cells at the same font size as Model/Effort;
 its intrinsic width and a separate gap keep it clear of the context donut. Hover
 reveals the reset time. Context
 is a donut with a used/capacity token popover. These are simulated snapshots, not
 real account limits. Status snapshots are retained separately from the rendered
-history window. The input extends one corner radius beyond each conversation
-edge. User and assistant headings align, with more padding on message contents.
-The fade above the wrapper uses the page background color. It grows smoothly
-with hidden content below the viewport, up to the input height. Edge tension adds
-up to another input height, then recedes when released.
+history window. The input extends 10px beyond each conversation edge. User and assistant headings align, with more padding on message contents.
+Both viewport fades use the page background color and sit behind the composer.
+The bottom fade starts with a smooth opacity/height ramp, up to the input height.
+Edge tension adds up to another input height, then recedes when released. A shorter
+top fade indicates earlier history and grows with downward edge tension.
 
 The conversation hides native scrollbars. Hover reveals a handle and user-prompt
 ticks; approaching the handle widens it. Its local range is capped at twelve
@@ -83,9 +84,13 @@ viewport heights. Prompt ticks and the handle share the same range-rebase
 animation, with stable event identities. During edge tension, the handle stays
 pinned while prompt ticks continue to move in phase with the passing transcript.
 Dragging beyond either end applies a saturating spring while accelerating
-scrolling through adjacent ranges. Older/newer journal pages replace
-the opposite end of the 2,000-event rendering window, preserving the visible
-message's position. Paging stops at the server's retained history boundary.
+scrolling through adjacent ranges. History arrives in 128-event pages, starting
+near the latest 256 events, with a cache capped at 512. Only visible messages and
+six extra messages on either side are mounted. Measured variable heights drive
+virtual positioning and prompt ticks; a fixed total height and visible-message
+anchor prevent jumps during measurement, resizing and page replacement. The
+conversation follows new events only while actually at the bottom. Paging stops
+at the server's retained history boundary.
 
 **Reset sandbox** recreates the entire Worker, discarding drafts, history and
 pending work, and applies the Seed and Pace controls. Identical seeds and the same
@@ -108,7 +113,8 @@ model/effort selection, reset and seed replay without HTTP RPC/auth requests.
 Desktop checks also cover project/session ordering, heading/input alignment,
 Ctrl+Enter, fixed field positions, quota/context popovers, bounded button press
 scaling, background fades with tension, overlapping input borders, scrollbar prompt phase
-at both edges, hover/stretch and older/latest paging.
+at both edges, hover/stretch, near-bottom scroll stability, resizing and full
+backward/forward history paging with bounded DOM and cache.
 
 Serve a static build at the origin root, preserving its Worker/WASM assets and
 application/wasm MIME type. `npx vite preview --config vite.sandbox.config.ts`

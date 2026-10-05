@@ -43,11 +43,20 @@ func idle(t *testing.T, x *Sessions, id string) {
 }
 func history(t *testing.T, x *Sessions, id string) []*resource.SessionEvent {
 	t.Helper()
-	v, err := x.History(t.Context(), resource.SessionEventsRequest_builder{Ref: ref(id)}.Build())
-	if err != nil {
-		t.Fatal(err)
+	var events []*resource.SessionEvent
+	var after uint64
+	for {
+		v, err := x.History(t.Context(), resource.SessionEventsRequest_builder{Ref: ref(id), AfterSeq: proto.Uint64(after)}.Build())
+		if err != nil {
+			t.Fatal(err)
+		}
+		page := v.GetEvents()
+		events = append(events, page...)
+		if len(page) < 128 {
+			return events
+		}
+		after = page[len(page)-1].GetSeq()
 	}
-	return v.GetEvents()
 }
 func TestSeededJobsAndIsolation(t *testing.T) {
 	run := func(seed uint64) []string {
@@ -150,6 +159,10 @@ func TestApprovalFilteringAndBoundedHistory(t *testing.T) {
 		s.event(st, "input", "bounded", "", nil)
 	}
 	s.mu.Unlock()
+	firstPage, err := x.History(t.Context(), resource.SessionEventsRequest_builder{Ref: ref("session-3")}.Build())
+	if err != nil || len(firstPage.GetEvents()) != 128 {
+		t.Fatal("history must use bounded pages", err)
+	}
 	es := history(t, x, "session-3")
 	if len(es) != maxEvents || es[0].GetSeq() <= 1 {
 		t.Fatal("unbounded history")

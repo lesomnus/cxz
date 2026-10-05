@@ -24,7 +24,7 @@ test("compact monochrome workspace, aligned composer and release-triggered butto
     Math.abs(box.x + box.width / 2 - main.x - main.width / 2),
   ).toBeLessThan(1);
   for (const content of await page
-    .locator(".transcript-content > article, .transcript-content > details")
+    .locator(".transcript-row > article, .transcript-row > details")
     .all()) {
     const bounds = (await content.boundingBox())!;
     expect(bounds.x).toBeGreaterThanOrEqual(box.x + 10 - 1);
@@ -75,6 +75,12 @@ test("compact monochrome workspace, aligned composer and release-triggered butto
     "rgb(25, 25, 25)",
   );
   await expect(send).toHaveCSS("border-top-width", "0px");
+  await expect(page.locator(".composer-wrapper")).toHaveCSS(
+    "border-radius",
+    "5px",
+  );
+  await expect(composer).toHaveCSS("border-radius", "5px");
+  await expect(send).toHaveCSS("border-radius", "2px");
   const message = page.getByRole("textbox", { name: "Message", exact: true });
   await message.fill("Release to send");
   await send.hover();

@@ -315,6 +315,9 @@ func (x *Sessions) History(_ context.Context, r *resource.SessionEventsRequest) 
 	for _, e := range st.events {
 		if e.GetSeq() > r.GetAfterSeq() {
 			events = append(events, proto.Clone(e).(*resource.SessionEvent))
+			if len(events) == 128 {
+				break // Match the production history page size.
+			}
 		}
 	}
 	return resource.SessionEventBatch_builder{Events: events}.Build(), nil

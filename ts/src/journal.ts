@@ -1,5 +1,6 @@
 import type { SessionEvent } from "../gen/cxz/session_pb";
-export const MAX_EVENTS = 2000;
+// Four history pages in memory; the transcript mounts only its visible rows.
+export const MAX_EVENTS = 512;
 export function mergeEvents(
   previous: SessionEvent[],
   incoming: SessionEvent[],

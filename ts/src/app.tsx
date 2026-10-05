@@ -1,10 +1,4 @@
-import React, {
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Provider, useQuery } from "@lesomnus/payday/react";
 import { ProjectService } from "../gen/cxz/project_svc_pb";
 import { SessionService } from "../gen/cxz/session_svc_pb";
@@ -302,7 +296,6 @@ function Conversation({
   const [events, setEvents] = useState<SessionEvent[]>([]);
   const [metadata, setMetadata] = useState<SessionEvent[]>([]);
   const catalogRun = useRef("");
-  const composerWrapper = useRef<HTMLDivElement>(null);
   const tension = useRef(0);
   const composerInput = useRef<HTMLDivElement>(null);
   const [pending, setPending] = useState<SessionEvent[]>([]);
@@ -322,23 +315,40 @@ function Conversation({
   eventsRef.current = events;
   const followRef = useRef(follow);
   followRef.current = follow;
-  const anchor = useRef<{ seq: string; offset: number } | null>(null);
+
   function rememberMetadata(rows: SessionEvent[]) {
     setMetadata((old) => mergeMetadata(old, rows));
   }
   function updateShadow() {
     const el = pane.current,
       input = composerInput.current;
-    const wrapper = composerWrapper.current;
-    if (!el || !input || !wrapper) return;
+    const area = el?.parentElement;
+    if (!el || !input || !area) return;
     const depth = Math.max(0, el.scrollHeight - el.scrollTop - el.clientHeight);
     const pull = Math.min(1, Math.abs(tension.current) / 20);
-    const length =
-      Math.min(input.offsetHeight, depth / 2) + input.offsetHeight * pull;
-    wrapper.style.setProperty("--shadow-length", `${length}px`);
-    wrapper.style.setProperty(
-      "--shadow-opacity",
-      String(Math.min(1, depth / input.offsetHeight + pull)),
+    const ramp = (distance: number) => {
+      const n = Math.min(1, Math.max(0, distance) / 160);
+      return n * n * (3 - 2 * n);
+    };
+    const bottom = ramp(depth);
+    const top =
+      eventsRef.current[0]?.seq > floor.current + 1n ? 1 : ramp(el.scrollTop);
+    const topPull = Math.min(1, Math.max(0, tension.current) / 20);
+    area.style.setProperty(
+      "--bottom-fade-height",
+      `${input.offsetHeight * (bottom + pull)}px`,
+    );
+    area.style.setProperty(
+      "--bottom-fade-opacity",
+      String(Math.max(bottom, pull)),
+    );
+    area.style.setProperty(
+      "--top-fade-height",
+      `${input.offsetHeight * (0.45 * top + 0.5 * topPull)}px`,
+    );
+    area.style.setProperty(
+      "--top-fade-opacity",
+      String(Math.max(top, topPull)),
     );
   }
   useEffect(
@@ -368,8 +378,8 @@ function Conversation({
         setPending(snapshot.status?.pending ?? []);
         const snapshotSeq = snapshot.status?.lastSeq ?? 0n;
         if (snapshotSeq > latestSeq.current) latestSeq.current = snapshotSeq;
-        if (cursor === 0n && latestSeq.current > BigInt(MAX_EVENTS))
-          cursor = latestSeq.current - BigInt(MAX_EVENTS);
+        if (cursor === 0n && latestSeq.current > 256n)
+          cursor = latestSeq.current - 256n;
         const history = await c.sessions.history(
           { ref: ref(id), afterSeq: cursor },
           { signal },
@@ -428,37 +438,6 @@ function Conversation({
       window.removeEventListener("offline", offline);
     };
   }, [c, id]);
-  useLayoutEffect(() => {
-    const el = pane.current;
-    if (!el) return;
-    if (anchor.current) {
-      const saved = anchor.current;
-      const node = el.querySelector<HTMLElement>(`[data-seq="${saved.seq}"]`);
-      if (node) {
-        const delta =
-          node.getBoundingClientRect().top -
-          el.getBoundingClientRect().top -
-          saved.offset;
-        el.scrollTop += delta;
-        el.dispatchEvent(new CustomEvent("history-shift", { detail: delta }));
-      }
-      anchor.current = null;
-    } else if (follow) el.scrollTop = el.scrollHeight;
-    updateShadow();
-  }, [events, follow]);
-  function saveAnchor() {
-    const el = pane.current;
-    if (!el) return;
-    const top = el.getBoundingClientRect().top;
-    const node = [...el.querySelectorAll<HTMLElement>("[data-seq]")].find(
-      (item) => item.getBoundingClientRect().bottom > top,
-    );
-    if (node)
-      anchor.current = {
-        seq: node.dataset.seq!,
-        offset: node.getBoundingClientRect().top - top,
-      };
-  }
   async function loadHistory(direction: "older" | "newer", goLatest = false) {
     if (historyRequest.current) {
       if (!goLatest) return;
@@ -486,8 +465,8 @@ function Conversation({
     historyRequest.current = controller;
     try {
       let cursor = goLatest
-        ? latestSeq.current > BigInt(MAX_EVENTS)
-          ? latestSeq.current - BigInt(MAX_EVENTS)
+        ? latestSeq.current > 256n
+          ? latestSeq.current - 256n
           : 0n
         : direction === "older"
           ? first > 129n
@@ -511,16 +490,18 @@ function Conversation({
       } while (!controller.signal.aborted);
       if (controller.signal.aborted) return;
       if (!incoming.length) {
-        if (direction === "older") floor.current = first - 1n;
+        if (direction === "older") {
+          floor.current = first - 1n;
+          updateShadow();
+        }
         return;
       }
-      if (!goLatest) saveAnchor();
       const next = goLatest
         ? incoming
         : mergeEvents(eventsRef.current, incoming, direction);
       detached.current = next.at(-1)!.seq < latestSeq.current;
       setEvents(next);
-      setFollow(goLatest);
+      if (goLatest) setFollow(true);
     } catch (e) {
       if (!controller.signal.aborted)
         setError(`Cannot load history: ${String(e)}`);
@@ -528,6 +509,14 @@ function Conversation({
       if (historyRequest.current === controller) historyRequest.current = null;
     }
   }
+  const visibleEvents = useMemo(
+    () =>
+      events.filter(
+        (e) =>
+          !["state", "approval_resolved", "models", "usage"].includes(e.kind),
+      ),
+    [events],
+  );
   const s = current.data;
   const combined = useMemo(
     () =>
@@ -650,6 +639,7 @@ function Conversation({
       setDraft((old) => (old === sent ? "" : old));
       if (detached.current) await loadHistory("newer", true);
       setFollow(true);
+      if (pane.current) pane.current.scrollTop = pane.current.scrollHeight;
     });
   }
   async function reply(e: SessionEvent, allow: boolean, answersJson = "") {
@@ -682,6 +672,16 @@ function Conversation({
       </header>
       <Transcript
         pane={pane}
+        events={visibleEvents}
+        follow={follow}
+        render={(e) => <EventView e={e} agent={s?.agent ?? ""} />}
+        notice={
+          gap && (
+            <p className="muted history-note">
+              Earlier history is no longer available.
+            </p>
+          )
+        }
         onTension={(stretch) => {
           tension.current = stretch;
           updateShadow();
@@ -693,26 +693,10 @@ function Conversation({
           updateShadow();
           setFollow(
             !detached.current &&
-              el.scrollHeight - el.scrollTop - el.clientHeight < 100,
+              el.scrollHeight - el.scrollTop - el.clientHeight < 1,
           );
         }}
-      >
-        {gap && (
-          <p className="muted history-note">
-            Earlier history is no longer available.
-          </p>
-        )}
-        {events
-          .filter(
-            (e) =>
-              !["state", "approval_resolved", "models", "usage"].includes(
-                e.kind,
-              ),
-          )
-          .map((e) => (
-            <EventView key={e.seq.toString()} e={e} agent={s?.agent ?? ""} />
-          ))}
-      </Transcript>
+      />
       {!follow && (
         <Button
           className="bottom"
@@ -738,7 +722,7 @@ function Conversation({
         </p>
       )}
       <form className="composer" onSubmit={send}>
-        <div className="composer-wrapper" ref={composerWrapper}>
+        <div className="composer-wrapper">
           <div className="composer-toolbar">
             <span className="send-control">
               <Button
@@ -803,7 +787,13 @@ function Conversation({
     </main>
   );
 }
-function EventView({ e, agent }: { e: SessionEvent; agent: string }) {
+const EventView = React.memo(function EventView({
+  e,
+  agent,
+}: {
+  e: SessionEvent;
+  agent: string;
+}) {
   if (e.kind === "assistant")
     return (
       <article data-seq={e.seq.toString()}>
@@ -840,7 +830,7 @@ function EventView({ e, agent }: { e: SessionEvent; agent: string }) {
       {e.payload.length > 0 && <pre>{detail(e)}</pre>}
     </details>
   );
-}
+});
 function Approval({
   e,
   agent,

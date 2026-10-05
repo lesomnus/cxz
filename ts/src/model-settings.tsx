@@ -156,7 +156,7 @@ function ValueMenu({
   useLayoutEffect(() => {
     if (!open || !root.current || !menu.current) return;
     const rect = root.current.getBoundingClientRect();
-    const height = 20 + 16 + 13 + options.length * 28;
+    const height = 28 + 16 + 13 + options.length * 28;
     const upwards = rect.top + height > window.innerHeight;
     setUp(upwards);
     menu.current.style.setProperty(
@@ -165,7 +165,7 @@ function ValueMenu({
     );
     menu.current.style.setProperty(
       "--options-height",
-      `${Math.max(28, Math.min(240, (upwards ? rect.bottom : window.innerHeight - rect.top) - 49))}px`,
+      `${Math.max(28, Math.min(240, (upwards ? rect.bottom : window.innerHeight - rect.top) - 57))}px`,
     );
     menu.current
       .querySelector<HTMLButtonElement>("[role=option]")
