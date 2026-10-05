@@ -77,8 +77,9 @@ type Reply struct {
 	Message       string     `json:"message,omitempty"`
 }
 type Store struct {
-	root    string
-	Session core.Session
+	stateRoot string
+	root      string
+	Session   core.Session
 }
 
 func key(s string) string { h := sha256.Sum256([]byte(s)); return hex.EncodeToString(h[:12]) }
@@ -91,7 +92,7 @@ func Dir(root, project string) string { return filepath.Join(root, "memories", k
 func SnapshotID(session string) string { return "session-" + key(session) }
 
 func New(root string, session core.Session) *Store {
-	return &Store{Dir(root, session.ProjectID), session}
+	return &Store{root: Dir(root, session.ProjectID), stateRoot: root, Session: session}
 }
 func (s *Store) OwnID() string { return SnapshotID(s.Session.ID) }
 

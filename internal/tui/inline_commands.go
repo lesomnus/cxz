@@ -8,7 +8,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-var inlineCommands = []slashCommand{{"@redact", "Insert a secret chip · Enter select · Tab complete · Esc dismiss"}}
+var inlineCommands = []slashCommand{{"/@redact", "Insert a secret chip · Enter select · Tab complete · Esc dismiss"}}
 
 type inlineToken struct {
 	start, end, cursor      int
@@ -31,14 +31,14 @@ func (m *model) inlineContext() *inlineToken {
 	for start > 0 && !unicode.IsSpace(r[start-1]) {
 		start--
 	}
-	if start >= len(r) || r[start] != '@' || pos <= start {
+	if start+1 >= len(r) || r[start] != '/' || r[start+1] != '@' || pos < start+2 {
 		return nil
 	}
 	end := pos
 	for end < len(r) && !unicode.IsSpace(r[end]) {
 		end++
 	}
-	for _, c := range r[start+1 : end] {
+	for _, c := range r[start+2 : end] {
 		if c < 'a' || c > 'z' {
 			return nil
 		}

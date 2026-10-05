@@ -1156,7 +1156,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.redactSending = false
 		m.pruneRedactions()
 		if v.err != nil {
-			m.showError(v.err.Error() + "; reenter the secret with @redact")
+			m.showError(v.err.Error() + "; reenter the secret with /@redact")
 		} else if v.status == "queued" {
 			m.notice = "send · waiting for the agent (secret files swept after 8 hours idle)"
 		} else {
@@ -2199,12 +2199,12 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			if text == "/redact" {
 				m.input.Reset()
-				m.notice = "Use @redact inside your message, then Enter"
+				m.notice = "Use /@redact inside your message, then Enter"
 				return m, nil
 			}
 			if strings.HasPrefix(text, "/redact ") || strings.HasPrefix(text, "/redact\n") || strings.HasPrefix(text, "/redact\t") {
 				m.input.Reset()
-				m.notice = "Use @redact inside your message; enter the secret only in its dialog"
+				m.notice = "Use /@redact inside your message; enter the secret only in its dialog"
 				return m, nil
 			}
 			if m.hasRedactions(text) {

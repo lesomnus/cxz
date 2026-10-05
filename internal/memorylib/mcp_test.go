@@ -24,7 +24,7 @@ func TestMCPDiscoveryAndOwnWrites(t *testing.T) {
 	}
 	defer cs.Close()
 	list, e := cs.ListTools(ctx, nil)
-	if e != nil || len(list.Tools) != 5 {
+	if e != nil || len(list.Tools) != 8 {
 		t.Fatal(list, e)
 	}
 	out, e := cs.CallTool(ctx, &mcp.CallToolParams{Name: "memory_update", Arguments: map[string]any{"document": "handoff.md", "content": "pending"}})

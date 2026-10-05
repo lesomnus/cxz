@@ -32,6 +32,7 @@ func populate(t *testing.T, root string) (mine, theirs []string) {
 	for _, s := range []Subject{subject(), neighbour} {
 		files := []string{
 			filepath.Join(core.Dir(root, s.Session), "events.jsonl"),
+			filepath.Join(core.Dir(root, s.Session), "conversation-exports", "snapshot.jsonl"),
 			core.Socket(root, s.Session),
 			filepath.Join(accounts.SessionRoot(root, s.CreateID), "accounts", "work", "config", "transcript.jsonl"),
 			filepath.Join(memorylib.Dir(root, s.Project), memorylib.SnapshotID(s.Session), "overview.md"),

@@ -50,5 +50,6 @@ func MCPServer(store *Store) *mcp.Server {
 		out, e := store.Do(ctx, Request{Action: "changes", Cursor: in.Cursor, Limit: in.Limit})
 		return nil, out, e
 	})
+	conversationTools(server, store)
 	return server
 }

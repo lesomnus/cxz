@@ -55,7 +55,7 @@ explained in the mobile plan; it remains Not implemented in the web column.
 | INPUT-04 | N/A: no conversation composer | Supported: path hints and previews | Not implemented |
 | FILE-01 | Not implemented: no user-facing attachment command | Supported: host-file references and upload chips | Not implemented |
 | FILE-02 | Not implemented: no user-facing download command | Supported: `/download` and transfer progress/cancel | Not implemented |
-| INPUT-05 | Not implemented: no user-facing redact command | Supported: `@redact` on supported local/SSH transports; plaintext TCP refused | Not implemented |
+| INPUT-05 | Not implemented: no user-facing redact command | Supported: `/@redact` on supported local/SSH transports; plaintext TCP refused | Not implemented |
 | INPUT-06 | External: shell/terminal text input; no cxz STT | External: OS/terminal text input; Win+H observed working, no cxz STT | Not implemented |
 
 ## Approvals, questions, and authentication
@@ -77,6 +77,7 @@ explained in the mobile plan; it remains Not implemented in the web column.
 | MEM-02 | Not implemented: no public memory-library lifecycle commands | Supported: library lifecycle and session-from-copy flow | Not implemented |
 | MEM-03 | Not implemented: no dedicated native-memory browser | Supported: original agent file browser from memory view | Not implemented |
 | MEM-04 | Shared: agent/MCP guidance, no compact command for shared memory | Shared: agent/MCP guidance, no separate compact UI | Not implemented |
+| MEM-05 | Shared: built-in MCP tools; no dedicated CLI command | Shared: agent can invoke MCP tools; no dedicated transcript search view | Shared: agent can invoke MCP tools; no dedicated transcript search view |
 | MCP-01 | Supported: `mcp list/add/remove/enable/disable/inherit` | Partial: Settings list/add/toggle/inherit; no removal action | Not implemented |
 | MCP-02 | Supported: `mcp logs/restart` | Not implemented: no dedicated MCP log/restart controls | Not implemented |
 | SKILL-01 | Supported: `skill list/add/remove/enable/disable/inherit` | Not implemented: no Skills Settings page in audited source | Not implemented |
