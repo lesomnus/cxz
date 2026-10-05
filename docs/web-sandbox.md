@@ -59,7 +59,8 @@ selectors rather than treating slash commands as chat prompts. Only values open
 styled dropdowns; labels stay inert. The current value overlays its exact original
 text position, separated from other choices, with the same full-width row and
 padding as the other options. Menus, value triggers and the composer toolbar share
-a narrow 2px inset token. Trigger padding keeps value/label text baselines aligned;
+a narrow 2px inset token. Values and options have 6px horizontal padding;
+trigger padding keeps value/label text baselines aligned;
 hovered values brighten. At the screen bottom, choices expand
 upward while the current row stays in place. Keyboard navigation, Escape and
 outside-click dismissal are supported.
@@ -79,15 +80,17 @@ history window. The input extends 10px beyond each conversation edge. User and
 assistant headings align, with more padding on message contents.
 Both viewport fades use the page background color and sit behind the composer.
 The bottom fade starts with a smooth opacity/height ramp, up to the input height.
-Edge tension adds up to another input height, then recedes when released. A shorter
-top fade indicates earlier history and grows with downward edge tension. Scroll
+Ordinary content movement extends the outgoing fade and then settles. Edge
+tension adds up to 3.5 input heights, capped at 80% of the viewport. A shorter
+top fade indicates earlier history and grows with downward edge tension; in that
+direction the opposite bottom fade uses 75% of the tension contribution. Scroll
 controls, message headings, Copy buttons and disclosure controls paint above the
 fades; the fades affect message bodies without covering other controls. Latest
 navigation sits inside the viewport, avoiding overlap as the composer grows.
 
 The conversation hides native scrollbars. Hover reveals a handle and user-prompt
 ticks; approaching the handle widens it. Its local range is capped at twelve
-viewport heights. Prompt ticks and the handle share the same range-rebase
+viewport heights in navigation units (100 per message). Prompt ticks and the handle share the same range-rebase
 animation on one clock, with stable event identities. Height measurement retargets
 that clock without restarting an individual marker. During edge tension, the handle stays
 pinned while prompt ticks continue to move in phase with the passing transcript.
@@ -101,17 +104,24 @@ Reduced-motion preference, nested scrolling and explicit navigation are respecte
 History arrives in 128-event pages, starting
 near the latest 256 events, with a cache capped at 512. Only visible messages and
 six extra messages on either side are mounted. Measured variable heights drive
-virtual positioning and prompt ticks; a fixed total height and visible-message
+virtual positioning; prompt ticks use stable message coordinates and an invertible
+message-to-pixel map; a fixed total height and visible-message
 anchor prevent jumps during measurement, resizing and page replacement. The
 conversation follows new events only while actually at the bottom. Paging stops
-at the server's retained history boundary.
+at the server's retained history boundary. The latest user input preceding the
+reading position stays pinned at the top and can be clicked to return to its
+original position, including when its row has left the cache. It is an overlay
+and contributes no height to the virtual transcript.
+
+The accepted handle/marker experience, numeric parameters, restoration steps and
+regression checks are recorded in [the scroll experience contract](web-conversation-scroll.md).
 
 **Reset sandbox** recreates the entire Worker, discarding drafts, history and
 pending work, and applies the Seed and Pace controls. Identical seeds and the same
 per-session sequence of sends produce identical random tool sequences. Switching
 scenarios alone preserves session state. Reloading the page also starts fresh.
 History is bounded to 3,000 events per fake session; client rendering still uses
-the regular 2,000-event window. Duplicate send IDs are remembered for 256 requests.
+the regular 512-event cache and visible messages plus six on either side. Duplicate send IDs are remembered for 256 requests.
 
 ## Builds and verification
 
