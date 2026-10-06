@@ -42,11 +42,14 @@ test("provider dropdowns, quota popovers, aligned headings and bounded press/sha
   ).toBeCloseTo(1, 1);
   await card.hover();
   await page.mouse.down();
+  const scale = await heading.evaluate((el) =>
+    Number(getComputedStyle(el).getPropertyValue("--press-scale")),
+  );
   await expect
-    .poll(async () => (await heading.boundingBox())!.width)
-    .toBeLessThan(headingBefore.width - 3.5);
+    .poll(async () => (await title.boundingBox())!.width)
+    .toBeCloseTo(titleBefore.width * scale, 1);
   expect(
-    headingBefore.width - (await heading.boundingBox())!.width,
+    titleBefore.width - (await title.boundingBox())!.width,
   ).toBeLessThanOrEqual(4.1);
   const logoPressed = (await logo.boundingBox())!;
   const titlePressed = (await title.boundingBox())!;
@@ -55,6 +58,16 @@ test("provider dropdowns, quota popovers, aligned headings and bounded press/sha
     titlePressed.width / titleBefore.width,
     3,
   );
+  expect(logoPressed.x + logoPressed.width / 2).toBeCloseTo(
+    logoBefore.x + logoBefore.width / 2,
+    2,
+  );
+  expect(logoPressed.y + logoPressed.height / 2).toBeCloseTo(
+    logoBefore.y + logoBefore.height / 2,
+    2,
+  );
+  expect(titlePressed.x).toBeCloseTo(titleBefore.x, 2);
+  expect(await heading.boundingBox()).toEqual(headingBefore);
   expect(await indicator.boundingBox()).toEqual(indicatorBefore);
   expect(await description.boundingBox()).toEqual(descriptionBefore);
   await expect(card.locator(".button-content")).toHaveCSS("transform", "none");

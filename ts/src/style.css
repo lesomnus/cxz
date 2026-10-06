@@ -885,22 +885,30 @@ summary:hover {
   min-width: 0;
   width: fit-content;
   max-width: 100%;
-  transform-origin: left center;
+}
+.session-heading .agent-brand,
+.session-heading .session-title {
   transition: transform 120ms ease-out;
 }
 .session-heading .agent-brand {
   position: relative;
   top: 1px;
+  transform-origin: center;
+}
+.session-heading .session-title {
+  transform-origin: left center;
 }
 button.tree-session:not(:disabled):active > .button-content {
   transform: none;
 }
-.tree-session:not(:disabled):active .session-heading {
+.tree-session:not(:disabled):active .session-heading .agent-brand,
+.tree-session:not(:disabled):active .session-title {
   transform: scale(var(--press-scale, 0.95));
   transition-duration: 60ms;
 }
 @media (prefers-reduced-motion: reduce) {
-  .session-heading {
+  .session-heading .agent-brand,
+  .session-heading .session-title {
     transition: none;
   }
 }
