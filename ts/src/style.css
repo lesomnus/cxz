@@ -876,25 +876,29 @@ summary:hover {
   flex: 1;
 }
 .session-heading {
+  --agent-logo-size: 12px;
   display: flex;
   align-items: center;
   gap: 8px;
   min-width: 0;
-}
-.session-title {
-  min-width: 0;
+  width: fit-content;
+  max-width: 100%;
   transform-origin: left center;
   transition: transform 120ms ease-out;
+}
+.session-heading .agent-brand {
+  position: relative;
+  top: 1px;
 }
 button.tree-session:not(:disabled):active > .button-content {
   transform: none;
 }
-.tree-session:not(:disabled):active .session-title {
+.tree-session:not(:disabled):active .session-heading {
   transform: scale(var(--press-scale, 0.95));
   transition-duration: 60ms;
 }
 @media (prefers-reduced-motion: reduce) {
-  .session-title {
+  .session-heading {
     transition: none;
   }
 }
@@ -904,6 +908,9 @@ button.tree-session:not(:disabled):active > .button-content {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.session-title {
+  min-width: 0;
 }
 .session-description {
   display: flex;

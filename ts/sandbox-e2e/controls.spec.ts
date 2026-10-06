@@ -22,29 +22,40 @@ test("provider dropdowns, quota popovers, aligned headings and bounded press/sha
   );
   const card = page.locator(".tree-session").first();
   const title = card.locator(".session-title");
+  const heading = card.locator(".session-heading");
   const logo = card.getByRole("img", { name: "Claude", exact: true });
   const description = card.locator(".session-description");
   const titleBefore = (await title.boundingBox())!;
+  const headingBefore = (await heading.boundingBox())!;
   const logoBefore = (await logo.boundingBox())!;
   const descriptionBefore = (await description.boundingBox())!;
+  const indicator = card.locator(".session-indicator");
+  const indicatorBefore = (await indicator.boundingBox())!;
   expect(logoBefore.x + logoBefore.width).toBeLessThan(titleBefore.x);
+  expect(logoBefore.width).toBe(12);
+  expect(logoBefore.height).toBe(12);
   expect(
-    Math.abs(
-      logoBefore.y +
-        logoBefore.height / 2 -
-        titleBefore.y -
-        titleBefore.height / 2,
-    ),
-  ).toBeLessThan(0.5);
+    logoBefore.y +
+      logoBefore.height / 2 -
+      titleBefore.y -
+      titleBefore.height / 2,
+  ).toBeCloseTo(1, 1);
   await card.hover();
   await page.mouse.down();
   await expect
-    .poll(async () => (await title.boundingBox())!.width)
-    .toBeLessThan(titleBefore.width);
+    .poll(async () => (await heading.boundingBox())!.width)
+    .toBeLessThan(headingBefore.width - 3.5);
   expect(
-    titleBefore.width - (await title.boundingBox())!.width,
+    headingBefore.width - (await heading.boundingBox())!.width,
   ).toBeLessThanOrEqual(4.1);
-  expect(await logo.boundingBox()).toEqual(logoBefore);
+  const logoPressed = (await logo.boundingBox())!;
+  const titlePressed = (await title.boundingBox())!;
+  expect(logoPressed.width).toBeLessThan(logoBefore.width);
+  expect(logoPressed.width / logoBefore.width).toBeCloseTo(
+    titlePressed.width / titleBefore.width,
+    3,
+  );
+  expect(await indicator.boundingBox()).toEqual(indicatorBefore);
   expect(await description.boundingBox()).toEqual(descriptionBefore);
   await expect(card.locator(".button-content")).toHaveCSS("transform", "none");
   await page.mouse.move(1000, 20);

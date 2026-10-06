@@ -51,7 +51,7 @@ export function SessionTreeGroup({
             <Button
               key={s.runtimeId}
               className={`tree-session ${selected === s.runtimeId ? "active" : ""}`}
-              pressTarget=".session-title"
+              pressTarget=".session-heading"
               aria-current={selected === s.runtimeId ? "true" : undefined}
               onClick={() => select(s.runtimeId)}
             >
