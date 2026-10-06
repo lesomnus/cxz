@@ -37,7 +37,6 @@ export function VirtualMessages({
   const sizes = useRef(new Map<string, number>());
   const knots = useRef(new Map<string, RowKnot>());
   const mapping = useRef<MessageMap | null>(null);
-  const expanded = useRef(new Map<string, boolean>());
   const [revision, setRevision] = useState(0);
   const [viewport, setViewport] = useState({ top: 0, offset: 0, height: 800 });
   const layout = useMemo(
@@ -156,8 +155,6 @@ export function VirtualMessages({
     const active = new Set(layout.rows.map((row) => row.id));
     for (const id of sizes.current.keys())
       if (!active.has(id)) sizes.current.delete(id);
-    for (const id of expanded.current.keys())
-      if (!active.has(id)) expanded.current.delete(id);
     for (const id of knots.current.keys())
       if (!active.has(id)) knots.current.delete(id);
     // Preserve the reading fraction when its row is measured or reflows. A
@@ -253,18 +250,9 @@ export function VirtualMessages({
             style={{ top: layout.rows[start + index].top }}
             ref={(node) => {
               if (!node) return;
-              const detail = node.querySelector("details");
-              if (detail && expanded.current.has(id))
-                detail.open = expanded.current.get(id)!;
-              const toggled = (e: Event) => {
-                if (e.target instanceof HTMLDetailsElement)
-                  expanded.current.set(id, e.target.open);
-              };
-              node.addEventListener("toggle", toggled, true);
               observer.current?.observe(node);
               return () => {
                 observer.current?.unobserve(node);
-                node.removeEventListener("toggle", toggled, true);
               };
             }}
           >

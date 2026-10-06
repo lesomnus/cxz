@@ -240,15 +240,30 @@ test("the preceding input only peeks after the nearest visible input clears the 
   ).toBe(true);
   await page.mouse.move(10, 10);
   // A large distance change must fade, rather than appearing in one frame.
-  await gap(129);
-  const samples = await overlay.evaluate(async (el) => {
+  // Start sampling in the same browser call that moves the content. Waiting
+  // for a separate geometry assertion first can miss the 180ms transition.
+  const samples = await input.evaluate(async (el) => {
+    const pane = el.closest(".transcript")!;
     const opacity: number[] = [];
+    pane.scrollTop +=
+      el.getBoundingClientRect().top - pane.getBoundingClientRect().top - 129;
+    pane.dispatchEvent(new Event("reading-move"));
     for (let i = 0; i < 16; i++) {
       await new Promise(requestAnimationFrame);
-      opacity.push(Number(getComputedStyle(el).opacity));
+      opacity.push(
+        Number(
+          getComputedStyle(document.querySelector(".pinned-prompt")!).opacity,
+        ),
+      );
     }
     return opacity;
   });
+  await expect
+    .poll(
+      async () =>
+        (await input.boundingBox())!.y - (await pane.boundingBox())!.y,
+    )
+    .toBeCloseTo(129, 0);
   expect(samples.some((value) => value > 0 && value < 1)).toBe(true);
   await expect(overlay).toHaveCSS("opacity", "1");
   const button = overlay.locator("button");

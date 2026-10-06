@@ -24,7 +24,7 @@ test("compact monochrome workspace, aligned composer and release-triggered butto
     Math.abs(box.x + box.width / 2 - main.x - main.width / 2),
   ).toBeLessThan(1);
   for (const content of await page
-    .locator(".transcript-row > article, .transcript-row > details")
+    .locator(".transcript-row > article, .transcript-row > .event-detail")
     .all()) {
     const bounds = (await content.boundingBox())!;
     expect(bounds.x).toBeGreaterThanOrEqual(box.x + 10 - 1);

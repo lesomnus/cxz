@@ -29,6 +29,11 @@ import {
 import { ResponseFooter } from "./response-footer";
 import { InputMessage } from "./input-message";
 import { ComposerEditor } from "./composer-editor";
+import {
+  BottomSheetProvider,
+  BottomSheetHost,
+  useBottomSheet,
+} from "./bottom-sheet";
 import { expandPastes } from "./composer-pastes";
 import { SessionTreeGroup } from "./session-tree";
 import { Transcript } from "./transcript";
@@ -290,7 +295,14 @@ export function Workspace({
     </div>
   );
 }
-function Conversation({
+function Conversation(props: { c: Connection; id: string; back: () => void }) {
+  return (
+    <BottomSheetProvider>
+      <ConversationContent {...props} />
+    </BottomSheetProvider>
+  );
+}
+function ConversationContent({
   c,
   id,
   back,
@@ -876,6 +888,7 @@ function Conversation({
       )}
       <form className="composer" onSubmit={send}>
         <div className="composer-wrapper">
+          <BottomSheetHost />
           <div className="composer-toolbar">
             <span
               className="latest-slot"
@@ -965,6 +978,7 @@ const EventView = React.memo(
     agent: string;
     completion?: ResponseCompletion;
   }) {
+    const openSheet = useBottomSheet();
     if (e.kind === "assistant") {
       const info = responseInfo(e.response);
       return (
@@ -994,20 +1008,26 @@ const EventView = React.memo(
         </article>
       );
     return (
-      <details
+      <Button
+        type="button"
         data-seq={e.seq.toString()}
-        className={
-          e.kind === "diagnostic" || e.kind === "stderr" ? "error" : ""
+        className={`event-detail ${e.kind === "diagnostic" || e.kind === "stderr" ? "error" : ""}`}
+        onClick={() =>
+          openSheet({
+            title: e.kind === "approval" ? approvalTitle(e) : e.kind,
+            content: () => (
+              <>
+                <pre>{e.text}</pre>
+                {e.payload.length > 0 && <pre>{detail(e)}</pre>}
+              </>
+            ),
+          })
         }
       >
-        <summary>
-          {e.kind === "approval"
-            ? approvalTitle(e)
-            : `${e.kind} · ${e.text.slice(0, 160)}`}
-        </summary>
-        <pre>{e.text}</pre>
-        {e.payload.length > 0 && <pre>{detail(e)}</pre>}
-      </details>
+        {e.kind === "approval"
+          ? approvalTitle(e)
+          : `${e.kind} · ${e.text.slice(0, 160)}`}
+      </Button>
     );
   },
   (previous, next) =>
@@ -1026,6 +1046,7 @@ function Approval({
   busy: boolean;
   reply: (e: SessionEvent, allow: boolean, answers?: string) => Promise<void>;
 }) {
+  const openSheet = useBottomSheet();
   const qs = questions(agent, e);
   const [selected, setSelected] = useState<Record<string, string[]>>({});
   const [other, setOther] = useState<Record<string, string>>({});
@@ -1038,10 +1059,18 @@ function Approval({
     <section className="approval">
       <h3>{approvalTitle(e)}</h3>
       {p.params?.message && <p>{String(p.params.message)}</p>}
-      <details>
-        <summary>Request details</summary>
-        <pre>{detail(e)}</pre>
-      </details>
+      <Button
+        type="button"
+        className="event-detail"
+        onClick={() =>
+          openSheet({
+            title: "Request details",
+            content: () => <pre>{detail(e)}</pre>,
+          })
+        }
+      >
+        Request details
+      </Button>
       {qs.map((q) => (
         <fieldset key={q.key}>
           <legend>{q.text}</legend>

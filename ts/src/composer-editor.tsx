@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Button } from "./button";
+import { useBottomSheet } from "./bottom-sheet";
 import {
   createPaste,
   MAX_PASTE_BYTES,
@@ -28,20 +29,15 @@ export function ComposerEditor({
   const mirror = useRef<HTMLDivElement>(null);
   const surface = useRef<HTMLDivElement>(null);
   const gutter = useRef<HTMLDivElement>(null);
-  const dialog = useRef<HTMLDialogElement>(null);
+  const openSheet = useBottomSheet();
   const composing = useRef(false);
   const [composition, setComposition] = useState(false);
   const [notice, setNotice] = useState("");
-  const [preview, setPreview] = useState<{ start: number; token: string }>();
   const cursor = useRef<number | undefined>(undefined);
   const expectedEdit = useRef<string | undefined>(undefined);
   const ranges = pasteRanges(value, pastes);
-  const selected =
-    preview &&
-    ranges.find(
-      (range) =>
-        range.start === preview.start && range.paste.token === preview.token,
-    );
+  const latest = useRef({ value, replace });
+  latest.current = { value, replace };
   const lines = value.split("\n");
 
   function syncScroll() {
@@ -73,11 +69,6 @@ export function ComposerEditor({
     observer.observe(mirror.current!);
     return () => observer.disconnect();
   }, []);
-  useEffect(() => {
-    const el = dialog.current;
-    if (selected && el && !el.open) el.showModal();
-    else if (!selected && el?.open) el.close();
-  }, [selected?.start, selected?.paste.token]);
 
   function normalizedSelection() {
     const el = input.current!;
@@ -109,14 +100,26 @@ export function ComposerEditor({
     cursor.current = start + text.length;
     expectedEdit.current = undefined;
   }
-  function closePreview() {
-    dialog.current?.close();
-    setPreview(undefined);
-    input.current!.focus({ preventScroll: true });
-  }
   function showPreview(range: PasteRange) {
+    input.current!.focus({ preventScroll: true });
     input.current!.setSelectionRange(range.start, range.end);
-    setPreview({ start: range.start, token: range.paste.token });
+    openSheet({
+      label: "붙여넣기 원문",
+      title: `붙여넣기 · ${range.paste.lines}줄 · ${range.paste.bytes.toLocaleString()}B`,
+      content: (close) => (
+        <PastePreview
+          paste={range.paste}
+          apply={(text) => {
+            // Sheets are non-modal: editing behind a preview must never replace a
+            // different occurrence at a stale offset.
+            if (latest.current.value !== value) return false;
+            close();
+            latest.current.replace(range.start, range.end, text);
+            return true;
+          }}
+        />
+      ),
+    });
   }
   let lineOffset = 0;
   return (
@@ -337,54 +340,42 @@ export function ComposerEditor({
           {notice}
         </p>
       )}
-      <dialog
-        className="paste-preview"
-        ref={dialog}
-        aria-label="붙여넣기 원문"
-        onCancel={(event) => {
-          event.preventDefault();
-          closePreview();
-        }}
-      >
-        {selected && (
-          <>
-            <header>
-              <span>
-                붙여넣기 · {selected.paste.lines}줄 ·{" "}
-                {selected.paste.bytes.toLocaleString()}B
-              </span>
-              <Button
-                type="button"
-                aria-label="Close paste preview"
-                onClick={closePreview}
-              >
-                ×
-              </Button>
-            </header>
-            <pre>{selected.paste.body}</pre>
-            <div className="buttons">
-              <Button
-                type="button"
-                onClick={() => {
-                  closePreview();
-                  replace(selected.start, selected.end, selected.paste.body);
-                }}
-              >
-                원문 펼치기
-              </Button>
-              <Button
-                type="button"
-                onClick={() => {
-                  closePreview();
-                  replace(selected.start, selected.end, "");
-                }}
-              >
-                삭제
-              </Button>
-            </div>
-          </>
-        )}
-      </dialog>
+    </>
+  );
+}
+
+function PastePreview({
+  paste,
+  apply,
+}: {
+  paste: ComposerPaste;
+  apply: (text: string) => boolean;
+}) {
+  const [stale, setStale] = useState(false);
+  return (
+    <>
+      <pre>{paste.body}</pre>
+      <div className="buttons">
+        <Button
+          type="button"
+          disabled={stale}
+          onClick={() => setStale(!apply(paste.body))}
+        >
+          원문 펼치기
+        </Button>
+        <Button
+          type="button"
+          disabled={stale}
+          onClick={() => setStale(!apply(""))}
+        >
+          삭제
+        </Button>
+      </div>
+      {stale && (
+        <p role="status" className="muted">
+          입력 내용이 변경되었습니다. chip을 다시 열어주세요.
+        </p>
+      )}
     </>
   );
 }
