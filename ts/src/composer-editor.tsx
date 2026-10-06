@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Button } from "./button";
-import { useBottomSheet } from "./bottom-sheet";
+import { useFloatingCard } from "./floating-card";
 import {
   createPaste,
   MAX_PASTE_BYTES,
@@ -29,7 +29,7 @@ export function ComposerEditor({
   const mirror = useRef<HTMLDivElement>(null);
   const surface = useRef<HTMLDivElement>(null);
   const gutter = useRef<HTMLDivElement>(null);
-  const openSheet = useBottomSheet();
+  const openCard = useFloatingCard();
   const composing = useRef(false);
   const [composition, setComposition] = useState(false);
   const [notice, setNotice] = useState("");
@@ -103,14 +103,14 @@ export function ComposerEditor({
   function showPreview(range: PasteRange) {
     input.current!.focus({ preventScroll: true });
     input.current!.setSelectionRange(range.start, range.end);
-    openSheet({
+    openCard({
       label: "붙여넣기 원문",
       title: `붙여넣기 · ${range.paste.lines}줄 · ${range.paste.bytes.toLocaleString()}B`,
       content: (close) => (
         <PastePreview
           paste={range.paste}
           apply={(text) => {
-            // Sheets are non-modal: editing behind a preview must never replace a
+            // Cards are non-modal: editing behind a preview must never replace a
             // different occurrence at a stale offset.
             if (latest.current.value !== value) return false;
             close();

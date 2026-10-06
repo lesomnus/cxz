@@ -30,10 +30,10 @@ import { ResponseFooter } from "./response-footer";
 import { InputMessage } from "./input-message";
 import { ComposerEditor } from "./composer-editor";
 import {
-  BottomSheetProvider,
-  BottomSheetHost,
-  useBottomSheet,
-} from "./bottom-sheet";
+  FloatingCardProvider,
+  FloatingCardHost,
+  useFloatingCard,
+} from "./floating-card";
 import { expandPastes } from "./composer-pastes";
 import { SessionTreeGroup } from "./session-tree";
 import { Transcript } from "./transcript";
@@ -297,9 +297,9 @@ export function Workspace({
 }
 function Conversation(props: { c: Connection; id: string; back: () => void }) {
   return (
-    <BottomSheetProvider>
+    <FloatingCardProvider>
       <ConversationContent {...props} />
-    </BottomSheetProvider>
+    </FloatingCardProvider>
   );
 }
 function ConversationContent({
@@ -888,7 +888,7 @@ function ConversationContent({
       )}
       <form className="composer" onSubmit={send}>
         <div className="composer-wrapper">
-          <BottomSheetHost />
+          <FloatingCardHost />
           <div className="composer-toolbar">
             <span
               className="latest-slot"
@@ -978,7 +978,7 @@ const EventView = React.memo(
     agent: string;
     completion?: ResponseCompletion;
   }) {
-    const openSheet = useBottomSheet();
+    const openCard = useFloatingCard();
     if (e.kind === "assistant") {
       const info = responseInfo(e.response);
       return (
@@ -1013,7 +1013,7 @@ const EventView = React.memo(
         data-seq={e.seq.toString()}
         className={`event-detail ${e.kind === "diagnostic" || e.kind === "stderr" ? "error" : ""}`}
         onClick={() =>
-          openSheet({
+          openCard({
             title: e.kind === "approval" ? approvalTitle(e) : e.kind,
             content: () => (
               <>
@@ -1046,7 +1046,7 @@ function Approval({
   busy: boolean;
   reply: (e: SessionEvent, allow: boolean, answers?: string) => Promise<void>;
 }) {
-  const openSheet = useBottomSheet();
+  const openCard = useFloatingCard();
   const qs = questions(agent, e);
   const [selected, setSelected] = useState<Record<string, string[]>>({});
   const [other, setOther] = useState<Record<string, string>>({});
@@ -1063,7 +1063,7 @@ function Approval({
         type="button"
         className="event-detail"
         onClick={() =>
-          openSheet({
+          openCard({
             title: "Request details",
             content: () => <pre>{detail(e)}</pre>,
           })

@@ -148,16 +148,20 @@ scope on hover and to assistive technology.
 
 Response Copy icons appear when hovering a response or focusing its controls,
 without changing footer geometry. Event summaries and approval request details
-open in the same non-modal bottom sheet used for paste previews. Sheets rise
-from the top of the composer wrapper; they leave its toolbar, editor and metadata
-accessible and contribute no height to the transcript. The viewport bounds the
-sheet below the conversation title, with long contents scrolling internally.
-Opening another sheet stacks it in front: the previous card shrinks to 96%,
-moves 22px down behind the composer and fades to 35% opacity over 240ms. Only the
-top sheet accepts input or appears to assistive technology. Close or Escape
-reveals the preceding card. The stack retains at most six sheets and respects
-reduced motion; session navigation discards it. These transitions never modify
-the transcript's scroll coordinates or the shared handle/marker animation.
+open in the same non-modal floating card used for paste previews. The card sits
+12px above the composer wrapper, with 12px rounding on every corner, no border,
+4px horizontal content padding and a translucent monochrome background with a
+strong 48px backdrop blur. The title has 12px left and 8px right padding; code
+and raw text retain their opaque black boxes. The composer's toolbar, editor
+and metadata remain accessible, and the card contributes no height to the
+transcript. The viewport bounds the card below the
+conversation title, with long contents scrolling internally.
+Opening another item replaces the previous card: Close or Escape never restores
+an older preview. Clicking the transcript's empty left/right margins also
+closes it, while content, links, buttons and the scrollbar remain interactive.
+Cards enter/exit with a short 180ms fade and 8px movement, respect reduced motion
+and are discarded on session navigation. These transitions never modify the
+transcript's scroll coordinates or the shared handle/marker animation.
 
 The shared composer is a fixed-size monospace editor with logical line numbers.
 Numbers follow soft wrapping, scrolling and viewport changes. Text pastes over
