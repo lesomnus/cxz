@@ -5,6 +5,7 @@ import { Queries } from "@lesomnus/payday/query";
 import { entities } from "../gen/entities";
 import { ProjectService } from "../gen/cxz/project_svc_pb";
 import { SessionService } from "../gen/cxz/session_svc_pb";
+import type { ComposerPaste } from "./composer-pastes";
 
 // All client state belongs to one authenticated Connection. No credentials or
 // conversation cache are persisted in localStorage; sign-out discards the tree.
@@ -16,6 +17,8 @@ export class Connection {
   readonly projects;
   readonly sessions;
   readonly drafts = new Map<string, string>();
+  // Original paste bodies stay in this authenticated connection's memory, like drafts.
+  readonly pastes = new Map<string, ComposerPaste>();
   constructor(
     readonly baseUrl = location.origin,
     transport?: Transport,

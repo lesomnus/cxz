@@ -145,6 +145,21 @@ Event timestamps use the current clock when each event is created, including
 seeded history. The seed controls content, not a fixed date. Response footers
 show month/day and time without a year; metric icons expose names and usage
 scope on hover and to assistive technology.
+
+The shared composer is a fixed-size monospace editor with logical line numbers.
+Numbers follow soft wrapping, scrolling and viewport changes. Text pastes over
+800 Unicode characters or containing at least three newlines become inline
+chips, matching the TUI threshold. Click a chip, select it with Left/Right and
+press Enter, or use Ctrl+P to preview the original; the preview can remove that
+occurrence or expand it into editable text. Backspace/Delete removes a whole
+chip. Sending and copying expand chips to original text in one pass, preserving
+whitespace; short pastes remain ordinary text. Drafts and paste bodies stay in
+the authenticated connection's memory across session navigation, and are lost
+on page reload, sign-out or sandbox Reset. Each paste is limited to 1 MiB, with
+a 32 MiB connection cache. Paste insertion/removal uses native undo when the
+browser supports `insertText`, with a `setRangeText` fallback. IME composition
+retains the native textarea and cannot trigger Ctrl+Enter submission.
+
 History is bounded to 3,000 events per fake session; client rendering still uses
 the regular 512-event cache and visible messages plus six on either side. Duplicate send IDs are remembered for 256 requests.
 

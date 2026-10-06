@@ -28,6 +28,8 @@ import {
 } from "./response-completion";
 import { ResponseFooter } from "./response-footer";
 import { InputMessage } from "./input-message";
+import { ComposerEditor } from "./composer-editor";
+import { expandPastes } from "./composer-pastes";
 import { SessionTreeGroup } from "./session-tree";
 import { Transcript } from "./transcript";
 export { Button } from "./button";
@@ -746,7 +748,12 @@ function Conversation({
     if (!draft.trim()) return;
     const sent = draft;
     await action(async (s) => {
-      await c.sessions.send({ ...control(s), text: sent });
+      const receipt = await c.sessions.send({
+        ...control(s),
+        text: expandPastes(sent, c.pastes),
+      });
+      if (receipt.status === "rejected")
+        throw new Error("Provider rejected the input");
       setDraft((old) => (old === sent ? "" : old));
       if (detached.current) await loadHistory("newer", true);
       pane.current?.dispatchEvent(new Event("scroll-jump"));
@@ -926,23 +933,11 @@ function Conversation({
             </span>
           </div>
           <div className="composer-input" ref={composerInput}>
-            <textarea
-              aria-label="Message"
-              placeholder="Continue the conversation…"
+            <ComposerEditor
               value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={(e) => {
-                if (
-                  e.ctrlKey &&
-                  e.key === "Enter" &&
-                  !e.nativeEvent.isComposing
-                ) {
-                  e.preventDefault();
-                  if (!busy && s && draft.trim())
-                    e.currentTarget.form?.requestSubmit();
-                }
-              }}
-              rows={3}
+              onChange={setDraft}
+              pastes={c.pastes}
+              canSend={!busy && !!s && !!draft.trim()}
             />
           </div>
         </div>
