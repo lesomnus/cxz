@@ -70,12 +70,15 @@ test("provider dropdowns, quota popovers, aligned headings and bounded press/sha
   const prefixBox = (await input.locator(".input-prefix").boundingBox())!;
   expect(bodyBox.y).toBeCloseTo(prefixBox.y, 1);
   expect(bodyBox.x).toBeGreaterThan(prefixBox.x + prefixBox.width);
-  const timestamp = input.locator(".input-time time");
+  const timestamp = input.locator(".input-box .input-time time");
   await expect(timestamp).toHaveAttribute("datetime", /^2023-11-14T/);
   await expect(input.locator(".input-relative-time")).toHaveCount(0);
   const timeBox = (await timestamp.boundingBox())!;
   const inputBox = (await input.locator(".input-box").boundingBox())!;
-  expect(timeBox.y + timeBox.height).toBeLessThan(inputBox.y);
+  expect(timeBox.y).toBeGreaterThan(inputBox.y);
+  expect(timeBox.y + timeBox.height).toBeLessThan(prefixBox.y);
+  expect(timeBox.x).toBeCloseTo(prefixBox.x, 1);
+  expect(timeBox.x + timeBox.width).toBeLessThan(inputBox.x + inputBox.width);
   const userHeading = await page
     .locator("article.input .input-prefix")
     .first()

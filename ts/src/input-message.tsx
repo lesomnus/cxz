@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import type { SessionEvent } from "../gen/cxz/session_pb";
 import {
   absoluteMessageTime,
-  INPUT_TIME_HEIGHT,
   messageDate,
   relativeMessageTime,
 } from "./message-time";
@@ -19,7 +18,7 @@ function InputTime({ timeMs }: { timeMs: bigint }) {
   if (!date) return null;
   const relative = relativeMessageTime(date, now);
   return (
-    <div className="input-time" style={{ height: INPUT_TIME_HEIGHT }}>
+    <div className="input-time">
       <time dateTime={date.toISOString()} title={date.toLocaleString("ko-KR")}>
         {absoluteMessageTime(date)}
       </time>
@@ -31,14 +30,14 @@ function InputTime({ timeMs }: { timeMs: bigint }) {
 // Shared by the transcript and the fixed preview of the preceding input.
 export function InputMessage({ event }: { event: SessionEvent }) {
   return (
-    <>
+    <div className="input-box">
       <InputTime timeMs={event.timeMs} />
-      <div className="input-box">
+      <div className="input-content">
         <span className="input-prefix" aria-hidden="true">
           &gt;
         </span>
         <p className="message-body">{event.text}</p>
       </div>
-    </>
+    </div>
   );
 }

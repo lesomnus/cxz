@@ -1,7 +1,5 @@
 const MINUTE = 60_000;
 const DAY = 24 * 60 * MINUTE;
-// The timestamp sits outside the input box; navigation still targets the box.
-export const INPUT_TIME_HEIGHT = 20;
 const absolute = new Intl.DateTimeFormat("ko-KR", {
   year: "numeric",
   month: "2-digit",

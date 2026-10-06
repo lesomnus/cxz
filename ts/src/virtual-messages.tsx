@@ -199,8 +199,7 @@ export function VirtualMessages({
   let promptIndex = -1;
   for (
     let i = 0;
-    i < layout.rows.length &&
-    layout.rows[i].top + 6 + layout.rows[i].promptInset < viewport.top;
+    i < layout.rows.length && layout.rows[i].top + 6 < viewport.top;
     i++
   )
     if (layout.rows[i].prompt) promptIndex = i;
@@ -220,10 +219,10 @@ export function VirtualMessages({
     (row) =>
       row.prompt &&
       row.top + row.height - 6 > viewport.offset &&
-      row.top + 6 + row.promptInset < viewport.offset + viewport.height,
+      row.top + 6 < viewport.offset + viewport.height,
   );
   const nextGap = closest
-    ? Math.max(0, closest.top + 6 + closest.promptInset - viewport.offset)
+    ? Math.max(0, closest.top + 6 - viewport.offset)
     : Infinity;
   const previousRow = promptIndex >= 0 ? layout.rows[promptIndex] : undefined;
   const previousGap = previousRow

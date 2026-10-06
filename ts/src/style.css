@@ -318,12 +318,14 @@ header strong {
   padding: 0;
 }
 .input-box {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
   background: #222;
   border-radius: 8px;
   padding: 10px 12px;
+}
+.input-content {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
 }
 .message-body {
   padding-inline: 12px;
@@ -346,7 +348,7 @@ header strong {
   display: flex;
   align-items: baseline;
   gap: 8px;
-  padding: 0 12px 4px;
+  padding: 0 0 4px;
   font-size: 11px;
   line-height: 16px;
   color: var(--muted);
