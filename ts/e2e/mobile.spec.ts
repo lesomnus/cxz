@@ -13,6 +13,9 @@ test("mobile sign-in, conversation, questions, drafts and sign-out", async ({
   ).toBeVisible();
   await page.getByRole("button", { name: /demo-chat/ }).click();
   await expect(page.getByRole("heading", { name: "Ready" })).toBeVisible();
+  await expect(page.locator(".response-settings")).toHaveText(
+    "fixture-model · high",
+  );
   await expect(page.getByRole("radio", { name: /Development/ })).toBeVisible();
   await page.getByRole("radio", { name: /Development/ }).check();
   await page.getByRole("button", { name: "Submit answers" }).click();
@@ -61,6 +64,9 @@ test("mobile sign-in, conversation, questions, drafts and sign-out", async ({
   await expect(
     page.locator("article.input").filter({ hasText: "초안 preserved" }),
   ).toHaveCount(1);
+  await expect(page.locator(".response-settings")).toHaveText(
+    "fixture-model · high",
+  );
   await page.screenshot({
     path: "test-results/mobile-conversation.png",
     fullPage: true,

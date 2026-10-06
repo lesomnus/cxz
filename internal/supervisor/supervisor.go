@@ -74,6 +74,7 @@ type Supervisor struct {
 	settingsRequest  string
 	settingsFor      string
 	settingPending   string
+	responseContext  core.ResponseMetadata
 }
 type record struct {
 	Digest  string       `json:"digest,omitempty"`
@@ -369,13 +370,17 @@ func (s *Supervisor) kill() {
 }
 
 // Every state transition is durable before it is externally observable.
-func (s *Supervisor) event(kind, text, id string, payload any, raw []byte) core.Event {
+func (s *Supervisor) event(kind, text, id string, payload any, raw []byte, response ...core.ResponseMetadata) core.Event {
 	s.observeUpdateEvent(kind, text, id)
 	var b []byte
 	if payload != nil {
 		b, _ = json.Marshal(payload)
 	}
 	e := core.Event{SessionID: s.session.ID, RunID: s.snap.RunID, Kind: kind, Text: text, RequestID: id, Payload: b, Raw: raw}
+	if kind == "assistant" && len(response) > 0 {
+		metadata := response[0]
+		e.Response = &metadata
+	}
 	var err error
 	if s.buffering {
 		e.Seq = s.snap.LastSeq + 1
@@ -643,7 +648,11 @@ func (s *Supervisor) consume(raw []byte) {
 			switch b.Type {
 			case "text":
 				if v.Type == "assistant" {
-					s.event("assistant", b.Text, "", nil, nil)
+					metadata := s.responseContext
+					if v.Message.Model != "" {
+						metadata.Model, metadata.ModelSource = v.Message.Model, "response"
+					}
+					s.event("assistant", b.Text, "", nil, nil, metadata)
 				}
 			case "tool_use":
 				s.event("tool_call", b.Name, b.ID, b.Input, nil)
@@ -662,6 +671,7 @@ func (s *Supervisor) consume(raw []byte) {
 		}
 		s.interrupted = false
 		s.event("turn_end", result, "", json.RawMessage(raw), nil)
+		s.responseContext = core.ResponseMetadata{}
 		s.event("state", "idle", "", nil, nil)
 		s.readClaudeQuota()
 	}
@@ -739,6 +749,7 @@ func (s *Supervisor) executeLocked(op string, c core.Command) (core.Receipt, err
 				return s.enqueue(c)
 			}
 			wire = map[string]any{"type": "user", "session_id": "", "parent_tool_use_id": nil, "message": map[string]any{"role": "user", "content": c.Text}}
+			s.responseContext = s.claudeResponseContext()
 		case "reply":
 			p, ok := s.pending[c.RequestID]
 			if !ok {

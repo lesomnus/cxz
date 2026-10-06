@@ -66,6 +66,11 @@ message WatchRequest { string session_id = 1; uint64 after_seq = 2; string clien
 message Event {
   string session_id = 1; string run_id = 2; uint64 seq = 3; int64 time_ms = 4;
   string kind = 5; string text = 6; string request_id = 7; bytes payload = 8;
+  ResponseMetadata response = 9;
+}
+message ResponseMetadata {
+  string model = 1; string effort = 2;
+  string model_source = 3; string effort_source = 4; string turn_id = 5;
 }
 message EventBatch { repeated Event events = 1; }
 message ProjectRequest {

@@ -21,6 +21,7 @@ import { ModelSettings, modelCatalog } from "./model-settings";
 import { UsageInfo } from "./usage-info";
 import { Button } from "./button";
 import { AgentBrand } from "./agent-brand";
+import { responseInfo } from "./response-info";
 import { InputMessage } from "./input-message";
 import { SessionTreeGroup } from "./session-tree";
 import { Transcript } from "./transcript";
@@ -954,11 +955,17 @@ const EventView = React.memo(function EventView({
   e: SessionEvent;
   agent: string;
 }) {
-  if (e.kind === "assistant")
+  if (e.kind === "assistant") {
+    const info = responseInfo(e.response);
     return (
       <article data-seq={e.seq.toString()}>
-        <small>
+        <small className="response-heading">
           <AgentBrand agent={agent} />
+          {info.label && (
+            <span className="response-settings" title={info.description}>
+              {info.label}
+            </span>
+          )}
         </small>
         <Markdown text={e.text} />
         <Button
@@ -969,6 +976,7 @@ const EventView = React.memo(function EventView({
         </Button>
       </article>
     );
+  }
   if (e.kind === "input")
     return (
       <article className="input" data-seq={e.seq.toString()}>

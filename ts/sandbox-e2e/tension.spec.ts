@@ -27,6 +27,23 @@ test("both pinned edges advance prompt phase and extend the background fade with
       .locator(".transcript-fade-bottom")
       .evaluate((el) => parseFloat(getComputedStyle(el).height));
   await expect.poll(fade).toBeGreaterThan(100);
+  // Capture the settled fade, rather than a frame during its 180ms entrance.
+  await expect
+    .poll(() =>
+      page
+        .locator(".transcript-fade-bottom")
+        .evaluate((el) =>
+          Math.abs(
+            parseFloat(getComputedStyle(el).height) -
+              parseFloat(
+                (el.parentElement as HTMLElement).style.getPropertyValue(
+                  "--bottom-fade-height",
+                ),
+              ),
+          ),
+        ),
+    )
+    .toBeLessThan(0.1);
   const baseline = await fade();
   for (const direction of [-1, 1]) {
     await expect

@@ -8,6 +8,27 @@ Recovery after a crash or a container replacement is driven by the journal and t
 manifests beside it, both fsynced. SQLite holds projections and caches built from
 them; it is not the source of truth and not a backup.
 
+## Response settings
+
+New normalized assistant events include an optional `response` snapshot with
+`model`, `effort`, their individual sources, and a native turn ID when available.
+The snapshot is written with the response in the same durable journal batch;
+changing session settings never relabels previous responses. Native payloads are
+preserved separately.
+
+Claude's response-reported model takes precedence over its applied settings.
+Effort comes from the applied settings captured at input delivery. If those
+settings are unavailable, explicitly requested values are stored as `requested`.
+Codex snapshots the resolved model and effort actually sent in `turn/start`, also
+marked `requested`; steering input keeps that turn's snapshot. This distinction
+does not claim the provider confirmed a requested setting. Source values are
+`response`, `settings`, or `requested`.
+
+The web transcript displays known values as `model · effort` beside the agent
+logo, with their sources in the hover description. Unknown fields are omitted.
+Older records are left unchanged, without reconstructing settings from nearby
+events or substituting the session's current values.
+
 ## One message
 
 A single message from the agent is bounded at **16 MiB**. A reply is nothing like

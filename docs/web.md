@@ -143,7 +143,7 @@ this terminal for developing cxz itself, and Ctrl+C stops only that gateway.
 | Area | Web support |
 | --- | --- |
 | Projects and sessions | Listed projects/sessions, project filter, pagination, opening existing sessions |
-| Conversation | Retained history, live events, Markdown, code blocks, response copy, raw event details |
+| Conversation | Retained history, live events, Markdown, code blocks, response model/effort snapshots beside the agent logo, response copy, raw event details |
 | History | Last 2,000 events in browser memory; Manager retention still applies; latest button |
 | Drafts | Per-session in-memory drafts survive navigation within the tab, not reload/sign-out |
 | Sending | Explicit Send button; mutation IDs; no automatic replay after ambiguous failure |

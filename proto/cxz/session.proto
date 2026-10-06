@@ -59,4 +59,15 @@ message SessionEvent {
   string text = 5;
   string request_id = 6;
   bytes payload = 7;
+  ResponseMetadata response = 8;
+}
+
+// Frozen response context; sources are response, settings or requested.
+// Empty values mean the provider/configuration did not supply a known value.
+message ResponseMetadata {
+  string model = 1;
+  string effort = 2;
+  string model_source = 3;
+  string effort_source = 4;
+  string turn_id = 5;
 }

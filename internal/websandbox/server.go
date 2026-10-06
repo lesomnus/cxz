@@ -140,6 +140,16 @@ func (s *Server) Register(r grpc.ServiceRegistrar) {
 func (s *Server) event(st *session, kind, text, request string, payload []byte) {
 	seq := st.value.GetStatus().GetLastSeq() + 1
 	e := resource.SessionEvent_builder{RunId: st.value.GetStatus().GetRunId(), Seq: seq, TimeMs: 1700000000000 + int64(seq)*100, Kind: kind, Text: text, RequestId: request, Payload: payload}.Build()
+	if kind == "assistant" {
+		model, effort := st.value.GetModel(), st.effort
+		if model == "" {
+			model = "sandbox-" + st.value.GetAgent()
+		}
+		if effort == "" {
+			effort = "high"
+		}
+		e.SetResponse(resource.ResponseMetadata_builder{Model: model, Effort: effort, ModelSource: "response", EffortSource: "settings"}.Build())
+	}
 	st.events = append(st.events, e)
 	if len(st.events) > maxEvents {
 		st.events = append([]*resource.SessionEvent(nil), st.events[len(st.events)-maxEvents:]...)

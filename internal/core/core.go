@@ -24,15 +24,26 @@ type Session struct {
 	AuthBinding string `json:"auth_binding"`
 }
 type Event struct {
-	SessionID string          `json:"session_id"`
-	RunID     string          `json:"run_id"`
-	Seq       uint64          `json:"seq"`
-	TimeMS    int64           `json:"time_ms"`
-	Kind      string          `json:"kind"`
-	Text      string          `json:"text,omitempty"`
-	RequestID string          `json:"request_id,omitempty"`
-	Payload   json.RawMessage `json:"payload,omitempty"`
-	Raw       []byte          `json:"raw,omitempty"` // Base64 preserves the exact vendor bytes.
+	SessionID string            `json:"session_id"`
+	RunID     string            `json:"run_id"`
+	Seq       uint64            `json:"seq"`
+	TimeMS    int64             `json:"time_ms"`
+	Kind      string            `json:"kind"`
+	Text      string            `json:"text,omitempty"`
+	RequestID string            `json:"request_id,omitempty"`
+	Payload   json.RawMessage   `json:"payload,omitempty"`
+	Raw       []byte            `json:"raw,omitempty"` // Base64 preserves the exact vendor bytes.
+	Response  *ResponseMetadata `json:"response,omitempty"`
+}
+
+// ResponseMetadata is immutable context for this response, not the session's
+// current settings. Sources distinguish response/settings reports from requests.
+type ResponseMetadata struct {
+	Model        string `json:"model,omitempty"`
+	Effort       string `json:"effort,omitempty"`
+	ModelSource  string `json:"model_source,omitempty"`
+	EffortSource string `json:"effort_source,omitempty"`
+	TurnID       string `json:"turn_id,omitempty"`
 }
 type Snapshot struct {
 	PermissionMode string  `json:"permission_mode"`

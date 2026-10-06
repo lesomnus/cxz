@@ -21,7 +21,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file cxz/session.proto.
  */
 export const file_cxz_session: GenFile = /*@__PURE__*/
-  fileDesc("ChFjeHovc2Vzc2lvbi5wcm90bxIDY3h6IqQFCgdTZXNzaW9uEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABIXCgVhbGlhcxgEIAEoCUII6oIWBDABOAESDAoEbmFtZRgFIAEoCRIMCgRkZXNjGAYgASgJEiUKB3Byb2plY3QYCCABKAsyDC5jeHouUHJvamVjdEIG8oIWAkABEhUKBWFnZW50GAkgASgJQgbqghYCQAESFQoFbW9kZWwYCiABKAlCBuqCFgJAARIcCgpydW50aW1lX2lkGAsgASgJQgjqghYEMAFAARIbCgljbGllbnRfaWQYDCABKAlCCOqCFgQwAUABEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBABIiCgZzdGF0dXMYECABKAsyEi5jeHouU2Vzc2lvblN0YXR1cxIbCgZsaXN0ZWQYESABKAhCC+qCFgeCAQR0cnVlEiUKB2FjY291bnQYEiABKAsyDC5jeHouQWNjb3VudEIG8oIWAkABEi4KDGF1dGhfYmluZGluZxgTIAEoCzIQLmN4ei5BdXRoQmluZGluZ0IG8oIWAkABOnHK/BUmEgIQARogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAGKuxZDCAgyOwoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZhoJCgdwcm9qZWN0GggKBmxpc3RlZCAyKMgBOgAqACKgAQoNU2Vzc2lvblN0YXR1cxINCgVzdGF0ZRgBIAEoCRIOCgZydW5faWQYAiABKAkSEQoJdmVuZG9yX2lkGAMgASgJEhAKCGxhc3Rfc2VxGAQgASgEEiIKB3BlbmRpbmcYBSADKAsyES5jeHouU2Vzc2lvbkV2ZW50EhcKD3Blcm1pc3Npb25fbW9kZRgGIAEoCRIOCgZxdWV1ZWQYByABKAkifQoMU2Vzc2lvbkV2ZW50Eg4KBnJ1bl9pZBgBIAEoCRILCgNzZXEYAiABKAQSDwoHdGltZV9tcxgDIAEoAxIMCgRraW5kGAQgASgJEgwKBHRleHQYBSABKAkSEgoKcmVxdWVzdF9pZBgGIAEoCRIPCgdwYXlsb2FkGAcgASgMQidaIGdpdGh1Yi5jb20vbGVzb21udXMvY3h6L3Jlc291cmNlkgMCCAJiCGVkaXRpb25zcOgH", [file_cxz_project, file_cxz_account, file_cxz_auth_binding, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("ChFjeHovc2Vzc2lvbi5wcm90bxIDY3h6IqQFCgdTZXNzaW9uEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABIXCgVhbGlhcxgEIAEoCUII6oIWBDABOAESDAoEbmFtZRgFIAEoCRIMCgRkZXNjGAYgASgJEiUKB3Byb2plY3QYCCABKAsyDC5jeHouUHJvamVjdEIG8oIWAkABEhUKBWFnZW50GAkgASgJQgbqghYCQAESFQoFbW9kZWwYCiABKAlCBuqCFgJAARIcCgpydW50aW1lX2lkGAsgASgJQgjqghYEMAFAARIbCgljbGllbnRfaWQYDCABKAlCCOqCFgQwAUABEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBABIiCgZzdGF0dXMYECABKAsyEi5jeHouU2Vzc2lvblN0YXR1cxIbCgZsaXN0ZWQYESABKAhCC+qCFgeCAQR0cnVlEiUKB2FjY291bnQYEiABKAsyDC5jeHouQWNjb3VudEIG8oIWAkABEi4KDGF1dGhfYmluZGluZxgTIAEoCzIQLmN4ei5BdXRoQmluZGluZ0IG8oIWAkABOnHK/BUmEgIQARogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAGKuxZDCAgyOwoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZhoJCgdwcm9qZWN0GggKBmxpc3RlZCAyKMgBOgAqACKgAQoNU2Vzc2lvblN0YXR1cxINCgVzdGF0ZRgBIAEoCRIOCgZydW5faWQYAiABKAkSEQoJdmVuZG9yX2lkGAMgASgJEhAKCGxhc3Rfc2VxGAQgASgEEiIKB3BlbmRpbmcYBSADKAsyES5jeHouU2Vzc2lvbkV2ZW50EhcKD3Blcm1pc3Npb25fbW9kZRgGIAEoCRIOCgZxdWV1ZWQYByABKAkipgEKDFNlc3Npb25FdmVudBIOCgZydW5faWQYASABKAkSCwoDc2VxGAIgASgEEg8KB3RpbWVfbXMYAyABKAMSDAoEa2luZBgEIAEoCRIMCgR0ZXh0GAUgASgJEhIKCnJlcXVlc3RfaWQYBiABKAkSDwoHcGF5bG9hZBgHIAEoDBInCghyZXNwb25zZRgIIAEoCzIVLmN4ei5SZXNwb25zZU1ldGFkYXRhIm8KEFJlc3BvbnNlTWV0YWRhdGESDQoFbW9kZWwYASABKAkSDgoGZWZmb3J0GAIgASgJEhQKDG1vZGVsX3NvdXJjZRgDIAEoCRIVCg1lZmZvcnRfc291cmNlGAQgASgJEg8KB3R1cm5faWQYBSABKAlCJ1ogZ2l0aHViLmNvbS9sZXNvbW51cy9jeHovcmVzb3VyY2WSAwIIAmIIZWRpdGlvbnNw6Ac", [file_cxz_project, file_cxz_account, file_cxz_auth_binding, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * The durable conversation identity. Runtime/run IDs and journal cursors are
@@ -205,6 +205,11 @@ export type SessionEvent = Message<"cxz.SessionEvent"> & {
    * @generated from field: bytes payload = 7;
    */
   payload: Uint8Array;
+
+  /**
+   * @generated from field: cxz.ResponseMetadata response = 8;
+   */
+  response?: ResponseMetadata | undefined;
 };
 
 /**
@@ -213,4 +218,44 @@ export type SessionEvent = Message<"cxz.SessionEvent"> & {
  */
 export const SessionEventSchema: GenMessage<SessionEvent> = /*@__PURE__*/
   messageDesc(file_cxz_session, 2);
+
+/**
+ * Frozen response context; sources are response, settings or requested.
+ * Empty values mean the provider/configuration did not supply a known value.
+ *
+ * @generated from message cxz.ResponseMetadata
+ */
+export type ResponseMetadata = Message<"cxz.ResponseMetadata"> & {
+  /**
+   * @generated from field: string model = 1;
+   */
+  model: string;
+
+  /**
+   * @generated from field: string effort = 2;
+   */
+  effort: string;
+
+  /**
+   * @generated from field: string model_source = 3;
+   */
+  modelSource: string;
+
+  /**
+   * @generated from field: string effort_source = 4;
+   */
+  effortSource: string;
+
+  /**
+   * @generated from field: string turn_id = 5;
+   */
+  turnId: string;
+};
+
+/**
+ * Describes the message cxz.ResponseMetadata.
+ * Use `create(ResponseMetadataSchema)` to create a new message.
+ */
+export const ResponseMetadataSchema: GenMessage<ResponseMetadata> = /*@__PURE__*/
+  messageDesc(file_cxz_session, 3);
 

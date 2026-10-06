@@ -111,6 +111,7 @@ func (c *codexProtocol) consume(raw []byte) {
 		} else {
 			s.clearPending()
 			s.event("turn_end", "failed", "", v.Error, nil)
+			s.responseContext = core.ResponseMetadata{}
 			s.event("state", "idle", "", nil, nil)
 		}
 		return
@@ -214,6 +215,10 @@ func (c *codexProtocol) consume(raw []byte) {
 		}
 	case "turn/started":
 		c.turn = p.Turn.ID
+		if s.responseContext.TurnID != "" && s.responseContext.TurnID != p.Turn.ID {
+			s.responseContext = core.ResponseMetadata{}
+		}
+		s.responseContext.TurnID = p.Turn.ID
 		s.event("state", "working", "", nil, nil)
 	case "turn/completed":
 		// Async messages remain answerable after the turn. Native blocking
@@ -235,6 +240,7 @@ func (c *codexProtocol) consume(raw []byte) {
 		s.interrupted = false
 		c.turn = ""
 		s.event("turn_end", state, "", v.Params, nil)
+		s.responseContext = core.ResponseMetadata{}
 		s.event("state", "idle", "", nil, nil)
 		c.readQuota()
 	case "item/commandExecution/outputDelta":
@@ -253,7 +259,15 @@ func (c *codexProtocol) consume(raw []byte) {
 		if p.Item.Type == "contextCompaction" {
 			s.event("compact", "completed", p.Item.ID, v.Params, nil)
 		} else if p.Item.Type == "agentMessage" {
-			s.event("assistant", p.Item.Text, p.Item.ID, v.Params, nil)
+			metadata := s.responseContext
+			var identity struct {
+				TurnID string `json:"turnId"`
+			}
+			_ = json.Unmarshal(v.Params, &identity)
+			if identity.TurnID != "" && identity.TurnID != metadata.TurnID {
+				metadata = core.ResponseMetadata{TurnID: identity.TurnID}
+			}
+			s.event("assistant", p.Item.Text, p.Item.ID, v.Params, nil, metadata)
 			if _, err := agentview.CodexAsyncQuestions(v.Params); err == nil {
 				id := "async:" + p.Item.ID
 				if c.asyncSeen == nil {
@@ -317,6 +331,7 @@ func (c *codexProtocol) command(op string, v core.Command) (any, error) {
 			return rpc(v.ClientID, "turn/steer", map[string]any{"threadId": s.snap.VendorID, "turnId": c.turn, "expectedTurnId": c.turn, "input": input}), nil
 		}
 		if strings.TrimSpace(v.Text) == "/compact" {
+			s.responseContext = core.ResponseMetadata{}
 			return rpc(v.ClientID, "thread/compact/start", map[string]any{"threadId": s.snap.VendorID}), nil
 		}
 		params := map[string]any{"threadId": s.snap.VendorID, "input": input}
@@ -335,6 +350,13 @@ func (c *codexProtocol) command(op string, v core.Command) (any, error) {
 		}
 		if effort != "" {
 			params["effort"] = effort
+		}
+		s.responseContext = core.ResponseMetadata{Model: model, Effort: effort}
+		if model != "" {
+			s.responseContext.ModelSource = "requested"
+		}
+		if effort != "" {
+			s.responseContext.EffortSource = "requested"
 		}
 		return rpc(v.ClientID, "turn/start", params), nil
 	case "interrupt":

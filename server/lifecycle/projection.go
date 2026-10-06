@@ -12,7 +12,11 @@ import (
 )
 
 func event(e *api.Event) *resource.SessionEvent {
-	return resource.SessionEvent_builder{RunId: e.RunId, Seq: e.Seq, TimeMs: e.TimeMs, Kind: e.Kind, Text: e.Text, RequestId: e.RequestId, Payload: e.Payload}.Build()
+	v := resource.SessionEvent_builder{RunId: e.RunId, Seq: e.Seq, TimeMs: e.TimeMs, Kind: e.Kind, Text: e.Text, RequestId: e.RequestId, Payload: e.Payload}.Build()
+	if r := e.Response; r != nil {
+		v.SetResponse(resource.ResponseMetadata_builder{Model: r.Model, Effort: r.Effort, ModelSource: r.ModelSource, EffortSource: r.EffortSource, TurnId: r.TurnId}.Build())
+	}
+	return v
 }
 func sessionStatus(v *api.Session) *resource.SessionStatus {
 	pending := make([]*resource.SessionEvent, 0, len(v.Pending))
