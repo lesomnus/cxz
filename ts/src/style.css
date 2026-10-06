@@ -595,16 +595,15 @@ pre {
 .composer-input,
 .question-other-editor {
   position: relative;
-  border: 1px solid #3a3a3a;
   background: #222;
 }
 .composer-input {
+  border: 1px solid #3a3a3a;
   width: calc(100% + 2px + 2 * var(--composer-overhang));
   margin: 0 calc(-1px - var(--composer-overhang)) -1px;
   border-radius: var(--composer-radius);
 }
-.composer-input:focus-within,
-.question-other-editor:focus-within {
+.composer-input:focus-within {
   border-color: #737373;
 }
 .composer-editor textarea {
@@ -1034,23 +1033,20 @@ legend {
   align-items: start;
   gap: calc(2 * var(--space));
   padding: calc(2 * var(--space));
-  border: 1px solid #363636;
+  border: 0;
   border-radius: var(--card-inner-radius);
   background: #101010;
   cursor: pointer;
-  transition:
-    background 120ms ease-out,
-    border-color 120ms ease-out;
+  transition: background 120ms ease-out;
 }
 .question-option:hover {
   background: #262626;
 }
 .question-option[data-selected="true"] {
   background: #303030;
-  border-color: #626262;
 }
 .question-option:focus-within {
-  border-color: #a0a0a0;
+  background: #383838;
 }
 .question-option input {
   margin: 2px 0 0;
@@ -1079,8 +1075,12 @@ legend {
   color: var(--muted);
 }
 .question-other-editor {
+  border: 0;
   border-radius: var(--card-inner-radius);
   overflow: hidden;
+}
+.question-other-editor:focus-within {
+  background: #262626;
 }
 summary {
   cursor: pointer;

@@ -192,6 +192,9 @@ layer. Preview replacement still retains no older details/paste cards.
 
 Question options are monochrome cards with a title, description and native
 radio/checkbox control, retaining keyboard navigation and accessible labels.
+Option cards and Other editors have no border inside the bordered Question card;
+selection, hover and focus use background tones. Avoid redundant borders inside
+an already bordered container.
 Fieldsets retain their grouping semantics but have no default border, margin or
 padding. Ordinary Other answers reuse `ComposerEditor`, with multiline text,
 monospace line numbers, atomic paste chips and native Undo/Redo. Answer editors
