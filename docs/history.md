@@ -150,3 +150,16 @@ rebuilt from journals — so back up all of it, not just transcripts.
 
 **Raw journals contain your source and may contain secrets.** Do not publish them.
 See [security](security.md).
+
+## Reduced state the manager keeps
+
+Some questions are about what is true now rather than what happened: the pending
+approvals, the background tasks of a run, the model catalog it published. Each is
+one record somewhere in a journal that may hold an entire conversation, so the
+manager keeps them reduced as events are applied and answers from that — one
+request, no scan.
+
+A client that rebuilt them by reading the journal would pay for the conversation
+to find a record, and over a remote link that cost is the conversation's size,
+not the record's. `cxz session get`, the background overlay and the model
+selector all read reduced state for this reason.

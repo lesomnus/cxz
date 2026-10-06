@@ -158,86 +158,89 @@ type model struct {
 	quotaState              string
 	modelPicker             *modelPicker
 	modelPickerEpoch        uint64
-	settingsPage            *settingsPage
-	sessionArchive          *sessionArchive
-	memoryPage              *memoryPage
-	report                  *reportOverlay
-	contextCapture          *contextCapture
-	hiddenEvents            map[*api.Event]bool
-	view                    viewport.Model
-	focusList, creating     bool
-	notice                  string
-	width, height           int
-	events                  map[string][]*api.Event
-	cursor                  map[string]uint64
-	historyWindows          map[string]*historyWindow
-	windowPolicy            *historypolicy.Window
-	historyLoading          map[string]uint64 // End sequence of each in-flight older page.
-	historyStart            map[string]uint64
-	historyOpening          map[string]bool // Keep loading through pages containing only bookkeeping events.
-	historyShimmer          *historyShimmer
-	watchCancel             context.CancelFunc
-	watchID                 string
-	watchEpoch              uint64
-	watchSequence           uint64
-	sessionWatches          map[string]*sessionWatch
-	watchBootstrap          chan struct{}
-	wantID                  string
-	accounts                []*resource.Account
-	accountIndex            int
-	accountView             bool
-	accountAdding           bool
-	accountChoosing         bool
-	accountLoading          bool
-	accountAgent            string
-	accountField            int
-	accountAlias            textinput.Model
-	accountName             textinput.Model
-	accountSearch           textinput.Model
-	accountSearching        bool
-	accountService          resource.AccountServiceClient
-	loginAccount            AccountLogin
-	workflow                *accountWorkflow
-	loginChoosing           bool
-	loginAlias              string
-	loginIndex              int
-	focusApproval           bool
-	approvalID              string
-	approvalOffset          int
-	interruptUntil          time.Time
-	interruptKey            string
-	approvalSent            map[string]bool
-	permissionUpdating      map[string]bool
-	localReports            map[string]string
-	historyTimes            []int64
-	historyPositions        []float64 // stable journal coordinates, not loaded-line offsets
-	workingToolRows         map[int]bool
-	restartConfirm          *restartConfirmation
-	questionDialog          *questionDialog
-	questionDrafts          map[string]*questionDialog
-	questionSeen            map[string]bool
-	restartBusy             bool
-	lastPromptStart         int
-	lastPromptEnd           int
-	latestPrompt            string
-	pulse                   int
-	blinkFrom               int
-	composerBlink           bool // enabled when Init starts the event loop
-	composerFocusCmd        tea.Cmd
-	blurred                 bool
-	workingSince            int64
-	backgroundSnapshots     map[string]backgroundSnapshot
-	watchContext            context.Context
-	backgroundLoading       map[string]bool
-	backgroundErrors        map[string]string
-	cursorOutput            *cursorWriter
-	renderedResponses       map[*api.Event]renderedResponse
-	toolActivities          map[toolActivityKey]cachedToolActivity
-	renderedTools           map[toolRenderKey]string
-	program                 *tea.Program
-	pastes                  map[string]*pastedText
-	pasteSelection          *chipSelection
-	pasteDialog             *pasteDialog
+	// modelCatalogs caches one capability record per run, so /model and /effort
+	// are one lookup rather than two, and a live `models` event replaces it.
+	modelCatalogs       map[string]*modelCatalog
+	settingsPage        *settingsPage
+	sessionArchive      *sessionArchive
+	memoryPage          *memoryPage
+	report              *reportOverlay
+	contextCapture      *contextCapture
+	hiddenEvents        map[*api.Event]bool
+	view                viewport.Model
+	focusList, creating bool
+	notice              string
+	width, height       int
+	events              map[string][]*api.Event
+	cursor              map[string]uint64
+	historyWindows      map[string]*historyWindow
+	windowPolicy        *historypolicy.Window
+	historyLoading      map[string]uint64 // End sequence of each in-flight older page.
+	historyStart        map[string]uint64
+	historyOpening      map[string]bool // Keep loading through pages containing only bookkeeping events.
+	historyShimmer      *historyShimmer
+	watchCancel         context.CancelFunc
+	watchID             string
+	watchEpoch          uint64
+	watchSequence       uint64
+	sessionWatches      map[string]*sessionWatch
+	watchBootstrap      chan struct{}
+	wantID              string
+	accounts            []*resource.Account
+	accountIndex        int
+	accountView         bool
+	accountAdding       bool
+	accountChoosing     bool
+	accountLoading      bool
+	accountAgent        string
+	accountField        int
+	accountAlias        textinput.Model
+	accountName         textinput.Model
+	accountSearch       textinput.Model
+	accountSearching    bool
+	accountService      resource.AccountServiceClient
+	loginAccount        AccountLogin
+	workflow            *accountWorkflow
+	loginChoosing       bool
+	loginAlias          string
+	loginIndex          int
+	focusApproval       bool
+	approvalID          string
+	approvalOffset      int
+	interruptUntil      time.Time
+	interruptKey        string
+	approvalSent        map[string]bool
+	permissionUpdating  map[string]bool
+	localReports        map[string]string
+	historyTimes        []int64
+	historyPositions    []float64 // stable journal coordinates, not loaded-line offsets
+	workingToolRows     map[int]bool
+	restartConfirm      *restartConfirmation
+	questionDialog      *questionDialog
+	questionDrafts      map[string]*questionDialog
+	questionSeen        map[string]bool
+	restartBusy         bool
+	lastPromptStart     int
+	lastPromptEnd       int
+	latestPrompt        string
+	pulse               int
+	blinkFrom           int
+	composerBlink       bool // enabled when Init starts the event loop
+	composerFocusCmd    tea.Cmd
+	blurred             bool
+	workingSince        int64
+	backgroundSnapshots map[string]backgroundSnapshot
+	watchContext        context.Context
+	backgroundLoading   map[string]bool
+	backgroundErrors    map[string]string
+	cursorOutput        *cursorWriter
+	renderedResponses   map[*api.Event]renderedResponse
+	toolActivities      map[toolActivityKey]cachedToolActivity
+	renderedTools       map[toolRenderKey]string
+	program             *tea.Program
+	pastes              map[string]*pastedText
+	pasteSelection      *chipSelection
+	pasteDialog         *pasteDialog
 }
 type listing struct {
 	projects       []*api.Project
@@ -2527,20 +2530,27 @@ func (m *model) receiveEvent(v received, repaint bool) {
 			m.events[v.id] = append(m.events[v.id], v.event)
 			trimmed = m.limitHistory(v.id, false, 0)
 		}
-		if p := m.modelPicker; p != nil && !p.loading && p.id == v.id && p.run == v.event.RunId && v.event.Kind == "models" {
+		// A catalog published while the picker is open replaces what it shows --
+		// including the one a refresh asked for, which arrives this way rather
+		// than as a reply, so nothing had to wait on the provider.
+		if v.event.Kind == "models" {
 			var catalog modelCatalog
 			if json.Unmarshal(v.event.Payload, &catalog) == nil {
-				selected := ""
-				options := p.options()
-				if p.selected < len(options) {
-					selected = options[p.selected]
-				}
-				p.catalog = &catalog
-				p.selected = 0
-				for i, option := range p.options() {
-					if option == selected {
-						p.selected = i
-						break
+				catalog.seq, catalog.ms = v.event.Seq, v.event.TimeMs
+				m.rememberCatalog(v.id, v.event.RunId, &catalog)
+				if p := m.modelPicker; p != nil && !p.loading && p.id == v.id && p.run == v.event.RunId {
+					selected := ""
+					options := p.options()
+					if p.selected < len(options) {
+						selected = options[p.selected]
+					}
+					p.catalog, p.refreshing, p.message = &catalog, false, ""
+					p.selected = 0
+					for i, option := range p.options() {
+						if option == selected {
+							p.selected = i
+							break
+						}
 					}
 				}
 			}

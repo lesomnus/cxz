@@ -218,6 +218,15 @@ func (c *Client) History(ctx context.Context, r *api.WatchRequest, opts ...grpc.
 	return v, nil
 }
 
+func (c *Client) Models(ctx context.Context, r *api.ModelsRequest, opts ...grpc.CallOption) (*api.ModelsReply, error) {
+	v, err := c.sessions.Models(ctx, resource.SessionModelsRequest_builder{Ref: sr(r.SessionId), Refresh: &r.Refresh, RunId: &r.RunId, ClientId: &r.ClientId}.Build(), opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &api.ModelsReply{LastSeq: v.GetLastSeq(), Data: v.GetData(), RunId: v.GetRunId(),
+		CatalogSeq: v.GetCatalogSeq(), CatalogMs: v.GetCatalogMs(), Refreshing: v.GetRefreshing(), Status: v.GetStatus()}, nil
+}
+
 func (c *Client) Background(ctx context.Context, r *api.SessionRef, opts ...grpc.CallOption) (*api.BackgroundReply, error) {
 	v, err := c.sessions.Background(ctx, resource.SessionBackgroundRequest_builder{Ref: sr(r.Id)}.Build(), opts...)
 	if err != nil {

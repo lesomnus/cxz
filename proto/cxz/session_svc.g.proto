@@ -53,6 +53,7 @@ service SessionService {
   // Journal replay is not payday Watch: it is cursor-ordered event history.
   rpc History(SessionEventsRequest) returns (SessionEventBatch);
   rpc Background(SessionBackgroundRequest) returns (SessionBackgroundReply);
+  rpc Models(SessionModelsRequest) returns (SessionModelsReply);
   rpc Events(SessionEventsRequest) returns (stream SessionEvent);
 }
 
@@ -365,4 +366,24 @@ message SessionBackgroundRequest {
 message SessionBackgroundReply {
   uint64 last_seq = 1;
   bytes data = 2;
+}
+
+// The model catalog is a projection of the journal, served like background
+// state: one request, no event scan. refresh additionally asks the agent, whose
+// answer arrives as a journal event.
+message SessionModelsRequest {
+  SessionRef ref = 1;
+  bool refresh = 2;
+  string run_id = 3;
+  string client_id = 4;
+}
+
+message SessionModelsReply {
+  uint64 last_seq = 1;
+  bytes data = 2;
+  string run_id = 3;
+  uint64 catalog_seq = 4;
+  int64 catalog_ms = 5;
+  bool refreshing = 6;
+  string status = 7;
 }
