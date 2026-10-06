@@ -261,3 +261,5 @@ and a muted OS cannot be detected.
 `⬤ REC` appears above the composer. It covers the whole TUI across session
 switches. See [development](development.md#diagnostic-recordings) for what it
 contains; typed text and conversation content are excluded.
+
+Conversation text supports double-click word selection and drag selection. Ctrl+C copies the selected text without the assistant response's two-column display indent; indentation inside code blocks is preserved. Selection currently copies rendered text, including visual line wraps, rather than Markdown source.

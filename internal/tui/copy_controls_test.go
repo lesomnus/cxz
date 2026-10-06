@@ -166,7 +166,7 @@ func TestConversationSelectionCopyAndDetach(t *testing.T) {
 	m.Update(pulseTick{})
 	m.View()
 	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
-	if cmd != nil || !strings.Contains(out.String(), ansi.SetSystemClipboard("alpha 한글 beta\n  second")) {
+	if cmd != nil || !strings.Contains(out.String(), ansi.SetSystemClipboard("alpha 한글 beta\nsecond")) {
 		t.Fatalf("selection copy: %q", out.String())
 	}
 	m.current().Id = "other"
