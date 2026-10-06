@@ -973,7 +973,7 @@ const EventView = React.memo(
     if (e.kind === "assistant") {
       const info = responseInfo(e.response);
       return (
-        <article data-seq={e.seq.toString()}>
+        <article className="response" data-seq={e.seq.toString()}>
           <small className="response-heading">
             <AgentBrand agent={agent} />
             {info.label && (

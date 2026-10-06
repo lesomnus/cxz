@@ -314,6 +314,12 @@ header strong {
 .transcript-row > article {
   padding: 0 12px;
 }
+.response {
+  border-radius: 8px;
+}
+.response:hover {
+  background: #1b1b1b;
+}
 .response-heading {
   display: flex;
   align-items: center;
