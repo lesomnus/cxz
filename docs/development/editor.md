@@ -16,7 +16,7 @@ cxz focus/resize policy. Clipboard requests arrive as `bed.CopyMsg` and use cxz'
 existing clipboard transport.
 
 The composer routes selection keys through `HandleKey`, then forwards remaining
-input with `UpdateText`. Rendering decorates the embedded textarea in this order:
+input with `UpdateText`. Rendering decorates bed `RawView()` in this order:
 paste labels, logical gutter/whitespace, selection, scrollbar. This keeps current
 chip and ghost presentation without embedding cxz behavior in the editor.
 
@@ -36,3 +36,9 @@ Keyboard/mouse input restarts the phase and terminal blur holds the cursor
 steady. Other UI animations and the terminal panel keep their own pulse.
 Render/layout probes must never call `Focus` on a shallow editor copy with
 blinking enabled: Bubbles copies share the live timer cancellation context.
+
+Line editing, auto-indent and multi-click selection come from bed. cxz maps
+Duplicate to Alt+D because Ctrl+D detaches. Tab indentation runs after completion
+handlers and yields to visible approval/error focus navigation. Wheel scrolling
+preserves cursor and selection; adapters must not snap the cursor on wheel events.
+Editor errors arrive as bed.EditErrorMsg and use the existing error view.

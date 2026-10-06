@@ -172,6 +172,7 @@ func hintAt(specs []hintSpec, x int) hintSpec {
 
 func newComposer() bed.Model {
 	input := bed.New()
+	input.EditorKeys.Duplicate.SetKeys("alt+d")
 	input.Gutter = func(line int) string {
 		if line == 0 {
 			return "❯ "
@@ -251,12 +252,18 @@ func (m *model) resize() {
 	// past the last character -- and words wrap before the edge, so an estimate
 	// runs short exactly as a row is filled and leaves the row being typed on
 	// off screen.
+	previousHeight := m.input.Height()
 	rows := len(m.composerRows())
 	m.input.SetHeight(min(max(2, rows), min(maxComposerRows, max(1, m.height/3), max(1, m.height-6-m.errorHeight()))))
 	// SetValue/SetHeight alone do not reveal a cursor below the old viewport.
 	// Populate its new content, then let the widget re-anchor its scroll offset.
 	_ = m.input.View()
 	m.input, _ = m.input.UpdateText(nil)
+	if previousHeight != m.input.Height() && rows <= m.input.Height() && m.composerScroll(m.composerRows()) > 0 {
+		pos := composerPosition(m.input)
+		m.input.SetPosition(0)
+		m.input.SetPosition(pos)
+	}
 	viewWidth := max(1, m.width-2)
 	if m.view.Width != viewWidth {
 		m.renderedTools = nil
@@ -360,7 +367,7 @@ func (m *model) sessionScreen() string {
 		body = m.redactOverlay(m.pasteOverlay(conversation)) + "\n" + track + "\n"
 	}
 	body += box + preview + strings.Repeat("\n", m.errorHeight()) + m.recordingStatusRow("  "+status, width) + "\n" +
-		frame(m.composerScrollbar(m.composerSelectionView(m.composerDisplay(m.decorateInputPastes(composer.Model.View())))), width, !modal && !m.focusList && !m.focusApproval && m.pathHints == nil) + "\n"
+		frame(m.composerScrollbar(m.composerSelectionView(m.composerDisplay(m.decorateInputPastes(composer.RawView())))), width, !modal && !m.focusList && !m.focusApproval && m.pathHints == nil) + "\n"
 	if m.terminalHeight() > 0 {
 		body += m.terminalView() + "\n"
 	}
