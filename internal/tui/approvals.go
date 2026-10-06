@@ -163,7 +163,7 @@ func (m *model) approvalKey(k tea.KeyMsg) tea.Cmd {
 	p := m.selectedApproval()
 	if p == nil {
 		m.focusApproval = false
-		return m.input.Focus()
+		return m.focusComposer()
 	}
 	s := m.current()
 	if handled, cmd := m.elicitationKey(p, k); handled {

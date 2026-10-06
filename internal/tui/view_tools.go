@@ -98,13 +98,13 @@ func (m *model) toolSelectorKey(k tea.KeyMsg) tea.Cmd {
 		return tea.Quit
 	case "esc", "x", "tab":
 		m.toolSelector = nil
-		m.input.Focus()
+		m.focusComposer()
 		return nil
 	}
 	targets := m.toolTargets()
 	if len(targets) == 0 {
 		m.toolSelector = nil
-		m.input.Focus()
+		m.focusComposer()
 		return nil
 	}
 	index := 0
@@ -330,7 +330,7 @@ func (m *model) closeFilePreview() {
 	m.resize()
 	m.render()
 	if !m.selectingTools() {
-		m.input.Focus()
+		m.focusComposer()
 	}
 }
 func (m *model) filePreviewKey(k tea.KeyMsg) tea.Cmd {
@@ -352,7 +352,7 @@ func (m *model) filePreviewKey(k tea.KeyMsg) tea.Cmd {
 	case "tab":
 		p.focused = false
 		if !m.selectingTools() {
-			m.input.Focus()
+			m.focusComposer()
 		}
 	case "left":
 		if p.tabs != nil {

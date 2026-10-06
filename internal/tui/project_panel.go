@@ -290,7 +290,7 @@ func (m *model) focusConversationMouse(v tea.MouseMsg) {
 	if p := m.terminal(); p != nil {
 		p.focused = false
 	}
-	m.input.Focus()
+	m.focusComposer()
 }
 
 func (m *model) panelKey(k tea.KeyMsg) tea.Cmd {
@@ -323,7 +323,7 @@ func (m *model) panelKey(k tea.KeyMsg) tea.Cmd {
 		}
 		m.panelFocus = false
 		if !m.projectView && !m.accountView {
-			return m.input.Focus()
+			return m.focusComposer()
 		}
 	case "tab", "shift+tab":
 		if m.errorVisible() {
@@ -422,7 +422,7 @@ func (m *model) panelKey(k tea.KeyMsg) tea.Cmd {
 		m.watch()
 		m.resize()
 		m.render()
-		return tea.Batch(m.input.Focus(), m.refresh())
+		return tea.Batch(m.focusComposer(), m.refresh())
 	}
 	return nil
 }

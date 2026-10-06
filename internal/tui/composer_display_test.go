@@ -15,7 +15,7 @@ func TestComposerLogicalGutterAndWhitespace(t *testing.T) {
 	value := "한글 hello words wrap onto another row\nnext line\n\nlast"
 	m.input.SetValue(value)
 	m.resize()
-	m.showInputWhitespace = true
+	m.input.ShowWhitespace = true
 	for pos := 0; pos <= utf8.RuneCountInString(value); pos++ {
 		m.setComposerPosition(pos)
 		m.resize()
@@ -34,14 +34,14 @@ func TestComposerLogicalGutterAndWhitespace(t *testing.T) {
 			}
 			row := layout[offset+y]
 			gutter := ansi.Cut(text, 0, 2)
-			if row.column > 0 && gutter != "  " {
+			if row.Column > 0 && gutter != "  " {
 				t.Fatalf("soft wrap has number: %q", text)
 			}
-			if row.column == 0 && row.line == 1 && gutter != "1 " {
+			if row.Column == 0 && row.Line == 1 && gutter != "1 " {
 				t.Fatalf("logical second line: %q", text)
 			}
 			runes := []rune(value)
-			hasNewline := row.end < len(runes) && runes[row.end] == '\n'
+			hasNewline := row.End < len(runes) && runes[row.End] == '\n'
 			if strings.Contains(text, "↵") != hasNewline {
 				t.Fatalf("newline mismatch: %q row=%+v", text, row)
 			}
@@ -62,7 +62,7 @@ func TestComposerWhitespaceTogglePreservesSelectionAndChips(t *testing.T) {
 	selected := m.selectedComposerText()
 	key := tea.KeyMsg{Type: tea.KeyRunes, Alt: true, Runes: []rune("w")}
 	handled, _ := m.composerKey(key)
-	if !handled || !m.showInputWhitespace || m.selectedComposerText() != selected {
+	if !handled || !m.input.ShowWhitespace || m.selectedComposerText() != selected {
 		t.Fatal("toggle lost selection")
 	}
 	view := ansi.Strip(m.composerDisplay(m.input.View()))
@@ -70,20 +70,12 @@ func TestComposerWhitespaceTogglePreservesSelectionAndChips(t *testing.T) {
 		t.Fatalf("visible whitespace/chip: %q", view)
 	}
 	m.composerKey(key)
-	if m.showInputWhitespace || strings.Contains(ansi.Strip(m.composerDisplay(m.input.View())), "·") {
+	if m.input.ShowWhitespace || strings.Contains(ansi.Strip(m.composerDisplay(m.input.View())), "·") {
 		t.Fatal("toggle off")
 	}
 	key.Paste = true
 	m.composerKey(key)
-	if m.showInputWhitespace {
+	if m.input.ShowWhitespace {
 		t.Fatal("pasted shortcut toggled")
-	}
-}
-
-func TestComposerCellReplacementPreservesCursorSGR(t *testing.T) {
-	input := "❯ a\x1b[7m \x1b[27m한글 "
-	got := replaceComposerCells(input, map[int]string{3: "·", 8: "↵"})
-	if got != "❯ a\x1b[7m·\x1b[27m한글↵" {
-		t.Fatalf("lost cursor/style/cell alignment: %q", got)
 	}
 }

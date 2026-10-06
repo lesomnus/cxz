@@ -150,7 +150,7 @@ func (m *model) leaveError() tea.Cmd {
 		m.focusPanel()
 		return nil
 	}
-	return m.input.Focus()
+	return m.focusComposer()
 }
 
 func (m *model) closeError() tea.Cmd {

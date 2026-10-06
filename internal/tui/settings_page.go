@@ -293,7 +293,7 @@ func (m *model) settingsKey(k tea.KeyMsg) tea.Cmd {
 	case "esc", "f19":
 		m.settingsPage = nil
 		if p.inputFocused {
-			return m.input.Focus()
+			return m.focusComposer()
 		}
 		return nil
 	case "up", "shift+tab":

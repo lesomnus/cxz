@@ -50,6 +50,14 @@ jobs:
       - run: npm run --prefix ts test:browser:plaintext
       - run: npm run --prefix ts sandbox:build
       - run: npm run --prefix ts test:sandbox
+      - name: Preserve failed browser diagnostics
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: web-test-results
+          path: ts/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
   windows-frontend:
     runs-on: windows-2025
     timeout-minutes: 20

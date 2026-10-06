@@ -41,7 +41,7 @@ func (m *model) cycleFocus(reverse bool) tea.Cmd {
 		return nil
 	}
 	if next == "input" {
-		return m.input.Focus()
+		return m.focusComposer()
 	}
 	m.input.Blur()
 	return nil

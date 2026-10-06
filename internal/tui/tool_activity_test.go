@@ -178,10 +178,9 @@ func TestGreenBlinkingInputCursor(t *testing.T) {
 	// The cursor is the plainest answer to "where does typing go", so it carries
 	// the focus step. Derive it rather than repeating the sequence.
 	green := sgr(focus)
-	// Static mode is deliberate: the blink phase comes from the shared pulse, not
-	// from the widget's own chain, which stops the moment a tick is consumed.
+	// The cursor stays static until the program starts its native timer.
 	if in.Cursor.Mode() != cursor.CursorStatic || !strings.Contains(in.Cursor.View(), green) {
-		t.Fatal("cursor not green/pulse-driven")
+		t.Fatal("cursor not green/static before Init")
 	}
 	in.Cursor.Blink = true
 	if strings.Contains(in.Cursor.View(), green) {

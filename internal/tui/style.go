@@ -7,10 +7,10 @@ import (
 
 	"github.com/charmbracelet/bubbles/cursor"
 	"github.com/charmbracelet/bubbles/key"
-	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/lesomnus/bed"
 )
 
 func providerLabel(provider string) string {
@@ -170,15 +170,18 @@ func hintAt(specs []hintSpec, x int) hintSpec {
 	return hintSpec{}
 }
 
-func newComposer() textarea.Model {
-	input := textarea.New()
+func newComposer() bed.Model {
+	input := bed.New()
+	input.Gutter = func(line int) string {
+		if line == 0 {
+			return "❯ "
+		}
+		return fmt.Sprintf("%d ", line%10)
+	}
 	input.KeyMap.WordBackward = key.NewBinding(key.WithKeys("ctrl+left", "alt+b"))
 	input.KeyMap.WordForward = key.NewBinding(key.WithKeys("ctrl+right", "alt+f"))
 	input.Cursor.Style = inputCursorStyle
-	// The widget's own blink is a self-rescheduling chain: it needs every tick to
-	// reach it and the next command to be run, so any branch of Update that
-	// consumes a tick stops the cursor until something refocuses the input. The
-	// shared pulse cannot stop, so the phase is driven from there instead.
+	// Init starts the native timer when the model enters a running program.
 	input.Cursor.SetMode(cursor.CursorStatic)
 	input.Placeholder = "Ask a question… (Ctrl+S to send · /help)"
 	input.Prompt = "❯ "
@@ -216,8 +219,7 @@ func (m *model) saveDraft() {
 }
 
 func (m *model) restoreDraft() {
-	m.composerSelection = nil
-	m.composerLayout = nil
+	m.input.ClearSelection()
 	m.interruptKey = ""
 	m.approvalOffset = 0
 	m.input.Reset()
@@ -254,7 +256,7 @@ func (m *model) resize() {
 	// SetValue/SetHeight alone do not reveal a cursor below the old viewport.
 	// Populate its new content, then let the widget re-anchor its scroll offset.
 	_ = m.input.View()
-	m.input, _ = m.input.Update(nil)
+	m.input, _ = m.input.UpdateText(nil)
 	viewWidth := max(1, m.width-2)
 	if m.view.Width != viewWidth {
 		m.renderedTools = nil
@@ -346,7 +348,7 @@ func (m *model) sessionScreen() string {
 	}
 	modal := m.errorFocused() || m.redactDialog != nil || m.terminalFocused() || m.panelFocus || m.report != nil || m.modelPicker != nil || m.restartConfirm != nil || m.questionFocused() || m.pasteDialog != nil || m.selectingTools() || (m.previewVisible() && m.filePreview.focused)
 	if modal {
-		composer.Blur()
+		composer.Model.Blur()
 	}
 	conversation := m.restartOverlay(m.reportView(m.modelPickerOverlay(m.commandOverlay(m.conversationView()))))
 	body := ""
@@ -358,7 +360,7 @@ func (m *model) sessionScreen() string {
 		body = m.redactOverlay(m.pasteOverlay(conversation)) + "\n" + track + "\n"
 	}
 	body += box + preview + strings.Repeat("\n", m.errorHeight()) + m.recordingStatusRow("  "+status, width) + "\n" +
-		frame(m.composerScrollbar(m.composerSelectionView(m.composerDisplay(m.decorateInputPastes(composer.View())))), width, !modal && !m.focusList && !m.focusApproval && m.pathHints == nil) + "\n"
+		frame(m.composerScrollbar(m.composerSelectionView(m.composerDisplay(m.decorateInputPastes(composer.Model.View())))), width, !modal && !m.focusList && !m.focusApproval && m.pathHints == nil) + "\n"
 	if m.terminalHeight() > 0 {
 		body += m.terminalView() + "\n"
 	}
