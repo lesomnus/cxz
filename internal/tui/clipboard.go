@@ -129,7 +129,7 @@ func (m *model) beginSelection(v tea.MouseMsg) {
 		return
 	}
 	m.textSelection = nil
-	m.composerSelection = nil
+	m.input.ClearSelection()
 	rows := strings.Split(m.conversationView(), "\n")
 	if v.Y < 0 || v.Y >= len(rows) {
 		return

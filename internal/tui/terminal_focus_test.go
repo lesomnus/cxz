@@ -1,8 +1,12 @@
 package tui
 
 import (
+	"github.com/charmbracelet/bubbles/cursor"
+	"github.com/lesomnus/bed"
+	"io"
 	"strings"
 	"testing"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -57,42 +61,55 @@ func TestBlurredTerminalGivesUpTheFocusStep(t *testing.T) {
 	}
 }
 
-// The widget's own blink is a chain that dies as soon as one tick is consumed
-// by another branch of Update, and nothing restarts it until the input is
-// refocused. The pulse cannot stop, so the phase is read from it.
-func TestComposerCursorBlinksOnThePulse(t *testing.T) {
-	m := &model{input: newComposer()}
-	phase := func() bool { return m.input.Cursor.Blink }
-	pulse := func(n int) {
-		for range n {
-			m.Update(pulseTick{})
-		}
+func TestComposerCursorUsesNativeTimer(t *testing.T) {
+	m := &model{composerBlink: true, input: newComposer(), cursorOutput: &cursorWriter{out: io.Discard}}
+	m.input.Cursor.SetMode(cursor.CursorBlink)
+	m.input.Cursor.BlinkSpeed = time.Millisecond
+	cmd := m.input.Focus()
+	// Rendering and unrelated animation ticks must leave the timer alive.
+	m.input.View()
+	for range 10 {
+		m.Update(pulseTick{})
 	}
-	pulse(5)
-	if !phase() {
-		t.Fatal("cursor never blinked off")
+	msg := cmd()
+	if _, ok := msg.(cursor.BlinkMsg); !ok {
+		t.Fatalf("timer canceled: %T", msg)
 	}
-	pulse(5)
-	if phase() {
-		t.Fatal("cursor never came back on")
+	_, cmd = m.Update(msg)
+	if !m.input.Cursor.Blink || cmd == nil {
+		t.Fatal("native cursor did not blink and reschedule")
 	}
-	// Typing restarts the phase: a cursor blinked off as a character lands reads
-	// as lag.
-	pulse(5)
-	if !phase() {
-		t.Fatal("phase did not advance")
+	// An early-return view route must not swallow the next cursor tick.
+	m.projectView = true
+	_, cmd = m.Update(cmd())
+	if m.input.Cursor.Blink || cmd == nil {
+		t.Fatal("view routing swallowed cursor tick")
 	}
-	m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("a")})
-	pulse(1)
-	if phase() {
-		t.Fatal("a keystroke did not restore the cursor")
-	}
-	// A background window holds it still; there is nothing to type into.
 	m.Update(tea.BlurMsg{})
 	t.Cleanup(func() { keyboardStep(false) })
-	pulse(20)
-	if phase() {
-		t.Fatal("cursor blinked off while the window was blurred")
+	if m.input.Cursor.Mode() != cursor.CursorStatic {
+		t.Fatal("background cursor still blinking")
+	}
+	m.Update(tea.FocusMsg{})
+	if m.input.Cursor.Mode() != cursor.CursorBlink || m.input.Cursor.Blink {
+		t.Fatal("focus did not restore native blinking")
+	}
+}
+
+func TestComposerFocusCommandSurvivesEarlyReturn(t *testing.T) {
+	m := &model{composerBlink: true, input: newComposer(), cursorOutput: &cursorWriter{out: io.Discard}}
+	m.input.Cursor.SetMode(cursor.CursorBlink)
+	m.input.Cursor.BlinkSpeed = time.Millisecond
+	m.focusComposer()
+	_, cmd := m.Update(bed.CopyMsg(""))
+	if cmd == nil {
+		t.Fatal("queued focus command lost")
+	}
+	if _, ok := cmd().(cursor.BlinkMsg); !ok {
+		t.Fatal("focus command did not produce a blink")
+	}
+	if m.composerFocusCmd != nil {
+		t.Fatal("focus command not drained")
 	}
 }
 

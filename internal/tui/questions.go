@@ -131,7 +131,7 @@ func (m *model) closeQuestion() {
 		delete(m.questionDrafts, d.id+"/"+d.run+"/"+d.request)
 	}
 	m.questionDialog = nil
-	m.input.Focus()
+	m.focusComposer()
 	m.resize()
 }
 

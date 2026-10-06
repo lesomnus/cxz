@@ -280,7 +280,7 @@ func (m *model) filePreviewMouse(v tea.MouseMsg) bool {
 		if v.Button == tea.MouseButtonLeft && v.Action == tea.MouseActionPress {
 			m.filePreview.focused = false
 			m.toolSelector = nil
-			m.input.Focus()
+			m.focusComposer()
 		}
 		return false
 	}

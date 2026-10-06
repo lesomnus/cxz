@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/lesomnus/bed"
 	"github.com/lesomnus/cxz/api"
 	"google.golang.org/grpc"
 )
@@ -23,7 +23,7 @@ func (c *activityClient) Activity(_ context.Context, r *api.ActivityInput, _ ...
 
 func TestIdleActivityHeartbeatAndDraft(t *testing.T) {
 	c := &activityClient{}
-	m := &model{ctx: context.Background(), client: c, activityID: "client", input: textarea.New(), sessions: []*api.Session{{Id: "s", RunId: "r"}}}
+	m := &model{ctx: context.Background(), client: c, activityID: "client", input: bed.New(), sessions: []*api.Session{{Id: "s", RunId: "r"}}}
 	m.program = tea.NewProgram(m)
 	m.reportActivity()()
 	if len(c.requests) != 1 || c.requests[0].Busy {

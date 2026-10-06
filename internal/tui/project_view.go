@@ -73,7 +73,7 @@ func (m *model) projectAction(key tea.KeyMsg) tea.Cmd {
 			m.input.Placeholder = "absolute workspace path; Enter creates, Esc cancels"
 		}
 		m.notice = "Loading accounts…"
-		return tea.Batch(m.input.Focus(), m.loadAccounts())
+		return tea.Batch(m.focusComposer(), m.loadAccounts())
 
 	}
 	return nil

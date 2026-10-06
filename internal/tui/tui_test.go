@@ -2,9 +2,9 @@ package tui
 
 import (
 	"context"
-	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/lesomnus/bed"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/resource"
 	"google.golang.org/grpc"
@@ -59,7 +59,7 @@ func (c *recordingClient) Interrupt(_ context.Context, r *api.Control, _ ...grpc
 }
 func TestKeyboardControls(t *testing.T) {
 	c := &recordingClient{}
-	input := textarea.New()
+	input := bed.New()
 	input.Focus()
 	m := &model{ctx: context.Background(), client: c, input: input, view: viewport.New(60, 8), watchID: "s", sessions: []*api.Session{{Id: "s", RunId: "run", Pending: []*api.Event{{RequestId: "permission"}}}}, events: map[string][]*api.Event{}, cursor: map[string]uint64{}}
 	m.input.SetValue("hello")
@@ -113,7 +113,7 @@ func TestTerminalOutputAndReplay(t *testing.T) {
 	if got := safeText("before\x1b]52;c;YWJj\a\x1b[2Jafter"); got != "beforeafter" {
 		t.Fatalf("terminal injection: %q", got)
 	}
-	m := &model{sessions: []*api.Session{{Id: "s"}}, view: viewport.New(30, 5), events: map[string][]*api.Event{}, cursor: map[string]uint64{}}
+	m := &model{input: newComposer(), sessions: []*api.Session{{Id: "s"}}, view: viewport.New(30, 5), events: map[string][]*api.Event{}, cursor: map[string]uint64{}}
 	for range 2 {
 		m.Update(received{id: "s", event: &api.Event{Seq: 1, Kind: "assistant", Text: "hello"}})
 	}

@@ -147,7 +147,7 @@ func (m *model) chipKey(k tea.KeyMsg) (bool, tea.Cmd) {
 			if m.focusedQuestion() == nil {
 				cursor(sel.end)
 				for i := sel.start; i < sel.end; i++ {
-					m.input, _ = m.input.Update(tea.KeyMsg{Type: tea.KeyBackspace})
+					m.input, _ = m.input.UpdateText(tea.KeyMsg{Type: tea.KeyBackspace})
 				}
 			} else {
 				setValue(string(r[:sel.start]) + string(r[sel.end:]))
@@ -645,7 +645,7 @@ func (m *model) expandPaste(d *pasteDialog, p *pastedText) {
 		m.setComposerPosition(pos)
 	}
 	m.pasteSelection = nil
-	m.composerSelection = nil
+	m.input.ClearSelection()
 	m.pasteDialog = nil
 	m.notice = "Paste expanded into editable text."
 	m.resize()

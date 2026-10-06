@@ -67,7 +67,7 @@ func TestComposerMouseCursorMapping(t *testing.T) {
 		}
 		top := m.height - m.input.Height() - 2 - m.terminalHeight()
 		// Move away on the same viewport, then click the recorded location.
-		m.composerSelection = nil
+		m.input.ClearSelection()
 		event := tea.MouseMsg{X: m.contentOffset() + 1 + x, Y: top + y, Button: tea.MouseButtonLeft, Action: tea.MouseActionPress}
 		m.Update(event)
 		if composerPosition(m.input) != got {
@@ -172,10 +172,10 @@ func TestComposerSelectionGraphemesAndModal(t *testing.T) {
 	if m.selectedComposerText() != "👩‍💻é" {
 		t.Fatal("split emoji grapheme")
 	}
-	m.composerSelection = nil
+	m.input.ClearSelection()
 	m.panelFocus = true
 	m.Update(tea.KeyMsg{Type: tea.KeyShiftLeft})
-	if m.composerSelection != nil {
+	if m.input.SelectionValid() {
 		t.Fatal("sidebar selected composer")
 	}
 	m.panelFocus = false
@@ -223,42 +223,42 @@ func TestComposerHomeEndFollowVisibleRows(t *testing.T) {
 	m.input.SetValue(strings.Repeat("alpha beta gamma delta ", 8) + "zeta\nsecond line here")
 	m.resize()
 	rows := m.composerRows()
-	if len(rows) < 4 || rows[1].line != 0 {
+	if len(rows) < 4 || rows[1].Line != 0 {
 		t.Fatal("fixture did not wrap", rows)
 	}
 	press := func(k tea.KeyType) int {
 		m.Update(tea.KeyMsg{Type: k})
 		return composerPosition(m.input)
 	}
-	m.setComposerPosition(rows[0].start + 10)
-	if got := press(tea.KeyHome); got != rows[0].start {
+	m.setComposerPosition(rows[0].Start + 10)
+	if got := press(tea.KeyHome); got != rows[0].Start {
 		t.Fatal("home left the row start", got)
 	}
 	// The first row ends mid line, so its last position is the one that still
 	// draws on it: the position after it is where the next row begins.
-	if got := press(tea.KeyEnd); got != rows[0].end-1 {
+	if got := press(tea.KeyEnd); got != rows[0].End-1 {
 		t.Fatal("end did not stop at the visible row end", got)
 	}
-	if got := press(tea.KeyEnd); got != rows[1].end-1 {
+	if got := press(tea.KeyEnd); got != rows[1].End-1 {
 		t.Fatal("end again did not step to the next row", got)
 	}
-	if got := press(tea.KeyHome); got != rows[1].start {
+	if got := press(tea.KeyHome); got != rows[1].Start {
 		t.Fatal("home did not return to this row's start", got)
 	}
-	if got := press(tea.KeyHome); got != rows[0].start {
+	if got := press(tea.KeyHome); got != rows[0].Start {
 		t.Fatal("home again did not step to the previous row", got)
 	}
-	if got := press(tea.KeyHome); got != rows[0].start {
+	if got := press(tea.KeyHome); got != rows[0].Start {
 		t.Fatal("home ran off the front of the draft", got)
 	}
 	// The last row of a line owns the position after its last character: no row
 	// starts there, so the cursor still draws on it.
 	last := rows[len(rows)-1]
-	m.setComposerPosition(last.start)
-	if got := press(tea.KeyEnd); got != last.end {
+	m.setComposerPosition(last.Start)
+	if got := press(tea.KeyEnd); got != last.End {
 		t.Fatal("end short of the final row", got)
 	}
-	if got := press(tea.KeyEnd); got != last.end {
+	if got := press(tea.KeyEnd); got != last.End {
 		t.Fatal("end ran off the back of the draft", got)
 	}
 	// An edge key is a move, so it collapses a selection like the arrows do.
@@ -355,7 +355,7 @@ func TestComposerWheelScrollsTheDraft(t *testing.T) {
 	}
 	// The column is held, the way an arrow key holds it.
 	rows := m.composerRows()
-	if got := composerPosition(m.input) - rows[row()].start; got != 5 {
+	if got := composerPosition(m.input) - rows[row()].Start; got != 5 {
 		t.Fatal("column became", got, "want 5")
 	}
 	// The view follows, which is the point of scrolling at all.
@@ -448,11 +448,11 @@ func TestComposerShiftEdgeSelection(t *testing.T) {
 	m.input.SetValue(strings.Repeat("alpha beta gamma delta ", 8) + "zeta\nsecond line here")
 	m.resize()
 	rows := m.composerRows()
-	if len(rows) < 3 || rows[1].line != 0 {
+	if len(rows) < 3 || rows[1].Line != 0 {
 		t.Fatal("fixture did not wrap", rows)
 	}
 	value := []rune(m.input.Value())
-	from := rows[0].start + 8
+	from := rows[0].Start + 8
 	m.setComposerPosition(from)
 	m.resize()
 	m.Update(tea.KeyMsg{Type: tea.KeyShiftEnd})
@@ -466,16 +466,16 @@ func TestComposerShiftEdgeSelection(t *testing.T) {
 	// Coming back shrinks the same selection rather than starting another, and
 	// crossing the anchor selects the other side of it.
 	m.Update(tea.KeyMsg{Type: tea.KeyShiftHome})
-	if got, want := m.selectedComposerText(), string(value[from:rows[1].start]); got != want {
+	if got, want := m.selectedComposerText(), string(value[from:rows[1].Start]); got != want {
 		t.Fatalf("shift+home selected %q, want %q", got, want)
 	}
 	m.Update(tea.KeyMsg{Type: tea.KeyShiftHome})
-	if got, want := m.selectedComposerText(), string(value[rows[0].start:from]); got != want {
+	if got, want := m.selectedComposerText(), string(value[rows[0].Start:from]); got != want {
 		t.Fatalf("crossing the anchor selected %q, want %q", got, want)
 	}
 	// The start of the draft is as far as it goes, and it holds there.
 	m.Update(tea.KeyMsg{Type: tea.KeyShiftHome})
-	if got, want := m.selectedComposerText(), string(value[rows[0].start:from]); got != want {
+	if got, want := m.selectedComposerText(), string(value[rows[0].Start:from]); got != want {
 		t.Fatalf("running off the front changed the selection to %q", got)
 	}
 	// Without shift the same key is a move, so it drops the selection.

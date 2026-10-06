@@ -91,7 +91,7 @@ func (m *model) accountKey(key tea.KeyMsg) tea.Cmd {
 		}
 		m.notice = ""
 		if !m.accountView && !m.panelFocus {
-			return m.input.Focus()
+			return m.focusComposer()
 		}
 		return nil
 	}

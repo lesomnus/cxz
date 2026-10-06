@@ -40,7 +40,7 @@ func (m *model) closeSuccessfulTerminal(id string) {
 		p.open, p.focused = false, false
 		if s := m.current(); s != nil && s.Id == id {
 			if focused && !m.panelFocus {
-				m.input.Focus()
+				m.focusComposer()
 			}
 			m.resize()
 		}
@@ -84,7 +84,7 @@ func (m *model) toggleTerminal() tea.Cmd {
 	}
 	if p.open && p.focused {
 		p.open, p.focused = false, false
-		m.input.Focus()
+		m.focusComposer()
 		m.resize()
 		return nil
 	}
@@ -166,7 +166,7 @@ func (m *model) terminalView() string {
 		for y := range lines {
 			lines[y] = rows[y].Render()
 		}
-		if p.scroll == nil && m.terminalFocused() && frame.CursorVisible && !m.input.Cursor.Blink {
+		if p.scroll == nil && m.terminalFocused() && frame.CursorVisible && (m.blurred || (m.pulse-m.blinkFrom)%10 < 5) {
 			x, y := frame.Cursor.X, frame.Cursor.Y
 			if y >= 0 && y < len(lines) && x >= 0 && x < m.width && x < len(rows[y]) {
 				cell := rows[y][x]
@@ -233,7 +233,7 @@ func (m *model) terminalMouse(v tea.MouseMsg) bool {
 			if x >= m.width-ansi.StringWidth(terminalFold) {
 				p.open, p.focused = false, false
 				m.panelFocus, m.focusList, m.focusApproval = false, false, false
-				m.input.Focus()
+				m.focusComposer()
 				m.resize()
 			}
 		}
@@ -300,7 +300,7 @@ func (m *model) terminalMouse(v tea.MouseMsg) bool {
 	if v.Action == tea.MouseActionPress && v.Button == tea.MouseButtonLeft && v.Y >= top-m.input.Height()-2 && v.Y < top {
 		p.focused = false
 		m.panelFocus, m.focusList, m.focusApproval = false, false, false
-		m.input.Focus()
+		m.focusComposer()
 		return true
 	}
 	return false
@@ -324,7 +324,7 @@ func (m *model) terminalKey(k tea.KeyMsg) {
 		return
 	}
 	p.scroll = nil // typing returns to the live shell, never into a historical row
-	m.input.Cursor.Blink = false
+	m.blinkFrom = m.pulse
 	ok := false
 	if k.Type == tea.KeyRunes && !k.Alt {
 		ok = p.session.Text(string(k.Runes), k.Paste)

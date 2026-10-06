@@ -18,6 +18,20 @@ test("both pinned edges advance prompt phase and extend the background fade with
   ).toBeVisible();
   const pane = page.locator(".transcript");
   const thumb = page.getByRole("scrollbar", { name: "Conversation scroll" });
+  // As in the wheel-motion regression, exclude virtual measurement/cache
+  // rebases from native scroll movement. A row's top can move as it remeasures.
+  await pane.evaluate((el) => {
+    el.setAttribute("data-tension-shift", "0");
+    el.addEventListener("history-shift", (event: Event) => {
+      el.setAttribute(
+        "data-tension-shift",
+        String(
+          Number(el.getAttribute("data-tension-shift")) +
+            (event as CustomEvent<number>).detail,
+        ),
+      );
+    });
+  });
   // Start far from actual retained-history ends so both local edges can stream past.
   await pane.evaluate(
     (el) => (el.scrollTop = (el.scrollHeight - el.clientHeight) / 2),
@@ -26,8 +40,11 @@ test("both pinned edges advance prompt phase and extend the background fade with
     page
       .locator(".transcript-fade-bottom")
       .evaluate((el) => parseFloat(getComputedStyle(el).height));
-  await expect.poll(fade).toBeGreaterThan(100);
-  // Capture the settled fade, rather than a frame during its 180ms entrance.
+  // Use the actual composer height and wait for its fade transition to settle.
+  const baseline = await page
+    .locator(".composer-input")
+    .evaluate((el) => (el as HTMLElement).offsetHeight);
+  await expect.poll(fade).toBeCloseTo(baseline, 0);
   await expect
     .poll(() =>
       page
@@ -44,7 +61,6 @@ test("both pinned edges advance prompt phase and extend the background fade with
         ),
     )
     .toBeLessThan(0.1);
-  const baseline = await fade();
   for (const direction of [-1, 1]) {
     await expect
       .poll(() =>
@@ -106,10 +122,12 @@ test("both pinned edges advance prompt phase and extend the background fade with
     }
     const phase = await page.evaluate(() => {
       const marker = document.querySelector<HTMLElement>(".scroll-marker")!;
+      const pane = document.querySelector(".transcript")!;
       return {
+        scroll:
+          pane.scrollTop - Number(pane.getAttribute("data-tension-shift")),
         id: marker.dataset.prompt!,
         marker: parseFloat(marker.style.top),
-        scroll: document.querySelector(".transcript")!.scrollTop,
       };
     });
     await expect
@@ -123,8 +141,20 @@ test("both pinned edges advance prompt phase and extend the background fade with
           .then((delta) => -direction * delta),
       )
       .toBeGreaterThan(5);
-    const moved = await pane.evaluate((el) => el.scrollTop);
-    expect(direction * (moved - phase.scroll)).toBeGreaterThan(50);
+    // Wait for real reading movement while removing all layout rebases.
+    await expect
+      .poll(() =>
+        pane
+          .evaluate(
+            (el, before) =>
+              el.scrollTop -
+              Number(el.getAttribute("data-tension-shift")) -
+              before,
+            phase.scroll,
+          )
+          .then((distance) => direction * distance),
+      )
+      .toBeGreaterThan(50);
     await page.mouse.up();
     await expect(thumb).toHaveAttribute("data-stretch", "0.00");
     await expect.poll(fade).toBeCloseTo(baseline, 0);

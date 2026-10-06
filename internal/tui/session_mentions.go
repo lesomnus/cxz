@@ -133,7 +133,7 @@ func (m *model) mentionKey(k tea.KeyMsg) bool {
 		if token.end == len(r) {
 			name += " "
 		}
-		m.composerSelection = nil
+		m.input.ClearSelection()
 		m.setPathInput(string(r[:token.start])+name+string(r[token.end:]), token.start+len([]rune(name)))
 		if next := m.mentionContext(); next != nil {
 			m.mentionDismissed = next.signature
