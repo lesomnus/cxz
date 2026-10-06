@@ -11,6 +11,7 @@
   --wrapper-radius: 10px;
   --control-inset: 2px;
   --control-inline-inset: 6px;
+  --toolbar-button-width: 48px;
   --composer-extension: 10px;
   --composer-overhang: 4px;
   --muted: #a0a0a0;
@@ -686,16 +687,71 @@ pre {
 .floating-card-host {
   --card-gap: calc(3 * var(--space));
   --card-shadow-space: 32px;
+  --card-shadow-left: var(--card-shadow-space);
+  --card-shadow-right: var(--card-shadow-space);
+  --card-reserve: 0px;
+  --card-max-height: max(
+    0px,
+    calc(var(--card-space, 50dvh) - var(--card-reserve))
+  );
   position: absolute;
   bottom: calc(100% + 1px);
-  left: calc(-1px - var(--card-shadow-space));
-  width: calc(100% + 2px + 2 * var(--card-shadow-space));
+  left: calc(-1px - var(--card-shadow-left));
+  width: calc(100% + 2px + var(--card-shadow-left) + var(--card-shadow-right));
   height: calc(var(--card-space, 50dvh) + var(--card-gap));
-  padding: 0 var(--card-shadow-space) var(--card-gap);
+  padding: 0 var(--card-shadow-right) var(--card-gap) var(--card-shadow-left);
   /* Overflow clips the same bounds without isolating the backdrop as clip-path does. */
   overflow: clip;
   z-index: 5;
   pointer-events: none;
+}
+.floating-card-host[data-questions="true"] {
+  --card-reserve: calc(6 * var(--space) + 4px);
+}
+.floating-card-host > .floating-card {
+  max-height: min(360px, var(--card-max-height));
+}
+.question-cards {
+  position: absolute;
+  bottom: var(--card-gap);
+  left: var(--card-shadow-left);
+  width: calc(100% - var(--card-shadow-left) - var(--card-shadow-right));
+  max-height: min(460px, var(--card-max-height));
+  display: flex;
+  flex-direction: column;
+  gap: calc(2 * var(--space));
+  overflow: auto;
+  overscroll-behavior: contain;
+  transform-origin: bottom center;
+  transform: translateY(0) scale(1);
+  transition: transform 180ms ease-out;
+}
+.question-cards > .floating-card {
+  position: relative;
+  bottom: auto;
+  left: auto;
+  width: 100%;
+  flex-shrink: 0;
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+.question-cards[data-covered="true"] {
+  transform: translateY(var(--question-lift)) scale(0.97);
+  pointer-events: none;
+}
+.approval::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: #0006;
+  opacity: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  transition: opacity 180ms ease-out;
+}
+.question-cards[data-covered="true"] .approval::after {
+  opacity: 1;
 }
 .floating-card {
   --card-radius: calc(3 * var(--space));
@@ -706,9 +762,9 @@ pre {
   );
   position: absolute;
   bottom: var(--card-gap);
-  left: var(--card-shadow-space);
-  width: calc(100% - 2 * var(--card-shadow-space));
-  max-height: min(460px, var(--card-space, 50dvh));
+  left: var(--card-shadow-left);
+  width: calc(100% - var(--card-shadow-left) - var(--card-shadow-right));
+  max-height: min(460px, var(--card-max-height));
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -788,6 +844,8 @@ pre {
 }
 @media (prefers-reduced-motion: reduce) {
   .floating-card,
+  .question-cards,
+  .approval::after,
   .copy-control {
     transition: none;
   }
@@ -806,7 +864,7 @@ pre {
 }
 .composer .toolbar-button,
 .card-close {
-  width: 64px;
+  width: var(--toolbar-button-width);
   height: 24px;
   min-height: 24px;
   padding: 3px 6px;
@@ -821,7 +879,7 @@ pre {
   position: absolute;
   inset: 0 auto 0 50%;
   transform: translateX(-50%);
-  width: 64px;
+  width: var(--toolbar-button-width);
   overflow: hidden;
   pointer-events: none;
   z-index: 1;
@@ -933,19 +991,7 @@ pre {
   margin-left: auto;
   justify-content: flex-end;
 }
-.pending {
-  max-height: 40dvh;
-  overflow: auto;
-  padding: 0 16px;
-  scrollbar-gutter: stable both-edges;
-}
 .approval {
-  max-width: var(--conversation-width);
-  border: 1px solid #3c3c3c;
-  border-radius: 8px;
-  background: #1e1e1e;
-  margin: 8px auto;
-  padding: 12px;
   overflow-wrap: anywhere;
 }
 .buttons {

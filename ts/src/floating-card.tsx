@@ -7,6 +7,9 @@ import {
   useMemo,
   useRef,
   useState,
+  Children,
+  type HTMLAttributes,
+  type Ref,
   type ReactNode,
 } from "react";
 import { Button } from "./button";
@@ -18,6 +21,7 @@ type Card = {
   content: (close: () => void) => ReactNode;
   origin: HTMLElement | null;
   closing?: boolean;
+  restoreFocus?: boolean;
 };
 type CardRequest = Pick<Card, "title" | "label" | "content">;
 const OpenCard = createContext<(card: CardRequest) => void>(() => {});
@@ -49,17 +53,19 @@ export function FloatingCardProvider({ children }: { children: ReactNode }) {
   const close = useCallback((id: number, restoreFocus = true) => {
     const active = current.current;
     if (!active || active.id !== id || active.closing) return;
-    setCard({ ...active, closing: true });
-    if (restoreFocus) {
-      const target = active.origin?.isConnected
-        ? active.origin
-        : document.querySelector<HTMLElement>(".composer textarea");
-      target?.focus({ preventScroll: true });
-    }
+    setCard({ ...active, closing: true, restoreFocus });
     timer.current = setTimeout(() => {
       setCard((old) => (old?.id === id ? undefined : old));
     }, 180);
   }, []);
+  useEffect(() => {
+    if (!card?.closing || card.restoreFocus === false) return;
+    // A covered question becomes interactive again during this commit.
+    const target = card.origin?.isConnected
+      ? card.origin
+      : document.querySelector<HTMLElement>(".composer textarea");
+    target?.focus({ preventScroll: true });
+  }, [card]);
   useEffect(() => {
     if (!card || card.closing) return;
     const escape = (event: KeyboardEvent) => {
@@ -81,14 +87,29 @@ export function FloatingCardProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function FloatingCardHost() {
+export function FloatingCardHost({ children }: { children?: ReactNode }) {
   const { card, close } = useContext(CardState);
   const host = useRef<HTMLDivElement>(null);
+  const persistent = useRef<HTMLDivElement>(null);
+  const hasQuestions = Children.count(children) > 0;
   useLayoutEffect(() => {
     const node = host.current!;
     const conversation = node.closest(".conversation")!;
     const header = conversation.querySelector("header")!;
+    const wrapper = conversation.querySelector(".composer-wrapper")!;
     const measure = () => {
+      const bounds = conversation.getBoundingClientRect();
+      const anchor = wrapper.getBoundingClientRect();
+      const inset = parseFloat(
+        getComputedStyle(node).getPropertyValue("--card-shadow-space"),
+      );
+      const left = Math.min(inset, Math.max(0, anchor.left - bounds.left));
+      const right = Math.min(inset, Math.max(0, bounds.right - anchor.right));
+      node.style.setProperty("--card-shadow-left", `${left}px`);
+      node.style.setProperty("--card-shadow-right", `${right}px`);
+      node.style.left = `${anchor.left - bounds.left - left}px`;
+      node.style.width = `${anchor.width + left + right}px`;
+      node.style.bottom = `${bounds.bottom - anchor.top}px`;
       const available =
         node.getBoundingClientRect().bottom -
         parseFloat(getComputedStyle(node).paddingBottom) -
@@ -99,7 +120,7 @@ export function FloatingCardHost() {
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(conversation);
-    observer.observe(node.parentElement!);
+    observer.observe(wrapper);
     observer.observe(header);
     observer.observe(conversation.querySelector(".transcript-area")!);
     window.addEventListener("resize", measure);
@@ -108,6 +129,33 @@ export function FloatingCardHost() {
       window.removeEventListener("resize", measure);
     };
   }, []);
+  useLayoutEffect(() => {
+    const node = host.current!;
+    const questions = persistent.current!;
+    const preview = node.querySelector<HTMLElement>(":scope > .floating-card");
+    const update = () => {
+      const questionHeight = questions.offsetHeight;
+      const previewHeight = preview?.offsetHeight ?? 0;
+      const covered =
+        !!card &&
+        !card.closing &&
+        questionHeight > 0 &&
+        previewHeight >= questionHeight;
+      const peek = parseFloat(getComputedStyle(node).paddingBottom) * 2 + 4;
+      questions.dataset.covered = String(covered);
+      questions.inert = covered;
+      questions.setAttribute("aria-hidden", String(covered));
+      questions.style.setProperty(
+        "--question-lift",
+        `${covered ? 0.97 * questionHeight - previewHeight - peek : 0}px`,
+      );
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(questions);
+    if (preview) observer.observe(preview);
+    return () => observer.disconnect();
+  }, [card, hasQuestions]);
   useEffect(() => {
     if (!card || card.closing) return;
     const conversation = host.current!.closest(".conversation")!;
@@ -132,7 +180,14 @@ export function FloatingCardHost() {
     return () => document.removeEventListener("pointerdown", dismissInMargin);
   }, [card, close]);
   return (
-    <div ref={host} className="floating-card-host">
+    <div
+      ref={host}
+      className="floating-card-host"
+      data-questions={hasQuestions}
+    >
+      <div ref={persistent} className="question-cards" data-covered="false">
+        {children}
+      </div>
       {card && (
         <PreviewCard key={card.id} card={card} close={() => close(card.id)} />
       )}
@@ -161,9 +216,13 @@ function PreviewCard({ card, close }: { card: Card; close: () => void }) {
     };
   }, []);
   return (
-    <section
+    <FloatingCard
       ref={root}
-      className="floating-card"
+      title={card.title}
+      close={close}
+      closeLabel={
+        card.label === "붙여넣기 원문" ? "Close paste preview" : "Close details"
+      }
       role="dialog"
       aria-label={card.label ?? card.title}
       aria-hidden={!active}
@@ -173,22 +232,41 @@ function PreviewCard({ card, close }: { card: Card; close: () => void }) {
       data-entered={entered}
       data-closing={!!card.closing}
     >
+      {card.content(close)}
+    </FloatingCard>
+  );
+}
+
+export function FloatingCard({
+  title,
+  close,
+  closeLabel,
+  children,
+  className = "",
+  ref,
+  ...props
+}: Omit<HTMLAttributes<HTMLElement>, "title"> & {
+  title: string;
+  close?: () => void;
+  closeLabel?: string;
+  ref?: Ref<HTMLElement>;
+}) {
+  return (
+    <section ref={ref} className={`floating-card ${className}`} {...props}>
       <header className="card-heading">
-        <strong>{card.title}</strong>
-        <Button
-          className="card-close"
-          type="button"
-          aria-label={
-            card.label === "붙여넣기 원문"
-              ? "Close paste preview"
-              : "Close details"
-          }
-          onClick={close}
-        >
-          ×
-        </Button>
+        <strong>{title}</strong>
+        {close && (
+          <Button
+            className="card-close"
+            type="button"
+            aria-label={closeLabel}
+            onClick={close}
+          >
+            ×
+          </Button>
+        )}
       </header>
-      <div className="card-body">{card.content(close)}</div>
+      <div className="card-body">{children}</div>
     </section>
   );
 }

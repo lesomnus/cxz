@@ -67,7 +67,7 @@ outside-click dismissal are supported.
 
 The icon-only send button sits on the right of a toolbar above the text input,
 inside a zero-padding wrapper. The 28px toolbar has equal 2px top, bottom and right
-gaps around its 64px-wide, 24px-high Send button. The wrapper is narrower than the
+gaps around its 48px-wide, 24px-high Send button. The wrapper is narrower than the
 input, which extends 4px past each side while retaining its width. Their bottom
 borders overlap. Wrapper corners are 10px, input corners are 15px, and the inset
 Send corner is 7px to share the wrapper corner center. Ctrl+Enter sends, with a hover shortcut.
@@ -87,7 +87,7 @@ direction the opposite bottom fade uses 75% of the tension contribution. Scroll
 controls, message headings, Copy buttons and disclosure controls paint above the
 fades; the fades affect message bodies without covering other controls. Latest
 navigation is an icon-only down arrow in the center of the composer toolbar,
-sharing Send's 64×24px borderless button style. Its absolute overlay occupies no
+sharing Send's 48×24px borderless button style. Its absolute overlay occupies no
 layout space and stays above future toolbar controls. It slides up from behind
 the input in 180ms after 96px of upward reading movement, and slides back down
 after 96px of downward movement. Small reversals consume the accumulated distance
@@ -153,15 +153,17 @@ open in the same non-modal floating card used for paste previews. The card sits
 4px horizontal content padding and a translucent monochrome background with a
 strong 48px backdrop blur. Header padding is also 4px, with an additional 4px
 left margin only on the title. The Close button shares the Send button's
-64px by 24px rectangular dimensions and hover style. Code and raw text retain
+48px by 24px rectangular dimensions and hover style. Code and raw text retain
 their opaque black boxes. Inner box and Close button rounding is calculated
 as outer radius minus border width minus inset: 12px - 1px - 4px = 7px,
 so the corner centers align. A last-child `pre` has no bottom margin.
 The composer's toolbar, editor
 and metadata remain accessible, and the card contributes no height to the
-transcript. The viewport bounds the card below the
-conversation title, with long contents scrolling internally.
-The host uses overflow clipping with space for the shadow. Do not use
+transcript. Detail and paste-preview cards have a 360px maximum height, further
+bounded below the conversation title and above the composer. Long contents
+scroll internally.
+The host uses overflow clipping with space for the shadow, clamped to the
+conversation's horizontal bounds so the overlay cannot widen a mobile page. Do not use
 `clip-path`, masks or opacity on its ancestors: these form a backdrop root that
 prevents the card's blur from sampling the conversation behind it.
 Opening another item replaces the previous card: Close or Escape never restores
@@ -170,6 +172,21 @@ closes it, while content, links, buttons and the scrollbar remain interactive.
 Cards enter/exit with a short 180ms fade and 8px movement, respect reduced motion
 and are discarded on session navigation. These transitions never modify the
 transcript's scroll coordinates or the shared handle/marker animation.
+
+Pending Question/approval requests use the same `FloatingCard` shell and overlay
+anchor as previews, outside the composer form. They have no Close control;
+Escape, side-margin dismissal and opening another preview never discard the
+request or its selected/free-text answers. Only an explicit Submit/Allow/Deny
+reply resolves it. Pressing Enter in an answer field does not send the composer.
+When a preview is at least as tall as the pending Question layer, the questions
+scale to 97%, gain a 40% black shade, and move upward so 28px of their top remains
+visible above the front card. Both cards reserve room below the conversation
+title, including on narrow viewports. A shorter preview leaves Question size,
+brightness and position unchanged. ResizeObserver compares actual card heights;
+the shared 180ms transition respects reduced motion. Covered questions are inert
+until the preview closes; closing restores their state and originating focus.
+Multiple pending requests stay available in the bounded, scrollable Question
+layer. Preview replacement still retains no older details/paste cards.
 
 The shared composer is a fixed-size monospace editor with logical line numbers.
 Numbers follow soft wrapping, scrolling and viewport changes. Text pastes over

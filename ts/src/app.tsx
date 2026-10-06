@@ -32,6 +32,7 @@ import { ComposerEditor } from "./composer-editor";
 import {
   FloatingCardProvider,
   FloatingCardHost,
+  FloatingCard,
   useFloatingCard,
 } from "./floating-card";
 import { expandPastes } from "./composer-pastes";
@@ -870,7 +871,7 @@ function ConversationContent({
           setFollow(next);
         }}
       />
-      <section className="pending">
+      <FloatingCardHost>
         {pending.map((e) => (
           <Approval
             key={`${e.runId}:${e.requestId}`}
@@ -880,7 +881,7 @@ function ConversationContent({
             reply={reply}
           />
         ))}
-      </section>
+      </FloatingCardHost>
       {!!(error || current.error) && (
         <p className="error" role="alert">
           {error || String(current.error)}
@@ -888,7 +889,6 @@ function ConversationContent({
       )}
       <form className="composer" onSubmit={send}>
         <div className="composer-wrapper">
-          <FloatingCardHost />
           <div className="composer-toolbar">
             <span
               className="latest-slot"
@@ -1056,8 +1056,12 @@ function Approval({
     (elicitation && p.params?.requestedSchema) ||
     e.text === "agentMessage/questions";
   return (
-    <section className="approval">
-      <h3>{approvalTitle(e)}</h3>
+    <FloatingCard
+      className="approval"
+      title={approvalTitle(e)}
+      role="region"
+      aria-label={approvalTitle(e)}
+    >
       {p.params?.message && <p>{String(p.params.message)}</p>}
       <Button
         type="button"
@@ -1146,6 +1150,6 @@ function Approval({
           Deny
         </Button>
       </div>
-    </section>
+    </FloatingCard>
   );
 }

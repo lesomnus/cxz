@@ -62,11 +62,11 @@ test("Latest slides into the toolbar overlay and switches after 96px of actual r
   await expect(button).toHaveCSS("opacity", "1");
   const latestBox = (await latest.boundingBox())!;
   const sendBox = (await send.boundingBox())!;
-  expect(latestBox.width).toBe(64);
+  expect(latestBox.width).toBe(48);
   expect(latestBox.height).toBe(24);
   expect(latestBox.y).toBe(sendBox.y);
   expect(latestBox.x + latestBox.width / 2).toBe(toolbar.x + toolbar.width / 2);
-  expect(sendBox.width).toBe(64);
+  expect(sendBox.width).toBe(48);
   expect(sendBox.height).toBe(latestBox.height);
   await latest.hover();
   await expect(latest).toHaveCSS("background-color", "rgb(54, 54, 54)");

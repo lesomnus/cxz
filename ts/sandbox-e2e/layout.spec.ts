@@ -63,7 +63,7 @@ test("compact monochrome workspace, aligned composer and release-triggered butto
   expect(box.x + box.width - wrapperBox.x - wrapperBox.width).toBe(4);
   const toolbarBox = (await page.locator(".composer-toolbar").boundingBox())!;
   expect(toolbarBox.height).toBe(28);
-  expect(sendBox.width).toBe(64);
+  expect(sendBox.width).toBe(48);
   expect(sendBox.height).toBe(24);
   expect(sendBox.y - toolbarBox.y).toBe(2);
   expect(toolbarBox.y + toolbarBox.height - sendBox.y - sendBox.height).toBe(2);
