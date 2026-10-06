@@ -61,7 +61,7 @@ test("floating event and paste cards replace one another without moving the tran
   const wrapper = (await page.locator(".composer-wrapper").boundingBox())!;
   const card = (await event.boundingBox())!;
   expect(wrapper.y - card.y - card.height).toBeCloseTo(12, 0);
-  await expect(event).toHaveCSS("border-top-width", "0px");
+  await expect(event).toHaveCSS("border-top-width", "1px");
   await expect(event).toHaveCSS("border-radius", "12px");
   await expect(event).toHaveCSS("backdrop-filter", "blur(48px)");
   await expect(event.locator(".card-body")).toHaveCSS("padding-left", "4px");

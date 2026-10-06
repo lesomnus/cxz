@@ -149,10 +149,15 @@ scope on hover and to assistive technology.
 Response Copy icons appear when hovering a response or focusing its controls,
 without changing footer geometry. Event summaries and approval request details
 open in the same non-modal floating card used for paste previews. The card sits
-12px above the composer wrapper, with 12px rounding on every corner, no border,
+12px above the composer wrapper, with 12px rounding on every corner, a 1px border,
 4px horizontal content padding and a translucent monochrome background with a
-strong 48px backdrop blur. The title has 12px left and 8px right padding; code
-and raw text retain their opaque black boxes. The composer's toolbar, editor
+strong 48px backdrop blur. Header padding is also 4px, with an additional 4px
+left margin only on the title. The Close button shares the Send button's
+64px by 24px rectangular dimensions and hover style. Code and raw text retain
+their opaque black boxes. Inner box and Close button rounding is calculated
+as outer radius minus border width minus inset: 12px - 1px - 4px = 7px,
+so the corner centers align. A last-child `pre` has no bottom margin.
+The composer's toolbar, editor
 and metadata remain accessible, and the card contributes no height to the
 transcript. The viewport bounds the card below the
 conversation title, with long contents scrolling internally.

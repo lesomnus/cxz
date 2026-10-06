@@ -698,6 +698,12 @@ pre {
   pointer-events: none;
 }
 .floating-card {
+  --card-radius: calc(3 * var(--space));
+  --card-border-width: 1px;
+  --card-inner-radius: max(
+    0px,
+    calc(var(--card-radius) - var(--card-border-width) - var(--space))
+  );
   position: absolute;
   bottom: var(--card-gap);
   left: var(--card-shadow-space);
@@ -710,8 +716,8 @@ pre {
   background: rgb(32 32 32 / 60%);
   -webkit-backdrop-filter: blur(48px);
   backdrop-filter: blur(48px);
-  border: 0;
-  border-radius: calc(3 * var(--space));
+  border: var(--card-border-width) solid #363636;
+  border-radius: var(--card-radius);
   box-shadow: 0 8px 24px #0006;
   transform-origin: bottom center;
   transform: translateY(8px) scale(0.99);
@@ -733,25 +739,23 @@ pre {
 }
 .conversation .card-heading {
   flex: 0 0 auto;
-  min-height: 36px;
+  min-height: 32px;
   height: auto;
   display: flex;
   align-items: center;
   gap: calc(2 * var(--space));
-  padding: var(--space) calc(2 * var(--space)) var(--space)
-    calc(3 * var(--space));
+  padding: var(--space);
   font-size: 12px;
 }
 .card-heading strong {
+  margin-left: var(--space);
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .card-close {
-  width: 28px;
-  height: 28px;
-  min-height: 28px;
+  border-radius: var(--card-inner-radius);
   margin-left: auto;
   flex-shrink: 0;
 }
@@ -765,9 +769,12 @@ pre {
   padding: calc(2 * var(--space)) var(--space);
   margin: var(--space) 0;
   background: #101010;
-  border-radius: calc(2 * var(--space));
+  border-radius: var(--card-inner-radius);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+.card-body pre:last-child {
+  margin-bottom: 0;
 }
 .event-detail {
   display: block;
@@ -796,6 +803,9 @@ pre {
     0px,
     calc(var(--wrapper-radius) - 1px - var(--control-inset))
   );
+}
+.composer .toolbar-button,
+.card-close {
   width: 64px;
   height: 24px;
   min-height: 24px;
@@ -803,7 +813,8 @@ pre {
   background: transparent;
   color: inherit;
 }
-.composer .toolbar-button:not(:disabled):hover {
+.composer .toolbar-button:not(:disabled):hover,
+.card-close:not(:disabled):hover {
   background: #363636;
 }
 .latest-slot {
