@@ -74,7 +74,12 @@ export function messageLayout(
     const height =
       sizes.get(id) ??
       (event.kind === "assistant" ? 86 : event.kind === "input" ? 76 : 44);
-    const row = { id, top, height, prompt: event.kind === "input" };
+    const row = {
+      id,
+      top,
+      height,
+      prompt: event.kind === "input",
+    };
     top += height;
     return row;
   });

@@ -20,8 +20,82 @@ test("provider dropdowns, quota popovers, aligned headings and bounded press/sha
   await expect(page.locator(".session-description").first()).toHaveText(
     "session-1sandbox-claude",
   );
+  const card = page.locator(".tree-session").first();
+  const title = card.locator(".session-title");
+  const heading = card.locator(".session-heading");
+  const logo = card.getByRole("img", { name: "Claude", exact: true });
+  const description = card.locator(".session-description");
+  const titleBefore = (await title.boundingBox())!;
+  const headingBefore = (await heading.boundingBox())!;
+  const logoBefore = (await logo.boundingBox())!;
+  const descriptionBefore = (await description.boundingBox())!;
+  const indicator = card.locator(".session-indicator");
+  const indicatorBefore = (await indicator.boundingBox())!;
+  expect(logoBefore.x + logoBefore.width).toBeLessThan(titleBefore.x);
+  expect(logoBefore.width).toBe(12);
+  expect(logoBefore.height).toBe(12);
+  expect(
+    logoBefore.y +
+      logoBefore.height / 2 -
+      titleBefore.y -
+      titleBefore.height / 2,
+  ).toBeCloseTo(1, 1);
+  await card.hover();
+  await page.mouse.down();
+  const scale = await heading.evaluate((el) =>
+    Number(getComputedStyle(el).getPropertyValue("--press-scale")),
+  );
+  await expect
+    .poll(async () => (await title.boundingBox())!.width)
+    .toBeCloseTo(titleBefore.width * scale, 1);
+  expect(
+    titleBefore.width - (await title.boundingBox())!.width,
+  ).toBeLessThanOrEqual(4.1);
+  const logoPressed = (await logo.boundingBox())!;
+  const titlePressed = (await title.boundingBox())!;
+  expect(logoPressed.width).toBeLessThan(logoBefore.width);
+  expect(logoPressed.width / logoBefore.width).toBeCloseTo(
+    titlePressed.width / titleBefore.width,
+    3,
+  );
+  expect(logoPressed.x + logoPressed.width / 2).toBeCloseTo(
+    logoBefore.x + logoBefore.width / 2,
+    2,
+  );
+  expect(logoPressed.y + logoPressed.height / 2).toBeCloseTo(
+    logoBefore.y + logoBefore.height / 2,
+    2,
+  );
+  expect(titlePressed.x).toBeCloseTo(titleBefore.x, 2);
+  expect(await heading.boundingBox()).toEqual(headingBefore);
+  expect(await indicator.boundingBox()).toEqual(indicatorBefore);
+  expect(await description.boundingBox()).toEqual(descriptionBefore);
+  await expect(card.locator(".button-content")).toHaveCSS("transform", "none");
+  await page.mouse.move(1000, 20);
+  await page.mouse.up();
+  await expect
+    .poll(async () => (await title.boundingBox())!.width)
+    .toBeCloseTo(titleBefore.width, 1);
+  const input = page.locator("article.input").first();
+  await expect(input.locator(".input-prefix")).toHaveText(">");
+  await expect(input).not.toContainText("You");
+  const bodyBox = (await input.locator(".message-body").boundingBox())!;
+  const prefixBox = (await input.locator(".input-prefix").boundingBox())!;
+  expect(bodyBox.y).toBeCloseTo(prefixBox.y, 1);
+  expect(bodyBox.x).toBeGreaterThan(prefixBox.x + prefixBox.width);
+  const timestamp = input.locator(".input-box .input-time time");
+  await expect(timestamp).not.toContainText(/\d{4}/);
+  const recorded = await timestamp.getAttribute("datetime");
+  expect(Math.abs(Date.now() - Date.parse(recorded!))).toBeLessThan(60_000);
+  await expect(input.locator(".input-relative-time")).toHaveText("1분 이내");
+  const timeBox = (await timestamp.boundingBox())!;
+  const inputBox = (await input.locator(".input-box").boundingBox())!;
+  expect(timeBox.y).toBeGreaterThan(inputBox.y);
+  expect(timeBox.y + timeBox.height).toBeLessThan(prefixBox.y);
+  expect(timeBox.x).toBeCloseTo(prefixBox.x, 1);
+  expect(timeBox.x + timeBox.width).toBeLessThan(inputBox.x + inputBox.width);
   const userHeading = await page
-    .locator("article.input > small")
+    .locator("article.input .input-prefix")
     .first()
     .boundingBox();
   const agentHeading = await page

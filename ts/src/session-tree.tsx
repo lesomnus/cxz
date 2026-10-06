@@ -51,21 +51,23 @@ export function SessionTreeGroup({
             <Button
               key={s.runtimeId}
               className={`tree-session ${selected === s.runtimeId ? "active" : ""}`}
+              pressTarget=".session-heading"
               aria-current={selected === s.runtimeId ? "true" : undefined}
               onClick={() => select(s.runtimeId)}
             >
               <SessionIndicator session={s} />
               <span className="session-label">
-                <span className="session-title">
-                  {s.name || s.alias || s.runtimeId}
+                <span className="session-heading">
+                  <AgentBrand agent={s.agent} />
+                  <span className="session-title">
+                    {s.name || s.alias || s.runtimeId}
+                  </span>
                 </span>
                 <span className="session-description">
                   <span className="session-alias">
                     {s.alias || s.runtimeId}
                   </span>
-                  <span className="session-model">
-                    {s.model || <AgentBrand agent={s.agent} />}
-                  </span>
+                  {s.model && <span className="session-model">{s.model}</span>}
                 </span>
               </span>
             </Button>

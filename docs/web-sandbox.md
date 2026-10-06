@@ -141,6 +141,40 @@ regression checks are recorded in [the scroll experience contract](web-conversat
 pending work, and applies the Seed and Pace controls. Identical seeds and the same
 per-session sequence of sends produce identical random tool sequences. Switching
 scenarios alone preserves session state. Reloading the page also starts fresh.
+Event timestamps use the current clock when each event is created, including
+seeded history. The seed controls content, not a fixed date. Response footers
+show month/day and time without a year; metric icons expose names and usage
+scope on hover and to assistive technology.
+
+Response Copy icons appear when hovering a response or focusing its controls,
+without changing footer geometry. Event summaries and approval request details
+open in the same non-modal bottom sheet used for paste previews. Sheets rise
+from the top of the composer wrapper; they leave its toolbar, editor and metadata
+accessible and contribute no height to the transcript. The viewport bounds the
+sheet below the conversation title, with long contents scrolling internally.
+Opening another sheet stacks it in front: the previous card shrinks to 96%,
+moves 22px down behind the composer and fades to 35% opacity over 240ms. Only the
+top sheet accepts input or appears to assistive technology. Close or Escape
+reveals the preceding card. The stack retains at most six sheets and respects
+reduced motion; session navigation discards it. These transitions never modify
+the transcript's scroll coordinates or the shared handle/marker animation.
+
+The shared composer is a fixed-size monospace editor with logical line numbers.
+Numbers follow soft wrapping, scrolling and viewport changes. Text pastes over
+800 Unicode characters or containing at least three newlines become inline
+chips, matching the TUI threshold. Click a chip, select it with Left/Right and
+press Enter, or use Ctrl+P to preview the original; the preview can remove that
+occurrence or expand it into editable text. Backspace/Delete removes a whole
+chip. If the draft changes while its preview is open, expansion/deletion is
+blocked and asks you to reopen the chip, avoiding replacement at a stale offset.
+Sending and copying expand chips to original text in one pass, preserving
+whitespace; short pastes remain ordinary text. Drafts and paste bodies stay in
+the authenticated connection's memory across session navigation, and are lost
+on page reload, sign-out or sandbox Reset. Each paste is limited to 1 MiB, with
+a 32 MiB connection cache. Paste insertion/removal uses native undo when the
+browser supports `insertText`, with a `setRangeText` fallback. IME composition
+retains the native textarea and cannot trigger Ctrl+Enter submission.
+
 History is bounded to 3,000 events per fake session; client rendering still uses
 the regular 512-event cache and visible messages plus six on either side. Duplicate send IDs are remembered for 256 requests.
 

@@ -120,7 +120,7 @@ test("preceding input peeks below the title without following scroll and reveals
   );
   await pinned.click();
   await expect(pane).toHaveAttribute("data-dismissed-opacity", "0");
-  const original = pane.locator(`article.input[data-seq="${seq}"]`);
+  const original = pane.locator(`article.input[data-seq="${seq}"] .input-box`);
   await expect(original).toBeVisible();
   await expect
     .poll(async () =>
@@ -203,7 +203,7 @@ test("the preceding input only peeks after the nearest visible input clears the 
   const seq = (await overlay.getAttribute("data-pinned-seq"))!;
   await reveal(page);
   await page.getByRole("button", { name: "Jump to user message" }).click();
-  const input = pane.locator(`article.input[data-seq="${seq}"]`);
+  const input = pane.locator(`article.input[data-seq="${seq}"] .input-box`);
   await expect(input).toBeVisible();
   await page.mouse.move(10, 10);
   async function gap(pixels: number) {
@@ -225,6 +225,8 @@ test("the preceding input only peeks after the nearest visible input clears the 
   await gap(12);
   await expect(overlay).toHaveAttribute("data-available", "false");
   await expect(overlay).toHaveCSS("opacity", "0");
+  // Hidden previews must not consume their entry animation before revealing.
+  await expect(overlay).toHaveCSS("animation-name", "none");
   const area = (await pane.boundingBox())!;
   await page.mouse.move(area.x + area.width / 2, area.y + 16);
   expect(
@@ -240,15 +242,30 @@ test("the preceding input only peeks after the nearest visible input clears the 
   ).toBe(true);
   await page.mouse.move(10, 10);
   // A large distance change must fade, rather than appearing in one frame.
-  await gap(129);
-  const samples = await overlay.evaluate(async (el) => {
+  // Start sampling in the same browser call that moves the content. Waiting
+  // for a separate geometry assertion first can miss the 180ms transition.
+  const samples = await input.evaluate(async (el) => {
+    const pane = el.closest(".transcript")!;
     const opacity: number[] = [];
+    pane.scrollTop +=
+      el.getBoundingClientRect().top - pane.getBoundingClientRect().top - 129;
+    pane.dispatchEvent(new Event("reading-move"));
     for (let i = 0; i < 16; i++) {
       await new Promise(requestAnimationFrame);
-      opacity.push(Number(getComputedStyle(el).opacity));
+      opacity.push(
+        Number(
+          getComputedStyle(document.querySelector(".pinned-prompt")!).opacity,
+        ),
+      );
     }
     return opacity;
   });
+  await expect
+    .poll(
+      async () =>
+        (await input.boundingBox())!.y - (await pane.boundingBox())!.y,
+    )
+    .toBeCloseTo(129, 0);
   expect(samples.some((value) => value > 0 && value < 1)).toBe(true);
   await expect(overlay).toHaveCSS("opacity", "1");
   const button = overlay.locator("button");

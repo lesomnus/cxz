@@ -180,7 +180,11 @@ func (c *Client) Reply(ctx context.Context, r *api.Answer, opts ...grpc.CallOpti
 	return receipt(c.sessions.Reply(ctx, resource.SessionReplyRequest_builder{Ref: sr(r.SessionId), RunId: &r.RunId, ClientId: &r.ClientId, RequestId: &r.RequestId, Allow: &r.Allow, AnswersJson: &r.AnswersJson}.Build(), opts...))
 }
 func event(id string, e *resource.SessionEvent) *api.Event {
-	return &api.Event{SessionId: id, RunId: e.GetRunId(), Seq: e.GetSeq(), TimeMs: e.GetTimeMs(), Kind: e.GetKind(), Text: e.GetText(), RequestId: e.GetRequestId(), Payload: e.GetPayload()}
+	v := &api.Event{SessionId: id, RunId: e.GetRunId(), Seq: e.GetSeq(), TimeMs: e.GetTimeMs(), Kind: e.GetKind(), Text: e.GetText(), RequestId: e.GetRequestId(), Payload: e.GetPayload()}
+	if r := e.GetResponse(); r != nil {
+		v.Response = &api.ResponseMetadata{Model: r.GetModel(), Effort: r.GetEffort(), ModelSource: r.GetModelSource(), EffortSource: r.GetEffortSource(), TurnId: r.GetTurnId(), Phase: r.GetPhase(), CompletionJson: r.GetCompletionJson()}
+	}
+	return v
 }
 
 type stream struct {

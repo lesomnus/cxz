@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { SessionEvent } from "../gen/cxz/session_pb";
 import { Button } from "./button";
+import { InputMessage } from "./input-message";
 
 export function PinnedPrompt({
   prompt,
@@ -110,8 +111,7 @@ export function PinnedPrompt({
           jump(prompt.seq.toString());
         }}
       >
-        <small>❯ You</small>
-        <span className="message-body">{prompt.text}</span>
+        <InputMessage event={prompt} />
       </Button>
     </div>
   );

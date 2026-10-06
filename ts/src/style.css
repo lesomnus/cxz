@@ -294,7 +294,7 @@ header strong {
   padding-block: 6px;
 }
 .transcript-row > article,
-.transcript-row > details,
+.transcript-row > .event-detail,
 .history-note {
   width: 100%;
   max-width: var(--conversation-width);
@@ -303,7 +303,7 @@ header strong {
 }
 .transcript-row > article > small,
 .transcript-row .copy,
-.transcript-row summary {
+.transcript-row .event-detail {
   position: relative;
   z-index: 2;
 }
@@ -314,17 +314,65 @@ header strong {
 .transcript-row > article {
   padding: 0 12px;
 }
+.transcript-row > .response {
+  padding: 12px;
+  border-radius: 8px;
+}
+.response:hover {
+  background: #1b1b1b;
+}
+.response-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 15px;
+}
+.response-settings {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+}
 .transcript-row > .input {
+  padding: 0;
+}
+.input-box {
   background: #222;
   border-radius: 8px;
   padding: 10px 12px;
 }
+.input-content {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
 .message-body {
   padding-inline: 12px;
 }
-.input p {
+.input-prefix {
+  flex: 0 0 auto;
+  color: var(--muted);
+}
+.input-box .message-body {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
   white-space: pre-wrap;
-  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+  margin: 0;
+}
+.input-time {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 0 0 4px;
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }
 .pinned-prompt {
   position: absolute;
@@ -344,6 +392,11 @@ header strong {
     opacity: 0;
   }
 }
+.pinned-prompt[data-available="false"] {
+  /* Start the entry fade when the preview becomes visible, not while hidden.
+     An opacity animation already finishing can suppress the reveal transition. */
+  animation: none;
+}
 .pinned-prompt-proximity {
   position: absolute;
   inset: 0 0 auto;
@@ -354,13 +407,13 @@ header strong {
   position: relative;
   display: block;
   width: 100%;
-  padding: 10px 12px;
+  padding: 0;
   max-height: var(--prompt-height);
   overflow: auto;
   overscroll-behavior: contain;
   text-align: left;
   font-size: 1rem;
-  background: #222;
+  background: transparent;
   scrollbar-width: thin;
   border-radius: 0 0 8px 8px;
   pointer-events: auto;
@@ -386,15 +439,8 @@ header strong {
   display: block;
   text-align: left;
 }
-.pinned-prompt small {
-  display: block;
-  color: var(--muted);
-}
-.pinned-prompt .message-body {
-  display: block;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  margin-top: 4px;
+.pinned-prompt > button:not(:disabled):hover {
+  background: transparent;
 }
 .markdown {
   padding-inline: 12px;
@@ -471,7 +517,52 @@ pre {
   font-size: 0.75rem;
   color: var(--muted);
   padding: 4px 6px;
-  margin-left: 6px;
+  margin: 0;
+  width: 28px;
+}
+.response-footer {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-height: 28px;
+  padding: 0 12px;
+}
+.response-metrics {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 10px;
+  min-width: 0;
+  padding-top: 6px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.copy-control {
+  flex-shrink: 0;
+  margin-left: auto;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+.response:hover .copy-control,
+.response:focus-within .copy-control {
+  opacity: 1;
+}
+.response-metric {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+.response-metric svg {
+  flex-shrink: 0;
+}
+.copy-control:focus-within .meta-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
 }
 .composer {
   position: relative;
@@ -519,9 +610,169 @@ pre {
   border: 0;
   border-radius: inherit;
   background: transparent;
-  resize: vertical;
+  resize: none;
   max-height: 35dvh;
   line-height: 1.5;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  color: transparent;
+  caret-color: #ededed;
+  overflow-wrap: anywhere;
+}
+.composer-editor {
+  display: flex;
+  position: relative;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  line-height: 1.5;
+}
+.editor-gutter {
+  position: relative;
+  flex-shrink: 0;
+  padding: 12px 0 12px 9px;
+  overflow: hidden;
+  color: #777;
+  text-align: right;
+  user-select: none;
+}
+.editor-gutter > div {
+  position: absolute;
+  inset: 12px 0 auto 9px;
+}
+.editor-body {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+.editor-surface {
+  position: absolute;
+  inset: 0 auto 0 0;
+  padding: 12px 9px;
+  overflow: hidden;
+  pointer-events: none;
+}
+.editor-mirror {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.editor-line {
+  min-height: 1.5em;
+}
+.paste-chip {
+  background: #383838;
+  border-radius: 4px;
+  box-shadow: 0 0 0 1px #383838;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.paste-chip:hover,
+.paste-chip:focus-visible {
+  background: #484848;
+  box-shadow: 0 0 0 1px #484848;
+  outline: none;
+  color: #fff;
+}
+.composer-editor[data-composing="true"] textarea {
+  color: inherit;
+}
+.composer-editor[data-composing="true"] .editor-surface {
+  visibility: hidden;
+}
+.editor-notice {
+  padding: 0 12px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.bottom-sheet-host {
+  position: absolute;
+  bottom: calc(100% + 1px);
+  left: -1px;
+  width: calc(100% + 2px);
+  height: var(--sheet-space, 50dvh);
+  overflow: clip;
+  z-index: 5;
+  pointer-events: none;
+}
+.bottom-sheet {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  max-height: min(460px, var(--sheet-space, 50dvh));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: inherit;
+  background: #202020;
+  border: 1px solid #363636;
+  border-radius: 10px 10px 0 0;
+  box-shadow: 0 -8px 28px #0005;
+  transform-origin: bottom center;
+  transform: translateY(100%);
+  opacity: 0;
+  transition:
+    transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 200ms ease;
+}
+.bottom-sheet[data-entered="true"] {
+  transform: translateY(calc(var(--sheet-depth) * 22px))
+    scale(calc(1 - var(--sheet-depth) * 0.04));
+  opacity: calc(1 - var(--sheet-depth) * 0.65);
+}
+.bottom-sheet[data-active="true"] {
+  pointer-events: auto;
+}
+.bottom-sheet[data-closing="true"] {
+  transform: translateY(100%);
+  opacity: 0;
+}
+.conversation .sheet-heading {
+  flex: 0 0 auto;
+  min-height: 36px;
+  height: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px 4px 12px;
+  font-size: 12px;
+}
+.sheet-heading strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sheet-close {
+  width: 28px;
+  height: 28px;
+  min-height: 28px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.sheet-body {
+  padding: 0 12px 12px;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.sheet-body pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.event-detail {
+  display: block;
+  text-align: left;
+  min-height: 32px;
+  padding: 6px 8px;
+  background: transparent;
+}
+.event-detail > .button-content {
+  display: block;
+}
+@media (prefers-reduced-motion: reduce) {
+  .bottom-sheet,
+  .copy-control {
+    transition: none;
+  }
 }
 .composer textarea:focus-visible {
   outline: none;
@@ -807,6 +1058,9 @@ summary:hover {
   .composer textarea {
     font-size: 16px;
   }
+  .composer-editor {
+    font-size: 16px;
+  }
   .composer-meta {
     font-size: 0.75rem;
   }
@@ -856,6 +1110,41 @@ summary:hover {
   min-width: 0;
   flex: 1;
 }
+.session-heading {
+  --agent-logo-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  width: fit-content;
+  max-width: 100%;
+}
+.session-heading .agent-brand,
+.session-heading .session-title {
+  transition: transform 120ms ease-out;
+}
+.session-heading .agent-brand {
+  position: relative;
+  top: 1px;
+  transform-origin: center;
+}
+.session-heading .session-title {
+  transform-origin: left center;
+}
+button.tree-session:not(:disabled):active > .button-content {
+  transform: none;
+}
+.tree-session:not(:disabled):active .session-heading .agent-brand,
+.tree-session:not(:disabled):active .session-title {
+  transform: scale(var(--press-scale, 0.95));
+  transition-duration: 60ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  .session-heading .agent-brand,
+  .session-heading .session-title {
+    transition: none;
+  }
+}
 .session-title,
 .session-alias,
 .session-model {
@@ -863,8 +1152,12 @@ summary:hover {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.session-title {
+  min-width: 0;
+}
 .session-description {
   display: flex;
+  align-items: center;
   gap: 8px;
   font-size: 11px;
   color: var(--muted);

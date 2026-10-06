@@ -40,7 +40,7 @@ test("WASM sandbox reuses the UI without backend, credentials or provider calls"
   await message.fill("Test message");
   await page.getByRole("button", { name: "Send", exact: true }).click();
   await expect(
-    page.locator("summary").filter({ hasText: "Sample tasks completed" }),
+    page.locator(".event-detail").filter({ hasText: "Sample tasks completed" }),
   ).toBeVisible();
   // Shared pending-question UI sends the same Reply RPC through the WASM transport.
   await page.getByLabel("Scenario", { exact: true }).selectOption("session-4");
@@ -56,7 +56,7 @@ test("WASM sandbox reuses the UI without backend, credentials or provider calls"
   ).toBeVisible();
   await page.getByLabel("Scenario", { exact: true }).selectOption("session-5");
   await expect(
-    page.locator("summary").filter({ hasText: "Simulated usage limit" }),
+    page.locator(".event-detail").filter({ hasText: "Simulated usage limit" }),
   ).toBeVisible();
   await page.getByLabel("Scenario", { exact: true }).selectOption("session-3");
   await expect(
@@ -73,10 +73,10 @@ test("WASM sandbox reuses the UI without backend, credentials or provider calls"
   await message.fill("Run a sample");
   await page.getByRole("button", { name: "Send", exact: true }).click();
   await expect(
-    page.locator("summary").filter({ hasText: "Sample tasks completed" }),
+    page.locator(".event-detail").filter({ hasText: "Sample tasks completed" }),
   ).toBeVisible();
   const first = await page
-    .locator("summary")
+    .locator(".event-detail")
     .filter({ hasText: /^tool ·/ })
     .allTextContents();
   await page
@@ -88,11 +88,11 @@ test("WASM sandbox reuses the UI without backend, credentials or provider calls"
   await message.fill("Run a sample");
   await page.getByRole("button", { name: "Send", exact: true }).click();
   await expect(
-    page.locator("summary").filter({ hasText: "Sample tasks completed" }),
+    page.locator(".event-detail").filter({ hasText: "Sample tasks completed" }),
   ).toBeVisible();
   expect(
     await page
-      .locator("summary")
+      .locator(".event-detail")
       .filter({ hasText: /^tool ·/ })
       .allTextContents(),
   ).toEqual(first);

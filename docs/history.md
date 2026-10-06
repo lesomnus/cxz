@@ -8,6 +8,55 @@ Recovery after a crash or a container replacement is driven by the journal and t
 manifests beside it, both fsynced. SQLite holds projections and caches built from
 them; it is not the source of truth and not a backup.
 
+## Response settings
+
+New normalized assistant events include an optional `response` snapshot with
+`model`, `effort`, their individual sources, and a native turn ID when available.
+The snapshot is written with the response in the same durable journal batch;
+changing session settings never relabels previous responses. Native payloads are
+preserved separately.
+
+Claude's response-reported model takes precedence over its applied settings.
+Effort comes from the applied settings captured at input delivery. If those
+settings are unavailable, explicitly requested values are stored as `requested`.
+Codex snapshots the resolved model and effort actually sent in `turn/start`, also
+marked `requested`; steering input keeps that turn's snapshot. This distinction
+does not claim the provider confirmed a requested setting. Source values are
+`response`, `settings`, or `requested`.
+
+The web transcript displays known values as `model · effort` beside the agent
+logo, with their sources in the hover description. Unknown fields are omitted.
+Older records are left unchanged, without reconstructing settings from nearby
+events or substituting the session's current values.
+
+Assistant events still use the same `assistant` kind for intermediate and final
+text. Codex's native `commentary` / `final_answer` phase is preserved in
+`response.phase`. Claude's successful `result` closes the turn and identifies its
+last main-agent response; nested subagent text is excluded. Failed/interrupted
+turns and explicit commentary are not promoted to successful final answers.
+
+A successful `turn_end` now holds an immutable `response.completion_json` summary
+referencing the final assistant's journal sequence as a decimal string. This
+links the footer without rewriting a previously committed assistant event. Native
+turn-end payloads remain unchanged. Every intermediate and final event has
+`time_ms`: the time cxz received and recorded it, rather than a claimed provider
+generation timestamp.
+
+The web final-response footer shows that timestamp, duration and known metrics,
+with an icon-only Copy control on the right and a `copy` hover/focus popover.
+Duration uses Claude's `duration_ms` or Codex's `turn.durationMs` when reported;
+otherwise cxz measures from actual input delivery to turn completion, excluding
+queued-input wait and including tools/approval wait. The duration hover describes
+its source. Unknown duration/usage is omitted.
+
+Claude result usage is scoped to the turn, with reported input/output/cache
+counts, cost, API duration and API turns. Codex's `tokenUsage.last` is scoped to
+the last model call and labeled accordingly; cumulative thread totals are not
+displayed as turn usage. Cached/reasoning counts are subsets where the provider
+defines them that way, and are not added to totals. Tool-call counts come from
+observed journal events. Older records can use available successful turn-end
+payloads and timestamps; partial history cannot invent missing values.
+
 ## One message
 
 A single message from the agent is bounded at **16 MiB**. A reply is nothing like

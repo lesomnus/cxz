@@ -74,6 +74,9 @@ func New(seed uint64, delay time.Duration) *Server {
 		s.telemetry(st)
 		s.event(st, "input", "Show the current state of this project.", "", nil)
 		s.event(st, "assistant", answer(st.scenario), "", nil)
+		if st.scenario != "long" {
+			s.complete(st, st.value.GetStatus().GetLastSeq())
+		}
 		if st.scenario == "long" {
 			for n := 0; n < 2100; n++ {
 				if n%40 == 0 {
@@ -139,7 +142,17 @@ func (s *Server) Register(r grpc.ServiceRegistrar) {
 }
 func (s *Server) event(st *session, kind, text, request string, payload []byte) {
 	seq := st.value.GetStatus().GetLastSeq() + 1
-	e := resource.SessionEvent_builder{RunId: st.value.GetStatus().GetRunId(), Seq: seq, TimeMs: 1700000000000 + int64(seq)*100, Kind: kind, Text: text, RequestId: request, Payload: payload}.Build()
+	e := resource.SessionEvent_builder{RunId: st.value.GetStatus().GetRunId(), Seq: seq, TimeMs: time.Now().UnixMilli(), Kind: kind, Text: text, RequestId: request, Payload: payload}.Build()
+	if kind == "assistant" {
+		model, effort := st.value.GetModel(), st.effort
+		if model == "" {
+			model = "sandbox-" + st.value.GetAgent()
+		}
+		if effort == "" {
+			effort = "high"
+		}
+		e.SetResponse(resource.ResponseMetadata_builder{Model: model, Effort: effort, ModelSource: "response", EffortSource: "settings"}.Build())
+	}
 	st.events = append(st.events, e)
 	if len(st.events) > maxEvents {
 		st.events = append([]*resource.SessionEvent(nil), st.events[len(st.events)-maxEvents:]...)
@@ -478,6 +491,7 @@ func (s *Server) respond(st *session, generation uint64) {
 	}
 	s.event(st, "tool_result", "Sample tasks completed", "", []byte(`{"simulated":true,"status":"completed","output":"All fixture checks passed"}`))
 	s.event(st, "assistant", answer(scenario), "", nil)
+	s.complete(st, st.value.GetStatus().GetLastSeq())
 	s.state(st, "idle")
 }
 func answer(scenario string) string {
@@ -514,6 +528,7 @@ func (x *Sessions) Reply(_ context.Context, r *resource.SessionReplyRequest) (*r
 	s.event(st, "approval_resolved", fmt.Sprintf("allow=%t", r.GetAllow()), r.GetRequestId(), nil)
 	st.value.GetStatus().SetPending(nil)
 	s.event(st, "assistant", "Your selection was recorded for this preview.\n\n"+r.GetAnswersJson(), "", nil)
+	s.complete(st, st.value.GetStatus().GetLastSeq())
 	s.state(st, "idle")
 	return receipt(r.GetClientId()), nil
 }

@@ -21,6 +21,20 @@ import { ModelSettings, modelCatalog } from "./model-settings";
 import { UsageInfo } from "./usage-info";
 import { Button } from "./button";
 import { AgentBrand } from "./agent-brand";
+import { responseInfo } from "./response-info";
+import {
+  responseCompletions,
+  type ResponseCompletion,
+} from "./response-completion";
+import { ResponseFooter } from "./response-footer";
+import { InputMessage } from "./input-message";
+import { ComposerEditor } from "./composer-editor";
+import {
+  BottomSheetProvider,
+  BottomSheetHost,
+  useBottomSheet,
+} from "./bottom-sheet";
+import { expandPastes } from "./composer-pastes";
 import { SessionTreeGroup } from "./session-tree";
 import { Transcript } from "./transcript";
 export { Button } from "./button";
@@ -281,7 +295,14 @@ export function Workspace({
     </div>
   );
 }
-function Conversation({
+function Conversation(props: { c: Connection; id: string; back: () => void }) {
+  return (
+    <BottomSheetProvider>
+      <ConversationContent {...props} />
+    </BottomSheetProvider>
+  );
+}
+function ConversationContent({
   c,
   id,
   back,
@@ -621,6 +642,7 @@ function Conversation({
     [events],
   );
   const s = current.data;
+  const completions = useMemo(() => responseCompletions(events), [events]);
   const combined = useMemo(
     () =>
       [
@@ -738,7 +760,12 @@ function Conversation({
     if (!draft.trim()) return;
     const sent = draft;
     await action(async (s) => {
-      await c.sessions.send({ ...control(s), text: sent });
+      const receipt = await c.sessions.send({
+        ...control(s),
+        text: expandPastes(sent, c.pastes),
+      });
+      if (receipt.status === "rejected")
+        throw new Error("Provider rejected the input");
       setDraft((old) => (old === sent ? "" : old));
       if (detached.current) await loadHistory("newer", true);
       pane.current?.dispatchEvent(new Event("scroll-jump"));
@@ -794,7 +821,13 @@ function Conversation({
           followRef.current = false;
           setFollow(false);
         }}
-        render={(e) => <EventView e={e} agent={s?.agent ?? ""} />}
+        render={(e) => (
+          <EventView
+            e={e}
+            agent={s?.agent ?? ""}
+            completion={completions.get(e.seq.toString())}
+          />
+        )}
         notice={
           gap && (
             <p className="muted history-note">
@@ -855,6 +888,7 @@ function Conversation({
       )}
       <form className="composer" onSubmit={send}>
         <div className="composer-wrapper">
+          <BottomSheetHost />
           <div className="composer-toolbar">
             <span
               className="latest-slot"
@@ -912,23 +946,11 @@ function Conversation({
             </span>
           </div>
           <div className="composer-input" ref={composerInput}>
-            <textarea
-              aria-label="Message"
-              placeholder="Continue the conversation…"
+            <ComposerEditor
               value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={(e) => {
-                if (
-                  e.ctrlKey &&
-                  e.key === "Enter" &&
-                  !e.nativeEvent.isComposing
-                ) {
-                  e.preventDefault();
-                  if (!busy && s && draft.trim())
-                    e.currentTarget.form?.requestSubmit();
-                }
-              }}
-              rows={3}
+              onChange={setDraft}
+              pastes={c.pastes}
+              canSend={!busy && !!s && !!draft.trim()}
             />
           </div>
         </div>
@@ -946,50 +968,73 @@ function Conversation({
     </main>
   );
 }
-const EventView = React.memo(function EventView({
-  e,
-  agent,
-}: {
-  e: SessionEvent;
-  agent: string;
-}) {
-  if (e.kind === "assistant")
+const EventView = React.memo(
+  function EventView({
+    e,
+    agent,
+    completion,
+  }: {
+    e: SessionEvent;
+    agent: string;
+    completion?: ResponseCompletion;
+  }) {
+    const openSheet = useBottomSheet();
+    if (e.kind === "assistant") {
+      const info = responseInfo(e.response);
+      return (
+        <article className="response" data-seq={e.seq.toString()}>
+          <small className="response-heading">
+            <AgentBrand agent={agent} />
+            {info.label && (
+              <span className="response-settings" title={info.description}>
+                {info.label}
+              </span>
+            )}
+          </small>
+          <Markdown text={e.text} />
+          <ResponseFooter
+            seq={e.seq}
+            timeMs={e.timeMs}
+            text={e.text}
+            completion={completion}
+          />
+        </article>
+      );
+    }
+    if (e.kind === "input")
+      return (
+        <article className="input" data-seq={e.seq.toString()}>
+          <InputMessage event={e} />
+        </article>
+      );
     return (
-      <article data-seq={e.seq.toString()}>
-        <small>
-          <AgentBrand agent={agent} />
-        </small>
-        <Markdown text={e.text} />
-        <Button
-          className="copy"
-          onClick={() => navigator.clipboard.writeText(e.text).catch(() => {})}
-        >
-          Copy
-        </Button>
-      </article>
-    );
-  if (e.kind === "input")
-    return (
-      <article className="input" data-seq={e.seq.toString()}>
-        <small>❯ You</small>
-        <p className="message-body">{e.text}</p>
-      </article>
-    );
-  return (
-    <details
-      data-seq={e.seq.toString()}
-      className={e.kind === "diagnostic" || e.kind === "stderr" ? "error" : ""}
-    >
-      <summary>
+      <Button
+        type="button"
+        data-seq={e.seq.toString()}
+        className={`event-detail ${e.kind === "diagnostic" || e.kind === "stderr" ? "error" : ""}`}
+        onClick={() =>
+          openSheet({
+            title: e.kind === "approval" ? approvalTitle(e) : e.kind,
+            content: () => (
+              <>
+                <pre>{e.text}</pre>
+                {e.payload.length > 0 && <pre>{detail(e)}</pre>}
+              </>
+            ),
+          })
+        }
+      >
         {e.kind === "approval"
           ? approvalTitle(e)
           : `${e.kind} · ${e.text.slice(0, 160)}`}
-      </summary>
-      <pre>{e.text}</pre>
-      {e.payload.length > 0 && <pre>{detail(e)}</pre>}
-    </details>
-  );
-});
+      </Button>
+    );
+  },
+  (previous, next) =>
+    previous.e === next.e &&
+    previous.agent === next.agent &&
+    JSON.stringify(previous.completion) === JSON.stringify(next.completion),
+);
 function Approval({
   e,
   agent,
@@ -1001,6 +1046,7 @@ function Approval({
   busy: boolean;
   reply: (e: SessionEvent, allow: boolean, answers?: string) => Promise<void>;
 }) {
+  const openSheet = useBottomSheet();
   const qs = questions(agent, e);
   const [selected, setSelected] = useState<Record<string, string[]>>({});
   const [other, setOther] = useState<Record<string, string>>({});
@@ -1013,10 +1059,18 @@ function Approval({
     <section className="approval">
       <h3>{approvalTitle(e)}</h3>
       {p.params?.message && <p>{String(p.params.message)}</p>}
-      <details>
-        <summary>Request details</summary>
-        <pre>{detail(e)}</pre>
-      </details>
+      <Button
+        type="button"
+        className="event-detail"
+        onClick={() =>
+          openSheet({
+            title: "Request details",
+            content: () => <pre>{detail(e)}</pre>,
+          })
+        }
+      >
+        Request details
+      </Button>
       {qs.map((q) => (
         <fieldset key={q.key}>
           <legend>{q.text}</legend>
