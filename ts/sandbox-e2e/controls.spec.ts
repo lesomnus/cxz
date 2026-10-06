@@ -84,8 +84,10 @@ test("provider dropdowns, quota popovers, aligned headings and bounded press/sha
   expect(bodyBox.y).toBeCloseTo(prefixBox.y, 1);
   expect(bodyBox.x).toBeGreaterThan(prefixBox.x + prefixBox.width);
   const timestamp = input.locator(".input-box .input-time time");
-  await expect(timestamp).toHaveAttribute("datetime", /^2023-11-14T/);
-  await expect(input.locator(".input-relative-time")).toHaveCount(0);
+  await expect(timestamp).not.toContainText(/\d{4}/);
+  const recorded = await timestamp.getAttribute("datetime");
+  expect(Math.abs(Date.now() - Date.parse(recorded!))).toBeLessThan(60_000);
+  await expect(input.locator(".input-relative-time")).toHaveText("1분 이내");
   const timeBox = (await timestamp.boundingBox())!;
   const inputBox = (await input.locator(".input-box").boundingBox())!;
   expect(timeBox.y).toBeGreaterThan(inputBox.y);

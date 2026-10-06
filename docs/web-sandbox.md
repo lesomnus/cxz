@@ -141,6 +141,10 @@ regression checks are recorded in [the scroll experience contract](web-conversat
 pending work, and applies the Seed and Pace controls. Identical seeds and the same
 per-session sequence of sends produce identical random tool sequences. Switching
 scenarios alone preserves session state. Reloading the page also starts fresh.
+Event timestamps use the current clock when each event is created, including
+seeded history. The seed controls content, not a fixed date. Response footers
+show month/day and time without a year; metric icons expose names and usage
+scope on hover and to assistive technology.
 History is bounded to 3,000 events per fake session; client rendering still uses
 the regular 512-event cache and visible messages plus six on either side. Duplicate send IDs are remembered for 256 requests.
 

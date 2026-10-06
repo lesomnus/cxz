@@ -532,6 +532,15 @@ pre {
   flex-shrink: 0;
   margin-left: auto;
 }
+.response-metric {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+.response-metric svg {
+  flex-shrink: 0;
+}
 .copy-control:focus-within .meta-tooltip {
   opacity: 1;
   visibility: visible;

@@ -142,7 +142,7 @@ func (s *Server) Register(r grpc.ServiceRegistrar) {
 }
 func (s *Server) event(st *session, kind, text, request string, payload []byte) {
 	seq := st.value.GetStatus().GetLastSeq() + 1
-	e := resource.SessionEvent_builder{RunId: st.value.GetStatus().GetRunId(), Seq: seq, TimeMs: 1700000000000 + int64(seq)*100, Kind: kind, Text: text, RequestId: request, Payload: payload}.Build()
+	e := resource.SessionEvent_builder{RunId: st.value.GetStatus().GetRunId(), Seq: seq, TimeMs: time.Now().UnixMilli(), Kind: kind, Text: text, RequestId: request, Payload: payload}.Build()
 	if kind == "assistant" {
 		model, effort := st.value.GetModel(), st.effort
 		if model == "" {

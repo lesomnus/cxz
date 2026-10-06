@@ -1,7 +1,6 @@
 const MINUTE = 60_000;
 const DAY = 24 * 60 * MINUTE;
 const absolute = new Intl.DateTimeFormat("ko-KR", {
-  year: "numeric",
   month: "2-digit",
   day: "2-digit",
   hour: "2-digit",
