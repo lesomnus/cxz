@@ -245,7 +245,7 @@ test("only the transcript's empty side margins dismiss the floating card", async
   await expect(input).toHaveValue(draft);
 });
 
-test("pending questions survive previews and only recede behind a taller card", async ({
+test("pending questions stay dimmed behind previews and only lift for a taller card", async ({
   page,
 }) => {
   const input = await open(page);
@@ -318,13 +318,21 @@ test("pending questions survive previews and only recede behind a taller card", 
   const short = page.getByRole("dialog", { name: "붙여넣기 원문" });
   await expect(short).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
   expect((await short.boundingBox())!.height).toBeLessThan(original.height);
-  await expect(layer).toHaveAttribute("data-covered", "false");
-  await expect(layer).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
+  await expect(layer).toHaveAttribute("data-covered", "true");
+  await expect(layer).toHaveJSProperty("inert", true);
+  await expect(layer).toHaveCSS("transform", "matrix(0.97, 0, 0, 0.97, 0, 0)");
+  await expect
+    .poll(() =>
+      question.evaluate((el) => getComputedStyle(el, "::after").opacity),
+    )
+    .toBe("1");
   const area = (await page.locator(".transcript-area").boundingBox())!;
   const column = (await page.locator(".transcript-content").boundingBox())!;
   await page.mouse.click(column.x - 20, area.y + 40);
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(question).toHaveCount(1);
+  await expect(layer).toHaveJSProperty("inert", false);
+  await expect(layer).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
   await expect(choice).toBeChecked();
   await expect(input).toHaveValue(draft);
   expect(

@@ -178,11 +178,13 @@ anchor as previews, outside the composer form. They have no Close control;
 Escape, side-margin dismissal and opening another preview never discard the
 request or its selected/free-text answers. Only an explicit Submit/Allow/Deny
 reply resolves it. Pressing Enter in an answer field does not send the composer.
-When a preview is at least as tall as the pending Question layer, the questions
-scale to 97%, gain a 40% black shade, and move upward so 28px of their top remains
-visible above the front card. Both cards reserve room below the conversation
-title, including on narrow viewports. A shorter preview leaves Question size,
-brightness and position unchanged. ResizeObserver compares actual card heights;
+Whenever a preview is active, questions scale to 97% and gain a 40% black shade
+to distinguish their background layer. If the preview is at least as tall as
+the pending Question layer, questions also move upward so 28px of their top
+remains visible above the front card. A shorter preview keeps the bottom anchor
+in place with no upward translation, while still shrinking and dimming questions.
+Both cards reserve room below the conversation title, including on narrow
+viewports. ResizeObserver compares actual card heights;
 the shared 180ms transition respects reduced motion. Covered questions are inert
 until the preview closes; closing restores their state and originating focus.
 Multiple pending requests stay available in the bounded, scrollable Question

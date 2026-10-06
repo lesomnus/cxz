@@ -136,18 +136,15 @@ export function FloatingCardHost({ children }: { children?: ReactNode }) {
     const update = () => {
       const questionHeight = questions.offsetHeight;
       const previewHeight = preview?.offsetHeight ?? 0;
-      const covered =
-        !!card &&
-        !card.closing &&
-        questionHeight > 0 &&
-        previewHeight >= questionHeight;
+      const covered = !!card && !card.closing && questionHeight > 0;
+      const lifted = covered && previewHeight >= questionHeight;
       const peek = parseFloat(getComputedStyle(node).paddingBottom) * 2 + 4;
       questions.dataset.covered = String(covered);
       questions.inert = covered;
       questions.setAttribute("aria-hidden", String(covered));
       questions.style.setProperty(
         "--question-lift",
-        `${covered ? 0.97 * questionHeight - previewHeight - peek : 0}px`,
+        `${lifted ? 0.97 * questionHeight - previewHeight - peek : 0}px`,
       );
     };
     update();
