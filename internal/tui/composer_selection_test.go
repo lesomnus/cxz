@@ -332,12 +332,10 @@ func TestComposerScrollbarTracksTheDraft(t *testing.T) {
 	}
 }
 
-// The wheel over the composer moves through the draft. The widget's view follows
-// its cursor, so the cursor is what moves, and everything that reads a position
-// -- the scrollbar, the selection, the cursor itself -- stays in agreement.
+// Wheel scrolling changes only the viewport.
 func TestComposerWheelScrollsTheDraft(t *testing.T) {
 	m := conversationModel()
-	m.input.SetValue(strings.Repeat("a line of draft\n", 12) + "last")
+	m.input.SetValue(strings.Repeat("a line of draft\n", 30) + "last")
 	m.resize()
 	m.setComposerPosition(5)
 	m.resize()
@@ -350,15 +348,15 @@ func TestComposerWheelScrollsTheDraft(t *testing.T) {
 	if !wheel(top+1, tea.MouseButtonWheelDown) {
 		t.Fatal("the composer did not take the wheel")
 	}
-	if row() != 3 {
-		t.Fatal("a notch moved to row", row(), "want three rows down")
+	if row() != 0 || m.composerScroll(m.composerRows()) != 3 {
+		t.Fatal("wheel moved cursor or wrong viewport", row(), m.composerScroll(m.composerRows()))
 	}
 	// The column is held, the way an arrow key holds it.
 	rows := m.composerRows()
 	if got := composerPosition(m.input) - rows[row()].Start; got != 5 {
 		t.Fatal("column became", got, "want 5")
 	}
-	// The view follows, which is the point of scrolling at all.
+	// More wheel events move the viewport without moving the cursor.
 	before := m.composerScroll(rows)
 	for range 3 {
 		wheel(top+1, tea.MouseButtonWheelDown)

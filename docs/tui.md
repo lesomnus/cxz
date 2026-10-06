@@ -37,7 +37,11 @@ new-session account picker for that project. Other shortcuts remain available.
 | `Enter`, `Alt+Enter`, `Ctrl+J` | Newline |
 | `Ctrl+Enter` | Send, where the terminal can distinguish it |
 | `Ctrl+X` | Clear the draft; with nothing to clear, take back the message waiting to be sent |
-| `Tab` / `Shift+Tab` | Between pending approvals and the composer |
+| `Tab` / `Shift+Tab` | Indent/outdent; active completions and visible approval/error focus take priority |
+| `Alt+↑` / `Alt+↓` | Move current or selected logical lines |
+| `Alt+D` | Duplicate selection or current line |
+| `Ctrl+Z` / `Ctrl+Y` | Undo / redo edits |
+| Double / triple click | Select word / logical line; drag to extend |
 | `F2` | Edit the selected project title; Enter saves, Esc cancels |
 | `F4` | Interrupt the turn |
 | `Esc` twice within 3s | Confirm the interruption |
@@ -54,7 +58,10 @@ new-session account picker for that project. Other shortcuts remain available.
 
 The composer grows to twelve rows — or a third of a short screen — and then
 holds; past that a bar on its right edge shows where in the draft you are, and
-the wheel over the composer moves through it. The bar's column is reserved
+the wheel over the composer moves through it without moving the cursor or
+selection. Typing returns to the cursor. Tab uses four-column space-based stops;
+Enter, Alt+Enter and Ctrl+J repeat leading indentation. Pasted text is not
+automatically indented. The bar's column is reserved
 whether or not a bar is in it, so adding a line never rewraps what is already
 written.
 

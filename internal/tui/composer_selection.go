@@ -47,10 +47,14 @@ func (m *model) composerKey(k tea.KeyMsg) (bool, tea.Cmd) {
 	if !m.composerAvailable() || m.panelFocus || m.focusList || m.focusApproval {
 		return false, nil
 	}
+	if !k.Paste && (k.String() == "tab" || k.String() == "shift+tab") {
+		return false, nil
+	}
 	m.prepareEditor()
 	before := m.input.Value()
 	hadSelection := m.input.SelectionValid()
 	handled, cmd := m.input.HandleKey(k)
+	m.rejectPartialChipEdit(before)
 	if handled || hadSelection || before != m.input.Value() {
 		m.pasteSelection = nil
 		m.resize()
@@ -79,10 +83,8 @@ func (m *model) composerMouse(v tea.MouseMsg) bool {
 	if v.Button != tea.MouseButtonWheelUp && v.Button != tea.MouseButtonWheelDown {
 		m.panelFocus, m.focusList, m.focusApproval = false, false, false
 		m.textSelection = nil
-	} else {
-		m.snapChipCursor()
+		m.pasteSelection = nil
 	}
-	m.pasteSelection = nil
 	m.resize()
 	return true
 }
@@ -97,8 +99,6 @@ func (m *model) scrollComposer(down bool) bool {
 	if !m.input.Scroll(down) {
 		return false
 	}
-	m.pasteSelection = nil
-	m.snapChipCursor()
 	m.resize()
 	return true
 }
@@ -127,4 +127,30 @@ func (m *model) focusComposer() tea.Cmd {
 	m.input.Cursor.SetMode(cursor.CursorBlink)
 	m.composerFocusCmd = m.input.Focus()
 	return nil
+}
+
+func (m *model) composerIndentKey(k tea.KeyMsg) (bool, tea.Cmd) {
+	if k.Paste || (k.String() != "tab" && k.String() != "shift+tab") || !m.composerAvailable() || m.panelFocus || m.focusList || m.focusApproval || m.approvalHeight() > 0 || m.errorVisible() {
+		return false, nil
+	}
+	m.prepareEditor()
+	before := m.input.Value()
+	handled, cmd := m.input.HandleKey(k)
+	m.rejectPartialChipEdit(before)
+	if handled {
+		m.pasteSelection = nil
+		m.resize()
+	}
+	return handled, cmd
+}
+
+func (m *model) rejectPartialChipEdit(before string) {
+	if !partialPasteEdit(before, m.input.Value(), m.pastes) {
+		return
+	}
+	m.input.Undo()
+	if m.input.Value() != before {
+		m.input.SetValue(before)
+	}
+	m.notice = "Paste chips are indivisible; Ctrl+P to preview or delete."
 }

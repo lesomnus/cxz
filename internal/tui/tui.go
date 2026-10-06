@@ -1052,6 +1052,9 @@ func (m *model) Update(msg tea.Msg) (next tea.Model, cmd tea.Cmd) {
 	// copied into live widgets are repainted here; widgets built later read the
 	// step they are built under.
 	switch msg.(type) {
+	case bed.EditErrorMsg:
+		m.showError(msg.(bed.EditErrorMsg).Err.Error())
+		return m, nil
 	case bed.CopyMsg:
 		m.copyText(string(msg.(bed.CopyMsg)))
 		return m, nil
@@ -2123,6 +2126,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 		}
+		if handled, cmd := m.composerIndentKey(v); handled {
+			return m, cmd
+		}
 		if v.String() == "ctrl+q" {
 			m.focusPanel()
 			return m, m.refresh()
@@ -2221,7 +2227,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		case "alt+enter", "ctrl+j":
 			if !m.focusList && !m.creating {
-				m.input.InsertString("\n")
+				if err := m.input.InsertNewline(); err != nil {
+					m.showError(err.Error())
+				}
 				m.resize()
 			}
 			return m, nil
@@ -2241,7 +2249,9 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			if !m.focusList && !m.creating {
 				before := m.input.Value()
-				m.input.InsertString("\n")
+				if err := m.input.InsertNewline(); err != nil {
+					m.showError(err.Error())
+				}
 				if partialPasteEdit(before, m.input.Value(), m.pastes) {
 					m.input.SetValue(before)
 				}

@@ -110,7 +110,7 @@ func TestProjectPanelFocusAndSessionSwitch(t *testing.T) {
 	if m.current().Id != "other-session" || m.project.Id != "other" || m.panelFocus || m.projectView {
 		t.Fatal("did not switch project/session")
 	}
-	if m.drafts["s"] != "keep my draft" || m.input.Value() != "" {
+	if m.drafts["s"] != "keep my draft   " || m.input.Value() != "" {
 		t.Fatal("draft leaked or lost")
 	}
 	// An in-flight refresh from the old project must not change the destination.
