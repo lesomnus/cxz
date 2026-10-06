@@ -26,8 +26,12 @@ test("both pinned edges advance prompt phase and extend the background fade with
     page
       .locator(".transcript-fade-bottom")
       .evaluate((el) => parseFloat(getComputedStyle(el).height));
-  await expect.poll(fade).toBeGreaterThan(100);
-  const baseline = await fade();
+  // The fade transitions after scrolling. Capture its settled middle-history
+  // height, not an arbitrary intermediate animation frame.
+  const baseline = await page
+    .locator(".composer-input")
+    .evaluate((el) => (el as HTMLElement).offsetHeight);
+  await expect.poll(fade).toBeCloseTo(baseline, 0);
   for (const direction of [-1, 1]) {
     await expect
       .poll(() =>
@@ -89,10 +93,21 @@ test("both pinned edges advance prompt phase and extend the background fade with
     }
     const phase = await page.evaluate(() => {
       const marker = document.querySelector<HTMLElement>(".scroll-marker")!;
+      const pane = document.querySelector(".transcript")!;
+      const middle = pane.getBoundingClientRect().top + pane.clientHeight / 2;
+      const anchor = [
+        ...pane.querySelectorAll<HTMLElement>("[data-row]"),
+      ].reduce((a, b) =>
+        Math.abs(a.getBoundingClientRect().top - middle) <
+        Math.abs(b.getBoundingClientRect().top - middle)
+          ? a
+          : b,
+      );
       return {
+        row: anchor.dataset.row!,
+        top: anchor.getBoundingClientRect().top,
         id: marker.dataset.prompt!,
         marker: parseFloat(marker.style.top),
-        scroll: document.querySelector(".transcript")!.scrollTop,
       };
     });
     await expect
@@ -106,8 +121,19 @@ test("both pinned edges advance prompt phase and extend the background fade with
           .then((delta) => -direction * delta),
       )
       .toBeGreaterThan(5);
-    const moved = await pane.evaluate((el) => el.scrollTop);
-    expect(direction * (moved - phase.scroll)).toBeGreaterThan(50);
+    // Paging rebases scrollTop. Measure the same rendered row so a cache
+    // replacement cannot masquerade as backwards motion; wait for animation.
+    await expect
+      .poll(() =>
+        page
+          .locator(`[data-row="${phase.row}"]`)
+          .evaluate(
+            (el, before) => before - el.getBoundingClientRect().top,
+            phase.top,
+          )
+          .then((distance) => direction * distance),
+      )
+      .toBeGreaterThan(50);
     await page.mouse.up();
     await expect(thumb).toHaveAttribute("data-stretch", "0.00");
     await expect.poll(fade).toBeCloseTo(baseline, 0);
