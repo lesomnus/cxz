@@ -314,7 +314,8 @@ header strong {
 .transcript-row > article {
   padding: 0 12px;
 }
-.response {
+.transcript-row > .response {
+  padding: 12px;
   border-radius: 8px;
 }
 .response:hover {
