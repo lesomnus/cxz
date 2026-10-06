@@ -248,6 +248,7 @@ test("only the transcript's empty side margins dismiss the floating card", async
 test("pending questions stay dimmed behind previews and only lift for a taller card", async ({
   page,
 }) => {
+  await page.setViewportSize({ width: 1440, height: 620 });
   const input = await open(page);
   await page.getByLabel("Scenario", { exact: true }).selectOption("session-4");
   const question = page.locator(".approval");
@@ -309,7 +310,7 @@ test("pending questions stay dimmed behind previews and only lift for a taller c
   await expect(layer).toHaveJSProperty("inert", false);
   await expect(details).toBeFocused();
   await expect(choice).toBeChecked();
-  await expect(other).toHaveValue("Keep my answer");
+  await expect(other).toHaveValue("Keep my answer\n");
 
   await input.fill("");
   await paste(page, "small\npreview\nbody\nhere");
@@ -352,7 +353,7 @@ test("pending questions stay dimmed behind previews and only lift for a taller c
 test("question and covering details stay bounded on mobile and dismiss independently", async ({
   page,
 }) => {
-  await page.setViewportSize({ width: 390, height: 720 });
+  await page.setViewportSize({ width: 390, height: 620 });
   await open(page);
   await page.getByLabel("Scenario", { exact: true }).selectOption("session-4");
   const question = page.locator(".approval");
@@ -372,7 +373,7 @@ test("question and covering details stay bounded on mobile and dismiss independe
       ),
     )
     .toBe(28);
-  await page.setViewportSize({ width: 390, height: 620 });
+  await page.setViewportSize({ width: 390, height: 560 });
   await expect
     .poll(async () =>
       Math.round(

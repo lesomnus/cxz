@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { Button } from "./button";
 import { useFloatingCard } from "./floating-card";
 import {
@@ -19,11 +20,15 @@ export function ComposerEditor({
   pastes,
   onChange,
   canSend,
+  ariaLabel = "Message",
+  placeholder = "Continue the conversation…",
 }: {
   value: string;
   pastes: Map<string, ComposerPaste>;
   onChange: (value: string) => void;
-  canSend: boolean;
+  canSend?: boolean;
+  ariaLabel?: string;
+  placeholder?: string;
 }) {
   const input = useRef<HTMLTextAreaElement>(null);
   const mirror = useRef<HTMLDivElement>(null);
@@ -85,6 +90,8 @@ export function ComposerEditor({
     return selection;
   }
   function replace(start: number, end: number, text: string) {
+    // Edit with native LF line breaks; untouched chips retain their original bytes.
+    text = text.replaceAll("\r\n", "\n").replaceAll("\r", "\n");
     const el = input.current!;
     const next = value.slice(0, start) + text + value.slice(end);
     expectedEdit.current = next;
@@ -113,7 +120,8 @@ export function ComposerEditor({
             // Cards are non-modal: editing behind a preview must never replace a
             // different occurrence at a stale offset.
             if (latest.current.value !== value) return false;
-            close();
+            // Release a background Question's inert state before native editing.
+            flushSync(close);
             latest.current.replace(range.start, range.end, text);
             return true;
           }}
@@ -139,8 +147,8 @@ export function ComposerEditor({
         <div className="editor-body">
           <textarea
             ref={input}
-            aria-label="Message"
-            placeholder="Continue the conversation…"
+            aria-label={ariaLabel}
+            placeholder={placeholder}
             value={value}
             rows={3}
             spellCheck={false}

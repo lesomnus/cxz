@@ -190,6 +190,19 @@ until the preview closes; closing restores their state and originating focus.
 Multiple pending requests stay available in the bounded, scrollable Question
 layer. Preview replacement still retains no older details/paste cards.
 
+Question options are monochrome cards with a title, description and native
+radio/checkbox control, retaining keyboard navigation and accessible labels.
+Fieldsets retain their grouping semantics but have no default border, margin or
+padding. Ordinary Other answers reuse `ComposerEditor`, with multiline text,
+monospace line numbers, atomic paste chips and native Undo/Redo. Answer editors
+and the composer have independent values but share the connection's bounded
+paste cache. Submit expands answer chips to their original text in `answersJson`;
+Enter inserts a line and Ctrl+Enter never sends the conversation draft from an
+answer editor. Password answers keep their masked native control.
+Chip preview edits release the Question's inert state before native insertion,
+so expanding/removing a chip modifies the correct editor and retains its undo
+history. Showing/closing a preview still preserves the pending request.
+
 The shared composer is a fixed-size monospace editor with logical line numbers.
 Numbers follow soft wrapping, scrolling and viewport changes. Text pastes over
 800 Unicode characters or containing at least three newlines become inline

@@ -592,18 +592,22 @@ pre {
   min-height: 28px;
   padding: var(--control-inset);
 }
-.composer-input {
+.composer-input,
+.question-other-editor {
   position: relative;
-  width: calc(100% + 2px + 2 * var(--composer-overhang));
-  margin: 0 calc(-1px - var(--composer-overhang)) -1px;
   border: 1px solid #3a3a3a;
   background: #222;
+}
+.composer-input {
+  width: calc(100% + 2px + 2 * var(--composer-overhang));
+  margin: 0 calc(-1px - var(--composer-overhang)) -1px;
   border-radius: var(--composer-radius);
 }
-.composer-input:focus-within {
+.composer-input:focus-within,
+.question-other-editor:focus-within {
   border-color: #737373;
 }
-.composer textarea {
+.composer-editor textarea {
   display: block;
   width: 100%;
   min-height: 110px;
@@ -850,10 +854,10 @@ pre {
     transition: none;
   }
 }
-.composer textarea:focus-visible {
+.composer-editor textarea:focus-visible {
   outline: none;
 }
-.composer textarea::placeholder {
+.composer-editor textarea::placeholder {
   color: #909090;
 }
 .composer .toolbar-button {
@@ -1004,12 +1008,79 @@ pre {
 }
 fieldset {
   min-width: 0;
-  border: 1px solid #3c3c3c;
-  margin: 8px 0;
-  padding: 8px;
+  border: 0;
+  margin: 0;
+  padding: 0;
 }
 legend {
   max-width: 100%;
+  padding: 0;
+}
+.question-group + .question-group {
+  margin-top: calc(2 * var(--space));
+}
+.question-group legend {
+  margin-bottom: var(--space);
+  font-size: 12px;
+}
+.question-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space);
+}
+.question-option {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  align-items: start;
+  gap: calc(2 * var(--space));
+  padding: calc(2 * var(--space));
+  border: 1px solid #363636;
+  border-radius: var(--card-inner-radius);
+  background: #101010;
+  cursor: pointer;
+  transition:
+    background 120ms ease-out,
+    border-color 120ms ease-out;
+}
+.question-option:hover {
+  background: #262626;
+}
+.question-option[data-selected="true"] {
+  background: #303030;
+  border-color: #626262;
+}
+.question-option:focus-within {
+  border-color: #a0a0a0;
+}
+.question-option input {
+  margin: 2px 0 0;
+  width: 14px;
+  height: 14px;
+  accent-color: #ededed;
+}
+.question-option-text strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+}
+.question-option-text small {
+  display: block;
+  margin-top: var(--space);
+  color: var(--muted);
+  font-size: 11px;
+}
+.question-other {
+  margin-top: calc(2 * var(--space));
+}
+.question-other-label {
+  display: block;
+  margin: 0 var(--space) var(--space);
+  font-size: 12px;
+  color: var(--muted);
+}
+.question-other-editor {
+  border-radius: var(--card-inner-radius);
+  overflow: hidden;
 }
 summary {
   cursor: pointer;

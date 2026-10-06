@@ -35,7 +35,7 @@ import {
   FloatingCard,
   useFloatingCard,
 } from "./floating-card";
-import { expandPastes } from "./composer-pastes";
+import { expandPastes, type ComposerPaste } from "./composer-pastes";
 import { SessionTreeGroup } from "./session-tree";
 import { Transcript } from "./transcript";
 export { Button } from "./button";
@@ -877,6 +877,7 @@ function ConversationContent({
             key={`${e.runId}:${e.requestId}`}
             e={e}
             agent={s?.agent ?? ""}
+            pastes={c.pastes}
             busy={busy}
             reply={reply}
           />
@@ -1038,11 +1039,13 @@ const EventView = React.memo(
 function Approval({
   e,
   agent,
+  pastes,
   busy,
   reply,
 }: {
   e: SessionEvent;
   agent: string;
+  pastes: Map<string, ComposerPaste>;
   busy: boolean;
   reply: (e: SessionEvent, allow: boolean, answers?: string) => Promise<void>;
 }) {
@@ -1050,6 +1053,7 @@ function Approval({
   const qs = questions(agent, e);
   const [selected, setSelected] = useState<Record<string, string[]>>({});
   const [other, setOther] = useState<Record<string, string>>({});
+  const otherAnswer = (key: string) => expandPastes(other[key] ?? "", pastes);
   const elicitation = e.text === "mcpServer/elicitation/request";
   const p = payload(e);
   const requiresForm =
@@ -1076,38 +1080,63 @@ function Approval({
         Request details
       </Button>
       {qs.map((q) => (
-        <fieldset key={q.key}>
+        <fieldset key={q.key} className="question-group">
           <legend>{q.text}</legend>
-          {q.options.map((o) => (
-            <label key={o.label}>
-              <input
-                type={q.multi ? "checkbox" : "radio"}
-                name={`${e.requestId}:${q.key}`}
-                checked={(selected[q.key] ?? []).includes(o.label)}
-                onChange={(event) =>
-                  setSelected((old) => ({
-                    ...old,
-                    [q.key]: q.multi
-                      ? event.target.checked
-                        ? [...(old[q.key] ?? []), o.label]
-                        : (old[q.key] ?? []).filter((x) => x !== o.label)
-                      : [o.label],
-                  }))
-                }
-              />
-              {o.label}
-              {o.description && <small>{o.description}</small>}
-            </label>
-          ))}
+          <div className="question-options">
+            {q.options.map((o) => (
+              <label
+                key={o.label}
+                className="question-option"
+                data-selected={(selected[q.key] ?? []).includes(o.label)}
+              >
+                <input
+                  type={q.multi ? "checkbox" : "radio"}
+                  name={`${e.requestId}:${q.key}`}
+                  checked={(selected[q.key] ?? []).includes(o.label)}
+                  onChange={(event) =>
+                    setSelected((old) => ({
+                      ...old,
+                      [q.key]: q.multi
+                        ? event.target.checked
+                          ? [...(old[q.key] ?? []), o.label]
+                          : (old[q.key] ?? []).filter((x) => x !== o.label)
+                        : [o.label],
+                    }))
+                  }
+                />
+                <span className="question-option-text">
+                  <strong>{o.label}</strong>
+                  {o.description && <small>{o.description}</small>}
+                </span>
+              </label>
+            ))}
+          </div>
           {q.other && (
-            <input
-              aria-label={`Other answer: ${q.text}`}
-              type={q.secret ? "password" : "text"}
-              value={other[q.key] ?? ""}
-              onChange={(event) =>
-                setOther((old) => ({ ...old, [q.key]: event.target.value }))
-              }
-            />
+            <div className="question-other">
+              <span className="question-other-label">Other</span>
+              {q.secret ? (
+                <input
+                  aria-label={`Other answer: ${q.text}`}
+                  type="password"
+                  value={other[q.key] ?? ""}
+                  onChange={(event) =>
+                    setOther((old) => ({ ...old, [q.key]: event.target.value }))
+                  }
+                />
+              ) : (
+                <div className="question-other-editor">
+                  <ComposerEditor
+                    ariaLabel={`Other answer: ${q.text}`}
+                    placeholder="직접 답변을 입력하세요…"
+                    value={other[q.key] ?? ""}
+                    pastes={pastes}
+                    onChange={(value) =>
+                      setOther((old) => ({ ...old, [q.key]: value }))
+                    }
+                  />
+                </div>
+              )}
+            </div>
           )}
         </fieldset>
       ))}
@@ -1122,7 +1151,9 @@ function Approval({
           disabled={
             busy ||
             !!requiresForm ||
-            qs.some((q) => !(selected[q.key]?.length || other[q.key]?.trim()))
+            qs.some(
+              (q) => !(selected[q.key]?.length || otherAnswer(q.key).trim()),
+            )
           }
           onClick={() =>
             reply(
@@ -1135,7 +1166,7 @@ function Approval({
                         q.key,
                         {
                           selected: selected[q.key] ?? [],
-                          other: other[q.key] ?? "",
+                          other: otherAnswer(q.key),
                         },
                       ]),
                     ),
