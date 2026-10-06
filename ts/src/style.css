@@ -685,19 +685,23 @@ pre {
 }
 .floating-card-host {
   --card-gap: calc(3 * var(--space));
+  --card-shadow-space: 32px;
   position: absolute;
-  bottom: calc(100% + 1px + var(--card-gap));
-  left: -1px;
-  width: calc(100% + 2px);
-  height: var(--card-space, 50dvh);
-  clip-path: inset(0 -32px -12px -32px);
+  bottom: calc(100% + 1px);
+  left: calc(-1px - var(--card-shadow-space));
+  width: calc(100% + 2px + 2 * var(--card-shadow-space));
+  height: calc(var(--card-space, 50dvh) + var(--card-gap));
+  padding: 0 var(--card-shadow-space) var(--card-gap);
+  /* Overflow clips the same bounds without isolating the backdrop as clip-path does. */
+  overflow: clip;
   z-index: 5;
   pointer-events: none;
 }
 .floating-card {
   position: absolute;
-  bottom: 0;
-  width: 100%;
+  bottom: var(--card-gap);
+  left: var(--card-shadow-space);
+  width: calc(100% - 2 * var(--card-shadow-space));
   max-height: min(460px, var(--card-space, 50dvh));
   display: flex;
   flex-direction: column;

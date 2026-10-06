@@ -91,6 +91,7 @@ export function FloatingCardHost() {
     const measure = () => {
       const available =
         node.getBoundingClientRect().bottom -
+        parseFloat(getComputedStyle(node).paddingBottom) -
         header.getBoundingClientRect().bottom -
         8;
       node.style.setProperty("--card-space", `${Math.max(0, available)}px`);

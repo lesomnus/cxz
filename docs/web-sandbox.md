@@ -156,6 +156,9 @@ and raw text retain their opaque black boxes. The composer's toolbar, editor
 and metadata remain accessible, and the card contributes no height to the
 transcript. The viewport bounds the card below the
 conversation title, with long contents scrolling internally.
+The host uses overflow clipping with space for the shadow. Do not use
+`clip-path`, masks or opacity on its ancestors: these form a backdrop root that
+prevents the card's blur from sampling the conversation behind it.
 Opening another item replaces the previous card: Close or Escape never restores
 an older preview. Clicking the transcript's empty left/right margins also
 closes it, while content, links, buttons and the scrollbar remain interactive.

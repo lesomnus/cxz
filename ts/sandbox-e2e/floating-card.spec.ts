@@ -104,6 +104,71 @@ test("floating event and paste cards replace one another without moving the tran
   await expect(input).toHaveValue(draft);
 });
 
+test.describe("rendered backdrop", () => {
+  test.use({ deviceScaleFactor: 1 });
+  test("card backdrop blurs rendered content rather than only tinting it", async ({
+    page,
+  }) => {
+    await open(page);
+    await page.locator(".transcript-row > .event-detail").last().click();
+    const card = page.locator(".floating-card");
+    await expect(card).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
+    await expect(card).toHaveCSS("opacity", "1");
+    const bounds = (await card.boundingBox())!;
+    // A real background in the conversation must be sampled across the composer
+    // and host ancestors. A computed blur value alone misses backdrop isolation.
+    await page.evaluate((box) => {
+      const backing = document.createElement("div");
+      backing.style.cssText = `position:fixed;left:${box.x}px;top:${box.y}px;width:${box.width}px;height:${box.height}px;pointer-events:none;background:repeating-linear-gradient(90deg,#000 0 32px,#fff 32px 64px)`;
+      document.querySelector(".transcript-area")!.append(backing);
+    }, bounds);
+    const edgeContrast = async () => {
+      // Capture the viewport before sampling: a cropped capture can exclude
+      // the pixels needed by the filter, particularly at higher pixel density.
+      const png = await page.screenshot();
+      return page.evaluate(
+        async ({ base64, box }) => {
+          const image = new Image();
+          image.src = `data:image/png;base64,${base64}`;
+          await image.decode();
+          const canvas = document.createElement("canvas");
+          canvas.width = image.width;
+          canvas.height = image.height;
+          const context = canvas.getContext("2d")!;
+          context.drawImage(image, 0, 0);
+          const scale = image.width / window.innerWidth;
+          const width = Math.floor(300 * scale);
+          const height = Math.floor(4 * scale);
+          const pixels = context.getImageData(
+            Math.floor((box.x + 100) * scale),
+            Math.floor((box.y + 30) * scale),
+            width,
+            height,
+          ).data;
+          let greatestStep = 0;
+          for (let y = 0; y < height; y++) {
+            for (let x = 1; x < width; x++) {
+              const index = (y * width + x) * 4;
+              greatestStep = Math.max(
+                greatestStep,
+                Math.abs(pixels[index] - pixels[index - 4]),
+              );
+            }
+          }
+          return greatestStep;
+        },
+        { base64: png.toString("base64"), box: bounds },
+      );
+    };
+    expect(await edgeContrast()).toBeLessThan(5);
+    await card.evaluate((el) => {
+      el.style.backdropFilter = "none";
+      el.style.setProperty("-webkit-backdrop-filter", "none");
+    });
+    expect(await edgeContrast()).toBeGreaterThan(50);
+  });
+});
+
 test("mobile cards stay below the title and stale previews cannot replace an edited draft", async ({
   page,
 }) => {
