@@ -114,6 +114,8 @@ an optional, independently loaded scenario if that behavior needs to be tested.
   conversation, readonly files, fake Connect, resize/draft preservation, and
   project isolation/restoration.
 - Production browser test loads the actual Monaco preview under the gateway CSP.
+- Lifecycle RPC test checks native metadata/binary bytes, cancellation cleanup,
+  deleted-project rejection and malformed/oversized tunnel frames.
 - Native gateway test covers unauthorized requests, RPC token removal, the
   workbench cookie scope, preview size/path limits, HTTP/WS bytes and logout
   revocation.
