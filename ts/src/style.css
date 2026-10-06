@@ -392,6 +392,11 @@ header strong {
     opacity: 0;
   }
 }
+.pinned-prompt[data-available="false"] {
+  /* Start the entry fade when the preview becomes visible, not while hidden.
+     An opacity animation already finishing can suppress the reveal transition. */
+  animation: none;
+}
 .pinned-prompt-proximity {
   position: absolute;
   inset: 0 0 auto;

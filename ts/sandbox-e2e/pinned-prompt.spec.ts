@@ -225,6 +225,8 @@ test("the preceding input only peeks after the nearest visible input clears the 
   await gap(12);
   await expect(overlay).toHaveAttribute("data-available", "false");
   await expect(overlay).toHaveCSS("opacity", "0");
+  // Hidden previews must not consume their entry animation before revealing.
+  await expect(overlay).toHaveCSS("animation-name", "none");
   const area = (await pane.boundingBox())!;
   await page.mouse.move(area.x + area.width / 2, area.y + 16);
   expect(
