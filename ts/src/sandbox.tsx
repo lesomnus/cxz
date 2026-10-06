@@ -6,6 +6,7 @@ import { Button, Workspace } from "./app";
 import { Connection } from "./connection";
 import "./sandbox.css";
 import workerURL from "./sandbox-worker.ts?worker&url";
+import { boot, BootTimeout } from "./sandbox-boot";
 
 const scenarios = [
   "Project checklist",
@@ -24,6 +25,9 @@ function SandboxApp() {
   const [generation, setGeneration] = useState(0);
   const [connection, setConnection] = useState<Connection>();
   const [loading, setLoading] = useState("Starting sandbox…");
+  // Kept rather than flashed: the first attempt stalling is the explanation for a
+  // slow start, and it is worth still being on screen once the sandbox is up.
+  const [stalled, setStalled] = useState(false);
   const [error, setError] = useState("");
   const [applied, setApplied] = useState({ seed: "42", delay: "400" });
   useEffect(() => {
@@ -31,21 +35,42 @@ function SandboxApp() {
     let box: Sandbox | undefined;
     setConnection(undefined);
     setError("");
+    setStalled(false);
     setLoading("Starting sandbox…");
     const worker = new URL(workerURL, location.href);
     worker.searchParams.set("seed", applied.seed);
     worker.searchParams.set("delay", applied.delay);
-    start({
-      url: "/app.wasm",
-      worker,
-      wasmExec: "/wasm_exec.js",
-      onProgress: (v) => {
-        if (!canceled)
-          setLoading(
-            `Loading sandbox · ${(v.loaded / 1048576).toFixed(1)} MB${v.total ? ` / ${(v.total / 1048576).toFixed(1)} MB` : ""}`,
-          );
+    // Bounded, and retried once without the module cache. Starting is the one
+    // step with nothing above it to notice that it never finished: a stall in
+    // the module's body or in the copy kept for the next reload leaves this page
+    // on "Starting sandbox…" with no error and no progress.
+    // The module cache makes a person's reload fast. Under automation it cannot:
+    // every page is a fresh context, so each of the sandbox's browser tests
+    // would write the 23 MB module into a cache that is thrown away -- while
+    // sharing the module's stream with that write. Off there, kept here.
+    const cacheable = !navigator.webdriver;
+    boot(
+      (cached) =>
+        start({
+          url: "/app.wasm",
+          worker,
+          wasmExec: "/wasm_exec.js",
+          ...(cached && cacheable ? {} : { cache: false }),
+          onProgress: (v) => {
+            if (!canceled)
+              setLoading(
+                `Loading sandbox · ${(v.loaded / 1048576).toFixed(1)} MB${v.total ? ` / ${(v.total / 1048576).toFixed(1)} MB` : ""}`,
+              );
+          },
+        }),
+      {
+        onRetry: () => {
+          if (canceled) return;
+          setStalled(true);
+          setLoading("Starting sandbox again, without its cache…");
+        },
       },
-    })
+    )
       .then((v) => {
         if (canceled) {
           v.close();
@@ -57,7 +82,11 @@ function SandboxApp() {
       })
       .catch((e) => {
         if (!canceled) {
-          setError(String(e));
+          setError(
+            e instanceof BootTimeout
+              ? `${e.message}. Reset the sandbox to try again.`
+              : String(e),
+          );
           setLoading("");
         }
       });
@@ -118,6 +147,11 @@ function SandboxApp() {
         <Button onClick={() => void reset()}>Reset sandbox</Button>
       </header>
       {error && <p role="alert">{error}</p>}
+      {stalled && !error && (
+        <p role="note">
+          The first attempt stalled; this sandbox started on a retry.
+        </p>
+      )}
       {loading && <p role="status">{loading}</p>}
       {connection && (
         <Provider key={connection.clientId} app={connection}>
