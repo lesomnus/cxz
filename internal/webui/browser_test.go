@@ -112,6 +112,8 @@ func (f *browserFixture) History(_ context.Context, r *resource.SessionEventsReq
 	defer f.mu.Unlock()
 	if f.events == nil {
 		f.events = []*resource.SessionEvent{resource.SessionEvent_builder{Seq: 1, RunId: "run", Kind: "input", Text: "Show the project"}.Build(), resource.SessionEvent_builder{Seq: 2, RunId: "run", Kind: "assistant", Text: "## Ready\n\nHello **mobile**.\n\n```go\nfmt.Println(\"안녕\")\n```\n\n<script>window.pwned=true</script>", Response: resource.ResponseMetadata_builder{Model: "fixture-model", Effort: "high", ModelSource: "response", EffortSource: "settings"}.Build()}.Build()}
+		f.events[1].SetTimeMs(1700000000000)
+		f.events = append(f.events, resource.SessionEvent_builder{Seq: 4, RunId: "run", Kind: "turn_end", Text: "completed", Response: resource.ResponseMetadata_builder{CompletionJson: []byte(`{"response_seq":"2","duration_ms":4200,"duration_source":"provider","token_scope":"turn","metrics":{"input_tokens":1200,"output_tokens":320}}`)}.Build()}.Build())
 	}
 	var out []*resource.SessionEvent
 	for _, e := range f.events {

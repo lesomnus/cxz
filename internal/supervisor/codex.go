@@ -112,6 +112,7 @@ func (c *codexProtocol) consume(raw []byte) {
 			s.clearPending()
 			s.event("turn_end", "failed", "", v.Error, nil)
 			s.responseContext = core.ResponseMetadata{}
+			s.responseTracking = responseTracking{}
 			s.event("state", "idle", "", nil, nil)
 		}
 		return
@@ -182,13 +183,15 @@ func (c *codexProtocol) consume(raw []byte) {
 	}
 	var p struct {
 		Turn struct {
-			ID     string `json:"id"`
-			Status string `json:"status"`
+			ID         string `json:"id"`
+			Status     string `json:"status"`
+			DurationMS *int64 `json:"durationMs"`
 		} `json:"turn"`
 		Item struct {
 			ID      string `json:"id"`
 			Type    string `json:"type"`
 			Text    string `json:"text"`
+			Phase   string `json:"phase"`
 			Command string `json:"command"`
 			Output  string `json:"aggregatedOutput"`
 		} `json:"item"`
@@ -217,6 +220,7 @@ func (c *codexProtocol) consume(raw []byte) {
 		c.turn = p.Turn.ID
 		if s.responseContext.TurnID != "" && s.responseContext.TurnID != p.Turn.ID {
 			s.responseContext = core.ResponseMetadata{}
+			s.responseTracking = responseTracking{}
 		}
 		s.responseContext.TurnID = p.Turn.ID
 		s.event("state", "working", "", nil, nil)
@@ -239,8 +243,10 @@ func (c *codexProtocol) consume(raw []byte) {
 		}
 		s.interrupted = false
 		c.turn = ""
-		s.event("turn_end", state, "", v.Params, nil)
+		metadata := s.completeResponse(state, v.Params)
+		s.event("turn_end", state, "", v.Params, nil, metadata)
 		s.responseContext = core.ResponseMetadata{}
+		s.responseTracking = responseTracking{}
 		s.event("state", "idle", "", nil, nil)
 		c.readQuota()
 	case "item/commandExecution/outputDelta":
@@ -260,6 +266,7 @@ func (c *codexProtocol) consume(raw []byte) {
 			s.event("compact", "completed", p.Item.ID, v.Params, nil)
 		} else if p.Item.Type == "agentMessage" {
 			metadata := s.responseContext
+			metadata.Phase = p.Item.Phase
 			var identity struct {
 				TurnID string `json:"turnId"`
 			}
@@ -283,6 +290,9 @@ func (c *codexProtocol) consume(raw []byte) {
 		}
 	case "thread/tokenUsage/updated", "account/rateLimits/updated":
 		s.event("usage", v.Method, "", v.Params, nil)
+		if v.Method == "thread/tokenUsage/updated" {
+			s.captureResponseUsage(v.Params)
+		}
 	case "error":
 		s.event("diagnostic", "Codex error", "", v.Params, nil)
 	}
@@ -332,6 +342,7 @@ func (c *codexProtocol) command(op string, v core.Command) (any, error) {
 		}
 		if strings.TrimSpace(v.Text) == "/compact" {
 			s.responseContext = core.ResponseMetadata{}
+			s.responseTracking = responseTracking{}
 			return rpc(v.ClientID, "thread/compact/start", map[string]any{"threadId": s.snap.VendorID}), nil
 		}
 		params := map[string]any{"threadId": s.snap.VendorID, "input": input}
@@ -352,6 +363,7 @@ func (c *codexProtocol) command(op string, v core.Command) (any, error) {
 			params["effort"] = effort
 		}
 		s.responseContext = core.ResponseMetadata{Model: model, Effort: effort}
+		s.responseTracking = responseTracking{started: time.Now()}
 		if model != "" {
 			s.responseContext.ModelSource = "requested"
 		}

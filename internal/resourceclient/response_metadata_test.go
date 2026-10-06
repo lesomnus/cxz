@@ -6,9 +6,9 @@ import (
 )
 
 func TestResponseSnapshotAdapter(t *testing.T) {
-	r := resource.ResponseMetadata_builder{Model: "m", Effort: "high", ModelSource: "response", EffortSource: "requested", TurnId: "turn"}.Build()
+	r := resource.ResponseMetadata_builder{Model: "m", Effort: "high", ModelSource: "response", EffortSource: "requested", TurnId: "turn", Phase: "final_answer", CompletionJson: []byte(`{"response_seq":"1"}`)}.Build()
 	e := event("s", resource.SessionEvent_builder{Kind: "assistant", Response: r}.Build())
-	if e.Response == nil || e.Response.Model != r.GetModel() || e.Response.Effort != r.GetEffort() || e.Response.ModelSource != r.GetModelSource() || e.Response.EffortSource != r.GetEffortSource() || e.Response.TurnId != r.GetTurnId() {
+	if e.Response == nil || e.Response.Model != r.GetModel() || e.Response.Effort != r.GetEffort() || e.Response.ModelSource != r.GetModelSource() || e.Response.EffortSource != r.GetEffortSource() || e.Response.TurnId != r.GetTurnId() || e.Response.Phase != r.GetPhase() || string(e.Response.CompletionJson) != string(r.GetCompletionJson()) {
 		t.Fatal(e)
 	}
 	if event("s", resource.SessionEvent_builder{Kind: "assistant"}.Build()).Response != nil {

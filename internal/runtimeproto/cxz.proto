@@ -71,6 +71,7 @@ message Event {
 message ResponseMetadata {
   string model = 1; string effort = 2;
   string model_source = 3; string effort_source = 4; string turn_id = 5;
+  string phase = 6; bytes completion_json = 7;
 }
 message EventBatch { repeated Event events = 1; }
 message ProjectRequest {

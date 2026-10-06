@@ -75,6 +75,7 @@ type Supervisor struct {
 	settingsFor      string
 	settingPending   string
 	responseContext  core.ResponseMetadata
+	responseTracking responseTracking
 }
 type record struct {
 	Digest  string       `json:"digest,omitempty"`
@@ -377,7 +378,7 @@ func (s *Supervisor) event(kind, text, id string, payload any, raw []byte, respo
 		b, _ = json.Marshal(payload)
 	}
 	e := core.Event{SessionID: s.session.ID, RunID: s.snap.RunID, Kind: kind, Text: text, RequestID: id, Payload: b, Raw: raw}
-	if kind == "assistant" && len(response) > 0 {
+	if (kind == "assistant" || kind == "turn_end") && len(response) > 0 {
 		metadata := response[0]
 		e.Response = &metadata
 	}
@@ -394,6 +395,15 @@ func (s *Supervisor) event(kind, text, id string, payload any, raw []byte, respo
 		panic(fmt.Sprintf("journal durability failure: %v", err))
 	}
 	s.snap.LastSeq = e.Seq
+	if kind == "assistant" && e.Response != nil && e.Response.Phase != "subagent" && (e.Response.TurnID == "" || e.Response.TurnID == s.responseContext.TurnID) {
+		s.responseTracking.last, s.responseTracking.phase = e.Seq, e.Response.Phase
+		if e.Response.Phase == "final_answer" {
+			s.responseTracking.final = e.Seq
+		}
+	}
+	if kind == "tool_call" {
+		s.responseTracking.tools++
+	}
 	if kind == "permission" {
 		s.snap.PermissionMode = text
 	}
@@ -517,12 +527,13 @@ func (s *Supervisor) consume(raw []byte) {
 		return
 	}
 	var v struct {
-		Type      string         `json:"type"`
-		Subtype   string         `json:"subtype"`
-		SessionID string         `json:"session_id"`
-		RequestID string         `json:"request_id"`
-		Request   map[string]any `json:"request"`
-		Response  struct {
+		Type            string         `json:"type"`
+		Subtype         string         `json:"subtype"`
+		SessionID       string         `json:"session_id"`
+		RequestID       string         `json:"request_id"`
+		ParentToolUseID *string        `json:"parent_tool_use_id"`
+		Request         map[string]any `json:"request"`
+		Response        struct {
 			RequestID string          `json:"request_id"`
 			Subtype   string          `json:"subtype"`
 			Response  json.RawMessage `json:"response"`
@@ -649,6 +660,9 @@ func (s *Supervisor) consume(raw []byte) {
 			case "text":
 				if v.Type == "assistant" {
 					metadata := s.responseContext
+					if v.ParentToolUseID != nil {
+						metadata = core.ResponseMetadata{Phase: "subagent"}
+					}
 					if v.Message.Model != "" {
 						metadata.Model, metadata.ModelSource = v.Message.Model, "response"
 					}
@@ -663,15 +677,17 @@ func (s *Supervisor) consume(raw []byte) {
 	case "result":
 		s.clearPending()
 		result := "completed"
-		if v.IsError {
+		if v.IsError || strings.HasPrefix(v.Subtype, "error") {
 			result = "failed"
 		}
 		if s.interrupted {
 			result = "interrupted"
 		}
 		s.interrupted = false
-		s.event("turn_end", result, "", json.RawMessage(raw), nil)
+		metadata := s.completeResponse(result, raw)
+		s.event("turn_end", result, "", json.RawMessage(raw), nil, metadata)
 		s.responseContext = core.ResponseMetadata{}
+		s.responseTracking = responseTracking{}
 		s.event("state", "idle", "", nil, nil)
 		s.readClaudeQuota()
 	}
@@ -750,6 +766,7 @@ func (s *Supervisor) executeLocked(op string, c core.Command) (core.Receipt, err
 			}
 			wire = map[string]any{"type": "user", "session_id": "", "parent_tool_use_id": nil, "message": map[string]any{"role": "user", "content": c.Text}}
 			s.responseContext = s.claudeResponseContext()
+			s.responseTracking = responseTracking{started: time.Now()}
 		case "reply":
 			p, ok := s.pending[c.RequestID]
 			if !ok {

@@ -1230,14 +1230,16 @@ func (x *Event) GetResponse() *ResponseMetadata {
 }
 
 type ResponseMetadata struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Model         string                 `protobuf:"bytes,1,opt,name=model,proto3" json:"model,omitempty"`
-	Effort        string                 `protobuf:"bytes,2,opt,name=effort,proto3" json:"effort,omitempty"`
-	ModelSource   string                 `protobuf:"bytes,3,opt,name=model_source,json=modelSource,proto3" json:"model_source,omitempty"`
-	EffortSource  string                 `protobuf:"bytes,4,opt,name=effort_source,json=effortSource,proto3" json:"effort_source,omitempty"`
-	TurnId        string                 `protobuf:"bytes,5,opt,name=turn_id,json=turnId,proto3" json:"turn_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Model          string                 `protobuf:"bytes,1,opt,name=model,proto3" json:"model,omitempty"`
+	Effort         string                 `protobuf:"bytes,2,opt,name=effort,proto3" json:"effort,omitempty"`
+	ModelSource    string                 `protobuf:"bytes,3,opt,name=model_source,json=modelSource,proto3" json:"model_source,omitempty"`
+	EffortSource   string                 `protobuf:"bytes,4,opt,name=effort_source,json=effortSource,proto3" json:"effort_source,omitempty"`
+	TurnId         string                 `protobuf:"bytes,5,opt,name=turn_id,json=turnId,proto3" json:"turn_id,omitempty"`
+	Phase          string                 `protobuf:"bytes,6,opt,name=phase,proto3" json:"phase,omitempty"`
+	CompletionJson []byte                 `protobuf:"bytes,7,opt,name=completion_json,json=completionJson,proto3" json:"completion_json,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *ResponseMetadata) Reset() {
@@ -1303,6 +1305,20 @@ func (x *ResponseMetadata) GetTurnId() string {
 		return x.TurnId
 	}
 	return ""
+}
+
+func (x *ResponseMetadata) GetPhase() string {
+	if x != nil {
+		return x.Phase
+	}
+	return ""
+}
+
+func (x *ResponseMetadata) GetCompletionJson() []byte {
+	if x != nil {
+		return x.CompletionJson
+	}
+	return nil
 }
 
 type EventBatch struct {
@@ -2307,13 +2323,15 @@ const file_cxz_proto_rawDesc = "" +
 	"\n" +
 	"request_id\x18\a \x01(\tR\trequestId\x12\x18\n" +
 	"\apayload\x18\b \x01(\fR\apayload\x129\n" +
-	"\bresponse\x18\t \x01(\v2\x1d.cxz.runtime.ResponseMetadataR\bresponse\"\xa1\x01\n" +
+	"\bresponse\x18\t \x01(\v2\x1d.cxz.runtime.ResponseMetadataR\bresponse\"\xe0\x01\n" +
 	"\x10ResponseMetadata\x12\x14\n" +
 	"\x05model\x18\x01 \x01(\tR\x05model\x12\x16\n" +
 	"\x06effort\x18\x02 \x01(\tR\x06effort\x12!\n" +
 	"\fmodel_source\x18\x03 \x01(\tR\vmodelSource\x12#\n" +
 	"\reffort_source\x18\x04 \x01(\tR\feffortSource\x12\x17\n" +
-	"\aturn_id\x18\x05 \x01(\tR\x06turnId\"8\n" +
+	"\aturn_id\x18\x05 \x01(\tR\x06turnId\x12\x14\n" +
+	"\x05phase\x18\x06 \x01(\tR\x05phase\x12'\n" +
+	"\x0fcompletion_json\x18\a \x01(\fR\x0ecompletionJson\"8\n" +
 	"\n" +
 	"EventBatch\x12*\n" +
 	"\x06events\x18\x01 \x03(\v2\x12.cxz.runtime.EventR\x06events\"\xf4\x02\n" +

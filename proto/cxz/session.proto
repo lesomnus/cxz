@@ -70,4 +70,7 @@ message ResponseMetadata {
   string model_source = 3;
   string effort_source = 4;
   string turn_id = 5;
+  string phase = 6;
+  // Immutable successful-turn summary referencing the final assistant seq.
+  bytes completion_json = 7;
 }

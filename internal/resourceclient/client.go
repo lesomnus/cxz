@@ -182,7 +182,7 @@ func (c *Client) Reply(ctx context.Context, r *api.Answer, opts ...grpc.CallOpti
 func event(id string, e *resource.SessionEvent) *api.Event {
 	v := &api.Event{SessionId: id, RunId: e.GetRunId(), Seq: e.GetSeq(), TimeMs: e.GetTimeMs(), Kind: e.GetKind(), Text: e.GetText(), RequestId: e.GetRequestId(), Payload: e.GetPayload()}
 	if r := e.GetResponse(); r != nil {
-		v.Response = &api.ResponseMetadata{Model: r.GetModel(), Effort: r.GetEffort(), ModelSource: r.GetModelSource(), EffortSource: r.GetEffortSource(), TurnId: r.GetTurnId()}
+		v.Response = &api.ResponseMetadata{Model: r.GetModel(), Effort: r.GetEffort(), ModelSource: r.GetModelSource(), EffortSource: r.GetEffortSource(), TurnId: r.GetTurnId(), Phase: r.GetPhase(), CompletionJson: r.GetCompletionJson()}
 	}
 	return v
 }

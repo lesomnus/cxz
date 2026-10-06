@@ -688,14 +688,16 @@ func (b0 SessionEvent_builder) Build() *SessionEvent {
 // Frozen response context; sources are response, settings or requested.
 // Empty values mean the provider/configuration did not supply a known value.
 type ResponseMetadata struct {
-	state                   protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Model        string                 `protobuf:"bytes,1,opt,name=model"`
-	xxx_hidden_Effort       string                 `protobuf:"bytes,2,opt,name=effort"`
-	xxx_hidden_ModelSource  string                 `protobuf:"bytes,3,opt,name=model_source,json=modelSource"`
-	xxx_hidden_EffortSource string                 `protobuf:"bytes,4,opt,name=effort_source,json=effortSource"`
-	xxx_hidden_TurnId       string                 `protobuf:"bytes,5,opt,name=turn_id,json=turnId"`
-	unknownFields           protoimpl.UnknownFields
-	sizeCache               protoimpl.SizeCache
+	state                     protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Model          string                 `protobuf:"bytes,1,opt,name=model"`
+	xxx_hidden_Effort         string                 `protobuf:"bytes,2,opt,name=effort"`
+	xxx_hidden_ModelSource    string                 `protobuf:"bytes,3,opt,name=model_source,json=modelSource"`
+	xxx_hidden_EffortSource   string                 `protobuf:"bytes,4,opt,name=effort_source,json=effortSource"`
+	xxx_hidden_TurnId         string                 `protobuf:"bytes,5,opt,name=turn_id,json=turnId"`
+	xxx_hidden_Phase          string                 `protobuf:"bytes,6,opt,name=phase"`
+	xxx_hidden_CompletionJson []byte                 `protobuf:"bytes,7,opt,name=completion_json,json=completionJson"`
+	unknownFields             protoimpl.UnknownFields
+	sizeCache                 protoimpl.SizeCache
 }
 
 func (x *ResponseMetadata) Reset() {
@@ -758,6 +760,20 @@ func (x *ResponseMetadata) GetTurnId() string {
 	return ""
 }
 
+func (x *ResponseMetadata) GetPhase() string {
+	if x != nil {
+		return x.xxx_hidden_Phase
+	}
+	return ""
+}
+
+func (x *ResponseMetadata) GetCompletionJson() []byte {
+	if x != nil {
+		return x.xxx_hidden_CompletionJson
+	}
+	return nil
+}
+
 func (x *ResponseMetadata) SetModel(v string) {
 	x.xxx_hidden_Model = v
 }
@@ -778,6 +794,17 @@ func (x *ResponseMetadata) SetTurnId(v string) {
 	x.xxx_hidden_TurnId = v
 }
 
+func (x *ResponseMetadata) SetPhase(v string) {
+	x.xxx_hidden_Phase = v
+}
+
+func (x *ResponseMetadata) SetCompletionJson(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_CompletionJson = v
+}
+
 type ResponseMetadata_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -786,6 +813,9 @@ type ResponseMetadata_builder struct {
 	ModelSource  string
 	EffortSource string
 	TurnId       string
+	Phase        string
+	// Immutable successful-turn summary referencing the final assistant seq.
+	CompletionJson []byte
 }
 
 func (b0 ResponseMetadata_builder) Build() *ResponseMetadata {
@@ -797,6 +827,8 @@ func (b0 ResponseMetadata_builder) Build() *ResponseMetadata {
 	x.xxx_hidden_ModelSource = b.ModelSource
 	x.xxx_hidden_EffortSource = b.EffortSource
 	x.xxx_hidden_TurnId = b.TurnId
+	x.xxx_hidden_Phase = b.Phase
+	x.xxx_hidden_CompletionJson = b.CompletionJson
 	return m0
 }
 
@@ -853,13 +885,15 @@ const file_cxz_session_proto_rawDesc = "" +
 	"\n" +
 	"request_id\x18\x06 \x01(\tR\trequestId\x12\x18\n" +
 	"\apayload\x18\a \x01(\fR\apayload\x121\n" +
-	"\bresponse\x18\b \x01(\v2\x15.cxz.ResponseMetadataR\bresponse\"\xa1\x01\n" +
+	"\bresponse\x18\b \x01(\v2\x15.cxz.ResponseMetadataR\bresponse\"\xe0\x01\n" +
 	"\x10ResponseMetadata\x12\x14\n" +
 	"\x05model\x18\x01 \x01(\tR\x05model\x12\x16\n" +
 	"\x06effort\x18\x02 \x01(\tR\x06effort\x12!\n" +
 	"\fmodel_source\x18\x03 \x01(\tR\vmodelSource\x12#\n" +
 	"\reffort_source\x18\x04 \x01(\tR\feffortSource\x12\x17\n" +
-	"\aturn_id\x18\x05 \x01(\tR\x06turnIdB'Z github.com/lesomnus/cxz/resource\x92\x03\x02\b\x02b\beditionsp\xe8\a"
+	"\aturn_id\x18\x05 \x01(\tR\x06turnId\x12\x14\n" +
+	"\x05phase\x18\x06 \x01(\tR\x05phase\x12'\n" +
+	"\x0fcompletion_json\x18\a \x01(\fR\x0ecompletionJsonB'Z github.com/lesomnus/cxz/resource\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
 var file_cxz_session_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_cxz_session_proto_goTypes = []any{

@@ -22,6 +22,11 @@ import { UsageInfo } from "./usage-info";
 import { Button } from "./button";
 import { AgentBrand } from "./agent-brand";
 import { responseInfo } from "./response-info";
+import {
+  responseCompletions,
+  type ResponseCompletion,
+} from "./response-completion";
+import { ResponseFooter } from "./response-footer";
 import { InputMessage } from "./input-message";
 import { SessionTreeGroup } from "./session-tree";
 import { Transcript } from "./transcript";
@@ -623,6 +628,7 @@ function Conversation({
     [events],
   );
   const s = current.data;
+  const completions = useMemo(() => responseCompletions(events), [events]);
   const combined = useMemo(
     () =>
       [
@@ -796,7 +802,13 @@ function Conversation({
           followRef.current = false;
           setFollow(false);
         }}
-        render={(e) => <EventView e={e} agent={s?.agent ?? ""} />}
+        render={(e) => (
+          <EventView
+            e={e}
+            agent={s?.agent ?? ""}
+            completion={completions.get(e.seq.toString())}
+          />
+        )}
         notice={
           gap && (
             <p className="muted history-note">
@@ -948,56 +960,66 @@ function Conversation({
     </main>
   );
 }
-const EventView = React.memo(function EventView({
-  e,
-  agent,
-}: {
-  e: SessionEvent;
-  agent: string;
-}) {
-  if (e.kind === "assistant") {
-    const info = responseInfo(e.response);
+const EventView = React.memo(
+  function EventView({
+    e,
+    agent,
+    completion,
+  }: {
+    e: SessionEvent;
+    agent: string;
+    completion?: ResponseCompletion;
+  }) {
+    if (e.kind === "assistant") {
+      const info = responseInfo(e.response);
+      return (
+        <article data-seq={e.seq.toString()}>
+          <small className="response-heading">
+            <AgentBrand agent={agent} />
+            {info.label && (
+              <span className="response-settings" title={info.description}>
+                {info.label}
+              </span>
+            )}
+          </small>
+          <Markdown text={e.text} />
+          <ResponseFooter
+            seq={e.seq}
+            timeMs={e.timeMs}
+            text={e.text}
+            completion={completion}
+          />
+        </article>
+      );
+    }
+    if (e.kind === "input")
+      return (
+        <article className="input" data-seq={e.seq.toString()}>
+          <InputMessage event={e} />
+        </article>
+      );
     return (
-      <article data-seq={e.seq.toString()}>
-        <small className="response-heading">
-          <AgentBrand agent={agent} />
-          {info.label && (
-            <span className="response-settings" title={info.description}>
-              {info.label}
-            </span>
-          )}
-        </small>
-        <Markdown text={e.text} />
-        <Button
-          className="copy"
-          onClick={() => navigator.clipboard.writeText(e.text).catch(() => {})}
-        >
-          Copy
-        </Button>
-      </article>
+      <details
+        data-seq={e.seq.toString()}
+        className={
+          e.kind === "diagnostic" || e.kind === "stderr" ? "error" : ""
+        }
+      >
+        <summary>
+          {e.kind === "approval"
+            ? approvalTitle(e)
+            : `${e.kind} · ${e.text.slice(0, 160)}`}
+        </summary>
+        <pre>{e.text}</pre>
+        {e.payload.length > 0 && <pre>{detail(e)}</pre>}
+      </details>
     );
-  }
-  if (e.kind === "input")
-    return (
-      <article className="input" data-seq={e.seq.toString()}>
-        <InputMessage event={e} />
-      </article>
-    );
-  return (
-    <details
-      data-seq={e.seq.toString()}
-      className={e.kind === "diagnostic" || e.kind === "stderr" ? "error" : ""}
-    >
-      <summary>
-        {e.kind === "approval"
-          ? approvalTitle(e)
-          : `${e.kind} · ${e.text.slice(0, 160)}`}
-      </summary>
-      <pre>{e.text}</pre>
-      {e.payload.length > 0 && <pre>{detail(e)}</pre>}
-    </details>
-  );
-});
+  },
+  (previous, next) =>
+    previous.e === next.e &&
+    previous.agent === next.agent &&
+    JSON.stringify(previous.completion) === JSON.stringify(next.completion),
+);
 function Approval({
   e,
   agent,

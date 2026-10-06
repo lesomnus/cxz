@@ -17,7 +17,7 @@ func assistantEvents(s *Supervisor) []core.Event {
 	for _, e := range s.log.All() {
 		if e.Kind == "assistant" {
 			out = append(out, e)
-		} else if e.Response != nil {
+		} else if e.Response != nil && e.Kind != "turn_end" {
 			panic("response metadata on non-assistant event")
 		}
 	}

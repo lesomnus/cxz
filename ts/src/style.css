@@ -505,7 +505,37 @@ pre {
   font-size: 0.75rem;
   color: var(--muted);
   padding: 4px 6px;
-  margin-left: 6px;
+  margin: 0;
+  width: 28px;
+}
+.response-footer {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-height: 28px;
+  padding: 0 12px;
+}
+.response-metrics {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 10px;
+  min-width: 0;
+  padding-top: 6px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.copy-control {
+  flex-shrink: 0;
+  margin-left: auto;
+}
+.copy-control:focus-within .meta-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
 }
 .composer {
   position: relative;

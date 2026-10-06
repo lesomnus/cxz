@@ -14,7 +14,7 @@ import (
 func event(e *api.Event) *resource.SessionEvent {
 	v := resource.SessionEvent_builder{RunId: e.RunId, Seq: e.Seq, TimeMs: e.TimeMs, Kind: e.Kind, Text: e.Text, RequestId: e.RequestId, Payload: e.Payload}.Build()
 	if r := e.Response; r != nil {
-		v.SetResponse(resource.ResponseMetadata_builder{Model: r.Model, Effort: r.Effort, ModelSource: r.ModelSource, EffortSource: r.EffortSource, TurnId: r.TurnId}.Build())
+		v.SetResponse(resource.ResponseMetadata_builder{Model: r.Model, Effort: r.Effort, ModelSource: r.ModelSource, EffortSource: r.EffortSource, TurnId: r.TurnId, Phase: r.Phase, CompletionJson: r.CompletionJson}.Build())
 	}
 	return v
 }

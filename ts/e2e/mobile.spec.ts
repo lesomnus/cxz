@@ -16,6 +16,9 @@ test("mobile sign-in, conversation, questions, drafts and sign-out", async ({
   await expect(page.locator(".response-settings")).toHaveText(
     "fixture-model · high",
   );
+  await expect(
+    page.getByLabel("Response metrics", { exact: true }),
+  ).toContainText("4.2초");
   await expect(page.getByRole("radio", { name: /Development/ })).toBeVisible();
   await page.getByRole("radio", { name: /Development/ }).check();
   await page.getByRole("button", { name: "Submit answers" }).click();

@@ -74,6 +74,9 @@ func New(seed uint64, delay time.Duration) *Server {
 		s.telemetry(st)
 		s.event(st, "input", "Show the current state of this project.", "", nil)
 		s.event(st, "assistant", answer(st.scenario), "", nil)
+		if st.scenario != "long" {
+			s.complete(st, st.value.GetStatus().GetLastSeq())
+		}
 		if st.scenario == "long" {
 			for n := 0; n < 2100; n++ {
 				if n%40 == 0 {
@@ -488,6 +491,7 @@ func (s *Server) respond(st *session, generation uint64) {
 	}
 	s.event(st, "tool_result", "Sample tasks completed", "", []byte(`{"simulated":true,"status":"completed","output":"All fixture checks passed"}`))
 	s.event(st, "assistant", answer(scenario), "", nil)
+	s.complete(st, st.value.GetStatus().GetLastSeq())
 	s.state(st, "idle")
 }
 func answer(scenario string) string {
@@ -524,6 +528,7 @@ func (x *Sessions) Reply(_ context.Context, r *resource.SessionReplyRequest) (*r
 	s.event(st, "approval_resolved", fmt.Sprintf("allow=%t", r.GetAllow()), r.GetRequestId(), nil)
 	st.value.GetStatus().SetPending(nil)
 	s.event(st, "assistant", "Your selection was recorded for this preview.\n\n"+r.GetAnswersJson(), "", nil)
+	s.complete(st, st.value.GetStatus().GetLastSeq())
 	s.state(st, "idle")
 	return receipt(r.GetClientId()), nil
 }
