@@ -69,6 +69,7 @@ type model struct {
 	sessionBackground       map[string]*sessionBackgroundCheck
 	backgroundStateCache    map[string]backgroundStateCache
 	textSelection           *transcriptSelection
+	responseRows            map[int]bool
 	codeButtons             []codeButton
 	codeHover               *codeButton
 	recordingError          string
@@ -635,10 +636,12 @@ func (m *model) render() {
 	}()
 	m.promptSpans = nil
 	m.codeButtons = nil
+	m.responseRows = map[int]bool{}
 	m.workingToolRows = nil
 	m.auxiliaryLoadingRows = nil
 	m.toolRows = map[int]uint64{}
 	copyBlocks := map[int][]codeButton{}
+	responseBlocks := map[int]bool{}
 	toolBlocks := map[int]bool{}
 	inspectBlocks := map[int]bool{}
 	auxiliaryBlocks := map[int]bool{}
@@ -874,6 +877,7 @@ func (m *model) render() {
 				if e.Kind == "assistant" {
 					replyIndex = len(lines) - 1
 					copyBlocks[replyIndex] = m.renderedResponses[e].buttons
+					responseBlocks[replyIndex] = true
 				}
 			}
 		}
@@ -909,6 +913,9 @@ func (m *model) render() {
 		}
 		rows := strings.Split(block, "\n")
 		for row := range rows {
+			if responseBlocks[i] && row > 0 {
+				m.responseRows[start+row] = true
+			}
 			if auxiliaryBlocks[i] {
 				if m.auxiliaryLoadingRows == nil {
 					m.auxiliaryLoadingRows = map[int]bool{}
