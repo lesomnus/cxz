@@ -28,3 +28,11 @@ independent document editors.
 Changes to editor mechanics belong in bed with its unit tests. Publish a commit
 there, update the pinned dependency here, and run the TUI regression tests,
 including composer selection/display, paste chips and session completion.
+
+The composer uses bed/Bubbles' native cursor timer. `Init` enables blinking;
+`Update` delivers cursor ticks before modal routing and dispatches commands
+queued by `focusComposer`, including focus changes in asynchronous handlers.
+Keyboard/mouse input restarts the phase and terminal blur holds the cursor
+steady. Other UI animations and the terminal panel keep their own pulse.
+Render/layout probes must never call `Focus` on a shallow editor copy with
+blinking enabled: Bubbles copies share the live timer cancellation context.

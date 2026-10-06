@@ -185,7 +185,7 @@ func (m *model) libraryKey(k tea.KeyMsg) tea.Cmd {
 			p.cancel()
 		}
 		m.library = nil
-		return m.input.Focus()
+		return m.focusComposer()
 	case "left", "backspace":
 		if p.request.Document != "" {
 			return m.loadLibrary(memorylib.Request{Action: "read", ID: p.request.ID, Trash: p.request.Trash})

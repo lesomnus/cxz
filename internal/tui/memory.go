@@ -127,7 +127,7 @@ func (m *model) memoryKey(k tea.KeyMsg) tea.Cmd {
 		}
 		m.memoryPage = nil
 		if p.inputFocused {
-			return m.input.Focus()
+			return m.focusComposer()
 		}
 	case "left", "backspace":
 		return m.memoryParent()

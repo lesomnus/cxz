@@ -181,10 +181,7 @@ func newComposer() bed.Model {
 	input.KeyMap.WordBackward = key.NewBinding(key.WithKeys("ctrl+left", "alt+b"))
 	input.KeyMap.WordForward = key.NewBinding(key.WithKeys("ctrl+right", "alt+f"))
 	input.Cursor.Style = inputCursorStyle
-	// The widget's own blink is a self-rescheduling chain: it needs every tick to
-	// reach it and the next command to be run, so any branch of Update that
-	// consumes a tick stops the cursor until something refocuses the input. The
-	// shared pulse cannot stop, so the phase is driven from there instead.
+	// Init starts the native timer when the model enters a running program.
 	input.Cursor.SetMode(cursor.CursorStatic)
 	input.Placeholder = "Ask a question… (Ctrl+S to send · /help)"
 	input.Prompt = "❯ "
@@ -351,7 +348,7 @@ func (m *model) sessionScreen() string {
 	}
 	modal := m.errorFocused() || m.redactDialog != nil || m.terminalFocused() || m.panelFocus || m.report != nil || m.modelPicker != nil || m.restartConfirm != nil || m.questionFocused() || m.pasteDialog != nil || m.selectingTools() || (m.previewVisible() && m.filePreview.focused)
 	if modal {
-		composer.Blur()
+		composer.Model.Blur()
 	}
 	conversation := m.restartOverlay(m.reportView(m.modelPickerOverlay(m.commandOverlay(m.conversationView()))))
 	body := ""

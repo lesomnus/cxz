@@ -104,7 +104,7 @@ func (m *model) navigateSession(direction int) tea.Cmd {
 		m.watch()
 		m.resize()
 		m.render()
-		return m.input.Focus()
+		return m.focusComposer()
 	}
 	return nil
 }

@@ -113,7 +113,7 @@ func TestTerminalOutputAndReplay(t *testing.T) {
 	if got := safeText("before\x1b]52;c;YWJj\a\x1b[2Jafter"); got != "beforeafter" {
 		t.Fatalf("terminal injection: %q", got)
 	}
-	m := &model{sessions: []*api.Session{{Id: "s"}}, view: viewport.New(30, 5), events: map[string][]*api.Event{}, cursor: map[string]uint64{}}
+	m := &model{input: newComposer(), sessions: []*api.Session{{Id: "s"}}, view: viewport.New(30, 5), events: map[string][]*api.Event{}, cursor: map[string]uint64{}}
 	for range 2 {
 		m.Update(received{id: "s", event: &api.Event{Seq: 1, Kind: "assistant", Text: "hello"}})
 	}

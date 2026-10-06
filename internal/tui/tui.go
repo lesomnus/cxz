@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/charmbracelet/bubbles/cursor"
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
@@ -221,6 +222,8 @@ type model struct {
 	latestPrompt            string
 	pulse                   int
 	blinkFrom               int
+	composerBlink           bool // enabled when Init starts the event loop
+	composerFocusCmd        tea.Cmd
 	blurred                 bool
 	workingSince            int64
 	backgroundSnapshots     map[string]backgroundSnapshot
@@ -460,7 +463,13 @@ func (m *model) refresh() tea.Cmd {
 }
 func timer() tea.Cmd { return tea.Tick(time.Second, func(t time.Time) tea.Msg { return tick(t) }) }
 func (m *model) Init() tea.Cmd {
-	return tea.Batch(m.refresh(), m.watchResources(), timer(), pulseTimer())
+	m.composerBlink = true
+	m.input.Cursor.SetMode(cursor.CursorBlink)
+	var blink tea.Cmd
+	if m.input.Focused() {
+		blink = m.input.Focus()
+	}
+	return tea.Batch(m.refresh(), m.watchResources(), timer(), pulseTimer(), blink)
 }
 func (m *model) current() *api.Session {
 	if len(m.sessions) == 0 {
@@ -1013,7 +1022,31 @@ func (m *model) action(kind, text string) tea.Cmd {
 		return r
 	}
 }
-func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m *model) Update(msg tea.Msg) (next tea.Model, cmd tea.Cmd) {
+	defer func() {
+		// Focus can change in any of the view handlers, including asynchronous ones.
+		// Keep the latest focus command even when a handler returns early.
+		switch msg.(type) {
+		case tea.KeyMsg, tea.MouseMsg, tea.FocusMsg:
+			if m.composerBlink && m.input.Focused() {
+				m.focusComposer()
+			}
+		}
+		if m.blurred {
+			m.input.Cursor.SetMode(cursor.CursorStatic)
+			m.composerFocusCmd = nil
+		}
+		cmd = tea.Batch(cmd, m.composerFocusCmd)
+		m.composerFocusCmd = nil
+	}()
+	if _, ok := msg.(cursor.BlinkMsg); ok {
+		var blink tea.Cmd
+		m.input.Cursor, blink = m.input.Cursor.Update(msg)
+		if blink != nil {
+			return m, blink
+		}
+	}
+
 	// Terminal focus decides what the bright green is allowed to claim, so it is
 	// read before any branch below can consume the message. Styles already
 	// copied into live widgets are repainted here; widgets built later read the
@@ -1182,7 +1215,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			activity = m.reportActivity()
 		}
 	}
-	next, cmd := m.update(msg)
+	next, cmd = m.update(msg)
 	if k, ok := msg.(tea.KeyMsg); ok && k.Paste {
 		if token := m.mentionContext(); token != nil {
 			m.mentionDismissed = token.signature
@@ -1351,7 +1384,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		d.suspended = !d.suspended
 		m.panelFocus = false
 		if d.suspended {
-			return m, m.input.Focus()
+			return m, m.focusComposer()
 		}
 		m.focusQuestion()
 		return m, nil
@@ -1605,9 +1638,6 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.refresh()
 	case pulseTick:
 		m.pulse++
-		// One second on, one off, like every other blink on screen. A background
-		// window holds the cursor still: there is nothing to type into.
-		m.input.Cursor.Blink = !m.blurred && (m.pulse-m.blinkFrom)%10 >= 5
 		return m, pulseTimer()
 	case permissionResult:
 		delete(m.permissionUpdating, v.id)
@@ -1659,7 +1689,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if m.focusApproval {
 			m.focusApproval = false
-			m.input.Focus()
+			m.focusComposer()
 		}
 		m.resize()
 		m.render()
@@ -1934,14 +1964,14 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if !found {
 				m.approvalOffset = 0
 				m.focusApproval = false
-				m.input.Focus()
+				m.focusComposer()
 				m.notice = "Selected approval resolved; review the next request before deciding"
 			}
 		}
 		if m.selectedApproval() == nil {
 			m.approvalOffset = 0
 			if m.focusApproval {
-				m.input.Focus()
+				m.focusComposer()
 			}
 			m.focusApproval = false
 		}
@@ -2019,7 +2049,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.panelFocus = false
 				m.projectView = false
 				m.accountView = false
-				return m, tea.Batch(m.input.Focus(), m.refresh())
+				return m, tea.Batch(m.focusComposer(), m.refresh())
 			}
 		}
 		return m, m.refresh()
@@ -2222,7 +2252,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+s":
 			if m.focusList {
 				m.focusList = false
-				return m, m.input.Focus()
+				return m, m.focusComposer()
 			}
 			text := strings.TrimSpace(m.input.Value())
 			if !m.fileAttachmentsReady(text) {

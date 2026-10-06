@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"github.com/charmbracelet/bubbles/cursor"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/lesomnus/bed"
 )
@@ -115,4 +116,15 @@ func (m *model) composerSession() string {
 		return s.Id
 	}
 	return ""
+}
+
+// focusComposer retains the command for Update to dispatch even when a view
+// handler has no command return value. Repeated focus calls replace older timers.
+func (m *model) focusComposer() tea.Cmd {
+	if !m.composerBlink {
+		return m.input.Focus()
+	}
+	m.input.Cursor.SetMode(cursor.CursorBlink)
+	m.composerFocusCmd = m.input.Focus()
+	return nil
 }
