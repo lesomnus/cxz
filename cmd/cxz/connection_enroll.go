@@ -23,7 +23,7 @@ func enrollCommands() xli.Commands {
 			Args:  arg.Args{&arg.String{Name: "NAME"}},
 			Flags: flg.Flags{
 				&flg.String{Name: "label", Brief: "Name the installation records for this client (default: this host's name)", Default: remoteDefault("")},
-				&flg.String{Name: "address", Brief: "Address to dial the relay on (default: the one the host reports)", Default: remoteDefault("")},
+				&flg.String{Name: "address", Brief: "Address to dial the relay on (default: the host ssh resolves, with the port the relay reports)", Default: remoteDefault("")},
 				&flg.Switch{Name: "csr", Brief: "Print a certificate request for the manual path and store the key", Default: remoteSwitch(false)},
 				&flg.String{Name: "certificate", Brief: "Signed certificate file, completing the manual path", Default: remoteDefault("")},
 				&flg.String{Name: "ca", Brief: "Installation root certificate file, completing the manual path", Default: remoteDefault("")},
@@ -129,7 +129,16 @@ func connectionEnroll(ctx context.Context, c *xli.Command, _ xli.Next) error {
 	if endpoint.Scheme != "ssh" {
 		return fmt.Errorf("connection %s has no ssh channel to enroll over; use --csr and --certificate, or add an ssh:// connection to the same host", name)
 	}
-	_, err = enroll.Over(ctx, sshRunner(endpoint), state, name, endpoint.Address, enroll.Options{
+	host := ""
+	if address == "" {
+		// The relay is dialed directly, so the name it is dialed by has to be
+		// one this machine resolves -- which the connection's own host is not
+		// whenever that is an ssh_config alias.
+		if host, err = endpoint.SSHDialHost(ctx); err != nil {
+			return fmt.Errorf("%w; pass --address host:port to say where to reach it", err)
+		}
+	}
+	_, err = enroll.Over(ctx, sshRunner(endpoint), state, name, host, enroll.Options{
 		Label:   flg.MustGet[string](c, "label"),
 		Address: address,
 		Start:   !flg.MustGet[bool](c, "no-start"),
