@@ -4,16 +4,21 @@ package webui
 import (
 	"context"
 	"io"
+	"path"
+	"strings"
 
 	"github.com/lesomnus/cxz/resource"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // Keep the initial browser surface explicit. Unimplemented methods fail closed;
 // no second database or lifecycle implementation is opened by this gateway.
 type projects struct {
 	resource.UnimplementedProjectServiceServer
-	client resource.ProjectServiceClient
+	client  resource.ProjectServiceClient
+	editors *editorProxy
 }
 
 func (s *projects) List(ctx context.Context, r *resource.ProjectListRequest) (*resource.ProjectListResponse, error) {
@@ -21,6 +26,79 @@ func (s *projects) List(ctx context.Context, r *resource.ProjectListRequest) (*r
 }
 func (s *projects) Get(ctx context.Context, r *resource.ProjectGetRequest) (*resource.Project, error) {
 	return s.client.Get(ctx, r)
+}
+
+func (s *projects) workspacePath(ctx context.Context, ref *resource.ProjectRef, requested string) error {
+	p, err := s.client.Get(ctx, resource.ProjectGetRequest_builder{Ref: ref, Select: resource.ProjectSelect_builder{All: boolPointer(true)}.Build()}.Build())
+	if err != nil {
+		return err
+	}
+	root := p.GetStatus().GetRemoteWorkspace()
+	if root == "" || !strings.HasPrefix(root, "/") {
+		return status.Error(codes.FailedPrecondition, "project workspace unavailable")
+	}
+	root = path.Clean(root)
+	requested = path.Clean(requested)
+	if requested != root && !strings.HasPrefix(requested, strings.TrimSuffix(root, "/")+"/") {
+		return status.Error(codes.PermissionDenied, "path outside project workspace")
+	}
+	return nil
+}
+func boolPointer(v bool) *bool { return &v }
+
+func (s *projects) Paths(r *resource.ProjectPathsRequest, stream grpc.ServerStreamingServer[resource.ProjectPathsReply]) error {
+	ctx, cancel := context.WithCancel(stream.Context())
+	defer cancel()
+	if err := s.workspacePath(ctx, r.GetRef(), r.GetPath()); err != nil {
+		return err
+	}
+	upstream, err := s.client.Paths(ctx, r)
+	if err != nil {
+		return err
+	}
+	for {
+		v, err := upstream.Recv()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		if err = stream.Send(v); err != nil {
+			return err
+		}
+	}
+}
+func (s *projects) Download(r *resource.ProjectDownloadRequest, stream grpc.ServerStreamingServer[resource.ProjectDownloadReply]) error {
+	ctx, cancel := context.WithCancel(stream.Context())
+	defer cancel()
+	if err := s.workspacePath(ctx, r.GetRef(), r.GetPath()); err != nil {
+		return err
+	}
+	upstream, err := s.client.Download(ctx, r)
+	if err != nil {
+		return err
+	}
+	total := 0
+	for {
+		v, err := upstream.Recv()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		total += len(v.GetData())
+		if total > 1<<20 || v.GetTotalSize() > 1<<20 {
+			return status.Error(codes.ResourceExhausted, "file preview is limited to 1 MiB")
+		}
+		if err = stream.Send(v); err != nil {
+			return err
+		}
+	}
+}
+func (s *projects) Editor(ctx context.Context, r *resource.ProjectEditorRequest) (*resource.ProjectEditorReply, error) {
+	return s.editors.connect(ctx, r)
 }
 
 type sessions struct {

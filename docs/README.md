@@ -13,6 +13,7 @@ start. This is the map of everything else.
 | [docker.md](docker.md) | What cxz creates, the shared engine, Compose overrides, remote engines |
 | [remote.md](remote.md) | SSH and TCP frontends, named connections, Windows |
 | [web.md](web.md) | Browser client: loopback desktop setup, VPN HTTPS, current support |
+| [web-editor.md](web-editor.md) | Wide-view file preview, devcontainer IDE connection, WASM fake connection and Linux review |
 
 ## Using it
 

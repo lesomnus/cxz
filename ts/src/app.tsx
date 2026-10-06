@@ -38,6 +38,7 @@ import {
 import { expandPastes, type ComposerPaste } from "./composer-pastes";
 import { SessionTreeGroup } from "./session-tree";
 import { Transcript } from "./transcript";
+import { WorkspaceEditor } from "./workspace-editor";
 export { Button } from "./button";
 import "./style.css";
 
@@ -70,6 +71,7 @@ function Markdown({ text }: { text: string }) {
       dangerouslySetInnerHTML={{
         __html: DOMPurify.sanitize(marked.parse(text, { async: false }), {
           FORBID_TAGS: ["img", "style", "input", "form"],
+          FORBID_ATTR: ["style"],
         }),
       }}
     />
@@ -281,12 +283,7 @@ export function Workspace({
           </div>
         </main>
       ) : session ? (
-        <Conversation
-          key={session}
-          c={c}
-          id={session}
-          back={() => setSession("")}
-        />
+        <SessionWorkspace c={c} id={session} back={() => setSession("")} />
       ) : (
         <main className="empty">
           <h1>Your workspace</h1>
@@ -294,6 +291,65 @@ export function Workspace({
         </main>
       )}
     </div>
+  );
+}
+function SessionWorkspace({
+  c,
+  id,
+  back,
+}: {
+  c: Connection;
+  id: string;
+  back: () => void;
+}) {
+  const current = useQuery(SessionService.method.get, {
+    ref: ref(id),
+    select: { all: true, project: { all: true } },
+  });
+  const area = useRef<HTMLDivElement>(null);
+  const [activated, setActivated] = useState(false);
+  useEffect(() => {
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry.contentRect.width >= 1600) setActivated(true);
+    });
+    observer.observe(area.current!);
+    return () => observer.disconnect();
+  }, []);
+  const project = current.data?.project;
+  return (
+    <div className="session-workspace" ref={area}>
+      <div className="session-split">
+        <Conversation key={id} c={c} id={id} back={back} />
+        {activated && !!project?.id.length && (
+          <ProjectEditorPane
+            key={Array.from(project.id).join("-")}
+            c={c}
+            projectId={project.id}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+function ProjectEditorPane({
+  c,
+  projectId,
+}: {
+  c: Connection;
+  projectId: Uint8Array;
+}) {
+  const project = useQuery(ProjectService.method.get, {
+    ref: { key: { case: "id", value: projectId } },
+    select: { all: true },
+  });
+  return project.data ? (
+    <WorkspaceEditor c={c} project={project.data} />
+  ) : (
+    <aside className="workspace-editor" aria-label="Workspace editor">
+      <p role={project.error ? "alert" : "status"}>
+        {project.error ? String(project.error) : "Loading workspace…"}
+      </p>
+    </aside>
   );
 }
 function Conversation(props: { c: Connection; id: string; back: () => void }) {

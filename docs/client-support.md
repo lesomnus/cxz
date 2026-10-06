@@ -107,6 +107,7 @@ explained in the mobile plan; it remains Not implemented in the web column.
 | WEB-05 | N/A: browser-specific requirement | N/A: browser-specific requirement | Not implemented |
 | WEB-06 | N/A: browser-specific requirement | N/A: browser-specific requirement | Not implemented |
 | WEB-07 | N/A: developer npm workflow, not a cxz CLI command | N/A | Supported: separate payday WASM design sandbox with shared UI, scenario sessions, seed/pace and reset; production server not required |
+| WEB-08 | N/A: browser-specific requirement | N/A | Supported: wide-view Monaco preview, explicit same-origin OpenVSCode devcontainer connection, project state and WASM fake connection; see [contract](web-editor.md) |
 
 ## Evidence and updates
 

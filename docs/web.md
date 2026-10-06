@@ -152,6 +152,7 @@ this terminal for developing cxz itself, and Ctrl+C stops only that gateway.
 | Questions | Claude AskUserQuestion and Codex requestUserInput choices/free text |
 | MCP | Server name/message/raw request; complex elicitation forms require the TUI |
 | Connectivity | Same-origin Connection, cursor reconnect, deduplication and retention gap notice |
+| Workspace editor | Wide-view read-only Monaco file preview; explicit Connect embeds OpenVSCode in the session project devcontainer; see [editor contract](web-editor.md) |
 | Authentication | Token login, Secure/HttpOnly/SameSite cookie, sign-out, 12-hour expiry |
 
 Not yet implemented: session/project creation and deletion, Settings, version

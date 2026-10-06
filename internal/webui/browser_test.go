@@ -2,14 +2,20 @@ package webui
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"io"
 	"net"
 	"net/http/httptest"
 	"os"
+	"os/exec"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/lesomnus/cxz/internal/dockerx"
+	"github.com/lesomnus/cxz/internal/editor"
 	"github.com/lesomnus/cxz/resource"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -25,7 +31,7 @@ func TestBrowserFixture(t *testing.T) {
 	ln := bufconn.Listen(1 << 20)
 	g := grpc.NewServer()
 	f := &browserFixture{}
-	resource.RegisterProjectServiceServer(g, &fixtureProjects{})
+	resource.RegisterProjectServiceServer(g, &fixtureProjects{probe: os.Getenv("CXZ_EDITOR_PROBE_CONTAINER")})
 	resource.RegisterSessionServiceServer(g, f)
 	go g.Serve(ln)
 	defer g.Stop()
@@ -62,10 +68,92 @@ func TestBrowserFixture(t *testing.T) {
 	time.Sleep(10 * time.Minute)
 }
 
-var fixtureProject = resource.Project_builder{Id: []byte("1234567890123456"), RuntimeId: "project", Alias: "demo", Name: "Demo project", Listed: true, Status: resource.ProjectStatus_builder{State: "running"}.Build()}.Build()
+var fixtureProject = resource.Project_builder{Id: []byte("1234567890123456"), RuntimeId: "project", Alias: "demo", Name: "Demo project", Listed: true, Status: resource.ProjectStatus_builder{State: "running", RemoteWorkspace: "/workspace"}.Build()}.Build()
 
 type fixtureProjects struct {
 	resource.UnimplementedProjectServiceServer
+	probe string
+}
+
+func (*fixtureProjects) Paths(_ *resource.ProjectPathsRequest, s grpc.ServerStreamingServer[resource.ProjectPathsReply]) error {
+	name := "README.md"
+	return s.Send(resource.ProjectPathsReply_builder{Entries: []*resource.ProjectPathEntry{resource.ProjectPathEntry_builder{Name: &name}.Build()}}.Build())
+}
+func (*fixtureProjects) Download(_ *resource.ProjectDownloadRequest, s grpc.ServerStreamingServer[resource.ProjectDownloadReply]) error {
+	data := []byte("# Fixture workspace\n\nA readonly file preview.\n")
+	size := int64(len(data))
+	return s.Send(resource.ProjectDownloadReply_builder{Data: data, TotalSize: &size}.Build())
+}
+
+// Opt-in real IDE probe: this test-owned container already has the helper and
+// pinned release installed. Ordinary browser tests still need no Docker.
+func (p *fixtureProjects) Editor(ctx context.Context, _ *resource.ProjectEditorRequest) (*resource.ProjectEditorReply, error) {
+	if p.probe == "" {
+		return nil, fmt.Errorf("real editor probe is opt-in")
+	}
+	data, err := dockerx.Run(ctx, "exec", p.probe, "/tmp/cxz", "_editor-start", "project", "/workspace")
+	if err != nil {
+		return nil, err
+	}
+	var result editor.Result
+	if err = json.Unmarshal(data, &result); err != nil {
+		return nil, err
+	}
+	return resource.ProjectEditorReply_builder{Workspace: &result.Workspace, ConnectionToken: &result.Token}.Build(), nil
+}
+func (p *fixtureProjects) EditorTunnel(stream grpc.BidiStreamingServer[resource.ProjectEditorTunnelRequest, resource.ProjectEditorTunnelReply]) error {
+	if p.probe == "" {
+		return fmt.Errorf("real editor probe is opt-in")
+	}
+	if _, err := stream.Recv(); err != nil {
+		return err
+	}
+	ctx, cancel := context.WithCancel(stream.Context())
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "docker", "exec", "-i", p.probe, "/tmp/cxz", "_editor-tunnel")
+	in, err := cmd.StdinPipe()
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+	out, err := cmd.StdoutPipe()
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+	if err = cmd.Start(); err != nil {
+		return err
+	}
+	defer func() { cancel(); cmd.Wait() }()
+	if err = stream.Send(resource.ProjectEditorTunnelReply_builder{Ready: boolPointer(true)}.Build()); err != nil {
+		return err
+	}
+	go func() {
+		for {
+			r, err := stream.Recv()
+			if err != nil {
+				return
+			}
+			if _, err = in.Write(r.GetInput()); err != nil {
+				return
+			}
+		}
+	}()
+	buf := make([]byte, 65536)
+	for {
+		n, err := out.Read(buf)
+		if n > 0 {
+			if e := stream.Send(resource.ProjectEditorTunnelReply_builder{Output: append([]byte(nil), buf[:n]...)}.Build()); e != nil {
+				return e
+			}
+		}
+		if err != nil {
+			if err == io.EOF {
+				return nil
+			}
+			return err
+		}
+	}
 }
 
 func (*fixtureProjects) List(context.Context, *resource.ProjectListRequest) (*resource.ProjectListResponse, error) {
@@ -111,7 +199,7 @@ func (f *browserFixture) History(_ context.Context, r *resource.SessionEventsReq
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	if f.events == nil {
-		f.events = []*resource.SessionEvent{resource.SessionEvent_builder{Seq: 1, RunId: "run", Kind: "input", Text: "Show the project"}.Build(), resource.SessionEvent_builder{Seq: 2, RunId: "run", Kind: "assistant", Text: "## Ready\n\nHello **mobile**.\n\n```go\nfmt.Println(\"안녕\")\n```\n\n<script>window.pwned=true</script>", Response: resource.ResponseMetadata_builder{Model: "fixture-model", Effort: "high", ModelSource: "response", EffortSource: "settings"}.Build()}.Build()}
+		f.events = []*resource.SessionEvent{resource.SessionEvent_builder{Seq: 1, RunId: "run", Kind: "input", Text: "Show the project"}.Build(), resource.SessionEvent_builder{Seq: 2, RunId: "run", Kind: "assistant", Text: "## Ready\n\nHello **mobile**. <span style=\"position:fixed;inset:0;color:red\">style fixture</span>\n\n```go\nfmt.Println(\"안녕\")\n```\n\n<script>window.pwned=true</script>", Response: resource.ResponseMetadata_builder{Model: "fixture-model", Effort: "high", ModelSource: "response", EffortSource: "settings"}.Build()}.Build()}
 		f.events[1].SetTimeMs(time.Now().UnixMilli())
 		f.events = append(f.events, resource.SessionEvent_builder{Seq: 4, RunId: "run", Kind: "turn_end", Text: "completed", Response: resource.ResponseMetadata_builder{CompletionJson: []byte(`{"response_seq":"2","duration_ms":4200,"duration_source":"provider","token_scope":"turn","metrics":{"input_tokens":1200,"output_tokens":320}}`)}.Build()}.Build())
 	}

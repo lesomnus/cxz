@@ -25,6 +25,18 @@ The script works from Windows or Linux with Go and Node installed. It uses Node
 process APIs rather than POSIX shell environment syntax, and copies wasm_exec.js
 from the same Go toolchain that compiled the module.
 
+## Workspace file preview and fake Connect
+
+When the area after the sidebar/session panel reaches 1600px, the conversation
+uses 800px and the remaining width shows a file tree/read-only Monaco view.
+The WASM service supplies README, Go/TypeScript and devcontainer fixture files
+for each project. **Connect** changes to **Simulated connection** using the
+configured pace; **Disconnect** returns to File preview. No Linux VM, container,
+remote IDE or real filesystem is started. Tabs and connection state are retained
+per project while resizing and switching sessions; conversation drafts are kept.
+The [workspace editor contract](web-editor.md) describes real devcontainer
+connections and the separate review of Linux/VS Code running inside browser WASM.
+
 ## Scenarios and controls
 
 The Scenario selector opens one of the sample sessions:

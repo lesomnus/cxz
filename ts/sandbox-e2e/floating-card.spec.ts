@@ -280,6 +280,7 @@ test("pending questions stay dimmed behind previews and only lift for a taller c
   });
   await details.click();
   const preview = page.getByRole("dialog", { name: "Request details" });
+  await expect(preview).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
   await expect(layer).toHaveAttribute("data-covered", "true");
   await expect(layer).toHaveJSProperty("inert", true);
   await expect
@@ -365,6 +366,7 @@ test("question and covering details stay bounded on mobile and dismiss independe
     .click();
   const layer = page.locator(".question-cards");
   const preview = page.getByRole("dialog", { name: "Request details" });
+  await expect(preview).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
   await expect(layer).toHaveAttribute("data-covered", "true");
   await expect
     .poll(async () =>
