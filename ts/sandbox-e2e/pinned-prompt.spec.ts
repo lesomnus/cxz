@@ -120,7 +120,7 @@ test("preceding input peeks below the title without following scroll and reveals
   );
   await pinned.click();
   await expect(pane).toHaveAttribute("data-dismissed-opacity", "0");
-  const original = pane.locator(`article.input[data-seq="${seq}"]`);
+  const original = pane.locator(`article.input[data-seq="${seq}"] .input-box`);
   await expect(original).toBeVisible();
   await expect
     .poll(async () =>
@@ -203,7 +203,7 @@ test("the preceding input only peeks after the nearest visible input clears the 
   const seq = (await overlay.getAttribute("data-pinned-seq"))!;
   await reveal(page);
   await page.getByRole("button", { name: "Jump to user message" }).click();
-  const input = pane.locator(`article.input[data-seq="${seq}"]`);
+  const input = pane.locator(`article.input[data-seq="${seq}"] .input-box`);
   await expect(input).toBeVisible();
   await page.mouse.move(10, 10);
   async function gap(pixels: number) {

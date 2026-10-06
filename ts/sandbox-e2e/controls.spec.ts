@@ -20,8 +20,53 @@ test("provider dropdowns, quota popovers, aligned headings and bounded press/sha
   await expect(page.locator(".session-description").first()).toHaveText(
     "session-1sandbox-claude",
   );
+  const card = page.locator(".tree-session").first();
+  const title = card.locator(".session-title");
+  const logo = card.getByRole("img", { name: "Claude", exact: true });
+  const description = card.locator(".session-description");
+  const titleBefore = (await title.boundingBox())!;
+  const logoBefore = (await logo.boundingBox())!;
+  const descriptionBefore = (await description.boundingBox())!;
+  expect(logoBefore.x + logoBefore.width).toBeLessThan(titleBefore.x);
+  expect(
+    Math.abs(
+      logoBefore.y +
+        logoBefore.height / 2 -
+        titleBefore.y -
+        titleBefore.height / 2,
+    ),
+  ).toBeLessThan(0.5);
+  await card.hover();
+  await page.mouse.down();
+  await expect
+    .poll(async () => (await title.boundingBox())!.width)
+    .toBeLessThan(titleBefore.width);
+  expect(
+    titleBefore.width - (await title.boundingBox())!.width,
+  ).toBeLessThanOrEqual(4.1);
+  expect(await logo.boundingBox()).toEqual(logoBefore);
+  expect(await description.boundingBox()).toEqual(descriptionBefore);
+  await expect(card.locator(".button-content")).toHaveCSS("transform", "none");
+  await page.mouse.move(1000, 20);
+  await page.mouse.up();
+  await expect
+    .poll(async () => (await title.boundingBox())!.width)
+    .toBeCloseTo(titleBefore.width, 1);
+  const input = page.locator("article.input").first();
+  await expect(input.locator(".input-prefix")).toHaveText(">");
+  await expect(input).not.toContainText("You");
+  const bodyBox = (await input.locator(".message-body").boundingBox())!;
+  const prefixBox = (await input.locator(".input-prefix").boundingBox())!;
+  expect(bodyBox.y).toBeCloseTo(prefixBox.y, 1);
+  expect(bodyBox.x).toBeGreaterThan(prefixBox.x + prefixBox.width);
+  const timestamp = input.locator(".input-time time");
+  await expect(timestamp).toHaveAttribute("datetime", /^2023-11-14T/);
+  await expect(input.locator(".input-relative-time")).toHaveCount(0);
+  const timeBox = (await timestamp.boundingBox())!;
+  const inputBox = (await input.locator(".input-box").boundingBox())!;
+  expect(timeBox.y + timeBox.height).toBeLessThan(inputBox.y);
   const userHeading = await page
-    .locator("article.input > small")
+    .locator("article.input .input-prefix")
     .first()
     .boundingBox();
   const agentHeading = await page

@@ -1,10 +1,12 @@
 import type { SessionEvent } from "../gen/cxz/session_pb";
+import { INPUT_TIME_HEIGHT, messageDate } from "./message-time";
 
 export type RowLayout = {
   id: string;
   top: number;
   height: number;
   prompt: boolean;
+  promptInset?: number;
 };
 
 // Navigation uses message positions, independent of measured pixel heights.
@@ -74,7 +76,16 @@ export function messageLayout(
     const height =
       sizes.get(id) ??
       (event.kind === "assistant" ? 86 : event.kind === "input" ? 76 : 44);
-    const row = { id, top, height, prompt: event.kind === "input" };
+    const row = {
+      id,
+      top,
+      height,
+      prompt: event.kind === "input",
+      promptInset:
+        event.kind === "input" && messageDate(event.timeMs)
+          ? INPUT_TIME_HEIGHT
+          : 0,
+    };
     top += height;
     return row;
   });

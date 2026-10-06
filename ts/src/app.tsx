@@ -21,6 +21,7 @@ import { ModelSettings, modelCatalog } from "./model-settings";
 import { UsageInfo } from "./usage-info";
 import { Button } from "./button";
 import { AgentBrand } from "./agent-brand";
+import { InputMessage } from "./input-message";
 import { SessionTreeGroup } from "./session-tree";
 import { Transcript } from "./transcript";
 export { Button } from "./button";
@@ -971,8 +972,7 @@ const EventView = React.memo(function EventView({
   if (e.kind === "input")
     return (
       <article className="input" data-seq={e.seq.toString()}>
-        <small>❯ You</small>
-        <p className="message-body">{e.text}</p>
+        <InputMessage event={e} />
       </article>
     );
   return (
