@@ -16,11 +16,16 @@ func (s *Supervisor) publishModels() {
 	if source == "" {
 		source = map[bool]string{true: "model/list", false: "initialize"}[s.codex != nil]
 	}
-	state := map[string]any{"models": s.modelOptions, "model": s.session.Model, "effort": s.effort, "source": source}
+	// applied_reported distinguishes what the provider confirmed from what cxz
+	// asked for. Claude is read back with get_settings; Codex reports no applied
+	// settings, and presenting a request as a fact is how a picker ends up
+	// disagreeing with the agent without anyone noticing.
+	state := map[string]any{"models": s.modelOptions, "model": s.session.Model, "effort": s.effort, "source": source, "applied_reported": false}
 	if s.codex == nil {
 		state["effective_model"], state["effective_effort"] = s.appliedModel, s.appliedEffort
 		if s.appliedModel != "" {
 			state["source"] = source + " + get_settings"
+			state["applied_reported"] = true
 		}
 	}
 	s.event("models", "catalog", "", state, nil)
@@ -31,8 +36,13 @@ func isSettingCommand(text string) bool {
 	return len(f) > 0 && (f[0] == "/model" || f[0] == "/effort")
 }
 
-func (s *Supervisor) readModels() {
-	if s.modelDisabled || (!s.modelRequested.IsZero() && time.Since(s.modelRequested) < time.Minute) {
+func (s *Supervisor) readModels() { s.readModelsNow(false) }
+
+// readModelsNow asks the agent for its catalog. The throttle is there so routine
+// republishing does not interrogate a provider every minute; someone who opened
+// a picker and pressed refresh is asking on purpose, and that request skips it.
+func (s *Supervisor) readModelsNow(forced bool) {
+	if s.modelDisabled || (!forced && !s.modelRequested.IsZero() && time.Since(s.modelRequested) < time.Minute) {
 		return
 	}
 	s.modelRequested = time.Now()
@@ -48,6 +58,22 @@ func (s *Supervisor) readModels() {
 		s.modelRequested = time.Time{}
 		s.event("models_status", "unavailable", "", nil, nil)
 	}
+}
+
+// refreshModels is the "ask the provider again" op. It does not wait for the
+// answer: the catalog is published as a journal event, so a client watching the
+// session gets it without a second request and nothing blocks on a provider.
+func (s *Supervisor) refreshModels(c core.Command) (core.Receipt, error) {
+	receipt := core.Receipt{ClientID: c.ClientID}
+	if s.modelDisabled {
+		return receipt, fmt.Errorf("this agent does not report a model catalog")
+	}
+	if s.snap.State != "idle" || s.settingPending != "" {
+		return receipt, fmt.Errorf("reading the catalog requires an idle session with no pending update")
+	}
+	s.readModelsNow(true)
+	receipt.Status = "accepted"
+	return receipt, nil
 }
 
 func (s *Supervisor) restoreSetting(name string, raw []byte) {

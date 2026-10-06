@@ -277,6 +277,21 @@ func (s SessionServer) History(ctx context.Context, r *resource.SessionEventsReq
 	return resource.SessionEventBatch_builder{Events: events}.Build(), nil
 }
 
+// Models is served from the runtime's projection; refresh is passed through so a
+// client can ask the agent again without a second kind of request.
+func (s SessionServer) Models(ctx context.Context, r *resource.SessionModelsRequest) (*resource.SessionModelsReply, error) {
+	v, err := s.Get(ctx, resource.SessionGetRequest_builder{Ref: r.GetRef(), Select: resource.SessionSelect_builder{All: ptr(true)}.Build()}.Build())
+	if err != nil {
+		return nil, err
+	}
+	out, err := s.shared.runtime.Models(ctx, &api.ModelsRequest{SessionId: v.GetRuntimeId(), Refresh: r.GetRefresh(), RunId: r.GetRunId(), ClientId: r.GetClientId()})
+	if err != nil {
+		return nil, err
+	}
+	return resource.SessionModelsReply_builder{LastSeq: &out.LastSeq, Data: out.Data, RunId: &out.RunId,
+		CatalogSeq: &out.CatalogSeq, CatalogMs: &out.CatalogMs, Refreshing: &out.Refreshing, Status: &out.Status}.Build(), nil
+}
+
 type eventStream struct {
 	grpc.ServerStreamingServer[resource.SessionEvent]
 	layer Layer

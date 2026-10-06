@@ -43,6 +43,7 @@ const (
 	SessionService_Reply_FullMethodName       = "/cxz.SessionService/Reply"
 	SessionService_History_FullMethodName     = "/cxz.SessionService/History"
 	SessionService_Background_FullMethodName  = "/cxz.SessionService/Background"
+	SessionService_Models_FullMethodName      = "/cxz.SessionService/Models"
 	SessionService_Events_FullMethodName      = "/cxz.SessionService/Events"
 )
 
@@ -92,6 +93,7 @@ type SessionServiceClient interface {
 	// Journal replay is not payday Watch: it is cursor-ordered event history.
 	History(ctx context.Context, in *SessionEventsRequest, opts ...grpc.CallOption) (*SessionEventBatch, error)
 	Background(ctx context.Context, in *SessionBackgroundRequest, opts ...grpc.CallOption) (*SessionBackgroundReply, error)
+	Models(ctx context.Context, in *SessionModelsRequest, opts ...grpc.CallOption) (*SessionModelsReply, error)
 	Events(ctx context.Context, in *SessionEventsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SessionEvent], error)
 }
 
@@ -355,6 +357,16 @@ func (c *sessionServiceClient) Background(ctx context.Context, in *SessionBackgr
 	return out, nil
 }
 
+func (c *sessionServiceClient) Models(ctx context.Context, in *SessionModelsRequest, opts ...grpc.CallOption) (*SessionModelsReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SessionModelsReply)
+	err := c.cc.Invoke(ctx, SessionService_Models_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *sessionServiceClient) Events(ctx context.Context, in *SessionEventsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SessionEvent], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	stream, err := c.cc.NewStream(ctx, &SessionService_ServiceDesc.Streams[2], SessionService_Events_FullMethodName, cOpts...)
@@ -420,6 +432,7 @@ type SessionServiceServer interface {
 	// Journal replay is not payday Watch: it is cursor-ordered event history.
 	History(context.Context, *SessionEventsRequest) (*SessionEventBatch, error)
 	Background(context.Context, *SessionBackgroundRequest) (*SessionBackgroundReply, error)
+	Models(context.Context, *SessionModelsRequest) (*SessionModelsReply, error)
 	Events(*SessionEventsRequest, grpc.ServerStreamingServer[SessionEvent]) error
 	mustEmbedUnimplementedSessionServiceServer()
 }
@@ -502,6 +515,9 @@ func (UnimplementedSessionServiceServer) History(context.Context, *SessionEvents
 }
 func (UnimplementedSessionServiceServer) Background(context.Context, *SessionBackgroundRequest) (*SessionBackgroundReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method Background not implemented")
+}
+func (UnimplementedSessionServiceServer) Models(context.Context, *SessionModelsRequest) (*SessionModelsReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method Models not implemented")
 }
 func (UnimplementedSessionServiceServer) Events(*SessionEventsRequest, grpc.ServerStreamingServer[SessionEvent]) error {
 	return status.Error(codes.Unimplemented, "method Events not implemented")
@@ -941,6 +957,24 @@ func _SessionService_Background_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SessionService_Models_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SessionModelsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionServiceServer).Models(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SessionService_Models_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionServiceServer).Models(ctx, req.(*SessionModelsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _SessionService_Events_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(SessionEventsRequest)
 	if err := stream.RecvMsg(m); err != nil {
@@ -1046,6 +1080,10 @@ var SessionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Background",
 			Handler:    _SessionService_Background_Handler,
+		},
+		{
+			MethodName: "Models",
+			Handler:    _SessionService_Models_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

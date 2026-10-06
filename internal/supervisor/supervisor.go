@@ -728,6 +728,9 @@ func (s *Supervisor) executeLocked(op string, c core.Command) (core.Receipt, err
 	if op == "unqueue" {
 		return s.unqueue(c)
 	}
+	if op == "models" {
+		return s.refreshModels(c)
+	}
 	if op == "send" {
 		if isSettingCommand(c.Text) {
 			return s.configure(c)

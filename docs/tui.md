@@ -119,6 +119,25 @@ completes, `Esc` dismisses.
 | `/record` | Diagnostic recording status and path |
 | `/memory` | Retained agent memory |
 | `/summary`, `/suggest` | Auxiliary AI result and next-message suggestion |
+| `/model`, `/effort` | Provider catalog; `Alt+R` asks the provider again |
+
+### What the model selector shows
+
+`/model` and `/effort` open a selector over the **capability record** this run
+published: the catalog the agent reported, what cxz asked it to use, and — where
+the provider reports it — what it confirmed is applied. The record is served by
+the manager in one request; the selector does not read the conversation to find
+it, and `/model` followed by `/effort` asks once.
+
+Under the title it says where the answer came from, how old it is, and whether
+the provider confirmed the applied value. That last part matters: Claude reads
+its settings back, Codex reports none, so for Codex the selector shows what was
+requested and labels it `applied value not confirmed by the provider`.
+
+`Alt+R` asks the agent again, which is the only way to learn that a provider
+changed something by itself — a fallback to a smaller model after a limit, for
+example. It needs an idle session, does not wait for the answer, and the selector
+updates when the new record is published.
 
 ## Reading a conversation
 
