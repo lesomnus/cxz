@@ -63,7 +63,7 @@ function SandboxApp() {
           wasmExec: "/wasm_exec.js",
           ...(cached && cacheable ? {} : { cache: false }),
           onProgress: (v) => {
-            if (!canceled)
+            if (!canceled && !signal.aborted)
               setLoading(
                 t("Loading sandbox · {loaded} MB{total}", {
                   loaded: (v.loaded / 1048576).toFixed(1),
@@ -74,12 +74,12 @@ function SandboxApp() {
               );
           },
         });
-        box = v;
         const close = () => v.close();
         signal.addEventListener("abort", close, { once: true });
         try {
           signal.throwIfAborted();
           if (canceled) throw new Error("Sandbox start canceled");
+          box = v;
           // Publishing a Go entry point does not prove the MessagePort can
           // answer requests. Keep the workspace behind the boot deadline until
           // a real RPC returns, so a stalled connection can be closed/retried.
