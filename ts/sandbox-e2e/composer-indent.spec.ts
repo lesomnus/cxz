@@ -84,9 +84,9 @@ test("Tab indents, Shift+Tab outdents, native undo preserves selection and Ctrl+
   await page.keyboard.press("Escape");
   await input.press("Control+Enter");
   await expect(input).toHaveValue("");
-  expect(
-    await page.locator("article.input .message-body").last().textContent(),
-  ).toBe("    " + pasted);
+  await expect(page.locator("article.input .message-body").last()).toHaveText(
+    "    " + pasted,
+  );
 });
 
 test("code tokens use subdued colors and Tab inserts inside paired fences without moving the caret or line numbers", async ({

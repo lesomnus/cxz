@@ -1,5 +1,21 @@
 // English source messages are always bundled; other packs load on demand.
 export const messages = {
+  General: "General",
+  "General settings": "General settings",
+  "Appearance and display language for this browser.":
+    "Appearance and display language for this browser.",
+  Theme: "Theme",
+  "Theme settings": "Theme settings",
+  Light: "Light",
+  Dark: "Dark",
+  System: "System",
+  Appearance: "Appearance",
+  "Choose Light, Dark, or follow your system appearance.":
+    "Choose Light, Dark, or follow your system appearance.",
+  "Unsupported theme. Choose light, dark or system.":
+    "Unsupported theme. Choose light, dark or system.",
+  "Inherited: {value}": "Inherited: {value}",
+  "Reset to inherited value": "Reset to inherited value",
   on: "on",
   off: "off",
   " (Included in input tokens)": " (Included in input tokens)",

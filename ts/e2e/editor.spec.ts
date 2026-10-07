@@ -66,6 +66,10 @@ test("editable settings JSON and its worker load under production CSP and save t
     "background-color",
     "rgb(20, 20, 20)",
   );
+  await page
+    .getByRole("navigation", { name: "Settings topics" })
+    .getByRole("button", { name: "Editor", exact: true })
+    .click();
   const raw = '{\n  "editor.tabSize": 6,\n  "editor.colorPalette": "cool"\n}\n';
   await page.evaluate((raw) => navigator.clipboard.writeText(raw), raw);
   await input.press("Control+a");
@@ -161,9 +165,10 @@ test("language packs load only on Apply under the production CSP and the saved l
     .click();
   await page
     .getByRole("navigation", { name: "Settings topics", exact: true })
-    .getByRole("button", { name: "Language", exact: true })
+    .getByRole("button", { name: "General", exact: true })
     .click();
-  await page.getByLabel("Display language", { exact: true }).selectOption("ko");
+  await page.getByLabel("Display language", { exact: true }).click();
+  await page.getByRole("option", { name: "한국어", exact: true }).click();
   expect(requests).toEqual([]);
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
   await page

@@ -1,5 +1,21 @@
 import type { LanguagePack } from "../i18n";
 export const messages = {
+  General: "일반",
+  "General settings": "일반 설정",
+  "Appearance and display language for this browser.":
+    "이 브라우저의 외관과 표시 언어 설정입니다.",
+  Theme: "테마",
+  "Theme settings": "테마 설정",
+  Light: "밝게",
+  Dark: "어둡게",
+  System: "시스템",
+  Appearance: "외관",
+  "Choose Light, Dark, or follow your system appearance.":
+    "밝게, 어둡게 또는 시스템 외관을 선택하세요.",
+  "Unsupported theme. Choose light, dark or system.":
+    "지원하지 않는 테마입니다. light, dark 또는 system을 선택하세요.",
+  "Inherited: {value}": "상속값: {value}",
+  "Reset to inherited value": "상속값으로 초기화",
   on: "켜짐",
   off: "꺼짐",
   " (Included in input tokens)": " (입력 토큰에 포함)",

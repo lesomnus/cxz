@@ -1,14 +1,6 @@
 import { t } from "./i18n";
 import { useLocale } from "./i18n-react";
-import {
-  useEffect,
-  useId,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type KeyboardEvent,
-} from "react";
-import { Button } from "./button";
+import { ValueMenu } from "./value-menu";
 import type { Session, SessionEvent } from "../gen/cxz/session_pb";
 import { payload } from "./journal";
 import type { SessionInfo } from "./session-info";
@@ -101,7 +93,13 @@ export function ModelSettings({
               label={label}
               display={info[kind] || "—"}
               value={value}
-              values={values}
+              options={values.map((value) => ({
+                value,
+                label: value,
+                muted: value === "default",
+              }))}
+              muted={value === "default"}
+              minMenuWidth={kind === "model" ? 240 : 140}
               disabled={disabled}
               disabledReason={
                 !values.length
@@ -113,177 +111,6 @@ export function ModelSettings({
           </div>
         );
       })}
-    </div>
-  );
-}
-
-function ValueMenu({
-  label,
-  display,
-  value,
-  values,
-  disabled,
-  disabledReason,
-  choose,
-}: {
-  label: string;
-  display: string;
-  value: string;
-  values: string[];
-  disabled: boolean;
-  disabledReason: string;
-  choose: (value: string) => void;
-}) {
-  useLocale();
-  const root = useRef<HTMLDivElement>(null);
-  const menu = useRef<HTMLDivElement>(null);
-  const id = useId();
-  const [open, setOpen] = useState(false);
-  const [up, setUp] = useState(true);
-  const options = values.filter((v) => v !== value && v !== display);
-  const trigger = () =>
-    root.current?.querySelector<HTMLButtonElement>(".setting-trigger");
-  function close(restore = false) {
-    setOpen(false);
-    if (restore) trigger()?.focus({ preventScroll: true });
-  }
-  useLayoutEffect(() => {
-    const el = root.current;
-    if (!el) return;
-    const measure = () =>
-      el.style.setProperty("--value-width", `${el.clientWidth}px`);
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-  useLayoutEffect(() => {
-    if (!open || !root.current || !menu.current) return;
-    const rect = root.current.getBoundingClientRect();
-    const inset = parseFloat(
-      getComputedStyle(root.current).getPropertyValue("--control-inset"),
-    );
-    const chrome = rect.height + 2 * inset + 13;
-    const height = chrome + options.length * rect.height;
-    const upwards = rect.top + height > window.innerHeight;
-    setUp(upwards);
-    menu.current.style.setProperty(
-      "--menu-width",
-      `${Math.max(rect.width + 2 * inset, Math.min(label === t("Model") ? 240 : 140, window.innerWidth - rect.left))}px`,
-    );
-    menu.current.style.setProperty(
-      "--options-height",
-      `${Math.max(rect.height, Math.min(240, (upwards ? rect.bottom : window.innerHeight - rect.top) - chrome))}px`,
-    );
-    menu.current
-      .querySelector<HTMLButtonElement>("[role=option]")
-      ?.focus({ preventScroll: true });
-  }, [open]);
-  useEffect(() => {
-    if (!open) return;
-    const outside = (e: PointerEvent) => {
-      if (!root.current?.contains(e.target as Node)) close();
-    };
-    const resized = () => close();
-    document.addEventListener("pointerdown", outside);
-    window.addEventListener("resize", resized);
-    return () => {
-      document.removeEventListener("pointerdown", outside);
-      window.removeEventListener("resize", resized);
-    };
-  }, [open]);
-  useEffect(() => {
-    if (disabled) close();
-  }, [disabled]);
-  function key(e: KeyboardEvent) {
-    if (e.key === "Escape") {
-      e.preventDefault();
-      close(true);
-      return;
-    }
-    if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(e.key)) return;
-    e.preventDefault();
-    if (!open) {
-      setOpen(true);
-      return;
-    }
-    const buttons = [
-      ...(menu.current?.querySelectorAll<HTMLButtonElement>("[role=option]") ||
-        []),
-    ];
-    const visual = up ? [...buttons.slice(1), buttons[0]] : buttons;
-    const index = visual.indexOf(document.activeElement as HTMLButtonElement);
-    const next =
-      e.key === "Home"
-        ? 0
-        : e.key === "End"
-          ? visual.length - 1
-          : (index + (e.key === "ArrowUp" ? -1 : 1) + visual.length) %
-            visual.length;
-    visual[next]?.focus({ preventScroll: true });
-  }
-  return (
-    <div
-      ref={root}
-      className="value-menu"
-      onKeyDown={key}
-      onBlur={(e) => {
-        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) close();
-      }}
-    >
-      <Button
-        type="button"
-        className="setting-trigger"
-        role="combobox"
-        aria-label={label}
-        aria-haspopup="listbox"
-        aria-controls={id}
-        aria-expanded={open}
-        disabled={disabled}
-        title={disabled ? disabledReason : display}
-        onClick={() => setOpen((v) => !v)}
-      >
-        <span className="meta-value">{display}</span>
-      </Button>
-      {open && (
-        <div
-          ref={menu}
-          id={id}
-          className={`setting-menu ${up ? "opens-up" : ""}`}
-          role="listbox"
-          aria-label={t("{label} choices", { label })}
-        >
-          <Button
-            type="button"
-            className="setting-current"
-            role="option"
-            tabIndex={-1}
-            aria-selected="true"
-            onClick={() => close(true)}
-          >
-            <span className="meta-value">{display}</span>
-          </Button>
-          <div className="setting-divider" role="separator" />
-          <div className="setting-options">
-            {options.map((choice) => (
-              <Button
-                key={choice}
-                type="button"
-                role="option"
-                tabIndex={-1}
-                aria-selected="false"
-                title={choice}
-                onClick={() => {
-                  close(true);
-                  choose(choice);
-                }}
-              >
-                {choice}
-              </Button>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

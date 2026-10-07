@@ -1,3 +1,4 @@
+import { useTheme } from "./theme";
 import { t, translateKnown, currentLocale } from "./i18n";
 import { useLocale } from "./i18n-react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -46,6 +47,7 @@ export function ComposerEditor({
 }) {
   useLocale();
   const input = useRef<HTMLTextAreaElement>(null);
+  const theme = useTheme();
   const editorSettings = useEditorSettings("session");
   const mirror = useRef<HTMLDivElement>(null);
   const surface = useRef<HTMLDivElement>(null);
@@ -219,7 +221,7 @@ export function ComposerEditor({
         data-composing={composition}
         style={{
           tabSize: editorSettings.tabSize,
-          ...paletteVariables(editorSettings.colorPalette),
+          ...paletteVariables(editorSettings.colorPalette, theme),
         }}
       >
         <div

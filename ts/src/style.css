@@ -1,9 +1,11 @@
+@import "./theme.css";
+
 :root {
   color-scheme: dark;
   font-family: Inter, system-ui, sans-serif;
-  --background: #141414;
+  --background: var(--shade-20);
   background: var(--background);
-  color: #ededed;
+  color: var(--shade-237);
   font-size: 14px;
   --space: 4px;
   --conversation-width: 600px;
@@ -14,8 +16,8 @@
   --toolbar-button-width: 48px;
   --composer-extension: 10px;
   --composer-overhang: 4px;
-  --muted: #a0a0a0;
-  --hover: #282828;
+  --muted: var(--shade-160);
+  --hover: var(--shade-40);
   --agent-logo-size: 14px;
 }
 * {
@@ -69,26 +71,26 @@ button:disabled {
 button:focus-visible,
 summary:focus-visible,
 select:focus-visible {
-  outline: 2px solid #ededed;
+  outline: 2px solid var(--shade-237);
   outline-offset: 2px;
 }
 input,
 textarea,
 select {
-  background: #202020;
+  background: var(--shade-32);
   color: inherit;
-  border: 1px solid #3c3c3c;
+  border: 1px solid var(--shade-60);
   padding: 8px 12px;
 }
 input:focus-visible,
 textarea:focus-visible {
-  outline: 2px solid #a0a0a0;
+  outline: 2px solid var(--shade-160);
   outline-offset: 2px;
 }
 input[type="radio"],
 input[type="checkbox"] {
   margin: 6px 8px 6px 0;
-  accent-color: #ededed;
+  accent-color: var(--shade-237);
 }
 input[type="password"],
 input[type="text"] {
@@ -138,8 +140,8 @@ header strong {
   align-items: center;
   gap: var(--space);
   padding: 12px 4px;
-  background: #111;
-  border-right: 1px solid #242424;
+  background: var(--shade-17);
+  border-right: 1px solid var(--shade-36);
 }
 .brand {
   font-size: 16px;
@@ -150,7 +152,7 @@ header strong {
 .resource-link {
   width: 56px;
   padding: 8px 2px;
-  color: #8c8c8c;
+  color: var(--shade-140);
 }
 .resource-link > .button-content {
   flex-direction: column;
@@ -160,7 +162,7 @@ header strong {
   font-size: 10px;
 }
 .resource-link.active {
-  color: #fff;
+  color: var(--shade-255);
 }
 .settings-link {
   margin-top: auto;
@@ -174,7 +176,7 @@ header strong {
   width: 100%;
   text-align: left;
   padding: 8px;
-  color: #fff;
+  color: var(--shade-255);
 }
 .settings-topics .button-content {
   justify-content: flex-start;
@@ -201,7 +203,7 @@ header strong {
   display: none;
 }
 .settings-page[data-wide="true"] .settings-file-pane {
-  border-left: 1px solid #363636;
+  border-left: 1px solid var(--shade-54);
 }
 .settings-editor-body,
 .settings-file {
@@ -235,7 +237,7 @@ header strong {
   min-width: 0;
   padding: 12px;
   border-radius: 10px;
-  background: #191919;
+  background: var(--shade-25);
 }
 .settings-group h2 {
   margin: 0;
@@ -261,20 +263,13 @@ header strong {
 .setting-row code {
   display: block;
   font-size: 10px;
-  color: #888;
+  color: var(--shade-136);
   overflow-wrap: anywhere;
-}
-.setting-row select {
-  min-width: 0;
-  width: 100%;
-  padding: 6px;
-  border: 0;
-  font-size: 12px;
 }
 .settings-preview {
   padding: 8px;
   margin-bottom: 0;
-  background: #000;
+  background: var(--shade-0);
   border-radius: 6px;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -308,7 +303,7 @@ header strong {
   flex: 0 0 auto;
   gap: 4px;
   padding: 4px 8px;
-  border-top: 1px solid #242424;
+  border-top: 1px solid var(--shade-36);
 }
 .settings-file-actions button {
   font-size: 12px;
@@ -316,7 +311,7 @@ header strong {
 .resource-panel {
   overflow: auto;
   min-width: 0;
-  background: #181818;
+  background: var(--shade-24);
   padding: 12px;
 }
 .resource-panel h2 {
@@ -341,7 +336,7 @@ header strong {
 }
 .resource-panel > button.active {
   font-weight: 650;
-  color: #fff;
+  color: var(--shade-255);
 }
 .resource-panel > button.active small {
   font-weight: 400;
@@ -371,7 +366,7 @@ header strong {
 }
 .empty h1 {
   font-size: 1.4rem;
-  color: #ededed;
+  color: var(--shade-237);
   margin: 0 0 4px;
 }
 .conversation,
@@ -394,7 +389,7 @@ header strong {
   display: none;
   min-width: 0;
   min-height: 0;
-  border-left: 1px solid #363636;
+  border-left: 1px solid var(--shade-54);
   overflow: hidden;
   flex-direction: column;
 }
@@ -408,8 +403,8 @@ header strong {
   min-height: 120px;
   display: flex;
   flex-direction: column;
-  border-top: 1px solid #363636;
-  background: #111;
+  border-top: 1px solid var(--shade-54);
+  background: var(--shade-17);
   overflow: hidden;
 }
 .workspace-terminal[hidden] {
@@ -448,6 +443,9 @@ header strong {
   padding: 4px 8px;
   filter: grayscale(1);
 }
+.terminal-screen .xterm .xterm-viewport {
+  background: var(--shade-17);
+}
 .terminal-screen .xterm {
   height: 100%;
 }
@@ -464,7 +462,7 @@ header strong {
   flex: 0 0 auto;
   min-height: 56px;
   padding: 8px 12px;
-  border-bottom: 1px solid #242424;
+  border-bottom: 1px solid var(--shade-36);
   gap: 8px;
 }
 .workspace-editor > header > div,
@@ -492,7 +490,7 @@ header strong {
 }
 .file-explorer {
   overflow: auto;
-  background: #181818;
+  background: var(--shade-24);
   padding: 4px;
 }
 .file-explorer-heading {
@@ -519,7 +517,7 @@ header strong {
   justify-content: flex-start;
 }
 .file-entry.active {
-  background: #303030;
+  background: var(--shade-48);
 }
 .file-entry-symbol {
   width: 10px;
@@ -544,7 +542,7 @@ header strong {
   flex: 0 0 auto;
   min-height: 32px;
   overflow-x: auto;
-  background: #181818;
+  background: var(--shade-24);
 }
 .file-tabs button {
   padding: 4px 8px;
@@ -607,7 +605,7 @@ header strong {
 .conversation > header,
 .resource-view > header {
   padding: 8px 16px;
-  border-bottom: 1px solid #242424;
+  border-bottom: 1px solid var(--shade-36);
   min-height: 56px;
 }
 .conversation > header small {
@@ -618,7 +616,7 @@ header strong {
   height: var(--agent-logo-size);
   align-items: center;
   vertical-align: text-bottom;
-  color: #fff;
+  color: var(--shade-255);
   line-height: 0;
   flex-shrink: 0;
 }
@@ -691,7 +689,7 @@ header strong {
   border-radius: 8px;
 }
 .response:hover {
-  background: #1b1b1b;
+  background: var(--shade-27);
 }
 .response-heading {
   display: flex;
@@ -710,7 +708,7 @@ header strong {
   padding: 0;
 }
 .input-box {
-  background: #222;
+  background: var(--shade-34);
   border-radius: 8px;
   padding: 10px 12px;
 }
@@ -845,7 +843,7 @@ header strong {
 .markdown pre,
 pre {
   overflow: auto;
-  background: #101010;
+  background: var(--shade-16);
   border-radius: 6px;
   padding: 12px;
   font-size: 0.85rem;
@@ -853,7 +851,7 @@ pre {
   margin: 8px 0;
 }
 .markdown code {
-  background: #292929;
+  background: var(--shade-41);
   padding: 2px 4px;
   border-radius: 4px;
   overflow-wrap: anywhere;
@@ -864,7 +862,7 @@ pre {
   overflow-wrap: normal;
 }
 .markdown a {
-  color: #ededed;
+  color: var(--shade-237);
   text-underline-offset: 3px;
 }
 .markdown table {
@@ -876,13 +874,13 @@ pre {
 .markdown td,
 .markdown th {
   padding: 6px 8px;
-  border: 1px solid #3c3c3c;
+  border: 1px solid var(--shade-60);
 }
 .markdown blockquote {
-  border-left: 2px solid #737373;
+  border-left: 2px solid var(--shade-115);
   margin: 8px 0;
   padding-left: 12px;
-  color: #b5b5b5;
+  color: var(--shade-181);
 }
 .copy {
   min-height: 28px;
@@ -951,8 +949,8 @@ pre {
   );
   margin-inline: calc(var(--composer-overhang) - var(--composer-extension));
   padding: 0;
-  border: 1px solid #2c2c2c;
-  background: #191919;
+  border: 1px solid var(--shade-44);
+  background: var(--shade-25);
   border-radius: var(--wrapper-radius);
 }
 .composer-toolbar {
@@ -966,16 +964,16 @@ pre {
 .composer-input,
 .question-other-editor {
   position: relative;
-  background: #222;
+  background: var(--shade-34);
 }
 .composer-input {
-  border: 1px solid #3a3a3a;
+  border: 1px solid var(--shade-58);
   width: calc(100% + 2px + 2 * var(--composer-overhang));
   margin: 0 calc(-1px - var(--composer-overhang)) -1px;
   border-radius: var(--composer-radius);
 }
 .composer-input:focus-within {
-  border-color: #737373;
+  border-color: var(--shade-115);
 }
 .composer-editor textarea {
   position: relative;
@@ -992,12 +990,12 @@ pre {
   line-height: 1.5;
   font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
   color: transparent;
-  caret-color: #ededed;
+  caret-color: var(--shade-237);
   overflow-wrap: anywhere;
 }
 .composer-editor textarea::selection {
-  background: #414141;
-  color: #ededed;
+  background: var(--shade-65);
+  color: var(--shade-237);
 }
 .composer-editor {
   display: flex;
@@ -1010,7 +1008,7 @@ pre {
   flex-shrink: 0;
   padding: 12px 0 12px 9px;
   overflow: hidden;
-  color: #777;
+  color: var(--shade-119);
   text-align: right;
   user-select: none;
 }
@@ -1040,10 +1038,10 @@ pre {
 }
 .editor-code-line {
   position: relative;
-  background: #000;
+  background: var(--shade-0);
   box-shadow:
-    -4px 0 #000,
-    4px 0 #000;
+    -4px 0 var(--shade-0),
+    4px 0 var(--shade-0);
 }
 .editor-code-header {
   border-radius: 6px 6px 0 0;
@@ -1075,16 +1073,16 @@ pre {
   padding: 0 var(--control-inline-inset);
   border: 0;
   border-radius: 4px;
-  background: #000;
-  color: #aaa;
+  background: var(--shade-0);
+  color: var(--shade-170);
   font: inherit;
   font-size: 11px;
   cursor: pointer;
 }
 .editor-code-controls select:hover,
 .editor-code-controls select:focus-visible {
-  background: #282828;
-  color: #fff;
+  background: var(--shade-40);
+  color: var(--shade-255);
 }
 .editor-code-controls .code-close {
   height: 1.5em;
@@ -1123,9 +1121,9 @@ pre {
 .paste-chip {
   position: relative;
   z-index: 2;
-  background: #383838;
+  background: var(--shade-56);
   border-radius: 4px;
-  box-shadow: 0 0 0 1px #383838;
+  box-shadow: 0 0 0 1px var(--shade-56);
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
   cursor: pointer;
@@ -1133,10 +1131,10 @@ pre {
 }
 .paste-chip:hover,
 .paste-chip:focus-visible {
-  background: #484848;
-  box-shadow: 0 0 0 1px #484848;
+  background: var(--shade-72);
+  box-shadow: 0 0 0 1px var(--shade-72);
   outline: none;
-  color: #fff;
+  color: var(--shade-255);
 }
 .composer-editor[data-composing="true"] textarea {
   color: inherit;
@@ -1240,10 +1238,10 @@ pre {
   flex-direction: column;
   overflow: hidden;
   color: inherit;
-  background: rgb(32 32 32 / 60%);
+  background: color-mix(in srgb, var(--shade-32) 60%, transparent);
   -webkit-backdrop-filter: blur(48px);
   backdrop-filter: blur(48px);
-  border: var(--card-border-width) solid #363636;
+  border: var(--card-border-width) solid var(--shade-54);
   border-radius: var(--card-radius);
   box-shadow: 0 8px 24px #0006;
   transform-origin: bottom center;
@@ -1295,7 +1293,7 @@ pre {
 .card-body pre {
   padding: calc(2 * var(--space)) var(--space);
   margin: var(--space) 0;
-  background: #101010;
+  background: var(--shade-16);
   border-radius: var(--card-inner-radius);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -1325,7 +1323,7 @@ pre {
   outline: none;
 }
 .composer-editor textarea::placeholder {
-  color: #909090;
+  color: var(--shade-144);
 }
 .composer .toolbar-button {
   border-radius: max(
@@ -1344,7 +1342,7 @@ pre {
 }
 .composer .toolbar-button:not(:disabled):hover,
 .card-close:not(:disabled):hover {
-  background: #363636;
+  background: var(--shade-54);
 }
 .latest-slot {
   position: absolute;
@@ -1387,8 +1385,8 @@ pre {
   width: max-content;
   padding: 5px 8px;
   border-radius: 5px;
-  background: #333;
-  color: #ddd;
+  background: var(--shade-51);
+  color: var(--shade-221);
   font-size: 11px;
   opacity: 0;
   visibility: hidden;
@@ -1413,7 +1411,7 @@ pre {
   flex-wrap: wrap;
   padding-top: 8px;
   font-size: 0.8rem;
-  color: #aaa;
+  color: var(--shade-170);
   font-variant-numeric: tabular-nums;
 }
 .model-info,
@@ -1453,7 +1451,7 @@ pre {
   white-space: nowrap;
 }
 .meta-label {
-  color: #909090;
+  color: var(--shade-144);
 }
 .usage-info {
   gap: 8px;
@@ -1471,7 +1469,7 @@ pre {
   margin-top: 8px;
 }
 .buttons button {
-  background: #303030;
+  background: var(--shade-48);
 }
 fieldset {
   min-width: 0;
@@ -1503,24 +1501,24 @@ legend {
   padding: calc(2 * var(--space));
   border: 0;
   border-radius: var(--card-inner-radius);
-  background: #101010;
+  background: var(--shade-16);
   cursor: pointer;
   transition: background 120ms ease-out;
 }
 .question-option:hover {
-  background: #262626;
+  background: var(--shade-38);
 }
 .question-option[data-selected="true"] {
-  background: #303030;
+  background: var(--shade-48);
 }
 .question-option:focus-within {
-  background: #383838;
+  background: var(--shade-56);
 }
 .question-option input {
   margin: 2px 0 0;
   width: 14px;
   height: 14px;
-  accent-color: #ededed;
+  accent-color: var(--shade-237);
 }
 .question-option-text strong {
   display: block;
@@ -1548,7 +1546,7 @@ legend {
   overflow: hidden;
 }
 .question-other-editor:focus-within {
-  background: #262626;
+  background: var(--shade-38);
 }
 summary {
   cursor: pointer;
@@ -1561,7 +1559,7 @@ summary:hover {
 }
 .error,
 [role="alert"] {
-  color: #ddd;
+  color: var(--shade-221);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
@@ -1603,11 +1601,11 @@ summary:hover {
 .login button {
   width: 100%;
   margin-top: 12px;
-  background: #ededed;
-  color: #161616;
+  background: var(--shade-237);
+  color: var(--shade-22);
 }
 .login button:hover {
-  background: #fff;
+  background: var(--shade-255);
 }
 .login h1 {
   font-size: 2.5rem;
@@ -1813,7 +1811,7 @@ button.tree-session:not(:disabled):active > .button-content {
   }
 }
 .tree-session.active .session-title {
-  color: #fff;
+  color: var(--shade-255);
   font-weight: 650;
 }
 .tree-message {
@@ -1849,7 +1847,7 @@ button.tree-session:not(:disabled):active > .button-content {
   left: 10px;
   width: 4px;
   border-radius: 3px;
-  background: #7a7a7a;
+  background: var(--shade-122);
   opacity: 0;
   transform: scaleX(1);
   transition:
@@ -1861,7 +1859,7 @@ button.tree-session:not(:disabled):active > .button-content {
   right: 20px;
   width: 10px;
   height: 2px;
-  background: #777;
+  background: var(--shade-119);
   opacity: 0;
   transition: opacity 160ms;
 }
@@ -1889,7 +1887,7 @@ button.tree-session:not(:disabled):active > .button-content {
   overflow: hidden;
 }
 .scroll-thumb:focus-visible {
-  outline: 1px solid #ccc;
+  outline: 1px solid var(--shade-204);
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -1959,8 +1957,8 @@ button.tree-session:not(:disabled):active > .button-content {
   white-space: nowrap;
 }
 .setting-menu {
-  position: absolute;
-  z-index: 6;
+  position: fixed;
+  z-index: 1100;
   top: calc(-1 * var(--control-inset));
   left: calc(-1 * var(--control-inset));
   display: flex;
@@ -1968,8 +1966,8 @@ button.tree-session:not(:disabled):active > .button-content {
   width: var(--menu-width, 180px);
   padding: var(--control-inset);
   border-radius: 6px;
-  background: #242424;
-  outline: 1px solid #3a3a3a;
+  background: var(--shade-36);
+  outline: 1px solid var(--shade-58);
   box-shadow: 0 6px 24px #0005;
 }
 .setting-menu.opens-up {
@@ -1987,7 +1985,7 @@ button.tree-session:not(:disabled):active > .button-content {
   height: 1px;
   flex-shrink: 0;
   margin: 6px 0;
-  background: #3c3c3c;
+  background: var(--shade-60);
 }
 .setting-options {
   max-height: var(--options-height, 240px);
@@ -2012,7 +2010,7 @@ button.tree-session:not(:disabled):active > .button-content {
 }
 .setting-trigger:not(:disabled):hover,
 .setting-menu button:not(:disabled):hover {
-  color: #fff;
+  color: var(--shade-255);
 }
 .context-popover {
   flex: 0 0 18px;
@@ -2031,8 +2029,8 @@ button.tree-session:not(:disabled):active > .button-content {
   right: 0;
   width: max-content;
   max-width: min(280px, 80vw);
-  background: #333;
-  color: #ededed;
+  background: var(--shade-51);
+  color: var(--shade-237);
   padding: 6px 8px;
   border-radius: 5px;
   font-size: 11px;
@@ -2052,10 +2050,10 @@ button.tree-session:not(:disabled):active > .button-content {
   transform: translateY(0);
 }
 .context-donut {
-  color: #ededed;
+  color: var(--shade-237);
 }
 .context-track {
-  stroke: #2b2b2b;
+  stroke: var(--shade-43);
 }
 .context-fill {
   transition: stroke-dasharray 160ms ease-out;
@@ -2080,7 +2078,117 @@ button.tree-session:not(:disabled):active > .button-content {
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  background: #202020;
+  background: var(--shade-32);
   border-radius: 10px;
   font-size: 12px;
+}
+
+/* Shared settings controls reuse the composer menu's overlay geometry. */
+.setting-trigger[data-muted="true"],
+.setting-menu button[data-muted="true"],
+.setting-slider[data-muted="true"] output,
+.segment[data-muted="true"] span {
+  color: var(--muted);
+}
+.setting-row .value-menu {
+  font-size: 12px;
+}
+.setting-slider {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  align-items: center;
+  gap: 0 6px;
+  font-size: 11px;
+}
+.setting-slider output {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.setting-slider input {
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+  height: 20px;
+  background: transparent;
+  border: 0;
+  accent-color: var(--shade-237);
+  cursor: pointer;
+}
+.slider-ticks {
+  grid-column: 2;
+  display: flex;
+  justify-content: space-between;
+  padding-inline: 6px;
+  font-size: 10px;
+  color: var(--muted);
+  user-select: none;
+}
+.segmented-control {
+  position: relative;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(var(--segment-count), minmax(0, 1fr));
+  border-radius: 6px;
+  background: var(--shade-32);
+  padding: var(--control-inset);
+  font-size: 11px;
+}
+.segment-indicator {
+  position: absolute;
+  left: var(--control-inset);
+  top: var(--control-inset);
+  bottom: var(--control-inset);
+  width: calc((100% - 2 * var(--control-inset)) / var(--segment-count));
+  transform: translateX(calc(100% * var(--segment-index)));
+  border-radius: calc(6px - var(--control-inset));
+  background: var(--shade-56);
+  transition: transform 140ms ease-out;
+  pointer-events: none;
+}
+.segment {
+  position: relative;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 30px;
+  padding: 4px 2px;
+  cursor: pointer;
+}
+.segment input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  cursor: inherit;
+}
+.segment span {
+  position: relative;
+  pointer-events: none;
+  overflow-wrap: anywhere;
+}
+.segment:has(input:focus-visible) {
+  outline: 2px solid var(--shade-237);
+  outline-offset: -2px;
+  border-radius: 4px;
+}
+.segment:has(input:disabled) {
+  opacity: 0.4;
+  cursor: default;
+}
+@media (prefers-reduced-motion: reduce) {
+  .segment-indicator {
+    transition: none;
+  }
+}
+
+/* Preserve the supplied white Spark on a contrasting monochrome background. */
+:root[data-theme="light"] .agent-brand-claude {
+  background: #222;
+  border-radius: 2px;
 }

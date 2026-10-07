@@ -1,3 +1,4 @@
+import { useTheme } from "./theme";
 import {
   useEffect,
   useImperativeHandle,
@@ -42,11 +43,16 @@ export function SourceEditor({
   );
   const model = useRef<Monaco.editor.ITextModel | undefined>(undefined);
   const configure = useRef<
-    ((settings: ReturnType<typeof useEditorSettings>) => void) | undefined
+    | ((
+        settings: ReturnType<typeof useEditorSettings>,
+        theme: "light" | "dark",
+      ) => void)
+    | undefined
   >(undefined);
   const [activated, setActivated] = useState(active);
   const [error, setError] = useState("");
   const settings = useEditorSettings();
+  const theme = useTheme();
   const latest = useRef({
     value,
     ariaLabel,
@@ -57,6 +63,7 @@ export function SourceEditor({
     view,
     onDispose,
     settings,
+    theme,
   });
   latest.current = {
     value,
@@ -68,6 +75,7 @@ export function SourceEditor({
     view,
     onDispose,
     settings,
+    theme,
   };
   const pendingFocus = useRef(false);
   const updating = useRef(false);
@@ -88,12 +96,13 @@ export function SourceEditor({
     } else pendingFocus.current = false;
   }, [active]);
   useEffect(() => {
-    configure.current?.(settings);
+    configure.current?.(settings, theme);
   }, [
     settings.indentSize,
     settings.insertSpaces,
     settings.tabSize,
     settings.colorPalette,
+    theme,
   ]);
   useEffect(() => {
     editor.current?.updateOptions({ ariaLabel });
@@ -124,12 +133,13 @@ export function SourceEditor({
           readOnly,
           domReadOnly: readOnly,
           ariaLabel: latest.current.ariaLabel,
-          theme: `cxz-${latest.current.settings.colorPalette}`,
+          theme: `cxz-${latest.current.settings.colorPalette}-${latest.current.theme}`,
         });
         model.current = m;
         editor.current = e;
-        configure.current = (settings) => configureEditor(e!, m!, settings);
-        configure.current(latest.current.settings);
+        configure.current = (settings, theme) =>
+          configureEditor(e!, m!, settings, theme);
+        configure.current(latest.current.settings, latest.current.theme);
         if (latest.current.view) e.restoreViewState(latest.current.view);
         subscriptions.push(
           m.onDidChangeContent(() => {

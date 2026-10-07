@@ -1,3 +1,4 @@
+import { chooseSetting, expectInherited } from "./settings-controls";
 import {
   expect,
   test,
@@ -24,6 +25,10 @@ async function ready(page: Page) {
 async function settings(page: Page) {
   await page
     .getByRole("button", { name: "Settings view", exact: true })
+    .click();
+  await page
+    .getByRole("navigation", { name: "Settings topics" })
+    .getByRole("button", { name: "Editor", exact: true })
     .click();
   await expect(
     page.getByRole("heading", { name: "Editor", exact: true }),
@@ -118,9 +123,7 @@ test("settings topics replace tabs, the 600px body stays centered and a live JSO
   expect((await pane.boundingBox())!.width).toBe(800);
   await expect(pane).toHaveCSS("border-left-width", "1px");
   expect(await centered()).toEqual({ width: 600, delta: 0 });
-  await page
-    .getByLabel("Global editor Tab display width", { exact: true })
-    .selectOption("8");
+  await chooseSetting(page, "Global editor Tab display width", "8");
   const saved = '{\n  "editor.tabSize": 8\n}\n';
   await expect.poll(() => readJSON(page, source)).toBe(saved);
   await source.press("Control+End");
@@ -278,23 +281,17 @@ test("one settings file persists, each session field overrides or inherits and e
   await composer.fill("keep draft");
   await settings(page);
   for (const label of fields)
-    await expect(
-      page.getByLabel(`Session editor ${label}`, { exact: true }),
-    ).toHaveValue("");
+    await expectInherited(page, `Session editor ${label}`);
   for (const [label, value] of fields.map((label, index) => [
     label,
     ["4", "false", "8", "cool"][index],
   ]))
-    await page
-      .getByLabel(`Global editor ${label}`, { exact: true })
-      .selectOption(value);
+    await chooseSetting(page, `Global editor ${label}`, value);
   for (const [label, value] of fields.map((label, index) => [
     label,
     ["6", "true", "2", "monochrome"][index],
   ]))
-    await page
-      .getByLabel(`Session editor ${label}`, { exact: true })
-      .selectOption(value);
+    await chooseSetting(page, `Session editor ${label}`, value);
   expect(await stored(page)).toEqual({
     "editor.indentSize": 4,
     "editor.insertSpaces": false,
@@ -320,9 +317,7 @@ test("one settings file persists, each session field overrides or inherits and e
   );
   await settings(page);
   for (const label of fields)
-    await page
-      .getByLabel(`Session editor ${label}`, { exact: true })
-      .selectOption("");
+    await chooseSetting(page, `Session editor ${label}`, "");
   expect(await stored(page)).toEqual({
     "editor.indentSize": 4,
     "editor.insertSpaces": false,
@@ -348,7 +343,7 @@ test("one settings file persists, each session field overrides or inherits and e
   await expect(composer).toHaveCSS("tab-size", "8");
   await composer.press("Tab");
   await expect(composer).toHaveValue("\t");
-  await page.getByLabel("Scenario", { exact: true }).selectOption("session-4");
+  await chooseSetting(page, "Scenario", "session-4");
   const other = page.getByRole("textbox", {
     name: "Other answer: Which environment?",
     exact: true,
@@ -377,7 +372,9 @@ test("JSON editing, validation, export and import preserve unknown settings in t
   await expect(
     page.locator(".settings-page p[role=status]:visible"),
   ).toContainText("Save");
-  expect(await page.evaluate(() => localStorage.getItem("settings"))).toBe(raw);
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem("settings")))
+    .toBe(raw);
   await source.press("Control+Home");
   await source.press("Tab");
   await expect.poll(() => readJSON(page, source)).toBe("  " + raw);
@@ -395,9 +392,7 @@ test("JSON editing, validation, export and import preserve unknown settings in t
   await expect(
     page.getByLabel("Global editor Tab display width", { exact: true }),
   ).toHaveValue("8");
-  await page
-    .getByLabel("Global editor Color palette", { exact: true })
-    .selectOption("warm");
+  await chooseSetting(page, "Global editor Color palette", "warm");
   expect((await stored(page)).future).toEqual({ enabled: true });
   await file(page);
   const saved = await readJSON(page, source);
@@ -467,9 +462,7 @@ test("cross-tab changes refresh editors and preserve stale JSON drafts instead o
   const other = await context.newPage();
   await ready(other);
   await settings(other);
-  await other
-    .getByLabel("Global editor Tab display width", { exact: true })
-    .selectOption("8");
+  await chooseSetting(other, "Global editor Tab display width", "8");
   await expect(
     page.locator(".settings-page p[role=alert]:visible"),
   ).toContainText("Your draft was preserved");
@@ -490,14 +483,10 @@ test("cross-tab changes refresh editors and preserve stale JSON drafts instead o
     .click();
   const composer = page.getByRole("textbox", { name: "Message", exact: true });
   await composer.fill("keep draft");
-  await other
-    .getByLabel("Global editor Tab display width", { exact: true })
-    .selectOption("6");
+  await chooseSetting(other, "Global editor Tab display width", "6");
   await expect(composer).toHaveCSS("tab-size", "6");
   await expect(composer).toHaveValue("keep draft");
-  await other
-    .getByLabel("Session editor Indentation size", { exact: true })
-    .selectOption("5");
+  await chooseSetting(other, "Session editor Indentation size", "5");
   await composer.press("Home");
   await composer.press("Tab");
   await expect(composer).toHaveValue("     keep draft");
@@ -533,9 +522,7 @@ test("invalid stored files stay recoverable and mobile settings remain accessibl
   await expect(
     page.getByLabel("Global editor Indentation size", { exact: true }),
   ).toBeEnabled();
-  await page
-    .getByLabel("Session editor Color palette", { exact: true })
-    .selectOption("monochrome");
+  await chooseSetting(page, "Session editor Color palette", "monochrome");
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(
     390,
   );
@@ -590,12 +577,8 @@ test("global settings update the readonly file viewer in place while conversatio
   const other = await context.newPage();
   await ready(other);
   await settings(other);
-  await other
-    .getByLabel("Global editor Tab display width", { exact: true })
-    .selectOption("8");
-  await other
-    .getByLabel("Global editor Color palette", { exact: true })
-    .selectOption("cool");
+  await chooseSetting(other, "Global editor Tab display width", "8");
+  await chooseSetting(other, "Global editor Color palette", "cool");
   await expect.poll(tabWidth).toBeGreaterThan(initialWidth * 1.9);
   await expect(
     editor

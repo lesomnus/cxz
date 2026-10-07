@@ -98,6 +98,11 @@ export function parseSettings(raw: string): SettingsDocument {
     value["ui.language"] !== "ko"
   )
     throw new Error(t("Unsupported display language. Choose en or ko."));
+  if (
+    Object.hasOwn(value, "ui.theme") &&
+    !["light", "dark", "system"].includes(value["ui.theme"] as string)
+  )
+    throw new Error(t("Unsupported theme. Choose light, dark or system."));
   return value;
 }
 
@@ -117,8 +122,45 @@ export function resolveEditorSettings(
   return result;
 }
 
-export function paletteVariables(name: Palette) {
+export function paletteForTheme(
+  name: Palette,
+  theme: "light" | "dark" = "dark",
+) {
   const palette = palettes[name];
+  const result: Record<string, string> = {};
+  for (const key of [
+    "comment",
+    "keyword",
+    "title",
+    "string",
+    "number",
+    "attr",
+  ] as const) {
+    const color = palette[key];
+    result[key] =
+      theme === "dark"
+        ? color
+        : "#" +
+          [1, 3, 5]
+            .map((offset) => {
+              const channel = parseInt(color.slice(offset, offset + 2), 16);
+              return (
+                name === "monochrome"
+                  ? Math.max(24, 255 - channel)
+                  : Math.round(channel * 0.72)
+              )
+                .toString(16)
+                .padStart(2, "0");
+            })
+            .join("");
+  }
+  return result;
+}
+export function paletteVariables(
+  name: Palette,
+  theme: "light" | "dark" = "dark",
+) {
+  const palette = paletteForTheme(name, theme);
   return Object.fromEntries(
     ["comment", "keyword", "title", "string", "number", "attr"].map((key) => [
       `--code-${key}`,

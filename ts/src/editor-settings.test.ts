@@ -133,3 +133,16 @@ it("survives unavailable browser storage and bounds oversized files", () => {
   );
   expect(() => parseSettings(" ".repeat(1024 * 1024 + 1))).toThrow("1 MiB");
 });
+
+it("accepts persisted theme preferences and rejects unsupported values without overwriting the file", () => {
+  for (const theme of ["light", "dark", "system"])
+    expect(
+      parseSettings(JSON.stringify({ "ui.theme": theme }))["ui.theme"],
+    ).toBe(theme);
+  const { store, file } = fixture('{"ui.theme":"dark"}');
+  for (const theme of ["auto", "LIGHT", null, 1, true])
+    expect(() => store.set("ui.theme", theme)).toThrow("Unsupported theme");
+  expect(file()).toBe('{"ui.theme":"dark"}');
+  store.set("ui.theme", undefined);
+  expect(store.snapshot().document["ui.theme"]).toBeUndefined();
+});

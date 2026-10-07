@@ -1,7 +1,7 @@
 # Browser settings
 
 The resource sidebar's **Settings** button opens settings. Topics belong to the left
-panel, **Editor** and **Language**; there are no top tabs. The settings body is at
+panel, **General** first and **Editor** second; there are no top tabs. The settings body is at
 most **600px** wide and centered, with global and session editor groups stacked.
 Production and the WASM sandbox use the same settings components. Editor
 controls save immediately; the JSON editor saves explicitly with **Save** or
@@ -23,7 +23,7 @@ independently. Leaving the settings page discards unsaved JSON edits.
 
 The JSON pane and the session's read-only file preview both use
 `ts/src/source-editor.tsx`, with the same Monaco options and palette, `#141414`
-background/gutter, 12px monospace font, line numbers, Find and scrollbar. The
+dark background/gutter (light: `#fafafa`), 12px monospace font, line numbers, Find and scrollbar. The
 pane header and footer share styles as well. Only settings JSON is editable.
 Monaco loads on first display; folding keeps its model and view. External
 reload/import/pristine updates replace its contents; normal typing and theme/
@@ -41,6 +41,7 @@ editing known settings through the UI.
 ```json
 {
   "ui.language": "en",
+  "ui.theme": "dark",
   "editor.indentSize": 2,
   "editor.insertSpaces": true,
   "editor.tabSize": 4,
@@ -52,7 +53,7 @@ editing known settings through the UI.
 ## Display language and lazy language packs
 
 English is the default even when the browser prefers another language. The
-**Language** topic offers English and 한국어 by their native names. Choosing a
+**General → Language** section offers English and 한국어 by their native names. Choosing a
 language does not save, load or activate it. **Apply settings** first downloads
 its pack, then persists `ui.language` in the same settings.json document.
 `en` and `ko` are currently supported; missing values resolve to `en`, while
@@ -89,6 +90,39 @@ also update without changing keys. There is no new i18n dependency or backend
 settings API. `sandbox-e2e/language.spec.ts` checks lazy fetches, persistence,
 failures and editor state; production tests cover the actual gateway CSP.
 
+## Theme and reusable controls
+
+**General → Theme** saves `ui.theme` immediately: `light`, `dark`, or `system`.
+Missing values resolve to **dark**, preserving the existing appearance; invalid
+values fail whole-file validation. System follows `prefers-color-scheme` live,
+including changes while the page is open. Same-origin storage changes and reload
+use the saved preference. The monochrome ramp in `src/theme.css` covers the app,
+composer, cards, menus, scrollbar and fades. Native syntax palettes and both
+Monaco panes adapt to the effective theme; the terminal updates in place without
+reconnecting. The white Claude Spark keeps its supplied color on a dark backing
+in light mode. Connected OpenVSCode retains its own appearance settings.
+
+Frequently reused inputs have their own files:
+
+- `src/value-menu.tsx`: model/effort, language, theme and palette menus. The
+  selected row overlays the trigger's text origin; current row, divider, then
+  other choices. Native button activation, arrow keys/Home/End, Escape with
+  focus restoration, outside dismissal, a bounded scrollable option list and
+  automatic up/down placement are shared. A fixed portal avoids clipping in
+  scrollable settings panes. Default choices display the effective value in
+  muted text; explicit values have normal text. No UI library was added.
+- `src/setting-slider.tsx`: native discrete slider with position **0** resetting
+  the key, then **1–8** explicit values. The reset position displays the inherited
+  numeric value and a reset symbol; keyboard Home/End/arrows work. Existing JSON
+  values **9–16** remain valid and their actual number is displayed (thumb at 8)
+  until the user chooses a UI value. Reading settings never clamps or rewrites
+  the saved file.
+- `src/segmented-control.tsx`: equal-width native radio cells with a sliding,
+  shadow-free selection box. Tab input uses reset/effective value, Spaces and
+  Tab character. Reset deletes the key; explicit false still means a real Tab.
+  Arrow-key selection and browser focus traversal use native radio behavior;
+  reduced motion disables the indicator animation.
+
 ## Editor scope and inheritance
 
 | Global key | Default | Behavior |
@@ -101,9 +135,8 @@ failures and editor state; production tests cover the actual gateway CSP.
 Each key also has a **`session.editor.*`** counterpart. Resolution is independent
 for every field: explicit session value → explicit global value → default.
 Explicit `false` is a value, not inheritance. Missing keys inherit; `null` is
-invalid. Choosing **Inherit global** deletes that session key, and the option
-shows the current effective global value. Choosing **Default** removes a global
-key. `indentSize` and `tabSize` are intentionally independent.
+invalid. Resetting a control deletes its key and shows the current effective
+value in muted text; there are no visible Default/Inherit global prefixes. `indentSize` and `tabSize` are intentionally independent.
 
 The session scope applies to **all session conversation editors**, including
 Question Other answers. It is not a setting for one session ID. Global settings

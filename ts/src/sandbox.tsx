@@ -1,3 +1,4 @@
+import { ThemeProvider } from "./theme";
 import { t, translateKnown } from "./i18n";
 import { LocaleProvider, useLocale } from "./i18n-react";
 import React, { useEffect, useState } from "react";
@@ -140,7 +141,9 @@ function SandboxApp() {
   );
 }
 createRoot(document.getElementById("root")!).render(
-  <LocaleProvider>
-    <SandboxApp />
-  </LocaleProvider>,
+  <ThemeProvider>
+    <LocaleProvider>
+      <SandboxApp />
+    </LocaleProvider>
+  </ThemeProvider>,
 );

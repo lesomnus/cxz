@@ -7,7 +7,11 @@ import "monaco-editor/esm/vs/basic-languages/shell/shell.contribution.js";
 import { jsonDefaults } from "monaco-editor/esm/vs/language/json/monaco.contribution.js";
 import EditorWorker from "monaco-editor/esm/vs/editor/editor.worker.js?worker";
 import JsonWorker from "monaco-editor/esm/vs/language/json/json.worker.js?worker";
-import { palettes, type EditorSettings } from "./editor-settings";
+import {
+  paletteForTheme,
+  palettes,
+  type EditorSettings,
+} from "./editor-settings";
 
 (
   globalThis as typeof globalThis & { MonacoEnvironment: unknown }
@@ -35,46 +39,51 @@ export const editorOptions: monaco.editor.IStandaloneEditorConstructionOptions =
     stickyScroll: { enabled: false },
     editContext: false,
   };
-for (const [name, palette] of Object.entries(palettes))
-  monaco.editor.defineTheme(`cxz-${name}`, {
-    base: "vs-dark",
-    inherit: false,
-    rules: [
-      { token: "", foreground: "EDEDED" },
-      { token: "comment", foreground: palette.comment.slice(1) },
-      { token: "keyword", foreground: palette.keyword.slice(1) },
-      { token: "string", foreground: palette.string.slice(1) },
-      { token: "string.key.json", foreground: palette.attr.slice(1) },
-      { token: "number", foreground: palette.number.slice(1) },
-      { token: "type", foreground: palette.title.slice(1) },
-      { token: "identifier", foreground: palette.title.slice(1) },
-    ],
-    colors: {
-      "editor.background": "#141414",
-      "editor.foreground": "#ededed",
-      "editorLineNumber.foreground": "#686868",
-      "editorLineNumber.activeForeground": "#bdbdbd",
-      "editor.selectionBackground": "#414141",
-      "editor.inactiveSelectionBackground": "#303030",
-      "editor.lineHighlightBackground": "#1b1b1b",
-      "editorCursor.foreground": "#ededed",
-      "editorWidget.background": "#222222",
-      "editorWidget.border": "#363636",
-      focusBorder: "#737373",
-    },
-  });
+for (const name of Object.keys(palettes) as (keyof typeof palettes)[])
+  for (const theme of ["dark", "light"] as const) {
+    const palette = paletteForTheme(name, theme);
+    const light = theme === "light";
+    monaco.editor.defineTheme(`cxz-${name}-${theme}`, {
+      base: light ? "vs" : "vs-dark",
+      inherit: false,
+      rules: [
+        { token: "", foreground: light ? "202020" : "EDEDED" },
+        { token: "comment", foreground: palette.comment.slice(1) },
+        { token: "keyword", foreground: palette.keyword.slice(1) },
+        { token: "string", foreground: palette.string.slice(1) },
+        { token: "string.key.json", foreground: palette.attr.slice(1) },
+        { token: "number", foreground: palette.number.slice(1) },
+        { token: "type", foreground: palette.title.slice(1) },
+        { token: "identifier", foreground: palette.title.slice(1) },
+      ],
+      colors: {
+        "editor.background": light ? "#fafafa" : "#141414",
+        "editor.foreground": light ? "#202020" : "#ededed",
+        "editorLineNumber.foreground": light ? "#777777" : "#686868",
+        "editorLineNumber.activeForeground": light ? "#424242" : "#bdbdbd",
+        "editor.selectionBackground": light ? "#bebebe" : "#414141",
+        "editor.inactiveSelectionBackground": light ? "#dfdfdf" : "#303030",
+        "editor.lineHighlightBackground": light ? "#f5f5f5" : "#1b1b1b",
+        "editorCursor.foreground": light ? "#202020" : "#ededed",
+        "editorWidget.background": light ? "#eeeeee" : "#222222",
+        "editorWidget.border": light ? "#c9c9c9" : "#363636",
+        focusBorder: light ? "#8c8c8c" : "#737373",
+      },
+    });
+  }
 export { monaco };
 export function configureEditor(
   editor: monaco.editor.IStandaloneCodeEditor,
   model: monaco.editor.ITextModel,
   settings: EditorSettings,
+  theme: "light" | "dark" = "dark",
 ) {
   model.updateOptions({
     tabSize: settings.tabSize,
     indentSize: settings.indentSize,
     insertSpaces: settings.insertSpaces,
   });
-  editor.updateOptions({ theme: `cxz-${settings.colorPalette}` });
+  editor.updateOptions({ theme: `cxz-${settings.colorPalette}-${theme}` });
 }
 
 export function language(path: string) {

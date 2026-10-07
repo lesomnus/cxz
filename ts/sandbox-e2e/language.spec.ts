@@ -1,3 +1,4 @@
+import { chooseSetting } from "./settings-controls";
 import { expect, test, devices, type Page } from "@playwright/test";
 test.use({
   ...devices["Desktop Chrome"],
@@ -24,7 +25,7 @@ async function language(page: Page) {
     .click();
   await page
     .getByRole("navigation", { name: "Settings topics", exact: true })
-    .getByRole("button", { name: "Language", exact: true })
+    .getByRole("button", { name: "General", exact: true })
     .click();
 }
 test("English defaults and only Apply settings downloads the language pack, preserving JSON drafts and other preferences", async ({
@@ -58,9 +59,9 @@ test("English defaults and only Apply settings downloads the language pack, pres
   );
   await editor.press("Control+a");
   await editor.press("Control+v");
-  await page.getByLabel("Display language", { exact: true }).selectOption("ko");
+  await chooseSetting(page, "Display language", "ko");
   await expect(
-    page.getByRole("heading", { name: "Language", exact: true }),
+    page.getByRole("heading", { name: "General", exact: true }),
   ).toBeVisible();
   expect(requests).toEqual([]);
   expect(
@@ -74,7 +75,7 @@ test("English defaults and only Apply settings downloads the language pack, pres
   await expect(page.locator("html")).toHaveAttribute("lang", "ko");
   expect(requests).toHaveLength(1);
   await expect(
-    page.getByRole("heading", { name: "언어", exact: true }),
+    page.getByRole("heading", { name: "일반", exact: true }),
   ).toBeVisible();
   expect(
     await page.evaluate(() => JSON.parse(localStorage.getItem("settings")!)),
@@ -110,7 +111,7 @@ test("failed language download leaves the active language and saved file unchang
   await ready(page);
   await language(page);
   const before = await page.evaluate(() => localStorage.getItem("settings"));
-  await page.getByLabel("Display language", { exact: true }).selectOption("ko");
+  await chooseSetting(page, "Display language", "ko");
   await page
     .getByRole("button", { name: "Apply settings", exact: true })
     .click();

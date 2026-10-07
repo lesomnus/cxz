@@ -1,3 +1,4 @@
+import { useTheme } from "./theme";
 import { t, translateKnown } from "./i18n";
 import { useLocale } from "./i18n-react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -45,9 +46,15 @@ export function WorkspaceTerminal({
     ref: { key: { case: "id", value: projectId } },
     select: { all: true },
   });
+  const theme = useTheme();
+  const currentTheme = useRef(theme);
+  currentTheme.current = theme;
   const screen = useRef<HTMLDivElement>(null);
   const link = useRef<TerminalLink | null>(null);
   const terminal = useRef<import("@xterm/xterm").Terminal | null>(null);
+  useEffect(() => {
+    if (terminal.current) terminal.current.options.theme = terminalTheme(theme);
+  }, [theme]);
   const fit = useRef<() => void>(() => {});
   const [generation, reconnect] = useState(0);
   const [state, setState] = useState("Connecting…");
@@ -74,28 +81,7 @@ export function WorkspaceTerminal({
         fontFamily: "ui-monospace, SFMono-Regular, Consolas, monospace",
         scrollback: 2000,
         allowProposedApi: false,
-        theme: {
-          background: "#111111",
-          foreground: "#ededed",
-          cursor: "#ededed",
-          selectionBackground: "#444444",
-          black: "#111111",
-          red: "#aaaaaa",
-          green: "#bbbbbb",
-          yellow: "#cccccc",
-          blue: "#aaaaaa",
-          magenta: "#bbbbbb",
-          cyan: "#cccccc",
-          white: "#dddddd",
-          brightBlack: "#777777",
-          brightRed: "#eeeeee",
-          brightGreen: "#eeeeee",
-          brightYellow: "#eeeeee",
-          brightBlue: "#eeeeee",
-          brightMagenta: "#eeeeee",
-          brightCyan: "#eeeeee",
-          brightWhite: "#ffffff",
-        },
+        theme: terminalTheme(currentTheme.current),
       });
       const fitter = new FitAddon();
       term.loadAddon(fitter);
@@ -207,4 +193,32 @@ export function WorkspaceTerminal({
       <div className="terminal-screen" ref={screen} />
     </section>
   );
+}
+
+function terminalTheme(theme: "light" | "dark") {
+  const light = theme === "light";
+  const normal = light ? "#555555" : "#bbbbbb";
+  const bright = light ? "#222222" : "#eeeeee";
+  return {
+    background: light ? "#fbfbfb" : "#111111",
+    foreground: light ? "#202020" : "#ededed",
+    cursor: light ? "#202020" : "#ededed",
+    selectionBackground: light ? "#cccccc" : "#444444",
+    black: "#111111",
+    red: normal,
+    green: normal,
+    yellow: normal,
+    blue: normal,
+    magenta: normal,
+    cyan: normal,
+    white: light ? "#666666" : "#dddddd",
+    brightBlack: "#777777",
+    brightRed: bright,
+    brightGreen: bright,
+    brightYellow: bright,
+    brightBlue: bright,
+    brightMagenta: bright,
+    brightCyan: bright,
+    brightWhite: light ? "#333333" : "#ffffff",
+  };
 }

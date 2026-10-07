@@ -20,16 +20,16 @@ import {
   parseSettings,
   type EditorScope,
 } from "./editor-settings";
+import { ValueMenu } from "./value-menu";
+import { SettingSlider } from "./setting-slider";
+import { SegmentedControl } from "./segmented-control";
+import { useTheme, resolveTheme } from "./theme";
 import { SourceEditor, type SourceEditorHandle } from "./source-editor";
 
 const fields = {
   indentSize: {
     label: "Indentation size",
     description: "Spaces inserted with Tab or removed with Shift+Tab",
-    choices: Array.from({ length: 16 }, (_, i) => [
-      String(i + 1),
-      `${i + 1} columns`,
-    ]),
   },
   insertSpaces: {
     label: "Tab input",
@@ -42,10 +42,6 @@ const fields = {
   tabSize: {
     label: "Tab display width",
     description: "Columns used to display a real tab character",
-    choices: Array.from({ length: 16 }, (_, i) => [
-      String(i + 1),
-      `${i + 1} columns`,
-    ]),
   },
   colorPalette: {
     label: "Color palette",
@@ -64,9 +60,10 @@ export function SettingsPage({
 }: {
   fileOpen: boolean;
   setFileOpen: (open: boolean) => void;
-  topic: "editor" | "language";
+  topic: "editor" | "general";
 }) {
   const locale = useLocale();
+  const theme = useTheme();
   const { store, snapshot } = useSettings();
   const savedLanguage = resolveLocale(snapshot.document["ui.language"]);
   const [language, setLanguage] = useState<Locale>(savedLanguage);
@@ -197,48 +194,65 @@ export function SettingsPage({
             const hasValue = Object.hasOwn(snapshot.document, name);
             const inherited =
               scope === "session" ? global[key] : defaultEditorSettings[key];
-            const label = fields[key].choices.find(
-              ([value]) => value === String(inherited),
-            )![1];
             return (
-              <label className="setting-row" key={key}>
+              <div className="setting-row" key={key}>
                 <span>
                   <strong>{translateKnown(fields[key].label)}</strong>
                   <small>{translateKnown(fields[key].description)}</small>
                   <code>{name}</code>
                 </span>
-                <select
-                  aria-label={`${title} ${translateKnown(fields[key].label)}`}
-                  value={hasValue ? String(snapshot.document[name]) : ""}
-                  onChange={(event) => {
-                    const value = event.target.value;
-                    update(
-                      name,
-                      value === ""
-                        ? undefined
-                        : key === "insertSpaces"
-                          ? value === "true"
-                          : key === "colorPalette"
-                            ? value
-                            : Number(value),
-                    );
-                  }}
-                >
-                  <option value="">
-                    {scope === "session" ? t("Inherit global") : t("Default")} ·{" "}
-                    {key === "indentSize" || key === "tabSize"
-                      ? t("{count} columns", { count: Number(inherited) })
-                      : translateKnown(label)}
-                  </option>
-                  {fields[key].choices.map(([value, label]) => (
-                    <option value={value} key={value}>
-                      {key === "indentSize" || key === "tabSize"
-                        ? t("{count} columns", { count: Number(value) })
-                        : translateKnown(label)}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                {key === "indentSize" || key === "tabSize" ? (
+                  <SettingSlider
+                    label={`${title} ${translateKnown(fields[key].label)}`}
+                    value={
+                      hasValue ? Number(snapshot.document[name]) : undefined
+                    }
+                    inherited={Number(inherited)}
+                    disabled={!snapshot.valid}
+                    onChange={(value) => update(name, value)}
+                  />
+                ) : key === "insertSpaces" ? (
+                  <SegmentedControl
+                    label={`${title} ${translateKnown(fields[key].label)}`}
+                    value={hasValue ? String(snapshot.document[name]) : ""}
+                    disabled={!snapshot.valid}
+                    options={[
+                      {
+                        value: "",
+                        label: `↺ ${translateKnown(inherited ? "Spaces" : "Tab character")}`,
+                        muted: true,
+                      },
+                      ...fields[key].choices.map(([value, label]) => ({
+                        value,
+                        label: translateKnown(label),
+                      })),
+                    ]}
+                    onChange={(value) =>
+                      update(name, value === "" ? undefined : value === "true")
+                    }
+                  />
+                ) : (
+                  <ValueMenu
+                    label={`${title} ${translateKnown(fields[key].label)}`}
+                    value={hasValue ? String(snapshot.document[name]) : ""}
+                    disabled={!snapshot.valid}
+                    options={[
+                      {
+                        value: "",
+                        label: translateKnown(
+                          palettes[inherited as keyof typeof palettes].label,
+                        ),
+                        muted: true,
+                      },
+                      ...fields[key].choices.map(([value, label]) => ({
+                        value,
+                        label: translateKnown(label),
+                      })),
+                    ]}
+                    choose={(value) => update(name, value || undefined)}
+                  />
+                )}
+              </div>
             );
           })}
         </fieldset>
@@ -247,7 +261,7 @@ export function SettingsPage({
           className="settings-preview"
           style={{
             tabSize: resolved.tabSize,
-            ...paletteVariables(resolved.colorPalette),
+            ...paletteVariables(resolved.colorPalette, theme),
           }}
         >
           <code className="editor-code-line">
@@ -272,20 +286,18 @@ export function SettingsPage({
           id="settings-editor"
           className="settings-form-pane"
           aria-label={
-            topic === "editor" ? t("Editor settings") : t("Language settings")
+            topic === "editor" ? t("Editor settings") : t("General settings")
           }
           hidden={!wide && fileOpen}
         >
           <div className="settings-editor-body">
             <header>
               <div>
-                <h1>{topic === "editor" ? t("Editor") : t("Language")}</h1>
+                <h1>{topic === "editor" ? t("Editor") : t("General")}</h1>
                 <small>
                   {topic === "editor"
                     ? t("Editor changes are saved immediately in this browser.")
-                    : t(
-                        "Choose a language, then apply it to download its language pack.",
-                      )}
+                    : t("Appearance and display language for this browser.")}
                 </small>
               </div>
               {!wide && (
@@ -306,45 +318,79 @@ export function SettingsPage({
                   {group("session")}
                 </>
               ) : (
-                <section className="settings-group">
-                  <h2>{t("Display language")}</h2>
-                  <p className="muted">
-                    {t(
-                      "Language changes apply to this browser. Conversation content and code are preserved.",
-                    )}
-                  </p>
-                  <fieldset disabled={!snapshot.valid || applying}>
-                    <label className="setting-row">
-                      <span>
-                        <strong>{t("Language")}</strong>
-                        <code>ui.language</code>
-                      </span>
-                      <select
-                        aria-label={t("Display language")}
-                        value={language}
-                        onChange={(event) =>
-                          setLanguage(event.target.value as Locale)
+                <>
+                  <section className="settings-group">
+                    <h2>{t("Display language")}</h2>
+                    <p className="muted">
+                      {t(
+                        "Language changes apply to this browser. Conversation content and code are preserved.",
+                      )}
+                    </p>
+                    <fieldset disabled={!snapshot.valid || applying}>
+                      <div className="setting-row">
+                        <span>
+                          <strong>{t("Language")}</strong>
+                          <code>ui.language</code>
+                        </span>
+                        <ValueMenu
+                          label={t("Display language")}
+                          value={language}
+                          muted={
+                            !Object.hasOwn(snapshot.document, "ui.language") &&
+                            language === "en"
+                          }
+                          options={languages.map(({ id, name }) => ({
+                            value: id,
+                            label: name,
+                          }))}
+                          disabled={!snapshot.valid || applying}
+                          choose={(value) => setLanguage(value as Locale)}
+                        />
+                      </div>
+                      <Button
+                        disabled={
+                          language === savedLanguage &&
+                          language === locale.locale &&
+                          !locale.error
                         }
+                        onClick={() => void applyLanguage()}
                       >
-                        {languages.map(({ id, name }) => (
-                          <option key={id} value={id}>
-                            {name}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <Button
-                      disabled={
-                        language === savedLanguage &&
-                        language === locale.locale &&
-                        !locale.error
-                      }
-                      onClick={() => void applyLanguage()}
-                    >
-                      {applying ? t("Applying…") : t("Apply settings")}
-                    </Button>
-                  </fieldset>
-                </section>
+                        {applying ? t("Applying…") : t("Apply settings")}
+                      </Button>
+                    </fieldset>
+                  </section>
+                  <section
+                    className="settings-group"
+                    aria-label={t("Theme settings")}
+                  >
+                    <h2>{t("Theme")}</h2>
+                    <p className="muted">
+                      {t(
+                        "Choose Light, Dark, or follow your system appearance.",
+                      )}
+                    </p>
+                    <fieldset disabled={!snapshot.valid}>
+                      <div className="setting-row">
+                        <span>
+                          <strong>{t("Theme")}</strong>
+                          <code>ui.theme</code>
+                        </span>
+                        <ValueMenu
+                          label={t("Appearance")}
+                          value={resolveTheme(snapshot.document["ui.theme"])}
+                          muted={!Object.hasOwn(snapshot.document, "ui.theme")}
+                          options={[
+                            { value: "light", label: t("Light") },
+                            { value: "dark", label: t("Dark") },
+                            { value: "system", label: t("System") },
+                          ]}
+                          disabled={!snapshot.valid}
+                          choose={(value) => update("ui.theme", value)}
+                        />
+                      </div>
+                    </fieldset>
+                  </section>
+                </>
               )}
             </div>
           </div>

@@ -170,8 +170,8 @@ export function Workspace({
   >("sessions");
   const [session, setSession] = useState(initialSession);
   const [settingsFileOpen, setSettingsFileOpen] = useState(false);
-  const [settingsTopic, setSettingsTopic] = useState<"editor" | "language">(
-    "editor",
+  const [settingsTopic, setSettingsTopic] = useState<"editor" | "general">(
+    "general",
   );
   const [after, setAfter] = useState("");
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
@@ -211,7 +211,7 @@ export function Workspace({
           title={t("Settings")}
           onClick={() => {
             setSettingsFileOpen(false);
-            setSettingsTopic("editor");
+            setSettingsTopic("general");
             setResource("settings");
           }}
         >
@@ -244,26 +244,19 @@ export function Workspace({
         <p className="muted">{new URL(c.baseUrl).host}</p>
         {resource === "settings" ? (
           <nav className="settings-topics" aria-label={t("Settings topics")}>
-            <Button
-              aria-current={settingsTopic === "editor" ? "page" : undefined}
-              aria-controls="settings-editor"
-              onClick={() => {
-                setSettingsTopic("editor");
-                setSettingsFileOpen(false);
-              }}
-            >
-              {t("Editor")}
-            </Button>
-            <Button
-              aria-current={settingsTopic === "language" ? "page" : undefined}
-              aria-controls="settings-editor"
-              onClick={() => {
-                setSettingsTopic("language");
-                setSettingsFileOpen(false);
-              }}
-            >
-              {t("Language")}
-            </Button>
+            {(["general", "editor"] as const).map((topic) => (
+              <Button
+                key={topic}
+                aria-current={settingsTopic === topic ? "page" : undefined}
+                aria-controls="settings-editor"
+                onClick={() => {
+                  setSettingsTopic(topic);
+                  setSettingsFileOpen(false);
+                }}
+              >
+                {topic === "general" ? t("General") : t("Editor")}
+              </Button>
+            ))}
           </nav>
         ) : resource === "sessions" ? (
           <div className="session-tree" aria-label={t("Projects and sessions")}>
