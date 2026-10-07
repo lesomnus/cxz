@@ -20,7 +20,7 @@ require (
 	github.com/gofrs/flock v0.13.0
 	github.com/google/jsonschema-go v0.4.3
 	github.com/google/uuid v1.6.0
-	github.com/lesomnus/bed v0.0.0-20261007123202-7dffe712ced8
+	github.com/lesomnus/bed v0.0.0-20261007123751-97238b06cc29
 	github.com/lesomnus/flob v0.0.0-20260915164944-39bf5f81924f
 	github.com/lesomnus/grpc-dgram v0.0.0-20260808164022-d993065403e1
 	github.com/lesomnus/otx v0.0.0-20260807173743-977a5687d6ba
