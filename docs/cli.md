@@ -124,6 +124,26 @@ waiting. See [sending while the agent works](tui.md#sending-while-the-agent-work
 Event streams reconnect by cursor. Mutations are never retried blindly; these APIs
 accept an idempotency key so retrying is your decision.
 
+## Conversation search
+
+```sh
+cxz conversation search TEXT                 # every project, last 30 days, newest first
+cxz conversation search --match regex|fuzzy --ignore-case TEXT
+cxz conversation search --project NAME --exclude NAME TEXT
+cxz conversation search --since 2026-08-01 --until 2026-09-01 TEXT
+cxz conversation search --window 7d --limit 50 --snippet 300 TEXT
+cxz conversation search --continue CURSOR
+cxz conversation search --tools --raw --progress TEXT
+```
+
+One window of time per search, newest first, streamed as it is found; the
+summary prints the cursor for the rest of the window and the command for the
+window before it. `--project`/`--exclude` take a name, alias, workspace path or
+id, and an unknown one is refused rather than quietly searching everything.
+Spans accept `36h`, `14d`, `2w` or `3mo`; times accept RFC3339, `YYYY-MM-DD` or
+`90d ago`. With `--format json` each conversation is one object as it arrives.
+See [searching it](history.md#searching-it).
+
 ## Accounts
 
 ```sh

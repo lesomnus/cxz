@@ -55,6 +55,9 @@ service SessionService {
   rpc Background(SessionBackgroundRequest) returns (SessionBackgroundReply);
   rpc Models(SessionModelsRequest) returns (SessionModelsReply);
   rpc Events(SessionEventsRequest) returns (stream SessionEvent);
+  // Search answers across every session in every project, so it names no ref.
+  // It is on this service because sessions are what it finds.
+  rpc Search(SessionSearchRequest) returns (stream SessionSearchReply);
 }
 
 message SessionAddRequest {
@@ -386,4 +389,88 @@ message SessionModelsReply {
   int64 catalog_ms = 5;
   bool refreshing = 6;
   string status = 7;
+}
+
+// A window is half-open, [since_ms, until_ms), so the windows a client walks
+// back through -- a month at a time -- neither overlap nor skip. cursor
+// continues one window and carries it, which is what keeps the second page
+// asking the same question as the first while new events arrive above it.
+//
+// projects and exclude are project runtime ids. A name or an alias is resolved
+// where it was displayed: this is not the place to guess which was meant.
+message SessionSearchRequest {
+  string query = 1;
+  string match = 2; // substring (default), regex or fuzzy
+  bool ignore_case = 3;
+  string view = 4; // conversation (default) or raw
+  bool include_tools = 5;
+  int64 since_ms = 6;
+  int64 until_ms = 7;
+  repeated string projects = 8;
+  repeated string exclude = 9;
+  repeated string sessions = 10;
+  int32 limit = 11;
+  int32 snippet = 12;
+  string cursor = 13;
+  string client_id = 14;
+}
+
+// Exactly one field is set. The summary comes last.
+message SessionSearchReply {
+  SessionSearchVisit visit = 1;
+  SessionSearchProgress progress = 2;
+  SessionSearchSummary summary = 3;
+}
+
+// One session's results, named once for all of them and newest first -- as the
+// visits themselves are.
+message SessionSearchVisit {
+  string project_id = 1;
+  string project_name = 2;
+  string session_id = 3;
+  string alias = 4;
+  string title = 5;
+  string agent = 6;
+  string state = 7;
+  int64 activity_ms = 8;
+  int64 created_ms = 9;
+  // truncated says this session's older events are gone, so finding nothing in
+  // it is not evidence that nothing was said.
+  bool truncated = 10;
+  repeated SessionSearchHit hits = 11;
+}
+
+message SessionSearchHit {
+  uint64 seq = 1;
+  int64 time_ms = 2;
+  string kind = 3;
+  int32 bytes = 4;
+  int32 score = 5;
+  string snippet = 6;
+}
+
+// Progress is not decoration. A project that is not running costs a container
+// to open, so a search can be working for seconds with nothing to show yet.
+message SessionSearchProgress {
+  string project_id = 1;
+  string project_name = 2;
+  string state = 3; // opening, reading, done or unavailable
+  string message = 4;
+  int32 opened = 5;
+  int32 total = 6;
+}
+
+// The summary says which window it answered for, because a continued page was
+// not told: the window travelled in the cursor, and the client needs it back to
+// say what it searched and to ask for the one before it.
+message SessionSearchSummary {
+  int32 projects = 1;
+  int32 unavailable = 2;
+  int32 sessions = 3;
+  int32 hits = 4;
+  int32 truncated = 5;
+  string next_cursor = 6;
+  bool has_more = 7;
+  int64 since_ms = 8;
+  int64 until_ms = 9;
 }

@@ -41,6 +41,7 @@ const (
 	Sessions_History_FullMethodName      = "/cxz.runtime.Sessions/History"
 	Sessions_Background_FullMethodName   = "/cxz.runtime.Sessions/Background"
 	Sessions_Models_FullMethodName       = "/cxz.runtime.Sessions/Models"
+	Sessions_Search_FullMethodName       = "/cxz.runtime.Sessions/Search"
 	Sessions_Open_FullMethodName         = "/cxz.runtime.Sessions/Open"
 	Sessions_Projects_FullMethodName     = "/cxz.runtime.Sessions/Projects"
 	Sessions_Down_FullMethodName         = "/cxz.runtime.Sessions/Down"
@@ -72,6 +73,7 @@ type SessionsClient interface {
 	History(ctx context.Context, in *WatchRequest, opts ...grpc.CallOption) (*EventBatch, error)
 	Background(ctx context.Context, in *SessionRef, opts ...grpc.CallOption) (*BackgroundReply, error)
 	Models(ctx context.Context, in *ModelsRequest, opts ...grpc.CallOption) (*ModelsReply, error)
+	Search(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SearchReply], error)
 	Open(ctx context.Context, in *ProjectRequest, opts ...grpc.CallOption) (*Session, error)
 	Projects(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ProjectList, error)
 	Down(ctx context.Context, in *ProjectRequest, opts ...grpc.CallOption) (*Receipt, error)
@@ -314,6 +316,25 @@ func (c *sessionsClient) Models(ctx context.Context, in *ModelsRequest, opts ...
 	return out, nil
 }
 
+func (c *sessionsClient) Search(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SearchReply], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &Sessions_ServiceDesc.Streams[1], Sessions_Search_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[SearchRequest, SearchReply]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type Sessions_SearchClient = grpc.ServerStreamingClient[SearchReply]
+
 func (c *sessionsClient) Open(ctx context.Context, in *ProjectRequest, opts ...grpc.CallOption) (*Session, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Session)
@@ -370,6 +391,7 @@ type SessionsServer interface {
 	History(context.Context, *WatchRequest) (*EventBatch, error)
 	Background(context.Context, *SessionRef) (*BackgroundReply, error)
 	Models(context.Context, *ModelsRequest) (*ModelsReply, error)
+	Search(*SearchRequest, grpc.ServerStreamingServer[SearchReply]) error
 	Open(context.Context, *ProjectRequest) (*Session, error)
 	Projects(context.Context, *Empty) (*ProjectList, error)
 	Down(context.Context, *ProjectRequest) (*Receipt, error)
@@ -448,6 +470,9 @@ func (UnimplementedSessionsServer) Background(context.Context, *SessionRef) (*Ba
 }
 func (UnimplementedSessionsServer) Models(context.Context, *ModelsRequest) (*ModelsReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method Models not implemented")
+}
+func (UnimplementedSessionsServer) Search(*SearchRequest, grpc.ServerStreamingServer[SearchReply]) error {
+	return status.Error(codes.Unimplemented, "method Search not implemented")
 }
 func (UnimplementedSessionsServer) Open(context.Context, *ProjectRequest) (*Session, error) {
 	return nil, status.Error(codes.Unimplemented, "method Open not implemented")
@@ -868,6 +893,17 @@ func _Sessions_Models_Handler(srv interface{}, ctx context.Context, dec func(int
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Sessions_Search_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(SearchRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(SessionsServer).Search(m, &grpc.GenericServerStream[SearchRequest, SearchReply]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type Sessions_SearchServer = grpc.ServerStreamingServer[SearchReply]
+
 func _Sessions_Open_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ProjectRequest)
 	if err := dec(in); err != nil {
@@ -1030,6 +1066,11 @@ var Sessions_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "Watch",
 			Handler:       _Sessions_Watch_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "Search",
+			Handler:       _Sessions_Search_Handler,
 			ServerStreams: true,
 		},
 	},

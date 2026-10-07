@@ -3715,6 +3715,11 @@ func (s interceptSession) Events(req *resource.SessionEventsRequest, out grpc.Se
 		resource.SessionService_Events_FullMethodName, req, out, s.SessionServiceServer.Events)
 }
 
+func (s interceptSession) Search(req *resource.SessionSearchRequest, out grpc.ServerStreamingServer[resource.SessionSearchReply]) error {
+	return grpcx.RunStream(s.stream, s.SessionServiceServer,
+		resource.SessionService_Search_FullMethodName, req, out, s.SessionServiceServer.Search)
+}
+
 // WatchRecorder answers with the recorder that remembers a write for `w`.
 //
 // It is the other end of the hook the trail hangs off, and it wants the

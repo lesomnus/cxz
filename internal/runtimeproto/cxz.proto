@@ -25,6 +25,7 @@ service Sessions {
   rpc History(WatchRequest) returns (EventBatch);
   rpc Background(SessionRef) returns (BackgroundReply);
   rpc Models(ModelsRequest) returns (ModelsReply);
+  rpc Search(SearchRequest) returns (stream SearchReply);
   rpc Open(ProjectRequest) returns (Session);
   rpc Projects(Empty) returns (ProjectList);
   rpc Down(ProjectRequest) returns (Receipt);
@@ -120,3 +121,53 @@ message ModelsReply {
 }
 
 message DevcontainerInput { bytes spec = 1; }
+
+// Search reads conversations rather than sessions, across every project the
+// caller's installation holds. A window is half-open, [since_ms, until_ms), so
+// consecutive windows -- a month at a time, as the client asks for them --
+// neither overlap nor skip. cursor continues one window; projects and exclude
+// are runtime ids, resolved from names and aliases before they get here.
+message SearchRequest {
+  string query = 1; string match = 2; bool ignore_case = 3;
+  string view = 4; bool include_tools = 5;
+  int64 since_ms = 6; int64 until_ms = 7;
+  repeated string projects = 8; repeated string exclude = 9;
+  repeated string sessions = 10;
+  int32 limit = 11; int32 snippet = 12;
+  string cursor = 13; string client_id = 14;
+}
+// One session's results, named once for all of them. hits are newest first,
+// and so are the visits.
+message SearchVisit {
+  string project_id = 1; string project_name = 2;
+  string session_id = 3; string alias = 4; string title = 5;
+  string agent = 6; string state = 7;
+  int64 activity_ms = 8; int64 created_ms = 9;
+  bool truncated = 10;
+  repeated SearchHit hits = 11;
+}
+message SearchHit {
+  uint64 seq = 1; int64 time_ms = 2; string kind = 3;
+  int32 bytes = 4; int32 score = 5; string snippet = 6;
+}
+// Progress is not decoration: a project that is not running costs a container
+// to open, so a search can be working for seconds with nothing to show.
+message SearchProgress {
+  string project_id = 1; string project_name = 2; string state = 3;
+  string message = 4; int32 opened = 5; int32 total = 6;
+}
+// The summary says which window it answered for, because a continued page was
+// not told: the window travelled in the cursor, and the client needs it back to
+// say what it searched and to ask for the one before it.
+message SearchSummary {
+  int32 projects = 1; int32 unavailable = 2; int32 sessions = 3;
+  int32 hits = 4; int32 truncated = 5;
+  string next_cursor = 6; bool has_more = 7;
+  int64 since_ms = 8; int64 until_ms = 9;
+}
+// Exactly one field is set. The summary is last.
+message SearchReply {
+  SearchVisit visit = 1;
+  SearchProgress progress = 2;
+  SearchSummary summary = 3;
+}

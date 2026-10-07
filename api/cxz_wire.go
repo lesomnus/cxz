@@ -2369,6 +2369,614 @@ func (x *DevcontainerInput) GetSpec() []byte {
 	return nil
 }
 
+type SearchRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Query         string                 `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty"`
+	Match         string                 `protobuf:"bytes,2,opt,name=match,proto3" json:"match,omitempty"`
+	IgnoreCase    bool                   `protobuf:"varint,3,opt,name=ignore_case,json=ignoreCase,proto3" json:"ignore_case,omitempty"`
+	View          string                 `protobuf:"bytes,4,opt,name=view,proto3" json:"view,omitempty"`
+	IncludeTools  bool                   `protobuf:"varint,5,opt,name=include_tools,json=includeTools,proto3" json:"include_tools,omitempty"`
+	SinceMs       int64                  `protobuf:"varint,6,opt,name=since_ms,json=sinceMs,proto3" json:"since_ms,omitempty"`
+	UntilMs       int64                  `protobuf:"varint,7,opt,name=until_ms,json=untilMs,proto3" json:"until_ms,omitempty"`
+	Projects      []string               `protobuf:"bytes,8,rep,name=projects,proto3" json:"projects,omitempty"`
+	Exclude       []string               `protobuf:"bytes,9,rep,name=exclude,proto3" json:"exclude,omitempty"`
+	Sessions      []string               `protobuf:"bytes,10,rep,name=sessions,proto3" json:"sessions,omitempty"`
+	Limit         int32                  `protobuf:"varint,11,opt,name=limit,proto3" json:"limit,omitempty"`
+	Snippet       int32                  `protobuf:"varint,12,opt,name=snippet,proto3" json:"snippet,omitempty"`
+	Cursor        string                 `protobuf:"bytes,13,opt,name=cursor,proto3" json:"cursor,omitempty"`
+	ClientId      string                 `protobuf:"bytes,14,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SearchRequest) Reset() {
+	*x = SearchRequest{}
+	mi := &file_cxz_proto_msgTypes[33]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SearchRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SearchRequest) ProtoMessage() {}
+
+func (x *SearchRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_proto_msgTypes[33]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SearchRequest.ProtoReflect.Descriptor instead.
+func (*SearchRequest) Descriptor() ([]byte, []int) {
+	return file_cxz_proto_rawDescGZIP(), []int{33}
+}
+
+func (x *SearchRequest) GetQuery() string {
+	if x != nil {
+		return x.Query
+	}
+	return ""
+}
+
+func (x *SearchRequest) GetMatch() string {
+	if x != nil {
+		return x.Match
+	}
+	return ""
+}
+
+func (x *SearchRequest) GetIgnoreCase() bool {
+	if x != nil {
+		return x.IgnoreCase
+	}
+	return false
+}
+
+func (x *SearchRequest) GetView() string {
+	if x != nil {
+		return x.View
+	}
+	return ""
+}
+
+func (x *SearchRequest) GetIncludeTools() bool {
+	if x != nil {
+		return x.IncludeTools
+	}
+	return false
+}
+
+func (x *SearchRequest) GetSinceMs() int64 {
+	if x != nil {
+		return x.SinceMs
+	}
+	return 0
+}
+
+func (x *SearchRequest) GetUntilMs() int64 {
+	if x != nil {
+		return x.UntilMs
+	}
+	return 0
+}
+
+func (x *SearchRequest) GetProjects() []string {
+	if x != nil {
+		return x.Projects
+	}
+	return nil
+}
+
+func (x *SearchRequest) GetExclude() []string {
+	if x != nil {
+		return x.Exclude
+	}
+	return nil
+}
+
+func (x *SearchRequest) GetSessions() []string {
+	if x != nil {
+		return x.Sessions
+	}
+	return nil
+}
+
+func (x *SearchRequest) GetLimit() int32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+func (x *SearchRequest) GetSnippet() int32 {
+	if x != nil {
+		return x.Snippet
+	}
+	return 0
+}
+
+func (x *SearchRequest) GetCursor() string {
+	if x != nil {
+		return x.Cursor
+	}
+	return ""
+}
+
+func (x *SearchRequest) GetClientId() string {
+	if x != nil {
+		return x.ClientId
+	}
+	return ""
+}
+
+type SearchVisit struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ProjectId     string                 `protobuf:"bytes,1,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
+	ProjectName   string                 `protobuf:"bytes,2,opt,name=project_name,json=projectName,proto3" json:"project_name,omitempty"`
+	SessionId     string                 `protobuf:"bytes,3,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	Alias         string                 `protobuf:"bytes,4,opt,name=alias,proto3" json:"alias,omitempty"`
+	Title         string                 `protobuf:"bytes,5,opt,name=title,proto3" json:"title,omitempty"`
+	Agent         string                 `protobuf:"bytes,6,opt,name=agent,proto3" json:"agent,omitempty"`
+	State         string                 `protobuf:"bytes,7,opt,name=state,proto3" json:"state,omitempty"`
+	ActivityMs    int64                  `protobuf:"varint,8,opt,name=activity_ms,json=activityMs,proto3" json:"activity_ms,omitempty"`
+	CreatedMs     int64                  `protobuf:"varint,9,opt,name=created_ms,json=createdMs,proto3" json:"created_ms,omitempty"`
+	Truncated     bool                   `protobuf:"varint,10,opt,name=truncated,proto3" json:"truncated,omitempty"`
+	Hits          []*SearchHit           `protobuf:"bytes,11,rep,name=hits,proto3" json:"hits,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SearchVisit) Reset() {
+	*x = SearchVisit{}
+	mi := &file_cxz_proto_msgTypes[34]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SearchVisit) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SearchVisit) ProtoMessage() {}
+
+func (x *SearchVisit) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_proto_msgTypes[34]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SearchVisit.ProtoReflect.Descriptor instead.
+func (*SearchVisit) Descriptor() ([]byte, []int) {
+	return file_cxz_proto_rawDescGZIP(), []int{34}
+}
+
+func (x *SearchVisit) GetProjectId() string {
+	if x != nil {
+		return x.ProjectId
+	}
+	return ""
+}
+
+func (x *SearchVisit) GetProjectName() string {
+	if x != nil {
+		return x.ProjectName
+	}
+	return ""
+}
+
+func (x *SearchVisit) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+func (x *SearchVisit) GetAlias() string {
+	if x != nil {
+		return x.Alias
+	}
+	return ""
+}
+
+func (x *SearchVisit) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *SearchVisit) GetAgent() string {
+	if x != nil {
+		return x.Agent
+	}
+	return ""
+}
+
+func (x *SearchVisit) GetState() string {
+	if x != nil {
+		return x.State
+	}
+	return ""
+}
+
+func (x *SearchVisit) GetActivityMs() int64 {
+	if x != nil {
+		return x.ActivityMs
+	}
+	return 0
+}
+
+func (x *SearchVisit) GetCreatedMs() int64 {
+	if x != nil {
+		return x.CreatedMs
+	}
+	return 0
+}
+
+func (x *SearchVisit) GetTruncated() bool {
+	if x != nil {
+		return x.Truncated
+	}
+	return false
+}
+
+func (x *SearchVisit) GetHits() []*SearchHit {
+	if x != nil {
+		return x.Hits
+	}
+	return nil
+}
+
+type SearchHit struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Seq           uint64                 `protobuf:"varint,1,opt,name=seq,proto3" json:"seq,omitempty"`
+	TimeMs        int64                  `protobuf:"varint,2,opt,name=time_ms,json=timeMs,proto3" json:"time_ms,omitempty"`
+	Kind          string                 `protobuf:"bytes,3,opt,name=kind,proto3" json:"kind,omitempty"`
+	Bytes         int32                  `protobuf:"varint,4,opt,name=bytes,proto3" json:"bytes,omitempty"`
+	Score         int32                  `protobuf:"varint,5,opt,name=score,proto3" json:"score,omitempty"`
+	Snippet       string                 `protobuf:"bytes,6,opt,name=snippet,proto3" json:"snippet,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SearchHit) Reset() {
+	*x = SearchHit{}
+	mi := &file_cxz_proto_msgTypes[35]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SearchHit) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SearchHit) ProtoMessage() {}
+
+func (x *SearchHit) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_proto_msgTypes[35]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SearchHit.ProtoReflect.Descriptor instead.
+func (*SearchHit) Descriptor() ([]byte, []int) {
+	return file_cxz_proto_rawDescGZIP(), []int{35}
+}
+
+func (x *SearchHit) GetSeq() uint64 {
+	if x != nil {
+		return x.Seq
+	}
+	return 0
+}
+
+func (x *SearchHit) GetTimeMs() int64 {
+	if x != nil {
+		return x.TimeMs
+	}
+	return 0
+}
+
+func (x *SearchHit) GetKind() string {
+	if x != nil {
+		return x.Kind
+	}
+	return ""
+}
+
+func (x *SearchHit) GetBytes() int32 {
+	if x != nil {
+		return x.Bytes
+	}
+	return 0
+}
+
+func (x *SearchHit) GetScore() int32 {
+	if x != nil {
+		return x.Score
+	}
+	return 0
+}
+
+func (x *SearchHit) GetSnippet() string {
+	if x != nil {
+		return x.Snippet
+	}
+	return ""
+}
+
+type SearchProgress struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ProjectId     string                 `protobuf:"bytes,1,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
+	ProjectName   string                 `protobuf:"bytes,2,opt,name=project_name,json=projectName,proto3" json:"project_name,omitempty"`
+	State         string                 `protobuf:"bytes,3,opt,name=state,proto3" json:"state,omitempty"`
+	Message       string                 `protobuf:"bytes,4,opt,name=message,proto3" json:"message,omitempty"`
+	Opened        int32                  `protobuf:"varint,5,opt,name=opened,proto3" json:"opened,omitempty"`
+	Total         int32                  `protobuf:"varint,6,opt,name=total,proto3" json:"total,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SearchProgress) Reset() {
+	*x = SearchProgress{}
+	mi := &file_cxz_proto_msgTypes[36]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SearchProgress) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SearchProgress) ProtoMessage() {}
+
+func (x *SearchProgress) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_proto_msgTypes[36]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SearchProgress.ProtoReflect.Descriptor instead.
+func (*SearchProgress) Descriptor() ([]byte, []int) {
+	return file_cxz_proto_rawDescGZIP(), []int{36}
+}
+
+func (x *SearchProgress) GetProjectId() string {
+	if x != nil {
+		return x.ProjectId
+	}
+	return ""
+}
+
+func (x *SearchProgress) GetProjectName() string {
+	if x != nil {
+		return x.ProjectName
+	}
+	return ""
+}
+
+func (x *SearchProgress) GetState() string {
+	if x != nil {
+		return x.State
+	}
+	return ""
+}
+
+func (x *SearchProgress) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *SearchProgress) GetOpened() int32 {
+	if x != nil {
+		return x.Opened
+	}
+	return 0
+}
+
+func (x *SearchProgress) GetTotal() int32 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
+}
+
+type SearchSummary struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Projects      int32                  `protobuf:"varint,1,opt,name=projects,proto3" json:"projects,omitempty"`
+	Unavailable   int32                  `protobuf:"varint,2,opt,name=unavailable,proto3" json:"unavailable,omitempty"`
+	Sessions      int32                  `protobuf:"varint,3,opt,name=sessions,proto3" json:"sessions,omitempty"`
+	Hits          int32                  `protobuf:"varint,4,opt,name=hits,proto3" json:"hits,omitempty"`
+	Truncated     int32                  `protobuf:"varint,5,opt,name=truncated,proto3" json:"truncated,omitempty"`
+	NextCursor    string                 `protobuf:"bytes,6,opt,name=next_cursor,json=nextCursor,proto3" json:"next_cursor,omitempty"`
+	HasMore       bool                   `protobuf:"varint,7,opt,name=has_more,json=hasMore,proto3" json:"has_more,omitempty"`
+	SinceMs       int64                  `protobuf:"varint,8,opt,name=since_ms,json=sinceMs,proto3" json:"since_ms,omitempty"`
+	UntilMs       int64                  `protobuf:"varint,9,opt,name=until_ms,json=untilMs,proto3" json:"until_ms,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SearchSummary) Reset() {
+	*x = SearchSummary{}
+	mi := &file_cxz_proto_msgTypes[37]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SearchSummary) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SearchSummary) ProtoMessage() {}
+
+func (x *SearchSummary) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_proto_msgTypes[37]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SearchSummary.ProtoReflect.Descriptor instead.
+func (*SearchSummary) Descriptor() ([]byte, []int) {
+	return file_cxz_proto_rawDescGZIP(), []int{37}
+}
+
+func (x *SearchSummary) GetProjects() int32 {
+	if x != nil {
+		return x.Projects
+	}
+	return 0
+}
+
+func (x *SearchSummary) GetUnavailable() int32 {
+	if x != nil {
+		return x.Unavailable
+	}
+	return 0
+}
+
+func (x *SearchSummary) GetSessions() int32 {
+	if x != nil {
+		return x.Sessions
+	}
+	return 0
+}
+
+func (x *SearchSummary) GetHits() int32 {
+	if x != nil {
+		return x.Hits
+	}
+	return 0
+}
+
+func (x *SearchSummary) GetTruncated() int32 {
+	if x != nil {
+		return x.Truncated
+	}
+	return 0
+}
+
+func (x *SearchSummary) GetNextCursor() string {
+	if x != nil {
+		return x.NextCursor
+	}
+	return ""
+}
+
+func (x *SearchSummary) GetHasMore() bool {
+	if x != nil {
+		return x.HasMore
+	}
+	return false
+}
+
+func (x *SearchSummary) GetSinceMs() int64 {
+	if x != nil {
+		return x.SinceMs
+	}
+	return 0
+}
+
+func (x *SearchSummary) GetUntilMs() int64 {
+	if x != nil {
+		return x.UntilMs
+	}
+	return 0
+}
+
+type SearchReply struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Visit         *SearchVisit           `protobuf:"bytes,1,opt,name=visit,proto3" json:"visit,omitempty"`
+	Progress      *SearchProgress        `protobuf:"bytes,2,opt,name=progress,proto3" json:"progress,omitempty"`
+	Summary       *SearchSummary         `protobuf:"bytes,3,opt,name=summary,proto3" json:"summary,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SearchReply) Reset() {
+	*x = SearchReply{}
+	mi := &file_cxz_proto_msgTypes[38]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SearchReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SearchReply) ProtoMessage() {}
+
+func (x *SearchReply) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_proto_msgTypes[38]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SearchReply.ProtoReflect.Descriptor instead.
+func (*SearchReply) Descriptor() ([]byte, []int) {
+	return file_cxz_proto_rawDescGZIP(), []int{38}
+}
+
+func (x *SearchReply) GetVisit() *SearchVisit {
+	if x != nil {
+		return x.Visit
+	}
+	return nil
+}
+
+func (x *SearchReply) GetProgress() *SearchProgress {
+	if x != nil {
+		return x.Progress
+	}
+	return nil
+}
+
+func (x *SearchReply) GetSummary() *SearchSummary {
+	if x != nil {
+		return x.Summary
+	}
+	return nil
+}
+
 var File_cxz_proto protoreflect.FileDescriptor
 
 const file_cxz_proto_rawDesc = "" +
@@ -2581,7 +3189,71 @@ const file_cxz_proto_rawDesc = "" +
 	"refreshing\x12\x16\n" +
 	"\x06status\x18\a \x01(\tR\x06status\"'\n" +
 	"\x11DevcontainerInput\x12\x12\n" +
-	"\x04spec\x18\x01 \x01(\fR\x04spec2\xfc\v\n" +
+	"\x04spec\x18\x01 \x01(\fR\x04spec\"\x82\x03\n" +
+	"\rSearchRequest\x12\x14\n" +
+	"\x05query\x18\x01 \x01(\tR\x05query\x12\x14\n" +
+	"\x05match\x18\x02 \x01(\tR\x05match\x12\x1f\n" +
+	"\vignore_case\x18\x03 \x01(\bR\n" +
+	"ignoreCase\x12\x12\n" +
+	"\x04view\x18\x04 \x01(\tR\x04view\x12#\n" +
+	"\rinclude_tools\x18\x05 \x01(\bR\fincludeTools\x12\x19\n" +
+	"\bsince_ms\x18\x06 \x01(\x03R\asinceMs\x12\x19\n" +
+	"\buntil_ms\x18\a \x01(\x03R\auntilMs\x12\x1a\n" +
+	"\bprojects\x18\b \x03(\tR\bprojects\x12\x18\n" +
+	"\aexclude\x18\t \x03(\tR\aexclude\x12\x1a\n" +
+	"\bsessions\x18\n" +
+	" \x03(\tR\bsessions\x12\x14\n" +
+	"\x05limit\x18\v \x01(\x05R\x05limit\x12\x18\n" +
+	"\asnippet\x18\f \x01(\x05R\asnippet\x12\x16\n" +
+	"\x06cursor\x18\r \x01(\tR\x06cursor\x12\x1b\n" +
+	"\tclient_id\x18\x0e \x01(\tR\bclientId\"\xd0\x02\n" +
+	"\vSearchVisit\x12\x1d\n" +
+	"\n" +
+	"project_id\x18\x01 \x01(\tR\tprojectId\x12!\n" +
+	"\fproject_name\x18\x02 \x01(\tR\vprojectName\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x03 \x01(\tR\tsessionId\x12\x14\n" +
+	"\x05alias\x18\x04 \x01(\tR\x05alias\x12\x14\n" +
+	"\x05title\x18\x05 \x01(\tR\x05title\x12\x14\n" +
+	"\x05agent\x18\x06 \x01(\tR\x05agent\x12\x14\n" +
+	"\x05state\x18\a \x01(\tR\x05state\x12\x1f\n" +
+	"\vactivity_ms\x18\b \x01(\x03R\n" +
+	"activityMs\x12\x1d\n" +
+	"\n" +
+	"created_ms\x18\t \x01(\x03R\tcreatedMs\x12\x1c\n" +
+	"\ttruncated\x18\n" +
+	" \x01(\bR\ttruncated\x12*\n" +
+	"\x04hits\x18\v \x03(\v2\x16.cxz.runtime.SearchHitR\x04hits\"\x90\x01\n" +
+	"\tSearchHit\x12\x10\n" +
+	"\x03seq\x18\x01 \x01(\x04R\x03seq\x12\x17\n" +
+	"\atime_ms\x18\x02 \x01(\x03R\x06timeMs\x12\x12\n" +
+	"\x04kind\x18\x03 \x01(\tR\x04kind\x12\x14\n" +
+	"\x05bytes\x18\x04 \x01(\x05R\x05bytes\x12\x14\n" +
+	"\x05score\x18\x05 \x01(\x05R\x05score\x12\x18\n" +
+	"\asnippet\x18\x06 \x01(\tR\asnippet\"\xb0\x01\n" +
+	"\x0eSearchProgress\x12\x1d\n" +
+	"\n" +
+	"project_id\x18\x01 \x01(\tR\tprojectId\x12!\n" +
+	"\fproject_name\x18\x02 \x01(\tR\vprojectName\x12\x14\n" +
+	"\x05state\x18\x03 \x01(\tR\x05state\x12\x18\n" +
+	"\amessage\x18\x04 \x01(\tR\amessage\x12\x16\n" +
+	"\x06opened\x18\x05 \x01(\x05R\x06opened\x12\x14\n" +
+	"\x05total\x18\x06 \x01(\x05R\x05total\"\x8d\x02\n" +
+	"\rSearchSummary\x12\x1a\n" +
+	"\bprojects\x18\x01 \x01(\x05R\bprojects\x12 \n" +
+	"\vunavailable\x18\x02 \x01(\x05R\vunavailable\x12\x1a\n" +
+	"\bsessions\x18\x03 \x01(\x05R\bsessions\x12\x12\n" +
+	"\x04hits\x18\x04 \x01(\x05R\x04hits\x12\x1c\n" +
+	"\ttruncated\x18\x05 \x01(\x05R\ttruncated\x12\x1f\n" +
+	"\vnext_cursor\x18\x06 \x01(\tR\n" +
+	"nextCursor\x12\x19\n" +
+	"\bhas_more\x18\a \x01(\bR\ahasMore\x12\x19\n" +
+	"\bsince_ms\x18\b \x01(\x03R\asinceMs\x12\x19\n" +
+	"\buntil_ms\x18\t \x01(\x03R\auntilMs\"\xac\x01\n" +
+	"\vSearchReply\x12.\n" +
+	"\x05visit\x18\x01 \x01(\v2\x18.cxz.runtime.SearchVisitR\x05visit\x127\n" +
+	"\bprogress\x18\x02 \x01(\v2\x1b.cxz.runtime.SearchProgressR\bprogress\x124\n" +
+	"\asummary\x18\x03 \x01(\v2\x1a.cxz.runtime.SearchSummaryR\asummary2\xbe\f\n" +
 	"\bSessions\x12D\n" +
 	"\fDevcontainer\x12\x1e.cxz.runtime.DevcontainerInput\x1a\x14.cxz.runtime.Receipt\x128\n" +
 	"\x06Docker\x12\x18.cxz.runtime.DockerInput\x1a\x14.cxz.runtime.Receipt\x12D\n" +
@@ -2607,7 +3279,8 @@ const file_cxz_proto_rawDesc = "" +
 	"\aHistory\x12\x19.cxz.runtime.WatchRequest\x1a\x17.cxz.runtime.EventBatch\x12C\n" +
 	"\n" +
 	"Background\x12\x17.cxz.runtime.SessionRef\x1a\x1c.cxz.runtime.BackgroundReply\x12>\n" +
-	"\x06Models\x12\x1a.cxz.runtime.ModelsRequest\x1a\x18.cxz.runtime.ModelsReply\x129\n" +
+	"\x06Models\x12\x1a.cxz.runtime.ModelsRequest\x1a\x18.cxz.runtime.ModelsReply\x12@\n" +
+	"\x06Search\x12\x1a.cxz.runtime.SearchRequest\x1a\x18.cxz.runtime.SearchReply0\x01\x129\n" +
 	"\x04Open\x12\x1b.cxz.runtime.ProjectRequest\x1a\x14.cxz.runtime.Session\x128\n" +
 	"\bProjects\x12\x12.cxz.runtime.Empty\x1a\x18.cxz.runtime.ProjectList\x129\n" +
 	"\x04Down\x12\x1b.cxz.runtime.ProjectRequest\x1a\x14.cxz.runtime.ReceiptB!Z\x1fgithub.com/lesomnus/cxz/api;apib\x06proto3"
@@ -2624,7 +3297,7 @@ func file_cxz_proto_rawDescGZIP() []byte {
 	return file_cxz_proto_rawDescData
 }
 
-var file_cxz_proto_msgTypes = make([]protoimpl.MessageInfo, 33)
+var file_cxz_proto_msgTypes = make([]protoimpl.MessageInfo, 39)
 var file_cxz_proto_goTypes = []any{
 	(*Empty)(nil),             // 0: cxz.runtime.Empty
 	(*CreateRequest)(nil),     // 1: cxz.runtime.CreateRequest
@@ -2659,6 +3332,12 @@ var file_cxz_proto_goTypes = []any{
 	(*ModelsRequest)(nil),     // 30: cxz.runtime.ModelsRequest
 	(*ModelsReply)(nil),       // 31: cxz.runtime.ModelsReply
 	(*DevcontainerInput)(nil), // 32: cxz.runtime.DevcontainerInput
+	(*SearchRequest)(nil),     // 33: cxz.runtime.SearchRequest
+	(*SearchVisit)(nil),       // 34: cxz.runtime.SearchVisit
+	(*SearchHit)(nil),         // 35: cxz.runtime.SearchHit
+	(*SearchProgress)(nil),    // 36: cxz.runtime.SearchProgress
+	(*SearchSummary)(nil),     // 37: cxz.runtime.SearchSummary
+	(*SearchReply)(nil),       // 38: cxz.runtime.SearchReply
 }
 var file_cxz_proto_depIdxs = []int32{
 	15, // 0: cxz.runtime.Session.pending:type_name -> cxz.runtime.Event
@@ -2666,61 +3345,67 @@ var file_cxz_proto_depIdxs = []int32{
 	16, // 2: cxz.runtime.Event.response:type_name -> cxz.runtime.ResponseMetadata
 	15, // 3: cxz.runtime.EventBatch.events:type_name -> cxz.runtime.Event
 	19, // 4: cxz.runtime.ProjectList.projects:type_name -> cxz.runtime.Project
-	32, // 5: cxz.runtime.Sessions.Devcontainer:input_type -> cxz.runtime.DevcontainerInput
-	25, // 6: cxz.runtime.Sessions.Docker:input_type -> cxz.runtime.DockerInput
-	24, // 7: cxz.runtime.Sessions.FileMappings:input_type -> cxz.runtime.FileMappingsInput
-	1,  // 8: cxz.runtime.Sessions.Create:input_type -> cxz.runtime.CreateRequest
-	0,  // 9: cxz.runtime.Sessions.List:input_type -> cxz.runtime.Empty
-	2,  // 10: cxz.runtime.Sessions.Get:input_type -> cxz.runtime.SessionRef
-	28, // 11: cxz.runtime.Sessions.CopyMemory:input_type -> cxz.runtime.CopyMemoryRequest
-	26, // 12: cxz.runtime.Sessions.Memory:input_type -> cxz.runtime.MemoryRequest
-	22, // 13: cxz.runtime.Sessions.Logs:input_type -> cxz.runtime.LogsRequest
-	21, // 14: cxz.runtime.Sessions.Permission:input_type -> cxz.runtime.PermissionInput
-	5,  // 15: cxz.runtime.Sessions.Send:input_type -> cxz.runtime.Input
-	6,  // 16: cxz.runtime.Sessions.Attach:input_type -> cxz.runtime.AttachmentInput
-	8,  // 17: cxz.runtime.Sessions.Activity:input_type -> cxz.runtime.ActivityInput
-	9,  // 18: cxz.runtime.Sessions.UpdateAgent:input_type -> cxz.runtime.AgentUpdateInput
-	11, // 19: cxz.runtime.Sessions.Reply:input_type -> cxz.runtime.Answer
-	12, // 20: cxz.runtime.Sessions.Interrupt:input_type -> cxz.runtime.Control
-	12, // 21: cxz.runtime.Sessions.Resume:input_type -> cxz.runtime.Control
-	12, // 22: cxz.runtime.Sessions.Stop:input_type -> cxz.runtime.Control
-	14, // 23: cxz.runtime.Sessions.Watch:input_type -> cxz.runtime.WatchRequest
-	14, // 24: cxz.runtime.Sessions.History:input_type -> cxz.runtime.WatchRequest
-	2,  // 25: cxz.runtime.Sessions.Background:input_type -> cxz.runtime.SessionRef
-	30, // 26: cxz.runtime.Sessions.Models:input_type -> cxz.runtime.ModelsRequest
-	18, // 27: cxz.runtime.Sessions.Open:input_type -> cxz.runtime.ProjectRequest
-	0,  // 28: cxz.runtime.Sessions.Projects:input_type -> cxz.runtime.Empty
-	18, // 29: cxz.runtime.Sessions.Down:input_type -> cxz.runtime.ProjectRequest
-	13, // 30: cxz.runtime.Sessions.Devcontainer:output_type -> cxz.runtime.Receipt
-	13, // 31: cxz.runtime.Sessions.Docker:output_type -> cxz.runtime.Receipt
-	13, // 32: cxz.runtime.Sessions.FileMappings:output_type -> cxz.runtime.Receipt
-	3,  // 33: cxz.runtime.Sessions.Create:output_type -> cxz.runtime.Session
-	4,  // 34: cxz.runtime.Sessions.List:output_type -> cxz.runtime.SessionList
-	3,  // 35: cxz.runtime.Sessions.Get:output_type -> cxz.runtime.Session
-	13, // 36: cxz.runtime.Sessions.CopyMemory:output_type -> cxz.runtime.Receipt
-	27, // 37: cxz.runtime.Sessions.Memory:output_type -> cxz.runtime.MemoryReply
-	23, // 38: cxz.runtime.Sessions.Logs:output_type -> cxz.runtime.LogsReply
-	13, // 39: cxz.runtime.Sessions.Permission:output_type -> cxz.runtime.Receipt
-	13, // 40: cxz.runtime.Sessions.Send:output_type -> cxz.runtime.Receipt
-	7,  // 41: cxz.runtime.Sessions.Attach:output_type -> cxz.runtime.Attachment
-	13, // 42: cxz.runtime.Sessions.Activity:output_type -> cxz.runtime.Receipt
-	10, // 43: cxz.runtime.Sessions.UpdateAgent:output_type -> cxz.runtime.AgentUpdateStatus
-	13, // 44: cxz.runtime.Sessions.Reply:output_type -> cxz.runtime.Receipt
-	13, // 45: cxz.runtime.Sessions.Interrupt:output_type -> cxz.runtime.Receipt
-	3,  // 46: cxz.runtime.Sessions.Resume:output_type -> cxz.runtime.Session
-	13, // 47: cxz.runtime.Sessions.Stop:output_type -> cxz.runtime.Receipt
-	15, // 48: cxz.runtime.Sessions.Watch:output_type -> cxz.runtime.Event
-	17, // 49: cxz.runtime.Sessions.History:output_type -> cxz.runtime.EventBatch
-	29, // 50: cxz.runtime.Sessions.Background:output_type -> cxz.runtime.BackgroundReply
-	31, // 51: cxz.runtime.Sessions.Models:output_type -> cxz.runtime.ModelsReply
-	3,  // 52: cxz.runtime.Sessions.Open:output_type -> cxz.runtime.Session
-	20, // 53: cxz.runtime.Sessions.Projects:output_type -> cxz.runtime.ProjectList
-	13, // 54: cxz.runtime.Sessions.Down:output_type -> cxz.runtime.Receipt
-	30, // [30:55] is the sub-list for method output_type
-	5,  // [5:30] is the sub-list for method input_type
-	5,  // [5:5] is the sub-list for extension type_name
-	5,  // [5:5] is the sub-list for extension extendee
-	0,  // [0:5] is the sub-list for field type_name
+	35, // 5: cxz.runtime.SearchVisit.hits:type_name -> cxz.runtime.SearchHit
+	34, // 6: cxz.runtime.SearchReply.visit:type_name -> cxz.runtime.SearchVisit
+	36, // 7: cxz.runtime.SearchReply.progress:type_name -> cxz.runtime.SearchProgress
+	37, // 8: cxz.runtime.SearchReply.summary:type_name -> cxz.runtime.SearchSummary
+	32, // 9: cxz.runtime.Sessions.Devcontainer:input_type -> cxz.runtime.DevcontainerInput
+	25, // 10: cxz.runtime.Sessions.Docker:input_type -> cxz.runtime.DockerInput
+	24, // 11: cxz.runtime.Sessions.FileMappings:input_type -> cxz.runtime.FileMappingsInput
+	1,  // 12: cxz.runtime.Sessions.Create:input_type -> cxz.runtime.CreateRequest
+	0,  // 13: cxz.runtime.Sessions.List:input_type -> cxz.runtime.Empty
+	2,  // 14: cxz.runtime.Sessions.Get:input_type -> cxz.runtime.SessionRef
+	28, // 15: cxz.runtime.Sessions.CopyMemory:input_type -> cxz.runtime.CopyMemoryRequest
+	26, // 16: cxz.runtime.Sessions.Memory:input_type -> cxz.runtime.MemoryRequest
+	22, // 17: cxz.runtime.Sessions.Logs:input_type -> cxz.runtime.LogsRequest
+	21, // 18: cxz.runtime.Sessions.Permission:input_type -> cxz.runtime.PermissionInput
+	5,  // 19: cxz.runtime.Sessions.Send:input_type -> cxz.runtime.Input
+	6,  // 20: cxz.runtime.Sessions.Attach:input_type -> cxz.runtime.AttachmentInput
+	8,  // 21: cxz.runtime.Sessions.Activity:input_type -> cxz.runtime.ActivityInput
+	9,  // 22: cxz.runtime.Sessions.UpdateAgent:input_type -> cxz.runtime.AgentUpdateInput
+	11, // 23: cxz.runtime.Sessions.Reply:input_type -> cxz.runtime.Answer
+	12, // 24: cxz.runtime.Sessions.Interrupt:input_type -> cxz.runtime.Control
+	12, // 25: cxz.runtime.Sessions.Resume:input_type -> cxz.runtime.Control
+	12, // 26: cxz.runtime.Sessions.Stop:input_type -> cxz.runtime.Control
+	14, // 27: cxz.runtime.Sessions.Watch:input_type -> cxz.runtime.WatchRequest
+	14, // 28: cxz.runtime.Sessions.History:input_type -> cxz.runtime.WatchRequest
+	2,  // 29: cxz.runtime.Sessions.Background:input_type -> cxz.runtime.SessionRef
+	30, // 30: cxz.runtime.Sessions.Models:input_type -> cxz.runtime.ModelsRequest
+	33, // 31: cxz.runtime.Sessions.Search:input_type -> cxz.runtime.SearchRequest
+	18, // 32: cxz.runtime.Sessions.Open:input_type -> cxz.runtime.ProjectRequest
+	0,  // 33: cxz.runtime.Sessions.Projects:input_type -> cxz.runtime.Empty
+	18, // 34: cxz.runtime.Sessions.Down:input_type -> cxz.runtime.ProjectRequest
+	13, // 35: cxz.runtime.Sessions.Devcontainer:output_type -> cxz.runtime.Receipt
+	13, // 36: cxz.runtime.Sessions.Docker:output_type -> cxz.runtime.Receipt
+	13, // 37: cxz.runtime.Sessions.FileMappings:output_type -> cxz.runtime.Receipt
+	3,  // 38: cxz.runtime.Sessions.Create:output_type -> cxz.runtime.Session
+	4,  // 39: cxz.runtime.Sessions.List:output_type -> cxz.runtime.SessionList
+	3,  // 40: cxz.runtime.Sessions.Get:output_type -> cxz.runtime.Session
+	13, // 41: cxz.runtime.Sessions.CopyMemory:output_type -> cxz.runtime.Receipt
+	27, // 42: cxz.runtime.Sessions.Memory:output_type -> cxz.runtime.MemoryReply
+	23, // 43: cxz.runtime.Sessions.Logs:output_type -> cxz.runtime.LogsReply
+	13, // 44: cxz.runtime.Sessions.Permission:output_type -> cxz.runtime.Receipt
+	13, // 45: cxz.runtime.Sessions.Send:output_type -> cxz.runtime.Receipt
+	7,  // 46: cxz.runtime.Sessions.Attach:output_type -> cxz.runtime.Attachment
+	13, // 47: cxz.runtime.Sessions.Activity:output_type -> cxz.runtime.Receipt
+	10, // 48: cxz.runtime.Sessions.UpdateAgent:output_type -> cxz.runtime.AgentUpdateStatus
+	13, // 49: cxz.runtime.Sessions.Reply:output_type -> cxz.runtime.Receipt
+	13, // 50: cxz.runtime.Sessions.Interrupt:output_type -> cxz.runtime.Receipt
+	3,  // 51: cxz.runtime.Sessions.Resume:output_type -> cxz.runtime.Session
+	13, // 52: cxz.runtime.Sessions.Stop:output_type -> cxz.runtime.Receipt
+	15, // 53: cxz.runtime.Sessions.Watch:output_type -> cxz.runtime.Event
+	17, // 54: cxz.runtime.Sessions.History:output_type -> cxz.runtime.EventBatch
+	29, // 55: cxz.runtime.Sessions.Background:output_type -> cxz.runtime.BackgroundReply
+	31, // 56: cxz.runtime.Sessions.Models:output_type -> cxz.runtime.ModelsReply
+	38, // 57: cxz.runtime.Sessions.Search:output_type -> cxz.runtime.SearchReply
+	3,  // 58: cxz.runtime.Sessions.Open:output_type -> cxz.runtime.Session
+	20, // 59: cxz.runtime.Sessions.Projects:output_type -> cxz.runtime.ProjectList
+	13, // 60: cxz.runtime.Sessions.Down:output_type -> cxz.runtime.Receipt
+	35, // [35:61] is the sub-list for method output_type
+	9,  // [9:35] is the sub-list for method input_type
+	9,  // [9:9] is the sub-list for extension type_name
+	9,  // [9:9] is the sub-list for extension extendee
+	0,  // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_cxz_proto_init() }
@@ -2734,7 +3419,7 @@ func file_cxz_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_cxz_proto_rawDesc), len(file_cxz_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   33,
+			NumMessages:   39,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
