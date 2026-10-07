@@ -15,11 +15,21 @@ use the conversation layout's **800px** left column and a 1px divider, with a
 the topic panel sits above the body alongside the resource sidebar.
 
 The JSON editor stays mounted when folded: resizing or moving between the form
-and file preserves its draft, native Undo/Redo and selection. Shrinking a wide
+and file preserves its draft, Monaco Undo/Redo and selection. Shrinking a wide
 window while focus is inside the JSON pane keeps that pane available as the
 narrow file view. Pristine JSON follows form changes immediately; a dirty draft
 uses the conflict protection described below. Form and file panes scroll
 independently. Leaving the settings page discards unsaved JSON edits.
+
+The JSON pane and the session's read-only file preview both use
+`ts/src/source-editor.tsx`, with the same Monaco options and palette, `#141414`
+background/gutter, 12px monospace font, line numbers, Find and scrollbar. The
+pane header and footer share styles as well. Only settings JSON is editable.
+Monaco loads on first display; folding keeps its model and view. External
+reload/import/pristine updates replace its contents; normal typing and theme/
+tab changes preserve its undo history. A JSON language worker supplies syntax
+highlighting and diagnostics, with schema network requests disabled. Known
+preference values still use the whole-file save validation below.
 
 All settings live in one JSON object, stored as the complete file text under
 the browser's **localStorage `settings`** key. There are no separate per-setting
@@ -66,8 +76,10 @@ The default palette keeps the composer's subdued syntax colors. The four shared
 palettes map to CSS token variables for the native composer and to named Monaco
 themes for the file viewer. Highlighter language detection and Markdown sending
 remain unchanged. Tab and Shift+Tab still perform one native edit with Undo/Redo
-and selection preserved. Ctrl+M switches to native Tab focus traversal, including
-in the JSON file editor. Text editing never modifies preference values.
+and selection preserved in conversation inputs. The settings JSON editor uses
+Monaco indentation and Undo/Redo with the global editor options. Ctrl+M switches
+to browser Tab focus traversal in either editor. Ctrl+Enter saves the current
+Monaco buffer. Text editing never modifies preference values until saved.
 
 ## Persistence and failures
 

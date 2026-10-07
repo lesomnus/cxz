@@ -209,8 +209,7 @@ header strong {
   max-width: var(--conversation-width);
   margin: 0 auto;
 }
-.settings-editor-body > header,
-.settings-file > header {
+.settings-editor-body > header {
   flex-wrap: wrap;
   gap: 4px 12px;
   margin-bottom: 12px;
@@ -225,7 +224,6 @@ header strong {
   font-size: 18px;
 }
 .settings-file h2 {
-  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
   font-size: 14px;
 }
 .settings-editor-groups {
@@ -282,23 +280,38 @@ header strong {
   overflow-wrap: anywhere;
 }
 .settings-file {
-  min-height: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
 }
 .settings-page[data-wide="true"] .settings-file {
   max-width: none;
 }
-.settings-file textarea {
-  flex: 1;
-  display: block;
-  width: 100%;
-  height: min(55dvh, 560px);
-  min-height: 200px;
-  resize: none;
-  border: 0;
-  line-height: 1.5;
-  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+.settings-page[data-wide="true"] .settings-file-pane {
+  padding: 0;
+}
+.settings-file-pane {
+  overflow: hidden;
+}
+.settings-file > header {
+  flex-wrap: wrap;
+}
+.settings-file > p {
+  padding: 4px 8px;
+  margin: 0;
+}
+.settings-file-actions {
+  display: flex;
+  flex-wrap: wrap;
+  flex: 0 0 auto;
+  gap: 4px;
+  padding: 4px 8px;
+  border-top: 1px solid #242424;
+}
+.settings-file-actions button {
+  font-size: 12px;
 }
 .resource-panel {
   overflow: auto;
@@ -446,14 +459,16 @@ header strong {
     display: flex;
   }
 }
-.workspace-editor > header {
+.workspace-editor > header,
+.settings-file > header {
   flex: 0 0 auto;
   min-height: 56px;
   padding: 8px 12px;
   border-bottom: 1px solid #242424;
   gap: 8px;
 }
-.workspace-editor > header > div {
+.workspace-editor > header > div,
+.settings-file > header > div {
   min-width: 0;
 }
 .workspace-editor > header strong,
@@ -562,7 +577,8 @@ header strong {
   min-height: 0;
   overflow: hidden;
 }
-.file-content > footer {
+.file-content > footer,
+.settings-file > footer {
   display: flex;
   justify-content: space-between;
   gap: 8px;
@@ -571,7 +587,8 @@ header strong {
   font-size: 10px;
   color: var(--muted);
 }
-.file-content > footer > span:first-child {
+.file-content > footer > span:first-child,
+.settings-file > footer > span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

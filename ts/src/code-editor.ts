@@ -4,14 +4,37 @@ import "monaco-editor/esm/vs/basic-languages/typescript/typescript.contribution.
 import "monaco-editor/esm/vs/basic-languages/javascript/javascript.contribution.js";
 import "monaco-editor/esm/vs/basic-languages/markdown/markdown.contribution.js";
 import "monaco-editor/esm/vs/basic-languages/shell/shell.contribution.js";
+import { jsonDefaults } from "monaco-editor/esm/vs/language/json/monaco.contribution.js";
 import EditorWorker from "monaco-editor/esm/vs/editor/editor.worker.js?worker";
+import JsonWorker from "monaco-editor/esm/vs/language/json/json.worker.js?worker";
 import { palettes, type EditorSettings } from "./editor-settings";
 
 (
   globalThis as typeof globalThis & { MonacoEnvironment: unknown }
 ).MonacoEnvironment = {
-  getWorker: () => new EditorWorker(),
+  getWorker: (_module: string, label: string) =>
+    label === "json" ? new JsonWorker() : new EditorWorker(),
 };
+jsonDefaults.setDiagnosticsOptions({
+  validate: true,
+  allowComments: false,
+  enableSchemaRequest: false,
+});
+export const editorOptions: monaco.editor.IStandaloneEditorConstructionOptions =
+  {
+    automaticLayout: true,
+    minimap: { enabled: false },
+    fontSize: 12,
+    fontFamily: "ui-monospace, SFMono-Regular, Consolas, monospace",
+    scrollBeyondLastLine: false,
+    padding: { top: 8, bottom: 8 },
+    renderLineHighlight: "none",
+    overviewRulerLanes: 0,
+    hideCursorInOverviewRuler: true,
+    contextmenu: false,
+    stickyScroll: { enabled: false },
+    editContext: false,
+  };
 for (const [name, palette] of Object.entries(palettes))
   monaco.editor.defineTheme(`cxz-${name}`, {
     base: "vs-dark",
@@ -21,6 +44,7 @@ for (const [name, palette] of Object.entries(palettes))
       { token: "comment", foreground: palette.comment.slice(1) },
       { token: "keyword", foreground: palette.keyword.slice(1) },
       { token: "string", foreground: palette.string.slice(1) },
+      { token: "string.key.json", foreground: palette.attr.slice(1) },
       { token: "number", foreground: palette.number.slice(1) },
       { token: "type", foreground: palette.title.slice(1) },
       { token: "identifier", foreground: palette.title.slice(1) },
@@ -50,7 +74,7 @@ export function configureEditor(
     indentSize: settings.indentSize,
     insertSpaces: settings.insertSpaces,
   });
-  monaco.editor.setTheme(`cxz-${settings.colorPalette}`);
+  editor.updateOptions({ theme: `cxz-${settings.colorPalette}` });
 }
 
 export function language(path: string) {

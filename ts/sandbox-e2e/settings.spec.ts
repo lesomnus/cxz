@@ -1,4 +1,10 @@
-import { expect, test, devices, type Page } from "@playwright/test";
+import {
+  expect,
+  test,
+  devices,
+  type Page,
+  type Locator,
+} from "@playwright/test";
 
 test.use({
   userAgent: devices["Desktop Chrome"].userAgent,
@@ -9,6 +15,7 @@ test.use({
 });
 
 async function ready(page: Page) {
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.goto("/sandbox.html");
   await expect(
     page.getByRole("heading", { name: "Current status" }),
@@ -27,9 +34,29 @@ async function file(page: Page) {
     name: "settings.json",
     exact: true,
   });
-  if (!(await input.isVisible()))
+  if (
+    !(await page
+      .getByRole("complementary", { name: "Settings file editor", exact: true })
+      .isVisible())
+  )
     await page.getByRole("button", { name: /^settings\.json 편집/ }).click();
+  await expect(input).toBeAttached({ timeout: 30000 });
   return input;
+}
+// Exercise the real editor through keyboard copy/paste, without a production test API.
+async function writeJSON(page: Page, input: Locator, value: string) {
+  await page.evaluate((value) => navigator.clipboard.writeText(value), value);
+  await input.press("Control+a");
+  await input.press("Control+v");
+}
+async function readJSON(page: Page, input: Locator) {
+  await input.press("Control+a");
+  await input.press("Control+c");
+  const value = await page.evaluate(() => navigator.clipboard.readText());
+  await input.press("Control+u"); // Restore the cursor/selection after Select All.
+  // Monaco uses platform line endings for clipboard text; stored/exported bytes
+  // are checked separately against the original JSON document.
+  return value.replaceAll("\r\n", "\n");
 }
 async function stored(page: Page) {
   return page.evaluate(() => JSON.parse(localStorage.getItem("settings")!));
@@ -81,6 +108,7 @@ test("settings topics replace tabs, the 600px body stays centered and a live JSO
     });
   expect(await centered()).toEqual({ width: 600, delta: 0 });
   await expect(pane).toBeHidden();
+  await expect(page.locator(".settings-file .monaco-editor")).toHaveCount(0);
   await page.setViewportSize({ width: 1904, height: 1000 });
   await expect(pane).toBeVisible();
   expect((await form.boundingBox())!.width).toBe(800);
@@ -91,7 +119,7 @@ test("settings topics replace tabs, the 600px body stays centered and a live JSO
     .getByLabel("전역 에디터 Tab 문자 표시 폭", { exact: true })
     .selectOption("8");
   const saved = '{\n  "editor.tabSize": 8\n}\n';
-  await expect(source).toHaveValue(saved);
+  await expect.poll(() => readJSON(page, source)).toBe(saved);
   await source.press("Control+End");
   await source.press("Enter");
   await source.evaluate((el) => {
@@ -101,7 +129,7 @@ test("settings topics replace tabs, the 600px body stays centered and a live JSO
   await expect(source).toBeVisible();
   await expect(form).toBeHidden();
   await expect(source).toBeFocused();
-  await expect(source).toHaveValue(saved + "\n");
+  await expect.poll(() => readJSON(page, source)).toBe(saved + "\n");
   await editorTopic.click();
   await expect(form).toBeVisible();
   await expect(source).toBeHidden();
@@ -109,9 +137,9 @@ test("settings topics replace tabs, the 600px body stays centered and a live JSO
   await page.setViewportSize({ width: 2104, height: 1000 });
   await expect(source).toBeVisible();
   await expect(source).toHaveAttribute("data-identity", "original");
-  await expect(source).toHaveValue(saved + "\n");
+  await expect.poll(() => readJSON(page, source)).toBe(saved + "\n");
   await source.press("Control+z");
-  await expect(source).toHaveValue(saved);
+  await expect.poll(() => readJSON(page, source)).toBe(saved);
   expect(await page.evaluate(() => localStorage.getItem("settings"))).toBe(
     saved,
   );
@@ -137,6 +165,106 @@ test("settings topics replace tabs, the 600px body stays centered and a live JSO
     path: "test-results/settings-topics-mobile.png",
     fullPage: true,
   });
+});
+
+test("settings JSON and session files share the editor surface and theme while only JSON is editable", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+  await page.setViewportSize({ width: 2000, height: 1000 });
+  await ready(page);
+  const workspace = page.getByRole("complementary", {
+    name: "Workspace editor",
+    exact: true,
+  });
+  await workspace.getByRole("button", { name: "src", exact: true }).click();
+  await workspace.getByRole("button", { name: "main.go", exact: true }).click();
+  await expect(workspace.locator(".view-lines")).toContainText("package main", {
+    timeout: 30000,
+  });
+  const appearance = (host: Locator) =>
+    host.evaluate((el) => {
+      const editor = getComputedStyle(el.querySelector(".monaco-editor")!);
+      const gutter = getComputedStyle(el.querySelector(".margin")!);
+      const lines = getComputedStyle(el.querySelector(".view-lines")!);
+      return {
+        background: editor.backgroundColor,
+        gutter: gutter.backgroundColor,
+        fontSize: lines.fontSize,
+        fontFamily: lines.fontFamily,
+        lineHeight: lines.lineHeight,
+      };
+    });
+  const expected = await appearance(workspace);
+  expect(expected.background).toBe("rgb(20, 20, 20)");
+  expect(expected.fontSize).toBe("12px");
+  const headerPadding = await workspace
+    .locator("header")
+    .evaluate((el) => getComputedStyle(el).padding);
+  const footerFont = await workspace
+    .locator("footer")
+    .evaluate((el) => getComputedStyle(el).fontSize);
+  await settings(page);
+  const pane = page.getByRole("complementary", {
+    name: "Settings file editor",
+    exact: true,
+  });
+  const input = await file(page);
+  await expect(pane.locator(".monaco-editor")).toBeVisible();
+  expect(await appearance(pane)).toEqual(expected);
+  expect(
+    await pane.locator("header").evaluate((el) => getComputedStyle(el).padding),
+  ).toBe(headerPadding);
+  expect(
+    await pane
+      .locator("footer")
+      .evaluate((el) => getComputedStyle(el).fontSize),
+  ).toBe(footerFont);
+  await expect(input).toHaveJSProperty("readOnly", false);
+  await expect(
+    pane.locator(".margin-view-overlays .line-numbers").first(),
+  ).toHaveText("1");
+  await writeJSON(
+    page,
+    input,
+    '{\n  "editor.tabSize": 8,\n  "editor.colorPalette": "cool"\n}\n',
+  );
+  await input.press("Control+Enter");
+  expect(await stored(page)).toEqual({
+    "editor.tabSize": 8,
+    "editor.colorPalette": "cool",
+  });
+  await expect(
+    pane.locator(".view-lines").getByText('"editor.tabSize"', { exact: true }),
+  ).toHaveCSS("color", "rgb(137, 155, 170)");
+  await page.screenshot({
+    path: "test-results/settings-shared-editor.png",
+    fullPage: true,
+  });
+  await page
+    .getByRole("button", { name: "Sessions view", exact: true })
+    .click();
+  await expect(
+    workspace.getByRole("tab", { name: "main.go", exact: true }),
+  ).toHaveAttribute("aria-selected", "true");
+  await expect(workspace.locator(".monaco-editor textarea")).toHaveJSProperty(
+    "readOnly",
+    true,
+  );
+  await expect(
+    workspace
+      .locator(".view-line")
+      .first()
+      .locator("span")
+      .filter({ hasText: "package" })
+      .last(),
+  ).toHaveCSS("color", "rgb(126, 143, 175)");
+  expect(await appearance(workspace)).toEqual(expected);
+  expect(errors).toEqual([]);
 });
 
 test("one settings file persists, each session field overrides or inherits and edits keep the conversation draft", async ({
@@ -241,15 +369,17 @@ test("JSON editing, validation, export and import preserve unknown settings in t
   const source = await file(page);
   const raw =
     '{\n  "editor.tabSize": 8,\n  "future": {"enabled": true},\n  "session.editor.insertSpaces": false\n}\n';
-  await source.fill(raw);
+  await writeJSON(page, source, raw);
   await source.press("Control+Enter");
-  await expect(page.getByRole("status")).toContainText("저장");
+  await expect(
+    page.locator(".settings-page p[role=status]:visible"),
+  ).toContainText("저장");
   expect(await page.evaluate(() => localStorage.getItem("settings"))).toBe(raw);
   await source.press("Control+Home");
   await source.press("Tab");
-  await expect(source).toHaveValue("  " + raw);
+  await expect.poll(() => readJSON(page, source)).toBe("  " + raw);
   await source.press("Control+z");
-  await expect(source).toHaveValue(raw);
+  await expect.poll(() => readJSON(page, source)).toBe(raw);
   await source.press("Control+m");
   await source.press("Tab");
   await expect(
@@ -267,17 +397,19 @@ test("JSON editing, validation, export and import preserve unknown settings in t
     .selectOption("warm");
   expect((await stored(page)).future).toEqual({ enabled: true });
   await file(page);
-  const saved = await source.inputValue();
-  await source.fill('{"editor.tabSize":0}');
+  const saved = await readJSON(page, source);
+  await writeJSON(page, source, '{"editor.tabSize":0}');
   await page.getByRole("button", { name: "저장", exact: true }).click();
-  await expect(page.getByRole("alert")).toContainText("1–16");
+  await expect(
+    page.locator(".settings-page p[role=alert]:visible"),
+  ).toContainText("1–16");
   expect(await page.evaluate(() => localStorage.getItem("settings"))).toBe(
     saved,
   );
   await page
     .getByRole("button", { name: "저장된 파일 다시 읽기", exact: true })
     .click();
-  await expect(source).toHaveValue(saved);
+  await expect.poll(() => readJSON(page, source)).toBe(saved);
   const downloadPending = page.waitForEvent("download");
   await page.getByRole("button", { name: "내보내기", exact: true }).click();
   const download = await downloadPending;
@@ -304,7 +436,7 @@ test("JSON editing, validation, export and import preserve unknown settings in t
       el.files = files.files;
       el.dispatchEvent(new Event("change", { bubbles: true }));
     }, imported);
-  await expect(source).toHaveValue(imported);
+  await expect.poll(() => readJSON(page, source)).toBe(imported);
   expect(await page.evaluate(() => localStorage.getItem("settings"))).toBe(
     imported,
   );
@@ -328,15 +460,17 @@ test("cross-tab changes refresh editors and preserve stale JSON drafts instead o
   await ready(page);
   await settings(page);
   const source = await file(page);
-  await source.fill('{"editor.tabSize":2}');
+  await writeJSON(page, source, '{"editor.tabSize":2}');
   const other = await context.newPage();
   await ready(other);
   await settings(other);
   await other
     .getByLabel("전역 에디터 Tab 문자 표시 폭", { exact: true })
     .selectOption("8");
-  await expect(page.getByRole("alert")).toContainText("수정 중인 내용은 유지");
-  await expect(source).toHaveValue('{"editor.tabSize":2}');
+  await expect(
+    page.locator(".settings-page p[role=alert]:visible"),
+  ).toContainText("수정 중인 내용은 유지");
+  await expect.poll(() => readJSON(page, source)).toBe('{"editor.tabSize":2}');
   await expect(
     page.getByRole("button", { name: "저장", exact: true }),
   ).toBeDisabled();
@@ -345,7 +479,9 @@ test("cross-tab changes refresh editors and preserve stale JSON drafts instead o
   await page
     .getByRole("button", { name: "저장된 파일 다시 읽기", exact: true })
     .click();
-  await expect(source).toHaveValue('{\n  "editor.tabSize": 8\n}\n');
+  await expect
+    .poll(() => readJSON(page, source))
+    .toBe('{\n  "editor.tabSize": 8\n}\n');
   await page
     .getByRole("button", { name: "Sessions view", exact: true })
     .click();
@@ -374,15 +510,19 @@ test("invalid stored files stay recoverable and mobile settings remain accessibl
     .getByRole("button", { name: "Back to sessions", exact: true })
     .click();
   await settings(page);
-  await expect(page.getByRole("alert")).toContainText("설정 파일 오류");
+  await expect(
+    page.locator(".settings-page p[role=alert]:visible"),
+  ).toContainText("설정 파일 오류");
   await expect(
     page.getByLabel("전역 에디터 들여쓰기 칸 수", { exact: true }),
   ).toBeDisabled();
   const source = await file(page);
-  await expect(source).toHaveValue('{"broken"');
-  await source.fill('{"editor.tabSize":4}');
+  await expect.poll(() => readJSON(page, source)).toBe('{"broken"');
+  await writeJSON(page, source, '{"editor.tabSize":4}');
   await source.press("Control+Enter");
-  await expect(page.getByRole("alert")).toHaveCount(0);
+  await expect(
+    page.locator(".settings-page p[role=alert]:visible"),
+  ).toHaveCount(0);
   await page
     .getByRole("navigation", { name: "설정 주제", exact: true })
     .getByRole("button", { name: "에디터", exact: true })

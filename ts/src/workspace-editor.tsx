@@ -4,7 +4,7 @@ import type { ProjectPathEntry } from "../gen/cxz/project_svc_pb";
 import { Connection, ref } from "./connection";
 import { Button } from "./button";
 import type * as Monaco from "monaco-editor/esm/vs/editor/editor.api.js";
-import { useEditorSettings } from "./settings";
+import { SourceEditor } from "./source-editor";
 
 type File = {
   path: string;
@@ -342,69 +342,16 @@ export function WorkspaceEditor({
 }
 
 function FileEditor({ file }: { file: File }) {
-  const host = useRef<HTMLDivElement>(null);
-  const [error, setError] = useState("");
-  const settings = useEditorSettings();
-  const latestSettings = useRef(settings);
-  latestSettings.current = settings;
-  const configure = useRef<
-    ((settings: typeof latestSettings.current) => void) | undefined
-  >(undefined);
-  useEffect(() => {
-    configure.current?.(settings);
-  }, [
-    settings.indentSize,
-    settings.insertSpaces,
-    settings.tabSize,
-    settings.colorPalette,
-  ]);
-  useEffect(() => {
-    let canceled = false;
-    let editor: Monaco.editor.IStandaloneCodeEditor | undefined;
-    let model: Monaco.editor.ITextModel | undefined;
-    import("./code-editor")
-      .then(({ monaco, language, configureEditor }) => {
-        if (canceled) return;
-        model = monaco.editor.createModel(file.text, language(file.path));
-        editor = monaco.editor.create(host.current!, {
-          model,
-          theme: `cxz-${latestSettings.current.colorPalette}`,
-          readOnly: true,
-          domReadOnly: true,
-          automaticLayout: true,
-          minimap: { enabled: false },
-          fontSize: 12,
-          fontFamily: "ui-monospace, SFMono-Regular, Consolas, monospace",
-          scrollBeyondLastLine: false,
-          padding: { top: 8, bottom: 8 },
-          renderLineHighlight: "none",
-          overviewRulerLanes: 0,
-          hideCursorInOverviewRuler: true,
-          contextmenu: false,
-          ariaLabel: `File preview: ${file.path}`,
-          stickyScroll: { enabled: false },
-        });
-        configure.current = (settings) =>
-          configureEditor(editor!, model!, settings);
-        configure.current(latestSettings.current);
-        if (file.view) editor.restoreViewState(file.view);
-      })
-      .catch((e) => {
-        if (!canceled) setError(String(e));
-      });
-    return () => {
-      canceled = true;
-      configure.current = undefined;
-      if (editor) {
-        file.view = editor.saveViewState();
-        editor.dispose();
-      }
-      model?.dispose();
-    };
-  }, [file]);
   return (
-    <div className="code-editor" ref={host}>
-      {error && <p role="alert">{error}</p>}
-    </div>
+    <SourceEditor
+      value={file.text}
+      path={file.path}
+      ariaLabel={`File preview: ${file.path}`}
+      readOnly
+      view={file.view}
+      onDispose={(view) => {
+        file.view = view;
+      }}
+    />
   );
 }

@@ -10,7 +10,7 @@ import {
   resolveEditorSettings,
   type EditorScope,
 } from "./editor-settings";
-import { indentEdit } from "./composer-indent";
+import { SourceEditor, type SourceEditorHandle } from "./source-editor";
 
 const fields = {
   indentSize: {
@@ -57,7 +57,7 @@ export function SettingsPage({
   const { store, snapshot } = useSettings();
   const area = useRef<HTMLElement>(null);
   const filePane = useRef<HTMLElement>(null);
-  const fileInput = useRef<HTMLTextAreaElement>(null);
+  const fileInput = useRef<SourceEditorHandle>(null);
   const [wide, setWide] = useState(false);
   const [draft, setDraft] = useState(snapshot.raw);
   const baseline = useRef(snapshot.raw);
@@ -82,7 +82,7 @@ export function SettingsPage({
     return () => observer.disconnect();
   }, [setFileOpen]);
   useLayoutEffect(() => {
-    if (fileOpen && !wide) fileInput.current?.focus({ preventScroll: true });
+    if (fileOpen && !wide) fileInput.current?.focus();
   }, [fileOpen, wide]);
   useEffect(() => {
     if (draft === baseline.current) {
@@ -116,10 +116,11 @@ export function SettingsPage({
     setError("");
     setMessage("");
   }
-  function save() {
+  function save(raw = draft) {
     try {
-      store.save(draft, baseline.current);
-      baseline.current = draft;
+      store.save(raw, baseline.current);
+      baseline.current = raw;
+      setDraft(raw);
       setError("");
       setMessage("저장되었습니다.");
     } catch (error) {
@@ -248,7 +249,10 @@ export function SettingsPage({
         >
           <section className="settings-file">
             <header>
-              <h2>settings.json{dirty ? " · 수정됨" : ""}</h2>
+              <div>
+                <h2>settings.json{dirty ? " · 수정됨" : ""}</h2>
+                <small>이 브라우저의 설정 파일</small>
+              </div>
               {!wide && (
                 <Button onClick={() => setFileOpen(false)}>
                   에디터 설정으로 돌아가기
@@ -256,71 +260,27 @@ export function SettingsPage({
               )}
             </header>
             {jsonVisible && feedback}
-            <p>
-              하나의 JSON 파일에 모든 설정을 저장합니다.{" "}
-              <code>session.editor.*</code> 항목을 지우면 전역 값을 상속합니다.
-            </p>
             {stale && (
               <p role="alert">
                 저장된 설정 파일이 변경되었습니다. 수정 중인 내용은
                 유지했습니다. 다시 읽은 뒤 저장하세요.
               </p>
             )}
-            <textarea
+            <SourceEditor
               ref={fileInput}
-              aria-label="settings.json"
-              aria-description="Ctrl+Enter: 저장. Ctrl+M: Tab 포커스 이동 전환."
-              spellCheck={false}
               value={draft}
-              style={{ tabSize: global.tabSize }}
-              onChange={(event) => {
-                setDraft(event.target.value);
+              path="settings.json"
+              ariaLabel="settings.json"
+              active={jsonVisible}
+              onChange={(value) => {
+                setDraft(value);
                 setMessage("");
               }}
-              onKeyDown={(event) => {
-                if (event.nativeEvent.isComposing) return;
-                if (event.ctrlKey && event.key === "Enter") {
-                  event.preventDefault();
-                  save();
-                } else if (event.ctrlKey && event.key.toLowerCase() === "m") {
-                  event.preventDefault();
-                  if (!event.repeat) setTabMovesFocus(!tabMovesFocus);
-                } else if (
-                  event.key === "Tab" &&
-                  !event.ctrlKey &&
-                  !event.metaKey &&
-                  !event.altKey &&
-                  !tabMovesFocus
-                ) {
-                  event.preventDefault();
-                  const el = event.currentTarget;
-                  const direction = el.selectionDirection;
-                  const edit = indentEdit(
-                    draft,
-                    el.selectionStart,
-                    el.selectionEnd,
-                    event.shiftKey,
-                    global,
-                  );
-                  el.setSelectionRange(edit.from, edit.to);
-                  document.execCommand("insertText", false, edit.text);
-                  if (
-                    el.value !==
-                    draft.slice(0, edit.from) + edit.text + draft.slice(edit.to)
-                  ) {
-                    el.setRangeText(edit.text, edit.from, edit.to, "end");
-                    setDraft(el.value);
-                  }
-                  el.setSelectionRange(edit.start, edit.end, direction);
-                }
-              }}
+              onSave={save}
+              onTabFocusChange={setTabMovesFocus}
             />
-            <small>
-              JSON · Ctrl+Enter: 저장 · Ctrl+M: Tab 포커스 이동{" "}
-              {tabMovesFocus ? "켜짐" : "꺼짐"}
-            </small>
-            <div className="buttons">
-              <Button disabled={!dirty || stale} onClick={save}>
+            <div className="settings-file-actions">
+              <Button disabled={!dirty || stale} onClick={() => save()}>
                 저장
               </Button>
               <Button onClick={reload}>저장된 파일 다시 읽기</Button>
@@ -340,6 +300,12 @@ export function SettingsPage({
               </Button>
               <Button onClick={() => upload.current!.click()}>가져오기</Button>
             </div>
+            <footer>
+              <span>JSON · Ctrl+Enter: 저장</span>
+              <span>
+                Ctrl+M: Tab 포커스 이동 {tabMovesFocus ? "켜짐" : "꺼짐"}
+              </span>
+            </footer>
             <input
               ref={upload}
               hidden

@@ -37,6 +37,59 @@ test("production file viewer loads under the gateway CSP", async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+test("editable settings JSON and its worker load under production CSP and save the single settings file", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.goto("/");
+  await page.getByLabel("Web access token").fill("a".repeat(32));
+  await page.getByRole("button", { name: "Connect", exact: true }).click();
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+  await page
+    .getByRole("button", { name: "Settings view", exact: true })
+    .click();
+  const pane = page.getByRole("complementary", {
+    name: "Settings file editor",
+    exact: true,
+  });
+  const input = pane.getByRole("textbox", {
+    name: "settings.json",
+    exact: true,
+  });
+  await expect(pane.locator(".monaco-editor")).toBeVisible({ timeout: 30000 });
+  await expect(input).toHaveJSProperty("readOnly", false);
+  await expect(pane.locator(".monaco-editor")).toHaveCSS(
+    "background-color",
+    "rgb(20, 20, 20)",
+  );
+  const raw = '{\n  "editor.tabSize": 6,\n  "editor.colorPalette": "cool"\n}\n';
+  await page.evaluate((raw) => navigator.clipboard.writeText(raw), raw);
+  await input.press("Control+a");
+  await input.press("Control+v");
+  await input.press("Control+Enter");
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem("settings")))
+    .toBe(raw);
+  await expect(
+    page.getByLabel("전역 에디터 Tab 문자 표시 폭", { exact: true }),
+  ).toHaveValue("6");
+  await expect(
+    pane.locator(".view-lines").getByText('"editor.tabSize"', { exact: true }),
+  ).toHaveCSS("color", "rgb(137, 155, 170)");
+  // Wait for real JSON diagnostics to ensure the dedicated worker is covered.
+  await input.press("Control+End");
+  await input.press("x");
+  await expect(pane.locator(".squiggly-error").first()).toBeVisible({
+    timeout: 10000,
+  });
+  await input.press("Control+z");
+  expect(errors).toEqual([]);
+});
+
 test("real container editor opens the workspace through the authenticated iframe", async ({
   page,
 }) => {
