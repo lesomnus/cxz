@@ -206,6 +206,24 @@ test("the preceding input only peeks after the nearest visible input clears the 
   const input = pane.locator(`article.input[data-seq="${seq}"] .input-box`);
   await expect(input).toBeVisible();
   await page.mouse.move(10, 10);
+  // Native scroll offsets can round to a CSS pixel while the input's layout
+  // origin stays fractional. Read both rectangles in the same browser call
+  // and allow less than one pixel, without relaxing the visibility/fade checks.
+  async function expectGap(pixels: number, edge: "top" | "bottom" = "top") {
+    await expect
+      .poll(() =>
+        input.evaluate(
+          (el, { pixels, edge }) => {
+            const box = el.getBoundingClientRect();
+            const top = el.closest(".transcript")!.getBoundingClientRect().top;
+            const distance = edge === "top" ? box.top - top : top - box.bottom;
+            return Math.abs(distance - pixels);
+          },
+          { pixels, edge },
+        ),
+      )
+      .toBeLessThan(1);
+  }
   async function gap(pixels: number) {
     await input.evaluate((el, pixels) => {
       const pane = el.closest(".transcript")!;
@@ -215,12 +233,7 @@ test("the preceding input only peeks after the nearest visible input clears the 
         pixels;
       pane.dispatchEvent(new Event("reading-move"));
     }, pixels);
-    await expect
-      .poll(
-        async () =>
-          (await input.boundingBox())!.y - (await pane.boundingBox())!.y,
-      )
-      .toBeCloseTo(pixels, 0);
+    await expectGap(pixels);
   }
   await gap(12);
   await expect(overlay).toHaveAttribute("data-available", "false");
@@ -260,12 +273,7 @@ test("the preceding input only peeks after the nearest visible input clears the 
     }
     return opacity;
   });
-  await expect
-    .poll(
-      async () =>
-        (await input.boundingBox())!.y - (await pane.boundingBox())!.y,
-    )
-    .toBeCloseTo(129, 0);
+  await expectGap(129);
   expect(samples.some((value) => value > 0 && value < 1)).toBe(true);
   await expect(overlay).toHaveCSS("opacity", "1");
   const button = overlay.locator("button");
@@ -303,14 +311,7 @@ test("the preceding input only peeks after the nearest visible input clears the 
         pixels;
       pane.dispatchEvent(new Event("reading-move"));
     }, pixels);
-    await expect
-      .poll(
-        async () =>
-          (await pane.boundingBox())!.y -
-          (await input.boundingBox())!.y -
-          (await input.boundingBox())!.height,
-      )
-      .toBeCloseTo(pixels, 0);
+    await expectGap(pixels, "bottom");
   }
   await past(95);
   await expect(overlay).toHaveAttribute("data-pinned-seq", seq);
