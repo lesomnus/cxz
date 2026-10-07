@@ -302,8 +302,8 @@ export function ComposerEditor({
                 return;
               }
               const selection = normalizedSelection();
-              // Completing a fence starts editing its body immediately, keeping
-              // the header controls out of the native text cursor's way.
+              // Pair a completed opening fence and place the native cursor on
+              // the empty body line between the visible Markdown delimiters.
               if (
                 event.key === "`" &&
                 !event.ctrlKey &&
@@ -314,12 +314,20 @@ export function ComposerEditor({
                 const lineStart =
                   value.lastIndexOf("\n", selection.start - 1) + 1;
                 const prefix = value.slice(lineStart, selection.start);
+                const lineEnd = value.indexOf("\n", selection.start);
                 if (
                   /^ {0,3}``$/.test(prefix) &&
+                  selection.start === (lineEnd < 0 ? value.length : lineEnd) &&
                   !blocks.some((b) => lineStart > b.start && lineStart <= b.end)
                 ) {
                   event.preventDefault();
-                  replace(selection.start, selection.end, "`\n");
+                  const indent = prefix.slice(0, -2);
+                  replace(
+                    selection.start,
+                    selection.end,
+                    "`\n\n" + indent + "```",
+                    selection.start + 2,
+                  );
                   return;
                 }
               }
@@ -425,9 +433,19 @@ export function ComposerEditor({
                     {header ? (
                       <>
                         <span aria-hidden="true" className="editor-code-fence">
-                          {line || "\u200b"}
+                          {block!.indent + block!.fence}
+                          <span className="editor-code-info">
+                            {line.slice(
+                              block!.indent.length + block!.fence.length,
+                            )}
+                          </span>
                         </span>
-                        <div className="editor-code-controls">
+                        <div
+                          className="editor-code-controls"
+                          style={{
+                            left: `${block!.indent.length + block!.fence.length}ch`,
+                          }}
+                        >
                           <select
                             aria-label={`Code syntax ${blocks.indexOf(block!) + 1}`}
                             value={codeSyntax(block!.syntax)}

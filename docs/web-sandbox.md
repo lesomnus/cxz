@@ -229,8 +229,10 @@ history. Showing/closing a preview still preserves the pending request.
 
 The shared composer is a monospace editor with logical line numbers and no resize
 handle. Typing three backticks at the start of a line opens an inline black code
-block and moves the cursor into its body. The first line overlays a syntax selector
-and a 48px Close button without changing native text/line-number coordinates.
+block, inserts the matching closing fence two lines below, and places the cursor
+on the empty body line between them. The opening backticks remain visible, with
+a syntax selector beside them and a 48px Close button at the right, without
+changing native text/line-number coordinates.
 The default Auto setting detects the snippet's language; manually chosen syntax
 wins. Close finishes the Markdown fence and moves the cursor into prose after it;
 it does not delete the snippet. Existing fenced snippets also render this way,

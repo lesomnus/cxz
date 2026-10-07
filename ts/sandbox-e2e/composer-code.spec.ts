@@ -14,9 +14,43 @@ test("fenced editor opens inline, detects syntax, closes to prose and sends reso
     page.getByRole("heading", { name: "Current status" }),
   ).toBeVisible({ timeout: 45000 });
   const input = page.getByRole("textbox", { name: "Message", exact: true });
+  await input.pressSequentially("```");
+  await expect(input).toHaveValue("```\n\n```");
+  expect(
+    await input.evaluate((el: HTMLTextAreaElement) => [
+      el.selectionStart,
+      el.selectionEnd,
+    ]),
+  ).toEqual([4, 4]);
+  await expect(page.locator(".editor-gutter > div > div")).toHaveText([
+    "1",
+    "2",
+    "3",
+  ]);
+  const opening = page.locator(".editor-code-fence");
+  await expect(opening).toHaveText("```");
+  await expect(opening).toHaveCSS("visibility", "visible");
+  const openingBox = (await opening.boundingBox())!;
+  const selectorBox = (await page
+    .getByRole("combobox", { name: "Code syntax 1", exact: true })
+    .boundingBox())!;
+  expect(selectorBox.x).toBeCloseTo(openingBox.x + openingBox.width, 1);
+  expect(selectorBox.y).toBeGreaterThanOrEqual(openingBox.y - 1);
+  await expect(page.locator(".editor-code-last")).toHaveText("```");
+  await input.fill("  ``\ntail");
+  await input.evaluate((el: HTMLTextAreaElement) => el.setSelectionRange(4, 4));
+  await input.press("`");
+  await expect(input).toHaveValue("  ```\n\n  ```\ntail");
+  expect(
+    await input.evaluate((el: HTMLTextAreaElement) => el.selectionStart),
+  ).toBe(6);
+  await input.press("Control+z");
+  await expect(input).toHaveValue("  ``\ntail");
+  await input.press("Control+Shift+z");
+  await expect(input).toHaveValue("  ```\n\n  ```\ntail");
   await input.fill("before\n");
   await input.pressSequentially("```");
-  await expect(input).toHaveValue("before\n```\n");
+  await expect(input).toHaveValue("before\n```\n\n```");
   const syntax = page.getByRole("combobox", {
     name: "Code syntax 1",
     exact: true,
@@ -41,14 +75,18 @@ test("fenced editor opens inline, detects syntax, closes to prose and sends reso
     ctrlKey: true,
     isComposing: true,
   });
-  await expect(input).toHaveValue('before\n```\n{"hello": true, "count": 42}');
+  await expect(input).toHaveValue(
+    'before\n```\n{"hello": true, "count": 42}\n```',
+  );
   await input.dispatchEvent("compositionend", { data: "중" });
   await syntax.selectOption("javascript");
   await expect(input).toHaveValue(
-    'before\n```javascript\n{"hello": true, "count": 42}',
+    'before\n```javascript\n{"hello": true, "count": 42}\n```',
   );
   await input.press("Control+z");
-  await expect(input).toHaveValue('before\n```\n{"hello": true, "count": 42}');
+  await expect(input).toHaveValue(
+    'before\n```\n{"hello": true, "count": 42}\n```',
+  );
   await syntax.selectOption("auto");
   await page
     .getByRole("button", { name: "Close code block 1", exact: true })

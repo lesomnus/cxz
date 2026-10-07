@@ -899,7 +899,7 @@ pre {
 .editor-code-header.editor-code-last {
   border-radius: 6px;
 }
-.editor-code-fence {
+.editor-code-info {
   visibility: hidden;
 }
 .editor-code-controls {
