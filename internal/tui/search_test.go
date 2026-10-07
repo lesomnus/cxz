@@ -76,6 +76,11 @@ func visit(session, label string, seqs ...uint64) *api.SearchVisit {
 	return out
 }
 
+// searchVisits is one conversation with matches at 90 and 40, newest first.
+func searchVisits() []*api.SearchVisit {
+	return []*api.SearchVisit{visit("s", "seal", 90, 40)}
+}
+
 func searchModel(t *testing.T, client *searchClient) *model {
 	t.Helper()
 	m := conversationModel()

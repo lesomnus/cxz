@@ -220,6 +220,12 @@ one search and not six — and the transcript jumps to the newest match. `Enter`
 walks the older ones, `Shift+Tab` goes back, and it wraps rather than making you
 retype. The bar counts them: `3/17`.
 
+Matches on screen are painted as you type, without waiting for the count: the
+match the transcript is on wears the bright green that marks where the keyboard
+is everywhere else, and the others wear the quiet one. Painting happens on the
+rows about to be drawn, so typing in the bar costs a screen rather than a
+re-render of the loaded window.
+
 `Ctrl+Shift+F` searches **the project**, and with the project list focused, every
 project in the installation. A wide search waits for `Enter`, because a list that
 reshuffles under the arrow keys cannot be chosen from. What it finds is listed
