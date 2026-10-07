@@ -48,6 +48,7 @@ explained in the mobile plan; it remains Not implemented in the web column.
 | CHAT-06 | Not implemented: no dedicated context command | Supported: `/context`, Summary/Raw | Not implemented |
 | CHAT-07 | Not implemented: no dedicated compact command | Supported: `/compact`, provider/idle constraints apply | Not implemented |
 | CHAT-08 | Partial: session creation model and configuration defaults; no session catalog/effort command | Supported: `/model`, `/effort` where provider supports them | Not implemented |
+| CHAT-10 | Supported on Linux: `conversation search` over every project from the conversation index, substring/regex/fuzzy, windowed; absent from the Windows frontend's command set | Supported: Ctrl+F in a conversation with as-you-type matches and Enter to walk them; Ctrl+Shift+F (or Tab in the bar) for project and installation scope with a chosen-from result list | Not implemented |
 | CHAT-09 | Not implemented: no dedicated background-task command | Supported: `/background` where reported | Not implemented |
 | INPUT-01 | Partial: `session send` text argument; editing belongs to caller/shell | Supported: composer, selection, per-session drafts, line move/duplicate/indent, auto-indent, Undo/Redo, multi-click selection, cursor-preserving wheel scroll, logical-line gutter and Alt+W whitespace display | Not implemented |
 | INPUT-02 | Supported: generated `--help` and completion for CLI actions | Supported: `/help` and slash hints | Not implemented |
@@ -97,7 +98,7 @@ explained in the mobile plan; it remains Not implemented in the web column.
 | OPS-04 | Supported: update/use/manager commands; host/platform restrictions apply | Partial: frontend update toggle/status; pin/switch/rollback remain CLI | Not implemented |
 | OPS-05 | Supported: `edit`, `config`, `github sync`, `gitconfig sync` on appropriate host | Not implemented: no host configuration/file-sync editor | Not implemented |
 | OPS-06 | Supported: Manager/project logs and doctor commands | Supported: `/logs` session/project reports | Not implemented |
-| OPS-07 | Supported: `project shell/exec` with required host Docker access | Supported: `/terminal` with required local Docker access; no persistence after detach | Not implemented |
+| OPS-07 | Supported: `project shell/exec` with required host Docker access | Supported: `/terminal` with required local Docker access; no persistence after detach | Supported: Ctrl+Backquote or title-bar button opens the project PTY; folding retains shell state, session change/sign-out closes it; [contract](web-terminal.md) |
 | OPS-08 | Partial: `terminal-info`, completion, Windows integration commands; no TUI recording command | Partial: `/record`/F9; shell completion and terminal registration remain CLI | Not implemented |
 | OPS-09 | Supported: Manager and optional web gateway installation/uninstallation; web JSON settings and running-gateway refresh on host self-update/use; purge on supported host | Not implemented: no installation-wide administration UI | Not implemented |
 | WEB-01 | N/A: browser-specific requirement | N/A: browser-specific requirement | Not implemented |
@@ -107,6 +108,7 @@ explained in the mobile plan; it remains Not implemented in the web column.
 | WEB-05 | N/A: browser-specific requirement | N/A: browser-specific requirement | Not implemented |
 | WEB-06 | N/A: browser-specific requirement | N/A: browser-specific requirement | Not implemented |
 | WEB-07 | N/A: developer npm workflow, not a cxz CLI command | N/A | Supported: separate payday WASM design sandbox with shared UI, scenario sessions, seed/pace and reset; production server not required |
+| WEB-08 | N/A: browser-specific requirement | N/A | Supported: wide-view Monaco preview, explicit same-origin OpenVSCode devcontainer connection, project state and WASM fake connection; see [contract](web-editor.md) |
 
 ## Evidence and updates
 

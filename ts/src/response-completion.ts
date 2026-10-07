@@ -1,3 +1,4 @@
+import { t } from "./i18n";
 import type { SessionEvent } from "../gen/cxz/session_pb";
 import { payload } from "./journal";
 
@@ -93,6 +94,9 @@ export function durationLabel(ms: number) {
   const seconds = ms / 1000;
   const rounded = Math.round(seconds);
   return seconds < 60
-    ? `${seconds.toFixed(1)}초`
-    : `${Math.floor(rounded / 60)}분 ${rounded % 60}초`;
+    ? t("{seconds}s", { seconds: seconds.toFixed(1) })
+    : t("{minutes}m {seconds}s", {
+        minutes: Math.floor(rounded / 60),
+        seconds: rounded % 60,
+      });
 }

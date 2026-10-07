@@ -1,6 +1,7 @@
 edition = "2023";
 package cxz;
 import "cxz/session.proto";
+import "google/protobuf/timestamp.proto";
 option go_package = "github.com/lesomnus/cxz/resource";
 
 service SessionService {
@@ -26,6 +27,79 @@ service SessionService {
   rpc Background(SessionBackgroundRequest) returns (SessionBackgroundReply);
   rpc Models(SessionModelsRequest) returns (SessionModelsReply);
   rpc Events(SessionEventsRequest) returns (stream SessionEvent);
+  // Search answers across every session in every project, so it names no ref.
+  // It is on this service because sessions are what it finds.
+  rpc Search(SessionSearchRequest) returns (stream SessionSearchReply);
+}
+
+// A window is half-open, [since, until), so the windows a client walks back
+// through -- a month at a time -- neither overlap nor skip. cursor continues one
+// window and carries it, which is what keeps the second page asking the same
+// question as the first while new events arrive above it.
+//
+// The bounds are timestamps rather than the journal's milliseconds because they
+// are the caller's, not a journal's: an absent one is no bound at all, which a
+// number would have had to spend a value on.
+//
+// projects and exclude are project runtime ids. A name or an alias is resolved
+// where it was displayed: this is not the place to guess which was meant.
+message SessionSearchRequest {
+  string query = 1;
+  string match = 2; // substring (default), regex or fuzzy
+  bool ignore_case = 3;
+  bool include_tools = 5;
+  google.protobuf.Timestamp since = 6;
+  google.protobuf.Timestamp until = 7;
+  repeated string projects = 8;
+  repeated string exclude = 9;
+  repeated string sessions = 10;
+  int32 limit = 11;
+  int32 snippet = 12;
+  string cursor = 13;
+  string client_id = 14;
+}
+// One session's results, named once for all of them and newest first -- as the
+// visits themselves are.
+message SessionSearchVisit {
+  string project_id = 1; string project_name = 2;
+  string session_id = 3; string alias = 4; string title = 5;
+  string agent = 6; string state = 7;
+  // Milliseconds, like SessionEvent: these are the journal's own times.
+  int64 activity_ms = 8; int64 created_ms = 9;
+  // truncated says this session's older events are gone, so finding nothing in
+  // it is not evidence that nothing was said.
+  bool truncated = 10;
+  repeated SessionSearchHit hits = 11;
+}
+message SessionSearchHit {
+  uint64 seq = 1; int64 time_ms = 2; string kind = 3;
+  int32 bytes = 4; int32 score = 5; string snippet = 6;
+}
+// Progress says what the index had to catch up on before answering, or could
+// not. A search answers from a derived store, and a store that is behind says so
+// rather than return an answer that looks complete.
+message SessionSearchProgress {
+  string project_id = 1; string project_name = 2;
+  string state = 3; // indexed, behind or unavailable
+  string message = 4; int32 done = 5; int32 total = 6;
+}
+// The summary says which window it answered for, because a continued page was
+// not told: the window travelled in the cursor, and the client needs it back to
+// say what it searched and to ask for the one before it.
+message SessionSearchSummary {
+  int32 projects = 1; int32 unavailable = 2; int32 sessions = 3;
+  int32 hits = 4; int32 truncated = 5;
+  string next_cursor = 6; bool has_more = 7;
+  google.protobuf.Timestamp since = 8; google.protobuf.Timestamp until = 9;
+  // examined is how many messages this page read, which is what the answer
+  // cost; pending is how many conversations the index had not caught up with.
+  int32 examined = 10; int32 pending = 11;
+}
+// Exactly one field is set. The summary comes last.
+message SessionSearchReply {
+  SessionSearchVisit visit = 1;
+  SessionSearchProgress progress = 2;
+  SessionSearchSummary summary = 3;
 }
 message SessionControl { SessionRef ref = 1; string run_id = 2; string client_id = 3; }
 // cancel takes back the message waiting to be sent, instead of sending text.

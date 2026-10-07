@@ -2,6 +2,8 @@ package lifecycle
 
 import (
 	"context"
+	"time"
+
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/internal/sessionalias"
@@ -10,6 +12,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type SessionServer struct {
@@ -327,6 +330,101 @@ func (s SessionServer) Events(r *resource.SessionEventsRequest, stream grpc.Serv
 		return err
 	}
 	return s.shared.runtime.Watch(&api.WatchRequest{SessionId: v.GetRuntimeId(), AfterSeq: r.GetAfterSeq(), ClientId: r.GetClientId()}, &eventStream{ServerStreamingServer: stream, layer: s.Layer, id: v.GetRuntimeId(), last: v.GetStatus().GetLastSeq()})
+}
+
+// Search passes the question to the runtime, which is the only layer that
+// knows where conversations are kept. Nothing about it is per session, so there
+// is no ref to resolve and no row to read: the reply is a stream of what was
+// found, while it is still being found.
+func (s SessionServer) Search(r *resource.SessionSearchRequest, stream grpc.ServerStreamingServer[resource.SessionSearchReply]) error {
+	if err := s.effect(); err != nil {
+		return err
+	}
+	return s.shared.runtime.Search(&api.SearchRequest{
+		Query: r.GetQuery(), Match: r.GetMatch(), IgnoreCase: r.GetIgnoreCase(),
+		IncludeTools: r.GetIncludeTools(),
+		SinceMs:      searchBoundMS(r.GetSince()), UntilMs: searchBoundMS(r.GetUntil()),
+		Projects: r.GetProjects(), Exclude: r.GetExclude(), Sessions: r.GetSessions(),
+		Limit: r.GetLimit(), Snippet: r.GetSnippet(), Cursor: r.GetCursor(), ClientId: r.GetClientId(),
+	}, &searchStream{ServerStreamingServer: stream, server: s, ctx: stream.Context(), named: map[string]*resource.Session{}})
+}
+
+// The runtime speaks the journal's milliseconds, where an absent bound is zero.
+// Nothing is lost in the translation: the window is a range of recorded events,
+// and they are recorded to the millisecond.
+func searchBoundMS(t *timestamppb.Timestamp) int64 {
+	if t == nil {
+		return 0
+	}
+	return t.AsTime().UnixMilli()
+}
+
+func searchBound(ms int64) *timestamppb.Timestamp {
+	if ms == 0 {
+		return nil
+	}
+	return timestamppb.New(time.UnixMilli(ms).UTC())
+}
+
+type searchStream struct {
+	grpc.ServerStreamingServer[resource.SessionSearchReply]
+	server SessionServer
+	ctx    context.Context
+	// One lookup per conversation in a page, remembered: a session appears once
+	// per page, and the alias a person reads it by lives here, not in the
+	// runtime that wrote its journal.
+	named map[string]*resource.Session
+}
+
+// name adds what this layer owns and the runtime does not: the alias a session
+// answers to, the name it was given, and its project's name.
+func (s *searchStream) name(runtimeID string) *resource.Session {
+	if v, ok := s.named[runtimeID]; ok {
+		return v
+	}
+	v, err := s.server.SessionServiceServer.Get(s.ctx, resource.SessionGetRequest_builder{
+		Ref:    resource.SessionRef_builder{RuntimeId: &runtimeID}.Build(),
+		Select: resource.SessionSelect_builder{All: ptr(true), Project: resource.ProjectSelect_builder{All: ptr(true)}.Build()}.Build(),
+	}.Build())
+	if err != nil {
+		v = nil
+	}
+	s.named[runtimeID] = v
+	return v
+}
+
+func (s *searchStream) Send(r *api.SearchReply) error {
+	out := resource.SessionSearchReply_builder{}
+	if v := r.Visit; v != nil {
+		hits := make([]*resource.SessionSearchHit, 0, len(v.Hits))
+		for _, h := range v.Hits {
+			hits = append(hits, resource.SessionSearchHit_builder{Seq: &h.Seq, TimeMs: &h.TimeMs, Kind: &h.Kind, Bytes: &h.Bytes, Score: &h.Score, Snippet: &h.Snippet}.Build())
+		}
+		alias, title, project, state := v.Alias, v.Title, v.ProjectName, v.State
+		if named := s.name(v.SessionId); named != nil {
+			alias = named.GetAlias()
+			if named.GetName() != "" {
+				title = named.GetName()
+			}
+			if p := named.GetProject(); p != nil && p.GetName() != "" {
+				project = p.GetName()
+			}
+			state = named.GetStatus().GetState()
+		}
+		out.Visit = resource.SessionSearchVisit_builder{
+			ProjectId: &v.ProjectId, ProjectName: &project,
+			SessionId: &v.SessionId, Alias: &alias, Title: &title, Agent: &v.Agent, State: &state,
+			ActivityMs: &v.ActivityMs, CreatedMs: &v.CreatedMs, Truncated: &v.Truncated, Hits: hits,
+		}.Build()
+	}
+	if p := r.Progress; p != nil {
+		out.Progress = resource.SessionSearchProgress_builder{ProjectId: &p.ProjectId, ProjectName: &p.ProjectName, State: &p.State, Message: &p.Message, Done: &p.Done, Total: &p.Total}.Build()
+	}
+	if v := r.Summary; v != nil {
+		out.Summary = resource.SessionSearchSummary_builder{Projects: &v.Projects, Unavailable: &v.Unavailable, Sessions: &v.Sessions, Hits: &v.Hits, Truncated: &v.Truncated, NextCursor: &v.NextCursor, HasMore: &v.HasMore, Since: searchBound(v.SinceMs), Until: searchBound(v.UntilMs),
+			Examined: &v.Examined, Pending: &v.Pending}.Build()
+	}
+	return s.ServerStreamingServer.Send(out.Build())
 }
 
 func (s SessionServer) Background(ctx context.Context, r *resource.SessionBackgroundRequest) (*resource.SessionBackgroundReply, error) {

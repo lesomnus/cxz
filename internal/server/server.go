@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/convindex"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/cxzupdate"
 	"github.com/lesomnus/cxz/internal/quotashare"
@@ -52,6 +53,13 @@ type Server struct {
 	root, agent, configDir string
 	db                     *sql.DB
 	manager                *workspace.Manager
+	// The conversation, kept as something that can be asked a question. It is
+	// derived from the events below it and absent inside a project container,
+	// where searching every conversation is not this process's business.
+	conversations *convindex.Index
+	// How long a search will spend catching the index up before answering.
+	// Zero is catchUpBudget.
+	catchUpBudget time.Duration
 }
 
 func Socket(root string) string { return filepath.Join(root, "run", "daemon.sock") }
@@ -96,11 +104,19 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 		return e
 	}
 	s := &Server{root: root, agent: agent, configDir: configDir, db: db, updateGate: cxzupdate.NewGate(root)}
+	if e = s.openConversations(ctx); e != nil {
+		return e
+	}
+	if s.conversations != nil {
+		defer s.conversations.Close()
+		go s.Seed(ctx)
+	}
 	if os.Getenv("CXZ_OWNER") != "" {
 		s.manager, e = workspace.New(db, root)
 		if e != nil {
 			return e
 		}
+		s.manager.Conversations = s.conversations
 		defer s.manager.Close()
 		broker, err := accounts.StartBroker(root, accounts.BrokerSocket, func(ctx context.Context, account string) error {
 			bin, err := distribution.Ensure(ctx, "/cxz/tools", "codex", "", true)

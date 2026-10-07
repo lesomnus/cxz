@@ -30,6 +30,25 @@ func TestSettingsKittyShortcut(t *testing.T) {
 	}
 }
 
+// Ctrl+Shift+F has no legacy encoding, so it is bridged to a spare function
+// key. Without the chord it would arrive as plain Ctrl+F, which is why the bar
+// can also change scope from the keyboard.
+func TestWidenSearchKittyShortcut(t *testing.T) {
+	r := keyboardReader{}
+	out, pending := r.translate([]byte("\x1b[102;6u"), true)
+	if string(out) != "\x1b[32~" || len(pending) != 0 {
+		t.Fatalf("Ctrl+Shift+F lost: %q", out)
+	}
+	// Ctrl+F alone stays Ctrl+F.
+	if out, _ = r.translate([]byte("\x1b[102;5u"), true); string(out) != "\x06" {
+		t.Fatalf("Ctrl+F changed: %q", out)
+	}
+	// And a pasted sequence is text, not a shortcut.
+	if out, _ = r.translate([]byte("\x1b[200~\x1b[102;6u\x1b[201~"), true); strings.Contains(string(out), "\x1b[32~") {
+		t.Fatal("a pasted shortcut was executed")
+	}
+}
+
 func TestKittyUnicodeCommit(t *testing.T) {
 	r := keyboardReader{}
 	for _, input := range []string{"한글", "\x1b[54620u\x1b[44544u"} {

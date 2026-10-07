@@ -49,3 +49,48 @@ test("a boot that keeps stalling is reported", async ({ page }) => {
   await expect(page.getByRole("alert")).toHaveText(/Reset the sandbox/);
   await expect(page.getByRole("status")).toHaveCount(0);
 });
+
+// Force the CI symptom: the worker announces readiness, but the first port
+// never reaches its service. A compiled module alone must not open a workspace
+// whose initial RPCs hang indefinitely.
+test("a published worker with a stalled RPC is closed and retried", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const send = Worker.prototype.postMessage;
+    let blocked = false;
+    const stalledPorts: Transferable[] = [];
+    Worker.prototype.postMessage = function (
+      message: unknown,
+      options: Transferable[] | StructuredSerializeOptions = {},
+    ) {
+      if (
+        !blocked &&
+        typeof message === "object" &&
+        message !== null &&
+        "drpc" in message &&
+        message.drpc === "serve"
+      ) {
+        blocked = true;
+        stalledPorts.push(
+          ...(Array.isArray(options) ? options : (options.transfer ?? [])),
+        );
+        return;
+      }
+      send.call(
+        this,
+        message,
+        Array.isArray(options) ? { transfer: options } : options,
+      );
+    };
+  });
+  await page.goto("/sandbox.html");
+  await expect(
+    page.getByRole("heading", { name: "Current status" }),
+  ).toBeVisible({ timeout: 45000 });
+  await expect(page.getByRole("note")).toHaveText(/first attempt stalled/);
+  await page.getByLabel("Scenario", { exact: true }).selectOption("session-2");
+  await expect(
+    page.getByRole("heading", { name: "Preview ready" }),
+  ).toBeVisible();
+});

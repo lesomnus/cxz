@@ -104,7 +104,7 @@ test("paste chips preserve session drafts and send exact original text inline", 
   const draft = await input.inputValue();
   expect(draft).toMatch(/^앞 \[Paste [0-9a-f]{8} · 5L · \d+B\] 뒤$/);
   await page.locator(".paste-chip").click();
-  const preview = page.getByRole("dialog", { name: "붙여넣기 원문" });
+  const preview = page.getByRole("dialog", { name: "Paste source" });
   await expect(preview).toBeVisible();
   expect(await preview.locator("pre").textContent()).toBe(body);
   await page.keyboard.press("Escape");
@@ -155,12 +155,14 @@ test("chips are atomic, undoable, previewable and expandable one occurrence at a
   ).toEqual([0, token.length]);
   await input.press("Enter");
   await expect(
-    page.getByRole("dialog", { name: "붙여넣기 원문" }),
+    page.getByRole("dialog", { name: "Paste source" }),
   ).toBeVisible();
   await page.keyboard.press("Escape");
   await input.fill(`${token}\n${token}`);
   await page.locator(".paste-chip").nth(1).click();
-  await page.getByRole("button", { name: "원문 펼치기", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Expand source", exact: true })
+    .click();
   await expect(input).toHaveValue(`${token}\n${body}`);
   expect(
     await input.evaluate((el: HTMLTextAreaElement) => el.selectionStart),
@@ -169,7 +171,7 @@ test("chips are atomic, undoable, previewable and expandable one occurrence at a
   await input.press("Control+z");
   await expect(input).toHaveValue(`${token}\n${token}`);
   await page.locator(".paste-chip").first().click();
-  await page.getByRole("button", { name: "삭제", exact: true }).click();
+  await page.getByRole("button", { name: "Delete", exact: true }).click();
   await expect(input).toHaveValue(`\n${token}`);
   await input.evaluate((el: HTMLTextAreaElement) => {
     el.setSelectionRange(5, 10);

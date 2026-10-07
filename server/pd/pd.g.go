@@ -3380,6 +3380,11 @@ func (s interceptProject) Download(req *resource.ProjectDownloadRequest, out grp
 		resource.ProjectService_Download_FullMethodName, req, out, s.ProjectServiceServer.Download)
 }
 
+func (s interceptProject) Editor(ctx context.Context, req *resource.ProjectEditorRequest) (*resource.ProjectEditorReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_Editor_FullMethodName, req, s.ProjectServiceServer.Editor)
+}
+
 func (s interceptProject) Devcontainer(ctx context.Context, req *resource.DevcontainerRequest) (*resource.DevcontainerReply, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
 		resource.ProjectService_Devcontainer_FullMethodName, req, s.ProjectServiceServer.Devcontainer)
@@ -3718,6 +3723,11 @@ func (s interceptSession) Models(ctx context.Context, req *resource.SessionModel
 func (s interceptSession) Events(req *resource.SessionEventsRequest, out grpc.ServerStreamingServer[resource.SessionEvent]) error {
 	return grpcx.RunStream(s.stream, s.SessionServiceServer,
 		resource.SessionService_Events_FullMethodName, req, out, s.SessionServiceServer.Events)
+}
+
+func (s interceptSession) Search(req *resource.SessionSearchRequest, out grpc.ServerStreamingServer[resource.SessionSearchReply]) error {
+	return grpcx.RunStream(s.stream, s.SessionServiceServer,
+		resource.SessionService_Search_FullMethodName, req, out, s.SessionServiceServer.Search)
 }
 
 // WatchRecorder answers with the recorder that remembers a write for `w`.
@@ -4404,6 +4414,19 @@ func dispatch(ctx context.Context, s resource.Server, op *pdpb.Op) (*anypb.Any, 
 		}
 
 		res, err := s.Project().Remove(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.ProjectService_Editor_FullMethodName:
+		v := &resource.ProjectEditorRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().Editor(ctx, v)
 		if err != nil {
 			return nil, err
 		}

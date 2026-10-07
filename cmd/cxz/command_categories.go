@@ -8,7 +8,7 @@ func categorizeCommands(root *xli.Command) {
 		name     string
 		commands []string
 	}{
-		{"Resources", []string{"project", "session", "account", "binding", "connection"}},
+		{"Resources", []string{"project", "session", "conversation", "account", "binding", "connection"}},
 		{"Workspace", []string{"up", "down", "web", "expose", "config", "edit", "integration"}},
 		{"Agents", []string{"ai", "mcp", "skill", "backend"}},
 		{"Integration", []string{"devcontainer", "github", "gitconfig", "docker", "completion"}},

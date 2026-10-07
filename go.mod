@@ -13,6 +13,7 @@ require (
 	github.com/charmbracelet/x/ansi v0.11.7
 	github.com/charmbracelet/x/term v0.2.2
 	github.com/charmbracelet/x/vt v0.0.0-20260913004009-c615ff2f7805
+	github.com/coder/websocket v1.8.15
 	github.com/compose-spec/compose-go/v2 v2.15.0
 	github.com/creack/pty v1.1.24
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f

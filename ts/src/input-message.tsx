@@ -1,3 +1,5 @@
+import { currentLocale } from "./i18n";
+import { useLocale } from "./i18n-react";
 import { useEffect, useState } from "react";
 import type { SessionEvent } from "../gen/cxz/session_pb";
 import {
@@ -7,6 +9,7 @@ import {
 } from "./message-time";
 
 function InputTime({ timeMs }: { timeMs: bigint }) {
+  useLocale();
   const [now, setNow] = useState(() => new Date());
   const date = messageDate(timeMs);
   const recent = !!date && now.getTime() - date.getTime() < 7 * 86_400_000;
@@ -19,7 +22,10 @@ function InputTime({ timeMs }: { timeMs: bigint }) {
   const relative = relativeMessageTime(date, now);
   return (
     <div className="input-time">
-      <time dateTime={date.toISOString()} title={date.toLocaleString("ko-KR")}>
+      <time
+        dateTime={date.toISOString()}
+        title={date.toLocaleString(currentLocale())}
+      >
         {absoluteMessageTime(date)}
       </time>
       {relative && <span className="input-relative-time">{relative}</span>}

@@ -46,6 +46,7 @@ const (
 	SessionService_Background_FullMethodName        = "/cxz.SessionService/Background"
 	SessionService_Models_FullMethodName            = "/cxz.SessionService/Models"
 	SessionService_Events_FullMethodName            = "/cxz.SessionService/Events"
+	SessionService_Search_FullMethodName            = "/cxz.SessionService/Search"
 )
 
 // SessionServiceClient is the client API for SessionService service.
@@ -98,6 +99,9 @@ type SessionServiceClient interface {
 	Background(ctx context.Context, in *SessionBackgroundRequest, opts ...grpc.CallOption) (*SessionBackgroundReply, error)
 	Models(ctx context.Context, in *SessionModelsRequest, opts ...grpc.CallOption) (*SessionModelsReply, error)
 	Events(ctx context.Context, in *SessionEventsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SessionEvent], error)
+	// Search answers across every session in every project, so it names no ref.
+	// It is on this service because sessions are what it finds.
+	Search(ctx context.Context, in *SessionSearchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SessionSearchReply], error)
 }
 
 type sessionServiceClient struct {
@@ -399,6 +403,25 @@ func (c *sessionServiceClient) Events(ctx context.Context, in *SessionEventsRequ
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type SessionService_EventsClient = grpc.ServerStreamingClient[SessionEvent]
 
+func (c *sessionServiceClient) Search(ctx context.Context, in *SessionSearchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SessionSearchReply], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &SessionService_ServiceDesc.Streams[3], SessionService_Search_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[SessionSearchRequest, SessionSearchReply]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type SessionService_SearchClient = grpc.ServerStreamingClient[SessionSearchReply]
+
 // SessionServiceServer is the server API for SessionService service.
 // All implementations must embed UnimplementedSessionServiceServer
 // for forward compatibility.
@@ -449,6 +472,9 @@ type SessionServiceServer interface {
 	Background(context.Context, *SessionBackgroundRequest) (*SessionBackgroundReply, error)
 	Models(context.Context, *SessionModelsRequest) (*SessionModelsReply, error)
 	Events(*SessionEventsRequest, grpc.ServerStreamingServer[SessionEvent]) error
+	// Search answers across every session in every project, so it names no ref.
+	// It is on this service because sessions are what it finds.
+	Search(*SessionSearchRequest, grpc.ServerStreamingServer[SessionSearchReply]) error
 	mustEmbedUnimplementedSessionServiceServer()
 }
 
@@ -539,6 +565,9 @@ func (UnimplementedSessionServiceServer) Models(context.Context, *SessionModelsR
 }
 func (UnimplementedSessionServiceServer) Events(*SessionEventsRequest, grpc.ServerStreamingServer[SessionEvent]) error {
 	return status.Error(codes.Unimplemented, "method Events not implemented")
+}
+func (UnimplementedSessionServiceServer) Search(*SessionSearchRequest, grpc.ServerStreamingServer[SessionSearchReply]) error {
+	return status.Error(codes.Unimplemented, "method Search not implemented")
 }
 func (UnimplementedSessionServiceServer) mustEmbedUnimplementedSessionServiceServer() {}
 func (UnimplementedSessionServiceServer) testEmbeddedByValue()                        {}
@@ -1022,6 +1051,17 @@ func _SessionService_Events_Handler(srv interface{}, stream grpc.ServerStream) e
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type SessionService_EventsServer = grpc.ServerStreamingServer[SessionEvent]
 
+func _SessionService_Search_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(SessionSearchRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(SessionServiceServer).Search(m, &grpc.GenericServerStream[SessionSearchRequest, SessionSearchReply]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type SessionService_SearchServer = grpc.ServerStreamingServer[SessionSearchReply]
+
 // SessionService_ServiceDesc is the grpc.ServiceDesc for SessionService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1140,6 +1180,11 @@ var SessionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "Events",
 			Handler:       _SessionService_Events_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "Search",
+			Handler:       _SessionService_Search_Handler,
 			ServerStreams: true,
 		},
 	},

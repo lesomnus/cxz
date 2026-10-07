@@ -25,7 +25,7 @@ describe("response snapshots", () => {
     );
     expect(info.label).toBe("m · high");
     expect(info.description).toBe(
-      "Model: m (응답 보고값)\nEffort: high (요청한 설정)",
+      "Model: m (Reported by response)\nEffort: high (Requested setting)",
     );
   });
 });

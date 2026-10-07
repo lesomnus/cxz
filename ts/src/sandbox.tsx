@@ -1,3 +1,6 @@
+import { ThemeProvider } from "./theme";
+import { t, translateKnown } from "./i18n";
+import { LocaleProvider, useLocale } from "./i18n-react";
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { start, type Sandbox } from "@lesomnus/payday/sandbox";
@@ -7,6 +10,8 @@ import { Connection } from "./connection";
 import "./sandbox.css";
 import workerURL from "./sandbox-worker.ts?worker&url";
 import { boot, BootTimeout } from "./sandbox-boot";
+import { createClient } from "@connectrpc/connect";
+import { ProjectService } from "../gen/cxz/project_svc_pb";
 
 const scenarios = [
   "Project checklist",
@@ -19,6 +24,7 @@ const scenarios = [
   "Other project",
 ];
 function SandboxApp() {
+  useLocale();
   const [seed, setSeed] = useState("42");
   const [delay, setDelay] = useState("400");
   const [scenario, setScenario] = useState("session-1");
@@ -36,7 +42,7 @@ function SandboxApp() {
     setConnection(undefined);
     setError("");
     setStalled(false);
-    setLoading("Starting sandbox…");
+    setLoading(t("Starting sandbox…"));
     const worker = new URL(workerURL, location.href);
     worker.searchParams.set("seed", applied.seed);
     worker.searchParams.set("delay", applied.delay);
@@ -50,24 +56,51 @@ function SandboxApp() {
     // sharing the module's stream with that write. Off there, kept here.
     const cacheable = !navigator.webdriver;
     boot(
-      (cached) =>
-        start({
+      async (cached, signal) => {
+        const v = await start({
           url: "/app.wasm",
           worker,
           wasmExec: "/wasm_exec.js",
           ...(cached && cacheable ? {} : { cache: false }),
           onProgress: (v) => {
-            if (!canceled)
+            if (!canceled && !signal.aborted)
               setLoading(
-                `Loading sandbox · ${(v.loaded / 1048576).toFixed(1)} MB${v.total ? ` / ${(v.total / 1048576).toFixed(1)} MB` : ""}`,
+                t("Loading sandbox · {loaded} MB{total}", {
+                  loaded: (v.loaded / 1048576).toFixed(1),
+                  total: v.total
+                    ? ` / ${(v.total / 1048576).toFixed(1)} MB`
+                    : "",
+                }),
               );
           },
-        }),
+        });
+        const close = () => v.close();
+        signal.addEventListener("abort", close, { once: true });
+        try {
+          signal.throwIfAborted();
+          if (canceled) throw new Error("Sandbox start canceled");
+          box = v;
+          // Publishing a Go entry point does not prove the MessagePort can
+          // answer requests. Keep the workspace behind the boot deadline until
+          // a real RPC returns, so a stalled connection can be closed/retried.
+          await createClient(ProjectService, v.transport).list(
+            { size: 1 },
+            { signal },
+          );
+          if (canceled) throw new Error("Sandbox start canceled");
+          return v;
+        } catch (e) {
+          v.close();
+          throw e;
+        } finally {
+          signal.removeEventListener("abort", close);
+        }
+      },
       {
         onRetry: () => {
           if (canceled) return;
           setStalled(true);
-          setLoading("Starting sandbox again, without its cache…");
+          setLoading(t("Starting sandbox again, without its cache…"));
         },
       },
     )
@@ -97,7 +130,7 @@ function SandboxApp() {
   }, [generation, applied]);
   async function reset() {
     if (!/^\d{1,10}$/.test(seed) || Number(seed) > 4294967295) {
-      setError("Seed must be an integer from 0 to 4294967295.");
+      setError(t("Seed must be an integer from 0 to 4294967295."));
       return;
     }
     setConnection(undefined);
@@ -107,52 +140,53 @@ function SandboxApp() {
   return (
     <div className="sandbox-shell">
       <header className="sandbox-controls">
-        <strong>Design sandbox</strong>
-        <span>Fake agent · no accounts or real tasks</span>
+        <strong>{t("Design sandbox")}</strong>
+        <span>{t("Fake agent · no accounts or real tasks")}</span>
         <label>
-          Scenario
+          {t("Scenario")}
           <select
-            aria-label="Scenario"
+            aria-label={t("Scenario")}
             value={scenario}
             onChange={(e) => setScenario(e.target.value)}
           >
             {scenarios.map((s, i) => (
               <option key={s} value={`session-${i + 1}`}>
-                {s}
+                {translateKnown(s)}
               </option>
             ))}
           </select>
         </label>
         <label>
-          Seed
+          {t("Seed")}
           <input
-            aria-label="Seed"
+            aria-label={t("Seed")}
             value={seed}
             inputMode="numeric"
             onChange={(e) => setSeed(e.target.value)}
           />
         </label>
         <label>
-          Pace
+          {t("Pace")}
           <select
-            aria-label="Pace"
+            aria-label={t("Pace")}
             value={delay}
             onChange={(e) => setDelay(e.target.value)}
           >
-            <option value="100">Fast</option>
-            <option value="400">Normal</option>
-            <option value="1200">Slow</option>
+            <option value="100">{t("Fast")}</option>
+            <option value="400">{t("Normal")}</option>
+            <option value="1200">{t("Slow")}</option>
           </select>
         </label>
-        <Button onClick={() => void reset()}>Reset sandbox</Button>
+        <Button onClick={() => void reset()}>{t("Reset sandbox")}</Button>
       </header>
       {error && <p role="alert">{error}</p>}
       {stalled && !error && (
         <p role="note">
-          The first attempt stalled; this sandbox started on a retry.
+          {t("The first attempt stalled; this sandbox started on a retry.")}
         </p>
       )}
-      {loading && <p role="status">{loading}</p>}
+      {loading && <p role="status">{translateKnown(loading)}</p>}
+
       {connection && (
         <Provider key={connection.clientId} app={connection}>
           <Workspace
@@ -160,11 +194,17 @@ function SandboxApp() {
             connection={connection}
             initialSession={scenario}
             logout={reset}
-            exitLabel="Reset sandbox"
+            exitLabel={t("Reset sandbox")}
           />
         </Provider>
       )}
     </div>
   );
 }
-createRoot(document.getElementById("root")!).render(<SandboxApp />);
+createRoot(document.getElementById("root")!).render(
+  <ThemeProvider>
+    <LocaleProvider>
+      <SandboxApp />
+    </LocaleProvider>
+  </ThemeProvider>,
+);

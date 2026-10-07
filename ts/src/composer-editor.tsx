@@ -1,6 +1,22 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useTheme } from "./theme";
+import { t, translateKnown, currentLocale } from "./i18n";
+import { useLocale } from "./i18n-react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { Button } from "./button";
-import { useBottomSheet } from "./bottom-sheet";
+import { useFloatingCard } from "./floating-card";
+import { indentEdit } from "./composer-indent";
+import { useEditorSettings } from "./settings";
+import { paletteVariables } from "./editor-settings";
+import {
+  codeBlocks,
+  codeSyntax,
+  codeSyntaxes,
+  highlightCodeLines,
+  resolvedCodeSyntax,
+  type CodeBlock,
+  type CodeToken,
+} from "./composer-code";
 import {
   createPaste,
   MAX_PASTE_BYTES,
@@ -19,30 +35,59 @@ export function ComposerEditor({
   pastes,
   onChange,
   canSend,
+  ariaLabel = t("Message"),
+  placeholder = t("Continue the conversation…"),
 }: {
   value: string;
   pastes: Map<string, ComposerPaste>;
   onChange: (value: string) => void;
-  canSend: boolean;
+  canSend?: boolean;
+  ariaLabel?: string;
+  placeholder?: string;
 }) {
+  useLocale();
   const input = useRef<HTMLTextAreaElement>(null);
+  const theme = useTheme();
+  const editorSettings = useEditorSettings("session");
   const mirror = useRef<HTMLDivElement>(null);
   const surface = useRef<HTMLDivElement>(null);
   const gutter = useRef<HTMLDivElement>(null);
-  const openSheet = useBottomSheet();
+  const openCard = useFloatingCard();
   const composing = useRef(false);
   const [composition, setComposition] = useState(false);
   const [notice, setNotice] = useState("");
-  const cursor = useRef<number | undefined>(undefined);
+  const [tabMovesFocus, setTabMovesFocus] = useState(false);
+  const cursor = useRef<
+    | { start: number; end: number; direction: "forward" | "backward" | "none" }
+    | undefined
+  >(undefined);
   const expectedEdit = useRef<string | undefined>(undefined);
   const ranges = pasteRanges(value, pastes);
   const latest = useRef({ value, replace });
   latest.current = { value, replace };
   const lines = value.split("\n");
+  const blocks = useMemo(
+    () =>
+      codeBlocks(value).map((block) => {
+        const syntax = resolvedCodeSyntax(block, value, pastes);
+        return {
+          ...block,
+          detected: syntax,
+          tokens: highlightCodeLines(
+            value.slice(block.bodyStart, block.bodyEnd),
+            syntax,
+          ),
+        };
+      }),
+    [value, pastes],
+  );
 
   function syncScroll() {
     const el = input.current!;
-    mirror.current!.style.transform = `translate(${-el.scrollLeft}px, ${-el.scrollTop}px)`;
+    // Keep code backgrounds behind the native caret, while header controls and
+    // chips can paint above the textarea without a transformed stacking context.
+    mirror.current!.style.left = `${-el.scrollLeft}px`;
+    mirror.current!.style.top = `${-el.scrollTop}px`;
     gutter.current!.style.transform = `translateY(${-el.scrollTop}px)`;
   }
   function measure() {
@@ -59,10 +104,14 @@ export function ComposerEditor({
   useLayoutEffect(() => {
     measure();
     if (cursor.current !== undefined) {
-      input.current!.setSelectionRange(cursor.current, cursor.current);
+      input.current!.setSelectionRange(
+        cursor.current.start,
+        cursor.current.end,
+        cursor.current.direction,
+      );
       cursor.current = undefined;
     }
-  }, [value, composition]);
+  }, [value, composition, editorSettings.tabSize]);
   useEffect(() => {
     const observer = new ResizeObserver(measure);
     observer.observe(input.current!);
@@ -84,7 +133,18 @@ export function ComposerEditor({
       el.setSelectionRange(selection.start, selection.end);
     return selection;
   }
-  function replace(start: number, end: number, text: string) {
+  function replace(
+    start: number,
+    end: number,
+    text: string,
+    caret?: number,
+    selectionEnd?: number,
+    direction: "forward" | "backward" | "none" = "none",
+  ) {
+    // Edit with native LF line breaks; untouched chips retain their original bytes.
+    text = text.replaceAll("\r\n", "\n").replaceAll("\r", "\n");
+    caret ??= start + text.length;
+    selectionEnd ??= caret;
     const el = input.current!;
     const next = value.slice(0, start) + text + value.slice(end);
     expectedEdit.current = next;
@@ -97,23 +157,55 @@ export function ComposerEditor({
       el.setRangeText(text, start, end, "end");
       onChange(next);
     }
-    cursor.current = start + text.length;
+    cursor.current = { start: caret, end: selectionEnd, direction };
+    el.setSelectionRange(caret, selectionEnd, direction);
     expectedEdit.current = undefined;
+  }
+  function changeSyntax(block: CodeBlock, syntax: string) {
+    const header =
+      block.indent + block.fence + (syntax === "auto" ? "" : syntax);
+    const el = input.current!;
+    const position = el.selectionStart;
+    const delta = header.length - (block.headerEnd - block.start);
+    replace(
+      block.start,
+      block.headerEnd,
+      header,
+      position > block.headerEnd ? position + delta : block.bodyStart + delta,
+    );
+  }
+  function closeCode(block: CodeBlock) {
+    if (!block.closed) {
+      const suffix =
+        (value.endsWith("\n") ? "" : "\n") + block.indent + block.fence + "\n";
+      replace(value.length, value.length, suffix);
+    } else if (value[block.end] !== "\n") {
+      replace(block.end, block.end, "\n");
+    } else {
+      input.current!.focus({ preventScroll: true });
+      input.current!.setSelectionRange(block.end + 1, block.end + 1);
+    }
   }
   function showPreview(range: PasteRange) {
     input.current!.focus({ preventScroll: true });
     input.current!.setSelectionRange(range.start, range.end);
-    openSheet({
-      label: "붙여넣기 원문",
-      title: `붙여넣기 · ${range.paste.lines}줄 · ${range.paste.bytes.toLocaleString()}B`,
+    openCard({
+      kind: "paste",
+      label: () => t("Paste source"),
+      title: () =>
+        t("Paste · {lines} lines · {bytes}B", {
+          lines: range.paste.lines,
+          bytes: range.paste.bytes.toLocaleString(currentLocale()),
+        }),
       content: (close) => (
         <PastePreview
           paste={range.paste}
           apply={(text) => {
-            // Sheets are non-modal: editing behind a preview must never replace a
+            // Cards are non-modal: editing behind a preview must never replace a
             // different occurrence at a stale offset.
             if (latest.current.value !== value) return false;
-            close();
+            // Release a background Question's inert state before native editing.
+            flushSync(close);
             latest.current.replace(range.start, range.end, text);
             return true;
           }}
@@ -124,7 +216,14 @@ export function ComposerEditor({
   let lineOffset = 0;
   return (
     <>
-      <div className="composer-editor" data-composing={composition}>
+      <div
+        className="composer-editor"
+        data-composing={composition}
+        style={{
+          tabSize: editorSettings.tabSize,
+          ...paletteVariables(editorSettings.colorPalette, theme),
+        }}
+      >
         <div
           className="editor-gutter"
           aria-hidden="true"
@@ -139,10 +238,24 @@ export function ComposerEditor({
         <div className="editor-body">
           <textarea
             ref={input}
-            aria-label="Message"
-            placeholder="Continue the conversation…"
+            aria-label={ariaLabel}
+            aria-description={
+              tabMovesFocus
+                ? t("Tab: Move focus. Ctrl+M: Switch to indentation mode.")
+                : t(
+                    "Tab: {action}. Shift+Tab: Outdent. Ctrl+M: Toggle Tab focus traversal.",
+                    {
+                      action: editorSettings.insertSpaces
+                        ? t("Indent {count} spaces", {
+                            count: editorSettings.indentSize,
+                          })
+                        : t("Insert a tab character"),
+                    },
+                  )
+            }
+            placeholder={placeholder}
             value={value}
-            rows={3}
+            rows={blocks.length ? Math.min(12, Math.max(5, lines.length)) : 3}
             spellCheck={false}
             autoCapitalize="off"
             autoCorrect="off"
@@ -191,7 +304,7 @@ export function ComposerEditor({
                   crypto.randomUUID().replaceAll("-", "").slice(0, 8),
                 );
               if (paste.bytes > MAX_PASTE_BYTES) {
-                setNotice("붙여넣기는 1 MiB까지 가능합니다.");
+                setNotice("Pastes are limited to 1 MiB.");
                 return;
               }
               if (
@@ -199,7 +312,7 @@ export function ComposerEditor({
                   [...pastes.values()].reduce((sum, p) => sum + p.bytes, 0) >
                 MAX_PASTE_CACHE_BYTES
               ) {
-                setNotice("붙여넣기 보관 공간이 32 MiB에 도달했습니다.");
+                setNotice("Paste storage has reached 32 MiB.");
                 return;
               }
               pastes.set(paste.token, paste);
@@ -234,12 +347,95 @@ export function ComposerEditor({
             onKeyDown={(event) => {
               if (event.nativeEvent.isComposing || composing.current) return;
               const el = event.currentTarget;
+              if (
+                event.ctrlKey &&
+                !event.altKey &&
+                !event.metaKey &&
+                !event.shiftKey &&
+                event.key.toLowerCase() === "m"
+              ) {
+                event.preventDefault();
+                if (event.repeat) return;
+                setTabMovesFocus(!tabMovesFocus);
+                setNotice(
+                  tabMovesFocus
+                    ? t(
+                        "Tab: {action} · Shift+Tab: Outdent · Ctrl+M: Focus traversal mode",
+                        {
+                          action: editorSettings.insertSpaces
+                            ? t("Indent {count} spaces", {
+                                count: editorSettings.indentSize,
+                              })
+                            : t("Insert a tab character"),
+                        },
+                      )
+                    : t("Tab: Move focus · Ctrl+M: Indentation mode"),
+                );
+                return;
+              }
+              if (
+                event.key === "Tab" &&
+                !event.ctrlKey &&
+                !event.altKey &&
+                !event.metaKey &&
+                !tabMovesFocus
+              ) {
+                event.preventDefault();
+                const direction = el.selectionDirection;
+                const selection = normalizedSelection();
+                const edit = indentEdit(
+                  value,
+                  selection.start,
+                  selection.end,
+                  event.shiftKey,
+                  editorSettings,
+                );
+                if (value.slice(edit.from, edit.to) !== edit.text)
+                  replace(
+                    edit.from,
+                    edit.to,
+                    edit.text,
+                    edit.start,
+                    edit.end,
+                    direction,
+                  );
+                return;
+              }
               if (event.ctrlKey && event.key === "Enter") {
                 event.preventDefault();
                 if (canSend) el.form?.requestSubmit();
                 return;
               }
               const selection = normalizedSelection();
+              // Pair a completed opening fence and place the native cursor on
+              // the empty body line between the visible Markdown delimiters.
+              if (
+                event.key === "`" &&
+                !event.ctrlKey &&
+                !event.metaKey &&
+                !event.altKey &&
+                selection.start === selection.end
+              ) {
+                const lineStart =
+                  value.lastIndexOf("\n", selection.start - 1) + 1;
+                const prefix = value.slice(lineStart, selection.start);
+                const lineEnd = value.indexOf("\n", selection.start);
+                if (
+                  /^ {0,3}``$/.test(prefix) &&
+                  selection.start === (lineEnd < 0 ? value.length : lineEnd) &&
+                  !blocks.some((b) => lineStart > b.start && lineStart <= b.end)
+                ) {
+                  event.preventDefault();
+                  const indent = prefix.slice(0, -2);
+                  replace(
+                    selection.start,
+                    selection.end,
+                    "`\n\n" + indent + "```",
+                    selection.start + 2,
+                  );
+                  return;
+                }
+              }
               const chip = ranges.find(
                 (range) =>
                   selection.start === range.start &&
@@ -253,7 +449,7 @@ export function ComposerEditor({
                 const target = chip ?? ranges[0];
                 if (target) {
                   showPreview(target);
-                } else setNotice("현재 입력에 붙여넣기 chip이 없습니다.");
+                } else setNotice("There are no paste chips in this input.");
                 return;
               }
               if (
@@ -288,26 +484,42 @@ export function ComposerEditor({
               {lines.map((line, index) => {
                 const start = lineOffset;
                 lineOffset += line.length + 1;
+                const block = blocks.find(
+                  (b) => index >= b.startLine && index <= b.endLine,
+                );
+                const header = block?.startLine === index;
+                const footer = block?.closed && block.endLine === index;
+                const tokens =
+                  block && !header && !footer
+                    ? block.tokens[index - block.startLine - 1]
+                    : undefined;
+                function text(from: number, to: number) {
+                  if (!tokens) return value.slice(from, to);
+                  return tokenSpans(tokens, from - start, to - start);
+                }
                 const chips = ranges.filter(
                   (range) =>
                     range.start >= start && range.end <= start + line.length,
                 );
                 let offset = start;
                 const parts = chips.flatMap((range) => {
-                  const text = (
+                  const fragment = (
                     <span aria-hidden="true" key={`text-${range.start}`}>
-                      {value.slice(offset, range.start)}
+                      {text(offset, range.start)}
                     </span>
                   );
                   offset = range.end;
                   return [
-                    text,
+                    fragment,
                     <span
                       className="paste-chip"
                       role="button"
                       tabIndex={0}
-                      aria-label={`붙여넣기 원문 보기: ${range.paste.lines}줄, ${range.paste.bytes} bytes`}
-                      title="원문 보기 · Ctrl+P"
+                      aria-label={t(
+                        "View paste source: {lines} lines, {bytes} bytes",
+                        { lines: range.paste.lines, bytes: range.paste.bytes },
+                      )}
+                      title={t("View source · Ctrl+P")}
                       key={range.start}
                       onClick={() => showPreview(range)}
                       onKeyDown={(event) => {
@@ -322,12 +534,74 @@ export function ComposerEditor({
                   ];
                 });
                 return (
-                  <div className="editor-line" key={index}>
-                    {parts}
-                    <span aria-hidden="true">
-                      {value.slice(offset, start + line.length) ||
-                        (line.length === 0 ? "\u200b" : "")}
-                    </span>
+                  <div
+                    className={`editor-line${block ? " editor-code-line" : ""}${header ? " editor-code-header" : ""}${footer || (block && index === block.endLine) ? " editor-code-last" : ""}`}
+                    key={index}
+                  >
+                    {header ? (
+                      <>
+                        <span aria-hidden="true" className="editor-code-fence">
+                          {block!.indent + block!.fence}
+                          <span className="editor-code-info">
+                            {line.slice(
+                              block!.indent.length + block!.fence.length,
+                            )}
+                          </span>
+                        </span>
+                        <div
+                          className="editor-code-controls"
+                          style={{
+                            left: `${block!.indent.length + block!.fence.length}ch`,
+                          }}
+                        >
+                          <select
+                            aria-label={t("Code syntax {index}", {
+                              index: blocks.indexOf(block!) + 1,
+                            })}
+                            value={codeSyntax(block!.syntax)}
+                            onChange={(event) =>
+                              changeSyntax(block!, event.target.value)
+                            }
+                          >
+                            {codeSyntaxes.map((syntax) => (
+                              <option key={syntax} value={syntax}>
+                                {syntax === "auto"
+                                  ? t("Auto · {syntax}", {
+                                      syntax: block!.detected,
+                                    })
+                                  : syntax}
+                              </option>
+                            ))}
+                            {!codeSyntaxes.includes(
+                              codeSyntax(block!.syntax),
+                            ) && (
+                              <option value={codeSyntax(block!.syntax)}>
+                                {block!.syntax}
+                              </option>
+                            )}
+                          </select>
+                          <Button
+                            className="toolbar-button code-close"
+                            type="button"
+                            aria-label={t("Close code block {index}", {
+                              index: blocks.indexOf(block!) + 1,
+                            })}
+                            title={t("Finish code block")}
+                            onClick={() => closeCode(block!)}
+                          >
+                            ×
+                          </Button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        {parts}
+                        <span aria-hidden="true">
+                          {text(offset, start + line.length) ||
+                            (line.length === 0 ? "\u200b" : "")}
+                        </span>
+                      </>
+                    )}
                   </div>
                 );
               })}
@@ -337,11 +611,25 @@ export function ComposerEditor({
       </div>
       {notice && (
         <p className="editor-notice" role="status">
-          {notice}
+          {translateKnown(notice)}
         </p>
       )}
     </>
   );
+}
+
+function tokenSpans(tokens: CodeToken[], start: number, end: number) {
+  let offset = 0;
+  return tokens.map((token, index) => {
+    const from = Math.max(0, start - offset);
+    const to = Math.min(token.text.length, end - offset);
+    offset += token.text.length;
+    return to > from ? (
+      <span key={index} className={token.className}>
+        {token.text.slice(from, to)}
+      </span>
+    ) : null;
+  });
 }
 
 function PastePreview({
@@ -351,6 +639,7 @@ function PastePreview({
   paste: ComposerPaste;
   apply: (text: string) => boolean;
 }) {
+  useLocale();
   const [stale, setStale] = useState(false);
   return (
     <>
@@ -361,19 +650,19 @@ function PastePreview({
           disabled={stale}
           onClick={() => setStale(!apply(paste.body))}
         >
-          원문 펼치기
+          {t("Expand source")}
         </Button>
         <Button
           type="button"
           disabled={stale}
           onClick={() => setStale(!apply(""))}
         >
-          삭제
+          {t("Delete")}
         </Button>
       </div>
       {stale && (
         <p role="status" className="muted">
-          입력 내용이 변경되었습니다. chip을 다시 열어주세요.
+          {t("The input has changed. Reopen the chip.")}
         </p>
       )}
     </>

@@ -1,3 +1,5 @@
+import { t } from "./i18n";
+import { useLocale } from "./i18n-react";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@lesomnus/payday/react";
 import type { Project } from "../gen/cxz/project_pb";
@@ -20,6 +22,7 @@ export function SessionTreeGroup({
   toggle: () => void;
   select: (id: string) => void;
 }) {
+  useLocale();
   const [after, setAfter] = useState("");
   const [items, setItems] = useState<Session[]>([]);
   const pages = useRef(new Map<string, Session[]>());
@@ -73,10 +76,10 @@ export function SessionTreeGroup({
             </Button>
           ))}
           {query.state === "pending" && !query.data && (
-            <small className="tree-message">Loading…</small>
+            <small className="tree-message">{t("Loading…")}</small>
           )}
           {query.data && !items.length && (
-            <small className="tree-message">No sessions</small>
+            <small className="tree-message">{t("No sessions")}</small>
           )}
           {!!query.error && <small role="alert">{String(query.error)}</small>}
           {query.data?.next && (
@@ -84,7 +87,7 @@ export function SessionTreeGroup({
               className="tree-more"
               onClick={() => setAfter(query.data!.next)}
             >
-              More sessions
+              {t("More sessions")}
             </Button>
           )}
         </div>
@@ -94,6 +97,7 @@ export function SessionTreeGroup({
 }
 
 function SessionIndicator({ session }: { session: Session }) {
+  useLocale();
   const [frame, setFrame] = useState(0);
   const state = session.status?.state || "unknown";
   const question = !!session.status?.pending.length;
@@ -115,7 +119,7 @@ function SessionIndicator({ session }: { session: Session }) {
     <span
       className={`session-indicator ${question ? "attention" : ""}`}
       role="img"
-      aria-label={question ? "Awaiting answer" : state}
+      aria-label={question ? t("Awaiting answer") : state}
     >
       {symbol}
     </span>

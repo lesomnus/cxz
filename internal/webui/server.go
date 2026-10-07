@@ -93,7 +93,8 @@ func Handler(c Config, conn grpc.ClientConnInterface, assets fs.FS) (http.Handle
 		return nil, nil, err
 	}
 	g := grpc.NewServer(grpc.MaxRecvMsgSize(8<<20), grpc.MaxSendMsgSize(24<<20))
-	resource.RegisterProjectServiceServer(g, &projects{client: resource.NewProjectServiceClient(conn)})
+	editorProxy := &editorProxy{client: resource.NewProjectServiceClient(conn), connected: make(map[string]editorConnection)}
+	resource.RegisterProjectServiceServer(g, &projects{client: resource.NewProjectServiceClient(conn), editors: editorProxy})
 	resource.RegisterSessionServiceServer(g, &sessions{client: resource.NewSessionServiceClient(conn)})
 	mux, err := pdweb.New(config.HttpConfig{AllowWeb: true}, g)
 	if err != nil {
@@ -101,6 +102,8 @@ func Handler(c Config, conn grpc.ClientConnInterface, assets fs.FS) (http.Handle
 		return nil, nil, err
 	}
 	mux.Handle("/", http.FileServer(http.FS(assets)))
+	mux.Handle("/editor/", editorProxy)
+	mux.Handle("/terminal/", &terminalProxy{client: resource.NewProjectServiceClient(conn)})
 	auth := &browserAuth{origin: c.Origin, transport: !c.plaintext(), token: sha256.Sum256([]byte(c.Token)), sessions: make(map[[32]byte]browserSession)}
 	return auth.wrap(mux), func() {
 		auth.mu.Lock()
@@ -117,7 +120,9 @@ func (a *browserAuth) wrap(next http.Handler) http.Handler {
 		w.Header().Set("Cache-Control", "no-store")
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("Referrer-Policy", "no-referrer")
-		w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'")
+		if !strings.HasPrefix(r.URL.Path, "/editor/") {
+			w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self'; style-src-elem 'self' 'unsafe-inline'; style-src-attr 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; worker-src 'self' blob:; frame-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'")
+		}
 		if a.transport {
 			w.Header().Set("Strict-Transport-Security", "max-age=31536000")
 		}
@@ -146,7 +151,7 @@ func (a *browserAuth) wrap(next http.Handler) http.Handler {
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
-		if pdweb.Rpc(r) || strings.HasPrefix(r.URL.Path, "/cxz.") || r.URL.Path == "/auth/status" {
+		if pdweb.Rpc(r) || strings.HasPrefix(r.URL.Path, "/cxz.") || strings.HasPrefix(r.URL.Path, "/editor/") || strings.HasPrefix(r.URL.Path, "/terminal/") || r.URL.Path == "/auth/status" {
 			c, err := r.Cookie(cookieName)
 			if err != nil {
 				http.Error(w, "sign in required", http.StatusUnauthorized)

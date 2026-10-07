@@ -2,7 +2,8 @@
  * Booting the sandbox has to finish or say why.
  *
  * `start` resolves when the WASM module is compiled and the Go instance has
- * published its entry point. Nothing bounds the whole of that from the page:
+ * published its entry point, before an RPC has proved the service is usable.
+ * The caller's attempt includes that readiness check. Nothing bounds it:
  * the only deadline inside it covers the publish step, which is the last one, so
  * a stall anywhere earlier -- reading the module's body, writing the copy that
  * makes the next reload fast -- leaves the page on "Starting sandbox…" with no
@@ -20,7 +21,7 @@ export const BootDeadlineMs = 15000;
 export class BootTimeout extends Error {
   constructor(ms: number) {
     super(
-      `the sandbox did not start within ${Math.round(ms / 1000)}s (no error and no progress from the module)`,
+      `the sandbox did not start within ${Math.round(ms / 1000)}s (module loading or service readiness stalled)`,
     );
     this.name = "BootTimeout";
   }
@@ -63,7 +64,7 @@ type TimerHandle = ReturnType<typeof setTimeout>;
 
 export interface Attempt<T> {
   /** cached is false on the retry, where the module cache is left out. */
-  (cached: boolean): Promise<T>;
+  (cached: boolean, signal: AbortSignal): Promise<T>;
 }
 
 /**
@@ -77,11 +78,22 @@ export async function boot<T>(
   opts: { ms?: number; timer?: Timer; onRetry?: (e: BootTimeout) => void } = {},
 ): Promise<T> {
   const ms = opts.ms ?? BootDeadlineMs;
+  const run = async (cached: boolean) => {
+    const controller = new AbortController();
+    try {
+      return await deadline(attempt(cached, controller.signal), ms, opts.timer);
+    } catch (e) {
+      // Close a stalled worker and cancel its readiness call before retrying.
+      // A late start must also observe this signal and close its own worker.
+      controller.abort(e);
+      throw e;
+    }
+  };
   try {
-    return await deadline(attempt(true), ms, opts.timer);
+    return await run(true);
   } catch (e) {
     if (!(e instanceof BootTimeout)) throw e;
     opts.onRetry?.(e);
-    return await deadline(attempt(false), ms, opts.timer);
+    return await run(false);
   }
 }

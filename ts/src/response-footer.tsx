@@ -1,19 +1,21 @@
+import { t, translateKnown, currentLocale } from "./i18n";
+import { useLocale } from "./i18n-react";
 import { Button } from "./button";
 import { messageDate } from "./message-time";
 import { durationLabel, type ResponseCompletion } from "./response-completion";
 import { formatTokens } from "./session-info";
 
 const names: Record<string, string> = {
-  input_tokens: "입력",
-  output_tokens: "출력",
-  cache_read_tokens: "캐시 읽기",
-  cache_write_tokens: "캐시 쓰기",
-  reasoning_tokens: "추론",
-  total_tokens: "전체",
-  cost_usd: "비용",
+  input_tokens: "Input",
+  output_tokens: "Output",
+  cache_read_tokens: "Cache read",
+  cache_write_tokens: "Cache write",
+  reasoning_tokens: "Reasoning",
+  total_tokens: "Total",
+  cost_usd: "Cost",
   api_duration_ms: "API",
-  api_turns: "API 턴",
-  tool_calls: "도구",
+  api_turns: "API turns",
+  tool_calls: "Tools",
 };
 
 const icons: Record<string, string> = {
@@ -35,6 +37,7 @@ const icons: Record<string, string> = {
 };
 
 function MetricIcon({ kind }: { kind: string }) {
+  useLocale();
   return (
     <svg
       width="12"
@@ -59,13 +62,26 @@ function metricValue(key: string, value: number) {
       ? durationLabel(value)
       : key.includes("tokens")
         ? formatTokens(value)
-        : value.toLocaleString();
+        : value.toLocaleString(currentLocale());
 }
 
 function metricTitle(key: string, value: number, scope?: string) {
   return key.includes("tokens")
-    ? `${names[key]} — ${scope === "last_call" ? "마지막 모델 호출" : "턴 전체"}: ${value.toLocaleString()} tokens${key === "reasoning_tokens" ? " (출력 토큰에 포함)" : key === "cache_read_tokens" && scope === "last_call" ? " (입력 토큰에 포함)" : ""}`
-    : `${names[key]}: ${metricValue(key, value)}`;
+    ? t("{name} — {scope}: {count} tokens{included}", {
+        name: translateKnown(names[key]),
+        scope: scope === "last_call" ? t("Last model call") : t("Entire turn"),
+        count: value.toLocaleString(currentLocale()),
+        included:
+          key === "reasoning_tokens"
+            ? t(" (Included in output tokens)")
+            : key === "cache_read_tokens" && scope === "last_call"
+              ? t(" (Included in input tokens)")
+              : "",
+      })
+    : t("{name}: {value}", {
+        name: translateKnown(names[key]),
+        value: metricValue(key, value),
+      });
 }
 
 export function ResponseFooter({
@@ -79,18 +95,19 @@ export function ResponseFooter({
   text: string;
   completion?: ResponseCompletion;
 }) {
+  useLocale();
   const date = completion && messageDate(timeMs);
   const tooltip = `copy-${seq}`;
   return (
     <footer className="response-footer">
       {completion && (
-        <div className="response-metrics" aria-label="Response metrics">
+        <div className="response-metrics" aria-label={t("Response metrics")}>
           {date && (
             <time
               dateTime={date.toISOString()}
-              title="cxz가 응답을 수신해 기록한 시각"
+              title={t("Time cxz received and recorded the response")}
             >
-              {date.toLocaleString("ko-KR", {
+              {date.toLocaleString(currentLocale(), {
                 month: "2-digit",
                 day: "2-digit",
                 hour: "2-digit",
@@ -105,11 +122,15 @@ export function ResponseFooter({
               className="response-metric"
               data-metric="duration"
               role="img"
-              aria-label={`소요 시간: ${durationLabel(completion.durationMs)}`}
+              aria-label={t("Duration: {duration}", {
+                duration: durationLabel(completion.durationMs),
+              })}
               title={
                 completion.durationSource === "provider"
-                  ? "에이전트가 보고한 턴 소요 시간"
-                  : "cxz가 입력 전송부터 턴 종료까지 측정한 시간 (도구·승인 대기 포함)"
+                  ? t("Turn duration reported by the agent")
+                  : t(
+                      "Time measured by cxz from input to turn completion, including tool and approval waits",
+                    )
               }
             >
               <MetricIcon kind="duration" />
@@ -137,7 +158,7 @@ export function ResponseFooter({
       <span className="meta-popover copy-control">
         <Button
           className="copy"
-          aria-label="Copy"
+          aria-label={t("Copy")}
           aria-describedby={tooltip}
           onClick={() => navigator.clipboard.writeText(text).catch(() => {})}
         >
@@ -157,7 +178,7 @@ export function ResponseFooter({
           </svg>
         </Button>
         <span id={tooltip} className="meta-tooltip" role="tooltip">
-          copy
+          {t("Copy")}
         </span>
       </span>
     </footer>

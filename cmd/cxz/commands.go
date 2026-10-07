@@ -13,6 +13,7 @@ import (
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/cxzupdate"
+	"github.com/lesomnus/cxz/internal/editor"
 	"github.com/lesomnus/cxz/internal/installer"
 	"github.com/lesomnus/cxz/internal/mcpruntime"
 	"github.com/lesomnus/cxz/internal/memorylib"
@@ -162,7 +163,7 @@ func newRoot(state string) *xli.Command {
 		root.Commands = append(root.Commands, newProjectCommand(name))
 	}
 	root.Commands = append(root.Commands, projectMetadataCommands())
-	root.Commands = append(root.Commands, devcontainerCommand(), webCommand(), internalWebCommand(), connectionCommand())
+	root.Commands = append(root.Commands, devcontainerCommand(), webCommand(), internalWebCommand(), connectionCommand(), conversationCommand())
 	root.Commands = append(root.Commands, pkiInternalCommands()...)
 	root.Commands = append(root.Commands, githubCommands(), gitconfigCommands())
 	root.Commands = append(root.Commands, accountCommands())
@@ -207,6 +208,19 @@ func internalCommands() xli.Commands {
 		return &xli.Command{Name: name, Category: "Internal runtime", Brief: "Internal process entrypoint", Args: args, Handler: onRun(fn)}
 	}
 	return xli.Commands{
+		makeCmd("_editor-installed", nil, func(ctx context.Context, c *xli.Command) error {
+			if !editor.Installed() {
+				return fmt.Errorf("browser editor not installed")
+			}
+			return nil
+		}),
+		makeCmd("_editor-install", nil, func(ctx context.Context, c *xli.Command) error { return editor.Install(ctx, c.ReadCloser) }),
+		makeCmd("_editor-start", arg.Args{stringArg("PROJECT", false), stringArg("WORKSPACE", false)}, func(ctx context.Context, c *xli.Command) error {
+			ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+			defer cancel()
+			return editor.Start(ctx, arg.MustGet[string](c, "PROJECT"), arg.MustGet[string](c, "WORKSPACE"), c.Writer)
+		}),
+		makeCmd("_editor-tunnel", nil, func(ctx context.Context, c *xli.Command) error { return editor.Tunnel(ctx, c.ReadCloser, c.Writer) }),
 		makeCmd("_connect", nil, func(ctx context.Context, c *xli.Command) error {
 			return transport.ConnectBridge(ctx, stateFrom(ctx), c.ReadCloser, c.Writer)
 		}),

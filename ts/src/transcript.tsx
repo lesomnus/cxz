@@ -1,3 +1,5 @@
+import { t } from "./i18n";
+import { useLocale } from "./i18n-react";
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   clamp,
@@ -86,6 +88,7 @@ export function Transcript({
   older: () => void;
   newer: () => void;
 }) {
+  useLocale();
   const content = useRef<HTMLDivElement>(null);
   const [pinned, setPinned] = useState<{
     prompt: SessionEvent | undefined;
@@ -555,7 +558,7 @@ export function Transcript({
         ref={pane}
         id="conversation-transcript"
         tabIndex={0}
-        aria-label="Conversation"
+        aria-label={t("Conversation")}
         onScroll={scrolled}
       >
         <div className="transcript-content" ref={content}>
@@ -610,7 +613,7 @@ export function Transcript({
           ref={thumb}
           className="scroll-thumb"
           role="scrollbar"
-          aria-label="Conversation scroll"
+          aria-label={t("Conversation scroll")}
           aria-controls="conversation-transcript"
           aria-orientation="vertical"
           aria-valuemin={0}
