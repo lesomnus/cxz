@@ -182,6 +182,12 @@ func terminalEventKey(key uv.KeyPressEvent) (tea.KeyMsg, bool) {
 	if (key.Code == '.' || key.BaseCode == '.') && key.Mod == uv.ModCtrl {
 		return tea.KeyMsg{Type: tea.KeyF19}, true
 	}
+	// Ctrl+Shift+F widens a search. A console record carries the shift state that
+	// a legacy terminal sequence cannot, and v1 has no name for the chord, so it
+	// is bridged to the same spare function key the unix side uses.
+	if unicode.ToLower(key.Code) == 'f' && key.Mod == uv.ModCtrl|uv.ModShift {
+		return tea.KeyMsg{Type: tea.KeyF18}, true
+	}
 	if key.Mod&uv.ModCtrl != 0 {
 		code := unicode.ToLower(key.Code)
 		switch {

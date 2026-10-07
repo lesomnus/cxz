@@ -118,47 +118,49 @@ type model struct {
 	wisp                    *containerterm.WispPool
 	terminalWidth           int
 	panelFocus              bool
-	panelWantKey            string
-	panelWantConnection     string
-	accountConnection       string
-	creationConnection      string
-	accountRequest          uint64
-	panelIndex              int
-	panelHoverY             int // Screen row; zero means no hovered item.
-	resumePending           map[string]bool
-	panelHintHover          string // Footer hint under the pointer, by its key.
-	quotaParses             map[quotaParseKey]quotaParse
-	panelProjects           []*api.Project
-	allSessions             []*api.Session
-	panelError              string
-	projectView             bool
-	deletingID              string
-	deleteConfirm           *sessionDeleteConfirmation
-	busy                    bool
-	createProjectSession    ProjectCreator
-	ctx                     context.Context
-	client                  api.SessionsClient
-	sessions                []*api.Session
-	selected                int
-	input                   bed.Model
-	drafts                  map[string]string
-	localHelp               map[string]uint64
-	localOutput             map[string]string
-	hintSelected            int
-	hintOffset              int
-	hintDismissed           bool
-	renaming                bool
-	renameBusy              bool
-	renameProject           bool
-	renameID                string
-	aliasInput              textinput.Model
-	usageReports            map[string]string
-	usageGeneration         map[string]uint64
-	accountQuotas           map[string][]agentview.Window
-	quotaWindows            []agentview.Window
-	quotaState              string
-	modelPicker             *modelPicker
-	modelPickerEpoch        uint64
+	// The find bar, when it is open. It holds the keyboard while it is.
+	search               *searchOverlay
+	panelWantKey         string
+	panelWantConnection  string
+	accountConnection    string
+	creationConnection   string
+	accountRequest       uint64
+	panelIndex           int
+	panelHoverY          int // Screen row; zero means no hovered item.
+	resumePending        map[string]bool
+	panelHintHover       string // Footer hint under the pointer, by its key.
+	quotaParses          map[quotaParseKey]quotaParse
+	panelProjects        []*api.Project
+	allSessions          []*api.Session
+	panelError           string
+	projectView          bool
+	deletingID           string
+	deleteConfirm        *sessionDeleteConfirmation
+	busy                 bool
+	createProjectSession ProjectCreator
+	ctx                  context.Context
+	client               api.SessionsClient
+	sessions             []*api.Session
+	selected             int
+	input                bed.Model
+	drafts               map[string]string
+	localHelp            map[string]uint64
+	localOutput          map[string]string
+	hintSelected         int
+	hintOffset           int
+	hintDismissed        bool
+	renaming             bool
+	renameBusy           bool
+	renameProject        bool
+	renameID             string
+	aliasInput           textinput.Model
+	usageReports         map[string]string
+	usageGeneration      map[string]uint64
+	accountQuotas        map[string][]agentview.Window
+	quotaWindows         []agentview.Window
+	quotaState           string
+	modelPicker          *modelPicker
+	modelPickerEpoch     uint64
 	// modelCatalogs caches one capability record per run, so /model and /effort
 	// are one lookup rather than two, and a live `models` event replaces it.
 	modelCatalogs       map[string]*modelCatalog
@@ -1103,6 +1105,13 @@ func (m *model) Update(msg tea.Msg) (next tea.Model, cmd tea.Cmd) {
 	}
 
 	switch v := msg.(type) {
+	case searchResult:
+		return m, m.receiveSearch(v)
+	case searchDebounced:
+		return m, m.receiveSearchDebounce(v)
+	}
+
+	switch v := msg.(type) {
 	case downloadDone:
 		m.receiveDownload(v)
 		return m, nil
@@ -1391,6 +1400,28 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	if k, ok := msg.(tea.KeyMsg); ok && k.Type == tea.KeyF19 && !k.Paste && m.workflow == nil && m.redactDialog == nil && m.pasteDialog == nil && m.restartConfirm == nil {
 		return m, m.openSettings()
+	}
+	if k, ok := msg.(tea.KeyMsg); ok && !k.Paste && m.searchAvailable() {
+		switch k.String() {
+		case "ctrl+f":
+			// Inside a conversation, Ctrl+F is the conversation. With the panel
+			// holding the keyboard there is no conversation to search, so the
+			// same key opens the wide one rather than refusing.
+			if m.panelFocus || m.current() == nil {
+				return m, m.openSearch(scopeAll)
+			}
+			return m, m.openSearch(scopeSession)
+		case "f18", "ctrl+shift+f":
+			if m.panelFocus || m.current() == nil {
+				return m, m.openSearch(scopeAll)
+			}
+			return m, m.openSearch(scopeProject)
+		}
+	}
+	if m.search != nil {
+		if k, ok := msg.(tea.KeyMsg); ok {
+			return m, m.searchKey(k)
+		}
 	}
 	if k, ok := msg.(tea.KeyMsg); ok && !k.Paste && m.questionDialog != nil && m.pasteDialog == nil && m.redactDialog == nil && k.Type == tea.KeyF6 {
 		d := m.questionDialog
@@ -2488,7 +2519,7 @@ func (m *model) View() (out string) {
 		return screen("cxz\nResize terminal to 40 × 14 or larger.\nCtrl+D detach", m.width, m.height)
 	}
 	if (m.panelFocus || m.projectView) && !m.accountView && !m.creating && !m.panelVisible() {
-		return m.reportView(m.panelScreen())
+		return m.searchBar(m.reportView(m.panelScreen()))
 	}
 	if m.accountView {
 		return m.accountScreen()

@@ -152,6 +152,9 @@ func (r *keyboardReader) kittyKey(seq []byte) ([]byte, bool) {
 	if key == 46 && mod == 4 {
 		return []byte("\x1b[33~"), true
 	} // reserved settings shortcut bridge (F19)
+	if key == 'f' && mod == 5 {
+		return []byte("\x1b[32~"), true
+	} // Ctrl+Shift+F: widen the search (F18)
 	if key == 9 && mod == 1 {
 		return []byte("\x1b[Z"), true
 	}

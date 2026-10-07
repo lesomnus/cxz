@@ -23,6 +23,7 @@ Needs at least 40 × 14 cells. Follows terminal resizes.
 | `s` | Stop it |
 | `m` | Browse its retained memory and history |
 | `Ctrl+X` twice within 3s | Stop and delete it; the journal is kept. `cxz session purge` destroys it |
+| `Ctrl+Shift+F` | Search every conversation in the installation |
 | `Ctrl+.` | Settings |
 
 The sidebar footer shows only **new**, **? help**, and **Ctrl+D detach**.
@@ -36,6 +37,8 @@ new-session account picker for that project. Other shortcuts remain available.
 | `Ctrl+S` | Send |
 | `Enter`, `Alt+Enter`, `Ctrl+J` | Newline |
 | `Ctrl+Enter` | Send, where the terminal can distinguish it |
+| `Ctrl+F` | Find in this conversation |
+| `Ctrl+Shift+F` | Find across this project |
 | `Ctrl+X` | Clear the draft; with nothing to clear, take back the message waiting to be sent |
 | `Tab` / `Shift+Tab` | Indent/outdent; active completions and visible approval/error focus take priority |
 | `Alt+↑` / `Alt+↓` | Move current or selected logical lines |
@@ -206,6 +209,31 @@ moves when the journal does.
 
 `Ctrl+End` returns to following. See [history and retention](history.md) for the
 window's size and what evicts from it.
+
+## Finding what was said
+
+`Ctrl+F` opens a bar over the top of the transcript and searches **this
+conversation**. Results arrive as you type — debounced by 300 ms, so a word is
+one search and not six — and the transcript jumps to the newest match. `Enter`
+walks the older ones, `Shift+Tab` goes back, and it wraps rather than making you
+retype. The bar counts them: `3/17`.
+
+`Ctrl+Shift+F` searches **the project**, and with the project list focused, every
+project in the installation. A wide search waits for `Enter`, because a list that
+reshuffles under the arrow keys cannot be chosen from. What it finds is listed
+under the bar with the sentence around each hit; `↑` `↓` chooses and `Enter`
+opens that conversation at that message, loading whatever history is needed to
+reach it.
+
+Not every terminal can send `Ctrl+Shift+F` — without the Kitty keyboard protocol
+it is indistinguishable from `Ctrl+F` — so `Tab` in the bar cycles the same three
+scopes. `Esc` closes.
+
+Tool calls and their arguments are searched too. Answers come from the
+installation's conversation index, which is kept current as events are recorded;
+a conversation it has not caught up with is counted in the bar rather than left
+out of the answer silently. See [searching it](history.md#searching-it) for what
+the index holds and `cxz conversation search` for the same question from a shell.
 
 ## Status bar
 
