@@ -4,9 +4,17 @@ export function indentEdit(
   start: number,
   end: number,
   outdent: boolean,
+  options = { indentSize: 2, insertSpaces: true },
 ) {
+  const indent = options.insertSpaces ? " ".repeat(options.indentSize) : "\t";
   if (!outdent && start === end)
-    return { from: start, to: end, text: "  ", start: start + 2, end: end + 2 };
+    return {
+      from: start,
+      to: end,
+      text: indent,
+      start: start + indent.length,
+      end: end + indent.length,
+    };
 
   const from = start > 0 ? value.lastIndexOf("\n", start - 1) + 1 : 0;
   const last = end > start ? end - 1 : end;
@@ -19,12 +27,13 @@ export function indentEdit(
     .split("\n")
     .map((line) => {
       const removed = outdent
-        ? (/^(?:\t| {1,2})/.exec(line)?.[0].length ?? 0)
+        ? (new RegExp(`^(?:\\t| {1,${options.indentSize}})`).exec(line)?.[0]
+            .length ?? 0)
         : 0;
-      const added = outdent ? 0 : 2;
+      const added = outdent ? 0 : indent.length;
       edits.push({ position: offset, removed, added });
       offset += line.length + 1;
-      return (outdent ? "" : "  ") + line.slice(removed);
+      return (outdent ? "" : indent) + line.slice(removed);
     })
     .join("\n");
   function adjust(position: number) {

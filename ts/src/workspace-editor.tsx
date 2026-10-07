@@ -4,6 +4,7 @@ import type { ProjectPathEntry } from "../gen/cxz/project_svc_pb";
 import { Connection, ref } from "./connection";
 import { Button } from "./button";
 import type * as Monaco from "monaco-editor/esm/vs/editor/editor.api.js";
+import { useEditorSettings } from "./settings";
 
 type File = {
   path: string;
@@ -343,17 +344,31 @@ export function WorkspaceEditor({
 function FileEditor({ file }: { file: File }) {
   const host = useRef<HTMLDivElement>(null);
   const [error, setError] = useState("");
+  const settings = useEditorSettings();
+  const latestSettings = useRef(settings);
+  latestSettings.current = settings;
+  const configure = useRef<
+    ((settings: typeof latestSettings.current) => void) | undefined
+  >(undefined);
+  useEffect(() => {
+    configure.current?.(settings);
+  }, [
+    settings.indentSize,
+    settings.insertSpaces,
+    settings.tabSize,
+    settings.colorPalette,
+  ]);
   useEffect(() => {
     let canceled = false;
     let editor: Monaco.editor.IStandaloneCodeEditor | undefined;
     let model: Monaco.editor.ITextModel | undefined;
     import("./code-editor")
-      .then(({ monaco, language }) => {
+      .then(({ monaco, language, configureEditor }) => {
         if (canceled) return;
         model = monaco.editor.createModel(file.text, language(file.path));
         editor = monaco.editor.create(host.current!, {
           model,
-          theme: "cxz",
+          theme: `cxz-${latestSettings.current.colorPalette}`,
           readOnly: true,
           domReadOnly: true,
           automaticLayout: true,
@@ -369,6 +384,9 @@ function FileEditor({ file }: { file: File }) {
           ariaLabel: `File preview: ${file.path}`,
           stickyScroll: { enabled: false },
         });
+        configure.current = (settings) =>
+          configureEditor(editor!, model!, settings);
+        configure.current(latestSettings.current);
         if (file.view) editor.restoreViewState(file.view);
       })
       .catch((e) => {
@@ -376,6 +394,7 @@ function FileEditor({ file }: { file: File }) {
       });
     return () => {
       canceled = true;
+      configure.current = undefined;
       if (editor) {
         file.view = editor.saveViewState();
         editor.dispose();

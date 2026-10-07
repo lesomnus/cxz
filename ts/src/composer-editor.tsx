@@ -3,6 +3,8 @@ import { flushSync } from "react-dom";
 import { Button } from "./button";
 import { useFloatingCard } from "./floating-card";
 import { indentEdit } from "./composer-indent";
+import { useEditorSettings } from "./settings";
+import { paletteVariables } from "./editor-settings";
 import {
   codeBlocks,
   codeSyntax,
@@ -41,6 +43,7 @@ export function ComposerEditor({
   placeholder?: string;
 }) {
   const input = useRef<HTMLTextAreaElement>(null);
+  const editorSettings = useEditorSettings("session");
   const mirror = useRef<HTMLDivElement>(null);
   const surface = useRef<HTMLDivElement>(null);
   const gutter = useRef<HTMLDivElement>(null);
@@ -103,7 +106,7 @@ export function ComposerEditor({
       );
       cursor.current = undefined;
     }
-  }, [value, composition]);
+  }, [value, composition, editorSettings.tabSize]);
   useEffect(() => {
     const observer = new ResizeObserver(measure);
     observer.observe(input.current!);
@@ -203,7 +206,14 @@ export function ComposerEditor({
   let lineOffset = 0;
   return (
     <>
-      <div className="composer-editor" data-composing={composition}>
+      <div
+        className="composer-editor"
+        data-composing={composition}
+        style={{
+          tabSize: editorSettings.tabSize,
+          ...paletteVariables(editorSettings.colorPalette),
+        }}
+      >
         <div
           className="editor-gutter"
           aria-hidden="true"
@@ -222,7 +232,7 @@ export function ComposerEditor({
             aria-description={
               tabMovesFocus
                 ? "Tab: 포커스 이동. Ctrl+M: 들여쓰기 모드로 전환."
-                : "Tab: 2칸 들여쓰기. Shift+Tab: 내어쓰기. Ctrl+M: Tab으로 포커스 이동 전환."
+                : `Tab: ${editorSettings.insertSpaces ? `${editorSettings.indentSize}칸 들여쓰기` : "Tab 문자 입력"}. Shift+Tab: 내어쓰기. Ctrl+M: Tab으로 포커스 이동 전환.`
             }
             placeholder={placeholder}
             value={value}
@@ -330,7 +340,7 @@ export function ComposerEditor({
                 setTabMovesFocus(!tabMovesFocus);
                 setNotice(
                   tabMovesFocus
-                    ? "Tab: 들여쓰기 · Shift+Tab: 내어쓰기 · Ctrl+M: 포커스 이동 모드"
+                    ? `Tab: ${editorSettings.insertSpaces ? `${editorSettings.indentSize}칸 들여쓰기` : "Tab 문자 입력"} · Shift+Tab: 내어쓰기 · Ctrl+M: 포커스 이동 모드`
                     : "Tab: 포커스 이동 · Ctrl+M: 들여쓰기 모드",
                 );
                 return;
@@ -350,6 +360,7 @@ export function ComposerEditor({
                   selection.start,
                   selection.end,
                   event.shiftKey,
+                  editorSettings,
                 );
                 if (value.slice(edit.from, edit.to) !== edit.text)
                   replace(

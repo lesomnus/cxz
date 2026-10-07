@@ -53,3 +53,27 @@ it("keeps Unicode and paste placeholders intact while adjusting selection offset
   expect(edit.end).toBe(value.length + 4);
   expect(apply(edit.value, edit.start, edit.end, true).value).toBe(value);
 });
+it("uses configurable space indentation and removes the configured width", () => {
+  const edit = indentEdit("one\ntwo", 0, 7, false, {
+    indentSize: 4,
+    insertSpaces: true,
+  });
+  expect(edit.text).toBe("    one\n    two");
+  expect(edit.end).toBe(15);
+  expect(
+    indentEdit(edit.text, edit.start, edit.end, true, {
+      indentSize: 4,
+      insertSpaces: true,
+    }).text,
+  ).toBe("one\ntwo");
+});
+it("inserts real tabs and can outdent mixed leading tabs and spaces", () => {
+  const options = { indentSize: 6, insertSpaces: false };
+  expect(indentEdit("x", 0, 0, false, options).text).toBe("\t");
+  expect(indentEdit("one\ntwo", 0, 7, false, options).text).toBe(
+    "\tone\n\ttwo",
+  );
+  expect(indentEdit("\tone\n      two", 0, 14, true, options).text).toBe(
+    "one\ntwo",
+  );
+});

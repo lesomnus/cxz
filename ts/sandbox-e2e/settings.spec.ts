@@ -1,0 +1,363 @@
+import { expect, test, devices, type Page } from "@playwright/test";
+
+test.use({
+  userAgent: devices["Desktop Chrome"].userAgent,
+  viewport: { width: 1440, height: 1000 },
+  isMobile: false,
+  hasTouch: false,
+  deviceScaleFactor: 1,
+});
+
+async function ready(page: Page) {
+  await page.goto("/sandbox.html");
+  await expect(
+    page.getByRole("heading", { name: "Current status" }),
+  ).toBeVisible({ timeout: 45000 });
+}
+async function settings(page: Page) {
+  await page
+    .getByRole("button", { name: "Settings view", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "설정", exact: true }),
+  ).toBeVisible();
+}
+async function file(page: Page) {
+  await page.getByRole("tab", { name: /settings\.json/ }).click();
+  return page.getByRole("textbox", { name: "settings.json", exact: true });
+}
+async function stored(page: Page) {
+  return page.evaluate(() => JSON.parse(localStorage.getItem("settings")!));
+}
+const fields = [
+  "들여쓰기 칸 수",
+  "Tab 입력 방식",
+  "Tab 문자 표시 폭",
+  "색상 팔레트",
+];
+
+test("one settings file persists, each session field overrides or inherits and edits keep the conversation draft", async ({
+  page,
+}) => {
+  await ready(page);
+  const composer = page.getByRole("textbox", { name: "Message", exact: true });
+  await composer.fill("keep draft");
+  await settings(page);
+  for (const label of fields)
+    await expect(
+      page.getByLabel(`세션 대화 에디터 ${label}`, { exact: true }),
+    ).toHaveValue("");
+  for (const [label, value] of fields.map((label, index) => [
+    label,
+    ["4", "false", "8", "cool"][index],
+  ]))
+    await page
+      .getByLabel(`전역 에디터 ${label}`, { exact: true })
+      .selectOption(value);
+  for (const [label, value] of fields.map((label, index) => [
+    label,
+    ["6", "true", "2", "monochrome"][index],
+  ]))
+    await page
+      .getByLabel(`세션 대화 에디터 ${label}`, { exact: true })
+      .selectOption(value);
+  expect(await stored(page)).toEqual({
+    "editor.indentSize": 4,
+    "editor.insertSpaces": false,
+    "editor.tabSize": 8,
+    "editor.colorPalette": "cool",
+    "session.editor.indentSize": 6,
+    "session.editor.insertSpaces": true,
+    "session.editor.tabSize": 2,
+    "session.editor.colorPalette": "monochrome",
+  });
+  await page
+    .getByRole("button", { name: "Sessions view", exact: true })
+    .click();
+  await expect(composer).toHaveValue("keep draft");
+  await composer.press("End");
+  await composer.press("Tab");
+  await expect(composer).toHaveValue("keep draft      ");
+  await expect(composer).toHaveCSS("tab-size", "2");
+  await composer.fill("```javascript\nconst n = 42;\n```");
+  await expect(page.locator(".editor-code-line .hljs-keyword")).toHaveCSS(
+    "color",
+    "rgb(237, 237, 237)",
+  );
+  await settings(page);
+  for (const label of fields)
+    await page
+      .getByLabel(`세션 대화 에디터 ${label}`, { exact: true })
+      .selectOption("");
+  expect(await stored(page)).toEqual({
+    "editor.indentSize": 4,
+    "editor.insertSpaces": false,
+    "editor.tabSize": 8,
+    "editor.colorPalette": "cool",
+  });
+  await page
+    .getByRole("button", { name: "Sessions view", exact: true })
+    .click();
+  await expect(composer).toHaveCSS("tab-size", "8");
+  await expect(page.locator(".editor-code-line .hljs-keyword")).toHaveCSS(
+    "color",
+    "rgb(126, 143, 175)",
+  );
+  await composer.fill("value");
+  await composer.press("Home");
+  await composer.press("Tab");
+  await expect(composer).toHaveValue("\tvalue");
+  await composer.press("Shift+Tab");
+  await expect(composer).toHaveValue("value");
+  await page.reload();
+  await expect(composer).toBeVisible({ timeout: 45000 });
+  await expect(composer).toHaveCSS("tab-size", "8");
+  await composer.press("Tab");
+  await expect(composer).toHaveValue("\t");
+  await page.getByLabel("Scenario", { exact: true }).selectOption("session-4");
+  const other = page.getByRole("textbox", {
+    name: "Other answer: Which environment?",
+    exact: true,
+  });
+  await expect(other).toHaveCSS("tab-size", "8");
+  await other.fill("answer");
+  await other.press("Home");
+  await other.press("Tab");
+  await expect(other).toHaveValue("\tanswer");
+  await page.screenshot({
+    path: "test-results/settings-composer.png",
+    fullPage: true,
+  });
+});
+
+test("JSON editing, validation, export and import preserve unknown settings in the same file", async ({
+  page,
+}) => {
+  await ready(page);
+  await settings(page);
+  const source = await file(page);
+  const raw =
+    '{\n  "editor.tabSize": 8,\n  "future": {"enabled": true},\n  "session.editor.insertSpaces": false\n}\n';
+  await source.fill(raw);
+  await source.press("Control+Enter");
+  await expect(page.getByRole("status")).toContainText("저장");
+  expect(await page.evaluate(() => localStorage.getItem("settings"))).toBe(raw);
+  await source.press("Control+Home");
+  await source.press("Tab");
+  await expect(source).toHaveValue("  " + raw);
+  await source.press("Control+z");
+  await expect(source).toHaveValue(raw);
+  await source.press("Control+m");
+  await source.press("Tab");
+  await expect(
+    page.getByRole("button", { name: "저장된 파일 다시 읽기", exact: true }),
+  ).toBeFocused();
+  await page.getByRole("tab", { name: "에디터", exact: true }).click();
+  await expect(
+    page.getByLabel("전역 에디터 Tab 문자 표시 폭", { exact: true }),
+  ).toHaveValue("8");
+  await page
+    .getByLabel("전역 에디터 색상 팔레트", { exact: true })
+    .selectOption("warm");
+  expect((await stored(page)).future).toEqual({ enabled: true });
+  await file(page);
+  const saved = await source.inputValue();
+  await source.fill('{"editor.tabSize":0}');
+  await page.getByRole("button", { name: "저장", exact: true }).click();
+  await expect(page.getByRole("alert")).toContainText("1–16");
+  expect(await page.evaluate(() => localStorage.getItem("settings"))).toBe(
+    saved,
+  );
+  await page
+    .getByRole("button", { name: "저장된 파일 다시 읽기", exact: true })
+    .click();
+  await expect(source).toHaveValue(saved);
+  const downloadPending = page.waitForEvent("download");
+  await page.getByRole("button", { name: "내보내기", exact: true }).click();
+  const download = await downloadPending;
+  expect(download.suggestedFilename()).toBe("settings.json");
+  const stream = await download.createReadStream();
+  let exported = "";
+  await new Promise<void>((resolve, reject) => {
+    stream!.on("data", (chunk: unknown) => {
+      exported += String(chunk);
+    });
+    stream!.on("end", resolve);
+    stream!.on("error", reject);
+  });
+  expect(exported).toBe(saved);
+  const imported =
+    '{"editor.indentSize":3,"session.editor.tabSize":6,"future":[1,2]}';
+  await page
+    .getByLabel("settings.json 가져오기", { exact: true })
+    .evaluate((el: HTMLInputElement, raw) => {
+      const files = new DataTransfer();
+      files.items.add(
+        new File([raw], "settings.json", { type: "application/json" }),
+      );
+      el.files = files.files;
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+    }, imported);
+  await expect(source).toHaveValue(imported);
+  expect(await page.evaluate(() => localStorage.getItem("settings"))).toBe(
+    imported,
+  );
+  await page.getByRole("tab", { name: "에디터", exact: true }).click();
+  await expect(
+    page.getByLabel("세션 대화 에디터 Tab 문자 표시 폭", { exact: true }),
+  ).toHaveValue("6");
+  await page.screenshot({
+    path: "test-results/settings-editor.png",
+    fullPage: true,
+  });
+});
+
+test("cross-tab changes refresh editors and preserve stale JSON drafts instead of overwriting newer settings", async ({
+  page,
+  context,
+}) => {
+  await ready(page);
+  await settings(page);
+  const source = await file(page);
+  await source.fill('{"editor.tabSize":2}');
+  const other = await context.newPage();
+  await ready(other);
+  await settings(other);
+  await other
+    .getByLabel("전역 에디터 Tab 문자 표시 폭", { exact: true })
+    .selectOption("8");
+  await expect(page.getByRole("alert")).toContainText("수정 중인 내용은 유지");
+  await expect(source).toHaveValue('{"editor.tabSize":2}');
+  await expect(
+    page.getByRole("button", { name: "저장", exact: true }),
+  ).toBeDisabled();
+  await source.press("Control+Enter");
+  expect((await stored(page))["editor.tabSize"]).toBe(8);
+  await page
+    .getByRole("button", { name: "저장된 파일 다시 읽기", exact: true })
+    .click();
+  await expect(source).toHaveValue('{\n  "editor.tabSize": 8\n}\n');
+  await page
+    .getByRole("button", { name: "Sessions view", exact: true })
+    .click();
+  const composer = page.getByRole("textbox", { name: "Message", exact: true });
+  await composer.fill("keep draft");
+  await other
+    .getByLabel("전역 에디터 Tab 문자 표시 폭", { exact: true })
+    .selectOption("6");
+  await expect(composer).toHaveCSS("tab-size", "6");
+  await expect(composer).toHaveValue("keep draft");
+  await other
+    .getByLabel("세션 대화 에디터 들여쓰기 칸 수", { exact: true })
+    .selectOption("5");
+  await composer.press("Home");
+  await composer.press("Tab");
+  await expect(composer).toHaveValue("     keep draft");
+});
+
+test("invalid stored files stay recoverable and mobile settings remain accessible without horizontal overflow", async ({
+  page,
+}) => {
+  await page.addInitScript(() => localStorage.setItem("settings", '{"broken"'));
+  await ready(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page
+    .getByRole("button", { name: "Back to sessions", exact: true })
+    .click();
+  await settings(page);
+  await expect(page.getByRole("alert")).toContainText("설정 파일 오류");
+  await expect(
+    page.getByLabel("전역 에디터 들여쓰기 칸 수", { exact: true }),
+  ).toBeDisabled();
+  const source = await file(page);
+  await expect(source).toHaveValue('{"broken"');
+  await source.fill('{"editor.tabSize":4}');
+  await source.press("Control+Enter");
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  await page.getByRole("tab", { name: "에디터", exact: true }).click();
+  await expect(
+    page.getByLabel("전역 에디터 들여쓰기 칸 수", { exact: true }),
+  ).toBeEnabled();
+  await page
+    .getByLabel("세션 대화 에디터 색상 팔레트", { exact: true })
+    .selectOption("monochrome");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(
+    390,
+  );
+  await page.screenshot({
+    path: "test-results/settings-mobile.png",
+    fullPage: true,
+  });
+});
+
+test("global settings update the readonly file viewer in place while conversation settings remain independent", async ({
+  page,
+  context,
+}) => {
+  await page.addInitScript(() =>
+    localStorage.setItem(
+      "settings",
+      JSON.stringify({
+        "editor.tabSize": 4,
+        "editor.colorPalette": "monochrome",
+        "session.editor.tabSize": 2,
+      }),
+    ),
+  );
+  await page.setViewportSize({ width: 1904, height: 1000 });
+  await ready(page);
+  const editor = page.getByRole("complementary", { name: "Workspace editor" });
+  await editor.getByRole("button", { name: "src", exact: true }).click();
+  await editor.getByRole("button", { name: "main.go", exact: true }).click();
+  await expect(editor.locator(".view-lines")).toContainText("fmt.Println", {
+    timeout: 30000,
+  });
+  const tabWidth = () =>
+    editor
+      .locator(".view-line")
+      .filter({ hasText: "fmt.Println" })
+      .evaluate((el) => {
+        const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+        let node: Node | null;
+        while ((node = walker.nextNode())) {
+          const position = node.textContent!.indexOf("fmt");
+          if (position < 0) continue;
+          const range = document.createRange();
+          range.setStart(node, position);
+          range.setEnd(node, position + 1);
+          return (
+            range.getBoundingClientRect().left - el.getBoundingClientRect().left
+          );
+        }
+        throw new Error("fmt text missing");
+      });
+  const initialWidth = await tabWidth();
+  const other = await context.newPage();
+  await ready(other);
+  await settings(other);
+  await other
+    .getByLabel("전역 에디터 Tab 문자 표시 폭", { exact: true })
+    .selectOption("8");
+  await other
+    .getByLabel("전역 에디터 색상 팔레트", { exact: true })
+    .selectOption("cool");
+  await expect.poll(tabWidth).toBeGreaterThan(initialWidth * 1.9);
+  await expect(
+    editor
+      .locator(".view-line")
+      .first()
+      .locator("span")
+      .filter({ hasText: "package" })
+      .last(),
+  ).toHaveCSS("color", "rgb(126, 143, 175)");
+  await expect(editor.locator(".monaco-editor textarea")).toHaveJSProperty(
+    "readOnly",
+    true,
+  );
+  await expect(
+    editor.getByRole("tab", { name: "main.go", exact: true }),
+  ).toHaveAttribute("aria-selected", "true");
+  await expect(
+    page.getByRole("textbox", { name: "Message", exact: true }),
+  ).toHaveCSS("tab-size", "2");
+});

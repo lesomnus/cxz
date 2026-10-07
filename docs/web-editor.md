@@ -12,7 +12,8 @@ loaded until the wide layout has first been activated.
 
 The initial view lists the selected session's **project** workspace, not an agent's
 account/configuration directory. Directories expand on demand. UTF-8 text files
-open in a read-only, monochrome Monaco editor with line numbers and Find. The
+open in a read-only Monaco editor with line numbers and Find. Its tab stops and
+syntax palette use the [global browser editor settings](web-settings.md). The
 editor and its worker load only when a file is opened; the conversation startup
 bundle does not include Monaco. Preview limits are 1 MiB per file, 16 cached tabs
 per project and 2048 entries per directory. Binary/non-UTF-8 files report an error.

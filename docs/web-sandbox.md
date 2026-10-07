@@ -238,13 +238,17 @@ wins. Close finishes the Markdown fence and moves the cursor into prose after it
 it does not delete the snippet. Existing fenced snippets also render this way,
 including multiple blocks, language aliases and longer backtick fences. Code
 blocks expand the editor up to twelve rows within the existing 35dvh height cap.
-Code uses subdued, low-saturation purple/green/blue/brown token colors on black;
+By default code uses subdued, low-saturation purple/green/blue/brown token colors on black;
 the surrounding UI stays monochrome. Highlight.js 11.12.0 is the runtime
 dependency, with a bounded set of explicitly registered grammars. User-authored
 HTML remains escaped text.
 
-Tab inserts two spaces at the cursor, or indents the selected logical lines.
-Shift+Tab removes up to two leading spaces or one existing tab per selected line.
+Tab inserts two spaces by default, or indents the selected logical lines.
+The [browser editor settings](web-settings.md) can change the indentation size,
+choose actual Tab characters, adjust their display width and choose a syntax
+palette. Session editor fields inherit global values independently.
+Shift+Tab removes up to the configured indentation's leading spaces or one
+existing tab per selected line.
 A selection ending at the next line's start does not change that next line.
 Each operation is one native edit, retaining Undo/Redo, the selection range and
 its direction; paste chip labels remain intact. Ctrl+M toggles Tab focus mode

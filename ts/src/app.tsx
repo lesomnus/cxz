@@ -41,10 +41,15 @@ import { composerPrompt } from "./composer-code";
 import { SessionTreeGroup } from "./session-tree";
 import { Transcript } from "./transcript";
 import { WorkspaceEditor } from "./workspace-editor";
+import { SettingsPage } from "./settings-page";
 export { Button } from "./button";
 import "./style.css";
 
-function ResourceIcon({ kind }: { kind: "sessions" | "projects" }) {
+function ResourceIcon({
+  kind,
+}: {
+  kind: "sessions" | "projects" | "settings";
+}) {
   return (
     <svg
       width="20"
@@ -59,8 +64,13 @@ function ResourceIcon({ kind }: { kind: "sessions" | "projects" }) {
     >
       {kind === "sessions" ? (
         <path d="M5 4h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6 3V6a2 2 0 0 1 2-2Z" />
-      ) : (
+      ) : kind === "projects" ? (
         <path d="M3 7V5a2 2 0 0 1 2-2h5l3 3h6a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" />
+      ) : (
+        <>
+          <circle cx="12" cy="12" r="3" />
+          <path d="M9 3h6l1 3 3 1 2 5-2 5-3 1-1 3H9l-1-3-3-1-2-5 2-5 3-1Z" />
+        </>
       )}
     </svg>
   );
@@ -149,7 +159,9 @@ export function Workspace({
   initialSession?: string;
   exitLabel?: string;
 }) {
-  const [resource, setResource] = useState<"sessions" | "projects">("sessions");
+  const [resource, setResource] = useState<
+    "sessions" | "projects" | "settings"
+  >("sessions");
   const [session, setSession] = useState(initialSession);
   const [after, setAfter] = useState("");
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
@@ -161,7 +173,7 @@ export function Workspace({
   const [error, setError] = useState("");
   return (
     <div
-      className={`workspace ${session && resource === "sessions" ? "conversation-open" : ""}`}
+      className={`workspace ${session && resource === "sessions" ? "conversation-open" : ""} ${resource === "settings" ? "settings-open" : ""}`}
     >
       <nav className="resource-sidebar" aria-label="Resources">
         <span className="brand" aria-label="cxz">
@@ -180,19 +192,45 @@ export function Workspace({
             <span>{view === "sessions" ? "Sessions" : "Projects"}</span>
           </Button>
         ))}
+        <Button
+          className={`resource-link settings-link ${resource === "settings" ? "active" : ""}`}
+          aria-label="Settings view"
+          aria-current={resource === "settings" ? "page" : undefined}
+          title="설정"
+          onClick={() => setResource("settings")}
+        >
+          <ResourceIcon kind="settings" />
+          <span>설정</span>
+        </Button>
       </nav>
       <aside
         className="resource-panel"
-        aria-label={resource === "sessions" ? "Session list" : "Project list"}
+        aria-label={
+          resource === "sessions"
+            ? "Session list"
+            : resource === "settings"
+              ? "Settings navigation"
+              : "Project list"
+        }
       >
         <header>
-          <strong>{resource === "sessions" ? "Sessions" : "Projects"}</strong>
+          <strong>
+            {resource === "sessions"
+              ? "Sessions"
+              : resource === "settings"
+                ? "설정"
+                : "Projects"}
+          </strong>
           <Button onClick={() => logout().catch((e) => setError(String(e)))}>
             {exitLabel}
           </Button>
         </header>
         <p className="muted">{new URL(c.baseUrl).host}</p>
-        {resource === "sessions" ? (
+        {resource === "settings" ? (
+          <p className="muted">
+            에디터 설정과 settings.json을 이 브라우저에서 관리합니다.
+          </p>
+        ) : resource === "sessions" ? (
           <div className="session-tree" aria-label="Projects and sessions">
             {projects.data?.items.map((p) => (
               <SessionTreeGroup
@@ -230,8 +268,10 @@ export function Workspace({
             </Button>
           ))
         )}
-        {after && <Button onClick={() => setAfter("")}>First projects</Button>}
-        {projects.data?.next && (
+        {resource !== "settings" && after && (
+          <Button onClick={() => setAfter("")}>First projects</Button>
+        )}
+        {resource !== "settings" && projects.data?.next && (
           <Button onClick={() => setAfter(projects.data!.next)}>
             More projects →
           </Button>
@@ -243,7 +283,9 @@ export function Workspace({
           <p className="muted">Loading projects…</p>
         )}
       </aside>
-      {resource === "projects" ? (
+      {resource === "settings" ? (
+        <SettingsPage />
+      ) : resource === "projects" ? (
         <main className="resource-view">
           <header>
             <div>
