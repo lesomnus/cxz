@@ -353,11 +353,11 @@ func (m *model) sessionScreen() string {
 			composer.Placeholder = safeText(hint)
 		}
 	}
-	modal := m.errorFocused() || m.redactDialog != nil || m.terminalFocused() || m.panelFocus || m.report != nil || m.modelPicker != nil || m.restartConfirm != nil || m.questionFocused() || m.pasteDialog != nil || m.selectingTools() || (m.previewVisible() && m.filePreview.focused)
+	modal := m.errorFocused() || m.redactDialog != nil || m.terminalFocused() || m.panelFocus || m.report != nil || m.search != nil || m.modelPicker != nil || m.restartConfirm != nil || m.questionFocused() || m.pasteDialog != nil || m.selectingTools() || (m.previewVisible() && m.filePreview.focused)
 	if modal {
 		composer.Model.Blur()
 	}
-	conversation := m.restartOverlay(m.reportView(m.modelPickerOverlay(m.commandOverlay(m.conversationView()))))
+	conversation := m.searchBar(m.restartOverlay(m.reportView(m.modelPickerOverlay(m.commandOverlay(m.conversationView())))))
 	body := ""
 	if question := m.questionPanel(); question != "" {
 		// Question reserves its own rows. Nested paste previews can still use
