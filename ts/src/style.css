@@ -939,20 +939,31 @@ pre {
 }
 .editor-code-line .hljs-comment,
 .editor-code-line .hljs-quote {
-  color: #808080;
+  color: #697b6d;
 }
 .editor-code-line .hljs-keyword,
-.editor-code-line .hljs-literal,
-.editor-code-line .hljs-title {
-  color: #fff;
+.editor-code-line .hljs-selector-tag,
+.editor-code-line .hljs-meta {
+  color: #987fa8;
+}
+.editor-code-line .hljs-title,
+.editor-code-line .hljs-built_in,
+.editor-code-line .hljs-type {
+  color: #7797ac;
 }
 .editor-code-line .hljs-keyword {
   font-weight: 600;
 }
-.editor-code-line .hljs-string,
+.editor-code-line .hljs-string {
+  color: #839c7b;
+}
 .editor-code-line .hljs-number,
+.editor-code-line .hljs-literal {
+  color: #ad8d6b;
+}
+.editor-code-line .hljs-tag,
 .editor-code-line .hljs-attr {
-  color: #bdbdbd;
+  color: #a18b7c;
 }
 .paste-chip {
   position: relative;

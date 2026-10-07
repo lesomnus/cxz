@@ -238,7 +238,20 @@ wins. Close finishes the Markdown fence and moves the cursor into prose after it
 it does not delete the snippet. Existing fenced snippets also render this way,
 including multiple blocks, language aliases and longer backtick fences. Code
 blocks expand the editor up to twelve rows within the existing 35dvh height cap.
-Highlighting stays monochrome, and user-authored HTML remains escaped text.
+Code uses subdued, low-saturation purple/green/blue/brown token colors on black;
+the surrounding UI stays monochrome. Highlight.js 11.12.0 is the runtime
+dependency, with a bounded set of explicitly registered grammars. User-authored
+HTML remains escaped text.
+
+Tab inserts two spaces at the cursor, or indents the selected logical lines.
+Shift+Tab removes up to two leading spaces or one existing tab per selected line.
+A selection ending at the next line's start does not change that next line.
+Each operation is one native edit, retaining Undo/Redo, the selection range and
+its direction; paste chip labels remain intact. Ctrl+M toggles Tab focus mode
+within each editor, with a status notice and an accessible shortcut description.
+In focus mode, Tab and Shift+Tab follow normal browser focus order. Ctrl+M returns
+them to indentation. IME composition and modified Ctrl/Alt/Meta+Tab are left to
+the browser. Question Other answers share the same controls.
 
 Drafts remain native Markdown, preserving selection, Undo/Redo and session draft
 restoration. Sending expands code's paste chips before detection, replaces Auto with the detected

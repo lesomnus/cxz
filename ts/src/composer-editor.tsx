@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { Button } from "./button";
 import { useFloatingCard } from "./floating-card";
+import { indentEdit } from "./composer-indent";
 import {
   codeBlocks,
   codeSyntax,
@@ -47,7 +48,11 @@ export function ComposerEditor({
   const composing = useRef(false);
   const [composition, setComposition] = useState(false);
   const [notice, setNotice] = useState("");
-  const cursor = useRef<number | undefined>(undefined);
+  const [tabMovesFocus, setTabMovesFocus] = useState(false);
+  const cursor = useRef<
+    | { start: number; end: number; direction: "forward" | "backward" | "none" }
+    | undefined
+  >(undefined);
   const expectedEdit = useRef<string | undefined>(undefined);
   const ranges = pasteRanges(value, pastes);
   const latest = useRef({ value, replace });
@@ -91,7 +96,11 @@ export function ComposerEditor({
   useLayoutEffect(() => {
     measure();
     if (cursor.current !== undefined) {
-      input.current!.setSelectionRange(cursor.current, cursor.current);
+      input.current!.setSelectionRange(
+        cursor.current.start,
+        cursor.current.end,
+        cursor.current.direction,
+      );
       cursor.current = undefined;
     }
   }, [value, composition]);
@@ -116,10 +125,18 @@ export function ComposerEditor({
       el.setSelectionRange(selection.start, selection.end);
     return selection;
   }
-  function replace(start: number, end: number, text: string, caret?: number) {
+  function replace(
+    start: number,
+    end: number,
+    text: string,
+    caret?: number,
+    selectionEnd?: number,
+    direction: "forward" | "backward" | "none" = "none",
+  ) {
     // Edit with native LF line breaks; untouched chips retain their original bytes.
     text = text.replaceAll("\r\n", "\n").replaceAll("\r", "\n");
     caret ??= start + text.length;
+    selectionEnd ??= caret;
     const el = input.current!;
     const next = value.slice(0, start) + text + value.slice(end);
     expectedEdit.current = next;
@@ -132,8 +149,8 @@ export function ComposerEditor({
       el.setRangeText(text, start, end, "end");
       onChange(next);
     }
-    cursor.current = caret;
-    el.setSelectionRange(caret, caret);
+    cursor.current = { start: caret, end: selectionEnd, direction };
+    el.setSelectionRange(caret, selectionEnd, direction);
     expectedEdit.current = undefined;
   }
   function changeSyntax(block: CodeBlock, syntax: string) {
@@ -202,6 +219,11 @@ export function ComposerEditor({
           <textarea
             ref={input}
             aria-label={ariaLabel}
+            aria-description={
+              tabMovesFocus
+                ? "Tab: 포커스 이동. Ctrl+M: 들여쓰기 모드로 전환."
+                : "Tab: 2칸 들여쓰기. Shift+Tab: 내어쓰기. Ctrl+M: Tab으로 포커스 이동 전환."
+            }
             placeholder={placeholder}
             value={value}
             rows={blocks.length ? Math.min(12, Math.max(5, lines.length)) : 3}
@@ -296,6 +318,50 @@ export function ComposerEditor({
             onKeyDown={(event) => {
               if (event.nativeEvent.isComposing || composing.current) return;
               const el = event.currentTarget;
+              if (
+                event.ctrlKey &&
+                !event.altKey &&
+                !event.metaKey &&
+                !event.shiftKey &&
+                event.key.toLowerCase() === "m"
+              ) {
+                event.preventDefault();
+                if (event.repeat) return;
+                setTabMovesFocus(!tabMovesFocus);
+                setNotice(
+                  tabMovesFocus
+                    ? "Tab: 들여쓰기 · Shift+Tab: 내어쓰기 · Ctrl+M: 포커스 이동 모드"
+                    : "Tab: 포커스 이동 · Ctrl+M: 들여쓰기 모드",
+                );
+                return;
+              }
+              if (
+                event.key === "Tab" &&
+                !event.ctrlKey &&
+                !event.altKey &&
+                !event.metaKey &&
+                !tabMovesFocus
+              ) {
+                event.preventDefault();
+                const direction = el.selectionDirection;
+                const selection = normalizedSelection();
+                const edit = indentEdit(
+                  value,
+                  selection.start,
+                  selection.end,
+                  event.shiftKey,
+                );
+                if (value.slice(edit.from, edit.to) !== edit.text)
+                  replace(
+                    edit.from,
+                    edit.to,
+                    edit.text,
+                    edit.start,
+                    edit.end,
+                    direction,
+                  );
+                return;
+              }
               if (event.ctrlKey && event.key === "Enter") {
                 event.preventDefault();
                 if (canSend) el.form?.requestSubmit();
