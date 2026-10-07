@@ -380,7 +380,7 @@ func (s *searchStream) Send(r *api.SearchReply) error {
 		out.Visit = resource.SessionSearchVisit_builder{
 			ProjectId: &v.ProjectId, ProjectName: &v.ProjectName,
 			SessionId: &v.SessionId, Alias: &v.Alias, Title: &v.Title, Agent: &v.Agent, State: &v.State,
-			ActivityMs: &v.ActivityMs, CreatedMs: &v.CreatedMs, Truncated: &v.Truncated, Hits: hits,
+			ActivityMs: &v.ActivityMs, CreatedMs: &v.CreatedMs, Truncated: &v.Truncated, Approximate: &v.Approximate, Hits: hits,
 		}.Build()
 	}
 	if p := r.Progress; p != nil {

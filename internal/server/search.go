@@ -92,7 +92,7 @@ func searchVisit(v workspace.SearchVisit) *api.SearchVisit {
 		ProjectId: v.ProjectID, ProjectName: v.ProjectName,
 		SessionId: v.ID, Alias: v.Alias, Title: v.Title, Agent: v.Agent, State: v.State,
 		ActivityMs: conversation.TimeMS(v.Activity), CreatedMs: conversation.TimeMS(v.CreatedAt),
-		Truncated: v.Truncated,
+		Truncated: v.Truncated, Approximate: v.Approximate,
 	}
 	for _, h := range v.Hits {
 		out.Hits = append(out.Hits, &api.SearchHit{Seq: h.Seq, TimeMs: conversation.TimeMS(h.Time), Kind: h.Kind, Bytes: int32(h.Bytes), Score: int32(h.Score), Snippet: h.Snippet})

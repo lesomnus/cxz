@@ -47,6 +47,10 @@ const (
 	// MaxScanHits bounds one session's page, and so the memory one session can
 	// cost while its newest hits are collected from an oldest-first file.
 	MaxScanHits = 500
+	// maxRecord is the largest journal record this package will read, forwards
+	// or backwards. A journal records what an agent read, so records are
+	// occasionally enormous.
+	maxRecord = 32 << 20
 )
 
 // ScanQuery selects events by content and time across sessions. The window is
@@ -140,6 +144,10 @@ type ScanSession struct {
 	// Truncated says older events are gone, so an absence of hits in this
 	// session is not evidence that nothing was said.
 	Truncated bool `json:"truncated,omitempty"`
+	// Approximate says Activity was placed rather than measured, because the
+	// journal's tail could not be read cheaply. The session is read anyway; only
+	// its position among the others is a guess.
+	Approximate bool `json:"approximate,omitempty"`
 }
 
 // ScanHit is one matching event. Which session it belongs to is said once, by
@@ -348,12 +356,20 @@ func (s *Scanner) index(ctx context.Context, root *os.Root, q ScanQuery) ([]Scan
 		if s.Project != "" && manifest.ProjectID != s.Project {
 			continue
 		}
-		activity, err := s.activity(root, id, q.Until)
+		activity, known, err := s.activity(root, id, q.Until)
 		if err != nil {
 			return nil, err
 		}
-		if activity.IsZero() || (!q.Since.IsZero() && activity.Before(q.Since)) {
+		// Only a known activity may drop a session. One that could not be read
+		// cheaply is read instead, ordered at the top of the window and marked
+		// as placed rather than measured -- an approximate position in the
+		// results beats leaving a conversation out of them.
+		if known && (activity.IsZero() || (!q.Since.IsZero() && activity.Before(q.Since))) {
 			continue
+		}
+		approximate := !known
+		if approximate {
+			activity = q.Until
 		}
 		// Everything above the resume point was read by an earlier page. It is
 		// dropped here so that the index is exactly the sessions that will be
@@ -361,7 +377,7 @@ func (s *Scanner) index(ctx context.Context, root *os.Root, q ScanQuery) ([]Scan
 		if ms := activity.UnixMilli(); !q.Resume.zero() && (ms > q.Resume.Activity || (ms == q.Resume.Activity && id > q.Resume.Session)) {
 			continue
 		}
-		v := ScanSession{ID: id, Title: manifest.Title, Agent: manifest.Kind, Project: manifest.ProjectID, Activity: activity}
+		v := ScanSession{ID: id, Title: manifest.Title, Agent: manifest.Kind, Project: manifest.ProjectID, Activity: activity, Approximate: approximate}
 		if manifest.CreatedAt > 0 {
 			v.CreatedAt = time.UnixMilli(manifest.CreatedAt).UTC()
 		}
@@ -389,55 +405,78 @@ func (s *Scanner) index(ctx context.Context, root *os.Root, q ScanQuery) ([]Scan
 // the newest. That assumption is only load-bearing at a window's edge: a clock
 // stepping backwards mid-session could put an event a little out of order and
 // move a session between windows, never into neither.
-func (s *Scanner) activity(root *os.Root, id string, until time.Time) (time.Time, error) {
+//
+// The walk is bounded, and reports whether it got an answer. A journal records
+// whatever an agent read, so one record can be tens of megabytes; walking back
+// through those to reach an older window would cost more than the scan it was
+// meant to avoid. Past the budget it stops and says it does not know, which the
+// caller turns into "read this one anyway" -- never into "skip it".
+func (s *Scanner) activity(root *os.Root, id string, until time.Time) (time.Time, bool, error) {
 	f, err := root.Open(filepath.Join("sessions", id, "events.jsonl"))
 	if errors.Is(err, fs.ErrNotExist) {
-		return time.Time{}, nil
+		return time.Time{}, true, nil
 	}
 	if err != nil {
-		return time.Time{}, err
+		return time.Time{}, false, err
 	}
 	defer f.Close()
 	info, err := f.Stat()
 	if err != nil {
-		return time.Time{}, err
+		return time.Time{}, false, err
 	}
-	const chunk = 64 << 10
-	end := info.Size()
-	var tail []byte
-	for end > 0 {
-		size := int64(chunk)
-		if size > end {
-			size = end
-		}
-		buf := make([]byte, size)
-		if _, err = f.ReadAt(buf, end-size); err != nil && err != io.EOF {
-			return time.Time{}, err
-		}
-		tail = append(buf, tail...)
-		end -= size
-		// Walk whole lines from the end; a record may be one event or a batch.
-		for {
-			cut := bytes.LastIndexByte(tail[:max(0, len(tail)-1)], '\n')
-			line := tail
-			if cut >= 0 {
-				line = tail[cut+1:]
-			} else if end > 0 {
-				break // The first line in hand may be a fragment.
+	// One pass, right to left: every byte is read once, parsed once, and the
+	// buffer grows at its front without re-reading what is already in it. The
+	// naive versions of this are both quadratic -- re-reading a larger window
+	// each time, or copying the accumulated tail for every chunk behind it --
+	// and a journal where the last record is twenty megabytes makes that the
+	// cost of ordering a session.
+	size := info.Size()
+	buf := make([]byte, 64<<10)
+	off := int64(len(buf)) // Data lives in buf[off:]; its last byte is the file's.
+	read := int64(0)       // Bytes of the file's tail in hand.
+	examined := size       // Everything at or after this offset has been read as records.
+	for read < size {
+		if off == 0 {
+			if int64(len(buf)) >= maxRecord {
+				return time.Time{}, false, nil
 			}
-			if t, ok := newestBefore(line, until); ok {
-				return t, nil
+			grown := make([]byte, min(int64(len(buf))*8, maxRecord))
+			off = int64(len(grown)) - read
+			copy(grown[off:], buf)
+			buf = grown
+		}
+		n := min(off, 64<<10, size-read)
+		if _, err = f.ReadAt(buf[off-n:off], size-read-n); err != nil && err != io.EOF {
+			return time.Time{}, false, err
+		}
+		off -= n
+		read += n
+		start := size - read // The file offset buf[off] came from.
+		region := buf[off : off+(examined-start)]
+		skipped := 0
+		if start > 0 {
+			// The record the region starts in the middle of is not one yet.
+			if i := bytes.IndexByte(region, '\n'); i >= 0 {
+				skipped = i + 1
+			} else {
+				skipped = len(region)
+			}
+		}
+		// Walk whole records from the end; one may be an event or a batch.
+		for rest := region[skipped:]; len(rest) > 0; {
+			trimmed := bytes.TrimRight(rest, "\n")
+			cut := bytes.LastIndexByte(trimmed, '\n')
+			if t, ok := newestBefore(trimmed[cut+1:], until); ok {
+				return t, true, nil
 			}
 			if cut < 0 {
 				break
 			}
-			tail = tail[:cut]
+			rest = trimmed[:cut]
 		}
-		if len(tail) > 8<<20 {
-			return time.Time{}, fmt.Errorf("journal record exceeds 8 MiB")
-		}
+		examined = start + int64(skipped)
 	}
-	return time.Time{}, nil
+	return time.Time{}, true, nil // The whole journal, and nothing before until.
 }
 
 func newestBefore(line []byte, until time.Time) (time.Time, bool) {
@@ -482,7 +521,7 @@ func (s *Scanner) session(ctx context.Context, root *os.Root, v ScanSession, q S
 	ring := make([]ScanHit, 0, keep+1)
 	truncated := false
 	scan := bufio.NewScanner(f)
-	scan.Buffer(make([]byte, 4096), 32<<20)
+	scan.Buffer(make([]byte, 4096), maxRecord)
 	for scan.Scan() {
 		if err = ctx.Err(); err != nil {
 			return nil, false, err

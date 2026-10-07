@@ -208,6 +208,11 @@ func printVisit(c *xli.Command, v *api.SearchVisit) error {
 	if v.Truncated {
 		fmt.Fprint(c.Writer, "  (older events trimmed)")
 	}
+	// Said out loud, because a conversation shown in the wrong place with
+	// nothing to explain it looks like a bug in the order.
+	if v.Approximate {
+		fmt.Fprint(c.Writer, "  (position approximate)")
+	}
 	fmt.Fprintf(c.Writer, "  %s\n", v.SessionId)
 	for _, h := range v.Hits {
 		when := time.UnixMilli(h.TimeMs).Local().Format("2006-01-02 15:04")

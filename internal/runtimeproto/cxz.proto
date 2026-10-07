@@ -151,6 +151,9 @@ message SearchVisit {
   int64 activity_ms = 8; int64 created_ms = 9;
   bool truncated = 10;
   repeated SearchHit hits = 11;
+  // approximate says activity_ms was placed rather than measured, so this
+  // conversation's position among the others is a guess. Its hits are not.
+  bool approximate = 12;
 }
 message SearchHit {
   uint64 seq = 1; int64 time_ms = 2; string kind = 3;

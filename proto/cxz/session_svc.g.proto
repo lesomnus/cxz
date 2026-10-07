@@ -443,6 +443,11 @@ message SessionSearchVisit {
   // it is not evidence that nothing was said.
   bool truncated = 10;
   repeated SessionSearchHit hits = 11;
+  // approximate says activity_ms was placed rather than measured -- the tail
+  // read that orders conversations is bounded, and this journal held more
+  // recent history than it walks back through. The position is a guess; the
+  // hits and their times are not.
+  bool approximate = 12;
 }
 
 message SessionSearchHit {

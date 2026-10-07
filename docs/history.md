@@ -176,6 +176,13 @@ moment and then streams. `--project NAME` searches one and skips all of it.
 A session whose older events were trimmed says so beside its results. Finding
 nothing in it is not evidence that nothing was said.
 
+Ordering reads each journal's tail rather than scanning it, and that read is
+bounded: a journal records whatever an agent read, so records are occasionally
+tens of megabytes. A session holding more recent history than the tail read
+walks back through is still searched — its results simply say `(position
+approximate)`, because where it sits among the others is then a guess. The hits
+and their times are not.
+
 Matching is `substring` by default, `regex` for RE2, or `fuzzy` — which is
 matched per line, because a query's letters can be found scattered across any
 paragraph and a match against a whole message would mean nothing. `--tools` also

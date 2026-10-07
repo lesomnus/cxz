@@ -60,7 +60,7 @@ func (s searchStream) Recv() (*api.SearchReply, error) {
 			ProjectId: v.GetProjectId(), ProjectName: v.GetProjectName(),
 			SessionId: v.GetSessionId(), Alias: v.GetAlias(), Title: v.GetTitle(),
 			Agent: v.GetAgent(), State: v.GetState(),
-			ActivityMs: v.GetActivityMs(), CreatedMs: v.GetCreatedMs(), Truncated: v.GetTruncated(),
+			ActivityMs: v.GetActivityMs(), CreatedMs: v.GetCreatedMs(), Truncated: v.GetTruncated(), Approximate: v.GetApproximate(),
 		}
 		for _, h := range v.GetHits() {
 			visit.Hits = append(visit.Hits, &api.SearchHit{Seq: h.GetSeq(), TimeMs: h.GetTimeMs(), Kind: h.GetKind(), Bytes: h.GetBytes(), Score: h.GetScore(), Snippet: h.GetSnippet()})

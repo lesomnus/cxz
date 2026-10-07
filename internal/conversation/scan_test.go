@@ -294,6 +294,50 @@ func TestScanReportsTrimmedHistory(t *testing.T) {
 	}
 }
 
+// Ordering reads a journal's tail rather than scanning it, and that read is
+// bounded: a session can hold more recent history than it will walk back
+// through, and a journal records whatever an agent read, so single records are
+// occasionally enormous. Past the bound it gives up -- and giving up has to mean
+// "read this session anyway" rather than "skip it" or "fail the search".
+func TestScanDoesNotLoseASessionBehindAHugeRecord(t *testing.T) {
+	c := newCorpus(t)
+	id := c.session(t, "p", "huge", "input", "the relay refused the certificate", 40*24*time.Hour)
+	log, err := journal.Open(filepath.Join(core.Dir(c.root, id), "events.jsonl"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Recent history past what a tail read will walk back through, so the older
+	// window's answer is out of its reach.
+	for i := 0; i <= maxRecord/(1<<20); i++ {
+		if _, err = log.Append(core.Event{SessionID: id, Kind: "input", Text: strings.Repeat("x", 1<<20), TimeMS: c.now.Add(-time.Duration(i) * time.Minute).UnixMilli()}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	log.Close()
+
+	s := c.scanner("p")
+	index, err := s.Index(t.Context(), ScanQuery{Query: "relay", Until: c.now.Add(-30 * 24 * time.Hour)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(index) != 1 || !index[0].Approximate {
+		t.Fatalf("%+v", index)
+	}
+	hits, out := collect(t, s, ScanQuery{Query: "relay", Since: c.now.Add(-50 * 24 * time.Hour), Until: c.now.Add(-30 * 24 * time.Hour)})
+	if len(hits) != 1 || out.Scanned != 1 {
+		t.Fatalf("a session behind a huge record was lost: %+v %+v", hits, out)
+	}
+	// The ordinary window still measures the tail exactly: the newest record is
+	// the first thing the walk sees.
+	index, err = s.Index(t.Context(), ScanQuery{Query: "relay"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(index) != 1 || index[0].Approximate {
+		t.Fatalf("%+v", index)
+	}
+}
+
 func TestSnippetCollapsesAndCentres(t *testing.T) {
 	text := "alpha\n\n   beta gamma   delta\nepsilon"
 	i := strings.Index(text, "gamma")

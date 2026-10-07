@@ -2530,6 +2530,7 @@ type SearchVisit struct {
 	CreatedMs     int64                  `protobuf:"varint,9,opt,name=created_ms,json=createdMs,proto3" json:"created_ms,omitempty"`
 	Truncated     bool                   `protobuf:"varint,10,opt,name=truncated,proto3" json:"truncated,omitempty"`
 	Hits          []*SearchHit           `protobuf:"bytes,11,rep,name=hits,proto3" json:"hits,omitempty"`
+	Approximate   bool                   `protobuf:"varint,12,opt,name=approximate,proto3" json:"approximate,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2639,6 +2640,13 @@ func (x *SearchVisit) GetHits() []*SearchHit {
 		return x.Hits
 	}
 	return nil
+}
+
+func (x *SearchVisit) GetApproximate() bool {
+	if x != nil {
+		return x.Approximate
+	}
+	return false
 }
 
 type SearchHit struct {
@@ -3206,7 +3214,7 @@ const file_cxz_proto_rawDesc = "" +
 	"\x05limit\x18\v \x01(\x05R\x05limit\x12\x18\n" +
 	"\asnippet\x18\f \x01(\x05R\asnippet\x12\x16\n" +
 	"\x06cursor\x18\r \x01(\tR\x06cursor\x12\x1b\n" +
-	"\tclient_id\x18\x0e \x01(\tR\bclientId\"\xd0\x02\n" +
+	"\tclient_id\x18\x0e \x01(\tR\bclientId\"\xf2\x02\n" +
 	"\vSearchVisit\x12\x1d\n" +
 	"\n" +
 	"project_id\x18\x01 \x01(\tR\tprojectId\x12!\n" +
@@ -3223,7 +3231,8 @@ const file_cxz_proto_rawDesc = "" +
 	"created_ms\x18\t \x01(\x03R\tcreatedMs\x12\x1c\n" +
 	"\ttruncated\x18\n" +
 	" \x01(\bR\ttruncated\x12*\n" +
-	"\x04hits\x18\v \x03(\v2\x16.cxz.runtime.SearchHitR\x04hits\"\x90\x01\n" +
+	"\x04hits\x18\v \x03(\v2\x16.cxz.runtime.SearchHitR\x04hits\x12 \n" +
+	"\vapproximate\x18\f \x01(\bR\vapproximate\"\x90\x01\n" +
 	"\tSearchHit\x12\x10\n" +
 	"\x03seq\x18\x01 \x01(\x04R\x03seq\x12\x17\n" +
 	"\atime_ms\x18\x02 \x01(\x03R\x06timeMs\x12\x12\n" +

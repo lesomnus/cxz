@@ -6222,6 +6222,7 @@ type SessionSearchVisit struct {
 	xxx_hidden_CreatedMs   int64                  `protobuf:"varint,9,opt,name=created_ms,json=createdMs"`
 	xxx_hidden_Truncated   bool                   `protobuf:"varint,10,opt,name=truncated"`
 	xxx_hidden_Hits        *[]*SessionSearchHit   `protobuf:"bytes,11,rep,name=hits"`
+	xxx_hidden_Approximate bool                   `protobuf:"varint,12,opt,name=approximate"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
 	XXX_presence           [1]uint32
 	unknownFields          protoimpl.UnknownFields
@@ -6353,58 +6354,70 @@ func (x *SessionSearchVisit) GetHits() []*SessionSearchHit {
 	return nil
 }
 
+func (x *SessionSearchVisit) GetApproximate() bool {
+	if x != nil {
+		return x.xxx_hidden_Approximate
+	}
+	return false
+}
+
 func (x *SessionSearchVisit) SetProjectId(v string) {
 	x.xxx_hidden_ProjectId = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 11)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 12)
 }
 
 func (x *SessionSearchVisit) SetProjectName(v string) {
 	x.xxx_hidden_ProjectName = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 11)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 12)
 }
 
 func (x *SessionSearchVisit) SetSessionId(v string) {
 	x.xxx_hidden_SessionId = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 11)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 12)
 }
 
 func (x *SessionSearchVisit) SetAlias(v string) {
 	x.xxx_hidden_Alias = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 11)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 12)
 }
 
 func (x *SessionSearchVisit) SetTitle(v string) {
 	x.xxx_hidden_Title = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 11)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 12)
 }
 
 func (x *SessionSearchVisit) SetAgent(v string) {
 	x.xxx_hidden_Agent = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 11)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 12)
 }
 
 func (x *SessionSearchVisit) SetState(v string) {
 	x.xxx_hidden_State = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 11)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 12)
 }
 
 func (x *SessionSearchVisit) SetActivityMs(v int64) {
 	x.xxx_hidden_ActivityMs = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 11)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 12)
 }
 
 func (x *SessionSearchVisit) SetCreatedMs(v int64) {
 	x.xxx_hidden_CreatedMs = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 11)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 12)
 }
 
 func (x *SessionSearchVisit) SetTruncated(v bool) {
 	x.xxx_hidden_Truncated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 11)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 12)
 }
 
 func (x *SessionSearchVisit) SetHits(v []*SessionSearchHit) {
 	x.xxx_hidden_Hits = &v
+}
+
+func (x *SessionSearchVisit) SetApproximate(v bool) {
+	x.xxx_hidden_Approximate = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 12)
 }
 
 func (x *SessionSearchVisit) HasProjectId() bool {
@@ -6477,6 +6490,13 @@ func (x *SessionSearchVisit) HasTruncated() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 9)
 }
 
+func (x *SessionSearchVisit) HasApproximate() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 11)
+}
+
 func (x *SessionSearchVisit) ClearProjectId() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
 	x.xxx_hidden_ProjectId = nil
@@ -6527,6 +6547,11 @@ func (x *SessionSearchVisit) ClearTruncated() {
 	x.xxx_hidden_Truncated = false
 }
 
+func (x *SessionSearchVisit) ClearApproximate() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 11)
+	x.xxx_hidden_Approximate = false
+}
+
 type SessionSearchVisit_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -6544,6 +6569,11 @@ type SessionSearchVisit_builder struct {
 	// it is not evidence that nothing was said.
 	Truncated *bool
 	Hits      []*SessionSearchHit
+	// approximate says activity_ms was placed rather than measured -- the tail
+	// read that orders conversations is bounded, and this journal held more
+	// recent history than it walks back through. The position is a guess; the
+	// hits and their times are not.
+	Approximate *bool
 }
 
 func (b0 SessionSearchVisit_builder) Build() *SessionSearchVisit {
@@ -6551,46 +6581,50 @@ func (b0 SessionSearchVisit_builder) Build() *SessionSearchVisit {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.ProjectId != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 11)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 12)
 		x.xxx_hidden_ProjectId = b.ProjectId
 	}
 	if b.ProjectName != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 11)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 12)
 		x.xxx_hidden_ProjectName = b.ProjectName
 	}
 	if b.SessionId != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 11)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 12)
 		x.xxx_hidden_SessionId = b.SessionId
 	}
 	if b.Alias != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 11)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 12)
 		x.xxx_hidden_Alias = b.Alias
 	}
 	if b.Title != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 11)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 12)
 		x.xxx_hidden_Title = b.Title
 	}
 	if b.Agent != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 11)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 12)
 		x.xxx_hidden_Agent = b.Agent
 	}
 	if b.State != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 11)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 12)
 		x.xxx_hidden_State = b.State
 	}
 	if b.ActivityMs != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 11)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 12)
 		x.xxx_hidden_ActivityMs = *b.ActivityMs
 	}
 	if b.CreatedMs != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 11)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 12)
 		x.xxx_hidden_CreatedMs = *b.CreatedMs
 	}
 	if b.Truncated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 11)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 12)
 		x.xxx_hidden_Truncated = *b.Truncated
 	}
 	x.xxx_hidden_Hits = &b.Hits
+	if b.Approximate != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 12)
+		x.xxx_hidden_Approximate = *b.Approximate
+	}
 	return m0
 }
 
@@ -7591,7 +7625,7 @@ const file_cxz_session_svc_g_proto_rawDesc = "" +
 	"\x12SessionSearchReply\x12-\n" +
 	"\x05visit\x18\x01 \x01(\v2\x17.cxz.SessionSearchVisitR\x05visit\x126\n" +
 	"\bprogress\x18\x02 \x01(\v2\x1a.cxz.SessionSearchProgressR\bprogress\x123\n" +
-	"\asummary\x18\x03 \x01(\v2\x19.cxz.SessionSearchSummaryR\asummary\"\xd6\x02\n" +
+	"\asummary\x18\x03 \x01(\v2\x19.cxz.SessionSearchSummaryR\asummary\"\xf8\x02\n" +
 	"\x12SessionSearchVisit\x12\x1d\n" +
 	"\n" +
 	"project_id\x18\x01 \x01(\tR\tprojectId\x12!\n" +
@@ -7608,7 +7642,8 @@ const file_cxz_session_svc_g_proto_rawDesc = "" +
 	"created_ms\x18\t \x01(\x03R\tcreatedMs\x12\x1c\n" +
 	"\ttruncated\x18\n" +
 	" \x01(\bR\ttruncated\x12)\n" +
-	"\x04hits\x18\v \x03(\v2\x15.cxz.SessionSearchHitR\x04hits\"\x97\x01\n" +
+	"\x04hits\x18\v \x03(\v2\x15.cxz.SessionSearchHitR\x04hits\x12 \n" +
+	"\vapproximate\x18\f \x01(\bR\vapproximate\"\x97\x01\n" +
 	"\x10SessionSearchHit\x12\x10\n" +
 	"\x03seq\x18\x01 \x01(\x04R\x03seq\x12\x17\n" +
 	"\atime_ms\x18\x02 \x01(\x03R\x06timeMs\x12\x12\n" +
