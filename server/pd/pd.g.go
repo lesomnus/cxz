@@ -3630,6 +3630,11 @@ func (s interceptSession) Watch(req *resource.SessionWatchRequest, out grpc.Serv
 		resource.SessionService_Watch_FullMethodName, req, out, s.SessionServiceServer.Watch)
 }
 
+func (s interceptSession) ConversationStats(ctx context.Context, req *resource.ConversationStatsRequest) (*resource.ConversationStatsReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
+		resource.SessionService_ConversationStats_FullMethodName, req, s.SessionServiceServer.ConversationStats)
+}
+
 func (s interceptSession) Restore(ctx context.Context, req *resource.SessionRef) (*resource.Session, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
 		resource.SessionService_Restore_FullMethodName, req, s.SessionServiceServer.Restore)
@@ -4903,6 +4908,19 @@ func dispatch(ctx context.Context, s resource.Server, op *pdpb.Op) (*anypb.Any, 
 		}
 
 		res, err := s.Session().List(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.SessionService_ConversationStats_FullMethodName:
+		v := &resource.ConversationStatsRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Session().ConversationStats(ctx, v)
 		if err != nil {
 			return nil, err
 		}

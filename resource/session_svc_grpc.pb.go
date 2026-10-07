@@ -19,33 +19,34 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	SessionService_Add_FullMethodName         = "/cxz.SessionService/Add"
-	SessionService_Get_FullMethodName         = "/cxz.SessionService/Get"
-	SessionService_Patch_FullMethodName       = "/cxz.SessionService/Patch"
-	SessionService_Apply_FullMethodName       = "/cxz.SessionService/Apply"
-	SessionService_Erase_FullMethodName       = "/cxz.SessionService/Erase"
-	SessionService_List_FullMethodName        = "/cxz.SessionService/List"
-	SessionService_Watch_FullMethodName       = "/cxz.SessionService/Watch"
-	SessionService_Restore_FullMethodName     = "/cxz.SessionService/Restore"
-	SessionService_Resume_FullMethodName      = "/cxz.SessionService/Resume"
-	SessionService_Stop_FullMethodName        = "/cxz.SessionService/Stop"
-	SessionService_Interrupt_FullMethodName   = "/cxz.SessionService/Interrupt"
-	SessionService_CopyMemory_FullMethodName  = "/cxz.SessionService/CopyMemory"
-	SessionService_Library_FullMethodName     = "/cxz.SessionService/Library"
-	SessionService_Memory_FullMethodName      = "/cxz.SessionService/Memory"
-	SessionService_Logs_FullMethodName        = "/cxz.SessionService/Logs"
-	SessionService_Permission_FullMethodName  = "/cxz.SessionService/Permission"
-	SessionService_Send_FullMethodName        = "/cxz.SessionService/Send"
-	SessionService_Attach_FullMethodName      = "/cxz.SessionService/Attach"
-	SessionService_Upload_FullMethodName      = "/cxz.SessionService/Upload"
-	SessionService_Activity_FullMethodName    = "/cxz.SessionService/Activity"
-	SessionService_UpdateAgent_FullMethodName = "/cxz.SessionService/UpdateAgent"
-	SessionService_Reply_FullMethodName       = "/cxz.SessionService/Reply"
-	SessionService_History_FullMethodName     = "/cxz.SessionService/History"
-	SessionService_Background_FullMethodName  = "/cxz.SessionService/Background"
-	SessionService_Models_FullMethodName      = "/cxz.SessionService/Models"
-	SessionService_Events_FullMethodName      = "/cxz.SessionService/Events"
-	SessionService_Search_FullMethodName      = "/cxz.SessionService/Search"
+	SessionService_Add_FullMethodName               = "/cxz.SessionService/Add"
+	SessionService_Get_FullMethodName               = "/cxz.SessionService/Get"
+	SessionService_Patch_FullMethodName             = "/cxz.SessionService/Patch"
+	SessionService_Apply_FullMethodName             = "/cxz.SessionService/Apply"
+	SessionService_Erase_FullMethodName             = "/cxz.SessionService/Erase"
+	SessionService_List_FullMethodName              = "/cxz.SessionService/List"
+	SessionService_Watch_FullMethodName             = "/cxz.SessionService/Watch"
+	SessionService_ConversationStats_FullMethodName = "/cxz.SessionService/ConversationStats"
+	SessionService_Restore_FullMethodName           = "/cxz.SessionService/Restore"
+	SessionService_Resume_FullMethodName            = "/cxz.SessionService/Resume"
+	SessionService_Stop_FullMethodName              = "/cxz.SessionService/Stop"
+	SessionService_Interrupt_FullMethodName         = "/cxz.SessionService/Interrupt"
+	SessionService_CopyMemory_FullMethodName        = "/cxz.SessionService/CopyMemory"
+	SessionService_Library_FullMethodName           = "/cxz.SessionService/Library"
+	SessionService_Memory_FullMethodName            = "/cxz.SessionService/Memory"
+	SessionService_Logs_FullMethodName              = "/cxz.SessionService/Logs"
+	SessionService_Permission_FullMethodName        = "/cxz.SessionService/Permission"
+	SessionService_Send_FullMethodName              = "/cxz.SessionService/Send"
+	SessionService_Attach_FullMethodName            = "/cxz.SessionService/Attach"
+	SessionService_Upload_FullMethodName            = "/cxz.SessionService/Upload"
+	SessionService_Activity_FullMethodName          = "/cxz.SessionService/Activity"
+	SessionService_UpdateAgent_FullMethodName       = "/cxz.SessionService/UpdateAgent"
+	SessionService_Reply_FullMethodName             = "/cxz.SessionService/Reply"
+	SessionService_History_FullMethodName           = "/cxz.SessionService/History"
+	SessionService_Background_FullMethodName        = "/cxz.SessionService/Background"
+	SessionService_Models_FullMethodName            = "/cxz.SessionService/Models"
+	SessionService_Events_FullMethodName            = "/cxz.SessionService/Events"
+	SessionService_Search_FullMethodName            = "/cxz.SessionService/Search"
 )
 
 // SessionServiceClient is the client API for SessionService service.
@@ -76,6 +77,8 @@ type SessionServiceClient interface {
 	// once in that first message and once as a change that happened while it was
 	// being read -- and that is harmless for the same reason.
 	Watch(ctx context.Context, in *SessionWatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SessionWatchResponse], error)
+	// Read retained conversation statistics, never account billing or lifetime totals.
+	ConversationStats(ctx context.Context, in *ConversationStatsRequest, opts ...grpc.CallOption) (*ConversationStatsReply, error)
 	Restore(ctx context.Context, in *SessionRef, opts ...grpc.CallOption) (*Session, error)
 	Resume(ctx context.Context, in *SessionControl, opts ...grpc.CallOption) (*Session, error)
 	Stop(ctx context.Context, in *SessionControl, opts ...grpc.CallOption) (*Session, error)
@@ -187,6 +190,16 @@ func (c *sessionServiceClient) Watch(ctx context.Context, in *SessionWatchReques
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type SessionService_WatchClient = grpc.ServerStreamingClient[SessionWatchResponse]
+
+func (c *sessionServiceClient) ConversationStats(ctx context.Context, in *ConversationStatsRequest, opts ...grpc.CallOption) (*ConversationStatsReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ConversationStatsReply)
+	err := c.cc.Invoke(ctx, SessionService_ConversationStats_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
 
 func (c *sessionServiceClient) Restore(ctx context.Context, in *SessionRef, opts ...grpc.CallOption) (*Session, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
@@ -437,6 +450,8 @@ type SessionServiceServer interface {
 	// once in that first message and once as a change that happened while it was
 	// being read -- and that is harmless for the same reason.
 	Watch(*SessionWatchRequest, grpc.ServerStreamingServer[SessionWatchResponse]) error
+	// Read retained conversation statistics, never account billing or lifetime totals.
+	ConversationStats(context.Context, *ConversationStatsRequest) (*ConversationStatsReply, error)
 	Restore(context.Context, *SessionRef) (*Session, error)
 	Resume(context.Context, *SessionControl) (*Session, error)
 	Stop(context.Context, *SessionControl) (*Session, error)
@@ -490,6 +505,9 @@ func (UnimplementedSessionServiceServer) List(context.Context, *SessionListReque
 }
 func (UnimplementedSessionServiceServer) Watch(*SessionWatchRequest, grpc.ServerStreamingServer[SessionWatchResponse]) error {
 	return status.Error(codes.Unimplemented, "method Watch not implemented")
+}
+func (UnimplementedSessionServiceServer) ConversationStats(context.Context, *ConversationStatsRequest) (*ConversationStatsReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method ConversationStats not implemented")
 }
 func (UnimplementedSessionServiceServer) Restore(context.Context, *SessionRef) (*Session, error) {
 	return nil, status.Error(codes.Unimplemented, "method Restore not implemented")
@@ -690,6 +708,24 @@ func _SessionService_Watch_Handler(srv interface{}, stream grpc.ServerStream) er
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type SessionService_WatchServer = grpc.ServerStreamingServer[SessionWatchResponse]
+
+func _SessionService_ConversationStats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ConversationStatsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionServiceServer).ConversationStats(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SessionService_ConversationStats_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionServiceServer).ConversationStats(ctx, req.(*ConversationStatsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
 
 func _SessionService_Restore_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SessionRef)
@@ -1056,6 +1092,10 @@ var SessionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "List",
 			Handler:    _SessionService_List_Handler,
+		},
+		{
+			MethodName: "ConversationStats",
+			Handler:    _SessionService_ConversationStats_Handler,
 		},
 		{
 			MethodName: "Restore",

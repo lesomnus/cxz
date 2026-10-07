@@ -35,6 +35,8 @@ service SessionService {
   // once in that first message and once as a change that happened while it was
   // being read -- and that is harmless for the same reason.
   rpc Watch(SessionWatchRequest) returns (stream SessionWatchResponse);
+  // Read retained conversation statistics, never account billing or lifetime totals.
+  rpc ConversationStats(ConversationStatsRequest) returns (ConversationStatsReply);
   rpc Restore(SessionRef) returns (Session);
   rpc Resume(SessionControl) returns (Session);
   rpc Stop(SessionControl) returns (Session);
@@ -239,6 +241,59 @@ message SessionWatchItem {
   // Empty in the first message, which is not something anybody asked for -- it
   // is what is already there.
   string action = 3 [features.field_presence = IMPLICIT];
+}
+
+// Omit both refs for all listed sessions; refs are mutually exclusive.
+// UTC half-open [from_ms, to_ms); defaults to the last 30 days, maximum 366 days.
+message ConversationStatsRequest {
+  ProjectRef project = 1;
+  SessionRef session = 2;
+  int64 from_ms = 3;
+  int64 to_ms = 4;
+}
+
+message ConversationStatsReply {
+  int64 from_ms = 1;
+  int64 to_ms = 2;
+  int64 generated_ms = 3;
+  ConversationStatsValues total = 4;
+  repeated ConversationStatsDay days = 5;
+  repeated ConversationStatsCoverage sessions = 6;
+  bool complete = 7;
+}
+
+message ConversationStatsValues {
+  uint64 events = 1;
+  uint64 input_messages = 2;
+  uint64 assistant_events = 3;
+  // UTF-8 text bytes of input/assistant events; not a database/disk size.
+  uint64 conversation_bytes = 4;
+  // UTF-8 text + payload bytes of all events, excluding serialization overhead.
+  uint64 event_content_bytes = 5;
+  uint64 finished_turns = 6;
+  // Uncached input; cache tokens are separate for both Claude and Codex.
+  uint64 input_tokens = 7;
+  uint64 output_tokens = 8;
+  uint64 cache_read_tokens = 9;
+  uint64 cache_write_tokens = 10;
+  uint64 token_reported_turns = 11;
+  double reported_cost_usd = 12;
+  uint64 cost_reported_turns = 13;
+}
+
+message ConversationStatsDay {
+  string date = 1;
+  ConversationStatsValues values = 2;
+}
+
+message ConversationStatsCoverage {
+  bytes session_id = 1;
+  string alias = 2;
+  uint64 snapshot_seq = 3;
+  uint64 first_seq = 4;
+  uint64 last_seq = 5;
+  // True only if every seq from 1 through snapshot_seq was observed.
+  bool complete = 6;
 }
 
 message SessionControl {
