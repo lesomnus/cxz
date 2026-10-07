@@ -5655,10 +5655,14 @@ func (b0 SessionModelsReply_builder) Build() *SessionModelsReply {
 	return m0
 }
 
-// A window is half-open, [since_ms, until_ms), so the windows a client walks
-// back through -- a month at a time -- neither overlap nor skip. cursor
-// continues one window and carries it, which is what keeps the second page
-// asking the same question as the first while new events arrive above it.
+// A window is half-open, [since, until), so the windows a client walks back
+// through -- a month at a time -- neither overlap nor skip. cursor continues one
+// window and carries it, which is what keeps the second page asking the same
+// question as the first while new events arrive above it.
+//
+// The bounds are timestamps rather than the journal's milliseconds because they
+// are the caller's, not a journal's: an absent one is no bound at all, which a
+// number would have had to spend a value on.
 //
 // projects and exclude are project runtime ids. A name or an alias is resolved
 // where it was displayed: this is not the place to guess which was meant.
@@ -5669,8 +5673,8 @@ type SessionSearchRequest struct {
 	xxx_hidden_IgnoreCase   bool                   `protobuf:"varint,3,opt,name=ignore_case,json=ignoreCase"`
 	xxx_hidden_View         *string                `protobuf:"bytes,4,opt,name=view"`
 	xxx_hidden_IncludeTools bool                   `protobuf:"varint,5,opt,name=include_tools,json=includeTools"`
-	xxx_hidden_SinceMs      int64                  `protobuf:"varint,6,opt,name=since_ms,json=sinceMs"`
-	xxx_hidden_UntilMs      int64                  `protobuf:"varint,7,opt,name=until_ms,json=untilMs"`
+	xxx_hidden_Since        *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=since"`
+	xxx_hidden_Until        *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=until"`
 	xxx_hidden_Projects     []string               `protobuf:"bytes,8,rep,name=projects"`
 	xxx_hidden_Exclude      []string               `protobuf:"bytes,9,rep,name=exclude"`
 	xxx_hidden_Sessions     []string               `protobuf:"bytes,10,rep,name=sessions"`
@@ -5753,18 +5757,18 @@ func (x *SessionSearchRequest) GetIncludeTools() bool {
 	return false
 }
 
-func (x *SessionSearchRequest) GetSinceMs() int64 {
+func (x *SessionSearchRequest) GetSince() *timestamppb.Timestamp {
 	if x != nil {
-		return x.xxx_hidden_SinceMs
+		return x.xxx_hidden_Since
 	}
-	return 0
+	return nil
 }
 
-func (x *SessionSearchRequest) GetUntilMs() int64 {
+func (x *SessionSearchRequest) GetUntil() *timestamppb.Timestamp {
 	if x != nil {
-		return x.xxx_hidden_UntilMs
+		return x.xxx_hidden_Until
 	}
-	return 0
+	return nil
 }
 
 func (x *SessionSearchRequest) GetProjects() []string {
@@ -5847,14 +5851,12 @@ func (x *SessionSearchRequest) SetIncludeTools(v bool) {
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 14)
 }
 
-func (x *SessionSearchRequest) SetSinceMs(v int64) {
-	x.xxx_hidden_SinceMs = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 14)
+func (x *SessionSearchRequest) SetSince(v *timestamppb.Timestamp) {
+	x.xxx_hidden_Since = v
 }
 
-func (x *SessionSearchRequest) SetUntilMs(v int64) {
-	x.xxx_hidden_UntilMs = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 14)
+func (x *SessionSearchRequest) SetUntil(v *timestamppb.Timestamp) {
+	x.xxx_hidden_Until = v
 }
 
 func (x *SessionSearchRequest) SetProjects(v []string) {
@@ -5924,18 +5926,18 @@ func (x *SessionSearchRequest) HasIncludeTools() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
 }
 
-func (x *SessionSearchRequest) HasSinceMs() bool {
+func (x *SessionSearchRequest) HasSince() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
+	return x.xxx_hidden_Since != nil
 }
 
-func (x *SessionSearchRequest) HasUntilMs() bool {
+func (x *SessionSearchRequest) HasUntil() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
+	return x.xxx_hidden_Until != nil
 }
 
 func (x *SessionSearchRequest) HasLimit() bool {
@@ -5991,14 +5993,12 @@ func (x *SessionSearchRequest) ClearIncludeTools() {
 	x.xxx_hidden_IncludeTools = false
 }
 
-func (x *SessionSearchRequest) ClearSinceMs() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
-	x.xxx_hidden_SinceMs = 0
+func (x *SessionSearchRequest) ClearSince() {
+	x.xxx_hidden_Since = nil
 }
 
-func (x *SessionSearchRequest) ClearUntilMs() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
-	x.xxx_hidden_UntilMs = 0
+func (x *SessionSearchRequest) ClearUntil() {
+	x.xxx_hidden_Until = nil
 }
 
 func (x *SessionSearchRequest) ClearLimit() {
@@ -6029,8 +6029,8 @@ type SessionSearchRequest_builder struct {
 	IgnoreCase   *bool
 	View         *string
 	IncludeTools *bool
-	SinceMs      *int64
-	UntilMs      *int64
+	Since        *timestamppb.Timestamp
+	Until        *timestamppb.Timestamp
 	Projects     []string
 	Exclude      []string
 	Sessions     []string
@@ -6064,14 +6064,8 @@ func (b0 SessionSearchRequest_builder) Build() *SessionSearchRequest {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 14)
 		x.xxx_hidden_IncludeTools = *b.IncludeTools
 	}
-	if b.SinceMs != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 14)
-		x.xxx_hidden_SinceMs = *b.SinceMs
-	}
-	if b.UntilMs != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 14)
-		x.xxx_hidden_UntilMs = *b.UntilMs
-	}
+	x.xxx_hidden_Since = b.Since
+	x.xxx_hidden_Until = b.Until
 	x.xxx_hidden_Projects = b.Projects
 	x.xxx_hidden_Exclude = b.Exclude
 	x.xxx_hidden_Sessions = b.Sessions
@@ -6543,8 +6537,9 @@ type SessionSearchVisit_builder struct {
 	Title       *string
 	Agent       *string
 	State       *string
-	ActivityMs  *int64
-	CreatedMs   *int64
+	// Milliseconds, like SessionEvent: these are the journal's own times.
+	ActivityMs *int64
+	CreatedMs  *int64
 	// truncated says this session's older events are gone, so finding nothing in
 	// it is not evidence that nothing was said.
 	Truncated *bool
@@ -7081,8 +7076,8 @@ type SessionSearchSummary struct {
 	xxx_hidden_Truncated   int32                  `protobuf:"varint,5,opt,name=truncated"`
 	xxx_hidden_NextCursor  *string                `protobuf:"bytes,6,opt,name=next_cursor,json=nextCursor"`
 	xxx_hidden_HasMore     bool                   `protobuf:"varint,7,opt,name=has_more,json=hasMore"`
-	xxx_hidden_SinceMs     int64                  `protobuf:"varint,8,opt,name=since_ms,json=sinceMs"`
-	xxx_hidden_UntilMs     int64                  `protobuf:"varint,9,opt,name=until_ms,json=untilMs"`
+	xxx_hidden_Since       *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=since"`
+	xxx_hidden_Until       *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=until"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
 	XXX_presence           [1]uint32
 	unknownFields          protoimpl.UnknownFields
@@ -7166,18 +7161,18 @@ func (x *SessionSearchSummary) GetHasMore() bool {
 	return false
 }
 
-func (x *SessionSearchSummary) GetSinceMs() int64 {
+func (x *SessionSearchSummary) GetSince() *timestamppb.Timestamp {
 	if x != nil {
-		return x.xxx_hidden_SinceMs
+		return x.xxx_hidden_Since
 	}
-	return 0
+	return nil
 }
 
-func (x *SessionSearchSummary) GetUntilMs() int64 {
+func (x *SessionSearchSummary) GetUntil() *timestamppb.Timestamp {
 	if x != nil {
-		return x.xxx_hidden_UntilMs
+		return x.xxx_hidden_Until
 	}
-	return 0
+	return nil
 }
 
 func (x *SessionSearchSummary) SetProjects(v int32) {
@@ -7215,14 +7210,12 @@ func (x *SessionSearchSummary) SetHasMore(v bool) {
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 9)
 }
 
-func (x *SessionSearchSummary) SetSinceMs(v int64) {
-	x.xxx_hidden_SinceMs = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 9)
+func (x *SessionSearchSummary) SetSince(v *timestamppb.Timestamp) {
+	x.xxx_hidden_Since = v
 }
 
-func (x *SessionSearchSummary) SetUntilMs(v int64) {
-	x.xxx_hidden_UntilMs = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 9)
+func (x *SessionSearchSummary) SetUntil(v *timestamppb.Timestamp) {
+	x.xxx_hidden_Until = v
 }
 
 func (x *SessionSearchSummary) HasProjects() bool {
@@ -7274,18 +7267,18 @@ func (x *SessionSearchSummary) HasHasMore() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
 }
 
-func (x *SessionSearchSummary) HasSinceMs() bool {
+func (x *SessionSearchSummary) HasSince() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 7)
+	return x.xxx_hidden_Since != nil
 }
 
-func (x *SessionSearchSummary) HasUntilMs() bool {
+func (x *SessionSearchSummary) HasUntil() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 8)
+	return x.xxx_hidden_Until != nil
 }
 
 func (x *SessionSearchSummary) ClearProjects() {
@@ -7323,14 +7316,12 @@ func (x *SessionSearchSummary) ClearHasMore() {
 	x.xxx_hidden_HasMore = false
 }
 
-func (x *SessionSearchSummary) ClearSinceMs() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
-	x.xxx_hidden_SinceMs = 0
+func (x *SessionSearchSummary) ClearSince() {
+	x.xxx_hidden_Since = nil
 }
 
-func (x *SessionSearchSummary) ClearUntilMs() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 8)
-	x.xxx_hidden_UntilMs = 0
+func (x *SessionSearchSummary) ClearUntil() {
+	x.xxx_hidden_Until = nil
 }
 
 type SessionSearchSummary_builder struct {
@@ -7343,8 +7334,8 @@ type SessionSearchSummary_builder struct {
 	Truncated   *int32
 	NextCursor  *string
 	HasMore     *bool
-	SinceMs     *int64
-	UntilMs     *int64
+	Since       *timestamppb.Timestamp
+	Until       *timestamppb.Timestamp
 }
 
 func (b0 SessionSearchSummary_builder) Build() *SessionSearchSummary {
@@ -7379,14 +7370,8 @@ func (b0 SessionSearchSummary_builder) Build() *SessionSearchSummary {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 9)
 		x.xxx_hidden_HasMore = *b.HasMore
 	}
-	if b.SinceMs != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 9)
-		x.xxx_hidden_SinceMs = *b.SinceMs
-	}
-	if b.UntilMs != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 9)
-		x.xxx_hidden_UntilMs = *b.UntilMs
-	}
+	x.xxx_hidden_Since = b.Since
+	x.xxx_hidden_Until = b.Until
 	return m0
 }
 
@@ -7585,16 +7570,16 @@ const file_cxz_session_svc_g_proto_rawDesc = "" +
 	"\n" +
 	"refreshing\x18\x06 \x01(\bR\n" +
 	"refreshing\x12\x16\n" +
-	"\x06status\x18\a \x01(\tR\x06status\"\x89\x03\n" +
+	"\x06status\x18\a \x01(\tR\x06status\"\xb7\x03\n" +
 	"\x14SessionSearchRequest\x12\x14\n" +
 	"\x05query\x18\x01 \x01(\tR\x05query\x12\x14\n" +
 	"\x05match\x18\x02 \x01(\tR\x05match\x12\x1f\n" +
 	"\vignore_case\x18\x03 \x01(\bR\n" +
 	"ignoreCase\x12\x12\n" +
 	"\x04view\x18\x04 \x01(\tR\x04view\x12#\n" +
-	"\rinclude_tools\x18\x05 \x01(\bR\fincludeTools\x12\x19\n" +
-	"\bsince_ms\x18\x06 \x01(\x03R\asinceMs\x12\x19\n" +
-	"\buntil_ms\x18\a \x01(\x03R\auntilMs\x12\x1a\n" +
+	"\rinclude_tools\x18\x05 \x01(\bR\fincludeTools\x120\n" +
+	"\x05since\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\x05since\x120\n" +
+	"\x05until\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\x05until\x12\x1a\n" +
 	"\bprojects\x18\b \x03(\tR\bprojects\x12\x18\n" +
 	"\aexclude\x18\t \x03(\tR\aexclude\x12\x1a\n" +
 	"\bsessions\x18\n" +
@@ -7638,7 +7623,7 @@ const file_cxz_session_svc_g_proto_rawDesc = "" +
 	"\x05state\x18\x03 \x01(\tR\x05state\x12\x18\n" +
 	"\amessage\x18\x04 \x01(\tR\amessage\x12\x16\n" +
 	"\x06opened\x18\x05 \x01(\x05R\x06opened\x12\x14\n" +
-	"\x05total\x18\x06 \x01(\x05R\x05total\"\x94\x02\n" +
+	"\x05total\x18\x06 \x01(\x05R\x05total\"\xc2\x02\n" +
 	"\x14SessionSearchSummary\x12\x1a\n" +
 	"\bprojects\x18\x01 \x01(\x05R\bprojects\x12 \n" +
 	"\vunavailable\x18\x02 \x01(\x05R\vunavailable\x12\x1a\n" +
@@ -7647,9 +7632,9 @@ const file_cxz_session_svc_g_proto_rawDesc = "" +
 	"\ttruncated\x18\x05 \x01(\x05R\ttruncated\x12\x1f\n" +
 	"\vnext_cursor\x18\x06 \x01(\tR\n" +
 	"nextCursor\x12\x19\n" +
-	"\bhas_more\x18\a \x01(\bR\ahasMore\x12\x19\n" +
-	"\bsince_ms\x18\b \x01(\x03R\asinceMs\x12\x19\n" +
-	"\buntil_ms\x18\t \x01(\x03R\auntilMs2\x9b\f\n" +
+	"\bhas_more\x18\a \x01(\bR\ahasMore\x120\n" +
+	"\x05since\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\x05since\x120\n" +
+	"\x05until\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\x05until2\x9b\f\n" +
 	"\x0eSessionService\x12+\n" +
 	"\x03Add\x12\x16.cxz.SessionAddRequest\x1a\f.cxz.Session\x12+\n" +
 	"\x03Get\x12\x16.cxz.SessionGetRequest\x1a\f.cxz.Session\x12/\n" +
@@ -7778,69 +7763,73 @@ var file_cxz_session_svc_g_proto_depIdxs = []int32{
 	52, // 36: cxz.SessionEventBatch.events:type_name -> cxz.SessionEvent
 	2,  // 37: cxz.SessionBackgroundRequest.ref:type_name -> cxz.SessionRef
 	2,  // 38: cxz.SessionModelsRequest.ref:type_name -> cxz.SessionRef
-	38, // 39: cxz.SessionSearchReply.visit:type_name -> cxz.SessionSearchVisit
-	40, // 40: cxz.SessionSearchReply.progress:type_name -> cxz.SessionSearchProgress
-	41, // 41: cxz.SessionSearchReply.summary:type_name -> cxz.SessionSearchSummary
-	39, // 42: cxz.SessionSearchVisit.hits:type_name -> cxz.SessionSearchHit
-	0,  // 43: cxz.SessionService.Add:input_type -> cxz.SessionAddRequest
-	1,  // 44: cxz.SessionService.Get:input_type -> cxz.SessionGetRequest
-	4,  // 45: cxz.SessionService.Patch:input_type -> cxz.SessionPatchRequest
-	5,  // 46: cxz.SessionService.Apply:input_type -> cxz.SessionApplyRequest
-	2,  // 47: cxz.SessionService.Erase:input_type -> cxz.SessionRef
-	7,  // 48: cxz.SessionService.List:input_type -> cxz.SessionListRequest
-	10, // 49: cxz.SessionService.Watch:input_type -> cxz.SessionWatchRequest
-	2,  // 50: cxz.SessionService.Restore:input_type -> cxz.SessionRef
-	13, // 51: cxz.SessionService.Resume:input_type -> cxz.SessionControl
-	13, // 52: cxz.SessionService.Stop:input_type -> cxz.SessionControl
-	13, // 53: cxz.SessionService.Interrupt:input_type -> cxz.SessionControl
-	15, // 54: cxz.SessionService.CopyMemory:input_type -> cxz.SessionCopyMemoryRequest
-	16, // 55: cxz.SessionService.Library:input_type -> cxz.SessionLibraryRequest
-	18, // 56: cxz.SessionService.Memory:input_type -> cxz.SessionMemoryRequest
-	19, // 57: cxz.SessionService.Logs:input_type -> cxz.SessionLogsRequest
-	21, // 58: cxz.SessionService.Permission:input_type -> cxz.SessionPermissionRequest
-	22, // 59: cxz.SessionService.Send:input_type -> cxz.SessionSendRequest
-	23, // 60: cxz.SessionService.Attach:input_type -> cxz.SessionAttachRequest
-	25, // 61: cxz.SessionService.Upload:input_type -> cxz.SessionUploadRequest
-	26, // 62: cxz.SessionService.Activity:input_type -> cxz.SessionActivityRequest
-	27, // 63: cxz.SessionService.UpdateAgent:input_type -> cxz.SessionUpdateRequest
-	29, // 64: cxz.SessionService.Reply:input_type -> cxz.SessionReplyRequest
-	30, // 65: cxz.SessionService.History:input_type -> cxz.SessionEventsRequest
-	32, // 66: cxz.SessionService.Background:input_type -> cxz.SessionBackgroundRequest
-	34, // 67: cxz.SessionService.Models:input_type -> cxz.SessionModelsRequest
-	30, // 68: cxz.SessionService.Events:input_type -> cxz.SessionEventsRequest
-	36, // 69: cxz.SessionService.Search:input_type -> cxz.SessionSearchRequest
-	51, // 70: cxz.SessionService.Add:output_type -> cxz.Session
-	51, // 71: cxz.SessionService.Get:output_type -> cxz.Session
-	51, // 72: cxz.SessionService.Patch:output_type -> cxz.Session
-	51, // 73: cxz.SessionService.Apply:output_type -> cxz.Session
-	6,  // 74: cxz.SessionService.Erase:output_type -> cxz.SessionEraseResponse
-	8,  // 75: cxz.SessionService.List:output_type -> cxz.SessionListResponse
-	11, // 76: cxz.SessionService.Watch:output_type -> cxz.SessionWatchResponse
-	51, // 77: cxz.SessionService.Restore:output_type -> cxz.Session
-	51, // 78: cxz.SessionService.Resume:output_type -> cxz.Session
-	51, // 79: cxz.SessionService.Stop:output_type -> cxz.Session
-	14, // 80: cxz.SessionService.Interrupt:output_type -> cxz.SessionReceipt
-	14, // 81: cxz.SessionService.CopyMemory:output_type -> cxz.SessionReceipt
-	17, // 82: cxz.SessionService.Library:output_type -> cxz.SessionMemoryReply
-	17, // 83: cxz.SessionService.Memory:output_type -> cxz.SessionMemoryReply
-	20, // 84: cxz.SessionService.Logs:output_type -> cxz.SessionLogsReply
-	14, // 85: cxz.SessionService.Permission:output_type -> cxz.SessionReceipt
-	14, // 86: cxz.SessionService.Send:output_type -> cxz.SessionReceipt
-	24, // 87: cxz.SessionService.Attach:output_type -> cxz.SessionAttachment
-	24, // 88: cxz.SessionService.Upload:output_type -> cxz.SessionAttachment
-	14, // 89: cxz.SessionService.Activity:output_type -> cxz.SessionReceipt
-	28, // 90: cxz.SessionService.UpdateAgent:output_type -> cxz.SessionUpdateStatus
-	14, // 91: cxz.SessionService.Reply:output_type -> cxz.SessionReceipt
-	31, // 92: cxz.SessionService.History:output_type -> cxz.SessionEventBatch
-	33, // 93: cxz.SessionService.Background:output_type -> cxz.SessionBackgroundReply
-	35, // 94: cxz.SessionService.Models:output_type -> cxz.SessionModelsReply
-	52, // 95: cxz.SessionService.Events:output_type -> cxz.SessionEvent
-	37, // 96: cxz.SessionService.Search:output_type -> cxz.SessionSearchReply
-	70, // [70:97] is the sub-list for method output_type
-	43, // [43:70] is the sub-list for method input_type
-	43, // [43:43] is the sub-list for extension type_name
-	43, // [43:43] is the sub-list for extension extendee
-	0,  // [0:43] is the sub-list for field type_name
+	43, // 39: cxz.SessionSearchRequest.since:type_name -> google.protobuf.Timestamp
+	43, // 40: cxz.SessionSearchRequest.until:type_name -> google.protobuf.Timestamp
+	38, // 41: cxz.SessionSearchReply.visit:type_name -> cxz.SessionSearchVisit
+	40, // 42: cxz.SessionSearchReply.progress:type_name -> cxz.SessionSearchProgress
+	41, // 43: cxz.SessionSearchReply.summary:type_name -> cxz.SessionSearchSummary
+	39, // 44: cxz.SessionSearchVisit.hits:type_name -> cxz.SessionSearchHit
+	43, // 45: cxz.SessionSearchSummary.since:type_name -> google.protobuf.Timestamp
+	43, // 46: cxz.SessionSearchSummary.until:type_name -> google.protobuf.Timestamp
+	0,  // 47: cxz.SessionService.Add:input_type -> cxz.SessionAddRequest
+	1,  // 48: cxz.SessionService.Get:input_type -> cxz.SessionGetRequest
+	4,  // 49: cxz.SessionService.Patch:input_type -> cxz.SessionPatchRequest
+	5,  // 50: cxz.SessionService.Apply:input_type -> cxz.SessionApplyRequest
+	2,  // 51: cxz.SessionService.Erase:input_type -> cxz.SessionRef
+	7,  // 52: cxz.SessionService.List:input_type -> cxz.SessionListRequest
+	10, // 53: cxz.SessionService.Watch:input_type -> cxz.SessionWatchRequest
+	2,  // 54: cxz.SessionService.Restore:input_type -> cxz.SessionRef
+	13, // 55: cxz.SessionService.Resume:input_type -> cxz.SessionControl
+	13, // 56: cxz.SessionService.Stop:input_type -> cxz.SessionControl
+	13, // 57: cxz.SessionService.Interrupt:input_type -> cxz.SessionControl
+	15, // 58: cxz.SessionService.CopyMemory:input_type -> cxz.SessionCopyMemoryRequest
+	16, // 59: cxz.SessionService.Library:input_type -> cxz.SessionLibraryRequest
+	18, // 60: cxz.SessionService.Memory:input_type -> cxz.SessionMemoryRequest
+	19, // 61: cxz.SessionService.Logs:input_type -> cxz.SessionLogsRequest
+	21, // 62: cxz.SessionService.Permission:input_type -> cxz.SessionPermissionRequest
+	22, // 63: cxz.SessionService.Send:input_type -> cxz.SessionSendRequest
+	23, // 64: cxz.SessionService.Attach:input_type -> cxz.SessionAttachRequest
+	25, // 65: cxz.SessionService.Upload:input_type -> cxz.SessionUploadRequest
+	26, // 66: cxz.SessionService.Activity:input_type -> cxz.SessionActivityRequest
+	27, // 67: cxz.SessionService.UpdateAgent:input_type -> cxz.SessionUpdateRequest
+	29, // 68: cxz.SessionService.Reply:input_type -> cxz.SessionReplyRequest
+	30, // 69: cxz.SessionService.History:input_type -> cxz.SessionEventsRequest
+	32, // 70: cxz.SessionService.Background:input_type -> cxz.SessionBackgroundRequest
+	34, // 71: cxz.SessionService.Models:input_type -> cxz.SessionModelsRequest
+	30, // 72: cxz.SessionService.Events:input_type -> cxz.SessionEventsRequest
+	36, // 73: cxz.SessionService.Search:input_type -> cxz.SessionSearchRequest
+	51, // 74: cxz.SessionService.Add:output_type -> cxz.Session
+	51, // 75: cxz.SessionService.Get:output_type -> cxz.Session
+	51, // 76: cxz.SessionService.Patch:output_type -> cxz.Session
+	51, // 77: cxz.SessionService.Apply:output_type -> cxz.Session
+	6,  // 78: cxz.SessionService.Erase:output_type -> cxz.SessionEraseResponse
+	8,  // 79: cxz.SessionService.List:output_type -> cxz.SessionListResponse
+	11, // 80: cxz.SessionService.Watch:output_type -> cxz.SessionWatchResponse
+	51, // 81: cxz.SessionService.Restore:output_type -> cxz.Session
+	51, // 82: cxz.SessionService.Resume:output_type -> cxz.Session
+	51, // 83: cxz.SessionService.Stop:output_type -> cxz.Session
+	14, // 84: cxz.SessionService.Interrupt:output_type -> cxz.SessionReceipt
+	14, // 85: cxz.SessionService.CopyMemory:output_type -> cxz.SessionReceipt
+	17, // 86: cxz.SessionService.Library:output_type -> cxz.SessionMemoryReply
+	17, // 87: cxz.SessionService.Memory:output_type -> cxz.SessionMemoryReply
+	20, // 88: cxz.SessionService.Logs:output_type -> cxz.SessionLogsReply
+	14, // 89: cxz.SessionService.Permission:output_type -> cxz.SessionReceipt
+	14, // 90: cxz.SessionService.Send:output_type -> cxz.SessionReceipt
+	24, // 91: cxz.SessionService.Attach:output_type -> cxz.SessionAttachment
+	24, // 92: cxz.SessionService.Upload:output_type -> cxz.SessionAttachment
+	14, // 93: cxz.SessionService.Activity:output_type -> cxz.SessionReceipt
+	28, // 94: cxz.SessionService.UpdateAgent:output_type -> cxz.SessionUpdateStatus
+	14, // 95: cxz.SessionService.Reply:output_type -> cxz.SessionReceipt
+	31, // 96: cxz.SessionService.History:output_type -> cxz.SessionEventBatch
+	33, // 97: cxz.SessionService.Background:output_type -> cxz.SessionBackgroundReply
+	35, // 98: cxz.SessionService.Models:output_type -> cxz.SessionModelsReply
+	52, // 99: cxz.SessionService.Events:output_type -> cxz.SessionEvent
+	37, // 100: cxz.SessionService.Search:output_type -> cxz.SessionSearchReply
+	74, // [74:101] is the sub-list for method output_type
+	47, // [47:74] is the sub-list for method input_type
+	47, // [47:47] is the sub-list for extension type_name
+	47, // [47:47] is the sub-list for extension extendee
+	0,  // [0:47] is the sub-list for field type_name
 }
 
 func init() { file_cxz_session_svc_g_proto_init() }

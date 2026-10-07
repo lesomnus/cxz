@@ -125,8 +125,14 @@ message DevcontainerInput { bytes spec = 1; }
 // Search reads conversations rather than sessions, across every project the
 // caller's installation holds. A window is half-open, [since_ms, until_ms), so
 // consecutive windows -- a month at a time, as the client asks for them --
-// neither overlap nor skip. cursor continues one window; projects and exclude
-// are runtime ids, resolved from names and aliases before they get here.
+// neither overlap nor skip, and zero means no bound. cursor continues one
+// window; projects and exclude are runtime ids, resolved from names and aliases
+// before they get here.
+//
+// Times here are the journal's milliseconds throughout, because this is the
+// runtime's own interface and the journal is what it reads. The wire API takes
+// a timestamp for the window, which is the caller's instant rather than a
+// recorded one.
 message SearchRequest {
   string query = 1; string match = 2; bool ignore_case = 3;
   string view = 4; bool include_tools = 5;

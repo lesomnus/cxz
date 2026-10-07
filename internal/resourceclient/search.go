@@ -3,9 +3,12 @@ package resourceclient
 import (
 	"context"
 
+	"time"
+
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/resource"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // Search is the one call on this client that is about no session in particular,
@@ -16,7 +19,7 @@ func (c *Client) Search(ctx context.Context, r *api.SearchRequest, opts ...grpc.
 	s, err := c.sessions.Search(ctx, resource.SessionSearchRequest_builder{
 		Query: &r.Query, Match: &r.Match, IgnoreCase: &r.IgnoreCase,
 		View: &r.View, IncludeTools: &r.IncludeTools,
-		SinceMs: &r.SinceMs, UntilMs: &r.UntilMs,
+		Since: bound(r.SinceMs), Until: bound(r.UntilMs),
 		Projects: r.Projects, Exclude: r.Exclude, Sessions: r.Sessions,
 		Limit: &r.Limit, Snippet: &r.Snippet, Cursor: &r.Cursor, ClientId: &r.ClientId,
 	}.Build(), opts...)
@@ -28,6 +31,22 @@ func (c *Client) Search(ctx context.Context, r *api.SearchRequest, opts ...grpc.
 
 type searchStream struct {
 	grpc.ServerStreamingClient[resource.SessionSearchReply]
+}
+
+// bound leaves an absent window absent rather than sending the epoch: the wire
+// says "no lower bound" by having nothing there.
+func bound(ms int64) *timestamppb.Timestamp {
+	if ms == 0 {
+		return nil
+	}
+	return timestamppb.New(time.UnixMilli(ms).UTC())
+}
+
+func boundMS(t *timestamppb.Timestamp) int64 {
+	if t == nil {
+		return 0
+	}
+	return t.AsTime().UnixMilli()
 }
 
 func (s searchStream) Recv() (*api.SearchReply, error) {
@@ -52,7 +71,7 @@ func (s searchStream) Recv() (*api.SearchReply, error) {
 		out.Progress = &api.SearchProgress{ProjectId: p.GetProjectId(), ProjectName: p.GetProjectName(), State: p.GetState(), Message: p.GetMessage(), Opened: p.GetOpened(), Total: p.GetTotal()}
 	}
 	if v := in.GetSummary(); v != nil {
-		out.Summary = &api.SearchSummary{Projects: v.GetProjects(), Unavailable: v.GetUnavailable(), Sessions: v.GetSessions(), Hits: v.GetHits(), Truncated: v.GetTruncated(), NextCursor: v.GetNextCursor(), HasMore: v.GetHasMore(), SinceMs: v.GetSinceMs(), UntilMs: v.GetUntilMs()}
+		out.Summary = &api.SearchSummary{Projects: v.GetProjects(), Unavailable: v.GetUnavailable(), Sessions: v.GetSessions(), Hits: v.GetHits(), Truncated: v.GetTruncated(), NextCursor: v.GetNextCursor(), HasMore: v.GetHasMore(), SinceMs: boundMS(v.GetSince()), UntilMs: boundMS(v.GetUntil())}
 	}
 	return out, nil
 }
