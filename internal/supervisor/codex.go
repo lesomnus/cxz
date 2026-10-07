@@ -311,6 +311,10 @@ func (c *codexProtocol) startThread() {
 	if s.snap.VendorID != "" {
 		method = "thread/resume"
 		params["threadId"] = s.snap.VendorID
+		// The journal already owns the conversation. Only metadata is needed
+		// here; hydrating all past turns can exceed the agent message budget
+		// and prevent a long-running thread from ever resuming.
+		params["excludeTurns"] = true
 	}
 	_ = s.write(rpc("cxz-thread", method, params))
 }
