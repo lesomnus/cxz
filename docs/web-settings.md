@@ -106,15 +106,12 @@ Frequently reused inputs have their own files:
 
 - `src/value-menu.tsx`: model/effort, language, theme and palette menus. The
   selected row overlays the trigger's text origin; current row, divider, then
-  other choices. Default triggers have a filled background and 6px/10px padding;
-  Model/Effort explicitly select the compact variant (transparent, 2px/6px).
-  Both variants use matching option-row padding and keep the current text origin.
-  Native button activation, arrow keys/Home/End, Escape with
+  other choices. Native button activation, arrow keys/Home/End, Escape with
   focus restoration, outside dismissal, a bounded scrollable option list and
   automatic up/down placement are shared. A fixed portal avoids clipping in
   scrollable settings panes. Default choices display the effective value in
   muted text; explicit values have normal text. No UI library was added.
-- `src/setting-slider.tsx`: native discrete slider with a borderless, shadow-free rail/thumb, with position **0** resetting
+- `src/setting-slider.tsx`: native discrete slider with position **0** resetting
   the key, then **1–8** explicit values. The reset position displays the inherited
   numeric value and a reset symbol; keyboard Home/End/arrows work. Existing JSON
   values **9–16** remain valid and their actual number is displayed (thumb at 8)
