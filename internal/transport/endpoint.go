@@ -162,6 +162,60 @@ func (e Endpoint) SSHCommand(args ...string) []string {
 
 func (e Endpoint) SSHArguments() []string { return e.SSHCommand("_connect") }
 
+// SSHDialHost reports the host a direct TCP connection should use to reach an
+// ssh endpoint. The two names disagree whenever a connection is configured the
+// usual way: `Host build` with a `HostName` under it is an alias that ssh
+// resolves through ssh_config and the system resolver has never heard of, so
+// dialing the name the connection was written with fails before it reaches
+// anything. Asking ssh what it would do -- `ssh -G` prints the configuration it
+// resolved and makes no connection -- is the only answer that stays true when
+// that file changes.
+//
+// A host ssh only reaches through a proxy has no address this client can dial,
+// so that is reported rather than papered over with a name that would fail.
+func (e Endpoint) SSHDialHost(ctx context.Context) (string, error) {
+	options := []string{"-G", "-o", "BatchMode=yes"}
+	if e.Port != "" {
+		options = append(options, "-p", e.Port)
+	}
+	if e.User != "" {
+		options = append(options, "-l", e.User)
+	}
+	out, err := exec.CommandContext(ctx, "ssh", append(options, "--", e.Address)...).Output()
+	if err != nil {
+		return "", fmt.Errorf("read the ssh configuration of %s: %w", e.Address, err)
+	}
+	return dialHost(string(out), e.Address)
+}
+
+// dialHost reads `ssh -G` output, which is one lowercase keyword and its value
+// per line.
+func dialHost(configuration, host string) (string, error) {
+	name := ""
+	proxy := ""
+	for _, line := range strings.Split(configuration, "\n") {
+		keyword, value, ok := strings.Cut(strings.TrimSpace(line), " ")
+		if !ok || value == "" {
+			continue
+		}
+		switch keyword {
+		case "hostname":
+			name = value
+		case "proxyjump", "proxycommand":
+			if value != "none" {
+				proxy = keyword
+			}
+		}
+	}
+	if proxy != "" {
+		return "", fmt.Errorf("ssh reaches %s through its %s, so the relay has no address this client can dial directly", host, proxy)
+	}
+	if name == "" {
+		return "", fmt.Errorf("ssh reported no hostname for %s", host)
+	}
+	return name, nil
+}
+
 func ReadToken(path string) (string, error) {
 	if path == "" {
 		return "", fmt.Errorf("TCP connections require --token-file")

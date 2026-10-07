@@ -201,6 +201,72 @@ func TestManualRequestAndCompletion(t *testing.T) {
 	}
 }
 
+// A relay that moved -- or an address that was never dialable from here -- is a
+// corrected file. The certificate is bound to the installation, not to the route
+// to it, so re-enrolling for one would be ceremony with a cost: a new serial in
+// the installation's records for every address that changed.
+func TestRehostKeepsTheCertificate(t *testing.T) {
+	state := t.TempDir()
+	h := newHost(t)
+	stored, err := Over(context.Background(), h.run, state, "work", "build-host", Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = Rehost(state, "work", "10.0.0.5:7349"); err != nil {
+		t.Fatal(err)
+	}
+	again, ok, err := Load(state, "work")
+	if err != nil || !ok {
+		t.Fatal(err)
+	}
+	if again.Address != "10.0.0.5:7349" || again.Serial != stored.Serial || !again.Usable() {
+		t.Fatalf("%+v", again)
+	}
+	if err = Rehost(state, "work", ""); err == nil {
+		t.Fatal("an empty address was stored")
+	}
+	if err = Rehost(state, "unenrolled", "10.0.0.5:7349"); err == nil {
+		t.Fatal("an address was stored for a connection with no identity")
+	}
+}
+
+// Address is the question on its own: where would this client dial the relay
+// now. Asking changes nothing, which is what lets a connection whose stored
+// address stopped answering repair itself without enrolling again.
+func TestAddressAsksTheHostAndStoresNothing(t *testing.T) {
+	state := t.TempDir()
+	h := newHost(t)
+	h.state = "0.0.0.0:7400"
+	got, err := Address(context.Background(), h.run, "10.0.0.5", Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The port is the host's; the host is the one this client can reach.
+	if got != "10.0.0.5:7400" {
+		t.Fatal(got)
+	}
+	if _, ok, err := Load(state, "work"); ok || err != nil {
+		t.Fatal("asking for an address created an identity")
+	}
+	// An override is taken as given, without a round trip to ask.
+	h.calls = nil
+	if got, err = Address(context.Background(), h.run, "10.0.0.5", Options{Address: "relay.example:1234"}); err != nil || got != "relay.example:1234" {
+		t.Fatal(got, err)
+	}
+	if len(h.calls) != 0 {
+		t.Fatal("the host was asked anyway:", h.calls)
+	}
+	// A stopped relay is the ordinary state after a reboot, and starting it is
+	// still something to be asked for.
+	h.state = ""
+	if _, err = Address(context.Background(), h.run, "10.0.0.5", Options{}); err == nil {
+		t.Fatal("a stopped relay reported an address")
+	}
+	if got, err = Address(context.Background(), h.run, "10.0.0.5", Options{Start: true}); err != nil || got != "10.0.0.5:7349" {
+		t.Fatal(got, err)
+	}
+}
+
 func TestExpiredIdentityIsNotUsable(t *testing.T) {
 	state := t.TempDir()
 	h := newHost(t)

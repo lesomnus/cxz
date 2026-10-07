@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -160,6 +161,58 @@ func TestEnrollAndCheckRefusals(t *testing.T) {
 	got = xlitest.Run(t, newRoot(root), "connection", "check", "work")
 	if got.Err == nil || !strings.Contains(got.Err.Error(), "connection enroll") {
 		t.Fatal(got.Err)
+	}
+}
+
+// An ssh alias is not a hostname, so an identity enrolled against one holds an
+// address nothing can dial. The channel that still works is what repairs it --
+// and the certificate, bound to the installation rather than to a route to it,
+// has to survive that.
+func TestAStoredAddressIsRepairedWithoutANewCertificate(t *testing.T) {
+	root := enrollTestState(t)
+	authority := signer(t)
+	enrollByHand(t, root, "work", authority, "work:7349")
+	before, _, err := enroll.Load(root, "work")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var asked []string
+	host := func(_ context.Context, _ []byte, args ...string) ([]byte, error) {
+		asked = append(asked, strings.Join(args, " "))
+		return []byte(`{"listen":"0.0.0.0:7349","state":"running"}`), nil
+	}
+	var out strings.Builder
+	address, err := relayAddress(context.Background(), host, root, "work", "10.0.0.9", before.Address, &out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The port is the relay's and the host is the one ssh resolved, which is the
+	// whole point: the relay itself publishes on a wildcard.
+	if address != "10.0.0.9:7349" {
+		t.Fatal(address)
+	}
+	if !strings.Contains(out.String(), "work:7349 did not answer") || !strings.Contains(out.String(), "10.0.0.9:7349") {
+		t.Fatal("the correction was silent:", out.String())
+	}
+	after, ok, err := enroll.Load(root, "work")
+	if err != nil || !ok {
+		t.Fatal(err)
+	}
+	if after.Address != address || after.Serial != before.Serial || !after.Usable() {
+		t.Fatalf("%+v", after)
+	}
+
+	// An address that is already right is left alone, and says nothing.
+	out.Reset()
+	again, err := relayAddress(context.Background(), host, root, "work", "10.0.0.9", after.Address, &out)
+	if err != nil || again != address || out.String() != "" {
+		t.Fatal(again, out.String(), err)
+	}
+	for _, call := range asked {
+		if !strings.HasPrefix(call, "expose status") {
+			t.Fatal("repairing an address did more than ask where the relay is:", asked)
+		}
 	}
 }
 
