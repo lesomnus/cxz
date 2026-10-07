@@ -1,7 +1,7 @@
 # Conversation workspace terminal
 
 Press **Ctrl+`** (`Ctrl+Backquote`) in a conversation, including its composer or
-terminal, to toggle the shell panel below the composer. The title bar's **>_**
+terminal, to toggle the shell panel below the composer. The title bar's **>\_**
 button provides the same action on touch devices. The shortcut uses the physical
 Backquote key or a backtick character, ignores key repeats and IME composition,
 and excludes Alt/Meta/Shift combinations. A browser or OS shortcut intercepted
@@ -20,9 +20,9 @@ leaving the conversation, resetting the sandbox, reloading or signing out closes
 that panel's connection and shell; it is not a persistent server terminal. An
 exited or disconnected shell shows **Reconnect**, which starts a new shell.
 Scrollback is bounded to 2000 terminal lines independently of virtualized messages.
-The panel is 28vh, bounded to 160–300px and at most 40% of conversation height
-(minimum 120px). ResizeObserver updates the PTY within its existing 1–500 columns,
-1–100 rows limits. The wide-view editor remains a separate adjacent pane.
+Panel sizing follows [style.css](../ts/src/style.css), bounded by the conversation
+viewport. ResizeObserver updates the PTY within the project service's validated
+dimension limits. The wide-view editor remains a separate adjacent pane.
 
 ## Browser transport
 

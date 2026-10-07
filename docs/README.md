@@ -30,6 +30,10 @@ start. This is the map of everything else.
 | [cli.md](cli.md) | Every command |
 | [feature-spec.md](feature-spec.md) | Stable feature IDs and client-independent behavioral contracts |
 | [client-support.md](client-support.md) | Current CLI, TUI and web support, partial implementations and gaps |
+| [web-design.md](web-design.md) | Web design direction: visual simplicity, compact spacing, comfortable controls, stable alignment and meaningful motion |
+| [web-settings.md](web-settings.md) | Browser settings file, editor inheritance, language and theme |
+| [web-conversation-scroll.md](web-conversation-scroll.md) | Accepted conversation scroll experience and regression reference |
+| [storybook.md](storybook.md) | Shared web component previews |
 
 ## Running it
 

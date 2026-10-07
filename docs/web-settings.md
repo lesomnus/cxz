@@ -1,15 +1,15 @@
 # Browser settings
 
 The resource sidebar's **Settings** button opens settings. Topics belong to the left
-panel, **General** first and **Editor** second; there are no top tabs. The settings body is at
-most **600px** wide and centered, with global and session editor groups stacked.
+panel, **General** first and **Editor** second; there are no top tabs. The settings
+body stays centered at a bounded reading width, with global and session editor groups stacked.
 Production and the WASM sandbox use the same settings components. Editor
 controls save immediately; the JSON editor saves explicitly with **Save** or
 Ctrl+Enter.
 
-At **1600px of available width** after the resource sidebar and panel, settings
-use the conversation layout's **800px** left column and a 1px divider, with a
-**settings.json** editor in the remaining space. Below that threshold,
+When the available width after the resource sidebar and panel reaches the shared
+CSS split breakpoint, settings use the conversation layout's left column and
+divider, with a **settings.json** editor in the remaining space. Below that breakpoint,
 **Edit settings.json** opens the file in the same centered body area; the
 **Editor** topic or **Back to settings** returns to the form. On mobile,
 the topic panel sits above the body alongside the resource sidebar.
@@ -22,8 +22,8 @@ uses the conflict protection described below. Form and file panes scroll
 independently. Leaving the settings page discards unsaved JSON edits.
 
 The JSON pane and the session's read-only file preview both use
-`ts/src/source-editor.tsx`, with the same Monaco options and palette, `#141414`
-dark background/gutter (light: `#fafafa`), 12px monospace font, line numbers, Find and scrollbar. The
+`ts/src/source-editor.tsx`, with the same Monaco options, themed background/gutter,
+monospace font, line numbers, Find and scrollbar. The
 pane header and footer share styles as well. Only settings JSON is editable.
 Monaco loads on first display; folding keeps its model and view. External
 reload/import/pristine updates replace its contents; normal typing and theme/
@@ -49,6 +49,11 @@ editing known settings through the UI.
   "session.editor.tabSize": 8
 }
 ```
+
+Visual dimensions, palettes and breakpoints are defined in the shared CSS tokens.
+Editor defaults and validation ranges are defined in
+[editor-settings.ts](../ts/src/editor-settings.ts). The JSON above illustrates the
+file shape rather than specifying current defaults.
 
 ## Display language and lazy language packs
 
@@ -111,12 +116,11 @@ Frequently reused inputs have their own files:
   automatic up/down placement are shared. A fixed portal avoids clipping in
   scrollable settings panes. Default choices display the effective value in
   muted text; explicit values have normal text. No UI library was added.
-- `src/setting-slider.tsx`: native discrete slider with position **0** resetting
-  the key, then **1–8** explicit values. The reset position displays the inherited
-  numeric value and a reset symbol; keyboard Home/End/arrows work. Existing JSON
-  values **9–16** remain valid and their actual number is displayed (thumb at 8)
-  until the user chooses a UI value. Reading settings never clamps or rewrites
-  the saved file.
+- `src/setting-slider.tsx`: native discrete slider with a reset position followed
+  by explicit choices. Reset displays the inherited value and a reset symbol;
+  keyboard Home/End/arrows work. Valid saved values outside the slider's visible
+  range remain displayed until an explicit choice. Reading settings never clamps
+  or rewrites the file. Choice ranges are defined in the component and validator.
 - `src/segmented-control.tsx`: equal-width native radio cells with a sliding,
   shadow-free selection box. Tab input uses reset/effective value, Spaces and
   Tab character. Reset deletes the key; explicit false still means a real Tab.
@@ -125,12 +129,12 @@ Frequently reused inputs have their own files:
 
 ## Editor scope and inheritance
 
-| Global key | Default | Behavior |
-| --- | --- | --- |
-| `editor.indentSize` | `2` | Number of spaces inserted by Tab and removed by Shift+Tab; integer 1–16. |
-| `editor.insertSpaces` | `true` | Insert spaces; `false` inserts an actual `\t` character. |
-| `editor.tabSize` | `4` | Display existing Tab characters at this many-column tab stops; integer 1–16. Does not rewrite text. |
-| `editor.colorPalette` | `"muted"` | Syntax colors: `muted`, `monochrome`, `cool`, or `warm`. UI chrome stays monochrome. |
+| Global key            | Behavior                                                         |
+| --------------------- | ---------------------------------------------------------------- |
+| `editor.indentSize`   | Spaces inserted by Tab and removed by Shift+Tab.                 |
+| `editor.insertSpaces` | Choose spaces or actual Tab characters.                          |
+| `editor.tabSize`      | Display width of existing Tab characters; does not rewrite text. |
+| `editor.colorPalette` | Syntax highlighting palette.                                     |
 
 Each key also has a **`session.editor.*`** counterpart. Resolution is independent
 for every field: explicit session value → explicit global value → default.
@@ -184,5 +188,5 @@ React subscriptions; `settings-page.tsx` provides form/file editing.
 `editor-settings.test.ts` and `sandbox-e2e/settings.spec.ts` cover inheritance,
 validation, persistence failures, import/export, stale drafts, cross-tab updates,
 mobile navigation and live read-only Monaco configuration. The settings browser
-test also checks exact 600px centering, the available-width split boundary,
+test also checks centered reading width, the available-width split boundary,
 topic navigation and JSON undo/draft retention through folding and resizing.
