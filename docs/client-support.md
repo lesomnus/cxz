@@ -48,6 +48,7 @@ explained in the mobile plan; it remains Not implemented in the web column.
 | CHAT-06 | Not implemented: no dedicated context command | Supported: `/context`, Summary/Raw | Not implemented |
 | CHAT-07 | Not implemented: no dedicated compact command | Supported: `/compact`, provider/idle constraints apply | Not implemented |
 | CHAT-08 | Partial: session creation model and configuration defaults; no session catalog/effort command | Supported: `/model`, `/effort` where provider supports them | Not implemented |
+| CHAT-10 | Supported on Linux: `conversation search` over every project, substring/regex/fuzzy, windowed, streamed; absent from the Windows frontend's command set | Not implemented: no search UI yet | Not implemented |
 | CHAT-09 | Not implemented: no dedicated background-task command | Supported: `/background` where reported | Not implemented |
 | INPUT-01 | Partial: `session send` text argument; editing belongs to caller/shell | Supported: composer, selection, per-session drafts, line move/duplicate/indent, auto-indent, Undo/Redo, multi-click selection, cursor-preserving wheel scroll, logical-line gutter and Alt+W whitespace display | Not implemented |
 | INPUT-02 | Supported: generated `--help` and completion for CLI actions | Supported: `/help` and slash hints | Not implemented |

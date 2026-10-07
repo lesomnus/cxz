@@ -2,6 +2,8 @@ package lifecycle
 
 import (
 	"context"
+	"time"
+
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/internal/sessionalias"
@@ -10,6 +12,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type SessionServer struct {
@@ -327,6 +330,66 @@ func (s SessionServer) Events(r *resource.SessionEventsRequest, stream grpc.Serv
 		return err
 	}
 	return s.shared.runtime.Watch(&api.WatchRequest{SessionId: v.GetRuntimeId(), AfterSeq: r.GetAfterSeq(), ClientId: r.GetClientId()}, &eventStream{ServerStreamingServer: stream, layer: s.Layer, id: v.GetRuntimeId(), last: v.GetStatus().GetLastSeq()})
+}
+
+// Search passes the question to the runtime, which is the only layer that
+// knows where conversations are kept. Nothing about it is per session, so there
+// is no ref to resolve and no row to read: the reply is a stream of what was
+// found, while it is still being found.
+func (s SessionServer) Search(r *resource.SessionSearchRequest, stream grpc.ServerStreamingServer[resource.SessionSearchReply]) error {
+	if err := s.effect(); err != nil {
+		return err
+	}
+	return s.shared.runtime.Search(&api.SearchRequest{
+		Query: r.GetQuery(), Match: r.GetMatch(), IgnoreCase: r.GetIgnoreCase(),
+		View: r.GetView(), IncludeTools: r.GetIncludeTools(),
+		SinceMs: searchBoundMS(r.GetSince()), UntilMs: searchBoundMS(r.GetUntil()),
+		Projects: r.GetProjects(), Exclude: r.GetExclude(), Sessions: r.GetSessions(),
+		Limit: r.GetLimit(), Snippet: r.GetSnippet(), Cursor: r.GetCursor(), ClientId: r.GetClientId(),
+	}, &searchStream{ServerStreamingServer: stream})
+}
+
+// The runtime speaks the journal's milliseconds, where an absent bound is zero.
+// Nothing is lost in the translation: the window is a range of recorded events,
+// and they are recorded to the millisecond.
+func searchBoundMS(t *timestamppb.Timestamp) int64 {
+	if t == nil {
+		return 0
+	}
+	return t.AsTime().UnixMilli()
+}
+
+func searchBound(ms int64) *timestamppb.Timestamp {
+	if ms == 0 {
+		return nil
+	}
+	return timestamppb.New(time.UnixMilli(ms).UTC())
+}
+
+type searchStream struct {
+	grpc.ServerStreamingServer[resource.SessionSearchReply]
+}
+
+func (s *searchStream) Send(r *api.SearchReply) error {
+	out := resource.SessionSearchReply_builder{}
+	if v := r.Visit; v != nil {
+		hits := make([]*resource.SessionSearchHit, 0, len(v.Hits))
+		for _, h := range v.Hits {
+			hits = append(hits, resource.SessionSearchHit_builder{Seq: &h.Seq, TimeMs: &h.TimeMs, Kind: &h.Kind, Bytes: &h.Bytes, Score: &h.Score, Snippet: &h.Snippet}.Build())
+		}
+		out.Visit = resource.SessionSearchVisit_builder{
+			ProjectId: &v.ProjectId, ProjectName: &v.ProjectName,
+			SessionId: &v.SessionId, Alias: &v.Alias, Title: &v.Title, Agent: &v.Agent, State: &v.State,
+			ActivityMs: &v.ActivityMs, CreatedMs: &v.CreatedMs, Truncated: &v.Truncated, Approximate: &v.Approximate, Hits: hits,
+		}.Build()
+	}
+	if p := r.Progress; p != nil {
+		out.Progress = resource.SessionSearchProgress_builder{ProjectId: &p.ProjectId, ProjectName: &p.ProjectName, State: &p.State, Message: &p.Message, Opened: &p.Opened, Total: &p.Total}.Build()
+	}
+	if v := r.Summary; v != nil {
+		out.Summary = resource.SessionSearchSummary_builder{Projects: &v.Projects, Unavailable: &v.Unavailable, Sessions: &v.Sessions, Hits: &v.Hits, Truncated: &v.Truncated, NextCursor: &v.NextCursor, HasMore: &v.HasMore, Since: searchBound(v.SinceMs), Until: searchBound(v.UntilMs)}.Build()
+	}
+	return s.ServerStreamingServer.Send(out.Build())
 }
 
 func (s SessionServer) Background(ctx context.Context, r *resource.SessionBackgroundRequest) (*resource.SessionBackgroundReply, error) {

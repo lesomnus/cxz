@@ -25,7 +25,7 @@ func (s *Server) purgeSession(ctx context.Context, spec []byte) (*api.Receipt, e
 	if len(spec) > sessionpurge.MaxSpec || json.Unmarshal(spec, &r) != nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid session purge request")
 	}
-	if err := s.requireManagerAuthority(ctx); err != nil {
+	if err := s.requireManagerAuthority(ctx, "purge a session from the host client, not from inside a project"); err != nil {
 		return nil, err
 	}
 	m, err := s.manifest(ctx, r.Session)
@@ -64,20 +64,20 @@ type managerAuthorityKey struct{}
 
 func (s *Server) insideProject() bool { return os.Getenv("CXZ_PROJECT_ID") != "" }
 
-// requireManagerAuthority keeps a project container from destroying its own
-// history. A project runtime answers on two surfaces: the manager's
+// requireManagerAuthority keeps a project container from driving an operation
+// that is the host's. A project runtime answers on two surfaces: the manager's
 // token-authenticated channel, and a local socket the agent inside the container
 // can reach. An agent that may read a journal must not also be able to unlink
 // it, and a purge driven from in there would silently skip the uploads that only
 // the manager can see.
-func (s *Server) requireManagerAuthority(ctx context.Context) error {
+func (s *Server) requireManagerAuthority(ctx context.Context, refusal string) error {
 	if !s.insideProject() {
 		return nil
 	}
 	if authorized, _ := ctx.Value(managerAuthorityKey{}).(bool); authorized {
 		return nil
 	}
-	return status.Error(codes.PermissionDenied, "purge a session from the host client, not from inside a project")
+	return status.Error(codes.PermissionDenied, refusal)
 }
 
 // forgetSession drops the derived projection, in memory and in the database. The

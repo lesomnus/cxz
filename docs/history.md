@@ -140,6 +140,61 @@ The manager caches events as they stream and serves a page from SQLite when it h
 Journal reads are incremental — only complete appended records — so a session's
 history loading does not replay the whole file.
 
+## Searching it
+
+```sh
+cxz conversation search relay                      # the last 30 days, newest first
+cxz conversation search --match fuzzy cxzweb       # a half remembered phrase
+cxz conversation search --match regex "login.*failed" --ignore-case
+cxz conversation search --project work --exclude scratch relay
+cxz conversation search --since 2026-08-01 --until 2026-09-01 relay
+cxz conversation search --continue CURSOR          # the rest of a window, or the one before it
+```
+
+**One window of time at a time.** The default is the last 30 days, and the
+summary prints the command for the window before it, so a question that was not
+discussed recently is followed backwards instead of by reading everything.
+Windows are half-open, `[since, until)`, so consecutive ones neither overlap nor
+skip, and the window travels in the cursor: every page of one search sees the
+same history even as new events arrive above it.
+
+**Newest first, as it is found.** Results stream. A conversation is the unit —
+its hits appear together, under the session they were said in — and conversations
+arrive in order of their newest event, so nothing already on screen moves.
+
+**Why it can take a moment.** Each project keeps its journals in its own storage,
+so a project that is not running has to be opened to be read: a short-lived
+container with that project's volume mounted read-only, four at a time.
+`--progress` reports each one as it opens. A project that cannot be opened is
+reported and skipped rather than failing the search, and the cursor does not mark
+it finished.
+
+Order is why the first result waits: a project nobody has opened yet could hold
+the newest conversation, so an installation with many projects is quiet for a
+moment and then streams. `--project NAME` searches one and skips all of it.
+
+A session whose older events were trimmed says so beside its results. Finding
+nothing in it is not evidence that nothing was said.
+
+Ordering reads each journal's tail rather than scanning it, and that read is
+bounded: a journal records whatever an agent read, so records are occasionally
+tens of megabytes. A session holding more recent history than the tail read
+walks back through is still searched — its results simply say `(position
+approximate)`, because where it sits among the others is then a guess. The hits
+and their times are not.
+
+Matching is `substring` by default, `regex` for RE2, or `fuzzy` — which is
+matched per line, because a query's letters can be found scattered across any
+paragraph and a match against a whole message would mean nothing. `--tools` also
+searches tool calls and their arguments; `--raw` searches recorded vendor events
+instead of the conversation. `--format json` prints one object per conversation
+as it arrives, then the summary.
+
+This is the owner's operation, not an agent's. An agent gets `conversation_search`,
+which answers for one session inside its own project and returns metadata rather
+than text; a search across every project is refused on the surface a project
+container can reach.
+
 ## Backups
 
 Back up the **state volumes** and your **workspace contents**.
