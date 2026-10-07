@@ -135,7 +135,7 @@ message DevcontainerInput { bytes spec = 1; }
 // recorded one.
 message SearchRequest {
   string query = 1; string match = 2; bool ignore_case = 3;
-  string view = 4; bool include_tools = 5;
+  bool include_tools = 5;
   int64 since_ms = 6; int64 until_ms = 7;
   repeated string projects = 8; repeated string exclude = 9;
   repeated string sessions = 10;
@@ -151,19 +151,17 @@ message SearchVisit {
   int64 activity_ms = 8; int64 created_ms = 9;
   bool truncated = 10;
   repeated SearchHit hits = 11;
-  // approximate says activity_ms was placed rather than measured, so this
-  // conversation's position among the others is a guess. Its hits are not.
-  bool approximate = 12;
 }
 message SearchHit {
   uint64 seq = 1; int64 time_ms = 2; string kind = 3;
   int32 bytes = 4; int32 score = 5; string snippet = 6;
 }
-// Progress is not decoration: a project that is not running costs a container
-// to open, so a search can be working for seconds with nothing to show.
+// Progress says what the index had to catch up on, or could not. A search
+// answers from a derived store, and a store that is behind has to say so rather
+// than return an answer that looks complete.
 message SearchProgress {
   string project_id = 1; string project_name = 2; string state = 3;
-  string message = 4; int32 opened = 5; int32 total = 6;
+  string message = 4; int32 done = 5; int32 total = 6;
 }
 // The summary says which window it answered for, because a continued page was
 // not told: the window travelled in the cursor, and the client needs it back to
@@ -173,6 +171,9 @@ message SearchSummary {
   int32 hits = 4; int32 truncated = 5;
   string next_cursor = 6; bool has_more = 7;
   int64 since_ms = 8; int64 until_ms = 9;
+  // examined is how many messages this page read, which is the cost of the
+  // answer; pending is how many conversations the index had not caught up with.
+  int32 examined = 10; int32 pending = 11;
 }
 // Exactly one field is set. The summary is last.
 message SearchReply {

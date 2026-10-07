@@ -5671,7 +5671,6 @@ type SessionSearchRequest struct {
 	xxx_hidden_Query        *string                `protobuf:"bytes,1,opt,name=query"`
 	xxx_hidden_Match        *string                `protobuf:"bytes,2,opt,name=match"`
 	xxx_hidden_IgnoreCase   bool                   `protobuf:"varint,3,opt,name=ignore_case,json=ignoreCase"`
-	xxx_hidden_View         *string                `protobuf:"bytes,4,opt,name=view"`
 	xxx_hidden_IncludeTools bool                   `protobuf:"varint,5,opt,name=include_tools,json=includeTools"`
 	xxx_hidden_Since        *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=since"`
 	xxx_hidden_Until        *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=until"`
@@ -5738,16 +5737,6 @@ func (x *SessionSearchRequest) GetIgnoreCase() bool {
 		return x.xxx_hidden_IgnoreCase
 	}
 	return false
-}
-
-func (x *SessionSearchRequest) GetView() string {
-	if x != nil {
-		if x.xxx_hidden_View != nil {
-			return *x.xxx_hidden_View
-		}
-		return ""
-	}
-	return ""
 }
 
 func (x *SessionSearchRequest) GetIncludeTools() bool {
@@ -5828,27 +5817,22 @@ func (x *SessionSearchRequest) GetClientId() string {
 
 func (x *SessionSearchRequest) SetQuery(v string) {
 	x.xxx_hidden_Query = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 14)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 13)
 }
 
 func (x *SessionSearchRequest) SetMatch(v string) {
 	x.xxx_hidden_Match = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 14)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 13)
 }
 
 func (x *SessionSearchRequest) SetIgnoreCase(v bool) {
 	x.xxx_hidden_IgnoreCase = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 14)
-}
-
-func (x *SessionSearchRequest) SetView(v string) {
-	x.xxx_hidden_View = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 14)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 13)
 }
 
 func (x *SessionSearchRequest) SetIncludeTools(v bool) {
 	x.xxx_hidden_IncludeTools = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 14)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 13)
 }
 
 func (x *SessionSearchRequest) SetSince(v *timestamppb.Timestamp) {
@@ -5873,22 +5857,22 @@ func (x *SessionSearchRequest) SetSessions(v []string) {
 
 func (x *SessionSearchRequest) SetLimit(v int32) {
 	x.xxx_hidden_Limit = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 14)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 13)
 }
 
 func (x *SessionSearchRequest) SetSnippet(v int32) {
 	x.xxx_hidden_Snippet = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 14)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 13)
 }
 
 func (x *SessionSearchRequest) SetCursor(v string) {
 	x.xxx_hidden_Cursor = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 14)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 13)
 }
 
 func (x *SessionSearchRequest) SetClientId(v string) {
 	x.xxx_hidden_ClientId = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 13, 14)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 13)
 }
 
 func (x *SessionSearchRequest) HasQuery() bool {
@@ -5912,18 +5896,11 @@ func (x *SessionSearchRequest) HasIgnoreCase() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
 }
 
-func (x *SessionSearchRequest) HasView() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
-}
-
 func (x *SessionSearchRequest) HasIncludeTools() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
 }
 
 func (x *SessionSearchRequest) HasSince() bool {
@@ -5944,28 +5921,28 @@ func (x *SessionSearchRequest) HasLimit() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 10)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 9)
 }
 
 func (x *SessionSearchRequest) HasSnippet() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 11)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 10)
 }
 
 func (x *SessionSearchRequest) HasCursor() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 12)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 11)
 }
 
 func (x *SessionSearchRequest) HasClientId() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 13)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 12)
 }
 
 func (x *SessionSearchRequest) ClearQuery() {
@@ -5983,13 +5960,8 @@ func (x *SessionSearchRequest) ClearIgnoreCase() {
 	x.xxx_hidden_IgnoreCase = false
 }
 
-func (x *SessionSearchRequest) ClearView() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
-	x.xxx_hidden_View = nil
-}
-
 func (x *SessionSearchRequest) ClearIncludeTools() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
 	x.xxx_hidden_IncludeTools = false
 }
 
@@ -6002,22 +5974,22 @@ func (x *SessionSearchRequest) ClearUntil() {
 }
 
 func (x *SessionSearchRequest) ClearLimit() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 10)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 9)
 	x.xxx_hidden_Limit = 0
 }
 
 func (x *SessionSearchRequest) ClearSnippet() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 11)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 10)
 	x.xxx_hidden_Snippet = 0
 }
 
 func (x *SessionSearchRequest) ClearCursor() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 12)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 11)
 	x.xxx_hidden_Cursor = nil
 }
 
 func (x *SessionSearchRequest) ClearClientId() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 13)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 12)
 	x.xxx_hidden_ClientId = nil
 }
 
@@ -6027,7 +5999,6 @@ type SessionSearchRequest_builder struct {
 	Query        *string
 	Match        *string
 	IgnoreCase   *bool
-	View         *string
 	IncludeTools *bool
 	Since        *timestamppb.Timestamp
 	Until        *timestamppb.Timestamp
@@ -6045,23 +6016,19 @@ func (b0 SessionSearchRequest_builder) Build() *SessionSearchRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Query != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 14)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 13)
 		x.xxx_hidden_Query = b.Query
 	}
 	if b.Match != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 14)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 13)
 		x.xxx_hidden_Match = b.Match
 	}
 	if b.IgnoreCase != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 14)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 13)
 		x.xxx_hidden_IgnoreCase = *b.IgnoreCase
 	}
-	if b.View != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 14)
-		x.xxx_hidden_View = b.View
-	}
 	if b.IncludeTools != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 14)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 13)
 		x.xxx_hidden_IncludeTools = *b.IncludeTools
 	}
 	x.xxx_hidden_Since = b.Since
@@ -6070,19 +6037,19 @@ func (b0 SessionSearchRequest_builder) Build() *SessionSearchRequest {
 	x.xxx_hidden_Exclude = b.Exclude
 	x.xxx_hidden_Sessions = b.Sessions
 	if b.Limit != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 14)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 13)
 		x.xxx_hidden_Limit = *b.Limit
 	}
 	if b.Snippet != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 14)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 13)
 		x.xxx_hidden_Snippet = *b.Snippet
 	}
 	if b.Cursor != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 14)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 13)
 		x.xxx_hidden_Cursor = b.Cursor
 	}
 	if b.ClientId != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 13, 14)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 13)
 		x.xxx_hidden_ClientId = b.ClientId
 	}
 	return m0
@@ -6222,7 +6189,6 @@ type SessionSearchVisit struct {
 	xxx_hidden_CreatedMs   int64                  `protobuf:"varint,9,opt,name=created_ms,json=createdMs"`
 	xxx_hidden_Truncated   bool                   `protobuf:"varint,10,opt,name=truncated"`
 	xxx_hidden_Hits        *[]*SessionSearchHit   `protobuf:"bytes,11,rep,name=hits"`
-	xxx_hidden_Approximate bool                   `protobuf:"varint,12,opt,name=approximate"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
 	XXX_presence           [1]uint32
 	unknownFields          protoimpl.UnknownFields
@@ -6354,70 +6320,58 @@ func (x *SessionSearchVisit) GetHits() []*SessionSearchHit {
 	return nil
 }
 
-func (x *SessionSearchVisit) GetApproximate() bool {
-	if x != nil {
-		return x.xxx_hidden_Approximate
-	}
-	return false
-}
-
 func (x *SessionSearchVisit) SetProjectId(v string) {
 	x.xxx_hidden_ProjectId = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 11)
 }
 
 func (x *SessionSearchVisit) SetProjectName(v string) {
 	x.xxx_hidden_ProjectName = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 11)
 }
 
 func (x *SessionSearchVisit) SetSessionId(v string) {
 	x.xxx_hidden_SessionId = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 11)
 }
 
 func (x *SessionSearchVisit) SetAlias(v string) {
 	x.xxx_hidden_Alias = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 11)
 }
 
 func (x *SessionSearchVisit) SetTitle(v string) {
 	x.xxx_hidden_Title = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 11)
 }
 
 func (x *SessionSearchVisit) SetAgent(v string) {
 	x.xxx_hidden_Agent = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 11)
 }
 
 func (x *SessionSearchVisit) SetState(v string) {
 	x.xxx_hidden_State = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 11)
 }
 
 func (x *SessionSearchVisit) SetActivityMs(v int64) {
 	x.xxx_hidden_ActivityMs = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 11)
 }
 
 func (x *SessionSearchVisit) SetCreatedMs(v int64) {
 	x.xxx_hidden_CreatedMs = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 11)
 }
 
 func (x *SessionSearchVisit) SetTruncated(v bool) {
 	x.xxx_hidden_Truncated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 11)
 }
 
 func (x *SessionSearchVisit) SetHits(v []*SessionSearchHit) {
 	x.xxx_hidden_Hits = &v
-}
-
-func (x *SessionSearchVisit) SetApproximate(v bool) {
-	x.xxx_hidden_Approximate = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 12)
 }
 
 func (x *SessionSearchVisit) HasProjectId() bool {
@@ -6490,13 +6444,6 @@ func (x *SessionSearchVisit) HasTruncated() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 9)
 }
 
-func (x *SessionSearchVisit) HasApproximate() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 11)
-}
-
 func (x *SessionSearchVisit) ClearProjectId() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
 	x.xxx_hidden_ProjectId = nil
@@ -6547,11 +6494,6 @@ func (x *SessionSearchVisit) ClearTruncated() {
 	x.xxx_hidden_Truncated = false
 }
 
-func (x *SessionSearchVisit) ClearApproximate() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 11)
-	x.xxx_hidden_Approximate = false
-}
-
 type SessionSearchVisit_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -6569,11 +6511,6 @@ type SessionSearchVisit_builder struct {
 	// it is not evidence that nothing was said.
 	Truncated *bool
 	Hits      []*SessionSearchHit
-	// approximate says activity_ms was placed rather than measured -- the tail
-	// read that orders conversations is bounded, and this journal held more
-	// recent history than it walks back through. The position is a guess; the
-	// hits and their times are not.
-	Approximate *bool
 }
 
 func (b0 SessionSearchVisit_builder) Build() *SessionSearchVisit {
@@ -6581,50 +6518,46 @@ func (b0 SessionSearchVisit_builder) Build() *SessionSearchVisit {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.ProjectId != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 11)
 		x.xxx_hidden_ProjectId = b.ProjectId
 	}
 	if b.ProjectName != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 11)
 		x.xxx_hidden_ProjectName = b.ProjectName
 	}
 	if b.SessionId != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 11)
 		x.xxx_hidden_SessionId = b.SessionId
 	}
 	if b.Alias != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 11)
 		x.xxx_hidden_Alias = b.Alias
 	}
 	if b.Title != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 11)
 		x.xxx_hidden_Title = b.Title
 	}
 	if b.Agent != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 11)
 		x.xxx_hidden_Agent = b.Agent
 	}
 	if b.State != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 11)
 		x.xxx_hidden_State = b.State
 	}
 	if b.ActivityMs != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 11)
 		x.xxx_hidden_ActivityMs = *b.ActivityMs
 	}
 	if b.CreatedMs != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 11)
 		x.xxx_hidden_CreatedMs = *b.CreatedMs
 	}
 	if b.Truncated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 11)
 		x.xxx_hidden_Truncated = *b.Truncated
 	}
 	x.xxx_hidden_Hits = &b.Hits
-	if b.Approximate != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 12)
-		x.xxx_hidden_Approximate = *b.Approximate
-	}
 	return m0
 }
 
@@ -6859,15 +6792,16 @@ func (b0 SessionSearchHit_builder) Build() *SessionSearchHit {
 	return m0
 }
 
-// Progress is not decoration. A project that is not running costs a container
-// to open, so a search can be working for seconds with nothing to show yet.
+// Progress says what the index had to catch up on before answering, or could
+// not. A search answers from a derived store, and a store that is behind says so
+// rather than return an answer that looks complete.
 type SessionSearchProgress struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_ProjectId   *string                `protobuf:"bytes,1,opt,name=project_id,json=projectId"`
 	xxx_hidden_ProjectName *string                `protobuf:"bytes,2,opt,name=project_name,json=projectName"`
 	xxx_hidden_State       *string                `protobuf:"bytes,3,opt,name=state"`
 	xxx_hidden_Message     *string                `protobuf:"bytes,4,opt,name=message"`
-	xxx_hidden_Opened      int32                  `protobuf:"varint,5,opt,name=opened"`
+	xxx_hidden_Done        int32                  `protobuf:"varint,5,opt,name=done"`
 	xxx_hidden_Total       int32                  `protobuf:"varint,6,opt,name=total"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
 	XXX_presence           [1]uint32
@@ -6940,9 +6874,9 @@ func (x *SessionSearchProgress) GetMessage() string {
 	return ""
 }
 
-func (x *SessionSearchProgress) GetOpened() int32 {
+func (x *SessionSearchProgress) GetDone() int32 {
 	if x != nil {
-		return x.xxx_hidden_Opened
+		return x.xxx_hidden_Done
 	}
 	return 0
 }
@@ -6974,8 +6908,8 @@ func (x *SessionSearchProgress) SetMessage(v string) {
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 6)
 }
 
-func (x *SessionSearchProgress) SetOpened(v int32) {
-	x.xxx_hidden_Opened = v
+func (x *SessionSearchProgress) SetDone(v int32) {
+	x.xxx_hidden_Done = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 6)
 }
 
@@ -7012,7 +6946,7 @@ func (x *SessionSearchProgress) HasMessage() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
 }
 
-func (x *SessionSearchProgress) HasOpened() bool {
+func (x *SessionSearchProgress) HasDone() bool {
 	if x == nil {
 		return false
 	}
@@ -7046,9 +6980,9 @@ func (x *SessionSearchProgress) ClearMessage() {
 	x.xxx_hidden_Message = nil
 }
 
-func (x *SessionSearchProgress) ClearOpened() {
+func (x *SessionSearchProgress) ClearDone() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
-	x.xxx_hidden_Opened = 0
+	x.xxx_hidden_Done = 0
 }
 
 func (x *SessionSearchProgress) ClearTotal() {
@@ -7063,7 +6997,7 @@ type SessionSearchProgress_builder struct {
 	ProjectName *string
 	State       *string
 	Message     *string
-	Opened      *int32
+	Done        *int32
 	Total       *int32
 }
 
@@ -7087,9 +7021,9 @@ func (b0 SessionSearchProgress_builder) Build() *SessionSearchProgress {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 6)
 		x.xxx_hidden_Message = b.Message
 	}
-	if b.Opened != nil {
+	if b.Done != nil {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 6)
-		x.xxx_hidden_Opened = *b.Opened
+		x.xxx_hidden_Done = *b.Done
 	}
 	if b.Total != nil {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 6)
@@ -7112,6 +7046,8 @@ type SessionSearchSummary struct {
 	xxx_hidden_HasMore     bool                   `protobuf:"varint,7,opt,name=has_more,json=hasMore"`
 	xxx_hidden_Since       *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=since"`
 	xxx_hidden_Until       *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=until"`
+	xxx_hidden_Examined    int32                  `protobuf:"varint,10,opt,name=examined"`
+	xxx_hidden_Pending     int32                  `protobuf:"varint,11,opt,name=pending"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
 	XXX_presence           [1]uint32
 	unknownFields          protoimpl.UnknownFields
@@ -7209,39 +7145,53 @@ func (x *SessionSearchSummary) GetUntil() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *SessionSearchSummary) GetExamined() int32 {
+	if x != nil {
+		return x.xxx_hidden_Examined
+	}
+	return 0
+}
+
+func (x *SessionSearchSummary) GetPending() int32 {
+	if x != nil {
+		return x.xxx_hidden_Pending
+	}
+	return 0
+}
+
 func (x *SessionSearchSummary) SetProjects(v int32) {
 	x.xxx_hidden_Projects = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 11)
 }
 
 func (x *SessionSearchSummary) SetUnavailable(v int32) {
 	x.xxx_hidden_Unavailable = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 11)
 }
 
 func (x *SessionSearchSummary) SetSessions(v int32) {
 	x.xxx_hidden_Sessions = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 11)
 }
 
 func (x *SessionSearchSummary) SetHits(v int32) {
 	x.xxx_hidden_Hits = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 11)
 }
 
 func (x *SessionSearchSummary) SetTruncated(v int32) {
 	x.xxx_hidden_Truncated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 11)
 }
 
 func (x *SessionSearchSummary) SetNextCursor(v string) {
 	x.xxx_hidden_NextCursor = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 11)
 }
 
 func (x *SessionSearchSummary) SetHasMore(v bool) {
 	x.xxx_hidden_HasMore = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 11)
 }
 
 func (x *SessionSearchSummary) SetSince(v *timestamppb.Timestamp) {
@@ -7250,6 +7200,16 @@ func (x *SessionSearchSummary) SetSince(v *timestamppb.Timestamp) {
 
 func (x *SessionSearchSummary) SetUntil(v *timestamppb.Timestamp) {
 	x.xxx_hidden_Until = v
+}
+
+func (x *SessionSearchSummary) SetExamined(v int32) {
+	x.xxx_hidden_Examined = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 11)
+}
+
+func (x *SessionSearchSummary) SetPending(v int32) {
+	x.xxx_hidden_Pending = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 11)
 }
 
 func (x *SessionSearchSummary) HasProjects() bool {
@@ -7315,6 +7275,20 @@ func (x *SessionSearchSummary) HasUntil() bool {
 	return x.xxx_hidden_Until != nil
 }
 
+func (x *SessionSearchSummary) HasExamined() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 9)
+}
+
+func (x *SessionSearchSummary) HasPending() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 10)
+}
+
 func (x *SessionSearchSummary) ClearProjects() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
 	x.xxx_hidden_Projects = 0
@@ -7358,6 +7332,16 @@ func (x *SessionSearchSummary) ClearUntil() {
 	x.xxx_hidden_Until = nil
 }
 
+func (x *SessionSearchSummary) ClearExamined() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 9)
+	x.xxx_hidden_Examined = 0
+}
+
+func (x *SessionSearchSummary) ClearPending() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 10)
+	x.xxx_hidden_Pending = 0
+}
+
 type SessionSearchSummary_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -7370,6 +7354,10 @@ type SessionSearchSummary_builder struct {
 	HasMore     *bool
 	Since       *timestamppb.Timestamp
 	Until       *timestamppb.Timestamp
+	// examined is how many messages this page read, which is what the answer
+	// cost; pending is how many conversations the index had not caught up with.
+	Examined *int32
+	Pending  *int32
 }
 
 func (b0 SessionSearchSummary_builder) Build() *SessionSearchSummary {
@@ -7377,35 +7365,43 @@ func (b0 SessionSearchSummary_builder) Build() *SessionSearchSummary {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Projects != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 11)
 		x.xxx_hidden_Projects = *b.Projects
 	}
 	if b.Unavailable != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 11)
 		x.xxx_hidden_Unavailable = *b.Unavailable
 	}
 	if b.Sessions != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 11)
 		x.xxx_hidden_Sessions = *b.Sessions
 	}
 	if b.Hits != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 11)
 		x.xxx_hidden_Hits = *b.Hits
 	}
 	if b.Truncated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 11)
 		x.xxx_hidden_Truncated = *b.Truncated
 	}
 	if b.NextCursor != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 11)
 		x.xxx_hidden_NextCursor = b.NextCursor
 	}
 	if b.HasMore != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 11)
 		x.xxx_hidden_HasMore = *b.HasMore
 	}
 	x.xxx_hidden_Since = b.Since
 	x.xxx_hidden_Until = b.Until
+	if b.Examined != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 11)
+		x.xxx_hidden_Examined = *b.Examined
+	}
+	if b.Pending != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 11)
+		x.xxx_hidden_Pending = *b.Pending
+	}
 	return m0
 }
 
@@ -7604,13 +7600,12 @@ const file_cxz_session_svc_g_proto_rawDesc = "" +
 	"\n" +
 	"refreshing\x18\x06 \x01(\bR\n" +
 	"refreshing\x12\x16\n" +
-	"\x06status\x18\a \x01(\tR\x06status\"\xb7\x03\n" +
+	"\x06status\x18\a \x01(\tR\x06status\"\xa3\x03\n" +
 	"\x14SessionSearchRequest\x12\x14\n" +
 	"\x05query\x18\x01 \x01(\tR\x05query\x12\x14\n" +
 	"\x05match\x18\x02 \x01(\tR\x05match\x12\x1f\n" +
 	"\vignore_case\x18\x03 \x01(\bR\n" +
-	"ignoreCase\x12\x12\n" +
-	"\x04view\x18\x04 \x01(\tR\x04view\x12#\n" +
+	"ignoreCase\x12#\n" +
 	"\rinclude_tools\x18\x05 \x01(\bR\fincludeTools\x120\n" +
 	"\x05since\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\x05since\x120\n" +
 	"\x05until\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\x05until\x12\x1a\n" +
@@ -7625,7 +7620,7 @@ const file_cxz_session_svc_g_proto_rawDesc = "" +
 	"\x12SessionSearchReply\x12-\n" +
 	"\x05visit\x18\x01 \x01(\v2\x17.cxz.SessionSearchVisitR\x05visit\x126\n" +
 	"\bprogress\x18\x02 \x01(\v2\x1a.cxz.SessionSearchProgressR\bprogress\x123\n" +
-	"\asummary\x18\x03 \x01(\v2\x19.cxz.SessionSearchSummaryR\asummary\"\xf8\x02\n" +
+	"\asummary\x18\x03 \x01(\v2\x19.cxz.SessionSearchSummaryR\asummary\"\xd6\x02\n" +
 	"\x12SessionSearchVisit\x12\x1d\n" +
 	"\n" +
 	"project_id\x18\x01 \x01(\tR\tprojectId\x12!\n" +
@@ -7642,23 +7637,22 @@ const file_cxz_session_svc_g_proto_rawDesc = "" +
 	"created_ms\x18\t \x01(\x03R\tcreatedMs\x12\x1c\n" +
 	"\ttruncated\x18\n" +
 	" \x01(\bR\ttruncated\x12)\n" +
-	"\x04hits\x18\v \x03(\v2\x15.cxz.SessionSearchHitR\x04hits\x12 \n" +
-	"\vapproximate\x18\f \x01(\bR\vapproximate\"\x97\x01\n" +
+	"\x04hits\x18\v \x03(\v2\x15.cxz.SessionSearchHitR\x04hits\"\x97\x01\n" +
 	"\x10SessionSearchHit\x12\x10\n" +
 	"\x03seq\x18\x01 \x01(\x04R\x03seq\x12\x17\n" +
 	"\atime_ms\x18\x02 \x01(\x03R\x06timeMs\x12\x12\n" +
 	"\x04kind\x18\x03 \x01(\tR\x04kind\x12\x14\n" +
 	"\x05bytes\x18\x04 \x01(\x05R\x05bytes\x12\x14\n" +
 	"\x05score\x18\x05 \x01(\x05R\x05score\x12\x18\n" +
-	"\asnippet\x18\x06 \x01(\tR\asnippet\"\xb7\x01\n" +
+	"\asnippet\x18\x06 \x01(\tR\asnippet\"\xb3\x01\n" +
 	"\x15SessionSearchProgress\x12\x1d\n" +
 	"\n" +
 	"project_id\x18\x01 \x01(\tR\tprojectId\x12!\n" +
 	"\fproject_name\x18\x02 \x01(\tR\vprojectName\x12\x14\n" +
 	"\x05state\x18\x03 \x01(\tR\x05state\x12\x18\n" +
-	"\amessage\x18\x04 \x01(\tR\amessage\x12\x16\n" +
-	"\x06opened\x18\x05 \x01(\x05R\x06opened\x12\x14\n" +
-	"\x05total\x18\x06 \x01(\x05R\x05total\"\xc2\x02\n" +
+	"\amessage\x18\x04 \x01(\tR\amessage\x12\x12\n" +
+	"\x04done\x18\x05 \x01(\x05R\x04done\x12\x14\n" +
+	"\x05total\x18\x06 \x01(\x05R\x05total\"\xf8\x02\n" +
 	"\x14SessionSearchSummary\x12\x1a\n" +
 	"\bprojects\x18\x01 \x01(\x05R\bprojects\x12 \n" +
 	"\vunavailable\x18\x02 \x01(\x05R\vunavailable\x12\x1a\n" +
@@ -7669,7 +7663,10 @@ const file_cxz_session_svc_g_proto_rawDesc = "" +
 	"nextCursor\x12\x19\n" +
 	"\bhas_more\x18\a \x01(\bR\ahasMore\x120\n" +
 	"\x05since\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\x05since\x120\n" +
-	"\x05until\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\x05until2\x9b\f\n" +
+	"\x05until\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\x05until\x12\x1a\n" +
+	"\bexamined\x18\n" +
+	" \x01(\x05R\bexamined\x12\x18\n" +
+	"\apending\x18\v \x01(\x05R\apending2\x9b\f\n" +
 	"\x0eSessionService\x12+\n" +
 	"\x03Add\x12\x16.cxz.SessionAddRequest\x1a\f.cxz.Session\x12+\n" +
 	"\x03Get\x12\x16.cxz.SessionGetRequest\x1a\f.cxz.Session\x12/\n" +

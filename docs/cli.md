@@ -133,16 +133,17 @@ cxz conversation search --project NAME --exclude NAME TEXT
 cxz conversation search --since 2026-08-01 --until 2026-09-01 TEXT
 cxz conversation search --window 7d --limit 50 --snippet 300 TEXT
 cxz conversation search --continue CURSOR
-cxz conversation search --tools --raw --progress TEXT
+cxz conversation search --tools --progress TEXT
 ```
 
-One window of time per search, newest first, streamed as it is found; the
-summary prints the cursor for the rest of the window and the command for the
-window before it. `--project`/`--exclude` take a name, alias, workspace path or
-id, and an unknown one is refused rather than quietly searching everything.
-Spans accept `36h`, `14d`, `2w` or `3mo`; times accept RFC3339, `YYYY-MM-DD` or
-`90d ago`. With `--format json` each conversation is one object as it arrives.
-See [searching it](history.md#searching-it).
+One window of time per search, newest first, grouped by conversation; the summary
+prints the cursor for the rest of the window and the command for the window
+before it. Answers come from the installation's conversation index, which is kept
+current as events are recorded — a conversation it has not reached yet is
+reported rather than omitted. `--project`/`--exclude` take a name, alias,
+workspace path or id, and an unknown one is refused rather than quietly searching
+everything. Spans accept `36h`, `14d`, `2w` or `3mo`; times accept RFC3339,
+`YYYY-MM-DD` or `90d ago`. See [searching it](history.md#searching-it).
 
 ## Accounts
 

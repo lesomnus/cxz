@@ -31,14 +31,14 @@ func conversationCommand() *xli.Command {
 		Synop: "Searches the last 30 days by default and prints the cursor to continue with. --continue\n" +
 			"CURSOR reads the window before the one just read, so a question that was not answered\n" +
 			"recently can be followed backwards without re-reading what was already seen.\n\n" +
-			"A project that is not running is opened to be read, which takes a moment; --progress\n" +
-			"says which one is being opened. Results stream as they are found, newest first.",
+			"Answers come from the installation's conversation index, which is kept up to date as\n" +
+			"events are recorded. A conversation the index has not reached is reported rather than\n" +
+			"left out silently; --progress shows what it caught up on.",
 		Args: arg.Args{stringArg("QUERY", true)},
 		Flags: flg.Flags{
 			&flg.Base[string, matchParser]{Name: "match", Brief: "How to match: substring, regex (RE2) or fuzzy (per line)", Default: ptr("substring")},
 			switchFlag("ignore-case", "Match regardless of case"),
 			switchFlag("tools", "Search tool calls and their results too"),
-			switchFlag("raw", "Search recorded vendor events instead of the conversation"),
 			&flg.Strings{Name: "project", Brief: "Search only this project (repeatable; name, alias or id)"},
 			&flg.Strings{Name: "exclude", Brief: "Skip this project (repeatable; name, alias or id)"},
 			stringFlag("since", "Oldest time to search: RFC3339, a date, or a duration such as 90d ago", ""),
@@ -47,7 +47,7 @@ func conversationCommand() *xli.Command {
 			stringFlag("continue", "Cursor from an earlier search: reads the window before it", ""),
 			&flg.Int{Name: "limit", Brief: "Most hits to return (default 200)", Default: ptr(0)},
 			&flg.Int{Name: "snippet", Brief: "Matching text to show per hit, in bytes (0 for none)", Default: ptr(0)},
-			switchFlag("progress", "Report each project as it is opened"),
+			switchFlag("progress", "Report what the index caught up on before answering"),
 			formatFlag(),
 		},
 		Handler: withClient(conversationSearch),
@@ -74,9 +74,6 @@ func conversationSearch(ctx context.Context, client api.SessionsClient, c *xli.C
 		Snippet:      int32(flg.MustGet[int](c, "snippet")),
 		Cursor:       flg.MustGet[string](c, "continue"),
 		ClientId:     core.ID(),
-	}
-	if flg.MustGet[bool](c, "raw") {
-		r.View = "raw"
 	}
 	projects, _ := flg.Get[[]string](c, "project")
 	exclude, _ := flg.Get[[]string](c, "exclude")
@@ -157,7 +154,7 @@ func conversationSearch(ctx context.Context, client api.SessionsClient, c *xli.C
 				continue
 			}
 			if progress {
-				fmt.Fprintf(c.ErrWriter, "%s %s (%d/%d)\n", reply.Progress.State, projectLabel(reply.Progress), reply.Progress.Opened, reply.Progress.Total)
+				fmt.Fprintf(c.ErrWriter, "%s %s %s\n", reply.Progress.State, projectLabel(reply.Progress), reply.Progress.Message)
 			}
 		case reply.Summary != nil:
 			if json {
@@ -208,11 +205,6 @@ func printVisit(c *xli.Command, v *api.SearchVisit) error {
 	if v.Truncated {
 		fmt.Fprint(c.Writer, "  (older events trimmed)")
 	}
-	// Said out loud, because a conversation shown in the wrong place with
-	// nothing to explain it looks like a bug in the order.
-	if v.Approximate {
-		fmt.Fprint(c.Writer, "  (position approximate)")
-	}
 	fmt.Fprintf(c.Writer, "  %s\n", v.SessionId)
 	for _, h := range v.Hits {
 		when := time.UnixMilli(h.TimeMs).Local().Format("2006-01-02 15:04")
@@ -235,6 +227,14 @@ func printSummary(c *xli.Command, s *api.SearchSummary, query string) error {
 		where = fmt.Sprintf(" across %d projects", s.Projects)
 	}
 	fmt.Fprintf(c.ErrWriter, "\n%s in %s%s%s\n", plural(int(s.Hits), "hit"), plural(int(s.Sessions), "conversation"), where, window)
+	if s.Examined > 0 {
+		fmt.Fprintf(c.ErrWriter, "%s read\n", plural(int(s.Examined), "message"))
+	}
+	if s.Pending > 0 {
+		// An answer from an index that is behind is incomplete, and saying so
+		// is the difference between that and an answer that is wrong.
+		fmt.Fprintf(c.ErrWriter, "%s not yet indexed; run the search again, or --progress to see them\n", plural(int(s.Pending), "conversation"))
+	}
 	if s.Unavailable > 0 {
 		fmt.Fprintf(c.ErrWriter, "%d projects could not be read; their conversations were not searched\n", s.Unavailable)
 	}

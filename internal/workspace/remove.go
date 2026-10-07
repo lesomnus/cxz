@@ -22,10 +22,23 @@ func (m *Manager) RemoveProject(ctx context.Context, id string, sessions []strin
 	return m.removeProject(ctx, id, sessions, dockerx.Run)
 }
 
+// forgetConversations drops a removed project's searchable record. The index
+// is derived from storage that is going away, so leaving it would be a copy of
+// something that no longer exists.
+func (m *Manager) forgetConversations(ctx context.Context, project string) {
+	if m.Conversations == nil || project == "" {
+		return
+	}
+	if err := m.Conversations.ForgetProject(ctx, project); err != nil {
+		fmt.Fprintln(os.Stderr, "conversation index:", err)
+	}
+}
+
 func (m *Manager) removeProject(ctx context.Context, id string, sessions []string, run removalDocker) error {
 	if !assets.ValidID(id) || m.Owner == "" {
 		return fmt.Errorf("invalid project removal scope")
 	}
+	defer m.forgetConversations(ctx, id)
 	lock := m.projectLock(id)
 	lock.Lock()
 	defer lock.Unlock()

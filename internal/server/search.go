@@ -4,8 +4,7 @@ import (
 	"time"
 
 	"github.com/lesomnus/cxz/api"
-	"github.com/lesomnus/cxz/internal/conversation"
-	"github.com/lesomnus/cxz/internal/workspace"
+	"github.com/lesomnus/cxz/internal/convindex"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -13,91 +12,108 @@ import (
 
 // Search answers for every conversation the installation holds.
 //
-// There are two installations to answer for, and the difference is where the
-// journals are. A manager keeps each project's in that project's own storage,
-// so it fans out; a host-local cxz has one state directory and reads it
-// directly. The stream is the same either way, because the caller's question
-// was the same.
+// There is one answer for both kinds of installation now, which is what keeping
+// the conversation as an index buys: a manager's projects and a host-local state
+// directory differ in where their journals are, and not at all in where their
+// conversation is. Nothing is fanned out, no project is opened to be read, and
+// the reply is one query's result rather than a merge of several readers'.
 func (s *Server) Search(r *api.SearchRequest, stream grpc.ServerStreamingServer[api.SearchReply]) error {
 	ctx := stream.Context()
-	q := conversation.ScanQuery{
+	if err := s.requireManagerAuthority(ctx, "search conversations from the host client, not from inside a project"); err != nil {
+		return err
+	}
+	if s.conversations == nil {
+		return status.Error(codes.Unavailable, "this installation keeps no conversation index")
+	}
+	q := convindex.Query{
 		Query:        r.Query,
 		Match:        r.Match,
 		IgnoreCase:   r.IgnoreCase,
-		View:         r.View,
 		IncludeTools: r.IncludeTools,
-		Since:        conversation.MSTime(r.SinceMs),
-		Until:        conversation.MSTime(r.UntilMs),
+		Since:        atMS(r.SinceMs),
+		Until:        atMS(r.UntilMs),
+		Projects:     r.Projects,
+		Exclude:      r.Exclude,
 		Sessions:     r.Sessions,
 		Snippet:      int(r.Snippet),
 		Limit:        int(r.Limit),
 	}
-	if err := s.requireManagerAuthority(ctx, "search conversations from the host client, not from inside a project"); err != nil {
-		return err
-	}
-	if s.manager != nil {
-		out, err := s.manager.Search(ctx, workspace.SearchRequest{Query: q, Projects: r.Projects, Exclude: r.Exclude, Cursor: r.Cursor}, func(v workspace.SearchVisit) error {
-			return stream.Send(&api.SearchReply{Visit: searchVisit(v)})
-		}, func(p workspace.SearchProgress) error {
-			return stream.Send(&api.SearchReply{Progress: &api.SearchProgress{ProjectId: p.ProjectID, ProjectName: p.ProjectName, State: p.State, Message: p.Message, Opened: int32(p.Opened), Total: int32(p.Total)}})
-		})
-		if err != nil {
-			return searchError(err)
-		}
-		return stream.Send(&api.SearchReply{Summary: &api.SearchSummary{
-			Projects: int32(out.Projects), Unavailable: int32(out.Unavailable), Sessions: int32(out.Sessions),
-			Hits: int32(out.Hits), Truncated: int32(out.Truncated), NextCursor: out.NextCursor, HasMore: out.HasMore,
-			SinceMs: conversation.TimeMS(out.Since), UntilMs: conversation.TimeMS(out.Until),
-		}})
-	}
-	cursor := conversation.ScanCursor{Version: 1}
 	if r.Cursor != "" {
-		var err error
-		if cursor, err = conversation.DecodeScanCursor(r.Cursor); err != nil {
+		since, until, resume, err := convindex.DecodeCursor(r.Cursor)
+		if err != nil {
 			return status.Error(codes.InvalidArgument, err.Error())
 		}
-		q.Since, q.Until = cursor.Window()
-		q.Resume = cursor.At[""]
+		// The window is fixed while it is being paged through: events arriving
+		// now are above it, and must not shift what has already been read.
+		q.Since, q.Until, q.Resume = since, until, resume
 	}
-	if q.Until.IsZero() {
-		q.Until = time.Now().UTC()
-	}
-	scanner := &conversation.Scanner{Root: s.root}
-	found := int32(0)
-	out, err := scanner.Scan(ctx, q, func(v conversation.ScanVisit) error {
-		if len(v.Hits) == 0 {
-			return nil
+	// Ingestion catches up before the question is answered, so that a search
+	// sees a conversation that is still happening. It is bounded: what it
+	// cannot reach in time is reported rather than waited for.
+	caught := s.catchUp(ctx)
+	pending := 0
+	for _, p := range caught {
+		// Having been caught up is not being behind. Only what the index could
+		// not reach makes an answer incomplete.
+		if p.State != "indexed" {
+			pending++
 		}
-		found++
-		return stream.Send(&api.SearchReply{Visit: searchVisit(workspace.SearchVisit{ScanVisit: v})})
-	})
+	}
+	for _, p := range caught {
+		if err := stream.Send(&api.SearchReply{Progress: &api.SearchProgress{
+			ProjectId: p.Project, ProjectName: p.Name, State: p.State, Message: p.Message,
+			Done: int32(p.Done), Total: int32(p.Total),
+		}}); err != nil {
+			return err
+		}
+	}
+	visits, out, err := s.conversations.Search(ctx, q, time.Now().UTC())
 	if err != nil {
 		return searchError(err)
 	}
-	// Sessions counts the conversations a person was shown, not the ones that
-	// were read: "two conversations" beside one hit reads as a miscount.
-	summary := &api.SearchSummary{Projects: 1, Sessions: found, Hits: int32(out.Hits), Truncated: int32(out.Truncated),
-		SinceMs: conversation.TimeMS(q.Since), UntilMs: conversation.TimeMS(q.Until)}
-	if out.Next != nil {
-		cursor.SinceMS, cursor.UntilMS = conversation.TimeMS(q.Since), conversation.TimeMS(q.Until)
-		cursor.At = map[string]conversation.Resume{"": *out.Next}
-		summary.HasMore = true
-		summary.NextCursor = cursor.Encode()
+	projects := map[string]bool{}
+	for _, v := range visits {
+		projects[v.Project] = true
+		reply := &api.SearchVisit{
+			// The project's name and the session's alias belong to the layer
+			// that owns them, and it adds them on the way out: the runtime
+			// knows a session by the identity its journal is written under.
+			ProjectId: v.Project, SessionId: v.Session, Title: v.Title, Agent: v.Agent,
+			ActivityMs: msAt(v.Activity), CreatedMs: msAt(v.CreatedAt), Truncated: v.Trimmed,
+		}
+		for _, h := range v.Hits {
+			reply.Hits = append(reply.Hits, &api.SearchHit{
+				Seq: h.Seq, TimeMs: msAt(h.Time), Kind: h.Kind,
+				Bytes: int32(h.Bytes), Score: int32(h.Score), Snippet: h.Snippet,
+			})
+		}
+		if err = stream.Send(&api.SearchReply{Visit: reply}); err != nil {
+			return err
+		}
+	}
+	summary := &api.SearchSummary{
+		Projects: int32(len(projects)), Sessions: int32(out.Sessions), Hits: int32(out.Hits),
+		Truncated: int32(out.Trimmed), Examined: int32(out.Examined), Pending: int32(pending),
+		SinceMs: msAt(out.Since), UntilMs: msAt(out.Until), HasMore: out.HasMore,
+	}
+	if out.HasMore && out.Next != nil {
+		summary.NextCursor = convindex.EncodeCursor(out.Since, out.Until, *out.Next)
 	}
 	return stream.Send(&api.SearchReply{Summary: summary})
 }
 
-func searchVisit(v workspace.SearchVisit) *api.SearchVisit {
-	out := &api.SearchVisit{
-		ProjectId: v.ProjectID, ProjectName: v.ProjectName,
-		SessionId: v.ID, Alias: v.Alias, Title: v.Title, Agent: v.Agent, State: v.State,
-		ActivityMs: conversation.TimeMS(v.Activity), CreatedMs: conversation.TimeMS(v.CreatedAt),
-		Truncated: v.Truncated, Approximate: v.Approximate,
+func atMS(v int64) time.Time {
+	if v == 0 {
+		return time.Time{}
 	}
-	for _, h := range v.Hits {
-		out.Hits = append(out.Hits, &api.SearchHit{Seq: h.Seq, TimeMs: conversation.TimeMS(h.Time), Kind: h.Kind, Bytes: int32(h.Bytes), Score: int32(h.Score), Snippet: h.Snippet})
+	return time.UnixMilli(v).UTC()
+}
+
+func msAt(t time.Time) int64 {
+	if t.IsZero() {
+		return 0
 	}
-	return out
+	return t.UnixMilli()
 }
 
 // searchError keeps a refused query a refusal: a bad expression or an

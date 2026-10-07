@@ -2374,7 +2374,6 @@ type SearchRequest struct {
 	Query         string                 `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty"`
 	Match         string                 `protobuf:"bytes,2,opt,name=match,proto3" json:"match,omitempty"`
 	IgnoreCase    bool                   `protobuf:"varint,3,opt,name=ignore_case,json=ignoreCase,proto3" json:"ignore_case,omitempty"`
-	View          string                 `protobuf:"bytes,4,opt,name=view,proto3" json:"view,omitempty"`
 	IncludeTools  bool                   `protobuf:"varint,5,opt,name=include_tools,json=includeTools,proto3" json:"include_tools,omitempty"`
 	SinceMs       int64                  `protobuf:"varint,6,opt,name=since_ms,json=sinceMs,proto3" json:"since_ms,omitempty"`
 	UntilMs       int64                  `protobuf:"varint,7,opt,name=until_ms,json=untilMs,proto3" json:"until_ms,omitempty"`
@@ -2438,13 +2437,6 @@ func (x *SearchRequest) GetIgnoreCase() bool {
 		return x.IgnoreCase
 	}
 	return false
-}
-
-func (x *SearchRequest) GetView() string {
-	if x != nil {
-		return x.View
-	}
-	return ""
 }
 
 func (x *SearchRequest) GetIncludeTools() bool {
@@ -2530,7 +2522,6 @@ type SearchVisit struct {
 	CreatedMs     int64                  `protobuf:"varint,9,opt,name=created_ms,json=createdMs,proto3" json:"created_ms,omitempty"`
 	Truncated     bool                   `protobuf:"varint,10,opt,name=truncated,proto3" json:"truncated,omitempty"`
 	Hits          []*SearchHit           `protobuf:"bytes,11,rep,name=hits,proto3" json:"hits,omitempty"`
-	Approximate   bool                   `protobuf:"varint,12,opt,name=approximate,proto3" json:"approximate,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2642,13 +2633,6 @@ func (x *SearchVisit) GetHits() []*SearchHit {
 	return nil
 }
 
-func (x *SearchVisit) GetApproximate() bool {
-	if x != nil {
-		return x.Approximate
-	}
-	return false
-}
-
 type SearchHit struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Seq           uint64                 `protobuf:"varint,1,opt,name=seq,proto3" json:"seq,omitempty"`
@@ -2739,7 +2723,7 @@ type SearchProgress struct {
 	ProjectName   string                 `protobuf:"bytes,2,opt,name=project_name,json=projectName,proto3" json:"project_name,omitempty"`
 	State         string                 `protobuf:"bytes,3,opt,name=state,proto3" json:"state,omitempty"`
 	Message       string                 `protobuf:"bytes,4,opt,name=message,proto3" json:"message,omitempty"`
-	Opened        int32                  `protobuf:"varint,5,opt,name=opened,proto3" json:"opened,omitempty"`
+	Done          int32                  `protobuf:"varint,5,opt,name=done,proto3" json:"done,omitempty"`
 	Total         int32                  `protobuf:"varint,6,opt,name=total,proto3" json:"total,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2803,9 +2787,9 @@ func (x *SearchProgress) GetMessage() string {
 	return ""
 }
 
-func (x *SearchProgress) GetOpened() int32 {
+func (x *SearchProgress) GetDone() int32 {
 	if x != nil {
-		return x.Opened
+		return x.Done
 	}
 	return 0
 }
@@ -2828,6 +2812,8 @@ type SearchSummary struct {
 	HasMore       bool                   `protobuf:"varint,7,opt,name=has_more,json=hasMore,proto3" json:"has_more,omitempty"`
 	SinceMs       int64                  `protobuf:"varint,8,opt,name=since_ms,json=sinceMs,proto3" json:"since_ms,omitempty"`
 	UntilMs       int64                  `protobuf:"varint,9,opt,name=until_ms,json=untilMs,proto3" json:"until_ms,omitempty"`
+	Examined      int32                  `protobuf:"varint,10,opt,name=examined,proto3" json:"examined,omitempty"`
+	Pending       int32                  `protobuf:"varint,11,opt,name=pending,proto3" json:"pending,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2921,6 +2907,20 @@ func (x *SearchSummary) GetSinceMs() int64 {
 func (x *SearchSummary) GetUntilMs() int64 {
 	if x != nil {
 		return x.UntilMs
+	}
+	return 0
+}
+
+func (x *SearchSummary) GetExamined() int32 {
+	if x != nil {
+		return x.Examined
+	}
+	return 0
+}
+
+func (x *SearchSummary) GetPending() int32 {
+	if x != nil {
+		return x.Pending
 	}
 	return 0
 }
@@ -3197,13 +3197,12 @@ const file_cxz_proto_rawDesc = "" +
 	"refreshing\x12\x16\n" +
 	"\x06status\x18\a \x01(\tR\x06status\"'\n" +
 	"\x11DevcontainerInput\x12\x12\n" +
-	"\x04spec\x18\x01 \x01(\fR\x04spec\"\x82\x03\n" +
+	"\x04spec\x18\x01 \x01(\fR\x04spec\"\xee\x02\n" +
 	"\rSearchRequest\x12\x14\n" +
 	"\x05query\x18\x01 \x01(\tR\x05query\x12\x14\n" +
 	"\x05match\x18\x02 \x01(\tR\x05match\x12\x1f\n" +
 	"\vignore_case\x18\x03 \x01(\bR\n" +
-	"ignoreCase\x12\x12\n" +
-	"\x04view\x18\x04 \x01(\tR\x04view\x12#\n" +
+	"ignoreCase\x12#\n" +
 	"\rinclude_tools\x18\x05 \x01(\bR\fincludeTools\x12\x19\n" +
 	"\bsince_ms\x18\x06 \x01(\x03R\asinceMs\x12\x19\n" +
 	"\buntil_ms\x18\a \x01(\x03R\auntilMs\x12\x1a\n" +
@@ -3214,7 +3213,7 @@ const file_cxz_proto_rawDesc = "" +
 	"\x05limit\x18\v \x01(\x05R\x05limit\x12\x18\n" +
 	"\asnippet\x18\f \x01(\x05R\asnippet\x12\x16\n" +
 	"\x06cursor\x18\r \x01(\tR\x06cursor\x12\x1b\n" +
-	"\tclient_id\x18\x0e \x01(\tR\bclientId\"\xf2\x02\n" +
+	"\tclient_id\x18\x0e \x01(\tR\bclientId\"\xd0\x02\n" +
 	"\vSearchVisit\x12\x1d\n" +
 	"\n" +
 	"project_id\x18\x01 \x01(\tR\tprojectId\x12!\n" +
@@ -3231,23 +3230,22 @@ const file_cxz_proto_rawDesc = "" +
 	"created_ms\x18\t \x01(\x03R\tcreatedMs\x12\x1c\n" +
 	"\ttruncated\x18\n" +
 	" \x01(\bR\ttruncated\x12*\n" +
-	"\x04hits\x18\v \x03(\v2\x16.cxz.runtime.SearchHitR\x04hits\x12 \n" +
-	"\vapproximate\x18\f \x01(\bR\vapproximate\"\x90\x01\n" +
+	"\x04hits\x18\v \x03(\v2\x16.cxz.runtime.SearchHitR\x04hits\"\x90\x01\n" +
 	"\tSearchHit\x12\x10\n" +
 	"\x03seq\x18\x01 \x01(\x04R\x03seq\x12\x17\n" +
 	"\atime_ms\x18\x02 \x01(\x03R\x06timeMs\x12\x12\n" +
 	"\x04kind\x18\x03 \x01(\tR\x04kind\x12\x14\n" +
 	"\x05bytes\x18\x04 \x01(\x05R\x05bytes\x12\x14\n" +
 	"\x05score\x18\x05 \x01(\x05R\x05score\x12\x18\n" +
-	"\asnippet\x18\x06 \x01(\tR\asnippet\"\xb0\x01\n" +
+	"\asnippet\x18\x06 \x01(\tR\asnippet\"\xac\x01\n" +
 	"\x0eSearchProgress\x12\x1d\n" +
 	"\n" +
 	"project_id\x18\x01 \x01(\tR\tprojectId\x12!\n" +
 	"\fproject_name\x18\x02 \x01(\tR\vprojectName\x12\x14\n" +
 	"\x05state\x18\x03 \x01(\tR\x05state\x12\x18\n" +
-	"\amessage\x18\x04 \x01(\tR\amessage\x12\x16\n" +
-	"\x06opened\x18\x05 \x01(\x05R\x06opened\x12\x14\n" +
-	"\x05total\x18\x06 \x01(\x05R\x05total\"\x8d\x02\n" +
+	"\amessage\x18\x04 \x01(\tR\amessage\x12\x12\n" +
+	"\x04done\x18\x05 \x01(\x05R\x04done\x12\x14\n" +
+	"\x05total\x18\x06 \x01(\x05R\x05total\"\xc3\x02\n" +
 	"\rSearchSummary\x12\x1a\n" +
 	"\bprojects\x18\x01 \x01(\x05R\bprojects\x12 \n" +
 	"\vunavailable\x18\x02 \x01(\x05R\vunavailable\x12\x1a\n" +
@@ -3258,7 +3256,10 @@ const file_cxz_proto_rawDesc = "" +
 	"nextCursor\x12\x19\n" +
 	"\bhas_more\x18\a \x01(\bR\ahasMore\x12\x19\n" +
 	"\bsince_ms\x18\b \x01(\x03R\asinceMs\x12\x19\n" +
-	"\buntil_ms\x18\t \x01(\x03R\auntilMs\"\xac\x01\n" +
+	"\buntil_ms\x18\t \x01(\x03R\auntilMs\x12\x1a\n" +
+	"\bexamined\x18\n" +
+	" \x01(\x05R\bexamined\x12\x18\n" +
+	"\apending\x18\v \x01(\x05R\apending\"\xac\x01\n" +
 	"\vSearchReply\x12.\n" +
 	"\x05visit\x18\x01 \x01(\v2\x18.cxz.runtime.SearchVisitR\x05visit\x127\n" +
 	"\bprogress\x18\x02 \x01(\v2\x1b.cxz.runtime.SearchProgressR\bprogress\x124\n" +
