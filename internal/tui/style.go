@@ -260,9 +260,17 @@ func (m *model) resize() {
 	_ = m.input.View()
 	m.input, _ = m.input.UpdateText(nil)
 	if previousHeight != m.input.Height() && rows <= m.input.Height() && m.composerScroll(m.composerRows()) > 0 {
+		selections := m.input.Selections()
+		primary := m.input.PrimarySelection().ID
 		pos := composerPosition(m.input)
 		m.input.SetPosition(0)
 		m.input.SetPosition(pos)
+		for i, s := range selections {
+			if s.ID == primary {
+				_ = m.input.SetSelections(selections, i)
+				break
+			}
+		}
 	}
 	viewWidth := max(1, m.width-2)
 	if m.view.Width != viewWidth {

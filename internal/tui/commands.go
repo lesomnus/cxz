@@ -39,6 +39,9 @@ var slashCommands = []slashCommand{
 }
 
 func (m *model) commandHints() []slashCommand {
+	if m.multiComposer() {
+		return nil
+	}
 	if m.pathHints != nil {
 		return nil
 	}

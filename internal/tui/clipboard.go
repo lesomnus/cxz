@@ -202,6 +202,9 @@ func (m *model) copyFocusedText() {
 		return
 	}
 	switch {
+	case m.composerAvailable() && !m.focusList && !m.focusApproval && m.multiComposer():
+		m.prepareEditor()
+		m.copyText(m.input.CopyText())
 	case m.composerAvailable() && !m.focusList && !m.focusApproval && m.selectedComposerText() != "":
 		m.copyText(m.selectedComposerText())
 	case m.previewVisible() && m.filePreview.focused && m.previewInteraction():

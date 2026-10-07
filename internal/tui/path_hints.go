@@ -114,6 +114,9 @@ func pathTokenAt(value string, cursor int) (pathToken, bool) {
 }
 
 func (m *model) pathContext() (pathToken, string, bool) {
+	if m.multiComposer() {
+		return pathToken{}, "", false
+	}
 	if m.errorFocused() || (m.memoryPage != nil || m.library != nil) || m.settingsPage != nil || m.program == nil || m.ctx == nil || m.ctx.Err() != nil || m.view.Height < 4 || m.terminalFocused() || m.panelFocus || m.questionFocused() || m.pasteDialog != nil {
 		return pathToken{}, "", false
 	}
@@ -289,6 +292,10 @@ func (m *model) pathOptions() []pathOption {
 	return paths
 }
 func (m *model) pathHintKey(k tea.KeyMsg) (bool, tea.Cmd) {
+	if m.multiComposer() {
+		m.pathHints = nil
+		return false, nil
+	}
 	p := m.pathHints
 	if p == nil {
 		return false, nil
@@ -396,6 +403,9 @@ func (m *model) setPathInput(value string, pos int) {
 }
 
 func (m *model) pathHintOverlay(view string) string {
+	if m.multiComposer() {
+		return view
+	}
 	p := m.pathHints
 	if p == nil {
 		return view
