@@ -68,6 +68,8 @@ What each step does:
 
 Full list in the [glossary](docs/glossary.md).
 
+For local UI component previews, see the [Storybook guide](docs/storybook.md).
+
 ## Commands you will actually use
 
 ```sh

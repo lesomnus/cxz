@@ -22,3 +22,4 @@ coverage.out
 # Browser-only design sandbox build artifacts.
 /ts/.sandbox/
 /ts/dist-sandbox/
+/ts/storybook-static/
