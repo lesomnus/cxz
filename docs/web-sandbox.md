@@ -227,8 +227,36 @@ Chip preview edits release the Question's inert state before native insertion,
 so expanding/removing a chip modifies the correct editor and retains its undo
 history. Showing/closing a preview still preserves the pending request.
 
-The shared composer is a fixed-size monospace editor with logical line numbers.
-Numbers follow soft wrapping, scrolling and viewport changes. Text pastes over
+The shared composer is a monospace editor with logical line numbers and no resize
+handle. Typing three backticks at the start of a line opens an inline black code
+block and moves the cursor into its body. The first line overlays a syntax selector
+and a 48px Close button without changing native text/line-number coordinates.
+The default Auto setting detects the snippet's language; manually chosen syntax
+wins. Close finishes the Markdown fence and moves the cursor into prose after it;
+it does not delete the snippet. Existing fenced snippets also render this way,
+including multiple blocks, language aliases and longer backtick fences. Code
+blocks expand the editor up to twelve rows within the existing 35dvh height cap.
+Highlighting stays monochrome, and user-authored HTML remains escaped text.
+
+Drafts remain native Markdown, preserving selection, Undo/Redo and session draft
+restoration. Sending expands code's paste chips before detection, replaces Auto with the detected
+syntax name (or plaintext when detection is inconclusive), canonicalizes common
+language aliases and finishes an unclosed fence. Surrounding prose and code body
+bytes remain intact. Question Other answers use the same editor and serialization.
+The highlighter uses a bounded common language set; Auto examines a cached sample
+of at most 1,024 characters. Visible blocks fall back to unhighlighted text above
+65,536 characters or when a logical line exceeds 2,048 characters. Fences inside
+a paste chip grow the enclosing Markdown fence as needed, and Markdown within
+standalone chips remains unchanged. See the
+[Highlight.js API](https://highlightjs.readthedocs.io/en/latest/api.html) for the
+underlying detection/highlighting interface.
+
+Code backgrounds sit below the native caret/selection, and interactive controls
+and chips above the textarea. Scrolling uses mirror top/left rather than a
+transform, keeping those layers in the same stacking context. During IME
+composition, native text is visible and code backgrounds remain in place.
+
+Line numbers follow soft wrapping, scrolling and viewport changes. Text pastes over
 800 Unicode characters or containing at least three newlines become inline
 chips, matching the TUI threshold. Click a chip, select it with Left/Right and
 press Enter, or use Ctrl+P to preview the original; the preview can remove that

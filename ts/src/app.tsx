@@ -36,7 +36,8 @@ import {
   FloatingCard,
   useFloatingCard,
 } from "./floating-card";
-import { expandPastes, type ComposerPaste } from "./composer-pastes";
+import { type ComposerPaste } from "./composer-pastes";
+import { composerPrompt } from "./composer-code";
 import { SessionTreeGroup } from "./session-tree";
 import { Transcript } from "./transcript";
 import { WorkspaceEditor } from "./workspace-editor";
@@ -842,7 +843,7 @@ function ConversationContent({
     await action(async (s) => {
       const receipt = await c.sessions.send({
         ...control(s),
-        text: expandPastes(sent, c.pastes),
+        text: composerPrompt(sent, c.pastes),
       });
       if (receipt.status === "rejected")
         throw new Error("Provider rejected the input");
@@ -1149,7 +1150,7 @@ function Approval({
   const qs = questions(agent, e);
   const [selected, setSelected] = useState<Record<string, string[]>>({});
   const [other, setOther] = useState<Record<string, string>>({});
-  const otherAnswer = (key: string) => expandPastes(other[key] ?? "", pastes);
+  const otherAnswer = (key: string) => composerPrompt(other[key] ?? "", pastes);
   const elicitation = e.text === "mcpServer/elicitation/request";
   const p = payload(e);
   const requiresForm =

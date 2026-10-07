@@ -823,6 +823,8 @@ pre {
   border-color: #737373;
 }
 .composer-editor textarea {
+  position: relative;
+  z-index: 1;
   display: block;
   width: 100%;
   min-height: 110px;
@@ -837,6 +839,10 @@ pre {
   color: transparent;
   caret-color: #ededed;
   overflow-wrap: anywhere;
+}
+.composer-editor textarea::selection {
+  background: #414141;
+  color: #ededed;
 }
 .composer-editor {
   display: flex;
@@ -870,13 +876,87 @@ pre {
   pointer-events: none;
 }
 .editor-mirror {
+  position: relative;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 .editor-line {
   min-height: 1.5em;
 }
+.editor-code-line {
+  position: relative;
+  background: #000;
+  box-shadow:
+    -4px 0 #000,
+    4px 0 #000;
+}
+.editor-code-header {
+  border-radius: 6px 6px 0 0;
+}
+.editor-code-last {
+  border-radius: 0 0 6px 6px;
+}
+.editor-code-header.editor-code-last {
+  border-radius: 6px;
+}
+.editor-code-fence {
+  visibility: hidden;
+}
+.editor-code-controls {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  white-space: nowrap;
+  pointer-events: auto;
+}
+.editor-code-controls select {
+  width: auto;
+  max-width: calc(100% - var(--toolbar-button-width));
+  height: 1.5em;
+  margin: 0;
+  padding: 0 var(--control-inline-inset);
+  border: 0;
+  border-radius: 4px;
+  background: #000;
+  color: #aaa;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+.editor-code-controls select:hover,
+.editor-code-controls select:focus-visible {
+  background: #282828;
+  color: #fff;
+}
+.editor-code-controls .code-close {
+  height: 1.5em;
+  padding-block: 0;
+  border-radius: 4px;
+  font-size: inherit;
+}
+.editor-code-line .hljs-comment,
+.editor-code-line .hljs-quote {
+  color: #808080;
+}
+.editor-code-line .hljs-keyword,
+.editor-code-line .hljs-literal,
+.editor-code-line .hljs-title {
+  color: #fff;
+}
+.editor-code-line .hljs-keyword {
+  font-weight: 600;
+}
+.editor-code-line .hljs-string,
+.editor-code-line .hljs-number,
+.editor-code-line .hljs-attr {
+  color: #bdbdbd;
+}
 .paste-chip {
+  position: relative;
+  z-index: 2;
   background: #383838;
   border-radius: 4px;
   box-shadow: 0 0 0 1px #383838;
@@ -896,6 +976,12 @@ pre {
   color: inherit;
 }
 .composer-editor[data-composing="true"] .editor-surface {
+  visibility: hidden;
+}
+.composer-editor[data-composing="true"] .editor-code-line {
+  visibility: visible;
+}
+.composer-editor[data-composing="true"] .editor-code-line > * {
   visibility: hidden;
 }
 .editor-notice {

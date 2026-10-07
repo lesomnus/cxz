@@ -1,7 +1,16 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { Button } from "./button";
 import { useFloatingCard } from "./floating-card";
+import {
+  codeBlocks,
+  codeSyntax,
+  codeSyntaxes,
+  highlightCodeLines,
+  resolvedCodeSyntax,
+  type CodeBlock,
+  type CodeToken,
+} from "./composer-code";
 import {
   createPaste,
   MAX_PASTE_BYTES,
@@ -44,10 +53,28 @@ export function ComposerEditor({
   const latest = useRef({ value, replace });
   latest.current = { value, replace };
   const lines = value.split("\n");
+  const blocks = useMemo(
+    () =>
+      codeBlocks(value).map((block) => {
+        const syntax = resolvedCodeSyntax(block, value, pastes);
+        return {
+          ...block,
+          detected: syntax,
+          tokens: highlightCodeLines(
+            value.slice(block.bodyStart, block.bodyEnd),
+            syntax,
+          ),
+        };
+      }),
+    [value, pastes],
+  );
 
   function syncScroll() {
     const el = input.current!;
-    mirror.current!.style.transform = `translate(${-el.scrollLeft}px, ${-el.scrollTop}px)`;
+    // Keep code backgrounds behind the native caret, while header controls and
+    // chips can paint above the textarea without a transformed stacking context.
+    mirror.current!.style.left = `${-el.scrollLeft}px`;
+    mirror.current!.style.top = `${-el.scrollTop}px`;
     gutter.current!.style.transform = `translateY(${-el.scrollTop}px)`;
   }
   function measure() {
@@ -89,9 +116,10 @@ export function ComposerEditor({
       el.setSelectionRange(selection.start, selection.end);
     return selection;
   }
-  function replace(start: number, end: number, text: string) {
+  function replace(start: number, end: number, text: string, caret?: number) {
     // Edit with native LF line breaks; untouched chips retain their original bytes.
     text = text.replaceAll("\r\n", "\n").replaceAll("\r", "\n");
+    caret ??= start + text.length;
     const el = input.current!;
     const next = value.slice(0, start) + text + value.slice(end);
     expectedEdit.current = next;
@@ -104,8 +132,34 @@ export function ComposerEditor({
       el.setRangeText(text, start, end, "end");
       onChange(next);
     }
-    cursor.current = start + text.length;
+    cursor.current = caret;
+    el.setSelectionRange(caret, caret);
     expectedEdit.current = undefined;
+  }
+  function changeSyntax(block: CodeBlock, syntax: string) {
+    const header =
+      block.indent + block.fence + (syntax === "auto" ? "" : syntax);
+    const el = input.current!;
+    const position = el.selectionStart;
+    const delta = header.length - (block.headerEnd - block.start);
+    replace(
+      block.start,
+      block.headerEnd,
+      header,
+      position > block.headerEnd ? position + delta : block.bodyStart + delta,
+    );
+  }
+  function closeCode(block: CodeBlock) {
+    if (!block.closed) {
+      const suffix =
+        (value.endsWith("\n") ? "" : "\n") + block.indent + block.fence + "\n";
+      replace(value.length, value.length, suffix);
+    } else if (value[block.end] !== "\n") {
+      replace(block.end, block.end, "\n");
+    } else {
+      input.current!.focus({ preventScroll: true });
+      input.current!.setSelectionRange(block.end + 1, block.end + 1);
+    }
   }
   function showPreview(range: PasteRange) {
     input.current!.focus({ preventScroll: true });
@@ -150,7 +204,7 @@ export function ComposerEditor({
             aria-label={ariaLabel}
             placeholder={placeholder}
             value={value}
-            rows={3}
+            rows={blocks.length ? Math.min(12, Math.max(5, lines.length)) : 3}
             spellCheck={false}
             autoCapitalize="off"
             autoCorrect="off"
@@ -248,6 +302,27 @@ export function ComposerEditor({
                 return;
               }
               const selection = normalizedSelection();
+              // Completing a fence starts editing its body immediately, keeping
+              // the header controls out of the native text cursor's way.
+              if (
+                event.key === "`" &&
+                !event.ctrlKey &&
+                !event.metaKey &&
+                !event.altKey &&
+                selection.start === selection.end
+              ) {
+                const lineStart =
+                  value.lastIndexOf("\n", selection.start - 1) + 1;
+                const prefix = value.slice(lineStart, selection.start);
+                if (
+                  /^ {0,3}``$/.test(prefix) &&
+                  !blocks.some((b) => lineStart > b.start && lineStart <= b.end)
+                ) {
+                  event.preventDefault();
+                  replace(selection.start, selection.end, "`\n");
+                  return;
+                }
+              }
               const chip = ranges.find(
                 (range) =>
                   selection.start === range.start &&
@@ -296,20 +371,33 @@ export function ComposerEditor({
               {lines.map((line, index) => {
                 const start = lineOffset;
                 lineOffset += line.length + 1;
+                const block = blocks.find(
+                  (b) => index >= b.startLine && index <= b.endLine,
+                );
+                const header = block?.startLine === index;
+                const footer = block?.closed && block.endLine === index;
+                const tokens =
+                  block && !header && !footer
+                    ? block.tokens[index - block.startLine - 1]
+                    : undefined;
+                function text(from: number, to: number) {
+                  if (!tokens) return value.slice(from, to);
+                  return tokenSpans(tokens, from - start, to - start);
+                }
                 const chips = ranges.filter(
                   (range) =>
                     range.start >= start && range.end <= start + line.length,
                 );
                 let offset = start;
                 const parts = chips.flatMap((range) => {
-                  const text = (
+                  const fragment = (
                     <span aria-hidden="true" key={`text-${range.start}`}>
-                      {value.slice(offset, range.start)}
+                      {text(offset, range.start)}
                     </span>
                   );
                   offset = range.end;
                   return [
-                    text,
+                    fragment,
                     <span
                       className="paste-chip"
                       role="button"
@@ -330,12 +418,58 @@ export function ComposerEditor({
                   ];
                 });
                 return (
-                  <div className="editor-line" key={index}>
-                    {parts}
-                    <span aria-hidden="true">
-                      {value.slice(offset, start + line.length) ||
-                        (line.length === 0 ? "\u200b" : "")}
-                    </span>
+                  <div
+                    className={`editor-line${block ? " editor-code-line" : ""}${header ? " editor-code-header" : ""}${footer || (block && index === block.endLine) ? " editor-code-last" : ""}`}
+                    key={index}
+                  >
+                    {header ? (
+                      <>
+                        <span aria-hidden="true" className="editor-code-fence">
+                          {line || "\u200b"}
+                        </span>
+                        <div className="editor-code-controls">
+                          <select
+                            aria-label={`Code syntax ${blocks.indexOf(block!) + 1}`}
+                            value={codeSyntax(block!.syntax)}
+                            onChange={(event) =>
+                              changeSyntax(block!, event.target.value)
+                            }
+                          >
+                            {codeSyntaxes.map((syntax) => (
+                              <option key={syntax} value={syntax}>
+                                {syntax === "auto"
+                                  ? `Auto · ${block!.detected}`
+                                  : syntax}
+                              </option>
+                            ))}
+                            {!codeSyntaxes.includes(
+                              codeSyntax(block!.syntax),
+                            ) && (
+                              <option value={codeSyntax(block!.syntax)}>
+                                {block!.syntax}
+                              </option>
+                            )}
+                          </select>
+                          <Button
+                            className="toolbar-button code-close"
+                            type="button"
+                            aria-label={`Close code block ${blocks.indexOf(block!) + 1}`}
+                            title="코드 블록 끝내기"
+                            onClick={() => closeCode(block!)}
+                          >
+                            ×
+                          </Button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        {parts}
+                        <span aria-hidden="true">
+                          {text(offset, start + line.length) ||
+                            (line.length === 0 ? "\u200b" : "")}
+                        </span>
+                      </>
+                    )}
                   </div>
                 );
               })}
@@ -350,6 +484,20 @@ export function ComposerEditor({
       )}
     </>
   );
+}
+
+function tokenSpans(tokens: CodeToken[], start: number, end: number) {
+  let offset = 0;
+  return tokens.map((token, index) => {
+    const from = Math.max(0, start - offset);
+    const to = Math.min(token.text.length, end - offset);
+    offset += token.text.length;
+    return to > from ? (
+      <span key={index} className={token.className}>
+        {token.text.slice(from, to)}
+      </span>
+    ) : null;
+  });
 }
 
 function PastePreview({

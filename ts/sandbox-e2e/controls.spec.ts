@@ -299,18 +299,24 @@ test("provider dropdowns, quota popovers, aligned headings and bounded press/sha
     });
   expect(layers).toEqual({ bodyBelow: true, controlAbove: true });
   const latest = page.getByRole("button", { name: "Latest", exact: true });
-  expect(
-    await latest.evaluate((el) => {
-      const box = el.getBoundingClientRect();
-      const area = el.closest(".composer-toolbar")!.getBoundingClientRect();
-      return (
-        box.bottom <= area.bottom &&
-        document
-          .elementFromPoint(box.left + box.width / 2, box.top + box.height / 2)
-          ?.closest("button") === el
-      );
-    }),
-  ).toBe(true);
+  // Wait for the overlay's entrance transition before testing its hit bounds.
+  await expect
+    .poll(() =>
+      latest.evaluate((el) => {
+        const box = el.getBoundingClientRect();
+        const area = el.closest(".composer-toolbar")!.getBoundingClientRect();
+        return (
+          box.bottom <= area.bottom &&
+          document
+            .elementFromPoint(
+              box.left + box.width / 2,
+              box.top + box.height / 2,
+            )
+            ?.closest("button") === el
+        );
+      }),
+    )
+    .toBe(true);
   await page.screenshot({
     path: "test-results/sandbox-input-shadow.png",
     fullPage: true,
