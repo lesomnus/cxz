@@ -15,7 +15,7 @@ test("final response metrics and right-aligned icon copy work for both providers
   await page.goto("/sandbox.html");
   const metrics = page.getByLabel("Response metrics", { exact: true });
   await expect(metrics).toBeVisible({ timeout: 45000 });
-  await expect(metrics).toContainText("4.2초");
+  await expect(metrics).toContainText("4.2s");
   await expect(metrics.locator('[data-metric="input_tokens"]')).toHaveText(
     "1.2K",
   );
@@ -38,7 +38,7 @@ test("final response metrics and right-aligned icon copy work for both providers
   expect(box.x + box.width - bounds.x - bounds.width).toBeCloseTo(12, 0);
   await copy.hover();
   await expect(footer.getByRole("tooltip")).toBeVisible();
-  await expect(footer.getByRole("tooltip")).toHaveText("copy");
+  await expect(footer.getByRole("tooltip")).toHaveText("Copy");
   await copy.click();
   await expect
     .poll(() => page.evaluate(() => (window as any).copiedResponse))
@@ -49,7 +49,7 @@ test("final response metrics and right-aligned icon copy work for both providers
   );
   await expect(metrics.locator('[data-metric="input_tokens"]')).toHaveAttribute(
     "title",
-    /입력 — 마지막 모델 호출/,
+    /Input — Last model call/,
   );
   await expect(metrics.locator('[data-metric="reasoning_tokens"]')).toHaveText(
     "120",
@@ -57,7 +57,10 @@ test("final response metrics and right-aligned icon copy work for both providers
   await expect(metrics.locator('[data-metric="cost_usd"]')).toHaveCount(0);
   await expect(
     metrics.locator('[data-metric="reasoning_tokens"]'),
-  ).toHaveAttribute("title", /추론 — 마지막 모델 호출.*출력 토큰에 포함/);
+  ).toHaveAttribute(
+    "title",
+    /Reasoning — Last model call.*Included in output tokens/,
+  );
   await page.mouse.move(0, 0);
   await page.screenshot({
     path: "test-results/response-footer.png",

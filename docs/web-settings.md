@@ -1,17 +1,17 @@
 # Browser settings
 
-The resource sidebar's **설정** button opens settings. Topics belong to the left
-panel, currently just **에디터**; there are no top tabs. The settings body is at
+The resource sidebar's **Settings** button opens settings. Topics belong to the left
+panel, **Editor** and **Language**; there are no top tabs. The settings body is at
 most **600px** wide and centered, with global and session editor groups stacked.
 Production and the WASM sandbox use the same settings components. Editor
-controls save immediately; the JSON editor saves explicitly with **저장** or
+controls save immediately; the JSON editor saves explicitly with **Save** or
 Ctrl+Enter.
 
 At **1600px of available width** after the resource sidebar and panel, settings
 use the conversation layout's **800px** left column and a 1px divider, with a
 **settings.json** editor in the remaining space. Below that threshold,
-**settings.json 편집** opens the file in the same centered body area; the
-**에디터** topic or **에디터 설정으로 돌아가기** returns to the form. On mobile,
+**Edit settings.json** opens the file in the same centered body area; the
+**Editor** topic or **Back to settings** returns to the form. On mobile,
 the topic panel sits above the body alongside the resource sidebar.
 
 The JSON editor stays mounted when folded: resizing or moving between the form
@@ -40,6 +40,7 @@ editing known settings through the UI.
 
 ```json
 {
+  "ui.language": "en",
   "editor.indentSize": 2,
   "editor.insertSpaces": true,
   "editor.tabSize": 4,
@@ -47,6 +48,46 @@ editing known settings through the UI.
   "session.editor.tabSize": 8
 }
 ```
+
+## Display language and lazy language packs
+
+English is the default even when the browser prefers another language. The
+**Language** topic offers English and 한국어 by their native names. Choosing a
+language does not save, load or activate it. **Apply settings** first downloads
+its pack, then persists `ui.language` in the same settings.json document.
+`en` and `ko` are currently supported; missing values resolve to `en`, while
+unsupported values fail whole-file validation. Other preferences and unknown
+keys are retained. Editor controls continue to save immediately.
+
+English source messages are bundled. `src/i18n.ts` has a static allowlist of
+loaders; Korean uses a separate Vite chunk via dynamic import. Requests are
+deduplicated and successful packs reused for the current page. Reloading with a
+saved language loads only that pack. An activation generation discards late
+loads after a newer preference wins. A failed download or storage write cannot
+apply a newly selected language or replace the saved file; the picker remains
+available to try again. A startup/cross-tab load failure retains the active
+language and offers Retry. A retry after a module evaluation failure may need
+a page reload because browsers cache evaluated modules.
+
+Saving/importing JSON prepares its requested pack before persistence too. A
+pending JSON save captures its original conflict baseline and preserves edits
+made while loading. Cross-tab changes load and apply the stored language without
+remounting the transcript, composer, terminal or Monaco models. `html.lang`,
+application labels, accessible descriptions, date formats, relative timestamps
+and response durations follow the active locale. Conversations, code, chip
+bodies, agent-provided questions, model IDs and settings keys are unchanged.
+Backend error text and third-party editor/terminal content retain their own
+language; this pack does not configure the connected OpenVSCode workbench.
+
+To add a language, extend Locale/languages/loaders and settings validation, then
+add a pack under `src/locales/` that satisfies `LanguagePack`. English messages
+are typed source-string keys. Translate whole messages with named placeholders;
+do not translate data or concatenate reordered sentence fragments. `i18n.test.ts`
+checks pack completeness and placeholder parity. `i18n-react.tsx` exposes React
+subscriptions; components using translated strings subscribe so memoized rows
+also update without changing keys. There is no new i18n dependency or backend
+settings API. `sandbox-e2e/language.spec.ts` checks lazy fetches, persistence,
+failures and editor state; production tests cover the actual gateway CSP.
 
 ## Editor scope and inheritance
 
@@ -60,8 +101,8 @@ editing known settings through the UI.
 Each key also has a **`session.editor.*`** counterpart. Resolution is independent
 for every field: explicit session value → explicit global value → default.
 Explicit `false` is a value, not inheritance. Missing keys inherit; `null` is
-invalid. Choosing **전역 설정 상속** deletes that session key, and the option
-shows the current effective global value. Choosing **기본값** removes a global
+invalid. Choosing **Inherit global** deletes that session key, and the option
+shows the current effective global value. Choosing **Default** removes a global
 key. `indentSize` and `tabSize` are intentionally independent.
 
 The session scope applies to **all session conversation editors**, including
@@ -99,7 +140,7 @@ disabled until the file is repaired. A denied storage read displays an error.
 The browser `storage` event updates other open tabs, including mounted editors.
 Form edits read and modify the latest saved object to preserve other keys. A
 dirty JSON draft stays untouched when the stored file changes; saving is blocked
-until **저장된 파일 다시 읽기**. Saving also compares the expected raw file against
+until **Reload saved file**. Saving also compares the expected raw file against
 storage to catch a change before its storage event arrives. Import explicitly
 replaces the entire document. This is localStorage persistence, without
 multi-tab transactional locking or automatic conflict merging of JSON drafts.

@@ -1,3 +1,4 @@
+import { currentLocale } from "./i18n";
 import type { Session, SessionEvent } from "../gen/cxz/session_pb";
 import { payload } from "./journal";
 
@@ -183,7 +184,7 @@ export function formatTokens(n: number | undefined) {
 export function formatReset(ms: number | undefined) {
   return ms === undefined
     ? "—"
-    : new Date(ms).toLocaleTimeString([], {
+    : new Date(ms).toLocaleTimeString(currentLocale(), {
         hour: "2-digit",
         minute: "2-digit",
         hour12: false,

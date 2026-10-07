@@ -36,7 +36,7 @@ test("response copy appears on hover and keyboard focus without changing layout"
   await expect(copy).toHaveCSS("opacity", "0");
   await response.getByRole("button", { name: "Copy", exact: true }).focus();
   await expect(copy).toHaveCSS("opacity", "1");
-  await expect(response.getByRole("tooltip")).toHaveText("copy");
+  await expect(response.getByRole("tooltip")).toHaveText("Copy");
   expect(await response.boundingBox()).toEqual(before);
 });
 
@@ -74,7 +74,7 @@ test("floating event and paste cards replace one another without moving the tran
   await expect(page.locator(".transcript-row details")).toHaveCount(0);
 
   await page.locator(".paste-chip").first().click();
-  const preview = page.getByRole("dialog", { name: "붙여넣기 원문" });
+  const preview = page.getByRole("dialog", { name: "Paste source" });
   await expect(preview).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
   await expect(preview.locator("pre")).toHaveText(
     "first\nsecond\nthird\nfourth",
@@ -177,7 +177,7 @@ test("mobile cards stay below the title and stale previews cannot replace an edi
   await paste(page, body);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.locator(".paste-chip").click();
-  const preview = page.getByRole("dialog", { name: "붙여넣기 원문" });
+  const preview = page.getByRole("dialog", { name: "Paste source" });
   await expect(preview).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
   const bounds = (await preview.boundingBox())!;
   const header = (await page.locator(".conversation > header").boundingBox())!;
@@ -195,10 +195,10 @@ test("mobile cards stay below the title and stale previews cannot replace an edi
   ).toBeVisible();
   await input.fill("edited while the preview is open");
   await preview
-    .getByRole("button", { name: "원문 펼치기", exact: true })
+    .getByRole("button", { name: "Expand source", exact: true })
     .click();
   await expect(preview.getByRole("status")).toContainText(
-    "입력 내용이 변경되었습니다",
+    "The input has changed",
   );
   await expect(input).toHaveValue("edited while the preview is open");
   await page.emulateMedia({ reducedMotion: "reduce" });
@@ -215,7 +215,7 @@ test("only the transcript's empty side margins dismiss the floating card", async
   const input = await open(page);
   await paste(page, "first\nsecond\nthird\nfourth");
   const draft = await input.inputValue();
-  const preview = page.getByRole("dialog", { name: "붙여넣기 원문" });
+  const preview = page.getByRole("dialog", { name: "Paste source" });
   await page.locator(".paste-chip").click();
   await expect(preview).toHaveCSS("opacity", "1");
   await preview.locator("pre").click();
@@ -317,7 +317,7 @@ test("pending questions stay dimmed behind previews and only lift for a taller c
   await paste(page, "small\npreview\nbody\nhere");
   const draft = await input.inputValue();
   await page.locator(".paste-chip").click();
-  const short = page.getByRole("dialog", { name: "붙여넣기 원문" });
+  const short = page.getByRole("dialog", { name: "Paste source" });
   await expect(short).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
   expect((await short.boundingBox())!.height).toBeLessThan(original.height);
   await expect(layer).toHaveAttribute("data-covered", "true");

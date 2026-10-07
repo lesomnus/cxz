@@ -129,7 +129,7 @@ test("multiple blocks, paste chips, highlighting and native line geometry stay a
   ).toHaveText("Auto · json");
   await page.locator(".paste-chip").click();
   await expect(
-    page.getByRole("dialog", { name: "붙여넣기 원문" }).locator("pre"),
+    page.getByRole("dialog", { name: "Paste source" }).locator("pre"),
   ).toHaveText(body);
   await page.keyboard.press("Escape");
   const draft = await input.inputValue();

@@ -87,7 +87,9 @@ test("provider dropdowns, quota popovers, aligned headings and bounded press/sha
   await expect(timestamp).not.toContainText(/\d{4}/);
   const recorded = await timestamp.getAttribute("datetime");
   expect(Math.abs(Date.now() - Date.parse(recorded!))).toBeLessThan(60_000);
-  await expect(input.locator(".input-relative-time")).toHaveText("1분 이내");
+  await expect(input.locator(".input-relative-time")).toHaveText(
+    "Less than a minute ago",
+  );
   const timeBox = (await timestamp.boundingBox())!;
   const inputBox = (await input.locator(".input-box").boundingBox())!;
   expect(timeBox.y).toBeGreaterThan(inputBox.y);

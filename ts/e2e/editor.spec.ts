@@ -75,7 +75,7 @@ test("editable settings JSON and its worker load under production CSP and save t
     .poll(() => page.evaluate(() => localStorage.getItem("settings")))
     .toBe(raw);
   await expect(
-    page.getByLabel("전역 에디터 Tab 문자 표시 폭", { exact: true }),
+    page.getByLabel("Global editor Tab display width", { exact: true }),
   ).toHaveValue("6");
   await expect(
     pane.locator(".view-lines").getByText('"editor.tabSize"', { exact: true }),
@@ -138,4 +138,48 @@ test("real container editor opens the workspace through the authenticated iframe
   await expect(
     editor.getByRole("button", { name: "README.md", exact: true }),
   ).toBeVisible();
+});
+
+test("language packs load only on Apply under the production CSP and the saved language survives reload", async ({
+  page,
+}) => {
+  const requests: string[] = [];
+  const errors: string[] = [];
+  page.on("request", (request) => {
+    if (/\/assets\/ko-[^/]+\.js/.test(request.url()))
+      requests.push(request.url());
+  });
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/");
+  await page.getByLabel("Web access token").fill("a".repeat(32));
+  await page.getByRole("button", { name: "Connect", exact: true }).click();
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+  await page
+    .getByRole("button", { name: "Settings view", exact: true })
+    .click();
+  await page
+    .getByRole("navigation", { name: "Settings topics", exact: true })
+    .getByRole("button", { name: "Language", exact: true })
+    .click();
+  await page.getByLabel("Display language", { exact: true }).selectOption("ko");
+  expect(requests).toEqual([]);
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await page
+    .getByRole("button", { name: "Apply settings", exact: true })
+    .click();
+  await expect(page.locator("html")).toHaveAttribute("lang", "ko");
+  expect(requests).toHaveLength(1);
+  expect(
+    await page.evaluate(
+      () => JSON.parse(localStorage.getItem("settings")!)["ui.language"],
+    ),
+  ).toBe("ko");
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("lang", "ko");
+  await expect(
+    page.getByRole("button", { name: "설정 보기", exact: true }),
+  ).toBeVisible();
+  expect(errors).toEqual([]);
 });

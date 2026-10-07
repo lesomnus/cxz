@@ -1,3 +1,12 @@
+import {
+  t,
+  translateKnown,
+  languages,
+  localeStore,
+  resolveLocale,
+  type Locale,
+} from "./i18n";
+import { useLocale } from "./i18n-react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Button } from "./button";
 import { useSettings } from "./settings";
@@ -8,38 +17,39 @@ import {
   palettes,
   paletteVariables,
   resolveEditorSettings,
+  parseSettings,
   type EditorScope,
 } from "./editor-settings";
 import { SourceEditor, type SourceEditorHandle } from "./source-editor";
 
 const fields = {
   indentSize: {
-    label: "들여쓰기 칸 수",
-    description: "Tab으로 넣거나 Shift+Tab으로 지울 공백 수",
+    label: "Indentation size",
+    description: "Spaces inserted with Tab or removed with Shift+Tab",
     choices: Array.from({ length: 16 }, (_, i) => [
       String(i + 1),
-      `${i + 1}칸`,
+      `${i + 1} columns`,
     ]),
   },
   insertSpaces: {
-    label: "Tab 입력 방식",
-    description: "공백을 넣을지 실제 Tab 문자를 넣을지 선택",
+    label: "Tab input",
+    description: "Choose spaces or a real tab character",
     choices: [
-      ["true", "공백"],
-      ["false", "Tab 문자"],
+      ["true", "Spaces"],
+      ["false", "Tab character"],
     ],
   },
   tabSize: {
-    label: "Tab 문자 표시 폭",
-    description: "실제 Tab 문자가 정렬되는 칸 수",
+    label: "Tab display width",
+    description: "Columns used to display a real tab character",
     choices: Array.from({ length: 16 }, (_, i) => [
       String(i + 1),
-      `${i + 1}칸`,
+      `${i + 1} columns`,
     ]),
   },
   colorPalette: {
-    label: "색상 팔레트",
-    description: "코드의 syntax highlight 색상",
+    label: "Color palette",
+    description: "Syntax highlighting colors",
     choices: Object.entries(palettes).map(([key, palette]) => [
       key,
       palette.label,
@@ -50,11 +60,20 @@ const fields = {
 export function SettingsPage({
   fileOpen,
   setFileOpen,
+  topic,
 }: {
   fileOpen: boolean;
   setFileOpen: (open: boolean) => void;
+  topic: "editor" | "language";
 }) {
+  const locale = useLocale();
   const { store, snapshot } = useSettings();
+  const savedLanguage = resolveLocale(snapshot.document["ui.language"]);
+  const [language, setLanguage] = useState<Locale>(savedLanguage);
+  const [applying, setApplying] = useState(false);
+  useEffect(() => {
+    setLanguage(savedLanguage);
+  }, [savedLanguage]);
   const area = useRef<HTMLElement>(null);
   const filePane = useRef<HTMLElement>(null);
   const fileInput = useRef<SourceEditorHandle>(null);
@@ -98,14 +117,14 @@ export function SettingsPage({
       {(error || snapshot.error) && (
         <p role="alert">{error || snapshot.error}</p>
       )}
-      {message && <p role="status">{message}</p>}
+      {message && <p role="status">{translateKnown(message)}</p>}
     </>
   );
   function update(key: string, value: unknown) {
     try {
       store.set(key, value);
       setError("");
-      setMessage("저장되었습니다.");
+      setMessage("Saved.");
     } catch (error) {
       setError(String(error));
     }
@@ -116,28 +135,61 @@ export function SettingsPage({
     setError("");
     setMessage("");
   }
-  function save(raw = draft) {
+  async function save(raw = draft) {
+    const expected = baseline.current;
     try {
-      store.save(raw, baseline.current);
+      await localeStore.prepare(
+        resolveLocale(parseSettings(raw)["ui.language"]),
+      );
+      store.save(raw, expected);
       baseline.current = raw;
-      setDraft(raw);
       setError("");
-      setMessage("저장되었습니다.");
+      setMessage("Saved.");
     } catch (error) {
       setError(String(error));
+    }
+  }
+  async function applyLanguage() {
+    setApplying(true);
+    setError("");
+    setMessage("");
+    try {
+      await localeStore.prepare(language);
+      if (
+        resolveLocale(store.snapshot().document["ui.language"]) !==
+        savedLanguage
+      )
+        throw new Error(
+          t("Settings have changed. Reload the saved file before editing."),
+        );
+      store.set("ui.language", language);
+      setMessage("Language applied.");
+    } catch (error) {
+      setError(
+        t(
+          "Unable to apply the language. Your previous language and saved settings are unchanged.",
+        ) +
+          " " +
+          String(error),
+      );
+    } finally {
+      setApplying(false);
     }
   }
   function group(scope: EditorScope) {
     const resolved = resolveEditorSettings(snapshot.document, scope);
     const prefix = scope === "session" ? "session.editor." : "editor.";
-    const title = scope === "session" ? "세션 대화 에디터" : "전역 에디터";
+    const title =
+      scope === "session" ? t("Session editor") : t("Global editor");
     return (
       <section className="settings-group" aria-label={title}>
         <h2>{title}</h2>
         <p className="muted">
           {scope === "session"
-            ? "값을 지정하지 않은 항목은 전역 에디터 설정을 상속합니다. Question 답변에도 적용됩니다."
-            : "브라우저의 파일 뷰와 에디터가 공유하는 기본 설정입니다."}
+            ? t(
+                "Unset values inherit global editor settings. These settings also apply to question answers.",
+              )
+            : t("Default settings shared by browser file views and editors.")}
         </p>
         <fieldset disabled={!snapshot.valid}>
           {editorKeys.map((key) => {
@@ -151,12 +203,12 @@ export function SettingsPage({
             return (
               <label className="setting-row" key={key}>
                 <span>
-                  <strong>{fields[key].label}</strong>
-                  <small>{fields[key].description}</small>
+                  <strong>{translateKnown(fields[key].label)}</strong>
+                  <small>{translateKnown(fields[key].description)}</small>
                   <code>{name}</code>
                 </span>
                 <select
-                  aria-label={`${title} ${fields[key].label}`}
+                  aria-label={`${title} ${translateKnown(fields[key].label)}`}
                   value={hasValue ? String(snapshot.document[name]) : ""}
                   onChange={(event) => {
                     const value = event.target.value;
@@ -173,12 +225,16 @@ export function SettingsPage({
                   }}
                 >
                   <option value="">
-                    {scope === "session" ? "전역 설정 상속" : "기본값"} ·{" "}
-                    {label}
+                    {scope === "session" ? t("Inherit global") : t("Default")} ·{" "}
+                    {key === "indentSize" || key === "tabSize"
+                      ? t("{count} columns", { count: Number(inherited) })
+                      : translateKnown(label)}
                   </option>
                   {fields[key].choices.map(([value, label]) => (
                     <option value={value} key={value}>
-                      {label}
+                      {key === "indentSize" || key === "tabSize"
+                        ? t("{count} columns", { count: Number(value) })
+                        : translateKnown(label)}
                     </option>
                   ))}
                 </select>
@@ -186,7 +242,7 @@ export function SettingsPage({
             );
           })}
         </fieldset>
-        <small>적용 중인 미리보기</small>
+        <small>{t("Current preview")}</small>
         <pre
           className="settings-preview"
           style={{
@@ -215,55 +271,109 @@ export function SettingsPage({
         <section
           id="settings-editor"
           className="settings-form-pane"
-          aria-label="에디터 설정"
+          aria-label={
+            topic === "editor" ? t("Editor settings") : t("Language settings")
+          }
           hidden={!wide && fileOpen}
         >
           <div className="settings-editor-body">
             <header>
               <div>
-                <h1>에디터</h1>
-                <small>이 브라우저의 에디터 설정은 즉시 저장됩니다.</small>
+                <h1>{topic === "editor" ? t("Editor") : t("Language")}</h1>
+                <small>
+                  {topic === "editor"
+                    ? t("Editor changes are saved immediately in this browser.")
+                    : t(
+                        "Choose a language, then apply it to download its language pack.",
+                      )}
+                </small>
               </div>
               {!wide && (
                 <Button
                   aria-controls="settings-file-editor"
                   onClick={() => setFileOpen(true)}
                 >
-                  settings.json 편집{dirty ? " · 수정됨" : ""}
+                  {t("Edit settings.json")}
+                  {dirty ? t(" · Modified") : ""}
                 </Button>
               )}
             </header>
             {!jsonVisible && feedback}
             <div className="settings-editor-groups">
-              {group("global")}
-              {group("session")}
+              {topic === "editor" ? (
+                <>
+                  {group("global")}
+                  {group("session")}
+                </>
+              ) : (
+                <section className="settings-group">
+                  <h2>{t("Display language")}</h2>
+                  <p className="muted">
+                    {t(
+                      "Language changes apply to this browser. Conversation content and code are preserved.",
+                    )}
+                  </p>
+                  <fieldset disabled={!snapshot.valid || applying}>
+                    <label className="setting-row">
+                      <span>
+                        <strong>{t("Language")}</strong>
+                        <code>ui.language</code>
+                      </span>
+                      <select
+                        aria-label={t("Display language")}
+                        value={language}
+                        onChange={(event) =>
+                          setLanguage(event.target.value as Locale)
+                        }
+                      >
+                        {languages.map(({ id, name }) => (
+                          <option key={id} value={id}>
+                            {name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <Button
+                      disabled={
+                        language === savedLanguage &&
+                        language === locale.locale &&
+                        !locale.error
+                      }
+                      onClick={() => void applyLanguage()}
+                    >
+                      {applying ? t("Applying…") : t("Apply settings")}
+                    </Button>
+                  </fieldset>
+                </section>
+              )}
             </div>
           </div>
         </section>
         <aside
           id="settings-file-editor"
           className="settings-file-pane"
-          aria-label="Settings file editor"
+          aria-label={t("Settings file editor")}
           ref={filePane}
           hidden={!jsonVisible}
         >
           <section className="settings-file">
             <header>
               <div>
-                <h2>settings.json{dirty ? " · 수정됨" : ""}</h2>
-                <small>이 브라우저의 설정 파일</small>
+                <h2>settings.json{dirty ? t(" · Modified") : ""}</h2>
+                <small>{t("Settings file for this browser")}</small>
               </div>
               {!wide && (
                 <Button onClick={() => setFileOpen(false)}>
-                  에디터 설정으로 돌아가기
+                  {t("Back to settings")}
                 </Button>
               )}
             </header>
             {jsonVisible && feedback}
             {stale && (
               <p role="alert">
-                저장된 설정 파일이 변경되었습니다. 수정 중인 내용은
-                유지했습니다. 다시 읽은 뒤 저장하세요.
+                {t(
+                  "The saved settings file has changed. Your draft was preserved. Reload before saving.",
+                )}
               </p>
             )}
             <SourceEditor
@@ -281,9 +391,9 @@ export function SettingsPage({
             />
             <div className="settings-file-actions">
               <Button disabled={!dirty || stale} onClick={() => save()}>
-                저장
+                {t("Save")}
               </Button>
-              <Button onClick={reload}>저장된 파일 다시 읽기</Button>
+              <Button onClick={reload}>{t("Reload saved file")}</Button>
               <Button
                 onClick={() => {
                   const url = URL.createObjectURL(
@@ -296,14 +406,17 @@ export function SettingsPage({
                   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
                 }}
               >
-                내보내기
+                {t("Export")}
               </Button>
-              <Button onClick={() => upload.current!.click()}>가져오기</Button>
+              <Button onClick={() => upload.current!.click()}>
+                {t("Import")}
+              </Button>
             </div>
             <footer>
-              <span>JSON · Ctrl+Enter: 저장</span>
+              <span>{t("JSON · Ctrl+Enter: Save")}</span>
               <span>
-                Ctrl+M: Tab 포커스 이동 {tabMovesFocus ? "켜짐" : "꺼짐"}
+                {t("Ctrl+M: Tab moves focus")}{" "}
+                {tabMovesFocus ? t("on") : t("off")}
               </span>
             </footer>
             <input
@@ -311,22 +424,23 @@ export function SettingsPage({
               hidden
               type="file"
               accept=".json,application/json"
-              aria-label="settings.json 가져오기"
+              aria-label={t("settings.json Import")}
               onChange={async (event) => {
                 const file = event.target.files?.[0];
                 event.target.value = "";
                 if (!file) return;
                 try {
                   if (file.size > MAX_SETTINGS_BYTES)
-                    throw new Error(
-                      "설정 파일은 1 MiB까지 저장할 수 있습니다.",
-                    );
+                    throw new Error(t("Settings files are limited to 1 MiB."));
                   const raw = await file.text();
+                  await localeStore.prepare(
+                    resolveLocale(parseSettings(raw)["ui.language"]),
+                  );
                   store.save(raw);
                   baseline.current = raw;
                   setDraft(raw);
                   setError("");
-                  setMessage("가져온 설정을 저장했습니다.");
+                  setMessage("Imported settings saved.");
                 } catch (error) {
                   setError(String(error));
                 }

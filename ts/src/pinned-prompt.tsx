@@ -1,3 +1,5 @@
+import { t } from "./i18n";
+import { useLocale } from "./i18n-react";
 import { useEffect, useRef, useState } from "react";
 import type { SessionEvent } from "../gen/cxz/session_pb";
 import { Button } from "./button";
@@ -14,6 +16,7 @@ export function PinnedPrompt({
   height: number;
   jump: (seq: string) => void;
 }) {
+  useLocale();
   const root = useRef<HTMLDivElement>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const hold = useRef({
@@ -95,7 +98,7 @@ export function PinnedPrompt({
       />
       <Button
         type="button"
-        aria-label="Jump to user message"
+        aria-label={t("Jump to user message")}
         onClick={(event) => {
           clearTimeout(timer.current);
           hold.current = {

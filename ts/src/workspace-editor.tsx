@@ -1,3 +1,5 @@
+import { t } from "./i18n";
+import { useLocale } from "./i18n-react";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { Project } from "../gen/cxz/project_pb";
 import type { ProjectPathEntry } from "../gen/cxz/project_svc_pb";
@@ -50,6 +52,7 @@ export function WorkspaceEditor({
   c: Connection;
   project: Project;
 }) {
+  useLocale();
   const id = project.runtimeId;
   const [state] = useState(() => {
     let state = c.editors.get(id);
@@ -98,8 +101,9 @@ export function WorkspaceEditor({
           ),
         );
         if (entries.length > 2048)
-          throw new Error("Directory preview is limited to 2048 entries.");
-        if (reply.truncated) setBrowseError("Directory preview was truncated.");
+          throw new Error(t("Directory preview is limited to 2048 entries."));
+        if (reply.truncated)
+          setBrowseError(t("Directory preview was truncated."));
       }
       entries.sort(
         (a, b) =>
@@ -140,7 +144,7 @@ export function WorkspaceEditor({
       )) {
         size += reply.data.length;
         if (size > 1048576 || reply.totalSize > 1048576n)
-          throw new Error("File preview is limited to 1 MiB.");
+          throw new Error(t("File preview is limited to 1 MiB."));
         chunks.push(reply.data);
       }
       const bytes = new Uint8Array(size);
@@ -150,7 +154,7 @@ export function WorkspaceEditor({
         offset += chunk.length;
       }
       if (bytes.includes(0))
-        throw new Error("Binary files cannot be previewed.");
+        throw new Error(t("Binary files cannot be previewed."));
       const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
       if (!controller.signal.aborted)
         state.update({
@@ -218,38 +222,38 @@ export function WorkspaceEditor({
           </Button>
           {entry.directory && isOpen && tree(target, depth + 1)}
           {loading.has(target) && (
-            <small className="file-loading">Loading…</small>
+            <small className="file-loading">{t("Loading…")}</small>
           )}
         </div>
       );
     });
   }
   return (
-    <aside className="workspace-editor" aria-label="Workspace editor">
+    <aside className="workspace-editor" aria-label={t("Workspace editor")}>
       <header>
         <div>
           <strong>{project.name || project.alias}</strong>
           <small>
             {value.phase === "connecting"
-              ? "Connecting…"
+              ? t("Connecting…")
               : value.phase === "connected"
                 ? value.simulated
-                  ? "Simulated connection"
-                  : "Connected"
-                : "File preview"}{" "}
-            · {value.workspace || root || "Workspace unavailable"}
+                  ? t("Simulated connection")
+                  : t("Connected")
+                : t("File preview")}{" "}
+            · {value.workspace || root || t("Workspace unavailable")}
           </small>
         </div>
         {value.phase === "connected" ? (
           <Button onClick={() => state.update({ phase: "idle", error: "" })}>
-            Disconnect
+            {t("Disconnect")}
           </Button>
         ) : (
           <Button
             disabled={value.phase === "connecting"}
             onClick={() => void connect()}
           >
-            Connect
+            {t("Connect")}
           </Button>
         )}
       </header>
@@ -261,16 +265,16 @@ export function WorkspaceEditor({
       {value.phase === "connected" && !value.simulated ? (
         <iframe
           key={frame}
-          title="VS Code workspace"
+          title={t("VS Code workspace")}
           src={`/editor/${encodeURIComponent(id)}/?folder=${encodeURIComponent(value.workspace)}`}
         />
       ) : (
         <div className="file-workbench">
-          <nav className="file-explorer" aria-label="Workspace files">
+          <nav className="file-explorer" aria-label={t("Workspace files")}>
             <div className="file-explorer-heading">
-              <span>Files</span>
+              <span>{t("Files")}</span>
               <Button
-                aria-label="Refresh files"
+                aria-label={t("Refresh files")}
                 onClick={() => {
                   setDirectories(new Map());
                   if (root) void list(root);
@@ -280,11 +284,15 @@ export function WorkspaceEditor({
               </Button>
             </div>
             {tree(root, 0)}
-            {loading.has(root) && <small>Loading files…</small>}
-            {!root && <small>Workspace unavailable.</small>}
+            {loading.has(root) && <small>{t("Loading files…")}</small>}
+            {!root && <small>{t("Workspace unavailable.")}</small>}
           </nav>
           <div className="file-content">
-            <div className="file-tabs" role="tablist" aria-label="Open files">
+            <div
+              className="file-tabs"
+              role="tablist"
+              aria-label={t("Open files")}
+            >
               {value.files.map((file) => (
                 <div className="file-tab" key={file.path}>
                   <Button
@@ -296,7 +304,9 @@ export function WorkspaceEditor({
                     {file.path.split("/").at(-1)}
                   </Button>
                   <Button
-                    aria-label={`Close ${file.path.split("/").at(-1)}`}
+                    aria-label={t("Close {name}", {
+                      name: file.path.split("/").at(-1)!,
+                    })}
                     onClick={() => {
                       const files = state.value.files.filter(
                         (f) => f.path !== file.path,
@@ -318,7 +328,7 @@ export function WorkspaceEditor({
             {active ? (
               <FileEditor key={active.path} file={active} />
             ) : (
-              <div className="file-empty">Select a file to preview.</div>
+              <div className="file-empty">{t("Select a file to preview.")}</div>
             )}
             {browseError && (
               <p className="editor-error" role="alert">
@@ -328,9 +338,9 @@ export function WorkspaceEditor({
             <footer>
               <span>{active?.path.replace(root + "/", "") || ""}</span>
               <span>
-                Read only
+                {t("Read only")}
                 {value.simulated && value.phase === "connected"
-                  ? " · Simulated"
+                  ? t(" · Simulated")
                   : ""}
               </span>
             </footer>
@@ -342,11 +352,12 @@ export function WorkspaceEditor({
 }
 
 function FileEditor({ file }: { file: File }) {
+  useLocale();
   return (
     <SourceEditor
       value={file.text}
       path={file.path}
-      ariaLabel={`File preview: ${file.path}`}
+      ariaLabel={t("File preview: {path}", { path: file.path })}
       readOnly
       view={file.view}
       onDispose={(view) => {

@@ -1,3 +1,4 @@
+import { t } from "./i18n";
 import {
   EMPTY_SETTINGS,
   parseSettings,
@@ -27,7 +28,7 @@ export class SettingsStore {
       this.value = {
         ...this.value,
         valid: false,
-        error: `설정을 읽을 수 없습니다: ${String(error)}`,
+        error: t("Cannot read settings: {error}", { error: String(error) }),
       };
     }
   }
@@ -52,7 +53,7 @@ export class SettingsStore {
         document: {},
         raw,
         valid: false,
-        error: `설정 파일 오류: ${String(error)}`,
+        error: t("Invalid settings file: {error}", { error: String(error) }),
       };
     }
     this.listeners.forEach((f) => f());
@@ -63,7 +64,7 @@ export class SettingsStore {
     if (expected !== undefined && expected !== current) {
       this.sync(current);
       throw new Error(
-        "설정 파일이 변경되었습니다. 저장된 파일을 다시 읽은 뒤 수정하세요.",
+        t("Settings have changed. Reload the saved file before editing."),
       );
     }
     // Persist the entire file before notifying editors; failed writes never

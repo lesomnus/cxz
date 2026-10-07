@@ -1,6 +1,7 @@
+import { t } from "./i18n";
 export const palettes = {
   muted: {
-    label: "차분한 색상",
+    label: "Muted",
     comment: "#697b6d",
     keyword: "#987fa8",
     title: "#7797ac",
@@ -9,7 +10,7 @@ export const palettes = {
     attr: "#a18b7c",
   },
   monochrome: {
-    label: "흑백",
+    label: "Monochrome",
     comment: "#808080",
     keyword: "#ededed",
     title: "#ededed",
@@ -18,7 +19,7 @@ export const palettes = {
     attr: "#bdbdbd",
   },
   cool: {
-    label: "차가운 색상",
+    label: "Cool",
     comment: "#657b85",
     keyword: "#7e8faf",
     title: "#71a0ab",
@@ -27,7 +28,7 @@ export const palettes = {
     attr: "#899baa",
   },
   warm: {
-    label: "따뜻한 색상",
+    label: "Warm",
     comment: "#80786b",
     keyword: "#aa838e",
     title: "#a6977b",
@@ -62,10 +63,10 @@ export const MAX_SETTINGS_BYTES = 1024 * 1024;
 
 export function parseSettings(raw: string): SettingsDocument {
   if (new TextEncoder().encode(raw).length > MAX_SETTINGS_BYTES)
-    throw new Error("설정 파일은 1 MiB까지 저장할 수 있습니다.");
+    throw new Error(t("Settings files are limited to 1 MiB."));
   const document: unknown = JSON.parse(raw);
   if (!document || typeof document !== "object" || Array.isArray(document))
-    throw new Error("settings는 JSON 객체여야 합니다.");
+    throw new Error(t("Settings must be a JSON object."));
   const value = document as SettingsDocument;
   for (const prefix of ["editor.", "session.editor."]) {
     for (const key of editorKeys) {
@@ -79,14 +80,24 @@ export function parseSettings(raw: string): SettingsDocument {
           entry < 1 ||
           entry > 16
         )
-          throw new Error(`${name}: 1–16 사이의 정수를 입력하세요.`);
+          throw new Error(
+            t("{name}: Enter an integer between 1 and 16.", { name }),
+          );
       } else if (key === "insertSpaces") {
         if (typeof entry !== "boolean")
-          throw new Error(`${name}: true 또는 false를 입력하세요.`);
+          throw new Error(t("{name}: Enter true or false.", { name }));
       } else if (typeof entry !== "string" || !Object.hasOwn(palettes, entry))
-        throw new Error(`${name}: 지원하는 색상 팔레트를 선택하세요.`);
+        throw new Error(
+          t("{name}: Choose a supported color palette.", { name }),
+        );
     }
   }
+  if (
+    Object.hasOwn(value, "ui.language") &&
+    value["ui.language"] !== "en" &&
+    value["ui.language"] !== "ko"
+  )
+    throw new Error(t("Unsupported display language. Choose en or ko."));
   return value;
 }
 

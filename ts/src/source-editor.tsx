@@ -49,6 +49,7 @@ export function SourceEditor({
   const settings = useEditorSettings();
   const latest = useRef({
     value,
+    ariaLabel,
     active,
     onChange,
     onSave,
@@ -59,6 +60,7 @@ export function SourceEditor({
   });
   latest.current = {
     value,
+    ariaLabel,
     active,
     onChange,
     onSave,
@@ -94,6 +96,9 @@ export function SourceEditor({
     settings.colorPalette,
   ]);
   useEffect(() => {
+    editor.current?.updateOptions({ ariaLabel });
+  }, [ariaLabel]);
+  useEffect(() => {
     const m = model.current;
     const e = editor.current;
     if (!m || !e || m.getValue() === value) return;
@@ -118,7 +123,7 @@ export function SourceEditor({
           model: m,
           readOnly,
           domReadOnly: readOnly,
-          ariaLabel,
+          ariaLabel: latest.current.ariaLabel,
           theme: `cxz-${latest.current.settings.colorPalette}`,
         });
         model.current = m;
@@ -170,7 +175,7 @@ export function SourceEditor({
       e?.dispose();
       m?.dispose();
     };
-  }, [activated, path, readOnly, ariaLabel]);
+  }, [activated, path, readOnly]);
   return (
     <div className="code-editor" ref={host}>
       {error && <p role="alert">{error}</p>}

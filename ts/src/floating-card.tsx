@@ -1,3 +1,5 @@
+import { t } from "./i18n";
+import { useLocale } from "./i18n-react";
 import {
   createContext,
   useCallback,
@@ -16,14 +18,15 @@ import { Button } from "./button";
 
 type Card = {
   id: number;
-  title: string;
-  label?: string;
+  title: string | (() => string);
+  label?: string | (() => string);
+  kind?: "paste";
   content: (close: () => void) => ReactNode;
   origin: HTMLElement | null;
   closing?: boolean;
   restoreFocus?: boolean;
 };
-type CardRequest = Pick<Card, "title" | "label" | "content">;
+type CardRequest = Pick<Card, "title" | "label" | "content" | "kind">;
 const OpenCard = createContext<(card: CardRequest) => void>(() => {});
 const CardState = createContext<{
   card?: Card;
@@ -35,6 +38,7 @@ export function useFloatingCard() {
 }
 
 export function FloatingCardProvider({ children }: { children: ReactNode }) {
+  useLocale();
   const [card, setCard] = useState<Card>();
   const current = useRef(card);
   current.current = card;
@@ -88,6 +92,7 @@ export function FloatingCardProvider({ children }: { children: ReactNode }) {
 }
 
 export function FloatingCardHost({ children }: { children?: ReactNode }) {
+  useLocale();
   const { card, close } = useContext(CardState);
   const host = useRef<HTMLDivElement>(null);
   const persistent = useRef<HTMLDivElement>(null);
@@ -193,6 +198,9 @@ export function FloatingCardHost({ children }: { children?: ReactNode }) {
 }
 
 function PreviewCard({ card, close }: { card: Card; close: () => void }) {
+  useLocale();
+  const title = typeof card.title === "function" ? card.title() : card.title;
+  const label = typeof card.label === "function" ? card.label() : card.label;
   const [entered, setEntered] = useState(false);
   const root = useRef<HTMLElement>(null);
   const active = !card.closing;
@@ -215,13 +223,13 @@ function PreviewCard({ card, close }: { card: Card; close: () => void }) {
   return (
     <FloatingCard
       ref={root}
-      title={card.title}
+      title={title}
       close={close}
       closeLabel={
-        card.label === "붙여넣기 원문" ? "Close paste preview" : "Close details"
+        card.kind === "paste" ? t("Close paste preview") : t("Close details")
       }
       role="dialog"
-      aria-label={card.label ?? card.title}
+      aria-label={label ?? title}
       aria-hidden={!active}
       inert={!active}
       data-card={card.id}
@@ -248,6 +256,7 @@ export function FloatingCard({
   closeLabel?: string;
   ref?: Ref<HTMLElement>;
 }) {
+  useLocale();
   return (
     <section ref={ref} className={`floating-card ${className}`} {...props}>
       <header className="card-heading">

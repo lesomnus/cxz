@@ -1,3 +1,4 @@
+import { t } from "./i18n";
 import type { SessionEvent } from "../gen/cxz/session_pb";
 // Four history pages in memory; the transcript mounts only its visible rows.
 export const MAX_EVENTS = 512;
@@ -62,7 +63,7 @@ export function questions(agent: string, e: SessionEvent): Question[] {
 export function approvalTitle(e: SessionEvent) {
   const p = payload(e);
   return e.text === "mcpServer/elicitation/request"
-    ? `MCP · ${p.params?.serverName ?? "Unknown server"}`
+    ? `MCP · ${p.params?.serverName ?? t("Unknown server")}`
     : e.text;
 }
 

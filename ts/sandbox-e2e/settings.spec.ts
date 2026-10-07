@@ -26,7 +26,7 @@ async function settings(page: Page) {
     .getByRole("button", { name: "Settings view", exact: true })
     .click();
   await expect(
-    page.getByRole("heading", { name: "에디터", exact: true }),
+    page.getByRole("heading", { name: "Editor", exact: true }),
   ).toBeVisible();
 }
 async function file(page: Page) {
@@ -39,7 +39,7 @@ async function file(page: Page) {
       .getByRole("complementary", { name: "Settings file editor", exact: true })
       .isVisible())
   )
-    await page.getByRole("button", { name: /^settings\.json 편집/ }).click();
+    await page.getByRole("button", { name: /^Edit settings\.json/ }).click();
   await expect(input).toBeAttached({ timeout: 30000 });
   return input;
 }
@@ -62,10 +62,10 @@ async function stored(page: Page) {
   return page.evaluate(() => JSON.parse(localStorage.getItem("settings")!));
 }
 const fields = [
-  "들여쓰기 칸 수",
-  "Tab 입력 방식",
-  "Tab 문자 표시 폭",
-  "색상 팔레트",
+  "Indentation size",
+  "Tab input",
+  "Tab display width",
+  "Color palette",
 ];
 
 test("settings topics replace tabs, the 600px body stays centered and a live JSON pane unfolds at the conversation width threshold", async ({
@@ -75,18 +75,21 @@ test("settings topics replace tabs, the 600px body stays centered and a live JSO
   await ready(page);
   await settings(page);
   const topics = page.getByRole("navigation", {
-    name: "설정 주제",
+    name: "Settings topics",
     exact: true,
   });
   const editorTopic = topics.getByRole("button", {
-    name: "에디터",
+    name: "Editor",
     exact: true,
   });
   await expect(editorTopic).toHaveAttribute("aria-current", "page");
-  await expect(topics.getByRole("button")).toHaveCount(1);
+  await expect(topics.getByRole("button")).toHaveCount(2);
   await expect(page.getByRole("tablist")).toHaveCount(0);
   const body = page.locator(".settings-editor-body");
-  const form = page.getByRole("region", { name: "에디터 설정", exact: true });
+  const form = page.getByRole("region", {
+    name: "Editor settings",
+    exact: true,
+  });
   const pane = page.getByRole("complementary", {
     name: "Settings file editor",
     exact: true,
@@ -116,7 +119,7 @@ test("settings topics replace tabs, the 600px body stays centered and a live JSO
   await expect(pane).toHaveCSS("border-left-width", "1px");
   expect(await centered()).toEqual({ width: 600, delta: 0 });
   await page
-    .getByLabel("전역 에디터 Tab 문자 표시 폭", { exact: true })
+    .getByLabel("Global editor Tab display width", { exact: true })
     .selectOption("8");
   const saved = '{\n  "editor.tabSize": 8\n}\n';
   await expect.poll(() => readJSON(page, source)).toBe(saved);
@@ -152,7 +155,7 @@ test("settings topics replace tabs, the 600px body stays centered and a live JSO
   await expect(source).toBeVisible();
   await expect(topics).toBeVisible();
   await page
-    .getByRole("button", { name: "에디터 설정으로 돌아가기", exact: true })
+    .getByRole("button", { name: "Back to settings", exact: true })
     .click();
   await expect(form).toBeVisible();
   await expect(source).toBeHidden();
@@ -276,21 +279,21 @@ test("one settings file persists, each session field overrides or inherits and e
   await settings(page);
   for (const label of fields)
     await expect(
-      page.getByLabel(`세션 대화 에디터 ${label}`, { exact: true }),
+      page.getByLabel(`Session editor ${label}`, { exact: true }),
     ).toHaveValue("");
   for (const [label, value] of fields.map((label, index) => [
     label,
     ["4", "false", "8", "cool"][index],
   ]))
     await page
-      .getByLabel(`전역 에디터 ${label}`, { exact: true })
+      .getByLabel(`Global editor ${label}`, { exact: true })
       .selectOption(value);
   for (const [label, value] of fields.map((label, index) => [
     label,
     ["6", "true", "2", "monochrome"][index],
   ]))
     await page
-      .getByLabel(`세션 대화 에디터 ${label}`, { exact: true })
+      .getByLabel(`Session editor ${label}`, { exact: true })
       .selectOption(value);
   expect(await stored(page)).toEqual({
     "editor.indentSize": 4,
@@ -318,7 +321,7 @@ test("one settings file persists, each session field overrides or inherits and e
   await settings(page);
   for (const label of fields)
     await page
-      .getByLabel(`세션 대화 에디터 ${label}`, { exact: true })
+      .getByLabel(`Session editor ${label}`, { exact: true })
       .selectOption("");
   expect(await stored(page)).toEqual({
     "editor.indentSize": 4,
@@ -373,7 +376,7 @@ test("JSON editing, validation, export and import preserve unknown settings in t
   await source.press("Control+Enter");
   await expect(
     page.locator(".settings-page p[role=status]:visible"),
-  ).toContainText("저장");
+  ).toContainText("Save");
   expect(await page.evaluate(() => localStorage.getItem("settings"))).toBe(raw);
   await source.press("Control+Home");
   await source.press("Tab");
@@ -383,35 +386,35 @@ test("JSON editing, validation, export and import preserve unknown settings in t
   await source.press("Control+m");
   await source.press("Tab");
   await expect(
-    page.getByRole("button", { name: "저장된 파일 다시 읽기", exact: true }),
+    page.getByRole("button", { name: "Reload saved file", exact: true }),
   ).toBeFocused();
   await page
-    .getByRole("navigation", { name: "설정 주제", exact: true })
-    .getByRole("button", { name: "에디터", exact: true })
+    .getByRole("navigation", { name: "Settings topics", exact: true })
+    .getByRole("button", { name: "Editor", exact: true })
     .click();
   await expect(
-    page.getByLabel("전역 에디터 Tab 문자 표시 폭", { exact: true }),
+    page.getByLabel("Global editor Tab display width", { exact: true }),
   ).toHaveValue("8");
   await page
-    .getByLabel("전역 에디터 색상 팔레트", { exact: true })
+    .getByLabel("Global editor Color palette", { exact: true })
     .selectOption("warm");
   expect((await stored(page)).future).toEqual({ enabled: true });
   await file(page);
   const saved = await readJSON(page, source);
   await writeJSON(page, source, '{"editor.tabSize":0}');
-  await page.getByRole("button", { name: "저장", exact: true }).click();
+  await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(
     page.locator(".settings-page p[role=alert]:visible"),
-  ).toContainText("1–16");
+  ).toContainText("between 1 and 16");
   expect(await page.evaluate(() => localStorage.getItem("settings"))).toBe(
     saved,
   );
   await page
-    .getByRole("button", { name: "저장된 파일 다시 읽기", exact: true })
+    .getByRole("button", { name: "Reload saved file", exact: true })
     .click();
   await expect.poll(() => readJSON(page, source)).toBe(saved);
   const downloadPending = page.waitForEvent("download");
-  await page.getByRole("button", { name: "내보내기", exact: true }).click();
+  await page.getByRole("button", { name: "Export", exact: true }).click();
   const download = await downloadPending;
   expect(download.suggestedFilename()).toBe("settings.json");
   const stream = await download.createReadStream();
@@ -427,7 +430,7 @@ test("JSON editing, validation, export and import preserve unknown settings in t
   const imported =
     '{"editor.indentSize":3,"session.editor.tabSize":6,"future":[1,2]}';
   await page
-    .getByLabel("settings.json 가져오기", { exact: true })
+    .getByLabel("settings.json Import", { exact: true })
     .evaluate((el: HTMLInputElement, raw) => {
       const files = new DataTransfer();
       files.items.add(
@@ -441,11 +444,11 @@ test("JSON editing, validation, export and import preserve unknown settings in t
     imported,
   );
   await page
-    .getByRole("navigation", { name: "설정 주제", exact: true })
-    .getByRole("button", { name: "에디터", exact: true })
+    .getByRole("navigation", { name: "Settings topics", exact: true })
+    .getByRole("button", { name: "Editor", exact: true })
     .click();
   await expect(
-    page.getByLabel("세션 대화 에디터 Tab 문자 표시 폭", { exact: true }),
+    page.getByLabel("Session editor Tab display width", { exact: true }),
   ).toHaveValue("6");
   await page.screenshot({
     path: "test-results/settings-editor.png",
@@ -465,19 +468,19 @@ test("cross-tab changes refresh editors and preserve stale JSON drafts instead o
   await ready(other);
   await settings(other);
   await other
-    .getByLabel("전역 에디터 Tab 문자 표시 폭", { exact: true })
+    .getByLabel("Global editor Tab display width", { exact: true })
     .selectOption("8");
   await expect(
     page.locator(".settings-page p[role=alert]:visible"),
-  ).toContainText("수정 중인 내용은 유지");
+  ).toContainText("Your draft was preserved");
   await expect.poll(() => readJSON(page, source)).toBe('{"editor.tabSize":2}');
   await expect(
-    page.getByRole("button", { name: "저장", exact: true }),
+    page.getByRole("button", { name: "Save", exact: true }),
   ).toBeDisabled();
   await source.press("Control+Enter");
   expect((await stored(page))["editor.tabSize"]).toBe(8);
   await page
-    .getByRole("button", { name: "저장된 파일 다시 읽기", exact: true })
+    .getByRole("button", { name: "Reload saved file", exact: true })
     .click();
   await expect
     .poll(() => readJSON(page, source))
@@ -488,12 +491,12 @@ test("cross-tab changes refresh editors and preserve stale JSON drafts instead o
   const composer = page.getByRole("textbox", { name: "Message", exact: true });
   await composer.fill("keep draft");
   await other
-    .getByLabel("전역 에디터 Tab 문자 표시 폭", { exact: true })
+    .getByLabel("Global editor Tab display width", { exact: true })
     .selectOption("6");
   await expect(composer).toHaveCSS("tab-size", "6");
   await expect(composer).toHaveValue("keep draft");
   await other
-    .getByLabel("세션 대화 에디터 들여쓰기 칸 수", { exact: true })
+    .getByLabel("Session editor Indentation size", { exact: true })
     .selectOption("5");
   await composer.press("Home");
   await composer.press("Tab");
@@ -512,9 +515,9 @@ test("invalid stored files stay recoverable and mobile settings remain accessibl
   await settings(page);
   await expect(
     page.locator(".settings-page p[role=alert]:visible"),
-  ).toContainText("설정 파일 오류");
+  ).toContainText("Invalid settings file");
   await expect(
-    page.getByLabel("전역 에디터 들여쓰기 칸 수", { exact: true }),
+    page.getByLabel("Global editor Indentation size", { exact: true }),
   ).toBeDisabled();
   const source = await file(page);
   await expect.poll(() => readJSON(page, source)).toBe('{"broken"');
@@ -524,14 +527,14 @@ test("invalid stored files stay recoverable and mobile settings remain accessibl
     page.locator(".settings-page p[role=alert]:visible"),
   ).toHaveCount(0);
   await page
-    .getByRole("navigation", { name: "설정 주제", exact: true })
-    .getByRole("button", { name: "에디터", exact: true })
+    .getByRole("navigation", { name: "Settings topics", exact: true })
+    .getByRole("button", { name: "Editor", exact: true })
     .click();
   await expect(
-    page.getByLabel("전역 에디터 들여쓰기 칸 수", { exact: true }),
+    page.getByLabel("Global editor Indentation size", { exact: true }),
   ).toBeEnabled();
   await page
-    .getByLabel("세션 대화 에디터 색상 팔레트", { exact: true })
+    .getByLabel("Session editor Color palette", { exact: true })
     .selectOption("monochrome");
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(
     390,
@@ -588,10 +591,10 @@ test("global settings update the readonly file viewer in place while conversatio
   await ready(other);
   await settings(other);
   await other
-    .getByLabel("전역 에디터 Tab 문자 표시 폭", { exact: true })
+    .getByLabel("Global editor Tab display width", { exact: true })
     .selectOption("8");
   await other
-    .getByLabel("전역 에디터 색상 팔레트", { exact: true })
+    .getByLabel("Global editor Color palette", { exact: true })
     .selectOption("cool");
   await expect.poll(tabWidth).toBeGreaterThan(initialWidth * 1.9);
   await expect(

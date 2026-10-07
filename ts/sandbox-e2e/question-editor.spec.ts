@@ -70,11 +70,11 @@ test("option cards and Other share native selection and multiline paste editing"
   await expect(page.locator(".composer .paste-chip")).toHaveCount(0);
   const compact = await other.inputValue();
   await chip.click();
-  const preview = page.getByRole("dialog", { name: "붙여넣기 원문" });
+  const preview = page.getByRole("dialog", { name: "Paste source" });
   await expect(preview.locator("pre")).toHaveText(body);
   await expect(page.locator(".question-cards")).toHaveJSProperty("inert", true);
   await preview
-    .getByRole("button", { name: "원문 펼치기", exact: true })
+    .getByRole("button", { name: "Expand source", exact: true })
     .click();
   await expect(preview).toHaveCount(0);
   // Native textarea values normalize CRLF; raw chip submission retains it.

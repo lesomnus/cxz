@@ -1,3 +1,5 @@
+import { t, translateKnown, currentLocale } from "./i18n";
+import { useLocale } from "./i18n-react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { Button } from "./button";
@@ -32,8 +34,8 @@ export function ComposerEditor({
   pastes,
   onChange,
   canSend,
-  ariaLabel = "Message",
-  placeholder = "Continue the conversation…",
+  ariaLabel = t("Message"),
+  placeholder = t("Continue the conversation…"),
 }: {
   value: string;
   pastes: Map<string, ComposerPaste>;
@@ -42,6 +44,7 @@ export function ComposerEditor({
   ariaLabel?: string;
   placeholder?: string;
 }) {
+  useLocale();
   const input = useRef<HTMLTextAreaElement>(null);
   const editorSettings = useEditorSettings("session");
   const mirror = useRef<HTMLDivElement>(null);
@@ -185,8 +188,13 @@ export function ComposerEditor({
     input.current!.focus({ preventScroll: true });
     input.current!.setSelectionRange(range.start, range.end);
     openCard({
-      label: "붙여넣기 원문",
-      title: `붙여넣기 · ${range.paste.lines}줄 · ${range.paste.bytes.toLocaleString()}B`,
+      kind: "paste",
+      label: () => t("Paste source"),
+      title: () =>
+        t("Paste · {lines} lines · {bytes}B", {
+          lines: range.paste.lines,
+          bytes: range.paste.bytes.toLocaleString(currentLocale()),
+        }),
       content: (close) => (
         <PastePreview
           paste={range.paste}
@@ -231,8 +239,17 @@ export function ComposerEditor({
             aria-label={ariaLabel}
             aria-description={
               tabMovesFocus
-                ? "Tab: 포커스 이동. Ctrl+M: 들여쓰기 모드로 전환."
-                : `Tab: ${editorSettings.insertSpaces ? `${editorSettings.indentSize}칸 들여쓰기` : "Tab 문자 입력"}. Shift+Tab: 내어쓰기. Ctrl+M: Tab으로 포커스 이동 전환.`
+                ? t("Tab: Move focus. Ctrl+M: Switch to indentation mode.")
+                : t(
+                    "Tab: {action}. Shift+Tab: Outdent. Ctrl+M: Toggle Tab focus traversal.",
+                    {
+                      action: editorSettings.insertSpaces
+                        ? t("Indent {count} spaces", {
+                            count: editorSettings.indentSize,
+                          })
+                        : t("Insert a tab character"),
+                    },
+                  )
             }
             placeholder={placeholder}
             value={value}
@@ -285,7 +302,7 @@ export function ComposerEditor({
                   crypto.randomUUID().replaceAll("-", "").slice(0, 8),
                 );
               if (paste.bytes > MAX_PASTE_BYTES) {
-                setNotice("붙여넣기는 1 MiB까지 가능합니다.");
+                setNotice("Pastes are limited to 1 MiB.");
                 return;
               }
               if (
@@ -293,7 +310,7 @@ export function ComposerEditor({
                   [...pastes.values()].reduce((sum, p) => sum + p.bytes, 0) >
                 MAX_PASTE_CACHE_BYTES
               ) {
-                setNotice("붙여넣기 보관 공간이 32 MiB에 도달했습니다.");
+                setNotice("Paste storage has reached 32 MiB.");
                 return;
               }
               pastes.set(paste.token, paste);
@@ -340,8 +357,17 @@ export function ComposerEditor({
                 setTabMovesFocus(!tabMovesFocus);
                 setNotice(
                   tabMovesFocus
-                    ? `Tab: ${editorSettings.insertSpaces ? `${editorSettings.indentSize}칸 들여쓰기` : "Tab 문자 입력"} · Shift+Tab: 내어쓰기 · Ctrl+M: 포커스 이동 모드`
-                    : "Tab: 포커스 이동 · Ctrl+M: 들여쓰기 모드",
+                    ? t(
+                        "Tab: {action} · Shift+Tab: Outdent · Ctrl+M: Focus traversal mode",
+                        {
+                          action: editorSettings.insertSpaces
+                            ? t("Indent {count} spaces", {
+                                count: editorSettings.indentSize,
+                              })
+                            : t("Insert a tab character"),
+                        },
+                      )
+                    : t("Tab: Move focus · Ctrl+M: Indentation mode"),
                 );
                 return;
               }
@@ -421,7 +447,7 @@ export function ComposerEditor({
                 const target = chip ?? ranges[0];
                 if (target) {
                   showPreview(target);
-                } else setNotice("현재 입력에 붙여넣기 chip이 없습니다.");
+                } else setNotice("There are no paste chips in this input.");
                 return;
               }
               if (
@@ -487,8 +513,11 @@ export function ComposerEditor({
                       className="paste-chip"
                       role="button"
                       tabIndex={0}
-                      aria-label={`붙여넣기 원문 보기: ${range.paste.lines}줄, ${range.paste.bytes} bytes`}
-                      title="원문 보기 · Ctrl+P"
+                      aria-label={t(
+                        "View paste source: {lines} lines, {bytes} bytes",
+                        { lines: range.paste.lines, bytes: range.paste.bytes },
+                      )}
+                      title={t("View source · Ctrl+P")}
                       key={range.start}
                       onClick={() => showPreview(range)}
                       onKeyDown={(event) => {
@@ -524,7 +553,9 @@ export function ComposerEditor({
                           }}
                         >
                           <select
-                            aria-label={`Code syntax ${blocks.indexOf(block!) + 1}`}
+                            aria-label={t("Code syntax {index}", {
+                              index: blocks.indexOf(block!) + 1,
+                            })}
                             value={codeSyntax(block!.syntax)}
                             onChange={(event) =>
                               changeSyntax(block!, event.target.value)
@@ -533,7 +564,9 @@ export function ComposerEditor({
                             {codeSyntaxes.map((syntax) => (
                               <option key={syntax} value={syntax}>
                                 {syntax === "auto"
-                                  ? `Auto · ${block!.detected}`
+                                  ? t("Auto · {syntax}", {
+                                      syntax: block!.detected,
+                                    })
                                   : syntax}
                               </option>
                             ))}
@@ -548,8 +581,10 @@ export function ComposerEditor({
                           <Button
                             className="toolbar-button code-close"
                             type="button"
-                            aria-label={`Close code block ${blocks.indexOf(block!) + 1}`}
-                            title="코드 블록 끝내기"
+                            aria-label={t("Close code block {index}", {
+                              index: blocks.indexOf(block!) + 1,
+                            })}
+                            title={t("Finish code block")}
                             onClick={() => closeCode(block!)}
                           >
                             ×
@@ -574,7 +609,7 @@ export function ComposerEditor({
       </div>
       {notice && (
         <p className="editor-notice" role="status">
-          {notice}
+          {translateKnown(notice)}
         </p>
       )}
     </>
@@ -602,6 +637,7 @@ function PastePreview({
   paste: ComposerPaste;
   apply: (text: string) => boolean;
 }) {
+  useLocale();
   const [stale, setStale] = useState(false);
   return (
     <>
@@ -612,19 +648,19 @@ function PastePreview({
           disabled={stale}
           onClick={() => setStale(!apply(paste.body))}
         >
-          원문 펼치기
+          {t("Expand source")}
         </Button>
         <Button
           type="button"
           disabled={stale}
           onClick={() => setStale(!apply(""))}
         >
-          삭제
+          {t("Delete")}
         </Button>
       </div>
       {stale && (
         <p role="status" className="muted">
-          입력 내용이 변경되었습니다. chip을 다시 열어주세요.
+          {t("The input has changed. Reopen the chip.")}
         </p>
       )}
     </>

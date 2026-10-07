@@ -46,7 +46,7 @@ test("Tab indents, Shift+Tab outdents, native undo preserves selection and Ctrl+
   await expect(input).toHaveValue("one\ntwo\nthree");
   await input.fill("keep draft");
   await input.press("Control+m");
-  await expect(page.getByRole("status")).toContainText("포커스 이동");
+  await expect(page.getByRole("status")).toContainText("Move focus");
   await input.press("Tab");
   await expect(
     page.getByRole("combobox", { name: "Model", exact: true }),
@@ -79,7 +79,7 @@ test("Tab indents, Shift+Tab outdents, native undo preserves selection and Ctrl+
   await expect(input).toHaveValue("    " + token);
   await page.locator(".paste-chip").click();
   await expect(
-    page.getByRole("dialog", { name: "붙여넣기 원문" }).locator("pre"),
+    page.getByRole("dialog", { name: "Paste source" }).locator("pre"),
   ).toHaveText(pasted);
   await page.keyboard.press("Escape");
   await input.press("Control+Enter");

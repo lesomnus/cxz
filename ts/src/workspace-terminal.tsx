@@ -1,3 +1,5 @@
+import { t, translateKnown } from "./i18n";
+import { useLocale } from "./i18n-react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useQuery } from "@lesomnus/payday/react";
 import { ProjectService } from "../gen/cxz/project_svc_pb";
@@ -38,6 +40,7 @@ export function WorkspaceTerminal({
   visible: boolean;
   hide: () => void;
 }) {
+  useLocale();
   const project = useQuery(ProjectService.method.get, {
     ref: { key: { case: "id", value: projectId } },
     select: { all: true },
@@ -179,22 +182,22 @@ export function WorkspaceTerminal({
   return (
     <section
       className="workspace-terminal"
-      aria-label="Workspace terminal"
+      aria-label={t("Workspace terminal")}
       hidden={!visible}
     >
       <header>
-        <strong>Terminal</strong>
+        <strong>{t("Terminal")}</strong>
         <small role={project.error ? "alert" : "status"}>
-          {project.error ? String(project.error) : state}
+          {project.error ? String(project.error) : translateKnown(state)}
         </small>
         {ended && (
           <Button onClick={() => reconnect((value) => value + 1)}>
-            Reconnect
+            {t("Reconnect")}
           </Button>
         )}
         <Button
           className="toolbar-button"
-          aria-label="Hide terminal"
+          aria-label={t("Hide terminal")}
           title="Ctrl+`"
           onClick={hide}
         >

@@ -1,3 +1,4 @@
+import { t } from "./i18n";
 import type { ResponseMetadata } from "../gen/cxz/session_pb";
 
 export function responseInfo(response?: ResponseMetadata) {
@@ -11,13 +12,18 @@ export function responseInfo(response?: ResponseMetadata) {
       .map(([name, value, source]) => {
         const origin =
           source === "response"
-            ? "응답 보고값"
+            ? "Reported by response"
             : source === "settings"
-              ? "적용된 설정"
+              ? "Applied setting"
               : source === "requested"
-                ? "요청한 설정"
-                : "저장된 값";
-        return `${name}: ${value} (${origin})`;
+                ? "Requested setting"
+                : "Stored value";
+        return t(
+          name === "Model"
+            ? "Model: {value} ({source})"
+            : "Effort: {value} ({source})",
+          { value: value!, source: t(origin) },
+        );
       })
       .join("\n"),
   };

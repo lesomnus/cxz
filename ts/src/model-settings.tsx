@@ -1,3 +1,5 @@
+import { t } from "./i18n";
+import { useLocale } from "./i18n-react";
 import {
   useEffect,
   useId,
@@ -70,6 +72,7 @@ export function ModelSettings({
   busy: boolean;
   change: (kind: "model" | "effort", value: string) => void;
 }) {
+  useLocale();
   const selected = catalog && selectedModel(catalog);
   const models = catalog?.models.map((m) => m.id) ?? [];
   if (catalog?.models.some((m) => m.default) && !models.includes("default"))
@@ -85,7 +88,7 @@ export function ModelSettings({
   return (
     <div className="model-info">
       {(["model", "effort"] as const).map((kind) => {
-        const label = kind === "model" ? "Model" : "Effort";
+        const label = kind === "model" ? t("Model") : t("Effort");
         const values = [...new Set(kind === "model" ? models : efforts)];
         const value =
           (kind === "model" ? catalog?.model : catalog?.effort) || "default";
@@ -102,8 +105,8 @@ export function ModelSettings({
               disabled={disabled}
               disabledReason={
                 !values.length
-                  ? "Provider choices not reported"
-                  : "Settings require an idle session"
+                  ? t("Provider choices not reported")
+                  : t("Settings require an idle session")
               }
               choose={(choice) => change(kind, choice)}
             />
@@ -131,6 +134,7 @@ function ValueMenu({
   disabledReason: string;
   choose: (value: string) => void;
 }) {
+  useLocale();
   const root = useRef<HTMLDivElement>(null);
   const menu = useRef<HTMLDivElement>(null);
   const id = useId();
@@ -165,7 +169,7 @@ function ValueMenu({
     setUp(upwards);
     menu.current.style.setProperty(
       "--menu-width",
-      `${Math.max(rect.width + 2 * inset, Math.min(label === "Model" ? 240 : 140, window.innerWidth - rect.left))}px`,
+      `${Math.max(rect.width + 2 * inset, Math.min(label === t("Model") ? 240 : 140, window.innerWidth - rect.left))}px`,
     );
     menu.current.style.setProperty(
       "--options-height",
@@ -247,7 +251,7 @@ function ValueMenu({
           id={id}
           className={`setting-menu ${up ? "opens-up" : ""}`}
           role="listbox"
-          aria-label={`${label} choices`}
+          aria-label={t("{label} choices", { label })}
         >
           <Button
             type="button"

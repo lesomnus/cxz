@@ -1,3 +1,4 @@
+import { t } from "./i18n";
 import type { MessageInitShape } from "@bufbuild/protobuf";
 import type { ProjectTerminalRequestSchema } from "../gen/cxz/project_svc_pb";
 import type { Connection } from "./connection";
@@ -23,7 +24,7 @@ class InputQueue {
   push(frame: Frame) {
     if (this.ended) return;
     if (this.frames.length >= 128)
-      throw new Error("Terminal input queue is full");
+      throw new Error(t("Terminal input queue is full"));
     this.frames.push(frame);
     this.wake?.();
   }
@@ -109,7 +110,9 @@ export function openTerminal(
   const send = (data: string | Uint8Array) => {
     if (ws.readyState !== WebSocket.OPEN) return;
     if (ws.bufferedAmount > 1 << 20) {
-      status({ error: "Terminal input is congested; reconnect to try again" });
+      status({
+        error: t("Terminal input is congested; reconnect to try again"),
+      });
       ws.close();
       return;
     }
@@ -127,7 +130,7 @@ export function openTerminal(
   };
   ws.onclose = () => {
     if (!closed)
-      status({ error: "Terminal disconnected; reconnect to try again" });
+      status({ error: t("Terminal disconnected; reconnect to try again") });
   };
   return {
     input: (text) => {

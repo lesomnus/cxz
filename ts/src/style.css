@@ -2070,3 +2070,17 @@ button.tree-session:not(:disabled):active > .button-content {
     animation: none;
   }
 }
+.language-error {
+  position: fixed;
+  inset: 12px auto auto 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  max-width: calc(100vw - 24px);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #202020;
+  border-radius: 10px;
+  font-size: 12px;
+}

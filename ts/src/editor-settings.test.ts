@@ -99,7 +99,7 @@ it("detects stale file saves and merges form changes against the latest stored f
   const { store, storage, file } = fixture('{"editor.tabSize":4}');
   const before = store.snapshot().raw;
   storage.setItem("settings", '{"editor.tabSize":8,"future":true}');
-  expect(() => store.save("{}", before)).toThrow("변경");
+  expect(() => store.save("{}", before)).toThrow("changed");
   expect(store.snapshot().document["editor.tabSize"]).toBe(8);
   store.set("session.editor.tabSize", 2);
   expect(JSON.parse(file()!)).toEqual({
