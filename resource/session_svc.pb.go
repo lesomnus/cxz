@@ -2333,6 +2333,1158 @@ func (b0 SessionWatchItem_builder) Build() *SessionWatchItem {
 	return m0
 }
 
+// Omit both refs for all listed sessions; refs are mutually exclusive.
+// UTC half-open [from_ms, to_ms); defaults to the last 30 days, maximum 366 days.
+type ConversationStatsRequest struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Project     *ProjectRef            `protobuf:"bytes,1,opt,name=project"`
+	xxx_hidden_Session     *SessionRef            `protobuf:"bytes,2,opt,name=session"`
+	xxx_hidden_FromMs      int64                  `protobuf:"varint,3,opt,name=from_ms,json=fromMs"`
+	xxx_hidden_ToMs        int64                  `protobuf:"varint,4,opt,name=to_ms,json=toMs"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *ConversationStatsRequest) Reset() {
+	*x = ConversationStatsRequest{}
+	mi := &file_cxz_session_svc_g_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ConversationStatsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ConversationStatsRequest) ProtoMessage() {}
+
+func (x *ConversationStatsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_session_svc_g_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *ConversationStatsRequest) GetProject() *ProjectRef {
+	if x != nil {
+		return x.xxx_hidden_Project
+	}
+	return nil
+}
+
+func (x *ConversationStatsRequest) GetSession() *SessionRef {
+	if x != nil {
+		return x.xxx_hidden_Session
+	}
+	return nil
+}
+
+func (x *ConversationStatsRequest) GetFromMs() int64 {
+	if x != nil {
+		return x.xxx_hidden_FromMs
+	}
+	return 0
+}
+
+func (x *ConversationStatsRequest) GetToMs() int64 {
+	if x != nil {
+		return x.xxx_hidden_ToMs
+	}
+	return 0
+}
+
+func (x *ConversationStatsRequest) SetProject(v *ProjectRef) {
+	x.xxx_hidden_Project = v
+}
+
+func (x *ConversationStatsRequest) SetSession(v *SessionRef) {
+	x.xxx_hidden_Session = v
+}
+
+func (x *ConversationStatsRequest) SetFromMs(v int64) {
+	x.xxx_hidden_FromMs = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 4)
+}
+
+func (x *ConversationStatsRequest) SetToMs(v int64) {
+	x.xxx_hidden_ToMs = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 4)
+}
+
+func (x *ConversationStatsRequest) HasProject() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Project != nil
+}
+
+func (x *ConversationStatsRequest) HasSession() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Session != nil
+}
+
+func (x *ConversationStatsRequest) HasFromMs() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+}
+
+func (x *ConversationStatsRequest) HasToMs() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
+}
+
+func (x *ConversationStatsRequest) ClearProject() {
+	x.xxx_hidden_Project = nil
+}
+
+func (x *ConversationStatsRequest) ClearSession() {
+	x.xxx_hidden_Session = nil
+}
+
+func (x *ConversationStatsRequest) ClearFromMs() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	x.xxx_hidden_FromMs = 0
+}
+
+func (x *ConversationStatsRequest) ClearToMs() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
+	x.xxx_hidden_ToMs = 0
+}
+
+type ConversationStatsRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Project *ProjectRef
+	Session *SessionRef
+	FromMs  *int64
+	ToMs    *int64
+}
+
+func (b0 ConversationStatsRequest_builder) Build() *ConversationStatsRequest {
+	m0 := &ConversationStatsRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Project = b.Project
+	x.xxx_hidden_Session = b.Session
+	if b.FromMs != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 4)
+		x.xxx_hidden_FromMs = *b.FromMs
+	}
+	if b.ToMs != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 4)
+		x.xxx_hidden_ToMs = *b.ToMs
+	}
+	return m0
+}
+
+type ConversationStatsReply struct {
+	state                  protoimpl.MessageState        `protogen:"opaque.v1"`
+	xxx_hidden_FromMs      int64                         `protobuf:"varint,1,opt,name=from_ms,json=fromMs"`
+	xxx_hidden_ToMs        int64                         `protobuf:"varint,2,opt,name=to_ms,json=toMs"`
+	xxx_hidden_GeneratedMs int64                         `protobuf:"varint,3,opt,name=generated_ms,json=generatedMs"`
+	xxx_hidden_Total       *ConversationStatsValues      `protobuf:"bytes,4,opt,name=total"`
+	xxx_hidden_Days        *[]*ConversationStatsDay      `protobuf:"bytes,5,rep,name=days"`
+	xxx_hidden_Sessions    *[]*ConversationStatsCoverage `protobuf:"bytes,6,rep,name=sessions"`
+	xxx_hidden_Complete    bool                          `protobuf:"varint,7,opt,name=complete"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *ConversationStatsReply) Reset() {
+	*x = ConversationStatsReply{}
+	mi := &file_cxz_session_svc_g_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ConversationStatsReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ConversationStatsReply) ProtoMessage() {}
+
+func (x *ConversationStatsReply) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_session_svc_g_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *ConversationStatsReply) GetFromMs() int64 {
+	if x != nil {
+		return x.xxx_hidden_FromMs
+	}
+	return 0
+}
+
+func (x *ConversationStatsReply) GetToMs() int64 {
+	if x != nil {
+		return x.xxx_hidden_ToMs
+	}
+	return 0
+}
+
+func (x *ConversationStatsReply) GetGeneratedMs() int64 {
+	if x != nil {
+		return x.xxx_hidden_GeneratedMs
+	}
+	return 0
+}
+
+func (x *ConversationStatsReply) GetTotal() *ConversationStatsValues {
+	if x != nil {
+		return x.xxx_hidden_Total
+	}
+	return nil
+}
+
+func (x *ConversationStatsReply) GetDays() []*ConversationStatsDay {
+	if x != nil {
+		if x.xxx_hidden_Days != nil {
+			return *x.xxx_hidden_Days
+		}
+	}
+	return nil
+}
+
+func (x *ConversationStatsReply) GetSessions() []*ConversationStatsCoverage {
+	if x != nil {
+		if x.xxx_hidden_Sessions != nil {
+			return *x.xxx_hidden_Sessions
+		}
+	}
+	return nil
+}
+
+func (x *ConversationStatsReply) GetComplete() bool {
+	if x != nil {
+		return x.xxx_hidden_Complete
+	}
+	return false
+}
+
+func (x *ConversationStatsReply) SetFromMs(v int64) {
+	x.xxx_hidden_FromMs = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 7)
+}
+
+func (x *ConversationStatsReply) SetToMs(v int64) {
+	x.xxx_hidden_ToMs = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 7)
+}
+
+func (x *ConversationStatsReply) SetGeneratedMs(v int64) {
+	x.xxx_hidden_GeneratedMs = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 7)
+}
+
+func (x *ConversationStatsReply) SetTotal(v *ConversationStatsValues) {
+	x.xxx_hidden_Total = v
+}
+
+func (x *ConversationStatsReply) SetDays(v []*ConversationStatsDay) {
+	x.xxx_hidden_Days = &v
+}
+
+func (x *ConversationStatsReply) SetSessions(v []*ConversationStatsCoverage) {
+	x.xxx_hidden_Sessions = &v
+}
+
+func (x *ConversationStatsReply) SetComplete(v bool) {
+	x.xxx_hidden_Complete = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 7)
+}
+
+func (x *ConversationStatsReply) HasFromMs() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *ConversationStatsReply) HasToMs() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
+}
+
+func (x *ConversationStatsReply) HasGeneratedMs() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+}
+
+func (x *ConversationStatsReply) HasTotal() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Total != nil
+}
+
+func (x *ConversationStatsReply) HasComplete() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
+}
+
+func (x *ConversationStatsReply) ClearFromMs() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_FromMs = 0
+}
+
+func (x *ConversationStatsReply) ClearToMs() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_ToMs = 0
+}
+
+func (x *ConversationStatsReply) ClearGeneratedMs() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	x.xxx_hidden_GeneratedMs = 0
+}
+
+func (x *ConversationStatsReply) ClearTotal() {
+	x.xxx_hidden_Total = nil
+}
+
+func (x *ConversationStatsReply) ClearComplete() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
+	x.xxx_hidden_Complete = false
+}
+
+type ConversationStatsReply_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	FromMs      *int64
+	ToMs        *int64
+	GeneratedMs *int64
+	Total       *ConversationStatsValues
+	Days        []*ConversationStatsDay
+	Sessions    []*ConversationStatsCoverage
+	Complete    *bool
+}
+
+func (b0 ConversationStatsReply_builder) Build() *ConversationStatsReply {
+	m0 := &ConversationStatsReply{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.FromMs != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 7)
+		x.xxx_hidden_FromMs = *b.FromMs
+	}
+	if b.ToMs != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 7)
+		x.xxx_hidden_ToMs = *b.ToMs
+	}
+	if b.GeneratedMs != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 7)
+		x.xxx_hidden_GeneratedMs = *b.GeneratedMs
+	}
+	x.xxx_hidden_Total = b.Total
+	x.xxx_hidden_Days = &b.Days
+	x.xxx_hidden_Sessions = &b.Sessions
+	if b.Complete != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 7)
+		x.xxx_hidden_Complete = *b.Complete
+	}
+	return m0
+}
+
+type ConversationStatsValues struct {
+	state                         protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Events             uint64                 `protobuf:"varint,1,opt,name=events"`
+	xxx_hidden_InputMessages      uint64                 `protobuf:"varint,2,opt,name=input_messages,json=inputMessages"`
+	xxx_hidden_AssistantEvents    uint64                 `protobuf:"varint,3,opt,name=assistant_events,json=assistantEvents"`
+	xxx_hidden_ConversationBytes  uint64                 `protobuf:"varint,4,opt,name=conversation_bytes,json=conversationBytes"`
+	xxx_hidden_EventContentBytes  uint64                 `protobuf:"varint,5,opt,name=event_content_bytes,json=eventContentBytes"`
+	xxx_hidden_FinishedTurns      uint64                 `protobuf:"varint,6,opt,name=finished_turns,json=finishedTurns"`
+	xxx_hidden_InputTokens        uint64                 `protobuf:"varint,7,opt,name=input_tokens,json=inputTokens"`
+	xxx_hidden_OutputTokens       uint64                 `protobuf:"varint,8,opt,name=output_tokens,json=outputTokens"`
+	xxx_hidden_CacheReadTokens    uint64                 `protobuf:"varint,9,opt,name=cache_read_tokens,json=cacheReadTokens"`
+	xxx_hidden_CacheWriteTokens   uint64                 `protobuf:"varint,10,opt,name=cache_write_tokens,json=cacheWriteTokens"`
+	xxx_hidden_TokenReportedTurns uint64                 `protobuf:"varint,11,opt,name=token_reported_turns,json=tokenReportedTurns"`
+	xxx_hidden_ReportedCostUsd    float64                `protobuf:"fixed64,12,opt,name=reported_cost_usd,json=reportedCostUsd"`
+	xxx_hidden_CostReportedTurns  uint64                 `protobuf:"varint,13,opt,name=cost_reported_turns,json=costReportedTurns"`
+	XXX_raceDetectHookData        protoimpl.RaceDetectHookData
+	XXX_presence                  [1]uint32
+	unknownFields                 protoimpl.UnknownFields
+	sizeCache                     protoimpl.SizeCache
+}
+
+func (x *ConversationStatsValues) Reset() {
+	*x = ConversationStatsValues{}
+	mi := &file_cxz_session_svc_g_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ConversationStatsValues) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ConversationStatsValues) ProtoMessage() {}
+
+func (x *ConversationStatsValues) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_session_svc_g_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *ConversationStatsValues) GetEvents() uint64 {
+	if x != nil {
+		return x.xxx_hidden_Events
+	}
+	return 0
+}
+
+func (x *ConversationStatsValues) GetInputMessages() uint64 {
+	if x != nil {
+		return x.xxx_hidden_InputMessages
+	}
+	return 0
+}
+
+func (x *ConversationStatsValues) GetAssistantEvents() uint64 {
+	if x != nil {
+		return x.xxx_hidden_AssistantEvents
+	}
+	return 0
+}
+
+func (x *ConversationStatsValues) GetConversationBytes() uint64 {
+	if x != nil {
+		return x.xxx_hidden_ConversationBytes
+	}
+	return 0
+}
+
+func (x *ConversationStatsValues) GetEventContentBytes() uint64 {
+	if x != nil {
+		return x.xxx_hidden_EventContentBytes
+	}
+	return 0
+}
+
+func (x *ConversationStatsValues) GetFinishedTurns() uint64 {
+	if x != nil {
+		return x.xxx_hidden_FinishedTurns
+	}
+	return 0
+}
+
+func (x *ConversationStatsValues) GetInputTokens() uint64 {
+	if x != nil {
+		return x.xxx_hidden_InputTokens
+	}
+	return 0
+}
+
+func (x *ConversationStatsValues) GetOutputTokens() uint64 {
+	if x != nil {
+		return x.xxx_hidden_OutputTokens
+	}
+	return 0
+}
+
+func (x *ConversationStatsValues) GetCacheReadTokens() uint64 {
+	if x != nil {
+		return x.xxx_hidden_CacheReadTokens
+	}
+	return 0
+}
+
+func (x *ConversationStatsValues) GetCacheWriteTokens() uint64 {
+	if x != nil {
+		return x.xxx_hidden_CacheWriteTokens
+	}
+	return 0
+}
+
+func (x *ConversationStatsValues) GetTokenReportedTurns() uint64 {
+	if x != nil {
+		return x.xxx_hidden_TokenReportedTurns
+	}
+	return 0
+}
+
+func (x *ConversationStatsValues) GetReportedCostUsd() float64 {
+	if x != nil {
+		return x.xxx_hidden_ReportedCostUsd
+	}
+	return 0
+}
+
+func (x *ConversationStatsValues) GetCostReportedTurns() uint64 {
+	if x != nil {
+		return x.xxx_hidden_CostReportedTurns
+	}
+	return 0
+}
+
+func (x *ConversationStatsValues) SetEvents(v uint64) {
+	x.xxx_hidden_Events = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 13)
+}
+
+func (x *ConversationStatsValues) SetInputMessages(v uint64) {
+	x.xxx_hidden_InputMessages = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 13)
+}
+
+func (x *ConversationStatsValues) SetAssistantEvents(v uint64) {
+	x.xxx_hidden_AssistantEvents = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 13)
+}
+
+func (x *ConversationStatsValues) SetConversationBytes(v uint64) {
+	x.xxx_hidden_ConversationBytes = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 13)
+}
+
+func (x *ConversationStatsValues) SetEventContentBytes(v uint64) {
+	x.xxx_hidden_EventContentBytes = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 13)
+}
+
+func (x *ConversationStatsValues) SetFinishedTurns(v uint64) {
+	x.xxx_hidden_FinishedTurns = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 13)
+}
+
+func (x *ConversationStatsValues) SetInputTokens(v uint64) {
+	x.xxx_hidden_InputTokens = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 13)
+}
+
+func (x *ConversationStatsValues) SetOutputTokens(v uint64) {
+	x.xxx_hidden_OutputTokens = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 13)
+}
+
+func (x *ConversationStatsValues) SetCacheReadTokens(v uint64) {
+	x.xxx_hidden_CacheReadTokens = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 13)
+}
+
+func (x *ConversationStatsValues) SetCacheWriteTokens(v uint64) {
+	x.xxx_hidden_CacheWriteTokens = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 13)
+}
+
+func (x *ConversationStatsValues) SetTokenReportedTurns(v uint64) {
+	x.xxx_hidden_TokenReportedTurns = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 13)
+}
+
+func (x *ConversationStatsValues) SetReportedCostUsd(v float64) {
+	x.xxx_hidden_ReportedCostUsd = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 13)
+}
+
+func (x *ConversationStatsValues) SetCostReportedTurns(v uint64) {
+	x.xxx_hidden_CostReportedTurns = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 13)
+}
+
+func (x *ConversationStatsValues) HasEvents() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *ConversationStatsValues) HasInputMessages() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
+}
+
+func (x *ConversationStatsValues) HasAssistantEvents() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+}
+
+func (x *ConversationStatsValues) HasConversationBytes() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
+}
+
+func (x *ConversationStatsValues) HasEventContentBytes() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
+}
+
+func (x *ConversationStatsValues) HasFinishedTurns() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
+}
+
+func (x *ConversationStatsValues) HasInputTokens() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
+}
+
+func (x *ConversationStatsValues) HasOutputTokens() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 7)
+}
+
+func (x *ConversationStatsValues) HasCacheReadTokens() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 8)
+}
+
+func (x *ConversationStatsValues) HasCacheWriteTokens() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 9)
+}
+
+func (x *ConversationStatsValues) HasTokenReportedTurns() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 10)
+}
+
+func (x *ConversationStatsValues) HasReportedCostUsd() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 11)
+}
+
+func (x *ConversationStatsValues) HasCostReportedTurns() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 12)
+}
+
+func (x *ConversationStatsValues) ClearEvents() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_Events = 0
+}
+
+func (x *ConversationStatsValues) ClearInputMessages() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_InputMessages = 0
+}
+
+func (x *ConversationStatsValues) ClearAssistantEvents() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	x.xxx_hidden_AssistantEvents = 0
+}
+
+func (x *ConversationStatsValues) ClearConversationBytes() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
+	x.xxx_hidden_ConversationBytes = 0
+}
+
+func (x *ConversationStatsValues) ClearEventContentBytes() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
+	x.xxx_hidden_EventContentBytes = 0
+}
+
+func (x *ConversationStatsValues) ClearFinishedTurns() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
+	x.xxx_hidden_FinishedTurns = 0
+}
+
+func (x *ConversationStatsValues) ClearInputTokens() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
+	x.xxx_hidden_InputTokens = 0
+}
+
+func (x *ConversationStatsValues) ClearOutputTokens() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
+	x.xxx_hidden_OutputTokens = 0
+}
+
+func (x *ConversationStatsValues) ClearCacheReadTokens() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 8)
+	x.xxx_hidden_CacheReadTokens = 0
+}
+
+func (x *ConversationStatsValues) ClearCacheWriteTokens() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 9)
+	x.xxx_hidden_CacheWriteTokens = 0
+}
+
+func (x *ConversationStatsValues) ClearTokenReportedTurns() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 10)
+	x.xxx_hidden_TokenReportedTurns = 0
+}
+
+func (x *ConversationStatsValues) ClearReportedCostUsd() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 11)
+	x.xxx_hidden_ReportedCostUsd = 0
+}
+
+func (x *ConversationStatsValues) ClearCostReportedTurns() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 12)
+	x.xxx_hidden_CostReportedTurns = 0
+}
+
+type ConversationStatsValues_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Events          *uint64
+	InputMessages   *uint64
+	AssistantEvents *uint64
+	// UTF-8 text bytes of input/assistant events; not a database/disk size.
+	ConversationBytes *uint64
+	// UTF-8 text + payload bytes of all events, excluding serialization overhead.
+	EventContentBytes *uint64
+	FinishedTurns     *uint64
+	// Uncached input; cache tokens are separate for both Claude and Codex.
+	InputTokens        *uint64
+	OutputTokens       *uint64
+	CacheReadTokens    *uint64
+	CacheWriteTokens   *uint64
+	TokenReportedTurns *uint64
+	ReportedCostUsd    *float64
+	CostReportedTurns  *uint64
+}
+
+func (b0 ConversationStatsValues_builder) Build() *ConversationStatsValues {
+	m0 := &ConversationStatsValues{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.Events != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 13)
+		x.xxx_hidden_Events = *b.Events
+	}
+	if b.InputMessages != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 13)
+		x.xxx_hidden_InputMessages = *b.InputMessages
+	}
+	if b.AssistantEvents != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 13)
+		x.xxx_hidden_AssistantEvents = *b.AssistantEvents
+	}
+	if b.ConversationBytes != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 13)
+		x.xxx_hidden_ConversationBytes = *b.ConversationBytes
+	}
+	if b.EventContentBytes != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 13)
+		x.xxx_hidden_EventContentBytes = *b.EventContentBytes
+	}
+	if b.FinishedTurns != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 13)
+		x.xxx_hidden_FinishedTurns = *b.FinishedTurns
+	}
+	if b.InputTokens != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 13)
+		x.xxx_hidden_InputTokens = *b.InputTokens
+	}
+	if b.OutputTokens != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 13)
+		x.xxx_hidden_OutputTokens = *b.OutputTokens
+	}
+	if b.CacheReadTokens != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 13)
+		x.xxx_hidden_CacheReadTokens = *b.CacheReadTokens
+	}
+	if b.CacheWriteTokens != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 13)
+		x.xxx_hidden_CacheWriteTokens = *b.CacheWriteTokens
+	}
+	if b.TokenReportedTurns != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 13)
+		x.xxx_hidden_TokenReportedTurns = *b.TokenReportedTurns
+	}
+	if b.ReportedCostUsd != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 13)
+		x.xxx_hidden_ReportedCostUsd = *b.ReportedCostUsd
+	}
+	if b.CostReportedTurns != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 13)
+		x.xxx_hidden_CostReportedTurns = *b.CostReportedTurns
+	}
+	return m0
+}
+
+type ConversationStatsDay struct {
+	state                  protoimpl.MessageState   `protogen:"opaque.v1"`
+	xxx_hidden_Date        *string                  `protobuf:"bytes,1,opt,name=date"`
+	xxx_hidden_Values      *ConversationStatsValues `protobuf:"bytes,2,opt,name=values"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *ConversationStatsDay) Reset() {
+	*x = ConversationStatsDay{}
+	mi := &file_cxz_session_svc_g_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ConversationStatsDay) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ConversationStatsDay) ProtoMessage() {}
+
+func (x *ConversationStatsDay) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_session_svc_g_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *ConversationStatsDay) GetDate() string {
+	if x != nil {
+		if x.xxx_hidden_Date != nil {
+			return *x.xxx_hidden_Date
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *ConversationStatsDay) GetValues() *ConversationStatsValues {
+	if x != nil {
+		return x.xxx_hidden_Values
+	}
+	return nil
+}
+
+func (x *ConversationStatsDay) SetDate(v string) {
+	x.xxx_hidden_Date = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 2)
+}
+
+func (x *ConversationStatsDay) SetValues(v *ConversationStatsValues) {
+	x.xxx_hidden_Values = v
+}
+
+func (x *ConversationStatsDay) HasDate() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *ConversationStatsDay) HasValues() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Values != nil
+}
+
+func (x *ConversationStatsDay) ClearDate() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_Date = nil
+}
+
+func (x *ConversationStatsDay) ClearValues() {
+	x.xxx_hidden_Values = nil
+}
+
+type ConversationStatsDay_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Date   *string
+	Values *ConversationStatsValues
+}
+
+func (b0 ConversationStatsDay_builder) Build() *ConversationStatsDay {
+	m0 := &ConversationStatsDay{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.Date != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 2)
+		x.xxx_hidden_Date = b.Date
+	}
+	x.xxx_hidden_Values = b.Values
+	return m0
+}
+
+type ConversationStatsCoverage struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_SessionId   []byte                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId"`
+	xxx_hidden_Alias       *string                `protobuf:"bytes,2,opt,name=alias"`
+	xxx_hidden_SnapshotSeq uint64                 `protobuf:"varint,3,opt,name=snapshot_seq,json=snapshotSeq"`
+	xxx_hidden_FirstSeq    uint64                 `protobuf:"varint,4,opt,name=first_seq,json=firstSeq"`
+	xxx_hidden_LastSeq     uint64                 `protobuf:"varint,5,opt,name=last_seq,json=lastSeq"`
+	xxx_hidden_Complete    bool                   `protobuf:"varint,6,opt,name=complete"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *ConversationStatsCoverage) Reset() {
+	*x = ConversationStatsCoverage{}
+	mi := &file_cxz_session_svc_g_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ConversationStatsCoverage) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ConversationStatsCoverage) ProtoMessage() {}
+
+func (x *ConversationStatsCoverage) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_session_svc_g_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *ConversationStatsCoverage) GetSessionId() []byte {
+	if x != nil {
+		return x.xxx_hidden_SessionId
+	}
+	return nil
+}
+
+func (x *ConversationStatsCoverage) GetAlias() string {
+	if x != nil {
+		if x.xxx_hidden_Alias != nil {
+			return *x.xxx_hidden_Alias
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *ConversationStatsCoverage) GetSnapshotSeq() uint64 {
+	if x != nil {
+		return x.xxx_hidden_SnapshotSeq
+	}
+	return 0
+}
+
+func (x *ConversationStatsCoverage) GetFirstSeq() uint64 {
+	if x != nil {
+		return x.xxx_hidden_FirstSeq
+	}
+	return 0
+}
+
+func (x *ConversationStatsCoverage) GetLastSeq() uint64 {
+	if x != nil {
+		return x.xxx_hidden_LastSeq
+	}
+	return 0
+}
+
+func (x *ConversationStatsCoverage) GetComplete() bool {
+	if x != nil {
+		return x.xxx_hidden_Complete
+	}
+	return false
+}
+
+func (x *ConversationStatsCoverage) SetSessionId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_SessionId = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 6)
+}
+
+func (x *ConversationStatsCoverage) SetAlias(v string) {
+	x.xxx_hidden_Alias = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 6)
+}
+
+func (x *ConversationStatsCoverage) SetSnapshotSeq(v uint64) {
+	x.xxx_hidden_SnapshotSeq = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 6)
+}
+
+func (x *ConversationStatsCoverage) SetFirstSeq(v uint64) {
+	x.xxx_hidden_FirstSeq = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 6)
+}
+
+func (x *ConversationStatsCoverage) SetLastSeq(v uint64) {
+	x.xxx_hidden_LastSeq = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 6)
+}
+
+func (x *ConversationStatsCoverage) SetComplete(v bool) {
+	x.xxx_hidden_Complete = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 6)
+}
+
+func (x *ConversationStatsCoverage) HasSessionId() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *ConversationStatsCoverage) HasAlias() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
+}
+
+func (x *ConversationStatsCoverage) HasSnapshotSeq() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+}
+
+func (x *ConversationStatsCoverage) HasFirstSeq() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
+}
+
+func (x *ConversationStatsCoverage) HasLastSeq() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
+}
+
+func (x *ConversationStatsCoverage) HasComplete() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
+}
+
+func (x *ConversationStatsCoverage) ClearSessionId() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_SessionId = nil
+}
+
+func (x *ConversationStatsCoverage) ClearAlias() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_Alias = nil
+}
+
+func (x *ConversationStatsCoverage) ClearSnapshotSeq() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	x.xxx_hidden_SnapshotSeq = 0
+}
+
+func (x *ConversationStatsCoverage) ClearFirstSeq() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
+	x.xxx_hidden_FirstSeq = 0
+}
+
+func (x *ConversationStatsCoverage) ClearLastSeq() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
+	x.xxx_hidden_LastSeq = 0
+}
+
+func (x *ConversationStatsCoverage) ClearComplete() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
+	x.xxx_hidden_Complete = false
+}
+
+type ConversationStatsCoverage_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	SessionId   []byte
+	Alias       *string
+	SnapshotSeq *uint64
+	FirstSeq    *uint64
+	LastSeq     *uint64
+	// True only if every seq from 1 through snapshot_seq was observed.
+	Complete *bool
+}
+
+func (b0 ConversationStatsCoverage_builder) Build() *ConversationStatsCoverage {
+	m0 := &ConversationStatsCoverage{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.SessionId != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 6)
+		x.xxx_hidden_SessionId = b.SessionId
+	}
+	if b.Alias != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 6)
+		x.xxx_hidden_Alias = b.Alias
+	}
+	if b.SnapshotSeq != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 6)
+		x.xxx_hidden_SnapshotSeq = *b.SnapshotSeq
+	}
+	if b.FirstSeq != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 6)
+		x.xxx_hidden_FirstSeq = *b.FirstSeq
+	}
+	if b.LastSeq != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 6)
+		x.xxx_hidden_LastSeq = *b.LastSeq
+	}
+	if b.Complete != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 6)
+		x.xxx_hidden_Complete = *b.Complete
+	}
+	return m0
+}
+
 type SessionControl struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Ref         *SessionRef            `protobuf:"bytes,1,opt,name=ref"`
@@ -2346,7 +3498,7 @@ type SessionControl struct {
 
 func (x *SessionControl) Reset() {
 	*x = SessionControl{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[13]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2358,7 +3510,7 @@ func (x *SessionControl) String() string {
 func (*SessionControl) ProtoMessage() {}
 
 func (x *SessionControl) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[13]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2481,7 +3633,7 @@ type SessionReceipt struct {
 
 func (x *SessionReceipt) Reset() {
 	*x = SessionReceipt{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[14]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2493,7 +3645,7 @@ func (x *SessionReceipt) String() string {
 func (*SessionReceipt) ProtoMessage() {}
 
 func (x *SessionReceipt) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[14]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2594,7 +3746,7 @@ type SessionCopyMemoryRequest struct {
 
 func (x *SessionCopyMemoryRequest) Reset() {
 	*x = SessionCopyMemoryRequest{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[15]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2606,7 +3758,7 @@ func (x *SessionCopyMemoryRequest) String() string {
 func (*SessionCopyMemoryRequest) ProtoMessage() {}
 
 func (x *SessionCopyMemoryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[15]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2753,7 +3905,7 @@ type SessionLibraryRequest struct {
 
 func (x *SessionLibraryRequest) Reset() {
 	*x = SessionLibraryRequest{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[16]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2765,7 +3917,7 @@ func (x *SessionLibraryRequest) String() string {
 func (*SessionLibraryRequest) ProtoMessage() {}
 
 func (x *SessionLibraryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[16]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2855,7 +4007,7 @@ type SessionMemoryReply struct {
 
 func (x *SessionMemoryReply) Reset() {
 	*x = SessionMemoryReply{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[17]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2867,7 +4019,7 @@ func (x *SessionMemoryReply) String() string {
 func (*SessionMemoryReply) ProtoMessage() {}
 
 func (x *SessionMemoryReply) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[17]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2934,7 +4086,7 @@ type SessionMemoryRequest struct {
 
 func (x *SessionMemoryRequest) Reset() {
 	*x = SessionMemoryRequest{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[18]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2946,7 +4098,7 @@ func (x *SessionMemoryRequest) String() string {
 func (*SessionMemoryRequest) ProtoMessage() {}
 
 func (x *SessionMemoryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[18]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3037,7 +4189,7 @@ type SessionLogsRequest struct {
 
 func (x *SessionLogsRequest) Reset() {
 	*x = SessionLogsRequest{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[19]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3049,7 +4201,7 @@ func (x *SessionLogsRequest) String() string {
 func (*SessionLogsRequest) ProtoMessage() {}
 
 func (x *SessionLogsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[19]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3136,7 +4288,7 @@ type SessionLogsReply struct {
 
 func (x *SessionLogsReply) Reset() {
 	*x = SessionLogsReply{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[20]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3148,7 +4300,7 @@ func (x *SessionLogsReply) String() string {
 func (*SessionLogsReply) ProtoMessage() {}
 
 func (x *SessionLogsReply) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[20]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3217,7 +4369,7 @@ type SessionPermissionRequest struct {
 
 func (x *SessionPermissionRequest) Reset() {
 	*x = SessionPermissionRequest{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[21]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3229,7 +4381,7 @@ func (x *SessionPermissionRequest) String() string {
 func (*SessionPermissionRequest) ProtoMessage() {}
 
 func (x *SessionPermissionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[21]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3388,7 +4540,7 @@ type SessionSendRequest struct {
 
 func (x *SessionSendRequest) Reset() {
 	*x = SessionSendRequest{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[22]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3400,7 +4552,7 @@ func (x *SessionSendRequest) String() string {
 func (*SessionSendRequest) ProtoMessage() {}
 
 func (x *SessionSendRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[22]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3585,7 +4737,7 @@ type SessionAttachRequest struct {
 
 func (x *SessionAttachRequest) Reset() {
 	*x = SessionAttachRequest{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[23]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3597,7 +4749,7 @@ func (x *SessionAttachRequest) String() string {
 func (*SessionAttachRequest) ProtoMessage() {}
 
 func (x *SessionAttachRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[23]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3719,7 +4871,7 @@ type SessionAttachment struct {
 
 func (x *SessionAttachment) Reset() {
 	*x = SessionAttachment{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[24]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3731,7 +4883,7 @@ func (x *SessionAttachment) String() string {
 func (*SessionAttachment) ProtoMessage() {}
 
 func (x *SessionAttachment) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[24]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3803,7 +4955,7 @@ type SessionUploadRequest struct {
 
 func (x *SessionUploadRequest) Reset() {
 	*x = SessionUploadRequest{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[25]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3815,7 +4967,7 @@ func (x *SessionUploadRequest) String() string {
 func (*SessionUploadRequest) ProtoMessage() {}
 
 func (x *SessionUploadRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[25]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4001,7 +5153,7 @@ type SessionActivityRequest struct {
 
 func (x *SessionActivityRequest) Reset() {
 	*x = SessionActivityRequest{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[26]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4013,7 +5165,7 @@ func (x *SessionActivityRequest) String() string {
 func (*SessionActivityRequest) ProtoMessage() {}
 
 func (x *SessionActivityRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[26]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4168,7 +5320,7 @@ type SessionUpdateRequest struct {
 
 func (x *SessionUpdateRequest) Reset() {
 	*x = SessionUpdateRequest{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[27]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4180,7 +5332,7 @@ func (x *SessionUpdateRequest) String() string {
 func (*SessionUpdateRequest) ProtoMessage() {}
 
 func (x *SessionUpdateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[27]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4369,7 +5521,7 @@ type SessionUpdateStatus struct {
 
 func (x *SessionUpdateStatus) Reset() {
 	*x = SessionUpdateStatus{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[28]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4381,7 +5533,7 @@ func (x *SessionUpdateStatus) String() string {
 func (*SessionUpdateStatus) ProtoMessage() {}
 
 func (x *SessionUpdateStatus) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[28]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4638,7 +5790,7 @@ type SessionReplyRequest struct {
 
 func (x *SessionReplyRequest) Reset() {
 	*x = SessionReplyRequest{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[29]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4650,7 +5802,7 @@ func (x *SessionReplyRequest) String() string {
 func (*SessionReplyRequest) ProtoMessage() {}
 
 func (x *SessionReplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[29]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4867,7 +6019,7 @@ type SessionEventsRequest struct {
 
 func (x *SessionEventsRequest) Reset() {
 	*x = SessionEventsRequest{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[30]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4879,7 +6031,7 @@ func (x *SessionEventsRequest) String() string {
 func (*SessionEventsRequest) ProtoMessage() {}
 
 func (x *SessionEventsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[30]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4996,7 +6148,7 @@ type SessionEventBatch struct {
 
 func (x *SessionEventBatch) Reset() {
 	*x = SessionEventBatch{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[31]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5008,7 +6160,7 @@ func (x *SessionEventBatch) String() string {
 func (*SessionEventBatch) ProtoMessage() {}
 
 func (x *SessionEventBatch) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[31]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5055,7 +6207,7 @@ type SessionBackgroundRequest struct {
 
 func (x *SessionBackgroundRequest) Reset() {
 	*x = SessionBackgroundRequest{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[32]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5067,7 +6219,7 @@ func (x *SessionBackgroundRequest) String() string {
 func (*SessionBackgroundRequest) ProtoMessage() {}
 
 func (x *SessionBackgroundRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[32]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5126,7 +6278,7 @@ type SessionBackgroundReply struct {
 
 func (x *SessionBackgroundReply) Reset() {
 	*x = SessionBackgroundReply{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[33]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5138,7 +6290,7 @@ func (x *SessionBackgroundReply) String() string {
 func (*SessionBackgroundReply) ProtoMessage() {}
 
 func (x *SessionBackgroundReply) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[33]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5239,7 +6391,7 @@ type SessionModelsRequest struct {
 
 func (x *SessionModelsRequest) Reset() {
 	*x = SessionModelsRequest{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[34]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5251,7 +6403,7 @@ func (x *SessionModelsRequest) String() string {
 func (*SessionModelsRequest) ProtoMessage() {}
 
 func (x *SessionModelsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[34]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5408,7 +6560,7 @@ type SessionModelsReply struct {
 
 func (x *SessionModelsReply) Reset() {
 	*x = SessionModelsReply{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[35]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5420,7 +6572,7 @@ func (x *SessionModelsReply) String() string {
 func (*SessionModelsReply) ProtoMessage() {}
 
 func (x *SessionModelsReply) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[35]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5746,7 +6898,46 @@ const file_cxz_session_svc_g_proto_rawDesc = "" +
 	"\x10SessionWatchItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12\"\n" +
 	"\x05value\x18\x02 \x01(\v2\f.cxz.SessionR\x05value\x12\x1d\n" +
-	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action\"g\n" +
+	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action\"\x9e\x01\n" +
+	"\x18ConversationStatsRequest\x12)\n" +
+	"\aproject\x18\x01 \x01(\v2\x0f.cxz.ProjectRefR\aproject\x12)\n" +
+	"\asession\x18\x02 \x01(\v2\x0f.cxz.SessionRefR\asession\x12\x17\n" +
+	"\afrom_ms\x18\x03 \x01(\x03R\x06fromMs\x12\x13\n" +
+	"\x05to_ms\x18\x04 \x01(\x03R\x04toMs\"\xa4\x02\n" +
+	"\x16ConversationStatsReply\x12\x17\n" +
+	"\afrom_ms\x18\x01 \x01(\x03R\x06fromMs\x12\x13\n" +
+	"\x05to_ms\x18\x02 \x01(\x03R\x04toMs\x12!\n" +
+	"\fgenerated_ms\x18\x03 \x01(\x03R\vgeneratedMs\x122\n" +
+	"\x05total\x18\x04 \x01(\v2\x1c.cxz.ConversationStatsValuesR\x05total\x12-\n" +
+	"\x04days\x18\x05 \x03(\v2\x19.cxz.ConversationStatsDayR\x04days\x12:\n" +
+	"\bsessions\x18\x06 \x03(\v2\x1e.cxz.ConversationStatsCoverageR\bsessions\x12\x1a\n" +
+	"\bcomplete\x18\a \x01(\bR\bcomplete\"\xb9\x04\n" +
+	"\x17ConversationStatsValues\x12\x16\n" +
+	"\x06events\x18\x01 \x01(\x04R\x06events\x12%\n" +
+	"\x0einput_messages\x18\x02 \x01(\x04R\rinputMessages\x12)\n" +
+	"\x10assistant_events\x18\x03 \x01(\x04R\x0fassistantEvents\x12-\n" +
+	"\x12conversation_bytes\x18\x04 \x01(\x04R\x11conversationBytes\x12.\n" +
+	"\x13event_content_bytes\x18\x05 \x01(\x04R\x11eventContentBytes\x12%\n" +
+	"\x0efinished_turns\x18\x06 \x01(\x04R\rfinishedTurns\x12!\n" +
+	"\finput_tokens\x18\a \x01(\x04R\vinputTokens\x12#\n" +
+	"\routput_tokens\x18\b \x01(\x04R\foutputTokens\x12*\n" +
+	"\x11cache_read_tokens\x18\t \x01(\x04R\x0fcacheReadTokens\x12,\n" +
+	"\x12cache_write_tokens\x18\n" +
+	" \x01(\x04R\x10cacheWriteTokens\x120\n" +
+	"\x14token_reported_turns\x18\v \x01(\x04R\x12tokenReportedTurns\x12*\n" +
+	"\x11reported_cost_usd\x18\f \x01(\x01R\x0freportedCostUsd\x12.\n" +
+	"\x13cost_reported_turns\x18\r \x01(\x04R\x11costReportedTurns\"`\n" +
+	"\x14ConversationStatsDay\x12\x12\n" +
+	"\x04date\x18\x01 \x01(\tR\x04date\x124\n" +
+	"\x06values\x18\x02 \x01(\v2\x1c.cxz.ConversationStatsValuesR\x06values\"\xc7\x01\n" +
+	"\x19ConversationStatsCoverage\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\fR\tsessionId\x12\x14\n" +
+	"\x05alias\x18\x02 \x01(\tR\x05alias\x12!\n" +
+	"\fsnapshot_seq\x18\x03 \x01(\x04R\vsnapshotSeq\x12\x1b\n" +
+	"\tfirst_seq\x18\x04 \x01(\x04R\bfirstSeq\x12\x19\n" +
+	"\blast_seq\x18\x05 \x01(\x04R\alastSeq\x12\x1a\n" +
+	"\bcomplete\x18\x06 \x01(\bR\bcomplete\"g\n" +
 	"\x0eSessionControl\x12!\n" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.SessionRefR\x03ref\x12\x15\n" +
 	"\x06run_id\x18\x02 \x01(\tR\x05runId\x12\x1b\n" +
@@ -5850,7 +7041,7 @@ const file_cxz_session_svc_g_proto_rawDesc = "" +
 	"\n" +
 	"refreshing\x18\x06 \x01(\bR\n" +
 	"refreshing\x12\x16\n" +
-	"\x06status\x18\a \x01(\tR\x06status2\xdb\v\n" +
+	"\x06status\x18\a \x01(\tR\x06status2\xac\f\n" +
 	"\x0eSessionService\x12+\n" +
 	"\x03Add\x12\x16.cxz.SessionAddRequest\x1a\f.cxz.Session\x12+\n" +
 	"\x03Get\x12\x16.cxz.SessionGetRequest\x1a\f.cxz.Session\x12/\n" +
@@ -5858,7 +7049,8 @@ const file_cxz_session_svc_g_proto_rawDesc = "" +
 	"\x05Apply\x12\x18.cxz.SessionApplyRequest\x1a\f.cxz.Session\x123\n" +
 	"\x05Erase\x12\x0f.cxz.SessionRef\x1a\x19.cxz.SessionEraseResponse\x129\n" +
 	"\x04List\x12\x17.cxz.SessionListRequest\x1a\x18.cxz.SessionListResponse\x12>\n" +
-	"\x05Watch\x12\x18.cxz.SessionWatchRequest\x1a\x19.cxz.SessionWatchResponse0\x01\x12(\n" +
+	"\x05Watch\x12\x18.cxz.SessionWatchRequest\x1a\x19.cxz.SessionWatchResponse0\x01\x12O\n" +
+	"\x11ConversationStats\x12\x1d.cxz.ConversationStatsRequest\x1a\x1b.cxz.ConversationStatsReply\x12(\n" +
 	"\aRestore\x12\x0f.cxz.SessionRef\x1a\f.cxz.Session\x12+\n" +
 	"\x06Resume\x12\x13.cxz.SessionControl\x1a\f.cxz.Session\x12)\n" +
 	"\x04Stop\x12\x13.cxz.SessionControl\x1a\f.cxz.Session\x125\n" +
@@ -5882,153 +7074,166 @@ const file_cxz_session_svc_g_proto_rawDesc = "" +
 	"\x06Models\x12\x19.cxz.SessionModelsRequest\x1a\x17.cxz.SessionModelsReply\x128\n" +
 	"\x06Events\x12\x19.cxz.SessionEventsRequest\x1a\x11.cxz.SessionEvent0\x01B\"Z github.com/lesomnus/cxz/resourceb\beditionsp\xe8\a"
 
-var file_cxz_session_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 36)
+var file_cxz_session_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 41)
 var file_cxz_session_svc_g_proto_goTypes = []any{
-	(*SessionAddRequest)(nil),        // 0: cxz.SessionAddRequest
-	(*SessionGetRequest)(nil),        // 1: cxz.SessionGetRequest
-	(*SessionRef)(nil),               // 2: cxz.SessionRef
-	(*SessionSelect)(nil),            // 3: cxz.SessionSelect
-	(*SessionPatchRequest)(nil),      // 4: cxz.SessionPatchRequest
-	(*SessionApplyRequest)(nil),      // 5: cxz.SessionApplyRequest
-	(*SessionEraseResponse)(nil),     // 6: cxz.SessionEraseResponse
-	(*SessionListRequest)(nil),       // 7: cxz.SessionListRequest
-	(*SessionListResponse)(nil),      // 8: cxz.SessionListResponse
-	(*SessionFilter)(nil),            // 9: cxz.SessionFilter
-	(*SessionWatchRequest)(nil),      // 10: cxz.SessionWatchRequest
-	(*SessionWatchResponse)(nil),     // 11: cxz.SessionWatchResponse
-	(*SessionWatchItem)(nil),         // 12: cxz.SessionWatchItem
-	(*SessionControl)(nil),           // 13: cxz.SessionControl
-	(*SessionReceipt)(nil),           // 14: cxz.SessionReceipt
-	(*SessionCopyMemoryRequest)(nil), // 15: cxz.SessionCopyMemoryRequest
-	(*SessionLibraryRequest)(nil),    // 16: cxz.SessionLibraryRequest
-	(*SessionMemoryReply)(nil),       // 17: cxz.SessionMemoryReply
-	(*SessionMemoryRequest)(nil),     // 18: cxz.SessionMemoryRequest
-	(*SessionLogsRequest)(nil),       // 19: cxz.SessionLogsRequest
-	(*SessionLogsReply)(nil),         // 20: cxz.SessionLogsReply
-	(*SessionPermissionRequest)(nil), // 21: cxz.SessionPermissionRequest
-	(*SessionSendRequest)(nil),       // 22: cxz.SessionSendRequest
-	(*SessionAttachRequest)(nil),     // 23: cxz.SessionAttachRequest
-	(*SessionAttachment)(nil),        // 24: cxz.SessionAttachment
-	(*SessionUploadRequest)(nil),     // 25: cxz.SessionUploadRequest
-	(*SessionActivityRequest)(nil),   // 26: cxz.SessionActivityRequest
-	(*SessionUpdateRequest)(nil),     // 27: cxz.SessionUpdateRequest
-	(*SessionUpdateStatus)(nil),      // 28: cxz.SessionUpdateStatus
-	(*SessionReplyRequest)(nil),      // 29: cxz.SessionReplyRequest
-	(*SessionEventsRequest)(nil),     // 30: cxz.SessionEventsRequest
-	(*SessionEventBatch)(nil),        // 31: cxz.SessionEventBatch
-	(*SessionBackgroundRequest)(nil), // 32: cxz.SessionBackgroundRequest
-	(*SessionBackgroundReply)(nil),   // 33: cxz.SessionBackgroundReply
-	(*SessionModelsRequest)(nil),     // 34: cxz.SessionModelsRequest
-	(*SessionModelsReply)(nil),       // 35: cxz.SessionModelsReply
-	(*ProjectRef)(nil),               // 36: cxz.ProjectRef
-	(*timestamppb.Timestamp)(nil),    // 37: google.protobuf.Timestamp
-	(*SessionStatus)(nil),            // 38: cxz.SessionStatus
-	(*AccountRef)(nil),               // 39: cxz.AccountRef
-	(*AuthBindingRef)(nil),           // 40: cxz.AuthBindingRef
-	(*ProjectSelect)(nil),            // 41: cxz.ProjectSelect
-	(*AccountSelect)(nil),            // 42: cxz.AccountSelect
-	(*AuthBindingSelect)(nil),        // 43: cxz.AuthBindingSelect
-	(*patchpb.Patch)(nil),            // 44: patch.Patch
-	(*Session)(nil),                  // 45: cxz.Session
-	(*SessionEvent)(nil),             // 46: cxz.SessionEvent
+	(*SessionAddRequest)(nil),         // 0: cxz.SessionAddRequest
+	(*SessionGetRequest)(nil),         // 1: cxz.SessionGetRequest
+	(*SessionRef)(nil),                // 2: cxz.SessionRef
+	(*SessionSelect)(nil),             // 3: cxz.SessionSelect
+	(*SessionPatchRequest)(nil),       // 4: cxz.SessionPatchRequest
+	(*SessionApplyRequest)(nil),       // 5: cxz.SessionApplyRequest
+	(*SessionEraseResponse)(nil),      // 6: cxz.SessionEraseResponse
+	(*SessionListRequest)(nil),        // 7: cxz.SessionListRequest
+	(*SessionListResponse)(nil),       // 8: cxz.SessionListResponse
+	(*SessionFilter)(nil),             // 9: cxz.SessionFilter
+	(*SessionWatchRequest)(nil),       // 10: cxz.SessionWatchRequest
+	(*SessionWatchResponse)(nil),      // 11: cxz.SessionWatchResponse
+	(*SessionWatchItem)(nil),          // 12: cxz.SessionWatchItem
+	(*ConversationStatsRequest)(nil),  // 13: cxz.ConversationStatsRequest
+	(*ConversationStatsReply)(nil),    // 14: cxz.ConversationStatsReply
+	(*ConversationStatsValues)(nil),   // 15: cxz.ConversationStatsValues
+	(*ConversationStatsDay)(nil),      // 16: cxz.ConversationStatsDay
+	(*ConversationStatsCoverage)(nil), // 17: cxz.ConversationStatsCoverage
+	(*SessionControl)(nil),            // 18: cxz.SessionControl
+	(*SessionReceipt)(nil),            // 19: cxz.SessionReceipt
+	(*SessionCopyMemoryRequest)(nil),  // 20: cxz.SessionCopyMemoryRequest
+	(*SessionLibraryRequest)(nil),     // 21: cxz.SessionLibraryRequest
+	(*SessionMemoryReply)(nil),        // 22: cxz.SessionMemoryReply
+	(*SessionMemoryRequest)(nil),      // 23: cxz.SessionMemoryRequest
+	(*SessionLogsRequest)(nil),        // 24: cxz.SessionLogsRequest
+	(*SessionLogsReply)(nil),          // 25: cxz.SessionLogsReply
+	(*SessionPermissionRequest)(nil),  // 26: cxz.SessionPermissionRequest
+	(*SessionSendRequest)(nil),        // 27: cxz.SessionSendRequest
+	(*SessionAttachRequest)(nil),      // 28: cxz.SessionAttachRequest
+	(*SessionAttachment)(nil),         // 29: cxz.SessionAttachment
+	(*SessionUploadRequest)(nil),      // 30: cxz.SessionUploadRequest
+	(*SessionActivityRequest)(nil),    // 31: cxz.SessionActivityRequest
+	(*SessionUpdateRequest)(nil),      // 32: cxz.SessionUpdateRequest
+	(*SessionUpdateStatus)(nil),       // 33: cxz.SessionUpdateStatus
+	(*SessionReplyRequest)(nil),       // 34: cxz.SessionReplyRequest
+	(*SessionEventsRequest)(nil),      // 35: cxz.SessionEventsRequest
+	(*SessionEventBatch)(nil),         // 36: cxz.SessionEventBatch
+	(*SessionBackgroundRequest)(nil),  // 37: cxz.SessionBackgroundRequest
+	(*SessionBackgroundReply)(nil),    // 38: cxz.SessionBackgroundReply
+	(*SessionModelsRequest)(nil),      // 39: cxz.SessionModelsRequest
+	(*SessionModelsReply)(nil),        // 40: cxz.SessionModelsReply
+	(*ProjectRef)(nil),                // 41: cxz.ProjectRef
+	(*timestamppb.Timestamp)(nil),     // 42: google.protobuf.Timestamp
+	(*SessionStatus)(nil),             // 43: cxz.SessionStatus
+	(*AccountRef)(nil),                // 44: cxz.AccountRef
+	(*AuthBindingRef)(nil),            // 45: cxz.AuthBindingRef
+	(*ProjectSelect)(nil),             // 46: cxz.ProjectSelect
+	(*AccountSelect)(nil),             // 47: cxz.AccountSelect
+	(*AuthBindingSelect)(nil),         // 48: cxz.AuthBindingSelect
+	(*patchpb.Patch)(nil),             // 49: patch.Patch
+	(*Session)(nil),                   // 50: cxz.Session
+	(*SessionEvent)(nil),              // 51: cxz.SessionEvent
 }
 var file_cxz_session_svc_g_proto_depIdxs = []int32{
-	36, // 0: cxz.SessionAddRequest.project:type_name -> cxz.ProjectRef
-	37, // 1: cxz.SessionAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	38, // 2: cxz.SessionAddRequest.status:type_name -> cxz.SessionStatus
-	39, // 3: cxz.SessionAddRequest.account:type_name -> cxz.AccountRef
-	40, // 4: cxz.SessionAddRequest.auth_binding:type_name -> cxz.AuthBindingRef
+	41, // 0: cxz.SessionAddRequest.project:type_name -> cxz.ProjectRef
+	42, // 1: cxz.SessionAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	43, // 2: cxz.SessionAddRequest.status:type_name -> cxz.SessionStatus
+	44, // 3: cxz.SessionAddRequest.account:type_name -> cxz.AccountRef
+	45, // 4: cxz.SessionAddRequest.auth_binding:type_name -> cxz.AuthBindingRef
 	2,  // 5: cxz.SessionGetRequest.ref:type_name -> cxz.SessionRef
 	3,  // 6: cxz.SessionGetRequest.select:type_name -> cxz.SessionSelect
-	41, // 7: cxz.SessionSelect.project:type_name -> cxz.ProjectSelect
-	42, // 8: cxz.SessionSelect.account:type_name -> cxz.AccountSelect
-	43, // 9: cxz.SessionSelect.auth_binding:type_name -> cxz.AuthBindingSelect
+	46, // 7: cxz.SessionSelect.project:type_name -> cxz.ProjectSelect
+	47, // 8: cxz.SessionSelect.account:type_name -> cxz.AccountSelect
+	48, // 9: cxz.SessionSelect.auth_binding:type_name -> cxz.AuthBindingSelect
 	2,  // 10: cxz.SessionPatchRequest.ref:type_name -> cxz.SessionRef
-	37, // 11: cxz.SessionPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	38, // 12: cxz.SessionPatchRequest.status:type_name -> cxz.SessionStatus
+	42, // 11: cxz.SessionPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	43, // 12: cxz.SessionPatchRequest.status:type_name -> cxz.SessionStatus
 	2,  // 13: cxz.SessionApplyRequest.ref:type_name -> cxz.SessionRef
-	44, // 14: cxz.SessionApplyRequest.patch:type_name -> patch.Patch
+	49, // 14: cxz.SessionApplyRequest.patch:type_name -> patch.Patch
 	9,  // 15: cxz.SessionListRequest.filters:type_name -> cxz.SessionFilter
-	45, // 16: cxz.SessionListResponse.items:type_name -> cxz.Session
+	50, // 16: cxz.SessionListResponse.items:type_name -> cxz.Session
 	2,  // 17: cxz.SessionFilter.ref:type_name -> cxz.SessionRef
-	36, // 18: cxz.SessionFilter.project:type_name -> cxz.ProjectRef
+	41, // 18: cxz.SessionFilter.project:type_name -> cxz.ProjectRef
 	9,  // 19: cxz.SessionWatchRequest.filters:type_name -> cxz.SessionFilter
 	12, // 20: cxz.SessionWatchResponse.items:type_name -> cxz.SessionWatchItem
-	45, // 21: cxz.SessionWatchItem.value:type_name -> cxz.Session
-	2,  // 22: cxz.SessionControl.ref:type_name -> cxz.SessionRef
-	2,  // 23: cxz.SessionCopyMemoryRequest.ref:type_name -> cxz.SessionRef
-	2,  // 24: cxz.SessionCopyMemoryRequest.target:type_name -> cxz.SessionRef
-	2,  // 25: cxz.SessionLibraryRequest.ref:type_name -> cxz.SessionRef
-	2,  // 26: cxz.SessionMemoryRequest.ref:type_name -> cxz.SessionRef
-	2,  // 27: cxz.SessionLogsRequest.ref:type_name -> cxz.SessionRef
-	2,  // 28: cxz.SessionPermissionRequest.ref:type_name -> cxz.SessionRef
-	2,  // 29: cxz.SessionSendRequest.ref:type_name -> cxz.SessionRef
-	2,  // 30: cxz.SessionAttachRequest.ref:type_name -> cxz.SessionRef
-	2,  // 31: cxz.SessionUploadRequest.ref:type_name -> cxz.SessionRef
-	2,  // 32: cxz.SessionActivityRequest.ref:type_name -> cxz.SessionRef
-	2,  // 33: cxz.SessionUpdateRequest.ref:type_name -> cxz.SessionRef
-	2,  // 34: cxz.SessionReplyRequest.ref:type_name -> cxz.SessionRef
-	2,  // 35: cxz.SessionEventsRequest.ref:type_name -> cxz.SessionRef
-	46, // 36: cxz.SessionEventBatch.events:type_name -> cxz.SessionEvent
-	2,  // 37: cxz.SessionBackgroundRequest.ref:type_name -> cxz.SessionRef
-	2,  // 38: cxz.SessionModelsRequest.ref:type_name -> cxz.SessionRef
-	0,  // 39: cxz.SessionService.Add:input_type -> cxz.SessionAddRequest
-	1,  // 40: cxz.SessionService.Get:input_type -> cxz.SessionGetRequest
-	4,  // 41: cxz.SessionService.Patch:input_type -> cxz.SessionPatchRequest
-	5,  // 42: cxz.SessionService.Apply:input_type -> cxz.SessionApplyRequest
-	2,  // 43: cxz.SessionService.Erase:input_type -> cxz.SessionRef
-	7,  // 44: cxz.SessionService.List:input_type -> cxz.SessionListRequest
-	10, // 45: cxz.SessionService.Watch:input_type -> cxz.SessionWatchRequest
-	2,  // 46: cxz.SessionService.Restore:input_type -> cxz.SessionRef
-	13, // 47: cxz.SessionService.Resume:input_type -> cxz.SessionControl
-	13, // 48: cxz.SessionService.Stop:input_type -> cxz.SessionControl
-	13, // 49: cxz.SessionService.Interrupt:input_type -> cxz.SessionControl
-	15, // 50: cxz.SessionService.CopyMemory:input_type -> cxz.SessionCopyMemoryRequest
-	16, // 51: cxz.SessionService.Library:input_type -> cxz.SessionLibraryRequest
-	18, // 52: cxz.SessionService.Memory:input_type -> cxz.SessionMemoryRequest
-	19, // 53: cxz.SessionService.Logs:input_type -> cxz.SessionLogsRequest
-	21, // 54: cxz.SessionService.Permission:input_type -> cxz.SessionPermissionRequest
-	22, // 55: cxz.SessionService.Send:input_type -> cxz.SessionSendRequest
-	23, // 56: cxz.SessionService.Attach:input_type -> cxz.SessionAttachRequest
-	25, // 57: cxz.SessionService.Upload:input_type -> cxz.SessionUploadRequest
-	26, // 58: cxz.SessionService.Activity:input_type -> cxz.SessionActivityRequest
-	27, // 59: cxz.SessionService.UpdateAgent:input_type -> cxz.SessionUpdateRequest
-	29, // 60: cxz.SessionService.Reply:input_type -> cxz.SessionReplyRequest
-	30, // 61: cxz.SessionService.History:input_type -> cxz.SessionEventsRequest
-	32, // 62: cxz.SessionService.Background:input_type -> cxz.SessionBackgroundRequest
-	34, // 63: cxz.SessionService.Models:input_type -> cxz.SessionModelsRequest
-	30, // 64: cxz.SessionService.Events:input_type -> cxz.SessionEventsRequest
-	45, // 65: cxz.SessionService.Add:output_type -> cxz.Session
-	45, // 66: cxz.SessionService.Get:output_type -> cxz.Session
-	45, // 67: cxz.SessionService.Patch:output_type -> cxz.Session
-	45, // 68: cxz.SessionService.Apply:output_type -> cxz.Session
-	6,  // 69: cxz.SessionService.Erase:output_type -> cxz.SessionEraseResponse
-	8,  // 70: cxz.SessionService.List:output_type -> cxz.SessionListResponse
-	11, // 71: cxz.SessionService.Watch:output_type -> cxz.SessionWatchResponse
-	45, // 72: cxz.SessionService.Restore:output_type -> cxz.Session
-	45, // 73: cxz.SessionService.Resume:output_type -> cxz.Session
-	45, // 74: cxz.SessionService.Stop:output_type -> cxz.Session
-	14, // 75: cxz.SessionService.Interrupt:output_type -> cxz.SessionReceipt
-	14, // 76: cxz.SessionService.CopyMemory:output_type -> cxz.SessionReceipt
-	17, // 77: cxz.SessionService.Library:output_type -> cxz.SessionMemoryReply
-	17, // 78: cxz.SessionService.Memory:output_type -> cxz.SessionMemoryReply
-	20, // 79: cxz.SessionService.Logs:output_type -> cxz.SessionLogsReply
-	14, // 80: cxz.SessionService.Permission:output_type -> cxz.SessionReceipt
-	14, // 81: cxz.SessionService.Send:output_type -> cxz.SessionReceipt
-	24, // 82: cxz.SessionService.Attach:output_type -> cxz.SessionAttachment
-	24, // 83: cxz.SessionService.Upload:output_type -> cxz.SessionAttachment
-	14, // 84: cxz.SessionService.Activity:output_type -> cxz.SessionReceipt
-	28, // 85: cxz.SessionService.UpdateAgent:output_type -> cxz.SessionUpdateStatus
-	14, // 86: cxz.SessionService.Reply:output_type -> cxz.SessionReceipt
-	31, // 87: cxz.SessionService.History:output_type -> cxz.SessionEventBatch
-	33, // 88: cxz.SessionService.Background:output_type -> cxz.SessionBackgroundReply
-	35, // 89: cxz.SessionService.Models:output_type -> cxz.SessionModelsReply
-	46, // 90: cxz.SessionService.Events:output_type -> cxz.SessionEvent
-	65, // [65:91] is the sub-list for method output_type
-	39, // [39:65] is the sub-list for method input_type
-	39, // [39:39] is the sub-list for extension type_name
-	39, // [39:39] is the sub-list for extension extendee
-	0,  // [0:39] is the sub-list for field type_name
+	50, // 21: cxz.SessionWatchItem.value:type_name -> cxz.Session
+	41, // 22: cxz.ConversationStatsRequest.project:type_name -> cxz.ProjectRef
+	2,  // 23: cxz.ConversationStatsRequest.session:type_name -> cxz.SessionRef
+	15, // 24: cxz.ConversationStatsReply.total:type_name -> cxz.ConversationStatsValues
+	16, // 25: cxz.ConversationStatsReply.days:type_name -> cxz.ConversationStatsDay
+	17, // 26: cxz.ConversationStatsReply.sessions:type_name -> cxz.ConversationStatsCoverage
+	15, // 27: cxz.ConversationStatsDay.values:type_name -> cxz.ConversationStatsValues
+	2,  // 28: cxz.SessionControl.ref:type_name -> cxz.SessionRef
+	2,  // 29: cxz.SessionCopyMemoryRequest.ref:type_name -> cxz.SessionRef
+	2,  // 30: cxz.SessionCopyMemoryRequest.target:type_name -> cxz.SessionRef
+	2,  // 31: cxz.SessionLibraryRequest.ref:type_name -> cxz.SessionRef
+	2,  // 32: cxz.SessionMemoryRequest.ref:type_name -> cxz.SessionRef
+	2,  // 33: cxz.SessionLogsRequest.ref:type_name -> cxz.SessionRef
+	2,  // 34: cxz.SessionPermissionRequest.ref:type_name -> cxz.SessionRef
+	2,  // 35: cxz.SessionSendRequest.ref:type_name -> cxz.SessionRef
+	2,  // 36: cxz.SessionAttachRequest.ref:type_name -> cxz.SessionRef
+	2,  // 37: cxz.SessionUploadRequest.ref:type_name -> cxz.SessionRef
+	2,  // 38: cxz.SessionActivityRequest.ref:type_name -> cxz.SessionRef
+	2,  // 39: cxz.SessionUpdateRequest.ref:type_name -> cxz.SessionRef
+	2,  // 40: cxz.SessionReplyRequest.ref:type_name -> cxz.SessionRef
+	2,  // 41: cxz.SessionEventsRequest.ref:type_name -> cxz.SessionRef
+	51, // 42: cxz.SessionEventBatch.events:type_name -> cxz.SessionEvent
+	2,  // 43: cxz.SessionBackgroundRequest.ref:type_name -> cxz.SessionRef
+	2,  // 44: cxz.SessionModelsRequest.ref:type_name -> cxz.SessionRef
+	0,  // 45: cxz.SessionService.Add:input_type -> cxz.SessionAddRequest
+	1,  // 46: cxz.SessionService.Get:input_type -> cxz.SessionGetRequest
+	4,  // 47: cxz.SessionService.Patch:input_type -> cxz.SessionPatchRequest
+	5,  // 48: cxz.SessionService.Apply:input_type -> cxz.SessionApplyRequest
+	2,  // 49: cxz.SessionService.Erase:input_type -> cxz.SessionRef
+	7,  // 50: cxz.SessionService.List:input_type -> cxz.SessionListRequest
+	10, // 51: cxz.SessionService.Watch:input_type -> cxz.SessionWatchRequest
+	13, // 52: cxz.SessionService.ConversationStats:input_type -> cxz.ConversationStatsRequest
+	2,  // 53: cxz.SessionService.Restore:input_type -> cxz.SessionRef
+	18, // 54: cxz.SessionService.Resume:input_type -> cxz.SessionControl
+	18, // 55: cxz.SessionService.Stop:input_type -> cxz.SessionControl
+	18, // 56: cxz.SessionService.Interrupt:input_type -> cxz.SessionControl
+	20, // 57: cxz.SessionService.CopyMemory:input_type -> cxz.SessionCopyMemoryRequest
+	21, // 58: cxz.SessionService.Library:input_type -> cxz.SessionLibraryRequest
+	23, // 59: cxz.SessionService.Memory:input_type -> cxz.SessionMemoryRequest
+	24, // 60: cxz.SessionService.Logs:input_type -> cxz.SessionLogsRequest
+	26, // 61: cxz.SessionService.Permission:input_type -> cxz.SessionPermissionRequest
+	27, // 62: cxz.SessionService.Send:input_type -> cxz.SessionSendRequest
+	28, // 63: cxz.SessionService.Attach:input_type -> cxz.SessionAttachRequest
+	30, // 64: cxz.SessionService.Upload:input_type -> cxz.SessionUploadRequest
+	31, // 65: cxz.SessionService.Activity:input_type -> cxz.SessionActivityRequest
+	32, // 66: cxz.SessionService.UpdateAgent:input_type -> cxz.SessionUpdateRequest
+	34, // 67: cxz.SessionService.Reply:input_type -> cxz.SessionReplyRequest
+	35, // 68: cxz.SessionService.History:input_type -> cxz.SessionEventsRequest
+	37, // 69: cxz.SessionService.Background:input_type -> cxz.SessionBackgroundRequest
+	39, // 70: cxz.SessionService.Models:input_type -> cxz.SessionModelsRequest
+	35, // 71: cxz.SessionService.Events:input_type -> cxz.SessionEventsRequest
+	50, // 72: cxz.SessionService.Add:output_type -> cxz.Session
+	50, // 73: cxz.SessionService.Get:output_type -> cxz.Session
+	50, // 74: cxz.SessionService.Patch:output_type -> cxz.Session
+	50, // 75: cxz.SessionService.Apply:output_type -> cxz.Session
+	6,  // 76: cxz.SessionService.Erase:output_type -> cxz.SessionEraseResponse
+	8,  // 77: cxz.SessionService.List:output_type -> cxz.SessionListResponse
+	11, // 78: cxz.SessionService.Watch:output_type -> cxz.SessionWatchResponse
+	14, // 79: cxz.SessionService.ConversationStats:output_type -> cxz.ConversationStatsReply
+	50, // 80: cxz.SessionService.Restore:output_type -> cxz.Session
+	50, // 81: cxz.SessionService.Resume:output_type -> cxz.Session
+	50, // 82: cxz.SessionService.Stop:output_type -> cxz.Session
+	19, // 83: cxz.SessionService.Interrupt:output_type -> cxz.SessionReceipt
+	19, // 84: cxz.SessionService.CopyMemory:output_type -> cxz.SessionReceipt
+	22, // 85: cxz.SessionService.Library:output_type -> cxz.SessionMemoryReply
+	22, // 86: cxz.SessionService.Memory:output_type -> cxz.SessionMemoryReply
+	25, // 87: cxz.SessionService.Logs:output_type -> cxz.SessionLogsReply
+	19, // 88: cxz.SessionService.Permission:output_type -> cxz.SessionReceipt
+	19, // 89: cxz.SessionService.Send:output_type -> cxz.SessionReceipt
+	29, // 90: cxz.SessionService.Attach:output_type -> cxz.SessionAttachment
+	29, // 91: cxz.SessionService.Upload:output_type -> cxz.SessionAttachment
+	19, // 92: cxz.SessionService.Activity:output_type -> cxz.SessionReceipt
+	33, // 93: cxz.SessionService.UpdateAgent:output_type -> cxz.SessionUpdateStatus
+	19, // 94: cxz.SessionService.Reply:output_type -> cxz.SessionReceipt
+	36, // 95: cxz.SessionService.History:output_type -> cxz.SessionEventBatch
+	38, // 96: cxz.SessionService.Background:output_type -> cxz.SessionBackgroundReply
+	40, // 97: cxz.SessionService.Models:output_type -> cxz.SessionModelsReply
+	51, // 98: cxz.SessionService.Events:output_type -> cxz.SessionEvent
+	72, // [72:99] is the sub-list for method output_type
+	45, // [45:72] is the sub-list for method input_type
+	45, // [45:45] is the sub-list for extension type_name
+	45, // [45:45] is the sub-list for extension extendee
+	0,  // [0:45] is the sub-list for field type_name
 }
 
 func init() { file_cxz_session_svc_g_proto_init() }
@@ -6052,7 +7257,7 @@ func file_cxz_session_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_cxz_session_svc_g_proto_rawDesc), len(file_cxz_session_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   36,
+			NumMessages:   41,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
