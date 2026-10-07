@@ -163,7 +163,7 @@ func newRoot(state string) *xli.Command {
 		root.Commands = append(root.Commands, newProjectCommand(name))
 	}
 	root.Commands = append(root.Commands, projectMetadataCommands())
-	root.Commands = append(root.Commands, devcontainerCommand(), webCommand(), internalWebCommand(), connectionCommand())
+	root.Commands = append(root.Commands, devcontainerCommand(), webCommand(), internalWebCommand(), connectionCommand(), conversationCommand())
 	root.Commands = append(root.Commands, pkiInternalCommands()...)
 	root.Commands = append(root.Commands, githubCommands(), gitconfigCommands())
 	root.Commands = append(root.Commands, accountCommands())

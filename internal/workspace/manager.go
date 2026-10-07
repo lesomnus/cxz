@@ -10,6 +10,7 @@ import (
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/auxiliary"
 	"github.com/lesomnus/cxz/internal/containerterm"
+	"github.com/lesomnus/cxz/internal/convindex"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/dockerx"
 	"github.com/lesomnus/cxz/internal/resourceclient"
@@ -33,22 +34,45 @@ type Project struct {
 }
 type Runtime struct{ ProjectID, Workspace, Token, Claude, Codex string }
 type Manager struct {
-	removedSessions                                           map[string]bool // protected by writeMu; rejects late frames after removal
-	auxStop                                                   context.CancelFunc
-	auxDone                                                   chan struct{}
-	auxMu                                                     sync.Mutex
-	aux                                                       *auxiliary.Controller
-	paths                                                     containerterm.WispPool
-	historyMu                                                 sync.Mutex
-	historyClients                                            map[string]*historyConnection
-	dockerMu                                                  sync.Mutex
-	filesMu                                                   sync.Mutex
-	opsMu                                                     sync.Mutex
-	writeMu                                                   sync.Mutex
-	ops                                                       map[string]*sync.Mutex
-	mu                                                        sync.Mutex
-	DB                                                        *sql.DB
+	removedSessions map[string]bool // protected by writeMu; rejects late frames after removal
+	auxStop         context.CancelFunc
+	auxDone         chan struct{}
+	auxMu           sync.Mutex
+	aux             *auxiliary.Controller
+	paths           containerterm.WispPool
+	historyMu       sync.Mutex
+	historyClients  map[string]*historyConnection
+	dockerMu        sync.Mutex
+	filesMu         sync.Mutex
+	opsMu           sync.Mutex
+	writeMu         sync.Mutex
+	ops             map[string]*sync.Mutex
+	mu              sync.Mutex
+	DB              *sql.DB
+	// Conversations is the installation's searchable record of what was said.
+	// The manager is where every project's events are consolidated, so it is
+	// where they are extracted; a nil index simply means nothing is indexed.
+	Conversations                                             *convindex.Index
 	Root, Owner, WorkspaceRoot, ToolsVolume, Image, Container string
+}
+
+// ConversationSessions lists every session the installation knows of, newest
+// conversation first, from what the manager has already cached: asking each
+// project would mean opening it, which is what the index exists to avoid.
+func (m *Manager) ConversationSessions(ctx context.Context) []core.Session {
+	m.mu.Lock()
+	all, err := m.all(ctx)
+	m.mu.Unlock()
+	if err != nil {
+		return nil
+	}
+	var out []core.Session
+	for _, p := range all {
+		for _, s := range p.Sessions {
+			out = append(out, core.Session{ID: s.Id, ProjectID: p.ID, Title: s.Title, Kind: s.Agent, CreatedAt: s.CreatedAt})
+		}
+	}
+	return out
 }
 
 func (m *Manager) projectLock(id string) *sync.Mutex {

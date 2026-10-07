@@ -140,13 +140,86 @@ The manager caches events as they stream and serves a page from SQLite when it h
 Journal reads are incremental — only complete appended records — so a session's
 history loading does not replay the whole file.
 
+## Searching it
+
+```sh
+cxz conversation search relay                      # the last 30 days, newest first
+cxz conversation search --match fuzzy cxzweb       # a half remembered phrase
+cxz conversation search --match regex "login.*failed" --ignore-case
+cxz conversation search --project work --exclude scratch relay
+cxz conversation search --since 2026-08-01 --until 2026-09-01 relay
+cxz conversation search --continue CURSOR          # the rest of a window, or the one before it
+```
+
+**The conversation is kept apart from the log.** In this repository's own
+journals, 275 MiB of events held 0.35 MiB of what was actually said — 0.13%. The
+rest is the machinery's own record: the verbatim vendor stream, usage, catalogs,
+approvals. So the conversation is extracted as events are recorded, into an index
+beside the installation's other state, and a search is a query over that rather
+than a pass over journals. Including tool calls and their output the index is
+around 6% of the journals; a question is answered in milliseconds.
+
+**One window of time at a time.** The default is the last 30 days, and the
+summary prints the command for the window before it, so a question that was not
+discussed recently is followed backwards instead of by reading everything.
+Windows are half-open, `[since, until)`, so consecutive ones neither overlap nor
+skip, and the window travels in the cursor: every page of one search asks what
+the first page asked, even as new events arrive above it.
+
+**Newest first, grouped by conversation.** A conversation is the unit — its hits
+appear together, under the session they were said in — and conversations are
+ordered by their newest match.
+
+**The index is derived, and says when it is behind.** It is rebuilt from the
+events this installation stores, caught up before a search answers, and seeded in
+the background when it is new or was deleted. A conversation it has not reached
+is reported rather than left out silently: the summary counts them, and
+`--progress` names them. Nothing is authoritative except the journals.
+
+A session whose older events were trimmed says so beside its results. Finding
+nothing in it is not evidence that nothing was said. A message longer than the
+index keeps (256 KiB) is cut, and its hits say so.
+
+Matching is `substring` by default, `regex` for RE2, or `fuzzy` — which is
+matched per line, because a query's letters can be found scattered across any
+paragraph and a match against a whole message would mean nothing. Substring is
+filtered by the store itself; regex and fuzzy are applied to the rows it returns,
+which is affordable because those rows are only the conversation. `--tools` also
+searches tool calls and their arguments. `--format json` prints one object per
+conversation, then the summary.
+
+Relevance ranking is deliberately absent. It needs a text index, a text index
+needs invalidating, and at this size the order a person asked for — newest first
+— costs nothing to provide. The schema leaves room for one.
+
+This is the owner's operation, not an agent's. An agent gets `conversation_search`,
+which answers for one session inside its own project, over that project's journal,
+and returns metadata rather than text; a search across every project is refused
+on the surface a project container can reach.
+
 ## Backups
 
 Back up the **state volumes** and your **workspace contents**.
 
 Journals and manifests are authoritative for runtime recovery. The resource
 database also holds project and session metadata and audit history that cannot be
-rebuilt from journals — so back up all of it, not just transcripts.
+rebuilt from journals — so back up all of it, not just transcripts. The
+conversation index (`conversations.db`) is the one file you may lose freely: it
+is derived, and it rebuilds itself from the events beside it.
 
 **Raw journals contain your source and may contain secrets.** Do not publish them.
 See [security](security.md).
+
+## Reduced state the manager keeps
+
+Some questions are about what is true now rather than what happened: the pending
+approvals, the background tasks of a run, the model catalog it published, and
+what was said across every conversation. Each is
+one record somewhere in a journal that may hold an entire conversation, so the
+manager keeps them reduced as events are applied and answers from that — one
+request, no scan.
+
+A client that rebuilt them by reading the journal would pay for the conversation
+to find a record, and over a remote link that cost is the conversation's size,
+not the record's. `cxz session get`, the background overlay, the model selector
+and `cxz conversation search` all read reduced state for this reason.

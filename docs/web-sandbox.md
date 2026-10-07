@@ -21,6 +21,14 @@ updates the preview. After changing Go simulator code, run
 server-side cxz installation to update. Ctrl+C stops the static development server.
 The first WASM load is roughly 23 MiB; a loading indicator reports bytes loaded.
 
+Starting is bounded. The sandbox gives the whole boot 15 seconds — the module's
+own deadline covers only its last step, so a stall before that used to leave the
+page on "Starting sandbox…" with no error, no progress and nothing to retry. On a
+timeout it starts once more without the module cache, says so in a note that
+stays on screen, and reports a second timeout instead of retrying forever. The
+module cache is skipped entirely under browser automation, where every page is a
+fresh context and the cache can only write 23 MiB it will never read.
+
 The script works from Windows or Linux with Go and Node installed. It uses Node
 process APIs rather than POSIX shell environment syntax, and copies wasm_exec.js
 from the same Go toolchain that compiled the module.
@@ -309,7 +317,14 @@ Ctrl+Enter, fixed field positions, quota/context popovers, bounded button press
 scaling, background fades with tension, overlapping input borders, scrollbar prompt phase
 at both edges, hover/stretch, near-bottom scroll stability, resizing and full
 backward/forward history paging with bounded DOM and cache, first-drag return,
-elastic handle bounds and wheel response/settling.
+elastic handle bounds and wheel response/settling. A boot test stalls the module
+request on purpose to check that the page recovers on its retry, still explains
+why afterwards, and reports a boot that never finishes rather than hanging.
+Startup also waits for a real project-list RPC before showing the workspace.
+A worker that publishes its entry point but cannot answer RPCs is closed under
+the same deadline and retried once; the browser suite forces this condition by
+dropping the first MessagePort handoff. Late starts from timed-out attempts close
+their workers instead of leaking them.
 
 Serve a static build at the origin root, preserving its Worker/WASM assets and
 application/wasm MIME type. `npx vite preview --config vite.sandbox.config.ts`

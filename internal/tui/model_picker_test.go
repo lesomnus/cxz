@@ -11,11 +11,37 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/lesomnus/cxz/api"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
+// catalogClient stands in for a manager. legacy makes it answer the capability
+// RPC the way a manager that predates it does, so the same fixtures exercise
+// both the current path and the fallback.
 type catalogClient struct {
 	recordingClient
-	events []*api.Event
+	events     []*api.Event
+	legacy     bool
+	refreshed  int
+	modelCalls int
+	pages      int
+}
+
+func (c *catalogClient) Models(_ context.Context, r *api.ModelsRequest, _ ...grpc.CallOption) (*api.ModelsReply, error) {
+	c.modelCalls++
+	if c.legacy {
+		return nil, status.Error(codes.Unimplemented, "unknown method Models")
+	}
+	if r.Refresh {
+		c.refreshed++
+	}
+	out := &api.ModelsReply{RunId: "run", Refreshing: r.Refresh}
+	for _, e := range c.events {
+		if e.Kind == "models" {
+			out.Data, out.CatalogSeq, out.CatalogMs, out.LastSeq = e.Payload, e.Seq, e.TimeMs, e.Seq
+		}
+	}
+	return out, nil
 }
 
 func TestClaudeEffortPickerUsesDefaultAndResolvedModel(t *testing.T) {
@@ -83,10 +109,14 @@ func TestReasoningDisplayDistinguishesAppliedAndPreferredEffort(t *testing.T) {
 }
 
 func (c *catalogClient) History(_ context.Context, r *api.WatchRequest, _ ...grpc.CallOption) (*api.EventBatch, error) {
-	if r.AfterSeq > 0 {
-		return &api.EventBatch{}, nil
+	c.pages++
+	out := &api.EventBatch{}
+	for _, e := range c.events {
+		if e.Seq > r.AfterSeq && uint64(len(out.Events)) < historyPageSize {
+			out.Events = append(out.Events, e)
+		}
 	}
-	return &api.EventBatch{Events: c.events}, nil
+	return out, nil
 }
 
 func TestModelPickerNeverChatsWithoutCapability(t *testing.T) {
@@ -127,11 +157,18 @@ func TestModelPickerSelectAndStaleRun(t *testing.T) {
 	if len(c.inputs) != 1 || c.inputs[0].Text != "/model second" {
 		t.Fatal(c.inputs)
 	}
-	m.Update(m.modelCommand("/model")())
+	reopen(m, "/model")
 	m.current().RunId = "changed"
 	_, send = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	if send != nil || !strings.Contains(m.modelPicker.message, "run changed") {
 		t.Fatal("stale selector applied")
+	}
+}
+
+// reopen opens a picker whether or not the lookup is already cached.
+func reopen(m *model, command string) {
+	if cmd := m.modelCommand(command); cmd != nil {
+		m.Update(cmd())
 	}
 }
 

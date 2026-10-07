@@ -3,6 +3,10 @@ package tui
 import (
 	"io"
 	"strings"
+	"time"
+	"unicode"
+
+	"github.com/rivo/uniseg"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/x/ansi"
@@ -39,6 +43,9 @@ type transcriptSelection struct {
 	offset, width              int
 	startX, startY, endX, endY int
 	dragging                   bool
+	pressedAt                  time.Time
+	pressX, pressY             int
+	word                       bool
 	rows                       []string
 	codeRows                   map[int]codeSelectionRow
 }
@@ -50,6 +57,12 @@ type codeSelectionRow struct {
 
 func (m *model) selectionCodeRows(rows []string) map[int]codeSelectionRow {
 	result := map[int]codeSelectionRow{}
+	for absolute := range m.responseRows {
+		row := absolute - m.view.YOffset
+		if row >= 0 && row < len(rows) && m.codeButtonVisible(codeButton{y: absolute}) {
+			result[row] = codeSelectionRow{start: 2, end: ansi.StringWidth(strings.TrimRight(ansi.Strip(rows[row]), " "))}
+		}
+	}
 	for _, b := range m.codeButtons {
 		first := max(0, m.view.YOffset-b.y)
 		last := min(b.contentRows+1, m.view.YOffset+len(rows)-1-b.y)
@@ -114,6 +127,13 @@ func (s *transcriptSelection) text() string {
 func (m *model) selectionMouse(v tea.MouseMsg) bool {
 	if s := m.textSelection; s != nil && s.dragging && m.selectionValid() {
 		if v.Action == tea.MouseActionMotion || v.Action == tea.MouseActionRelease {
+			// A release at the clicked cell must preserve the whole word.
+			if s.word && v.X-m.contentOffset() == s.pressX && v.Y == s.pressY {
+				if v.Action == tea.MouseActionRelease {
+					s.dragging = false
+				}
+				return true
+			}
 			s.endX = max(0, min(m.width, v.X-m.contentOffset()))
 			s.endY = max(0, min(len(s.rows)-1, v.Y))
 			if v.Action == tea.MouseActionRelease {
@@ -128,13 +148,29 @@ func (m *model) beginSelection(v tea.MouseMsg) {
 	if v.Action != tea.MouseActionPress || v.Button != tea.MouseButtonLeft || m.current() == nil {
 		return
 	}
+	previous := m.textSelection
+	validPrevious := m.selectionValid()
 	m.textSelection = nil
 	m.input.ClearSelection()
 	rows := strings.Split(m.conversationView(), "\n")
 	if v.Y < 0 || v.Y >= len(rows) {
 		return
 	}
-	m.textSelection = &transcriptSelection{session: m.current().Id, offset: m.view.YOffset, width: m.width, startX: v.X, endX: v.X, startY: v.Y, endY: v.Y, dragging: true, rows: rows, codeRows: m.selectionCodeRows(rows)}
+	m.textSelection = &transcriptSelection{session: m.current().Id, offset: m.view.YOffset, width: m.width, startX: v.X, endX: v.X, startY: v.Y, endY: v.Y, dragging: true, rows: rows, codeRows: m.selectionCodeRows(rows), pressedAt: time.Now(), pressX: v.X, pressY: v.Y}
+	s := m.textSelection
+	if validPrevious && previous != nil && !previous.word && previous.pressX == v.X && previous.pressY == v.Y &&
+		previous.endX == previous.startX && previous.endY == previous.startY &&
+		time.Since(previous.pressedAt) < 400*time.Millisecond && previous.rows[v.Y] == rows[v.Y] {
+		s.startX, s.endX = transcriptWord(rows[v.Y], v.X)
+		if limit, ok := s.codeRows[v.Y]; ok {
+			s.startX = max(s.startX, limit.start)
+			s.endX = max(s.startX, min(s.endX, limit.end))
+			if limit.omit {
+				s.endX = s.startX
+			}
+		}
+		s.word = true
+	}
 }
 func (m *model) selectionView(rows []string) {
 	if !m.selectionValid() {
@@ -177,4 +213,42 @@ func (m *model) copyFocusedText() {
 	default:
 		m.notice = "Drag to select conversation text, or open a tool preview · Ctrl+C copy"
 	}
+}
+
+// Work in terminal cells and grapheme clusters, so a click on either half of
+// a wide glyph (or on an emoji/combining sequence) selects the complete glyph.
+func transcriptWord(row string, x int) (int, int) {
+	type cluster struct{ start, end, class int }
+	var cells []cluster
+	g := uniseg.NewGraphemes(ansi.Strip(row))
+	column := 0
+	for g.Next() {
+		value := g.Str()
+		class := 2
+		for _, r := range value {
+			if unicode.IsSpace(r) {
+				class = 0
+			} else if unicode.IsLetter(r) || unicode.IsNumber(r) || unicode.IsMark(r) || r == '_' {
+				class = 1
+			}
+			break
+		}
+		end := column + g.Width()
+		cells = append(cells, cluster{column, end, class})
+		column = end
+	}
+	for i, cell := range cells {
+		if x < cell.start || x >= cell.end {
+			continue
+		}
+		left, right := i, i
+		for left > 0 && cells[left-1].class == cell.class {
+			left--
+		}
+		for right+1 < len(cells) && cells[right+1].class == cell.class {
+			right++
+		}
+		return cells[left].start, cells[right].end
+	}
+	return x, x
 }

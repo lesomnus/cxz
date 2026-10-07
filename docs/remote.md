@@ -87,9 +87,18 @@ client and stays there; what crosses the channel is a certificate request and a
 certificate, both public. If the relay is not running, enrollment starts it over
 the same channel and says it did — `--no-start` refuses instead.
 
-A connection whose relay has stopped is repaired the same way on the next launch,
-and an expired certificate is renewed. `cxz --no-enroll` turns both off for one
-invocation, and falls back to ssh rather than failing.
+**The address comes from your SSH configuration, not from the target.** Mutual
+TLS is a direct TCP connection, so `ssh://build-host` is only a name this machine
+can dial if `build-host` resolves; usually it is a `Host` block whose `HostName`
+is the real address, and only ssh knows that. `cxz` asks ssh what it resolved
+(`ssh -G`) and dials that, joined to the port the relay reports. A host ssh
+reaches through a `ProxyJump` or `ProxyCommand` has no direct address at all:
+enrollment says so and `--address host:port` says where to go instead.
+
+A connection whose relay has stopped — or moved to an address the stored identity
+no longer matches — is repaired the same way on the next launch, without a new
+certificate, and an expired certificate is renewed. `cxz --no-enroll` turns all
+of that off for one invocation, and falls back to ssh rather than failing.
 
 ### Without SSH
 

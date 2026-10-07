@@ -217,6 +217,10 @@ export const messages = {
   Spaces: "공백",
   "Spaces inserted with Tab or removed with Shift+Tab":
     "Tab으로 넣거나 Shift+Tab으로 지울 공백 수",
+  "Starting sandbox again, without its cache…":
+    "캐시 없이 샌드박스를 다시 시작합니다…",
+  "The first attempt stalled; this sandbox started on a retry.":
+    "첫 시작이 지연되어 샌드박스를 다시 시작했습니다.",
   "Starting sandbox…": "샌드박스 시작 중…",
   "Stopped session": "중지된 세션",
   "Stored value": "저장된 값",

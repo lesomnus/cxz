@@ -20,7 +20,12 @@ func quotaCountdown(reset, now time.Time) string {
 	if !reset.After(now) {
 		return "refresh"
 	}
-	mins := int(math.Ceil(reset.Sub(now).Minutes()))
+	return minutesLabel(int(math.Ceil(reset.Sub(now).Minutes())))
+}
+
+// minutesLabel is the one spelling of a duration in this UI, shared so a
+// countdown and an age do not drift apart in how they read.
+func minutesLabel(mins int) string {
 	if mins >= 1440 {
 		if mins/60%24 == 0 {
 			return fmt.Sprintf("%dd", mins/1440)

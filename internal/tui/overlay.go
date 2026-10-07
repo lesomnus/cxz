@@ -41,6 +41,32 @@ func overlayBox(view string, content []string, width int, focused ...bool) strin
 	return strings.Join(rows, "\n")
 }
 
+// overlayTop is overlayBox at the other end. A find bar belongs above what it
+// is searching: the eye goes to the query, and the transcript keeps the rows
+// nearest the composer, which is where the reading was.
+func overlayTop(view string, content []string, width int, focused ...bool) string {
+	rows := strings.Split(view, "\n")
+	if width < 4 || len(rows) < 3 {
+		return view
+	}
+	inner := width - 4
+	if len(content) > len(rows)-2 {
+		content = content[:max(0, len(rows)-2)]
+	}
+	border := accent
+	if len(focused) > 0 && focused[0] {
+		border = focus
+	}
+	box := []string{border.Render("╭" + strings.Repeat("─", width-2) + "╮")}
+	for _, line := range content {
+		line = clip(line, inner)
+		box = append(box, border.Render("│")+" "+line+strings.Repeat(" ", max(0, inner-ansi.StringWidth(line)))+" "+border.Render("│"))
+	}
+	box = append(box, border.Render("╰"+strings.Repeat("─", width-2)+"╯"))
+	copy(rows, box)
+	return strings.Join(rows, "\n")
+}
+
 func (m *model) openReport(title, text string) {
 	id := ""
 	run := ""

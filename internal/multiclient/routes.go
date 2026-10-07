@@ -264,6 +264,14 @@ func (c *Client) Background(ctx context.Context, in *api.SessionRef, opts ...grp
 	return client.Background(ctx, &api.SessionRef{Id: id}, opts...)
 }
 
+func (c *Client) Models(ctx context.Context, in *api.ModelsRequest, opts ...grpc.CallOption) (*api.ModelsReply, error) {
+	_, id, client, err := c.route(ctx, in.SessionId)
+	if err != nil {
+		return nil, err
+	}
+	return client.Models(ctx, &api.ModelsRequest{SessionId: id, Refresh: in.Refresh, RunId: in.RunId, ClientId: in.ClientId}, opts...)
+}
+
 func (c *Client) Open(ctx context.Context, in *api.ProjectRequest, opts ...grpc.CallOption) (*api.Session, error) {
 	name, id, client, err := c.route(ctx, in.Workspace)
 	if err != nil {

@@ -216,6 +216,10 @@ export const messages = {
   Spaces: "Spaces",
   "Spaces inserted with Tab or removed with Shift+Tab":
     "Spaces inserted with Tab or removed with Shift+Tab",
+  "Starting sandbox again, without its cache…":
+    "Starting sandbox again, without its cache…",
+  "The first attempt stalled; this sandbox started on a retry.":
+    "The first attempt stalled; this sandbox started on a retry.",
   "Starting sandbox…": "Starting sandbox…",
   "Stopped session": "Stopped session",
   "Stored value": "Stored value",

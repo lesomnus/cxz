@@ -5,6 +5,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -40,6 +41,50 @@ func TestEndpointValidation(t *testing.T) {
 	}
 	if _, err := DialEndpoint("tcp://127.0.0.1:7349", "", nil); err == nil {
 		t.Fatal("missing token accepted")
+	}
+}
+
+// The name a connection is written with is the one ssh resolves, not the one a
+// TCP dial can use, so what `ssh -G` reports is what the relay is dialed by.
+func TestDialHostComesFromTheResolvedSSHConfiguration(t *testing.T) {
+	alias := "host build-host\nuser me\nhostname 10.0.0.5\nport 22\nproxyusefdpass no\n"
+	if host, err := dialHost(alias, "build-host"); err != nil || host != "10.0.0.5" {
+		t.Fatal(host, err)
+	}
+	// A host with no HostName of its own resolves to itself, which is then the
+	// right answer rather than a special case.
+	if host, err := dialHost("host plain\nhostname plain\n", "plain"); err != nil || host != "plain" {
+		t.Fatal(host, err)
+	}
+	// Reached through a proxy there is no address to report, and reporting the
+	// resolved name anyway would hand back one that cannot be dialed.
+	for _, configuration := range []string{alias + "proxyjump bastion\n", alias + "proxycommand nc %h %p\n"} {
+		if host, err := dialHost(configuration, "build-host"); err == nil {
+			t.Fatal("a proxied host reported", host)
+		}
+	}
+	if _, err := dialHost("proxyjump none\nproxycommand none\n", "build-host"); err == nil {
+		t.Fatal("no hostname reported was accepted")
+	}
+}
+
+// Asking the installed ssh is what keeps the parsing honest: `ssh -G` resolves
+// the configuration and connects to nothing, so a host that is already an
+// address comes back as itself.
+func TestDialHostAsksTheInstalledSSH(t *testing.T) {
+	if _, err := exec.LookPath("ssh"); err != nil {
+		t.Skip("no ssh client")
+	}
+	e, err := ParseEndpoint("ssh://someone@10.11.12.13:2222")
+	if err != nil {
+		t.Fatal(err)
+	}
+	host, err := e.SSHDialHost(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if host != "10.11.12.13" {
+		t.Fatal("ssh resolved the host to", host)
 	}
 }
 

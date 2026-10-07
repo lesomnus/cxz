@@ -149,7 +149,12 @@ type remoteStatus struct {
 // Over enrolls this client through run. The order matters: the root is fetched
 // and the certificate signed before anything is stored, so a failure halfway
 // leaves the previous identity in place.
-func Over(ctx context.Context, run Runner, state, name, sshHost string, o Options) (Stored, error) {
+//
+// dialHost is the host part of the address this client will dial afterwards, and
+// has to be one this machine can resolve. The name the channel was configured
+// with is not necessarily that: ssh resolves its own aliases and a TCP dial
+// cannot, so the caller is the one that knows how to translate.
+func Over(ctx context.Context, run Runner, state, name, dialHost string, o Options) (Stored, error) {
 	label := o.Label
 	if label == "" {
 		label = hostLabel()
@@ -166,12 +171,9 @@ func Over(ctx context.Context, run Runner, state, name, sshHost string, o Option
 	if err != nil {
 		return Stored{}, fmt.Errorf("sign this client: %w", err)
 	}
-	address := o.Address
-	if address == "" {
-		address, err = relayAddress(ctx, run, sshHost, o)
-		if err != nil {
-			return Stored{}, err
-		}
+	address, err := Address(ctx, run, dialHost, o)
+	if err != nil {
+		return Stored{}, err
 	}
 	if err = store(state, name, key, cert, ca, address); err != nil {
 		return Stored{}, err
@@ -186,12 +188,39 @@ func Over(ctx context.Context, run Runner, state, name, sshHost string, o Option
 	return stored, nil
 }
 
+// Address is where this client should dial the installation's relay: the port
+// the host reports, joined to the host the caller says this machine can reach it
+// by. It asks rather than assuming a port, and starts a stopped relay when
+// allowed to, which is also what makes it the repair for an address that no
+// longer answers -- the identity is unaffected either way.
+func Address(ctx context.Context, run Runner, dialHost string, o Options) (string, error) {
+	if o.Address != "" {
+		return o.Address, nil
+	}
+	return relayAddress(ctx, run, dialHost, o)
+}
+
+// Rehost replaces the address an enrolled connection dials and leaves the
+// certificate alone, because the identity is bound to the installation and not
+// to a route to it. A relay that moved, or an address that was never dialable
+// from here, is a corrected file rather than a new enrollment.
+func Rehost(state, name, address string) error {
+	if address == "" {
+		return fmt.Errorf("a relay address is required")
+	}
+	if _, ok, err := Load(state, name); err != nil {
+		return err
+	} else if !ok {
+		return fmt.Errorf("no identity is stored for connection %s", name)
+	}
+	return store(state, name, nil, nil, nil, address)
+}
+
 // relayAddress asks the installation where it listens rather than assuming a
-// port, and starts the relay when asked to. The host part comes from the
-// channel we are already talking over: the relay reports the address it is
-// published on, which is frequently a wildcard that says nothing about how this
-// client should reach it.
-func relayAddress(ctx context.Context, run Runner, sshHost string, o Options) (string, error) {
+// port, and starts the relay when asked to. Only the port is taken from the
+// answer: the relay reports the address it is published on, which is frequently
+// a wildcard that says nothing about how this client should reach it.
+func relayAddress(ctx context.Context, run Runner, dialHost string, o Options) (string, error) {
 	status, err := relay(ctx, run)
 	if err != nil {
 		return "", err
@@ -217,10 +246,10 @@ func relayAddress(ctx context.Context, run Runner, sshHost string, o Options) (s
 	if err != nil {
 		return "", fmt.Errorf("the relay reported an unusable listen address %q", status.Listen)
 	}
-	if sshHost == "" {
+	if dialHost == "" {
 		return status.Listen, nil
 	}
-	return net.JoinHostPort(sshHost, port), nil
+	return net.JoinHostPort(dialHost, port), nil
 }
 
 func relay(ctx context.Context, run Runner) (remoteStatus, error) {
@@ -233,24 +262,6 @@ func relay(ctx context.Context, run Runner) (remoteStatus, error) {
 		return status, fmt.Errorf("the host did not report a relay state: %w", err)
 	}
 	return status, nil
-}
-
-// Start brings up a relay that stopped, for a client that is already enrolled.
-// It is the recovery that keeps an enrolled connection working after a host
-// reboot that left the relay removed.
-func Start(ctx context.Context, run Runner, out io.Writer) error {
-	status, err := relay(ctx, run)
-	if err != nil {
-		return err
-	}
-	if status.State == "running" {
-		return nil
-	}
-	if out != nil {
-		fmt.Fprintf(out, "the relay was %s; starting it over ssh\n", status.State)
-	}
-	_, err = run(ctx, nil, "expose", "up")
-	return err
 }
 
 func hostLabel() string {

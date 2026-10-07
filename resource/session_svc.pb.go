@@ -5222,6 +5222,2189 @@ func (b0 SessionBackgroundReply_builder) Build() *SessionBackgroundReply {
 	return m0
 }
 
+// The model catalog is a projection of the journal, served like background
+// state: one request, no event scan. refresh additionally asks the agent, whose
+// answer arrives as a journal event.
+type SessionModelsRequest struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ref         *SessionRef            `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Refresh     bool                   `protobuf:"varint,2,opt,name=refresh"`
+	xxx_hidden_RunId       *string                `protobuf:"bytes,3,opt,name=run_id,json=runId"`
+	xxx_hidden_ClientId    *string                `protobuf:"bytes,4,opt,name=client_id,json=clientId"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *SessionModelsRequest) Reset() {
+	*x = SessionModelsRequest{}
+	mi := &file_cxz_session_svc_g_proto_msgTypes[34]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SessionModelsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SessionModelsRequest) ProtoMessage() {}
+
+func (x *SessionModelsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_session_svc_g_proto_msgTypes[34]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SessionModelsRequest) GetRef() *SessionRef {
+	if x != nil {
+		return x.xxx_hidden_Ref
+	}
+	return nil
+}
+
+func (x *SessionModelsRequest) GetRefresh() bool {
+	if x != nil {
+		return x.xxx_hidden_Refresh
+	}
+	return false
+}
+
+func (x *SessionModelsRequest) GetRunId() string {
+	if x != nil {
+		if x.xxx_hidden_RunId != nil {
+			return *x.xxx_hidden_RunId
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *SessionModelsRequest) GetClientId() string {
+	if x != nil {
+		if x.xxx_hidden_ClientId != nil {
+			return *x.xxx_hidden_ClientId
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *SessionModelsRequest) SetRef(v *SessionRef) {
+	x.xxx_hidden_Ref = v
+}
+
+func (x *SessionModelsRequest) SetRefresh(v bool) {
+	x.xxx_hidden_Refresh = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 4)
+}
+
+func (x *SessionModelsRequest) SetRunId(v string) {
+	x.xxx_hidden_RunId = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 4)
+}
+
+func (x *SessionModelsRequest) SetClientId(v string) {
+	x.xxx_hidden_ClientId = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 4)
+}
+
+func (x *SessionModelsRequest) HasRef() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Ref != nil
+}
+
+func (x *SessionModelsRequest) HasRefresh() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
+}
+
+func (x *SessionModelsRequest) HasRunId() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+}
+
+func (x *SessionModelsRequest) HasClientId() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
+}
+
+func (x *SessionModelsRequest) ClearRef() {
+	x.xxx_hidden_Ref = nil
+}
+
+func (x *SessionModelsRequest) ClearRefresh() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_Refresh = false
+}
+
+func (x *SessionModelsRequest) ClearRunId() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	x.xxx_hidden_RunId = nil
+}
+
+func (x *SessionModelsRequest) ClearClientId() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
+	x.xxx_hidden_ClientId = nil
+}
+
+type SessionModelsRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Ref      *SessionRef
+	Refresh  *bool
+	RunId    *string
+	ClientId *string
+}
+
+func (b0 SessionModelsRequest_builder) Build() *SessionModelsRequest {
+	m0 := &SessionModelsRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Ref = b.Ref
+	if b.Refresh != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 4)
+		x.xxx_hidden_Refresh = *b.Refresh
+	}
+	if b.RunId != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 4)
+		x.xxx_hidden_RunId = b.RunId
+	}
+	if b.ClientId != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 4)
+		x.xxx_hidden_ClientId = b.ClientId
+	}
+	return m0
+}
+
+type SessionModelsReply struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_LastSeq     uint64                 `protobuf:"varint,1,opt,name=last_seq,json=lastSeq"`
+	xxx_hidden_Data        []byte                 `protobuf:"bytes,2,opt,name=data"`
+	xxx_hidden_RunId       *string                `protobuf:"bytes,3,opt,name=run_id,json=runId"`
+	xxx_hidden_CatalogSeq  uint64                 `protobuf:"varint,4,opt,name=catalog_seq,json=catalogSeq"`
+	xxx_hidden_CatalogMs   int64                  `protobuf:"varint,5,opt,name=catalog_ms,json=catalogMs"`
+	xxx_hidden_Refreshing  bool                   `protobuf:"varint,6,opt,name=refreshing"`
+	xxx_hidden_Status      *string                `protobuf:"bytes,7,opt,name=status"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *SessionModelsReply) Reset() {
+	*x = SessionModelsReply{}
+	mi := &file_cxz_session_svc_g_proto_msgTypes[35]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SessionModelsReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SessionModelsReply) ProtoMessage() {}
+
+func (x *SessionModelsReply) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_session_svc_g_proto_msgTypes[35]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SessionModelsReply) GetLastSeq() uint64 {
+	if x != nil {
+		return x.xxx_hidden_LastSeq
+	}
+	return 0
+}
+
+func (x *SessionModelsReply) GetData() []byte {
+	if x != nil {
+		return x.xxx_hidden_Data
+	}
+	return nil
+}
+
+func (x *SessionModelsReply) GetRunId() string {
+	if x != nil {
+		if x.xxx_hidden_RunId != nil {
+			return *x.xxx_hidden_RunId
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *SessionModelsReply) GetCatalogSeq() uint64 {
+	if x != nil {
+		return x.xxx_hidden_CatalogSeq
+	}
+	return 0
+}
+
+func (x *SessionModelsReply) GetCatalogMs() int64 {
+	if x != nil {
+		return x.xxx_hidden_CatalogMs
+	}
+	return 0
+}
+
+func (x *SessionModelsReply) GetRefreshing() bool {
+	if x != nil {
+		return x.xxx_hidden_Refreshing
+	}
+	return false
+}
+
+func (x *SessionModelsReply) GetStatus() string {
+	if x != nil {
+		if x.xxx_hidden_Status != nil {
+			return *x.xxx_hidden_Status
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *SessionModelsReply) SetLastSeq(v uint64) {
+	x.xxx_hidden_LastSeq = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 7)
+}
+
+func (x *SessionModelsReply) SetData(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_Data = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 7)
+}
+
+func (x *SessionModelsReply) SetRunId(v string) {
+	x.xxx_hidden_RunId = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 7)
+}
+
+func (x *SessionModelsReply) SetCatalogSeq(v uint64) {
+	x.xxx_hidden_CatalogSeq = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 7)
+}
+
+func (x *SessionModelsReply) SetCatalogMs(v int64) {
+	x.xxx_hidden_CatalogMs = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 7)
+}
+
+func (x *SessionModelsReply) SetRefreshing(v bool) {
+	x.xxx_hidden_Refreshing = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 7)
+}
+
+func (x *SessionModelsReply) SetStatus(v string) {
+	x.xxx_hidden_Status = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 7)
+}
+
+func (x *SessionModelsReply) HasLastSeq() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *SessionModelsReply) HasData() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
+}
+
+func (x *SessionModelsReply) HasRunId() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+}
+
+func (x *SessionModelsReply) HasCatalogSeq() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
+}
+
+func (x *SessionModelsReply) HasCatalogMs() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
+}
+
+func (x *SessionModelsReply) HasRefreshing() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
+}
+
+func (x *SessionModelsReply) HasStatus() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
+}
+
+func (x *SessionModelsReply) ClearLastSeq() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_LastSeq = 0
+}
+
+func (x *SessionModelsReply) ClearData() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_Data = nil
+}
+
+func (x *SessionModelsReply) ClearRunId() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	x.xxx_hidden_RunId = nil
+}
+
+func (x *SessionModelsReply) ClearCatalogSeq() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
+	x.xxx_hidden_CatalogSeq = 0
+}
+
+func (x *SessionModelsReply) ClearCatalogMs() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
+	x.xxx_hidden_CatalogMs = 0
+}
+
+func (x *SessionModelsReply) ClearRefreshing() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
+	x.xxx_hidden_Refreshing = false
+}
+
+func (x *SessionModelsReply) ClearStatus() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
+	x.xxx_hidden_Status = nil
+}
+
+type SessionModelsReply_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	LastSeq    *uint64
+	Data       []byte
+	RunId      *string
+	CatalogSeq *uint64
+	CatalogMs  *int64
+	Refreshing *bool
+	Status     *string
+}
+
+func (b0 SessionModelsReply_builder) Build() *SessionModelsReply {
+	m0 := &SessionModelsReply{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.LastSeq != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 7)
+		x.xxx_hidden_LastSeq = *b.LastSeq
+	}
+	if b.Data != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 7)
+		x.xxx_hidden_Data = b.Data
+	}
+	if b.RunId != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 7)
+		x.xxx_hidden_RunId = b.RunId
+	}
+	if b.CatalogSeq != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 7)
+		x.xxx_hidden_CatalogSeq = *b.CatalogSeq
+	}
+	if b.CatalogMs != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 7)
+		x.xxx_hidden_CatalogMs = *b.CatalogMs
+	}
+	if b.Refreshing != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 7)
+		x.xxx_hidden_Refreshing = *b.Refreshing
+	}
+	if b.Status != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 7)
+		x.xxx_hidden_Status = b.Status
+	}
+	return m0
+}
+
+// A window is half-open, [since, until), so the windows a client walks back
+// through -- a month at a time -- neither overlap nor skip. cursor continues one
+// window and carries it, which is what keeps the second page asking the same
+// question as the first while new events arrive above it.
+//
+// The bounds are timestamps rather than the journal's milliseconds because they
+// are the caller's, not a journal's: an absent one is no bound at all, which a
+// number would have had to spend a value on.
+//
+// projects and exclude are project runtime ids. A name or an alias is resolved
+// where it was displayed: this is not the place to guess which was meant.
+type SessionSearchRequest struct {
+	state                   protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Query        *string                `protobuf:"bytes,1,opt,name=query"`
+	xxx_hidden_Match        *string                `protobuf:"bytes,2,opt,name=match"`
+	xxx_hidden_IgnoreCase   bool                   `protobuf:"varint,3,opt,name=ignore_case,json=ignoreCase"`
+	xxx_hidden_IncludeTools bool                   `protobuf:"varint,5,opt,name=include_tools,json=includeTools"`
+	xxx_hidden_Since        *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=since"`
+	xxx_hidden_Until        *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=until"`
+	xxx_hidden_Projects     []string               `protobuf:"bytes,8,rep,name=projects"`
+	xxx_hidden_Exclude      []string               `protobuf:"bytes,9,rep,name=exclude"`
+	xxx_hidden_Sessions     []string               `protobuf:"bytes,10,rep,name=sessions"`
+	xxx_hidden_Limit        int32                  `protobuf:"varint,11,opt,name=limit"`
+	xxx_hidden_Snippet      int32                  `protobuf:"varint,12,opt,name=snippet"`
+	xxx_hidden_Cursor       *string                `protobuf:"bytes,13,opt,name=cursor"`
+	xxx_hidden_ClientId     *string                `protobuf:"bytes,14,opt,name=client_id,json=clientId"`
+	XXX_raceDetectHookData  protoimpl.RaceDetectHookData
+	XXX_presence            [1]uint32
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
+}
+
+func (x *SessionSearchRequest) Reset() {
+	*x = SessionSearchRequest{}
+	mi := &file_cxz_session_svc_g_proto_msgTypes[36]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SessionSearchRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SessionSearchRequest) ProtoMessage() {}
+
+func (x *SessionSearchRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_session_svc_g_proto_msgTypes[36]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SessionSearchRequest) GetQuery() string {
+	if x != nil {
+		if x.xxx_hidden_Query != nil {
+			return *x.xxx_hidden_Query
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *SessionSearchRequest) GetMatch() string {
+	if x != nil {
+		if x.xxx_hidden_Match != nil {
+			return *x.xxx_hidden_Match
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *SessionSearchRequest) GetIgnoreCase() bool {
+	if x != nil {
+		return x.xxx_hidden_IgnoreCase
+	}
+	return false
+}
+
+func (x *SessionSearchRequest) GetIncludeTools() bool {
+	if x != nil {
+		return x.xxx_hidden_IncludeTools
+	}
+	return false
+}
+
+func (x *SessionSearchRequest) GetSince() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_Since
+	}
+	return nil
+}
+
+func (x *SessionSearchRequest) GetUntil() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_Until
+	}
+	return nil
+}
+
+func (x *SessionSearchRequest) GetProjects() []string {
+	if x != nil {
+		return x.xxx_hidden_Projects
+	}
+	return nil
+}
+
+func (x *SessionSearchRequest) GetExclude() []string {
+	if x != nil {
+		return x.xxx_hidden_Exclude
+	}
+	return nil
+}
+
+func (x *SessionSearchRequest) GetSessions() []string {
+	if x != nil {
+		return x.xxx_hidden_Sessions
+	}
+	return nil
+}
+
+func (x *SessionSearchRequest) GetLimit() int32 {
+	if x != nil {
+		return x.xxx_hidden_Limit
+	}
+	return 0
+}
+
+func (x *SessionSearchRequest) GetSnippet() int32 {
+	if x != nil {
+		return x.xxx_hidden_Snippet
+	}
+	return 0
+}
+
+func (x *SessionSearchRequest) GetCursor() string {
+	if x != nil {
+		if x.xxx_hidden_Cursor != nil {
+			return *x.xxx_hidden_Cursor
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *SessionSearchRequest) GetClientId() string {
+	if x != nil {
+		if x.xxx_hidden_ClientId != nil {
+			return *x.xxx_hidden_ClientId
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *SessionSearchRequest) SetQuery(v string) {
+	x.xxx_hidden_Query = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 13)
+}
+
+func (x *SessionSearchRequest) SetMatch(v string) {
+	x.xxx_hidden_Match = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 13)
+}
+
+func (x *SessionSearchRequest) SetIgnoreCase(v bool) {
+	x.xxx_hidden_IgnoreCase = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 13)
+}
+
+func (x *SessionSearchRequest) SetIncludeTools(v bool) {
+	x.xxx_hidden_IncludeTools = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 13)
+}
+
+func (x *SessionSearchRequest) SetSince(v *timestamppb.Timestamp) {
+	x.xxx_hidden_Since = v
+}
+
+func (x *SessionSearchRequest) SetUntil(v *timestamppb.Timestamp) {
+	x.xxx_hidden_Until = v
+}
+
+func (x *SessionSearchRequest) SetProjects(v []string) {
+	x.xxx_hidden_Projects = v
+}
+
+func (x *SessionSearchRequest) SetExclude(v []string) {
+	x.xxx_hidden_Exclude = v
+}
+
+func (x *SessionSearchRequest) SetSessions(v []string) {
+	x.xxx_hidden_Sessions = v
+}
+
+func (x *SessionSearchRequest) SetLimit(v int32) {
+	x.xxx_hidden_Limit = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 13)
+}
+
+func (x *SessionSearchRequest) SetSnippet(v int32) {
+	x.xxx_hidden_Snippet = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 13)
+}
+
+func (x *SessionSearchRequest) SetCursor(v string) {
+	x.xxx_hidden_Cursor = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 13)
+}
+
+func (x *SessionSearchRequest) SetClientId(v string) {
+	x.xxx_hidden_ClientId = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 13)
+}
+
+func (x *SessionSearchRequest) HasQuery() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *SessionSearchRequest) HasMatch() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
+}
+
+func (x *SessionSearchRequest) HasIgnoreCase() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+}
+
+func (x *SessionSearchRequest) HasIncludeTools() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
+}
+
+func (x *SessionSearchRequest) HasSince() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Since != nil
+}
+
+func (x *SessionSearchRequest) HasUntil() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Until != nil
+}
+
+func (x *SessionSearchRequest) HasLimit() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 9)
+}
+
+func (x *SessionSearchRequest) HasSnippet() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 10)
+}
+
+func (x *SessionSearchRequest) HasCursor() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 11)
+}
+
+func (x *SessionSearchRequest) HasClientId() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 12)
+}
+
+func (x *SessionSearchRequest) ClearQuery() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_Query = nil
+}
+
+func (x *SessionSearchRequest) ClearMatch() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_Match = nil
+}
+
+func (x *SessionSearchRequest) ClearIgnoreCase() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	x.xxx_hidden_IgnoreCase = false
+}
+
+func (x *SessionSearchRequest) ClearIncludeTools() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
+	x.xxx_hidden_IncludeTools = false
+}
+
+func (x *SessionSearchRequest) ClearSince() {
+	x.xxx_hidden_Since = nil
+}
+
+func (x *SessionSearchRequest) ClearUntil() {
+	x.xxx_hidden_Until = nil
+}
+
+func (x *SessionSearchRequest) ClearLimit() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 9)
+	x.xxx_hidden_Limit = 0
+}
+
+func (x *SessionSearchRequest) ClearSnippet() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 10)
+	x.xxx_hidden_Snippet = 0
+}
+
+func (x *SessionSearchRequest) ClearCursor() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 11)
+	x.xxx_hidden_Cursor = nil
+}
+
+func (x *SessionSearchRequest) ClearClientId() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 12)
+	x.xxx_hidden_ClientId = nil
+}
+
+type SessionSearchRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Query        *string
+	Match        *string
+	IgnoreCase   *bool
+	IncludeTools *bool
+	Since        *timestamppb.Timestamp
+	Until        *timestamppb.Timestamp
+	Projects     []string
+	Exclude      []string
+	Sessions     []string
+	Limit        *int32
+	Snippet      *int32
+	Cursor       *string
+	ClientId     *string
+}
+
+func (b0 SessionSearchRequest_builder) Build() *SessionSearchRequest {
+	m0 := &SessionSearchRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.Query != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 13)
+		x.xxx_hidden_Query = b.Query
+	}
+	if b.Match != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 13)
+		x.xxx_hidden_Match = b.Match
+	}
+	if b.IgnoreCase != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 13)
+		x.xxx_hidden_IgnoreCase = *b.IgnoreCase
+	}
+	if b.IncludeTools != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 13)
+		x.xxx_hidden_IncludeTools = *b.IncludeTools
+	}
+	x.xxx_hidden_Since = b.Since
+	x.xxx_hidden_Until = b.Until
+	x.xxx_hidden_Projects = b.Projects
+	x.xxx_hidden_Exclude = b.Exclude
+	x.xxx_hidden_Sessions = b.Sessions
+	if b.Limit != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 13)
+		x.xxx_hidden_Limit = *b.Limit
+	}
+	if b.Snippet != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 13)
+		x.xxx_hidden_Snippet = *b.Snippet
+	}
+	if b.Cursor != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 13)
+		x.xxx_hidden_Cursor = b.Cursor
+	}
+	if b.ClientId != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 13)
+		x.xxx_hidden_ClientId = b.ClientId
+	}
+	return m0
+}
+
+// Exactly one field is set. The summary comes last.
+type SessionSearchReply struct {
+	state               protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Visit    *SessionSearchVisit    `protobuf:"bytes,1,opt,name=visit"`
+	xxx_hidden_Progress *SessionSearchProgress `protobuf:"bytes,2,opt,name=progress"`
+	xxx_hidden_Summary  *SessionSearchSummary  `protobuf:"bytes,3,opt,name=summary"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *SessionSearchReply) Reset() {
+	*x = SessionSearchReply{}
+	mi := &file_cxz_session_svc_g_proto_msgTypes[37]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SessionSearchReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SessionSearchReply) ProtoMessage() {}
+
+func (x *SessionSearchReply) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_session_svc_g_proto_msgTypes[37]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SessionSearchReply) GetVisit() *SessionSearchVisit {
+	if x != nil {
+		return x.xxx_hidden_Visit
+	}
+	return nil
+}
+
+func (x *SessionSearchReply) GetProgress() *SessionSearchProgress {
+	if x != nil {
+		return x.xxx_hidden_Progress
+	}
+	return nil
+}
+
+func (x *SessionSearchReply) GetSummary() *SessionSearchSummary {
+	if x != nil {
+		return x.xxx_hidden_Summary
+	}
+	return nil
+}
+
+func (x *SessionSearchReply) SetVisit(v *SessionSearchVisit) {
+	x.xxx_hidden_Visit = v
+}
+
+func (x *SessionSearchReply) SetProgress(v *SessionSearchProgress) {
+	x.xxx_hidden_Progress = v
+}
+
+func (x *SessionSearchReply) SetSummary(v *SessionSearchSummary) {
+	x.xxx_hidden_Summary = v
+}
+
+func (x *SessionSearchReply) HasVisit() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Visit != nil
+}
+
+func (x *SessionSearchReply) HasProgress() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Progress != nil
+}
+
+func (x *SessionSearchReply) HasSummary() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Summary != nil
+}
+
+func (x *SessionSearchReply) ClearVisit() {
+	x.xxx_hidden_Visit = nil
+}
+
+func (x *SessionSearchReply) ClearProgress() {
+	x.xxx_hidden_Progress = nil
+}
+
+func (x *SessionSearchReply) ClearSummary() {
+	x.xxx_hidden_Summary = nil
+}
+
+type SessionSearchReply_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Visit    *SessionSearchVisit
+	Progress *SessionSearchProgress
+	Summary  *SessionSearchSummary
+}
+
+func (b0 SessionSearchReply_builder) Build() *SessionSearchReply {
+	m0 := &SessionSearchReply{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Visit = b.Visit
+	x.xxx_hidden_Progress = b.Progress
+	x.xxx_hidden_Summary = b.Summary
+	return m0
+}
+
+// One session's results, named once for all of them and newest first -- as the
+// visits themselves are.
+type SessionSearchVisit struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_ProjectId   *string                `protobuf:"bytes,1,opt,name=project_id,json=projectId"`
+	xxx_hidden_ProjectName *string                `protobuf:"bytes,2,opt,name=project_name,json=projectName"`
+	xxx_hidden_SessionId   *string                `protobuf:"bytes,3,opt,name=session_id,json=sessionId"`
+	xxx_hidden_Alias       *string                `protobuf:"bytes,4,opt,name=alias"`
+	xxx_hidden_Title       *string                `protobuf:"bytes,5,opt,name=title"`
+	xxx_hidden_Agent       *string                `protobuf:"bytes,6,opt,name=agent"`
+	xxx_hidden_State       *string                `protobuf:"bytes,7,opt,name=state"`
+	xxx_hidden_ActivityMs  int64                  `protobuf:"varint,8,opt,name=activity_ms,json=activityMs"`
+	xxx_hidden_CreatedMs   int64                  `protobuf:"varint,9,opt,name=created_ms,json=createdMs"`
+	xxx_hidden_Truncated   bool                   `protobuf:"varint,10,opt,name=truncated"`
+	xxx_hidden_Hits        *[]*SessionSearchHit   `protobuf:"bytes,11,rep,name=hits"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *SessionSearchVisit) Reset() {
+	*x = SessionSearchVisit{}
+	mi := &file_cxz_session_svc_g_proto_msgTypes[38]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SessionSearchVisit) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SessionSearchVisit) ProtoMessage() {}
+
+func (x *SessionSearchVisit) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_session_svc_g_proto_msgTypes[38]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SessionSearchVisit) GetProjectId() string {
+	if x != nil {
+		if x.xxx_hidden_ProjectId != nil {
+			return *x.xxx_hidden_ProjectId
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *SessionSearchVisit) GetProjectName() string {
+	if x != nil {
+		if x.xxx_hidden_ProjectName != nil {
+			return *x.xxx_hidden_ProjectName
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *SessionSearchVisit) GetSessionId() string {
+	if x != nil {
+		if x.xxx_hidden_SessionId != nil {
+			return *x.xxx_hidden_SessionId
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *SessionSearchVisit) GetAlias() string {
+	if x != nil {
+		if x.xxx_hidden_Alias != nil {
+			return *x.xxx_hidden_Alias
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *SessionSearchVisit) GetTitle() string {
+	if x != nil {
+		if x.xxx_hidden_Title != nil {
+			return *x.xxx_hidden_Title
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *SessionSearchVisit) GetAgent() string {
+	if x != nil {
+		if x.xxx_hidden_Agent != nil {
+			return *x.xxx_hidden_Agent
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *SessionSearchVisit) GetState() string {
+	if x != nil {
+		if x.xxx_hidden_State != nil {
+			return *x.xxx_hidden_State
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *SessionSearchVisit) GetActivityMs() int64 {
+	if x != nil {
+		return x.xxx_hidden_ActivityMs
+	}
+	return 0
+}
+
+func (x *SessionSearchVisit) GetCreatedMs() int64 {
+	if x != nil {
+		return x.xxx_hidden_CreatedMs
+	}
+	return 0
+}
+
+func (x *SessionSearchVisit) GetTruncated() bool {
+	if x != nil {
+		return x.xxx_hidden_Truncated
+	}
+	return false
+}
+
+func (x *SessionSearchVisit) GetHits() []*SessionSearchHit {
+	if x != nil {
+		if x.xxx_hidden_Hits != nil {
+			return *x.xxx_hidden_Hits
+		}
+	}
+	return nil
+}
+
+func (x *SessionSearchVisit) SetProjectId(v string) {
+	x.xxx_hidden_ProjectId = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 11)
+}
+
+func (x *SessionSearchVisit) SetProjectName(v string) {
+	x.xxx_hidden_ProjectName = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 11)
+}
+
+func (x *SessionSearchVisit) SetSessionId(v string) {
+	x.xxx_hidden_SessionId = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 11)
+}
+
+func (x *SessionSearchVisit) SetAlias(v string) {
+	x.xxx_hidden_Alias = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 11)
+}
+
+func (x *SessionSearchVisit) SetTitle(v string) {
+	x.xxx_hidden_Title = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 11)
+}
+
+func (x *SessionSearchVisit) SetAgent(v string) {
+	x.xxx_hidden_Agent = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 11)
+}
+
+func (x *SessionSearchVisit) SetState(v string) {
+	x.xxx_hidden_State = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 11)
+}
+
+func (x *SessionSearchVisit) SetActivityMs(v int64) {
+	x.xxx_hidden_ActivityMs = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 11)
+}
+
+func (x *SessionSearchVisit) SetCreatedMs(v int64) {
+	x.xxx_hidden_CreatedMs = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 11)
+}
+
+func (x *SessionSearchVisit) SetTruncated(v bool) {
+	x.xxx_hidden_Truncated = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 11)
+}
+
+func (x *SessionSearchVisit) SetHits(v []*SessionSearchHit) {
+	x.xxx_hidden_Hits = &v
+}
+
+func (x *SessionSearchVisit) HasProjectId() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *SessionSearchVisit) HasProjectName() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
+}
+
+func (x *SessionSearchVisit) HasSessionId() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+}
+
+func (x *SessionSearchVisit) HasAlias() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
+}
+
+func (x *SessionSearchVisit) HasTitle() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
+}
+
+func (x *SessionSearchVisit) HasAgent() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
+}
+
+func (x *SessionSearchVisit) HasState() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
+}
+
+func (x *SessionSearchVisit) HasActivityMs() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 7)
+}
+
+func (x *SessionSearchVisit) HasCreatedMs() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 8)
+}
+
+func (x *SessionSearchVisit) HasTruncated() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 9)
+}
+
+func (x *SessionSearchVisit) ClearProjectId() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_ProjectId = nil
+}
+
+func (x *SessionSearchVisit) ClearProjectName() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_ProjectName = nil
+}
+
+func (x *SessionSearchVisit) ClearSessionId() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	x.xxx_hidden_SessionId = nil
+}
+
+func (x *SessionSearchVisit) ClearAlias() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
+	x.xxx_hidden_Alias = nil
+}
+
+func (x *SessionSearchVisit) ClearTitle() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
+	x.xxx_hidden_Title = nil
+}
+
+func (x *SessionSearchVisit) ClearAgent() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
+	x.xxx_hidden_Agent = nil
+}
+
+func (x *SessionSearchVisit) ClearState() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
+	x.xxx_hidden_State = nil
+}
+
+func (x *SessionSearchVisit) ClearActivityMs() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
+	x.xxx_hidden_ActivityMs = 0
+}
+
+func (x *SessionSearchVisit) ClearCreatedMs() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 8)
+	x.xxx_hidden_CreatedMs = 0
+}
+
+func (x *SessionSearchVisit) ClearTruncated() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 9)
+	x.xxx_hidden_Truncated = false
+}
+
+type SessionSearchVisit_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	ProjectId   *string
+	ProjectName *string
+	SessionId   *string
+	Alias       *string
+	Title       *string
+	Agent       *string
+	State       *string
+	// Milliseconds, like SessionEvent: these are the journal's own times.
+	ActivityMs *int64
+	CreatedMs  *int64
+	// truncated says this session's older events are gone, so finding nothing in
+	// it is not evidence that nothing was said.
+	Truncated *bool
+	Hits      []*SessionSearchHit
+}
+
+func (b0 SessionSearchVisit_builder) Build() *SessionSearchVisit {
+	m0 := &SessionSearchVisit{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.ProjectId != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 11)
+		x.xxx_hidden_ProjectId = b.ProjectId
+	}
+	if b.ProjectName != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 11)
+		x.xxx_hidden_ProjectName = b.ProjectName
+	}
+	if b.SessionId != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 11)
+		x.xxx_hidden_SessionId = b.SessionId
+	}
+	if b.Alias != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 11)
+		x.xxx_hidden_Alias = b.Alias
+	}
+	if b.Title != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 11)
+		x.xxx_hidden_Title = b.Title
+	}
+	if b.Agent != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 11)
+		x.xxx_hidden_Agent = b.Agent
+	}
+	if b.State != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 11)
+		x.xxx_hidden_State = b.State
+	}
+	if b.ActivityMs != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 11)
+		x.xxx_hidden_ActivityMs = *b.ActivityMs
+	}
+	if b.CreatedMs != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 11)
+		x.xxx_hidden_CreatedMs = *b.CreatedMs
+	}
+	if b.Truncated != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 11)
+		x.xxx_hidden_Truncated = *b.Truncated
+	}
+	x.xxx_hidden_Hits = &b.Hits
+	return m0
+}
+
+type SessionSearchHit struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Seq         uint64                 `protobuf:"varint,1,opt,name=seq"`
+	xxx_hidden_TimeMs      int64                  `protobuf:"varint,2,opt,name=time_ms,json=timeMs"`
+	xxx_hidden_Kind        *string                `protobuf:"bytes,3,opt,name=kind"`
+	xxx_hidden_Bytes       int32                  `protobuf:"varint,4,opt,name=bytes"`
+	xxx_hidden_Score       int32                  `protobuf:"varint,5,opt,name=score"`
+	xxx_hidden_Snippet     *string                `protobuf:"bytes,6,opt,name=snippet"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *SessionSearchHit) Reset() {
+	*x = SessionSearchHit{}
+	mi := &file_cxz_session_svc_g_proto_msgTypes[39]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SessionSearchHit) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SessionSearchHit) ProtoMessage() {}
+
+func (x *SessionSearchHit) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_session_svc_g_proto_msgTypes[39]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SessionSearchHit) GetSeq() uint64 {
+	if x != nil {
+		return x.xxx_hidden_Seq
+	}
+	return 0
+}
+
+func (x *SessionSearchHit) GetTimeMs() int64 {
+	if x != nil {
+		return x.xxx_hidden_TimeMs
+	}
+	return 0
+}
+
+func (x *SessionSearchHit) GetKind() string {
+	if x != nil {
+		if x.xxx_hidden_Kind != nil {
+			return *x.xxx_hidden_Kind
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *SessionSearchHit) GetBytes() int32 {
+	if x != nil {
+		return x.xxx_hidden_Bytes
+	}
+	return 0
+}
+
+func (x *SessionSearchHit) GetScore() int32 {
+	if x != nil {
+		return x.xxx_hidden_Score
+	}
+	return 0
+}
+
+func (x *SessionSearchHit) GetSnippet() string {
+	if x != nil {
+		if x.xxx_hidden_Snippet != nil {
+			return *x.xxx_hidden_Snippet
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *SessionSearchHit) SetSeq(v uint64) {
+	x.xxx_hidden_Seq = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 6)
+}
+
+func (x *SessionSearchHit) SetTimeMs(v int64) {
+	x.xxx_hidden_TimeMs = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 6)
+}
+
+func (x *SessionSearchHit) SetKind(v string) {
+	x.xxx_hidden_Kind = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 6)
+}
+
+func (x *SessionSearchHit) SetBytes(v int32) {
+	x.xxx_hidden_Bytes = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 6)
+}
+
+func (x *SessionSearchHit) SetScore(v int32) {
+	x.xxx_hidden_Score = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 6)
+}
+
+func (x *SessionSearchHit) SetSnippet(v string) {
+	x.xxx_hidden_Snippet = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 6)
+}
+
+func (x *SessionSearchHit) HasSeq() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *SessionSearchHit) HasTimeMs() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
+}
+
+func (x *SessionSearchHit) HasKind() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+}
+
+func (x *SessionSearchHit) HasBytes() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
+}
+
+func (x *SessionSearchHit) HasScore() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
+}
+
+func (x *SessionSearchHit) HasSnippet() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
+}
+
+func (x *SessionSearchHit) ClearSeq() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_Seq = 0
+}
+
+func (x *SessionSearchHit) ClearTimeMs() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_TimeMs = 0
+}
+
+func (x *SessionSearchHit) ClearKind() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	x.xxx_hidden_Kind = nil
+}
+
+func (x *SessionSearchHit) ClearBytes() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
+	x.xxx_hidden_Bytes = 0
+}
+
+func (x *SessionSearchHit) ClearScore() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
+	x.xxx_hidden_Score = 0
+}
+
+func (x *SessionSearchHit) ClearSnippet() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
+	x.xxx_hidden_Snippet = nil
+}
+
+type SessionSearchHit_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Seq     *uint64
+	TimeMs  *int64
+	Kind    *string
+	Bytes   *int32
+	Score   *int32
+	Snippet *string
+}
+
+func (b0 SessionSearchHit_builder) Build() *SessionSearchHit {
+	m0 := &SessionSearchHit{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.Seq != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 6)
+		x.xxx_hidden_Seq = *b.Seq
+	}
+	if b.TimeMs != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 6)
+		x.xxx_hidden_TimeMs = *b.TimeMs
+	}
+	if b.Kind != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 6)
+		x.xxx_hidden_Kind = b.Kind
+	}
+	if b.Bytes != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 6)
+		x.xxx_hidden_Bytes = *b.Bytes
+	}
+	if b.Score != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 6)
+		x.xxx_hidden_Score = *b.Score
+	}
+	if b.Snippet != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 6)
+		x.xxx_hidden_Snippet = b.Snippet
+	}
+	return m0
+}
+
+// Progress says what the index had to catch up on before answering, or could
+// not. A search answers from a derived store, and a store that is behind says so
+// rather than return an answer that looks complete.
+type SessionSearchProgress struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_ProjectId   *string                `protobuf:"bytes,1,opt,name=project_id,json=projectId"`
+	xxx_hidden_ProjectName *string                `protobuf:"bytes,2,opt,name=project_name,json=projectName"`
+	xxx_hidden_State       *string                `protobuf:"bytes,3,opt,name=state"`
+	xxx_hidden_Message     *string                `protobuf:"bytes,4,opt,name=message"`
+	xxx_hidden_Done        int32                  `protobuf:"varint,5,opt,name=done"`
+	xxx_hidden_Total       int32                  `protobuf:"varint,6,opt,name=total"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *SessionSearchProgress) Reset() {
+	*x = SessionSearchProgress{}
+	mi := &file_cxz_session_svc_g_proto_msgTypes[40]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SessionSearchProgress) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SessionSearchProgress) ProtoMessage() {}
+
+func (x *SessionSearchProgress) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_session_svc_g_proto_msgTypes[40]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SessionSearchProgress) GetProjectId() string {
+	if x != nil {
+		if x.xxx_hidden_ProjectId != nil {
+			return *x.xxx_hidden_ProjectId
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *SessionSearchProgress) GetProjectName() string {
+	if x != nil {
+		if x.xxx_hidden_ProjectName != nil {
+			return *x.xxx_hidden_ProjectName
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *SessionSearchProgress) GetState() string {
+	if x != nil {
+		if x.xxx_hidden_State != nil {
+			return *x.xxx_hidden_State
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *SessionSearchProgress) GetMessage() string {
+	if x != nil {
+		if x.xxx_hidden_Message != nil {
+			return *x.xxx_hidden_Message
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *SessionSearchProgress) GetDone() int32 {
+	if x != nil {
+		return x.xxx_hidden_Done
+	}
+	return 0
+}
+
+func (x *SessionSearchProgress) GetTotal() int32 {
+	if x != nil {
+		return x.xxx_hidden_Total
+	}
+	return 0
+}
+
+func (x *SessionSearchProgress) SetProjectId(v string) {
+	x.xxx_hidden_ProjectId = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 6)
+}
+
+func (x *SessionSearchProgress) SetProjectName(v string) {
+	x.xxx_hidden_ProjectName = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 6)
+}
+
+func (x *SessionSearchProgress) SetState(v string) {
+	x.xxx_hidden_State = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 6)
+}
+
+func (x *SessionSearchProgress) SetMessage(v string) {
+	x.xxx_hidden_Message = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 6)
+}
+
+func (x *SessionSearchProgress) SetDone(v int32) {
+	x.xxx_hidden_Done = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 6)
+}
+
+func (x *SessionSearchProgress) SetTotal(v int32) {
+	x.xxx_hidden_Total = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 6)
+}
+
+func (x *SessionSearchProgress) HasProjectId() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *SessionSearchProgress) HasProjectName() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
+}
+
+func (x *SessionSearchProgress) HasState() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+}
+
+func (x *SessionSearchProgress) HasMessage() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
+}
+
+func (x *SessionSearchProgress) HasDone() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
+}
+
+func (x *SessionSearchProgress) HasTotal() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
+}
+
+func (x *SessionSearchProgress) ClearProjectId() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_ProjectId = nil
+}
+
+func (x *SessionSearchProgress) ClearProjectName() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_ProjectName = nil
+}
+
+func (x *SessionSearchProgress) ClearState() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	x.xxx_hidden_State = nil
+}
+
+func (x *SessionSearchProgress) ClearMessage() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
+	x.xxx_hidden_Message = nil
+}
+
+func (x *SessionSearchProgress) ClearDone() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
+	x.xxx_hidden_Done = 0
+}
+
+func (x *SessionSearchProgress) ClearTotal() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
+	x.xxx_hidden_Total = 0
+}
+
+type SessionSearchProgress_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	ProjectId   *string
+	ProjectName *string
+	State       *string
+	Message     *string
+	Done        *int32
+	Total       *int32
+}
+
+func (b0 SessionSearchProgress_builder) Build() *SessionSearchProgress {
+	m0 := &SessionSearchProgress{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.ProjectId != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 6)
+		x.xxx_hidden_ProjectId = b.ProjectId
+	}
+	if b.ProjectName != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 6)
+		x.xxx_hidden_ProjectName = b.ProjectName
+	}
+	if b.State != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 6)
+		x.xxx_hidden_State = b.State
+	}
+	if b.Message != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 6)
+		x.xxx_hidden_Message = b.Message
+	}
+	if b.Done != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 6)
+		x.xxx_hidden_Done = *b.Done
+	}
+	if b.Total != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 6)
+		x.xxx_hidden_Total = *b.Total
+	}
+	return m0
+}
+
+// The summary says which window it answered for, because a continued page was
+// not told: the window travelled in the cursor, and the client needs it back to
+// say what it searched and to ask for the one before it.
+type SessionSearchSummary struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Projects    int32                  `protobuf:"varint,1,opt,name=projects"`
+	xxx_hidden_Unavailable int32                  `protobuf:"varint,2,opt,name=unavailable"`
+	xxx_hidden_Sessions    int32                  `protobuf:"varint,3,opt,name=sessions"`
+	xxx_hidden_Hits        int32                  `protobuf:"varint,4,opt,name=hits"`
+	xxx_hidden_Truncated   int32                  `protobuf:"varint,5,opt,name=truncated"`
+	xxx_hidden_NextCursor  *string                `protobuf:"bytes,6,opt,name=next_cursor,json=nextCursor"`
+	xxx_hidden_HasMore     bool                   `protobuf:"varint,7,opt,name=has_more,json=hasMore"`
+	xxx_hidden_Since       *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=since"`
+	xxx_hidden_Until       *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=until"`
+	xxx_hidden_Examined    int32                  `protobuf:"varint,10,opt,name=examined"`
+	xxx_hidden_Pending     int32                  `protobuf:"varint,11,opt,name=pending"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *SessionSearchSummary) Reset() {
+	*x = SessionSearchSummary{}
+	mi := &file_cxz_session_svc_g_proto_msgTypes[41]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SessionSearchSummary) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SessionSearchSummary) ProtoMessage() {}
+
+func (x *SessionSearchSummary) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_session_svc_g_proto_msgTypes[41]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SessionSearchSummary) GetProjects() int32 {
+	if x != nil {
+		return x.xxx_hidden_Projects
+	}
+	return 0
+}
+
+func (x *SessionSearchSummary) GetUnavailable() int32 {
+	if x != nil {
+		return x.xxx_hidden_Unavailable
+	}
+	return 0
+}
+
+func (x *SessionSearchSummary) GetSessions() int32 {
+	if x != nil {
+		return x.xxx_hidden_Sessions
+	}
+	return 0
+}
+
+func (x *SessionSearchSummary) GetHits() int32 {
+	if x != nil {
+		return x.xxx_hidden_Hits
+	}
+	return 0
+}
+
+func (x *SessionSearchSummary) GetTruncated() int32 {
+	if x != nil {
+		return x.xxx_hidden_Truncated
+	}
+	return 0
+}
+
+func (x *SessionSearchSummary) GetNextCursor() string {
+	if x != nil {
+		if x.xxx_hidden_NextCursor != nil {
+			return *x.xxx_hidden_NextCursor
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *SessionSearchSummary) GetHasMore() bool {
+	if x != nil {
+		return x.xxx_hidden_HasMore
+	}
+	return false
+}
+
+func (x *SessionSearchSummary) GetSince() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_Since
+	}
+	return nil
+}
+
+func (x *SessionSearchSummary) GetUntil() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_Until
+	}
+	return nil
+}
+
+func (x *SessionSearchSummary) GetExamined() int32 {
+	if x != nil {
+		return x.xxx_hidden_Examined
+	}
+	return 0
+}
+
+func (x *SessionSearchSummary) GetPending() int32 {
+	if x != nil {
+		return x.xxx_hidden_Pending
+	}
+	return 0
+}
+
+func (x *SessionSearchSummary) SetProjects(v int32) {
+	x.xxx_hidden_Projects = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 11)
+}
+
+func (x *SessionSearchSummary) SetUnavailable(v int32) {
+	x.xxx_hidden_Unavailable = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 11)
+}
+
+func (x *SessionSearchSummary) SetSessions(v int32) {
+	x.xxx_hidden_Sessions = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 11)
+}
+
+func (x *SessionSearchSummary) SetHits(v int32) {
+	x.xxx_hidden_Hits = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 11)
+}
+
+func (x *SessionSearchSummary) SetTruncated(v int32) {
+	x.xxx_hidden_Truncated = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 11)
+}
+
+func (x *SessionSearchSummary) SetNextCursor(v string) {
+	x.xxx_hidden_NextCursor = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 11)
+}
+
+func (x *SessionSearchSummary) SetHasMore(v bool) {
+	x.xxx_hidden_HasMore = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 11)
+}
+
+func (x *SessionSearchSummary) SetSince(v *timestamppb.Timestamp) {
+	x.xxx_hidden_Since = v
+}
+
+func (x *SessionSearchSummary) SetUntil(v *timestamppb.Timestamp) {
+	x.xxx_hidden_Until = v
+}
+
+func (x *SessionSearchSummary) SetExamined(v int32) {
+	x.xxx_hidden_Examined = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 11)
+}
+
+func (x *SessionSearchSummary) SetPending(v int32) {
+	x.xxx_hidden_Pending = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 11)
+}
+
+func (x *SessionSearchSummary) HasProjects() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *SessionSearchSummary) HasUnavailable() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
+}
+
+func (x *SessionSearchSummary) HasSessions() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+}
+
+func (x *SessionSearchSummary) HasHits() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
+}
+
+func (x *SessionSearchSummary) HasTruncated() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
+}
+
+func (x *SessionSearchSummary) HasNextCursor() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
+}
+
+func (x *SessionSearchSummary) HasHasMore() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
+}
+
+func (x *SessionSearchSummary) HasSince() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Since != nil
+}
+
+func (x *SessionSearchSummary) HasUntil() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Until != nil
+}
+
+func (x *SessionSearchSummary) HasExamined() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 9)
+}
+
+func (x *SessionSearchSummary) HasPending() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 10)
+}
+
+func (x *SessionSearchSummary) ClearProjects() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_Projects = 0
+}
+
+func (x *SessionSearchSummary) ClearUnavailable() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_Unavailable = 0
+}
+
+func (x *SessionSearchSummary) ClearSessions() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	x.xxx_hidden_Sessions = 0
+}
+
+func (x *SessionSearchSummary) ClearHits() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
+	x.xxx_hidden_Hits = 0
+}
+
+func (x *SessionSearchSummary) ClearTruncated() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
+	x.xxx_hidden_Truncated = 0
+}
+
+func (x *SessionSearchSummary) ClearNextCursor() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
+	x.xxx_hidden_NextCursor = nil
+}
+
+func (x *SessionSearchSummary) ClearHasMore() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
+	x.xxx_hidden_HasMore = false
+}
+
+func (x *SessionSearchSummary) ClearSince() {
+	x.xxx_hidden_Since = nil
+}
+
+func (x *SessionSearchSummary) ClearUntil() {
+	x.xxx_hidden_Until = nil
+}
+
+func (x *SessionSearchSummary) ClearExamined() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 9)
+	x.xxx_hidden_Examined = 0
+}
+
+func (x *SessionSearchSummary) ClearPending() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 10)
+	x.xxx_hidden_Pending = 0
+}
+
+type SessionSearchSummary_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Projects    *int32
+	Unavailable *int32
+	Sessions    *int32
+	Hits        *int32
+	Truncated   *int32
+	NextCursor  *string
+	HasMore     *bool
+	Since       *timestamppb.Timestamp
+	Until       *timestamppb.Timestamp
+	// examined is how many messages this page read, which is what the answer
+	// cost; pending is how many conversations the index had not caught up with.
+	Examined *int32
+	Pending  *int32
+}
+
+func (b0 SessionSearchSummary_builder) Build() *SessionSearchSummary {
+	m0 := &SessionSearchSummary{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.Projects != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 11)
+		x.xxx_hidden_Projects = *b.Projects
+	}
+	if b.Unavailable != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 11)
+		x.xxx_hidden_Unavailable = *b.Unavailable
+	}
+	if b.Sessions != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 11)
+		x.xxx_hidden_Sessions = *b.Sessions
+	}
+	if b.Hits != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 11)
+		x.xxx_hidden_Hits = *b.Hits
+	}
+	if b.Truncated != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 11)
+		x.xxx_hidden_Truncated = *b.Truncated
+	}
+	if b.NextCursor != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 11)
+		x.xxx_hidden_NextCursor = b.NextCursor
+	}
+	if b.HasMore != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 11)
+		x.xxx_hidden_HasMore = *b.HasMore
+	}
+	x.xxx_hidden_Since = b.Since
+	x.xxx_hidden_Until = b.Until
+	if b.Examined != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 11)
+		x.xxx_hidden_Examined = *b.Examined
+	}
+	if b.Pending != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 11)
+		x.xxx_hidden_Pending = *b.Pending
+	}
+	return m0
+}
+
 var File_cxz_session_svc_g_proto protoreflect.FileDescriptor
 
 const file_cxz_session_svc_g_proto_rawDesc = "" +
@@ -5400,7 +7583,90 @@ const file_cxz_session_svc_g_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.SessionRefR\x03ref\"G\n" +
 	"\x16SessionBackgroundReply\x12\x19\n" +
 	"\blast_seq\x18\x01 \x01(\x04R\alastSeq\x12\x12\n" +
-	"\x04data\x18\x02 \x01(\fR\x04data2\x9d\v\n" +
+	"\x04data\x18\x02 \x01(\fR\x04data\"\x87\x01\n" +
+	"\x14SessionModelsRequest\x12!\n" +
+	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.SessionRefR\x03ref\x12\x18\n" +
+	"\arefresh\x18\x02 \x01(\bR\arefresh\x12\x15\n" +
+	"\x06run_id\x18\x03 \x01(\tR\x05runId\x12\x1b\n" +
+	"\tclient_id\x18\x04 \x01(\tR\bclientId\"\xd2\x01\n" +
+	"\x12SessionModelsReply\x12\x19\n" +
+	"\blast_seq\x18\x01 \x01(\x04R\alastSeq\x12\x12\n" +
+	"\x04data\x18\x02 \x01(\fR\x04data\x12\x15\n" +
+	"\x06run_id\x18\x03 \x01(\tR\x05runId\x12\x1f\n" +
+	"\vcatalog_seq\x18\x04 \x01(\x04R\n" +
+	"catalogSeq\x12\x1d\n" +
+	"\n" +
+	"catalog_ms\x18\x05 \x01(\x03R\tcatalogMs\x12\x1e\n" +
+	"\n" +
+	"refreshing\x18\x06 \x01(\bR\n" +
+	"refreshing\x12\x16\n" +
+	"\x06status\x18\a \x01(\tR\x06status\"\xa3\x03\n" +
+	"\x14SessionSearchRequest\x12\x14\n" +
+	"\x05query\x18\x01 \x01(\tR\x05query\x12\x14\n" +
+	"\x05match\x18\x02 \x01(\tR\x05match\x12\x1f\n" +
+	"\vignore_case\x18\x03 \x01(\bR\n" +
+	"ignoreCase\x12#\n" +
+	"\rinclude_tools\x18\x05 \x01(\bR\fincludeTools\x120\n" +
+	"\x05since\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\x05since\x120\n" +
+	"\x05until\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\x05until\x12\x1a\n" +
+	"\bprojects\x18\b \x03(\tR\bprojects\x12\x18\n" +
+	"\aexclude\x18\t \x03(\tR\aexclude\x12\x1a\n" +
+	"\bsessions\x18\n" +
+	" \x03(\tR\bsessions\x12\x14\n" +
+	"\x05limit\x18\v \x01(\x05R\x05limit\x12\x18\n" +
+	"\asnippet\x18\f \x01(\x05R\asnippet\x12\x16\n" +
+	"\x06cursor\x18\r \x01(\tR\x06cursor\x12\x1b\n" +
+	"\tclient_id\x18\x0e \x01(\tR\bclientId\"\xb0\x01\n" +
+	"\x12SessionSearchReply\x12-\n" +
+	"\x05visit\x18\x01 \x01(\v2\x17.cxz.SessionSearchVisitR\x05visit\x126\n" +
+	"\bprogress\x18\x02 \x01(\v2\x1a.cxz.SessionSearchProgressR\bprogress\x123\n" +
+	"\asummary\x18\x03 \x01(\v2\x19.cxz.SessionSearchSummaryR\asummary\"\xd6\x02\n" +
+	"\x12SessionSearchVisit\x12\x1d\n" +
+	"\n" +
+	"project_id\x18\x01 \x01(\tR\tprojectId\x12!\n" +
+	"\fproject_name\x18\x02 \x01(\tR\vprojectName\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x03 \x01(\tR\tsessionId\x12\x14\n" +
+	"\x05alias\x18\x04 \x01(\tR\x05alias\x12\x14\n" +
+	"\x05title\x18\x05 \x01(\tR\x05title\x12\x14\n" +
+	"\x05agent\x18\x06 \x01(\tR\x05agent\x12\x14\n" +
+	"\x05state\x18\a \x01(\tR\x05state\x12\x1f\n" +
+	"\vactivity_ms\x18\b \x01(\x03R\n" +
+	"activityMs\x12\x1d\n" +
+	"\n" +
+	"created_ms\x18\t \x01(\x03R\tcreatedMs\x12\x1c\n" +
+	"\ttruncated\x18\n" +
+	" \x01(\bR\ttruncated\x12)\n" +
+	"\x04hits\x18\v \x03(\v2\x15.cxz.SessionSearchHitR\x04hits\"\x97\x01\n" +
+	"\x10SessionSearchHit\x12\x10\n" +
+	"\x03seq\x18\x01 \x01(\x04R\x03seq\x12\x17\n" +
+	"\atime_ms\x18\x02 \x01(\x03R\x06timeMs\x12\x12\n" +
+	"\x04kind\x18\x03 \x01(\tR\x04kind\x12\x14\n" +
+	"\x05bytes\x18\x04 \x01(\x05R\x05bytes\x12\x14\n" +
+	"\x05score\x18\x05 \x01(\x05R\x05score\x12\x18\n" +
+	"\asnippet\x18\x06 \x01(\tR\asnippet\"\xb3\x01\n" +
+	"\x15SessionSearchProgress\x12\x1d\n" +
+	"\n" +
+	"project_id\x18\x01 \x01(\tR\tprojectId\x12!\n" +
+	"\fproject_name\x18\x02 \x01(\tR\vprojectName\x12\x14\n" +
+	"\x05state\x18\x03 \x01(\tR\x05state\x12\x18\n" +
+	"\amessage\x18\x04 \x01(\tR\amessage\x12\x12\n" +
+	"\x04done\x18\x05 \x01(\x05R\x04done\x12\x14\n" +
+	"\x05total\x18\x06 \x01(\x05R\x05total\"\xf8\x02\n" +
+	"\x14SessionSearchSummary\x12\x1a\n" +
+	"\bprojects\x18\x01 \x01(\x05R\bprojects\x12 \n" +
+	"\vunavailable\x18\x02 \x01(\x05R\vunavailable\x12\x1a\n" +
+	"\bsessions\x18\x03 \x01(\x05R\bsessions\x12\x12\n" +
+	"\x04hits\x18\x04 \x01(\x05R\x04hits\x12\x1c\n" +
+	"\ttruncated\x18\x05 \x01(\x05R\ttruncated\x12\x1f\n" +
+	"\vnext_cursor\x18\x06 \x01(\tR\n" +
+	"nextCursor\x12\x19\n" +
+	"\bhas_more\x18\a \x01(\bR\ahasMore\x120\n" +
+	"\x05since\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\x05since\x120\n" +
+	"\x05until\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\x05until\x12\x1a\n" +
+	"\bexamined\x18\n" +
+	" \x01(\x05R\bexamined\x12\x18\n" +
+	"\apending\x18\v \x01(\x05R\apending2\x9b\f\n" +
 	"\x0eSessionService\x12+\n" +
 	"\x03Add\x12\x16.cxz.SessionAddRequest\x1a\f.cxz.Session\x12+\n" +
 	"\x03Get\x12\x16.cxz.SessionGetRequest\x1a\f.cxz.Session\x12/\n" +
@@ -5428,10 +7694,12 @@ const file_cxz_session_svc_g_proto_rawDesc = "" +
 	"\x05Reply\x12\x18.cxz.SessionReplyRequest\x1a\x13.cxz.SessionReceipt\x12<\n" +
 	"\aHistory\x12\x19.cxz.SessionEventsRequest\x1a\x16.cxz.SessionEventBatch\x12H\n" +
 	"\n" +
-	"Background\x12\x1d.cxz.SessionBackgroundRequest\x1a\x1b.cxz.SessionBackgroundReply\x128\n" +
-	"\x06Events\x12\x19.cxz.SessionEventsRequest\x1a\x11.cxz.SessionEvent0\x01B\"Z github.com/lesomnus/cxz/resourceb\beditionsp\xe8\a"
+	"Background\x12\x1d.cxz.SessionBackgroundRequest\x1a\x1b.cxz.SessionBackgroundReply\x12<\n" +
+	"\x06Models\x12\x19.cxz.SessionModelsRequest\x1a\x17.cxz.SessionModelsReply\x128\n" +
+	"\x06Events\x12\x19.cxz.SessionEventsRequest\x1a\x11.cxz.SessionEvent0\x01\x12>\n" +
+	"\x06Search\x12\x19.cxz.SessionSearchRequest\x1a\x17.cxz.SessionSearchReply0\x01B\"Z github.com/lesomnus/cxz/resourceb\beditionsp\xe8\a"
 
-var file_cxz_session_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 34)
+var file_cxz_session_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 42)
 var file_cxz_session_svc_g_proto_goTypes = []any{
 	(*SessionAddRequest)(nil),        // 0: cxz.SessionAddRequest
 	(*SessionGetRequest)(nil),        // 1: cxz.SessionGetRequest
@@ -5467,41 +7735,49 @@ var file_cxz_session_svc_g_proto_goTypes = []any{
 	(*SessionEventBatch)(nil),        // 31: cxz.SessionEventBatch
 	(*SessionBackgroundRequest)(nil), // 32: cxz.SessionBackgroundRequest
 	(*SessionBackgroundReply)(nil),   // 33: cxz.SessionBackgroundReply
-	(*ProjectRef)(nil),               // 34: cxz.ProjectRef
-	(*timestamppb.Timestamp)(nil),    // 35: google.protobuf.Timestamp
-	(*SessionStatus)(nil),            // 36: cxz.SessionStatus
-	(*AccountRef)(nil),               // 37: cxz.AccountRef
-	(*AuthBindingRef)(nil),           // 38: cxz.AuthBindingRef
-	(*ProjectSelect)(nil),            // 39: cxz.ProjectSelect
-	(*AccountSelect)(nil),            // 40: cxz.AccountSelect
-	(*AuthBindingSelect)(nil),        // 41: cxz.AuthBindingSelect
-	(*patchpb.Patch)(nil),            // 42: patch.Patch
-	(*Session)(nil),                  // 43: cxz.Session
-	(*SessionEvent)(nil),             // 44: cxz.SessionEvent
+	(*SessionModelsRequest)(nil),     // 34: cxz.SessionModelsRequest
+	(*SessionModelsReply)(nil),       // 35: cxz.SessionModelsReply
+	(*SessionSearchRequest)(nil),     // 36: cxz.SessionSearchRequest
+	(*SessionSearchReply)(nil),       // 37: cxz.SessionSearchReply
+	(*SessionSearchVisit)(nil),       // 38: cxz.SessionSearchVisit
+	(*SessionSearchHit)(nil),         // 39: cxz.SessionSearchHit
+	(*SessionSearchProgress)(nil),    // 40: cxz.SessionSearchProgress
+	(*SessionSearchSummary)(nil),     // 41: cxz.SessionSearchSummary
+	(*ProjectRef)(nil),               // 42: cxz.ProjectRef
+	(*timestamppb.Timestamp)(nil),    // 43: google.protobuf.Timestamp
+	(*SessionStatus)(nil),            // 44: cxz.SessionStatus
+	(*AccountRef)(nil),               // 45: cxz.AccountRef
+	(*AuthBindingRef)(nil),           // 46: cxz.AuthBindingRef
+	(*ProjectSelect)(nil),            // 47: cxz.ProjectSelect
+	(*AccountSelect)(nil),            // 48: cxz.AccountSelect
+	(*AuthBindingSelect)(nil),        // 49: cxz.AuthBindingSelect
+	(*patchpb.Patch)(nil),            // 50: patch.Patch
+	(*Session)(nil),                  // 51: cxz.Session
+	(*SessionEvent)(nil),             // 52: cxz.SessionEvent
 }
 var file_cxz_session_svc_g_proto_depIdxs = []int32{
-	34, // 0: cxz.SessionAddRequest.project:type_name -> cxz.ProjectRef
-	35, // 1: cxz.SessionAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	36, // 2: cxz.SessionAddRequest.status:type_name -> cxz.SessionStatus
-	37, // 3: cxz.SessionAddRequest.account:type_name -> cxz.AccountRef
-	38, // 4: cxz.SessionAddRequest.auth_binding:type_name -> cxz.AuthBindingRef
+	42, // 0: cxz.SessionAddRequest.project:type_name -> cxz.ProjectRef
+	43, // 1: cxz.SessionAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	44, // 2: cxz.SessionAddRequest.status:type_name -> cxz.SessionStatus
+	45, // 3: cxz.SessionAddRequest.account:type_name -> cxz.AccountRef
+	46, // 4: cxz.SessionAddRequest.auth_binding:type_name -> cxz.AuthBindingRef
 	2,  // 5: cxz.SessionGetRequest.ref:type_name -> cxz.SessionRef
 	3,  // 6: cxz.SessionGetRequest.select:type_name -> cxz.SessionSelect
-	39, // 7: cxz.SessionSelect.project:type_name -> cxz.ProjectSelect
-	40, // 8: cxz.SessionSelect.account:type_name -> cxz.AccountSelect
-	41, // 9: cxz.SessionSelect.auth_binding:type_name -> cxz.AuthBindingSelect
+	47, // 7: cxz.SessionSelect.project:type_name -> cxz.ProjectSelect
+	48, // 8: cxz.SessionSelect.account:type_name -> cxz.AccountSelect
+	49, // 9: cxz.SessionSelect.auth_binding:type_name -> cxz.AuthBindingSelect
 	2,  // 10: cxz.SessionPatchRequest.ref:type_name -> cxz.SessionRef
-	35, // 11: cxz.SessionPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	36, // 12: cxz.SessionPatchRequest.status:type_name -> cxz.SessionStatus
+	43, // 11: cxz.SessionPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	44, // 12: cxz.SessionPatchRequest.status:type_name -> cxz.SessionStatus
 	2,  // 13: cxz.SessionApplyRequest.ref:type_name -> cxz.SessionRef
-	42, // 14: cxz.SessionApplyRequest.patch:type_name -> patch.Patch
+	50, // 14: cxz.SessionApplyRequest.patch:type_name -> patch.Patch
 	9,  // 15: cxz.SessionListRequest.filters:type_name -> cxz.SessionFilter
-	43, // 16: cxz.SessionListResponse.items:type_name -> cxz.Session
+	51, // 16: cxz.SessionListResponse.items:type_name -> cxz.Session
 	2,  // 17: cxz.SessionFilter.ref:type_name -> cxz.SessionRef
-	34, // 18: cxz.SessionFilter.project:type_name -> cxz.ProjectRef
+	42, // 18: cxz.SessionFilter.project:type_name -> cxz.ProjectRef
 	9,  // 19: cxz.SessionWatchRequest.filters:type_name -> cxz.SessionFilter
 	12, // 20: cxz.SessionWatchResponse.items:type_name -> cxz.SessionWatchItem
-	43, // 21: cxz.SessionWatchItem.value:type_name -> cxz.Session
+	51, // 21: cxz.SessionWatchItem.value:type_name -> cxz.Session
 	2,  // 22: cxz.SessionControl.ref:type_name -> cxz.SessionRef
 	2,  // 23: cxz.SessionCopyMemoryRequest.ref:type_name -> cxz.SessionRef
 	2,  // 24: cxz.SessionCopyMemoryRequest.target:type_name -> cxz.SessionRef
@@ -5516,63 +7792,76 @@ var file_cxz_session_svc_g_proto_depIdxs = []int32{
 	2,  // 33: cxz.SessionUpdateRequest.ref:type_name -> cxz.SessionRef
 	2,  // 34: cxz.SessionReplyRequest.ref:type_name -> cxz.SessionRef
 	2,  // 35: cxz.SessionEventsRequest.ref:type_name -> cxz.SessionRef
-	44, // 36: cxz.SessionEventBatch.events:type_name -> cxz.SessionEvent
+	52, // 36: cxz.SessionEventBatch.events:type_name -> cxz.SessionEvent
 	2,  // 37: cxz.SessionBackgroundRequest.ref:type_name -> cxz.SessionRef
-	0,  // 38: cxz.SessionService.Add:input_type -> cxz.SessionAddRequest
-	1,  // 39: cxz.SessionService.Get:input_type -> cxz.SessionGetRequest
-	4,  // 40: cxz.SessionService.Patch:input_type -> cxz.SessionPatchRequest
-	5,  // 41: cxz.SessionService.Apply:input_type -> cxz.SessionApplyRequest
-	2,  // 42: cxz.SessionService.Erase:input_type -> cxz.SessionRef
-	7,  // 43: cxz.SessionService.List:input_type -> cxz.SessionListRequest
-	10, // 44: cxz.SessionService.Watch:input_type -> cxz.SessionWatchRequest
-	2,  // 45: cxz.SessionService.Restore:input_type -> cxz.SessionRef
-	13, // 46: cxz.SessionService.Resume:input_type -> cxz.SessionControl
-	13, // 47: cxz.SessionService.Stop:input_type -> cxz.SessionControl
-	13, // 48: cxz.SessionService.Interrupt:input_type -> cxz.SessionControl
-	15, // 49: cxz.SessionService.CopyMemory:input_type -> cxz.SessionCopyMemoryRequest
-	16, // 50: cxz.SessionService.Library:input_type -> cxz.SessionLibraryRequest
-	18, // 51: cxz.SessionService.Memory:input_type -> cxz.SessionMemoryRequest
-	19, // 52: cxz.SessionService.Logs:input_type -> cxz.SessionLogsRequest
-	21, // 53: cxz.SessionService.Permission:input_type -> cxz.SessionPermissionRequest
-	22, // 54: cxz.SessionService.Send:input_type -> cxz.SessionSendRequest
-	23, // 55: cxz.SessionService.Attach:input_type -> cxz.SessionAttachRequest
-	25, // 56: cxz.SessionService.Upload:input_type -> cxz.SessionUploadRequest
-	26, // 57: cxz.SessionService.Activity:input_type -> cxz.SessionActivityRequest
-	27, // 58: cxz.SessionService.UpdateAgent:input_type -> cxz.SessionUpdateRequest
-	29, // 59: cxz.SessionService.Reply:input_type -> cxz.SessionReplyRequest
-	30, // 60: cxz.SessionService.History:input_type -> cxz.SessionEventsRequest
-	32, // 61: cxz.SessionService.Background:input_type -> cxz.SessionBackgroundRequest
-	30, // 62: cxz.SessionService.Events:input_type -> cxz.SessionEventsRequest
-	43, // 63: cxz.SessionService.Add:output_type -> cxz.Session
-	43, // 64: cxz.SessionService.Get:output_type -> cxz.Session
-	43, // 65: cxz.SessionService.Patch:output_type -> cxz.Session
-	43, // 66: cxz.SessionService.Apply:output_type -> cxz.Session
-	6,  // 67: cxz.SessionService.Erase:output_type -> cxz.SessionEraseResponse
-	8,  // 68: cxz.SessionService.List:output_type -> cxz.SessionListResponse
-	11, // 69: cxz.SessionService.Watch:output_type -> cxz.SessionWatchResponse
-	43, // 70: cxz.SessionService.Restore:output_type -> cxz.Session
-	43, // 71: cxz.SessionService.Resume:output_type -> cxz.Session
-	43, // 72: cxz.SessionService.Stop:output_type -> cxz.Session
-	14, // 73: cxz.SessionService.Interrupt:output_type -> cxz.SessionReceipt
-	14, // 74: cxz.SessionService.CopyMemory:output_type -> cxz.SessionReceipt
-	17, // 75: cxz.SessionService.Library:output_type -> cxz.SessionMemoryReply
-	17, // 76: cxz.SessionService.Memory:output_type -> cxz.SessionMemoryReply
-	20, // 77: cxz.SessionService.Logs:output_type -> cxz.SessionLogsReply
-	14, // 78: cxz.SessionService.Permission:output_type -> cxz.SessionReceipt
-	14, // 79: cxz.SessionService.Send:output_type -> cxz.SessionReceipt
-	24, // 80: cxz.SessionService.Attach:output_type -> cxz.SessionAttachment
-	24, // 81: cxz.SessionService.Upload:output_type -> cxz.SessionAttachment
-	14, // 82: cxz.SessionService.Activity:output_type -> cxz.SessionReceipt
-	28, // 83: cxz.SessionService.UpdateAgent:output_type -> cxz.SessionUpdateStatus
-	14, // 84: cxz.SessionService.Reply:output_type -> cxz.SessionReceipt
-	31, // 85: cxz.SessionService.History:output_type -> cxz.SessionEventBatch
-	33, // 86: cxz.SessionService.Background:output_type -> cxz.SessionBackgroundReply
-	44, // 87: cxz.SessionService.Events:output_type -> cxz.SessionEvent
-	63, // [63:88] is the sub-list for method output_type
-	38, // [38:63] is the sub-list for method input_type
-	38, // [38:38] is the sub-list for extension type_name
-	38, // [38:38] is the sub-list for extension extendee
-	0,  // [0:38] is the sub-list for field type_name
+	2,  // 38: cxz.SessionModelsRequest.ref:type_name -> cxz.SessionRef
+	43, // 39: cxz.SessionSearchRequest.since:type_name -> google.protobuf.Timestamp
+	43, // 40: cxz.SessionSearchRequest.until:type_name -> google.protobuf.Timestamp
+	38, // 41: cxz.SessionSearchReply.visit:type_name -> cxz.SessionSearchVisit
+	40, // 42: cxz.SessionSearchReply.progress:type_name -> cxz.SessionSearchProgress
+	41, // 43: cxz.SessionSearchReply.summary:type_name -> cxz.SessionSearchSummary
+	39, // 44: cxz.SessionSearchVisit.hits:type_name -> cxz.SessionSearchHit
+	43, // 45: cxz.SessionSearchSummary.since:type_name -> google.protobuf.Timestamp
+	43, // 46: cxz.SessionSearchSummary.until:type_name -> google.protobuf.Timestamp
+	0,  // 47: cxz.SessionService.Add:input_type -> cxz.SessionAddRequest
+	1,  // 48: cxz.SessionService.Get:input_type -> cxz.SessionGetRequest
+	4,  // 49: cxz.SessionService.Patch:input_type -> cxz.SessionPatchRequest
+	5,  // 50: cxz.SessionService.Apply:input_type -> cxz.SessionApplyRequest
+	2,  // 51: cxz.SessionService.Erase:input_type -> cxz.SessionRef
+	7,  // 52: cxz.SessionService.List:input_type -> cxz.SessionListRequest
+	10, // 53: cxz.SessionService.Watch:input_type -> cxz.SessionWatchRequest
+	2,  // 54: cxz.SessionService.Restore:input_type -> cxz.SessionRef
+	13, // 55: cxz.SessionService.Resume:input_type -> cxz.SessionControl
+	13, // 56: cxz.SessionService.Stop:input_type -> cxz.SessionControl
+	13, // 57: cxz.SessionService.Interrupt:input_type -> cxz.SessionControl
+	15, // 58: cxz.SessionService.CopyMemory:input_type -> cxz.SessionCopyMemoryRequest
+	16, // 59: cxz.SessionService.Library:input_type -> cxz.SessionLibraryRequest
+	18, // 60: cxz.SessionService.Memory:input_type -> cxz.SessionMemoryRequest
+	19, // 61: cxz.SessionService.Logs:input_type -> cxz.SessionLogsRequest
+	21, // 62: cxz.SessionService.Permission:input_type -> cxz.SessionPermissionRequest
+	22, // 63: cxz.SessionService.Send:input_type -> cxz.SessionSendRequest
+	23, // 64: cxz.SessionService.Attach:input_type -> cxz.SessionAttachRequest
+	25, // 65: cxz.SessionService.Upload:input_type -> cxz.SessionUploadRequest
+	26, // 66: cxz.SessionService.Activity:input_type -> cxz.SessionActivityRequest
+	27, // 67: cxz.SessionService.UpdateAgent:input_type -> cxz.SessionUpdateRequest
+	29, // 68: cxz.SessionService.Reply:input_type -> cxz.SessionReplyRequest
+	30, // 69: cxz.SessionService.History:input_type -> cxz.SessionEventsRequest
+	32, // 70: cxz.SessionService.Background:input_type -> cxz.SessionBackgroundRequest
+	34, // 71: cxz.SessionService.Models:input_type -> cxz.SessionModelsRequest
+	30, // 72: cxz.SessionService.Events:input_type -> cxz.SessionEventsRequest
+	36, // 73: cxz.SessionService.Search:input_type -> cxz.SessionSearchRequest
+	51, // 74: cxz.SessionService.Add:output_type -> cxz.Session
+	51, // 75: cxz.SessionService.Get:output_type -> cxz.Session
+	51, // 76: cxz.SessionService.Patch:output_type -> cxz.Session
+	51, // 77: cxz.SessionService.Apply:output_type -> cxz.Session
+	6,  // 78: cxz.SessionService.Erase:output_type -> cxz.SessionEraseResponse
+	8,  // 79: cxz.SessionService.List:output_type -> cxz.SessionListResponse
+	11, // 80: cxz.SessionService.Watch:output_type -> cxz.SessionWatchResponse
+	51, // 81: cxz.SessionService.Restore:output_type -> cxz.Session
+	51, // 82: cxz.SessionService.Resume:output_type -> cxz.Session
+	51, // 83: cxz.SessionService.Stop:output_type -> cxz.Session
+	14, // 84: cxz.SessionService.Interrupt:output_type -> cxz.SessionReceipt
+	14, // 85: cxz.SessionService.CopyMemory:output_type -> cxz.SessionReceipt
+	17, // 86: cxz.SessionService.Library:output_type -> cxz.SessionMemoryReply
+	17, // 87: cxz.SessionService.Memory:output_type -> cxz.SessionMemoryReply
+	20, // 88: cxz.SessionService.Logs:output_type -> cxz.SessionLogsReply
+	14, // 89: cxz.SessionService.Permission:output_type -> cxz.SessionReceipt
+	14, // 90: cxz.SessionService.Send:output_type -> cxz.SessionReceipt
+	24, // 91: cxz.SessionService.Attach:output_type -> cxz.SessionAttachment
+	24, // 92: cxz.SessionService.Upload:output_type -> cxz.SessionAttachment
+	14, // 93: cxz.SessionService.Activity:output_type -> cxz.SessionReceipt
+	28, // 94: cxz.SessionService.UpdateAgent:output_type -> cxz.SessionUpdateStatus
+	14, // 95: cxz.SessionService.Reply:output_type -> cxz.SessionReceipt
+	31, // 96: cxz.SessionService.History:output_type -> cxz.SessionEventBatch
+	33, // 97: cxz.SessionService.Background:output_type -> cxz.SessionBackgroundReply
+	35, // 98: cxz.SessionService.Models:output_type -> cxz.SessionModelsReply
+	52, // 99: cxz.SessionService.Events:output_type -> cxz.SessionEvent
+	37, // 100: cxz.SessionService.Search:output_type -> cxz.SessionSearchReply
+	74, // [74:101] is the sub-list for method output_type
+	47, // [47:74] is the sub-list for method input_type
+	47, // [47:47] is the sub-list for extension type_name
+	47, // [47:47] is the sub-list for extension extendee
+	0,  // [0:47] is the sub-list for field type_name
 }
 
 func init() { file_cxz_session_svc_g_proto_init() }
@@ -5596,7 +7885,7 @@ func file_cxz_session_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_cxz_session_svc_g_proto_rawDesc), len(file_cxz_session_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   34,
+			NumMessages:   42,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

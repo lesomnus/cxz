@@ -123,7 +123,12 @@ func mutualOverSSH(ctx context.Context, state, name string, e transport.Endpoint
 		if ok {
 			fmt.Fprintf(out, "%s: the client certificate expired on %s; enrolling again over ssh\n", name, stored.Expires.UTC().Format("2006-01-02"))
 		}
-		stored, err = enroll.Over(ctx, run, state, name, e.Address, enroll.Options{Start: true, Out: out})
+		host, err := e.SSHDialHost(ctx)
+		if err != nil {
+			fmt.Fprintf(out, "%s: %v; using ssh\n", name, err)
+			return nil
+		}
+		stored, err = enroll.Over(ctx, run, state, name, host, enroll.Options{Start: true, Out: out})
 		if err != nil {
 			fmt.Fprintf(out, "%s: %v; using ssh\n", name, err)
 			return nil
@@ -137,18 +142,25 @@ func mutualOverSSH(ctx context.Context, state, name string, e transport.Endpoint
 	if reach(ctx, conn) == nil {
 		return conn
 	}
-	// A relay that is not listening is the ordinary state after a host reboot
-	// that removed the container, so try the one repair that fits in this
-	// channel before giving up on it.
 	conn.Close()
 	if !enrolling {
 		return nil
 	}
-	if err = enroll.Start(ctx, run, out); err != nil {
+	// Two things stop a stored address from answering, and the channel that is
+	// still up can repair both: the relay is gone, which is the ordinary state
+	// after a host reboot that removed the container, or the address is not one
+	// this client can dial -- an identity enrolled before ssh aliases were
+	// resolved holds a name only ssh knows how to look up.
+	host, err := e.SSHDialHost(ctx)
+	if err != nil {
 		fmt.Fprintf(out, "%s: %v; using ssh\n", name, err)
 		return nil
 	}
-	if conn, err = transport.DialMutual(address(stored, e), stored.Identity); err != nil {
+	if stored.Address, err = relayAddress(ctx, run, state, name, host, stored.Address, out); err != nil {
+		fmt.Fprintf(out, "%s: %v; using ssh\n", name, err)
+		return nil
+	}
+	if conn, err = transport.DialMutual(stored.Address, stored.Identity); err != nil {
 		fmt.Fprintf(out, "%s: %v; using ssh\n", name, err)
 		return nil
 	}
@@ -158,6 +170,25 @@ func mutualOverSSH(ctx context.Context, state, name string, e transport.Endpoint
 		return nil
 	}
 	return conn
+}
+
+// relayAddress re-derives where a connection's relay is, and records it when it
+// is not where the stored identity says: a client whose address stopped working
+// repairs itself over ssh instead of asking a person to enroll again for a
+// certificate that is still perfectly valid.
+func relayAddress(ctx context.Context, run enroll.Runner, state, name, host, current string, out io.Writer) (string, error) {
+	address, err := enroll.Address(ctx, run, host, enroll.Options{Start: true, Out: out})
+	if err != nil {
+		return "", err
+	}
+	if address == current {
+		return current, nil
+	}
+	if err = enroll.Rehost(state, name, address); err != nil {
+		return "", err
+	}
+	fmt.Fprintf(out, "%s: %s did not answer; the relay is at %s and this connection now dials it there\n", name, current, address)
+	return address, nil
 }
 
 // checkRelay answers the two questions a person has about a relay, in the one

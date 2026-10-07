@@ -24,6 +24,8 @@ service Sessions {
   rpc Watch(WatchRequest) returns (stream Event);
   rpc History(WatchRequest) returns (EventBatch);
   rpc Background(SessionRef) returns (BackgroundReply);
+  rpc Models(ModelsRequest) returns (ModelsReply);
+  rpc Search(SearchRequest) returns (stream SearchReply);
   rpc Open(ProjectRequest) returns (Session);
   rpc Projects(Empty) returns (ProjectList);
   rpc Down(ProjectRequest) returns (Receipt);
@@ -108,5 +110,74 @@ message MemoryReply { bytes data = 1; }
 message CopyMemoryRequest { string session_id = 1; string path = 2; string target_id = 3; string target_path = 4; }
 
 message BackgroundReply { uint64 last_seq = 1; bytes data = 2; }
+// refresh asks the agent for its catalog again. The answer arrives as a journal
+// event rather than in this reply: a client already watching the session sees it
+// without a second request, and nothing has to block on a provider.
+message ModelsRequest { string session_id = 1; bool refresh = 2; string run_id = 3; string client_id = 4; }
+message ModelsReply {
+  uint64 last_seq = 1; bytes data = 2; string run_id = 3;
+  uint64 catalog_seq = 4; int64 catalog_ms = 5;
+  bool refreshing = 6; string status = 7;
+}
 
 message DevcontainerInput { bytes spec = 1; }
+
+// Search reads conversations rather than sessions, across every project the
+// caller's installation holds. A window is half-open, [since_ms, until_ms), so
+// consecutive windows -- a month at a time, as the client asks for them --
+// neither overlap nor skip, and zero means no bound. cursor continues one
+// window; projects and exclude are runtime ids, resolved from names and aliases
+// before they get here.
+//
+// Times here are the journal's milliseconds throughout, because this is the
+// runtime's own interface and the journal is what it reads. The wire API takes
+// a timestamp for the window, which is the caller's instant rather than a
+// recorded one.
+message SearchRequest {
+  string query = 1; string match = 2; bool ignore_case = 3;
+  bool include_tools = 5;
+  int64 since_ms = 6; int64 until_ms = 7;
+  repeated string projects = 8; repeated string exclude = 9;
+  repeated string sessions = 10;
+  int32 limit = 11; int32 snippet = 12;
+  string cursor = 13; string client_id = 14;
+}
+// One session's results, named once for all of them. hits are newest first,
+// and so are the visits.
+message SearchVisit {
+  string project_id = 1; string project_name = 2;
+  string session_id = 3; string alias = 4; string title = 5;
+  string agent = 6; string state = 7;
+  int64 activity_ms = 8; int64 created_ms = 9;
+  bool truncated = 10;
+  repeated SearchHit hits = 11;
+}
+message SearchHit {
+  uint64 seq = 1; int64 time_ms = 2; string kind = 3;
+  int32 bytes = 4; int32 score = 5; string snippet = 6;
+}
+// Progress says what the index had to catch up on, or could not. A search
+// answers from a derived store, and a store that is behind has to say so rather
+// than return an answer that looks complete.
+message SearchProgress {
+  string project_id = 1; string project_name = 2; string state = 3;
+  string message = 4; int32 done = 5; int32 total = 6;
+}
+// The summary says which window it answered for, because a continued page was
+// not told: the window travelled in the cursor, and the client needs it back to
+// say what it searched and to ask for the one before it.
+message SearchSummary {
+  int32 projects = 1; int32 unavailable = 2; int32 sessions = 3;
+  int32 hits = 4; int32 truncated = 5;
+  string next_cursor = 6; bool has_more = 7;
+  int64 since_ms = 8; int64 until_ms = 9;
+  // examined is how many messages this page read, which is the cost of the
+  // answer; pending is how many conversations the index had not caught up with.
+  int32 examined = 10; int32 pending = 11;
+}
+// Exactly one field is set. The summary is last.
+message SearchReply {
+  SearchVisit visit = 1;
+  SearchProgress progress = 2;
+  SearchSummary summary = 3;
+}

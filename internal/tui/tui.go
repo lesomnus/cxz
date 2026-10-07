@@ -69,6 +69,7 @@ type model struct {
 	sessionBackground       map[string]*sessionBackgroundCheck
 	backgroundStateCache    map[string]backgroundStateCache
 	textSelection           *transcriptSelection
+	responseRows            map[int]bool
 	codeButtons             []codeButton
 	codeHover               *codeButton
 	recordingError          string
@@ -117,127 +118,132 @@ type model struct {
 	wisp                    *containerterm.WispPool
 	terminalWidth           int
 	panelFocus              bool
-	panelWantKey            string
-	panelWantConnection     string
-	accountConnection       string
-	creationConnection      string
-	accountRequest          uint64
-	panelIndex              int
-	panelHoverY             int // Screen row; zero means no hovered item.
-	resumePending           map[string]bool
-	panelHintHover          string // Footer hint under the pointer, by its key.
-	quotaParses             map[quotaParseKey]quotaParse
-	panelProjects           []*api.Project
-	allSessions             []*api.Session
-	panelError              string
-	projectView             bool
-	deletingID              string
-	deleteConfirm           *sessionDeleteConfirmation
-	busy                    bool
-	createProjectSession    ProjectCreator
-	ctx                     context.Context
-	client                  api.SessionsClient
-	sessions                []*api.Session
-	selected                int
-	input                   bed.Model
-	drafts                  map[string]string
-	localHelp               map[string]uint64
-	localOutput             map[string]string
-	hintSelected            int
-	hintOffset              int
-	hintDismissed           bool
-	renaming                bool
-	renameBusy              bool
-	renameProject           bool
-	renameID                string
-	aliasInput              textinput.Model
-	usageReports            map[string]string
-	usageGeneration         map[string]uint64
-	accountQuotas           map[string][]agentview.Window
-	quotaWindows            []agentview.Window
-	quotaState              string
-	modelPicker             *modelPicker
-	modelPickerEpoch        uint64
-	settingsPage            *settingsPage
-	sessionArchive          *sessionArchive
-	memoryPage              *memoryPage
-	report                  *reportOverlay
-	contextCapture          *contextCapture
-	hiddenEvents            map[*api.Event]bool
-	view                    viewport.Model
-	focusList, creating     bool
-	notice                  string
-	width, height           int
-	events                  map[string][]*api.Event
-	cursor                  map[string]uint64
-	historyWindows          map[string]*historyWindow
-	windowPolicy            *historypolicy.Window
-	historyLoading          map[string]uint64 // End sequence of each in-flight older page.
-	historyStart            map[string]uint64
-	historyOpening          map[string]bool // Keep loading through pages containing only bookkeeping events.
-	historyShimmer          *historyShimmer
-	watchCancel             context.CancelFunc
-	watchID                 string
-	watchEpoch              uint64
-	watchSequence           uint64
-	sessionWatches          map[string]*sessionWatch
-	watchBootstrap          chan struct{}
-	wantID                  string
-	accounts                []*resource.Account
-	accountIndex            int
-	accountView             bool
-	accountAdding           bool
-	accountChoosing         bool
-	accountLoading          bool
-	accountAgent            string
-	accountField            int
-	accountAlias            textinput.Model
-	accountName             textinput.Model
-	accountSearch           textinput.Model
-	accountSearching        bool
-	accountService          resource.AccountServiceClient
-	loginAccount            AccountLogin
-	workflow                *accountWorkflow
-	loginChoosing           bool
-	loginAlias              string
-	loginIndex              int
-	focusApproval           bool
-	approvalID              string
-	approvalOffset          int
-	interruptUntil          time.Time
-	interruptKey            string
-	approvalSent            map[string]bool
-	permissionUpdating      map[string]bool
-	localReports            map[string]string
-	historyTimes            []int64
-	historyPositions        []float64 // stable journal coordinates, not loaded-line offsets
-	workingToolRows         map[int]bool
-	restartConfirm          *restartConfirmation
-	questionDialog          *questionDialog
-	questionDrafts          map[string]*questionDialog
-	questionSeen            map[string]bool
-	restartBusy             bool
-	lastPromptStart         int
-	lastPromptEnd           int
-	latestPrompt            string
-	pulse                   int
-	blinkFrom               int
-	composerBlink           bool // enabled when Init starts the event loop
-	composerFocusCmd        tea.Cmd
-	blurred                 bool
-	workingSince            int64
-	backgroundSnapshots     map[string]backgroundSnapshot
-	watchContext            context.Context
-	backgroundLoading       map[string]bool
-	backgroundErrors        map[string]string
-	cursorOutput            *cursorWriter
-	renderedResponses       map[*api.Event]renderedResponse
-	toolActivities          map[toolActivityKey]cachedToolActivity
-	renderedTools           map[toolRenderKey]string
-	program                 *tea.Program
-	pastes                  map[string]*pastedText
-	pasteSelection          *chipSelection
-	pasteDialog             *pasteDialog
+	// The find bar, when it is open. It holds the keyboard while it is.
+	search               *searchOverlay
+	panelWantKey         string
+	panelWantConnection  string
+	accountConnection    string
+	creationConnection   string
+	accountRequest       uint64
+	panelIndex           int
+	panelHoverY          int // Screen row; zero means no hovered item.
+	resumePending        map[string]bool
+	panelHintHover       string // Footer hint under the pointer, by its key.
+	quotaParses          map[quotaParseKey]quotaParse
+	panelProjects        []*api.Project
+	allSessions          []*api.Session
+	panelError           string
+	projectView          bool
+	deletingID           string
+	deleteConfirm        *sessionDeleteConfirmation
+	busy                 bool
+	createProjectSession ProjectCreator
+	ctx                  context.Context
+	client               api.SessionsClient
+	sessions             []*api.Session
+	selected             int
+	input                bed.Model
+	drafts               map[string]string
+	localHelp            map[string]uint64
+	localOutput          map[string]string
+	hintSelected         int
+	hintOffset           int
+	hintDismissed        bool
+	renaming             bool
+	renameBusy           bool
+	renameProject        bool
+	renameID             string
+	aliasInput           textinput.Model
+	usageReports         map[string]string
+	usageGeneration      map[string]uint64
+	accountQuotas        map[string][]agentview.Window
+	quotaWindows         []agentview.Window
+	quotaState           string
+	modelPicker          *modelPicker
+	modelPickerEpoch     uint64
+	// modelCatalogs caches one capability record per run, so /model and /effort
+	// are one lookup rather than two, and a live `models` event replaces it.
+	modelCatalogs       map[string]*modelCatalog
+	settingsPage        *settingsPage
+	sessionArchive      *sessionArchive
+	memoryPage          *memoryPage
+	report              *reportOverlay
+	contextCapture      *contextCapture
+	hiddenEvents        map[*api.Event]bool
+	view                viewport.Model
+	focusList, creating bool
+	notice              string
+	width, height       int
+	events              map[string][]*api.Event
+	cursor              map[string]uint64
+	historyWindows      map[string]*historyWindow
+	windowPolicy        *historypolicy.Window
+	historyLoading      map[string]uint64 // End sequence of each in-flight older page.
+	historyStart        map[string]uint64
+	historyOpening      map[string]bool // Keep loading through pages containing only bookkeeping events.
+	historyShimmer      *historyShimmer
+	watchCancel         context.CancelFunc
+	watchID             string
+	watchEpoch          uint64
+	watchSequence       uint64
+	sessionWatches      map[string]*sessionWatch
+	watchBootstrap      chan struct{}
+	wantID              string
+	accounts            []*resource.Account
+	accountIndex        int
+	accountView         bool
+	accountAdding       bool
+	accountChoosing     bool
+	accountLoading      bool
+	accountAgent        string
+	accountField        int
+	accountAlias        textinput.Model
+	accountName         textinput.Model
+	accountSearch       textinput.Model
+	accountSearching    bool
+	accountService      resource.AccountServiceClient
+	loginAccount        AccountLogin
+	workflow            *accountWorkflow
+	loginChoosing       bool
+	loginAlias          string
+	loginIndex          int
+	focusApproval       bool
+	approvalID          string
+	approvalOffset      int
+	interruptUntil      time.Time
+	interruptKey        string
+	approvalSent        map[string]bool
+	permissionUpdating  map[string]bool
+	localReports        map[string]string
+	historyTimes        []int64
+	historyPositions    []float64 // stable journal coordinates, not loaded-line offsets
+	workingToolRows     map[int]bool
+	restartConfirm      *restartConfirmation
+	questionDialog      *questionDialog
+	questionDrafts      map[string]*questionDialog
+	questionSeen        map[string]bool
+	restartBusy         bool
+	lastPromptStart     int
+	lastPromptEnd       int
+	latestPrompt        string
+	pulse               int
+	blinkFrom           int
+	composerBlink       bool // enabled when Init starts the event loop
+	composerFocusCmd    tea.Cmd
+	blurred             bool
+	workingSince        int64
+	backgroundSnapshots map[string]backgroundSnapshot
+	watchContext        context.Context
+	backgroundLoading   map[string]bool
+	backgroundErrors    map[string]string
+	cursorOutput        *cursorWriter
+	renderedResponses   map[*api.Event]renderedResponse
+	toolActivities      map[toolActivityKey]cachedToolActivity
+	renderedTools       map[toolRenderKey]string
+	program             *tea.Program
+	pastes              map[string]*pastedText
+	pasteSelection      *chipSelection
+	pasteDialog         *pasteDialog
 }
 type listing struct {
 	projects       []*api.Project
@@ -632,10 +638,12 @@ func (m *model) render() {
 	}()
 	m.promptSpans = nil
 	m.codeButtons = nil
+	m.responseRows = map[int]bool{}
 	m.workingToolRows = nil
 	m.auxiliaryLoadingRows = nil
 	m.toolRows = map[int]uint64{}
 	copyBlocks := map[int][]codeButton{}
+	responseBlocks := map[int]bool{}
 	toolBlocks := map[int]bool{}
 	inspectBlocks := map[int]bool{}
 	auxiliaryBlocks := map[int]bool{}
@@ -871,6 +879,7 @@ func (m *model) render() {
 				if e.Kind == "assistant" {
 					replyIndex = len(lines) - 1
 					copyBlocks[replyIndex] = m.renderedResponses[e].buttons
+					responseBlocks[replyIndex] = true
 				}
 			}
 		}
@@ -906,6 +915,9 @@ func (m *model) render() {
 		}
 		rows := strings.Split(block, "\n")
 		for row := range rows {
+			if responseBlocks[i] && row > 0 {
+				m.responseRows[start+row] = true
+			}
 			if auxiliaryBlocks[i] {
 				if m.auxiliaryLoadingRows == nil {
 					m.auxiliaryLoadingRows = map[int]bool{}
@@ -1090,6 +1102,13 @@ func (m *model) Update(msg tea.Msg) (next tea.Model, cmd tea.Cmd) {
 		m.openAccounts(true)
 		m.accountConnection = v.project.Id
 		return m, m.loadAccounts()
+	}
+
+	switch v := msg.(type) {
+	case searchResult:
+		return m, m.receiveSearch(v)
+	case searchDebounced:
+		return m, m.receiveSearchDebounce(v)
 	}
 
 	switch v := msg.(type) {
@@ -1381,6 +1400,28 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	if k, ok := msg.(tea.KeyMsg); ok && k.Type == tea.KeyF19 && !k.Paste && m.workflow == nil && m.redactDialog == nil && m.pasteDialog == nil && m.restartConfirm == nil {
 		return m, m.openSettings()
+	}
+	if k, ok := msg.(tea.KeyMsg); ok && !k.Paste && m.searchAvailable() {
+		switch k.String() {
+		case "ctrl+f":
+			// Inside a conversation, Ctrl+F is the conversation. With the panel
+			// holding the keyboard there is no conversation to search, so the
+			// same key opens the wide one rather than refusing.
+			if m.panelFocus || m.current() == nil {
+				return m, m.openSearch(scopeAll)
+			}
+			return m, m.openSearch(scopeSession)
+		case "f18", "ctrl+shift+f":
+			if m.panelFocus || m.current() == nil {
+				return m, m.openSearch(scopeAll)
+			}
+			return m, m.openSearch(scopeProject)
+		}
+	}
+	if m.search != nil {
+		if k, ok := msg.(tea.KeyMsg); ok {
+			return m, m.searchKey(k)
+		}
 	}
 	if k, ok := msg.(tea.KeyMsg); ok && !k.Paste && m.questionDialog != nil && m.pasteDialog == nil && m.redactDialog == nil && k.Type == tea.KeyF6 {
 		d := m.questionDialog
@@ -2478,7 +2519,7 @@ func (m *model) View() (out string) {
 		return screen("cxz\nResize terminal to 40 × 14 or larger.\nCtrl+D detach", m.width, m.height)
 	}
 	if (m.panelFocus || m.projectView) && !m.accountView && !m.creating && !m.panelVisible() {
-		return m.reportView(m.panelScreen())
+		return m.searchBar(m.reportView(m.panelScreen()))
 	}
 	if m.accountView {
 		return m.accountScreen()
@@ -2527,20 +2568,27 @@ func (m *model) receiveEvent(v received, repaint bool) {
 			m.events[v.id] = append(m.events[v.id], v.event)
 			trimmed = m.limitHistory(v.id, false, 0)
 		}
-		if p := m.modelPicker; p != nil && !p.loading && p.id == v.id && p.run == v.event.RunId && v.event.Kind == "models" {
+		// A catalog published while the picker is open replaces what it shows --
+		// including the one a refresh asked for, which arrives this way rather
+		// than as a reply, so nothing had to wait on the provider.
+		if v.event.Kind == "models" {
 			var catalog modelCatalog
 			if json.Unmarshal(v.event.Payload, &catalog) == nil {
-				selected := ""
-				options := p.options()
-				if p.selected < len(options) {
-					selected = options[p.selected]
-				}
-				p.catalog = &catalog
-				p.selected = 0
-				for i, option := range p.options() {
-					if option == selected {
-						p.selected = i
-						break
+				catalog.seq, catalog.ms = v.event.Seq, v.event.TimeMs
+				m.rememberCatalog(v.id, v.event.RunId, &catalog)
+				if p := m.modelPicker; p != nil && !p.loading && p.id == v.id && p.run == v.event.RunId {
+					selected := ""
+					options := p.options()
+					if p.selected < len(options) {
+						selected = options[p.selected]
+					}
+					p.catalog, p.refreshing, p.message = &catalog, false, ""
+					p.selected = 0
+					for i, option := range p.options() {
+						if option == selected {
+							p.selected = i
+							break
+						}
 					}
 				}
 			}

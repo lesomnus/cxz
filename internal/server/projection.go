@@ -20,6 +20,17 @@ type sessionProjection struct {
 	floor      uint64
 	snapshot   core.Snapshot
 	background map[string]*agentview.BackgroundState
+	// catalogs is the latest model catalog per run. It is reduced state like the
+	// background map: clients ask what the current capability is, which is one
+	// event out of a journal, and reconstructing that by reading the journal from
+	// a client costs the whole conversation to find one record.
+	catalogs map[string]catalogRecord
+}
+
+type catalogRecord struct {
+	payload []byte
+	seq     uint64
+	ms      int64
 }
 
 // lockProjection returns a committed projection with its per-session lock held.
@@ -92,10 +103,20 @@ func (s *Server) lockProjection(ctx context.Context, m core.Session) (*sessionPr
 	if reset {
 		p.snapshot = supervisor.Replay(nil)
 		p.background = map[string]*agentview.BackgroundState{}
+		p.catalogs = map[string]catalogRecord{}
 	}
 	p.snapshot = supervisor.ReplayFrom(p.snapshot, events)
 	for _, e := range events {
 		v := pbEvent(e)
+		if v.Kind == "models" {
+			if p.catalogs == nil {
+				p.catalogs = map[string]catalogRecord{}
+			}
+			// Last one wins: a run republishes after a setting is applied, and
+			// only the newest describes the agent now.
+			p.catalogs[e.RunID] = catalogRecord{payload: v.Payload, seq: v.Seq, ms: v.TimeMs}
+			continue
+		}
 		if v.Kind != "background" {
 			continue
 		}
