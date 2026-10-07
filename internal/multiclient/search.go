@@ -93,7 +93,7 @@ func (c *Client) Search(ctx context.Context, r *api.SearchRequest, opts ...grpc.
 // installation's projects must not become "everything here".
 func scopeSearchRequest(r *api.SearchRequest, name, cursor string) (*api.SearchRequest, bool) {
 	out := &api.SearchRequest{
-		Query: r.Query, Match: r.Match, IgnoreCase: r.IgnoreCase, View: r.View, IncludeTools: r.IncludeTools,
+		Query: r.Query, Match: r.Match, IgnoreCase: r.IgnoreCase, IncludeTools: r.IncludeTools,
 		SinceMs: r.SinceMs, UntilMs: r.UntilMs, Limit: r.Limit, Snippet: r.Snippet, ClientId: r.ClientId, Cursor: cursor,
 	}
 	for _, id := range r.Projects {
@@ -223,7 +223,7 @@ func (m *mergedSearch) absorb(message namedReply) error {
 		s.pending = message.reply.Visit
 	case message.reply.GetProgress() != nil:
 		p := message.reply.Progress
-		m.send(&api.SearchReply{Progress: &api.SearchProgress{ProjectId: Scope(message.name, p.ProjectId), ProjectName: decorateName(message.name, p.ProjectName), State: p.State, Message: p.Message, Opened: p.Opened, Total: p.Total}})
+		m.send(&api.SearchReply{Progress: &api.SearchProgress{ProjectId: Scope(message.name, p.ProjectId), ProjectName: decorateName(message.name, p.ProjectName), State: p.State, Message: p.Message, Done: p.Done, Total: p.Total}})
 	case message.reply.GetSummary() != nil:
 		v := message.reply.Summary
 		m.totals.projects += v.Projects

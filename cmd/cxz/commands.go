@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/lesomnus/cxz/api"
-	"github.com/lesomnus/cxz/internal/conversation"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/cxzupdate"
 	"github.com/lesomnus/cxz/internal/installer"
@@ -225,9 +224,6 @@ func internalCommands() xli.Commands {
 		makeCmd("wisp", nil, func(ctx context.Context, _ *xli.Command) error { return wisp.Serve(os.Stdin, os.Stdout) }),
 		makeCmd("_memory-library", nil, func(ctx context.Context, _ *xli.Command) error {
 			return memorylib.Serve(ctx, stateFrom(ctx), os.Stdin, os.Stdout)
-		}),
-		makeCmd("_conversation-scan", nil, func(ctx context.Context, _ *xli.Command) error {
-			return conversation.ServeScan(ctx, stateFrom(ctx), os.Stdin, os.Stdout)
 		}),
 		makeCmd("_memory-copy", nil, func(ctx context.Context, _ *xli.Command) error {
 			return memoryview.ServeCopy(ctx, stateFrom(ctx), "/cxz/target/data", os.Stdin, os.Stdout)

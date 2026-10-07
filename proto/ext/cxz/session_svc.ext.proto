@@ -45,7 +45,6 @@ message SessionSearchRequest {
   string query = 1;
   string match = 2; // substring (default), regex or fuzzy
   bool ignore_case = 3;
-  string view = 4; // conversation (default) or raw
   bool include_tools = 5;
   google.protobuf.Timestamp since = 6;
   google.protobuf.Timestamp until = 7;
@@ -69,22 +68,18 @@ message SessionSearchVisit {
   // it is not evidence that nothing was said.
   bool truncated = 10;
   repeated SessionSearchHit hits = 11;
-  // approximate says activity_ms was placed rather than measured -- the tail
-  // read that orders conversations is bounded, and this journal held more
-  // recent history than it walks back through. The position is a guess; the
-  // hits and their times are not.
-  bool approximate = 12;
 }
 message SessionSearchHit {
   uint64 seq = 1; int64 time_ms = 2; string kind = 3;
   int32 bytes = 4; int32 score = 5; string snippet = 6;
 }
-// Progress is not decoration. A project that is not running costs a container
-// to open, so a search can be working for seconds with nothing to show yet.
+// Progress says what the index had to catch up on before answering, or could
+// not. A search answers from a derived store, and a store that is behind says so
+// rather than return an answer that looks complete.
 message SessionSearchProgress {
   string project_id = 1; string project_name = 2;
-  string state = 3; // opening, reading, done or unavailable
-  string message = 4; int32 opened = 5; int32 total = 6;
+  string state = 3; // indexed, behind or unavailable
+  string message = 4; int32 done = 5; int32 total = 6;
 }
 // The summary says which window it answered for, because a continued page was
 // not told: the window travelled in the cursor, and the client needs it back to
@@ -94,6 +89,9 @@ message SessionSearchSummary {
   int32 hits = 4; int32 truncated = 5;
   string next_cursor = 6; bool has_more = 7;
   google.protobuf.Timestamp since = 8; google.protobuf.Timestamp until = 9;
+  // examined is how many messages this page read, which is what the answer
+  // cost; pending is how many conversations the index had not caught up with.
+  int32 examined = 10; int32 pending = 11;
 }
 // Exactly one field is set. The summary comes last.
 message SessionSearchReply {

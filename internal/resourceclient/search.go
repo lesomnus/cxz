@@ -18,8 +18,8 @@ import (
 func (c *Client) Search(ctx context.Context, r *api.SearchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[api.SearchReply], error) {
 	s, err := c.sessions.Search(ctx, resource.SessionSearchRequest_builder{
 		Query: &r.Query, Match: &r.Match, IgnoreCase: &r.IgnoreCase,
-		View: &r.View, IncludeTools: &r.IncludeTools,
-		Since: bound(r.SinceMs), Until: bound(r.UntilMs),
+		IncludeTools: &r.IncludeTools,
+		Since:        bound(r.SinceMs), Until: bound(r.UntilMs),
 		Projects: r.Projects, Exclude: r.Exclude, Sessions: r.Sessions,
 		Limit: &r.Limit, Snippet: &r.Snippet, Cursor: &r.Cursor, ClientId: &r.ClientId,
 	}.Build(), opts...)
@@ -60,7 +60,7 @@ func (s searchStream) Recv() (*api.SearchReply, error) {
 			ProjectId: v.GetProjectId(), ProjectName: v.GetProjectName(),
 			SessionId: v.GetSessionId(), Alias: v.GetAlias(), Title: v.GetTitle(),
 			Agent: v.GetAgent(), State: v.GetState(),
-			ActivityMs: v.GetActivityMs(), CreatedMs: v.GetCreatedMs(), Truncated: v.GetTruncated(), Approximate: v.GetApproximate(),
+			ActivityMs: v.GetActivityMs(), CreatedMs: v.GetCreatedMs(), Truncated: v.GetTruncated(),
 		}
 		for _, h := range v.GetHits() {
 			visit.Hits = append(visit.Hits, &api.SearchHit{Seq: h.GetSeq(), TimeMs: h.GetTimeMs(), Kind: h.GetKind(), Bytes: h.GetBytes(), Score: h.GetScore(), Snippet: h.GetSnippet()})
@@ -68,10 +68,11 @@ func (s searchStream) Recv() (*api.SearchReply, error) {
 		out.Visit = visit
 	}
 	if p := in.GetProgress(); p != nil {
-		out.Progress = &api.SearchProgress{ProjectId: p.GetProjectId(), ProjectName: p.GetProjectName(), State: p.GetState(), Message: p.GetMessage(), Opened: p.GetOpened(), Total: p.GetTotal()}
+		out.Progress = &api.SearchProgress{ProjectId: p.GetProjectId(), ProjectName: p.GetProjectName(), State: p.GetState(), Message: p.GetMessage(), Done: p.GetDone(), Total: p.GetTotal()}
 	}
 	if v := in.GetSummary(); v != nil {
-		out.Summary = &api.SearchSummary{Projects: v.GetProjects(), Unavailable: v.GetUnavailable(), Sessions: v.GetSessions(), Hits: v.GetHits(), Truncated: v.GetTruncated(), NextCursor: v.GetNextCursor(), HasMore: v.GetHasMore(), SinceMs: boundMS(v.GetSince()), UntilMs: boundMS(v.GetUntil())}
+		out.Summary = &api.SearchSummary{Projects: v.GetProjects(), Unavailable: v.GetUnavailable(), Sessions: v.GetSessions(), Hits: v.GetHits(), Truncated: v.GetTruncated(), NextCursor: v.GetNextCursor(), HasMore: v.GetHasMore(), SinceMs: boundMS(v.GetSince()), UntilMs: boundMS(v.GetUntil()),
+			Examined: v.GetExamined(), Pending: v.GetPending()}
 	}
 	return out, nil
 }

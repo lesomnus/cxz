@@ -84,6 +84,9 @@ func (s *Server) requireManagerAuthority(ctx context.Context, refusal string) er
 // per-session lock is taken so a reader mid-projection finishes first rather
 // than committing rows back behind the delete.
 func (s *Server) forgetSession(ctx context.Context, id string) error {
+	// The index is derived, so this is not a record being destroyed: it is a
+	// copy being kept honest about what the installation still holds.
+	s.forgetConversation(ctx, id)
 	s.projectionMu.Lock()
 	p := s.projections[id]
 	delete(s.projections, id)

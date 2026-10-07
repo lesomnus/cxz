@@ -3,7 +3,11 @@ package workspace
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"os"
+
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/convindex"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/historypolicy"
 	"time"
@@ -112,7 +116,36 @@ func (m *Manager) cache(ctx context.Context, batch *api.EventBatch) error {
 			return e
 		}
 	}
-	return tx.Commit()
+	if e = tx.Commit(); e != nil {
+		return e
+	}
+	m.extractConversation(ctx, batch)
+	return nil
+}
+
+// extractConversation keeps the searchable record level with the events as they
+// are committed, which is what makes a search a query rather than a scan. It
+// cannot fail the commit: the index is derived, and a derived store that falls
+// behind is reported by the search it serves.
+func (m *Manager) extractConversation(ctx context.Context, batch *api.EventBatch) {
+	if m.Conversations == nil {
+		return
+	}
+	bySession := map[string][]core.Event{}
+	for _, v := range batch.Events {
+		if v.SessionId == "" || v.Seq == 0 {
+			continue
+		}
+		bySession[v.SessionId] = append(bySession[v.SessionId], core.Event{
+			SessionID: v.SessionId, RunID: v.RunId, Seq: v.Seq, TimeMS: v.TimeMs,
+			Kind: v.Kind, Text: v.Text, Payload: v.Payload,
+		})
+	}
+	for id, events := range bySession {
+		if err := m.Conversations.Ingest(ctx, convindex.Session{ID: id}, events, 0, 0); err != nil {
+			fmt.Fprintln(os.Stderr, "conversation index:", err)
+		}
+	}
 }
 
 // CacheEvents commits streamed events before acknowledging them to the TUI.
