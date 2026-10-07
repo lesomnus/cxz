@@ -59,6 +59,10 @@ func (m *model) chipInput() (string, int, func(int), func(string), bool) {
 }
 
 func (m *model) chipKey(k tea.KeyMsg) (bool, tea.Cmd) {
+	if m.focusedQuestion() == nil && m.multiComposer() {
+		m.pasteSelection = nil
+		return false, nil
+	}
 	value, pos, cursor, setValue, ok := m.chipInput()
 	id := ""
 	if s := m.current(); s != nil {
@@ -423,9 +427,12 @@ func (m *model) capturePaste(k tea.KeyMsg) bool {
 		d.message = "Ctrl+P: preview, delete or attach pasted text as a file"
 	} else {
 		before := m.input.Value()
-		m.input.InsertString(token)
-		if !strings.Contains(m.input.Value(), token) || partialPasteEdit(before, m.input.Value(), m.pastes) {
-			m.input.SetValue(before)
+		m.prepareEditor()
+		err := m.input.InsertText(token)
+		if err != nil || !strings.Contains(m.input.Value(), token) || partialPasteEdit(before, m.input.Value(), m.pastes) {
+			if m.input.Value() != before {
+				m.input.Undo()
+			}
 			delete(m.pastes, token)
 			m.notice = "Could not insert paste chip at this position; original draft retained."
 			return true
@@ -634,18 +641,17 @@ func (m *model) expandPaste(d *pasteDialog, p *pastedText) {
 		in.SetCursor(pos)
 		d.question.otherSelected[d.page] = strings.TrimSpace(next) != ""
 	} else {
-		oldPos := composerPosition(m.input)
-		m.input.SetValue(next)
-		if m.input.Value() != next {
-			m.input.SetValue(value)
-			m.setComposerPosition(oldPos)
+		m.prepareEditor()
+		from := utf8.RuneCountInString(value[:start])
+		if err := m.input.ReplaceRange(from, from+utf8.RuneCountInString(p.token), p.body); err != nil {
 			d.message = "This input cannot hold the original text; paste chip retained."
 			return
 		}
-		m.setComposerPosition(pos)
 	}
 	m.pasteSelection = nil
-	m.input.ClearSelection()
+	if d.question != nil {
+		m.input.ClearSelection()
+	}
 	m.pasteDialog = nil
 	m.notice = "Paste expanded into editable text."
 	m.resize()

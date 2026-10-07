@@ -16,6 +16,9 @@ type inlineToken struct {
 }
 
 func (m *model) inlineContext() *inlineToken {
+	if m.multiComposer() {
+		return nil
+	}
 	if m.workflow != nil || m.questionFocused() || m.pasteDialog != nil || m.pathHints != nil || m.panelFocus {
 		return nil
 	}

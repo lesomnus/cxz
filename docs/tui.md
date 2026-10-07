@@ -42,8 +42,10 @@ new-session account picker for that project. Other shortcuts remain available.
 | `Ctrl+X` | Clear the draft; with nothing to clear, take back the message waiting to be sent |
 | `Tab` / `Shift+Tab` | Indent/outdent; active completions and visible approval/error focus take priority |
 | `Alt+↑` / `Alt+↓` | Move current or selected logical lines |
-| `Alt+D` | Duplicate selection or current line |
-| `Ctrl+Z` / `Ctrl+Y` | Undo / redo edits |
+| `Alt+D` | Duplicate selection/current line; with multiple cursors, duplicate affected line blocks |
+| `Ctrl+Z` / `Ctrl+Y` | Undo / redo edits, including all cursor positions |
+| `Alt+click` | Add a composer cursor (clicking an existing cursor promotes it) |
+| `Ctrl+Alt+↑` / `Ctrl+Alt+↓` | Add a cursor on the adjacent visual row |
 | Double / triple click | Select word / logical line; drag to extend |
 | `F2` | Edit the selected project title; Enter saves, Esc cancels |
 | `F4` | Interrupt the turn |
@@ -291,3 +293,23 @@ switches. See [development](development.md#diagnostic-recordings) for what it
 contains; typed text and conversation content are excluded.
 
 Conversation text supports double-click word selection and drag selection. Ctrl+C copies the selected text without the assistant response's two-column display indent; indentation inside code blocks is preserved. Selection currently copies rendered text, including visual line wraps, rather than Markdown source.
+
+### Multiple composer cursors
+
+Typing, paste, newline, deletion and Shift-selection apply at every cursor.
+Overlapping selections merge; one Undo restores the entire edit and cursor set.
+Indentation acts on each affected logical line once. With multiple empty cursors,
+Ctrl+C/Ctrl+X copy/cut distinct logical lines; mixed selections copy/cut only the
+selected fragments. Ordinary paste repeats the same text at each cursor.
+Large pastes retain the shared payload behind a chip at each insertion site;
+chip deletion, expansion and Undo do not discard the cached payload.
+
+Escape first keeps only the primary range, then clears it on another press.
+A plain click/drag starts one selection. Wheel scrolling and resize retain cursor
+positions; switching sessions or sending resets them. Ctrl+S sends the complete
+draft once, and Ctrl+D still detaches. Terminal/OS interception can prevent an
+Alt-modified gesture from reaching cxz.
+
+Session mentions, paths, slash commands and inline-command hints are single-target
+and stay hidden while multiple cursors are active. Escape returns to one cursor
+before using them. AI suggestions retain their existing empty-draft behavior.

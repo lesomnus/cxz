@@ -47,12 +47,28 @@ func (m *model) composerKey(k tea.KeyMsg) (bool, tea.Cmd) {
 	if !m.composerAvailable() || m.panelFocus || m.focusList || m.focusApproval {
 		return false, nil
 	}
+	// Large pastes must pass through cxz's chip capture before bed broadcasts.
+	if k.Paste && m.multiComposer() && m.capturePaste(k) {
+		return true, nil
+	}
 	if !k.Paste && (k.String() == "tab" || k.String() == "shift+tab") {
 		return false, nil
 	}
 	m.prepareEditor()
 	before := m.input.Value()
 	hadSelection := m.input.SelectionValid()
+	// These keys belong to the product, not textarea. In particular Ctrl+D
+	// must detach, not delete at every cursor through the base textarea binding.
+	if !k.Paste {
+		switch k.String() {
+		case "ctrl+d", "ctrl+s", "ctrl+home", "ctrl+end", "pgup", "pgdown", "ctrl+q", "ctrl+n", "ctrl+r", "ctrl+p", "f2", "f4", "alt+g":
+			return false, nil
+		}
+	}
+	if m.multiComposer() {
+		m.pasteSelection = nil
+		m.pathHints = nil
+	}
 	handled, cmd := m.input.HandleKey(k)
 	m.rejectPartialChipEdit(before)
 	if handled || hadSelection || before != m.input.Value() {
@@ -154,3 +170,7 @@ func (m *model) rejectPartialChipEdit(before string) {
 	}
 	m.notice = "Paste chips are indivisible; Ctrl+P to preview or delete."
 }
+
+// Product completions are single-target. Keep them hidden while bed owns a
+// selection set; they can be used again after Escape retains the primary.
+func (m *model) multiComposer() bool { return len(m.input.Selections()) > 1 }

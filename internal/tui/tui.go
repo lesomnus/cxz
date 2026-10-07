@@ -1290,6 +1290,10 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.copyFocusedText()
 			return m, nil
 		case "esc":
+			if m.composerAvailable() && !m.panelFocus && !m.focusList && m.multiComposer() {
+				m.input.ClearSecondaryCursors()
+				return m, nil
+			}
 			if m.composerAvailable() && !m.panelFocus && !m.focusList && m.selectedComposerText() != "" {
 				m.input.ClearSelection()
 				return m, nil
