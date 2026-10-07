@@ -33,6 +33,27 @@ The script works from Windows or Linux with Go and Node installed. It uses Node
 process APIs rather than POSIX shell environment syntax, and copies wasm_exec.js
 from the same Go toolchain that compiled the module.
 
+## Workspace file preview and fake Connect
+
+When the area after the sidebar/session panel reaches 1600px, the conversation
+uses 800px and the remaining width shows a file tree/read-only Monaco view.
+The WASM service supplies README, Go/TypeScript and devcontainer fixture files
+for each project. **Connect** changes to **Simulated connection** using the
+configured pace; **Disconnect** returns to File preview. No Linux VM, container,
+remote IDE or real filesystem is started. Tabs and connection state are retained
+per project while resizing and switching sessions; conversation drafts are kept.
+The [workspace editor contract](web-editor.md) describes real devcontainer
+connections and the separate review of Linux/VS Code running inside browser WASM.
+
+## Simulated workspace shell
+
+Press **Ctrl+Backquote** or the conversation title bar's **>_** button to open a
+terminal below the composer. The WASM service simulates `pwd`, `ls`, `cat`, `echo`,
+`clear`, `help` and `exit` over the same Terminal RPC used by native clients.
+`cat README.md` shows the selected project's fixture file. Folding preserves the
+screen and input, while switching sessions or Reset closes it. There is no Linux
+VM or real command execution; see the [terminal contract](web-terminal.md).
+
 ## Scenarios and controls
 
 The Scenario selector opens one of the sample sessions:
@@ -75,7 +96,7 @@ outside-click dismissal are supported.
 
 The icon-only send button sits on the right of a toolbar above the text input,
 inside a zero-padding wrapper. The 28px toolbar has equal 2px top, bottom and right
-gaps around its 64px-wide, 24px-high Send button. The wrapper is narrower than the
+gaps around its 48px-wide, 24px-high Send button. The wrapper is narrower than the
 input, which extends 4px past each side while retaining its width. Their bottom
 borders overlap. Wrapper corners are 10px, input corners are 15px, and the inset
 Send corner is 7px to share the wrapper corner center. Ctrl+Enter sends, with a hover shortcut.
@@ -95,7 +116,7 @@ direction the opposite bottom fade uses 75% of the tension contribution. Scroll
 controls, message headings, Copy buttons and disclosure controls paint above the
 fades; the fades affect message bodies without covering other controls. Latest
 navigation is an icon-only down arrow in the center of the composer toolbar,
-sharing Send's 64×24px borderless button style. Its absolute overlay occupies no
+sharing Send's 48×24px borderless button style. Its absolute overlay occupies no
 layout space and stays above future toolbar controls. It slides up from behind
 the input in 180ms after 96px of upward reading movement, and slides back down
 after 96px of downward movement. Small reversals consume the accumulated distance
@@ -156,19 +177,113 @@ scope on hover and to assistive technology.
 
 Response Copy icons appear when hovering a response or focusing its controls,
 without changing footer geometry. Event summaries and approval request details
-open in the same non-modal bottom sheet used for paste previews. Sheets rise
-from the top of the composer wrapper; they leave its toolbar, editor and metadata
-accessible and contribute no height to the transcript. The viewport bounds the
-sheet below the conversation title, with long contents scrolling internally.
-Opening another sheet stacks it in front: the previous card shrinks to 96%,
-moves 22px down behind the composer and fades to 35% opacity over 240ms. Only the
-top sheet accepts input or appears to assistive technology. Close or Escape
-reveals the preceding card. The stack retains at most six sheets and respects
-reduced motion; session navigation discards it. These transitions never modify
-the transcript's scroll coordinates or the shared handle/marker animation.
+open in the same non-modal floating card used for paste previews. The card sits
+12px above the composer wrapper, with 12px rounding on every corner, a 1px border,
+4px horizontal content padding and a translucent monochrome background with a
+strong 48px backdrop blur. Header padding is also 4px, with an additional 4px
+left margin only on the title. The Close button shares the Send button's
+48px by 24px rectangular dimensions and hover style. Code and raw text retain
+their opaque black boxes. Inner box and Close button rounding is calculated
+as outer radius minus border width minus inset: 12px - 1px - 4px = 7px,
+so the corner centers align. A last-child `pre` has no bottom margin.
+The composer's toolbar, editor
+and metadata remain accessible, and the card contributes no height to the
+transcript. Detail and paste-preview cards have a 360px maximum height, further
+bounded below the conversation title and above the composer. Long contents
+scroll internally.
+The host uses overflow clipping with space for the shadow, clamped to the
+conversation's horizontal bounds so the overlay cannot widen a mobile page. Do not use
+`clip-path`, masks or opacity on its ancestors: these form a backdrop root that
+prevents the card's blur from sampling the conversation behind it.
+Opening another item replaces the previous card: Close or Escape never restores
+an older preview. Clicking the transcript's empty left/right margins also
+closes it, while content, links, buttons and the scrollbar remain interactive.
+Cards enter/exit with a short 180ms fade and 8px movement, respect reduced motion
+and are discarded on session navigation. These transitions never modify the
+transcript's scroll coordinates or the shared handle/marker animation.
 
-The shared composer is a fixed-size monospace editor with logical line numbers.
-Numbers follow soft wrapping, scrolling and viewport changes. Text pastes over
+Pending Question/approval requests use the same `FloatingCard` shell and overlay
+anchor as previews, outside the composer form. They have no Close control;
+Escape, side-margin dismissal and opening another preview never discard the
+request or its selected/free-text answers. Only an explicit Submit/Allow/Deny
+reply resolves it. Pressing Enter in an answer field does not send the composer.
+Whenever a preview is active, questions scale to 97% and gain a 40% black shade
+to distinguish their background layer. If the preview is at least as tall as
+the pending Question layer, questions also move upward so 28px of their top
+remains visible above the front card. A shorter preview keeps the bottom anchor
+in place with no upward translation, while still shrinking and dimming questions.
+Both cards reserve room below the conversation title, including on narrow
+viewports. ResizeObserver compares actual card heights;
+the shared 180ms transition respects reduced motion. Covered questions are inert
+until the preview closes; closing restores their state and originating focus.
+Multiple pending requests stay available in the bounded, scrollable Question
+layer. Preview replacement still retains no older details/paste cards.
+
+Question options are monochrome cards with a title, description and native
+radio/checkbox control, retaining keyboard navigation and accessible labels.
+Option cards and Other editors have no border inside the bordered Question card;
+selection, hover and focus use background tones. Avoid redundant borders inside
+an already bordered container.
+Fieldsets retain their grouping semantics but have no default border, margin or
+padding. Ordinary Other answers reuse `ComposerEditor`, with multiline text,
+monospace line numbers, atomic paste chips and native Undo/Redo. Answer editors
+and the composer have independent values but share the connection's bounded
+paste cache. Submit expands answer chips to their original text in `answersJson`;
+Enter inserts a line and Ctrl+Enter never sends the conversation draft from an
+answer editor. Password answers keep their masked native control.
+Chip preview edits release the Question's inert state before native insertion,
+so expanding/removing a chip modifies the correct editor and retains its undo
+history. Showing/closing a preview still preserves the pending request.
+
+The shared composer is a monospace editor with logical line numbers and no resize
+handle. Typing three backticks at the start of a line opens an inline black code
+block, inserts the matching closing fence two lines below, and places the cursor
+on the empty body line between them. The opening backticks remain visible, with
+a syntax selector beside them and a 48px Close button at the right, without
+changing native text/line-number coordinates.
+The default Auto setting detects the snippet's language; manually chosen syntax
+wins. Close finishes the Markdown fence and moves the cursor into prose after it;
+it does not delete the snippet. Existing fenced snippets also render this way,
+including multiple blocks, language aliases and longer backtick fences. Code
+blocks expand the editor up to twelve rows within the existing 35dvh height cap.
+By default code uses subdued, low-saturation purple/green/blue/brown token colors on black;
+the surrounding UI stays monochrome. Highlight.js 11.12.0 is the runtime
+dependency, with a bounded set of explicitly registered grammars. User-authored
+HTML remains escaped text.
+
+Tab inserts two spaces by default, or indents the selected logical lines.
+The [browser editor settings](web-settings.md) can change the indentation size,
+choose actual Tab characters, adjust their display width and choose a syntax
+palette. Session editor fields inherit global values independently.
+Shift+Tab removes up to the configured indentation's leading spaces or one
+existing tab per selected line.
+A selection ending at the next line's start does not change that next line.
+Each operation is one native edit, retaining Undo/Redo, the selection range and
+its direction; paste chip labels remain intact. Ctrl+M toggles Tab focus mode
+within each editor, with a status notice and an accessible shortcut description.
+In focus mode, Tab and Shift+Tab follow normal browser focus order. Ctrl+M returns
+them to indentation. IME composition and modified Ctrl/Alt/Meta+Tab are left to
+the browser. Question Other answers share the same controls.
+
+Drafts remain native Markdown, preserving selection, Undo/Redo and session draft
+restoration. Sending expands code's paste chips before detection, replaces Auto with the detected
+syntax name (or plaintext when detection is inconclusive), canonicalizes common
+language aliases and finishes an unclosed fence. Surrounding prose and code body
+bytes remain intact. Question Other answers use the same editor and serialization.
+The highlighter uses a bounded common language set; Auto examines a cached sample
+of at most 1,024 characters. Visible blocks fall back to unhighlighted text above
+65,536 characters or when a logical line exceeds 2,048 characters. Fences inside
+a paste chip grow the enclosing Markdown fence as needed, and Markdown within
+standalone chips remains unchanged. See the
+[Highlight.js API](https://highlightjs.readthedocs.io/en/latest/api.html) for the
+underlying detection/highlighting interface.
+
+Code backgrounds sit below the native caret/selection, and interactive controls
+and chips above the textarea. Scrolling uses mirror top/left rather than a
+transform, keeping those layers in the same stacking context. During IME
+composition, native text is visible and code backgrounds remain in place.
+
+Line numbers follow soft wrapping, scrolling and viewport changes. Text pastes over
 800 Unicode characters or containing at least three newlines become inline
 chips, matching the TUI threshold. Click a chip, select it with Left/Right and
 press Enter, or use Ctrl+P to preview the original; the preview can remove that
@@ -205,6 +320,11 @@ backward/forward history paging with bounded DOM and cache, first-drag return,
 elastic handle bounds and wheel response/settling. A boot test stalls the module
 request on purpose to check that the page recovers on its retry, still explains
 why afterwards, and reports a boot that never finishes rather than hanging.
+Startup also waits for a real project-list RPC before showing the workspace.
+A worker that publishes its entry point but cannot answer RPCs is closed under
+the same deadline and retried once; the browser suite forces this condition by
+dropping the first MessagePort handoff. Late starts from timed-out attempts close
+their workers instead of leaking them.
 
 Serve a static build at the origin root, preserving its Worker/WASM assets and
 application/wasm MIME type. `npx vite preview --config vite.sandbox.config.ts`

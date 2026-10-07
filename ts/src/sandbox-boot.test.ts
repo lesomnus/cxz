@@ -61,4 +61,25 @@ describe("sandbox boot", () => {
     await expect(boot(attempt, { ms: 5 })).rejects.toBeInstanceOf(BootTimeout);
     expect(attempts).toBe(2);
   });
+
+  it("cancels a stalled service before starting a new worker", async () => {
+    const calls: string[] = [];
+    let first: AbortSignal | undefined;
+    const attempt = async (cached: boolean, signal: AbortSignal) => {
+      if (!cached) {
+        expect(first?.aborted).toBe(true);
+        calls.push("retry");
+        return "ready";
+      }
+      first = signal;
+      return new Promise<string>((_, reject) => {
+        signal.addEventListener("abort", () => {
+          calls.push("closed");
+          reject(signal.reason);
+        });
+      });
+    };
+    await expect(boot(attempt, { ms: 5 })).resolves.toBe("ready");
+    expect(calls).toEqual(["closed", "retry"]);
+  });
 });

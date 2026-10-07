@@ -34,6 +34,15 @@ test("sign in over loopback http, stay signed in, sign out", async ({
   const response = await page.goto("/");
   expect(response?.headers()["strict-transport-security"]).toBeUndefined();
 
+  await page.getByRole("button", { name: /demo-chat/ }).click();
+  await page.keyboard.press("Control+Backquote");
+  const terminal = page.getByRole("region", { name: "Workspace terminal" });
+  await expect(terminal).toContainText("fixture$");
+  await expect(terminal.locator(".xterm-helper-textarea")).toBeFocused();
+  await page.keyboard.type("printf 'plaintext:%s\\n' shell");
+  await page.keyboard.press("Enter");
+  await expect(terminal).toContainText("plaintext:shell");
+
   await page.getByRole("button", { name: "Sign out" }).click();
   await expect(
     page.getByRole("button", { name: "Connect", exact: true }),

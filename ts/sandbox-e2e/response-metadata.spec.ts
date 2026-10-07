@@ -35,7 +35,7 @@ test("response headings keep their own model and effort after settings change", 
     .fill("Snapshot preview");
   await page.getByRole("button", { name: "Send", exact: true }).click();
   await expect(headings.last()).toHaveText("sandbox-claude-compact · low");
-  await expect(headings.last()).toHaveAttribute("title", /적용된 설정/);
+  await expect(headings.last()).toHaveAttribute("title", /Applied setting/);
   // Earlier rows may be unmounted by virtualization once the new turn finishes.
   await expect(page.locator(".conversation header small")).toContainText(
     "idle",

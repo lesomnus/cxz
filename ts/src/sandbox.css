@@ -15,8 +15,8 @@
   gap: 4px 12px;
   flex-wrap: wrap;
   padding: 8px 12px;
-  background: #1c1c1c;
-  border-bottom: 1px solid #333;
+  background: var(--shade-28);
+  border-bottom: 1px solid var(--shade-51);
 }
 .sandbox-controls label {
   display: flex;
@@ -30,13 +30,13 @@
 }
 .sandbox-controls select {
   color: inherit;
-  background: #141414;
+  background: var(--shade-20);
   padding: 6px 8px;
-  border: 1px solid #3c3c3c;
+  border: 1px solid var(--shade-60);
   border-radius: 4px;
 }
 .sandbox-controls > span {
-  color: #aaa;
+  color: var(--shade-170);
   font-size: 0.75rem;
 }
 .sandbox-controls button {

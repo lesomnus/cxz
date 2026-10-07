@@ -32,6 +32,8 @@ const (
 	ProjectService_SessionLogin_FullMethodName   = "/cxz.ProjectService/SessionLogin"
 	ProjectService_Paths_FullMethodName          = "/cxz.ProjectService/Paths"
 	ProjectService_Download_FullMethodName       = "/cxz.ProjectService/Download"
+	ProjectService_Editor_FullMethodName         = "/cxz.ProjectService/Editor"
+	ProjectService_EditorTunnel_FullMethodName   = "/cxz.ProjectService/EditorTunnel"
 	ProjectService_Devcontainer_FullMethodName   = "/cxz.ProjectService/Devcontainer"
 	ProjectService_Docker_FullMethodName         = "/cxz.ProjectService/Docker"
 	ProjectService_FileMappings_FullMethodName   = "/cxz.ProjectService/FileMappings"
@@ -83,6 +85,11 @@ type ProjectServiceClient interface {
 	Paths(ctx context.Context, in *ProjectPathsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ProjectPathsReply], error)
 	// Stream a regular file as the project remote user; never journal file contents.
 	Download(ctx context.Context, in *ProjectDownloadRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ProjectDownloadReply], error)
+	// Start/reuse the project's browser editor. The browser gateway removes the
+	// private token from RPC replies and scopes its workbench cookie to the proxy.
+	Editor(ctx context.Context, in *ProjectEditorRequest, opts ...grpc.CallOption) (*ProjectEditorReply, error)
+	// Private gateway transport to the editor's loopback listener; not web RPC.
+	EditorTunnel(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ProjectEditorTunnelRequest, ProjectEditorTunnelReply], error)
 	Devcontainer(ctx context.Context, in *DevcontainerRequest, opts ...grpc.CallOption) (*DevcontainerReply, error)
 	Docker(ctx context.Context, in *DockerRequest, opts ...grpc.CallOption) (*DockerReply, error)
 	FileMappings(ctx context.Context, in *FileMappingsRequest, opts ...grpc.CallOption) (*FileMappingsReply, error)
@@ -270,6 +277,29 @@ func (c *projectServiceClient) Download(ctx context.Context, in *ProjectDownload
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type ProjectService_DownloadClient = grpc.ServerStreamingClient[ProjectDownloadReply]
 
+func (c *projectServiceClient) Editor(ctx context.Context, in *ProjectEditorRequest, opts ...grpc.CallOption) (*ProjectEditorReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ProjectEditorReply)
+	err := c.cc.Invoke(ctx, ProjectService_Editor_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectServiceClient) EditorTunnel(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ProjectEditorTunnelRequest, ProjectEditorTunnelReply], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &ProjectService_ServiceDesc.Streams[6], ProjectService_EditorTunnel_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[ProjectEditorTunnelRequest, ProjectEditorTunnelReply]{ClientStream: stream}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type ProjectService_EditorTunnelClient = grpc.BidiStreamingClient[ProjectEditorTunnelRequest, ProjectEditorTunnelReply]
+
 func (c *projectServiceClient) Devcontainer(ctx context.Context, in *DevcontainerRequest, opts ...grpc.CallOption) (*DevcontainerReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DevcontainerReply)
@@ -382,6 +412,11 @@ type ProjectServiceServer interface {
 	Paths(*ProjectPathsRequest, grpc.ServerStreamingServer[ProjectPathsReply]) error
 	// Stream a regular file as the project remote user; never journal file contents.
 	Download(*ProjectDownloadRequest, grpc.ServerStreamingServer[ProjectDownloadReply]) error
+	// Start/reuse the project's browser editor. The browser gateway removes the
+	// private token from RPC replies and scopes its workbench cookie to the proxy.
+	Editor(context.Context, *ProjectEditorRequest) (*ProjectEditorReply, error)
+	// Private gateway transport to the editor's loopback listener; not web RPC.
+	EditorTunnel(grpc.BidiStreamingServer[ProjectEditorTunnelRequest, ProjectEditorTunnelReply]) error
 	Devcontainer(context.Context, *DevcontainerRequest) (*DevcontainerReply, error)
 	Docker(context.Context, *DockerRequest) (*DockerReply, error)
 	FileMappings(context.Context, *FileMappingsRequest) (*FileMappingsReply, error)
@@ -441,6 +476,12 @@ func (UnimplementedProjectServiceServer) Paths(*ProjectPathsRequest, grpc.Server
 }
 func (UnimplementedProjectServiceServer) Download(*ProjectDownloadRequest, grpc.ServerStreamingServer[ProjectDownloadReply]) error {
 	return status.Error(codes.Unimplemented, "method Download not implemented")
+}
+func (UnimplementedProjectServiceServer) Editor(context.Context, *ProjectEditorRequest) (*ProjectEditorReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method Editor not implemented")
+}
+func (UnimplementedProjectServiceServer) EditorTunnel(grpc.BidiStreamingServer[ProjectEditorTunnelRequest, ProjectEditorTunnelReply]) error {
+	return status.Error(codes.Unimplemented, "method EditorTunnel not implemented")
 }
 func (UnimplementedProjectServiceServer) Devcontainer(context.Context, *DevcontainerRequest) (*DevcontainerReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method Devcontainer not implemented")
@@ -664,6 +705,31 @@ func _ProjectService_Download_Handler(srv interface{}, stream grpc.ServerStream)
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type ProjectService_DownloadServer = grpc.ServerStreamingServer[ProjectDownloadReply]
 
+func _ProjectService_Editor_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProjectEditorRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).Editor(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_Editor_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).Editor(ctx, req.(*ProjectEditorRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProjectService_EditorTunnel_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(ProjectServiceServer).EditorTunnel(&grpc.GenericServerStream[ProjectEditorTunnelRequest, ProjectEditorTunnelReply]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type ProjectService_EditorTunnelServer = grpc.BidiStreamingServer[ProjectEditorTunnelRequest, ProjectEditorTunnelReply]
+
 func _ProjectService_Devcontainer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DevcontainerRequest)
 	if err := dec(in); err != nil {
@@ -826,6 +892,10 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ProjectService_Remove_Handler,
 		},
 		{
+			MethodName: "Editor",
+			Handler:    _ProjectService_Editor_Handler,
+		},
+		{
 			MethodName: "Devcontainer",
 			Handler:    _ProjectService_Devcontainer_Handler,
 		},
@@ -887,6 +957,12 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 			StreamName:    "Download",
 			Handler:       _ProjectService_Download_Handler,
 			ServerStreams: true,
+		},
+		{
+			StreamName:    "EditorTunnel",
+			Handler:       _ProjectService_EditorTunnel_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
 		},
 	},
 	Metadata: "cxz/project_svc.g.proto",

@@ -1,3 +1,5 @@
+import { t, currentLocale } from "./i18n";
+import { useLocale } from "./i18n-react";
 import {
   formatTokens,
   formatReset,
@@ -6,6 +8,7 @@ import {
 } from "./session-info";
 
 export function UsageInfo({ info }: { info: SessionInfo }) {
+  useLocale();
   const known = info.contextUsed !== undefined && !!info.contextWindow;
   const ratio = known
     ? Math.min(1, info.contextUsed! / info.contextWindow!)
@@ -22,20 +25,26 @@ export function UsageInfo({ info }: { info: SessionInfo }) {
           role="img"
           aria-label={
             info.remaining === undefined
-              ? "Remaining quota not reported"
-              : `Remaining quota ${Math.round(info.remaining)}%`
+              ? t("Remaining quota not reported")
+              : t("Remaining quota {percent}%", {
+                  percent: Math.round(info.remaining),
+                })
           }
         >
           {quotaDots(info.remaining)}
         </span>
         <span id="quota-popover" className="meta-tooltip" role="tooltip">
-          {info.quotaLabel || "Usage"} ·{" "}
+          {info.quotaLabel || t("Usage")} ·{" "}
           {info.remaining === undefined
             ? "—"
-            : `${Math.round(info.remaining)}% remaining`}
+            : t("{percent}% remaining", {
+                percent: Math.round(info.remaining),
+              })}
           <br />
-          Reset {formatReset(info.reset)}
-          {info.reset ? ` · ${new Date(info.reset).toLocaleDateString()}` : ""}
+          {t("Reset")} {formatReset(info.reset)}
+          {info.reset
+            ? ` · ${new Date(info.reset).toLocaleDateString(currentLocale())}`
+            : ""}
         </span>
       </span>
       <span
@@ -49,7 +58,7 @@ export function UsageInfo({ info }: { info: SessionInfo }) {
           height="18"
           viewBox="0 0 20 20"
           role="img"
-          aria-label="Context usage"
+          aria-label={t("Context usage")}
         >
           <circle
             className="context-track"

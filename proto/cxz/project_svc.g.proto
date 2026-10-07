@@ -47,6 +47,11 @@ service ProjectService {
   rpc Paths(ProjectPathsRequest) returns (stream ProjectPathsReply);
   // Stream a regular file as the project remote user; never journal file contents.
   rpc Download(ProjectDownloadRequest) returns (stream ProjectDownloadReply);
+  // Start/reuse the project's browser editor. The browser gateway removes the
+  // private token from RPC replies and scopes its workbench cookie to the proxy.
+  rpc Editor(ProjectEditorRequest) returns (ProjectEditorReply);
+  // Private gateway transport to the editor's loopback listener; not web RPC.
+  rpc EditorTunnel(stream ProjectEditorTunnelRequest) returns (stream ProjectEditorTunnelReply);
   rpc Devcontainer(DevcontainerRequest) returns (DevcontainerReply);
   rpc Docker(DockerRequest) returns (DockerReply);
   rpc FileMappings(FileMappingsRequest) returns (FileMappingsReply);
@@ -290,6 +295,26 @@ message ProjectDownloadRequest {
 message ProjectDownloadReply {
   bytes data = 1;
   int64 total_size = 2;
+}
+
+message ProjectEditorRequest {
+  ProjectRef ref = 1;
+}
+
+message ProjectEditorReply {
+  string workspace = 1;
+  string connection_token = 2;
+  bool simulated = 3;
+}
+
+message ProjectEditorTunnelRequest {
+  ProjectRef ref = 1;
+  bytes input = 2;
+}
+
+message ProjectEditorTunnelReply {
+  bool ready = 1;
+  bytes output = 2;
 }
 
 message DevcontainerRequest {

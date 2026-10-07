@@ -6,26 +6,30 @@ describe("input timestamps", () => {
     const now = new Date(2026, 9, 6, 12);
     const ago = (ms: number) =>
       relativeMessageTime(new Date(now.getTime() - ms), now);
-    expect(ago(0)).toBe("1분 이내");
-    expect(ago(59_999)).toBe("1분 이내");
-    expect(ago(60_000)).toBe("1분 전");
-    expect(ago(5 * 60_000)).toBe("5분 전");
-    expect(ago(3_600_000)).toBe("1시간 전");
-    expect(ago(86_400_000)).toBe("어제");
+    expect(ago(0)).toBe("Less than a minute ago");
+    expect(ago(59_999)).toBe("Less than a minute ago");
+    expect(ago(60_000)).toBe("1 minute ago");
+    expect(ago(5 * 60_000)).toBe("5 minutes ago");
+    expect(ago(3_600_000)).toBe("1 hour ago");
+    expect(ago(86_400_000)).toBe("Yesterday");
     expect(ago(7 * 86_400_000)).toBe("");
     expect(ago(-1000)).toBe("");
   });
 
-  it("uses calendar days and only calls an earlier calendar week 지난주", () => {
+  it("uses calendar days and only calls an earlier calendar week Last week", () => {
     const now = new Date(2026, 9, 11, 12); // Sunday
-    expect(relativeMessageTime(new Date(2026, 9, 8, 12), now)).toBe("3일 전");
-    expect(relativeMessageTime(new Date(2026, 9, 7, 12), now)).toBe("4일 전");
+    expect(relativeMessageTime(new Date(2026, 9, 8, 12), now)).toBe(
+      "3 days ago",
+    );
+    expect(relativeMessageTime(new Date(2026, 9, 7, 12), now)).toBe(
+      "4 days ago",
+    );
     const monday = new Date(2026, 9, 12, 12);
     expect(relativeMessageTime(new Date(2026, 9, 7, 12), monday)).toBe(
-      "지난주",
+      "Last week",
     );
     expect(relativeMessageTime(new Date(2026, 9, 6, 12), monday)).toBe(
-      "지난주",
+      "Last week",
     );
     expect(relativeMessageTime(new Date(2026, 9, 5, 12), monday)).toBe("");
   });

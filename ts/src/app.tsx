@@ -1,3 +1,5 @@
+import { t, translateKnown } from "./i18n";
+import { useLocale } from "./i18n-react";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Provider, useQuery } from "@lesomnus/payday/react";
 import { ProjectService } from "../gen/cxz/project_svc_pb";
@@ -29,18 +31,28 @@ import {
 import { ResponseFooter } from "./response-footer";
 import { InputMessage } from "./input-message";
 import { ComposerEditor } from "./composer-editor";
+import { WorkspaceTerminal, terminalShortcut } from "./workspace-terminal";
 import {
-  BottomSheetProvider,
-  BottomSheetHost,
-  useBottomSheet,
-} from "./bottom-sheet";
-import { expandPastes } from "./composer-pastes";
+  FloatingCardProvider,
+  FloatingCardHost,
+  FloatingCard,
+  useFloatingCard,
+} from "./floating-card";
+import { type ComposerPaste } from "./composer-pastes";
+import { composerPrompt } from "./composer-code";
 import { SessionTreeGroup } from "./session-tree";
 import { Transcript } from "./transcript";
+import { WorkspaceEditor } from "./workspace-editor";
+import { SettingsPage } from "./settings-page";
 export { Button } from "./button";
 import "./style.css";
 
-function ResourceIcon({ kind }: { kind: "sessions" | "projects" }) {
+function ResourceIcon({
+  kind,
+}: {
+  kind: "sessions" | "projects" | "settings";
+}) {
+  useLocale();
   return (
     <svg
       width="20"
@@ -55,26 +67,34 @@ function ResourceIcon({ kind }: { kind: "sessions" | "projects" }) {
     >
       {kind === "sessions" ? (
         <path d="M5 4h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6 3V6a2 2 0 0 1 2-2Z" />
-      ) : (
+      ) : kind === "projects" ? (
         <path d="M3 7V5a2 2 0 0 1 2-2h5l3 3h6a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" />
+      ) : (
+        <>
+          <circle cx="12" cy="12" r="3" />
+          <path d="M9 3h6l1 3 3 1 2 5-2 5-3 1-1 3H9l-1-3-3-1-2-5 2-5 3-1Z" />
+        </>
       )}
     </svg>
   );
 }
 
 function Markdown({ text }: { text: string }) {
+  useLocale();
   return (
     <div
       className="markdown"
       dangerouslySetInnerHTML={{
         __html: DOMPurify.sanitize(marked.parse(text, { async: false }), {
           FORBID_TAGS: ["img", "style", "input", "form"],
+          FORBID_ATTR: ["style"],
         }),
       }}
     />
   );
 }
 export function App() {
+  useLocale();
   const [connection, setConnection] = useState<Connection>();
   const [token, setToken] = useState("");
   const [error, setError] = useState("");
@@ -84,7 +104,7 @@ export function App() {
       .then((r) => {
         if (r.ok) setConnection(new Connection());
       })
-      .catch(() => setError("Cannot reach cxz"));
+      .catch(() => setError(t("Cannot reach cxz")));
   }, []);
   async function login(e: React.FormEvent) {
     e.preventDefault();
@@ -102,17 +122,17 @@ export function App() {
   }
   async function logout() {
     const r = await fetch("/auth/logout", { method: "POST" });
-    if (!r.ok) throw Error("Sign out failed");
+    if (!r.ok) throw Error(t("Sign out failed"));
     setConnection(undefined);
   }
   if (!connection)
     return (
       <main className="login">
         <h1>cxz</h1>
-        <p>Your projects, wherever you are.</p>
+        <p>{t("Your projects, wherever you are.")}</p>
         <form onSubmit={login}>
           <label>
-            Web access token
+            {t("Web access token")}
             <input
               type="password"
               value={token}
@@ -121,7 +141,7 @@ export function App() {
               required
             />
           </label>
-          <Button disabled={busy}>Connect</Button>
+          <Button disabled={busy}>{t("Connect")}</Button>
         </form>
         <p role="alert">{error}</p>
         <small>{location.origin}</small>
@@ -137,15 +157,22 @@ export function Workspace({
   connection: c,
   logout,
   initialSession = "",
-  exitLabel = "Sign out",
+  exitLabel = t("Sign out"),
 }: {
   connection: Connection;
   logout: () => Promise<void>;
   initialSession?: string;
   exitLabel?: string;
 }) {
-  const [resource, setResource] = useState<"sessions" | "projects">("sessions");
+  useLocale();
+  const [resource, setResource] = useState<
+    "sessions" | "projects" | "settings"
+  >("sessions");
   const [session, setSession] = useState(initialSession);
+  const [settingsFileOpen, setSettingsFileOpen] = useState(false);
+  const [settingsTopic, setSettingsTopic] = useState<"editor" | "general">(
+    "general",
+  );
   const [after, setAfter] = useState("");
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const projects = useQuery(ProjectService.method.list, {
@@ -156,9 +183,9 @@ export function Workspace({
   const [error, setError] = useState("");
   return (
     <div
-      className={`workspace ${session && resource === "sessions" ? "conversation-open" : ""}`}
+      className={`workspace ${session && resource === "sessions" ? "conversation-open" : ""} ${resource === "settings" ? "settings-open" : ""}`}
     >
-      <nav className="resource-sidebar" aria-label="Resources">
+      <nav className="resource-sidebar" aria-label={t("Resources")}>
         <span className="brand" aria-label="cxz">
           cxz
         </span>
@@ -166,29 +193,73 @@ export function Workspace({
           <Button
             key={view}
             className={`resource-link ${resource === view ? "active" : ""}`}
-            aria-label={`${view === "sessions" ? "Sessions" : "Projects"} view`}
+            aria-label={
+              view === "sessions" ? t("Sessions view") : t("Projects view")
+            }
             aria-current={resource === view ? "page" : undefined}
-            title={view === "sessions" ? "Sessions" : "Projects"}
+            title={view === "sessions" ? t("Sessions") : t("Projects")}
             onClick={() => setResource(view)}
           >
             <ResourceIcon kind={view} />
-            <span>{view === "sessions" ? "Sessions" : "Projects"}</span>
+            <span>{view === "sessions" ? t("Sessions") : t("Projects")}</span>
           </Button>
         ))}
+        <Button
+          className={`resource-link settings-link ${resource === "settings" ? "active" : ""}`}
+          aria-label={t("Settings view")}
+          aria-current={resource === "settings" ? "page" : undefined}
+          title={t("Settings")}
+          onClick={() => {
+            setSettingsFileOpen(false);
+            setSettingsTopic("general");
+            setResource("settings");
+          }}
+        >
+          <ResourceIcon kind="settings" />
+          <span>{t("Settings")}</span>
+        </Button>
       </nav>
       <aside
         className="resource-panel"
-        aria-label={resource === "sessions" ? "Session list" : "Project list"}
+        aria-label={
+          resource === "sessions"
+            ? t("Session list")
+            : resource === "settings"
+              ? t("Settings navigation")
+              : t("Project list")
+        }
       >
         <header>
-          <strong>{resource === "sessions" ? "Sessions" : "Projects"}</strong>
+          <strong>
+            {resource === "sessions"
+              ? t("Sessions")
+              : resource === "settings"
+                ? t("Settings")
+                : t("Projects")}
+          </strong>
           <Button onClick={() => logout().catch((e) => setError(String(e)))}>
             {exitLabel}
           </Button>
         </header>
         <p className="muted">{new URL(c.baseUrl).host}</p>
-        {resource === "sessions" ? (
-          <div className="session-tree" aria-label="Projects and sessions">
+        {resource === "settings" ? (
+          <nav className="settings-topics" aria-label={t("Settings topics")}>
+            {(["general", "editor"] as const).map((topic) => (
+              <Button
+                key={topic}
+                aria-current={settingsTopic === topic ? "page" : undefined}
+                aria-controls="settings-editor"
+                onClick={() => {
+                  setSettingsTopic(topic);
+                  setSettingsFileOpen(false);
+                }}
+              >
+                {topic === "general" ? t("General") : t("Editor")}
+              </Button>
+            ))}
+          </nav>
+        ) : resource === "sessions" ? (
+          <div className="session-tree" aria-label={t("Projects and sessions")}>
             {projects.data?.items.map((p) => (
               <SessionTreeGroup
                 key={p.runtimeId}
@@ -225,25 +296,33 @@ export function Workspace({
             </Button>
           ))
         )}
-        {after && <Button onClick={() => setAfter("")}>First projects</Button>}
-        {projects.data?.next && (
+        {resource !== "settings" && after && (
+          <Button onClick={() => setAfter("")}>{t("First projects")}</Button>
+        )}
+        {resource !== "settings" && projects.data?.next && (
           <Button onClick={() => setAfter(projects.data!.next)}>
-            More projects →
+            {t("More projects →")}
           </Button>
         )}
         {(projects.error || error) && (
           <p role="alert">{String(projects.error || error)}</p>
         )}
         {projects.state === "pending" && !projects.data && (
-          <p className="muted">Loading projects…</p>
+          <p className="muted">{t("Loading projects…")}</p>
         )}
       </aside>
-      {resource === "projects" ? (
+      {resource === "settings" ? (
+        <SettingsPage
+          topic={settingsTopic}
+          fileOpen={settingsFileOpen}
+          setFileOpen={setSettingsFileOpen}
+        />
+      ) : resource === "projects" ? (
         <main className="resource-view">
           <header>
             <div>
-              <strong>Projects</strong>
-              <small>Select a project to browse its sessions.</small>
+              <strong>{t("Projects")}</strong>
+              <small>{t("Select a project to browse its sessions.")}</small>
             </div>
           </header>
           <div className="resource-view-content">
@@ -272,34 +351,91 @@ export function Workspace({
               </Button>
             ))}
             {projects.state === "pending" && !projects.data && (
-              <p className="muted">Loading projects…</p>
+              <p className="muted">{t("Loading projects…")}</p>
             )}
             {projects.data && !projects.data.items.length && (
-              <p className="muted">No projects yet.</p>
+              <p className="muted">{t("No projects yet.")}</p>
             )}
           </div>
         </main>
       ) : session ? (
-        <Conversation
-          key={session}
-          c={c}
-          id={session}
-          back={() => setSession("")}
-        />
+        <SessionWorkspace c={c} id={session} back={() => setSession("")} />
       ) : (
         <main className="empty">
-          <h1>Your workspace</h1>
-          <p>Select a session to continue.</p>
+          <h1>{t("Your workspace")}</h1>
+          <p>{t("Select a session to continue.")}</p>
         </main>
       )}
     </div>
   );
 }
-function Conversation(props: { c: Connection; id: string; back: () => void }) {
+function SessionWorkspace({
+  c,
+  id,
+  back,
+}: {
+  c: Connection;
+  id: string;
+  back: () => void;
+}) {
+  useLocale();
+  const current = useQuery(SessionService.method.get, {
+    ref: ref(id),
+    select: { all: true, project: { all: true } },
+  });
+  const area = useRef<HTMLDivElement>(null);
+  const [activated, setActivated] = useState(false);
+  useEffect(() => {
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry.contentRect.width >= 1600) setActivated(true);
+    });
+    observer.observe(area.current!);
+    return () => observer.disconnect();
+  }, []);
+  const project = current.data?.project;
   return (
-    <BottomSheetProvider>
+    <div className="session-workspace" ref={area}>
+      <div className="session-split">
+        <Conversation key={id} c={c} id={id} back={back} />
+        {activated && !!project?.id.length && (
+          <ProjectEditorPane
+            key={Array.from(project.id).join("-")}
+            c={c}
+            projectId={project.id}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+function ProjectEditorPane({
+  c,
+  projectId,
+}: {
+  c: Connection;
+  projectId: Uint8Array;
+}) {
+  useLocale();
+  const project = useQuery(ProjectService.method.get, {
+    ref: { key: { case: "id", value: projectId } },
+    select: { all: true },
+  });
+  return project.data ? (
+    <WorkspaceEditor c={c} project={project.data} />
+  ) : (
+    <aside className="workspace-editor" aria-label={t("Workspace editor")}>
+      <p role={project.error ? "alert" : "status"}>
+        {project.error ? String(project.error) : t("Loading workspace…")}
+      </p>
+    </aside>
+  );
+}
+function Conversation(props: { c: Connection; id: string; back: () => void }) {
+  useLocale();
+  return (
+    <FloatingCardProvider>
       <ConversationContent {...props} />
-    </BottomSheetProvider>
+    </FloatingCardProvider>
   );
 }
 function ConversationContent({
@@ -311,6 +447,7 @@ function ConversationContent({
   id: string;
   back: () => void;
 }) {
+  useLocale();
   const current = useQuery(SessionService.method.get, {
     ref: ref(id),
     select: { all: true, project: { all: true } },
@@ -327,6 +464,28 @@ function ConversationContent({
   const [error, setError] = useState("");
   const [draft, setDraft] = useState(c.drafts.get(id) ?? "");
   const [busy, setBusy] = useState(false);
+  const [terminalVisible, setTerminalVisible] = useState(false);
+  const [terminalActivated, setTerminalActivated] = useState(false);
+  const terminalVisibleRef = useRef(false);
+  function showTerminal(show: boolean) {
+    terminalVisibleRef.current = show;
+    if (show) setTerminalActivated(true);
+    setTerminalVisible(show);
+    if (!show)
+      composerInput.current
+        ?.querySelector<HTMLTextAreaElement>("textarea")
+        ?.focus();
+  }
+  useEffect(() => {
+    const keydown = (event: KeyboardEvent) => {
+      if (!terminalShortcut(event)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      if (!event.repeat) showTerminal(!terminalVisibleRef.current);
+    };
+    document.addEventListener("keydown", keydown, true);
+    return () => document.removeEventListener("keydown", keydown, true);
+  }, []);
   const [follow, setFollow] = useState(true);
   const [latestShown, setLatestShown] = useState(false);
   const latestTravel = useRef({ shown: false, distance: 0 });
@@ -395,7 +554,9 @@ function ConversationContent({
       if (!controller.signal.aborted) remember();
     })().catch((e) => {
       if (!controller.signal.aborted)
-        setError(`Cannot load preceding input: ${String(e)}`);
+        setError(
+          t("Cannot load preceding input: {error}", { error: String(e) }),
+        );
     });
     return () => controller.abort();
   }, [c, id, firstSeq]);
@@ -419,7 +580,7 @@ function ConversationContent({
           (event) => event.seq === target && event.kind === "input",
         )
       ) {
-        setError("This input is no longer available in retained history.");
+        setError(t("This input is no longer available in retained history."));
         return;
       }
       detached.current = page.events.at(-1)!.seq < latestSeq.current;
@@ -428,7 +589,7 @@ function ConversationContent({
       setJumpTarget(seq);
     } catch (e) {
       if (!controller.signal.aborted)
-        setError(`Cannot open input: ${String(e)}`);
+        setError(t("Cannot open input: {error}", { error: String(e) }));
     } finally {
       if (historyRequest.current === controller) historyRequest.current = null;
     }
@@ -539,7 +700,7 @@ function ConversationContent({
         }
       } catch (e) {
         if (canceled) return;
-        setStatus(`Disconnected · retrying: ${String(e)}`);
+        setStatus(t("Disconnected · retrying: {error}", { error: String(e) }));
       } finally {
         if (!canceled) timer = setTimeout(connect, 2000);
       }
@@ -628,7 +789,7 @@ function ConversationContent({
       if (goLatest) setFollow(true);
     } catch (e) {
       if (!controller.signal.aborted)
-        setError(`Cannot load history: ${String(e)}`);
+        setError(t("Cannot load history: {error}", { error: String(e) }));
     } finally {
       if (historyRequest.current === controller) historyRequest.current = null;
     }
@@ -673,7 +834,7 @@ function ConversationContent({
       }
     })().catch((e) => {
       if (!controller.signal.aborted)
-        setError(`Cannot read model choices: ${String(e)}`);
+        setError(t("Cannot read model choices: {error}", { error: String(e) }));
     });
     return () => controller.abort();
   }, [c, id, s?.status?.runId, events.length > 0]);
@@ -695,7 +856,7 @@ function ConversationContent({
         });
         if (receipt.status === "accepted") return;
         if (receipt.status === "rejected")
-          throw new Error("Provider rejected the setting");
+          throw new Error(t("Provider rejected the setting"));
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 20000);
         try {
@@ -717,12 +878,12 @@ function ConversationContent({
                 event.kind === "receipt" &&
                 payload(event).status === "rejected"
               )
-                throw new Error("Provider rejected the setting");
+                throw new Error(t("Provider rejected the setting"));
             }
             afterSeq = page.events.at(-1)?.seq ?? afterSeq;
             await new Promise((resolve) => setTimeout(resolve, 100));
           }
-          throw new Error("Provider has not confirmed the setting");
+          throw new Error(t("Provider has not confirmed the setting"));
         } finally {
           clearTimeout(timeout);
         }
@@ -741,7 +902,10 @@ function ConversationContent({
       await fn(s);
     } catch (e) {
       setError(
-        `${String(e)}. The result may be unknown after a disconnect; inspect the conversation before retrying.`,
+        t(
+          "{error}. The result may be unknown after a disconnect; inspect the conversation before retrying.",
+          { error: String(e) },
+        ),
       );
     } finally {
       lock.current = false;
@@ -762,10 +926,10 @@ function ConversationContent({
     await action(async (s) => {
       const receipt = await c.sessions.send({
         ...control(s),
-        text: expandPastes(sent, c.pastes),
+        text: composerPrompt(sent, c.pastes),
       });
       if (receipt.status === "rejected")
-        throw new Error("Provider rejected the input");
+        throw new Error(t("Provider rejected the input"));
       setDraft((old) => (old === sent ? "" : old));
       if (detached.current) await loadHistory("newer", true);
       pane.current?.dispatchEvent(new Event("scroll-jump"));
@@ -791,16 +955,25 @@ function ConversationContent({
   return (
     <main className="conversation">
       <header>
-        <Button onClick={back} aria-label="Back to sessions">
+        <Button onClick={back} aria-label={t("Back to sessions")}>
           ←
         </Button>
         <div>
-          <strong>{s?.alias || s?.runtimeId || "Session"}</strong>
+          <strong>{s?.alias || s?.runtimeId || t("Session")}</strong>
           <small>
             <AgentBrand agent={s?.agent ?? ""} /> · {s?.status?.state} ·{" "}
-            {status}
+            {translateKnown(status)}
           </small>
         </div>
+        <Button
+          className="toolbar-button terminal-toggle"
+          aria-label={t("Toggle workspace terminal")}
+          aria-expanded={terminalVisible}
+          title="Ctrl+`"
+          onClick={() => showTerminal(!terminalVisibleRef.current)}
+        >
+          &gt;_
+        </Button>
       </header>
       <Transcript
         pane={pane}
@@ -831,7 +1004,7 @@ function ConversationContent({
         notice={
           gap && (
             <p className="muted history-note">
-              Earlier history is no longer available.
+              {t("Earlier history is no longer available.")}
             </p>
           )
         }
@@ -870,17 +1043,18 @@ function ConversationContent({
           setFollow(next);
         }}
       />
-      <section className="pending">
+      <FloatingCardHost>
         {pending.map((e) => (
           <Approval
             key={`${e.runId}:${e.requestId}`}
             e={e}
             agent={s?.agent ?? ""}
+            pastes={c.pastes}
             busy={busy}
             reply={reply}
           />
         ))}
-      </section>
+      </FloatingCardHost>
       {!!(error || current.error) && (
         <p className="error" role="alert">
           {error || String(current.error)}
@@ -888,7 +1062,6 @@ function ConversationContent({
       )}
       <form className="composer" onSubmit={send}>
         <div className="composer-wrapper">
-          <BottomSheetHost />
           <div className="composer-toolbar">
             <span
               className="latest-slot"
@@ -899,7 +1072,7 @@ function ConversationContent({
               <Button
                 className="toolbar-button latest-button"
                 type="button"
-                aria-label="Latest"
+                aria-label={t("Latest")}
                 onClick={() => void loadHistory("newer", true)}
               >
                 <svg
@@ -921,7 +1094,7 @@ function ConversationContent({
               <Button
                 className="toolbar-button send"
                 type="submit"
-                aria-label="Send"
+                aria-label={t("Send")}
                 aria-keyshortcuts="Control+Enter"
                 aria-describedby="send-shortcut"
                 disabled={busy || !s || !draft.trim()}
@@ -954,7 +1127,7 @@ function ConversationContent({
             />
           </div>
         </div>
-        <div className="composer-meta" aria-label="Session information">
+        <div className="composer-meta" aria-label={t("Session information")}>
           <ModelSettings
             session={s}
             info={info}
@@ -965,6 +1138,14 @@ function ConversationContent({
           <UsageInfo info={info} />
         </div>
       </form>
+      {terminalActivated && !!s?.project?.id.length && (
+        <WorkspaceTerminal
+          c={c}
+          projectId={s.project.id}
+          visible={terminalVisible}
+          hide={() => showTerminal(false)}
+        />
+      )}
     </main>
   );
 }
@@ -978,7 +1159,8 @@ const EventView = React.memo(
     agent: string;
     completion?: ResponseCompletion;
   }) {
-    const openSheet = useBottomSheet();
+    useLocale();
+    const openCard = useFloatingCard();
     if (e.kind === "assistant") {
       const info = responseInfo(e.response);
       return (
@@ -1013,7 +1195,7 @@ const EventView = React.memo(
         data-seq={e.seq.toString()}
         className={`event-detail ${e.kind === "diagnostic" || e.kind === "stderr" ? "error" : ""}`}
         onClick={() =>
-          openSheet({
+          openCard({
             title: e.kind === "approval" ? approvalTitle(e) : e.kind,
             content: () => (
               <>
@@ -1038,79 +1220,117 @@ const EventView = React.memo(
 function Approval({
   e,
   agent,
+  pastes,
   busy,
   reply,
 }: {
   e: SessionEvent;
   agent: string;
+  pastes: Map<string, ComposerPaste>;
   busy: boolean;
   reply: (e: SessionEvent, allow: boolean, answers?: string) => Promise<void>;
 }) {
-  const openSheet = useBottomSheet();
+  useLocale();
+  const openCard = useFloatingCard();
   const qs = questions(agent, e);
   const [selected, setSelected] = useState<Record<string, string[]>>({});
   const [other, setOther] = useState<Record<string, string>>({});
+  const otherAnswer = (key: string) => composerPrompt(other[key] ?? "", pastes);
   const elicitation = e.text === "mcpServer/elicitation/request";
   const p = payload(e);
   const requiresForm =
     (elicitation && p.params?.requestedSchema) ||
     e.text === "agentMessage/questions";
   return (
-    <section className="approval">
-      <h3>{approvalTitle(e)}</h3>
+    <FloatingCard
+      className="approval"
+      title={approvalTitle(e)}
+      role="region"
+      aria-label={approvalTitle(e)}
+    >
       {p.params?.message && <p>{String(p.params.message)}</p>}
       <Button
         type="button"
         className="event-detail"
         onClick={() =>
-          openSheet({
-            title: "Request details",
+          openCard({
+            title: () => t("Request details"),
             content: () => <pre>{detail(e)}</pre>,
           })
         }
       >
-        Request details
+        {t("Request details")}
       </Button>
       {qs.map((q) => (
-        <fieldset key={q.key}>
+        <fieldset key={q.key} className="question-group">
           <legend>{q.text}</legend>
-          {q.options.map((o) => (
-            <label key={o.label}>
-              <input
-                type={q.multi ? "checkbox" : "radio"}
-                name={`${e.requestId}:${q.key}`}
-                checked={(selected[q.key] ?? []).includes(o.label)}
-                onChange={(event) =>
-                  setSelected((old) => ({
-                    ...old,
-                    [q.key]: q.multi
-                      ? event.target.checked
-                        ? [...(old[q.key] ?? []), o.label]
-                        : (old[q.key] ?? []).filter((x) => x !== o.label)
-                      : [o.label],
-                  }))
-                }
-              />
-              {o.label}
-              {o.description && <small>{o.description}</small>}
-            </label>
-          ))}
+          <div className="question-options">
+            {q.options.map((o) => (
+              <label
+                key={o.label}
+                className="question-option"
+                data-selected={(selected[q.key] ?? []).includes(o.label)}
+              >
+                <input
+                  type={q.multi ? "checkbox" : "radio"}
+                  name={`${e.requestId}:${q.key}`}
+                  checked={(selected[q.key] ?? []).includes(o.label)}
+                  onChange={(event) =>
+                    setSelected((old) => ({
+                      ...old,
+                      [q.key]: q.multi
+                        ? event.target.checked
+                          ? [...(old[q.key] ?? []), o.label]
+                          : (old[q.key] ?? []).filter((x) => x !== o.label)
+                        : [o.label],
+                    }))
+                  }
+                />
+                <span className="question-option-text">
+                  <strong>{o.label}</strong>
+                  {o.description && <small>{o.description}</small>}
+                </span>
+              </label>
+            ))}
+          </div>
           {q.other && (
-            <input
-              aria-label={`Other answer: ${q.text}`}
-              type={q.secret ? "password" : "text"}
-              value={other[q.key] ?? ""}
-              onChange={(event) =>
-                setOther((old) => ({ ...old, [q.key]: event.target.value }))
-              }
-            />
+            <div className="question-other">
+              <span className="question-other-label">{t("Other")}</span>
+              {q.secret ? (
+                <input
+                  aria-label={t("Other answer: {question}", {
+                    question: q.text,
+                  })}
+                  type="password"
+                  value={other[q.key] ?? ""}
+                  onChange={(event) =>
+                    setOther((old) => ({ ...old, [q.key]: event.target.value }))
+                  }
+                />
+              ) : (
+                <div className="question-other-editor">
+                  <ComposerEditor
+                    ariaLabel={t("Other answer: {question}", {
+                      question: q.text,
+                    })}
+                    placeholder={t("Type your answer…")}
+                    value={other[q.key] ?? ""}
+                    pastes={pastes}
+                    onChange={(value) =>
+                      setOther((old) => ({ ...old, [q.key]: value }))
+                    }
+                  />
+                </div>
+              )}
+            </div>
           )}
         </fieldset>
       ))}
       {requiresForm && (
         <p>
-          This request form is not supported in the web client yet. Complete it
-          in the TUI.
+          {t(
+            "This request form is not supported in the web client yet. Complete it in the TUI.",
+          )}
         </p>
       )}
       <div className="buttons">
@@ -1118,7 +1338,9 @@ function Approval({
           disabled={
             busy ||
             !!requiresForm ||
-            qs.some((q) => !(selected[q.key]?.length || other[q.key]?.trim()))
+            qs.some(
+              (q) => !(selected[q.key]?.length || otherAnswer(q.key).trim()),
+            )
           }
           onClick={() =>
             reply(
@@ -1131,7 +1353,7 @@ function Approval({
                         q.key,
                         {
                           selected: selected[q.key] ?? [],
-                          other: other[q.key] ?? "",
+                          other: otherAnswer(q.key),
                         },
                       ]),
                     ),
@@ -1140,12 +1362,12 @@ function Approval({
             )
           }
         >
-          {qs.length ? "Submit answers" : "Allow"}
+          {qs.length ? t("Submit answers") : t("Allow")}
         </Button>
         <Button disabled={busy} onClick={() => reply(e, false)}>
-          Deny
+          {t("Deny")}
         </Button>
       </div>
-    </section>
+    </FloatingCard>
   );
 }
