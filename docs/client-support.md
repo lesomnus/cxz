@@ -97,7 +97,7 @@ explained in the mobile plan; it remains Not implemented in the web column.
 | OPS-04 | Supported: update/use/manager commands; host/platform restrictions apply | Partial: frontend update toggle/status; pin/switch/rollback remain CLI | Not implemented |
 | OPS-05 | Supported: `edit`, `config`, `github sync`, `gitconfig sync` on appropriate host | Not implemented: no host configuration/file-sync editor | Not implemented |
 | OPS-06 | Supported: Manager/project logs and doctor commands | Supported: `/logs` session/project reports | Not implemented |
-| OPS-07 | Supported: `project shell/exec` with required host Docker access | Supported: `/terminal` with required local Docker access; no persistence after detach | Not implemented |
+| OPS-07 | Supported: `project shell/exec` with required host Docker access | Supported: `/terminal` with required local Docker access; no persistence after detach | Supported: Ctrl+Backquote or title-bar button opens the project PTY; folding retains shell state, session change/sign-out closes it; [contract](web-terminal.md) |
 | OPS-08 | Partial: `terminal-info`, completion, Windows integration commands; no TUI recording command | Partial: `/record`/F9; shell completion and terminal registration remain CLI | Not implemented |
 | OPS-09 | Supported: Manager and optional web gateway installation/uninstallation; web JSON settings and running-gateway refresh on host self-update/use; purge on supported host | Not implemented: no installation-wide administration UI | Not implemented |
 | WEB-01 | N/A: browser-specific requirement | N/A: browser-specific requirement | Not implemented |

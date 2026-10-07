@@ -103,6 +103,7 @@ func Handler(c Config, conn grpc.ClientConnInterface, assets fs.FS) (http.Handle
 	}
 	mux.Handle("/", http.FileServer(http.FS(assets)))
 	mux.Handle("/editor/", editorProxy)
+	mux.Handle("/terminal/", &terminalProxy{client: resource.NewProjectServiceClient(conn)})
 	auth := &browserAuth{origin: c.Origin, transport: !c.plaintext(), token: sha256.Sum256([]byte(c.Token)), sessions: make(map[[32]byte]browserSession)}
 	return auth.wrap(mux), func() {
 		auth.mu.Lock()
@@ -150,7 +151,7 @@ func (a *browserAuth) wrap(next http.Handler) http.Handler {
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
-		if pdweb.Rpc(r) || strings.HasPrefix(r.URL.Path, "/cxz.") || strings.HasPrefix(r.URL.Path, "/editor/") || r.URL.Path == "/auth/status" {
+		if pdweb.Rpc(r) || strings.HasPrefix(r.URL.Path, "/cxz.") || strings.HasPrefix(r.URL.Path, "/editor/") || strings.HasPrefix(r.URL.Path, "/terminal/") || r.URL.Path == "/auth/status" {
 			c, err := r.Cookie(cookieName)
 			if err != nil {
 				http.Error(w, "sign in required", http.StatusUnauthorized)

@@ -247,6 +247,59 @@ header strong {
   overflow: hidden;
   flex-direction: column;
 }
+.terminal-toggle {
+  margin-left: auto;
+}
+.workspace-terminal {
+  flex: 0 0 auto;
+  height: clamp(160px, 28vh, 300px);
+  max-height: 40%;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid #363636;
+  background: #111;
+  overflow: hidden;
+}
+.workspace-terminal[hidden] {
+  display: none;
+}
+.workspace-terminal > header {
+  flex: 0 0 28px;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 8px;
+}
+.workspace-terminal > header strong,
+.workspace-terminal > header small {
+  font-size: 11px;
+  font-weight: normal;
+}
+.workspace-terminal > header small {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+}
+.workspace-terminal .toolbar-button {
+  width: 48px;
+  height: 24px;
+  padding: 2px;
+}
+.terminal-screen {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  padding: 4px 8px;
+  filter: grayscale(1);
+}
+.terminal-screen .xterm {
+  height: 100%;
+}
 @container (min-width: 1600px) {
   .session-split {
     grid-template-columns: 800px minmax(0, 1fr);

@@ -14,6 +14,7 @@ start. This is the map of everything else.
 | [remote.md](remote.md) | SSH and TCP frontends, named connections, Windows |
 | [web.md](web.md) | Browser client: loopback desktop setup, VPN HTTPS, current support |
 | [web-editor.md](web-editor.md) | Wide-view file preview, devcontainer IDE connection, WASM fake connection and Linux review |
+| [web-terminal.md](web-terminal.md) | Conversation shell shortcut, PTY lifetime, authenticated browser transport and WASM simulation |
 
 ## Using it
 

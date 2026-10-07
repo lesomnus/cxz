@@ -37,6 +37,15 @@ per project while resizing and switching sessions; conversation drafts are kept.
 The [workspace editor contract](web-editor.md) describes real devcontainer
 connections and the separate review of Linux/VS Code running inside browser WASM.
 
+## Simulated workspace shell
+
+Press **Ctrl+Backquote** or the conversation title bar's **>_** button to open a
+terminal below the composer. The WASM service simulates `pwd`, `ls`, `cat`, `echo`,
+`clear`, `help` and `exit` over the same Terminal RPC used by native clients.
+`cat README.md` shows the selected project's fixture file. Folding preserves the
+screen and input, while switching sessions or Reset closes it. There is no Linux
+VM or real command execution; see the [terminal contract](web-terminal.md).
+
 ## Scenarios and controls
 
 The Scenario selector opens one of the sample sessions:

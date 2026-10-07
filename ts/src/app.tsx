@@ -29,6 +29,7 @@ import {
 import { ResponseFooter } from "./response-footer";
 import { InputMessage } from "./input-message";
 import { ComposerEditor } from "./composer-editor";
+import { WorkspaceTerminal, terminalShortcut } from "./workspace-terminal";
 import {
   FloatingCardProvider,
   FloatingCardHost,
@@ -384,6 +385,28 @@ function ConversationContent({
   const [error, setError] = useState("");
   const [draft, setDraft] = useState(c.drafts.get(id) ?? "");
   const [busy, setBusy] = useState(false);
+  const [terminalVisible, setTerminalVisible] = useState(false);
+  const [terminalActivated, setTerminalActivated] = useState(false);
+  const terminalVisibleRef = useRef(false);
+  function showTerminal(show: boolean) {
+    terminalVisibleRef.current = show;
+    if (show) setTerminalActivated(true);
+    setTerminalVisible(show);
+    if (!show)
+      composerInput.current
+        ?.querySelector<HTMLTextAreaElement>("textarea")
+        ?.focus();
+  }
+  useEffect(() => {
+    const keydown = (event: KeyboardEvent) => {
+      if (!terminalShortcut(event)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      if (!event.repeat) showTerminal(!terminalVisibleRef.current);
+    };
+    document.addEventListener("keydown", keydown, true);
+    return () => document.removeEventListener("keydown", keydown, true);
+  }, []);
   const [follow, setFollow] = useState(true);
   const [latestShown, setLatestShown] = useState(false);
   const latestTravel = useRef({ shown: false, distance: 0 });
@@ -858,6 +881,15 @@ function ConversationContent({
             {status}
           </small>
         </div>
+        <Button
+          className="toolbar-button terminal-toggle"
+          aria-label="Toggle workspace terminal"
+          aria-expanded={terminalVisible}
+          title="Ctrl+`"
+          onClick={() => showTerminal(!terminalVisibleRef.current)}
+        >
+          &gt;_
+        </Button>
       </header>
       <Transcript
         pane={pane}
@@ -1022,6 +1054,14 @@ function ConversationContent({
           <UsageInfo info={info} />
         </div>
       </form>
+      {terminalActivated && !!s?.project?.id.length && (
+        <WorkspaceTerminal
+          c={c}
+          projectId={s.project.id}
+          visible={terminalVisible}
+          hide={() => showTerminal(false)}
+        />
+      )}
     </main>
   );
 }

@@ -21,10 +21,12 @@ export class Connection {
   // Original paste bodies stay in this authenticated connection's memory, like drafts.
   readonly pastes = new Map<string, ComposerPaste>();
   readonly editors = new Map<string, EditorState>();
+  readonly inProcess: boolean;
   constructor(
     readonly baseUrl = location.origin,
     transport?: Transport,
   ) {
+    this.inProcess = !!transport;
     this.transport =
       transport ??
       createConnectTransport({
