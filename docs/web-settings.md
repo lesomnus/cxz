@@ -1,9 +1,25 @@
 # Browser settings
 
-The resource sidebar's **설정** button opens settings, with **에디터** and
-**settings.json** tabs. Production and the WASM sandbox use the same settings
-components. Editor controls save immediately; the JSON tab saves explicitly
-with **저장** or Ctrl+Enter.
+The resource sidebar's **설정** button opens settings. Topics belong to the left
+panel, currently just **에디터**; there are no top tabs. The settings body is at
+most **600px** wide and centered, with global and session editor groups stacked.
+Production and the WASM sandbox use the same settings components. Editor
+controls save immediately; the JSON editor saves explicitly with **저장** or
+Ctrl+Enter.
+
+At **1600px of available width** after the resource sidebar and panel, settings
+use the conversation layout's **800px** left column and a 1px divider, with a
+**settings.json** editor in the remaining space. Below that threshold,
+**settings.json 편집** opens the file in the same centered body area; the
+**에디터** topic or **에디터 설정으로 돌아가기** returns to the form. On mobile,
+the topic panel sits above the body alongside the resource sidebar.
+
+The JSON editor stays mounted when folded: resizing or moving between the form
+and file preserves its draft, native Undo/Redo and selection. Shrinking a wide
+window while focus is inside the JSON pane keeps that pane available as the
+narrow file view. Pristine JSON follows form changes immediately; a dirty draft
+uses the conflict protection described below. Form and file panes scroll
+independently. Leaving the settings page discards unsaved JSON edits.
 
 All settings live in one JSON object, stored as the complete file text under
 the browser's **localStorage `settings`** key. There are no separate per-setting
@@ -65,7 +81,7 @@ The complete file is validated before storage or application. The size limit is
 1 MiB; known editor values must match their types and ranges. Invalid JSON or a
 failed/quota-denied storage write cannot replace the previously saved file or
 apply unsaved preferences. An invalid file already in storage remains available
-in the JSON tab for repair; the editors use defaults and form controls are
+in the JSON editor for repair; the editors use defaults and form controls are
 disabled until the file is repaired. A denied storage read displays an error.
 
 The browser `storage` event updates other open tabs, including mounted editors.
@@ -81,4 +97,6 @@ and palettes; `settings-store.ts` owns the whole-file store; `settings.ts` expos
 React subscriptions; `settings-page.tsx` provides form/file editing.
 `editor-settings.test.ts` and `sandbox-e2e/settings.spec.ts` cover inheritance,
 validation, persistence failures, import/export, stale drafts, cross-tab updates,
-mobile navigation and live read-only Monaco configuration.
+mobile navigation and live read-only Monaco configuration. The settings browser
+test also checks exact 600px centering, the available-width split boundary,
+topic navigation and JSON undo/draft retention through folding and resizing.

@@ -19,12 +19,17 @@ async function settings(page: Page) {
     .getByRole("button", { name: "Settings view", exact: true })
     .click();
   await expect(
-    page.getByRole("heading", { name: "설정", exact: true }),
+    page.getByRole("heading", { name: "에디터", exact: true }),
   ).toBeVisible();
 }
 async function file(page: Page) {
-  await page.getByRole("tab", { name: /settings\.json/ }).click();
-  return page.getByRole("textbox", { name: "settings.json", exact: true });
+  const input = page.getByRole("textbox", {
+    name: "settings.json",
+    exact: true,
+  });
+  if (!(await input.isVisible()))
+    await page.getByRole("button", { name: /^settings\.json 편집/ }).click();
+  return input;
 }
 async function stored(page: Page) {
   return page.evaluate(() => JSON.parse(localStorage.getItem("settings")!));
@@ -35,6 +40,104 @@ const fields = [
   "Tab 문자 표시 폭",
   "색상 팔레트",
 ];
+
+test("settings topics replace tabs, the 600px body stays centered and a live JSON pane unfolds at the conversation width threshold", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1903, height: 1000 });
+  await ready(page);
+  await settings(page);
+  const topics = page.getByRole("navigation", {
+    name: "설정 주제",
+    exact: true,
+  });
+  const editorTopic = topics.getByRole("button", {
+    name: "에디터",
+    exact: true,
+  });
+  await expect(editorTopic).toHaveAttribute("aria-current", "page");
+  await expect(topics.getByRole("button")).toHaveCount(1);
+  await expect(page.getByRole("tablist")).toHaveCount(0);
+  const body = page.locator(".settings-editor-body");
+  const form = page.getByRole("region", { name: "에디터 설정", exact: true });
+  const pane = page.getByRole("complementary", {
+    name: "Settings file editor",
+    exact: true,
+  });
+  const source = page.getByRole("textbox", {
+    name: "settings.json",
+    exact: true,
+  });
+  const centered = () =>
+    body.evaluate((el) => {
+      const body = el.getBoundingClientRect();
+      const pane = el.parentElement!.getBoundingClientRect();
+      return {
+        width: body.width,
+        delta: Math.abs(
+          body.left + body.width / 2 - (pane.left + pane.width / 2),
+        ),
+      };
+    });
+  expect(await centered()).toEqual({ width: 600, delta: 0 });
+  await expect(pane).toBeHidden();
+  await page.setViewportSize({ width: 1904, height: 1000 });
+  await expect(pane).toBeVisible();
+  expect((await form.boundingBox())!.width).toBe(800);
+  expect((await pane.boundingBox())!.width).toBe(800);
+  await expect(pane).toHaveCSS("border-left-width", "1px");
+  expect(await centered()).toEqual({ width: 600, delta: 0 });
+  await page
+    .getByLabel("전역 에디터 Tab 문자 표시 폭", { exact: true })
+    .selectOption("8");
+  const saved = '{\n  "editor.tabSize": 8\n}\n';
+  await expect(source).toHaveValue(saved);
+  await source.press("Control+End");
+  await source.press("Enter");
+  await source.evaluate((el) => {
+    (el as HTMLElement).dataset.identity = "original";
+  });
+  await page.setViewportSize({ width: 1903, height: 1000 });
+  await expect(source).toBeVisible();
+  await expect(form).toBeHidden();
+  await expect(source).toBeFocused();
+  await expect(source).toHaveValue(saved + "\n");
+  await editorTopic.click();
+  await expect(form).toBeVisible();
+  await expect(source).toBeHidden();
+  expect(await centered()).toEqual({ width: 600, delta: 0 });
+  await page.setViewportSize({ width: 2104, height: 1000 });
+  await expect(source).toBeVisible();
+  await expect(source).toHaveAttribute("data-identity", "original");
+  await expect(source).toHaveValue(saved + "\n");
+  await source.press("Control+z");
+  await expect(source).toHaveValue(saved);
+  expect(await page.evaluate(() => localStorage.getItem("settings"))).toBe(
+    saved,
+  );
+  expect(await centered()).toEqual({ width: 600, delta: 0 });
+  await page.screenshot({
+    path: "test-results/settings-wide.png",
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(source).toBeVisible();
+  await expect(topics).toBeVisible();
+  await page
+    .getByRole("button", { name: "에디터 설정으로 돌아가기", exact: true })
+    .click();
+  await expect(form).toBeVisible();
+  await expect(source).toBeHidden();
+  expect((await centered()).width).toBeLessThanOrEqual(600);
+  expect((await centered()).delta).toBe(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(
+    390,
+  );
+  await page.screenshot({
+    path: "test-results/settings-topics-mobile.png",
+    fullPage: true,
+  });
+});
 
 test("one settings file persists, each session field overrides or inherits and edits keep the conversation draft", async ({
   page,
@@ -152,7 +255,10 @@ test("JSON editing, validation, export and import preserve unknown settings in t
   await expect(
     page.getByRole("button", { name: "저장된 파일 다시 읽기", exact: true }),
   ).toBeFocused();
-  await page.getByRole("tab", { name: "에디터", exact: true }).click();
+  await page
+    .getByRole("navigation", { name: "설정 주제", exact: true })
+    .getByRole("button", { name: "에디터", exact: true })
+    .click();
   await expect(
     page.getByLabel("전역 에디터 Tab 문자 표시 폭", { exact: true }),
   ).toHaveValue("8");
@@ -202,7 +308,10 @@ test("JSON editing, validation, export and import preserve unknown settings in t
   expect(await page.evaluate(() => localStorage.getItem("settings"))).toBe(
     imported,
   );
-  await page.getByRole("tab", { name: "에디터", exact: true }).click();
+  await page
+    .getByRole("navigation", { name: "설정 주제", exact: true })
+    .getByRole("button", { name: "에디터", exact: true })
+    .click();
   await expect(
     page.getByLabel("세션 대화 에디터 Tab 문자 표시 폭", { exact: true }),
   ).toHaveValue("6");
@@ -274,7 +383,10 @@ test("invalid stored files stay recoverable and mobile settings remain accessibl
   await source.fill('{"editor.tabSize":4}');
   await source.press("Control+Enter");
   await expect(page.getByRole("alert")).toHaveCount(0);
-  await page.getByRole("tab", { name: "에디터", exact: true }).click();
+  await page
+    .getByRole("navigation", { name: "설정 주제", exact: true })
+    .getByRole("button", { name: "에디터", exact: true })
+    .click();
   await expect(
     page.getByLabel("전역 에디터 들여쓰기 칸 수", { exact: true }),
   ).toBeEnabled();

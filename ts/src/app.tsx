@@ -163,6 +163,7 @@ export function Workspace({
     "sessions" | "projects" | "settings"
   >("sessions");
   const [session, setSession] = useState(initialSession);
+  const [settingsFileOpen, setSettingsFileOpen] = useState(false);
   const [after, setAfter] = useState("");
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const projects = useQuery(ProjectService.method.list, {
@@ -197,7 +198,10 @@ export function Workspace({
           aria-label="Settings view"
           aria-current={resource === "settings" ? "page" : undefined}
           title="설정"
-          onClick={() => setResource("settings")}
+          onClick={() => {
+            setSettingsFileOpen(false);
+            setResource("settings");
+          }}
         >
           <ResourceIcon kind="settings" />
           <span>설정</span>
@@ -227,9 +231,15 @@ export function Workspace({
         </header>
         <p className="muted">{new URL(c.baseUrl).host}</p>
         {resource === "settings" ? (
-          <p className="muted">
-            에디터 설정과 settings.json을 이 브라우저에서 관리합니다.
-          </p>
+          <nav className="settings-topics" aria-label="설정 주제">
+            <Button
+              aria-current="page"
+              aria-controls="settings-editor"
+              onClick={() => setSettingsFileOpen(false)}
+            >
+              에디터
+            </Button>
+          </nav>
         ) : resource === "sessions" ? (
           <div className="session-tree" aria-label="Projects and sessions">
             {projects.data?.items.map((p) => (
@@ -284,7 +294,10 @@ export function Workspace({
         )}
       </aside>
       {resource === "settings" ? (
-        <SettingsPage />
+        <SettingsPage
+          fileOpen={settingsFileOpen}
+          setFileOpen={setSettingsFileOpen}
+        />
       ) : resource === "projects" ? (
         <main className="resource-view">
           <header>

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Button } from "./button";
 import { useSettings } from "./settings";
 import {
@@ -47,9 +47,18 @@ const fields = {
   },
 };
 
-export function SettingsPage() {
+export function SettingsPage({
+  fileOpen,
+  setFileOpen,
+}: {
+  fileOpen: boolean;
+  setFileOpen: (open: boolean) => void;
+}) {
   const { store, snapshot } = useSettings();
-  const [tab, setTab] = useState<"editor" | "file">("editor");
+  const area = useRef<HTMLElement>(null);
+  const filePane = useRef<HTMLElement>(null);
+  const fileInput = useRef<HTMLTextAreaElement>(null);
+  const [wide, setWide] = useState(false);
   const [draft, setDraft] = useState(snapshot.raw);
   const baseline = useRef(snapshot.raw);
   const [message, setMessage] = useState("");
@@ -57,6 +66,24 @@ export function SettingsPage() {
   const [tabMovesFocus, setTabMovesFocus] = useState(false);
   const upload = useRef<HTMLInputElement>(null);
   const global = resolveEditorSettings(snapshot.document);
+  useLayoutEffect(() => {
+    function resize(width: number) {
+      const next = width >= 1600;
+      // Keep a focused JSON editor available when the side pane folds away.
+      if (!next && filePane.current?.contains(document.activeElement))
+        setFileOpen(true);
+      setWide(next);
+    }
+    resize(area.current!.clientWidth);
+    const observer = new ResizeObserver(([entry]) =>
+      resize(entry.contentRect.width),
+    );
+    observer.observe(area.current!);
+    return () => observer.disconnect();
+  }, [setFileOpen]);
+  useLayoutEffect(() => {
+    if (fileOpen && !wide) fileInput.current?.focus({ preventScroll: true });
+  }, [fileOpen, wide]);
   useEffect(() => {
     if (draft === baseline.current) {
       baseline.current = snapshot.raw;
@@ -65,6 +92,15 @@ export function SettingsPage() {
   }, [snapshot.raw]);
   const dirty = draft !== baseline.current;
   const stale = baseline.current !== snapshot.raw;
+  const jsonVisible = wide || fileOpen;
+  const feedback = (
+    <>
+      {(error || snapshot.error) && (
+        <p role="alert">{error || snapshot.error}</p>
+      )}
+      {message && <p role="status">{message}</p>}
+    </>
+  );
   function update(key: string, value: unknown) {
     try {
       store.set(key, value);
@@ -173,73 +209,53 @@ export function SettingsPage() {
     );
   }
   return (
-    <main className="settings-page">
-      <header>
-        <div>
-          <h1>설정</h1>
-          <small>
-            이 브라우저의 settings.json · 에디터 설정은 즉시 저장됩니다.
-          </small>
-        </div>
-      </header>
-      <div
-        className="settings-tabs"
-        role="tablist"
-        aria-label="설정 탭"
-        onKeyDown={(event) => {
-          if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key))
-            return;
-          event.preventDefault();
-          const next =
-            event.key === "Home"
-              ? "editor"
-              : event.key === "End"
-                ? "file"
-                : tab === "editor"
-                  ? "file"
-                  : "editor";
-          setTab(next);
-          document.getElementById(`settings-tab-${next}`)?.focus();
-        }}
-      >
-        {(["editor", "file"] as const).map((key) => (
-          <Button
-            key={key}
-            id={`settings-tab-${key}`}
-            role="tab"
-            aria-controls={`settings-panel-${key}`}
-            aria-selected={tab === key}
-            tabIndex={tab === key ? 0 : -1}
-            onClick={() => setTab(key)}
-          >
-            {key === "editor"
-              ? "에디터"
-              : `settings.json${dirty ? " · 수정됨" : ""}`}
-          </Button>
-        ))}
-      </div>
-      <div className="settings-content">
-        {(error || snapshot.error) && (
-          <p role="alert">{error || snapshot.error}</p>
-        )}
-        {message && <p role="status">{message}</p>}
-        {tab === "editor" ? (
-          <div
-            className="settings-editor-groups"
-            role="tabpanel"
-            id="settings-panel-editor"
-            aria-labelledby="settings-tab-editor"
-          >
-            {group("global")}
-            {group("session")}
+    <main className="settings-page" ref={area} data-wide={wide}>
+      <div className="settings-split">
+        <section
+          id="settings-editor"
+          className="settings-form-pane"
+          aria-label="에디터 설정"
+          hidden={!wide && fileOpen}
+        >
+          <div className="settings-editor-body">
+            <header>
+              <div>
+                <h1>에디터</h1>
+                <small>이 브라우저의 에디터 설정은 즉시 저장됩니다.</small>
+              </div>
+              {!wide && (
+                <Button
+                  aria-controls="settings-file-editor"
+                  onClick={() => setFileOpen(true)}
+                >
+                  settings.json 편집{dirty ? " · 수정됨" : ""}
+                </Button>
+              )}
+            </header>
+            {!jsonVisible && feedback}
+            <div className="settings-editor-groups">
+              {group("global")}
+              {group("session")}
+            </div>
           </div>
-        ) : (
-          <section
-            className="settings-file"
-            role="tabpanel"
-            id="settings-panel-file"
-            aria-labelledby="settings-tab-file"
-          >
+        </section>
+        <aside
+          id="settings-file-editor"
+          className="settings-file-pane"
+          aria-label="Settings file editor"
+          ref={filePane}
+          hidden={!jsonVisible}
+        >
+          <section className="settings-file">
+            <header>
+              <h2>settings.json{dirty ? " · 수정됨" : ""}</h2>
+              {!wide && (
+                <Button onClick={() => setFileOpen(false)}>
+                  에디터 설정으로 돌아가기
+                </Button>
+              )}
+            </header>
+            {jsonVisible && feedback}
             <p>
               하나의 JSON 파일에 모든 설정을 저장합니다.{" "}
               <code>session.editor.*</code> 항목을 지우면 전역 값을 상속합니다.
@@ -251,6 +267,7 @@ export function SettingsPage() {
               </p>
             )}
             <textarea
+              ref={fileInput}
               aria-label="settings.json"
               aria-description="Ctrl+Enter: 저장. Ctrl+M: Tab 포커스 이동 전환."
               spellCheck={false}
@@ -350,7 +367,7 @@ export function SettingsPage() {
               }}
             />
           </section>
-        )}
+        </aside>
       </div>
     </main>
   );
