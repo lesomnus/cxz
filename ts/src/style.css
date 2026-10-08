@@ -11,6 +11,7 @@
   --space: 4px;
   --conversation-width: 600px;
   --composer-radius: 15px;
+  --composer-editor-height: 110px;
   --wrapper-radius: 10px;
   --control-inset: 2px;
   --control-inline-inset: 6px;
@@ -501,9 +502,6 @@ header strong {
   overflow: hidden;
   flex-direction: column;
 }
-.terminal-toggle {
-  margin-left: auto;
-}
 .workspace-terminal {
   flex: 0 0 auto;
   height: clamp(160px, 28vh, 300px);
@@ -718,6 +716,46 @@ header strong {
 }
 .conversation > header small {
   margin: 2px 0 0;
+}
+.conversation-back {
+  display: none;
+}
+.conversation > header > .action-menu {
+  flex: 0 0 auto;
+}
+.action-menu-popup {
+  position: fixed;
+  z-index: 100;
+  min-width: 190px;
+  max-width: calc(100vw - 16px);
+  max-height: 50dvh;
+  overflow: auto;
+  padding: var(--control-inset);
+  border: 1px solid var(--shade-54);
+  border-radius: 6px;
+  background: var(--shade-32);
+}
+.action-menu-popup button {
+  display: block;
+  width: 100%;
+  padding: var(--control-inset) var(--control-inline-inset);
+  text-align: left;
+}
+.action-menu-popup .button-content {
+  justify-content: space-between;
+}
+.action-menu-popup [aria-checked="true"] {
+  background: var(--selected);
+}
+.action-menu-popup kbd {
+  font: inherit;
+  color: var(--muted);
+  margin-left: calc(2 * var(--space));
+}
+.action-menu-popup small {
+  margin: var(--space);
+  padding-top: var(--space);
+  border-top: 1px solid var(--shade-54);
 }
 .agent-brand {
   display: inline-flex;
@@ -1086,7 +1124,8 @@ pre {
   z-index: 1;
   display: block;
   width: 100%;
-  min-height: 110px;
+  height: var(--composer-editor-height);
+  min-height: var(--composer-editor-height);
   padding: 12px 9px;
   border: 0;
   border-radius: inherit;
@@ -1098,6 +1137,10 @@ pre {
   color: transparent;
   caret-color: var(--shade-237);
   overflow-wrap: anywhere;
+  scrollbar-gutter: stable;
+}
+.composer-editor textarea[data-expanded="true"] {
+  height: calc(3 * var(--composer-editor-height));
 }
 .composer-editor textarea::selection {
   background: var(--shade-65);
@@ -1797,6 +1840,9 @@ summary:hover {
   }
   .conversation > header {
     padding: 8px 12px;
+  }
+  .conversation-back {
+    display: inline-block;
   }
   .composer {
     width: calc(100% - 44px);

@@ -203,6 +203,7 @@ export const messages = {
   "Select a session to continue.": "계속할 세션을 선택하세요.",
   Send: "전송",
   Session: "세션",
+  "Session menu": "세션 메뉴",
   "Session editor": "세션 대화 에디터",
   "Session information": "세션 정보",
   "Session list": "세션 목록",

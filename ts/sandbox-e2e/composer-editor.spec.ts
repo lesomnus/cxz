@@ -56,8 +56,10 @@ test("monospace line numbers follow soft wraps, native scrolling and mobile widt
             ),
             Math.abs(
               textarea.scrollHeight -
-                content.getBoundingClientRect().height -
-                24,
+                Math.max(
+                  textarea.clientHeight,
+                  content.getBoundingClientRect().height + 24,
+                ),
             ),
           );
         }),

@@ -202,6 +202,7 @@ export const messages = {
   "Select a session to continue.": "Select a session to continue.",
   Send: "Send",
   Session: "Session",
+  "Session menu": "Session menu",
   "Session editor": "Session editor",
   "Session information": "Session information",
   "Session list": "Session list",

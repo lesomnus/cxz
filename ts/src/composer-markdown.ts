@@ -50,3 +50,34 @@ export function inlineCodeRanges(line: string) {
   }
   return ranges;
 }
+
+export function inlineBacktickEdit(
+  value: string,
+  position: number,
+  blocks = codeBlocks(value),
+) {
+  if (blocks.some((block) => position >= block.start && position <= block.end))
+    return;
+  const lineStart =
+    position > 0 ? value.lastIndexOf("\n", position - 1) + 1 : 0;
+  const prefix = value.slice(lineStart, position);
+  if (/^\s*`*$/.test(prefix)) return;
+  let slashes = 0;
+  for (let i = prefix.length - 1; i >= 0 && prefix[i] === "\\"; i--) slashes++;
+  if (slashes % 2) return;
+  if (value[position] === "`")
+    return { text: "", caret: position + 1, skip: true };
+  const lineEnd = value.indexOf("\n", position);
+  const line = value.slice(lineStart, lineEnd < 0 ? value.length : lineEnd);
+  const offset = position - lineStart;
+  if (
+    inlineCodeRanges(line).some(
+      (range) => offset > range.start && offset < range.end,
+    ) ||
+    inlineCodeRanges(prefix + "`").some(
+      (range) => range.end === prefix.length + 1,
+    )
+  )
+    return;
+  return { text: "``", caret: position + 1, skip: false };
+}

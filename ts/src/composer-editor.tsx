@@ -6,7 +6,11 @@ import { flushSync } from "react-dom";
 import { Button } from "./button";
 import { useFloatingCard } from "./floating-card";
 import { indentEdit } from "./composer-indent";
-import { inlineCodeRanges, listNewlineEdit } from "./composer-markdown";
+import {
+  inlineBacktickEdit,
+  inlineCodeRanges,
+  listNewlineEdit,
+} from "./composer-markdown";
 import { useEditorSettings } from "./settings";
 import { paletteVariables } from "./editor-settings";
 import {
@@ -63,6 +67,7 @@ export function ComposerEditor({
     | undefined
   >(undefined);
   const expectedEdit = useRef<string | undefined>(undefined);
+  const followOnEdit = useRef(false);
   const ranges = pasteRanges(value, pastes);
   const latest = useRef({ value, replace });
   latest.current = { value, replace };
@@ -95,6 +100,16 @@ export function ComposerEditor({
     const el = input.current!;
     // Match the actual native text width, including a visible scrollbar's gutter.
     surface.current!.style.width = `${el.clientWidth}px`;
+    const style = getComputedStyle(el);
+    const baseline = parseFloat(
+      style.getPropertyValue("--composer-editor-height"),
+    );
+    const contentHeight =
+      mirror.current!.getBoundingClientRect().height +
+      parseFloat(style.paddingTop) +
+      parseFloat(style.paddingBottom);
+    const expanded = String(contentHeight > baseline + 1);
+    if (el.dataset.expanded !== expanded) el.dataset.expanded = expanded;
     const numbers = gutter.current!.children;
     Array.from(mirror.current!.children).forEach((line, index) => {
       (numbers[index] as HTMLElement).style.height =
@@ -103,7 +118,6 @@ export function ComposerEditor({
     syncScroll();
   }
   useLayoutEffect(() => {
-    measure();
     if (cursor.current !== undefined) {
       input.current!.setSelectionRange(
         cursor.current.start,
@@ -111,6 +125,12 @@ export function ComposerEditor({
         cursor.current.direction,
       );
       cursor.current = undefined;
+    }
+    measure();
+    if (followOnEdit.current) {
+      input.current!.scrollTop = input.current!.scrollHeight;
+      syncScroll();
+      followOnEdit.current = false;
     }
   }, [value, composition, editorSettings.tabSize]);
   useEffect(() => {
@@ -287,6 +307,9 @@ export function ComposerEditor({
                 normalizedSelection();
                 return;
               }
+              followOnEdit.current =
+                event.target.selectionStart === event.target.selectionEnd &&
+                next.indexOf("\n", event.target.selectionEnd) < 0;
               onChange(next);
             }}
             onPaste={(event) => {
@@ -434,6 +457,24 @@ export function ComposerEditor({
                     "`\n\n" + indent + "```",
                     selection.start + 2,
                   );
+                  return;
+                }
+                const inline = inlineBacktickEdit(
+                  value,
+                  selection.start,
+                  blocks,
+                );
+                if (inline) {
+                  event.preventDefault();
+                  if (inline.skip)
+                    el.setSelectionRange(inline.caret, inline.caret);
+                  else
+                    replace(
+                      selection.start,
+                      selection.end,
+                      inline.text,
+                      inline.caret,
+                    );
                   return;
                 }
               }

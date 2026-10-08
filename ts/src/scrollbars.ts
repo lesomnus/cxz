@@ -11,6 +11,7 @@ const scrollSurfaces = [
   ".file-explorer",
   ".file-tabs",
   ".setting-options",
+  ".action-menu-popup",
   ".pinned-prompt > button",
   "pre",
   ".markdown table",

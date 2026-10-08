@@ -198,10 +198,12 @@ test("multiple blocks, paste chips, highlighting and native line geometry stay a
           return Math.max(
             Math.abs(
               textarea.scrollHeight -
-                document
-                  .querySelector(".editor-mirror")!
-                  .getBoundingClientRect().height -
-                24,
+                Math.max(
+                  textarea.clientHeight,
+                  document
+                    .querySelector(".editor-mirror")!
+                    .getBoundingClientRect().height + 24,
+                ),
             ),
             ...lines.map((line, index) =>
               Math.abs(

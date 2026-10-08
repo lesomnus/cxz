@@ -1,5 +1,9 @@
 import { expect, it } from "vitest";
-import { inlineCodeRanges, listNewlineEdit } from "./composer-markdown";
+import {
+  inlineBacktickEdit,
+  inlineCodeRanges,
+  listNewlineEdit,
+} from "./composer-markdown";
 
 function enter(value: string, start = value.length, end = start) {
   const edit = listNewlineEdit(value, start, end);
@@ -10,6 +14,30 @@ function enter(value: string, start = value.length, end = start) {
     }
   );
 }
+
+it("pairs inline ticks, skips the closer, and leaves fences/escapes/existing code alone", () => {
+  expect(inlineBacktickEdit("Use ", 4)).toEqual({
+    text: "``",
+    caret: 5,
+    skip: false,
+  });
+  expect(inlineBacktickEdit("Use `code`", 9)).toEqual({
+    text: "",
+    caret: 10,
+    skip: true,
+  });
+  for (const [value, pos] of [
+    ["", 0],
+    ["  ", 2],
+    ["`", 1],
+    ["  ``", 4],
+    ["Use \\", 5],
+    ["Use `code", 9],
+    ["Use `code`", 7],
+    ["```\ncode\n```", 8],
+  ] as const)
+    expect(inlineBacktickEdit(value, pos)).toBeUndefined();
+});
 
 it("continues bullet and task lists with their exact space/tab indentation", () => {
   expect(enter("- first")).toEqual({ value: "- first\n- ", caret: 10 });

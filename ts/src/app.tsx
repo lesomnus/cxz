@@ -52,6 +52,8 @@ import {
 import { type ComposerPaste } from "./composer-pastes";
 import { composerPrompt } from "./composer-code";
 import { SessionTreeGroup } from "./session-tree";
+import { SessionIdentity } from "./session-identity";
+import { ActionMenu } from "./action-menu";
 import { PanelScroll } from "./panel-scroll";
 import { useScrollbars } from "./scrollbars";
 import { useResourceInventory } from "./resource-inventory";
@@ -1051,25 +1053,26 @@ function ConversationContent({
   return (
     <main className="conversation">
       <header>
-        <Button onClick={back} aria-label={t("Back to sessions")}>
+        <Button
+          className="conversation-back"
+          onClick={back}
+          aria-label={t("Back to sessions")}
+        >
           ←
         </Button>
-        <div>
-          <strong>{s?.alias || s?.runtimeId || t("Session")}</strong>
-          <small>
-            <AgentBrand agent={s?.agent ?? ""} /> · {s?.status?.state} ·{" "}
-            {translateKnown(status)}
-          </small>
-        </div>
-        <Button
-          className="toolbar-button terminal-toggle"
-          aria-label={t("Toggle workspace terminal")}
-          aria-expanded={terminalVisible}
-          title="Ctrl+`"
-          onClick={() => showTerminal(!terminalVisibleRef.current)}
-        >
-          &gt;_
-        </Button>
+        <SessionIdentity session={s} heading />
+        <ActionMenu
+          label={t("Session menu")}
+          status={`${s?.status?.state ?? ""} · ${translateKnown(status)}`}
+          items={[
+            {
+              label: t("Terminal"),
+              shortcut: "Ctrl+`",
+              checked: terminalVisible,
+              run: () => showTerminal(!terminalVisibleRef.current),
+            },
+          ]}
+        />
       </header>
       <Transcript
         pane={pane}

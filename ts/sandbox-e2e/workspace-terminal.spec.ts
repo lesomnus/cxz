@@ -53,7 +53,10 @@ test.describe("desktop terminal", () => {
       .getByLabel("Scenario", { exact: true })
       .selectOption("session-8");
     await page
-      .getByRole("button", { name: "Toggle workspace terminal" })
+      .getByRole("button", { name: "Session menu", exact: true })
+      .click();
+    await page
+      .getByRole("menuitemcheckbox", { name: "Terminal", exact: true })
       .click();
     await expect(panel).toContainText("sandbox@project-2:/workspace$");
     expect(errors).toEqual([]);
@@ -71,7 +74,10 @@ test("mobile terminal button fits the conversation and keeps composer accessible
   await expect(
     page.getByRole("heading", { name: "Current status" }),
   ).toBeVisible({ timeout: 45000 });
-  await page.getByRole("button", { name: "Toggle workspace terminal" }).click();
+  await page.getByRole("button", { name: "Session menu", exact: true }).click();
+  await page
+    .getByRole("menuitemcheckbox", { name: "Terminal", exact: true })
+    .click();
   const panel = page.getByRole("region", { name: "Workspace terminal" });
   await expect(panel).toContainText("sandbox@project-1:/workspace$");
   await expect(

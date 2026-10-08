@@ -216,6 +216,12 @@ handle. Enter continues Markdown bullet lists at the same space/tab indentation;
 empty items end the list, Shift+Enter inserts a plain newline, and fenced code
 does not trigger list continuation. Inline code spans keep their visible backtick
 delimiters and use a dark background without changing text/caret geometry.
+Typing an inline backtick inserts its closing partner; typing the closing
+backtick advances past the existing delimiter. Escaped backticks and fenced
+code retain ordinary input behavior. Typing on the final logical line keeps
+the editor scrolled to the bottom. Content that exceeds the normal visible
+height expands the editor within its CSS viewport cap and contracts again
+when the draft fits.
 Typing three backticks at the start of a line opens an inline black code
 block, inserts the matching closing fence two lines below, and places the cursor
 on the empty body line between them. The opening backticks remain visible, with

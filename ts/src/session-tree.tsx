@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import type { Project } from "../gen/cxz/project_pb";
 import type { Session } from "../gen/cxz/session_pb";
 import { Button } from "./button";
-import { AgentBrand } from "./agent-brand";
+import { SessionIdentity } from "./session-identity";
 
 export function SessionTreeGroup({
   project,
@@ -43,19 +43,7 @@ export function SessionTreeGroup({
               onClick={() => select(s.runtimeId)}
             >
               <SessionIndicator session={s} />
-              <span className="session-heading">
-                <AgentBrand agent={s.agent} />
-                <span className="session-label">
-                  <span className="session-title">
-                    {s.name || s.alias || s.runtimeId}
-                  </span>
-                  <span className="session-description">
-                    <span className="session-alias">
-                      {s.alias || s.runtimeId}
-                    </span>
-                  </span>
-                </span>
-              </span>
+              <SessionIdentity session={s} />
             </Button>
           ))}
           {loading && !items.length && (
