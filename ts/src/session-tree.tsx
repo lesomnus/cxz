@@ -2,6 +2,7 @@ import { t } from "./i18n";
 import { useLocale } from "./i18n-react";
 import type { Project } from "../gen/cxz/project_pb";
 import type { Session } from "../gen/cxz/session_pb";
+import { RouteLink } from "./route-link";
 import { Button } from "./button";
 import { SessionIdentity } from "./session-identity";
 
@@ -12,7 +13,6 @@ export function SessionTreeGroup({
   selected,
   open,
   toggle,
-  select,
 }: {
   project: Project;
   items: Session[];
@@ -20,7 +20,6 @@ export function SessionTreeGroup({
   selected: string;
   open: boolean;
   toggle: () => void;
-  select: (id: string) => void;
 }) {
   useLocale();
   return (
@@ -34,16 +33,17 @@ export function SessionTreeGroup({
       {open && (
         <div className="tree-sessions">
           {items.map((s) => (
-            <Button
+            <RouteLink
+              to="/sessions/$sessionId"
+              params={{ sessionId: s.runtimeId }}
               key={s.runtimeId}
               className={`tree-session ${selected === s.runtimeId ? "active" : ""}`}
               pressTarget=".session-heading"
               aria-current={selected === s.runtimeId ? "true" : undefined}
-              onClick={() => select(s.runtimeId)}
             >
               <SessionIndicator session={s} />
               <SessionIdentity session={s} />
-            </Button>
+            </RouteLink>
           ))}
           {loading && !items.length && (
             <small className="tree-message">{t("Loading…")}</small>

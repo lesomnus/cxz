@@ -22,6 +22,7 @@
     "@connectrpc/connect": "2.1.2",
     "@connectrpc/connect-web": "2.1.2",
     "@lesomnus/payday": "0.0.5",
+    "@tanstack/react-router": "1.170.41",
     "@xterm/addon-fit": "0.11.0",
     "@xterm/xterm": "6.0.0",
     "dompurify": "3.4.16",

@@ -13,7 +13,7 @@ test("authenticated terminal runs a PTY shell under production CSP and preserves
   await page.goto("/");
   await page.getByLabel("Web access token").fill("a".repeat(32));
   await page.getByRole("button", { name: "Connect", exact: true }).click();
-  await page.getByRole("button", { name: /demo-chat/ }).click();
+  await page.getByRole("link", { name: /demo-chat/ }).click();
   page.on("console", (m) => {
     if (m.type() === "error") errors.push(m.text());
   });

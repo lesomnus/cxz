@@ -1,17 +1,24 @@
 import { ThemeProvider } from "./theme";
 import { t, translateKnown } from "./i18n";
 import { LocaleProvider, useLocale } from "./i18n-react";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, type PropsWithChildren } from "react";
 import { createRoot } from "react-dom/client";
 import { start, type Sandbox } from "@lesomnus/payday/sandbox";
 import { Provider } from "@lesomnus/payday/react";
-import { Button, Workspace } from "./app";
+import { Button, Workspace, WorkspaceView } from "./app";
 import { Connection } from "./connection";
 import "./sandbox.css";
 import workerURL from "./sandbox-worker.ts?worker&url";
 import { boot, BootTimeout } from "./sandbox-boot";
 import { createClient } from "@connectrpc/connect";
 import { ProjectService } from "../gen/cxz/project_svc_pb";
+
+import {
+  createHashHistory,
+  RouterProvider,
+  useNavigate,
+} from "@tanstack/react-router";
+import { createWorkspaceRouter, useWorkspaceRoute } from "./router";
 
 const scenarios = [
   "Project checklist",
@@ -23,11 +30,16 @@ const scenarios = [
   "Stopped session",
   "Other project",
 ];
-function SandboxApp() {
+function SandboxApp({ children }: PropsWithChildren) {
   useLocale();
   const [seed, setSeed] = useState("42");
   const [delay, setDelay] = useState("400");
+  const navigate = useNavigate();
+  const route = useWorkspaceRoute();
   const [scenario, setScenario] = useState("session-1");
+  useEffect(() => {
+    if (route.session) setScenario(route.session);
+  }, [route.session]);
   const [generation, setGeneration] = useState(0);
   const [connection, setConnection] = useState<Connection>();
   const [loading, setLoading] = useState("Starting sandbox…");
@@ -147,7 +159,13 @@ function SandboxApp() {
           <select
             aria-label={t("Scenario")}
             value={scenario}
-            onChange={(e) => setScenario(e.target.value)}
+            onChange={(e) => {
+              setScenario(e.target.value);
+              void navigate({
+                to: "/sessions/$sessionId",
+                params: { sessionId: e.target.value },
+              });
+            }}
           >
             {scenarios.map((s, i) => (
               <option key={s} value={`session-${i + 1}`}>
@@ -190,21 +208,27 @@ function SandboxApp() {
       {connection && (
         <Provider key={connection.clientId} app={connection}>
           <Workspace
-            key={scenario}
             connection={connection}
-            initialSession={scenario}
             logout={reset}
             exitLabel={t("Reset sandbox")}
-          />
+          >
+            {children}
+          </Workspace>
         </Provider>
       )}
     </div>
   );
 }
+const history = createHashHistory();
+if (!location.hash) history.replace("/sessions/session-1");
+const router = createWorkspaceRouter(
+  { shell: SandboxApp, view: WorkspaceView },
+  history,
+);
 createRoot(document.getElementById("root")!).render(
   <ThemeProvider>
     <LocaleProvider>
-      <SandboxApp />
+      <RouterProvider router={router} />
     </LocaleProvider>
   </ThemeProvider>,
 );

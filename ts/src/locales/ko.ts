@@ -1,6 +1,7 @@
 import type { LanguagePack } from "../i18n";
 export const messages = {
   "(path not reported)": "(경로 미제공)",
+  "Page not found": "페이지를 찾을 수 없습니다",
   "{count} more files in Details": "상세 정보에서 파일 {count}개 더 보기",
 
   Details: "세부 정보",

@@ -101,7 +101,7 @@ func Handler(c Config, conn grpc.ClientConnInterface, assets fs.FS) (http.Handle
 		g.Stop()
 		return nil, nil, err
 	}
-	mux.Handle("/", http.FileServer(http.FS(assets)))
+	mux.Handle("/", spaFiles(assets))
 	mux.Handle("/editor/", editorProxy)
 	mux.Handle("/terminal/", &terminalProxy{client: resource.NewProjectServiceClient(conn)})
 	auth := &browserAuth{origin: c.Origin, transport: !c.plaintext(), token: sha256.Sum256([]byte(c.Token)), sessions: make(map[[32]byte]browserSession)}

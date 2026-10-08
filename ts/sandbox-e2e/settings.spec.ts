@@ -23,12 +23,10 @@ async function ready(page: Page) {
   ).toBeVisible({ timeout: 45000 });
 }
 async function settings(page: Page) {
-  await page
-    .getByRole("button", { name: "Settings view", exact: true })
-    .click();
+  await page.getByRole("link", { name: "Settings view", exact: true }).click();
   await page
     .getByRole("navigation", { name: "Settings topics" })
-    .getByRole("button", { name: "Editor", exact: true })
+    .getByRole("link", { name: "Editor", exact: true })
     .click();
   await expect(
     page.getByRole("heading", { name: "Editor", exact: true }),
@@ -93,12 +91,12 @@ test("settings topics replace tabs, the 600px body stays centered and a live JSO
     name: "Settings topics",
     exact: true,
   });
-  const editorTopic = topics.getByRole("button", {
+  const editorTopic = topics.getByRole("link", {
     name: "Editor",
     exact: true,
   });
   await expect(editorTopic).toHaveAttribute("aria-current", "page");
-  await expect(topics.getByRole("button")).toHaveCount(2);
+  await expect(topics.getByRole("link")).toHaveCount(2);
   await expect(page.getByRole("tablist")).toHaveCount(0);
   const body = page.locator(".settings-editor-body");
   const form = page.getByRole("region", {
@@ -266,9 +264,7 @@ test("settings JSON and session files share the editor surface and theme while o
     path: "test-results/settings-shared-editor.png",
     fullPage: true,
   });
-  await page
-    .getByRole("button", { name: "Sessions view", exact: true })
-    .click();
+  await page.getByRole("link", { name: "Sessions view", exact: true }).click();
   await expect(
     workspace.getByRole("tab", { name: "main.go", exact: true }),
   ).toHaveAttribute("aria-selected", "true");
@@ -317,9 +313,7 @@ test("one settings file persists, each session field overrides or inherits and e
     "session.editor.tabSize": 2,
     "session.editor.colorPalette": "monochrome",
   });
-  await page
-    .getByRole("button", { name: "Sessions view", exact: true })
-    .click();
+  await page.getByRole("link", { name: "Sessions view", exact: true }).click();
   await expect(composer).toHaveValue("keep draft");
   await composer.press("End");
   await composer.press("Tab");
@@ -339,9 +333,7 @@ test("one settings file persists, each session field overrides or inherits and e
     "editor.tabSize": 8,
     "editor.colorPalette": "cool",
   });
-  await page
-    .getByRole("button", { name: "Sessions view", exact: true })
-    .click();
+  await page.getByRole("link", { name: "Sessions view", exact: true }).click();
   await expect(composer).toHaveCSS("tab-size", "8");
   await expect(page.locator(".editor-code-line .hljs-keyword")).toHaveCSS(
     "color",
@@ -402,7 +394,7 @@ test("JSON editing, validation, export and import preserve unknown settings in t
   ).toBeFocused();
   await page
     .getByRole("navigation", { name: "Settings topics", exact: true })
-    .getByRole("button", { name: "Editor", exact: true })
+    .getByRole("link", { name: "Editor", exact: true })
     .click();
   await expect(
     page.getByLabel("Global editor Tab display width", { exact: true }),
@@ -455,7 +447,7 @@ test("JSON editing, validation, export and import preserve unknown settings in t
   );
   await page
     .getByRole("navigation", { name: "Settings topics", exact: true })
-    .getByRole("button", { name: "Editor", exact: true })
+    .getByRole("link", { name: "Editor", exact: true })
     .click();
   await expect(
     page.getByLabel("Session editor Tab display width", { exact: true }),
@@ -493,9 +485,7 @@ test("cross-tab changes refresh editors and preserve stale JSON drafts instead o
   await expect
     .poll(() => readJSON(page, source))
     .toBe('{\n  "editor.tabSize": 8\n}\n');
-  await page
-    .getByRole("button", { name: "Sessions view", exact: true })
-    .click();
+  await page.getByRole("link", { name: "Sessions view", exact: true }).click();
   const composer = page.getByRole("textbox", { name: "Message", exact: true });
   await composer.fill("keep draft");
   await chooseSetting(other, "Global editor Tab display width", "6");
@@ -532,7 +522,7 @@ test("invalid stored files stay recoverable and mobile settings remain accessibl
   ).toHaveCount(0);
   await page
     .getByRole("navigation", { name: "Settings topics", exact: true })
-    .getByRole("button", { name: "Editor", exact: true })
+    .getByRole("link", { name: "Editor", exact: true })
     .click();
   await expect(
     page.getByLabel("Global editor Indentation size", { exact: true }),

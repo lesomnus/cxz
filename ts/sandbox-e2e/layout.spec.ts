@@ -106,7 +106,7 @@ test("compact monochrome workspace, aligned composer and release-triggered butto
     "transform",
     "matrix(1, 0, 0, 1, 0, 0)",
   );
-  await page.getByRole("button", { name: "Projects view" }).click();
+  await page.getByRole("link", { name: "Projects view" }).click();
   await expect(page.locator(".resource-view")).toBeVisible();
   await page
     .locator(".project-row")

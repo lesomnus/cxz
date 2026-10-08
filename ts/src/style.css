@@ -51,19 +51,22 @@ body {
   margin: 0;
 }
 button,
+a.route-link,
 input,
 textarea,
 select {
   font: inherit;
 }
 button,
+a.route-link,
 input,
 textarea,
 select,
 summary {
   border-radius: 6px;
 }
-button {
+button,
+a.route-link {
   min-height: 32px;
   border: 0;
   background: transparent;
@@ -71,6 +74,10 @@ button {
   padding: 6px 10px;
   cursor: pointer;
   touch-action: manipulation;
+}
+.route-link {
+  display: inline-block;
+  text-decoration: none;
 }
 .button-content {
   display: flex;
@@ -81,10 +88,12 @@ button {
   transform: scale(1);
   transition: transform 120ms ease-out;
 }
-button:not(:disabled):hover {
+button:not(:disabled):hover,
+a.route-link:hover {
   background: var(--hover);
 }
-button:not(:disabled):active > .button-content {
+button:not(:disabled):active > .button-content,
+a.route-link:active > .button-content {
   transform: scale(var(--press-scale, 0.95));
   transition-duration: 60ms;
 }
@@ -93,6 +102,7 @@ button:disabled {
   cursor: default;
 }
 button:focus-visible,
+a.route-link:focus-visible,
 summary:focus-visible,
 select:focus-visible {
   outline: 2px solid var(--shade-237);
@@ -196,7 +206,7 @@ header strong {
   min-height: 0;
   overflow: hidden;
 }
-.settings-topics button {
+.settings-topics :is(button, a.route-link) {
   width: 100%;
   text-align: left;
   padding: 8px;
@@ -434,7 +444,7 @@ header strong {
   color: var(--muted);
   margin: 20px 8px 6px;
 }
-.panel-scroll-inner > button {
+.panel-scroll-inner > :is(button, a.route-link) {
   display: block;
   width: 100%;
   text-align: left;
@@ -443,19 +453,19 @@ header strong {
   background: transparent;
   border: 0;
 }
-.panel-scroll-inner > button > .button-content {
+.panel-scroll-inner > :is(button, a.route-link) > .button-content {
   display: block;
   transform-origin: left center;
   overflow-wrap: anywhere;
 }
-.panel-scroll-inner > button.active {
+.panel-scroll-inner > :is(button, a.route-link).active {
   font-weight: 650;
   color: var(--shade-255);
 }
-.panel-scroll-inner > button.active small {
+.panel-scroll-inner > :is(button, a.route-link).active small {
   font-weight: 400;
 }
-.panel-scroll-inner > button:hover {
+.panel-scroll-inner > :is(button, a.route-link):hover {
   background: var(--hover);
   border: 0;
 }
@@ -1860,6 +1870,9 @@ summary:hover {
   .conversation-open > .resource-panel {
     display: none;
   }
+  .conversation-open > .route-not-found {
+    display: flex;
+  }
   .conversation-open > .session-workspace {
     display: block;
     height: 100%;
@@ -1895,7 +1908,7 @@ summary:hover {
   .usage-info {
     gap: 4px 8px;
   }
-  .panel-scroll-inner > button {
+  .panel-scroll-inner > :is(button, a.route-link) {
     min-height: 44px;
   }
 }
@@ -1903,7 +1916,7 @@ summary:hover {
 .session-tree-group {
   margin: 4px 0 12px;
 }
-.session-tree button {
+.session-tree :is(button, a.route-link) {
   display: block;
   width: 100%;
   min-height: 30px;
@@ -1912,7 +1925,7 @@ summary:hover {
   background: transparent;
   border: 0;
 }
-.session-tree button:hover {
+.session-tree :is(button, a.route-link):hover {
   background: var(--hover);
 }
 .session-tree .tree-session.active {
@@ -1965,7 +1978,7 @@ summary:hover {
 .session-heading .session-alias {
   transform-origin: left center;
 }
-button.tree-session:not(:disabled):active > .button-content {
+:is(button, a.route-link).tree-session:not(:disabled):active > .button-content {
   transform: none;
 }
 .tree-session:not(:disabled):active .session-heading .agent-brand,

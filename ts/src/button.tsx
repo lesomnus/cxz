@@ -1,4 +1,9 @@
-import { useLayoutEffect, useRef, type ButtonHTMLAttributes } from "react";
+import {
+  useLayoutEffect,
+  useRef,
+  type ButtonHTMLAttributes,
+  type ReactNode,
+} from "react";
 
 // Keep uniform scaling, but cap the longest edge's total contraction at 4px.
 export function Button({
@@ -6,6 +11,20 @@ export function Button({
   pressTarget,
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & { pressTarget?: string }) {
+  return (
+    <button {...props}>
+      <ButtonContent pressTarget={pressTarget}>{children}</ButtonContent>
+    </button>
+  );
+}
+
+export function ButtonContent({
+  children,
+  pressTarget,
+}: {
+  children: ReactNode;
+  pressTarget?: string;
+}) {
   const content = useRef<HTMLSpanElement>(null);
   useLayoutEffect(() => {
     const el = pressTarget
@@ -26,10 +45,8 @@ export function Button({
     return () => resize.disconnect();
   }, [pressTarget]);
   return (
-    <button {...props}>
-      <span ref={content} className="button-content">
-        {children}
-      </span>
-    </button>
+    <span ref={content} className="button-content">
+      {children}
+    </span>
   );
 }

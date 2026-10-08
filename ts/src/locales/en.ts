@@ -1,6 +1,7 @@
 // English source messages are always bundled; other packs load on demand.
 export const messages = {
   "(path not reported)": "(path not reported)",
+  "Page not found": "Page not found",
   "{count} more files in Details": "{count} more files in Details",
 
   Details: "Details",

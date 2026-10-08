@@ -49,20 +49,12 @@ test("resource navigation shares catalog subscriptions instead of opening a list
     });
   await page.locator(".tree-project").first().click();
   await page.locator(".tree-project").first().click();
-  await page
-    .getByRole("button", { name: "Projects view", exact: true })
-    .click();
-  await page
-    .getByRole("button", { name: "Sessions view", exact: true })
-    .click();
-  await page.getByRole("button", { name: /demo-chat/ }).click();
+  await page.getByRole("link", { name: "Projects view", exact: true }).click();
+  await page.getByRole("link", { name: "Sessions view", exact: true }).click();
+  await page.getByRole("link", { name: /demo-chat/ }).click();
   await expect(page.locator(".composer")).toBeVisible();
-  await page
-    .getByRole("button", { name: "Settings view", exact: true })
-    .click();
-  await page
-    .getByRole("button", { name: "Sessions view", exact: true })
-    .click();
+  await page.getByRole("link", { name: "Settings view", exact: true }).click();
+  await page.getByRole("link", { name: "Sessions view", exact: true }).click();
   await page.waitForTimeout(300);
   expect(calls).toEqual({
     projectList: 1,

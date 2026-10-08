@@ -11,7 +11,7 @@ test("mobile sign-in, conversation, questions, drafts and sign-out", async ({
   await expect(
     page.getByRole("button", { name: /Demo project/ }),
   ).toBeVisible();
-  await page.getByRole("button", { name: /demo-chat/ }).click();
+  await page.getByRole("link", { name: /demo-chat/ }).click();
   await expect(page.getByRole("heading", { name: "Ready" })).toBeVisible();
   await expect(page.locator(".response-settings")).toHaveText(
     "fixture-model · high",
@@ -33,7 +33,7 @@ test("mobile sign-in, conversation, questions, drafts and sign-out", async ({
     .getByRole("textbox", { name: "Message", exact: true })
     .fill("초안 preserved");
   await page.getByRole("button", { name: "Back to sessions" }).click();
-  await page.getByRole("button", { name: /demo-chat/ }).click();
+  await page.getByRole("link", { name: /demo-chat/ }).click();
   await expect(
     page.getByRole("textbox", { name: "Message", exact: true }),
   ).toHaveValue("초안 preserved");
@@ -45,25 +45,28 @@ test("mobile sign-in, conversation, questions, drafts and sign-out", async ({
     page.locator("article.input").filter({ hasText: "초안 preserved" }),
   ).toHaveCount(1);
   await context.setOffline(true);
-  await expect(page.getByText(/Disconnected · retrying/)).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Session menu", exact: true }),
+  ).toHaveAttribute("aria-description", /Disconnected · retrying/);
   await context.setOffline(false);
   await expect(
     page
       .locator(".conversation > header")
       .getByRole("img", { name: "Claude", exact: true }),
   ).toBeVisible();
-  await expect(page.locator(".conversation > header small")).toContainText(
-    "· idle · Live",
-    {
-      timeout: 15000,
-    },
-  );
+  await expect(
+    page.getByRole("button", { name: "Session menu", exact: true }),
+  ).toHaveAttribute("aria-description", /idle · Live/, {
+    timeout: 15000,
+  });
   await expect(
     page.locator("article.input").filter({ hasText: "초안 preserved" }),
   ).toHaveCount(1);
   await page.reload();
-  await expect(page.getByRole("button", { name: /demo-chat/ })).toBeVisible();
-  await page.getByRole("button", { name: /demo-chat/ }).click();
+  await expect(page).toHaveURL(/\/sessions\/session$/);
+  await expect(
+    page.getByRole("textbox", { name: "Message", exact: true }),
+  ).toBeVisible();
   await expect(
     page.locator("article.input").filter({ hasText: "초안 preserved" }),
   ).toHaveCount(1);
