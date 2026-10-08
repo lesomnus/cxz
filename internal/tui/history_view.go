@@ -212,6 +212,10 @@ func (m *model) conversationView() string {
 			rows[i] = indexedBackground(rows[i], promptBackground)
 		}
 	}
+	// After the row fills, so a match is visible on a prompt's background, and
+	// before the hover and button overlays, which draw over small parts of a row
+	// and should stay on top of everything including this.
+	m.searchHighlightView(rows)
 	m.toolHoverView(rows, promptRows)
 	m.codeButtonView(rows, promptRows)
 	m.selectionView(rows)

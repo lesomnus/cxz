@@ -5,6 +5,9 @@ Manager, Docker, SSH tunnel, TLS certificate, provider account or paid model cal
 The simulator is a design fixture, not a replacement for integration testing the
 real Manager, authentication, providers or containers.
 
+The shared [web design principles](web-design.md) explain the visual direction
+and interaction intent behind these fixtures and the production UI.
+
 ## Start
 
 Use the repository's Go toolchain (go.mod) and Node/npm, then:
@@ -35,8 +38,9 @@ from the same Go toolchain that compiled the module.
 
 ## Workspace file preview and fake Connect
 
-When the area after the sidebar/session panel reaches 1600px, the conversation
-uses 800px and the remaining width shows a file tree/read-only Monaco view.
+When the area after the sidebar/session panel reaches the CSS split breakpoint,
+the conversation keeps a reading column and the remaining width shows a file
+tree/read-only Monaco view.
 The WASM service supplies README, Go/TypeScript and devcontainer fixture files
 for each project. **Connect** changes to **Simulated connection** using the
 configured pace; **Disconnect** returns to File preview. No Linux VM, container,
@@ -47,7 +51,7 @@ connections and the separate review of Linux/VS Code running inside browser WASM
 
 ## Simulated workspace shell
 
-Press **Ctrl+Backquote** or the conversation title bar's **>_** button to open a
+Press **Ctrl+Backquote** or the conversation title bar's **>\_** button to open a
 terminal below the composer. The WASM service simulates `pwd`, `ls`, `cat`, `echo`,
 `clear`, `help` and `exit` over the same Terminal RPC used by native clients.
 `cat README.md` shows the selected project's fixture file. Folding preserves the
@@ -78,180 +82,152 @@ The resource sidebar switches between Sessions and Projects. Sessions follow
 project/session ordering, without directory icons or branch decoration. Each
 session shows a title, then a monospace alias and model, with a TUI-style activity
 or question indicator. Buttons have no borders and transparent backgrounds until
-hover; pressing uniformly scales their content, capped at 4px along its longest
-edge, and actions trigger on release.
+hover; pressing scales their content with a bounded contraction along the longest
+edge, and actions trigger on release. Button sizes, insets, radii and appearance
+come from the shared CSS tokens rather than a separate specification here.
 
 The fixed-width model/effort fields use the current run's provider catalog. Settings
 require an idle session. A model change clears explicit effort first, awaiting
 provider confirmation before applying the model. Missing capabilities disable the
 selectors rather than treating slash commands as chat prompts. Only values open
-styled dropdowns; labels stay inert. The current value overlays its exact original
+styled dropdowns; labels stay inert. The current value overlays its original
 text position, separated from other choices, with the same full-width row and
-padding as the other options. Menus, value triggers and the composer toolbar share
-a narrow 2px inset token. Values and options have 6px horizontal padding;
-trigger padding keeps value/label text baselines aligned;
-hovered values brighten. At the screen bottom, choices expand
-upward while the current row stays in place. Keyboard navigation, Escape and
-outside-click dismissal are supported.
+padding as the other options. Shared inset tokens keep labels and values aligned;
+hovered values brighten. At the screen bottom, choices expand upward while the
+current row stays in place. Keyboard navigation, Escape and outside dismissal
+are supported.
 
-The icon-only send button sits on the right of a toolbar above the text input,
-inside a zero-padding wrapper. The 28px toolbar has equal 2px top, bottom and right
-gaps around its 48px-wide, 24px-high Send button. The wrapper is narrower than the
-input, which extends 4px past each side while retaining its width. Their bottom
-borders overlap. Wrapper corners are 10px, input corners are 15px, and the inset
-Send corner is 7px to share the wrapper corner center. Ctrl+Enter sends, with a hover shortcut.
-Quota uses the TUI's eight Braille cells at the same font size as Model/Effort;
-its intrinsic width and a separate gap keep it clear of the context donut. Hover
-reveals the reset time. Context
-is a donut with a used/capacity token popover. These are simulated snapshots, not
-real account limits. Status snapshots are retained separately from the rendered
-history window. The input extends 10px beyond each conversation edge. User and
-assistant headings align, with more padding on message contents.
+The icon-only Send sits on the right of a toolbar above the text input. The wrapper
+has no padding, and the button's right gap matches its vertical gaps. The input
+extends beyond the wrapper while retaining its reading width; their bottom borders
+overlap. Inner button rounding follows the outer corner center. Ctrl+Enter sends,
+with a hover shortcut. Quota uses the TUI's Braille cells at the Model/Effort label
+font size; its intrinsic width and a separate gap keep it clear of the context donut.
+Hover reveals reset time. Context is a donut with a used/capacity token popover.
+These are simulated snapshots, not real account limits. Status snapshots are
+retained separately from the rendered history window. User and assistant headings
+align, with message content inset inside the shared conversation edges.
+
 Both viewport fades use the page background color and sit behind the composer.
-The bottom fade starts with a smooth opacity/height ramp, up to the input height.
-Ordinary content movement extends the outgoing fade and then settles. Edge
-tension adds up to 3.5 input heights, capped at 80% of the viewport. A shorter
-top fade indicates earlier history and grows with downward edge tension; in that
-direction the opposite bottom fade uses 75% of the tension contribution. Scroll
-controls, message headings, Copy buttons and disclosure controls paint above the
-fades; the fades affect message bodies without covering other controls. Latest
-navigation is an icon-only down arrow in the center of the composer toolbar,
-sharing Send's 48×24px borderless button style. Its absolute overlay occupies no
-layout space and stays above future toolbar controls. It slides up from behind
-the input in 180ms after 96px of upward reading movement, and slides back down
-after 96px of downward movement. Small reversals consume the accumulated distance
+The bottom fade ramps in smoothly. Ordinary movement extends the outgoing fade
+and then settles; edge tension adds a stronger extension within the viewport.
+The top fade starts shorter, and directional tension keeps the opposite fade smaller.
+Scroll controls, headings, Copy and disclosure controls paint above the fades;
+only message bodies disappear into the background.
+
+Latest is an icon-only down arrow centered in the composer toolbar, sharing Send's
+button style. Its absolute overlay occupies no layout space. It slides up from
+behind the input after sufficient upward reading movement and slides back down
+after sufficient downward movement. Small reversals consume accumulated distance
 without toggling it. At the latest position it hides and resets; hidden controls
 cannot capture clicks or focus. Cache insertion/eviction and row measurement are
-excluded from movement, and reduced motion switches immediately.
+excluded from movement. Reduced motion switches immediately.
 
 The conversation hides native scrollbars. Hover reveals a handle and user-prompt
-ticks; approaching the handle widens it. Its local range is capped at twelve
-viewport heights in navigation units (100 per message). Prompt ticks and the handle share the same range-rebase
-animation on one clock, with stable event identities. Height measurement retargets
-that clock without restarting an individual marker. During edge tension, the handle stays
-pinned while prompt ticks continue to move in phase with the passing transcript.
-A 20px elastic reserve keeps even the fully stretched handle inside the viewport.
-Dragging beyond either end applies a saturating spring while accelerating
-scrolling through adjacent ranges. Returning to the rail starts at the current
-reading position, including on the first drag; manual gestures pause live follow
-immediately. Large wheel steps and handle movement use short, non-overshooting
-interpolation, settling on the exact target; OS trackpad motion stays native.
-Reduced-motion preference, nested scrolling and explicit navigation are respected.
-History arrives in 128-event pages, starting
-near the latest 256 events, with a cache capped at 512. Only visible messages and
-six extra messages on either side are mounted. Measured variable heights drive
-virtual positioning; prompt ticks use stable message coordinates and an invertible
-message-to-pixel map; a fixed total height and visible-message
-anchor prevent jumps during measurement, resizing and page replacement. The
-conversation follows new events only while actually at the bottom. Paging stops
-at the server's retained history boundary. The latest user input preceding the
-reading position sits in a fixed overlay below the title, outside the scrolling
-canvas. It uses equal clearance above and below the upper edge: the bottom of
-the last passing user input and the top of the next visible input. Either edge
-within 96px hides it, including a straddling input. Across 96–128px of clearance,
-its bottom edge (up to 8px) and opacity fade in together. Missing edges impose
-no limit.
-The hidden overlay cannot capture clicks or focus. Approaching the top 28px of
-the conversation column or focusing the available button slides the box down
-in 180ms. Once expanded it stays open for at least three seconds, even after
-the pointer leaves; leaving after that minimum grants one more second. Returning
-cancels the pending close. Focus keeps it expanded too. Touching the approach
-area focuses and reveals it. Long inputs are
-bounded to 180px or 25% of the viewport and scroll independently. Clicking returns
-to the original position with 18px above the input, preserving that gap through
-row measurement. Clicks dismiss the overlay instantly, bypassing hold timers and
-fade animations, including while an uncached input loads. The overlay
-contributes no height to the virtual transcript and never tracks scroll offsets.
+markers; approaching the handle widens it. Its local display range is bounded,
+independently of total history. Markers and the handle share a range-rebase
+animation on the same clock, with stable event identities. Height measurement
+retargets that clock without restarting individual markers. During edge tension,
+the handle stays near the boundary while markers move in phase with the transcript.
+Elastic reserve keeps the stretched handle inside the viewport. Pulling beyond
+an end applies saturating tension while accelerating through adjacent ranges.
+Returning to the rail starts at the current reading position, including on the
+first drag; manual gestures pause live follow immediately. Wheel steps and handle
+movement use short, non-overshooting interpolation, settling on the exact target;
+OS trackpad motion stays native. Nested scrolling and explicit navigation are respected.
 
-The accepted handle/marker experience, numeric parameters, restoration steps and
-regression checks are recorded in [the scroll experience contract](web-conversation-scroll.md).
+History arrives in pages, starting near the latest entries, with a bounded cache.
+Only visible messages and an overscan buffer are mounted. Measured variable heights
+drive virtual positioning. Markers use stable message coordinates and an invertible
+message-to-pixel map; a fixed total height and visible-message anchor prevent jumps
+during measurement, resizing and page replacement. New events follow only while
+actually at the bottom. Paging stops at the retained history boundary.
 
-**Reset sandbox** recreates the entire Worker, discarding drafts, history and
-pending work, and applies the Seed and Pace controls. Identical seeds and the same
-per-session sequence of sends produce identical random tool sequences. Switching
-scenarios alone preserves session state. Reloading the page also starts fresh.
-Event timestamps use the current clock when each event is created, including
-seeded history. The seed controls content, not a fixed date. Response footers
-show month/day and time without a year; metric icons expose names and usage
-scope on hover and to assistive technology.
+The user input preceding the reading position sits in a fixed overlay below the
+title, outside the scrolling canvas. Exposure uses equal clearance conditions
+above and below the upper edge: the previous input's bottom and the next visible
+input's top. A nearby or straddling input hides it; sufficient clearance gradually
+reveals the bottom edge and opacity together. Missing edges impose no limit.
+Hidden overlays cannot capture clicks or focus. Approaching the top of the column
+or focusing the available button slides the whole box down. Once expanded it stays
+open for a minimum hold period, then a leaving grace period; returning cancels the
+pending close. Focus keeps it expanded too. Touching the approach area reveals it.
+Long inputs are height-bounded and scroll independently. Clicking returns to the
+original input with space above, preserving that gap through row measurement.
+Clicks dismiss instantly, bypassing timers and fades, including while an uncached
+input loads. The overlay adds no virtual height and never follows scroll offsets.
 
-Response Copy icons appear when hovering a response or focusing its controls,
-without changing footer geometry. Event summaries and approval request details
-open in the same non-modal floating card used for paste previews. The card sits
-12px above the composer wrapper, with 12px rounding on every corner, a 1px border,
-4px horizontal content padding and a translucent monochrome background with a
-strong 48px backdrop blur. Header padding is also 4px, with an additional 4px
-left margin only on the title. The Close button shares the Send button's
-48px by 24px rectangular dimensions and hover style. Code and raw text retain
-their opaque black boxes. Inner box and Close button rounding is calculated
-as outer radius minus border width minus inset: 12px - 1px - 4px = 7px,
-so the corner centers align. A last-child `pre` has no bottom margin.
-The composer's toolbar, editor
-and metadata remain accessible, and the card contributes no height to the
-transcript. Detail and paste-preview cards have a 360px maximum height, further
-bounded below the conversation title and above the composer. Long contents
-scroll internally.
-The host uses overflow clipping with space for the shadow, clamped to the
-conversation's horizontal bounds so the overlay cannot widen a mobile page. Do not use
-`clip-path`, masks or opacity on its ancestors: these form a backdrop root that
-prevents the card's blur from sampling the conversation behind it.
-Opening another item replaces the previous card: Close or Escape never restores
-an older preview. Clicking the transcript's empty left/right margins also
-closes it, while content, links, buttons and the scrollbar remain interactive.
-Cards enter/exit with a short 180ms fade and 8px movement, respect reduced motion
-and are discarded on session navigation. These transitions never modify the
-transcript's scroll coordinates or the shared handle/marker animation.
+The accepted handle/marker experience and regression steps are recorded in
+[the scroll experience contract](web-conversation-scroll.md). Current geometry,
+thresholds and timing are defined in its linked code, not duplicated in this guide.
 
-Pending Question/approval requests use the same `FloatingCard` shell and overlay
-anchor as previews, outside the composer form. They have no Close control;
-Escape, side-margin dismissal and opening another preview never discard the
-request or its selected/free-text answers. Only an explicit Submit/Allow/Deny
-reply resolves it. Pressing Enter in an answer field does not send the composer.
-Whenever a preview is active, questions scale to 97% and gain a 40% black shade
-to distinguish their background layer. If the preview is at least as tall as
-the pending Question layer, questions also move upward so 28px of their top
-remains visible above the front card. A shorter preview keeps the bottom anchor
-in place with no upward translation, while still shrinking and dimming questions.
-Both cards reserve room below the conversation title, including on narrow
-viewports. ResizeObserver compares actual card heights;
-the shared 180ms transition respects reduced motion. Covered questions are inert
-until the preview closes; closing restores their state and originating focus.
-Multiple pending requests stay available in the bounded, scrollable Question
-layer. Preview replacement still retains no older details/paste cards.
+**Reset sandbox** recreates the Worker, discarding drafts, history and pending work,
+and applies Seed and Pace. Identical seeds and the same per-session sequence of
+sends produce identical random tool sequences. Switching scenarios preserves
+session state; reloading starts fresh. Event timestamps use the current clock,
+including seeded history. The seed controls content, not a fixed date. Response
+footers omit the year; metric icons expose names and scope on hover and to
+assistive technology. Relative-time rules are defined in `src/message-time.ts`.
 
-Question options are monochrome cards with a title, description and native
-radio/checkbox control, retaining keyboard navigation and accessible labels.
-Option cards and Other editors have no border inside the bordered Question card;
-selection, hover and focus use background tones. Avoid redundant borders inside
-an already bordered container.
-Fieldsets retain their grouping semantics but have no default border, margin or
-padding. Ordinary Other answers reuse `ComposerEditor`, with multiline text,
-monospace line numbers, atomic paste chips and native Undo/Redo. Answer editors
-and the composer have independent values but share the connection's bounded
-paste cache. Submit expands answer chips to their original text in `answersJson`;
-Enter inserts a line and Ctrl+Enter never sends the conversation draft from an
-answer editor. Password answers keep their masked native control.
-Chip preview edits release the Question's inert state before native insertion,
-so expanding/removing a chip modifies the correct editor and retains its undo
-history. Showing/closing a preview still preserves the pending request.
+Response Copy icons appear on response hover or control focus without changing
+footer geometry. Event summaries and request details open in the same non-modal
+floating card as paste previews. Cards sit above the composer, with rounding on
+all corners, an outer border, narrow content/header padding and strong backdrop
+blur. The title alone gains a little left margin. Close shares Send's rectangular
+style. Code and raw text retain opaque boxes. Inner radii follow outer border and
+inset tokens so the corner centers align. A last-child `pre` has no bottom margin.
+The toolbar, editor and metadata remain accessible. Cards add no transcript height;
+long content scrolls inside a height capped by both shared styles and available space.
+
+The host uses overflow clipping with shadow room, clamped to conversation bounds.
+Do not use ancestor clip-path, masks or opacity that form a backdrop root and stop
+the blur sampling the conversation. Opening another item replaces the previous
+preview: Close or Escape never restores an older card. Clicking empty transcript
+side margins closes it while content, links, buttons and scrolling stay interactive.
+Enter/exit transitions respect reduced motion and never alter transcript coordinates
+or handle/marker physics. Previews are discarded on session navigation.
+
+Pending Question/approval requests use the same FloatingCard shell and anchor,
+outside the composer form. They have no Close control. Escape, side-margin dismissal
+and preview replacement never discard requests or selected/free-text answers.
+Only explicit Submit/Allow/Deny resolves them. Enter in an answer does not send the
+composer. Whenever a preview is active, questions shrink and dim to show their
+background layer. If the preview is at least as tall, questions also move upward
+so part of their top remains visible. A shorter preview keeps the bottom anchor,
+while still shrinking and dimming. Both layers reserve room below the title.
+ResizeObserver compares actual heights; transitions respect reduced motion.
+Covered questions are inert until the preview closes, restoring state and focus.
+Multiple pending requests remain in a bounded, scrollable layer.
+
+Question options are monochrome cards with titles, descriptions and native
+radio/checkbox controls, retaining keyboard navigation and accessible labels.
+Options and Other editors have no border inside the bordered Question card;
+selection, hover and focus use background tones. Fieldsets keep grouping semantics
+without default border, margin or padding. Ordinary Other answers reuse ComposerEditor
+with multiline text, monospace line numbers, atomic chips and native Undo/Redo.
+Answer editors and composer have independent values but share the connection's
+bounded paste cache. Submit expands chips to original text in answersJson; Enter
+inserts a line and Ctrl+Enter never sends the conversation draft from an answer.
+Password answers keep masked native controls. Chip editing releases the Question's
+inert state before native insertion, preserving the correct editor's Undo history.
 
 The shared composer is a monospace editor with logical line numbers and no resize
 handle. Typing three backticks at the start of a line opens an inline black code
 block, inserts the matching closing fence two lines below, and places the cursor
 on the empty body line between them. The opening backticks remain visible, with
-a syntax selector beside them and a 48px Close button at the right, without
+a syntax selector beside them and a shared Close button at the right, without
 changing native text/line-number coordinates.
 The default Auto setting detects the snippet's language; manually chosen syntax
 wins. Close finishes the Markdown fence and moves the cursor into prose after it;
 it does not delete the snippet. Existing fenced snippets also render this way,
 including multiple blocks, language aliases and longer backtick fences. Code
-blocks expand the editor up to twelve rows within the existing 35dvh height cap.
+blocks expand the editor within its CSS height cap.
 By default code uses subdued, low-saturation purple/green/blue/brown token colors on black;
 the surrounding UI stays monochrome. Highlight.js 11.12.0 is the runtime
 dependency, with a bounded set of explicitly registered grammars. User-authored
 HTML remains escaped text.
 
-Tab inserts two spaces by default, or indents the selected logical lines.
+Tab inserts the configured indentation, or indents the selected logical lines.
 The [browser editor settings](web-settings.md) can change the indentation size,
 choose actual Tab characters, adjust their display width and choose a syntax
 palette. Session editor fields inherit global values independently.
@@ -270,9 +246,9 @@ restoration. Sending expands code's paste chips before detection, replaces Auto 
 syntax name (or plaintext when detection is inconclusive), canonicalizes common
 language aliases and finishes an unclosed fence. Surrounding prose and code body
 bytes remain intact. Question Other answers use the same editor and serialization.
-The highlighter uses a bounded common language set; Auto examines a cached sample
-of at most 1,024 characters. Visible blocks fall back to unhighlighted text above
-65,536 characters or when a logical line exceeds 2,048 characters. Fences inside
+The highlighter uses a bounded common language set and cached detection samples.
+Oversized blocks or lines fall back to unhighlighted text; the limits are defined
+in `src/composer-code.ts`. Fences inside
 a paste chip grow the enclosing Markdown fence as needed, and Markdown within
 standalone chips remains unchanged. See the
 [Highlight.js API](https://highlightjs.readthedocs.io/en/latest/api.html) for the
@@ -298,8 +274,9 @@ a 32 MiB connection cache. Paste insertion/removal uses native undo when the
 browser supports `insertText`, with a `setRangeText` fallback. IME composition
 retains the native textarea and cannot trigger Ctrl+Enter submission.
 
-History is bounded to 3,000 events per fake session; client rendering still uses
-the regular 512-event cache and visible messages plus six on either side. Duplicate send IDs are remembered for 256 requests.
+Fake history and remembered send IDs are bounded by the simulator. Client rendering
+uses the regular bounded cache and visible-message overscan from
+`src/virtual-messages.tsx`.
 
 ## Builds and verification
 

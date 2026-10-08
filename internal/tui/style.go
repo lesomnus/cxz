@@ -71,6 +71,11 @@ var (
 	// background, so it is darker than timestamp and not adaptive: the surface it
 	// has to read against is the same in a light or dark theme.
 	promptTimestamp = lipgloss.NewStyle().Foreground(lipgloss.Color("#23262C"))
+	// A found word, and the one the transcript is on. The two greens already
+	// mean this: the bright one is where the attention is, the quiet one is the
+	// same kind of thing without it.
+	searchCurrentMatch = lipgloss.NewStyle().Foreground(lipgloss.Color("#000000")).Background(lipgloss.Color(focusGreen)).Bold(true)
+	searchOtherMatch   = lipgloss.NewStyle().Foreground(lipgloss.Color("#000000")).Background(lipgloss.Color(accentGreen))
 )
 
 // keyboardStep moves every mark that means "the keyboard is here" between the

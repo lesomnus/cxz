@@ -1,12 +1,15 @@
 # Conversation and workspace editor
 
 The available conversation area excludes the resource sidebar and session panel.
-At **1600px or wider**, its left column is **800px** and a 1px divider separates
-it from the workspace editor, which fills the remainder. The conversation and
-composer retain their existing centered 600px content width. Below that threshold
-the editor hides and conversation fills the available area. Resizing does not
+At the shared CSS wide-layout breakpoint, a reading column and divider separate
+the conversation from the workspace editor, which fills the remainder. Conversation
+and composer keep their centered, bounded content width. Below that breakpoint the
+editor hides and conversation fills the available area. Resizing does not
 reset the draft, file tabs or connection. On narrower screens no editor code is
 loaded until the wide layout has first been activated.
+
+Layout dimensions and breakpoints are defined in
+[style.css](../ts/src/style.css).
 
 ## File preview
 
@@ -114,8 +117,8 @@ an optional, independently loaded scenario if that behavior needs to be tested.
 
 ## Verification
 
-- Sandbox browser test checks the 1599/1600px available-area boundary, 800px
-  conversation, readonly files, fake Connect, resize/draft preservation, and
+- Sandbox browser test checks both sides of the available-area split breakpoint,
+  conversation geometry, readonly files, fake Connect, resize/draft preservation, and
   project isolation/restoration.
 - Production browser test loads the actual Monaco preview under the gateway CSP.
 - Lifecycle RPC test checks native metadata/binary bytes, cancellation cleanup,

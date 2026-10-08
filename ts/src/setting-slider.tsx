@@ -1,4 +1,4 @@
-import { useId } from "react";
+import { useId, type CSSProperties } from "react";
 import { t } from "./i18n";
 
 // Position zero unsets the key; its label follows the resolved default/global.
@@ -24,6 +24,9 @@ export function SettingSlider({
       <input
         id={id}
         type="range"
+        style={
+          { "--slider-progress": `${(position / 8) * 100}%` } as CSSProperties
+        }
         aria-label={label}
         min={0}
         max={8}
