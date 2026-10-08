@@ -14,18 +14,16 @@ async function ready(page: Page) {
 async function language(page: Page) {
   if (
     !(await page
-      .getByRole("button", { name: "Settings view", exact: true })
+      .getByRole("link", { name: "Settings view", exact: true })
       .isVisible())
   )
     await page
       .getByRole("button", { name: "Back to sessions", exact: true })
       .click();
-  await page
-    .getByRole("button", { name: "Settings view", exact: true })
-    .click();
+  await page.getByRole("link", { name: "Settings view", exact: true }).click();
   await page
     .getByRole("navigation", { name: "Settings topics", exact: true })
-    .getByRole("button", { name: "General", exact: true })
+    .getByRole("link", { name: "General", exact: true })
     .click();
 }
 test("English defaults and only Apply settings downloads the language pack, preserving JSON drafts and other preferences", async ({
@@ -97,7 +95,7 @@ test("English defaults and only Apply settings downloads the language pack, pres
   );
   await page
     .getByRole("navigation", { name: "설정 주제", exact: true })
-    .getByRole("button", { name: "에디터", exact: true })
+    .getByRole("link", { name: "에디터", exact: true })
     .click();
   await expect(
     page.getByLabel("전역 에디터 Tab 문자 표시 폭", { exact: true }),

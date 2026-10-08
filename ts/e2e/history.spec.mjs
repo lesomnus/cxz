@@ -56,8 +56,8 @@ function replayEvents() {
     };
   });
 }
-async function openReplay(page, summary = false) {
-  const events = replayEvents();
+async function openReplay(page, summary = false, options = {}) {
+  const events = options.events ?? replayEvents();
   const latest = Number(events.at(-1).seq);
   // Serve the current build even when an already-running fixture embeds an old one.
   await page.route("https://127.0.0.1:18081/**", async (route) => {
@@ -90,6 +90,8 @@ async function openReplay(page, summary = false) {
   else if (!process.env.CXZ_REPLAY_EVENTS)
     await page.route("**/cxz.SessionService/Transcript", async (route) => {
       const q = route.request().postDataJSON();
+      if (options.delay && q.beforeSeq && q.limit > 1)
+        await new Promise((resolve) => setTimeout(resolve, options.delay));
       const all = events.filter((e) => e.kind !== "raw");
       const eligible = all.filter(
         (e) =>
@@ -122,6 +124,7 @@ async function openReplay(page, summary = false) {
       },
     });
   });
+
   await page.route("**/cxz.SessionService/Get", async (route) => {
     const response = await route.fetch();
     const json = await response.json();
@@ -143,7 +146,7 @@ async function openReplay(page, summary = false) {
     data: { token: "a".repeat(32) },
   });
   await page.goto("/");
-  await page.getByRole("button", { name: /demo-chat/ }).click();
+  await page.getByRole("link", { name: /demo-chat/ }).click();
   return latest;
 }
 const geometry = (page) =>
@@ -261,7 +264,7 @@ for (const mode of ["legacy", "summary"])
       Number(
         await page.locator(".virtual-messages").getAttribute("data-cached"),
       ),
-    ).toBeLessThanOrEqual(2048);
+    ).toBeLessThanOrEqual(8192);
     expect(await page.locator(".transcript [data-row]").count()).toBeLessThan(
       60,
     );
@@ -284,4 +287,256 @@ for (const mode of ["legacy", "summary"])
         await expect(page.locator(".card-body pre").first()).toBeVisible();
       }
     }
+  });
+
+test("summary history prefetches before the loaded edge even with delayed responses", async ({
+  page,
+}) => {
+  const events = Array.from({ length: 12000 }, (_, index) => ({
+    seq: String(index + 1),
+    kind: index % 2 ? "assistant" : "input",
+    runId: "run",
+    text: `Cached message ${index + 1}`,
+  }));
+  const requests = [];
+  page.on("request", (request) => {
+    if (request.url().endsWith("/Transcript"))
+      requests.push(request.postDataJSON());
+  });
+  await openReplay(page, true, { events, delay: 400 });
+  const pane = page.locator(".transcript");
+  const messages = page.locator(".virtual-messages");
+  await expect(messages).toHaveAttribute("data-cached", "1024");
+  await expect
+    .poll(async () => (await geometry(page)).top)
+    .toBeGreaterThan(10000);
+  expect(requests[0].limit).toBe(1024);
+  const first = BigInt(await messages.getAttribute("data-first"));
+  await pane.evaluate((el) => {
+    el.scrollTop = el.clientHeight * 5;
+  });
+  await expect
+    .poll(() => requests.filter((q) => q.beforeSeq && q.limit > 1).length)
+    .toBe(1);
+  // We still have local content to read during the network round trip.
+  expect((await geometry(page)).top).toBeGreaterThan(
+    (await geometry(page)).height * 2,
+  );
+  await page.waitForTimeout(100);
+  const anchor = await readingAnchor(page);
+  await expect
+    .poll(async () => BigInt(await messages.getAttribute("data-first")))
+    .toBeLessThan(first);
+  await expect
+    .poll(async () => (await readingAnchor(page)).offset)
+    .toBeCloseTo(anchor.offset, 0);
+  expect((await readingAnchor(page)).id).toBe(anchor.id);
+  expect(requests.filter((q) => q.beforeSeq && q.limit > 1)).toHaveLength(1);
+  expect(await pane.locator("[data-row]").count()).toBeLessThan(60);
+});
+
+test("viewport fades cover native tool rows while the scrollbar and detail interaction remain available", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 700 });
+  const events = Array.from({ length: 100 }, (_, index) => {
+    const seq = index + 1;
+    const command = `/usr/bin/zsh -lc 'echo task-${Math.floor(index / 2)}'`;
+    return {
+      seq: String(seq),
+      runId: "run",
+      requestId: `task-${Math.floor(index / 2)}`,
+      kind: index % 2 ? "tool_result" : "tool_call",
+      text: command,
+      timeMs: String(1700000000000 + seq),
+      payload: Buffer.from(
+        JSON.stringify({
+          item: {
+            type: "commandExecution",
+            command,
+            status: index % 2 ? "completed" : "inProgress",
+            ...(index % 2 ? { exitCode: 0, aggregatedOutput: "done" } : {}),
+          },
+        }),
+      ).toString("base64"),
+    };
+  });
+  await openReplay(page, true, { events });
+  const pane = page.locator(".transcript");
+  await expect(page.locator(".tool-activity").first()).toBeAttached();
+  await expect(page.locator(".scroll-response-marker")).toHaveCount(0);
+  await pane.evaluate((el) => {
+    el.scrollTop = (el.scrollHeight - el.clientHeight) / 2;
+  });
+  for (const edge of ["top", "bottom"]) {
+    let seq;
+    await expect
+      .poll(async () => {
+        seq = await pane.evaluate((el) => {
+          const area = el.getBoundingClientRect();
+          const task = [...el.querySelectorAll(".tool-activity")].find(
+            (node) => {
+              const box = node.getBoundingClientRect();
+              return (
+                box.top > area.top + area.height / 3 &&
+                box.bottom < area.bottom - area.height / 3
+              );
+            },
+          );
+          return task?.dataset.seq;
+        });
+        return seq;
+      })
+      .toBeTruthy();
+    const task = page.locator(`.tool-activity[data-seq="${seq}"]`);
+    await task.evaluate((el, edge) => {
+      const pane = el.closest(".transcript");
+      const area = pane.getBoundingClientRect();
+      const box = el.getBoundingClientRect();
+      pane.scrollTop +=
+        box.top +
+        box.height / 2 -
+        (edge === "top" ? area.top + 8 : area.bottom - 8);
+    }, edge);
+    const fade = page.locator(`.transcript-fade-${edge}`);
+    await expect(fade).toHaveCSS("opacity", "1");
+    await expect
+      .poll(() => fade.evaluate((el) => el.getBoundingClientRect().height))
+      .toBeGreaterThan(16);
+    const layers = await task.evaluate((el, edge) => {
+      const box = el.getBoundingClientRect();
+      const area = el.closest(".transcript-area");
+      const fade = area.querySelector(`.transcript-fade-${edge}`);
+      fade.style.pointerEvents = "auto";
+      const bodyBelow =
+        document.elementFromPoint(box.x + 20, box.y + box.height / 2) === fade;
+      const thumb = area.querySelector(".scroll-thumb");
+      const handle = thumb.getBoundingClientRect();
+      const scrollbarAbove = thumb.contains(
+        document.elementFromPoint(handle.x + handle.width / 2, handle.y + 2),
+      );
+      fade.style.pointerEvents = "none";
+      const stillInteractive = el.contains(
+        document.elementFromPoint(box.x + 20, box.y + box.height / 2),
+      );
+      return { bodyBelow, scrollbarAbove, stillInteractive };
+    }, edge);
+    expect(layers).toEqual({
+      bodyBelow: true,
+      scrollbarAbove: true,
+      stillInteractive: true,
+    });
+    await pane.evaluate((el) => {
+      el.scrollTop = (el.scrollHeight - el.clientHeight) / 2;
+    });
+  }
+});
+
+for (const mode of ["legacy", "summary"])
+  test(`${mode} file changes show per-file actions and deltas without fetching details`, async ({
+    page,
+  }) => {
+    const changes = [
+      {
+        path: "/workspace/ts/src/app.tsx",
+        kind: { type: "update" },
+        diff: "@@ -1,11 +1,25 @@\n" + "-old\n".repeat(11) + "+new\n".repeat(25),
+      },
+      { path: "/workspace/ts/src/send-motion.ts", kind: { type: "add" } },
+      {
+        path: "/workspace/ts/src/style.css",
+        kind: { type: "update" },
+        diff: "@@ -0,0 +1,32 @@\n" + "+style\n".repeat(32),
+      },
+    ];
+    const native = [
+      {
+        seq: "1",
+        kind: "input",
+        text: "Change the UI",
+        runId: "run",
+        timeMs: "1700000000000",
+      },
+      {
+        seq: "2",
+        kind: "tool_call",
+        requestId: "patch",
+        runId: "run",
+        payload: Buffer.from(
+          JSON.stringify({
+            item: { type: "fileChange", status: "inProgress", changes: [] },
+          }),
+        ).toString("base64"),
+      },
+      {
+        seq: "3",
+        kind: "tool_result",
+        requestId: "patch",
+        runId: "run",
+        payload: Buffer.from(
+          JSON.stringify({
+            item: { type: "fileChange", status: "completed", changes },
+          }),
+        ).toString("base64"),
+      },
+      { seq: "4", kind: "assistant", text: "Changes completed", runId: "run" },
+    ];
+    const events =
+      mode === "legacy"
+        ? native
+        : [
+            native[0],
+            {
+              ...native[1],
+              payload: undefined,
+              toolSummary: {
+                name: "Files",
+                state: "completed",
+                files: [
+                  {
+                    path: changes[0].path,
+                    action: "update",
+                    added: 25,
+                    removed: 11,
+                    measure: "diff",
+                  },
+                  { path: changes[1].path, action: "add", measure: "unknown" },
+                  {
+                    path: changes[2].path,
+                    action: "update",
+                    added: 32,
+                    removed: 0,
+                    measure: "diff",
+                  },
+                ],
+              },
+            },
+            native[3],
+          ];
+    let details = 0;
+    await openReplay(page, mode === "summary", { events });
+    await page.route("**/cxz.SessionService/EventDetails", (route) => {
+      details++;
+      return route.fulfill({ json: { events: native.slice(1, 3) } });
+    });
+    const task = page.locator('.tool-activity[data-seq="2"]');
+    await expect(task).toHaveAttribute("data-state", "completed");
+    await expect(task.locator(".tool-file-row")).toHaveText([
+      "✓Edit /workspace/ts/src/app.tsx · +25 -11",
+      "✓Write /workspace/ts/src/send-motion.ts · Δ?",
+      "✓Edit /workspace/ts/src/style.css · +32 -0",
+    ]);
+    for (const row of await task.locator(".tool-file-row").all())
+      await expect(row).toBeVisible();
+    await expect(page.locator(".tool-activity")).toHaveCount(1);
+    expect(details).toBe(0);
+    await task.click();
+    const card = page.getByRole("dialog", { name: "Details" });
+    await expect(card).toBeVisible();
+    await expect(card).toContainText("/workspace/ts/src/send-motion.ts");
+    expect(details).toBe(mode === "summary" ? 1 : 0);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect
+      .poll(() => page.evaluate(() => document.documentElement.scrollWidth))
+      .toBe(390);
   });

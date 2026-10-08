@@ -112,8 +112,8 @@ Both viewport fades use the page background color and sit behind the composer.
 The bottom fade ramps in smoothly. Ordinary movement extends the outgoing fade
 and then settles; edge tension adds a stronger extension within the viewport.
 The top fade starts shorter, and directional tension keeps the opposite fade smaller.
-Scroll controls, headings, Copy and disclosure controls paint above the fades;
-only message bodies disappear into the background.
+Scroll controls, headings and Copy paint above the fades. Message bodies and
+task response rows disappear into the background together.
 
 Latest is an icon-only down arrow centered in the composer toolbar, sharing Send's
 button style. Its absolute overlay occupies no layout space. It slides up from
@@ -211,8 +211,27 @@ inserts a line and Ctrl+Enter never sends the conversation draft from an answer.
 Password answers keep masked native controls. Chip editing releases the Question's
 inert state before native insertion, preserving the correct editor's Undo history.
 
+After an accepted Send, a non-interactive copy of the visible draft moves upward
+out of the composer while shrinking, followed by the actual input message
+emerging into the transcript and returning to full size. These transforms do not
+change measured row heights or create optimistic journal entries. Failed sends
+keep the draft; edits made during sending survive, and switching sessions removes
+the decorative layers without restoring an accepted draft. Reduced-motion
+preferences skip the effect. `ts/src/send-motion.ts` coordinates the animation;
+CSS tokens define its appearance and timing.
+
 The shared composer is a monospace editor with logical line numbers and no resize
-handle. Typing three backticks at the start of a line opens an inline black code
+handle. Enter continues Markdown bullet lists at the same space/tab indentation;
+empty items end the list, Shift+Enter inserts a plain newline, and fenced code
+does not trigger list continuation. Inline code spans keep their visible backtick
+delimiters and use a dark background without changing text/caret geometry.
+Typing an inline backtick inserts its closing partner; typing the closing
+backtick advances past the existing delimiter. Escaped backticks and fenced
+code retain ordinary input behavior. Typing on the final logical line keeps
+the editor scrolled to the bottom. Content that exceeds the normal visible
+height expands the editor within its CSS viewport cap and contracts again
+when the draft fits.
+Typing three backticks at the start of a line opens an inline black code
 block, inserts the matching closing fence two lines below, and places the cursor
 on the empty body line between them. The opening backticks remain visible, with
 a syntax selector beside them and a shared Close button at the right, without

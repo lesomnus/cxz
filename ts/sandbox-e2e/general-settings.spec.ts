@@ -1,5 +1,6 @@
 import { test, expect, devices, type Page } from "@playwright/test";
 import { chooseSetting, expectInherited } from "./settings-controls";
+import { disableTerminalWebGL } from "../test-support/terminal";
 test.use({
   ...devices["Desktop Chrome"],
   viewport: { width: 2000, height: 1000 },
@@ -11,9 +12,7 @@ async function ready(page: Page) {
   ).toBeVisible({ timeout: 45000 });
 }
 async function general(page: Page) {
-  await page
-    .getByRole("button", { name: "Settings view", exact: true })
-    .click();
+  await page.getByRole("link", { name: "Settings view", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "General", exact: true }),
   ).toBeVisible();
@@ -21,7 +20,7 @@ async function general(page: Page) {
 async function editor(page: Page) {
   await page
     .getByRole("navigation", { name: "Settings topics" })
-    .getByRole("button", { name: "Editor", exact: true })
+    .getByRole("link", { name: "Editor", exact: true })
     .click();
 }
 test("General is first, shared menus preserve the current text position and system appearance follows the OS without resetting JSON Undo", async ({
@@ -31,7 +30,7 @@ test("General is first, shared menus preserve the current text position and syst
   await ready(page);
   await general(page);
   const topics = page.getByRole("navigation", { name: "Settings topics" });
-  await expect(topics.getByRole("button")).toHaveText(["General", "Editor"]);
+  await expect(topics.getByRole("link")).toHaveText(["General", "Editor"]);
   await expect(
     page.getByRole("button", { name: "Language", exact: true }),
   ).toHaveCount(0);
@@ -180,6 +179,7 @@ test("cross-tab theme changes retain the composer Undo, selected file and runnin
   page,
   context,
 }) => {
+  await disableTerminalWebGL(page);
   await ready(page);
   const input = page.getByRole("textbox", { name: "Message", exact: true });
   const original = await input.elementHandle();

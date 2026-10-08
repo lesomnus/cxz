@@ -33,6 +33,12 @@ func TestTranscriptUsesJournalResultsWithoutChangingHistory(t *testing.T) {
 	if err != nil || len(raw.Events) != 128 || raw.Events[2].Kind != "raw" {
 		t.Fatal(raw, err)
 	}
+	for _, limit := range []uint32{1024, ^uint32(0)} {
+		large, err := s.History(ctx, &api.WatchRequest{SessionId: m.ID, Limit: limit})
+		if err != nil || len(large.Events) != 1024 || large.Events[1023].Seq != 1024 {
+			t.Fatal("native history limit not honored or capped", large, err)
+		}
+	}
 	details, err := s.EventDetails(ctx, &api.EventDetailsRequest{SessionId: m.ID, Seq: 2})
 	if err != nil || len(details.Events) != 2 || details.Events[1].Text != "full result" {
 		t.Fatal(details, err)

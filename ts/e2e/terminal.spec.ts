@@ -1,4 +1,8 @@
 import { test, expect, devices } from "@playwright/test";
+import {
+  disableTerminalWebGL,
+  loseTerminalContext,
+} from "../test-support/terminal";
 
 test.use({
   ...devices["Desktop Chrome"],
@@ -8,12 +12,13 @@ test.use({
 test("authenticated terminal runs a PTY shell under production CSP and preserves it while folded", async ({
   page,
 }) => {
+  await disableTerminalWebGL(page);
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/");
   await page.getByLabel("Web access token").fill("a".repeat(32));
   await page.getByRole("button", { name: "Connect", exact: true }).click();
-  await page.getByRole("button", { name: /demo-chat/ }).click();
+  await page.getByRole("link", { name: /demo-chat/ }).click();
   page.on("console", (m) => {
     if (m.type() === "error") errors.push(m.text());
   });
@@ -51,4 +56,31 @@ test("authenticated terminal runs a PTY shell under production CSP and preserves
   expect(errors).toEqual([]);
   await page.getByRole("button", { name: "Sign out" }).click();
   await expect(panel).toHaveCount(0);
+});
+
+test("WebGL works under production CSP and context loss keeps the PTY alive", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await page.goto("/");
+  await page.getByLabel("Web access token").fill("a".repeat(32));
+  await page.getByRole("button", { name: "Connect", exact: true }).click();
+  await page.getByRole("link", { name: /demo-chat/ }).click();
+  await page.keyboard.press("Control+Backquote");
+  const panel = page.getByRole("region", { name: "Workspace terminal" });
+  await expect(panel.locator(".xterm-screen canvas").last()).toBeVisible();
+  await expect(panel.locator(".xterm-helper-textarea")).toBeFocused();
+  await page.keyboard.type(
+    "CXZ_WEB_KEEP=webgl; printf 'before-loss:%s\\n' ready",
+  );
+  await page.keyboard.press("Enter");
+  await loseTerminalContext(panel);
+  await expect(panel.locator(".xterm-rows")).toBeVisible({ timeout: 10000 });
+  await expect(panel).toContainText("before-loss:ready");
+  await expect(panel.locator(".xterm-screen canvas")).toHaveCount(0);
+  await page.keyboard.type("printf 'after-loss:%s\\n' \"$CXZ_WEB_KEEP\"");
+  await page.keyboard.press("Enter");
+  await expect(panel).toContainText("after-loss:webgl");
+  expect(errors).toEqual([]);
 });

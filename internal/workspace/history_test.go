@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/historypage"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials/insecure"
@@ -20,7 +21,7 @@ type historySource struct {
 func (s *historySource) History(_ context.Context, r *api.WatchRequest, _ ...grpc.CallOption) (*api.EventBatch, error) {
 	s.calls++
 	b := &api.EventBatch{}
-	for seq := r.AfterSeq + 1; seq <= r.AfterSeq+128; seq++ {
+	for seq := r.AfterSeq + 1; seq <= r.AfterSeq+uint64(historypage.PageSize(r.Limit)); seq++ {
 		b.Events = append(b.Events, &api.Event{SessionId: r.SessionId, Seq: seq, Text: "event"})
 	}
 	return b, nil
@@ -93,6 +94,12 @@ func TestHistoryCacheCompletenessAndTransportReuse(t *testing.T) {
 	}
 	if source.backgrounds != 2 || m.historyClients[p.ID] != c {
 		t.Fatal("snapshot did not reuse transport")
+	}
+	for _, limit := range []uint32{1024, 1024, ^uint32(0), 0} {
+		page, err := m.History(ctx, &api.WatchRequest{SessionId: "s", Limit: limit})
+		if err != nil || len(page.Events) != historypage.PageSize(limit) || source.calls != 4 {
+			t.Fatal("larger page was treated as complete too early or re-fetched", len(page.Events), source.calls, err)
+		}
 	}
 	p.ContainerID = "replacement"
 	if err = m.save(ctx, p); err != nil {

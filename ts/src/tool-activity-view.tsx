@@ -9,6 +9,9 @@ import {
   toolLabel,
   toolOutput,
   toolState,
+  toolFiles,
+  fileAction,
+  fileMeasure,
   transcriptEvents,
   type ToolActivity,
 } from "./tool-activity";
@@ -28,9 +31,27 @@ export function ToolActivityView({
   const openCard = useFloatingCard();
   const label = toolLabel(activity, agent);
   const state = toolState(activity, agent);
+  const { files, omitted } = toolFiles(activity);
   const symbol = { pending: "○", working: "•", completed: "✓", failed: "×" }[
     state
   ];
+  const status = (
+    <span
+      className="tool-state"
+      role="img"
+      aria-label={t(
+        state === "completed"
+          ? "Completed"
+          : state === "failed"
+            ? "Failed"
+            : state === "working"
+              ? "Working"
+              : "Pending",
+      )}
+    >
+      {symbol}
+    </span>
+  );
   return (
     <Button
       type="button"
@@ -50,28 +71,51 @@ export function ToolActivityView({
         })
       }
     >
-      <span
-        className="tool-state"
-        role="img"
-        aria-label={t(
-          state === "completed"
-            ? "Completed"
-            : state === "failed"
-              ? "Failed"
-              : state === "working"
-                ? "Working"
-                : "Pending",
-        )}
-      >
-        {symbol}
-      </span>
-      <span className="tool-summary">
-        <span>{label.name}</span>
-        {label.shell && <span className="tool-shell"> · {label.shell}</span>}
-        {label.command && (
-          <span className="tool-command"> · {label.command}</span>
-        )}
-      </span>
+      {files.length ? (
+        <span className="tool-file-list">
+          {files.map((file, index) => (
+            <span className="tool-file-row" key={index}>
+              {status}
+              <span className="tool-file-summary">
+                {fileAction(file)}{" "}
+                <span className="tool-file-path">
+                  {file.path || t("(path not reported)")}
+                </span>
+                {file.movePath && (
+                  <>
+                    {" "}
+                    → <span className="tool-file-path">{file.movePath}</span>
+                  </>
+                )}
+                {fileMeasure(file) && (
+                  <span className="tool-file-measure">
+                    {" "}
+                    · {fileMeasure(file)}
+                  </span>
+                )}
+              </span>
+            </span>
+          ))}
+          {!!omitted && (
+            <span className="tool-file-more">
+              {t("{count} more files in Details", { count: omitted })}
+            </span>
+          )}
+        </span>
+      ) : (
+        <>
+          {status}
+          <span className="tool-summary">
+            <span>{label.name}</span>
+            {label.shell && (
+              <span className="tool-shell"> · {label.shell}</span>
+            )}
+            {label.command && (
+              <span className="tool-command"> · {label.command}</span>
+            )}
+          </span>
+        </>
+      )}
     </Button>
   );
 }

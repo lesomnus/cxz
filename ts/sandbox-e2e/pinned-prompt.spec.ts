@@ -376,7 +376,7 @@ test("an input preceding the cached window is found and can be loaded on demand"
   await expect(pane.locator(`article.input[data-seq="${seq}"]`)).toBeVisible();
   expect(
     Number(await page.locator(".virtual-messages").getAttribute("data-cached")),
-  ).toBeLessThanOrEqual(2048);
+  ).toBeLessThanOrEqual(8192);
 });
 
 test("a long pinned input stays bounded and its own wheel does not move the transcript", async ({
@@ -395,9 +395,9 @@ test("a long pinned input stays bounded and its own wheel does not move the tran
   await expect(
     page.getByRole("heading", { name: "Preview ready", exact: true }),
   ).toBeVisible();
-  await expect(page.locator(".conversation header small")).toContainText(
-    "idle",
-  );
+  await expect(
+    page.getByRole("button", { name: "Session menu", exact: true }),
+  ).toHaveAttribute("aria-description", /idle/);
   const pinned = page.getByRole("button", { name: "Jump to user message" });
   // The tall input remains partly visible at the latest position in a tall
   // viewport. A shorter viewport fits inside its response, clearing the input.
@@ -407,9 +407,9 @@ test("a long pinned input stays bounded and its own wheel does not move the tran
     window.scrollTo(0, 0);
   });
   await expect(pinned).toContainText("Pinned input line 100");
-  await expect(page.locator(".conversation header small")).toContainText(
-    "idle",
-  );
+  await expect(
+    page.getByRole("button", { name: "Session menu", exact: true }),
+  ).toHaveAttribute("aria-description", /idle/);
   const pane = page.locator(".transcript");
   await reveal(page);
   const box = (await pinned.boundingBox())!,

@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lesomnus/cxz/internal/historypage"
 	"github.com/lesomnus/cxz/resource"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -236,13 +237,23 @@ func (p *Projects) List(_ context.Context, r *resource.ProjectListRequest) (*res
 }
 func (p *Projects) Watch(r *resource.ProjectWatchRequest, stream grpc.ServerStreamingServer[resource.ProjectWatchResponse]) error {
 	if !r.GetSkipSnapshot() {
-		list, _ := p.List(stream.Context(), resource.ProjectListRequest_builder{Filters: r.GetFilters()}.Build())
-		var items []*resource.ProjectWatchItem
-		for _, v := range list.GetItems() {
-			items = append(items, resource.ProjectWatchItem_builder{Id: v.GetId(), Value: v}.Build())
-		}
-		if err := stream.Send(resource.ProjectWatchResponse_builder{Items: items}.Build()); err != nil {
-			return err
+		after := ""
+		for {
+			list, err := p.List(stream.Context(), resource.ProjectListRequest_builder{Filters: r.GetFilters(), After: after}.Build())
+			if err != nil {
+				return err
+			}
+			var items []*resource.ProjectWatchItem
+			for _, v := range list.GetItems() {
+				items = append(items, resource.ProjectWatchItem_builder{Id: v.GetId(), Value: v}.Build())
+			}
+			if err := stream.Send(resource.ProjectWatchResponse_builder{Items: items}.Build()); err != nil {
+				return err
+			}
+			after = list.GetNext()
+			if after == "" {
+				break
+			}
 		}
 	}
 	select {
@@ -325,11 +336,12 @@ func (x *Sessions) History(_ context.Context, r *resource.SessionEventsRequest) 
 		return nil, err
 	}
 	var events []*resource.SessionEvent
+	limit := historypage.PageSize(r.GetLimit())
 	for _, e := range st.events {
 		if e.GetSeq() > r.GetAfterSeq() {
 			events = append(events, proto.Clone(e).(*resource.SessionEvent))
-			if len(events) == 128 {
-				break // Match the production history page size.
+			if len(events) == limit {
+				break
 			}
 		}
 	}

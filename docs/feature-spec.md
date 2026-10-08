@@ -14,7 +14,7 @@ linked guides explain existing behavior; correct these documents when code chang
 
 | ID | Capability | Behavioral contract |
 |---|---|---|
-| NAV-01 | Projects and sessions | List project/session identity, aliases, agent and state. Distinguish stopped or down resources from permanently deleted data. Web session panels highlight the current session and reveal a handle-only scrollbar on panel hover. |
+| NAV-01 | Projects and sessions | List project/session identity, aliases, agent and state. Distinguish stopped or down resources from permanently deleted data. Web panels keep their heading outside the scrolling list, highlight the current session and reveal a handle-only scrollbar on panel hover. Panel handles share the conversation handle's color and enlarge on pointer approach. Hidden list content fades into the panel background at each obscured edge; faster scrolling lengthens the outgoing fade, then it settles. The heading and handle remain above the fade. |
 | NAV-02 | Session navigation | Open and switch sessions, retain each draft, and navigate session-only back/forward history. |
 | SES-01 | Session creation | Choose workspace, account and supported model; complete required provider authentication before starting a session. |
 | SES-02 | Names and aliases | Change supported project/session metadata without changing resource identity. Validate aliases and report ambiguous targets. |
@@ -30,7 +30,7 @@ linked guides explain existing behavior; correct these documents when code chang
 | CHAT-01 | Conversation events | Show assistant output, tool activity and turn state from recorded/streamed events without duplicating events on reconnect. Keep protocol raw records, polling and control bookkeeping out of the transcript while retaining them for replay and metadata. Represent successful turn completion in its loaded final response footer without a duplicate status row; preserve failure, interruption and unmatched notices. Fill sparse rendered history without requiring overflow first and preserve reading anchors during paging and resize. |
 | CHAT-02 | Formatted responses and copying | Render Markdown/GFM, highlighted code and safe links; copy code without display padding while retaining source indentation. |
 | CHAT-03 | Tool inspection | Inspect recorded tool input and output separately, including raw content when a normalized preview is unavailable. Group a tool call, correlated approval, output chunks and result by run and execution ID at the original call position; preserve unrelated requests and history-edge results. |
-| CHAT-04 | History navigation | Load retained history in a bounded window, preserve browsing position and provide follow-latest, pinned prompt and jump-to-bottom navigation. |
+| CHAT-04 | History navigation | Load retained history in a bounded window, preserve browsing position and provide follow-latest, pinned prompt and jump-to-bottom navigation. Web history uses larger indexed pages and prefetches in the direction of travel before reaching the loaded edge, with a larger bounded cache and a virtualized DOM. |
 | CHAT-05 | Usage and quota | Distinguish turn metrics, session totals, account quota and auxiliary usage. Show only provider-reported metrics; absent data is not zero. |
 | CHAT-06 | Context report | Provide normalized Summary and original Raw context views while preserving provider availability and idle requirements. |
 | CHAT-07 | Agent context compaction | Invoke native provider compaction on an eligible idle session. This does not prune the cxz journal or compact shared memory. |

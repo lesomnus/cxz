@@ -1,4 +1,5 @@
 @import "./theme.css";
+@import "./scrollbars.css";
 
 :root {
   color-scheme: dark;
@@ -10,6 +11,12 @@
   --space: 4px;
   --conversation-width: 600px;
   --composer-radius: 15px;
+  --composer-editor-height: 110px;
+  --send-exit-duration: 180ms;
+  --send-enter-duration: 240ms;
+  --send-exit-travel: 72px;
+  --send-enter-travel: 40px;
+  --send-content-scale: 0.96;
   --wrapper-radius: 10px;
   --control-inset: 2px;
   --control-inline-inset: 6px;
@@ -20,8 +27,21 @@
   --hover: var(--shade-40);
   --selected: var(--shade-48);
   --selected-hover: var(--shade-56);
-  --panel-scrollbar-width: 6px;
-  --panel-scrollbar-thumb: var(--shade-119);
+  --resource-panel-width: 180px;
+  --panel-inset: 12px;
+  --scroll-handle-color: var(--shade-122);
+  --scroll-handle-hover-color: color-mix(
+    in srgb,
+    var(--scroll-handle-color) 70%,
+    transparent
+  );
+  --scroll-handle-size: 4px;
+  --scroll-handle-radius: 3px;
+  --scroll-handle-expansion: 2;
+  --native-scrollbar-size: 12px;
+  --scroll-near-distance: 32px;
+  --panel-fade-depth: 24px;
+  --panel-fade-extension: 72px;
   --agent-logo-size: 14px;
 }
 * {
@@ -31,19 +51,22 @@ body {
   margin: 0;
 }
 button,
+a.route-link,
 input,
 textarea,
 select {
   font: inherit;
 }
 button,
+a.route-link,
 input,
 textarea,
 select,
 summary {
   border-radius: 6px;
 }
-button {
+button,
+a.route-link {
   min-height: 32px;
   border: 0;
   background: transparent;
@@ -51,6 +74,10 @@ button {
   padding: 6px 10px;
   cursor: pointer;
   touch-action: manipulation;
+}
+.route-link {
+  display: inline-block;
+  text-decoration: none;
 }
 .button-content {
   display: flex;
@@ -61,10 +88,12 @@ button {
   transform: scale(1);
   transition: transform 120ms ease-out;
 }
-button:not(:disabled):hover {
+button:not(:disabled):hover,
+a.route-link:hover {
   background: var(--hover);
 }
-button:not(:disabled):active > .button-content {
+button:not(:disabled):active > .button-content,
+a.route-link:active > .button-content {
   transform: scale(var(--press-scale, 0.95));
   transition-duration: 60ms;
 }
@@ -73,6 +102,7 @@ button:disabled {
   cursor: default;
 }
 button:focus-visible,
+a.route-link:focus-visible,
 summary:focus-visible,
 select:focus-visible {
   outline: 2px solid var(--shade-237);
@@ -134,7 +164,7 @@ header strong {
 }
 .workspace {
   display: grid;
-  grid-template-columns: 64px 240px minmax(0, 1fr);
+  grid-template-columns: 64px var(--resource-panel-width) minmax(0, 1fr);
   height: 100dvh;
   min-width: 0;
 }
@@ -176,7 +206,7 @@ header strong {
   min-height: 0;
   overflow: hidden;
 }
-.settings-topics button {
+.settings-topics :is(button, a.route-link) {
   width: 100%;
   text-align: left;
   padding: 8px;
@@ -313,47 +343,100 @@ header strong {
   font-size: 12px;
 }
 .resource-panel {
-  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   min-width: 0;
+  min-height: 0;
   background: var(--shade-24);
-  padding: 12px;
+  padding: var(--panel-inset);
 }
-.session-panel {
-  scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
+.resource-panel > header {
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  gap: var(--space);
 }
-.session-panel:hover {
-  scrollbar-color: var(--panel-scrollbar-thumb) transparent;
+.panel-scroll-region {
+  position: relative;
+  isolation: isolate;
+  flex: 1;
+  min-height: 0;
 }
-@supports selector(::-webkit-scrollbar) {
-  /* Let the WebKit pseudo-elements hide the native buttons and track. */
-  .session-panel,
-  .session-panel:hover {
-    scrollbar-width: auto;
-    scrollbar-color: auto;
-  }
+.panel-scroll-content {
+  height: 100%;
+  overflow: auto;
+  scrollbar-width: none;
 }
-.session-panel::-webkit-scrollbar {
-  width: var(--panel-scrollbar-width);
-  height: var(--panel-scrollbar-width);
-  background: transparent;
-}
-.session-panel::-webkit-scrollbar-track,
-.session-panel::-webkit-scrollbar-corner {
-  background: transparent;
-}
-.session-panel::-webkit-scrollbar-button {
+.panel-scroll-content::-webkit-scrollbar {
   display: none;
-  width: 0;
-  height: 0;
 }
-.session-panel::-webkit-scrollbar-thumb {
-  background: transparent;
-  border: 0;
-  border-radius: 999px;
+.panel-scroll-inner {
+  display: flow-root;
+  padding-right: 14px;
 }
-.session-panel:hover::-webkit-scrollbar-thumb {
-  background: var(--panel-scrollbar-thumb);
+.panel-scroll-rail {
+  position: absolute;
+  top: var(--space);
+  bottom: var(--space);
+  right: calc(var(--space) - var(--panel-inset));
+  width: 24px;
+  z-index: 2;
+  pointer-events: none;
+}
+.panel-scroll-fade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  pointer-events: none;
+  max-height: 40%;
+  transition:
+    height 180ms ease-out,
+    opacity 180ms ease-out;
+}
+.panel-scroll-fade-top {
+  top: 0;
+  height: min(
+    var(--panel-top-hidden, 0px),
+    calc(
+      var(--panel-fade-depth) + var(--panel-fade-extension) *
+        var(--panel-top-motion, 0)
+    )
+  );
+  opacity: var(--panel-top-opacity, 0);
+  background: linear-gradient(to bottom, var(--shade-24), transparent);
+}
+.panel-scroll-fade-bottom {
+  bottom: 0;
+  height: min(
+    var(--panel-bottom-hidden, 0px),
+    calc(
+      var(--panel-fade-depth) + var(--panel-fade-extension) *
+        var(--panel-bottom-motion, 0)
+    )
+  );
+  opacity: var(--panel-bottom-opacity, 0);
+  background: linear-gradient(to top, var(--shade-24), transparent);
+}
+.panel-scroll-thumb {
+  position: absolute;
+  width: 24px;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  pointer-events: auto;
+}
+.resource-panel:hover .scroll-handle,
+.panel-scroll-thumb:focus-visible .scroll-handle {
+  opacity: 0.7;
+}
+.panel-scroll-region.scroll-dragging .panel-scroll-thumb {
+  cursor: grabbing;
+}
+.panel-scroll-thumb:focus-visible {
+  outline: 1px solid var(--shade-204);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 .resource-panel h2 {
   font-size: 0.75rem;
@@ -361,7 +444,7 @@ header strong {
   color: var(--muted);
   margin: 20px 8px 6px;
 }
-.resource-panel > button {
+.panel-scroll-inner > :is(button, a.route-link) {
   display: block;
   width: 100%;
   text-align: left;
@@ -370,19 +453,19 @@ header strong {
   background: transparent;
   border: 0;
 }
-.resource-panel > button > .button-content {
+.panel-scroll-inner > :is(button, a.route-link) > .button-content {
   display: block;
   transform-origin: left center;
   overflow-wrap: anywhere;
 }
-.resource-panel > button.active {
+.panel-scroll-inner > :is(button, a.route-link).active {
   font-weight: 650;
   color: var(--shade-255);
 }
-.resource-panel > button.active small {
+.panel-scroll-inner > :is(button, a.route-link).active small {
   font-weight: 400;
 }
-.resource-panel > button:hover {
+.panel-scroll-inner > :is(button, a.route-link):hover {
   background: var(--hover);
   border: 0;
 }
@@ -433,9 +516,6 @@ header strong {
   border-left: 1px solid var(--shade-54);
   overflow: hidden;
   flex-direction: column;
-}
-.terminal-toggle {
-  margin-left: auto;
 }
 .workspace-terminal {
   flex: 0 0 auto;
@@ -652,6 +732,46 @@ header strong {
 .conversation > header small {
   margin: 2px 0 0;
 }
+.conversation-back {
+  display: none;
+}
+.conversation > header > .action-menu {
+  flex: 0 0 auto;
+}
+.action-menu-popup {
+  position: fixed;
+  z-index: 100;
+  min-width: 190px;
+  max-width: calc(100vw - 16px);
+  max-height: 50dvh;
+  overflow: auto;
+  padding: var(--control-inset);
+  border: 1px solid var(--shade-54);
+  border-radius: 6px;
+  background: var(--shade-32);
+}
+.action-menu-popup button {
+  display: block;
+  width: 100%;
+  padding: var(--control-inset) var(--control-inline-inset);
+  text-align: left;
+}
+.action-menu-popup .button-content {
+  justify-content: space-between;
+}
+.action-menu-popup [aria-checked="true"] {
+  background: var(--selected);
+}
+.action-menu-popup kbd {
+  font: inherit;
+  color: var(--muted);
+  margin-left: calc(2 * var(--space));
+}
+.action-menu-popup small {
+  margin: var(--space);
+  padding-top: var(--space);
+  border-top: 1px solid var(--shade-54);
+}
 .agent-brand {
   display: inline-flex;
   height: var(--agent-logo-size);
@@ -713,8 +833,7 @@ header strong {
   overflow-wrap: anywhere;
 }
 .transcript-row > article > small,
-.transcript-row .copy,
-.transcript-row .event-detail {
+.transcript-row .copy {
   position: relative;
   z-index: 2;
 }
@@ -752,6 +871,10 @@ header strong {
   background: var(--shade-34);
   border-radius: 8px;
   padding: 10px 12px;
+}
+.input[data-send-arrival] {
+  overflow: clip;
+  border-radius: 8px;
 }
 .input-content {
   display: flex;
@@ -825,7 +948,6 @@ header strong {
   text-align: left;
   font-size: 1rem;
   background: transparent;
-  scrollbar-width: thin;
   border-radius: 0 0 8px 8px;
   pointer-events: auto;
   transform: translateY(calc(-100% + var(--prompt-peek)));
@@ -1016,12 +1138,36 @@ pre {
 .composer-input:focus-within {
   border-color: var(--shade-115);
 }
+.composer-editor.composer-send-ghost {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.composer-send-ghost .editor-mirror {
+  transform-origin: center top;
+}
+.composer-input[data-send-exiting]
+  > .composer-editor:not(.composer-send-ghost)
+  .editor-mirror {
+  visibility: hidden;
+}
+.composer-input[data-send-exiting] textarea {
+  caret-color: transparent;
+}
+.composer-input[data-send-exiting] textarea::selection {
+  color: transparent;
+  background: transparent;
+}
 .composer-editor textarea {
   position: relative;
   z-index: 1;
   display: block;
   width: 100%;
-  min-height: 110px;
+  height: var(--composer-editor-height);
+  min-height: var(--composer-editor-height);
   padding: 12px 9px;
   border: 0;
   border-radius: inherit;
@@ -1033,6 +1179,10 @@ pre {
   color: transparent;
   caret-color: var(--shade-237);
   overflow-wrap: anywhere;
+  scrollbar-gutter: stable;
+}
+.composer-editor textarea[data-expanded="true"] {
+  height: calc(3 * var(--composer-editor-height));
 }
 .composer-editor textarea::selection {
   background: var(--shade-65);
@@ -1076,6 +1226,15 @@ pre {
 }
 .editor-line {
   min-height: 1.5em;
+}
+.editor-inline-code {
+  background: var(--shade-0);
+  border-radius: 4px;
+  box-shadow:
+    -2px 0 var(--shade-0),
+    2px 0 var(--shade-0);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
 }
 .editor-code-line {
   position: relative;
@@ -1188,6 +1347,10 @@ pre {
 }
 .composer-editor[data-composing="true"] .editor-code-line > * {
   visibility: hidden;
+}
+.composer-editor[data-composing="true"] .editor-inline-code {
+  visibility: visible;
+  color: transparent;
 }
 .editor-notice {
   padding: 0 12px;
@@ -1662,11 +1825,6 @@ summary:hover {
     transition: none;
   }
 }
-@media (max-width: 900px) {
-  .workspace {
-    grid-template-columns: 64px 208px minmax(0, 1fr);
-  }
-}
 @media (max-width: 700px) {
   .settings-open {
     grid-template-rows: auto minmax(0, 1fr);
@@ -1679,6 +1837,13 @@ summary:hover {
     grid-column: 2;
     grid-row: 1;
     padding: 8px 12px;
+  }
+  .settings-open .panel-scroll-region {
+    flex: 0 0 auto;
+  }
+  .settings-open .panel-scroll-content {
+    height: auto;
+    overflow: visible;
   }
   .settings-open > .resource-panel > .muted {
     display: none;
@@ -1705,6 +1870,9 @@ summary:hover {
   .conversation-open > .resource-panel {
     display: none;
   }
+  .conversation-open > .route-not-found {
+    display: flex;
+  }
   .conversation-open > .session-workspace {
     display: block;
     height: 100%;
@@ -1717,6 +1885,9 @@ summary:hover {
   }
   .conversation > header {
     padding: 8px 12px;
+  }
+  .conversation-back {
+    display: inline-block;
   }
   .composer {
     width: calc(100% - 44px);
@@ -1737,7 +1908,7 @@ summary:hover {
   .usage-info {
     gap: 4px 8px;
   }
-  .resource-panel > button {
+  .panel-scroll-inner > :is(button, a.route-link) {
     min-height: 44px;
   }
 }
@@ -1745,7 +1916,7 @@ summary:hover {
 .session-tree-group {
   margin: 4px 0 12px;
 }
-.session-tree button {
+.session-tree :is(button, a.route-link) {
   display: block;
   width: 100%;
   min-height: 30px;
@@ -1754,7 +1925,7 @@ summary:hover {
   background: transparent;
   border: 0;
 }
-.session-tree button:hover {
+.session-tree :is(button, a.route-link):hover {
   background: var(--hover);
 }
 .session-tree .tree-session.active {
@@ -1781,21 +1952,21 @@ summary:hover {
 .session-label {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 0;
   min-width: 0;
   flex: 1;
 }
 .session-heading {
-  --agent-logo-size: 12px;
+  --agent-logo-size: 14px;
   display: flex;
   align-items: center;
   gap: 8px;
   min-width: 0;
-  width: fit-content;
-  max-width: 100%;
+  flex: 1;
 }
 .session-heading .agent-brand,
-.session-heading .session-title {
+.session-heading .session-title,
+.session-heading .session-alias {
   transition: transform 120ms ease-out;
 }
 .session-heading .agent-brand {
@@ -1803,26 +1974,28 @@ summary:hover {
   top: 1px;
   transform-origin: center;
 }
-.session-heading .session-title {
+.session-heading .session-title,
+.session-heading .session-alias {
   transform-origin: left center;
 }
-button.tree-session:not(:disabled):active > .button-content {
+:is(button, a.route-link).tree-session:not(:disabled):active > .button-content {
   transform: none;
 }
 .tree-session:not(:disabled):active .session-heading .agent-brand,
-.tree-session:not(:disabled):active .session-title {
+.tree-session:not(:disabled):active .session-title,
+.tree-session:not(:disabled):active .session-alias {
   transform: scale(var(--press-scale, 0.95));
   transition-duration: 60ms;
 }
 @media (prefers-reduced-motion: reduce) {
   .session-heading .agent-brand,
-  .session-heading .session-title {
+  .session-heading .session-title,
+  .session-heading .session-alias {
     transition: none;
   }
 }
 .session-title,
-.session-alias,
-.session-model {
+.session-alias {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1840,14 +2013,35 @@ button.tree-session:not(:disabled):active > .button-content {
 .session-alias {
   font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
   flex-shrink: 0;
-  max-width: 55%;
+  max-width: 100%;
 }
 .session-indicator {
+  --session-dot-step: 200ms;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 12px;
+  height: 20px;
   flex: 0 0 12px;
-  align-self: flex-start;
-  margin-top: 1px;
+  align-self: center;
   font: 14px/20px monospace;
+}
+.session-activity-dot {
+  fill: currentColor;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: session-dot-scale calc(8 * var(--session-dot-step)) ease-in-out
+    infinite;
+}
+@keyframes session-dot-scale {
+  0%,
+  100% {
+    transform: scale(0);
+  }
+  12.5%,
+  87.5% {
+    transform: scale(1);
+  }
 }
 .session-indicator.attention {
   animation: attention-blink 2s step-end infinite;
@@ -1880,6 +2074,28 @@ button.tree-session:not(:disabled):active > .button-content {
   overflow: hidden;
 }
 .tool-shell {
+  color: var(--muted);
+}
+.tool-file-list {
+  display: grid;
+  gap: var(--space);
+  min-width: 0;
+  width: 100%;
+}
+.tool-file-row {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+.tool-file-summary {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.tool-file-path {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+.tool-file-measure,
+.tool-file-more {
   color: var(--muted);
 }
 .tool-command {
@@ -1915,38 +2131,43 @@ button.tree-session:not(:disabled):active > .button-content {
   position: absolute;
   top: 0;
   bottom: 0;
-  left: 10px;
-  width: 4px;
-  border-radius: 3px;
-  background: var(--shade-122);
+  left: calc((24px - var(--scroll-handle-size)) / 2);
+  width: var(--scroll-handle-size);
+  border-radius: var(--scroll-handle-radius);
+  background: var(--scroll-handle-color);
   opacity: 0;
   transform: scaleX(1);
   transition:
     opacity 160ms,
     transform 160ms;
 }
-.scroll-marker {
+.scroll-tick {
   position: absolute;
   right: 20px;
-  width: 10px;
   height: 2px;
   background: var(--shade-119);
   opacity: 0;
   transition: opacity 160ms;
+}
+.scroll-marker {
+  width: 10px;
+}
+.scroll-response-marker {
+  width: 5px;
 }
 .transcript-area:hover .scroll-handle,
 .scroll-thumb:focus-visible .scroll-handle,
 .scroll-dragging .scroll-handle {
   opacity: 0.7;
 }
-.transcript-area:hover .scroll-marker,
-.scroll-track:focus-within .scroll-marker,
-.scroll-dragging .scroll-marker {
+.transcript-area:hover .scroll-tick,
+.scroll-track:focus-within .scroll-tick,
+.scroll-dragging .scroll-tick {
   opacity: 0.55;
 }
 .scroll-near .scroll-handle,
 .scroll-dragging .scroll-handle {
-  transform: scaleX(2);
+  transform: scaleX(var(--scroll-handle-expansion));
   opacity: 1;
 }
 .scroll-dragging .scroll-thumb {
@@ -1965,7 +2186,8 @@ button.tree-session:not(:disabled):active > .button-content {
 @media (prefers-reduced-motion: reduce) {
   .scroll-thumb,
   .scroll-handle,
-  .scroll-marker,
+  .scroll-tick,
+  .panel-scroll-fade,
   .send-shortcut,
   .tree-chevron {
     transition: none !important;
@@ -2077,7 +2299,6 @@ button.tree-session:not(:disabled):active > .button-content {
 .setting-options {
   max-height: var(--options-height, 240px);
   overflow: auto;
-  scrollbar-width: thin;
 }
 .setting-menu button {
   display: block;
@@ -2153,6 +2374,12 @@ button.tree-session:not(:disabled):active > .button-content {
   }
   .session-indicator.attention {
     animation: none;
+  }
+  .session-activity-dot {
+    animation: none;
+  }
+  .session-activity-dot:first-child {
+    transform: scale(0);
   }
 }
 .language-error {

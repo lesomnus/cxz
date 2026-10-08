@@ -207,7 +207,7 @@ func (c *Client) Watch(ctx context.Context, r *api.WatchRequest, opts ...grpc.Ca
 	return stream{s, r.SessionId}, nil
 }
 func (c *Client) History(ctx context.Context, r *api.WatchRequest, opts ...grpc.CallOption) (*api.EventBatch, error) {
-	b, err := c.sessions.History(ctx, resource.SessionEventsRequest_builder{Ref: sr(r.SessionId), AfterSeq: &r.AfterSeq}.Build(), opts...)
+	b, err := c.sessions.History(ctx, resource.SessionEventsRequest_builder{Ref: sr(r.SessionId), AfterSeq: &r.AfterSeq, Limit: &r.Limit}.Build(), opts...)
 	if err != nil {
 		return nil, err
 	}

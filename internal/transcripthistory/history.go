@@ -12,6 +12,7 @@ import (
 
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/shellview"
+	"github.com/lesomnus/cxz/internal/toolview"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
@@ -110,6 +111,17 @@ func summary(e *api.Event) *api.Event {
 	if label.Name == "" {
 		label.Name = "Tool"
 	}
+	provider := "claude"
+	if text(item, "type") != "" {
+		provider = "codex"
+	}
+	if activity, ok := toolview.ToolView(provider, e.Text, e.Payload); ok {
+		const maxFiles = 256
+		for _, f := range activity.Files[:min(len(activity.Files), maxFiles)] {
+			label.Files = append(label.Files, &api.ToolFileSummary{Path: clip(f.Path, 1024), MovePath: clip(f.MovePath, 1024), Action: f.Action, Added: uint32(f.Added), Removed: uint32(f.Removed), Lines: uint32(f.Lines), Measure: f.Measure, PerMatch: f.PerMatch})
+		}
+		label.OmittedFiles = uint32(len(activity.Files) - len(label.Files))
+	}
 	if text(item, "status") == "inProgress" {
 		label.State = "working"
 	}
@@ -152,6 +164,14 @@ func (p *Projection) Apply(e *api.Event) {
 			}
 			state := v.ToolSummary.State
 			if e.Kind == "tool_result" {
+				// Codex can announce an empty file-change list and report the paths/diff
+				// only on completion. Enrich the original anchor instead of adding a row.
+				result := summary(e).ToolSummary
+				if text(child(object(e.Payload), "item"), "type") == "fileChange" && len(result.Files) > 0 {
+					v.ToolSummary.Files = result.Files
+					v.ToolSummary.OmittedFiles = result.OmittedFiles
+					v.ToolSummary.Command = result.Command
+				}
 				v.ToolSummary.State = "completed"
 				if failed(e) {
 					v.ToolSummary.State = "failed"
@@ -281,7 +301,10 @@ var schema = []string{
 	`CREATE INDEX IF NOT EXISTS transcript_related ON transcript_records(session_id,run_id,related_id,seq)`,
 	`CREATE INDEX IF NOT EXISTS transcript_metadata ON transcript_records(session_id,kind,seq)`,
 	`CREATE TABLE IF NOT EXISTS transcript_state(session_id TEXT PRIMARY KEY,count INTEGER,first INTEGER,last INTEGER)`,
+	`CREATE TABLE IF NOT EXISTS transcript_format(session_id TEXT PRIMARY KEY,version INTEGER)`,
 }
+
+const projectionFormat = 2
 
 // Sync indexes only native non-raw records. A cache backfill or retention change
 // rebuilds this disposable session index; normal queries read only the new suffix.
@@ -305,14 +328,19 @@ func Sync(ctx context.Context, db *sql.DB, id string, decode Decode) error {
 	if err != nil && err != sql.ErrNoRows {
 		return err
 	}
-	if oldCount == count && oldFirst == first && oldLast == last {
+	var format int
+	err = tx.QueryRowContext(ctx, `SELECT version FROM transcript_format WHERE session_id=?`, id).Scan(&format)
+	if err != nil && err != sql.ErrNoRows {
+		return err
+	}
+	if format == projectionFormat && oldCount == count && oldFirst == first && oldLast == last {
 		return tx.Commit()
 	}
 	var suffix uint64
 	if err = tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM events WHERE session_id=? AND seq>?`, id, oldLast).Scan(&suffix); err != nil {
 		return err
 	}
-	rebuild := oldCount == 0 || oldFirst != first || count != oldCount+suffix || last < oldLast
+	rebuild := format != projectionFormat || oldCount == 0 || oldFirst != first || count != oldCount+suffix || last < oldLast
 	if rebuild {
 		oldLast = 0
 		for _, table := range []string{"transcript_rows", "transcript_records"} {
@@ -437,6 +465,9 @@ func Sync(ctx context.Context, db *sql.DB, id string, decode Decode) error {
 		}
 	}
 	if _, err = tx.ExecContext(ctx, `INSERT OR REPLACE INTO transcript_state VALUES(?,?,?,?)`, id, count, first, last); err != nil {
+		return err
+	}
+	if _, err = tx.ExecContext(ctx, `INSERT OR REPLACE INTO transcript_format VALUES(?,?)`, id, projectionFormat); err != nil {
 		return err
 	}
 	return tx.Commit()

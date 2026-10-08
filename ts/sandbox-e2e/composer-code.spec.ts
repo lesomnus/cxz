@@ -6,6 +6,47 @@ test.use({
   hasTouch: false,
 });
 
+test("inline backticks keep native text geometry and send literal Markdown with a code background", async ({
+  page,
+}) => {
+  await page.goto("/sandbox.html");
+  await expect(
+    page.getByRole("heading", { name: "Current status" }),
+  ).toBeVisible({ timeout: 45000 });
+  const input = page.getByRole("textbox", { name: "Message", exact: true });
+  const draft =
+    "Use `git status` and ``a ` tick``.\nEscaped \\`plain\\` and `unfinished";
+  await input.fill(draft);
+  const code = page.locator(".editor-inline-code");
+  await expect(code).toHaveText(["`git status`", "``a ` tick``"]);
+  await expect(code.first()).toHaveCSS("background-color", "rgb(0, 0, 0)");
+  await expect(page.locator(".editor-line")).toHaveText(draft.split("\n"));
+  await input.dispatchEvent("compositionstart", { data: "중" });
+  await expect(code.first()).toHaveCSS("visibility", "visible");
+  await expect(code.first()).toHaveCSS("color", "rgba(0, 0, 0, 0)");
+  await expect(code.first()).toHaveCSS("background-color", "rgb(0, 0, 0)");
+  await input.dispatchEvent("compositionend", { data: "중" });
+  const mirrorBefore = (await page.locator(".editor-mirror").boundingBox())!;
+  const codeBefore = (await code.first().boundingBox())!;
+  await code.evaluateAll((elements) =>
+    elements.forEach((el) => el.removeAttribute("class")),
+  );
+  const plain = page
+    .locator(".editor-line")
+    .first()
+    .locator("span span")
+    .first();
+  expect(await plain.boundingBox()).toEqual(codeBefore);
+  expect(await page.locator(".editor-mirror").boundingBox()).toEqual(
+    mirrorBefore,
+  );
+  await input.press("Control+Enter");
+  await expect(input).toHaveValue("");
+  await expect(page.locator("article.input .message-body").last()).toHaveText(
+    draft,
+  );
+});
+
 test("fenced editor opens inline, detects syntax, closes to prose and sends resolved Markdown", async ({
   page,
 }) => {
@@ -157,10 +198,12 @@ test("multiple blocks, paste chips, highlighting and native line geometry stay a
           return Math.max(
             Math.abs(
               textarea.scrollHeight -
-                document
-                  .querySelector(".editor-mirror")!
-                  .getBoundingClientRect().height -
-                24,
+                Math.max(
+                  textarea.clientHeight,
+                  document
+                    .querySelector(".editor-mirror")!
+                    .getBoundingClientRect().height + 24,
+                ),
             ),
             ...lines.map((line, index) =>
               Math.abs(

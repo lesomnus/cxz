@@ -117,12 +117,17 @@ func (s ProjectServer) List(ctx context.Context, r *resource.ProjectListRequest)
 	return s.ProjectServiceServer.List(ctx, r)
 }
 func (s ProjectServer) Watch(r *resource.ProjectWatchRequest, stream grpc.ServerStreamingServer[resource.ProjectWatchResponse]) error {
+	// Match List's default: all registered projects, with explicit filters still
+	// available for archived resources or a narrower subscription.
+	if len(r.GetFilters()) == 0 {
+		r.SetFilters([]*resource.ProjectFilter{resource.ProjectFilter_builder{Listed: ptr(true)}.Build()})
+	}
 	s.shared.watchers.Add(1)
 	defer s.shared.watchers.Add(-1)
 	if err := s.ensureSnapshot(stream.Context()); err != nil {
 		return err
 	}
-	return s.ProjectServiceServer.Watch(r, stream)
+	return s.watchInventory(r, stream)
 }
 func (s ProjectServer) Patch(ctx context.Context, r *resource.ProjectPatchRequest) (*resource.Project, error) {
 	if r.HasStatus() || r.HasStatusNull() || r.HasConfig() || r.HasListed() || r.GetDateUpdatedForce() {

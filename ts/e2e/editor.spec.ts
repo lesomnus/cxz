@@ -17,7 +17,7 @@ test("production file viewer loads under the gateway CSP", async ({ page }) => {
   page.on("console", (message) => {
     if (message.type() === "error") errors.push(message.text());
   });
-  await page.getByRole("button", { name: /demo-chat/ }).click();
+  await page.getByRole("link", { name: /demo-chat/ }).click();
   const editor = page.getByRole("complementary", { name: "Workspace editor" });
   await expect(editor).toBeVisible();
   await editor.getByRole("button", { name: "README.md", exact: true }).click();
@@ -49,9 +49,7 @@ test("editable settings JSON and its worker load under production CSP and save t
   page.on("console", (message) => {
     if (message.type() === "error") errors.push(message.text());
   });
-  await page
-    .getByRole("button", { name: "Settings view", exact: true })
-    .click();
+  await page.getByRole("link", { name: "Settings view", exact: true }).click();
   const pane = page.getByRole("complementary", {
     name: "Settings file editor",
     exact: true,
@@ -68,12 +66,15 @@ test("editable settings JSON and its worker load under production CSP and save t
   );
   await page
     .getByRole("navigation", { name: "Settings topics" })
-    .getByRole("button", { name: "Editor", exact: true })
+    .getByRole("link", { name: "Editor", exact: true })
     .click();
   const raw = '{\n  "editor.tabSize": 6,\n  "editor.colorPalette": "cool"\n}\n';
   await page.evaluate((raw) => navigator.clipboard.writeText(raw), raw);
   await input.press("Control+a");
   await input.press("Control+v");
+  await expect(pane.locator(".view-lines")).toContainText(
+    '"editor.tabSize": 6',
+  );
   await input.press("Control+Enter");
   await expect
     .poll(() => page.evaluate(() => localStorage.getItem("settings")))
@@ -105,7 +106,7 @@ test("real container editor opens the workspace through the authenticated iframe
   await page.goto("/");
   await page.getByLabel("Web access token").fill("a".repeat(32));
   await page.getByRole("button", { name: "Connect", exact: true }).click();
-  await page.getByRole("button", { name: /demo-chat/ }).click();
+  await page.getByRole("link", { name: /demo-chat/ }).click();
   const editor = page.getByRole("complementary", { name: "Workspace editor" });
   await editor.getByRole("button", { name: "README.md", exact: true }).click();
   await expect(editor.locator(".view-lines")).toContainText(
@@ -160,12 +161,10 @@ test("language packs load only on Apply under the production CSP and the saved l
   page.on("console", (message) => {
     if (message.type() === "error") errors.push(message.text());
   });
-  await page
-    .getByRole("button", { name: "Settings view", exact: true })
-    .click();
+  await page.getByRole("link", { name: "Settings view", exact: true }).click();
   await page
     .getByRole("navigation", { name: "Settings topics", exact: true })
-    .getByRole("button", { name: "General", exact: true })
+    .getByRole("link", { name: "General", exact: true })
     .click();
   await page.getByLabel("Display language", { exact: true }).click();
   await page.getByRole("option", { name: "한국어", exact: true }).click();
@@ -184,7 +183,7 @@ test("language packs load only on Apply under the production CSP and the saved l
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("lang", "ko");
   await expect(
-    page.getByRole("button", { name: "설정 보기", exact: true }),
+    page.getByRole("link", { name: "설정 보기", exact: true }),
   ).toBeVisible();
   expect(errors).toEqual([]);
 });

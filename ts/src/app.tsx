@@ -1,6 +1,9 @@
 import { t, translateKnown } from "./i18n";
 import { useLocale } from "./i18n-react";
 import React, {
+  createContext,
+  useContext,
+  type PropsWithChildren,
   useCallback,
   useEffect,
   useMemo,
@@ -10,6 +13,7 @@ import React, {
 import { Provider, useQuery } from "@lesomnus/payday/react";
 import { ProjectService } from "../gen/cxz/project_svc_pb";
 import { SessionService } from "../gen/cxz/session_svc_pb";
+import type { Project } from "../gen/cxz/project_pb";
 import type { Session, SessionEvent } from "../gen/cxz/session_pb";
 import { Connection, authenticate, ref } from "./connection";
 import {
@@ -42,6 +46,7 @@ import type { ResponseCompletion } from "./response-completion";
 import { ResponseFooter } from "./response-footer";
 import { InputMessage } from "./input-message";
 import { ComposerEditor } from "./composer-editor";
+import { useSendMotion } from "./send-motion";
 import { WorkspaceTerminal, terminalShortcut } from "./workspace-terminal";
 import {
   FloatingCardProvider,
@@ -52,11 +57,20 @@ import {
 import { type ComposerPaste } from "./composer-pastes";
 import { composerPrompt } from "./composer-code";
 import { SessionTreeGroup } from "./session-tree";
+import { SessionIdentity } from "./session-identity";
+import { ActionMenu } from "./action-menu";
+import { PanelScroll } from "./panel-scroll";
+import { useScrollbars } from "./scrollbars";
+import { useResourceInventory } from "./resource-inventory";
+import { key } from "@lesomnus/payday/store";
 import { transcriptEvents, type ToolActivity } from "./tool-activity";
 import { ToolActivityView } from "./tool-activity-view";
 import { Transcript } from "./transcript";
 import { WorkspaceEditor } from "./workspace-editor";
 import { SettingsPage } from "./settings-page";
+import { useNavigate } from "@tanstack/react-router";
+import { RouteLink } from "./route-link";
+import { useWorkspaceRoute } from "./router";
 export { Button } from "./button";
 import "./style.css";
 
@@ -106,7 +120,7 @@ function Markdown({ text }: { text: string }) {
     />
   );
 }
-export function App() {
+export function App({ children }: PropsWithChildren) {
   useLocale();
   const [connection, setConnection] = useState<Connection>();
   const [token, setToken] = useState("");
@@ -162,168 +176,245 @@ export function App() {
     );
   return (
     <Provider app={connection}>
-      <Workspace connection={connection} logout={logout} />
+      <Workspace connection={connection} logout={logout}>
+        {children}
+      </Workspace>
     </Provider>
   );
 }
 export function Workspace({
   connection: c,
   logout,
-  initialSession = "",
   exitLabel = t("Sign out"),
+  children,
 }: {
   connection: Connection;
   logout: () => Promise<void>;
-  initialSession?: string;
   exitLabel?: string;
-}) {
+} & PropsWithChildren) {
   useLocale();
-  const [resource, setResource] = useState<
-    "sessions" | "projects" | "settings"
-  >("sessions");
-  const [session, setSession] = useState(initialSession);
+  useScrollbars();
+  const route = useWorkspaceRoute();
+  const resource = route.resource === "not-found" ? "sessions" : route.resource;
+  const session = route.session;
+  const settingsTopic = route.settingsTopic;
+  const lastSession = useRef("");
+  if (route.resource === "sessions") lastSession.current = session;
   const [settingsFileOpen, setSettingsFileOpen] = useState(false);
-  const [settingsTopic, setSettingsTopic] = useState<"editor" | "general">(
-    "general",
-  );
-  const [after, setAfter] = useState("");
+  useEffect(() => setSettingsFileOpen(false), [resource, settingsTopic]);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
-  const projects = useQuery(ProjectService.method.list, {
-    filters: [{ listed: true }],
-    size: 50,
-    after,
-  });
+  const inventory = useResourceInventory(c);
+  const projects = inventory.projects;
+  const sessionsByProject = useMemo(() => {
+    const grouped = new Map<string, Session[]>();
+    for (const session of inventory.sessions) {
+      if (!session.project) continue;
+      const id = key(session.project.id);
+      const sessions = grouped.get(id) ?? [];
+      sessions.push(session);
+      grouped.set(id, sessions);
+    }
+    return grouped;
+  }, [inventory.sessions]);
   const [error, setError] = useState("");
+  function expandProject(id: string) {
+    setCollapsed((old) => {
+      const next = new Set(old);
+      next.delete(id);
+      return next;
+    });
+  }
   return (
-    <div
-      className={`workspace ${session && resource === "sessions" ? "conversation-open" : ""} ${resource === "settings" ? "settings-open" : ""}`}
+    <WorkspaceContext.Provider
+      value={{
+        c,
+        projects,
+        projectsLoading: inventory.loading.projects,
+        settingsFileOpen,
+        setSettingsFileOpen,
+        expandProject,
+      }}
     >
-      <nav className="resource-sidebar" aria-label={t("Resources")}>
-        <span className="brand" aria-label="cxz">
-          cxz
-        </span>
-        {(["sessions", "projects"] as const).map((view) => (
-          <Button
-            key={view}
-            className={`resource-link ${resource === view ? "active" : ""}`}
-            aria-label={
-              view === "sessions" ? t("Sessions view") : t("Projects view")
-            }
-            aria-current={resource === view ? "page" : undefined}
-            title={view === "sessions" ? t("Sessions") : t("Projects")}
-            onClick={() => setResource(view)}
-          >
-            <ResourceIcon kind={view} />
-            <span>{view === "sessions" ? t("Sessions") : t("Projects")}</span>
-          </Button>
-        ))}
-        <Button
-          className={`resource-link settings-link ${resource === "settings" ? "active" : ""}`}
-          aria-label={t("Settings view")}
-          aria-current={resource === "settings" ? "page" : undefined}
-          title={t("Settings")}
-          onClick={() => {
-            setSettingsFileOpen(false);
-            setSettingsTopic("general");
-            setResource("settings");
-          }}
-        >
-          <ResourceIcon kind="settings" />
-          <span>{t("Settings")}</span>
-        </Button>
-      </nav>
-      <aside
-        className={`resource-panel${resource === "sessions" ? " session-panel" : ""}`}
-        aria-label={
-          resource === "sessions"
-            ? t("Session list")
-            : resource === "settings"
-              ? t("Settings navigation")
-              : t("Project list")
-        }
+      <div
+        className={`workspace ${(session && resource === "sessions") || route.resource === "not-found" ? "conversation-open" : ""} ${resource === "settings" ? "settings-open" : ""}`}
       >
-        <header>
-          <strong>
-            {resource === "sessions"
-              ? t("Sessions")
-              : resource === "settings"
-                ? t("Settings")
-                : t("Projects")}
-          </strong>
-          <Button onClick={() => logout().catch((e) => setError(String(e)))}>
-            {exitLabel}
-          </Button>
-        </header>
-        <p className="muted">{new URL(c.baseUrl).host}</p>
-        {resource === "settings" ? (
-          <nav className="settings-topics" aria-label={t("Settings topics")}>
-            {(["general", "editor"] as const).map((topic) => (
-              <Button
-                key={topic}
-                aria-current={settingsTopic === topic ? "page" : undefined}
-                aria-controls="settings-editor"
-                onClick={() => {
-                  setSettingsTopic(topic);
-                  setSettingsFileOpen(false);
-                }}
-              >
-                {topic === "general" ? t("General") : t("Editor")}
-              </Button>
-            ))}
-          </nav>
-        ) : resource === "sessions" ? (
-          <div className="session-tree" aria-label={t("Projects and sessions")}>
-            {projects.data?.items.map((p) => (
-              <SessionTreeGroup
-                key={p.runtimeId}
-                project={p}
-                selected={session}
-                open={!collapsed.has(p.runtimeId)}
-                toggle={() =>
-                  setCollapsed((old) => {
-                    const next = new Set(old);
-                    if (next.has(p.runtimeId)) next.delete(p.runtimeId);
-                    else next.add(p.runtimeId);
-                    return next;
-                  })
-                }
-                select={setSession}
-              />
-            ))}
-          </div>
-        ) : (
-          projects.data?.items.map((p) => (
-            <Button
-              key={p.runtimeId}
-              onClick={() => {
-                setCollapsed((old) => {
-                  const next = new Set(old);
-                  next.delete(p.runtimeId);
-                  return next;
-                });
-                setResource("sessions");
-                setSession("");
-              }}
+        <nav className="resource-sidebar" aria-label={t("Resources")}>
+          <span className="brand" aria-label="cxz">
+            cxz
+          </span>
+          {(["sessions", "projects"] as const).map((view) => (
+            <RouteLink
+              key={view}
+              {...(view === "projects"
+                ? { to: "/projects" as const }
+                : lastSession.current
+                  ? {
+                      to: "/sessions/$sessionId" as const,
+                      params: { sessionId: lastSession.current },
+                    }
+                  : { to: "/sessions" as const })}
+              className={`resource-link ${resource === view ? "active" : ""}`}
+              aria-label={
+                view === "sessions" ? t("Sessions view") : t("Projects view")
+              }
+              aria-current={resource === view ? "page" : undefined}
+              title={view === "sessions" ? t("Sessions") : t("Projects")}
             >
-              {p.name || p.alias}
+              <ResourceIcon kind={view} />
+              <span>{view === "sessions" ? t("Sessions") : t("Projects")}</span>
+            </RouteLink>
+          ))}
+          <RouteLink
+            to="/settings/general"
+            className={`resource-link settings-link ${resource === "settings" ? "active" : ""}`}
+            aria-label={t("Settings view")}
+            aria-current={resource === "settings" ? "page" : undefined}
+            title={t("Settings")}
+            onClick={() => {
+              setSettingsFileOpen(false);
+            }}
+          >
+            <ResourceIcon kind="settings" />
+            <span>{t("Settings")}</span>
+          </RouteLink>
+        </nav>
+        <aside
+          className={`resource-panel${resource === "sessions" ? " session-panel" : ""}`}
+          aria-label={
+            resource === "sessions"
+              ? t("Session list")
+              : resource === "settings"
+                ? t("Settings navigation")
+                : t("Project list")
+          }
+        >
+          <header>
+            <strong>
+              {resource === "sessions"
+                ? t("Sessions")
+                : resource === "settings"
+                  ? t("Settings")
+                  : t("Projects")}
+            </strong>
+            <Button onClick={() => logout().catch((e) => setError(String(e)))}>
+              {exitLabel}
             </Button>
-          ))
-        )}
-        {resource !== "settings" && after && (
-          <Button onClick={() => setAfter("")}>{t("First projects")}</Button>
-        )}
-        {resource !== "settings" && projects.data?.next && (
-          <Button onClick={() => setAfter(projects.data!.next)}>
-            {t("More projects →")}
-          </Button>
-        )}
-        {(projects.error || error) && (
-          <p role="alert">{String(projects.error || error)}</p>
-        )}
-        {projects.state === "pending" && !projects.data && (
-          <p className="muted">{t("Loading projects…")}</p>
-        )}
-      </aside>
+          </header>
+          <p className="muted">{new URL(c.baseUrl).host}</p>
+          <PanelScroll>
+            {resource === "settings" ? (
+              <nav
+                className="settings-topics"
+                aria-label={t("Settings topics")}
+              >
+                {(["general", "editor"] as const).map((topic) => (
+                  <RouteLink
+                    key={topic}
+                    to={
+                      topic === "general"
+                        ? "/settings/general"
+                        : "/settings/editor"
+                    }
+                    aria-current={settingsTopic === topic ? "page" : undefined}
+                    aria-controls="settings-editor"
+                    onClick={() => {
+                      setSettingsFileOpen(false);
+                    }}
+                  >
+                    {topic === "general" ? t("General") : t("Editor")}
+                  </RouteLink>
+                ))}
+              </nav>
+            ) : resource === "sessions" ? (
+              <div
+                className="session-tree"
+                aria-label={t("Projects and sessions")}
+              >
+                {projects.map((p) => (
+                  <SessionTreeGroup
+                    key={p.runtimeId}
+                    project={p}
+                    items={sessionsByProject.get(key(p.id)) ?? []}
+                    loading={inventory.loading.sessions}
+                    selected={session}
+                    open={!collapsed.has(p.runtimeId)}
+                    toggle={() =>
+                      setCollapsed((old) => {
+                        const next = new Set(old);
+                        if (next.has(p.runtimeId)) next.delete(p.runtimeId);
+                        else next.add(p.runtimeId);
+                        return next;
+                      })
+                    }
+                  />
+                ))}
+              </div>
+            ) : (
+              projects.map((p) => (
+                <RouteLink
+                  key={p.runtimeId}
+                  to="/sessions"
+                  onClick={() => expandProject(p.runtimeId)}
+                >
+                  {p.name || p.alias}
+                </RouteLink>
+              ))
+            )}
+            {(inventory.errors.projects ||
+              inventory.errors.sessions ||
+              error) && (
+              <p role="alert">
+                {String(
+                  inventory.errors.projects ||
+                    inventory.errors.sessions ||
+                    error,
+                )}
+              </p>
+            )}
+            {inventory.loading.projects && !projects.length && (
+              <p className="muted">{t("Loading projects…")}</p>
+            )}
+          </PanelScroll>
+        </aside>
+        {children}
+      </div>
+    </WorkspaceContext.Provider>
+  );
+}
+
+const WorkspaceContext = createContext<
+  | {
+      c: Connection;
+      projects: Project[];
+      projectsLoading: boolean;
+      settingsFileOpen: boolean;
+      setSettingsFileOpen: (open: boolean) => void;
+      expandProject: (id: string) => void;
+    }
+  | undefined
+>(undefined);
+
+export function WorkspaceView() {
+  useLocale();
+  const {
+    c,
+    projects,
+    projectsLoading,
+    settingsFileOpen,
+    setSettingsFileOpen,
+    expandProject,
+  } = useContext(WorkspaceContext)!;
+  const { resource, session, settingsTopic } = useWorkspaceRoute();
+  const navigate = useNavigate();
+  if (resource === "not-found")
+    return (
+      <main className="empty route-not-found">
+        <h1>{t("Page not found")}</h1>
+        <RouteLink to="/sessions">{t("Back to sessions")}</RouteLink>
+      </main>
+    );
+  return (
+    <>
       {resource === "settings" ? (
         <SettingsPage
           topic={settingsTopic}
@@ -339,19 +430,12 @@ export function Workspace({
             </div>
           </header>
           <div className="resource-view-content">
-            {projects.data?.items.map((p) => (
-              <Button
+            {projects.map((p) => (
+              <RouteLink
+                to="/sessions"
                 className="project-row"
                 key={p.runtimeId}
-                onClick={() => {
-                  setCollapsed((old) => {
-                    const next = new Set(old);
-                    next.delete(p.runtimeId);
-                    return next;
-                  });
-                  setSession("");
-                  setResource("sessions");
-                }}
+                onClick={() => expandProject(p.runtimeId)}
               >
                 <ResourceIcon kind="projects" />
                 <span>
@@ -361,25 +445,29 @@ export function Workspace({
                   </small>
                 </span>
                 <span aria-hidden="true">→</span>
-              </Button>
+              </RouteLink>
             ))}
-            {projects.state === "pending" && !projects.data && (
+            {projectsLoading && !projects.length && (
               <p className="muted">{t("Loading projects…")}</p>
             )}
-            {projects.data && !projects.data.items.length && (
+            {!projectsLoading && !projects.length && (
               <p className="muted">{t("No projects yet.")}</p>
             )}
           </div>
         </main>
       ) : session ? (
-        <SessionWorkspace c={c} id={session} back={() => setSession("")} />
+        <SessionWorkspace
+          c={c}
+          id={session}
+          back={() => void navigate({ to: "/sessions" })}
+        />
       ) : (
         <main className="empty">
           <h1>{t("Your workspace")}</h1>
           <p>{t("Select a session to continue.")}</p>
         </main>
       )}
-    </div>
+    </>
   );
 }
 function SessionWorkspace({
@@ -514,6 +602,12 @@ function ConversationContent({
     setLatestShown(false);
   }, [follow]);
   const pane = useRef<HTMLDivElement>(null);
+  const sendMotion = useSendMotion({
+    source: composerInput,
+    pane,
+    events,
+    draft,
+  });
   const lock = useRef(false);
   const historyRequest = useRef<AbortController | null>(null);
   const [precedingPrompt, setPrecedingPrompt] = useState<{
@@ -567,10 +661,9 @@ function ConversationContent({
       }
       let before = firstSeq;
       while (before > 0n && !controller.signal.aborted) {
-        const afterSeq = before > 129n ? before - 129n : 0n;
-        const page = await c.sessions.history(
-          { ref: ref(id), afterSeq },
-          { signal: controller.signal },
+        const page = await history.page(
+          { beforeSeq: before, snapshotSeq: latestSeq.current },
+          controller.signal,
         );
         if (controller.signal.aborted) return;
         const prompt = [...page.events]
@@ -581,12 +674,12 @@ function ConversationContent({
           return;
         }
         if (
-          afterSeq === 0n ||
+          !page.hasOlder ||
           !page.events.length ||
-          page.events[0].seq > afterSeq + 1n
+          page.events[0].seq >= before
         )
           break;
-        before = afterSeq + 1n;
+        before = page.events[0].seq;
       }
       if (!controller.signal.aborted) remember();
     })().catch((e) => {
@@ -738,10 +831,7 @@ function ConversationContent({
           // On reconnect, replay every native update after the stream cursor:
           // an old task's completion has an earlier summary row anchor.
           do {
-            const page = await c.sessions.history(
-              { ref: ref(id), afterSeq: cursor },
-              { signal },
-            );
+            const page = await history.nativePage(cursor, signal);
             if (canceled) return;
             rememberMetadata(page.events);
             if (cursor > 0n && page.events[0]?.seq > cursor + 1n) setGap(true);
@@ -1007,17 +1097,26 @@ function ConversationContent({
     if (!draft.trim()) return;
     const sent = draft;
     await action(async (s) => {
-      const receipt = await c.sessions.send({
-        ...control(s),
-        text: composerPrompt(sent, c.pastes),
-      });
-      if (receipt.status === "rejected")
-        throw new Error(t("Provider rejected the input"));
-      setDraft((old) => (old === sent ? "" : old));
-      if (detached.current) await loadHistory("newer", true);
-      pane.current?.dispatchEvent(new Event("scroll-jump"));
-      setFollow(true);
-      if (pane.current) pane.current.scrollTop = pane.current.scrollHeight;
+      const text = composerPrompt(sent, c.pastes);
+      const motion = sendMotion.prepare(text, latestSeq.current);
+      try {
+        const receipt = await c.sessions.send({ ...control(s), text });
+        if (receipt.status === "rejected")
+          throw new Error(t("Provider rejected the input"));
+        // A session switch can unmount this view during the decorative departure.
+        if (c.drafts.get(id) === sent) c.drafts.set(id, "");
+        await sendMotion.depart(motion);
+        setDraft((old) => (old === sent ? "" : old));
+        if (detached.current) await loadHistory("newer", true);
+        pane.current?.dispatchEvent(new Event("scroll-jump"));
+        followRef.current = true;
+        setFollow(true);
+        if (pane.current) pane.current.scrollTop = pane.current.scrollHeight;
+        sendMotion.enter(motion);
+      } catch (error) {
+        if (motion) sendMotion.cancel(motion);
+        throw error;
+      }
     });
   }
   async function reply(e: SessionEvent, allow: boolean, answersJson = "") {
@@ -1038,25 +1137,26 @@ function ConversationContent({
   return (
     <main className="conversation">
       <header>
-        <Button onClick={back} aria-label={t("Back to sessions")}>
+        <Button
+          className="conversation-back"
+          onClick={back}
+          aria-label={t("Back to sessions")}
+        >
           ←
         </Button>
-        <div>
-          <strong>{s?.alias || s?.runtimeId || t("Session")}</strong>
-          <small>
-            <AgentBrand agent={s?.agent ?? ""} /> · {s?.status?.state} ·{" "}
-            {translateKnown(status)}
-          </small>
-        </div>
-        <Button
-          className="toolbar-button terminal-toggle"
-          aria-label={t("Toggle workspace terminal")}
-          aria-expanded={terminalVisible}
-          title="Ctrl+`"
-          onClick={() => showTerminal(!terminalVisibleRef.current)}
-        >
-          &gt;_
-        </Button>
+        <SessionIdentity session={s} heading />
+        <ActionMenu
+          label={t("Session menu")}
+          status={`${s?.status?.state ?? ""} · ${translateKnown(status)}`}
+          items={[
+            {
+              label: t("Terminal"),
+              shortcut: "Ctrl+`",
+              checked: terminalVisible,
+              run: () => showTerminal(!terminalVisibleRef.current),
+            },
+          ]}
+        />
       </header>
       <Transcript
         pane={pane}

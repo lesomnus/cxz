@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/lesomnus/cxz/api"
@@ -150,5 +151,94 @@ func TestCompletionAndMetadata(t *testing.T) {
 	add(next)
 	if p = syncPage(t, db, &api.TranscriptRequest{}); len(p.Events) != 5 || p.Events[4].Kind != "turn_end" {
 		t.Fatal(p)
+	}
+}
+
+func TestFileChangesEnrichOriginalRowAndUpgradeCachedProjection(t *testing.T) {
+	db, add := fixture(t)
+	start := event(1, "tool_call", "files", `{"item":{"type":"fileChange","status":"inProgress","changes":[]}}`)
+	add(start)
+	before := syncPage(t, db, &api.TranscriptRequest{})
+	if len(before.Events) != 1 || len(before.Events[0].ToolSummary.Files) != 0 {
+		t.Fatal(before)
+	}
+	end := event(2, "tool_result", "files", `{"item":{"type":"fileChange","status":"completed","changes":[{"path":"/workspace/ts/src/app.tsx","kind":{"type":"update","move_path":"app-new.tsx"},"diff":"--- a/app.tsx\n+++ b/app-new.tsx\n@@ -1 +1,2 @@\n-old\n+new\n+SECRET_DIFF_BODY\n"},{"path":"/workspace/ts/src/send-motion.ts","kind":{"type":"add"}},{"path":"/workspace/ts/src/style.css","kind":"delete"}]}}`)
+	add(end)
+	page := syncPage(t, db, &api.TranscriptRequest{})
+	row := page.Events[0]
+	if len(page.Events) != 1 || row.Seq != 1 || row.ToolSummary.State != "completed" || len(row.ToolSummary.Files) != 3 {
+		t.Fatal(page)
+	}
+	f := row.ToolSummary.Files[0]
+	if f.Path != "/workspace/ts/src/app.tsx" || f.MovePath != "app-new.tsx" || f.Action != "update" || f.Added != 2 || f.Removed != 1 || f.Measure != "diff" {
+		t.Fatal(f)
+	}
+	if row.ToolSummary.Files[1].Measure != "unknown" || row.ToolSummary.Files[1].Action != "add" || row.ToolSummary.Files[2].Action != "delete" {
+		t.Fatal(row)
+	}
+	encoded, _ := json.Marshal(row)
+	if len(row.Payload) != 0 || strings.Contains(string(encoded), "SECRET_DIFF_BODY") {
+		t.Fatal("summary leaked file body")
+	}
+	old := syncPage(t, db, &api.TranscriptRequest{SnapshotSeq: 1})
+	if len(old.Events[0].ToolSummary.Files) != 0 || old.Events[0].ToolSummary.State != "working" {
+		t.Fatal("snapshot fence changed", old)
+	}
+	// Model an index made by an older build with identical native bounds.
+	row.ToolSummary.Files = nil
+	legacy, _ := json.Marshal(row)
+	if _, err := db.Exec(`UPDATE transcript_rows SET data=? WHERE session_id='s' AND updated=2`, legacy); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`DELETE FROM transcript_format WHERE session_id='s'`); err != nil {
+		t.Fatal(err)
+	}
+	rebuilt := syncPage(t, db, &api.TranscriptRequest{})
+	if len(rebuilt.Events[0].ToolSummary.Files) != 3 {
+		t.Fatal("old cached projection was not rebuilt", rebuilt)
+	}
+	details, err := Details(context.Background(), db, &api.EventDetailsRequest{SessionId: "s", Seq: 1}, decode)
+	if err != nil || len(details.Events) != 2 || !strings.Contains(string(details.Events[1].Payload), "SECRET_DIFF_BODY") {
+		t.Fatal(details, err)
+	}
+}
+
+func TestFileSummaryCountsAreRecordedSpansAndBounded(t *testing.T) {
+	for _, tc := range []struct {
+		name, payload, measure string
+		added, removed, lines  uint32
+		perMatch               bool
+	}{
+		{"Write", `{"file_path":"a","content":"one\ntwo\n"}`, "content", 0, 0, 2, false},
+		{"Edit", `{"input":{"file_path":"a","old_string":"one\ntwo","new_string":"new","replace_all":true}}`, "replacement", 1, 2, 0, true},
+		{"Write", `{"file_path":"a"}`, "unknown", 0, 0, 0, false},
+		{"Read", `{"file_path":"a"}`, "", 0, 0, 0, false},
+	} {
+		e := event(1, "tool_call", "file", tc.payload)
+		e.Text = tc.name
+		f := summary(e).ToolSummary.Files[0]
+		if f.Path != "a" || f.Measure != tc.measure || f.Added != tc.added || f.Removed != tc.removed || f.Lines != tc.lines || f.PerMatch != tc.perMatch {
+			t.Fatal(tc.name, f)
+		}
+	}
+	p := New()
+	call := event(1, "tool_call", "write", `{"file_path":"a","content":"one\ntwo\n"}`)
+	call.Text = "Write"
+	result := event(2, "tool_result", "write", `{"content":"Write"}`)
+	result.Text = "Write"
+	p.Apply(call)
+	p.Apply(result)
+	if f := p.Rows[1].ToolSummary.Files[0]; f.Path != "a" || f.Lines != 2 || f.Measure != "content" {
+		t.Fatal("result text was mistaken for a new file request", f)
+	}
+	var changes []map[string]any
+	for range 300 {
+		changes = append(changes, map[string]any{"path": strings.Repeat("x", 1100), "kind": "add"})
+	}
+	payload, _ := json.Marshal(map[string]any{"item": map[string]any{"type": "fileChange", "changes": changes}})
+	e := event(1, "tool_call", "many", string(payload))
+	s := summary(e).ToolSummary
+	if len(s.Files) != 256 || s.OmittedFiles != 44 || len([]rune(s.Files[0].Path)) != 1025 {
+		t.Fatal("unbounded summary", len(s.Files), s.OmittedFiles)
 	}
 }

@@ -1,5 +1,9 @@
 // English source messages are always bundled; other packs load on demand.
 export const messages = {
+  "(path not reported)": "(path not reported)",
+  "Page not found": "Page not found",
+  "{count} more files in Details": "{count} more files in Details",
+
   Details: "Details",
   Result: "Result",
   Approval: "Approval",
@@ -75,6 +79,7 @@ export const messages = {
   "Continue the conversation…": "Continue the conversation…",
   Conversation: "Conversation",
   "Conversation scroll": "Conversation scroll",
+  "Panel scroll": "Panel scroll",
   Cool: "Cool",
   Copy: "Copy",
   Cost: "Cost",
@@ -201,6 +206,7 @@ export const messages = {
   "Select a session to continue.": "Select a session to continue.",
   Send: "Send",
   Session: "Session",
+  "Session menu": "Session menu",
   "Session editor": "Session editor",
   "Session information": "Session information",
   "Session list": "Session list",

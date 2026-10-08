@@ -1,7 +1,7 @@
 import { t } from "./i18n";
 import type { SessionEvent } from "../gen/cxz/session_pb";
 // Bound cached records; the transcript mounts only its visible rows.
-export const MAX_EVENTS = 2048;
+export const MAX_EVENTS = 8192;
 const internalEventKinds = new Set([
   "raw",
   "state",

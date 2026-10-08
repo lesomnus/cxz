@@ -16,7 +16,9 @@ export type LoadEventDetails = (
   seq: bigint,
   signal: AbortSignal,
 ) => Promise<SessionEvent[]>;
-export const HISTORY_PAGE_SIZE = 256;
+export const HISTORY_PAGE_SIZE = 1024;
+export const NATIVE_HISTORY_PAGE_SIZE = 1024;
+export const HISTORY_PREFETCH_SCREENS = 6;
 
 // Capability belongs to this session's runtime: a gateway can route to projects
 // running different versions. Only Unimplemented enables the legacy fallback.
@@ -26,6 +28,12 @@ export class SessionHistory {
     private sessions: Connection["sessions"],
     private id: string,
   ) {}
+  nativePage(afterSeq: bigint, signal: AbortSignal) {
+    return this.sessions.history(
+      { ref: ref(this.id), afterSeq, limit: NATIVE_HISTORY_PAGE_SIZE },
+      { signal },
+    );
+  }
   async page(
     query: { beforeSeq?: bigint; afterSeq?: bigint; snapshotSeq?: bigint },
     signal: AbortSignal,
@@ -44,22 +52,20 @@ export class SessionHistory {
       }
     }
     const snapshotSeq = query.snapshotSeq ?? 0n;
+    const span = BigInt(NATIVE_HISTORY_PAGE_SIZE);
     let cursor =
       query.afterSeq ??
       (query.beforeSeq !== undefined
-        ? query.beforeSeq > 257n
-          ? query.beforeSeq - 257n
+        ? query.beforeSeq > span + 1n
+          ? query.beforeSeq - span - 1n
           : 0n
-        : snapshotSeq > 256n
-          ? snapshotSeq - 256n
+        : snapshotSeq > span
+          ? snapshotSeq - span
           : 0n);
     let events: SessionEvent[] = [];
     let advanced = cursor;
     do {
-      const page = await this.sessions.history(
-        { ref: ref(this.id), afterSeq: cursor },
-        { signal },
-      );
+      const page = await this.nativePage(cursor, signal);
       const rows = page.events.filter(
         (e) =>
           (query.beforeSeq === undefined || e.seq < query.beforeSeq) &&

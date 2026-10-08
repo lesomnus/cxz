@@ -7,6 +7,7 @@ import { ProjectService } from "../gen/cxz/project_svc_pb";
 import { SessionService } from "../gen/cxz/session_svc_pb";
 import type { ComposerPaste } from "./composer-pastes";
 import type { EditorState } from "./workspace-editor";
+import { ResourceInventory } from "./resource-inventory";
 
 // All client state belongs to one authenticated Connection. No credentials or
 // conversation cache are persisted in localStorage; sign-out discards the tree.
@@ -17,6 +18,7 @@ export class Connection {
   readonly queries;
   readonly projects;
   readonly sessions;
+  readonly inventory;
   readonly drafts = new Map<string, string>();
   // Original paste bodies stay in this authenticated connection's memory, like drafts.
   readonly pastes = new Map<string, ComposerPaste>();
@@ -41,6 +43,11 @@ export class Connection {
     this.queries = new Queries(this.store, this.transport, entities);
     this.projects = createClient(ProjectService, this.transport);
     this.sessions = createClient(SessionService, this.transport);
+    this.inventory = new ResourceInventory(
+      this.projects,
+      this.sessions,
+      this.store,
+    );
   }
 }
 export const ref = (id: string) => ({

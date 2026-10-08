@@ -6,6 +6,11 @@ import { flushSync } from "react-dom";
 import { Button } from "./button";
 import { useFloatingCard } from "./floating-card";
 import { indentEdit } from "./composer-indent";
+import {
+  inlineBacktickEdit,
+  inlineCodeRanges,
+  listNewlineEdit,
+} from "./composer-markdown";
 import { useEditorSettings } from "./settings";
 import { paletteVariables } from "./editor-settings";
 import {
@@ -62,6 +67,7 @@ export function ComposerEditor({
     | undefined
   >(undefined);
   const expectedEdit = useRef<string | undefined>(undefined);
+  const followOnEdit = useRef(false);
   const ranges = pasteRanges(value, pastes);
   const latest = useRef({ value, replace });
   latest.current = { value, replace };
@@ -94,6 +100,16 @@ export function ComposerEditor({
     const el = input.current!;
     // Match the actual native text width, including a visible scrollbar's gutter.
     surface.current!.style.width = `${el.clientWidth}px`;
+    const style = getComputedStyle(el);
+    const baseline = parseFloat(
+      style.getPropertyValue("--composer-editor-height"),
+    );
+    const contentHeight =
+      mirror.current!.getBoundingClientRect().height +
+      parseFloat(style.paddingTop) +
+      parseFloat(style.paddingBottom);
+    const expanded = String(contentHeight > baseline + 1);
+    if (el.dataset.expanded !== expanded) el.dataset.expanded = expanded;
     const numbers = gutter.current!.children;
     Array.from(mirror.current!.children).forEach((line, index) => {
       (numbers[index] as HTMLElement).style.height =
@@ -102,7 +118,6 @@ export function ComposerEditor({
     syncScroll();
   }
   useLayoutEffect(() => {
-    measure();
     if (cursor.current !== undefined) {
       input.current!.setSelectionRange(
         cursor.current.start,
@@ -110,6 +125,12 @@ export function ComposerEditor({
         cursor.current.direction,
       );
       cursor.current = undefined;
+    }
+    measure();
+    if (followOnEdit.current) {
+      input.current!.scrollTop = input.current!.scrollHeight;
+      syncScroll();
+      followOnEdit.current = false;
     }
   }, [value, composition, editorSettings.tabSize]);
   useEffect(() => {
@@ -286,6 +307,9 @@ export function ComposerEditor({
                 normalizedSelection();
                 return;
               }
+              followOnEdit.current =
+                event.target.selectionStart === event.target.selectionEnd &&
+                next.indexOf("\n", event.target.selectionEnd) < 0;
               onChange(next);
             }}
             onPaste={(event) => {
@@ -435,6 +459,24 @@ export function ComposerEditor({
                   );
                   return;
                 }
+                const inline = inlineBacktickEdit(
+                  value,
+                  selection.start,
+                  blocks,
+                );
+                if (inline) {
+                  event.preventDefault();
+                  if (inline.skip)
+                    el.setSelectionRange(inline.caret, inline.caret);
+                  else
+                    replace(
+                      selection.start,
+                      selection.end,
+                      inline.text,
+                      inline.caret,
+                    );
+                  return;
+                }
               }
               const chip = ranges.find(
                 (range) =>
@@ -451,6 +493,25 @@ export function ComposerEditor({
                   showPreview(target);
                 } else setNotice("There are no paste chips in this input.");
                 return;
+              }
+              if (
+                event.key === "Enter" &&
+                !event.ctrlKey &&
+                !event.metaKey &&
+                !event.altKey &&
+                !event.shiftKey
+              ) {
+                const edit = listNewlineEdit(
+                  value,
+                  selection.start,
+                  selection.end,
+                  blocks,
+                );
+                if (edit) {
+                  event.preventDefault();
+                  replace(edit.from, edit.to, edit.text, edit.caret);
+                  return;
+                }
               }
               if (
                 event.altKey ||
@@ -493,9 +554,28 @@ export function ComposerEditor({
                   block && !header && !footer
                     ? block.tokens[index - block.startLine - 1]
                     : undefined;
+                const inline = block ? [] : inlineCodeRanges(line);
                 function text(from: number, to: number) {
-                  if (!tokens) return value.slice(from, to);
-                  return tokenSpans(tokens, from - start, to - start);
+                  if (tokens)
+                    return tokenSpans(tokens, from - start, to - start);
+                  if (!inline.length || from === to)
+                    return value.slice(from, to);
+                  let offset = from - start;
+                  const end = to - start;
+                  const parts = inline.flatMap((range) => {
+                    const left = Math.max(offset, range.start);
+                    const right = Math.min(end, range.end);
+                    if (left >= right) return [];
+                    const plain = line.slice(offset, left);
+                    offset = right;
+                    return [
+                      plain,
+                      <span className="editor-inline-code" key={left}>
+                        {line.slice(left, right)}
+                      </span>,
+                    ];
+                  });
+                  return [...parts, line.slice(offset, end)];
                 }
                 const chips = ranges.filter(
                   (range) =>

@@ -64,7 +64,18 @@ message SessionEvent {
   ToolSummary tool_summary = 9;
 }
 
-message ToolSummary { string name = 1; string shell = 2; string command = 3; string state = 4; }
+message ToolSummary {
+  string name = 1; string shell = 2; string command = 3; string state = 4;
+  repeated ToolFileSummary files = 5;
+  uint32 omitted_files = 6;
+}
+// Counts describe recorded diff hunks or submitted content/replacement spans.
+// An unknown measure never implies zero changes.
+message ToolFileSummary {
+  string path = 1; string move_path = 2; string action = 3;
+  uint32 added = 4; uint32 removed = 5; uint32 lines = 6;
+  string measure = 7; bool per_match = 8;
+}
 
 // Frozen response context; sources are response, settings or requested.
 // Empty values mean the provider/configuration did not supply a known value.

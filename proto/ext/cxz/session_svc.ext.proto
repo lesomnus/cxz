@@ -128,7 +128,11 @@ message SessionReplyRequest {
   string answers_json = 6;
 }
 message SessionReceipt { string client_id = 1; string status = 2; }
-message SessionEventsRequest { SessionRef ref = 1; uint64 after_seq = 2; string client_id = 3; }
+message SessionEventsRequest {
+  SessionRef ref = 1; uint64 after_seq = 2; string client_id = 3;
+  // History only: zero preserves the legacy page size; bounded by the server.
+  uint32 limit = 4;
+}
 message SessionEventBatch { repeated SessionEvent events = 1; }
 
 // No cursor selects the latest page. after_seq and before_seq are exclusive and

@@ -1,5 +1,9 @@
 import type { LanguagePack } from "../i18n";
 export const messages = {
+  "(path not reported)": "(경로 미제공)",
+  "Page not found": "페이지를 찾을 수 없습니다",
+  "{count} more files in Details": "상세 정보에서 파일 {count}개 더 보기",
+
   Details: "세부 정보",
   Result: "결과",
   Approval: "승인",
@@ -75,6 +79,7 @@ export const messages = {
   "Continue the conversation…": "대화를 이어가세요…",
   Conversation: "대화",
   "Conversation scroll": "대화 스크롤",
+  "Panel scroll": "패널 스크롤",
   Cool: "차가운 색상",
   Copy: "복사",
   Cost: "비용",
@@ -202,6 +207,7 @@ export const messages = {
   "Select a session to continue.": "계속할 세션을 선택하세요.",
   Send: "전송",
   Session: "세션",
+  "Session menu": "세션 메뉴",
   "Session editor": "세션 대화 에디터",
   "Session information": "세션 정보",
   "Session list": "세션 목록",

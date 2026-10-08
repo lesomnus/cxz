@@ -40,7 +40,7 @@ test("WASM sandbox reuses the UI without backend, credentials or provider calls"
   await message.fill("Test message");
   await page.getByRole("button", { name: "Send", exact: true }).click();
   await expect(
-    page.locator(".event-detail").filter({ hasText: "Sample tasks completed" }),
+    page.getByRole("button", { name: "Completed Tool result", exact: true }),
   ).toBeVisible();
   // Shared pending-question UI sends the same Reply RPC through the WASM transport.
   await page.getByLabel("Scenario", { exact: true }).selectOption("session-4");
@@ -65,15 +65,15 @@ test("WASM sandbox reuses the UI without backend, credentials or provider calls"
   expect(await page.locator(".transcript article").count()).toBeLessThan(40);
   await page.getByLabel("Scenario", { exact: true }).selectOption("session-7");
   await expect(page.getByText("Actions", { exact: true })).toHaveCount(0);
-  await expect(page.locator(".conversation header small")).toContainText(
-    "stopped",
-  );
+  await expect(
+    page.getByRole("button", { name: "Session menu", exact: true }),
+  ).toHaveAttribute("aria-description", /stopped/);
   // Repeating a seed produces the same sequence. Reset drops prior conversations.
   await page.getByLabel("Scenario", { exact: true }).selectOption("session-6");
   await message.fill("Run a sample");
   await page.getByRole("button", { name: "Send", exact: true }).click();
   await expect(
-    page.locator(".event-detail").filter({ hasText: "Sample tasks completed" }),
+    page.getByRole("button", { name: "Completed Tool result", exact: true }),
   ).toBeVisible();
   const first = await page
     .locator(".event-detail")
@@ -88,7 +88,7 @@ test("WASM sandbox reuses the UI without backend, credentials or provider calls"
   await message.fill("Run a sample");
   await page.getByRole("button", { name: "Send", exact: true }).click();
   await expect(
-    page.locator(".event-detail").filter({ hasText: "Sample tasks completed" }),
+    page.getByRole("button", { name: "Completed Tool result", exact: true }),
   ).toBeVisible();
   expect(
     await page

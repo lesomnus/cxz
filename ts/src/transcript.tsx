@@ -16,6 +16,7 @@ import type { SessionEvent } from "../gen/cxz/session_pb";
 import { VirtualMessages } from "./virtual-messages";
 import { PinnedPrompt } from "./pinned-prompt";
 import type { MessageMap } from "./virtual-layout";
+import { HISTORY_PREFETCH_SCREENS } from "./session-history";
 
 type Geometry = {
   top: number;
@@ -25,7 +26,7 @@ type Geometry = {
   height: number;
   thumb: number;
   range: ScrollRange;
-  markers: { id: string; top: number }[];
+  markers: { id: string; kind: "input" | "assistant"; top: number }[];
 };
 const empty: Geometry = {
   top: 0,
@@ -103,7 +104,7 @@ export function Transcript({
   );
   const track = useRef<HTMLDivElement>(null);
   const thumb = useRef<HTMLDivElement>(null);
-  const offsets = useRef<{ id: string; y: number }[]>([]);
+  const offsets = useRef<MessageMap["markers"]>([]);
   const mapping = useRef<MessageMap | null>(null);
   const geometry = useRef(empty);
   const drag = useRef<Drag | null>(null);
@@ -206,9 +207,9 @@ export function Transcript({
       progress: 0,
       thumb: parseFloat(getComputedStyle(thumb.current).top),
       markers: new Map(
-        [...track.current!.querySelectorAll<HTMLElement>(".scroll-marker")].map(
+        [...track.current!.querySelectorAll<HTMLElement>(".scroll-tick")].map(
           (node) => [
-            node.dataset.prompt!,
+            node.dataset.event!,
             parseFloat(getComputedStyle(node).top),
           ],
         ),
@@ -270,10 +271,18 @@ export function Transcript({
     // Stable event IDs preserve the same DOM nodes through range rebasing.
     // Keep off-rail ticks mounted so incoming/outgoing markers animate too.
     const markerStart = markerRangeStart(mappedTop, range);
-    const markers = offsets.current.map(({ id, y }) => ({
-      id,
-      top: ((y - markerStart) / (range.span + el.clientHeight || 1)) * height,
-    }));
+    const markers = offsets.current
+      .map(({ id, kind, y }) => ({
+        id,
+        kind,
+        top: ((y - markerStart) / (range.span + el.clientHeight || 1)) * height,
+      }))
+      .filter(
+        ({ id, kind, top }) =>
+          kind === "input" ||
+          (top >= -height && top <= height * 2) ||
+          rangeMotion.current?.markers.has(id),
+      );
     // One timeline for the handle and every marker. Height corrections retarget
     // that timeline instead of restarting an individual CSS transition.
     if (
@@ -311,20 +320,20 @@ export function Transcript({
     cancelAnimationFrame(fillRaf.current);
     fillRaf.current = requestAnimationFrame(() => {
       const max = el.scrollHeight - el.clientHeight;
-      if (max < el.clientHeight) {
+      if (max < el.clientHeight * HISTORY_PREFETCH_SCREENS) {
         if (!follow.current && readingDirection.current > 0)
           callbacks.current.newer();
         else callbacks.current.older();
       } else if (
         !follow.current &&
         readingDirection.current < 0 &&
-        el.scrollTop < el.clientHeight * 2
+        el.scrollTop < el.clientHeight * HISTORY_PREFETCH_SCREENS
       )
         callbacks.current.older();
       else if (
         !follow.current &&
         readingDirection.current > 0 &&
-        max - el.scrollTop < el.clientHeight * 2
+        max - el.scrollTop < el.clientHeight * HISTORY_PREFETCH_SCREENS
       )
         callbacks.current.newer();
     });
@@ -361,11 +370,12 @@ export function Transcript({
     if (delta) callbacks.current.onReadingMove(delta);
     // Only request the edge being approached. A small loaded window can be
     // near both ends: fetching both would alternately evict opposite pages.
-    if (delta < 0 && el.scrollTop < el.clientHeight * 2)
+    if (delta < 0 && el.scrollTop < el.clientHeight * HISTORY_PREFETCH_SCREENS)
       callbacks.current.older();
     if (
       delta > 0 &&
-      el.scrollHeight - el.scrollTop - el.clientHeight < el.clientHeight * 2
+      el.scrollHeight - el.scrollTop - el.clientHeight <
+        el.clientHeight * HISTORY_PREFETCH_SCREENS
     )
       callbacks.current.newer();
   }
@@ -646,11 +656,13 @@ export function Transcript({
       )}
       <div className="scroll-track" ref={track} aria-hidden={view.max === 0}>
         <div className="scroll-markers">
-          {view.markers.map(({ id, top }) => (
+          {view.markers.map(({ id, kind, top }) => (
             <span
               key={id}
-              className="scroll-marker"
-              data-prompt={id}
+              className={`scroll-tick ${kind === "input" ? "scroll-marker" : "scroll-response-marker"}`}
+              data-event={id}
+              data-prompt={kind === "input" ? id : undefined}
+              data-response={kind === "assistant" ? id : undefined}
               data-target-top={top + stretch}
               style={{
                 top: animated(top + stretch, rangeFrame?.markers.get(id)),

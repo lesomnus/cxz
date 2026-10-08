@@ -18,27 +18,40 @@ test("provider dropdowns, quota popovers, aligned headings and bounded press/sha
     "Project checklist",
   );
   await expect(page.locator(".session-description").first()).toHaveText(
-    "session-1sandbox-claude",
+    "session-1",
   );
   const card = page.locator(".tree-session").first();
   const title = card.locator(".session-title");
+  const alias = card.locator(".session-alias");
   const heading = card.locator(".session-heading");
   const logo = card.getByRole("img", { name: "Claude", exact: true });
   const description = card.locator(".session-description");
   const titleBefore = (await title.boundingBox())!;
+  const aliasBefore = (await alias.boundingBox())!;
   const headingBefore = (await heading.boundingBox())!;
   const logoBefore = (await logo.boundingBox())!;
   const descriptionBefore = (await description.boundingBox())!;
+  const labelBefore = (await card.locator(".session-label").boundingBox())!;
   const indicator = card.locator(".session-indicator");
   const indicatorBefore = (await indicator.boundingBox())!;
   expect(logoBefore.x + logoBefore.width).toBeLessThan(titleBefore.x);
-  expect(logoBefore.width).toBe(12);
-  expect(logoBefore.height).toBe(12);
+  expect(descriptionBefore.x).toBe(titleBefore.x);
+  expect(descriptionBefore.y).toBeCloseTo(
+    titleBefore.y + titleBefore.height,
+    1,
+  );
+  expect(logoBefore.x).toBe(indicatorBefore.x + indicatorBefore.width + 6);
+  expect(indicatorBefore.y + indicatorBefore.height / 2).toBeCloseTo(
+    headingBefore.y + headingBefore.height / 2,
+    1,
+  );
+  expect(logoBefore.width).toBe(14);
+  expect(logoBefore.height).toBe(14);
   expect(
     logoBefore.y +
       logoBefore.height / 2 -
-      titleBefore.y -
-      titleBefore.height / 2,
+      labelBefore.y -
+      labelBefore.height / 2,
   ).toBeCloseTo(1, 1);
   await card.hover();
   await page.mouse.down();
@@ -48,6 +61,10 @@ test("provider dropdowns, quota popovers, aligned headings and bounded press/sha
   await expect
     .poll(async () => (await title.boundingBox())!.width)
     .toBeCloseTo(titleBefore.width * scale, 1);
+  await expect
+    .poll(async () => (await alias.boundingBox())!.width)
+    .toBeCloseTo(aliasBefore.width * scale, 1);
+  expect((await alias.boundingBox())!.x).toBeCloseTo(aliasBefore.x, 2);
   expect(
     titleBefore.width - (await title.boundingBox())!.width,
   ).toBeLessThanOrEqual(4.1);
@@ -76,6 +93,9 @@ test("provider dropdowns, quota popovers, aligned headings and bounded press/sha
   await expect
     .poll(async () => (await title.boundingBox())!.width)
     .toBeCloseTo(titleBefore.width, 1);
+  await expect
+    .poll(async () => (await alias.boundingBox())!.width)
+    .toBeCloseTo(aliasBefore.width, 1);
   const input = page.locator("article.input").first();
   await expect(input.locator(".input-prefix")).toHaveText(">");
   await expect(input).not.toContainText("You");
@@ -202,9 +222,9 @@ test("provider dropdowns, quota popovers, aligned headings and bounded press/sha
   ).toBeGreaterThanOrEqual(7);
   expect((await page.locator(".effort-field").boundingBox())!.x).toBe(effortX);
   await expect(page.locator("article.input")).toHaveCount(1);
-  await expect(page.locator(".conversation header small")).toContainText(
-    "idle",
-  );
+  await expect(
+    page.getByRole("button", { name: "Session menu", exact: true }),
+  ).toHaveAttribute("aria-description", /idle/);
   // Every button scales uniformly; a long label loses at most 4px along its long edge.
   const project = page.locator(".tree-project").first();
   const original = (await project.locator(".button-content").boundingBox())!;
@@ -231,6 +251,53 @@ test("provider dropdowns, quota popovers, aligned headings and bounded press/sha
   await expect(send).toHaveCSS("background-color", "rgb(54, 54, 54)");
   await page.mouse.move(1000, 20);
   await expect(send).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await page.getByLabel("Pace", { exact: true }).selectOption("1200");
+  await send.click();
+  const activity = card.locator(".session-indicator svg");
+  await expect(activity).toBeVisible();
+  const activityBox = (await activity.boundingBox())!;
+  const activeHeading = (await heading.boundingBox())!;
+  expect(activityBox.y + activityBox.height / 2).toBeCloseTo(
+    activeHeading.y + activeHeading.height / 2,
+    1,
+  );
+  const gaps = await activity.evaluate((svg) => {
+    const centers = Array.from(svg.querySelectorAll("circle"), (dot) => {
+      const box = dot.getBoundingClientRect();
+      return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    });
+    return {
+      horizontal: centers[1].x - centers[0].x,
+      vertical: centers[2].y - centers[1].y,
+    };
+  });
+  expect(gaps.horizontal).toBeCloseTo(gaps.vertical, 1);
+  const dotScale = await activity.evaluate((svg) => {
+    const dot = svg.querySelector("circle")!;
+    const animation = dot.getAnimations()[0];
+    animation.pause();
+    const duration = Number(animation.effect!.getComputedTiming().duration);
+    animation.currentTime = 0;
+    const hidden = new DOMMatrix(getComputedStyle(dot).transform).a;
+    animation.currentTime = duration / 16;
+    const between = new DOMMatrix(getComputedStyle(dot).transform).a;
+    animation.currentTime = duration / 8;
+    const shown = new DOMMatrix(getComputedStyle(dot).transform).a;
+    // Release the manually controlled animation before testing CSS motion preferences.
+    animation.cancel();
+    return { hidden, between, shown };
+  });
+  expect(dotScale.hidden).toBe(0);
+  expect(dotScale.between).toBeGreaterThan(0);
+  expect(dotScale.between).toBeLessThan(1);
+  expect(dotScale.shown).toBe(1);
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await expect
+    .poll(() =>
+      activity.evaluate((svg) => svg.getAnimations({ subtree: true }).length),
+    )
+    .toBe(0);
+  await page.emulateMedia({ reducedMotion: "no-preference" });
   await page.getByLabel("Scenario", { exact: true }).selectOption("session-3");
   await expect(
     page.getByText("History item 2100", { exact: false }),
