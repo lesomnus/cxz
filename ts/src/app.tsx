@@ -12,7 +12,6 @@ import {
   detail,
   questions,
   approvalTitle,
-  MAX_EVENTS,
   pendingAfter,
 } from "./journal";
 import { marked } from "marked";
@@ -663,24 +662,32 @@ function ConversationContent({
         if (snapshotSeq > latestSeq.current) latestSeq.current = snapshotSeq;
         if (cursor === 0n && latestSeq.current > 256n)
           cursor = latestSeq.current - 256n;
-        const history = await c.sessions.history(
-          { ref: ref(id), afterSeq: cursor },
-          { signal },
-        );
-        if (canceled) return;
-        rememberMetadata(history.events);
-        if (history.events.length) {
-          if (cursor > 0n && history.events[0].seq > cursor + 1n) setGap(true);
-          cursor = history.events.at(-1)!.seq;
+        let history: SessionEvent[] = [];
+        // The tail spans more than one RPC page. Finish the snapshot before
+        // publishing a window that layout-driven older paging could detach.
+        do {
+          const page = await c.sessions.history(
+            { ref: ref(id), afterSeq: cursor },
+            { signal },
+          );
+          if (canceled) return;
+          rememberMetadata(page.events);
+          if (cursor > 0n && page.events[0]?.seq > cursor + 1n) setGap(true);
+          const next = page.events.at(-1)?.seq ?? cursor;
+          if (next <= cursor) break;
+          history = mergeEvents(history, page.events);
+          cursor = next;
+        } while (cursor < snapshotSeq);
+        if (history.length) {
           setPending(
             pendingAfter(
               snapshot.status?.pending ?? [],
-              history.events,
+              history,
               snapshot.status?.lastSeq ?? 0n,
             ),
           );
           setEvents((old) =>
-            detached.current ? old : mergeEvents(old, history.events),
+            detached.current ? old : mergeEvents(old, history),
           );
         }
         setStatus("Live");
@@ -692,9 +699,22 @@ function ConversationContent({
           rememberMetadata([e]);
           cursor = e.seq > cursor ? e.seq : cursor;
           if (cursor > latestSeq.current) latestSeq.current = cursor;
-          if (!followRef.current && eventsRef.current.length >= MAX_EVENTS)
-            detached.current = true;
-          setEvents((old) => (detached.current ? old : mergeEvents(old, [e])));
+          setEvents((old) => {
+            if (detached.current) return old;
+            const next = mergeEvents(old, [e]);
+            // Protocol compaction alone must not detach a reader. Freeze only
+            // when adding live records would evict a visible reading row.
+            if (
+              !followRef.current &&
+              transcriptEvents(old).events.some(
+                (row) => row.seq < (next[0]?.seq ?? 0n),
+              )
+            ) {
+              detached.current = true;
+              return old;
+            }
+            return next;
+          });
           setPending((old) => pendingAfter(old, [e]));
         }
       } catch (e) {
@@ -780,6 +800,7 @@ function ConversationContent({
         }
         return;
       }
+      rememberMetadata(incoming);
       const next = goLatest
         ? incoming
         : mergeEvents(eventsRef.current, incoming, direction);

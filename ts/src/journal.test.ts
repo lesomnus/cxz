@@ -75,6 +75,46 @@ describe("transcript events", () => {
 });
 
 describe("journal recovery", () => {
+  it("keeps messages, approval resolutions and fetched boundaries through protocol floods", () => {
+    const input = create(SessionEventSchema, { seq: 1n, kind: "input" });
+    const resolved = create(SessionEventSchema, {
+      seq: 2n,
+      kind: "approval_resolved",
+      requestId: "tool",
+    });
+    const noise = Array.from({ length: MAX_EVENTS * 2 }, (_, i) =>
+      create(SessionEventSchema, {
+        seq: BigInt(i + 3),
+        kind: i % 2 ? "raw" : "usage_status",
+      }),
+    );
+    const result = mergeEvents([input, resolved], noise);
+    expect(result).toContain(input);
+    expect(result).toContain(resolved);
+    expect(result.at(-1)?.seq).toBe(noise.at(-1)?.seq);
+    expect(result.length).toBeLessThanOrEqual(MAX_EVENTS);
+  });
+
+  it("prepends sparse pages without dropping the latest messages before the pane can fill", () => {
+    const newest = event(10000n);
+    let cached = [newest];
+    for (let page = 0; page < 10; page++) {
+      const first = BigInt(10000 - (page + 1) * 128);
+      const incoming = Array.from({ length: 128 }, (_, i) =>
+        create(SessionEventSchema, {
+          seq: first + BigInt(i),
+          kind: i === 64 ? "assistant" : "raw",
+          text: "recorded",
+        }),
+      );
+      cached = mergeEvents(cached, incoming, "older");
+      expect(cached[0].seq).toBe(first);
+      expect(cached).toContain(newest);
+      expect(cached.filter(isTranscriptEvent)).toHaveLength(page + 2);
+      expect(cached.length).toBeLessThanOrEqual(MAX_EVENTS);
+    }
+  });
+
   it("deduplicates replayed events without losing uint64 cursor precision", () => {
     const n = 9007199254740993n;
     expect(

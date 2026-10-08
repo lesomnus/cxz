@@ -1,6 +1,6 @@
 import { t } from "./i18n";
 import type { SessionEvent } from "../gen/cxz/session_pb";
-// Four history pages in memory; the transcript mounts only its visible rows.
+// Bound cached records; the transcript mounts only its visible rows.
 export const MAX_EVENTS = 512;
 const internalEventKinds = new Set([
   "raw",
@@ -29,9 +29,21 @@ export function mergeEvents(
 ) {
   const map = new Map(previous.map((e) => [e.seq, e]));
   for (const e of incoming) map.set(e.seq, e);
-  const sorted = [...map.values()].sort((a, b) =>
+  let sorted = [...map.values()].sort((a, b) =>
     a.seq < b.seq ? -1 : a.seq > b.seq ? 1 : 0,
   );
+  if (sorted.length > MAX_EVENTS) {
+    // Token/protocol traffic can fill whole pages without adding a single row.
+    // Prefer readable records and tool approval resolutions when trimming, while
+    // retaining both fetched boundaries for pagination and stream replay.
+    sorted = sorted.filter(
+      (e, index) =>
+        index === 0 ||
+        index === sorted.length - 1 ||
+        isTranscriptEvent(e) ||
+        e.kind === "approval_resolved",
+    );
+  }
   return edge === "older"
     ? sorted.slice(0, MAX_EVENTS)
     : sorted.slice(-MAX_EVENTS);

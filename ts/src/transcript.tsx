@@ -111,6 +111,8 @@ export function Transcript({
   const wheelRaf = useRef(0);
   const rangeRaf = useRef(0);
   const motionRaf = useRef(0);
+  const fillRaf = useRef(0);
+  const readingDirection = useRef(0);
   const motion = useRef({ top: 0, time: 0, strength: 0 });
   const rangeMotion = useRef<RangeMotion | null>(null);
   const [rangeFrame, setRangeFrame] = useState<RangeMotion | null>(null);
@@ -297,8 +299,35 @@ export function Transcript({
   function readOffsets() {
     const el = pane.current;
     if (!el) return;
+    // A measurement/viewport change is not a reading gesture. Keep a follower
+    // at the new bottom before publishing geometry, rather than detaching it
+    // because the measured content temporarily grew below its old position.
+    if (follow.current && !drag.current && !wheel.current)
+      el.scrollTop = el.scrollHeight;
     measure();
     callbacks.current.onScroll(!!(drag.current || wheel.current));
+    // Short/filtered pages cannot emit a native scroll event. Recheck after
+    // layout/measurement and resize, not only after the user moves the pane.
+    cancelAnimationFrame(fillRaf.current);
+    fillRaf.current = requestAnimationFrame(() => {
+      const max = el.scrollHeight - el.clientHeight;
+      if (max < el.clientHeight) {
+        if (!follow.current && readingDirection.current > 0)
+          callbacks.current.newer();
+        else callbacks.current.older();
+      } else if (
+        !follow.current &&
+        readingDirection.current < 0 &&
+        el.scrollTop < el.clientHeight * 2
+      )
+        callbacks.current.older();
+      else if (
+        !follow.current &&
+        readingDirection.current > 0 &&
+        max - el.scrollTop < el.clientHeight * 2
+      )
+        callbacks.current.newer();
+    });
   }
   function scrolled() {
     const el = pane.current;
@@ -308,6 +337,7 @@ export function Transcript({
     el.dispatchEvent(new Event("reading-move"));
     const sample = motion.current;
     const delta = el.scrollTop - sample.top;
+    if (delta && !follow.current) readingDirection.current = Math.sign(delta);
     if (delta && sample.time && !follow.current) {
       const time = performance.now();
       sample.strength = clamp(
@@ -329,8 +359,14 @@ export function Transcript({
     measure();
     callbacks.current.onScroll(!!(drag.current || wheel.current));
     if (delta) callbacks.current.onReadingMove(delta);
-    if (el.scrollTop < el.clientHeight * 2) callbacks.current.older();
-    if (el.scrollHeight - el.scrollTop - el.clientHeight < el.clientHeight * 2)
+    // Only request the edge being approached. A small loaded window can be
+    // near both ends: fetching both would alternately evict opposite pages.
+    if (delta < 0 && el.scrollTop < el.clientHeight * 2)
+      callbacks.current.older();
+    if (
+      delta > 0 &&
+      el.scrollHeight - el.scrollTop - el.clientHeight < el.clientHeight * 2
+    )
       callbacks.current.newer();
   }
   useEffect(() => {
@@ -392,6 +428,11 @@ export function Transcript({
             : el.scrollTop < el.scrollHeight - el.clientHeight
         )
           callbacks.current.onNavigate();
+        else {
+          readingDirection.current = Math.sign(event.deltaY);
+          if (event.deltaY < 0) callbacks.current.older();
+          else callbacks.current.newer();
+        }
         return;
       }
       event.preventDefault();
@@ -407,7 +448,14 @@ export function Transcript({
         0,
         el.scrollHeight - el.clientHeight,
       );
-      if (target === (wheel.current?.target ?? el.scrollTop)) return;
+      if (target === (wheel.current?.target ?? el.scrollTop)) {
+        // At a loaded edge there may still be retained history beyond it.
+        // Fetching does not mean navigation until actual content can move.
+        readingDirection.current = Math.sign(delta);
+        if (delta < 0) callbacks.current.older();
+        else callbacks.current.newer();
+        return;
+      }
       callbacks.current.onNavigate();
       const running = !!wheel.current;
       wheel.current = {
@@ -421,6 +469,7 @@ export function Transcript({
     const jumped = () => {
       stopWheel();
       cancelAnimationFrame(motionRaf.current);
+      cancelAnimationFrame(fillRaf.current);
       motion.current = { top: el.scrollTop, time: 0, strength: 0 };
       callbacks.current.onMotion(0);
     };
@@ -442,6 +491,7 @@ export function Transcript({
       cancelAnimationFrame(rangeRaf.current);
       cancelAnimationFrame(motionRaf.current);
       rangeMotion.current = null;
+      cancelAnimationFrame(fillRaf.current);
       cancelAnimationFrame(raf.current);
       drag.current = null;
     };

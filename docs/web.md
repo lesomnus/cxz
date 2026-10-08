@@ -25,6 +25,15 @@ in the shared floating details card. Unrelated approvals and questions retain
 their existing answer controls; orphan output/results at a loaded-history edge
 remain inspectable until their call is loaded.
 
+History paging follows the rendered content, including after viewport changes.
+Short pages containing mostly protocol traffic automatically load older pages
+until the pane has reading room, without requiring a scrollbar first. The initial
+tail is fetched through the session snapshot; near-edge paging follows the reading
+direction rather than alternating both ends. Cache trimming prefers conversation
+and tool records over internal traffic, retains fetched pagination boundaries and
+keeps metadata separately. Row measurements and viewport changes preserve the
+reader's position or keep the latest response in view when following.
+
 ## A browser on this desktop
 
 On the Linux Manager host, with the Manager already running:
