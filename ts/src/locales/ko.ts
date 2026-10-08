@@ -1,5 +1,17 @@
 import type { LanguagePack } from "../i18n";
 export const messages = {
+  Details: "세부 정보",
+  Result: "결과",
+  Approval: "승인",
+  Pending: "대기 중",
+  Working: "실행 중",
+  Completed: "완료",
+  Failed: "실패",
+  "Input is not available in the loaded history.":
+    "로드된 기록에 입력이 없습니다.",
+  "No output recorded yet.": "아직 기록된 출력이 없습니다.",
+  "No resolution recorded in loaded history.":
+    "로드된 기록에 승인 결과가 없습니다.",
   General: "일반",
   "General settings": "일반 설정",
   "Appearance and display language for this browser.":

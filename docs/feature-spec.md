@@ -29,7 +29,7 @@ linked guides explain existing behavior; correct these documents when code chang
 |---|---|---|
 | CHAT-01 | Conversation events | Show assistant output, tool activity and turn state from recorded/streamed events without duplicating events on reconnect. Keep protocol raw records, polling and control bookkeeping out of the transcript while retaining them for replay and metadata. |
 | CHAT-02 | Formatted responses and copying | Render Markdown/GFM, highlighted code and safe links; copy code without display padding while retaining source indentation. |
-| CHAT-03 | Tool inspection | Inspect recorded tool input and output separately, including raw content when a normalized preview is unavailable. |
+| CHAT-03 | Tool inspection | Inspect recorded tool input and output separately, including raw content when a normalized preview is unavailable. Group a tool call, correlated approval, output chunks and result by run and execution ID at the original call position; preserve unrelated requests and history-edge results. |
 | CHAT-04 | History navigation | Load retained history in a bounded window, preserve browsing position and provide follow-latest, pinned prompt and jump-to-bottom navigation. |
 | CHAT-05 | Usage and quota | Distinguish turn metrics, session totals, account quota and auxiliary usage. Show only provider-reported metrics; absent data is not zero. |
 | CHAT-06 | Context report | Provide normalized Summary and original Raw context views while preserving provider availability and idle requirements. |

@@ -1,5 +1,17 @@
 // English source messages are always bundled; other packs load on demand.
 export const messages = {
+  Details: "Details",
+  Result: "Result",
+  Approval: "Approval",
+  Pending: "Pending",
+  Working: "Working",
+  Completed: "Completed",
+  Failed: "Failed",
+  "Input is not available in the loaded history.":
+    "Input is not available in the loaded history.",
+  "No output recorded yet.": "No output recorded yet.",
+  "No resolution recorded in loaded history.":
+    "No resolution recorded in loaded history.",
   General: "General",
   "General settings": "General settings",
   "Appearance and display language for this browser.":

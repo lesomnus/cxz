@@ -1861,6 +1861,30 @@ button.tree-session:not(:disabled):active > .button-content {
   color: var(--shade-255);
   font-weight: 650;
 }
+.tool-activity .button-content {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-start;
+}
+.tool-state {
+  flex: 0 0 1em;
+  text-align: center;
+  color: var(--muted);
+}
+.tool-summary {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+.tool-shell {
+  color: var(--muted);
+}
+.tool-command {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+}
 .tree-message {
   padding: 4px 20px;
 }

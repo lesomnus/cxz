@@ -8,7 +8,6 @@ import type { Session, SessionEvent } from "../gen/cxz/session_pb";
 import { Connection, authenticate, ref } from "./connection";
 import {
   mergeEvents,
-  isTranscriptEvent,
   payload,
   detail,
   questions,
@@ -42,6 +41,8 @@ import {
 import { type ComposerPaste } from "./composer-pastes";
 import { composerPrompt } from "./composer-code";
 import { SessionTreeGroup } from "./session-tree";
+import { transcriptEvents, type ToolActivity } from "./tool-activity";
+import { ToolActivityView } from "./tool-activity-view";
 import { Transcript } from "./transcript";
 import { WorkspaceEditor } from "./workspace-editor";
 import { SettingsPage } from "./settings-page";
@@ -795,10 +796,7 @@ function ConversationContent({
       if (historyRequest.current === controller) historyRequest.current = null;
     }
   }
-  const visibleEvents = useMemo(
-    () => events.filter(isTranscriptEvent),
-    [events],
-  );
+  const transcript = useMemo(() => transcriptEvents(events), [events]);
   const s = current.data;
   const completions = useMemo(() => responseCompletions(events), [events]);
   const combined = useMemo(
@@ -974,7 +972,7 @@ function ConversationContent({
       </header>
       <Transcript
         pane={pane}
-        events={visibleEvents}
+        events={transcript.events}
         follow={followRef}
         precedingPrompt={
           firstSeq !== undefined &&
@@ -996,6 +994,7 @@ function ConversationContent({
             e={e}
             agent={s?.agent ?? ""}
             completion={completions.get(e.seq.toString())}
+            activity={transcript.activities.get(e.seq)}
           />
         )}
         notice={
@@ -1151,13 +1150,17 @@ const EventView = React.memo(
     e,
     agent,
     completion,
+    activity,
   }: {
     e: SessionEvent;
     agent: string;
     completion?: ResponseCompletion;
+    activity?: ToolActivity;
   }) {
     useLocale();
     const openCard = useFloatingCard();
+    if (activity)
+      return <ToolActivityView activity={activity} agent={agent} seq={e.seq} />;
     if (e.kind === "assistant") {
       const info = responseInfo(e.response);
       return (
@@ -1212,6 +1215,7 @@ const EventView = React.memo(
   (previous, next) =>
     previous.e === next.e &&
     previous.agent === next.agent &&
+    previous.activity === next.activity &&
     JSON.stringify(previous.completion) === JSON.stringify(next.completion),
 );
 function Approval({
