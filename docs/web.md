@@ -36,6 +36,44 @@ address, and a gateway with no certificate is refused on a published address a
 network can reach — `cxz web up --listen 0.0.0.0:7350` fails rather than putting
 an unencrypted gateway on your LAN.
 
+## Developing the UI against the installed Manager
+
+On the same host as cxz, start the gateway, then run Vite from the checkout:
+
+```sh
+cxz web up
+cd ts
+npm ci
+npm run dev
+```
+
+Open `http://127.0.0.1:5173/`. UI edits use Vite HMR; API calls, editor connections
+and terminal WebSockets are proxied to the installed gateway. This uses real
+projects and sessions, including real sends and decisions.
+
+The dev server reads `STATE/web-installation.json` first, so gateway address and
+token-path overrides from the last successful `cxz web up` are respected. It
+falls back to `STATE/web.json`. `STATE` follows `CXZ_STATE`, `$XDG_STATE_HOME/cxz`,
+then `~/.local/state/cxz`, like the CLI. To explicitly select another configuration:
+
+```sh
+CXZ_WEB_CONFIG=/absolute/path/to/web.json npm run dev
+```
+
+The default token file is `STATE/web-token`; `access_token_file` in the selected
+configuration can point elsewhere, including a path relative to that JSON file.
+On the initial browser authentication check, Vite reuses an existing gateway
+session or reads this file and signs in server-side. Only the gateway's HttpOnly
+session cookie reaches the browser. The access token is never included in UI
+assets, browser storage or dev-server logs, and is read again for each new login
+so token rotation does not require restarting Vite. Sign out still works; a page
+reload signs in automatically again in this local development mode.
+
+Automatic sign-in binds Vite to loopback HTTP and checks the browser origin
+before rewriting headers for the gateway. Production builds and `npm run sandbox`
+do not load this dev-only configuration. Stop the sandbox before starting dev if
+it is using the same port; `npm run dev -- --port 5174` selects another.
+
 ## Reaching it from another machine
 
 Two ways, and the first needs nothing new:

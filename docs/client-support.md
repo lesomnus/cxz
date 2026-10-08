@@ -101,7 +101,7 @@ explained in the mobile plan; it remains Not implemented in the web column.
 | OPS-07 | Supported: `project shell/exec` with required host Docker access | Supported: `/terminal` with required local Docker access; no persistence after detach | Supported: Ctrl+Backquote or title-bar button opens the project PTY; folding retains shell state, session change/sign-out closes it; [contract](web-terminal.md) |
 | OPS-08 | Partial: `terminal-info`, completion, Windows integration commands; no TUI recording command | Partial: `/record`/F9; shell completion and terminal registration remain CLI | Not implemented |
 | OPS-09 | Supported: Manager and optional web gateway installation/uninstallation; web JSON settings and running-gateway refresh on host self-update/use; purge on supported host | Not implemented: no installation-wide administration UI | Not implemented |
-| WEB-01 | N/A: browser-specific requirement | N/A: browser-specific requirement | Not implemented |
+| WEB-01 | N/A: browser-specific requirement | N/A: browser-specific requirement | Supported: installed same-origin gateway with token login/logout; local `npm run dev` proxies the gateway and signs in server-side from the installed token file; [development and authentication](web.md#developing-the-ui-against-the-installed-manager) |
 | WEB-02 | N/A: browser-specific requirement | N/A: browser-specific requirement | Not implemented |
 | WEB-03 | N/A: browser-specific requirement | N/A: browser-specific requirement | Not implemented |
 | WEB-04 | N/A: browser-specific requirement | N/A: browser-specific requirement | Not implemented |
