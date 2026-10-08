@@ -188,3 +188,14 @@ func (s *sessions) Watch(r *resource.SessionWatchRequest, stream grpc.ServerStre
 		}
 	}
 }
+
+func (s *sessions) Transcript(ctx context.Context, r *resource.SessionTranscriptRequest) (*resource.SessionTranscriptReply, error) {
+	return s.client.Transcript(ctx, r)
+}
+func (s *sessions) EventDetails(ctx context.Context, r *resource.SessionEventDetailsRequest) (*resource.SessionEventBatch, error) {
+	return s.client.EventDetails(ctx, r)
+}
+
+func (s *sessions) Models(ctx context.Context, r *resource.SessionModelsRequest) (*resource.SessionModelsReply, error) {
+	return s.client.Models(ctx, r)
+}

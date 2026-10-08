@@ -517,17 +517,18 @@ func (b0 SessionStatus_builder) Build() *SessionStatus {
 }
 
 type SessionEvent struct {
-	state                protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_RunId     string                 `protobuf:"bytes,1,opt,name=run_id,json=runId"`
-	xxx_hidden_Seq       uint64                 `protobuf:"varint,2,opt,name=seq"`
-	xxx_hidden_TimeMs    int64                  `protobuf:"varint,3,opt,name=time_ms,json=timeMs"`
-	xxx_hidden_Kind      string                 `protobuf:"bytes,4,opt,name=kind"`
-	xxx_hidden_Text      string                 `protobuf:"bytes,5,opt,name=text"`
-	xxx_hidden_RequestId string                 `protobuf:"bytes,6,opt,name=request_id,json=requestId"`
-	xxx_hidden_Payload   []byte                 `protobuf:"bytes,7,opt,name=payload"`
-	xxx_hidden_Response  *ResponseMetadata      `protobuf:"bytes,8,opt,name=response"`
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_RunId       string                 `protobuf:"bytes,1,opt,name=run_id,json=runId"`
+	xxx_hidden_Seq         uint64                 `protobuf:"varint,2,opt,name=seq"`
+	xxx_hidden_TimeMs      int64                  `protobuf:"varint,3,opt,name=time_ms,json=timeMs"`
+	xxx_hidden_Kind        string                 `protobuf:"bytes,4,opt,name=kind"`
+	xxx_hidden_Text        string                 `protobuf:"bytes,5,opt,name=text"`
+	xxx_hidden_RequestId   string                 `protobuf:"bytes,6,opt,name=request_id,json=requestId"`
+	xxx_hidden_Payload     []byte                 `protobuf:"bytes,7,opt,name=payload"`
+	xxx_hidden_Response    *ResponseMetadata      `protobuf:"bytes,8,opt,name=response"`
+	xxx_hidden_ToolSummary *ToolSummary           `protobuf:"bytes,9,opt,name=tool_summary,json=toolSummary"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
 func (x *SessionEvent) Reset() {
@@ -611,6 +612,13 @@ func (x *SessionEvent) GetResponse() *ResponseMetadata {
 	return nil
 }
 
+func (x *SessionEvent) GetToolSummary() *ToolSummary {
+	if x != nil {
+		return x.xxx_hidden_ToolSummary
+	}
+	return nil
+}
+
 func (x *SessionEvent) SetRunId(v string) {
 	x.xxx_hidden_RunId = v
 }
@@ -646,6 +654,10 @@ func (x *SessionEvent) SetResponse(v *ResponseMetadata) {
 	x.xxx_hidden_Response = v
 }
 
+func (x *SessionEvent) SetToolSummary(v *ToolSummary) {
+	x.xxx_hidden_ToolSummary = v
+}
+
 func (x *SessionEvent) HasResponse() bool {
 	if x == nil {
 		return false
@@ -653,8 +665,19 @@ func (x *SessionEvent) HasResponse() bool {
 	return x.xxx_hidden_Response != nil
 }
 
+func (x *SessionEvent) HasToolSummary() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_ToolSummary != nil
+}
+
 func (x *SessionEvent) ClearResponse() {
 	x.xxx_hidden_Response = nil
+}
+
+func (x *SessionEvent) ClearToolSummary() {
+	x.xxx_hidden_ToolSummary = nil
 }
 
 type SessionEvent_builder struct {
@@ -668,6 +691,8 @@ type SessionEvent_builder struct {
 	RequestId string
 	Payload   []byte
 	Response  *ResponseMetadata
+	// Present only on a derived transcript row, never in the native live journal.
+	ToolSummary *ToolSummary
 }
 
 func (b0 SessionEvent_builder) Build() *SessionEvent {
@@ -682,6 +707,106 @@ func (b0 SessionEvent_builder) Build() *SessionEvent {
 	x.xxx_hidden_RequestId = b.RequestId
 	x.xxx_hidden_Payload = b.Payload
 	x.xxx_hidden_Response = b.Response
+	x.xxx_hidden_ToolSummary = b.ToolSummary
+	return m0
+}
+
+type ToolSummary struct {
+	state              protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Name    string                 `protobuf:"bytes,1,opt,name=name"`
+	xxx_hidden_Shell   string                 `protobuf:"bytes,2,opt,name=shell"`
+	xxx_hidden_Command string                 `protobuf:"bytes,3,opt,name=command"`
+	xxx_hidden_State   string                 `protobuf:"bytes,4,opt,name=state"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *ToolSummary) Reset() {
+	*x = ToolSummary{}
+	mi := &file_cxz_session_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ToolSummary) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ToolSummary) ProtoMessage() {}
+
+func (x *ToolSummary) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_session_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *ToolSummary) GetName() string {
+	if x != nil {
+		return x.xxx_hidden_Name
+	}
+	return ""
+}
+
+func (x *ToolSummary) GetShell() string {
+	if x != nil {
+		return x.xxx_hidden_Shell
+	}
+	return ""
+}
+
+func (x *ToolSummary) GetCommand() string {
+	if x != nil {
+		return x.xxx_hidden_Command
+	}
+	return ""
+}
+
+func (x *ToolSummary) GetState() string {
+	if x != nil {
+		return x.xxx_hidden_State
+	}
+	return ""
+}
+
+func (x *ToolSummary) SetName(v string) {
+	x.xxx_hidden_Name = v
+}
+
+func (x *ToolSummary) SetShell(v string) {
+	x.xxx_hidden_Shell = v
+}
+
+func (x *ToolSummary) SetCommand(v string) {
+	x.xxx_hidden_Command = v
+}
+
+func (x *ToolSummary) SetState(v string) {
+	x.xxx_hidden_State = v
+}
+
+type ToolSummary_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Name    string
+	Shell   string
+	Command string
+	State   string
+}
+
+func (b0 ToolSummary_builder) Build() *ToolSummary {
+	m0 := &ToolSummary{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Name = b.Name
+	x.xxx_hidden_Shell = b.Shell
+	x.xxx_hidden_Command = b.Command
+	x.xxx_hidden_State = b.State
 	return m0
 }
 
@@ -702,7 +827,7 @@ type ResponseMetadata struct {
 
 func (x *ResponseMetadata) Reset() {
 	*x = ResponseMetadata{}
-	mi := &file_cxz_session_proto_msgTypes[3]
+	mi := &file_cxz_session_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -714,7 +839,7 @@ func (x *ResponseMetadata) String() string {
 func (*ResponseMetadata) ProtoMessage() {}
 
 func (x *ResponseMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_proto_msgTypes[3]
+	mi := &file_cxz_session_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -875,7 +1000,7 @@ const file_cxz_session_proto_rawDesc = "" +
 	"\blast_seq\x18\x04 \x01(\x04R\alastSeq\x12+\n" +
 	"\apending\x18\x05 \x03(\v2\x11.cxz.SessionEventR\apending\x12'\n" +
 	"\x0fpermission_mode\x18\x06 \x01(\tR\x0epermissionMode\x12\x16\n" +
-	"\x06queued\x18\a \x01(\tR\x06queued\"\xe4\x01\n" +
+	"\x06queued\x18\a \x01(\tR\x06queued\"\x99\x02\n" +
 	"\fSessionEvent\x12\x15\n" +
 	"\x06run_id\x18\x01 \x01(\tR\x05runId\x12\x10\n" +
 	"\x03seq\x18\x02 \x01(\x04R\x03seq\x12\x17\n" +
@@ -885,7 +1010,13 @@ const file_cxz_session_proto_rawDesc = "" +
 	"\n" +
 	"request_id\x18\x06 \x01(\tR\trequestId\x12\x18\n" +
 	"\apayload\x18\a \x01(\fR\apayload\x121\n" +
-	"\bresponse\x18\b \x01(\v2\x15.cxz.ResponseMetadataR\bresponse\"\xe0\x01\n" +
+	"\bresponse\x18\b \x01(\v2\x15.cxz.ResponseMetadataR\bresponse\x123\n" +
+	"\ftool_summary\x18\t \x01(\v2\x10.cxz.ToolSummaryR\vtoolSummary\"g\n" +
+	"\vToolSummary\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
+	"\x05shell\x18\x02 \x01(\tR\x05shell\x12\x18\n" +
+	"\acommand\x18\x03 \x01(\tR\acommand\x12\x14\n" +
+	"\x05state\x18\x04 \x01(\tR\x05state\"\xe0\x01\n" +
 	"\x10ResponseMetadata\x12\x14\n" +
 	"\x05model\x18\x01 \x01(\tR\x05model\x12\x16\n" +
 	"\x06effort\x18\x02 \x01(\tR\x06effort\x12!\n" +
@@ -895,32 +1026,34 @@ const file_cxz_session_proto_rawDesc = "" +
 	"\x05phase\x18\x06 \x01(\tR\x05phase\x12'\n" +
 	"\x0fcompletion_json\x18\a \x01(\fR\x0ecompletionJsonB'Z github.com/lesomnus/cxz/resource\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
-var file_cxz_session_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_cxz_session_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_cxz_session_proto_goTypes = []any{
 	(*Session)(nil),               // 0: cxz.Session
 	(*SessionStatus)(nil),         // 1: cxz.SessionStatus
 	(*SessionEvent)(nil),          // 2: cxz.SessionEvent
-	(*ResponseMetadata)(nil),      // 3: cxz.ResponseMetadata
-	(*Project)(nil),               // 4: cxz.Project
-	(*timestamppb.Timestamp)(nil), // 5: google.protobuf.Timestamp
-	(*Account)(nil),               // 6: cxz.Account
-	(*AuthBinding)(nil),           // 7: cxz.AuthBinding
+	(*ToolSummary)(nil),           // 3: cxz.ToolSummary
+	(*ResponseMetadata)(nil),      // 4: cxz.ResponseMetadata
+	(*Project)(nil),               // 5: cxz.Project
+	(*timestamppb.Timestamp)(nil), // 6: google.protobuf.Timestamp
+	(*Account)(nil),               // 7: cxz.Account
+	(*AuthBinding)(nil),           // 8: cxz.AuthBinding
 }
 var file_cxz_session_proto_depIdxs = []int32{
-	4, // 0: cxz.Session.project:type_name -> cxz.Project
-	5, // 1: cxz.Session.date_updated:type_name -> google.protobuf.Timestamp
-	5, // 2: cxz.Session.date_erased:type_name -> google.protobuf.Timestamp
-	5, // 3: cxz.Session.date_created:type_name -> google.protobuf.Timestamp
-	1, // 4: cxz.Session.status:type_name -> cxz.SessionStatus
-	6, // 5: cxz.Session.account:type_name -> cxz.Account
-	7, // 6: cxz.Session.auth_binding:type_name -> cxz.AuthBinding
-	2, // 7: cxz.SessionStatus.pending:type_name -> cxz.SessionEvent
-	3, // 8: cxz.SessionEvent.response:type_name -> cxz.ResponseMetadata
-	9, // [9:9] is the sub-list for method output_type
-	9, // [9:9] is the sub-list for method input_type
-	9, // [9:9] is the sub-list for extension type_name
-	9, // [9:9] is the sub-list for extension extendee
-	0, // [0:9] is the sub-list for field type_name
+	5,  // 0: cxz.Session.project:type_name -> cxz.Project
+	6,  // 1: cxz.Session.date_updated:type_name -> google.protobuf.Timestamp
+	6,  // 2: cxz.Session.date_erased:type_name -> google.protobuf.Timestamp
+	6,  // 3: cxz.Session.date_created:type_name -> google.protobuf.Timestamp
+	1,  // 4: cxz.Session.status:type_name -> cxz.SessionStatus
+	7,  // 5: cxz.Session.account:type_name -> cxz.Account
+	8,  // 6: cxz.Session.auth_binding:type_name -> cxz.AuthBinding
+	2,  // 7: cxz.SessionStatus.pending:type_name -> cxz.SessionEvent
+	4,  // 8: cxz.SessionEvent.response:type_name -> cxz.ResponseMetadata
+	3,  // 9: cxz.SessionEvent.tool_summary:type_name -> cxz.ToolSummary
+	10, // [10:10] is the sub-list for method output_type
+	10, // [10:10] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_cxz_session_proto_init() }
@@ -937,7 +1070,7 @@ func file_cxz_session_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_cxz_session_proto_rawDesc), len(file_cxz_session_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   4,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

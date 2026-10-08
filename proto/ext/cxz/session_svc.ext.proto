@@ -24,6 +24,10 @@ service SessionService {
   rpc Reply(SessionReplyRequest) returns (SessionReceipt);
   // Journal replay is not payday Watch: it is cursor-ordered event history.
   rpc History(SessionEventsRequest) returns (SessionEventBatch);
+  // Readable, indexed history. Paging counts transcript rows, not protocol records.
+  rpc Transcript(SessionTranscriptRequest) returns (SessionTranscriptReply);
+  // Full native records for one row/execution, fetched only for inspection.
+  rpc EventDetails(SessionEventDetailsRequest) returns (SessionEventBatch);
   rpc Background(SessionBackgroundRequest) returns (SessionBackgroundReply);
   rpc Models(SessionModelsRequest) returns (SessionModelsReply);
   rpc Events(SessionEventsRequest) returns (stream SessionEvent);
@@ -126,6 +130,19 @@ message SessionReplyRequest {
 message SessionReceipt { string client_id = 1; string status = 2; }
 message SessionEventsRequest { SessionRef ref = 1; uint64 after_seq = 2; string client_id = 3; }
 message SessionEventBatch { repeated SessionEvent events = 1; }
+
+// No cursor selects the latest page. after_seq and before_seq are exclusive and
+// mutually exclusive. snapshot_seq pins subsequent pages while live events arrive.
+message SessionTranscriptRequest {
+  SessionRef ref = 1; uint64 after_seq = 2; uint64 before_seq = 3;
+  uint32 limit = 4; uint64 snapshot_seq = 5;
+}
+message SessionTranscriptReply {
+  repeated SessionEvent events = 1;
+  uint64 snapshot_seq = 2; bool has_older = 3; bool has_newer = 4;
+  SessionEvent preceding_input = 5; repeated SessionEvent metadata = 6;
+}
+message SessionEventDetailsRequest { SessionRef ref = 1; uint64 seq = 2; }
 
 message SessionPermissionRequest { SessionRef ref = 1; string run_id = 2; string client_id = 3; string mode = 4; }
 

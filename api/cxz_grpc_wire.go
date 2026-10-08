@@ -39,6 +39,8 @@ const (
 	Sessions_Stop_FullMethodName         = "/cxz.runtime.Sessions/Stop"
 	Sessions_Watch_FullMethodName        = "/cxz.runtime.Sessions/Watch"
 	Sessions_History_FullMethodName      = "/cxz.runtime.Sessions/History"
+	Sessions_Transcript_FullMethodName   = "/cxz.runtime.Sessions/Transcript"
+	Sessions_EventDetails_FullMethodName = "/cxz.runtime.Sessions/EventDetails"
 	Sessions_Background_FullMethodName   = "/cxz.runtime.Sessions/Background"
 	Sessions_Models_FullMethodName       = "/cxz.runtime.Sessions/Models"
 	Sessions_Search_FullMethodName       = "/cxz.runtime.Sessions/Search"
@@ -71,6 +73,8 @@ type SessionsClient interface {
 	Stop(ctx context.Context, in *Control, opts ...grpc.CallOption) (*Receipt, error)
 	Watch(ctx context.Context, in *WatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[Event], error)
 	History(ctx context.Context, in *WatchRequest, opts ...grpc.CallOption) (*EventBatch, error)
+	Transcript(ctx context.Context, in *TranscriptRequest, opts ...grpc.CallOption) (*TranscriptReply, error)
+	EventDetails(ctx context.Context, in *EventDetailsRequest, opts ...grpc.CallOption) (*EventBatch, error)
 	Background(ctx context.Context, in *SessionRef, opts ...grpc.CallOption) (*BackgroundReply, error)
 	Models(ctx context.Context, in *ModelsRequest, opts ...grpc.CallOption) (*ModelsReply, error)
 	Search(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SearchReply], error)
@@ -296,6 +300,26 @@ func (c *sessionsClient) History(ctx context.Context, in *WatchRequest, opts ...
 	return out, nil
 }
 
+func (c *sessionsClient) Transcript(ctx context.Context, in *TranscriptRequest, opts ...grpc.CallOption) (*TranscriptReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(TranscriptReply)
+	err := c.cc.Invoke(ctx, Sessions_Transcript_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) EventDetails(ctx context.Context, in *EventDetailsRequest, opts ...grpc.CallOption) (*EventBatch, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EventBatch)
+	err := c.cc.Invoke(ctx, Sessions_EventDetails_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *sessionsClient) Background(ctx context.Context, in *SessionRef, opts ...grpc.CallOption) (*BackgroundReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(BackgroundReply)
@@ -389,6 +413,8 @@ type SessionsServer interface {
 	Stop(context.Context, *Control) (*Receipt, error)
 	Watch(*WatchRequest, grpc.ServerStreamingServer[Event]) error
 	History(context.Context, *WatchRequest) (*EventBatch, error)
+	Transcript(context.Context, *TranscriptRequest) (*TranscriptReply, error)
+	EventDetails(context.Context, *EventDetailsRequest) (*EventBatch, error)
 	Background(context.Context, *SessionRef) (*BackgroundReply, error)
 	Models(context.Context, *ModelsRequest) (*ModelsReply, error)
 	Search(*SearchRequest, grpc.ServerStreamingServer[SearchReply]) error
@@ -464,6 +490,12 @@ func (UnimplementedSessionsServer) Watch(*WatchRequest, grpc.ServerStreamingServ
 }
 func (UnimplementedSessionsServer) History(context.Context, *WatchRequest) (*EventBatch, error) {
 	return nil, status.Error(codes.Unimplemented, "method History not implemented")
+}
+func (UnimplementedSessionsServer) Transcript(context.Context, *TranscriptRequest) (*TranscriptReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method Transcript not implemented")
+}
+func (UnimplementedSessionsServer) EventDetails(context.Context, *EventDetailsRequest) (*EventBatch, error) {
+	return nil, status.Error(codes.Unimplemented, "method EventDetails not implemented")
 }
 func (UnimplementedSessionsServer) Background(context.Context, *SessionRef) (*BackgroundReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method Background not implemented")
@@ -857,6 +889,42 @@ func _Sessions_History_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Sessions_Transcript_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TranscriptRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).Transcript(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_Transcript_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).Transcript(ctx, req.(*TranscriptRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_EventDetails_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EventDetailsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).EventDetails(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_EventDetails_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).EventDetails(ctx, req.(*EventDetailsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Sessions_Background_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SessionRef)
 	if err := dec(in); err != nil {
@@ -1040,6 +1108,14 @@ var Sessions_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "History",
 			Handler:    _Sessions_History_Handler,
+		},
+		{
+			MethodName: "Transcript",
+			Handler:    _Sessions_Transcript_Handler,
+		},
+		{
+			MethodName: "EventDetails",
+			Handler:    _Sessions_EventDetails_Handler,
 		},
 		{
 			MethodName: "Background",

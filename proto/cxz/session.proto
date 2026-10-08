@@ -60,7 +60,11 @@ message SessionEvent {
   string request_id = 6;
   bytes payload = 7;
   ResponseMetadata response = 8;
+  // Present only on a derived transcript row, never in the native live journal.
+  ToolSummary tool_summary = 9;
 }
+
+message ToolSummary { string name = 1; string shell = 2; string command = 3; string state = 4; }
 
 // Frozen response context; sources are response, settings or requested.
 // Empty values mean the provider/configuration did not supply a known value.

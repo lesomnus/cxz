@@ -2,6 +2,7 @@ package webui
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -31,6 +32,7 @@ func TestBrowserFixture(t *testing.T) {
 	ln := bufconn.Listen(1 << 20)
 	g := grpc.NewServer()
 	f := &browserFixture{}
+	setupTranscriptReplay(t, f)
 	resource.RegisterProjectServiceServer(g, &fixtureProjects{probe: os.Getenv("CXZ_EDITOR_PROBE_CONTAINER")})
 	resource.RegisterSessionServiceServer(g, f)
 	go g.Serve(ln)
@@ -169,9 +171,10 @@ func (*fixtureProjects) Watch(_ *resource.ProjectWatchRequest, s grpc.ServerStre
 
 type browserFixture struct {
 	resource.UnimplementedSessionServiceServer
-	mu       sync.Mutex
-	events   []*resource.SessionEvent
-	resolved bool
+	mu           sync.Mutex
+	events       []*resource.SessionEvent
+	resolved     bool
+	transcriptDB *sql.DB
 }
 
 func (f *browserFixture) snapshot() *resource.Session {

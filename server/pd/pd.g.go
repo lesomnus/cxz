@@ -3710,6 +3710,16 @@ func (s interceptSession) History(ctx context.Context, req *resource.SessionEven
 		resource.SessionService_History_FullMethodName, req, s.SessionServiceServer.History)
 }
 
+func (s interceptSession) Transcript(ctx context.Context, req *resource.SessionTranscriptRequest) (*resource.SessionTranscriptReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
+		resource.SessionService_Transcript_FullMethodName, req, s.SessionServiceServer.Transcript)
+}
+
+func (s interceptSession) EventDetails(ctx context.Context, req *resource.SessionEventDetailsRequest) (*resource.SessionEventBatch, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
+		resource.SessionService_EventDetails_FullMethodName, req, s.SessionServiceServer.EventDetails)
+}
+
 func (s interceptSession) Background(ctx context.Context, req *resource.SessionBackgroundRequest) (*resource.SessionBackgroundReply, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
 		resource.SessionService_Background_FullMethodName, req, s.SessionServiceServer.Background)
@@ -5116,6 +5126,32 @@ func dispatch(ctx context.Context, s resource.Server, op *pdpb.Op) (*anypb.Any, 
 		}
 
 		res, err := s.Session().History(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.SessionService_Transcript_FullMethodName:
+		v := &resource.SessionTranscriptRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Session().Transcript(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.SessionService_EventDetails_FullMethodName:
+		v := &resource.SessionEventDetailsRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Session().EventDetails(ctx, v)
 		if err != nil {
 			return nil, err
 		}

@@ -23,6 +23,8 @@ service Sessions {
   rpc Stop(Control) returns (Receipt);
   rpc Watch(WatchRequest) returns (stream Event);
   rpc History(WatchRequest) returns (EventBatch);
+  rpc Transcript(TranscriptRequest) returns (TranscriptReply);
+  rpc EventDetails(EventDetailsRequest) returns (EventBatch);
   rpc Background(SessionRef) returns (BackgroundReply);
   rpc Models(ModelsRequest) returns (ModelsReply);
   rpc Search(SearchRequest) returns (stream SearchReply);
@@ -69,7 +71,15 @@ message Event {
   string session_id = 1; string run_id = 2; uint64 seq = 3; int64 time_ms = 4;
   string kind = 5; string text = 6; string request_id = 7; bytes payload = 8;
   ResponseMetadata response = 9;
+  ToolSummary tool_summary = 10;
 }
+message ToolSummary { string name = 1; string shell = 2; string command = 3; string state = 4; }
+message TranscriptRequest { string session_id = 1; uint64 after_seq = 2; uint64 before_seq = 3; uint32 limit = 4; uint64 snapshot_seq = 5; }
+message TranscriptReply {
+  repeated Event events = 1; uint64 snapshot_seq = 2;
+  bool has_older = 3; bool has_newer = 4; Event preceding_input = 5; repeated Event metadata = 6;
+}
+message EventDetailsRequest { string session_id = 1; uint64 seq = 2; }
 message ResponseMetadata {
   string model = 1; string effort = 2;
   string model_source = 3; string effort_source = 4; string turn_id = 5;
