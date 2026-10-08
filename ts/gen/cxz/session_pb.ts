@@ -21,7 +21,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file cxz/session.proto.
  */
 export const file_cxz_session: GenFile = /*@__PURE__*/
-  fileDesc("ChFjeHovc2Vzc2lvbi5wcm90bxIDY3h6IqQFCgdTZXNzaW9uEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABIXCgVhbGlhcxgEIAEoCUII6oIWBDABOAESDAoEbmFtZRgFIAEoCRIMCgRkZXNjGAYgASgJEiUKB3Byb2plY3QYCCABKAsyDC5jeHouUHJvamVjdEIG8oIWAkABEhUKBWFnZW50GAkgASgJQgbqghYCQAESFQoFbW9kZWwYCiABKAlCBuqCFgJAARIcCgpydW50aW1lX2lkGAsgASgJQgjqghYEMAFAARIbCgljbGllbnRfaWQYDCABKAlCCOqCFgQwAUABEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBABIiCgZzdGF0dXMYECABKAsyEi5jeHouU2Vzc2lvblN0YXR1cxIbCgZsaXN0ZWQYESABKAhCC+qCFgeCAQR0cnVlEiUKB2FjY291bnQYEiABKAsyDC5jeHouQWNjb3VudEIG8oIWAkABEi4KDGF1dGhfYmluZGluZxgTIAEoCzIQLmN4ei5BdXRoQmluZGluZ0IG8oIWAkABOnHK/BUmEgIQARogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAGKuxZDCAgyOwoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZhoJCgdwcm9qZWN0GggKBmxpc3RlZCAyKMgBOgAqACKgAQoNU2Vzc2lvblN0YXR1cxINCgVzdGF0ZRgBIAEoCRIOCgZydW5faWQYAiABKAkSEQoJdmVuZG9yX2lkGAMgASgJEhAKCGxhc3Rfc2VxGAQgASgEEiIKB3BlbmRpbmcYBSADKAsyES5jeHouU2Vzc2lvbkV2ZW50EhcKD3Blcm1pc3Npb25fbW9kZRgGIAEoCRIOCgZxdWV1ZWQYByABKAkizgEKDFNlc3Npb25FdmVudBIOCgZydW5faWQYASABKAkSCwoDc2VxGAIgASgEEg8KB3RpbWVfbXMYAyABKAMSDAoEa2luZBgEIAEoCRIMCgR0ZXh0GAUgASgJEhIKCnJlcXVlc3RfaWQYBiABKAkSDwoHcGF5bG9hZBgHIAEoDBInCghyZXNwb25zZRgIIAEoCzIVLmN4ei5SZXNwb25zZU1ldGFkYXRhEiYKDHRvb2xfc3VtbWFyeRgJIAEoCzIQLmN4ei5Ub29sU3VtbWFyeSJKCgtUb29sU3VtbWFyeRIMCgRuYW1lGAEgASgJEg0KBXNoZWxsGAIgASgJEg8KB2NvbW1hbmQYAyABKAkSDQoFc3RhdGUYBCABKAkilwEKEFJlc3BvbnNlTWV0YWRhdGESDQoFbW9kZWwYASABKAkSDgoGZWZmb3J0GAIgASgJEhQKDG1vZGVsX3NvdXJjZRgDIAEoCRIVCg1lZmZvcnRfc291cmNlGAQgASgJEg8KB3R1cm5faWQYBSABKAkSDQoFcGhhc2UYBiABKAkSFwoPY29tcGxldGlvbl9qc29uGAcgASgMQidaIGdpdGh1Yi5jb20vbGVzb21udXMvY3h6L3Jlc291cmNlkgMCCAJiCGVkaXRpb25zcOgH", [file_cxz_project, file_cxz_account, file_cxz_auth_binding, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("ChFjeHovc2Vzc2lvbi5wcm90bxIDY3h6IqQFCgdTZXNzaW9uEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABIXCgVhbGlhcxgEIAEoCUII6oIWBDABOAESDAoEbmFtZRgFIAEoCRIMCgRkZXNjGAYgASgJEiUKB3Byb2plY3QYCCABKAsyDC5jeHouUHJvamVjdEIG8oIWAkABEhUKBWFnZW50GAkgASgJQgbqghYCQAESFQoFbW9kZWwYCiABKAlCBuqCFgJAARIcCgpydW50aW1lX2lkGAsgASgJQgjqghYEMAFAARIbCgljbGllbnRfaWQYDCABKAlCCOqCFgQwAUABEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBABIiCgZzdGF0dXMYECABKAsyEi5jeHouU2Vzc2lvblN0YXR1cxIbCgZsaXN0ZWQYESABKAhCC+qCFgeCAQR0cnVlEiUKB2FjY291bnQYEiABKAsyDC5jeHouQWNjb3VudEIG8oIWAkABEi4KDGF1dGhfYmluZGluZxgTIAEoCzIQLmN4ei5BdXRoQmluZGluZ0IG8oIWAkABOnHK/BUmEgIQARogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAGKuxZDCAgyOwoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZhoJCgdwcm9qZWN0GggKBmxpc3RlZCAyKMgBOgAqACKgAQoNU2Vzc2lvblN0YXR1cxINCgVzdGF0ZRgBIAEoCRIOCgZydW5faWQYAiABKAkSEQoJdmVuZG9yX2lkGAMgASgJEhAKCGxhc3Rfc2VxGAQgASgEEiIKB3BlbmRpbmcYBSADKAsyES5jeHouU2Vzc2lvbkV2ZW50EhcKD3Blcm1pc3Npb25fbW9kZRgGIAEoCRIOCgZxdWV1ZWQYByABKAkizgEKDFNlc3Npb25FdmVudBIOCgZydW5faWQYASABKAkSCwoDc2VxGAIgASgEEg8KB3RpbWVfbXMYAyABKAMSDAoEa2luZBgEIAEoCRIMCgR0ZXh0GAUgASgJEhIKCnJlcXVlc3RfaWQYBiABKAkSDwoHcGF5bG9hZBgHIAEoDBInCghyZXNwb25zZRgIIAEoCzIVLmN4ei5SZXNwb25zZU1ldGFkYXRhEiYKDHRvb2xfc3VtbWFyeRgJIAEoCzIQLmN4ei5Ub29sU3VtbWFyeSKGAQoLVG9vbFN1bW1hcnkSDAoEbmFtZRgBIAEoCRINCgVzaGVsbBgCIAEoCRIPCgdjb21tYW5kGAMgASgJEg0KBXN0YXRlGAQgASgJEiMKBWZpbGVzGAUgAygLMhQuY3h6LlRvb2xGaWxlU3VtbWFyeRIVCg1vbWl0dGVkX2ZpbGVzGAYgASgNIpUBCg9Ub29sRmlsZVN1bW1hcnkSDAoEcGF0aBgBIAEoCRIRCgltb3ZlX3BhdGgYAiABKAkSDgoGYWN0aW9uGAMgASgJEg0KBWFkZGVkGAQgASgNEg8KB3JlbW92ZWQYBSABKA0SDQoFbGluZXMYBiABKA0SDwoHbWVhc3VyZRgHIAEoCRIRCglwZXJfbWF0Y2gYCCABKAgilwEKEFJlc3BvbnNlTWV0YWRhdGESDQoFbW9kZWwYASABKAkSDgoGZWZmb3J0GAIgASgJEhQKDG1vZGVsX3NvdXJjZRgDIAEoCRIVCg1lZmZvcnRfc291cmNlGAQgASgJEg8KB3R1cm5faWQYBSABKAkSDQoFcGhhc2UYBiABKAkSFwoPY29tcGxldGlvbl9qc29uGAcgASgMQidaIGdpdGh1Yi5jb20vbGVzb21udXMvY3h6L3Jlc291cmNlkgMCCAJiCGVkaXRpb25zcOgH", [file_cxz_project, file_cxz_account, file_cxz_auth_binding, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * The durable conversation identity. Runtime/run IDs and journal cursors are
@@ -249,6 +249,16 @@ export type ToolSummary = Message<"cxz.ToolSummary"> & {
    * @generated from field: string state = 4;
    */
   state: string;
+
+  /**
+   * @generated from field: repeated cxz.ToolFileSummary files = 5;
+   */
+  files: ToolFileSummary[];
+
+  /**
+   * @generated from field: uint32 omitted_files = 6;
+   */
+  omittedFiles: number;
 };
 
 /**
@@ -257,6 +267,61 @@ export type ToolSummary = Message<"cxz.ToolSummary"> & {
  */
 export const ToolSummarySchema: GenMessage<ToolSummary> = /*@__PURE__*/
   messageDesc(file_cxz_session, 3);
+
+/**
+ * Counts describe recorded diff hunks or submitted content/replacement spans.
+ * An unknown measure never implies zero changes.
+ *
+ * @generated from message cxz.ToolFileSummary
+ */
+export type ToolFileSummary = Message<"cxz.ToolFileSummary"> & {
+  /**
+   * @generated from field: string path = 1;
+   */
+  path: string;
+
+  /**
+   * @generated from field: string move_path = 2;
+   */
+  movePath: string;
+
+  /**
+   * @generated from field: string action = 3;
+   */
+  action: string;
+
+  /**
+   * @generated from field: uint32 added = 4;
+   */
+  added: number;
+
+  /**
+   * @generated from field: uint32 removed = 5;
+   */
+  removed: number;
+
+  /**
+   * @generated from field: uint32 lines = 6;
+   */
+  lines: number;
+
+  /**
+   * @generated from field: string measure = 7;
+   */
+  measure: string;
+
+  /**
+   * @generated from field: bool per_match = 8;
+   */
+  perMatch: boolean;
+};
+
+/**
+ * Describes the message cxz.ToolFileSummary.
+ * Use `create(ToolFileSummarySchema)` to create a new message.
+ */
+export const ToolFileSummarySchema: GenMessage<ToolFileSummary> = /*@__PURE__*/
+  messageDesc(file_cxz_session, 4);
 
 /**
  * Frozen response context; sources are response, settings or requested.
@@ -308,5 +373,5 @@ export type ResponseMetadata = Message<"cxz.ResponseMetadata"> & {
  * Use `create(ResponseMetadataSchema)` to create a new message.
  */
 export const ResponseMetadataSchema: GenMessage<ResponseMetadata> = /*@__PURE__*/
-  messageDesc(file_cxz_session, 4);
+  messageDesc(file_cxz_session, 5);
 

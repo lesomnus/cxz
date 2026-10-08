@@ -712,13 +712,15 @@ func (b0 SessionEvent_builder) Build() *SessionEvent {
 }
 
 type ToolSummary struct {
-	state              protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Name    string                 `protobuf:"bytes,1,opt,name=name"`
-	xxx_hidden_Shell   string                 `protobuf:"bytes,2,opt,name=shell"`
-	xxx_hidden_Command string                 `protobuf:"bytes,3,opt,name=command"`
-	xxx_hidden_State   string                 `protobuf:"bytes,4,opt,name=state"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	state                   protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Name         string                 `protobuf:"bytes,1,opt,name=name"`
+	xxx_hidden_Shell        string                 `protobuf:"bytes,2,opt,name=shell"`
+	xxx_hidden_Command      string                 `protobuf:"bytes,3,opt,name=command"`
+	xxx_hidden_State        string                 `protobuf:"bytes,4,opt,name=state"`
+	xxx_hidden_Files        *[]*ToolFileSummary    `protobuf:"bytes,5,rep,name=files"`
+	xxx_hidden_OmittedFiles uint32                 `protobuf:"varint,6,opt,name=omitted_files,json=omittedFiles"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
 }
 
 func (x *ToolSummary) Reset() {
@@ -774,6 +776,22 @@ func (x *ToolSummary) GetState() string {
 	return ""
 }
 
+func (x *ToolSummary) GetFiles() []*ToolFileSummary {
+	if x != nil {
+		if x.xxx_hidden_Files != nil {
+			return *x.xxx_hidden_Files
+		}
+	}
+	return nil
+}
+
+func (x *ToolSummary) GetOmittedFiles() uint32 {
+	if x != nil {
+		return x.xxx_hidden_OmittedFiles
+	}
+	return 0
+}
+
 func (x *ToolSummary) SetName(v string) {
 	x.xxx_hidden_Name = v
 }
@@ -790,13 +808,23 @@ func (x *ToolSummary) SetState(v string) {
 	x.xxx_hidden_State = v
 }
 
+func (x *ToolSummary) SetFiles(v []*ToolFileSummary) {
+	x.xxx_hidden_Files = &v
+}
+
+func (x *ToolSummary) SetOmittedFiles(v uint32) {
+	x.xxx_hidden_OmittedFiles = v
+}
+
 type ToolSummary_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Name    string
-	Shell   string
-	Command string
-	State   string
+	Name         string
+	Shell        string
+	Command      string
+	State        string
+	Files        []*ToolFileSummary
+	OmittedFiles uint32
 }
 
 func (b0 ToolSummary_builder) Build() *ToolSummary {
@@ -807,6 +835,165 @@ func (b0 ToolSummary_builder) Build() *ToolSummary {
 	x.xxx_hidden_Shell = b.Shell
 	x.xxx_hidden_Command = b.Command
 	x.xxx_hidden_State = b.State
+	x.xxx_hidden_Files = &b.Files
+	x.xxx_hidden_OmittedFiles = b.OmittedFiles
+	return m0
+}
+
+// Counts describe recorded diff hunks or submitted content/replacement spans.
+// An unknown measure never implies zero changes.
+type ToolFileSummary struct {
+	state               protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Path     string                 `protobuf:"bytes,1,opt,name=path"`
+	xxx_hidden_MovePath string                 `protobuf:"bytes,2,opt,name=move_path,json=movePath"`
+	xxx_hidden_Action   string                 `protobuf:"bytes,3,opt,name=action"`
+	xxx_hidden_Added    uint32                 `protobuf:"varint,4,opt,name=added"`
+	xxx_hidden_Removed  uint32                 `protobuf:"varint,5,opt,name=removed"`
+	xxx_hidden_Lines    uint32                 `protobuf:"varint,6,opt,name=lines"`
+	xxx_hidden_Measure  string                 `protobuf:"bytes,7,opt,name=measure"`
+	xxx_hidden_PerMatch bool                   `protobuf:"varint,8,opt,name=per_match,json=perMatch"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *ToolFileSummary) Reset() {
+	*x = ToolFileSummary{}
+	mi := &file_cxz_session_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ToolFileSummary) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ToolFileSummary) ProtoMessage() {}
+
+func (x *ToolFileSummary) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_session_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *ToolFileSummary) GetPath() string {
+	if x != nil {
+		return x.xxx_hidden_Path
+	}
+	return ""
+}
+
+func (x *ToolFileSummary) GetMovePath() string {
+	if x != nil {
+		return x.xxx_hidden_MovePath
+	}
+	return ""
+}
+
+func (x *ToolFileSummary) GetAction() string {
+	if x != nil {
+		return x.xxx_hidden_Action
+	}
+	return ""
+}
+
+func (x *ToolFileSummary) GetAdded() uint32 {
+	if x != nil {
+		return x.xxx_hidden_Added
+	}
+	return 0
+}
+
+func (x *ToolFileSummary) GetRemoved() uint32 {
+	if x != nil {
+		return x.xxx_hidden_Removed
+	}
+	return 0
+}
+
+func (x *ToolFileSummary) GetLines() uint32 {
+	if x != nil {
+		return x.xxx_hidden_Lines
+	}
+	return 0
+}
+
+func (x *ToolFileSummary) GetMeasure() string {
+	if x != nil {
+		return x.xxx_hidden_Measure
+	}
+	return ""
+}
+
+func (x *ToolFileSummary) GetPerMatch() bool {
+	if x != nil {
+		return x.xxx_hidden_PerMatch
+	}
+	return false
+}
+
+func (x *ToolFileSummary) SetPath(v string) {
+	x.xxx_hidden_Path = v
+}
+
+func (x *ToolFileSummary) SetMovePath(v string) {
+	x.xxx_hidden_MovePath = v
+}
+
+func (x *ToolFileSummary) SetAction(v string) {
+	x.xxx_hidden_Action = v
+}
+
+func (x *ToolFileSummary) SetAdded(v uint32) {
+	x.xxx_hidden_Added = v
+}
+
+func (x *ToolFileSummary) SetRemoved(v uint32) {
+	x.xxx_hidden_Removed = v
+}
+
+func (x *ToolFileSummary) SetLines(v uint32) {
+	x.xxx_hidden_Lines = v
+}
+
+func (x *ToolFileSummary) SetMeasure(v string) {
+	x.xxx_hidden_Measure = v
+}
+
+func (x *ToolFileSummary) SetPerMatch(v bool) {
+	x.xxx_hidden_PerMatch = v
+}
+
+type ToolFileSummary_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Path     string
+	MovePath string
+	Action   string
+	Added    uint32
+	Removed  uint32
+	Lines    uint32
+	Measure  string
+	PerMatch bool
+}
+
+func (b0 ToolFileSummary_builder) Build() *ToolFileSummary {
+	m0 := &ToolFileSummary{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Path = b.Path
+	x.xxx_hidden_MovePath = b.MovePath
+	x.xxx_hidden_Action = b.Action
+	x.xxx_hidden_Added = b.Added
+	x.xxx_hidden_Removed = b.Removed
+	x.xxx_hidden_Lines = b.Lines
+	x.xxx_hidden_Measure = b.Measure
+	x.xxx_hidden_PerMatch = b.PerMatch
 	return m0
 }
 
@@ -827,7 +1014,7 @@ type ResponseMetadata struct {
 
 func (x *ResponseMetadata) Reset() {
 	*x = ResponseMetadata{}
-	mi := &file_cxz_session_proto_msgTypes[4]
+	mi := &file_cxz_session_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -839,7 +1026,7 @@ func (x *ResponseMetadata) String() string {
 func (*ResponseMetadata) ProtoMessage() {}
 
 func (x *ResponseMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_proto_msgTypes[4]
+	mi := &file_cxz_session_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1011,12 +1198,23 @@ const file_cxz_session_proto_rawDesc = "" +
 	"request_id\x18\x06 \x01(\tR\trequestId\x12\x18\n" +
 	"\apayload\x18\a \x01(\fR\apayload\x121\n" +
 	"\bresponse\x18\b \x01(\v2\x15.cxz.ResponseMetadataR\bresponse\x123\n" +
-	"\ftool_summary\x18\t \x01(\v2\x10.cxz.ToolSummaryR\vtoolSummary\"g\n" +
+	"\ftool_summary\x18\t \x01(\v2\x10.cxz.ToolSummaryR\vtoolSummary\"\xb8\x01\n" +
 	"\vToolSummary\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
 	"\x05shell\x18\x02 \x01(\tR\x05shell\x12\x18\n" +
 	"\acommand\x18\x03 \x01(\tR\acommand\x12\x14\n" +
-	"\x05state\x18\x04 \x01(\tR\x05state\"\xe0\x01\n" +
+	"\x05state\x18\x04 \x01(\tR\x05state\x12*\n" +
+	"\x05files\x18\x05 \x03(\v2\x14.cxz.ToolFileSummaryR\x05files\x12#\n" +
+	"\romitted_files\x18\x06 \x01(\rR\fomittedFiles\"\xd7\x01\n" +
+	"\x0fToolFileSummary\x12\x12\n" +
+	"\x04path\x18\x01 \x01(\tR\x04path\x12\x1b\n" +
+	"\tmove_path\x18\x02 \x01(\tR\bmovePath\x12\x16\n" +
+	"\x06action\x18\x03 \x01(\tR\x06action\x12\x14\n" +
+	"\x05added\x18\x04 \x01(\rR\x05added\x12\x18\n" +
+	"\aremoved\x18\x05 \x01(\rR\aremoved\x12\x14\n" +
+	"\x05lines\x18\x06 \x01(\rR\x05lines\x12\x18\n" +
+	"\ameasure\x18\a \x01(\tR\ameasure\x12\x1b\n" +
+	"\tper_match\x18\b \x01(\bR\bperMatch\"\xe0\x01\n" +
 	"\x10ResponseMetadata\x12\x14\n" +
 	"\x05model\x18\x01 \x01(\tR\x05model\x12\x16\n" +
 	"\x06effort\x18\x02 \x01(\tR\x06effort\x12!\n" +
@@ -1026,34 +1224,36 @@ const file_cxz_session_proto_rawDesc = "" +
 	"\x05phase\x18\x06 \x01(\tR\x05phase\x12'\n" +
 	"\x0fcompletion_json\x18\a \x01(\fR\x0ecompletionJsonB'Z github.com/lesomnus/cxz/resource\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
-var file_cxz_session_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_cxz_session_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_cxz_session_proto_goTypes = []any{
 	(*Session)(nil),               // 0: cxz.Session
 	(*SessionStatus)(nil),         // 1: cxz.SessionStatus
 	(*SessionEvent)(nil),          // 2: cxz.SessionEvent
 	(*ToolSummary)(nil),           // 3: cxz.ToolSummary
-	(*ResponseMetadata)(nil),      // 4: cxz.ResponseMetadata
-	(*Project)(nil),               // 5: cxz.Project
-	(*timestamppb.Timestamp)(nil), // 6: google.protobuf.Timestamp
-	(*Account)(nil),               // 7: cxz.Account
-	(*AuthBinding)(nil),           // 8: cxz.AuthBinding
+	(*ToolFileSummary)(nil),       // 4: cxz.ToolFileSummary
+	(*ResponseMetadata)(nil),      // 5: cxz.ResponseMetadata
+	(*Project)(nil),               // 6: cxz.Project
+	(*timestamppb.Timestamp)(nil), // 7: google.protobuf.Timestamp
+	(*Account)(nil),               // 8: cxz.Account
+	(*AuthBinding)(nil),           // 9: cxz.AuthBinding
 }
 var file_cxz_session_proto_depIdxs = []int32{
-	5,  // 0: cxz.Session.project:type_name -> cxz.Project
-	6,  // 1: cxz.Session.date_updated:type_name -> google.protobuf.Timestamp
-	6,  // 2: cxz.Session.date_erased:type_name -> google.protobuf.Timestamp
-	6,  // 3: cxz.Session.date_created:type_name -> google.protobuf.Timestamp
+	6,  // 0: cxz.Session.project:type_name -> cxz.Project
+	7,  // 1: cxz.Session.date_updated:type_name -> google.protobuf.Timestamp
+	7,  // 2: cxz.Session.date_erased:type_name -> google.protobuf.Timestamp
+	7,  // 3: cxz.Session.date_created:type_name -> google.protobuf.Timestamp
 	1,  // 4: cxz.Session.status:type_name -> cxz.SessionStatus
-	7,  // 5: cxz.Session.account:type_name -> cxz.Account
-	8,  // 6: cxz.Session.auth_binding:type_name -> cxz.AuthBinding
+	8,  // 5: cxz.Session.account:type_name -> cxz.Account
+	9,  // 6: cxz.Session.auth_binding:type_name -> cxz.AuthBinding
 	2,  // 7: cxz.SessionStatus.pending:type_name -> cxz.SessionEvent
-	4,  // 8: cxz.SessionEvent.response:type_name -> cxz.ResponseMetadata
+	5,  // 8: cxz.SessionEvent.response:type_name -> cxz.ResponseMetadata
 	3,  // 9: cxz.SessionEvent.tool_summary:type_name -> cxz.ToolSummary
-	10, // [10:10] is the sub-list for method output_type
-	10, // [10:10] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	4,  // 10: cxz.ToolSummary.files:type_name -> cxz.ToolFileSummary
+	11, // [11:11] is the sub-list for method output_type
+	11, // [11:11] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_cxz_session_proto_init() }
@@ -1070,7 +1270,7 @@ func file_cxz_session_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_cxz_session_proto_rawDesc), len(file_cxz_session_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   5,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

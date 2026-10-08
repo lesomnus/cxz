@@ -1,5 +1,8 @@
 // English source messages are always bundled; other packs load on demand.
 export const messages = {
+  "(path not reported)": "(path not reported)",
+  "{count} more files in Details": "{count} more files in Details",
+
   Details: "Details",
   Result: "Result",
   Approval: "Approval",

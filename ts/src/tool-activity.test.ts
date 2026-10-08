@@ -10,6 +10,9 @@ import {
   toolLabel,
   toolOutput,
   toolState,
+  toolFiles,
+  fileAction,
+  fileMeasure,
   transcriptEvents,
 } from "./tool-activity";
 
@@ -315,4 +318,124 @@ it("preserves a historical task anchor and applies native live results to it", (
   expect(
     toolState(transcriptEvents([summary]).activities.get(1n)!, "codex"),
   ).toBe("failed");
+});
+
+it("uses completed Codex file changes at the original anchor, including unknown counts and renames", () => {
+  const start = event(1, "tool_call", "files", {
+    item: { type: "fileChange", status: "inProgress", changes: [] },
+  });
+  const end = event(2, "tool_result", "files", {
+    item: {
+      type: "fileChange",
+      status: "completed",
+      changes: [
+        {
+          path: "/workspace/ts/src/app.tsx",
+          kind: { type: "update" },
+          diff: "--- a/app.tsx\n+++ b/app.tsx\n@@ -1,1 +1,2 @@\n-old\n+new\n+extra\n",
+        },
+        { path: "/workspace/ts/src/send-motion.ts", kind: { type: "add" } },
+        {
+          path: "old.ts",
+          kind: { type: "update", move_path: "new.ts" },
+          diff: "@@ -1 +1 @@\n-a\n+b\n",
+        },
+      ],
+    },
+  });
+  const projected = transcriptEvents([start, end]);
+  expect(projected.events.map((e) => e.seq)).toEqual([1n]);
+  const activity = projected.activities.get(1n)!;
+  expect(toolState(activity, "codex")).toBe("completed");
+  const { files } = toolFiles(activity);
+  expect(
+    files.map((f) => [fileAction(f), f.path, fileMeasure(f), f.movePath]),
+  ).toEqual([
+    ["Edit", "/workspace/ts/src/app.tsx", "+2 -1", ""],
+    ["Write", "/workspace/ts/src/send-motion.ts", "Δ?", ""],
+    ["Edit", "old.ts", "+1 -1", "new.ts"],
+  ]);
+  expect(toolFiles(transcriptEvents([end]).activities.get(2n)!)).toEqual({
+    files,
+    omitted: 0,
+  });
+  end.requestId = "";
+  expect(toolFiles(transcriptEvents([end]).activities.get(2n)!).files).toEqual(
+    files,
+  );
+});
+
+it("distinguishes submitted content/replacement counts from actual diff hunks and preserves unknowns", () => {
+  const cases = [
+    ["Write", { file_path: "a", content: "one\ntwo\n" }, "+2 content"],
+    ["Write", { file_path: "a" }, "Δ?"],
+    [
+      "Edit",
+      {
+        input: {
+          file_path: "a",
+          old_string: "one\ntwo",
+          new_string: "new",
+          replace_all: true,
+        },
+      },
+      "+1 -2 /match",
+    ],
+    ["Edit", { file_path: "a", old_string: "", new_string: "" }, "+0 -0"],
+    ["Read", { file_path: "a" }, ""],
+  ] as const;
+  for (const [name, p, expected] of cases) {
+    const call = event(1, "tool_call", "file", p, name);
+    const file = toolFiles({ call, output: [], approvals: [] }).files[0];
+    expect(file.path).toBe("a");
+    expect(fileMeasure(file)).toBe(expected);
+  }
+});
+
+it("renders structured summary files and enriches old summaries from native live completion", () => {
+  const call = create(SessionEventSchema, {
+    seq: 1n,
+    kind: "tool_call",
+    requestId: "files",
+    runId: "run",
+    toolSummary: {
+      name: "Files",
+      state: "working",
+      files: [
+        { path: "a", action: "update", added: 2, removed: 1, measure: "diff" },
+      ],
+      omittedFiles: 3,
+    },
+  });
+  const activity = transcriptEvents([call]).activities.get(1n)!;
+  expect(fileMeasure(toolFiles(activity).files[0])).toBe("+2 -1");
+  expect(toolFiles(activity).omitted).toBe(3);
+  call.toolSummary!.files = [];
+  const end = event(2, "tool_result", "files", {
+    item: {
+      type: "fileChange",
+      status: "completed",
+      changes: [{ path: "a", kind: "delete" }],
+    },
+  });
+  expect(
+    fileAction(
+      toolFiles(transcriptEvents([call, end]).activities.get(1n)!).files[0],
+    ),
+  ).toBe("Delete");
+});
+
+it("does not interpret result text matching a file tool name as another file request", () => {
+  const call = event(
+    1,
+    "tool_call",
+    "file",
+    { file_path: "a", content: "one\ntwo\n" },
+    "Write",
+  );
+  const result = event(2, "tool_result", "file", { content: "Write" }, "Write");
+  const file = toolFiles(transcriptEvents([call, result]).activities.get(1n)!)
+    .files[0];
+  expect(file.path).toBe("a");
+  expect(fileMeasure(file)).toBe("+2 content");
 });

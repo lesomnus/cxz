@@ -73,7 +73,18 @@ message Event {
   ResponseMetadata response = 9;
   ToolSummary tool_summary = 10;
 }
-message ToolSummary { string name = 1; string shell = 2; string command = 3; string state = 4; }
+message ToolSummary {
+  string name = 1; string shell = 2; string command = 3; string state = 4;
+  repeated ToolFileSummary files = 5;
+  uint32 omitted_files = 6;
+}
+// Counts describe recorded diff hunks or submitted content/replacement spans.
+// An unknown measure never implies zero changes.
+message ToolFileSummary {
+  string path = 1; string move_path = 2; string action = 3;
+  uint32 added = 4; uint32 removed = 5; uint32 lines = 6;
+  string measure = 7; bool per_match = 8;
+}
 message TranscriptRequest { string session_id = 1; uint64 after_seq = 2; uint64 before_seq = 3; uint32 limit = 4; uint64 snapshot_seq = 5; }
 message TranscriptReply {
   repeated Event events = 1; uint64 snapshot_seq = 2;

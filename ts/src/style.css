@@ -2063,6 +2063,28 @@ button.tree-session:not(:disabled):active > .button-content {
 .tool-shell {
   color: var(--muted);
 }
+.tool-file-list {
+  display: grid;
+  gap: var(--space);
+  min-width: 0;
+  width: 100%;
+}
+.tool-file-row {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+.tool-file-summary {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.tool-file-path {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+.tool-file-measure,
+.tool-file-more {
+  color: var(--muted);
+}
 .tool-command {
   font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
 }

@@ -431,3 +431,112 @@ test("viewport fades cover native tool rows while the scrollbar and detail inter
     });
   }
 });
+
+for (const mode of ["legacy", "summary"])
+  test(`${mode} file changes show per-file actions and deltas without fetching details`, async ({
+    page,
+  }) => {
+    const changes = [
+      {
+        path: "/workspace/ts/src/app.tsx",
+        kind: { type: "update" },
+        diff: "@@ -1,11 +1,25 @@\n" + "-old\n".repeat(11) + "+new\n".repeat(25),
+      },
+      { path: "/workspace/ts/src/send-motion.ts", kind: { type: "add" } },
+      {
+        path: "/workspace/ts/src/style.css",
+        kind: { type: "update" },
+        diff: "@@ -0,0 +1,32 @@\n" + "+style\n".repeat(32),
+      },
+    ];
+    const native = [
+      {
+        seq: "1",
+        kind: "input",
+        text: "Change the UI",
+        runId: "run",
+        timeMs: "1700000000000",
+      },
+      {
+        seq: "2",
+        kind: "tool_call",
+        requestId: "patch",
+        runId: "run",
+        payload: Buffer.from(
+          JSON.stringify({
+            item: { type: "fileChange", status: "inProgress", changes: [] },
+          }),
+        ).toString("base64"),
+      },
+      {
+        seq: "3",
+        kind: "tool_result",
+        requestId: "patch",
+        runId: "run",
+        payload: Buffer.from(
+          JSON.stringify({
+            item: { type: "fileChange", status: "completed", changes },
+          }),
+        ).toString("base64"),
+      },
+      { seq: "4", kind: "assistant", text: "Changes completed", runId: "run" },
+    ];
+    const events =
+      mode === "legacy"
+        ? native
+        : [
+            native[0],
+            {
+              ...native[1],
+              payload: undefined,
+              toolSummary: {
+                name: "Files",
+                state: "completed",
+                files: [
+                  {
+                    path: changes[0].path,
+                    action: "update",
+                    added: 25,
+                    removed: 11,
+                    measure: "diff",
+                  },
+                  { path: changes[1].path, action: "add", measure: "unknown" },
+                  {
+                    path: changes[2].path,
+                    action: "update",
+                    added: 32,
+                    removed: 0,
+                    measure: "diff",
+                  },
+                ],
+              },
+            },
+            native[3],
+          ];
+    let details = 0;
+    await openReplay(page, mode === "summary", { events });
+    await page.route("**/cxz.SessionService/EventDetails", (route) => {
+      details++;
+      return route.fulfill({ json: { events: native.slice(1, 3) } });
+    });
+    const task = page.locator('.tool-activity[data-seq="2"]');
+    await expect(task).toHaveAttribute("data-state", "completed");
+    await expect(task.locator(".tool-file-row")).toHaveText([
+      "✓Edit /workspace/ts/src/app.tsx · +25 -11",
+      "✓Write /workspace/ts/src/send-motion.ts · Δ?",
+      "✓Edit /workspace/ts/src/style.css · +32 -0",
+    ]);
+    for (const row of await task.locator(".tool-file-row").all())
+      await expect(row).toBeVisible();
+    await expect(page.locator(".tool-activity")).toHaveCount(1);
+    expect(details).toBe(0);
+    await task.click();
+    const card = page.getByRole("dialog", { name: "Details" });
+    await expect(card).toBeVisible();
+    await expect(card).toContainText("/workspace/ts/src/send-motion.ts");
+    expect(details).toBe(mode === "summary" ? 1 : 0);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect
+      .poll(() => page.evaluate(() => document.documentElement.scrollWidth))
+      .toBe(390);
+  });
