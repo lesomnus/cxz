@@ -1,6 +1,5 @@
 import { t } from "./i18n";
 import { useLocale } from "./i18n-react";
-import { useEffect, useState } from "react";
 import type { Project } from "../gen/cxz/project_pb";
 import type { Session } from "../gen/cxz/session_pb";
 import { Button } from "./button";
@@ -58,32 +57,51 @@ export function SessionTreeGroup({
   );
 }
 
+// Keep the braille-like arrangement, ordered around its perimeter.
+const activityDots = [
+  [4, 2],
+  [8, 2],
+  [8, 6],
+  [8, 10],
+  [8, 14],
+  [4, 14],
+  [4, 10],
+  [4, 6],
+] as const;
+
 function SessionIndicator({ session }: { session: Session }) {
   useLocale();
-  const [frame, setFrame] = useState(0);
   const state = session.status?.state || "unknown";
   const question = !!session.status?.pending.length;
   const working = ["running", "working", "waiting_input"].includes(state);
-  useEffect(() => {
-    if (!working) return;
-    const timer = setInterval(() => setFrame((v) => (v + 1) % 8), 200);
-    return () => clearInterval(timer);
-  }, [working]);
-  // Match the TUI's question and braille activity indicators, in monochrome.
-  const symbol = question
-    ? "?"
-    : working
-      ? [..."⣟⣯⣷⣾⣽⣻⢿⡿"][frame]
-      : state === "stopped"
-        ? "○"
-        : " ";
   return (
     <span
       className={`session-indicator ${question ? "attention" : ""}`}
       role="img"
       aria-label={question ? t("Awaiting answer") : state}
     >
-      {symbol}
+      {question ? (
+        "?"
+      ) : working ? (
+        <svg width="12" height="16" viewBox="0 0 12 16" aria-hidden="true">
+          {activityDots.map(([cx, cy], index) => (
+            <circle
+              className="session-activity-dot"
+              key={index}
+              cx={cx}
+              cy={cy}
+              r="1.3"
+              style={{
+                animationDelay: `calc(${index} * var(--session-dot-step) * -1)`,
+              }}
+            />
+          ))}
+        </svg>
+      ) : state === "stopped" ? (
+        "○"
+      ) : (
+        " "
+      )}
     </span>
   );
 }

@@ -251,6 +251,53 @@ test("provider dropdowns, quota popovers, aligned headings and bounded press/sha
   await expect(send).toHaveCSS("background-color", "rgb(54, 54, 54)");
   await page.mouse.move(1000, 20);
   await expect(send).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await page.getByLabel("Pace", { exact: true }).selectOption("1200");
+  await send.click();
+  const activity = card.locator(".session-indicator svg");
+  await expect(activity).toBeVisible();
+  const activityBox = (await activity.boundingBox())!;
+  const activeHeading = (await heading.boundingBox())!;
+  expect(activityBox.y + activityBox.height / 2).toBeCloseTo(
+    activeHeading.y + activeHeading.height / 2,
+    1,
+  );
+  const gaps = await activity.evaluate((svg) => {
+    const centers = Array.from(svg.querySelectorAll("circle"), (dot) => {
+      const box = dot.getBoundingClientRect();
+      return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    });
+    return {
+      horizontal: centers[1].x - centers[0].x,
+      vertical: centers[2].y - centers[1].y,
+    };
+  });
+  expect(gaps.horizontal).toBeCloseTo(gaps.vertical, 1);
+  const dotScale = await activity.evaluate((svg) => {
+    const dot = svg.querySelector("circle")!;
+    const animation = dot.getAnimations()[0];
+    animation.pause();
+    const duration = Number(animation.effect!.getComputedTiming().duration);
+    animation.currentTime = 0;
+    const hidden = new DOMMatrix(getComputedStyle(dot).transform).a;
+    animation.currentTime = duration / 16;
+    const between = new DOMMatrix(getComputedStyle(dot).transform).a;
+    animation.currentTime = duration / 8;
+    const shown = new DOMMatrix(getComputedStyle(dot).transform).a;
+    // Release the manually controlled animation before testing CSS motion preferences.
+    animation.cancel();
+    return { hidden, between, shown };
+  });
+  expect(dotScale.hidden).toBe(0);
+  expect(dotScale.between).toBeGreaterThan(0);
+  expect(dotScale.between).toBeLessThan(1);
+  expect(dotScale.shown).toBe(1);
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await expect
+    .poll(() =>
+      activity.evaluate((svg) => svg.getAnimations({ subtree: true }).length),
+    )
+    .toBe(0);
+  await page.emulateMedia({ reducedMotion: "no-preference" });
   await page.getByLabel("Scenario", { exact: true }).selectOption("session-3");
   await expect(
     page.getByText("History item 2100", { exact: false }),

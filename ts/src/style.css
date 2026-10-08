@@ -1971,10 +1971,32 @@ button.tree-session:not(:disabled):active > .button-content {
   max-width: 100%;
 }
 .session-indicator {
+  --session-dot-step: 200ms;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 12px;
+  height: 20px;
   flex: 0 0 12px;
   align-self: center;
   font: 14px/20px monospace;
+}
+.session-activity-dot {
+  fill: currentColor;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: session-dot-scale calc(8 * var(--session-dot-step)) ease-in-out
+    infinite;
+}
+@keyframes session-dot-scale {
+  0%,
+  100% {
+    transform: scale(0);
+  }
+  12.5%,
+  87.5% {
+    transform: scale(1);
+  }
 }
 .session-indicator.attention {
   animation: attention-blink 2s step-end infinite;
@@ -2285,6 +2307,12 @@ button.tree-session:not(:disabled):active > .button-content {
   }
   .session-indicator.attention {
     animation: none;
+  }
+  .session-activity-dot {
+    animation: none;
+  }
+  .session-activity-dot:first-child {
+    transform: scale(0);
   }
 }
 .language-error {
