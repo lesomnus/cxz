@@ -75,3 +75,42 @@ describe("final response summaries", () => {
     ).toBeUndefined();
   });
 });
+
+it("reads completion snapshots attached to historical responses", () => {
+  const answer = event(10n, "assistant");
+  answer.response = create(ResponseMetadataSchema, {
+    phase: "final_answer",
+    completionJson: new TextEncoder().encode(
+      JSON.stringify({
+        response_seq: "10",
+        duration_ms: 800,
+        metrics: { input_tokens: 120 },
+      }),
+    ),
+  });
+  expect(responseCompletions([answer]).get("10")).toMatchObject({
+    durationMs: 800,
+    metrics: { input_tokens: 120 },
+  });
+  answer.response.phase = "commentary";
+  expect(responseCompletions([answer]).size).toBe(0);
+  answer.response.phase = "final_answer";
+  answer.seq = 11n;
+  expect(responseCompletions([answer]).size).toBe(0);
+});
+
+it("does not reuse a historical final answer for a later empty legacy turn", () => {
+  const answer = event(10n, "assistant");
+  answer.response = create(ResponseMetadataSchema, {
+    completionJson: new TextEncoder().encode(
+      JSON.stringify({
+        response_seq: "10",
+        duration_ms: 800,
+        metrics: { input_tokens: 120 },
+      }),
+    ),
+  });
+  const end = event(12n, "turn_end", "completed");
+  end.payload = new TextEncoder().encode(JSON.stringify({ duration_ms: 1 }));
+  expect(responseCompletions([answer, end]).get("10")?.durationMs).toBe(800);
+});

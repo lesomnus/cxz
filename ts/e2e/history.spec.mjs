@@ -43,7 +43,7 @@ function replayEvents() {
       }));
   }
   // A protocol-heavy journal: most RPC pages add no visible content.
-  return Array.from({ length: 1900 }, (_, index) => {
+  return Array.from({ length: 10000 }, (_, index) => {
     const seq = index + 1;
     const kind =
       seq % 200 === 0 ? "input" : seq % 200 === 1 ? "assistant" : "raw";
@@ -56,7 +56,7 @@ function replayEvents() {
     };
   });
 }
-async function openReplay(page) {
+async function openReplay(page, summary = false) {
   const events = replayEvents();
   const latest = Number(events.at(-1).seq);
   // Serve the current build even when an already-running fixture embeds an old one.
@@ -80,6 +80,40 @@ async function openReplay(page) {
     }[extension];
     await route.fulfill({ body: readFileSync(file), contentType });
   });
+  if (!summary)
+    await page.route("**/cxz.SessionService/Transcript", (route) =>
+      route.fulfill({
+        status: 501,
+        json: { code: "unimplemented", message: "legacy project runtime" },
+      }),
+    );
+  else if (!process.env.CXZ_REPLAY_EVENTS)
+    await page.route("**/cxz.SessionService/Transcript", async (route) => {
+      const q = route.request().postDataJSON();
+      const all = events.filter((e) => e.kind !== "raw");
+      const eligible = all.filter(
+        (e) =>
+          (!q.beforeSeq || Number(e.seq) < Number(q.beforeSeq)) &&
+          (!q.afterSeq || Number(e.seq) > Number(q.afterSeq)),
+      );
+      const limit = q.limit || 256;
+      const rows = q.afterSeq
+        ? eligible.slice(0, limit)
+        : eligible.slice(-limit);
+      const first = Number(rows[0]?.seq ?? 0),
+        last = Number(rows.at(-1)?.seq ?? 0);
+      await route.fulfill({
+        json: {
+          events: rows,
+          snapshotSeq: String(latest),
+          hasOlder: all.some((e) => Number(e.seq) < first),
+          hasNewer: all.some((e) => Number(e.seq) > last),
+          precedingInput: all
+            .filter((e) => e.kind === "input" && Number(e.seq) < first)
+            .at(-1),
+        },
+      });
+    });
   await page.route("**/cxz.SessionService/History", async (route) => {
     const after = Number(route.request().postDataJSON().afterSeq ?? 0);
     await route.fulfill({
@@ -136,76 +170,113 @@ test.use({
   viewport: { width: 1440, height: 1300 },
   isMobile: false,
   hasTouch: false,
+  deviceScaleFactor: 1,
 });
-test("sparse recorded pages fill a tall pane and keep scrolling usable through resize", async ({
-  page,
-}) => {
-  const errors = [];
-  page.on("pageerror", (e) => errors.push(e.message));
-  const latest = await openReplay(page);
-  await expect.poll(async () => (await geometry(page)).max).toBeGreaterThan(0);
-  await expect
-    .poll(async () => {
-      const g = await geometry(page);
-      return g.max - g.top;
-    })
-    .toBeLessThan(1);
-  await expect
-    .poll(async () =>
-      Number(
-        await page.locator(".virtual-messages").getAttribute("data-first"),
-      ),
-    )
-    .toBeLessThan(latest - 256);
-  await page.locator(".transcript").hover();
-  await page.mouse.wheel(0, -240);
-  await expect
-    .poll(async () => {
-      const g = await geometry(page);
-      return g.max - g.top;
-    })
-    .toBeGreaterThan(100);
-  // Wait for near-edge prefetch and row measurements to settle.
-  await page.waitForTimeout(400);
-  const anchor = await readingAnchor(page);
-  await page.setViewportSize({ width: 1100, height: 750 });
-  await expect
-    .poll(async () =>
-      page
-        .locator(`[data-row="${anchor.id}"]`)
-        .evaluate(
-          (el) =>
-            el.getBoundingClientRect().top -
-            el.closest(".transcript").getBoundingClientRect().top,
+for (const mode of ["legacy", "summary"])
+  test(`${mode} recorded pages fill a tall pane and keep scrolling usable through resize`, async ({
+    page,
+  }) => {
+    const errors = [];
+    page.on("pageerror", (e) => errors.push(e.message));
+    const calls = { history: 0, transcript: 0, details: 0 };
+    let latest = Infinity;
+    page.on("request", (request) => {
+      if (
+        request.url().endsWith("/History") &&
+        Number(request.postDataJSON().afterSeq ?? 0) < latest
+      )
+        calls.history++;
+      if (request.url().endsWith("/Transcript")) calls.transcript++;
+      if (request.url().endsWith("/EventDetails")) calls.details++;
+    });
+    latest = await openReplay(page, mode === "summary");
+    await expect
+      .poll(async () => (await geometry(page)).max)
+      .toBeGreaterThan(0);
+    await expect
+      .poll(async () => {
+        const g = await geometry(page);
+        return g.max - g.top;
+      })
+      .toBeLessThan(1);
+    await expect
+      .poll(async () =>
+        Number(
+          await page.locator(".virtual-messages").getAttribute("data-first"),
         ),
-    )
-    .toBeCloseTo(anchor.offset, 0);
-  const g = await geometry(page);
-  expect(g.top).toBeGreaterThanOrEqual(0);
-  expect(g.top).toBeLessThanOrEqual(g.max);
-  await page.locator(".transcript").hover();
-  const thumb = page.locator(".scroll-thumb");
-  const bounds = await thumb.boundingBox();
-  const area = await page.locator(".transcript-area").boundingBox();
-  await page.mouse.move(
-    bounds.x + bounds.width / 2,
-    bounds.y + bounds.height / 2,
-  );
-  await page.mouse.down();
-  await page.mouse.move(bounds.x + bounds.width / 2, area.y - 80);
-  await page.waitForTimeout(250);
-  const pulled = await thumb.boundingBox();
-  expect(pulled.y).toBeGreaterThanOrEqual(area.y);
-  expect(pulled.y + pulled.height).toBeLessThanOrEqual(area.y + area.height);
-  await page.mouse.move(bounds.x + bounds.width / 2, area.y + 100);
-  await page.mouse.up();
-  await page.waitForTimeout(400);
-  const read = await readingAnchor(page);
-  await page.waitForTimeout(400);
-  expect((await readingAnchor(page)).id).toBe(read.id);
-  expect(
-    Number(await page.locator(".virtual-messages").getAttribute("data-cached")),
-  ).toBeLessThanOrEqual(512);
-  expect(await page.locator(".transcript [data-row]").count()).toBeLessThan(60);
-  expect(errors).toEqual([]);
-});
+      )
+      .toBeLessThan(latest - 256);
+    await page.locator(".transcript").hover();
+    await page.mouse.wheel(0, -240);
+    await expect
+      .poll(async () => {
+        const g = await geometry(page);
+        return g.max - g.top;
+      })
+      .toBeGreaterThan(100);
+    // Wait for near-edge prefetch and row measurements to settle.
+    await page.waitForTimeout(400);
+    const anchor = await readingAnchor(page);
+    await page.setViewportSize({ width: 1100, height: 750 });
+    await expect
+      .poll(async () =>
+        page
+          .locator(`[data-row="${anchor.id}"]`)
+          .evaluate(
+            (el) =>
+              el.getBoundingClientRect().top -
+              el.closest(".transcript").getBoundingClientRect().top,
+          ),
+      )
+      .toBeCloseTo(anchor.offset, 0);
+    const g = await geometry(page);
+    expect(g.top).toBeGreaterThanOrEqual(0);
+    expect(g.top).toBeLessThanOrEqual(g.max);
+    await page.locator(".transcript").hover();
+    const thumb = page.locator(".scroll-thumb");
+    const bounds = await thumb.boundingBox();
+    const area = await page.locator(".transcript-area").boundingBox();
+    await page.mouse.move(
+      bounds.x + bounds.width / 2,
+      bounds.y + bounds.height / 2,
+    );
+    await page.mouse.down();
+    await page.mouse.move(bounds.x + bounds.width / 2, area.y - 80);
+    await page.waitForTimeout(250);
+    const pulled = await thumb.boundingBox();
+    expect(pulled.y).toBeGreaterThanOrEqual(area.y);
+    expect(pulled.y + pulled.height).toBeLessThanOrEqual(area.y + area.height);
+    await page.mouse.move(bounds.x + bounds.width / 2, area.y + 100);
+    await page.mouse.up();
+    await page.waitForTimeout(400);
+    const read = await readingAnchor(page);
+    await page.waitForTimeout(400);
+    expect((await readingAnchor(page)).id).toBe(read.id);
+    expect(
+      Number(
+        await page.locator(".virtual-messages").getAttribute("data-cached"),
+      ),
+    ).toBeLessThanOrEqual(2048);
+    expect(await page.locator(".transcript [data-row]").count()).toBeLessThan(
+      60,
+    );
+    expect(errors).toEqual([]);
+    if (process.env.CXZ_REPLAY_EVENTS)
+      console.log(
+        `${mode} replay RPCs: History=${calls.history}, Transcript=${calls.transcript}, EventDetails=${calls.details}`,
+      );
+    if (mode === "summary") {
+      expect(calls.history).toBe(0);
+      expect(calls.transcript).toBeLessThan(10);
+      expect(calls.details).toBe(0);
+      const task = page.locator(".tool-activity").first();
+      if (await task.count()) {
+        await task.click();
+        await expect.poll(() => calls.details).toBe(1);
+        await expect(
+          page.locator(".card-body").getByText("Loading…"),
+        ).toHaveCount(0);
+        await expect(page.locator(".card-body pre").first()).toBeVisible();
+      }
+    }
+  });

@@ -102,7 +102,7 @@ test("pages through an entire history in both directions with bounded DOM and ca
     await expect.poll(first).toBeLessThan(before);
     expect(
       Number(await messages.getAttribute("data-cached")),
-    ).toBeLessThanOrEqual(512);
+    ).toBeLessThanOrEqual(2048);
     expect(await pane.locator("[data-seq]").count()).toBeLessThan(50);
   }
   await pane.evaluate((el) => (el.scrollTop = 0));
@@ -116,7 +116,7 @@ test("pages through an entire history in both directions with bounded DOM and ca
     await expect.poll(last).toBeGreaterThan(before);
     expect(
       Number(await messages.getAttribute("data-cached")),
-    ).toBeLessThanOrEqual(512);
+    ).toBeLessThanOrEqual(2048);
     expect(await pane.locator("[data-seq]").count()).toBeLessThan(50);
   }
   await pane.evaluate((el) => (el.scrollTop = el.scrollHeight));

@@ -213,6 +213,10 @@ test("only the transcript's empty side margins dismiss the floating card", async
 }) => {
   await page.setViewportSize({ width: 1440, height: 720 });
   const input = await open(page);
+  await page.getByLabel("Scenario", { exact: true }).selectOption("session-3");
+  await expect(
+    page.getByText("History item 2100", { exact: false }),
+  ).toBeVisible();
   await paste(page, "first\nsecond\nthird\nfourth");
   const draft = await input.inputValue();
   const preview = page.getByRole("dialog", { name: "Paste source" });
@@ -220,7 +224,7 @@ test("only the transcript's empty side margins dismiss the floating card", async
   await expect(preview).toHaveCSS("opacity", "1");
   await preview.locator("pre").click();
   await expect(preview).toBeVisible();
-  await page.getByRole("heading", { name: "Current status" }).click();
+  await page.locator(".conversation > header strong").click();
   await expect(preview).toBeVisible();
   // The scrollbar sits in a side margin but remains an interactive control.
   const thumb = page.getByRole("scrollbar", { name: "Conversation scroll" });

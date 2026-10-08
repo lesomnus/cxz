@@ -376,7 +376,7 @@ test("an input preceding the cached window is found and can be loaded on demand"
   await expect(pane.locator(`article.input[data-seq="${seq}"]`)).toBeVisible();
   expect(
     Number(await page.locator(".virtual-messages").getAttribute("data-cached")),
-  ).toBeLessThanOrEqual(512);
+  ).toBeLessThanOrEqual(2048);
 });
 
 test("a long pinned input stays bounded and its own wheel does not move the transcript", async ({

@@ -69,6 +69,21 @@ export function transcriptEvents(events: SessionEvent[]) {
 }
 
 export function toolState(activity: ToolActivity, agent: string) {
+  const summarized =
+    activity.result?.toolSummary ??
+    activity.call?.toolSummary ??
+    activity.output[0]?.toolSummary;
+  if (
+    activity.result?.toolSummary &&
+    ["pending", "working", "completed", "failed"].includes(
+      activity.result.toolSummary.state,
+    )
+  )
+    return activity.result.toolSummary.state as
+      | "pending"
+      | "working"
+      | "completed"
+      | "failed";
   if (activity.result) {
     const p = payload(activity.result);
     const state = p.item?.status;
@@ -90,6 +105,8 @@ export function toolState(activity: ToolActivity, agent: string) {
     if (!decision.resolution) return "pending";
     return decision.resolution.text === "allowed" ? "working" : "failed";
   }
+  if (summarized && ["completed", "failed"].includes(summarized.state))
+    return summarized.state as "completed" | "failed";
   if (
     activity.output.length ||
     (agent === "codex" &&
@@ -97,7 +114,7 @@ export function toolState(activity: ToolActivity, agent: string) {
       payload(activity.call).item?.status === "inProgress")
   )
     return "working";
-  return "pending";
+  return summarized?.state === "working" ? "working" : "pending";
 }
 
 // Parse shell quoting for display only. Do not evaluate variables, substitutions
@@ -155,8 +172,9 @@ export function shellCommand(command: string) {
 }
 
 export function toolLabel(activity: ToolActivity, agent: string) {
-  const event = activity.call ?? activity.result;
+  const event = activity.call ?? activity.result ?? activity.output[0];
   if (!event) return { name: "Tool output", shell: "", command: "" };
+  if (event.toolSummary) return event.toolSummary;
   const p = payload(event);
   if (
     (agent === "codex" && p.item?.type === "commandExecution") ||

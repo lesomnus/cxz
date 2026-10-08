@@ -289,3 +289,30 @@ describe("shell display", () => {
     }
   });
 });
+
+it("preserves a historical task anchor and applies native live results to it", () => {
+  const summary = create(SessionEventSchema, {
+    seq: 1n,
+    kind: "tool_call",
+    requestId: "exec-1",
+    runId: "run",
+    toolSummary: {
+      name: "Bash",
+      shell: "zsh",
+      command: "git status",
+      state: "working",
+    },
+  });
+  const projected = transcriptEvents([summary]);
+  expect(toolState(projected.activities.get(1n)!, "codex")).toBe("working");
+  expect(toolLabel(projected.activities.get(1n)!, "codex").command).toBe(
+    "git status",
+  );
+  const updated = transcriptEvents([summary, result]);
+  expect(updated.events.map((e) => e.seq)).toEqual([1n]);
+  expect(toolState(updated.activities.get(1n)!, "codex")).toBe("completed");
+  summary.toolSummary!.state = "failed";
+  expect(
+    toolState(transcriptEvents([summary]).activities.get(1n)!, "codex"),
+  ).toBe("failed");
+});
