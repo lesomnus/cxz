@@ -12,7 +12,10 @@ The conversation renders messages, tool activity and actionable notices.
 Protocol `raw` records, quota/model polling and internal control acknowledgements
 remain in the journal but do not appear as conversation rows. Usage snapshots
 still drive composer indicators, and turn-completion events still supply response
-metrics; diagnostics and errors remain visible.
+metrics. A successful completion represented by a loaded final response is shown
+in that response's footer rather than a separate `turn_end completed` row.
+Failures, interruptions and completion notices without a matching loaded response
+remain visible.
 
 Tool executions stay at their original transcript position. The call, associated
 approval, streamed output and result are grouped by run and native execution ID

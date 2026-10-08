@@ -1,5 +1,6 @@
 import type { SessionEvent } from "../gen/cxz/session_pb";
 import { isTranscriptEvent, payload } from "./journal";
+import { responseCompletionIndex } from "./response-completion";
 
 export type ToolActivity = {
   call?: SessionEvent;
@@ -14,6 +15,7 @@ const toolKinds = new Set(["tool_call", "tool_output", "tool_result"]);
 // Group by native execution identity, never by command text: concurrent tools
 // can run the same command, and a new run can reuse an old request ID.
 export function transcriptEvents(events: SessionEvent[]) {
+  const { completions, representedEnds } = responseCompletionIndex(events);
   const groups = new Map<string, ToolActivity>();
   const resolutions = new Map<string, SessionEvent>();
   for (const e of events) {
@@ -47,7 +49,12 @@ export function transcriptEvents(events: SessionEvent[]) {
   }
   const activities = new Map<bigint, ToolActivity>();
   const rows = events.filter((e) => {
-    if (!isTranscriptEvent(e) || pairedApprovals.has(e)) return false;
+    if (
+      !isTranscriptEvent(e) ||
+      pairedApprovals.has(e) ||
+      representedEnds.has(e.seq)
+    )
+      return false;
     const group =
       toolKinds.has(e.kind) && e.requestId ? groups.get(key(e)) : undefined;
     if (!group) return true;
@@ -58,7 +65,7 @@ export function transcriptEvents(events: SessionEvent[]) {
     activities.set(e.seq, group);
     return true;
   });
-  return { events: rows, activities };
+  return { events: rows, activities, completions };
 }
 
 export function toolState(activity: ToolActivity, agent: string) {

@@ -24,10 +24,7 @@ import { UsageInfo } from "./usage-info";
 import { Button } from "./button";
 import { AgentBrand } from "./agent-brand";
 import { responseInfo } from "./response-info";
-import {
-  responseCompletions,
-  type ResponseCompletion,
-} from "./response-completion";
+import type { ResponseCompletion } from "./response-completion";
 import { ResponseFooter } from "./response-footer";
 import { InputMessage } from "./input-message";
 import { ComposerEditor } from "./composer-editor";
@@ -798,7 +795,7 @@ function ConversationContent({
   }
   const transcript = useMemo(() => transcriptEvents(events), [events]);
   const s = current.data;
-  const completions = useMemo(() => responseCompletions(events), [events]);
+  const completions = transcript.completions;
   const combined = useMemo(
     () =>
       [

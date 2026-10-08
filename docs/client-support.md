@@ -40,7 +40,7 @@ explained in the mobile plan; it remains Not implemented in the web column.
 
 | ID | CLI | TUI | Web |
 |---|---|---|---|
-| CHAT-01 | Partial: `session events` raw stream and `session get`, no conversation renderer | Supported: streamed transcript and state | Supported: recorded/live messages, tool-event details and session state; internal raw/polling/control records omitted from transcript without losing metadata or replay; [web client](web.md) |
+| CHAT-01 | Partial: `session events` raw stream and `session get`, no conversation renderer | Supported: streamed transcript and state | Supported: recorded/live messages, tool-event details and session state; internal raw/polling/control records omitted from transcript without losing metadata or replay; successful completion is folded into the matching final response footer, with failure/interruption and unmatched notices retained; [web client](web.md) |
 | CHAT-02 | N/A: raw command output, no Markdown conversation UI | Supported: Markdown and copy controls | Not implemented |
 | CHAT-03 | Partial: raw `session events`; no input/output inspection UI | Supported: `/view`, `/details`, tool preview tabs | Partial: grouped tool status rows with shell/script preview and input/output/result/approval records in the shared floating card; file edits retain raw details rather than a normalized diff preview; [web client](web.md) |
 | CHAT-04 | Partial: `session events ID AFTER_SEQ`; no viewport navigation | Supported: history window and navigation controls | Not implemented |

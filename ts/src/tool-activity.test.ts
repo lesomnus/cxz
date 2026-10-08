@@ -1,6 +1,9 @@
 import { create } from "@bufbuild/protobuf";
 import { describe, expect, it } from "vitest";
-import { SessionEventSchema } from "../gen/cxz/session_pb";
+import {
+  ResponseMetadataSchema,
+  SessionEventSchema,
+} from "../gen/cxz/session_pb";
 import { pendingAfter } from "./journal";
 import {
   shellCommand,
@@ -59,6 +62,66 @@ const result = event(
 );
 
 describe("tool transcript projection", () => {
+  it("shows a completed response once while retaining its completion metrics", () => {
+    const response = event(1, "assistant", "", {}, "Done");
+    const end = event(2, "turn_end", "", {}, "completed");
+    end.response = create(ResponseMetadataSchema, {
+      completionJson: new TextEncoder().encode(
+        JSON.stringify({
+          response_seq: "1",
+          duration_ms: 500,
+          metrics: { output_tokens: 20 },
+        }),
+      ),
+    });
+    const history = [response, end];
+    const projected = transcriptEvents(history);
+    expect(projected.events).toEqual([response]);
+    expect(projected.completions.get("1")).toMatchObject({
+      durationMs: 500,
+      metrics: { output_tokens: 20 },
+    });
+    expect(history).toEqual([response, end]);
+    // A history window lacking the referenced response must keep the notice.
+    expect(transcriptEvents([end]).events).toEqual([end]);
+    end.runId = "other-run";
+    expect(transcriptEvents(history).events).toEqual(history);
+  });
+
+  it("keeps failed, interrupted and unmatched completions even after an earlier completed turn in the same run", () => {
+    const response = event(1, "assistant", "", {}, "Done");
+    const completed = event(2, "turn_end", "", {}, "completed");
+    const failed = event(3, "turn_end", "", {}, "failed");
+    const interrupted = event(4, "turn_end", "", {}, "interrupted");
+    const unmatched = event(5, "turn_end", "", {}, "completed");
+    const projected = transcriptEvents([
+      response,
+      completed,
+      failed,
+      interrupted,
+      unmatched,
+    ]);
+    expect(projected.events).toEqual([
+      response,
+      failed,
+      interrupted,
+      unmatched,
+    ]);
+    expect(projected.completions.has("1")).toBe(true);
+  });
+
+  it("does not hide a completion for commentary or a malformed response snapshot", () => {
+    const response = event(1, "assistant", "", {}, "Working");
+    response.response = create(ResponseMetadataSchema, { phase: "commentary" });
+    const end = event(2, "turn_end", "", {}, "completed");
+    expect(transcriptEvents([response, end]).events).toEqual([response, end]);
+    response.response.phase = "final_answer";
+    end.response = create(ResponseMetadataSchema, {
+      completionJson: new TextEncoder().encode("invalid"),
+    });
+    expect(transcriptEvents([response, end]).events).toEqual([response, end]);
+  });
+
   it("updates one original row from running through approval to completed, retaining the native records", () => {
     const started = transcriptEvents([call]);
     expect(toolState(started.activities.get(1n)!, "codex")).toBe("working");
