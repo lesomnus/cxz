@@ -18,7 +18,7 @@ test("provider dropdowns, quota popovers, aligned headings and bounded press/sha
     "Project checklist",
   );
   await expect(page.locator(".session-description").first()).toHaveText(
-    "session-1sandbox-claude",
+    "session-1",
   );
   const card = page.locator(".tree-session").first();
   const title = card.locator(".session-title");
@@ -29,16 +29,23 @@ test("provider dropdowns, quota popovers, aligned headings and bounded press/sha
   const headingBefore = (await heading.boundingBox())!;
   const logoBefore = (await logo.boundingBox())!;
   const descriptionBefore = (await description.boundingBox())!;
+  const labelBefore = (await card.locator(".session-label").boundingBox())!;
   const indicator = card.locator(".session-indicator");
   const indicatorBefore = (await indicator.boundingBox())!;
   expect(logoBefore.x + logoBefore.width).toBeLessThan(titleBefore.x);
+  expect(descriptionBefore.x).toBe(titleBefore.x);
+  expect(descriptionBefore.y).toBeGreaterThan(
+    titleBefore.y + titleBefore.height,
+  );
+  expect(logoBefore.x).toBe(indicatorBefore.x + indicatorBefore.width + 6);
+  expect(indicatorBefore.y).toBe(headingBefore.y + 1);
   expect(logoBefore.width).toBe(12);
   expect(logoBefore.height).toBe(12);
   expect(
     logoBefore.y +
       logoBefore.height / 2 -
-      titleBefore.y -
-      titleBefore.height / 2,
+      labelBefore.y -
+      labelBefore.height / 2,
   ).toBeCloseTo(1, 1);
   await card.hover();
   await page.mouse.down();

@@ -43,18 +43,17 @@ export function SessionTreeGroup({
               onClick={() => select(s.runtimeId)}
             >
               <SessionIndicator session={s} />
-              <span className="session-label">
-                <span className="session-heading">
-                  <AgentBrand agent={s.agent} />
+              <span className="session-heading">
+                <AgentBrand agent={s.agent} />
+                <span className="session-label">
                   <span className="session-title">
                     {s.name || s.alias || s.runtimeId}
                   </span>
-                </span>
-                <span className="session-description">
-                  <span className="session-alias">
-                    {s.alias || s.runtimeId}
+                  <span className="session-description">
+                    <span className="session-alias">
+                      {s.alias || s.runtimeId}
+                    </span>
                   </span>
-                  {s.model && <span className="session-model">{s.model}</span>}
                 </span>
               </span>
             </Button>

@@ -81,6 +81,8 @@ test("panel fades track hidden edges and scroll intensity without covering the h
     el.scrollTop = 24;
   });
   await expect.poll(() => depth(top)).toBeCloseTo(24, 0);
+  const thumb = panel.getByRole("scrollbar", { name: "Panel scroll" });
+  await expect(thumb).toHaveAttribute("aria-valuenow", "24");
   const layers = await panel.evaluate((el) => {
     const region = el.querySelector<HTMLElement>(".panel-scroll-region")!;
     const thumb = region.querySelector<HTMLElement>(".panel-scroll-thumb")!;
@@ -107,7 +109,6 @@ test("panel fades track hidden edges and scroll intensity without covering the h
   expect(layers.belowHeading).toBe(true);
   expect(layers.background).toContain(layers.panel);
 
-  const thumb = panel.getByRole("scrollbar", { name: "Panel scroll" });
   await thumb.focus();
   await thumb.press("End");
   await expect(bottom).toHaveCSS("opacity", "0");

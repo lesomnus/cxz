@@ -1848,8 +1848,7 @@ summary:hover {
   align-items: center;
   gap: 8px;
   min-width: 0;
-  width: fit-content;
-  max-width: 100%;
+  flex: 1;
 }
 .session-heading .agent-brand,
 .session-heading .session-title {
@@ -1878,8 +1877,7 @@ button.tree-session:not(:disabled):active > .button-content {
   }
 }
 .session-title,
-.session-alias,
-.session-model {
+.session-alias {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1897,7 +1895,7 @@ button.tree-session:not(:disabled):active > .button-content {
 .session-alias {
   font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
   flex-shrink: 0;
-  max-width: 55%;
+  max-width: 100%;
 }
 .session-indicator {
   width: 12px;
