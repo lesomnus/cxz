@@ -53,6 +53,7 @@ import { type ComposerPaste } from "./composer-pastes";
 import { composerPrompt } from "./composer-code";
 import { SessionTreeGroup } from "./session-tree";
 import { PanelScroll } from "./panel-scroll";
+import { useScrollbars } from "./scrollbars";
 import { useResourceInventory } from "./resource-inventory";
 import { key } from "@lesomnus/payday/store";
 import { transcriptEvents, type ToolActivity } from "./tool-activity";
@@ -181,6 +182,7 @@ export function Workspace({
   exitLabel?: string;
 }) {
   useLocale();
+  useScrollbars();
   const [resource, setResource] = useState<
     "sessions" | "projects" | "settings"
   >("sessions");

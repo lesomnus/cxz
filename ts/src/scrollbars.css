@@ -1,0 +1,150 @@
+/* Stable gutters keep editor text/caret geometry unchanged on hover. The
+   transparent track reserves space; only its centered handle is painted. */
+*::-webkit-scrollbar {
+  width: var(--native-scrollbar-size);
+  height: var(--native-scrollbar-size);
+  background: transparent;
+}
+*::-webkit-scrollbar-track,
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+*::-webkit-scrollbar-button {
+  display: none;
+}
+*::-webkit-scrollbar-thumb {
+  background: transparent;
+  background-clip: padding-box;
+  border: calc((var(--native-scrollbar-size) - var(--scroll-handle-size)) / 2)
+    solid transparent;
+  border-radius: var(--native-scrollbar-size);
+}
+*:hover::-webkit-scrollbar-thumb,
+*:focus-visible::-webkit-scrollbar-thumb,
+*:focus-within::-webkit-scrollbar-thumb {
+  background-color: var(--scroll-handle-hover-color);
+}
+*[data-scrollbar-near-y="true"]::-webkit-scrollbar-thumb:vertical {
+  border-inline-width: calc(
+    (
+        var(--native-scrollbar-size) - var(--scroll-handle-size) *
+          var(--scroll-handle-expansion)
+      ) /
+      2
+  );
+  background-color: var(--scroll-handle-color);
+}
+*[data-scrollbar-near-x="true"]::-webkit-scrollbar-thumb:horizontal {
+  border-block-width: calc(
+    (
+        var(--native-scrollbar-size) - var(--scroll-handle-size) *
+          var(--scroll-handle-expansion)
+      ) /
+      2
+  );
+  background-color: var(--scroll-handle-color);
+}
+*::-webkit-scrollbar-thumb:hover,
+*::-webkit-scrollbar-thumb:active {
+  border-width: calc(
+    (
+        var(--native-scrollbar-size) - var(--scroll-handle-size) *
+          var(--scroll-handle-expansion)
+      ) /
+      2
+  );
+  background-color: var(--scroll-handle-color);
+}
+/* Firefox exposes native scrollbar colors/width rather than WebKit pseudos. */
+@supports (-moz-appearance: none) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+  }
+  *:hover,
+  *:focus-visible,
+  *:focus-within {
+    scrollbar-color: var(--scroll-handle-hover-color) transparent;
+  }
+  [data-scrollbar-near-x="true"],
+  [data-scrollbar-near-y="true"] {
+    scrollbar-color: var(--scroll-handle-color) transparent;
+  }
+}
+
+/* Monaco and xterm own their scroll mechanics; use the same visual handle. */
+:is(.monaco-scrollable-element, .xterm-scrollable-element) > .scrollbar,
+:is(.monaco-scrollable-element, .xterm-scrollable-element)
+  > .scrollbar
+  > .slider {
+  background: transparent !important;
+}
+:is(.monaco-scrollable-element, .xterm-scrollable-element) > .shadow {
+  display: none !important;
+}
+:is(.monaco-scrollable-element, .xterm-scrollable-element)
+  > .scrollbar
+  > .slider::before {
+  content: "";
+  position: absolute;
+  background: var(--scroll-handle-color);
+  border-radius: var(--scroll-handle-radius);
+  opacity: 0;
+  transition:
+    opacity 160ms,
+    transform 160ms;
+  pointer-events: none;
+}
+:is(.monaco-scrollable-element, .xterm-scrollable-element)
+  > .scrollbar.vertical
+  > .slider::before {
+  top: 0;
+  bottom: 0;
+  left: calc(50% - var(--scroll-handle-size) / 2);
+  width: var(--scroll-handle-size);
+  transform: scaleX(1);
+}
+:is(.monaco-scrollable-element, .xterm-scrollable-element)
+  > .scrollbar.horizontal
+  > .slider::before {
+  left: 0;
+  right: 0;
+  top: calc(50% - var(--scroll-handle-size) / 2);
+  height: var(--scroll-handle-size);
+  transform: scaleY(1);
+}
+:is(.monaco-editor, .xterm):hover .slider::before,
+:is(.monaco-editor, .xterm):focus-within .slider::before {
+  opacity: 0.7;
+}
+:is(.monaco-editor, .xterm)[data-scrollbar-near-y="true"]
+  .scrollbar.vertical
+  > .slider::before,
+:is(.monaco-scrollable-element, .xterm-scrollable-element)
+  > .scrollbar.vertical:hover
+  > .slider::before,
+:is(.monaco-scrollable-element, .xterm-scrollable-element)
+  > .scrollbar.vertical
+  > .slider.active::before {
+  transform: scaleX(var(--scroll-handle-expansion));
+  opacity: 1;
+}
+:is(.monaco-editor, .xterm)[data-scrollbar-near-x="true"]
+  .scrollbar.horizontal
+  > .slider::before,
+:is(.monaco-scrollable-element, .xterm-scrollable-element)
+  > .scrollbar.horizontal:hover
+  > .slider::before,
+:is(.monaco-scrollable-element, .xterm-scrollable-element)
+  > .scrollbar.horizontal
+  > .slider.active::before {
+  transform: scaleY(var(--scroll-handle-expansion));
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  :is(.monaco-scrollable-element, .xterm-scrollable-element)
+    > .scrollbar
+    > .slider::before {
+    transition: none;
+  }
+}

@@ -1,4 +1,5 @@
 @import "./theme.css";
+@import "./scrollbars.css";
 
 :root {
   color-scheme: dark;
@@ -23,6 +24,16 @@
   --resource-panel-width: 180px;
   --panel-inset: 12px;
   --scroll-handle-color: var(--shade-122);
+  --scroll-handle-hover-color: color-mix(
+    in srgb,
+    var(--scroll-handle-color) 70%,
+    transparent
+  );
+  --scroll-handle-size: 4px;
+  --scroll-handle-radius: 3px;
+  --scroll-handle-expansion: 2;
+  --native-scrollbar-size: 12px;
+  --scroll-near-distance: 32px;
   --panel-fade-depth: 24px;
   --panel-fade-extension: 72px;
   --agent-logo-size: 14px;
@@ -880,7 +891,6 @@ header strong {
   text-align: left;
   font-size: 1rem;
   background: transparent;
-  scrollbar-width: thin;
   border-radius: 0 0 8px 8px;
   pointer-events: auto;
   transform: translateY(calc(-100% + var(--prompt-peek)));
@@ -1987,9 +1997,9 @@ button.tree-session:not(:disabled):active > .button-content {
   position: absolute;
   top: 0;
   bottom: 0;
-  left: 10px;
-  width: 4px;
-  border-radius: 3px;
+  left: calc((24px - var(--scroll-handle-size)) / 2);
+  width: var(--scroll-handle-size);
+  border-radius: var(--scroll-handle-radius);
   background: var(--scroll-handle-color);
   opacity: 0;
   transform: scaleX(1);
@@ -2023,7 +2033,7 @@ button.tree-session:not(:disabled):active > .button-content {
 }
 .scroll-near .scroll-handle,
 .scroll-dragging .scroll-handle {
-  transform: scaleX(2);
+  transform: scaleX(var(--scroll-handle-expansion));
   opacity: 1;
 }
 .scroll-dragging .scroll-thumb {
@@ -2155,7 +2165,6 @@ button.tree-session:not(:disabled):active > .button-content {
 .setting-options {
   max-height: var(--options-height, 240px);
   overflow: auto;
-  scrollbar-width: thin;
 }
 .setting-menu button {
   display: block;
