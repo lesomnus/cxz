@@ -2,7 +2,7 @@ import { test, expect, devices } from "@playwright/test";
 
 test.use({
   userAgent: devices["Desktop Chrome"].userAgent,
-  viewport: { width: 1903, height: 1000 },
+  viewport: { width: 1807, height: 1000 },
   isMobile: false,
   hasTouch: false,
   deviceScaleFactor: 1,
@@ -20,7 +20,7 @@ test("workspace split, readonly files and simulated connections keep project sta
   await expect(
     page.getByRole("complementary", { name: "Workspace editor" }),
   ).toHaveCount(0);
-  await page.setViewportSize({ width: 1904, height: 1000 });
+  await page.setViewportSize({ width: 1808, height: 1000 });
   const editor = page.getByRole("complementary", { name: "Workspace editor" });
   await expect(editor).toBeVisible();
   expect(

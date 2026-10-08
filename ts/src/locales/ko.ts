@@ -75,6 +75,7 @@ export const messages = {
   "Continue the conversation…": "대화를 이어가세요…",
   Conversation: "대화",
   "Conversation scroll": "대화 스크롤",
+  "Panel scroll": "패널 스크롤",
   Cool: "차가운 색상",
   Copy: "복사",
   Cost: "비용",

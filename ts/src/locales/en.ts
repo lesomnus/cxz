@@ -75,6 +75,7 @@ export const messages = {
   "Continue the conversation…": "Continue the conversation…",
   Conversation: "Conversation",
   "Conversation scroll": "Conversation scroll",
+  "Panel scroll": "Panel scroll",
   Cool: "Cool",
   Copy: "Copy",
   Cost: "Cost",

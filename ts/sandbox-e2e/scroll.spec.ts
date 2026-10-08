@@ -52,7 +52,7 @@ test("grouped sessions, shortcut, stable fields and elastic local scrollbar", as
   ).toBeVisible();
   const pane = page.locator(".transcript"),
     area = page.locator(".transcript-area");
-  const handle = page.locator(".scroll-handle"),
+  const handle = page.locator(".transcript-area .scroll-handle"),
     thumb = page.getByRole("scrollbar", { name: "Conversation scroll" });
   const areaBox = (await area.boundingBox())!;
   await page.mouse.move(100, 20);

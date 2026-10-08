@@ -53,6 +53,16 @@ async function writeJSON(page: Page, input: Locator, value: string) {
   await page.evaluate((value) => navigator.clipboard.writeText(value), value);
   await input.press("Control+a");
   await input.press("Control+v");
+  // Monaco applies clipboard input asynchronously. Wait for the edited text
+  // before a subsequent Save command can read the previous model contents.
+  await expect
+    .poll(async () =>
+      (await page.locator(".settings-file .view-lines").textContent())?.replace(
+        /\s/g,
+        "",
+      ),
+    )
+    .toBe(value.replace(/\s/g, ""));
 }
 async function readJSON(page: Page, input: Locator) {
   await input.press("Control+a");
@@ -76,7 +86,7 @@ const fields = [
 test("settings topics replace tabs, the 600px body stays centered and a live JSON pane unfolds at the conversation width threshold", async ({
   page,
 }) => {
-  await page.setViewportSize({ width: 1903, height: 1000 });
+  await page.setViewportSize({ width: 1807, height: 1000 });
   await ready(page);
   await settings(page);
   const topics = page.getByRole("navigation", {
@@ -117,7 +127,7 @@ test("settings topics replace tabs, the 600px body stays centered and a live JSO
   expect(await centered()).toEqual({ width: 600, delta: 0 });
   await expect(pane).toBeHidden();
   await expect(page.locator(".settings-file .monaco-editor")).toHaveCount(0);
-  await page.setViewportSize({ width: 1904, height: 1000 });
+  await page.setViewportSize({ width: 1808, height: 1000 });
   await expect(pane).toBeVisible();
   expect((await form.boundingBox())!.width).toBe(800);
   expect((await pane.boundingBox())!.width).toBe(800);
@@ -131,7 +141,7 @@ test("settings topics replace tabs, the 600px body stays centered and a live JSO
   await source.evaluate((el) => {
     (el as HTMLElement).dataset.identity = "original";
   });
-  await page.setViewportSize({ width: 1903, height: 1000 });
+  await page.setViewportSize({ width: 1807, height: 1000 });
   await expect(source).toBeVisible();
   await expect(form).toBeHidden();
   await expect(source).toBeFocused();
@@ -243,10 +253,12 @@ test("settings JSON and session files share the editor surface and theme while o
     pane.getByRole("button", { name: "Save", exact: true }),
   ).toBeEnabled();
   await input.press("Control+Enter");
-  await expect.poll(() => stored(page)).toEqual({
-    "editor.tabSize": 8,
-    "editor.colorPalette": "cool",
-  });
+  await expect
+    .poll(() => stored(page))
+    .toEqual({
+      "editor.tabSize": 8,
+      "editor.colorPalette": "cool",
+    });
   await expect(
     pane.locator(".view-lines").getByText('"editor.tabSize"', { exact: true }),
   ).toHaveCSS("color", "rgb(137, 155, 170)");
@@ -549,7 +561,7 @@ test("global settings update the readonly file viewer in place while conversatio
       }),
     ),
   );
-  await page.setViewportSize({ width: 1904, height: 1000 });
+  await page.setViewportSize({ width: 1808, height: 1000 });
   await ready(page);
   const editor = page.getByRole("complementary", { name: "Workspace editor" });
   await editor.getByRole("button", { name: "src", exact: true }).click();

@@ -52,6 +52,7 @@ import {
 import { type ComposerPaste } from "./composer-pastes";
 import { composerPrompt } from "./composer-code";
 import { SessionTreeGroup } from "./session-tree";
+import { PanelScroll } from "./panel-scroll";
 import { transcriptEvents, type ToolActivity } from "./tool-activity";
 import { ToolActivityView } from "./tool-activity-view";
 import { Transcript } from "./transcript";
@@ -255,74 +256,79 @@ export function Workspace({
           </Button>
         </header>
         <p className="muted">{new URL(c.baseUrl).host}</p>
-        {resource === "settings" ? (
-          <nav className="settings-topics" aria-label={t("Settings topics")}>
-            {(["general", "editor"] as const).map((topic) => (
+        <PanelScroll>
+          {resource === "settings" ? (
+            <nav className="settings-topics" aria-label={t("Settings topics")}>
+              {(["general", "editor"] as const).map((topic) => (
+                <Button
+                  key={topic}
+                  aria-current={settingsTopic === topic ? "page" : undefined}
+                  aria-controls="settings-editor"
+                  onClick={() => {
+                    setSettingsTopic(topic);
+                    setSettingsFileOpen(false);
+                  }}
+                >
+                  {topic === "general" ? t("General") : t("Editor")}
+                </Button>
+              ))}
+            </nav>
+          ) : resource === "sessions" ? (
+            <div
+              className="session-tree"
+              aria-label={t("Projects and sessions")}
+            >
+              {projects.data?.items.map((p) => (
+                <SessionTreeGroup
+                  key={p.runtimeId}
+                  project={p}
+                  selected={session}
+                  open={!collapsed.has(p.runtimeId)}
+                  toggle={() =>
+                    setCollapsed((old) => {
+                      const next = new Set(old);
+                      if (next.has(p.runtimeId)) next.delete(p.runtimeId);
+                      else next.add(p.runtimeId);
+                      return next;
+                    })
+                  }
+                  select={setSession}
+                />
+              ))}
+            </div>
+          ) : (
+            projects.data?.items.map((p) => (
               <Button
-                key={topic}
-                aria-current={settingsTopic === topic ? "page" : undefined}
-                aria-controls="settings-editor"
-                onClick={() => {
-                  setSettingsTopic(topic);
-                  setSettingsFileOpen(false);
-                }}
-              >
-                {topic === "general" ? t("General") : t("Editor")}
-              </Button>
-            ))}
-          </nav>
-        ) : resource === "sessions" ? (
-          <div className="session-tree" aria-label={t("Projects and sessions")}>
-            {projects.data?.items.map((p) => (
-              <SessionTreeGroup
                 key={p.runtimeId}
-                project={p}
-                selected={session}
-                open={!collapsed.has(p.runtimeId)}
-                toggle={() =>
+                onClick={() => {
                   setCollapsed((old) => {
                     const next = new Set(old);
-                    if (next.has(p.runtimeId)) next.delete(p.runtimeId);
-                    else next.add(p.runtimeId);
+                    next.delete(p.runtimeId);
                     return next;
-                  })
-                }
-                select={setSession}
-              />
-            ))}
-          </div>
-        ) : (
-          projects.data?.items.map((p) => (
-            <Button
-              key={p.runtimeId}
-              onClick={() => {
-                setCollapsed((old) => {
-                  const next = new Set(old);
-                  next.delete(p.runtimeId);
-                  return next;
-                });
-                setResource("sessions");
-                setSession("");
-              }}
-            >
-              {p.name || p.alias}
+                  });
+                  setResource("sessions");
+                  setSession("");
+                }}
+              >
+                {p.name || p.alias}
+              </Button>
+            ))
+          )}
+          {resource !== "settings" && after && (
+            <Button onClick={() => setAfter("")}>{t("First projects")}</Button>
+          )}
+          {resource !== "settings" && projects.data?.next && (
+            <Button onClick={() => setAfter(projects.data!.next)}>
+              {t("More projects →")}
             </Button>
-          ))
-        )}
-        {resource !== "settings" && after && (
-          <Button onClick={() => setAfter("")}>{t("First projects")}</Button>
-        )}
-        {resource !== "settings" && projects.data?.next && (
-          <Button onClick={() => setAfter(projects.data!.next)}>
-            {t("More projects →")}
-          </Button>
-        )}
-        {(projects.error || error) && (
-          <p role="alert">{String(projects.error || error)}</p>
-        )}
-        {projects.state === "pending" && !projects.data && (
-          <p className="muted">{t("Loading projects…")}</p>
-        )}
+          )}
+          {(projects.error || error) && (
+            <p role="alert">{String(projects.error || error)}</p>
+          )}
+          {projects.state === "pending" && !projects.data && (
+            <p className="muted">{t("Loading projects…")}</p>
+          )}
+        </PanelScroll>
       </aside>
       {resource === "settings" ? (
         <SettingsPage

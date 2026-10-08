@@ -20,8 +20,10 @@
   --hover: var(--shade-40);
   --selected: var(--shade-48);
   --selected-hover: var(--shade-56);
-  --panel-scrollbar-width: 6px;
-  --panel-scrollbar-thumb: var(--shade-119);
+  --resource-panel-width: 144px;
+  --resource-panel-compact-width: 125px;
+  --panel-inset: 12px;
+  --scroll-handle-color: var(--shade-122);
   --agent-logo-size: 14px;
 }
 * {
@@ -134,7 +136,7 @@ header strong {
 }
 .workspace {
   display: grid;
-  grid-template-columns: 64px 240px minmax(0, 1fr);
+  grid-template-columns: 64px var(--resource-panel-width) minmax(0, 1fr);
   height: 100dvh;
   min-width: 0;
 }
@@ -313,47 +315,63 @@ header strong {
   font-size: 12px;
 }
 .resource-panel {
-  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   min-width: 0;
+  min-height: 0;
   background: var(--shade-24);
-  padding: 12px;
+  padding: var(--panel-inset);
 }
-.session-panel {
-  scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
+.resource-panel > header {
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  gap: var(--space);
 }
-.session-panel:hover {
-  scrollbar-color: var(--panel-scrollbar-thumb) transparent;
+.panel-scroll-region {
+  position: relative;
+  flex: 1;
+  min-height: 0;
 }
-@supports selector(::-webkit-scrollbar) {
-  /* Let the WebKit pseudo-elements hide the native buttons and track. */
-  .session-panel,
-  .session-panel:hover {
-    scrollbar-width: auto;
-    scrollbar-color: auto;
-  }
+.panel-scroll-content {
+  height: 100%;
+  overflow: auto;
+  scrollbar-width: none;
 }
-.session-panel::-webkit-scrollbar {
-  width: var(--panel-scrollbar-width);
-  height: var(--panel-scrollbar-width);
-  background: transparent;
-}
-.session-panel::-webkit-scrollbar-track,
-.session-panel::-webkit-scrollbar-corner {
-  background: transparent;
-}
-.session-panel::-webkit-scrollbar-button {
+.panel-scroll-content::-webkit-scrollbar {
   display: none;
-  width: 0;
-  height: 0;
 }
-.session-panel::-webkit-scrollbar-thumb {
-  background: transparent;
-  border: 0;
-  border-radius: 999px;
+.panel-scroll-inner {
+  display: flow-root;
+  padding-right: 14px;
 }
-.session-panel:hover::-webkit-scrollbar-thumb {
-  background: var(--panel-scrollbar-thumb);
+.panel-scroll-rail {
+  position: absolute;
+  top: var(--space);
+  bottom: var(--space);
+  right: calc(var(--space) - var(--panel-inset));
+  width: 24px;
+  pointer-events: none;
+}
+.panel-scroll-thumb {
+  position: absolute;
+  width: 24px;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  pointer-events: auto;
+}
+.resource-panel:hover .scroll-handle,
+.panel-scroll-thumb:focus-visible .scroll-handle {
+  opacity: 0.7;
+}
+.panel-scroll-region.scroll-dragging .panel-scroll-thumb {
+  cursor: grabbing;
+}
+.panel-scroll-thumb:focus-visible {
+  outline: 1px solid var(--shade-204);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 .resource-panel h2 {
   font-size: 0.75rem;
@@ -361,7 +379,7 @@ header strong {
   color: var(--muted);
   margin: 20px 8px 6px;
 }
-.resource-panel > button {
+.panel-scroll-inner > button {
   display: block;
   width: 100%;
   text-align: left;
@@ -370,19 +388,19 @@ header strong {
   background: transparent;
   border: 0;
 }
-.resource-panel > button > .button-content {
+.panel-scroll-inner > button > .button-content {
   display: block;
   transform-origin: left center;
   overflow-wrap: anywhere;
 }
-.resource-panel > button.active {
+.panel-scroll-inner > button.active {
   font-weight: 650;
   color: var(--shade-255);
 }
-.resource-panel > button.active small {
+.panel-scroll-inner > button.active small {
   font-weight: 400;
 }
-.resource-panel > button:hover {
+.panel-scroll-inner > button:hover {
   background: var(--hover);
   border: 0;
 }
@@ -1664,7 +1682,10 @@ summary:hover {
 }
 @media (max-width: 900px) {
   .workspace {
-    grid-template-columns: 64px 208px minmax(0, 1fr);
+    grid-template-columns: 64px var(--resource-panel-compact-width) minmax(
+        0,
+        1fr
+      );
   }
 }
 @media (max-width: 700px) {
@@ -1679,6 +1700,13 @@ summary:hover {
     grid-column: 2;
     grid-row: 1;
     padding: 8px 12px;
+  }
+  .settings-open .panel-scroll-region {
+    flex: 0 0 auto;
+  }
+  .settings-open .panel-scroll-content {
+    height: auto;
+    overflow: visible;
   }
   .settings-open > .resource-panel > .muted {
     display: none;
@@ -1737,7 +1765,7 @@ summary:hover {
   .usage-info {
     gap: 4px 8px;
   }
-  .resource-panel > button {
+  .panel-scroll-inner > button {
     min-height: 44px;
   }
 }
@@ -1918,7 +1946,7 @@ button.tree-session:not(:disabled):active > .button-content {
   left: 10px;
   width: 4px;
   border-radius: 3px;
-  background: var(--shade-122);
+  background: var(--scroll-handle-color);
   opacity: 0;
   transform: scaleX(1);
   transition:
