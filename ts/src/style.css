@@ -1132,6 +1132,15 @@ pre {
 .editor-line {
   min-height: 1.5em;
 }
+.editor-inline-code {
+  background: var(--shade-0);
+  border-radius: 4px;
+  box-shadow:
+    -2px 0 var(--shade-0),
+    2px 0 var(--shade-0);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
 .editor-code-line {
   position: relative;
   background: var(--shade-0);
@@ -1243,6 +1252,10 @@ pre {
 }
 .composer-editor[data-composing="true"] .editor-code-line > * {
   visibility: hidden;
+}
+.composer-editor[data-composing="true"] .editor-inline-code {
+  visibility: visible;
+  color: transparent;
 }
 .editor-notice {
   padding: 0 12px;

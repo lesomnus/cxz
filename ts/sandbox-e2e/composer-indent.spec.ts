@@ -6,6 +6,46 @@ test.use({
   hasTouch: false,
 });
 
+test("Markdown bullets continue indentation, undo atomically, and leave code and modified Enter alone", async ({
+  page,
+}) => {
+  await page.goto("/sandbox.html");
+  await expect(
+    page.getByRole("heading", { name: "Current status" }),
+  ).toBeVisible({ timeout: 45000 });
+  const input = page.getByRole("textbox", { name: "Message", exact: true });
+  await input.fill("  \t- nested");
+  await input.press("Enter");
+  await expect(input).toHaveValue("  \t- nested\n  \t- ");
+  expect(
+    await input.evaluate((el: HTMLTextAreaElement) => el.selectionStart),
+  ).toBe(17);
+  await input.press("Control+z");
+  await expect(input).toHaveValue("  \t- nested");
+  await input.press("Control+Shift+z");
+  await expect(input).toHaveValue("  \t- nested\n  \t- ");
+  await input.press("Enter");
+  await expect(input).toHaveValue("  \t- nested\n  \t");
+  await input.fill("- one two");
+  await input.evaluate((el: HTMLTextAreaElement) => el.setSelectionRange(5, 6));
+  await input.press("Enter");
+  await expect(input).toHaveValue("- one\n- two");
+  await input.press("Shift+Enter");
+  await expect(input).toHaveValue("- one\n- \ntwo");
+  await input.fill("```\n- code\n```");
+  await input.evaluate((el: HTMLTextAreaElement) =>
+    el.setSelectionRange(10, 10),
+  );
+  await input.press("Enter");
+  await expect(input).toHaveValue("```\n- code\n\n```");
+  await input.fill("- first\n  - nested");
+  await input.press("Control+Enter");
+  await expect(input).toHaveValue("");
+  await expect(page.locator("article.input .message-body").last()).toHaveText(
+    "- first\n  - nested",
+  );
+});
+
 test("Tab indents, Shift+Tab outdents, native undo preserves selection and Ctrl+M releases keyboard focus", async ({
   page,
 }) => {

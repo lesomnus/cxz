@@ -212,7 +212,11 @@ Password answers keep masked native controls. Chip editing releases the Question
 inert state before native insertion, preserving the correct editor's Undo history.
 
 The shared composer is a monospace editor with logical line numbers and no resize
-handle. Typing three backticks at the start of a line opens an inline black code
+handle. Enter continues Markdown bullet lists at the same space/tab indentation;
+empty items end the list, Shift+Enter inserts a plain newline, and fenced code
+does not trigger list continuation. Inline code spans keep their visible backtick
+delimiters and use a dark background without changing text/caret geometry.
+Typing three backticks at the start of a line opens an inline black code
 block, inserts the matching closing fence two lines below, and places the cursor
 on the empty body line between them. The opening backticks remain visible, with
 a syntax selector beside them and a shared Close button at the right, without

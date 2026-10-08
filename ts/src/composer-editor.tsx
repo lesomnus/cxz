@@ -6,6 +6,7 @@ import { flushSync } from "react-dom";
 import { Button } from "./button";
 import { useFloatingCard } from "./floating-card";
 import { indentEdit } from "./composer-indent";
+import { inlineCodeRanges, listNewlineEdit } from "./composer-markdown";
 import { useEditorSettings } from "./settings";
 import { paletteVariables } from "./editor-settings";
 import {
@@ -453,6 +454,25 @@ export function ComposerEditor({
                 return;
               }
               if (
+                event.key === "Enter" &&
+                !event.ctrlKey &&
+                !event.metaKey &&
+                !event.altKey &&
+                !event.shiftKey
+              ) {
+                const edit = listNewlineEdit(
+                  value,
+                  selection.start,
+                  selection.end,
+                  blocks,
+                );
+                if (edit) {
+                  event.preventDefault();
+                  replace(edit.from, edit.to, edit.text, edit.caret);
+                  return;
+                }
+              }
+              if (
                 event.altKey ||
                 event.ctrlKey ||
                 event.metaKey ||
@@ -493,9 +513,28 @@ export function ComposerEditor({
                   block && !header && !footer
                     ? block.tokens[index - block.startLine - 1]
                     : undefined;
+                const inline = block ? [] : inlineCodeRanges(line);
                 function text(from: number, to: number) {
-                  if (!tokens) return value.slice(from, to);
-                  return tokenSpans(tokens, from - start, to - start);
+                  if (tokens)
+                    return tokenSpans(tokens, from - start, to - start);
+                  if (!inline.length || from === to)
+                    return value.slice(from, to);
+                  let offset = from - start;
+                  const end = to - start;
+                  const parts = inline.flatMap((range) => {
+                    const left = Math.max(offset, range.start);
+                    const right = Math.min(end, range.end);
+                    if (left >= right) return [];
+                    const plain = line.slice(offset, left);
+                    offset = right;
+                    return [
+                      plain,
+                      <span className="editor-inline-code" key={left}>
+                        {line.slice(left, right)}
+                      </span>,
+                    ];
+                  });
+                  return [...parts, line.slice(offset, end)];
                 }
                 const chips = ranges.filter(
                   (range) =>
