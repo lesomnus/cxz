@@ -20,10 +20,11 @@
   --hover: var(--shade-40);
   --selected: var(--shade-48);
   --selected-hover: var(--shade-56);
-  --resource-panel-width: 144px;
-  --resource-panel-compact-width: 125px;
+  --resource-panel-width: 160px;
   --panel-inset: 12px;
   --scroll-handle-color: var(--shade-122);
+  --panel-fade-depth: 24px;
+  --panel-fade-extension: 72px;
   --agent-logo-size: 14px;
 }
 * {
@@ -330,6 +331,7 @@ header strong {
 }
 .panel-scroll-region {
   position: relative;
+  isolation: isolate;
   flex: 1;
   min-height: 0;
 }
@@ -351,7 +353,43 @@ header strong {
   bottom: var(--space);
   right: calc(var(--space) - var(--panel-inset));
   width: 24px;
+  z-index: 2;
   pointer-events: none;
+}
+.panel-scroll-fade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  pointer-events: none;
+  max-height: 40%;
+  transition:
+    height 180ms ease-out,
+    opacity 180ms ease-out;
+}
+.panel-scroll-fade-top {
+  top: 0;
+  height: min(
+    var(--panel-top-hidden, 0px),
+    calc(
+      var(--panel-fade-depth) + var(--panel-fade-extension) *
+        var(--panel-top-motion, 0)
+    )
+  );
+  opacity: var(--panel-top-opacity, 0);
+  background: linear-gradient(to bottom, var(--shade-24), transparent);
+}
+.panel-scroll-fade-bottom {
+  bottom: 0;
+  height: min(
+    var(--panel-bottom-hidden, 0px),
+    calc(
+      var(--panel-fade-depth) + var(--panel-fade-extension) *
+        var(--panel-bottom-motion, 0)
+    )
+  );
+  opacity: var(--panel-bottom-opacity, 0);
+  background: linear-gradient(to top, var(--shade-24), transparent);
 }
 .panel-scroll-thumb {
   position: absolute;
@@ -731,8 +769,7 @@ header strong {
   overflow-wrap: anywhere;
 }
 .transcript-row > article > small,
-.transcript-row .copy,
-.transcript-row .event-detail {
+.transcript-row .copy {
   position: relative;
   z-index: 2;
 }
@@ -1680,14 +1717,6 @@ summary:hover {
     transition: none;
   }
 }
-@media (max-width: 900px) {
-  .workspace {
-    grid-template-columns: 64px var(--resource-panel-compact-width) minmax(
-        0,
-        1fr
-      );
-  }
-}
 @media (max-width: 700px) {
   .settings-open {
     grid-template-rows: auto minmax(0, 1fr);
@@ -1994,6 +2023,7 @@ button.tree-session:not(:disabled):active > .button-content {
   .scroll-thumb,
   .scroll-handle,
   .scroll-marker,
+  .panel-scroll-fade,
   .send-shortcut,
   .tree-chevron {
     transition: none !important;

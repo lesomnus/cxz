@@ -14,7 +14,7 @@ linked guides explain existing behavior; correct these documents when code chang
 
 | ID | Capability | Behavioral contract |
 |---|---|---|
-| NAV-01 | Projects and sessions | List project/session identity, aliases, agent and state. Distinguish stopped or down resources from permanently deleted data. Web panels keep their heading outside the scrolling list, highlight the current session and reveal a handle-only scrollbar on panel hover. Panel handles share the conversation handle's color and enlarge on pointer approach. |
+| NAV-01 | Projects and sessions | List project/session identity, aliases, agent and state. Distinguish stopped or down resources from permanently deleted data. Web panels keep their heading outside the scrolling list, highlight the current session and reveal a handle-only scrollbar on panel hover. Panel handles share the conversation handle's color and enlarge on pointer approach. Hidden list content fades into the panel background at each obscured edge; faster scrolling lengthens the outgoing fade, then it settles. The heading and handle remain above the fade. |
 | NAV-02 | Session navigation | Open and switch sessions, retain each draft, and navigate session-only back/forward history. |
 | SES-01 | Session creation | Choose workspace, account and supported model; complete required provider authentication before starting a session. |
 | SES-02 | Names and aliases | Change supported project/session metadata without changing resource identity. Validate aliases and report ambiguous targets. |

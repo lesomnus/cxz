@@ -112,8 +112,8 @@ Both viewport fades use the page background color and sit behind the composer.
 The bottom fade ramps in smoothly. Ordinary movement extends the outgoing fade
 and then settles; edge tension adds a stronger extension within the viewport.
 The top fade starts shorter, and directional tension keeps the opposite fade smaller.
-Scroll controls, headings, Copy and disclosure controls paint above the fades;
-only message bodies disappear into the background.
+Scroll controls, headings and Copy paint above the fades. Message bodies and
+task response rows disappear into the background together.
 
 Latest is an icon-only down arrow centered in the composer toolbar, sharing Send's
 button style. Its absolute overlay occupies no layout space. It slides up from

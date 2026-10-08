@@ -334,3 +334,91 @@ test("summary history prefetches before the loaded edge even with delayed respon
   expect(requests.filter((q) => q.beforeSeq && q.limit > 1)).toHaveLength(1);
   expect(await pane.locator("[data-row]").count()).toBeLessThan(60);
 });
+
+test("viewport fades cover native tool rows while the scrollbar and detail interaction remain available", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 700 });
+  const events = Array.from({ length: 100 }, (_, index) => {
+    const seq = index + 1;
+    const command = `/usr/bin/zsh -lc 'echo task-${Math.floor(index / 2)}'`;
+    return {
+      seq: String(seq),
+      runId: "run",
+      requestId: `task-${Math.floor(index / 2)}`,
+      kind: index % 2 ? "tool_result" : "tool_call",
+      text: command,
+      timeMs: String(1700000000000 + seq),
+      payload: Buffer.from(
+        JSON.stringify({
+          item: {
+            type: "commandExecution",
+            command,
+            status: index % 2 ? "completed" : "inProgress",
+            ...(index % 2 ? { exitCode: 0, aggregatedOutput: "done" } : {}),
+          },
+        }),
+      ).toString("base64"),
+    };
+  });
+  await openReplay(page, true, { events });
+  const pane = page.locator(".transcript");
+  await expect(page.locator(".tool-activity").first()).toBeAttached();
+  await pane.evaluate((el) => {
+    el.scrollTop = (el.scrollHeight - el.clientHeight) / 2;
+  });
+  for (const edge of ["top", "bottom"]) {
+    const seq = await pane.evaluate((el) => {
+      const area = el.getBoundingClientRect();
+      const task = [...el.querySelectorAll(".tool-activity")].find((node) => {
+        const box = node.getBoundingClientRect();
+        return (
+          box.top > area.top + area.height / 3 &&
+          box.bottom < area.bottom - area.height / 3
+        );
+      });
+      return task.dataset.seq;
+    });
+    const task = page.locator(`.tool-activity[data-seq="${seq}"]`);
+    await task.evaluate((el, edge) => {
+      const pane = el.closest(".transcript");
+      const area = pane.getBoundingClientRect();
+      const box = el.getBoundingClientRect();
+      pane.scrollTop +=
+        box.top +
+        box.height / 2 -
+        (edge === "top" ? area.top + 8 : area.bottom - 8);
+    }, edge);
+    const fade = page.locator(`.transcript-fade-${edge}`);
+    await expect(fade).toHaveCSS("opacity", "1");
+    await expect
+      .poll(() => fade.evaluate((el) => el.getBoundingClientRect().height))
+      .toBeGreaterThan(16);
+    const layers = await task.evaluate((el, edge) => {
+      const box = el.getBoundingClientRect();
+      const area = el.closest(".transcript-area");
+      const fade = area.querySelector(`.transcript-fade-${edge}`);
+      fade.style.pointerEvents = "auto";
+      const bodyBelow =
+        document.elementFromPoint(box.x + 20, box.y + box.height / 2) === fade;
+      const thumb = area.querySelector(".scroll-thumb");
+      const handle = thumb.getBoundingClientRect();
+      const scrollbarAbove = thumb.contains(
+        document.elementFromPoint(handle.x + handle.width / 2, handle.y + 2),
+      );
+      fade.style.pointerEvents = "none";
+      const stillInteractive = el.contains(
+        document.elementFromPoint(box.x + 20, box.y + box.height / 2),
+      );
+      return { bodyBelow, scrollbarAbove, stillInteractive };
+    }, edge);
+    expect(layers).toEqual({
+      bodyBelow: true,
+      scrollbarAbove: true,
+      stillInteractive: true,
+    });
+    await pane.evaluate((el) => {
+      el.scrollTop = (el.scrollHeight - el.clientHeight) / 2;
+    });
+  }
+});
