@@ -1128,7 +1128,7 @@ pre {
 .composer-input:focus-within {
   border-color: var(--shade-115);
 }
-.composer-send-ghost {
+.composer-editor.composer-send-ghost {
   position: absolute;
   inset: 0;
   z-index: 3;

@@ -31,9 +31,11 @@ async function probe(page: Page) {
         exit.currentTime =
           Number(exit.effect!.getComputedTiming().duration) / 2;
       }
-      state.arrival ??= document
+      const arrival = document
         .querySelector(".input[data-send-arrival] .input-box")
         ?.getAnimations()[0];
+      // Virtual rows can remount while the accepted input reaches Latest.
+      if (arrival) state.arrival = arrival;
     });
     observer.observe(document.querySelector(".conversation")!, {
       childList: true,
@@ -62,6 +64,19 @@ test("Send carries visible draft content upward and reveals one real message wit
   const text = "Send motion `code`\nSecond line";
   await input.fill(text);
   const initialHeight = (await input.boundingBox())!.height;
+  const geometry = () =>
+    page.locator(".composer-input").evaluate((el) => {
+      const box = el.getBoundingClientRect();
+      const transcript = document
+        .querySelector(".transcript-area")!
+        .getBoundingClientRect();
+      return {
+        top: box.top,
+        height: box.height,
+        transcriptHeight: transcript.height,
+      };
+    });
+  const initialGeometry = await geometry();
   await probe(page);
   await page.getByRole("button", { name: "Send", exact: true }).click();
   await expect(page.locator(".composer-send-ghost")).toHaveCount(1);
@@ -78,9 +93,11 @@ test("Send carries visible draft content upward and reveals one real message wit
   expect(outgoing.opacity).toBeGreaterThan(0);
   expect(outgoing.opacity).toBeLessThan(1);
   expect((await input.boundingBox())!.height).toBe(initialHeight);
+  expect(await geometry()).toEqual(initialGeometry);
   await page.evaluate(() => (window as any).sendMotionProbe.exit.play());
   await page.waitForFunction(() => (window as any).sendMotionProbe.entered);
   await expect(input).toHaveValue("");
+  expect(await geometry()).toEqual(initialGeometry);
   const row = page.locator("article.input").filter({ hasText: text });
   await expect(row).toHaveCount(1);
   const rowHeight = await row.evaluate((el: HTMLElement) => el.offsetHeight);

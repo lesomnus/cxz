@@ -52,7 +52,12 @@ export function useSendMotion({
     clearRow(motion);
   }
   function timing(node: HTMLElement, token: string) {
-    return parseFloat(getComputedStyle(node).getPropertyValue(token));
+    const value = getComputedStyle(node).getPropertyValue(token).trim();
+    // Production CSS can normalize milliseconds to seconds; WAAPI uses ms.
+    const number = parseFloat(value);
+    return value.endsWith("s") && !value.endsWith("ms")
+      ? number * 1000
+      : number;
   }
   function locate() {
     const motion = active.current;
