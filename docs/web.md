@@ -8,6 +8,12 @@ The session panel keeps the current session highlighted. Its scrollbar shows
 only a handle while the panel is hovered, with no visible track or arrow buttons;
 revealing it does not change the list width.
 
+The conversation renders messages, tool activity and actionable notices.
+Protocol `raw` records, quota/model polling and internal control acknowledgements
+remain in the journal but do not appear as conversation rows. Usage snapshots
+still drive composer indicators, and turn-completion events still supply response
+metrics; diagnostics and errors remain visible.
+
 ## A browser on this desktop
 
 On the Linux Manager host, with the Manager already running:

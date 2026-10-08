@@ -1,7 +1,14 @@
 import { describe, it, expect } from "vitest";
 import { create } from "@bufbuild/protobuf";
-import { SessionEventSchema } from "../gen/cxz/session_pb";
-import { mergeEvents, MAX_EVENTS, questions } from "./journal";
+import { SessionSchema, SessionEventSchema } from "../gen/cxz/session_pb";
+import { mergeMetadata } from "./session-metadata";
+import { sessionInfo } from "./session-info";
+import {
+  mergeEvents,
+  MAX_EVENTS,
+  questions,
+  isTranscriptEvent,
+} from "./journal";
 const event = (seq: bigint) =>
   create(SessionEventSchema, {
     seq,
@@ -9,6 +16,64 @@ const event = (seq: bigint) =>
     kind: "assistant",
     text: "hello",
   });
+describe("transcript events", () => {
+  it("keeps protocol and quota polling in history without rendering conversation rows", () => {
+    const rows = [
+      create(SessionEventSchema, { seq: 1n, kind: "input", text: "Hello" }),
+      create(SessionEventSchema, { seq: 2n, kind: "raw" }),
+      create(SessionEventSchema, { seq: 3n, kind: "assistant", text: "Hi" }),
+      create(SessionEventSchema, {
+        seq: 4n,
+        kind: "usage_status",
+        text: "polling",
+      }),
+    ];
+    const history = mergeEvents([], rows);
+    expect(history.filter(isTranscriptEvent).map((e) => e.seq)).toEqual([
+      1n,
+      3n,
+    ]);
+    expect(history.map((e) => e.seq)).toEqual([1n, 2n, 3n, 4n]);
+  });
+
+  it("still updates the quota indicator from snapshots omitted from the conversation", () => {
+    const usage = create(SessionEventSchema, {
+      seq: 1n,
+      kind: "usage",
+      runId: "run",
+      text: "account/rateLimits/updated",
+      payload: new TextEncoder().encode(
+        JSON.stringify({ rateLimits: { primary: { usedPercent: 25 } } }),
+      ),
+    });
+    const history = mergeEvents([], [usage]);
+    expect(history.filter(isTranscriptEvent)).toEqual([]);
+    const session = create(SessionSchema, {
+      agent: "codex",
+      status: { runId: "run" },
+    });
+    expect(sessionInfo(session, mergeMetadata([], history)).remaining).toBe(75);
+  });
+
+  it("preserves approval requests and actual diagnostics beside internal failure statuses", () => {
+    const rows = [
+      create(SessionEventSchema, { kind: "raw" }),
+      create(SessionEventSchema, { kind: "usage_status", text: "error" }),
+      create(SessionEventSchema, {
+        kind: "diagnostic",
+        text: "Codex request failed",
+      }),
+      create(SessionEventSchema, {
+        kind: "approval",
+        text: "item/commandExecution/requestApproval",
+        requestId: "pending",
+      }),
+      create(SessionEventSchema, { kind: "receipt", text: "send" }),
+    ];
+    expect(rows.filter(isTranscriptEvent)).toEqual([rows[2], rows[3]]);
+  });
+});
+
 describe("journal recovery", () => {
   it("deduplicates replayed events without losing uint64 cursor precision", () => {
     const n = 9007199254740993n;

@@ -5,7 +5,7 @@ Scheduling belongs in [the mobile web plan](plans/mobile-web.md), not this table
 
 Baseline audited against main `df35808` on 2026-10-03. This is source/documentation
 coverage, not a claim that every combination has been exercised on every device.
-All web cells are **Not implemented**: an existing server RPC is not a web UI.
+Web support requires a user-facing implementation: an existing server RPC is not a web UI.
 Open PRs remain pending until merged. In particular,
 [#79](https://github.com/lesomnus/cxz/pull/79) is not counted as shipped here.
 
@@ -40,7 +40,7 @@ explained in the mobile plan; it remains Not implemented in the web column.
 
 | ID | CLI | TUI | Web |
 |---|---|---|---|
-| CHAT-01 | Partial: `session events` raw stream and `session get`, no conversation renderer | Supported: streamed transcript and state | Not implemented |
+| CHAT-01 | Partial: `session events` raw stream and `session get`, no conversation renderer | Supported: streamed transcript and state | Supported: recorded/live messages, tool-event details and session state; internal raw/polling/control records omitted from transcript without losing metadata or replay; [web client](web.md) |
 | CHAT-02 | N/A: raw command output, no Markdown conversation UI | Supported: Markdown and copy controls | Not implemented |
 | CHAT-03 | Partial: raw `session events`; no input/output inspection UI | Supported: `/view`, `/details`, tool preview tabs | Not implemented |
 | CHAT-04 | Partial: `session events ID AFTER_SEQ`; no viewport navigation | Supported: history window and navigation controls | Not implemented |

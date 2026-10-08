@@ -2,6 +2,26 @@ import { t } from "./i18n";
 import type { SessionEvent } from "../gen/cxz/session_pb";
 // Four history pages in memory; the transcript mounts only its visible rows.
 export const MAX_EVENTS = 512;
+const internalEventKinds = new Set([
+  "raw",
+  "state",
+  "vendor",
+  "intent",
+  "receipt",
+  "approval_resolved",
+  "models",
+  "models_status",
+  "usage",
+  "usage_status",
+  "history_checkpoint",
+]);
+
+// The journal also carries protocol bytes and control/telemetry snapshots.
+// Keep them for replay and metadata, but do not allocate transcript rows for them.
+export function isTranscriptEvent(e: SessionEvent) {
+  return !internalEventKinds.has(e.kind);
+}
+
 export function mergeEvents(
   previous: SessionEvent[],
   incoming: SessionEvent[],

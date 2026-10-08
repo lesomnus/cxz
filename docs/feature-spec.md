@@ -27,7 +27,7 @@ linked guides explain existing behavior; correct these documents when code chang
 
 | ID | Capability | Behavioral contract |
 |---|---|---|
-| CHAT-01 | Conversation events | Show assistant output, tool activity and turn state from recorded/streamed events without duplicating events on reconnect. |
+| CHAT-01 | Conversation events | Show assistant output, tool activity and turn state from recorded/streamed events without duplicating events on reconnect. Keep protocol raw records, polling and control bookkeeping out of the transcript while retaining them for replay and metadata. |
 | CHAT-02 | Formatted responses and copying | Render Markdown/GFM, highlighted code and safe links; copy code without display padding while retaining source indentation. |
 | CHAT-03 | Tool inspection | Inspect recorded tool input and output separately, including raw content when a normalized preview is unavailable. |
 | CHAT-04 | History navigation | Load retained history in a bounded window, preserve browsing position and provide follow-latest, pinned prompt and jump-to-bottom navigation. |

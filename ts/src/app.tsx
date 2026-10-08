@@ -8,6 +8,7 @@ import type { Session, SessionEvent } from "../gen/cxz/session_pb";
 import { Connection, authenticate, ref } from "./connection";
 import {
   mergeEvents,
+  isTranscriptEvent,
   payload,
   detail,
   questions,
@@ -795,11 +796,7 @@ function ConversationContent({
     }
   }
   const visibleEvents = useMemo(
-    () =>
-      events.filter(
-        (e) =>
-          !["state", "approval_resolved", "models", "usage"].includes(e.kind),
-      ),
+    () => events.filter(isTranscriptEvent),
     [events],
   );
   const s = current.data;
