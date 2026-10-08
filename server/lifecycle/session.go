@@ -269,7 +269,7 @@ func (s SessionServer) History(ctx context.Context, r *resource.SessionEventsReq
 	if err != nil {
 		return nil, err
 	}
-	batch, err := s.shared.runtime.History(ctx, &api.WatchRequest{SessionId: v.GetRuntimeId(), AfterSeq: r.GetAfterSeq()})
+	batch, err := s.shared.runtime.History(ctx, &api.WatchRequest{SessionId: v.GetRuntimeId(), AfterSeq: r.GetAfterSeq(), Limit: r.GetLimit()})
 	if err != nil {
 		return nil, err
 	}

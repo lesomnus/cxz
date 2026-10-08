@@ -2,7 +2,11 @@ import { create } from "@bufbuild/protobuf";
 import { Code, ConnectError } from "@connectrpc/connect";
 import { describe, expect, it, vi } from "vitest";
 import { SessionEventSchema } from "../gen/cxz/session_pb";
-import { SessionHistory, HISTORY_PAGE_SIZE } from "./session-history";
+import {
+  SessionHistory,
+  HISTORY_PAGE_SIZE,
+  NATIVE_HISTORY_PAGE_SIZE,
+} from "./session-history";
 import type { Connection } from "./connection";
 const event = (seq: bigint, kind = "input") =>
   create(SessionEventSchema, { seq, kind });
@@ -48,18 +52,51 @@ describe("historical transcript transport", () => {
       ),
     }));
     const s = source({ transcript, history });
-    const p = await s.page({ snapshotSeq: 1000n }, signal());
-    expect(p.events).toHaveLength(256);
-    expect(p.events[0].seq).toBe(745n);
-    expect(p.events.at(-1)?.seq).toBe(1000n);
+    const p = await s.page({ snapshotSeq: 10000n }, signal());
+    expect(p.events).toHaveLength(NATIVE_HISTORY_PAGE_SIZE);
+    expect(p.events[0].seq).toBe(8977n);
+    expect(p.events.at(-1)?.seq).toBe(10000n);
     expect(p.hasNewer).toBe(false);
-    expect(history).toHaveBeenCalledTimes(2);
+    expect(history).toHaveBeenCalledTimes(8);
     const older = await s.page(
-      { beforeSeq: 745n, snapshotSeq: 1000n },
+      { beforeSeq: 8977n, snapshotSeq: 10000n },
       signal(),
     );
-    expect(older.events.at(-1)?.seq).toBe(744n);
+    expect(older.events.at(-1)?.seq).toBe(8976n);
     expect(transcript).toHaveBeenCalledTimes(1);
+  });
+  it("fetches a larger native window in one round trip when the server honors the limit", async () => {
+    const history = vi.fn(async ({ afterSeq, limit }) => ({
+      events: Array.from({ length: limit }, (_, i) =>
+        event(afterSeq + BigInt(i + 1)),
+      ),
+    }));
+    const s = source({
+      transcript: vi
+        .fn()
+        .mockRejectedValue(
+          new ConnectError("old projection", Code.Unimplemented),
+        ),
+      history,
+    });
+    const p = await s.page({ snapshotSeq: 10000n }, signal());
+    expect(history).toHaveBeenCalledTimes(1);
+    expect(p.events).toHaveLength(NATIVE_HISTORY_PAGE_SIZE);
+    expect(p.events.at(-1)?.seq).toBe(10000n);
+    const newer = await s.page(
+      { afterSeq: 10000n, snapshotSeq: 10500n },
+      signal(),
+    );
+    expect(newer.snapshotSeq).toBe(10500n);
+    expect(newer.events).toHaveLength(500);
+    expect(newer.hasNewer).toBe(false);
+    const older = await s.page(
+      { beforeSeq: 100n, snapshotSeq: 10000n },
+      signal(),
+    );
+    expect(older.events[0].seq).toBe(1n);
+    expect(older.events.at(-1)?.seq).toBe(99n);
+    expect(older.hasOlder).toBe(false);
   });
   it("never hides authorization, cancellation or network errors behind a history scan", async () => {
     const history = vi.fn();

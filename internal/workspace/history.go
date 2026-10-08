@@ -9,6 +9,7 @@ import (
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/convindex"
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/historypage"
 	"github.com/lesomnus/cxz/internal/historypolicy"
 	"time"
 )
@@ -22,7 +23,7 @@ func (m *Manager) History(ctx context.Context, r *api.WatchRequest) (*api.EventB
 	if err != nil {
 		return nil, err
 	}
-	complete := len(cached.Events) == 128
+	complete := len(cached.Events) == historypage.PageSize(r.Limit)
 	for i, e := range cached.Events {
 		complete = complete && e.Seq == r.AfterSeq+uint64(i)+1
 	}
@@ -45,7 +46,7 @@ func (m *Manager) History(ctx context.Context, r *api.WatchRequest) (*api.EventB
 }
 
 func (m *Manager) cachedHistory(ctx context.Context, r *api.WatchRequest) (*api.EventBatch, error) {
-	rows, e := m.DB.QueryContext(ctx, "SELECT data FROM events WHERE session_id=? AND seq>? ORDER BY seq LIMIT 128", r.SessionId, r.AfterSeq)
+	rows, e := m.DB.QueryContext(ctx, "SELECT data FROM events WHERE session_id=? AND seq>? ORDER BY seq LIMIT ?", r.SessionId, r.AfterSeq, historypage.PageSize(r.Limit))
 	if e != nil {
 		return nil, e
 	}

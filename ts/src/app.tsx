@@ -567,10 +567,9 @@ function ConversationContent({
       }
       let before = firstSeq;
       while (before > 0n && !controller.signal.aborted) {
-        const afterSeq = before > 129n ? before - 129n : 0n;
-        const page = await c.sessions.history(
-          { ref: ref(id), afterSeq },
-          { signal: controller.signal },
+        const page = await history.page(
+          { beforeSeq: before, snapshotSeq: latestSeq.current },
+          controller.signal,
         );
         if (controller.signal.aborted) return;
         const prompt = [...page.events]
@@ -581,12 +580,12 @@ function ConversationContent({
           return;
         }
         if (
-          afterSeq === 0n ||
+          !page.hasOlder ||
           !page.events.length ||
-          page.events[0].seq > afterSeq + 1n
+          page.events[0].seq >= before
         )
           break;
-        before = afterSeq + 1n;
+        before = page.events[0].seq;
       }
       if (!controller.signal.aborted) remember();
     })().catch((e) => {
@@ -738,10 +737,7 @@ function ConversationContent({
           // On reconnect, replay every native update after the stream cursor:
           // an old task's completion has an earlier summary row anchor.
           do {
-            const page = await c.sessions.history(
-              { ref: ref(id), afterSeq: cursor },
-              { signal },
-            );
+            const page = await history.nativePage(cursor, signal);
             if (canceled) return;
             rememberMetadata(page.events);
             if (cursor > 0n && page.events[0]?.seq > cursor + 1n) setGap(true);

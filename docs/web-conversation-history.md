@@ -40,6 +40,22 @@ survive prepending history and resize. Protocol-only live records update the
 stream cursor and metadata without rebuilding the transcript layout. Model
 choices use the dedicated `Models` projection rather than scanning history.
 
+The browser requests larger pages and warms history several viewports before
+the loaded edge. Its authenticated in-memory cache can hold more pages than the
+virtualized DOM. Prefetching follows the direction of travel to avoid fetching
+and evicting opposite edges. Page, cache and prefetch limits remain in code.
+Native `History` accepts a bounded `limit`; omitting it preserves the original
+page size for existing TUI clients. Older runtimes may ignore this field, so the
+browser continues paging until the requested sequence window is complete.
+
+If scrolling uses `History` after `Transcript` returns `Unimplemented`, one of
+the gateway, Manager or project runtime has not been updated. Updating only Vite
+does not upgrade these components. On the cxz host, `cxz use @edge` switches all
+managed components while retaining project containers and data; this interrupts
+active agent work. Reload the browser afterward to repeat capability detection.
+Occasional native `History` reads during reconnection are expected even with a
+supported summary API.
+
 `internal/transcripthistory/history_test.go` covers snapshot paging, lazy details,
 identity isolation, completion metadata, backfills, retention and cancellation.
 `internal/server/transcript_test.go` verifies the native journal path. Optional

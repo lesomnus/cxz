@@ -1066,6 +1066,7 @@ type WatchRequest struct {
 	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
 	AfterSeq      uint64                 `protobuf:"varint,2,opt,name=after_seq,json=afterSeq,proto3" json:"after_seq,omitempty"`
 	ClientId      string                 `protobuf:"bytes,3,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
+	Limit         uint32                 `protobuf:"varint,4,opt,name=limit,proto3" json:"limit,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1119,6 +1120,13 @@ func (x *WatchRequest) GetClientId() string {
 		return x.ClientId
 	}
 	return ""
+}
+
+func (x *WatchRequest) GetLimit() uint32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
 }
 
 type Event struct {
@@ -3370,12 +3378,13 @@ const file_cxz_proto_rawDesc = "" +
 	"\tclient_id\x18\x03 \x01(\tR\bclientId\">\n" +
 	"\aReceipt\x12\x1b\n" +
 	"\tclient_id\x18\x01 \x01(\tR\bclientId\x12\x16\n" +
-	"\x06status\x18\x02 \x01(\tR\x06status\"g\n" +
+	"\x06status\x18\x02 \x01(\tR\x06status\"}\n" +
 	"\fWatchRequest\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x1b\n" +
 	"\tafter_seq\x18\x02 \x01(\x04R\bafterSeq\x12\x1b\n" +
-	"\tclient_id\x18\x03 \x01(\tR\bclientId\"\xc1\x02\n" +
+	"\tclient_id\x18\x03 \x01(\tR\bclientId\x12\x14\n" +
+	"\x05limit\x18\x04 \x01(\rR\x05limit\"\xc1\x02\n" +
 	"\x05Event\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x15\n" +

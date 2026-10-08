@@ -6011,6 +6011,7 @@ type SessionEventsRequest struct {
 	xxx_hidden_Ref         *SessionRef            `protobuf:"bytes,1,opt,name=ref"`
 	xxx_hidden_AfterSeq    uint64                 `protobuf:"varint,2,opt,name=after_seq,json=afterSeq"`
 	xxx_hidden_ClientId    *string                `protobuf:"bytes,3,opt,name=client_id,json=clientId"`
+	xxx_hidden_Limit       uint32                 `protobuf:"varint,4,opt,name=limit"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
 	XXX_presence           [1]uint32
 	unknownFields          protoimpl.UnknownFields
@@ -6066,18 +6067,30 @@ func (x *SessionEventsRequest) GetClientId() string {
 	return ""
 }
 
+func (x *SessionEventsRequest) GetLimit() uint32 {
+	if x != nil {
+		return x.xxx_hidden_Limit
+	}
+	return 0
+}
+
 func (x *SessionEventsRequest) SetRef(v *SessionRef) {
 	x.xxx_hidden_Ref = v
 }
 
 func (x *SessionEventsRequest) SetAfterSeq(v uint64) {
 	x.xxx_hidden_AfterSeq = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 3)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 4)
 }
 
 func (x *SessionEventsRequest) SetClientId(v string) {
 	x.xxx_hidden_ClientId = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 3)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 4)
+}
+
+func (x *SessionEventsRequest) SetLimit(v uint32) {
+	x.xxx_hidden_Limit = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 4)
 }
 
 func (x *SessionEventsRequest) HasRef() bool {
@@ -6101,6 +6114,13 @@ func (x *SessionEventsRequest) HasClientId() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
 }
 
+func (x *SessionEventsRequest) HasLimit() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
+}
+
 func (x *SessionEventsRequest) ClearRef() {
 	x.xxx_hidden_Ref = nil
 }
@@ -6115,12 +6135,19 @@ func (x *SessionEventsRequest) ClearClientId() {
 	x.xxx_hidden_ClientId = nil
 }
 
+func (x *SessionEventsRequest) ClearLimit() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
+	x.xxx_hidden_Limit = 0
+}
+
 type SessionEventsRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Ref      *SessionRef
 	AfterSeq *uint64
 	ClientId *string
+	// History only: zero preserves the legacy page size; bounded by the server.
+	Limit *uint32
 }
 
 func (b0 SessionEventsRequest_builder) Build() *SessionEventsRequest {
@@ -6129,12 +6156,16 @@ func (b0 SessionEventsRequest_builder) Build() *SessionEventsRequest {
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
 	if b.AfterSeq != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 3)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 4)
 		x.xxx_hidden_AfterSeq = *b.AfterSeq
 	}
 	if b.ClientId != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 3)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 4)
 		x.xxx_hidden_ClientId = b.ClientId
+	}
+	if b.Limit != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 4)
+		x.xxx_hidden_Limit = *b.Limit
 	}
 	return m0
 }
@@ -9247,11 +9278,12 @@ const file_cxz_session_svc_g_proto_rawDesc = "" +
 	"\n" +
 	"request_id\x18\x04 \x01(\tR\trequestId\x12\x14\n" +
 	"\x05allow\x18\x05 \x01(\bR\x05allow\x12!\n" +
-	"\fanswers_json\x18\x06 \x01(\tR\vanswersJson\"s\n" +
+	"\fanswers_json\x18\x06 \x01(\tR\vanswersJson\"\x89\x01\n" +
 	"\x14SessionEventsRequest\x12!\n" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.SessionRefR\x03ref\x12\x1b\n" +
 	"\tafter_seq\x18\x02 \x01(\x04R\bafterSeq\x12\x1b\n" +
-	"\tclient_id\x18\x03 \x01(\tR\bclientId\">\n" +
+	"\tclient_id\x18\x03 \x01(\tR\bclientId\x12\x14\n" +
+	"\x05limit\x18\x04 \x01(\rR\x05limit\">\n" +
 	"\x11SessionEventBatch\x12)\n" +
 	"\x06events\x18\x01 \x03(\v2\x11.cxz.SessionEventR\x06events\"\xb2\x01\n" +
 	"\x18SessionTranscriptRequest\x12!\n" +

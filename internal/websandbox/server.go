@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lesomnus/cxz/internal/historypage"
 	"github.com/lesomnus/cxz/resource"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -325,11 +326,12 @@ func (x *Sessions) History(_ context.Context, r *resource.SessionEventsRequest) 
 		return nil, err
 	}
 	var events []*resource.SessionEvent
+	limit := historypage.PageSize(r.GetLimit())
 	for _, e := range st.events {
 		if e.GetSeq() > r.GetAfterSeq() {
 			events = append(events, proto.Clone(e).(*resource.SessionEvent))
-			if len(events) == 128 {
-				break // Match the production history page size.
+			if len(events) == limit {
+				break
 			}
 		}
 	}

@@ -163,6 +163,12 @@ func TestApprovalFilteringAndBoundedHistory(t *testing.T) {
 	if err != nil || len(firstPage.GetEvents()) != 128 {
 		t.Fatal("history must use bounded pages", err)
 	}
+	for _, limit := range []uint32{1024, ^uint32(0)} {
+		page, err := x.History(t.Context(), resource.SessionEventsRequest_builder{Ref: ref("session-3"), Limit: proto.Uint32(limit)}.Build())
+		if err != nil || len(page.GetEvents()) != 1024 {
+			t.Fatal("large history page must honor the bounded limit", err)
+		}
+	}
 	es := history(t, x, "session-3")
 	if len(es) != maxEvents || es[0].GetSeq() <= 1 {
 		t.Fatal("unbounded history")

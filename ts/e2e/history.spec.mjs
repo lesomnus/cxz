@@ -56,8 +56,8 @@ function replayEvents() {
     };
   });
 }
-async function openReplay(page, summary = false) {
-  const events = replayEvents();
+async function openReplay(page, summary = false, options = {}) {
+  const events = options.events ?? replayEvents();
   const latest = Number(events.at(-1).seq);
   // Serve the current build even when an already-running fixture embeds an old one.
   await page.route("https://127.0.0.1:18081/**", async (route) => {
@@ -90,6 +90,8 @@ async function openReplay(page, summary = false) {
   else if (!process.env.CXZ_REPLAY_EVENTS)
     await page.route("**/cxz.SessionService/Transcript", async (route) => {
       const q = route.request().postDataJSON();
+      if (options.delay && q.beforeSeq && q.limit > 1)
+        await new Promise((resolve) => setTimeout(resolve, options.delay));
       const all = events.filter((e) => e.kind !== "raw");
       const eligible = all.filter(
         (e) =>
@@ -122,6 +124,7 @@ async function openReplay(page, summary = false) {
       },
     });
   });
+
   await page.route("**/cxz.SessionService/Get", async (route) => {
     const response = await route.fetch();
     const json = await response.json();
@@ -261,7 +264,7 @@ for (const mode of ["legacy", "summary"])
       Number(
         await page.locator(".virtual-messages").getAttribute("data-cached"),
       ),
-    ).toBeLessThanOrEqual(2048);
+    ).toBeLessThanOrEqual(8192);
     expect(await page.locator(".transcript [data-row]").count()).toBeLessThan(
       60,
     );
@@ -285,3 +288,49 @@ for (const mode of ["legacy", "summary"])
       }
     }
   });
+
+test("summary history prefetches before the loaded edge even with delayed responses", async ({
+  page,
+}) => {
+  const events = Array.from({ length: 12000 }, (_, index) => ({
+    seq: String(index + 1),
+    kind: index % 2 ? "assistant" : "input",
+    runId: "run",
+    text: `Cached message ${index + 1}`,
+  }));
+  const requests = [];
+  page.on("request", (request) => {
+    if (request.url().endsWith("/Transcript"))
+      requests.push(request.postDataJSON());
+  });
+  await openReplay(page, true, { events, delay: 400 });
+  const pane = page.locator(".transcript");
+  const messages = page.locator(".virtual-messages");
+  await expect(messages).toHaveAttribute("data-cached", "1024");
+  await expect
+    .poll(async () => (await geometry(page)).top)
+    .toBeGreaterThan(10000);
+  expect(requests[0].limit).toBe(1024);
+  const first = BigInt(await messages.getAttribute("data-first"));
+  await pane.evaluate((el) => {
+    el.scrollTop = el.clientHeight * 5;
+  });
+  await expect
+    .poll(() => requests.filter((q) => q.beforeSeq && q.limit > 1).length)
+    .toBe(1);
+  // We still have local content to read during the network round trip.
+  expect((await geometry(page)).top).toBeGreaterThan(
+    (await geometry(page)).height * 2,
+  );
+  await page.waitForTimeout(100);
+  const anchor = await readingAnchor(page);
+  await expect
+    .poll(async () => BigInt(await messages.getAttribute("data-first")))
+    .toBeLessThan(first);
+  await expect
+    .poll(async () => (await readingAnchor(page)).offset)
+    .toBeCloseTo(anchor.offset, 0);
+  expect((await readingAnchor(page)).id).toBe(anchor.id);
+  expect(requests.filter((q) => q.beforeSeq && q.limit > 1)).toHaveLength(1);
+  expect(await pane.locator("[data-row]").count()).toBeLessThan(60);
+});

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/historypage"
 )
 
 func (s *Server) History(ctx context.Context, r *api.WatchRequest) (*api.EventBatch, error) {
@@ -20,7 +21,7 @@ func (s *Server) History(ctx context.Context, r *api.WatchRequest) (*api.EventBa
 		return nil, e
 	}
 	p.mu.Unlock()
-	rows, e := s.db.QueryContext(ctx, "SELECT data FROM events WHERE session_id=? AND seq>? ORDER BY seq LIMIT 128", r.SessionId, r.AfterSeq)
+	rows, e := s.db.QueryContext(ctx, "SELECT data FROM events WHERE session_id=? AND seq>? ORDER BY seq LIMIT ?", r.SessionId, r.AfterSeq, historypage.PageSize(r.Limit))
 	if e != nil {
 		return nil, e
 	}

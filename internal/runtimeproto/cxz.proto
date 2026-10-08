@@ -66,7 +66,7 @@ message Answer {
 }
 message Control { string session_id = 1; string run_id = 2; string client_id = 3; }
 message Receipt { string client_id = 1; string status = 2; }
-message WatchRequest { string session_id = 1; uint64 after_seq = 2; string client_id = 3; }
+message WatchRequest { string session_id = 1; uint64 after_seq = 2; string client_id = 3; uint32 limit = 4; }
 message Event {
   string session_id = 1; string run_id = 2; uint64 seq = 3; int64 time_ms = 4;
   string kind = 5; string text = 6; string request_id = 7; bytes payload = 8;

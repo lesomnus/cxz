@@ -25,7 +25,7 @@ test("virtual messages preserve small tail scrolls and anchors across resize", a
   expect(await pane.locator("[data-seq]").count()).toBeLessThan(40);
   expect(
     Number(await page.locator(".virtual-messages").getAttribute("data-cached")),
-  ).toBeLessThanOrEqual(256);
+  ).toBeLessThanOrEqual(1024);
   await pane.evaluate((el) => (el.scrollTop -= 8));
   // A near-bottom scroll must remain where the user put it, through row measurement.
   await page.waitForTimeout(400);
@@ -102,7 +102,7 @@ test("pages through an entire history in both directions with bounded DOM and ca
     await expect.poll(first).toBeLessThan(before);
     expect(
       Number(await messages.getAttribute("data-cached")),
-    ).toBeLessThanOrEqual(2048);
+    ).toBeLessThanOrEqual(8192);
     expect(await pane.locator("[data-seq]").count()).toBeLessThan(50);
   }
   await pane.evaluate((el) => (el.scrollTop = 0));
@@ -116,7 +116,7 @@ test("pages through an entire history in both directions with bounded DOM and ca
     await expect.poll(last).toBeGreaterThan(before);
     expect(
       Number(await messages.getAttribute("data-cached")),
-    ).toBeLessThanOrEqual(2048);
+    ).toBeLessThanOrEqual(8192);
     expect(await pane.locator("[data-seq]").count()).toBeLessThan(50);
   }
   await pane.evaluate((el) => (el.scrollTop = el.scrollHeight));

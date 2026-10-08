@@ -16,6 +16,7 @@ import type { SessionEvent } from "../gen/cxz/session_pb";
 import { VirtualMessages } from "./virtual-messages";
 import { PinnedPrompt } from "./pinned-prompt";
 import type { MessageMap } from "./virtual-layout";
+import { HISTORY_PREFETCH_SCREENS } from "./session-history";
 
 type Geometry = {
   top: number;
@@ -311,20 +312,20 @@ export function Transcript({
     cancelAnimationFrame(fillRaf.current);
     fillRaf.current = requestAnimationFrame(() => {
       const max = el.scrollHeight - el.clientHeight;
-      if (max < el.clientHeight) {
+      if (max < el.clientHeight * HISTORY_PREFETCH_SCREENS) {
         if (!follow.current && readingDirection.current > 0)
           callbacks.current.newer();
         else callbacks.current.older();
       } else if (
         !follow.current &&
         readingDirection.current < 0 &&
-        el.scrollTop < el.clientHeight * 2
+        el.scrollTop < el.clientHeight * HISTORY_PREFETCH_SCREENS
       )
         callbacks.current.older();
       else if (
         !follow.current &&
         readingDirection.current > 0 &&
-        max - el.scrollTop < el.clientHeight * 2
+        max - el.scrollTop < el.clientHeight * HISTORY_PREFETCH_SCREENS
       )
         callbacks.current.newer();
     });
@@ -361,11 +362,12 @@ export function Transcript({
     if (delta) callbacks.current.onReadingMove(delta);
     // Only request the edge being approached. A small loaded window can be
     // near both ends: fetching both would alternately evict opposite pages.
-    if (delta < 0 && el.scrollTop < el.clientHeight * 2)
+    if (delta < 0 && el.scrollTop < el.clientHeight * HISTORY_PREFETCH_SCREENS)
       callbacks.current.older();
     if (
       delta > 0 &&
-      el.scrollHeight - el.scrollTop - el.clientHeight < el.clientHeight * 2
+      el.scrollHeight - el.scrollTop - el.clientHeight <
+        el.clientHeight * HISTORY_PREFETCH_SCREENS
     )
       callbacks.current.newer();
   }
