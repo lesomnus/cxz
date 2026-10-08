@@ -12,6 +12,11 @@
   --conversation-width: 600px;
   --composer-radius: 15px;
   --composer-editor-height: 110px;
+  --send-exit-duration: 180ms;
+  --send-enter-duration: 240ms;
+  --send-exit-travel: 72px;
+  --send-enter-travel: 40px;
+  --send-content-scale: 0.96;
   --wrapper-radius: 10px;
   --control-inset: 2px;
   --control-inline-inset: 6px;
@@ -857,6 +862,10 @@ header strong {
   border-radius: 8px;
   padding: 10px 12px;
 }
+.input[data-send-arrival] {
+  overflow: clip;
+  border-radius: 8px;
+}
 .input-content {
   display: flex;
   align-items: baseline;
@@ -1118,6 +1127,29 @@ pre {
 }
 .composer-input:focus-within {
   border-color: var(--shade-115);
+}
+.composer-send-ghost {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.composer-send-ghost .editor-mirror {
+  transform-origin: center top;
+}
+.composer-input[data-send-exiting]
+  > .composer-editor:not(.composer-send-ghost)
+  .editor-mirror {
+  visibility: hidden;
+}
+.composer-input[data-send-exiting] textarea {
+  caret-color: transparent;
+}
+.composer-input[data-send-exiting] textarea::selection {
+  color: transparent;
+  background: transparent;
 }
 .composer-editor textarea {
   position: relative;

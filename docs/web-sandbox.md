@@ -211,6 +211,15 @@ inserts a line and Ctrl+Enter never sends the conversation draft from an answer.
 Password answers keep masked native controls. Chip editing releases the Question's
 inert state before native insertion, preserving the correct editor's Undo history.
 
+After an accepted Send, a non-interactive copy of the visible draft moves upward
+out of the composer while shrinking, followed by the actual input message
+emerging into the transcript and returning to full size. These transforms do not
+change measured row heights or create optimistic journal entries. Failed sends
+keep the draft; edits made during sending survive, and switching sessions removes
+the decorative layers without restoring an accepted draft. Reduced-motion
+preferences skip the effect. `ts/src/send-motion.ts` coordinates the animation;
+CSS tokens define its appearance and timing.
+
 The shared composer is a monospace editor with logical line numbers and no resize
 handle. Enter continues Markdown bullet lists at the same space/tab indentation;
 empty items end the list, Shift+Enter inserts a plain newline, and fenced code

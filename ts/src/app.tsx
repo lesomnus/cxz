@@ -42,6 +42,7 @@ import type { ResponseCompletion } from "./response-completion";
 import { ResponseFooter } from "./response-footer";
 import { InputMessage } from "./input-message";
 import { ComposerEditor } from "./composer-editor";
+import { useSendMotion } from "./send-motion";
 import { WorkspaceTerminal, terminalShortcut } from "./workspace-terminal";
 import {
   FloatingCardProvider,
@@ -533,6 +534,12 @@ function ConversationContent({
     setLatestShown(false);
   }, [follow]);
   const pane = useRef<HTMLDivElement>(null);
+  const sendMotion = useSendMotion({
+    source: composerInput,
+    pane,
+    events,
+    draft,
+  });
   const lock = useRef(false);
   const historyRequest = useRef<AbortController | null>(null);
   const [precedingPrompt, setPrecedingPrompt] = useState<{
@@ -1022,17 +1029,26 @@ function ConversationContent({
     if (!draft.trim()) return;
     const sent = draft;
     await action(async (s) => {
-      const receipt = await c.sessions.send({
-        ...control(s),
-        text: composerPrompt(sent, c.pastes),
-      });
-      if (receipt.status === "rejected")
-        throw new Error(t("Provider rejected the input"));
-      setDraft((old) => (old === sent ? "" : old));
-      if (detached.current) await loadHistory("newer", true);
-      pane.current?.dispatchEvent(new Event("scroll-jump"));
-      setFollow(true);
-      if (pane.current) pane.current.scrollTop = pane.current.scrollHeight;
+      const text = composerPrompt(sent, c.pastes);
+      const motion = sendMotion.prepare(text, latestSeq.current);
+      try {
+        const receipt = await c.sessions.send({ ...control(s), text });
+        if (receipt.status === "rejected")
+          throw new Error(t("Provider rejected the input"));
+        // A session switch can unmount this view during the decorative departure.
+        if (c.drafts.get(id) === sent) c.drafts.set(id, "");
+        await sendMotion.depart(motion);
+        setDraft((old) => (old === sent ? "" : old));
+        if (detached.current) await loadHistory("newer", true);
+        pane.current?.dispatchEvent(new Event("scroll-jump"));
+        followRef.current = true;
+        setFollow(true);
+        if (pane.current) pane.current.scrollTop = pane.current.scrollHeight;
+        sendMotion.enter(motion);
+      } catch (error) {
+        if (motion) sendMotion.cancel(motion);
+        throw error;
+      }
     });
   }
   async function reply(e: SessionEvent, allow: boolean, answersJson = "") {
