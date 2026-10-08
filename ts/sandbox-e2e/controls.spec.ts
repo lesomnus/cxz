@@ -41,7 +41,10 @@ test("provider dropdowns, quota popovers, aligned headings and bounded press/sha
     1,
   );
   expect(logoBefore.x).toBe(indicatorBefore.x + indicatorBefore.width + 6);
-  expect(indicatorBefore.y).toBe(headingBefore.y + 1);
+  expect(indicatorBefore.y + indicatorBefore.height / 2).toBeCloseTo(
+    headingBefore.y + headingBefore.height / 2,
+    1,
+  );
   expect(logoBefore.width).toBe(14);
   expect(logoBefore.height).toBe(14);
   expect(
