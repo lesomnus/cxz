@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { disableTerminalWebGL } from "../test-support/terminal";
 
 // The desktop path serves http on a loopback address and no certificate. What
 // that has to prove is a browser rule, not ours: Chrome treats 127.0.0.1 as a
@@ -8,6 +9,7 @@ import { test, expect } from "@playwright/test";
 test("sign in over loopback http, stay signed in, sign out", async ({
   page,
 }) => {
+  await disableTerminalWebGL(page);
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/");
