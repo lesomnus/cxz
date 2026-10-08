@@ -14,7 +14,7 @@ linked guides explain existing behavior; correct these documents when code chang
 
 | ID | Capability | Behavioral contract |
 |---|---|---|
-| NAV-01 | Projects and sessions | List project/session identity, aliases, agent and state. Distinguish stopped or down resources from permanently deleted data. |
+| NAV-01 | Projects and sessions | List project/session identity, aliases, agent and state. Distinguish stopped or down resources from permanently deleted data. Web session panels highlight the current session and reveal a handle-only scrollbar on panel hover. |
 | NAV-02 | Session navigation | Open and switch sessions, retain each draft, and navigate session-only back/forward history. |
 | SES-01 | Session creation | Choose workspace, account and supported model; complete required provider authentication before starting a session. |
 | SES-02 | Names and aliases | Change supported project/session metadata without changing resource identity. Validate aliases and report ambiguous targets. |
@@ -27,9 +27,9 @@ linked guides explain existing behavior; correct these documents when code chang
 
 | ID | Capability | Behavioral contract |
 |---|---|---|
-| CHAT-01 | Conversation events | Show assistant output, tool activity and turn state from recorded/streamed events without duplicating events on reconnect. |
+| CHAT-01 | Conversation events | Show assistant output, tool activity and turn state from recorded/streamed events without duplicating events on reconnect. Keep protocol raw records, polling and control bookkeeping out of the transcript while retaining them for replay and metadata. Represent successful turn completion in its loaded final response footer without a duplicate status row; preserve failure, interruption and unmatched notices. Fill sparse rendered history without requiring overflow first and preserve reading anchors during paging and resize. |
 | CHAT-02 | Formatted responses and copying | Render Markdown/GFM, highlighted code and safe links; copy code without display padding while retaining source indentation. |
-| CHAT-03 | Tool inspection | Inspect recorded tool input and output separately, including raw content when a normalized preview is unavailable. |
+| CHAT-03 | Tool inspection | Inspect recorded tool input and output separately, including raw content when a normalized preview is unavailable. Group a tool call, correlated approval, output chunks and result by run and execution ID at the original call position; preserve unrelated requests and history-edge results. |
 | CHAT-04 | History navigation | Load retained history in a bounded window, preserve browsing position and provide follow-latest, pinned prompt and jump-to-bottom navigation. |
 | CHAT-05 | Usage and quota | Distinguish turn metrics, session totals, account quota and auxiliary usage. Show only provider-reported metrics; absent data is not zero. |
 | CHAT-06 | Context report | Provide normalized Summary and original Raw context views while preserving provider availability and idle requirements. |
@@ -87,7 +87,7 @@ linked guides explain existing behavior; correct these documents when code chang
 | OPS-07 | Container terminal | Provide shell/exec access where supported, distinguish shell lifecycle from agent lifecycle and disclose connection requirements. |
 | OPS-08 | Frontend integration | Provide platform-specific diagnostic recording, terminal diagnostics, completion and terminal registration; do not treat these as server features. |
 | OPS-09 | Installation lifecycle | Install/uninstall Manager and an optional persistent HTTPS web gateway; web settings accept file defaults and CLI overrides. Host self-update/version switching refreshes a running gateway while preserving settings and agent work (version switching still interrupts agents by its own contract). Purge installation-owned resources with explicit destructive scope. |
-| WEB-01 | Browser access | Provide HTTPS, trusted certificate handling, browser authentication/logout and expired-session handling. Transport and auth details require design. |
+| WEB-01 | Browser access | Provide HTTPS, trusted certificate handling, browser authentication/logout and expired-session handling. Local Vite development may proxy the installed gateway and exchange its token file for a browser session server-side; never expose that token to UI assets or browser storage. |
 | WEB-02 | Browser reconnection | Recover from suspension/disconnection using event cursors and current state; handle history gaps without stopping agents or resolving requests. |
 | WEB-03 | Browser mutation recovery | Recover an unknown send/decision outcome without duplicate execution or applying a decision to a new run; do not blindly retry. |
 | WEB-04 | Mobile interaction | Support phone viewports, touch, soft keyboard, accessible controls and background/resume without keyboard-only required actions. |

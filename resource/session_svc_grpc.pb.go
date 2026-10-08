@@ -43,6 +43,8 @@ const (
 	SessionService_UpdateAgent_FullMethodName       = "/cxz.SessionService/UpdateAgent"
 	SessionService_Reply_FullMethodName             = "/cxz.SessionService/Reply"
 	SessionService_History_FullMethodName           = "/cxz.SessionService/History"
+	SessionService_Transcript_FullMethodName        = "/cxz.SessionService/Transcript"
+	SessionService_EventDetails_FullMethodName      = "/cxz.SessionService/EventDetails"
 	SessionService_Background_FullMethodName        = "/cxz.SessionService/Background"
 	SessionService_Models_FullMethodName            = "/cxz.SessionService/Models"
 	SessionService_Events_FullMethodName            = "/cxz.SessionService/Events"
@@ -96,6 +98,10 @@ type SessionServiceClient interface {
 	Reply(ctx context.Context, in *SessionReplyRequest, opts ...grpc.CallOption) (*SessionReceipt, error)
 	// Journal replay is not payday Watch: it is cursor-ordered event history.
 	History(ctx context.Context, in *SessionEventsRequest, opts ...grpc.CallOption) (*SessionEventBatch, error)
+	// Readable, indexed history. Paging counts transcript rows, not protocol records.
+	Transcript(ctx context.Context, in *SessionTranscriptRequest, opts ...grpc.CallOption) (*SessionTranscriptReply, error)
+	// Full native records for one row/execution, fetched only for inspection.
+	EventDetails(ctx context.Context, in *SessionEventDetailsRequest, opts ...grpc.CallOption) (*SessionEventBatch, error)
 	Background(ctx context.Context, in *SessionBackgroundRequest, opts ...grpc.CallOption) (*SessionBackgroundReply, error)
 	Models(ctx context.Context, in *SessionModelsRequest, opts ...grpc.CallOption) (*SessionModelsReply, error)
 	Events(ctx context.Context, in *SessionEventsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SessionEvent], error)
@@ -364,6 +370,26 @@ func (c *sessionServiceClient) History(ctx context.Context, in *SessionEventsReq
 	return out, nil
 }
 
+func (c *sessionServiceClient) Transcript(ctx context.Context, in *SessionTranscriptRequest, opts ...grpc.CallOption) (*SessionTranscriptReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SessionTranscriptReply)
+	err := c.cc.Invoke(ctx, SessionService_Transcript_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionServiceClient) EventDetails(ctx context.Context, in *SessionEventDetailsRequest, opts ...grpc.CallOption) (*SessionEventBatch, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SessionEventBatch)
+	err := c.cc.Invoke(ctx, SessionService_EventDetails_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *sessionServiceClient) Background(ctx context.Context, in *SessionBackgroundRequest, opts ...grpc.CallOption) (*SessionBackgroundReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SessionBackgroundReply)
@@ -469,6 +495,10 @@ type SessionServiceServer interface {
 	Reply(context.Context, *SessionReplyRequest) (*SessionReceipt, error)
 	// Journal replay is not payday Watch: it is cursor-ordered event history.
 	History(context.Context, *SessionEventsRequest) (*SessionEventBatch, error)
+	// Readable, indexed history. Paging counts transcript rows, not protocol records.
+	Transcript(context.Context, *SessionTranscriptRequest) (*SessionTranscriptReply, error)
+	// Full native records for one row/execution, fetched only for inspection.
+	EventDetails(context.Context, *SessionEventDetailsRequest) (*SessionEventBatch, error)
 	Background(context.Context, *SessionBackgroundRequest) (*SessionBackgroundReply, error)
 	Models(context.Context, *SessionModelsRequest) (*SessionModelsReply, error)
 	Events(*SessionEventsRequest, grpc.ServerStreamingServer[SessionEvent]) error
@@ -556,6 +586,12 @@ func (UnimplementedSessionServiceServer) Reply(context.Context, *SessionReplyReq
 }
 func (UnimplementedSessionServiceServer) History(context.Context, *SessionEventsRequest) (*SessionEventBatch, error) {
 	return nil, status.Error(codes.Unimplemented, "method History not implemented")
+}
+func (UnimplementedSessionServiceServer) Transcript(context.Context, *SessionTranscriptRequest) (*SessionTranscriptReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method Transcript not implemented")
+}
+func (UnimplementedSessionServiceServer) EventDetails(context.Context, *SessionEventDetailsRequest) (*SessionEventBatch, error) {
+	return nil, status.Error(codes.Unimplemented, "method EventDetails not implemented")
 }
 func (UnimplementedSessionServiceServer) Background(context.Context, *SessionBackgroundRequest) (*SessionBackgroundReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method Background not implemented")
@@ -1004,6 +1040,42 @@ func _SessionService_History_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SessionService_Transcript_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SessionTranscriptRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionServiceServer).Transcript(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SessionService_Transcript_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionServiceServer).Transcript(ctx, req.(*SessionTranscriptRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SessionService_EventDetails_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SessionEventDetailsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionServiceServer).EventDetails(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SessionService_EventDetails_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionServiceServer).EventDetails(ctx, req.(*SessionEventDetailsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _SessionService_Background_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SessionBackgroundRequest)
 	if err := dec(in); err != nil {
@@ -1156,6 +1228,14 @@ var SessionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "History",
 			Handler:    _SessionService_History_Handler,
+		},
+		{
+			MethodName: "Transcript",
+			Handler:    _SessionService_Transcript_Handler,
+		},
+		{
+			MethodName: "EventDetails",
+			Handler:    _SessionService_EventDetails_Handler,
 		},
 		{
 			MethodName: "Background",

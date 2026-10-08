@@ -18,6 +18,10 @@
   --composer-overhang: 4px;
   --muted: var(--shade-160);
   --hover: var(--shade-40);
+  --selected: var(--shade-48);
+  --selected-hover: var(--shade-56);
+  --panel-scrollbar-width: 6px;
+  --panel-scrollbar-thumb: var(--shade-119);
   --agent-logo-size: 14px;
 }
 * {
@@ -313,6 +317,43 @@ header strong {
   min-width: 0;
   background: var(--shade-24);
   padding: 12px;
+}
+.session-panel {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+.session-panel:hover {
+  scrollbar-color: var(--panel-scrollbar-thumb) transparent;
+}
+@supports selector(::-webkit-scrollbar) {
+  /* Let the WebKit pseudo-elements hide the native buttons and track. */
+  .session-panel,
+  .session-panel:hover {
+    scrollbar-width: auto;
+    scrollbar-color: auto;
+  }
+}
+.session-panel::-webkit-scrollbar {
+  width: var(--panel-scrollbar-width);
+  height: var(--panel-scrollbar-width);
+  background: transparent;
+}
+.session-panel::-webkit-scrollbar-track,
+.session-panel::-webkit-scrollbar-corner {
+  background: transparent;
+}
+.session-panel::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+.session-panel::-webkit-scrollbar-thumb {
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+}
+.session-panel:hover::-webkit-scrollbar-thumb {
+  background: var(--panel-scrollbar-thumb);
 }
 .resource-panel h2 {
   font-size: 0.75rem;
@@ -1716,6 +1757,12 @@ summary:hover {
 .session-tree button:hover {
   background: var(--hover);
 }
+.session-tree .tree-session.active {
+  background: var(--selected);
+}
+.session-tree .tree-session.active:hover {
+  background: var(--selected-hover);
+}
 .session-tree .button-content {
   justify-content: flex-start;
   gap: 6px;
@@ -1813,6 +1860,30 @@ button.tree-session:not(:disabled):active > .button-content {
 .tree-session.active .session-title {
   color: var(--shade-255);
   font-weight: 650;
+}
+.tool-activity .button-content {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-start;
+}
+.tool-state {
+  flex: 0 0 1em;
+  text-align: center;
+  color: var(--muted);
+}
+.tool-summary {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+.tool-shell {
+  color: var(--muted);
+}
+.tool-command {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
 }
 .tree-message {
   padding: 4px 20px;

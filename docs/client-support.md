@@ -5,7 +5,7 @@ Scheduling belongs in [the mobile web plan](plans/mobile-web.md), not this table
 
 Baseline audited against main `df35808` on 2026-10-03. This is source/documentation
 coverage, not a claim that every combination has been exercised on every device.
-All web cells are **Not implemented**: an existing server RPC is not a web UI.
+Web support requires a user-facing implementation: an existing server RPC is not a web UI.
 Open PRs remain pending until merged. In particular,
 [#79](https://github.com/lesomnus/cxz/pull/79) is not counted as shipped here.
 
@@ -27,7 +27,7 @@ explained in the mobile plan; it remains Not implemented in the web column.
 
 | ID | CLI | TUI | Web |
 |---|---|---|---|
-| NAV-01 | Partial: `project ls`, `session ls/get`; includes down/foreign projects, no interactive active-list filtering | Supported: project/session lists, active-project filtering, hover + creation shortcut and ? help | Not implemented |
+| NAV-01 | Partial: `project ls`, `session ls/get`; includes down/foreign projects, no interactive active-list filtering | Supported: project/session lists, active-project filtering, hover + creation shortcut and ? help | Partial: listed projects and sessions with pagination, identities/agent/state, current-session highlight and panel-hover scrollbar handle; [web client](web.md) |
 | NAV-02 | N/A: one-shot commands have no view history | Supported: session navigation and Alt+Left/Right history | Not implemented |
 | SES-01 | Supported: `session new`, account flow | Supported: new-session account/login flow | Not implemented |
 | SES-02 | Partial: `project add/set`, creation-time session metadata; no standalone session rename command | Partial: session alias rename; no project metadata editor | Not implemented |
@@ -40,9 +40,9 @@ explained in the mobile plan; it remains Not implemented in the web column.
 
 | ID | CLI | TUI | Web |
 |---|---|---|---|
-| CHAT-01 | Partial: `session events` raw stream and `session get`, no conversation renderer | Supported: streamed transcript and state | Not implemented |
+| CHAT-01 | Partial: `session events` raw stream and `session get`, no conversation renderer | Supported: streamed transcript and state | Supported: recorded/live messages, tool-event details and session state; internal raw/polling/control records omitted from transcript without losing metadata or replay; successful completion is folded into the matching final response footer, with failure/interruption and unmatched notices retained; sparse-history prefetch and anchored paging/resize; [web client](web.md) |
 | CHAT-02 | N/A: raw command output, no Markdown conversation UI | Supported: Markdown and copy controls | Not implemented |
-| CHAT-03 | Partial: raw `session events`; no input/output inspection UI | Supported: `/view`, `/details`, tool preview tabs | Not implemented |
+| CHAT-03 | Partial: raw `session events`; no input/output inspection UI | Supported: `/view`, `/details`, tool preview tabs | Partial: grouped tool status rows with shell/script preview and input/output/result/approval records in the shared floating card; file edits retain raw details rather than a normalized diff preview; [web client](web.md) |
 | CHAT-04 | Partial: `session events ID AFTER_SEQ`; no viewport navigation | Supported: history window and navigation controls | Not implemented |
 | CHAT-05 | Partial: recorded event telemetry; no dedicated session usage report command | Supported: turn metrics, `/usage` and quota display | Not implemented |
 | CHAT-06 | Not implemented: no dedicated context command | Supported: `/context`, Summary/Raw | Not implemented |
@@ -101,7 +101,7 @@ explained in the mobile plan; it remains Not implemented in the web column.
 | OPS-07 | Supported: `project shell/exec` with required host Docker access | Supported: `/terminal` with required local Docker access; no persistence after detach | Supported: Ctrl+Backquote or title-bar button opens the project PTY; folding retains shell state, session change/sign-out closes it; [contract](web-terminal.md) |
 | OPS-08 | Partial: `terminal-info`, completion, Windows integration commands; no TUI recording command | Partial: `/record`/F9; shell completion and terminal registration remain CLI | Not implemented |
 | OPS-09 | Supported: Manager and optional web gateway installation/uninstallation; web JSON settings and running-gateway refresh on host self-update/use; purge on supported host | Not implemented: no installation-wide administration UI | Not implemented |
-| WEB-01 | N/A: browser-specific requirement | N/A: browser-specific requirement | Not implemented |
+| WEB-01 | N/A: browser-specific requirement | N/A: browser-specific requirement | Supported: installed same-origin gateway with token login/logout; local `npm run dev` proxies the gateway and signs in server-side from the installed token file; [development and authentication](web.md#developing-the-ui-against-the-installed-manager) |
 | WEB-02 | N/A: browser-specific requirement | N/A: browser-specific requirement | Not implemented |
 | WEB-03 | N/A: browser-specific requirement | N/A: browser-specific requirement | Not implemented |
 | WEB-04 | N/A: browser-specific requirement | N/A: browser-specific requirement | Not implemented |

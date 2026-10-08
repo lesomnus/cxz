@@ -239,8 +239,11 @@ test("settings JSON and session files share the editor surface and theme while o
     input,
     '{\n  "editor.tabSize": 8,\n  "editor.colorPalette": "cool"\n}\n',
   );
+  await expect(
+    pane.getByRole("button", { name: "Save", exact: true }),
+  ).toBeEnabled();
   await input.press("Control+Enter");
-  expect(await stored(page)).toEqual({
+  await expect.poll(() => stored(page)).toEqual({
     "editor.tabSize": 8,
     "editor.colorPalette": "cool",
   });

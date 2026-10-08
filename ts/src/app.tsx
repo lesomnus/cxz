@@ -1,18 +1,32 @@
 import { t, translateKnown } from "./i18n";
 import { useLocale } from "./i18n-react";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Provider, useQuery } from "@lesomnus/payday/react";
 import { ProjectService } from "../gen/cxz/project_svc_pb";
 import { SessionService } from "../gen/cxz/session_svc_pb";
 import type { Session, SessionEvent } from "../gen/cxz/session_pb";
 import { Connection, authenticate, ref } from "./connection";
 import {
+  SessionHistory,
+  type HistoryPage,
+  type LoadEventDetails,
+} from "./session-history";
+import { create } from "@bufbuild/protobuf";
+import { SessionEventSchema } from "../gen/cxz/session_pb";
+import { EventDetails } from "./event-details";
+import {
   mergeEvents,
+  isTranscriptEvent,
   payload,
   detail,
   questions,
   approvalTitle,
-  MAX_EVENTS,
   pendingAfter,
 } from "./journal";
 import { marked } from "marked";
@@ -24,10 +38,7 @@ import { UsageInfo } from "./usage-info";
 import { Button } from "./button";
 import { AgentBrand } from "./agent-brand";
 import { responseInfo } from "./response-info";
-import {
-  responseCompletions,
-  type ResponseCompletion,
-} from "./response-completion";
+import type { ResponseCompletion } from "./response-completion";
 import { ResponseFooter } from "./response-footer";
 import { InputMessage } from "./input-message";
 import { ComposerEditor } from "./composer-editor";
@@ -41,6 +52,8 @@ import {
 import { type ComposerPaste } from "./composer-pastes";
 import { composerPrompt } from "./composer-code";
 import { SessionTreeGroup } from "./session-tree";
+import { transcriptEvents, type ToolActivity } from "./tool-activity";
+import { ToolActivityView } from "./tool-activity-view";
 import { Transcript } from "./transcript";
 import { WorkspaceEditor } from "./workspace-editor";
 import { SettingsPage } from "./settings-page";
@@ -220,7 +233,7 @@ export function Workspace({
         </Button>
       </nav>
       <aside
-        className="resource-panel"
+        className={`resource-panel${resource === "sessions" ? " session-panel" : ""}`}
         aria-label={
           resource === "sessions"
             ? t("Session list")
@@ -455,6 +468,12 @@ function ConversationContent({
   const [events, setEvents] = useState<SessionEvent[]>([]);
   const [metadata, setMetadata] = useState<SessionEvent[]>([]);
   const catalogRun = useRef("");
+  const history = useMemo(() => new SessionHistory(c.sessions, id), [c, id]);
+  const newest = useRef({ anchor: 0n, through: 0n });
+  const loadDetails = useCallback<LoadEventDetails>(
+    (seq, signal) => history.details(seq, signal),
+    [history],
+  );
   const tension = useRef(0);
   const scrollMotion = useRef(0);
   const composerInput = useRef<HTMLDivElement>(null);
@@ -528,6 +547,24 @@ function ConversationContent({
     // Resolve just the prompt preceding the cached window, retaining one event.
     // This read-only lookup does not prepend rows or change scrollbar geometry.
     void (async () => {
+      if (history.mode === "summary") {
+        const page = await c.sessions.transcript(
+          {
+            ref: ref(id),
+            beforeSeq: firstSeq,
+            limit: 1,
+            snapshotSeq: latestSeq.current,
+          },
+          { signal: controller.signal },
+        );
+        if (!controller.signal.aborted)
+          remember(
+            page.events[0]?.kind === "input"
+              ? page.events[0]
+              : page.precedingInput,
+          );
+        return;
+      }
       let before = firstSeq;
       while (before > 0n && !controller.signal.aborted) {
         const afterSeq = before > 129n ? before - 129n : 0n;
@@ -559,7 +596,7 @@ function ConversationContent({
         );
     });
     return () => controller.abort();
-  }, [c, id, firstSeq]);
+  }, [c, id, firstSeq, history]);
 
   async function showPrompt(seq: string) {
     historyRequest.current?.abort();
@@ -570,11 +607,12 @@ function ConversationContent({
     setFollow(false);
     try {
       const target = BigInt(seq);
-      const page = await c.sessions.history(
-        { ref: ref(id), afterSeq: target - 1n },
-        { signal: controller.signal },
+      const page = await history.page(
+        { afterSeq: target - 1n, snapshotSeq: latestSeq.current },
+        controller.signal,
       );
       if (controller.signal.aborted) return;
+      rememberPage(page);
       if (
         !page.events.some(
           (event) => event.seq === target && event.kind === "input",
@@ -583,7 +621,7 @@ function ConversationContent({
         setError(t("This input is no longer available in retained history."));
         return;
       }
-      detached.current = page.events.at(-1)!.seq < latestSeq.current;
+      detached.current = page.hasNewer;
       rememberMetadata(page.events);
       setEvents(page.events);
       setJumpTarget(seq);
@@ -595,6 +633,31 @@ function ConversationContent({
     }
   }
 
+  function rememberPage(page: HistoryPage) {
+    rememberMetadata(page.metadata);
+    const first = page.events[0]?.seq;
+    const last = page.events.at(-1)?.seq;
+    if (first !== undefined) {
+      if (!page.hasOlder) floor.current = first - 1n;
+      const next = {
+        before: first,
+        through: page.events.find((e) => e.kind === "input")?.seq ?? last! + 1n,
+        event: page.precedingInput,
+      };
+      precedingRef.current = next;
+      setPrecedingPrompt(next);
+    }
+    if (last !== undefined && !page.hasNewer)
+      newest.current = { anchor: last, through: page.snapshotSeq };
+  }
+  function atLatest(rows: SessionEvent[]) {
+    const last = rows.at(-1)?.seq ?? 0n;
+    return (
+      last >= latestSeq.current ||
+      (last >= newest.current.anchor &&
+        newest.current.through >= latestSeq.current)
+    );
+  }
   function rememberMetadata(rows: SessionEvent[]) {
     setMetadata((old) => mergeMetadata(old, rows));
   }
@@ -662,26 +725,42 @@ function ConversationContent({
         setPending(snapshot.status?.pending ?? []);
         const snapshotSeq = snapshot.status?.lastSeq ?? 0n;
         if (snapshotSeq > latestSeq.current) latestSeq.current = snapshotSeq;
-        if (cursor === 0n && latestSeq.current > 256n)
-          cursor = latestSeq.current - 256n;
-        const history = await c.sessions.history(
-          { ref: ref(id), afterSeq: cursor },
-          { signal },
-        );
-        if (canceled) return;
-        rememberMetadata(history.events);
-        if (history.events.length) {
-          if (cursor > 0n && history.events[0].seq > cursor + 1n) setGap(true);
-          cursor = history.events.at(-1)!.seq;
+        let loaded: SessionEvent[] = [];
+        if (cursor === 0n) {
+          const page = await history.page({ snapshotSeq }, signal);
+          if (canceled) return;
+          rememberPage(page);
+          loaded = page.events;
+          // The stream replays native records, including the ones omitted from
+          // the summary. Resume at its snapshot fence, not the last display row.
+          cursor = page.snapshotSeq;
+        } else {
+          // On reconnect, replay every native update after the stream cursor:
+          // an old task's completion has an earlier summary row anchor.
+          do {
+            const page = await c.sessions.history(
+              { ref: ref(id), afterSeq: cursor },
+              { signal },
+            );
+            if (canceled) return;
+            rememberMetadata(page.events);
+            if (cursor > 0n && page.events[0]?.seq > cursor + 1n) setGap(true);
+            const next = page.events.at(-1)?.seq ?? cursor;
+            if (next <= cursor) break;
+            loaded = mergeEvents(loaded, page.events);
+            cursor = next;
+          } while (cursor < snapshotSeq);
+        }
+        if (loaded.length) {
           setPending(
             pendingAfter(
               snapshot.status?.pending ?? [],
-              history.events,
+              loaded,
               snapshot.status?.lastSeq ?? 0n,
             ),
           );
           setEvents((old) =>
-            detached.current ? old : mergeEvents(old, history.events),
+            detached.current ? old : mergeEvents(old, loaded),
           );
         }
         setStatus("Live");
@@ -693,9 +772,32 @@ function ConversationContent({
           rememberMetadata([e]);
           cursor = e.seq > cursor ? e.seq : cursor;
           if (cursor > latestSeq.current) latestSeq.current = cursor;
-          if (!followRef.current && eventsRef.current.length >= MAX_EVENTS)
-            detached.current = true;
-          setEvents((old) => (detached.current ? old : mergeEvents(old, [e])));
+          // Receive every native record, but token/protocol traffic cannot
+          // change the reading layout. Metadata is reduced separately above.
+          if (!isTranscriptEvent(e) && e.kind !== "approval_resolved") {
+            if (!detached.current) newest.current.through = cursor;
+            continue;
+          }
+          setEvents((old) => {
+            if (detached.current) return old;
+            const next = mergeEvents(old, [e]);
+            // Protocol compaction alone must not detach a reader. Freeze only
+            // when adding live records would evict a visible reading row.
+            if (
+              !followRef.current &&
+              transcriptEvents(old).events.some(
+                (row) => row.seq < (next[0]?.seq ?? 0n),
+              )
+            ) {
+              detached.current = true;
+              return old;
+            }
+            newest.current = {
+              anchor: next.at(-1)?.seq ?? 0n,
+              through: cursor,
+            };
+            return next;
+          });
           setPending((old) => pendingAfter(old, [e]));
         }
       } catch (e) {
@@ -721,7 +823,7 @@ function ConversationContent({
       document.removeEventListener("visibilitychange", resume);
       window.removeEventListener("offline", offline);
     };
-  }, [c, id]);
+  }, [c, id, history]);
   async function loadHistory(direction: "older" | "newer", goLatest = false) {
     if (goLatest) pane.current?.dispatchEvent(new Event("scroll-jump"));
     if (historyRequest.current) {
@@ -735,12 +837,10 @@ function ConversationContent({
       last = old.at(-1)!.seq;
     if (
       !goLatest &&
-      (direction === "older"
-        ? first <= floor.current + 1n
-        : last >= latestSeq.current)
+      (direction === "older" ? first <= floor.current + 1n : atLatest(old))
     )
       return;
-    if (goLatest && last >= latestSeq.current) {
+    if (goLatest && atLatest(old)) {
       detached.current = false;
       setFollow(true);
       if (pane.current) pane.current.scrollTop = pane.current.scrollHeight;
@@ -749,31 +849,17 @@ function ConversationContent({
     const controller = new AbortController();
     historyRequest.current = controller;
     try {
-      let cursor = goLatest
-        ? latestSeq.current > 256n
-          ? latestSeq.current - 256n
-          : 0n
-        : direction === "older"
-          ? first > 129n
-            ? first - 129n
-            : 0n
-          : last;
-      let incoming: SessionEvent[] = [];
-      do {
-        const page = await c.sessions.history(
-          { ref: ref(id), afterSeq: cursor },
-          { signal: controller.signal },
-        );
-        const rows =
-          direction === "older" && !goLatest
-            ? page.events.filter((e) => e.seq < first)
-            : page.events;
-        incoming = mergeEvents(incoming, rows);
-        const next = page.events.at(-1)?.seq ?? cursor;
-        if (!goLatest || next <= cursor || next >= latestSeq.current) break;
-        cursor = next;
-      } while (!controller.signal.aborted);
+      const page = await history.page(
+        goLatest
+          ? { snapshotSeq: latestSeq.current }
+          : direction === "older"
+            ? { beforeSeq: first, snapshotSeq: latestSeq.current }
+            : { afterSeq: last, snapshotSeq: latestSeq.current },
+        controller.signal,
+      );
       if (controller.signal.aborted) return;
+      rememberPage(page);
+      const incoming = page.events;
       if (!incoming.length) {
         if (direction === "older") {
           floor.current = first - 1n;
@@ -781,10 +867,11 @@ function ConversationContent({
         }
         return;
       }
+      rememberMetadata(incoming);
       const next = goLatest
         ? incoming
         : mergeEvents(eventsRef.current, incoming, direction);
-      detached.current = next.at(-1)!.seq < latestSeq.current;
+      detached.current = !atLatest(next);
       setEvents(next);
       if (goLatest) setFollow(true);
     } catch (e) {
@@ -794,16 +881,9 @@ function ConversationContent({
       if (historyRequest.current === controller) historyRequest.current = null;
     }
   }
-  const visibleEvents = useMemo(
-    () =>
-      events.filter(
-        (e) =>
-          !["state", "approval_resolved", "models", "usage"].includes(e.kind),
-      ),
-    [events],
-  );
+  const transcript = useMemo(() => transcriptEvents(events), [events]);
   const s = current.data;
-  const completions = useMemo(() => responseCompletions(events), [events]);
+  const completions = transcript.completions;
   const combined = useMemo(
     () =>
       [
@@ -813,29 +893,32 @@ function ConversationContent({
   );
   const info = useMemo(() => sessionInfo(s, combined), [s, combined]);
   const catalog = useMemo(() => modelCatalog(s, combined), [s, combined]);
-  // A long transcript's model catalog may precede its retained event window.
-  // Read history like the TUI; never send an unsupported slash command to chat.
+  // Model choices have a dedicated projection; avoid scanning the journal.
   useEffect(() => {
     const run = s?.status?.runId;
     if (!run || !events.length || catalog || catalogRun.current === run) return;
     catalogRun.current = run;
     const controller = new AbortController();
-    void (async () => {
-      let afterSeq = 0n;
-      while (!controller.signal.aborted) {
-        const page = await c.sessions.history(
-          { ref: ref(id), afterSeq },
-          { signal: controller.signal },
-        );
-        rememberMetadata(page.events);
-        const next = page.events.at(-1)?.seq ?? afterSeq;
-        if (next <= afterSeq || next >= latestSeq.current) break;
-        afterSeq = next;
-      }
-    })().catch((e) => {
-      if (!controller.signal.aborted)
-        setError(t("Cannot read model choices: {error}", { error: String(e) }));
-    });
+    void c.sessions
+      .models({ ref: ref(id) }, { signal: controller.signal })
+      .then((page) => {
+        if (!controller.signal.aborted && page.data.length)
+          rememberMetadata([
+            create(SessionEventSchema, {
+              seq: page.catalogSeq,
+              timeMs: page.catalogMs,
+              runId: page.runId,
+              kind: "models",
+              payload: page.data,
+            }),
+          ]);
+      })
+      .catch((error) => {
+        if (!controller.signal.aborted)
+          setError(
+            t("Cannot read model choices: {error}", { error: String(error) }),
+          );
+      });
     return () => controller.abort();
   }, [c, id, s?.status?.runId, events.length > 0]);
   useEffect(() => {
@@ -977,7 +1060,7 @@ function ConversationContent({
       </header>
       <Transcript
         pane={pane}
-        events={visibleEvents}
+        events={transcript.events}
         follow={followRef}
         precedingPrompt={
           firstSeq !== undefined &&
@@ -999,6 +1082,8 @@ function ConversationContent({
             e={e}
             agent={s?.agent ?? ""}
             completion={completions.get(e.seq.toString())}
+            activity={transcript.activities.get(e.seq)}
+            loadDetails={history.mode === "summary" ? loadDetails : undefined}
           />
         )}
         notice={
@@ -1154,13 +1239,26 @@ const EventView = React.memo(
     e,
     agent,
     completion,
+    activity,
+    loadDetails,
   }: {
     e: SessionEvent;
     agent: string;
     completion?: ResponseCompletion;
+    activity?: ToolActivity;
+    loadDetails?: LoadEventDetails;
   }) {
     useLocale();
     const openCard = useFloatingCard();
+    if (activity)
+      return (
+        <ToolActivityView
+          activity={activity}
+          agent={agent}
+          seq={e.seq}
+          loadDetails={loadDetails}
+        />
+      );
     if (e.kind === "assistant") {
       const info = responseInfo(e.response);
       return (
@@ -1198,10 +1296,10 @@ const EventView = React.memo(
           openCard({
             title: e.kind === "approval" ? approvalTitle(e) : e.kind,
             content: () => (
-              <>
-                <pre>{e.text}</pre>
-                {e.payload.length > 0 && <pre>{detail(e)}</pre>}
-              </>
+              <EventDetails
+                event={e}
+                loadDetails={e.payload.length ? undefined : loadDetails}
+              />
             ),
           })
         }
@@ -1215,6 +1313,8 @@ const EventView = React.memo(
   (previous, next) =>
     previous.e === next.e &&
     previous.agent === next.agent &&
+    previous.activity === next.activity &&
+    previous.loadDetails === next.loadDetails &&
     JSON.stringify(previous.completion) === JSON.stringify(next.completion),
 );
 function Approval({

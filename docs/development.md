@@ -28,6 +28,10 @@ it at a specific agent binary.
 
 ## Tests
 
+For web UI edits against a real local Manager, run `cxz web up` on that host and
+`npm run dev` in `ts/`. Vite reads the installed web settings and signs in using
+the local token file. See [web development](web.md#developing-the-ui-against-the-installed-manager).
+
 ```sh
 go vet ./...
 go test ./...

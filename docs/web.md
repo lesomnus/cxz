@@ -4,6 +4,36 @@ A browser client served from the same origin as its RPC endpoint. It operates
 existing sessions in the installed local Manager, and is not a replacement for
 every TUI or CLI feature.
 
+The session panel keeps the current session highlighted. Its scrollbar shows
+only a handle while the panel is hovered, with no visible track or arrow buttons;
+revealing it does not change the list width.
+
+The conversation renders messages, tool activity and actionable notices.
+Protocol `raw` records, quota/model polling and internal control acknowledgements
+remain in the journal but do not appear as conversation rows. Usage snapshots
+still drive composer indicators, and turn-completion events still supply response
+metrics. A successful completion represented by a loaded final response is shown
+in that response's footer rather than a separate `turn_end completed` row.
+Failures, interruptions and completion notices without a matching loaded response
+remain visible.
+
+Tool executions stay at their original transcript position. The call, associated
+approval, streamed output and result are grouped by run and native execution ID
+into one status row, like the TUI. Shell wrappers are shown as the shell name and
+the script it runs. Click the row for input, output, result and approval records
+in the shared floating details card. Unrelated approvals and questions retain
+their existing answer controls; orphan output/results at a loaded-history edge
+remain inspectable until their call is loaded.
+
+History paging follows the rendered content, including after viewport changes.
+Short pages containing mostly protocol traffic automatically load older pages
+until the pane has reading room, without requiring a scrollbar first. The initial
+tail is fetched through the session snapshot; near-edge paging follows the reading
+direction rather than alternating both ends. Cache trimming prefers conversation
+and tool records over internal traffic, retains fetched pagination boundaries and
+keeps metadata separately. Row measurements and viewport changes preserve the
+reader's position or keep the latest response in view when following.
+
 ## A browser on this desktop
 
 On the Linux Manager host, with the Manager already running:
@@ -35,6 +65,44 @@ Plaintext is confined to that case. An `http` origin must name a loopback
 address, and a gateway with no certificate is refused on a published address a
 network can reach — `cxz web up --listen 0.0.0.0:7350` fails rather than putting
 an unencrypted gateway on your LAN.
+
+## Developing the UI against the installed Manager
+
+On the same host as cxz, start the gateway, then run Vite from the checkout:
+
+```sh
+cxz web up
+cd ts
+npm ci
+npm run dev
+```
+
+Open `http://127.0.0.1:5173/`. UI edits use Vite HMR; API calls, editor connections
+and terminal WebSockets are proxied to the installed gateway. This uses real
+projects and sessions, including real sends and decisions.
+
+The dev server reads `STATE/web-installation.json` first, so gateway address and
+token-path overrides from the last successful `cxz web up` are respected. It
+falls back to `STATE/web.json`. `STATE` follows `CXZ_STATE`, `$XDG_STATE_HOME/cxz`,
+then `~/.local/state/cxz`, like the CLI. To explicitly select another configuration:
+
+```sh
+CXZ_WEB_CONFIG=/absolute/path/to/web.json npm run dev
+```
+
+The default token file is `STATE/web-token`; `access_token_file` in the selected
+configuration can point elsewhere, including a path relative to that JSON file.
+On the initial browser authentication check, Vite reuses an existing gateway
+session or reads this file and signs in server-side. Only the gateway's HttpOnly
+session cookie reaches the browser. The access token is never included in UI
+assets, browser storage or dev-server logs, and is read again for each new login
+so token rotation does not require restarting Vite. Sign out still works; a page
+reload signs in automatically again in this local development mode.
+
+Automatic sign-in binds Vite to loopback HTTP and checks the browser origin
+before rewriting headers for the gateway. Production builds and `npm run sandbox`
+do not load this dev-only configuration. Stop the sandbox before starting dev if
+it is using the same port; `npm run dev -- --port 5174` selects another.
 
 ## Reaching it from another machine
 

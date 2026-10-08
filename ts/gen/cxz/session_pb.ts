@@ -21,7 +21,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file cxz/session.proto.
  */
 export const file_cxz_session: GenFile = /*@__PURE__*/
-  fileDesc("ChFjeHovc2Vzc2lvbi5wcm90bxIDY3h6IqQFCgdTZXNzaW9uEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABIXCgVhbGlhcxgEIAEoCUII6oIWBDABOAESDAoEbmFtZRgFIAEoCRIMCgRkZXNjGAYgASgJEiUKB3Byb2plY3QYCCABKAsyDC5jeHouUHJvamVjdEIG8oIWAkABEhUKBWFnZW50GAkgASgJQgbqghYCQAESFQoFbW9kZWwYCiABKAlCBuqCFgJAARIcCgpydW50aW1lX2lkGAsgASgJQgjqghYEMAFAARIbCgljbGllbnRfaWQYDCABKAlCCOqCFgQwAUABEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBABIiCgZzdGF0dXMYECABKAsyEi5jeHouU2Vzc2lvblN0YXR1cxIbCgZsaXN0ZWQYESABKAhCC+qCFgeCAQR0cnVlEiUKB2FjY291bnQYEiABKAsyDC5jeHouQWNjb3VudEIG8oIWAkABEi4KDGF1dGhfYmluZGluZxgTIAEoCzIQLmN4ei5BdXRoQmluZGluZ0IG8oIWAkABOnHK/BUmEgIQARogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAGKuxZDCAgyOwoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZhoJCgdwcm9qZWN0GggKBmxpc3RlZCAyKMgBOgAqACKgAQoNU2Vzc2lvblN0YXR1cxINCgVzdGF0ZRgBIAEoCRIOCgZydW5faWQYAiABKAkSEQoJdmVuZG9yX2lkGAMgASgJEhAKCGxhc3Rfc2VxGAQgASgEEiIKB3BlbmRpbmcYBSADKAsyES5jeHouU2Vzc2lvbkV2ZW50EhcKD3Blcm1pc3Npb25fbW9kZRgGIAEoCRIOCgZxdWV1ZWQYByABKAkipgEKDFNlc3Npb25FdmVudBIOCgZydW5faWQYASABKAkSCwoDc2VxGAIgASgEEg8KB3RpbWVfbXMYAyABKAMSDAoEa2luZBgEIAEoCRIMCgR0ZXh0GAUgASgJEhIKCnJlcXVlc3RfaWQYBiABKAkSDwoHcGF5bG9hZBgHIAEoDBInCghyZXNwb25zZRgIIAEoCzIVLmN4ei5SZXNwb25zZU1ldGFkYXRhIpcBChBSZXNwb25zZU1ldGFkYXRhEg0KBW1vZGVsGAEgASgJEg4KBmVmZm9ydBgCIAEoCRIUCgxtb2RlbF9zb3VyY2UYAyABKAkSFQoNZWZmb3J0X3NvdXJjZRgEIAEoCRIPCgd0dXJuX2lkGAUgASgJEg0KBXBoYXNlGAYgASgJEhcKD2NvbXBsZXRpb25fanNvbhgHIAEoDEInWiBnaXRodWIuY29tL2xlc29tbnVzL2N4ei9yZXNvdXJjZZIDAggCYghlZGl0aW9uc3DoBw", [file_cxz_project, file_cxz_account, file_cxz_auth_binding, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("ChFjeHovc2Vzc2lvbi5wcm90bxIDY3h6IqQFCgdTZXNzaW9uEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABIXCgVhbGlhcxgEIAEoCUII6oIWBDABOAESDAoEbmFtZRgFIAEoCRIMCgRkZXNjGAYgASgJEiUKB3Byb2plY3QYCCABKAsyDC5jeHouUHJvamVjdEIG8oIWAkABEhUKBWFnZW50GAkgASgJQgbqghYCQAESFQoFbW9kZWwYCiABKAlCBuqCFgJAARIcCgpydW50aW1lX2lkGAsgASgJQgjqghYEMAFAARIbCgljbGllbnRfaWQYDCABKAlCCOqCFgQwAUABEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBABIiCgZzdGF0dXMYECABKAsyEi5jeHouU2Vzc2lvblN0YXR1cxIbCgZsaXN0ZWQYESABKAhCC+qCFgeCAQR0cnVlEiUKB2FjY291bnQYEiABKAsyDC5jeHouQWNjb3VudEIG8oIWAkABEi4KDGF1dGhfYmluZGluZxgTIAEoCzIQLmN4ei5BdXRoQmluZGluZ0IG8oIWAkABOnHK/BUmEgIQARogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAGKuxZDCAgyOwoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZhoJCgdwcm9qZWN0GggKBmxpc3RlZCAyKMgBOgAqACKgAQoNU2Vzc2lvblN0YXR1cxINCgVzdGF0ZRgBIAEoCRIOCgZydW5faWQYAiABKAkSEQoJdmVuZG9yX2lkGAMgASgJEhAKCGxhc3Rfc2VxGAQgASgEEiIKB3BlbmRpbmcYBSADKAsyES5jeHouU2Vzc2lvbkV2ZW50EhcKD3Blcm1pc3Npb25fbW9kZRgGIAEoCRIOCgZxdWV1ZWQYByABKAkizgEKDFNlc3Npb25FdmVudBIOCgZydW5faWQYASABKAkSCwoDc2VxGAIgASgEEg8KB3RpbWVfbXMYAyABKAMSDAoEa2luZBgEIAEoCRIMCgR0ZXh0GAUgASgJEhIKCnJlcXVlc3RfaWQYBiABKAkSDwoHcGF5bG9hZBgHIAEoDBInCghyZXNwb25zZRgIIAEoCzIVLmN4ei5SZXNwb25zZU1ldGFkYXRhEiYKDHRvb2xfc3VtbWFyeRgJIAEoCzIQLmN4ei5Ub29sU3VtbWFyeSJKCgtUb29sU3VtbWFyeRIMCgRuYW1lGAEgASgJEg0KBXNoZWxsGAIgASgJEg8KB2NvbW1hbmQYAyABKAkSDQoFc3RhdGUYBCABKAkilwEKEFJlc3BvbnNlTWV0YWRhdGESDQoFbW9kZWwYASABKAkSDgoGZWZmb3J0GAIgASgJEhQKDG1vZGVsX3NvdXJjZRgDIAEoCRIVCg1lZmZvcnRfc291cmNlGAQgASgJEg8KB3R1cm5faWQYBSABKAkSDQoFcGhhc2UYBiABKAkSFwoPY29tcGxldGlvbl9qc29uGAcgASgMQidaIGdpdGh1Yi5jb20vbGVzb21udXMvY3h6L3Jlc291cmNlkgMCCAJiCGVkaXRpb25zcOgH", [file_cxz_project, file_cxz_account, file_cxz_auth_binding, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * The durable conversation identity. Runtime/run IDs and journal cursors are
@@ -210,6 +210,13 @@ export type SessionEvent = Message<"cxz.SessionEvent"> & {
    * @generated from field: cxz.ResponseMetadata response = 8;
    */
   response?: ResponseMetadata | undefined;
+
+  /**
+   * Present only on a derived transcript row, never in the native live journal.
+   *
+   * @generated from field: cxz.ToolSummary tool_summary = 9;
+   */
+  toolSummary?: ToolSummary | undefined;
 };
 
 /**
@@ -218,6 +225,38 @@ export type SessionEvent = Message<"cxz.SessionEvent"> & {
  */
 export const SessionEventSchema: GenMessage<SessionEvent> = /*@__PURE__*/
   messageDesc(file_cxz_session, 2);
+
+/**
+ * @generated from message cxz.ToolSummary
+ */
+export type ToolSummary = Message<"cxz.ToolSummary"> & {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name: string;
+
+  /**
+   * @generated from field: string shell = 2;
+   */
+  shell: string;
+
+  /**
+   * @generated from field: string command = 3;
+   */
+  command: string;
+
+  /**
+   * @generated from field: string state = 4;
+   */
+  state: string;
+};
+
+/**
+ * Describes the message cxz.ToolSummary.
+ * Use `create(ToolSummarySchema)` to create a new message.
+ */
+export const ToolSummarySchema: GenMessage<ToolSummary> = /*@__PURE__*/
+  messageDesc(file_cxz_session, 3);
 
 /**
  * Frozen response context; sources are response, settings or requested.
@@ -269,5 +308,5 @@ export type ResponseMetadata = Message<"cxz.ResponseMetadata"> & {
  * Use `create(ResponseMetadataSchema)` to create a new message.
  */
 export const ResponseMetadataSchema: GenMessage<ResponseMetadata> = /*@__PURE__*/
-  messageDesc(file_cxz_session, 3);
+  messageDesc(file_cxz_session, 4);
 

@@ -1,7 +1,14 @@
 import { describe, it, expect } from "vitest";
 import { create } from "@bufbuild/protobuf";
-import { SessionEventSchema } from "../gen/cxz/session_pb";
-import { mergeEvents, MAX_EVENTS, questions } from "./journal";
+import { SessionSchema, SessionEventSchema } from "../gen/cxz/session_pb";
+import { mergeMetadata } from "./session-metadata";
+import { sessionInfo } from "./session-info";
+import {
+  mergeEvents,
+  MAX_EVENTS,
+  questions,
+  isTranscriptEvent,
+} from "./journal";
 const event = (seq: bigint) =>
   create(SessionEventSchema, {
     seq,
@@ -9,7 +16,105 @@ const event = (seq: bigint) =>
     kind: "assistant",
     text: "hello",
   });
+describe("transcript events", () => {
+  it("keeps protocol and quota polling in history without rendering conversation rows", () => {
+    const rows = [
+      create(SessionEventSchema, { seq: 1n, kind: "input", text: "Hello" }),
+      create(SessionEventSchema, { seq: 2n, kind: "raw" }),
+      create(SessionEventSchema, { seq: 3n, kind: "assistant", text: "Hi" }),
+      create(SessionEventSchema, {
+        seq: 4n,
+        kind: "usage_status",
+        text: "polling",
+      }),
+    ];
+    const history = mergeEvents([], rows);
+    expect(history.filter(isTranscriptEvent).map((e) => e.seq)).toEqual([
+      1n,
+      3n,
+    ]);
+    expect(history.map((e) => e.seq)).toEqual([1n, 2n, 3n, 4n]);
+  });
+
+  it("still updates the quota indicator from snapshots omitted from the conversation", () => {
+    const usage = create(SessionEventSchema, {
+      seq: 1n,
+      kind: "usage",
+      runId: "run",
+      text: "account/rateLimits/updated",
+      payload: new TextEncoder().encode(
+        JSON.stringify({ rateLimits: { primary: { usedPercent: 25 } } }),
+      ),
+    });
+    const history = mergeEvents([], [usage]);
+    expect(history.filter(isTranscriptEvent)).toEqual([]);
+    const session = create(SessionSchema, {
+      agent: "codex",
+      status: { runId: "run" },
+    });
+    expect(sessionInfo(session, mergeMetadata([], history)).remaining).toBe(75);
+  });
+
+  it("preserves approval requests and actual diagnostics beside internal failure statuses", () => {
+    const rows = [
+      create(SessionEventSchema, { kind: "raw" }),
+      create(SessionEventSchema, { kind: "usage_status", text: "error" }),
+      create(SessionEventSchema, {
+        kind: "diagnostic",
+        text: "Codex request failed",
+      }),
+      create(SessionEventSchema, {
+        kind: "approval",
+        text: "item/commandExecution/requestApproval",
+        requestId: "pending",
+      }),
+      create(SessionEventSchema, { kind: "receipt", text: "send" }),
+    ];
+    expect(rows.filter(isTranscriptEvent)).toEqual([rows[2], rows[3]]);
+  });
+});
+
 describe("journal recovery", () => {
+  it("keeps messages, approval resolutions and fetched boundaries through protocol floods", () => {
+    const input = create(SessionEventSchema, { seq: 1n, kind: "input" });
+    const resolved = create(SessionEventSchema, {
+      seq: 2n,
+      kind: "approval_resolved",
+      requestId: "tool",
+    });
+    const noise = Array.from({ length: MAX_EVENTS * 2 }, (_, i) =>
+      create(SessionEventSchema, {
+        seq: BigInt(i + 3),
+        kind: i % 2 ? "raw" : "usage_status",
+      }),
+    );
+    const result = mergeEvents([input, resolved], noise);
+    expect(result).toContain(input);
+    expect(result).toContain(resolved);
+    expect(result.at(-1)?.seq).toBe(noise.at(-1)?.seq);
+    expect(result.length).toBeLessThanOrEqual(MAX_EVENTS);
+  });
+
+  it("prepends sparse pages without dropping the latest messages before the pane can fill", () => {
+    const newest = event(10000n);
+    let cached = [newest];
+    for (let page = 0; page < 10; page++) {
+      const first = BigInt(10000 - (page + 1) * 128);
+      const incoming = Array.from({ length: 128 }, (_, i) =>
+        create(SessionEventSchema, {
+          seq: first + BigInt(i),
+          kind: i === 64 ? "assistant" : "raw",
+          text: "recorded",
+        }),
+      );
+      cached = mergeEvents(cached, incoming, "older");
+      expect(cached[0].seq).toBe(first);
+      expect(cached).toContain(newest);
+      expect(cached.filter(isTranscriptEvent)).toHaveLength(page + 2);
+      expect(cached.length).toBeLessThanOrEqual(MAX_EVENTS);
+    }
+  });
+
   it("deduplicates replayed events without losing uint64 cursor precision", () => {
     const n = 9007199254740993n;
     expect(

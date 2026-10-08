@@ -78,12 +78,16 @@ export function VirtualMessages({
     const el = pane.current!;
     observer.current = new ResizeObserver((entries) => {
       let dirty = false;
-      if (el.clientWidth !== width.current) {
+      // The centered reading column can keep its width while the pane resizes.
+      // Clearing heights then loses mounted measurements: those rows did not
+      // resize, so ResizeObserver has no replacement entries to deliver.
+      const columnWidth = root.current!.clientWidth;
+      if (columnWidth !== width.current) {
         if (width.current) {
           sizes.current.clear();
           dirty = true;
         }
-        width.current = el.clientWidth;
+        width.current = columnWidth;
       }
       for (const entry of entries) {
         const node = entry.target as HTMLElement;
