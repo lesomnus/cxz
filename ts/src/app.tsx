@@ -220,7 +220,7 @@ export function Workspace({
         </Button>
       </nav>
       <aside
-        className="resource-panel"
+        className={`resource-panel${resource === "sessions" ? " session-panel" : ""}`}
         aria-label={
           resource === "sessions"
             ? t("Session list")

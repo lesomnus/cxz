@@ -4,6 +4,10 @@ A browser client served from the same origin as its RPC endpoint. It operates
 existing sessions in the installed local Manager, and is not a replacement for
 every TUI or CLI feature.
 
+The session panel keeps the current session highlighted. Its scrollbar shows
+only a handle while the panel is hovered, with no visible track or arrow buttons;
+revealing it does not change the list width.
+
 ## A browser on this desktop
 
 On the Linux Manager host, with the Manager already running:

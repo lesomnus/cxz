@@ -27,7 +27,7 @@ explained in the mobile plan; it remains Not implemented in the web column.
 
 | ID | CLI | TUI | Web |
 |---|---|---|---|
-| NAV-01 | Partial: `project ls`, `session ls/get`; includes down/foreign projects, no interactive active-list filtering | Supported: project/session lists, active-project filtering, hover + creation shortcut and ? help | Not implemented |
+| NAV-01 | Partial: `project ls`, `session ls/get`; includes down/foreign projects, no interactive active-list filtering | Supported: project/session lists, active-project filtering, hover + creation shortcut and ? help | Partial: listed projects and sessions with pagination, identities/agent/state, current-session highlight and panel-hover scrollbar handle; [web client](web.md) |
 | NAV-02 | N/A: one-shot commands have no view history | Supported: session navigation and Alt+Left/Right history | Not implemented |
 | SES-01 | Supported: `session new`, account flow | Supported: new-session account/login flow | Not implemented |
 | SES-02 | Partial: `project add/set`, creation-time session metadata; no standalone session rename command | Partial: session alias rename; no project metadata editor | Not implemented |
