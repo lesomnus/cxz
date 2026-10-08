@@ -172,6 +172,11 @@ test.use({
   hasTouch: false,
   deviceScaleFactor: 1,
 });
+test.afterEach(async ({ page }) => {
+  // Session refreshes can still be fetching when the scroll assertions finish.
+  // Complete those handlers before Playwright disposes their API responses.
+  await page.unrouteAll({ behavior: "wait" });
+});
 for (const mode of ["legacy", "summary"])
   test(`${mode} recorded pages fill a tall pane and keep scrolling usable through resize`, async ({
     page,
