@@ -22,10 +22,12 @@ test("provider dropdowns, quota popovers, aligned headings and bounded press/sha
   );
   const card = page.locator(".tree-session").first();
   const title = card.locator(".session-title");
+  const alias = card.locator(".session-alias");
   const heading = card.locator(".session-heading");
   const logo = card.getByRole("img", { name: "Claude", exact: true });
   const description = card.locator(".session-description");
   const titleBefore = (await title.boundingBox())!;
+  const aliasBefore = (await alias.boundingBox())!;
   const headingBefore = (await heading.boundingBox())!;
   const logoBefore = (await logo.boundingBox())!;
   const descriptionBefore = (await description.boundingBox())!;
@@ -34,13 +36,14 @@ test("provider dropdowns, quota popovers, aligned headings and bounded press/sha
   const indicatorBefore = (await indicator.boundingBox())!;
   expect(logoBefore.x + logoBefore.width).toBeLessThan(titleBefore.x);
   expect(descriptionBefore.x).toBe(titleBefore.x);
-  expect(descriptionBefore.y).toBeGreaterThan(
+  expect(descriptionBefore.y).toBeCloseTo(
     titleBefore.y + titleBefore.height,
+    1,
   );
   expect(logoBefore.x).toBe(indicatorBefore.x + indicatorBefore.width + 6);
   expect(indicatorBefore.y).toBe(headingBefore.y + 1);
-  expect(logoBefore.width).toBe(12);
-  expect(logoBefore.height).toBe(12);
+  expect(logoBefore.width).toBe(14);
+  expect(logoBefore.height).toBe(14);
   expect(
     logoBefore.y +
       logoBefore.height / 2 -
@@ -55,6 +58,10 @@ test("provider dropdowns, quota popovers, aligned headings and bounded press/sha
   await expect
     .poll(async () => (await title.boundingBox())!.width)
     .toBeCloseTo(titleBefore.width * scale, 1);
+  await expect
+    .poll(async () => (await alias.boundingBox())!.width)
+    .toBeCloseTo(aliasBefore.width * scale, 1);
+  expect((await alias.boundingBox())!.x).toBeCloseTo(aliasBefore.x, 2);
   expect(
     titleBefore.width - (await title.boundingBox())!.width,
   ).toBeLessThanOrEqual(4.1);
@@ -83,6 +90,9 @@ test("provider dropdowns, quota popovers, aligned headings and bounded press/sha
   await expect
     .poll(async () => (await title.boundingBox())!.width)
     .toBeCloseTo(titleBefore.width, 1);
+  await expect
+    .poll(async () => (await alias.boundingBox())!.width)
+    .toBeCloseTo(aliasBefore.width, 1);
   const input = page.locator("article.input").first();
   await expect(input.locator(".input-prefix")).toHaveText(">");
   await expect(input).not.toContainText("You");
