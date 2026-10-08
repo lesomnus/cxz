@@ -5,6 +5,7 @@ import {
   type Locator,
   type Page,
 } from "@playwright/test";
+import { disableTerminalWebGL } from "../test-support/terminal";
 
 test.use({
   userAgent: devices["Desktop Chrome"].userAgent,
@@ -210,6 +211,7 @@ test("horizontal code, dropdowns and Monaco reuse the panel handle styling", asy
 test("terminal scrollback uses the same handle and keeps its own wheel scrolling", async ({
   page,
 }) => {
+  await disableTerminalWebGL(page);
   await ready(page);
   await page.keyboard.press("Control+Backquote");
   const terminal = page.getByRole("region", {

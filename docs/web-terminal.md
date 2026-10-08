@@ -1,8 +1,8 @@
 # Conversation workspace terminal
 
 Press **Ctrl+`** (`Ctrl+Backquote`) in a conversation, including its composer or
-terminal, to toggle the shell panel below the composer. The title bar's **>\_**
-button provides the same action on touch devices. The shortcut uses the physical
+terminal, to toggle the shell panel below the composer. The title bar's session
+menu provides the same action on touch devices. The shortcut uses the physical
 Backquote key or a backtick character, ignores key repeats and IME composition,
 and excludes Alt/Meta/Shift combinations. A browser or OS shortcut intercepted
 before delivery cannot be handled by the page; the button remains available.
@@ -42,7 +42,18 @@ count after xterm's write callback parses it. This backpressure bounds output
 buffers when a command floods stdout, even while folded. Writes/acknowledgements
 time out after 30 seconds. Browser input buffering is bounded to 1 MiB, with an
 explicit disconnected state on congestion. xterm and its styles load lazily on
-first use. ANSI colors are displayed in grayscale; no addon interprets terminal
+first use. The optional WebGL addon also loads on demand. It renders through the
+GPU when available; failed downloads, unsupported WebGL or initialization errors
+leave the DOM renderer in place. When the addon cannot recover a lost context,
+it is disposed to restore the DOM renderer without restarting the shell or
+clearing its buffer or selection. That terminal keeps using DOM until it closes;
+opening a new terminal or reconnecting tries WebGL again.
+Renderer cleanup runs before terminal disposal, and pending imports cannot attach
+to a terminal that has already been closed. Text selection and copying remain
+managed by xterm independently of the renderer. Hidden panels keep receiving
+output while xterm defers drawing until they are visible again.
+
+ANSI colors are displayed in grayscale; no addon interprets terminal
 output as HTML, opens links or accesses the clipboard.
 
 ## WASM sandbox
@@ -62,7 +73,9 @@ WebSocket, checking command output, resize, origin/session rejection and revocat
 while output is awaiting acknowledgement. Production browser tests cover real
 PTY commands, Ctrl+C, shell state across folding, resizing, reconnect, sign-out
 and the gateway CSP. Sandbox browser tests cover desktop shortcuts, focus/drafts,
-project isolation, wide-view coexistence, reconnect and mobile sizing.
+project isolation, wide-view coexistence, reconnect and mobile sizing. Renderer
+tests cover actual WebGL drawing and drag selection, unavailable WebGL, and forced
+context loss with continued output and selection on the DOM renderer.
 
 References: [xterm.js API](https://xtermjs.org/docs/api/terminal/classes/terminal/),
 [flow control](https://xtermjs.org/docs/guides/flowcontrol/),

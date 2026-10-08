@@ -1,5 +1,6 @@
 import { test, expect, devices, type Page } from "@playwright/test";
 import { chooseSetting, expectInherited } from "./settings-controls";
+import { disableTerminalWebGL } from "../test-support/terminal";
 test.use({
   ...devices["Desktop Chrome"],
   viewport: { width: 2000, height: 1000 },
@@ -178,6 +179,7 @@ test("cross-tab theme changes retain the composer Undo, selected file and runnin
   page,
   context,
 }) => {
+  await disableTerminalWebGL(page);
   await ready(page);
   const input = page.getByRole("textbox", { name: "Message", exact: true });
   const original = await input.elementHandle();

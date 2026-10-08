@@ -1,4 +1,7 @@
 import { test, expect, devices } from "@playwright/test";
+import { disableTerminalWebGL } from "../test-support/terminal";
+
+test.beforeEach(async ({ page }) => disableTerminalWebGL(page));
 
 test.describe("desktop terminal", () => {
   test.use({

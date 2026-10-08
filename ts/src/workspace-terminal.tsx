@@ -7,6 +7,7 @@ import { ProjectService } from "../gen/cxz/project_svc_pb";
 import type { Connection } from "./connection";
 import { Button } from "./button";
 import { openTerminal, type TerminalLink } from "./terminal-link";
+import { enableTerminalWebGL } from "./terminal-renderer";
 
 export function terminalShortcut(
   event: Pick<
@@ -86,6 +87,12 @@ export function WorkspaceTerminal({
       const fitter = new FitAddon();
       term.loadAddon(fitter);
       term.open(screen.current!);
+      const disposeRenderer = enableTerminalWebGL(term);
+      // Install cleanup before opening the transport, including partial setup.
+      cleanup = () => {
+        disposeRenderer();
+        term.dispose();
+      };
       const resize = () => {
         if (!screen.current?.clientWidth || !screen.current?.clientHeight)
           return;
@@ -145,6 +152,7 @@ export function WorkspaceTerminal({
         data.dispose();
         sizes.dispose();
         transport.close();
+        disposeRenderer();
         term.dispose();
         terminal.current = null;
         link.current = null;
