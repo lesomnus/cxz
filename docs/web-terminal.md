@@ -7,7 +7,7 @@ Backquote key or a backtick character, ignores key repeats and IME composition,
 and excludes Alt/Meta/Shift combinations. A browser or OS shortcut intercepted
 before delivery cannot be handled by the page; the button remains available.
 
-The panel uses a monochrome xterm.js terminal with a login shell in the selected
+The panel uses an xterm.js terminal with a login shell in the selected
 session's **project** workspace, as its resolved remote user. It reuses
 `ProjectService.Terminal`, the same PTY lifecycle and ownership validation used by
 the TUI. It requires an existing running devcontainer; opening it does not start
@@ -53,8 +53,12 @@ to a terminal that has already been closed. Text selection and copying remain
 managed by xterm independently of the renderer. Hidden panels keep receiving
 output while xterm defers drawing until they are visible again.
 
-ANSI colors are displayed in grayscale; no addon interprets terminal
-output as HTML, opens links or accesses the clipboard.
+The standard ANSI colors use a subdued palette, with brighter variants on dark
+backgrounds and deeper variants on light backgrounds. Theme changes recolor the
+existing buffer without reconnecting the shell. Indexed and truecolor escape
+sequences keep xterm's native handling. Palette values live in
+`terminalTheme` in [workspace-terminal.tsx](../ts/src/workspace-terminal.tsx).
+No addon interprets terminal output as HTML, opens links or accesses the clipboard.
 
 ## WASM sandbox
 

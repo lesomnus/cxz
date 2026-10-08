@@ -205,28 +205,26 @@ export function WorkspaceTerminal({
 
 function terminalTheme(theme: "light" | "dark") {
   const light = theme === "light";
-  const normal = light ? "#555555" : "#bbbbbb";
-  const bright = light ? "#222222" : "#eeeeee";
   return {
     background: light ? "#fbfbfb" : "#111111",
     foreground: light ? "#202020" : "#ededed",
     cursor: light ? "#202020" : "#ededed",
     selectionBackground: light ? "#cccccc" : "#444444",
     black: "#111111",
-    red: normal,
-    green: normal,
-    yellow: normal,
-    blue: normal,
-    magenta: normal,
-    cyan: normal,
+    red: light ? "#a04a4a" : "#c07878",
+    green: light ? "#4c7135" : "#8fa979",
+    yellow: light ? "#82621f" : "#c1a36d",
+    blue: light ? "#386889" : "#7b9db9",
+    magenta: light ? "#7b4f8f" : "#ac8abd",
+    cyan: light ? "#2f716c" : "#76aaa6",
     white: light ? "#666666" : "#dddddd",
     brightBlack: "#777777",
-    brightRed: bright,
-    brightGreen: bright,
-    brightYellow: bright,
-    brightBlue: bright,
-    brightMagenta: bright,
-    brightCyan: bright,
+    brightRed: light ? "#913737" : "#e49a9a",
+    brightGreen: light ? "#3d6425" : "#b1c995",
+    brightYellow: light ? "#725114" : "#dec08c",
+    brightBlue: light ? "#275877" : "#a0bfd8",
+    brightMagenta: light ? "#6b3e7e" : "#c9abd7",
+    brightCyan: light ? "#20635e" : "#9acac5",
     brightWhite: light ? "#333333" : "#ffffff",
   };
 }
