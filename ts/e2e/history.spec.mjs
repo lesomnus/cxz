@@ -364,21 +364,30 @@ test("viewport fades cover native tool rows while the scrollbar and detail inter
   await openReplay(page, true, { events });
   const pane = page.locator(".transcript");
   await expect(page.locator(".tool-activity").first()).toBeAttached();
+  await expect(page.locator(".scroll-response-marker")).toHaveCount(0);
   await pane.evaluate((el) => {
     el.scrollTop = (el.scrollHeight - el.clientHeight) / 2;
   });
   for (const edge of ["top", "bottom"]) {
-    const seq = await pane.evaluate((el) => {
-      const area = el.getBoundingClientRect();
-      const task = [...el.querySelectorAll(".tool-activity")].find((node) => {
-        const box = node.getBoundingClientRect();
-        return (
-          box.top > area.top + area.height / 3 &&
-          box.bottom < area.bottom - area.height / 3
-        );
-      });
-      return task.dataset.seq;
-    });
+    let seq;
+    await expect
+      .poll(async () => {
+        seq = await pane.evaluate((el) => {
+          const area = el.getBoundingClientRect();
+          const task = [...el.querySelectorAll(".tool-activity")].find(
+            (node) => {
+              const box = node.getBoundingClientRect();
+              return (
+                box.top > area.top + area.height / 3 &&
+                box.bottom < area.bottom - area.height / 3
+              );
+            },
+          );
+          return task?.dataset.seq;
+        });
+        return seq;
+      })
+      .toBeTruthy();
     const task = page.locator(`.tool-activity[data-seq="${seq}"]`);
     await task.evaluate((el, edge) => {
       const pane = el.closest(".transcript");

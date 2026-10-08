@@ -86,7 +86,7 @@ const fields = [
 test("settings topics replace tabs, the 600px body stays centered and a live JSON pane unfolds at the conversation width threshold", async ({
   page,
 }) => {
-  await page.setViewportSize({ width: 1823, height: 1000 });
+  await page.setViewportSize({ width: 1843, height: 1000 });
   await ready(page);
   await settings(page);
   const topics = page.getByRole("navigation", {
@@ -127,7 +127,7 @@ test("settings topics replace tabs, the 600px body stays centered and a live JSO
   expect(await centered()).toEqual({ width: 600, delta: 0 });
   await expect(pane).toBeHidden();
   await expect(page.locator(".settings-file .monaco-editor")).toHaveCount(0);
-  await page.setViewportSize({ width: 1824, height: 1000 });
+  await page.setViewportSize({ width: 1844, height: 1000 });
   await expect(pane).toBeVisible();
   expect((await form.boundingBox())!.width).toBe(800);
   expect((await pane.boundingBox())!.width).toBe(800);
@@ -141,7 +141,7 @@ test("settings topics replace tabs, the 600px body stays centered and a live JSO
   await source.evaluate((el) => {
     (el as HTMLElement).dataset.identity = "original";
   });
-  await page.setViewportSize({ width: 1823, height: 1000 });
+  await page.setViewportSize({ width: 1843, height: 1000 });
   await expect(source).toBeVisible();
   await expect(form).toBeHidden();
   await expect(source).toBeFocused();
@@ -561,7 +561,7 @@ test("global settings update the readonly file viewer in place while conversatio
       }),
     ),
   );
-  await page.setViewportSize({ width: 1824, height: 1000 });
+  await page.setViewportSize({ width: 1844, height: 1000 });
   await ready(page);
   const editor = page.getByRole("complementary", { name: "Workspace editor" });
   await editor.getByRole("button", { name: "src", exact: true }).click();

@@ -115,12 +115,16 @@ func (s SessionServer) List(ctx context.Context, r *resource.SessionListRequest)
 	return page, nil
 }
 func (s SessionServer) Watch(r *resource.SessionWatchRequest, stream grpc.ServerStreamingServer[resource.SessionWatchResponse]) error {
+	// No project constraint means every listed session, just like List.
+	if len(r.GetFilters()) == 0 {
+		r.SetFilters([]*resource.SessionFilter{resource.SessionFilter_builder{Listed: ptr(true)}.Build()})
+	}
 	s.shared.watchers.Add(1)
 	defer s.shared.watchers.Add(-1)
 	if err := s.ensureSnapshot(stream.Context()); err != nil {
 		return err
 	}
-	return s.SessionServiceServer.Watch(r, stream)
+	return s.watchInventory(r, stream)
 }
 func (s SessionServer) Patch(ctx context.Context, r *resource.SessionPatchRequest) (*resource.Session, error) {
 	s.shared.transition.RLock()

@@ -8,6 +8,17 @@ The session panel keeps the current session highlighted. Its scrollbar shows
 only a handle while the panel is hovered, with no visible track or arrow buttons;
 revealing it does not change the list width.
 
+The browser shares project and session inventories across navigation. Each entity
+type has a bounded initial List and a single Watch spanning all listed projects;
+project groups use this shared state instead of opening their own requests. The
+Watch snapshot streams the full inventory, followed by row additions, updates and
+removals. Disconnected streams reconnect with backoff, and signing out cancels
+both subscriptions. On the Manager API, empty List or Watch filters default to
+all listed resources; explicit filters still allow narrower or archived scopes.
+Older Managers that require individual IDs for Watch retain a paginated static
+list and show an update message instead of repeatedly retrying the unsupported
+subscription. The Manager must be updated to use shared live subscriptions.
+
 The conversation renders messages, tool activity and actionable notices.
 Protocol `raw` records, quota/model polling and internal control acknowledgements
 remain in the journal but do not appear as conversation rows. Usage snapshots
@@ -210,7 +221,7 @@ this terminal for developing cxz itself, and Ctrl+C stops only that gateway.
 
 | Area | Web support |
 | --- | --- |
-| Projects and sessions | Listed projects/sessions, project filter, pagination, opening existing sessions |
+| Projects and sessions | Shared listed-project/session inventories, live membership, collapsible project groups, opening existing sessions |
 | Conversation | Retained history, live events, Markdown, code blocks, response model/effort snapshots beside the agent logo, response copy, raw event details |
 | History | Last 2,000 events in browser memory; Manager retention still applies; latest button |
 | Drafts | Per-session in-memory drafts survive navigation within the tab, not reload/sign-out |

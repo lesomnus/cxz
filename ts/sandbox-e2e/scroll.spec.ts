@@ -63,6 +63,14 @@ test("grouped sessions, shortcut, stable fields and elastic local scrollbar", as
   );
   await expect(handle).toHaveCSS("opacity", "0.7");
   await expect(page.locator(".scroll-marker").first()).toBeVisible();
+  const responseMarker = page.locator(".scroll-response-marker").first();
+  await expect(responseMarker).toBeVisible();
+  expect((await responseMarker.boundingBox())!.width).toBeLessThan(
+    (await page.locator(".scroll-marker").first().boundingBox())!.width,
+  );
+  expect(await page.locator(".scroll-response-marker").count()).toBeLessThan(
+    400,
+  );
   const maximum = Number(await thumb.getAttribute("aria-valuemax"));
   const span = Number(await thumb.getAttribute("data-range"));
   expect(span).toBeLessThan(maximum);
@@ -104,9 +112,18 @@ test("grouped sessions, shortcut, stable fields and elastic local scrollbar", as
             parseFloat(getComputedStyle(el).top) < rail.clientHeight,
         )!;
         (window as any).savedPromptMarker = marker;
+        const response = [
+          ...rail.querySelectorAll<HTMLElement>(".scroll-response-marker"),
+        ].find(
+          (el) =>
+            parseFloat(getComputedStyle(el).top) > 0 &&
+            parseFloat(getComputedStyle(el).top) < rail.clientHeight,
+        )!;
         (window as any).promptAnimationStart = {
           id: marker.dataset.prompt!,
           marker: parseFloat(getComputedStyle(marker).top),
+          responseId: response.dataset.response!,
+          response: parseFloat(getComputedStyle(response).top),
           thumb: parseFloat(
             getComputedStyle(document.querySelector(".scroll-thumb")!).top,
           ),
@@ -126,6 +143,9 @@ test("grouped sessions, shortcut, stable fields and elastic local scrollbar", as
       `[data-prompt="${before.id}"]`,
     )!;
     const thumb = document.querySelector<HTMLElement>(".scroll-thumb")!;
+    const response = document.querySelector<HTMLElement>(
+      `[data-response="${before.responseId}"]`,
+    )!;
     return {
       sameNode: marker === (window as any).savedPromptMarker,
       markerProgress:
@@ -134,6 +154,9 @@ test("grouped sessions, shortcut, stable fields and elastic local scrollbar", as
       thumbProgress:
         (parseFloat(getComputedStyle(thumb).top) - before.thumb) /
         (Number(thumb.dataset.targetTop) - before.thumb),
+      responseProgress:
+        (parseFloat(getComputedStyle(response).top) - before.response) /
+        (Number(response.dataset.targetTop) - before.response),
     };
   });
   expect(animation.sameNode).toBe(true);
@@ -141,6 +164,9 @@ test("grouped sessions, shortcut, stable fields and elastic local scrollbar", as
   expect(animation.markerProgress).toBeLessThan(1);
   expect(
     Math.abs(animation.markerProgress - animation.thumbProgress),
+  ).toBeLessThan(0.12);
+  expect(
+    Math.abs(animation.markerProgress - animation.responseProgress),
   ).toBeLessThan(0.12);
   const first = await page
     .locator(".transcript-content [data-seq]")

@@ -165,6 +165,9 @@ func (*fixtureProjects) Get(context.Context, *resource.ProjectGetRequest) (*reso
 	return fixtureProject, nil
 }
 func (*fixtureProjects) Watch(_ *resource.ProjectWatchRequest, s grpc.ServerStreamingServer[resource.ProjectWatchResponse]) error {
+	if err := s.Send(resource.ProjectWatchResponse_builder{Items: []*resource.ProjectWatchItem{resource.ProjectWatchItem_builder{Id: fixtureProject.GetId(), Value: fixtureProject}.Build()}}.Build()); err != nil {
+		return err
+	}
 	<-s.Context().Done()
 	return s.Context().Err()
 }
@@ -195,6 +198,12 @@ func (f *browserFixture) List(context.Context, *resource.SessionListRequest) (*r
 	return resource.SessionListResponse_builder{Items: []*resource.Session{f.snapshot()}}.Build(), nil
 }
 func (f *browserFixture) Watch(_ *resource.SessionWatchRequest, s grpc.ServerStreamingServer[resource.SessionWatchResponse]) error {
+	f.mu.Lock()
+	value := f.snapshot()
+	f.mu.Unlock()
+	if err := s.Send(resource.SessionWatchResponse_builder{Items: []*resource.SessionWatchItem{resource.SessionWatchItem_builder{Id: value.GetId(), Value: value}.Build()}}.Build()); err != nil {
+		return err
+	}
 	<-s.Context().Done()
 	return s.Context().Err()
 }

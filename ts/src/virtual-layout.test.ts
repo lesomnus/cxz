@@ -102,3 +102,21 @@ it("keeps prompt positions and the reading fraction fixed when its row height ch
     before.toLogical(12 + old.rows[1].top + 40),
   );
 });
+
+it("marks user and assistant conversations while omitting tool and control rows", () => {
+  const events = [
+    "input",
+    "tool_call",
+    "tool_result",
+    "assistant",
+    "diagnostic",
+    "assistant",
+  ].map((kind, i) => create(SessionEventSchema, { seq: BigInt(i + 1), kind }));
+  const layout = messageLayout(events, new Map());
+  const map = messageMap(layout.rows, 12, new Map());
+  expect(map.markers.map(({ id, kind, y }) => [id, kind, y])).toEqual([
+    ["1", "input", 18],
+    ["4", "assistant", 318],
+    ["6", "assistant", 518],
+  ]);
+});

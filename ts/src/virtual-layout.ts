@@ -5,6 +5,7 @@ export type RowLayout = {
   top: number;
   height: number;
   prompt: boolean;
+  response: boolean;
 };
 
 // Navigation uses message positions, independent of measured pixel heights.
@@ -59,7 +60,15 @@ export function messageMap(
       return origin + row.top + offset;
     },
     markers: rows.flatMap((row, index) =>
-      row.prompt ? [{ id: row.id, y: origin + index * ROW_UNITS + 6 }] : [],
+      row.prompt || row.response
+        ? [
+            {
+              id: row.id,
+              kind: row.prompt ? ("input" as const) : ("assistant" as const),
+              y: origin + index * ROW_UNITS + 6,
+            },
+          ]
+        : [],
     ),
   };
 }
@@ -79,6 +88,7 @@ export function messageLayout(
       top,
       height,
       prompt: event.kind === "input",
+      response: event.kind === "assistant",
     };
     top += height;
     return row;

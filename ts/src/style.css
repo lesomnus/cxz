@@ -20,7 +20,7 @@
   --hover: var(--shade-40);
   --selected: var(--shade-48);
   --selected-hover: var(--shade-56);
-  --resource-panel-width: 160px;
+  --resource-panel-width: 180px;
   --panel-inset: 12px;
   --scroll-handle-color: var(--shade-122);
   --panel-fade-depth: 24px;
@@ -1982,23 +1982,28 @@ button.tree-session:not(:disabled):active > .button-content {
     opacity 160ms,
     transform 160ms;
 }
-.scroll-marker {
+.scroll-tick {
   position: absolute;
   right: 20px;
-  width: 10px;
   height: 2px;
   background: var(--shade-119);
   opacity: 0;
   transition: opacity 160ms;
+}
+.scroll-marker {
+  width: 10px;
+}
+.scroll-response-marker {
+  width: 5px;
 }
 .transcript-area:hover .scroll-handle,
 .scroll-thumb:focus-visible .scroll-handle,
 .scroll-dragging .scroll-handle {
   opacity: 0.7;
 }
-.transcript-area:hover .scroll-marker,
-.scroll-track:focus-within .scroll-marker,
-.scroll-dragging .scroll-marker {
+.transcript-area:hover .scroll-tick,
+.scroll-track:focus-within .scroll-tick,
+.scroll-dragging .scroll-tick {
   opacity: 0.55;
 }
 .scroll-near .scroll-handle,
@@ -2022,7 +2027,7 @@ button.tree-session:not(:disabled):active > .button-content {
 @media (prefers-reduced-motion: reduce) {
   .scroll-thumb,
   .scroll-handle,
-  .scroll-marker,
+  .scroll-tick,
   .panel-scroll-fade,
   .send-shortcut,
   .tree-chevron {

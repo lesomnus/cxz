@@ -1,45 +1,29 @@
 import { t } from "./i18n";
 import { useLocale } from "./i18n-react";
-import { useEffect, useRef, useState } from "react";
-import { useQuery } from "@lesomnus/payday/react";
+import { useEffect, useState } from "react";
 import type { Project } from "../gen/cxz/project_pb";
 import type { Session } from "../gen/cxz/session_pb";
-import { SessionService } from "../gen/cxz/session_svc_pb";
-import { ref } from "./connection";
 import { Button } from "./button";
 import { AgentBrand } from "./agent-brand";
 
 export function SessionTreeGroup({
   project,
+  items,
+  loading,
   selected,
   open,
   toggle,
   select,
 }: {
   project: Project;
+  items: Session[];
+  loading: boolean;
   selected: string;
   open: boolean;
   toggle: () => void;
   select: (id: string) => void;
 }) {
   useLocale();
-  const [after, setAfter] = useState("");
-  const [items, setItems] = useState<Session[]>([]);
-  const pages = useRef(new Map<string, Session[]>());
-  const query = useQuery(SessionService.method.list, {
-    filters: [{ listed: true, project: ref(project.runtimeId) }],
-    size: 50,
-    after,
-  });
-  useEffect(() => {
-    if (!query.data) return;
-    pages.current.set(after, query.data.items);
-    setItems([
-      ...new Map(
-        [...pages.current.values()].flat().map((s) => [s.runtimeId, s]),
-      ).values(),
-    ]);
-  }, [query.data, after]);
   return (
     <section
       className="session-tree-group"
@@ -75,20 +59,11 @@ export function SessionTreeGroup({
               </span>
             </Button>
           ))}
-          {query.state === "pending" && !query.data && (
+          {loading && !items.length && (
             <small className="tree-message">{t("Loading…")}</small>
           )}
-          {query.data && !items.length && (
+          {!loading && !items.length && (
             <small className="tree-message">{t("No sessions")}</small>
-          )}
-          {!!query.error && <small role="alert">{String(query.error)}</small>}
-          {query.data?.next && (
-            <Button
-              className="tree-more"
-              onClick={() => setAfter(query.data!.next)}
-            >
-              {t("More sessions")}
-            </Button>
           )}
         </div>
       )}

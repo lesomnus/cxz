@@ -53,6 +53,8 @@ import { type ComposerPaste } from "./composer-pastes";
 import { composerPrompt } from "./composer-code";
 import { SessionTreeGroup } from "./session-tree";
 import { PanelScroll } from "./panel-scroll";
+import { useResourceInventory } from "./resource-inventory";
+import { key } from "@lesomnus/payday/store";
 import { transcriptEvents, type ToolActivity } from "./tool-activity";
 import { ToolActivityView } from "./tool-activity-view";
 import { Transcript } from "./transcript";
@@ -187,13 +189,20 @@ export function Workspace({
   const [settingsTopic, setSettingsTopic] = useState<"editor" | "general">(
     "general",
   );
-  const [after, setAfter] = useState("");
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
-  const projects = useQuery(ProjectService.method.list, {
-    filters: [{ listed: true }],
-    size: 50,
-    after,
-  });
+  const inventory = useResourceInventory(c);
+  const projects = inventory.projects;
+  const sessionsByProject = useMemo(() => {
+    const grouped = new Map<string, Session[]>();
+    for (const session of inventory.sessions) {
+      if (!session.project) continue;
+      const id = key(session.project.id);
+      const sessions = grouped.get(id) ?? [];
+      sessions.push(session);
+      grouped.set(id, sessions);
+    }
+    return grouped;
+  }, [inventory.sessions]);
   const [error, setError] = useState("");
   return (
     <div
@@ -278,10 +287,12 @@ export function Workspace({
               className="session-tree"
               aria-label={t("Projects and sessions")}
             >
-              {projects.data?.items.map((p) => (
+              {projects.map((p) => (
                 <SessionTreeGroup
                   key={p.runtimeId}
                   project={p}
+                  items={sessionsByProject.get(key(p.id)) ?? []}
+                  loading={inventory.loading.sessions}
                   selected={session}
                   open={!collapsed.has(p.runtimeId)}
                   toggle={() =>
@@ -297,7 +308,7 @@ export function Workspace({
               ))}
             </div>
           ) : (
-            projects.data?.items.map((p) => (
+            projects.map((p) => (
               <Button
                 key={p.runtimeId}
                 onClick={() => {
@@ -314,18 +325,16 @@ export function Workspace({
               </Button>
             ))
           )}
-          {resource !== "settings" && after && (
-            <Button onClick={() => setAfter("")}>{t("First projects")}</Button>
+          {(inventory.errors.projects ||
+            inventory.errors.sessions ||
+            error) && (
+            <p role="alert">
+              {String(
+                inventory.errors.projects || inventory.errors.sessions || error,
+              )}
+            </p>
           )}
-          {resource !== "settings" && projects.data?.next && (
-            <Button onClick={() => setAfter(projects.data!.next)}>
-              {t("More projects →")}
-            </Button>
-          )}
-          {(projects.error || error) && (
-            <p role="alert">{String(projects.error || error)}</p>
-          )}
-          {projects.state === "pending" && !projects.data && (
+          {inventory.loading.projects && !projects.length && (
             <p className="muted">{t("Loading projects…")}</p>
           )}
         </PanelScroll>
@@ -345,7 +354,7 @@ export function Workspace({
             </div>
           </header>
           <div className="resource-view-content">
-            {projects.data?.items.map((p) => (
+            {projects.map((p) => (
               <Button
                 className="project-row"
                 key={p.runtimeId}
@@ -369,10 +378,10 @@ export function Workspace({
                 <span aria-hidden="true">→</span>
               </Button>
             ))}
-            {projects.state === "pending" && !projects.data && (
+            {inventory.loading.projects && !projects.length && (
               <p className="muted">{t("Loading projects…")}</p>
             )}
-            {projects.data && !projects.data.items.length && (
+            {!inventory.loading.projects && !projects.length && (
               <p className="muted">{t("No projects yet.")}</p>
             )}
           </div>
