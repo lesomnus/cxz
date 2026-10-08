@@ -1928,17 +1928,33 @@ button.tree-session:not(:disabled):active > .button-content {
   align-items: center;
   line-height: 20px;
 }
+.value-menu,
+.setting-menu {
+  --value-padding-block: 6px;
+  --value-padding-inline: 10px;
+  --value-row-height: calc(20px + 2 * var(--value-padding-block));
+}
+.value-menu[data-variant="compact"],
+.setting-menu[data-variant="compact"] {
+  --value-padding-block: var(--control-inset);
+  --value-padding-inline: var(--control-inline-inset);
+}
 .value-menu {
+  --value-background: var(--shade-32);
   position: relative;
   flex: 1;
   min-width: 0;
-  height: calc(20px + 2 * var(--control-inset));
+  height: var(--value-row-height);
+}
+.value-menu[data-variant="compact"] {
+  --value-background: transparent;
 }
 .setting-trigger {
+  background: var(--value-background);
   display: block;
-  padding: var(--control-inset) var(--control-inline-inset);
-  min-height: calc(20px + 2 * var(--control-inset));
-  height: calc(20px + 2 * var(--control-inset));
+  padding: var(--value-padding-block) var(--value-padding-inline);
+  min-height: var(--value-row-height);
+  height: var(--value-row-height);
   width: 100%;
   font-size: inherit;
   line-height: 20px;
@@ -1979,7 +1995,7 @@ button.tree-session:not(:disabled):active > .button-content {
   flex-shrink: 0;
 }
 .setting-current .meta-value {
-  max-width: calc(var(--value-width) - 2 * var(--control-inline-inset));
+  max-width: calc(var(--value-width) - 2 * var(--value-padding-inline));
 }
 .setting-divider {
   height: 1px;
@@ -1994,8 +2010,8 @@ button.tree-session:not(:disabled):active > .button-content {
 }
 .setting-menu button {
   display: block;
-  min-height: calc(20px + 2 * var(--control-inset));
-  padding: var(--control-inset) var(--control-inline-inset);
+  min-height: var(--value-row-height);
+  padding: var(--value-padding-block) var(--value-padding-inline);
   width: 100%;
   text-align: left;
   font-size: inherit;
@@ -2106,6 +2122,7 @@ button.tree-session:not(:disabled):active > .button-content {
   font-variant-numeric: tabular-nums;
 }
 .setting-slider input {
+  appearance: none;
   width: 100%;
   min-width: 0;
   padding: 0;
@@ -2113,8 +2130,53 @@ button.tree-session:not(:disabled):active > .button-content {
   height: 20px;
   background: transparent;
   border: 0;
-  accent-color: var(--shade-237);
   cursor: pointer;
+}
+.setting-slider input::-webkit-slider-runnable-track {
+  height: 4px;
+  border: 0;
+  border-radius: 2px;
+  background: linear-gradient(
+    to right,
+    var(--shade-237) var(--slider-progress),
+    var(--shade-60) var(--slider-progress)
+  );
+  box-shadow: none;
+}
+.setting-slider input::-moz-range-track {
+  height: 4px;
+  border: 0;
+  border-radius: 2px;
+  background: var(--shade-60);
+  box-shadow: none;
+}
+.setting-slider input::-moz-range-progress {
+  height: 4px;
+  border: 0;
+  border-radius: 2px;
+  background: var(--shade-237);
+}
+.setting-slider input::-webkit-slider-thumb {
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  margin-top: -4px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--shade-237);
+  box-shadow: none;
+}
+.setting-slider input::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--shade-237);
+  box-shadow: none;
+}
+.setting-slider input:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 .slider-ticks {
   grid-column: 2;

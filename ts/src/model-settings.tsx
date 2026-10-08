@@ -90,6 +90,7 @@ export function ModelSettings({
           <div key={kind} className={`${kind}-field setting-field`}>
             <span className="meta-label">{label}</span>
             <ValueMenu
+              variant="compact"
               label={label}
               display={info[kind] || "—"}
               value={value}

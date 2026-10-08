@@ -22,6 +22,7 @@ export function ValueMenu({
   options: items,
   muted = false,
   minMenuWidth = 140,
+  variant = "default",
   disabled,
   disabledReason,
   choose,
@@ -32,6 +33,7 @@ export function ValueMenu({
   options: ValueOption[];
   muted?: boolean;
   minMenuWidth?: number;
+  variant?: "default" | "compact";
   disabled?: boolean;
   disabledReason?: string;
   choose: (value: string) => void;
@@ -152,6 +154,7 @@ export function ValueMenu({
     <div
       ref={root}
       className="value-menu"
+      data-variant={variant}
       data-value={value}
       onKeyDown={key}
       onBlur={(e) => {
@@ -182,6 +185,7 @@ export function ValueMenu({
           <div
             ref={menu}
             id={id}
+            data-variant={variant}
             className={`setting-menu ${up ? "opens-up" : ""}`}
             onKeyDown={(e) => {
               e.stopPropagation();
