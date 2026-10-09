@@ -75,6 +75,10 @@ service SessionService {
   rpc AuxEvents(AuxStatusRequest) returns (stream AuxState);
   rpc AuxPrefer(AuxPreferRequest) returns (AuxState);
   rpc AuxCancel(AuxCancelRequest) returns (AuxState);
+  // Purge destroys a session everywhere cxz keeps it, which is the one
+  // operation that does. A dry run reports the plan without carrying it out --
+  // the same code, so that what is reported is what would happen.
+  rpc Purge(SessionPurgeRequest) returns (SessionPurgeReply);
 }
 
 message SessionAddRequest {
@@ -669,4 +673,27 @@ message AuxPreferRequest {
 message AuxCancelRequest {
   SessionRef ref = 1;
   string aux_id = 2;
+}
+
+message SessionPurgeRequest {
+  SessionRef ref = 1;
+  bool dry_run = 2;
+}
+
+message SessionPurgeReply {
+  SessionRef ref = 1;
+  bool dry_run = 2;
+  repeated SessionPurgeTarget targets = 3;
+  // retained names what purge deliberately left, so a caller can say so
+  // instead of implying the session vanished from the world.
+  repeated string retained = 4;
+}
+
+// kind says what the path is, so a caller can describe a plan without knowing
+// the layout: journal, state, cache, and so on.
+message SessionPurgeTarget {
+  string kind = 1;
+  string path = 2;
+  int32 files = 3;
+  int64 bytes = 4;
 }

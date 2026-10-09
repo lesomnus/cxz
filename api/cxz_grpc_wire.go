@@ -19,46 +19,51 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Sessions_Devcontainer_FullMethodName     = "/cxz.runtime.Sessions/Devcontainer"
-	Sessions_Docker_FullMethodName           = "/cxz.runtime.Sessions/Docker"
-	Sessions_FileMappings_FullMethodName     = "/cxz.runtime.Sessions/FileMappings"
-	Sessions_Create_FullMethodName           = "/cxz.runtime.Sessions/Create"
-	Sessions_List_FullMethodName             = "/cxz.runtime.Sessions/List"
-	Sessions_Get_FullMethodName              = "/cxz.runtime.Sessions/Get"
-	Sessions_CopyMemory_FullMethodName       = "/cxz.runtime.Sessions/CopyMemory"
-	Sessions_Memory_FullMethodName           = "/cxz.runtime.Sessions/Memory"
-	Sessions_Logs_FullMethodName             = "/cxz.runtime.Sessions/Logs"
-	Sessions_Permission_FullMethodName       = "/cxz.runtime.Sessions/Permission"
-	Sessions_Send_FullMethodName             = "/cxz.runtime.Sessions/Send"
-	Sessions_Attach_FullMethodName           = "/cxz.runtime.Sessions/Attach"
-	Sessions_Activity_FullMethodName         = "/cxz.runtime.Sessions/Activity"
-	Sessions_UpdateAgent_FullMethodName      = "/cxz.runtime.Sessions/UpdateAgent"
-	Sessions_Reply_FullMethodName            = "/cxz.runtime.Sessions/Reply"
-	Sessions_Interrupt_FullMethodName        = "/cxz.runtime.Sessions/Interrupt"
-	Sessions_Resume_FullMethodName           = "/cxz.runtime.Sessions/Resume"
-	Sessions_Stop_FullMethodName             = "/cxz.runtime.Sessions/Stop"
-	Sessions_Watch_FullMethodName            = "/cxz.runtime.Sessions/Watch"
-	Sessions_History_FullMethodName          = "/cxz.runtime.Sessions/History"
-	Sessions_Transcript_FullMethodName       = "/cxz.runtime.Sessions/Transcript"
-	Sessions_EventDetails_FullMethodName     = "/cxz.runtime.Sessions/EventDetails"
-	Sessions_Background_FullMethodName       = "/cxz.runtime.Sessions/Background"
-	Sessions_Models_FullMethodName           = "/cxz.runtime.Sessions/Models"
-	Sessions_Search_FullMethodName           = "/cxz.runtime.Sessions/Search"
-	Sessions_Open_FullMethodName             = "/cxz.runtime.Sessions/Open"
-	Sessions_Projects_FullMethodName         = "/cxz.runtime.Sessions/Projects"
-	Sessions_Down_FullMethodName             = "/cxz.runtime.Sessions/Down"
-	Sessions_AuxRun_FullMethodName           = "/cxz.runtime.Sessions/AuxRun"
-	Sessions_AuxCancel_FullMethodName        = "/cxz.runtime.Sessions/AuxCancel"
-	Sessions_AuxStatus_FullMethodName        = "/cxz.runtime.Sessions/AuxStatus"
-	Sessions_AuxEvents_FullMethodName        = "/cxz.runtime.Sessions/AuxEvents"
-	Sessions_AuxPrefer_FullMethodName        = "/cxz.runtime.Sessions/AuxPrefer"
-	Sessions_AuxForget_FullMethodName        = "/cxz.runtime.Sessions/AuxForget"
-	Sessions_AuxConfig_FullMethodName        = "/cxz.runtime.Sessions/AuxConfig"
-	Sessions_AuxSetConfig_FullMethodName     = "/cxz.runtime.Sessions/AuxSetConfig"
-	Sessions_AuxModels_FullMethodName        = "/cxz.runtime.Sessions/AuxModels"
-	Sessions_AuxLoginInfo_FullMethodName     = "/cxz.runtime.Sessions/AuxLoginInfo"
-	Sessions_PutSecretFile_FullMethodName    = "/cxz.runtime.Sessions/PutSecretFile"
-	Sessions_DeleteSecretFile_FullMethodName = "/cxz.runtime.Sessions/DeleteSecretFile"
+	Sessions_Devcontainer_FullMethodName         = "/cxz.runtime.Sessions/Devcontainer"
+	Sessions_Docker_FullMethodName               = "/cxz.runtime.Sessions/Docker"
+	Sessions_FileMappings_FullMethodName         = "/cxz.runtime.Sessions/FileMappings"
+	Sessions_Create_FullMethodName               = "/cxz.runtime.Sessions/Create"
+	Sessions_List_FullMethodName                 = "/cxz.runtime.Sessions/List"
+	Sessions_Get_FullMethodName                  = "/cxz.runtime.Sessions/Get"
+	Sessions_CopyMemory_FullMethodName           = "/cxz.runtime.Sessions/CopyMemory"
+	Sessions_Memory_FullMethodName               = "/cxz.runtime.Sessions/Memory"
+	Sessions_Logs_FullMethodName                 = "/cxz.runtime.Sessions/Logs"
+	Sessions_Permission_FullMethodName           = "/cxz.runtime.Sessions/Permission"
+	Sessions_Send_FullMethodName                 = "/cxz.runtime.Sessions/Send"
+	Sessions_Attach_FullMethodName               = "/cxz.runtime.Sessions/Attach"
+	Sessions_Activity_FullMethodName             = "/cxz.runtime.Sessions/Activity"
+	Sessions_UpdateAgent_FullMethodName          = "/cxz.runtime.Sessions/UpdateAgent"
+	Sessions_Reply_FullMethodName                = "/cxz.runtime.Sessions/Reply"
+	Sessions_Interrupt_FullMethodName            = "/cxz.runtime.Sessions/Interrupt"
+	Sessions_Resume_FullMethodName               = "/cxz.runtime.Sessions/Resume"
+	Sessions_Stop_FullMethodName                 = "/cxz.runtime.Sessions/Stop"
+	Sessions_Watch_FullMethodName                = "/cxz.runtime.Sessions/Watch"
+	Sessions_History_FullMethodName              = "/cxz.runtime.Sessions/History"
+	Sessions_Transcript_FullMethodName           = "/cxz.runtime.Sessions/Transcript"
+	Sessions_EventDetails_FullMethodName         = "/cxz.runtime.Sessions/EventDetails"
+	Sessions_Background_FullMethodName           = "/cxz.runtime.Sessions/Background"
+	Sessions_Models_FullMethodName               = "/cxz.runtime.Sessions/Models"
+	Sessions_Search_FullMethodName               = "/cxz.runtime.Sessions/Search"
+	Sessions_Open_FullMethodName                 = "/cxz.runtime.Sessions/Open"
+	Sessions_Projects_FullMethodName             = "/cxz.runtime.Sessions/Projects"
+	Sessions_Down_FullMethodName                 = "/cxz.runtime.Sessions/Down"
+	Sessions_AuxRun_FullMethodName               = "/cxz.runtime.Sessions/AuxRun"
+	Sessions_AuxCancel_FullMethodName            = "/cxz.runtime.Sessions/AuxCancel"
+	Sessions_AuxStatus_FullMethodName            = "/cxz.runtime.Sessions/AuxStatus"
+	Sessions_AuxEvents_FullMethodName            = "/cxz.runtime.Sessions/AuxEvents"
+	Sessions_AuxPrefer_FullMethodName            = "/cxz.runtime.Sessions/AuxPrefer"
+	Sessions_AuxForget_FullMethodName            = "/cxz.runtime.Sessions/AuxForget"
+	Sessions_AuxConfig_FullMethodName            = "/cxz.runtime.Sessions/AuxConfig"
+	Sessions_AuxSetConfig_FullMethodName         = "/cxz.runtime.Sessions/AuxSetConfig"
+	Sessions_AuxModels_FullMethodName            = "/cxz.runtime.Sessions/AuxModels"
+	Sessions_AuxLoginInfo_FullMethodName         = "/cxz.runtime.Sessions/AuxLoginInfo"
+	Sessions_PurgeSession_FullMethodName         = "/cxz.runtime.Sessions/PurgeSession"
+	Sessions_GetHistoryPolicy_FullMethodName     = "/cxz.runtime.Sessions/GetHistoryPolicy"
+	Sessions_SetHistoryPolicy_FullMethodName     = "/cxz.runtime.Sessions/SetHistoryPolicy"
+	Sessions_GetHistoryFloor_FullMethodName      = "/cxz.runtime.Sessions/GetHistoryFloor"
+	Sessions_MarkHistoryTrimmable_FullMethodName = "/cxz.runtime.Sessions/MarkHistoryTrimmable"
+	Sessions_PutSecretFile_FullMethodName        = "/cxz.runtime.Sessions/PutSecretFile"
+	Sessions_DeleteSecretFile_FullMethodName     = "/cxz.runtime.Sessions/DeleteSecretFile"
 )
 
 // SessionsClient is the client API for Sessions service.
@@ -103,6 +108,11 @@ type SessionsClient interface {
 	AuxSetConfig(ctx context.Context, in *AuxSetConfigInput, opts ...grpc.CallOption) (*AuxConfigReply, error)
 	AuxModels(ctx context.Context, in *AuxModelsInput, opts ...grpc.CallOption) (*AuxModelsReply, error)
 	AuxLoginInfo(ctx context.Context, in *AuxLoginInfoInput, opts ...grpc.CallOption) (*AuxLoginInfoReply, error)
+	PurgeSession(ctx context.Context, in *SessionPurgeInput, opts ...grpc.CallOption) (*SessionPurgeReply, error)
+	GetHistoryPolicy(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*HistoryPolicy, error)
+	SetHistoryPolicy(ctx context.Context, in *HistoryPolicy, opts ...grpc.CallOption) (*HistoryPolicy, error)
+	GetHistoryFloor(ctx context.Context, in *SessionRef, opts ...grpc.CallOption) (*HistoryFloorReply, error)
+	MarkHistoryTrimmable(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Empty, error)
 	PutSecretFile(ctx context.Context, in *PutSecretFileInput, opts ...grpc.CallOption) (*SecretFileReply, error)
 	DeleteSecretFile(ctx context.Context, in *DeleteSecretFileInput, opts ...grpc.CallOption) (*SecretFileReply, error)
 }
@@ -522,6 +532,56 @@ func (c *sessionsClient) AuxLoginInfo(ctx context.Context, in *AuxLoginInfoInput
 	return out, nil
 }
 
+func (c *sessionsClient) PurgeSession(ctx context.Context, in *SessionPurgeInput, opts ...grpc.CallOption) (*SessionPurgeReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SessionPurgeReply)
+	err := c.cc.Invoke(ctx, Sessions_PurgeSession_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) GetHistoryPolicy(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*HistoryPolicy, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(HistoryPolicy)
+	err := c.cc.Invoke(ctx, Sessions_GetHistoryPolicy_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) SetHistoryPolicy(ctx context.Context, in *HistoryPolicy, opts ...grpc.CallOption) (*HistoryPolicy, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(HistoryPolicy)
+	err := c.cc.Invoke(ctx, Sessions_SetHistoryPolicy_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) GetHistoryFloor(ctx context.Context, in *SessionRef, opts ...grpc.CallOption) (*HistoryFloorReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(HistoryFloorReply)
+	err := c.cc.Invoke(ctx, Sessions_GetHistoryFloor_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) MarkHistoryTrimmable(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Empty)
+	err := c.cc.Invoke(ctx, Sessions_MarkHistoryTrimmable_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *sessionsClient) PutSecretFile(ctx context.Context, in *PutSecretFileInput, opts ...grpc.CallOption) (*SecretFileReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SecretFileReply)
@@ -584,6 +644,11 @@ type SessionsServer interface {
 	AuxSetConfig(context.Context, *AuxSetConfigInput) (*AuxConfigReply, error)
 	AuxModels(context.Context, *AuxModelsInput) (*AuxModelsReply, error)
 	AuxLoginInfo(context.Context, *AuxLoginInfoInput) (*AuxLoginInfoReply, error)
+	PurgeSession(context.Context, *SessionPurgeInput) (*SessionPurgeReply, error)
+	GetHistoryPolicy(context.Context, *Empty) (*HistoryPolicy, error)
+	SetHistoryPolicy(context.Context, *HistoryPolicy) (*HistoryPolicy, error)
+	GetHistoryFloor(context.Context, *SessionRef) (*HistoryFloorReply, error)
+	MarkHistoryTrimmable(context.Context, *Empty) (*Empty, error)
 	PutSecretFile(context.Context, *PutSecretFileInput) (*SecretFileReply, error)
 	DeleteSecretFile(context.Context, *DeleteSecretFileInput) (*SecretFileReply, error)
 	mustEmbedUnimplementedSessionsServer()
@@ -709,6 +774,21 @@ func (UnimplementedSessionsServer) AuxModels(context.Context, *AuxModelsInput) (
 }
 func (UnimplementedSessionsServer) AuxLoginInfo(context.Context, *AuxLoginInfoInput) (*AuxLoginInfoReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method AuxLoginInfo not implemented")
+}
+func (UnimplementedSessionsServer) PurgeSession(context.Context, *SessionPurgeInput) (*SessionPurgeReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method PurgeSession not implemented")
+}
+func (UnimplementedSessionsServer) GetHistoryPolicy(context.Context, *Empty) (*HistoryPolicy, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetHistoryPolicy not implemented")
+}
+func (UnimplementedSessionsServer) SetHistoryPolicy(context.Context, *HistoryPolicy) (*HistoryPolicy, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetHistoryPolicy not implemented")
+}
+func (UnimplementedSessionsServer) GetHistoryFloor(context.Context, *SessionRef) (*HistoryFloorReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetHistoryFloor not implemented")
+}
+func (UnimplementedSessionsServer) MarkHistoryTrimmable(context.Context, *Empty) (*Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method MarkHistoryTrimmable not implemented")
 }
 func (UnimplementedSessionsServer) PutSecretFile(context.Context, *PutSecretFileInput) (*SecretFileReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method PutSecretFile not implemented")
@@ -1400,6 +1480,96 @@ func _Sessions_AuxLoginInfo_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Sessions_PurgeSession_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SessionPurgeInput)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).PurgeSession(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_PurgeSession_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).PurgeSession(ctx, req.(*SessionPurgeInput))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_GetHistoryPolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).GetHistoryPolicy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_GetHistoryPolicy_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).GetHistoryPolicy(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_SetHistoryPolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HistoryPolicy)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).SetHistoryPolicy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_SetHistoryPolicy_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).SetHistoryPolicy(ctx, req.(*HistoryPolicy))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_GetHistoryFloor_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SessionRef)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).GetHistoryFloor(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_GetHistoryFloor_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).GetHistoryFloor(ctx, req.(*SessionRef))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_MarkHistoryTrimmable_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).MarkHistoryTrimmable(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_MarkHistoryTrimmable_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).MarkHistoryTrimmable(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Sessions_PutSecretFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(PutSecretFileInput)
 	if err := dec(in); err != nil {
@@ -1582,6 +1752,26 @@ var Sessions_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AuxLoginInfo",
 			Handler:    _Sessions_AuxLoginInfo_Handler,
+		},
+		{
+			MethodName: "PurgeSession",
+			Handler:    _Sessions_PurgeSession_Handler,
+		},
+		{
+			MethodName: "GetHistoryPolicy",
+			Handler:    _Sessions_GetHistoryPolicy_Handler,
+		},
+		{
+			MethodName: "SetHistoryPolicy",
+			Handler:    _Sessions_SetHistoryPolicy_Handler,
+		},
+		{
+			MethodName: "GetHistoryFloor",
+			Handler:    _Sessions_GetHistoryFloor_Handler,
+		},
+		{
+			MethodName: "MarkHistoryTrimmable",
+			Handler:    _Sessions_MarkHistoryTrimmable_Handler,
 		},
 		{
 			MethodName: "PutSecretFile",

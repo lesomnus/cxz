@@ -288,8 +288,7 @@ func authorizeHistoryCheckpoint(root string) error {
 	defer conn.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	action := "history-checkpoint-ready"
-	_, err = resource.NewProjectServiceClient(conn).Docker(ctx, resource.DockerRequest_builder{Action: &action}.Build())
+	_, err = resource.NewProjectServiceClient(conn).MarkHistoryTrimmable(ctx, resource.HistoryTrimmableRequest_builder{}.Build())
 	return err
 }
 

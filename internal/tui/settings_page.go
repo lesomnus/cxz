@@ -66,7 +66,7 @@ func (m *model) settingsRequest(action string) tea.Cmd {
 	if action != "info" {
 		p.message = "Working…"
 	}
-	var historySpec []byte
+	var historyNext *historypolicy.Policy
 	if action == "history-policy" && p.info.History != nil {
 		next := *p.info.History
 		if p.selected == 6 {
@@ -79,7 +79,7 @@ func (m *model) settingsRequest(action string) tea.Cmd {
 			next.Disabled = value == 0
 			next.MaxMiB = value
 		}
-		historySpec, _ = json.Marshal(next)
+		historyNext = &next
 	}
 	client, ctx := m.client, m.contextFor(p.connection)
 	return func() tea.Msg {
@@ -90,14 +90,20 @@ func (m *model) settingsRequest(action string) tea.Cmd {
 		ctx, cancel := context.WithTimeout(ctx, timeout)
 		defer cancel()
 		result := settingsResult{page: p, request: request, action: action}
-		if action != "info" {
-			out, err := client.Docker(ctx, &api.DockerInput{Action: action, Spec: historySpec})
+		if action == "history-policy" {
+			_, err := client.SetHistoryPolicy(ctx, &api.HistoryPolicy{
+				Disabled: historyNext.Disabled, MaxMib: int32(historyNext.MaxMiB), RawMib: int32(historyNext.RawMiB),
+				WindowMib: int32(historyNext.WindowMiB), WindowTurns: int32(historyNext.WindowTurns),
+			})
+			result.err = err
+			if err == nil {
+				result.text = "Server history policy saved; running sessions apply it at a safe idle check."
+			}
+		} else if action != "info" {
+			out, err := client.Docker(ctx, &api.DockerInput{Action: action, Spec: nil})
 			result.err = err
 			if out != nil {
 				result.text = out.Status
-				if action == "history-policy" && err == nil {
-					result.text = "Server history policy saved; running sessions apply it at a safe idle check."
-				}
 			}
 		}
 		out, err := client.Docker(ctx, &api.DockerInput{Action: "info"})

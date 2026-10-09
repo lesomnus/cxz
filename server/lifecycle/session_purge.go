@@ -2,7 +2,6 @@ package lifecycle
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/sessionalias"
@@ -21,14 +20,16 @@ import (
 // destroy the data, and erase the record last. A failure between any two steps
 // leaves a tombstone pointing at less data than before -- never a listed session
 // whose journal is already gone.
-func (s ProjectServer) purgeSession(ctx context.Context, spec []byte) (*resource.DockerReply, error) {
-	var r sessionpurge.Request
-	if len(spec) > sessionpurge.MaxSpec || json.Unmarshal(spec, &r) != nil {
-		return nil, status.Error(codes.InvalidArgument, "invalid session purge request")
-	}
-	if r.Session == "" {
+func (s SessionServer) Purge(ctx context.Context, r *resource.SessionPurgeRequest) (*resource.SessionPurgeReply, error) {
+	return ProjectServer{s.Layer, s.Next().Project()}.purgeSession(ctx, r)
+}
+
+func (s ProjectServer) purgeSession(ctx context.Context, request *resource.SessionPurgeRequest) (*resource.SessionPurgeReply, error) {
+	handle := sessionHandle(request.GetRef())
+	if handle == "" {
 		return nil, status.Error(codes.InvalidArgument, "name the session to purge")
 	}
+	r := sessionpurge.Request{Session: handle, DryRun: request.GetDryRun()}
 	v, err := func() (*resource.Session, error) {
 		s.shared.transition.RLock()
 		defer s.shared.transition.RUnlock()
@@ -45,23 +46,17 @@ func (s ProjectServer) purgeSession(ctx context.Context, spec []byte) (*resource
 			return nil, err
 		}
 	}
-	resolved, err := json.Marshal(r)
-	if err != nil {
-		return nil, err
-	}
 	s.shared.transition.Lock()
 	defer s.shared.transition.Unlock()
-	out, err := s.shared.runtime.Docker(ctx, &api.DockerInput{Action: "session-purge", Spec: resolved})
+	out, err := s.shared.runtime.PurgeSession(ctx, &api.SessionPurgeInput{SessionId: r.Session, DryRun: r.DryRun})
 	if err != nil {
 		return nil, err
 	}
-	var reply sessionpurge.Reply
-	if err = json.Unmarshal([]byte(out.Status), &reply); err != nil {
-		return nil, err
-	}
-	reply.Session = v.GetAlias()
-	if reply.Session == "" {
-		reply.Session = r.Session
+	reply := sessionpurge.Reply{Session: r.Session, DryRun: out.DryRun, Retained: out.Retained}
+	for _, t := range out.Targets {
+		reply.Targets = append(reply.Targets, sessionpurge.Target{
+			Kind: t.Kind, Path: t.Path, Files: int(t.Files), Bytes: t.Bytes,
+		})
 	}
 	if !r.DryRun {
 		if err = s.eraseRecord(ctx, sessionRef(r.Session)); err != nil {
@@ -69,11 +64,32 @@ func (s ProjectServer) purgeSession(ctx context.Context, spec []byte) (*resource
 		}
 		reply.Targets = append(reply.Targets, sessionpurge.Target{Kind: "record", Path: "manager database", Files: 1})
 	}
-	b, err := json.Marshal(reply)
-	if err != nil {
-		return nil, err
+	answer := resource.SessionPurgeReply_builder{
+		Ref: request.GetRef(), DryRun: ptr(reply.DryRun), Retained: reply.Retained,
 	}
-	return resource.DockerReply_builder{Status: ptr(string(b))}.Build(), nil
+	for _, t := range reply.Targets {
+		answer.Targets = append(answer.Targets, resource.SessionPurgeTarget_builder{
+			Kind: ptr(t.Kind), Path: ptr(t.Path), Files: ptr(int32(t.Files)), Bytes: ptr(t.Bytes),
+		}.Build())
+	}
+	return answer.Build(), nil
+}
+
+// sessionHandle is whichever handle the caller had at hand. A purge resolves it
+// itself rather than through the usual getter, because the id is tried before
+// the alias: resolving the wrong session is the one mistake with no undo.
+func sessionHandle(ref *resource.SessionRef) string {
+	switch {
+	case ref == nil:
+		return ""
+	case ref.GetRuntimeId() != "":
+		return ref.GetRuntimeId()
+	case ref.GetAlias() != "":
+		return ref.GetAlias()
+	case len(ref.GetId()) > 0:
+		return string(ref.GetId())
+	}
+	return ""
 }
 
 // resolveSession accepts whichever handle the caller had at hand. The id is

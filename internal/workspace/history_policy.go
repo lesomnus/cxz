@@ -2,7 +2,6 @@ package workspace
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -23,16 +22,42 @@ func (m *Manager) syncHistoryPolicy(ctx context.Context, client api.SessionsClie
 	if err != nil {
 		return err
 	}
-	b, _ := json.Marshal(p)
-	_, err = client.Docker(ctx, &api.DockerInput{Action: "history-policy", Spec: b})
+	_, err = client.SetHistoryPolicy(ctx, historyPolicy(p))
 	return err
 }
-func (m *Manager) historyPolicy(ctx context.Context, spec []byte) (*api.Receipt, error) {
-	if len(spec) > 0 {
-		var p historypolicy.Policy
-		if err := json.Unmarshal(spec, &p); err != nil {
-			return nil, err
-		}
+
+// The policy travels as itself. Zero in a budget still means "use the default",
+// which is the policy's own rule rather than the wire's.
+func historyPolicy(p historypolicy.Policy) *api.HistoryPolicy {
+	return &api.HistoryPolicy{
+		Disabled: p.Disabled, MaxMib: int32(p.MaxMiB), RawMib: int32(p.RawMiB),
+		WindowMib: int32(p.WindowMiB), WindowTurns: int32(p.WindowTurns),
+	}
+}
+
+func historyPolicyOf(v *api.HistoryPolicy) historypolicy.Policy {
+	if v == nil {
+		return historypolicy.Policy{}
+	}
+	return historypolicy.Policy{
+		Disabled: v.Disabled, MaxMiB: int(v.MaxMib), RawMiB: int(v.RawMib),
+		WindowMiB: int(v.WindowMib), WindowTurns: int(v.WindowTurns),
+	}
+}
+func (m *Manager) GetHistoryPolicy(ctx context.Context, _ *api.Empty) (*api.HistoryPolicy, error) {
+	p, err := historypolicy.Load(m.Root)
+	if err != nil {
+		return nil, err
+	}
+	return historyPolicy(p), nil
+}
+
+// SetHistoryPolicy saves the budgets and pushes them to the projects that are
+// running. A project that cannot take them is named rather than silently left
+// on the old ones.
+func (m *Manager) SetHistoryPolicy(ctx context.Context, in *api.HistoryPolicy) (*api.HistoryPolicy, error) {
+	{
+		p := historyPolicyOf(in)
 		if err := historypolicy.Save(m.Root, p); err != nil {
 			return nil, err
 		}
@@ -65,12 +90,7 @@ func (m *Manager) historyPolicy(ctx context.Context, spec []byte) (*api.Receipt,
 			return nil, fmt.Errorf("history policy saved; some projects require a retry: %w", err)
 		}
 	}
-	p, err := historypolicy.Load(m.Root)
-	if err != nil {
-		return nil, err
-	}
-	b, err := json.Marshal(p)
-	return &api.Receipt{Status: string(b)}, err
+	return m.GetHistoryPolicy(ctx, &api.Empty{})
 }
 
 // A project runtime older than the manager routes an action it does not know

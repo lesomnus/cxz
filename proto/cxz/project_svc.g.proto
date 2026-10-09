@@ -70,6 +70,14 @@ service ProjectService {
   // Whether the link may carry it at all is decided by the client, because the
   // exposed TCP surface is authenticated plaintext and cannot be told apart
   // from a local socket on this side. See internal/transport.Confidential.
+  // The history budgets of this installation. They bound cxz's own records
+  // only; provider context is not affected. See docs/history.md.
+  // Asked by a session supervisor before it compacts a journal, so that a
+  // release predating trimming refuses the projection rather than serving
+  // history that is gone. A failure stops the compaction.
+  rpc MarkHistoryTrimmable(HistoryTrimmableRequest) returns (HistoryTrimmableReply);
+  rpc GetHistoryPolicy(HistoryPolicyRequest) returns (HistoryPolicy);
+  rpc SetHistoryPolicy(HistoryPolicy) returns (HistoryPolicy);
   rpc PutSecretFile(PutSecretFileRequest) returns (SecretFileReply);
   rpc DeleteSecretFile(DeleteSecretFileRequest) returns (SecretFileReply);
   rpc FileMappings(FileMappingsRequest) returns (FileMappingsReply);
@@ -421,6 +429,22 @@ message AuxLoginInfoReply {
   string account = 2;
   string agent = 3;
   string backend = 4;
+}
+
+message HistoryTrimmableRequest {}
+
+message HistoryTrimmableReply {}
+
+message HistoryPolicyRequest {}
+
+// disabled turns removal off entirely; zero in a budget means the default. Both
+// budgets are per session.
+message HistoryPolicy {
+  bool disabled = 1;
+  int32 max_mib = 2;
+  int32 raw_mib = 3;
+  int32 window_mib = 4;
+  int32 window_turns = 5;
 }
 
 // session is the runtime id and not a SessionRef: it names the scope the helper
