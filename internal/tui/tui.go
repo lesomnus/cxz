@@ -41,8 +41,7 @@ type model struct {
 	auxiliaryVersions        map[string]uint64
 	auxiliaryPending         map[string]bool
 	auxiliaryLoadingRows     map[int]bool
-	auxiliaryPolling         bool
-	auxiliaryChecked         time.Time
+	auxiliaryWatches         map[string]*auxiliaryWatch
 	auxiliaryError           string
 	library                  *libraryPage
 	seedMemory               string
@@ -1187,6 +1186,12 @@ func (m *model) Update(msg tea.Msg) (next tea.Model, cmd tea.Cmd) {
 	if v, ok := msg.(auxiliaryResult); ok {
 		return m, m.receiveAuxiliary(v)
 	}
+	if v, ok := msg.(auxiliaryStream); ok {
+		return m, m.receiveAuxiliaryStream(v)
+	}
+	if v, ok := msg.(auxiliaryPushed); ok {
+		return m, m.receiveAuxiliaryPush(v)
+	}
 	if v, ok := msg.(mcpResult); ok {
 		m.receiveMCP(v)
 		return m, nil
@@ -1923,7 +1928,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// previous page arrived while another conversation was selected.
 			history = m.loadOlderHistory()
 		}
-		return m, tea.Batch(timer(), m.periodicRefresh(), m.reportActivity(), m.frontendUpdate(), m.pollSettings(), m.pollLibrary(), m.pollAuxiliary(), history)
+		return m, tea.Batch(timer(), m.periodicRefresh(), m.reportActivity(), m.frontendUpdate(), m.pollSettings(), m.pollLibrary(), m.watchAuxiliary(), history)
 	case resourcesChanged:
 		if v.generation != m.resourceWatchGeneration {
 			return m, nil

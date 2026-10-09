@@ -3770,6 +3770,11 @@ func (s interceptSession) AuxStatus(ctx context.Context, req *resource.AuxStatus
 		resource.SessionService_AuxStatus_FullMethodName, req, s.SessionServiceServer.AuxStatus)
 }
 
+func (s interceptSession) AuxEvents(req *resource.AuxStatusRequest, out grpc.ServerStreamingServer[resource.AuxState]) error {
+	return grpcx.RunStream(s.stream, s.SessionServiceServer,
+		resource.SessionService_AuxEvents_FullMethodName, req, out, s.SessionServiceServer.AuxEvents)
+}
+
 func (s interceptSession) AuxPrefer(ctx context.Context, req *resource.AuxPreferRequest) (*resource.AuxState, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
 		resource.SessionService_AuxPrefer_FullMethodName, req, s.SessionServiceServer.AuxPrefer)

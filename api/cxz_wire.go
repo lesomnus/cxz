@@ -4165,6 +4165,7 @@ type AuxState struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Summaries     []*AuxSummary          `protobuf:"bytes,1,rep,name=summaries,proto3" json:"summaries,omitempty"`
 	Current       *Aux                   `protobuf:"bytes,2,opt,name=current,proto3" json:"current,omitempty"`
+	Recent        []*Aux                 `protobuf:"bytes,6,rep,name=recent,proto3" json:"recent,omitempty"`
 	Preferences   []*AuxPreference       `protobuf:"bytes,3,rep,name=preferences,proto3" json:"preferences,omitempty"`
 	Title         string                 `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
 	Message       string                 `protobuf:"bytes,5,opt,name=message,proto3" json:"message,omitempty"`
@@ -4212,6 +4213,13 @@ func (x *AuxState) GetSummaries() []*AuxSummary {
 func (x *AuxState) GetCurrent() *Aux {
 	if x != nil {
 		return x.Current
+	}
+	return nil
+}
+
+func (x *AuxState) GetRecent() []*Aux {
+	if x != nil {
+		return x.Recent
 	}
 	return nil
 }
@@ -5024,10 +5032,11 @@ const file_cxz_proto_rawDesc = "" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x1d\n" +
 	"\n" +
 	"after_turn\x18\x02 \x01(\x04R\tafterTurn\x12\x14\n" +
-	"\x05limit\x18\x03 \x01(\x05R\x05limit\"\xdb\x01\n" +
+	"\x05limit\x18\x03 \x01(\x05R\x05limit\"\x85\x02\n" +
 	"\bAuxState\x125\n" +
 	"\tsummaries\x18\x01 \x03(\v2\x17.cxz.runtime.AuxSummaryR\tsummaries\x12*\n" +
-	"\acurrent\x18\x02 \x01(\v2\x10.cxz.runtime.AuxR\acurrent\x12<\n" +
+	"\acurrent\x18\x02 \x01(\v2\x10.cxz.runtime.AuxR\acurrent\x12(\n" +
+	"\x06recent\x18\x06 \x03(\v2\x10.cxz.runtime.AuxR\x06recent\x12<\n" +
 	"\vpreferences\x18\x03 \x03(\v2\x1a.cxz.runtime.AuxPreferenceR\vpreferences\x12\x14\n" +
 	"\x05title\x18\x04 \x01(\tR\x05title\x12\x18\n" +
 	"\amessage\x18\x05 \x01(\tR\amessage\"m\n" +
@@ -5058,7 +5067,7 @@ const file_cxz_proto_rawDesc = "" +
 	"\x05owner\x18\x01 \x01(\tR\x05owner\x12\x18\n" +
 	"\aaccount\x18\x02 \x01(\tR\aaccount\x12\x14\n" +
 	"\x05agent\x18\x03 \x01(\tR\x05agent\x12\x18\n" +
-	"\abackend\x18\x04 \x01(\tR\abackend2\xb5\x12\n" +
+	"\abackend\x18\x04 \x01(\tR\abackend2\xf8\x12\n" +
 	"\bSessions\x12D\n" +
 	"\fDevcontainer\x12\x1e.cxz.runtime.DevcontainerInput\x1a\x14.cxz.runtime.Receipt\x128\n" +
 	"\x06Docker\x12\x18.cxz.runtime.DockerInput\x1a\x14.cxz.runtime.Receipt\x12D\n" +
@@ -5094,7 +5103,8 @@ const file_cxz_proto_rawDesc = "" +
 	"\x04Down\x12\x1b.cxz.runtime.ProjectRequest\x1a\x14.cxz.runtime.Receipt\x129\n" +
 	"\x06AuxRun\x12\x18.cxz.runtime.AuxRunInput\x1a\x15.cxz.runtime.AuxState\x12?\n" +
 	"\tAuxCancel\x12\x1b.cxz.runtime.AuxCancelInput\x1a\x15.cxz.runtime.AuxState\x12?\n" +
-	"\tAuxStatus\x12\x1b.cxz.runtime.AuxStatusInput\x1a\x15.cxz.runtime.AuxState\x12?\n" +
+	"\tAuxStatus\x12\x1b.cxz.runtime.AuxStatusInput\x1a\x15.cxz.runtime.AuxState\x12A\n" +
+	"\tAuxEvents\x12\x1b.cxz.runtime.AuxStatusInput\x1a\x15.cxz.runtime.AuxState0\x01\x12?\n" +
 	"\tAuxPrefer\x12\x1b.cxz.runtime.AuxPreferInput\x1a\x15.cxz.runtime.AuxState\x12>\n" +
 	"\tAuxForget\x12\x1b.cxz.runtime.AuxForgetInput\x1a\x14.cxz.runtime.Receipt\x12<\n" +
 	"\tAuxConfig\x12\x12.cxz.runtime.Empty\x1a\x1b.cxz.runtime.AuxConfigReply\x12K\n" +
@@ -5199,90 +5209,93 @@ var file_cxz_proto_depIdxs = []int32{
 	46, // 15: cxz.runtime.Aux.usage:type_name -> cxz.runtime.AuxUsage
 	47, // 16: cxz.runtime.AuxState.summaries:type_name -> cxz.runtime.AuxSummary
 	44, // 17: cxz.runtime.AuxState.current:type_name -> cxz.runtime.Aux
-	49, // 18: cxz.runtime.AuxState.preferences:type_name -> cxz.runtime.AuxPreference
-	49, // 19: cxz.runtime.AuxPreferInput.preferences:type_name -> cxz.runtime.AuxPreference
-	48, // 20: cxz.runtime.AuxConfigReply.profiles:type_name -> cxz.runtime.AuxProfile
-	48, // 21: cxz.runtime.AuxSetConfigInput.profiles:type_name -> cxz.runtime.AuxProfile
-	50, // 22: cxz.runtime.AuxModelsReply.models:type_name -> cxz.runtime.AuxModel
-	37, // 23: cxz.runtime.Sessions.Devcontainer:input_type -> cxz.runtime.DevcontainerInput
-	30, // 24: cxz.runtime.Sessions.Docker:input_type -> cxz.runtime.DockerInput
-	29, // 25: cxz.runtime.Sessions.FileMappings:input_type -> cxz.runtime.FileMappingsInput
-	1,  // 26: cxz.runtime.Sessions.Create:input_type -> cxz.runtime.CreateRequest
-	0,  // 27: cxz.runtime.Sessions.List:input_type -> cxz.runtime.Empty
-	2,  // 28: cxz.runtime.Sessions.Get:input_type -> cxz.runtime.SessionRef
-	33, // 29: cxz.runtime.Sessions.CopyMemory:input_type -> cxz.runtime.CopyMemoryRequest
-	31, // 30: cxz.runtime.Sessions.Memory:input_type -> cxz.runtime.MemoryRequest
-	27, // 31: cxz.runtime.Sessions.Logs:input_type -> cxz.runtime.LogsRequest
-	26, // 32: cxz.runtime.Sessions.Permission:input_type -> cxz.runtime.PermissionInput
-	5,  // 33: cxz.runtime.Sessions.Send:input_type -> cxz.runtime.Input
-	6,  // 34: cxz.runtime.Sessions.Attach:input_type -> cxz.runtime.AttachmentInput
-	8,  // 35: cxz.runtime.Sessions.Activity:input_type -> cxz.runtime.ActivityInput
-	9,  // 36: cxz.runtime.Sessions.UpdateAgent:input_type -> cxz.runtime.AgentUpdateInput
-	11, // 37: cxz.runtime.Sessions.Reply:input_type -> cxz.runtime.Answer
-	12, // 38: cxz.runtime.Sessions.Interrupt:input_type -> cxz.runtime.Control
-	12, // 39: cxz.runtime.Sessions.Resume:input_type -> cxz.runtime.Control
-	12, // 40: cxz.runtime.Sessions.Stop:input_type -> cxz.runtime.Control
-	14, // 41: cxz.runtime.Sessions.Watch:input_type -> cxz.runtime.WatchRequest
-	14, // 42: cxz.runtime.Sessions.History:input_type -> cxz.runtime.WatchRequest
-	18, // 43: cxz.runtime.Sessions.Transcript:input_type -> cxz.runtime.TranscriptRequest
-	20, // 44: cxz.runtime.Sessions.EventDetails:input_type -> cxz.runtime.EventDetailsRequest
-	2,  // 45: cxz.runtime.Sessions.Background:input_type -> cxz.runtime.SessionRef
-	35, // 46: cxz.runtime.Sessions.Models:input_type -> cxz.runtime.ModelsRequest
-	38, // 47: cxz.runtime.Sessions.Search:input_type -> cxz.runtime.SearchRequest
-	23, // 48: cxz.runtime.Sessions.Open:input_type -> cxz.runtime.ProjectRequest
-	0,  // 49: cxz.runtime.Sessions.Projects:input_type -> cxz.runtime.Empty
-	23, // 50: cxz.runtime.Sessions.Down:input_type -> cxz.runtime.ProjectRequest
-	51, // 51: cxz.runtime.Sessions.AuxRun:input_type -> cxz.runtime.AuxRunInput
-	52, // 52: cxz.runtime.Sessions.AuxCancel:input_type -> cxz.runtime.AuxCancelInput
-	54, // 53: cxz.runtime.Sessions.AuxStatus:input_type -> cxz.runtime.AuxStatusInput
-	56, // 54: cxz.runtime.Sessions.AuxPrefer:input_type -> cxz.runtime.AuxPreferInput
-	53, // 55: cxz.runtime.Sessions.AuxForget:input_type -> cxz.runtime.AuxForgetInput
-	0,  // 56: cxz.runtime.Sessions.AuxConfig:input_type -> cxz.runtime.Empty
-	58, // 57: cxz.runtime.Sessions.AuxSetConfig:input_type -> cxz.runtime.AuxSetConfigInput
-	59, // 58: cxz.runtime.Sessions.AuxModels:input_type -> cxz.runtime.AuxModelsInput
-	61, // 59: cxz.runtime.Sessions.AuxLoginInfo:input_type -> cxz.runtime.AuxLoginInfoInput
-	13, // 60: cxz.runtime.Sessions.Devcontainer:output_type -> cxz.runtime.Receipt
-	13, // 61: cxz.runtime.Sessions.Docker:output_type -> cxz.runtime.Receipt
-	13, // 62: cxz.runtime.Sessions.FileMappings:output_type -> cxz.runtime.Receipt
-	3,  // 63: cxz.runtime.Sessions.Create:output_type -> cxz.runtime.Session
-	4,  // 64: cxz.runtime.Sessions.List:output_type -> cxz.runtime.SessionList
-	3,  // 65: cxz.runtime.Sessions.Get:output_type -> cxz.runtime.Session
-	13, // 66: cxz.runtime.Sessions.CopyMemory:output_type -> cxz.runtime.Receipt
-	32, // 67: cxz.runtime.Sessions.Memory:output_type -> cxz.runtime.MemoryReply
-	28, // 68: cxz.runtime.Sessions.Logs:output_type -> cxz.runtime.LogsReply
-	13, // 69: cxz.runtime.Sessions.Permission:output_type -> cxz.runtime.Receipt
-	13, // 70: cxz.runtime.Sessions.Send:output_type -> cxz.runtime.Receipt
-	7,  // 71: cxz.runtime.Sessions.Attach:output_type -> cxz.runtime.Attachment
-	13, // 72: cxz.runtime.Sessions.Activity:output_type -> cxz.runtime.Receipt
-	10, // 73: cxz.runtime.Sessions.UpdateAgent:output_type -> cxz.runtime.AgentUpdateStatus
-	13, // 74: cxz.runtime.Sessions.Reply:output_type -> cxz.runtime.Receipt
-	13, // 75: cxz.runtime.Sessions.Interrupt:output_type -> cxz.runtime.Receipt
-	3,  // 76: cxz.runtime.Sessions.Resume:output_type -> cxz.runtime.Session
-	13, // 77: cxz.runtime.Sessions.Stop:output_type -> cxz.runtime.Receipt
-	15, // 78: cxz.runtime.Sessions.Watch:output_type -> cxz.runtime.Event
-	22, // 79: cxz.runtime.Sessions.History:output_type -> cxz.runtime.EventBatch
-	19, // 80: cxz.runtime.Sessions.Transcript:output_type -> cxz.runtime.TranscriptReply
-	22, // 81: cxz.runtime.Sessions.EventDetails:output_type -> cxz.runtime.EventBatch
-	34, // 82: cxz.runtime.Sessions.Background:output_type -> cxz.runtime.BackgroundReply
-	36, // 83: cxz.runtime.Sessions.Models:output_type -> cxz.runtime.ModelsReply
-	43, // 84: cxz.runtime.Sessions.Search:output_type -> cxz.runtime.SearchReply
-	3,  // 85: cxz.runtime.Sessions.Open:output_type -> cxz.runtime.Session
-	25, // 86: cxz.runtime.Sessions.Projects:output_type -> cxz.runtime.ProjectList
-	13, // 87: cxz.runtime.Sessions.Down:output_type -> cxz.runtime.Receipt
-	55, // 88: cxz.runtime.Sessions.AuxRun:output_type -> cxz.runtime.AuxState
-	55, // 89: cxz.runtime.Sessions.AuxCancel:output_type -> cxz.runtime.AuxState
-	55, // 90: cxz.runtime.Sessions.AuxStatus:output_type -> cxz.runtime.AuxState
-	55, // 91: cxz.runtime.Sessions.AuxPrefer:output_type -> cxz.runtime.AuxState
-	13, // 92: cxz.runtime.Sessions.AuxForget:output_type -> cxz.runtime.Receipt
-	57, // 93: cxz.runtime.Sessions.AuxConfig:output_type -> cxz.runtime.AuxConfigReply
-	57, // 94: cxz.runtime.Sessions.AuxSetConfig:output_type -> cxz.runtime.AuxConfigReply
-	60, // 95: cxz.runtime.Sessions.AuxModels:output_type -> cxz.runtime.AuxModelsReply
-	62, // 96: cxz.runtime.Sessions.AuxLoginInfo:output_type -> cxz.runtime.AuxLoginInfoReply
-	60, // [60:97] is the sub-list for method output_type
-	23, // [23:60] is the sub-list for method input_type
-	23, // [23:23] is the sub-list for extension type_name
-	23, // [23:23] is the sub-list for extension extendee
-	0,  // [0:23] is the sub-list for field type_name
+	44, // 18: cxz.runtime.AuxState.recent:type_name -> cxz.runtime.Aux
+	49, // 19: cxz.runtime.AuxState.preferences:type_name -> cxz.runtime.AuxPreference
+	49, // 20: cxz.runtime.AuxPreferInput.preferences:type_name -> cxz.runtime.AuxPreference
+	48, // 21: cxz.runtime.AuxConfigReply.profiles:type_name -> cxz.runtime.AuxProfile
+	48, // 22: cxz.runtime.AuxSetConfigInput.profiles:type_name -> cxz.runtime.AuxProfile
+	50, // 23: cxz.runtime.AuxModelsReply.models:type_name -> cxz.runtime.AuxModel
+	37, // 24: cxz.runtime.Sessions.Devcontainer:input_type -> cxz.runtime.DevcontainerInput
+	30, // 25: cxz.runtime.Sessions.Docker:input_type -> cxz.runtime.DockerInput
+	29, // 26: cxz.runtime.Sessions.FileMappings:input_type -> cxz.runtime.FileMappingsInput
+	1,  // 27: cxz.runtime.Sessions.Create:input_type -> cxz.runtime.CreateRequest
+	0,  // 28: cxz.runtime.Sessions.List:input_type -> cxz.runtime.Empty
+	2,  // 29: cxz.runtime.Sessions.Get:input_type -> cxz.runtime.SessionRef
+	33, // 30: cxz.runtime.Sessions.CopyMemory:input_type -> cxz.runtime.CopyMemoryRequest
+	31, // 31: cxz.runtime.Sessions.Memory:input_type -> cxz.runtime.MemoryRequest
+	27, // 32: cxz.runtime.Sessions.Logs:input_type -> cxz.runtime.LogsRequest
+	26, // 33: cxz.runtime.Sessions.Permission:input_type -> cxz.runtime.PermissionInput
+	5,  // 34: cxz.runtime.Sessions.Send:input_type -> cxz.runtime.Input
+	6,  // 35: cxz.runtime.Sessions.Attach:input_type -> cxz.runtime.AttachmentInput
+	8,  // 36: cxz.runtime.Sessions.Activity:input_type -> cxz.runtime.ActivityInput
+	9,  // 37: cxz.runtime.Sessions.UpdateAgent:input_type -> cxz.runtime.AgentUpdateInput
+	11, // 38: cxz.runtime.Sessions.Reply:input_type -> cxz.runtime.Answer
+	12, // 39: cxz.runtime.Sessions.Interrupt:input_type -> cxz.runtime.Control
+	12, // 40: cxz.runtime.Sessions.Resume:input_type -> cxz.runtime.Control
+	12, // 41: cxz.runtime.Sessions.Stop:input_type -> cxz.runtime.Control
+	14, // 42: cxz.runtime.Sessions.Watch:input_type -> cxz.runtime.WatchRequest
+	14, // 43: cxz.runtime.Sessions.History:input_type -> cxz.runtime.WatchRequest
+	18, // 44: cxz.runtime.Sessions.Transcript:input_type -> cxz.runtime.TranscriptRequest
+	20, // 45: cxz.runtime.Sessions.EventDetails:input_type -> cxz.runtime.EventDetailsRequest
+	2,  // 46: cxz.runtime.Sessions.Background:input_type -> cxz.runtime.SessionRef
+	35, // 47: cxz.runtime.Sessions.Models:input_type -> cxz.runtime.ModelsRequest
+	38, // 48: cxz.runtime.Sessions.Search:input_type -> cxz.runtime.SearchRequest
+	23, // 49: cxz.runtime.Sessions.Open:input_type -> cxz.runtime.ProjectRequest
+	0,  // 50: cxz.runtime.Sessions.Projects:input_type -> cxz.runtime.Empty
+	23, // 51: cxz.runtime.Sessions.Down:input_type -> cxz.runtime.ProjectRequest
+	51, // 52: cxz.runtime.Sessions.AuxRun:input_type -> cxz.runtime.AuxRunInput
+	52, // 53: cxz.runtime.Sessions.AuxCancel:input_type -> cxz.runtime.AuxCancelInput
+	54, // 54: cxz.runtime.Sessions.AuxStatus:input_type -> cxz.runtime.AuxStatusInput
+	54, // 55: cxz.runtime.Sessions.AuxEvents:input_type -> cxz.runtime.AuxStatusInput
+	56, // 56: cxz.runtime.Sessions.AuxPrefer:input_type -> cxz.runtime.AuxPreferInput
+	53, // 57: cxz.runtime.Sessions.AuxForget:input_type -> cxz.runtime.AuxForgetInput
+	0,  // 58: cxz.runtime.Sessions.AuxConfig:input_type -> cxz.runtime.Empty
+	58, // 59: cxz.runtime.Sessions.AuxSetConfig:input_type -> cxz.runtime.AuxSetConfigInput
+	59, // 60: cxz.runtime.Sessions.AuxModels:input_type -> cxz.runtime.AuxModelsInput
+	61, // 61: cxz.runtime.Sessions.AuxLoginInfo:input_type -> cxz.runtime.AuxLoginInfoInput
+	13, // 62: cxz.runtime.Sessions.Devcontainer:output_type -> cxz.runtime.Receipt
+	13, // 63: cxz.runtime.Sessions.Docker:output_type -> cxz.runtime.Receipt
+	13, // 64: cxz.runtime.Sessions.FileMappings:output_type -> cxz.runtime.Receipt
+	3,  // 65: cxz.runtime.Sessions.Create:output_type -> cxz.runtime.Session
+	4,  // 66: cxz.runtime.Sessions.List:output_type -> cxz.runtime.SessionList
+	3,  // 67: cxz.runtime.Sessions.Get:output_type -> cxz.runtime.Session
+	13, // 68: cxz.runtime.Sessions.CopyMemory:output_type -> cxz.runtime.Receipt
+	32, // 69: cxz.runtime.Sessions.Memory:output_type -> cxz.runtime.MemoryReply
+	28, // 70: cxz.runtime.Sessions.Logs:output_type -> cxz.runtime.LogsReply
+	13, // 71: cxz.runtime.Sessions.Permission:output_type -> cxz.runtime.Receipt
+	13, // 72: cxz.runtime.Sessions.Send:output_type -> cxz.runtime.Receipt
+	7,  // 73: cxz.runtime.Sessions.Attach:output_type -> cxz.runtime.Attachment
+	13, // 74: cxz.runtime.Sessions.Activity:output_type -> cxz.runtime.Receipt
+	10, // 75: cxz.runtime.Sessions.UpdateAgent:output_type -> cxz.runtime.AgentUpdateStatus
+	13, // 76: cxz.runtime.Sessions.Reply:output_type -> cxz.runtime.Receipt
+	13, // 77: cxz.runtime.Sessions.Interrupt:output_type -> cxz.runtime.Receipt
+	3,  // 78: cxz.runtime.Sessions.Resume:output_type -> cxz.runtime.Session
+	13, // 79: cxz.runtime.Sessions.Stop:output_type -> cxz.runtime.Receipt
+	15, // 80: cxz.runtime.Sessions.Watch:output_type -> cxz.runtime.Event
+	22, // 81: cxz.runtime.Sessions.History:output_type -> cxz.runtime.EventBatch
+	19, // 82: cxz.runtime.Sessions.Transcript:output_type -> cxz.runtime.TranscriptReply
+	22, // 83: cxz.runtime.Sessions.EventDetails:output_type -> cxz.runtime.EventBatch
+	34, // 84: cxz.runtime.Sessions.Background:output_type -> cxz.runtime.BackgroundReply
+	36, // 85: cxz.runtime.Sessions.Models:output_type -> cxz.runtime.ModelsReply
+	43, // 86: cxz.runtime.Sessions.Search:output_type -> cxz.runtime.SearchReply
+	3,  // 87: cxz.runtime.Sessions.Open:output_type -> cxz.runtime.Session
+	25, // 88: cxz.runtime.Sessions.Projects:output_type -> cxz.runtime.ProjectList
+	13, // 89: cxz.runtime.Sessions.Down:output_type -> cxz.runtime.Receipt
+	55, // 90: cxz.runtime.Sessions.AuxRun:output_type -> cxz.runtime.AuxState
+	55, // 91: cxz.runtime.Sessions.AuxCancel:output_type -> cxz.runtime.AuxState
+	55, // 92: cxz.runtime.Sessions.AuxStatus:output_type -> cxz.runtime.AuxState
+	55, // 93: cxz.runtime.Sessions.AuxEvents:output_type -> cxz.runtime.AuxState
+	55, // 94: cxz.runtime.Sessions.AuxPrefer:output_type -> cxz.runtime.AuxState
+	13, // 95: cxz.runtime.Sessions.AuxForget:output_type -> cxz.runtime.Receipt
+	57, // 96: cxz.runtime.Sessions.AuxConfig:output_type -> cxz.runtime.AuxConfigReply
+	57, // 97: cxz.runtime.Sessions.AuxSetConfig:output_type -> cxz.runtime.AuxConfigReply
+	60, // 98: cxz.runtime.Sessions.AuxModels:output_type -> cxz.runtime.AuxModelsReply
+	62, // 99: cxz.runtime.Sessions.AuxLoginInfo:output_type -> cxz.runtime.AuxLoginInfoReply
+	62, // [62:100] is the sub-list for method output_type
+	24, // [24:62] is the sub-list for method input_type
+	24, // [24:24] is the sub-list for extension type_name
+	24, // [24:24] is the sub-list for extension extendee
+	0,  // [0:24] is the sub-list for field type_name
 }
 
 func init() { file_cxz_proto_init() }

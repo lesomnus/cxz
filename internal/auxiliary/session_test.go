@@ -181,12 +181,27 @@ func TestDisableCancelsAndSummaryStorageIsBounded(t *testing.T) {
 		t.Fatal(err)
 	}
 	waitJob(t, c, "a", "canceled")
-	var s State
-	for i := uint64(1); i <= 40; i++ {
-		rememberSummary(&s, &Job{Run: "run", Turn: i, Summary: strings.Repeat("한", 2000)})
+	// Kept per turn, bounded, and clipped: a summary is read beside a turn, and
+	// one of them is fed back as context for a later suggestion.
+	for i := uint64(1); i <= SummaryHistory+8; i++ {
+		if err := c.rememberSummary("a", &Job{Run: "run", Turn: i, Summary: strings.Repeat("한", 2000)}); err != nil {
+			t.Fatal(err)
+		}
 	}
-	if len(s.Summaries) != 32 || s.Summaries[0].Turn != 9 || len(s.Summaries[0].Text) > 4<<10 {
-		t.Fatal("unbounded summary storage")
+	kept, err := c.Summaries("a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(kept) != SummaryHistory || kept[0].Turn != 9 || len(kept[0].Text) > 4<<10 {
+		t.Fatal("unbounded summary storage", len(kept))
+	}
+	// Asking again about the same turn replaces what was said about it.
+	if err := c.rememberSummary("a", &Job{Run: "run", Turn: 100, Summary: "again"}); err != nil {
+		t.Fatal(err)
+	}
+	kept, _ = c.Summaries("a")
+	if len(kept) != SummaryHistory {
+		t.Fatal("a second answer was added beside the first", len(kept))
 	}
 }
 

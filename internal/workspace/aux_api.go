@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
+
+	"google.golang.org/protobuf/proto"
 
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/accounts"
@@ -21,10 +24,6 @@ var AuxKinds = []string{"summary", "suggestion", "title"}
 
 // maxAuxText bounds the one text a caller supplies, which is a manual title.
 const maxAuxText = 4 << 10
-
-// defaultAuxSummaries bounds one answer. Summaries are kept per turn, and a
-// client draws the ones on screen.
-const defaultAuxSummaries = 200
 
 func auxKind(kind string) error {
 	for _, k := range AuxKinds {
@@ -250,14 +249,15 @@ func (m *Manager) auxState(session, message string, afterTurn uint64, limit int3
 	if err != nil {
 		return nil, err
 	}
-	summaries, err := c.Summaries(session)
+	summaries, err := c.SummariesAfter(session, afterTurn, int(limit))
+	if err != nil {
+		return nil, err
+	}
+	recent, err := c.Tasks(session, int(limit))
 	if err != nil {
 		return nil, err
 	}
 	title, _ := c.Title(session)
-	if limit <= 0 || limit > defaultAuxSummaries {
-		limit = defaultAuxSummaries
-	}
 	out := &api.AuxState{
 		Current: auxOf(session, job),
 		Title:   title.Text,
@@ -268,13 +268,10 @@ func (m *Manager) auxState(session, message string, afterTurn uint64, limit int3
 		},
 	}
 	for _, s := range summaries {
-		if s.Turn <= afterTurn {
-			continue
-		}
 		out.Summaries = append(out.Summaries, &api.AuxSummary{RunId: s.Run, Turn: s.Turn, Text: s.Text})
 	}
-	if n := len(out.Summaries); n > int(limit) {
-		out.Summaries = out.Summaries[n-int(limit):]
+	for i := range recent {
+		out.Recent = append(out.Recent, auxOf(session, &recent[i]))
 	}
 	return out, nil
 }
@@ -362,3 +359,46 @@ func AuxText(a *api.Aux, kind string) string {
 	}
 	return ""
 }
+
+// AuxEvents sends this session's aux state now, and again whenever it changes.
+// The heartbeat is a safety net rather than a poll: a watcher is woken by the
+// controller in the same place it writes, and a read that finds nothing new
+// sends nothing.
+func (m *Manager) AuxEvents(in *api.AuxStatusInput, stream api.Sessions_AuxEventsServer) error {
+	if in.SessionId == "" {
+		return fmt.Errorf("select a session")
+	}
+	c, err := m.auxiliaryController()
+	if err != nil {
+		return err
+	}
+	wake, stop := c.Watch(in.SessionId)
+	defer stop()
+	ctx := stream.Context()
+	ticker := time.NewTicker(auxHeartbeat)
+	defer ticker.Stop()
+	var last *api.AuxState
+	for {
+		state, err := m.auxState(in.SessionId, "", in.AfterTurn, in.Limit)
+		if err != nil {
+			return err
+		}
+		if last == nil || !proto.Equal(last, state) {
+			if err = stream.Send(state); err != nil {
+				return err
+			}
+			last = state
+		}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-wake:
+		case <-ticker.C:
+		}
+	}
+}
+
+// auxHeartbeat is how long a watcher waits before reading anyway. Nothing
+// depends on it: it covers a wake lost to a process that wrote and died, and a
+// state that did not change costs one read and sends nothing.
+const auxHeartbeat = 30 * time.Second

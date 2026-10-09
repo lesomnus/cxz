@@ -93,10 +93,12 @@ type Summary struct {
 	Text string `json:"text"`
 }
 
+// State is working state: the rolling context a task is built from, and the
+// task in flight. What ran, and what it produced, is kept in the store beside
+// this file -- a pointer here would be overwritten by the next turn.
 type State struct {
-	PendingTask string    `json:"pending_task,omitempty"`
-	Summaries   []Summary `json:"summaries,omitempty"`
-	Deleted     bool      `json:"deleted,omitempty"`
+	PendingTask string `json:"pending_task,omitempty"`
+	Deleted     bool   `json:"deleted,omitempty"`
 	Gap         bool      `json:"gap,omitempty"`
 	Seen        uint64    `json:"seen"`
 	Current     Turn      `json:"current"`

@@ -97,3 +97,13 @@ func (c *Client) AuxLoginInfo(ctx context.Context, r *api.AuxLoginInfoInput, opt
 	}
 	return client.AuxLoginInfo(ctx, r, opts...)
 }
+
+func (c *Client) AuxEvents(ctx context.Context, r *api.AuxStatusInput, opts ...grpc.CallOption) (grpc.ServerStreamingClient[api.AuxState], error) {
+	in := proto.Clone(r).(*api.AuxStatusInput)
+	_, id, client, err := c.route(ctx, r.SessionId)
+	if err != nil {
+		return nil, err
+	}
+	in.SessionId = id
+	return client.AuxEvents(ctx, in, opts...)
+}
