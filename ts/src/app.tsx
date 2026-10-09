@@ -1160,10 +1160,6 @@ function ConversationContent({ c, id }: { c: Connection; id: string }) {
       className="conversation"
       aria-description={`${s?.status?.state ?? ""} · ${translateKnown(status)}`}
     >
-      <ComposerAurora
-        anchor={composer}
-        active={turn.active && ["working", "running"].includes(executionState)}
-      />
       <Transcript
         pane={pane}
         events={transcript.events}
@@ -1253,6 +1249,11 @@ function ConversationContent({ c, id }: { c: Connection; id: string }) {
       )}
       <form ref={composer} className="composer" onSubmit={send}>
         <div className="composer-wrapper">
+          <ComposerAurora
+            active={
+              turn.active && ["working", "running"].includes(executionState)
+            }
+          />
           <div className="composer-toolbar">
             <TurnControls
               turn={turn}

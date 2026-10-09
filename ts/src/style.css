@@ -1156,24 +1156,25 @@ pre {
   padding: 0 0 max(12px, env(safe-area-inset-bottom));
 }
 .composer-wrapper {
+  --composer-border-width: 1px;
   position: relative;
   width: calc(
     100% + 2 * (var(--composer-extension) - var(--composer-overhang))
   );
   margin-inline: calc(var(--composer-overhang) - var(--composer-extension));
   padding: 0;
-  border: 1px solid var(--shade-44);
+  border: var(--composer-border-width) solid var(--shade-44);
   background: transparent;
   border-radius: var(--wrapper-radius);
 }
 .composer-toolbar {
   position: relative;
   z-index: 1;
-  background: color-mix(in srgb, var(--shade-16) 48%, transparent);
+  background: color-mix(in srgb, var(--shade-16) 72%, transparent);
   -webkit-backdrop-filter: blur(24px);
   backdrop-filter: blur(24px);
-  border-radius: calc(var(--wrapper-radius) - 1px)
-    calc(var(--wrapper-radius) - 1px) 0 0;
+  border-radius: calc(var(--wrapper-radius) - var(--composer-border-width))
+    calc(var(--wrapper-radius) - var(--composer-border-width)) 0 0;
   display: flex;
   justify-content: flex-end;
   align-items: center;
@@ -1182,8 +1183,13 @@ pre {
   padding: var(--control-inset);
 }
 .composer-aurora-viewport {
+  /* Include the wrapper border; the glass toolbar dims only the interior. */
   position: absolute;
-  inset: 0;
+  top: calc(-1 * var(--composer-border-width));
+  left: calc(-1 * var(--composer-border-width));
+  right: calc(-1 * var(--composer-border-width));
+  height: calc(var(--composer-toolbar-height) + var(--composer-border-width));
+  border-radius: var(--wrapper-radius) var(--wrapper-radius) 0 0;
   z-index: 0;
   overflow: clip;
   contain: paint;
@@ -1193,35 +1199,17 @@ pre {
   --aurora-green: #1b8060;
   --aurora-cyan: #1e718b;
   --aurora-violet: #5d4187;
-  --aurora-strength: 0.2;
+  --aurora-strength: 0.34;
   --aurora-envelope-duration: 3200ms;
-  --aurora-drift-duration: 86s;
-  --aurora-form-duration: 68s;
-  --aurora-focus-duration: 54s;
+  --aurora-drift-duration: 38s;
+  --aurora-form-duration: 29s;
+  --aurora-focus-duration: 23s;
   --aurora-orbit-radius: 24px;
-  --aurora-anchor-offset: 64px;
-  --aurora-side-fade: 64px;
   position: absolute;
-  top: calc(var(--aurora-anchor-top) - var(--aurora-anchor-offset));
-  left: calc(var(--aurora-anchor-left) - var(--aurora-side-fade));
-  width: calc(var(--aurora-anchor-width) + 2 * var(--aurora-side-fade));
-  height: calc(
-    var(--aurora-anchor-offset) + var(--composer-toolbar-height) + 20px
-  );
-  z-index: 0;
+  inset: 0;
   pointer-events: none;
   opacity: 0;
-  filter: blur(24px);
-  mask-image:
-    linear-gradient(
-      to right,
-      transparent,
-      #000 var(--aurora-side-fade),
-      #000 calc(100% - var(--aurora-side-fade)),
-      transparent
-    ),
-    linear-gradient(transparent, #000 30%, #000 86%, transparent);
-  mask-composite: intersect;
+  filter: blur(16px);
   transition: opacity var(--aurora-envelope-duration) ease-in-out;
 }
 .composer-aurora[data-active="true"] {
@@ -1229,11 +1217,11 @@ pre {
 }
 .aurora-clusters {
   position: absolute;
-  inset: 0 var(--aurora-side-fade);
+  inset: 0;
 }
 .aurora-cluster {
   position: absolute;
-  top: var(--aurora-anchor-offset);
+  top: 0;
   left: -20%;
   width: 72%;
   height: var(--composer-toolbar-height);
@@ -1269,40 +1257,40 @@ pre {
 .aurora-orbit {
   position: absolute;
   inset: 0;
-  animation: aurora-orbit 61s linear -7s infinite;
+  animation: aurora-orbit 29s linear -7s infinite;
   animation-play-state: paused;
 }
 .aurora-orbit:nth-child(2) {
-  animation-duration: 79s;
+  animation-duration: 37s;
   animation-delay: -31s;
   animation-direction: reverse;
 }
 .aurora-orbit:nth-child(3) {
-  animation-duration: 97s;
+  animation-duration: 43s;
   animation-delay: -53s;
 }
 .aurora-cluster:nth-child(2) .aurora-orbit {
-  animation-duration: 71s;
+  animation-duration: 33s;
   animation-delay: -27s;
 }
 .aurora-cluster:nth-child(2) .aurora-orbit:nth-child(2) {
-  animation-duration: 89s;
+  animation-duration: 41s;
   animation-delay: -57s;
 }
 .aurora-cluster:nth-child(2) .aurora-orbit:nth-child(3) {
-  animation-duration: 113s;
+  animation-duration: 53s;
   animation-delay: -11s;
 }
 .aurora-cluster:nth-child(3) .aurora-orbit {
-  animation-duration: 83s;
+  animation-duration: 39s;
   animation-delay: -44s;
 }
 .aurora-cluster:nth-child(3) .aurora-orbit:nth-child(2) {
-  animation-duration: 103s;
+  animation-duration: 47s;
   animation-delay: -15s;
 }
 .aurora-cluster:nth-child(3) .aurora-orbit:nth-child(3) {
-  animation-duration: 127s;
+  animation-duration: 61s;
   animation-delay: -83s;
 }
 .composer-aurora[data-running="true"] .aurora-orbit {
@@ -1348,10 +1336,10 @@ pre {
   }
 }
 :root[data-theme="light"] .composer-toolbar {
-  background: color-mix(in srgb, var(--shade-32) 60%, transparent);
+  background: color-mix(in srgb, var(--shade-32) 78%, transparent);
 }
 :root[data-theme="light"] .composer-aurora {
-  --aurora-strength: 0.12;
+  --aurora-strength: 0.22;
 }
 @media (prefers-reduced-motion: reduce) {
   .composer-aurora,
@@ -1768,7 +1756,7 @@ pre {
   flex-direction: column;
   overflow: hidden;
   color: inherit;
-  background: color-mix(in srgb, var(--shade-32) 60%, transparent);
+  background: color-mix(in srgb, var(--shade-32) 78%, transparent);
   -webkit-backdrop-filter: blur(48px);
   backdrop-filter: blur(48px);
   border: var(--card-border-width) solid var(--shade-54);
