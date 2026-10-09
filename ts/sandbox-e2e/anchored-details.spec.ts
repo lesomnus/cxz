@@ -32,7 +32,10 @@ test("event details grow only the trigger's exterior, toggle and replace in plac
   ).toHaveCount(0);
   await expect(card.locator(".card-heading")).toHaveCount(0);
   await expect(card).toHaveCSS("border-top-left-radius", "0px");
+  await expect(card.locator(".monaco-editor")).toBeVisible();
+  const initialHeight = (await card.boundingBox())!.height;
   await card.getByRole("tab", { name: "Result", exact: true }).click();
+  expect((await card.boundingBox())!.height).toBeCloseTo(initialHeight, 0);
   await expect(card.locator(".view-lines")).toContainText("usageLimitExceeded");
   await expect(card.locator(".detail-editor")).toHaveAttribute(
     "data-language",
@@ -75,6 +78,10 @@ test("event details grow only the trigger's exterior, toggle and replace in plac
   const editor = (await card.locator(".detail-editor").boundingBox())!;
   expect(tabs.y).toBeGreaterThan(before!.y + before!.height + 4);
   expect(editor.y).toBeGreaterThan(tabs.y + tabs.height);
+  const lastLine = (await card.locator(".view-line").last().boundingBox())!;
+  expect(
+    editor.y + editor.height - lastLine.y - lastLine.height,
+  ).toBeGreaterThan(24);
   await card.locator(".view-lines").click();
   await expect(card).toBeVisible();
   await page.screenshot({ path: "test-results/anchored-details-desktop.png" });
@@ -128,6 +135,18 @@ test("grouped tool details fit short output, follow native scrolling, and close 
   await page.getByRole("button", { name: "Send", exact: true }).click();
   const tool = page.locator(".tool-activity").last();
   await expect(tool).toHaveAttribute("data-state", "completed");
+  await expect(tool.getByRole("tooltip", { includeHidden: true })).toBeHidden();
+  await tool.hover();
+  const timestamp = tool.getByRole("tooltip", { includeHidden: true });
+  await expect(timestamp).toBeVisible();
+  const recorded = await timestamp.locator("time").getAttribute("datetime");
+  expect(Math.abs(Date.now() - Date.parse(recorded!))).toBeLessThan(60_000);
+  const timeBounds = (await timestamp.boundingBox())!;
+  const toolBounds = (await tool.boundingBox())!;
+  expect(timeBounds.x).toBeCloseTo(toolBounds.x, 0);
+  expect(timeBounds.y + timeBounds.height).toBeLessThan(toolBounds.y);
+  await page.mouse.move(0, 0);
+  await expect(timestamp).toBeHidden();
   await expect(page.locator(".conversation")).toHaveAttribute(
     "aria-description",
     /idle/,
@@ -144,6 +163,7 @@ test("grouped tool details fit short output, follow native scrolling, and close 
     card.getByRole("tab", { name: "Result", exact: true }),
   ).toHaveAttribute("aria-selected", "true");
   await expect(card.locator(".monaco-editor")).toBeVisible();
+  expect((await card.boundingBox())!.height).toBeCloseTo(bounds.height, 0);
   const pane = page.locator(".transcript");
   const top = await pane.evaluate((el) => el.scrollTop);
   const editor = card.locator(".monaco-editor");

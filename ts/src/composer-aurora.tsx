@@ -1,4 +1,4 @@
-import { useEffect, useRef, type RefObject } from "react";
+import { useEffect, useRef } from "react";
 
 type Drift = {
   node: HTMLElement;
@@ -11,50 +11,14 @@ const between = (min: number, max: number) => min + Math.random() * (max - min);
 
 // Layout stays in CSS. The browser interpolates random, slow paths; JavaScript
 // chooses new waypoints only when a long animation finishes, never each frame.
-export function ComposerAurora({
-  active,
-  anchor,
-}: {
-  active: boolean;
-  anchor: RefObject<HTMLFormElement | null>;
-}) {
-  const viewport = useRef<HTMLDivElement>(null);
+export function ComposerAurora({ active }: { active: boolean }) {
   const root = useRef<HTMLDivElement>(null);
   const latest = useRef(active);
   latest.current = active;
   const control = useRef<{ sync: () => void } | undefined>(undefined);
   useEffect(() => {
-    // This component precedes the form: its layout effects run before that
-    // sibling's ref attaches. Wait until the whole commit has attached its refs.
-    const layer = viewport.current;
-    const composer = anchor.current;
+    if (!root.current) return;
     const node = root.current;
-    const toolbar = composer?.querySelector<HTMLElement>(".composer-toolbar");
-    if (!layer || !composer || !node || !toolbar) return;
-    // Keep the field behind the conversation, anchored only on layout changes.
-    // The bounded paint layer contains even the largest rotating orbs.
-    const align = () => {
-      const bounds = layer.getBoundingClientRect();
-      const bar = toolbar.getBoundingClientRect();
-      node.style.setProperty(
-        "--aurora-anchor-left",
-        `${bar.left - bounds.left}px`,
-      );
-      node.style.setProperty(
-        "--aurora-anchor-top",
-        `${bar.top - bounds.top}px`,
-      );
-      node.style.setProperty("--aurora-anchor-width", `${bar.width}px`);
-    };
-    const observer = new ResizeObserver(align);
-    observer.observe(layer);
-    observer.observe(composer);
-    observer.observe(toolbar);
-    align();
-    return () => observer.disconnect();
-  }, [anchor]);
-  useEffect(() => {
-    const node = root.current!;
     const reduced = matchMedia("(prefers-reduced-motion: reduce)");
     const style = getComputedStyle(node);
     const timing = (token: string) => {
@@ -84,7 +48,7 @@ export function ComposerAurora({
       "--aurora-drift-duration",
       { transform: "translate3d(0, 0, 0)" },
       () => ({
-        transform: `translate3d(${between(-15, 15)}%, ${between(-16, 16)}%, 0)`,
+        transform: `translate3d(${between(-16, 16)}%, ${between(-32, 32)}%, 0)`,
       }),
     );
     add(
@@ -94,8 +58,8 @@ export function ComposerAurora({
       () => {
         const vanished = Math.random() < 0.2;
         return {
-          transform: `rotate(${between(-32, 32)}deg) scale(${vanished ? 0.025 : between(0.45, 1.35)}, ${vanished ? 0.025 : between(0.4, 1.5)})`,
-          opacity: vanished ? 0 : between(0.4, 0.8),
+          transform: `rotate(${between(-55, 55)}deg) scale(${vanished ? 0.025 : between(0.3, 1.55)}, ${vanished ? 0.025 : between(0.35, 1.65)})`,
+          opacity: vanished ? 0 : between(0.3, 0.85),
         };
       },
     );
@@ -104,7 +68,7 @@ export function ComposerAurora({
       "--aurora-focus-duration",
       { transform: "translate3d(0, 0, 0) scale(1)" },
       () => ({
-        transform: `translate3d(${between(-24, 24)}%, ${between(-24, 24)}%, 0) scale(${between(0.45, 1)})`,
+        transform: `translate3d(${between(-32, 32)}%, ${between(-32, 32)}%, 0) scale(${between(0.3, 1.15)})`,
       }),
     );
     function wander(motion: Drift) {
@@ -168,7 +132,7 @@ export function ComposerAurora({
   }, []);
   useEffect(() => control.current?.sync(), [active]);
   return (
-    <div ref={viewport} className="composer-aurora-viewport" aria-hidden="true">
+    <div className="composer-aurora-viewport" aria-hidden="true">
       <div
         ref={root}
         className="composer-aurora"

@@ -49,7 +49,11 @@ func TestBrowserFixture(t *testing.T) {
 	if os.Getenv("CXZ_WEB_FIXTURE_PLAINTEXT") == "1" {
 		c = Config{Listen: "127.0.0.1:18082", Origin: "http://127.0.0.1:18082", Token: strings.Repeat("a", 32)}
 	}
-	h, stop, err := Handler(c, conn, Assets())
+	assets, err := Assets("../../internal/webui/assets")
+	if err != nil {
+		t.Fatal(err)
+	}
+	h, stop, err := Handler(c, conn, assets)
 	if err != nil {
 		t.Fatal(err)
 	}

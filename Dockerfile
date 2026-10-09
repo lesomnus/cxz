@@ -1,4 +1,11 @@
 # syntax=docker/dockerfile:1
+FROM --platform=$BUILDPLATFORM node:24-bookworm-slim AS web
+WORKDIR /src/ts
+COPY ts/package.json ts/package-lock.json ./
+RUN --mount=type=cache,target=/root/.npm npm ci
+COPY ts/ ./
+RUN npm run build
+
 # Compile both architectures natively; no emulation is needed for Go builds.
 FROM --platform=$BUILDPLATFORM golang:1.27 AS builder
 WORKDIR /src
@@ -18,3 +25,4 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 
 FROM scratch AS build
 COPY --from=builder /dist/ /
+COPY --from=web /src/internal/webui/assets/ /webui/

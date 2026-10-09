@@ -7,6 +7,7 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
+  useId,
   useRef,
   useState,
 } from "react";
@@ -47,6 +48,8 @@ import { AgentBrand } from "./agent-brand";
 import { responseInfo } from "./response-info";
 import type { ResponseCompletion } from "./response-completion";
 import { ResponseFooter } from "./response-footer";
+import { CopyButton } from "./copy-button";
+import { EventTimePopover } from "./event-time-popover";
 import { InputMessage } from "./input-message";
 import { ComposerEditor } from "./composer-editor";
 import { sessionCommands } from "./composer-commands";
@@ -108,16 +111,28 @@ function ResourceIcon({
   );
 }
 
+// Keep conversation link behavior scoped to this sanitizer instance.
+const markdownPurifier = DOMPurify();
+markdownPurifier.addHook("afterSanitizeAttributes", (node) => {
+  if (node.localName === "a" && node.hasAttribute("href")) {
+    node.setAttribute("target", "_blank");
+    node.setAttribute("rel", "noopener noreferrer");
+  }
+});
+
 function Markdown({ text }: { text: string }) {
   useLocale();
   return (
     <div
       className="markdown"
       dangerouslySetInnerHTML={{
-        __html: DOMPurify.sanitize(marked.parse(text, { async: false }), {
-          FORBID_TAGS: ["img", "style", "input", "form"],
-          FORBID_ATTR: ["style"],
-        }),
+        __html: markdownPurifier.sanitize(
+          marked.parse(text, { async: false }),
+          {
+            FORBID_TAGS: ["img", "style", "input", "form"],
+            FORBID_ATTR: ["style"],
+          },
+        ),
       }}
     />
   );
@@ -530,6 +545,7 @@ function Conversation(props: { c: Connection; id: string }) {
 }
 function ConversationContent({ c, id }: { c: Connection; id: string }) {
   useLocale();
+  const [sending, setSending] = useState(false);
   const current = useQuery(SessionService.method.get, {
     ref: ref(id),
     select: { all: true, project: { all: true } },
@@ -1110,8 +1126,13 @@ function ConversationContent({ c, id }: { c: Connection; id: string }) {
           clearCommand();
           trigger.click();
         } else setError(t("Settings require an idle session"));
-      } else if (await changeSetting(kind, setting[2])) {
-        clearCommand();
+      } else if (!lock.current) {
+        setSending(true);
+        try {
+          if (await changeSetting(kind, setting[2])) clearCommand();
+        } finally {
+          setSending(false);
+        }
       }
       return;
     }
@@ -1119,9 +1140,14 @@ function ConversationContent({ c, id }: { c: Connection; id: string }) {
       const text = composerPrompt(sent, c.pastes);
       const motion = sendMotion.prepare(text, latestSeq.current);
       try {
-        const receipt = await c.sessions.send({ ...control(s), text });
-        if (receipt.status === "rejected")
-          throw new Error(t("Provider rejected the input"));
+        setSending(true);
+        try {
+          const receipt = await c.sessions.send({ ...control(s), text });
+          if (receipt.status === "rejected")
+            throw new Error(t("Provider rejected the input"));
+        } finally {
+          setSending(false);
+        }
         // A session switch can unmount this view during the decorative departure.
         if (c.drafts.get(id) === sent) c.drafts.set(id, "");
         await sendMotion.depart(motion);
@@ -1160,10 +1186,6 @@ function ConversationContent({ c, id }: { c: Connection; id: string }) {
       className="conversation"
       aria-description={`${s?.status?.state ?? ""} · ${translateKnown(status)}`}
     >
-      <ComposerAurora
-        anchor={composer}
-        active={turn.active && ["working", "running"].includes(executionState)}
-      />
       <Transcript
         pane={pane}
         events={transcript.events}
@@ -1253,6 +1275,11 @@ function ConversationContent({ c, id }: { c: Connection; id: string }) {
       )}
       <form ref={composer} className="composer" onSubmit={send}>
         <div className="composer-wrapper">
+          <ComposerAurora
+            active={
+              turn.active && ["working", "running"].includes(executionState)
+            }
+          />
           <div className="composer-toolbar">
             <TurnControls
               turn={turn}
@@ -1356,9 +1383,15 @@ function ConversationContent({ c, id }: { c: Connection; id: string }) {
               </span>
             </span>
           </div>
-          <div className="composer-input" ref={composerInput}>
+          <div
+            className="composer-input"
+            ref={composerInput}
+            data-sending={sending}
+            aria-busy={sending}
+          >
             <ComposerEditor
               value={draft}
+              readOnly={sending}
               onChange={setDraft}
               pastes={c.pastes}
               canSend={!busy && !!s && !!draft.trim()}
@@ -1404,12 +1437,14 @@ const EventView = React.memo(
   }) {
     useLocale();
     const details = useAnchoredCard();
+    const timestamp = useId();
     if (activity)
       return (
         <ToolActivityView
           activity={activity}
           agent={agent}
           seq={e.seq}
+          timeMs={e.timeMs}
           loadDetails={loadDetails}
         />
       );
@@ -1424,14 +1459,10 @@ const EventView = React.memo(
                 {info.label}
               </span>
             )}
+            <CopyButton value={e.text} className="copy-control" />
           </small>
           <Markdown text={e.text} />
-          <ResponseFooter
-            seq={e.seq}
-            timeMs={e.timeMs}
-            text={e.text}
-            completion={completion}
-          />
+          <ResponseFooter timeMs={e.timeMs} completion={completion} />
         </article>
       );
     }
@@ -1452,6 +1483,7 @@ const EventView = React.memo(
         aria-expanded={details.expanded}
         aria-haspopup="dialog"
         aria-controls={details.controls}
+        aria-describedby={timestamp}
         {...details.handlers({
           title: e.kind === "approval" ? approvalTitle(e) : e.kind,
           content: () => (
@@ -1462,6 +1494,7 @@ const EventView = React.memo(
           ),
         })}
       >
+        <EventTimePopover timeMs={e.timeMs} id={timestamp} />
         {e.kind === "approval"
           ? approvalTitle(e)
           : `${e.kind} · ${e.text.slice(0, 160)}`}

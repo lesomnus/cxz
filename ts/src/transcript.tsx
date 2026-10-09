@@ -154,7 +154,7 @@ export function Transcript({
     }
     el.dispatchEvent(new Event("scroll-jump"));
     callbacks.current.onNavigate();
-    el.scrollTop = Math.max(0, map.origin + row.top + 6 - 18);
+    el.scrollTop = Math.max(0, map.origin + row.top + map.rowPadding - 18);
     scrolled();
     el.dispatchEvent(new CustomEvent("reading-anchor", { detail: seq }));
     el.focus({ preventScroll: true });

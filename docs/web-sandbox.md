@@ -375,8 +375,9 @@ which is separate from conversation state.
 
 Normal `npm run --prefix ts build` still writes only the authenticated production
 web client into `internal/webui/assets`. Sandbox binaries, Worker and controls are
-not shipped in that build. The generated `.sandbox` and `dist-sandbox` directories
-are ignored by Git.
+not shipped in that build. The production files are served from the container
+filesystem, separately from the Go binary, and are ignored by Git along with the
+generated `.sandbox` and `dist-sandbox` directories.
 
 ## Implementation boundaries
 

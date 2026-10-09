@@ -24,6 +24,11 @@ jobs:
           cache: true
       - run: go vet ./...
       - run: CXZ_TEST_RACE=1 go test -race ./... -count=1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: ts/package-lock.json
       - name: Build versioned binaries and checksums
         env:
           RELEASE_VERSION: ${{ github.ref_name }}

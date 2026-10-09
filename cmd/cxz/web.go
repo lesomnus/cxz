@@ -30,6 +30,10 @@ func webFlags() flg.Flags {
 	}
 }
 
+func webServeFlags() flg.Flags {
+	return append(webFlags(), stringFlag("assets-dir", "Built browser UI directory (or CXZ_WEB_ASSETS_DIR)", ""))
+}
+
 // loadWebConfig reads the configuration without applying flags, and reports
 // which file it came from. An empty path means nothing is configured yet, which
 // is what lets `web up` write the default instead of reporting a usage error.
@@ -78,7 +82,7 @@ func webCommand() *xli.Command {
 			return installer.UninstallWeb(ctx, stateFrom(ctx))
 		})},
 		{Name: "status", Brief: "Report the gateway container, its origin and whether it is current", Flags: flg.Flags{stringFlag("config", "Web JSON settings (default: STATE/web.json)", ""), &flg.String{Name: "format", Brief: "Output format: table or json", Default: remoteDefault("table")}}, Handler: onRun(webStatus)},
-		{Name: "serve", Brief: "Run the gateway in this terminal; for developing cxz itself", Flags: webFlags(), Handler: onRun(serveWeb(false))},
+		{Name: "serve", Brief: "Run the gateway in this terminal; for developing cxz itself", Flags: webServeFlags(), Handler: onRun(serveWeb(false))},
 	}
 	return group
 }
@@ -193,18 +197,26 @@ func serveWeb(published bool) func(context.Context, *xli.Command) error {
 				return fmt.Errorf("a plaintext gateway must listen on a loopback address, not %q; configure an https origin with tls-cert and tls-key to serve a network", config.Listen)
 			}
 		}
+		directory := flg.MustGet[string](c, "assets-dir")
+		if directory == "" {
+			directory = webui.AssetsDirectory()
+		}
+		assets, err := webui.Assets(directory)
+		if err != nil {
+			return err
+		}
 		conn, err := transport.Dial(stateFrom(ctx))
 		if err != nil {
 			return err
 		}
 		defer conn.Close()
 		fmt.Fprintf(c.ErrWriter, "cxz web: %s (browser sign-in required; Ctrl+C stops only the gateway)\n", config.Origin)
-		return webui.Serve(ctx, config, conn, webui.Assets())
+		return webui.Serve(ctx, config, conn, assets)
 	}
 }
 
 // internalWebCommand is how the installed container starts the gateway. It is
 // not a supported interface: it trusts the publish address cxz web up chose.
 func internalWebCommand() *xli.Command {
-	return &xli.Command{Name: "_web-serve", Category: "Internal runtime", Brief: "Serve a published gateway container", Flags: webFlags(), Handler: onRun(serveWeb(true))}
+	return &xli.Command{Name: "_web-serve", Category: "Internal runtime", Brief: "Serve a published gateway container", Flags: webServeFlags(), Handler: onRun(serveWeb(true))}
 }

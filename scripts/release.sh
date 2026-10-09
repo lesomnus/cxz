@@ -13,6 +13,11 @@ if [[ "$version" == edge ]]; then
   build_version="source-$(git rev-parse --short=12 HEAD)"
 fi
 mkdir -p "$output"
+# Keep the browser build out of Go executables and package it for manager images.
+npm ci --prefix ts
+npm run --prefix ts build
+rm -rf "$output/webui"
+cp -a internal/webui/assets "$output/webui"
 for arch in amd64 arm64; do
   mkdir -p "$output/linux-$arch"
   CGO_ENABLED=0 GOOS=linux GOARCH="$arch" go build -trimpath -ldflags="-s -w -X main.version=$build_version -X main.buildRevision=$revision" -o "$output/linux-$arch/cxz" ./cmd/cxz

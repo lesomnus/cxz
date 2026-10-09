@@ -76,14 +76,14 @@ test("compact monochrome workspace, aligned composer and release-triggered butto
   );
   await expect(page.locator(".composer-toolbar")).toHaveCSS(
     "backdrop-filter",
-    "blur(24px)",
+    "blur(10px)",
   );
   const toolbarBackground = await page
     .locator(".composer-toolbar")
     .evaluate((el) => {
       const probe = document.createElement("div");
       probe.style.background =
-        "color-mix(in srgb, var(--shade-16) 48%, transparent)";
+        "color-mix(in srgb, var(--shade-16) 72%, transparent)";
       el.append(probe);
       const expected = getComputedStyle(probe).backgroundColor;
       probe.remove();

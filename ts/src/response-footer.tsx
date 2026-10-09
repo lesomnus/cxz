@@ -1,6 +1,5 @@
 import { t, translateKnown, currentLocale } from "./i18n";
 import { useLocale } from "./i18n-react";
-import { CopyButton } from "./copy-button";
 import { messageDate } from "./message-time";
 import { durationLabel, type ResponseCompletion } from "./response-completion";
 import { formatTokens } from "./session-info";
@@ -86,16 +85,14 @@ function metricTitle(key: string, value: number, scope?: string) {
 
 export function ResponseFooter({
   timeMs,
-  text,
   completion,
 }: {
-  seq: bigint;
   timeMs: bigint;
-  text: string;
   completion?: ResponseCompletion;
 }) {
   useLocale();
-  const date = completion && messageDate(timeMs);
+  if (!completion) return null;
+  const date = messageDate(timeMs);
   return (
     <footer className="response-footer">
       {completion && (
@@ -153,7 +150,6 @@ export function ResponseFooter({
           )}
         </div>
       )}
-      <CopyButton value={text} className="copy-control" />
     </footer>
   );
 }

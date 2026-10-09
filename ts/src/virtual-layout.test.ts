@@ -4,6 +4,7 @@ import { SessionEventSchema } from "../gen/cxz/session_pb";
 import {
   messageLayout,
   messageMap,
+  messageMapShift,
   ROW_UNITS,
   rowAt,
   visibleRows,
@@ -119,4 +120,37 @@ it("marks user and assistant conversations while omitting tool and control rows"
     ["4", "assistant", 318],
     ["6", "assistant", 518],
   ]);
+});
+
+it("rebases marker coordinates for notices and prepended events independently of row-height fractions", () => {
+  const original = events.slice(0, 4);
+  const before = messageMap(
+    messageLayout(original, new Map()).rows,
+    12,
+    new Map(),
+  );
+  const after = messageMap(
+    messageLayout(
+      original,
+      new Map([
+        ["1", 40],
+        ["2", 200],
+      ]),
+    ).rows,
+    29,
+    new Map(),
+  );
+  const reading = 12 + before.rows[1].top + 20;
+  expect(after.toLogical(reading) - before.toLogical(reading)).not.toBe(17);
+  expect(messageMapShift(before, after, reading)).toBe(17);
+  const prefixed = messageMap(
+    messageLayout(
+      [create(SessionEventSchema, { seq: 99n }), ...original],
+      new Map(),
+    ).rows,
+    29,
+    new Map(),
+  );
+  expect(messageMapShift(before, prefixed, reading)).toBe(17 + ROW_UNITS);
+  expect(messageMapShift(prefixed, before, reading)).toBe(-17 - ROW_UNITS);
 });

@@ -10,6 +10,7 @@ import { useTranscriptMotion } from "./transcript-motion";
 import {
   messageLayout,
   messageMap,
+  messageMapShift,
   ROW_UNITS,
   rowAt,
   visibleRows,
@@ -39,6 +40,7 @@ export function VirtualMessages({
   const knots = useRef(new Map<string, RowKnot>());
   const mapping = useRef<MessageMap | null>(null);
   const [revision, setRevision] = useState(0);
+  const [rowPadding, setRowPadding] = useState(0);
   const [viewport, setViewport] = useState({ top: 0, offset: 0, height: 800 });
   const layout = useMemo(
     () => messageLayout(events, sizes.current),
@@ -79,6 +81,9 @@ export function VirtualMessages({
     const el = pane.current!;
     observer.current = new ResizeObserver((entries) => {
       let dirty = false;
+      const mountedRow = root.current!.querySelector<HTMLElement>("[data-row]");
+      if (mountedRow)
+        setRowPadding(parseFloat(getComputedStyle(mountedRow).paddingTop));
       // The centered reading column can keep its width while the pane resizes.
       // Clearing heights then loses mounted measurements: those rows did not
       // resize, so ResizeObserver has no replacement entries to deliver.
@@ -183,16 +188,22 @@ export function VirtualMessages({
       layout.rows,
       root.current!.offsetTop,
       knots.current,
+      rowPadding,
     );
     mapping.current = nextMap;
     if (beforeMapped !== undefined) {
-      const delta = nextMap.toLogical(el.scrollTop) - beforeMapped;
+      // Rebase the rail by stable event coordinates, not a measured row's
+      // fractional position. Rounding at a row boundary must not move ticks
+      // against the reading direction when heights or the notice inset change.
+      const delta = oldMap
+        ? messageMapShift(oldMap, nextMap, before)
+        : nextMap.toLogical(el.scrollTop) - beforeMapped;
       if (Math.abs(delta) > 0.001)
         el.dispatchEvent(new CustomEvent("mapping-shift", { detail: delta }));
     }
     changed(nextMap);
     remember();
-  }, [layout, follow]);
+  }, [layout, follow, rowPadding]);
   const { start, end } = visibleRows(
     layout.rows,
     viewport.top,
@@ -201,7 +212,7 @@ export function VirtualMessages({
   let promptIndex = -1;
   for (
     let i = 0;
-    i < layout.rows.length && layout.rows[i].top + 6 < viewport.top;
+    i < layout.rows.length && layout.rows[i].top + rowPadding < viewport.top;
     i++
   )
     if (layout.rows[i].prompt) promptIndex = i;
@@ -220,15 +231,18 @@ export function VirtualMessages({
   const closest = layout.rows.find(
     (row) =>
       row.prompt &&
-      row.top + row.height - 6 > viewport.offset &&
-      row.top + 6 < viewport.offset + viewport.height,
+      row.top + row.height - rowPadding > viewport.offset &&
+      row.top + rowPadding < viewport.offset + viewport.height,
   );
   const nextGap = closest
-    ? Math.max(0, closest.top + 6 - viewport.offset)
+    ? Math.max(0, closest.top + rowPadding - viewport.offset)
     : Infinity;
   const previousRow = promptIndex >= 0 ? layout.rows[promptIndex] : undefined;
   const previousGap = previousRow
-    ? Math.max(0, viewport.offset - (previousRow.top + previousRow.height - 6))
+    ? Math.max(
+        0,
+        viewport.offset - (previousRow.top + previousRow.height - rowPadding),
+      )
     : Infinity;
   const gap = Math.min(nextGap, previousGap);
   const progress = Math.max(0, Math.min(1, (gap - 96) / 32));

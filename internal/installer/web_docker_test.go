@@ -228,7 +228,14 @@ func buildWebFixtureImage(t *testing.T) string {
 	if b, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("build web fixture: %v %s", err, b)
 	}
-	dockerfile := "FROM alpine:3.22\nRUN apk add --no-cache curl ca-certificates\nCOPY cxz /usr/local/bin/cxz\nENTRYPOINT [\"/usr/local/bin/cxz\"]\n"
+	// A minimal filesystem UI fixture is sufficient for gateway lifecycle tests.
+	if err := os.Mkdir(filepath.Join(dir, "webui"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "webui", "index.html"), []byte("<!doctype html><title>Fixture</title>"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	dockerfile := "FROM alpine:3.22\nRUN apk add --no-cache curl ca-certificates\nCOPY cxz /usr/local/bin/cxz\nCOPY webui /usr/local/share/cxz/webui\nENTRYPOINT [\"/usr/local/bin/cxz\"]\n"
 	if err := os.WriteFile(filepath.Join(dir, "Dockerfile"), []byte(dockerfile), 0600); err != nil {
 		t.Fatal(err)
 	}

@@ -48,8 +48,22 @@ func Build(ctx context.Context, out io.Writer) (string, error) {
 		return "", e
 	}
 	defer f.Close()
+	recipe, uiDirectory, uiRevision, e := managerUIBuild()
+	if e != nil {
+		return "", e
+	}
 	h := sha256.New()
-	h.Write(dockerfile)
+	h.Write(recipe)
+	h.Write([]byte(uiRevision))
+	if uiDirectory != "" {
+		tw := tar.NewWriter(h)
+		if e = writeUIArchive(tw, uiDirectory); e != nil {
+			return "", e
+		}
+		if e = tw.Close(); e != nil {
+			return "", e
+		}
+	}
 	if _, e = io.Copy(h, f); e != nil {
 		return "", e
 	}
@@ -65,9 +79,9 @@ func Build(ctx context.Context, out io.Writer) (string, error) {
 	rd, wr := io.Pipe()
 	go func() {
 		tw := tar.NewWriter(wr)
-		e := tw.WriteHeader(&tar.Header{Name: "Dockerfile", Mode: 0644, Size: int64(len(dockerfile))})
+		e := tw.WriteHeader(&tar.Header{Name: "Dockerfile", Mode: 0644, Size: int64(len(recipe))})
 		if e == nil {
-			_, e = tw.Write(dockerfile)
+			_, e = tw.Write(recipe)
 		}
 		if e == nil {
 			e = tw.WriteHeader(&tar.Header{Name: "linux-" + runtime.GOARCH + "/cxz", Mode: 0755, Size: st.Size()})
@@ -75,13 +89,16 @@ func Build(ctx context.Context, out io.Writer) (string, error) {
 		if e == nil {
 			_, e = io.Copy(tw, f)
 		}
+		if e == nil && uiDirectory != "" {
+			e = writeUIArchive(tw, uiDirectory)
+		}
 		if e == nil {
 			e = tw.Close()
 		}
 		wr.CloseWithError(e)
 	}()
 	defer rd.Close()
-	c := exec.CommandContext(ctx, "docker", "build", "--label", "cxz.role=manager-image", "-t", tag, "-")
+	c := exec.CommandContext(ctx, "docker", "build", "--label", "cxz.role=manager-image", "-t", tag, "--build-arg", "CXZ_WEB_REVISION="+uiRevision, "-")
 	c.Stdin = rd
 	c.Stdout = out
 	c.Stderr = out
