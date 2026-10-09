@@ -131,6 +131,11 @@ test("failed sends preserve the draft and reduced motion sends without decorativ
   await input.press("Control+Enter");
   await expect(page.getByRole("alert")).toContainText("effort not supported");
   await expect(input).toHaveValue("/effort invalid");
+  await expect(input).toBeEditable();
+  await expect(page.locator(".composer-input")).toHaveAttribute(
+    "aria-busy",
+    "false",
+  );
   await expect(
     page.locator(
       ".composer-send-ghost, [data-send-arrival], [data-send-exiting]",
@@ -159,6 +164,8 @@ test("editing during departure preserves the next draft across session switches"
   await probe(page);
   await input.press("Control+Enter");
   await expect(page.locator(".composer-send-ghost")).toHaveCount(1);
+  // Acceptance restores editing before the decorative departure or agent turn ends.
+  await expect(input).toBeEditable();
   await input.fill("Next draft");
   await expect(page.locator(".composer-send-ghost")).toHaveCount(0);
   await expect(input).toHaveValue("Next draft");
@@ -174,6 +181,69 @@ test("editing during departure preserves the next draft across session switches"
       ".composer-send-ghost, [data-send-arrival], [data-send-exiting]",
     ),
   ).toHaveCount(0);
+});
+
+test("pending sends lock native and custom edits until confirmation", async ({
+  page,
+}) => {
+  await ready(page);
+  const input = page.getByRole("textbox", { name: "Message", exact: true });
+  const text = "- Pending draft\n```js\nconst n = 1;\n```";
+  await input.fill(text);
+  const surface = page.locator(".composer-input");
+  const idleBackground = await surface.evaluate(
+    (el) => getComputedStyle(el).backgroundColor,
+  );
+  // Hold outgoing binary RPC packets at the real WASM transport boundary.
+  // The app has no special test transport or delay hooks.
+  async function hold() {
+    await page.evaluate(() => {
+      const post = MessagePort.prototype.postMessage;
+      const queued: (() => void)[] = [];
+      MessagePort.prototype.postMessage = function (...args: any[]) {
+        if (ArrayBuffer.isView(args[0]) || args[0] instanceof ArrayBuffer)
+          queued.push(() => post.apply(this, args as any));
+        else post.apply(this, args as any);
+      };
+      (window as any).releaseSend = () => {
+        MessagePort.prototype.postMessage = post;
+        queued.forEach((send) => send());
+      };
+    });
+  }
+  await hold();
+  await page.getByRole("button", { name: "Send", exact: true }).click();
+  await expect(input).not.toBeEditable();
+  await expect(surface).toHaveAttribute("aria-busy", "true");
+  await expect
+    .poll(() => surface.evaluate((el) => getComputedStyle(el).backgroundColor))
+    .not.toBe(idleBackground);
+  await input.focus();
+  await input.pressSequentially("cannot edit");
+  await input.press("Tab");
+  await input.press("Enter");
+  await input.evaluate((el) => {
+    const clipboardData = new DataTransfer();
+    clipboardData.setData("text/plain", "one\ntwo\nthree\nfour");
+    el.dispatchEvent(
+      new ClipboardEvent("paste", {
+        clipboardData,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+  });
+  await expect(input).toHaveValue(text);
+  await expect(
+    page.getByLabel("Code syntax 1", { exact: true }),
+  ).toBeDisabled();
+  await page.evaluate(() => (window as any).releaseSend());
+  await expect(input).toBeEditable();
+  await expect(input).toHaveValue("");
+  await expect(surface).toHaveAttribute("aria-busy", "false");
+  await expect
+    .poll(() => surface.evaluate((el) => getComputedStyle(el).backgroundColor))
+    .toBe(idleBackground);
 });
 
 test("leaving during departure clears the accepted saved draft and cancels the decorative layers", async ({

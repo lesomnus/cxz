@@ -545,6 +545,7 @@ function Conversation(props: { c: Connection; id: string }) {
 }
 function ConversationContent({ c, id }: { c: Connection; id: string }) {
   useLocale();
+  const [sending, setSending] = useState(false);
   const current = useQuery(SessionService.method.get, {
     ref: ref(id),
     select: { all: true, project: { all: true } },
@@ -1125,8 +1126,13 @@ function ConversationContent({ c, id }: { c: Connection; id: string }) {
           clearCommand();
           trigger.click();
         } else setError(t("Settings require an idle session"));
-      } else if (await changeSetting(kind, setting[2])) {
-        clearCommand();
+      } else if (!lock.current) {
+        setSending(true);
+        try {
+          if (await changeSetting(kind, setting[2])) clearCommand();
+        } finally {
+          setSending(false);
+        }
       }
       return;
     }
@@ -1134,9 +1140,14 @@ function ConversationContent({ c, id }: { c: Connection; id: string }) {
       const text = composerPrompt(sent, c.pastes);
       const motion = sendMotion.prepare(text, latestSeq.current);
       try {
-        const receipt = await c.sessions.send({ ...control(s), text });
-        if (receipt.status === "rejected")
-          throw new Error(t("Provider rejected the input"));
+        setSending(true);
+        try {
+          const receipt = await c.sessions.send({ ...control(s), text });
+          if (receipt.status === "rejected")
+            throw new Error(t("Provider rejected the input"));
+        } finally {
+          setSending(false);
+        }
         // A session switch can unmount this view during the decorative departure.
         if (c.drafts.get(id) === sent) c.drafts.set(id, "");
         await sendMotion.depart(motion);
@@ -1372,9 +1383,15 @@ function ConversationContent({ c, id }: { c: Connection; id: string }) {
               </span>
             </span>
           </div>
-          <div className="composer-input" ref={composerInput}>
+          <div
+            className="composer-input"
+            ref={composerInput}
+            data-sending={sending}
+            aria-busy={sending}
+          >
             <ComposerEditor
               value={draft}
+              readOnly={sending}
               onChange={setDraft}
               pastes={c.pastes}
               canSend={!busy && !!s && !!draft.trim()}

@@ -1387,6 +1387,10 @@ pre {
   width: calc(100% + 2px + 2 * var(--composer-overhang));
   margin: 0 calc(-1px - var(--composer-overhang)) -1px;
   border-radius: var(--composer-radius);
+  transition: background-color 150ms ease-out;
+}
+.composer-input[data-sending="true"] {
+  background: var(--shade-27);
 }
 .composer-input:focus-within {
   border-color: var(--shade-115);
@@ -1939,6 +1943,17 @@ pre {
 }
 .event-detail > .button-content {
   display: block;
+}
+.transcript-row > .event-detail {
+  --muted: var(--shade-144);
+  color: var(--shade-181);
+  transition: color 150ms ease-out;
+}
+.transcript-row > .event-detail:hover,
+.transcript-row > .event-detail:focus-visible,
+.transcript-row > .event-detail[data-detail-open="true"] {
+  --muted: var(--shade-160);
+  color: var(--shade-237);
 }
 .detail-anchor {
   --detail-anchor-growth: 0px;

@@ -41,6 +41,7 @@ export function ComposerEditor({
   value,
   pastes,
   onChange,
+  readOnly = false,
   canSend,
   commands,
   ariaLabel = t("Message"),
@@ -49,6 +50,7 @@ export function ComposerEditor({
   value: string;
   pastes: Map<string, ComposerPaste>;
   onChange: (value: string) => void;
+  readOnly?: boolean;
   canSend?: boolean;
   commands?: readonly ComposerCommand[];
   ariaLabel?: string;
@@ -73,12 +75,12 @@ export function ComposerEditor({
   const expectedEdit = useRef<string | undefined>(undefined);
   const followOnEdit = useRef(false);
   const ranges = pasteRanges(value, pastes);
-  const latest = useRef({ value, replace });
-  latest.current = { value, replace };
+  const latest = useRef({ value, replace, readOnly });
+  latest.current = { value, replace, readOnly };
   const lines = value.split("\n");
   const commandHints = useCommandSuggestions({
     value,
-    commands,
+    commands: readOnly ? undefined : commands,
     input,
     composing: composition,
     accept: (name, end) => replace(0, end, name),
@@ -173,6 +175,7 @@ export function ComposerEditor({
     selectionEnd?: number,
     direction: "forward" | "backward" | "none" = "none",
   ) {
+    if (readOnly) return;
     // Edit with native LF line breaks; untouched chips retain their original bytes.
     text = text.replaceAll("\r\n", "\n").replaceAll("\r", "\n");
     caret ??= start + text.length;
@@ -235,7 +238,8 @@ export function ComposerEditor({
           apply={(text) => {
             // Cards are non-modal: editing behind a preview must never replace a
             // different occurrence at a stale offset.
-            if (latest.current.value !== value) return false;
+            if (latest.current.readOnly || latest.current.value !== value)
+              return false;
             // Release a background Question's inert state before native editing.
             flushSync(close);
             latest.current.replace(range.start, range.end, text);
@@ -289,6 +293,7 @@ export function ComposerEditor({
             }
             placeholder={placeholder}
             value={value}
+            readOnly={readOnly}
             rows={blocks.length ? Math.min(12, Math.max(5, lines.length)) : 3}
             spellCheck={false}
             autoCapitalize="off"
@@ -314,6 +319,7 @@ export function ComposerEditor({
               if (!composing.current) normalizedSelection();
             }}
             onChange={(event) => {
+              if (readOnly) return;
               const next = event.target.value;
               if (
                 !composing.current &&
@@ -331,6 +337,10 @@ export function ComposerEditor({
               commandHints.updateSelection();
             }}
             onPaste={(event) => {
+              if (readOnly) {
+                event.preventDefault();
+                return;
+              }
               const text = event.clipboardData.getData("text/plain");
               if (!text) return;
               const selection = normalizedSelection();
@@ -387,6 +397,7 @@ export function ComposerEditor({
               replace(selection.start, selection.end, "");
             }}
             onKeyDown={(event) => {
+              if (readOnly) return;
               if (event.nativeEvent.isComposing || composing.current) return;
               if (commandHints.key(event)) return;
               const el = event.currentTarget;
@@ -655,6 +666,7 @@ export function ComposerEditor({
                           }}
                         >
                           <select
+                            disabled={readOnly}
                             aria-label={t("Code syntax {index}", {
                               index: blocks.indexOf(block!) + 1,
                             })}
@@ -682,6 +694,7 @@ export function ComposerEditor({
                           </select>
                           <Button
                             className="toolbar-button code-close"
+                            disabled={readOnly}
                             type="button"
                             aria-label={t("Close code block {index}", {
                               index: blocks.indexOf(block!) + 1,
