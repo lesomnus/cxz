@@ -1171,8 +1171,8 @@ pre {
   position: relative;
   z-index: 1;
   background: color-mix(in srgb, var(--shade-16) 72%, transparent);
-  -webkit-backdrop-filter: blur(24px);
-  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
   border-radius: calc(var(--wrapper-radius) - var(--composer-border-width))
     calc(var(--wrapper-radius) - var(--composer-border-width)) 0 0;
   display: flex;
@@ -1196,20 +1196,21 @@ pre {
   pointer-events: none;
 }
 .composer-aurora {
-  --aurora-green: #1b8060;
-  --aurora-cyan: #1e718b;
-  --aurora-violet: #5d4187;
-  --aurora-strength: 0.34;
+  --aurora-green: #187c34;
+  --aurora-cyan: #1a6ba6;
+  --aurora-violet: #7e3692;
+  --aurora-strength: 0.5;
   --aurora-envelope-duration: 3200ms;
-  --aurora-drift-duration: 38s;
-  --aurora-form-duration: 29s;
-  --aurora-focus-duration: 23s;
-  --aurora-orbit-radius: 24px;
+  --aurora-drift-duration: 24s;
+  --aurora-form-duration: 20s;
+  --aurora-focus-duration: 17s;
+  --aurora-orbit-radius: 26%;
+  --aurora-orbit-rise: 34%;
   position: absolute;
   inset: 0;
   pointer-events: none;
   opacity: 0;
-  filter: blur(16px);
+  filter: blur(8px);
   transition: opacity var(--aurora-envelope-duration) ease-in-out;
 }
 .composer-aurora[data-active="true"] {
@@ -1222,16 +1223,16 @@ pre {
 .aurora-cluster {
   position: absolute;
   top: 0;
-  left: -20%;
-  width: 72%;
+  left: -4%;
+  width: 44%;
   height: var(--composer-toolbar-height);
 }
 .aurora-cluster:nth-child(2) {
-  left: 10%;
-  width: 80%;
+  left: 25%;
+  width: 50%;
 }
 .aurora-cluster:nth-child(3) {
-  left: 48%;
+  left: 60%;
 }
 .aurora-envelope {
   position: absolute;
@@ -1248,7 +1249,7 @@ pre {
   position: absolute;
   inset: -48px -8%;
   border-radius: 50%;
-  opacity: 0.45;
+  opacity: 0.08;
   background:
     radial-gradient(ellipse at 25% 50%, var(--aurora-green), transparent 75%),
     radial-gradient(ellipse at 50% 50%, var(--aurora-cyan), transparent 80%),
@@ -1257,40 +1258,43 @@ pre {
 .aurora-orbit {
   position: absolute;
   inset: 0;
-  animation: aurora-orbit 29s linear -7s infinite;
+  transform: translate(var(--aurora-orbit-radius), 0);
+  animation: aurora-orbit 16s ease-in-out -7s infinite;
   animation-play-state: paused;
 }
 .aurora-orbit:nth-child(2) {
-  animation-duration: 37s;
+  transform: translate(0, 0);
+  animation-duration: 21s;
   animation-delay: -31s;
   animation-direction: reverse;
 }
 .aurora-orbit:nth-child(3) {
-  animation-duration: 43s;
+  transform: translate(calc(-1 * var(--aurora-orbit-radius)), 0);
+  animation-duration: 27s;
   animation-delay: -53s;
 }
 .aurora-cluster:nth-child(2) .aurora-orbit {
-  animation-duration: 33s;
+  animation-duration: 19s;
   animation-delay: -27s;
 }
 .aurora-cluster:nth-child(2) .aurora-orbit:nth-child(2) {
-  animation-duration: 41s;
+  animation-duration: 25s;
   animation-delay: -57s;
 }
 .aurora-cluster:nth-child(2) .aurora-orbit:nth-child(3) {
-  animation-duration: 53s;
+  animation-duration: 31s;
   animation-delay: -11s;
 }
 .aurora-cluster:nth-child(3) .aurora-orbit {
-  animation-duration: 39s;
+  animation-duration: 23s;
   animation-delay: -44s;
 }
 .aurora-cluster:nth-child(3) .aurora-orbit:nth-child(2) {
-  animation-duration: 47s;
+  animation-duration: 29s;
   animation-delay: -15s;
 }
 .aurora-cluster:nth-child(3) .aurora-orbit:nth-child(3) {
-  animation-duration: 61s;
+  animation-duration: 37s;
   animation-delay: -83s;
 }
 .composer-aurora[data-running="true"] .aurora-orbit {
@@ -1300,14 +1304,14 @@ pre {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 105%;
-  height: calc(5 * var(--composer-toolbar-height));
-  translate: calc(-50% + var(--aurora-orbit-radius)) -50%;
+  width: 60%;
+  height: calc(3.5 * var(--composer-toolbar-height));
+  translate: -50% -50%;
   border-radius: 50%;
   opacity: 0.7;
   background: radial-gradient(
     ellipse,
-    color-mix(in srgb, var(--orb-color) 65%, transparent),
+    color-mix(in srgb, var(--orb-color) 90%, transparent),
     transparent 72%
   );
 }
@@ -1331,15 +1335,49 @@ pre {
   );
 }
 @keyframes aurora-orbit {
-  to {
-    transform: rotate(360deg);
+  0%,
+  100% {
+    transform: translate(var(--aurora-orbit-radius), 0);
+  }
+  12.5% {
+    transform: translate(
+      calc(var(--aurora-orbit-radius) * 0.707),
+      calc(var(--aurora-orbit-rise) * 0.707)
+    );
+  }
+  25% {
+    transform: translate(0, var(--aurora-orbit-rise));
+  }
+  37.5% {
+    transform: translate(
+      calc(var(--aurora-orbit-radius) * -0.707),
+      calc(var(--aurora-orbit-rise) * 0.707)
+    );
+  }
+  50% {
+    transform: translate(calc(var(--aurora-orbit-radius) * -1), 0);
+  }
+  62.5% {
+    transform: translate(
+      calc(var(--aurora-orbit-radius) * -0.707),
+      calc(var(--aurora-orbit-rise) * -0.707)
+    );
+  }
+  75% {
+    transform: translate(0, calc(var(--aurora-orbit-rise) * -1));
+  }
+  87.5% {
+    transform: translate(
+      calc(var(--aurora-orbit-radius) * 0.707),
+      calc(var(--aurora-orbit-rise) * -0.707)
+    );
   }
 }
 :root[data-theme="light"] .composer-toolbar {
   background: color-mix(in srgb, var(--shade-32) 78%, transparent);
 }
 :root[data-theme="light"] .composer-aurora {
-  --aurora-strength: 0.22;
+  --aurora-strength: 0.3;
 }
 @media (prefers-reduced-motion: reduce) {
   .composer-aurora,
