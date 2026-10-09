@@ -19,44 +19,46 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Sessions_Devcontainer_FullMethodName = "/cxz.runtime.Sessions/Devcontainer"
-	Sessions_Docker_FullMethodName       = "/cxz.runtime.Sessions/Docker"
-	Sessions_FileMappings_FullMethodName = "/cxz.runtime.Sessions/FileMappings"
-	Sessions_Create_FullMethodName       = "/cxz.runtime.Sessions/Create"
-	Sessions_List_FullMethodName         = "/cxz.runtime.Sessions/List"
-	Sessions_Get_FullMethodName          = "/cxz.runtime.Sessions/Get"
-	Sessions_CopyMemory_FullMethodName   = "/cxz.runtime.Sessions/CopyMemory"
-	Sessions_Memory_FullMethodName       = "/cxz.runtime.Sessions/Memory"
-	Sessions_Logs_FullMethodName         = "/cxz.runtime.Sessions/Logs"
-	Sessions_Permission_FullMethodName   = "/cxz.runtime.Sessions/Permission"
-	Sessions_Send_FullMethodName         = "/cxz.runtime.Sessions/Send"
-	Sessions_Attach_FullMethodName       = "/cxz.runtime.Sessions/Attach"
-	Sessions_Activity_FullMethodName     = "/cxz.runtime.Sessions/Activity"
-	Sessions_UpdateAgent_FullMethodName  = "/cxz.runtime.Sessions/UpdateAgent"
-	Sessions_Reply_FullMethodName        = "/cxz.runtime.Sessions/Reply"
-	Sessions_Interrupt_FullMethodName    = "/cxz.runtime.Sessions/Interrupt"
-	Sessions_Resume_FullMethodName       = "/cxz.runtime.Sessions/Resume"
-	Sessions_Stop_FullMethodName         = "/cxz.runtime.Sessions/Stop"
-	Sessions_Watch_FullMethodName        = "/cxz.runtime.Sessions/Watch"
-	Sessions_History_FullMethodName      = "/cxz.runtime.Sessions/History"
-	Sessions_Transcript_FullMethodName   = "/cxz.runtime.Sessions/Transcript"
-	Sessions_EventDetails_FullMethodName = "/cxz.runtime.Sessions/EventDetails"
-	Sessions_Background_FullMethodName   = "/cxz.runtime.Sessions/Background"
-	Sessions_Models_FullMethodName       = "/cxz.runtime.Sessions/Models"
-	Sessions_Search_FullMethodName       = "/cxz.runtime.Sessions/Search"
-	Sessions_Open_FullMethodName         = "/cxz.runtime.Sessions/Open"
-	Sessions_Projects_FullMethodName     = "/cxz.runtime.Sessions/Projects"
-	Sessions_Down_FullMethodName         = "/cxz.runtime.Sessions/Down"
-	Sessions_AuxRun_FullMethodName       = "/cxz.runtime.Sessions/AuxRun"
-	Sessions_AuxCancel_FullMethodName    = "/cxz.runtime.Sessions/AuxCancel"
-	Sessions_AuxStatus_FullMethodName    = "/cxz.runtime.Sessions/AuxStatus"
-	Sessions_AuxEvents_FullMethodName    = "/cxz.runtime.Sessions/AuxEvents"
-	Sessions_AuxPrefer_FullMethodName    = "/cxz.runtime.Sessions/AuxPrefer"
-	Sessions_AuxForget_FullMethodName    = "/cxz.runtime.Sessions/AuxForget"
-	Sessions_AuxConfig_FullMethodName    = "/cxz.runtime.Sessions/AuxConfig"
-	Sessions_AuxSetConfig_FullMethodName = "/cxz.runtime.Sessions/AuxSetConfig"
-	Sessions_AuxModels_FullMethodName    = "/cxz.runtime.Sessions/AuxModels"
-	Sessions_AuxLoginInfo_FullMethodName = "/cxz.runtime.Sessions/AuxLoginInfo"
+	Sessions_Devcontainer_FullMethodName     = "/cxz.runtime.Sessions/Devcontainer"
+	Sessions_Docker_FullMethodName           = "/cxz.runtime.Sessions/Docker"
+	Sessions_FileMappings_FullMethodName     = "/cxz.runtime.Sessions/FileMappings"
+	Sessions_Create_FullMethodName           = "/cxz.runtime.Sessions/Create"
+	Sessions_List_FullMethodName             = "/cxz.runtime.Sessions/List"
+	Sessions_Get_FullMethodName              = "/cxz.runtime.Sessions/Get"
+	Sessions_CopyMemory_FullMethodName       = "/cxz.runtime.Sessions/CopyMemory"
+	Sessions_Memory_FullMethodName           = "/cxz.runtime.Sessions/Memory"
+	Sessions_Logs_FullMethodName             = "/cxz.runtime.Sessions/Logs"
+	Sessions_Permission_FullMethodName       = "/cxz.runtime.Sessions/Permission"
+	Sessions_Send_FullMethodName             = "/cxz.runtime.Sessions/Send"
+	Sessions_Attach_FullMethodName           = "/cxz.runtime.Sessions/Attach"
+	Sessions_Activity_FullMethodName         = "/cxz.runtime.Sessions/Activity"
+	Sessions_UpdateAgent_FullMethodName      = "/cxz.runtime.Sessions/UpdateAgent"
+	Sessions_Reply_FullMethodName            = "/cxz.runtime.Sessions/Reply"
+	Sessions_Interrupt_FullMethodName        = "/cxz.runtime.Sessions/Interrupt"
+	Sessions_Resume_FullMethodName           = "/cxz.runtime.Sessions/Resume"
+	Sessions_Stop_FullMethodName             = "/cxz.runtime.Sessions/Stop"
+	Sessions_Watch_FullMethodName            = "/cxz.runtime.Sessions/Watch"
+	Sessions_History_FullMethodName          = "/cxz.runtime.Sessions/History"
+	Sessions_Transcript_FullMethodName       = "/cxz.runtime.Sessions/Transcript"
+	Sessions_EventDetails_FullMethodName     = "/cxz.runtime.Sessions/EventDetails"
+	Sessions_Background_FullMethodName       = "/cxz.runtime.Sessions/Background"
+	Sessions_Models_FullMethodName           = "/cxz.runtime.Sessions/Models"
+	Sessions_Search_FullMethodName           = "/cxz.runtime.Sessions/Search"
+	Sessions_Open_FullMethodName             = "/cxz.runtime.Sessions/Open"
+	Sessions_Projects_FullMethodName         = "/cxz.runtime.Sessions/Projects"
+	Sessions_Down_FullMethodName             = "/cxz.runtime.Sessions/Down"
+	Sessions_AuxRun_FullMethodName           = "/cxz.runtime.Sessions/AuxRun"
+	Sessions_AuxCancel_FullMethodName        = "/cxz.runtime.Sessions/AuxCancel"
+	Sessions_AuxStatus_FullMethodName        = "/cxz.runtime.Sessions/AuxStatus"
+	Sessions_AuxEvents_FullMethodName        = "/cxz.runtime.Sessions/AuxEvents"
+	Sessions_AuxPrefer_FullMethodName        = "/cxz.runtime.Sessions/AuxPrefer"
+	Sessions_AuxForget_FullMethodName        = "/cxz.runtime.Sessions/AuxForget"
+	Sessions_AuxConfig_FullMethodName        = "/cxz.runtime.Sessions/AuxConfig"
+	Sessions_AuxSetConfig_FullMethodName     = "/cxz.runtime.Sessions/AuxSetConfig"
+	Sessions_AuxModels_FullMethodName        = "/cxz.runtime.Sessions/AuxModels"
+	Sessions_AuxLoginInfo_FullMethodName     = "/cxz.runtime.Sessions/AuxLoginInfo"
+	Sessions_PutSecretFile_FullMethodName    = "/cxz.runtime.Sessions/PutSecretFile"
+	Sessions_DeleteSecretFile_FullMethodName = "/cxz.runtime.Sessions/DeleteSecretFile"
 )
 
 // SessionsClient is the client API for Sessions service.
@@ -101,6 +103,8 @@ type SessionsClient interface {
 	AuxSetConfig(ctx context.Context, in *AuxSetConfigInput, opts ...grpc.CallOption) (*AuxConfigReply, error)
 	AuxModels(ctx context.Context, in *AuxModelsInput, opts ...grpc.CallOption) (*AuxModelsReply, error)
 	AuxLoginInfo(ctx context.Context, in *AuxLoginInfoInput, opts ...grpc.CallOption) (*AuxLoginInfoReply, error)
+	PutSecretFile(ctx context.Context, in *PutSecretFileInput, opts ...grpc.CallOption) (*SecretFileReply, error)
+	DeleteSecretFile(ctx context.Context, in *DeleteSecretFileInput, opts ...grpc.CallOption) (*SecretFileReply, error)
 }
 
 type sessionsClient struct {
@@ -518,6 +522,26 @@ func (c *sessionsClient) AuxLoginInfo(ctx context.Context, in *AuxLoginInfoInput
 	return out, nil
 }
 
+func (c *sessionsClient) PutSecretFile(ctx context.Context, in *PutSecretFileInput, opts ...grpc.CallOption) (*SecretFileReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SecretFileReply)
+	err := c.cc.Invoke(ctx, Sessions_PutSecretFile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) DeleteSecretFile(ctx context.Context, in *DeleteSecretFileInput, opts ...grpc.CallOption) (*SecretFileReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SecretFileReply)
+	err := c.cc.Invoke(ctx, Sessions_DeleteSecretFile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SessionsServer is the server API for Sessions service.
 // All implementations must embed UnimplementedSessionsServer
 // for forward compatibility.
@@ -560,6 +584,8 @@ type SessionsServer interface {
 	AuxSetConfig(context.Context, *AuxSetConfigInput) (*AuxConfigReply, error)
 	AuxModels(context.Context, *AuxModelsInput) (*AuxModelsReply, error)
 	AuxLoginInfo(context.Context, *AuxLoginInfoInput) (*AuxLoginInfoReply, error)
+	PutSecretFile(context.Context, *PutSecretFileInput) (*SecretFileReply, error)
+	DeleteSecretFile(context.Context, *DeleteSecretFileInput) (*SecretFileReply, error)
 	mustEmbedUnimplementedSessionsServer()
 }
 
@@ -683,6 +709,12 @@ func (UnimplementedSessionsServer) AuxModels(context.Context, *AuxModelsInput) (
 }
 func (UnimplementedSessionsServer) AuxLoginInfo(context.Context, *AuxLoginInfoInput) (*AuxLoginInfoReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method AuxLoginInfo not implemented")
+}
+func (UnimplementedSessionsServer) PutSecretFile(context.Context, *PutSecretFileInput) (*SecretFileReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method PutSecretFile not implemented")
+}
+func (UnimplementedSessionsServer) DeleteSecretFile(context.Context, *DeleteSecretFileInput) (*SecretFileReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteSecretFile not implemented")
 }
 func (UnimplementedSessionsServer) mustEmbedUnimplementedSessionsServer() {}
 func (UnimplementedSessionsServer) testEmbeddedByValue()                  {}
@@ -1368,6 +1400,42 @@ func _Sessions_AuxLoginInfo_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Sessions_PutSecretFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PutSecretFileInput)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).PutSecretFile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_PutSecretFile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).PutSecretFile(ctx, req.(*PutSecretFileInput))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_DeleteSecretFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteSecretFileInput)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).DeleteSecretFile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_DeleteSecretFile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).DeleteSecretFile(ctx, req.(*DeleteSecretFileInput))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Sessions_ServiceDesc is the grpc.ServiceDesc for Sessions service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1514,6 +1582,14 @@ var Sessions_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AuxLoginInfo",
 			Handler:    _Sessions_AuxLoginInfo_Handler,
+		},
+		{
+			MethodName: "PutSecretFile",
+			Handler:    _Sessions_PutSecretFile_Handler,
+		},
+		{
+			MethodName: "DeleteSecretFile",
+			Handler:    _Sessions_DeleteSecretFile_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

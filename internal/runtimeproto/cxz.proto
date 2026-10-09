@@ -48,6 +48,12 @@ service Sessions {
   rpc AuxSetConfig(AuxSetConfigInput) returns (AuxConfigReply);
   rpc AuxModels(AuxModelsInput) returns (AuxModelsReply);
   rpc AuxLoginInfo(AuxLoginInfoInput) returns (AuxLoginInfoReply);
+  // A secret file is written by the workspace helper inside a project
+  // container, for a client that cannot reach the engine itself. Two calls
+  // rather than one with a verb: only one of them carries a secret, and that
+  // difference is the whole of what has to be obvious here.
+  rpc PutSecretFile(PutSecretFileInput) returns (SecretFileReply);
+  rpc DeleteSecretFile(DeleteSecretFileInput) returns (SecretFileReply);
 }
 message Empty {}
 message CreateRequest { string workspace = 1; string title = 2; string client_id = 3; string agent = 4; string model = 5; string account = 6; string auth_backend = 7; string auth_binding = 8; }
@@ -295,3 +301,10 @@ message AuxModelsInput { string account = 1; string agent = 2; string backend = 
 message AuxModelsReply { repeated AuxModel models = 1; bool needs_login = 2; }
 message AuxLoginInfoInput { string account = 1; string agent = 2; string backend = 3; }
 message AuxLoginInfoReply { string owner = 1; string account = 2; string agent = 3; string backend = 4; }
+
+// The secret travels only on a put, and only over a link that keeps it off the
+// network. That decision belongs to the client: the exposed TCP surface is
+// authenticated plaintext and cannot be told apart from a local socket here.
+message PutSecretFileInput { string project = 1; string session = 2; bytes secret = 3; }
+message DeleteSecretFileInput { string project = 1; string path = 2; }
+message SecretFileReply { string path = 1; }

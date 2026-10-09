@@ -2,11 +2,9 @@ package tui
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/lesomnus/cxz/api"
-	"github.com/lesomnus/cxz/internal/secretfile"
 )
 
 // managerSecrets writes a secret through the manager, for a client that cannot
@@ -22,33 +20,21 @@ func (s managerSecrets) PutSecret(_, ctx context.Context, project *api.Project, 
 	if project == nil || project.Id == "" {
 		return "", fmt.Errorf("project unavailable")
 	}
-	reply, err := s.call(ctx, secretfile.Request{Action: "put", Project: project.Id, Session: session, Secret: body})
-	return reply.Path, err
+	// The secret is the request, so the copy made for the call is cleared with
+	// it rather than left for the collector.
+	in := &api.PutSecretFileInput{Project: project.Id, Session: session, Secret: body}
+	defer clear(in.Secret)
+	reply, err := s.client.PutSecretFile(ctx, in)
+	if err != nil {
+		return "", err
+	}
+	return reply.Path, nil
 }
 
 func (s managerSecrets) DeleteSecret(_, ctx context.Context, project *api.Project, path string) error {
 	if project == nil || project.Id == "" {
 		return fmt.Errorf("project unavailable")
 	}
-	_, err := s.call(ctx, secretfile.Request{Action: "delete", Project: project.Id, Path: path})
+	_, err := s.client.DeleteSecretFile(ctx, &api.DeleteSecretFileInput{Project: project.Id, Path: path})
 	return err
-}
-
-func (s managerSecrets) call(ctx context.Context, r secretfile.Request) (secretfile.Reply, error) {
-	var reply secretfile.Reply
-	spec, err := json.Marshal(r)
-	if err != nil {
-		return reply, err
-	}
-	// The request holds the secret itself, so the buffer is cleared as soon as
-	// the call is over rather than left for the collector.
-	defer clear(spec)
-	out, err := s.client.Docker(ctx, &api.DockerInput{Action: "secret-file", Spec: spec})
-	if err != nil {
-		return reply, err
-	}
-	if err = json.Unmarshal([]byte(out.Status), &reply); err != nil {
-		return reply, err
-	}
-	return reply, nil
 }

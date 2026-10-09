@@ -4649,6 +4649,162 @@ func (x *AuxLoginInfoReply) GetBackend() string {
 	return ""
 }
 
+type PutSecretFileInput struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Project       string                 `protobuf:"bytes,1,opt,name=project,proto3" json:"project,omitempty"`
+	Session       string                 `protobuf:"bytes,2,opt,name=session,proto3" json:"session,omitempty"`
+	Secret        []byte                 `protobuf:"bytes,3,opt,name=secret,proto3" json:"secret,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PutSecretFileInput) Reset() {
+	*x = PutSecretFileInput{}
+	mi := &file_cxz_proto_msgTypes[63]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PutSecretFileInput) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PutSecretFileInput) ProtoMessage() {}
+
+func (x *PutSecretFileInput) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_proto_msgTypes[63]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PutSecretFileInput.ProtoReflect.Descriptor instead.
+func (*PutSecretFileInput) Descriptor() ([]byte, []int) {
+	return file_cxz_proto_rawDescGZIP(), []int{63}
+}
+
+func (x *PutSecretFileInput) GetProject() string {
+	if x != nil {
+		return x.Project
+	}
+	return ""
+}
+
+func (x *PutSecretFileInput) GetSession() string {
+	if x != nil {
+		return x.Session
+	}
+	return ""
+}
+
+func (x *PutSecretFileInput) GetSecret() []byte {
+	if x != nil {
+		return x.Secret
+	}
+	return nil
+}
+
+type DeleteSecretFileInput struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Project       string                 `protobuf:"bytes,1,opt,name=project,proto3" json:"project,omitempty"`
+	Path          string                 `protobuf:"bytes,2,opt,name=path,proto3" json:"path,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteSecretFileInput) Reset() {
+	*x = DeleteSecretFileInput{}
+	mi := &file_cxz_proto_msgTypes[64]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteSecretFileInput) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteSecretFileInput) ProtoMessage() {}
+
+func (x *DeleteSecretFileInput) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_proto_msgTypes[64]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteSecretFileInput.ProtoReflect.Descriptor instead.
+func (*DeleteSecretFileInput) Descriptor() ([]byte, []int) {
+	return file_cxz_proto_rawDescGZIP(), []int{64}
+}
+
+func (x *DeleteSecretFileInput) GetProject() string {
+	if x != nil {
+		return x.Project
+	}
+	return ""
+}
+
+func (x *DeleteSecretFileInput) GetPath() string {
+	if x != nil {
+		return x.Path
+	}
+	return ""
+}
+
+type SecretFileReply struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Path          string                 `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SecretFileReply) Reset() {
+	*x = SecretFileReply{}
+	mi := &file_cxz_proto_msgTypes[65]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SecretFileReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SecretFileReply) ProtoMessage() {}
+
+func (x *SecretFileReply) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_proto_msgTypes[65]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SecretFileReply.ProtoReflect.Descriptor instead.
+func (*SecretFileReply) Descriptor() ([]byte, []int) {
+	return file_cxz_proto_rawDescGZIP(), []int{65}
+}
+
+func (x *SecretFileReply) GetPath() string {
+	if x != nil {
+		return x.Path
+	}
+	return ""
+}
+
 var File_cxz_proto protoreflect.FileDescriptor
 
 const file_cxz_proto_rawDesc = "" +
@@ -5067,7 +5223,16 @@ const file_cxz_proto_rawDesc = "" +
 	"\x05owner\x18\x01 \x01(\tR\x05owner\x12\x18\n" +
 	"\aaccount\x18\x02 \x01(\tR\aaccount\x12\x14\n" +
 	"\x05agent\x18\x03 \x01(\tR\x05agent\x12\x18\n" +
-	"\abackend\x18\x04 \x01(\tR\abackend2\xf8\x12\n" +
+	"\abackend\x18\x04 \x01(\tR\abackend\"`\n" +
+	"\x12PutSecretFileInput\x12\x18\n" +
+	"\aproject\x18\x01 \x01(\tR\aproject\x12\x18\n" +
+	"\asession\x18\x02 \x01(\tR\asession\x12\x16\n" +
+	"\x06secret\x18\x03 \x01(\fR\x06secret\"E\n" +
+	"\x15DeleteSecretFileInput\x12\x18\n" +
+	"\aproject\x18\x01 \x01(\tR\aproject\x12\x12\n" +
+	"\x04path\x18\x02 \x01(\tR\x04path\"%\n" +
+	"\x0fSecretFileReply\x12\x12\n" +
+	"\x04path\x18\x01 \x01(\tR\x04path2\x9e\x14\n" +
 	"\bSessions\x12D\n" +
 	"\fDevcontainer\x12\x1e.cxz.runtime.DevcontainerInput\x1a\x14.cxz.runtime.Receipt\x128\n" +
 	"\x06Docker\x12\x18.cxz.runtime.DockerInput\x1a\x14.cxz.runtime.Receipt\x12D\n" +
@@ -5110,7 +5275,9 @@ const file_cxz_proto_rawDesc = "" +
 	"\tAuxConfig\x12\x12.cxz.runtime.Empty\x1a\x1b.cxz.runtime.AuxConfigReply\x12K\n" +
 	"\fAuxSetConfig\x12\x1e.cxz.runtime.AuxSetConfigInput\x1a\x1b.cxz.runtime.AuxConfigReply\x12E\n" +
 	"\tAuxModels\x12\x1b.cxz.runtime.AuxModelsInput\x1a\x1b.cxz.runtime.AuxModelsReply\x12N\n" +
-	"\fAuxLoginInfo\x12\x1e.cxz.runtime.AuxLoginInfoInput\x1a\x1e.cxz.runtime.AuxLoginInfoReplyB!Z\x1fgithub.com/lesomnus/cxz/api;apib\x06proto3"
+	"\fAuxLoginInfo\x12\x1e.cxz.runtime.AuxLoginInfoInput\x1a\x1e.cxz.runtime.AuxLoginInfoReply\x12N\n" +
+	"\rPutSecretFile\x12\x1f.cxz.runtime.PutSecretFileInput\x1a\x1c.cxz.runtime.SecretFileReply\x12T\n" +
+	"\x10DeleteSecretFile\x12\".cxz.runtime.DeleteSecretFileInput\x1a\x1c.cxz.runtime.SecretFileReplyB!Z\x1fgithub.com/lesomnus/cxz/api;apib\x06proto3"
 
 var (
 	file_cxz_proto_rawDescOnce sync.Once
@@ -5124,71 +5291,74 @@ func file_cxz_proto_rawDescGZIP() []byte {
 	return file_cxz_proto_rawDescData
 }
 
-var file_cxz_proto_msgTypes = make([]protoimpl.MessageInfo, 63)
+var file_cxz_proto_msgTypes = make([]protoimpl.MessageInfo, 66)
 var file_cxz_proto_goTypes = []any{
-	(*Empty)(nil),               // 0: cxz.runtime.Empty
-	(*CreateRequest)(nil),       // 1: cxz.runtime.CreateRequest
-	(*SessionRef)(nil),          // 2: cxz.runtime.SessionRef
-	(*Session)(nil),             // 3: cxz.runtime.Session
-	(*SessionList)(nil),         // 4: cxz.runtime.SessionList
-	(*Input)(nil),               // 5: cxz.runtime.Input
-	(*AttachmentInput)(nil),     // 6: cxz.runtime.AttachmentInput
-	(*Attachment)(nil),          // 7: cxz.runtime.Attachment
-	(*ActivityInput)(nil),       // 8: cxz.runtime.ActivityInput
-	(*AgentUpdateInput)(nil),    // 9: cxz.runtime.AgentUpdateInput
-	(*AgentUpdateStatus)(nil),   // 10: cxz.runtime.AgentUpdateStatus
-	(*Answer)(nil),              // 11: cxz.runtime.Answer
-	(*Control)(nil),             // 12: cxz.runtime.Control
-	(*Receipt)(nil),             // 13: cxz.runtime.Receipt
-	(*WatchRequest)(nil),        // 14: cxz.runtime.WatchRequest
-	(*Event)(nil),               // 15: cxz.runtime.Event
-	(*ToolSummary)(nil),         // 16: cxz.runtime.ToolSummary
-	(*ToolFileSummary)(nil),     // 17: cxz.runtime.ToolFileSummary
-	(*TranscriptRequest)(nil),   // 18: cxz.runtime.TranscriptRequest
-	(*TranscriptReply)(nil),     // 19: cxz.runtime.TranscriptReply
-	(*EventDetailsRequest)(nil), // 20: cxz.runtime.EventDetailsRequest
-	(*ResponseMetadata)(nil),    // 21: cxz.runtime.ResponseMetadata
-	(*EventBatch)(nil),          // 22: cxz.runtime.EventBatch
-	(*ProjectRequest)(nil),      // 23: cxz.runtime.ProjectRequest
-	(*Project)(nil),             // 24: cxz.runtime.Project
-	(*ProjectList)(nil),         // 25: cxz.runtime.ProjectList
-	(*PermissionInput)(nil),     // 26: cxz.runtime.PermissionInput
-	(*LogsRequest)(nil),         // 27: cxz.runtime.LogsRequest
-	(*LogsReply)(nil),           // 28: cxz.runtime.LogsReply
-	(*FileMappingsInput)(nil),   // 29: cxz.runtime.FileMappingsInput
-	(*DockerInput)(nil),         // 30: cxz.runtime.DockerInput
-	(*MemoryRequest)(nil),       // 31: cxz.runtime.MemoryRequest
-	(*MemoryReply)(nil),         // 32: cxz.runtime.MemoryReply
-	(*CopyMemoryRequest)(nil),   // 33: cxz.runtime.CopyMemoryRequest
-	(*BackgroundReply)(nil),     // 34: cxz.runtime.BackgroundReply
-	(*ModelsRequest)(nil),       // 35: cxz.runtime.ModelsRequest
-	(*ModelsReply)(nil),         // 36: cxz.runtime.ModelsReply
-	(*DevcontainerInput)(nil),   // 37: cxz.runtime.DevcontainerInput
-	(*SearchRequest)(nil),       // 38: cxz.runtime.SearchRequest
-	(*SearchVisit)(nil),         // 39: cxz.runtime.SearchVisit
-	(*SearchHit)(nil),           // 40: cxz.runtime.SearchHit
-	(*SearchProgress)(nil),      // 41: cxz.runtime.SearchProgress
-	(*SearchSummary)(nil),       // 42: cxz.runtime.SearchSummary
-	(*SearchReply)(nil),         // 43: cxz.runtime.SearchReply
-	(*Aux)(nil),                 // 44: cxz.runtime.Aux
-	(*AuxResult)(nil),           // 45: cxz.runtime.AuxResult
-	(*AuxUsage)(nil),            // 46: cxz.runtime.AuxUsage
-	(*AuxSummary)(nil),          // 47: cxz.runtime.AuxSummary
-	(*AuxProfile)(nil),          // 48: cxz.runtime.AuxProfile
-	(*AuxPreference)(nil),       // 49: cxz.runtime.AuxPreference
-	(*AuxModel)(nil),            // 50: cxz.runtime.AuxModel
-	(*AuxRunInput)(nil),         // 51: cxz.runtime.AuxRunInput
-	(*AuxCancelInput)(nil),      // 52: cxz.runtime.AuxCancelInput
-	(*AuxForgetInput)(nil),      // 53: cxz.runtime.AuxForgetInput
-	(*AuxStatusInput)(nil),      // 54: cxz.runtime.AuxStatusInput
-	(*AuxState)(nil),            // 55: cxz.runtime.AuxState
-	(*AuxPreferInput)(nil),      // 56: cxz.runtime.AuxPreferInput
-	(*AuxConfigReply)(nil),      // 57: cxz.runtime.AuxConfigReply
-	(*AuxSetConfigInput)(nil),   // 58: cxz.runtime.AuxSetConfigInput
-	(*AuxModelsInput)(nil),      // 59: cxz.runtime.AuxModelsInput
-	(*AuxModelsReply)(nil),      // 60: cxz.runtime.AuxModelsReply
-	(*AuxLoginInfoInput)(nil),   // 61: cxz.runtime.AuxLoginInfoInput
-	(*AuxLoginInfoReply)(nil),   // 62: cxz.runtime.AuxLoginInfoReply
+	(*Empty)(nil),                 // 0: cxz.runtime.Empty
+	(*CreateRequest)(nil),         // 1: cxz.runtime.CreateRequest
+	(*SessionRef)(nil),            // 2: cxz.runtime.SessionRef
+	(*Session)(nil),               // 3: cxz.runtime.Session
+	(*SessionList)(nil),           // 4: cxz.runtime.SessionList
+	(*Input)(nil),                 // 5: cxz.runtime.Input
+	(*AttachmentInput)(nil),       // 6: cxz.runtime.AttachmentInput
+	(*Attachment)(nil),            // 7: cxz.runtime.Attachment
+	(*ActivityInput)(nil),         // 8: cxz.runtime.ActivityInput
+	(*AgentUpdateInput)(nil),      // 9: cxz.runtime.AgentUpdateInput
+	(*AgentUpdateStatus)(nil),     // 10: cxz.runtime.AgentUpdateStatus
+	(*Answer)(nil),                // 11: cxz.runtime.Answer
+	(*Control)(nil),               // 12: cxz.runtime.Control
+	(*Receipt)(nil),               // 13: cxz.runtime.Receipt
+	(*WatchRequest)(nil),          // 14: cxz.runtime.WatchRequest
+	(*Event)(nil),                 // 15: cxz.runtime.Event
+	(*ToolSummary)(nil),           // 16: cxz.runtime.ToolSummary
+	(*ToolFileSummary)(nil),       // 17: cxz.runtime.ToolFileSummary
+	(*TranscriptRequest)(nil),     // 18: cxz.runtime.TranscriptRequest
+	(*TranscriptReply)(nil),       // 19: cxz.runtime.TranscriptReply
+	(*EventDetailsRequest)(nil),   // 20: cxz.runtime.EventDetailsRequest
+	(*ResponseMetadata)(nil),      // 21: cxz.runtime.ResponseMetadata
+	(*EventBatch)(nil),            // 22: cxz.runtime.EventBatch
+	(*ProjectRequest)(nil),        // 23: cxz.runtime.ProjectRequest
+	(*Project)(nil),               // 24: cxz.runtime.Project
+	(*ProjectList)(nil),           // 25: cxz.runtime.ProjectList
+	(*PermissionInput)(nil),       // 26: cxz.runtime.PermissionInput
+	(*LogsRequest)(nil),           // 27: cxz.runtime.LogsRequest
+	(*LogsReply)(nil),             // 28: cxz.runtime.LogsReply
+	(*FileMappingsInput)(nil),     // 29: cxz.runtime.FileMappingsInput
+	(*DockerInput)(nil),           // 30: cxz.runtime.DockerInput
+	(*MemoryRequest)(nil),         // 31: cxz.runtime.MemoryRequest
+	(*MemoryReply)(nil),           // 32: cxz.runtime.MemoryReply
+	(*CopyMemoryRequest)(nil),     // 33: cxz.runtime.CopyMemoryRequest
+	(*BackgroundReply)(nil),       // 34: cxz.runtime.BackgroundReply
+	(*ModelsRequest)(nil),         // 35: cxz.runtime.ModelsRequest
+	(*ModelsReply)(nil),           // 36: cxz.runtime.ModelsReply
+	(*DevcontainerInput)(nil),     // 37: cxz.runtime.DevcontainerInput
+	(*SearchRequest)(nil),         // 38: cxz.runtime.SearchRequest
+	(*SearchVisit)(nil),           // 39: cxz.runtime.SearchVisit
+	(*SearchHit)(nil),             // 40: cxz.runtime.SearchHit
+	(*SearchProgress)(nil),        // 41: cxz.runtime.SearchProgress
+	(*SearchSummary)(nil),         // 42: cxz.runtime.SearchSummary
+	(*SearchReply)(nil),           // 43: cxz.runtime.SearchReply
+	(*Aux)(nil),                   // 44: cxz.runtime.Aux
+	(*AuxResult)(nil),             // 45: cxz.runtime.AuxResult
+	(*AuxUsage)(nil),              // 46: cxz.runtime.AuxUsage
+	(*AuxSummary)(nil),            // 47: cxz.runtime.AuxSummary
+	(*AuxProfile)(nil),            // 48: cxz.runtime.AuxProfile
+	(*AuxPreference)(nil),         // 49: cxz.runtime.AuxPreference
+	(*AuxModel)(nil),              // 50: cxz.runtime.AuxModel
+	(*AuxRunInput)(nil),           // 51: cxz.runtime.AuxRunInput
+	(*AuxCancelInput)(nil),        // 52: cxz.runtime.AuxCancelInput
+	(*AuxForgetInput)(nil),        // 53: cxz.runtime.AuxForgetInput
+	(*AuxStatusInput)(nil),        // 54: cxz.runtime.AuxStatusInput
+	(*AuxState)(nil),              // 55: cxz.runtime.AuxState
+	(*AuxPreferInput)(nil),        // 56: cxz.runtime.AuxPreferInput
+	(*AuxConfigReply)(nil),        // 57: cxz.runtime.AuxConfigReply
+	(*AuxSetConfigInput)(nil),     // 58: cxz.runtime.AuxSetConfigInput
+	(*AuxModelsInput)(nil),        // 59: cxz.runtime.AuxModelsInput
+	(*AuxModelsReply)(nil),        // 60: cxz.runtime.AuxModelsReply
+	(*AuxLoginInfoInput)(nil),     // 61: cxz.runtime.AuxLoginInfoInput
+	(*AuxLoginInfoReply)(nil),     // 62: cxz.runtime.AuxLoginInfoReply
+	(*PutSecretFileInput)(nil),    // 63: cxz.runtime.PutSecretFileInput
+	(*DeleteSecretFileInput)(nil), // 64: cxz.runtime.DeleteSecretFileInput
+	(*SecretFileReply)(nil),       // 65: cxz.runtime.SecretFileReply
 }
 var file_cxz_proto_depIdxs = []int32{
 	15, // 0: cxz.runtime.Session.pending:type_name -> cxz.runtime.Event
@@ -5253,46 +5423,50 @@ var file_cxz_proto_depIdxs = []int32{
 	58, // 59: cxz.runtime.Sessions.AuxSetConfig:input_type -> cxz.runtime.AuxSetConfigInput
 	59, // 60: cxz.runtime.Sessions.AuxModels:input_type -> cxz.runtime.AuxModelsInput
 	61, // 61: cxz.runtime.Sessions.AuxLoginInfo:input_type -> cxz.runtime.AuxLoginInfoInput
-	13, // 62: cxz.runtime.Sessions.Devcontainer:output_type -> cxz.runtime.Receipt
-	13, // 63: cxz.runtime.Sessions.Docker:output_type -> cxz.runtime.Receipt
-	13, // 64: cxz.runtime.Sessions.FileMappings:output_type -> cxz.runtime.Receipt
-	3,  // 65: cxz.runtime.Sessions.Create:output_type -> cxz.runtime.Session
-	4,  // 66: cxz.runtime.Sessions.List:output_type -> cxz.runtime.SessionList
-	3,  // 67: cxz.runtime.Sessions.Get:output_type -> cxz.runtime.Session
-	13, // 68: cxz.runtime.Sessions.CopyMemory:output_type -> cxz.runtime.Receipt
-	32, // 69: cxz.runtime.Sessions.Memory:output_type -> cxz.runtime.MemoryReply
-	28, // 70: cxz.runtime.Sessions.Logs:output_type -> cxz.runtime.LogsReply
-	13, // 71: cxz.runtime.Sessions.Permission:output_type -> cxz.runtime.Receipt
-	13, // 72: cxz.runtime.Sessions.Send:output_type -> cxz.runtime.Receipt
-	7,  // 73: cxz.runtime.Sessions.Attach:output_type -> cxz.runtime.Attachment
-	13, // 74: cxz.runtime.Sessions.Activity:output_type -> cxz.runtime.Receipt
-	10, // 75: cxz.runtime.Sessions.UpdateAgent:output_type -> cxz.runtime.AgentUpdateStatus
-	13, // 76: cxz.runtime.Sessions.Reply:output_type -> cxz.runtime.Receipt
-	13, // 77: cxz.runtime.Sessions.Interrupt:output_type -> cxz.runtime.Receipt
-	3,  // 78: cxz.runtime.Sessions.Resume:output_type -> cxz.runtime.Session
-	13, // 79: cxz.runtime.Sessions.Stop:output_type -> cxz.runtime.Receipt
-	15, // 80: cxz.runtime.Sessions.Watch:output_type -> cxz.runtime.Event
-	22, // 81: cxz.runtime.Sessions.History:output_type -> cxz.runtime.EventBatch
-	19, // 82: cxz.runtime.Sessions.Transcript:output_type -> cxz.runtime.TranscriptReply
-	22, // 83: cxz.runtime.Sessions.EventDetails:output_type -> cxz.runtime.EventBatch
-	34, // 84: cxz.runtime.Sessions.Background:output_type -> cxz.runtime.BackgroundReply
-	36, // 85: cxz.runtime.Sessions.Models:output_type -> cxz.runtime.ModelsReply
-	43, // 86: cxz.runtime.Sessions.Search:output_type -> cxz.runtime.SearchReply
-	3,  // 87: cxz.runtime.Sessions.Open:output_type -> cxz.runtime.Session
-	25, // 88: cxz.runtime.Sessions.Projects:output_type -> cxz.runtime.ProjectList
-	13, // 89: cxz.runtime.Sessions.Down:output_type -> cxz.runtime.Receipt
-	55, // 90: cxz.runtime.Sessions.AuxRun:output_type -> cxz.runtime.AuxState
-	55, // 91: cxz.runtime.Sessions.AuxCancel:output_type -> cxz.runtime.AuxState
-	55, // 92: cxz.runtime.Sessions.AuxStatus:output_type -> cxz.runtime.AuxState
-	55, // 93: cxz.runtime.Sessions.AuxEvents:output_type -> cxz.runtime.AuxState
-	55, // 94: cxz.runtime.Sessions.AuxPrefer:output_type -> cxz.runtime.AuxState
-	13, // 95: cxz.runtime.Sessions.AuxForget:output_type -> cxz.runtime.Receipt
-	57, // 96: cxz.runtime.Sessions.AuxConfig:output_type -> cxz.runtime.AuxConfigReply
-	57, // 97: cxz.runtime.Sessions.AuxSetConfig:output_type -> cxz.runtime.AuxConfigReply
-	60, // 98: cxz.runtime.Sessions.AuxModels:output_type -> cxz.runtime.AuxModelsReply
-	62, // 99: cxz.runtime.Sessions.AuxLoginInfo:output_type -> cxz.runtime.AuxLoginInfoReply
-	62, // [62:100] is the sub-list for method output_type
-	24, // [24:62] is the sub-list for method input_type
+	63, // 62: cxz.runtime.Sessions.PutSecretFile:input_type -> cxz.runtime.PutSecretFileInput
+	64, // 63: cxz.runtime.Sessions.DeleteSecretFile:input_type -> cxz.runtime.DeleteSecretFileInput
+	13, // 64: cxz.runtime.Sessions.Devcontainer:output_type -> cxz.runtime.Receipt
+	13, // 65: cxz.runtime.Sessions.Docker:output_type -> cxz.runtime.Receipt
+	13, // 66: cxz.runtime.Sessions.FileMappings:output_type -> cxz.runtime.Receipt
+	3,  // 67: cxz.runtime.Sessions.Create:output_type -> cxz.runtime.Session
+	4,  // 68: cxz.runtime.Sessions.List:output_type -> cxz.runtime.SessionList
+	3,  // 69: cxz.runtime.Sessions.Get:output_type -> cxz.runtime.Session
+	13, // 70: cxz.runtime.Sessions.CopyMemory:output_type -> cxz.runtime.Receipt
+	32, // 71: cxz.runtime.Sessions.Memory:output_type -> cxz.runtime.MemoryReply
+	28, // 72: cxz.runtime.Sessions.Logs:output_type -> cxz.runtime.LogsReply
+	13, // 73: cxz.runtime.Sessions.Permission:output_type -> cxz.runtime.Receipt
+	13, // 74: cxz.runtime.Sessions.Send:output_type -> cxz.runtime.Receipt
+	7,  // 75: cxz.runtime.Sessions.Attach:output_type -> cxz.runtime.Attachment
+	13, // 76: cxz.runtime.Sessions.Activity:output_type -> cxz.runtime.Receipt
+	10, // 77: cxz.runtime.Sessions.UpdateAgent:output_type -> cxz.runtime.AgentUpdateStatus
+	13, // 78: cxz.runtime.Sessions.Reply:output_type -> cxz.runtime.Receipt
+	13, // 79: cxz.runtime.Sessions.Interrupt:output_type -> cxz.runtime.Receipt
+	3,  // 80: cxz.runtime.Sessions.Resume:output_type -> cxz.runtime.Session
+	13, // 81: cxz.runtime.Sessions.Stop:output_type -> cxz.runtime.Receipt
+	15, // 82: cxz.runtime.Sessions.Watch:output_type -> cxz.runtime.Event
+	22, // 83: cxz.runtime.Sessions.History:output_type -> cxz.runtime.EventBatch
+	19, // 84: cxz.runtime.Sessions.Transcript:output_type -> cxz.runtime.TranscriptReply
+	22, // 85: cxz.runtime.Sessions.EventDetails:output_type -> cxz.runtime.EventBatch
+	34, // 86: cxz.runtime.Sessions.Background:output_type -> cxz.runtime.BackgroundReply
+	36, // 87: cxz.runtime.Sessions.Models:output_type -> cxz.runtime.ModelsReply
+	43, // 88: cxz.runtime.Sessions.Search:output_type -> cxz.runtime.SearchReply
+	3,  // 89: cxz.runtime.Sessions.Open:output_type -> cxz.runtime.Session
+	25, // 90: cxz.runtime.Sessions.Projects:output_type -> cxz.runtime.ProjectList
+	13, // 91: cxz.runtime.Sessions.Down:output_type -> cxz.runtime.Receipt
+	55, // 92: cxz.runtime.Sessions.AuxRun:output_type -> cxz.runtime.AuxState
+	55, // 93: cxz.runtime.Sessions.AuxCancel:output_type -> cxz.runtime.AuxState
+	55, // 94: cxz.runtime.Sessions.AuxStatus:output_type -> cxz.runtime.AuxState
+	55, // 95: cxz.runtime.Sessions.AuxEvents:output_type -> cxz.runtime.AuxState
+	55, // 96: cxz.runtime.Sessions.AuxPrefer:output_type -> cxz.runtime.AuxState
+	13, // 97: cxz.runtime.Sessions.AuxForget:output_type -> cxz.runtime.Receipt
+	57, // 98: cxz.runtime.Sessions.AuxConfig:output_type -> cxz.runtime.AuxConfigReply
+	57, // 99: cxz.runtime.Sessions.AuxSetConfig:output_type -> cxz.runtime.AuxConfigReply
+	60, // 100: cxz.runtime.Sessions.AuxModels:output_type -> cxz.runtime.AuxModelsReply
+	62, // 101: cxz.runtime.Sessions.AuxLoginInfo:output_type -> cxz.runtime.AuxLoginInfoReply
+	65, // 102: cxz.runtime.Sessions.PutSecretFile:output_type -> cxz.runtime.SecretFileReply
+	65, // 103: cxz.runtime.Sessions.DeleteSecretFile:output_type -> cxz.runtime.SecretFileReply
+	64, // [64:104] is the sub-list for method output_type
+	24, // [24:64] is the sub-list for method input_type
 	24, // [24:24] is the sub-list for extension type_name
 	24, // [24:24] is the sub-list for extension extendee
 	0,  // [0:24] is the sub-list for field type_name
@@ -5309,7 +5483,7 @@ func file_cxz_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_cxz_proto_rawDesc), len(file_cxz_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   63,
+			NumMessages:   66,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

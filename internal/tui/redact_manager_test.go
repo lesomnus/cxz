@@ -2,33 +2,38 @@ package tui
 
 import (
 	"context"
-	"encoding/json"
 	"strings"
 	"testing"
 
 	"github.com/lesomnus/cxz/api"
-	"github.com/lesomnus/cxz/internal/secretfile"
 	"github.com/lesomnus/cxz/internal/transport"
 	"google.golang.org/grpc"
 )
 
+// What the manager was asked for, recorded as the call it became.
+type secretCall struct {
+	call             string
+	project, session string
+	path             string
+	secret           []byte
+}
 type secretClient struct {
 	api.SessionsClient
-	seen []secretfile.Request
+	seen []secretCall
 	path string
 }
 
-func (c *secretClient) Docker(_ context.Context, in *api.DockerInput, _ ...grpc.CallOption) (*api.Receipt, error) {
-	var r secretfile.Request
-	if err := json.Unmarshal(in.Spec, &r); err != nil {
-		return nil, err
-	}
-	c.seen = append(c.seen, r)
-	if in.Action != "secret-file" {
-		return nil, context.Canceled
-	}
-	b, _ := json.Marshal(secretfile.Reply{Path: c.path})
-	return &api.Receipt{Status: string(b)}, nil
+func (c *secretClient) PutSecretFile(_ context.Context, in *api.PutSecretFileInput, _ ...grpc.CallOption) (*api.SecretFileReply, error) {
+	c.seen = append(c.seen, secretCall{
+		call: "put", project: in.Project, session: in.Session,
+		secret: append([]byte(nil), in.Secret...),
+	})
+	return &api.SecretFileReply{Path: c.path}, nil
+}
+
+func (c *secretClient) DeleteSecretFile(_ context.Context, in *api.DeleteSecretFileInput, _ ...grpc.CallOption) (*api.SecretFileReply, error) {
+	c.seen = append(c.seen, secretCall{call: "delete", project: in.Project, path: in.Path})
+	return &api.SecretFileReply{}, nil
 }
 
 // Who writes the secret file depends on the connection, and the one case that
@@ -66,14 +71,19 @@ func TestManagerSecretsRoundTrip(t *testing.T) {
 	if err = store.DeleteSecret(context.Background(), context.Background(), project, path); err != nil {
 		t.Fatal(err)
 	}
-	if len(c.seen) != 2 || c.seen[0].Action != "put" || c.seen[1].Action != "delete" {
+	if len(c.seen) != 2 || c.seen[0].call != "put" || c.seen[1].call != "delete" {
 		t.Fatalf("manager saw %+v", c.seen)
 	}
-	if string(c.seen[0].Secret) != "hunter2" || c.seen[0].Session != "session/run" {
+	if string(c.seen[0].secret) != "hunter2" || c.seen[0].session != "session/run" {
 		t.Fatalf("put did not carry the secret and its scope: %+v", c.seen[0])
 	}
-	if c.seen[1].Path != c.path || len(c.seen[1].Secret) != 0 {
+	if c.seen[1].path != c.path || len(c.seen[1].secret) != 0 {
 		t.Fatalf("delete carried the wrong fields: %+v", c.seen[1])
+	}
+	// Only one of the two calls can carry a secret at all, which is why they
+	// are two calls: the delete has no field to put one in.
+	if _, ok := any(&api.DeleteSecretFileInput{}).(interface{ GetSecret() []byte }); ok {
+		t.Fatal("the delete request has somewhere to put a secret")
 	}
 	// A project the client cannot name is refused before anything is sent.
 	if _, err = store.PutSecret(context.Background(), context.Background(), nil, "s", []byte("x")); err == nil {

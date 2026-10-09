@@ -24,12 +24,6 @@ func (m *Manager) Docker(ctx context.Context, r *api.DockerInput) (*api.Receipt,
 	if r.Action == "devcontainer-render" {
 		return m.renderDevcontainer(ctx, r.Spec)
 	}
-	// A secret file is written through a helper in the project container, not
-	// through the engine, and holding the engine lock for it would make typing a
-	// secret wait on an unrelated rebuild.
-	if r.Action == "secret-file" {
-		return m.secretFile(ctx, r.Spec)
-	}
 	m.dockerMu.Lock()
 	defer m.dockerMu.Unlock()
 	e := m.dockerEngine()
