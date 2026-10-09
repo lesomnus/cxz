@@ -7,6 +7,7 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
+  useId,
   useRef,
   useState,
 } from "react";
@@ -47,6 +48,8 @@ import { AgentBrand } from "./agent-brand";
 import { responseInfo } from "./response-info";
 import type { ResponseCompletion } from "./response-completion";
 import { ResponseFooter } from "./response-footer";
+import { CopyButton } from "./copy-button";
+import { EventTimePopover } from "./event-time-popover";
 import { InputMessage } from "./input-message";
 import { ComposerEditor } from "./composer-editor";
 import { sessionCommands } from "./composer-commands";
@@ -1417,12 +1420,14 @@ const EventView = React.memo(
   }) {
     useLocale();
     const details = useAnchoredCard();
+    const timestamp = useId();
     if (activity)
       return (
         <ToolActivityView
           activity={activity}
           agent={agent}
           seq={e.seq}
+          timeMs={e.timeMs}
           loadDetails={loadDetails}
         />
       );
@@ -1437,14 +1442,10 @@ const EventView = React.memo(
                 {info.label}
               </span>
             )}
+            <CopyButton value={e.text} className="copy-control" />
           </small>
           <Markdown text={e.text} />
-          <ResponseFooter
-            seq={e.seq}
-            timeMs={e.timeMs}
-            text={e.text}
-            completion={completion}
-          />
+          <ResponseFooter timeMs={e.timeMs} completion={completion} />
         </article>
       );
     }
@@ -1465,6 +1466,7 @@ const EventView = React.memo(
         aria-expanded={details.expanded}
         aria-haspopup="dialog"
         aria-controls={details.controls}
+        aria-describedby={timestamp}
         {...details.handlers({
           title: e.kind === "approval" ? approvalTitle(e) : e.kind,
           content: () => (
@@ -1475,6 +1477,7 @@ const EventView = React.memo(
           ),
         })}
       >
+        <EventTimePopover timeMs={e.timeMs} id={timestamp} />
         {e.kind === "approval"
           ? approvalTitle(e)
           : `${e.kind} · ${e.text.slice(0, 160)}`}

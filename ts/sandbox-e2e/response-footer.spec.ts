@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("final response metrics and right-aligned icon copy work for both providers", async ({
+test("final response metrics and top-right rectangular icon copy work for both providers", async ({
   page,
 }) => {
   await page.addInitScript(() =>
@@ -29,16 +29,21 @@ test("final response metrics and right-aligned icon copy work for both providers
     await expect(metric.locator("svg")).toHaveCount(1);
     await expect(metric).toHaveAttribute("aria-label", /.+/);
   }
-  const footer = page.locator(".response-footer").first();
-  const copy = footer.getByRole("button", { name: "Copy", exact: true });
+  const response = page.locator(".response").first();
+  const copy = response.getByRole("button", { name: "Copy", exact: true });
   await expect(copy.locator("svg")).toHaveCount(1);
   await expect(copy).toHaveText("");
   const bounds = (await copy.boundingBox())!,
-    box = (await footer.boundingBox())!;
+    box = (await response.boundingBox())!;
   expect(box.x + box.width - bounds.x - bounds.width).toBeCloseTo(12, 0);
+  expect(bounds.y - box.y).toBeCloseTo(12, 0);
+  expect(bounds.width).toBeGreaterThan(bounds.height);
+  await expect(response.locator(".copy-control")).toHaveCSS("opacity", "0");
+  await response.hover();
+  await expect(response.locator(".copy-control")).toHaveCSS("opacity", "1");
   await copy.hover();
-  await expect(footer.getByRole("tooltip")).toBeVisible();
-  await expect(footer.getByRole("tooltip")).toHaveText("Copy");
+  await expect(response.getByRole("tooltip")).toBeVisible();
+  await expect(response.getByRole("tooltip")).toHaveText("Copy");
   await copy.click();
   await expect
     .poll(() => page.evaluate(() => (window as any).copiedResponse))

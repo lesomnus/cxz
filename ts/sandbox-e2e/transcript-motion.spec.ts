@@ -100,7 +100,7 @@ test("live additions glide existing rows and reveal new cards faster without cha
   expect(entry.scale).toBeLessThan(1);
   expect(entry.opacity).toBeGreaterThan(0);
   expect(entry.opacity).toBeLessThan(1);
-  expect(entry.blur).toBe("blur(16px)");
+  expect(entry.blur).toBe("none");
   expect(entry.duration).toBeLessThan(result.shifts[0].duration);
   for (const sample of [...result.shifts, ...result.entrances])
     expect(sample.paintedHeight).toBeCloseTo(sample.height, 0);

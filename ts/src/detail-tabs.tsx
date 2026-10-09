@@ -1,4 +1,4 @@
-import { useId, useRef, useState, type CSSProperties } from "react";
+import { useId, useRef, useState } from "react";
 import type * as Monaco from "monaco-editor/esm/vs/editor/editor.api.js";
 import { Button } from "./button";
 import { CopyButton } from "./copy-button";
@@ -21,7 +21,6 @@ function detectedLanguage(value: string) {
 export function DetailTabs({ sections }: { sections: DetailSection[] }) {
   const prefix = useId();
   const [selected, setSelected] = useState(sections[0]?.id);
-  const [heights, setHeights] = useState<Record<string, number>>({});
   const views = useRef(
     new Map<string, Monaco.editor.ICodeEditorViewState | null>(),
   );
@@ -31,14 +30,7 @@ export function DetailTabs({ sections }: { sections: DetailSection[] }) {
   const panel = `${prefix}-panel`;
   const language = active.language ?? detectedLanguage(active.value);
   return (
-    <div
-      className="detail-tabs"
-      style={
-        {
-          "--detail-content-height": `${heights[active.id] ?? 240}px`,
-        } as CSSProperties
-      }
-    >
+    <div className="detail-tabs">
       <div className="detail-tab-bar">
         <div className="detail-tab-list" role="tablist">
           {sections.map((section, index) => (
@@ -89,13 +81,6 @@ export function DetailTabs({ sections }: { sections: DetailSection[] }) {
           readOnly
           view={views.current.get(active.id)}
           onDispose={(view) => views.current.set(active.id, view)}
-          onContentHeightChange={(height) =>
-            setHeights((previous) =>
-              previous[active.id] === height
-                ? previous
-                : { ...previous, [active.id]: height },
-            )
-          }
         />
       </div>
     </div>

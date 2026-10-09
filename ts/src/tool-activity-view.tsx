@@ -1,7 +1,9 @@
+import { useId } from "react";
 import type { LoadEventDetails } from "./session-history";
 import { DetailTabs, type DetailSection } from "./detail-tabs";
 import { useEventDetails } from "./event-details";
 import { Button } from "./button";
+import { EventTimePopover } from "./event-time-popover";
 import { useAnchoredCard } from "./floating-card";
 import { detail, payload } from "./journal";
 import { t } from "./i18n";
@@ -21,15 +23,18 @@ export function ToolActivityView({
   activity,
   agent,
   seq,
+  timeMs,
   loadDetails,
 }: {
   activity: ToolActivity;
   agent: string;
   seq: bigint;
+  timeMs: bigint;
   loadDetails?: LoadEventDetails;
 }) {
   useLocale();
   const details = useAnchoredCard();
+  const timestamp = useId();
   const label = toolLabel(activity, agent);
   const state = toolState(activity, agent);
   const { files, omitted } = toolFiles(activity);
@@ -65,6 +70,7 @@ export function ToolActivityView({
       aria-expanded={details.expanded}
       aria-haspopup="dialog"
       aria-controls={details.controls}
+      aria-describedby={timestamp}
       {...details.handlers({
         title: `${label.name} · ${t("Details")}`,
         content: () => (
@@ -76,6 +82,7 @@ export function ToolActivityView({
         ),
       })}
     >
+      <EventTimePopover timeMs={timeMs} id={timestamp} />
       {files.length ? (
         <span className="tool-file-list">
           {files.map((file, index) => (
