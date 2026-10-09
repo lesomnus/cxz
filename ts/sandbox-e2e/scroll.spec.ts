@@ -126,37 +126,48 @@ test("grouped sessions, shortcut, stable fields and elastic local scrollbar", as
             getComputedStyle(document.querySelector(".scroll-thumb")!).top,
           ),
         };
+        // Capture an intermediate frame in the browser itself. Protocol calls
+        // and retrying an assertion can otherwise outlast the whole animation.
+        (window as any).promptAnimationSample = (async () => {
+          const before = (window as any).promptAnimationStart;
+          const deadline = performance.now() + 1000;
+          while (performance.now() < deadline) {
+            await new Promise(requestAnimationFrame);
+            const marker = document.querySelector<HTMLElement>(
+              `[data-prompt="${before.id}"]`,
+            )!;
+            const thumb = document.querySelector<HTMLElement>(".scroll-thumb")!;
+            const response = document.querySelector<HTMLElement>(
+              `[data-response="${before.responseId}"]`,
+            )!;
+            const sample = {
+              sameNode: marker === (window as any).savedPromptMarker,
+              markerProgress:
+                (parseFloat(getComputedStyle(marker).top) - before.marker) /
+                (Number(marker.dataset.targetTop) - before.marker),
+              thumbProgress:
+                (parseFloat(getComputedStyle(thumb).top) - before.thumb) /
+                (Number(thumb.dataset.targetTop) - before.thumb),
+              responseProgress:
+                (parseFloat(getComputedStyle(response).top) - before.response) /
+                (Number(response.dataset.targetTop) - before.response),
+            };
+            if (sample.markerProgress > 0.01 && sample.markerProgress < 0.99)
+              return sample;
+          }
+          throw new Error(
+            "No intermediate scrollbar rebase frame was rendered",
+          );
+        })();
       },
       { capture: true, once: true },
     );
   });
   await page.mouse.up();
   await expect(thumb).toHaveAttribute("data-stretch", "0.00");
-  const animation = await page.evaluate(async () => {
-    const before = (window as any).promptAnimationStart;
-    await new Promise<void>((resolve) =>
-      requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
-    );
-    const marker = document.querySelector<HTMLElement>(
-      `[data-prompt="${before.id}"]`,
-    )!;
-    const thumb = document.querySelector<HTMLElement>(".scroll-thumb")!;
-    const response = document.querySelector<HTMLElement>(
-      `[data-response="${before.responseId}"]`,
-    )!;
-    return {
-      sameNode: marker === (window as any).savedPromptMarker,
-      markerProgress:
-        (parseFloat(getComputedStyle(marker).top) - before.marker) /
-        (Number(marker.dataset.targetTop) - before.marker),
-      thumbProgress:
-        (parseFloat(getComputedStyle(thumb).top) - before.thumb) /
-        (Number(thumb.dataset.targetTop) - before.thumb),
-      responseProgress:
-        (parseFloat(getComputedStyle(response).top) - before.response) /
-        (Number(response.dataset.targetTop) - before.response),
-    };
-  });
+  const animation = await page.evaluate(
+    () => (window as any).promptAnimationSample,
+  );
   expect(animation.sameNode).toBe(true);
   expect(animation.markerProgress).toBeGreaterThan(0);
   expect(animation.markerProgress).toBeLessThan(1);

@@ -12,10 +12,25 @@ export type RowLayout = {
 export const ROW_UNITS = 100;
 export type RowKnot = { offset: number; fraction: number };
 export type MessageMap = ReturnType<typeof messageMap>;
+// Coordinate corrections follow stable event IDs. A row-height correction can
+// change a viewport's fractional position without moving any marker coordinate.
+export function messageMapShift(
+  before: MessageMap,
+  after: MessageMap,
+  pixel: number,
+) {
+  const index = rowAt(before.rows, pixel - before.origin);
+  const id = before.rows[index]?.id;
+  const nextIndex = after.rows.findIndex((row) => row.id === id);
+  return nextIndex >= 0
+    ? after.origin - before.origin + (nextIndex - index) * ROW_UNITS
+    : after.toLogical(pixel) - before.toLogical(pixel);
+}
 export function messageMap(
   rows: RowLayout[],
   origin: number,
   knots: Map<string, RowKnot>,
+  rowPadding = 0,
 ) {
   const points = new Map(knots);
   const fractionAt = (row: RowLayout, offset: number) => {
@@ -31,6 +46,7 @@ export function messageMap(
   return {
     rows,
     origin,
+    rowPadding,
     toLogical(pixel: number) {
       if (!rows.length || pixel <= origin) return pixel;
       const index = rowAt(rows, pixel - origin),
