@@ -19,59 +19,69 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Sessions_Devcontainer_FullMethodName         = "/cxz.runtime.Sessions/Devcontainer"
-	Sessions_Docker_FullMethodName               = "/cxz.runtime.Sessions/Docker"
-	Sessions_FileMappings_FullMethodName         = "/cxz.runtime.Sessions/FileMappings"
-	Sessions_Create_FullMethodName               = "/cxz.runtime.Sessions/Create"
-	Sessions_List_FullMethodName                 = "/cxz.runtime.Sessions/List"
-	Sessions_Get_FullMethodName                  = "/cxz.runtime.Sessions/Get"
-	Sessions_CopyMemory_FullMethodName           = "/cxz.runtime.Sessions/CopyMemory"
-	Sessions_Memory_FullMethodName               = "/cxz.runtime.Sessions/Memory"
-	Sessions_Logs_FullMethodName                 = "/cxz.runtime.Sessions/Logs"
-	Sessions_Permission_FullMethodName           = "/cxz.runtime.Sessions/Permission"
-	Sessions_Send_FullMethodName                 = "/cxz.runtime.Sessions/Send"
-	Sessions_Attach_FullMethodName               = "/cxz.runtime.Sessions/Attach"
-	Sessions_Activity_FullMethodName             = "/cxz.runtime.Sessions/Activity"
-	Sessions_UpdateAgent_FullMethodName          = "/cxz.runtime.Sessions/UpdateAgent"
-	Sessions_Reply_FullMethodName                = "/cxz.runtime.Sessions/Reply"
-	Sessions_Interrupt_FullMethodName            = "/cxz.runtime.Sessions/Interrupt"
-	Sessions_Resume_FullMethodName               = "/cxz.runtime.Sessions/Resume"
-	Sessions_Stop_FullMethodName                 = "/cxz.runtime.Sessions/Stop"
-	Sessions_Watch_FullMethodName                = "/cxz.runtime.Sessions/Watch"
-	Sessions_History_FullMethodName              = "/cxz.runtime.Sessions/History"
-	Sessions_Transcript_FullMethodName           = "/cxz.runtime.Sessions/Transcript"
-	Sessions_EventDetails_FullMethodName         = "/cxz.runtime.Sessions/EventDetails"
-	Sessions_Background_FullMethodName           = "/cxz.runtime.Sessions/Background"
-	Sessions_Models_FullMethodName               = "/cxz.runtime.Sessions/Models"
-	Sessions_Search_FullMethodName               = "/cxz.runtime.Sessions/Search"
-	Sessions_Open_FullMethodName                 = "/cxz.runtime.Sessions/Open"
-	Sessions_Projects_FullMethodName             = "/cxz.runtime.Sessions/Projects"
-	Sessions_Down_FullMethodName                 = "/cxz.runtime.Sessions/Down"
-	Sessions_AuxRun_FullMethodName               = "/cxz.runtime.Sessions/AuxRun"
-	Sessions_AuxCancel_FullMethodName            = "/cxz.runtime.Sessions/AuxCancel"
-	Sessions_AuxStatus_FullMethodName            = "/cxz.runtime.Sessions/AuxStatus"
-	Sessions_AuxEvents_FullMethodName            = "/cxz.runtime.Sessions/AuxEvents"
-	Sessions_AuxPrefer_FullMethodName            = "/cxz.runtime.Sessions/AuxPrefer"
-	Sessions_AuxForget_FullMethodName            = "/cxz.runtime.Sessions/AuxForget"
-	Sessions_AuxConfig_FullMethodName            = "/cxz.runtime.Sessions/AuxConfig"
-	Sessions_AuxSetConfig_FullMethodName         = "/cxz.runtime.Sessions/AuxSetConfig"
-	Sessions_AuxModels_FullMethodName            = "/cxz.runtime.Sessions/AuxModels"
-	Sessions_AuxLoginInfo_FullMethodName         = "/cxz.runtime.Sessions/AuxLoginInfo"
-	Sessions_PurgeSession_FullMethodName         = "/cxz.runtime.Sessions/PurgeSession"
-	Sessions_GetHistoryPolicy_FullMethodName     = "/cxz.runtime.Sessions/GetHistoryPolicy"
-	Sessions_SetHistoryPolicy_FullMethodName     = "/cxz.runtime.Sessions/SetHistoryPolicy"
-	Sessions_GetHistoryFloor_FullMethodName      = "/cxz.runtime.Sessions/GetHistoryFloor"
-	Sessions_MarkHistoryTrimmable_FullMethodName = "/cxz.runtime.Sessions/MarkHistoryTrimmable"
-	Sessions_PutSecretFile_FullMethodName        = "/cxz.runtime.Sessions/PutSecretFile"
-	Sessions_DeleteSecretFile_FullMethodName     = "/cxz.runtime.Sessions/DeleteSecretFile"
-	Sessions_GetSkills_FullMethodName            = "/cxz.runtime.Sessions/GetSkills"
-	Sessions_AddSkill_FullMethodName             = "/cxz.runtime.Sessions/AddSkill"
-	Sessions_RemoveSkill_FullMethodName          = "/cxz.runtime.Sessions/RemoveSkill"
-	Sessions_SetSkillDefault_FullMethodName      = "/cxz.runtime.Sessions/SetSkillDefault"
-	Sessions_SetProjectSkill_FullMethodName      = "/cxz.runtime.Sessions/SetProjectSkill"
-	Sessions_ClearProjectSkill_FullMethodName    = "/cxz.runtime.Sessions/ClearProjectSkill"
-	Sessions_SyncSkills_FullMethodName           = "/cxz.runtime.Sessions/SyncSkills"
-	Sessions_RenderDevcontainer_FullMethodName   = "/cxz.runtime.Sessions/RenderDevcontainer"
+	Sessions_Devcontainer_FullMethodName          = "/cxz.runtime.Sessions/Devcontainer"
+	Sessions_Docker_FullMethodName                = "/cxz.runtime.Sessions/Docker"
+	Sessions_FileMappings_FullMethodName          = "/cxz.runtime.Sessions/FileMappings"
+	Sessions_Create_FullMethodName                = "/cxz.runtime.Sessions/Create"
+	Sessions_List_FullMethodName                  = "/cxz.runtime.Sessions/List"
+	Sessions_Get_FullMethodName                   = "/cxz.runtime.Sessions/Get"
+	Sessions_CopyMemory_FullMethodName            = "/cxz.runtime.Sessions/CopyMemory"
+	Sessions_Memory_FullMethodName                = "/cxz.runtime.Sessions/Memory"
+	Sessions_Logs_FullMethodName                  = "/cxz.runtime.Sessions/Logs"
+	Sessions_Permission_FullMethodName            = "/cxz.runtime.Sessions/Permission"
+	Sessions_Send_FullMethodName                  = "/cxz.runtime.Sessions/Send"
+	Sessions_Attach_FullMethodName                = "/cxz.runtime.Sessions/Attach"
+	Sessions_Activity_FullMethodName              = "/cxz.runtime.Sessions/Activity"
+	Sessions_UpdateAgent_FullMethodName           = "/cxz.runtime.Sessions/UpdateAgent"
+	Sessions_Reply_FullMethodName                 = "/cxz.runtime.Sessions/Reply"
+	Sessions_Interrupt_FullMethodName             = "/cxz.runtime.Sessions/Interrupt"
+	Sessions_Resume_FullMethodName                = "/cxz.runtime.Sessions/Resume"
+	Sessions_Stop_FullMethodName                  = "/cxz.runtime.Sessions/Stop"
+	Sessions_Watch_FullMethodName                 = "/cxz.runtime.Sessions/Watch"
+	Sessions_History_FullMethodName               = "/cxz.runtime.Sessions/History"
+	Sessions_Transcript_FullMethodName            = "/cxz.runtime.Sessions/Transcript"
+	Sessions_EventDetails_FullMethodName          = "/cxz.runtime.Sessions/EventDetails"
+	Sessions_Background_FullMethodName            = "/cxz.runtime.Sessions/Background"
+	Sessions_Models_FullMethodName                = "/cxz.runtime.Sessions/Models"
+	Sessions_Search_FullMethodName                = "/cxz.runtime.Sessions/Search"
+	Sessions_Open_FullMethodName                  = "/cxz.runtime.Sessions/Open"
+	Sessions_Projects_FullMethodName              = "/cxz.runtime.Sessions/Projects"
+	Sessions_Down_FullMethodName                  = "/cxz.runtime.Sessions/Down"
+	Sessions_AuxRun_FullMethodName                = "/cxz.runtime.Sessions/AuxRun"
+	Sessions_AuxCancel_FullMethodName             = "/cxz.runtime.Sessions/AuxCancel"
+	Sessions_AuxStatus_FullMethodName             = "/cxz.runtime.Sessions/AuxStatus"
+	Sessions_AuxEvents_FullMethodName             = "/cxz.runtime.Sessions/AuxEvents"
+	Sessions_AuxPrefer_FullMethodName             = "/cxz.runtime.Sessions/AuxPrefer"
+	Sessions_AuxForget_FullMethodName             = "/cxz.runtime.Sessions/AuxForget"
+	Sessions_AuxConfig_FullMethodName             = "/cxz.runtime.Sessions/AuxConfig"
+	Sessions_AuxSetConfig_FullMethodName          = "/cxz.runtime.Sessions/AuxSetConfig"
+	Sessions_AuxModels_FullMethodName             = "/cxz.runtime.Sessions/AuxModels"
+	Sessions_AuxLoginInfo_FullMethodName          = "/cxz.runtime.Sessions/AuxLoginInfo"
+	Sessions_PurgeSession_FullMethodName          = "/cxz.runtime.Sessions/PurgeSession"
+	Sessions_GetHistoryPolicy_FullMethodName      = "/cxz.runtime.Sessions/GetHistoryPolicy"
+	Sessions_SetHistoryPolicy_FullMethodName      = "/cxz.runtime.Sessions/SetHistoryPolicy"
+	Sessions_GetHistoryFloor_FullMethodName       = "/cxz.runtime.Sessions/GetHistoryFloor"
+	Sessions_MarkHistoryTrimmable_FullMethodName  = "/cxz.runtime.Sessions/MarkHistoryTrimmable"
+	Sessions_PutSecretFile_FullMethodName         = "/cxz.runtime.Sessions/PutSecretFile"
+	Sessions_DeleteSecretFile_FullMethodName      = "/cxz.runtime.Sessions/DeleteSecretFile"
+	Sessions_GetSkills_FullMethodName             = "/cxz.runtime.Sessions/GetSkills"
+	Sessions_AddSkill_FullMethodName              = "/cxz.runtime.Sessions/AddSkill"
+	Sessions_RemoveSkill_FullMethodName           = "/cxz.runtime.Sessions/RemoveSkill"
+	Sessions_SetSkillDefault_FullMethodName       = "/cxz.runtime.Sessions/SetSkillDefault"
+	Sessions_SetProjectSkill_FullMethodName       = "/cxz.runtime.Sessions/SetProjectSkill"
+	Sessions_ClearProjectSkill_FullMethodName     = "/cxz.runtime.Sessions/ClearProjectSkill"
+	Sessions_SyncSkills_FullMethodName            = "/cxz.runtime.Sessions/SyncSkills"
+	Sessions_RenderDevcontainer_FullMethodName    = "/cxz.runtime.Sessions/RenderDevcontainer"
+	Sessions_GetMcpServers_FullMethodName         = "/cxz.runtime.Sessions/GetMcpServers"
+	Sessions_PutMcpServer_FullMethodName          = "/cxz.runtime.Sessions/PutMcpServer"
+	Sessions_RemoveMcpServer_FullMethodName       = "/cxz.runtime.Sessions/RemoveMcpServer"
+	Sessions_SetMcpServerDefault_FullMethodName   = "/cxz.runtime.Sessions/SetMcpServerDefault"
+	Sessions_SetProjectMcpServer_FullMethodName   = "/cxz.runtime.Sessions/SetProjectMcpServer"
+	Sessions_ClearProjectMcpServer_FullMethodName = "/cxz.runtime.Sessions/ClearProjectMcpServer"
+	Sessions_McpSessions_FullMethodName           = "/cxz.runtime.Sessions/McpSessions"
+	Sessions_SyncMcpServers_FullMethodName        = "/cxz.runtime.Sessions/SyncMcpServers"
+	Sessions_McpLogs_FullMethodName               = "/cxz.runtime.Sessions/McpLogs"
+	Sessions_RestartMcp_FullMethodName            = "/cxz.runtime.Sessions/RestartMcp"
 )
 
 // SessionsClient is the client API for Sessions service.
@@ -131,6 +141,16 @@ type SessionsClient interface {
 	ClearProjectSkill(ctx context.Context, in *ClearProjectSkillInput, opts ...grpc.CallOption) (*SkillsReply, error)
 	SyncSkills(ctx context.Context, in *SyncSkillsInput, opts ...grpc.CallOption) (*Receipt, error)
 	RenderDevcontainer(ctx context.Context, in *RenderDevcontainerInput, opts ...grpc.CallOption) (*RenderDevcontainerReply, error)
+	GetMcpServers(ctx context.Context, in *McpServersInput, opts ...grpc.CallOption) (*McpServersReply, error)
+	PutMcpServer(ctx context.Context, in *PutMcpServerInput, opts ...grpc.CallOption) (*McpServersReply, error)
+	RemoveMcpServer(ctx context.Context, in *McpServerInput, opts ...grpc.CallOption) (*McpServersReply, error)
+	SetMcpServerDefault(ctx context.Context, in *McpServerDefaultInput, opts ...grpc.CallOption) (*McpServersReply, error)
+	SetProjectMcpServer(ctx context.Context, in *ProjectMcpServerInput, opts ...grpc.CallOption) (*McpServersReply, error)
+	ClearProjectMcpServer(ctx context.Context, in *ClearProjectMcpServerInput, opts ...grpc.CallOption) (*McpServersReply, error)
+	McpSessions(ctx context.Context, in *McpSessionsInput, opts ...grpc.CallOption) (*McpSessionsReply, error)
+	SyncMcpServers(ctx context.Context, in *SyncMcpServersInput, opts ...grpc.CallOption) (*Receipt, error)
+	McpLogs(ctx context.Context, in *McpLogsInput, opts ...grpc.CallOption) (*McpLogsReply, error)
+	RestartMcp(ctx context.Context, in *RestartMcpInput, opts ...grpc.CallOption) (*Receipt, error)
 }
 
 type sessionsClient struct {
@@ -698,6 +718,106 @@ func (c *sessionsClient) RenderDevcontainer(ctx context.Context, in *RenderDevco
 	return out, nil
 }
 
+func (c *sessionsClient) GetMcpServers(ctx context.Context, in *McpServersInput, opts ...grpc.CallOption) (*McpServersReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(McpServersReply)
+	err := c.cc.Invoke(ctx, Sessions_GetMcpServers_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) PutMcpServer(ctx context.Context, in *PutMcpServerInput, opts ...grpc.CallOption) (*McpServersReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(McpServersReply)
+	err := c.cc.Invoke(ctx, Sessions_PutMcpServer_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) RemoveMcpServer(ctx context.Context, in *McpServerInput, opts ...grpc.CallOption) (*McpServersReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(McpServersReply)
+	err := c.cc.Invoke(ctx, Sessions_RemoveMcpServer_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) SetMcpServerDefault(ctx context.Context, in *McpServerDefaultInput, opts ...grpc.CallOption) (*McpServersReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(McpServersReply)
+	err := c.cc.Invoke(ctx, Sessions_SetMcpServerDefault_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) SetProjectMcpServer(ctx context.Context, in *ProjectMcpServerInput, opts ...grpc.CallOption) (*McpServersReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(McpServersReply)
+	err := c.cc.Invoke(ctx, Sessions_SetProjectMcpServer_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) ClearProjectMcpServer(ctx context.Context, in *ClearProjectMcpServerInput, opts ...grpc.CallOption) (*McpServersReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(McpServersReply)
+	err := c.cc.Invoke(ctx, Sessions_ClearProjectMcpServer_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) McpSessions(ctx context.Context, in *McpSessionsInput, opts ...grpc.CallOption) (*McpSessionsReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(McpSessionsReply)
+	err := c.cc.Invoke(ctx, Sessions_McpSessions_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) SyncMcpServers(ctx context.Context, in *SyncMcpServersInput, opts ...grpc.CallOption) (*Receipt, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Receipt)
+	err := c.cc.Invoke(ctx, Sessions_SyncMcpServers_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) McpLogs(ctx context.Context, in *McpLogsInput, opts ...grpc.CallOption) (*McpLogsReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(McpLogsReply)
+	err := c.cc.Invoke(ctx, Sessions_McpLogs_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) RestartMcp(ctx context.Context, in *RestartMcpInput, opts ...grpc.CallOption) (*Receipt, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Receipt)
+	err := c.cc.Invoke(ctx, Sessions_RestartMcp_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SessionsServer is the server API for Sessions service.
 // All implementations must embed UnimplementedSessionsServer
 // for forward compatibility.
@@ -755,6 +875,16 @@ type SessionsServer interface {
 	ClearProjectSkill(context.Context, *ClearProjectSkillInput) (*SkillsReply, error)
 	SyncSkills(context.Context, *SyncSkillsInput) (*Receipt, error)
 	RenderDevcontainer(context.Context, *RenderDevcontainerInput) (*RenderDevcontainerReply, error)
+	GetMcpServers(context.Context, *McpServersInput) (*McpServersReply, error)
+	PutMcpServer(context.Context, *PutMcpServerInput) (*McpServersReply, error)
+	RemoveMcpServer(context.Context, *McpServerInput) (*McpServersReply, error)
+	SetMcpServerDefault(context.Context, *McpServerDefaultInput) (*McpServersReply, error)
+	SetProjectMcpServer(context.Context, *ProjectMcpServerInput) (*McpServersReply, error)
+	ClearProjectMcpServer(context.Context, *ClearProjectMcpServerInput) (*McpServersReply, error)
+	McpSessions(context.Context, *McpSessionsInput) (*McpSessionsReply, error)
+	SyncMcpServers(context.Context, *SyncMcpServersInput) (*Receipt, error)
+	McpLogs(context.Context, *McpLogsInput) (*McpLogsReply, error)
+	RestartMcp(context.Context, *RestartMcpInput) (*Receipt, error)
 	mustEmbedUnimplementedSessionsServer()
 }
 
@@ -923,6 +1053,36 @@ func (UnimplementedSessionsServer) SyncSkills(context.Context, *SyncSkillsInput)
 }
 func (UnimplementedSessionsServer) RenderDevcontainer(context.Context, *RenderDevcontainerInput) (*RenderDevcontainerReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method RenderDevcontainer not implemented")
+}
+func (UnimplementedSessionsServer) GetMcpServers(context.Context, *McpServersInput) (*McpServersReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetMcpServers not implemented")
+}
+func (UnimplementedSessionsServer) PutMcpServer(context.Context, *PutMcpServerInput) (*McpServersReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method PutMcpServer not implemented")
+}
+func (UnimplementedSessionsServer) RemoveMcpServer(context.Context, *McpServerInput) (*McpServersReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method RemoveMcpServer not implemented")
+}
+func (UnimplementedSessionsServer) SetMcpServerDefault(context.Context, *McpServerDefaultInput) (*McpServersReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetMcpServerDefault not implemented")
+}
+func (UnimplementedSessionsServer) SetProjectMcpServer(context.Context, *ProjectMcpServerInput) (*McpServersReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetProjectMcpServer not implemented")
+}
+func (UnimplementedSessionsServer) ClearProjectMcpServer(context.Context, *ClearProjectMcpServerInput) (*McpServersReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method ClearProjectMcpServer not implemented")
+}
+func (UnimplementedSessionsServer) McpSessions(context.Context, *McpSessionsInput) (*McpSessionsReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method McpSessions not implemented")
+}
+func (UnimplementedSessionsServer) SyncMcpServers(context.Context, *SyncMcpServersInput) (*Receipt, error) {
+	return nil, status.Error(codes.Unimplemented, "method SyncMcpServers not implemented")
+}
+func (UnimplementedSessionsServer) McpLogs(context.Context, *McpLogsInput) (*McpLogsReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method McpLogs not implemented")
+}
+func (UnimplementedSessionsServer) RestartMcp(context.Context, *RestartMcpInput) (*Receipt, error) {
+	return nil, status.Error(codes.Unimplemented, "method RestartMcp not implemented")
 }
 func (UnimplementedSessionsServer) mustEmbedUnimplementedSessionsServer() {}
 func (UnimplementedSessionsServer) testEmbeddedByValue()                  {}
@@ -1878,6 +2038,186 @@ func _Sessions_RenderDevcontainer_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Sessions_GetMcpServers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(McpServersInput)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).GetMcpServers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_GetMcpServers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).GetMcpServers(ctx, req.(*McpServersInput))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_PutMcpServer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PutMcpServerInput)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).PutMcpServer(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_PutMcpServer_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).PutMcpServer(ctx, req.(*PutMcpServerInput))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_RemoveMcpServer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(McpServerInput)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).RemoveMcpServer(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_RemoveMcpServer_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).RemoveMcpServer(ctx, req.(*McpServerInput))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_SetMcpServerDefault_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(McpServerDefaultInput)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).SetMcpServerDefault(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_SetMcpServerDefault_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).SetMcpServerDefault(ctx, req.(*McpServerDefaultInput))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_SetProjectMcpServer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProjectMcpServerInput)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).SetProjectMcpServer(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_SetProjectMcpServer_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).SetProjectMcpServer(ctx, req.(*ProjectMcpServerInput))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_ClearProjectMcpServer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ClearProjectMcpServerInput)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).ClearProjectMcpServer(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_ClearProjectMcpServer_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).ClearProjectMcpServer(ctx, req.(*ClearProjectMcpServerInput))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_McpSessions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(McpSessionsInput)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).McpSessions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_McpSessions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).McpSessions(ctx, req.(*McpSessionsInput))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_SyncMcpServers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SyncMcpServersInput)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).SyncMcpServers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_SyncMcpServers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).SyncMcpServers(ctx, req.(*SyncMcpServersInput))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_McpLogs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(McpLogsInput)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).McpLogs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_McpLogs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).McpLogs(ctx, req.(*McpLogsInput))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_RestartMcp_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RestartMcpInput)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).RestartMcp(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_RestartMcp_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).RestartMcp(ctx, req.(*RestartMcpInput))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Sessions_ServiceDesc is the grpc.ServiceDesc for Sessions service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -2084,6 +2424,46 @@ var Sessions_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RenderDevcontainer",
 			Handler:    _Sessions_RenderDevcontainer_Handler,
+		},
+		{
+			MethodName: "GetMcpServers",
+			Handler:    _Sessions_GetMcpServers_Handler,
+		},
+		{
+			MethodName: "PutMcpServer",
+			Handler:    _Sessions_PutMcpServer_Handler,
+		},
+		{
+			MethodName: "RemoveMcpServer",
+			Handler:    _Sessions_RemoveMcpServer_Handler,
+		},
+		{
+			MethodName: "SetMcpServerDefault",
+			Handler:    _Sessions_SetMcpServerDefault_Handler,
+		},
+		{
+			MethodName: "SetProjectMcpServer",
+			Handler:    _Sessions_SetProjectMcpServer_Handler,
+		},
+		{
+			MethodName: "ClearProjectMcpServer",
+			Handler:    _Sessions_ClearProjectMcpServer_Handler,
+		},
+		{
+			MethodName: "McpSessions",
+			Handler:    _Sessions_McpSessions_Handler,
+		},
+		{
+			MethodName: "SyncMcpServers",
+			Handler:    _Sessions_SyncMcpServers_Handler,
+		},
+		{
+			MethodName: "McpLogs",
+			Handler:    _Sessions_McpLogs_Handler,
+		},
+		{
+			MethodName: "RestartMcp",
+			Handler:    _Sessions_RestartMcp_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

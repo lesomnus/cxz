@@ -8,16 +8,16 @@ import (
 func TestDefaultsAndProjectOverrides(t *testing.T) {
 	root := t.TempDir()
 	for _, id := range []string{"A", "B", "C"} {
-		_, e := Apply(root, Request{Action: "put", ID: id, Server: &Server{Name: id, Kind: "stdio", Command: "test", Enabled: id != "C"}})
+		_, e := Put(root, id, Server{Name: id, Kind: "stdio", Command: "test", Enabled: id != "C"})
 		if e != nil {
 			t.Fatal(e)
 		}
 	}
-	off, on := false, true
-	for _, r := range []Request{{Action: "enable", ID: "B", Project: "P", Enabled: &off}, {Action: "enable", ID: "C", Project: "P", Enabled: &on}} {
-		if _, e := Apply(root, r); e != nil {
-			t.Fatal(e)
-		}
+	if _, e := SetProject(root, "P", "B", false); e != nil {
+		t.Fatal(e)
+	}
+	if _, e := SetProject(root, "P", "C", true); e != nil {
+		t.Fatal(e)
 	}
 	check := func(project string, want ...string) {
 		t.Helper()
@@ -37,15 +37,21 @@ func TestDefaultsAndProjectOverrides(t *testing.T) {
 	}
 	check("P", "A", "C")
 	check("Q", "A", "B")
-	_, _ = Apply(root, Request{Action: "enable", ID: "A", Enabled: &off})
+	if _, e := SetDefault(root, "A", false); e != nil {
+		t.Fatal(e)
+	}
 	check("P", "C")
 	check("Q", "B")
-	_, _ = Apply(root, Request{Action: "enable", ID: "B", Project: "P"})
+	// Restoring the default is its own call now; it used to be the same verb
+	// with the on/off left out.
+	if _, e := ClearProject(root, "P", "B"); e != nil {
+		t.Fatal(e)
+	}
 	check("P", "B", "C")
 }
 func TestConcurrentOverridesAndSecretRedaction(t *testing.T) {
 	root := t.TempDir()
-	_, e := Apply(root, Request{Action: "put", ID: "a", Server: &Server{Name: "a", Kind: "stdio", Command: "test", Env: map[string]string{"TOKEN": "secret"}}})
+	_, e := Put(root, "a", Server{Name: "a", Kind: "stdio", Command: "test", Env: map[string]string{"TOKEN": "secret"}})
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -54,8 +60,7 @@ func TestConcurrentOverridesAndSecretRedaction(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			on := true
-			if _, e := Apply(root, Request{Action: "enable", ID: "a", Project: id, Enabled: &on}); e != nil {
+			if _, e := SetProject(root, id, "a", true); e != nil {
 				t.Error(e)
 			}
 		}()

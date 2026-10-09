@@ -11025,6 +11025,223 @@ func (b0 SessionPurgeTarget_builder) Build() *SessionPurgeTarget {
 	return m0
 }
 
+type SessionMcpRequest struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ref         *SessionRef            `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Id          *string                `protobuf:"bytes,2,opt,name=id"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *SessionMcpRequest) Reset() {
+	*x = SessionMcpRequest{}
+	mi := &file_cxz_session_svc_g_proto_msgTypes[63]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SessionMcpRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SessionMcpRequest) ProtoMessage() {}
+
+func (x *SessionMcpRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_session_svc_g_proto_msgTypes[63]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SessionMcpRequest) GetRef() *SessionRef {
+	if x != nil {
+		return x.xxx_hidden_Ref
+	}
+	return nil
+}
+
+func (x *SessionMcpRequest) GetId() string {
+	if x != nil {
+		if x.xxx_hidden_Id != nil {
+			return *x.xxx_hidden_Id
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *SessionMcpRequest) SetRef(v *SessionRef) {
+	x.xxx_hidden_Ref = v
+}
+
+func (x *SessionMcpRequest) SetId(v string) {
+	x.xxx_hidden_Id = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 2)
+}
+
+func (x *SessionMcpRequest) HasRef() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Ref != nil
+}
+
+func (x *SessionMcpRequest) HasId() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
+}
+
+func (x *SessionMcpRequest) ClearRef() {
+	x.xxx_hidden_Ref = nil
+}
+
+func (x *SessionMcpRequest) ClearId() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_Id = nil
+}
+
+type SessionMcpRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Ref *SessionRef
+	Id  *string
+}
+
+func (b0 SessionMcpRequest_builder) Build() *SessionMcpRequest {
+	m0 := &SessionMcpRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Ref = b.Ref
+	if b.Id != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 2)
+		x.xxx_hidden_Id = b.Id
+	}
+	return m0
+}
+
+// Explicit environment values are removed from the text before it leaves the
+// project, because a server that prints its own configuration on startup would
+// otherwise hand back the secret it was given.
+type SessionMcpLogsReply struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Text        *string                `protobuf:"bytes,1,opt,name=text"`
+	xxx_hidden_Message     *string                `protobuf:"bytes,2,opt,name=message"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *SessionMcpLogsReply) Reset() {
+	*x = SessionMcpLogsReply{}
+	mi := &file_cxz_session_svc_g_proto_msgTypes[64]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SessionMcpLogsReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SessionMcpLogsReply) ProtoMessage() {}
+
+func (x *SessionMcpLogsReply) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_session_svc_g_proto_msgTypes[64]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SessionMcpLogsReply) GetText() string {
+	if x != nil {
+		if x.xxx_hidden_Text != nil {
+			return *x.xxx_hidden_Text
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *SessionMcpLogsReply) GetMessage() string {
+	if x != nil {
+		if x.xxx_hidden_Message != nil {
+			return *x.xxx_hidden_Message
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *SessionMcpLogsReply) SetText(v string) {
+	x.xxx_hidden_Text = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 2)
+}
+
+func (x *SessionMcpLogsReply) SetMessage(v string) {
+	x.xxx_hidden_Message = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 2)
+}
+
+func (x *SessionMcpLogsReply) HasText() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *SessionMcpLogsReply) HasMessage() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
+}
+
+func (x *SessionMcpLogsReply) ClearText() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_Text = nil
+}
+
+func (x *SessionMcpLogsReply) ClearMessage() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_Message = nil
+}
+
+type SessionMcpLogsReply_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Text    *string
+	Message *string
+}
+
+func (b0 SessionMcpLogsReply_builder) Build() *SessionMcpLogsReply {
+	m0 := &SessionMcpLogsReply{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.Text != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 2)
+		x.xxx_hidden_Text = b.Text
+	}
+	if b.Message != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 2)
+		x.xxx_hidden_Message = b.Message
+	}
+	return m0
+}
+
 var File_cxz_session_svc_g_proto protoreflect.FileDescriptor
 
 const file_cxz_session_svc_g_proto_rawDesc = "" +
@@ -11409,7 +11626,13 @@ const file_cxz_session_svc_g_proto_rawDesc = "" +
 	"\x04kind\x18\x01 \x01(\tR\x04kind\x12\x12\n" +
 	"\x04path\x18\x02 \x01(\tR\x04path\x12\x14\n" +
 	"\x05files\x18\x03 \x01(\x05R\x05files\x12\x14\n" +
-	"\x05bytes\x18\x04 \x01(\x03R\x05bytes2\xb5\x10\n" +
+	"\x05bytes\x18\x04 \x01(\x03R\x05bytes\"F\n" +
+	"\x11SessionMcpRequest\x12!\n" +
+	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.SessionRefR\x03ref\x12\x0e\n" +
+	"\x02id\x18\x02 \x01(\tR\x02id\"C\n" +
+	"\x13SessionMcpLogsReply\x12\x12\n" +
+	"\x04text\x18\x01 \x01(\tR\x04text\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage2\xad\x11\n" +
 	"\x0eSessionService\x12+\n" +
 	"\x03Add\x12\x16.cxz.SessionAddRequest\x1a\f.cxz.Session\x12+\n" +
 	"\x03Get\x12\x16.cxz.SessionGetRequest\x1a\f.cxz.Session\x12/\n" +
@@ -11450,9 +11673,12 @@ const file_cxz_session_svc_g_proto_rawDesc = "" +
 	"\tAuxEvents\x12\x15.cxz.AuxStatusRequest\x1a\r.cxz.AuxState0\x01\x121\n" +
 	"\tAuxPrefer\x12\x15.cxz.AuxPreferRequest\x1a\r.cxz.AuxState\x121\n" +
 	"\tAuxCancel\x12\x15.cxz.AuxCancelRequest\x1a\r.cxz.AuxState\x129\n" +
-	"\x05Purge\x12\x18.cxz.SessionPurgeRequest\x1a\x16.cxz.SessionPurgeReplyB\"Z github.com/lesomnus/cxz/resourceb\beditionsp\xe8\a"
+	"\x05Purge\x12\x18.cxz.SessionPurgeRequest\x1a\x16.cxz.SessionPurgeReply\x12;\n" +
+	"\aMcpLogs\x12\x16.cxz.SessionMcpRequest\x1a\x18.cxz.SessionMcpLogsReply\x129\n" +
+	"\n" +
+	"RestartMcp\x12\x16.cxz.SessionMcpRequest\x1a\x13.cxz.SessionReceiptB\"Z github.com/lesomnus/cxz/resourceb\beditionsp\xe8\a"
 
-var file_cxz_session_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 63)
+var file_cxz_session_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 65)
 var file_cxz_session_svc_g_proto_goTypes = []any{
 	(*SessionAddRequest)(nil),          // 0: cxz.SessionAddRequest
 	(*SessionGetRequest)(nil),          // 1: cxz.SessionGetRequest
@@ -11517,43 +11743,45 @@ var file_cxz_session_svc_g_proto_goTypes = []any{
 	(*SessionPurgeRequest)(nil),        // 60: cxz.SessionPurgeRequest
 	(*SessionPurgeReply)(nil),          // 61: cxz.SessionPurgeReply
 	(*SessionPurgeTarget)(nil),         // 62: cxz.SessionPurgeTarget
-	(*ProjectRef)(nil),                 // 63: cxz.ProjectRef
-	(*timestamppb.Timestamp)(nil),      // 64: google.protobuf.Timestamp
-	(*SessionStatus)(nil),              // 65: cxz.SessionStatus
-	(*AccountRef)(nil),                 // 66: cxz.AccountRef
-	(*AuthBindingRef)(nil),             // 67: cxz.AuthBindingRef
-	(*ProjectSelect)(nil),              // 68: cxz.ProjectSelect
-	(*AccountSelect)(nil),              // 69: cxz.AccountSelect
-	(*AuthBindingSelect)(nil),          // 70: cxz.AuthBindingSelect
-	(*patchpb.Patch)(nil),              // 71: patch.Patch
-	(*Session)(nil),                    // 72: cxz.Session
-	(*SessionEvent)(nil),               // 73: cxz.SessionEvent
-	(AuxKind)(0),                       // 74: cxz.AuxKind
+	(*SessionMcpRequest)(nil),          // 63: cxz.SessionMcpRequest
+	(*SessionMcpLogsReply)(nil),        // 64: cxz.SessionMcpLogsReply
+	(*ProjectRef)(nil),                 // 65: cxz.ProjectRef
+	(*timestamppb.Timestamp)(nil),      // 66: google.protobuf.Timestamp
+	(*SessionStatus)(nil),              // 67: cxz.SessionStatus
+	(*AccountRef)(nil),                 // 68: cxz.AccountRef
+	(*AuthBindingRef)(nil),             // 69: cxz.AuthBindingRef
+	(*ProjectSelect)(nil),              // 70: cxz.ProjectSelect
+	(*AccountSelect)(nil),              // 71: cxz.AccountSelect
+	(*AuthBindingSelect)(nil),          // 72: cxz.AuthBindingSelect
+	(*patchpb.Patch)(nil),              // 73: patch.Patch
+	(*Session)(nil),                    // 74: cxz.Session
+	(*SessionEvent)(nil),               // 75: cxz.SessionEvent
+	(AuxKind)(0),                       // 76: cxz.AuxKind
 }
 var file_cxz_session_svc_g_proto_depIdxs = []int32{
-	63,  // 0: cxz.SessionAddRequest.project:type_name -> cxz.ProjectRef
-	64,  // 1: cxz.SessionAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	65,  // 2: cxz.SessionAddRequest.status:type_name -> cxz.SessionStatus
-	66,  // 3: cxz.SessionAddRequest.account:type_name -> cxz.AccountRef
-	67,  // 4: cxz.SessionAddRequest.auth_binding:type_name -> cxz.AuthBindingRef
+	65,  // 0: cxz.SessionAddRequest.project:type_name -> cxz.ProjectRef
+	66,  // 1: cxz.SessionAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	67,  // 2: cxz.SessionAddRequest.status:type_name -> cxz.SessionStatus
+	68,  // 3: cxz.SessionAddRequest.account:type_name -> cxz.AccountRef
+	69,  // 4: cxz.SessionAddRequest.auth_binding:type_name -> cxz.AuthBindingRef
 	2,   // 5: cxz.SessionGetRequest.ref:type_name -> cxz.SessionRef
 	3,   // 6: cxz.SessionGetRequest.select:type_name -> cxz.SessionSelect
-	68,  // 7: cxz.SessionSelect.project:type_name -> cxz.ProjectSelect
-	69,  // 8: cxz.SessionSelect.account:type_name -> cxz.AccountSelect
-	70,  // 9: cxz.SessionSelect.auth_binding:type_name -> cxz.AuthBindingSelect
+	70,  // 7: cxz.SessionSelect.project:type_name -> cxz.ProjectSelect
+	71,  // 8: cxz.SessionSelect.account:type_name -> cxz.AccountSelect
+	72,  // 9: cxz.SessionSelect.auth_binding:type_name -> cxz.AuthBindingSelect
 	2,   // 10: cxz.SessionPatchRequest.ref:type_name -> cxz.SessionRef
-	64,  // 11: cxz.SessionPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	65,  // 12: cxz.SessionPatchRequest.status:type_name -> cxz.SessionStatus
+	66,  // 11: cxz.SessionPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	67,  // 12: cxz.SessionPatchRequest.status:type_name -> cxz.SessionStatus
 	2,   // 13: cxz.SessionApplyRequest.ref:type_name -> cxz.SessionRef
-	71,  // 14: cxz.SessionApplyRequest.patch:type_name -> patch.Patch
+	73,  // 14: cxz.SessionApplyRequest.patch:type_name -> patch.Patch
 	9,   // 15: cxz.SessionListRequest.filters:type_name -> cxz.SessionFilter
-	72,  // 16: cxz.SessionListResponse.items:type_name -> cxz.Session
+	74,  // 16: cxz.SessionListResponse.items:type_name -> cxz.Session
 	2,   // 17: cxz.SessionFilter.ref:type_name -> cxz.SessionRef
-	63,  // 18: cxz.SessionFilter.project:type_name -> cxz.ProjectRef
+	65,  // 18: cxz.SessionFilter.project:type_name -> cxz.ProjectRef
 	9,   // 19: cxz.SessionWatchRequest.filters:type_name -> cxz.SessionFilter
 	12,  // 20: cxz.SessionWatchResponse.items:type_name -> cxz.SessionWatchItem
-	72,  // 21: cxz.SessionWatchItem.value:type_name -> cxz.Session
-	63,  // 22: cxz.ConversationStatsRequest.project:type_name -> cxz.ProjectRef
+	74,  // 21: cxz.SessionWatchItem.value:type_name -> cxz.Session
+	65,  // 22: cxz.ConversationStatsRequest.project:type_name -> cxz.ProjectRef
 	2,   // 23: cxz.ConversationStatsRequest.session:type_name -> cxz.SessionRef
 	15,  // 24: cxz.ConversationStatsReply.total:type_name -> cxz.ConversationStatsValues
 	16,  // 25: cxz.ConversationStatsReply.days:type_name -> cxz.ConversationStatsDay
@@ -11573,35 +11801,35 @@ var file_cxz_session_svc_g_proto_depIdxs = []int32{
 	2,   // 39: cxz.SessionUpdateRequest.ref:type_name -> cxz.SessionRef
 	2,   // 40: cxz.SessionReplyRequest.ref:type_name -> cxz.SessionRef
 	2,   // 41: cxz.SessionEventsRequest.ref:type_name -> cxz.SessionRef
-	73,  // 42: cxz.SessionEventBatch.events:type_name -> cxz.SessionEvent
+	75,  // 42: cxz.SessionEventBatch.events:type_name -> cxz.SessionEvent
 	2,   // 43: cxz.SessionTranscriptRequest.ref:type_name -> cxz.SessionRef
-	73,  // 44: cxz.SessionTranscriptReply.events:type_name -> cxz.SessionEvent
-	73,  // 45: cxz.SessionTranscriptReply.preceding_input:type_name -> cxz.SessionEvent
-	73,  // 46: cxz.SessionTranscriptReply.metadata:type_name -> cxz.SessionEvent
+	75,  // 44: cxz.SessionTranscriptReply.events:type_name -> cxz.SessionEvent
+	75,  // 45: cxz.SessionTranscriptReply.preceding_input:type_name -> cxz.SessionEvent
+	75,  // 46: cxz.SessionTranscriptReply.metadata:type_name -> cxz.SessionEvent
 	2,   // 47: cxz.SessionEventDetailsRequest.ref:type_name -> cxz.SessionRef
 	2,   // 48: cxz.SessionBackgroundRequest.ref:type_name -> cxz.SessionRef
 	2,   // 49: cxz.SessionModelsRequest.ref:type_name -> cxz.SessionRef
-	64,  // 50: cxz.SessionSearchRequest.since:type_name -> google.protobuf.Timestamp
-	64,  // 51: cxz.SessionSearchRequest.until:type_name -> google.protobuf.Timestamp
+	66,  // 50: cxz.SessionSearchRequest.since:type_name -> google.protobuf.Timestamp
+	66,  // 51: cxz.SessionSearchRequest.until:type_name -> google.protobuf.Timestamp
 	46,  // 52: cxz.SessionSearchReply.visit:type_name -> cxz.SessionSearchVisit
 	48,  // 53: cxz.SessionSearchReply.progress:type_name -> cxz.SessionSearchProgress
 	49,  // 54: cxz.SessionSearchReply.summary:type_name -> cxz.SessionSearchSummary
 	47,  // 55: cxz.SessionSearchVisit.hits:type_name -> cxz.SessionSearchHit
-	64,  // 56: cxz.SessionSearchSummary.since:type_name -> google.protobuf.Timestamp
-	64,  // 57: cxz.SessionSearchSummary.until:type_name -> google.protobuf.Timestamp
+	66,  // 56: cxz.SessionSearchSummary.since:type_name -> google.protobuf.Timestamp
+	66,  // 57: cxz.SessionSearchSummary.until:type_name -> google.protobuf.Timestamp
 	2,   // 58: cxz.AuxRunRequest.ref:type_name -> cxz.SessionRef
-	74,  // 59: cxz.AuxRunRequest.kinds:type_name -> cxz.AuxKind
+	76,  // 59: cxz.AuxRunRequest.kinds:type_name -> cxz.AuxKind
 	52,  // 60: cxz.AuxState.summaries:type_name -> cxz.AuxSummary
 	53,  // 61: cxz.AuxState.current:type_name -> cxz.Aux
 	53,  // 62: cxz.AuxState.recent:type_name -> cxz.Aux
 	56,  // 63: cxz.AuxState.preferences:type_name -> cxz.AuxPreference
-	74,  // 64: cxz.Aux.kinds:type_name -> cxz.AuxKind
+	76,  // 64: cxz.Aux.kinds:type_name -> cxz.AuxKind
 	54,  // 65: cxz.Aux.results:type_name -> cxz.AuxResult
 	55,  // 66: cxz.Aux.usage:type_name -> cxz.AuxUsage
-	74,  // 67: cxz.AuxResult.kind:type_name -> cxz.AuxKind
-	74,  // 68: cxz.AuxUsage.kind:type_name -> cxz.AuxKind
-	74,  // 69: cxz.AuxPreference.kind:type_name -> cxz.AuxKind
-	64,  // 70: cxz.AuxPreference.since:type_name -> google.protobuf.Timestamp
+	76,  // 67: cxz.AuxResult.kind:type_name -> cxz.AuxKind
+	76,  // 68: cxz.AuxUsage.kind:type_name -> cxz.AuxKind
+	76,  // 69: cxz.AuxPreference.kind:type_name -> cxz.AuxKind
+	66,  // 70: cxz.AuxPreference.since:type_name -> google.protobuf.Timestamp
 	2,   // 71: cxz.AuxStatusRequest.ref:type_name -> cxz.SessionRef
 	2,   // 72: cxz.AuxPreferRequest.ref:type_name -> cxz.SessionRef
 	56,  // 73: cxz.AuxPreferRequest.preferences:type_name -> cxz.AuxPreference
@@ -11609,83 +11837,88 @@ var file_cxz_session_svc_g_proto_depIdxs = []int32{
 	2,   // 75: cxz.SessionPurgeRequest.ref:type_name -> cxz.SessionRef
 	2,   // 76: cxz.SessionPurgeReply.ref:type_name -> cxz.SessionRef
 	62,  // 77: cxz.SessionPurgeReply.targets:type_name -> cxz.SessionPurgeTarget
-	0,   // 78: cxz.SessionService.Add:input_type -> cxz.SessionAddRequest
-	1,   // 79: cxz.SessionService.Get:input_type -> cxz.SessionGetRequest
-	4,   // 80: cxz.SessionService.Patch:input_type -> cxz.SessionPatchRequest
-	5,   // 81: cxz.SessionService.Apply:input_type -> cxz.SessionApplyRequest
-	2,   // 82: cxz.SessionService.Erase:input_type -> cxz.SessionRef
-	7,   // 83: cxz.SessionService.List:input_type -> cxz.SessionListRequest
-	10,  // 84: cxz.SessionService.Watch:input_type -> cxz.SessionWatchRequest
-	13,  // 85: cxz.SessionService.ConversationStats:input_type -> cxz.ConversationStatsRequest
-	2,   // 86: cxz.SessionService.Restore:input_type -> cxz.SessionRef
-	18,  // 87: cxz.SessionService.Resume:input_type -> cxz.SessionControl
-	18,  // 88: cxz.SessionService.Stop:input_type -> cxz.SessionControl
-	18,  // 89: cxz.SessionService.Interrupt:input_type -> cxz.SessionControl
-	20,  // 90: cxz.SessionService.CopyMemory:input_type -> cxz.SessionCopyMemoryRequest
-	21,  // 91: cxz.SessionService.Library:input_type -> cxz.SessionLibraryRequest
-	23,  // 92: cxz.SessionService.Memory:input_type -> cxz.SessionMemoryRequest
-	24,  // 93: cxz.SessionService.Logs:input_type -> cxz.SessionLogsRequest
-	26,  // 94: cxz.SessionService.Permission:input_type -> cxz.SessionPermissionRequest
-	27,  // 95: cxz.SessionService.Send:input_type -> cxz.SessionSendRequest
-	28,  // 96: cxz.SessionService.Attach:input_type -> cxz.SessionAttachRequest
-	30,  // 97: cxz.SessionService.Upload:input_type -> cxz.SessionUploadRequest
-	31,  // 98: cxz.SessionService.Activity:input_type -> cxz.SessionActivityRequest
-	32,  // 99: cxz.SessionService.UpdateAgent:input_type -> cxz.SessionUpdateRequest
-	34,  // 100: cxz.SessionService.Reply:input_type -> cxz.SessionReplyRequest
-	35,  // 101: cxz.SessionService.History:input_type -> cxz.SessionEventsRequest
-	37,  // 102: cxz.SessionService.Transcript:input_type -> cxz.SessionTranscriptRequest
-	39,  // 103: cxz.SessionService.EventDetails:input_type -> cxz.SessionEventDetailsRequest
-	40,  // 104: cxz.SessionService.Background:input_type -> cxz.SessionBackgroundRequest
-	42,  // 105: cxz.SessionService.Models:input_type -> cxz.SessionModelsRequest
-	35,  // 106: cxz.SessionService.Events:input_type -> cxz.SessionEventsRequest
-	44,  // 107: cxz.SessionService.Search:input_type -> cxz.SessionSearchRequest
-	50,  // 108: cxz.SessionService.AuxRun:input_type -> cxz.AuxRunRequest
-	57,  // 109: cxz.SessionService.AuxStatus:input_type -> cxz.AuxStatusRequest
-	57,  // 110: cxz.SessionService.AuxEvents:input_type -> cxz.AuxStatusRequest
-	58,  // 111: cxz.SessionService.AuxPrefer:input_type -> cxz.AuxPreferRequest
-	59,  // 112: cxz.SessionService.AuxCancel:input_type -> cxz.AuxCancelRequest
-	60,  // 113: cxz.SessionService.Purge:input_type -> cxz.SessionPurgeRequest
-	72,  // 114: cxz.SessionService.Add:output_type -> cxz.Session
-	72,  // 115: cxz.SessionService.Get:output_type -> cxz.Session
-	72,  // 116: cxz.SessionService.Patch:output_type -> cxz.Session
-	72,  // 117: cxz.SessionService.Apply:output_type -> cxz.Session
-	6,   // 118: cxz.SessionService.Erase:output_type -> cxz.SessionEraseResponse
-	8,   // 119: cxz.SessionService.List:output_type -> cxz.SessionListResponse
-	11,  // 120: cxz.SessionService.Watch:output_type -> cxz.SessionWatchResponse
-	14,  // 121: cxz.SessionService.ConversationStats:output_type -> cxz.ConversationStatsReply
-	72,  // 122: cxz.SessionService.Restore:output_type -> cxz.Session
-	72,  // 123: cxz.SessionService.Resume:output_type -> cxz.Session
-	72,  // 124: cxz.SessionService.Stop:output_type -> cxz.Session
-	19,  // 125: cxz.SessionService.Interrupt:output_type -> cxz.SessionReceipt
-	19,  // 126: cxz.SessionService.CopyMemory:output_type -> cxz.SessionReceipt
-	22,  // 127: cxz.SessionService.Library:output_type -> cxz.SessionMemoryReply
-	22,  // 128: cxz.SessionService.Memory:output_type -> cxz.SessionMemoryReply
-	25,  // 129: cxz.SessionService.Logs:output_type -> cxz.SessionLogsReply
-	19,  // 130: cxz.SessionService.Permission:output_type -> cxz.SessionReceipt
-	19,  // 131: cxz.SessionService.Send:output_type -> cxz.SessionReceipt
-	29,  // 132: cxz.SessionService.Attach:output_type -> cxz.SessionAttachment
-	29,  // 133: cxz.SessionService.Upload:output_type -> cxz.SessionAttachment
-	19,  // 134: cxz.SessionService.Activity:output_type -> cxz.SessionReceipt
-	33,  // 135: cxz.SessionService.UpdateAgent:output_type -> cxz.SessionUpdateStatus
-	19,  // 136: cxz.SessionService.Reply:output_type -> cxz.SessionReceipt
-	36,  // 137: cxz.SessionService.History:output_type -> cxz.SessionEventBatch
-	38,  // 138: cxz.SessionService.Transcript:output_type -> cxz.SessionTranscriptReply
-	36,  // 139: cxz.SessionService.EventDetails:output_type -> cxz.SessionEventBatch
-	41,  // 140: cxz.SessionService.Background:output_type -> cxz.SessionBackgroundReply
-	43,  // 141: cxz.SessionService.Models:output_type -> cxz.SessionModelsReply
-	73,  // 142: cxz.SessionService.Events:output_type -> cxz.SessionEvent
-	45,  // 143: cxz.SessionService.Search:output_type -> cxz.SessionSearchReply
-	51,  // 144: cxz.SessionService.AuxRun:output_type -> cxz.AuxState
-	51,  // 145: cxz.SessionService.AuxStatus:output_type -> cxz.AuxState
-	51,  // 146: cxz.SessionService.AuxEvents:output_type -> cxz.AuxState
-	51,  // 147: cxz.SessionService.AuxPrefer:output_type -> cxz.AuxState
-	51,  // 148: cxz.SessionService.AuxCancel:output_type -> cxz.AuxState
-	61,  // 149: cxz.SessionService.Purge:output_type -> cxz.SessionPurgeReply
-	114, // [114:150] is the sub-list for method output_type
-	78,  // [78:114] is the sub-list for method input_type
-	78,  // [78:78] is the sub-list for extension type_name
-	78,  // [78:78] is the sub-list for extension extendee
-	0,   // [0:78] is the sub-list for field type_name
+	2,   // 78: cxz.SessionMcpRequest.ref:type_name -> cxz.SessionRef
+	0,   // 79: cxz.SessionService.Add:input_type -> cxz.SessionAddRequest
+	1,   // 80: cxz.SessionService.Get:input_type -> cxz.SessionGetRequest
+	4,   // 81: cxz.SessionService.Patch:input_type -> cxz.SessionPatchRequest
+	5,   // 82: cxz.SessionService.Apply:input_type -> cxz.SessionApplyRequest
+	2,   // 83: cxz.SessionService.Erase:input_type -> cxz.SessionRef
+	7,   // 84: cxz.SessionService.List:input_type -> cxz.SessionListRequest
+	10,  // 85: cxz.SessionService.Watch:input_type -> cxz.SessionWatchRequest
+	13,  // 86: cxz.SessionService.ConversationStats:input_type -> cxz.ConversationStatsRequest
+	2,   // 87: cxz.SessionService.Restore:input_type -> cxz.SessionRef
+	18,  // 88: cxz.SessionService.Resume:input_type -> cxz.SessionControl
+	18,  // 89: cxz.SessionService.Stop:input_type -> cxz.SessionControl
+	18,  // 90: cxz.SessionService.Interrupt:input_type -> cxz.SessionControl
+	20,  // 91: cxz.SessionService.CopyMemory:input_type -> cxz.SessionCopyMemoryRequest
+	21,  // 92: cxz.SessionService.Library:input_type -> cxz.SessionLibraryRequest
+	23,  // 93: cxz.SessionService.Memory:input_type -> cxz.SessionMemoryRequest
+	24,  // 94: cxz.SessionService.Logs:input_type -> cxz.SessionLogsRequest
+	26,  // 95: cxz.SessionService.Permission:input_type -> cxz.SessionPermissionRequest
+	27,  // 96: cxz.SessionService.Send:input_type -> cxz.SessionSendRequest
+	28,  // 97: cxz.SessionService.Attach:input_type -> cxz.SessionAttachRequest
+	30,  // 98: cxz.SessionService.Upload:input_type -> cxz.SessionUploadRequest
+	31,  // 99: cxz.SessionService.Activity:input_type -> cxz.SessionActivityRequest
+	32,  // 100: cxz.SessionService.UpdateAgent:input_type -> cxz.SessionUpdateRequest
+	34,  // 101: cxz.SessionService.Reply:input_type -> cxz.SessionReplyRequest
+	35,  // 102: cxz.SessionService.History:input_type -> cxz.SessionEventsRequest
+	37,  // 103: cxz.SessionService.Transcript:input_type -> cxz.SessionTranscriptRequest
+	39,  // 104: cxz.SessionService.EventDetails:input_type -> cxz.SessionEventDetailsRequest
+	40,  // 105: cxz.SessionService.Background:input_type -> cxz.SessionBackgroundRequest
+	42,  // 106: cxz.SessionService.Models:input_type -> cxz.SessionModelsRequest
+	35,  // 107: cxz.SessionService.Events:input_type -> cxz.SessionEventsRequest
+	44,  // 108: cxz.SessionService.Search:input_type -> cxz.SessionSearchRequest
+	50,  // 109: cxz.SessionService.AuxRun:input_type -> cxz.AuxRunRequest
+	57,  // 110: cxz.SessionService.AuxStatus:input_type -> cxz.AuxStatusRequest
+	57,  // 111: cxz.SessionService.AuxEvents:input_type -> cxz.AuxStatusRequest
+	58,  // 112: cxz.SessionService.AuxPrefer:input_type -> cxz.AuxPreferRequest
+	59,  // 113: cxz.SessionService.AuxCancel:input_type -> cxz.AuxCancelRequest
+	60,  // 114: cxz.SessionService.Purge:input_type -> cxz.SessionPurgeRequest
+	63,  // 115: cxz.SessionService.McpLogs:input_type -> cxz.SessionMcpRequest
+	63,  // 116: cxz.SessionService.RestartMcp:input_type -> cxz.SessionMcpRequest
+	74,  // 117: cxz.SessionService.Add:output_type -> cxz.Session
+	74,  // 118: cxz.SessionService.Get:output_type -> cxz.Session
+	74,  // 119: cxz.SessionService.Patch:output_type -> cxz.Session
+	74,  // 120: cxz.SessionService.Apply:output_type -> cxz.Session
+	6,   // 121: cxz.SessionService.Erase:output_type -> cxz.SessionEraseResponse
+	8,   // 122: cxz.SessionService.List:output_type -> cxz.SessionListResponse
+	11,  // 123: cxz.SessionService.Watch:output_type -> cxz.SessionWatchResponse
+	14,  // 124: cxz.SessionService.ConversationStats:output_type -> cxz.ConversationStatsReply
+	74,  // 125: cxz.SessionService.Restore:output_type -> cxz.Session
+	74,  // 126: cxz.SessionService.Resume:output_type -> cxz.Session
+	74,  // 127: cxz.SessionService.Stop:output_type -> cxz.Session
+	19,  // 128: cxz.SessionService.Interrupt:output_type -> cxz.SessionReceipt
+	19,  // 129: cxz.SessionService.CopyMemory:output_type -> cxz.SessionReceipt
+	22,  // 130: cxz.SessionService.Library:output_type -> cxz.SessionMemoryReply
+	22,  // 131: cxz.SessionService.Memory:output_type -> cxz.SessionMemoryReply
+	25,  // 132: cxz.SessionService.Logs:output_type -> cxz.SessionLogsReply
+	19,  // 133: cxz.SessionService.Permission:output_type -> cxz.SessionReceipt
+	19,  // 134: cxz.SessionService.Send:output_type -> cxz.SessionReceipt
+	29,  // 135: cxz.SessionService.Attach:output_type -> cxz.SessionAttachment
+	29,  // 136: cxz.SessionService.Upload:output_type -> cxz.SessionAttachment
+	19,  // 137: cxz.SessionService.Activity:output_type -> cxz.SessionReceipt
+	33,  // 138: cxz.SessionService.UpdateAgent:output_type -> cxz.SessionUpdateStatus
+	19,  // 139: cxz.SessionService.Reply:output_type -> cxz.SessionReceipt
+	36,  // 140: cxz.SessionService.History:output_type -> cxz.SessionEventBatch
+	38,  // 141: cxz.SessionService.Transcript:output_type -> cxz.SessionTranscriptReply
+	36,  // 142: cxz.SessionService.EventDetails:output_type -> cxz.SessionEventBatch
+	41,  // 143: cxz.SessionService.Background:output_type -> cxz.SessionBackgroundReply
+	43,  // 144: cxz.SessionService.Models:output_type -> cxz.SessionModelsReply
+	75,  // 145: cxz.SessionService.Events:output_type -> cxz.SessionEvent
+	45,  // 146: cxz.SessionService.Search:output_type -> cxz.SessionSearchReply
+	51,  // 147: cxz.SessionService.AuxRun:output_type -> cxz.AuxState
+	51,  // 148: cxz.SessionService.AuxStatus:output_type -> cxz.AuxState
+	51,  // 149: cxz.SessionService.AuxEvents:output_type -> cxz.AuxState
+	51,  // 150: cxz.SessionService.AuxPrefer:output_type -> cxz.AuxState
+	51,  // 151: cxz.SessionService.AuxCancel:output_type -> cxz.AuxState
+	61,  // 152: cxz.SessionService.Purge:output_type -> cxz.SessionPurgeReply
+	64,  // 153: cxz.SessionService.McpLogs:output_type -> cxz.SessionMcpLogsReply
+	19,  // 154: cxz.SessionService.RestartMcp:output_type -> cxz.SessionReceipt
+	117, // [117:155] is the sub-list for method output_type
+	79,  // [79:117] is the sub-list for method input_type
+	79,  // [79:79] is the sub-list for extension type_name
+	79,  // [79:79] is the sub-list for extension extendee
+	0,   // [0:79] is the sub-list for field type_name
 }
 
 func init() { file_cxz_session_svc_g_proto_init() }
@@ -11709,7 +11942,7 @@ func file_cxz_session_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_cxz_session_svc_g_proto_rawDesc), len(file_cxz_session_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   63,
+			NumMessages:   65,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

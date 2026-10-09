@@ -108,8 +108,7 @@ func TestRemoveProjectStateIsolationAndLateEvents(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	off := false
-	if _, err := mcpconfig.Apply(root, mcpconfig.Request{Action: "enable", Project: "p", ID: "cxz_memory", Enabled: &off}); err != nil {
+	if _, err := mcpconfig.SetProject(root, "p", "cxz_memory", false); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := assets.Add(ctx, filepath.Join(root, "assets"), "p", "s", "attachment.txt", 4, strings.NewReader("data")); err != nil {

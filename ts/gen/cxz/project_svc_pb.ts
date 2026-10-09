@@ -18,7 +18,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file cxz/project_svc.g.proto.
  */
 export const file_cxz_project_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChdjeHovcHJvamVjdF9zdmMuZy5wcm90bxIDY3h6IpECChFQcm9qZWN0QWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIUCgVhbGlhcxgEIAEoCUIFqgECCAISEwoEbmFtZRgFIAEoCUIFqgECCAISEwoEZGVzYxgGIAEoCUIFqgECCAISGAoJd29ya3NwYWNlGAggASgJQgWqAQIIAhIVCgZjb25maWcYCSABKAlCBaoBAggCEhkKCnJ1bnRpbWVfaWQYCiABKAlCBaoBAggCEjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASIgoGc3RhdHVzGBAgASgLMhIuY3h6LlByb2plY3RTdGF0dXMSDgoGbGlzdGVkGBEgASgIIlUKEVByb2plY3RHZXRSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLmN4ei5Qcm9qZWN0UmVmEiIKBnNlbGVjdBgCIAEoCzISLmN4ei5Qcm9qZWN0U2VsZWN0Il0KClByb2plY3RSZWYSDAoCaWQYASABKAxIABIPCgVhbGlhcxgEIAEoCUgAEhMKCXdvcmtzcGFjZRgIIAEoCUgAEhQKCnJ1bnRpbWVfaWQYCiABKAlIAEIFCgNrZXki3wEKDVByb2plY3RTZWxlY3QSCwoDYWxsGAEgASgIEg0KBWFsaWFzGAQgASgIEgwKBG5hbWUYBSABKAgSDAoEZGVzYxgGIAEoCBIRCgl3b3Jrc3BhY2UYCCABKAgSDgoGY29uZmlnGAkgASgIEhIKCnJ1bnRpbWVfaWQYCiABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCBIOCgZzdGF0dXMYECABKAgSDgoGbGlzdGVkGBEgASgIIoUCChNQcm9qZWN0UGF0Y2hSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLmN4ei5Qcm9qZWN0UmVmEg0KBWFsaWFzGAggASgJEgwKBG5hbWUYCiABKAkSDAoEZGVzYxgMIAEoCRIOCgZjb25maWcYEiABKAkSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgSIgoGc3RhdHVzGCAgASgLMhIuY3h6LlByb2plY3RTdGF0dXMSEwoLc3RhdHVzX251bGwYISABKAgSDgoGbGlzdGVkGCIgASgIIlAKE1Byb2plY3RBcHBseVJlcXVlc3QSHAoDcmVmGAEgASgLMg8uY3h6LlByb2plY3RSZWYSGwoFcGF0Y2gYAiABKAsyDC5wYXRjaC5QYXRjaCImChRQcm9qZWN0RXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgiZAoSUHJvamVjdExpc3RSZXF1ZXN0EiMKB2ZpbHRlcnMYASADKAsyEi5jeHouUHJvamVjdEZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAIiRwoTUHJvamVjdExpc3RSZXNwb25zZRIbCgVpdGVtcxgBIAMoCzIMLmN4ei5Qcm9qZWN0EhMKBG5leHQYAiABKAlCBaoBAggCIj0KDVByb2plY3RGaWx0ZXISHAoDcmVmGAEgASgLMg8uY3h6LlByb2plY3RSZWYSDgoGbGlzdGVkGAIgASgIIlgKE1Byb2plY3RXYXRjaFJlcXVlc3QSIwoHZmlsdGVycxgBIAMoCzISLmN4ei5Qcm9qZWN0RmlsdGVyEhwKDXNraXBfc25hcHNob3QYAiABKAhCBaoBAggCIjwKFFByb2plY3RXYXRjaFJlc3BvbnNlEiQKBWl0ZW1zGAEgAygLMhUuY3h6LlByb2plY3RXYXRjaEl0ZW0iUgoQUHJvamVjdFdhdGNoSXRlbRIKCgJpZBgBIAEoDBIbCgV2YWx1ZRgCIAEoCzIMLmN4ei5Qcm9qZWN0EhUKBmFjdGlvbhgDIAEoCUIFqgECCAIiOQoUUHJvamVjdFJlbW92ZVJlcXVlc3QSDgoGdGFyZ2V0GAEgASgJEhEKCWNvbmZpcm1lZBgCIAEoCCJEChJQcm9qZWN0UmVtb3ZlUmVwbHkSHQoHcHJvamVjdBgBIAEoCzIMLmN4ei5Qcm9qZWN0Eg8KB3JlbW92ZWQYAiABKAgiZAoWUHJvamVjdFRlcm1pbmFsUmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouUHJvamVjdFJlZhIPCgdjb2x1bW5zGAIgASgNEgwKBHJvd3MYAyABKA0SDQoFaW5wdXQYBCABKAwiVAoUUHJvamVjdFRlcm1pbmFsUmVwbHkSDQoFcmVhZHkYASABKAgSDgoGb3V0cHV0GAIgASgMEg4KBmV4aXRlZBgDIAEoCBINCgVlcnJvchgEIAEoCSJ5ChNQcm9qZWN0TG9naW5SZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLmN4ei5Qcm9qZWN0UmVmEiAKB2FjY291bnQYAiABKAsyDy5jeHouQWNjb3VudFJlZhITCgtzZXNzaW9uX2tleRgDIAEoCRINCgVpbnB1dBgEIAEoDCIkChJQcm9qZWN0TG9naW5PdXRwdXQSDgoGb3V0cHV0GAEgASgMIkEKE1Byb2plY3RQYXRoc1JlcXVlc3QSHAoDcmVmGAEgASgLMg8uY3h6LlByb2plY3RSZWYSDAoEcGF0aBgCIAEoCSJOChFQcm9qZWN0UGF0aHNSZXBseRImCgdlbnRyaWVzGAEgAygLMhUuY3h6LlByb2plY3RQYXRoRW50cnkSEQoJdHJ1bmNhdGVkGAIgASgIIm0KEFByb2plY3RQYXRoRW50cnkSDAoEbmFtZRgBIAEoCRIRCglkaXJlY3RvcnkYAiABKAgSEgoKZXhlY3V0YWJsZRgDIAEoCBIPCgdzeW1saW5rGAQgASgIEhMKC2xpbmtfdGFyZ2V0GAUgASgJIkQKFlByb2plY3REb3dubG9hZFJlcXVlc3QSHAoDcmVmGAEgASgLMg8uY3h6LlByb2plY3RSZWYSDAoEcGF0aBgCIAEoCSI4ChRQcm9qZWN0RG93bmxvYWRSZXBseRIMCgRkYXRhGAEgASgMEhIKCnRvdGFsX3NpemUYAiABKAMiNAoUUHJvamVjdEVkaXRvclJlcXVlc3QSHAoDcmVmGAEgASgLMg8uY3h6LlByb2plY3RSZWYiVAoSUHJvamVjdEVkaXRvclJlcGx5EhEKCXdvcmtzcGFjZRgBIAEoCRIYChBjb25uZWN0aW9uX3Rva2VuGAIgASgJEhEKCXNpbXVsYXRlZBgDIAEoCCJJChpQcm9qZWN0RWRpdG9yVHVubmVsUmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouUHJvamVjdFJlZhINCgVpbnB1dBgCIAEoDCI5ChhQcm9qZWN0RWRpdG9yVHVubmVsUmVwbHkSDQoFcmVhZHkYASABKAgSDgoGb3V0cHV0GAIgASgMIiMKE0RldmNvbnRhaW5lclJlcXVlc3QSDAoEc3BlYxgBIAEoDCIjChFEZXZjb250YWluZXJSZXBseRIOCgZzdGF0dXMYASABKAkiKwoZUmVuZGVyRGV2Y29udGFpbmVyUmVxdWVzdBIOCgZoYW5kbGUYASABKAkiewoXUmVuZGVyRGV2Y29udGFpbmVyUmVwbHkSDwoHcHJvamVjdBgBIAEoCRIMCgRuYW1lGAIgASgJEhEKCXdvcmtzcGFjZRgDIAEoCRIMCgRub3RlGAQgASgJEiAKBWZpbGVzGAUgAygLMhEuY3h6LlJlbmRlcmVkRmlsZSJICgxSZW5kZXJlZEZpbGUSDAoEbmFtZRgBIAEoCRIOCgZzb3VyY2UYAiABKAkSDAoEcm9sZRgDIAEoCRIMCgRkYXRhGAQgASgMIi0KDURvY2tlclJlcXVlc3QSDgoGYWN0aW9uGAEgASgJEgwKBHNwZWMYAiABKAwiHQoLRG9ja2VyUmVwbHkSDgoGc3RhdHVzGAEgASgJIhIKEEF1eENvbmZpZ1JlcXVlc3QiZQoOQXV4Q29uZmlnUmVwbHkSEAoIcmV2aXNpb24YASABKAkSIQoIcHJvZmlsZXMYAiADKAsyDy5jeHouQXV4UHJvZmlsZRIPCgdtZXNzYWdlGAMgASgJEg0KBW93bmVyGAQgASgJIrQBCgpBdXhQcm9maWxlEhoKBGtpbmQYASABKA4yDC5jeHouQXV4S2luZBIPCgdlbmFibGVkGAIgASgIEg8KB2FjY291bnQYAyABKAkSDQoFYWdlbnQYBCABKAkSDwoHYmFja2VuZBgFIAEoCRINCgVtb2RlbBgGIAEoCRIOCgZlZmZvcnQYByABKAkSKQoFc2luY2UYCCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIjgKE0F1eFNldENvbmZpZ1JlcXVlc3QSIQoIcHJvZmlsZXMYASADKAsyDy5jeHouQXV4UHJvZmlsZSIjChBBdXhNb2RlbHNSZXF1ZXN0Eg8KB2FjY291bnQYASABKAkiRAoOQXV4TW9kZWxzUmVwbHkSHQoGbW9kZWxzGAEgAygLMg0uY3h6LkF1eE1vZGVsEhMKC25lZWRzX2xvZ2luGAIgASgIInMKCEF1eE1vZGVsEgoKAmlkGAEgASgJEhMKC3Jlc29sdmVkX2lkGAIgASgJEgwKBG5hbWUYAyABKAkSDwoHZWZmb3J0cxgEIAMoCRIWCg5kZWZhdWx0X2VmZm9ydBgFIAEoCRIPCgdkZWZhdWx0GAYgASgIIiYKE0F1eExvZ2luSW5mb1JlcXVlc3QSDwoHYWNjb3VudBgBIAEoCSJTChFBdXhMb2dpbkluZm9SZXBseRINCgVvd25lchgBIAEoCRIPCgdhY2NvdW50GAIgASgJEg0KBWFnZW50GAMgASgJEg8KB2JhY2tlbmQYBCABKAkiGQoXSGlzdG9yeVRyaW1tYWJsZVJlcXVlc3QiFwoVSGlzdG9yeVRyaW1tYWJsZVJlcGx5IhYKFEhpc3RvcnlQb2xpY3lSZXF1ZXN0Im0KDUhpc3RvcnlQb2xpY3kSEAoIZGlzYWJsZWQYASABKAgSDwoHbWF4X21pYhgCIAEoBRIPCgdyYXdfbWliGAMgASgFEhIKCndpbmRvd19taWIYBCABKAUSFAoMd2luZG93X3R1cm5zGAUgASgFIlUKFFB1dFNlY3JldEZpbGVSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLmN4ei5Qcm9qZWN0UmVmEg8KB3Nlc3Npb24YAiABKAkSDgoGc2VjcmV0GAMgASgMIh8KD1NlY3JldEZpbGVSZXBseRIMCgRwYXRoGAEgASgJIkUKF0RlbGV0ZVNlY3JldEZpbGVSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLmN4ei5Qcm9qZWN0UmVmEgwKBHBhdGgYAiABKAkiLQoNU2tpbGxzUmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouUHJvamVjdFJlZiJACgtTa2lsbHNSZXBseRIgCgdlbnRyaWVzGAEgAygLMg8uY3h6LlNraWxsRW50cnkSDwoHbWVzc2FnZRgCIAEoCSJUCgpTa2lsbEVudHJ5EgwKBG5hbWUYASABKAkSEwoLZGVzY3JpcHRpb24YAiABKAkSEAoIb3ZlcnJpZGUYAyABKAgSEQoJZWZmZWN0aXZlGAQgASgIIjoKDFNraWxsUmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouUHJvamVjdFJlZhIMCgRuYW1lGAIgASgJIjQKE1NraWxsRGVmYXVsdFJlcXVlc3QSDAoEbmFtZRgBIAEoCRIPCgdlbmFibGVkGAIgASgIIlIKE1Byb2plY3RTa2lsbFJlcXVlc3QSHAoDcmVmGAEgASgLMg8uY3h6LlByb2plY3RSZWYSDAoEbmFtZRgCIAEoCRIPCgdlbmFibGVkGAMgASgIIkYKGENsZWFyUHJvamVjdFNraWxsUmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouUHJvamVjdFJlZhIMCgRuYW1lGAIgASgJIiMKEVN5bmNTa2lsbHNSZXF1ZXN0Eg4KBmJ1bmRsZRgBIAEoDCIhCg9TeW5jU2tpbGxzUmVwbHkSDgoGc3RhdHVzGAEgASgJIiUKE0ZpbGVNYXBwaW5nc1JlcXVlc3QSDgoGYnVuZGxlGAEgASgMIiMKEUZpbGVNYXBwaW5nc1JlcGx5Eg4KBnN0YXR1cxgBIAEoCSJ4ChBQcm9qZWN0VXBSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLmN4ei5Qcm9qZWN0UmVmEhEKCWNsaWVudF9pZBgCIAEoCRINCgVhZ2VudBgDIAEoCRIUCgx0cnVzdF9jb25maWcYBCABKAgSDgoGY29uZmlnGAUgASgJIkEKDlByb2plY3RDb250cm9sEhwKA3JlZhgBIAEoCzIPLmN4ei5Qcm9qZWN0UmVmEhEKCWNsaWVudF9pZBgCIAEoCSKRAQoWUHJvamVjdFJlY3JlYXRlUmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouUHJvamVjdFJlZhIRCgljbGllbnRfaWQYAiABKAkSDQoFYWdlbnQYAyABKAkSFAoMdHJ1c3RfY29uZmlnGAQgASgIEhEKCWNvbmZpcm1lZBgFIAEoCBIOCgZjb25maWcYBiABKAkiFwoVSW5zcGVjdEZvcmVpZ25SZXF1ZXN0Ij4KFkluc3BlY3RGb3JlaWduUmVzcG9uc2USJAoFaXRlbXMYASADKAsyFS5jeHouRm9yZWlnbkNvbnRhaW5lciJJChBGb3JlaWduQ29udGFpbmVyEhQKDGNvbnRhaW5lcl9pZBgBIAEoCRIRCgl3b3Jrc3BhY2UYAiABKAkSDAoEbmFtZRgDIAEoCSpmCgdBdXhLaW5kEhgKFEFVWF9LSU5EX1VOU1BFQ0lGSUVEEAASFAoQQVVYX0tJTkRfU1VNTUFSWRABEhcKE0FVWF9LSU5EX1NVR0dFU1RJT04QAhISCg5BVVhfS0lORF9USVRMRRADMu0SCg5Qcm9qZWN0U2VydmljZRIrCgNBZGQSFi5jeHouUHJvamVjdEFkZFJlcXVlc3QaDC5jeHouUHJvamVjdBIrCgNHZXQSFi5jeHouUHJvamVjdEdldFJlcXVlc3QaDC5jeHouUHJvamVjdBIvCgVQYXRjaBIYLmN4ei5Qcm9qZWN0UGF0Y2hSZXF1ZXN0GgwuY3h6LlByb2plY3QSLwoFQXBwbHkSGC5jeHouUHJvamVjdEFwcGx5UmVxdWVzdBoMLmN4ei5Qcm9qZWN0EjMKBUVyYXNlEg8uY3h6LlByb2plY3RSZWYaGS5jeHouUHJvamVjdEVyYXNlUmVzcG9uc2USOQoETGlzdBIXLmN4ei5Qcm9qZWN0TGlzdFJlcXVlc3QaGC5jeHouUHJvamVjdExpc3RSZXNwb25zZRI+CgVXYXRjaBIYLmN4ei5Qcm9qZWN0V2F0Y2hSZXF1ZXN0GhkuY3h6LlByb2plY3RXYXRjaFJlc3BvbnNlMAESPAoGUmVtb3ZlEhkuY3h6LlByb2plY3RSZW1vdmVSZXF1ZXN0GhcuY3h6LlByb2plY3RSZW1vdmVSZXBseRJGCghUZXJtaW5hbBIbLmN4ei5Qcm9qZWN0VGVybWluYWxSZXF1ZXN0GhkuY3h6LlByb2plY3RUZXJtaW5hbFJlcGx5KAEwARJHCg5BdXhpbGlhcnlMb2dpbhIYLmN4ei5Qcm9qZWN0TG9naW5SZXF1ZXN0GhcuY3h6LlByb2plY3RMb2dpbk91dHB1dCgBMAESRQoMU2Vzc2lvbkxvZ2luEhguY3h6LlByb2plY3RMb2dpblJlcXVlc3QaFy5jeHouUHJvamVjdExvZ2luT3V0cHV0KAEwARI7CgVQYXRocxIYLmN4ei5Qcm9qZWN0UGF0aHNSZXF1ZXN0GhYuY3h6LlByb2plY3RQYXRoc1JlcGx5MAESRAoIRG93bmxvYWQSGy5jeHouUHJvamVjdERvd25sb2FkUmVxdWVzdBoZLmN4ei5Qcm9qZWN0RG93bmxvYWRSZXBseTABEjwKBkVkaXRvchIZLmN4ei5Qcm9qZWN0RWRpdG9yUmVxdWVzdBoXLmN4ei5Qcm9qZWN0RWRpdG9yUmVwbHkSUgoMRWRpdG9yVHVubmVsEh8uY3h6LlByb2plY3RFZGl0b3JUdW5uZWxSZXF1ZXN0Gh0uY3h6LlByb2plY3RFZGl0b3JUdW5uZWxSZXBseSgBMAESQAoMRGV2Y29udGFpbmVyEhguY3h6LkRldmNvbnRhaW5lclJlcXVlc3QaFi5jeHouRGV2Y29udGFpbmVyUmVwbHkSUgoSUmVuZGVyRGV2Y29udGFpbmVyEh4uY3h6LlJlbmRlckRldmNvbnRhaW5lclJlcXVlc3QaHC5jeHouUmVuZGVyRGV2Y29udGFpbmVyUmVwbHkSLgoGRG9ja2VyEhIuY3h6LkRvY2tlclJlcXVlc3QaEC5jeHouRG9ja2VyUmVwbHkSNwoJQXV4Q29uZmlnEhUuY3h6LkF1eENvbmZpZ1JlcXVlc3QaEy5jeHouQXV4Q29uZmlnUmVwbHkSPQoMQXV4U2V0Q29uZmlnEhguY3h6LkF1eFNldENvbmZpZ1JlcXVlc3QaEy5jeHouQXV4Q29uZmlnUmVwbHkSNwoJQXV4TW9kZWxzEhUuY3h6LkF1eE1vZGVsc1JlcXVlc3QaEy5jeHouQXV4TW9kZWxzUmVwbHkSQAoMQXV4TG9naW5JbmZvEhguY3h6LkF1eExvZ2luSW5mb1JlcXVlc3QaFi5jeHouQXV4TG9naW5JbmZvUmVwbHkSUAoUTWFya0hpc3RvcnlUcmltbWFibGUSHC5jeHouSGlzdG9yeVRyaW1tYWJsZVJlcXVlc3QaGi5jeHouSGlzdG9yeVRyaW1tYWJsZVJlcGx5EkEKEEdldEhpc3RvcnlQb2xpY3kSGS5jeHouSGlzdG9yeVBvbGljeVJlcXVlc3QaEi5jeHouSGlzdG9yeVBvbGljeRI6ChBTZXRIaXN0b3J5UG9saWN5EhIuY3h6Lkhpc3RvcnlQb2xpY3kaEi5jeHouSGlzdG9yeVBvbGljeRJACg1QdXRTZWNyZXRGaWxlEhkuY3h6LlB1dFNlY3JldEZpbGVSZXF1ZXN0GhQuY3h6LlNlY3JldEZpbGVSZXBseRJGChBEZWxldGVTZWNyZXRGaWxlEhwuY3h6LkRlbGV0ZVNlY3JldEZpbGVSZXF1ZXN0GhQuY3h6LlNlY3JldEZpbGVSZXBseRIxCglHZXRTa2lsbHMSEi5jeHouU2tpbGxzUmVxdWVzdBoQLmN4ei5Ta2lsbHNSZXBseRIvCghBZGRTa2lsbBIRLmN4ei5Ta2lsbFJlcXVlc3QaEC5jeHouU2tpbGxzUmVwbHkSMgoLUmVtb3ZlU2tpbGwSES5jeHouU2tpbGxSZXF1ZXN0GhAuY3h6LlNraWxsc1JlcGx5Ej0KD1NldFNraWxsRGVmYXVsdBIYLmN4ei5Ta2lsbERlZmF1bHRSZXF1ZXN0GhAuY3h6LlNraWxsc1JlcGx5Ej0KD1NldFByb2plY3RTa2lsbBIYLmN4ei5Qcm9qZWN0U2tpbGxSZXF1ZXN0GhAuY3h6LlNraWxsc1JlcGx5EkQKEUNsZWFyUHJvamVjdFNraWxsEh0uY3h6LkNsZWFyUHJvamVjdFNraWxsUmVxdWVzdBoQLmN4ei5Ta2lsbHNSZXBseRI6CgpTeW5jU2tpbGxzEhYuY3h6LlN5bmNTa2lsbHNSZXF1ZXN0GhQuY3h6LlN5bmNTa2lsbHNSZXBseRJACgxGaWxlTWFwcGluZ3MSGC5jeHouRmlsZU1hcHBpbmdzUmVxdWVzdBoWLmN4ei5GaWxlTWFwcGluZ3NSZXBseRIpCgJVcBIVLmN4ei5Qcm9qZWN0VXBSZXF1ZXN0GgwuY3h6LlByb2plY3QSKQoERG93bhITLmN4ei5Qcm9qZWN0Q29udHJvbBoMLmN4ei5Qcm9qZWN0EjUKCFJlY3JlYXRlEhsuY3h6LlByb2plY3RSZWNyZWF0ZVJlcXVlc3QaDC5jeHouUHJvamVjdBJJCg5JbnNwZWN0Rm9yZWlnbhIaLmN4ei5JbnNwZWN0Rm9yZWlnblJlcXVlc3QaGy5jeHouSW5zcGVjdEZvcmVpZ25SZXNwb25zZUIiWiBnaXRodWIuY29tL2xlc29tbnVzL2N4ei9yZXNvdXJjZWIIZWRpdGlvbnNw6Ac", [file_cxz_account_svc_g, file_cxz_project, file_google_protobuf_timestamp, file_patch_patch]);
+  fileDesc("ChdjeHovcHJvamVjdF9zdmMuZy5wcm90bxIDY3h6IpECChFQcm9qZWN0QWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIUCgVhbGlhcxgEIAEoCUIFqgECCAISEwoEbmFtZRgFIAEoCUIFqgECCAISEwoEZGVzYxgGIAEoCUIFqgECCAISGAoJd29ya3NwYWNlGAggASgJQgWqAQIIAhIVCgZjb25maWcYCSABKAlCBaoBAggCEhkKCnJ1bnRpbWVfaWQYCiABKAlCBaoBAggCEjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASIgoGc3RhdHVzGBAgASgLMhIuY3h6LlByb2plY3RTdGF0dXMSDgoGbGlzdGVkGBEgASgIIlUKEVByb2plY3RHZXRSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLmN4ei5Qcm9qZWN0UmVmEiIKBnNlbGVjdBgCIAEoCzISLmN4ei5Qcm9qZWN0U2VsZWN0Il0KClByb2plY3RSZWYSDAoCaWQYASABKAxIABIPCgVhbGlhcxgEIAEoCUgAEhMKCXdvcmtzcGFjZRgIIAEoCUgAEhQKCnJ1bnRpbWVfaWQYCiABKAlIAEIFCgNrZXki3wEKDVByb2plY3RTZWxlY3QSCwoDYWxsGAEgASgIEg0KBWFsaWFzGAQgASgIEgwKBG5hbWUYBSABKAgSDAoEZGVzYxgGIAEoCBIRCgl3b3Jrc3BhY2UYCCABKAgSDgoGY29uZmlnGAkgASgIEhIKCnJ1bnRpbWVfaWQYCiABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCBIOCgZzdGF0dXMYECABKAgSDgoGbGlzdGVkGBEgASgIIoUCChNQcm9qZWN0UGF0Y2hSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLmN4ei5Qcm9qZWN0UmVmEg0KBWFsaWFzGAggASgJEgwKBG5hbWUYCiABKAkSDAoEZGVzYxgMIAEoCRIOCgZjb25maWcYEiABKAkSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgSIgoGc3RhdHVzGCAgASgLMhIuY3h6LlByb2plY3RTdGF0dXMSEwoLc3RhdHVzX251bGwYISABKAgSDgoGbGlzdGVkGCIgASgIIlAKE1Byb2plY3RBcHBseVJlcXVlc3QSHAoDcmVmGAEgASgLMg8uY3h6LlByb2plY3RSZWYSGwoFcGF0Y2gYAiABKAsyDC5wYXRjaC5QYXRjaCImChRQcm9qZWN0RXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgiZAoSUHJvamVjdExpc3RSZXF1ZXN0EiMKB2ZpbHRlcnMYASADKAsyEi5jeHouUHJvamVjdEZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAIiRwoTUHJvamVjdExpc3RSZXNwb25zZRIbCgVpdGVtcxgBIAMoCzIMLmN4ei5Qcm9qZWN0EhMKBG5leHQYAiABKAlCBaoBAggCIj0KDVByb2plY3RGaWx0ZXISHAoDcmVmGAEgASgLMg8uY3h6LlByb2plY3RSZWYSDgoGbGlzdGVkGAIgASgIIlgKE1Byb2plY3RXYXRjaFJlcXVlc3QSIwoHZmlsdGVycxgBIAMoCzISLmN4ei5Qcm9qZWN0RmlsdGVyEhwKDXNraXBfc25hcHNob3QYAiABKAhCBaoBAggCIjwKFFByb2plY3RXYXRjaFJlc3BvbnNlEiQKBWl0ZW1zGAEgAygLMhUuY3h6LlByb2plY3RXYXRjaEl0ZW0iUgoQUHJvamVjdFdhdGNoSXRlbRIKCgJpZBgBIAEoDBIbCgV2YWx1ZRgCIAEoCzIMLmN4ei5Qcm9qZWN0EhUKBmFjdGlvbhgDIAEoCUIFqgECCAIiOQoUUHJvamVjdFJlbW92ZVJlcXVlc3QSDgoGdGFyZ2V0GAEgASgJEhEKCWNvbmZpcm1lZBgCIAEoCCJEChJQcm9qZWN0UmVtb3ZlUmVwbHkSHQoHcHJvamVjdBgBIAEoCzIMLmN4ei5Qcm9qZWN0Eg8KB3JlbW92ZWQYAiABKAgiZAoWUHJvamVjdFRlcm1pbmFsUmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouUHJvamVjdFJlZhIPCgdjb2x1bW5zGAIgASgNEgwKBHJvd3MYAyABKA0SDQoFaW5wdXQYBCABKAwiVAoUUHJvamVjdFRlcm1pbmFsUmVwbHkSDQoFcmVhZHkYASABKAgSDgoGb3V0cHV0GAIgASgMEg4KBmV4aXRlZBgDIAEoCBINCgVlcnJvchgEIAEoCSJ5ChNQcm9qZWN0TG9naW5SZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLmN4ei5Qcm9qZWN0UmVmEiAKB2FjY291bnQYAiABKAsyDy5jeHouQWNjb3VudFJlZhITCgtzZXNzaW9uX2tleRgDIAEoCRINCgVpbnB1dBgEIAEoDCIkChJQcm9qZWN0TG9naW5PdXRwdXQSDgoGb3V0cHV0GAEgASgMIkEKE1Byb2plY3RQYXRoc1JlcXVlc3QSHAoDcmVmGAEgASgLMg8uY3h6LlByb2plY3RSZWYSDAoEcGF0aBgCIAEoCSJOChFQcm9qZWN0UGF0aHNSZXBseRImCgdlbnRyaWVzGAEgAygLMhUuY3h6LlByb2plY3RQYXRoRW50cnkSEQoJdHJ1bmNhdGVkGAIgASgIIm0KEFByb2plY3RQYXRoRW50cnkSDAoEbmFtZRgBIAEoCRIRCglkaXJlY3RvcnkYAiABKAgSEgoKZXhlY3V0YWJsZRgDIAEoCBIPCgdzeW1saW5rGAQgASgIEhMKC2xpbmtfdGFyZ2V0GAUgASgJIkQKFlByb2plY3REb3dubG9hZFJlcXVlc3QSHAoDcmVmGAEgASgLMg8uY3h6LlByb2plY3RSZWYSDAoEcGF0aBgCIAEoCSI4ChRQcm9qZWN0RG93bmxvYWRSZXBseRIMCgRkYXRhGAEgASgMEhIKCnRvdGFsX3NpemUYAiABKAMiNAoUUHJvamVjdEVkaXRvclJlcXVlc3QSHAoDcmVmGAEgASgLMg8uY3h6LlByb2plY3RSZWYiVAoSUHJvamVjdEVkaXRvclJlcGx5EhEKCXdvcmtzcGFjZRgBIAEoCRIYChBjb25uZWN0aW9uX3Rva2VuGAIgASgJEhEKCXNpbXVsYXRlZBgDIAEoCCJJChpQcm9qZWN0RWRpdG9yVHVubmVsUmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouUHJvamVjdFJlZhINCgVpbnB1dBgCIAEoDCI5ChhQcm9qZWN0RWRpdG9yVHVubmVsUmVwbHkSDQoFcmVhZHkYASABKAgSDgoGb3V0cHV0GAIgASgMIiMKE0RldmNvbnRhaW5lclJlcXVlc3QSDAoEc3BlYxgBIAEoDCIjChFEZXZjb250YWluZXJSZXBseRIOCgZzdGF0dXMYASABKAkiKwoZUmVuZGVyRGV2Y29udGFpbmVyUmVxdWVzdBIOCgZoYW5kbGUYASABKAkiewoXUmVuZGVyRGV2Y29udGFpbmVyUmVwbHkSDwoHcHJvamVjdBgBIAEoCRIMCgRuYW1lGAIgASgJEhEKCXdvcmtzcGFjZRgDIAEoCRIMCgRub3RlGAQgASgJEiAKBWZpbGVzGAUgAygLMhEuY3h6LlJlbmRlcmVkRmlsZSJICgxSZW5kZXJlZEZpbGUSDAoEbmFtZRgBIAEoCRIOCgZzb3VyY2UYAiABKAkSDAoEcm9sZRgDIAEoCRIMCgRkYXRhGAQgASgMIi0KDURvY2tlclJlcXVlc3QSDgoGYWN0aW9uGAEgASgJEgwKBHNwZWMYAiABKAwiHQoLRG9ja2VyUmVwbHkSDgoGc3RhdHVzGAEgASgJIhIKEEF1eENvbmZpZ1JlcXVlc3QiZQoOQXV4Q29uZmlnUmVwbHkSEAoIcmV2aXNpb24YASABKAkSIQoIcHJvZmlsZXMYAiADKAsyDy5jeHouQXV4UHJvZmlsZRIPCgdtZXNzYWdlGAMgASgJEg0KBW93bmVyGAQgASgJIrQBCgpBdXhQcm9maWxlEhoKBGtpbmQYASABKA4yDC5jeHouQXV4S2luZBIPCgdlbmFibGVkGAIgASgIEg8KB2FjY291bnQYAyABKAkSDQoFYWdlbnQYBCABKAkSDwoHYmFja2VuZBgFIAEoCRINCgVtb2RlbBgGIAEoCRIOCgZlZmZvcnQYByABKAkSKQoFc2luY2UYCCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIjgKE0F1eFNldENvbmZpZ1JlcXVlc3QSIQoIcHJvZmlsZXMYASADKAsyDy5jeHouQXV4UHJvZmlsZSIjChBBdXhNb2RlbHNSZXF1ZXN0Eg8KB2FjY291bnQYASABKAkiRAoOQXV4TW9kZWxzUmVwbHkSHQoGbW9kZWxzGAEgAygLMg0uY3h6LkF1eE1vZGVsEhMKC25lZWRzX2xvZ2luGAIgASgIInMKCEF1eE1vZGVsEgoKAmlkGAEgASgJEhMKC3Jlc29sdmVkX2lkGAIgASgJEgwKBG5hbWUYAyABKAkSDwoHZWZmb3J0cxgEIAMoCRIWCg5kZWZhdWx0X2VmZm9ydBgFIAEoCRIPCgdkZWZhdWx0GAYgASgIIiYKE0F1eExvZ2luSW5mb1JlcXVlc3QSDwoHYWNjb3VudBgBIAEoCSJTChFBdXhMb2dpbkluZm9SZXBseRINCgVvd25lchgBIAEoCRIPCgdhY2NvdW50GAIgASgJEg0KBWFnZW50GAMgASgJEg8KB2JhY2tlbmQYBCABKAkiGQoXSGlzdG9yeVRyaW1tYWJsZVJlcXVlc3QiFwoVSGlzdG9yeVRyaW1tYWJsZVJlcGx5IhYKFEhpc3RvcnlQb2xpY3lSZXF1ZXN0Im0KDUhpc3RvcnlQb2xpY3kSEAoIZGlzYWJsZWQYASABKAgSDwoHbWF4X21pYhgCIAEoBRIPCgdyYXdfbWliGAMgASgFEhIKCndpbmRvd19taWIYBCABKAUSFAoMd2luZG93X3R1cm5zGAUgASgFIlUKFFB1dFNlY3JldEZpbGVSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLmN4ei5Qcm9qZWN0UmVmEg8KB3Nlc3Npb24YAiABKAkSDgoGc2VjcmV0GAMgASgMIh8KD1NlY3JldEZpbGVSZXBseRIMCgRwYXRoGAEgASgJIkUKF0RlbGV0ZVNlY3JldEZpbGVSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLmN4ei5Qcm9qZWN0UmVmEgwKBHBhdGgYAiABKAkiLQoNU2tpbGxzUmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouUHJvamVjdFJlZiJACgtTa2lsbHNSZXBseRIgCgdlbnRyaWVzGAEgAygLMg8uY3h6LlNraWxsRW50cnkSDwoHbWVzc2FnZRgCIAEoCSJUCgpTa2lsbEVudHJ5EgwKBG5hbWUYASABKAkSEwoLZGVzY3JpcHRpb24YAiABKAkSEAoIb3ZlcnJpZGUYAyABKAgSEQoJZWZmZWN0aXZlGAQgASgIIjoKDFNraWxsUmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouUHJvamVjdFJlZhIMCgRuYW1lGAIgASgJIjQKE1NraWxsRGVmYXVsdFJlcXVlc3QSDAoEbmFtZRgBIAEoCRIPCgdlbmFibGVkGAIgASgIIlIKE1Byb2plY3RTa2lsbFJlcXVlc3QSHAoDcmVmGAEgASgLMg8uY3h6LlByb2plY3RSZWYSDAoEbmFtZRgCIAEoCRIPCgdlbmFibGVkGAMgASgIIkYKGENsZWFyUHJvamVjdFNraWxsUmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouUHJvamVjdFJlZhIMCgRuYW1lGAIgASgJIiMKEVN5bmNTa2lsbHNSZXF1ZXN0Eg4KBmJ1bmRsZRgBIAEoDCIhCg9TeW5jU2tpbGxzUmVwbHkSDgoGc3RhdHVzGAEgASgJIjEKEU1jcFNlcnZlcnNSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLmN4ei5Qcm9qZWN0UmVmIkIKD01jcFNlcnZlcnNSZXBseRIeCgdlbnRyaWVzGAEgAygLMg0uY3h6Lk1jcEVudHJ5Eg8KB21lc3NhZ2UYAiABKAkiWwoITWNwRW50cnkSCgoCaWQYASABKAkSHgoGc2VydmVyGAIgASgLMg4uY3h6Lk1jcFNlcnZlchIQCghvdmVycmlkZRgDIAEoCBIRCgllZmZlY3RpdmUYBCABKAgiogIKCU1jcFNlcnZlchIMCgRuYW1lGAEgASgJEhoKBGtpbmQYAiABKA4yDC5jeHouTWNwS2luZBIPCgdlbmFibGVkGAMgASgIEg8KB2NvbW1hbmQYBCABKAkSDAoEYXJncxgFIAMoCRIkCgNlbnYYBiADKAsyFy5jeHouTWNwU2VydmVyLkVudkVudHJ5EgsKA3VybBgHIAEoCRIsCgdoZWFkZXJzGAggAygLMhsuY3h6Lk1jcFNlcnZlci5IZWFkZXJzRW50cnkaKgoIRW52RW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ARouCgxIZWFkZXJzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASJBChNQdXRNY3BTZXJ2ZXJSZXF1ZXN0EgoKAmlkGAEgASgJEh4KBnNlcnZlchgCIAEoCzIOLmN4ei5NY3BTZXJ2ZXIiHgoQTWNwU2VydmVyUmVxdWVzdBIKCgJpZBgBIAEoCSI2ChdNY3BTZXJ2ZXJEZWZhdWx0UmVxdWVzdBIKCgJpZBgBIAEoCRIPCgdlbmFibGVkGAIgASgIIlQKF1Byb2plY3RNY3BTZXJ2ZXJSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLmN4ei5Qcm9qZWN0UmVmEgoKAmlkGAIgASgJEg8KB2VuYWJsZWQYAyABKAgiSAocQ2xlYXJQcm9qZWN0TWNwU2VydmVyUmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouUHJvamVjdFJlZhIKCgJpZBgCIAEoCSIyChJNY3BTZXNzaW9uc1JlcXVlc3QSHAoDcmVmGAEgASgLMg8uY3h6LlByb2plY3RSZWYiTAoQTWNwU2Vzc2lvbnNSZXBseRInCghzZXNzaW9ucxgBIAMoCzIVLmN4ei5NY3BTZXNzaW9uU3RhdHVzEg8KB21lc3NhZ2UYAiABKAkivwEKEE1jcFNlc3Npb25TdGF0dXMSDwoHc2Vzc2lvbhgBIAEoCRINCgV0aXRsZRgCIAEoCRIPCgdwZW5kaW5nGAMgASgIEhUKDWxhdW5jaF9kaWdlc3QYBCABKAkSMwoHc2VydmVycxgFIAMoCzIiLmN4ei5NY3BTZXNzaW9uU3RhdHVzLlNlcnZlcnNFbnRyeRouCgxTZXJ2ZXJzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASKRAQoVU3luY01jcFNlcnZlcnNSZXF1ZXN0EjgKB3NlcnZlcnMYASADKAsyJy5jeHouU3luY01jcFNlcnZlcnNSZXF1ZXN0LlNlcnZlcnNFbnRyeRo+CgxTZXJ2ZXJzRW50cnkSCwoDa2V5GAEgASgJEh0KBXZhbHVlGAIgASgLMg4uY3h6Lk1jcFNlcnZlcjoCOAEiJQoTU3luY01jcFNlcnZlcnNSZXBseRIOCgZzdGF0dXMYASABKAkiJQoTRmlsZU1hcHBpbmdzUmVxdWVzdBIOCgZidW5kbGUYASABKAwiIwoRRmlsZU1hcHBpbmdzUmVwbHkSDgoGc3RhdHVzGAEgASgJIngKEFByb2plY3RVcFJlcXVlc3QSHAoDcmVmGAEgASgLMg8uY3h6LlByb2plY3RSZWYSEQoJY2xpZW50X2lkGAIgASgJEg0KBWFnZW50GAMgASgJEhQKDHRydXN0X2NvbmZpZxgEIAEoCBIOCgZjb25maWcYBSABKAkiQQoOUHJvamVjdENvbnRyb2wSHAoDcmVmGAEgASgLMg8uY3h6LlByb2plY3RSZWYSEQoJY2xpZW50X2lkGAIgASgJIpEBChZQcm9qZWN0UmVjcmVhdGVSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLmN4ei5Qcm9qZWN0UmVmEhEKCWNsaWVudF9pZBgCIAEoCRINCgVhZ2VudBgDIAEoCRIUCgx0cnVzdF9jb25maWcYBCABKAgSEQoJY29uZmlybWVkGAUgASgIEg4KBmNvbmZpZxgGIAEoCSIXChVJbnNwZWN0Rm9yZWlnblJlcXVlc3QiPgoWSW5zcGVjdEZvcmVpZ25SZXNwb25zZRIkCgVpdGVtcxgBIAMoCzIVLmN4ei5Gb3JlaWduQ29udGFpbmVyIkkKEEZvcmVpZ25Db250YWluZXISFAoMY29udGFpbmVyX2lkGAEgASgJEhEKCXdvcmtzcGFjZRgCIAEoCRIMCgRuYW1lGAMgASgJKmYKB0F1eEtpbmQSGAoUQVVYX0tJTkRfVU5TUEVDSUZJRUQQABIUChBBVVhfS0lORF9TVU1NQVJZEAESFwoTQVVYX0tJTkRfU1VHR0VTVElPThACEhIKDkFVWF9LSU5EX1RJVExFEAMqYAoHTWNwS2luZBIYChRNQ1BfS0lORF9VTlNQRUNJRklFRBAAEhIKDk1DUF9LSU5EX1NURElPEAESEQoNTUNQX0tJTkRfSFRUUBACEhQKEE1DUF9LSU5EX0JVSUxUSU4QAzKbFwoOUHJvamVjdFNlcnZpY2USKwoDQWRkEhYuY3h6LlByb2plY3RBZGRSZXF1ZXN0GgwuY3h6LlByb2plY3QSKwoDR2V0EhYuY3h6LlByb2plY3RHZXRSZXF1ZXN0GgwuY3h6LlByb2plY3QSLwoFUGF0Y2gSGC5jeHouUHJvamVjdFBhdGNoUmVxdWVzdBoMLmN4ei5Qcm9qZWN0Ei8KBUFwcGx5EhguY3h6LlByb2plY3RBcHBseVJlcXVlc3QaDC5jeHouUHJvamVjdBIzCgVFcmFzZRIPLmN4ei5Qcm9qZWN0UmVmGhkuY3h6LlByb2plY3RFcmFzZVJlc3BvbnNlEjkKBExpc3QSFy5jeHouUHJvamVjdExpc3RSZXF1ZXN0GhguY3h6LlByb2plY3RMaXN0UmVzcG9uc2USPgoFV2F0Y2gSGC5jeHouUHJvamVjdFdhdGNoUmVxdWVzdBoZLmN4ei5Qcm9qZWN0V2F0Y2hSZXNwb25zZTABEjwKBlJlbW92ZRIZLmN4ei5Qcm9qZWN0UmVtb3ZlUmVxdWVzdBoXLmN4ei5Qcm9qZWN0UmVtb3ZlUmVwbHkSRgoIVGVybWluYWwSGy5jeHouUHJvamVjdFRlcm1pbmFsUmVxdWVzdBoZLmN4ei5Qcm9qZWN0VGVybWluYWxSZXBseSgBMAESRwoOQXV4aWxpYXJ5TG9naW4SGC5jeHouUHJvamVjdExvZ2luUmVxdWVzdBoXLmN4ei5Qcm9qZWN0TG9naW5PdXRwdXQoATABEkUKDFNlc3Npb25Mb2dpbhIYLmN4ei5Qcm9qZWN0TG9naW5SZXF1ZXN0GhcuY3h6LlByb2plY3RMb2dpbk91dHB1dCgBMAESOwoFUGF0aHMSGC5jeHouUHJvamVjdFBhdGhzUmVxdWVzdBoWLmN4ei5Qcm9qZWN0UGF0aHNSZXBseTABEkQKCERvd25sb2FkEhsuY3h6LlByb2plY3REb3dubG9hZFJlcXVlc3QaGS5jeHouUHJvamVjdERvd25sb2FkUmVwbHkwARI8CgZFZGl0b3ISGS5jeHouUHJvamVjdEVkaXRvclJlcXVlc3QaFy5jeHouUHJvamVjdEVkaXRvclJlcGx5ElIKDEVkaXRvclR1bm5lbBIfLmN4ei5Qcm9qZWN0RWRpdG9yVHVubmVsUmVxdWVzdBodLmN4ei5Qcm9qZWN0RWRpdG9yVHVubmVsUmVwbHkoATABEkAKDERldmNvbnRhaW5lchIYLmN4ei5EZXZjb250YWluZXJSZXF1ZXN0GhYuY3h6LkRldmNvbnRhaW5lclJlcGx5ElIKElJlbmRlckRldmNvbnRhaW5lchIeLmN4ei5SZW5kZXJEZXZjb250YWluZXJSZXF1ZXN0GhwuY3h6LlJlbmRlckRldmNvbnRhaW5lclJlcGx5Ei4KBkRvY2tlchISLmN4ei5Eb2NrZXJSZXF1ZXN0GhAuY3h6LkRvY2tlclJlcGx5EjcKCUF1eENvbmZpZxIVLmN4ei5BdXhDb25maWdSZXF1ZXN0GhMuY3h6LkF1eENvbmZpZ1JlcGx5Ej0KDEF1eFNldENvbmZpZxIYLmN4ei5BdXhTZXRDb25maWdSZXF1ZXN0GhMuY3h6LkF1eENvbmZpZ1JlcGx5EjcKCUF1eE1vZGVscxIVLmN4ei5BdXhNb2RlbHNSZXF1ZXN0GhMuY3h6LkF1eE1vZGVsc1JlcGx5EkAKDEF1eExvZ2luSW5mbxIYLmN4ei5BdXhMb2dpbkluZm9SZXF1ZXN0GhYuY3h6LkF1eExvZ2luSW5mb1JlcGx5ElAKFE1hcmtIaXN0b3J5VHJpbW1hYmxlEhwuY3h6Lkhpc3RvcnlUcmltbWFibGVSZXF1ZXN0GhouY3h6Lkhpc3RvcnlUcmltbWFibGVSZXBseRJBChBHZXRIaXN0b3J5UG9saWN5EhkuY3h6Lkhpc3RvcnlQb2xpY3lSZXF1ZXN0GhIuY3h6Lkhpc3RvcnlQb2xpY3kSOgoQU2V0SGlzdG9yeVBvbGljeRISLmN4ei5IaXN0b3J5UG9saWN5GhIuY3h6Lkhpc3RvcnlQb2xpY3kSQAoNUHV0U2VjcmV0RmlsZRIZLmN4ei5QdXRTZWNyZXRGaWxlUmVxdWVzdBoULmN4ei5TZWNyZXRGaWxlUmVwbHkSRgoQRGVsZXRlU2VjcmV0RmlsZRIcLmN4ei5EZWxldGVTZWNyZXRGaWxlUmVxdWVzdBoULmN4ei5TZWNyZXRGaWxlUmVwbHkSMQoJR2V0U2tpbGxzEhIuY3h6LlNraWxsc1JlcXVlc3QaEC5jeHouU2tpbGxzUmVwbHkSLwoIQWRkU2tpbGwSES5jeHouU2tpbGxSZXF1ZXN0GhAuY3h6LlNraWxsc1JlcGx5EjIKC1JlbW92ZVNraWxsEhEuY3h6LlNraWxsUmVxdWVzdBoQLmN4ei5Ta2lsbHNSZXBseRI9Cg9TZXRTa2lsbERlZmF1bHQSGC5jeHouU2tpbGxEZWZhdWx0UmVxdWVzdBoQLmN4ei5Ta2lsbHNSZXBseRI9Cg9TZXRQcm9qZWN0U2tpbGwSGC5jeHouUHJvamVjdFNraWxsUmVxdWVzdBoQLmN4ei5Ta2lsbHNSZXBseRJEChFDbGVhclByb2plY3RTa2lsbBIdLmN4ei5DbGVhclByb2plY3RTa2lsbFJlcXVlc3QaEC5jeHouU2tpbGxzUmVwbHkSOgoKU3luY1NraWxscxIWLmN4ei5TeW5jU2tpbGxzUmVxdWVzdBoULmN4ei5TeW5jU2tpbGxzUmVwbHkSPQoNR2V0TWNwU2VydmVycxIWLmN4ei5NY3BTZXJ2ZXJzUmVxdWVzdBoULmN4ei5NY3BTZXJ2ZXJzUmVwbHkSPgoMUHV0TWNwU2VydmVyEhguY3h6LlB1dE1jcFNlcnZlclJlcXVlc3QaFC5jeHouTWNwU2VydmVyc1JlcGx5Ej4KD1JlbW92ZU1jcFNlcnZlchIVLmN4ei5NY3BTZXJ2ZXJSZXF1ZXN0GhQuY3h6Lk1jcFNlcnZlcnNSZXBseRJJChNTZXRNY3BTZXJ2ZXJEZWZhdWx0EhwuY3h6Lk1jcFNlcnZlckRlZmF1bHRSZXF1ZXN0GhQuY3h6Lk1jcFNlcnZlcnNSZXBseRJJChNTZXRQcm9qZWN0TWNwU2VydmVyEhwuY3h6LlByb2plY3RNY3BTZXJ2ZXJSZXF1ZXN0GhQuY3h6Lk1jcFNlcnZlcnNSZXBseRJQChVDbGVhclByb2plY3RNY3BTZXJ2ZXISIS5jeHouQ2xlYXJQcm9qZWN0TWNwU2VydmVyUmVxdWVzdBoULmN4ei5NY3BTZXJ2ZXJzUmVwbHkSPQoLTWNwU2Vzc2lvbnMSFy5jeHouTWNwU2Vzc2lvbnNSZXF1ZXN0GhUuY3h6Lk1jcFNlc3Npb25zUmVwbHkSRgoOU3luY01jcFNlcnZlcnMSGi5jeHouU3luY01jcFNlcnZlcnNSZXF1ZXN0GhguY3h6LlN5bmNNY3BTZXJ2ZXJzUmVwbHkSQAoMRmlsZU1hcHBpbmdzEhguY3h6LkZpbGVNYXBwaW5nc1JlcXVlc3QaFi5jeHouRmlsZU1hcHBpbmdzUmVwbHkSKQoCVXASFS5jeHouUHJvamVjdFVwUmVxdWVzdBoMLmN4ei5Qcm9qZWN0EikKBERvd24SEy5jeHouUHJvamVjdENvbnRyb2waDC5jeHouUHJvamVjdBI1CghSZWNyZWF0ZRIbLmN4ei5Qcm9qZWN0UmVjcmVhdGVSZXF1ZXN0GgwuY3h6LlByb2plY3QSSQoOSW5zcGVjdEZvcmVpZ24SGi5jeHouSW5zcGVjdEZvcmVpZ25SZXF1ZXN0GhsuY3h6Lkluc3BlY3RGb3JlaWduUmVzcG9uc2VCIlogZ2l0aHViLmNvbS9sZXNvbW51cy9jeHovcmVzb3VyY2ViCGVkaXRpb25zcOgH", [file_cxz_account_svc_g, file_cxz_project, file_google_protobuf_timestamp, file_patch_patch]);
 
 /**
  * @generated from message cxz.ProjectAddRequest
@@ -1694,6 +1694,361 @@ export const SyncSkillsReplySchema: GenMessage<SyncSkillsReply> = /*@__PURE__*/
   messageDesc(file_cxz_project_svc_g, 59);
 
 /**
+ * ref scopes the view, as it does for the skills library. A registration is
+ * installation-wide, so put and remove have nowhere to name a project.
+ *
+ * @generated from message cxz.McpServersRequest
+ */
+export type McpServersRequest = Message<"cxz.McpServersRequest"> & {
+  /**
+   * @generated from field: cxz.ProjectRef ref = 1;
+   */
+  ref?: ProjectRef | undefined;
+};
+
+/**
+ * Describes the message cxz.McpServersRequest.
+ * Use `create(McpServersRequestSchema)` to create a new message.
+ */
+export const McpServersRequestSchema: GenMessage<McpServersRequest> = /*@__PURE__*/
+  messageDesc(file_cxz_project_svc_g, 60);
+
+/**
+ * @generated from message cxz.McpServersReply
+ */
+export type McpServersReply = Message<"cxz.McpServersReply"> & {
+  /**
+   * @generated from field: repeated cxz.McpEntry entries = 1;
+   */
+  entries: McpEntry[];
+
+  /**
+   * @generated from field: string message = 2;
+   */
+  message: string;
+};
+
+/**
+ * Describes the message cxz.McpServersReply.
+ * Use `create(McpServersReplySchema)` to create a new message.
+ */
+export const McpServersReplySchema: GenMessage<McpServersReply> = /*@__PURE__*/
+  messageDesc(file_cxz_project_svc_g, 61);
+
+/**
+ * @generated from message cxz.McpEntry
+ */
+export type McpEntry = Message<"cxz.McpEntry"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: cxz.McpServer server = 2;
+   */
+  server?: McpServer | undefined;
+
+  /**
+   * Set only when this project decided for itself; absent means it inherits.
+   *
+   * @generated from field: bool override = 3;
+   */
+  override: boolean;
+
+  /**
+   * @generated from field: bool effective = 4;
+   */
+  effective: boolean;
+};
+
+/**
+ * Describes the message cxz.McpEntry.
+ * Use `create(McpEntrySchema)` to create a new message.
+ */
+export const McpEntrySchema: GenMessage<McpEntry> = /*@__PURE__*/
+  messageDesc(file_cxz_project_svc_g, 62);
+
+/**
+ * @generated from message cxz.McpServer
+ */
+export type McpServer = Message<"cxz.McpServer"> & {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name: string;
+
+  /**
+   * @generated from field: cxz.McpKind kind = 2;
+   */
+  kind: McpKind;
+
+  /**
+   * @generated from field: bool enabled = 3;
+   */
+  enabled: boolean;
+
+  /**
+   * @generated from field: string command = 4;
+   */
+  command: string;
+
+  /**
+   * @generated from field: repeated string args = 5;
+   */
+  args: string[];
+
+  /**
+   * @generated from field: map<string, string> env = 6;
+   */
+  env: { [key: string]: string };
+
+  /**
+   * @generated from field: string url = 7;
+   */
+  url: string;
+
+  /**
+   * @generated from field: map<string, string> headers = 8;
+   */
+  headers: { [key: string]: string };
+};
+
+/**
+ * Describes the message cxz.McpServer.
+ * Use `create(McpServerSchema)` to create a new message.
+ */
+export const McpServerSchema: GenMessage<McpServer> = /*@__PURE__*/
+  messageDesc(file_cxz_project_svc_g, 63);
+
+/**
+ * @generated from message cxz.PutMcpServerRequest
+ */
+export type PutMcpServerRequest = Message<"cxz.PutMcpServerRequest"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: cxz.McpServer server = 2;
+   */
+  server?: McpServer | undefined;
+};
+
+/**
+ * Describes the message cxz.PutMcpServerRequest.
+ * Use `create(PutMcpServerRequestSchema)` to create a new message.
+ */
+export const PutMcpServerRequestSchema: GenMessage<PutMcpServerRequest> = /*@__PURE__*/
+  messageDesc(file_cxz_project_svc_g, 64);
+
+/**
+ * @generated from message cxz.McpServerRequest
+ */
+export type McpServerRequest = Message<"cxz.McpServerRequest"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+};
+
+/**
+ * Describes the message cxz.McpServerRequest.
+ * Use `create(McpServerRequestSchema)` to create a new message.
+ */
+export const McpServerRequestSchema: GenMessage<McpServerRequest> = /*@__PURE__*/
+  messageDesc(file_cxz_project_svc_g, 65);
+
+/**
+ * @generated from message cxz.McpServerDefaultRequest
+ */
+export type McpServerDefaultRequest = Message<"cxz.McpServerDefaultRequest"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: bool enabled = 2;
+   */
+  enabled: boolean;
+};
+
+/**
+ * Describes the message cxz.McpServerDefaultRequest.
+ * Use `create(McpServerDefaultRequestSchema)` to create a new message.
+ */
+export const McpServerDefaultRequestSchema: GenMessage<McpServerDefaultRequest> = /*@__PURE__*/
+  messageDesc(file_cxz_project_svc_g, 66);
+
+/**
+ * @generated from message cxz.ProjectMcpServerRequest
+ */
+export type ProjectMcpServerRequest = Message<"cxz.ProjectMcpServerRequest"> & {
+  /**
+   * @generated from field: cxz.ProjectRef ref = 1;
+   */
+  ref?: ProjectRef | undefined;
+
+  /**
+   * @generated from field: string id = 2;
+   */
+  id: string;
+
+  /**
+   * @generated from field: bool enabled = 3;
+   */
+  enabled: boolean;
+};
+
+/**
+ * Describes the message cxz.ProjectMcpServerRequest.
+ * Use `create(ProjectMcpServerRequestSchema)` to create a new message.
+ */
+export const ProjectMcpServerRequestSchema: GenMessage<ProjectMcpServerRequest> = /*@__PURE__*/
+  messageDesc(file_cxz_project_svc_g, 67);
+
+/**
+ * @generated from message cxz.ClearProjectMcpServerRequest
+ */
+export type ClearProjectMcpServerRequest = Message<"cxz.ClearProjectMcpServerRequest"> & {
+  /**
+   * @generated from field: cxz.ProjectRef ref = 1;
+   */
+  ref?: ProjectRef | undefined;
+
+  /**
+   * @generated from field: string id = 2;
+   */
+  id: string;
+};
+
+/**
+ * Describes the message cxz.ClearProjectMcpServerRequest.
+ * Use `create(ClearProjectMcpServerRequestSchema)` to create a new message.
+ */
+export const ClearProjectMcpServerRequestSchema: GenMessage<ClearProjectMcpServerRequest> = /*@__PURE__*/
+  messageDesc(file_cxz_project_svc_g, 68);
+
+/**
+ * @generated from message cxz.McpSessionsRequest
+ */
+export type McpSessionsRequest = Message<"cxz.McpSessionsRequest"> & {
+  /**
+   * @generated from field: cxz.ProjectRef ref = 1;
+   */
+  ref?: ProjectRef | undefined;
+};
+
+/**
+ * Describes the message cxz.McpSessionsRequest.
+ * Use `create(McpSessionsRequestSchema)` to create a new message.
+ */
+export const McpSessionsRequestSchema: GenMessage<McpSessionsRequest> = /*@__PURE__*/
+  messageDesc(file_cxz_project_svc_g, 69);
+
+/**
+ * @generated from message cxz.McpSessionsReply
+ */
+export type McpSessionsReply = Message<"cxz.McpSessionsReply"> & {
+  /**
+   * @generated from field: repeated cxz.McpSessionStatus sessions = 1;
+   */
+  sessions: McpSessionStatus[];
+
+  /**
+   * @generated from field: string message = 2;
+   */
+  message: string;
+};
+
+/**
+ * Describes the message cxz.McpSessionsReply.
+ * Use `create(McpSessionsReplySchema)` to create a new message.
+ */
+export const McpSessionsReplySchema: GenMessage<McpSessionsReply> = /*@__PURE__*/
+  messageDesc(file_cxz_project_svc_g, 70);
+
+/**
+ * servers maps an MCP id to what its connection is doing in this session.
+ * pending says the session launched with something other than what is
+ * registered now, so the difference waits for the next launch.
+ * session is the runtime id and not a SessionRef, for the same reason
+ * PutSecretFileRequest's is: this contract cannot refer to the session one,
+ * because the dependency runs the other way.
+ *
+ * @generated from message cxz.McpSessionStatus
+ */
+export type McpSessionStatus = Message<"cxz.McpSessionStatus"> & {
+  /**
+   * @generated from field: string session = 1;
+   */
+  session: string;
+
+  /**
+   * @generated from field: string title = 2;
+   */
+  title: string;
+
+  /**
+   * @generated from field: bool pending = 3;
+   */
+  pending: boolean;
+
+  /**
+   * @generated from field: string launch_digest = 4;
+   */
+  launchDigest: string;
+
+  /**
+   * @generated from field: map<string, string> servers = 5;
+   */
+  servers: { [key: string]: string };
+};
+
+/**
+ * Describes the message cxz.McpSessionStatus.
+ * Use `create(McpSessionStatusSchema)` to create a new message.
+ */
+export const McpSessionStatusSchema: GenMessage<McpSessionStatus> = /*@__PURE__*/
+  messageDesc(file_cxz_project_svc_g, 71);
+
+/**
+ * @generated from message cxz.SyncMcpServersRequest
+ */
+export type SyncMcpServersRequest = Message<"cxz.SyncMcpServersRequest"> & {
+  /**
+   * @generated from field: map<string, cxz.McpServer> servers = 1;
+   */
+  servers: { [key: string]: McpServer };
+};
+
+/**
+ * Describes the message cxz.SyncMcpServersRequest.
+ * Use `create(SyncMcpServersRequestSchema)` to create a new message.
+ */
+export const SyncMcpServersRequestSchema: GenMessage<SyncMcpServersRequest> = /*@__PURE__*/
+  messageDesc(file_cxz_project_svc_g, 72);
+
+/**
+ * @generated from message cxz.SyncMcpServersReply
+ */
+export type SyncMcpServersReply = Message<"cxz.SyncMcpServersReply"> & {
+  /**
+   * @generated from field: string status = 1;
+   */
+  status: string;
+};
+
+/**
+ * Describes the message cxz.SyncMcpServersReply.
+ * Use `create(SyncMcpServersReplySchema)` to create a new message.
+ */
+export const SyncMcpServersReplySchema: GenMessage<SyncMcpServersReply> = /*@__PURE__*/
+  messageDesc(file_cxz_project_svc_g, 73);
+
+/**
  * @generated from message cxz.FileMappingsRequest
  */
 export type FileMappingsRequest = Message<"cxz.FileMappingsRequest"> & {
@@ -1708,7 +2063,7 @@ export type FileMappingsRequest = Message<"cxz.FileMappingsRequest"> & {
  * Use `create(FileMappingsRequestSchema)` to create a new message.
  */
 export const FileMappingsRequestSchema: GenMessage<FileMappingsRequest> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 60);
+  messageDesc(file_cxz_project_svc_g, 74);
 
 /**
  * @generated from message cxz.FileMappingsReply
@@ -1725,7 +2080,7 @@ export type FileMappingsReply = Message<"cxz.FileMappingsReply"> & {
  * Use `create(FileMappingsReplySchema)` to create a new message.
  */
 export const FileMappingsReplySchema: GenMessage<FileMappingsReply> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 61);
+  messageDesc(file_cxz_project_svc_g, 75);
 
 /**
  * @generated from message cxz.ProjectUpRequest
@@ -1762,7 +2117,7 @@ export type ProjectUpRequest = Message<"cxz.ProjectUpRequest"> & {
  * Use `create(ProjectUpRequestSchema)` to create a new message.
  */
 export const ProjectUpRequestSchema: GenMessage<ProjectUpRequest> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 62);
+  messageDesc(file_cxz_project_svc_g, 76);
 
 /**
  * @generated from message cxz.ProjectControl
@@ -1784,7 +2139,7 @@ export type ProjectControl = Message<"cxz.ProjectControl"> & {
  * Use `create(ProjectControlSchema)` to create a new message.
  */
 export const ProjectControlSchema: GenMessage<ProjectControl> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 63);
+  messageDesc(file_cxz_project_svc_g, 77);
 
 /**
  * @generated from message cxz.ProjectRecreateRequest
@@ -1826,7 +2181,7 @@ export type ProjectRecreateRequest = Message<"cxz.ProjectRecreateRequest"> & {
  * Use `create(ProjectRecreateRequestSchema)` to create a new message.
  */
 export const ProjectRecreateRequestSchema: GenMessage<ProjectRecreateRequest> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 64);
+  messageDesc(file_cxz_project_svc_g, 78);
 
 /**
  * @generated from message cxz.InspectForeignRequest
@@ -1839,7 +2194,7 @@ export type InspectForeignRequest = Message<"cxz.InspectForeignRequest"> & {
  * Use `create(InspectForeignRequestSchema)` to create a new message.
  */
 export const InspectForeignRequestSchema: GenMessage<InspectForeignRequest> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 65);
+  messageDesc(file_cxz_project_svc_g, 79);
 
 /**
  * @generated from message cxz.InspectForeignResponse
@@ -1856,7 +2211,7 @@ export type InspectForeignResponse = Message<"cxz.InspectForeignResponse"> & {
  * Use `create(InspectForeignResponseSchema)` to create a new message.
  */
 export const InspectForeignResponseSchema: GenMessage<InspectForeignResponse> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 66);
+  messageDesc(file_cxz_project_svc_g, 80);
 
 /**
  * @generated from message cxz.ForeignContainer
@@ -1883,7 +2238,7 @@ export type ForeignContainer = Message<"cxz.ForeignContainer"> & {
  * Use `create(ForeignContainerSchema)` to create a new message.
  */
 export const ForeignContainerSchema: GenMessage<ForeignContainer> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 67);
+  messageDesc(file_cxz_project_svc_g, 81);
 
 /**
  * The kinds of task that can be done beside a session. A new kind is a value
@@ -1918,6 +2273,45 @@ export enum AuxKind {
  */
 export const AuxKindSchema: GenEnum<AuxKind> = /*@__PURE__*/
   enumDesc(file_cxz_project_svc_g, 0);
+
+/**
+ * An MCP server definition. kind is what the connection is: a local process, an
+ * HTTP endpoint, or one cxz provides itself. env and headers hold explicit
+ * values and are kept private, which is why a definition travels whole:
+ * changing one of them field by field would mean reading the others back out.
+ *
+ * @generated from enum cxz.McpKind
+ */
+export enum McpKind {
+  /**
+   * @generated from enum value: MCP_KIND_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: MCP_KIND_STDIO = 1;
+   */
+  STDIO = 1,
+
+  /**
+   * @generated from enum value: MCP_KIND_HTTP = 2;
+   */
+  HTTP = 2,
+
+  /**
+   * Provided by cxz. It cannot be registered or replaced by a caller, so this
+   * value only ever arrives in a reply.
+   *
+   * @generated from enum value: MCP_KIND_BUILTIN = 3;
+   */
+  BUILTIN = 3,
+}
+
+/**
+ * Describes the enum cxz.McpKind.
+ */
+export const McpKindSchema: GenEnum<McpKind> = /*@__PURE__*/
+  enumDesc(file_cxz_project_svc_g, 1);
 
 /**
  * @generated from service cxz.ProjectService
@@ -2273,6 +2667,81 @@ export const ProjectService: GenService<{
     methodKind: "unary";
     input: typeof SyncSkillsRequestSchema;
     output: typeof SyncSkillsReplySchema;
+  },
+  /**
+   * MCP registrations, and which projects see each one. The same six decisions
+   * as the skills library, for the same reason, plus a definition that arrives
+   * whole: its environment and headers hold explicit values, so editing one
+   * field at a time would mean reading the others back out first.
+   *
+   * @generated from rpc cxz.ProjectService.GetMcpServers
+   */
+  getMcpServers: {
+    methodKind: "unary";
+    input: typeof McpServersRequestSchema;
+    output: typeof McpServersReplySchema;
+  },
+  /**
+   * @generated from rpc cxz.ProjectService.PutMcpServer
+   */
+  putMcpServer: {
+    methodKind: "unary";
+    input: typeof PutMcpServerRequestSchema;
+    output: typeof McpServersReplySchema;
+  },
+  /**
+   * @generated from rpc cxz.ProjectService.RemoveMcpServer
+   */
+  removeMcpServer: {
+    methodKind: "unary";
+    input: typeof McpServerRequestSchema;
+    output: typeof McpServersReplySchema;
+  },
+  /**
+   * @generated from rpc cxz.ProjectService.SetMcpServerDefault
+   */
+  setMcpServerDefault: {
+    methodKind: "unary";
+    input: typeof McpServerDefaultRequestSchema;
+    output: typeof McpServersReplySchema;
+  },
+  /**
+   * @generated from rpc cxz.ProjectService.SetProjectMcpServer
+   */
+  setProjectMcpServer: {
+    methodKind: "unary";
+    input: typeof ProjectMcpServerRequestSchema;
+    output: typeof McpServersReplySchema;
+  },
+  /**
+   * @generated from rpc cxz.ProjectService.ClearProjectMcpServer
+   */
+  clearProjectMcpServer: {
+    methodKind: "unary";
+    input: typeof ClearProjectMcpServerRequestSchema;
+    output: typeof McpServersReplySchema;
+  },
+  /**
+   * What each of a project's live sessions actually launched with, and whether
+   * a change is still waiting for a restart. Separate from reading the
+   * registrations, because a settings list should not stall on a container.
+   *
+   * @generated from rpc cxz.ProjectService.McpSessions
+   */
+  mcpSessions: {
+    methodKind: "unary";
+    input: typeof McpSessionsRequestSchema;
+    output: typeof McpSessionsReplySchema;
+  },
+  /**
+   * Manager to project container: the registrations resolved for this project.
+   *
+   * @generated from rpc cxz.ProjectService.SyncMcpServers
+   */
+  syncMcpServers: {
+    methodKind: "unary";
+    input: typeof SyncMcpServersRequestSchema;
+    output: typeof SyncMcpServersReplySchema;
   },
   /**
    * @generated from rpc cxz.ProjectService.FileMappings

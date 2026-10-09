@@ -49,6 +49,11 @@ service SessionService {
   // operation that does. A dry run reports the plan without carrying it out --
   // the same code, so that what is reported is what would happen.
   rpc Purge(SessionPurgeRequest) returns (SessionPurgeReply);
+  // One session's connection to one registered MCP. Both are the session's and
+  // not the installation's: the logs are of that launch and the reconnection is
+  // of that connection, and neither changes what is registered.
+  rpc McpLogs(SessionMcpRequest) returns (SessionMcpLogsReply);
+  rpc RestartMcp(SessionMcpRequest) returns (SessionReceipt);
 }
 
 // A window is half-open, [since, until), so the windows a client walks back
@@ -296,3 +301,9 @@ message SessionPurgeReply {
   // instead of implying the session vanished from the world.
   repeated string retained = 4;
 }
+
+message SessionMcpRequest { SessionRef ref = 1; string id = 2; }
+// Explicit environment values are removed from the text before it leaves the
+// project, because a server that prints its own configuration on startup would
+// otherwise hand back the secret it was given.
+message SessionMcpLogsReply { string text = 1; string message = 2; }

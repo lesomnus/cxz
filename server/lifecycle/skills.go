@@ -12,7 +12,7 @@ import (
 // project sees; without one, the installation's own defaults.
 
 func (s ProjectServer) GetSkills(ctx context.Context, r *resource.SkillsRequest) (*resource.SkillsReply, error) {
-	project, err := s.skillScope(ctx, r.GetRef())
+	project, err := s.projectScope(ctx, r.GetRef())
 	if err != nil {
 		return nil, err
 	}
@@ -75,10 +75,10 @@ func (s ProjectServer) SyncSkills(ctx context.Context, r *resource.SyncSkillsReq
 	return resource.SyncSkillsReply_builder{Status: &out.Status}.Build(), nil
 }
 
-// skillScope resolves an optional ref to the runtime id the library is keyed
-// by. No ref is the installation itself, which is a scope and not a missing
-// argument.
-func (s ProjectServer) skillScope(ctx context.Context, ref *resource.ProjectRef) (string, error) {
+// projectScope resolves an optional ref to the runtime id an installation's
+// settings are keyed by. No ref is the installation itself, which is a scope
+// and not a missing argument.
+func (s ProjectServer) projectScope(ctx context.Context, ref *resource.ProjectRef) (string, error) {
 	if ref == nil {
 		return "", nil
 	}
@@ -95,7 +95,7 @@ func (s ProjectServer) changeScope(ctx context.Context, ref *resource.ProjectRef
 	if err := s.effect(); err != nil {
 		return "", err
 	}
-	return s.skillScope(ctx, ref)
+	return s.projectScope(ctx, ref)
 }
 
 func skillsReply(v *api.SkillsReply, err error) (*resource.SkillsReply, error) {

@@ -89,6 +89,28 @@ service Sessions {
   // one that is easy to look at is the one that would drift from the one that
   // runs.
   rpc RenderDevcontainer(RenderDevcontainerInput) returns (RenderDevcontainerReply);
+  // MCP registrations, and which projects see each one. The same six decisions
+  // as the skills library, for the same reason, plus a definition that arrives
+  // whole: its environment and headers hold explicit values, so a field-by-
+  // field edit would mean reading them back out to change one of them.
+  rpc GetMcpServers(McpServersInput) returns (McpServersReply);
+  rpc PutMcpServer(PutMcpServerInput) returns (McpServersReply);
+  rpc RemoveMcpServer(McpServerInput) returns (McpServersReply);
+  rpc SetMcpServerDefault(McpServerDefaultInput) returns (McpServersReply);
+  rpc SetProjectMcpServer(ProjectMcpServerInput) returns (McpServersReply);
+  rpc ClearProjectMcpServer(ClearProjectMcpServerInput) returns (McpServersReply);
+  // What each of a project's live sessions actually launched with, and whether
+  // a change is still waiting for a restart. Separate from reading the
+  // registrations, because a settings list should not stall on a container.
+  rpc McpSessions(McpSessionsInput) returns (McpSessionsReply);
+  // Manager to project container: the registrations resolved for this project,
+  // for the next agent launch to use.
+  rpc SyncMcpServers(SyncMcpServersInput) returns (Receipt);
+  // One session's connection to one MCP. Both are the session's, not the
+  // installation's: the logs are of that launch and the reconnection is of that
+  // connection, and neither touches what is registered.
+  rpc McpLogs(McpLogsInput) returns (McpLogsReply);
+  rpc RestartMcp(RestartMcpInput) returns (Receipt);
 }
 message Empty {}
 message CreateRequest { string workspace = 1; string title = 2; string client_id = 3; string agent = 4; string model = 5; string account = 6; string auth_backend = 7; string auth_binding = 8; }
@@ -400,3 +422,43 @@ message RenderDevcontainerReply {
   string note = 4;
   repeated RenderedFile files = 5;
 }
+
+// kind is stdio, http or builtin. env and headers hold explicit values and are
+// kept private, which is why a definition travels whole: changing one of them
+// field by field would mean reading the others back out first.
+message McpServer {
+  string name = 1; string kind = 2; bool enabled = 3;
+  string command = 4; repeated string args = 5; map<string, string> env = 6;
+  string url = 7; map<string, string> headers = 8;
+}
+message McpEntry {
+  string id = 1; McpServer server = 2;
+  // Set only when this project decided for itself; absent means it inherits.
+  optional bool override = 3;
+  bool effective = 4;
+}
+message McpServersReply { repeated McpEntry entries = 1; string message = 2; }
+// project scopes the view, as it does for skills. A registration is
+// installation-wide, so put and remove have nowhere to name one.
+message McpServersInput { string project = 1; }
+message PutMcpServerInput { string id = 1; McpServer server = 2; }
+message McpServerInput { string id = 1; }
+message McpServerDefaultInput { string id = 1; bool enabled = 2; }
+message ProjectMcpServerInput { string project = 1; string id = 2; bool enabled = 3; }
+message ClearProjectMcpServerInput { string project = 1; string id = 2; }
+message McpSessionsInput { string project = 1; }
+// servers maps an MCP id to what its connection is doing in this session.
+// pending says the session launched with something other than what is
+// registered now, so the difference waits for the next launch.
+message McpSessionStatus {
+  string session_id = 1; string title = 2; bool pending = 3;
+  string launch_digest = 4; map<string, string> servers = 5;
+}
+message McpSessionsReply { repeated McpSessionStatus sessions = 1; string message = 2; }
+message SyncMcpServersInput { map<string, McpServer> servers = 1; }
+message McpLogsInput { string session_id = 1; string id = 2; }
+// Explicit environment values are removed from the text before it leaves the
+// project, because a server that prints its own configuration on startup would
+// otherwise hand back the secret it was given.
+message McpLogsReply { string text = 1; string message = 2; }
+message RestartMcpInput { string session_id = 1; string id = 2; }

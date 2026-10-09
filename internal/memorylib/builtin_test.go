@@ -31,8 +31,9 @@ func TestBuiltinActivationAndRuntimeSessions(t *testing.T) {
 	if mcpruntime.Instructions(on) == "" {
 		t.Fatal("missing builtin instructions")
 	}
-	off := false
-	mcpconfig.Apply(root, mcpconfig.Request{Action: "enable", Project: "P", ID: "cxz_memory", Enabled: &off})
+	if _, e := mcpconfig.SetProject(root, "P", "cxz_memory", false); e != nil {
+		t.Fatal(e)
+	}
 	cfg, _ = mcpconfig.Load(root)
 	if len(cfg.Resolve("P").Servers) != 0 || mcpruntime.Instructions(cfg.Resolve("P")) != "" {
 		t.Fatal("disabled memory consumes context")

@@ -17,7 +17,8 @@ type mcpPage struct {
 	global               bool
 	selected, offset     int
 	busy                 bool
-	result               mcpconfig.Reply
+	result               *api.McpServersReply
+	sessions             []*api.McpSessionStatus
 	message              string
 	request              uint64
 	adding               bool
@@ -25,10 +26,11 @@ type mcpPage struct {
 	inputs               []textinput.Model
 }
 type mcpResult struct {
-	page    *mcpPage
-	request uint64
-	reply   mcpconfig.Reply
-	err     error
+	page     *mcpPage
+	request  uint64
+	reply    *api.McpServersReply
+	sessions []*api.McpSessionStatus
+	err      error
 }
 
 func (m *model) openMCP() tea.Cmd {
@@ -41,15 +43,26 @@ func (m *model) openMCP() tea.Cmd {
 		p.projectName = s.ProjectName
 	}
 	m.settingsPage.mcp = p
-	return m.mcpRequest(mcpconfig.Request{Action: "list"})
+	return m.mcpList()
 }
-func (m *model) mcpRequest(r mcpconfig.Request) tea.Cmd {
+
+func (m *model) mcpList() tea.Cmd {
+	return m.mcpCall(func(ctx context.Context, client api.SessionsClient, project string) (*api.McpServersReply, error) {
+		return client.GetMcpServers(ctx, &api.McpServersInput{Project: project})
+	})
+}
+
+// mcpCall runs one named call and, when the page is looking at a project, also
+// asks what that project's live sessions launched with. They are two questions
+// now: reading the registrations no longer waits on a container.
+func (m *model) mcpCall(call func(context.Context, api.SessionsClient, string) (*api.McpServersReply, error)) tea.Cmd {
 	p := m.settingsPage.mcp
 	if p.busy {
 		return nil
 	}
+	project := ""
 	if !p.global {
-		r.Project = p.project
+		project = p.project
 	}
 	p.busy = true
 	p.request++
@@ -58,11 +71,14 @@ func (m *model) mcpRequest(r mcpconfig.Request) tea.Cmd {
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 		defer cancel()
-		b, _ := json.Marshal(r)
-		out, e := client.Docker(ctx, &api.DockerInput{Action: "mcp", Spec: b})
-		v := mcpResult{page: p, request: seq, err: e}
-		if e == nil {
-			v.err = json.Unmarshal([]byte(out.Status), &v.reply)
+		out, e := call(ctx, client, project)
+		v := mcpResult{page: p, request: seq, reply: out, err: e}
+		if e == nil && project != "" {
+			// A status that cannot be read is not a failed change: the change
+			// is already saved, and the reply says so.
+			if st, err := client.McpSessions(ctx, &api.McpSessionsInput{Project: project}); err == nil {
+				v.sessions = st.Sessions
+			}
 		}
 		return v
 	}
@@ -78,8 +94,9 @@ func (m *model) receiveMCP(v mcpResult) {
 		return
 	}
 	p.result = v.reply
-	p.message = v.reply.Message
-	p.selected = max(0, min(p.selected, len(p.result.Entries)-1))
+	p.sessions = v.sessions
+	p.message = v.reply.GetMessage()
+	p.selected = max(0, min(p.selected, len(p.result.GetEntries())-1))
 	p.adding = false
 	p.inputs = nil
 }
@@ -131,14 +148,14 @@ func (m *model) mcpKey(k tea.KeyMsg) tea.Cmd {
 			p.global = !p.global
 			p.selected = 0
 			p.offset = 0
-			return m.mcpRequest(mcpconfig.Request{Action: "list"})
+			return m.mcpList()
 		}
 	case "up":
 		p.selected = max(0, p.selected-1)
 	case "down":
-		p.selected = min(len(p.result.Entries)-1, p.selected+1)
+		p.selected = min(len(p.result.GetEntries())-1, p.selected+1)
 	case "r":
-		return m.mcpRequest(mcpconfig.Request{Action: "list"})
+		return m.mcpList()
 	case "a":
 		if !p.global {
 			p.message = "Register MCP servers in Global defaults (Tab)."
@@ -165,29 +182,39 @@ func (m *model) mcpKey(k tea.KeyMsg) tea.Cmd {
 		}
 		return p.inputs[0].Focus()
 	case "enter", " ", "i":
-		if p.selected < 0 || p.selected >= len(p.result.Entries) {
+		if p.selected < 0 || p.selected >= len(p.result.GetEntries()) {
 			return nil
 		}
-		v := p.result.Entries[p.selected]
-		r := mcpconfig.Request{Action: "enable", ID: v.ID}
+		v := p.result.GetEntries()[p.selected]
+		// Which of the three activation calls this is depends on the scope the
+		// page is in, which the page knows. Nothing has to be inferred from a
+		// field being empty.
 		if k.String() == "i" {
 			if p.global {
 				return nil
 			}
-		} else {
-			on := !v.Effective
-			r.Enabled = &on
+			return m.mcpCall(func(ctx context.Context, client api.SessionsClient, project string) (*api.McpServersReply, error) {
+				return client.ClearProjectMcpServer(ctx, &api.ClearProjectMcpServerInput{Project: project, Id: v.Id})
+			})
 		}
-		return m.mcpRequest(r)
+		on := !v.Effective
+		if p.global {
+			return m.mcpCall(func(ctx context.Context, client api.SessionsClient, _ string) (*api.McpServersReply, error) {
+				return client.SetMcpServerDefault(ctx, &api.McpServerDefaultInput{Id: v.Id, Enabled: on})
+			})
+		}
+		return m.mcpCall(func(ctx context.Context, client api.SessionsClient, project string) (*api.McpServersReply, error) {
+			return client.SetProjectMcpServer(ctx, &api.ProjectMcpServerInput{Project: project, Id: v.Id, Enabled: on})
+		})
 	}
 	return nil
 }
 func (m *model) mcpAdd() tea.Cmd {
 	p := m.settingsPage.mcp
 	v := func(i int) string { return strings.TrimSpace(p.inputs[i].Value()) }
-	s := mcpconfig.Server{Name: v(1), Kind: v(2)}
+	s := &api.McpServer{Name: v(1), Kind: v(2)}
 	if s.Kind == "http" {
-		s.URL = v(3)
+		s.Url = v(3)
 	} else {
 		s.Command = v(3)
 	}
@@ -201,17 +228,23 @@ func (m *model) mcpAdd() tea.Cmd {
 		p.message = e.Error()
 		return nil
 	}
-	if e := s.Validate(); e != nil {
+	if e := (mcpconfig.Server{
+		Name: s.Name, Kind: s.Kind, Command: s.Command, Args: s.Args,
+		Env: s.Env, URL: s.Url, Headers: s.Headers,
+	}).Validate(); e != nil {
 		p.message = e.Error()
 		return nil
 	}
-	for _, entry := range p.result.Entries {
-		if entry.ID == v(0) {
+	for _, entry := range p.result.GetEntries() {
+		if entry.Id == v(0) {
 			p.message = "ID already exists; use a new ID or cxz mcp add to replace it."
 			return nil
 		}
 	}
-	return m.mcpRequest(mcpconfig.Request{Action: "put", ID: v(0), Server: &s})
+	id := v(0)
+	return m.mcpCall(func(ctx context.Context, client api.SessionsClient, _ string) (*api.McpServersReply, error) {
+		return client.PutMcpServer(ctx, &api.PutMcpServerInput{Id: id, Server: s})
+	})
 }
 func (m *model) mcpMouse(v tea.MouseMsg) tea.Cmd {
 	p := m.settingsPage.mcp
@@ -220,7 +253,7 @@ func (m *model) mcpMouse(v tea.MouseMsg) tea.Cmd {
 	}
 	if v.Button == tea.MouseButtonLeft && v.Action == tea.MouseActionPress {
 		i := v.Y - 4 + p.offset
-		if i >= 0 && i < len(p.result.Entries) {
+		if i >= 0 && i < len(p.result.GetEntries()) {
 			p.selected = i
 			return m.mcpKey(tea.KeyMsg{Type: tea.KeyEnter})
 		}
@@ -247,8 +280,8 @@ func (m *model) mcpScreen() string {
 		visible := max(1, m.height-10)
 		p.offset = max(0, min(p.offset, p.selected))
 		p.offset = max(p.offset, p.selected-visible+1)
-		for i := p.offset; i < min(len(p.result.Entries), p.offset+visible); i++ {
-			v := p.result.Entries[i]
+		for i := p.offset; i < min(len(p.result.GetEntries()), p.offset+visible); i++ {
+			v := p.result.GetEntries()[i]
 			check := "[ ]"
 			if v.Effective {
 				check = "[✓]"
@@ -257,28 +290,28 @@ func (m *model) mcpScreen() string {
 			if !p.global && v.Override != nil {
 				source = "project override"
 			}
-			line := fmt.Sprintf("  %s  %s · %s · %s", check, v.Server.Name, v.Server.Kind, source)
+			line := fmt.Sprintf("  %s  %s · %s · %s", check, v.GetServer().GetName(), v.GetServer().GetKind(), source)
 			if i == p.selected {
 				line = focus.Render("›" + line[1:])
 			}
 			lines = append(lines, line)
 		}
-		if len(p.result.Entries) == 0 {
+		if len(p.result.GetEntries()) == 0 {
 			lines = append(lines, "No MCP servers registered. Press a to add one.")
 		}
 		lines = append(lines, "", "Tab global/project · Enter/Space toggle · i inherit · a add · r refresh · Esc back", "Changes apply on the next agent launch; working agents are not restarted.")
 	}
-	for i, session := range p.result.Sessions {
+	for i, session := range p.sessions {
 		if i >= 3 {
-			lines = append(lines, fmt.Sprintf("%d more sessions (cxz mcp list --project …)", len(p.result.Sessions)-i))
+			lines = append(lines, fmt.Sprintf("%d more sessions (cxz mcp list --project …)", len(p.sessions)-i))
 			break
 		}
 		label := "Applied"
 		if session.Pending {
 			label = "Settings pending restart"
 		}
-		if p.selected >= 0 && p.selected < len(p.result.Entries) {
-			status := session.Servers[p.result.Entries[p.selected].ID]
+		if p.selected >= 0 && p.selected < len(p.result.GetEntries()) {
+			status := session.Servers[p.result.GetEntries()[p.selected].Id]
 			if status == "" {
 				status = "not in this launch"
 			}

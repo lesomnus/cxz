@@ -3480,6 +3480,46 @@ func (s interceptProject) SyncSkills(ctx context.Context, req *resource.SyncSkil
 		resource.ProjectService_SyncSkills_FullMethodName, req, s.ProjectServiceServer.SyncSkills)
 }
 
+func (s interceptProject) GetMcpServers(ctx context.Context, req *resource.McpServersRequest) (*resource.McpServersReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_GetMcpServers_FullMethodName, req, s.ProjectServiceServer.GetMcpServers)
+}
+
+func (s interceptProject) PutMcpServer(ctx context.Context, req *resource.PutMcpServerRequest) (*resource.McpServersReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_PutMcpServer_FullMethodName, req, s.ProjectServiceServer.PutMcpServer)
+}
+
+func (s interceptProject) RemoveMcpServer(ctx context.Context, req *resource.McpServerRequest) (*resource.McpServersReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_RemoveMcpServer_FullMethodName, req, s.ProjectServiceServer.RemoveMcpServer)
+}
+
+func (s interceptProject) SetMcpServerDefault(ctx context.Context, req *resource.McpServerDefaultRequest) (*resource.McpServersReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_SetMcpServerDefault_FullMethodName, req, s.ProjectServiceServer.SetMcpServerDefault)
+}
+
+func (s interceptProject) SetProjectMcpServer(ctx context.Context, req *resource.ProjectMcpServerRequest) (*resource.McpServersReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_SetProjectMcpServer_FullMethodName, req, s.ProjectServiceServer.SetProjectMcpServer)
+}
+
+func (s interceptProject) ClearProjectMcpServer(ctx context.Context, req *resource.ClearProjectMcpServerRequest) (*resource.McpServersReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_ClearProjectMcpServer_FullMethodName, req, s.ProjectServiceServer.ClearProjectMcpServer)
+}
+
+func (s interceptProject) McpSessions(ctx context.Context, req *resource.McpSessionsRequest) (*resource.McpSessionsReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_McpSessions_FullMethodName, req, s.ProjectServiceServer.McpSessions)
+}
+
+func (s interceptProject) SyncMcpServers(ctx context.Context, req *resource.SyncMcpServersRequest) (*resource.SyncMcpServersReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_SyncMcpServers_FullMethodName, req, s.ProjectServiceServer.SyncMcpServers)
+}
+
 func (s interceptProject) FileMappings(ctx context.Context, req *resource.FileMappingsRequest) (*resource.FileMappingsReply, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
 		resource.ProjectService_FileMappings_FullMethodName, req, s.ProjectServiceServer.FileMappings)
@@ -3853,6 +3893,16 @@ func (s interceptSession) AuxCancel(ctx context.Context, req *resource.AuxCancel
 func (s interceptSession) Purge(ctx context.Context, req *resource.SessionPurgeRequest) (*resource.SessionPurgeReply, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
 		resource.SessionService_Purge_FullMethodName, req, s.SessionServiceServer.Purge)
+}
+
+func (s interceptSession) McpLogs(ctx context.Context, req *resource.SessionMcpRequest) (*resource.SessionMcpLogsReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
+		resource.SessionService_McpLogs_FullMethodName, req, s.SessionServiceServer.McpLogs)
+}
+
+func (s interceptSession) RestartMcp(ctx context.Context, req *resource.SessionMcpRequest) (*resource.SessionReceipt, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
+		resource.SessionService_RestartMcp_FullMethodName, req, s.SessionServiceServer.RestartMcp)
 }
 
 // WatchRecorder answers with the recorder that remembers a write for `w`.
@@ -4805,6 +4855,110 @@ func dispatch(ctx context.Context, s resource.Server, op *pdpb.Op) (*anypb.Any, 
 
 		return anypb.New(res)
 
+	case resource.ProjectService_GetMcpServers_FullMethodName:
+		v := &resource.McpServersRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().GetMcpServers(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.ProjectService_PutMcpServer_FullMethodName:
+		v := &resource.PutMcpServerRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().PutMcpServer(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.ProjectService_RemoveMcpServer_FullMethodName:
+		v := &resource.McpServerRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().RemoveMcpServer(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.ProjectService_SetMcpServerDefault_FullMethodName:
+		v := &resource.McpServerDefaultRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().SetMcpServerDefault(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.ProjectService_SetProjectMcpServer_FullMethodName:
+		v := &resource.ProjectMcpServerRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().SetProjectMcpServer(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.ProjectService_ClearProjectMcpServer_FullMethodName:
+		v := &resource.ClearProjectMcpServerRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().ClearProjectMcpServer(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.ProjectService_McpSessions_FullMethodName:
+		v := &resource.McpSessionsRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().McpSessions(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.ProjectService_SyncMcpServers_FullMethodName:
+		v := &resource.SyncMcpServersRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().SyncMcpServers(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
 	case resource.ProjectService_FileMappings_FullMethodName:
 		v := &resource.FileMappingsRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
@@ -5579,6 +5733,32 @@ func dispatch(ctx context.Context, s resource.Server, op *pdpb.Op) (*anypb.Any, 
 		}
 
 		res, err := s.Session().Purge(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.SessionService_McpLogs_FullMethodName:
+		v := &resource.SessionMcpRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Session().McpLogs(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.SessionService_RestartMcp_FullMethodName:
+		v := &resource.SessionMcpRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Session().RestartMcp(ctx, v)
 		if err != nil {
 			return nil, err
 		}
