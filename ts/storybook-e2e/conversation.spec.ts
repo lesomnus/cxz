@@ -210,8 +210,27 @@ test("major component stories render without runtime errors", async ({
     const errors = await story(page, entry.id);
     // Wait for component mount rather than just Storybook's loading shell.
     await expect(page.locator("#storybook-root"), entry.id).toBeVisible();
-    if (entry.id.startsWith("editor-sourceeditor--"))
+    if (entry.id.startsWith("editor-sourceeditor--")) {
       await expect(page.locator(".monaco-editor"), entry.id).toBeVisible();
+      await expect
+        .poll(
+          () =>
+            page
+              .locator(".code-editor")
+              .evaluate(
+                (el) => el.clientHeight / el.parentElement!.clientHeight,
+              ),
+          { message: entry.id },
+        )
+        .toBeGreaterThan(0.95);
+    }
+    if (entry.id.startsWith("components-floatingcard--")) {
+      await expect(page.locator(".floating-card"), entry.id).toHaveCSS(
+        "opacity",
+        "1",
+      );
+      await expect(page.locator(".floating-card"), entry.id).toBeInViewport();
+    }
     await expect(page.locator(".sb-errordisplay"), entry.id).toBeHidden();
     expect(errors, entry.id).toEqual([]);
     page.removeAllListeners("pageerror");
@@ -262,5 +281,53 @@ test("long conversation uses virtual rows and the real transcript scrollbar", as
   await scroll.press("Home");
   await expect.poll(() => pane.evaluate((el) => el.scrollTop)).toBe(0);
   await expect(page.locator("article.input").first()).toContainText("UI · 1.");
+  expect(errors).toEqual([]);
+});
+
+test("standalone floating cards are opaque, readable and interactive", async ({
+  page,
+}) => {
+  const errors = await story(page, "components-floatingcard--paste-preview");
+  const card = page.locator(".floating-card");
+  await expect(card).toHaveCSS("opacity", "1");
+  await expect(card).toBeInViewport();
+  await expect(card.getByText("Paste preview", { exact: true })).toBeVisible();
+  await expect(card.locator("pre")).toContainText("export const ready = true;");
+  await expect(
+    card.getByRole("button", { name: "Close paste preview" }),
+  ).toBeEnabled();
+  await page.goto(
+    "/iframe.html?id=components-floatingcard--editor-tabs&viewMode=story",
+  );
+  await expect(page.locator(".floating-card")).toHaveCSS("opacity", "1");
+  const viewport = page.locator(".detail-editor");
+  await expect
+    .poll(() => viewport.evaluate((el) => el.clientHeight))
+    .toBeGreaterThan(100);
+  await page.getByRole("tab", { name: "Output", exact: true }).click();
+  await expect(page.getByRole("tabpanel")).toContainText("main");
+  expect(errors).toEqual([]);
+});
+
+test("source editor fills its preview and accepts edits", async ({ page }) => {
+  const errors = await story(page, "editor-sourceeditor--settings-json");
+  await expect(page.locator(".monaco-editor")).toBeVisible();
+  const editor = page.locator(".code-editor");
+  await expect
+    .poll(() =>
+      editor.evaluate((el) => el.clientHeight / el.parentElement!.clientHeight),
+    )
+    .toBeGreaterThan(0.95);
+  await expect(page.locator(".view-lines")).toContainText('"editor.tabSize"');
+  // Monaco's visible text layer receives clicks above its native textarea.
+  await page.locator(".monaco-editor").click({ position: { x: 130, y: 24 } });
+  await expect(
+    page.getByRole("textbox", { name: "Settings file", exact: true }),
+  ).toBeFocused();
+  await page.keyboard.press("Control+A");
+  await page.keyboard.type('{"editor.tabSize": 6}');
+  await expect(page.locator(".view-lines")).toContainText(
+    '"editor.tabSize": 6',
+  );
   expect(errors).toEqual([]);
 });

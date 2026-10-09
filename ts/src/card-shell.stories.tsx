@@ -13,9 +13,12 @@ const meta = {
     close: () => {},
     children: <pre>{"export const ready = true;\nconsole.log(ready);"}</pre>,
   },
+  render: (args) => (
+    <FloatingCard {...args} data-entered="true" data-active="true" />
+  ),
   decorators: [
     (Story) => (
-      <div className="storybook-card">
+      <div className="conversation storybook-card">
         <Story />
       </div>
     ),

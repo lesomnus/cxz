@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useArgs } from "storybook/preview-api";
 import { SourceEditor } from "./source-editor";
+import "./storybook/preview.css";
 
 const meta = {
   title: "Editor/SourceEditor",
@@ -16,7 +17,7 @@ const meta = {
   },
   decorators: [
     (Story) => (
-      <div style={{ width: "min(800px, calc(100vw - 48px))", height: 420 }}>
+      <div className="storybook-source-editor">
         <Story />
       </div>
     ),

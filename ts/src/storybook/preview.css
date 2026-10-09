@@ -30,8 +30,18 @@
   font-size: 14px;
 }
 .storybook-card {
+  --card-max-height: calc(100dvh - 48px);
   width: min(600px, calc(100vw - 48px));
+  overflow: visible;
 }
-.storybook-card .detail-editor {
-  height: 300px;
+.storybook-card > .floating-card {
+  position: relative;
+  inset: auto;
+  width: 100%;
+}
+.storybook-source-editor {
+  display: flex;
+  flex-direction: column;
+  width: min(800px, calc(100vw - 48px));
+  height: 420px;
 }
