@@ -34,7 +34,8 @@ away from the query hide them. Suggestions are enabled only for the session
 composer, leaving question answers as ordinary editable text.
 
 The overlay has vertical inset around its rows and a dark translucent backdrop
-with Gaussian blur. Padding extends the surface without shifting the selected
+with Gaussian blur. The tint lightly darkens the blurred content rather than
+concealing it. Padding extends the surface without shifting the selected
 line. The backdrop occupies its own layer below the native textarea so the caret
 remains visible; applying a filter to the whole overlay would change that stacking.
 

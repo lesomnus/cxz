@@ -1240,7 +1240,7 @@ pre {
   inset: 0;
   z-index: 2;
   border-radius: var(--space);
-  background: color-mix(in srgb, var(--shade-0) 72%, transparent);
+  background: color-mix(in srgb, var(--shade-0) 32%, transparent);
   -webkit-backdrop-filter: blur(var(--command-overlay-blur));
   backdrop-filter: blur(var(--command-overlay-blur));
 }
