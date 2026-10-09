@@ -147,10 +147,12 @@ enum AuxKind {
   AUX_KIND_TITLE = 3;
 }
 
-// 보조 AI 실행에 쓰는 계정과 모델. 세션 자격증명을 복사하지 않는다.
+// kind를 어떤 계정·모델로 실행하는지. 세션 자격증명을 복사하지 않는다.
+// 요약과 추천의 프로필이 같은지가 한 호출로 묶을지를 결정하므로, 프로필은
+// kind별로 따로 있어야 한다.
 message AuxProfile {
-  bool enabled = 1; string account = 2; string agent = 3;
-  string backend = 4; string model = 5; string effort = 6;
+  AuxKind kind = 1; bool enabled = 2; string account = 3; string agent = 4;
+  string backend = 5; string model = 6; string effort = 7;
 }
 
 // 한 턴에 대한 한 건의 작업. kinds가 복수인 것이 핵심이다: 같은 프로필이면
@@ -164,6 +166,8 @@ message Aux {
   // 설정이 바뀌면 진행 중인 Aux는 stale이 된다. 바뀐 설정의 결과가 아니기 때문이다.
   string revision = 6;
   string state = 7; // queued, running, completed, failed, stale, canceled
+  // 부분 결과를 허용한다. 요약은 추천이 아직 돌고 있는 동안 공개되므로
+  // (`controller.go:363`) running 상태의 Aux가 결과 하나를 이미 들고 있다.
   repeated AuxResult results = 8;
   repeated AuxUsage usage = 9;
   string message = 10; // 실패 이유. 사람이 읽는 한 줄
@@ -181,7 +185,12 @@ message AuxUsage { string account = 1; string model = 2; AuxKind kind = 3; bytes
 message AuxSummary { string run_id = 1; uint64 turn = 2; string text = 3; }
 
 // kind별 자동 실행 여부. 세션 설정이 설치 기본값을 덮는다.
-message AuxPreference { AuxKind kind = 1; bool enabled = 2; }
+//
+// since는 "언제부터의 턴을 대상으로 하는가"다. 켜는 순간 지난 대화를 소급해서
+// 실행하지 않기 위해 필요하고, 설치 기본값과 세션 설정 양쪽에 있다 -- 지금도
+// `Config.Since`와 세션 preferences의 `Since`를 max로 합친다
+// (`internal/auxiliary/session.go:39`).
+message AuxPreference { AuxKind kind = 1; bool enabled = 2; google.protobuf.Timestamp since = 3; }
 ```
 
 ### `proto/ext/cxz/aux_svc.ext.proto`
@@ -205,13 +214,16 @@ service AuxService {
 }
 
 message AuxRunRequest { SessionRef parent = 1; repeated AuxKind kinds = 2; string text = 3; }
-message AuxRequest { SessionRef parent = 1; string job_id = 2; }
+message AuxRequest { SessionRef parent = 1; string aux_id = 2; }
 message AuxSummariesRequest { SessionRef parent = 1; uint64 after_turn = 2; int32 limit = 3; }
-message AuxSummariesReply { repeated AuxSummary summaries = 1; Aux job = 2; }
+message AuxSummariesReply { repeated AuxSummary summaries = 1; Aux current = 2; }
 message AuxConfig {
   string revision = 1;
   repeated AuxProfile profiles = 2;        // kind별 기본 프로필
   repeated AuxPreference preferences = 3;  // parent가 지정되면 그 세션 설정
+  // 설정을 바꾼 뒤 사람이 읽는 한 줄. 지금 Reply.Message가 하는 일이다 --
+  // "summary on · this session", grant 정리 실패 보고 같은 것.
+  string message = 4;
 }
 // parent가 비어 있으면 설치 기본값, 지정되면 그 세션의 설정을 읽고 쓴다.
 message AuxConfigRequest { SessionRef parent = 1; }
@@ -249,7 +261,7 @@ message AuxLoginInfo { string owner = 1; string account = 2; string agent = 3; s
 ```
 AuxService.Summaries{parent: <session>}
   → summaries: [{run_id, turn, text}, ...]
-    job: {state: "running", kinds: [SUMMARY, SUGGESTION]}
+    current: {state: "running", kinds: [SUMMARY, SUGGESTION], results: [{kind: SUMMARY, ...}]}
 ```
 
 TUI는 이것을 1초에 한 번 이하로 폴링하고(`internal/tui/auxiliary.go:171`),
@@ -261,7 +273,7 @@ TUI는 이것을 1초에 한 번 이하로 폴링하고(`internal/tui/auxiliary.
 
 ```
 AuxService.Run{parent: <session>, kinds: [SUMMARY]}  → Aux{state: "queued"}
-AuxService.Get{parent: <session>, job_id: <id>}      → Aux{state: "completed", results: [...]}
+AuxService.Get{parent: <session>, aux_id: <id>}       → Aux{state: "completed", results: [...]}
 ```
 
 `Run`은 자동 실행 설정을 바꾸지 않는다. 자동이 켜져 있는 kind를 `Run`하면 아무
@@ -283,7 +295,7 @@ revision으로 진행 중인 Aux는 `stale`이 되어 결과를 버린다. 바�
 AuxService.Cancel{parent: <session>}  → Aux{state: "canceled"}
 ```
 
-`job_id` 없이 부르면 그 세션의 진행 중인 Aux를 취소한다. 요약과 추천이 한 호출로
+`aux_id` 없이 부르면 그 세션의 진행 중인 Aux를 취소한다. 요약과 추천이 한 호출로
 묶인 Aux면 둘 다 멈춘다 — 지금도 그렇다.
 
 ### 설정과 로그인
@@ -312,10 +324,49 @@ AuxService.LoginInfo{profile: {account: "work1"}} → {owner, agent, backend}
 | `cxz ai title SESSION [--text]` | `{action:"title"}` | `Run{parent, kinds:[TITLE], text}` |
 | `cxz ai login ACCOUNT` | `{action:"login-info"}` + 스트림 | `LoginInfo{}` + 기존 스트림 |
 | (TUI `/summary`, `/suggest`) | `{action:"session"}` | `SetConfig{parent, preferences}` / `Run{parent, kinds}` |
-| (내부) `{action:"forget"}` | 세션 purge 경로에 남김 | `Controller.Forget` 직접 호출 |
+| (내부) `{action:"forget"}` | 세션 purge 경로 | 런타임 API에 남김 |
 
-`forget`은 클라이언트가 부를 일이 없다. 세션 purge/삭제 경로에서만 쓰이므로 공개
-API에 두지 않는다.
+`forget`은 클라이언트가 부르지 않는다. 리소스 서버가 세션을 지울 때 매니저에게
+보내는 호출이다 (`server/lifecycle/delete.go:116` `forgetAuxiliary`). 그래서 표면이
+둘로 갈린다.
+
+- **리소스 API**(`proto/ext/cxz/*`, 클라이언트가 보는 것)에서 `auxiliary` action은
+  사라진다. 이 문서가 설계하는 것이 그 자리다.
+- **런타임 API**(`internal/runtimeproto`, 서버↔매니저)는 `forget`처럼 클라이언트가
+  볼 일 없는 호출을 계속 가진다. 타입을 주는 것이 낫지만 공개 표면이 아니므로 이
+  설계의 범위가 아니다.
+
+## 현재 동작을 그대로 재현하는가
+
+문맥 보존과 combined 호출은 **API에 나타나지 않는다**. 둘 다 매니저가 하는 결정이고,
+API는 무엇을 요청했고 무엇이 나왔는지만 말한다. 그래서 판단 기준은 설계가 그 동작을
+허용하는지가 아니라 **간섭하지 않는지**다.
+
+| 현재 동작 | 어디서 결정 | API에 보이는 것 |
+| --- | --- | --- |
+| 제한된 롤링 문맥 (`Recent` 20KiB·32턴) | 매니저 내부 | 없음. API는 문맥을 보내지도 받지도 않는다 |
+| 넘치면 `checkpoint`로 압축 | 매니저 내부 | 없음. kind도 아니다 |
+| 프로필이 같으면 요약·추천을 한 호출로 | 매니저가 프로필 비교로 결정 | Aux 하나에 `kinds:[SUMMARY,SUGGESTION]`, `results` 둘 |
+| 프로필이 다르면 추천이 요약을 문맥으로 받음 | 매니저 내부 | 같은 모양. 공급자 호출 횟수를 노출하지 않는다 |
+| 요약을 먼저 공개하고 추천은 계속 실행 | — | `state:"running"` + `results:[SUMMARY]` (부분 결과) |
+| 새 입력이 오면 진행 중 결과를 버림 | — | `state:"stale"`, `results` 비움 |
+| 설정이 바뀌면 진행 중 결과를 버림 | — | `revision` + `state:"stale"` |
+| 켠 시점 이후의 턴만 대상 | — | `AuxPreference.since` (설치 기본값·세션 양쪽) |
+| 작업 중 다른 요청이 오면 뒤에 대기 (`PendingTask`) | 매니저 내부 | 끝난 뒤 새 Aux가 이어서 나타난다 |
+| 턴별 요약 누적, 히스토리에 보관되는 사본은 4KiB로 제한 | — | `AuxSummary` 목록 |
+| 한계에서 잘린 산출물을 버리지 않고 표시 | — | `AuxResult.truncated` |
+| 계정별 직렬 실행, 프로필 잠금 | 매니저 내부 | `state:"queued"` |
+| 제목 자동 생성 → 세션 이름 | — | `AUX_KIND_TITLE` 결과 + `Session.Patch` |
+| 모델 목록에 로그인이 필요함 | — | `AuxModelsReply.needs_login` |
+| 설정 저장 후 사람이 읽는 한 줄 | — | `AuxConfig.message` |
+| 세션 purge 시 보조 상태 삭제 | 서버→매니저 | 리소스 API에 없음 (위 참고) |
+
+재현되지 않는 동작은 찾지 못했다. 다만 초안에 빠져 있던 것 세 개를 채웠다:
+`AuxPreference.since`(없으면 켤 때 지난 대화를 소급 실행한다),
+`AuxConfig.message`(지금 `Reply.Message`가 TUI에 보여주는 문장),
+그리고 `AuxProfile.kind`(kind별 프로필이 없으면 combined 여부를 결정할 수 없다).
+`Aux.results`가 `running` 상태에서도 채워진다는 것도 명시했다 — 그렇지 않으면 추천을
+기다리는 동안 요약이 보이지 않는다.
 
 ## 저장과 단계
 
