@@ -246,3 +246,23 @@ func (s ProjectServer) Devcontainer(ctx context.Context, r *resource.Devcontaine
 	}
 	return resource.DevcontainerReply_builder{Status: &out.Status}.Build(), nil
 }
+
+// RenderDevcontainer passes the handle through rather than resolving it. It
+// may name a directory inside a workspace, and only the manager knows which
+// registered workspace owns that directory -- a ref resolved here would have
+// to be the workspace already, which is the thing the caller is asking about.
+func (s ProjectServer) RenderDevcontainer(ctx context.Context, r *resource.RenderDevcontainerRequest) (*resource.RenderDevcontainerReply, error) {
+	out, err := s.shared.runtime.RenderDevcontainer(ctx, &api.RenderDevcontainerInput{Handle: r.GetHandle()})
+	if err != nil {
+		return nil, err
+	}
+	reply := resource.RenderDevcontainerReply_builder{
+		Project: &out.Project, Name: &out.Name, Workspace: &out.Workspace, Note: &out.Note,
+	}
+	for _, f := range out.Files {
+		reply.Files = append(reply.Files, resource.RenderedFile_builder{
+			Name: &f.Name, Source: &f.Source, Role: &f.Role, Data: f.Data,
+		}.Build())
+	}
+	return reply.Build(), nil
+}

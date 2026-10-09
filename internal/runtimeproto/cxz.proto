@@ -69,6 +69,26 @@ service Sessions {
   rpc MarkHistoryTrimmable(Empty) returns (Empty);
   rpc PutSecretFile(PutSecretFileInput) returns (SecretFileReply);
   rpc DeleteSecretFile(DeleteSecretFileInput) returns (SecretFileReply);
+  // The installation's Agent Skills library, and which projects see each
+  // skill. One method per decision rather than one with a verb: enabling a
+  // skill by default and enabling it for one project write to different
+  // places, and restoring a project's default has nowhere to put an on/off
+  // that would be ignored. So no request here can name one and mean another.
+  rpc GetSkills(SkillsInput) returns (SkillsReply);
+  rpc AddSkill(SkillInput) returns (SkillsReply);
+  rpc RemoveSkill(SkillInput) returns (SkillsReply);
+  rpc SetSkillDefault(SkillDefaultInput) returns (SkillsReply);
+  rpc SetProjectSkill(ProjectSkillInput) returns (SkillsReply);
+  rpc ClearProjectSkill(ClearProjectSkillInput) returns (SkillsReply);
+  // Manager to project container: the skills this project is allowed to see,
+  // already resolved. Resolving before the push is what keeps a library the
+  // installation shares from arriving everywhere.
+  rpc SyncSkills(SyncSkillsInput) returns (Receipt);
+  // What a project actually runs under, read back from what provisioning
+  // wrote. Not a second render: a second renderer is a second answer, and the
+  // one that is easy to look at is the one that would drift from the one that
+  // runs.
+  rpc RenderDevcontainer(RenderDevcontainerInput) returns (RenderDevcontainerReply);
 }
 message Empty {}
 message CreateRequest { string workspace = 1; string title = 2; string client_id = 3; string agent = 4; string model = 5; string account = 6; string auth_backend = 7; string auth_binding = 8; }
@@ -342,3 +362,41 @@ message HistoryPolicy {
   int32 window_mib = 4; int32 window_turns = 5;
 }
 message HistoryFloorReply { uint64 through = 1; }
+
+// project scopes the view that comes back: with one, each entry says what that
+// project sees and whether it decided for itself. Empty is the installation's
+// own defaults. A registration is installation-wide either way, so project on
+// an add or a remove only chooses whose view is reported back.
+message SkillsInput { string project = 1; }
+message SkillInput { string project = 1; string name = 2; }
+message SkillDefaultInput { string name = 1; bool enabled = 2; }
+message ProjectSkillInput { string project = 1; string name = 2; bool enabled = 3; }
+message ClearProjectSkillInput { string project = 1; string name = 2; }
+message SkillEntry {
+  string name = 1; string description = 2;
+  // Set only when this project decided for itself; absent means it inherits
+  // the installation's default, which is a different thing from agreeing with
+  // it.
+  optional bool override = 3;
+  bool effective = 4;
+}
+message SkillsReply { repeated SkillEntry entries = 1; string message = 2; }
+message SyncSkillsInput { bytes bundle = 1; }
+
+// handle is not a key to a row: it may be a directory inside a workspace
+// rather than the workspace itself -- a .devcontainer directory is exactly
+// where someone wonders which devcontainer is in effect -- so the manager
+// walks up to the registered workspace that owns it. Only a registered
+// workspace matches, so walking up cannot widen the answer, and the reply
+// names the project it settled on.
+message RenderDevcontainerInput { string handle = 1; }
+// role is one line of prose, because the order of a merge is what a reader
+// needs and what a file name cannot say. source is a path on the manager host.
+message RenderedFile { string name = 1; string source = 2; string role = 3; bytes data = 4; }
+message RenderDevcontainerReply {
+  string project = 1; string name = 2; string workspace = 3;
+  // Set when something could not be rendered -- no Compose files to merge, or
+  // no Compose CLI to merge them with -- rather than failing the read.
+  string note = 4;
+  repeated RenderedFile files = 5;
+}

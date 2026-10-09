@@ -6,14 +6,15 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/devcontainerrender"
 	"github.com/lesomnus/xli/xlitest"
 )
 
-func renderReply() devcontainerrender.Reply {
-	return devcontainerrender.Reply{
+func renderReply() *api.RenderDevcontainerReply {
+	return &api.RenderDevcontainerReply{
 		Project: "abc", Name: "demo", Workspace: "/w",
-		Files: []devcontainerrender.File{
+		Files: []*api.RenderedFile{
 			{Name: "devcontainer.json", Source: "/state/projects/abc/devcontainer.json", Role: "what cxz passed to the CLI", Data: []byte("{}")},
 			{Name: "compose/01-docker-compose.yaml", Source: "/w/.devcontainer/docker-compose.yaml", Role: "from the project", Data: []byte("services: {}\n")},
 		},
@@ -68,7 +69,7 @@ func TestRenderedDevcontainerRefusesEscapingPaths(t *testing.T) {
 // Without files there is nothing to look at, and a directory that says nothing
 // is worse than an error that does.
 func TestRenderedDevcontainerNeedsFiles(t *testing.T) {
-	if _, err := writeRenderedDevcontainer("", devcontainerrender.Reply{}); err == nil {
+	if _, err := writeRenderedDevcontainer("", &api.RenderDevcontainerReply{}); err == nil {
 		t.Fatal("wrote an empty report")
 	}
 }
@@ -79,7 +80,7 @@ func TestRenderedDevcontainerNeedsFiles(t *testing.T) {
 func TestComposePrintsTheMergedFile(t *testing.T) {
 	reply := renderReply()
 	merged := []byte("services:\n  dev:\n    image: resolved\n")
-	reply.Files = append(reply.Files, devcontainerrender.File{
+	reply.Files = append(reply.Files, &api.RenderedFile{
 		Name: devcontainerrender.ResolvedCompose, Source: "docker compose config", Role: "the merge", Data: merged,
 	})
 	dir, err := writeRenderedDevcontainer(filepath.Join(t.TempDir(), "render"), reply)

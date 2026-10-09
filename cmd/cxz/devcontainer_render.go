@@ -74,15 +74,14 @@ func devcontainerCommand() *xli.Command {
 // fetchRenderedDevcontainer asks the manager what the project is running under.
 // The project argument is optional: without one the current directory is used,
 // and the manager walks up from it to the workspace that owns it.
-func fetchRenderedDevcontainer(ctx context.Context, c *xli.Command) (devcontainerrender.Reply, error) {
-	var reply devcontainerrender.Reply
+func fetchRenderedDevcontainer(ctx context.Context, c *xli.Command) (*api.RenderDevcontainerReply, error) {
 	// An optional argument may be absent, and MustGet panics on absent rather
 	// than falling back to a zero value.
 	target, _ := arg.Get[string](c, "PROJECT")
 	if target == "" {
 		cwd, err := os.Getwd()
 		if err != nil {
-			return reply, err
+			return nil, err
 		}
 		target = cwd
 	}
@@ -91,7 +90,7 @@ func fetchRenderedDevcontainer(ctx context.Context, c *xli.Command) (devcontaine
 	if st, err := os.Stat(target); err == nil && st.IsDir() {
 		var err error
 		if target, err = dockerx.EnginePath(target); err != nil {
-			return reply, err
+			return nil, err
 		}
 	}
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
@@ -99,26 +98,17 @@ func fetchRenderedDevcontainer(ctx context.Context, c *xli.Command) (devcontaine
 	session := ""
 	client, closeClient, err := configConnect(ctx, c, &target, &session)
 	if err != nil {
-		return reply, err
+		return nil, err
 	}
 	defer closeClient()
-	spec, err := json.Marshal(devcontainerrender.Request{Project: target})
-	if err != nil {
-		return reply, err
-	}
-	out, err := client.Docker(ctx, &api.DockerInput{Action: "devcontainer-render", Spec: spec})
-	if err != nil {
-		return reply, err
-	}
-	err = json.Unmarshal([]byte(out.Status), &reply)
-	return reply, err
+	return client.RenderDevcontainer(ctx, &api.RenderDevcontainerInput{Handle: target})
 }
 
 // writeRenderedDevcontainer lays the files out as a directory you can open,
 // which is the point: a merge order is easier to believe when the files sit in
 // it. sources.txt keeps the explanation next to them, for when the terminal
 // that printed it is gone.
-func writeRenderedDevcontainer(out string, reply devcontainerrender.Reply) (string, error) {
+func writeRenderedDevcontainer(out string, reply *api.RenderDevcontainerReply) (string, error) {
 	if len(reply.Files) == 0 {
 		return "", fmt.Errorf("manager returned no devcontainer files")
 	}
@@ -153,15 +143,38 @@ func writeRenderedDevcontainer(out string, reply devcontainerrender.Reply) (stri
 	return dir, os.WriteFile(filepath.Join(dir, "sources.txt"), []byte(notes), 0600)
 }
 
-func printRenderedDevcontainer(c *xli.Command, dir string, reply devcontainerrender.Reply) error {
+// renderedFile and renderedReply shape --format json output. They live here
+// rather than being the reply itself: the keys are this command's interface,
+// and data is deliberately absent because the bytes are the files just written.
+type renderedFile struct {
+	Name   string `json:"name"`
+	Source string `json:"source"`
+	Role   string `json:"role"`
+	Data   []byte `json:"data"`
+}
+type renderedReply struct {
+	Project   string         `json:"project"`
+	Name      string         `json:"name"`
+	Workspace string         `json:"workspace"`
+	Note      string         `json:"note,omitempty"`
+	Files     []renderedFile `json:"files"`
+	Directory string         `json:"directory"`
+}
+
+func renderedView(dir string, reply *api.RenderDevcontainerReply) renderedReply {
+	out := renderedReply{
+		Project: reply.Project, Name: reply.Name, Workspace: reply.Workspace,
+		Note: reply.Note, Directory: dir, Files: []renderedFile{},
+	}
+	for _, f := range reply.Files {
+		out.Files = append(out.Files, renderedFile{Name: f.Name, Source: f.Source, Role: f.Role})
+	}
+	return out
+}
+
+func printRenderedDevcontainer(c *xli.Command, dir string, reply *api.RenderDevcontainerReply) error {
 	if inheritedFlag(c, "format") == "json" {
-		for i := range reply.Files {
-			reply.Files[i].Data = nil // The bytes are the files just written.
-		}
-		b, err := json.MarshalIndent(struct {
-			devcontainerrender.Reply
-			Directory string `json:"directory"`
-		}{reply, dir}, "", "  ")
+		b, err := json.MarshalIndent(renderedView(dir, reply), "", "  ")
 		if err != nil {
 			return err
 		}

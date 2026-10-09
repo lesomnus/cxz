@@ -26,6 +26,12 @@ service ProjectService {
   // Private gateway transport to the editor's loopback listener; not web RPC.
   rpc EditorTunnel(stream ProjectEditorTunnelRequest) returns (stream ProjectEditorTunnelReply);
  rpc Devcontainer(DevcontainerRequest) returns (DevcontainerReply);
+  // What one project actually runs under: the configuration cxz handed the
+  // devcontainer CLI, every Compose file in merge order, and the merge itself,
+  // read back from what provisioning wrote. Devcontainer, above, saves the
+  // settings; this reads what a project got from them, which is why the two
+  // are not one call.
+  rpc RenderDevcontainer(RenderDevcontainerRequest) returns (RenderDevcontainerReply);
  rpc Docker(DockerRequest) returns (DockerReply);
   // Aux is a model task done beside a session: run once, with the context cxz
   // assembles, never accumulating into a conversation. These four are the part
@@ -35,6 +41,14 @@ service ProjectService {
   rpc AuxSetConfig(AuxSetConfigRequest) returns (AuxConfigReply);
   rpc AuxModels(AuxModelsRequest) returns (AuxModelsReply);
   rpc AuxLoginInfo(AuxLoginInfoRequest) returns (AuxLoginInfoReply);
+  // Asked by a session supervisor before it compacts a journal, so that a
+  // release predating trimming refuses the projection rather than serving
+  // history that is gone. A failure stops the compaction.
+  rpc MarkHistoryTrimmable(HistoryTrimmableRequest) returns (HistoryTrimmableReply);
+  // The history budgets of this installation. They bound cxz's own records
+  // only; provider context is not affected. See docs/history.md.
+  rpc GetHistoryPolicy(HistoryPolicyRequest) returns (HistoryPolicy);
+  rpc SetHistoryPolicy(HistoryPolicy) returns (HistoryPolicy);
   // A secret file is written by the workspace helper inside a project
   // container, for a client that cannot reach the engine itself. Two calls
   // rather than one with a verb: only one of them carries a secret, and that
@@ -43,16 +57,23 @@ service ProjectService {
   // Whether the link may carry it at all is decided by the client, because the
   // exposed TCP surface is authenticated plaintext and cannot be told apart
   // from a local socket on this side. See internal/transport.Confidential.
-  // The history budgets of this installation. They bound cxz's own records
-  // only; provider context is not affected. See docs/history.md.
-  // Asked by a session supervisor before it compacts a journal, so that a
-  // release predating trimming refuses the projection rather than serving
-  // history that is gone. A failure stops the compaction.
-  rpc MarkHistoryTrimmable(HistoryTrimmableRequest) returns (HistoryTrimmableReply);
-  rpc GetHistoryPolicy(HistoryPolicyRequest) returns (HistoryPolicy);
-  rpc SetHistoryPolicy(HistoryPolicy) returns (HistoryPolicy);
   rpc PutSecretFile(PutSecretFileRequest) returns (SecretFileReply);
   rpc DeleteSecretFile(DeleteSecretFileRequest) returns (SecretFileReply);
+  // The installation's Agent Skills library, and which projects see each
+  // skill. One method per decision rather than one with a verb: enabling a
+  // skill by default and enabling it for one project write to different
+  // places, and restoring a project's default has nowhere to put an on/off
+  // that would be ignored. So no request here can name one and mean another.
+  rpc GetSkills(SkillsRequest) returns (SkillsReply);
+  rpc AddSkill(SkillRequest) returns (SkillsReply);
+  rpc RemoveSkill(SkillRequest) returns (SkillsReply);
+  rpc SetSkillDefault(SkillDefaultRequest) returns (SkillsReply);
+  rpc SetProjectSkill(ProjectSkillRequest) returns (SkillsReply);
+  rpc ClearProjectSkill(ClearProjectSkillRequest) returns (SkillsReply);
+  // Manager to project container: the skills this project is allowed to see,
+  // already resolved. An unactivated skill costs the project nothing, not even
+  // the bytes.
+  rpc SyncSkills(SyncSkillsRequest) returns (SyncSkillsReply);
   rpc FileMappings(FileMappingsRequest) returns (FileMappingsReply);
   // Provision/start a registered workspace. This never creates a conversation.
   rpc Up(ProjectUpRequest) returns (Project);
@@ -125,6 +146,45 @@ message DockerReply { string status = 1; }
 
 message DevcontainerRequest { bytes spec = 1; }
 message DevcontainerReply { string status = 1; }
+
+// handle is not a key to a row, which is why it is not a ProjectRef: it may be
+// a directory inside a workspace rather than the workspace itself -- a
+// .devcontainer directory is exactly where someone wonders which devcontainer
+// is in effect -- so the manager walks up to the registered workspace that
+// owns it. Only a registered workspace matches, so walking up cannot widen the
+// answer, and the reply names the project it settled on.
+message RenderDevcontainerRequest { string handle = 1; }
+// role is one line of prose, because the order of a merge is what a reader
+// needs and what a file name cannot say. source is a path on the manager host.
+message RenderedFile { string name = 1; string source = 2; string role = 3; bytes data = 4; }
+message RenderDevcontainerReply {
+  string project = 1; string name = 2; string workspace = 3;
+  // Set when something could not be rendered -- no Compose files to merge, or
+  // no Compose CLI to merge them with -- rather than failing the read.
+  string note = 4;
+  repeated RenderedFile files = 5;
+}
+
+// ref scopes the view that comes back: with one, each entry says what that
+// project sees and whether it decided for itself. Without one, the view is the
+// installation's own defaults. A registration is installation-wide either way,
+// so ref on an add or a remove only chooses whose view is reported back.
+message SkillsRequest { ProjectRef ref = 1; }
+message SkillRequest { ProjectRef ref = 1; string name = 2; }
+message SkillDefaultRequest { string name = 1; bool enabled = 2; }
+message ProjectSkillRequest { ProjectRef ref = 1; string name = 2; bool enabled = 3; }
+message ClearProjectSkillRequest { ProjectRef ref = 1; string name = 2; }
+message SkillEntry {
+  string name = 1; string description = 2;
+  // Set only when this project decided for itself; absent means it inherits
+  // the installation's default, which is a different thing from agreeing with
+  // it.
+  bool override = 3;
+  bool effective = 4;
+}
+message SkillsReply { repeated SkillEntry entries = 1; string message = 2; }
+message SyncSkillsRequest { bytes bundle = 1; }
+message SyncSkillsReply { string status = 1; }
 
 message ProjectDownloadRequest { ProjectRef ref = 1; string path = 2; }
 message ProjectDownloadReply { bytes data = 1; int64 total_size = 2; }

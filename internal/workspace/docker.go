@@ -13,20 +13,12 @@ import (
 
 func (m *Manager) dockerEngine() engine.Engine { return engine.Engine{Root: m.Root, Owner: m.Owner} }
 func (m *Manager) Docker(ctx context.Context, r *api.DockerInput) (*api.Receipt, error) {
-	// Reading back what a project runs under is not an engine operation, and
-	// waiting behind one that is rebuilding another project would make the
-	// answer arrive long after the question stopped being interesting.
-	if r.Action == "devcontainer-render" {
-		return m.renderDevcontainer(ctx, r.Spec)
-	}
 	m.dockerMu.Lock()
 	defer m.dockerMu.Unlock()
 	e := m.dockerEngine()
 	switch r.Action {
 	case "mcp":
 		return m.mcp(ctx, r.Spec)
-	case "skills":
-		return m.skills(ctx, r.Spec)
 	case "save", "up":
 		var spec engine.Spec
 		if len(r.Spec) == 0 && r.Action == "up" {

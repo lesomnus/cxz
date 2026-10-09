@@ -35,6 +35,7 @@ const (
 	ProjectService_Editor_FullMethodName               = "/cxz.ProjectService/Editor"
 	ProjectService_EditorTunnel_FullMethodName         = "/cxz.ProjectService/EditorTunnel"
 	ProjectService_Devcontainer_FullMethodName         = "/cxz.ProjectService/Devcontainer"
+	ProjectService_RenderDevcontainer_FullMethodName   = "/cxz.ProjectService/RenderDevcontainer"
 	ProjectService_Docker_FullMethodName               = "/cxz.ProjectService/Docker"
 	ProjectService_AuxConfig_FullMethodName            = "/cxz.ProjectService/AuxConfig"
 	ProjectService_AuxSetConfig_FullMethodName         = "/cxz.ProjectService/AuxSetConfig"
@@ -45,6 +46,13 @@ const (
 	ProjectService_SetHistoryPolicy_FullMethodName     = "/cxz.ProjectService/SetHistoryPolicy"
 	ProjectService_PutSecretFile_FullMethodName        = "/cxz.ProjectService/PutSecretFile"
 	ProjectService_DeleteSecretFile_FullMethodName     = "/cxz.ProjectService/DeleteSecretFile"
+	ProjectService_GetSkills_FullMethodName            = "/cxz.ProjectService/GetSkills"
+	ProjectService_AddSkill_FullMethodName             = "/cxz.ProjectService/AddSkill"
+	ProjectService_RemoveSkill_FullMethodName          = "/cxz.ProjectService/RemoveSkill"
+	ProjectService_SetSkillDefault_FullMethodName      = "/cxz.ProjectService/SetSkillDefault"
+	ProjectService_SetProjectSkill_FullMethodName      = "/cxz.ProjectService/SetProjectSkill"
+	ProjectService_ClearProjectSkill_FullMethodName    = "/cxz.ProjectService/ClearProjectSkill"
+	ProjectService_SyncSkills_FullMethodName           = "/cxz.ProjectService/SyncSkills"
 	ProjectService_FileMappings_FullMethodName         = "/cxz.ProjectService/FileMappings"
 	ProjectService_Up_FullMethodName                   = "/cxz.ProjectService/Up"
 	ProjectService_Down_FullMethodName                 = "/cxz.ProjectService/Down"
@@ -100,6 +108,12 @@ type ProjectServiceClient interface {
 	// Private gateway transport to the editor's loopback listener; not web RPC.
 	EditorTunnel(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ProjectEditorTunnelRequest, ProjectEditorTunnelReply], error)
 	Devcontainer(ctx context.Context, in *DevcontainerRequest, opts ...grpc.CallOption) (*DevcontainerReply, error)
+	// What one project actually runs under: the configuration cxz handed the
+	// devcontainer CLI, every Compose file in merge order, and the merge itself,
+	// read back from what provisioning wrote. Devcontainer, above, saves the
+	// settings; this reads what a project got from them, which is why the two
+	// are not one call.
+	RenderDevcontainer(ctx context.Context, in *RenderDevcontainerRequest, opts ...grpc.CallOption) (*RenderDevcontainerReply, error)
 	Docker(ctx context.Context, in *DockerRequest, opts ...grpc.CallOption) (*DockerReply, error)
 	// Aux is a model task done beside a session: run once, with the context cxz
 	// assembles, never accumulating into a conversation. These four are the part
@@ -109,6 +123,14 @@ type ProjectServiceClient interface {
 	AuxSetConfig(ctx context.Context, in *AuxSetConfigRequest, opts ...grpc.CallOption) (*AuxConfigReply, error)
 	AuxModels(ctx context.Context, in *AuxModelsRequest, opts ...grpc.CallOption) (*AuxModelsReply, error)
 	AuxLoginInfo(ctx context.Context, in *AuxLoginInfoRequest, opts ...grpc.CallOption) (*AuxLoginInfoReply, error)
+	// Asked by a session supervisor before it compacts a journal, so that a
+	// release predating trimming refuses the projection rather than serving
+	// history that is gone. A failure stops the compaction.
+	MarkHistoryTrimmable(ctx context.Context, in *HistoryTrimmableRequest, opts ...grpc.CallOption) (*HistoryTrimmableReply, error)
+	// The history budgets of this installation. They bound cxz's own records
+	// only; provider context is not affected. See docs/history.md.
+	GetHistoryPolicy(ctx context.Context, in *HistoryPolicyRequest, opts ...grpc.CallOption) (*HistoryPolicy, error)
+	SetHistoryPolicy(ctx context.Context, in *HistoryPolicy, opts ...grpc.CallOption) (*HistoryPolicy, error)
 	// A secret file is written by the workspace helper inside a project
 	// container, for a client that cannot reach the engine itself. Two calls
 	// rather than one with a verb: only one of them carries a secret, and that
@@ -117,16 +139,23 @@ type ProjectServiceClient interface {
 	// Whether the link may carry it at all is decided by the client, because the
 	// exposed TCP surface is authenticated plaintext and cannot be told apart
 	// from a local socket on this side. See internal/transport.Confidential.
-	// The history budgets of this installation. They bound cxz's own records
-	// only; provider context is not affected. See docs/history.md.
-	// Asked by a session supervisor before it compacts a journal, so that a
-	// release predating trimming refuses the projection rather than serving
-	// history that is gone. A failure stops the compaction.
-	MarkHistoryTrimmable(ctx context.Context, in *HistoryTrimmableRequest, opts ...grpc.CallOption) (*HistoryTrimmableReply, error)
-	GetHistoryPolicy(ctx context.Context, in *HistoryPolicyRequest, opts ...grpc.CallOption) (*HistoryPolicy, error)
-	SetHistoryPolicy(ctx context.Context, in *HistoryPolicy, opts ...grpc.CallOption) (*HistoryPolicy, error)
 	PutSecretFile(ctx context.Context, in *PutSecretFileRequest, opts ...grpc.CallOption) (*SecretFileReply, error)
 	DeleteSecretFile(ctx context.Context, in *DeleteSecretFileRequest, opts ...grpc.CallOption) (*SecretFileReply, error)
+	// The installation's Agent Skills library, and which projects see each
+	// skill. One method per decision rather than one with a verb: enabling a
+	// skill by default and enabling it for one project write to different
+	// places, and restoring a project's default has nowhere to put an on/off
+	// that would be ignored. So no request here can name one and mean another.
+	GetSkills(ctx context.Context, in *SkillsRequest, opts ...grpc.CallOption) (*SkillsReply, error)
+	AddSkill(ctx context.Context, in *SkillRequest, opts ...grpc.CallOption) (*SkillsReply, error)
+	RemoveSkill(ctx context.Context, in *SkillRequest, opts ...grpc.CallOption) (*SkillsReply, error)
+	SetSkillDefault(ctx context.Context, in *SkillDefaultRequest, opts ...grpc.CallOption) (*SkillsReply, error)
+	SetProjectSkill(ctx context.Context, in *ProjectSkillRequest, opts ...grpc.CallOption) (*SkillsReply, error)
+	ClearProjectSkill(ctx context.Context, in *ClearProjectSkillRequest, opts ...grpc.CallOption) (*SkillsReply, error)
+	// Manager to project container: the skills this project is allowed to see,
+	// already resolved. An unactivated skill costs the project nothing, not even
+	// the bytes.
+	SyncSkills(ctx context.Context, in *SyncSkillsRequest, opts ...grpc.CallOption) (*SyncSkillsReply, error)
 	FileMappings(ctx context.Context, in *FileMappingsRequest, opts ...grpc.CallOption) (*FileMappingsReply, error)
 	// Provision/start a registered workspace. This never creates a conversation.
 	Up(ctx context.Context, in *ProjectUpRequest, opts ...grpc.CallOption) (*Project, error)
@@ -345,6 +374,16 @@ func (c *projectServiceClient) Devcontainer(ctx context.Context, in *Devcontaine
 	return out, nil
 }
 
+func (c *projectServiceClient) RenderDevcontainer(ctx context.Context, in *RenderDevcontainerRequest, opts ...grpc.CallOption) (*RenderDevcontainerReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RenderDevcontainerReply)
+	err := c.cc.Invoke(ctx, ProjectService_RenderDevcontainer_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *projectServiceClient) Docker(ctx context.Context, in *DockerRequest, opts ...grpc.CallOption) (*DockerReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DockerReply)
@@ -439,6 +478,76 @@ func (c *projectServiceClient) DeleteSecretFile(ctx context.Context, in *DeleteS
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SecretFileReply)
 	err := c.cc.Invoke(ctx, ProjectService_DeleteSecretFile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectServiceClient) GetSkills(ctx context.Context, in *SkillsRequest, opts ...grpc.CallOption) (*SkillsReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SkillsReply)
+	err := c.cc.Invoke(ctx, ProjectService_GetSkills_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectServiceClient) AddSkill(ctx context.Context, in *SkillRequest, opts ...grpc.CallOption) (*SkillsReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SkillsReply)
+	err := c.cc.Invoke(ctx, ProjectService_AddSkill_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectServiceClient) RemoveSkill(ctx context.Context, in *SkillRequest, opts ...grpc.CallOption) (*SkillsReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SkillsReply)
+	err := c.cc.Invoke(ctx, ProjectService_RemoveSkill_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectServiceClient) SetSkillDefault(ctx context.Context, in *SkillDefaultRequest, opts ...grpc.CallOption) (*SkillsReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SkillsReply)
+	err := c.cc.Invoke(ctx, ProjectService_SetSkillDefault_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectServiceClient) SetProjectSkill(ctx context.Context, in *ProjectSkillRequest, opts ...grpc.CallOption) (*SkillsReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SkillsReply)
+	err := c.cc.Invoke(ctx, ProjectService_SetProjectSkill_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectServiceClient) ClearProjectSkill(ctx context.Context, in *ClearProjectSkillRequest, opts ...grpc.CallOption) (*SkillsReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SkillsReply)
+	err := c.cc.Invoke(ctx, ProjectService_ClearProjectSkill_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectServiceClient) SyncSkills(ctx context.Context, in *SyncSkillsRequest, opts ...grpc.CallOption) (*SyncSkillsReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SyncSkillsReply)
+	err := c.cc.Invoke(ctx, ProjectService_SyncSkills_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -543,6 +652,12 @@ type ProjectServiceServer interface {
 	// Private gateway transport to the editor's loopback listener; not web RPC.
 	EditorTunnel(grpc.BidiStreamingServer[ProjectEditorTunnelRequest, ProjectEditorTunnelReply]) error
 	Devcontainer(context.Context, *DevcontainerRequest) (*DevcontainerReply, error)
+	// What one project actually runs under: the configuration cxz handed the
+	// devcontainer CLI, every Compose file in merge order, and the merge itself,
+	// read back from what provisioning wrote. Devcontainer, above, saves the
+	// settings; this reads what a project got from them, which is why the two
+	// are not one call.
+	RenderDevcontainer(context.Context, *RenderDevcontainerRequest) (*RenderDevcontainerReply, error)
 	Docker(context.Context, *DockerRequest) (*DockerReply, error)
 	// Aux is a model task done beside a session: run once, with the context cxz
 	// assembles, never accumulating into a conversation. These four are the part
@@ -552,6 +667,14 @@ type ProjectServiceServer interface {
 	AuxSetConfig(context.Context, *AuxSetConfigRequest) (*AuxConfigReply, error)
 	AuxModels(context.Context, *AuxModelsRequest) (*AuxModelsReply, error)
 	AuxLoginInfo(context.Context, *AuxLoginInfoRequest) (*AuxLoginInfoReply, error)
+	// Asked by a session supervisor before it compacts a journal, so that a
+	// release predating trimming refuses the projection rather than serving
+	// history that is gone. A failure stops the compaction.
+	MarkHistoryTrimmable(context.Context, *HistoryTrimmableRequest) (*HistoryTrimmableReply, error)
+	// The history budgets of this installation. They bound cxz's own records
+	// only; provider context is not affected. See docs/history.md.
+	GetHistoryPolicy(context.Context, *HistoryPolicyRequest) (*HistoryPolicy, error)
+	SetHistoryPolicy(context.Context, *HistoryPolicy) (*HistoryPolicy, error)
 	// A secret file is written by the workspace helper inside a project
 	// container, for a client that cannot reach the engine itself. Two calls
 	// rather than one with a verb: only one of them carries a secret, and that
@@ -560,16 +683,23 @@ type ProjectServiceServer interface {
 	// Whether the link may carry it at all is decided by the client, because the
 	// exposed TCP surface is authenticated plaintext and cannot be told apart
 	// from a local socket on this side. See internal/transport.Confidential.
-	// The history budgets of this installation. They bound cxz's own records
-	// only; provider context is not affected. See docs/history.md.
-	// Asked by a session supervisor before it compacts a journal, so that a
-	// release predating trimming refuses the projection rather than serving
-	// history that is gone. A failure stops the compaction.
-	MarkHistoryTrimmable(context.Context, *HistoryTrimmableRequest) (*HistoryTrimmableReply, error)
-	GetHistoryPolicy(context.Context, *HistoryPolicyRequest) (*HistoryPolicy, error)
-	SetHistoryPolicy(context.Context, *HistoryPolicy) (*HistoryPolicy, error)
 	PutSecretFile(context.Context, *PutSecretFileRequest) (*SecretFileReply, error)
 	DeleteSecretFile(context.Context, *DeleteSecretFileRequest) (*SecretFileReply, error)
+	// The installation's Agent Skills library, and which projects see each
+	// skill. One method per decision rather than one with a verb: enabling a
+	// skill by default and enabling it for one project write to different
+	// places, and restoring a project's default has nowhere to put an on/off
+	// that would be ignored. So no request here can name one and mean another.
+	GetSkills(context.Context, *SkillsRequest) (*SkillsReply, error)
+	AddSkill(context.Context, *SkillRequest) (*SkillsReply, error)
+	RemoveSkill(context.Context, *SkillRequest) (*SkillsReply, error)
+	SetSkillDefault(context.Context, *SkillDefaultRequest) (*SkillsReply, error)
+	SetProjectSkill(context.Context, *ProjectSkillRequest) (*SkillsReply, error)
+	ClearProjectSkill(context.Context, *ClearProjectSkillRequest) (*SkillsReply, error)
+	// Manager to project container: the skills this project is allowed to see,
+	// already resolved. An unactivated skill costs the project nothing, not even
+	// the bytes.
+	SyncSkills(context.Context, *SyncSkillsRequest) (*SyncSkillsReply, error)
 	FileMappings(context.Context, *FileMappingsRequest) (*FileMappingsReply, error)
 	// Provision/start a registered workspace. This never creates a conversation.
 	Up(context.Context, *ProjectUpRequest) (*Project, error)
@@ -637,6 +767,9 @@ func (UnimplementedProjectServiceServer) EditorTunnel(grpc.BidiStreamingServer[P
 func (UnimplementedProjectServiceServer) Devcontainer(context.Context, *DevcontainerRequest) (*DevcontainerReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method Devcontainer not implemented")
 }
+func (UnimplementedProjectServiceServer) RenderDevcontainer(context.Context, *RenderDevcontainerRequest) (*RenderDevcontainerReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method RenderDevcontainer not implemented")
+}
 func (UnimplementedProjectServiceServer) Docker(context.Context, *DockerRequest) (*DockerReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method Docker not implemented")
 }
@@ -666,6 +799,27 @@ func (UnimplementedProjectServiceServer) PutSecretFile(context.Context, *PutSecr
 }
 func (UnimplementedProjectServiceServer) DeleteSecretFile(context.Context, *DeleteSecretFileRequest) (*SecretFileReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteSecretFile not implemented")
+}
+func (UnimplementedProjectServiceServer) GetSkills(context.Context, *SkillsRequest) (*SkillsReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetSkills not implemented")
+}
+func (UnimplementedProjectServiceServer) AddSkill(context.Context, *SkillRequest) (*SkillsReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method AddSkill not implemented")
+}
+func (UnimplementedProjectServiceServer) RemoveSkill(context.Context, *SkillRequest) (*SkillsReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method RemoveSkill not implemented")
+}
+func (UnimplementedProjectServiceServer) SetSkillDefault(context.Context, *SkillDefaultRequest) (*SkillsReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetSkillDefault not implemented")
+}
+func (UnimplementedProjectServiceServer) SetProjectSkill(context.Context, *ProjectSkillRequest) (*SkillsReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetProjectSkill not implemented")
+}
+func (UnimplementedProjectServiceServer) ClearProjectSkill(context.Context, *ClearProjectSkillRequest) (*SkillsReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method ClearProjectSkill not implemented")
+}
+func (UnimplementedProjectServiceServer) SyncSkills(context.Context, *SyncSkillsRequest) (*SyncSkillsReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method SyncSkills not implemented")
 }
 func (UnimplementedProjectServiceServer) FileMappings(context.Context, *FileMappingsRequest) (*FileMappingsReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method FileMappings not implemented")
@@ -926,6 +1080,24 @@ func _ProjectService_Devcontainer_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ProjectService_RenderDevcontainer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RenderDevcontainerRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).RenderDevcontainer(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_RenderDevcontainer_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).RenderDevcontainer(ctx, req.(*RenderDevcontainerRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ProjectService_Docker_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DockerRequest)
 	if err := dec(in); err != nil {
@@ -1106,6 +1278,132 @@ func _ProjectService_DeleteSecretFile_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ProjectService_GetSkills_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SkillsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).GetSkills(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_GetSkills_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).GetSkills(ctx, req.(*SkillsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProjectService_AddSkill_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SkillRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).AddSkill(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_AddSkill_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).AddSkill(ctx, req.(*SkillRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProjectService_RemoveSkill_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SkillRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).RemoveSkill(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_RemoveSkill_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).RemoveSkill(ctx, req.(*SkillRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProjectService_SetSkillDefault_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SkillDefaultRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).SetSkillDefault(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_SetSkillDefault_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).SetSkillDefault(ctx, req.(*SkillDefaultRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProjectService_SetProjectSkill_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProjectSkillRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).SetProjectSkill(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_SetProjectSkill_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).SetProjectSkill(ctx, req.(*ProjectSkillRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProjectService_ClearProjectSkill_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ClearProjectSkillRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).ClearProjectSkill(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_ClearProjectSkill_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).ClearProjectSkill(ctx, req.(*ClearProjectSkillRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProjectService_SyncSkills_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SyncSkillsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).SyncSkills(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_SyncSkills_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).SyncSkills(ctx, req.(*SyncSkillsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ProjectService_FileMappings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(FileMappingsRequest)
 	if err := dec(in); err != nil {
@@ -1240,6 +1538,10 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ProjectService_Devcontainer_Handler,
 		},
 		{
+			MethodName: "RenderDevcontainer",
+			Handler:    _ProjectService_RenderDevcontainer_Handler,
+		},
+		{
 			MethodName: "Docker",
 			Handler:    _ProjectService_Docker_Handler,
 		},
@@ -1278,6 +1580,34 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteSecretFile",
 			Handler:    _ProjectService_DeleteSecretFile_Handler,
+		},
+		{
+			MethodName: "GetSkills",
+			Handler:    _ProjectService_GetSkills_Handler,
+		},
+		{
+			MethodName: "AddSkill",
+			Handler:    _ProjectService_AddSkill_Handler,
+		},
+		{
+			MethodName: "RemoveSkill",
+			Handler:    _ProjectService_RemoveSkill_Handler,
+		},
+		{
+			MethodName: "SetSkillDefault",
+			Handler:    _ProjectService_SetSkillDefault_Handler,
+		},
+		{
+			MethodName: "SetProjectSkill",
+			Handler:    _ProjectService_SetProjectSkill_Handler,
+		},
+		{
+			MethodName: "ClearProjectSkill",
+			Handler:    _ProjectService_ClearProjectSkill_Handler,
+		},
+		{
+			MethodName: "SyncSkills",
+			Handler:    _ProjectService_SyncSkills_Handler,
 		},
 		{
 			MethodName: "FileMappings",
