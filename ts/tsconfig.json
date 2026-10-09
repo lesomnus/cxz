@@ -19,6 +19,8 @@
     "e2e",
     "vite.sandbox.config.ts",
     "playwright.sandbox.config.ts",
-    "sandbox-e2e"
+    "sandbox-e2e",
+    "playwright.storybook.config.ts",
+    "storybook-e2e"
   ]
 }

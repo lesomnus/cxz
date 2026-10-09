@@ -8,13 +8,13 @@ const meta = {
   tags: ["autodocs"],
   args: {
     onChange: () => {},
-    label: "테마",
+    label: "Theme",
     value: "dark",
     disabled: false,
     options: [
-      { value: "system", label: "시스템", muted: true },
-      { value: "light", label: "밝게" },
-      { value: "dark", label: "어둡게" },
+      { value: "system", label: "System", muted: true },
+      { value: "light", label: "Light" },
+      { value: "dark", label: "Dark" },
     ],
   },
   decorators: [
@@ -36,3 +36,15 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
 export const Disabled: Story = { args: { disabled: true } };
+
+export const TabInput: Story = {
+  args: {
+    label: "Tab input",
+    value: "spaces",
+    options: [
+      { value: "default", label: "Spaces", muted: true },
+      { value: "spaces", label: "Spaces" },
+      { value: "tab", label: "Tab" },
+    ],
+  },
+};

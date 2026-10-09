@@ -50,6 +50,8 @@ jobs:
       - run: npm run --prefix ts test
       - run: npx playwright install --with-deps chromium
         working-directory: ts
+      - run: npm run --prefix ts build-storybook
+      - run: npm run --prefix ts test:storybook
       - run: npm run --prefix ts test:browser
       - run: npm run --prefix ts test:browser:plaintext
       - run: npm run --prefix ts sandbox:build

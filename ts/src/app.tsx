@@ -1,3 +1,6 @@
+import { EventView } from "./event-view";
+import { QuestionCard } from "./question-card";
+import { ConversationComposer } from "./conversation-composer";
 import { t, translateKnown } from "./i18n";
 import { useLocale } from "./i18n-react";
 import React, {
@@ -7,7 +10,6 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
-  useId,
   useRef,
   useState,
 } from "react";
@@ -24,44 +26,22 @@ import {
 } from "./session-history";
 import { create } from "@bufbuild/protobuf";
 import { SessionEventSchema } from "../gen/cxz/session_pb";
-import { EventDetails } from "./event-details";
 import {
   mergeEvents,
   isTranscriptEvent,
   payload,
-  detail,
-  questions,
-  approvalTitle,
   pendingAfter,
 } from "./journal";
-import { marked } from "marked";
-import DOMPurify from "dompurify";
 import { mergeMetadata } from "./session-metadata";
 import { sessionInfo } from "./session-info";
 import { ModelSettings, modelCatalog } from "./model-settings";
 import { UsageInfo } from "./usage-info";
 import { Button } from "./button";
-import { ComposerAurora } from "./composer-aurora";
-import { TurnControls } from "./turn-controls";
 import { advanceTurn, snapshotTurn, type TurnProgress } from "./turn-progress";
-import { AgentBrand } from "./agent-brand";
-import { responseInfo } from "./response-info";
-import type { ResponseCompletion } from "./response-completion";
-import { ResponseFooter } from "./response-footer";
-import { CopyButton } from "./copy-button";
-import { EventTimePopover } from "./event-time-popover";
-import { InputMessage } from "./input-message";
-import { ComposerEditor } from "./composer-editor";
 import { sessionCommands } from "./composer-commands";
 import { useSendMotion } from "./send-motion";
 import { WorkspaceTerminal, terminalShortcut } from "./workspace-terminal";
-import {
-  FloatingCardProvider,
-  FloatingCardHost,
-  FloatingCard,
-  useFloatingCard,
-  useAnchoredCard,
-} from "./floating-card";
+import { FloatingCardProvider, FloatingCardHost } from "./floating-card";
 import { type ComposerPaste } from "./composer-pastes";
 import { composerPrompt } from "./composer-code";
 import { SessionTreeGroup } from "./session-tree";
@@ -69,8 +49,7 @@ import { PanelScroll } from "./panel-scroll";
 import { useScrollbars } from "./scrollbars";
 import { useResourceInventory } from "./resource-inventory";
 import { key } from "@lesomnus/payday/store";
-import { transcriptEvents, type ToolActivity } from "./tool-activity";
-import { ToolActivityView } from "./tool-activity-view";
+import { transcriptEvents } from "./tool-activity";
 import { Transcript } from "./transcript";
 import { WorkspaceEditor } from "./workspace-editor";
 import { SettingsPage } from "./settings-page";
@@ -111,32 +90,6 @@ function ResourceIcon({
   );
 }
 
-// Keep conversation link behavior scoped to this sanitizer instance.
-const markdownPurifier = DOMPurify();
-markdownPurifier.addHook("afterSanitizeAttributes", (node) => {
-  if (node.localName === "a" && node.hasAttribute("href")) {
-    node.setAttribute("target", "_blank");
-    node.setAttribute("rel", "noopener noreferrer");
-  }
-});
-
-function Markdown({ text }: { text: string }) {
-  useLocale();
-  return (
-    <div
-      className="markdown"
-      dangerouslySetInnerHTML={{
-        __html: markdownPurifier.sanitize(
-          marked.parse(text, { async: false }),
-          {
-            FORBID_TAGS: ["img", "style", "input", "form"],
-            FORBID_ATTR: ["style"],
-          },
-        ),
-      }}
-    />
-  );
-}
 export function App({ children }: PropsWithChildren) {
   useLocale();
   const [connection, setConnection] = useState<Connection>();
@@ -1258,7 +1211,7 @@ function ConversationContent({ c, id }: { c: Connection; id: string }) {
       />
       <FloatingCardHost>
         {pending.map((e) => (
-          <Approval
+          <QuestionCard
             key={`${e.runId}:${e.requestId}`}
             e={e}
             agent={s?.agent ?? ""}
@@ -1273,143 +1226,44 @@ function ConversationContent({ c, id }: { c: Connection; id: string }) {
           {error || String(current.error)}
         </p>
       )}
-      <form ref={composer} className="composer" onSubmit={send}>
-        <div className="composer-wrapper">
-          <ComposerAurora
-            active={
-              turn.active && ["working", "running"].includes(executionState)
-            }
-          />
-          <div className="composer-toolbar">
-            <TurnControls
-              turn={turn}
-              busy={busy}
-              interrupt={() =>
-                void action(async (session) => {
-                  const receipt = await c.sessions.interrupt({
-                    ...control(session),
-                    runId: turn.runId,
-                  });
-                  if (receipt.status === "rejected")
-                    throw new Error(t("Provider rejected the interrupt"));
-                })
-              }
-            />
-            <span
-              className="latest-slot"
-              data-visible={!follow && latestShown}
-              inert={follow || !latestShown}
-              aria-hidden={follow || !latestShown}
-            >
-              <Button
-                className="toolbar-button latest-button"
-                type="button"
-                aria-label={t("Latest")}
-                onClick={() => void loadHistory("newer", true)}
-              >
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M12 5v14m-6-6 6 6 6-6" />
-                </svg>
-              </Button>
-            </span>
-            <span className="terminal-control">
-              <Button
-                className="toolbar-button terminal-toggle"
-                type="button"
-                aria-label={t("Terminal")}
-                aria-pressed={terminalVisible}
-                aria-keyshortcuts="Control+Backquote"
-                aria-describedby="terminal-shortcut"
-                disabled={!s?.project?.id.length}
-                onClick={() => showTerminal(!terminalVisibleRef.current)}
-              >
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="m4 6 6 6-6 6m9 0h7" />
-                </svg>
-              </Button>
-              <span
-                id="terminal-shortcut"
-                className="send-shortcut"
-                role="tooltip"
-              >
-                {t("Terminal")} · ctrl+`
-              </span>
-            </span>
-            <span className="send-control">
-              <Button
-                className="toolbar-button send"
-                type="submit"
-                aria-label={t("Send")}
-                aria-keyshortcuts="Control+Enter"
-                aria-describedby="send-shortcut"
-                disabled={busy || !s || !draft.trim()}
-              >
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M12 19V5m-6 6 6-6 6 6" />
-                </svg>
-              </Button>
-              <span id="send-shortcut" className="send-shortcut" role="tooltip">
-                ctrl+enter
-              </span>
-            </span>
-          </div>
-          <div
-            className="composer-input"
-            ref={composerInput}
-            data-sending={sending}
-            aria-busy={sending}
-          >
-            <ComposerEditor
-              value={draft}
-              readOnly={sending}
-              onChange={setDraft}
-              pastes={c.pastes}
-              canSend={!busy && !!s && !!draft.trim()}
-              commands={sessionCommands(s?.agent ?? "", catalog)}
-            />
-          </div>
-        </div>
-        <div className="composer-meta" aria-label={t("Session information")}>
-          <ModelSettings
-            session={s}
-            info={info}
-            catalog={catalog}
-            busy={busy}
-            change={(kind, value) => void changeSetting(kind, value)}
-          />
-          <UsageInfo info={info} />
-        </div>
-      </form>
+      <ConversationComposer
+        formRef={composer}
+        inputRef={composerInput}
+        draft={draft}
+        pastes={c.pastes}
+        onChange={setDraft}
+        onSubmit={send}
+        commands={sessionCommands(s?.agent ?? "", catalog)}
+        canSend={!busy && !!s && !!draft.trim()}
+        sending={sending}
+        busy={busy}
+        turn={turn}
+        working={turn.active && ["working", "running"].includes(executionState)}
+        interrupt={() =>
+          void action(async (session) => {
+            const receipt = await c.sessions.interrupt({
+              ...control(session),
+              runId: turn.runId,
+            });
+            if (receipt.status === "rejected")
+              throw new Error(t("Provider rejected the interrupt"));
+          })
+        }
+        latestVisible={!follow && latestShown}
+        onLatest={() => void loadHistory("newer", true)}
+        terminalVisible={terminalVisible}
+        terminalAvailable={!!s?.project?.id.length}
+        onTerminal={() => showTerminal(!terminalVisibleRef.current)}
+      >
+        <ModelSettings
+          session={s}
+          info={info}
+          catalog={catalog}
+          busy={busy}
+          change={(kind, value) => void changeSetting(kind, value)}
+        />
+        <UsageInfo info={info} />
+      </ConversationComposer>
       {terminalActivated && !!s?.project?.id.length && (
         <WorkspaceTerminal
           c={c}
@@ -1419,246 +1273,5 @@ function ConversationContent({ c, id }: { c: Connection; id: string }) {
         />
       )}
     </main>
-  );
-}
-const EventView = React.memo(
-  function EventView({
-    e,
-    agent,
-    completion,
-    activity,
-    loadDetails,
-  }: {
-    e: SessionEvent;
-    agent: string;
-    completion?: ResponseCompletion;
-    activity?: ToolActivity;
-    loadDetails?: LoadEventDetails;
-  }) {
-    useLocale();
-    const details = useAnchoredCard();
-    const timestamp = useId();
-    if (activity)
-      return (
-        <ToolActivityView
-          activity={activity}
-          agent={agent}
-          seq={e.seq}
-          timeMs={e.timeMs}
-          loadDetails={loadDetails}
-        />
-      );
-    if (e.kind === "assistant") {
-      const info = responseInfo(e.response);
-      return (
-        <article className="response" data-seq={e.seq.toString()}>
-          <small className="response-heading">
-            <AgentBrand agent={agent} />
-            {info.label && (
-              <span className="response-settings" title={info.description}>
-                {info.label}
-              </span>
-            )}
-            <CopyButton value={e.text} className="copy-control" />
-          </small>
-          <Markdown text={e.text} />
-          <ResponseFooter timeMs={e.timeMs} completion={completion} />
-        </article>
-      );
-    }
-    if (e.kind === "input")
-      return (
-        <article className="input" data-seq={e.seq.toString()}>
-          <InputMessage event={e} />
-        </article>
-      );
-    return (
-      <Button
-        type="button"
-        data-seq={e.seq.toString()}
-        className={`event-detail detail-anchor ${e.kind === "diagnostic" || e.kind === "stderr" ? "error" : ""}`}
-        ref={details.anchor}
-        data-detail-present={details.present}
-        data-detail-open={details.expanded}
-        aria-expanded={details.expanded}
-        aria-haspopup="dialog"
-        aria-controls={details.controls}
-        aria-describedby={timestamp}
-        {...details.handlers({
-          title: e.kind === "approval" ? approvalTitle(e) : e.kind,
-          content: () => (
-            <EventDetails
-              event={e}
-              loadDetails={e.payload.length ? undefined : loadDetails}
-            />
-          ),
-        })}
-      >
-        <EventTimePopover timeMs={e.timeMs} id={timestamp} />
-        {e.kind === "approval"
-          ? approvalTitle(e)
-          : `${e.kind} · ${e.text.slice(0, 160)}`}
-      </Button>
-    );
-  },
-  (previous, next) =>
-    previous.e === next.e &&
-    previous.agent === next.agent &&
-    previous.activity === next.activity &&
-    previous.loadDetails === next.loadDetails &&
-    JSON.stringify(previous.completion) === JSON.stringify(next.completion),
-);
-function Approval({
-  e,
-  agent,
-  pastes,
-  busy,
-  reply,
-}: {
-  e: SessionEvent;
-  agent: string;
-  pastes: Map<string, ComposerPaste>;
-  busy: boolean;
-  reply: (e: SessionEvent, allow: boolean, answers?: string) => Promise<void>;
-}) {
-  useLocale();
-  const openCard = useFloatingCard();
-  const qs = questions(agent, e);
-  const [selected, setSelected] = useState<Record<string, string[]>>({});
-  const [other, setOther] = useState<Record<string, string>>({});
-  const otherAnswer = (key: string) => composerPrompt(other[key] ?? "", pastes);
-  const elicitation = e.text === "mcpServer/elicitation/request";
-  const p = payload(e);
-  const requiresForm =
-    (elicitation && p.params?.requestedSchema) ||
-    e.text === "agentMessage/questions";
-  return (
-    <FloatingCard
-      className="approval"
-      title={approvalTitle(e)}
-      role="region"
-      aria-label={approvalTitle(e)}
-    >
-      {p.params?.message && <p>{String(p.params.message)}</p>}
-      <Button
-        type="button"
-        className="event-detail"
-        onClick={() =>
-          openCard({
-            title: () => t("Request details"),
-            content: () => <pre>{detail(e)}</pre>,
-          })
-        }
-      >
-        {t("Request details")}
-      </Button>
-      {qs.map((q) => (
-        <fieldset key={q.key} className="question-group">
-          <legend>{q.text}</legend>
-          <div className="question-options">
-            {q.options.map((o) => (
-              <label
-                key={o.label}
-                className="question-option"
-                data-selected={(selected[q.key] ?? []).includes(o.label)}
-              >
-                <input
-                  type={q.multi ? "checkbox" : "radio"}
-                  name={`${e.requestId}:${q.key}`}
-                  checked={(selected[q.key] ?? []).includes(o.label)}
-                  onChange={(event) =>
-                    setSelected((old) => ({
-                      ...old,
-                      [q.key]: q.multi
-                        ? event.target.checked
-                          ? [...(old[q.key] ?? []), o.label]
-                          : (old[q.key] ?? []).filter((x) => x !== o.label)
-                        : [o.label],
-                    }))
-                  }
-                />
-                <span className="question-option-text">
-                  <strong>{o.label}</strong>
-                  {o.description && <small>{o.description}</small>}
-                </span>
-              </label>
-            ))}
-          </div>
-          {q.other && (
-            <div className="question-other">
-              <span className="question-other-label">{t("Other")}</span>
-              {q.secret ? (
-                <input
-                  aria-label={t("Other answer: {question}", {
-                    question: q.text,
-                  })}
-                  type="password"
-                  value={other[q.key] ?? ""}
-                  onChange={(event) =>
-                    setOther((old) => ({ ...old, [q.key]: event.target.value }))
-                  }
-                />
-              ) : (
-                <div className="question-other-editor">
-                  <ComposerEditor
-                    ariaLabel={t("Other answer: {question}", {
-                      question: q.text,
-                    })}
-                    placeholder={t("Type your answer…")}
-                    value={other[q.key] ?? ""}
-                    pastes={pastes}
-                    onChange={(value) =>
-                      setOther((old) => ({ ...old, [q.key]: value }))
-                    }
-                  />
-                </div>
-              )}
-            </div>
-          )}
-        </fieldset>
-      ))}
-      {requiresForm && (
-        <p>
-          {t(
-            "This request form is not supported in the web client yet. Complete it in the TUI.",
-          )}
-        </p>
-      )}
-      <div className="buttons">
-        <Button
-          disabled={
-            busy ||
-            !!requiresForm ||
-            qs.some(
-              (q) => !(selected[q.key]?.length || otherAnswer(q.key).trim()),
-            )
-          }
-          onClick={() =>
-            reply(
-              e,
-              true,
-              qs.length
-                ? JSON.stringify(
-                    Object.fromEntries(
-                      qs.map((q) => [
-                        q.key,
-                        {
-                          selected: selected[q.key] ?? [],
-                          other: otherAnswer(q.key),
-                        },
-                      ]),
-                    ),
-                  )
-                : "",
-            )
-          }
-        >
-          {qs.length ? t("Submit answers") : t("Allow")}
-        </Button>
-        <Button disabled={busy} onClick={() => reply(e, false)}>
-          {t("Deny")}
-        </Button>
-      </div>
-    </FloatingCard>
   );
 }

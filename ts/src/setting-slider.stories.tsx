@@ -7,7 +7,7 @@ const meta = {
   component: SettingSlider,
   tags: ["autodocs"],
   args: {
-    label: "응답 상세도",
+    label: "Indentation size",
     value: 4,
     inherited: 3,
     disabled: false,

@@ -8,14 +8,14 @@ const meta = {
   tags: ["autodocs"],
   args: {
     choose: () => {},
-    label: "추론 강도",
+    label: "Effort",
     value: "medium",
     disabled: false,
     options: [
-      { value: "default", label: "기본값", muted: true },
-      { value: "low", label: "낮음" },
-      { value: "medium", label: "보통" },
-      { value: "high", label: "높음" },
+      { value: "default", label: "medium", muted: true },
+      { value: "low", label: "low" },
+      { value: "medium", label: "medium" },
+      { value: "high", label: "high" },
     ],
   },
   render: function Interactive(args) {
@@ -29,5 +29,19 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
 export const Inherited: Story = { args: { value: "default" } };
 export const Disabled: Story = {
-  args: { disabled: true, disabledReason: "실행 중에는 변경할 수 없습니다." },
+  args: { disabled: true, disabledReason: "Settings require an idle session" },
+};
+
+export const ComposerValue: Story = {
+  args: { variant: "compact", minMenuWidth: 140 },
+  decorators: [
+    (Story) => (
+      <div className="composer-meta">
+        <div className="setting-field">
+          <span className="meta-label">Effort</span>
+          <Story />
+        </div>
+      </div>
+    ),
+  ],
 };
