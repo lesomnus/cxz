@@ -147,10 +147,11 @@ test("the same glow colors the toolbar and its border without painting outside i
               ),
             );
             if (difference <= 3) continue;
+            // Fractional layout edges can partially cover their boundary pixel.
             const inside =
-              x >= area.x &&
+              x + 1 > area.x &&
               x < area.x + area.width &&
-              y >= area.y &&
+              y + 1 > area.y &&
               y < area.y + area.height;
             if (!inside) result.outside++;
             else if (
