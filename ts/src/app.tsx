@@ -1441,17 +1441,15 @@ const EventView = React.memo(
         aria-expanded={details.expanded}
         aria-haspopup="dialog"
         aria-controls={details.controls}
-        onClick={() =>
-          details.toggle({
-            title: e.kind === "approval" ? approvalTitle(e) : e.kind,
-            content: () => (
-              <EventDetails
-                event={e}
-                loadDetails={e.payload.length ? undefined : loadDetails}
-              />
-            ),
-          })
-        }
+        {...details.handlers({
+          title: e.kind === "approval" ? approvalTitle(e) : e.kind,
+          content: () => (
+            <EventDetails
+              event={e}
+              loadDetails={e.payload.length ? undefined : loadDetails}
+            />
+          ),
+        })}
       >
         {e.kind === "approval"
           ? approvalTitle(e)

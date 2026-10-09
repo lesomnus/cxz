@@ -170,17 +170,22 @@ footers omit the year; metric icons expose names and scope on hover and to
 assistive technology. Relative-time rules are defined in `src/message-time.ts`.
 
 Response Copy icons appear on response hover or control focus without changing
-footer geometry. Transcript task and event summaries open a non-modal overlay
+footer geometry. Double-clicking transcript task and event summaries opens a non-modal overlay
 below the selected summary. Only its exterior expands and gains a border; its
 content and measured height stay unchanged. Details emerge under the summary's
 layer, follow scrolling, and close when the trigger leaves view. They stay within
-the conversation bounds and use an internal scrollbar for long content. The
+the conversation bounds. The detail exterior matches the expanded summary width,
+with square top corners and no repeated title. Input, Output, Result and Approval
+use tabs; each selected section is a read-only Monaco editor with detected syntax
+and shared editor settings. Only the editor viewport scrolls, with the common
+handle skin. Tabs preserve their own reading positions and support arrow keys.
+Single clicks do not load details; keyboard activation opens them. The
 summary remains clickable above the details: click it again, press Escape, or
 click an empty transcript side margin to dismiss. There is no separate Close
 button. Opening another item replaces the active preview.
 
 Request details and paste previews retain their composer anchor. Cards share the
-same shell, with rounding on all corners, an outer border, narrow content/header
+same shell; composer previews retain rounding on all corners, an outer border, narrow content/header
 padding and strong backdrop
 blur. The title alone gains a little left margin. Close shares Send's rectangular
 style. Code and raw text retain opaque boxes. Inner radii follow outer border and

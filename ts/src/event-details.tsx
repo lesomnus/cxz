@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { SessionEvent } from "../gen/cxz/session_pb";
 import type { LoadEventDetails } from "./session-history";
+import { DetailTabs, type DetailSection } from "./detail-tabs";
 import { detail } from "./journal";
 import { t } from "./i18n";
 import { useLocale } from "./i18n-react";
@@ -38,14 +39,21 @@ export function EventDetails({
   const state = useEventDetails(event, loadDetails);
   if (state.error) return <p role="alert">{state.error}</p>;
   if (!state.events) return <p className="muted">{t("Loading…")}</p>;
-  return (
-    <>
-      {state.events.map((e) => (
-        <div key={e.seq.toString()}>
-          <pre>{e.text}</pre>
-          {e.payload.length > 0 && <pre>{detail(e)}</pre>}
-        </div>
-      ))}
-    </>
-  );
+  const sections: DetailSection[] = [];
+  for (const e of state.events) {
+    if (e.text)
+      sections.push({
+        id: `output-${e.seq}`,
+        label: t("Output"),
+        value: e.text,
+      });
+    if (e.payload.length)
+      sections.push({
+        id: `result-${e.seq}`,
+        label: t("Result"),
+        value: detail(e),
+        language: "json",
+      });
+  }
+  return <DetailTabs sections={sections} />;
 }

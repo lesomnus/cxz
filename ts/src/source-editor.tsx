@@ -11,10 +11,12 @@ import { useEditorSettings } from "./settings";
 
 export type SourceEditorHandle = { focus: () => void };
 
-// File previews and editable settings share the same lazy Monaco surface.
+// File previews, task details and editable settings share a lazy Monaco surface.
 export function SourceEditor({
   value,
   path,
+  languageId,
+  onContentHeightChange,
   ariaLabel,
   readOnly = false,
   active = true,
@@ -27,6 +29,8 @@ export function SourceEditor({
 }: {
   value: string;
   path: string;
+  languageId?: string;
+  onContentHeightChange?: (height: number) => void;
   ariaLabel: string;
   readOnly?: boolean;
   active?: boolean;
@@ -62,6 +66,7 @@ export function SourceEditor({
     onTabFocusChange,
     view,
     onDispose,
+    onContentHeightChange,
     settings,
     theme,
   });
@@ -74,6 +79,7 @@ export function SourceEditor({
     onTabFocusChange,
     view,
     onDispose,
+    onContentHeightChange,
     settings,
     theme,
   };
@@ -126,7 +132,10 @@ export function SourceEditor({
     import("./code-editor")
       .then(({ monaco, language, configureEditor, editorOptions }) => {
         if (canceled) return;
-        m = monaco.editor.createModel(latest.current.value, language(path));
+        m = monaco.editor.createModel(
+          latest.current.value,
+          languageId ?? language(path),
+        );
         e = monaco.editor.create(host.current!, {
           ...editorOptions,
           model: m,
@@ -135,6 +144,10 @@ export function SourceEditor({
           ariaLabel: latest.current.ariaLabel,
           theme: `cxz-${latest.current.settings.colorPalette}-${latest.current.theme}`,
         });
+        const reportHeight = () =>
+          latest.current.onContentHeightChange?.(e!.getContentHeight());
+        subscriptions.push(e.onDidContentSizeChange(reportHeight));
+        reportHeight();
         model.current = m;
         editor.current = e;
         configure.current = (settings, theme) =>
@@ -185,7 +198,7 @@ export function SourceEditor({
       e?.dispose();
       m?.dispose();
     };
-  }, [activated, path, readOnly]);
+  }, [activated, path, readOnly, languageId]);
   return (
     <div className="code-editor" ref={host}>
       {error && <p role="alert">{error}</p>}

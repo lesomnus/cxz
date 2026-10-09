@@ -43,6 +43,7 @@ export function useFloatingCard() {
 
 export function useAnchoredCard() {
   const anchor = useRef<HTMLButtonElement>(null);
+  const closingClick = useRef(false);
   const open = useFloatingCard();
   const { card, close } = useContext(CardState);
   const present = !!card && card.anchor === anchor.current;
@@ -52,9 +53,22 @@ export function useAnchoredCard() {
     present,
     expanded,
     controls: expanded ? `event-details-${card.id}` : undefined,
-    toggle(request: Omit<CardRequest, "anchor">) {
-      if (expanded) close(card.id);
-      else if (anchor.current) open({ ...request, anchor: anchor.current });
+    handlers(request: Omit<CardRequest, "anchor">) {
+      return {
+        onClick(event: React.MouseEvent<HTMLButtonElement>) {
+          // Keyboard activation remains a single action. Pointer activation
+          // opens on double click; a single click can close an existing card.
+          if (event.detail <= 1) closingClick.current = expanded;
+          if (expanded) close(card.id);
+          else if (event.detail === 0 && anchor.current)
+            open({ ...request, anchor: anchor.current });
+        },
+        onDoubleClick() {
+          // A double click on an open card must not reopen its closing preview.
+          if (!present && !closingClick.current && anchor.current)
+            open({ ...request, anchor: anchor.current });
+        },
+      };
     },
   };
 }

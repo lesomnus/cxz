@@ -54,7 +54,7 @@ test("floating event and paste cards replace one another without moving the tran
   const before = await page
     .locator(".transcript")
     .evaluate((el) => ({ top: el.scrollTop, height: el.scrollHeight }));
-  await trigger.click();
+  await trigger.dblclick();
   const event = page.locator('.floating-card[data-active="true"]');
   await expect(event).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
   const eventId = await event.getAttribute("data-card");
@@ -62,7 +62,7 @@ test("floating event and paste cards replace one another without moving the tran
   const anchor = (await trigger.boundingBox())!;
   expect(card.y).toBeCloseTo(anchor.y + anchor.height - 4, 0);
   await expect(event).toHaveCSS("border-top-width", "1px");
-  await expect(event).toHaveCSS("border-radius", "12px");
+  await expect(event).toHaveCSS("border-radius", "0px 0px 12px 12px");
   await expect(event).toHaveCSS("backdrop-filter", "blur(48px)");
   await expect(event.locator(".card-body")).toHaveCSS("padding-left", "4px");
   const eventRow = await trigger.boundingBox();
@@ -96,7 +96,7 @@ test("floating event and paste cards replace one another without moving the tran
   await expect(page.locator(".floating-card")).toHaveCount(0);
   await expect(input).toBeFocused();
   expect(await trigger.boundingBox()).toEqual(eventRow);
-  await trigger.click();
+  await trigger.dblclick();
   await expect(trigger).toHaveAttribute("aria-expanded", "true");
   await trigger.click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
@@ -109,7 +109,8 @@ test.describe("rendered backdrop", () => {
     page,
   }) => {
     await open(page);
-    await page.locator(".transcript-row > .event-detail").last().click();
+    await paste(page, "blur\npreview\nbody\nhere");
+    await page.locator(".paste-chip").click();
     const card = page.locator(".floating-card");
     await expect(card).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
     await expect(card).toHaveCSS("opacity", "1");

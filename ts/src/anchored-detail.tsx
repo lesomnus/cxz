@@ -56,8 +56,8 @@ export function AnchoredDetail({
       const top = origin.bottom - view.top - overlap;
       layer.current!.style.height = `${bottom - view.top}px`;
       card.style.top = `${top}px`;
-      card.style.left = `${origin.left - view.left}px`;
-      card.style.width = `${origin.width}px`;
+      card.style.left = `${origin.left - view.left - overlap}px`;
+      card.style.width = `${origin.width + 2 * overlap}px`;
       card.style.setProperty(
         "--detail-space",
         `${Math.max(0, bottom - view.top - top - inset)}px`,
@@ -94,6 +94,7 @@ export function AnchoredDetail({
         id={id}
         data-card={id}
         title={title}
+        hideHeading
         className="anchored-detail"
         bodyTabIndex={0}
         role="dialog"

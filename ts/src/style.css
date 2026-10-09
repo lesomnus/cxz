@@ -1567,13 +1567,45 @@ pre {
 .floating-card.anchored-detail {
   --detail-overlap: var(--space);
   padding-top: var(--detail-overlap);
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
   bottom: auto;
   max-height: min(360px, var(--detail-space));
   transform-origin: top center;
   transform: translateY(calc(-2 * var(--space))) scale(0.99);
 }
-.anchored-detail .card-heading {
-  padding-top: calc(2 * var(--space));
+.anchored-detail .card-body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.detail-tabs {
+  --detail-tab-height: calc(8 * var(--space));
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: calc(var(--detail-content-height, 240px) + var(--detail-tab-height));
+}
+.detail-tab-list {
+  display: flex;
+  flex: 0 0 var(--detail-tab-height);
+  gap: var(--space);
+}
+.detail-tab-list button {
+  padding: var(--space) calc(2 * var(--space));
+  color: var(--muted);
+  border-radius: var(--space);
+}
+.detail-tab-list button[aria-selected="true"] {
+  background: var(--shade-40);
+  color: var(--shade-237);
+}
+.detail-editor {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: var(--card-inner-radius);
 }
 .floating-card.anchored-detail[data-entered="true"] {
   transform: translateY(0) scale(1);

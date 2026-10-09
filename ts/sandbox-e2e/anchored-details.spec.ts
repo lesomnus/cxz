@@ -21,6 +21,8 @@ test("event details grow only the trigger's exterior, toggle and replace in plac
   const before = await trigger.boundingBox();
   const text = await trigger.locator(".button-content").boundingBox();
   await trigger.click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await trigger.dblclick();
   const card = page.getByRole("dialog");
   await expect(card).toHaveCSS("opacity", "1");
   await expect(trigger).toHaveAttribute("aria-expanded", "true");
@@ -28,10 +30,27 @@ test("event details grow only the trigger's exterior, toggle and replace in plac
   await expect(
     card.getByRole("button", { name: "Close details", exact: true }),
   ).toHaveCount(0);
-  await expect(card).toContainText("usageLimitExceeded");
+  await expect(card.locator(".card-heading")).toHaveCount(0);
+  await expect(card).toHaveCSS("border-top-left-radius", "0px");
+  await card.getByRole("tab", { name: "Result", exact: true }).click();
+  await expect(card.locator(".view-lines")).toContainText("usageLimitExceeded");
+  await expect(card.locator(".detail-editor")).toHaveAttribute(
+    "data-language",
+    "json",
+  );
+  await expect(card.locator(".monaco-editor textarea")).toHaveJSProperty(
+    "readOnly",
+    true,
+  );
+  const tokenColors = await card
+    .locator(".view-line span span")
+    .evaluateAll((tokens) => [
+      ...new Set(tokens.map((token) => getComputedStyle(token).color)),
+    ]);
+  expect(tokenColors.length).toBeGreaterThan(1);
   const bounds = (await card.boundingBox())!;
-  expect(bounds.x).toBe(before!.x);
-  expect(bounds.width).toBe(before!.width);
+  expect(bounds.x).toBe(before!.x - 4);
+  expect(bounds.width).toBe(before!.width + 8);
   expect(bounds.y).toBeCloseTo(before!.y + before!.height - 4, 0);
   expect(await trigger.boundingBox()).toEqual(before);
   await expect
@@ -53,13 +72,14 @@ test("event details grow only the trigger's exterior, toggle and replace in plac
   });
   expect(hit).toBe(true);
   await page.screenshot({ path: "test-results/anchored-details-desktop.png" });
-  await trigger.click();
+  // The closing transition can finish between the two pointer clicks.
+  await trigger.dblclick({ delay: 220 });
   await expect(card).toHaveCount(0);
   await trigger.press("Enter");
   await expect(card).toBeVisible();
   const previous = await card.getAttribute("id");
   const first = page.locator(".detail-anchor").first();
-  await first.click();
+  await first.dblclick();
   await expect(first).toHaveAttribute("aria-expanded", "true");
   await expect(trigger).toHaveAttribute("aria-expanded", "false");
   await expect(page.locator(`[id="${previous}"]`)).toHaveCount(0);
@@ -70,7 +90,7 @@ test("event details grow only the trigger's exterior, toggle and replace in plac
   await expect(card).toHaveCount(0);
   await expect(first).toHaveAttribute("aria-expanded", "false");
   await page.setViewportSize({ width: 390, height: 844 });
-  await trigger.click();
+  await trigger.dblclick();
   await expect(card).toHaveCSS("opacity", "1");
   const mobile = (await card.boundingBox())!;
   expect(mobile.x).toBeGreaterThanOrEqual(0);
@@ -85,7 +105,7 @@ test("event details grow only the trigger's exterior, toggle and replace in plac
   await expect(trigger).toBeFocused();
 });
 
-test("grouped tool details follow native scrolling, scroll their own output, and close when a virtualized trigger leaves view", async ({
+test("grouped tool details fit short output, follow native scrolling, and close when a virtualized trigger leaves view", async ({
   page,
 }) => {
   // A short conversation leaves less room than this tool's combined details.
@@ -101,21 +121,27 @@ test("grouped tool details follow native scrolling, scroll their own output, and
     "aria-description",
     /idle/,
   );
-  await tool.click();
+  await tool.dblclick();
   const card = page.getByRole("dialog");
   await expect(card).toHaveCSS("opacity", "1");
   const bounds = (await card.boundingBox())!;
   expect(bounds.y + bounds.height).toBeLessThanOrEqual(360);
+  const inputTab = card.getByRole("tab", { name: "Input", exact: true });
+  await expect(inputTab).toHaveAttribute("aria-selected", "true");
+  await inputTab.press("End");
   await expect(
-    card.getByRole("heading", { name: "Output", exact: true }),
-  ).toBeVisible();
+    card.getByRole("tab", { name: "Result", exact: true }),
+  ).toHaveAttribute("aria-selected", "true");
+  await expect(card.locator(".monaco-editor")).toBeVisible();
   const pane = page.locator(".transcript");
   const top = await pane.evaluate((el) => el.scrollTop);
-  await card.locator(".card-body").hover();
+  const editor = card.locator(".monaco-editor");
+  await editor.hover();
   await page.mouse.wheel(0, 80);
-  await expect
-    .poll(() => card.locator(".card-body").evaluate((el) => el.scrollTop))
-    .toBeGreaterThan(0);
+  // This fixture's result fits: wheel input still belongs to the editor.
+  expect(await card.locator(".card-body").evaluate((el) => el.scrollTop)).toBe(
+    0,
+  );
   expect(await pane.evaluate((el) => el.scrollTop)).toBe(top);
   await pane.evaluate((el) => {
     el.scrollTop -= 32;

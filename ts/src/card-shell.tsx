@@ -4,6 +4,7 @@ import { Button } from "./button";
 
 export function FloatingCard({
   title,
+  hideHeading = false,
   close,
   closeLabel,
   bodyTabIndex,
@@ -13,6 +14,7 @@ export function FloatingCard({
   ...props
 }: Omit<HTMLAttributes<HTMLElement>, "title"> & {
   title: string;
+  hideHeading?: boolean;
   close?: () => void;
   closeLabel?: string;
   bodyTabIndex?: number;
@@ -21,19 +23,21 @@ export function FloatingCard({
   useLocale();
   return (
     <section ref={ref} className={`floating-card ${className}`} {...props}>
-      <header className="card-heading">
-        <strong>{title}</strong>
-        {close && (
-          <Button
-            className="card-close"
-            type="button"
-            aria-label={closeLabel}
-            onClick={close}
-          >
-            ×
-          </Button>
-        )}
-      </header>
+      {!hideHeading && (
+        <header className="card-heading">
+          <strong>{title}</strong>
+          {close && (
+            <Button
+              className="card-close"
+              type="button"
+              aria-label={closeLabel}
+              onClick={close}
+            >
+              ×
+            </Button>
+          )}
+        </header>
+      )}
       <div className="card-body" tabIndex={bodyTabIndex}>
         {children}
       </div>

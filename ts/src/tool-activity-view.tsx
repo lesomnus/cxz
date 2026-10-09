@@ -1,8 +1,9 @@
 import type { LoadEventDetails } from "./session-history";
+import { DetailTabs, type DetailSection } from "./detail-tabs";
 import { useEventDetails } from "./event-details";
 import { Button } from "./button";
 import { useAnchoredCard } from "./floating-card";
-import { detail } from "./journal";
+import { detail, payload } from "./journal";
 import { t } from "./i18n";
 import { useLocale } from "./i18n-react";
 import {
@@ -64,18 +65,16 @@ export function ToolActivityView({
       aria-expanded={details.expanded}
       aria-haspopup="dialog"
       aria-controls={details.controls}
-      onClick={() =>
-        details.toggle({
-          title: `${label.name} · ${t("Details")}`,
-          content: () => (
-            <ToolDetails
-              activity={activity}
-              seq={seq}
-              loadDetails={loadDetails}
-            />
-          ),
-        })
-      }
+      {...details.handlers({
+        title: `${label.name} · ${t("Details")}`,
+        content: () => (
+          <ToolDetails
+            activity={activity}
+            seq={seq}
+            loadDetails={loadDetails}
+          />
+        ),
+      })}
     >
       {files.length ? (
         <span className="tool-file-list">
@@ -154,38 +153,46 @@ function ToolDetails({
         );
       })) ??
     original;
-  return (
-    <>
-      <h3>{t("Input")}</h3>
-      {activity.call ? (
-        <pre>{detail(activity.call)}</pre>
-      ) : (
-        <p className="muted">
-          {t("Input is not available in the loaded history.")}
-        </p>
-      )}
-      <h3>{t("Output")}</h3>
-      <pre>
-        {toolOutput(activity) ||
-          (activity.result
-            ? detail(activity.result)
-            : t("No output recorded yet."))}
-      </pre>
-      {activity.result && (
-        <>
-          <h3>{t("Result")}</h3>
-          <pre>{detail(activity.result)}</pre>
-        </>
-      )}
-      {activity.approvals.map(({ request, resolution }) => (
-        <div key={request.seq.toString()}>
-          <h3>
-            {t("Approval")} ·{" "}
-            {resolution?.text ?? t("No resolution recorded in loaded history.")}
-          </h3>
-          <pre>{detail(request)}</pre>
-        </div>
-      ))}
-    </>
-  );
+  const sections: DetailSection[] = [
+    {
+      id: "input",
+      label: t("Input"),
+      value: activity.call
+        ? detail(activity.call)
+        : t("Input is not available in the loaded history."),
+      language: activity.call ? "json" : "plaintext",
+    },
+    {
+      id: "output",
+      label: t("Output"),
+      value:
+        toolOutput(activity) ||
+        (activity.result
+          ? detail(activity.result)
+          : t("No output recorded yet.")),
+    },
+  ];
+  if (activity.result)
+    sections.push({
+      id: "result",
+      label: t("Result"),
+      value: detail(activity.result),
+      language: "json",
+    });
+  for (const { request, resolution } of activity.approvals)
+    sections.push({
+      id: `approval-${request.seq}`,
+      label: t("Approval"),
+      value: JSON.stringify(
+        {
+          resolution:
+            resolution?.text ?? t("No resolution recorded in loaded history."),
+          request: payload(request),
+        },
+        null,
+        2,
+      ),
+      language: "json",
+    });
+  return <DetailTabs sections={sections} />;
 }
