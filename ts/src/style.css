@@ -207,6 +207,9 @@ header strong {
   margin-top: auto;
 }
 .settings-page {
+  --settings-column-width: 320px;
+  --settings-section-gap: calc(3 * var(--space));
+  --settings-section-radius: 10px;
   min-width: 0;
   min-height: 0;
   overflow: hidden;
@@ -241,19 +244,31 @@ header strong {
 .settings-file-pane[hidden] {
   display: none;
 }
+.settings-form-pane {
+  container: settings-form / inline-size;
+  padding: var(--settings-section-radius);
+}
 .settings-page[data-wide="true"] .settings-file-pane {
   border-left: 1px solid var(--shade-54);
 }
-.settings-editor-body,
 .settings-file {
   width: 100%;
   max-width: var(--conversation-width);
   margin: 0 auto;
 }
+.settings-editor-body {
+  width: 100%;
+  max-width: var(--settings-column-width);
+  margin: 0 auto;
+}
 .settings-editor-body > header {
+  padding-inline: var(--settings-section-radius);
   flex-wrap: wrap;
   gap: 4px 12px;
   margin-bottom: 12px;
+}
+.settings-editor-body > p {
+  padding-inline: var(--settings-section-radius);
 }
 .settings-editor-body > header > button,
 .settings-file > header > button {
@@ -270,12 +285,23 @@ header strong {
 .settings-editor-groups {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 12px;
+  gap: var(--settings-section-gap);
+  align-items: start;
+}
+@container settings-form (min-width: 680px) {
+  .settings-editor-body {
+    max-width: calc(
+      2 * var(--settings-column-width) + var(--settings-section-gap)
+    );
+  }
+  .settings-editor-groups {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 .settings-group {
   min-width: 0;
-  padding: 12px;
-  border-radius: 10px;
+  padding: var(--settings-section-radius);
+  border-radius: var(--settings-section-radius);
   background: var(--shade-25);
 }
 .settings-group h2 {
@@ -289,11 +315,33 @@ header strong {
   min-width: 0;
 }
 .setting-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(140px, 0.65fr);
-  align-items: center;
-  gap: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space);
   margin-bottom: 12px;
+}
+.setting-summary,
+.setting-details,
+.settings-group > .muted {
+  margin-block: 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.settings-group > .muted {
+  margin-top: var(--space);
+}
+.setting-control {
+  min-width: 0;
+}
+.language-setting-control {
+  display: flex;
+  align-items: center;
+  gap: var(--space);
+}
+.language-setting-control > button {
+  flex-shrink: 0;
+  font-size: 12px;
 }
 .setting-row strong {
   font-size: 12px;
@@ -2358,10 +2406,6 @@ summary:hover {
   .settings-open > .settings-page {
     grid-column: 2;
     grid-row: 2;
-  }
-  .settings-open .setting-row {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 4px;
   }
   .workspace {
     grid-template-columns: 64px minmax(0, 1fr);

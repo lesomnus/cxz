@@ -1,7 +1,9 @@
 import { expect, type Page } from "@playwright/test";
 
 export async function chooseSetting(page: Page, label: string, value: string) {
-  const control = page.getByLabel(label, { exact: true });
+  const control = page
+    .getByLabel(label, { exact: true })
+    .and(page.locator('input, select, [role="combobox"], [role="radiogroup"]'));
   if (await control.evaluate((el) => el.matches("select"))) {
     await control.selectOption(value);
   } else if (
@@ -21,7 +23,9 @@ export async function chooseSetting(page: Page, label: string, value: string) {
   }
 }
 export async function expectInherited(page: Page, label: string) {
-  const control = page.getByLabel(label, { exact: true });
+  const control = page
+    .getByLabel(label, { exact: true })
+    .and(page.locator('input, select, [role="combobox"], [role="radiogroup"]'));
   if (await control.evaluate((el) => el.matches('input[type="range"]')))
     await expect(control).toHaveValue("0");
   else if ((await control.getAttribute("role")) === "radiogroup")

@@ -145,6 +145,7 @@ export const messages = {
   "Invalid settings file: {error}": "설정 파일 오류: {error}",
   "JSON · Ctrl+Enter: Save": "JSON · Ctrl+Enter: 저장",
   "Jump to user message": "사용자 입력으로 이동",
+  "Choose the interface language.": "인터페이스 언어를 선택합니다.",
   Language: "언어",
   "Language applied.": "언어를 적용했습니다.",
   "Language changes apply to this browser. Conversation content and code are preserved.":

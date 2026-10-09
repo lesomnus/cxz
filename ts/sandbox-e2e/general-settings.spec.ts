@@ -23,7 +23,7 @@ async function editor(page: Page) {
     .getByRole("link", { name: "Editor", exact: true })
     .click();
 }
-test("General is first, shared menus preserve the current text position and system appearance follows the OS without resetting JSON Undo", async ({
+test("General is first, language menus preserve text position and segmented system appearance follows the OS without resetting JSON Undo", async ({
   page,
 }) => {
   await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
@@ -45,13 +45,13 @@ test("General is first, shared menus preserve the current text position and syst
   await page.evaluate(() => navigator.clipboard.writeText('{"unsaved":true}'));
   await source.press("Control+a");
   await source.press("Control+v");
-  const appearance = page.getByRole("combobox", {
-    name: "Appearance",
+  const language = page.getByRole("combobox", {
+    name: "Display language",
     exact: true,
   });
-  await expect(appearance).toHaveAttribute("data-muted", "true");
-  const before = (await appearance.locator(".meta-value").boundingBox())!;
-  await appearance.click();
+  await expect(language).toHaveAttribute("data-muted", "true");
+  const before = (await language.locator(".meta-value").boundingBox())!;
+  await language.click();
   const popup = page.getByRole("listbox");
   const after = (await popup
     .locator(".setting-current .meta-value")
@@ -59,7 +59,15 @@ test("General is first, shared menus preserve the current text position and syst
   expect(Math.abs(after.x - before.x)).toBeLessThan(0.1);
   expect(Math.abs(after.y - before.y)).toBeLessThan(0.1);
   await page.keyboard.press("Escape");
-  await expect(appearance).toBeFocused();
+  await expect(language).toBeFocused();
+  const appearance = page.getByRole("radiogroup", {
+    name: "Appearance",
+    exact: true,
+  });
+  await expect(appearance).toHaveAttribute("data-value", "dark");
+  await expect(
+    appearance.locator('.segment:has(input[value="dark"])'),
+  ).toHaveAttribute("data-muted", "true");
   await chooseSetting(page, "Appearance", "light");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
   await expect(page.locator("html")).toHaveCSS(
