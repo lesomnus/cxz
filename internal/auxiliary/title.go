@@ -48,6 +48,8 @@ func (c *Controller) saveTitle(id string, s TitleState) error {
 	if e := os.MkdirAll(filepath.Dir(c.titlePath(id)), 0700); e != nil {
 		return e
 	}
+	// A title is part of what a watcher reads, so saving one is news.
+	defer c.wake(id)
 	return core.WriteJSON(c.titlePath(id), s)
 }
 func cleanTitle(s string) string {
@@ -234,9 +236,9 @@ func (c *Controller) startTitle(id string, s *TitleState, phase string) error {
 	copy := *s
 	copy.Recent = append([]Turn(nil), s.Recent...)
 	// Reuse available turn summaries; never wait or make another AI request.
-	if state, err := c.load(id); err == nil {
+	if summaries, err := c.store.summaries(id, 0, 0); err == nil {
 		for i := range copy.Recent {
-			for _, summary := range state.Summaries {
+			for _, summary := range summaries {
 				if summary.Turn == copy.Recent[i].Seq && summary.Text != "" {
 					copy.Recent[i].Answer = Clip(summary.Text, 1024)
 				}

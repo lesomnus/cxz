@@ -233,9 +233,6 @@ func (m *model) receiveAuxiliary(v auxiliaryResult) tea.Cmd {
 		}
 		return nil
 	}
-	if v.action == "status" {
-		m.auxiliaryPolling = false
-	}
 	key := v.connection + "/" + v.session
 	if v.version != m.auxiliaryVersions[key] {
 		return nil
@@ -298,21 +295,6 @@ func (m *model) receiveAuxiliary(v auxiliaryResult) tea.Cmd {
 	}
 
 	return nil
-}
-func (m *model) pollAuxiliary() tea.Cmd {
-	if m.auxiliaryPolling || time.Since(m.auxiliaryChecked) < time.Second || m.ctx == nil {
-		return nil
-	}
-	s := m.current()
-	if s == nil {
-		return nil
-	}
-	if m.auxiliaryPending[m.connectionRef()+"/"+s.Id] {
-		return nil
-	}
-	m.auxiliaryPolling = true
-	m.auxiliaryChecked = time.Now()
-	return m.auxiliaryRequest(auxiliary.Request{Action: "status", Session: s.Id}, nil)
 }
 func (m *model) auxiliaryJob() *auxiliary.Job {
 	s := m.current()

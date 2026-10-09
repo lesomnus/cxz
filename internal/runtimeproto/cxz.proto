@@ -37,6 +37,9 @@ service Sessions {
   rpc AuxRun(AuxRunInput) returns (AuxState);
   rpc AuxCancel(AuxCancelInput) returns (AuxState);
   rpc AuxStatus(AuxStatusInput) returns (AuxState);
+  // The same answer, pushed. A client that wants to know when a task finishes
+  // should not have to ask every second to find out.
+  rpc AuxEvents(AuxStatusInput) returns (stream AuxState);
   rpc AuxPrefer(AuxPreferInput) returns (AuxState);
   // Only a session being deleted sends this, which is why the resource API
   // does not carry it.
@@ -273,6 +276,8 @@ message AuxStatusInput { string session_id = 1; uint64 after_turn = 2; int32 lim
 message AuxState {
   repeated AuxSummary summaries = 1;
   Aux current = 2;
+  // What ran before, newest first. The current task is the first of them.
+  repeated Aux recent = 6;
   repeated AuxPreference preferences = 3;
   // The session's generated title, for the caller that records session names.
   string title = 4;

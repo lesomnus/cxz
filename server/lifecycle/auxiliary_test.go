@@ -6,6 +6,7 @@ import (
 	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/resource"
 	"github.com/lesomnus/payday/config"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"path/filepath"
@@ -27,6 +28,10 @@ func (f *auxiliaryFixture) AuxModels(_ context.Context, r *api.AuxModelsInput) (
 func (f *auxiliaryFixture) AuxStatus(_ context.Context, r *api.AuxStatusInput) (*api.AuxState, error) {
 	f.calls++
 	return &api.AuxState{Title: f.title}, nil
+}
+func (f *auxiliaryFixture) AuxEvents(r *api.AuxStatusInput, stream api.Sessions_AuxEventsServer) error {
+	f.calls++
+	return stream.Send(&api.AuxState{Title: f.title})
 }
 func TestAuxiliaryUsesRegisteredAccountNotClientProvider(t *testing.T) {
 	ctx := t.Context()
@@ -61,6 +66,54 @@ func TestAuxiliaryUsesRegisteredAccountNotClientProvider(t *testing.T) {
 	if e == nil || f.calls != 1 {
 		t.Fatal("nameless account reached runner")
 	}
+}
+
+// The pushed answer is the same answer, including recording a generated title
+// on the session it names -- so a client that is subscribed does not have to
+// ask once more for the name to be right.
+func TestAuxEventsRelayRecordsTheTitle(t *testing.T) {
+	ctx := t.Context()
+	db, _, err := (config.DbConfig{Driver: "sqlite3", Dsn: "file:" + filepath.Join(t.TempDir(), "resources.db"), MaxOpenConns: 1}).Open(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	f := &auxiliaryFixture{fixture: fixture{p: &api.Project{Id: "project", Workspace: "/work", Name: "test"}, s: &api.Session{Id: "session", ProjectId: "project", Agent: "codex", Title: "Old title", LastSeq: 7, Account: "work", AuthBackend: accounts.ProjectLocalOAuth}}}
+	f.s.AuthBinding = accounts.BindingID(f.p.Id, f.s.Account, f.s.AuthBackend)
+	stack, err := Build(ctx, db, f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = stack.Session().Get(ctx, resource.SessionGetRequest_builder{Ref: sessionRef("session"), Select: resource.SessionSelect_builder{All: ptr(true)}.Build()}.Build()); err != nil {
+		t.Fatal(err)
+	}
+	f.title = "Pushed title"
+	sink := &auxRelaySink{ctx: ctx}
+	if err = stack.Session().AuxEvents(resource.AuxStatusRequest_builder{Ref: sessionRef("session")}.Build(), sink); err != nil {
+		t.Fatal(err)
+	}
+	if len(sink.sent) != 1 || sink.sent[0].GetTitle() != "Pushed title" {
+		t.Fatal("the state was not relayed", sink.sent)
+	}
+	v, err := stack.Session().Get(ctx, resource.SessionGetRequest_builder{Ref: sessionRef("session"), Select: resource.SessionSelect_builder{All: ptr(true)}.Build()}.Build())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if v.GetName() != "Pushed title" {
+		t.Fatal("a pushed title was not recorded", v.GetName())
+	}
+}
+
+type auxRelaySink struct {
+	grpc.ServerStreamingServer[resource.AuxState]
+	ctx  context.Context
+	sent []*resource.AuxState
+}
+
+func (s *auxRelaySink) Context() context.Context { return s.ctx }
+func (s *auxRelaySink) Send(v *resource.AuxState) error {
+	s.sent = append(s.sent, v)
+	return nil
 }
 
 // A kind this build does not know is refused at the edge, before it can reach
