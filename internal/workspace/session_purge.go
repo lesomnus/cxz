@@ -2,7 +2,6 @@ package workspace
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/lesomnus/cxz/api"
@@ -13,11 +12,8 @@ import (
 // goes first because the conversation is the part nothing can reconstruct; the
 // manager's own leftovers are small and survive a re-run, so a failure between
 // the two loses the journal and nothing else.
-func (m *Manager) PurgeSession(ctx context.Context, spec []byte) (*api.Receipt, error) {
-	var r sessionpurge.Request
-	if len(spec) > sessionpurge.MaxSpec || json.Unmarshal(spec, &r) != nil {
-		return nil, fmt.Errorf("invalid session purge request")
-	}
+func (m *Manager) PurgeSession(ctx context.Context, in *api.SessionPurgeInput) (*api.SessionPurgeReply, error) {
+	r := sessionpurge.Request{Session: in.SessionId, DryRun: in.DryRun}
 	project, err := m.projectOf(ctx, r.Session)
 	if err != nil {
 		return nil, err
@@ -27,12 +23,8 @@ func (m *Manager) PurgeSession(ctx context.Context, spec []byte) (*api.Receipt, 
 		return nil, err
 	}
 	defer conn.Close()
-	out, err := client.Docker(ctx, &api.DockerInput{Action: "session-purge", Spec: spec})
+	reply, err := client.PurgeSession(ctx, in)
 	if err != nil {
-		return nil, err
-	}
-	var reply sessionpurge.Reply
-	if err = json.Unmarshal([]byte(out.Status), &reply); err != nil {
 		return nil, err
 	}
 	subject := sessionpurge.Subject{Session: r.Session, Project: project.ID}
@@ -44,7 +36,11 @@ func (m *Manager) PurgeSession(ctx context.Context, spec []byte) (*api.Receipt, 
 	if err != nil {
 		return nil, err
 	}
-	reply.Targets = append(reply.Targets, here.Targets...)
+	for _, t := range here.Targets {
+		reply.Targets = append(reply.Targets, &api.SessionPurgeTarget{
+			Kind: t.Kind, Path: t.Path, Files: int32(t.Files), Bytes: t.Bytes,
+		})
+	}
 	if !r.DryRun {
 		c, err := m.auxiliaryController()
 		if err != nil {
@@ -61,8 +57,7 @@ func (m *Manager) PurgeSession(ctx context.Context, spec []byte) (*api.Receipt, 
 		"attachment bytes other sessions still reference",
 		"manager and project logs that mention the session id",
 	}
-	b, err := json.Marshal(reply)
-	return &api.Receipt{Status: string(b)}, err
+	return reply, nil
 }
 
 func (m *Manager) projectOf(ctx context.Context, session string) (*Project, error) {

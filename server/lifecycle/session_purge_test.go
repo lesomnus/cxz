@@ -3,12 +3,12 @@ package lifecycle
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"path/filepath"
 	"testing"
 
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/accounts"
+	"github.com/lesomnus/cxz/internal/sessionalias"
 	"github.com/lesomnus/cxz/internal/sessionpurge"
 	"github.com/lesomnus/cxz/resource"
 	"github.com/lesomnus/payday/config"
@@ -21,18 +21,12 @@ type purgeFixture struct {
 	purged []sessionpurge.Request
 }
 
-func (f *purgeFixture) Docker(_ context.Context, r *api.DockerInput) (*api.Receipt, error) {
-	if r.Action != "session-purge" {
-		return nil, status.Error(codes.Unimplemented, r.Action)
-	}
-	var q sessionpurge.Request
-	if err := json.Unmarshal(r.Spec, &q); err != nil {
-		return nil, err
-	}
-	f.purged = append(f.purged, q)
-	reply := sessionpurge.Reply{Session: q.Session, DryRun: q.DryRun, Targets: []sessionpurge.Target{{Kind: "journal", Path: "/state/sessions/" + q.Session, Files: 3, Bytes: 4096}}}
-	b, err := json.Marshal(reply)
-	return &api.Receipt{Status: string(b)}, err
+func (f *purgeFixture) PurgeSession(_ context.Context, r *api.SessionPurgeInput) (*api.SessionPurgeReply, error) {
+	f.purged = append(f.purged, sessionpurge.Request{Session: r.SessionId, DryRun: r.DryRun})
+	return &api.SessionPurgeReply{
+		SessionId: r.SessionId, DryRun: r.DryRun,
+		Targets: []*api.SessionPurgeTarget{{Kind: "journal", Path: "/state/sessions/" + r.SessionId, Files: 3, Bytes: 4096}},
+	}, nil
 }
 
 func purgeStack(t *testing.T) (*purgeFixture, resource.Server, *sql.DB, func()) {
@@ -57,17 +51,27 @@ func purgeStack(t *testing.T) (*purgeFixture, resource.Server, *sql.DB, func()) 
 	return f, stack, db, func() { db.Close() }
 }
 
+// A purge is asked for on the session's own service now, by whichever handle
+// the caller has.
 func purge(ctx context.Context, stack resource.Server, handle string, dry bool) (sessionpurge.Reply, error) {
-	var reply sessionpurge.Reply
-	spec, err := json.Marshal(sessionpurge.Request{Session: handle, DryRun: dry})
-	if err != nil {
-		return reply, err
+	// Whichever field the handle belongs in, the way a client fills it.
+	ref := resource.SessionRef_builder{RuntimeId: &handle}.Build()
+	if sessionalias.Valid(handle) {
+		ref = resource.SessionRef_builder{Alias: &handle}.Build()
 	}
-	out, err := stack.Project().Docker(ctx, resource.DockerRequest_builder{Action: ptr("session-purge"), Spec: spec}.Build())
+	out, err := stack.Session().Purge(ctx, resource.SessionPurgeRequest_builder{Ref: ref, DryRun: &dry}.Build())
 	if err != nil {
-		return reply, err
+		return sessionpurge.Reply{}, err
 	}
-	return reply, json.Unmarshal([]byte(out.GetStatus()), &reply)
+	// The reply carries back the ref that was asked about, so a caller reads
+	// its own handle rather than one it never typed.
+	reply := sessionpurge.Reply{Session: sessionHandle(out.GetRef()), DryRun: out.GetDryRun(), Retained: out.GetRetained()}
+	for _, t := range out.GetTargets() {
+		reply.Targets = append(reply.Targets, sessionpurge.Target{
+			Kind: t.GetKind(), Path: t.GetPath(), Files: int(t.GetFiles()), Bytes: t.GetBytes(),
+		})
+	}
+	return reply, nil
 }
 
 func TestPurgeStopsTheAgentAndLeavesNoRecord(t *testing.T) {

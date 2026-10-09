@@ -3415,6 +3415,21 @@ func (s interceptProject) AuxLoginInfo(ctx context.Context, req *resource.AuxLog
 		resource.ProjectService_AuxLoginInfo_FullMethodName, req, s.ProjectServiceServer.AuxLoginInfo)
 }
 
+func (s interceptProject) MarkHistoryTrimmable(ctx context.Context, req *resource.HistoryTrimmableRequest) (*resource.HistoryTrimmableReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_MarkHistoryTrimmable_FullMethodName, req, s.ProjectServiceServer.MarkHistoryTrimmable)
+}
+
+func (s interceptProject) GetHistoryPolicy(ctx context.Context, req *resource.HistoryPolicyRequest) (*resource.HistoryPolicy, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_GetHistoryPolicy_FullMethodName, req, s.ProjectServiceServer.GetHistoryPolicy)
+}
+
+func (s interceptProject) SetHistoryPolicy(ctx context.Context, req *resource.HistoryPolicy) (*resource.HistoryPolicy, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_SetHistoryPolicy_FullMethodName, req, s.ProjectServiceServer.SetHistoryPolicy)
+}
+
 func (s interceptProject) PutSecretFile(ctx context.Context, req *resource.PutSecretFileRequest) (*resource.SecretFileReply, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
 		resource.ProjectService_PutSecretFile_FullMethodName, req, s.ProjectServiceServer.PutSecretFile)
@@ -3793,6 +3808,11 @@ func (s interceptSession) AuxPrefer(ctx context.Context, req *resource.AuxPrefer
 func (s interceptSession) AuxCancel(ctx context.Context, req *resource.AuxCancelRequest) (*resource.AuxState, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
 		resource.SessionService_AuxCancel_FullMethodName, req, s.SessionServiceServer.AuxCancel)
+}
+
+func (s interceptSession) Purge(ctx context.Context, req *resource.SessionPurgeRequest) (*resource.SessionPurgeReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
+		resource.SessionService_Purge_FullMethodName, req, s.SessionServiceServer.Purge)
 }
 
 // WatchRecorder answers with the recorder that remembers a write for `w`.
@@ -4570,6 +4590,45 @@ func dispatch(ctx context.Context, s resource.Server, op *pdpb.Op) (*anypb.Any, 
 		}
 
 		res, err := s.Project().AuxLoginInfo(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.ProjectService_MarkHistoryTrimmable_FullMethodName:
+		v := &resource.HistoryTrimmableRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().MarkHistoryTrimmable(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.ProjectService_GetHistoryPolicy_FullMethodName:
+		v := &resource.HistoryPolicyRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().GetHistoryPolicy(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.ProjectService_SetHistoryPolicy_FullMethodName:
+		v := &resource.HistoryPolicy{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().SetHistoryPolicy(ctx, v)
 		if err != nil {
 			return nil, err
 		}
@@ -5363,6 +5422,19 @@ func dispatch(ctx context.Context, s resource.Server, op *pdpb.Op) (*anypb.Any, 
 		}
 
 		res, err := s.Session().AuxCancel(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.SessionService_Purge_FullMethodName:
+		v := &resource.SessionPurgeRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Session().Purge(ctx, v)
 		if err != nil {
 			return nil, err
 		}

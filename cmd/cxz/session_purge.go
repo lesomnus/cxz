@@ -4,7 +4,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"sort"
 	"time"
@@ -36,24 +35,22 @@ func sessionPurgeCommand() *xli.Command {
 		// half minute before giving up on a session mid-turn.
 		ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 		defer cancel()
-		r := sessionpurge.Request{Session: arg.MustGet[string](c, "SESSION"), DryRun: dry}
+		session := arg.MustGet[string](c, "SESSION")
 		project := ""
-		client, closeClient, err := configConnect(ctx, c, &project, &r.Session)
+		client, closeClient, err := configConnect(ctx, c, &project, &session)
 		if err != nil {
 			return err
 		}
 		defer closeClient()
-		spec, err := json.Marshal(r)
+		out, err := client.PurgeSession(ctx, &api.SessionPurgeInput{SessionId: session, DryRun: dry})
 		if err != nil {
 			return err
 		}
-		out, err := client.Docker(ctx, &api.DockerInput{Action: "session-purge", Spec: spec})
-		if err != nil {
-			return err
-		}
-		var reply sessionpurge.Reply
-		if err = json.Unmarshal([]byte(out.Status), &reply); err != nil {
-			return err
+		reply := sessionpurge.Reply{Session: out.SessionId, DryRun: out.DryRun, Retained: out.Retained}
+		for _, t := range out.Targets {
+			reply.Targets = append(reply.Targets, sessionpurge.Target{
+				Kind: t.Kind, Path: t.Path, Files: int(t.Files), Bytes: t.Bytes,
+			})
 		}
 		return printSessionPurge(c, reply)
 	})

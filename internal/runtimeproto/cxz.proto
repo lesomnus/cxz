@@ -52,6 +52,21 @@ service Sessions {
   // container, for a client that cannot reach the engine itself. Two calls
   // rather than one with a verb: only one of them carries a secret, and that
   // difference is the whole of what has to be obvious here.
+  // Purge destroys a session everywhere cxz keeps it. A dry run reports the
+  // same plan without carrying it out, which is the only reason the two share
+  // a request instead of being two calls: the plan and the removal must be the
+  // same code or the report is of something else.
+  rpc PurgeSession(SessionPurgeInput) returns (SessionPurgeReply);
+  rpc GetHistoryPolicy(Empty) returns (HistoryPolicy);
+  rpc SetHistoryPolicy(HistoryPolicy) returns (HistoryPolicy);
+  // The floor a project runtime has trimmed to. Only the manager asks, to keep
+  // its cache from offering history the journal no longer has.
+  rpc GetHistoryFloor(SessionRef) returns (HistoryFloorReply);
+  // Asked before a journal is compacted, not after: it records in the
+  // projection that trimmed history is now possible, so a release that predates
+  // trimming refuses the database instead of serving history that is gone. A
+  // failure here stops the compaction.
+  rpc MarkHistoryTrimmable(Empty) returns (Empty);
   rpc PutSecretFile(PutSecretFileInput) returns (SecretFileReply);
   rpc DeleteSecretFile(DeleteSecretFileInput) returns (SecretFileReply);
 }
@@ -308,3 +323,22 @@ message AuxLoginInfoReply { string owner = 1; string account = 2; string agent =
 message PutSecretFileInput { string project = 1; string session = 2; bytes secret = 3; }
 message DeleteSecretFileInput { string project = 1; string path = 2; }
 message SecretFileReply { string path = 1; }
+
+message SessionPurgeInput { string session_id = 1; bool dry_run = 2; }
+// kind says what the path is, so a caller can describe a plan without knowing
+// the layout: journal, state, cache, and so on.
+message SessionPurgeTarget { string kind = 1; string path = 2; int32 files = 3; int64 bytes = 4; }
+message SessionPurgeReply {
+  string session_id = 1; bool dry_run = 2;
+  repeated SessionPurgeTarget targets = 3;
+  // retained names what purge deliberately left, so a caller can say so
+  // instead of implying the session vanished from the world.
+  repeated string retained = 4;
+}
+// disabled turns removal off entirely; zero in a budget means the default. Both
+// budgets are per session: see docs/history.md.
+message HistoryPolicy {
+  bool disabled = 1; int32 max_mib = 2; int32 raw_mib = 3;
+  int32 window_mib = 4; int32 window_turns = 5;
+}
+message HistoryFloorReply { uint64 through = 1; }

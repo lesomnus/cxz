@@ -9,7 +9,6 @@ import (
 	"github.com/lesomnus/cxz/internal/resourceclient"
 	"github.com/lesomnus/cxz/internal/supervisor"
 	"os"
-	"strings"
 	"testing"
 	"time"
 )
@@ -94,10 +93,10 @@ func TestRetentionPolicyAndSchemaFenceThroughPublicRPC(t *testing.T) {
 		}
 		client := resourceclient.New(conn)
 		deadline := time.Now().Add(10 * time.Second)
-		var reply *api.Receipt
+		var reply *api.HistoryPolicy
 		for time.Now().Before(deadline) {
 			q, stop := context.WithTimeout(t.Context(), time.Second)
-			reply, err = client.Docker(q, &api.DockerInput{Action: "history-policy"})
+			reply, err = client.GetHistoryPolicy(q, &api.Empty{})
 			stop()
 			if err == nil {
 				break
@@ -105,12 +104,14 @@ func TestRetentionPolicyAndSchemaFenceThroughPublicRPC(t *testing.T) {
 			time.Sleep(20 * time.Millisecond)
 		}
 		if err == nil && iteration == 0 {
-			_, err = client.Docker(t.Context(), &api.DockerInput{Action: "history-policy", Spec: []byte(`{"max_mib":25}`)})
+			_, err = client.SetHistoryPolicy(t.Context(), &api.HistoryPolicy{MaxMib: 25})
 			if err == nil {
-				_, err = client.Docker(t.Context(), &api.DockerInput{Action: "history-checkpoint-ready"})
+				// Marking the projection is what the supervisor does before it
+				// compacts, and what fences an older release off the file.
+				_, err = client.MarkHistoryTrimmable(t.Context(), &api.Empty{})
 			}
-		} else if err == nil && !strings.Contains(reply.Status, `"max_mib":25`) {
-			err = fmt.Errorf("policy lost across schema-2 restart: %s", reply.Status)
+		} else if err == nil && reply.MaxMib != 25 {
+			err = fmt.Errorf("policy lost across schema-2 restart: %d MiB", reply.MaxMib)
 		}
 		conn.Close()
 		cancel()

@@ -344,6 +344,8 @@ Project.AuxLoginInfo{account: "work1"}  → {owner, account, agent, backend}
 | TUI 폴링 | `{action:"status"}` | `Session.AuxStatus{ref}` |
 | (내부) `{action:"forget"}` | 세션 purge 경로 | 런타임 API `AuxForget` |
 
+같은 패턴으로 나머지 승객들도 내리고 있다 — [#132](https://github.com/lesomnus/cxz/issues/132).
+
 `forget`은 클라이언트가 부르지 않는다. 리소스 서버가 세션을 지울 때 매니저에게
 보내는 호출이다 (`server/lifecycle/delete.go:116` `forgetAuxiliary`). 그래서 표면이
 둘로 갈린다.

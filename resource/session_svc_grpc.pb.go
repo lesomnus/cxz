@@ -54,6 +54,7 @@ const (
 	SessionService_AuxEvents_FullMethodName         = "/cxz.SessionService/AuxEvents"
 	SessionService_AuxPrefer_FullMethodName         = "/cxz.SessionService/AuxPrefer"
 	SessionService_AuxCancel_FullMethodName         = "/cxz.SessionService/AuxCancel"
+	SessionService_Purge_FullMethodName             = "/cxz.SessionService/Purge"
 )
 
 // SessionServiceClient is the client API for SessionService service.
@@ -124,6 +125,10 @@ type SessionServiceClient interface {
 	AuxEvents(ctx context.Context, in *AuxStatusRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[AuxState], error)
 	AuxPrefer(ctx context.Context, in *AuxPreferRequest, opts ...grpc.CallOption) (*AuxState, error)
 	AuxCancel(ctx context.Context, in *AuxCancelRequest, opts ...grpc.CallOption) (*AuxState, error)
+	// Purge destroys a session everywhere cxz keeps it, which is the one
+	// operation that does. A dry run reports the plan without carrying it out --
+	// the same code, so that what is reported is what would happen.
+	Purge(ctx context.Context, in *SessionPurgeRequest, opts ...grpc.CallOption) (*SessionPurgeReply, error)
 }
 
 type sessionServiceClient struct {
@@ -523,6 +528,16 @@ func (c *sessionServiceClient) AuxCancel(ctx context.Context, in *AuxCancelReque
 	return out, nil
 }
 
+func (c *sessionServiceClient) Purge(ctx context.Context, in *SessionPurgeRequest, opts ...grpc.CallOption) (*SessionPurgeReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SessionPurgeReply)
+	err := c.cc.Invoke(ctx, SessionService_Purge_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SessionServiceServer is the server API for SessionService service.
 // All implementations must embed UnimplementedSessionServiceServer
 // for forward compatibility.
@@ -591,6 +606,10 @@ type SessionServiceServer interface {
 	AuxEvents(*AuxStatusRequest, grpc.ServerStreamingServer[AuxState]) error
 	AuxPrefer(context.Context, *AuxPreferRequest) (*AuxState, error)
 	AuxCancel(context.Context, *AuxCancelRequest) (*AuxState, error)
+	// Purge destroys a session everywhere cxz keeps it, which is the one
+	// operation that does. A dry run reports the plan without carrying it out --
+	// the same code, so that what is reported is what would happen.
+	Purge(context.Context, *SessionPurgeRequest) (*SessionPurgeReply, error)
 	mustEmbedUnimplementedSessionServiceServer()
 }
 
@@ -705,6 +724,9 @@ func (UnimplementedSessionServiceServer) AuxPrefer(context.Context, *AuxPreferRe
 }
 func (UnimplementedSessionServiceServer) AuxCancel(context.Context, *AuxCancelRequest) (*AuxState, error) {
 	return nil, status.Error(codes.Unimplemented, "method AuxCancel not implemented")
+}
+func (UnimplementedSessionServiceServer) Purge(context.Context, *SessionPurgeRequest) (*SessionPurgeReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method Purge not implemented")
 }
 func (UnimplementedSessionServiceServer) mustEmbedUnimplementedSessionServiceServer() {}
 func (UnimplementedSessionServiceServer) testEmbeddedByValue()                        {}
@@ -1318,6 +1340,24 @@ func _SessionService_AuxCancel_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SessionService_Purge_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SessionPurgeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionServiceServer).Purge(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SessionService_Purge_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionServiceServer).Purge(ctx, req.(*SessionPurgeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SessionService_ServiceDesc is the grpc.ServiceDesc for SessionService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1444,6 +1484,10 @@ var SessionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AuxCancel",
 			Handler:    _SessionService_AuxCancel_Handler,
+		},
+		{
+			MethodName: "Purge",
+			Handler:    _SessionService_Purge_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

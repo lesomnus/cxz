@@ -692,7 +692,7 @@ func TestLifecycle(t *testing.T) {
 	// without stopping the provider. A runtime and supervisor restart must retain
 	// provider identity, profile data and deduplication of a now-pruned command.
 	await("idle")
-	if _, e = client.Docker(ctx, &api.DockerInput{Action: "history-policy", Spec: []byte(`{"max_mib":1}`)}); e != nil {
+	if _, e = client.SetHistoryPolicy(ctx, &api.HistoryPolicy{MaxMib: 1}); e != nil {
 		t.Fatal(e)
 	}
 	var prunedRequest *api.Input

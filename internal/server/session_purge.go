@@ -20,17 +20,39 @@ import (
 // rebuilds them from the manifests still on disk -- so dropping them first
 // stops this process from serving a session whose journal is about to vanish,
 // and a purge interrupted after that point is simply run again.
-func (s *Server) purgeSession(ctx context.Context, spec []byte) (*api.Receipt, error) {
-	var r sessionpurge.Request
-	if len(spec) > sessionpurge.MaxSpec || json.Unmarshal(spec, &r) != nil {
-		return nil, status.Error(codes.InvalidArgument, "invalid session purge request")
+func (s *Server) PurgeSession(ctx context.Context, in *api.SessionPurgeInput) (*api.SessionPurgeReply, error) {
+	// With a manager above it, the manager owns the order the two roots are
+	// purged in; this process is then only asked for its own.
+	if s.manager != nil {
+		return s.manager.PurgeSession(ctx, in)
 	}
-	if err := s.requireManagerAuthority(ctx, "purge a session from the host client, not from inside a project"); err != nil {
+	out, err := s.purgeSession(ctx, in)
+	if err != nil {
 		return nil, err
+	}
+	return purgeReply(out), nil
+}
+
+// purgeReply carries the plan as the API states it. kind travels so a caller
+// can describe what would go without knowing the layout it would go from.
+func purgeReply(v sessionpurge.Reply) *api.SessionPurgeReply {
+	out := &api.SessionPurgeReply{SessionId: v.Session, DryRun: v.DryRun, Retained: v.Retained}
+	for _, t := range v.Targets {
+		out.Targets = append(out.Targets, &api.SessionPurgeTarget{
+			Kind: t.Kind, Path: t.Path, Files: int32(t.Files), Bytes: t.Bytes,
+		})
+	}
+	return out
+}
+
+func (s *Server) purgeSession(ctx context.Context, in *api.SessionPurgeInput) (sessionpurge.Reply, error) {
+	r := sessionpurge.Request{Session: in.SessionId, DryRun: in.DryRun}
+	if err := s.requireManagerAuthority(ctx, "purge a session from the host client, not from inside a project"); err != nil {
+		return sessionpurge.Reply{}, err
 	}
 	m, err := s.manifest(ctx, r.Session)
 	if err != nil {
-		return nil, err
+		return sessionpurge.Reply{}, err
 	}
 	subject := sessionpurge.Subject{Session: m.ID, CreateID: m.CreateID, Project: m.ProjectID}
 	// A project runtime holds the conversation while the manager holds the
@@ -42,7 +64,7 @@ func (s *Server) purgeSession(ctx context.Context, spec []byte) (*api.Receipt, e
 	}
 	if !r.DryRun {
 		if err := s.forgetSession(ctx, m.ID); err != nil {
-			return nil, err
+			return sessionpurge.Reply{}, err
 		}
 	}
 	out := sessionpurge.Reply{Session: m.ID, DryRun: r.DryRun}
@@ -53,11 +75,11 @@ func (s *Server) purgeSession(ctx context.Context, spec []byte) (*api.Receipt, e
 		}
 		reply, err := step(ctx, scope, s.root, subject)
 		if err != nil {
-			return nil, err
+			return sessionpurge.Reply{}, err
 		}
 		out.Targets = append(out.Targets, reply.Targets...)
 	}
-	return receipt(out)
+	return out, nil
 }
 
 type managerAuthorityKey struct{}

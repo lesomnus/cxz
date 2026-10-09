@@ -229,11 +229,7 @@ func (s ProjectServer) Docker(ctx context.Context, r *resource.DockerRequest) (*
 	if err := s.effect(); err != nil {
 		return nil, err
 	}
-	spec := r.GetSpec()
-	if r.GetAction() == "session-purge" {
-		return s.purgeSession(ctx, spec)
-	}
-	out, err := s.shared.runtime.Docker(ctx, &api.DockerInput{Action: r.GetAction(), Spec: spec})
+	out, err := s.shared.runtime.Docker(ctx, &api.DockerInput{Action: r.GetAction(), Spec: r.GetSpec()})
 	if err != nil {
 		return nil, err
 	}

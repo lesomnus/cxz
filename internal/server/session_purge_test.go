@@ -2,9 +2,9 @@ package server
 
 import (
 	"context"
-	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/lesomnus/cxz/api"
@@ -14,22 +14,8 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func purgeSpec(t *testing.T, id string, dry bool) []byte {
-	t.Helper()
-	b, err := json.Marshal(sessionpurge.Request{Session: id, DryRun: dry})
-	if err != nil {
-		t.Fatal(err)
-	}
-	return b
-}
-
-func reply(t *testing.T, r *api.Receipt) sessionpurge.Reply {
-	t.Helper()
-	var v sessionpurge.Reply
-	if err := json.Unmarshal([]byte(r.Status), &v); err != nil {
-		t.Fatal(err)
-	}
-	return v
+func purgeIn(id string, dry bool) *api.SessionPurgeInput {
+	return &api.SessionPurgeInput{SessionId: id, DryRun: dry}
 }
 
 func rows(t *testing.T, s *Server, query, id string) int {
@@ -55,12 +41,12 @@ func TestPurgeDropsTheDerivedProjectionAndTheJournal(t *testing.T) {
 	if rows(t, s, "SELECT count(*) FROM events WHERE session_id=?", m.ID) == 0 {
 		t.Fatal("fixture never projected an event")
 	}
-	out, err := s.Docker(ctx, &api.DockerInput{Action: "session-purge", Spec: purgeSpec(t, m.ID, false)})
+	out, err := s.PurgeSession(ctx, purgeIn(m.ID, false))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if kinds := reply(t, out); len(kinds.Targets) == 0 || kinds.Targets[len(kinds.Targets)-1].Kind != "journal" {
-		t.Fatal("unexpected targets", kinds.Targets)
+	if len(out.Targets) == 0 || out.Targets[len(out.Targets)-1].Kind != "journal" {
+		t.Fatal("unexpected targets", out.Targets)
 	}
 	for _, query := range []string{"SELECT count(*) FROM events WHERE session_id=?", "SELECT count(*) FROM sessions WHERE id=?"} {
 		if n := rows(t, s, query, m.ID); n != 0 {
@@ -74,7 +60,7 @@ func TestPurgeDropsTheDerivedProjectionAndTheJournal(t *testing.T) {
 		t.Fatal("journal survived", err)
 	}
 	// The session is gone, so a second purge has nothing to find and says so.
-	if _, err = s.Docker(ctx, &api.DockerInput{Action: "session-purge", Spec: purgeSpec(t, m.ID, false)}); status.Code(err) != codes.NotFound {
+	if _, err = s.PurgeSession(ctx, purgeIn(m.ID, false)); status.Code(err) != codes.NotFound {
 		t.Fatal("purging a purged session did not report it missing", err)
 	}
 }
@@ -90,13 +76,16 @@ func TestPurgeDryRunLeavesTheProjectionAndJournalAlone(t *testing.T) {
 		t.Fatal(err)
 	}
 	s.projections[m.ID].mu.Unlock()
-	out, err := s.Docker(ctx, &api.DockerInput{Action: "session-purge", Spec: purgeSpec(t, m.ID, true)})
+	out, err := s.PurgeSession(ctx, purgeIn(m.ID, true))
 	if err != nil {
 		t.Fatal(err)
 	}
-	v := reply(t, out)
-	if !v.DryRun || v.Bytes() == 0 {
-		t.Fatal("dry run reported nothing at stake", v)
+	var stake int64
+	for _, t := range out.Targets {
+		stake += t.Bytes
+	}
+	if !out.DryRun || stake == 0 {
+		t.Fatal("dry run reported nothing at stake", out)
 	}
 	if rows(t, s, "SELECT count(*) FROM sessions WHERE id=?", m.ID) != 1 {
 		t.Fatal("dry run deleted the manifest row")
@@ -116,7 +105,7 @@ func TestPurgeRefusesToRunFromInsideAProject(t *testing.T) {
 	ctx := context.Background()
 	s, m, _ := projectionFixture(t)
 	t.Setenv("CXZ_PROJECT_ID", "project")
-	if _, err := s.Docker(ctx, &api.DockerInput{Action: "session-purge", Spec: purgeSpec(t, m.ID, false)}); status.Code(err) != codes.PermissionDenied {
+	if _, err := s.PurgeSession(ctx, purgeIn(m.ID, false)); status.Code(err) != codes.PermissionDenied {
 		t.Fatal("a call on the in-container socket was allowed to purge", err)
 	}
 	if rows(t, s, "SELECT count(*) FROM sessions WHERE id=?", m.ID) != 1 {
@@ -126,18 +115,21 @@ func TestPurgeRefusesToRunFromInsideAProject(t *testing.T) {
 		t.Fatal("a refused purge still deleted the journal", err)
 	}
 	authorized := context.WithValue(ctx, managerAuthorityKey{}, true)
-	if _, err := s.Docker(authorized, &api.DockerInput{Action: "session-purge", Spec: purgeSpec(t, m.ID, false)}); err != nil {
+	if _, err := s.PurgeSession(authorized, purgeIn(m.ID, false)); err != nil {
 		t.Fatal("the manager's own channel was refused", err)
 	}
 }
 
+// A handle that is not a session id is refused before it can be joined onto a
+// path. The envelope used to make this a question about JSON; now the only way
+// to get it wrong is the handle itself.
 func TestPurgeRefusesAMalformedRequest(t *testing.T) {
 	ctx := context.Background()
 	t.Setenv("CXZ_PROJECT_ID", "")
 	s, _, _ := projectionFixture(t)
-	for _, spec := range [][]byte{[]byte("not json"), purgeSpec(t, "", false), purgeSpec(t, "../../etc", false), make([]byte, sessionpurge.MaxSpec+1)} {
-		if _, err := s.Docker(ctx, &api.DockerInput{Action: "session-purge", Spec: spec}); err == nil {
-			t.Fatal("accepted", string(spec))
+	for _, id := range []string{"", "../../etc", "not-hex", strings.Repeat("a", sessionpurge.MaxSpec)} {
+		if _, err := s.PurgeSession(ctx, purgeIn(id, false)); err == nil {
+			t.Fatal("accepted", id)
 		}
 	}
 }

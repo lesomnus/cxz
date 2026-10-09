@@ -13,11 +13,6 @@ import (
 
 func (m *Manager) dockerEngine() engine.Engine { return engine.Engine{Root: m.Root, Owner: m.Owner} }
 func (m *Manager) Docker(ctx context.Context, r *api.DockerInput) (*api.Receipt, error) {
-	// Purge talks to one project runtime and must not serialise behind an engine
-	// operation that could be rebuilding another.
-	if r.Action == "session-purge" {
-		return m.PurgeSession(ctx, r.Spec)
-	}
 	// Reading back what a project runs under is not an engine operation, and
 	// waiting behind one that is rebuilding another project would make the
 	// answer arrive long after the question stopped being interesting.
@@ -32,8 +27,6 @@ func (m *Manager) Docker(ctx context.Context, r *api.DockerInput) (*api.Receipt,
 		return m.mcp(ctx, r.Spec)
 	case "skills":
 		return m.skills(ctx, r.Spec)
-	case "history-policy":
-		return m.historyPolicy(ctx, r.Spec)
 	case "save", "up":
 		var spec engine.Spec
 		if len(r.Spec) == 0 && r.Action == "up" {

@@ -17,25 +17,28 @@ import (
 	"google.golang.org/grpc"
 )
 
+// A purge is a session operation, so the stub serves it on the session service.
 type purgeStub struct {
-	resource.UnimplementedProjectServiceServer
+	resource.UnimplementedSessionServiceServer
 	requests chan sessionpurge.Request
 	reply    sessionpurge.Reply
 }
 
-func (s purgeStub) Docker(_ context.Context, r *resource.DockerRequest) (*resource.DockerReply, error) {
-	var q sessionpurge.Request
-	if err := json.Unmarshal(r.GetSpec(), &q); err != nil {
-		return nil, err
+func (s purgeStub) Purge(_ context.Context, r *resource.SessionPurgeRequest) (*resource.SessionPurgeReply, error) {
+	handle := r.GetRef().GetAlias()
+	if handle == "" {
+		handle = r.GetRef().GetRuntimeId()
 	}
-	s.requests <- q
-	reply := s.reply
-	reply.DryRun = q.DryRun
-	b, err := json.Marshal(reply)
-	if err != nil {
-		return nil, err
+	s.requests <- sessionpurge.Request{Session: handle, DryRun: r.GetDryRun()}
+	out := resource.SessionPurgeReply_builder{
+		Ref: r.GetRef(), DryRun: ptr(r.GetDryRun()), Retained: s.reply.Retained,
 	}
-	return resource.DockerReply_builder{Status: ptr(string(b))}.Build(), nil
+	for _, t := range s.reply.Targets {
+		out.Targets = append(out.Targets, resource.SessionPurgeTarget_builder{
+			Kind: ptr(t.Kind), Path: ptr(t.Path), Files: ptr(int32(t.Files)), Bytes: ptr(t.Bytes),
+		}.Build())
+	}
+	return out.Build(), nil
 }
 
 // The connection flags live on the root command, so a command nested two levels
@@ -60,7 +63,7 @@ func TestSessionPurgeReachesTheAPIThroughNestedCommands(t *testing.T) {
 		Targets:  []sessionpurge.Target{{Kind: "journal", Path: "/state/sessions/x", Files: 4, Bytes: 5 * 1024 * 1024}, {Kind: "record", Path: "manager database", Files: 1}},
 		Retained: []string{"project workspace files the agent wrote"},
 	}}
-	resource.RegisterProjectServiceServer(server, stub)
+	resource.RegisterSessionServiceServer(server, stub)
 	go server.Serve(listener)
 	defer server.Stop()
 
