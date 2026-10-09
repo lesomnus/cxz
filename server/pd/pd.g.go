@@ -3415,6 +3415,16 @@ func (s interceptProject) AuxLoginInfo(ctx context.Context, req *resource.AuxLog
 		resource.ProjectService_AuxLoginInfo_FullMethodName, req, s.ProjectServiceServer.AuxLoginInfo)
 }
 
+func (s interceptProject) PutSecretFile(ctx context.Context, req *resource.PutSecretFileRequest) (*resource.SecretFileReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_PutSecretFile_FullMethodName, req, s.ProjectServiceServer.PutSecretFile)
+}
+
+func (s interceptProject) DeleteSecretFile(ctx context.Context, req *resource.DeleteSecretFileRequest) (*resource.SecretFileReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_DeleteSecretFile_FullMethodName, req, s.ProjectServiceServer.DeleteSecretFile)
+}
+
 func (s interceptProject) FileMappings(ctx context.Context, req *resource.FileMappingsRequest) (*resource.FileMappingsReply, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
 		resource.ProjectService_FileMappings_FullMethodName, req, s.ProjectServiceServer.FileMappings)
@@ -4560,6 +4570,32 @@ func dispatch(ctx context.Context, s resource.Server, op *pdpb.Op) (*anypb.Any, 
 		}
 
 		res, err := s.Project().AuxLoginInfo(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.ProjectService_PutSecretFile_FullMethodName:
+		v := &resource.PutSecretFileRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().PutSecretFile(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.ProjectService_DeleteSecretFile_FullMethodName:
+		v := &resource.DeleteSecretFileRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().DeleteSecretFile(ctx, v)
 		if err != nil {
 			return nil, err
 		}

@@ -35,6 +35,16 @@ service ProjectService {
   rpc AuxSetConfig(AuxSetConfigRequest) returns (AuxConfigReply);
   rpc AuxModels(AuxModelsRequest) returns (AuxModelsReply);
   rpc AuxLoginInfo(AuxLoginInfoRequest) returns (AuxLoginInfoReply);
+  // A secret file is written by the workspace helper inside a project
+  // container, for a client that cannot reach the engine itself. Two calls
+  // rather than one with a verb: only one of them carries a secret, and that
+  // difference is the whole of what has to be obvious here.
+  //
+  // Whether the link may carry it at all is decided by the client, because the
+  // exposed TCP surface is authenticated plaintext and cannot be told apart
+  // from a local socket on this side. See internal/transport.Confidential.
+  rpc PutSecretFile(PutSecretFileRequest) returns (SecretFileReply);
+  rpc DeleteSecretFile(DeleteSecretFileRequest) returns (SecretFileReply);
   rpc FileMappings(FileMappingsRequest) returns (FileMappingsReply);
   // Provision/start a registered workspace. This never creates a conversation.
   rpc Up(ProjectUpRequest) returns (Project);
@@ -157,3 +167,10 @@ message AuxLoginInfoRequest { string account = 1; }
 message AuxLoginInfoReply {
   string owner = 1; string account = 2; string agent = 3; string backend = 4;
 }
+
+// session is the runtime id and not a SessionRef: it names the scope the helper
+// writes under rather than a row to look up, and this contract cannot refer to
+// the session one -- the dependency runs the other way.
+message PutSecretFileRequest { ProjectRef ref = 1; string session = 2; bytes secret = 3; }
+message DeleteSecretFileRequest { ProjectRef ref = 1; string path = 2; }
+message SecretFileReply { string path = 1; }

@@ -2,12 +2,9 @@ package workspace
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/dockerx"
-	"github.com/lesomnus/cxz/internal/secretfile"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -18,13 +15,35 @@ import (
 // that reached the daemon from elsewhere cannot, so the manager does it on its
 // behalf. The client decides whether its link may carry the secret at all --
 // the exposed TCP surface and a local socket are indistinguishable here.
-func (m *Manager) secretFile(ctx context.Context, spec []byte) (*api.Receipt, error) {
-	var r secretfile.Request
-	if err := json.Unmarshal(spec, &r); err != nil {
+func (m *Manager) PutSecretFile(ctx context.Context, in *api.PutSecretFileInput) (*api.SecretFileReply, error) {
+	// The secret is cleared as soon as the helper has it, rather than left for
+	// the collector to get to.
+	defer clear(in.Secret)
+	p, err := m.secretProject(ctx, in.Project)
+	if err != nil {
 		return nil, err
 	}
-	defer clear(r.Secret)
-	p, err := m.resolve(ctx, r.Project)
+	// Helpers outlive one request and are closed with the manager, the way path
+	// completion uses them.
+	path, err := m.paths.PutSecret(context.Background(), ctx, projectView(p), in.Session, in.Secret)
+	if err != nil {
+		return nil, err
+	}
+	return &api.SecretFileReply{Path: path}, nil
+}
+
+func (m *Manager) DeleteSecretFile(ctx context.Context, in *api.DeleteSecretFileInput) (*api.SecretFileReply, error) {
+	p, err := m.secretProject(ctx, in.Project)
+	if err != nil {
+		return nil, err
+	}
+	return &api.SecretFileReply{}, m.paths.DeleteSecret(context.Background(), ctx, projectView(p), in.Path)
+}
+
+// secretProject answers with the running project the helper will write in, or
+// says why it cannot: a stopped container has no tmpfs to put a secret in.
+func (m *Manager) secretProject(ctx context.Context, project string) (*Project, error) {
+	p, err := m.resolve(ctx, project)
 	if err != nil {
 		return nil, err
 	}
@@ -38,24 +57,5 @@ func (m *Manager) secretFile(ctx context.Context, spec []byte) (*api.Receipt, er
 	if !c.State.Running {
 		return nil, status.Error(codes.FailedPrecondition, "project is stopped; start the project")
 	}
-	// Helpers outlive one request and are closed with the manager, the way path
-	// completion uses them.
-	switch r.Action {
-	case "put":
-		path, err := m.paths.PutSecret(context.Background(), ctx, projectView(p), r.Session, r.Secret)
-		if err != nil {
-			return nil, err
-		}
-		b, err := json.Marshal(secretfile.Reply{Path: path})
-		if err != nil {
-			return nil, err
-		}
-		return &api.Receipt{Status: string(b)}, nil
-	case "delete":
-		if err := m.paths.DeleteSecret(context.Background(), ctx, projectView(p), r.Path); err != nil {
-			return nil, err
-		}
-		return &api.Receipt{Status: "{}"}, nil
-	}
-	return nil, fmt.Errorf("unknown secret action %q", r.Action)
+	return p, nil
 }

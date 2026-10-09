@@ -19,32 +19,34 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ProjectService_Add_FullMethodName            = "/cxz.ProjectService/Add"
-	ProjectService_Get_FullMethodName            = "/cxz.ProjectService/Get"
-	ProjectService_Patch_FullMethodName          = "/cxz.ProjectService/Patch"
-	ProjectService_Apply_FullMethodName          = "/cxz.ProjectService/Apply"
-	ProjectService_Erase_FullMethodName          = "/cxz.ProjectService/Erase"
-	ProjectService_List_FullMethodName           = "/cxz.ProjectService/List"
-	ProjectService_Watch_FullMethodName          = "/cxz.ProjectService/Watch"
-	ProjectService_Remove_FullMethodName         = "/cxz.ProjectService/Remove"
-	ProjectService_Terminal_FullMethodName       = "/cxz.ProjectService/Terminal"
-	ProjectService_AuxiliaryLogin_FullMethodName = "/cxz.ProjectService/AuxiliaryLogin"
-	ProjectService_SessionLogin_FullMethodName   = "/cxz.ProjectService/SessionLogin"
-	ProjectService_Paths_FullMethodName          = "/cxz.ProjectService/Paths"
-	ProjectService_Download_FullMethodName       = "/cxz.ProjectService/Download"
-	ProjectService_Editor_FullMethodName         = "/cxz.ProjectService/Editor"
-	ProjectService_EditorTunnel_FullMethodName   = "/cxz.ProjectService/EditorTunnel"
-	ProjectService_Devcontainer_FullMethodName   = "/cxz.ProjectService/Devcontainer"
-	ProjectService_Docker_FullMethodName         = "/cxz.ProjectService/Docker"
-	ProjectService_AuxConfig_FullMethodName      = "/cxz.ProjectService/AuxConfig"
-	ProjectService_AuxSetConfig_FullMethodName   = "/cxz.ProjectService/AuxSetConfig"
-	ProjectService_AuxModels_FullMethodName      = "/cxz.ProjectService/AuxModels"
-	ProjectService_AuxLoginInfo_FullMethodName   = "/cxz.ProjectService/AuxLoginInfo"
-	ProjectService_FileMappings_FullMethodName   = "/cxz.ProjectService/FileMappings"
-	ProjectService_Up_FullMethodName             = "/cxz.ProjectService/Up"
-	ProjectService_Down_FullMethodName           = "/cxz.ProjectService/Down"
-	ProjectService_Recreate_FullMethodName       = "/cxz.ProjectService/Recreate"
-	ProjectService_InspectForeign_FullMethodName = "/cxz.ProjectService/InspectForeign"
+	ProjectService_Add_FullMethodName              = "/cxz.ProjectService/Add"
+	ProjectService_Get_FullMethodName              = "/cxz.ProjectService/Get"
+	ProjectService_Patch_FullMethodName            = "/cxz.ProjectService/Patch"
+	ProjectService_Apply_FullMethodName            = "/cxz.ProjectService/Apply"
+	ProjectService_Erase_FullMethodName            = "/cxz.ProjectService/Erase"
+	ProjectService_List_FullMethodName             = "/cxz.ProjectService/List"
+	ProjectService_Watch_FullMethodName            = "/cxz.ProjectService/Watch"
+	ProjectService_Remove_FullMethodName           = "/cxz.ProjectService/Remove"
+	ProjectService_Terminal_FullMethodName         = "/cxz.ProjectService/Terminal"
+	ProjectService_AuxiliaryLogin_FullMethodName   = "/cxz.ProjectService/AuxiliaryLogin"
+	ProjectService_SessionLogin_FullMethodName     = "/cxz.ProjectService/SessionLogin"
+	ProjectService_Paths_FullMethodName            = "/cxz.ProjectService/Paths"
+	ProjectService_Download_FullMethodName         = "/cxz.ProjectService/Download"
+	ProjectService_Editor_FullMethodName           = "/cxz.ProjectService/Editor"
+	ProjectService_EditorTunnel_FullMethodName     = "/cxz.ProjectService/EditorTunnel"
+	ProjectService_Devcontainer_FullMethodName     = "/cxz.ProjectService/Devcontainer"
+	ProjectService_Docker_FullMethodName           = "/cxz.ProjectService/Docker"
+	ProjectService_AuxConfig_FullMethodName        = "/cxz.ProjectService/AuxConfig"
+	ProjectService_AuxSetConfig_FullMethodName     = "/cxz.ProjectService/AuxSetConfig"
+	ProjectService_AuxModels_FullMethodName        = "/cxz.ProjectService/AuxModels"
+	ProjectService_AuxLoginInfo_FullMethodName     = "/cxz.ProjectService/AuxLoginInfo"
+	ProjectService_PutSecretFile_FullMethodName    = "/cxz.ProjectService/PutSecretFile"
+	ProjectService_DeleteSecretFile_FullMethodName = "/cxz.ProjectService/DeleteSecretFile"
+	ProjectService_FileMappings_FullMethodName     = "/cxz.ProjectService/FileMappings"
+	ProjectService_Up_FullMethodName               = "/cxz.ProjectService/Up"
+	ProjectService_Down_FullMethodName             = "/cxz.ProjectService/Down"
+	ProjectService_Recreate_FullMethodName         = "/cxz.ProjectService/Recreate"
+	ProjectService_InspectForeign_FullMethodName   = "/cxz.ProjectService/InspectForeign"
 )
 
 // ProjectServiceClient is the client API for ProjectService service.
@@ -104,6 +106,16 @@ type ProjectServiceClient interface {
 	AuxSetConfig(ctx context.Context, in *AuxSetConfigRequest, opts ...grpc.CallOption) (*AuxConfigReply, error)
 	AuxModels(ctx context.Context, in *AuxModelsRequest, opts ...grpc.CallOption) (*AuxModelsReply, error)
 	AuxLoginInfo(ctx context.Context, in *AuxLoginInfoRequest, opts ...grpc.CallOption) (*AuxLoginInfoReply, error)
+	// A secret file is written by the workspace helper inside a project
+	// container, for a client that cannot reach the engine itself. Two calls
+	// rather than one with a verb: only one of them carries a secret, and that
+	// difference is the whole of what has to be obvious here.
+	//
+	// Whether the link may carry it at all is decided by the client, because the
+	// exposed TCP surface is authenticated plaintext and cannot be told apart
+	// from a local socket on this side. See internal/transport.Confidential.
+	PutSecretFile(ctx context.Context, in *PutSecretFileRequest, opts ...grpc.CallOption) (*SecretFileReply, error)
+	DeleteSecretFile(ctx context.Context, in *DeleteSecretFileRequest, opts ...grpc.CallOption) (*SecretFileReply, error)
 	FileMappings(ctx context.Context, in *FileMappingsRequest, opts ...grpc.CallOption) (*FileMappingsReply, error)
 	// Provision/start a registered workspace. This never creates a conversation.
 	Up(ctx context.Context, in *ProjectUpRequest, opts ...grpc.CallOption) (*Project, error)
@@ -372,6 +384,26 @@ func (c *projectServiceClient) AuxLoginInfo(ctx context.Context, in *AuxLoginInf
 	return out, nil
 }
 
+func (c *projectServiceClient) PutSecretFile(ctx context.Context, in *PutSecretFileRequest, opts ...grpc.CallOption) (*SecretFileReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SecretFileReply)
+	err := c.cc.Invoke(ctx, ProjectService_PutSecretFile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectServiceClient) DeleteSecretFile(ctx context.Context, in *DeleteSecretFileRequest, opts ...grpc.CallOption) (*SecretFileReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SecretFileReply)
+	err := c.cc.Invoke(ctx, ProjectService_DeleteSecretFile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *projectServiceClient) FileMappings(ctx context.Context, in *FileMappingsRequest, opts ...grpc.CallOption) (*FileMappingsReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(FileMappingsReply)
@@ -479,6 +511,16 @@ type ProjectServiceServer interface {
 	AuxSetConfig(context.Context, *AuxSetConfigRequest) (*AuxConfigReply, error)
 	AuxModels(context.Context, *AuxModelsRequest) (*AuxModelsReply, error)
 	AuxLoginInfo(context.Context, *AuxLoginInfoRequest) (*AuxLoginInfoReply, error)
+	// A secret file is written by the workspace helper inside a project
+	// container, for a client that cannot reach the engine itself. Two calls
+	// rather than one with a verb: only one of them carries a secret, and that
+	// difference is the whole of what has to be obvious here.
+	//
+	// Whether the link may carry it at all is decided by the client, because the
+	// exposed TCP surface is authenticated plaintext and cannot be told apart
+	// from a local socket on this side. See internal/transport.Confidential.
+	PutSecretFile(context.Context, *PutSecretFileRequest) (*SecretFileReply, error)
+	DeleteSecretFile(context.Context, *DeleteSecretFileRequest) (*SecretFileReply, error)
 	FileMappings(context.Context, *FileMappingsRequest) (*FileMappingsReply, error)
 	// Provision/start a registered workspace. This never creates a conversation.
 	Up(context.Context, *ProjectUpRequest) (*Project, error)
@@ -560,6 +602,12 @@ func (UnimplementedProjectServiceServer) AuxModels(context.Context, *AuxModelsRe
 }
 func (UnimplementedProjectServiceServer) AuxLoginInfo(context.Context, *AuxLoginInfoRequest) (*AuxLoginInfoReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method AuxLoginInfo not implemented")
+}
+func (UnimplementedProjectServiceServer) PutSecretFile(context.Context, *PutSecretFileRequest) (*SecretFileReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method PutSecretFile not implemented")
+}
+func (UnimplementedProjectServiceServer) DeleteSecretFile(context.Context, *DeleteSecretFileRequest) (*SecretFileReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteSecretFile not implemented")
 }
 func (UnimplementedProjectServiceServer) FileMappings(context.Context, *FileMappingsRequest) (*FileMappingsReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method FileMappings not implemented")
@@ -910,6 +958,42 @@ func _ProjectService_AuxLoginInfo_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ProjectService_PutSecretFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PutSecretFileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).PutSecretFile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_PutSecretFile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).PutSecretFile(ctx, req.(*PutSecretFileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProjectService_DeleteSecretFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteSecretFileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).DeleteSecretFile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_DeleteSecretFile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).DeleteSecretFile(ctx, req.(*DeleteSecretFileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ProjectService_FileMappings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(FileMappingsRequest)
 	if err := dec(in); err != nil {
@@ -1062,6 +1146,14 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AuxLoginInfo",
 			Handler:    _ProjectService_AuxLoginInfo_Handler,
+		},
+		{
+			MethodName: "PutSecretFile",
+			Handler:    _ProjectService_PutSecretFile_Handler,
+		},
+		{
+			MethodName: "DeleteSecretFile",
+			Handler:    _ProjectService_DeleteSecretFile_Handler,
 		},
 		{
 			MethodName: "FileMappings",
