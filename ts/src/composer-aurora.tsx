@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, type RefObject } from "react";
+import { useEffect, useRef, type RefObject } from "react";
 
 type Drift = {
   node: HTMLElement;
@@ -23,16 +23,19 @@ export function ComposerAurora({
   const latest = useRef(active);
   latest.current = active;
   const control = useRef<{ sync: () => void } | undefined>(undefined);
-  useLayoutEffect(() => {
-    const layer = viewport.current!;
-    const composer = anchor.current!;
-    const toolbar = composer.querySelector<HTMLElement>(".composer-toolbar")!;
+  useEffect(() => {
+    // This component precedes the form: its layout effects run before that
+    // sibling's ref attaches. Wait until the whole commit has attached its refs.
+    const layer = viewport.current;
+    const composer = anchor.current;
+    const node = root.current;
+    const toolbar = composer?.querySelector<HTMLElement>(".composer-toolbar");
+    if (!layer || !composer || !node || !toolbar) return;
     // Keep the field behind the conversation, anchored only on layout changes.
     // The bounded paint layer contains even the largest rotating orbs.
     const align = () => {
       const bounds = layer.getBoundingClientRect();
       const bar = toolbar.getBoundingClientRect();
-      const node = root.current!;
       node.style.setProperty(
         "--aurora-anchor-left",
         `${bar.left - bounds.left}px`,
