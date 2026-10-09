@@ -4,6 +4,7 @@
 [보조 AI 작업](../auxiliary-ai.md)을 참고한다. 아래는 설계 배경과 검증 방향이다.
 추적: [#27](https://github.com/lesomnus/cxz/issues/27).
 공유 메모리 compact는 [#36](https://github.com/lesomnus/cxz/issues/36)에서 별도로 구현한다.
+전송 표면은 [보조 AI 작업 API](auxiliary-job-api.md)에서 따로 설계한다.
 
 ## 사용자 경험
 
