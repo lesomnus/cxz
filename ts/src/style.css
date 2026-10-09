@@ -1184,9 +1184,9 @@ pre {
   pointer-events: none;
 }
 .composer-aurora {
-  --aurora-green: #187c34;
-  --aurora-cyan: #1a6ba6;
-  --aurora-violet: #7e3692;
+  --aurora-green: #1e9b41;
+  --aurora-cyan: #2186d0;
+  --aurora-violet: #9e44b7;
   --aurora-strength: 0.5;
   --aurora-envelope-duration: 3200ms;
   --aurora-drift-duration: 24s;
