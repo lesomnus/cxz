@@ -94,7 +94,8 @@ export function useCommandSuggestions({
     const measure = () => {
       const style = getComputedStyle(el);
       const height = parseFloat(style.lineHeight);
-      overlay.style.top = `${el.offsetTop + parseFloat(style.paddingTop) - el.scrollTop - COMMAND_NEIGHBORS * height}px`;
+      const inset = parseFloat(getComputedStyle(overlay).paddingTop);
+      overlay.style.top = `${el.offsetTop + parseFloat(style.paddingTop) - el.scrollTop - COMMAND_NEIGHBORS * height - inset}px`;
       overlay.style.left = `${el.offsetLeft}px`;
       overlay.style.width = `${el.clientWidth}px`;
       overlay.style.setProperty("--command-line-height", `${height}px`);
@@ -103,6 +104,7 @@ export function useCommandSuggestions({
     measure();
     const resize = new ResizeObserver(measure);
     resize.observe(el);
+    resize.observe(overlay);
     el.addEventListener("scroll", measure);
     return () => {
       resize.disconnect();

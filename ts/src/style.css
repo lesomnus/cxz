@@ -1219,14 +1219,34 @@ pre {
 .composer-editor[data-command-open="true"] .editor-mirror > :first-child {
   visibility: hidden;
 }
+.composer-editor[data-command-open="true"] .editor-surface {
+  z-index: 0;
+}
+.composer-editor[data-command-open="true"] textarea {
+  z-index: 3;
+}
 .command-suggestions {
+  --command-overlay-padding: calc(2 * var(--space));
+  --command-overlay-blur: 24px;
   position: absolute;
+  padding-block: var(--command-overlay-padding);
   pointer-events: none;
   font: inherit;
 }
+.command-suggestions::before {
+  /* Keep the backdrop in its own layer so the native caret stays above it. */
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: var(--space);
+  background: color-mix(in srgb, var(--shade-0) 72%, transparent);
+  -webkit-backdrop-filter: blur(var(--command-overlay-blur));
+  backdrop-filter: blur(var(--command-overlay-blur));
+}
 .command-suggestions .command-suggestion {
   position: relative;
-  z-index: 2;
+  z-index: 4;
   display: block;
   width: 100%;
   height: var(--command-line-height);
@@ -1234,18 +1254,12 @@ pre {
   padding: 0 var(--command-inset);
   border: 0;
   border-radius: 0;
-  background: var(--shade-25);
+  background: transparent;
   color: var(--shade-144);
   font: inherit;
   line-height: var(--command-line-height);
   text-align: left;
   pointer-events: auto;
-}
-.command-suggestion:first-child {
-  border-radius: var(--space) var(--space) 0 0;
-}
-.command-suggestion:last-child {
-  border-radius: 0 0 var(--space) var(--space);
 }
 .command-suggestion .button-content {
   display: grid;
@@ -1259,8 +1273,8 @@ pre {
 }
 .command-suggestions .command-suggestion[data-current="true"] {
   /* Paint the selected hint below the transparent native textarea/caret. */
-  z-index: 0;
-  background: var(--shade-34);
+  z-index: 2;
+  background: transparent;
   color: var(--shade-119);
   pointer-events: none;
 }

@@ -39,6 +39,7 @@ test("suggestions cover only the text area, arrows preserve the caret and Right 
       row = current.getBoundingClientRect();
     const style = getComputedStyle(el),
       height = parseFloat(style.lineHeight);
+    const overlayStyle = getComputedStyle(overlay);
     return {
       textX: text.x,
       rootX: root.x,
@@ -47,6 +48,8 @@ test("suggestions cover only the text area, arrows preserve the caret and Right 
       topGap: row.y - root.y,
       rootHeight: root.height,
       rowHeight: height,
+      overlayTopPadding: parseFloat(overlayStyle.paddingTop),
+      overlayBottomPadding: parseFloat(overlayStyle.paddingBottom),
       baseline: row.y - text.y,
       padding: parseFloat(style.paddingTop),
       caret: el.selectionStart,
@@ -54,8 +57,14 @@ test("suggestions cover only the text area, arrows preserve the caret and Right 
   });
   expect(geometry.rootX).toBe(geometry.textX);
   expect(geometry.rootWidth).toBe(geometry.textWidth);
-  expect(geometry.topGap).toBe(geometry.rowHeight * 3);
-  expect(geometry.rootHeight).toBe(geometry.rowHeight * 7);
+  expect(geometry.topGap).toBe(
+    geometry.rowHeight * 3 + geometry.overlayTopPadding,
+  );
+  expect(geometry.rootHeight).toBe(
+    geometry.rowHeight * 7 +
+      geometry.overlayTopPadding +
+      geometry.overlayBottomPadding,
+  );
   expect(geometry.baseline).toBe(geometry.padding);
   await input.press("ArrowDown");
   await expect(selected).toHaveText("/effort");

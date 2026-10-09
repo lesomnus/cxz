@@ -33,6 +33,11 @@ suggestions before the turn-interrupt shortcut; blur, composition and moving
 away from the query hide them. Suggestions are enabled only for the session
 composer, leaving question answers as ordinary editable text.
 
+The overlay has vertical inset around its rows and a dark translucent backdrop
+with Gaussian blur. Padding extends the surface without shifting the selected
+line. The backdrop occupies its own layer below the native textarea so the caret
+remains visible; applying a filter to the whole overlay would change that stacking.
+
 The initial catalog contains `/model`, `/effort`, `/compact` and Claude's
 `/context`, plus model and effort values reported by the provider. Submitting a
 bare model/effort command opens the existing picker; submitting a value uses the
