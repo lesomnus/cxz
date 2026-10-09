@@ -2,6 +2,7 @@ edition = "2023";
 package cxz;
 import "cxz/project.proto";
 import "cxz/account_svc.g.proto";
+import "google/protobuf/timestamp.proto";
 option go_package = "github.com/lesomnus/cxz/resource";
 
 service ProjectService {
@@ -26,6 +27,14 @@ service ProjectService {
   rpc EditorTunnel(stream ProjectEditorTunnelRequest) returns (stream ProjectEditorTunnelReply);
  rpc Devcontainer(DevcontainerRequest) returns (DevcontainerReply);
  rpc Docker(DockerRequest) returns (DockerReply);
+  // Aux is a model task done beside a session: run once, with the context cxz
+  // assembles, never accumulating into a conversation. These four are the part
+  // that belongs to the installation rather than to one session -- which
+  // account and model each kind runs on. See docs/plans/aux-api.md.
+  rpc AuxConfig(AuxConfigRequest) returns (AuxConfigReply);
+  rpc AuxSetConfig(AuxSetConfigRequest) returns (AuxConfigReply);
+  rpc AuxModels(AuxModelsRequest) returns (AuxModelsReply);
+  rpc AuxLoginInfo(AuxLoginInfoRequest) returns (AuxLoginInfoReply);
   rpc FileMappings(FileMappingsRequest) returns (FileMappingsReply);
   // Provision/start a registered workspace. This never creates a conversation.
   rpc Up(ProjectUpRequest) returns (Project);
@@ -109,3 +118,42 @@ message ProjectEditorTunnelReply { bool ready = 1; bytes output = 2; }
 
 message ProjectRemoveRequest { string target = 1; bool confirmed = 2; }
 message ProjectRemoveReply { Project project = 1; bool removed = 2; }
+
+// The kinds of task that can be done beside a session. A new kind is a value
+// here, not another RPC.
+enum AuxKind {
+  AUX_KIND_UNSPECIFIED = 0;
+  AUX_KIND_SUMMARY = 1;
+  AUX_KIND_SUGGESTION = 2;
+  AUX_KIND_TITLE = 3;
+}
+// Which account and model run a kind. Per kind, because whether two kinds share
+// a profile is what decides whether one call can answer both. agent and backend
+// are read only: they come from the registered account, not from a caller.
+message AuxProfile {
+  AuxKind kind = 1; bool enabled = 2; string account = 3; string agent = 4;
+  string backend = 5; string model = 6; string effort = 7;
+  // Read only: the boundary the server set when the kind was enabled, so a
+  // caller can say what it applies to. Ignored when it arrives.
+  google.protobuf.Timestamp since = 8;
+}
+message AuxModel {
+  string id = 1; string resolved_id = 2; string name = 3;
+  repeated string efforts = 4; string default_effort = 5; bool default = 6;
+}
+message AuxConfigRequest {}
+message AuxSetConfigRequest { repeated AuxProfile profiles = 1; }
+message AuxConfigReply {
+  string revision = 1; repeated AuxProfile profiles = 2;
+  string message = 3; string owner = 4;
+}
+// A catalog read for one registered account. It does not generate a response,
+// and it does not prove a stored token will be accepted for one.
+message AuxModelsRequest { string account = 1; }
+message AuxModelsReply { repeated AuxModel models = 1; bool needs_login = 2; }
+// Where a login has to happen and under which profile. No credential travels
+// here, which is why it is separate from the stream that performs one.
+message AuxLoginInfoRequest { string account = 1; }
+message AuxLoginInfoReply {
+  string owner = 1; string account = 2; string agent = 3; string backend = 4;
+}

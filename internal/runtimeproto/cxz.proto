@@ -31,6 +31,20 @@ service Sessions {
   rpc Open(ProjectRequest) returns (Session);
   rpc Projects(Empty) returns (ProjectList);
   rpc Down(ProjectRequest) returns (Receipt);
+  // Aux is a model task attached to a session: run once, with the context cxz
+  // assembles, never accumulating into a conversation. Summary, suggestion and
+  // title are its kinds. See docs/plans/aux-api.md.
+  rpc AuxRun(AuxRunInput) returns (AuxState);
+  rpc AuxCancel(AuxCancelInput) returns (AuxState);
+  rpc AuxStatus(AuxStatusInput) returns (AuxState);
+  rpc AuxPrefer(AuxPreferInput) returns (AuxState);
+  // Only a session being deleted sends this, which is why the resource API
+  // does not carry it.
+  rpc AuxForget(AuxForgetInput) returns (Receipt);
+  rpc AuxConfig(Empty) returns (AuxConfigReply);
+  rpc AuxSetConfig(AuxSetConfigInput) returns (AuxConfigReply);
+  rpc AuxModels(AuxModelsInput) returns (AuxModelsReply);
+  rpc AuxLoginInfo(AuxLoginInfoInput) returns (AuxLoginInfoReply);
 }
 message Empty {}
 message CreateRequest { string workspace = 1; string title = 2; string client_id = 3; string agent = 4; string model = 5; string account = 6; string auth_backend = 7; string auth_binding = 8; }
@@ -202,3 +216,77 @@ message SearchReply {
   SearchProgress progress = 2;
   SearchSummary summary = 3;
 }
+
+// Aux: one task done beside a session. kinds are strings here, as every other
+// kind on this API is; the resource API gives them an enum.
+//
+// kinds is what was asked for and results is what came back, so one task can
+// answer two kinds -- which is what happens when summary and suggestion share a
+// profile and one model call answers both. results may be partial while state is
+// still running, because the summary is published while a separate suggestion is
+// still being generated.
+message Aux {
+  string id = 1; string session_id = 2;
+  repeated string kinds = 3;
+  // The turn this answered. Results are shown beside it.
+  string run_id = 4; uint64 turn = 5;
+  // The configuration revision it ran under. A changed one makes it stale,
+  // because its answer is not an answer for the new settings.
+  string revision = 6;
+  string state = 7; // queued, running, completed, failed, stale, canceled
+  repeated AuxResult results = 8;
+  repeated AuxUsage usage = 9;
+  string message = 10; // why it failed, for a person to read
+}
+// truncated says the text hit a limit; what arrived is kept rather than refused.
+message AuxResult { string kind = 1; string text = 2; bool truncated = 3; }
+// What this task spent, not what an account has spent.
+message AuxUsage { string account = 1; string model = 2; string kind = 3; bytes data = 4; }
+// Kept per turn on the session, so a summary outlives the task that wrote it.
+message AuxSummary { string run_id = 1; uint64 turn = 2; string text = 3; }
+// Which account and model run a kind. Per kind, because whether two kinds share
+// a profile is what decides whether one call can answer both.
+// kind is which task this profile runs. agent and backend are read only: they
+// come from the registered account, not from a caller.
+message AuxProfile {
+  string kind = 1; bool enabled = 2; string account = 3; string agent = 4;
+  string backend = 5; string model = 6; string effort = 7;
+  // Read only: the boundary the server set when the kind was enabled. Sent back
+  // so a caller can say what a kind applies to; ignored when it arrives.
+  int64 since_ms = 8;
+}
+// since_ms is the turn boundary: turning a kind on does not reach backwards
+// over the conversation that already happened.
+message AuxPreference { string kind = 1; bool enabled = 2; int64 since_ms = 3; }
+message AuxModel {
+  string id = 1; string resolved_id = 2; string name = 3;
+  repeated string efforts = 4; string default_effort = 5; bool default = 6;
+}
+message AuxRunInput { string session_id = 1; repeated string kinds = 2; string text = 3; }
+message AuxCancelInput { string session_id = 1; string aux_id = 2; }
+message AuxForgetInput { string session_id = 1; }
+message AuxStatusInput { string session_id = 1; uint64 after_turn = 2; int32 limit = 3; }
+// One session's aux state, which is what every session-scoped call answers
+// with: asking for a task and reading what the last one produced are the same
+// question asked at two moments, and a caller that just asked wants the answer
+// without a second round trip.
+message AuxState {
+  repeated AuxSummary summaries = 1;
+  Aux current = 2;
+  repeated AuxPreference preferences = 3;
+  // The session's generated title, for the caller that records session names.
+  string title = 4;
+  string message = 5;
+}
+message AuxPreferInput { string session_id = 1; repeated AuxPreference preferences = 2; }
+message AuxConfigReply {
+  string revision = 1; repeated AuxProfile profiles = 2;
+  string message = 3; string owner = 4;
+}
+message AuxSetConfigInput { repeated AuxProfile profiles = 1; }
+// The account and what it authenticates as, already resolved from the
+// registered account by the layer in front of this one.
+message AuxModelsInput { string account = 1; string agent = 2; string backend = 3; }
+message AuxModelsReply { repeated AuxModel models = 1; bool needs_login = 2; }
+message AuxLoginInfoInput { string account = 1; string agent = 2; string backend = 3; }
+message AuxLoginInfoReply { string owner = 1; string account = 2; string agent = 3; string backend = 4; }

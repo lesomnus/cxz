@@ -2,9 +2,7 @@ package lifecycle
 
 import (
 	"context"
-	"encoding/json"
 	"github.com/lesomnus/cxz/api"
-	"github.com/lesomnus/cxz/internal/auxiliary"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/resource"
 	"google.golang.org/grpc/codes"
@@ -113,9 +111,10 @@ func (s ProjectServer) Erase(ctx context.Context, ref *resource.ProjectRef) (*re
 	return resource.ProjectEraseResponse_builder{Erased: ptr(true)}.Build(), nil
 }
 
+// A deleted session's aux state goes with it. The call is the manager's own,
+// not a client's, which is why it is on the runtime API alone.
 func forgetAuxiliary(ctx context.Context, r interface {
-	Docker(context.Context, *api.DockerInput) (*api.Receipt, error)
+	AuxForget(context.Context, *api.AuxForgetInput) (*api.Receipt, error)
 }, id string) {
-	b, _ := json.Marshal(auxiliary.Request{Action: "forget", Session: id})
-	_, _ = r.Docker(ctx, &api.DockerInput{Action: "auxiliary", Spec: b})
+	_, _ = r.AuxForget(ctx, &api.AuxForgetInput{SessionId: id})
 }

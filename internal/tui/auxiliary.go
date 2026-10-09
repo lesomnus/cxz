@@ -2,7 +2,6 @@ package tui
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/lesomnus/cxz/api"
@@ -54,14 +53,143 @@ func (m *model) auxiliaryRequest(r auxiliary.Request, p *auxiliaryPage) tea.Cmd 
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(ctx, 90*time.Second)
 		defer cancel()
-		b, _ := json.Marshal(r)
-		out, e := client.Docker(ctx, &api.DockerInput{Action: "auxiliary", Spec: b})
-		v := auxiliaryResult{version: version, page: p, connection: connection, session: r.Session, action: action, err: e}
-		if e == nil {
-			v.err = json.Unmarshal([]byte(out.Status), &v.reply)
-		}
+		v := auxiliaryResult{version: version, page: p, connection: connection, session: r.Session, action: action}
+		v.reply, v.err = auxCall(ctx, client, r)
 		return v
 	}
+}
+
+// auxCall is the one place the view's request becomes aux calls. The view keeps
+// asking in its own terms -- a row, a task, a session -- and each of those is
+// now a method rather than an action string inside a payload.
+func auxCall(ctx context.Context, client api.SessionsClient, r auxiliary.Request) (auxiliary.Reply, error) {
+	switch r.Action {
+	case "list":
+		out, err := client.AuxConfig(ctx, &api.Empty{})
+		if err != nil {
+			return auxiliary.Reply{}, err
+		}
+		return auxiliary.Reply{Config: auxConfigOf(out)}, nil
+	case "put":
+		out, err := client.AuxSetConfig(ctx, &api.AuxSetConfigInput{Profiles: []*api.AuxProfile{{
+			Kind: r.Task, Enabled: r.Profile.Enabled, Account: r.Profile.Account,
+			Model: r.Profile.Model, Effort: r.Profile.Effort,
+		}}})
+		if err != nil {
+			return auxiliary.Reply{}, err
+		}
+		return auxiliary.Reply{Config: auxConfigOf(out), Message: out.Message}, nil
+	case "models":
+		out, err := client.AuxModels(ctx, &api.AuxModelsInput{Account: r.Profile.Account})
+		if err != nil {
+			return auxiliary.Reply{}, err
+		}
+		reply := auxiliary.Reply{NeedsLogin: out.NeedsLogin}
+		for _, o := range out.Models {
+			reply.Models = append(reply.Models, agentview.ModelOption{
+				ID: o.Id, ResolvedID: o.ResolvedId, Name: o.Name,
+				Efforts: o.Efforts, DefaultEffort: o.DefaultEffort, Default: o.Default,
+			})
+		}
+		return reply, nil
+	case "status":
+		out, err := client.AuxStatus(ctx, &api.AuxStatusInput{SessionId: r.Session})
+		return auxStateOf(out), err
+	case "title":
+		out, err := client.AuxRun(ctx, &api.AuxRunInput{SessionId: r.Session, Kinds: []string{"title"}, Text: r.Text})
+		return auxStateOf(out), err
+	case "session":
+		if r.Enabled != nil {
+			out, err := client.AuxPrefer(ctx, &api.AuxPreferInput{
+				SessionId:   r.Session,
+				Preferences: []*api.AuxPreference{{Kind: r.Task, Enabled: *r.Enabled}},
+			})
+			return auxStateOf(out), err
+		}
+		out, err := client.AuxRun(ctx, &api.AuxRunInput{SessionId: r.Session, Kinds: []string{r.Task}})
+		return auxStateOf(out), err
+	}
+	return auxiliary.Reply{}, fmt.Errorf("unknown auxiliary request %q", r.Action)
+}
+
+func auxConfigOf(out *api.AuxConfigReply) auxiliary.Config {
+	cfg := auxiliary.Config{Revision: out.Revision}
+	for _, p := range out.Profiles {
+		profile := auxiliary.Profile{
+			Enabled: p.Enabled, Account: p.Account, Agent: p.Agent,
+			Backend: p.Backend, Model: p.Model, Effort: p.Effort,
+		}
+		switch p.Kind {
+		case "summary":
+			cfg.Summary, cfg.Since = profile, p.SinceMs
+		case "suggestion":
+			cfg.Suggestion, cfg.Since = profile, p.SinceMs
+		case "title":
+			cfg.Title, cfg.TitleSince = profile, p.SinceMs
+		}
+	}
+	return cfg
+}
+
+func auxStateOf(out *api.AuxState) auxiliary.Reply {
+	if out == nil {
+		return auxiliary.Reply{}
+	}
+	reply := auxiliary.Reply{Message: out.Message, Job: auxJobOf(out.Current)}
+	if out.Title != "" {
+		reply.Title = &auxiliary.TitleState{Text: out.Title}
+	}
+	for _, s := range out.Summaries {
+		reply.Summaries = append(reply.Summaries, auxiliary.Summary{Run: s.RunId, Turn: s.Turn, Text: s.Text})
+	}
+	// Only an answer that reported preferences replaces the ones held: a reply
+	// that said nothing about them is not a reply that said they are off.
+	if len(out.Preferences) > 0 {
+		cfg := auxiliary.SessionConfig{}
+		for _, p := range out.Preferences {
+			switch p.Kind {
+			case "summary":
+				cfg.Summary, cfg.Since = p.Enabled, p.SinceMs
+			case "suggestion":
+				cfg.Suggestion, cfg.Since = p.Enabled, p.SinceMs
+			}
+		}
+		reply.SessionConfig = &cfg
+	}
+	return reply
+}
+
+// auxJobOf reads the kinds a task was asked for and the results it has so far,
+// which is how a run that already produced its summary shows it while the
+// suggestion beside it is still being generated.
+func auxJobOf(a *api.Aux) *auxiliary.Job {
+	if a == nil {
+		return nil
+	}
+	job := &auxiliary.Job{
+		ID: a.Id, Session: a.SessionId, Run: a.RunId, Turn: a.Turn,
+		Revision: a.Revision, Status: a.State, Error: a.Message,
+	}
+	for _, kind := range a.Kinds {
+		switch kind {
+		case "summary":
+			job.SummaryRequested = true
+		case "suggestion":
+			job.SuggestionRequested = true
+		}
+	}
+	for _, r := range a.Results {
+		switch r.Kind {
+		case "summary":
+			job.Summary = r.Text
+		case "suggestion":
+			job.Suggestion = r.Text
+		}
+	}
+	for _, u := range a.Usage {
+		job.Usage = append(job.Usage, auxiliary.Usage{Account: u.Account, Model: u.Model, Task: u.Kind, Data: u.Data})
+	}
+	return job
 }
 func (m *model) receiveAuxiliary(v auxiliaryResult) tea.Cmd {
 	if v.page != nil {
@@ -76,7 +204,11 @@ func (m *model) receiveAuxiliary(v auxiliaryResult) tea.Cmd {
 			p.message = v.err.Error()
 			return nil
 		}
-		p.config = v.reply.Config
+		// A catalog read does not carry the settings, so the page keeps the
+		// ones it already has.
+		if v.action != "models" {
+			p.config = v.reply.Config
+		}
 		if v.action == "models" {
 			if v.reply.NeedsLogin {
 				p.models = nil

@@ -2,7 +2,6 @@ package tui
 
 import (
 	"context"
-	"encoding/json"
 	"strings"
 	"testing"
 
@@ -13,20 +12,37 @@ import (
 	"google.golang.org/grpc"
 )
 
+// What the view asked for, recorded as the call it became: one method per
+// intent instead of an action string inside a payload.
+type inlineAIRequest struct {
+	call    string
+	session string
+	kinds   []string
+	enabled *bool
+}
 type inlineAIClient struct {
 	api.SessionsClient
-	requests []auxiliary.Request
-	reply    auxiliary.Reply
+	requests []inlineAIRequest
+	state    api.AuxState
 }
 
-func (c *inlineAIClient) Docker(_ context.Context, in *api.DockerInput, _ ...grpc.CallOption) (*api.Receipt, error) {
-	var r auxiliary.Request
-	if err := json.Unmarshal(in.Spec, &r); err != nil {
-		return nil, err
+func (c *inlineAIClient) AuxRun(_ context.Context, in *api.AuxRunInput, _ ...grpc.CallOption) (*api.AuxState, error) {
+	c.requests = append(c.requests, inlineAIRequest{call: "run", session: in.SessionId, kinds: in.Kinds})
+	return &c.state, nil
+}
+func (c *inlineAIClient) AuxPrefer(_ context.Context, in *api.AuxPreferInput, _ ...grpc.CallOption) (*api.AuxState, error) {
+	r := inlineAIRequest{call: "prefer", session: in.SessionId}
+	for _, p := range in.Preferences {
+		r.kinds = append(r.kinds, p.Kind)
+		enabled := p.Enabled
+		r.enabled = &enabled
 	}
 	c.requests = append(c.requests, r)
-	b, err := json.Marshal(c.reply)
-	return &api.Receipt{Status: string(b)}, err
+	return &c.state, nil
+}
+func (c *inlineAIClient) AuxStatus(_ context.Context, in *api.AuxStatusInput, _ ...grpc.CallOption) (*api.AuxState, error) {
+	c.requests = append(c.requests, inlineAIRequest{call: "status", session: in.SessionId})
+	return &c.state, nil
 }
 func inlineAIModel() (*model, *inlineAIClient) {
 	m := conversationModel()
@@ -57,7 +73,8 @@ func TestAuxiliaryCommandsShowInlineLoadingWithoutSending(t *testing.T) {
 				t.Fatal("no ghost loading", m.suggestionGhost())
 			}
 			m.receiveAuxiliary(cmd().(auxiliaryResult))
-			if len(c.requests) != 1 || c.requests[0].Action != "session" || c.requests[0].Enabled != nil {
+			// Asking for one now, which is not the same as turning it on.
+			if len(c.requests) != 1 || c.requests[0].call != "run" || c.requests[0].enabled != nil {
 				t.Fatal(c.requests)
 			}
 		})
@@ -72,7 +89,7 @@ func TestAuxiliarySessionCommandArgumentsAndNoop(t *testing.T) {
 		}
 		m.receiveAuxiliary(cmd().(auxiliaryResult))
 		r := c.requests[0]
-		if r.Enabled == nil || *r.Enabled != strings.HasSuffix(command, " on") || r.Session != "s" {
+		if r.call != "prefer" || r.enabled == nil || *r.enabled != strings.HasSuffix(command, " on") || r.session != "s" {
 			t.Fatal(r)
 		}
 	}

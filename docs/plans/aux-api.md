@@ -1,7 +1,9 @@
 # Aux: 보조 AI가 쓰는 리소스와 API
 
-상태: 설계 제안. 구현 없음. 현재 동작은 [보조 AI 작업](../auxiliary-ai.md),
-설계 배경은 [보조 AI 작업: 인증과 제한된 세션 문맥](auxiliary-ai.md)을 참고한다.
+상태: 1단계 구현됨 — 전송 표면만 바꾸고 저장은 그대로다. 사용 방법은
+[보조 AI 작업](../auxiliary-ai.md), 설계 배경은
+[보조 AI 작업: 인증과 제한된 세션 문맥](auxiliary-ai.md)을 참고한다. 아래는
+구현된 모양이며, 초안과 달라진 곳은 "초안에서 달라진 것"에 모아 적었다.
 
 보조 AI 기능에는 전용 API가 없다. 클라이언트는 `Project.Docker`에
 `action: "auxiliary"`와 JSON `spec`을 실어 보낸다. 이 문서는 그 자리에 들어갈
@@ -90,8 +92,10 @@ Run, Turn, Revision, Status, Usage, Error}`가 이미 그 모양이고 `Status`�
 
 ## 이름
 
-리소스 이름은 **`Aux`**, 서비스는 `AuxService`다. 리소스와 서비스 이름을 맞추는
-기존 규칙(`Project`/`ProjectService`, `Session`/`SessionService`)을 따른다.
+리소스 이름은 **`Aux`**다. 리소스와 서비스 이름을 맞추는 기존
+규칙(`Project`/`ProjectService`, `Session`/`SessionService`)을 따르면 서비스는
+`AuxService`가 되는데, 그 서비스는 아직 없다 — 아래 "서비스는 엔티티를 전제한다"를
+참고한다.
 
 리소스 이름에 기능 이름을 쓰지 않는다. 보조 AI는 이 리소스를 **써서** 구현되는
 기능이고, 이 리소스 자체가 아니다. 공유 메모리
@@ -113,6 +117,26 @@ AI tasks, `ProjectService.AuxiliaryLogin`(보조 계정 프로필 로그인),
 `internal/auxiliary` 패키지. 두 이름은 다른 층을 가리킨다 — `Aux`는 무엇을 실행하는
 단위이고, "보조 AI"는 그것으로 만든 사용자 기능이다.
 
+## 서비스는 엔티티를 전제한다
+
+payday에서 **서비스는 엔티티에서 생성된다.** `resource.Server`는 엔티티마다 메서드
+하나를 갖고(`resource/store.g.go:28`), `proto/ext/cxz/*.ext.proto`는 그렇게 생성된
+계약에 RPC를 얹는 overlay다. 엔티티 없는 서비스를 선언하면 생성기가 그대로 말한다:
+
+```
+pd: proto/ext/cxz/aux_svc.ext.proto extends a contract that does not exist,
+    so it is never merged: nothing generates cxz/aux_svc.g.proto
+```
+
+그래서 `AuxService`는 `Aux`를 payday 엔티티로 올리는 것과 같은 일이고, 그것은
+ent 테이블과 보존 정책을 뜻한다 — 아래 "저장과 단계"의 2단계다. 1단계에서 테이블을
+만들어 두고 쓰지 않는 것은 아무것도 쓰지 않는 테이블을 남기는 일이라 하지 않았다.
+
+**1단계는 기존 계약에 RPC를 얹는다.** 세션에 속한 것은 `SessionService`에,
+설치에 속한 것은 `ProjectService`에 둔다. `Aux`는 그 RPC들이 주고받는 타입으로
+존재한다. 2단계에서 엔티티가 되면 이 RPC들은 `AuxService`로 옮겨가며, 타입과
+이름은 그대로다.
+
 ## API 모양
 
 ### 종류
@@ -128,124 +152,110 @@ AI tasks, `ProjectService.AuxiliaryLogin`(보조 계정 프로필 로그인),
 | `checkpoint` | 컨텍스트 내부 압축 | kind 아님. 노출하지 않음 |
 | `models` | 계정 능력 조회 | kind 아님. 별도 RPC |
 
-### `proto/cxz/aux.proto`
+### `proto/ext/cxz/session_svc.ext.proto` — 세션에 속한 것
 
-리소스 엔티티가 아닌 메세지로 시작한다. 저장 위치는 아래 "저장과 단계"를 따른다.
+네 호출이 모두 같은 것으로 답한다. 작업을 요청하는 것과 지난 작업이 무엇을
+만들었는지 읽는 것은 같은 질문을 두 시점에 하는 것이고, 방금 요청한 호출자는 왕복
+한 번을 더 하지 않고 답을 원한다.
 
 ```proto
-edition = "2023";
-package cxz;
-import "cxz/session_svc.g.proto";
-import "google/protobuf/timestamp.proto";
-option features.field_presence = IMPLICIT;
-option go_package = "github.com/lesomnus/cxz/resource";
+service SessionService {
+  rpc AuxRun(AuxRunRequest) returns (AuxState);
+  rpc AuxStatus(AuxStatusRequest) returns (AuxState);
+  rpc AuxPrefer(AuxPreferRequest) returns (AuxState);
+  rpc AuxCancel(AuxCancelRequest) returns (AuxState);
+}
 
+// kinds는 요청이고 results는 산출이다. 그래서 한 작업이 kind 둘을 답할 수 있고 --
+// 요약과 추천이 프로필을 공유할 때 모델 호출 한 번이 둘을 답하는 것이 그것이다 --
+// state가 running인 동안에도 results가 채워질 수 있다. 요약은 옆의 추천이 아직
+// 생성되는 중에 공개되기 때문이다.
+message Aux {
+  string id = 1; bytes session_id = 2;
+  repeated AuxKind kinds = 3;
+  string run_id = 4; uint64 turn = 5;   // 이 작업이 답한 턴
+  string revision = 6;                  // 설정이 바뀌면 stale이 된다
+  string state = 7; // queued, running, completed, failed, stale, canceled
+  repeated AuxResult results = 8;
+  repeated AuxUsage usage = 9;
+  string message = 10;
+}
+message AuxResult { AuxKind kind = 1; string text = 2; bool truncated = 3; }
+message AuxUsage { string account = 1; string model = 2; AuxKind kind = 3; bytes data = 4; }
+message AuxSummary { string run_id = 1; uint64 turn = 2; string text = 3; }
+// since는 읽기 전용이다: kind를 켜는 것이 이미 지나간 대화를 소급하지 않는다.
+message AuxPreference { AuxKind kind = 1; bool enabled = 2; google.protobuf.Timestamp since = 3; }
+message AuxState {
+  repeated AuxSummary summaries = 1;
+  Aux current = 2;
+  repeated AuxPreference preferences = 3;
+  string title = 4;   // 세션 이름을 기록하는 호출자를 위해
+  string message = 5;
+}
+message AuxRunRequest { SessionRef ref = 1; repeated AuxKind kinds = 2; string text = 3; }
+message AuxStatusRequest { SessionRef ref = 1; uint64 after_turn = 2; int32 limit = 3; }
+message AuxPreferRequest { SessionRef ref = 1; repeated AuxPreference preferences = 2; }
+message AuxCancelRequest { SessionRef ref = 1; string aux_id = 2; }
+```
+
+### `proto/ext/cxz/project_svc.ext.proto` — 설치에 속한 것
+
+어떤 kind를 어떤 계정·모델로 돌리는지는 한 세션의 것이 아니라 설치의 설정이므로,
+나머지 설치 설정이 이미 있는 곳에 둔다.
+
+```proto
+service ProjectService {
+  rpc AuxConfig(AuxConfigRequest) returns (AuxConfigReply);
+  rpc AuxSetConfig(AuxSetConfigRequest) returns (AuxConfigReply);
+  rpc AuxModels(AuxModelsRequest) returns (AuxModelsReply);
+  rpc AuxLoginInfo(AuxLoginInfoRequest) returns (AuxLoginInfoReply);
+}
+
+// kind를 하나 더하는 것은 RPC가 아니라 여기 값 하나를 더하는 일이다.
 enum AuxKind {
   AUX_KIND_UNSPECIFIED = 0;
   AUX_KIND_SUMMARY = 1;
   AUX_KIND_SUGGESTION = 2;
   AUX_KIND_TITLE = 3;
 }
-
-// kind를 어떤 계정·모델로 실행하는지. 세션 자격증명을 복사하지 않는다.
-// 요약과 추천의 프로필이 같은지가 한 호출로 묶을지를 결정하므로, 프로필은
-// kind별로 따로 있어야 한다.
+// kind별이다. 두 kind가 프로필을 공유하는지가 한 호출로 둘을 답할 수 있는지를
+// 결정한다. agent와 backend는 읽기 전용 -- 등록된 계정에서 읽고, 호출자에게서
+// 받지 않는다.
 message AuxProfile {
   AuxKind kind = 1; bool enabled = 2; string account = 3; string agent = 4;
   string backend = 5; string model = 6; string effort = 7;
+  google.protobuf.Timestamp since = 8;  // 읽기 전용
 }
-
-// 한 턴에 대한 한 건의 작업. kinds가 복수인 것이 핵심이다: 같은 프로필이면
-// 요약과 추천을 호출 한 번으로 받고, 그 사실이 Aux 하나로 기록된다.
-message Aux {
-  string id = 1;
-  SessionRef parent = 2;
-  repeated AuxKind kinds = 3;
-  // 이 Aux가 답한 턴. 결과를 그 턴 옆에 붙이는 근거다.
-  string run_id = 4; uint64 turn = 5;
-  // 설정이 바뀌면 진행 중인 Aux는 stale이 된다. 바뀐 설정의 결과가 아니기 때문이다.
-  string revision = 6;
-  string state = 7; // queued, running, completed, failed, stale, canceled
-  // 부분 결과를 허용한다. 요약은 추천이 아직 돌고 있는 동안 공개되므로
-  // (`controller.go:363`) running 상태의 Aux가 결과 하나를 이미 들고 있다.
-  repeated AuxResult results = 8;
-  repeated AuxUsage usage = 9;
-  string message = 10; // 실패 이유. 사람이 읽는 한 줄
-  google.protobuf.Timestamp date_created = 11;
-  google.protobuf.Timestamp date_updated = 12;
+message AuxConfigRequest {}
+message AuxSetConfigRequest { repeated AuxProfile profiles = 1; }
+message AuxConfigReply {
+  string revision = 1; repeated AuxProfile profiles = 2;
+  string message = 3; string owner = 4;
 }
-
-// 산출물. truncated는 한계에서 잘렸음을 말한다 -- 도착한 텍스트는 버리지 않는다.
-message AuxResult { AuxKind kind = 1; string text = 2; bool truncated = 3; }
-
-// 과금 근거가 아니라 이 Aux가 쓴 양이다. 계정 누적 총액을 뜻하지 않는다.
-message AuxUsage { string account = 1; string model = 2; AuxKind kind = 3; bytes data = 4; }
-
-// 부모 세션에 붙어 보존되는 산출물. Aux는 최신 것만 남아도 요약은 턴마다 쌓인다.
-message AuxSummary { string run_id = 1; uint64 turn = 2; string text = 3; }
-
-// kind별 자동 실행 여부. 세션 설정이 설치 기본값을 덮는다.
-//
-// since는 "언제부터의 턴을 대상으로 하는가"다. 켜는 순간 지난 대화를 소급해서
-// 실행하지 않기 위해 필요하고, 설치 기본값과 세션 설정 양쪽에 있다 -- 지금도
-// `Config.Since`와 세션 preferences의 `Since`를 max로 합친다
-// (`internal/auxiliary/session.go:39`).
-message AuxPreference { AuxKind kind = 1; bool enabled = 2; google.protobuf.Timestamp since = 3; }
-```
-
-### `proto/ext/cxz/aux_svc.ext.proto`
-
-```proto
-service AuxService {
-  // 한 번만 실행한다. 자동 실행 설정을 바꾸지 않는다.
-  rpc Run(AuxRunRequest) returns (Aux);
-  rpc Get(AuxRequest) returns (Aux);
-  rpc Cancel(AuxRequest) returns (Aux);
-  // 턴에 붙은 산출물을 읽는다. 생성하지 않는다.
-  rpc Summaries(AuxSummariesRequest) returns (AuxSummariesReply);
-  // 설치 기본 프로필과 세션별 자동 실행 설정.
-  rpc GetConfig(AuxConfigRequest) returns (AuxConfig);
-  rpc SetConfig(AuxSetConfigRequest) returns (AuxConfig);
-  // 계정이 어떤 모델을 쓸 수 있는지. 응답을 생성하지 않으며, 저장된 토큰이
-  // 생성에 받아들여진다는 증명도 아니다.
-  rpc Models(AuxModelsRequest) returns (AuxModelsReply);
-  // 로그인에 필요한 정보만 돌려준다. 자격증명은 응답에 담지 않는다.
-  rpc LoginInfo(AuxLoginInfoRequest) returns (AuxLoginInfo);
-}
-
-message AuxRunRequest { SessionRef parent = 1; repeated AuxKind kinds = 2; string text = 3; }
-message AuxRequest { SessionRef parent = 1; string aux_id = 2; }
-message AuxSummariesRequest { SessionRef parent = 1; uint64 after_turn = 2; int32 limit = 3; }
-message AuxSummariesReply { repeated AuxSummary summaries = 1; Aux current = 2; }
-message AuxConfig {
-  string revision = 1;
-  repeated AuxProfile profiles = 2;        // kind별 기본 프로필
-  repeated AuxPreference preferences = 3;  // parent가 지정되면 그 세션 설정
-  // 설정을 바꾼 뒤 사람이 읽는 한 줄. 지금 Reply.Message가 하는 일이다 --
-  // "summary on · this session", grant 정리 실패 보고 같은 것.
-  string message = 4;
-}
-// parent가 비어 있으면 설치 기본값, 지정되면 그 세션의 설정을 읽고 쓴다.
-message AuxConfigRequest { SessionRef parent = 1; }
-message AuxSetConfigRequest {
-  SessionRef parent = 1;
-  repeated AuxProfile profiles = 2;
-  repeated AuxPreference preferences = 3;
-}
-message AuxModelsRequest { AuxProfile profile = 1; }
+// 등록된 계정 하나의 목록 조회. 응답을 생성하지 않으며, 저장된 토큰이 생성에
+// 받아들여진다는 증명도 아니다.
+message AuxModelsRequest { string account = 1; }
 message AuxModelsReply { repeated AuxModel models = 1; bool needs_login = 2; }
-message AuxModel { string name = 1; string label = 2; repeated string efforts = 3; }
-message AuxLoginInfoRequest { AuxProfile profile = 1; }
-// 로그인을 어디서 수행할지 말해줄 뿐이다. 토큰도, grant도 담지 않는다.
-message AuxLoginInfo { string owner = 1; string account = 2; string agent = 3; string backend = 4; }
+// 로그인을 어디서 어떤 프로필로 해야 하는지만 말한다. 자격증명은 담지 않는다.
+message AuxLoginInfoRequest { string account = 1; }
+message AuxLoginInfoReply {
+  string owner = 1; string account = 2; string agent = 3; string backend = 4;
+}
 ```
 
-`AuxRunRequest.text`는 제목을 직접 지정하는 경로(`cxz ai title --text`)에만
-쓴다. 비어 있으면 생성한다.
+### `internal/runtimeproto/cxz.proto` — 내부 표면
 
-세 가지가 타입으로 해결된다. `parent`가 필드이므로 전송 계층이 payload를 뜯지
-않아도 라우팅된다. 제목은 `AuxResult`의 kind이므로 `Session.Patch` 트리거가
-추측이 아니다. 권한 검사를 `Run`/`SetConfig`/`Cancel` 각 메서드에 붙일 수 있다.
+런타임 API(서버↔매니저)에도 같은 호출들이 있다. 두 가지가 다르다.
+
+- **kind가 문자열이다.** 이 API의 다른 모든 kind가 그렇고, 공개 표면이 아니므로
+  모르는 kind를 거부하는 일은 앞단의 enum이 이미 한다.
+- **`AuxForget`이 여기에만 있다.** 세션을 지울 때 리소스 서버가 매니저에게 보내는
+  호출이고(`server/lifecycle/delete.go` `forgetAuxiliary`), 클라이언트가 부를 일이
+  없다. 리소스 클라이언트에서 호출하면 조용히 성공하지 않고 거부한다 — 보조 상태를
+  지우려던 호출자에게 "됐다"고 답하면 남은 상태가 그대로 남는다.
+
+`internal/auxkind`가 둘 사이를 옮긴다. 모르는 kind에는 이름이 없고, 그래서 위
+계층이 추측하지 않고 거부할 수 있다.
 
 ## 어떻게 쓰는가
 
@@ -259,9 +269,10 @@ message AuxLoginInfo { string owner = 1; string account = 2; string agent = 3; s
 따라서 클라이언트가 하는 일은 **읽기**다.
 
 ```
-AuxService.Summaries{parent: <session>}
+Session.AuxStatus{ref: <session>}
   → summaries: [{run_id, turn, text}, ...]
     current: {state: "running", kinds: [SUMMARY, SUGGESTION], results: [{kind: SUMMARY, ...}]}
+    preferences: [{kind: SUMMARY, enabled: true, since: ...}, ...]
 ```
 
 TUI는 이것을 1초에 한 번 이하로 폴링하고(`internal/tui/auxiliary.go:171`),
@@ -272,27 +283,28 @@ TUI는 이것을 1초에 한 번 이하로 폴링하고(`internal/tui/auxiliary.
 ### 한 번만 생성
 
 ```
-AuxService.Run{parent: <session>, kinds: [SUMMARY]}  → Aux{state: "queued"}
-AuxService.Get{parent: <session>, aux_id: <id>}       → Aux{state: "completed", results: [...]}
+Session.AuxRun{ref: <session>, kinds: [SUMMARY]}  → AuxState{current: {state: "queued"}}
+Session.AuxStatus{ref: <session>}                  → AuxState{current: {state: "completed", results: [...]}}
 ```
 
-`Run`은 자동 실행 설정을 바꾸지 않는다. 자동이 켜져 있는 kind를 `Run`하면 아무
-일도 하지 않는다 — 지금 `/summary`의 동작과 같다.
+`AuxRun`은 자동 실행 설정을 바꾸지 않는다. 자동이 켜져 있는 kind를 `AuxRun`하면
+아무 일도 하지 않는다 — 지금 `/summary`의 동작과 같다.
 
 ### 자동 실행 켜고 끄기
 
 ```
-AuxService.SetConfig{parent: <session>, preferences: [{kind: SUGGESTION, enabled: true}]}
+Session.AuxPrefer{ref: <session>, preferences: [{kind: SUGGESTION, enabled: true}]}
+Project.AuxSetConfig{profiles: [{kind: SUGGESTION, enabled: true, account: ..., model: ...}]}
 ```
 
-`parent`가 없으면 설치 기본값(프로필)을 바꾸고 `revision`이 올라간다. 올라간
+앞은 이 세션만, 뒤는 설치 기본값이다. 설치 기본값을 바꾸면 `revision`이 올라간다. 올라간
 revision으로 진행 중인 Aux는 `stale`이 되어 결과를 버린다. 바뀐 설정의 결과가 아니기
 때문이고, 이 규칙은 현재 구현(`cfg.Revision != c.config.Revision`)과 같다.
 
 ### 취소
 
 ```
-AuxService.Cancel{parent: <session>}  → Aux{state: "canceled"}
+Session.AuxCancel{ref: <session>}  → AuxState{current: {state: "canceled"}}
 ```
 
 `aux_id` 없이 부르면 그 세션의 진행 중인 Aux를 취소한다. 요약과 추천이 한 호출로
@@ -301,10 +313,14 @@ AuxService.Cancel{parent: <session>}  → Aux{state: "canceled"}
 ### 설정과 로그인
 
 ```
-AuxService.Models{profile: {account: "work1"}}   → models: [...] 또는 needs_login
-AuxService.SetConfig{profiles: [{kind: SUMMARY, enabled: true, account: "work1", model: ..., effort: ...}]}
-AuxService.LoginInfo{profile: {account: "work1"}} → {owner, agent, backend}
+Project.AuxModels{account: "work1"}     → models: [...] 또는 needs_login
+Project.AuxSetConfig{profiles: [{kind: SUMMARY, enabled: true, account: "work1", model: ..., effort: ...}]}
+Project.AuxLoginInfo{account: "work1"}  → {owner, account, agent, backend}
 ```
+
+요청은 계정 이름만 보낸다. 그 계정이 무엇으로 인증하는지(agent, backend)는 서버가
+등록된 Account 리소스에서 읽는다 — 그래야 요청이 한 계정을 지목하면서 다른 계정으로
+인증하는 일이 없다.
 
 로그인 자체는 지금처럼 `ProjectService.AuxiliaryLogin` 스트림을 쓴다. 이 설계가
 바꾸지 않는다.
@@ -313,18 +329,20 @@ AuxService.LoginInfo{profile: {account: "work1"}} → {owner, agent, backend}
 
 `cxz ai`의 표면은 그대로 두고 뒤에서 부르는 것만 바뀐다.
 
-| 명령 | 지금 | 제안 |
+| 명령 | 전에 | 지금 |
 | --- | --- | --- |
-| `cxz ai list` | `Docker{auxiliary, {action:"list"}}` | `GetConfig{}` |
-| `cxz ai set TASK --account --model` | `{action:"put"}` | `SetConfig{profiles:[...]}` |
-| `cxz ai disable TASK` | `{action:"put"}` (enabled 없음) | `SetConfig{profiles:[{enabled:false}]}` |
-| `cxz ai models ACCOUNT` | `{action:"models"}` | `Models{profile:{account}}` |
-| `cxz ai status SESSION` | `{action:"status"}` | `Summaries{parent}` |
-| `cxz ai cancel SESSION` | `{action:"cancel"}` | `Cancel{parent}` |
-| `cxz ai title SESSION [--text]` | `{action:"title"}` | `Run{parent, kinds:[TITLE], text}` |
-| `cxz ai login ACCOUNT` | `{action:"login-info"}` + 스트림 | `LoginInfo{}` + 기존 스트림 |
-| (TUI `/summary`, `/suggest`) | `{action:"session"}` | `SetConfig{parent, preferences}` / `Run{parent, kinds}` |
-| (내부) `{action:"forget"}` | 세션 purge 경로 | 런타임 API에 남김 |
+| `cxz ai list` | `Docker{auxiliary, {action:"list"}}` | `Project.AuxConfig{}` |
+| `cxz ai set KIND --account --model` | `{action:"put"}` | `Project.AuxSetConfig{profiles:[...]}` |
+| `cxz ai disable KIND` | `{action:"put"}` (enabled 없음) | `Project.AuxSetConfig{profiles:[{enabled:false}]}` |
+| `cxz ai models ACCOUNT` | `{action:"models"}` | `Project.AuxModels{account}` |
+| `cxz ai status SESSION` | `{action:"status"}` | `Session.AuxStatus{ref}` |
+| `cxz ai cancel SESSION` | `{action:"cancel"}` | `Session.AuxCancel{ref}` |
+| `cxz ai title SESSION [--text]` | `{action:"title"}` | `Session.AuxRun{ref, kinds:[TITLE], text}` |
+| `cxz ai login ACCOUNT` | `{action:"login-info"}` + 스트림 | `Project.AuxLoginInfo{account}` + 기존 스트림 |
+| TUI `/summary on\|off` | `{action:"session"}` + enabled | `Session.AuxPrefer{ref, preferences}` |
+| TUI `/summary` | `{action:"session"}` | `Session.AuxRun{ref, kinds}` |
+| TUI 폴링 | `{action:"status"}` | `Session.AuxStatus{ref}` |
+| (내부) `{action:"forget"}` | 세션 purge 경로 | 런타임 API `AuxForget` |
 
 `forget`은 클라이언트가 부르지 않는다. 리소스 서버가 세션을 지울 때 매니저에게
 보내는 호출이다 (`server/lifecycle/delete.go:116` `forgetAuxiliary`). 그래서 표면이
@@ -333,8 +351,8 @@ AuxService.LoginInfo{profile: {account: "work1"}} → {owner, agent, backend}
 - **리소스 API**(`proto/ext/cxz/*`, 클라이언트가 보는 것)에서 `auxiliary` action은
   사라진다. 이 문서가 설계하는 것이 그 자리다.
 - **런타임 API**(`internal/runtimeproto`, 서버↔매니저)는 `forget`처럼 클라이언트가
-  볼 일 없는 호출을 계속 가진다. 타입을 주는 것이 낫지만 공개 표면이 아니므로 이
-  설계의 범위가 아니다.
+  볼 일 없는 호출을 계속 가진다. 거기서도 타입은 받았지만(`AuxForget`), 공개 표면이
+  아니므로 kind는 문자열로 둔다.
 
 ## 현재 동작을 그대로 재현하는가
 
@@ -370,15 +388,14 @@ API는 무엇을 요청했고 무엇이 나왔는지만 말한다. 그래서 판
 
 ## 저장과 단계
 
-**1단계 — 타입만.** 저장은 지금 그대로다. 보조 상태는 매니저 state의
+**1단계 — 타입만 (구현됨).** 저장은 지금 그대로다. 보조 상태는 매니저 state의
 `<aux root>/<sha256(session)>.json`에 남고, Aux는 세션당 최신 하나
 (`State.Job`), 요약은 턴마다 `State.Summaries`에 쌓인다. 바뀌는 것은 전송 표면뿐이고,
 `Project.Docker`에서 `auxiliary` action이 사라진다.
 
-**2단계 — 필요해지면 엔티티화.** `Aux`을 payday 리소스로 올리면
-(`domain: 11`, 7~10은 사용 중) `watch`를 얻는다. 그러면 TUI/웹의 1초 폴링이
-구독으로 바뀌고 Aux 이력이 남는다. 다만 새 테이블과 보존 정책이 필요하므로 1단계와
-섞지 않는다.
+**2단계 — 엔티티화.** `Aux`를 payday 리소스로 올리면(`domain: 11`, 7~10은 사용 중)
+`AuxService`와 `watch`를 함께 얻는다. 그러면 TUI/웹의 1초 폴링이 구독으로 바뀌고
+Aux 이력이 남는다. 다만 새 테이블과 보존 정책이 필요하므로 1단계와 섞지 않는다.
 
 주의: 보조 산출물은 저널 이벤트가 **아니다**. 저널의 이벤트 kind에
 `summary`/`suggestion`/`auxiliary`는 없고, 보조 컨트롤러는 저널을 읽기만 한다.
@@ -388,8 +405,33 @@ API는 무엇을 요청했고 무엇이 나왔는지만 말한다. 그래서 판
 ## 하위호환
 
 사용자 배포 전이므로 `Project.Docker`의 `auxiliary` action에 호환 경로를 남기지
-않는다. 봉투를 비워 두면 비울 이유가 없어진다. `DockerInput` 자체는
+않았다. 봉투를 비워 두면 비울 이유가 없어진다. `DockerInput` 자체는
 `save/up/down/prune/status`에 남는다 — 그 메세지가 실제로 뜻하는 것이다.
+
+## 초안에서 달라진 것
+
+구현하면서 바뀐 것들과, 왜 바꿨는지.
+
+- **`AuxService`가 없다.** payday에서 서비스는 엔티티에서 생성된다. 위 "서비스는
+  엔티티를 전제한다"를 참고한다. RPC는 `SessionService`와 `ProjectService`에 얹혀
+  있고, 2단계에서 옮겨간다.
+- **세션 호출 네 개가 모두 `AuxState`로 답한다.** 초안은 `Run`/`Cancel`이 `Aux`를
+  돌려주게 했는데, 그러면 제목을 요청한 호출이 돌려줄 것이 없다 — 제목은 작업의
+  생애가 아니라 세션에 기록되는 것이기 때문이다. 그리고 방금 요청한 클라이언트는
+  곧바로 상태를 다시 읽는다. 한 응답 타입이 그 왕복을 없앤다.
+- **`Get`이 없다.** 세션당 작업은 최신 하나뿐이므로 `AuxStatus`가 그 역할을 한다.
+  작업 이력은 2단계의 것이다.
+- **`AuxModels`/`AuxLoginInfo`가 프로필이 아니라 계정 이름을 받는다.** 두 호출에
+  kind는 의미가 없고, agent·backend는 서버가 등록된 Account에서 읽는다. 프로필을
+  받으면 호출자가 채울 수 없는 필드를 가진 메세지를 보내게 된다.
+- **`AuxProfile.kind`가 추가됐다.** 없으면 kind별 프로필을 비교할 수 없고, 그 비교가
+  한 호출로 두 kind를 답할 수 있는지를 결정한다.
+- **`since`는 읽기 전용이다.** 경계를 정하는 것은 서버이고(켠 시각), 클라이언트는
+  그것을 읽어 "무엇부터 적용되는지"를 말할 뿐이다.
+- **`AuxConfigReply.message`와 `AuxState.message`가 있다.** 지금 설정 화면과
+  알림줄에 뜨는 문장을 그대로 유지한다.
+- **`AuxState.preferences`는 보고된 것만 기록한다.** 선호를 말하지 않은 응답은
+  "선호가 꺼졌다"고 말한 응답이 아니다. 비어 있으면 클라이언트가 가진 것을 유지한다.
 
 ## 열어 두는 질문
 

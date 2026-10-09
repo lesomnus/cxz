@@ -8,7 +8,7 @@ import type { AccountRef, AccountSelect } from "./account_svc_pb.js";
 import { file_cxz_account_svc_g } from "./account_svc_pb.js";
 import type { AuthBindingRef, AuthBindingSelect } from "./auth_binding_svc_pb.js";
 import { file_cxz_auth_binding_svc_g } from "./auth_binding_svc_pb.js";
-import type { ProjectRef, ProjectSelect } from "./project_svc_pb.js";
+import type { AuxKind, ProjectRef, ProjectSelect } from "./project_svc_pb.js";
 import { file_cxz_project_svc_g } from "./project_svc_pb.js";
 import type { Session, SessionEvent, SessionEventSchema, SessionSchema, SessionStatus } from "./session_pb.js";
 import { file_cxz_session } from "./session_pb.js";
@@ -22,7 +22,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file cxz/session_svc.g.proto.
  */
 export const file_cxz_session_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChdjeHovc2Vzc2lvbl9zdmMuZy5wcm90bxIDY3h6Io4DChFTZXNzaW9uQWRkUmVxdWVzdBIKCgJpZBgBIAEoDBINCgVhbGlhcxgEIAEoCRITCgRuYW1lGAUgASgJQgWqAQIIAhITCgRkZXNjGAYgASgJQgWqAQIIAhIgCgdwcm9qZWN0GAggASgLMg8uY3h6LlByb2plY3RSZWYSFAoFYWdlbnQYCSABKAlCBaoBAggCEhQKBW1vZGVsGAogASgJQgWqAQIIAhIZCgpydW50aW1lX2lkGAsgASgJQgWqAQIIAhIYCgljbGllbnRfaWQYDCABKAlCBaoBAggCEjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASIgoGc3RhdHVzGBAgASgLMhIuY3h6LlNlc3Npb25TdGF0dXMSDgoGbGlzdGVkGBEgASgIEiAKB2FjY291bnQYEiABKAsyDy5jeHouQWNjb3VudFJlZhIpCgxhdXRoX2JpbmRpbmcYEyABKAsyEy5jeHouQXV0aEJpbmRpbmdSZWYiVQoRU2Vzc2lvbkdldFJlcXVlc3QSHAoDcmVmGAEgASgLMg8uY3h6LlNlc3Npb25SZWYSIgoGc2VsZWN0GAIgASgLMhIuY3h6LlNlc3Npb25TZWxlY3QiXQoKU2Vzc2lvblJlZhIMCgJpZBgBIAEoDEgAEg8KBWFsaWFzGAQgASgJSAASFAoKcnVudGltZV9pZBgLIAEoCUgAEhMKCWNsaWVudF9pZBgMIAEoCUgAQgUKA2tleSLlAgoNU2Vzc2lvblNlbGVjdBILCgNhbGwYASABKAgSDQoFYWxpYXMYBCABKAgSDAoEbmFtZRgFIAEoCBIMCgRkZXNjGAYgASgIEiMKB3Byb2plY3QYCCABKAsyEi5jeHouUHJvamVjdFNlbGVjdBINCgVhZ2VudBgJIAEoCBINCgVtb2RlbBgKIAEoCBISCgpydW50aW1lX2lkGAsgASgIEhEKCWNsaWVudF9pZBgMIAEoCBIUCgxkYXRlX3VwZGF0ZWQYDSABKAgSEwoLZGF0ZV9lcmFzZWQYDiABKAgSFAoMZGF0ZV9jcmVhdGVkGA8gASgIEg4KBnN0YXR1cxgQIAEoCBIOCgZsaXN0ZWQYESABKAgSIwoHYWNjb3VudBgSIAEoCzISLmN4ei5BY2NvdW50U2VsZWN0EiwKDGF1dGhfYmluZGluZxgTIAEoCzIWLmN4ei5BdXRoQmluZGluZ1NlbGVjdCKJAgoTU2Vzc2lvblBhdGNoUmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouU2Vzc2lvblJlZhINCgVhbGlhcxgIIAEoCRISCgphbGlhc19udWxsGAkgASgIEgwKBG5hbWUYCiABKAkSDAoEZGVzYxgMIAEoCRIwCgxkYXRlX3VwZGF0ZWQYGiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfdXBkYXRlZF9mb3JjZRgbIAEoCBIiCgZzdGF0dXMYICABKAsyEi5jeHouU2Vzc2lvblN0YXR1cxITCgtzdGF0dXNfbnVsbBghIAEoCBIOCgZsaXN0ZWQYIiABKAgiUAoTU2Vzc2lvbkFwcGx5UmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouU2Vzc2lvblJlZhIbCgVwYXRjaBgCIAEoCzIMLnBhdGNoLlBhdGNoIiYKFFNlc3Npb25FcmFzZVJlc3BvbnNlEg4KBmVyYXNlZBgBIAEoCCJkChJTZXNzaW9uTGlzdFJlcXVlc3QSIwoHZmlsdGVycxgBIAMoCzISLmN4ei5TZXNzaW9uRmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAiJHChNTZXNzaW9uTGlzdFJlc3BvbnNlEhsKBWl0ZW1zGAEgAygLMgwuY3h6LlNlc3Npb24SEwoEbmV4dBgCIAEoCUIFqgECCAIiXwoNU2Vzc2lvbkZpbHRlchIcCgNyZWYYASABKAsyDy5jeHouU2Vzc2lvblJlZhIgCgdwcm9qZWN0GAIgASgLMg8uY3h6LlByb2plY3RSZWYSDgoGbGlzdGVkGAMgASgIIlgKE1Nlc3Npb25XYXRjaFJlcXVlc3QSIwoHZmlsdGVycxgBIAMoCzISLmN4ei5TZXNzaW9uRmlsdGVyEhwKDXNraXBfc25hcHNob3QYAiABKAhCBaoBAggCIjwKFFNlc3Npb25XYXRjaFJlc3BvbnNlEiQKBWl0ZW1zGAEgAygLMhUuY3h6LlNlc3Npb25XYXRjaEl0ZW0iUgoQU2Vzc2lvbldhdGNoSXRlbRIKCgJpZBgBIAEoDBIbCgV2YWx1ZRgCIAEoCzIMLmN4ei5TZXNzaW9uEhUKBmFjdGlvbhgDIAEoCUIFqgECCAIifgoYQ29udmVyc2F0aW9uU3RhdHNSZXF1ZXN0EiAKB3Byb2plY3QYASABKAsyDy5jeHouUHJvamVjdFJlZhIgCgdzZXNzaW9uGAIgASgLMg8uY3h6LlNlc3Npb25SZWYSDwoHZnJvbV9tcxgDIAEoAxINCgV0b19tcxgEIAEoAyLoAQoWQ29udmVyc2F0aW9uU3RhdHNSZXBseRIPCgdmcm9tX21zGAEgASgDEg0KBXRvX21zGAIgASgDEhQKDGdlbmVyYXRlZF9tcxgDIAEoAxIrCgV0b3RhbBgEIAEoCzIcLmN4ei5Db252ZXJzYXRpb25TdGF0c1ZhbHVlcxInCgRkYXlzGAUgAygLMhkuY3h6LkNvbnZlcnNhdGlvblN0YXRzRGF5EjAKCHNlc3Npb25zGAYgAygLMh4uY3h6LkNvbnZlcnNhdGlvblN0YXRzQ292ZXJhZ2USEAoIY29tcGxldGUYByABKAgi5gIKF0NvbnZlcnNhdGlvblN0YXRzVmFsdWVzEg4KBmV2ZW50cxgBIAEoBBIWCg5pbnB1dF9tZXNzYWdlcxgCIAEoBBIYChBhc3Npc3RhbnRfZXZlbnRzGAMgASgEEhoKEmNvbnZlcnNhdGlvbl9ieXRlcxgEIAEoBBIbChNldmVudF9jb250ZW50X2J5dGVzGAUgASgEEhYKDmZpbmlzaGVkX3R1cm5zGAYgASgEEhQKDGlucHV0X3Rva2VucxgHIAEoBBIVCg1vdXRwdXRfdG9rZW5zGAggASgEEhkKEWNhY2hlX3JlYWRfdG9rZW5zGAkgASgEEhoKEmNhY2hlX3dyaXRlX3Rva2VucxgKIAEoBBIcChR0b2tlbl9yZXBvcnRlZF90dXJucxgLIAEoBBIZChFyZXBvcnRlZF9jb3N0X3VzZBgMIAEoARIbChNjb3N0X3JlcG9ydGVkX3R1cm5zGA0gASgEIlIKFENvbnZlcnNhdGlvblN0YXRzRGF5EgwKBGRhdGUYASABKAkSLAoGdmFsdWVzGAIgASgLMhwuY3h6LkNvbnZlcnNhdGlvblN0YXRzVmFsdWVzIosBChlDb252ZXJzYXRpb25TdGF0c0NvdmVyYWdlEhIKCnNlc3Npb25faWQYASABKAwSDQoFYWxpYXMYAiABKAkSFAoMc25hcHNob3Rfc2VxGAMgASgEEhEKCWZpcnN0X3NlcRgEIAEoBBIQCghsYXN0X3NlcRgFIAEoBBIQCghjb21wbGV0ZRgGIAEoCCJRCg5TZXNzaW9uQ29udHJvbBIcCgNyZWYYASABKAsyDy5jeHouU2Vzc2lvblJlZhIOCgZydW5faWQYAiABKAkSEQoJY2xpZW50X2lkGAMgASgJIjMKDlNlc3Npb25SZWNlaXB0EhEKCWNsaWVudF9pZBgBIAEoCRIOCgZzdGF0dXMYAiABKAkifAoYU2Vzc2lvbkNvcHlNZW1vcnlSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLmN4ei5TZXNzaW9uUmVmEgwKBHBhdGgYAiABKAkSHwoGdGFyZ2V0GAMgASgLMg8uY3h6LlNlc3Npb25SZWYSEwoLdGFyZ2V0X3BhdGgYBCABKAkiRgoVU2Vzc2lvbkxpYnJhcnlSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLmN4ei5TZXNzaW9uUmVmEg8KB3JlcXVlc3QYAiABKAwiIgoSU2Vzc2lvbk1lbW9yeVJlcGx5EgwKBGRhdGEYASABKAwiQgoUU2Vzc2lvbk1lbW9yeVJlcXVlc3QSHAoDcmVmGAEgASgLMg8uY3h6LlNlc3Npb25SZWYSDAoEcGF0aBgCIAEoCSJDChJTZXNzaW9uTG9nc1JlcXVlc3QSHAoDcmVmGAEgASgLMg8uY3h6LlNlc3Npb25SZWYSDwoHcHJvamVjdBgCIAEoCCIgChBTZXNzaW9uTG9nc1JlcGx5EgwKBHRleHQYASABKAkiaQoYU2Vzc2lvblBlcm1pc3Npb25SZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLmN4ei5TZXNzaW9uUmVmEg4KBnJ1bl9pZBgCIAEoCRIRCgljbGllbnRfaWQYAyABKAkSDAoEbW9kZRgEIAEoCSJzChJTZXNzaW9uU2VuZFJlcXVlc3QSHAoDcmVmGAEgASgLMg8uY3h6LlNlc3Npb25SZWYSDgoGcnVuX2lkGAIgASgJEhEKCWNsaWVudF9pZBgDIAEoCRIMCgR0ZXh0GAQgASgJEg4KBmNhbmNlbBgFIAEoCCJVChRTZXNzaW9uQXR0YWNoUmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouU2Vzc2lvblJlZhIOCgZydW5faWQYAiABKAkSDwoHY29udGVudBgDIAEoDCIhChFTZXNzaW9uQXR0YWNobWVudBIMCgRwYXRoGAEgASgJInEKFFNlc3Npb25VcGxvYWRSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLmN4ei5TZXNzaW9uUmVmEg4KBnJ1bl9pZBgCIAEoCRIMCgRuYW1lGAMgASgJEgwKBHNpemUYBCABKAMSDwoHY29udGVudBgFIAEoDCJnChZTZXNzaW9uQWN0aXZpdHlSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLmN4ei5TZXNzaW9uUmVmEg4KBnJ1bl9pZBgCIAEoCRIRCgljbGllbnRfaWQYAyABKAkSDAoEYnVzeRgEIAEoCCJ+ChRTZXNzaW9uVXBkYXRlUmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouU2Vzc2lvblJlZhIOCgZydW5faWQYAiABKAkSDgoGYmluYXJ5GAMgASgJEg0KBWFwcGx5GAQgASgIEhkKEXN1cGVydmlzb3JfYmluYXJ5GAUgASgJIpIBChNTZXNzaW9uVXBkYXRlU3RhdHVzEg0KBXJlYWR5GAEgASgIEg4KBnJlYXNvbhgCIAEoCRIOCgZiaW5hcnkYAyABKAkSDQoFc3RhdGUYBCABKAkSGQoRc3VwZXJ2aXNvcl9iaW5hcnkYBSABKAkSEAoIcmV2aXNpb24YBiABKAkSEAoIcHJvdG9jb2wYByABKAUijwEKE1Nlc3Npb25SZXBseVJlcXVlc3QSHAoDcmVmGAEgASgLMg8uY3h6LlNlc3Npb25SZWYSDgoGcnVuX2lkGAIgASgJEhEKCWNsaWVudF9pZBgDIAEoCRISCgpyZXF1ZXN0X2lkGAQgASgJEg0KBWFsbG93GAUgASgIEhQKDGFuc3dlcnNfanNvbhgGIAEoCSJpChRTZXNzaW9uRXZlbnRzUmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouU2Vzc2lvblJlZhIRCglhZnRlcl9zZXEYAiABKAQSEQoJY2xpZW50X2lkGAMgASgJEg0KBWxpbWl0GAQgASgNIjYKEVNlc3Npb25FdmVudEJhdGNoEiEKBmV2ZW50cxgBIAMoCzIRLmN4ei5TZXNzaW9uRXZlbnQihAEKGFNlc3Npb25UcmFuc2NyaXB0UmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouU2Vzc2lvblJlZhIRCglhZnRlcl9zZXEYAiABKAQSEgoKYmVmb3JlX3NlcRgDIAEoBBINCgVsaW1pdBgEIAEoDRIUCgxzbmFwc2hvdF9zZXEYBSABKAQiyAEKFlNlc3Npb25UcmFuc2NyaXB0UmVwbHkSIQoGZXZlbnRzGAEgAygLMhEuY3h6LlNlc3Npb25FdmVudBIUCgxzbmFwc2hvdF9zZXEYAiABKAQSEQoJaGFzX29sZGVyGAMgASgIEhEKCWhhc19uZXdlchgEIAEoCBIqCg9wcmVjZWRpbmdfaW5wdXQYBSABKAsyES5jeHouU2Vzc2lvbkV2ZW50EiMKCG1ldGFkYXRhGAYgAygLMhEuY3h6LlNlc3Npb25FdmVudCJHChpTZXNzaW9uRXZlbnREZXRhaWxzUmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouU2Vzc2lvblJlZhILCgNzZXEYAiABKAQiOAoYU2Vzc2lvbkJhY2tncm91bmRSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLmN4ei5TZXNzaW9uUmVmIjgKFlNlc3Npb25CYWNrZ3JvdW5kUmVwbHkSEAoIbGFzdF9zZXEYASABKAQSDAoEZGF0YRgCIAEoDCJoChRTZXNzaW9uTW9kZWxzUmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouU2Vzc2lvblJlZhIPCgdyZWZyZXNoGAIgASgIEg4KBnJ1bl9pZBgDIAEoCRIRCgljbGllbnRfaWQYBCABKAkikQEKElNlc3Npb25Nb2RlbHNSZXBseRIQCghsYXN0X3NlcRgBIAEoBBIMCgRkYXRhGAIgASgMEg4KBnJ1bl9pZBgDIAEoCRITCgtjYXRhbG9nX3NlcRgEIAEoBBISCgpjYXRhbG9nX21zGAUgASgDEhIKCnJlZnJlc2hpbmcYBiABKAgSDgoGc3RhdHVzGAcgASgJIq4CChRTZXNzaW9uU2VhcmNoUmVxdWVzdBINCgVxdWVyeRgBIAEoCRINCgVtYXRjaBgCIAEoCRITCgtpZ25vcmVfY2FzZRgDIAEoCBIVCg1pbmNsdWRlX3Rvb2xzGAUgASgIEikKBXNpbmNlGAYgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIpCgV1bnRpbBgHIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASEAoIcHJvamVjdHMYCCADKAkSDwoHZXhjbHVkZRgJIAMoCRIQCghzZXNzaW9ucxgKIAMoCRINCgVsaW1pdBgLIAEoBRIPCgdzbmlwcGV0GAwgASgFEg4KBmN1cnNvchgNIAEoCRIRCgljbGllbnRfaWQYDiABKAkilgEKElNlc3Npb25TZWFyY2hSZXBseRImCgV2aXNpdBgBIAEoCzIXLmN4ei5TZXNzaW9uU2VhcmNoVmlzaXQSLAoIcHJvZ3Jlc3MYAiABKAsyGi5jeHouU2Vzc2lvblNlYXJjaFByb2dyZXNzEioKB3N1bW1hcnkYAyABKAsyGS5jeHouU2Vzc2lvblNlYXJjaFN1bW1hcnki7wEKElNlc3Npb25TZWFyY2hWaXNpdBISCgpwcm9qZWN0X2lkGAEgASgJEhQKDHByb2plY3RfbmFtZRgCIAEoCRISCgpzZXNzaW9uX2lkGAMgASgJEg0KBWFsaWFzGAQgASgJEg0KBXRpdGxlGAUgASgJEg0KBWFnZW50GAYgASgJEg0KBXN0YXRlGAcgASgJEhMKC2FjdGl2aXR5X21zGAggASgDEhIKCmNyZWF0ZWRfbXMYCSABKAMSEQoJdHJ1bmNhdGVkGAogASgIEiMKBGhpdHMYCyADKAsyFS5jeHouU2Vzc2lvblNlYXJjaEhpdCJtChBTZXNzaW9uU2VhcmNoSGl0EgsKA3NlcRgBIAEoBBIPCgd0aW1lX21zGAIgASgDEgwKBGtpbmQYAyABKAkSDQoFYnl0ZXMYBCABKAUSDQoFc2NvcmUYBSABKAUSDwoHc25pcHBldBgGIAEoCSJ+ChVTZXNzaW9uU2VhcmNoUHJvZ3Jlc3MSEgoKcHJvamVjdF9pZBgBIAEoCRIUCgxwcm9qZWN0X25hbWUYAiABKAkSDQoFc3RhdGUYAyABKAkSDwoHbWVzc2FnZRgEIAEoCRIMCgRkb25lGAUgASgFEg0KBXRvdGFsGAYgASgFIpACChRTZXNzaW9uU2VhcmNoU3VtbWFyeRIQCghwcm9qZWN0cxgBIAEoBRITCgt1bmF2YWlsYWJsZRgCIAEoBRIQCghzZXNzaW9ucxgDIAEoBRIMCgRoaXRzGAQgASgFEhEKCXRydW5jYXRlZBgFIAEoBRITCgtuZXh0X2N1cnNvchgGIAEoCRIQCghoYXNfbW9yZRgHIAEoCBIpCgVzaW5jZRgIIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASKQoFdW50aWwYCSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhAKCGV4YW1pbmVkGAogASgFEg8KB3BlbmRpbmcYCyABKAUy/w0KDlNlc3Npb25TZXJ2aWNlEisKA0FkZBIWLmN4ei5TZXNzaW9uQWRkUmVxdWVzdBoMLmN4ei5TZXNzaW9uEisKA0dldBIWLmN4ei5TZXNzaW9uR2V0UmVxdWVzdBoMLmN4ei5TZXNzaW9uEi8KBVBhdGNoEhguY3h6LlNlc3Npb25QYXRjaFJlcXVlc3QaDC5jeHouU2Vzc2lvbhIvCgVBcHBseRIYLmN4ei5TZXNzaW9uQXBwbHlSZXF1ZXN0GgwuY3h6LlNlc3Npb24SMwoFRXJhc2USDy5jeHouU2Vzc2lvblJlZhoZLmN4ei5TZXNzaW9uRXJhc2VSZXNwb25zZRI5CgRMaXN0EhcuY3h6LlNlc3Npb25MaXN0UmVxdWVzdBoYLmN4ei5TZXNzaW9uTGlzdFJlc3BvbnNlEj4KBVdhdGNoEhguY3h6LlNlc3Npb25XYXRjaFJlcXVlc3QaGS5jeHouU2Vzc2lvbldhdGNoUmVzcG9uc2UwARJPChFDb252ZXJzYXRpb25TdGF0cxIdLmN4ei5Db252ZXJzYXRpb25TdGF0c1JlcXVlc3QaGy5jeHouQ29udmVyc2F0aW9uU3RhdHNSZXBseRIoCgdSZXN0b3JlEg8uY3h6LlNlc3Npb25SZWYaDC5jeHouU2Vzc2lvbhIrCgZSZXN1bWUSEy5jeHouU2Vzc2lvbkNvbnRyb2waDC5jeHouU2Vzc2lvbhIpCgRTdG9wEhMuY3h6LlNlc3Npb25Db250cm9sGgwuY3h6LlNlc3Npb24SNQoJSW50ZXJydXB0EhMuY3h6LlNlc3Npb25Db250cm9sGhMuY3h6LlNlc3Npb25SZWNlaXB0EkAKCkNvcHlNZW1vcnkSHS5jeHouU2Vzc2lvbkNvcHlNZW1vcnlSZXF1ZXN0GhMuY3h6LlNlc3Npb25SZWNlaXB0Ej4KB0xpYnJhcnkSGi5jeHouU2Vzc2lvbkxpYnJhcnlSZXF1ZXN0GhcuY3h6LlNlc3Npb25NZW1vcnlSZXBseRI8CgZNZW1vcnkSGS5jeHouU2Vzc2lvbk1lbW9yeVJlcXVlc3QaFy5jeHouU2Vzc2lvbk1lbW9yeVJlcGx5EjYKBExvZ3MSFy5jeHouU2Vzc2lvbkxvZ3NSZXF1ZXN0GhUuY3h6LlNlc3Npb25Mb2dzUmVwbHkSQAoKUGVybWlzc2lvbhIdLmN4ei5TZXNzaW9uUGVybWlzc2lvblJlcXVlc3QaEy5jeHouU2Vzc2lvblJlY2VpcHQSNAoEU2VuZBIXLmN4ei5TZXNzaW9uU2VuZFJlcXVlc3QaEy5jeHouU2Vzc2lvblJlY2VpcHQSOwoGQXR0YWNoEhkuY3h6LlNlc3Npb25BdHRhY2hSZXF1ZXN0GhYuY3h6LlNlc3Npb25BdHRhY2htZW50Ej0KBlVwbG9hZBIZLmN4ei5TZXNzaW9uVXBsb2FkUmVxdWVzdBoWLmN4ei5TZXNzaW9uQXR0YWNobWVudCgBEjwKCEFjdGl2aXR5EhsuY3h6LlNlc3Npb25BY3Rpdml0eVJlcXVlc3QaEy5jeHouU2Vzc2lvblJlY2VpcHQSQgoLVXBkYXRlQWdlbnQSGS5jeHouU2Vzc2lvblVwZGF0ZVJlcXVlc3QaGC5jeHouU2Vzc2lvblVwZGF0ZVN0YXR1cxI2CgVSZXBseRIYLmN4ei5TZXNzaW9uUmVwbHlSZXF1ZXN0GhMuY3h6LlNlc3Npb25SZWNlaXB0EjwKB0hpc3RvcnkSGS5jeHouU2Vzc2lvbkV2ZW50c1JlcXVlc3QaFi5jeHouU2Vzc2lvbkV2ZW50QmF0Y2gSSAoKVHJhbnNjcmlwdBIdLmN4ei5TZXNzaW9uVHJhbnNjcmlwdFJlcXVlc3QaGy5jeHouU2Vzc2lvblRyYW5zY3JpcHRSZXBseRJHCgxFdmVudERldGFpbHMSHy5jeHouU2Vzc2lvbkV2ZW50RGV0YWlsc1JlcXVlc3QaFi5jeHouU2Vzc2lvbkV2ZW50QmF0Y2gSSAoKQmFja2dyb3VuZBIdLmN4ei5TZXNzaW9uQmFja2dyb3VuZFJlcXVlc3QaGy5jeHouU2Vzc2lvbkJhY2tncm91bmRSZXBseRI8CgZNb2RlbHMSGS5jeHouU2Vzc2lvbk1vZGVsc1JlcXVlc3QaFy5jeHouU2Vzc2lvbk1vZGVsc1JlcGx5EjgKBkV2ZW50cxIZLmN4ei5TZXNzaW9uRXZlbnRzUmVxdWVzdBoRLmN4ei5TZXNzaW9uRXZlbnQwARI+CgZTZWFyY2gSGS5jeHouU2Vzc2lvblNlYXJjaFJlcXVlc3QaFy5jeHouU2Vzc2lvblNlYXJjaFJlcGx5MAFCIlogZ2l0aHViLmNvbS9sZXNvbW51cy9jeHovcmVzb3VyY2ViCGVkaXRpb25zcOgH", [file_cxz_account_svc_g, file_cxz_auth_binding_svc_g, file_cxz_project_svc_g, file_cxz_session, file_google_protobuf_timestamp, file_patch_patch]);
+  fileDesc("ChdjeHovc2Vzc2lvbl9zdmMuZy5wcm90bxIDY3h6Io4DChFTZXNzaW9uQWRkUmVxdWVzdBIKCgJpZBgBIAEoDBINCgVhbGlhcxgEIAEoCRITCgRuYW1lGAUgASgJQgWqAQIIAhITCgRkZXNjGAYgASgJQgWqAQIIAhIgCgdwcm9qZWN0GAggASgLMg8uY3h6LlByb2plY3RSZWYSFAoFYWdlbnQYCSABKAlCBaoBAggCEhQKBW1vZGVsGAogASgJQgWqAQIIAhIZCgpydW50aW1lX2lkGAsgASgJQgWqAQIIAhIYCgljbGllbnRfaWQYDCABKAlCBaoBAggCEjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASIgoGc3RhdHVzGBAgASgLMhIuY3h6LlNlc3Npb25TdGF0dXMSDgoGbGlzdGVkGBEgASgIEiAKB2FjY291bnQYEiABKAsyDy5jeHouQWNjb3VudFJlZhIpCgxhdXRoX2JpbmRpbmcYEyABKAsyEy5jeHouQXV0aEJpbmRpbmdSZWYiVQoRU2Vzc2lvbkdldFJlcXVlc3QSHAoDcmVmGAEgASgLMg8uY3h6LlNlc3Npb25SZWYSIgoGc2VsZWN0GAIgASgLMhIuY3h6LlNlc3Npb25TZWxlY3QiXQoKU2Vzc2lvblJlZhIMCgJpZBgBIAEoDEgAEg8KBWFsaWFzGAQgASgJSAASFAoKcnVudGltZV9pZBgLIAEoCUgAEhMKCWNsaWVudF9pZBgMIAEoCUgAQgUKA2tleSLlAgoNU2Vzc2lvblNlbGVjdBILCgNhbGwYASABKAgSDQoFYWxpYXMYBCABKAgSDAoEbmFtZRgFIAEoCBIMCgRkZXNjGAYgASgIEiMKB3Byb2plY3QYCCABKAsyEi5jeHouUHJvamVjdFNlbGVjdBINCgVhZ2VudBgJIAEoCBINCgVtb2RlbBgKIAEoCBISCgpydW50aW1lX2lkGAsgASgIEhEKCWNsaWVudF9pZBgMIAEoCBIUCgxkYXRlX3VwZGF0ZWQYDSABKAgSEwoLZGF0ZV9lcmFzZWQYDiABKAgSFAoMZGF0ZV9jcmVhdGVkGA8gASgIEg4KBnN0YXR1cxgQIAEoCBIOCgZsaXN0ZWQYESABKAgSIwoHYWNjb3VudBgSIAEoCzISLmN4ei5BY2NvdW50U2VsZWN0EiwKDGF1dGhfYmluZGluZxgTIAEoCzIWLmN4ei5BdXRoQmluZGluZ1NlbGVjdCKJAgoTU2Vzc2lvblBhdGNoUmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouU2Vzc2lvblJlZhINCgVhbGlhcxgIIAEoCRISCgphbGlhc19udWxsGAkgASgIEgwKBG5hbWUYCiABKAkSDAoEZGVzYxgMIAEoCRIwCgxkYXRlX3VwZGF0ZWQYGiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfdXBkYXRlZF9mb3JjZRgbIAEoCBIiCgZzdGF0dXMYICABKAsyEi5jeHouU2Vzc2lvblN0YXR1cxITCgtzdGF0dXNfbnVsbBghIAEoCBIOCgZsaXN0ZWQYIiABKAgiUAoTU2Vzc2lvbkFwcGx5UmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouU2Vzc2lvblJlZhIbCgVwYXRjaBgCIAEoCzIMLnBhdGNoLlBhdGNoIiYKFFNlc3Npb25FcmFzZVJlc3BvbnNlEg4KBmVyYXNlZBgBIAEoCCJkChJTZXNzaW9uTGlzdFJlcXVlc3QSIwoHZmlsdGVycxgBIAMoCzISLmN4ei5TZXNzaW9uRmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAiJHChNTZXNzaW9uTGlzdFJlc3BvbnNlEhsKBWl0ZW1zGAEgAygLMgwuY3h6LlNlc3Npb24SEwoEbmV4dBgCIAEoCUIFqgECCAIiXwoNU2Vzc2lvbkZpbHRlchIcCgNyZWYYASABKAsyDy5jeHouU2Vzc2lvblJlZhIgCgdwcm9qZWN0GAIgASgLMg8uY3h6LlByb2plY3RSZWYSDgoGbGlzdGVkGAMgASgIIlgKE1Nlc3Npb25XYXRjaFJlcXVlc3QSIwoHZmlsdGVycxgBIAMoCzISLmN4ei5TZXNzaW9uRmlsdGVyEhwKDXNraXBfc25hcHNob3QYAiABKAhCBaoBAggCIjwKFFNlc3Npb25XYXRjaFJlc3BvbnNlEiQKBWl0ZW1zGAEgAygLMhUuY3h6LlNlc3Npb25XYXRjaEl0ZW0iUgoQU2Vzc2lvbldhdGNoSXRlbRIKCgJpZBgBIAEoDBIbCgV2YWx1ZRgCIAEoCzIMLmN4ei5TZXNzaW9uEhUKBmFjdGlvbhgDIAEoCUIFqgECCAIifgoYQ29udmVyc2F0aW9uU3RhdHNSZXF1ZXN0EiAKB3Byb2plY3QYASABKAsyDy5jeHouUHJvamVjdFJlZhIgCgdzZXNzaW9uGAIgASgLMg8uY3h6LlNlc3Npb25SZWYSDwoHZnJvbV9tcxgDIAEoAxINCgV0b19tcxgEIAEoAyLoAQoWQ29udmVyc2F0aW9uU3RhdHNSZXBseRIPCgdmcm9tX21zGAEgASgDEg0KBXRvX21zGAIgASgDEhQKDGdlbmVyYXRlZF9tcxgDIAEoAxIrCgV0b3RhbBgEIAEoCzIcLmN4ei5Db252ZXJzYXRpb25TdGF0c1ZhbHVlcxInCgRkYXlzGAUgAygLMhkuY3h6LkNvbnZlcnNhdGlvblN0YXRzRGF5EjAKCHNlc3Npb25zGAYgAygLMh4uY3h6LkNvbnZlcnNhdGlvblN0YXRzQ292ZXJhZ2USEAoIY29tcGxldGUYByABKAgi5gIKF0NvbnZlcnNhdGlvblN0YXRzVmFsdWVzEg4KBmV2ZW50cxgBIAEoBBIWCg5pbnB1dF9tZXNzYWdlcxgCIAEoBBIYChBhc3Npc3RhbnRfZXZlbnRzGAMgASgEEhoKEmNvbnZlcnNhdGlvbl9ieXRlcxgEIAEoBBIbChNldmVudF9jb250ZW50X2J5dGVzGAUgASgEEhYKDmZpbmlzaGVkX3R1cm5zGAYgASgEEhQKDGlucHV0X3Rva2VucxgHIAEoBBIVCg1vdXRwdXRfdG9rZW5zGAggASgEEhkKEWNhY2hlX3JlYWRfdG9rZW5zGAkgASgEEhoKEmNhY2hlX3dyaXRlX3Rva2VucxgKIAEoBBIcChR0b2tlbl9yZXBvcnRlZF90dXJucxgLIAEoBBIZChFyZXBvcnRlZF9jb3N0X3VzZBgMIAEoARIbChNjb3N0X3JlcG9ydGVkX3R1cm5zGA0gASgEIlIKFENvbnZlcnNhdGlvblN0YXRzRGF5EgwKBGRhdGUYASABKAkSLAoGdmFsdWVzGAIgASgLMhwuY3h6LkNvbnZlcnNhdGlvblN0YXRzVmFsdWVzIosBChlDb252ZXJzYXRpb25TdGF0c0NvdmVyYWdlEhIKCnNlc3Npb25faWQYASABKAwSDQoFYWxpYXMYAiABKAkSFAoMc25hcHNob3Rfc2VxGAMgASgEEhEKCWZpcnN0X3NlcRgEIAEoBBIQCghsYXN0X3NlcRgFIAEoBBIQCghjb21wbGV0ZRgGIAEoCCJRCg5TZXNzaW9uQ29udHJvbBIcCgNyZWYYASABKAsyDy5jeHouU2Vzc2lvblJlZhIOCgZydW5faWQYAiABKAkSEQoJY2xpZW50X2lkGAMgASgJIjMKDlNlc3Npb25SZWNlaXB0EhEKCWNsaWVudF9pZBgBIAEoCRIOCgZzdGF0dXMYAiABKAkifAoYU2Vzc2lvbkNvcHlNZW1vcnlSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLmN4ei5TZXNzaW9uUmVmEgwKBHBhdGgYAiABKAkSHwoGdGFyZ2V0GAMgASgLMg8uY3h6LlNlc3Npb25SZWYSEwoLdGFyZ2V0X3BhdGgYBCABKAkiRgoVU2Vzc2lvbkxpYnJhcnlSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLmN4ei5TZXNzaW9uUmVmEg8KB3JlcXVlc3QYAiABKAwiIgoSU2Vzc2lvbk1lbW9yeVJlcGx5EgwKBGRhdGEYASABKAwiQgoUU2Vzc2lvbk1lbW9yeVJlcXVlc3QSHAoDcmVmGAEgASgLMg8uY3h6LlNlc3Npb25SZWYSDAoEcGF0aBgCIAEoCSJDChJTZXNzaW9uTG9nc1JlcXVlc3QSHAoDcmVmGAEgASgLMg8uY3h6LlNlc3Npb25SZWYSDwoHcHJvamVjdBgCIAEoCCIgChBTZXNzaW9uTG9nc1JlcGx5EgwKBHRleHQYASABKAkiaQoYU2Vzc2lvblBlcm1pc3Npb25SZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLmN4ei5TZXNzaW9uUmVmEg4KBnJ1bl9pZBgCIAEoCRIRCgljbGllbnRfaWQYAyABKAkSDAoEbW9kZRgEIAEoCSJzChJTZXNzaW9uU2VuZFJlcXVlc3QSHAoDcmVmGAEgASgLMg8uY3h6LlNlc3Npb25SZWYSDgoGcnVuX2lkGAIgASgJEhEKCWNsaWVudF9pZBgDIAEoCRIMCgR0ZXh0GAQgASgJEg4KBmNhbmNlbBgFIAEoCCJVChRTZXNzaW9uQXR0YWNoUmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouU2Vzc2lvblJlZhIOCgZydW5faWQYAiABKAkSDwoHY29udGVudBgDIAEoDCIhChFTZXNzaW9uQXR0YWNobWVudBIMCgRwYXRoGAEgASgJInEKFFNlc3Npb25VcGxvYWRSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLmN4ei5TZXNzaW9uUmVmEg4KBnJ1bl9pZBgCIAEoCRIMCgRuYW1lGAMgASgJEgwKBHNpemUYBCABKAMSDwoHY29udGVudBgFIAEoDCJnChZTZXNzaW9uQWN0aXZpdHlSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLmN4ei5TZXNzaW9uUmVmEg4KBnJ1bl9pZBgCIAEoCRIRCgljbGllbnRfaWQYAyABKAkSDAoEYnVzeRgEIAEoCCJ+ChRTZXNzaW9uVXBkYXRlUmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouU2Vzc2lvblJlZhIOCgZydW5faWQYAiABKAkSDgoGYmluYXJ5GAMgASgJEg0KBWFwcGx5GAQgASgIEhkKEXN1cGVydmlzb3JfYmluYXJ5GAUgASgJIpIBChNTZXNzaW9uVXBkYXRlU3RhdHVzEg0KBXJlYWR5GAEgASgIEg4KBnJlYXNvbhgCIAEoCRIOCgZiaW5hcnkYAyABKAkSDQoFc3RhdGUYBCABKAkSGQoRc3VwZXJ2aXNvcl9iaW5hcnkYBSABKAkSEAoIcmV2aXNpb24YBiABKAkSEAoIcHJvdG9jb2wYByABKAUijwEKE1Nlc3Npb25SZXBseVJlcXVlc3QSHAoDcmVmGAEgASgLMg8uY3h6LlNlc3Npb25SZWYSDgoGcnVuX2lkGAIgASgJEhEKCWNsaWVudF9pZBgDIAEoCRISCgpyZXF1ZXN0X2lkGAQgASgJEg0KBWFsbG93GAUgASgIEhQKDGFuc3dlcnNfanNvbhgGIAEoCSJpChRTZXNzaW9uRXZlbnRzUmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouU2Vzc2lvblJlZhIRCglhZnRlcl9zZXEYAiABKAQSEQoJY2xpZW50X2lkGAMgASgJEg0KBWxpbWl0GAQgASgNIjYKEVNlc3Npb25FdmVudEJhdGNoEiEKBmV2ZW50cxgBIAMoCzIRLmN4ei5TZXNzaW9uRXZlbnQihAEKGFNlc3Npb25UcmFuc2NyaXB0UmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouU2Vzc2lvblJlZhIRCglhZnRlcl9zZXEYAiABKAQSEgoKYmVmb3JlX3NlcRgDIAEoBBINCgVsaW1pdBgEIAEoDRIUCgxzbmFwc2hvdF9zZXEYBSABKAQiyAEKFlNlc3Npb25UcmFuc2NyaXB0UmVwbHkSIQoGZXZlbnRzGAEgAygLMhEuY3h6LlNlc3Npb25FdmVudBIUCgxzbmFwc2hvdF9zZXEYAiABKAQSEQoJaGFzX29sZGVyGAMgASgIEhEKCWhhc19uZXdlchgEIAEoCBIqCg9wcmVjZWRpbmdfaW5wdXQYBSABKAsyES5jeHouU2Vzc2lvbkV2ZW50EiMKCG1ldGFkYXRhGAYgAygLMhEuY3h6LlNlc3Npb25FdmVudCJHChpTZXNzaW9uRXZlbnREZXRhaWxzUmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouU2Vzc2lvblJlZhILCgNzZXEYAiABKAQiOAoYU2Vzc2lvbkJhY2tncm91bmRSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLmN4ei5TZXNzaW9uUmVmIjgKFlNlc3Npb25CYWNrZ3JvdW5kUmVwbHkSEAoIbGFzdF9zZXEYASABKAQSDAoEZGF0YRgCIAEoDCJoChRTZXNzaW9uTW9kZWxzUmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouU2Vzc2lvblJlZhIPCgdyZWZyZXNoGAIgASgIEg4KBnJ1bl9pZBgDIAEoCRIRCgljbGllbnRfaWQYBCABKAkikQEKElNlc3Npb25Nb2RlbHNSZXBseRIQCghsYXN0X3NlcRgBIAEoBBIMCgRkYXRhGAIgASgMEg4KBnJ1bl9pZBgDIAEoCRITCgtjYXRhbG9nX3NlcRgEIAEoBBISCgpjYXRhbG9nX21zGAUgASgDEhIKCnJlZnJlc2hpbmcYBiABKAgSDgoGc3RhdHVzGAcgASgJIq4CChRTZXNzaW9uU2VhcmNoUmVxdWVzdBINCgVxdWVyeRgBIAEoCRINCgVtYXRjaBgCIAEoCRITCgtpZ25vcmVfY2FzZRgDIAEoCBIVCg1pbmNsdWRlX3Rvb2xzGAUgASgIEikKBXNpbmNlGAYgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIpCgV1bnRpbBgHIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASEAoIcHJvamVjdHMYCCADKAkSDwoHZXhjbHVkZRgJIAMoCRIQCghzZXNzaW9ucxgKIAMoCRINCgVsaW1pdBgLIAEoBRIPCgdzbmlwcGV0GAwgASgFEg4KBmN1cnNvchgNIAEoCRIRCgljbGllbnRfaWQYDiABKAkilgEKElNlc3Npb25TZWFyY2hSZXBseRImCgV2aXNpdBgBIAEoCzIXLmN4ei5TZXNzaW9uU2VhcmNoVmlzaXQSLAoIcHJvZ3Jlc3MYAiABKAsyGi5jeHouU2Vzc2lvblNlYXJjaFByb2dyZXNzEioKB3N1bW1hcnkYAyABKAsyGS5jeHouU2Vzc2lvblNlYXJjaFN1bW1hcnki7wEKElNlc3Npb25TZWFyY2hWaXNpdBISCgpwcm9qZWN0X2lkGAEgASgJEhQKDHByb2plY3RfbmFtZRgCIAEoCRISCgpzZXNzaW9uX2lkGAMgASgJEg0KBWFsaWFzGAQgASgJEg0KBXRpdGxlGAUgASgJEg0KBWFnZW50GAYgASgJEg0KBXN0YXRlGAcgASgJEhMKC2FjdGl2aXR5X21zGAggASgDEhIKCmNyZWF0ZWRfbXMYCSABKAMSEQoJdHJ1bmNhdGVkGAogASgIEiMKBGhpdHMYCyADKAsyFS5jeHouU2Vzc2lvblNlYXJjaEhpdCJtChBTZXNzaW9uU2VhcmNoSGl0EgsKA3NlcRgBIAEoBBIPCgd0aW1lX21zGAIgASgDEgwKBGtpbmQYAyABKAkSDQoFYnl0ZXMYBCABKAUSDQoFc2NvcmUYBSABKAUSDwoHc25pcHBldBgGIAEoCSJ+ChVTZXNzaW9uU2VhcmNoUHJvZ3Jlc3MSEgoKcHJvamVjdF9pZBgBIAEoCRIUCgxwcm9qZWN0X25hbWUYAiABKAkSDQoFc3RhdGUYAyABKAkSDwoHbWVzc2FnZRgEIAEoCRIMCgRkb25lGAUgASgFEg0KBXRvdGFsGAYgASgFIpACChRTZXNzaW9uU2VhcmNoU3VtbWFyeRIQCghwcm9qZWN0cxgBIAEoBRITCgt1bmF2YWlsYWJsZRgCIAEoBRIQCghzZXNzaW9ucxgDIAEoBRIMCgRoaXRzGAQgASgFEhEKCXRydW5jYXRlZBgFIAEoBRITCgtuZXh0X2N1cnNvchgGIAEoCRIQCghoYXNfbW9yZRgHIAEoCBIpCgVzaW5jZRgIIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASKQoFdW50aWwYCSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhAKCGV4YW1pbmVkGAogASgFEg8KB3BlbmRpbmcYCyABKAUiWAoNQXV4UnVuUmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouU2Vzc2lvblJlZhIbCgVraW5kcxgCIAMoDjIMLmN4ei5BdXhLaW5kEgwKBHRleHQYAyABKAkikgEKCEF1eFN0YXRlEiIKCXN1bW1hcmllcxgBIAMoCzIPLmN4ei5BdXhTdW1tYXJ5EhkKB2N1cnJlbnQYAiABKAsyCC5jeHouQXV4EicKC3ByZWZlcmVuY2VzGAMgAygLMhIuY3h6LkF1eFByZWZlcmVuY2USDQoFdGl0bGUYBCABKAkSDwoHbWVzc2FnZRgFIAEoCSI4CgpBdXhTdW1tYXJ5Eg4KBnJ1bl9pZBgBIAEoCRIMCgR0dXJuGAIgASgEEgwKBHRleHQYAyABKAki0QEKA0F1eBIKCgJpZBgBIAEoCRISCgpzZXNzaW9uX2lkGAIgASgMEhsKBWtpbmRzGAMgAygOMgwuY3h6LkF1eEtpbmQSDgoGcnVuX2lkGAQgASgJEgwKBHR1cm4YBSABKAQSEAoIcmV2aXNpb24YBiABKAkSDQoFc3RhdGUYByABKAkSHwoHcmVzdWx0cxgIIAMoCzIOLmN4ei5BdXhSZXN1bHQSHAoFdXNhZ2UYCSADKAsyDS5jeHouQXV4VXNhZ2USDwoHbWVzc2FnZRgKIAEoCSJICglBdXhSZXN1bHQSGgoEa2luZBgBIAEoDjIMLmN4ei5BdXhLaW5kEgwKBHRleHQYAiABKAkSEQoJdHJ1bmNhdGVkGAMgASgIIlQKCEF1eFVzYWdlEg8KB2FjY291bnQYASABKAkSDQoFbW9kZWwYAiABKAkSGgoEa2luZBgDIAEoDjIMLmN4ei5BdXhLaW5kEgwKBGRhdGEYBCABKAwiZwoNQXV4UHJlZmVyZW5jZRIaCgRraW5kGAEgASgOMgwuY3h6LkF1eEtpbmQSDwoHZW5hYmxlZBgCIAEoCBIpCgVzaW5jZRgDIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiUwoQQXV4U3RhdHVzUmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouU2Vzc2lvblJlZhISCgphZnRlcl90dXJuGAIgASgEEg0KBWxpbWl0GAMgASgFIlkKEEF1eFByZWZlclJlcXVlc3QSHAoDcmVmGAEgASgLMg8uY3h6LlNlc3Npb25SZWYSJwoLcHJlZmVyZW5jZXMYAiADKAsyEi5jeHouQXV4UHJlZmVyZW5jZSJAChBBdXhDYW5jZWxSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLmN4ei5TZXNzaW9uUmVmEg4KBmF1eF9pZBgCIAEoCTLFDwoOU2Vzc2lvblNlcnZpY2USKwoDQWRkEhYuY3h6LlNlc3Npb25BZGRSZXF1ZXN0GgwuY3h6LlNlc3Npb24SKwoDR2V0EhYuY3h6LlNlc3Npb25HZXRSZXF1ZXN0GgwuY3h6LlNlc3Npb24SLwoFUGF0Y2gSGC5jeHouU2Vzc2lvblBhdGNoUmVxdWVzdBoMLmN4ei5TZXNzaW9uEi8KBUFwcGx5EhguY3h6LlNlc3Npb25BcHBseVJlcXVlc3QaDC5jeHouU2Vzc2lvbhIzCgVFcmFzZRIPLmN4ei5TZXNzaW9uUmVmGhkuY3h6LlNlc3Npb25FcmFzZVJlc3BvbnNlEjkKBExpc3QSFy5jeHouU2Vzc2lvbkxpc3RSZXF1ZXN0GhguY3h6LlNlc3Npb25MaXN0UmVzcG9uc2USPgoFV2F0Y2gSGC5jeHouU2Vzc2lvbldhdGNoUmVxdWVzdBoZLmN4ei5TZXNzaW9uV2F0Y2hSZXNwb25zZTABEk8KEUNvbnZlcnNhdGlvblN0YXRzEh0uY3h6LkNvbnZlcnNhdGlvblN0YXRzUmVxdWVzdBobLmN4ei5Db252ZXJzYXRpb25TdGF0c1JlcGx5EigKB1Jlc3RvcmUSDy5jeHouU2Vzc2lvblJlZhoMLmN4ei5TZXNzaW9uEisKBlJlc3VtZRITLmN4ei5TZXNzaW9uQ29udHJvbBoMLmN4ei5TZXNzaW9uEikKBFN0b3ASEy5jeHouU2Vzc2lvbkNvbnRyb2waDC5jeHouU2Vzc2lvbhI1CglJbnRlcnJ1cHQSEy5jeHouU2Vzc2lvbkNvbnRyb2waEy5jeHouU2Vzc2lvblJlY2VpcHQSQAoKQ29weU1lbW9yeRIdLmN4ei5TZXNzaW9uQ29weU1lbW9yeVJlcXVlc3QaEy5jeHouU2Vzc2lvblJlY2VpcHQSPgoHTGlicmFyeRIaLmN4ei5TZXNzaW9uTGlicmFyeVJlcXVlc3QaFy5jeHouU2Vzc2lvbk1lbW9yeVJlcGx5EjwKBk1lbW9yeRIZLmN4ei5TZXNzaW9uTWVtb3J5UmVxdWVzdBoXLmN4ei5TZXNzaW9uTWVtb3J5UmVwbHkSNgoETG9ncxIXLmN4ei5TZXNzaW9uTG9nc1JlcXVlc3QaFS5jeHouU2Vzc2lvbkxvZ3NSZXBseRJACgpQZXJtaXNzaW9uEh0uY3h6LlNlc3Npb25QZXJtaXNzaW9uUmVxdWVzdBoTLmN4ei5TZXNzaW9uUmVjZWlwdBI0CgRTZW5kEhcuY3h6LlNlc3Npb25TZW5kUmVxdWVzdBoTLmN4ei5TZXNzaW9uUmVjZWlwdBI7CgZBdHRhY2gSGS5jeHouU2Vzc2lvbkF0dGFjaFJlcXVlc3QaFi5jeHouU2Vzc2lvbkF0dGFjaG1lbnQSPQoGVXBsb2FkEhkuY3h6LlNlc3Npb25VcGxvYWRSZXF1ZXN0GhYuY3h6LlNlc3Npb25BdHRhY2htZW50KAESPAoIQWN0aXZpdHkSGy5jeHouU2Vzc2lvbkFjdGl2aXR5UmVxdWVzdBoTLmN4ei5TZXNzaW9uUmVjZWlwdBJCCgtVcGRhdGVBZ2VudBIZLmN4ei5TZXNzaW9uVXBkYXRlUmVxdWVzdBoYLmN4ei5TZXNzaW9uVXBkYXRlU3RhdHVzEjYKBVJlcGx5EhguY3h6LlNlc3Npb25SZXBseVJlcXVlc3QaEy5jeHouU2Vzc2lvblJlY2VpcHQSPAoHSGlzdG9yeRIZLmN4ei5TZXNzaW9uRXZlbnRzUmVxdWVzdBoWLmN4ei5TZXNzaW9uRXZlbnRCYXRjaBJICgpUcmFuc2NyaXB0Eh0uY3h6LlNlc3Npb25UcmFuc2NyaXB0UmVxdWVzdBobLmN4ei5TZXNzaW9uVHJhbnNjcmlwdFJlcGx5EkcKDEV2ZW50RGV0YWlscxIfLmN4ei5TZXNzaW9uRXZlbnREZXRhaWxzUmVxdWVzdBoWLmN4ei5TZXNzaW9uRXZlbnRCYXRjaBJICgpCYWNrZ3JvdW5kEh0uY3h6LlNlc3Npb25CYWNrZ3JvdW5kUmVxdWVzdBobLmN4ei5TZXNzaW9uQmFja2dyb3VuZFJlcGx5EjwKBk1vZGVscxIZLmN4ei5TZXNzaW9uTW9kZWxzUmVxdWVzdBoXLmN4ei5TZXNzaW9uTW9kZWxzUmVwbHkSOAoGRXZlbnRzEhkuY3h6LlNlc3Npb25FdmVudHNSZXF1ZXN0GhEuY3h6LlNlc3Npb25FdmVudDABEj4KBlNlYXJjaBIZLmN4ei5TZXNzaW9uU2VhcmNoUmVxdWVzdBoXLmN4ei5TZXNzaW9uU2VhcmNoUmVwbHkwARIrCgZBdXhSdW4SEi5jeHouQXV4UnVuUmVxdWVzdBoNLmN4ei5BdXhTdGF0ZRIxCglBdXhTdGF0dXMSFS5jeHouQXV4U3RhdHVzUmVxdWVzdBoNLmN4ei5BdXhTdGF0ZRIxCglBdXhQcmVmZXISFS5jeHouQXV4UHJlZmVyUmVxdWVzdBoNLmN4ei5BdXhTdGF0ZRIxCglBdXhDYW5jZWwSFS5jeHouQXV4Q2FuY2VsUmVxdWVzdBoNLmN4ei5BdXhTdGF0ZUIiWiBnaXRodWIuY29tL2xlc29tbnVzL2N4ei9yZXNvdXJjZWIIZWRpdGlvbnNw6Ac", [file_cxz_account_svc_g, file_cxz_auth_binding_svc_g, file_cxz_project_svc_g, file_cxz_session, file_google_protobuf_timestamp, file_patch_patch]);
 
 /**
  * @generated from message cxz.SessionAddRequest
@@ -1952,6 +1952,351 @@ export const SessionSearchSummarySchema: GenMessage<SessionSearchSummary> = /*@_
   messageDesc(file_cxz_session_svc_g, 49);
 
 /**
+ * Run asks for one task now. It does not change what runs automatically, and a
+ * kind that is already automatic is left alone rather than run twice. text is
+ * only for a title given rather than generated.
+ *
+ * @generated from message cxz.AuxRunRequest
+ */
+export type AuxRunRequest = Message<"cxz.AuxRunRequest"> & {
+  /**
+   * @generated from field: cxz.SessionRef ref = 1;
+   */
+  ref?: SessionRef | undefined;
+
+  /**
+   * @generated from field: repeated cxz.AuxKind kinds = 2;
+   */
+  kinds: AuxKind[];
+
+  /**
+   * @generated from field: string text = 3;
+   */
+  text: string;
+};
+
+/**
+ * Describes the message cxz.AuxRunRequest.
+ * Use `create(AuxRunRequestSchema)` to create a new message.
+ */
+export const AuxRunRequestSchema: GenMessage<AuxRunRequest> = /*@__PURE__*/
+  messageDesc(file_cxz_session_svc_g, 50);
+
+/**
+ * One session's aux state.
+ *
+ * @generated from message cxz.AuxState
+ */
+export type AuxState = Message<"cxz.AuxState"> & {
+  /**
+   * @generated from field: repeated cxz.AuxSummary summaries = 1;
+   */
+  summaries: AuxSummary[];
+
+  /**
+   * @generated from field: cxz.Aux current = 2;
+   */
+  current?: Aux | undefined;
+
+  /**
+   * @generated from field: repeated cxz.AuxPreference preferences = 3;
+   */
+  preferences: AuxPreference[];
+
+  /**
+   * The session's generated title, for the caller that records session names.
+   *
+   * @generated from field: string title = 4;
+   */
+  title: string;
+
+  /**
+   * @generated from field: string message = 5;
+   */
+  message: string;
+};
+
+/**
+ * Describes the message cxz.AuxState.
+ * Use `create(AuxStateSchema)` to create a new message.
+ */
+export const AuxStateSchema: GenMessage<AuxState> = /*@__PURE__*/
+  messageDesc(file_cxz_session_svc_g, 51);
+
+/**
+ * Kept per turn on the session, so a summary outlives the task that wrote it.
+ *
+ * @generated from message cxz.AuxSummary
+ */
+export type AuxSummary = Message<"cxz.AuxSummary"> & {
+  /**
+   * @generated from field: string run_id = 1;
+   */
+  runId: string;
+
+  /**
+   * @generated from field: uint64 turn = 2;
+   */
+  turn: bigint;
+
+  /**
+   * @generated from field: string text = 3;
+   */
+  text: string;
+};
+
+/**
+ * Describes the message cxz.AuxSummary.
+ * Use `create(AuxSummarySchema)` to create a new message.
+ */
+export const AuxSummarySchema: GenMessage<AuxSummary> = /*@__PURE__*/
+  messageDesc(file_cxz_session_svc_g, 52);
+
+/**
+ * Aux: one task done beside a session.
+ *
+ * kinds is what was asked for and results is what came back, so one task can
+ * answer two kinds -- which is what happens when summary and suggestion share a
+ * profile and one model call answers both. results may be partial while state
+ * is still running, because the summary is published while a separate
+ * suggestion is still being generated.
+ *
+ * @generated from message cxz.Aux
+ */
+export type Aux = Message<"cxz.Aux"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: bytes session_id = 2;
+   */
+  sessionId: Uint8Array;
+
+  /**
+   * @generated from field: repeated cxz.AuxKind kinds = 3;
+   */
+  kinds: AuxKind[];
+
+  /**
+   * The turn this answered. Results are shown beside it.
+   *
+   * @generated from field: string run_id = 4;
+   */
+  runId: string;
+
+  /**
+   * @generated from field: uint64 turn = 5;
+   */
+  turn: bigint;
+
+  /**
+   * The configuration revision it ran under. A changed one makes it stale,
+   * because its answer is not an answer for the new settings.
+   *
+   * @generated from field: string revision = 6;
+   */
+  revision: string;
+
+  /**
+   * queued, running, completed, failed, stale, canceled
+   *
+   * @generated from field: string state = 7;
+   */
+  state: string;
+
+  /**
+   * @generated from field: repeated cxz.AuxResult results = 8;
+   */
+  results: AuxResult[];
+
+  /**
+   * @generated from field: repeated cxz.AuxUsage usage = 9;
+   */
+  usage: AuxUsage[];
+
+  /**
+   * why it failed, for a person to read
+   *
+   * @generated from field: string message = 10;
+   */
+  message: string;
+};
+
+/**
+ * Describes the message cxz.Aux.
+ * Use `create(AuxSchema)` to create a new message.
+ */
+export const AuxSchema: GenMessage<Aux> = /*@__PURE__*/
+  messageDesc(file_cxz_session_svc_g, 53);
+
+/**
+ * truncated says the text hit a limit; what arrived is kept rather than refused.
+ *
+ * @generated from message cxz.AuxResult
+ */
+export type AuxResult = Message<"cxz.AuxResult"> & {
+  /**
+   * @generated from field: cxz.AuxKind kind = 1;
+   */
+  kind: AuxKind;
+
+  /**
+   * @generated from field: string text = 2;
+   */
+  text: string;
+
+  /**
+   * @generated from field: bool truncated = 3;
+   */
+  truncated: boolean;
+};
+
+/**
+ * Describes the message cxz.AuxResult.
+ * Use `create(AuxResultSchema)` to create a new message.
+ */
+export const AuxResultSchema: GenMessage<AuxResult> = /*@__PURE__*/
+  messageDesc(file_cxz_session_svc_g, 54);
+
+/**
+ * What this task spent, not what an account has spent.
+ *
+ * @generated from message cxz.AuxUsage
+ */
+export type AuxUsage = Message<"cxz.AuxUsage"> & {
+  /**
+   * @generated from field: string account = 1;
+   */
+  account: string;
+
+  /**
+   * @generated from field: string model = 2;
+   */
+  model: string;
+
+  /**
+   * @generated from field: cxz.AuxKind kind = 3;
+   */
+  kind: AuxKind;
+
+  /**
+   * @generated from field: bytes data = 4;
+   */
+  data: Uint8Array;
+};
+
+/**
+ * Describes the message cxz.AuxUsage.
+ * Use `create(AuxUsageSchema)` to create a new message.
+ */
+export const AuxUsageSchema: GenMessage<AuxUsage> = /*@__PURE__*/
+  messageDesc(file_cxz_session_svc_g, 55);
+
+/**
+ * Whether a kind runs automatically for this session, overriding the
+ * installation default. since is read only: turning a kind on does not reach
+ * backwards over the conversation that already happened.
+ *
+ * @generated from message cxz.AuxPreference
+ */
+export type AuxPreference = Message<"cxz.AuxPreference"> & {
+  /**
+   * @generated from field: cxz.AuxKind kind = 1;
+   */
+  kind: AuxKind;
+
+  /**
+   * @generated from field: bool enabled = 2;
+   */
+  enabled: boolean;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp since = 3;
+   */
+  since?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message cxz.AuxPreference.
+ * Use `create(AuxPreferenceSchema)` to create a new message.
+ */
+export const AuxPreferenceSchema: GenMessage<AuxPreference> = /*@__PURE__*/
+  messageDesc(file_cxz_session_svc_g, 56);
+
+/**
+ * @generated from message cxz.AuxStatusRequest
+ */
+export type AuxStatusRequest = Message<"cxz.AuxStatusRequest"> & {
+  /**
+   * @generated from field: cxz.SessionRef ref = 1;
+   */
+  ref?: SessionRef | undefined;
+
+  /**
+   * @generated from field: uint64 after_turn = 2;
+   */
+  afterTurn: bigint;
+
+  /**
+   * @generated from field: int32 limit = 3;
+   */
+  limit: number;
+};
+
+/**
+ * Describes the message cxz.AuxStatusRequest.
+ * Use `create(AuxStatusRequestSchema)` to create a new message.
+ */
+export const AuxStatusRequestSchema: GenMessage<AuxStatusRequest> = /*@__PURE__*/
+  messageDesc(file_cxz_session_svc_g, 57);
+
+/**
+ * @generated from message cxz.AuxPreferRequest
+ */
+export type AuxPreferRequest = Message<"cxz.AuxPreferRequest"> & {
+  /**
+   * @generated from field: cxz.SessionRef ref = 1;
+   */
+  ref?: SessionRef | undefined;
+
+  /**
+   * @generated from field: repeated cxz.AuxPreference preferences = 2;
+   */
+  preferences: AuxPreference[];
+};
+
+/**
+ * Describes the message cxz.AuxPreferRequest.
+ * Use `create(AuxPreferRequestSchema)` to create a new message.
+ */
+export const AuxPreferRequestSchema: GenMessage<AuxPreferRequest> = /*@__PURE__*/
+  messageDesc(file_cxz_session_svc_g, 58);
+
+/**
+ * @generated from message cxz.AuxCancelRequest
+ */
+export type AuxCancelRequest = Message<"cxz.AuxCancelRequest"> & {
+  /**
+   * @generated from field: cxz.SessionRef ref = 1;
+   */
+  ref?: SessionRef | undefined;
+
+  /**
+   * @generated from field: string aux_id = 2;
+   */
+  auxId: string;
+};
+
+/**
+ * Describes the message cxz.AuxCancelRequest.
+ * Use `create(AuxCancelRequestSchema)` to create a new message.
+ */
+export const AuxCancelRequestSchema: GenMessage<AuxCancelRequest> = /*@__PURE__*/
+  messageDesc(file_cxz_session_svc_g, 59);
+
+/**
  * @generated from service cxz.SessionService
  */
 export const SessionService: GenService<{
@@ -2229,6 +2574,42 @@ export const SessionService: GenService<{
     methodKind: "server_streaming";
     input: typeof SessionSearchRequestSchema;
     output: typeof SessionSearchReplySchema;
+  },
+  /**
+   * Aux is a model task done beside this session. Asking for one and reading
+   * what the last one produced are the same question at two moments, so all
+   * four answer with the session's aux state. See docs/plans/aux-api.md.
+   *
+   * @generated from rpc cxz.SessionService.AuxRun
+   */
+  auxRun: {
+    methodKind: "unary";
+    input: typeof AuxRunRequestSchema;
+    output: typeof AuxStateSchema;
+  },
+  /**
+   * @generated from rpc cxz.SessionService.AuxStatus
+   */
+  auxStatus: {
+    methodKind: "unary";
+    input: typeof AuxStatusRequestSchema;
+    output: typeof AuxStateSchema;
+  },
+  /**
+   * @generated from rpc cxz.SessionService.AuxPrefer
+   */
+  auxPrefer: {
+    methodKind: "unary";
+    input: typeof AuxPreferRequestSchema;
+    output: typeof AuxStateSchema;
+  },
+  /**
+   * @generated from rpc cxz.SessionService.AuxCancel
+   */
+  auxCancel: {
+    methodKind: "unary";
+    input: typeof AuxCancelRequestSchema;
+    output: typeof AuxStateSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_cxz_session_svc_g, 0);
