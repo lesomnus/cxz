@@ -577,12 +577,28 @@ for (const mode of ["legacy", "summary"])
       .poll(() => page.evaluate(() => document.documentElement.scrollWidth))
       .toBe(390);
     await expect(card).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
-    const anchor = await task.boundingBox();
-    const box = await card.boundingBox();
-    expect(box.x).toBe(anchor.x - 4);
-    expect(box.width).toBe(anchor.width + 8);
-    expect(box.y).toBeCloseTo(anchor.y + anchor.height - 4, 0);
-    expect(box.y + box.height).toBeLessThanOrEqual(844);
+    // ResizeObserver schedules overlay positioning on the next animation frame.
+    // An already-settled opening transform does not prove the resize was applied.
+    await expect
+      .poll(
+        () =>
+          page.evaluate(() => {
+            const anchor = document
+              .querySelector('.tool-activity[data-seq="2"]')
+              .getBoundingClientRect();
+            const box = document
+              .querySelector(".anchored-detail")
+              .getBoundingClientRect();
+            return Math.max(
+              Math.abs(box.x - (anchor.x - 4)),
+              Math.abs(box.width - (anchor.width + 8)),
+              Math.abs(box.y - (anchor.bottom - 4)),
+              Math.max(0, box.bottom - window.innerHeight),
+            );
+          }),
+        { message: "Detail geometry should follow the resized mobile trigger" },
+      )
+      .toBeLessThan(1);
     const pane = page.locator(".transcript");
     const top = await pane.evaluate((el) => el.scrollTop);
     const editor = card.locator(".monaco-editor");
