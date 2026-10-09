@@ -6,6 +6,8 @@ import { flushSync } from "react-dom";
 import { Button } from "./button";
 import { useFloatingCard } from "./floating-card";
 import { indentEdit } from "./composer-indent";
+import { useCommandSuggestions } from "./command-suggestions";
+import type { ComposerCommand } from "./composer-commands";
 import {
   inlineBacktickEdit,
   inlineCodeRanges,
@@ -40,6 +42,7 @@ export function ComposerEditor({
   pastes,
   onChange,
   canSend,
+  commands,
   ariaLabel = t("Message"),
   placeholder = t("Continue the conversation…"),
 }: {
@@ -47,6 +50,7 @@ export function ComposerEditor({
   pastes: Map<string, ComposerPaste>;
   onChange: (value: string) => void;
   canSend?: boolean;
+  commands?: readonly ComposerCommand[];
   ariaLabel?: string;
   placeholder?: string;
 }) {
@@ -72,6 +76,13 @@ export function ComposerEditor({
   const latest = useRef({ value, replace });
   latest.current = { value, replace };
   const lines = value.split("\n");
+  const commandHints = useCommandSuggestions({
+    value,
+    commands,
+    input,
+    composing: composition,
+    accept: (name, end) => replace(0, end, name),
+  });
   const blocks = useMemo(
     () =>
       codeBlocks(value).map((block) => {
@@ -240,6 +251,7 @@ export function ComposerEditor({
       <div
         className="composer-editor"
         data-composing={composition}
+        data-command-open={commandHints.open}
         style={{
           tabSize: editorSettings.tabSize,
           ...paletteVariables(editorSettings.colorPalette, theme),
@@ -260,6 +272,7 @@ export function ComposerEditor({
           <textarea
             ref={input}
             aria-label={ariaLabel}
+            {...commandHints.inputProps}
             aria-description={
               tabMovesFocus
                 ? t("Tab: Move focus. Ctrl+M: Switch to indentation mode.")
@@ -281,6 +294,9 @@ export function ComposerEditor({
             autoCapitalize="off"
             autoCorrect="off"
             wrap="soft"
+            onFocus={commandHints.updateSelection}
+            onBlur={commandHints.updateSelection}
+            onKeyUp={commandHints.updateSelection}
             onScroll={syncScroll}
             onCompositionStart={() => {
               composing.current = true;
@@ -292,6 +308,7 @@ export function ComposerEditor({
             }}
             onSelect={() => {
               if (!composing.current) normalizedSelection();
+              commandHints.updateSelection();
             }}
             onBeforeInput={() => {
               if (!composing.current) normalizedSelection();
@@ -311,6 +328,7 @@ export function ComposerEditor({
                 event.target.selectionStart === event.target.selectionEnd &&
                 next.indexOf("\n", event.target.selectionEnd) < 0;
               onChange(next);
+              commandHints.updateSelection();
             }}
             onPaste={(event) => {
               const text = event.clipboardData.getData("text/plain");
@@ -370,6 +388,7 @@ export function ComposerEditor({
             }}
             onKeyDown={(event) => {
               if (event.nativeEvent.isComposing || composing.current) return;
+              if (commandHints.key(event)) return;
               const el = event.currentTarget;
               if (
                 event.ctrlKey &&
@@ -540,6 +559,7 @@ export function ComposerEditor({
               }
             }}
           />
+          {commandHints.overlay}
           <div className="editor-surface" ref={surface}>
             <div className="editor-mirror" ref={mirror}>
               {lines.map((line, index) => {

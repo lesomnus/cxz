@@ -22,6 +22,24 @@ known start. If retained history lacks the turn's start, it measures from first
 observation instead. `ElapsedTime` is a reusable display; unused leading digits
 are dimmed without changing the text width.
 
+When the message starts with a slash and the caret is at the end of its first
+line, the text area offers fuzzy command suggestions. The selected suggestion
+occupies the same line as the native caret, with neighboring commands above and
+below it. The overlay follows the editor's text width, padding and line height;
+it excludes the line-number gutter and scrollbar and never changes composer
+height. Up/Down browse suggestions while keeping the typed query and caret in
+place. Right accepts a suggestion as one undoable edit. Escape dismisses the
+suggestions before the turn-interrupt shortcut; blur, composition and moving
+away from the query hide them. Suggestions are enabled only for the session
+composer, leaving question answers as ordinary editable text.
+
+The initial catalog contains `/model`, `/effort`, `/compact` and Claude's
+`/context`, plus model and effort values reported by the provider. Submitting a
+bare model/effort command opens the existing picker; submitting a value uses the
+same setting path as that picker, including resetting an explicit effort before
+a model change. Suggestions remain visual until accepted, so an unaccepted hint
+cannot silently replace submitted text. TUI-only screen commands are not offered.
+
 The browser shares project and session inventories across navigation. Each entity
 type has a bounded initial List and a single Watch spanning all listed projects;
 project groups use this shared state instead of opening their own requests. The

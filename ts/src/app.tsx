@@ -48,6 +48,7 @@ import type { ResponseCompletion } from "./response-completion";
 import { ResponseFooter } from "./response-footer";
 import { InputMessage } from "./input-message";
 import { ComposerEditor } from "./composer-editor";
+import { sessionCommands } from "./composer-commands";
 import { useSendMotion } from "./send-motion";
 import { WorkspaceTerminal, terminalShortcut } from "./workspace-terminal";
 import {
@@ -1023,8 +1024,17 @@ function ConversationContent({
     return () => resize.disconnect();
   }, []);
   async function changeSetting(kind: "model" | "effort", value: string) {
-    if (!catalog || s?.status?.state !== "idle") return;
-    await action(async (session) => {
+    if (!catalog || s?.status?.state !== "idle") {
+      setError(
+        t(
+          !catalog
+            ? "Provider choices not reported"
+            : "Settings require an idle session",
+        ),
+      );
+      return false;
+    }
+    return action(async (session) => {
       async function apply(name: "model" | "effort", choice: string) {
         const command = control(session);
         let afterSeq = latestSeq.current;
@@ -1072,12 +1082,13 @@ function ConversationContent({
     });
   }
   async function action(fn: (s: Session) => Promise<unknown>) {
-    if (lock.current || !s) return;
+    if (lock.current || !s) return false;
     lock.current = true;
     setBusy(true);
     setError("");
     try {
       await fn(s);
+      return true;
     } catch (e) {
       setError(
         t(
@@ -1085,6 +1096,7 @@ function ConversationContent({
           { error: String(e) },
         ),
       );
+      return false;
     } finally {
       lock.current = false;
       setBusy(false);
@@ -1101,6 +1113,26 @@ function ConversationContent({
     e.preventDefault();
     if (!draft.trim()) return;
     const sent = draft;
+    const clearCommand = () => {
+      if (c.drafts.get(id) === sent) c.drafts.set(id, "");
+      setDraft((old) => (old === sent ? "" : old));
+    };
+    const setting = /^\/(model|effort)(?:[ \t]+(\S+))?[ \t]*$/.exec(sent);
+    if (setting) {
+      const kind = setting[1] as "model" | "effort";
+      if (!setting[2]) {
+        const trigger = document.querySelector<HTMLButtonElement>(
+          `.${kind}-field .setting-trigger`,
+        );
+        if (trigger && !trigger.disabled) {
+          clearCommand();
+          trigger.click();
+        } else setError(t("Settings require an idle session"));
+      } else if (await changeSetting(kind, setting[2])) {
+        clearCommand();
+      }
+      return;
+    }
     await action(async (s) => {
       const text = composerPrompt(sent, c.pastes);
       const motion = sendMotion.prepare(text, latestSeq.current);
@@ -1328,6 +1360,7 @@ function ConversationContent({
               onChange={setDraft}
               pastes={c.pastes}
               canSend={!busy && !!s && !!draft.trim()}
+              commands={sessionCommands(s?.agent ?? "", catalog)}
             />
           </div>
         </div>

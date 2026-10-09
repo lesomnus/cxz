@@ -1155,6 +1155,9 @@ pre {
 .composer-input[data-send-exiting] textarea {
   caret-color: transparent;
 }
+.composer-input[data-send-exiting] .command-suggestions {
+  visibility: hidden;
+}
 .composer-input[data-send-exiting] textarea::selection {
   color: transparent;
   background: transparent;
@@ -1209,6 +1212,76 @@ pre {
   position: relative;
   flex: 1;
   min-width: 0;
+}
+.composer:has([data-command-open="true"]) {
+  z-index: 6;
+}
+.composer-editor[data-command-open="true"] .editor-mirror > :first-child {
+  visibility: hidden;
+}
+.command-suggestions {
+  position: absolute;
+  pointer-events: none;
+  font: inherit;
+}
+.command-suggestions .command-suggestion {
+  position: relative;
+  z-index: 2;
+  display: block;
+  width: 100%;
+  height: var(--command-line-height);
+  min-height: 0;
+  padding: 0 var(--command-inset);
+  border: 0;
+  border-radius: 0;
+  background: var(--shade-25);
+  color: var(--shade-144);
+  font: inherit;
+  line-height: var(--command-line-height);
+  text-align: left;
+  pointer-events: auto;
+}
+.command-suggestion:first-child {
+  border-radius: var(--space) var(--space) 0 0;
+}
+.command-suggestion:last-child {
+  border-radius: 0 0 var(--space) var(--space);
+}
+.command-suggestion .button-content {
+  display: grid;
+  grid-template-columns: minmax(0, min(var(--command-name-width), 55%)) minmax(
+      0,
+      1fr
+    );
+  gap: var(--space);
+  height: 100%;
+  justify-content: start;
+}
+.command-suggestions .command-suggestion[data-current="true"] {
+  /* Paint the selected hint below the transparent native textarea/caret. */
+  z-index: 0;
+  background: var(--shade-34);
+  color: var(--shade-119);
+  pointer-events: none;
+}
+.command-suggestion[data-current="true"] [data-matched="true"] {
+  color: var(--shade-237);
+}
+.command-suggestion:not([data-current="true"]):hover {
+  background: var(--hover);
+  color: var(--shade-237);
+}
+.command-name,
+.command-description {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.command-description {
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 11px;
+  color: var(--shade-119);
 }
 .editor-surface {
   position: absolute;
