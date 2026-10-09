@@ -1,7 +1,7 @@
 import type { LoadEventDetails } from "./session-history";
 import { useEventDetails } from "./event-details";
 import { Button } from "./button";
-import { useFloatingCard } from "./floating-card";
+import { useAnchoredCard } from "./floating-card";
 import { detail } from "./journal";
 import { t } from "./i18n";
 import { useLocale } from "./i18n-react";
@@ -28,7 +28,7 @@ export function ToolActivityView({
   loadDetails?: LoadEventDetails;
 }) {
   useLocale();
-  const openCard = useFloatingCard();
+  const details = useAnchoredCard();
   const label = toolLabel(activity, agent);
   const state = toolState(activity, agent);
   const { files, omitted } = toolFiles(activity);
@@ -57,9 +57,15 @@ export function ToolActivityView({
       type="button"
       data-seq={seq.toString()}
       data-state={state}
-      className="event-detail tool-activity"
+      className="event-detail tool-activity detail-anchor"
+      ref={details.anchor}
+      data-detail-present={details.present}
+      data-detail-open={details.expanded}
+      aria-expanded={details.expanded}
+      aria-haspopup="dialog"
+      aria-controls={details.controls}
       onClick={() =>
-        openCard({
+        details.toggle({
           title: `${label.name} · ${t("Details")}`,
           content: () => (
             <ToolDetails

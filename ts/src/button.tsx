@@ -3,6 +3,7 @@ import {
   useRef,
   type ButtonHTMLAttributes,
   type ReactNode,
+  type Ref,
 } from "react";
 
 // Keep uniform scaling, but cap the longest edge's total contraction at 4px.
@@ -10,7 +11,10 @@ export function Button({
   children,
   pressTarget,
   ...props
-}: ButtonHTMLAttributes<HTMLButtonElement> & { pressTarget?: string }) {
+}: ButtonHTMLAttributes<HTMLButtonElement> & {
+  pressTarget?: string;
+  ref?: Ref<HTMLButtonElement>;
+}) {
   return (
     <button {...props}>
       <ButtonContent pressTarget={pressTarget}>{children}</ButtonContent>

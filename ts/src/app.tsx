@@ -56,6 +56,7 @@ import {
   FloatingCardHost,
   FloatingCard,
   useFloatingCard,
+  useAnchoredCard,
 } from "./floating-card";
 import { type ComposerPaste } from "./composer-pastes";
 import { composerPrompt } from "./composer-code";
@@ -1391,7 +1392,7 @@ const EventView = React.memo(
     loadDetails?: LoadEventDetails;
   }) {
     useLocale();
-    const openCard = useFloatingCard();
+    const details = useAnchoredCard();
     if (activity)
       return (
         <ToolActivityView
@@ -1433,9 +1434,15 @@ const EventView = React.memo(
       <Button
         type="button"
         data-seq={e.seq.toString()}
-        className={`event-detail ${e.kind === "diagnostic" || e.kind === "stderr" ? "error" : ""}`}
+        className={`event-detail detail-anchor ${e.kind === "diagnostic" || e.kind === "stderr" ? "error" : ""}`}
+        ref={details.anchor}
+        data-detail-present={details.present}
+        data-detail-open={details.expanded}
+        aria-expanded={details.expanded}
+        aria-haspopup="dialog"
+        aria-controls={details.controls}
         onClick={() =>
-          openCard({
+          details.toggle({
             title: e.kind === "approval" ? approvalTitle(e) : e.kind,
             content: () => (
               <EventDetails

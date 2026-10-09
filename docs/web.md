@@ -75,8 +75,14 @@ Tool executions stay at their original transcript position. The call, associated
 approval, streamed output and result are grouped by run and native execution ID
 into one status row, like the TUI. Shell wrappers are shown as the shell name and
 the script it runs. Click the row for input, output, result and approval records
-in the shared floating details card. Unrelated approvals and questions retain
-their existing answer controls; orphan output/results at a loaded-history edge
+in an overlay attached below the selected task. The selected summary's exterior
+grows and gains a border while its text and measured row height stay unchanged.
+Details emerge from beneath that summary, follow it while scrolling, and close
+if the summary leaves view. Click the same summary again, press Escape, or click
+an empty transcript side margin to dismiss. The card has no separate Close button;
+its height stays within the conversation and long content scrolls internally.
+Unrelated approvals and questions retain their existing answer controls;
+orphan output/results at a loaded-history edge
 remain inspectable until their call is loaded.
 
 History paging follows the rendered content, including after viewport changes.

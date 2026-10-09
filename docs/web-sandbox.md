@@ -143,8 +143,8 @@ message-to-pixel map; a fixed total height and visible-message anchor prevent ju
 during measurement, resizing and page replacement. New events follow only while
 actually at the bottom. Paging stops at the retained history boundary.
 
-The user input preceding the reading position sits in a fixed overlay below the
-title, outside the scrolling canvas. Exposure uses equal clearance conditions
+The user input preceding the reading position sits in a fixed overlay at the
+top of the transcript, outside the scrolling canvas. Exposure uses equal clearance conditions
 above and below the upper edge: the previous input's bottom and the next visible
 input's top. A nearby or straddling input hides it; sufficient clearance gradually
 reveals the bottom edge and opacity together. Missing edges impose no limit.
@@ -170,14 +170,25 @@ footers omit the year; metric icons expose names and scope on hover and to
 assistive technology. Relative-time rules are defined in `src/message-time.ts`.
 
 Response Copy icons appear on response hover or control focus without changing
-footer geometry. Event summaries and request details open in the same non-modal
-floating card as paste previews. Cards sit above the composer, with rounding on
-all corners, an outer border, narrow content/header padding and strong backdrop
+footer geometry. Transcript task and event summaries open a non-modal overlay
+below the selected summary. Only its exterior expands and gains a border; its
+content and measured height stay unchanged. Details emerge under the summary's
+layer, follow scrolling, and close when the trigger leaves view. They stay within
+the conversation bounds and use an internal scrollbar for long content. The
+summary remains clickable above the details: click it again, press Escape, or
+click an empty transcript side margin to dismiss. There is no separate Close
+button. Opening another item replaces the active preview.
+
+Request details and paste previews retain their composer anchor. Cards share the
+same shell, with rounding on all corners, an outer border, narrow content/header
+padding and strong backdrop
 blur. The title alone gains a little left margin. Close shares Send's rectangular
 style. Code and raw text retain opaque boxes. Inner radii follow outer border and
 inset tokens so the corner centers align. A last-child `pre` has no bottom margin.
-The toolbar, editor and metadata remain accessible. Cards add no transcript height;
-long content scrolls inside a height capped by both shared styles and available space.
+Composer-anchored previews leave the toolbar, editor and metadata accessible.
+Task details may overlay that area when their trigger is near the bottom.
+Cards add no transcript height; long content scrolls inside a height capped by
+both shared styles and available space.
 
 The host uses overflow clipping with shadow room, clamped to conversation bounds.
 Do not use ancestor clip-path, masks or opacity that form a backdrop root and stop
@@ -191,11 +202,13 @@ Pending Question/approval requests use the same FloatingCard shell and anchor,
 outside the composer form. They have no Close control. Escape, side-margin dismissal
 and preview replacement never discard requests or selected/free-text answers.
 Only explicit Submit/Allow/Deny resolves them. Enter in an answer does not send the
-composer. Whenever a preview is active, questions shrink and dim to show their
-background layer. If the preview is at least as tall, questions also move upward
+composer. Whenever a composer-anchored preview is active, questions shrink and
+dim to show their background layer. If the preview is at least as tall, questions also move upward
 so part of their top remains visible. A shorter preview keeps the bottom anchor,
-while still shrinking and dimming. Both layers reserve room below the title.
-ResizeObserver compares actual heights; transitions respect reduced motion.
+while still shrinking and dimming. Both layers stay within the conversation.
+Transcript-anchored details occupy their own layer below pending questions and
+do not replace or cover their controls. ResizeObserver compares actual heights;
+transitions respect reduced motion.
 Covered questions are inert until the preview closes, restoring state and focus.
 Multiple pending requests remain in a bounded, scrollable layer.
 

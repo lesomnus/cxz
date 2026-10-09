@@ -10,11 +10,11 @@ import {
   useRef,
   useState,
   Children,
-  type HTMLAttributes,
-  type Ref,
   type ReactNode,
 } from "react";
-import { Button } from "./button";
+import { FloatingCard } from "./card-shell";
+export { FloatingCard } from "./card-shell";
+import { AnchoredDetail } from "./anchored-detail";
 
 type Card = {
   id: number;
@@ -23,10 +23,14 @@ type Card = {
   kind?: "paste";
   content: (close: () => void) => ReactNode;
   origin: HTMLElement | null;
+  anchor?: HTMLElement;
   closing?: boolean;
   restoreFocus?: boolean;
 };
-type CardRequest = Pick<Card, "title" | "label" | "content" | "kind">;
+type CardRequest = Pick<
+  Card,
+  "title" | "label" | "content" | "kind" | "anchor"
+>;
 const OpenCard = createContext<(card: CardRequest) => void>(() => {});
 const CardState = createContext<{
   card?: Card;
@@ -35,6 +39,24 @@ const CardState = createContext<{
 
 export function useFloatingCard() {
   return useContext(OpenCard);
+}
+
+export function useAnchoredCard() {
+  const anchor = useRef<HTMLButtonElement>(null);
+  const open = useFloatingCard();
+  const { card, close } = useContext(CardState);
+  const present = !!card && card.anchor === anchor.current;
+  const expanded = present && !card.closing;
+  return {
+    anchor,
+    present,
+    expanded,
+    controls: expanded ? `event-details-${card.id}` : undefined,
+    toggle(request: Omit<CardRequest, "anchor">) {
+      if (expanded) close(card.id);
+      else if (anchor.current) open({ ...request, anchor: anchor.current });
+    },
+  };
 }
 
 export function FloatingCardProvider({ children }: { children: ReactNode }) {
@@ -51,7 +73,7 @@ export function FloatingCardProvider({ children }: { children: ReactNode }) {
     setCard({
       ...request,
       id: ++sequence.current,
-      origin: document.activeElement as HTMLElement | null,
+      origin: request.anchor ?? (document.activeElement as HTMLElement | null),
     });
   }, []);
   const close = useCallback((id: number, restoreFocus = true) => {
@@ -140,7 +162,8 @@ export function FloatingCardHost({ children }: { children?: ReactNode }) {
     const update = () => {
       const questionHeight = questions.offsetHeight;
       const previewHeight = preview?.offsetHeight ?? 0;
-      const covered = !!card && !card.closing && questionHeight > 0;
+      const covered =
+        !!card && !card.anchor && !card.closing && questionHeight > 0;
       const lifted = covered && previewHeight >= questionHeight;
       const peek = parseFloat(getComputedStyle(node).paddingBottom) * 2 + 4;
       questions.dataset.covered = String(covered);
@@ -189,9 +212,22 @@ export function FloatingCardHost({ children }: { children?: ReactNode }) {
       <div ref={persistent} className="question-cards" data-covered="false">
         {children}
       </div>
-      {card && (
-        <PreviewCard key={card.id} card={card} close={() => close(card.id)} />
-      )}
+      {card &&
+        (card.anchor ? (
+          <AnchoredDetail
+            key={card.id}
+            anchor={card.anchor}
+            id={`event-details-${card.id}`}
+            title={typeof card.title === "function" ? card.title() : card.title}
+            label={typeof card.label === "function" ? card.label() : card.label}
+            closing={!!card.closing}
+            close={(restore) => close(card.id, restore)}
+          >
+            {card.content(() => close(card.id))}
+          </AnchoredDetail>
+        ) : (
+          <PreviewCard key={card.id} card={card} close={() => close(card.id)} />
+        ))}
     </div>
   );
 }
@@ -238,40 +274,5 @@ function PreviewCard({ card, close }: { card: Card; close: () => void }) {
     >
       {card.content(close)}
     </FloatingCard>
-  );
-}
-
-export function FloatingCard({
-  title,
-  close,
-  closeLabel,
-  children,
-  className = "",
-  ref,
-  ...props
-}: Omit<HTMLAttributes<HTMLElement>, "title"> & {
-  title: string;
-  close?: () => void;
-  closeLabel?: string;
-  ref?: Ref<HTMLElement>;
-}) {
-  useLocale();
-  return (
-    <section ref={ref} className={`floating-card ${className}`} {...props}>
-      <header className="card-heading">
-        <strong>{title}</strong>
-        {close && (
-          <Button
-            className="card-close"
-            type="button"
-            aria-label={closeLabel}
-            onClick={close}
-          >
-            ×
-          </Button>
-        )}
-      </header>
-      <div className="card-body">{children}</div>
-    </section>
   );
 }

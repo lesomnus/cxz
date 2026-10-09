@@ -58,9 +58,9 @@ test("floating event and paste cards replace one another without moving the tran
   const event = page.locator('.floating-card[data-active="true"]');
   await expect(event).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
   const eventId = await event.getAttribute("data-card");
-  const wrapper = (await page.locator(".composer-wrapper").boundingBox())!;
   const card = (await event.boundingBox())!;
-  expect(wrapper.y - card.y - card.height).toBeCloseTo(12, 0);
+  const anchor = (await trigger.boundingBox())!;
+  expect(card.y).toBeCloseTo(anchor.y + anchor.height - 4, 0);
   await expect(event).toHaveCSS("border-top-width", "1px");
   await expect(event).toHaveCSS("border-radius", "12px");
   await expect(event).toHaveCSS("backdrop-filter", "blur(48px)");
@@ -97,9 +97,8 @@ test("floating event and paste cards replace one another without moving the tran
   await expect(input).toBeFocused();
   expect(await trigger.boundingBox()).toEqual(eventRow);
   await trigger.click();
-  await page
-    .getByRole("button", { name: "Close details", exact: true })
-    .click();
+  await expect(trigger).toHaveAttribute("aria-expanded", "true");
+  await trigger.click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(input).toHaveValue(draft);
 });

@@ -806,6 +806,19 @@ header strong {
   position: relative;
   overflow: clip;
 }
+.virtual-messages:has([data-detail-present="true"]) {
+  overflow: visible;
+}
+.transcript-area:has(.anchored-detail-layer) {
+  z-index: 3;
+}
+.transcript-area:has(.anchored-detail-layer) .scroll-track,
+.transcript-area:has(.anchored-detail-layer) .pinned-prompt {
+  z-index: 5;
+}
+.transcript-row:has([data-detail-present="true"]) {
+  z-index: 4;
+}
 .transcript-row {
   position: absolute;
   width: 100%;
@@ -1542,6 +1555,32 @@ pre {
   transform: translateY(8px) scale(0.99);
   opacity: 0;
 }
+.anchored-detail-layer {
+  --detail-edge-inset: calc(2 * var(--space));
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 3;
+  padding-bottom: var(--detail-edge-inset);
+  overflow: clip;
+  pointer-events: none;
+}
+.floating-card.anchored-detail {
+  --detail-overlap: var(--space);
+  padding-top: var(--detail-overlap);
+  bottom: auto;
+  max-height: min(360px, var(--detail-space));
+  transform-origin: top center;
+  transform: translateY(calc(-2 * var(--space))) scale(0.99);
+}
+.anchored-detail .card-heading {
+  padding-top: calc(2 * var(--space));
+}
+.floating-card.anchored-detail[data-entered="true"] {
+  transform: translateY(0) scale(1);
+}
+.floating-card.anchored-detail[data-closing="true"] {
+  transform: translateY(calc(-2 * var(--space))) scale(0.99);
+}
 .conversation .card-heading {
   flex: 0 0 auto;
   min-height: 32px;
@@ -1591,11 +1630,42 @@ pre {
 .event-detail > .button-content {
   display: block;
 }
+.detail-anchor {
+  --detail-anchor-growth: 0px;
+  position: relative;
+  isolation: isolate;
+  border-radius: calc(2 * var(--space));
+}
+.detail-anchor::before {
+  content: "";
+  position: absolute;
+  inset: calc(-1 * var(--detail-anchor-growth));
+  z-index: -1;
+  border: 1px solid transparent;
+  border-radius: calc(2 * var(--space) + var(--detail-anchor-growth));
+  transition:
+    inset 180ms ease-out,
+    border-color 180ms ease-out,
+    border-radius 180ms ease-out,
+    background-color 180ms ease-out;
+}
+.detail-anchor[data-detail-open="true"] {
+  --detail-anchor-growth: var(--space);
+}
+.detail-anchor[data-detail-present="true"],
+.detail-anchor[data-detail-present="true"]:not(:disabled):hover {
+  background: transparent;
+}
+.detail-anchor[data-detail-open="true"]::before {
+  background: var(--shade-27);
+  border-color: var(--shade-54);
+}
 @media (prefers-reduced-motion: reduce) {
   .floating-card,
   .question-cards,
   .approval::after,
-  .copy-control {
+  .copy-control,
+  .detail-anchor::before {
     transition: none;
   }
 }

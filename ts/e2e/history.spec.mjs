@@ -539,4 +539,23 @@ for (const mode of ["legacy", "summary"])
     await expect
       .poll(() => page.evaluate(() => document.documentElement.scrollWidth))
       .toBe(390);
+    await expect(card).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
+    const anchor = await task.boundingBox();
+    const box = await card.boundingBox();
+    expect(box.x).toBe(anchor.x);
+    expect(box.width).toBe(anchor.width);
+    expect(box.y).toBeCloseTo(anchor.y + anchor.height - 4, 0);
+    expect(box.y + box.height).toBeLessThanOrEqual(844);
+    const pane = page.locator(".transcript");
+    const top = await pane.evaluate((el) => el.scrollTop);
+    const body = card.locator(".card-body");
+    await body.hover();
+    await page.mouse.wheel(0, 80);
+    await expect
+      .poll(() => body.evaluate((el) => el.scrollTop))
+      .toBeGreaterThan(0);
+    expect(await pane.evaluate((el) => el.scrollTop)).toBe(top);
+    await task.click();
+    await expect(card).toHaveCount(0);
+    expect(details).toBe(mode === "summary" ? 1 : 0);
   });
