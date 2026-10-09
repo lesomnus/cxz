@@ -18,7 +18,11 @@ concurrency:
 jobs:
   web:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    # The sandbox suite is most of this job and it is wall-clock bound: it waits
+    # for real motion, which is why it is not parallelised. It lands around nine
+    # minutes and has been cancelled at fifteen, so the ceiling is where a job
+    # that is actually stuck gets stopped, not where a busy runner does.
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
