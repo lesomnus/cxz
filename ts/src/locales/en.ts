@@ -9,6 +9,12 @@ export const messages = {
   Approval: "Approval",
   Pending: "Pending",
   Working: "Working",
+  "Stop response": "Stop response",
+  "Response elapsed time": "Response elapsed time",
+  "Repeat within 3 seconds to stop": "Repeat within 3 seconds to stop",
+  "Click twice or press Esc twice within 3 seconds":
+    "Click twice or press Esc twice within 3 seconds",
+  "Provider rejected the interrupt": "Provider rejected the interrupt",
   Completed: "Completed",
   Failed: "Failed",
   "Input is not available in the loaded history.":

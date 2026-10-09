@@ -1580,6 +1580,39 @@ pre {
   position: relative;
   display: inline-flex;
 }
+.turn-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--control-inset);
+  margin-right: auto;
+}
+.elapsed-time {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  white-space: nowrap;
+  color: var(--shade-204);
+}
+.elapsed-time-leading {
+  color: var(--shade-115);
+}
+.stop-control {
+  position: relative;
+  display: inline-flex;
+}
+.stop-control .send-shortcut {
+  left: 0;
+  right: auto;
+}
+.stop-control:hover .send-shortcut,
+.stop-control:focus-within .send-shortcut {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+.composer .stop[data-armed="true"] {
+  background: var(--shade-54);
+}
 .send-shortcut {
   position: absolute;
   bottom: calc(100% + 6px);

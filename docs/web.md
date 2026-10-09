@@ -8,6 +8,20 @@ The session panel keeps the current session highlighted. Its scrollbar shows
 only a handle while the panel is hovered, with no visible track or arrow buttons;
 revealing it does not change the list width.
 
+The composer toolbar has a Stop response button and a monospace elapsed clock.
+Click twice within three seconds, or press Escape twice within the same window,
+to interrupt the current turn through SessionService/Interrupt. This keeps the
+agent session available for another message. A single action arms confirmation;
+holding Escape does not confirm, and switching sessions or completing a turn
+clears it. Menus and preview cards retain their own Escape handling.
+
+The clock follows the latest snapshot and native live events, independently of
+historical scrolling. It starts at the recorded input, continues through approval
+waits and steering, and resets when the turn finishes. Reconnection preserves a
+known start. If retained history lacks the turn's start, it measures from first
+observation instead. `ElapsedTime` is a reusable display; unused leading digits
+are dimmed without changing the text width.
+
 The browser shares project and session inventories across navigation. Each entity
 type has a bounded initial List and a single Watch spanning all listed projects;
 project groups use this shared state instead of opening their own requests. The

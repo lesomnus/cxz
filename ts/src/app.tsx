@@ -40,6 +40,8 @@ import { sessionInfo } from "./session-info";
 import { ModelSettings, modelCatalog } from "./model-settings";
 import { UsageInfo } from "./usage-info";
 import { Button } from "./button";
+import { TurnControls } from "./turn-controls";
+import { advanceTurn, snapshotTurn, type TurnProgress } from "./turn-progress";
 import { AgentBrand } from "./agent-brand";
 import { responseInfo } from "./response-info";
 import type { ResponseCompletion } from "./response-completion";
@@ -568,6 +570,7 @@ function ConversationContent({
   const [pending, setPending] = useState<SessionEvent[]>([]);
   const [gap, setGap] = useState(false);
   const [status, setStatus] = useState("Connecting…");
+  const [turn, setTurn] = useState<TurnProgress>({ runId: "", active: false });
   const [error, setError] = useState("");
   const [draft, setDraft] = useState(c.drafts.get(id) ?? "");
   const [busy, setBusy] = useState(false);
@@ -853,12 +856,14 @@ function ConversationContent({
             detached.current ? old : mergeEvents(old, loaded),
           );
         }
+        setTurn((old) => snapshotTurn(snapshot.status, loaded, old));
         setStatus("Live");
         for await (const e of c.sessions.events(
           { ref: ref(id), afterSeq: cursor, clientId: c.clientId },
           { signal },
         )) {
           if (canceled) return;
+          setTurn((old) => advanceTurn(old, e, true));
           rememberMetadata([e]);
           cursor = e.seq > cursor ? e.seq : cursor;
           if (cursor > latestSeq.current) latestSeq.current = cursor;
@@ -1248,6 +1253,20 @@ function ConversationContent({
       <form className="composer" onSubmit={send}>
         <div className="composer-wrapper">
           <div className="composer-toolbar">
+            <TurnControls
+              turn={turn}
+              busy={busy}
+              interrupt={() =>
+                void action(async (session) => {
+                  const receipt = await c.sessions.interrupt({
+                    ...control(session),
+                    runId: turn.runId,
+                  });
+                  if (receipt.status === "rejected")
+                    throw new Error(t("Provider rejected the interrupt"));
+                })
+              }
+            />
             <span
               className="latest-slot"
               data-visible={!follow && latestShown}
