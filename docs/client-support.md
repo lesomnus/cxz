@@ -93,7 +93,7 @@ explained in the mobile plan; it remains Not implemented in the web column.
 | ID | CLI | TUI | Web |
 |---|---|---|---|
 | OPS-01 | Supported: `version`, `use`, `self-update status/check` | Supported: Settings / `/settings` versions and channels | Not implemented |
-| OPS-02 | Partial: host configuration; no equivalent interactive history budget controls | Supported: Settings server retention/client scroll budgets | Not implemented |
+| OPS-02 | Partial: host configuration; no equivalent interactive history budget controls | Supported: Settings server retention, vendor stream and client scroll budgets | Not implemented |
 | OPS-03 | Partial: `docker status/up/down/sync`; no dedicated cache-prune command | Supported: engine status, activation/deactivation and build-cache cleanup | Not implemented |
 | OPS-04 | Supported: update/use/manager commands; host/platform restrictions apply | Partial: frontend update toggle/status; pin/switch/rollback remain CLI | Not implemented |
 | OPS-05 | Supported: `edit`, `config`, `github sync`, `gitconfig sync` on appropriate host | Not implemented: no host configuration/file-sync editor | Not implemented |

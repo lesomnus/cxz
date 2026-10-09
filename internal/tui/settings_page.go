@@ -12,6 +12,7 @@ import (
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/cxzupdate"
 	"github.com/lesomnus/cxz/internal/engine"
+	"github.com/lesomnus/cxz/internal/historypolicy"
 	"github.com/lesomnus/cxz/internal/versionpin"
 )
 
@@ -42,7 +43,7 @@ type settingsResult struct {
 
 var settingsActions = []struct{ label, action string }{
 	{"Refresh", "info"}, {"Activate", "up"}, {"Clear unused build cache", "prune"}, {"Start debug recording", "record"}, {"Automatic frontend updates", "auto-update"},
-	{"Server history limit", "history-policy"}, {"Client scroll bytes", "history-window"}, {"Client scroll turns", "history-window"}, {"MCP servers", "mcp"}, {"AI tasks", "auxiliary"},
+	{"Server history limit", "history-policy"}, {"Vendor stream limit", "history-policy"}, {"Client scroll bytes", "history-window"}, {"Client scroll turns", "history-window"}, {"MCP servers", "mcp"}, {"AI tasks", "auxiliary"},
 }
 
 const settingsActionRow = 12
@@ -68,10 +69,16 @@ func (m *model) settingsRequest(action string) tea.Cmd {
 	var historySpec []byte
 	if action == "history-policy" && p.info.History != nil {
 		next := *p.info.History
-		n, _, _ := next.Limits()
-		value := nextHistoryChoice(int(n)/(1<<20), []int{25, 50, 100, 250, 500, 0})
-		next.Disabled = value == 0
-		next.MaxMiB = value
+		if p.selected == 6 {
+			// The vendor stream has no "off": turning retention off is one
+			// switch, and a budget large enough is the way to keep all of it.
+			next.RawMiB = nextHistoryChoice(int(next.RawLimit()/historypolicy.MiB), []int{5, 20, 50, 100, 500})
+		} else {
+			n, _, _ := next.Limits()
+			value := nextHistoryChoice(int(n)/(1<<20), []int{25, 50, 100, 250, 500, 0})
+			next.Disabled = value == 0
+			next.MaxMiB = value
+		}
 		historySpec, _ = json.Marshal(next)
 	}
 	client, ctx := m.client, m.contextFor(p.connection)
@@ -140,7 +147,7 @@ func (m *model) pollSettings() tea.Cmd {
 
 // Resolve the toggle from the latest reported engine state.
 func (m *model) settingsAction(index int) (string, string) {
-	if index >= 5 && index <= 7 {
+	if index >= 5 && index <= 8 {
 		return m.historySettingLabel(index), settingsActions[index].action
 	}
 	if index == 4 {
@@ -211,23 +218,23 @@ func (m *model) settingsEnabled(index int) bool {
 	if index == 1 {
 		return p.info.State == "running" || p.info.Mode == "dind"
 	}
-	if index == 8 || index == 9 {
+	if index == 9 || index == 10 {
 		return true
 	}
 	return p.info.State == "running"
 }
 func (m *model) activateSetting() tea.Cmd {
 	p := m.settingsPage
-	if p.selected == 9 {
+	if p.selected == 10 {
 		return m.openAuxiliary()
 	}
-	if p.selected == 8 {
+	if p.selected == 9 {
 		return m.openMCP()
 	}
 	if !m.settingsEnabled(p.selected) {
 		return nil
 	}
-	if p.selected == 6 || p.selected == 7 {
+	if p.selected == 7 || p.selected == 8 {
 		return m.changeHistoryWindow(p.selected)
 	}
 	_, action := m.settingsAction(p.selected)
@@ -375,11 +382,16 @@ func (m *model) settingsConfirmation() ([]string, int, int) {
 	width := max(1, m.settingsWidth()-4)
 	text := map[string]string{"down": "Deactivate Docker for all projects? Images and volumes will be retained.", "prune": "Remove unused build cache from the shared Docker engine? Images and volumes will be retained."}[p.confirm]
 	if p.confirm == "history-policy" && p.info.History != nil {
-		n, _, _ := p.info.History.Limits()
-		next := nextHistoryChoice(int(n)/(1<<20), []int{25, 50, 100, 250, 500, 0})
-		text = fmt.Sprintf("Set server history limit to %d MiB per session? Old completed display records will be permanently removed when the limit is exceeded. Provider context is preserved.", next)
-		if next == 0 {
-			text = "Disable automatic display-history pruning on this server? Previously removed records cannot be restored."
+		if p.selected == 6 {
+			next := nextHistoryChoice(int(p.info.History.RawLimit()/historypolicy.MiB), []int{5, 20, 50, 100, 500})
+			text = fmt.Sprintf("Set the vendor stream limit to %d MiB per session? The verbatim provider stream of older turns will be permanently removed when the limit is exceeded; the conversation around it is kept.", next)
+		} else {
+			n, _, _ := p.info.History.Limits()
+			next := nextHistoryChoice(int(n)/(1<<20), []int{25, 50, 100, 250, 500, 0})
+			text = fmt.Sprintf("Set server history limit to %d MiB per session? Old completed display records will be permanently removed when the limit is exceeded. Provider context is preserved.", next)
+			if next == 0 {
+				text = "Disable automatic display-history pruning on this server? Previously removed records cannot be restored."
+			}
 		}
 	}
 	lines := []string{"", accent.Bold(true).Render("Confirm action"), ""}
@@ -447,7 +459,7 @@ func (m *model) settingsScreen() string {
 		}
 		lines = append(lines, panelBackground(line+strings.Repeat(" ", max(0, inner-ansi.StringWidth(line)))))
 	}
-	lines = append(lines, accent.Render(strings.Repeat("─", inner)), "", "Configure defaults and overrides with cxz edit.", "History limits affect cxz display records only; provider context is preserved.", "Server: prune completed turns to 80% of the limit. Client: bound the loaded scroll window.")
+	lines = append(lines, accent.Render(strings.Repeat("─", inner)), "", "Configure defaults and overrides with cxz edit.", "History limits affect cxz display records only; provider context is preserved.", "Server: shed the vendor stream first, then prune completed turns, to 80% of each limit. Client: bound the loaded scroll window.")
 	current := cxzupdate.Current()
 	lines = append(lines, "", "cxz automatic updates", "Frontend running: "+current.Revision, "Frontend state: "+m.autoState.State+" · "+m.autoState.Reason)
 	if m.autoState.Release != nil {

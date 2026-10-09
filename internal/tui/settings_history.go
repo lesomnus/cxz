@@ -21,10 +21,19 @@ func (m *model) windowPreference() historypolicy.Window {
 	return settings.From(m.ctx).History
 }
 func (m *model) historySettingLabel(index int) string {
-	if index == 5 {
+	if index == 5 || index == 6 {
 		p := m.settingsPage.info.History
 		if p == nil {
-			return "Server history limit: unavailable"
+			return []string{"Server history limit: unavailable", "Vendor stream limit: unavailable"}[index-5]
+		}
+		if index == 6 {
+			// What the provider actually sent, kept verbatim. It is most of a
+			// journal's bytes, so it is bounded apart from the conversation it
+			// came with.
+			if raw := p.RawLimit(); raw > 0 {
+				return fmt.Sprintf("Vendor stream limit: %d MiB/session", raw/historypolicy.MiB)
+			}
+			return "Vendor stream limit: unlimited"
 		}
 		n, _, _ := p.Limits()
 		if n == 0 {
@@ -33,7 +42,7 @@ func (m *model) historySettingLabel(index int) string {
 		return fmt.Sprintf("Server history limit: %d MiB/session", n/historypolicy.MiB)
 	}
 	b, t := m.windowPreference().Limits()
-	if index == 6 {
+	if index == 7 {
 		return fmt.Sprintf("Client scroll window: %d MiB", b/historypolicy.MiB)
 	}
 	return fmt.Sprintf("Client scroll window: %d turns", t)
@@ -53,7 +62,7 @@ func (m *model) changeHistoryWindow(index int) tea.Cmd {
 	}
 	p := m.windowPreference()
 	b, t := p.Limits()
-	if index == 6 {
+	if index == 7 {
 		p.MiB = nextHistoryChoice(b/historypolicy.MiB, []int{5, 10, 20, 50})
 	} else {
 		p.Turns = nextHistoryChoice(t, []int{100, 200, 500, 1000})

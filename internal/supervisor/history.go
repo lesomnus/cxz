@@ -95,12 +95,18 @@ func (s *Supervisor) retainHistory(root string, authorize func() error) error {
 		return err
 	}
 	limit, _, _ := p.Limits()
-	if limit == 0 {
+	raw := p.RawLimit()
+	if limit == 0 && raw == 0 {
 		return nil
 	}
 	size, err := s.log.Size()
-	if err != nil || size <= limit {
+	if err != nil {
 		return err
+	}
+	overDisk := limit > 0 && size > limit
+	overRaw := raw > 0 && s.log.RawBytes() > raw
+	if !overDisk && !overRaw {
+		return nil
 	}
 	if s.snap.State != "idle" || len(s.pending) > 0 || s.settingPending != "" || s.updateUnknown || len(s.updateTools) > 0 {
 		return nil
@@ -112,6 +118,19 @@ func (s *Supervisor) retainHistory(root string, authorize func() error) error {
 		if task.Active {
 			return nil
 		}
+	}
+	// The vendor stream goes first, and on its own budget. It is most of the
+	// bytes and none of the conversation, so shedding it is what keeps the
+	// trim below from being reached by telemetry.
+	if overRaw {
+		if err = s.shedRaw(raw); err != nil {
+			return err
+		}
+		if size, err = s.log.Size(); err != nil || limit == 0 || size <= limit {
+			return err
+		}
+	} else if !overDisk {
+		return nil
 	}
 	events := s.log.All()
 	// Pick the earliest safe boundary that leaves at most 80% of the budget.
@@ -209,6 +228,58 @@ func (s *Supervisor) retainHistory(root string, authorize func() error) error {
 	s.event(core.HistoryTrimmedKind, "Earlier display history was removed by the size limit.", "", core.HistoryBoundary{Through: checkpoint.Seq}, nil)
 	return nil
 }
+// shedRaw empties vendor payloads oldest first, down to four fifths of the
+// budget, and never touches the turn in flight or the one before it: the most
+// recent turn's stream is what a person is looking at when they open the raw
+// view, and what reconstructs background work that may still be running.
+func (s *Supervisor) shedRaw(limit int64) error {
+	events := s.log.All()
+	lastInput := -1
+	for i, e := range events {
+		if e.Kind == "input" {
+			lastInput = i
+		}
+	}
+	var total int64
+	for _, e := range events {
+		if e.Kind == "raw" {
+			total += int64(len(e.Raw))
+		}
+	}
+	target := limit * 8 / 10
+	through := uint64(0)
+	for i, e := range events {
+		if lastInput >= 0 && i >= lastInput {
+			break
+		}
+		if e.Kind != "raw" || len(e.Raw) == 0 {
+			continue
+		}
+		if total <= target {
+			break
+		}
+		total -= int64(len(e.Raw))
+		through = e.Seq
+	}
+	if through == 0 {
+		return nil
+	}
+	freed, err := s.log.Shed(through)
+	if err != nil {
+		var commit *journal.CompactionCommitError
+		if errors.As(err, &commit) {
+			s.kill()
+			panic(err)
+		}
+		return err
+	}
+	if freed == 0 {
+		return nil
+	}
+	s.event(core.HistoryShedKind, "Vendor stream detail up to this point was removed by its own size limit; the conversation was kept.", "", core.HistoryBoundary{Through: through}, nil)
+	return nil
+}
+
 func authorizeHistoryCheckpoint(root string) error {
 	conn, err := transport.Dial(root)
 	if err != nil {
