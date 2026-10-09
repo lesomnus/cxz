@@ -108,16 +108,28 @@ function ResourceIcon({
   );
 }
 
+// Keep conversation link behavior scoped to this sanitizer instance.
+const markdownPurifier = DOMPurify();
+markdownPurifier.addHook("afterSanitizeAttributes", (node) => {
+  if (node.localName === "a" && node.hasAttribute("href")) {
+    node.setAttribute("target", "_blank");
+    node.setAttribute("rel", "noopener noreferrer");
+  }
+});
+
 function Markdown({ text }: { text: string }) {
   useLocale();
   return (
     <div
       className="markdown"
       dangerouslySetInnerHTML={{
-        __html: DOMPurify.sanitize(marked.parse(text, { async: false }), {
-          FORBID_TAGS: ["img", "style", "input", "form"],
-          FORBID_ATTR: ["style"],
-        }),
+        __html: markdownPurifier.sanitize(
+          marked.parse(text, { async: false }),
+          {
+            FORBID_TAGS: ["img", "style", "input", "form"],
+            FORBID_ATTR: ["style"],
+          },
+        ),
       }}
     />
   );
