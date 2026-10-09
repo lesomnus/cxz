@@ -40,6 +40,7 @@ import { sessionInfo } from "./session-info";
 import { ModelSettings, modelCatalog } from "./model-settings";
 import { UsageInfo } from "./usage-info";
 import { Button } from "./button";
+import { ComposerAurora } from "./composer-aurora";
 import { TurnControls } from "./turn-controls";
 import { advanceTurn, snapshotTurn, type TurnProgress } from "./turn-progress";
 import { AgentBrand } from "./agent-brand";
@@ -548,6 +549,7 @@ function ConversationContent({ c, id }: { c: Connection; id: string }) {
   const [pending, setPending] = useState<SessionEvent[]>([]);
   const [gap, setGap] = useState(false);
   const [status, setStatus] = useState("Connecting…");
+  const [executionState, setExecutionState] = useState("");
   const [turn, setTurn] = useState<TurnProgress>({ runId: "", active: false });
   const [error, setError] = useState("");
   const [draft, setDraft] = useState(c.drafts.get(id) ?? "");
@@ -834,6 +836,7 @@ function ConversationContent({ c, id }: { c: Connection; id: string }) {
             detached.current ? old : mergeEvents(old, loaded),
           );
         }
+        setExecutionState(snapshot.status?.state ?? "");
         setTurn((old) => snapshotTurn(snapshot.status, loaded, old));
         setStatus("Live");
         for await (const e of c.sessions.events(
@@ -841,6 +844,7 @@ function ConversationContent({ c, id }: { c: Connection; id: string }) {
           { signal },
         )) {
           if (canceled) return;
+          if (e.kind === "state") setExecutionState(e.text);
           setTurn((old) => advanceTurn(old, e, true));
           rememberMetadata([e]);
           cursor = e.seq > cursor ? e.seq : cursor;
@@ -1243,6 +1247,11 @@ function ConversationContent({ c, id }: { c: Connection; id: string }) {
       <form className="composer" onSubmit={send}>
         <div className="composer-wrapper">
           <div className="composer-toolbar">
+            <ComposerAurora
+              active={
+                turn.active && ["working", "running"].includes(executionState)
+              }
+            />
             <TurnControls
               turn={turn}
               busy={busy}

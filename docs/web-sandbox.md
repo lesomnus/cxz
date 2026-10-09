@@ -169,6 +169,12 @@ including seeded history. The seed controls content, not a fixed date. Response
 footers omit the year; metric icons expose names and scope on hover and to
 assistive technology. Relative-time rules are defined in `src/message-time.ts`.
 
+While the agent is working, the composer toolbar has a subdued aurora behind it.
+Independent colored fields drift at different phases and fade in/out without
+changing layout or intercepting controls. Waiting for an answer pauses the glow;
+reduced motion uses a static glow. Native snapshot/live state controls it, separate
+from the historical reading position.
+
 Response Copy icons appear on response hover or control focus without changing
 footer geometry. Double-clicking transcript task and event summaries opens a non-modal overlay
 below the selected summary. Only its exterior expands and gains a border; its
