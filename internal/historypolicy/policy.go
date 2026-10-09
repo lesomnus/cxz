@@ -12,10 +12,27 @@ import (
 const MiB = 1 << 20
 
 type Policy struct {
-	Disabled    bool `json:"disabled,omitempty"`
-	MaxMiB      int  `json:"max_mib,omitempty"`
-	WindowMiB   int  `json:"window_mib,omitempty"`
-	WindowTurns int  `json:"window_turns,omitempty"`
+	Disabled bool `json:"disabled,omitempty"`
+	MaxMiB   int  `json:"max_mib,omitempty"`
+	// RawMiB bounds the verbatim vendor stream on its own, because it is most
+	// of a journal's bytes and none of its conversation. Without it the disk
+	// budget is spent on telemetry, and the trim that follows takes the
+	// conversation with it -- which is the one thing a journal is for.
+	RawMiB      int `json:"raw_mib,omitempty"`
+	WindowMiB   int `json:"window_mib,omitempty"`
+	WindowTurns int `json:"window_turns,omitempty"`
+}
+
+// RawLimit is the telemetry budget in bytes, or zero for no bound. Disabling
+// retention disables this with it: one switch turns off removal, not two.
+func (p Policy) RawLimit() int64 {
+	if p.Disabled {
+		return 0
+	}
+	if p.RawMiB == 0 {
+		return 20 * MiB
+	}
+	return int64(p.RawMiB) * MiB
 }
 
 func (p Policy) Limits() (disk int64, bytes, turns int) {
@@ -37,8 +54,8 @@ func (p Policy) Limits() (disk int64, bytes, turns int) {
 	return
 }
 func (p Policy) Validate() error {
-	if p.MaxMiB < 0 || p.MaxMiB > 10240 || p.WindowMiB < 0 || p.WindowMiB > 1024 || p.WindowTurns < 0 || p.WindowTurns > 10000 {
-		return fmt.Errorf("invalid history limits (disk 1–10240 MiB, window 1–1024 MiB / 1–10000 turns; 0 uses default)")
+	if p.MaxMiB < 0 || p.MaxMiB > 10240 || p.RawMiB < 0 || p.RawMiB > 10240 || p.WindowMiB < 0 || p.WindowMiB > 1024 || p.WindowTurns < 0 || p.WindowTurns > 10000 {
+		return fmt.Errorf("invalid history limits (disk and vendor stream 1–10240 MiB, window 1–1024 MiB / 1–10000 turns; 0 uses default)")
 	}
 	return nil
 }

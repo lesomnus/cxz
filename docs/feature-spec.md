@@ -79,7 +79,7 @@ linked guides explain existing behavior; correct these documents when code chang
 | ID | Capability | Behavioral contract |
 |---|---|---|
 | OPS-01 | Version identity | Identify client, Manager and available upstream versions/channels; do not present one component version as all components. |
-| OPS-02 | History budgets | Configure server display-history retention separately from the client rendering window; state when records are permanently pruned. |
+| OPS-02 | History budgets | Configure server display-history retention, the verbatim vendor stream budget, and the client rendering window separately; state when records are permanently pruned. Bound the vendor stream apart from the conversation so telemetry cannot evict what was said. |
 | OPS-03 | Docker maintenance | Inspect engine health/cache and explicitly activate, deactivate or clean unused build cache with the appropriate confirmations. |
 | OPS-04 | Updates and recovery | Check and configure updates, switch channel/pin and recover via rollback; report component-specific restart consequences. |
 | OPS-05 | Host configuration | Edit host settings/shared sources/file mappings and synchronize gh credentials or gitconfig without confusing client files with server files. |

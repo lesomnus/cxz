@@ -69,27 +69,58 @@ Past it, the bytes that did arrive are kept as the vendor record, the truncation
 is reported as a diagnostic in the transcript, and the session stops reading. It
 does not resume from the middle of a message it cannot parse.
 
-## Two independent budgets
+## Three independent budgets
 
 | | Where | Default | What it bounds |
 |---|---|---|---|
+| **Vendor stream** | Manager | 20 MiB per session | The verbatim provider stream inside the journal |
 | **Server retention** | Manager | 100 MiB per session | Journal on disk |
 | **Client window** | TUI | 10 MiB or 200 turns | What one frontend holds in memory |
 
 They are unrelated. Trimming the client window does not delete anything; exceeding
-server retention does.
+either server budget does.
 
-`Ctrl+.` exposes both. Server choices are 25/50/100/250/500 MiB or unlimited, with
-a confirmation, and apply to running projects. Client choices are 5/10/20/50 MiB and
-100/200/500/1000 turns. `cxz edit` sets the client window directly:
+The vendor stream has its own budget because it is most of a journal's bytes and
+none of its conversation. One measured installation held 275 MiB of journal, of
+which the verbatim stream was 194 MiB and everything that had been *said* was
+0.35 MiB — about one part in eight hundred. Under a single budget those 194 MiB
+are what reaches the limit, and the trim that follows removes turns: telemetry
+evicting the conversation it arrived with. Shedding the stream first is what
+keeps that from happening.
+
+`Ctrl+.` exposes all three. Server history choices are 25/50/100/250/500 MiB or
+unlimited and vendor stream choices are 5/20/50/100/500 MiB, both with a
+confirmation, and both apply to running projects. The vendor stream has no "off":
+turning retention off is one switch, and a budget large enough keeps all of it.
+Client choices are 5/10/20/50 MiB and 100/200/500/1000 turns. `cxz edit` sets the
+client window directly:
 
 ```jsonc
 "history": { "window_mib": 10, "window_turns": 200 }
 ```
 
+### The vendor stream
+
+The journal keeps what the provider sent, byte for byte, beside what it meant.
+That record is worth having — it is what the raw context view reads and what a
+provider bug is diagnosed from — and it is also where the bytes are.
+
+When a session's stream passes its budget, a safe idle check **empties the oldest
+payloads down to roughly 80% of it**, and says so in the journal with a
+`history_shed` record. The events stay: a raw event with nothing in it still says
+that a turn produced a stream, where a removed one would be indistinguishable
+from a turn that never had one. The most recent turn is never shed — that is the
+one the raw view is usually opened on, and the one background work is
+reconstructed from.
+
+What this costs is the raw view of older turns, which stops showing those events.
+What it buys is that the conversation is no longer what gets removed to make
+room.
+
 ### Server retention
 
-Once a session's journal passes the limit, a safe idle check removes its oldest
+Once a session's journal passes the limit — after the stream has been shed, which
+in practice is most of what was over it — a safe idle check removes its oldest
 **completed turns**, down to roughly 80% of the budget, leaving a versioned control
 checkpoint at the last removed position. Checks run after completed turns and once a
 minute; a stopped session is checked when it resumes.

@@ -30,3 +30,30 @@ func TestPolicyDefaultsAndValidation(t *testing.T) {
 		t.Fatal(got, err)
 	}
 }
+
+// The vendor stream is bounded on its own, and turning retention off turns it
+// off with everything else rather than leaving one budget running.
+func TestVendorStreamBudget(t *testing.T) {
+	if n := (Policy{}).RawLimit(); n != 20*MiB {
+		t.Fatal("default", n)
+	}
+	if n := (Policy{RawMiB: 5}).RawLimit(); n != 5*MiB {
+		t.Fatal("configured", n)
+	}
+	if n := (Policy{Disabled: true, RawMiB: 5}).RawLimit(); n != 0 {
+		t.Fatal("a disabled policy kept a budget", n)
+	}
+	// The two budgets are independent: a session can keep little stream and
+	// much conversation, which is the point of having both.
+	p := Policy{MaxMiB: 500, RawMiB: 5}
+	disk, _, _ := p.Limits()
+	if disk != 500*MiB || p.RawLimit() != 5*MiB {
+		t.Fatal(disk, p.RawLimit())
+	}
+	if err := p.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	if (Policy{RawMiB: -1}).Validate() == nil || (Policy{RawMiB: 20481}).Validate() == nil {
+		t.Fatal("an impossible vendor budget was accepted")
+	}
+}
