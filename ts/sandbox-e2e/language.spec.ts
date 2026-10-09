@@ -17,9 +17,9 @@ async function language(page: Page) {
       .getByRole("link", { name: "Settings view", exact: true })
       .isVisible())
   )
-    await page
-      .getByRole("button", { name: "Back to sessions", exact: true })
-      .click();
+    await page.evaluate(() => {
+      location.hash = "/sessions";
+    });
   await page.getByRole("link", { name: "Settings view", exact: true }).click();
   await page
     .getByRole("navigation", { name: "Settings topics", exact: true })

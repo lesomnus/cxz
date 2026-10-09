@@ -37,9 +37,10 @@ test("response headings keep their own model and effort after settings change", 
   await expect(headings.last()).toHaveText("sandbox-claude-compact · low");
   await expect(headings.last()).toHaveAttribute("title", /Applied setting/);
   // Earlier rows may be unmounted by virtualization once the new turn finishes.
-  await expect(
-    page.getByRole("button", { name: "Session menu", exact: true }),
-  ).toHaveAttribute("aria-description", /idle/);
+  await expect(page.locator(".conversation")).toHaveAttribute(
+    "aria-description",
+    /idle/,
+  );
   await pane.evaluate((el) => (el.scrollTop = 0));
   await expect(original).toHaveText("sandbox-claude · high");
   const alignment = await original.evaluate((el) => {

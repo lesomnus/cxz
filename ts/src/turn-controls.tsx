@@ -72,6 +72,10 @@ export function TurnControls({
         (!target || !conversation?.contains(target))
       )
         return;
+      // Preview dismissal has priority even though this listener was registered
+      // before the card opened and attached its own Escape listener.
+      if (conversation?.querySelector('.floating-card[data-active="true"]'))
+        return;
       if (!latest.current.turn.active || latest.current.busy) return;
       event.preventDefault();
       confirm("escape");

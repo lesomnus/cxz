@@ -51,7 +51,7 @@ connections and the separate review of Linux/VS Code running inside browser WASM
 
 ## Simulated workspace shell
 
-Press **Ctrl+Backquote** or the conversation title bar's **>\_** button to open a
+Press **Ctrl+Backquote** or the **>\_** button to the left of Send to open a
 terminal below the composer. The WASM service simulates `pwd`, `ls`, `cat`, `echo`,
 `clear`, `help` and `exit` over the same Terminal RPC used by native clients.
 `cat README.md` shows the selected project's fixture file. Folding preserves the

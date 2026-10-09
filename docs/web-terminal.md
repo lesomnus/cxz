@@ -1,9 +1,9 @@
 # Conversation workspace terminal
 
 Press **Ctrl+`** (`Ctrl+Backquote`) in a conversation, including its composer or
-terminal, to toggle the shell panel below the composer. The title bar's session
-menu provides the same action on touch devices. The shortcut uses the physical
-Backquote key or a backtick character, ignores key repeats and IME composition,
+terminal, to toggle the shell panel below the composer. The terminal icon to the
+left of Send provides the same action on touch devices. The shortcut uses the
+physical Backquote key or a backtick character, ignores key repeats and IME composition,
 and excludes Alt/Meta/Shift combinations. A browser or OS shortcut intercepted
 before delivery cannot be handled by the page; the button remains available.
 

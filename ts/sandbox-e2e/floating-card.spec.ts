@@ -169,7 +169,7 @@ test.describe("rendered backdrop", () => {
   });
 });
 
-test("mobile cards stay below the title and stale previews cannot replace an edited draft", async ({
+test("mobile cards stay inside the conversation and stale previews cannot replace an edited draft", async ({
   page,
 }) => {
   const input = await open(page);
@@ -180,8 +180,8 @@ test("mobile cards stay below the title and stale previews cannot replace an edi
   const preview = page.getByRole("dialog", { name: "Paste source" });
   await expect(preview).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
   const bounds = (await preview.boundingBox())!;
-  const header = (await page.locator(".conversation > header").boundingBox())!;
-  expect(bounds.y).toBeGreaterThanOrEqual(header.y + header.height);
+  const area = (await page.locator(".transcript-area").boundingBox())!;
+  expect(bounds.y).toBeGreaterThanOrEqual(area.y);
   expect(bounds.x).toBeGreaterThanOrEqual(0);
   expect(bounds.x + bounds.width).toBeLessThanOrEqual(390);
   expect(bounds.height).toBeLessThanOrEqual(360);
@@ -224,7 +224,7 @@ test("only the transcript's empty side margins dismiss the floating card", async
   await expect(preview).toHaveCSS("opacity", "1");
   await preview.locator("pre").click();
   await expect(preview).toBeVisible();
-  await page.locator(".conversation > header strong").click();
+  await input.click();
   await expect(preview).toBeVisible();
   // The scrollbar sits in a side margin but remains an interactive control.
   const thumb = page.getByRole("scrollbar", { name: "Conversation scroll" });
@@ -388,9 +388,9 @@ test("question and covering details stay bounded on mobile and dismiss independe
     )
     .toBe(28);
   expect(await page.locator("body").evaluate((el) => el.scrollWidth)).toBe(390);
-  const header = (await page.locator(".conversation > header").boundingBox())!;
+  const area = (await page.locator(".transcript-area").boundingBox())!;
   const bounds = (await question.boundingBox())!;
-  expect(bounds.y).toBeGreaterThanOrEqual(header.y + header.height + 7);
+  expect(bounds.y).toBeGreaterThanOrEqual(area.y + 7);
   expect(bounds.x).toBeGreaterThanOrEqual(0);
   expect(bounds.x + bounds.width).toBeLessThanOrEqual(390);
   await expect(

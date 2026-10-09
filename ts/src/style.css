@@ -721,20 +721,10 @@ header strong {
   flex-direction: column;
   position: relative;
 }
-.conversation > header,
 .resource-view > header {
   padding: 8px 16px;
   border-bottom: 1px solid var(--shade-36);
   min-height: 56px;
-}
-.conversation > header small {
-  margin: 2px 0 0;
-}
-.conversation-back {
-  display: none;
-}
-.conversation > header > .action-menu {
-  flex: 0 0 auto;
 }
 .action-menu-popup {
   position: fixed;
@@ -1119,6 +1109,7 @@ pre {
   display: flex;
   justify-content: flex-end;
   align-items: center;
+  gap: var(--control-inset);
   min-height: 28px;
   padding: var(--control-inset);
 }
@@ -1663,7 +1654,8 @@ pre {
     transition: none;
   }
 }
-.send-control {
+.send-control,
+.terminal-control {
   position: relative;
   display: inline-flex;
 }
@@ -1720,7 +1712,9 @@ pre {
   pointer-events: none;
 }
 .send-control:hover .send-shortcut,
-.send-control:focus-within .send-shortcut {
+.send-control:focus-within .send-shortcut,
+.terminal-control:hover .send-shortcut,
+.terminal-control:focus-within .send-shortcut {
   opacity: 1;
   visibility: visible;
   transform: translateY(0);
@@ -2000,12 +1994,6 @@ summary:hover {
   }
   .transcript {
     padding: 8px 22px;
-  }
-  .conversation > header {
-    padding: 8px 12px;
-  }
-  .conversation-back {
-    display: inline-block;
   }
   .composer {
     width: calc(100% - 44px);

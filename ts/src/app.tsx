@@ -60,8 +60,6 @@ import {
 import { type ComposerPaste } from "./composer-pastes";
 import { composerPrompt } from "./composer-code";
 import { SessionTreeGroup } from "./session-tree";
-import { SessionIdentity } from "./session-identity";
-import { ActionMenu } from "./action-menu";
 import { PanelScroll } from "./panel-scroll";
 import { useScrollbars } from "./scrollbars";
 import { useResourceInventory } from "./resource-inventory";
@@ -71,7 +69,6 @@ import { ToolActivityView } from "./tool-activity-view";
 import { Transcript } from "./transcript";
 import { WorkspaceEditor } from "./workspace-editor";
 import { SettingsPage } from "./settings-page";
-import { useNavigate } from "@tanstack/react-router";
 import { RouteLink } from "./route-link";
 import { useWorkspaceRoute } from "./router";
 export { Button } from "./button";
@@ -408,7 +405,6 @@ export function WorkspaceView() {
     expandProject,
   } = useContext(WorkspaceContext)!;
   const { resource, session, settingsTopic } = useWorkspaceRoute();
-  const navigate = useNavigate();
   if (resource === "not-found")
     return (
       <main className="empty route-not-found">
@@ -459,11 +455,7 @@ export function WorkspaceView() {
           </div>
         </main>
       ) : session ? (
-        <SessionWorkspace
-          c={c}
-          id={session}
-          back={() => void navigate({ to: "/sessions" })}
-        />
+        <SessionWorkspace c={c} id={session} />
       ) : (
         <main className="empty">
           <h1>{t("Your workspace")}</h1>
@@ -473,15 +465,7 @@ export function WorkspaceView() {
     </>
   );
 }
-function SessionWorkspace({
-  c,
-  id,
-  back,
-}: {
-  c: Connection;
-  id: string;
-  back: () => void;
-}) {
+function SessionWorkspace({ c, id }: { c: Connection; id: string }) {
   useLocale();
   const current = useQuery(SessionService.method.get, {
     ref: ref(id),
@@ -500,7 +484,7 @@ function SessionWorkspace({
   return (
     <div className="session-workspace" ref={area}>
       <div className="session-split">
-        <Conversation key={id} c={c} id={id} back={back} />
+        <Conversation key={id} c={c} id={id} />
         {activated && !!project?.id.length && (
           <ProjectEditorPane
             key={Array.from(project.id).join("-")}
@@ -534,7 +518,7 @@ function ProjectEditorPane({
     </aside>
   );
 }
-function Conversation(props: { c: Connection; id: string; back: () => void }) {
+function Conversation(props: { c: Connection; id: string }) {
   useLocale();
   return (
     <FloatingCardProvider>
@@ -542,15 +526,7 @@ function Conversation(props: { c: Connection; id: string; back: () => void }) {
     </FloatingCardProvider>
   );
 }
-function ConversationContent({
-  c,
-  id,
-  back,
-}: {
-  c: Connection;
-  id: string;
-  back: () => void;
-}) {
+function ConversationContent({ c, id }: { c: Connection; id: string }) {
   useLocale();
   const current = useQuery(SessionService.method.get, {
     ref: ref(id),
@@ -1172,29 +1148,10 @@ function ConversationContent({
     });
   }
   return (
-    <main className="conversation">
-      <header>
-        <Button
-          className="conversation-back"
-          onClick={back}
-          aria-label={t("Back to sessions")}
-        >
-          ←
-        </Button>
-        <SessionIdentity session={s} heading />
-        <ActionMenu
-          label={t("Session menu")}
-          status={`${s?.status?.state ?? ""} · ${translateKnown(status)}`}
-          items={[
-            {
-              label: t("Terminal"),
-              shortcut: "Ctrl+`",
-              checked: terminalVisible,
-              run: () => showTerminal(!terminalVisibleRef.current),
-            },
-          ]}
-        />
-      </header>
+    <main
+      className="conversation"
+      aria-description={`${s?.status?.state ?? ""} · ${translateKnown(status)}`}
+    >
       <Transcript
         pane={pane}
         events={transcript.events}
@@ -1325,6 +1282,39 @@ function ConversationContent({
                   <path d="M12 5v14m-6-6 6 6 6-6" />
                 </svg>
               </Button>
+            </span>
+            <span className="terminal-control">
+              <Button
+                className="toolbar-button terminal-toggle"
+                type="button"
+                aria-label={t("Terminal")}
+                aria-pressed={terminalVisible}
+                aria-keyshortcuts="Control+Backquote"
+                aria-describedby="terminal-shortcut"
+                disabled={!s?.project?.id.length}
+                onClick={() => showTerminal(!terminalVisibleRef.current)}
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="m4 6 6 6-6 6m9 0h7" />
+                </svg>
+              </Button>
+              <span
+                id="terminal-shortcut"
+                className="send-shortcut"
+                role="tooltip"
+              >
+                {t("Terminal")} · ctrl+`
+              </span>
             </span>
             <span className="send-control">
               <Button

@@ -503,9 +503,9 @@ test("invalid stored files stay recoverable and mobile settings remain accessibl
   await page.addInitScript(() => localStorage.setItem("settings", '{"broken"'));
   await ready(page);
   await page.setViewportSize({ width: 390, height: 844 });
-  await page
-    .getByRole("button", { name: "Back to sessions", exact: true })
-    .click();
+  await page.evaluate(() => {
+    location.hash = "/sessions";
+  });
   await settings(page);
   await expect(
     page.locator(".settings-page p[role=alert]:visible"),

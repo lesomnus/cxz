@@ -100,7 +100,7 @@ export function FloatingCardHost({ children }: { children?: ReactNode }) {
   useLayoutEffect(() => {
     const node = host.current!;
     const conversation = node.closest(".conversation")!;
-    const header = conversation.querySelector("header")!;
+    const area = conversation.querySelector(".transcript-area")!;
     const wrapper = conversation.querySelector(".composer-wrapper")!;
     const measure = () => {
       const bounds = conversation.getBoundingClientRect();
@@ -118,7 +118,7 @@ export function FloatingCardHost({ children }: { children?: ReactNode }) {
       const available =
         node.getBoundingClientRect().bottom -
         parseFloat(getComputedStyle(node).paddingBottom) -
-        header.getBoundingClientRect().bottom -
+        area.getBoundingClientRect().top -
         8;
       node.style.setProperty("--card-space", `${Math.max(0, available)}px`);
     };
@@ -126,8 +126,7 @@ export function FloatingCardHost({ children }: { children?: ReactNode }) {
     const observer = new ResizeObserver(measure);
     observer.observe(conversation);
     observer.observe(wrapper);
-    observer.observe(header);
-    observer.observe(conversation.querySelector(".transcript-area")!);
+    observer.observe(area);
     window.addEventListener("resize", measure);
     return () => {
       observer.disconnect();

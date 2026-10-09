@@ -8,6 +8,11 @@ The session panel keeps the current session highlighted. Its scrollbar shows
 only a handle while the panel is hovered, with no visible track or arrow buttons;
 revealing it does not change the list width.
 
+The conversation starts directly at the transcript without a title bar. The
+terminal toggle sits immediately to the left of Send in the composer toolbar.
+The selected session's identity remains in the session panel; narrow layouts
+use browser history to return to the session list.
+
 The composer toolbar has a Stop response button and a monospace elapsed clock.
 Click twice within three seconds, or press Escape twice within the same window,
 to interrupt the current turn through SessionService/Interrupt. This keeps the
