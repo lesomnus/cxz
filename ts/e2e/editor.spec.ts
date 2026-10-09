@@ -133,7 +133,7 @@ test("real container editor opens the workspace through the authenticated iframe
       timeout: 30000,
     },
   );
-  await expect(editor.locator("iframe")).toHaveCSS("filter", "grayscale(1)");
+  await expect(editor.locator("iframe")).toHaveCSS("filter", "none");
   await page.screenshot({
     path: "test-results/real-workspace-editor.png",
     fullPage: true,

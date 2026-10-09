@@ -43,7 +43,7 @@ second container or adopt an unregistered/foreign one. A stopped project reports
 that it must be started first. **Disconnect** closes the embedded view and returns
 to the read-only preview; it leaves the project and private editor process running.
 The IDE's first-use workspace trust prompt remains available for the user.
-The embedded workbench is displayed in grayscale; its own theme/settings remain
+The embedded workbench keeps its original colors, with its own theme/settings
 available in VS Code.
 
 Supported containers are glibc Linux amd64/arm64. The first Connect downloads the

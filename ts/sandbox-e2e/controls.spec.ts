@@ -222,9 +222,10 @@ test("provider dropdowns, quota popovers, aligned headings and bounded press/sha
   ).toBeGreaterThanOrEqual(7);
   expect((await page.locator(".effort-field").boundingBox())!.x).toBe(effortX);
   await expect(page.locator("article.input")).toHaveCount(1);
-  await expect(
-    page.getByRole("button", { name: "Session menu", exact: true }),
-  ).toHaveAttribute("aria-description", /idle/);
+  await expect(page.locator(".conversation")).toHaveAttribute(
+    "aria-description",
+    /idle/,
+  );
   // Every button scales uniformly; a long label loses at most 4px along its long edge.
   const project = page.locator(".tree-project").first();
   const original = (await project.locator(".button-content").boundingBox())!;
@@ -367,6 +368,12 @@ test("provider dropdowns, quota popovers, aligned headings and bounded press/sha
       return { bodyBelow, controlAbove };
     });
   expect(layers).toEqual({ bodyBelow: true, controlAbove: true });
+  expect(
+    await page
+      .locator(".transcript-row > .response")
+      .first()
+      .evaluate((el) => getComputedStyle(el, "::before").backdropFilter),
+  ).toBe("blur(16px)");
   const latest = page.getByRole("button", { name: "Latest", exact: true });
   // Wait for the overlay's entrance transition before testing its hit bounds.
   await expect

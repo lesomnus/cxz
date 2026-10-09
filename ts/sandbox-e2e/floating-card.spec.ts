@@ -54,15 +54,15 @@ test("floating event and paste cards replace one another without moving the tran
   const before = await page
     .locator(".transcript")
     .evaluate((el) => ({ top: el.scrollTop, height: el.scrollHeight }));
-  await trigger.click();
+  await trigger.dblclick();
   const event = page.locator('.floating-card[data-active="true"]');
   await expect(event).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
   const eventId = await event.getAttribute("data-card");
-  const wrapper = (await page.locator(".composer-wrapper").boundingBox())!;
   const card = (await event.boundingBox())!;
-  expect(wrapper.y - card.y - card.height).toBeCloseTo(12, 0);
+  const anchor = (await trigger.boundingBox())!;
+  expect(card.y).toBeCloseTo(anchor.y + anchor.height - 4, 0);
   await expect(event).toHaveCSS("border-top-width", "1px");
-  await expect(event).toHaveCSS("border-radius", "12px");
+  await expect(event).toHaveCSS("border-radius", "0px 0px 12px 12px");
   await expect(event).toHaveCSS("backdrop-filter", "blur(48px)");
   await expect(event.locator(".card-body")).toHaveCSS("padding-left", "4px");
   const eventRow = await trigger.boundingBox();
@@ -96,10 +96,9 @@ test("floating event and paste cards replace one another without moving the tran
   await expect(page.locator(".floating-card")).toHaveCount(0);
   await expect(input).toBeFocused();
   expect(await trigger.boundingBox()).toEqual(eventRow);
+  await trigger.dblclick();
+  await expect(trigger).toHaveAttribute("aria-expanded", "true");
   await trigger.click();
-  await page
-    .getByRole("button", { name: "Close details", exact: true })
-    .click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(input).toHaveValue(draft);
 });
@@ -110,7 +109,8 @@ test.describe("rendered backdrop", () => {
     page,
   }) => {
     await open(page);
-    await page.locator(".transcript-row > .event-detail").last().click();
+    await paste(page, "blur\npreview\nbody\nhere");
+    await page.locator(".paste-chip").click();
     const card = page.locator(".floating-card");
     await expect(card).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
     await expect(card).toHaveCSS("opacity", "1");
@@ -169,7 +169,7 @@ test.describe("rendered backdrop", () => {
   });
 });
 
-test("mobile cards stay below the title and stale previews cannot replace an edited draft", async ({
+test("mobile cards stay inside the conversation and stale previews cannot replace an edited draft", async ({
   page,
 }) => {
   const input = await open(page);
@@ -180,8 +180,8 @@ test("mobile cards stay below the title and stale previews cannot replace an edi
   const preview = page.getByRole("dialog", { name: "Paste source" });
   await expect(preview).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
   const bounds = (await preview.boundingBox())!;
-  const header = (await page.locator(".conversation > header").boundingBox())!;
-  expect(bounds.y).toBeGreaterThanOrEqual(header.y + header.height);
+  const area = (await page.locator(".transcript-area").boundingBox())!;
+  expect(bounds.y).toBeGreaterThanOrEqual(area.y);
   expect(bounds.x).toBeGreaterThanOrEqual(0);
   expect(bounds.x + bounds.width).toBeLessThanOrEqual(390);
   expect(bounds.height).toBeLessThanOrEqual(360);
@@ -224,7 +224,7 @@ test("only the transcript's empty side margins dismiss the floating card", async
   await expect(preview).toHaveCSS("opacity", "1");
   await preview.locator("pre").click();
   await expect(preview).toBeVisible();
-  await page.locator(".conversation > header strong").click();
+  await input.click();
   await expect(preview).toBeVisible();
   // The scrollbar sits in a side margin but remains an interactive control.
   const thumb = page.getByRole("scrollbar", { name: "Conversation scroll" });
@@ -388,9 +388,9 @@ test("question and covering details stay bounded on mobile and dismiss independe
     )
     .toBe(28);
   expect(await page.locator("body").evaluate((el) => el.scrollWidth)).toBe(390);
-  const header = (await page.locator(".conversation > header").boundingBox())!;
+  const area = (await page.locator(".transcript-area").boundingBox())!;
   const bounds = (await question.boundingBox())!;
-  expect(bounds.y).toBeGreaterThanOrEqual(header.y + header.height + 7);
+  expect(bounds.y).toBeGreaterThanOrEqual(area.y + 7);
   expect(bounds.x).toBeGreaterThanOrEqual(0);
   expect(bounds.x + bounds.width).toBeLessThanOrEqual(390);
   await expect(

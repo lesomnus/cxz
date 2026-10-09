@@ -5,54 +5,51 @@ test.use({
   viewport: { width: 1440, height: 1000 },
 });
 
-test("session heading shares the card identity, hides desktop Back, and puts the terminal in its menu", async ({
+test("conversation starts at the transcript and the terminal toggle sits beside Send on desktop and mobile", async ({
   page,
 }) => {
   await page.goto("/sandbox.html");
-  const header = page.locator(".conversation > header");
-  await expect(header.locator(".session-title")).toHaveText(
-    "Project checklist",
-    { timeout: 45000 },
-  );
-  await expect(header.locator(".session-alias")).toHaveText("session-1");
-  await expect(
-    header.getByRole("button", { name: "Back to sessions", exact: true }),
-  ).toBeHidden();
-  const logo = (await header
-    .getByRole("img", { name: "Claude", exact: true })
-    .boundingBox())!;
-  const title = (await header.locator(".session-title").boundingBox())!;
-  const alias = (await header.locator(".session-alias").boundingBox())!;
-  expect(logo.x + logo.width).toBeLessThan(title.x);
-  expect(alias.x).toBe(title.x);
-  expect(alias.y).toBeGreaterThan(title.y);
-  await expect(header.locator(".terminal-toggle")).toHaveCount(0);
-  const trigger = header.getByRole("button", {
-    name: "Session menu",
-    exact: true,
-  });
-  await trigger.press("ArrowDown");
-  const terminal = page.getByRole("menuitemcheckbox", {
+  const input = page.getByRole("textbox", { name: "Message", exact: true });
+  await expect(input).toBeVisible({ timeout: 45000 });
+  await expect(page.locator(".conversation > header")).toHaveCount(0);
+  const area = (await page.locator(".transcript-area").boundingBox())!;
+  const conversation = (await page.locator(".conversation").boundingBox())!;
+  expect(area.y).toBe(conversation.y);
+  const terminal = page.getByRole("button", {
     name: "Terminal",
     exact: true,
   });
-  await expect(terminal).toBeFocused();
-  await expect(terminal).toHaveAttribute("aria-checked", "false");
-  await page.keyboard.press("Escape");
-  await expect(trigger).toBeFocused();
-  await trigger.click();
+  const toolbar = page.locator(".composer-toolbar");
+  await expect(
+    toolbar.getByRole("button", { name: "Terminal", exact: true }),
+  ).toBeVisible();
+  await expect(terminal).toHaveAttribute("aria-pressed", "false");
+  const send = page.getByRole("button", { name: "Send", exact: true });
+  const terminalBox = (await terminal.boundingBox())!;
+  const sendBox = (await send.boundingBox())!;
+  expect(terminalBox.x + terminalBox.width).toBeLessThan(sendBox.x);
+  expect(terminalBox.y).toBe(sendBox.y);
+  expect(terminalBox.height).toBe(sendBox.height);
+  expect(terminalBox.width).toBe(sendBox.width);
   await terminal.click();
   await expect(
     page.getByRole("region", { name: "Workspace terminal", exact: true }),
   ).toBeVisible();
+  await expect(terminal).toHaveAttribute("aria-pressed", "true");
   await page.keyboard.press("Control+Backquote");
+  await expect(terminal).toHaveAttribute("aria-pressed", "false");
+  await expect(input).toBeFocused();
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect(
-    header.getByRole("button", { name: "Back to sessions", exact: true }),
-  ).toBeVisible();
+  await expect(page.locator(".conversation > header")).toHaveCount(0);
+  await expect(terminal).toBeVisible();
+  const mobileTerminal = (await terminal.boundingBox())!;
+  const mobileSend = (await send.boundingBox())!;
+  expect(mobileTerminal.x + mobileTerminal.width).toBeLessThan(mobileSend.x);
+  expect(mobileTerminal.y).toBe(mobileSend.y);
   await expect(
     page.getByRole("complementary", { name: "Session list", exact: true }),
   ).toBeHidden();
+  await page.screenshot({ path: "test-results/composer-terminal-mobile.png" });
 });
 
 test("inline ticks pair and overtype while opening fences still pair as blocks", async ({

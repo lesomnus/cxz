@@ -6,6 +6,7 @@ import React, {
   useState,
 } from "react";
 import type { SessionEvent } from "../gen/cxz/session_pb";
+import { useTranscriptMotion } from "./transcript-motion";
 import {
   messageLayout,
   messageMap,
@@ -235,6 +236,7 @@ export function VirtualMessages({
   useLayoutEffect(() => {
     onPromptChange(prompt, peek);
   }, [prompt, peek, onPromptChange]);
+  useTranscriptMotion({ root, pane, follow, rows: layout.rows, start, end });
   return (
     <div
       className="virtual-messages"

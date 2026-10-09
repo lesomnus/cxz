@@ -89,6 +89,11 @@ and `memory_changes`. When a refresh is useful, call `memory_changes` with the
 cursor retained from the previous call, then read only relevant changed documents.
 This is an explicit refresh mechanism, not a request to poll on every message.
 
+Memory operations wait only briefly for another operation's project lock. If the
+lock remains busy, the call returns a deadline error instead of waiting indefinitely.
+The timed-out call has not modified a document. Once the contention clears, normal
+ownership and revision checks still apply to the next request.
+
 Omitting `cursor` starts a metadata baseline of current memories and documents.
 Save the returned opaque `cursor`; while `has_more` is true, request the next page
 with that cursor. `limit` defaults to 100 and accepts 1–500 entries. Baseline pages

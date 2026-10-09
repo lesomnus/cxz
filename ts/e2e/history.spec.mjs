@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, devices } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 // Optional local replay uses private recorded data without checking it into git.
@@ -279,12 +279,14 @@ for (const mode of ["legacy", "summary"])
       expect(calls.details).toBe(0);
       const task = page.locator(".tool-activity").first();
       if (await task.count()) {
-        await task.click();
+        await task.dblclick();
         await expect.poll(() => calls.details).toBe(1);
         await expect(
           page.locator(".card-body").getByText("Loading…"),
         ).toHaveCount(0);
-        await expect(page.locator(".card-body pre").first()).toBeVisible();
+        await expect(
+          page.locator(".card-body .monaco-editor").first(),
+        ).toBeVisible();
       }
     }
   });
@@ -481,6 +483,25 @@ for (const mode of ["legacy", "summary"])
       },
       { seq: "4", kind: "assistant", text: "Changes completed", runId: "run" },
     ];
+    native.push(
+      {
+        seq: "5",
+        kind: "approval",
+        text: "Write",
+        requestId: "approve",
+        runId: "run",
+        payload: Buffer.from(
+          JSON.stringify({ tool_use_id: "patch", file_path: changes[1].path }),
+        ).toString("base64"),
+      },
+      {
+        seq: "6",
+        kind: "approval_resolved",
+        text: "allowed",
+        requestId: "approve",
+        runId: "run",
+      },
+    );
     const events =
       mode === "legacy"
         ? native
@@ -517,7 +538,13 @@ for (const mode of ["legacy", "summary"])
     await openReplay(page, mode === "summary", { events });
     await page.route("**/cxz.SessionService/EventDetails", (route) => {
       details++;
-      return route.fulfill({ json: { events: native.slice(1, 3) } });
+      return route.fulfill({
+        json: {
+          events: native.filter(
+            (event) => !["input", "assistant"].includes(event.kind),
+          ),
+        },
+      });
     });
     const task = page.locator('.tool-activity[data-seq="2"]');
     await expect(task).toHaveAttribute("data-state", "completed");
@@ -531,12 +558,192 @@ for (const mode of ["legacy", "summary"])
     await expect(page.locator(".tool-activity")).toHaveCount(1);
     expect(details).toBe(0);
     await task.click();
+    expect(details).toBe(0);
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await task.dblclick();
     const card = page.getByRole("dialog", { name: "Details" });
     await expect(card).toBeVisible();
-    await expect(card).toContainText("/workspace/ts/src/send-motion.ts");
+    await card.getByRole("tab", { name: "Result", exact: true }).click();
+    await expect(card.locator(".view-lines")).toContainText(
+      "/workspace/ts/src/send-motion.ts",
+    );
+    await expect(card.locator(".monaco-editor textarea")).toHaveJSProperty(
+      "readOnly",
+      true,
+    );
     expect(details).toBe(mode === "summary" ? 1 : 0);
     await page.setViewportSize({ width: 390, height: 844 });
     await expect
       .poll(() => page.evaluate(() => document.documentElement.scrollWidth))
       .toBe(390);
+    await expect(card).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
+    const anchor = await task.boundingBox();
+    const box = await card.boundingBox();
+    expect(box.x).toBe(anchor.x - 4);
+    expect(box.width).toBe(anchor.width + 8);
+    expect(box.y).toBeCloseTo(anchor.y + anchor.height - 4, 0);
+    expect(box.y + box.height).toBeLessThanOrEqual(844);
+    const pane = page.locator(".transcript");
+    const top = await pane.evaluate((el) => el.scrollTop);
+    const editor = card.locator(".monaco-editor");
+    await editor.hover();
+    await page.mouse.wheel(0, 80);
+    await expect
+      .poll(() =>
+        editor
+          .locator(".scrollbar.vertical > .slider")
+          .first()
+          .evaluate((el) => parseFloat(el.style.top)),
+      )
+      .toBeGreaterThan(0);
+    expect(
+      await card.locator(".card-body").evaluate((el) => el.scrollTop),
+    ).toBe(0);
+    expect(await pane.evaluate((el) => el.scrollTop)).toBe(top);
+    await card.getByRole("tab", { name: "Approval", exact: true }).click();
+    await expect(card.locator(".view-lines")).toContainText("allowed");
+    await expect(card.locator(".view-lines")).toContainText(
+      "/workspace/ts/src/send-motion.ts",
+    );
+    await expect(card.locator(".detail-editor")).toHaveAttribute(
+      "data-language",
+      "json",
+    );
+    await task.click();
+    await expect(card).toHaveCount(0);
+    expect(details).toBe(mode === "summary" ? 1 : 0);
   });
+
+test.describe("task detail editor", () => {
+  // Exercise Monaco with Chromium's own identity. The fixture's default iPhone
+  // Safari user agent enables a WebKit clipboard workaround in a Chromium page.
+  const { defaultBrowserType: _browserType, ...desktop } =
+    devices["Desktop Chrome"];
+  test.use({
+    ...desktop,
+    viewport: { width: 1440, height: 900 },
+  });
+  test("task output detects syntax, scrolls only its Monaco viewport and restores tab reading positions", async ({
+    page,
+  }) => {
+    await page
+      .context()
+      .grantPermissions(["clipboard-read", "clipboard-write"]);
+    const output = Array.from(
+      { length: 60 },
+      (_, index) =>
+        `def greeting_${index}(name):\n    # Print a greeting\n    return f"Hello, {name}"\n`,
+    ).join("\n");
+    const native = [
+      {
+        seq: "2",
+        kind: "tool_call",
+        requestId: "cat",
+        runId: "run",
+        payload: Buffer.from(
+          JSON.stringify({
+            item: {
+              type: "commandExecution",
+              command: "cat greetings.py",
+              status: "inProgress",
+            },
+          }),
+        ).toString("base64"),
+      },
+      {
+        seq: "3",
+        kind: "tool_result",
+        requestId: "cat",
+        runId: "run",
+        payload: Buffer.from(
+          JSON.stringify({
+            item: {
+              type: "commandExecution",
+              status: "completed",
+              aggregatedOutput: output,
+              exitCode: 0,
+            },
+          }),
+        ).toString("base64"),
+      },
+    ];
+    const errors = [];
+    page.on("pageerror", (error) => errors.push(error.stack ?? error.message));
+    await openReplay(page, true, {
+      events: [
+        { seq: "1", kind: "input", text: "Show the source", runId: "run" },
+        {
+          ...native[0],
+          payload: undefined,
+          toolSummary: {
+            name: "Bash",
+            command: "cat greetings.py",
+            state: "completed",
+          },
+        },
+        { seq: "4", kind: "assistant", text: "Source printed", runId: "run" },
+      ],
+    });
+    let requests = 0;
+    await page.route("**/cxz.SessionService/EventDetails", (route) => {
+      requests++;
+      return route.fulfill({ json: { events: native } });
+    });
+    await page.locator(".tool-activity").dblclick();
+    const card = page.getByRole("dialog", { name: "Details" });
+    const outputTab = card.getByRole("tab", { name: "Output", exact: true });
+    await outputTab.click();
+    await expect(card.locator(".detail-editor")).toHaveAttribute(
+      "data-language",
+      "python",
+    );
+    await expect(card.locator(".view-lines")).toContainText("def greeting_0");
+    const copy = card.getByRole("button", { name: "Copy", exact: true });
+    await copy.click();
+    await expect
+      .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+      .toBe(output);
+    await expect(card).toBeVisible();
+    const pane = page.locator(".transcript");
+    const top = await pane.evaluate((el) => el.scrollTop);
+    const editor = card.locator(".monaco-editor");
+    await expect(editor.locator("textarea")).toHaveJSProperty("readOnly", true);
+    await editor.hover();
+    await page.mouse.wheel(0, 160);
+    const readingPosition = () =>
+      editor
+        .locator(".scrollbar.vertical > .slider")
+        .first()
+        .evaluate((el) => parseFloat(el.style.top));
+    await expect.poll(readingPosition).toBeGreaterThan(0);
+    expect(
+      await card.locator(".card-body").evaluate((el) => el.scrollTop),
+    ).toBe(0);
+    expect(await pane.evaluate((el) => el.scrollTop)).toBe(top);
+    await card.getByRole("tab", { name: "Input", exact: true }).click();
+    await expect(card.locator(".detail-editor")).toHaveAttribute(
+      "data-language",
+      "json",
+    );
+    await copy.click();
+    await expect
+      .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+      .toBe(
+        JSON.stringify(
+          {
+            item: {
+              type: "commandExecution",
+              command: "cat greetings.py",
+              status: "inProgress",
+            },
+          },
+          null,
+          2,
+        ),
+      );
+    await outputTab.click();
+    await expect.poll(readingPosition).toBeGreaterThan(0);
+    expect(requests).toBe(1);
+    expect(errors).toEqual([]);
+  });
+});

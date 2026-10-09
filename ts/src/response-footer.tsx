@@ -1,6 +1,6 @@
 import { t, translateKnown, currentLocale } from "./i18n";
 import { useLocale } from "./i18n-react";
-import { Button } from "./button";
+import { CopyButton } from "./copy-button";
 import { messageDate } from "./message-time";
 import { durationLabel, type ResponseCompletion } from "./response-completion";
 import { formatTokens } from "./session-info";
@@ -85,7 +85,6 @@ function metricTitle(key: string, value: number, scope?: string) {
 }
 
 export function ResponseFooter({
-  seq,
   timeMs,
   text,
   completion,
@@ -97,7 +96,6 @@ export function ResponseFooter({
 }) {
   useLocale();
   const date = completion && messageDate(timeMs);
-  const tooltip = `copy-${seq}`;
   return (
     <footer className="response-footer">
       {completion && (
@@ -155,32 +153,7 @@ export function ResponseFooter({
           )}
         </div>
       )}
-      <span className="meta-popover copy-control">
-        <Button
-          className="copy"
-          aria-label={t("Copy")}
-          aria-describedby={tooltip}
-          onClick={() => navigator.clipboard.writeText(text).catch(() => {})}
-        >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <rect x="8" y="8" width="12" height="12" rx="2" />
-            <path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3" />
-          </svg>
-        </Button>
-        <span id={tooltip} className="meta-tooltip" role="tooltip">
-          {t("Copy")}
-        </span>
-      </span>
+      <CopyButton value={text} className="copy-control" />
     </footer>
   );
 }

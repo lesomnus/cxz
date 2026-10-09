@@ -32,7 +32,7 @@ test("mobile sign-in, conversation, questions, drafts and sign-out", async ({
   await page
     .getByRole("textbox", { name: "Message", exact: true })
     .fill("초안 preserved");
-  await page.getByRole("button", { name: "Back to sessions" }).click();
+  await page.goBack();
   await page.getByRole("link", { name: /demo-chat/ }).click();
   await expect(
     page.getByRole("textbox", { name: "Message", exact: true }),
@@ -45,20 +45,24 @@ test("mobile sign-in, conversation, questions, drafts and sign-out", async ({
     page.locator("article.input").filter({ hasText: "초안 preserved" }),
   ).toHaveCount(1);
   await context.setOffline(true);
-  await expect(
-    page.getByRole("button", { name: "Session menu", exact: true }),
-  ).toHaveAttribute("aria-description", /Disconnected · retrying/);
+  await expect(page.locator(".conversation")).toHaveAttribute(
+    "aria-description",
+    /Disconnected · retrying/,
+  );
   await context.setOffline(false);
   await expect(
     page
-      .locator(".conversation > header")
+      .locator(".response")
+      .first()
       .getByRole("img", { name: "Claude", exact: true }),
   ).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "Session menu", exact: true }),
-  ).toHaveAttribute("aria-description", /idle · Live/, {
-    timeout: 15000,
-  });
+  await expect(page.locator(".conversation")).toHaveAttribute(
+    "aria-description",
+    /idle · Live/,
+    {
+      timeout: 15000,
+    },
+  );
   await expect(
     page.locator("article.input").filter({ hasText: "초안 preserved" }),
   ).toHaveCount(1);
@@ -77,7 +81,7 @@ test("mobile sign-in, conversation, questions, drafts and sign-out", async ({
     path: "test-results/mobile-conversation.png",
     fullPage: true,
   });
-  await page.getByRole("button", { name: "Back to sessions" }).click();
+  await page.goBack();
   await page.getByRole("button", { name: "Sign out" }).click();
   await expect(
     page.getByRole("button", { name: "Connect", exact: true }),

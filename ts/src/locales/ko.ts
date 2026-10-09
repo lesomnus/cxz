@@ -1,5 +1,18 @@
 import type { LanguagePack } from "../i18n";
 export const messages = {
+  "Command suggestions": "명령어 제안",
+  "Choose the provider model": "에이전트 모델 선택",
+  "Choose the reasoning effort": "추론 강도 선택",
+  "Compact the current context": "현재 컨텍스트 압축",
+  "Inspect the current context": "현재 컨텍스트 확인",
+  "Use the default model": "기본 모델 사용",
+  "Set reasoning effort to {effort}": "추론 강도를 {effort}로 변경",
+  "Stop response": "응답 정지",
+  "Response elapsed time": "응답 경과 시간",
+  "Repeat within 3 seconds to stop": "3초 이내 한 번 더 누르면 정지",
+  "Click twice or press Esc twice within 3 seconds":
+    "3초 이내 두 번 클릭하거나 Esc 두 번",
+  "Provider rejected the interrupt": "에이전트가 중단 요청을 거부했습니다",
   "(path not reported)": "(경로 미제공)",
   "Page not found": "페이지를 찾을 수 없습니다",
   "{count} more files in Details": "상세 정보에서 파일 {count}개 더 보기",

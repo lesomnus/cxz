@@ -134,6 +134,9 @@ export function useSendMotion({
     )
       return;
     const snapshot = editor.cloneNode(true) as HTMLElement;
+    // Only submitted source text departs; unaccepted command hints are decoration.
+    snapshot.removeAttribute("data-command-open");
+    snapshot.querySelector(".command-suggestions")?.remove();
     snapshot.classList.add("composer-send-ghost");
     snapshot.setAttribute("aria-hidden", "true");
     snapshot.inert = true;

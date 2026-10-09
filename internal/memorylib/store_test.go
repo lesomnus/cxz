@@ -2,6 +2,7 @@ package memorylib
 
 import (
 	"context"
+	"errors"
 	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/internal/core"
 	"os"
@@ -9,7 +10,33 @@ import (
 	"strings"
 	"sync"
 	"testing"
+
+	"github.com/gofrs/flock"
 )
+
+func TestContendedMemoryLockHasADefaultDeadlineAndRecovers(t *testing.T) {
+	_, store, _ := fixture(t)
+	must(t, store, Request{Action: "update", Document: "notes.md", Content: "saved"})
+	before := must(t, store, Request{Action: "read", Document: "notes.md"})
+	blocker := flock.New(filepath.Join(store.root, ".lock"))
+	if err := blocker.Lock(); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = blocker.Unlock() })
+	// No caller deadline: the store must bound contention itself. A timed-out
+	// write must not change the document, and the next read must work normally.
+	_, err := store.Do(context.Background(), Request{Action: "update", Document: "notes.md", Content: "not saved", Revision: before.Revision})
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("contended operation did not time out: %v", err)
+	}
+	if err := blocker.Unlock(); err != nil {
+		t.Fatal(err)
+	}
+	after := must(t, store, Request{Action: "read", Document: "notes.md"})
+	if after.Content != before.Content || after.Revision != before.Revision {
+		t.Fatal("timed-out operation changed saved memory")
+	}
+}
 
 func fixture(t *testing.T) (string, *Store, *Store) {
 	t.Helper()

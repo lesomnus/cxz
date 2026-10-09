@@ -8,6 +8,49 @@ The session panel keeps the current session highlighted. Its scrollbar shows
 only a handle while the panel is hovered, with no visible track or arrow buttons;
 revealing it does not change the list width.
 
+The conversation starts directly at the transcript without a title bar. The
+terminal toggle sits immediately to the left of Send in the composer toolbar.
+The selected session's identity remains in the session panel; narrow layouts
+use browser history to return to the session list.
+
+The composer toolbar has a Stop response button and a monospace elapsed clock.
+Click twice within three seconds, or press Escape twice within the same window,
+to interrupt the current turn through SessionService/Interrupt. This keeps the
+agent session available for another message. A single action arms confirmation;
+holding Escape does not confirm, and switching sessions or completing a turn
+clears it. Menus and preview cards retain their own Escape handling.
+
+The clock follows the latest snapshot and native live events, independently of
+historical scrolling. It starts at the recorded input, continues through approval
+waits and steering, and resets when the turn finishes. Reconnection preserves a
+known start. If retained history lacks the turn's start, it measures from first
+observation instead. `ElapsedTime` is a reusable display; unused leading digits
+are dimmed without changing the text width.
+
+When the message starts with a slash and the caret is at the end of its first
+line, the text area offers fuzzy command suggestions. The selected suggestion
+occupies the same line as the native caret, with neighboring commands above and
+below it. The overlay follows the editor's text width, padding and line height;
+it excludes the line-number gutter and scrollbar and never changes composer
+height. Up/Down browse suggestions while keeping the typed query and caret in
+place. Right accepts a suggestion as one undoable edit. Escape dismisses the
+suggestions before the turn-interrupt shortcut; blur, composition and moving
+away from the query hide them. Suggestions are enabled only for the session
+composer, leaving question answers as ordinary editable text.
+
+The overlay has vertical inset around its rows and a dark translucent backdrop
+with Gaussian blur. The tint lightly darkens the blurred content rather than
+concealing it. Padding extends the surface without shifting the selected
+line. The backdrop occupies its own layer below the native textarea so the caret
+remains visible; applying a filter to the whole overlay would change that stacking.
+
+The initial catalog contains `/model`, `/effort`, `/compact` and Claude's
+`/context`, plus model and effort values reported by the provider. Submitting a
+bare model/effort command opens the existing picker; submitting a value uses the
+same setting path as that picker, including resetting an explicit effort before
+a model change. Suggestions remain visual until accepted, so an unaccepted hint
+cannot silently replace submitted text. TUI-only screen commands are not offered.
+
 The browser shares project and session inventories across navigation. Each entity
 type has a bounded initial List and a single Watch spanning all listed projects;
 project groups use this shared state instead of opening their own requests. The
@@ -32,8 +75,14 @@ Tool executions stay at their original transcript position. The call, associated
 approval, streamed output and result are grouped by run and native execution ID
 into one status row, like the TUI. Shell wrappers are shown as the shell name and
 the script it runs. Click the row for input, output, result and approval records
-in the shared floating details card. Unrelated approvals and questions retain
-their existing answer controls; orphan output/results at a loaded-history edge
+in an overlay attached below the selected task. The selected summary's exterior
+grows and gains a border while its text and measured row height stay unchanged.
+Details emerge from beneath that summary, follow it while scrolling, and close
+if the summary leaves view. Click the same summary again, press Escape, or click
+an empty transcript side margin to dismiss. The card has no separate Close button;
+its height stays within the conversation and long content scrolls internally.
+Unrelated approvals and questions retain their existing answer controls;
+orphan output/results at a loaded-history edge
 remain inspectable until their call is loaded.
 
 History paging follows the rendered content, including after viewport changes.

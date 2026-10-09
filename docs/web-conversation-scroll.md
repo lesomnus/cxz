@@ -137,6 +137,17 @@ inert/aria-hidden이며 클릭과 focus를 가로채지 않는다. Reduced motio
 전환한다. 클릭은 최신 기록을 불러와 live follow를 재개하고 draft를 보내거나 지우지
 않는다. 고정 입력과 마찬가지로 핸들·막대의 공통 물리는 유지한다.
 
+## 새 실시간 카드의 등장
+
+최신 대화를 따라가는 동안 새 카드가 들어오면 앞의 카드는 부드럽게 위로 밀리고,
+새 카드는 그보다 조금 빠르게 아래에서 올라오며 본래 크기로 돌아온다. 이후 높이
+측정이 보정되어도 현재 화면 위치에서 이어서 움직인다. 가상 행의 높이와 스크롤
+목표는 즉시 확정하고 실제 화면에 보이는 행만 전환하여 읽기 좌표를 흔들지 않는다.
+초기 기록, 과거 페이지 로딩과 단순 재마운트는 등장 효과를 반복하지 않는다.
+읽기 동작이나 명시적인 이동을 시작하면 전환을 정리하고 사용자의 이동을 바로
+따른다. Reduced motion에서는 모든 위치와 내용이 즉시 반영된다.
+구현은 `ts/src/transcript-motion.ts`, 값은 CSS 토큰이 기준이다.
+
 ## 회귀 검증
 
 ```sh
@@ -150,6 +161,8 @@ npm run --prefix ts test:sandbox
 - `scroll.spec.ts`, `tension.spec.ts`: hover·접근·장력, 핸들과 막대의 공통 진행,
   양 끝의 위상과 핸들 경계를 검사한다.
 - `virtual.spec.ts`: 전체 기록 왕복, 캐시/DOM 상한, 작은 최신 근처 이동과 resize anchor.
+- `transcript-motion.spec.ts`: 실시간 추가의 기존 행 이동·등장 속도와 측정 높이 보존,
+  과거 읽기 및 reduced motion에서의 전환 생략.
 - `scroll-physics.test.ts`, `virtual-layout.test.ts`: 물리 곡선, 범위 보존, 단조 변환과
   역변환, 재측정 시 읽는 비율 보존.
 - `pinned-prompt.spec.ts`: 고정 레이어의 안정성, clearance와 노출, 접근·focus,

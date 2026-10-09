@@ -18,9 +18,7 @@ test("grouped sessions, shortcut, stable fields and elastic local scrollbar", as
   await expect(groups).toHaveCount(2);
   await expect(groups.first().locator(".tree-session")).toHaveCount(7);
   await expect(groups.last().locator(".tree-session")).toHaveCount(1);
-  await expect(page.locator(".conversation header strong")).toHaveText(
-    "Project checklist",
-  );
+  await expect(page.locator(".conversation > header")).toHaveCount(0);
   await expect(page.locator(".tree-session").first()).toContainText(
     "session-1",
   );

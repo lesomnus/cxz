@@ -13,6 +13,7 @@ import (
 type codexProtocol struct {
 	s            *Supervisor
 	turn         string
+	progress     codexProgress
 	token        func(previous string, refresh bool) (accounts.Token, error)
 	asyncSeen    map[string]bool
 	asyncReplies map[string]core.Event
@@ -38,7 +39,16 @@ func (c *codexProtocol) consume(raw []byte) {
 		s.event("diagnostic", "invalid Codex JSON", "", nil, nil)
 		return
 	}
+	c.observeProgress(v.Method, v.Params, time.Now())
 	id := string(v.ID)
+	if id == `"cxz-progress-interrupt"` {
+		if len(v.Error) > 0 && string(v.Error) != "null" {
+			s.event("diagnostic", "Codex rejected the response-timeout interrupt; resume the session to reconnect.", "", nil, nil)
+			s.event("state", "failed", "", nil, nil)
+			s.kill()
+		}
+		return
+	}
 	if pending, ok := c.asyncReplies[id]; ok {
 		delete(c.asyncReplies, id)
 		if len(v.Error) > 0 && string(v.Error) != "null" {

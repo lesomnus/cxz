@@ -72,8 +72,24 @@ test("compact monochrome workspace, aligned composer and release-triggered butto
   await expect(page.locator(".composer-wrapper")).toHaveCSS("padding", "0px");
   await expect(page.locator(".composer-wrapper")).toHaveCSS(
     "background-color",
-    "rgb(25, 25, 25)",
+    "rgba(0, 0, 0, 0)",
   );
+  await expect(page.locator(".composer-toolbar")).toHaveCSS(
+    "backdrop-filter",
+    "blur(24px)",
+  );
+  const toolbarBackground = await page
+    .locator(".composer-toolbar")
+    .evaluate((el) => {
+      const probe = document.createElement("div");
+      probe.style.background =
+        "color-mix(in srgb, var(--shade-16) 48%, transparent)";
+      el.append(probe);
+      const expected = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+      return { actual: getComputedStyle(el).backgroundColor, expected };
+    });
+  expect(toolbarBackground.actual).toBe(toolbarBackground.expected);
   await expect(send).toHaveCSS("border-top-width", "0px");
   await expect(page.locator(".composer-wrapper")).toHaveCSS(
     "border-radius",

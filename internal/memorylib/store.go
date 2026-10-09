@@ -262,12 +262,16 @@ func (s *Store) Do(ctx context.Context, q Request) (Reply, error) {
 	}
 	defer r.Close()
 	lock := flock.New(filepath.Join(s.root, ".lock"))
-	ok, e := lock.TryLockContext(ctx, 25*time.Millisecond)
+	// MCP callers need not supply a deadline. A busy project must not keep a
+	// memory tool waiting indefinitely, even when cancellation is not forwarded.
+	lockCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	ok, e := lock.TryLockContext(lockCtx, 25*time.Millisecond)
 	if e != nil {
 		return out, e
 	}
 	if !ok {
-		return out, ctx.Err()
+		return out, lockCtx.Err()
 	}
 	defer lock.Unlock()
 	if q.Action == "init" || q.Action == "update" || q.Action == "fork" {

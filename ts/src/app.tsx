@@ -40,12 +40,16 @@ import { sessionInfo } from "./session-info";
 import { ModelSettings, modelCatalog } from "./model-settings";
 import { UsageInfo } from "./usage-info";
 import { Button } from "./button";
+import { ComposerAurora } from "./composer-aurora";
+import { TurnControls } from "./turn-controls";
+import { advanceTurn, snapshotTurn, type TurnProgress } from "./turn-progress";
 import { AgentBrand } from "./agent-brand";
 import { responseInfo } from "./response-info";
 import type { ResponseCompletion } from "./response-completion";
 import { ResponseFooter } from "./response-footer";
 import { InputMessage } from "./input-message";
 import { ComposerEditor } from "./composer-editor";
+import { sessionCommands } from "./composer-commands";
 import { useSendMotion } from "./send-motion";
 import { WorkspaceTerminal, terminalShortcut } from "./workspace-terminal";
 import {
@@ -53,12 +57,11 @@ import {
   FloatingCardHost,
   FloatingCard,
   useFloatingCard,
+  useAnchoredCard,
 } from "./floating-card";
 import { type ComposerPaste } from "./composer-pastes";
 import { composerPrompt } from "./composer-code";
 import { SessionTreeGroup } from "./session-tree";
-import { SessionIdentity } from "./session-identity";
-import { ActionMenu } from "./action-menu";
 import { PanelScroll } from "./panel-scroll";
 import { useScrollbars } from "./scrollbars";
 import { useResourceInventory } from "./resource-inventory";
@@ -68,7 +71,6 @@ import { ToolActivityView } from "./tool-activity-view";
 import { Transcript } from "./transcript";
 import { WorkspaceEditor } from "./workspace-editor";
 import { SettingsPage } from "./settings-page";
-import { useNavigate } from "@tanstack/react-router";
 import { RouteLink } from "./route-link";
 import { useWorkspaceRoute } from "./router";
 export { Button } from "./button";
@@ -405,7 +407,6 @@ export function WorkspaceView() {
     expandProject,
   } = useContext(WorkspaceContext)!;
   const { resource, session, settingsTopic } = useWorkspaceRoute();
-  const navigate = useNavigate();
   if (resource === "not-found")
     return (
       <main className="empty route-not-found">
@@ -456,11 +457,7 @@ export function WorkspaceView() {
           </div>
         </main>
       ) : session ? (
-        <SessionWorkspace
-          c={c}
-          id={session}
-          back={() => void navigate({ to: "/sessions" })}
-        />
+        <SessionWorkspace c={c} id={session} />
       ) : (
         <main className="empty">
           <h1>{t("Your workspace")}</h1>
@@ -470,15 +467,7 @@ export function WorkspaceView() {
     </>
   );
 }
-function SessionWorkspace({
-  c,
-  id,
-  back,
-}: {
-  c: Connection;
-  id: string;
-  back: () => void;
-}) {
+function SessionWorkspace({ c, id }: { c: Connection; id: string }) {
   useLocale();
   const current = useQuery(SessionService.method.get, {
     ref: ref(id),
@@ -497,7 +486,7 @@ function SessionWorkspace({
   return (
     <div className="session-workspace" ref={area}>
       <div className="session-split">
-        <Conversation key={id} c={c} id={id} back={back} />
+        <Conversation key={id} c={c} id={id} />
         {activated && !!project?.id.length && (
           <ProjectEditorPane
             key={Array.from(project.id).join("-")}
@@ -531,7 +520,7 @@ function ProjectEditorPane({
     </aside>
   );
 }
-function Conversation(props: { c: Connection; id: string; back: () => void }) {
+function Conversation(props: { c: Connection; id: string }) {
   useLocale();
   return (
     <FloatingCardProvider>
@@ -539,15 +528,7 @@ function Conversation(props: { c: Connection; id: string; back: () => void }) {
     </FloatingCardProvider>
   );
 }
-function ConversationContent({
-  c,
-  id,
-  back,
-}: {
-  c: Connection;
-  id: string;
-  back: () => void;
-}) {
+function ConversationContent({ c, id }: { c: Connection; id: string }) {
   useLocale();
   const current = useQuery(SessionService.method.get, {
     ref: ref(id),
@@ -565,9 +546,12 @@ function ConversationContent({
   const tension = useRef(0);
   const scrollMotion = useRef(0);
   const composerInput = useRef<HTMLDivElement>(null);
+  const composer = useRef<HTMLFormElement>(null);
   const [pending, setPending] = useState<SessionEvent[]>([]);
   const [gap, setGap] = useState(false);
   const [status, setStatus] = useState("Connecting…");
+  const [executionState, setExecutionState] = useState("");
+  const [turn, setTurn] = useState<TurnProgress>({ runId: "", active: false });
   const [error, setError] = useState("");
   const [draft, setDraft] = useState(c.drafts.get(id) ?? "");
   const [busy, setBusy] = useState(false);
@@ -853,12 +837,16 @@ function ConversationContent({
             detached.current ? old : mergeEvents(old, loaded),
           );
         }
+        setExecutionState(snapshot.status?.state ?? "");
+        setTurn((old) => snapshotTurn(snapshot.status, loaded, old));
         setStatus("Live");
         for await (const e of c.sessions.events(
           { ref: ref(id), afterSeq: cursor, clientId: c.clientId },
           { signal },
         )) {
           if (canceled) return;
+          if (e.kind === "state") setExecutionState(e.text);
+          setTurn((old) => advanceTurn(old, e, true));
           rememberMetadata([e]);
           cursor = e.seq > cursor ? e.seq : cursor;
           if (cursor > latestSeq.current) latestSeq.current = cursor;
@@ -1018,8 +1006,17 @@ function ConversationContent({
     return () => resize.disconnect();
   }, []);
   async function changeSetting(kind: "model" | "effort", value: string) {
-    if (!catalog || s?.status?.state !== "idle") return;
-    await action(async (session) => {
+    if (!catalog || s?.status?.state !== "idle") {
+      setError(
+        t(
+          !catalog
+            ? "Provider choices not reported"
+            : "Settings require an idle session",
+        ),
+      );
+      return false;
+    }
+    return action(async (session) => {
       async function apply(name: "model" | "effort", choice: string) {
         const command = control(session);
         let afterSeq = latestSeq.current;
@@ -1067,12 +1064,13 @@ function ConversationContent({
     });
   }
   async function action(fn: (s: Session) => Promise<unknown>) {
-    if (lock.current || !s) return;
+    if (lock.current || !s) return false;
     lock.current = true;
     setBusy(true);
     setError("");
     try {
       await fn(s);
+      return true;
     } catch (e) {
       setError(
         t(
@@ -1080,6 +1078,7 @@ function ConversationContent({
           { error: String(e) },
         ),
       );
+      return false;
     } finally {
       lock.current = false;
       setBusy(false);
@@ -1096,6 +1095,26 @@ function ConversationContent({
     e.preventDefault();
     if (!draft.trim()) return;
     const sent = draft;
+    const clearCommand = () => {
+      if (c.drafts.get(id) === sent) c.drafts.set(id, "");
+      setDraft((old) => (old === sent ? "" : old));
+    };
+    const setting = /^\/(model|effort)(?:[ \t]+(\S+))?[ \t]*$/.exec(sent);
+    if (setting) {
+      const kind = setting[1] as "model" | "effort";
+      if (!setting[2]) {
+        const trigger = document.querySelector<HTMLButtonElement>(
+          `.${kind}-field .setting-trigger`,
+        );
+        if (trigger && !trigger.disabled) {
+          clearCommand();
+          trigger.click();
+        } else setError(t("Settings require an idle session"));
+      } else if (await changeSetting(kind, setting[2])) {
+        clearCommand();
+      }
+      return;
+    }
     await action(async (s) => {
       const text = composerPrompt(sent, c.pastes);
       const motion = sendMotion.prepare(text, latestSeq.current);
@@ -1108,7 +1127,9 @@ function ConversationContent({
         await sendMotion.depart(motion);
         setDraft((old) => (old === sent ? "" : old));
         if (detached.current) await loadHistory("newer", true);
-        pane.current?.dispatchEvent(new Event("scroll-jump"));
+        pane.current?.dispatchEvent(
+          new CustomEvent("scroll-jump", { detail: "send" }),
+        );
         followRef.current = true;
         setFollow(true);
         if (pane.current) pane.current.scrollTop = pane.current.scrollHeight;
@@ -1135,29 +1156,14 @@ function ConversationContent({
     });
   }
   return (
-    <main className="conversation">
-      <header>
-        <Button
-          className="conversation-back"
-          onClick={back}
-          aria-label={t("Back to sessions")}
-        >
-          ←
-        </Button>
-        <SessionIdentity session={s} heading />
-        <ActionMenu
-          label={t("Session menu")}
-          status={`${s?.status?.state ?? ""} · ${translateKnown(status)}`}
-          items={[
-            {
-              label: t("Terminal"),
-              shortcut: "Ctrl+`",
-              checked: terminalVisible,
-              run: () => showTerminal(!terminalVisibleRef.current),
-            },
-          ]}
-        />
-      </header>
+    <main
+      className="conversation"
+      aria-description={`${s?.status?.state ?? ""} · ${translateKnown(status)}`}
+    >
+      <ComposerAurora
+        anchor={composer}
+        active={turn.active && ["working", "running"].includes(executionState)}
+      />
       <Transcript
         pane={pane}
         events={transcript.events}
@@ -1245,9 +1251,23 @@ function ConversationContent({
           {error || String(current.error)}
         </p>
       )}
-      <form className="composer" onSubmit={send}>
+      <form ref={composer} className="composer" onSubmit={send}>
         <div className="composer-wrapper">
           <div className="composer-toolbar">
+            <TurnControls
+              turn={turn}
+              busy={busy}
+              interrupt={() =>
+                void action(async (session) => {
+                  const receipt = await c.sessions.interrupt({
+                    ...control(session),
+                    runId: turn.runId,
+                  });
+                  if (receipt.status === "rejected")
+                    throw new Error(t("Provider rejected the interrupt"));
+                })
+              }
+            />
             <span
               className="latest-slot"
               data-visible={!follow && latestShown}
@@ -1274,6 +1294,39 @@ function ConversationContent({
                   <path d="M12 5v14m-6-6 6 6 6-6" />
                 </svg>
               </Button>
+            </span>
+            <span className="terminal-control">
+              <Button
+                className="toolbar-button terminal-toggle"
+                type="button"
+                aria-label={t("Terminal")}
+                aria-pressed={terminalVisible}
+                aria-keyshortcuts="Control+Backquote"
+                aria-describedby="terminal-shortcut"
+                disabled={!s?.project?.id.length}
+                onClick={() => showTerminal(!terminalVisibleRef.current)}
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="m4 6 6 6-6 6m9 0h7" />
+                </svg>
+              </Button>
+              <span
+                id="terminal-shortcut"
+                className="send-shortcut"
+                role="tooltip"
+              >
+                {t("Terminal")} · ctrl+`
+              </span>
             </span>
             <span className="send-control">
               <Button
@@ -1309,6 +1362,7 @@ function ConversationContent({
               onChange={setDraft}
               pastes={c.pastes}
               canSend={!busy && !!s && !!draft.trim()}
+              commands={sessionCommands(s?.agent ?? "", catalog)}
             />
           </div>
         </div>
@@ -1349,7 +1403,7 @@ const EventView = React.memo(
     loadDetails?: LoadEventDetails;
   }) {
     useLocale();
-    const openCard = useFloatingCard();
+    const details = useAnchoredCard();
     if (activity)
       return (
         <ToolActivityView
@@ -1391,18 +1445,22 @@ const EventView = React.memo(
       <Button
         type="button"
         data-seq={e.seq.toString()}
-        className={`event-detail ${e.kind === "diagnostic" || e.kind === "stderr" ? "error" : ""}`}
-        onClick={() =>
-          openCard({
-            title: e.kind === "approval" ? approvalTitle(e) : e.kind,
-            content: () => (
-              <EventDetails
-                event={e}
-                loadDetails={e.payload.length ? undefined : loadDetails}
-              />
-            ),
-          })
-        }
+        className={`event-detail detail-anchor ${e.kind === "diagnostic" || e.kind === "stderr" ? "error" : ""}`}
+        ref={details.anchor}
+        data-detail-present={details.present}
+        data-detail-open={details.expanded}
+        aria-expanded={details.expanded}
+        aria-haspopup="dialog"
+        aria-controls={details.controls}
+        {...details.handlers({
+          title: e.kind === "approval" ? approvalTitle(e) : e.kind,
+          content: () => (
+            <EventDetails
+              event={e}
+              loadDetails={e.payload.length ? undefined : loadDetails}
+            />
+          ),
+        })}
       >
         {e.kind === "approval"
           ? approvalTitle(e)
