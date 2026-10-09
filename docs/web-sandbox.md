@@ -170,7 +170,7 @@ footers omit the year; metric icons expose names and scope on hover and to
 assistive technology. Relative-time rules are defined in `src/message-time.ts`.
 
 While the agent is working, the composer toolbar has a subdued aurora behind it.
-The field keeps volume at both ends of the toolbar rather than widening its bounds.
+The field keeps volume at both ends of the toolbar and fades softly beyond them.
 Each cluster contains differently colored orbs revolving around a shared center.
 The centers wander freely within bounded regions, while individual orbs slowly
 grow, vanish and change ellipticity. Small dense foci drift inside broad diffuse
@@ -181,8 +181,10 @@ the visible exit before pausing. Colors are subdued.
 Gravity centers stay inside the toolbar. Broad overlapping clusters and a diffuse
 moving base cover the whole bar, including both ends, even when individual orbs
 vanish. The combined surface swells gently rather than separating into tiny spots.
-It lives in the composer layer above transcript scroll fades and behind the dark
-translucent toolbar, following layout without portal measurements. The toolbar
+It lives in a bounded background layer behind the transcript, scroll fades and
+composer. Painting is contained to the conversation so large rotating orbs cannot
+extend page scrolling. The field tracks the toolbar on layout changes, including
+composer expansion and viewport resizing, without per-frame measurements. The toolbar
 uses real backdrop blur; normally transparent conversation and event cards also
 blur their backdrop to preserve readability.
 Independent colored fields drift at different phases and fade in/out without

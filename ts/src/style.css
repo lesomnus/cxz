@@ -726,6 +726,7 @@ header strong {
   flex-direction: column;
   position: relative;
   overflow-x: clip;
+  isolation: isolate;
 }
 .resource-view > header {
   padding: 8px 16px;
@@ -1169,33 +1170,55 @@ pre {
   min-height: var(--composer-toolbar-height);
   padding: var(--control-inset);
 }
+.composer-aurora-viewport {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: clip;
+  contain: paint;
+  pointer-events: none;
+}
 .composer-aurora {
   --aurora-green: #1b8060;
   --aurora-cyan: #1e718b;
   --aurora-violet: #5d4187;
-  --aurora-strength: 0.42;
+  --aurora-strength: 0.2;
   --aurora-envelope-duration: 3200ms;
   --aurora-drift-duration: 86s;
   --aurora-form-duration: 68s;
   --aurora-focus-duration: 54s;
   --aurora-orbit-radius: 24px;
   --aurora-anchor-offset: 64px;
+  --aurora-side-fade: 64px;
   position: absolute;
-  top: calc(-1 * var(--aurora-anchor-offset));
-  left: 0;
-  right: 0;
+  top: calc(var(--aurora-anchor-top) - var(--aurora-anchor-offset));
+  left: calc(var(--aurora-anchor-left) - var(--aurora-side-fade));
+  width: calc(var(--aurora-anchor-width) + 2 * var(--aurora-side-fade));
   height: calc(
     var(--aurora-anchor-offset) + var(--composer-toolbar-height) + 20px
   );
   z-index: 0;
   pointer-events: none;
   opacity: 0;
-  filter: blur(16px);
-  mask-image: linear-gradient(transparent, #000 30%, #000 86%, transparent);
+  filter: blur(24px);
+  mask-image:
+    linear-gradient(
+      to right,
+      transparent,
+      #000 var(--aurora-side-fade),
+      #000 calc(100% - var(--aurora-side-fade)),
+      transparent
+    ),
+    linear-gradient(transparent, #000 30%, #000 86%, transparent);
+  mask-composite: intersect;
   transition: opacity var(--aurora-envelope-duration) ease-in-out;
 }
 .composer-aurora[data-active="true"] {
   opacity: var(--aurora-strength);
+}
+.aurora-clusters {
+  position: absolute;
+  inset: 0 var(--aurora-side-fade);
 }
 .aurora-cluster {
   position: absolute;
@@ -1317,7 +1340,7 @@ pre {
   background: color-mix(in srgb, var(--shade-32) 60%, transparent);
 }
 :root[data-theme="light"] .composer-aurora {
-  --aurora-strength: 0.24;
+  --aurora-strength: 0.12;
 }
 @media (prefers-reduced-motion: reduce) {
   .composer-aurora,

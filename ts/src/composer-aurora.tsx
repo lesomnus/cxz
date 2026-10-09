@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef, type RefObject } from "react";
 
 type Drift = {
   node: HTMLElement;
@@ -11,11 +11,45 @@ const between = (min: number, max: number) => min + Math.random() * (max - min);
 
 // Layout stays in CSS. The browser interpolates random, slow paths; JavaScript
 // chooses new waypoints only when a long animation finishes, never each frame.
-export function ComposerAurora({ active }: { active: boolean }) {
+export function ComposerAurora({
+  active,
+  anchor,
+}: {
+  active: boolean;
+  anchor: RefObject<HTMLFormElement | null>;
+}) {
+  const viewport = useRef<HTMLDivElement>(null);
   const root = useRef<HTMLDivElement>(null);
   const latest = useRef(active);
   latest.current = active;
   const control = useRef<{ sync: () => void } | undefined>(undefined);
+  useLayoutEffect(() => {
+    const layer = viewport.current!;
+    const composer = anchor.current!;
+    const toolbar = composer.querySelector<HTMLElement>(".composer-toolbar")!;
+    // Keep the field behind the conversation, anchored only on layout changes.
+    // The bounded paint layer contains even the largest rotating orbs.
+    const align = () => {
+      const bounds = layer.getBoundingClientRect();
+      const bar = toolbar.getBoundingClientRect();
+      const node = root.current!;
+      node.style.setProperty(
+        "--aurora-anchor-left",
+        `${bar.left - bounds.left}px`,
+      );
+      node.style.setProperty(
+        "--aurora-anchor-top",
+        `${bar.top - bounds.top}px`,
+      );
+      node.style.setProperty("--aurora-anchor-width", `${bar.width}px`);
+    };
+    const observer = new ResizeObserver(align);
+    observer.observe(layer);
+    observer.observe(composer);
+    observer.observe(toolbar);
+    align();
+    return () => observer.disconnect();
+  }, [anchor]);
   useEffect(() => {
     const node = root.current!;
     const reduced = matchMedia("(prefers-reduced-motion: reduce)");
@@ -131,26 +165,29 @@ export function ComposerAurora({ active }: { active: boolean }) {
   }, []);
   useEffect(() => control.current?.sync(), [active]);
   return (
-    <div
-      ref={root}
-      className="composer-aurora"
-      data-active="false"
-      data-running="false"
-      aria-hidden="true"
-    >
-      {[0, 1, 2].map((cluster) => (
-        <div className="aurora-cluster" key={cluster}>
-          <div className="aurora-envelope">
-            {["green", "cyan", "violet"].map((color) => (
-              <div className="aurora-orbit" key={color}>
-                <div className={`aurora-orb aurora-${color}`}>
-                  <span className="aurora-hotspot" />
-                </div>
+    <div ref={viewport} className="composer-aurora-viewport" aria-hidden="true">
+      <div
+        ref={root}
+        className="composer-aurora"
+        data-active="false"
+        data-running="false"
+      >
+        <div className="aurora-clusters">
+          {[0, 1, 2].map((cluster) => (
+            <div className="aurora-cluster" key={cluster}>
+              <div className="aurora-envelope">
+                {["green", "cyan", "violet"].map((color) => (
+                  <div className="aurora-orbit" key={color}>
+                    <div className={`aurora-orb aurora-${color}`}>
+                      <span className="aurora-hotspot" />
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
-      ))}
+      </div>
     </div>
   );
 }

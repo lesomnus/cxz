@@ -546,6 +546,7 @@ function ConversationContent({ c, id }: { c: Connection; id: string }) {
   const tension = useRef(0);
   const scrollMotion = useRef(0);
   const composerInput = useRef<HTMLDivElement>(null);
+  const composer = useRef<HTMLFormElement>(null);
   const [pending, setPending] = useState<SessionEvent[]>([]);
   const [gap, setGap] = useState(false);
   const [status, setStatus] = useState("Connecting…");
@@ -1159,6 +1160,10 @@ function ConversationContent({ c, id }: { c: Connection; id: string }) {
       className="conversation"
       aria-description={`${s?.status?.state ?? ""} · ${translateKnown(status)}`}
     >
+      <ComposerAurora
+        anchor={composer}
+        active={turn.active && ["working", "running"].includes(executionState)}
+      />
       <Transcript
         pane={pane}
         events={transcript.events}
@@ -1246,13 +1251,8 @@ function ConversationContent({ c, id }: { c: Connection; id: string }) {
           {error || String(current.error)}
         </p>
       )}
-      <form className="composer" onSubmit={send}>
+      <form ref={composer} className="composer" onSubmit={send}>
         <div className="composer-wrapper">
-          <ComposerAurora
-            active={
-              turn.active && ["working", "running"].includes(executionState)
-            }
-          />
           <div className="composer-toolbar">
             <TurnControls
               turn={turn}
