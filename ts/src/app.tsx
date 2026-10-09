@@ -1126,7 +1126,9 @@ function ConversationContent({ c, id }: { c: Connection; id: string }) {
         await sendMotion.depart(motion);
         setDraft((old) => (old === sent ? "" : old));
         if (detached.current) await loadHistory("newer", true);
-        pane.current?.dispatchEvent(new Event("scroll-jump"));
+        pane.current?.dispatchEvent(
+          new CustomEvent("scroll-jump", { detail: "send" }),
+        );
         followRef.current = true;
         setFollow(true);
         if (pane.current) pane.current.scrollTop = pane.current.scrollHeight;

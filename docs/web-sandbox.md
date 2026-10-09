@@ -170,11 +170,13 @@ footers omit the year; metric icons expose names and scope on hover and to
 assistive technology. Relative-time rules are defined in `src/message-time.ts`.
 
 While the agent is working, the composer toolbar has a subdued aurora behind it.
-The field spreads beyond the toolbar and upward from it, with a soft radial edge.
+The field keeps volume at both ends of the toolbar rather than widening its bounds.
+An ambient base remains while independent cores grow, shrink and fade in/out at
+uneven phases, without collecting into a single traveling center. Colors are subdued.
 It lives in the composer layer above transcript scroll fades and behind the dark
 translucent toolbar, following layout without portal measurements. The toolbar
-uses real backdrop blur; normally transparent response cards also blur their
-backdrop to preserve readability.
+uses real backdrop blur; normally transparent conversation and event cards also
+blur their backdrop to preserve readability.
 Independent colored fields drift at different phases and fade in/out without
 changing layout or intercepting controls. Waiting for an answer pauses the glow;
 reduced motion uses a static glow. Native snapshot/live state controls it, separate
