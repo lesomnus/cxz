@@ -69,6 +69,10 @@ service SessionService {
   // four answer with the session's aux state. See docs/plans/aux-api.md.
   rpc AuxRun(AuxRunRequest) returns (AuxState);
   rpc AuxStatus(AuxStatusRequest) returns (AuxState);
+  // The same answer, pushed. Relayed from the runtime the way Events is: the
+  // controller that runs the tasks is in this process, so there is nothing to
+  // poll and nothing to write down in between.
+  rpc AuxEvents(AuxStatusRequest) returns (stream AuxState);
   rpc AuxPrefer(AuxPreferRequest) returns (AuxState);
   rpc AuxCancel(AuxCancelRequest) returns (AuxState);
 }
@@ -589,6 +593,8 @@ message AuxRunRequest {
 message AuxState {
   repeated AuxSummary summaries = 1;
   Aux current = 2;
+  // What ran before, newest first. The current task is the first of them.
+  repeated Aux recent = 6;
   repeated AuxPreference preferences = 3;
   // The session's generated title, for the caller that records session names.
   string title = 4;

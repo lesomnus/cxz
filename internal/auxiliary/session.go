@@ -84,6 +84,9 @@ func (c *Controller) SetSession(id, task string, enabled bool) error {
 	if err := core.WriteJSON(c.preferencePath(id), p); err != nil {
 		return err
 	}
+	// A preference is part of what a watcher reads, and turning a kind off does
+	// not always write the state file below -- so the wake is here as well.
+	c.wake(id)
 	// Do not leave a disabled task running. Completed results remain readable.
 	s, err := c.load(id)
 	if err != nil {
@@ -244,25 +247,34 @@ func (c *Controller) start(id string, s *State, cfg Config) error {
 }
 
 // Keep only a bounded set of inline summaries, independent of the agent journal.
-func rememberSummary(s *State, j *Job) {
-	if j.Summary == "" {
-		return
+// rememberSummary keeps one turn's summary where it can be asked for later.
+// The kept copy is clipped: it is read beside a turn in a transcript, and the
+// one fed back as context for a later suggestion is bounded for the same
+// reason the checkpoint is.
+func (c *Controller) rememberSummary(id string, j *Job) error {
+	if j == nil || j.Summary == "" {
+		return nil
 	}
-	v := Summary{Run: j.Run, Turn: j.Turn, Text: Clip(j.Summary, RetainedSummaryLimit)}
-	for i := range s.Summaries {
-		if s.Summaries[i].Run == v.Run && s.Summaries[i].Turn == v.Turn {
-			s.Summaries[i] = v
-			return
-		}
-	}
-	s.Summaries = append(s.Summaries, v)
-	if len(s.Summaries) > 32 {
-		s.Summaries = s.Summaries[len(s.Summaries)-32:]
-	}
+	return c.store.putSummary(id, Summary{
+		Run: j.Run, Turn: j.Turn, Text: Clip(j.Summary, RetainedSummaryLimit),
+	}, time.Now().UnixMilli())
 }
+
+// Summaries are what the turns of one session have been summarised as, oldest
+// first. afterTurn skips what the caller already has.
 func (c *Controller) Summaries(id string) ([]Summary, error) {
+	return c.SummariesAfter(id, 0, 0)
+}
+
+func (c *Controller) SummariesAfter(id string, afterTurn uint64, limit int) ([]Summary, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	s, err := c.load(id)
-	return s.Summaries, err
+	return c.store.summaries(id, afterTurn, limit)
+}
+
+// Tasks is what ran for one session, newest first.
+func (c *Controller) Tasks(id string, limit int) ([]Job, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.store.tasks(id, limit)
 }

@@ -26,11 +26,20 @@ type Controller struct {
 	active      map[string]context.CancelFunc
 	titleActive map[string]context.CancelFunc
 	slots       chan struct{}
+	store       *store
+	// Who is watching which session. A watcher is woken rather than told what
+	// changed, because it reads the whole of one session's state anyway -- so a
+	// wake already pending is a wake that covers this change too.
+	watchers map[string]map[chan struct{}]struct{}
 }
 
 func New(root string, run Runner) (*Controller, error) {
-	c := &Controller{root: filepath.Join(root, "auxiliary"), started: time.Now().UnixMilli(), run: run, active: map[string]context.CancelFunc{}, titleActive: map[string]context.CancelFunc{}, slots: make(chan struct{}, 4)}
+	c := &Controller{root: filepath.Join(root, "auxiliary"), started: time.Now().UnixMilli(), run: run, active: map[string]context.CancelFunc{}, titleActive: map[string]context.CancelFunc{}, slots: make(chan struct{}, 4), watchers: map[string]map[chan struct{}]struct{}{}}
 	if err := os.MkdirAll(c.root, 0700); err != nil {
+		return nil, err
+	}
+	var err error
+	if c.store, err = openStore(context.Background(), c.root); err != nil {
 		return nil, err
 	}
 	b, e := os.ReadFile(filepath.Join(c.root, "config.json"))
@@ -92,10 +101,17 @@ func (c *Controller) load(id string) (State, error) {
 	e = json.Unmarshal(b, &s)
 	return s, e
 }
+// save writes the working state and mirrors the task into the store, so that
+// what ran outlives the turn that was running it. Both happen under the
+// controller's lock, and the wake goes out once both are on disk.
 func (c *Controller) save(id string, s State) error {
 	if e := core.WriteJSON(c.path(id), s); e != nil {
 		return e
 	}
+	if e := c.store.putTask(id, s.Job, time.Now().UnixMilli()); e != nil {
+		return e
+	}
+	defer c.wake(id)
 	// Bound derived storage independently of conversation retention.
 	activeFiles := map[string]bool{}
 	for id := range c.active {
@@ -252,7 +268,7 @@ func (c *Controller) execute(ctx context.Context, cancel context.CancelFunc, id 
 		s.Job.Usage = usage
 		current.Job = s.Job
 		if cfg.Revision == c.config.Revision {
-			rememberSummary(&current, s.Job)
+			_ = c.rememberSummary(id, s.Job)
 		}
 		if err == nil {
 			current.Checkpoint = s.Checkpoint
@@ -365,7 +381,7 @@ func (c *Controller) execute(ctx context.Context, cancel context.CancelFunc, id 
 		current, e := c.load(id)
 		if e == nil && current.Job != nil && current.Job.ID == s.Job.ID && current.Job.Status == "running" {
 			current.Job.Summary = o.Summary
-			rememberSummary(&current, current.Job)
+			_ = c.rememberSummary(id, current.Job)
 			_ = c.save(id, current)
 		}
 		c.mu.Unlock()
@@ -402,6 +418,9 @@ func (c *Controller) Forget(id string) error {
 	if err := os.Remove(c.preferencePath(id)); err != nil && !os.IsNotExist(err) {
 		return err
 	}
+	if err := c.store.forget(id); err != nil {
+		return err
+	}
 	return c.save(id, State{Deleted: true})
 }
 
@@ -424,7 +443,41 @@ func (c *Controller) Purge(id string) error {
 			return err
 		}
 	}
-	return nil
+	defer c.wake(id)
+	return c.store.forget(id)
+}
+
+// wake tells this session's watchers that there is something new to read. A
+// watcher with a wake already pending is left alone: it has not read yet, so
+// the read it is about to do will see this change as well.
+func (c *Controller) wake(id string) {
+	for ch := range c.watchers[id] {
+		select {
+		case ch <- struct{}{}:
+		default:
+		}
+	}
+}
+
+// Watch answers with a channel that is woken whenever this session's aux state
+// changes, and the function that stops watching. The channel is never closed
+// by the controller; stop is what ends it.
+func (c *Controller) Watch(id string) (<-chan struct{}, func()) {
+	ch := make(chan struct{}, 1)
+	c.mu.Lock()
+	if c.watchers[id] == nil {
+		c.watchers[id] = map[chan struct{}]struct{}{}
+	}
+	c.watchers[id][ch] = struct{}{}
+	c.mu.Unlock()
+	return ch, func() {
+		c.mu.Lock()
+		defer c.mu.Unlock()
+		delete(c.watchers[id], ch)
+		if len(c.watchers[id]) == 0 {
+			delete(c.watchers, id)
+		}
+	}
 }
 
 func (c *Controller) Close() {
@@ -438,6 +491,7 @@ func (c *Controller) Close() {
 	}
 	c.mu.Unlock()
 	c.wg.Wait()
+	_ = c.store.Close()
 }
 func (c *Controller) Cursor(id string) uint64 {
 	c.mu.Lock()

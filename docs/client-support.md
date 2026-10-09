@@ -86,7 +86,7 @@ explained in the mobile plan; it remains Not implemented in the web column.
 | AI-01 | Supported: `ai list/models/login/set/disable` | Supported: Settings AI tasks account/login/model/effort flow | Not implemented |
 | AI-02 | Partial: `ai status` returns derived data; no inline/ghost or per-session command UI | Supported: `/summary`, `/suggest`, inline Markdown and editable ghost acceptance | Not implemented |
 | AI-04 | Supported: `ai title`, `ai title --text`, `ai set title` | Supported: AI tasks title profile, `/title`, `/title set`, two-row sidebar | Not implemented |
-| AI-03 | Supported: `ai status/cancel` | Partial: loading/errors and cancellation via turning tasks off; no full usage/status/cancel panel | Not implemented |
+| AI-03 | Supported: `ai status/cancel`, recent task history with usage | Partial: subscribed to derived state, loading/errors and cancellation via turning tasks off; no full usage/status/cancel panel | Not implemented |
 
 ## Settings, operations, and platform differences
 

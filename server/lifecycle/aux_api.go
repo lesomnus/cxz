@@ -7,6 +7,7 @@ import (
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/auxkind"
 	"github.com/lesomnus/cxz/resource"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -132,6 +133,9 @@ func (s SessionServer) auxState(ctx context.Context, ref *resource.SessionRef, o
 		reply.Summaries = append(reply.Summaries, resource.AuxSummary_builder{
 			RunId: &v.RunId, Turn: &v.Turn, Text: &v.Text,
 		}.Build())
+	}
+	for _, v := range out.Recent {
+		reply.Recent = append(reply.Recent, auxOf(v))
 	}
 	for _, v := range out.Preferences {
 		kind := auxkind.Of(v.Kind)
@@ -305,4 +309,34 @@ func auxSince(ms int64) *timestamppb.Timestamp {
 		return nil
 	}
 	return timestamppb.New(time.UnixMilli(ms))
+}
+
+// AuxEvents relays the runtime's stream, the way Events does. Each message is
+// the same answer the unary call gives, including recording a generated title
+// on the session it names.
+func (s SessionServer) AuxEvents(r *resource.AuxStatusRequest, stream grpc.ServerStreamingServer[resource.AuxState]) error {
+	if err := s.effect(); err != nil {
+		return err
+	}
+	v, err := s.resolve(stream.Context(), r.GetRef())
+	if err != nil {
+		return err
+	}
+	return s.shared.runtime.AuxEvents(&api.AuxStatusInput{
+		SessionId: v.GetRuntimeId(), AfterTurn: r.GetAfterTurn(), Limit: r.GetLimit(),
+	}, &auxStateStream{ServerStreamingServer: stream, session: s, ref: r.GetRef()})
+}
+
+type auxStateStream struct {
+	grpc.ServerStreamingServer[resource.AuxState]
+	session SessionServer
+	ref     *resource.SessionRef
+}
+
+func (s *auxStateStream) Send(v *api.AuxState) error {
+	out, err := s.session.auxState(s.Context(), s.ref, v)
+	if err != nil {
+		return err
+	}
+	return s.ServerStreamingServer.Send(out)
 }

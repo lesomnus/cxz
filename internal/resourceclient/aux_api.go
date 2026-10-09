@@ -97,6 +97,9 @@ func auxState(v *resource.AuxState, err error) (*api.AuxState, error) {
 	for _, s := range v.GetSummaries() {
 		out.Summaries = append(out.Summaries, &api.AuxSummary{RunId: s.GetRunId(), Turn: s.GetTurn(), Text: s.GetText()})
 	}
+	for _, r := range v.GetRecent() {
+		out.Recent = append(out.Recent, aux(r))
+	}
 	for _, p := range v.GetPreferences() {
 		out.Preferences = append(out.Preferences, &api.AuxPreference{
 			Kind: auxkind.Name(p.GetKind()), Enabled: p.GetEnabled(), SinceMs: auxMillis(p.GetSince()),
@@ -187,3 +190,27 @@ func auxMillis(t *timestamppb.Timestamp) int64 {
 // errAuxForget is a refusal rather than a silent success: a caller that wanted
 // aux state removed and was told "fine" would leave it behind.
 var errAuxForget = status.Error(codes.Unimplemented, "aux state is forgotten by the deletion that owns the session")
+
+func (c *Client) AuxEvents(ctx context.Context, r *api.AuxStatusInput, opts ...grpc.CallOption) (grpc.ServerStreamingClient[api.AuxState], error) {
+	s, err := c.sessions.AuxEvents(ctx, resource.AuxStatusRequest_builder{
+		Ref: sr(r.SessionId), AfterTurn: &r.AfterTurn, Limit: &r.Limit,
+	}.Build(), opts...)
+	if err != nil {
+		return nil, err
+	}
+	return auxEventStream{s}, nil
+}
+
+// The stream carries the same message the unary call answers with, so the
+// adapter is the same conversion applied per item.
+type auxEventStream struct {
+	grpc.ServerStreamingClient[resource.AuxState]
+}
+
+func (s auxEventStream) Recv() (*api.AuxState, error) {
+	v, err := s.ServerStreamingClient.Recv()
+	if err != nil {
+		return nil, err
+	}
+	return auxState(v, nil)
+}

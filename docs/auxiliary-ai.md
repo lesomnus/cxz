@@ -131,7 +131,13 @@ first time starts from its last 512 events, so a turn already long in flight is
 picked up from the next one instead.
 
 Collection continues while no TUI is attached, and several clients watching the same
-turn do not produce duplicates.
+turn do not produce duplicates. Results arrive **as they are produced**: a client
+subscribes to the session rather than asking repeatedly, so a summary appears when
+it is written rather than up to a second later.
+
+What ran is kept per turn rather than only for the turn in progress, so scrolling
+back finds the summaries of earlier turns, and `cxz ai status` reports the recent
+tasks with their usage rather than only the last one.
 
 ## Context and limits
 
@@ -152,7 +158,8 @@ and these numbers do not promise a particular cost saving.
 | Structured model reply | 1 MiB; refused past that |
 | Asked of the model | 5 bullets of 120 characters, 500 characters of suggestion |
 | Retained recent turns | 48 KiB of JSON, or 64 turns |
-| Inline summaries | Last 32 per session, at most 4 KiB each |
+| Inline summaries | Last 200 turns per session, at most 4 KiB each |
+| Task records | Last 200 per session, with what each one produced and cost |
 | Derived state | 256 sessions, least recently used evicted |
 | Concurrency | 4 tasks, serial per account, 32 sessions running or queued |
 | Time | 3 minutes per task; 15 minutes for a dedicated login |

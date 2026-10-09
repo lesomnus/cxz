@@ -51,6 +51,7 @@ const (
 	SessionService_Search_FullMethodName            = "/cxz.SessionService/Search"
 	SessionService_AuxRun_FullMethodName            = "/cxz.SessionService/AuxRun"
 	SessionService_AuxStatus_FullMethodName         = "/cxz.SessionService/AuxStatus"
+	SessionService_AuxEvents_FullMethodName         = "/cxz.SessionService/AuxEvents"
 	SessionService_AuxPrefer_FullMethodName         = "/cxz.SessionService/AuxPrefer"
 	SessionService_AuxCancel_FullMethodName         = "/cxz.SessionService/AuxCancel"
 )
@@ -117,6 +118,10 @@ type SessionServiceClient interface {
 	// four answer with the session's aux state. See docs/plans/aux-api.md.
 	AuxRun(ctx context.Context, in *AuxRunRequest, opts ...grpc.CallOption) (*AuxState, error)
 	AuxStatus(ctx context.Context, in *AuxStatusRequest, opts ...grpc.CallOption) (*AuxState, error)
+	// The same answer, pushed. Relayed from the runtime the way Events is: the
+	// controller that runs the tasks is in this process, so there is nothing to
+	// poll and nothing to write down in between.
+	AuxEvents(ctx context.Context, in *AuxStatusRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[AuxState], error)
 	AuxPrefer(ctx context.Context, in *AuxPreferRequest, opts ...grpc.CallOption) (*AuxState, error)
 	AuxCancel(ctx context.Context, in *AuxCancelRequest, opts ...grpc.CallOption) (*AuxState, error)
 }
@@ -479,6 +484,25 @@ func (c *sessionServiceClient) AuxStatus(ctx context.Context, in *AuxStatusReque
 	return out, nil
 }
 
+func (c *sessionServiceClient) AuxEvents(ctx context.Context, in *AuxStatusRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[AuxState], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &SessionService_ServiceDesc.Streams[4], SessionService_AuxEvents_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[AuxStatusRequest, AuxState]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type SessionService_AuxEventsClient = grpc.ServerStreamingClient[AuxState]
+
 func (c *sessionServiceClient) AuxPrefer(ctx context.Context, in *AuxPreferRequest, opts ...grpc.CallOption) (*AuxState, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(AuxState)
@@ -561,6 +585,10 @@ type SessionServiceServer interface {
 	// four answer with the session's aux state. See docs/plans/aux-api.md.
 	AuxRun(context.Context, *AuxRunRequest) (*AuxState, error)
 	AuxStatus(context.Context, *AuxStatusRequest) (*AuxState, error)
+	// The same answer, pushed. Relayed from the runtime the way Events is: the
+	// controller that runs the tasks is in this process, so there is nothing to
+	// poll and nothing to write down in between.
+	AuxEvents(*AuxStatusRequest, grpc.ServerStreamingServer[AuxState]) error
 	AuxPrefer(context.Context, *AuxPreferRequest) (*AuxState, error)
 	AuxCancel(context.Context, *AuxCancelRequest) (*AuxState, error)
 	mustEmbedUnimplementedSessionServiceServer()
@@ -668,6 +696,9 @@ func (UnimplementedSessionServiceServer) AuxRun(context.Context, *AuxRunRequest)
 }
 func (UnimplementedSessionServiceServer) AuxStatus(context.Context, *AuxStatusRequest) (*AuxState, error) {
 	return nil, status.Error(codes.Unimplemented, "method AuxStatus not implemented")
+}
+func (UnimplementedSessionServiceServer) AuxEvents(*AuxStatusRequest, grpc.ServerStreamingServer[AuxState]) error {
+	return status.Error(codes.Unimplemented, "method AuxEvents not implemented")
 }
 func (UnimplementedSessionServiceServer) AuxPrefer(context.Context, *AuxPreferRequest) (*AuxState, error) {
 	return nil, status.Error(codes.Unimplemented, "method AuxPrefer not implemented")
@@ -1240,6 +1271,17 @@ func _SessionService_AuxStatus_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SessionService_AuxEvents_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(AuxStatusRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(SessionServiceServer).AuxEvents(m, &grpc.GenericServerStream[AuxStatusRequest, AuxState]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type SessionService_AuxEventsServer = grpc.ServerStreamingServer[AuxState]
+
 func _SessionService_AuxPrefer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(AuxPreferRequest)
 	if err := dec(in); err != nil {
@@ -1423,6 +1465,11 @@ var SessionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "Search",
 			Handler:       _SessionService_Search_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "AuxEvents",
+			Handler:       _SessionService_AuxEvents_Handler,
 			ServerStreams: true,
 		},
 	},

@@ -82,3 +82,10 @@ func (s *Server) AuxLoginInfo(ctx context.Context, r *api.AuxLoginInfoInput) (*a
 	}
 	return s.manager.AuxLoginInfo(ctx, r)
 }
+
+func (s *Server) AuxEvents(r *api.AuxStatusInput, stream api.Sessions_AuxEventsServer) error {
+	if err := s.requireManagerAux(); err != nil {
+		return err
+	}
+	return s.manager.AuxEvents(r, stream)
+}
