@@ -1124,7 +1124,7 @@ pre {
 .composer-toolbar {
   position: relative;
   z-index: 1;
-  background: color-mix(in srgb, var(--shade-16) 86%, transparent);
+  background: color-mix(in srgb, var(--shade-16) 48%, transparent);
   -webkit-backdrop-filter: blur(24px);
   backdrop-filter: blur(24px);
   border-radius: calc(var(--wrapper-radius) - 1px)
@@ -1140,16 +1140,17 @@ pre {
   --aurora-green: #24a77b;
   --aurora-cyan: #258faf;
   --aurora-violet: #7854ac;
-  --aurora-strength: 0.62;
+  --aurora-strength: 0.42;
   position: absolute;
-  margin-top: -64px;
+  top: -64px;
+  left: -64px;
+  right: -64px;
   height: 112px;
   z-index: 0;
-  overflow: clip;
   pointer-events: none;
   opacity: 0;
   filter: blur(16px);
-  mask-image: linear-gradient(transparent, #000 40%, #000 68%, transparent);
+  mask-image: radial-gradient(ellipse at 50% 55%, #000 30%, transparent 72%);
   transition: opacity 1600ms ease-in-out;
 }
 .composer-aurora[data-active="true"] {
@@ -1189,10 +1190,10 @@ pre {
   will-change: transform;
 }
 :root[data-theme="light"] .composer-toolbar {
-  background: color-mix(in srgb, var(--shade-32) 86%, transparent);
+  background: color-mix(in srgb, var(--shade-32) 60%, transparent);
 }
 :root[data-theme="light"] .composer-aurora {
-  --aurora-strength: 0.32;
+  --aurora-strength: 0.24;
 }
 @keyframes aurora-green {
   0%,

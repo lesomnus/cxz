@@ -1246,12 +1246,12 @@ function ConversationContent({ c, id }: { c: Connection; id: string }) {
       )}
       <form className="composer" onSubmit={send}>
         <div className="composer-wrapper">
+          <ComposerAurora
+            active={
+              turn.active && ["working", "running"].includes(executionState)
+            }
+          />
           <div className="composer-toolbar">
-            <ComposerAurora
-              active={
-                turn.active && ["working", "running"].includes(executionState)
-              }
-            />
             <TurnControls
               turn={turn}
               busy={busy}
