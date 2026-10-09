@@ -5,5 +5,6 @@ COPY --from=docker:29-cli /usr/local/libexec/docker/cli-plugins /usr/local/libex
 RUN npm install -g @devcontainers/cli@0.89.0
 ARG TARGETARCH
 COPY linux-${TARGETARCH}/cxz /usr/local/bin/cxz
+COPY webui/ /usr/local/share/cxz/webui/
 ENTRYPOINT ["/usr/local/bin/cxz"]
 CMD ["--state", "/var/lib/cxz", "manager", "serve"]

@@ -164,9 +164,31 @@ npm run test:browser
 npm run test:browser:plaintext
 ```
 
-Commit `ts/gen/` and `internal/webui/assets/` after changes. The latter is the
-production build embedded in the Go binary: Go-only builds and source-based
-self-updates need no Node toolchain. CI rebuilds and rejects asset/schema drift.
+Commit `ts/gen/` after contract changes. `internal/webui/assets/` is the ignored
+production browser build; it is served from disk, never embedded in Go. Go-only
+builds require no browser bundle or Node toolchain. Docker/release builds compile
+the UI with the locked npm dependencies and include it in the manager image at
+`/usr/local/share/cxz/webui`. CI builds the UI and checks generated contract drift.
+
+For a local gateway, build the UI first, then from the repository root run:
+
+```sh
+cxz web serve --assets-dir internal/webui/assets
+```
+
+Use the usual web configuration.
+`CXZ_WEB_ASSETS_DIR` also selects a directory. Without an override, the gateway
+looks for a `webui` directory beside its executable (or in the parent release
+build directory), the installed image directory,
+and then the repository build directory. It reports a missing build at startup.
+
+Local `cxz install` copies a separate UI bundle into its build context and includes
+its contents in the image cache key. If no bundle is available, a clean recorded
+source revision lets Docker build the UI from the exact executable revision;
+source self-updates therefore still need no host Node installation. An unversioned
+or dirty development executable needs a local UI build or an explicit published
+image. Never fetch a moving branch to supply UI for an already built executable.
+
 Keep generated files untouched by formatting tools. `npm run --prefix ts format`
 formats authored client source only.
 

@@ -13,7 +13,8 @@ coverage.out
 /cxz.previous
 /.cxz.update.lock
 
-# Browser dependencies; the embedded production build is checked in.
+# Browser dependencies and generated production UI.
+/internal/webui/assets/
 /ts/node_modules/
 /ts/coverage/
 /ts/test-results/

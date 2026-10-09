@@ -7,3 +7,13 @@
 !internal/**
 !resource/**
 !server/**
+
+!ts/**
+ts/node_modules/
+ts/.sandbox/
+ts/dist-sandbox/
+ts/test-results/
+ts/playwright-report/
+ts/storybook-static/
+ts/core.*
+internal/webui/assets/

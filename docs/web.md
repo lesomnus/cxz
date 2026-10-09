@@ -193,7 +193,7 @@ not issue certificates or install them into any trust store.
 
 `<manager-container>-web`, using the installed Manager's image, with Docker's
 `unless-stopped` restart policy. It survives terminal closure and host reboot,
-and serves both the embedded UI and the payday Connect API. It mounts only the
+and serves the UI files packaged in the image and the payday Connect API. It mounts only the
 Manager state volume's `run` subdirectory, the token file, and the certificate
 and key when those are configured, all read-only; it receives no Docker socket
 and no database mount. Configured files must exist on both the command host and
