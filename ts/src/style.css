@@ -25,6 +25,7 @@
   --control-inset: 2px;
   --control-inline-inset: 6px;
   --toolbar-button-width: 48px;
+  --composer-toolbar-height: 28px;
   --composer-extension: 10px;
   --composer-overhang: 4px;
   --muted: var(--shade-160);
@@ -1165,7 +1166,7 @@ pre {
   justify-content: flex-end;
   align-items: center;
   gap: var(--control-inset);
-  min-height: 28px;
+  min-height: var(--composer-toolbar-height);
   padding: var(--control-inset);
 }
 .composer-aurora {
@@ -1178,16 +1179,19 @@ pre {
   --aurora-form-duration: 68s;
   --aurora-focus-duration: 54s;
   --aurora-orbit-radius: 24px;
+  --aurora-anchor-offset: 64px;
   position: absolute;
-  top: -64px;
+  top: calc(-1 * var(--aurora-anchor-offset));
   left: 0;
   right: 0;
-  height: 112px;
+  height: calc(
+    var(--aurora-anchor-offset) + var(--composer-toolbar-height) + 20px
+  );
   z-index: 0;
   pointer-events: none;
   opacity: 0;
   filter: blur(16px);
-  mask-image: linear-gradient(transparent, #000 35%, #000 78%, transparent);
+  mask-image: linear-gradient(transparent, #000 30%, #000 86%, transparent);
   transition: opacity var(--aurora-envelope-duration) ease-in-out;
 }
 .composer-aurora[data-active="true"] {
@@ -1195,19 +1199,17 @@ pre {
 }
 .aurora-cluster {
   position: absolute;
-  top: -4%;
-  left: 0;
-  width: 40%;
-  height: 100%;
+  top: var(--aurora-anchor-offset);
+  left: -20%;
+  width: 72%;
+  height: var(--composer-toolbar-height);
 }
 .aurora-cluster:nth-child(2) {
-  left: 27%;
-  width: 46%;
-  top: -8%;
+  left: 10%;
+  width: 80%;
 }
 .aurora-cluster:nth-child(3) {
-  left: 60%;
-  top: 0;
+  left: 48%;
 }
 .aurora-envelope {
   position: absolute;
@@ -1218,6 +1220,17 @@ pre {
 }
 .composer-aurora[data-active="true"] .aurora-envelope {
   transform: scale(1);
+}
+.aurora-envelope::before {
+  content: "";
+  position: absolute;
+  inset: -48px -8%;
+  border-radius: 50%;
+  opacity: 0.45;
+  background:
+    radial-gradient(ellipse at 25% 50%, var(--aurora-green), transparent 75%),
+    radial-gradient(ellipse at 50% 50%, var(--aurora-cyan), transparent 80%),
+    radial-gradient(ellipse at 75% 50%, var(--aurora-violet), transparent 75%);
 }
 .aurora-orbit {
   position: absolute;
@@ -1265,8 +1278,8 @@ pre {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 70%;
-  height: 90%;
+  width: 105%;
+  height: calc(5 * var(--composer-toolbar-height));
   translate: calc(-50% + var(--aurora-orbit-radius)) -50%;
   border-radius: 50%;
   opacity: 0.7;

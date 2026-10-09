@@ -178,6 +178,9 @@ gradients. New random paths are chosen only at the end of long browser animation
 JavaScript does not run per-frame motion or change layout. All clusters emerge
 small at work start and contract gradually at the end, retaining movement through
 the visible exit before pausing. Colors are subdued.
+Gravity centers stay inside the toolbar. Broad overlapping clusters and a diffuse
+moving base cover the whole bar, including both ends, even when individual orbs
+vanish. The combined surface swells gently rather than separating into tiny spots.
 It lives in the composer layer above transcript scroll fades and behind the dark
 translucent toolbar, following layout without portal measurements. The toolbar
 uses real backdrop blur; normally transparent conversation and event cards also
