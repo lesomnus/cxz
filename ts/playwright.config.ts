@@ -2,6 +2,9 @@ import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({
   testDir: "e2e",
   workers: 1,
+  // See playwright.sandbox.config.ts for why one worker, and why a generous
+  // deadline rather than a tight one.
+  expect: { timeout: 15000 },
   use: {
     ...devices["iPhone 13"],
     defaultBrowserType: "chromium",
