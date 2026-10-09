@@ -626,6 +626,9 @@ test.describe("task detail editor", () => {
   test("task output detects syntax, scrolls only its Monaco viewport and restores tab reading positions", async ({
     page,
   }) => {
+    await page
+      .context()
+      .grantPermissions(["clipboard-read", "clipboard-write"]);
     const output = Array.from(
       { length: 60 },
       (_, index) =>
@@ -695,6 +698,12 @@ test.describe("task detail editor", () => {
       "python",
     );
     await expect(card.locator(".view-lines")).toContainText("def greeting_0");
+    const copy = card.getByRole("button", { name: "Copy", exact: true });
+    await copy.click();
+    await expect
+      .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+      .toBe(output);
+    await expect(card).toBeVisible();
     const pane = page.locator(".transcript");
     const top = await pane.evaluate((el) => el.scrollTop);
     const editor = card.locator(".monaco-editor");
@@ -716,6 +725,22 @@ test.describe("task detail editor", () => {
       "data-language",
       "json",
     );
+    await copy.click();
+    await expect
+      .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+      .toBe(
+        JSON.stringify(
+          {
+            item: {
+              type: "commandExecution",
+              command: "cat greetings.py",
+              status: "inProgress",
+            },
+          },
+          null,
+          2,
+        ),
+      );
     await outputTab.click();
     await expect.poll(readingPosition).toBeGreaterThan(0);
     expect(requests).toBe(1);

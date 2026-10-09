@@ -1093,7 +1093,8 @@ pre {
 .response-metric svg {
   flex-shrink: 0;
 }
-.copy-control:focus-within .meta-tooltip {
+.copy-control:focus-within .meta-tooltip,
+.detail-copy:focus-within .meta-tooltip {
   opacity: 1;
   visibility: visible;
   transform: translateY(0);
@@ -1584,11 +1585,29 @@ pre {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  height: calc(var(--detail-content-height, 240px) + var(--detail-tab-height));
+  padding-top: calc(2 * var(--space));
+  gap: var(--space);
+  height: calc(
+    var(--detail-content-height, 240px) + var(--detail-tab-height) + 3 *
+      var(--space)
+  );
+}
+.detail-tab-bar {
+  display: flex;
+  flex: 0 0 var(--detail-tab-height);
+  align-items: center;
+  gap: var(--space);
+}
+.detail-copy {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.detail-copy .meta-tooltip {
+  bottom: auto;
+  top: calc(100% + var(--space));
 }
 .detail-tab-list {
   display: flex;
-  flex: 0 0 var(--detail-tab-height);
   gap: var(--space);
 }
 .detail-tab-list button {

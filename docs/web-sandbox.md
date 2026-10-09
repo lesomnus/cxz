@@ -181,7 +181,9 @@ and shared editor settings. Only the editor viewport scrolls, with the common
 handle skin. Tabs preserve their own reading positions and support arrow keys.
 Single clicks do not load details; keyboard activation opens them. The
 summary remains clickable above the details: click it again, press Escape, or
-click an empty transcript side margin to dismiss. There is no separate Close
+click anywhere else in the transcript to dismiss. The tabs have room above and
+below; their right-hand Copy icon copies the active section's entire source,
+including content outside the editor viewport. There is no separate Close
 button. Opening another item replaces the active preview.
 
 Request details and paste previews retain their composer anchor. Cards share the

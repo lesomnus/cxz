@@ -65,7 +65,7 @@ export function useAnchoredCard() {
         },
         onDoubleClick() {
           // A double click on an open card must not reopen its closing preview.
-          if (!present && !closingClick.current && anchor.current)
+          if (!expanded && !closingClick.current && anchor.current)
             open({ ...request, anchor: anchor.current });
         },
       };
@@ -199,12 +199,24 @@ export function FloatingCardHost({ children }: { children?: ReactNode }) {
     const conversation = host.current!.closest(".conversation")!;
     const area = conversation.querySelector(".transcript-area")!;
     const column = conversation.querySelector(".transcript-content")!;
-    const dismissInMargin = (event: PointerEvent) => {
+    const dismissInTranscript = (event: PointerEvent) => {
       const target = event.target;
       if (
         event.button !== 0 ||
         !(target instanceof Element) ||
-        !area.contains(target) ||
+        !area.contains(target)
+      )
+        return;
+      if (card.anchor) {
+        if (
+          target.closest(".floating-card, .scroll-track, [role='scrollbar']") ||
+          card.anchor.contains(target)
+        )
+          return;
+        close(card.id, false);
+        return;
+      }
+      if (
         target.closest(
           'button, a, input, textarea, select, [role="button"], [role="scrollbar"], .scroll-track, .pinned-prompt',
         )
@@ -214,8 +226,9 @@ export function FloatingCardHost({ children }: { children?: ReactNode }) {
       if (event.clientX < bounds.left || event.clientX > bounds.right)
         close(card.id, false);
     };
-    document.addEventListener("pointerdown", dismissInMargin);
-    return () => document.removeEventListener("pointerdown", dismissInMargin);
+    document.addEventListener("pointerdown", dismissInTranscript);
+    return () =>
+      document.removeEventListener("pointerdown", dismissInTranscript);
   }, [card, close]);
   return (
     <div

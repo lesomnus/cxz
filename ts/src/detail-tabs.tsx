@@ -1,6 +1,7 @@
 import { useId, useRef, useState, type CSSProperties } from "react";
 import type * as Monaco from "monaco-editor/esm/vs/editor/editor.api.js";
 import { Button } from "./button";
+import { CopyButton } from "./copy-button";
 import { SourceEditor } from "./source-editor";
 import { detectCodeSyntax } from "./composer-code";
 
@@ -38,36 +39,39 @@ export function DetailTabs({ sections }: { sections: DetailSection[] }) {
         } as CSSProperties
       }
     >
-      <div className="detail-tab-list" role="tablist">
-        {sections.map((section, index) => (
-          <Button
-            key={section.id}
-            id={`${prefix}-${section.id}`}
-            type="button"
-            role="tab"
-            aria-selected={section.id === active.id}
-            aria-controls={panel}
-            tabIndex={section.id === active.id ? 0 : -1}
-            onClick={() => setSelected(section.id)}
-            onKeyDown={(event) => {
-              let next: number;
-              if (event.key === "ArrowRight")
-                next = (index + 1) % sections.length;
-              else if (event.key === "ArrowLeft")
-                next = (index - 1 + sections.length) % sections.length;
-              else if (event.key === "Home") next = 0;
-              else if (event.key === "End") next = sections.length - 1;
-              else return;
-              event.preventDefault();
-              setSelected(sections[next].id);
-              document
-                .getElementById(`${prefix}-${sections[next].id}`)
-                ?.focus();
-            }}
-          >
-            {section.label}
-          </Button>
-        ))}
+      <div className="detail-tab-bar">
+        <div className="detail-tab-list" role="tablist">
+          {sections.map((section, index) => (
+            <Button
+              key={section.id}
+              id={`${prefix}-${section.id}`}
+              type="button"
+              role="tab"
+              aria-selected={section.id === active.id}
+              aria-controls={panel}
+              tabIndex={section.id === active.id ? 0 : -1}
+              onClick={() => setSelected(section.id)}
+              onKeyDown={(event) => {
+                let next: number;
+                if (event.key === "ArrowRight")
+                  next = (index + 1) % sections.length;
+                else if (event.key === "ArrowLeft")
+                  next = (index - 1 + sections.length) % sections.length;
+                else if (event.key === "Home") next = 0;
+                else if (event.key === "End") next = sections.length - 1;
+                else return;
+                event.preventDefault();
+                setSelected(sections[next].id);
+                document
+                  .getElementById(`${prefix}-${sections[next].id}`)
+                  ?.focus();
+              }}
+            >
+              {section.label}
+            </Button>
+          ))}
+        </div>
+        <CopyButton value={active.value} className="detail-copy" />
       </div>
       <div
         className="detail-editor"

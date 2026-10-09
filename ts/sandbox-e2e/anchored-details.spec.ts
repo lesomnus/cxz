@@ -5,7 +5,7 @@ test.use({
   viewport: { width: 1440, height: 1000 },
 });
 
-test("event details grow only the trigger's exterior, toggle and replace in place, and dismiss from side margins", async ({
+test("event details grow only the trigger's exterior, toggle and replace in place, and dismiss from the transcript", async ({
   page,
 }) => {
   await page.goto("/sandbox.html#/sessions/session-5");
@@ -71,6 +71,12 @@ test("event details grow only the trigger's exterior, toggle and replace in plac
     return target === el || (!!target && el.contains(target));
   });
   expect(hit).toBe(true);
+  const tabs = (await card.locator(".detail-tab-bar").boundingBox())!;
+  const editor = (await card.locator(".detail-editor").boundingBox())!;
+  expect(tabs.y).toBeGreaterThan(before!.y + before!.height + 4);
+  expect(editor.y).toBeGreaterThan(tabs.y + tabs.height);
+  await card.locator(".view-lines").click();
+  await expect(card).toBeVisible();
   await page.screenshot({ path: "test-results/anchored-details-desktop.png" });
   // The closing transition can finish between the two pointer clicks.
   await trigger.dblclick({ delay: 220 });
@@ -89,6 +95,11 @@ test("event details grow only the trigger's exterior, toggle and replace in plac
   await page.mouse.click(column.x - 16, view.y + 30);
   await expect(card).toHaveCount(0);
   await expect(first).toHaveAttribute("aria-expanded", "false");
+  await trigger.dblclick();
+  await expect(card).toHaveCSS("opacity", "1");
+  // A body click closes details without restoring focus to their source.
+  await page.locator(".response .markdown p").first().click();
+  await expect(card).toHaveCount(0);
   await page.setViewportSize({ width: 390, height: 844 });
   await trigger.dblclick();
   await expect(card).toHaveCSS("opacity", "1");
