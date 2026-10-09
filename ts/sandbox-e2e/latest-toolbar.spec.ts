@@ -33,9 +33,15 @@ test("Latest slides into the toolbar overlay and switches after 96px of actual r
   await page.mouse.move(area.x + area.width / 2, area.y + area.height / 2);
   const before = await pane.evaluate((el) => el.scrollTop);
   await page.mouse.wheel(0, -80);
+  // A wheel of eighty moves the pane by eighty, give or take what the browser
+  // rounds a fractional device pixel to -- it arrives as seventy-eight often
+  // enough to matter, and the exact conversion is not what is under test here.
+  // What is under test is that real wheel movement scrolls the pane and leaves
+  // the slot hidden; the reading-movement thresholds below are driven by
+  // scrollTop directly, so they do not inherit this.
   await expect
-    .poll(() => pane.evaluate((el) => el.scrollTop))
-    .toBeCloseTo(before - 80, 0);
+    .poll(async () => before - (await pane.evaluate((el) => el.scrollTop)))
+    .toBeCloseTo(80, -1);
   await expect(slot).toHaveAttribute("data-visible", "false");
   const frames = await pane.evaluate(async (el) => {
     const button = document.querySelector<HTMLElement>(".latest-button")!;
