@@ -64,6 +64,13 @@ service SessionService {
   // Search answers across every session in every project, so it names no ref.
   // It is on this service because sessions are what it finds.
   rpc Search(SessionSearchRequest) returns (stream SessionSearchReply);
+  // Aux is a model task done beside this session. Asking for one and reading
+  // what the last one produced are the same question at two moments, so all
+  // four answer with the session's aux state. See docs/plans/aux-api.md.
+  rpc AuxRun(AuxRunRequest) returns (AuxState);
+  rpc AuxStatus(AuxStatusRequest) returns (AuxState);
+  rpc AuxPrefer(AuxPreferRequest) returns (AuxState);
+  rpc AuxCancel(AuxCancelRequest) returns (AuxState);
 }
 
 message SessionAddRequest {
@@ -567,4 +574,93 @@ message SessionSearchSummary {
   // cost; pending is how many conversations the index had not caught up with.
   int32 examined = 10;
   int32 pending = 11;
+}
+
+// Run asks for one task now. It does not change what runs automatically, and a
+// kind that is already automatic is left alone rather than run twice. text is
+// only for a title given rather than generated.
+message AuxRunRequest {
+  SessionRef ref = 1;
+  repeated AuxKind kinds = 2;
+  string text = 3;
+}
+
+// One session's aux state.
+message AuxState {
+  repeated AuxSummary summaries = 1;
+  Aux current = 2;
+  repeated AuxPreference preferences = 3;
+  // The session's generated title, for the caller that records session names.
+  string title = 4;
+  string message = 5;
+}
+
+// Kept per turn on the session, so a summary outlives the task that wrote it.
+message AuxSummary {
+  string run_id = 1;
+  uint64 turn = 2;
+  string text = 3;
+}
+
+// Aux: one task done beside a session.
+//
+// kinds is what was asked for and results is what came back, so one task can
+// answer two kinds -- which is what happens when summary and suggestion share a
+// profile and one model call answers both. results may be partial while state
+// is still running, because the summary is published while a separate
+// suggestion is still being generated.
+message Aux {
+  string id = 1;
+  bytes session_id = 2;
+  repeated AuxKind kinds = 3;
+  // The turn this answered. Results are shown beside it.
+  string run_id = 4;
+  uint64 turn = 5;
+  // The configuration revision it ran under. A changed one makes it stale,
+  // because its answer is not an answer for the new settings.
+  string revision = 6;
+  string state = 7; // queued, running, completed, failed, stale, canceled
+  repeated AuxResult results = 8;
+  repeated AuxUsage usage = 9;
+  string message = 10; // why it failed, for a person to read
+}
+
+// truncated says the text hit a limit; what arrived is kept rather than refused.
+message AuxResult {
+  AuxKind kind = 1;
+  string text = 2;
+  bool truncated = 3;
+}
+
+// What this task spent, not what an account has spent.
+message AuxUsage {
+  string account = 1;
+  string model = 2;
+  AuxKind kind = 3;
+  bytes data = 4;
+}
+
+// Whether a kind runs automatically for this session, overriding the
+// installation default. since is read only: turning a kind on does not reach
+// backwards over the conversation that already happened.
+message AuxPreference {
+  AuxKind kind = 1;
+  bool enabled = 2;
+  google.protobuf.Timestamp since = 3;
+}
+
+message AuxStatusRequest {
+  SessionRef ref = 1;
+  uint64 after_turn = 2;
+  int32 limit = 3;
+}
+
+message AuxPreferRequest {
+  SessionRef ref = 1;
+  repeated AuxPreference preferences = 2;
+}
+
+message AuxCancelRequest {
+  SessionRef ref = 1;
+  string aux_id = 2;
 }

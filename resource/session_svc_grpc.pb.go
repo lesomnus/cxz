@@ -49,6 +49,10 @@ const (
 	SessionService_Models_FullMethodName            = "/cxz.SessionService/Models"
 	SessionService_Events_FullMethodName            = "/cxz.SessionService/Events"
 	SessionService_Search_FullMethodName            = "/cxz.SessionService/Search"
+	SessionService_AuxRun_FullMethodName            = "/cxz.SessionService/AuxRun"
+	SessionService_AuxStatus_FullMethodName         = "/cxz.SessionService/AuxStatus"
+	SessionService_AuxPrefer_FullMethodName         = "/cxz.SessionService/AuxPrefer"
+	SessionService_AuxCancel_FullMethodName         = "/cxz.SessionService/AuxCancel"
 )
 
 // SessionServiceClient is the client API for SessionService service.
@@ -108,6 +112,13 @@ type SessionServiceClient interface {
 	// Search answers across every session in every project, so it names no ref.
 	// It is on this service because sessions are what it finds.
 	Search(ctx context.Context, in *SessionSearchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SessionSearchReply], error)
+	// Aux is a model task done beside this session. Asking for one and reading
+	// what the last one produced are the same question at two moments, so all
+	// four answer with the session's aux state. See docs/plans/aux-api.md.
+	AuxRun(ctx context.Context, in *AuxRunRequest, opts ...grpc.CallOption) (*AuxState, error)
+	AuxStatus(ctx context.Context, in *AuxStatusRequest, opts ...grpc.CallOption) (*AuxState, error)
+	AuxPrefer(ctx context.Context, in *AuxPreferRequest, opts ...grpc.CallOption) (*AuxState, error)
+	AuxCancel(ctx context.Context, in *AuxCancelRequest, opts ...grpc.CallOption) (*AuxState, error)
 }
 
 type sessionServiceClient struct {
@@ -448,6 +459,46 @@ func (c *sessionServiceClient) Search(ctx context.Context, in *SessionSearchRequ
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type SessionService_SearchClient = grpc.ServerStreamingClient[SessionSearchReply]
 
+func (c *sessionServiceClient) AuxRun(ctx context.Context, in *AuxRunRequest, opts ...grpc.CallOption) (*AuxState, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AuxState)
+	err := c.cc.Invoke(ctx, SessionService_AuxRun_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionServiceClient) AuxStatus(ctx context.Context, in *AuxStatusRequest, opts ...grpc.CallOption) (*AuxState, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AuxState)
+	err := c.cc.Invoke(ctx, SessionService_AuxStatus_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionServiceClient) AuxPrefer(ctx context.Context, in *AuxPreferRequest, opts ...grpc.CallOption) (*AuxState, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AuxState)
+	err := c.cc.Invoke(ctx, SessionService_AuxPrefer_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionServiceClient) AuxCancel(ctx context.Context, in *AuxCancelRequest, opts ...grpc.CallOption) (*AuxState, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AuxState)
+	err := c.cc.Invoke(ctx, SessionService_AuxCancel_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SessionServiceServer is the server API for SessionService service.
 // All implementations must embed UnimplementedSessionServiceServer
 // for forward compatibility.
@@ -505,6 +556,13 @@ type SessionServiceServer interface {
 	// Search answers across every session in every project, so it names no ref.
 	// It is on this service because sessions are what it finds.
 	Search(*SessionSearchRequest, grpc.ServerStreamingServer[SessionSearchReply]) error
+	// Aux is a model task done beside this session. Asking for one and reading
+	// what the last one produced are the same question at two moments, so all
+	// four answer with the session's aux state. See docs/plans/aux-api.md.
+	AuxRun(context.Context, *AuxRunRequest) (*AuxState, error)
+	AuxStatus(context.Context, *AuxStatusRequest) (*AuxState, error)
+	AuxPrefer(context.Context, *AuxPreferRequest) (*AuxState, error)
+	AuxCancel(context.Context, *AuxCancelRequest) (*AuxState, error)
 	mustEmbedUnimplementedSessionServiceServer()
 }
 
@@ -604,6 +662,18 @@ func (UnimplementedSessionServiceServer) Events(*SessionEventsRequest, grpc.Serv
 }
 func (UnimplementedSessionServiceServer) Search(*SessionSearchRequest, grpc.ServerStreamingServer[SessionSearchReply]) error {
 	return status.Error(codes.Unimplemented, "method Search not implemented")
+}
+func (UnimplementedSessionServiceServer) AuxRun(context.Context, *AuxRunRequest) (*AuxState, error) {
+	return nil, status.Error(codes.Unimplemented, "method AuxRun not implemented")
+}
+func (UnimplementedSessionServiceServer) AuxStatus(context.Context, *AuxStatusRequest) (*AuxState, error) {
+	return nil, status.Error(codes.Unimplemented, "method AuxStatus not implemented")
+}
+func (UnimplementedSessionServiceServer) AuxPrefer(context.Context, *AuxPreferRequest) (*AuxState, error) {
+	return nil, status.Error(codes.Unimplemented, "method AuxPrefer not implemented")
+}
+func (UnimplementedSessionServiceServer) AuxCancel(context.Context, *AuxCancelRequest) (*AuxState, error) {
+	return nil, status.Error(codes.Unimplemented, "method AuxCancel not implemented")
 }
 func (UnimplementedSessionServiceServer) mustEmbedUnimplementedSessionServiceServer() {}
 func (UnimplementedSessionServiceServer) testEmbeddedByValue()                        {}
@@ -1134,6 +1204,78 @@ func _SessionService_Search_Handler(srv interface{}, stream grpc.ServerStream) e
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type SessionService_SearchServer = grpc.ServerStreamingServer[SessionSearchReply]
 
+func _SessionService_AuxRun_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuxRunRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionServiceServer).AuxRun(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SessionService_AuxRun_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionServiceServer).AuxRun(ctx, req.(*AuxRunRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SessionService_AuxStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuxStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionServiceServer).AuxStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SessionService_AuxStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionServiceServer).AuxStatus(ctx, req.(*AuxStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SessionService_AuxPrefer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuxPreferRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionServiceServer).AuxPrefer(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SessionService_AuxPrefer_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionServiceServer).AuxPrefer(ctx, req.(*AuxPreferRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SessionService_AuxCancel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuxCancelRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionServiceServer).AuxCancel(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SessionService_AuxCancel_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionServiceServer).AuxCancel(ctx, req.(*AuxCancelRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SessionService_ServiceDesc is the grpc.ServiceDesc for SessionService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1244,6 +1386,22 @@ var SessionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Models",
 			Handler:    _SessionService_Models_Handler,
+		},
+		{
+			MethodName: "AuxRun",
+			Handler:    _SessionService_AuxRun_Handler,
+		},
+		{
+			MethodName: "AuxStatus",
+			Handler:    _SessionService_AuxStatus_Handler,
+		},
+		{
+			MethodName: "AuxPrefer",
+			Handler:    _SessionService_AuxPrefer_Handler,
+		},
+		{
+			MethodName: "AuxCancel",
+			Handler:    _SessionService_AuxCancel_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

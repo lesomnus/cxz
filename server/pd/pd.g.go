@@ -3395,6 +3395,26 @@ func (s interceptProject) Docker(ctx context.Context, req *resource.DockerReques
 		resource.ProjectService_Docker_FullMethodName, req, s.ProjectServiceServer.Docker)
 }
 
+func (s interceptProject) AuxConfig(ctx context.Context, req *resource.AuxConfigRequest) (*resource.AuxConfigReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_AuxConfig_FullMethodName, req, s.ProjectServiceServer.AuxConfig)
+}
+
+func (s interceptProject) AuxSetConfig(ctx context.Context, req *resource.AuxSetConfigRequest) (*resource.AuxConfigReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_AuxSetConfig_FullMethodName, req, s.ProjectServiceServer.AuxSetConfig)
+}
+
+func (s interceptProject) AuxModels(ctx context.Context, req *resource.AuxModelsRequest) (*resource.AuxModelsReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_AuxModels_FullMethodName, req, s.ProjectServiceServer.AuxModels)
+}
+
+func (s interceptProject) AuxLoginInfo(ctx context.Context, req *resource.AuxLoginInfoRequest) (*resource.AuxLoginInfoReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_AuxLoginInfo_FullMethodName, req, s.ProjectServiceServer.AuxLoginInfo)
+}
+
 func (s interceptProject) FileMappings(ctx context.Context, req *resource.FileMappingsRequest) (*resource.FileMappingsReply, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
 		resource.ProjectService_FileMappings_FullMethodName, req, s.ProjectServiceServer.FileMappings)
@@ -3738,6 +3758,26 @@ func (s interceptSession) Events(req *resource.SessionEventsRequest, out grpc.Se
 func (s interceptSession) Search(req *resource.SessionSearchRequest, out grpc.ServerStreamingServer[resource.SessionSearchReply]) error {
 	return grpcx.RunStream(s.stream, s.SessionServiceServer,
 		resource.SessionService_Search_FullMethodName, req, out, s.SessionServiceServer.Search)
+}
+
+func (s interceptSession) AuxRun(ctx context.Context, req *resource.AuxRunRequest) (*resource.AuxState, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
+		resource.SessionService_AuxRun_FullMethodName, req, s.SessionServiceServer.AuxRun)
+}
+
+func (s interceptSession) AuxStatus(ctx context.Context, req *resource.AuxStatusRequest) (*resource.AuxState, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
+		resource.SessionService_AuxStatus_FullMethodName, req, s.SessionServiceServer.AuxStatus)
+}
+
+func (s interceptSession) AuxPrefer(ctx context.Context, req *resource.AuxPreferRequest) (*resource.AuxState, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
+		resource.SessionService_AuxPrefer_FullMethodName, req, s.SessionServiceServer.AuxPrefer)
+}
+
+func (s interceptSession) AuxCancel(ctx context.Context, req *resource.AuxCancelRequest) (*resource.AuxState, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
+		resource.SessionService_AuxCancel_FullMethodName, req, s.SessionServiceServer.AuxCancel)
 }
 
 // WatchRecorder answers with the recorder that remembers a write for `w`.
@@ -4469,6 +4509,58 @@ func dispatch(ctx context.Context, s resource.Server, op *pdpb.Op) (*anypb.Any, 
 
 		return anypb.New(res)
 
+	case resource.ProjectService_AuxConfig_FullMethodName:
+		v := &resource.AuxConfigRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().AuxConfig(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.ProjectService_AuxSetConfig_FullMethodName:
+		v := &resource.AuxSetConfigRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().AuxSetConfig(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.ProjectService_AuxModels_FullMethodName:
+		v := &resource.AuxModelsRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().AuxModels(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.ProjectService_AuxLoginInfo_FullMethodName:
+		v := &resource.AuxLoginInfoRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().AuxLoginInfo(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
 	case resource.ProjectService_FileMappings_FullMethodName:
 		v := &resource.FileMappingsRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
@@ -5178,6 +5270,58 @@ func dispatch(ctx context.Context, s resource.Server, op *pdpb.Op) (*anypb.Any, 
 		}
 
 		res, err := s.Session().Models(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.SessionService_AuxRun_FullMethodName:
+		v := &resource.AuxRunRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Session().AuxRun(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.SessionService_AuxStatus_FullMethodName:
+		v := &resource.AuxStatusRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Session().AuxStatus(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.SessionService_AuxPrefer_FullMethodName:
+		v := &resource.AuxPreferRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Session().AuxPrefer(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.SessionService_AuxCancel_FullMethodName:
+		v := &resource.AuxCancelRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Session().AuxCancel(ctx, v)
 		if err != nil {
 			return nil, err
 		}

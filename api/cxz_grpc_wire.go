@@ -47,6 +47,15 @@ const (
 	Sessions_Open_FullMethodName         = "/cxz.runtime.Sessions/Open"
 	Sessions_Projects_FullMethodName     = "/cxz.runtime.Sessions/Projects"
 	Sessions_Down_FullMethodName         = "/cxz.runtime.Sessions/Down"
+	Sessions_AuxRun_FullMethodName       = "/cxz.runtime.Sessions/AuxRun"
+	Sessions_AuxCancel_FullMethodName    = "/cxz.runtime.Sessions/AuxCancel"
+	Sessions_AuxStatus_FullMethodName    = "/cxz.runtime.Sessions/AuxStatus"
+	Sessions_AuxPrefer_FullMethodName    = "/cxz.runtime.Sessions/AuxPrefer"
+	Sessions_AuxForget_FullMethodName    = "/cxz.runtime.Sessions/AuxForget"
+	Sessions_AuxConfig_FullMethodName    = "/cxz.runtime.Sessions/AuxConfig"
+	Sessions_AuxSetConfig_FullMethodName = "/cxz.runtime.Sessions/AuxSetConfig"
+	Sessions_AuxModels_FullMethodName    = "/cxz.runtime.Sessions/AuxModels"
+	Sessions_AuxLoginInfo_FullMethodName = "/cxz.runtime.Sessions/AuxLoginInfo"
 )
 
 // SessionsClient is the client API for Sessions service.
@@ -81,6 +90,15 @@ type SessionsClient interface {
 	Open(ctx context.Context, in *ProjectRequest, opts ...grpc.CallOption) (*Session, error)
 	Projects(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ProjectList, error)
 	Down(ctx context.Context, in *ProjectRequest, opts ...grpc.CallOption) (*Receipt, error)
+	AuxRun(ctx context.Context, in *AuxRunInput, opts ...grpc.CallOption) (*AuxState, error)
+	AuxCancel(ctx context.Context, in *AuxCancelInput, opts ...grpc.CallOption) (*AuxState, error)
+	AuxStatus(ctx context.Context, in *AuxStatusInput, opts ...grpc.CallOption) (*AuxState, error)
+	AuxPrefer(ctx context.Context, in *AuxPreferInput, opts ...grpc.CallOption) (*AuxState, error)
+	AuxForget(ctx context.Context, in *AuxForgetInput, opts ...grpc.CallOption) (*Receipt, error)
+	AuxConfig(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*AuxConfigReply, error)
+	AuxSetConfig(ctx context.Context, in *AuxSetConfigInput, opts ...grpc.CallOption) (*AuxConfigReply, error)
+	AuxModels(ctx context.Context, in *AuxModelsInput, opts ...grpc.CallOption) (*AuxModelsReply, error)
+	AuxLoginInfo(ctx context.Context, in *AuxLoginInfoInput, opts ...grpc.CallOption) (*AuxLoginInfoReply, error)
 }
 
 type sessionsClient struct {
@@ -389,6 +407,96 @@ func (c *sessionsClient) Down(ctx context.Context, in *ProjectRequest, opts ...g
 	return out, nil
 }
 
+func (c *sessionsClient) AuxRun(ctx context.Context, in *AuxRunInput, opts ...grpc.CallOption) (*AuxState, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AuxState)
+	err := c.cc.Invoke(ctx, Sessions_AuxRun_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) AuxCancel(ctx context.Context, in *AuxCancelInput, opts ...grpc.CallOption) (*AuxState, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AuxState)
+	err := c.cc.Invoke(ctx, Sessions_AuxCancel_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) AuxStatus(ctx context.Context, in *AuxStatusInput, opts ...grpc.CallOption) (*AuxState, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AuxState)
+	err := c.cc.Invoke(ctx, Sessions_AuxStatus_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) AuxPrefer(ctx context.Context, in *AuxPreferInput, opts ...grpc.CallOption) (*AuxState, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AuxState)
+	err := c.cc.Invoke(ctx, Sessions_AuxPrefer_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) AuxForget(ctx context.Context, in *AuxForgetInput, opts ...grpc.CallOption) (*Receipt, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Receipt)
+	err := c.cc.Invoke(ctx, Sessions_AuxForget_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) AuxConfig(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*AuxConfigReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AuxConfigReply)
+	err := c.cc.Invoke(ctx, Sessions_AuxConfig_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) AuxSetConfig(ctx context.Context, in *AuxSetConfigInput, opts ...grpc.CallOption) (*AuxConfigReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AuxConfigReply)
+	err := c.cc.Invoke(ctx, Sessions_AuxSetConfig_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) AuxModels(ctx context.Context, in *AuxModelsInput, opts ...grpc.CallOption) (*AuxModelsReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AuxModelsReply)
+	err := c.cc.Invoke(ctx, Sessions_AuxModels_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) AuxLoginInfo(ctx context.Context, in *AuxLoginInfoInput, opts ...grpc.CallOption) (*AuxLoginInfoReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AuxLoginInfoReply)
+	err := c.cc.Invoke(ctx, Sessions_AuxLoginInfo_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SessionsServer is the server API for Sessions service.
 // All implementations must embed UnimplementedSessionsServer
 // for forward compatibility.
@@ -421,6 +529,15 @@ type SessionsServer interface {
 	Open(context.Context, *ProjectRequest) (*Session, error)
 	Projects(context.Context, *Empty) (*ProjectList, error)
 	Down(context.Context, *ProjectRequest) (*Receipt, error)
+	AuxRun(context.Context, *AuxRunInput) (*AuxState, error)
+	AuxCancel(context.Context, *AuxCancelInput) (*AuxState, error)
+	AuxStatus(context.Context, *AuxStatusInput) (*AuxState, error)
+	AuxPrefer(context.Context, *AuxPreferInput) (*AuxState, error)
+	AuxForget(context.Context, *AuxForgetInput) (*Receipt, error)
+	AuxConfig(context.Context, *Empty) (*AuxConfigReply, error)
+	AuxSetConfig(context.Context, *AuxSetConfigInput) (*AuxConfigReply, error)
+	AuxModels(context.Context, *AuxModelsInput) (*AuxModelsReply, error)
+	AuxLoginInfo(context.Context, *AuxLoginInfoInput) (*AuxLoginInfoReply, error)
 	mustEmbedUnimplementedSessionsServer()
 }
 
@@ -514,6 +631,33 @@ func (UnimplementedSessionsServer) Projects(context.Context, *Empty) (*ProjectLi
 }
 func (UnimplementedSessionsServer) Down(context.Context, *ProjectRequest) (*Receipt, error) {
 	return nil, status.Error(codes.Unimplemented, "method Down not implemented")
+}
+func (UnimplementedSessionsServer) AuxRun(context.Context, *AuxRunInput) (*AuxState, error) {
+	return nil, status.Error(codes.Unimplemented, "method AuxRun not implemented")
+}
+func (UnimplementedSessionsServer) AuxCancel(context.Context, *AuxCancelInput) (*AuxState, error) {
+	return nil, status.Error(codes.Unimplemented, "method AuxCancel not implemented")
+}
+func (UnimplementedSessionsServer) AuxStatus(context.Context, *AuxStatusInput) (*AuxState, error) {
+	return nil, status.Error(codes.Unimplemented, "method AuxStatus not implemented")
+}
+func (UnimplementedSessionsServer) AuxPrefer(context.Context, *AuxPreferInput) (*AuxState, error) {
+	return nil, status.Error(codes.Unimplemented, "method AuxPrefer not implemented")
+}
+func (UnimplementedSessionsServer) AuxForget(context.Context, *AuxForgetInput) (*Receipt, error) {
+	return nil, status.Error(codes.Unimplemented, "method AuxForget not implemented")
+}
+func (UnimplementedSessionsServer) AuxConfig(context.Context, *Empty) (*AuxConfigReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method AuxConfig not implemented")
+}
+func (UnimplementedSessionsServer) AuxSetConfig(context.Context, *AuxSetConfigInput) (*AuxConfigReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method AuxSetConfig not implemented")
+}
+func (UnimplementedSessionsServer) AuxModels(context.Context, *AuxModelsInput) (*AuxModelsReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method AuxModels not implemented")
+}
+func (UnimplementedSessionsServer) AuxLoginInfo(context.Context, *AuxLoginInfoInput) (*AuxLoginInfoReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method AuxLoginInfo not implemented")
 }
 func (UnimplementedSessionsServer) mustEmbedUnimplementedSessionsServer() {}
 func (UnimplementedSessionsServer) testEmbeddedByValue()                  {}
@@ -1026,6 +1170,168 @@ func _Sessions_Down_Handler(srv interface{}, ctx context.Context, dec func(inter
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Sessions_AuxRun_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuxRunInput)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).AuxRun(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_AuxRun_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).AuxRun(ctx, req.(*AuxRunInput))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_AuxCancel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuxCancelInput)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).AuxCancel(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_AuxCancel_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).AuxCancel(ctx, req.(*AuxCancelInput))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_AuxStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuxStatusInput)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).AuxStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_AuxStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).AuxStatus(ctx, req.(*AuxStatusInput))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_AuxPrefer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuxPreferInput)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).AuxPrefer(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_AuxPrefer_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).AuxPrefer(ctx, req.(*AuxPreferInput))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_AuxForget_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuxForgetInput)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).AuxForget(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_AuxForget_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).AuxForget(ctx, req.(*AuxForgetInput))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_AuxConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).AuxConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_AuxConfig_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).AuxConfig(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_AuxSetConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuxSetConfigInput)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).AuxSetConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_AuxSetConfig_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).AuxSetConfig(ctx, req.(*AuxSetConfigInput))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_AuxModels_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuxModelsInput)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).AuxModels(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_AuxModels_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).AuxModels(ctx, req.(*AuxModelsInput))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_AuxLoginInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuxLoginInfoInput)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).AuxLoginInfo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_AuxLoginInfo_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).AuxLoginInfo(ctx, req.(*AuxLoginInfoInput))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Sessions_ServiceDesc is the grpc.ServiceDesc for Sessions service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1136,6 +1442,42 @@ var Sessions_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Down",
 			Handler:    _Sessions_Down_Handler,
+		},
+		{
+			MethodName: "AuxRun",
+			Handler:    _Sessions_AuxRun_Handler,
+		},
+		{
+			MethodName: "AuxCancel",
+			Handler:    _Sessions_AuxCancel_Handler,
+		},
+		{
+			MethodName: "AuxStatus",
+			Handler:    _Sessions_AuxStatus_Handler,
+		},
+		{
+			MethodName: "AuxPrefer",
+			Handler:    _Sessions_AuxPrefer_Handler,
+		},
+		{
+			MethodName: "AuxForget",
+			Handler:    _Sessions_AuxForget_Handler,
+		},
+		{
+			MethodName: "AuxConfig",
+			Handler:    _Sessions_AuxConfig_Handler,
+		},
+		{
+			MethodName: "AuxSetConfig",
+			Handler:    _Sessions_AuxSetConfig_Handler,
+		},
+		{
+			MethodName: "AuxModels",
+			Handler:    _Sessions_AuxModels_Handler,
+		},
+		{
+			MethodName: "AuxLoginInfo",
+			Handler:    _Sessions_AuxLoginInfo_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

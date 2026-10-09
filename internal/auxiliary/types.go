@@ -108,6 +108,10 @@ type State struct {
 type SessionConfig struct {
 	Summary    bool `json:"summary"`
 	Suggestion bool `json:"suggestion"`
+	// Since is the turn boundary in force for this session: the later of the
+	// installation's and the session's own, which is what Observe compares
+	// against. Reported so a caller can say what a kind applies to.
+	Since int64 `json:"since,omitempty"`
 }
 
 type Job struct {

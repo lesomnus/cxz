@@ -49,7 +49,7 @@ func (c *Controller) SessionConfig(id string) (SessionConfig, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	cfg, err := c.sessionConfig(id)
-	return SessionConfig{cfg.Summary.Enabled, cfg.Suggestion.Enabled}, err
+	return SessionConfig{Summary: cfg.Summary.Enabled, Suggestion: cfg.Suggestion.Enabled, Since: cfg.Since}, err
 }
 func (c *Controller) SetSession(id, task string, enabled bool) error {
 	c.mu.Lock()

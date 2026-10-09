@@ -2,30 +2,31 @@ package lifecycle
 
 import (
 	"context"
-	"encoding/json"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/accounts"
-	"github.com/lesomnus/cxz/internal/auxiliary"
 	"github.com/lesomnus/cxz/resource"
 	"github.com/lesomnus/payday/config"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"path/filepath"
 	"testing"
 )
 
 type auxiliaryFixture struct {
 	fixture
-	got   auxiliary.Request
-	calls int
-	reply string
+	models *api.AuxModelsInput
+	calls  int
+	title  string
 }
 
-func (f *auxiliaryFixture) Docker(_ context.Context, r *api.DockerInput) (*api.Receipt, error) {
+func (f *auxiliaryFixture) AuxModels(_ context.Context, r *api.AuxModelsInput) (*api.AuxModelsReply, error) {
 	f.calls++
-	_ = json.Unmarshal(r.Spec, &f.got)
-	if f.reply != "" {
-		return &api.Receipt{Status: f.reply}, nil
-	}
-	return &api.Receipt{Status: `{}`}, nil
+	f.models = r
+	return &api.AuxModelsReply{}, nil
+}
+func (f *auxiliaryFixture) AuxStatus(_ context.Context, r *api.AuxStatusInput) (*api.AuxState, error) {
+	f.calls++
+	return &api.AuxState{Title: f.title}, nil
 }
 func TestAuxiliaryUsesRegisteredAccountNotClientProvider(t *testing.T) {
 	ctx := t.Context()
@@ -43,18 +44,52 @@ func TestAuxiliaryUsesRegisteredAccountNotClientProvider(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	b, _ := json.Marshal(auxiliary.Request{Action: "models", Profile: auxiliary.Profile{Account: "work", Agent: "claude", Backend: accounts.ProjectLocalOAuth}})
-	_, e = stack.Project().Docker(ctx, resource.DockerRequest_builder{Action: ptr("auxiliary"), Spec: b}.Build())
+	// The request names an account and nothing else about authentication; what
+	// it authenticates as is read off the registered account.
+	_, e = stack.Project().AuxModels(ctx, resource.AuxModelsRequest_builder{Account: ptr("work")}.Build())
 	if e != nil {
 		t.Fatal(e)
 	}
-	if f.got.Profile.Agent != "codex" || f.got.Profile.Backend != accounts.BrokeredAccessToken {
-		t.Fatal("trusted client authentication fields")
+	if f.models.Agent != "codex" || f.models.Backend != accounts.BrokeredAccessToken {
+		t.Fatal("wrong authentication for the registered account", f.models)
 	}
-	b, _ = json.Marshal(auxiliary.Request{Action: "models", Profile: auxiliary.Profile{Account: "missing"}})
-	_, e = stack.Project().Docker(ctx, resource.DockerRequest_builder{Action: ptr("auxiliary"), Spec: b}.Build())
+	_, e = stack.Project().AuxModels(ctx, resource.AuxModelsRequest_builder{Account: ptr("missing")}.Build())
 	if e == nil || f.calls != 1 {
 		t.Fatal("missing account reached runner")
+	}
+	_, e = stack.Project().AuxModels(ctx, resource.AuxModelsRequest_builder{}.Build())
+	if e == nil || f.calls != 1 {
+		t.Fatal("nameless account reached runner")
+	}
+}
+
+// A kind this build does not know is refused at the edge, before it can reach
+// the controller as something it would have to interpret.
+func TestAuxRefusesAnUnknownKindAtTheEdge(t *testing.T) {
+	ctx := t.Context()
+	db, _, err := (config.DbConfig{Driver: "sqlite3", Dsn: "file:" + filepath.Join(t.TempDir(), "resources.db"), MaxOpenConns: 1}).Open(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	f := &auxiliaryFixture{fixture: fixture{p: &api.Project{Id: "project", Workspace: "/work", Name: "test"}, s: &api.Session{Id: "session", ProjectId: "project", Agent: "codex", LastSeq: 1, Account: "work", AuthBackend: accounts.ProjectLocalOAuth}}}
+	f.s.AuthBinding = accounts.BindingID(f.p.Id, f.s.Account, f.s.AuthBackend)
+	stack, err := Build(ctx, db, f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = stack.Session().AuxRun(ctx, resource.AuxRunRequest_builder{
+		Ref: sessionRef("session"), Kinds: []resource.AuxKind{resource.AuxKind(99)},
+	}.Build())
+	if status.Code(err) != codes.InvalidArgument || f.calls != 0 {
+		t.Fatal("an unknown kind reached the runner", err, f.calls)
+	}
+	_, err = stack.Session().AuxPrefer(ctx, resource.AuxPreferRequest_builder{
+		Ref:         sessionRef("session"),
+		Preferences: []*resource.AuxPreference{resource.AuxPreference_builder{Kind: ptr(resource.AuxKind_AUX_KIND_UNSPECIFIED)}.Build()},
+	}.Build())
+	if status.Code(err) != codes.InvalidArgument || f.calls != 0 {
+		t.Fatal("an unset kind reached the runner", err, f.calls)
 	}
 }
 
@@ -79,9 +114,10 @@ func TestAuxiliaryTitleUpdatesResourceWithoutChangingIdentity(t *testing.T) {
 		return v
 	}
 	before := get()
-	f.reply = `{"title":{"text":"New title","status":"completed"}}`
-	b, _ := json.Marshal(auxiliary.Request{Action: "status", Session: "session"})
-	if _, err := stack.Project().Docker(ctx, resource.DockerRequest_builder{Action: ptr("auxiliary"), Spec: b}.Build()); err != nil {
+	// A generated title is a field of the answer, so recording it is not a
+	// guess about what an opaque reply contained.
+	f.title = "New title"
+	if _, err := stack.Session().AuxStatus(ctx, resource.AuxStatusRequest_builder{Ref: sessionRef("session")}.Build()); err != nil {
 		t.Fatal(err)
 	}
 	after := get()

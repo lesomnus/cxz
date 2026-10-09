@@ -368,6 +368,12 @@ test("provider dropdowns, quota popovers, aligned headings and bounded press/sha
       return { bodyBelow, controlAbove };
     });
   expect(layers).toEqual({ bodyBelow: true, controlAbove: true });
+  expect(
+    await page
+      .locator(".transcript-row > .response")
+      .first()
+      .evaluate((el) => getComputedStyle(el, "::before").backdropFilter),
+  ).toBe("blur(16px)");
   const latest = page.getByRole("button", { name: "Latest", exact: true });
   // Wait for the overlay's entrance transition before testing its hit bounds.
   await expect

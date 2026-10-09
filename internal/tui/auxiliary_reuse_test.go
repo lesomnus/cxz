@@ -40,13 +40,17 @@ func TestReuseAnotherTasksProfileSavesInOneStep(t *testing.T) {
 		t.Fatal("selecting a reused profile did nothing")
 	}
 	m.Update(cmd())
-	if c.got.Action != "put" || c.got.Task != "suggestion" {
+	if c.got.call != "set" || c.got.kind != "suggestion" {
 		t.Fatalf("not saved as the suggestion: %+v", c.got)
 	}
-	if c.got.Profile != summary {
-		t.Fatalf("the saved profile differs from the one it copied:\n got %+v\nwant %+v", c.got.Profile, summary)
+	// Copied whole: what travels is the account, the model and the effort. What
+	// an account authenticates as is read off the registered account by the
+	// server, so a client no longer sends it at all.
+	saved := c.got.profile
+	if saved.Account != summary.Account || saved.Model != summary.Model || saved.Effort != summary.Effort || !saved.Enabled {
+		t.Fatalf("the saved profile differs from the one it copied:\n got %+v\nwant %+v", saved, summary)
 	}
-	if c.got.Action == "models" || c.loginCount != 0 {
+	if c.got.call == "models" || c.loginCount != 0 {
 		t.Fatal("a validated profile was probed again")
 	}
 	if p.step == "model" || p.step == "effort" {
@@ -76,7 +80,7 @@ func TestAccountChoiceIsOffsetByReuseEntries(t *testing.T) {
 	if p.step != "model" {
 		t.Fatal("the wizard did not continue to the model step:", p.step)
 	}
-	if c.got.Action != "models" || c.got.Profile.Account != "second" || c.got.Profile.Agent != "codex" {
+	if c.got.call != "models" || c.got.account != "second" {
 		t.Fatalf("wrong account taken: %+v", c.got)
 	}
 }

@@ -36,6 +36,10 @@ const (
 	ProjectService_EditorTunnel_FullMethodName   = "/cxz.ProjectService/EditorTunnel"
 	ProjectService_Devcontainer_FullMethodName   = "/cxz.ProjectService/Devcontainer"
 	ProjectService_Docker_FullMethodName         = "/cxz.ProjectService/Docker"
+	ProjectService_AuxConfig_FullMethodName      = "/cxz.ProjectService/AuxConfig"
+	ProjectService_AuxSetConfig_FullMethodName   = "/cxz.ProjectService/AuxSetConfig"
+	ProjectService_AuxModels_FullMethodName      = "/cxz.ProjectService/AuxModels"
+	ProjectService_AuxLoginInfo_FullMethodName   = "/cxz.ProjectService/AuxLoginInfo"
 	ProjectService_FileMappings_FullMethodName   = "/cxz.ProjectService/FileMappings"
 	ProjectService_Up_FullMethodName             = "/cxz.ProjectService/Up"
 	ProjectService_Down_FullMethodName           = "/cxz.ProjectService/Down"
@@ -92,6 +96,14 @@ type ProjectServiceClient interface {
 	EditorTunnel(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ProjectEditorTunnelRequest, ProjectEditorTunnelReply], error)
 	Devcontainer(ctx context.Context, in *DevcontainerRequest, opts ...grpc.CallOption) (*DevcontainerReply, error)
 	Docker(ctx context.Context, in *DockerRequest, opts ...grpc.CallOption) (*DockerReply, error)
+	// Aux is a model task done beside a session: run once, with the context cxz
+	// assembles, never accumulating into a conversation. These four are the part
+	// that belongs to the installation rather than to one session -- which
+	// account and model each kind runs on. See docs/plans/aux-api.md.
+	AuxConfig(ctx context.Context, in *AuxConfigRequest, opts ...grpc.CallOption) (*AuxConfigReply, error)
+	AuxSetConfig(ctx context.Context, in *AuxSetConfigRequest, opts ...grpc.CallOption) (*AuxConfigReply, error)
+	AuxModels(ctx context.Context, in *AuxModelsRequest, opts ...grpc.CallOption) (*AuxModelsReply, error)
+	AuxLoginInfo(ctx context.Context, in *AuxLoginInfoRequest, opts ...grpc.CallOption) (*AuxLoginInfoReply, error)
 	FileMappings(ctx context.Context, in *FileMappingsRequest, opts ...grpc.CallOption) (*FileMappingsReply, error)
 	// Provision/start a registered workspace. This never creates a conversation.
 	Up(ctx context.Context, in *ProjectUpRequest, opts ...grpc.CallOption) (*Project, error)
@@ -320,6 +332,46 @@ func (c *projectServiceClient) Docker(ctx context.Context, in *DockerRequest, op
 	return out, nil
 }
 
+func (c *projectServiceClient) AuxConfig(ctx context.Context, in *AuxConfigRequest, opts ...grpc.CallOption) (*AuxConfigReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AuxConfigReply)
+	err := c.cc.Invoke(ctx, ProjectService_AuxConfig_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectServiceClient) AuxSetConfig(ctx context.Context, in *AuxSetConfigRequest, opts ...grpc.CallOption) (*AuxConfigReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AuxConfigReply)
+	err := c.cc.Invoke(ctx, ProjectService_AuxSetConfig_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectServiceClient) AuxModels(ctx context.Context, in *AuxModelsRequest, opts ...grpc.CallOption) (*AuxModelsReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AuxModelsReply)
+	err := c.cc.Invoke(ctx, ProjectService_AuxModels_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectServiceClient) AuxLoginInfo(ctx context.Context, in *AuxLoginInfoRequest, opts ...grpc.CallOption) (*AuxLoginInfoReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AuxLoginInfoReply)
+	err := c.cc.Invoke(ctx, ProjectService_AuxLoginInfo_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *projectServiceClient) FileMappings(ctx context.Context, in *FileMappingsRequest, opts ...grpc.CallOption) (*FileMappingsReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(FileMappingsReply)
@@ -419,6 +471,14 @@ type ProjectServiceServer interface {
 	EditorTunnel(grpc.BidiStreamingServer[ProjectEditorTunnelRequest, ProjectEditorTunnelReply]) error
 	Devcontainer(context.Context, *DevcontainerRequest) (*DevcontainerReply, error)
 	Docker(context.Context, *DockerRequest) (*DockerReply, error)
+	// Aux is a model task done beside a session: run once, with the context cxz
+	// assembles, never accumulating into a conversation. These four are the part
+	// that belongs to the installation rather than to one session -- which
+	// account and model each kind runs on. See docs/plans/aux-api.md.
+	AuxConfig(context.Context, *AuxConfigRequest) (*AuxConfigReply, error)
+	AuxSetConfig(context.Context, *AuxSetConfigRequest) (*AuxConfigReply, error)
+	AuxModels(context.Context, *AuxModelsRequest) (*AuxModelsReply, error)
+	AuxLoginInfo(context.Context, *AuxLoginInfoRequest) (*AuxLoginInfoReply, error)
 	FileMappings(context.Context, *FileMappingsRequest) (*FileMappingsReply, error)
 	// Provision/start a registered workspace. This never creates a conversation.
 	Up(context.Context, *ProjectUpRequest) (*Project, error)
@@ -488,6 +548,18 @@ func (UnimplementedProjectServiceServer) Devcontainer(context.Context, *Devconta
 }
 func (UnimplementedProjectServiceServer) Docker(context.Context, *DockerRequest) (*DockerReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method Docker not implemented")
+}
+func (UnimplementedProjectServiceServer) AuxConfig(context.Context, *AuxConfigRequest) (*AuxConfigReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method AuxConfig not implemented")
+}
+func (UnimplementedProjectServiceServer) AuxSetConfig(context.Context, *AuxSetConfigRequest) (*AuxConfigReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method AuxSetConfig not implemented")
+}
+func (UnimplementedProjectServiceServer) AuxModels(context.Context, *AuxModelsRequest) (*AuxModelsReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method AuxModels not implemented")
+}
+func (UnimplementedProjectServiceServer) AuxLoginInfo(context.Context, *AuxLoginInfoRequest) (*AuxLoginInfoReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method AuxLoginInfo not implemented")
 }
 func (UnimplementedProjectServiceServer) FileMappings(context.Context, *FileMappingsRequest) (*FileMappingsReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method FileMappings not implemented")
@@ -766,6 +838,78 @@ func _ProjectService_Docker_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ProjectService_AuxConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuxConfigRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).AuxConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_AuxConfig_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).AuxConfig(ctx, req.(*AuxConfigRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProjectService_AuxSetConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuxSetConfigRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).AuxSetConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_AuxSetConfig_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).AuxSetConfig(ctx, req.(*AuxSetConfigRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProjectService_AuxModels_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuxModelsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).AuxModels(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_AuxModels_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).AuxModels(ctx, req.(*AuxModelsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProjectService_AuxLoginInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuxLoginInfoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).AuxLoginInfo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_AuxLoginInfo_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).AuxLoginInfo(ctx, req.(*AuxLoginInfoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ProjectService_FileMappings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(FileMappingsRequest)
 	if err := dec(in); err != nil {
@@ -902,6 +1046,22 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Docker",
 			Handler:    _ProjectService_Docker_Handler,
+		},
+		{
+			MethodName: "AuxConfig",
+			Handler:    _ProjectService_AuxConfig_Handler,
+		},
+		{
+			MethodName: "AuxSetConfig",
+			Handler:    _ProjectService_AuxSetConfig_Handler,
+		},
+		{
+			MethodName: "AuxModels",
+			Handler:    _ProjectService_AuxModels_Handler,
+		},
+		{
+			MethodName: "AuxLoginInfo",
+			Handler:    _ProjectService_AuxLoginInfo_Handler,
 		},
 		{
 			MethodName: "FileMappings",

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/lesomnus/cxz/api"
-	"github.com/lesomnus/cxz/internal/auxiliary"
 	"github.com/lesomnus/cxz/internal/mcpconfig"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
@@ -15,13 +14,6 @@ func (c *Client) Docker(ctx context.Context, in *api.DockerInput, opts ...grpc.C
 	request := proto.Clone(in).(*api.DockerInput)
 	ref := ""
 	var mcpRequest mcpconfig.Request
-	var aiRequest auxiliary.Request
-	if in.Action == "auxiliary" {
-		if err := json.Unmarshal(in.Spec, &aiRequest); err != nil {
-			return nil, err
-		}
-		ref = aiRequest.Session
-	}
 	if in.Action == "mcp" {
 		if err := json.Unmarshal(in.Spec, &mcpRequest); err != nil {
 			return nil, err
@@ -43,12 +35,8 @@ func (c *Client) Docker(ctx context.Context, in *api.DockerInput, opts ...grpc.C
 		}
 		request.Spec, _ = json.Marshal(mcpRequest)
 	}
-	if in.Action == "auxiliary" {
-		aiRequest.Session = id
-		request.Spec, _ = json.Marshal(aiRequest)
-	}
 	reply, err := client.Docker(ctx, request, opts...)
-	if err == nil && in.Action != "info" && in.Action != "mcp" && in.Action != "auxiliary" {
+	if err == nil && in.Action != "info" && in.Action != "mcp" {
 		c.refreshSource(ctx, ref)
 	}
 	return reply, err

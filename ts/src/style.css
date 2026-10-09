@@ -878,10 +878,21 @@ header strong {
   padding: 0 12px;
 }
 .transcript-row > .response {
+  position: relative;
   padding: 12px;
   border-radius: 8px;
 }
-.transcript-row > .response,
+.transcript-row > .response::before {
+  /* Blur behind the body without trapping the footer below scroll fades. */
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+}
 .transcript-row > .event-detail {
   -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
