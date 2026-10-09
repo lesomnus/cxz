@@ -2,12 +2,10 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"time"
 
 	"github.com/lesomnus/cxz/api"
-	"github.com/lesomnus/cxz/internal/skillconfig"
 	"github.com/lesomnus/xli"
 	"github.com/lesomnus/xli/arg"
 	"github.com/lesomnus/xli/flg"
@@ -31,26 +29,22 @@ func skillCommand() *xli.Command {
 		command.Handler = xli.OnRun(func(ctx context.Context, c *xli.Command, _ xli.Next) error {
 			ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 			defer cancel()
-			r := skillconfig.Request{Action: c.Name, Project: flg.MustGet[string](c, "project")}
+			project := flg.MustGet[string](c, "project")
+			name := ""
 			if c.Name != "list" {
-				r.Name = arg.MustGet[string](c, "NAME")
+				name = arg.MustGet[string](c, "NAME")
+			}
+			if c.Name == "inherit" && project == "" {
+				return fmt.Errorf("inherit needs a project to restore")
 			}
 			session := ""
-			client, closeClient, err := configConnect(ctx, c, &r.Project, &session)
+			client, closeClient, err := configConnect(ctx, c, &project, &session)
 			if err != nil {
 				return err
 			}
 			defer closeClient()
-			spec, err := json.Marshal(r)
+			reply, err := callSkill(ctx, client, c.Name, project, name)
 			if err != nil {
-				return err
-			}
-			out, err := client.Docker(ctx, &api.DockerInput{Action: "skills", Spec: spec})
-			if err != nil {
-				return err
-			}
-			var reply skillconfig.Reply
-			if err := json.Unmarshal([]byte(out.Status), &reply); err != nil {
 				return err
 			}
 			return printSkills(c, reply)
@@ -60,7 +54,30 @@ func skillCommand() *xli.Command {
 	return c
 }
 
-func printSkills(c *xli.Command, r skillconfig.Reply) error {
+// Each verb is its own call, and enable and disable split by scope rather than
+// by name: setting the installation's default and deciding for one project are
+// different decisions written to different places.
+func callSkill(ctx context.Context, client api.SessionsClient, op, project, name string) (*api.SkillsReply, error) {
+	switch op {
+	case "list":
+		return client.GetSkills(ctx, &api.SkillsInput{Project: project})
+	case "add":
+		return client.AddSkill(ctx, &api.SkillInput{Project: project, Name: name})
+	case "remove":
+		return client.RemoveSkill(ctx, &api.SkillInput{Project: project, Name: name})
+	case "enable", "disable":
+		on := op == "enable"
+		if project == "" {
+			return client.SetSkillDefault(ctx, &api.SkillDefaultInput{Name: name, Enabled: on})
+		}
+		return client.SetProjectSkill(ctx, &api.ProjectSkillInput{Project: project, Name: name, Enabled: on})
+	case "inherit":
+		return client.ClearProjectSkill(ctx, &api.ClearProjectSkillInput{Project: project, Name: name})
+	}
+	return nil, fmt.Errorf("unknown skill command: %s", op)
+}
+
+func printSkills(c *xli.Command, r *api.SkillsReply) error {
 	if r.Message != "" {
 		fmt.Fprintln(c.Writer, r.Message)
 	}

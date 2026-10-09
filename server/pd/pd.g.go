@@ -3390,6 +3390,11 @@ func (s interceptProject) Devcontainer(ctx context.Context, req *resource.Devcon
 		resource.ProjectService_Devcontainer_FullMethodName, req, s.ProjectServiceServer.Devcontainer)
 }
 
+func (s interceptProject) RenderDevcontainer(ctx context.Context, req *resource.RenderDevcontainerRequest) (*resource.RenderDevcontainerReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_RenderDevcontainer_FullMethodName, req, s.ProjectServiceServer.RenderDevcontainer)
+}
+
 func (s interceptProject) Docker(ctx context.Context, req *resource.DockerRequest) (*resource.DockerReply, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
 		resource.ProjectService_Docker_FullMethodName, req, s.ProjectServiceServer.Docker)
@@ -3438,6 +3443,41 @@ func (s interceptProject) PutSecretFile(ctx context.Context, req *resource.PutSe
 func (s interceptProject) DeleteSecretFile(ctx context.Context, req *resource.DeleteSecretFileRequest) (*resource.SecretFileReply, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
 		resource.ProjectService_DeleteSecretFile_FullMethodName, req, s.ProjectServiceServer.DeleteSecretFile)
+}
+
+func (s interceptProject) GetSkills(ctx context.Context, req *resource.SkillsRequest) (*resource.SkillsReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_GetSkills_FullMethodName, req, s.ProjectServiceServer.GetSkills)
+}
+
+func (s interceptProject) AddSkill(ctx context.Context, req *resource.SkillRequest) (*resource.SkillsReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_AddSkill_FullMethodName, req, s.ProjectServiceServer.AddSkill)
+}
+
+func (s interceptProject) RemoveSkill(ctx context.Context, req *resource.SkillRequest) (*resource.SkillsReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_RemoveSkill_FullMethodName, req, s.ProjectServiceServer.RemoveSkill)
+}
+
+func (s interceptProject) SetSkillDefault(ctx context.Context, req *resource.SkillDefaultRequest) (*resource.SkillsReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_SetSkillDefault_FullMethodName, req, s.ProjectServiceServer.SetSkillDefault)
+}
+
+func (s interceptProject) SetProjectSkill(ctx context.Context, req *resource.ProjectSkillRequest) (*resource.SkillsReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_SetProjectSkill_FullMethodName, req, s.ProjectServiceServer.SetProjectSkill)
+}
+
+func (s interceptProject) ClearProjectSkill(ctx context.Context, req *resource.ClearProjectSkillRequest) (*resource.SkillsReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_ClearProjectSkill_FullMethodName, req, s.ProjectServiceServer.ClearProjectSkill)
+}
+
+func (s interceptProject) SyncSkills(ctx context.Context, req *resource.SyncSkillsRequest) (*resource.SyncSkillsReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_SyncSkills_FullMethodName, req, s.ProjectServiceServer.SyncSkills)
 }
 
 func (s interceptProject) FileMappings(ctx context.Context, req *resource.FileMappingsRequest) (*resource.FileMappingsReply, error) {
@@ -4531,6 +4571,19 @@ func dispatch(ctx context.Context, s resource.Server, op *pdpb.Op) (*anypb.Any, 
 
 		return anypb.New(res)
 
+	case resource.ProjectService_RenderDevcontainer_FullMethodName:
+		v := &resource.RenderDevcontainerRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().RenderDevcontainer(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
 	case resource.ProjectService_Docker_FullMethodName:
 		v := &resource.DockerRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
@@ -4655,6 +4708,97 @@ func dispatch(ctx context.Context, s resource.Server, op *pdpb.Op) (*anypb.Any, 
 		}
 
 		res, err := s.Project().DeleteSecretFile(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.ProjectService_GetSkills_FullMethodName:
+		v := &resource.SkillsRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().GetSkills(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.ProjectService_AddSkill_FullMethodName:
+		v := &resource.SkillRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().AddSkill(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.ProjectService_RemoveSkill_FullMethodName:
+		v := &resource.SkillRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().RemoveSkill(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.ProjectService_SetSkillDefault_FullMethodName:
+		v := &resource.SkillDefaultRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().SetSkillDefault(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.ProjectService_SetProjectSkill_FullMethodName:
+		v := &resource.ProjectSkillRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().SetProjectSkill(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.ProjectService_ClearProjectSkill_FullMethodName:
+		v := &resource.ClearProjectSkillRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().ClearProjectSkill(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.ProjectService_SyncSkills_FullMethodName:
+		v := &resource.SyncSkillsRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().SyncSkills(ctx, v)
 		if err != nil {
 			return nil, err
 		}

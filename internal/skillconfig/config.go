@@ -49,23 +49,19 @@ type Config struct {
 	Projects map[string]map[string]bool `json:"projects,omitempty"`
 }
 
-type Request struct {
-	Action  string `json:"action"`
-	Project string `json:"project,omitempty"`
-	Name    string `json:"name,omitempty"`
-}
-
 type Entry struct {
-	Name        string `json:"name"`
-	Description string `json:"description,omitempty"`
+	Name        string
+	Description string
 	// Set when this project decided for itself rather than inheriting.
-	Override  *bool `json:"override,omitempty"`
-	Effective bool  `json:"effective"`
+	Override  *bool
+	Effective bool
 }
 
-type Reply struct {
-	Entries []Entry `json:"entries"`
-	Message string  `json:"message,omitempty"`
+// Listing is the library as one scope sees it. Every operation returns one,
+// because a change to activation is only legible next to what it changed.
+type Listing struct {
+	Entries []Entry
+	Message string
 }
 
 // Library is where the user keeps skill directories.
@@ -174,8 +170,8 @@ func (c Config) Resolve(project string) []string {
 	return out
 }
 
-func (c Config) View(project string) Reply {
-	r := Reply{Entries: []Entry{}}
+func (c Config) View(project string) Listing {
+	r := Listing{Entries: []Entry{}}
 	for name, s := range c.Skills {
 		e := Entry{Name: name, Description: s.Description, Effective: s.Enabled}
 		if v, ok := c.Projects[project][name]; ok {
@@ -204,78 +200,125 @@ func (c Config) Mappings(project string) []filemap.Mapping {
 	return out
 }
 
-func Apply(root string, r Request) (Reply, error) {
+// List reports the library without changing it. project chooses whose view:
+// empty is the installation's own defaults.
+func List(root, project string) (Listing, error) {
 	c, err := Load(root)
 	if err != nil {
-		return Reply{}, err
+		return Listing{}, err
 	}
-	if r.Action != "list" {
-		if err := ValidateName(r.Name); err != nil {
-			return Reply{}, err
+	return c.View(project), nil
+}
+
+// Add registers a directory from the library. Registration is
+// installation-wide; project only chooses whose view comes back.
+func Add(root, project, name string) (Listing, error) {
+	return edit(root, project, name, func(c *Config) (string, error) {
+		if _, ok := c.Skills[name]; !ok && len(c.Skills) >= MaxSkills {
+			return "", fmt.Errorf("installation already holds %d skills", MaxSkills)
 		}
-	}
-	message := ""
-	switch r.Action {
-	case "list":
-	case "add":
-		if _, ok := c.Skills[r.Name]; !ok && len(c.Skills) >= MaxSkills {
-			return Reply{}, fmt.Errorf("installation already holds %d skills", MaxSkills)
-		}
-		s, err := Read(Library(root), r.Name)
+		s, err := Read(Library(root), name)
 		if err != nil {
-			return Reply{}, err
+			return "", err
 		}
 		// Re-reading a registered skill refreshes its description without
 		// disturbing where it is already switched on.
-		s.Enabled = c.Skills[r.Name].Enabled
-		c.Skills[r.Name] = s
-		message = r.Name + " registered; enable it globally or for a project"
-	case "remove":
-		if _, ok := c.Skills[r.Name]; !ok {
-			return Reply{}, fmt.Errorf("%s is not registered", r.Name)
+		s.Enabled = c.Skills[name].Enabled
+		c.Skills[name] = s
+		return name + " registered; enable it globally or for a project", nil
+	})
+}
+
+func Remove(root, project, name string) (Listing, error) {
+	return edit(root, project, name, func(c *Config) (string, error) {
+		if err := c.registered(name); err != nil {
+			return "", err
 		}
-		delete(c.Skills, r.Name)
+		delete(c.Skills, name)
 		for _, p := range c.Projects {
-			delete(p, r.Name)
+			delete(p, name)
 		}
-		message = r.Name + " removed from the library; its directory is untouched"
-	case "enable", "disable":
-		if _, ok := c.Skills[r.Name]; !ok {
-			return Reply{}, fmt.Errorf("%s is not registered", r.Name)
+		return name + " removed from the library; its directory is untouched", nil
+	})
+}
+
+// SetDefault decides what a project sees when it has not decided for itself.
+func SetDefault(root, name string, enabled bool) (Listing, error) {
+	return edit(root, "", name, func(c *Config) (string, error) {
+		if err := c.registered(name); err != nil {
+			return "", err
 		}
-		on := r.Action == "enable"
-		if r.Project == "" {
-			s := c.Skills[r.Name]
-			s.Enabled = on
-			c.Skills[r.Name] = s
-			break
+		s := c.Skills[name]
+		s.Enabled = enabled
+		c.Skills[name] = s
+		return "", nil
+	})
+}
+
+// SetProject decides for one project, overriding the default.
+func SetProject(root, project, name string, enabled bool) (Listing, error) {
+	if project == "" {
+		return Listing{}, fmt.Errorf("a project skill needs a project")
+	}
+	return edit(root, project, name, func(c *Config) (string, error) {
+		if err := c.registered(name); err != nil {
+			return "", err
 		}
 		if c.Projects == nil {
 			c.Projects = map[string]map[string]bool{}
 		}
-		if c.Projects[r.Project] == nil {
-			c.Projects[r.Project] = map[string]bool{}
+		if c.Projects[project] == nil {
+			c.Projects[project] = map[string]bool{}
 		}
-		c.Projects[r.Project][r.Name] = on
-	case "inherit":
-		if r.Project == "" {
-			return Reply{}, fmt.Errorf("inherit needs a project to restore")
-		}
-		delete(c.Projects[r.Project], r.Name)
-		if len(c.Projects[r.Project]) == 0 {
-			delete(c.Projects, r.Project)
-		}
-	default:
-		return Reply{}, fmt.Errorf("unknown skill action: %s", r.Action)
+		c.Projects[project][name] = enabled
+		return "", nil
+	})
+}
+
+// ClearProject drops a project's own decision so it inherits again. There is
+// nowhere here to put an on or an off, which is the point of it being its own
+// call: restoring a default is not a third value of one.
+func ClearProject(root, project, name string) (Listing, error) {
+	if project == "" {
+		return Listing{}, fmt.Errorf("inherit needs a project to restore")
 	}
-	if r.Action != "list" {
-		if err := save(root, c); err != nil {
-			return Reply{}, err
+	return edit(root, project, name, func(c *Config) (string, error) {
+		delete(c.Projects[project], name)
+		if len(c.Projects[project]) == 0 {
+			delete(c.Projects, project)
 		}
+		return "", nil
+	})
+}
+
+func (c Config) registered(name string) error {
+	if _, ok := c.Skills[name]; !ok {
+		return fmt.Errorf("%s is not registered", name)
 	}
-	reply := c.View(r.Project)
-	reply.Message = message
-	return reply, nil
+	return nil
+}
+
+// edit is the part every change shares: the name is valid, the config is read
+// and written once, and the view that comes back is the one the caller asked
+// for rather than the one the change happened to touch.
+func edit(root, project, name string, change func(*Config) (string, error)) (Listing, error) {
+	if err := ValidateName(name); err != nil {
+		return Listing{}, err
+	}
+	c, err := Load(root)
+	if err != nil {
+		return Listing{}, err
+	}
+	message, err := change(&c)
+	if err != nil {
+		return Listing{}, err
+	}
+	if err := save(root, c); err != nil {
+		return Listing{}, err
+	}
+	out := c.View(project)
+	out.Message = message
+	return out, nil
 }
 
 func RuntimePath(root string) string { return filepath.Join(root, runtimeFile) }

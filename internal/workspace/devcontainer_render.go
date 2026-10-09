@@ -19,24 +19,15 @@ import (
 // second answer, and the one that is easy to look at is the one that would
 // quietly drift from the one that runs.
 
-func (m *Manager) renderDevcontainer(ctx context.Context, spec []byte) (*api.Receipt, error) {
-	var r devcontainerrender.Request
-	if err := json.Unmarshal(spec, &r); err != nil {
-		return nil, err
-	}
-	p, err := m.resolveNearest(ctx, r.Project)
+// Reading it back is not an engine operation, so it does not take the engine
+// lock: waiting behind a rebuild of another project would make the answer
+// arrive long after the question stopped being interesting.
+func (m *Manager) RenderDevcontainer(ctx context.Context, r *api.RenderDevcontainerInput) (*api.RenderDevcontainerReply, error) {
+	p, err := m.resolveNearest(ctx, r.Handle)
 	if err != nil {
 		return nil, err
 	}
-	reply, err := m.renderProjectDevcontainer(ctx, p)
-	if err != nil {
-		return nil, err
-	}
-	b, err := json.Marshal(reply)
-	if err != nil {
-		return nil, err
-	}
-	return &api.Receipt{Status: string(b)}, nil
+	return m.renderProjectDevcontainer(ctx, p)
 }
 
 // resolveNearest accepts the directory the question was asked from, which is
@@ -59,8 +50,8 @@ func (m *Manager) resolveNearest(ctx context.Context, handle string) (*Project, 
 	}
 }
 
-func (m *Manager) renderProjectDevcontainer(ctx context.Context, p *Project) (devcontainerrender.Reply, error) {
-	out := devcontainerrender.Reply{Project: p.ID, Name: p.Name, Workspace: p.Workspace}
+func (m *Manager) renderProjectDevcontainer(ctx context.Context, p *Project) (*api.RenderDevcontainerReply, error) {
+	out := &api.RenderDevcontainerReply{Project: p.ID, Name: p.Name, Workspace: p.Workspace}
 	dir := filepath.Join(m.Root, "projects", p.ID)
 	config := filepath.Join(dir, "devcontainer.json")
 	b, err := os.ReadFile(config)
@@ -76,7 +67,7 @@ func (m *Manager) renderProjectDevcontainer(ctx context.Context, p *Project) (de
 		if total > devcontainerrender.MaxBytes {
 			return fmt.Errorf("devcontainer configuration exceeds %d bytes", devcontainerrender.MaxBytes)
 		}
-		out.Files = append(out.Files, devcontainerrender.File{Name: name, Source: source, Role: role, Data: data})
+		out.Files = append(out.Files, &api.RenderedFile{Name: name, Source: source, Role: role, Data: data})
 		return nil
 	}
 	if err = add("devcontainer.json", config, "what cxz passed to the devcontainer CLI: the project's own configuration plus cxz's environment, mounts and startup hook", b); err != nil {

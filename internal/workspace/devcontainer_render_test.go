@@ -9,7 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/lesomnus/cxz/internal/devcontainerrender"
+	"github.com/lesomnus/cxz/api"
+	"google.golang.org/protobuf/proto"
 )
 
 func renderFixture(t *testing.T) (*Manager, *Project) {
@@ -127,20 +128,20 @@ func TestRenderExplainsAnImageDevcontainer(t *testing.T) {
 	}
 }
 
-// The client decodes the reply from a receipt's status string, so the file
-// bytes have to survive that trip intact.
+// The reply crosses a connection, so the file bytes have to survive that trip
+// intact: a configuration that arrives truncated is read as the one in effect.
 func TestRenderReplySurvivesTheWire(t *testing.T) {
 	m, p := renderFixture(t)
 	reply, err := m.renderProjectDevcontainer(context.Background(), p)
 	if err != nil {
 		t.Fatal(err)
 	}
-	b, err := json.Marshal(reply)
+	b, err := proto.Marshal(reply)
 	if err != nil {
 		t.Fatal(err)
 	}
-	var decoded devcontainerrender.Reply
-	if err = json.Unmarshal(b, &decoded); err != nil {
+	decoded := &api.RenderDevcontainerReply{}
+	if err = proto.Unmarshal(b, decoded); err != nil {
 		t.Fatal(err)
 	}
 	if len(decoded.Files) != len(reply.Files) {

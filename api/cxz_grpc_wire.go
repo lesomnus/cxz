@@ -64,6 +64,14 @@ const (
 	Sessions_MarkHistoryTrimmable_FullMethodName = "/cxz.runtime.Sessions/MarkHistoryTrimmable"
 	Sessions_PutSecretFile_FullMethodName        = "/cxz.runtime.Sessions/PutSecretFile"
 	Sessions_DeleteSecretFile_FullMethodName     = "/cxz.runtime.Sessions/DeleteSecretFile"
+	Sessions_GetSkills_FullMethodName            = "/cxz.runtime.Sessions/GetSkills"
+	Sessions_AddSkill_FullMethodName             = "/cxz.runtime.Sessions/AddSkill"
+	Sessions_RemoveSkill_FullMethodName          = "/cxz.runtime.Sessions/RemoveSkill"
+	Sessions_SetSkillDefault_FullMethodName      = "/cxz.runtime.Sessions/SetSkillDefault"
+	Sessions_SetProjectSkill_FullMethodName      = "/cxz.runtime.Sessions/SetProjectSkill"
+	Sessions_ClearProjectSkill_FullMethodName    = "/cxz.runtime.Sessions/ClearProjectSkill"
+	Sessions_SyncSkills_FullMethodName           = "/cxz.runtime.Sessions/SyncSkills"
+	Sessions_RenderDevcontainer_FullMethodName   = "/cxz.runtime.Sessions/RenderDevcontainer"
 )
 
 // SessionsClient is the client API for Sessions service.
@@ -115,6 +123,14 @@ type SessionsClient interface {
 	MarkHistoryTrimmable(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Empty, error)
 	PutSecretFile(ctx context.Context, in *PutSecretFileInput, opts ...grpc.CallOption) (*SecretFileReply, error)
 	DeleteSecretFile(ctx context.Context, in *DeleteSecretFileInput, opts ...grpc.CallOption) (*SecretFileReply, error)
+	GetSkills(ctx context.Context, in *SkillsInput, opts ...grpc.CallOption) (*SkillsReply, error)
+	AddSkill(ctx context.Context, in *SkillInput, opts ...grpc.CallOption) (*SkillsReply, error)
+	RemoveSkill(ctx context.Context, in *SkillInput, opts ...grpc.CallOption) (*SkillsReply, error)
+	SetSkillDefault(ctx context.Context, in *SkillDefaultInput, opts ...grpc.CallOption) (*SkillsReply, error)
+	SetProjectSkill(ctx context.Context, in *ProjectSkillInput, opts ...grpc.CallOption) (*SkillsReply, error)
+	ClearProjectSkill(ctx context.Context, in *ClearProjectSkillInput, opts ...grpc.CallOption) (*SkillsReply, error)
+	SyncSkills(ctx context.Context, in *SyncSkillsInput, opts ...grpc.CallOption) (*Receipt, error)
+	RenderDevcontainer(ctx context.Context, in *RenderDevcontainerInput, opts ...grpc.CallOption) (*RenderDevcontainerReply, error)
 }
 
 type sessionsClient struct {
@@ -602,6 +618,86 @@ func (c *sessionsClient) DeleteSecretFile(ctx context.Context, in *DeleteSecretF
 	return out, nil
 }
 
+func (c *sessionsClient) GetSkills(ctx context.Context, in *SkillsInput, opts ...grpc.CallOption) (*SkillsReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SkillsReply)
+	err := c.cc.Invoke(ctx, Sessions_GetSkills_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) AddSkill(ctx context.Context, in *SkillInput, opts ...grpc.CallOption) (*SkillsReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SkillsReply)
+	err := c.cc.Invoke(ctx, Sessions_AddSkill_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) RemoveSkill(ctx context.Context, in *SkillInput, opts ...grpc.CallOption) (*SkillsReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SkillsReply)
+	err := c.cc.Invoke(ctx, Sessions_RemoveSkill_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) SetSkillDefault(ctx context.Context, in *SkillDefaultInput, opts ...grpc.CallOption) (*SkillsReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SkillsReply)
+	err := c.cc.Invoke(ctx, Sessions_SetSkillDefault_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) SetProjectSkill(ctx context.Context, in *ProjectSkillInput, opts ...grpc.CallOption) (*SkillsReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SkillsReply)
+	err := c.cc.Invoke(ctx, Sessions_SetProjectSkill_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) ClearProjectSkill(ctx context.Context, in *ClearProjectSkillInput, opts ...grpc.CallOption) (*SkillsReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SkillsReply)
+	err := c.cc.Invoke(ctx, Sessions_ClearProjectSkill_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) SyncSkills(ctx context.Context, in *SyncSkillsInput, opts ...grpc.CallOption) (*Receipt, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Receipt)
+	err := c.cc.Invoke(ctx, Sessions_SyncSkills_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) RenderDevcontainer(ctx context.Context, in *RenderDevcontainerInput, opts ...grpc.CallOption) (*RenderDevcontainerReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RenderDevcontainerReply)
+	err := c.cc.Invoke(ctx, Sessions_RenderDevcontainer_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SessionsServer is the server API for Sessions service.
 // All implementations must embed UnimplementedSessionsServer
 // for forward compatibility.
@@ -651,6 +747,14 @@ type SessionsServer interface {
 	MarkHistoryTrimmable(context.Context, *Empty) (*Empty, error)
 	PutSecretFile(context.Context, *PutSecretFileInput) (*SecretFileReply, error)
 	DeleteSecretFile(context.Context, *DeleteSecretFileInput) (*SecretFileReply, error)
+	GetSkills(context.Context, *SkillsInput) (*SkillsReply, error)
+	AddSkill(context.Context, *SkillInput) (*SkillsReply, error)
+	RemoveSkill(context.Context, *SkillInput) (*SkillsReply, error)
+	SetSkillDefault(context.Context, *SkillDefaultInput) (*SkillsReply, error)
+	SetProjectSkill(context.Context, *ProjectSkillInput) (*SkillsReply, error)
+	ClearProjectSkill(context.Context, *ClearProjectSkillInput) (*SkillsReply, error)
+	SyncSkills(context.Context, *SyncSkillsInput) (*Receipt, error)
+	RenderDevcontainer(context.Context, *RenderDevcontainerInput) (*RenderDevcontainerReply, error)
 	mustEmbedUnimplementedSessionsServer()
 }
 
@@ -795,6 +899,30 @@ func (UnimplementedSessionsServer) PutSecretFile(context.Context, *PutSecretFile
 }
 func (UnimplementedSessionsServer) DeleteSecretFile(context.Context, *DeleteSecretFileInput) (*SecretFileReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteSecretFile not implemented")
+}
+func (UnimplementedSessionsServer) GetSkills(context.Context, *SkillsInput) (*SkillsReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetSkills not implemented")
+}
+func (UnimplementedSessionsServer) AddSkill(context.Context, *SkillInput) (*SkillsReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method AddSkill not implemented")
+}
+func (UnimplementedSessionsServer) RemoveSkill(context.Context, *SkillInput) (*SkillsReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method RemoveSkill not implemented")
+}
+func (UnimplementedSessionsServer) SetSkillDefault(context.Context, *SkillDefaultInput) (*SkillsReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetSkillDefault not implemented")
+}
+func (UnimplementedSessionsServer) SetProjectSkill(context.Context, *ProjectSkillInput) (*SkillsReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetProjectSkill not implemented")
+}
+func (UnimplementedSessionsServer) ClearProjectSkill(context.Context, *ClearProjectSkillInput) (*SkillsReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method ClearProjectSkill not implemented")
+}
+func (UnimplementedSessionsServer) SyncSkills(context.Context, *SyncSkillsInput) (*Receipt, error) {
+	return nil, status.Error(codes.Unimplemented, "method SyncSkills not implemented")
+}
+func (UnimplementedSessionsServer) RenderDevcontainer(context.Context, *RenderDevcontainerInput) (*RenderDevcontainerReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method RenderDevcontainer not implemented")
 }
 func (UnimplementedSessionsServer) mustEmbedUnimplementedSessionsServer() {}
 func (UnimplementedSessionsServer) testEmbeddedByValue()                  {}
@@ -1606,6 +1734,150 @@ func _Sessions_DeleteSecretFile_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Sessions_GetSkills_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SkillsInput)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).GetSkills(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_GetSkills_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).GetSkills(ctx, req.(*SkillsInput))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_AddSkill_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SkillInput)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).AddSkill(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_AddSkill_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).AddSkill(ctx, req.(*SkillInput))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_RemoveSkill_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SkillInput)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).RemoveSkill(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_RemoveSkill_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).RemoveSkill(ctx, req.(*SkillInput))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_SetSkillDefault_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SkillDefaultInput)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).SetSkillDefault(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_SetSkillDefault_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).SetSkillDefault(ctx, req.(*SkillDefaultInput))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_SetProjectSkill_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProjectSkillInput)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).SetProjectSkill(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_SetProjectSkill_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).SetProjectSkill(ctx, req.(*ProjectSkillInput))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_ClearProjectSkill_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ClearProjectSkillInput)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).ClearProjectSkill(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_ClearProjectSkill_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).ClearProjectSkill(ctx, req.(*ClearProjectSkillInput))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_SyncSkills_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SyncSkillsInput)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).SyncSkills(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_SyncSkills_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).SyncSkills(ctx, req.(*SyncSkillsInput))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_RenderDevcontainer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RenderDevcontainerInput)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).RenderDevcontainer(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_RenderDevcontainer_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).RenderDevcontainer(ctx, req.(*RenderDevcontainerInput))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Sessions_ServiceDesc is the grpc.ServiceDesc for Sessions service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1780,6 +2052,38 @@ var Sessions_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteSecretFile",
 			Handler:    _Sessions_DeleteSecretFile_Handler,
+		},
+		{
+			MethodName: "GetSkills",
+			Handler:    _Sessions_GetSkills_Handler,
+		},
+		{
+			MethodName: "AddSkill",
+			Handler:    _Sessions_AddSkill_Handler,
+		},
+		{
+			MethodName: "RemoveSkill",
+			Handler:    _Sessions_RemoveSkill_Handler,
+		},
+		{
+			MethodName: "SetSkillDefault",
+			Handler:    _Sessions_SetSkillDefault_Handler,
+		},
+		{
+			MethodName: "SetProjectSkill",
+			Handler:    _Sessions_SetProjectSkill_Handler,
+		},
+		{
+			MethodName: "ClearProjectSkill",
+			Handler:    _Sessions_ClearProjectSkill_Handler,
+		},
+		{
+			MethodName: "SyncSkills",
+			Handler:    _Sessions_SyncSkills_Handler,
+		},
+		{
+			MethodName: "RenderDevcontainer",
+			Handler:    _Sessions_RenderDevcontainer_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
