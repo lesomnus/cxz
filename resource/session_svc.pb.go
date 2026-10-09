@@ -9072,6 +9072,1537 @@ func (b0 SessionSearchSummary_builder) Build() *SessionSearchSummary {
 	return m0
 }
 
+// Run asks for one task now. It does not change what runs automatically, and a
+// kind that is already automatic is left alone rather than run twice. text is
+// only for a title given rather than generated.
+type AuxRunRequest struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ref         *SessionRef            `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Kinds       []AuxKind              `protobuf:"varint,2,rep,packed,name=kinds,enum=cxz.AuxKind"`
+	xxx_hidden_Text        *string                `protobuf:"bytes,3,opt,name=text"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *AuxRunRequest) Reset() {
+	*x = AuxRunRequest{}
+	mi := &file_cxz_session_svc_g_proto_msgTypes[50]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AuxRunRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AuxRunRequest) ProtoMessage() {}
+
+func (x *AuxRunRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_session_svc_g_proto_msgTypes[50]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *AuxRunRequest) GetRef() *SessionRef {
+	if x != nil {
+		return x.xxx_hidden_Ref
+	}
+	return nil
+}
+
+func (x *AuxRunRequest) GetKinds() []AuxKind {
+	if x != nil {
+		return x.xxx_hidden_Kinds
+	}
+	return nil
+}
+
+func (x *AuxRunRequest) GetText() string {
+	if x != nil {
+		if x.xxx_hidden_Text != nil {
+			return *x.xxx_hidden_Text
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *AuxRunRequest) SetRef(v *SessionRef) {
+	x.xxx_hidden_Ref = v
+}
+
+func (x *AuxRunRequest) SetKinds(v []AuxKind) {
+	x.xxx_hidden_Kinds = v
+}
+
+func (x *AuxRunRequest) SetText(v string) {
+	x.xxx_hidden_Text = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 3)
+}
+
+func (x *AuxRunRequest) HasRef() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Ref != nil
+}
+
+func (x *AuxRunRequest) HasText() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+}
+
+func (x *AuxRunRequest) ClearRef() {
+	x.xxx_hidden_Ref = nil
+}
+
+func (x *AuxRunRequest) ClearText() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	x.xxx_hidden_Text = nil
+}
+
+type AuxRunRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Ref   *SessionRef
+	Kinds []AuxKind
+	Text  *string
+}
+
+func (b0 AuxRunRequest_builder) Build() *AuxRunRequest {
+	m0 := &AuxRunRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Ref = b.Ref
+	x.xxx_hidden_Kinds = b.Kinds
+	if b.Text != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 3)
+		x.xxx_hidden_Text = b.Text
+	}
+	return m0
+}
+
+// One session's aux state.
+type AuxState struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Summaries   *[]*AuxSummary         `protobuf:"bytes,1,rep,name=summaries"`
+	xxx_hidden_Current     *Aux                   `protobuf:"bytes,2,opt,name=current"`
+	xxx_hidden_Preferences *[]*AuxPreference      `protobuf:"bytes,3,rep,name=preferences"`
+	xxx_hidden_Title       *string                `protobuf:"bytes,4,opt,name=title"`
+	xxx_hidden_Message     *string                `protobuf:"bytes,5,opt,name=message"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *AuxState) Reset() {
+	*x = AuxState{}
+	mi := &file_cxz_session_svc_g_proto_msgTypes[51]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AuxState) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AuxState) ProtoMessage() {}
+
+func (x *AuxState) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_session_svc_g_proto_msgTypes[51]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *AuxState) GetSummaries() []*AuxSummary {
+	if x != nil {
+		if x.xxx_hidden_Summaries != nil {
+			return *x.xxx_hidden_Summaries
+		}
+	}
+	return nil
+}
+
+func (x *AuxState) GetCurrent() *Aux {
+	if x != nil {
+		return x.xxx_hidden_Current
+	}
+	return nil
+}
+
+func (x *AuxState) GetPreferences() []*AuxPreference {
+	if x != nil {
+		if x.xxx_hidden_Preferences != nil {
+			return *x.xxx_hidden_Preferences
+		}
+	}
+	return nil
+}
+
+func (x *AuxState) GetTitle() string {
+	if x != nil {
+		if x.xxx_hidden_Title != nil {
+			return *x.xxx_hidden_Title
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *AuxState) GetMessage() string {
+	if x != nil {
+		if x.xxx_hidden_Message != nil {
+			return *x.xxx_hidden_Message
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *AuxState) SetSummaries(v []*AuxSummary) {
+	x.xxx_hidden_Summaries = &v
+}
+
+func (x *AuxState) SetCurrent(v *Aux) {
+	x.xxx_hidden_Current = v
+}
+
+func (x *AuxState) SetPreferences(v []*AuxPreference) {
+	x.xxx_hidden_Preferences = &v
+}
+
+func (x *AuxState) SetTitle(v string) {
+	x.xxx_hidden_Title = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 5)
+}
+
+func (x *AuxState) SetMessage(v string) {
+	x.xxx_hidden_Message = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 5)
+}
+
+func (x *AuxState) HasCurrent() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Current != nil
+}
+
+func (x *AuxState) HasTitle() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
+}
+
+func (x *AuxState) HasMessage() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
+}
+
+func (x *AuxState) ClearCurrent() {
+	x.xxx_hidden_Current = nil
+}
+
+func (x *AuxState) ClearTitle() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
+	x.xxx_hidden_Title = nil
+}
+
+func (x *AuxState) ClearMessage() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
+	x.xxx_hidden_Message = nil
+}
+
+type AuxState_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Summaries   []*AuxSummary
+	Current     *Aux
+	Preferences []*AuxPreference
+	// The session's generated title, for the caller that records session names.
+	Title   *string
+	Message *string
+}
+
+func (b0 AuxState_builder) Build() *AuxState {
+	m0 := &AuxState{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Summaries = &b.Summaries
+	x.xxx_hidden_Current = b.Current
+	x.xxx_hidden_Preferences = &b.Preferences
+	if b.Title != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 5)
+		x.xxx_hidden_Title = b.Title
+	}
+	if b.Message != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 5)
+		x.xxx_hidden_Message = b.Message
+	}
+	return m0
+}
+
+// Kept per turn on the session, so a summary outlives the task that wrote it.
+type AuxSummary struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_RunId       *string                `protobuf:"bytes,1,opt,name=run_id,json=runId"`
+	xxx_hidden_Turn        uint64                 `protobuf:"varint,2,opt,name=turn"`
+	xxx_hidden_Text        *string                `protobuf:"bytes,3,opt,name=text"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *AuxSummary) Reset() {
+	*x = AuxSummary{}
+	mi := &file_cxz_session_svc_g_proto_msgTypes[52]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AuxSummary) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AuxSummary) ProtoMessage() {}
+
+func (x *AuxSummary) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_session_svc_g_proto_msgTypes[52]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *AuxSummary) GetRunId() string {
+	if x != nil {
+		if x.xxx_hidden_RunId != nil {
+			return *x.xxx_hidden_RunId
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *AuxSummary) GetTurn() uint64 {
+	if x != nil {
+		return x.xxx_hidden_Turn
+	}
+	return 0
+}
+
+func (x *AuxSummary) GetText() string {
+	if x != nil {
+		if x.xxx_hidden_Text != nil {
+			return *x.xxx_hidden_Text
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *AuxSummary) SetRunId(v string) {
+	x.xxx_hidden_RunId = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 3)
+}
+
+func (x *AuxSummary) SetTurn(v uint64) {
+	x.xxx_hidden_Turn = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 3)
+}
+
+func (x *AuxSummary) SetText(v string) {
+	x.xxx_hidden_Text = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 3)
+}
+
+func (x *AuxSummary) HasRunId() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *AuxSummary) HasTurn() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
+}
+
+func (x *AuxSummary) HasText() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+}
+
+func (x *AuxSummary) ClearRunId() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_RunId = nil
+}
+
+func (x *AuxSummary) ClearTurn() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_Turn = 0
+}
+
+func (x *AuxSummary) ClearText() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	x.xxx_hidden_Text = nil
+}
+
+type AuxSummary_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	RunId *string
+	Turn  *uint64
+	Text  *string
+}
+
+func (b0 AuxSummary_builder) Build() *AuxSummary {
+	m0 := &AuxSummary{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.RunId != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 3)
+		x.xxx_hidden_RunId = b.RunId
+	}
+	if b.Turn != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 3)
+		x.xxx_hidden_Turn = *b.Turn
+	}
+	if b.Text != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 3)
+		x.xxx_hidden_Text = b.Text
+	}
+	return m0
+}
+
+// Aux: one task done beside a session.
+//
+// kinds is what was asked for and results is what came back, so one task can
+// answer two kinds -- which is what happens when summary and suggestion share a
+// profile and one model call answers both. results may be partial while state
+// is still running, because the summary is published while a separate
+// suggestion is still being generated.
+type Aux struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Id          *string                `protobuf:"bytes,1,opt,name=id"`
+	xxx_hidden_SessionId   []byte                 `protobuf:"bytes,2,opt,name=session_id,json=sessionId"`
+	xxx_hidden_Kinds       []AuxKind              `protobuf:"varint,3,rep,packed,name=kinds,enum=cxz.AuxKind"`
+	xxx_hidden_RunId       *string                `protobuf:"bytes,4,opt,name=run_id,json=runId"`
+	xxx_hidden_Turn        uint64                 `protobuf:"varint,5,opt,name=turn"`
+	xxx_hidden_Revision    *string                `protobuf:"bytes,6,opt,name=revision"`
+	xxx_hidden_State       *string                `protobuf:"bytes,7,opt,name=state"`
+	xxx_hidden_Results     *[]*AuxResult          `protobuf:"bytes,8,rep,name=results"`
+	xxx_hidden_Usage       *[]*AuxUsage           `protobuf:"bytes,9,rep,name=usage"`
+	xxx_hidden_Message     *string                `protobuf:"bytes,10,opt,name=message"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *Aux) Reset() {
+	*x = Aux{}
+	mi := &file_cxz_session_svc_g_proto_msgTypes[53]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Aux) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Aux) ProtoMessage() {}
+
+func (x *Aux) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_session_svc_g_proto_msgTypes[53]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *Aux) GetId() string {
+	if x != nil {
+		if x.xxx_hidden_Id != nil {
+			return *x.xxx_hidden_Id
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *Aux) GetSessionId() []byte {
+	if x != nil {
+		return x.xxx_hidden_SessionId
+	}
+	return nil
+}
+
+func (x *Aux) GetKinds() []AuxKind {
+	if x != nil {
+		return x.xxx_hidden_Kinds
+	}
+	return nil
+}
+
+func (x *Aux) GetRunId() string {
+	if x != nil {
+		if x.xxx_hidden_RunId != nil {
+			return *x.xxx_hidden_RunId
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *Aux) GetTurn() uint64 {
+	if x != nil {
+		return x.xxx_hidden_Turn
+	}
+	return 0
+}
+
+func (x *Aux) GetRevision() string {
+	if x != nil {
+		if x.xxx_hidden_Revision != nil {
+			return *x.xxx_hidden_Revision
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *Aux) GetState() string {
+	if x != nil {
+		if x.xxx_hidden_State != nil {
+			return *x.xxx_hidden_State
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *Aux) GetResults() []*AuxResult {
+	if x != nil {
+		if x.xxx_hidden_Results != nil {
+			return *x.xxx_hidden_Results
+		}
+	}
+	return nil
+}
+
+func (x *Aux) GetUsage() []*AuxUsage {
+	if x != nil {
+		if x.xxx_hidden_Usage != nil {
+			return *x.xxx_hidden_Usage
+		}
+	}
+	return nil
+}
+
+func (x *Aux) GetMessage() string {
+	if x != nil {
+		if x.xxx_hidden_Message != nil {
+			return *x.xxx_hidden_Message
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *Aux) SetId(v string) {
+	x.xxx_hidden_Id = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 10)
+}
+
+func (x *Aux) SetSessionId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_SessionId = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 10)
+}
+
+func (x *Aux) SetKinds(v []AuxKind) {
+	x.xxx_hidden_Kinds = v
+}
+
+func (x *Aux) SetRunId(v string) {
+	x.xxx_hidden_RunId = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 10)
+}
+
+func (x *Aux) SetTurn(v uint64) {
+	x.xxx_hidden_Turn = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 10)
+}
+
+func (x *Aux) SetRevision(v string) {
+	x.xxx_hidden_Revision = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 10)
+}
+
+func (x *Aux) SetState(v string) {
+	x.xxx_hidden_State = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 10)
+}
+
+func (x *Aux) SetResults(v []*AuxResult) {
+	x.xxx_hidden_Results = &v
+}
+
+func (x *Aux) SetUsage(v []*AuxUsage) {
+	x.xxx_hidden_Usage = &v
+}
+
+func (x *Aux) SetMessage(v string) {
+	x.xxx_hidden_Message = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 10)
+}
+
+func (x *Aux) HasId() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *Aux) HasSessionId() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
+}
+
+func (x *Aux) HasRunId() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
+}
+
+func (x *Aux) HasTurn() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
+}
+
+func (x *Aux) HasRevision() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
+}
+
+func (x *Aux) HasState() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
+}
+
+func (x *Aux) HasMessage() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 9)
+}
+
+func (x *Aux) ClearId() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_Id = nil
+}
+
+func (x *Aux) ClearSessionId() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_SessionId = nil
+}
+
+func (x *Aux) ClearRunId() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
+	x.xxx_hidden_RunId = nil
+}
+
+func (x *Aux) ClearTurn() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
+	x.xxx_hidden_Turn = 0
+}
+
+func (x *Aux) ClearRevision() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
+	x.xxx_hidden_Revision = nil
+}
+
+func (x *Aux) ClearState() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
+	x.xxx_hidden_State = nil
+}
+
+func (x *Aux) ClearMessage() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 9)
+	x.xxx_hidden_Message = nil
+}
+
+type Aux_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Id        *string
+	SessionId []byte
+	Kinds     []AuxKind
+	// The turn this answered. Results are shown beside it.
+	RunId *string
+	Turn  *uint64
+	// The configuration revision it ran under. A changed one makes it stale,
+	// because its answer is not an answer for the new settings.
+	Revision *string
+	State    *string
+	Results  []*AuxResult
+	Usage    []*AuxUsage
+	Message  *string
+}
+
+func (b0 Aux_builder) Build() *Aux {
+	m0 := &Aux{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.Id != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 10)
+		x.xxx_hidden_Id = b.Id
+	}
+	if b.SessionId != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 10)
+		x.xxx_hidden_SessionId = b.SessionId
+	}
+	x.xxx_hidden_Kinds = b.Kinds
+	if b.RunId != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 10)
+		x.xxx_hidden_RunId = b.RunId
+	}
+	if b.Turn != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 10)
+		x.xxx_hidden_Turn = *b.Turn
+	}
+	if b.Revision != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 10)
+		x.xxx_hidden_Revision = b.Revision
+	}
+	if b.State != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 10)
+		x.xxx_hidden_State = b.State
+	}
+	x.xxx_hidden_Results = &b.Results
+	x.xxx_hidden_Usage = &b.Usage
+	if b.Message != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 10)
+		x.xxx_hidden_Message = b.Message
+	}
+	return m0
+}
+
+// truncated says the text hit a limit; what arrived is kept rather than refused.
+type AuxResult struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Kind        AuxKind                `protobuf:"varint,1,opt,name=kind,enum=cxz.AuxKind"`
+	xxx_hidden_Text        *string                `protobuf:"bytes,2,opt,name=text"`
+	xxx_hidden_Truncated   bool                   `protobuf:"varint,3,opt,name=truncated"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *AuxResult) Reset() {
+	*x = AuxResult{}
+	mi := &file_cxz_session_svc_g_proto_msgTypes[54]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AuxResult) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AuxResult) ProtoMessage() {}
+
+func (x *AuxResult) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_session_svc_g_proto_msgTypes[54]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *AuxResult) GetKind() AuxKind {
+	if x != nil {
+		if protoimpl.X.Present(&(x.XXX_presence[0]), 0) {
+			return x.xxx_hidden_Kind
+		}
+	}
+	return AuxKind_AUX_KIND_UNSPECIFIED
+}
+
+func (x *AuxResult) GetText() string {
+	if x != nil {
+		if x.xxx_hidden_Text != nil {
+			return *x.xxx_hidden_Text
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *AuxResult) GetTruncated() bool {
+	if x != nil {
+		return x.xxx_hidden_Truncated
+	}
+	return false
+}
+
+func (x *AuxResult) SetKind(v AuxKind) {
+	x.xxx_hidden_Kind = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 3)
+}
+
+func (x *AuxResult) SetText(v string) {
+	x.xxx_hidden_Text = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 3)
+}
+
+func (x *AuxResult) SetTruncated(v bool) {
+	x.xxx_hidden_Truncated = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 3)
+}
+
+func (x *AuxResult) HasKind() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *AuxResult) HasText() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
+}
+
+func (x *AuxResult) HasTruncated() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+}
+
+func (x *AuxResult) ClearKind() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_Kind = AuxKind_AUX_KIND_UNSPECIFIED
+}
+
+func (x *AuxResult) ClearText() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_Text = nil
+}
+
+func (x *AuxResult) ClearTruncated() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	x.xxx_hidden_Truncated = false
+}
+
+type AuxResult_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Kind      *AuxKind
+	Text      *string
+	Truncated *bool
+}
+
+func (b0 AuxResult_builder) Build() *AuxResult {
+	m0 := &AuxResult{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.Kind != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 3)
+		x.xxx_hidden_Kind = *b.Kind
+	}
+	if b.Text != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 3)
+		x.xxx_hidden_Text = b.Text
+	}
+	if b.Truncated != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 3)
+		x.xxx_hidden_Truncated = *b.Truncated
+	}
+	return m0
+}
+
+// What this task spent, not what an account has spent.
+type AuxUsage struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Account     *string                `protobuf:"bytes,1,opt,name=account"`
+	xxx_hidden_Model       *string                `protobuf:"bytes,2,opt,name=model"`
+	xxx_hidden_Kind        AuxKind                `protobuf:"varint,3,opt,name=kind,enum=cxz.AuxKind"`
+	xxx_hidden_Data        []byte                 `protobuf:"bytes,4,opt,name=data"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *AuxUsage) Reset() {
+	*x = AuxUsage{}
+	mi := &file_cxz_session_svc_g_proto_msgTypes[55]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AuxUsage) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AuxUsage) ProtoMessage() {}
+
+func (x *AuxUsage) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_session_svc_g_proto_msgTypes[55]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *AuxUsage) GetAccount() string {
+	if x != nil {
+		if x.xxx_hidden_Account != nil {
+			return *x.xxx_hidden_Account
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *AuxUsage) GetModel() string {
+	if x != nil {
+		if x.xxx_hidden_Model != nil {
+			return *x.xxx_hidden_Model
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *AuxUsage) GetKind() AuxKind {
+	if x != nil {
+		if protoimpl.X.Present(&(x.XXX_presence[0]), 2) {
+			return x.xxx_hidden_Kind
+		}
+	}
+	return AuxKind_AUX_KIND_UNSPECIFIED
+}
+
+func (x *AuxUsage) GetData() []byte {
+	if x != nil {
+		return x.xxx_hidden_Data
+	}
+	return nil
+}
+
+func (x *AuxUsage) SetAccount(v string) {
+	x.xxx_hidden_Account = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 4)
+}
+
+func (x *AuxUsage) SetModel(v string) {
+	x.xxx_hidden_Model = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 4)
+}
+
+func (x *AuxUsage) SetKind(v AuxKind) {
+	x.xxx_hidden_Kind = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 4)
+}
+
+func (x *AuxUsage) SetData(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_Data = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 4)
+}
+
+func (x *AuxUsage) HasAccount() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *AuxUsage) HasModel() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
+}
+
+func (x *AuxUsage) HasKind() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+}
+
+func (x *AuxUsage) HasData() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
+}
+
+func (x *AuxUsage) ClearAccount() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_Account = nil
+}
+
+func (x *AuxUsage) ClearModel() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_Model = nil
+}
+
+func (x *AuxUsage) ClearKind() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	x.xxx_hidden_Kind = AuxKind_AUX_KIND_UNSPECIFIED
+}
+
+func (x *AuxUsage) ClearData() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
+	x.xxx_hidden_Data = nil
+}
+
+type AuxUsage_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Account *string
+	Model   *string
+	Kind    *AuxKind
+	Data    []byte
+}
+
+func (b0 AuxUsage_builder) Build() *AuxUsage {
+	m0 := &AuxUsage{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.Account != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 4)
+		x.xxx_hidden_Account = b.Account
+	}
+	if b.Model != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 4)
+		x.xxx_hidden_Model = b.Model
+	}
+	if b.Kind != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 4)
+		x.xxx_hidden_Kind = *b.Kind
+	}
+	if b.Data != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 4)
+		x.xxx_hidden_Data = b.Data
+	}
+	return m0
+}
+
+// Whether a kind runs automatically for this session, overriding the
+// installation default. since is read only: turning a kind on does not reach
+// backwards over the conversation that already happened.
+type AuxPreference struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Kind        AuxKind                `protobuf:"varint,1,opt,name=kind,enum=cxz.AuxKind"`
+	xxx_hidden_Enabled     bool                   `protobuf:"varint,2,opt,name=enabled"`
+	xxx_hidden_Since       *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=since"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *AuxPreference) Reset() {
+	*x = AuxPreference{}
+	mi := &file_cxz_session_svc_g_proto_msgTypes[56]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AuxPreference) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AuxPreference) ProtoMessage() {}
+
+func (x *AuxPreference) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_session_svc_g_proto_msgTypes[56]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *AuxPreference) GetKind() AuxKind {
+	if x != nil {
+		if protoimpl.X.Present(&(x.XXX_presence[0]), 0) {
+			return x.xxx_hidden_Kind
+		}
+	}
+	return AuxKind_AUX_KIND_UNSPECIFIED
+}
+
+func (x *AuxPreference) GetEnabled() bool {
+	if x != nil {
+		return x.xxx_hidden_Enabled
+	}
+	return false
+}
+
+func (x *AuxPreference) GetSince() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_Since
+	}
+	return nil
+}
+
+func (x *AuxPreference) SetKind(v AuxKind) {
+	x.xxx_hidden_Kind = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 3)
+}
+
+func (x *AuxPreference) SetEnabled(v bool) {
+	x.xxx_hidden_Enabled = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 3)
+}
+
+func (x *AuxPreference) SetSince(v *timestamppb.Timestamp) {
+	x.xxx_hidden_Since = v
+}
+
+func (x *AuxPreference) HasKind() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *AuxPreference) HasEnabled() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
+}
+
+func (x *AuxPreference) HasSince() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Since != nil
+}
+
+func (x *AuxPreference) ClearKind() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_Kind = AuxKind_AUX_KIND_UNSPECIFIED
+}
+
+func (x *AuxPreference) ClearEnabled() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_Enabled = false
+}
+
+func (x *AuxPreference) ClearSince() {
+	x.xxx_hidden_Since = nil
+}
+
+type AuxPreference_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Kind    *AuxKind
+	Enabled *bool
+	Since   *timestamppb.Timestamp
+}
+
+func (b0 AuxPreference_builder) Build() *AuxPreference {
+	m0 := &AuxPreference{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.Kind != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 3)
+		x.xxx_hidden_Kind = *b.Kind
+	}
+	if b.Enabled != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 3)
+		x.xxx_hidden_Enabled = *b.Enabled
+	}
+	x.xxx_hidden_Since = b.Since
+	return m0
+}
+
+type AuxStatusRequest struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ref         *SessionRef            `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_AfterTurn   uint64                 `protobuf:"varint,2,opt,name=after_turn,json=afterTurn"`
+	xxx_hidden_Limit       int32                  `protobuf:"varint,3,opt,name=limit"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *AuxStatusRequest) Reset() {
+	*x = AuxStatusRequest{}
+	mi := &file_cxz_session_svc_g_proto_msgTypes[57]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AuxStatusRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AuxStatusRequest) ProtoMessage() {}
+
+func (x *AuxStatusRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_session_svc_g_proto_msgTypes[57]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *AuxStatusRequest) GetRef() *SessionRef {
+	if x != nil {
+		return x.xxx_hidden_Ref
+	}
+	return nil
+}
+
+func (x *AuxStatusRequest) GetAfterTurn() uint64 {
+	if x != nil {
+		return x.xxx_hidden_AfterTurn
+	}
+	return 0
+}
+
+func (x *AuxStatusRequest) GetLimit() int32 {
+	if x != nil {
+		return x.xxx_hidden_Limit
+	}
+	return 0
+}
+
+func (x *AuxStatusRequest) SetRef(v *SessionRef) {
+	x.xxx_hidden_Ref = v
+}
+
+func (x *AuxStatusRequest) SetAfterTurn(v uint64) {
+	x.xxx_hidden_AfterTurn = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 3)
+}
+
+func (x *AuxStatusRequest) SetLimit(v int32) {
+	x.xxx_hidden_Limit = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 3)
+}
+
+func (x *AuxStatusRequest) HasRef() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Ref != nil
+}
+
+func (x *AuxStatusRequest) HasAfterTurn() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
+}
+
+func (x *AuxStatusRequest) HasLimit() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+}
+
+func (x *AuxStatusRequest) ClearRef() {
+	x.xxx_hidden_Ref = nil
+}
+
+func (x *AuxStatusRequest) ClearAfterTurn() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_AfterTurn = 0
+}
+
+func (x *AuxStatusRequest) ClearLimit() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	x.xxx_hidden_Limit = 0
+}
+
+type AuxStatusRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Ref       *SessionRef
+	AfterTurn *uint64
+	Limit     *int32
+}
+
+func (b0 AuxStatusRequest_builder) Build() *AuxStatusRequest {
+	m0 := &AuxStatusRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Ref = b.Ref
+	if b.AfterTurn != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 3)
+		x.xxx_hidden_AfterTurn = *b.AfterTurn
+	}
+	if b.Limit != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 3)
+		x.xxx_hidden_Limit = *b.Limit
+	}
+	return m0
+}
+
+type AuxPreferRequest struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ref         *SessionRef            `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Preferences *[]*AuxPreference      `protobuf:"bytes,2,rep,name=preferences"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *AuxPreferRequest) Reset() {
+	*x = AuxPreferRequest{}
+	mi := &file_cxz_session_svc_g_proto_msgTypes[58]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AuxPreferRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AuxPreferRequest) ProtoMessage() {}
+
+func (x *AuxPreferRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_session_svc_g_proto_msgTypes[58]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *AuxPreferRequest) GetRef() *SessionRef {
+	if x != nil {
+		return x.xxx_hidden_Ref
+	}
+	return nil
+}
+
+func (x *AuxPreferRequest) GetPreferences() []*AuxPreference {
+	if x != nil {
+		if x.xxx_hidden_Preferences != nil {
+			return *x.xxx_hidden_Preferences
+		}
+	}
+	return nil
+}
+
+func (x *AuxPreferRequest) SetRef(v *SessionRef) {
+	x.xxx_hidden_Ref = v
+}
+
+func (x *AuxPreferRequest) SetPreferences(v []*AuxPreference) {
+	x.xxx_hidden_Preferences = &v
+}
+
+func (x *AuxPreferRequest) HasRef() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Ref != nil
+}
+
+func (x *AuxPreferRequest) ClearRef() {
+	x.xxx_hidden_Ref = nil
+}
+
+type AuxPreferRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Ref         *SessionRef
+	Preferences []*AuxPreference
+}
+
+func (b0 AuxPreferRequest_builder) Build() *AuxPreferRequest {
+	m0 := &AuxPreferRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Ref = b.Ref
+	x.xxx_hidden_Preferences = &b.Preferences
+	return m0
+}
+
+type AuxCancelRequest struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ref         *SessionRef            `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_AuxId       *string                `protobuf:"bytes,2,opt,name=aux_id,json=auxId"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *AuxCancelRequest) Reset() {
+	*x = AuxCancelRequest{}
+	mi := &file_cxz_session_svc_g_proto_msgTypes[59]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AuxCancelRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AuxCancelRequest) ProtoMessage() {}
+
+func (x *AuxCancelRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_session_svc_g_proto_msgTypes[59]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *AuxCancelRequest) GetRef() *SessionRef {
+	if x != nil {
+		return x.xxx_hidden_Ref
+	}
+	return nil
+}
+
+func (x *AuxCancelRequest) GetAuxId() string {
+	if x != nil {
+		if x.xxx_hidden_AuxId != nil {
+			return *x.xxx_hidden_AuxId
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *AuxCancelRequest) SetRef(v *SessionRef) {
+	x.xxx_hidden_Ref = v
+}
+
+func (x *AuxCancelRequest) SetAuxId(v string) {
+	x.xxx_hidden_AuxId = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 2)
+}
+
+func (x *AuxCancelRequest) HasRef() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Ref != nil
+}
+
+func (x *AuxCancelRequest) HasAuxId() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
+}
+
+func (x *AuxCancelRequest) ClearRef() {
+	x.xxx_hidden_Ref = nil
+}
+
+func (x *AuxCancelRequest) ClearAuxId() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_AuxId = nil
+}
+
+type AuxCancelRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Ref   *SessionRef
+	AuxId *string
+}
+
+func (b0 AuxCancelRequest_builder) Build() *AuxCancelRequest {
+	m0 := &AuxCancelRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Ref = b.Ref
+	if b.AuxId != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 2)
+		x.xxx_hidden_AuxId = b.AuxId
+	}
+	return m0
+}
+
 var File_cxz_session_svc_g_proto protoreflect.FileDescriptor
 
 const file_cxz_session_svc_g_proto_rawDesc = "" +
@@ -9390,7 +10921,59 @@ const file_cxz_session_svc_g_proto_rawDesc = "" +
 	"\x05until\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\x05until\x12\x1a\n" +
 	"\bexamined\x18\n" +
 	" \x01(\x05R\bexamined\x12\x18\n" +
-	"\apending\x18\v \x01(\x05R\apending2\xff\r\n" +
+	"\apending\x18\v \x01(\x05R\apending\"j\n" +
+	"\rAuxRunRequest\x12!\n" +
+	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.SessionRefR\x03ref\x12\"\n" +
+	"\x05kinds\x18\x02 \x03(\x0e2\f.cxz.AuxKindR\x05kinds\x12\x12\n" +
+	"\x04text\x18\x03 \x01(\tR\x04text\"\xc3\x01\n" +
+	"\bAuxState\x12-\n" +
+	"\tsummaries\x18\x01 \x03(\v2\x0f.cxz.AuxSummaryR\tsummaries\x12\"\n" +
+	"\acurrent\x18\x02 \x01(\v2\b.cxz.AuxR\acurrent\x124\n" +
+	"\vpreferences\x18\x03 \x03(\v2\x12.cxz.AuxPreferenceR\vpreferences\x12\x14\n" +
+	"\x05title\x18\x04 \x01(\tR\x05title\x12\x18\n" +
+	"\amessage\x18\x05 \x01(\tR\amessage\"K\n" +
+	"\n" +
+	"AuxSummary\x12\x15\n" +
+	"\x06run_id\x18\x01 \x01(\tR\x05runId\x12\x12\n" +
+	"\x04turn\x18\x02 \x01(\x04R\x04turn\x12\x12\n" +
+	"\x04text\x18\x03 \x01(\tR\x04text\"\x9e\x02\n" +
+	"\x03Aux\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x02 \x01(\fR\tsessionId\x12\"\n" +
+	"\x05kinds\x18\x03 \x03(\x0e2\f.cxz.AuxKindR\x05kinds\x12\x15\n" +
+	"\x06run_id\x18\x04 \x01(\tR\x05runId\x12\x12\n" +
+	"\x04turn\x18\x05 \x01(\x04R\x04turn\x12\x1a\n" +
+	"\brevision\x18\x06 \x01(\tR\brevision\x12\x14\n" +
+	"\x05state\x18\a \x01(\tR\x05state\x12(\n" +
+	"\aresults\x18\b \x03(\v2\x0e.cxz.AuxResultR\aresults\x12#\n" +
+	"\x05usage\x18\t \x03(\v2\r.cxz.AuxUsageR\x05usage\x12\x18\n" +
+	"\amessage\x18\n" +
+	" \x01(\tR\amessage\"_\n" +
+	"\tAuxResult\x12 \n" +
+	"\x04kind\x18\x01 \x01(\x0e2\f.cxz.AuxKindR\x04kind\x12\x12\n" +
+	"\x04text\x18\x02 \x01(\tR\x04text\x12\x1c\n" +
+	"\ttruncated\x18\x03 \x01(\bR\ttruncated\"p\n" +
+	"\bAuxUsage\x12\x18\n" +
+	"\aaccount\x18\x01 \x01(\tR\aaccount\x12\x14\n" +
+	"\x05model\x18\x02 \x01(\tR\x05model\x12 \n" +
+	"\x04kind\x18\x03 \x01(\x0e2\f.cxz.AuxKindR\x04kind\x12\x12\n" +
+	"\x04data\x18\x04 \x01(\fR\x04data\"}\n" +
+	"\rAuxPreference\x12 \n" +
+	"\x04kind\x18\x01 \x01(\x0e2\f.cxz.AuxKindR\x04kind\x12\x18\n" +
+	"\aenabled\x18\x02 \x01(\bR\aenabled\x120\n" +
+	"\x05since\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\x05since\"j\n" +
+	"\x10AuxStatusRequest\x12!\n" +
+	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.SessionRefR\x03ref\x12\x1d\n" +
+	"\n" +
+	"after_turn\x18\x02 \x01(\x04R\tafterTurn\x12\x14\n" +
+	"\x05limit\x18\x03 \x01(\x05R\x05limit\"k\n" +
+	"\x10AuxPreferRequest\x12!\n" +
+	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.SessionRefR\x03ref\x124\n" +
+	"\vpreferences\x18\x02 \x03(\v2\x12.cxz.AuxPreferenceR\vpreferences\"L\n" +
+	"\x10AuxCancelRequest\x12!\n" +
+	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.SessionRefR\x03ref\x12\x15\n" +
+	"\x06aux_id\x18\x02 \x01(\tR\x05auxId2\xc5\x0f\n" +
 	"\x0eSessionService\x12+\n" +
 	"\x03Add\x12\x16.cxz.SessionAddRequest\x1a\f.cxz.Session\x12+\n" +
 	"\x03Get\x12\x16.cxz.SessionGetRequest\x1a\f.cxz.Session\x12/\n" +
@@ -9425,9 +11008,13 @@ const file_cxz_session_svc_g_proto_rawDesc = "" +
 	"Background\x12\x1d.cxz.SessionBackgroundRequest\x1a\x1b.cxz.SessionBackgroundReply\x12<\n" +
 	"\x06Models\x12\x19.cxz.SessionModelsRequest\x1a\x17.cxz.SessionModelsReply\x128\n" +
 	"\x06Events\x12\x19.cxz.SessionEventsRequest\x1a\x11.cxz.SessionEvent0\x01\x12>\n" +
-	"\x06Search\x12\x19.cxz.SessionSearchRequest\x1a\x17.cxz.SessionSearchReply0\x01B\"Z github.com/lesomnus/cxz/resourceb\beditionsp\xe8\a"
+	"\x06Search\x12\x19.cxz.SessionSearchRequest\x1a\x17.cxz.SessionSearchReply0\x01\x12+\n" +
+	"\x06AuxRun\x12\x12.cxz.AuxRunRequest\x1a\r.cxz.AuxState\x121\n" +
+	"\tAuxStatus\x12\x15.cxz.AuxStatusRequest\x1a\r.cxz.AuxState\x121\n" +
+	"\tAuxPrefer\x12\x15.cxz.AuxPreferRequest\x1a\r.cxz.AuxState\x121\n" +
+	"\tAuxCancel\x12\x15.cxz.AuxCancelRequest\x1a\r.cxz.AuxStateB\"Z github.com/lesomnus/cxz/resourceb\beditionsp\xe8\a"
 
-var file_cxz_session_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 50)
+var file_cxz_session_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 60)
 var file_cxz_session_svc_g_proto_goTypes = []any{
 	(*SessionAddRequest)(nil),          // 0: cxz.SessionAddRequest
 	(*SessionGetRequest)(nil),          // 1: cxz.SessionGetRequest
@@ -9479,142 +11066,177 @@ var file_cxz_session_svc_g_proto_goTypes = []any{
 	(*SessionSearchHit)(nil),           // 47: cxz.SessionSearchHit
 	(*SessionSearchProgress)(nil),      // 48: cxz.SessionSearchProgress
 	(*SessionSearchSummary)(nil),       // 49: cxz.SessionSearchSummary
-	(*ProjectRef)(nil),                 // 50: cxz.ProjectRef
-	(*timestamppb.Timestamp)(nil),      // 51: google.protobuf.Timestamp
-	(*SessionStatus)(nil),              // 52: cxz.SessionStatus
-	(*AccountRef)(nil),                 // 53: cxz.AccountRef
-	(*AuthBindingRef)(nil),             // 54: cxz.AuthBindingRef
-	(*ProjectSelect)(nil),              // 55: cxz.ProjectSelect
-	(*AccountSelect)(nil),              // 56: cxz.AccountSelect
-	(*AuthBindingSelect)(nil),          // 57: cxz.AuthBindingSelect
-	(*patchpb.Patch)(nil),              // 58: patch.Patch
-	(*Session)(nil),                    // 59: cxz.Session
-	(*SessionEvent)(nil),               // 60: cxz.SessionEvent
+	(*AuxRunRequest)(nil),              // 50: cxz.AuxRunRequest
+	(*AuxState)(nil),                   // 51: cxz.AuxState
+	(*AuxSummary)(nil),                 // 52: cxz.AuxSummary
+	(*Aux)(nil),                        // 53: cxz.Aux
+	(*AuxResult)(nil),                  // 54: cxz.AuxResult
+	(*AuxUsage)(nil),                   // 55: cxz.AuxUsage
+	(*AuxPreference)(nil),              // 56: cxz.AuxPreference
+	(*AuxStatusRequest)(nil),           // 57: cxz.AuxStatusRequest
+	(*AuxPreferRequest)(nil),           // 58: cxz.AuxPreferRequest
+	(*AuxCancelRequest)(nil),           // 59: cxz.AuxCancelRequest
+	(*ProjectRef)(nil),                 // 60: cxz.ProjectRef
+	(*timestamppb.Timestamp)(nil),      // 61: google.protobuf.Timestamp
+	(*SessionStatus)(nil),              // 62: cxz.SessionStatus
+	(*AccountRef)(nil),                 // 63: cxz.AccountRef
+	(*AuthBindingRef)(nil),             // 64: cxz.AuthBindingRef
+	(*ProjectSelect)(nil),              // 65: cxz.ProjectSelect
+	(*AccountSelect)(nil),              // 66: cxz.AccountSelect
+	(*AuthBindingSelect)(nil),          // 67: cxz.AuthBindingSelect
+	(*patchpb.Patch)(nil),              // 68: patch.Patch
+	(*Session)(nil),                    // 69: cxz.Session
+	(*SessionEvent)(nil),               // 70: cxz.SessionEvent
+	(AuxKind)(0),                       // 71: cxz.AuxKind
 }
 var file_cxz_session_svc_g_proto_depIdxs = []int32{
-	50, // 0: cxz.SessionAddRequest.project:type_name -> cxz.ProjectRef
-	51, // 1: cxz.SessionAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	52, // 2: cxz.SessionAddRequest.status:type_name -> cxz.SessionStatus
-	53, // 3: cxz.SessionAddRequest.account:type_name -> cxz.AccountRef
-	54, // 4: cxz.SessionAddRequest.auth_binding:type_name -> cxz.AuthBindingRef
-	2,  // 5: cxz.SessionGetRequest.ref:type_name -> cxz.SessionRef
-	3,  // 6: cxz.SessionGetRequest.select:type_name -> cxz.SessionSelect
-	55, // 7: cxz.SessionSelect.project:type_name -> cxz.ProjectSelect
-	56, // 8: cxz.SessionSelect.account:type_name -> cxz.AccountSelect
-	57, // 9: cxz.SessionSelect.auth_binding:type_name -> cxz.AuthBindingSelect
-	2,  // 10: cxz.SessionPatchRequest.ref:type_name -> cxz.SessionRef
-	51, // 11: cxz.SessionPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	52, // 12: cxz.SessionPatchRequest.status:type_name -> cxz.SessionStatus
-	2,  // 13: cxz.SessionApplyRequest.ref:type_name -> cxz.SessionRef
-	58, // 14: cxz.SessionApplyRequest.patch:type_name -> patch.Patch
-	9,  // 15: cxz.SessionListRequest.filters:type_name -> cxz.SessionFilter
-	59, // 16: cxz.SessionListResponse.items:type_name -> cxz.Session
-	2,  // 17: cxz.SessionFilter.ref:type_name -> cxz.SessionRef
-	50, // 18: cxz.SessionFilter.project:type_name -> cxz.ProjectRef
-	9,  // 19: cxz.SessionWatchRequest.filters:type_name -> cxz.SessionFilter
-	12, // 20: cxz.SessionWatchResponse.items:type_name -> cxz.SessionWatchItem
-	59, // 21: cxz.SessionWatchItem.value:type_name -> cxz.Session
-	50, // 22: cxz.ConversationStatsRequest.project:type_name -> cxz.ProjectRef
-	2,  // 23: cxz.ConversationStatsRequest.session:type_name -> cxz.SessionRef
-	15, // 24: cxz.ConversationStatsReply.total:type_name -> cxz.ConversationStatsValues
-	16, // 25: cxz.ConversationStatsReply.days:type_name -> cxz.ConversationStatsDay
-	17, // 26: cxz.ConversationStatsReply.sessions:type_name -> cxz.ConversationStatsCoverage
-	15, // 27: cxz.ConversationStatsDay.values:type_name -> cxz.ConversationStatsValues
-	2,  // 28: cxz.SessionControl.ref:type_name -> cxz.SessionRef
-	2,  // 29: cxz.SessionCopyMemoryRequest.ref:type_name -> cxz.SessionRef
-	2,  // 30: cxz.SessionCopyMemoryRequest.target:type_name -> cxz.SessionRef
-	2,  // 31: cxz.SessionLibraryRequest.ref:type_name -> cxz.SessionRef
-	2,  // 32: cxz.SessionMemoryRequest.ref:type_name -> cxz.SessionRef
-	2,  // 33: cxz.SessionLogsRequest.ref:type_name -> cxz.SessionRef
-	2,  // 34: cxz.SessionPermissionRequest.ref:type_name -> cxz.SessionRef
-	2,  // 35: cxz.SessionSendRequest.ref:type_name -> cxz.SessionRef
-	2,  // 36: cxz.SessionAttachRequest.ref:type_name -> cxz.SessionRef
-	2,  // 37: cxz.SessionUploadRequest.ref:type_name -> cxz.SessionRef
-	2,  // 38: cxz.SessionActivityRequest.ref:type_name -> cxz.SessionRef
-	2,  // 39: cxz.SessionUpdateRequest.ref:type_name -> cxz.SessionRef
-	2,  // 40: cxz.SessionReplyRequest.ref:type_name -> cxz.SessionRef
-	2,  // 41: cxz.SessionEventsRequest.ref:type_name -> cxz.SessionRef
-	60, // 42: cxz.SessionEventBatch.events:type_name -> cxz.SessionEvent
-	2,  // 43: cxz.SessionTranscriptRequest.ref:type_name -> cxz.SessionRef
-	60, // 44: cxz.SessionTranscriptReply.events:type_name -> cxz.SessionEvent
-	60, // 45: cxz.SessionTranscriptReply.preceding_input:type_name -> cxz.SessionEvent
-	60, // 46: cxz.SessionTranscriptReply.metadata:type_name -> cxz.SessionEvent
-	2,  // 47: cxz.SessionEventDetailsRequest.ref:type_name -> cxz.SessionRef
-	2,  // 48: cxz.SessionBackgroundRequest.ref:type_name -> cxz.SessionRef
-	2,  // 49: cxz.SessionModelsRequest.ref:type_name -> cxz.SessionRef
-	51, // 50: cxz.SessionSearchRequest.since:type_name -> google.protobuf.Timestamp
-	51, // 51: cxz.SessionSearchRequest.until:type_name -> google.protobuf.Timestamp
-	46, // 52: cxz.SessionSearchReply.visit:type_name -> cxz.SessionSearchVisit
-	48, // 53: cxz.SessionSearchReply.progress:type_name -> cxz.SessionSearchProgress
-	49, // 54: cxz.SessionSearchReply.summary:type_name -> cxz.SessionSearchSummary
-	47, // 55: cxz.SessionSearchVisit.hits:type_name -> cxz.SessionSearchHit
-	51, // 56: cxz.SessionSearchSummary.since:type_name -> google.protobuf.Timestamp
-	51, // 57: cxz.SessionSearchSummary.until:type_name -> google.protobuf.Timestamp
-	0,  // 58: cxz.SessionService.Add:input_type -> cxz.SessionAddRequest
-	1,  // 59: cxz.SessionService.Get:input_type -> cxz.SessionGetRequest
-	4,  // 60: cxz.SessionService.Patch:input_type -> cxz.SessionPatchRequest
-	5,  // 61: cxz.SessionService.Apply:input_type -> cxz.SessionApplyRequest
-	2,  // 62: cxz.SessionService.Erase:input_type -> cxz.SessionRef
-	7,  // 63: cxz.SessionService.List:input_type -> cxz.SessionListRequest
-	10, // 64: cxz.SessionService.Watch:input_type -> cxz.SessionWatchRequest
-	13, // 65: cxz.SessionService.ConversationStats:input_type -> cxz.ConversationStatsRequest
-	2,  // 66: cxz.SessionService.Restore:input_type -> cxz.SessionRef
-	18, // 67: cxz.SessionService.Resume:input_type -> cxz.SessionControl
-	18, // 68: cxz.SessionService.Stop:input_type -> cxz.SessionControl
-	18, // 69: cxz.SessionService.Interrupt:input_type -> cxz.SessionControl
-	20, // 70: cxz.SessionService.CopyMemory:input_type -> cxz.SessionCopyMemoryRequest
-	21, // 71: cxz.SessionService.Library:input_type -> cxz.SessionLibraryRequest
-	23, // 72: cxz.SessionService.Memory:input_type -> cxz.SessionMemoryRequest
-	24, // 73: cxz.SessionService.Logs:input_type -> cxz.SessionLogsRequest
-	26, // 74: cxz.SessionService.Permission:input_type -> cxz.SessionPermissionRequest
-	27, // 75: cxz.SessionService.Send:input_type -> cxz.SessionSendRequest
-	28, // 76: cxz.SessionService.Attach:input_type -> cxz.SessionAttachRequest
-	30, // 77: cxz.SessionService.Upload:input_type -> cxz.SessionUploadRequest
-	31, // 78: cxz.SessionService.Activity:input_type -> cxz.SessionActivityRequest
-	32, // 79: cxz.SessionService.UpdateAgent:input_type -> cxz.SessionUpdateRequest
-	34, // 80: cxz.SessionService.Reply:input_type -> cxz.SessionReplyRequest
-	35, // 81: cxz.SessionService.History:input_type -> cxz.SessionEventsRequest
-	37, // 82: cxz.SessionService.Transcript:input_type -> cxz.SessionTranscriptRequest
-	39, // 83: cxz.SessionService.EventDetails:input_type -> cxz.SessionEventDetailsRequest
-	40, // 84: cxz.SessionService.Background:input_type -> cxz.SessionBackgroundRequest
-	42, // 85: cxz.SessionService.Models:input_type -> cxz.SessionModelsRequest
-	35, // 86: cxz.SessionService.Events:input_type -> cxz.SessionEventsRequest
-	44, // 87: cxz.SessionService.Search:input_type -> cxz.SessionSearchRequest
-	59, // 88: cxz.SessionService.Add:output_type -> cxz.Session
-	59, // 89: cxz.SessionService.Get:output_type -> cxz.Session
-	59, // 90: cxz.SessionService.Patch:output_type -> cxz.Session
-	59, // 91: cxz.SessionService.Apply:output_type -> cxz.Session
-	6,  // 92: cxz.SessionService.Erase:output_type -> cxz.SessionEraseResponse
-	8,  // 93: cxz.SessionService.List:output_type -> cxz.SessionListResponse
-	11, // 94: cxz.SessionService.Watch:output_type -> cxz.SessionWatchResponse
-	14, // 95: cxz.SessionService.ConversationStats:output_type -> cxz.ConversationStatsReply
-	59, // 96: cxz.SessionService.Restore:output_type -> cxz.Session
-	59, // 97: cxz.SessionService.Resume:output_type -> cxz.Session
-	59, // 98: cxz.SessionService.Stop:output_type -> cxz.Session
-	19, // 99: cxz.SessionService.Interrupt:output_type -> cxz.SessionReceipt
-	19, // 100: cxz.SessionService.CopyMemory:output_type -> cxz.SessionReceipt
-	22, // 101: cxz.SessionService.Library:output_type -> cxz.SessionMemoryReply
-	22, // 102: cxz.SessionService.Memory:output_type -> cxz.SessionMemoryReply
-	25, // 103: cxz.SessionService.Logs:output_type -> cxz.SessionLogsReply
-	19, // 104: cxz.SessionService.Permission:output_type -> cxz.SessionReceipt
-	19, // 105: cxz.SessionService.Send:output_type -> cxz.SessionReceipt
-	29, // 106: cxz.SessionService.Attach:output_type -> cxz.SessionAttachment
-	29, // 107: cxz.SessionService.Upload:output_type -> cxz.SessionAttachment
-	19, // 108: cxz.SessionService.Activity:output_type -> cxz.SessionReceipt
-	33, // 109: cxz.SessionService.UpdateAgent:output_type -> cxz.SessionUpdateStatus
-	19, // 110: cxz.SessionService.Reply:output_type -> cxz.SessionReceipt
-	36, // 111: cxz.SessionService.History:output_type -> cxz.SessionEventBatch
-	38, // 112: cxz.SessionService.Transcript:output_type -> cxz.SessionTranscriptReply
-	36, // 113: cxz.SessionService.EventDetails:output_type -> cxz.SessionEventBatch
-	41, // 114: cxz.SessionService.Background:output_type -> cxz.SessionBackgroundReply
-	43, // 115: cxz.SessionService.Models:output_type -> cxz.SessionModelsReply
-	60, // 116: cxz.SessionService.Events:output_type -> cxz.SessionEvent
-	45, // 117: cxz.SessionService.Search:output_type -> cxz.SessionSearchReply
-	88, // [88:118] is the sub-list for method output_type
-	58, // [58:88] is the sub-list for method input_type
-	58, // [58:58] is the sub-list for extension type_name
-	58, // [58:58] is the sub-list for extension extendee
-	0,  // [0:58] is the sub-list for field type_name
+	60,  // 0: cxz.SessionAddRequest.project:type_name -> cxz.ProjectRef
+	61,  // 1: cxz.SessionAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	62,  // 2: cxz.SessionAddRequest.status:type_name -> cxz.SessionStatus
+	63,  // 3: cxz.SessionAddRequest.account:type_name -> cxz.AccountRef
+	64,  // 4: cxz.SessionAddRequest.auth_binding:type_name -> cxz.AuthBindingRef
+	2,   // 5: cxz.SessionGetRequest.ref:type_name -> cxz.SessionRef
+	3,   // 6: cxz.SessionGetRequest.select:type_name -> cxz.SessionSelect
+	65,  // 7: cxz.SessionSelect.project:type_name -> cxz.ProjectSelect
+	66,  // 8: cxz.SessionSelect.account:type_name -> cxz.AccountSelect
+	67,  // 9: cxz.SessionSelect.auth_binding:type_name -> cxz.AuthBindingSelect
+	2,   // 10: cxz.SessionPatchRequest.ref:type_name -> cxz.SessionRef
+	61,  // 11: cxz.SessionPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	62,  // 12: cxz.SessionPatchRequest.status:type_name -> cxz.SessionStatus
+	2,   // 13: cxz.SessionApplyRequest.ref:type_name -> cxz.SessionRef
+	68,  // 14: cxz.SessionApplyRequest.patch:type_name -> patch.Patch
+	9,   // 15: cxz.SessionListRequest.filters:type_name -> cxz.SessionFilter
+	69,  // 16: cxz.SessionListResponse.items:type_name -> cxz.Session
+	2,   // 17: cxz.SessionFilter.ref:type_name -> cxz.SessionRef
+	60,  // 18: cxz.SessionFilter.project:type_name -> cxz.ProjectRef
+	9,   // 19: cxz.SessionWatchRequest.filters:type_name -> cxz.SessionFilter
+	12,  // 20: cxz.SessionWatchResponse.items:type_name -> cxz.SessionWatchItem
+	69,  // 21: cxz.SessionWatchItem.value:type_name -> cxz.Session
+	60,  // 22: cxz.ConversationStatsRequest.project:type_name -> cxz.ProjectRef
+	2,   // 23: cxz.ConversationStatsRequest.session:type_name -> cxz.SessionRef
+	15,  // 24: cxz.ConversationStatsReply.total:type_name -> cxz.ConversationStatsValues
+	16,  // 25: cxz.ConversationStatsReply.days:type_name -> cxz.ConversationStatsDay
+	17,  // 26: cxz.ConversationStatsReply.sessions:type_name -> cxz.ConversationStatsCoverage
+	15,  // 27: cxz.ConversationStatsDay.values:type_name -> cxz.ConversationStatsValues
+	2,   // 28: cxz.SessionControl.ref:type_name -> cxz.SessionRef
+	2,   // 29: cxz.SessionCopyMemoryRequest.ref:type_name -> cxz.SessionRef
+	2,   // 30: cxz.SessionCopyMemoryRequest.target:type_name -> cxz.SessionRef
+	2,   // 31: cxz.SessionLibraryRequest.ref:type_name -> cxz.SessionRef
+	2,   // 32: cxz.SessionMemoryRequest.ref:type_name -> cxz.SessionRef
+	2,   // 33: cxz.SessionLogsRequest.ref:type_name -> cxz.SessionRef
+	2,   // 34: cxz.SessionPermissionRequest.ref:type_name -> cxz.SessionRef
+	2,   // 35: cxz.SessionSendRequest.ref:type_name -> cxz.SessionRef
+	2,   // 36: cxz.SessionAttachRequest.ref:type_name -> cxz.SessionRef
+	2,   // 37: cxz.SessionUploadRequest.ref:type_name -> cxz.SessionRef
+	2,   // 38: cxz.SessionActivityRequest.ref:type_name -> cxz.SessionRef
+	2,   // 39: cxz.SessionUpdateRequest.ref:type_name -> cxz.SessionRef
+	2,   // 40: cxz.SessionReplyRequest.ref:type_name -> cxz.SessionRef
+	2,   // 41: cxz.SessionEventsRequest.ref:type_name -> cxz.SessionRef
+	70,  // 42: cxz.SessionEventBatch.events:type_name -> cxz.SessionEvent
+	2,   // 43: cxz.SessionTranscriptRequest.ref:type_name -> cxz.SessionRef
+	70,  // 44: cxz.SessionTranscriptReply.events:type_name -> cxz.SessionEvent
+	70,  // 45: cxz.SessionTranscriptReply.preceding_input:type_name -> cxz.SessionEvent
+	70,  // 46: cxz.SessionTranscriptReply.metadata:type_name -> cxz.SessionEvent
+	2,   // 47: cxz.SessionEventDetailsRequest.ref:type_name -> cxz.SessionRef
+	2,   // 48: cxz.SessionBackgroundRequest.ref:type_name -> cxz.SessionRef
+	2,   // 49: cxz.SessionModelsRequest.ref:type_name -> cxz.SessionRef
+	61,  // 50: cxz.SessionSearchRequest.since:type_name -> google.protobuf.Timestamp
+	61,  // 51: cxz.SessionSearchRequest.until:type_name -> google.protobuf.Timestamp
+	46,  // 52: cxz.SessionSearchReply.visit:type_name -> cxz.SessionSearchVisit
+	48,  // 53: cxz.SessionSearchReply.progress:type_name -> cxz.SessionSearchProgress
+	49,  // 54: cxz.SessionSearchReply.summary:type_name -> cxz.SessionSearchSummary
+	47,  // 55: cxz.SessionSearchVisit.hits:type_name -> cxz.SessionSearchHit
+	61,  // 56: cxz.SessionSearchSummary.since:type_name -> google.protobuf.Timestamp
+	61,  // 57: cxz.SessionSearchSummary.until:type_name -> google.protobuf.Timestamp
+	2,   // 58: cxz.AuxRunRequest.ref:type_name -> cxz.SessionRef
+	71,  // 59: cxz.AuxRunRequest.kinds:type_name -> cxz.AuxKind
+	52,  // 60: cxz.AuxState.summaries:type_name -> cxz.AuxSummary
+	53,  // 61: cxz.AuxState.current:type_name -> cxz.Aux
+	56,  // 62: cxz.AuxState.preferences:type_name -> cxz.AuxPreference
+	71,  // 63: cxz.Aux.kinds:type_name -> cxz.AuxKind
+	54,  // 64: cxz.Aux.results:type_name -> cxz.AuxResult
+	55,  // 65: cxz.Aux.usage:type_name -> cxz.AuxUsage
+	71,  // 66: cxz.AuxResult.kind:type_name -> cxz.AuxKind
+	71,  // 67: cxz.AuxUsage.kind:type_name -> cxz.AuxKind
+	71,  // 68: cxz.AuxPreference.kind:type_name -> cxz.AuxKind
+	61,  // 69: cxz.AuxPreference.since:type_name -> google.protobuf.Timestamp
+	2,   // 70: cxz.AuxStatusRequest.ref:type_name -> cxz.SessionRef
+	2,   // 71: cxz.AuxPreferRequest.ref:type_name -> cxz.SessionRef
+	56,  // 72: cxz.AuxPreferRequest.preferences:type_name -> cxz.AuxPreference
+	2,   // 73: cxz.AuxCancelRequest.ref:type_name -> cxz.SessionRef
+	0,   // 74: cxz.SessionService.Add:input_type -> cxz.SessionAddRequest
+	1,   // 75: cxz.SessionService.Get:input_type -> cxz.SessionGetRequest
+	4,   // 76: cxz.SessionService.Patch:input_type -> cxz.SessionPatchRequest
+	5,   // 77: cxz.SessionService.Apply:input_type -> cxz.SessionApplyRequest
+	2,   // 78: cxz.SessionService.Erase:input_type -> cxz.SessionRef
+	7,   // 79: cxz.SessionService.List:input_type -> cxz.SessionListRequest
+	10,  // 80: cxz.SessionService.Watch:input_type -> cxz.SessionWatchRequest
+	13,  // 81: cxz.SessionService.ConversationStats:input_type -> cxz.ConversationStatsRequest
+	2,   // 82: cxz.SessionService.Restore:input_type -> cxz.SessionRef
+	18,  // 83: cxz.SessionService.Resume:input_type -> cxz.SessionControl
+	18,  // 84: cxz.SessionService.Stop:input_type -> cxz.SessionControl
+	18,  // 85: cxz.SessionService.Interrupt:input_type -> cxz.SessionControl
+	20,  // 86: cxz.SessionService.CopyMemory:input_type -> cxz.SessionCopyMemoryRequest
+	21,  // 87: cxz.SessionService.Library:input_type -> cxz.SessionLibraryRequest
+	23,  // 88: cxz.SessionService.Memory:input_type -> cxz.SessionMemoryRequest
+	24,  // 89: cxz.SessionService.Logs:input_type -> cxz.SessionLogsRequest
+	26,  // 90: cxz.SessionService.Permission:input_type -> cxz.SessionPermissionRequest
+	27,  // 91: cxz.SessionService.Send:input_type -> cxz.SessionSendRequest
+	28,  // 92: cxz.SessionService.Attach:input_type -> cxz.SessionAttachRequest
+	30,  // 93: cxz.SessionService.Upload:input_type -> cxz.SessionUploadRequest
+	31,  // 94: cxz.SessionService.Activity:input_type -> cxz.SessionActivityRequest
+	32,  // 95: cxz.SessionService.UpdateAgent:input_type -> cxz.SessionUpdateRequest
+	34,  // 96: cxz.SessionService.Reply:input_type -> cxz.SessionReplyRequest
+	35,  // 97: cxz.SessionService.History:input_type -> cxz.SessionEventsRequest
+	37,  // 98: cxz.SessionService.Transcript:input_type -> cxz.SessionTranscriptRequest
+	39,  // 99: cxz.SessionService.EventDetails:input_type -> cxz.SessionEventDetailsRequest
+	40,  // 100: cxz.SessionService.Background:input_type -> cxz.SessionBackgroundRequest
+	42,  // 101: cxz.SessionService.Models:input_type -> cxz.SessionModelsRequest
+	35,  // 102: cxz.SessionService.Events:input_type -> cxz.SessionEventsRequest
+	44,  // 103: cxz.SessionService.Search:input_type -> cxz.SessionSearchRequest
+	50,  // 104: cxz.SessionService.AuxRun:input_type -> cxz.AuxRunRequest
+	57,  // 105: cxz.SessionService.AuxStatus:input_type -> cxz.AuxStatusRequest
+	58,  // 106: cxz.SessionService.AuxPrefer:input_type -> cxz.AuxPreferRequest
+	59,  // 107: cxz.SessionService.AuxCancel:input_type -> cxz.AuxCancelRequest
+	69,  // 108: cxz.SessionService.Add:output_type -> cxz.Session
+	69,  // 109: cxz.SessionService.Get:output_type -> cxz.Session
+	69,  // 110: cxz.SessionService.Patch:output_type -> cxz.Session
+	69,  // 111: cxz.SessionService.Apply:output_type -> cxz.Session
+	6,   // 112: cxz.SessionService.Erase:output_type -> cxz.SessionEraseResponse
+	8,   // 113: cxz.SessionService.List:output_type -> cxz.SessionListResponse
+	11,  // 114: cxz.SessionService.Watch:output_type -> cxz.SessionWatchResponse
+	14,  // 115: cxz.SessionService.ConversationStats:output_type -> cxz.ConversationStatsReply
+	69,  // 116: cxz.SessionService.Restore:output_type -> cxz.Session
+	69,  // 117: cxz.SessionService.Resume:output_type -> cxz.Session
+	69,  // 118: cxz.SessionService.Stop:output_type -> cxz.Session
+	19,  // 119: cxz.SessionService.Interrupt:output_type -> cxz.SessionReceipt
+	19,  // 120: cxz.SessionService.CopyMemory:output_type -> cxz.SessionReceipt
+	22,  // 121: cxz.SessionService.Library:output_type -> cxz.SessionMemoryReply
+	22,  // 122: cxz.SessionService.Memory:output_type -> cxz.SessionMemoryReply
+	25,  // 123: cxz.SessionService.Logs:output_type -> cxz.SessionLogsReply
+	19,  // 124: cxz.SessionService.Permission:output_type -> cxz.SessionReceipt
+	19,  // 125: cxz.SessionService.Send:output_type -> cxz.SessionReceipt
+	29,  // 126: cxz.SessionService.Attach:output_type -> cxz.SessionAttachment
+	29,  // 127: cxz.SessionService.Upload:output_type -> cxz.SessionAttachment
+	19,  // 128: cxz.SessionService.Activity:output_type -> cxz.SessionReceipt
+	33,  // 129: cxz.SessionService.UpdateAgent:output_type -> cxz.SessionUpdateStatus
+	19,  // 130: cxz.SessionService.Reply:output_type -> cxz.SessionReceipt
+	36,  // 131: cxz.SessionService.History:output_type -> cxz.SessionEventBatch
+	38,  // 132: cxz.SessionService.Transcript:output_type -> cxz.SessionTranscriptReply
+	36,  // 133: cxz.SessionService.EventDetails:output_type -> cxz.SessionEventBatch
+	41,  // 134: cxz.SessionService.Background:output_type -> cxz.SessionBackgroundReply
+	43,  // 135: cxz.SessionService.Models:output_type -> cxz.SessionModelsReply
+	70,  // 136: cxz.SessionService.Events:output_type -> cxz.SessionEvent
+	45,  // 137: cxz.SessionService.Search:output_type -> cxz.SessionSearchReply
+	51,  // 138: cxz.SessionService.AuxRun:output_type -> cxz.AuxState
+	51,  // 139: cxz.SessionService.AuxStatus:output_type -> cxz.AuxState
+	51,  // 140: cxz.SessionService.AuxPrefer:output_type -> cxz.AuxState
+	51,  // 141: cxz.SessionService.AuxCancel:output_type -> cxz.AuxState
+	108, // [108:142] is the sub-list for method output_type
+	74,  // [74:108] is the sub-list for method input_type
+	74,  // [74:74] is the sub-list for extension type_name
+	74,  // [74:74] is the sub-list for extension extendee
+	0,   // [0:74] is the sub-list for field type_name
 }
 
 func init() { file_cxz_session_svc_g_proto_init() }
@@ -9638,7 +11260,7 @@ func file_cxz_session_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_cxz_session_svc_g_proto_rawDesc), len(file_cxz_session_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   50,
+			NumMessages:   60,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

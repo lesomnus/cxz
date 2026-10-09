@@ -2,7 +2,6 @@ package tui
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"google.golang.org/grpc"
 	"io"
@@ -11,18 +10,24 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/lesomnus/cxz/api"
-	"github.com/lesomnus/cxz/internal/agentview"
 	"github.com/lesomnus/cxz/internal/auxiliary"
 	"github.com/lesomnus/cxz/resource"
 )
 
+// The wizard's last call, recorded as the call it became.
+type setupCall struct {
+	call    string
+	kind    string
+	account string
+	profile *api.AuxProfile
+}
 type setupClient struct {
 	api.SessionsClient
 	loginErr   error
 	needsLogin bool
 	modelErr   error
 	loginCount int
-	got        auxiliary.Request
+	got        setupCall
 	alias      string
 }
 
@@ -34,18 +39,26 @@ func (c *setupClient) LoginAuxiliary(ctx context.Context, alias string, in io.Re
 	}
 	return c.loginErr
 }
-func (c *setupClient) Docker(ctx context.Context, in *api.DockerInput, _ ...grpc.CallOption) (*api.Receipt, error) {
-	json.Unmarshal(in.Spec, &c.got)
-	out := auxiliary.Reply{}
-	if c.got.Action == "models" {
-		if c.modelErr != nil {
-			return nil, c.modelErr
-		}
-		out.NeedsLogin = c.needsLogin
-		out.Models = []agentview.ModelOption{{ID: "fixture", Efforts: []string{"low", "high"}}}
+func (c *setupClient) AuxModels(_ context.Context, in *api.AuxModelsInput, _ ...grpc.CallOption) (*api.AuxModelsReply, error) {
+	c.got = setupCall{call: "models", account: in.Account}
+	if c.modelErr != nil {
+		return nil, c.modelErr
 	}
-	b, _ := json.Marshal(out)
-	return &api.Receipt{Status: string(b)}, nil
+	return &api.AuxModelsReply{
+		NeedsLogin: c.needsLogin,
+		Models:     []*api.AuxModel{{Id: "fixture", Efforts: []string{"low", "high"}}},
+	}, nil
+}
+func (c *setupClient) AuxSetConfig(_ context.Context, in *api.AuxSetConfigInput, _ ...grpc.CallOption) (*api.AuxConfigReply, error) {
+	c.got = setupCall{call: "set"}
+	if len(in.Profiles) > 0 {
+		c.got.kind, c.got.profile, c.got.account = in.Profiles[0].Kind, in.Profiles[0], in.Profiles[0].Account
+	}
+	return &api.AuxConfigReply{}, nil
+}
+func (c *setupClient) AuxConfig(_ context.Context, _ *api.Empty, _ ...grpc.CallOption) (*api.AuxConfigReply, error) {
+	c.got = setupCall{call: "list"}
+	return &api.AuxConfigReply{}, nil
 }
 func TestAuxiliarySetupAuthenticatesThenSelectsCapabilities(t *testing.T) {
 	for _, fail := range []bool{false, true} {
@@ -69,7 +82,7 @@ func TestAuxiliarySetupAuthenticatesThenSelectsCapabilities(t *testing.T) {
 			t.Fatal("wrong login target or busy state")
 		}
 		if fail {
-			if cmd != nil || p.message != "login canceled" || c.got.Action != "models" {
+			if cmd != nil || p.message != "login canceled" || c.got.call != "models" {
 				t.Fatal("failed auth advanced wizard")
 			}
 			continue
@@ -85,7 +98,7 @@ func TestAuxiliarySetupAuthenticatesThenSelectsCapabilities(t *testing.T) {
 		m.auxiliaryKey(tea.KeyMsg{Type: tea.KeyDown})
 		cmd = m.auxiliaryKey(tea.KeyMsg{Type: tea.KeyEnter})
 		m.Update(cmd())
-		if c.got.Action != "put" || c.got.Profile.Account != "work" || c.got.Profile.Model != "fixture" || c.got.Profile.Effort != "low" || p.editing {
+		if c.got.call != "set" || c.got.profile.Account != "work" || c.got.profile.Model != "fixture" || c.got.profile.Effort != "low" || p.editing {
 			t.Fatalf("wrong saved profile: %+v", c.got)
 		}
 	}
@@ -140,7 +153,7 @@ func TestAuxiliarySetupReusesAccountAcrossTasks(t *testing.T) {
 		}
 		m.auxiliaryKey(tea.KeyMsg{Type: tea.KeyEnter})
 		m.Update(m.auxiliaryKey(tea.KeyMsg{Type: tea.KeyEnter})())
-		if c.got.Action != "put" || c.got.Task != []string{"summary", "suggestion"}[task] {
+		if c.got.call != "set" || c.got.kind != []string{"summary", "suggestion"}[task] {
 			t.Fatalf("not saved: %+v", c.got)
 		}
 	}

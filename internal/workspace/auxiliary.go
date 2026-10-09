@@ -29,128 +29,6 @@ func (m *Manager) auxiliaryController() (*auxiliary.Controller, error) {
 	}
 	return m.aux, nil
 }
-func (m *Manager) auxiliaryRequest(ctx context.Context, b []byte) (*api.Receipt, error) {
-	var r auxiliary.Request
-	if len(b) > 16384 {
-		return nil, fmt.Errorf("auxiliary request too large")
-	}
-	if e := json.Unmarshal(b, &r); e != nil {
-		return nil, e
-	}
-	c, e := m.auxiliaryController()
-	if e != nil {
-		return nil, e
-	}
-	out := auxiliary.Reply{Config: c.Config()}
-	switch r.Action {
-	case "", "list":
-	case "put":
-		if r.Profile.Enabled {
-			o, e := m.runAuxiliary(ctx, auxiliary.Input{Profile: r.Profile, Task: "models"})
-			if e != nil {
-				return nil, e
-			}
-			if o.NeedsLogin {
-				return nil, fmt.Errorf("auxiliary account needs login")
-			}
-			if e = auxiliary.ValidateModel(r.Profile, o.Models); e != nil {
-				return nil, e
-			}
-		}
-		old := out.Config
-		out.Config, e = c.Save(r.Task, r.Profile)
-		if e == nil {
-			for _, p := range []auxiliary.Profile{old.Summary, old.Suggestion, old.Title} {
-				if !p.Enabled || p.Backend != accounts.BrokeredAccessToken {
-					continue
-				}
-				needed := false
-				for _, next := range []auxiliary.Profile{out.Config.Summary, out.Config.Suggestion, out.Config.Title} {
-					needed = needed || (next.Enabled && next.Account == p.Account)
-				}
-				if !needed {
-					if err := accounts.RevokeAuxiliaryGrant(m.Root, p.Account); err != nil {
-						out.Message = "Settings saved; auxiliary grant cleanup failed: " + err.Error()
-					}
-				}
-			}
-		}
-	case "models":
-		var o auxiliary.Output
-		o, e = m.runAuxiliary(ctx, auxiliary.Input{Profile: r.Profile, Task: "models"})
-		out.Models = o.Models
-		out.NeedsLogin = o.NeedsLogin
-	case "session":
-		if r.Session == "" {
-			return nil, fmt.Errorf("select a session")
-		}
-		if r.Enabled != nil {
-			e = c.SetSession(r.Session, r.Task, *r.Enabled)
-		} else {
-			var cfg auxiliary.SessionConfig
-			cfg, e = c.SessionConfig(r.Session)
-			enabled := r.Task == "summary" && cfg.Summary || r.Task == "suggestion" && cfg.Suggestion
-			if e == nil && !enabled {
-				e = m.generateAuxiliary(ctx, c, r.Session, r.Task)
-			}
-		}
-		out.Job, _ = c.Status(r.Session)
-		if e == nil && r.Enabled != nil {
-			out.Message = fmt.Sprintf("%s %s · this session", r.Task, map[bool]string{true: "on", false: "off"}[*r.Enabled])
-		}
-	case "title":
-		if _, err := m.Get(ctx, r.Session); err != nil {
-			return nil, err
-		}
-		if r.Text != "" {
-			e = c.SetTitle(r.Session, r.Text)
-		} else {
-			conn, client, err := m.ClientFor(ctx, r.Session)
-			if err != nil {
-				return nil, err
-			}
-			defer conn.Close()
-			events, err := auxiliaryHistory(ctx, client, r.Session)
-			if err != nil {
-				return nil, err
-			}
-			e = c.GenerateTitle(r.Session, events)
-		}
-		title, _ := c.Title(r.Session)
-		out.Title = &title
-		out.Message = "Session title updated or queued"
-	case "status":
-		out.Job, e = c.Status(r.Session)
-	case "forget":
-		e = c.Forget(r.Session)
-	case "cancel":
-		e = c.Cancel(r.Session)
-		out.Job, _ = c.Status(r.Session)
-	case "login-info":
-		out.Profile = &r.Profile
-		out.Owner = m.Owner
-	default:
-		return nil, fmt.Errorf("unknown auxiliary action")
-	}
-	if e != nil {
-		return nil, e
-	}
-	if r.Session != "" {
-		cfg, err := c.SessionConfig(r.Session)
-		if err != nil {
-			return nil, err
-		}
-		title, _ := c.Title(r.Session)
-		out.Title = &title
-		out.SessionConfig = &cfg
-		out.Summaries, err = c.Summaries(r.Session)
-		if err != nil {
-			return nil, err
-		}
-	}
-	b, e = json.Marshal(out)
-	return &api.Receipt{Status: string(b)}, e
-}
 func (m *Manager) auxiliaryArgs(ctx context.Context, p auxiliary.Profile) ([]string, string, error) {
 	if e := accounts.Validate(p.Account, p.Agent); e != nil {
 		return nil, "", e
@@ -352,6 +230,23 @@ func (m *Manager) generateAuxiliary(ctx context.Context, c *auxiliary.Controller
 		return err
 	}
 	return c.Generate(id, task, events)
+}
+
+// A title reads the same bounded window, but is kept separately from the
+// prunable summary context, so it has its own entry point.
+func (m *Manager) generateAuxiliaryTitle(ctx context.Context, c *auxiliary.Controller, id string) error {
+	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+	conn, client, err := m.ClientFor(ctx, id)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	events, err := auxiliaryHistory(ctx, client, id)
+	if err != nil {
+		return err
+	}
+	return c.GenerateTitle(id, events)
 }
 
 func auxiliaryHistory(ctx context.Context, client api.SessionsClient, id string) ([]*api.Event, error) {

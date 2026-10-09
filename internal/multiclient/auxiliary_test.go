@@ -2,43 +2,49 @@ package multiclient
 
 import (
 	"context"
-	"encoding/json"
-	"github.com/lesomnus/cxz/api"
-	"github.com/lesomnus/cxz/internal/auxiliary"
-	"google.golang.org/grpc"
 	"testing"
+
+	"github.com/lesomnus/cxz/api"
+	"google.golang.org/grpc"
 )
 
 type auxiliaryDaemon struct {
 	daemon
-	request auxiliary.Request
+	session string
 	calls   int
 }
 
-func (d *auxiliaryDaemon) Docker(_ context.Context, r *api.DockerInput, _ ...grpc.CallOption) (*api.Receipt, error) {
+func (d *auxiliaryDaemon) AuxStatus(_ context.Context, r *api.AuxStatusInput, _ ...grpc.CallOption) (*api.AuxState, error) {
 	d.calls++
-	_ = json.Unmarshal(r.Spec, &d.request)
-	return &api.Receipt{Status: `{}`}, nil
+	d.session = r.SessionId
+	return &api.AuxState{}, nil
 }
+func (d *auxiliaryDaemon) AuxConfig(_ context.Context, _ *api.Empty, _ ...grpc.CallOption) (*api.AuxConfigReply, error) {
+	d.calls++
+	return &api.AuxConfigReply{}, nil
+}
+
+// A task belongs to a session, and the session says which manager owns it. The
+// connection prefix is the client's own and must not travel, so what arrives
+// names the session alone -- and the caller's own copy is left unchanged,
+// because it may be retried against another connection.
 func TestAuxiliarySessionRoutesToItsManager(t *testing.T) {
 	a, b := &auxiliaryDaemon{}, &auxiliaryDaemon{}
 	c := New(t.Context(), []Source{{Name: "a", Client: a}, {Name: "b", Client: b}}, "a")
 	defer c.Close()
-	raw, _ := json.Marshal(auxiliary.Request{Action: "status", Session: "b::S"})
-	r := &api.DockerInput{Action: "auxiliary", Spec: raw}
-	if _, e := c.Docker(t.Context(), r); e != nil {
+	r := &api.AuxStatusInput{SessionId: "b::S"}
+	if _, e := c.AuxStatus(t.Context(), r); e != nil {
 		t.Fatal(e)
 	}
-	if a.calls != 0 || b.request.Session != "S" {
-		t.Fatal("wrong manager or session", a.calls, b.request)
+	if a.calls != 0 || b.session != "S" {
+		t.Fatal("wrong manager or session", a.calls, b.session)
 	}
-	var original auxiliary.Request
-	_ = json.Unmarshal(r.Spec, &original)
-	if original.Session != "b::S" {
+	if r.SessionId != "b::S" {
 		t.Fatal("mutated input")
 	}
-	raw, _ = json.Marshal(auxiliary.Request{Action: "list"})
-	if _, e := c.Docker(c.ContextFor(t.Context(), "b::S"), &api.DockerInput{Action: "auxiliary", Spec: raw}); e != nil {
+	// The configuration belongs to an installation, so it follows the
+	// connection the caller is looking at rather than a session of its own.
+	if _, e := c.AuxConfig(c.ContextFor(t.Context(), "b::S"), &api.Empty{}); e != nil {
 		t.Fatal(e)
 	}
 	if b.calls != 2 {

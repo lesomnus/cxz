@@ -2,8 +2,8 @@
 // @generated from file cxz/project_svc.g.proto (package cxz, edition 2023)
 /* eslint-disable */
 
-import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
-import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
+import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
+import { enumDesc, fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
 import type { AccountRef } from "./account_svc_pb.js";
 import { file_cxz_account_svc_g } from "./account_svc_pb.js";
 import type { Project, ProjectSchema, ProjectStatus } from "./project_pb.js";
@@ -18,7 +18,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file cxz/project_svc.g.proto.
  */
 export const file_cxz_project_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChdjeHovcHJvamVjdF9zdmMuZy5wcm90bxIDY3h6IpECChFQcm9qZWN0QWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIUCgVhbGlhcxgEIAEoCUIFqgECCAISEwoEbmFtZRgFIAEoCUIFqgECCAISEwoEZGVzYxgGIAEoCUIFqgECCAISGAoJd29ya3NwYWNlGAggASgJQgWqAQIIAhIVCgZjb25maWcYCSABKAlCBaoBAggCEhkKCnJ1bnRpbWVfaWQYCiABKAlCBaoBAggCEjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASIgoGc3RhdHVzGBAgASgLMhIuY3h6LlByb2plY3RTdGF0dXMSDgoGbGlzdGVkGBEgASgIIlUKEVByb2plY3RHZXRSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLmN4ei5Qcm9qZWN0UmVmEiIKBnNlbGVjdBgCIAEoCzISLmN4ei5Qcm9qZWN0U2VsZWN0Il0KClByb2plY3RSZWYSDAoCaWQYASABKAxIABIPCgVhbGlhcxgEIAEoCUgAEhMKCXdvcmtzcGFjZRgIIAEoCUgAEhQKCnJ1bnRpbWVfaWQYCiABKAlIAEIFCgNrZXki3wEKDVByb2plY3RTZWxlY3QSCwoDYWxsGAEgASgIEg0KBWFsaWFzGAQgASgIEgwKBG5hbWUYBSABKAgSDAoEZGVzYxgGIAEoCBIRCgl3b3Jrc3BhY2UYCCABKAgSDgoGY29uZmlnGAkgASgIEhIKCnJ1bnRpbWVfaWQYCiABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCBIOCgZzdGF0dXMYECABKAgSDgoGbGlzdGVkGBEgASgIIoUCChNQcm9qZWN0UGF0Y2hSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLmN4ei5Qcm9qZWN0UmVmEg0KBWFsaWFzGAggASgJEgwKBG5hbWUYCiABKAkSDAoEZGVzYxgMIAEoCRIOCgZjb25maWcYEiABKAkSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgSIgoGc3RhdHVzGCAgASgLMhIuY3h6LlByb2plY3RTdGF0dXMSEwoLc3RhdHVzX251bGwYISABKAgSDgoGbGlzdGVkGCIgASgIIlAKE1Byb2plY3RBcHBseVJlcXVlc3QSHAoDcmVmGAEgASgLMg8uY3h6LlByb2plY3RSZWYSGwoFcGF0Y2gYAiABKAsyDC5wYXRjaC5QYXRjaCImChRQcm9qZWN0RXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgiZAoSUHJvamVjdExpc3RSZXF1ZXN0EiMKB2ZpbHRlcnMYASADKAsyEi5jeHouUHJvamVjdEZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAIiRwoTUHJvamVjdExpc3RSZXNwb25zZRIbCgVpdGVtcxgBIAMoCzIMLmN4ei5Qcm9qZWN0EhMKBG5leHQYAiABKAlCBaoBAggCIj0KDVByb2plY3RGaWx0ZXISHAoDcmVmGAEgASgLMg8uY3h6LlByb2plY3RSZWYSDgoGbGlzdGVkGAIgASgIIlgKE1Byb2plY3RXYXRjaFJlcXVlc3QSIwoHZmlsdGVycxgBIAMoCzISLmN4ei5Qcm9qZWN0RmlsdGVyEhwKDXNraXBfc25hcHNob3QYAiABKAhCBaoBAggCIjwKFFByb2plY3RXYXRjaFJlc3BvbnNlEiQKBWl0ZW1zGAEgAygLMhUuY3h6LlByb2plY3RXYXRjaEl0ZW0iUgoQUHJvamVjdFdhdGNoSXRlbRIKCgJpZBgBIAEoDBIbCgV2YWx1ZRgCIAEoCzIMLmN4ei5Qcm9qZWN0EhUKBmFjdGlvbhgDIAEoCUIFqgECCAIiOQoUUHJvamVjdFJlbW92ZVJlcXVlc3QSDgoGdGFyZ2V0GAEgASgJEhEKCWNvbmZpcm1lZBgCIAEoCCJEChJQcm9qZWN0UmVtb3ZlUmVwbHkSHQoHcHJvamVjdBgBIAEoCzIMLmN4ei5Qcm9qZWN0Eg8KB3JlbW92ZWQYAiABKAgiZAoWUHJvamVjdFRlcm1pbmFsUmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouUHJvamVjdFJlZhIPCgdjb2x1bW5zGAIgASgNEgwKBHJvd3MYAyABKA0SDQoFaW5wdXQYBCABKAwiVAoUUHJvamVjdFRlcm1pbmFsUmVwbHkSDQoFcmVhZHkYASABKAgSDgoGb3V0cHV0GAIgASgMEg4KBmV4aXRlZBgDIAEoCBINCgVlcnJvchgEIAEoCSJ5ChNQcm9qZWN0TG9naW5SZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLmN4ei5Qcm9qZWN0UmVmEiAKB2FjY291bnQYAiABKAsyDy5jeHouQWNjb3VudFJlZhITCgtzZXNzaW9uX2tleRgDIAEoCRINCgVpbnB1dBgEIAEoDCIkChJQcm9qZWN0TG9naW5PdXRwdXQSDgoGb3V0cHV0GAEgASgMIkEKE1Byb2plY3RQYXRoc1JlcXVlc3QSHAoDcmVmGAEgASgLMg8uY3h6LlByb2plY3RSZWYSDAoEcGF0aBgCIAEoCSJOChFQcm9qZWN0UGF0aHNSZXBseRImCgdlbnRyaWVzGAEgAygLMhUuY3h6LlByb2plY3RQYXRoRW50cnkSEQoJdHJ1bmNhdGVkGAIgASgIIm0KEFByb2plY3RQYXRoRW50cnkSDAoEbmFtZRgBIAEoCRIRCglkaXJlY3RvcnkYAiABKAgSEgoKZXhlY3V0YWJsZRgDIAEoCBIPCgdzeW1saW5rGAQgASgIEhMKC2xpbmtfdGFyZ2V0GAUgASgJIkQKFlByb2plY3REb3dubG9hZFJlcXVlc3QSHAoDcmVmGAEgASgLMg8uY3h6LlByb2plY3RSZWYSDAoEcGF0aBgCIAEoCSI4ChRQcm9qZWN0RG93bmxvYWRSZXBseRIMCgRkYXRhGAEgASgMEhIKCnRvdGFsX3NpemUYAiABKAMiNAoUUHJvamVjdEVkaXRvclJlcXVlc3QSHAoDcmVmGAEgASgLMg8uY3h6LlByb2plY3RSZWYiVAoSUHJvamVjdEVkaXRvclJlcGx5EhEKCXdvcmtzcGFjZRgBIAEoCRIYChBjb25uZWN0aW9uX3Rva2VuGAIgASgJEhEKCXNpbXVsYXRlZBgDIAEoCCJJChpQcm9qZWN0RWRpdG9yVHVubmVsUmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouUHJvamVjdFJlZhINCgVpbnB1dBgCIAEoDCI5ChhQcm9qZWN0RWRpdG9yVHVubmVsUmVwbHkSDQoFcmVhZHkYASABKAgSDgoGb3V0cHV0GAIgASgMIiMKE0RldmNvbnRhaW5lclJlcXVlc3QSDAoEc3BlYxgBIAEoDCIjChFEZXZjb250YWluZXJSZXBseRIOCgZzdGF0dXMYASABKAkiLQoNRG9ja2VyUmVxdWVzdBIOCgZhY3Rpb24YASABKAkSDAoEc3BlYxgCIAEoDCIdCgtEb2NrZXJSZXBseRIOCgZzdGF0dXMYASABKAkiJQoTRmlsZU1hcHBpbmdzUmVxdWVzdBIOCgZidW5kbGUYASABKAwiIwoRRmlsZU1hcHBpbmdzUmVwbHkSDgoGc3RhdHVzGAEgASgJIngKEFByb2plY3RVcFJlcXVlc3QSHAoDcmVmGAEgASgLMg8uY3h6LlByb2plY3RSZWYSEQoJY2xpZW50X2lkGAIgASgJEg0KBWFnZW50GAMgASgJEhQKDHRydXN0X2NvbmZpZxgEIAEoCBIOCgZjb25maWcYBSABKAkiQQoOUHJvamVjdENvbnRyb2wSHAoDcmVmGAEgASgLMg8uY3h6LlByb2plY3RSZWYSEQoJY2xpZW50X2lkGAIgASgJIpEBChZQcm9qZWN0UmVjcmVhdGVSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLmN4ei5Qcm9qZWN0UmVmEhEKCWNsaWVudF9pZBgCIAEoCRINCgVhZ2VudBgDIAEoCRIUCgx0cnVzdF9jb25maWcYBCABKAgSEQoJY29uZmlybWVkGAUgASgIEg4KBmNvbmZpZxgGIAEoCSIXChVJbnNwZWN0Rm9yZWlnblJlcXVlc3QiPgoWSW5zcGVjdEZvcmVpZ25SZXNwb25zZRIkCgVpdGVtcxgBIAMoCzIVLmN4ei5Gb3JlaWduQ29udGFpbmVyIkkKEEZvcmVpZ25Db250YWluZXISFAoMY29udGFpbmVyX2lkGAEgASgJEhEKCXdvcmtzcGFjZRgCIAEoCRIMCgRuYW1lGAMgASgJMrMKCg5Qcm9qZWN0U2VydmljZRIrCgNBZGQSFi5jeHouUHJvamVjdEFkZFJlcXVlc3QaDC5jeHouUHJvamVjdBIrCgNHZXQSFi5jeHouUHJvamVjdEdldFJlcXVlc3QaDC5jeHouUHJvamVjdBIvCgVQYXRjaBIYLmN4ei5Qcm9qZWN0UGF0Y2hSZXF1ZXN0GgwuY3h6LlByb2plY3QSLwoFQXBwbHkSGC5jeHouUHJvamVjdEFwcGx5UmVxdWVzdBoMLmN4ei5Qcm9qZWN0EjMKBUVyYXNlEg8uY3h6LlByb2plY3RSZWYaGS5jeHouUHJvamVjdEVyYXNlUmVzcG9uc2USOQoETGlzdBIXLmN4ei5Qcm9qZWN0TGlzdFJlcXVlc3QaGC5jeHouUHJvamVjdExpc3RSZXNwb25zZRI+CgVXYXRjaBIYLmN4ei5Qcm9qZWN0V2F0Y2hSZXF1ZXN0GhkuY3h6LlByb2plY3RXYXRjaFJlc3BvbnNlMAESPAoGUmVtb3ZlEhkuY3h6LlByb2plY3RSZW1vdmVSZXF1ZXN0GhcuY3h6LlByb2plY3RSZW1vdmVSZXBseRJGCghUZXJtaW5hbBIbLmN4ei5Qcm9qZWN0VGVybWluYWxSZXF1ZXN0GhkuY3h6LlByb2plY3RUZXJtaW5hbFJlcGx5KAEwARJHCg5BdXhpbGlhcnlMb2dpbhIYLmN4ei5Qcm9qZWN0TG9naW5SZXF1ZXN0GhcuY3h6LlByb2plY3RMb2dpbk91dHB1dCgBMAESRQoMU2Vzc2lvbkxvZ2luEhguY3h6LlByb2plY3RMb2dpblJlcXVlc3QaFy5jeHouUHJvamVjdExvZ2luT3V0cHV0KAEwARI7CgVQYXRocxIYLmN4ei5Qcm9qZWN0UGF0aHNSZXF1ZXN0GhYuY3h6LlByb2plY3RQYXRoc1JlcGx5MAESRAoIRG93bmxvYWQSGy5jeHouUHJvamVjdERvd25sb2FkUmVxdWVzdBoZLmN4ei5Qcm9qZWN0RG93bmxvYWRSZXBseTABEjwKBkVkaXRvchIZLmN4ei5Qcm9qZWN0RWRpdG9yUmVxdWVzdBoXLmN4ei5Qcm9qZWN0RWRpdG9yUmVwbHkSUgoMRWRpdG9yVHVubmVsEh8uY3h6LlByb2plY3RFZGl0b3JUdW5uZWxSZXF1ZXN0Gh0uY3h6LlByb2plY3RFZGl0b3JUdW5uZWxSZXBseSgBMAESQAoMRGV2Y29udGFpbmVyEhguY3h6LkRldmNvbnRhaW5lclJlcXVlc3QaFi5jeHouRGV2Y29udGFpbmVyUmVwbHkSLgoGRG9ja2VyEhIuY3h6LkRvY2tlclJlcXVlc3QaEC5jeHouRG9ja2VyUmVwbHkSQAoMRmlsZU1hcHBpbmdzEhguY3h6LkZpbGVNYXBwaW5nc1JlcXVlc3QaFi5jeHouRmlsZU1hcHBpbmdzUmVwbHkSKQoCVXASFS5jeHouUHJvamVjdFVwUmVxdWVzdBoMLmN4ei5Qcm9qZWN0EikKBERvd24SEy5jeHouUHJvamVjdENvbnRyb2waDC5jeHouUHJvamVjdBI1CghSZWNyZWF0ZRIbLmN4ei5Qcm9qZWN0UmVjcmVhdGVSZXF1ZXN0GgwuY3h6LlByb2plY3QSSQoOSW5zcGVjdEZvcmVpZ24SGi5jeHouSW5zcGVjdEZvcmVpZ25SZXF1ZXN0GhsuY3h6Lkluc3BlY3RGb3JlaWduUmVzcG9uc2VCIlogZ2l0aHViLmNvbS9sZXNvbW51cy9jeHovcmVzb3VyY2ViCGVkaXRpb25zcOgH", [file_cxz_account_svc_g, file_cxz_project, file_google_protobuf_timestamp, file_patch_patch]);
+  fileDesc("ChdjeHovcHJvamVjdF9zdmMuZy5wcm90bxIDY3h6IpECChFQcm9qZWN0QWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIUCgVhbGlhcxgEIAEoCUIFqgECCAISEwoEbmFtZRgFIAEoCUIFqgECCAISEwoEZGVzYxgGIAEoCUIFqgECCAISGAoJd29ya3NwYWNlGAggASgJQgWqAQIIAhIVCgZjb25maWcYCSABKAlCBaoBAggCEhkKCnJ1bnRpbWVfaWQYCiABKAlCBaoBAggCEjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASIgoGc3RhdHVzGBAgASgLMhIuY3h6LlByb2plY3RTdGF0dXMSDgoGbGlzdGVkGBEgASgIIlUKEVByb2plY3RHZXRSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLmN4ei5Qcm9qZWN0UmVmEiIKBnNlbGVjdBgCIAEoCzISLmN4ei5Qcm9qZWN0U2VsZWN0Il0KClByb2plY3RSZWYSDAoCaWQYASABKAxIABIPCgVhbGlhcxgEIAEoCUgAEhMKCXdvcmtzcGFjZRgIIAEoCUgAEhQKCnJ1bnRpbWVfaWQYCiABKAlIAEIFCgNrZXki3wEKDVByb2plY3RTZWxlY3QSCwoDYWxsGAEgASgIEg0KBWFsaWFzGAQgASgIEgwKBG5hbWUYBSABKAgSDAoEZGVzYxgGIAEoCBIRCgl3b3Jrc3BhY2UYCCABKAgSDgoGY29uZmlnGAkgASgIEhIKCnJ1bnRpbWVfaWQYCiABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCBIOCgZzdGF0dXMYECABKAgSDgoGbGlzdGVkGBEgASgIIoUCChNQcm9qZWN0UGF0Y2hSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLmN4ei5Qcm9qZWN0UmVmEg0KBWFsaWFzGAggASgJEgwKBG5hbWUYCiABKAkSDAoEZGVzYxgMIAEoCRIOCgZjb25maWcYEiABKAkSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgSIgoGc3RhdHVzGCAgASgLMhIuY3h6LlByb2plY3RTdGF0dXMSEwoLc3RhdHVzX251bGwYISABKAgSDgoGbGlzdGVkGCIgASgIIlAKE1Byb2plY3RBcHBseVJlcXVlc3QSHAoDcmVmGAEgASgLMg8uY3h6LlByb2plY3RSZWYSGwoFcGF0Y2gYAiABKAsyDC5wYXRjaC5QYXRjaCImChRQcm9qZWN0RXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgiZAoSUHJvamVjdExpc3RSZXF1ZXN0EiMKB2ZpbHRlcnMYASADKAsyEi5jeHouUHJvamVjdEZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAIiRwoTUHJvamVjdExpc3RSZXNwb25zZRIbCgVpdGVtcxgBIAMoCzIMLmN4ei5Qcm9qZWN0EhMKBG5leHQYAiABKAlCBaoBAggCIj0KDVByb2plY3RGaWx0ZXISHAoDcmVmGAEgASgLMg8uY3h6LlByb2plY3RSZWYSDgoGbGlzdGVkGAIgASgIIlgKE1Byb2plY3RXYXRjaFJlcXVlc3QSIwoHZmlsdGVycxgBIAMoCzISLmN4ei5Qcm9qZWN0RmlsdGVyEhwKDXNraXBfc25hcHNob3QYAiABKAhCBaoBAggCIjwKFFByb2plY3RXYXRjaFJlc3BvbnNlEiQKBWl0ZW1zGAEgAygLMhUuY3h6LlByb2plY3RXYXRjaEl0ZW0iUgoQUHJvamVjdFdhdGNoSXRlbRIKCgJpZBgBIAEoDBIbCgV2YWx1ZRgCIAEoCzIMLmN4ei5Qcm9qZWN0EhUKBmFjdGlvbhgDIAEoCUIFqgECCAIiOQoUUHJvamVjdFJlbW92ZVJlcXVlc3QSDgoGdGFyZ2V0GAEgASgJEhEKCWNvbmZpcm1lZBgCIAEoCCJEChJQcm9qZWN0UmVtb3ZlUmVwbHkSHQoHcHJvamVjdBgBIAEoCzIMLmN4ei5Qcm9qZWN0Eg8KB3JlbW92ZWQYAiABKAgiZAoWUHJvamVjdFRlcm1pbmFsUmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouUHJvamVjdFJlZhIPCgdjb2x1bW5zGAIgASgNEgwKBHJvd3MYAyABKA0SDQoFaW5wdXQYBCABKAwiVAoUUHJvamVjdFRlcm1pbmFsUmVwbHkSDQoFcmVhZHkYASABKAgSDgoGb3V0cHV0GAIgASgMEg4KBmV4aXRlZBgDIAEoCBINCgVlcnJvchgEIAEoCSJ5ChNQcm9qZWN0TG9naW5SZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLmN4ei5Qcm9qZWN0UmVmEiAKB2FjY291bnQYAiABKAsyDy5jeHouQWNjb3VudFJlZhITCgtzZXNzaW9uX2tleRgDIAEoCRINCgVpbnB1dBgEIAEoDCIkChJQcm9qZWN0TG9naW5PdXRwdXQSDgoGb3V0cHV0GAEgASgMIkEKE1Byb2plY3RQYXRoc1JlcXVlc3QSHAoDcmVmGAEgASgLMg8uY3h6LlByb2plY3RSZWYSDAoEcGF0aBgCIAEoCSJOChFQcm9qZWN0UGF0aHNSZXBseRImCgdlbnRyaWVzGAEgAygLMhUuY3h6LlByb2plY3RQYXRoRW50cnkSEQoJdHJ1bmNhdGVkGAIgASgIIm0KEFByb2plY3RQYXRoRW50cnkSDAoEbmFtZRgBIAEoCRIRCglkaXJlY3RvcnkYAiABKAgSEgoKZXhlY3V0YWJsZRgDIAEoCBIPCgdzeW1saW5rGAQgASgIEhMKC2xpbmtfdGFyZ2V0GAUgASgJIkQKFlByb2plY3REb3dubG9hZFJlcXVlc3QSHAoDcmVmGAEgASgLMg8uY3h6LlByb2plY3RSZWYSDAoEcGF0aBgCIAEoCSI4ChRQcm9qZWN0RG93bmxvYWRSZXBseRIMCgRkYXRhGAEgASgMEhIKCnRvdGFsX3NpemUYAiABKAMiNAoUUHJvamVjdEVkaXRvclJlcXVlc3QSHAoDcmVmGAEgASgLMg8uY3h6LlByb2plY3RSZWYiVAoSUHJvamVjdEVkaXRvclJlcGx5EhEKCXdvcmtzcGFjZRgBIAEoCRIYChBjb25uZWN0aW9uX3Rva2VuGAIgASgJEhEKCXNpbXVsYXRlZBgDIAEoCCJJChpQcm9qZWN0RWRpdG9yVHVubmVsUmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouUHJvamVjdFJlZhINCgVpbnB1dBgCIAEoDCI5ChhQcm9qZWN0RWRpdG9yVHVubmVsUmVwbHkSDQoFcmVhZHkYASABKAgSDgoGb3V0cHV0GAIgASgMIiMKE0RldmNvbnRhaW5lclJlcXVlc3QSDAoEc3BlYxgBIAEoDCIjChFEZXZjb250YWluZXJSZXBseRIOCgZzdGF0dXMYASABKAkiLQoNRG9ja2VyUmVxdWVzdBIOCgZhY3Rpb24YASABKAkSDAoEc3BlYxgCIAEoDCIdCgtEb2NrZXJSZXBseRIOCgZzdGF0dXMYASABKAkiEgoQQXV4Q29uZmlnUmVxdWVzdCJlCg5BdXhDb25maWdSZXBseRIQCghyZXZpc2lvbhgBIAEoCRIhCghwcm9maWxlcxgCIAMoCzIPLmN4ei5BdXhQcm9maWxlEg8KB21lc3NhZ2UYAyABKAkSDQoFb3duZXIYBCABKAkitAEKCkF1eFByb2ZpbGUSGgoEa2luZBgBIAEoDjIMLmN4ei5BdXhLaW5kEg8KB2VuYWJsZWQYAiABKAgSDwoHYWNjb3VudBgDIAEoCRINCgVhZ2VudBgEIAEoCRIPCgdiYWNrZW5kGAUgASgJEg0KBW1vZGVsGAYgASgJEg4KBmVmZm9ydBgHIAEoCRIpCgVzaW5jZRgIIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiOAoTQXV4U2V0Q29uZmlnUmVxdWVzdBIhCghwcm9maWxlcxgBIAMoCzIPLmN4ei5BdXhQcm9maWxlIiMKEEF1eE1vZGVsc1JlcXVlc3QSDwoHYWNjb3VudBgBIAEoCSJECg5BdXhNb2RlbHNSZXBseRIdCgZtb2RlbHMYASADKAsyDS5jeHouQXV4TW9kZWwSEwoLbmVlZHNfbG9naW4YAiABKAgicwoIQXV4TW9kZWwSCgoCaWQYASABKAkSEwoLcmVzb2x2ZWRfaWQYAiABKAkSDAoEbmFtZRgDIAEoCRIPCgdlZmZvcnRzGAQgAygJEhYKDmRlZmF1bHRfZWZmb3J0GAUgASgJEg8KB2RlZmF1bHQYBiABKAgiJgoTQXV4TG9naW5JbmZvUmVxdWVzdBIPCgdhY2NvdW50GAEgASgJIlMKEUF1eExvZ2luSW5mb1JlcGx5Eg0KBW93bmVyGAEgASgJEg8KB2FjY291bnQYAiABKAkSDQoFYWdlbnQYAyABKAkSDwoHYmFja2VuZBgEIAEoCSIlChNGaWxlTWFwcGluZ3NSZXF1ZXN0Eg4KBmJ1bmRsZRgBIAEoDCIjChFGaWxlTWFwcGluZ3NSZXBseRIOCgZzdGF0dXMYASABKAkieAoQUHJvamVjdFVwUmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouUHJvamVjdFJlZhIRCgljbGllbnRfaWQYAiABKAkSDQoFYWdlbnQYAyABKAkSFAoMdHJ1c3RfY29uZmlnGAQgASgIEg4KBmNvbmZpZxgFIAEoCSJBCg5Qcm9qZWN0Q29udHJvbBIcCgNyZWYYASABKAsyDy5jeHouUHJvamVjdFJlZhIRCgljbGllbnRfaWQYAiABKAkikQEKFlByb2plY3RSZWNyZWF0ZVJlcXVlc3QSHAoDcmVmGAEgASgLMg8uY3h6LlByb2plY3RSZWYSEQoJY2xpZW50X2lkGAIgASgJEg0KBWFnZW50GAMgASgJEhQKDHRydXN0X2NvbmZpZxgEIAEoCBIRCgljb25maXJtZWQYBSABKAgSDgoGY29uZmlnGAYgASgJIhcKFUluc3BlY3RGb3JlaWduUmVxdWVzdCI+ChZJbnNwZWN0Rm9yZWlnblJlc3BvbnNlEiQKBWl0ZW1zGAEgAygLMhUuY3h6LkZvcmVpZ25Db250YWluZXIiSQoQRm9yZWlnbkNvbnRhaW5lchIUCgxjb250YWluZXJfaWQYASABKAkSEQoJd29ya3NwYWNlGAIgASgJEgwKBG5hbWUYAyABKAkqZgoHQXV4S2luZBIYChRBVVhfS0lORF9VTlNQRUNJRklFRBAAEhQKEEFVWF9LSU5EX1NVTU1BUlkQARIXChNBVVhfS0lORF9TVUdHRVNUSU9OEAISEgoOQVVYX0tJTkRfVElUTEUQAzKmDAoOUHJvamVjdFNlcnZpY2USKwoDQWRkEhYuY3h6LlByb2plY3RBZGRSZXF1ZXN0GgwuY3h6LlByb2plY3QSKwoDR2V0EhYuY3h6LlByb2plY3RHZXRSZXF1ZXN0GgwuY3h6LlByb2plY3QSLwoFUGF0Y2gSGC5jeHouUHJvamVjdFBhdGNoUmVxdWVzdBoMLmN4ei5Qcm9qZWN0Ei8KBUFwcGx5EhguY3h6LlByb2plY3RBcHBseVJlcXVlc3QaDC5jeHouUHJvamVjdBIzCgVFcmFzZRIPLmN4ei5Qcm9qZWN0UmVmGhkuY3h6LlByb2plY3RFcmFzZVJlc3BvbnNlEjkKBExpc3QSFy5jeHouUHJvamVjdExpc3RSZXF1ZXN0GhguY3h6LlByb2plY3RMaXN0UmVzcG9uc2USPgoFV2F0Y2gSGC5jeHouUHJvamVjdFdhdGNoUmVxdWVzdBoZLmN4ei5Qcm9qZWN0V2F0Y2hSZXNwb25zZTABEjwKBlJlbW92ZRIZLmN4ei5Qcm9qZWN0UmVtb3ZlUmVxdWVzdBoXLmN4ei5Qcm9qZWN0UmVtb3ZlUmVwbHkSRgoIVGVybWluYWwSGy5jeHouUHJvamVjdFRlcm1pbmFsUmVxdWVzdBoZLmN4ei5Qcm9qZWN0VGVybWluYWxSZXBseSgBMAESRwoOQXV4aWxpYXJ5TG9naW4SGC5jeHouUHJvamVjdExvZ2luUmVxdWVzdBoXLmN4ei5Qcm9qZWN0TG9naW5PdXRwdXQoATABEkUKDFNlc3Npb25Mb2dpbhIYLmN4ei5Qcm9qZWN0TG9naW5SZXF1ZXN0GhcuY3h6LlByb2plY3RMb2dpbk91dHB1dCgBMAESOwoFUGF0aHMSGC5jeHouUHJvamVjdFBhdGhzUmVxdWVzdBoWLmN4ei5Qcm9qZWN0UGF0aHNSZXBseTABEkQKCERvd25sb2FkEhsuY3h6LlByb2plY3REb3dubG9hZFJlcXVlc3QaGS5jeHouUHJvamVjdERvd25sb2FkUmVwbHkwARI8CgZFZGl0b3ISGS5jeHouUHJvamVjdEVkaXRvclJlcXVlc3QaFy5jeHouUHJvamVjdEVkaXRvclJlcGx5ElIKDEVkaXRvclR1bm5lbBIfLmN4ei5Qcm9qZWN0RWRpdG9yVHVubmVsUmVxdWVzdBodLmN4ei5Qcm9qZWN0RWRpdG9yVHVubmVsUmVwbHkoATABEkAKDERldmNvbnRhaW5lchIYLmN4ei5EZXZjb250YWluZXJSZXF1ZXN0GhYuY3h6LkRldmNvbnRhaW5lclJlcGx5Ei4KBkRvY2tlchISLmN4ei5Eb2NrZXJSZXF1ZXN0GhAuY3h6LkRvY2tlclJlcGx5EjcKCUF1eENvbmZpZxIVLmN4ei5BdXhDb25maWdSZXF1ZXN0GhMuY3h6LkF1eENvbmZpZ1JlcGx5Ej0KDEF1eFNldENvbmZpZxIYLmN4ei5BdXhTZXRDb25maWdSZXF1ZXN0GhMuY3h6LkF1eENvbmZpZ1JlcGx5EjcKCUF1eE1vZGVscxIVLmN4ei5BdXhNb2RlbHNSZXF1ZXN0GhMuY3h6LkF1eE1vZGVsc1JlcGx5EkAKDEF1eExvZ2luSW5mbxIYLmN4ei5BdXhMb2dpbkluZm9SZXF1ZXN0GhYuY3h6LkF1eExvZ2luSW5mb1JlcGx5EkAKDEZpbGVNYXBwaW5ncxIYLmN4ei5GaWxlTWFwcGluZ3NSZXF1ZXN0GhYuY3h6LkZpbGVNYXBwaW5nc1JlcGx5EikKAlVwEhUuY3h6LlByb2plY3RVcFJlcXVlc3QaDC5jeHouUHJvamVjdBIpCgREb3duEhMuY3h6LlByb2plY3RDb250cm9sGgwuY3h6LlByb2plY3QSNQoIUmVjcmVhdGUSGy5jeHouUHJvamVjdFJlY3JlYXRlUmVxdWVzdBoMLmN4ei5Qcm9qZWN0EkkKDkluc3BlY3RGb3JlaWduEhouY3h6Lkluc3BlY3RGb3JlaWduUmVxdWVzdBobLmN4ei5JbnNwZWN0Rm9yZWlnblJlc3BvbnNlQiJaIGdpdGh1Yi5jb20vbGVzb21udXMvY3h6L3Jlc291cmNlYghlZGl0aW9uc3DoBw", [file_cxz_account_svc_g, file_cxz_project, file_google_protobuf_timestamp, file_patch_patch]);
 
 /**
  * @generated from message cxz.ProjectAddRequest
@@ -982,6 +982,263 @@ export const DockerReplySchema: GenMessage<DockerReply> = /*@__PURE__*/
   messageDesc(file_cxz_project_svc_g, 31);
 
 /**
+ * @generated from message cxz.AuxConfigRequest
+ */
+export type AuxConfigRequest = Message<"cxz.AuxConfigRequest"> & {
+};
+
+/**
+ * Describes the message cxz.AuxConfigRequest.
+ * Use `create(AuxConfigRequestSchema)` to create a new message.
+ */
+export const AuxConfigRequestSchema: GenMessage<AuxConfigRequest> = /*@__PURE__*/
+  messageDesc(file_cxz_project_svc_g, 32);
+
+/**
+ * @generated from message cxz.AuxConfigReply
+ */
+export type AuxConfigReply = Message<"cxz.AuxConfigReply"> & {
+  /**
+   * @generated from field: string revision = 1;
+   */
+  revision: string;
+
+  /**
+   * @generated from field: repeated cxz.AuxProfile profiles = 2;
+   */
+  profiles: AuxProfile[];
+
+  /**
+   * @generated from field: string message = 3;
+   */
+  message: string;
+
+  /**
+   * @generated from field: string owner = 4;
+   */
+  owner: string;
+};
+
+/**
+ * Describes the message cxz.AuxConfigReply.
+ * Use `create(AuxConfigReplySchema)` to create a new message.
+ */
+export const AuxConfigReplySchema: GenMessage<AuxConfigReply> = /*@__PURE__*/
+  messageDesc(file_cxz_project_svc_g, 33);
+
+/**
+ * Which account and model run a kind. Per kind, because whether two kinds share
+ * a profile is what decides whether one call can answer both. agent and backend
+ * are read only: they come from the registered account, not from a caller.
+ *
+ * @generated from message cxz.AuxProfile
+ */
+export type AuxProfile = Message<"cxz.AuxProfile"> & {
+  /**
+   * @generated from field: cxz.AuxKind kind = 1;
+   */
+  kind: AuxKind;
+
+  /**
+   * @generated from field: bool enabled = 2;
+   */
+  enabled: boolean;
+
+  /**
+   * @generated from field: string account = 3;
+   */
+  account: string;
+
+  /**
+   * @generated from field: string agent = 4;
+   */
+  agent: string;
+
+  /**
+   * @generated from field: string backend = 5;
+   */
+  backend: string;
+
+  /**
+   * @generated from field: string model = 6;
+   */
+  model: string;
+
+  /**
+   * @generated from field: string effort = 7;
+   */
+  effort: string;
+
+  /**
+   * Read only: the boundary the server set when the kind was enabled, so a
+   * caller can say what it applies to. Ignored when it arrives.
+   *
+   * @generated from field: google.protobuf.Timestamp since = 8;
+   */
+  since?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message cxz.AuxProfile.
+ * Use `create(AuxProfileSchema)` to create a new message.
+ */
+export const AuxProfileSchema: GenMessage<AuxProfile> = /*@__PURE__*/
+  messageDesc(file_cxz_project_svc_g, 34);
+
+/**
+ * @generated from message cxz.AuxSetConfigRequest
+ */
+export type AuxSetConfigRequest = Message<"cxz.AuxSetConfigRequest"> & {
+  /**
+   * @generated from field: repeated cxz.AuxProfile profiles = 1;
+   */
+  profiles: AuxProfile[];
+};
+
+/**
+ * Describes the message cxz.AuxSetConfigRequest.
+ * Use `create(AuxSetConfigRequestSchema)` to create a new message.
+ */
+export const AuxSetConfigRequestSchema: GenMessage<AuxSetConfigRequest> = /*@__PURE__*/
+  messageDesc(file_cxz_project_svc_g, 35);
+
+/**
+ * A catalog read for one registered account. It does not generate a response,
+ * and it does not prove a stored token will be accepted for one.
+ *
+ * @generated from message cxz.AuxModelsRequest
+ */
+export type AuxModelsRequest = Message<"cxz.AuxModelsRequest"> & {
+  /**
+   * @generated from field: string account = 1;
+   */
+  account: string;
+};
+
+/**
+ * Describes the message cxz.AuxModelsRequest.
+ * Use `create(AuxModelsRequestSchema)` to create a new message.
+ */
+export const AuxModelsRequestSchema: GenMessage<AuxModelsRequest> = /*@__PURE__*/
+  messageDesc(file_cxz_project_svc_g, 36);
+
+/**
+ * @generated from message cxz.AuxModelsReply
+ */
+export type AuxModelsReply = Message<"cxz.AuxModelsReply"> & {
+  /**
+   * @generated from field: repeated cxz.AuxModel models = 1;
+   */
+  models: AuxModel[];
+
+  /**
+   * @generated from field: bool needs_login = 2;
+   */
+  needsLogin: boolean;
+};
+
+/**
+ * Describes the message cxz.AuxModelsReply.
+ * Use `create(AuxModelsReplySchema)` to create a new message.
+ */
+export const AuxModelsReplySchema: GenMessage<AuxModelsReply> = /*@__PURE__*/
+  messageDesc(file_cxz_project_svc_g, 37);
+
+/**
+ * @generated from message cxz.AuxModel
+ */
+export type AuxModel = Message<"cxz.AuxModel"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: string resolved_id = 2;
+   */
+  resolvedId: string;
+
+  /**
+   * @generated from field: string name = 3;
+   */
+  name: string;
+
+  /**
+   * @generated from field: repeated string efforts = 4;
+   */
+  efforts: string[];
+
+  /**
+   * @generated from field: string default_effort = 5;
+   */
+  defaultEffort: string;
+
+  /**
+   * @generated from field: bool default = 6;
+   */
+  default: boolean;
+};
+
+/**
+ * Describes the message cxz.AuxModel.
+ * Use `create(AuxModelSchema)` to create a new message.
+ */
+export const AuxModelSchema: GenMessage<AuxModel> = /*@__PURE__*/
+  messageDesc(file_cxz_project_svc_g, 38);
+
+/**
+ * Where a login has to happen and under which profile. No credential travels
+ * here, which is why it is separate from the stream that performs one.
+ *
+ * @generated from message cxz.AuxLoginInfoRequest
+ */
+export type AuxLoginInfoRequest = Message<"cxz.AuxLoginInfoRequest"> & {
+  /**
+   * @generated from field: string account = 1;
+   */
+  account: string;
+};
+
+/**
+ * Describes the message cxz.AuxLoginInfoRequest.
+ * Use `create(AuxLoginInfoRequestSchema)` to create a new message.
+ */
+export const AuxLoginInfoRequestSchema: GenMessage<AuxLoginInfoRequest> = /*@__PURE__*/
+  messageDesc(file_cxz_project_svc_g, 39);
+
+/**
+ * @generated from message cxz.AuxLoginInfoReply
+ */
+export type AuxLoginInfoReply = Message<"cxz.AuxLoginInfoReply"> & {
+  /**
+   * @generated from field: string owner = 1;
+   */
+  owner: string;
+
+  /**
+   * @generated from field: string account = 2;
+   */
+  account: string;
+
+  /**
+   * @generated from field: string agent = 3;
+   */
+  agent: string;
+
+  /**
+   * @generated from field: string backend = 4;
+   */
+  backend: string;
+};
+
+/**
+ * Describes the message cxz.AuxLoginInfoReply.
+ * Use `create(AuxLoginInfoReplySchema)` to create a new message.
+ */
+export const AuxLoginInfoReplySchema: GenMessage<AuxLoginInfoReply> = /*@__PURE__*/
+  messageDesc(file_cxz_project_svc_g, 40);
+
+/**
  * @generated from message cxz.FileMappingsRequest
  */
 export type FileMappingsRequest = Message<"cxz.FileMappingsRequest"> & {
@@ -996,7 +1253,7 @@ export type FileMappingsRequest = Message<"cxz.FileMappingsRequest"> & {
  * Use `create(FileMappingsRequestSchema)` to create a new message.
  */
 export const FileMappingsRequestSchema: GenMessage<FileMappingsRequest> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 32);
+  messageDesc(file_cxz_project_svc_g, 41);
 
 /**
  * @generated from message cxz.FileMappingsReply
@@ -1013,7 +1270,7 @@ export type FileMappingsReply = Message<"cxz.FileMappingsReply"> & {
  * Use `create(FileMappingsReplySchema)` to create a new message.
  */
 export const FileMappingsReplySchema: GenMessage<FileMappingsReply> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 33);
+  messageDesc(file_cxz_project_svc_g, 42);
 
 /**
  * @generated from message cxz.ProjectUpRequest
@@ -1050,7 +1307,7 @@ export type ProjectUpRequest = Message<"cxz.ProjectUpRequest"> & {
  * Use `create(ProjectUpRequestSchema)` to create a new message.
  */
 export const ProjectUpRequestSchema: GenMessage<ProjectUpRequest> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 34);
+  messageDesc(file_cxz_project_svc_g, 43);
 
 /**
  * @generated from message cxz.ProjectControl
@@ -1072,7 +1329,7 @@ export type ProjectControl = Message<"cxz.ProjectControl"> & {
  * Use `create(ProjectControlSchema)` to create a new message.
  */
 export const ProjectControlSchema: GenMessage<ProjectControl> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 35);
+  messageDesc(file_cxz_project_svc_g, 44);
 
 /**
  * @generated from message cxz.ProjectRecreateRequest
@@ -1114,7 +1371,7 @@ export type ProjectRecreateRequest = Message<"cxz.ProjectRecreateRequest"> & {
  * Use `create(ProjectRecreateRequestSchema)` to create a new message.
  */
 export const ProjectRecreateRequestSchema: GenMessage<ProjectRecreateRequest> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 36);
+  messageDesc(file_cxz_project_svc_g, 45);
 
 /**
  * @generated from message cxz.InspectForeignRequest
@@ -1127,7 +1384,7 @@ export type InspectForeignRequest = Message<"cxz.InspectForeignRequest"> & {
  * Use `create(InspectForeignRequestSchema)` to create a new message.
  */
 export const InspectForeignRequestSchema: GenMessage<InspectForeignRequest> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 37);
+  messageDesc(file_cxz_project_svc_g, 46);
 
 /**
  * @generated from message cxz.InspectForeignResponse
@@ -1144,7 +1401,7 @@ export type InspectForeignResponse = Message<"cxz.InspectForeignResponse"> & {
  * Use `create(InspectForeignResponseSchema)` to create a new message.
  */
 export const InspectForeignResponseSchema: GenMessage<InspectForeignResponse> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 38);
+  messageDesc(file_cxz_project_svc_g, 47);
 
 /**
  * @generated from message cxz.ForeignContainer
@@ -1171,7 +1428,41 @@ export type ForeignContainer = Message<"cxz.ForeignContainer"> & {
  * Use `create(ForeignContainerSchema)` to create a new message.
  */
 export const ForeignContainerSchema: GenMessage<ForeignContainer> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 39);
+  messageDesc(file_cxz_project_svc_g, 48);
+
+/**
+ * The kinds of task that can be done beside a session. A new kind is a value
+ * here, not another RPC.
+ *
+ * @generated from enum cxz.AuxKind
+ */
+export enum AuxKind {
+  /**
+   * @generated from enum value: AUX_KIND_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: AUX_KIND_SUMMARY = 1;
+   */
+  SUMMARY = 1,
+
+  /**
+   * @generated from enum value: AUX_KIND_SUGGESTION = 2;
+   */
+  SUGGESTION = 2,
+
+  /**
+   * @generated from enum value: AUX_KIND_TITLE = 3;
+   */
+  TITLE = 3,
+}
+
+/**
+ * Describes the enum cxz.AuxKind.
+ */
+export const AuxKindSchema: GenEnum<AuxKind> = /*@__PURE__*/
+  enumDesc(file_cxz_project_svc_g, 0);
 
 /**
  * @generated from service cxz.ProjectService
@@ -1354,6 +1645,43 @@ export const ProjectService: GenService<{
     methodKind: "unary";
     input: typeof DockerRequestSchema;
     output: typeof DockerReplySchema;
+  },
+  /**
+   * Aux is a model task done beside a session: run once, with the context cxz
+   * assembles, never accumulating into a conversation. These four are the part
+   * that belongs to the installation rather than to one session -- which
+   * account and model each kind runs on. See docs/plans/aux-api.md.
+   *
+   * @generated from rpc cxz.ProjectService.AuxConfig
+   */
+  auxConfig: {
+    methodKind: "unary";
+    input: typeof AuxConfigRequestSchema;
+    output: typeof AuxConfigReplySchema;
+  },
+  /**
+   * @generated from rpc cxz.ProjectService.AuxSetConfig
+   */
+  auxSetConfig: {
+    methodKind: "unary";
+    input: typeof AuxSetConfigRequestSchema;
+    output: typeof AuxConfigReplySchema;
+  },
+  /**
+   * @generated from rpc cxz.ProjectService.AuxModels
+   */
+  auxModels: {
+    methodKind: "unary";
+    input: typeof AuxModelsRequestSchema;
+    output: typeof AuxModelsReplySchema;
+  },
+  /**
+   * @generated from rpc cxz.ProjectService.AuxLoginInfo
+   */
+  auxLoginInfo: {
+    methodKind: "unary";
+    input: typeof AuxLoginInfoRequestSchema;
+    output: typeof AuxLoginInfoReplySchema;
   },
   /**
    * @generated from rpc cxz.ProjectService.FileMappings

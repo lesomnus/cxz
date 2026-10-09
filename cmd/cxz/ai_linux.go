@@ -5,6 +5,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/internal/auxiliary"
 	"github.com/lesomnus/cxz/internal/transport"
@@ -15,15 +16,14 @@ import (
 	"os/exec"
 )
 
-func aiLogin(ctx context.Context, c *xli.Command, r auxiliary.Reply) error {
-	p := *r.Profile
+func aiLogin(ctx context.Context, c *xli.Command, r *api.AuxLoginInfoReply) error {
 	install, e := transport.Load(stateFrom(ctx))
 	if e != nil || install.Owner != r.Owner {
-		return fmt.Errorf("run cxz ai login %s on the connected Manager host", p.Account)
+		return fmt.Errorf("run cxz ai login %s on the connected Manager host", r.Account)
 	}
-	args := []string{"exec", "-i", install.Container, "/cxz/tools/cxz", "--state", "/var/lib/cxz", "_auxiliary-manager-login", p.Account, p.Agent, p.Backend}
-	if p.Backend == accounts.BrokeredAccessToken {
-		args = []string{"exec", "-i", install.Container, "/cxz/tools/cxz", "--state", "/var/lib/cxz", "_central-account-login", p.Account}
+	args := []string{"exec", "-i", install.Container, "/cxz/tools/cxz", "--state", "/var/lib/cxz", "_auxiliary-manager-login", r.Account, r.Agent, r.Backend}
+	if r.Backend == accounts.BrokeredAccessToken {
+		args = []string{"exec", "-i", install.Container, "/cxz/tools/cxz", "--state", "/var/lib/cxz", "_central-account-login", r.Account}
 	}
 	cmd := exec.CommandContext(ctx, "docker", args...)
 	cmd.Stdin = c.ReadCloser

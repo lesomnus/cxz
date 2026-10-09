@@ -2,7 +2,6 @@ package workspace
 
 import (
 	"context"
-	"encoding/json"
 	"strings"
 	"testing"
 
@@ -70,7 +69,9 @@ func TestAuxiliaryHistoryIsBoundedAndRechecksSource(t *testing.T) {
 		t.Fatal("read a working session")
 	}
 }
-func TestAuxiliarySessionActionPersistsAndEnabledBareCommandDoesNotFetch(t *testing.T) {
+// A session preference persists, and asking for a kind that already runs
+// automatically does not spend a second call on it.
+func TestAuxPreferPersistsAndRunDoesNotRepeatAnAutomaticKind(t *testing.T) {
 	c, err := auxiliary.New(t.TempDir(), func(context.Context, auxiliary.Input) (auxiliary.Output, error) {
 		t.Error("unexpected paid execution")
 		return auxiliary.Output{}, nil
@@ -84,16 +85,77 @@ func TestAuxiliarySessionActionPersistsAndEnabledBareCommandDoesNotFetch(t *test
 		t.Fatal(err)
 	}
 	m := &Manager{aux: c}
-	enabled := true
-	for _, r := range []auxiliary.Request{{Action: "session", Session: "s", Task: "summary", Enabled: &enabled}, {Action: "session", Session: "s", Task: "summary"}, {Action: "status", Session: "s"}} {
-		b, _ := json.Marshal(r)
-		receipt, err := m.auxiliaryRequest(t.Context(), b)
-		if err != nil {
-			t.Fatal(err)
+	enabled := func(state *api.AuxState, kind string) bool {
+		for _, pref := range state.Preferences {
+			if pref.Kind == kind {
+				return pref.Enabled
+			}
 		}
-		var out auxiliary.Reply
-		if err = json.Unmarshal([]byte(receipt.Status), &out); err != nil || out.SessionConfig == nil || !out.SessionConfig.Summary || out.Config.Summary.Enabled {
-			t.Fatal(out, err)
+		return false
+	}
+	state, err := m.AuxPrefer(t.Context(), &api.AuxPreferInput{
+		SessionId:   "s",
+		Preferences: []*api.AuxPreference{{Kind: "summary", Enabled: true}},
+	})
+	if err != nil || !enabled(state, "summary") {
+		t.Fatal(state, err)
+	}
+	// Already automatic, so this is a no-op rather than a run; the controller
+	// would have called the provider, which the fixture refuses.
+	if state, err = m.AuxRun(t.Context(), &api.AuxRunInput{SessionId: "s", Kinds: []string{"summary"}}); err != nil || !enabled(state, "summary") {
+		t.Fatal(state, err)
+	}
+	if state, err = m.AuxStatus(t.Context(), &api.AuxStatusInput{SessionId: "s"}); err != nil || !enabled(state, "summary") {
+		t.Fatal(state, err)
+	}
+	// The session said yes; the installation default did not.
+	cfg, err := m.AuxConfig(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, profile := range cfg.Profiles {
+		if profile.Kind == "summary" && profile.Enabled {
+			t.Fatal("a session preference enabled the installation default")
 		}
+	}
+}
+
+// A kind this build does not know is refused rather than mistaken for another.
+func TestAuxRefusesAnUnknownKind(t *testing.T) {
+	c, err := auxiliary.New(t.TempDir(), func(context.Context, auxiliary.Input) (auxiliary.Output, error) {
+		t.Error("unexpected paid execution")
+		return auxiliary.Output{}, nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer c.Close()
+	m := &Manager{aux: c}
+	if _, err = m.AuxRun(t.Context(), &api.AuxRunInput{SessionId: "s", Kinds: []string{"haiku"}}); err == nil {
+		t.Fatal("ran an unknown kind")
+	}
+	if _, err = m.AuxPrefer(t.Context(), &api.AuxPreferInput{SessionId: "s", Preferences: []*api.AuxPreference{{Kind: "title"}}}); err == nil {
+		t.Fatal("accepted a per-session title preference")
+	}
+}
+
+// Results carry the kind that produced them, and a clipped one says so instead
+// of being thrown away.
+func TestAuxReportsResultsPerKind(t *testing.T) {
+	a := auxOf("s", &auxiliary.Job{
+		ID: "j", Run: "run", Turn: 7, Status: "running",
+		SummaryRequested: true, SuggestionRequested: true,
+		Summary:          "half of it\n[truncated]",
+	})
+	if len(a.Kinds) != 2 || a.SessionId != "s" || a.State != "running" {
+		t.Fatal(a)
+	}
+	// Partial while running: the summary is reported before the suggestion
+	// beside it has been generated.
+	if len(a.Results) != 1 || a.Results[0].Kind != "summary" || !a.Results[0].Truncated {
+		t.Fatal(a.Results)
+	}
+	if AuxText(a, "summary") == "" || AuxText(a, "suggestion") != "" {
+		t.Fatal("wrong text per kind")
 	}
 }
