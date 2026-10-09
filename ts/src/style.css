@@ -1173,6 +1173,11 @@ pre {
   --aurora-cyan: #1e718b;
   --aurora-violet: #5d4187;
   --aurora-strength: 0.42;
+  --aurora-envelope-duration: 3200ms;
+  --aurora-drift-duration: 86s;
+  --aurora-form-duration: 68s;
+  --aurora-focus-duration: 54s;
+  --aurora-orbit-radius: 24px;
   position: absolute;
   top: -64px;
   left: 0;
@@ -1183,60 +1188,117 @@ pre {
   opacity: 0;
   filter: blur(16px);
   mask-image: linear-gradient(transparent, #000 35%, #000 78%, transparent);
-  transition: opacity 1600ms ease-in-out;
+  transition: opacity var(--aurora-envelope-duration) ease-in-out;
 }
 .composer-aurora[data-active="true"] {
   opacity: var(--aurora-strength);
 }
-.composer-aurora::before {
-  content: "";
-  position: absolute;
-  inset: 20% 0 0;
-  opacity: 0.45;
-  background:
-    radial-gradient(ellipse at 5% 70%, var(--aurora-green), transparent 48%),
-    radial-gradient(ellipse at 50% 60%, var(--aurora-cyan), transparent 55%),
-    radial-gradient(ellipse at 95% 70%, var(--aurora-violet), transparent 48%);
-}
-.composer-aurora > span {
+.aurora-cluster {
   position: absolute;
   top: -4%;
   left: 0;
   width: 40%;
   height: 100%;
-  border-radius: 50%;
-  background: radial-gradient(
-    ellipse,
-    var(--aurora-green) 12%,
-    transparent 72%
-  );
-  animation: aurora-green 17s ease-in-out -4s infinite;
-  animation-play-state: paused;
 }
-.composer-aurora > span:nth-child(2) {
+.aurora-cluster:nth-child(2) {
   left: 27%;
-  top: -8%;
   width: 46%;
-  background: radial-gradient(ellipse, var(--aurora-cyan) 12%, transparent 72%);
-  animation-name: aurora-cyan;
-  animation-duration: 23s;
-  animation-delay: -11s;
+  top: -8%;
 }
-.composer-aurora > span:nth-child(3) {
+.aurora-cluster:nth-child(3) {
   left: 60%;
   top: 0;
+}
+.aurora-envelope {
+  position: absolute;
+  inset: 0;
+  transform: scale(0.025);
+  transform-origin: center;
+  transition: transform var(--aurora-envelope-duration) ease-in-out;
+}
+.composer-aurora[data-active="true"] .aurora-envelope {
+  transform: scale(1);
+}
+.aurora-orbit {
+  position: absolute;
+  inset: 0;
+  animation: aurora-orbit 61s linear -7s infinite;
+  animation-play-state: paused;
+}
+.aurora-orbit:nth-child(2) {
+  animation-duration: 79s;
+  animation-delay: -31s;
+  animation-direction: reverse;
+}
+.aurora-orbit:nth-child(3) {
+  animation-duration: 97s;
+  animation-delay: -53s;
+}
+.aurora-cluster:nth-child(2) .aurora-orbit {
+  animation-duration: 71s;
+  animation-delay: -27s;
+}
+.aurora-cluster:nth-child(2) .aurora-orbit:nth-child(2) {
+  animation-duration: 89s;
+  animation-delay: -57s;
+}
+.aurora-cluster:nth-child(2) .aurora-orbit:nth-child(3) {
+  animation-duration: 113s;
+  animation-delay: -11s;
+}
+.aurora-cluster:nth-child(3) .aurora-orbit {
+  animation-duration: 83s;
+  animation-delay: -44s;
+}
+.aurora-cluster:nth-child(3) .aurora-orbit:nth-child(2) {
+  animation-duration: 103s;
+  animation-delay: -15s;
+}
+.aurora-cluster:nth-child(3) .aurora-orbit:nth-child(3) {
+  animation-duration: 127s;
+  animation-delay: -83s;
+}
+.composer-aurora[data-running="true"] .aurora-orbit {
+  animation-play-state: running;
+}
+.aurora-orb {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 70%;
+  height: 90%;
+  translate: calc(-50% + var(--aurora-orbit-radius)) -50%;
+  border-radius: 50%;
+  opacity: 0.7;
   background: radial-gradient(
     ellipse,
-    var(--aurora-violet) 12%,
+    color-mix(in srgb, var(--orb-color) 65%, transparent),
     transparent 72%
   );
-  animation-name: aurora-violet;
-  animation-duration: 29s;
-  animation-delay: -7s;
 }
-.composer-aurora[data-active="true"] > span {
-  animation-play-state: running;
-  will-change: transform, opacity;
+.aurora-green {
+  --orb-color: var(--aurora-green);
+}
+.aurora-cyan {
+  --orb-color: var(--aurora-cyan);
+}
+.aurora-violet {
+  --orb-color: var(--aurora-violet);
+}
+.aurora-hotspot {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse,
+    var(--orb-color),
+    color-mix(in srgb, var(--orb-color) 35%, transparent) 4%,
+    transparent 18%
+  );
+}
+@keyframes aurora-orbit {
+  to {
+    transform: rotate(360deg);
+  }
 }
 :root[data-theme="light"] .composer-toolbar {
   background: color-mix(in srgb, var(--shade-32) 60%, transparent);
@@ -1244,94 +1306,13 @@ pre {
 :root[data-theme="light"] .composer-aurora {
   --aurora-strength: 0.24;
 }
-@keyframes aurora-green {
-  0%,
-  100% {
-    transform: translate3d(0, 12%, 0) scale(0.4, 0.35);
-    opacity: 0;
-  }
-  17% {
-    transform: translate3d(4%, -8%, 0) scale(1.3, 1.15);
-    opacity: 0.8;
-  }
-  39% {
-    transform: translate3d(-6%, 8%, 0) scale(0.75, 0.65);
-    opacity: 0.3;
-  }
-  58% {
-    transform: translate3d(7%, -12%, 0) scale(1.05, 1.45);
-    opacity: 0.65;
-  }
-  76% {
-    transform: translate3d(-3%, 12%, 0) scale(0.3, 0.45);
-    opacity: 0;
-  }
-  89% {
-    transform: translate3d(2%, -4%, 0) scale(0.85, 0.9);
-    opacity: 0.55;
-  }
-}
-@keyframes aurora-cyan {
-  0%,
-  100% {
-    transform: translate3d(-4%, -6%, 0) scale(1.15, 0.9);
-    opacity: 0.6;
-  }
-  21% {
-    transform: translate3d(6%, 10%, 0) scale(0.45, 0.3);
-    opacity: 0;
-  }
-  34% {
-    transform: translate3d(-5%, -14%, 0) scale(0.8, 1.4);
-    opacity: 0.75;
-  }
-  56% {
-    transform: translate3d(3%, 4%, 0) scale(1.3, 0.8);
-    opacity: 0.45;
-  }
-  73% {
-    transform: translate3d(0, 14%, 0) scale(0.3, 0.45);
-    opacity: 0;
-  }
-  88% {
-    transform: translate3d(5%, -10%, 0) scale(0.9, 1.25);
-    opacity: 0.7;
-  }
-}
-@keyframes aurora-violet {
-  0%,
-  100% {
-    transform: translate3d(3%, 5%, 0) scale(0.85, 1.15);
-    opacity: 0.65;
-  }
-  13% {
-    transform: translate3d(-5%, -8%, 0) scale(1.25, 0.8);
-    opacity: 0.45;
-  }
-  31% {
-    transform: translate3d(0, 15%, 0) scale(0.35, 0.3);
-    opacity: 0;
-  }
-  52% {
-    transform: translate3d(-4%, -15%, 0) scale(1.05, 1.5);
-    opacity: 0.8;
-  }
-  69% {
-    transform: translate3d(5%, 6%, 0) scale(0.7, 0.9);
-    opacity: 0.35;
-  }
-  84% {
-    transform: translate3d(0, 12%, 0) scale(0.3, 0.4);
-    opacity: 0;
-  }
-}
 @media (prefers-reduced-motion: reduce) {
-  .composer-aurora {
+  .composer-aurora,
+  .aurora-envelope {
     transition: none;
   }
-  .composer-aurora[data-active] > span {
+  .composer-aurora[data-running] .aurora-orbit {
     animation: none;
-    will-change: auto;
   }
 }
 .composer-input,

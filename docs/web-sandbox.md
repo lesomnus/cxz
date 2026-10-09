@@ -171,8 +171,13 @@ assistive technology. Relative-time rules are defined in `src/message-time.ts`.
 
 While the agent is working, the composer toolbar has a subdued aurora behind it.
 The field keeps volume at both ends of the toolbar rather than widening its bounds.
-An ambient base remains while independent cores grow, shrink and fade in/out at
-uneven phases, without collecting into a single traveling center. Colors are subdued.
+Each cluster contains differently colored orbs revolving around a shared center.
+The centers wander freely within bounded regions, while individual orbs slowly
+grow, vanish and change ellipticity. Small dense foci drift inside broad diffuse
+gradients. New random paths are chosen only at the end of long browser animations;
+JavaScript does not run per-frame motion or change layout. All clusters emerge
+small at work start and contract gradually at the end, retaining movement through
+the visible exit before pausing. Colors are subdued.
 It lives in the composer layer above transcript scroll fades and behind the dark
 translucent toolbar, following layout without portal measurements. The toolbar
 uses real backdrop blur; normally transparent conversation and event cards also
