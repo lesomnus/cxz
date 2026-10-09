@@ -185,17 +185,13 @@ func (m *Manager) refreshHistoryFloor(ctx context.Context, id string) {
 	}
 	c.checked[id] = time.Now()
 	m.historyMu.Unlock()
-	spec, _ := json.Marshal(&api.SessionRef{Id: id})
 	q, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
-	reply, err := c.client.Docker(q, &api.DockerInput{Action: "history-floor", Spec: spec})
-	if err != nil || reply == nil {
+	reply, err := c.client.GetHistoryFloor(q, &api.SessionRef{Id: id})
+	if err != nil || reply == nil || reply.Through == 0 {
 		return
 	}
-	var boundary core.HistoryBoundary
-	if json.Unmarshal([]byte(reply.Status), &boundary) != nil || boundary.Through == 0 {
-		return
-	}
+	boundary := core.HistoryBoundary{Through: reply.Through}
 	payload, _ := json.Marshal(boundary)
 	_ = m.cache(ctx, &api.EventBatch{Events: []*api.Event{{SessionId: id, Seq: boundary.Through, Kind: core.HistoryTrimmedKind, Payload: payload}}})
 }

@@ -52,6 +52,10 @@ service SessionService {
   // One session's connection to one registered MCP. Both are the session's and
   // not the installation's: the logs are of that launch and the reconnection is
   // of that connection, and neither changes what is registered.
+  // How far this session's journal has been trimmed. Only a manager asks, to
+  // keep its cache from offering history the journal no longer has -- but it
+  // asks over a connection, and this is the API that connection speaks.
+  rpc GetHistoryFloor(SessionHistoryFloorRequest) returns (SessionHistoryFloorReply);
   rpc McpLogs(SessionMcpRequest) returns (SessionMcpLogsReply);
   rpc RestartMcp(SessionMcpRequest) returns (SessionReceipt);
 }
@@ -307,3 +311,8 @@ message SessionMcpRequest { SessionRef ref = 1; string id = 2; }
 // project, because a server that prints its own configuration on startup would
 // otherwise hand back the secret it was given.
 message SessionMcpLogsReply { string text = 1; string message = 2; }
+
+message SessionHistoryFloorRequest { SessionRef ref = 1; }
+// through is the last sequence that is gone. Zero means nothing has been
+// trimmed, which is a different answer from not knowing.
+message SessionHistoryFloorReply { uint64 through = 1; }

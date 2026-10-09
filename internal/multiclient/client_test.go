@@ -52,9 +52,13 @@ func (d *daemon) Open(_ context.Context, r *api.ProjectRequest, _ ...grpc.CallOp
 	d.record("open:" + r.Workspace)
 	return &api.Session{Id: "new", ProjectId: "project"}, nil
 }
-func (d *daemon) Docker(_ context.Context, r *api.DockerInput, _ ...grpc.CallOption) (*api.Receipt, error) {
-	d.record("docker:" + r.Action)
-	return &api.Receipt{}, nil
+func (d *daemon) StartEngine(_ context.Context, _ *api.StartEngineInput, _ ...grpc.CallOption) (*api.EngineReply, error) {
+	d.record("engine:up")
+	return &api.EngineReply{}, nil
+}
+func (d *daemon) EngineStatus(_ context.Context, _ *api.Empty, _ ...grpc.CallOption) (*api.EngineReply, error) {
+	d.record("engine:status")
+	return &api.EngineReply{}, nil
 }
 func (d *daemon) History(_ context.Context, r *api.WatchRequest, _ ...grpc.CallOption) (*api.EventBatch, error) {
 	return &api.EventBatch{Events: []*api.Event{{SessionId: r.SessionId, Text: "hello"}}}, nil
@@ -120,7 +124,9 @@ func TestDuplicateIDsRouteToSelectedDaemon(t *testing.T) {
 	if err != nil || out.Id != "home::new" {
 		t.Fatal(out, err)
 	}
-	if _, err = c.Docker(local, &api.DockerInput{Action: "info"}); err != nil {
+	// An engine read follows the connection the context selected, as the
+	// envelope's one method did.
+	if _, err = c.EngineStatus(local, &api.Empty{}); err != nil {
 		t.Fatal(err)
 	}
 	batch, err := c.History(ctx, &api.WatchRequest{SessionId: "work::same"})
@@ -151,7 +157,7 @@ func TestDuplicateIDsRouteToSelectedDaemon(t *testing.T) {
 	b.mu.Lock()
 	gotB := strings.Join(b.calls, ",")
 	b.mu.Unlock()
-	if gotA != "open:/new,docker:info,copy:same:other" || gotB != "send:same:hello,reply:same:approval" {
+	if gotA != "open:/new,engine:status,copy:same:other" || gotB != "send:same:hello,reply:same:approval" {
 		t.Fatal(gotA, gotB)
 	}
 	if _, err = c.Send(ctx, &api.Input{SessionId: "typo::same"}); err == nil {

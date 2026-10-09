@@ -122,3 +122,17 @@ func (m *Manager) syncRuntimePreferences(ctx context.Context, client api.Session
 	}
 	return nil
 }
+
+// GetHistoryFloor is answered by the project runtime that holds the session, so
+// a manager asks the one that does. It is on the resource API because that is
+// what the connection to a project container speaks -- I had this wrong in
+// #139, where it was called runtime-only and the one caller was left on the
+// Docker envelope, which by then no longer carried it.
+func (m *Manager) GetHistoryFloor(ctx context.Context, r *api.SessionRef) (*api.HistoryFloorReply, error) {
+	conn, client, err := m.ClientFor(ctx, r.Id)
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+	return client.GetHistoryFloor(ctx, r)
+}

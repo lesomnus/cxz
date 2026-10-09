@@ -6,8 +6,6 @@ import (
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/resource"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 func (c *Client) PurgeSession(ctx context.Context, r *api.SessionPurgeInput, opts ...grpc.CallOption) (*api.SessionPurgeReply, error) {
@@ -56,11 +54,4 @@ func historyPolicy(v *resource.HistoryPolicy, err error) (*api.HistoryPolicy, er
 		Disabled: v.GetDisabled(), MaxMib: v.GetMaxMib(), RawMib: v.GetRawMib(),
 		WindowMib: v.GetWindowMib(), WindowTurns: v.GetWindowTurns(),
 	}, nil
-}
-
-// GetHistoryFloor is not on the resource API: only the manager asks a runtime
-// how far it has trimmed, and it asks the runtime it is holding rather than
-// one reached through here.
-func (c *Client) GetHistoryFloor(ctx context.Context, _ *api.SessionRef, opts ...grpc.CallOption) (*api.HistoryFloorReply, error) {
-	return nil, status.Error(codes.Unimplemented, "a trim floor is read from a runtime, not through the resource API")
 }

@@ -32,7 +32,20 @@ service ProjectService {
   // settings; this reads what a project got from them, which is why the two
   // are not one call.
   rpc RenderDevcontainer(RenderDevcontainerRequest) returns (RenderDevcontainerReply);
- rpc Docker(DockerRequest) returns (DockerReply);
+  // The shared Docker engine. Five operations, each named, where one message
+  // with an action string used to carry all of them -- and a spec field that
+  // only two of them could mean anything by. The enum that is left is on the
+  // thing that has a closed set of values, which is the engine's mode.
+  rpc SaveEngine(SaveEngineRequest) returns (EngineReply);
+  rpc StartEngine(StartEngineRequest) returns (EngineReply);
+  rpc StopEngine(EngineRequest) returns (EngineReply);
+  rpc PruneEngine(EngineRequest) returns (EngineReply);
+  rpc EngineStatus(EngineRequest) returns (EngineReply);
+  rpc GetEngineInfo(EngineRequest) returns (EngineInfo);
+  // What this installation of cxz is: its build, its update channel and
+  // whether it is pinned. It travelled inside the engine's info reply, which is
+  // how a question about Docker came to answer a question about cxz.
+  rpc GetInstallationVersion(EngineRequest) returns (InstallationVersion);
   // Aux is a model task done beside a session: run once, with the context cxz
   // assembles, never accumulating into a conversation. These four are the part
   // that belongs to the installation rather than to one session -- which
@@ -156,9 +169,6 @@ message ForeignContainer { string container_id = 1; string workspace = 2; string
 message FileMappingsRequest { bytes bundle = 1; }
 message FileMappingsReply { string status = 1; }
 
-message DockerRequest { string action = 1; bytes spec = 2; }
-
-message DockerReply { string status = 1; }
 
 message DevcontainerRequest { bytes spec = 1; }
 message DevcontainerReply { string status = 1; }
@@ -316,3 +326,39 @@ message McpSessionStatus {
 message McpSessionsReply { repeated McpSessionStatus sessions = 1; string message = 2; }
 message SyncMcpServersRequest { map<string, McpServer> servers = 1; }
 message SyncMcpServersReply { string status = 1; }
+
+// The engine has two modes and nothing else, so this is where the action
+// string's enum belongs: on the value with a closed set, not on the verb.
+enum EngineMode {
+  ENGINE_MODE_UNSPECIFIED = 0;
+  ENGINE_MODE_OFF = 1;
+  ENGINE_MODE_DIND = 2;
+}
+// override is the user's own Compose document and stays bytes: it is theirs to
+// write and cxz only merges it.
+message EngineSpec { EngineMode mode = 1; string image = 2; bytes override = 3; }
+message EngineRequest {}
+// A save has nothing to fall back on, so its spec is required. An absent spec
+// on a start means "apply the one already saved", which is what an empty
+// payload meant.
+message SaveEngineRequest { EngineSpec spec = 1; }
+message StartEngineRequest { EngineSpec spec = 1; }
+// One line of text for a person: an endpoint, a sentence, or what a prune
+// reclaimed.
+message EngineReply { string status = 1; }
+// What the engine is, and nothing else. The history budgets and the cxz build
+// have their own calls.
+message EngineInfo {
+  EngineMode mode = 1; string state = 2; string health = 3;
+  string image = 4; string configured_image = 5; string endpoint = 6;
+  string build_cache = 7; string reclaimable = 8;
+  // Set when the engine is running but its disk usage could not be read,
+  // rather than reporting a size of nothing.
+  string usage_error = 9;
+}
+// error is set when the channel or the pin could not be read; the build itself
+// is compiled in and always known.
+message InstallationVersion {
+  string version = 1; string revision = 2; string channel = 3;
+  string pin = 4; string error = 5;
+}

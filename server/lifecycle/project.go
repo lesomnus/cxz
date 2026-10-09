@@ -225,17 +225,6 @@ func (s ProjectServer) FileMappings(ctx context.Context, r *resource.FileMapping
 	return resource.FileMappingsReply_builder{Status: &out.Status}.Build(), nil
 }
 
-func (s ProjectServer) Docker(ctx context.Context, r *resource.DockerRequest) (*resource.DockerReply, error) {
-	if err := s.effect(); err != nil {
-		return nil, err
-	}
-	out, err := s.shared.runtime.Docker(ctx, &api.DockerInput{Action: r.GetAction(), Spec: r.GetSpec()})
-	if err != nil {
-		return nil, err
-	}
-	return resource.DockerReply_builder{Status: &out.Status}.Build(), nil
-}
-
 func (s ProjectServer) Devcontainer(ctx context.Context, r *resource.DevcontainerRequest) (*resource.DevcontainerReply, error) {
 	if err := s.effect(); err != nil {
 		return nil, err

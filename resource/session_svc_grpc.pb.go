@@ -55,6 +55,7 @@ const (
 	SessionService_AuxPrefer_FullMethodName         = "/cxz.SessionService/AuxPrefer"
 	SessionService_AuxCancel_FullMethodName         = "/cxz.SessionService/AuxCancel"
 	SessionService_Purge_FullMethodName             = "/cxz.SessionService/Purge"
+	SessionService_GetHistoryFloor_FullMethodName   = "/cxz.SessionService/GetHistoryFloor"
 	SessionService_McpLogs_FullMethodName           = "/cxz.SessionService/McpLogs"
 	SessionService_RestartMcp_FullMethodName        = "/cxz.SessionService/RestartMcp"
 )
@@ -134,6 +135,10 @@ type SessionServiceClient interface {
 	// One session's connection to one registered MCP. Both are the session's and
 	// not the installation's: the logs are of that launch and the reconnection is
 	// of that connection, and neither changes what is registered.
+	// How far this session's journal has been trimmed. Only a manager asks, to
+	// keep its cache from offering history the journal no longer has -- but it
+	// asks over a connection, and this is the API that connection speaks.
+	GetHistoryFloor(ctx context.Context, in *SessionHistoryFloorRequest, opts ...grpc.CallOption) (*SessionHistoryFloorReply, error)
 	McpLogs(ctx context.Context, in *SessionMcpRequest, opts ...grpc.CallOption) (*SessionMcpLogsReply, error)
 	RestartMcp(ctx context.Context, in *SessionMcpRequest, opts ...grpc.CallOption) (*SessionReceipt, error)
 }
@@ -545,6 +550,16 @@ func (c *sessionServiceClient) Purge(ctx context.Context, in *SessionPurgeReques
 	return out, nil
 }
 
+func (c *sessionServiceClient) GetHistoryFloor(ctx context.Context, in *SessionHistoryFloorRequest, opts ...grpc.CallOption) (*SessionHistoryFloorReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SessionHistoryFloorReply)
+	err := c.cc.Invoke(ctx, SessionService_GetHistoryFloor_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *sessionServiceClient) McpLogs(ctx context.Context, in *SessionMcpRequest, opts ...grpc.CallOption) (*SessionMcpLogsReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SessionMcpLogsReply)
@@ -640,6 +655,10 @@ type SessionServiceServer interface {
 	// One session's connection to one registered MCP. Both are the session's and
 	// not the installation's: the logs are of that launch and the reconnection is
 	// of that connection, and neither changes what is registered.
+	// How far this session's journal has been trimmed. Only a manager asks, to
+	// keep its cache from offering history the journal no longer has -- but it
+	// asks over a connection, and this is the API that connection speaks.
+	GetHistoryFloor(context.Context, *SessionHistoryFloorRequest) (*SessionHistoryFloorReply, error)
 	McpLogs(context.Context, *SessionMcpRequest) (*SessionMcpLogsReply, error)
 	RestartMcp(context.Context, *SessionMcpRequest) (*SessionReceipt, error)
 	mustEmbedUnimplementedSessionServiceServer()
@@ -759,6 +778,9 @@ func (UnimplementedSessionServiceServer) AuxCancel(context.Context, *AuxCancelRe
 }
 func (UnimplementedSessionServiceServer) Purge(context.Context, *SessionPurgeRequest) (*SessionPurgeReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method Purge not implemented")
+}
+func (UnimplementedSessionServiceServer) GetHistoryFloor(context.Context, *SessionHistoryFloorRequest) (*SessionHistoryFloorReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetHistoryFloor not implemented")
 }
 func (UnimplementedSessionServiceServer) McpLogs(context.Context, *SessionMcpRequest) (*SessionMcpLogsReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method McpLogs not implemented")
@@ -1396,6 +1418,24 @@ func _SessionService_Purge_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SessionService_GetHistoryFloor_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SessionHistoryFloorRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionServiceServer).GetHistoryFloor(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SessionService_GetHistoryFloor_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionServiceServer).GetHistoryFloor(ctx, req.(*SessionHistoryFloorRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _SessionService_McpLogs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SessionMcpRequest)
 	if err := dec(in); err != nil {
@@ -1562,6 +1602,10 @@ var SessionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Purge",
 			Handler:    _SessionService_Purge_Handler,
+		},
+		{
+			MethodName: "GetHistoryFloor",
+			Handler:    _SessionService_GetHistoryFloor_Handler,
 		},
 		{
 			MethodName: "McpLogs",

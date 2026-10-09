@@ -8,23 +8,6 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-// Every action left on this envelope is the shared engine's, and an
-// installation has one of those, so the call follows the connection being
-// looked at. Nothing here reads the payload any more: routing used to parse the
-// MCP request out of it to learn which connection the call belonged to, and
-// serialise it again with the prefix stripped.
-func (c *Client) Docker(ctx context.Context, in *api.DockerInput, opts ...grpc.CallOption) (*api.Receipt, error) {
-	_, _, client, err := c.route(ctx, "")
-	if err != nil {
-		return nil, err
-	}
-	reply, err := client.Docker(ctx, proto.Clone(in).(*api.DockerInput), opts...)
-	if err == nil && in.Action != "info" {
-		c.refreshSource(ctx, "")
-	}
-	return reply, err
-}
-
 func (c *Client) FileMappings(ctx context.Context, in *api.FileMappingsInput, opts ...grpc.CallOption) (*api.Receipt, error) {
 	_, _, client, err := c.route(ctx, "")
 	if err != nil {

@@ -48,9 +48,15 @@ func (c *routingUIClient) DefaultConnection() string { return "work" }
 func (c *routingUIClient) AccountClient(ref string) resource.AccountServiceClient {
 	return c.accounts[c.ConnectionName(ref)]
 }
-func (c *routingUIClient) Docker(ctx context.Context, _ *api.DockerInput, _ ...grpc.CallOption) (*api.Receipt, error) {
+func (c *routingUIClient) GetEngineInfo(ctx context.Context, _ *api.Empty, _ ...grpc.CallOption) (*api.EngineInfo, error) {
 	c.calls = append(c.calls, ctx.Value(connectionContextKey{}).(string))
-	return &api.Receipt{Status: `{"mode":"dind","state":"running"}`}, nil
+	return &api.EngineInfo{Mode: "dind", State: "running"}, nil
+}
+func (c *routingUIClient) GetHistoryPolicy(context.Context, *api.Empty, ...grpc.CallOption) (*api.HistoryPolicy, error) {
+	return &api.HistoryPolicy{}, nil
+}
+func (c *routingUIClient) GetInstallationVersion(context.Context, *api.Empty, ...grpc.CallOption) (*api.InstallationVersion, error) {
+	return &api.InstallationVersion{}, nil
 }
 func TestConnectionPanelFocusAndOverlayRouting(t *testing.T) {
 	m := conversationModel()

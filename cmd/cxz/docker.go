@@ -4,25 +4,21 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"time"
+
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/resourceclient"
 	"github.com/lesomnus/cxz/internal/server"
 	"github.com/lesomnus/cxz/internal/settings"
 	"github.com/lesomnus/xli"
-	"time"
 )
 
 func dockerCommand() *xli.Command {
 	c := commandGroup("docker", "Manage the shared Docker engine for project containers")
 	for _, op := range []string{"up", "down", "status", "sync"} {
 		c.Commands = append(c.Commands, &xli.Command{Name: op, Brief: map[string]string{"up": "Start/apply engine configuration (changes restart Docker workloads)", "down": "Remove engine, retaining its images and volumes", "status": "Show managed engine endpoint", "sync": "Save engine configuration without restarting it"}[op], Handler: onRun(func(ctx context.Context, c *xli.Command) error {
-			action := c.Name
-			if action == "sync" {
-				action = "save"
-			}
-			out, err := publishDocker(ctx, stateFrom(ctx), action)
+			out, err := publishDocker(ctx, stateFrom(ctx), c.Name)
 			if err != nil {
 				return err
 			}
@@ -31,21 +27,22 @@ func dockerCommand() *xli.Command {
 	}
 	return c
 }
-func publishDocker(ctx context.Context, root, action string) (*api.Receipt, error) {
-	r := &api.DockerInput{Action: action}
-	if action == "up" || action == "save" {
+
+// Each subcommand is its own call now. sync and up are the two that publish
+// local settings, which is why they are the two that read them: the rest had a
+// spec field they could not mean anything by.
+func publishDocker(ctx context.Context, root, op string) (*api.EngineReply, error) {
+	var spec *api.EngineSpec
+	if op == "up" || op == "sync" {
 		cfg, err := settings.Load(root)
 		if err != nil {
 			return nil, err
 		}
-		spec, err := cfg.Docker.Snapshot(root)
+		v, err := cfg.Docker.Snapshot(root)
 		if err != nil {
 			return nil, err
 		}
-		r.Spec, err = json.Marshal(spec)
-		if err != nil {
-			return nil, err
-		}
+		spec = &api.EngineSpec{Mode: v.Mode, Image: v.Image, Override: v.Override}
 	}
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Minute)
 	defer cancel()
@@ -54,7 +51,20 @@ func publishDocker(ctx context.Context, root, action string) (*api.Receipt, erro
 		return nil, err
 	}
 	defer conn.Close()
-	out, err := resourceclient.New(conn).Docker(ctx, r)
+	client := resourceclient.New(conn)
+	var out *api.EngineReply
+	switch op {
+	case "sync":
+		out, err = client.SaveEngine(ctx, &api.SaveEngineInput{Spec: spec})
+	case "up":
+		out, err = client.StartEngine(ctx, &api.StartEngineInput{Spec: spec})
+	case "down":
+		out, err = client.StopEngine(ctx, &api.Empty{})
+	case "status":
+		out, err = client.EngineStatus(ctx, &api.Empty{})
+	default:
+		return nil, fmt.Errorf("unknown docker command: %s", op)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("managed Docker: %w (saved local settings can be retried with cxz docker sync/up)", err)
 	}
