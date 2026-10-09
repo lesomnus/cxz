@@ -720,6 +720,7 @@ header strong {
   display: flex;
   flex-direction: column;
   position: relative;
+  overflow-x: clip;
 }
 .resource-view > header {
   padding: 8px 16px;
