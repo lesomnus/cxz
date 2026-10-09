@@ -52,6 +52,9 @@ func TestBuiltinDevcontainerIsAValidTemplate(t *testing.T) {
 	// pinned name escapes that prefix, so a content-addressed cache is one cache
 	// for the machine. Getting either backwards is silent until it bites.
 	var declared struct {
+		Services map[string]struct {
+			Init bool `yaml:"init"`
+		} `yaml:"services"`
 		Volumes map[string]struct {
 			Name     string `yaml:"name"`
 			External bool   `yaml:"external"`
@@ -59,6 +62,9 @@ func TestBuiltinDevcontainerIsAValidTemplate(t *testing.T) {
 	}
 	if err = yaml.Unmarshal([]byte(compose), &declared); err != nil {
 		t.Fatal(err)
+	}
+	if !declared.Services[cfg["service"].(string)].Init {
+		t.Fatal("default container needs an init to reap orphaned processes")
 	}
 	for volume, want := range map[string]string{
 		"command.history": "",

@@ -109,6 +109,23 @@ process across session switches, not one conversation.
 This is the tool for "the TUI feels slow" or "this key does nothing". A timing
 without a recording is a guess.
 
+## Codex response stalls
+
+The supervisor distinguishes response silence from a running native item or a
+blocking approval. With no running items, an active Codex turn that stops producing
+item progress for two minutes receives one `turn/interrupt` request. Account quota
+polling does not reset this timer. A completed interrupt returns the session to
+idle; if Codex rejects it or produces no turn completion within the grace period,
+the agent is stopped and the session becomes a resumable failure. The journal and
+native thread ID are retained. User input and tool calls are never replayed by this
+watchdog.
+
+Set `CXZ_CODEX_PROGRESS_TIMEOUT` to a positive Go duration, such as `5m`, in the
+project runtime environment to allow a longer silent response budget. Running
+tools, compaction and human approval waits remain outside this response deadline.
+The watchdog is loaded by a new supervisor; updating sources does not change an
+already running supervisor.
+
 ## Pinned versions
 
 Claude 2.1.267, Codex 0.154.0, devcontainer CLI 0.89.0. Codex integration follows

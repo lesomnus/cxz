@@ -9,6 +9,8 @@
 services:
   dev:
     image: ghcr.io/lesomnus/dev-golang:1.27
+    # Reap orphaned shell and agent children throughout long-lived sessions.
+    init: true
     command: sleep infinity
 
     user: "1000"

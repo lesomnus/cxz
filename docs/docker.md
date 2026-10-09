@@ -126,6 +126,7 @@ in `devcontainer.json` and in the template's own Compose files:
 services:
   dev:
     image: ghcr.io/you/dev:latest
+    init: true
     command: sleep infinity
     volumes:
       - ${cxz:workspace}:/workspace
@@ -133,6 +134,11 @@ services:
 volumes:
   go.cache.mod:
 ```
+
+Keep `init: true` for a long-lived development service. The init process reaps
+orphaned shell and agent children; using `sleep` as PID 1 lets zombies accumulate
+until the container cannot create new processes. This takes effect when the
+container is recreated; changing the file does not repair an already running PID 1.
 
 **A Compose template must mount the workspace itself**, and `${cxz:workspace}`
 is how. The template is materialized outside the workspace, so the `..` a

@@ -1,6 +1,7 @@
 services:
   dev:
     image: ghcr.io/lesomnus/dev-golang:1.27
+    init: true
     command: sleep infinity
 
     user: "1000"
