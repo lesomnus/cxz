@@ -101,6 +101,22 @@ service ProjectService {
   // already resolved. An unactivated skill costs the project nothing, not even
   // the bytes.
   rpc SyncSkills(SyncSkillsRequest) returns (SyncSkillsReply);
+  // MCP registrations, and which projects see each one. The same six decisions
+  // as the skills library, for the same reason, plus a definition that arrives
+  // whole: its environment and headers hold explicit values, so editing one
+  // field at a time would mean reading the others back out first.
+  rpc GetMcpServers(McpServersRequest) returns (McpServersReply);
+  rpc PutMcpServer(PutMcpServerRequest) returns (McpServersReply);
+  rpc RemoveMcpServer(McpServerRequest) returns (McpServersReply);
+  rpc SetMcpServerDefault(McpServerDefaultRequest) returns (McpServersReply);
+  rpc SetProjectMcpServer(ProjectMcpServerRequest) returns (McpServersReply);
+  rpc ClearProjectMcpServer(ClearProjectMcpServerRequest) returns (McpServersReply);
+  // What each of a project's live sessions actually launched with, and whether
+  // a change is still waiting for a restart. Separate from reading the
+  // registrations, because a settings list should not stall on a container.
+  rpc McpSessions(McpSessionsRequest) returns (McpSessionsReply);
+  // Manager to project container: the registrations resolved for this project.
+  rpc SyncMcpServers(SyncMcpServersRequest) returns (SyncMcpServersReply);
   rpc FileMappings(FileMappingsRequest) returns (FileMappingsReply);
   // Provision/start a registered workspace. This never creates a conversation.
   rpc Up(ProjectUpRequest) returns (Project);
@@ -564,6 +580,105 @@ message SyncSkillsRequest {
 }
 
 message SyncSkillsReply {
+  string status = 1;
+}
+
+// ref scopes the view, as it does for the skills library. A registration is
+// installation-wide, so put and remove have nowhere to name a project.
+message McpServersRequest {
+  ProjectRef ref = 1;
+}
+
+message McpServersReply {
+  repeated McpEntry entries = 1;
+  string message = 2;
+}
+
+message McpEntry {
+  string id = 1;
+  McpServer server = 2;
+  // Set only when this project decided for itself; absent means it inherits.
+  bool override = 3;
+  bool effective = 4;
+}
+
+message McpServer {
+  string name = 1;
+  McpKind kind = 2;
+  bool enabled = 3;
+  string command = 4;
+  repeated string args = 5;
+  map<string, string> env = 6;
+  string url = 7;
+  map<string, string> headers = 8;
+}
+
+// An MCP server definition. kind is what the connection is: a local process, an
+// HTTP endpoint, or one cxz provides itself. env and headers hold explicit
+// values and are kept private, which is why a definition travels whole:
+// changing one of them field by field would mean reading the others back out.
+enum McpKind {
+  MCP_KIND_UNSPECIFIED = 0;
+  MCP_KIND_STDIO = 1;
+  MCP_KIND_HTTP = 2;
+  // Provided by cxz. It cannot be registered or replaced by a caller, so this
+  // value only ever arrives in a reply.
+  MCP_KIND_BUILTIN = 3;
+}
+
+message PutMcpServerRequest {
+  string id = 1;
+  McpServer server = 2;
+}
+
+message McpServerRequest {
+  string id = 1;
+}
+
+message McpServerDefaultRequest {
+  string id = 1;
+  bool enabled = 2;
+}
+
+message ProjectMcpServerRequest {
+  ProjectRef ref = 1;
+  string id = 2;
+  bool enabled = 3;
+}
+
+message ClearProjectMcpServerRequest {
+  ProjectRef ref = 1;
+  string id = 2;
+}
+
+message McpSessionsRequest {
+  ProjectRef ref = 1;
+}
+
+message McpSessionsReply {
+  repeated McpSessionStatus sessions = 1;
+  string message = 2;
+}
+
+// servers maps an MCP id to what its connection is doing in this session.
+// pending says the session launched with something other than what is
+// registered now, so the difference waits for the next launch.
+// session is the runtime id and not a SessionRef, for the same reason
+// PutSecretFileRequest's is: this contract cannot refer to the session one,
+// because the dependency runs the other way.
+message McpSessionStatus {
+  string session = 1;
+  string title = 2;
+  bool pending = 3;
+  string launch_digest = 4;
+  map<string, string> servers = 5;
+}
+
+message SyncMcpServersRequest {
+  map<string, McpServer> servers = 1;
+}
+
+message SyncMcpServersReply {
   string status = 1;
 }
 

@@ -55,6 +55,8 @@ const (
 	SessionService_AuxPrefer_FullMethodName         = "/cxz.SessionService/AuxPrefer"
 	SessionService_AuxCancel_FullMethodName         = "/cxz.SessionService/AuxCancel"
 	SessionService_Purge_FullMethodName             = "/cxz.SessionService/Purge"
+	SessionService_McpLogs_FullMethodName           = "/cxz.SessionService/McpLogs"
+	SessionService_RestartMcp_FullMethodName        = "/cxz.SessionService/RestartMcp"
 )
 
 // SessionServiceClient is the client API for SessionService service.
@@ -129,6 +131,11 @@ type SessionServiceClient interface {
 	// operation that does. A dry run reports the plan without carrying it out --
 	// the same code, so that what is reported is what would happen.
 	Purge(ctx context.Context, in *SessionPurgeRequest, opts ...grpc.CallOption) (*SessionPurgeReply, error)
+	// One session's connection to one registered MCP. Both are the session's and
+	// not the installation's: the logs are of that launch and the reconnection is
+	// of that connection, and neither changes what is registered.
+	McpLogs(ctx context.Context, in *SessionMcpRequest, opts ...grpc.CallOption) (*SessionMcpLogsReply, error)
+	RestartMcp(ctx context.Context, in *SessionMcpRequest, opts ...grpc.CallOption) (*SessionReceipt, error)
 }
 
 type sessionServiceClient struct {
@@ -538,6 +545,26 @@ func (c *sessionServiceClient) Purge(ctx context.Context, in *SessionPurgeReques
 	return out, nil
 }
 
+func (c *sessionServiceClient) McpLogs(ctx context.Context, in *SessionMcpRequest, opts ...grpc.CallOption) (*SessionMcpLogsReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SessionMcpLogsReply)
+	err := c.cc.Invoke(ctx, SessionService_McpLogs_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionServiceClient) RestartMcp(ctx context.Context, in *SessionMcpRequest, opts ...grpc.CallOption) (*SessionReceipt, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SessionReceipt)
+	err := c.cc.Invoke(ctx, SessionService_RestartMcp_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SessionServiceServer is the server API for SessionService service.
 // All implementations must embed UnimplementedSessionServiceServer
 // for forward compatibility.
@@ -610,6 +637,11 @@ type SessionServiceServer interface {
 	// operation that does. A dry run reports the plan without carrying it out --
 	// the same code, so that what is reported is what would happen.
 	Purge(context.Context, *SessionPurgeRequest) (*SessionPurgeReply, error)
+	// One session's connection to one registered MCP. Both are the session's and
+	// not the installation's: the logs are of that launch and the reconnection is
+	// of that connection, and neither changes what is registered.
+	McpLogs(context.Context, *SessionMcpRequest) (*SessionMcpLogsReply, error)
+	RestartMcp(context.Context, *SessionMcpRequest) (*SessionReceipt, error)
 	mustEmbedUnimplementedSessionServiceServer()
 }
 
@@ -727,6 +759,12 @@ func (UnimplementedSessionServiceServer) AuxCancel(context.Context, *AuxCancelRe
 }
 func (UnimplementedSessionServiceServer) Purge(context.Context, *SessionPurgeRequest) (*SessionPurgeReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method Purge not implemented")
+}
+func (UnimplementedSessionServiceServer) McpLogs(context.Context, *SessionMcpRequest) (*SessionMcpLogsReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method McpLogs not implemented")
+}
+func (UnimplementedSessionServiceServer) RestartMcp(context.Context, *SessionMcpRequest) (*SessionReceipt, error) {
+	return nil, status.Error(codes.Unimplemented, "method RestartMcp not implemented")
 }
 func (UnimplementedSessionServiceServer) mustEmbedUnimplementedSessionServiceServer() {}
 func (UnimplementedSessionServiceServer) testEmbeddedByValue()                        {}
@@ -1358,6 +1396,42 @@ func _SessionService_Purge_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SessionService_McpLogs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SessionMcpRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionServiceServer).McpLogs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SessionService_McpLogs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionServiceServer).McpLogs(ctx, req.(*SessionMcpRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SessionService_RestartMcp_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SessionMcpRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionServiceServer).RestartMcp(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SessionService_RestartMcp_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionServiceServer).RestartMcp(ctx, req.(*SessionMcpRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SessionService_ServiceDesc is the grpc.ServiceDesc for SessionService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1488,6 +1562,14 @@ var SessionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Purge",
 			Handler:    _SessionService_Purge_Handler,
+		},
+		{
+			MethodName: "McpLogs",
+			Handler:    _SessionService_McpLogs_Handler,
+		},
+		{
+			MethodName: "RestartMcp",
+			Handler:    _SessionService_RestartMcp_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

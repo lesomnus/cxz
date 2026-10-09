@@ -2,42 +2,25 @@ package multiclient
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/lesomnus/cxz/api"
-	"github.com/lesomnus/cxz/internal/mcpconfig"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 )
 
+// Every action left on this envelope is the shared engine's, and an
+// installation has one of those, so the call follows the connection being
+// looked at. Nothing here reads the payload any more: routing used to parse the
+// MCP request out of it to learn which connection the call belonged to, and
+// serialise it again with the prefix stripped.
 func (c *Client) Docker(ctx context.Context, in *api.DockerInput, opts ...grpc.CallOption) (*api.Receipt, error) {
-	request := proto.Clone(in).(*api.DockerInput)
-	ref := ""
-	var mcpRequest mcpconfig.Request
-	if in.Action == "mcp" {
-		if err := json.Unmarshal(in.Spec, &mcpRequest); err != nil {
-			return nil, err
-		}
-		ref = mcpRequest.Project
-	}
-	routeSource, id, client, err := c.route(ctx, ref)
+	_, _, client, err := c.route(ctx, "")
 	if err != nil {
 		return nil, err
 	}
-	if in.Action == "mcp" && ref != "" {
-		mcpRequest.Project = id
-		if mcpRequest.Session != "" {
-			source, session := Split(mcpRequest.Session)
-			if source != "" && source != routeSource {
-				return nil, fmt.Errorf("MCP project and session belong to different connections")
-			}
-			mcpRequest.Session = session
-		}
-		request.Spec, _ = json.Marshal(mcpRequest)
-	}
-	reply, err := client.Docker(ctx, request, opts...)
-	if err == nil && in.Action != "info" && in.Action != "mcp" {
-		c.refreshSource(ctx, ref)
+	reply, err := client.Docker(ctx, proto.Clone(in).(*api.DockerInput), opts...)
+	if err == nil && in.Action != "info" {
+		c.refreshSource(ctx, "")
 	}
 	return reply, err
 }

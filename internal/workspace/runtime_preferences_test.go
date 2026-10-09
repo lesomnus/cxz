@@ -27,11 +27,15 @@ func (c *runtimeClient) FileMappings(_ context.Context, _ *api.FileMappingsInput
 	return &api.Receipt{}, nil
 }
 
-// A skills push is its own call now, so a runtime that does not know it
-// answers Unimplemented rather than routing an action it never had -- which is
-// the other shape this test has to survive.
+// Each push is its own call now, so a runtime that does not know one answers
+// Unimplemented rather than routing an action it never had -- which is the
+// other shape this test has to survive.
 func (c *runtimeClient) SyncSkills(_ context.Context, _ *api.SyncSkillsInput, _ ...grpc.CallOption) (*api.Receipt, error) {
 	c.actions = append(c.actions, "SyncSkills")
+	return &api.Receipt{}, c.err
+}
+func (c *runtimeClient) SyncMcpServers(_ context.Context, _ *api.SyncMcpServersInput, _ ...grpc.CallOption) (*api.Receipt, error) {
+	c.actions = append(c.actions, "SyncMcpServers")
 	return &api.Receipt{}, c.err
 }
 

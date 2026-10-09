@@ -34,7 +34,7 @@ func (m *Manager) syncSkills(ctx context.Context, client api.SessionsClient, pro
 }
 
 func (m *Manager) GetSkills(ctx context.Context, r *api.SkillsInput) (*api.SkillsReply, error) {
-	project, err := m.skillScope(ctx, r.Project)
+	project, err := m.projectScope(ctx, r.Project)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +85,7 @@ func (m *Manager) SyncSkills(context.Context, *api.SyncSkillsInput) (*api.Receip
 // what a project may see; leaving it until something else happens to sync
 // would mean a skill is switched on and not there.
 func (m *Manager) changeSkills(ctx context.Context, handle string, change func(string) (skillconfig.Listing, error)) (*api.SkillsReply, error) {
-	project, err := m.skillScope(ctx, handle)
+	project, err := m.projectScope(ctx, handle)
 	if err != nil {
 		return nil, err
 	}
@@ -101,9 +101,10 @@ func (m *Manager) changeSkills(ctx context.Context, handle string, change func(s
 	return out, nil
 }
 
-// skillScope turns the handle a caller used into the project id the config is
-// keyed by. An empty handle is the installation itself, and stays empty.
-func (m *Manager) skillScope(ctx context.Context, handle string) (string, error) {
+// projectScope turns the handle a caller used into the project id the
+// installation's settings are keyed by. An empty handle is the installation
+// itself, and stays empty.
+func (m *Manager) projectScope(ctx context.Context, handle string) (string, error) {
 	if handle == "" {
 		return "", nil
 	}

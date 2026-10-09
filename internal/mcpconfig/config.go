@@ -32,32 +32,20 @@ type Config struct {
 	Servers  map[string]Server          `json:"servers"`
 	Projects map[string]map[string]bool `json:"projects,omitempty"`
 }
-type Request struct {
-	Session string  `json:"session,omitempty"`
-	Action  string  `json:"action"`
-	Project string  `json:"project,omitempty"`
-	ID      string  `json:"id,omitempty"`
-	Server  *Server `json:"server,omitempty"`
-	Enabled *bool   `json:"enabled,omitempty"` // nil restores inheritance
-}
 type Entry struct {
-	ID        string `json:"id"`
-	Server    Server `json:"server"`
-	Override  *bool  `json:"override,omitempty"`
-	Effective bool   `json:"effective"`
+	ID     string
+	Server Server
+	// Set when this project decided for itself rather than inheriting.
+	Override  *bool
+	Effective bool
 }
-type SessionStatus struct {
-	LaunchDigest string            `json:"launch_digest,omitempty"`
-	ID           string            `json:"id"`
-	Title        string            `json:"title"`
-	Pending      bool              `json:"pending"`
-	Servers      map[string]string `json:"servers"`
-}
-type Reply struct {
-	Log      string          `json:"log,omitempty"`
-	Sessions []SessionStatus `json:"sessions,omitempty"`
-	Entries  []Entry         `json:"entries"`
-	Message  string          `json:"message,omitempty"`
+
+// Listing is the registrations as one scope sees them. Every operation returns
+// one, because a change to activation is only legible next to what it changed.
+// Entries never carry environment values or headers: see View.
+type Listing struct {
+	Entries []Entry
+	Message string
 }
 type Snapshot struct {
 	Servers map[string]Server `json:"servers"`
@@ -166,8 +154,12 @@ func (c Config) Resolve(project string) Snapshot {
 	}
 	return out
 }
-func (c Config) View(project string) Reply {
-	r := Reply{}
+
+// View strips the environment and the headers out of every entry. They are
+// what the caller wrote and never what it needs read back, and a list is the
+// one MCP reply that goes to every client that asks.
+func (c Config) View(project string) Listing {
+	r := Listing{}
 	for id, s := range c.Servers {
 		v := Entry{ID: id, Server: s, Effective: s.Enabled}
 		if b, ok := c.Projects[project][id]; ok {
@@ -181,76 +173,144 @@ func (c Config) View(project string) Reply {
 	sort.Slice(r.Entries, func(i, j int) bool { return r.Entries[i].ID < r.Entries[j].ID })
 	return r
 }
-func Apply(root string, r Request) (Reply, error) {
+
+// List reports the registrations without changing them. project chooses whose
+// view: empty is the installation's own defaults.
+func List(root, project string) (Listing, error) {
+	return read(root, func(c Config) (Listing, error) { return c.View(project), nil })
+}
+
+// Put registers or replaces an external MCP. There is no project to name,
+// because a registration is the installation's; which projects see it is a
+// different decision with its own calls.
+func Put(root, id string, server Server) (Listing, error) {
+	return edit(root, "", id, func(c *Config) error {
+		if Builtin(id) || server.Kind == "builtin" {
+			return fmt.Errorf("built-in MCP cannot be replaced")
+		}
+		if e := server.Validate(); e != nil {
+			return e
+		}
+		c.Servers[id] = server
+		return nil
+	})
+}
+
+func Remove(root, id string) (Listing, error) {
+	return edit(root, "", id, func(c *Config) error {
+		if _, ok := c.Servers[id]; !ok || Builtin(id) {
+			return fmt.Errorf("external global MCP required")
+		}
+		delete(c.Servers, id)
+		for _, p := range c.Projects {
+			delete(p, id)
+		}
+		return nil
+	})
+}
+
+// SetDefault decides what a project sees when it has not decided for itself.
+func SetDefault(root, id string, enabled bool) (Listing, error) {
+	return edit(root, "", id, func(c *Config) error {
+		s, ok := c.Servers[id]
+		if !ok {
+			return fmt.Errorf("unknown MCP server")
+		}
+		s.Enabled = enabled
+		c.Servers[id] = s
+		return nil
+	})
+}
+
+// SetProject decides for one project, overriding the default.
+func SetProject(root, project, id string, enabled bool) (Listing, error) {
+	if project == "" {
+		return Listing{}, fmt.Errorf("a project activation needs a project")
+	}
+	return edit(root, project, id, func(c *Config) error {
+		if _, ok := c.Servers[id]; !ok {
+			return fmt.Errorf("unknown MCP server")
+		}
+		if c.Projects[project] == nil {
+			c.Projects[project] = map[string]bool{}
+		}
+		c.Projects[project][id] = enabled
+		return nil
+	})
+}
+
+// ClearProject drops a project's own decision so it inherits again. There is
+// nowhere here to put an on or an off, which is the point of it being its own
+// call: nil used to mean this, in the same field that otherwise meant a value.
+func ClearProject(root, project, id string) (Listing, error) {
+	if project == "" {
+		return Listing{}, fmt.Errorf("inherit needs a project to restore")
+	}
+	return edit(root, project, id, func(c *Config) error {
+		if _, ok := c.Servers[id]; !ok {
+			return fmt.Errorf("unknown MCP server")
+		}
+		delete(c.Projects[project], id)
+		return nil
+	})
+}
+
+// read holds the lock for a read too, so a list cannot observe half of a write.
+func read(root string, view func(Config) (Listing, error)) (Listing, error) {
+	unlock, e := lock(root)
+	if e != nil {
+		return Listing{}, e
+	}
+	defer unlock()
+	c, e := Load(root)
+	if e != nil {
+		return Listing{}, e
+	}
+	return view(c)
+}
+
+// edit is the part every change shares: a valid id, one read and one write
+// under the lock, and the view that comes back is the one the caller asked for
+// rather than the one the change happened to touch.
+func edit(root, project, id string, change func(*Config) error) (Listing, error) {
+	if e := ValidateID(id); e != nil {
+		return Listing{}, e
+	}
+	unlock, e := lock(root)
+	if e != nil {
+		return Listing{}, e
+	}
+	defer unlock()
+	c, e := Load(root)
+	if e != nil {
+		return Listing{}, e
+	}
+	if e = change(&c); e != nil {
+		return Listing{}, e
+	}
+	if e = core.WriteJSON(filepath.Join(root, "mcp.json"), c); e != nil {
+		return Listing{}, e
+	}
+	out := c.View(project)
+	out.Message = SavedMessage
+	return out, nil
+}
+
+// SavedMessage says what a change does and does not do: settings land at the
+// next agent launch, and a working agent is never restarted under someone.
+const SavedMessage = "Saved. New or restarted agents use these settings; running agents keep their launch configuration."
+
+func lock(root string) (func(), error) {
 	if e := os.MkdirAll(root, 0700); e != nil {
-		return Reply{}, e
+		return nil, e
 	}
 	l := flock.New(filepath.Join(root, "mcp.lock"))
 	if e := l.Lock(); e != nil {
-		return Reply{}, e
+		return nil, e
 	}
-	defer l.Unlock()
-	c, e := Load(root)
-	if e != nil {
-		return Reply{}, e
-	}
-	if r.Action == "" || r.Action == "list" {
-		return c.View(r.Project), nil
-	}
-	if e = ValidateID(r.ID); e != nil {
-		return Reply{}, e
-	}
-	s, exists := c.Servers[r.ID]
-	switch r.Action {
-	case "put":
-		if r.Project != "" || r.Server == nil {
-			return Reply{}, fmt.Errorf("register servers globally")
-		}
-		if Builtin(r.ID) || r.Server.Kind == "builtin" {
-			return Reply{}, fmt.Errorf("built-in MCP cannot be replaced")
-		}
-		if e = r.Server.Validate(); e != nil {
-			return Reply{}, e
-		}
-		c.Servers[r.ID] = *r.Server
-	case "remove":
-		if !exists || Builtin(r.ID) || r.Project != "" {
-			return Reply{}, fmt.Errorf("external global MCP required")
-		}
-		delete(c.Servers, r.ID)
-		for _, p := range c.Projects {
-			delete(p, r.ID)
-		}
-	case "enable":
-		if !exists {
-			return Reply{}, fmt.Errorf("unknown MCP server")
-		}
-		if r.Project == "" {
-			if r.Enabled == nil {
-				return Reply{}, fmt.Errorf("global default requires on or off")
-			}
-			s.Enabled = *r.Enabled
-			c.Servers[r.ID] = s
-		} else {
-			if c.Projects[r.Project] == nil {
-				c.Projects[r.Project] = map[string]bool{}
-			}
-			if r.Enabled == nil {
-				delete(c.Projects[r.Project], r.ID)
-			} else {
-				c.Projects[r.Project][r.ID] = *r.Enabled
-			}
-		}
-	default:
-		return Reply{}, fmt.Errorf("unknown MCP action")
-	}
-	if e = core.WriteJSON(filepath.Join(root, "mcp.json"), c); e != nil {
-		return Reply{}, e
-	}
-	out := c.View(r.Project)
-	out.Message = "Saved. New or restarted agents use these settings; running agents keep their launch configuration."
-	return out, nil
+	return func() { l.Unlock() }, nil
 }
+
 func (s Snapshot) Digest() string {
 	b, _ := json.Marshal(s)
 	h := sha256.Sum256(b)

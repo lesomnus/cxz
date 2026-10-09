@@ -10,7 +10,7 @@ import (
 )
 
 func (c *Client) GetSkills(ctx context.Context, r *api.SkillsInput, opts ...grpc.CallOption) (*api.SkillsReply, error) {
-	ref, err := c.skillRef(ctx, r.Project, opts...)
+	ref, err := c.projectRef(ctx, r.Project, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -18,7 +18,7 @@ func (c *Client) GetSkills(ctx context.Context, r *api.SkillsInput, opts ...grpc
 }
 
 func (c *Client) AddSkill(ctx context.Context, r *api.SkillInput, opts ...grpc.CallOption) (*api.SkillsReply, error) {
-	ref, err := c.skillRef(ctx, r.Project, opts...)
+	ref, err := c.projectRef(ctx, r.Project, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -28,7 +28,7 @@ func (c *Client) AddSkill(ctx context.Context, r *api.SkillInput, opts ...grpc.C
 }
 
 func (c *Client) RemoveSkill(ctx context.Context, r *api.SkillInput, opts ...grpc.CallOption) (*api.SkillsReply, error) {
-	ref, err := c.skillRef(ctx, r.Project, opts...)
+	ref, err := c.projectRef(ctx, r.Project, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +44,7 @@ func (c *Client) SetSkillDefault(ctx context.Context, r *api.SkillDefaultInput, 
 }
 
 func (c *Client) SetProjectSkill(ctx context.Context, r *api.ProjectSkillInput, opts ...grpc.CallOption) (*api.SkillsReply, error) {
-	ref, err := c.skillRef(ctx, r.Project, opts...)
+	ref, err := c.projectRef(ctx, r.Project, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +54,7 @@ func (c *Client) SetProjectSkill(ctx context.Context, r *api.ProjectSkillInput, 
 }
 
 func (c *Client) ClearProjectSkill(ctx context.Context, r *api.ClearProjectSkillInput, opts ...grpc.CallOption) (*api.SkillsReply, error) {
-	ref, err := c.skillRef(ctx, r.Project, opts...)
+	ref, err := c.projectRef(ctx, r.Project, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -89,13 +89,13 @@ func (c *Client) RenderDevcontainer(ctx context.Context, r *api.RenderDevcontain
 	return out, nil
 }
 
-// skillRef turns the handle a caller used -- an id, a path, an alias or a
+// projectRef turns the handle a caller used -- an id, a path, an alias or a
 // display name -- into a ref. A ref is a key to a row and a handle is not, so
 // the translation happens here, against the same list the CLI prints, rather
 // than being pushed onto the server as another string to guess at. An empty
 // handle leaves the ref unset: the installation's own scope is a scope, not a
 // project named "".
-func (c *Client) skillRef(ctx context.Context, handle string, opts ...grpc.CallOption) (*resource.ProjectRef, error) {
+func (c *Client) projectRef(ctx context.Context, handle string, opts ...grpc.CallOption) (*resource.ProjectRef, error) {
 	if handle == "" {
 		return nil, nil
 	}

@@ -19,45 +19,53 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ProjectService_Add_FullMethodName                  = "/cxz.ProjectService/Add"
-	ProjectService_Get_FullMethodName                  = "/cxz.ProjectService/Get"
-	ProjectService_Patch_FullMethodName                = "/cxz.ProjectService/Patch"
-	ProjectService_Apply_FullMethodName                = "/cxz.ProjectService/Apply"
-	ProjectService_Erase_FullMethodName                = "/cxz.ProjectService/Erase"
-	ProjectService_List_FullMethodName                 = "/cxz.ProjectService/List"
-	ProjectService_Watch_FullMethodName                = "/cxz.ProjectService/Watch"
-	ProjectService_Remove_FullMethodName               = "/cxz.ProjectService/Remove"
-	ProjectService_Terminal_FullMethodName             = "/cxz.ProjectService/Terminal"
-	ProjectService_AuxiliaryLogin_FullMethodName       = "/cxz.ProjectService/AuxiliaryLogin"
-	ProjectService_SessionLogin_FullMethodName         = "/cxz.ProjectService/SessionLogin"
-	ProjectService_Paths_FullMethodName                = "/cxz.ProjectService/Paths"
-	ProjectService_Download_FullMethodName             = "/cxz.ProjectService/Download"
-	ProjectService_Editor_FullMethodName               = "/cxz.ProjectService/Editor"
-	ProjectService_EditorTunnel_FullMethodName         = "/cxz.ProjectService/EditorTunnel"
-	ProjectService_Devcontainer_FullMethodName         = "/cxz.ProjectService/Devcontainer"
-	ProjectService_RenderDevcontainer_FullMethodName   = "/cxz.ProjectService/RenderDevcontainer"
-	ProjectService_Docker_FullMethodName               = "/cxz.ProjectService/Docker"
-	ProjectService_AuxConfig_FullMethodName            = "/cxz.ProjectService/AuxConfig"
-	ProjectService_AuxSetConfig_FullMethodName         = "/cxz.ProjectService/AuxSetConfig"
-	ProjectService_AuxModels_FullMethodName            = "/cxz.ProjectService/AuxModels"
-	ProjectService_AuxLoginInfo_FullMethodName         = "/cxz.ProjectService/AuxLoginInfo"
-	ProjectService_MarkHistoryTrimmable_FullMethodName = "/cxz.ProjectService/MarkHistoryTrimmable"
-	ProjectService_GetHistoryPolicy_FullMethodName     = "/cxz.ProjectService/GetHistoryPolicy"
-	ProjectService_SetHistoryPolicy_FullMethodName     = "/cxz.ProjectService/SetHistoryPolicy"
-	ProjectService_PutSecretFile_FullMethodName        = "/cxz.ProjectService/PutSecretFile"
-	ProjectService_DeleteSecretFile_FullMethodName     = "/cxz.ProjectService/DeleteSecretFile"
-	ProjectService_GetSkills_FullMethodName            = "/cxz.ProjectService/GetSkills"
-	ProjectService_AddSkill_FullMethodName             = "/cxz.ProjectService/AddSkill"
-	ProjectService_RemoveSkill_FullMethodName          = "/cxz.ProjectService/RemoveSkill"
-	ProjectService_SetSkillDefault_FullMethodName      = "/cxz.ProjectService/SetSkillDefault"
-	ProjectService_SetProjectSkill_FullMethodName      = "/cxz.ProjectService/SetProjectSkill"
-	ProjectService_ClearProjectSkill_FullMethodName    = "/cxz.ProjectService/ClearProjectSkill"
-	ProjectService_SyncSkills_FullMethodName           = "/cxz.ProjectService/SyncSkills"
-	ProjectService_FileMappings_FullMethodName         = "/cxz.ProjectService/FileMappings"
-	ProjectService_Up_FullMethodName                   = "/cxz.ProjectService/Up"
-	ProjectService_Down_FullMethodName                 = "/cxz.ProjectService/Down"
-	ProjectService_Recreate_FullMethodName             = "/cxz.ProjectService/Recreate"
-	ProjectService_InspectForeign_FullMethodName       = "/cxz.ProjectService/InspectForeign"
+	ProjectService_Add_FullMethodName                   = "/cxz.ProjectService/Add"
+	ProjectService_Get_FullMethodName                   = "/cxz.ProjectService/Get"
+	ProjectService_Patch_FullMethodName                 = "/cxz.ProjectService/Patch"
+	ProjectService_Apply_FullMethodName                 = "/cxz.ProjectService/Apply"
+	ProjectService_Erase_FullMethodName                 = "/cxz.ProjectService/Erase"
+	ProjectService_List_FullMethodName                  = "/cxz.ProjectService/List"
+	ProjectService_Watch_FullMethodName                 = "/cxz.ProjectService/Watch"
+	ProjectService_Remove_FullMethodName                = "/cxz.ProjectService/Remove"
+	ProjectService_Terminal_FullMethodName              = "/cxz.ProjectService/Terminal"
+	ProjectService_AuxiliaryLogin_FullMethodName        = "/cxz.ProjectService/AuxiliaryLogin"
+	ProjectService_SessionLogin_FullMethodName          = "/cxz.ProjectService/SessionLogin"
+	ProjectService_Paths_FullMethodName                 = "/cxz.ProjectService/Paths"
+	ProjectService_Download_FullMethodName              = "/cxz.ProjectService/Download"
+	ProjectService_Editor_FullMethodName                = "/cxz.ProjectService/Editor"
+	ProjectService_EditorTunnel_FullMethodName          = "/cxz.ProjectService/EditorTunnel"
+	ProjectService_Devcontainer_FullMethodName          = "/cxz.ProjectService/Devcontainer"
+	ProjectService_RenderDevcontainer_FullMethodName    = "/cxz.ProjectService/RenderDevcontainer"
+	ProjectService_Docker_FullMethodName                = "/cxz.ProjectService/Docker"
+	ProjectService_AuxConfig_FullMethodName             = "/cxz.ProjectService/AuxConfig"
+	ProjectService_AuxSetConfig_FullMethodName          = "/cxz.ProjectService/AuxSetConfig"
+	ProjectService_AuxModels_FullMethodName             = "/cxz.ProjectService/AuxModels"
+	ProjectService_AuxLoginInfo_FullMethodName          = "/cxz.ProjectService/AuxLoginInfo"
+	ProjectService_MarkHistoryTrimmable_FullMethodName  = "/cxz.ProjectService/MarkHistoryTrimmable"
+	ProjectService_GetHistoryPolicy_FullMethodName      = "/cxz.ProjectService/GetHistoryPolicy"
+	ProjectService_SetHistoryPolicy_FullMethodName      = "/cxz.ProjectService/SetHistoryPolicy"
+	ProjectService_PutSecretFile_FullMethodName         = "/cxz.ProjectService/PutSecretFile"
+	ProjectService_DeleteSecretFile_FullMethodName      = "/cxz.ProjectService/DeleteSecretFile"
+	ProjectService_GetSkills_FullMethodName             = "/cxz.ProjectService/GetSkills"
+	ProjectService_AddSkill_FullMethodName              = "/cxz.ProjectService/AddSkill"
+	ProjectService_RemoveSkill_FullMethodName           = "/cxz.ProjectService/RemoveSkill"
+	ProjectService_SetSkillDefault_FullMethodName       = "/cxz.ProjectService/SetSkillDefault"
+	ProjectService_SetProjectSkill_FullMethodName       = "/cxz.ProjectService/SetProjectSkill"
+	ProjectService_ClearProjectSkill_FullMethodName     = "/cxz.ProjectService/ClearProjectSkill"
+	ProjectService_SyncSkills_FullMethodName            = "/cxz.ProjectService/SyncSkills"
+	ProjectService_GetMcpServers_FullMethodName         = "/cxz.ProjectService/GetMcpServers"
+	ProjectService_PutMcpServer_FullMethodName          = "/cxz.ProjectService/PutMcpServer"
+	ProjectService_RemoveMcpServer_FullMethodName       = "/cxz.ProjectService/RemoveMcpServer"
+	ProjectService_SetMcpServerDefault_FullMethodName   = "/cxz.ProjectService/SetMcpServerDefault"
+	ProjectService_SetProjectMcpServer_FullMethodName   = "/cxz.ProjectService/SetProjectMcpServer"
+	ProjectService_ClearProjectMcpServer_FullMethodName = "/cxz.ProjectService/ClearProjectMcpServer"
+	ProjectService_McpSessions_FullMethodName           = "/cxz.ProjectService/McpSessions"
+	ProjectService_SyncMcpServers_FullMethodName        = "/cxz.ProjectService/SyncMcpServers"
+	ProjectService_FileMappings_FullMethodName          = "/cxz.ProjectService/FileMappings"
+	ProjectService_Up_FullMethodName                    = "/cxz.ProjectService/Up"
+	ProjectService_Down_FullMethodName                  = "/cxz.ProjectService/Down"
+	ProjectService_Recreate_FullMethodName              = "/cxz.ProjectService/Recreate"
+	ProjectService_InspectForeign_FullMethodName        = "/cxz.ProjectService/InspectForeign"
 )
 
 // ProjectServiceClient is the client API for ProjectService service.
@@ -156,6 +164,22 @@ type ProjectServiceClient interface {
 	// already resolved. An unactivated skill costs the project nothing, not even
 	// the bytes.
 	SyncSkills(ctx context.Context, in *SyncSkillsRequest, opts ...grpc.CallOption) (*SyncSkillsReply, error)
+	// MCP registrations, and which projects see each one. The same six decisions
+	// as the skills library, for the same reason, plus a definition that arrives
+	// whole: its environment and headers hold explicit values, so editing one
+	// field at a time would mean reading the others back out first.
+	GetMcpServers(ctx context.Context, in *McpServersRequest, opts ...grpc.CallOption) (*McpServersReply, error)
+	PutMcpServer(ctx context.Context, in *PutMcpServerRequest, opts ...grpc.CallOption) (*McpServersReply, error)
+	RemoveMcpServer(ctx context.Context, in *McpServerRequest, opts ...grpc.CallOption) (*McpServersReply, error)
+	SetMcpServerDefault(ctx context.Context, in *McpServerDefaultRequest, opts ...grpc.CallOption) (*McpServersReply, error)
+	SetProjectMcpServer(ctx context.Context, in *ProjectMcpServerRequest, opts ...grpc.CallOption) (*McpServersReply, error)
+	ClearProjectMcpServer(ctx context.Context, in *ClearProjectMcpServerRequest, opts ...grpc.CallOption) (*McpServersReply, error)
+	// What each of a project's live sessions actually launched with, and whether
+	// a change is still waiting for a restart. Separate from reading the
+	// registrations, because a settings list should not stall on a container.
+	McpSessions(ctx context.Context, in *McpSessionsRequest, opts ...grpc.CallOption) (*McpSessionsReply, error)
+	// Manager to project container: the registrations resolved for this project.
+	SyncMcpServers(ctx context.Context, in *SyncMcpServersRequest, opts ...grpc.CallOption) (*SyncMcpServersReply, error)
 	FileMappings(ctx context.Context, in *FileMappingsRequest, opts ...grpc.CallOption) (*FileMappingsReply, error)
 	// Provision/start a registered workspace. This never creates a conversation.
 	Up(ctx context.Context, in *ProjectUpRequest, opts ...grpc.CallOption) (*Project, error)
@@ -554,6 +578,86 @@ func (c *projectServiceClient) SyncSkills(ctx context.Context, in *SyncSkillsReq
 	return out, nil
 }
 
+func (c *projectServiceClient) GetMcpServers(ctx context.Context, in *McpServersRequest, opts ...grpc.CallOption) (*McpServersReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(McpServersReply)
+	err := c.cc.Invoke(ctx, ProjectService_GetMcpServers_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectServiceClient) PutMcpServer(ctx context.Context, in *PutMcpServerRequest, opts ...grpc.CallOption) (*McpServersReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(McpServersReply)
+	err := c.cc.Invoke(ctx, ProjectService_PutMcpServer_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectServiceClient) RemoveMcpServer(ctx context.Context, in *McpServerRequest, opts ...grpc.CallOption) (*McpServersReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(McpServersReply)
+	err := c.cc.Invoke(ctx, ProjectService_RemoveMcpServer_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectServiceClient) SetMcpServerDefault(ctx context.Context, in *McpServerDefaultRequest, opts ...grpc.CallOption) (*McpServersReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(McpServersReply)
+	err := c.cc.Invoke(ctx, ProjectService_SetMcpServerDefault_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectServiceClient) SetProjectMcpServer(ctx context.Context, in *ProjectMcpServerRequest, opts ...grpc.CallOption) (*McpServersReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(McpServersReply)
+	err := c.cc.Invoke(ctx, ProjectService_SetProjectMcpServer_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectServiceClient) ClearProjectMcpServer(ctx context.Context, in *ClearProjectMcpServerRequest, opts ...grpc.CallOption) (*McpServersReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(McpServersReply)
+	err := c.cc.Invoke(ctx, ProjectService_ClearProjectMcpServer_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectServiceClient) McpSessions(ctx context.Context, in *McpSessionsRequest, opts ...grpc.CallOption) (*McpSessionsReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(McpSessionsReply)
+	err := c.cc.Invoke(ctx, ProjectService_McpSessions_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectServiceClient) SyncMcpServers(ctx context.Context, in *SyncMcpServersRequest, opts ...grpc.CallOption) (*SyncMcpServersReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SyncMcpServersReply)
+	err := c.cc.Invoke(ctx, ProjectService_SyncMcpServers_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *projectServiceClient) FileMappings(ctx context.Context, in *FileMappingsRequest, opts ...grpc.CallOption) (*FileMappingsReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(FileMappingsReply)
@@ -700,6 +804,22 @@ type ProjectServiceServer interface {
 	// already resolved. An unactivated skill costs the project nothing, not even
 	// the bytes.
 	SyncSkills(context.Context, *SyncSkillsRequest) (*SyncSkillsReply, error)
+	// MCP registrations, and which projects see each one. The same six decisions
+	// as the skills library, for the same reason, plus a definition that arrives
+	// whole: its environment and headers hold explicit values, so editing one
+	// field at a time would mean reading the others back out first.
+	GetMcpServers(context.Context, *McpServersRequest) (*McpServersReply, error)
+	PutMcpServer(context.Context, *PutMcpServerRequest) (*McpServersReply, error)
+	RemoveMcpServer(context.Context, *McpServerRequest) (*McpServersReply, error)
+	SetMcpServerDefault(context.Context, *McpServerDefaultRequest) (*McpServersReply, error)
+	SetProjectMcpServer(context.Context, *ProjectMcpServerRequest) (*McpServersReply, error)
+	ClearProjectMcpServer(context.Context, *ClearProjectMcpServerRequest) (*McpServersReply, error)
+	// What each of a project's live sessions actually launched with, and whether
+	// a change is still waiting for a restart. Separate from reading the
+	// registrations, because a settings list should not stall on a container.
+	McpSessions(context.Context, *McpSessionsRequest) (*McpSessionsReply, error)
+	// Manager to project container: the registrations resolved for this project.
+	SyncMcpServers(context.Context, *SyncMcpServersRequest) (*SyncMcpServersReply, error)
 	FileMappings(context.Context, *FileMappingsRequest) (*FileMappingsReply, error)
 	// Provision/start a registered workspace. This never creates a conversation.
 	Up(context.Context, *ProjectUpRequest) (*Project, error)
@@ -820,6 +940,30 @@ func (UnimplementedProjectServiceServer) ClearProjectSkill(context.Context, *Cle
 }
 func (UnimplementedProjectServiceServer) SyncSkills(context.Context, *SyncSkillsRequest) (*SyncSkillsReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method SyncSkills not implemented")
+}
+func (UnimplementedProjectServiceServer) GetMcpServers(context.Context, *McpServersRequest) (*McpServersReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetMcpServers not implemented")
+}
+func (UnimplementedProjectServiceServer) PutMcpServer(context.Context, *PutMcpServerRequest) (*McpServersReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method PutMcpServer not implemented")
+}
+func (UnimplementedProjectServiceServer) RemoveMcpServer(context.Context, *McpServerRequest) (*McpServersReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method RemoveMcpServer not implemented")
+}
+func (UnimplementedProjectServiceServer) SetMcpServerDefault(context.Context, *McpServerDefaultRequest) (*McpServersReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetMcpServerDefault not implemented")
+}
+func (UnimplementedProjectServiceServer) SetProjectMcpServer(context.Context, *ProjectMcpServerRequest) (*McpServersReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetProjectMcpServer not implemented")
+}
+func (UnimplementedProjectServiceServer) ClearProjectMcpServer(context.Context, *ClearProjectMcpServerRequest) (*McpServersReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method ClearProjectMcpServer not implemented")
+}
+func (UnimplementedProjectServiceServer) McpSessions(context.Context, *McpSessionsRequest) (*McpSessionsReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method McpSessions not implemented")
+}
+func (UnimplementedProjectServiceServer) SyncMcpServers(context.Context, *SyncMcpServersRequest) (*SyncMcpServersReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method SyncMcpServers not implemented")
 }
 func (UnimplementedProjectServiceServer) FileMappings(context.Context, *FileMappingsRequest) (*FileMappingsReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method FileMappings not implemented")
@@ -1404,6 +1548,150 @@ func _ProjectService_SyncSkills_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ProjectService_GetMcpServers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(McpServersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).GetMcpServers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_GetMcpServers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).GetMcpServers(ctx, req.(*McpServersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProjectService_PutMcpServer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PutMcpServerRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).PutMcpServer(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_PutMcpServer_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).PutMcpServer(ctx, req.(*PutMcpServerRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProjectService_RemoveMcpServer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(McpServerRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).RemoveMcpServer(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_RemoveMcpServer_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).RemoveMcpServer(ctx, req.(*McpServerRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProjectService_SetMcpServerDefault_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(McpServerDefaultRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).SetMcpServerDefault(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_SetMcpServerDefault_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).SetMcpServerDefault(ctx, req.(*McpServerDefaultRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProjectService_SetProjectMcpServer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProjectMcpServerRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).SetProjectMcpServer(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_SetProjectMcpServer_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).SetProjectMcpServer(ctx, req.(*ProjectMcpServerRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProjectService_ClearProjectMcpServer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ClearProjectMcpServerRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).ClearProjectMcpServer(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_ClearProjectMcpServer_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).ClearProjectMcpServer(ctx, req.(*ClearProjectMcpServerRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProjectService_McpSessions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(McpSessionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).McpSessions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_McpSessions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).McpSessions(ctx, req.(*McpSessionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProjectService_SyncMcpServers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SyncMcpServersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).SyncMcpServers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_SyncMcpServers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).SyncMcpServers(ctx, req.(*SyncMcpServersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ProjectService_FileMappings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(FileMappingsRequest)
 	if err := dec(in); err != nil {
@@ -1608,6 +1896,38 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SyncSkills",
 			Handler:    _ProjectService_SyncSkills_Handler,
+		},
+		{
+			MethodName: "GetMcpServers",
+			Handler:    _ProjectService_GetMcpServers_Handler,
+		},
+		{
+			MethodName: "PutMcpServer",
+			Handler:    _ProjectService_PutMcpServer_Handler,
+		},
+		{
+			MethodName: "RemoveMcpServer",
+			Handler:    _ProjectService_RemoveMcpServer_Handler,
+		},
+		{
+			MethodName: "SetMcpServerDefault",
+			Handler:    _ProjectService_SetMcpServerDefault_Handler,
+		},
+		{
+			MethodName: "SetProjectMcpServer",
+			Handler:    _ProjectService_SetProjectMcpServer_Handler,
+		},
+		{
+			MethodName: "ClearProjectMcpServer",
+			Handler:    _ProjectService_ClearProjectMcpServer_Handler,
+		},
+		{
+			MethodName: "McpSessions",
+			Handler:    _ProjectService_McpSessions_Handler,
+		},
+		{
+			MethodName: "SyncMcpServers",
+			Handler:    _ProjectService_SyncMcpServers_Handler,
 		},
 		{
 			MethodName: "FileMappings",
