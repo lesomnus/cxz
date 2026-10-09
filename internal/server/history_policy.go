@@ -54,10 +54,13 @@ func (s *Server) MarkHistoryTrimmable(ctx context.Context, _ *api.Empty) (*api.E
 	return &api.Empty{}, nil
 }
 
-// GetHistoryFloor says how far this runtime has trimmed. Only the manager
-// asks, so that its cache stops offering history the journal no longer has;
-// there is no client-facing call for it.
+// GetHistoryFloor says how far this runtime has trimmed, so that a manager's
+// cache stops offering history the journal no longer has. A manager does not
+// hold the journal, so it asks the project runtime that does.
 func (s *Server) GetHistoryFloor(ctx context.Context, r *api.SessionRef) (*api.HistoryFloorReply, error) {
+	if s.manager != nil {
+		return s.manager.GetHistoryFloor(ctx, r)
+	}
 	manifest, err := s.manifest(ctx, r.Id)
 	if err != nil {
 		return nil, err

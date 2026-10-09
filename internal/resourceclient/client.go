@@ -255,14 +255,6 @@ func (c *Client) FileMappings(ctx context.Context, r *api.FileMappingsInput, opt
 	return &api.Receipt{Status: out.GetStatus()}, nil
 }
 
-func (c *Client) Docker(ctx context.Context, r *api.DockerInput, opts ...grpc.CallOption) (*api.Receipt, error) {
-	out, err := c.projects.Docker(ctx, resource.DockerRequest_builder{Action: &r.Action, Spec: r.Spec}.Build(), opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &api.Receipt{Status: out.GetStatus()}, nil
-}
-
 func (c *Client) Memory(ctx context.Context, r *api.MemoryRequest, opts ...grpc.CallOption) (*api.MemoryReply, error) {
 	out, err := c.sessions.Memory(ctx, resource.SessionMemoryRequest_builder{Ref: sr(r.SessionId), Path: &r.Path}.Build(), opts...)
 	if err != nil {

@@ -19,69 +19,75 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Sessions_Devcontainer_FullMethodName          = "/cxz.runtime.Sessions/Devcontainer"
-	Sessions_Docker_FullMethodName                = "/cxz.runtime.Sessions/Docker"
-	Sessions_FileMappings_FullMethodName          = "/cxz.runtime.Sessions/FileMappings"
-	Sessions_Create_FullMethodName                = "/cxz.runtime.Sessions/Create"
-	Sessions_List_FullMethodName                  = "/cxz.runtime.Sessions/List"
-	Sessions_Get_FullMethodName                   = "/cxz.runtime.Sessions/Get"
-	Sessions_CopyMemory_FullMethodName            = "/cxz.runtime.Sessions/CopyMemory"
-	Sessions_Memory_FullMethodName                = "/cxz.runtime.Sessions/Memory"
-	Sessions_Logs_FullMethodName                  = "/cxz.runtime.Sessions/Logs"
-	Sessions_Permission_FullMethodName            = "/cxz.runtime.Sessions/Permission"
-	Sessions_Send_FullMethodName                  = "/cxz.runtime.Sessions/Send"
-	Sessions_Attach_FullMethodName                = "/cxz.runtime.Sessions/Attach"
-	Sessions_Activity_FullMethodName              = "/cxz.runtime.Sessions/Activity"
-	Sessions_UpdateAgent_FullMethodName           = "/cxz.runtime.Sessions/UpdateAgent"
-	Sessions_Reply_FullMethodName                 = "/cxz.runtime.Sessions/Reply"
-	Sessions_Interrupt_FullMethodName             = "/cxz.runtime.Sessions/Interrupt"
-	Sessions_Resume_FullMethodName                = "/cxz.runtime.Sessions/Resume"
-	Sessions_Stop_FullMethodName                  = "/cxz.runtime.Sessions/Stop"
-	Sessions_Watch_FullMethodName                 = "/cxz.runtime.Sessions/Watch"
-	Sessions_History_FullMethodName               = "/cxz.runtime.Sessions/History"
-	Sessions_Transcript_FullMethodName            = "/cxz.runtime.Sessions/Transcript"
-	Sessions_EventDetails_FullMethodName          = "/cxz.runtime.Sessions/EventDetails"
-	Sessions_Background_FullMethodName            = "/cxz.runtime.Sessions/Background"
-	Sessions_Models_FullMethodName                = "/cxz.runtime.Sessions/Models"
-	Sessions_Search_FullMethodName                = "/cxz.runtime.Sessions/Search"
-	Sessions_Open_FullMethodName                  = "/cxz.runtime.Sessions/Open"
-	Sessions_Projects_FullMethodName              = "/cxz.runtime.Sessions/Projects"
-	Sessions_Down_FullMethodName                  = "/cxz.runtime.Sessions/Down"
-	Sessions_AuxRun_FullMethodName                = "/cxz.runtime.Sessions/AuxRun"
-	Sessions_AuxCancel_FullMethodName             = "/cxz.runtime.Sessions/AuxCancel"
-	Sessions_AuxStatus_FullMethodName             = "/cxz.runtime.Sessions/AuxStatus"
-	Sessions_AuxEvents_FullMethodName             = "/cxz.runtime.Sessions/AuxEvents"
-	Sessions_AuxPrefer_FullMethodName             = "/cxz.runtime.Sessions/AuxPrefer"
-	Sessions_AuxForget_FullMethodName             = "/cxz.runtime.Sessions/AuxForget"
-	Sessions_AuxConfig_FullMethodName             = "/cxz.runtime.Sessions/AuxConfig"
-	Sessions_AuxSetConfig_FullMethodName          = "/cxz.runtime.Sessions/AuxSetConfig"
-	Sessions_AuxModels_FullMethodName             = "/cxz.runtime.Sessions/AuxModels"
-	Sessions_AuxLoginInfo_FullMethodName          = "/cxz.runtime.Sessions/AuxLoginInfo"
-	Sessions_PurgeSession_FullMethodName          = "/cxz.runtime.Sessions/PurgeSession"
-	Sessions_GetHistoryPolicy_FullMethodName      = "/cxz.runtime.Sessions/GetHistoryPolicy"
-	Sessions_SetHistoryPolicy_FullMethodName      = "/cxz.runtime.Sessions/SetHistoryPolicy"
-	Sessions_GetHistoryFloor_FullMethodName       = "/cxz.runtime.Sessions/GetHistoryFloor"
-	Sessions_MarkHistoryTrimmable_FullMethodName  = "/cxz.runtime.Sessions/MarkHistoryTrimmable"
-	Sessions_PutSecretFile_FullMethodName         = "/cxz.runtime.Sessions/PutSecretFile"
-	Sessions_DeleteSecretFile_FullMethodName      = "/cxz.runtime.Sessions/DeleteSecretFile"
-	Sessions_GetSkills_FullMethodName             = "/cxz.runtime.Sessions/GetSkills"
-	Sessions_AddSkill_FullMethodName              = "/cxz.runtime.Sessions/AddSkill"
-	Sessions_RemoveSkill_FullMethodName           = "/cxz.runtime.Sessions/RemoveSkill"
-	Sessions_SetSkillDefault_FullMethodName       = "/cxz.runtime.Sessions/SetSkillDefault"
-	Sessions_SetProjectSkill_FullMethodName       = "/cxz.runtime.Sessions/SetProjectSkill"
-	Sessions_ClearProjectSkill_FullMethodName     = "/cxz.runtime.Sessions/ClearProjectSkill"
-	Sessions_SyncSkills_FullMethodName            = "/cxz.runtime.Sessions/SyncSkills"
-	Sessions_RenderDevcontainer_FullMethodName    = "/cxz.runtime.Sessions/RenderDevcontainer"
-	Sessions_GetMcpServers_FullMethodName         = "/cxz.runtime.Sessions/GetMcpServers"
-	Sessions_PutMcpServer_FullMethodName          = "/cxz.runtime.Sessions/PutMcpServer"
-	Sessions_RemoveMcpServer_FullMethodName       = "/cxz.runtime.Sessions/RemoveMcpServer"
-	Sessions_SetMcpServerDefault_FullMethodName   = "/cxz.runtime.Sessions/SetMcpServerDefault"
-	Sessions_SetProjectMcpServer_FullMethodName   = "/cxz.runtime.Sessions/SetProjectMcpServer"
-	Sessions_ClearProjectMcpServer_FullMethodName = "/cxz.runtime.Sessions/ClearProjectMcpServer"
-	Sessions_McpSessions_FullMethodName           = "/cxz.runtime.Sessions/McpSessions"
-	Sessions_SyncMcpServers_FullMethodName        = "/cxz.runtime.Sessions/SyncMcpServers"
-	Sessions_McpLogs_FullMethodName               = "/cxz.runtime.Sessions/McpLogs"
-	Sessions_RestartMcp_FullMethodName            = "/cxz.runtime.Sessions/RestartMcp"
+	Sessions_Devcontainer_FullMethodName           = "/cxz.runtime.Sessions/Devcontainer"
+	Sessions_SaveEngine_FullMethodName             = "/cxz.runtime.Sessions/SaveEngine"
+	Sessions_StartEngine_FullMethodName            = "/cxz.runtime.Sessions/StartEngine"
+	Sessions_StopEngine_FullMethodName             = "/cxz.runtime.Sessions/StopEngine"
+	Sessions_PruneEngine_FullMethodName            = "/cxz.runtime.Sessions/PruneEngine"
+	Sessions_EngineStatus_FullMethodName           = "/cxz.runtime.Sessions/EngineStatus"
+	Sessions_GetEngineInfo_FullMethodName          = "/cxz.runtime.Sessions/GetEngineInfo"
+	Sessions_GetInstallationVersion_FullMethodName = "/cxz.runtime.Sessions/GetInstallationVersion"
+	Sessions_FileMappings_FullMethodName           = "/cxz.runtime.Sessions/FileMappings"
+	Sessions_Create_FullMethodName                 = "/cxz.runtime.Sessions/Create"
+	Sessions_List_FullMethodName                   = "/cxz.runtime.Sessions/List"
+	Sessions_Get_FullMethodName                    = "/cxz.runtime.Sessions/Get"
+	Sessions_CopyMemory_FullMethodName             = "/cxz.runtime.Sessions/CopyMemory"
+	Sessions_Memory_FullMethodName                 = "/cxz.runtime.Sessions/Memory"
+	Sessions_Logs_FullMethodName                   = "/cxz.runtime.Sessions/Logs"
+	Sessions_Permission_FullMethodName             = "/cxz.runtime.Sessions/Permission"
+	Sessions_Send_FullMethodName                   = "/cxz.runtime.Sessions/Send"
+	Sessions_Attach_FullMethodName                 = "/cxz.runtime.Sessions/Attach"
+	Sessions_Activity_FullMethodName               = "/cxz.runtime.Sessions/Activity"
+	Sessions_UpdateAgent_FullMethodName            = "/cxz.runtime.Sessions/UpdateAgent"
+	Sessions_Reply_FullMethodName                  = "/cxz.runtime.Sessions/Reply"
+	Sessions_Interrupt_FullMethodName              = "/cxz.runtime.Sessions/Interrupt"
+	Sessions_Resume_FullMethodName                 = "/cxz.runtime.Sessions/Resume"
+	Sessions_Stop_FullMethodName                   = "/cxz.runtime.Sessions/Stop"
+	Sessions_Watch_FullMethodName                  = "/cxz.runtime.Sessions/Watch"
+	Sessions_History_FullMethodName                = "/cxz.runtime.Sessions/History"
+	Sessions_Transcript_FullMethodName             = "/cxz.runtime.Sessions/Transcript"
+	Sessions_EventDetails_FullMethodName           = "/cxz.runtime.Sessions/EventDetails"
+	Sessions_Background_FullMethodName             = "/cxz.runtime.Sessions/Background"
+	Sessions_Models_FullMethodName                 = "/cxz.runtime.Sessions/Models"
+	Sessions_Search_FullMethodName                 = "/cxz.runtime.Sessions/Search"
+	Sessions_Open_FullMethodName                   = "/cxz.runtime.Sessions/Open"
+	Sessions_Projects_FullMethodName               = "/cxz.runtime.Sessions/Projects"
+	Sessions_Down_FullMethodName                   = "/cxz.runtime.Sessions/Down"
+	Sessions_AuxRun_FullMethodName                 = "/cxz.runtime.Sessions/AuxRun"
+	Sessions_AuxCancel_FullMethodName              = "/cxz.runtime.Sessions/AuxCancel"
+	Sessions_AuxStatus_FullMethodName              = "/cxz.runtime.Sessions/AuxStatus"
+	Sessions_AuxEvents_FullMethodName              = "/cxz.runtime.Sessions/AuxEvents"
+	Sessions_AuxPrefer_FullMethodName              = "/cxz.runtime.Sessions/AuxPrefer"
+	Sessions_AuxForget_FullMethodName              = "/cxz.runtime.Sessions/AuxForget"
+	Sessions_AuxConfig_FullMethodName              = "/cxz.runtime.Sessions/AuxConfig"
+	Sessions_AuxSetConfig_FullMethodName           = "/cxz.runtime.Sessions/AuxSetConfig"
+	Sessions_AuxModels_FullMethodName              = "/cxz.runtime.Sessions/AuxModels"
+	Sessions_AuxLoginInfo_FullMethodName           = "/cxz.runtime.Sessions/AuxLoginInfo"
+	Sessions_PurgeSession_FullMethodName           = "/cxz.runtime.Sessions/PurgeSession"
+	Sessions_GetHistoryPolicy_FullMethodName       = "/cxz.runtime.Sessions/GetHistoryPolicy"
+	Sessions_SetHistoryPolicy_FullMethodName       = "/cxz.runtime.Sessions/SetHistoryPolicy"
+	Sessions_GetHistoryFloor_FullMethodName        = "/cxz.runtime.Sessions/GetHistoryFloor"
+	Sessions_MarkHistoryTrimmable_FullMethodName   = "/cxz.runtime.Sessions/MarkHistoryTrimmable"
+	Sessions_PutSecretFile_FullMethodName          = "/cxz.runtime.Sessions/PutSecretFile"
+	Sessions_DeleteSecretFile_FullMethodName       = "/cxz.runtime.Sessions/DeleteSecretFile"
+	Sessions_GetSkills_FullMethodName              = "/cxz.runtime.Sessions/GetSkills"
+	Sessions_AddSkill_FullMethodName               = "/cxz.runtime.Sessions/AddSkill"
+	Sessions_RemoveSkill_FullMethodName            = "/cxz.runtime.Sessions/RemoveSkill"
+	Sessions_SetSkillDefault_FullMethodName        = "/cxz.runtime.Sessions/SetSkillDefault"
+	Sessions_SetProjectSkill_FullMethodName        = "/cxz.runtime.Sessions/SetProjectSkill"
+	Sessions_ClearProjectSkill_FullMethodName      = "/cxz.runtime.Sessions/ClearProjectSkill"
+	Sessions_SyncSkills_FullMethodName             = "/cxz.runtime.Sessions/SyncSkills"
+	Sessions_RenderDevcontainer_FullMethodName     = "/cxz.runtime.Sessions/RenderDevcontainer"
+	Sessions_GetMcpServers_FullMethodName          = "/cxz.runtime.Sessions/GetMcpServers"
+	Sessions_PutMcpServer_FullMethodName           = "/cxz.runtime.Sessions/PutMcpServer"
+	Sessions_RemoveMcpServer_FullMethodName        = "/cxz.runtime.Sessions/RemoveMcpServer"
+	Sessions_SetMcpServerDefault_FullMethodName    = "/cxz.runtime.Sessions/SetMcpServerDefault"
+	Sessions_SetProjectMcpServer_FullMethodName    = "/cxz.runtime.Sessions/SetProjectMcpServer"
+	Sessions_ClearProjectMcpServer_FullMethodName  = "/cxz.runtime.Sessions/ClearProjectMcpServer"
+	Sessions_McpSessions_FullMethodName            = "/cxz.runtime.Sessions/McpSessions"
+	Sessions_SyncMcpServers_FullMethodName         = "/cxz.runtime.Sessions/SyncMcpServers"
+	Sessions_McpLogs_FullMethodName                = "/cxz.runtime.Sessions/McpLogs"
+	Sessions_RestartMcp_FullMethodName             = "/cxz.runtime.Sessions/RestartMcp"
 )
 
 // SessionsClient is the client API for Sessions service.
@@ -89,7 +95,13 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SessionsClient interface {
 	Devcontainer(ctx context.Context, in *DevcontainerInput, opts ...grpc.CallOption) (*Receipt, error)
-	Docker(ctx context.Context, in *DockerInput, opts ...grpc.CallOption) (*Receipt, error)
+	SaveEngine(ctx context.Context, in *SaveEngineInput, opts ...grpc.CallOption) (*EngineReply, error)
+	StartEngine(ctx context.Context, in *StartEngineInput, opts ...grpc.CallOption) (*EngineReply, error)
+	StopEngine(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*EngineReply, error)
+	PruneEngine(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*EngineReply, error)
+	EngineStatus(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*EngineReply, error)
+	GetEngineInfo(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*EngineInfo, error)
+	GetInstallationVersion(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*InstallationVersion, error)
 	FileMappings(ctx context.Context, in *FileMappingsInput, opts ...grpc.CallOption) (*Receipt, error)
 	Create(ctx context.Context, in *CreateRequest, opts ...grpc.CallOption) (*Session, error)
 	List(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*SessionList, error)
@@ -171,10 +183,70 @@ func (c *sessionsClient) Devcontainer(ctx context.Context, in *DevcontainerInput
 	return out, nil
 }
 
-func (c *sessionsClient) Docker(ctx context.Context, in *DockerInput, opts ...grpc.CallOption) (*Receipt, error) {
+func (c *sessionsClient) SaveEngine(ctx context.Context, in *SaveEngineInput, opts ...grpc.CallOption) (*EngineReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Receipt)
-	err := c.cc.Invoke(ctx, Sessions_Docker_FullMethodName, in, out, cOpts...)
+	out := new(EngineReply)
+	err := c.cc.Invoke(ctx, Sessions_SaveEngine_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) StartEngine(ctx context.Context, in *StartEngineInput, opts ...grpc.CallOption) (*EngineReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EngineReply)
+	err := c.cc.Invoke(ctx, Sessions_StartEngine_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) StopEngine(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*EngineReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EngineReply)
+	err := c.cc.Invoke(ctx, Sessions_StopEngine_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) PruneEngine(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*EngineReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EngineReply)
+	err := c.cc.Invoke(ctx, Sessions_PruneEngine_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) EngineStatus(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*EngineReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EngineReply)
+	err := c.cc.Invoke(ctx, Sessions_EngineStatus_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) GetEngineInfo(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*EngineInfo, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EngineInfo)
+	err := c.cc.Invoke(ctx, Sessions_GetEngineInfo_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) GetInstallationVersion(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*InstallationVersion, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(InstallationVersion)
+	err := c.cc.Invoke(ctx, Sessions_GetInstallationVersion_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -823,7 +895,13 @@ func (c *sessionsClient) RestartMcp(ctx context.Context, in *RestartMcpInput, op
 // for forward compatibility.
 type SessionsServer interface {
 	Devcontainer(context.Context, *DevcontainerInput) (*Receipt, error)
-	Docker(context.Context, *DockerInput) (*Receipt, error)
+	SaveEngine(context.Context, *SaveEngineInput) (*EngineReply, error)
+	StartEngine(context.Context, *StartEngineInput) (*EngineReply, error)
+	StopEngine(context.Context, *Empty) (*EngineReply, error)
+	PruneEngine(context.Context, *Empty) (*EngineReply, error)
+	EngineStatus(context.Context, *Empty) (*EngineReply, error)
+	GetEngineInfo(context.Context, *Empty) (*EngineInfo, error)
+	GetInstallationVersion(context.Context, *Empty) (*InstallationVersion, error)
 	FileMappings(context.Context, *FileMappingsInput) (*Receipt, error)
 	Create(context.Context, *CreateRequest) (*Session, error)
 	List(context.Context, *Empty) (*SessionList, error)
@@ -898,8 +976,26 @@ type UnimplementedSessionsServer struct{}
 func (UnimplementedSessionsServer) Devcontainer(context.Context, *DevcontainerInput) (*Receipt, error) {
 	return nil, status.Error(codes.Unimplemented, "method Devcontainer not implemented")
 }
-func (UnimplementedSessionsServer) Docker(context.Context, *DockerInput) (*Receipt, error) {
-	return nil, status.Error(codes.Unimplemented, "method Docker not implemented")
+func (UnimplementedSessionsServer) SaveEngine(context.Context, *SaveEngineInput) (*EngineReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method SaveEngine not implemented")
+}
+func (UnimplementedSessionsServer) StartEngine(context.Context, *StartEngineInput) (*EngineReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method StartEngine not implemented")
+}
+func (UnimplementedSessionsServer) StopEngine(context.Context, *Empty) (*EngineReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method StopEngine not implemented")
+}
+func (UnimplementedSessionsServer) PruneEngine(context.Context, *Empty) (*EngineReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method PruneEngine not implemented")
+}
+func (UnimplementedSessionsServer) EngineStatus(context.Context, *Empty) (*EngineReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method EngineStatus not implemented")
+}
+func (UnimplementedSessionsServer) GetEngineInfo(context.Context, *Empty) (*EngineInfo, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetEngineInfo not implemented")
+}
+func (UnimplementedSessionsServer) GetInstallationVersion(context.Context, *Empty) (*InstallationVersion, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetInstallationVersion not implemented")
 }
 func (UnimplementedSessionsServer) FileMappings(context.Context, *FileMappingsInput) (*Receipt, error) {
 	return nil, status.Error(codes.Unimplemented, "method FileMappings not implemented")
@@ -1123,20 +1219,128 @@ func _Sessions_Devcontainer_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Sessions_Docker_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DockerInput)
+func _Sessions_SaveEngine_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SaveEngineInput)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(SessionsServer).Docker(ctx, in)
+		return srv.(SessionsServer).SaveEngine(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Sessions_Docker_FullMethodName,
+		FullMethod: Sessions_SaveEngine_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SessionsServer).Docker(ctx, req.(*DockerInput))
+		return srv.(SessionsServer).SaveEngine(ctx, req.(*SaveEngineInput))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_StartEngine_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StartEngineInput)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).StartEngine(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_StartEngine_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).StartEngine(ctx, req.(*StartEngineInput))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_StopEngine_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).StopEngine(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_StopEngine_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).StopEngine(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_PruneEngine_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).PruneEngine(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_PruneEngine_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).PruneEngine(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_EngineStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).EngineStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_EngineStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).EngineStatus(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_GetEngineInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).GetEngineInfo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_GetEngineInfo_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).GetEngineInfo(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_GetInstallationVersion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).GetInstallationVersion(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_GetInstallationVersion_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).GetInstallationVersion(ctx, req.(*Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2230,8 +2434,32 @@ var Sessions_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Sessions_Devcontainer_Handler,
 		},
 		{
-			MethodName: "Docker",
-			Handler:    _Sessions_Docker_Handler,
+			MethodName: "SaveEngine",
+			Handler:    _Sessions_SaveEngine_Handler,
+		},
+		{
+			MethodName: "StartEngine",
+			Handler:    _Sessions_StartEngine_Handler,
+		},
+		{
+			MethodName: "StopEngine",
+			Handler:    _Sessions_StopEngine_Handler,
+		},
+		{
+			MethodName: "PruneEngine",
+			Handler:    _Sessions_PruneEngine_Handler,
+		},
+		{
+			MethodName: "EngineStatus",
+			Handler:    _Sessions_EngineStatus_Handler,
+		},
+		{
+			MethodName: "GetEngineInfo",
+			Handler:    _Sessions_GetEngineInfo_Handler,
+		},
+		{
+			MethodName: "GetInstallationVersion",
+			Handler:    _Sessions_GetInstallationVersion_Handler,
 		},
 		{
 			MethodName: "FileMappings",

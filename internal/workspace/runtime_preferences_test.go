@@ -19,10 +19,6 @@ type runtimeClient struct {
 	actions []string
 }
 
-func (c *runtimeClient) Docker(_ context.Context, r *api.DockerInput, _ ...grpc.CallOption) (*api.Receipt, error) {
-	c.actions = append(c.actions, r.Action)
-	return &api.Receipt{}, c.err
-}
 func (c *runtimeClient) FileMappings(_ context.Context, _ *api.FileMappingsInput, _ ...grpc.CallOption) (*api.Receipt, error) {
 	return &api.Receipt{}, nil
 }

@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/charmbracelet/x/ansi"
-	"github.com/lesomnus/cxz/internal/engine"
 	"github.com/lesomnus/cxz/internal/versionpin"
 )
 
@@ -13,7 +12,7 @@ func TestSettingsVersionsAndStaleUpstream(t *testing.T) {
 	m := conversationModel()
 	m.ctx = versionpin.WithClient(m.ctx, t.TempDir())
 	m.terminalWidth, m.height = 160, 40
-	p := &settingsPage{loaded: true, info: engine.Info{CXZVersion: "v0.1.2", CXZRevision: strings.Repeat("a", 40), CXZChannel: "stable", CXZPin: "v0.1.2"}}
+	p := &settingsPage{loaded: true, info: settingsInfo{CXZVersion: "v0.1.2", CXZRevision: strings.Repeat("a", 40), CXZChannel: "stable", CXZPin: "v0.1.2"}}
 	m.settingsPage = p
 	m.Update(settingsUpstreamResult{p, map[string]string{"edge": "source-bbbbbbbbbbbb", "stable": "v0.1.2"}})
 	screen := ansi.Strip(m.settingsScreen())

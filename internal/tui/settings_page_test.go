@@ -2,7 +2,6 @@ package tui
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"strings"
 	"testing"
@@ -14,33 +13,56 @@ import (
 	"google.golang.org/grpc"
 )
 
+// calls records what the page asked for, one entry per button and one for each
+// refresh. The refresh is three calls on the wire now -- the engine, the
+// budgets and the build -- but it is one question the page asks, so it is one
+// entry here.
 type settingsClient struct {
 	api.SessionsClient
-	calls []*api.DockerInput
+	calls []string
 	fail  bool
 	state string
 }
 
-func (c *settingsClient) Docker(_ context.Context, r *api.DockerInput, _ ...grpc.CallOption) (*api.Receipt, error) {
-	c.calls = append(c.calls, r)
+func (c *settingsClient) GetEngineInfo(_ context.Context, _ *api.Empty, _ ...grpc.CallOption) (*api.EngineInfo, error) {
+	c.calls = append(c.calls, "info")
 	if c.fail {
 		return nil, errors.New("unsupported manager")
 	}
-	if r.Action == "info" {
-		state := c.state
-		if state == "" {
-			state = "running"
-		}
-		b, _ := json.Marshal(engine.Info{Mode: "dind", State: state, Image: "docker:29-dind", BuildCache: "20MB", Reclaimable: "10MB"})
-		return &api.Receipt{Status: string(b)}, nil
+	state := c.state
+	if state == "" {
+		state = "running"
 	}
-	if r.Action == "up" {
-		c.state = "running"
+	return &api.EngineInfo{Mode: "dind", State: state, Image: "docker:29-dind", BuildCache: "20MB", Reclaimable: "10MB"}, nil
+}
+func (c *settingsClient) GetHistoryPolicy(_ context.Context, _ *api.Empty, _ ...grpc.CallOption) (*api.HistoryPolicy, error) {
+	return &api.HistoryPolicy{}, nil
+}
+func (c *settingsClient) GetInstallationVersion(_ context.Context, _ *api.Empty, _ ...grpc.CallOption) (*api.InstallationVersion, error) {
+	return &api.InstallationVersion{}, nil
+}
+func (c *settingsClient) StartEngine(_ context.Context, _ *api.StartEngineInput, _ ...grpc.CallOption) (*api.EngineReply, error) {
+	c.calls = append(c.calls, "up")
+	if c.fail {
+		return nil, errors.New("unsupported manager")
 	}
-	if r.Action == "down" {
-		c.state = "not running"
+	c.state = "running"
+	return &api.EngineReply{Status: "Done"}, nil
+}
+func (c *settingsClient) StopEngine(_ context.Context, _ *api.Empty, _ ...grpc.CallOption) (*api.EngineReply, error) {
+	c.calls = append(c.calls, "down")
+	if c.fail {
+		return nil, errors.New("unsupported manager")
 	}
-	return &api.Receipt{Status: "Done"}, nil
+	c.state = "not running"
+	return &api.EngineReply{Status: "Done"}, nil
+}
+func (c *settingsClient) PruneEngine(_ context.Context, _ *api.Empty, _ ...grpc.CallOption) (*api.EngineReply, error) {
+	c.calls = append(c.calls, "prune")
+	if c.fail {
+		return nil, errors.New("unsupported manager")
+	}
+	return &api.EngineReply{Status: "Done"}, nil
 }
 func TestSettingsShortcutAndMaintenance(t *testing.T) {
 	m := conversationModel()
@@ -76,7 +98,7 @@ func TestSettingsShortcutAndMaintenance(t *testing.T) {
 		t.Fatal("request concurrency")
 	}
 	m.Update(cmd())
-	if len(c.calls) != 3 || c.calls[1].Action != "prune" || len(c.calls[1].Spec) != 0 {
+	if len(c.calls) != 3 || c.calls[1] != "prune" {
 		t.Fatal(c.calls)
 	}
 	m.Update(tea.KeyMsg{Type: tea.KeyF19})
@@ -141,8 +163,9 @@ func TestSettingsEngineToggle(t *testing.T) {
 		t.Fatal("busy buttons show selection")
 	}
 	m.Update(cmd())
-	if c.calls[1].Action != "up" || len(c.calls[1].Spec) != 0 {
-		t.Fatal(c.calls[1])
+	// Activate applies the configuration already saved, so it carries none.
+	if c.calls[1] != "up" {
+		t.Fatal(c.calls)
 	}
 	if text := ansi.Strip(m.View()); !strings.Contains(text, "[ Deactivate ]") || strings.Contains(text, "[ Activate ]") {
 		t.Fatal(text)
@@ -152,7 +175,7 @@ func TestSettingsEngineToggle(t *testing.T) {
 	}
 	m.settingsKey(tea.KeyMsg{Type: tea.KeyTab})
 	m.Update(m.settingsKey(tea.KeyMsg{Type: tea.KeyEnter})())
-	if c.calls[3].Action != "down" || p.info.State != "not running" {
+	if c.calls[3] != "down" || p.info.State != "not running" {
 		t.Fatal(c.calls, p.info)
 	}
 	if text := ansi.Strip(m.View()); !strings.Contains(text, "[ Activate ]") {
@@ -162,7 +185,7 @@ func TestSettingsEngineToggle(t *testing.T) {
 
 func TestSettingsSkipDisabledButtons(t *testing.T) {
 	m := conversationModel()
-	m.settingsPage = &settingsPage{loaded: true, info: engine.Info{Mode: "dind", State: "not running"}}
+	m.settingsPage = &settingsPage{loaded: true, info: settingsInfo{Info: engine.Info{Mode: "dind", State: "not running"}}}
 	p := m.settingsPage
 	for _, key := range []tea.KeyType{tea.KeyDown, tea.KeyTab} {
 		p.selected = 1
@@ -184,7 +207,7 @@ func TestSettingsSkipDisabledButtons(t *testing.T) {
 	}
 	p.info.State = "running"
 	p.selected = 2
-	m.receiveSettings(settingsResult{page: p, request: p.request, action: "info", info: engine.Info{Mode: "off", State: "not running"}})
+	m.receiveSettings(settingsResult{page: p, request: p.request, action: "info", info: settingsInfo{Info: engine.Info{Mode: "off", State: "not running"}}})
 	if p.selected != 3 {
 		t.Fatal("focus stayed on disabled action")
 	}

@@ -2,7 +2,6 @@ package tui
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -16,11 +15,26 @@ import (
 	"github.com/lesomnus/cxz/internal/versionpin"
 )
 
+// settingsInfo is this page's aggregate, not an API shape. The engine's own
+// info, the installation's history budgets and the cxz build are three calls
+// now; one reply used to answer all three because one envelope carried all
+// three questions.
+type settingsInfo struct {
+	engine.Info
+	History      *historypolicy.Policy
+	HistoryError string
+	CXZVersion   string
+	CXZRevision  string
+	CXZChannel   string
+	CXZPin       string
+	CXZError     string
+}
+
 type settingsPage struct {
 	auxiliary                           *auxiliaryPage
 	mcp                                 *mcpPage
 	connection                          string
-	info                                engine.Info
+	info                                settingsInfo
 	loaded, loading, busy, inputFocused bool
 	selected, offset                    int
 	request                             uint64
@@ -36,7 +50,7 @@ type settingsResult struct {
 	page         *settingsPage
 	request      uint64
 	action       string
-	info         engine.Info
+	info         settingsInfo
 	text         string
 	err, infoErr error
 }
@@ -100,17 +114,13 @@ func (m *model) settingsRequest(action string) tea.Cmd {
 				result.text = "Server history policy saved; running sessions apply it at a safe idle check."
 			}
 		} else if action != "info" {
-			out, err := client.Docker(ctx, &api.DockerInput{Action: action, Spec: nil})
+			out, err := engineAction(ctx, client, action)
 			result.err = err
 			if out != nil {
 				result.text = out.Status
 			}
 		}
-		out, err := client.Docker(ctx, &api.DockerInput{Action: "info"})
-		result.infoErr = err
-		if err == nil {
-			result.infoErr = json.Unmarshal([]byte(out.Status), &result.info)
-		}
+		result.info, result.infoErr = readSettingsInfo(ctx, client)
 		return result
 	}
 }

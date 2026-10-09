@@ -3395,9 +3395,39 @@ func (s interceptProject) RenderDevcontainer(ctx context.Context, req *resource.
 		resource.ProjectService_RenderDevcontainer_FullMethodName, req, s.ProjectServiceServer.RenderDevcontainer)
 }
 
-func (s interceptProject) Docker(ctx context.Context, req *resource.DockerRequest) (*resource.DockerReply, error) {
+func (s interceptProject) SaveEngine(ctx context.Context, req *resource.SaveEngineRequest) (*resource.EngineReply, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_Docker_FullMethodName, req, s.ProjectServiceServer.Docker)
+		resource.ProjectService_SaveEngine_FullMethodName, req, s.ProjectServiceServer.SaveEngine)
+}
+
+func (s interceptProject) StartEngine(ctx context.Context, req *resource.StartEngineRequest) (*resource.EngineReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_StartEngine_FullMethodName, req, s.ProjectServiceServer.StartEngine)
+}
+
+func (s interceptProject) StopEngine(ctx context.Context, req *resource.EngineRequest) (*resource.EngineReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_StopEngine_FullMethodName, req, s.ProjectServiceServer.StopEngine)
+}
+
+func (s interceptProject) PruneEngine(ctx context.Context, req *resource.EngineRequest) (*resource.EngineReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_PruneEngine_FullMethodName, req, s.ProjectServiceServer.PruneEngine)
+}
+
+func (s interceptProject) EngineStatus(ctx context.Context, req *resource.EngineRequest) (*resource.EngineReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_EngineStatus_FullMethodName, req, s.ProjectServiceServer.EngineStatus)
+}
+
+func (s interceptProject) GetEngineInfo(ctx context.Context, req *resource.EngineRequest) (*resource.EngineInfo, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_GetEngineInfo_FullMethodName, req, s.ProjectServiceServer.GetEngineInfo)
+}
+
+func (s interceptProject) GetInstallationVersion(ctx context.Context, req *resource.EngineRequest) (*resource.InstallationVersion, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_GetInstallationVersion_FullMethodName, req, s.ProjectServiceServer.GetInstallationVersion)
 }
 
 func (s interceptProject) AuxConfig(ctx context.Context, req *resource.AuxConfigRequest) (*resource.AuxConfigReply, error) {
@@ -3893,6 +3923,11 @@ func (s interceptSession) AuxCancel(ctx context.Context, req *resource.AuxCancel
 func (s interceptSession) Purge(ctx context.Context, req *resource.SessionPurgeRequest) (*resource.SessionPurgeReply, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
 		resource.SessionService_Purge_FullMethodName, req, s.SessionServiceServer.Purge)
+}
+
+func (s interceptSession) GetHistoryFloor(ctx context.Context, req *resource.SessionHistoryFloorRequest) (*resource.SessionHistoryFloorReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
+		resource.SessionService_GetHistoryFloor_FullMethodName, req, s.SessionServiceServer.GetHistoryFloor)
 }
 
 func (s interceptSession) McpLogs(ctx context.Context, req *resource.SessionMcpRequest) (*resource.SessionMcpLogsReply, error) {
@@ -4634,13 +4669,91 @@ func dispatch(ctx context.Context, s resource.Server, op *pdpb.Op) (*anypb.Any, 
 
 		return anypb.New(res)
 
-	case resource.ProjectService_Docker_FullMethodName:
-		v := &resource.DockerRequest{}
+	case resource.ProjectService_SaveEngine_FullMethodName:
+		v := &resource.SaveEngineRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
 
-		res, err := s.Project().Docker(ctx, v)
+		res, err := s.Project().SaveEngine(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.ProjectService_StartEngine_FullMethodName:
+		v := &resource.StartEngineRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().StartEngine(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.ProjectService_StopEngine_FullMethodName:
+		v := &resource.EngineRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().StopEngine(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.ProjectService_PruneEngine_FullMethodName:
+		v := &resource.EngineRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().PruneEngine(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.ProjectService_EngineStatus_FullMethodName:
+		v := &resource.EngineRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().EngineStatus(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.ProjectService_GetEngineInfo_FullMethodName:
+		v := &resource.EngineRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().GetEngineInfo(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.ProjectService_GetInstallationVersion_FullMethodName:
+		v := &resource.EngineRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().GetInstallationVersion(ctx, v)
 		if err != nil {
 			return nil, err
 		}
@@ -5733,6 +5846,19 @@ func dispatch(ctx context.Context, s resource.Server, op *pdpb.Op) (*anypb.Any, 
 		}
 
 		res, err := s.Session().Purge(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.SessionService_GetHistoryFloor_FullMethodName:
+		v := &resource.SessionHistoryFloorRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Session().GetHistoryFloor(ctx, v)
 		if err != nil {
 			return nil, err
 		}

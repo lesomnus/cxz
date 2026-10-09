@@ -5,8 +5,6 @@ import (
 
 	"github.com/lesomnus/cxz/api"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -54,6 +52,13 @@ func (c *Client) MarkHistoryTrimmable(ctx context.Context, r *api.Empty, opts ..
 	return client.MarkHistoryTrimmable(ctx, r, opts...)
 }
 
-func (c *Client) GetHistoryFloor(context.Context, *api.SessionRef, ...grpc.CallOption) (*api.HistoryFloorReply, error) {
-	return nil, status.Error(codes.Unimplemented, "a trim floor is read from a runtime, not through a frontend connection")
+// A trim floor is a session's, and a session names the connection that holds
+// it. It is routed like every other session read rather than refused here:
+// resolving it is what the resource API does now.
+func (c *Client) GetHistoryFloor(ctx context.Context, r *api.SessionRef, opts ...grpc.CallOption) (*api.HistoryFloorReply, error) {
+	_, id, client, err := c.route(ctx, r.Id)
+	if err != nil {
+		return nil, err
+	}
+	return client.GetHistoryFloor(ctx, &api.SessionRef{Id: id}, opts...)
 }

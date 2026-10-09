@@ -4,7 +4,19 @@ option go_package = "github.com/lesomnus/cxz/api;api";
 
 service Sessions {
  rpc Devcontainer(DevcontainerInput) returns (Receipt);
- rpc Docker(DockerInput) returns (Receipt);
+  // The shared Docker engine. Five operations, each named, where one message
+  // with an action string used to carry all of them -- and a spec field that
+  // only two of them could mean anything by.
+  rpc SaveEngine(SaveEngineInput) returns (EngineReply);
+  rpc StartEngine(StartEngineInput) returns (EngineReply);
+  rpc StopEngine(Empty) returns (EngineReply);
+  rpc PruneEngine(Empty) returns (EngineReply);
+  rpc EngineStatus(Empty) returns (EngineReply);
+  rpc GetEngineInfo(Empty) returns (EngineInfo);
+  // What this installation of cxz is: its build, its update channel and
+  // whether it is pinned. It travelled inside the engine's info reply, which
+  // is how a question about Docker came to answer a question about cxz.
+  rpc GetInstallationVersion(Empty) returns (InstallationVersion);
   rpc FileMappings(FileMappingsInput) returns (Receipt);
   rpc Create(CreateRequest) returns (Session);
   rpc List(Empty) returns (SessionList);
@@ -203,7 +215,6 @@ message LogsReply { string text = 1; }
 
 message FileMappingsInput { bytes bundle = 1; }
 
-message DockerInput { string action = 1; bytes spec = 2; }
 
 message MemoryRequest { string session_id = 1; string path = 2; }
 message MemoryReply { bytes data = 1; }
@@ -462,3 +473,31 @@ message McpLogsInput { string session_id = 1; string id = 2; }
 // otherwise hand back the secret it was given.
 message McpLogsReply { string text = 1; string message = 2; }
 message RestartMcpInput { string session_id = 1; string id = 2; }
+
+// mode is off or dind. override is the user's own Compose document and stays
+// bytes: it is theirs to write and cxz only merges it.
+message EngineSpec { string mode = 1; string image = 2; bytes override = 3; }
+// An absent spec on a start means "use the one already saved", which is what an
+// empty payload meant. A save has nothing to fall back on, so its spec is
+// required.
+message SaveEngineInput { EngineSpec spec = 1; }
+message StartEngineInput { EngineSpec spec = 1; }
+// One line of text for a person: an endpoint, a sentence, or what a prune
+// reclaimed.
+message EngineReply { string status = 1; }
+// What the engine is, and nothing else. The history budgets and the cxz build
+// have their own calls.
+message EngineInfo {
+  string mode = 1; string state = 2; string health = 3;
+  string image = 4; string configured_image = 5; string endpoint = 6;
+  string build_cache = 7; string reclaimable = 8;
+  // Set when the engine is running but its disk usage could not be read,
+  // rather than reporting a size of nothing.
+  string usage_error = 9;
+}
+// error is set when the channel or the pin could not be read; the build itself
+// is compiled in and always known.
+message InstallationVersion {
+  string version = 1; string revision = 2; string channel = 3;
+  string pin = 4; string error = 5;
+}

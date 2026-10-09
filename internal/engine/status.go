@@ -4,27 +4,22 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/lesomnus/cxz/internal/historypolicy"
 	"strings"
 )
 
+// Info is what the engine is. The history budgets and the cxz build used to
+// ride along here because one reply answered every question asked of the Docker
+// envelope; they have their own calls now.
 type Info struct {
-	History         *historypolicy.Policy `json:"history,omitempty"`
-	HistoryError    string                `json:"history_error,omitempty"`
-	CXZVersion      string                `json:"cxz_version,omitempty"`
-	CXZRevision     string                `json:"cxz_revision,omitempty"`
-	CXZChannel      string                `json:"cxz_channel,omitempty"`
-	CXZPin          string                `json:"cxz_pin,omitempty"`
-	CXZError        string                `json:"cxz_error,omitempty"`
-	Mode            string                `json:"mode"`
-	State           string                `json:"state"`
-	Health          string                `json:"health,omitempty"`
-	Image           string                `json:"image"`
-	ConfiguredImage string                `json:"configured_image"`
-	Endpoint        string                `json:"endpoint"`
-	BuildCache      string                `json:"build_cache,omitempty"`
-	Reclaimable     string                `json:"reclaimable,omitempty"`
-	UsageError      string                `json:"usage_error,omitempty"`
+	Mode            string `json:"mode"`
+	State           string `json:"state"`
+	Health          string `json:"health,omitempty"`
+	Image           string `json:"image"`
+	ConfiguredImage string `json:"configured_image"`
+	Endpoint        string `json:"endpoint"`
+	BuildCache      string `json:"build_cache,omitempty"`
+	Reclaimable     string `json:"reclaimable,omitempty"`
+	UsageError      string `json:"usage_error,omitempty"`
 }
 
 func (e Engine) Info(ctx context.Context) (Info, error) {
