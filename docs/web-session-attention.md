@@ -39,6 +39,9 @@ allows in-memory editing.
 An expanded composer contracts smoothly after its accepted contents depart.
 Reduced-motion preferences disable the height transition. Timing and geometry
 tokens in the app stylesheet are the source of truth.
+The transcript keeps following latest through those viewport changes, correcting
+resize-generated scroll events before treating them as reading navigation.
+Wheel, drag and keyboard navigation still allow reading older messages.
 
 Implementation: `features/session/model/session-attention.ts`,
 `use-session-attention.ts`, `session-drafts.ts`, and

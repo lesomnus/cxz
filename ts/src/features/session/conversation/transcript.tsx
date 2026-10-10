@@ -341,6 +341,19 @@ export function Transcript({
   function scrolled() {
     const el = pane.current;
     if (!el) return;
+    // Native scroll events can precede ResizeObserver while the composer is
+    // contracting. Correct a follower against the current layout before its
+    // old scroll position is mistaken for a reading gesture. Ordinary native
+    // navigation with unchanged dimensions still detaches as before.
+    const previous = geometry.current;
+    if (
+      follow.current &&
+      !drag.current &&
+      !wheel.current &&
+      (el.clientHeight !== previous.viewport ||
+        Math.max(0, el.scrollHeight - el.clientHeight) !== previous.max)
+    )
+      el.scrollTop = el.scrollHeight;
     // Programmatic wheel/drag frames precede the browser's native scroll event.
     // Publish their anchor now so a ResizeObserver cannot restore a stale frame.
     el.dispatchEvent(new Event("reading-move"));
