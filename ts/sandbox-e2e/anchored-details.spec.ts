@@ -45,12 +45,16 @@ test("event details grow only the trigger's exterior, toggle and replace in plac
     "readOnly",
     true,
   );
-  const tokenColors = await card
-    .locator(".view-line span span")
-    .evaluateAll((tokens) => [
-      ...new Set(tokens.map((token) => getComputedStyle(token).color)),
-    ]);
-  expect(tokenColors.length).toBeGreaterThan(1);
+  await expect
+    .poll(() =>
+      card
+        .locator(".view-line span span")
+        .evaluateAll(
+          (tokens) =>
+            new Set(tokens.map((token) => getComputedStyle(token).color)).size,
+        ),
+    )
+    .toBeGreaterThan(1);
   const bounds = (await card.boundingBox())!;
   expect(bounds.x).toBe(before!.x - 4);
   expect(bounds.width).toBe(before!.width + 8);
@@ -71,7 +75,11 @@ test("event details grow only the trigger's exterior, toggle and replace in plac
       rect.x + rect.width / 2,
       rect.bottom + 2,
     );
-    return target === el || (!!target && el.contains(target));
+    return (
+      target === el ||
+      (!!target && el.contains(target)) ||
+      !!target?.closest(".activity-card-preview")
+    );
   });
   expect(hit).toBe(true);
   const tabs = (await card.locator(".detail-tab-bar").boundingBox())!;

@@ -1,10 +1,7 @@
-import { useId } from "react";
 import type { LoadEventDetails } from "./session-history";
 import { DetailTabs, type DetailSection } from "./detail-tabs";
 import { useEventDetails } from "./event-details";
-import { Button } from "./button";
-import { EventTimePopover } from "./event-time-popover";
-import { useAnchoredCard } from "./floating-card";
+import { ActivityCard } from "./activity-card";
 import { detail, payload } from "./journal";
 import { t } from "./i18n";
 import { useLocale } from "./i18n-react";
@@ -33,8 +30,6 @@ export function ToolActivityView({
   loadDetails?: LoadEventDetails;
 }) {
   useLocale();
-  const details = useAnchoredCard();
-  const timestamp = useId();
   const label = toolLabel(activity, agent);
   const state = toolState(activity, agent);
   const { files, omitted } = toolFiles(activity);
@@ -59,30 +54,16 @@ export function ToolActivityView({
     </span>
   );
   return (
-    <Button
-      type="button"
-      data-seq={seq.toString()}
-      data-state={state}
-      className="event-detail tool-activity detail-anchor"
-      ref={details.anchor}
-      data-detail-present={details.present}
-      data-detail-open={details.expanded}
-      aria-expanded={details.expanded}
-      aria-haspopup="dialog"
-      aria-controls={details.controls}
-      aria-describedby={timestamp}
-      {...details.handlers({
-        title: `${label.name} · ${t("Details")}`,
-        content: () => (
-          <ToolDetails
-            activity={activity}
-            seq={seq}
-            loadDetails={loadDetails}
-          />
-        ),
-      })}
+    <ActivityCard
+      seq={seq}
+      timeMs={timeMs}
+      state={state}
+      className="tool-activity"
+      title={`${label.name} · ${t("Details")}`}
+      details={() => (
+        <ToolDetails activity={activity} seq={seq} loadDetails={loadDetails} />
+      )}
     >
-      <EventTimePopover timeMs={timeMs} id={timestamp} />
       {files.length ? (
         <span className="tool-file-list">
           {files.map((file, index) => (
@@ -128,7 +109,7 @@ export function ToolActivityView({
           </span>
         </>
       )}
-    </Button>
+    </ActivityCard>
   );
 }
 

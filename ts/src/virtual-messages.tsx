@@ -266,6 +266,7 @@ export function VirtualMessages({
           <div
             key={id}
             data-row={id}
+            data-activity={event.kind !== "input" && event.kind !== "assistant"}
             className="transcript-row"
             style={{ top: layout.rows[start + index].top }}
             ref={(node) => {

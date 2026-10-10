@@ -6,6 +6,7 @@ import { FloatingCard } from "./card-shell";
 // expands, so opening details never changes measured message heights or range.
 export function AnchoredDetail({
   anchor,
+  surface,
   id,
   title,
   label,
@@ -14,6 +15,7 @@ export function AnchoredDetail({
   children,
 }: {
   anchor: HTMLElement;
+  surface?: HTMLElement;
   id: string;
   title: string;
   label?: string;
@@ -37,7 +39,9 @@ export function AnchoredDetail({
     let enterFrame = 0;
     const measure = () => {
       frame = 0;
-      const origin = anchor.getBoundingClientRect();
+      const origin = (
+        surface?.isConnected ? surface : anchor
+      ).getBoundingClientRect();
       const view = area.getBoundingClientRect();
       if (
         !anchor.isConnected ||
@@ -70,6 +74,7 @@ export function AnchoredDetail({
     enterFrame = requestAnimationFrame(() => setEntered(true));
     const resize = new ResizeObserver(schedule);
     resize.observe(anchor);
+    if (surface) resize.observe(surface);
     resize.observe(area);
     resize.observe(conversation);
     const mutations = new MutationObserver(schedule);
@@ -85,7 +90,7 @@ export function AnchoredDetail({
       for (const event of ["scroll", "history-shift", "mapping-shift"])
         pane.removeEventListener(event, schedule);
     };
-  }, [anchor, area]);
+  }, [anchor, area, surface]);
   if (!area) return null;
   return createPortal(
     <div ref={layer} className="anchored-detail-layer">

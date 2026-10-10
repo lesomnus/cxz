@@ -119,6 +119,102 @@ test("tool detail tabs load Monaco and dismiss on transcript clicks", async ({
   expect(errors).toEqual([]);
 });
 
+test("folded activity cards unfold above neighbors without shifting the transcript", async ({
+  page,
+}) => {
+  const errors = await story(
+    page,
+    "conversation-eventcards--folded-activity-stack",
+  );
+  const rows = page.locator('.transcript-row[data-activity="true"]');
+  await expect(rows).toHaveCount(4);
+  const file = rows.last().locator(".event-detail");
+  const face = file.locator(".activity-card-face");
+  const content = file.locator(".activity-card-content");
+  await expect.poll(() => content.evaluate((el) => el.clientHeight)).toBe(18);
+  await expect(face).toHaveCSS("backdrop-filter", "blur(14px)");
+  await expect(face).toHaveCSS(
+    "clip-path",
+    "polygon(0px 0px, 100% 0px, 97% 100%, 3% 100%)",
+  );
+  const geometry = () =>
+    page.locator(".transcript").evaluate((pane) => ({
+      top: pane.scrollTop,
+      height: pane.scrollHeight,
+      rows: [...pane.querySelectorAll<HTMLElement>(".transcript-row")].map(
+        (row) => ({
+          id: row.dataset.row,
+          top: row.offsetTop,
+          height: row.offsetHeight,
+        }),
+      ),
+    }));
+  const before = await geometry();
+  await page.screenshot({ path: "test-results/activity-stack-folded.png" });
+  await file.hover({ position: { x: 140, y: 10 } });
+  await expect
+    .poll(() => content.evaluate((el) => el.clientHeight))
+    .toBeGreaterThan(18);
+  await expect(
+    page.locator(".activity-card-preview .activity-card-face"),
+  ).toHaveCSS("clip-path", "polygon(0px 0px, 100% 0px, 100% 100%, 0px 100%)");
+  await expect(rows.last()).toHaveCSS("z-index", "3");
+  expect(await geometry()).toEqual(before);
+  await page.screenshot({ path: "test-results/activity-stack-unfolded.png" });
+  await page.mouse.move(20, 20);
+  await expect.poll(() => content.evaluate((el) => el.clientHeight)).toBe(18);
+  await file.focus();
+  await expect
+    .poll(() => content.evaluate((el) => el.clientHeight))
+    .toBeGreaterThan(18);
+  await file.press("Enter");
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(file).toHaveAttribute("data-detail-open", "true");
+  await page.getByRole("tab", { name: "Input", exact: true }).click();
+  await expect
+    .poll(() => content.evaluate((el) => el.clientHeight))
+    .toBeGreaterThan(18);
+  await expect(rows.last()).toHaveCSS("z-index", "4");
+  expect((await geometry()).rows).toEqual(before.rows);
+  await page.locator("article.response").first().click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect.poll(() => content.evaluate((el) => el.clientHeight)).toBe(18);
+  expect(errors).toEqual([]);
+});
+
+test("unfolding the last activity paints outside the history without adding scroll range", async ({
+  page,
+}) => {
+  const errors = await story(page, "conversation-eventcards--file-changes");
+  // A short viewport exposes the overflow even for a single activity row.
+  await page.locator(".transcript-area").evaluate((el) => {
+    el.style.flex = "none";
+    el.style.height = "55px";
+  });
+  const pane = page.locator(".transcript");
+  const tool = page.locator(".tool-activity");
+  const metrics = () =>
+    pane.evaluate((el) => ({ height: el.scrollHeight, top: el.scrollTop }));
+  const before = await metrics();
+  await tool.hover({ position: { x: 140, y: 10 } });
+  const preview = page.locator(".activity-card-preview");
+  await expect
+    .poll(() => preview.evaluate((el) => el.clientHeight))
+    .toBeGreaterThan(34);
+  expect(await metrics()).toEqual(before);
+  // Return to a normal viewport and activate the portion outside the virtual root.
+  await page.locator(".transcript-area").evaluate((el) => {
+    el.style.removeProperty("flex");
+    el.style.removeProperty("height");
+  });
+  await expect(preview).toBeVisible();
+  const box = (await preview.boundingBox())!;
+  await page.mouse.move(box.x + 140, box.y + box.height - 8);
+  await page.mouse.dblclick(box.x + 140, box.y + box.height - 8);
+  await expect(page.getByRole("dialog")).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
 test("question remains until explicitly answered and reuses the multiline editor", async ({
   page,
 }) => {

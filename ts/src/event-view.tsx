@@ -1,10 +1,10 @@
-import { memo, useId } from "react";
+import { memo } from "react";
 import type { SessionEvent } from "../gen/cxz/session_pb";
 import type { LoadEventDetails } from "./session-history";
 import { marked } from "marked";
 import DOMPurify from "dompurify";
 import { useLocale } from "./i18n-react";
-import { Button } from "./button";
+import { ActivityCard } from "./activity-card";
 import { EventDetails } from "./event-details";
 import { approvalTitle } from "./journal";
 import { AgentBrand } from "./agent-brand";
@@ -12,9 +12,7 @@ import { responseInfo } from "./response-info";
 import type { ResponseCompletion } from "./response-completion";
 import { ResponseFooter } from "./response-footer";
 import { CopyButton } from "./copy-button";
-import { EventTimePopover } from "./event-time-popover";
 import { InputMessage } from "./input-message";
-import { useAnchoredCard } from "./floating-card";
 import type { ToolActivity } from "./tool-activity";
 import { ToolActivityView } from "./tool-activity-view";
 
@@ -59,8 +57,6 @@ export const EventView = memo(
     loadDetails?: LoadEventDetails;
   }) {
     useLocale();
-    const details = useAnchoredCard();
-    const timestamp = useId();
     if (activity)
       return (
         <ToolActivityView
@@ -96,32 +92,24 @@ export const EventView = memo(
         </article>
       );
     return (
-      <Button
-        type="button"
-        data-seq={e.seq.toString()}
-        className={`event-detail detail-anchor ${e.kind === "diagnostic" || e.kind === "stderr" ? "error" : ""}`}
-        ref={details.anchor}
-        data-detail-present={details.present}
-        data-detail-open={details.expanded}
-        aria-expanded={details.expanded}
-        aria-haspopup="dialog"
-        aria-controls={details.controls}
-        aria-describedby={timestamp}
-        {...details.handlers({
-          title: e.kind === "approval" ? approvalTitle(e) : e.kind,
-          content: () => (
-            <EventDetails
-              event={e}
-              loadDetails={e.payload.length ? undefined : loadDetails}
-            />
-          ),
-        })}
+      <ActivityCard
+        seq={e.seq}
+        timeMs={e.timeMs}
+        className={
+          e.kind === "diagnostic" || e.kind === "stderr" ? "error" : ""
+        }
+        title={e.kind === "approval" ? approvalTitle(e) : e.kind}
+        details={() => (
+          <EventDetails
+            event={e}
+            loadDetails={e.payload.length ? undefined : loadDetails}
+          />
+        )}
       >
-        <EventTimePopover timeMs={e.timeMs} id={timestamp} />
         {e.kind === "approval"
           ? approvalTitle(e)
           : `${e.kind} · ${e.text.slice(0, 160)}`}
-      </Button>
+      </ActivityCard>
     );
   },
   (previous, next) =>

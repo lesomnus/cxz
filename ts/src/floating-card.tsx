@@ -11,6 +11,7 @@ import {
   useState,
   Children,
   type ReactNode,
+  type RefObject,
 } from "react";
 import { FloatingCard } from "./card-shell";
 export { FloatingCard } from "./card-shell";
@@ -24,12 +25,13 @@ type Card = {
   content: (close: () => void) => ReactNode;
   origin: HTMLElement | null;
   anchor?: HTMLElement;
+  surface?: HTMLElement;
   closing?: boolean;
   restoreFocus?: boolean;
 };
 type CardRequest = Pick<
   Card,
-  "title" | "label" | "content" | "kind" | "anchor"
+  "title" | "label" | "content" | "kind" | "anchor" | "surface"
 >;
 const OpenCard = createContext<(card: CardRequest) => void>(() => {});
 const CardState = createContext<{
@@ -41,7 +43,7 @@ export function useFloatingCard() {
   return useContext(OpenCard);
 }
 
-export function useAnchoredCard() {
+export function useAnchoredCard(surface?: RefObject<HTMLElement | null>) {
   const anchor = useRef<HTMLButtonElement>(null);
   const closingClick = useRef(false);
   const open = useFloatingCard();
@@ -61,12 +63,20 @@ export function useAnchoredCard() {
           if (event.detail <= 1) closingClick.current = expanded;
           if (expanded) close(card.id);
           else if (event.detail === 0 && anchor.current)
-            open({ ...request, anchor: anchor.current });
+            open({
+              ...request,
+              anchor: anchor.current,
+              surface: surface?.current ?? undefined,
+            });
         },
         onDoubleClick() {
           // A double click on an open card must not reopen its closing preview.
           if (!expanded && !closingClick.current && anchor.current)
-            open({ ...request, anchor: anchor.current });
+            open({
+              ...request,
+              anchor: anchor.current,
+              surface: surface?.current ?? undefined,
+            });
         },
       };
     },
@@ -210,7 +220,8 @@ export function FloatingCardHost({ children }: { children?: ReactNode }) {
       if (card.anchor) {
         if (
           target.closest(".floating-card, .scroll-track, [role='scrollbar']") ||
-          card.anchor.contains(target)
+          card.anchor.contains(target) ||
+          card.surface?.contains(target)
         )
           return;
         close(card.id, false);
@@ -244,6 +255,7 @@ export function FloatingCardHost({ children }: { children?: ReactNode }) {
           <AnchoredDetail
             key={card.id}
             anchor={card.anchor}
+            surface={card.surface}
             id={`event-details-${card.id}`}
             title={typeof card.title === "function" ? card.title() : card.title}
             label={typeof card.label === "function" ? card.label() : card.label}

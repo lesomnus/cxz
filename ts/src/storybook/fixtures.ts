@@ -95,6 +95,40 @@ export function fileEvents() {
   event.requestId = "files-1";
   return [event];
 }
+export function activityStackEvents() {
+  const commands = [
+    "git status --short --branch",
+    "rg -n 'ActivityCard|ToolActivityView' ts/src/event-view.tsx ts/src/tool-activity-view.tsx ts/src/activity-card.tsx",
+    "npm run build && npm run test:storybook -- --grep 'folded activity cards'",
+  ];
+  const tools = commands.flatMap((command, index) => {
+    const seq = 3 + index * 2;
+    const item = { type: "commandExecution", command, status: "completed" };
+    const call = storyEvent(seq, "tool_call", command, { item });
+    const result = storyEvent(seq + 1, "tool_result", "Check passed.", {
+      item: { ...item, exitCode: 0, aggregatedOutput: "Check passed." },
+    });
+    call.requestId = result.requestId = `stack-${index}`;
+    return [call, result];
+  });
+  const files = fileEvents()[0];
+  files.seq = 9n;
+  return [
+    storyEvent(1, "input", "Show the work between conversational responses."),
+    responseEvent(
+      2,
+      "codex",
+      "I’ll inspect the cards, update the files and check the result.",
+    ),
+    ...tools,
+    files,
+    responseEvent(
+      10,
+      "codex",
+      "The activity cards are folded. Hover or focus a card to bring it forward; double-click for its full details.",
+    ),
+  ];
+}
 export function questionEvent() {
   const event = storyEvent(5, "approval", "item/tool/requestUserInput", {
     params: {

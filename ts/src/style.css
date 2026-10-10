@@ -21,6 +21,12 @@
   --transcript-enter-duration: 220ms;
   --transcript-enter-travel: 28px;
   --transcript-enter-scale: 0.96;
+  --activity-card-step: 26px;
+  --activity-card-line-height: 18px;
+  --activity-card-blur: 14px;
+  --activity-card-perspective: 280px;
+  --activity-card-tilt: -24deg;
+  --activity-card-duration: 200ms;
   --wrapper-radius: 10px;
   --control-inset: 2px;
   --control-inline-inset: 6px;
@@ -861,9 +867,6 @@ header strong {
 .virtual-messages {
   position: relative;
   overflow: clip;
-}
-.virtual-messages:has([data-detail-present="true"]) {
-  overflow: visible;
 }
 .transcript-area:has(.anchored-detail-layer) {
   z-index: 3;
@@ -1981,16 +1984,132 @@ pre {
   margin-bottom: 0;
 }
 .event-detail {
-  --event-padding-block: 6px;
+  --event-padding-block: 8px;
   --event-padding-inline: 8px;
   display: block;
   text-align: left;
   min-height: 32px;
-  padding: var(--event-padding-block) var(--event-padding-inline);
+  padding: 0;
   background: transparent;
 }
 .event-detail > .button-content {
   display: block;
+}
+.activity-card-face {
+  display: block;
+  padding: var(--event-padding-block) var(--event-padding-inline);
+}
+.activity-card-content {
+  display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+/* Folding changes only the painted face. Hover, focus and details never move
+   neighboring messages, the reading anchor or the scrollbar's event markers. */
+.transcript-row[data-activity="true"] {
+  height: var(--activity-card-step);
+  z-index: 1;
+}
+.transcript-row[data-activity="true"] > .event-detail,
+.transcript-row[data-activity="true"] > .event-detail:not(:disabled):hover {
+  min-height: 0;
+  background: transparent;
+}
+.transcript-row[data-activity="true"] .activity-card-face,
+.activity-card-preview .activity-card-face {
+  display: grid;
+  grid-template-rows: 0fr;
+  border-radius: calc(2 * var(--space));
+  line-height: var(--activity-card-line-height);
+  background: color-mix(in srgb, var(--shade-27) 62%, transparent);
+  -webkit-backdrop-filter: blur(var(--activity-card-blur));
+  backdrop-filter: blur(var(--activity-card-blur));
+  clip-path: polygon(0 0, 100% 0, 97% 100%, 3% 100%);
+  transform-origin: center top;
+  transform: perspective(var(--activity-card-perspective))
+    rotateX(var(--activity-card-tilt));
+  transition:
+    grid-template-rows var(--activity-card-duration) ease-out,
+    transform var(--activity-card-duration) ease-out,
+    clip-path var(--activity-card-duration) ease-out,
+    background-color var(--activity-card-duration) ease-out;
+}
+.transcript-row[data-activity="true"] .activity-card-content,
+.activity-card-preview .activity-card-content {
+  min-height: var(--activity-card-line-height);
+  overflow: hidden;
+}
+.transcript-row[data-activity="true"]:has(
+    .event-detail:hover,
+    .event-detail:focus-visible,
+    [data-detail-present="true"]
+  ) {
+  z-index: 3;
+}
+.activity-card-preview[data-entered="true"] .activity-card-face {
+  grid-template-rows: 1fr;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+  transform: perspective(var(--activity-card-perspective)) rotateX(0deg);
+  background: color-mix(in srgb, var(--shade-27) 86%, transparent);
+}
+.event-detail[data-lifted="true"] .activity-card-face {
+  grid-template-rows: 1fr;
+  transform: none;
+}
+.event-detail[data-lifted="true"] > .button-content {
+  opacity: 0;
+}
+.event-detail[data-lifted="true"]:focus-visible {
+  outline: none;
+}
+.activity-card-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  overflow: clip;
+  pointer-events: none;
+}
+.activity-card-layer > .activity-card-preview {
+  --event-padding-block: 8px;
+  --event-padding-inline: 8px;
+  position: absolute;
+  min-height: 0;
+  color: var(--shade-237);
+  pointer-events: none;
+  cursor: pointer;
+}
+.activity-card-hit-area {
+  position: absolute;
+  inset: calc(-1 * var(--detail-anchor-growth));
+  clip-path: inset(
+    calc(var(--activity-hit-start) + var(--detail-anchor-growth)) 0 0
+  );
+  pointer-events: auto;
+}
+.activity-card-preview[data-focused="true"] .activity-card-face {
+  outline: 2px solid var(--shade-237);
+  outline-offset: -2px;
+}
+.activity-card-preview .activity-card-content {
+  transform: scale(1);
+  transition: transform 120ms ease-out;
+}
+.activity-card-preview[data-pressed="true"] .activity-card-content {
+  transform: scale(var(--press-scale, 0.95));
+  transition-duration: 60ms;
+}
+.activity-card-preview .event-time-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+.activity-card-layer:has([data-detail-open="true"]) {
+  z-index: 4;
+}
+.transcript-row[data-activity="true"]:has(
+    .event-detail[data-detail-present="true"]
+  ) {
+  z-index: 4;
 }
 .transcript-row > .event-detail {
   --muted: var(--shade-144);
@@ -2003,13 +2122,15 @@ pre {
   --muted: var(--shade-160);
   color: var(--shade-237);
 }
-.detail-anchor {
+.detail-anchor,
+.activity-card-preview {
   --detail-anchor-growth: 0px;
   position: relative;
   isolation: isolate;
   border-radius: calc(2 * var(--space));
 }
-.detail-anchor::before {
+.detail-anchor::before,
+.activity-card-preview::before {
   content: "";
   position: absolute;
   inset: calc(-1 * var(--detail-anchor-growth));
@@ -2022,14 +2143,16 @@ pre {
     border-radius 180ms ease-out,
     background-color 180ms ease-out;
 }
-.detail-anchor[data-detail-open="true"] {
+.detail-anchor[data-detail-open="true"],
+.activity-card-preview[data-detail-open="true"] {
   --detail-anchor-growth: var(--space);
 }
 .detail-anchor[data-detail-present="true"],
 .detail-anchor[data-detail-present="true"]:not(:disabled):hover {
   background: transparent;
 }
-.detail-anchor[data-detail-open="true"]::before {
+.detail-anchor[data-detail-open="true"]::before,
+.activity-card-preview[data-detail-open="true"]::before {
   background: var(--shade-27);
   border-color: var(--shade-54);
 }
@@ -2038,6 +2161,9 @@ pre {
   .question-cards,
   .approval::after,
   .copy-control,
+  .activity-card-face,
+  .activity-card-preview::before,
+  .activity-card-preview .activity-card-content,
   .detail-anchor::before {
     transition: none;
   }
@@ -2600,7 +2726,8 @@ summary:hover {
   color: var(--shade-255);
   font-weight: 650;
 }
-.tool-activity .button-content {
+.tool-activity .activity-card-content,
+.activity-card-preview[data-tool="true"] .activity-card-content {
   display: flex;
   align-items: baseline;
   justify-content: flex-start;
@@ -3099,9 +3226,9 @@ summary:hover {
 }
 
 .event-time-tooltip {
-  left: calc(-1 * var(--event-padding-inline));
+  left: 0;
   right: auto;
-  bottom: calc(100% + var(--event-padding-block) + var(--space));
+  bottom: calc(100% + var(--space));
   font-weight: normal;
   line-height: normal;
 }
@@ -3117,5 +3244,5 @@ summary:hover {
 .transcript-row:has(.event-detail:focus-visible):not(
     :has([data-detail-present="true"])
   ) {
-  z-index: 2;
+  z-index: 3;
 }

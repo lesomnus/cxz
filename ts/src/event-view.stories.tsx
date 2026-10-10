@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { ComponentPreview } from "./storybook/conversation-preview";
 import {
   fileEvents,
+  activityStackEvents,
   responseEvent,
   storyEvent,
   toolEvents,
@@ -51,6 +52,17 @@ export const Commentary: Story = { args: { events: [commentary] } };
 export const CompletedTool: Story = { args: { events: toolEvents() } };
 export const WorkingTool: Story = { args: { events: toolEvents("working") } };
 export const FileChanges: Story = { args: { events: fileEvents() } };
+export const FoldedActivityStack: Story = {
+  args: { events: activityStackEvents() },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Tool cards keep one line on a tilted translucent face. Hover or keyboard focus straightens and unfolds that face above its neighbors without moving the transcript; double-click opens the existing detail editor.",
+      },
+    },
+  },
+};
 export const Diagnostic: Story = {
   args: {
     events: [

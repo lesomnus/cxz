@@ -29,6 +29,8 @@ Esc 두 번으로 모의 응답을 정지할 수 있습니다. Reset preview는 
 여러 줄 텍스트를 붙여넣으면 chip이 만들어지고, chip을 누르면 미리보기 카드가 열립니다.
 전송된 카드에는 chip이 가리키는 원문이 들어갑니다. 작업 카드를 더블클릭하면
 카드 아래에 Input/Output/Result 탭과 Monaco 에디터가 열립니다.
+`Conversation/EventCards/FoldedActivityStack`에서 접힌 작업 카드의 겹침,
+hover·키보드 focus로 펼침, 상세보기와 안정적인 대화 배치를 확인할 수 있습니다.
 대화 본문을 누르면 작업 상세가 닫힙니다. 질문 카드는 답변 제출 또는 Deny로 닫습니다.
 
 이 미리보기는 합성 protobuf 이벤트를 사용합니다. 실제 cxz 서버에 요청하거나 계정 quota를
