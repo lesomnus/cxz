@@ -20,6 +20,26 @@ npm run storybook
 - `Conversation/QuestionCard`: 라디오 선택, 여러 줄 Other 답변, 명시적 제출, 상세 카드에 가려지는 질문 카드.
 - `Conversation/Playground`: 메시지 입력과 전송부터 대화 카드 생성까지 이어지는 인터랙티브 미리보기.
 
+## Composer 영역과 Story 구성
+
+**Composer**는 메시지 작성 영역 전체를 뜻합니다. `Compose`는 작성 동작을 가리킵니다.
+
+| 영역                | 역할                                                           | 코드                                                                      |
+| ------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Composer toolbar    | Stop, 경과 시간, Terminal, Latest, Send를 배치하는 상단 바     | `.composer-toolbar`                                                       |
+| Composer editor     | 줄번호, Markdown, 코드블록, 붙여넣기 chip을 포함하는 입력창    | `ComposerEditor`, `.composer-editor`; 입력창 컨테이너는 `.composer-input` |
+| Composer status bar | Model, Effort, usage, context를 표시하는 하단 영역             | `.composer-meta`                                                          |
+| Composer surface    | Toolbar와 입력창을 감싸는 박스. Status bar는 이 박스 밖에 배치 | `.composer-wrapper`                                                       |
+| Composer            | Toolbar, Editor, Status bar를 포함하는 전체 영역               | `ConversationComposer`, `form.composer`                                   |
+
+`Conversation/Composer`는 영역별 단독 Story가 아니라 **전체 Composer의 상태별 Story**입니다.
+`Empty`, `Markdown`, `CodeBlock`, `PasteChip`, `Commands`, `PendingSend`, `Working`을 제공합니다.
+입력창은 별도 `ComposerEditor` 컴포넌트이지만, 이 Story에서는 상단 바와 하단 상태 영역을
+함께 표시합니다. Toolbar와 Status bar는 현재 `ConversationComposer` 내부 영역입니다.
+이 영역에 들어가는 버튼, 선택 메뉴, 타이머 같은 재사용 컴포넌트는 `Components`에서
+별도 Story로 확인할 수 있습니다. 작성·전송·응답 생성이 이어지는 흐름은
+`Conversation/Playground`에서 확인합니다.
+
 Playground에서 메시지를 작성하고 화살표 버튼이나 Ctrl+Enter로 전송합니다.
 전송 확인 대기 동안 입력창이 잠기고, 확인 후 전송 애니메이션과 함께 사용자 카드가 생성됩니다.
 이어서 작업 중 glow·타이머와 모의 에이전트 응답이 표시됩니다. Stop 버튼 두 번이나
