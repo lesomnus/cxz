@@ -14,6 +14,9 @@ test("inline edits keep value bounds and font, support hover and never submit th
   const row = page.locator(".session-details > div").filter({ has: trigger });
   await expect(row.locator("dt")).toHaveCSS("font-family", font);
   await expect(row.locator("dd")).toHaveCSS("font-family", font);
+  await expect(row).toHaveCSS("padding", "2px");
+  await expect(row.locator("dt")).toHaveCSS("padding-left", "8px");
+  await expect(row.locator("dt")).toHaveCSS("padding-right", "8px");
   const geometry = await row.evaluate((node) => {
     const style = getComputedStyle(node);
     const value = node.querySelector("button")!;

@@ -876,7 +876,7 @@ header strong {
   font-weight: 600;
 }
 .session-details {
-  --details-row-inset: var(--control-inline-inset);
+  --details-row-inset: calc(var(--space) / 2);
   --details-row-radius: calc(3 * var(--space));
   --details-value-radius: calc(
     var(--details-row-radius) - var(--details-row-inset)
@@ -901,6 +901,7 @@ header strong {
   background: var(--hover);
 }
 .session-details dt {
+  padding-inline: calc(2 * var(--space));
   color: var(--muted);
 }
 .session-details dd {
