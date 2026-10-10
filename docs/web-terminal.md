@@ -70,12 +70,27 @@ Changing it updates an open terminal without reconnecting its PTY. Native contex
 menu copying remains available; Ctrl+C continues to interrupt the shell. Browser
 shortcuts such as Ctrl+Shift+C may be intercepted before the terminal sees them.
 
+## Keyboard editing and selection
+
+Ctrl+V passes through to the browser's trusted paste event, so xterm handles
+clipboard text, line endings and bracketed paste without a separate clipboard
+read. Ctrl+Backspace sends the usual Ctrl+W word-erase input; the connected shell
+or terminal application determines its word boundaries and key bindings.
+
+In the normal screen, Shift+arrows extend or shrink a selection from the terminal
+cursor, or extend an existing mouse selection. Vertical movement preserves the
+target column, selection follows scrollback when needed, and wide glyphs remain
+whole. Escape dismisses a keyboard selection. Selection never edits the command
+line; it uses the same Copy on selection preference and feedback as dragging.
+Alternate-screen applications retain their Shift+arrow input. Ctrl/Alt/Meta
+modified arrow combinations also remain available to the terminal application.
+
 ## WASM sandbox
 
 The in-process WASM transport supports bidirectional RPC directly. It uses the
 same `ProjectService.Terminal` request/reply messages and UI, with a simulated
 shell rather than a Linux VM. Supported fixture commands are `help`, `pwd`, `ls`,
-`cat <file>`, `echo <text>`, `clear`, `exit`, plus Ctrl+C/Ctrl+D and backspace.
+`cat <file>`, `echo <text>`, `clear`, `exit`, plus Ctrl+C/Ctrl+D, backspace and word erase.
 `cat` reads the same project-specific fixture files as the file viewer.
 Each opened stream has independent input state. Unsupported commands report that
 they are unavailable; no host commands or files are accessed.

@@ -10,6 +10,7 @@ import { openTerminal, type TerminalLink } from "./terminal-link";
 import { enableTerminalWebGL } from "./terminal-renderer";
 import { terminalTheme } from "./terminal-theme";
 import { installTerminalSelectionCopy } from "./terminal-selection-copy";
+import { installTerminalKeyboard } from "./terminal-keyboard";
 import { useSettings } from "#src/shared/settings/settings.ts";
 import { resolveTerminalSettings } from "#src/shared/settings/terminal-settings.ts";
 
@@ -112,9 +113,11 @@ export function WorkspaceTerminal({
           noticeTimer.current = setTimeout(() => setClipboardNotice(""), 2200);
         },
       );
+      const disposeKeyboard = installTerminalKeyboard(term);
       // Install cleanup before opening the transport, including partial setup.
       cleanup = () => {
         clearTimeout(noticeTimer.current);
+        disposeKeyboard();
         disposeCopy();
         disposeRenderer();
         term.dispose();
@@ -175,6 +178,7 @@ export function WorkspaceTerminal({
       observer.observe(screen.current!);
       cleanup = () => {
         clearTimeout(noticeTimer.current);
+        disposeKeyboard();
         disposeCopy();
         observer.disconnect();
         data.dispose();

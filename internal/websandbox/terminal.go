@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"unicode"
 	"unicode/utf8"
 
 	"github.com/lesomnus/cxz/resource"
@@ -114,6 +115,21 @@ func (p *Projects) Terminal(stream grpc.BidiStreamingServer[resource.ProjectTerm
 					_, size := utf8.DecodeLastRuneInString(line)
 					line = line[:len(line)-size]
 					output = "\b \b"
+				}
+			case 23: // Ctrl+W: erase trailing whitespace and the preceding word.
+				trimmed := strings.TrimRightFunc(line, unicode.IsSpace)
+				end := len(trimmed)
+				for end > 0 {
+					ch, size := utf8.DecodeLastRuneInString(trimmed[:end])
+					if unicode.IsSpace(ch) {
+						break
+					}
+					end -= size
+				}
+				if end < len(line) {
+					line = line[:end]
+					// Redraw the line: erasing one cell per rune fails for wide glyphs.
+					output = "\r\x1b[2K" + prompt + line
 				}
 			default:
 				if ch >= 32 && ch != utf8.RuneError && len(line) < 8192 {

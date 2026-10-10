@@ -1,5 +1,6 @@
 import { test, expect, devices } from "@playwright/test";
 import {
+  copyTerminalSelection,
   disableTerminalWebGL,
   loseTerminalContext,
 } from "../test-support/terminal";
@@ -7,6 +8,61 @@ import {
 test.use({
   ...devices["Desktop Chrome"],
   viewport: { width: 1440, height: 900 },
+});
+
+test("terminal keyboard shortcuts paste once, erase words and select without editing the PTY input", async ({
+  page,
+  context,
+}) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await disableTerminalWebGL(page);
+  await page.goto("/");
+  await page.getByLabel("Web access token").fill("a".repeat(32));
+  await page.getByRole("button", { name: "Connect", exact: true }).click();
+  await page.getByRole("link", { name: /demo-chat/ }).click();
+  await page.keyboard.press("Control+Backquote");
+  const panel = page.getByRole("region", { name: "Workspace terminal" });
+  const input = panel.locator(".xterm-helper-textarea");
+  await expect(panel).toContainText("fixture$");
+  await page.evaluate(() =>
+    navigator.clipboard.writeText("printf 'result:%s\\n' preserved discarded"),
+  );
+  await input.press("Control+v");
+  await expect(panel).toContainText("preserved discarded");
+  await input.press("Control+Backspace");
+  await expect(panel).not.toContainText("discarded");
+  const cursor = panel.locator(".xterm-cursor");
+  const beforeBackspace = (await cursor.boundingBox())!.x;
+  await input.press("Backspace");
+  await expect
+    .poll(async () => (await cursor.boundingBox())!.x)
+    .toBeLessThan(beforeBackspace);
+  await input.press("Shift+ArrowLeft");
+  await expect.poll(() => copyTerminalSelection(panel)).toBe("d");
+  await input.press("Shift+ArrowLeft");
+  expect(await copyTerminalSelection(panel)).toBe("ed");
+  await input.press("Shift+ArrowRight");
+  expect(await copyTerminalSelection(panel)).toBe("d");
+  await input.press("Escape");
+  await input.press("Enter");
+  await expect
+    .poll(() => panel.locator(".xterm-rows > div").allTextContents())
+    .toContain("result:preserved");
+  // Run a raw, alternate-screen reader to check the application receives
+  // Shift+Left intact. Its own readiness text avoids entering keys too early.
+  await page.evaluate(() =>
+    navigator.clipboard.writeText(
+      "stty raw -echo; printf '\\033[?1049hALT-READY'; CXZ_KEY_BYTES=$(dd bs=1 count=6 2>/dev/null | od -An -tx1); printf '\\033[?1049l'; stty sane; printf 'key:%s\\n' \"$CXZ_KEY_BYTES\"",
+    ),
+  );
+  await input.press("Control+v");
+  await input.press("Enter");
+  await expect(panel).toContainText("ALT-READY");
+  await input.press("Shift+ArrowLeft");
+  await expect(panel).not.toContainText("ALT-READY");
+  await expect(panel).toContainText("key: 1b 5b 31 3b 32 44");
+  await expect(panel).toContainText("fixture$");
+  expect(await copyTerminalSelection(panel)).toBe("");
 });
 
 test("authenticated terminal runs a PTY shell under production CSP and preserves it while folded", async ({
