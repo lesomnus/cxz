@@ -1,5 +1,5 @@
-import { t } from "../../../shared/i18n/i18n";
-import type { SessionEvent } from "../../../../gen/cxz/session_pb";
+import { t } from "#src/shared/i18n/i18n.ts";
+import type { SessionEvent } from "#gen/cxz/session_pb";
 // Bound cached records; the transcript mounts only its visible rows.
 export const MAX_EVENTS = 8192;
 const internalEventKinds = new Set([

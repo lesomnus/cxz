@@ -1,4 +1,4 @@
-import type { SessionEvent } from "../../../../gen/cxz/session_pb";
+import type { SessionEvent } from "#gen/cxz/session_pb";
 
 export type RowLayout = {
   id: string;

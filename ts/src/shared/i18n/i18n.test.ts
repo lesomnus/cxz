@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { LocaleStore, resolveLocale } from "./i18n";
-import { messages as en } from "./locales/en";
-import { messages as ko } from "./locales/ko";
-import { parseSettings } from "../settings/editor-settings";
+import { messages as en } from "#src/shared/i18n/locales/en.ts";
+import { messages as ko } from "#src/shared/i18n/locales/ko.ts";
+import { parseSettings } from "#src/shared/settings/editor-settings.ts";
 
 const deferred = () => {
   let resolve!: (value: typeof ko) => void;

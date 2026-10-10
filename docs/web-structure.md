@@ -64,4 +64,21 @@ Tests stay beside the behavior they verify. Application stories stay beside thei
 
 Global application layout CSS lives under `src/app/styles`; component CSS lives in its UI component folder. Shared native scrollbar styling remains under `src/shared/scroll`. CSS tokens and behavior implementations are the source of truth for design values. Generated protocol files remain under `ts/gen`, and generated UI distribution and Storybook outputs remain excluded from Git.
 
+## Module imports
+
+`ts/package.json` defines the application's internal paths with the standard `imports` field:
+
+```json
+{
+  "imports": {
+    "#gen/*": "./gen/*.ts",
+    "#src/*": "./src/*"
+  }
+}
+```
+
+The root is the web package directory, `ts/`. Use `#gen/cxz/session_pb` for generated protocol code and `#src/shared/api/connection.ts` for application code across folders. `#src` targets include their actual file extension, including `.tsx`, `.css` and asset query suffixes such as `.svg?raw`. Keep imports within the same folder relative (`./router`). Generated files keep their generator-owned imports.
+
+TypeScript's Bundler resolution, Vite, Vitest and the application Storybook read this mapping directly. Do not duplicate it in TypeScript `paths` or individual Vite configurations. The independent UI package continues to use its own local imports and public package entries, without depending on the application's aliases.
+
 See [Storybook](storybook.md) for preview and browser checks, and the [UI package README](../ts/packages/ui/README.md) for installation, theming, translation and optional-editor usage.

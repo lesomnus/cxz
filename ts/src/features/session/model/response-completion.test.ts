@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   SessionEventSchema,
   ResponseMetadataSchema,
-} from "../../../../gen/cxz/session_pb";
+} from "#gen/cxz/session_pb";
 import { responseCompletions } from "./response-completion";
 
 const event = (seq: bigint, kind: string, text = "") =>

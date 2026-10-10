@@ -1,10 +1,10 @@
-import type { LoadEventDetails } from "../model/session-history";
+import type { LoadEventDetails } from "#src/features/session/model/session-history.ts";
 import { DetailTabs, type DetailSection } from "./detail-tabs";
 import { useEventDetails } from "./event-details";
 import { ActivityCard } from "./activity-card";
-import { detail, payload } from "../model/journal";
-import { t } from "../../../shared/i18n/i18n";
-import { useLocale } from "../../../shared/i18n/i18n-react";
+import { detail, payload } from "#src/features/session/model/journal.ts";
+import { t } from "#src/shared/i18n/i18n.ts";
+import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import {
   toolLabel,
   toolOutput,
@@ -14,7 +14,7 @@ import {
   fileMeasure,
   transcriptEvents,
   type ToolActivity,
-} from "../model/tool-activity";
+} from "#src/features/session/model/tool-activity.ts";
 
 export function ToolActivityView({
   activity,

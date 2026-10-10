@@ -1,6 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { describe, expect, it } from "vitest";
-import { SessionEventSchema } from "../../../../gen/cxz/session_pb";
+import { SessionEventSchema } from "#gen/cxz/session_pb";
 import {
   messageLayout,
   messageMap,

@@ -3,7 +3,7 @@ import { useArgs } from "storybook/preview-api";
 import {
   ComponentPreview,
   samplePaste,
-} from "../../../storybook/conversation-preview";
+} from "#src/storybook/conversation-preview.tsx";
 
 const meta = {
   title: "Conversation/Composer",

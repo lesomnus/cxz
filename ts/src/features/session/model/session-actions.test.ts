@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { create } from "@bufbuild/protobuf";
-import { SessionSchema } from "../../../../gen/cxz/session_pb";
-import { SessionRefSchema } from "../../../../gen/cxz/session_svc_pb";
+import { SessionSchema } from "#gen/cxz/session_pb";
+import { SessionRefSchema } from "#gen/cxz/session_svc_pb";
 import { manageSession } from "./session-actions";
 
 const ref = create(SessionRefSchema, {

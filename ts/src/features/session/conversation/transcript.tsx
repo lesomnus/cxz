@@ -1,5 +1,5 @@
-import { t } from "../../../shared/i18n/i18n";
-import { useLocale } from "../../../shared/i18n/i18n-react";
+import { t } from "#src/shared/i18n/i18n.ts";
+import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   clamp,
@@ -12,11 +12,11 @@ import {
   type ScrollRange,
 } from "./scroll-physics";
 
-import type { SessionEvent } from "../../../../gen/cxz/session_pb";
+import type { SessionEvent } from "#gen/cxz/session_pb";
 import { VirtualMessages } from "./virtual-messages";
 import { PinnedPrompt } from "./pinned-prompt";
 import type { MessageMap } from "./virtual-layout";
-import { HISTORY_PREFETCH_SCREENS } from "../model/session-history";
+import { HISTORY_PREFETCH_SCREENS } from "#src/features/session/model/session-history.ts";
 
 type Geometry = {
   top: number;

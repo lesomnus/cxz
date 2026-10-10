@@ -1,8 +1,8 @@
-import { t } from "../../shared/i18n/i18n";
-import { useLocale } from "../../shared/i18n/i18n-react";
-import type { Project } from "../../../gen/cxz/project_pb";
-import { RouteLink } from "../../shared/navigation/route-link";
-import { ResourceIcon } from "../../shared/navigation/resource-icon";
+import { t } from "#src/shared/i18n/i18n.ts";
+import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
+import type { Project } from "#gen/cxz/project_pb";
+import { RouteLink } from "#src/shared/navigation/route-link.tsx";
+import { ResourceIcon } from "#src/shared/navigation/resource-icon.tsx";
 export function ProjectsPage({
   projects,
   projectsLoading,

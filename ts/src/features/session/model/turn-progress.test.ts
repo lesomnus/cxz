@@ -1,9 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { describe, expect, it } from "vitest";
-import {
-  SessionEventSchema,
-  SessionStatusSchema,
-} from "../../../../gen/cxz/session_pb";
+import { SessionEventSchema, SessionStatusSchema } from "#gen/cxz/session_pb";
 import { advanceTurn, snapshotTurn } from "./turn-progress";
 
 const event = (seq: number, kind: string, text = "", runId = "run") =>

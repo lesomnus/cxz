@@ -1,9 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { create } from "@bufbuild/protobuf";
-import {
-  SessionSchema,
-  SessionEventSchema,
-} from "../../../../gen/cxz/session_pb";
+import { SessionSchema, SessionEventSchema } from "#gen/cxz/session_pb";
 import { mergeMetadata } from "./session-metadata";
 import { sessionInfo } from "./session-info";
 import {

@@ -1,7 +1,7 @@
 import { Code, ConnectError } from "@connectrpc/connect";
-import type { Connection } from "../../../shared/api/connection";
-import { ref } from "../../../shared/api/connection";
-import type { SessionEvent } from "../../../../gen/cxz/session_pb";
+import type { Connection } from "#src/shared/api/connection.ts";
+import { ref } from "#src/shared/api/connection.ts";
+import type { SessionEvent } from "#gen/cxz/session_pb";
 import { mergeEvents } from "./journal";
 
 export type HistoryPage = {

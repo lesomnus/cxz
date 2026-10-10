@@ -1,5 +1,5 @@
-import { clamp } from "../../../shared/lib/math";
-export { clamp } from "../../../shared/lib/math";
+import { clamp } from "#src/shared/lib/math.ts";
+export { clamp } from "#src/shared/lib/math.ts";
 export const SCROLL_WINDOW_SCREENS = 12;
 export const ELASTIC_RESERVE = 20;
 export type ScrollRange = { start: number; span: number };

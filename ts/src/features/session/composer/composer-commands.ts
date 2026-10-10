@@ -1,4 +1,4 @@
-import { t } from "../../../shared/i18n/i18n";
+import { t } from "#src/shared/i18n/i18n.ts";
 import { selectedModel, type ModelCatalog } from "./model-settings";
 
 export type ComposerCommand = { name: string; description: string };

@@ -1,6 +1,6 @@
 import { createContext } from "react";
-import type { Project } from "../../gen/cxz/project_pb";
-import { Connection } from "../shared/api/connection";
+import type { Project } from "#gen/cxz/project_pb";
+import { Connection } from "#src/shared/api/connection.ts";
 
 export const WorkspaceContext = createContext<
   | {

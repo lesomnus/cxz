@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, type RefObject } from "react";
-import type { SessionEvent } from "../../../../gen/cxz/session_pb";
+import type { SessionEvent } from "#gen/cxz/session_pb";
 
 type SendMotion = {
   text: string;

@@ -8,8 +8,8 @@ import {
   type RefObject,
 } from "react";
 import { Button } from "@lesomnus/cxz-ui";
-import { t } from "../../../shared/i18n/i18n";
-import { useLocale } from "../../../shared/i18n/i18n-react";
+import { t } from "#src/shared/i18n/i18n.ts";
+import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import {
   COMMAND_NEIGHBORS,
   commandQuery,

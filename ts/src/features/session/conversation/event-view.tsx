@@ -1,18 +1,18 @@
 import { memo } from "react";
-import type { SessionEvent } from "../../../../gen/cxz/session_pb";
-import type { LoadEventDetails } from "../model/session-history";
-import { Markdown } from "../../../shared/content/markdown";
-import { useLocale } from "../../../shared/i18n/i18n-react";
+import type { SessionEvent } from "#gen/cxz/session_pb";
+import type { LoadEventDetails } from "#src/features/session/model/session-history.ts";
+import { Markdown } from "#src/shared/content/markdown.tsx";
+import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { ActivityCard } from "./activity-card";
 import { EventDetails } from "./event-details";
-import { approvalTitle } from "../model/journal";
-import { AgentBrand } from "../../../shared/components/agent-brand";
-import { responseInfo } from "../model/response-info";
-import type { ResponseCompletion } from "../model/response-completion";
+import { approvalTitle } from "#src/features/session/model/journal.ts";
+import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
+import { responseInfo } from "#src/features/session/model/response-info.ts";
+import type { ResponseCompletion } from "#src/features/session/model/response-completion.ts";
 import { ResponseFooter } from "./response-footer";
-import { CopyButton } from "../../../shared/components/copy-button";
+import { CopyButton } from "#src/shared/components/copy-button.tsx";
 import { InputMessage } from "./input-message";
-import type { ToolActivity } from "../model/tool-activity";
+import type { ToolActivity } from "#src/features/session/model/tool-activity.ts";
 import { ToolActivityView } from "./tool-activity-view";
 
 export const EventView = memo(

@@ -1,18 +1,18 @@
 import { useState } from "react";
-import type { Session } from "../../../../gen/cxz/session_pb";
-import type { SessionPurgeReply } from "../../../../gen/cxz/session_svc_pb";
+import type { Session } from "#gen/cxz/session_pb";
+import type { SessionPurgeReply } from "#gen/cxz/session_svc_pb";
 import { ActionMenu } from "@lesomnus/cxz-ui";
 import { ConfirmationDialog } from "@lesomnus/cxz-ui";
-import { useFloatingCard } from "../cards/floating-card";
-import { t } from "../../../shared/i18n/i18n";
-import { useLocale } from "../../../shared/i18n/i18n-react";
+import { useFloatingCard } from "#src/features/session/cards/floating-card.tsx";
+import { t } from "#src/shared/i18n/i18n.ts";
+import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { SessionDetails } from "./session-details";
-import type { SessionField } from "../model/session-edit";
+import type { SessionField } from "#src/features/session/model/session-edit.ts";
 import {
   resumableStates,
   type SessionOperation,
-} from "../model/session-actions";
-import type { SessionInfo } from "../model/session-info";
+} from "#src/features/session/model/session-actions.ts";
+import type { SessionInfo } from "#src/features/session/model/session-info.ts";
 
 export type SessionMenuProps = {
   session?: Session;

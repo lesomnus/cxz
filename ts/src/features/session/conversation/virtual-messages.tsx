@@ -5,7 +5,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import type { SessionEvent } from "../../../../gen/cxz/session_pb";
+import type { SessionEvent } from "#gen/cxz/session_pb";
 import { useTranscriptMotion } from "./transcript-motion";
 import { ActivityCardUnfolded } from "./activity-card";
 import {

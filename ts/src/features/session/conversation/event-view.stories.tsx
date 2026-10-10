@@ -1,12 +1,12 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { ComponentPreview } from "../../../storybook/conversation-preview";
+import { ComponentPreview } from "#src/storybook/conversation-preview.tsx";
 import {
   fileEvents,
   activityStackEvents,
   responseEvent,
   storyEvent,
   toolEvents,
-} from "../../../storybook/fixtures";
+} from "#src/storybook/fixtures.ts";
 
 const meta = {
   title: "Conversation/EventCards",

@@ -1,4 +1,4 @@
-import type { LanguagePack } from "../i18n";
+import type { LanguagePack } from "#src/shared/i18n/i18n.ts";
 export const messages = {
   "Expand question": "질문 확대",
   "Collapse question": "질문 축소",

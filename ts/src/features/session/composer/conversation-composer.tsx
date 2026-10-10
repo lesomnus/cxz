@@ -1,10 +1,10 @@
 import { useId, type FormEventHandler, type ReactNode, type Ref } from "react";
-import { t } from "../../../shared/i18n/i18n";
-import { useLocale } from "../../../shared/i18n/i18n-react";
+import { t } from "#src/shared/i18n/i18n.ts";
+import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { Button } from "@lesomnus/cxz-ui";
 import { ComposerAurora } from "./composer-aurora";
 import { TurnControls } from "./turn-controls";
-import type { TurnProgress } from "../model/turn-progress";
+import type { TurnProgress } from "#src/features/session/model/turn-progress.ts";
 import { ComposerEditor } from "./composer-editor";
 import type { ComposerCommand } from "./composer-commands";
 import type { ComposerPaste } from "./composer-pastes";

@@ -1,21 +1,26 @@
 import { useId, useState } from "react";
-import type { SessionEvent } from "../../../../gen/cxz/session_pb";
-import { t } from "../../../shared/i18n/i18n";
-import { useLocale } from "../../../shared/i18n/i18n-react";
+import type { SessionEvent } from "#gen/cxz/session_pb";
+import { t } from "#src/shared/i18n/i18n.ts";
+import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { Button } from "@lesomnus/cxz-ui";
 import { ConfirmButton } from "@lesomnus/cxz-ui";
 import {
   FloatingCard,
   useFloatingCard,
   useQuestionExpansion,
-} from "../cards/floating-card";
-import { approvalTitle, questions, payload, detail } from "../model/journal";
-import { ComposerEditor } from "../composer/composer-editor";
-import type { ComposerPaste } from "../composer/composer-pastes";
-import { composerPrompt } from "../composer/composer-code";
-import { TabList } from "../../../shared/components/tab-list";
-import { Markdown } from "../../../shared/content/markdown";
-import { ScrollFade } from "../../../shared/components/scroll-fade";
+} from "#src/features/session/cards/floating-card.tsx";
+import {
+  approvalTitle,
+  questions,
+  payload,
+  detail,
+} from "#src/features/session/model/journal.ts";
+import { ComposerEditor } from "#src/features/session/composer/composer-editor.tsx";
+import type { ComposerPaste } from "#src/features/session/composer/composer-pastes.ts";
+import { composerPrompt } from "#src/features/session/composer/composer-code.ts";
+import { TabList } from "#src/shared/components/tab-list.tsx";
+import { Markdown } from "#src/shared/content/markdown.tsx";
+import { ScrollFade } from "#src/shared/components/scroll-fade.tsx";
 
 export function QuestionCard({
   e,

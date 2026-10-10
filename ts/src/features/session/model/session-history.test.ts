@@ -1,13 +1,13 @@
 import { create } from "@bufbuild/protobuf";
 import { Code, ConnectError } from "@connectrpc/connect";
 import { describe, expect, it, vi } from "vitest";
-import { SessionEventSchema } from "../../../../gen/cxz/session_pb";
+import { SessionEventSchema } from "#gen/cxz/session_pb";
 import {
   SessionHistory,
   HISTORY_PAGE_SIZE,
   NATIVE_HISTORY_PAGE_SIZE,
 } from "./session-history";
-import type { Connection } from "../../../shared/api/connection";
+import type { Connection } from "#src/shared/api/connection.ts";
 const event = (seq: bigint, kind = "input") =>
   create(SessionEventSchema, { seq, kind });
 const signal = () => new AbortController().signal;

@@ -1,4 +1,4 @@
-import { t, currentLocale } from "../../../shared/i18n/i18n";
+import { t, currentLocale } from "#src/shared/i18n/i18n.ts";
 const MINUTE = 60_000;
 const DAY = 24 * 60 * MINUTE;
 const absoluteOptions: Intl.DateTimeFormatOptions = {

@@ -1,29 +1,29 @@
 import { useRef, useState, type ReactNode } from "react";
-import type { SessionEvent } from "../../gen/cxz/session_pb";
+import type { SessionEvent } from "#gen/cxz/session_pb";
 import {
   FloatingCardHost,
   FloatingCardProvider,
-} from "../features/session/cards/floating-card";
-import { Transcript } from "../features/session/conversation/transcript";
-import { EventView } from "../features/session/conversation/event-view";
-import { transcriptEvents } from "../features/session/model/tool-activity";
-import { ConversationComposer } from "../features/session/composer/conversation-composer";
+} from "#src/features/session/cards/floating-card.tsx";
+import { Transcript } from "#src/features/session/conversation/transcript.tsx";
+import { EventView } from "#src/features/session/conversation/event-view.tsx";
+import { transcriptEvents } from "#src/features/session/model/tool-activity.ts";
+import { ConversationComposer } from "#src/features/session/composer/conversation-composer.tsx";
 import {
   createPaste,
   type ComposerPaste,
-} from "../features/session/composer/composer-pastes";
-import { sessionCommands } from "../features/session/composer/composer-commands";
+} from "#src/features/session/composer/composer-pastes.ts";
+import { sessionCommands } from "#src/features/session/composer/composer-commands.ts";
 import {
   ModelSettings,
   type ModelCatalog,
-} from "../features/session/composer/model-settings";
-import { UsageInfo } from "../features/session/composer/usage-info";
+} from "#src/features/session/composer/model-settings.tsx";
+import { UsageInfo } from "#src/features/session/composer/usage-info.tsx";
 import { storySession } from "./fixtures";
-import { SessionMenu } from "../features/session/components/session-menu";
+import { SessionMenu } from "#src/features/session/components/session-menu.tsx";
 import { create } from "@bufbuild/protobuf";
-import { SessionPurgeReplySchema } from "../../gen/cxz/session_svc_pb";
-import type { SessionInfo } from "../features/session/model/session-info";
-import type { TurnProgress } from "../features/session/model/turn-progress";
+import { SessionPurgeReplySchema } from "#gen/cxz/session_svc_pb";
+import type { SessionInfo } from "#src/features/session/model/session-info.ts";
+import type { TurnProgress } from "#src/features/session/model/turn-progress.ts";
 import "./preview.css";
 
 export const samplePaste = createPaste(

@@ -1,4 +1,4 @@
-import { isGoogleFont } from "../settings/editor-settings";
+import { isGoogleFont } from "#src/shared/settings/editor-settings.ts";
 
 const loads = new Map<string, Promise<void>>();
 const status = new Map<string, "loading" | "ready" | "error">();

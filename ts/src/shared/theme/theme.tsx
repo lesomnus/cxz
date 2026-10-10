@@ -1,5 +1,5 @@
 import { useLayoutEffect, useSyncExternalStore, type ReactNode } from "react";
-import { useSettings } from "../settings/settings";
+import { useSettings } from "#src/shared/settings/settings.ts";
 
 export type ThemePreference = "light" | "dark" | "system";
 export type Theme = "light" | "dark";

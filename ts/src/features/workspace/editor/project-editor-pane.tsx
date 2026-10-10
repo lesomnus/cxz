@@ -1,8 +1,8 @@
-import { t } from "../../../shared/i18n/i18n";
-import { useLocale } from "../../../shared/i18n/i18n-react";
+import { t } from "#src/shared/i18n/i18n.ts";
+import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { useQuery } from "@lesomnus/payday/react";
-import { ProjectService } from "../../../../gen/cxz/project_svc_pb";
-import { Connection, ref } from "../../../shared/api/connection";
+import { ProjectService } from "#gen/cxz/project_svc_pb";
+import { Connection, ref } from "#src/shared/api/connection.ts";
 import { key } from "@lesomnus/payday/store";
 import { WorkspaceEditor } from "./workspace-editor";
 

@@ -1,11 +1,11 @@
 import { useMemo, useState, type PropsWithChildren } from "react";
 import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { createWorkspaceRouter, useWorkspaceRoute } from "../../../app/router";
+import { createWorkspaceRouter, useWorkspaceRoute } from "#src/app/router.tsx";
 import { SessionTreeGroup } from "./session-tree";
-import { PanelScroll } from "../../../shared/components/panel-scroll";
-import { project, storySession } from "../../../storybook/fixtures";
-import "../../../storybook/preview.css";
+import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
+import { project, storySession } from "#src/storybook/fixtures.ts";
+import "#src/storybook/preview.css";
 
 function SessionPanel({
   count = 3,

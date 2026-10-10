@@ -1,5 +1,5 @@
-import { currentLocale } from "../../../shared/i18n/i18n";
-import type { Session, SessionEvent } from "../../../../gen/cxz/session_pb";
+import { currentLocale } from "#src/shared/i18n/i18n.ts";
+import type { Session, SessionEvent } from "#gen/cxz/session_pb";
 import { payload } from "./journal";
 
 type ObjectValue = Record<string, unknown>;

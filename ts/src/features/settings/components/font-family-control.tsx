@@ -6,10 +6,10 @@ import {
   fontFamilyCSS,
   isGoogleFont,
   type FontFamilySetting,
-} from "../../../shared/settings/editor-settings";
-import { t } from "../../../shared/i18n/i18n";
-import { loadGoogleFont } from "../../../shared/editor/google-fonts";
-import { useFontFamily } from "../../../shared/editor/use-font-family";
+} from "#src/shared/settings/editor-settings.ts";
+import { t } from "#src/shared/i18n/i18n.ts";
+import { loadGoogleFont } from "#src/shared/editor/google-fonts.ts";
+import { useFontFamily } from "#src/shared/editor/use-font-family.ts";
 
 const systemFont = defaultEditorSettings.fontFamily;
 const presets = [systemFont, "monospace"];

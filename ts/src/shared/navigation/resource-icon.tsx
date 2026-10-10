@@ -1,4 +1,4 @@
-import { useLocale } from "../i18n/i18n-react";
+import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 
 export function ResourceIcon({
   kind,

@@ -1,6 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { describe, expect, it } from "vitest";
-import { ResponseMetadataSchema } from "../../../../gen/cxz/session_pb";
+import { ResponseMetadataSchema } from "#gen/cxz/session_pb";
 import { responseInfo } from "./response-info";
 
 describe("response snapshots", () => {

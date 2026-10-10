@@ -1,27 +1,27 @@
-import { ThemeProvider } from "../../shared/theme/theme";
-import { t, translateKnown } from "../../shared/i18n/i18n";
-import { LocaleProvider, useLocale } from "../../shared/i18n/i18n-react";
+import { ThemeProvider } from "#src/shared/theme/theme.tsx";
+import { t, translateKnown } from "#src/shared/i18n/i18n.ts";
+import { LocaleProvider, useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import React, { useEffect, useState, type PropsWithChildren } from "react";
 import { createRoot } from "react-dom/client";
 import { start, type Sandbox } from "@lesomnus/payday/sandbox";
 import { Provider } from "@lesomnus/payday/react";
 import { Button } from "@lesomnus/cxz-ui";
-import { Workspace } from "../workspace-shell";
-import { WorkspaceView } from "../workspace-view";
-import { Connection } from "../../shared/api/connection";
-import "../styles/style.css";
+import { Workspace } from "#src/app/workspace-shell.tsx";
+import { WorkspaceView } from "#src/app/workspace-view.tsx";
+import { Connection } from "#src/shared/api/connection.ts";
+import "#src/app/styles/style.css";
 import "./sandbox.css";
 import workerURL from "./sandbox-worker.ts?worker&url";
 import { boot, BootTimeout } from "./sandbox-boot";
 import { createClient } from "@connectrpc/connect";
-import { ProjectService } from "../../../gen/cxz/project_svc_pb";
+import { ProjectService } from "#gen/cxz/project_svc_pb";
 
 import {
   createHashHistory,
   RouterProvider,
   useNavigate,
 } from "@tanstack/react-router";
-import { createWorkspaceRouter, useWorkspaceRoute } from "../router";
+import { createWorkspaceRouter, useWorkspaceRoute } from "#src/app/router.tsx";
 
 const scenarios = [
   "Project checklist",

@@ -1,11 +1,11 @@
-import { t } from "../shared/i18n/i18n";
-import { useLocale } from "../shared/i18n/i18n-react";
+import { t } from "#src/shared/i18n/i18n.ts";
+import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import React, { type PropsWithChildren, useEffect, useState } from "react";
 import { Provider } from "@lesomnus/payday/react";
-import { Connection, authenticate } from "../shared/api/connection";
+import { Connection, authenticate } from "#src/shared/api/connection.ts";
 import { Button } from "@lesomnus/cxz-ui";
 import { Workspace } from "./workspace-shell";
-import "./styles/style.css";
+import "#src/app/styles/style.css";
 export function App({ children }: PropsWithChildren) {
   useLocale();
   const [connection, setConnection] = useState<Connection>();

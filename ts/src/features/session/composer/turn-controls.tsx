@@ -1,9 +1,9 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Button } from "@lesomnus/cxz-ui";
 import { ElapsedTime } from "@lesomnus/cxz-ui";
-import { useLocale } from "../../../shared/i18n/i18n-react";
-import { t } from "../../../shared/i18n/i18n";
-import type { TurnProgress } from "../model/turn-progress";
+import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
+import { t } from "#src/shared/i18n/i18n.ts";
+import type { TurnProgress } from "#src/features/session/model/turn-progress.ts";
 
 export function TurnControls({
   turn,

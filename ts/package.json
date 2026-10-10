@@ -2,6 +2,10 @@
   "name": "cxz-web",
   "private": true,
   "type": "module",
+  "imports": {
+    "#gen/*": "./gen/*.ts",
+    "#src/*": "./src/*"
+  },
   "scripts": {
     "dev": "vite --config vite.dev.config.mjs",
     "build": "tsc --noEmit && vite build",

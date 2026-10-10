@@ -1,5 +1,5 @@
 import { useEffect, useRef, useSyncExternalStore } from "react";
-import { defaultEditorSettings } from "../settings/editor-settings";
+import { defaultEditorSettings } from "#src/shared/settings/editor-settings.ts";
 import {
   googleFontStatus,
   loadGoogleFont,

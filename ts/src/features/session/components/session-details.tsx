@@ -1,15 +1,18 @@
 import { useState, type ReactNode } from "react";
-import type { Session } from "../../../../gen/cxz/session_pb";
+import type { Session } from "#gen/cxz/session_pb";
 import { EditableValue } from "@lesomnus/cxz-ui";
-import { validateSessionField, type SessionField } from "../model/session-edit";
+import {
+  validateSessionField,
+  type SessionField,
+} from "#src/features/session/model/session-edit.ts";
 import { SessionIdentity } from "./session-identity";
 import {
   formatReset,
   formatTokens,
   type SessionInfo,
-} from "../model/session-info";
-import { t, currentLocale } from "../../../shared/i18n/i18n";
-import { useLocale } from "../../../shared/i18n/i18n-react";
+} from "#src/features/session/model/session-info.ts";
+import { t, currentLocale } from "#src/shared/i18n/i18n.ts";
+import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 
 export function SessionDetails({
   session,

@@ -7,7 +7,7 @@ import {
   resumeRange,
   smoothStep,
 } from "./scroll-physics";
-import { quotaDots } from "../model/session-info";
+import { quotaDots } from "#src/features/session/model/session-info.ts";
 
 describe("bounded scroll handle", () => {
   it("keeps its range bounded as history grows and preserves a usable local range", () => {

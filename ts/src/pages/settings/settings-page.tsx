@@ -5,11 +5,14 @@ import {
   localeStore,
   resolveLocale,
   type Locale,
-} from "../../shared/i18n/i18n";
-import { useLocale } from "../../shared/i18n/i18n-react";
+} from "#src/shared/i18n/i18n.ts";
+import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Button } from "@lesomnus/cxz-ui";
-import { useSettings, useEditorSettings } from "../../shared/settings/settings";
+import {
+  useSettings,
+  useEditorSettings,
+} from "#src/shared/settings/settings.ts";
 import {
   defaultEditorSettings,
   editorKeys,
@@ -20,17 +23,17 @@ import {
   parseSettings,
   type EditorScope,
   type FontFamilySetting,
-} from "../../shared/settings/editor-settings";
+} from "#src/shared/settings/editor-settings.ts";
 import { SettingField } from "@lesomnus/cxz-ui";
 import { ValueMenu } from "@lesomnus/cxz-ui";
-import { FontFamilyControl } from "../../features/settings/components/font-family-control";
+import { FontFamilyControl } from "#src/features/settings/components/font-family-control.tsx";
 import { SettingSlider } from "@lesomnus/cxz-ui";
 import { SegmentedControl } from "@lesomnus/cxz-ui";
-import { useTheme, resolveTheme } from "../../shared/theme/theme";
+import { useTheme, resolveTheme } from "#src/shared/theme/theme.tsx";
 import {
   SourceEditor,
   type SourceEditorHandle,
-} from "../../shared/editor/source-editor";
+} from "#src/shared/editor/source-editor.tsx";
 
 const fields = {
   fontFamily: {

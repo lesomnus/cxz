@@ -5,13 +5,13 @@ import { Button } from "@lesomnus/cxz-ui";
 import {
   ComponentPreview,
   previewPastes,
-} from "../../../storybook/conversation-preview";
+} from "#src/storybook/conversation-preview.tsx";
 import {
   questionEvent,
   toolEvents,
   responseEvent,
   type QuestionExample,
-} from "../../../storybook/fixtures";
+} from "#src/storybook/fixtures.ts";
 
 function QuestionPreview({
   busy = false,

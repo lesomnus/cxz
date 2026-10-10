@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useRef } from "react";
 import { FloatingCard } from "@lesomnus/cxz-ui";
 import { SessionDetails } from "./session-details";
-import { storySession } from "../../../storybook/fixtures";
+import { storySession } from "#src/storybook/fixtures.ts";
 
 const session = storySession();
 const meta = {

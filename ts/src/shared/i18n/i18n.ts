@@ -1,4 +1,4 @@
-import { messages, type Message } from "./locales/en";
+import { messages, type Message } from "#src/shared/i18n/locales/en.ts";
 
 export type Locale = "en" | "ko";
 export type LanguagePack = Record<Message, string>;
@@ -10,7 +10,8 @@ export function resolveLocale(value: unknown): Locale {
   return value === "ko" ? "ko" : "en";
 }
 const loaders: Record<Exclude<Locale, "en">, () => Promise<LanguagePack>> = {
-  ko: () => import("./locales/ko").then((module) => module.messages),
+  ko: () =>
+    import("#src/shared/i18n/locales/ko.ts").then((module) => module.messages),
 };
 type LocaleSnapshot = { locale: Locale; loading: boolean; error: string };
 

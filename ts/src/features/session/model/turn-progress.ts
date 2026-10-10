@@ -1,7 +1,4 @@
-import type {
-  SessionEvent,
-  SessionStatus,
-} from "../../../../gen/cxz/session_pb";
+import type { SessionEvent, SessionStatus } from "#gen/cxz/session_pb";
 
 export type TurnProgress = {
   runId: string;

@@ -1,11 +1,11 @@
-import { t, translateKnown, currentLocale } from "../../../shared/i18n/i18n";
-import { useLocale } from "../../../shared/i18n/i18n-react";
+import { t, translateKnown, currentLocale } from "#src/shared/i18n/i18n.ts";
+import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { messageDate } from "./message-time";
 import {
   durationLabel,
   type ResponseCompletion,
-} from "../model/response-completion";
-import { formatTokens } from "../model/session-info";
+} from "#src/features/session/model/response-completion.ts";
+import { formatTokens } from "#src/features/session/model/session-info.ts";
 
 const names: Record<string, string> = {
   input_tokens: "Input",

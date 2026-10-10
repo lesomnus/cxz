@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
 import { SourceEditor } from "./source-editor";
-import "../../storybook/preview.css";
+import "#src/storybook/preview.css";
 
 const meta = {
   title: "Editor/SourceEditor",

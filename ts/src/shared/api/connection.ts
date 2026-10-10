@@ -2,11 +2,11 @@ import { createClient, type Transport } from "@connectrpc/connect";
 import { createConnectTransport } from "@connectrpc/connect-web";
 import { Store } from "@lesomnus/payday/store";
 import { Queries } from "@lesomnus/payday/query";
-import { entities } from "../../../gen/entities";
-import { ProjectService } from "../../../gen/cxz/project_svc_pb";
-import { SessionService } from "../../../gen/cxz/session_svc_pb";
-import type { ComposerPaste } from "../../features/session/composer/composer-pastes";
-import type { EditorState } from "../../features/workspace/editor/workspace-editor";
+import { entities } from "#gen/entities";
+import { ProjectService } from "#gen/cxz/project_svc_pb";
+import { SessionService } from "#gen/cxz/session_svc_pb";
+import type { ComposerPaste } from "#src/features/session/composer/composer-pastes.ts";
+import type { EditorState } from "#src/features/workspace/editor/workspace-editor.tsx";
 import { ResourceInventory } from "./resource-inventory";
 
 // All client state belongs to one authenticated Connection. No credentials or

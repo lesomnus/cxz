@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, type ReactNode } from "react";
-import { clamp } from "../lib/math";
+import { clamp } from "#src/shared/lib/math.ts";
 
 // Keep native scrolling and paint only the edges where content is hidden.
 // Changes to scroll position/motion do not re-render the scrollable children.

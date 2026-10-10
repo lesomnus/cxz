@@ -1,12 +1,12 @@
 import { EventView } from "./event-view";
-import { QuestionCard } from "../questions/question-card";
-import { ConversationComposer } from "../composer/conversation-composer";
-import { SessionMenu } from "../components/session-menu";
-import { manageSession } from "../model/session-actions";
-import { editSession } from "../model/session-edit";
+import { QuestionCard } from "#src/features/session/questions/question-card.tsx";
+import { ConversationComposer } from "#src/features/session/composer/conversation-composer.tsx";
+import { SessionMenu } from "#src/features/session/components/session-menu.tsx";
+import { manageSession } from "#src/features/session/model/session-actions.ts";
+import { editSession } from "#src/features/session/model/session-edit.ts";
 import { useNavigate } from "@tanstack/react-router";
-import { t, translateKnown } from "../../../shared/i18n/i18n";
-import { useLocale } from "../../../shared/i18n/i18n-react";
+import { t, translateKnown } from "#src/shared/i18n/i18n.ts";
+import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import React, {
   useCallback,
   useEffect,
@@ -15,45 +15,48 @@ import React, {
   useState,
 } from "react";
 import { useQuery } from "@lesomnus/payday/react";
-import {
-  SessionService,
-  SessionRefSchema,
-} from "../../../../gen/cxz/session_svc_pb";
-import type { Project } from "../../../../gen/cxz/project_pb";
-import type { Session, SessionEvent } from "../../../../gen/cxz/session_pb";
-import { Connection, ref } from "../../../shared/api/connection";
+import { SessionService, SessionRefSchema } from "#gen/cxz/session_svc_pb";
+import type { Project } from "#gen/cxz/project_pb";
+import type { Session, SessionEvent } from "#gen/cxz/session_pb";
+import { Connection, ref } from "#src/shared/api/connection.ts";
 import {
   SessionHistory,
   type HistoryPage,
   type LoadEventDetails,
-} from "../model/session-history";
+} from "#src/features/session/model/session-history.ts";
 import { create } from "@bufbuild/protobuf";
-import { SessionEventSchema } from "../../../../gen/cxz/session_pb";
+import { SessionEventSchema } from "#gen/cxz/session_pb";
 import {
   mergeEvents,
   isTranscriptEvent,
   payload,
   pendingAfter,
-} from "../model/journal";
-import { mergeMetadata } from "../model/session-metadata";
-import { sessionInfo } from "../model/session-info";
-import { ModelSettings, modelCatalog } from "../composer/model-settings";
-import { UsageInfo } from "../composer/usage-info";
+} from "#src/features/session/model/journal.ts";
+import { mergeMetadata } from "#src/features/session/model/session-metadata.ts";
+import { sessionInfo } from "#src/features/session/model/session-info.ts";
+import {
+  ModelSettings,
+  modelCatalog,
+} from "#src/features/session/composer/model-settings.tsx";
+import { UsageInfo } from "#src/features/session/composer/usage-info.tsx";
 import {
   advanceTurn,
   snapshotTurn,
   type TurnProgress,
-} from "../model/turn-progress";
-import { sessionCommands } from "../composer/composer-commands";
+} from "#src/features/session/model/turn-progress.ts";
+import { sessionCommands } from "#src/features/session/composer/composer-commands.ts";
 import { useSendMotion } from "./send-motion";
 import {
   WorkspaceTerminal,
   terminalShortcut,
-} from "../../workspace/terminal/workspace-terminal";
-import { FloatingCardProvider, FloatingCardHost } from "../cards/floating-card";
-import { composerPrompt } from "../composer/composer-code";
+} from "#src/features/workspace/terminal/workspace-terminal.tsx";
+import {
+  FloatingCardProvider,
+  FloatingCardHost,
+} from "#src/features/session/cards/floating-card.tsx";
+import { composerPrompt } from "#src/features/session/composer/composer-code.ts";
 import { key } from "@lesomnus/payday/store";
-import { transcriptEvents } from "../model/tool-activity";
+import { transcriptEvents } from "#src/features/session/model/tool-activity.ts";
 import { Transcript } from "./transcript";
 import { atScrollBottom } from "./scroll-physics";
 

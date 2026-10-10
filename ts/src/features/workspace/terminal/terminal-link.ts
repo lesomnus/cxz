@@ -1,8 +1,8 @@
-import { t } from "../../../shared/i18n/i18n";
+import { t } from "#src/shared/i18n/i18n.ts";
 import type { MessageInitShape } from "@bufbuild/protobuf";
-import type { ProjectTerminalRequestSchema } from "../../../../gen/cxz/project_svc_pb";
-import type { Connection } from "../../../shared/api/connection";
-import { ref } from "../../../shared/api/connection";
+import type { ProjectTerminalRequestSchema } from "#gen/cxz/project_svc_pb";
+import type { Connection } from "#src/shared/api/connection.ts";
+import { ref } from "#src/shared/api/connection.ts";
 
 type Frame = MessageInitShape<typeof ProjectTerminalRequestSchema>;
 export type TerminalStatus = {

@@ -1,10 +1,10 @@
-import { useTheme } from "../../../shared/theme/theme";
-import { t, translateKnown } from "../../../shared/i18n/i18n";
-import { useLocale } from "../../../shared/i18n/i18n-react";
+import { useTheme } from "#src/shared/theme/theme.tsx";
+import { t, translateKnown } from "#src/shared/i18n/i18n.ts";
+import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useQuery } from "@lesomnus/payday/react";
-import { ProjectService } from "../../../../gen/cxz/project_svc_pb";
-import type { Connection } from "../../../shared/api/connection";
+import { ProjectService } from "#gen/cxz/project_svc_pb";
+import type { Connection } from "#src/shared/api/connection.ts";
 import { Button } from "@lesomnus/cxz-ui";
 import { openTerminal, type TerminalLink } from "./terminal-link";
 import { enableTerminalWebGL } from "./terminal-renderer";

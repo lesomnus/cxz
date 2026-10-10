@@ -1,12 +1,12 @@
-import { t } from "../../shared/i18n/i18n";
-import { useLocale } from "../../shared/i18n/i18n-react";
+import { t } from "#src/shared/i18n/i18n.ts";
+import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@lesomnus/payday/react";
-import { SessionService } from "../../../gen/cxz/session_svc_pb";
-import type { Project } from "../../../gen/cxz/project_pb";
-import { Connection, ref } from "../../shared/api/connection";
-import { Conversation } from "../../features/session/conversation/conversation";
-import { ProjectEditorPane } from "../../features/workspace/editor/project-editor-pane";
+import { SessionService } from "#gen/cxz/session_svc_pb";
+import type { Project } from "#gen/cxz/project_pb";
+import { Connection, ref } from "#src/shared/api/connection.ts";
+import { Conversation } from "#src/features/session/conversation/conversation.tsx";
+import { ProjectEditorPane } from "#src/features/workspace/editor/project-editor-pane.tsx";
 export function SessionsPage({
   c,
   id,

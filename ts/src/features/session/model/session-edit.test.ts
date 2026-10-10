@@ -1,6 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { describe, expect, it, vi } from "vitest";
-import { SessionSchema } from "../../../../gen/cxz/session_pb";
+import { SessionSchema } from "#gen/cxz/session_pb";
 import { editSession } from "./session-edit";
 
 function client() {

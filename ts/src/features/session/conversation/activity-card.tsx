@@ -11,7 +11,7 @@ import {
 import { createPortal } from "react-dom";
 import { Button } from "@lesomnus/cxz-ui";
 import { EventTimePopover } from "./event-time-popover";
-import { useAnchoredCard } from "../cards/floating-card";
+import { useAnchoredCard } from "#src/features/session/cards/floating-card.tsx";
 
 export const ActivityCardUnfolded = createContext(false);
 

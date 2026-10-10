@@ -1,7 +1,4 @@
-import type {
-  SessionEvent,
-  ToolFileSummary,
-} from "../../../../gen/cxz/session_pb";
+import type { SessionEvent, ToolFileSummary } from "#gen/cxz/session_pb";
 import { isTranscriptEvent, payload } from "./journal";
 import { responseCompletionIndex } from "./response-completion";
 

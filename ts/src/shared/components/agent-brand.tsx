@@ -1,7 +1,7 @@
-import { t } from "../i18n/i18n";
-import { useLocale } from "../i18n/i18n-react";
-import openaiBlossom from "../assets/brands/openai-blossom.svg?raw";
-import claudeLogo from "../assets/brands/claude-spark-white.svg";
+import { t } from "#src/shared/i18n/i18n.ts";
+import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
+import openaiBlossom from "#src/shared/assets/brands/openai-blossom.svg?raw";
+import claudeLogo from "#src/shared/assets/brands/claude-spark-white.svg";
 
 // Blossom uses its original currentColor; Claude keeps the white Spark path
 // extracted from the official lockup. Provenance/conditions accompany the SVGs.

@@ -1,7 +1,7 @@
 import type { Client } from "@connectrpc/connect";
-import type { SessionService } from "../../../../gen/cxz/session_svc_pb";
-import { ref } from "../../../shared/api/connection";
-import { t } from "../../../shared/i18n/i18n";
+import type { SessionService } from "#gen/cxz/session_svc_pb";
+import { ref } from "#src/shared/api/connection.ts";
+import { t } from "#src/shared/i18n/i18n.ts";
 
 export type SessionField = "name" | "alias";
 export function validateSessionField(field: SessionField, value: string) {

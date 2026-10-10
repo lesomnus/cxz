@@ -1,9 +1,9 @@
-import { t } from "../../../shared/i18n/i18n";
-import { useLocale } from "../../../shared/i18n/i18n-react";
+import { t } from "#src/shared/i18n/i18n.ts";
+import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { ValueMenu } from "@lesomnus/cxz-ui";
-import type { Session, SessionEvent } from "../../../../gen/cxz/session_pb";
-import { payload } from "../model/journal";
-import type { SessionInfo } from "../model/session-info";
+import type { Session, SessionEvent } from "#gen/cxz/session_pb";
+import { payload } from "#src/features/session/model/journal.ts";
+import type { SessionInfo } from "#src/features/session/model/session-info.ts";
 
 type ModelOption = {
   id: string;

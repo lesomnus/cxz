@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   ResponseMetadataSchema,
   SessionEventSchema,
-} from "../../../../gen/cxz/session_pb";
+} from "#gen/cxz/session_pb";
 import { pendingAfter } from "./journal";
 import {
   shellCommand,

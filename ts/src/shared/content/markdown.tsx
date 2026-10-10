@@ -1,6 +1,6 @@
 import { marked } from "marked";
 import DOMPurify from "dompurify";
-import { useLocale } from "../i18n/i18n-react";
+import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 
 // Keep conversation link behavior scoped to this sanitizer instance.
 const markdownPurifier = DOMPurify();

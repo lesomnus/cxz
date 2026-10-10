@@ -1,9 +1,9 @@
 import { useId, useRef, useState } from "react";
 import type * as Monaco from "monaco-editor/esm/vs/editor/editor.api.js";
 import { Button } from "@lesomnus/cxz-ui";
-import { CopyButton } from "../../../shared/components/copy-button";
-import { SourceEditor } from "../../../shared/editor/source-editor";
-import { detectCodeSyntax } from "../composer/composer-code";
+import { CopyButton } from "#src/shared/components/copy-button.tsx";
+import { SourceEditor } from "#src/shared/editor/source-editor.tsx";
+import { detectCodeSyntax } from "#src/features/session/composer/composer-code.ts";
 
 export type DetailSection = {
   id: string;

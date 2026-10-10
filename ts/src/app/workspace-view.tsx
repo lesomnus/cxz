@@ -1,11 +1,11 @@
-import { useLocale } from "../shared/i18n/i18n-react";
+import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { useContext } from "react";
-import { SettingsPage } from "../pages/settings/settings-page";
+import { SettingsPage } from "#src/pages/settings/settings-page.tsx";
 import { useWorkspaceRoute } from "./router";
 import { WorkspaceContext } from "./workspace-context";
-import { ProjectsPage } from "../pages/projects/projects-page";
-import { SessionsPage } from "../pages/sessions/sessions-page";
-import { NotFoundPage } from "../pages/not-found/not-found-page";
+import { ProjectsPage } from "#src/pages/projects/projects-page.tsx";
+import { SessionsPage } from "#src/pages/sessions/sessions-page.tsx";
+import { NotFoundPage } from "#src/pages/not-found/not-found-page.tsx";
 export function WorkspaceView() {
   useLocale();
   const {

@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { FloatingCard } from "@lesomnus/cxz-ui";
-import { DetailTabs } from "../../features/session/conversation/detail-tabs";
-import "../preview.css";
+import { DetailTabs } from "#src/features/session/conversation/detail-tabs.tsx";
+import "#src/storybook/preview.css";
 
 const meta = {
   title: "Components/FloatingCard",

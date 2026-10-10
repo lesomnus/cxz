@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { resolveEditorSettings, type EditorScope } from "./editor-settings";
 import { SettingsStore } from "./settings-store";
-import { useFontFamily } from "../editor/use-font-family";
+import { useFontFamily } from "#src/shared/editor/use-font-family.ts";
 
 let instance: SettingsStore | undefined;
 export function settingsStore() {

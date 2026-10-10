@@ -1,5 +1,5 @@
-import { t } from "../shared/i18n/i18n";
-import { useLocale } from "../shared/i18n/i18n-react";
+import { t } from "#src/shared/i18n/i18n.ts";
+import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import {
   type PropsWithChildren,
   useEffect,
@@ -7,17 +7,17 @@ import {
   useRef,
   useState,
 } from "react";
-import type { Session } from "../../gen/cxz/session_pb";
-import { Connection } from "../shared/api/connection";
+import type { Session } from "#gen/cxz/session_pb";
+import { Connection } from "#src/shared/api/connection.ts";
 import { Button } from "@lesomnus/cxz-ui";
-import { SessionTreeGroup } from "../features/session/components/session-tree";
-import { PanelScroll } from "../shared/components/panel-scroll";
-import { useScrollbars } from "../shared/scroll/scrollbars";
-import { useResourceInventory } from "../shared/api/resource-inventory";
+import { SessionTreeGroup } from "#src/features/session/components/session-tree.tsx";
+import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
+import { useScrollbars } from "#src/shared/scroll/scrollbars.ts";
+import { useResourceInventory } from "#src/shared/api/resource-inventory.ts";
 import { key } from "@lesomnus/payday/store";
-import { RouteLink } from "../shared/navigation/route-link";
+import { RouteLink } from "#src/shared/navigation/route-link.tsx";
 import { useWorkspaceRoute } from "./router";
-import { ResourceIcon } from "../shared/navigation/resource-icon";
+import { ResourceIcon } from "#src/shared/navigation/resource-icon.tsx";
 import { WorkspaceContext } from "./workspace-context";
 export function Workspace({
   connection: c,

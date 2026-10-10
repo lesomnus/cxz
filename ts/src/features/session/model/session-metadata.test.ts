@@ -1,12 +1,9 @@
 import { create } from "@bufbuild/protobuf";
 import { expect, it } from "vitest";
-import {
-  SessionSchema,
-  SessionEventSchema,
-} from "../../../../gen/cxz/session_pb";
+import { SessionSchema, SessionEventSchema } from "#gen/cxz/session_pb";
 import { mergeMetadata } from "./session-metadata";
 import { sessionInfo } from "./session-info";
-import { modelCatalog } from "../composer/model-settings";
+import { modelCatalog } from "#src/features/session/composer/model-settings.tsx";
 
 it("preserves model capabilities and quota across hundreds of context updates and out-of-order history", () => {
   const session = create(SessionSchema, {

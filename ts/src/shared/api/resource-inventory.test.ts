@@ -1,19 +1,16 @@
 import { create } from "@bufbuild/protobuf";
 import { Code, ConnectError } from "@connectrpc/connect";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ProjectSchema } from "../../../gen/cxz/project_pb";
-import {
-  SessionSchema,
-  SessionStatusSchema,
-} from "../../../gen/cxz/session_pb";
+import { ProjectSchema } from "#gen/cxz/project_pb";
+import { SessionSchema, SessionStatusSchema } from "#gen/cxz/session_pb";
 import {
   ProjectListResponseSchema,
   ProjectWatchResponseSchema,
-} from "../../../gen/cxz/project_svc_pb";
+} from "#gen/cxz/project_svc_pb";
 import {
   SessionListResponseSchema,
   SessionWatchResponseSchema,
-} from "../../../gen/cxz/session_svc_pb";
+} from "#gen/cxz/session_svc_pb";
 import { ResourceInventory } from "./resource-inventory";
 
 class Feed<T> {

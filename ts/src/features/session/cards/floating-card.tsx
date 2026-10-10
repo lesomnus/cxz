@@ -1,5 +1,5 @@
-import { t } from "../../../shared/i18n/i18n";
-import { useLocale } from "../../../shared/i18n/i18n-react";
+import { t } from "#src/shared/i18n/i18n.ts";
+import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import {
   createContext,
   useCallback,
@@ -17,7 +17,7 @@ import {
 } from "react";
 import { FloatingCard } from "@lesomnus/cxz-ui";
 export { FloatingCard } from "@lesomnus/cxz-ui";
-import { AnchoredDetail } from "../conversation/anchored-detail";
+import { AnchoredDetail } from "#src/features/session/conversation/anchored-detail.tsx";
 
 type Card = {
   id: number;

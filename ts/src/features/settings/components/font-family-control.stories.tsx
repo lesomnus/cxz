@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useArgs } from "storybook/preview-api";
 import { FontFamilyControl } from "./font-family-control";
-import { defaultEditorSettings } from "../../../shared/settings/editor-settings";
+import { defaultEditorSettings } from "#src/shared/settings/editor-settings.ts";
 
 const meta = {
   title: "Components/FontFamilyControl",

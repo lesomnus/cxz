@@ -1,6 +1,6 @@
-import { t } from "../../shared/i18n/i18n";
-import { useLocale } from "../../shared/i18n/i18n-react";
-import { RouteLink } from "../../shared/navigation/route-link";
+import { t } from "#src/shared/i18n/i18n.ts";
+import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
+import { RouteLink } from "#src/shared/navigation/route-link.tsx";
 
 export function NotFoundPage() {
   useLocale();

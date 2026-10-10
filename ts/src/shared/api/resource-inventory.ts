@@ -1,10 +1,10 @@
 import { useSyncExternalStore } from "react";
 import { Code, ConnectError, type Client } from "@connectrpc/connect";
 import { key, type Store } from "@lesomnus/payday/store";
-import type { Project } from "../../../gen/cxz/project_pb";
-import type { Session } from "../../../gen/cxz/session_pb";
-import type { ProjectService } from "../../../gen/cxz/project_svc_pb";
-import type { SessionService } from "../../../gen/cxz/session_svc_pb";
+import type { Project } from "#gen/cxz/project_pb";
+import type { Session } from "#gen/cxz/session_pb";
+import type { ProjectService } from "#gen/cxz/project_svc_pb";
+import type { SessionService } from "#gen/cxz/session_svc_pb";
 
 type Kind = "projects" | "sessions";
 type Snapshot = {

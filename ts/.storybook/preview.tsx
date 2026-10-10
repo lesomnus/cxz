@@ -1,10 +1,10 @@
 import { UIProvider } from "@lesomnus/cxz-ui";
 import { useLayoutEffect } from "react";
 import type { Preview } from "@storybook/react-vite";
-import { t, localeStore } from "../src/shared/i18n/i18n";
-import { useLocale } from "../src/shared/i18n/i18n-react";
-import { settingsStore } from "../src/shared/settings/settings";
-import "../src/app/styles/style.css";
+import { t, localeStore } from "#src/shared/i18n/i18n.ts";
+import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
+import { settingsStore } from "#src/shared/settings/settings.ts";
+import "#src/app/styles/style.css";
 
 const preview: Preview = {
   globalTypes: {

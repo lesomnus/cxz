@@ -1,9 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { describe, expect, it } from "vitest";
-import {
-  SessionSchema,
-  SessionEventSchema,
-} from "../../../../gen/cxz/session_pb";
+import { SessionSchema, SessionEventSchema } from "#gen/cxz/session_pb";
 import { sessionInfo } from "./session-info";
 
 const session = (agent = "codex") =>

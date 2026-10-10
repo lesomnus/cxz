@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
-import { t } from "../i18n/i18n";
-import { clamp } from "../lib/math";
+import { t } from "#src/shared/i18n/i18n.ts";
+import { clamp } from "#src/shared/lib/math.ts";
 
 // Native scrolling keeps wheel, touch and focus navigation predictable; only
 // its visual handle is custom, sharing the conversation handle's appearance.

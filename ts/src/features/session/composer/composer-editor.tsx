@@ -1,10 +1,10 @@
-import { useTheme } from "../../../shared/theme/theme";
-import { t, translateKnown, currentLocale } from "../../../shared/i18n/i18n";
-import { useLocale } from "../../../shared/i18n/i18n-react";
+import { useTheme } from "#src/shared/theme/theme.tsx";
+import { t, translateKnown, currentLocale } from "#src/shared/i18n/i18n.ts";
+import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { Button } from "@lesomnus/cxz-ui";
-import { useFloatingCard } from "../cards/floating-card";
+import { useFloatingCard } from "#src/features/session/cards/floating-card.tsx";
 import { indentEdit } from "./composer-indent";
 import { useCommandSuggestions } from "./command-suggestions";
 import type { ComposerCommand } from "./composer-commands";
@@ -13,8 +13,8 @@ import {
   inlineCodeRanges,
   listNewlineEdit,
 } from "./composer-markdown";
-import { useEditorSettings } from "../../../shared/settings/settings";
-import { paletteVariables } from "../../../shared/settings/editor-settings";
+import { useEditorSettings } from "#src/shared/settings/settings.ts";
+import { paletteVariables } from "#src/shared/settings/editor-settings.ts";
 import {
   codeBlocks,
   codeSyntax,

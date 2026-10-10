@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import type { SessionEvent } from "../../../../gen/cxz/session_pb";
-import type { LoadEventDetails } from "../model/session-history";
+import type { SessionEvent } from "#gen/cxz/session_pb";
+import type { LoadEventDetails } from "#src/features/session/model/session-history.ts";
 import { DetailTabs, type DetailSection } from "./detail-tabs";
-import { detail } from "../model/journal";
-import { t } from "../../../shared/i18n/i18n";
-import { useLocale } from "../../../shared/i18n/i18n-react";
+import { detail } from "#src/features/session/model/journal.ts";
+import { t } from "#src/shared/i18n/i18n.ts";
+import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 
 // Mounting a preview triggers the read. Closing/replacing it cancels the request;
 // native tool output never occupies the main transcript's historical cache.

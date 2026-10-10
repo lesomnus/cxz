@@ -1,4 +1,4 @@
-import type { SessionEvent } from "../../../../gen/cxz/session_pb";
+import type { SessionEvent } from "#gen/cxz/session_pb";
 import { payload } from "./journal";
 
 // Retain the latest capability/quota/context snapshots even after many token

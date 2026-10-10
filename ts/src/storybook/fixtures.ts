@@ -3,8 +3,8 @@ import {
   ResponseMetadataSchema,
   SessionEventSchema,
   SessionSchema,
-} from "../../gen/cxz/session_pb";
-import { ProjectSchema } from "../../gen/cxz/project_pb";
+} from "#gen/cxz/session_pb";
+import { ProjectSchema } from "#gen/cxz/project_pb";
 
 // Synthetic data uses the same protobuf records and projection as the live UI.
 export function storyEvent(

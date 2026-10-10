@@ -1,7 +1,7 @@
-import type { Session } from "../../../../gen/cxz/session_pb";
-import { AgentBrand } from "../../../shared/components/agent-brand";
-import { t } from "../../../shared/i18n/i18n";
-import { useLocale } from "../../../shared/i18n/i18n-react";
+import type { Session } from "#gen/cxz/session_pb";
+import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
+import { t } from "#src/shared/i18n/i18n.ts";
+import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 
 export function SessionIdentity({
   session,

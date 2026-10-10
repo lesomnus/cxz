@@ -1,12 +1,12 @@
-import { t } from "../../../shared/i18n/i18n";
-import { useLocale } from "../../../shared/i18n/i18n-react";
+import { t } from "#src/shared/i18n/i18n.ts";
+import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import type { Project } from "../../../../gen/cxz/project_pb";
-import type { ProjectPathEntry } from "../../../../gen/cxz/project_svc_pb";
-import { Connection, ref } from "../../../shared/api/connection";
+import type { Project } from "#gen/cxz/project_pb";
+import type { ProjectPathEntry } from "#gen/cxz/project_svc_pb";
+import { Connection, ref } from "#src/shared/api/connection.ts";
 import { Button } from "@lesomnus/cxz-ui";
 import type * as Monaco from "monaco-editor/esm/vs/editor/editor.api.js";
-import { SourceEditor } from "../../../shared/editor/source-editor";
+import { SourceEditor } from "#src/shared/editor/source-editor.tsx";
 
 type File = {
   path: string;

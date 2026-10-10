@@ -1,11 +1,11 @@
-import { t, currentLocale } from "../../../shared/i18n/i18n";
-import { useLocale } from "../../../shared/i18n/i18n-react";
+import { t, currentLocale } from "#src/shared/i18n/i18n.ts";
+import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import {
   formatTokens,
   formatReset,
   quotaDots,
   type SessionInfo,
-} from "../model/session-info";
+} from "#src/features/session/model/session-info.ts";
 
 export function UsageInfo({ info }: { info: SessionInfo }) {
   useLocale();

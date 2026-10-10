@@ -1,9 +1,6 @@
 import type { Client } from "@connectrpc/connect";
-import type {
-  SessionService,
-  SessionRef,
-} from "../../../../gen/cxz/session_svc_pb";
-import { t } from "../../../shared/i18n/i18n";
+import type { SessionService, SessionRef } from "#gen/cxz/session_svc_pb";
+import { t } from "#src/shared/i18n/i18n.ts";
 
 export type SessionOperation = "stop" | "resume" | "restart";
 type LifecycleClient = Pick<

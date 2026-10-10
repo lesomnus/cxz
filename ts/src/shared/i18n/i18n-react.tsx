@@ -1,7 +1,7 @@
 import { UIProvider } from "@lesomnus/cxz-ui";
 import { useEffect, useSyncExternalStore, type ReactNode } from "react";
 import { localeStore, resolveLocale, t } from "./i18n";
-import { useSettings } from "../settings/settings";
+import { useSettings } from "#src/shared/settings/settings.ts";
 import { Button } from "@lesomnus/cxz-ui";
 
 export function useLocale() {

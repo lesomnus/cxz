@@ -1,5 +1,5 @@
-import { currentLocale } from "../../../shared/i18n/i18n";
-import { useLocale } from "../../../shared/i18n/i18n-react";
+import { currentLocale } from "#src/shared/i18n/i18n.ts";
+import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { messageDate } from "./message-time";
 
 // Display the journal's recorded timestamp, never the time of a rerender.
