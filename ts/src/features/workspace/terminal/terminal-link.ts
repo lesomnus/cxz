@@ -3,6 +3,7 @@ import type { MessageInitShape } from "@bufbuild/protobuf";
 import type { ProjectTerminalRequestSchema } from "#gen/cxz/project_svc_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { ref } from "#src/shared/api/connection.ts";
+import { createTerminalAcknowledger } from "./terminal-acknowledger.ts";
 
 type Frame = MessageInitShape<typeof ProjectTerminalRequestSchema>;
 export type TerminalStatus = {
@@ -107,6 +108,10 @@ export function openTerminal(
   const ws = new WebSocket(url);
   ws.binaryType = "arraybuffer";
   let closed = false;
+  const acknowledger = createTerminalAcknowledger((ack) => {
+    // Input congestion must not prevent output credit from reaching the server.
+    if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ ack }));
+  });
   const send = (data: string | Uint8Array) => {
     if (ws.readyState !== WebSocket.OPEN) return;
     if (ws.bufferedAmount > 1 << 20) {
@@ -121,7 +126,12 @@ export function openTerminal(
   ws.onmessage = (event) => {
     if (event.data instanceof ArrayBuffer) {
       const bytes = new Uint8Array(event.data);
-      output(bytes, () => send(JSON.stringify({ ack: bytes.length })));
+      let consumed = false;
+      output(bytes, () => {
+        if (consumed) return;
+        consumed = true;
+        acknowledger.parsed(bytes.length);
+      });
     } else {
       const frame: TerminalStatus = JSON.parse(event.data);
       if (frame.exited || frame.error) closed = true;
@@ -129,6 +139,7 @@ export function openTerminal(
     }
   };
   ws.onclose = () => {
+    acknowledger.dispose();
     if (!closed)
       status({ error: t("Terminal disconnected; reconnect to try again") });
   };
@@ -141,6 +152,7 @@ export function openTerminal(
     resize: (columns, rows) => send(JSON.stringify({ columns, rows })),
     close: () => {
       closed = true;
+      acknowledger.dispose();
       ws.close();
     },
   };

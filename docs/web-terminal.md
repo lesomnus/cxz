@@ -37,10 +37,20 @@ registered project and verifies its owned running devcontainer.
 Binary messages carry input/output bytes. Text controls carry `{columns, rows}`
 or `{ack}`; text responses carry `{ready}`, `{exited}` or `{error}`. Input messages
 are at most 32768 bytes, dimensions are validated, and unknown control fields are
-rejected. Only one output chunk is in flight: the browser acknowledges its byte
-count after xterm's write callback parses it. This backpressure bounds output
-buffers when a command floods stdout, even while folded. Writes/acknowledgements
-time out after 30 seconds. Browser input buffering is bounded to 1 MiB, with an
+rejected. Output flows continuously within a bounded byte window, rather than
+waiting for an acknowledgement after every chunk. The gateway pauses when the
+unparsed output reaches the high watermark and resumes at the low watermark.
+The browser returns accumulated credit only after xterm's write callbacks parse
+the bytes; a short timer also acknowledges the final partial batch. Small RPC
+outputs are briefly coalesced before transmission to reduce WebSocket messages
+and xterm writes. An exit/error status waits for preceding output to be parsed.
+The socket reader processes acknowledgements independently of upstream input
+writes, so a blocked PTY cannot prevent output from draining. Input queues and
+the output window remain bounded, including while folded; stalled output and
+writes time out. Protocol limits and batching intervals live in
+[terminal_flow.go](../internal/webui/terminal_flow.go) and
+[terminal-acknowledger.ts](../ts/src/features/workspace/terminal/terminal-acknowledger.ts).
+Browser input buffering is bounded to 1 MiB, with an
 explicit disconnected state on congestion. xterm and its styles load lazily on
 first use. The optional WebGL addon also loads on demand. It renders through the
 GPU when available; failed downloads, unsupported WebGL or initialization errors
@@ -105,6 +115,11 @@ and the gateway CSP. Sandbox browser tests cover desktop shortcuts, focus/drafts
 project isolation, wide-view coexistence, reconnect and mobile sizing. Renderer
 tests cover actual WebGL drawing and drag selection, unavailable WebGL, and forced
 context loss with continued output and selection on the DOM renderer.
+Flow-control tests additionally delay acknowledgements, block upstream input,
+verify the hard output bound and low-watermark resumption, preserve UTF-8 bytes
+across frames, coalesce small fragments, reject excessive credit and drain final
+output before exit. Large-paste browser coverage checks the received byte count
+and checksum through a real PTY, followed by a sustained output burst.
 
 References: [xterm.js API](https://xtermjs.org/docs/api/terminal/classes/terminal/),
 [flow control](https://xtermjs.org/docs/guides/flowcontrol/),

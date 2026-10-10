@@ -198,8 +198,17 @@ func TestTerminalGatewayPTYAuthenticationResizeFlowAndRevocation(t *testing.T) {
 	} // Deliberately don't ack.
 	res = request("POST", "/auth/logout", "", cookie)
 	res.Body.Close()
-	if _, _, err = c.Read(ctx); err == nil {
-		t.Fatal("logout did not close terminal")
+	// Frames already sent within the bounded window can precede the close.
+	buffered := 0
+	for {
+		_, data, err := c.Read(ctx)
+		if err != nil {
+			break
+		}
+		buffered += len(data)
+		if buffered > terminalOutputHigh {
+			t.Fatal("logout did not close terminal within its output window")
+		}
 	}
 	res = request("GET", "/terminal/project?columns=80&rows=20", "", cookie)
 	res.Body.Close()
