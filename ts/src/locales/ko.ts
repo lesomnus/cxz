@@ -414,4 +414,10 @@ export const messages = {
   "Question {number}": "질문 {number}",
   Answer: "답변",
   "Answer: {question}": "답변: {question}",
+  "Edit {label}": "{label} 편집",
+  "Enter a session title.": "세션 제목을 입력하세요.",
+  "Alias must be 3–20 characters: lowercase letters, digits and single hyphens, beginning with a letter.":
+    "별칭은 소문자로 시작하는 3–20자의 소문자, 숫자, 단일 하이픈이어야 합니다.",
+  Confirm: "확인",
+  Title: "제목",
 } satisfies LanguagePack;

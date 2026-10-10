@@ -15,6 +15,8 @@ npm run storybook
 - `Settings/SettingField`: 제목·설정 ID·요약·컨트롤·선택적 상세설명을 배치하는 공통 설정 항목.
 - `Components/FontFamilyControl`: 로컬 글꼴과 Google Fonts 선택, 적용 후 저장되는 메타데이터. Google Fonts는 Apply font를 누를 때만 다운로드합니다.
 - `Components/ConfirmationDialog`: 배경 조작과 포커스를 제한하는 확인창. 취소, 실행 대기, 실패 후 재시도, Purge 상태를 확인합니다.
+- `Components/EditableValue`: 값 영역 그대로 편집하는 입력과 취소·확인 오버레이. Alias/Title, 저장 대기, 실패 후 수정·재시도를 확인합니다.
+- `Components/SessionDetails`: 세션 정보와 Title·Alias 편집. Title은 `Session.name`이고 alias와 별개이며, 앱에서는 수동 제목 API와 alias Patch를 통해 저장합니다.
 - `Editor/SourceEditor`: 파일 미리보기와 편집 가능한 settings JSON.
 - `Sessions/Panel`: 실제 세션 카드, 선택 하이라이트, 상태 indicator, 프로젝트 접기, 긴 목록의 스크롤.
 - `Conversation/Composer`: Markdown, 코드블록, 붙여넣기 chip, 명령어 제안, 전송 대기, 작업 중 glow, 모델·effort와 usage 표시.
@@ -37,6 +39,7 @@ npm run storybook
 `Conversation/Composer`는 영역별 단독 Story가 아니라 **전체 Composer의 상태별 Story**입니다.
 `Empty`, `Markdown`, `CodeBlock`, `PasteChip`, `Commands`, `PendingSend`, `Working`, `StoppedSession`을 제공합니다.
 세션 메뉴에서 정지/재개, 재시작 확인, 모의 Purge 계획과 상세 정보를 확인할 수 있습니다.
+Details의 Title·Alias를 클릭하면 주변이 어두워지고 값 위치 그대로 편집됩니다.
 Storybook의 관리 동작은 미리보기 내부 상태만 변경하며 실제 세션이나 파일을 변경하지 않습니다.
 입력창은 별도 `ComposerEditor` 컴포넌트이지만, 이 Story에서는 상단 바와 하단 상태 영역을
 함께 표시합니다. Toolbar와 Status bar는 현재 `ConversationComposer` 내부 영역입니다.

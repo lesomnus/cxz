@@ -161,3 +161,96 @@ test("Purge previews without deleting, cancels, then removes only the confirmed 
   ).toHaveCount(0);
   await expect(page.locator(".resource-panel .tree-session")).toHaveCount(7);
 });
+
+test("Details edits title and alias without changing the session route or conversation", async ({
+  page,
+}) => {
+  await ready(page);
+  const originalRun = await runId(page);
+  const originalMessage = await page
+    .locator("article.input .message-body")
+    .last()
+    .innerText();
+  await choose(page, "Details");
+  const details = page.getByRole("dialog", {
+    name: "Session details",
+    exact: true,
+  });
+  await details.getByRole("button", { name: "Edit Title" }).click();
+  const titleEditor = page.getByRole("dialog", {
+    name: "Edit Title",
+    exact: true,
+  });
+  await titleEditor
+    .getByRole("textbox", { name: "Title", exact: true })
+    .fill("Updated project review");
+  await titleEditor
+    .getByRole("textbox", { name: "Title", exact: true })
+    .press("Enter");
+  await expect(titleEditor).toHaveCount(0);
+  await expect(details.getByRole("button", { name: "Edit Title" })).toHaveText(
+    "Updated project review",
+  );
+  await expect(
+    page
+      .locator(".resource-panel .tree-session")
+      .filter({ hasText: "session-1" }),
+  ).toContainText("Updated project review");
+  await details.getByRole("button", { name: "Edit Alias" }).click();
+  const aliasEditor = page.getByRole("dialog", {
+    name: "Edit Alias",
+    exact: true,
+  });
+  await aliasEditor
+    .getByRole("textbox", { name: "Alias", exact: true })
+    .fill("oak-tree");
+  await aliasEditor
+    .getByRole("button", { name: "Confirm", exact: true })
+    .click();
+  await expect(aliasEditor).toHaveCount(0);
+  await expect(details.getByRole("button", { name: "Edit Alias" })).toHaveText(
+    "oak-tree",
+  );
+  await expect(
+    page
+      .locator(".resource-panel .tree-session")
+      .filter({ hasText: "Updated project review" }),
+  ).toContainText("oak-tree");
+  await details.getByRole("button", { name: "Edit Alias" }).click();
+  await aliasEditor
+    .getByRole("textbox", { name: "Alias", exact: true })
+    .fill("session-2");
+  await aliasEditor
+    .getByRole("textbox", { name: "Alias", exact: true })
+    .press("Enter");
+  await expect(aliasEditor.getByRole("alert")).toContainText(
+    "alias is already in use",
+  );
+  await page.screenshot({
+    path: "test-results/session-details-edit-error.png",
+  });
+  await page.keyboard.press("Escape");
+  await expect(aliasEditor).toHaveCount(0);
+  await expect(details).toBeVisible();
+  await expect(
+    details.getByRole("button", { name: "Edit Alias" }),
+  ).toBeFocused();
+  await expect(details.getByRole("button", { name: "Edit Alias" })).toHaveText(
+    "oak-tree",
+  );
+  await page
+    .getByRole("button", { name: "Close details", exact: true })
+    .click();
+  expect(await runId(page)).toBe(originalRun);
+  await expect(page).toHaveURL(/#\/sessions\/session-1$/);
+  await expect(page.locator("article.input .message-body").last()).toHaveText(
+    originalMessage,
+  );
+  await choose(page, "Details");
+  await expect(details.getByRole("button", { name: "Edit Title" })).toHaveText(
+    "Updated project review",
+  );
+  await expect(details.getByRole("button", { name: "Edit Alias" })).toHaveText(
+    "oak-tree",
+  );
+});

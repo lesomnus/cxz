@@ -162,7 +162,13 @@ export function ComponentPreview({
   const [purged, setPurged] = useState(false);
   const [generation, setGeneration] = useState(1);
   const active = working && !stopped;
+  const [identity, setIdentity] = useState({
+    name: storySession().name,
+    alias: storySession().alias,
+  });
+  const identityRef = useRef(identity);
   const session = storySession();
+  Object.assign(session, identity);
   session.agent = agent;
   session.status!.state = stopped ? "stopped" : active ? "running" : "idle";
   session.status!.runId = `storybook-run-${generation}`;
@@ -210,6 +216,11 @@ export function ComponentPreview({
               contextWindow: 200000,
             }}
             busy={sending}
+            edit={async (field, value) => {
+              identityRef.current = { ...identityRef.current, [field]: value };
+              setIdentity(identityRef.current);
+              return { ...session, ...identityRef.current };
+            }}
             manage={async (operation) => {
               setStopped(operation === "stop");
               if (operation !== "stop") setGeneration((value) => value + 1);

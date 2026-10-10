@@ -1,14 +1,15 @@
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import type { Session } from "../gen/cxz/session_pb";
 import type { SessionPurgeReply } from "../gen/cxz/session_svc_pb";
 import { ActionMenu } from "./action-menu";
 import { ConfirmationDialog } from "./confirmation-dialog";
 import { useFloatingCard } from "./floating-card";
-import { t, currentLocale } from "./i18n";
+import { t } from "./i18n";
 import { useLocale } from "./i18n-react";
-import { SessionIdentity } from "./session-identity";
+import { SessionDetails } from "./session-details";
+import type { SessionField } from "./session-edit";
 import { resumableStates, type SessionOperation } from "./session-actions";
-import { formatReset, formatTokens, type SessionInfo } from "./session-info";
+import type { SessionInfo } from "./session-info";
 
 export type SessionMenuProps = {
   session?: Session;
@@ -17,6 +18,7 @@ export type SessionMenuProps = {
   manage: (operation: SessionOperation, run: string) => Promise<boolean>;
   previewPurge: () => Promise<SessionPurgeReply | undefined>;
   purge: () => Promise<boolean>;
+  edit: (field: SessionField, value: string) => Promise<Session>;
 };
 
 export function SessionMenu({
@@ -26,6 +28,7 @@ export function SessionMenu({
   manage,
   previewPurge,
   purge,
+  edit,
 }: SessionMenuProps) {
   useLocale();
   const open = useFloatingCard();
@@ -94,7 +97,11 @@ export function SessionMenu({
                   open({
                     title: t("Session details"),
                     content: () => (
-                      <SessionDetails session={session!} info={info} />
+                      <SessionDetails
+                        session={session!}
+                        info={info}
+                        edit={edit}
+                      />
                     ),
                   }),
               },
@@ -218,60 +225,5 @@ function SessionActionIcon({
         </>
       )}
     </svg>
-  );
-}
-
-export function SessionDetails({
-  session,
-  info,
-}: {
-  session: Session;
-  info: SessionInfo;
-}) {
-  useLocale();
-  const date = (value: Session["dateCreated"]) =>
-    value
-      ? new Date(
-          Number(value.seconds) * 1000 + value.nanos / 1e6,
-        ).toLocaleString(currentLocale())
-      : "—";
-  const rows: [string, ReactNode][] = [
-    [t("State"), session.status?.state],
-    [t("Alias"), session.alias],
-    [t("Project"), session.project?.name || session.project?.alias],
-    [t("Workspace"), session.project?.workspace],
-    [t("Agent"), session.agent],
-    [t("Model"), info.model],
-    [t("Effort"), info.effort],
-    [t("Runtime ID"), session.runtimeId],
-    [t("Run ID"), session.status?.runId],
-    [t("Provider session ID"), session.status?.vendorId],
-    [t("Permission mode"), session.status?.permissionMode],
-    [t("Last event"), session.status?.lastSeq?.toString()],
-    [t("Pending approvals"), session.status?.pending.length ?? 0],
-    [
-      t("Remaining usage"),
-      info.remaining === undefined ? undefined : `${info.remaining}%`,
-    ],
-    [t("Usage reset"), formatReset(info.reset)],
-    [
-      t("Context"),
-      `${formatTokens(info.contextUsed)} / ${formatTokens(info.contextWindow)}`,
-    ],
-    [t("Created"), date(session.dateCreated)],
-    [t("Updated"), date(session.dateUpdated)],
-  ];
-  return (
-    <>
-      <SessionIdentity session={session} heading />
-      <dl className="session-details">
-        {rows.map(([label, value]) => (
-          <div key={label}>
-            <dt>{label}</dt>
-            <dd>{value || value === 0 ? value : "—"}</dd>
-          </div>
-        ))}
-      </dl>
-    </>
   );
 }

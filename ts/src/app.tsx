@@ -3,6 +3,7 @@ import { QuestionCard } from "./question-card";
 import { ConversationComposer } from "./conversation-composer";
 import { SessionMenu } from "./session-menu";
 import { manageSession } from "./session-actions";
+import { editSession } from "./session-edit";
 import { useNavigate } from "@tanstack/react-router";
 import { t, translateKnown } from "./i18n";
 import { useLocale } from "./i18n-react";
@@ -1265,6 +1266,13 @@ function ConversationContent({ c, id }: { c: Connection; id: string }) {
             session={s && { ...s, project: sessionProject ?? s.project }}
             info={info}
             busy={busy}
+            edit={async (field, value) => {
+              const updated = await editSession(c.sessions, id, field, value);
+              c.store.apply("cxz.Session", [
+                { id: updated.id, value: updated },
+              ]);
+              return updated;
+            }}
             manage={(operation, run) =>
               action(async () => {
                 const updated = await manageSession(

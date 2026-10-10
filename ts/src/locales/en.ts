@@ -413,5 +413,11 @@ export const messages = {
   "Question {number}": "Question {number}",
   Answer: "Answer",
   "Answer: {question}": "Answer: {question}",
+  "Edit {label}": "Edit {label}",
+  "Enter a session title.": "Enter a session title.",
+  "Alias must be 3–20 characters: lowercase letters, digits and single hyphens, beginning with a letter.":
+    "Alias must be 3–20 characters: lowercase letters, digits and single hyphens, beginning with a letter.",
+  Confirm: "Confirm",
+  Title: "Title",
 } as const;
 export type Message = keyof typeof messages;
