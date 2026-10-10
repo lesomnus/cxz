@@ -27,6 +27,7 @@
   --activity-card-perspective: 280px;
   --activity-card-tilt: -14deg;
   --activity-card-duration: 200ms;
+  --activity-card-background: var(--shade-22);
   --wrapper-radius: 10px;
   --control-inset: 2px;
   --control-inline-inset: 6px;
@@ -2087,7 +2088,7 @@ pre {
   grid-template-rows: 0fr;
   border-radius: calc(2 * var(--space));
   line-height: var(--activity-card-line-height);
-  background: var(--shade-27);
+  background: var(--activity-card-background);
   transform-origin: center top;
   transform: perspective(var(--activity-card-perspective))
     rotateX(var(--activity-card-tilt));
@@ -2225,7 +2226,7 @@ pre {
 }
 .detail-anchor[data-detail-open="true"]::before,
 .activity-card-preview[data-detail-open="true"]::before {
-  background: var(--shade-27);
+  background: var(--activity-card-background);
   border-color: var(--shade-54);
 }
 @media (prefers-reduced-motion: reduce) {
