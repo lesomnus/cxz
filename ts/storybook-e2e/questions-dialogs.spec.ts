@@ -118,10 +118,15 @@ test("async free-text questions submit structured native keys and only explicit 
     name: "Confirm cancel",
     exact: true,
   });
+  await cancel.hover();
+  await expect(cancel).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await expect(cancel).toHaveCSS("border-top-width", "1px");
+  const cancelBounds = await cancel.boundingBox();
   await cancel.click();
   await expect(question).toBeVisible();
   await expect(confirm).toHaveAttribute("data-confirming", "true");
   await expect(confirm).toHaveCSS("background-color", "rgb(59, 27, 27)");
+  expect(await confirm.boundingBox()).toEqual(cancelBounds);
   await page.screenshot({
     path: "test-results/question-cancel-confirmation.png",
   });
@@ -299,7 +304,30 @@ test("question layout keeps the longest height, fixed Other/footer, and option-o
     '.question-group[data-active="true"] .question-other',
   );
   const otherBefore = await other.boundingBox();
+  const active = question.locator('.question-group[data-active="true"]');
+  const topFade = active.locator(".scroll-edge-fade-top");
+  const bottomFade = active.locator(".scroll-edge-fade-bottom");
+  await expect(topFade).toHaveCSS("opacity", "0");
+  await expect(bottomFade).toHaveCSS("opacity", "1");
+  const bodyColor = await question
+    .locator(".question-body")
+    .evaluate((el) => getComputedStyle(el).backgroundColor);
+  expect(
+    await bottomFade.evaluate((el) => getComputedStyle(el).backgroundImage),
+  ).toContain(bodyColor);
+  await options.evaluate(
+    (el) => (el.scrollTop = (el.scrollHeight - el.clientHeight) / 2),
+  );
+  await expect(topFade).toHaveCSS("opacity", "1");
+  await expect(bottomFade).toHaveCSS("opacity", "1");
+  expect((await topFade.boundingBox())!.height).toBeGreaterThan(0);
+  expect((await bottomFade.boundingBox())!.height).toBeGreaterThan(0);
+  await page.screenshot({
+    path: "test-results/question-choice-scroll-fades.png",
+  });
   await options.evaluate((el) => (el.scrollTop = el.scrollHeight));
+  await expect(topFade).toHaveCSS("opacity", "1");
+  await expect(bottomFade).toHaveCSS("opacity", "0");
   expect(await footer.boundingBox()).toEqual(fixed);
   expect(await other.boundingBox()).toEqual(otherBefore);
   await question.getByRole("radio", { name: /^Implementation 12 / }).check();
@@ -316,6 +344,12 @@ test("question layout keeps the longest height, fixed Other/footer, and option-o
   await expect(submit).toBeEnabled();
   expect((await question.boundingBox())!.height).toBeCloseTo(initial.height, 0);
   await tab("Q1").click();
+  const compactFade = question.locator(
+    '.question-group[data-active="true"] .scroll-edge-fade',
+  );
+  await expect(compactFade).toHaveCount(2);
+  for (const fade of await compactFade.all())
+    await expect(fade).toHaveCSS("opacity", "0");
   await expect(
     question.getByRole("radio", { name: "Compact", exact: true }),
   ).toBeChecked();

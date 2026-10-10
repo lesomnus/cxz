@@ -15,6 +15,7 @@ import type { ComposerPaste } from "./composer-pastes";
 import { composerPrompt } from "./composer-code";
 import { TabList } from "./tab-list";
 import { Markdown } from "./markdown";
+import { ScrollFade } from "./scroll-fade";
 
 export function QuestionCard({
   e,
@@ -141,7 +142,7 @@ export function QuestionCard({
             <div className="question-text" id={`${prefix}-question-${index}`}>
               {q.text}
             </div>
-            <div className="question-options">
+            <ScrollFade viewportClassName="question-options">
               {q.options.map((o) => (
                 <div
                   key={o.label}
@@ -181,7 +182,7 @@ export function QuestionCard({
                   )}
                 </div>
               ))}
-            </div>
+            </ScrollFade>
             {q.other && (
               <div
                 className="question-other"

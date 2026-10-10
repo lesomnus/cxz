@@ -6,6 +6,7 @@ const scrollSurfaces = [
   ".composer-editor textarea",
   ".card-body",
   ".question-cards",
+  ".scroll-fade-viewport",
   ".settings-form-pane",
   ".resource-view",
   ".file-explorer",
