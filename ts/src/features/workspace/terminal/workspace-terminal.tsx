@@ -8,6 +8,11 @@ import type { Connection } from "#src/shared/api/connection.ts";
 import { Button } from "@lesomnus/cxz-ui";
 import { openTerminal, type TerminalLink } from "./terminal-link";
 import { enableTerminalWebGL } from "./terminal-renderer";
+import { terminalTheme } from "./terminal-theme";
+import { installTerminalSelectionCopy } from "./terminal-selection-copy";
+import { installTerminalKeyboard } from "./terminal-keyboard";
+import { useSettings } from "#src/shared/settings/settings.ts";
+import { resolveTerminalSettings } from "#src/shared/settings/terminal-settings.ts";
 
 export function terminalShortcut(
   event: Pick<
@@ -48,6 +53,15 @@ export function WorkspaceTerminal({
     select: { all: true },
   });
   const theme = useTheme();
+  const { snapshot } = useSettings();
+  const preferences = useRef(resolveTerminalSettings(snapshot.document));
+  preferences.current = resolveTerminalSettings(snapshot.document);
+  const [clipboardNotice, setClipboardNotice] = useState<
+    "copied" | "failed" | ""
+  >("");
+  const noticeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
   const currentTheme = useRef(theme);
   currentTheme.current = theme;
   const screen = useRef<HTMLDivElement>(null);
@@ -69,6 +83,7 @@ export function WorkspaceTerminal({
     let cleanup = () => {};
     setState("Connecting…");
     setEnded(false);
+    setClipboardNotice("");
     void (async () => {
       const [{ Terminal }, { FitAddon }] = await Promise.all([
         import("@xterm/xterm"),
@@ -88,8 +103,22 @@ export function WorkspaceTerminal({
       term.loadAddon(fitter);
       term.open(screen.current!);
       const disposeRenderer = enableTerminalWebGL(term);
+      const disposeCopy = installTerminalSelectionCopy(
+        term,
+        screen.current!,
+        () => preferences.current.copyOnSelect,
+        (result) => {
+          clearTimeout(noticeTimer.current);
+          setClipboardNotice(result);
+          noticeTimer.current = setTimeout(() => setClipboardNotice(""), 2200);
+        },
+      );
+      const disposeKeyboard = installTerminalKeyboard(term);
       // Install cleanup before opening the transport, including partial setup.
       cleanup = () => {
+        clearTimeout(noticeTimer.current);
+        disposeKeyboard();
+        disposeCopy();
         disposeRenderer();
         term.dispose();
       };
@@ -148,6 +177,9 @@ export function WorkspaceTerminal({
       const observer = new ResizeObserver(resize);
       observer.observe(screen.current!);
       cleanup = () => {
+        clearTimeout(noticeTimer.current);
+        disposeKeyboard();
+        disposeCopy();
         observer.disconnect();
         data.dispose();
         sizes.dispose();
@@ -184,6 +216,24 @@ export function WorkspaceTerminal({
         <small role={project.error ? "alert" : "status"}>
           {project.error ? String(project.error) : translateKnown(state)}
         </small>
+        <span
+          className="terminal-clipboard-feedback"
+          role="status"
+          aria-live="polite"
+          title={
+            clipboardNotice === "failed"
+              ? t(
+                  "Clipboard access failed. Use the terminal context menu to copy.",
+                )
+              : undefined
+          }
+        >
+          {clipboardNotice === "copied"
+            ? t("Copied")
+            : clipboardNotice === "failed"
+              ? t("Copy failed")
+              : ""}
+        </span>
         {ended && (
           <Button onClick={() => reconnect((value) => value + 1)}>
             {t("Reconnect")}
@@ -201,30 +251,4 @@ export function WorkspaceTerminal({
       <div className="terminal-screen" ref={screen} />
     </section>
   );
-}
-
-function terminalTheme(theme: "light" | "dark") {
-  const light = theme === "light";
-  return {
-    background: light ? "#fbfbfb" : "#111111",
-    foreground: light ? "#202020" : "#ededed",
-    cursor: light ? "#202020" : "#ededed",
-    selectionBackground: light ? "#cccccc" : "#444444",
-    black: "#111111",
-    red: light ? "#a04a4a" : "#c07878",
-    green: light ? "#4c7135" : "#8fa979",
-    yellow: light ? "#82621f" : "#c1a36d",
-    blue: light ? "#386889" : "#7b9db9",
-    magenta: light ? "#7b4f8f" : "#ac8abd",
-    cyan: light ? "#2f716c" : "#76aaa6",
-    white: light ? "#666666" : "#dddddd",
-    brightBlack: "#777777",
-    brightRed: light ? "#913737" : "#e49a9a",
-    brightGreen: light ? "#3d6425" : "#b1c995",
-    brightYellow: light ? "#725114" : "#dec08c",
-    brightBlue: light ? "#275877" : "#a0bfd8",
-    brightMagenta: light ? "#6b3e7e" : "#c9abd7",
-    brightCyan: light ? "#20635e" : "#9acac5",
-    brightWhite: light ? "#333333" : "#ffffff",
-  };
 }

@@ -36,6 +36,8 @@ export function App({ children }: PropsWithChildren) {
   async function logout() {
     const r = await fetch("/auth/logout", { method: "POST" });
     if (!r.ok) throw Error(t("Sign out failed"));
+    connection?.drafts.clear();
+    connection?.attention.clear();
     setConnection(undefined);
   }
   if (!connection)

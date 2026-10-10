@@ -1,5 +1,17 @@
 // English source messages are always bundled; other packs load on demand.
 export const messages = {
+  "Terminal settings": "Terminal settings",
+  "Copy on selection": "Copy on selection",
+  "Automatically copy selected terminal text.":
+    "Automatically copy selected terminal text.",
+  "Dragging copies the final selection when you release the pointer. A notice confirms when clipboard access succeeds.":
+    "Dragging copies the final selection when you release the pointer. A notice confirms when clipboard access succeeds.",
+  "Appearance, language, and terminal behavior for this browser.":
+    "Appearance, language, and terminal behavior for this browser.",
+  Copied: "Copied",
+  "Copy failed": "Copy failed",
+  "Clipboard access failed. Use the terminal context menu to copy.":
+    "Clipboard access failed. Use the terminal context menu to copy.",
   "Upload files": "Upload files",
   "Upload folder": "Upload folder",
   Attachment: "Attachment",
@@ -433,5 +445,14 @@ export const messages = {
     "Alias must be 3–20 characters: lowercase letters, digits and single hyphens, beginning with a letter.",
   Confirm: "Confirm",
   Title: "Title",
+  "Unread response": "Unread response",
+  Notifications: "Notifications",
+  "Notification sounds": "Notification sounds",
+  "Play a sound when a response finishes or a new question arrives.":
+    "Play a sound when a response finishes or a new question arrives.",
+  "Sounds become available after interacting with the page. Tab indicators do not request notification permission.":
+    "Sounds become available after interacting with the page. Tab indicators do not request notification permission.",
+  "Upload interrupted. Remove this chip and select the file again.":
+    "Upload interrupted. Remove this chip and select the file again.",
 } as const;
 export type Message = keyof typeof messages;

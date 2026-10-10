@@ -39,6 +39,7 @@ export function ConversationComposer({
   onTerminal,
   menu,
   upload,
+  onDraftAssetsChange,
   children,
 }: {
   formRef?: Ref<HTMLFormElement>;
@@ -61,6 +62,7 @@ export function ConversationComposer({
   onTerminal?: () => void;
   menu?: ReactNode | ((pick: (directory?: boolean) => void) => ReactNode);
   upload?: UploadFile;
+  onDraftAssetsChange?: () => void;
   children?: ReactNode;
 }) {
   useLocale();
@@ -220,7 +222,10 @@ export function ConversationComposer({
             commands={commands}
             editorRef={editor}
             upload={upload}
-            onUploadChange={() => refreshUploads((value) => value + 1)}
+            onUploadChange={() => {
+              refreshUploads((value) => value + 1);
+              onDraftAssetsChange?.();
+            }}
           />
         </div>
       </div>

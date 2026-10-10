@@ -29,6 +29,8 @@ import { ValueMenu } from "@lesomnus/cxz-ui";
 import { FontFamilyControl } from "#src/features/settings/components/font-family-control.tsx";
 import { SettingSlider } from "@lesomnus/cxz-ui";
 import { SegmentedControl } from "@lesomnus/cxz-ui";
+import { Switch } from "@lesomnus/cxz-ui";
+import { resolveTerminalSettings } from "#src/shared/settings/terminal-settings.ts";
 import { useTheme, resolveTheme } from "#src/shared/theme/theme.tsx";
 import {
   SourceEditor,
@@ -338,7 +340,9 @@ export function SettingsPage({
                 <small>
                   {topic === "editor"
                     ? t("Editor changes are saved immediately in this browser.")
-                    : t("Appearance and display language for this browser.")}
+                    : t(
+                        "Appearance, language, and terminal behavior for this browser.",
+                      )}
                 </small>
               </div>
               {!wide && (
@@ -435,6 +439,63 @@ export function SettingsPage({
                         />
                       </SettingField>
                     </fieldset>
+                  </section>
+                  <section
+                    className="settings-group"
+                    aria-label={t("Terminal settings")}
+                  >
+                    <h2>{t("Terminal")}</h2>
+                    <fieldset disabled={!snapshot.valid}>
+                      <SettingField
+                        title={t("Copy on selection")}
+                        settingId="terminal.copyOnSelect"
+                        summary={t(
+                          "Automatically copy selected terminal text.",
+                        )}
+                        details={t(
+                          "Dragging copies the final selection when you release the pointer. A notice confirms when clipboard access succeeds.",
+                        )}
+                      >
+                        <Switch
+                          label={t("Copy on selection")}
+                          checked={
+                            resolveTerminalSettings(snapshot.document)
+                              .copyOnSelect
+                          }
+                          disabled={!snapshot.valid}
+                          onChange={(checked) =>
+                            update("terminal.copyOnSelect", checked)
+                          }
+                        />
+                      </SettingField>
+                    </fieldset>
+                  </section>
+                  <section
+                    className="settings-group"
+                    aria-label={t("Notifications")}
+                  >
+                    <h2>{t("Notifications")}</h2>
+                    <SettingField
+                      title={t("Notification sounds")}
+                      settingId="notifications.sound"
+                      summary={t(
+                        "Play a sound when a response finishes or a new question arrives.",
+                      )}
+                      details={t(
+                        "Sounds become available after interacting with the page. Tab indicators do not request notification permission.",
+                      )}
+                    >
+                      <Switch
+                        label={t("Notification sounds")}
+                        checked={
+                          snapshot.document["notifications.sound"] !== false
+                        }
+                        disabled={!snapshot.valid}
+                        onChange={(checked) =>
+                          update("notifications.sound", checked)
+                        }
+                      />
+                    </SettingField>
                   </section>
                 </>
               )}

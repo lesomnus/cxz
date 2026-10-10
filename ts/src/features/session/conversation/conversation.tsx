@@ -156,6 +156,32 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
   followRef.current = follow;
   const firstSeq = events[0]?.seq;
   useEffect(() => {
+    const acknowledge = () => {
+      c.attention.setReading(
+        follow &&
+          status === "Live" &&
+          !document.activeElement?.closest(".workspace-terminal") &&
+          document.visibilityState === "visible" &&
+          document.hasFocus()
+          ? id
+          : "",
+        latestSeq.current,
+      );
+    };
+    acknowledge();
+    document.addEventListener("visibilitychange", acknowledge);
+    window.addEventListener("focus", acknowledge);
+    window.addEventListener("blur", acknowledge);
+    document.addEventListener("focusin", acknowledge);
+    return () => {
+      c.attention.setReading("");
+      document.removeEventListener("visibilitychange", acknowledge);
+      window.removeEventListener("focus", acknowledge);
+      window.removeEventListener("blur", acknowledge);
+      document.removeEventListener("focusin", acknowledge);
+    };
+  }, [c, id, follow, status, events, turn, terminalVisible]);
+  useEffect(() => {
     if (firstSeq === undefined) return;
     const known = precedingRef.current;
     if (known && known.before <= firstSeq && firstSeq <= known.through) return;
@@ -391,6 +417,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
           { signal },
         )) {
           if (canceled) return;
+          c.attention.event(id, e);
           if (e.kind === "state") setExecutionState(e.text);
           setTurn((old) => advanceTurn(old, e, true));
           rememberMetadata([e]);
@@ -811,6 +838,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         formRef={composer}
         inputRef={composerInput}
         draft={draft}
+        onDraftAssetsChange={() => c.drafts.persist(id)}
         pastes={c.pastes}
         onChange={setDraft}
         onSubmit={send}
@@ -884,6 +912,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
                 );
                 c.store.apply("cxz.Session", [{ id: session.id }]);
                 c.drafts.delete(id);
+                c.attention.reset(id);
                 await navigate({ to: "/sessions", replace: true });
               })
             }

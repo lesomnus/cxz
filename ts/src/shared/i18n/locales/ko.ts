@@ -1,5 +1,17 @@
 import type { LanguagePack } from "#src/shared/i18n/i18n.ts";
 export const messages = {
+  "Terminal settings": "터미널 설정",
+  "Copy on selection": "선택 시 복사",
+  "Automatically copy selected terminal text.":
+    "선택한 터미널 텍스트를 자동으로 복사합니다.",
+  "Dragging copies the final selection when you release the pointer. A notice confirms when clipboard access succeeds.":
+    "드래그를 놓으면 최종 선택 내용을 복사합니다. 클립보드 복사에 성공하면 안내가 표시됩니다.",
+  "Appearance, language, and terminal behavior for this browser.":
+    "이 브라우저의 테마, 언어 및 터미널 동작을 설정합니다.",
+  Copied: "복사됨",
+  "Copy failed": "복사 실패",
+  "Clipboard access failed. Use the terminal context menu to copy.":
+    "클립보드에 접근하지 못했습니다. 터미널 우클릭 메뉴에서 복사하세요.",
   "Upload files": "파일 업로드",
   "Upload folder": "폴더 업로드",
   Attachment: "첨부 파일",
@@ -434,4 +446,13 @@ export const messages = {
     "별칭은 소문자로 시작하는 3–20자의 소문자, 숫자, 단일 하이픈이어야 합니다.",
   Confirm: "확인",
   Title: "제목",
+  "Unread response": "읽지 않은 응답",
+  Notifications: "알림",
+  "Notification sounds": "알림 소리",
+  "Play a sound when a response finishes or a new question arrives.":
+    "응답이 완료되거나 새 질문이 도착하면 소리를 재생합니다.",
+  "Sounds become available after interacting with the page. Tab indicators do not request notification permission.":
+    "페이지를 클릭하거나 키를 누른 뒤 소리가 재생됩니다. 탭 표시는 알림 권한을 요청하지 않습니다.",
+  "Upload interrupted. Remove this chip and select the file again.":
+    "업로드가 중단됐습니다. 이 칩을 제거하고 파일을 다시 선택하세요.",
 } satisfies LanguagePack;

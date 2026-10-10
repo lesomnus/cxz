@@ -5,6 +5,7 @@ import {
   resolveEditorSettings,
 } from "./editor-settings";
 import { SettingsStore } from "./settings-store";
+import { resolveTerminalSettings } from "./terminal-settings";
 
 function fixture(raw: string | null = null) {
   let file = raw;
@@ -16,6 +17,36 @@ function fixture(raw: string | null = null) {
   };
   return { store: new SettingsStore(storage), storage, file: () => file };
 }
+it("persists terminal copy preferences in the settings file and rejects non-booleans", () => {
+  const { store, file } = fixture('{"future":true}');
+  expect(resolveTerminalSettings(store.snapshot().document).copyOnSelect).toBe(
+    true,
+  );
+  store.set("terminal.copyOnSelect", false);
+  expect(JSON.parse(file()!)).toEqual({
+    future: true,
+    "terminal.copyOnSelect": false,
+  });
+  expect(
+    resolveTerminalSettings(
+      new SettingsStore({ getItem: () => file(), setItem: () => {} }).snapshot()
+        .document,
+    ).copyOnSelect,
+  ).toBe(false);
+  for (const value of [null, 0, "false", []]) {
+    expect(() => store.set("terminal.copyOnSelect", value)).toThrow(
+      "Enter true or false",
+    );
+  }
+  expect(resolveTerminalSettings(store.snapshot().document).copyOnSelect).toBe(
+    false,
+  );
+  store.set("terminal.copyOnSelect", undefined);
+  expect(resolveTerminalSettings(store.snapshot().document).copyOnSelect).toBe(
+    true,
+  );
+  expect(JSON.parse(file()!)).toEqual({ future: true });
+});
 it("inherits each missing session field independently, including explicit false", () => {
   const document = parseSettings(
     '{"editor.indentSize":4,"editor.insertSpaces":true,"editor.tabSize":8,"editor.colorPalette":"warm","session.editor.insertSpaces":false,"session.editor.tabSize":2}',

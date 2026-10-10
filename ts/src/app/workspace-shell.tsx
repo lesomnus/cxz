@@ -19,6 +19,7 @@ import { RouteLink } from "#src/shared/navigation/route-link.tsx";
 import { useWorkspaceRoute } from "./router";
 import { ResourceIcon } from "#src/shared/navigation/resource-icon.tsx";
 import { WorkspaceContext } from "./workspace-context";
+import { useSessionAttention } from "#src/features/session/model/use-session-attention.ts";
 export function Workspace({
   connection: c,
   logout,
@@ -41,6 +42,11 @@ export function Workspace({
   useEffect(() => setSettingsFileOpen(false), [resource, settingsTopic]);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const inventory = useResourceInventory(c);
+  const unread = useSessionAttention(
+    c,
+    inventory.sessions,
+    resource === "sessions" ? session : "",
+  );
   const projects = inventory.projects;
   const sessionsByProject = useMemo(() => {
     const grouped = new Map<string, Session[]>();
@@ -174,6 +180,7 @@ export function Workspace({
                     items={sessionsByProject.get(key(p.id)) ?? []}
                     loading={inventory.loading.sessions}
                     selected={session}
+                    unread={unread}
                     open={!collapsed.has(p.runtimeId)}
                     toggle={() =>
                       setCollapsed((old) => {

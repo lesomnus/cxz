@@ -50,6 +50,20 @@ export function parseSettings(raw: string): SettingsDocument {
   if (!document || typeof document !== "object" || Array.isArray(document))
     throw new Error(t("Settings must be a JSON object."));
   const value = document as SettingsDocument;
+  if (
+    Object.hasOwn(value, "notifications.sound") &&
+    typeof value["notifications.sound"] !== "boolean"
+  )
+    throw new Error(
+      t("{name}: Enter true or false.", { name: "notifications.sound" }),
+    );
+  if (
+    Object.hasOwn(value, "terminal.copyOnSelect") &&
+    typeof value["terminal.copyOnSelect"] !== "boolean"
+  )
+    throw new Error(
+      t("{name}: Enter true or false.", { name: "terminal.copyOnSelect" }),
+    );
   for (const prefix of ["editor.", "session.editor."]) {
     for (const key of editorKeys) {
       const name = prefix + key;

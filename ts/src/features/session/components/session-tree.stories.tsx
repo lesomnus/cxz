@@ -11,10 +11,12 @@ function SessionPanel({
   count = 3,
   loading = false,
   expanded = true,
+  unread = false,
 }: {
   count?: number;
   loading?: boolean;
   expanded?: boolean;
+  unread?: boolean;
 }) {
   const router = useMemo(
     () =>
@@ -22,12 +24,17 @@ function SessionPanel({
         {
           shell: ({ children }: PropsWithChildren) => <>{children}</>,
           view: () => (
-            <SessionList count={count} loading={loading} expanded={expanded} />
+            <SessionList
+              count={count}
+              loading={loading}
+              expanded={expanded}
+              unread={unread}
+            />
           ),
         },
         createMemoryHistory({ initialEntries: ["/sessions/session-0"] }),
       ),
-    [count, loading, expanded],
+    [count, loading, expanded, unread],
   );
   return <RouterProvider router={router} />;
 }
@@ -35,6 +42,7 @@ function SessionList({
   count,
   loading,
   expanded,
+  unread,
 }: Required<Parameters<typeof SessionPanel>[0]>) {
   const route = useWorkspaceRoute();
   const [open, setOpen] = useState(expanded);
@@ -54,6 +62,15 @@ function SessionList({
             items={items}
             loading={loading}
             selected={route.session}
+            unread={
+              unread
+                ? new Set(
+                    items
+                      .filter((s) => s.runtimeId !== route.session)
+                      .map((s) => s.runtimeId),
+                  )
+                : undefined
+            }
             open={open}
             toggle={() => setOpen((value) => !value)}
           />
@@ -83,3 +100,4 @@ export const LongList: Story = { args: { count: 24 } };
 export const Collapsed: Story = { args: { expanded: false } };
 export const Empty: Story = { args: { count: 0 } };
 export const Loading: Story = { args: { count: 0, loading: true } };
+export const UnreadCompleted: Story = { args: { unread: true } };

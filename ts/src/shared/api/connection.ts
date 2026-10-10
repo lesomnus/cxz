@@ -8,9 +8,11 @@ import { SessionService } from "#gen/cxz/session_svc_pb";
 import type { ComposerPaste } from "#src/features/session/composer/composer-pastes.ts";
 import type { EditorState } from "#src/features/workspace/editor/workspace-editor.tsx";
 import { ResourceInventory } from "./resource-inventory";
+import { SessionDrafts } from "#src/features/session/model/session-drafts.ts";
+import { SessionAttention } from "#src/features/session/model/session-attention.ts";
 
 // All client state belongs to one authenticated Connection. No credentials or
-// conversation cache are persisted in localStorage; sign-out discards the tree.
+// conversation cache are persisted in localStorage. Drafts use tab-local storage.
 export class Connection {
   readonly clientId = crypto.randomUUID();
   readonly transport;
@@ -19,9 +21,10 @@ export class Connection {
   readonly projects;
   readonly sessions;
   readonly inventory;
-  readonly drafts = new Map<string, string>();
+  readonly attention;
   // Original paste bodies stay in this authenticated connection's memory, like drafts.
   readonly pastes = new Map<string, ComposerPaste>();
+  readonly drafts;
   readonly editors = new Map<string, EditorState>();
   readonly inProcess: boolean;
   constructor(
@@ -29,6 +32,7 @@ export class Connection {
     transport?: Transport,
   ) {
     this.inProcess = !!transport;
+    this.drafts = new SessionDrafts(baseUrl, this.pastes);
     this.transport =
       transport ??
       createConnectTransport({
@@ -43,6 +47,7 @@ export class Connection {
     this.queries = new Queries(this.store, this.transport, entities);
     this.projects = createClient(ProjectService, this.transport);
     this.sessions = createClient(SessionService, this.transport);
+    this.attention = new SessionAttention(this.sessions, baseUrl);
     this.inventory = new ResourceInventory(
       this.projects,
       this.sessions,

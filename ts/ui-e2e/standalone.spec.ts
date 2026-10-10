@@ -1,5 +1,22 @@
 import { expect, test } from "@playwright/test";
 
+test("standalone switch supports pointer and keyboard activation and a disabled state", async ({
+  page,
+}) => {
+  await page.goto("/iframe.html?id=components-switch--default&viewMode=story");
+  const toggle = page.getByRole("switch", { name: "Copy on selection" });
+  await expect(toggle).toHaveAttribute("aria-checked", "true");
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-checked", "false");
+  await toggle.press("Space");
+  await expect(toggle).toHaveAttribute("aria-checked", "true");
+  await toggle.press("Enter");
+  await expect(toggle).toHaveAttribute("aria-checked", "false");
+  await page.goto("/iframe.html?id=components-switch--disabled&viewMode=story");
+  await expect(toggle).toBeDisabled();
+  await expect(toggle).toHaveAttribute("aria-checked", "true");
+});
+
 test("package styling and tokens work without resetting host controls", async ({
   page,
 }) => {

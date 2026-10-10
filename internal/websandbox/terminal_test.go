@@ -60,3 +60,25 @@ func TestSimulatedTerminalProjectFilesInputExitAndNoJournal(t *testing.T) {
 		t.Fatal("unknown project shell", err)
 	}
 }
+
+func TestSimulatedTerminalWordErase(t *testing.T) {
+	server := New(1, time.Millisecond)
+	defer server.Close()
+	p := &Projects{S: server}
+	stream := &sandboxTerminalStream{fixtureStream: fixtureStream[resource.ProjectTerminalReply]{ctx: t.Context()}, requests: []*resource.ProjectTerminalRequest{
+		resource.ProjectTerminalRequest_builder{Ref: resource.ProjectRef_builder{RuntimeId: proto.String("project-1")}.Build(), Columns: proto.Uint32(80), Rows: proto.Uint32(24)}.Build(),
+		resource.ProjectTerminalRequest_builder{Input: []byte("\x17echo keep 한글   \x17done\recho word\x17\x17\x17echo empty\r")}.Build(),
+	}}
+	if err := p.Terminal(stream); err != nil {
+		t.Fatal(err)
+	}
+	var output strings.Builder
+	for _, reply := range stream.replies {
+		output.Write(reply.GetOutput())
+	}
+	for _, expected := range []string{"\r\nkeep done\r\n", "\r\nempty\r\n"} {
+		if !strings.Contains(output.String(), expected) {
+			t.Fatalf("missing %q in %q", expected, output.String())
+		}
+	}
+}

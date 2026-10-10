@@ -139,6 +139,47 @@ test("rapid updates respect reading history, and Latest resumes following during
   expect(errors).toEqual([]);
 });
 
+test("a native bottom clamp before the first wheel frame preserves reading intent", async ({
+  page,
+}) => {
+  const errors = await ready(page);
+  await send(page);
+  await expect.poll(() => received(page)).toBeGreaterThan(15);
+  const positions = await page.locator(".transcript").evaluate((el) => {
+    const before = el.scrollTop;
+    el.dispatchEvent(
+      new WheelEvent("wheel", {
+        deltaY: -800,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+    // Reproduce the native clamp from a measured row/viewport change in the
+    // same task, before the queued smooth-wheel frame can move away from latest.
+    (el as HTMLElement).style.flex = "none";
+    (el as HTMLElement).style.height = `${el.clientHeight + 8}px`;
+    return {
+      before,
+      top: el.scrollTop,
+      max: el.scrollHeight - el.clientHeight,
+    };
+  });
+  expect(positions.before).toBeGreaterThan(positions.max + 1);
+  expect(positions.top).toBeCloseTo(positions.max, 0);
+  await expect(
+    page.locator(".storybook-burst-status [data-following]"),
+  ).toHaveText("Reading history");
+  const before = await received(page);
+  await expect.poll(() => received(page)).toBeGreaterThan(before + 10);
+  expect(await gap(page)).toBeGreaterThan(300);
+  await page.getByRole("button", { name: "Latest", exact: true }).click();
+  await expect(
+    page.locator(".storybook-burst-status [data-following]"),
+  ).toHaveText("Following latest");
+  await expect.poll(() => gap(page)).toBeLessThan(1);
+  expect(errors).toEqual([]);
+});
+
 test("Stop and Reset cancel pending rapid updates", async ({ page }) => {
   const errors = await ready(page);
   await send(page);

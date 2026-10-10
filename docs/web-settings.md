@@ -42,6 +42,7 @@ editing known settings through the UI.
 {
   "ui.language": "en",
   "ui.theme": "dark",
+  "terminal.copyOnSelect": true,
   "editor.indentSize": 2,
   "editor.insertSpaces": true,
   "editor.tabSize": 4,
@@ -96,6 +97,13 @@ settings API. `sandbox-e2e/language.spec.ts` checks lazy fetches, persistence,
 failures and editor state; production tests cover the actual gateway CSP.
 
 ## Theme and reusable controls
+
+**General → Terminal** includes **Copy on selection**, saved immediately as the
+boolean `terminal.copyOnSelect`. Missing values enable automatic copying; invalid
+types fail whole-file validation. Open terminals apply changes without reconnecting.
+The shared `Switch` control supports pointer, Space and Enter activation with
+an accessible switch state and a disabled state. Its Storybook examples are also
+available in the standalone UI package.
 
 **General → Theme** saves `ui.theme` immediately: `light`, `dark`, or `system`.
 Missing values resolve to **dark**, preserving the existing appearance; invalid
