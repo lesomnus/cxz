@@ -367,6 +367,54 @@ test("question layout keeps the longest height, fixed Other/footer, and option-o
   await page.screenshot({ path: "test-results/question-long-mobile.png" });
 });
 
+test("choice fades track remaining distance and disappear on the boundary frame", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=conversation-questioncard--long-questions&viewMode=story",
+  );
+  const question = page.getByRole("region", { name: "Question", exact: true });
+  await question.getByRole("tab", { name: "Q2", exact: true }).click();
+  const samples = await question
+    .locator('.question-group[data-active="true"]')
+    .evaluate(async (group) => {
+      const pane = group.querySelector<HTMLElement>(".question-options")!;
+      const top = group.querySelector<HTMLElement>(".scroll-edge-fade-top")!;
+      const bottom = group.querySelector<HTMLElement>(
+        ".scroll-edge-fade-bottom",
+      )!;
+      const depth = parseFloat(
+        getComputedStyle(group).getPropertyValue("--scroll-fade-depth"),
+      );
+      const max = pane.scrollHeight - pane.clientHeight;
+      const sample = async (position: number, fade: HTMLElement) => {
+        pane.scrollTop = position;
+        await new Promise<void>((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        );
+        const style = getComputedStyle(fade);
+        return {
+          opacity: Number(style.opacity),
+          height: parseFloat(style.height),
+        };
+      };
+      const bottomNear = await sample(max - depth / 4, bottom);
+      const bottomEnd = await sample(max, bottom);
+      const topNear = await sample(depth / 4, top);
+      const topEnd = await sample(0, top);
+      return { depth, bottomNear, bottomEnd, topNear, topEnd };
+    });
+  for (const near of [samples.bottomNear, samples.topNear]) {
+    expect(near.opacity).toBeGreaterThan(0);
+    expect(near.opacity).toBeLessThan(0.5);
+    expect(near.height).toBeLessThanOrEqual(samples.depth / 4 + 1);
+  }
+  for (const end of [samples.bottomEnd, samples.topEnd]) {
+    expect(end.opacity).toBe(0);
+    expect(end.height).toBe(0);
+  }
+});
+
 test("questions expand to the available conversation height and collapse from either margin without losing answers", async ({
   page,
 }) => {

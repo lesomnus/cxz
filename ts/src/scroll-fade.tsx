@@ -16,6 +16,12 @@ export function ScrollFade({
   useLayoutEffect(() => {
     const root = region.current!;
     const viewport = pane.current!;
+    const fadeDepth = Math.max(
+      1,
+      parseFloat(
+        getComputedStyle(root).getPropertyValue("--scroll-fade-depth"),
+      ),
+    );
     let frame = 0;
     let lastTop = viewport.scrollTop;
     let lastTime = performance.now();
@@ -35,10 +41,13 @@ export function ScrollFade({
       const top = clamp(viewport.scrollTop, 0, max);
       root.style.setProperty("--scroll-fade-top-hidden", `${top}px`);
       root.style.setProperty("--scroll-fade-bottom-hidden", `${max - top}px`);
-      root.style.setProperty("--scroll-fade-top-opacity", top > 0 ? "1" : "0");
+      root.style.setProperty(
+        "--scroll-fade-top-opacity",
+        String(clamp(top / fadeDepth, 0, 1)),
+      );
       root.style.setProperty(
         "--scroll-fade-bottom-opacity",
-        max > top ? "1" : "0",
+        String(clamp((max - top) / fadeDepth, 0, 1)),
       );
     };
     const settle = (time: number) => {

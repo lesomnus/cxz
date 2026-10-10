@@ -3505,9 +3505,7 @@ summary:hover {
   right: var(--native-scrollbar-size);
   max-height: 40%;
   pointer-events: none;
-  transition:
-    height 180ms ease-out,
-    opacity 180ms ease-out;
+  /* Distance tracks the viewport immediately; motion already settles in RAF. */
 }
 .scroll-edge-fade-top {
   top: 0;
@@ -3540,11 +3538,6 @@ summary:hover {
     var(--scroll-fade-background),
     transparent
   );
-}
-@media (prefers-reduced-motion: reduce) {
-  .scroll-edge-fade {
-    transition: none;
-  }
 }
 .question-option-card[data-selected="true"] {
   outline: 1px solid var(--shade-144);
