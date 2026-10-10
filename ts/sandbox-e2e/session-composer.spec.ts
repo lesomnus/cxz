@@ -113,7 +113,9 @@ test("overflow expands the input and last-line edits follow the bottom without p
   expect(await input.evaluate((el) => el.scrollTop)).toBe(0);
   await input.fill("short");
   await expect(input).toHaveAttribute("data-expanded", "false");
-  expect((await input.boundingBox())!.height).toBe(baseline);
+  await expect
+    .poll(async () => (await input.boundingBox())!.height)
+    .toBe(baseline);
   await page.setViewportSize({ width: 390, height: 844 });
   await input.fill("line\n".repeat(40));
   expect((await input.boundingBox())!.height).toBeLessThanOrEqual(844 * 0.35);

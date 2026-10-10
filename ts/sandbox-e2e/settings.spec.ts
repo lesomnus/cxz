@@ -428,8 +428,10 @@ test("one settings file persists, each session field overrides or inherits and e
   await page.reload();
   await expect(composer).toBeVisible({ timeout: 45000 });
   await expect(composer).toHaveCSS("tab-size", "8");
+  await expect(composer).toHaveValue("value");
+  await composer.press("Home");
   await composer.press("Tab");
-  await expect(composer).toHaveValue("\t");
+  await expect(composer).toHaveValue("\tvalue");
   await chooseSetting(page, "Scenario", "session-4");
   const other = page.getByRole("textbox", {
     name: "Other answer: Which environment?",
