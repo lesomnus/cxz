@@ -1,0 +1,52 @@
+.switch_control {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  width: 40px;
+  height: 22px;
+  padding: 3px;
+  border: 0;
+  border-radius: 11px;
+  background: var(--ui-shade-54);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background 160ms ease-out;
+}
+.switch_control > span {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--ui-shade-144);
+  transform: translateX(0);
+  transition:
+    transform 160ms ease-out,
+    background 160ms ease-out;
+}
+.switch_control[aria-checked="true"] {
+  background: var(--ui-shade-204);
+}
+.switch_control[aria-checked="true"] > span {
+  transform: translateX(18px);
+  background: var(--ui-shade-20);
+}
+.switch_control:not(:disabled):hover {
+  background: var(--ui-shade-72);
+}
+.switch_control[aria-checked="true"]:not(:disabled):hover {
+  background: var(--ui-shade-237);
+}
+.switch_control:focus-visible {
+  outline: 2px solid var(--ui-shade-237);
+  outline-offset: 2px;
+}
+.switch_control:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+@media (prefers-reduced-motion: reduce) {
+  .switch_control,
+  .switch_control > span {
+    transition: none;
+  }
+}

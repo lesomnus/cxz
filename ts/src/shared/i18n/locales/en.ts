@@ -1,5 +1,17 @@
 // English source messages are always bundled; other packs load on demand.
 export const messages = {
+  "Terminal settings": "Terminal settings",
+  "Copy on selection": "Copy on selection",
+  "Automatically copy selected terminal text.":
+    "Automatically copy selected terminal text.",
+  "Dragging copies the final selection when you release the pointer. A notice confirms when clipboard access succeeds.":
+    "Dragging copies the final selection when you release the pointer. A notice confirms when clipboard access succeeds.",
+  "Appearance, language, and terminal behavior for this browser.":
+    "Appearance, language, and terminal behavior for this browser.",
+  Copied: "Copied",
+  "Copy failed": "Copy failed",
+  "Clipboard access failed. Use the terminal context menu to copy.":
+    "Clipboard access failed. Use the terminal context menu to copy.",
   "Upload files": "Upload files",
   "Upload folder": "Upload folder",
   Attachment: "Attachment",

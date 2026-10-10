@@ -11,7 +11,9 @@ test.use({
 
 test("authenticated terminal runs a PTY shell under production CSP and preserves it while folded", async ({
   page,
+  context,
 }) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await disableTerminalWebGL(page);
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
@@ -26,11 +28,28 @@ test("authenticated terminal runs a PTY shell under production CSP and preserves
   const panel = page.getByRole("region", { name: "Workspace terminal" });
   await expect(panel).toContainText("fixture$");
   await expect(panel.locator(".xterm-helper-textarea")).toBeFocused();
+  const screen = (await panel.locator(".xterm-screen").boundingBox())!;
+  await page.mouse.move(screen.x + 1, screen.y + 6);
+  await page.mouse.down();
+  await page.mouse.move(screen.x + 45, screen.y + 6, { steps: 8 });
+  await page.mouse.up();
+  await expect(panel.locator(".terminal-clipboard-feedback")).toHaveText(
+    "Copied",
+  );
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toMatch(
+    /^fixt/,
+  );
   await page.keyboard.type(
     "CXZ_WEB_KEEP=preserved; printf 'connected:%s\\n' pty",
   );
   await page.keyboard.press("Enter");
   await expect(panel).toContainText("connected:pty");
+  await page.keyboard.type("printf '\\033[31mpalette-red\\033[0m\\n'");
+  await page.keyboard.press("Enter");
+  await expect(panel.locator(".xterm-fg-1").last()).toHaveCSS(
+    "color",
+    "rgb(255, 135, 159)",
+  );
   await page.keyboard.press("Control+Backquote");
   await expect(panel).toBeHidden();
   await page.keyboard.press("Control+Backquote");

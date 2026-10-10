@@ -39,7 +39,7 @@ export function SaveButton() {
 
 The base components inherit the host font and text color. The stylesheet defines only namespaced tokens and styles for library component classes; it does not reset the host's body, buttons or form fields. Dark is the default palette. Set `data-ui-theme="light"` on the document root for the light palette. Root-level `--ui-*` overrides also reach portaled menus and dialogs. Keep token values in CSS rather than duplicating design measurements in documentation.
 
-The public core entry exports Button/ButtonContent, ConfirmButton, ActionMenu, ValueMenu, SegmentedControl, ConfirmationDialog, EditableValue, FloatingCard, SettingField, SettingSlider, ElapsedTime and UIProvider. Button's `toolbar` variant provides the compact rectangular shape. Callbacks and selected values belong to the consuming application; cxz adapters handle persistence and session operations separately.
+The public core entry exports Button/ButtonContent, ConfirmButton, ActionMenu, ValueMenu, SegmentedControl, Switch, ConfirmationDialog, EditableValue, FloatingCard, SettingField, SettingSlider, ElapsedTime and UIProvider. Button's `toolbar` variant provides the compact rectangular shape. Callbacks and selected values belong to the consuming application; cxz adapters handle persistence and session operations separately.
 
 ## Translation
 

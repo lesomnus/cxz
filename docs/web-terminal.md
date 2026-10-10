@@ -53,12 +53,22 @@ to a terminal that has already been closed. Text selection and copying remain
 managed by xterm independently of the renderer. Hidden panels keep receiving
 output while xterm defers drawing until they are visible again.
 
-The standard ANSI colors use a subdued palette, with brighter variants on dark
+The standard ANSI colors preserve their hue families with pastel/neon variants on dark
 backgrounds and deeper variants on light backgrounds. Theme changes recolor the
 existing buffer without reconnecting the shell. Indexed and truecolor escape
 sequences keep xterm's native handling. Palette values live in
-`terminalTheme` in [workspace-terminal.tsx](../ts/src/features/workspace/terminal/workspace-terminal.tsx).
+`terminalTheme` in [terminal-theme.ts](../ts/src/features/workspace/terminal/terminal-theme.ts).
 No addon interprets terminal output as HTML, opens links or accesses the clipboard.
+
+Selecting terminal text copies it automatically by default. A drag copies the
+final selection on pointer release, rather than each intermediate position.
+Keyboard selection changes also copy. The header shows **Copied** only after
+the browser confirms the write, or **Copy failed** if clipboard access fails.
+**Settings → General → Terminal → Copy on selection** controls this behavior
+through the boolean `terminal.copyOnSelect` in the same browser settings file.
+Changing it updates an open terminal without reconnecting its PTY. Native context
+menu copying remains available; Ctrl+C continues to interrupt the shell. Browser
+shortcuts such as Ctrl+Shift+C may be intercepted before the terminal sees them.
 
 ## WASM sandbox
 

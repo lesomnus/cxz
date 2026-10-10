@@ -1,5 +1,17 @@
 import type { LanguagePack } from "#src/shared/i18n/i18n.ts";
 export const messages = {
+  "Terminal settings": "터미널 설정",
+  "Copy on selection": "선택 시 복사",
+  "Automatically copy selected terminal text.":
+    "선택한 터미널 텍스트를 자동으로 복사합니다.",
+  "Dragging copies the final selection when you release the pointer. A notice confirms when clipboard access succeeds.":
+    "드래그를 놓으면 최종 선택 내용을 복사합니다. 클립보드 복사에 성공하면 안내가 표시됩니다.",
+  "Appearance, language, and terminal behavior for this browser.":
+    "이 브라우저의 테마, 언어 및 터미널 동작을 설정합니다.",
+  Copied: "복사됨",
+  "Copy failed": "복사 실패",
+  "Clipboard access failed. Use the terminal context menu to copy.":
+    "클립보드에 접근하지 못했습니다. 터미널 우클릭 메뉴에서 복사하세요.",
   "Upload files": "파일 업로드",
   "Upload folder": "폴더 업로드",
   Attachment: "첨부 파일",
