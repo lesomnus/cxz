@@ -24,7 +24,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Title edits Session.name, which falls back to alias/runtime ID when absent. Alias is a separate identity field. Click either value to edit in place with a dimmed background and overlaid Cancel/Confirm controls. Production saves titles through the manual-title API and aliases through Patch, then updates the shared store. Runtime and run identities stay unchanged.",
+          "Title edits Session.name, which falls back to alias/runtime ID when absent. Alias is a separate identity field. Keys and values use monospace text with inset values. Hovering an editable row shows a dark row surface and the existing brighter rounded value surface. Click either value to edit in place with a dimmed background and overlaid Cancel/Confirm controls. Production saves titles through AuxRun(TITLE, text), which records a manual title without running a model, and aliases through Patch, then updates the shared store. Runtime and run identities stay unchanged.",
       },
     },
   },

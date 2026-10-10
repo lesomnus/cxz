@@ -85,6 +85,7 @@ function ValueEditor({
         font: font.font,
         letterSpacing: font.letterSpacing,
         "--editable-value-height": `${bounds.height}px`,
+        "--editable-value-padding": font.padding,
       } as CSSProperties);
     };
     measure();

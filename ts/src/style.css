@@ -877,18 +877,29 @@ header strong {
 }
 .session-details {
   margin: calc(2 * var(--space)) 0 0;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
 }
 .session-details > div {
   display: grid;
   grid-template-columns: minmax(90px, 1fr) minmax(0, 2fr);
   gap: calc(2 * var(--space));
   padding: var(--space);
+  border-radius: 6px;
+}
+.session-details > div:has(.editable-value-trigger):is(:hover, :focus-within) {
+  background: var(--shade-24);
+}
+.session-details
+  > div:has(.editable-value-trigger):is(:hover, :focus-within)
+  .editable-value-trigger {
+  background: var(--hover);
 }
 .session-details dt {
   color: var(--muted);
 }
 .session-details dd {
   margin: 0;
+  padding: 0 var(--control-inline-inset);
   overflow-wrap: anywhere;
 }
 .session-details dd code {
@@ -897,10 +908,10 @@ header strong {
 }
 .editable-value-trigger {
   display: block;
-  width: calc(100% + 2 * var(--space));
+  width: calc(100% + 2 * var(--control-inline-inset));
   min-height: 0;
-  margin: calc(-1 * var(--space));
-  padding: var(--space);
+  margin: calc(-1 * var(--space)) calc(-1 * var(--control-inline-inset));
+  padding: var(--space) var(--control-inline-inset);
   text-align: left;
 }
 .editable-value-trigger > .button-content {
@@ -930,7 +941,7 @@ header strong {
   display: block;
   width: 100%;
   height: var(--editable-value-height);
-  padding: var(--space);
+  padding: var(--editable-value-padding);
   border: 0;
   outline: 0;
   background: var(--shade-28);

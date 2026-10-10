@@ -11,9 +11,18 @@ test("inline edits keep value bounds and font, support hover and never submit th
   const font = await trigger.evaluate(
     (node) => getComputedStyle(node).fontFamily,
   );
+  const row = page.locator(".session-details > div").filter({ has: trigger });
+  await expect(row.locator("dt")).toHaveCSS("font-family", font);
+  await expect(row.locator("dd")).toHaveCSS("font-family", font);
   await expect(trigger).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
-  await trigger.hover();
+  await row.locator("dt").hover();
+  await expect(row).not.toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
   await expect(trigger).not.toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  expect(
+    await row.evaluate((node) => getComputedStyle(node).backgroundColor),
+  ).not.toBe(
+    await trigger.evaluate((node) => getComputedStyle(node).backgroundColor),
+  );
   await trigger.click();
   const dialog = page.getByRole("dialog", { name: "Edit Alias" });
   const input = dialog.getByRole("textbox", { name: "Alias", exact: true });
@@ -22,6 +31,14 @@ test("inline edits keep value bounds and font, support hover and never submit th
   for (const key of ["x", "y", "width", "height"] as const)
     expect(editing[key]).toBeCloseTo(bounds[key], 0);
   await expect(input).toHaveCSS("font-family", font);
+  await expect(input).toHaveCSS(
+    "padding-left",
+    await trigger.evaluate((node) => getComputedStyle(node).paddingLeft),
+  );
+  await expect(input).toHaveCSS(
+    "padding-right",
+    await trigger.evaluate((node) => getComputedStyle(node).paddingRight),
+  );
   expect(
     await dialog.evaluate(
       (node) => getComputedStyle(node, "::backdrop").backgroundColor,
@@ -160,6 +177,13 @@ test("Details and composer previews retain both title and alias across sequentia
       await expect(
         page.getByRole("dialog", { name: "Session details", exact: true }),
       ).toHaveCSS("opacity", "1");
+      await page
+        .locator(".session-details > div")
+        .filter({
+          has: page.getByRole("button", { name: "Edit Title", exact: true }),
+        })
+        .locator("dt")
+        .hover();
       await page.screenshot({
         path: "test-results/session-details-storybook.png",
       });
