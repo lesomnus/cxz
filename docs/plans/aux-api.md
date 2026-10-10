@@ -512,14 +512,23 @@ reconcile이 돌 때 기록된다.
   쌓이는 진짜 스레드이고, `AuxThread`(messages를 가진 별도 타입, 역시
   `Session`은 아니다)가 맞다. 그때도 요약·추천은 Aux다. Aux로 설계해도 이 길이
   막히지 않는다.
-- **요약을 검색 대상에 넣을지.** 대화 색인은
-  `input/assistant/tool_call/tool_output/tool_result`만 넣으므로 요약은 검색되지
-  않는다. 요약은 *대화에 대해 모델이 쓴 글*이라 히트에 섞이면 아무도 쓰지 않은
-  문장이 결과에 나온다. 넣는다면 출처를 구분해 표시해야 한다.
-- **요약 검색은 2단계 다음에 쉬워진다.** 요약이 행이 되면 색인에 넣는 일이 파일을
-  여는 일이 아니라 질의가 된다. 넣을지 말지는 여전히 위의 질문이다.
-- **`info` 응답 분리.** `Docker{action:"info"}`는 엔진 정보·히스토리 정책·cxz
-  버전/채널/핀을 한 응답에 섞는다. 이 설계와 독립적이지만 같은 성질의 문제다.
+
+## 닫힌 질문
+
+- **요약은 검색 대상에 넣지 않는다.** 대화 색인은
+  `input/assistant/tool_call/tool_output/tool_result`만 넣는다. 2단계로 요약이
+  행이 되어 색인에 넣는 일이 파일을 여는 일이 아니라 질의가 되었지만, 넣지 않는
+  쪽으로 정했다. 요약은 *대화에 대해 모델이 쓴 글*이고 검색 결과는 사람이 한 말을
+  인용하는 자리다. 거기에 아무도 쓰지 않은 문장이 섞이면 결과를 읽는 방식이
+  달라지고, opt-in 플래그로도 그 성질은 바뀌지 않는다 — 켜 둔 사람에게는 여전히
+  섞인 결과다. 구현 비용이 아니라 성질 때문이다
+  ([#133](https://github.com/lesomnus/cxz/issues/133)).
+- **`info` 응답은 분리되었다.** `Docker{action:"info"}`가 섞어 답하던 엔진 정보·
+  히스토리 정책·cxz 버전/채널/핀은 `GetEngineInfo`·`GetHistoryPolicy`·
+  `GetInstallationVersion` 셋이 되었고, 봉투 자체가 비었다
+  ([#132](https://github.com/lesomnus/cxz/issues/132), v0.1.5). 같은 모양이
+  `SessionService.Library`에 하나 남아 있다
+  ([#143](https://github.com/lesomnus/cxz/issues/143)).
 
 ## 비목표
 
