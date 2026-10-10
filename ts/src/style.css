@@ -17,13 +17,12 @@
   --send-exit-travel: 72px;
   --send-enter-travel: 40px;
   --send-content-scale: 0.96;
-  --transcript-shift-duration: 360ms;
-  --transcript-enter-duration: 220ms;
+  --transcript-shift-duration: 500ms;
+  --transcript-enter-duration: 300ms;
   --transcript-enter-travel: 28px;
   --transcript-enter-scale: 0.96;
-  --activity-card-step: 30px;
+  --activity-card-step: 36px;
   --activity-card-line-height: 18px;
-  --activity-card-blur: 14px;
   --activity-card-perspective: 280px;
   --activity-card-tilt: -14deg;
   --activity-card-duration: 200ms;
@@ -2010,6 +2009,9 @@ pre {
   height: var(--activity-card-step);
   z-index: 1;
 }
+.transcript-row[data-latest-activity="true"] {
+  height: auto;
+}
 .transcript-row[data-activity="true"] > .event-detail,
 .transcript-row[data-activity="true"] > .event-detail:not(:disabled):hover {
   min-height: 0;
@@ -2022,16 +2024,12 @@ pre {
   border-radius: calc(2 * var(--space));
   line-height: var(--activity-card-line-height);
   background: color-mix(in srgb, var(--shade-27) 62%, transparent);
-  -webkit-backdrop-filter: blur(var(--activity-card-blur));
-  backdrop-filter: blur(var(--activity-card-blur));
-  clip-path: polygon(0 0, 100% 0, 97% 100%, 3% 100%);
   transform-origin: center top;
   transform: perspective(var(--activity-card-perspective))
     rotateX(var(--activity-card-tilt));
   transition:
     grid-template-rows var(--activity-card-duration) ease-out,
     transform var(--activity-card-duration) ease-out,
-    clip-path var(--activity-card-duration) ease-out,
     background-color var(--activity-card-duration) ease-out;
 }
 .transcript-row[data-activity="true"] .activity-card-content,
@@ -2046,11 +2044,15 @@ pre {
   ) {
   z-index: 3;
 }
-.activity-card-preview[data-entered="true"] .activity-card-face {
+.activity-card-preview[data-entered="true"] .activity-card-face,
+.activity-card-preview[data-unfolded="true"] .activity-card-face {
   grid-template-rows: 1fr;
-  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
   transform: perspective(var(--activity-card-perspective)) rotateX(0deg);
   background: color-mix(in srgb, var(--shade-27) 86%, transparent);
+}
+.transcript-row[data-latest-activity="true"] .activity-card-face {
+  grid-template-rows: 1fr;
+  transform: none;
 }
 .event-detail[data-lifted="true"] .activity-card-face {
   grid-template-rows: 1fr;

@@ -7,6 +7,7 @@ import React, {
 } from "react";
 import type { SessionEvent } from "../gen/cxz/session_pb";
 import { useTranscriptMotion } from "./transcript-motion";
+import { ActivityCardUnfolded } from "./activity-card";
 import {
   messageLayout,
   messageMap,
@@ -209,6 +210,12 @@ export function VirtualMessages({
     viewport.top,
     viewport.height,
   );
+  const latestActivity = useMemo(() => {
+    for (let index = events.length - 1; index >= 0; index--)
+      if (events[index].kind !== "input" && events[index].kind !== "assistant")
+        return index;
+    return -1;
+  }, [events]);
   let promptIndex = -1;
   for (
     let i = 0;
@@ -267,6 +274,7 @@ export function VirtualMessages({
             key={id}
             data-row={id}
             data-activity={event.kind !== "input" && event.kind !== "assistant"}
+            data-latest-activity={start + index === latestActivity}
             className="transcript-row"
             style={{ top: layout.rows[start + index].top }}
             ref={(node) => {
@@ -277,7 +285,9 @@ export function VirtualMessages({
               };
             }}
           >
-            {render(event)}
+            <ActivityCardUnfolded value={start + index === latestActivity}>
+              {render(event)}
+            </ActivityCardUnfolded>
           </div>
         );
       })}

@@ -101,6 +101,8 @@ test("live additions glide existing rows and reveal new cards faster without cha
   expect(entry.opacity).toBeGreaterThan(0);
   expect(entry.opacity).toBeLessThan(1);
   expect(entry.blur).toBe("none");
+  expect(entry.duration).toBe(300);
+  expect(result.shifts[0].duration).toBe(500);
   expect(entry.duration).toBeLessThan(result.shifts[0].duration);
   for (const sample of [...result.shifts, ...result.entrances])
     expect(sample.paintedHeight).toBeCloseTo(sample.height, 0);
@@ -117,6 +119,31 @@ test("live additions glide existing rows and reveal new cards faster without cha
         ),
     )
     .toBeLessThan(1);
+  const latest = page.locator('.transcript-row[data-latest-activity="true"]');
+  await expect(latest).toHaveCount(1);
+  await expect(latest.locator(".activity-card-face")).toHaveCSS(
+    "transform",
+    "none",
+  );
+  const previous = await latest.getAttribute("data-row");
+  await page
+    .getByRole("textbox", { name: "Message", exact: true })
+    .fill("Continue the review");
+  await page.getByRole("button", { name: "Send", exact: true }).click();
+  await expect(latest).not.toHaveAttribute("data-row", previous!);
+  await expect(latest.locator(".activity-card-face")).toHaveCSS(
+    "transform",
+    "none",
+  );
+  const earlier = page.locator(`.transcript-row[data-row="${previous}"]`);
+  await expect(earlier).toHaveAttribute("data-latest-activity", "false");
+  await expect
+    .poll(() =>
+      earlier
+        .locator(".activity-card-face")
+        .evaluate((el) => new DOMMatrix(getComputedStyle(el).transform).m23),
+    )
+    .toBeLessThan(0);
 });
 
 test("reading history and reduced motion do not replay arrivals or displace the reading anchor", async ({

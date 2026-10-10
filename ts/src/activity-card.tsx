@@ -1,4 +1,6 @@
 import {
+  createContext,
+  useContext,
   useEffect,
   useId,
   useLayoutEffect,
@@ -10,6 +12,8 @@ import { createPortal } from "react-dom";
 import { Button } from "./button";
 import { EventTimePopover } from "./event-time-popover";
 import { useAnchoredCard } from "./floating-card";
+
+export const ActivityCardUnfolded = createContext(false);
 
 // The virtual row owns the folded footprint; this face can unfold above its
 // neighbors without changing the transcript's measured heights or scroll map.
@@ -30,6 +34,7 @@ export function ActivityCard({
   className?: string;
   state?: string;
 }) {
+  const unfolded = useContext(ActivityCardUnfolded);
   const surface = useRef<HTMLDivElement>(null);
   const details = useAnchoredCard(surface);
   const timestamp = useId();
@@ -168,6 +173,7 @@ export function ActivityCard({
               className="activity-card-preview"
               data-tool={className.includes("tool-activity")}
               data-entered={entered}
+              data-unfolded={unfolded}
               data-hovered={hovered}
               data-detail-open={details.expanded}
               data-focused={

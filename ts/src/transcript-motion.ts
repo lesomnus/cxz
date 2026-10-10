@@ -122,15 +122,21 @@ export function useTranscriptMotion({
       return;
     }
     const now = performance.now();
+    const style = getComputedStyle(root.current!);
+    const durationOf = (name: string) => {
+      const token = style.getPropertyValue(name).trim();
+      return parseFloat(token) * (token.endsWith("ms") ? 1 : 1000);
+    };
+    const duration = durationOf("--transcript-shift-duration");
+    const entranceDuration = durationOf("--transcript-enter-duration");
+    const settleDuration = Math.max(duration, entranceDuration);
     if (sequence !== undefined && sequence > old.tail) {
-      settling.current = now + 500;
+      settling.current = now + settleDuration;
       for (const row of rows)
-        if (BigInt(row.id) > old.tail) pending.current.set(row.id, now + 500);
+        if (BigInt(row.id) > old.tail)
+          pending.current.set(row.id, now + settleDuration);
     }
     if (now > settling.current) return;
-    const style = getComputedStyle(root.current!);
-    const token = style.getPropertyValue("--transcript-shift-duration").trim();
-    const duration = parseFloat(token) * (token.endsWith("ms") ? 1 : 1000);
     for (const [id, position] of next.positions) {
       const before = old.positions.get(id),
         node = position.node;
@@ -166,7 +172,7 @@ export function useTranscriptMotion({
           const timeout = window.setTimeout(() => {
             node.removeAttribute("data-live-arrival");
             arrivals.current.delete(node);
-          }, duration);
+          }, entranceDuration);
           arrivals.current.set(node, timeout);
         }
       }

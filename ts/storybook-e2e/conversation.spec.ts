@@ -128,15 +128,18 @@ test("folded activity cards unfold above neighbors without shifting the transcri
   );
   const rows = page.locator('.transcript-row[data-activity="true"]');
   await expect(rows).toHaveCount(4);
-  const file = rows.last().locator(".event-detail");
+  const foldedRow = rows.nth(1);
+  const file = foldedRow.locator(".event-detail");
   const face = file.locator(".activity-card-face");
   const content = file.locator(".activity-card-content");
   await expect.poll(() => content.evaluate((el) => el.clientHeight)).toBe(18);
-  await expect(face).toHaveCSS("backdrop-filter", "blur(14px)");
-  await expect(face).toHaveCSS(
-    "clip-path",
-    "polygon(0px 0px, 100% 0px, 97% 100%, 3% 100%)",
-  );
+  await expect(face).toHaveCSS("backdrop-filter", "none");
+  await expect(face).toHaveCSS("clip-path", "none");
+  expect(
+    await face.evaluate(
+      (el) => new DOMMatrix(getComputedStyle(el).transform).m23,
+    ),
+  ).toBeLessThan(0);
   const geometry = () =>
     page.locator(".transcript").evaluate((pane) => ({
       top: pane.scrollTop,
@@ -155,10 +158,14 @@ test("folded activity cards unfold above neighbors without shifting the transcri
   await expect
     .poll(() => content.evaluate((el) => el.clientHeight))
     .toBeGreaterThan(18);
-  await expect(
-    page.locator(".activity-card-preview .activity-card-face"),
-  ).toHaveCSS("clip-path", "polygon(0px 0px, 100% 0px, 100% 100%, 0px 100%)");
-  await expect(rows.last()).toHaveCSS("z-index", "3");
+  await expect
+    .poll(() =>
+      page
+        .locator(".activity-card-preview .activity-card-face")
+        .evaluate((el) => new DOMMatrix(getComputedStyle(el).transform).m23),
+    )
+    .toBe(0);
+  await expect(foldedRow).toHaveCSS("z-index", "3");
   expect(await geometry()).toEqual(before);
   const timestamp = page.locator(".activity-card-preview .event-time-tooltip");
   await expect(timestamp).toHaveCSS("opacity", "1");
@@ -195,7 +202,7 @@ test("folded activity cards unfold above neighbors without shifting the transcri
   await expect
     .poll(() => content.evaluate((el) => el.clientHeight))
     .toBeGreaterThan(18);
-  await expect(rows.last()).toHaveCSS("z-index", "4");
+  await expect(foldedRow).toHaveCSS("z-index", "4");
   expect((await geometry()).rows).toEqual(before.rows);
   await page.locator("article.response").first().click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
@@ -203,14 +210,25 @@ test("folded activity cards unfold above neighbors without shifting the transcri
   expect(errors).toEqual([]);
 });
 
-test("unfolding the last activity paints outside the history without adding scroll range", async ({
+test("the latest activity stays unfolded and hover does not add scroll range", async ({
   page,
 }) => {
   const errors = await story(page, "conversation-eventcards--file-changes");
-  // A short viewport exposes the overflow even for a single activity row.
+  const latest = page.locator('.transcript-row[data-latest-activity="true"]');
+  await expect(latest).toHaveCount(1);
+  const face = latest.locator(".activity-card-face");
+  await expect(face).toHaveCSS("transform", "none");
+  await expect
+    .poll(() =>
+      latest
+        .locator(".activity-card-content")
+        .evaluate((el) => el.clientHeight),
+    )
+    .toBeGreaterThan(18);
+  // Keep both lines reachable in a short viewport and preserve its scroll range.
   await page.locator(".transcript-area").evaluate((el) => {
     el.style.flex = "none";
-    el.style.height = "55px";
+    el.style.height = "80px";
   });
   const pane = page.locator(".transcript");
   const tool = page.locator(".tool-activity");
@@ -223,7 +241,7 @@ test("unfolding the last activity paints outside the history without adding scro
     .poll(() => preview.evaluate((el) => el.clientHeight))
     .toBeGreaterThan(34);
   expect(await metrics()).toEqual(before);
-  // Return to a normal viewport and activate the portion outside the virtual root.
+  // The unfolded card's second line also activates the same detail editor.
   await page.locator(".transcript-area").evaluate((el) => {
     el.style.removeProperty("flex");
     el.style.removeProperty("height");

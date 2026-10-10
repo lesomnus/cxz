@@ -58,7 +58,7 @@ export const FoldedActivityStack: Story = {
     docs: {
       description: {
         story:
-          "Tool cards keep one line on a tilted translucent face. Hover or keyboard focus straightens and unfolds that face above its neighbors without moving the transcript; double-click opens the existing detail editor.",
+          "Earlier tool cards keep one line on a tilted translucent face; the newest activity remains unfolded. Hover or keyboard focus straightens and unfolds an earlier face above its neighbors without moving the transcript; double-click opens the existing detail editor.",
       },
     },
   },
