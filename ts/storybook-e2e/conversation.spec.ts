@@ -160,8 +160,29 @@ test("folded activity cards unfold above neighbors without shifting the transcri
   ).toHaveCSS("clip-path", "polygon(0px 0px, 100% 0px, 100% 100%, 0px 100%)");
   await expect(rows.last()).toHaveCSS("z-index", "3");
   expect(await geometry()).toEqual(before);
+  const timestamp = page.locator(".activity-card-preview .event-time-tooltip");
+  await expect(timestamp).toHaveCSS("opacity", "1");
+  await expect(timestamp).toHaveCSS("transition-duration", "0s");
   await page.screenshot({ path: "test-results/activity-stack-unfolded.png" });
   await page.mouse.move(20, 20);
+  // The timestamp disappears while the lifted face is still folding away.
+  const leaving = await page
+    .locator(".activity-card-preview")
+    .evaluate((preview) => {
+      const tooltip = getComputedStyle(
+        preview.querySelector(".event-time-tooltip")!,
+      );
+      return {
+        hovered: preview.getAttribute("data-hovered"),
+        opacity: tooltip.opacity,
+        visibility: tooltip.visibility,
+      };
+    });
+  expect(leaving).toEqual({
+    hovered: "false",
+    opacity: "0",
+    visibility: "hidden",
+  });
   await expect.poll(() => content.evaluate((el) => el.clientHeight)).toBe(18);
   await file.focus();
   await expect

@@ -21,11 +21,11 @@
   --transcript-enter-duration: 220ms;
   --transcript-enter-travel: 28px;
   --transcript-enter-scale: 0.96;
-  --activity-card-step: 26px;
+  --activity-card-step: 30px;
   --activity-card-line-height: 18px;
   --activity-card-blur: 14px;
   --activity-card-perspective: 280px;
-  --activity-card-tilt: -24deg;
+  --activity-card-tilt: -14deg;
   --activity-card-duration: 200ms;
   --wrapper-radius: 10px;
   --control-inset: 2px;
@@ -2099,6 +2099,11 @@ pre {
   transition-duration: 60ms;
 }
 .activity-card-preview .event-time-tooltip {
+  opacity: 0;
+  visibility: hidden;
+}
+.activity-card-preview[data-hovered="true"] .event-time-tooltip,
+.activity-card-preview[data-focused="true"] .event-time-tooltip {
   opacity: 1;
   visibility: visible;
   transform: translateY(0);
@@ -3226,6 +3231,7 @@ summary:hover {
 }
 
 .event-time-tooltip {
+  transition: none;
   left: 0;
   right: auto;
   bottom: calc(100% + var(--space));

@@ -168,6 +168,7 @@ export function ActivityCard({
               className="activity-card-preview"
               data-tool={className.includes("tool-activity")}
               data-entered={entered}
+              data-hovered={hovered}
               data-detail-open={details.expanded}
               data-focused={
                 focused && details.anchor.current?.matches(":focus-visible")
