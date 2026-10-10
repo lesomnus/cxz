@@ -30,6 +30,8 @@
   --wrapper-radius: 10px;
   --control-inset: 2px;
   --control-inline-inset: 6px;
+  --dropdown-background: color-mix(in srgb, var(--shade-0) 14%, transparent);
+  --dropdown-blur: 24px;
   --toolbar-button-width: 48px;
   --composer-toolbar-height: 28px;
   --composer-extension: 10px;
@@ -787,6 +789,12 @@ header strong {
   border-bottom: 1px solid var(--shade-36);
   min-height: 56px;
 }
+.action-menu-popup,
+.setting-menu {
+  background: var(--dropdown-background);
+  -webkit-backdrop-filter: blur(var(--dropdown-blur));
+  backdrop-filter: blur(var(--dropdown-blur));
+}
 .action-menu-popup {
   position: fixed;
   z-index: 100;
@@ -797,9 +805,6 @@ header strong {
   padding: var(--control-inset);
   border: 1px solid var(--shade-54);
   border-radius: 6px;
-  background: color-mix(in srgb, var(--shade-16) 72%, transparent);
-  -webkit-backdrop-filter: blur(24px);
-  backdrop-filter: blur(24px);
 }
 .action-menu-popup button {
   display: block;
@@ -3015,7 +3020,6 @@ summary:hover {
   width: var(--menu-width, 180px);
   padding: var(--control-inset);
   border-radius: 6px;
-  background: var(--shade-36);
   outline: 1px solid var(--shade-58);
   box-shadow: 0 6px 24px #0005;
 }
