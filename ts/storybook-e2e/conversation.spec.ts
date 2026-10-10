@@ -290,7 +290,7 @@ test("question remains until explicitly answered and reuses the multiline editor
 }) => {
   const errors = await story(page, "conversation-questioncard--question");
   const question = page.getByRole("region", {
-    name: "item/tool/requestUserInput",
+    name: "Question",
     exact: true,
   });
   await expect(question).toBeVisible();
@@ -301,7 +301,7 @@ test("question remains until explicitly answered and reuses the multiline editor
   });
   await other.fill("A combined preview\nwith multiple lines");
   await expect(question.locator(".editor-gutter")).toContainText("2");
-  await page.getByRole("button", { name: "Submit answers" }).click();
+  await page.getByRole("button", { name: "Submit" }).click();
   await expect(question).toHaveCount(0);
   await expect(page.getByRole("status")).toContainText("A combined preview");
   expect(errors).toEqual([]);

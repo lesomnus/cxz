@@ -231,7 +231,7 @@ or handle/marker physics. Previews are discarded on session navigation.
 Pending Question/approval requests use the same FloatingCard shell and anchor,
 outside the composer form. They have no Close control. Escape, side-margin dismissal
 and preview replacement never discard requests or selected/free-text answers.
-Only explicit Submit/Allow/Deny resolves them. Enter in an answer does not send the
+Only explicit Submit/Cancel (or Allow/Deny for other approvals) resolves them. Enter in an answer does not send the
 composer. Whenever a composer-anchored preview is active, questions shrink and
 dim to show their background layer. If the preview is at least as tall, questions also move upward
 so part of their top remains visible. A shorter preview keeps the bottom anchor,
@@ -244,13 +244,21 @@ Multiple pending requests remain in a bounded, scrollable layer.
 
 Question options are monochrome cards with titles, descriptions and native
 radio/checkbox controls, retaining keyboard navigation and accessible labels.
-Options and Other editors have no border inside the bordered Question card;
-selection, hover and focus use background tones. Fieldsets keep grouping semantics
+Unselected options and Other editors have no border inside the bordered Question card;
+selected options use an inset outline without shifting layout, while hover and focus use background tones. Fieldsets keep grouping semantics
 without default border, margin or padding. Ordinary Other answers reuse ComposerEditor
 with multiline text, monospace line numbers, atomic chips and native Undo/Redo.
 Answer editors and composer have independent values but share the connection's
 bounded paste cache. Submit expands chips to original text in answersJson; Enter
 inserts a line and Ctrl+Enter never sends the conversation draft from an answer.
+Question forms use numbered tabs with completion indicators, preserving every
+step's mounted editor and Undo history. The longest question sizes the card within
+the conversation height limit; only the option list scrolls, while Other and the
+Cancel/Submit/Next footer remain fixed. Submit requires all answers; Next is disabled
+at the final step. Redundant question and request-detail headings are omitted.
+Transcript reading tucks the pending card behind the composer into the background
+fade. Pointer proximity or answer focus raises it again without discarding state.
+Cancellation retains the existing allow=false wire response.
 Password answers keep masked native controls. Chip editing releases the Question's
 inert state before native insertion, preserving the correct editor's Undo history.
 

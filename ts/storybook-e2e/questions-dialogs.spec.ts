@@ -92,7 +92,7 @@ test("async free-text questions submit structured native keys and only explicit 
   await expect(question).not.toContainText("not supported");
   await expect(question.getByRole("radio")).toHaveCount(0);
   const submit = question.getByRole("button", {
-    name: "Submit answers",
+    name: "Submit",
     exact: true,
   });
   await expect(submit).toBeDisabled();
@@ -113,7 +113,7 @@ test("async free-text questions submit structured native keys and only explicit 
     "0": { selected: [], other: "first line\nsecond line" },
   });
   await page.getByRole("button", { name: "Ask again", exact: true }).click();
-  await question.getByRole("button", { name: "Deny", exact: true }).click();
+  await question.getByRole("button", { name: "Cancel", exact: true }).click();
   await expect(page.getByRole("status")).toHaveText("Denied");
 });
 
@@ -126,12 +126,12 @@ test("question tabs preserve choices, draft and undo and submit all steps togeth
   const question = page.getByRole("region", { name: "Question", exact: true });
   const tabs = question.getByRole("tablist", { name: "Question steps" });
   const submit = question.getByRole("button", {
-    name: "Submit answers",
+    name: "Submit",
     exact: true,
   });
-  await expect(tabs.getByRole("tab")).toHaveText(["Layout", "Notes", "Timing"]);
+  await expect(tabs.getByRole("tab")).toHaveText(["Q1○", "Q2○", "Q3○"]);
   await question.getByRole("radio", { name: "Compact", exact: true }).check();
-  await tabs.getByRole("tab", { name: "Notes", exact: true }).click();
+  await tabs.getByRole("tab", { name: "Q2", exact: true }).click();
   const answer = question.getByRole("textbox", {
     name: "Answer: Describe any additional changes.",
     exact: true,
@@ -139,17 +139,17 @@ test("question tabs preserve choices, draft and undo and submit all steps togeth
   await answer.fill("Keep this draft");
   await answer.press("End");
   await answer.press("!");
-  await tabs.getByRole("tab", { name: "Timing", exact: true }).click();
+  await tabs.getByRole("tab", { name: "Q3", exact: true }).click();
   await expect(submit).toBeDisabled();
   await question.getByRole("radio", { name: "Now", exact: true }).check();
-  await tabs.getByRole("tab", { name: "Notes", exact: true }).click();
+  await tabs.getByRole("tab", { name: "Q2", exact: true }).click();
   await expect(answer).toHaveValue("Keep this draft!");
   await answer.press("Control+z");
   await expect(answer).toHaveValue("Keep this draft");
-  await tabs.getByRole("tab", { name: "Layout", exact: true }).focus();
+  await tabs.getByRole("tab", { name: "Q1", exact: true }).focus();
   await page.keyboard.press("End");
   await expect(
-    tabs.getByRole("tab", { name: "Timing", exact: true }),
+    tabs.getByRole("tab", { name: "Q3", exact: true }),
   ).toBeFocused();
   await expect(
     question.getByRole("radio", { name: "Now", exact: true }),
@@ -175,10 +175,10 @@ test("async choice and free-text steps use positional keys and option previews r
   );
   let question = page.getByRole("region", { name: "Question", exact: true });
   await question.getByRole("radio", { name: "Dark", exact: true }).check();
-  await question.getByRole("tab", { name: "Question 1", exact: true }).focus();
+  await question.getByRole("tab", { name: "Q1", exact: true }).focus();
   await page.keyboard.press("ArrowRight");
   await expect(
-    question.getByRole("tab", { name: "Question 2", exact: true }),
+    question.getByRole("tab", { name: "Q2", exact: true }),
   ).toBeFocused();
   await question
     .getByRole("textbox", {
@@ -186,9 +186,7 @@ test("async choice and free-text steps use positional keys and option previews r
       exact: true,
     })
     .fill("More contrast");
-  await question
-    .getByRole("button", { name: "Submit answers", exact: true })
-    .click();
+  await question.getByRole("button", { name: "Submit", exact: true }).click();
   expect(JSON.parse(await page.getByRole("status").innerText())).toEqual({
     "0": { selected: ["Dark"], other: "" },
     "1": { selected: [], other: "More contrast" },
@@ -208,10 +206,121 @@ test("async choice and free-text steps use positional keys and option previews r
   await expect(link).toHaveAttribute("rel", "noopener noreferrer");
   await question.getByRole("radio", { name: /Compact/ }).check();
   await page.screenshot({ path: "test-results/question-option-previews.png" });
-  await question
-    .getByRole("button", { name: "Submit answers", exact: true })
-    .click();
+  await question.getByRole("button", { name: "Submit", exact: true }).click();
   expect(JSON.parse(await page.getByRole("status").innerText())).toEqual({
     "Which implementation should we use?": { selected: ["Compact"], other: "" },
   });
+});
+
+test("question layout keeps the longest height, fixed Other/footer, and option-only scrolling", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=conversation-questioncard--long-questions&viewMode=story",
+  );
+  const question = page.getByRole("region", { name: "Question", exact: true });
+  const tab = (name: string) =>
+    question.getByRole("tab", { name, exact: true });
+  const footer = question.locator(".question-footer");
+  const submit = footer.getByRole("button", { name: "Submit", exact: true });
+  const next = footer.getByRole("button", { name: "Next", exact: true });
+  await expect(question.locator(".card-heading")).toHaveCount(0);
+  await expect(
+    question.getByRole("button", { name: "Request details" }),
+  ).toHaveCount(0);
+  await expect(tab("Q1")).toHaveAttribute("aria-selected", "true");
+  await expect(submit).toBeDisabled();
+  const initial = (await question.boundingBox())!;
+  const conversation = (await page.locator(".conversation").boundingBox())!;
+  expect(initial.height).toBeLessThanOrEqual(conversation.height / 2 + 1);
+  await question.getByRole("radio", { name: "Compact", exact: true }).check();
+  await expect(tab("Q1").locator(".tab-answered")).toHaveAttribute(
+    "data-answered",
+    "true",
+  );
+  await next.click();
+  await expect(tab("Q2")).toHaveAttribute("aria-selected", "true");
+  expect((await question.boundingBox())!.height).toBeCloseTo(initial.height, 0);
+  const options = question.locator(
+    '.question-group[data-active="true"] .question-options',
+  );
+  expect(
+    await options.evaluate((el) => el.scrollHeight > el.clientHeight),
+  ).toBe(true);
+  const fixed = await footer.boundingBox();
+  const other = question.locator(
+    '.question-group[data-active="true"] .question-other',
+  );
+  const otherBefore = await other.boundingBox();
+  await options.evaluate((el) => (el.scrollTop = el.scrollHeight));
+  expect(await footer.boundingBox()).toEqual(fixed);
+  expect(await other.boundingBox()).toEqual(otherBefore);
+  await question.getByRole("radio", { name: /^Implementation 12 / }).check();
+  await expect(
+    question.locator('.question-option-card[data-selected="true"]').last(),
+  ).toHaveCSS("outline-width", "1px");
+  await next.click();
+  await expect(tab("Q3")).toHaveAttribute("aria-selected", "true");
+  await expect(next).toBeDisabled();
+  await expect(submit).toBeDisabled();
+  await question
+    .getByRole("textbox", { name: "Answer: Anything else?", exact: true })
+    .fill("Keep the footer visible");
+  await expect(submit).toBeEnabled();
+  expect((await question.boundingBox())!.height).toBeCloseTo(initial.height, 0);
+  await tab("Q1").click();
+  await expect(
+    question.getByRole("radio", { name: "Compact", exact: true }),
+  ).toBeChecked();
+  await page.screenshot({ path: "test-results/question-long-layout.png" });
+  await page.setViewportSize({ width: 390, height: 620 });
+  await expect
+    .poll(async () => (await question.boundingBox())!.height)
+    .toBeLessThanOrEqual(
+      (await page.locator(".conversation").boundingBox())!.height / 2 + 1,
+    );
+  await tab("Q2").click();
+  await expect(next).toBeVisible();
+  await expect(submit).toBeVisible();
+  await expect(other).toBeVisible();
+  await page.screenshot({ path: "test-results/question-long-mobile.png" });
+});
+
+test("reading tucks the question into the composer fade and approaching restores it without losing answers", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=conversation-questioncard--long-questions&viewMode=story",
+  );
+  const question = page.getByRole("region", { name: "Question", exact: true });
+  const layer = page.locator(".question-cards");
+  const host = page.locator(".floating-card-host");
+  await question.getByRole("radio", { name: "Compact", exact: true }).check();
+  const original = (await question.boundingBox())!;
+  const area = (await page.locator(".transcript-area").boundingBox())!;
+  await page.locator(".transcript").focus();
+  await page.mouse.move(area.x + 20, area.y + 50);
+  await page.mouse.wheel(0, -240);
+  await expect(layer).toHaveAttribute("data-retreated", "true");
+  await expect
+    .poll(async () => (await question.boundingBox())!.y - original.y)
+    .toBeCloseTo(original.height / 2, 0);
+  await expect(host.locator(".question-scroll-fade")).not.toHaveCSS(
+    "opacity",
+    "0",
+  );
+  const retreated = (await question.boundingBox())!;
+  await page.mouse.move(retreated.x + retreated.width / 2, retreated.y - 12);
+  await expect(layer).toHaveAttribute("data-retreated", "false");
+  await expect
+    .poll(async () => (await question.boundingBox())!.y)
+    .toBeCloseTo(original.y, 0);
+  await expect(host.locator(".question-scroll-fade")).toHaveCSS("opacity", "0");
+  await expect(
+    question.getByRole("radio", { name: "Compact", exact: true }),
+  ).toBeChecked();
+  await page.keyboard.press("Escape");
+  await expect(question).toBeVisible();
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await expect(layer).toHaveCSS("transition-duration", "0s");
 });

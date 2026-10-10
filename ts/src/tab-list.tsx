@@ -42,9 +42,13 @@ export function TabList({
           }}
         >
           {item.label}
-          {item.answered && (
-            <span className="tab-answered" aria-hidden="true">
-              ✓
+          {item.answered !== undefined && (
+            <span
+              className="tab-answered"
+              data-answered={item.answered}
+              aria-hidden="true"
+            >
+              {item.answered ? "✓" : "○"}
             </span>
           )}
         </Button>

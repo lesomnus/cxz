@@ -1868,7 +1868,7 @@ pre {
   bottom: var(--card-gap);
   left: var(--card-shadow-left);
   width: calc(100% - var(--card-shadow-left) - var(--card-shadow-right));
-  max-height: min(460px, var(--card-max-height));
+  max-height: min(var(--question-max-height, 50dvh), var(--card-max-height));
   display: flex;
   flex-direction: column;
   gap: calc(2 * var(--space));
@@ -3410,4 +3410,104 @@ summary:hover {
 }
 .question-group[hidden] {
   display: none;
+}
+
+/* All question panels occupy the same grid cell so the longest question sizes
+   the card. Inactive panels keep their editors mounted without receiving focus. */
+.question-cards > .question-card {
+  max-height: min(var(--question-max-height, 50dvh), var(--card-max-height));
+  flex-shrink: 0;
+}
+.question-cards:has(> .question-card:only-child) {
+  overflow: hidden;
+}
+.question-card .card-body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: var(--space);
+}
+.question-card .tab-list {
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+  margin: 0 0 calc(2 * var(--space));
+}
+.question-panels {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  min-height: 0;
+}
+.question-card .question-group {
+  grid-area: 1 / 1;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  min-height: 0;
+  margin: 0;
+}
+.question-group[data-active="false"] {
+  visibility: hidden;
+  pointer-events: none;
+}
+.question-text {
+  margin: 0 var(--space) calc(2 * var(--space));
+  font-size: 12px;
+}
+.question-card .question-options {
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.question-option-card[data-selected="true"] {
+  outline: 1px solid var(--shade-144);
+  outline-offset: -1px;
+}
+.question-card .question-other {
+  margin-top: calc(2 * var(--space));
+}
+.question-card .question-other .composer-editor {
+  --composer-editor-height: 60px;
+}
+.question-card .question-other .composer-editor textarea {
+  height: var(--composer-editor-height);
+  max-height: min(80px, 12dvh);
+}
+.question-footer {
+  flex-shrink: 0;
+  margin-top: calc(2 * var(--space));
+  justify-content: flex-end;
+}
+.question-footer > button:first-child {
+  margin-right: auto;
+}
+.tab-answered[data-answered="true"] {
+  color: var(--shade-237);
+}
+.question-cards[data-retreated="true"][data-covered="false"] {
+  transform: translateY(50%);
+}
+.question-scroll-fade {
+  position: absolute;
+  z-index: 1;
+  bottom: 0;
+  left: var(--card-shadow-left);
+  right: var(--card-shadow-right);
+  height: max(96px, var(--question-fade-height, 96px));
+  max-height: 80%;
+  background: linear-gradient(to top, var(--background), transparent);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    height 180ms ease-out,
+    opacity 180ms ease-out;
+}
+.floating-card-host[data-retreated="true"] .question-scroll-fade {
+  opacity: max(0.5, var(--question-fade-opacity, 1));
+}
+.floating-card-host > .floating-card {
+  z-index: 2;
+}
+@media (prefers-reduced-motion: reduce) {
+  .question-scroll-fade {
+    transition: none;
+  }
 }

@@ -367,7 +367,13 @@ export function Transcript({
       stopWheel();
     measure();
     callbacks.current.onScroll(!!(drag.current || wheel.current));
-    if (delta) callbacks.current.onReadingMove(delta);
+    if (delta) {
+      callbacks.current.onReadingMove(delta);
+      if (!follow.current)
+        el.dispatchEvent(
+          new CustomEvent("conversation-reading-move", { bubbles: true }),
+        );
+    }
     // Only request the edge being approached. A small loaded window can be
     // near both ends: fetching both would alternately evict opposite pages.
     if (delta < 0 && el.scrollTop < el.clientHeight * HISTORY_PREFETCH_SCREENS)

@@ -49,32 +49,35 @@ export function QuestionCard({
       qs.length === 0);
   return (
     <FloatingCard
-      className="approval"
+      className={`approval ${qs.length ? "question-card" : ""}`}
+      hideHeading={qs.length > 0}
       title={title}
       role="region"
       aria-label={title}
     >
-      {p.params?.message && <p>{String(p.params.message)}</p>}
-      <Button
-        type="button"
-        className="event-detail"
-        onClick={() =>
-          openCard({
-            title: () => t("Request details"),
-            content: () => <pre>{detail(e)}</pre>,
-          })
-        }
-      >
-        {t("Request details")}
-      </Button>
-      {qs.length > 1 && (
+      {!qs.length && p.params?.message && <p>{String(p.params.message)}</p>}
+      {!qs.length && (
+        <Button
+          type="button"
+          className="event-detail"
+          onClick={() =>
+            openCard({
+              title: () => t("Request details"),
+              content: () => <pre>{detail(e)}</pre>,
+            })
+          }
+        >
+          {t("Request details")}
+        </Button>
+      )}
+      {qs.length > 0 && (
         <TabList
           prefix={prefix}
           panelId={panel}
           label={t("Question steps")}
           items={qs.map((q, index) => ({
             id: String(index),
-            label: q.header || t("Question {number}", { number: index + 1 }),
+            label: `Q${index + 1}`,
             answered: answered(q.key),
           }))}
           value={String(activeStep)}
@@ -82,21 +85,31 @@ export function QuestionCard({
         />
       )}
       <div
+        className="question-panels"
         id={panel}
-        role={qs.length > 1 ? "tabpanel" : undefined}
-        aria-labelledby={qs.length > 1 ? `${prefix}-${activeStep}` : undefined}
+        role={qs.length ? "tabpanel" : undefined}
+        aria-labelledby={qs.length ? `${prefix}-${activeStep}` : undefined}
       >
         {qs.map((q, index) => (
           <fieldset
             key={q.key}
             className="question-group"
-            hidden={index !== activeStep}
+            aria-labelledby={`${prefix}-question-${index}`}
+            data-active={index === activeStep}
+            aria-hidden={index !== activeStep}
+            inert={index !== activeStep}
             disabled={busy}
           >
-            <legend>{q.text}</legend>
+            <div className="question-text" id={`${prefix}-question-${index}`}>
+              {q.text}
+            </div>
             <div className="question-options">
               {q.options.map((o) => (
-                <div key={o.label} className="question-option-card">
+                <div
+                  key={o.label}
+                  className="question-option-card"
+                  data-selected={(selected[q.key] ?? []).includes(o.label)}
+                >
                   <label
                     className="question-option"
                     data-selected={(selected[q.key] ?? []).includes(o.label)}
@@ -191,7 +204,10 @@ export function QuestionCard({
           )}
         </p>
       )}
-      <div className="buttons">
+      <div className={`buttons ${qs.length ? "question-footer" : ""}`}>
+        <Button disabled={busy} onClick={() => reply(e, false)}>
+          {qs.length ? t("Cancel") : t("Deny")}
+        </Button>
         <Button
           disabled={busy || !!requiresForm || qs.some((q) => !answered(q.key))}
           onClick={() =>
@@ -214,11 +230,16 @@ export function QuestionCard({
             )
           }
         >
-          {qs.length ? t("Submit answers") : t("Allow")}
+          {qs.length ? t("Submit") : t("Allow")}
         </Button>
-        <Button disabled={busy} onClick={() => reply(e, false)}>
-          {t("Deny")}
-        </Button>
+        {!!qs.length && (
+          <Button
+            disabled={busy || activeStep >= qs.length - 1}
+            onClick={() => setStep((old) => Math.min(old + 1, qs.length - 1))}
+          >
+            {t("Next")}
+          </Button>
+        )}
       </div>
     </FloatingCard>
   );

@@ -282,9 +282,7 @@ test("Question Other uses the same code editor and sends fenced syntax without s
   await other.press("Control+Enter");
   await expect(question).toHaveCount(1);
   await expect(composer).toHaveValue("Keep my draft");
-  await question
-    .getByRole("button", { name: "Submit answers", exact: true })
-    .click();
+  await question.getByRole("button", { name: "Submit", exact: true }).click();
   await expect(question).toHaveCount(0);
   const response = page
     .locator(".response")

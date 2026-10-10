@@ -140,6 +140,8 @@ export const messages = {
   "Default settings shared by browser file views and editors.":
     "브라우저의 파일 뷰와 에디터가 공유하는 기본 설정입니다.",
   Delete: "삭제",
+  Submit: "제출",
+  Next: "다음",
   Deny: "거절",
   "Design sandbox": "디자인 샌드박스",
   "Directory preview is limited to 2048 entries.":

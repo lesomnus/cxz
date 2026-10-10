@@ -140,6 +140,8 @@ export const messages = {
   "Default settings shared by browser file views and editors.":
     "Default settings shared by browser file views and editors.",
   Delete: "Delete",
+  Submit: "Submit",
+  Next: "Next",
   Deny: "Deny",
   "Design sandbox": "Design sandbox",
   "Directory preview is limited to 2048 entries.":

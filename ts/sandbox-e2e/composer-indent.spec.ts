@@ -212,7 +212,7 @@ test("Question Other shares indentation and focus escape without touching the co
   await input.press("Control+m");
   await input.press("Tab");
   await expect(
-    question.getByRole("button", { name: "Submit answers", exact: true }),
+    question.getByRole("button", { name: "Submit", exact: true }),
   ).toBeFocused();
   await expect(question).toHaveCount(1);
   await expect(composer).toHaveValue("keep draft");

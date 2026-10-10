@@ -9,6 +9,7 @@ import {
 import {
   questionEvent,
   toolEvents,
+  responseEvent,
   type QuestionExample,
 } from "./storybook/fixtures";
 
@@ -22,7 +23,19 @@ function QuestionPreview({
   const [answer, setAnswer] = useState<string>();
   const pastes = useRef(previewPastes());
   return (
-    <ComponentPreview events={toolEvents()}>
+    <ComponentPreview
+      events={
+        example === "long"
+          ? Array.from({ length: 25 }, (_, index) =>
+              responseEvent(
+                index + 1,
+                "codex",
+                `History response ${index + 1}\n\nRead the conversation while the question stays available.\n\nAdditional context for this response.`,
+              ),
+            )
+          : toolEvents()
+      }
+    >
       {answer === undefined ? (
         <QuestionCard
           e={questionEvent(example)}
@@ -54,7 +67,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "A persistent question with radio cards, Markdown option previews and the same multiline editor for free-text and Other answers. Multiple questions use keyboard-accessible tabs that preserve selections, drafts and undo. Codex asynchronous questions use the same reply keys as the TUI. Select an option or write an answer and submit. Open Request details to preview the covered-card hierarchy. Only an explicit answer or Deny dismisses the question.",
+          "A persistent question with radio cards, Markdown option previews and the same multiline editor for free-text and Other answers. Multiple questions use keyboard-accessible tabs that preserve selections, drafts and undo. Codex asynchronous questions use the same reply keys as the TUI. Select an option or write an answer and submit. Only the option list scrolls; Other and the Cancel/Submit/Next footer stay visible. All steps share the tallest question’s size within the conversation height limit. Scroll the LongQuestions transcript to tuck the card behind the composer, then approach it to reveal it. Only explicit Submit or Cancel dismisses the question.",
       },
     },
   },
@@ -68,3 +81,5 @@ export const FreeText: Story = { args: { example: "free-text" } };
 export const Steps: Story = { args: { example: "steps" } };
 export const AsyncSteps: Story = { args: { example: "async-steps" } };
 export const OptionPreviews: Story = { args: { example: "previews" } };
+
+export const LongQuestions: Story = { args: { example: "long" } };

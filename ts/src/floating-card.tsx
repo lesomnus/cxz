@@ -145,7 +145,7 @@ export function FloatingCardHost({ children }: { children?: ReactNode }) {
   const hasQuestions = Children.count(children) > 0;
   useLayoutEffect(() => {
     const node = host.current!;
-    const conversation = node.closest(".conversation")!;
+    const conversation = node.closest<HTMLElement>(".conversation")!;
     const area = conversation.querySelector(".transcript-area")!;
     const wrapper = conversation.querySelector(".composer-wrapper")!;
     const measure = () => {
@@ -167,6 +167,7 @@ export function FloatingCardHost({ children }: { children?: ReactNode }) {
         area.getBoundingClientRect().top -
         8;
       node.style.setProperty("--card-space", `${Math.max(0, available)}px`);
+      node.style.setProperty("--question-max-height", `${bounds.height / 2}px`);
     };
     measure();
     const observer = new ResizeObserver(measure);
@@ -204,6 +205,77 @@ export function FloatingCardHost({ children }: { children?: ReactNode }) {
     if (preview) observer.observe(preview);
     return () => observer.disconnect();
   }, [card, hasQuestions]);
+  useEffect(() => {
+    const node = host.current!;
+    const questions = persistent.current!;
+    const conversation = node.closest<HTMLElement>(".conversation")!;
+    const area = conversation.querySelector<HTMLElement>(".transcript-area")!;
+    node.dataset.retreated = "false";
+    questions.dataset.retreated = "false";
+    if (!hasQuestions) return;
+    let reading = false;
+    let near = false;
+    let pointer: { x: number; y: number } | undefined;
+    const update = () => {
+      const focused = questions.contains(document.activeElement);
+      const retreated = hasQuestions && reading && !near && !focused;
+      node.dataset.retreated = String(retreated);
+      questions.dataset.retreated = String(retreated);
+    };
+    const proximity = () => {
+      if (!pointer) return false;
+      const box = questions.getBoundingClientRect();
+      return (
+        pointer.x >= box.left - 32 &&
+        pointer.x <= box.right + 32 &&
+        pointer.y >= box.top - 32 &&
+        pointer.y <= box.bottom + 32
+      );
+    };
+    const scroll = () => {
+      reading = true;
+      near = proximity();
+      update();
+    };
+    const move = (event: PointerEvent) => {
+      pointer = { x: event.clientX, y: event.clientY };
+      near = proximity();
+      update();
+    };
+    const leave = () => {
+      pointer = undefined;
+      near = false;
+      update();
+    };
+    const shadow = () => {
+      const style = getComputedStyle(area);
+      node.style.setProperty(
+        "--question-fade-height",
+        style.getPropertyValue("--bottom-fade-height") || "96px",
+      );
+      node.style.setProperty(
+        "--question-fade-opacity",
+        style.getPropertyValue("--bottom-fade-opacity") || "1",
+      );
+    };
+    update();
+    shadow();
+    const observer = new MutationObserver(shadow);
+    observer.observe(area, { attributes: true, attributeFilter: ["style"] });
+    conversation.addEventListener("conversation-reading-move", scroll);
+    conversation.addEventListener("pointermove", move);
+    conversation.addEventListener("pointerleave", leave);
+    questions.addEventListener("focusin", update);
+    questions.addEventListener("focusout", update);
+    return () => {
+      observer.disconnect();
+      conversation.removeEventListener("conversation-reading-move", scroll);
+      conversation.removeEventListener("pointermove", move);
+      conversation.removeEventListener("pointerleave", leave);
+      questions.removeEventListener("focusin", update);
+      questions.removeEventListener("focusout", update);
+    };
+  }, [hasQuestions]);
   useEffect(() => {
     if (!card || card.closing) return;
     const conversation = host.current!.closest(".conversation")!;
@@ -250,6 +322,7 @@ export function FloatingCardHost({ children }: { children?: ReactNode }) {
       <div ref={persistent} className="question-cards" data-covered="false">
         {children}
       </div>
+      <div className="question-scroll-fade" aria-hidden="true" />
       {card &&
         (card.anchor ? (
           <AnchoredDetail

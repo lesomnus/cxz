@@ -50,7 +50,7 @@ test("WASM sandbox reuses the UI without backend, credentials or provider calls"
     }),
   ).toBeVisible();
   await page.getByRole("radio", { name: /Development/ }).check();
-  await page.getByRole("button", { name: "Submit answers" }).click();
+  await page.getByRole("button", { name: "Submit" }).click();
   await expect(
     page.getByText("Your selection was recorded for this preview."),
   ).toBeVisible();

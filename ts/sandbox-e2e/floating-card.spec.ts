@@ -278,12 +278,11 @@ test("pending questions stay dimmed behind previews and only lift for a taller c
     .locator(".transcript")
     .evaluate((el) => ({ top: el.scrollTop, height: el.scrollHeight }));
 
-  const details = question.getByRole("button", {
-    name: "Request details",
-    exact: true,
-  });
+  await input.fill("");
+  await paste(page, "preview source line\n".repeat(80));
+  const details = page.locator(".composer .paste-chip");
   await details.click();
-  const preview = page.getByRole("dialog", { name: "Request details" });
+  const preview = page.getByRole("dialog", { name: "Paste source" });
   await expect(preview).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
   await expect(layer).toHaveAttribute("data-covered", "true");
   await expect(layer).toHaveJSProperty("inert", true);
@@ -313,8 +312,8 @@ test("pending questions stay dimmed behind previews and only lift for a taller c
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(layer).toHaveJSProperty("inert", false);
-  await expect(details).toBeFocused();
-  await expect(choice).toBeChecked();
+  await expect(input).toBeFocused();
+  await expect(choice).not.toBeChecked();
   await expect(other).toHaveValue("Keep my answer\n");
 
   await input.fill("");
@@ -339,14 +338,14 @@ test("pending questions stay dimmed behind previews and only lift for a taller c
   await expect(question).toHaveCount(1);
   await expect(layer).toHaveJSProperty("inert", false);
   await expect(layer).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
-  await expect(choice).toBeChecked();
+  await expect(choice).not.toBeChecked();
   await expect(input).toHaveValue(draft);
   expect(
     await page
       .locator(".transcript")
       .evaluate((el) => ({ top: el.scrollTop, height: el.scrollHeight })),
   ).toEqual(geometry);
-  await question.getByRole("button", { name: "Submit answers" }).click();
+  await question.getByRole("button", { name: "Submit" }).click();
   await expect(question).toHaveCount(0);
   await expect(
     page.getByText("Your selection was recorded for this preview.", {
@@ -365,11 +364,10 @@ test("question and covering details stay bounded on mobile and dismiss independe
   await expect(
     question.getByText("Which environment?", { exact: true }),
   ).toBeVisible();
-  await question
-    .getByRole("button", { name: "Request details", exact: true })
-    .click();
+  await paste(page, "preview source line\n".repeat(80));
+  await page.locator(".composer .paste-chip").click();
   const layer = page.locator(".question-cards");
-  const preview = page.getByRole("dialog", { name: "Request details" });
+  const preview = page.getByRole("dialog", { name: "Paste source" });
   await expect(preview).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
   await expect(layer).toHaveAttribute("data-covered", "true");
   await expect
@@ -397,12 +395,12 @@ test("question and covering details stay bounded on mobile and dismiss independe
     page.getByRole("button", { name: "Send", exact: true }),
   ).toBeVisible();
   await preview
-    .getByRole("button", { name: "Close details", exact: true })
+    .getByRole("button", { name: "Close paste preview", exact: true })
     .click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(question).toHaveCount(1);
   await page.emulateMedia({ reducedMotion: "reduce" });
   await expect(layer).toHaveCSS("transition-duration", "0s");
-  await question.getByRole("button", { name: "Deny", exact: true }).click();
+  await question.getByRole("button", { name: "Cancel", exact: true }).click();
   await expect(question).toHaveCount(0);
 });

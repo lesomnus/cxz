@@ -19,7 +19,7 @@ npm run storybook
 - `Sessions/Panel`: 실제 세션 카드, 선택 하이라이트, 상태 indicator, 프로젝트 접기, 긴 목록의 스크롤.
 - `Conversation/Composer`: Markdown, 코드블록, 붙여넣기 chip, 명령어 제안, 전송 대기, 작업 중 glow, 모델·effort와 usage 표시.
 - `Conversation/EventCards`: 사용자 입력, 최종·중간 대화 응답, 작업 진행·완료, 파일 변경, 진단 메시지.
-- `Conversation/QuestionCard`: 라디오 선택, 주관식·Other 편집기, 단계별 탭과 Markdown 선택지 preview. FreeText, Steps, AsyncSteps, OptionPreviews로 각 이벤트 형식과 전체 답변 제출을 확인합니다. 상세 카드가 가려도 답변은 유지되며, 명시적 제출 또는 Deny로만 종료합니다.
+- `Conversation/QuestionCard`: 라디오 선택, 주관식·Other 편집기, 단계별 탭과 Markdown 선택지 preview. FreeText, Steps, AsyncSteps, OptionPreviews, LongQuestions로 각 이벤트 형식과 전체 답변 제출을 확인합니다. 선택지 목록만 스크롤하고 Other와 footer는 고정됩니다. 질문 전환 시 가장 긴 질문에 맞춘 높이를 유지하며, 대화를 스크롤하면 카드가 입력창 뒤로 내려갔다가 마우스 접근이나 포커스로 복귀합니다. 상세 카드가 가려도 답변은 유지되며, 명시적 제출 또는 Cancel로만 종료합니다.
 - `Conversation/Playground`: 메시지 입력과 전송부터 대화 카드 생성까지 이어지는 인터랙티브 미리보기.
 
 ## Composer 영역과 Story 구성
@@ -61,7 +61,7 @@ Controls의 `burstUpdates`와 `burstIntervalMs`로 발생 횟수와 간격을 �
 카드 아래에 Input/Output/Result 탭과 Monaco 에디터가 열립니다.
 `Conversation/EventCards/FoldedActivityStack`에서 접힌 작업 카드의 겹침,
 hover·키보드 focus로 펼침, 상세보기와 안정적인 대화 배치를 확인할 수 있습니다.
-대화 본문을 누르면 작업 상세가 닫힙니다. 질문 카드는 답변 제출 또는 Deny로 닫습니다.
+대화 본문을 누르면 작업 상세가 닫힙니다. 질문 카드는 답변 제출 또는 Cancel로 닫습니다.
 
 이 미리보기는 합성 protobuf 이벤트를 사용합니다. 실제 cxz 서버에 요청하거나 계정 quota를
 소비하지 않으며, 터미널 연결은 비활성화되어 있습니다. UI와 전송 애니메이션은 실제 앱과

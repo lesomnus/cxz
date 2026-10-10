@@ -182,7 +182,8 @@ export type QuestionExample =
   | "free-text"
   | "steps"
   | "async-steps"
-  | "previews";
+  | "previews"
+  | "long";
 export function questionEvent(example: QuestionExample = "choice") {
   const event = storyEvent(5, "approval", "item/tool/requestUserInput", {
     params: {
@@ -251,6 +252,36 @@ export function questionEvent(example: QuestionExample = "choice") {
               question: "When should we ship?",
               options: [{ label: "Now" }, { label: "Later" }],
             },
+          ],
+        },
+      }),
+    );
+  } else if (example === "long") {
+    event.payload = new TextEncoder().encode(
+      JSON.stringify({
+        params: {
+          questions: [
+            {
+              id: "short",
+              isOther: true,
+              question: "Choose a layout.",
+              options: [{ label: "Compact" }, { label: "Spacious" }],
+            },
+            {
+              id: "long",
+              isOther: true,
+              question: "Which implementation should we use?",
+              options: Array.from({ length: 12 }, (_, index) => ({
+                label: `Implementation ${index + 1}`,
+                description:
+                  "Review the implementation details before choosing.",
+                preview:
+                  "```ts\n" +
+                  "const configuration = { enabled: true };\n".repeat(4) +
+                  "```",
+              })),
+            },
+            { id: "notes", question: "Anything else?", options: null },
           ],
         },
       }),

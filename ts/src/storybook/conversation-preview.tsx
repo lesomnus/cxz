@@ -173,6 +173,9 @@ export function ComponentPreview({
         agent={agent}
         pane={pane}
         follow={follow}
+        navigate={() => {
+          follow.current = false;
+        }}
       />
       <FloatingCardHost>{children}</FloatingCardHost>
       <ConversationComposer
