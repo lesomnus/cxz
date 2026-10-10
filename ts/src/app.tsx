@@ -1,6 +1,9 @@
 import { EventView } from "./event-view";
 import { QuestionCard } from "./question-card";
 import { ConversationComposer } from "./conversation-composer";
+import { SessionMenu } from "./session-menu";
+import { manageSession } from "./session-actions";
+import { useNavigate } from "@tanstack/react-router";
 import { t, translateKnown } from "./i18n";
 import { useLocale } from "./i18n-react";
 import React, {
@@ -15,7 +18,7 @@ import React, {
 } from "react";
 import { Provider, useQuery } from "@lesomnus/payday/react";
 import { ProjectService } from "../gen/cxz/project_svc_pb";
-import { SessionService } from "../gen/cxz/session_svc_pb";
+import { SessionService, SessionRefSchema } from "../gen/cxz/session_svc_pb";
 import type { Project } from "../gen/cxz/project_pb";
 import type { Session, SessionEvent } from "../gen/cxz/session_pb";
 import { Connection, authenticate, ref } from "./connection";
@@ -498,6 +501,8 @@ function Conversation(props: { c: Connection; id: string }) {
 }
 function ConversationContent({ c, id }: { c: Connection; id: string }) {
   useLocale();
+  const navigate = useNavigate();
+  const { projects } = useContext(WorkspaceContext)!;
   const [sending, setSending] = useState(false);
   const current = useQuery(SessionService.method.get, {
     ref: ref(id),
@@ -930,6 +935,9 @@ function ConversationContent({ c, id }: { c: Connection; id: string }) {
   }
   const transcript = useMemo(() => transcriptEvents(events), [events]);
   const s = current.data;
+  const sessionProject =
+    s?.project?.id &&
+    projects.find((project) => key(project.id) === key(s.project!.id));
   const completions = transcript.completions;
   const combined = useMemo(
     () =>
@@ -1254,6 +1262,47 @@ function ConversationContent({ c, id }: { c: Connection; id: string }) {
         terminalVisible={terminalVisible}
         terminalAvailable={!!s?.project?.id.length}
         onTerminal={() => showTerminal(!terminalVisibleRef.current)}
+        menu={
+          <SessionMenu
+            session={s && { ...s, project: sessionProject ?? s.project }}
+            info={info}
+            busy={busy}
+            manage={(operation, run) =>
+              action(async () => {
+                const updated = await manageSession(
+                  c.sessions,
+                  create(SessionRefSchema, ref(id)),
+                  operation,
+                  run,
+                );
+                c.store.apply("cxz.Session", [
+                  { id: updated.id, value: updated },
+                ]);
+              })
+            }
+            previewPurge={async () => {
+              let plan;
+              await action(async () => {
+                plan = await c.sessions.purge(
+                  { ref: ref(id), dryRun: true },
+                  { timeoutMs: 20_000 },
+                );
+              });
+              return plan;
+            }}
+            purge={() =>
+              action(async (session) => {
+                await c.sessions.purge(
+                  { ref: ref(id) },
+                  { timeoutMs: 120_000 },
+                );
+                c.store.apply("cxz.Session", [{ id: session.id }]);
+                c.drafts.delete(id);
+                await navigate({ to: "/sessions", replace: true });
+              })
+            }
+          />
+        }
       >
         <ModelSettings
           session={s}

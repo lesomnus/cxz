@@ -296,6 +296,7 @@ func (x *Sessions) Watch(r *resource.SessionWatchRequest, stream grpc.ServerStre
 	last := s.rev
 	s.mu.Unlock()
 	first := !r.GetSkipSnapshot()
+	known := map[string][]byte{}
 	tick := time.NewTicker(80 * time.Millisecond)
 	defer tick.Stop()
 	for {
@@ -303,12 +304,20 @@ func (x *Sessions) Watch(r *resource.SessionWatchRequest, stream grpc.ServerStre
 		rev := s.rev
 		var items []*resource.SessionWatchItem
 		if first || rev != last {
+			next := map[string][]byte{}
 			for _, st := range s.sessions {
 				if sessionMatches(st, r.GetFilters()) {
 					v := proto.Clone(st.value).(*resource.Session)
 					items = append(items, resource.SessionWatchItem_builder{Id: v.GetId(), Value: v}.Build())
+					next[string(v.GetId())] = v.GetId()
 				}
 			}
+			for id, value := range known {
+				if _, found := next[id]; !found {
+					items = append(items, resource.SessionWatchItem_builder{Id: value}.Build())
+				}
+			}
+			known = next
 		}
 		s.mu.Unlock()
 		if first || rev != last {

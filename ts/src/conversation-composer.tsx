@@ -29,6 +29,7 @@ export function ConversationComposer({
   terminalVisible = false,
   terminalAvailable = false,
   onTerminal,
+  menu,
   children,
 }: {
   formRef?: Ref<HTMLFormElement>;
@@ -49,6 +50,7 @@ export function ConversationComposer({
   terminalVisible?: boolean;
   terminalAvailable?: boolean;
   onTerminal?: () => void;
+  menu?: ReactNode;
   children?: ReactNode;
 }) {
   useLocale();
@@ -87,6 +89,7 @@ export function ConversationComposer({
               </svg>
             </Button>
           </span>
+          {menu}
           <span className="terminal-control">
             <Button
               className="toolbar-button terminal-toggle"

@@ -15,7 +15,7 @@ const meta = {
       description: {
         component:
           "The **Composer** is the complete message-writing area, including its toolbar, editor and status bar.\n\n" +
-          "- **Composer toolbar** (`.composer-toolbar`): Stop, elapsed time, Terminal, Latest and Send.\n" +
+          "- **Composer toolbar** (`.composer-toolbar`): Stop, elapsed time, Session menu, Terminal, Latest and Send.\n" +
           "- **Composer editor** (`ComposerEditor`, `.composer-editor`): line numbers, Markdown, code blocks, paste chips and slash-command suggestions. Its input container is `.composer-input`.\n" +
           "- **Composer status bar** (`.composer-meta`): model, effort, usage and context.\n" +
           "- **Composer surface** (`.composer-wrapper`): the box around the toolbar and input; the status bar sits outside this box.\n\n" +
@@ -64,3 +64,14 @@ export const PendingSend: Story = {
   args: { value: "A message awaiting acknowledgement…", sending: true },
 };
 export const Working: Story = { args: { working: true } };
+export const StoppedSession: Story = {
+  args: { sessionStopped: true },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Open Session menu to resume the simulated stopped session, restart it, inspect session details or review a fake purge plan. These actions affect only this preview; no server or filesystem is used.",
+      },
+    },
+  },
+};

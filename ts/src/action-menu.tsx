@@ -2,18 +2,28 @@ import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "./button";
 
+export type ActionMenuItem = {
+  label: string;
+  shortcut?: string;
+  checked?: boolean;
+  disabled?: boolean;
+  danger?: boolean;
+  run: () => void;
+};
+
 export function ActionMenu({
   label,
-  items,
+  items = [],
+  groups,
+  disabled = false,
+  placement = "below",
   status,
 }: {
   label: string;
-  items: {
-    label: string;
-    shortcut?: string;
-    checked?: boolean;
-    run: () => void;
-  }[];
+  items?: ActionMenuItem[];
+  groups?: { label: string; items: ActionMenuItem[] }[];
+  disabled?: boolean;
+  placement?: "above" | "below";
   status?: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -27,11 +37,35 @@ export function ActionMenu({
   }
   useLayoutEffect(() => {
     if (!open || !menu.current) return;
-    const bounds = trigger.current!.getBoundingClientRect();
     const popup = menu.current;
-    popup.style.top = `${bounds.bottom + 4}px`;
-    popup.style.right = `${Math.max(8, window.innerWidth - bounds.right)}px`;
-    popup.querySelector("button")?.focus({ preventScroll: true });
+    const position = () => {
+      const bounds = trigger.current!.getBoundingClientRect();
+      const gap = 4,
+        inset = 8;
+      const above = Math.max(0, bounds.top - gap - inset);
+      const below = Math.max(
+        0,
+        window.innerHeight - bounds.bottom - gap - inset,
+      );
+      const upward =
+        placement === "above"
+          ? above >= popup.scrollHeight || above > below
+          : below < popup.scrollHeight && above > below;
+      popup.style.maxHeight = `${Math.min(window.innerHeight / 2, upward ? above : below)}px`;
+      popup.style.top = `${upward ? Math.max(inset, bounds.top - gap - popup.offsetHeight) : bounds.bottom + gap}px`;
+      popup.style.right = `${Math.max(inset, window.innerWidth - bounds.right)}px`;
+    };
+    position();
+    popup
+      .querySelector<HTMLButtonElement>("button:not(:disabled)")
+      ?.focus({ preventScroll: true });
+    const resize = new ResizeObserver(position);
+    resize.observe(popup);
+    window.addEventListener("scroll", position, true);
+    return () => {
+      resize.disconnect();
+      window.removeEventListener("scroll", position, true);
+    };
   }, [open]);
   useEffect(() => {
     if (!open) return;
@@ -53,6 +87,7 @@ export function ActionMenu({
       <Button
         className="toolbar-button"
         type="button"
+        disabled={disabled}
         aria-label={label}
         aria-description={status}
         aria-haspopup="menu"
@@ -103,7 +138,9 @@ export function ActionMenu({
               if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) {
                 event.preventDefault();
                 const buttons = [
-                  ...event.currentTarget.querySelectorAll("button"),
+                  ...event.currentTarget.querySelectorAll<HTMLButtonElement>(
+                    "button:not(:disabled)",
+                  ),
                 ];
                 const current = buttons.indexOf(
                   document.activeElement as HTMLButtonElement,
@@ -121,23 +158,41 @@ export function ActionMenu({
               }
             }}
           >
-            {items.map((item) => (
-              <Button
-                key={item.label}
-                type="button"
-                role={
-                  item.checked === undefined ? "menuitem" : "menuitemcheckbox"
-                }
-                aria-checked={item.checked}
-                aria-label={item.label}
-                onClick={() => {
-                  close(true);
-                  item.run();
-                }}
+            {(groups ?? [{ label: "", items }]).map((group) => (
+              <div
+                className="action-menu-group"
+                key={group.label}
+                role="group"
+                aria-label={group.label || undefined}
               >
-                <span>{item.label}</span>
-                {item.shortcut && <kbd>{item.shortcut}</kbd>}
-              </Button>
+                {group.label && (
+                  <span className="action-menu-group-title" aria-hidden="true">
+                    {group.label}
+                  </span>
+                )}
+                {group.items.map((item) => (
+                  <Button
+                    key={item.label}
+                    type="button"
+                    role={
+                      item.checked === undefined
+                        ? "menuitem"
+                        : "menuitemcheckbox"
+                    }
+                    aria-checked={item.checked}
+                    aria-label={item.label}
+                    disabled={item.disabled}
+                    data-danger={item.danger}
+                    onClick={() => {
+                      close(true);
+                      item.run();
+                    }}
+                  >
+                    <span>{item.label}</span>
+                    {item.shortcut && <kbd>{item.shortcut}</kbd>}
+                  </Button>
+                ))}
+              </div>
             ))}
             {status && <small role="status">{status}</small>}
           </div>,

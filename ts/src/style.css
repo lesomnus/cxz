@@ -821,6 +821,62 @@ header strong {
   padding-top: var(--space);
   border-top: 1px solid var(--shade-54);
 }
+.action-menu-group + .action-menu-group {
+  margin-top: var(--space);
+  padding-top: var(--space);
+  border-top: 1px solid var(--shade-54);
+}
+.action-menu-group-title {
+  display: block;
+  padding: var(--control-inset) var(--control-inline-inset);
+  color: var(--muted);
+  font-size: 11px;
+}
+.action-menu-popup [data-danger="true"] {
+  font-weight: 600;
+}
+.session-details {
+  margin: calc(2 * var(--space)) 0 0;
+}
+.session-details > div {
+  display: grid;
+  grid-template-columns: minmax(90px, 1fr) minmax(0, 2fr);
+  gap: calc(2 * var(--space));
+  padding: var(--space);
+}
+.session-details dt {
+  color: var(--muted);
+}
+.session-details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.session-details dd code {
+  padding: 0;
+  background: transparent;
+}
+.purge-plan dd small {
+  display: block;
+  color: var(--muted);
+}
+.session-confirmation-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space);
+  margin-top: calc(2 * var(--space));
+}
+.session-confirmation-actions button {
+  background: var(--shade-42);
+}
+.session-link {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space);
+}
+.session-link input {
+  flex: 1;
+  min-width: 0;
+}
 .agent-brand {
   display: inline-flex;
   height: var(--agent-logo-size);

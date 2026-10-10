@@ -10,6 +10,9 @@ import { sessionCommands } from "../composer-commands";
 import { ModelSettings, type ModelCatalog } from "../model-settings";
 import { UsageInfo } from "../usage-info";
 import { storySession } from "./fixtures";
+import { SessionMenu } from "../session-menu";
+import { create } from "@bufbuild/protobuf";
+import { SessionPurgeReplySchema } from "../../gen/cxz/session_svc_pb";
 import type { SessionInfo } from "../session-info";
 import type { TurnProgress } from "../turn-progress";
 import "./preview.css";
@@ -139,6 +142,7 @@ export function ComponentPreview({
   onChange,
   sending = false,
   working = false,
+  sessionStopped = false,
   children,
 }: {
   events?: SessionEvent[];
@@ -147,14 +151,21 @@ export function ComponentPreview({
   onChange?: (value: string) => void;
   sending?: boolean;
   working?: boolean;
+  sessionStopped?: boolean;
   children?: ReactNode;
 }) {
   const pane = useRef<HTMLDivElement>(null);
   const follow = useRef(true);
   const pastes = useRef<Map<string, ComposerPaste>>(previewPastes());
   const startedAt = useRef(Date.now() - 14_000);
-  const [stopped, setStopped] = useState(false);
+  const [stopped, setStopped] = useState(sessionStopped);
+  const [purged, setPurged] = useState(false);
+  const [generation, setGeneration] = useState(1);
   const active = working && !stopped;
+  const session = storySession();
+  session.agent = agent;
+  session.status!.state = stopped ? "stopped" : active ? "running" : "idle";
+  session.status!.runId = `storybook-run-${generation}`;
   return (
     <PreviewFrame>
       <PreviewTranscript
@@ -185,6 +196,42 @@ export function ComponentPreview({
         }
         working={active}
         interrupt={() => setStopped(true)}
+        menu={
+          <SessionMenu
+            session={purged ? undefined : session}
+            info={{
+              model: session.model,
+              effort: "medium",
+              remaining: 72,
+              contextUsed: 48000,
+              contextWindow: 200000,
+            }}
+            busy={sending}
+            manage={async (operation) => {
+              setStopped(operation === "stop");
+              if (operation !== "stop") setGeneration((value) => value + 1);
+              return true;
+            }}
+            previewPurge={async () =>
+              create(SessionPurgeReplySchema, {
+                dryRun: true,
+                targets: [
+                  {
+                    kind: "journal",
+                    path: "/storybook/conversation",
+                    files: 1,
+                    bytes: 1200n,
+                  },
+                ],
+                retained: ["Project workspace"],
+              })
+            }
+            purge={async () => {
+              setPurged(true);
+              return true;
+            }}
+          />
+        }
       >
         <PreviewMetadata agent={agent} busy={sending || active} />
       </ConversationComposer>
