@@ -20,7 +20,7 @@ leaving the conversation, resetting the sandbox, reloading or signing out closes
 that panel's connection and shell; it is not a persistent server terminal. An
 exited or disconnected shell shows **Reconnect**, which starts a new shell.
 Scrollback is bounded to 2000 terminal lines independently of virtualized messages.
-Panel sizing follows [style.css](../ts/src/style.css), bounded by the conversation
+Panel sizing follows [style.css](../ts/src/app/styles/style.css), bounded by the conversation
 viewport. ResizeObserver updates the PTY within the project service's validated
 dimension limits. The wide-view editor remains a separate adjacent pane.
 
@@ -57,7 +57,7 @@ The standard ANSI colors use a subdued palette, with brighter variants on dark
 backgrounds and deeper variants on light backgrounds. Theme changes recolor the
 existing buffer without reconnecting the shell. Indexed and truecolor escape
 sequences keep xterm's native handling. Palette values live in
-`terminalTheme` in [workspace-terminal.tsx](../ts/src/workspace-terminal.tsx).
+`terminalTheme` in [workspace-terminal.tsx](../ts/src/features/workspace/terminal/workspace-terminal.tsx).
 No addon interprets terminal output as HTML, opens links or accesses the clipboard.
 
 ## WASM sandbox

@@ -1,20 +1,29 @@
 import { useRef, useState, type ReactNode } from "react";
 import type { SessionEvent } from "../../gen/cxz/session_pb";
-import { FloatingCardHost, FloatingCardProvider } from "../floating-card";
-import { Transcript } from "../transcript";
-import { EventView } from "../event-view";
-import { transcriptEvents } from "../tool-activity";
-import { ConversationComposer } from "../conversation-composer";
-import { createPaste, type ComposerPaste } from "../composer-pastes";
-import { sessionCommands } from "../composer-commands";
-import { ModelSettings, type ModelCatalog } from "../model-settings";
-import { UsageInfo } from "../usage-info";
+import {
+  FloatingCardHost,
+  FloatingCardProvider,
+} from "../features/session/cards/floating-card";
+import { Transcript } from "../features/session/conversation/transcript";
+import { EventView } from "../features/session/conversation/event-view";
+import { transcriptEvents } from "../features/session/model/tool-activity";
+import { ConversationComposer } from "../features/session/composer/conversation-composer";
+import {
+  createPaste,
+  type ComposerPaste,
+} from "../features/session/composer/composer-pastes";
+import { sessionCommands } from "../features/session/composer/composer-commands";
+import {
+  ModelSettings,
+  type ModelCatalog,
+} from "../features/session/composer/model-settings";
+import { UsageInfo } from "../features/session/composer/usage-info";
 import { storySession } from "./fixtures";
-import { SessionMenu } from "../session-menu";
+import { SessionMenu } from "../features/session/components/session-menu";
 import { create } from "@bufbuild/protobuf";
 import { SessionPurgeReplySchema } from "../../gen/cxz/session_svc_pb";
-import type { SessionInfo } from "../session-info";
-import type { TurnProgress } from "../turn-progress";
+import type { SessionInfo } from "../features/session/model/session-info";
+import type { TurnProgress } from "../features/session/model/turn-progress";
 import "./preview.css";
 
 export const samplePaste = createPaste(

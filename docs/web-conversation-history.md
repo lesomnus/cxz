@@ -10,7 +10,7 @@ direction. These bounds are mutually exclusive. `snapshot_seq` fences both the
 membership and state of rows while new records arrive. The reply includes retained
 older/newer flags, the preceding user input for the pinned preview, and recent
 model/quota/context metadata. Defaults and limits live in
-`internal/transcripthistory/history.go` and `ts/src/session-history.ts`.
+`internal/transcripthistory/history.go` and `ts/src/features/session/model/session-history.ts`.
 
 A tool's row stays at its original call sequence. Output, results and correlated
 approval decisions update that row's status rather than inserting more transcript

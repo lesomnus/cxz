@@ -204,7 +204,7 @@ Question은 사용자가 답해야 하는 작업이다. 다른 정보가 앞에 
 - 움직임이 위치와 관계를 설명하고, 작은 변화에도 안정적으로 반응하는가.
 - 같은 조작을 다른 화면에서도 익숙하게 사용할 수 있는가.
 
-디자인 수치는 [style.css](../ts/src/style.css)와 [theme.css](../ts/src/theme.css)의
+디자인 수치는 [style.css](../ts/src/app/styles/style.css)와 [theme.css](../ts/src/app/styles/theme.css)의
 토큰을 기준으로 한다. 스크롤·노출·애니메이션처럼 동작에 속한 수치는 해당 구현에서
 관리한다. 문서에 상수나 기본값을 복사해 별도의 기준을 만들지 않는다.
 

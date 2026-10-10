@@ -9,7 +9,7 @@ reset the draft, file tabs or connection. On narrower screens no editor code is
 loaded until the wide layout has first been activated.
 
 Layout dimensions and breakpoints are defined in
-[style.css](../ts/src/style.css).
+[style.css](../ts/src/app/styles/style.css).
 
 ## File preview
 
@@ -19,7 +19,7 @@ open in a read-only Monaco editor with line numbers and Find. Its tab stops and
 syntax palette use the [global browser editor settings](web-settings.md). The
 editor and its worker load only when a file is opened; the conversation startup
 bundle does not include Monaco. File previews and the editable settings JSON
-share `ts/src/source-editor.tsx`: the same theme, background/gutter, font, line
+share `ts/src/shared/editor/source-editor.tsx`: the same theme, background/gutter, font, line
 numbers and rendering options, with read-only enabled for workspace previews.
 Their header/footer styles are shared too. Preview limits are 1 MiB per file,
 16 cached tabs per project and 2048 entries per directory. Binary/non-UTF-8 files report an error.

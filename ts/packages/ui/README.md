@@ -86,3 +86,7 @@ npm run test:ui
 ```
 
 This Storybook imports the package stylesheet and documentation framing only. Its stories demonstrate core controls, value editing, menus, cards, injected translation and the optional editor without app CSS or cxz providers. The existing application Storybook remains the integration reference for session, composer, Question and transcript layouts.
+
+## Source layout
+
+`src/components/<component>/` keeps each control's implementation, CSS Module and Storybook examples together. The optional editor is in `src/editor`, the translation provider is in `src/providers`, and theme tokens are in `src/theme`. Multi-component integration stories live in `src/stories/integration`. Use the public package entries rather than depending on this internal layout. App pages, session behavior and workspace integration are described in [web source organization](../../../docs/web-structure.md).

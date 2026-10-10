@@ -1,0 +1,63 @@
+import { createClient, type Transport } from "@connectrpc/connect";
+import { createConnectTransport } from "@connectrpc/connect-web";
+import { Store } from "@lesomnus/payday/store";
+import { Queries } from "@lesomnus/payday/query";
+import { entities } from "../../../gen/entities";
+import { ProjectService } from "../../../gen/cxz/project_svc_pb";
+import { SessionService } from "../../../gen/cxz/session_svc_pb";
+import type { ComposerPaste } from "../../features/session/composer/composer-pastes";
+import type { EditorState } from "../../features/workspace/editor/workspace-editor";
+import { ResourceInventory } from "./resource-inventory";
+
+// All client state belongs to one authenticated Connection. No credentials or
+// conversation cache are persisted in localStorage; sign-out discards the tree.
+export class Connection {
+  readonly clientId = crypto.randomUUID();
+  readonly transport;
+  readonly store;
+  readonly queries;
+  readonly projects;
+  readonly sessions;
+  readonly inventory;
+  readonly drafts = new Map<string, string>();
+  // Original paste bodies stay in this authenticated connection's memory, like drafts.
+  readonly pastes = new Map<string, ComposerPaste>();
+  readonly editors = new Map<string, EditorState>();
+  readonly inProcess: boolean;
+  constructor(
+    readonly baseUrl = location.origin,
+    transport?: Transport,
+  ) {
+    this.inProcess = !!transport;
+    this.transport =
+      transport ??
+      createConnectTransport({
+        baseUrl,
+        fetch: (input, init) =>
+          fetch(input, { ...init, credentials: "same-origin" }),
+      });
+    this.store = Store.open(entities, {
+      name: "cxz",
+      identity: crypto.randomUUID(),
+    });
+    this.queries = new Queries(this.store, this.transport, entities);
+    this.projects = createClient(ProjectService, this.transport);
+    this.sessions = createClient(SessionService, this.transport);
+    this.inventory = new ResourceInventory(
+      this.projects,
+      this.sessions,
+      this.store,
+    );
+  }
+}
+export const ref = (id: string) => ({
+  key: { case: "runtimeId" as const, value: id },
+});
+export async function authenticate(token: string) {
+  const r = await fetch("/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token }),
+  });
+  if (!r.ok) throw new Error(await r.text());
+}

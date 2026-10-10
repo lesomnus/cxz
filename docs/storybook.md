@@ -75,9 +75,10 @@ hover·키보드 focus로 펼침, 상세보기와 안정적인 대화 배치를 
 Controls에서 props를 바꾸거나 컴포넌트를 직접 클릭해 동작을 확인합니다.
 Docs에서 컴포넌트의 props와 여러 상태를 함께 확인합니다.
 
-스토리는 `ts/src/*.stories.tsx`, 공통 설정은 `ts/.storybook/`에 있습니다.
+스토리는 `ts/src/**/*.stories.tsx`, 공통 설정은 `ts/.storybook/`에 있습니다.
 새 컴포넌트는 같은 위치에 `컴포넌트명.stories.tsx`를 추가하면 자동으로 표시됩니다.
-선택 메뉴와 슬라이더, 입력창 스토리는 `useArgs`로 선택 값을 Controls와 동기화합니다.
+선택 메뉴와 슬라이더 스토리는 `useArgs`로 선택 값을 Controls와 동기화합니다.
+Monaco 텍스트 편집 예제는 로컬 React 상태를 사용해 입력을 즉시 반영합니다.
 미리보기 전용 프레임과 합성 데이터는 `ts/src/storybook/`에 있으며 앱 번들에서는 사용하지 않습니다.
 
 정적 빌드와 브라우저 검증:
@@ -101,3 +102,5 @@ npm run storybook:ui
 ```
 
 별도의 UI Storybook은 앱 전역 CSS와 설정·언어 저장소 없이 패키지를 검증합니다. 앱 Storybook은 실제 제품 화면 안에서의 조합을 검증합니다. 패키지 설치·테마·번역·에디터 사용법은 [UI README](../ts/packages/ui/README.md)를 참조하세요. 배포용 CSS와 타입 선언은 빌드 결과이며 git에 저장하지 않습니다.
+
+소스의 역할별 분류와 파일 배치 기준은 [웹 소스 구조](web-structure.md)에 정리되어 있습니다.

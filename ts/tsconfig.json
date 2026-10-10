@@ -28,7 +28,6 @@
     "storybook-e2e",
     "packages/ui/src",
     ".storybook-ui",
-    "packages/ui/stories",
     "playwright.ui.config.ts",
     "ui-e2e"
   ]

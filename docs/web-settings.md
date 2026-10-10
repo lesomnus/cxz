@@ -22,7 +22,7 @@ uses the conflict protection described below. Form and file panes scroll
 independently. Leaving the settings page discards unsaved JSON edits.
 
 The JSON pane and the session's read-only file preview both use
-`ts/src/source-editor.tsx`, with the same Monaco options, themed background/gutter,
+`ts/src/shared/editor/source-editor.tsx`, with the same Monaco options, themed background/gutter,
 monospace font, line numbers, Find and scrollbar. The
 pane header and footer share styles as well. Only settings JSON is editable.
 Monaco loads on first display; folding keeps its model and view. External
@@ -52,7 +52,7 @@ editing known settings through the UI.
 
 Visual dimensions, palettes and breakpoints are defined in the shared CSS tokens.
 Editor defaults and validation ranges are defined in
-[editor-settings.ts](../ts/src/editor-settings.ts). The JSON above illustrates the
+[editor-settings.ts](../ts/src/shared/settings/editor-settings.ts). The JSON above illustrates the
 file shape rather than specifying current defaults.
 
 ## Display language and lazy language packs
@@ -65,7 +65,7 @@ its pack, then persists `ui.language` in the same settings.json document.
 unsupported values fail whole-file validation. Other preferences and unknown
 keys are retained. Editor controls continue to save immediately.
 
-English source messages are bundled. `src/i18n.ts` has a static allowlist of
+English source messages are bundled. `src/shared/i18n/i18n.ts` has a static allowlist of
 loaders; Korean uses a separate Vite chunk via dynamic import. Requests are
 deduplicated and successful packs reused for the current page. Reloading with a
 saved language loads only that pack. An activation generation discards late
@@ -86,7 +86,7 @@ Backend error text and third-party editor/terminal content retain their own
 language; this pack does not configure the connected OpenVSCode workbench.
 
 To add a language, extend Locale/languages/loaders and settings validation, then
-add a pack under `src/locales/` that satisfies `LanguagePack`. English messages
+add a pack under `src/shared/i18n/locales/` that satisfies `LanguagePack`. English messages
 are typed source-string keys. Translate whole messages with named placeholders;
 do not translate data or concatenate reordered sentence fragments. `i18n.test.ts`
 checks pack completeness and placeholder parity. `i18n-react.tsx` exposes React
@@ -101,7 +101,7 @@ failures and editor state; production tests cover the actual gateway CSP.
 Missing values resolve to **dark**, preserving the existing appearance; invalid
 values fail whole-file validation. System follows `prefers-color-scheme` live,
 including changes while the page is open. Same-origin storage changes and reload
-use the saved preference. The monochrome ramp in `src/theme.css` covers the app,
+use the saved preference. The monochrome ramp in `src/app/styles/theme.css` covers the app,
 composer, cards, menus, scrollbar and fades. Native syntax palettes and both
 Monaco panes adapt to the effective theme; the terminal updates in place without
 reconnecting. The white Claude Spark keeps its supplied color on a dark backing
@@ -109,19 +109,19 @@ in light mode. Connected OpenVSCode retains its own appearance settings.
 
 Frequently reused inputs have their own files:
 
-- `src/value-menu.tsx`: model/effort, language, theme and palette menus. The
+- `packages/ui/src/components/value-menu/value-menu.tsx`: model/effort, language, theme and palette menus. The
   selected row overlays the trigger's text origin; current row, divider, then
   other choices. Native button activation, arrow keys/Home/End, Escape with
   focus restoration, outside dismissal, a bounded scrollable option list and
   automatic up/down placement are shared. A fixed portal avoids clipping in
   scrollable settings panes. Default choices display the effective value in
   muted text; explicit values have normal text. No UI library was added.
-- `src/setting-slider.tsx`: native discrete slider with a reset position followed
+- `packages/ui/src/components/setting-slider/setting-slider.tsx`: native discrete slider with a reset position followed
   by explicit choices. Reset displays the inherited value and a reset symbol;
   keyboard Home/End/arrows work. Valid saved values outside the slider's visible
   range remain displayed until an explicit choice. Reading settings never clamps
   or rewrites the file. Choice ranges are defined in the component and validator.
-- `src/segmented-control.tsx`: equal-width native radio cells with a sliding,
+- `packages/ui/src/components/segmented-control/segmented-control.tsx`: equal-width native radio cells with a sliding,
   shadow-free selection box. Tab input uses reset/effective value, Spaces and
   Tab character. Reset deletes the key; explicit false still means a real Tab.
   Arrow-key selection and browser focus traversal use native radio behavior;
@@ -212,7 +212,7 @@ storage to catch a change before its storage event arrives. Import explicitly
 replaces the entire document. This is localStorage persistence, without
 multi-tab transactional locking or automatic conflict merging of JSON drafts.
 
-Implementation: `ts/src/editor-settings.ts` defines keys, validation, resolution
+Implementation: `ts/src/shared/settings/editor-settings.ts` defines keys, validation, resolution
 and palettes; `settings-store.ts` owns the whole-file store; `settings.ts` exposes
 React subscriptions; `settings-page.tsx` provides form/file editing.
 `editor-settings.test.ts` and `sandbox-e2e/settings.spec.ts` cover inheritance,

@@ -167,7 +167,7 @@ sends produce identical random tool sequences. Switching scenarios preserves
 session state; reloading starts fresh. Event timestamps use the current clock,
 including seeded history. The seed controls content, not a fixed date. Response
 footers omit the year; metric icons expose names and scope on hover and to
-assistive technology. Relative-time rules are defined in `src/message-time.ts`.
+assistive technology. Relative-time rules are defined in `src/features/session/conversation/message-time.ts`.
 
 While the agent is working, the composer toolbar has a subdued aurora behind it.
 The field keeps volume at both ends of the toolbar and fades softly beyond them.
@@ -268,7 +268,7 @@ emerging into the transcript and returning to full size. These transforms do not
 change measured row heights or create optimistic journal entries. Failed sends
 keep the draft; edits made during sending survive, and switching sessions removes
 the decorative layers without restoring an accepted draft. Reduced-motion
-preferences skip the effect. `ts/src/send-motion.ts` coordinates the animation;
+preferences skip the effect. `ts/src/features/session/conversation/send-motion.ts` coordinates the animation;
 CSS tokens define its appearance and timing.
 
 The shared composer is a monospace editor with logical line numbers and no resize
@@ -318,7 +318,7 @@ language aliases and finishes an unclosed fence. Surrounding prose and code body
 bytes remain intact. Question Other answers use the same editor and serialization.
 The highlighter uses a bounded common language set and cached detection samples.
 Oversized blocks or lines fall back to unhighlighted text; the limits are defined
-in `src/composer-code.ts`. Fences inside
+in `src/features/session/composer/composer-code.ts`. Fences inside
 a paste chip grow the enclosing Markdown fence as needed, and Markdown within
 standalone chips remains unchanged. See the
 [Highlight.js API](https://highlightjs.readthedocs.io/en/latest/api.html) for the
@@ -346,7 +346,7 @@ retains the native textarea and cannot trigger Ctrl+Enter submission.
 
 Fake history and remembered send IDs are bounded by the simulator. Client rendering
 uses the regular bounded cache and visible-message overscan from
-`src/virtual-messages.tsx`.
+`src/features/session/conversation/virtual-messages.tsx`.
 
 ## Builds and verification
 
@@ -394,10 +394,10 @@ generated `.sandbox` and `dist-sandbox` directories.
   deterministic fake-agent jobs. Generated protobuf services are shared with the
   real server, but the fixture lifecycle is deliberately simplified. Unimplemented
   RPCs remain unimplemented; it does not exercise the production lifecycle stack.
-- `ts/src/sandbox.tsx`: payday sandbox startup, seed/pace controls, reset and a
+- `ts/src/app/sandbox/sandbox.tsx`: payday sandbox startup, seed/pace controls, reset and a
   sandbox Connection. No browser-auth bypass is added to the production app.
-- `ts/src/app.tsx`: shared production workspace/conversation UI.
-- `ts/src/connection.ts`: accepts a Connect Transport; normal connections use HTTPS,
+- `ts/src/app/workspace-shell.tsx` and `ts/src/pages/`: shared production workspace and page composition. Session conversation behavior lives under `ts/src/features/session/`.
+- `ts/src/shared/api/connection.ts`: accepts a Connect Transport; normal connections use HTTPS,
   while the sandbox supplies payday's Worker transport.
 
 Use the existing HTTPS browser fixture and Go integration tests for real gateway

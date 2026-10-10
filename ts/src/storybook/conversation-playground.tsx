@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { Button } from "../button";
-import { ConversationComposer } from "../conversation-composer";
-import { FloatingCardHost } from "../floating-card";
-import { composerPrompt } from "../composer-code";
-import { sessionCommands } from "../composer-commands";
-import { useSendMotion } from "../send-motion";
-import { atScrollBottom } from "../scroll-physics";
-import type { TurnProgress } from "../turn-progress";
+import { Button } from "@lesomnus/cxz-ui";
+import { ConversationComposer } from "../features/session/composer/conversation-composer";
+import { FloatingCardHost } from "../features/session/cards/floating-card";
+import { composerPrompt } from "../features/session/composer/composer-code";
+import { sessionCommands } from "../features/session/composer/composer-commands";
+import { useSendMotion } from "../features/session/conversation/send-motion";
+import { atScrollBottom } from "../features/session/conversation/scroll-physics";
+import type { TurnProgress } from "../features/session/model/turn-progress";
 import {
   conversationEvents,
   burstEvent,
