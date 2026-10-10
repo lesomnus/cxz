@@ -1,5 +1,7 @@
 import type { LanguagePack } from "../i18n";
 export const messages = {
+  "Expand question": "질문 확대",
+  "Collapse question": "질문 축소",
   Controls: "상태 관리",
   Stop: "정지",
   Resume: "재개",

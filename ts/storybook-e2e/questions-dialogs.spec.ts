@@ -308,6 +308,76 @@ test("question layout keeps the longest height, fixed Other/footer, and option-o
   await page.screenshot({ path: "test-results/question-long-mobile.png" });
 });
 
+test("questions expand to the available conversation height and collapse from either margin without losing answers", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=conversation-questioncard--long-questions&viewMode=story",
+  );
+  const question = page.getByRole("region", { name: "Question", exact: true });
+  const original = (await question.boundingBox())!;
+  const other = question.getByRole("textbox", {
+    name: "Other answer: Choose a layout.",
+    exact: true,
+  });
+  await other.fill("Preserve this draft");
+  await question.getByRole("button", { name: "Expand question" }).click();
+  const collapse = question.getByRole("button", { name: "Collapse question" });
+  await expect(collapse).toHaveAttribute("aria-expanded", "true");
+  const expanded = (await question.boundingBox())!;
+  const area = (await page.locator(".transcript-area").boundingBox())!;
+  const composer = (await page.locator(".composer-wrapper").boundingBox())!;
+  expect(expanded.height).toBeGreaterThan(original.height);
+  expect(expanded.y).toBeGreaterThanOrEqual(area.y);
+  expect(expanded.y - area.y).toBeLessThan(16);
+  expect(composer.y - expanded.y - expanded.height).toBeGreaterThanOrEqual(0);
+  expect(composer.y - expanded.y - expanded.height).toBeLessThan(20);
+  await question.getByText("Choose a layout.", { exact: true }).click();
+  await expect(collapse).toBeVisible();
+  await page.mouse.move(expanded.x - 10, expanded.y + 30);
+  await page.mouse.wheel(0, -250);
+  await expect
+    .poll(async () => (await question.boundingBox())!.y)
+    .toBeCloseTo(expanded.y, 0);
+  await page.screenshot({ path: "test-results/question-expanded-desktop.png" });
+  await page.mouse.click(expanded.x - 10, expanded.y + 30);
+  await expect(
+    question.getByRole("button", { name: "Expand question" }),
+  ).toBeVisible();
+  expect((await question.boundingBox())!.height).toBeCloseTo(
+    original.height,
+    0,
+  );
+  await expect(other).toHaveValue("Preserve this draft");
+  await question.getByRole("button", { name: "Expand question" }).click();
+  const right = (await question.boundingBox())!;
+  await page.mouse.click(right.x + right.width + 10, right.y + 30);
+  await expect(
+    question.getByRole("button", { name: "Expand question" }),
+  ).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 620 });
+  await question.getByRole("button", { name: "Expand question" }).focus();
+  await page.keyboard.press("Enter");
+  const mobile = (await question.boundingBox())!;
+  const mobileArea = (await page.locator(".transcript-area").boundingBox())!;
+  const mobileComposer = (await page
+    .locator(".composer-wrapper")
+    .boundingBox())!;
+  expect(mobile.y).toBeGreaterThanOrEqual(mobileArea.y);
+  expect(mobile.y - mobileArea.y).toBeLessThan(16);
+  expect(mobile.y + mobile.height).toBeLessThanOrEqual(mobileComposer.y);
+  await expect(
+    question.getByRole("button", { name: "Submit", exact: true }),
+  ).toBeVisible();
+  await page.screenshot({ path: "test-results/question-expanded-mobile.png" });
+  await collapse.click();
+  await expect(other).toHaveValue("Preserve this draft");
+  await expect(question).toBeVisible();
+  await page.screenshot({
+    path: "test-results/question-expanded-mobile-collapsed.png",
+  });
+});
+
 test("reading tucks the question into the composer fade and approaching restores it without losing answers", async ({
   page,
 }) => {

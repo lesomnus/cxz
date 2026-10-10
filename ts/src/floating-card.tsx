@@ -12,6 +12,8 @@ import {
   Children,
   type ReactNode,
   type RefObject,
+  type Dispatch,
+  type SetStateAction,
 } from "react";
 import { FloatingCard } from "./card-shell";
 export { FloatingCard } from "./card-shell";
@@ -38,6 +40,23 @@ const CardState = createContext<{
   card?: Card;
   close: (id: number, restoreFocus?: boolean) => void;
 }>({ close: () => {} });
+const QuestionExpansion = createContext<{
+  expanded?: string;
+  setExpanded: Dispatch<SetStateAction<string | undefined>>;
+}>({ setExpanded: () => {} });
+
+export function useQuestionExpansion(id: string) {
+  const { expanded, setExpanded } = useContext(QuestionExpansion);
+  useEffect(
+    () => () =>
+      setExpanded((current) => (current === id ? undefined : current)),
+    [id, setExpanded],
+  );
+  return {
+    expanded: expanded === id,
+    toggle: () => setExpanded((current) => (current === id ? undefined : id)),
+  };
+}
 
 export function useFloatingCard() {
   return useContext(OpenCard);
@@ -143,6 +162,11 @@ export function FloatingCardHost({ children }: { children?: ReactNode }) {
   const host = useRef<HTMLDivElement>(null);
   const persistent = useRef<HTMLDivElement>(null);
   const hasQuestions = Children.count(children) > 0;
+  const [expandedQuestion, setExpandedQuestion] = useState<string>();
+  const expansion = useMemo(
+    () => ({ expanded: expandedQuestion, setExpanded: setExpandedQuestion }),
+    [expandedQuestion],
+  );
   useLayoutEffect(() => {
     const node = host.current!;
     const conversation = node.closest<HTMLElement>(".conversation")!;
@@ -273,6 +297,31 @@ export function FloatingCardHost({ children }: { children?: ReactNode }) {
     };
   }, [hasQuestions]);
   useEffect(() => {
+    if (!expandedQuestion) return;
+    const conversation = host.current!.closest(".conversation")!;
+    const collapseInMargin = (event: PointerEvent) => {
+      const target = event.target;
+      if (
+        event.button !== 0 ||
+        !(target instanceof Element) ||
+        !conversation.contains(target) ||
+        target.closest(
+          '.floating-card, button, a, input, textarea, select, [role="button"], [role="scrollbar"], .scroll-track',
+        )
+      )
+        return;
+      const question = persistent.current!.querySelector<HTMLElement>(
+        '.question-card[data-expanded="true"]',
+      );
+      if (!question) return;
+      const bounds = question.getBoundingClientRect();
+      if (event.clientX < bounds.left || event.clientX > bounds.right)
+        setExpandedQuestion(undefined);
+    };
+    document.addEventListener("pointerdown", collapseInMargin);
+    return () => document.removeEventListener("pointerdown", collapseInMargin);
+  }, [expandedQuestion]);
+  useEffect(() => {
     if (!card || card.closing) return;
     const conversation = host.current!.closest(".conversation")!;
     const area = conversation.querySelector(".transcript-area")!;
@@ -310,33 +359,49 @@ export function FloatingCardHost({ children }: { children?: ReactNode }) {
       document.removeEventListener("pointerdown", dismissInTranscript);
   }, [card, close]);
   return (
-    <div
-      ref={host}
-      className="floating-card-host"
-      data-questions={hasQuestions}
-    >
-      <div ref={persistent} className="question-cards" data-covered="false">
-        {children}
+    <QuestionExpansion.Provider value={expansion}>
+      <div
+        ref={host}
+        className="floating-card-host"
+        data-questions={hasQuestions}
+        data-expanded={!!expandedQuestion}
+      >
+        <div
+          ref={persistent}
+          className="question-cards"
+          data-covered="false"
+          data-expanded={!!expandedQuestion}
+        >
+          {children}
+        </div>
+        <div className="question-scroll-fade" aria-hidden="true" />
+        {card &&
+          (card.anchor ? (
+            <AnchoredDetail
+              key={card.id}
+              anchor={card.anchor}
+              surface={card.surface}
+              id={`event-details-${card.id}`}
+              title={
+                typeof card.title === "function" ? card.title() : card.title
+              }
+              label={
+                typeof card.label === "function" ? card.label() : card.label
+              }
+              closing={!!card.closing}
+              close={(restore) => close(card.id, restore)}
+            >
+              {card.content(() => close(card.id))}
+            </AnchoredDetail>
+          ) : (
+            <PreviewCard
+              key={card.id}
+              card={card}
+              close={() => close(card.id)}
+            />
+          ))}
       </div>
-      <div className="question-scroll-fade" aria-hidden="true" />
-      {card &&
-        (card.anchor ? (
-          <AnchoredDetail
-            key={card.id}
-            anchor={card.anchor}
-            surface={card.surface}
-            id={`event-details-${card.id}`}
-            title={typeof card.title === "function" ? card.title() : card.title}
-            label={typeof card.label === "function" ? card.label() : card.label}
-            closing={!!card.closing}
-            close={(restore) => close(card.id, restore)}
-          >
-            {card.content(() => close(card.id))}
-          </AnchoredDetail>
-        ) : (
-          <PreviewCard key={card.id} card={card} close={() => close(card.id)} />
-        ))}
-    </div>
+    </QuestionExpansion.Provider>
   );
 }
 

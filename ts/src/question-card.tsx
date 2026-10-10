@@ -3,7 +3,11 @@ import type { SessionEvent } from "../gen/cxz/session_pb";
 import { t } from "./i18n";
 import { useLocale } from "./i18n-react";
 import { Button } from "./button";
-import { FloatingCard, useFloatingCard } from "./floating-card";
+import {
+  FloatingCard,
+  useFloatingCard,
+  useQuestionExpansion,
+} from "./floating-card";
 import { approvalTitle, questions, payload, detail } from "./journal";
 import { ComposerEditor } from "./composer-editor";
 import type { ComposerPaste } from "./composer-pastes";
@@ -31,6 +35,7 @@ export function QuestionCard({
   const [other, setOther] = useState<Record<string, string>>({});
   const [step, setStep] = useState(0);
   const prefix = useId();
+  const { expanded, toggle } = useQuestionExpansion(prefix);
   const activeStep = Math.min(step, qs.length - 1);
   const panel = `${prefix}-panel`;
   const otherAnswer = (key: string) => composerPrompt(other[key] ?? "", pastes);
@@ -54,6 +59,7 @@ export function QuestionCard({
       title={title}
       role="region"
       aria-label={title}
+      data-expanded={expanded}
     >
       {!qs.length && p.params?.message && <p>{String(p.params.message)}</p>}
       {!qs.length && (
@@ -84,6 +90,35 @@ export function QuestionCard({
             value={String(activeStep)}
             choose={(value) => setStep(Number(value))}
           />
+          <Button
+            type="button"
+            className="question-size-toggle"
+            aria-label={t(expanded ? "Collapse question" : "Expand question")}
+            title={t(expanded ? "Collapse question" : "Expand question")}
+            aria-expanded={expanded}
+            aria-controls={panel}
+            onClick={toggle}
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path
+                d={
+                  expanded
+                    ? "M2 6h4V2M10 2v4h4M14 10h-4v4M6 14v-4H2"
+                    : "M6 2H2v4M10 2h4v4M14 10v4h-4M6 14H2v-4"
+                }
+              />
+            </svg>
+          </Button>
         </header>
       )}
       <div

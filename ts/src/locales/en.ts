@@ -1,6 +1,8 @@
 // English source messages are always bundled; other packs load on demand.
 export const messages = {
   Controls: "Controls",
+  "Expand question": "Expand question",
+  "Collapse question": "Collapse question",
   Stop: "Stop",
   Resume: "Resume",
   "Restart session": "Restart session",
