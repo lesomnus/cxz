@@ -14,6 +14,33 @@ test("inline edits keep value bounds and font, support hover and never submit th
   const row = page.locator(".session-details > div").filter({ has: trigger });
   await expect(row.locator("dt")).toHaveCSS("font-family", font);
   await expect(row.locator("dd")).toHaveCSS("font-family", font);
+  const geometry = await row.evaluate((node) => {
+    const style = getComputedStyle(node);
+    const value = node.querySelector("button")!;
+    const outer = node.getBoundingClientRect();
+    const inner = value.getBoundingClientRect();
+    return {
+      inset: parseFloat(style.paddingRight),
+      padding: [
+        style.paddingTop,
+        style.paddingRight,
+        style.paddingBottom,
+        style.paddingLeft,
+      ],
+      outerRadius: parseFloat(style.borderTopRightRadius),
+      innerRadius: parseFloat(getComputedStyle(value).borderTopRightRadius),
+      top: inner.top - outer.top,
+      right: outer.right - inner.right,
+      bottom: outer.bottom - inner.bottom,
+    };
+  });
+  expect(new Set(geometry.padding).size).toBe(1);
+  for (const inset of [geometry.top, geometry.right, geometry.bottom])
+    expect(inset).toBeCloseTo(geometry.inset, 1);
+  expect(geometry.innerRadius + geometry.inset).toBeCloseTo(
+    geometry.outerRadius,
+    1,
+  );
   await expect(trigger).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
   await row.locator("dt").hover();
   await expect(row).not.toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
@@ -31,6 +58,10 @@ test("inline edits keep value bounds and font, support hover and never submit th
   for (const key of ["x", "y", "width", "height"] as const)
     expect(editing[key]).toBeCloseTo(bounds[key], 0);
   await expect(input).toHaveCSS("font-family", font);
+  await expect(input).toHaveCSS(
+    "border-radius",
+    await trigger.evaluate((node) => getComputedStyle(node).borderRadius),
+  );
   await expect(input).toHaveCSS(
     "padding-left",
     await trigger.evaluate((node) => getComputedStyle(node).paddingLeft),

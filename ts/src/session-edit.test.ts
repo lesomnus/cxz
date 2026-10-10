@@ -1,7 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { describe, expect, it, vi } from "vitest";
 import { SessionSchema } from "../gen/cxz/session_pb";
-import { AuxKind } from "../gen/cxz/project_svc_pb";
 import { editSession } from "./session-edit";
 
 function client() {
@@ -18,17 +17,16 @@ function client() {
   };
 }
 describe("session identity editing", () => {
-  it("records a manual title instead of patching the runtime-owned name", async () => {
+  it("patches a manual title without invoking auxiliary AI", async () => {
     const api = client();
     const saved = await editSession(api, "stable-id", "name", "New title");
-    expect(api.auxRun.mock.calls[0][0]).toEqual({
+    expect(api.patch.mock.calls[0][0]).toEqual({
       ref: { key: { case: "runtimeId", value: "stable-id" } },
-      kinds: [AuxKind.TITLE],
-      text: "New title",
+      name: "New title",
     });
-    expect(api.patch).not.toHaveBeenCalled();
+    expect(api.auxRun).not.toHaveBeenCalled();
     expect(api.get.mock.invocationCallOrder[0]).toBeGreaterThan(
-      api.auxRun.mock.invocationCallOrder[0],
+      api.patch.mock.invocationCallOrder[0],
     );
     expect(saved.name).toBe("New title");
   });

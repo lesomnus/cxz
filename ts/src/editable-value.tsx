@@ -86,6 +86,7 @@ function ValueEditor({
         letterSpacing: font.letterSpacing,
         "--editable-value-height": `${bounds.height}px`,
         "--editable-value-padding": font.padding,
+        "--editable-value-radius": font.borderRadius,
       } as CSSProperties);
     };
     measure();

@@ -43,6 +43,13 @@ func TestUnversionedProtoNamespace(t *testing.T) {
 func (f *fixture) RegisterProject(context.Context, string, string) (*api.Project, error) {
 	return f.p, nil
 }
+func (f *fixture) SetSessionTitle(_ context.Context, id, title string) (string, error) {
+	if id != f.s.Id {
+		return "", status.Error(codes.NotFound, "session not found")
+	}
+	f.s.Title = title
+	return title, nil
+}
 func (f *fixture) ResourceSnapshot(context.Context) (*api.ProjectList, *api.SessionList, error) {
 	return &api.ProjectList{Projects: []*api.Project{f.p}}, &api.SessionList{Sessions: []*api.Session{f.s}}, nil
 }

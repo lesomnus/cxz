@@ -876,15 +876,21 @@ header strong {
   font-weight: 600;
 }
 .session-details {
+  --details-row-inset: var(--control-inline-inset);
+  --details-row-radius: calc(3 * var(--space));
+  --details-value-radius: calc(
+    var(--details-row-radius) - var(--details-row-inset)
+  );
   margin: calc(2 * var(--space)) 0 0;
   font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
 }
 .session-details > div {
   display: grid;
+  align-items: center;
   grid-template-columns: minmax(90px, 1fr) minmax(0, 2fr);
   gap: calc(2 * var(--space));
-  padding: var(--space);
-  border-radius: 6px;
+  padding: var(--details-row-inset);
+  border-radius: var(--details-row-radius);
 }
 .session-details > div:has(.editable-value-trigger):is(:hover, :focus-within) {
   background: var(--shade-24);
@@ -906,11 +912,14 @@ header strong {
   padding: 0;
   background: transparent;
 }
+.session-details .editable-value-trigger {
+  border-radius: var(--details-value-radius);
+}
 .editable-value-trigger {
   display: block;
   width: calc(100% + 2 * var(--control-inline-inset));
   min-height: 0;
-  margin: calc(-1 * var(--space)) calc(-1 * var(--control-inline-inset));
+  margin: 0 calc(-1 * var(--control-inline-inset));
   padding: var(--space) var(--control-inline-inset);
   text-align: left;
 }
@@ -942,6 +951,7 @@ header strong {
   width: 100%;
   height: var(--editable-value-height);
   padding: var(--editable-value-padding);
+  border-radius: var(--editable-value-radius);
   border: 0;
   outline: 0;
   background: var(--shade-28);

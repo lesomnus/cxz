@@ -16,7 +16,7 @@ npm run storybook
 - `Components/FontFamilyControl`: 로컬 글꼴과 Google Fonts 선택, 적용 후 저장되는 메타데이터. Google Fonts는 Apply font를 누를 때만 다운로드합니다.
 - `Components/ConfirmationDialog`: 배경 조작과 포커스를 제한하는 확인창. 취소, 실행 대기, 실패 후 재시도, Purge 상태를 확인합니다.
 - `Components/EditableValue`: 값 영역 그대로 편집하는 입력과 취소·확인 오버레이. Alias/Title, 저장 대기, 실패 후 수정·재시도를 확인합니다.
-- `Components/SessionDetails`: 고정폭 key·value와 Title·Alias 편집. 편집 가능한 행의 hover 배경 안에서 값 영역은 더 밝은 둥근 표면을 유지합니다. Title은 `Session.name`이고 alias와 별개이며, 앱에서는 수동 제목 API와 alias Patch를 통해 저장합니다.
+- `Components/SessionDetails`: 고정폭 key·value와 Title·Alias 편집. 편집 가능한 행의 hover 배경 안에서 값 영역은 더 밝은 둥근 표면을 유지하며, 외곽과 내부 모서리는 같은 중심을 갖습니다. Title은 `Session.name`이고 alias와 별개이며, 둘 다 `Session.Patch`로 저장합니다. 이름 변경은 수동 제목으로 기록하고 진행 중인 자동 제목 생성을 취소하며, 보조 AI를 실행하지 않습니다.
 - `Editor/SourceEditor`: 파일 미리보기와 편집 가능한 settings JSON.
 - `Sessions/Panel`: 실제 세션 카드, 선택 하이라이트, 상태 indicator, 프로젝트 접기, 긴 목록의 스크롤.
 - `Conversation/Composer`: Markdown, 코드블록, 붙여넣기 chip, 명령어 제안, 전송 대기, 작업 중 glow, 모델·effort와 usage 표시.

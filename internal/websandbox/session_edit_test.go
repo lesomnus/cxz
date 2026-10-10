@@ -23,7 +23,7 @@ func TestSessionIdentityEditsPreserveRunAndTranscript(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = x.AuxRun(t.Context(), resource.AuxRunRequest_builder{Ref: ref("session-1"), Kinds: []resource.AuxKind{resource.AuxKind_AUX_KIND_TITLE}, Text: proto.String("  My new title  ")}.Build())
+	_, err = x.Patch(t.Context(), resource.SessionPatchRequest_builder{Ref: ref("session-1"), Name: proto.String("  My new title  ")}.Build())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -40,7 +40,22 @@ func TestSessionIdentityEditsPreserveRunAndTranscript(t *testing.T) {
 	if _, err = x.Patch(t.Context(), resource.SessionPatchRequest_builder{Ref: ref("session-2"), Alias: proto.String("Bad_Alias")}.Build()); status.Code(err) != codes.InvalidArgument {
 		t.Fatal("invalid alias accepted", err)
 	}
-	if _, err = x.Patch(t.Context(), resource.SessionPatchRequest_builder{Ref: ref("session-2"), Name: proto.String("not manual")}.Build()); status.Code(err) != codes.InvalidArgument {
-		t.Fatal("direct title patch accepted", err)
+	if _, err = x.Patch(t.Context(), resource.SessionPatchRequest_builder{Ref: ref("session-2"), Name: proto.String("  `  `  ")}.Build()); status.Code(err) != codes.InvalidArgument {
+		t.Fatal("empty normalized title accepted", err)
+	}
+	second, _ := x.Get(t.Context(), resource.SessionGetRequest_builder{Ref: ref("session-2")}.Build())
+	if _, err = x.Patch(t.Context(), resource.SessionPatchRequest_builder{Ref: ref("session-2"), Name: proto.String("Invalid combined update"), Alias: proto.String("oak-tree")}.Build()); status.Code(err) != codes.AlreadyExists {
+		t.Fatal("combined update accepted duplicate alias", err)
+	}
+	unchanged, _ := x.Get(t.Context(), resource.SessionGetRequest_builder{Ref: ref("session-2")}.Build())
+	if !proto.Equal(second, unchanged) {
+		t.Fatal("invalid combined update changed the title")
+	}
+	if _, err = x.Patch(t.Context(), resource.SessionPatchRequest_builder{Ref: ref("session-2"), Name: proto.String("Combined title"), Alias: proto.String("maple-tree")}.Build()); err != nil {
+		t.Fatal("combined update rejected", err)
+	}
+	combined, _ := x.Get(t.Context(), resource.SessionGetRequest_builder{Ref: resource.SessionRef_builder{Alias: proto.String("maple-tree")}.Build()}.Build())
+	if combined.GetName() != "Combined title" {
+		t.Fatal("combined title lost", combined)
 	}
 }
