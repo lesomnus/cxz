@@ -92,7 +92,7 @@ export function ActionMenu({
     };
   }, [open]);
   return (
-    <div className="action-menu" ref={trigger}>
+    <div className={`${styles.action_menu} action-menu`} ref={trigger}>
       <Button
         variant="toolbar"
         className="toolbar-button"

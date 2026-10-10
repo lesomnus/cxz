@@ -1,6 +1,10 @@
+:is(.action_menu),
 :is(.action_menu_popup),
 :is(.action_menu_popup) * {
   box-sizing: border-box;
+}
+.action_menu {
+  display: inline-flex;
 }
 .action_menu_popup {
   background: var(--ui-dropdown-background);
