@@ -42,6 +42,8 @@ tokens in the app stylesheet are the source of truth.
 The transcript keeps following latest through those viewport changes, correcting
 resize-generated scroll events before treating them as reading navigation.
 Wheel, drag and keyboard navigation still allow reading older messages.
+If new row measurements shorten the scroll range during a wheel gesture, native
+position clamping preserves the remaining movement instead of resuming latest.
 
 Implementation: `features/session/model/session-attention.ts`,
 `use-session-attention.ts`, `session-drafts.ts`, and

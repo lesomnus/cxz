@@ -224,10 +224,22 @@ export function Transcript({
     cancelAnimationFrame(wheelRaf.current);
     wheel.current = null;
   }
+  function rebaseWheel(el: HTMLDivElement) {
+    const motion = wheel.current;
+    if (!motion) return;
+    const top = clamp(motion.top, 0, el.scrollHeight - el.clientHeight);
+    if (top === motion.top || Math.abs(el.scrollTop - top) > 1) return;
+    // Row measurements or viewport growth can clamp a bottom position before
+    // the first wheel frame. Preserve its remaining travel through that clamp;
+    // it is a layout correction, not another gesture interrupting the wheel.
+    motion.target += top - motion.top;
+    motion.top = top;
+  }
   function animateWheel(time: number) {
     const el = pane.current,
       motion = wheel.current;
     if (!el || !motion) return;
+    rebaseWheel(el);
     if (Math.abs(el.scrollTop - motion.top) > 1) {
       stopWheel();
       scrolled();
@@ -341,6 +353,7 @@ export function Transcript({
   function scrolled() {
     const el = pane.current;
     if (!el) return;
+    rebaseWheel(el);
     // Native scroll events can precede ResizeObserver while the composer is
     // contracting. Correct a follower against the current layout before its
     // old scroll position is mistaken for a reading gesture. Ordinary native
