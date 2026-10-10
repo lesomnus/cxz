@@ -214,6 +214,26 @@ describe("Vite against a real HTTP gateway", () => {
     expect(f.calls[1].headers.host).toBe(new URL(f.origin).host);
   });
 
+  it("proxies raw attachment bytes and rewrites the dev origin", async () => {
+    const f = await fixture();
+    const body = new Uint8Array([0, 255, 13, 10]);
+    const response = await fetch(
+      `${f.url}/attachments/session?run=run&name=report.bin&size=4`,
+      {
+        method: "POST",
+        headers: { Origin: f.url, "Content-Type": "application/octet-stream" },
+        body,
+      },
+    );
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe("proxied");
+    expect(f.calls[0].path).toBe(
+      "/attachments/session?run=run&name=report.bin&size=4",
+    );
+    expect(f.calls[0].headers.origin).toBe(f.origin);
+    expect(f.calls[0].headers["content-type"]).toBe("application/octet-stream");
+  });
+
   it("reuses an authenticated cookie without creating another session", async () => {
     const f = await fixture();
     const r = await fetch(`${f.url}/auth/status`, {

@@ -7,6 +7,7 @@ import (
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/internal/sessionalias"
+	"github.com/lesomnus/cxz/internal/sessiontitle"
 	"github.com/lesomnus/cxz/resource"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -131,7 +132,7 @@ func (s SessionServer) Patch(ctx context.Context, r *resource.SessionPatchReques
 	defer s.shared.transition.RUnlock()
 	allowed := true
 	r.ProtoReflect().Range(func(f protoreflect.FieldDescriptor, v protoreflect.Value) bool {
-		if f.Name() != "ref" && f.Name() != "alias" && f.Name() != "date_updated" {
+		if f.Name() != "ref" && f.Name() != "name" && f.Name() != "alias" && f.Name() != "date_updated" {
 			allowed = false
 		}
 		return allowed
@@ -139,7 +140,13 @@ func (s SessionServer) Patch(ctx context.Context, r *resource.SessionPatchReques
 	if !allowed {
 		return nil, closed()
 	}
-	if !r.HasAlias() || !sessionalias.Valid(r.GetAlias()) {
+	if !r.HasName() && !r.HasAlias() {
+		return nil, status.Error(codes.InvalidArgument, "provide a session name or alias")
+	}
+	if r.HasName() && (len(r.GetName()) > sessiontitle.MaxInputBytes || sessiontitle.Normalize(r.GetName()) == "") {
+		return nil, status.Error(codes.InvalidArgument, "invalid session title")
+	}
+	if r.HasAlias() && !sessionalias.Valid(r.GetAlias()) {
 		return nil, status.Error(codes.InvalidArgument, sessionalias.Rule)
 	}
 	if err := s.effect(); err != nil {
@@ -157,12 +164,21 @@ func (s SessionServer) Patch(ctx context.Context, r *resource.SessionPatchReques
 	if !v.GetListed() {
 		return nil, status.Error(codes.NotFound, "session deleted")
 	}
-	owner, err := s.SessionServiceServer.Get(ctx, resource.SessionGetRequest_builder{Ref: resource.SessionRef_builder{Alias: ptr(r.GetAlias())}.Build()}.Build())
-	if err != nil && status.Code(err) != codes.NotFound {
-		return nil, err
+	if r.HasAlias() {
+		owner, err := s.SessionServiceServer.Get(ctx, resource.SessionGetRequest_builder{Ref: resource.SessionRef_builder{Alias: ptr(r.GetAlias())}.Build()}.Build())
+		if err != nil && status.Code(err) != codes.NotFound {
+			return nil, err
+		}
+		if owner != nil && owner.GetRuntimeId() != v.GetRuntimeId() {
+			return nil, status.Error(codes.AlreadyExists, "session alias is already in use")
+		}
 	}
-	if owner != nil && owner.GetRuntimeId() != v.GetRuntimeId() {
-		return nil, status.Error(codes.AlreadyExists, "session alias is already in use")
+	if r.HasName() {
+		title, err := s.shared.runtime.SetSessionTitle(ctx, v.GetRuntimeId(), r.GetName())
+		if err != nil {
+			return nil, err
+		}
+		r.SetName(title)
 	}
 	r.SetDateUpdatedForce(true)
 	return s.SessionServiceServer.Patch(ctx, r)

@@ -26,7 +26,7 @@ func spaFiles(assets fs.FS) http.Handler {
 }
 
 func clientNavigation(urlPath string) bool {
-	for _, prefix := range []string{"/assets", "/auth", "/editor", "/terminal", "/cxz."} {
+	for _, prefix := range []string{"/assets", "/auth", "/editor", "/terminal", "/attachments", "/cxz."} {
 		if urlPath == prefix || strings.HasPrefix(urlPath, prefix+"/") || (prefix == "/cxz." && strings.HasPrefix(urlPath, prefix)) {
 			return false
 		}

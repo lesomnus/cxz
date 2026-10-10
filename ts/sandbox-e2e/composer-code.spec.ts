@@ -235,7 +235,10 @@ test("multiple blocks, paste chips, highlighting and native line geometry stay a
   await page.getByRole("button", { name: "Send", exact: true }).click();
   await expect(
     page.locator("article.input .message-body").last(),
-  ).toContainText("```json\n" + body + "\n```");
+  ).toContainText("```json\n[Attached file: /cxz/assets/");
+  await expect(
+    page.locator("article.input .message-body").last(),
+  ).toContainText("read this file for the full content]\n```");
 });
 
 test("unfinished code blocks are completed on send without changing draft source", async ({
@@ -282,9 +285,7 @@ test("Question Other uses the same code editor and sends fenced syntax without s
   await other.press("Control+Enter");
   await expect(question).toHaveCount(1);
   await expect(composer).toHaveValue("Keep my draft");
-  await question
-    .getByRole("button", { name: "Submit answers", exact: true })
-    .click();
+  await question.getByRole("button", { name: "Submit", exact: true }).click();
   await expect(question).toHaveCount(0);
   const response = page
     .locator(".response")

@@ -104,6 +104,7 @@ func Handler(c Config, conn grpc.ClientConnInterface, assets fs.FS) (http.Handle
 	mux.Handle("/", spaFiles(assets))
 	mux.Handle("/editor/", editorProxy)
 	mux.Handle("/terminal/", &terminalProxy{client: resource.NewProjectServiceClient(conn)})
+	mux.Handle("/attachments/", &attachmentProxy{client: resource.NewSessionServiceClient(conn)})
 	auth := &browserAuth{origin: c.Origin, transport: !c.plaintext(), token: sha256.Sum256([]byte(c.Token)), sessions: make(map[[32]byte]browserSession)}
 	return auth.wrap(mux), func() {
 		auth.mu.Lock()
@@ -121,12 +122,16 @@ func (a *browserAuth) wrap(next http.Handler) http.Handler {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("Referrer-Policy", "no-referrer")
 		if !strings.HasPrefix(r.URL.Path, "/editor/") {
-			w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self'; style-src-elem 'self' 'unsafe-inline'; style-src-attr 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; worker-src 'self' blob:; frame-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'")
+			w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self'; style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com; style-src-attr 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; worker-src 'self' blob:; frame-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'")
 		}
 		if a.transport {
 			w.Header().Set("Strict-Transport-Security", "max-age=31536000")
 		}
-		r.Body = http.MaxBytesReader(w, r.Body, 8<<20)
+		bodyLimit := int64(8 << 20)
+		if strings.HasPrefix(r.URL.Path, "/attachments/") {
+			bodyLimit = 1 << 30 // Same bound as Session.Upload; RPC JSON stays bounded.
+		}
+		r.Body = http.MaxBytesReader(w, r.Body, bodyLimit)
 		// Exact host and origin binding also protects authenticated Connect GETs.
 		u, _ := url.Parse(a.origin)
 		if r.Host != u.Host || (r.Header.Get("Origin") != "" && r.Header.Get("Origin") != a.origin) {
@@ -151,7 +156,7 @@ func (a *browserAuth) wrap(next http.Handler) http.Handler {
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
-		if pdweb.Rpc(r) || strings.HasPrefix(r.URL.Path, "/cxz.") || strings.HasPrefix(r.URL.Path, "/editor/") || strings.HasPrefix(r.URL.Path, "/terminal/") || r.URL.Path == "/auth/status" {
+		if pdweb.Rpc(r) || strings.HasPrefix(r.URL.Path, "/cxz.") || strings.HasPrefix(r.URL.Path, "/editor/") || strings.HasPrefix(r.URL.Path, "/terminal/") || strings.HasPrefix(r.URL.Path, "/attachments/") || r.URL.Path == "/auth/status" {
 			c, err := r.Cookie(cookieName)
 			if err != nil {
 				http.Error(w, "sign in required", http.StatusUnauthorized)

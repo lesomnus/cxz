@@ -81,7 +81,81 @@ const fields = [
   "Color palette",
 ];
 
-test("settings topics replace tabs, the 600px body stays centered and a live JSON pane unfolds at the conversation width threshold", async ({
+test("font settings apply live to file editors and session drafts with independent inheritance", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 2104, height: 1000 });
+  await ready(page);
+  const composer = page.getByRole("textbox", { name: "Message", exact: true });
+  await composer.fill("keep 한글 draft");
+  await settings(page);
+  const source = await file(page);
+  await chooseSetting(page, "Global editor Font family", "monospace");
+  await expectInherited(page, "Session editor Font family");
+  await expect(page.locator(".settings-preview").first()).toHaveCSS(
+    "font-family",
+    "monospace",
+  );
+  await expect(page.locator(".settings-file .view-lines")).toHaveCSS(
+    "font-family",
+    /^monospace/,
+  );
+  expect(await stored(page)).toEqual({ "editor.fontFamily": "monospace" });
+  await chooseSetting(page, "Session editor Font family", "custom");
+  const custom = page.getByRole("textbox", {
+    name: "Session editor Font family custom font family",
+    exact: true,
+  });
+  await custom.fill('"Liberation Mono", monospace');
+  await custom.press("Enter");
+  expect(await stored(page)).toEqual({
+    "editor.fontFamily": "monospace",
+    "session.editor.fontFamily": '"Liberation Mono", monospace',
+  });
+  await expect(page.locator(".settings-file .view-lines")).toHaveCSS(
+    "font-family",
+    /^monospace/,
+  );
+  await expect
+    .poll(() => readJSON(page, source))
+    .toContain('"session.editor.fontFamily"');
+  await page.screenshot({ path: "test-results/settings-font-family.png" });
+  await page.getByRole("link", { name: "Sessions view", exact: true }).click();
+  await expect(composer).toHaveValue("keep 한글 draft");
+  await expect(composer).toHaveCSS("font-family", /Liberation Mono/);
+  await composer.fill("keep 한글 `draft`");
+  const font = await composer.evaluate((el) => getComputedStyle(el).fontFamily);
+  await expect(page.locator(".editor-mirror")).toHaveCSS("font-family", font);
+  await expect(page.locator(".editor-gutter")).toHaveCSS("font-family", font);
+  await settings(page);
+  await chooseSetting(page, "Session editor Font family", "");
+  await expectInherited(page, "Session editor Font family");
+  await page.reload();
+  await expect(
+    page.getByLabel("Global editor Font family", { exact: true }),
+  ).toBeVisible();
+  await expectInherited(page, "Session editor Font family");
+  expect(await stored(page)).toEqual({ "editor.fontFamily": "monospace" });
+  await chooseSetting(page, "Global editor Font family", "custom");
+  const globalCustom = page.getByRole("textbox", {
+    name: "Global editor Font family custom font family",
+    exact: true,
+  });
+  await globalCustom.fill("bad;");
+  await globalCustom.press("Enter");
+  await expect(page.locator(".font-family-control [role=alert]")).toHaveText(
+    "Enter a valid CSS font family list.",
+  );
+  expect(await stored(page)).toEqual({ "editor.fontFamily": "monospace" });
+  await chooseSetting(page, "Global editor Font family", "");
+  await page.getByRole("link", { name: "Sessions view", exact: true }).click();
+  await page
+    .locator('a[href="/sandbox.html#/sessions/session-1"]')
+    .click({ timeout: 5000 });
+  await expect(composer).toHaveCSS("font-family", /ui-monospace/);
+});
+
+test("settings topics keep compact columns centered and a live JSON pane unfolds at the conversation width threshold", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1843, height: 1000 });
@@ -117,12 +191,18 @@ test("settings topics replace tabs, the 600px body stays centered and a live JSO
       const pane = el.parentElement!.getBoundingClientRect();
       return {
         width: body.width,
+        limit: parseFloat(getComputedStyle(el).maxWidth),
         delta: Math.abs(
           body.left + body.width / 2 - (pane.left + pane.width / 2),
         ),
       };
     });
-  expect(await centered()).toEqual({ width: 600, delta: 0 });
+  const expectCentered = async () => {
+    const current = await centered();
+    expect(current.delta).toBeLessThan(0.1);
+    expect(current.width).toBe(current.limit);
+  };
+  await expectCentered();
   await expect(pane).toBeHidden();
   await expect(page.locator(".settings-file .monaco-editor")).toHaveCount(0);
   await page.setViewportSize({ width: 1844, height: 1000 });
@@ -130,7 +210,7 @@ test("settings topics replace tabs, the 600px body stays centered and a live JSO
   expect((await form.boundingBox())!.width).toBe(800);
   expect((await pane.boundingBox())!.width).toBe(800);
   await expect(pane).toHaveCSS("border-left-width", "1px");
-  expect(await centered()).toEqual({ width: 600, delta: 0 });
+  await expectCentered();
   await chooseSetting(page, "Global editor Tab display width", "8");
   const saved = '{\n  "editor.tabSize": 8\n}\n';
   await expect.poll(() => readJSON(page, source)).toBe(saved);
@@ -147,7 +227,7 @@ test("settings topics replace tabs, the 600px body stays centered and a live JSO
   await editorTopic.click();
   await expect(form).toBeVisible();
   await expect(source).toBeHidden();
-  expect(await centered()).toEqual({ width: 600, delta: 0 });
+  await expectCentered();
   await page.setViewportSize({ width: 2104, height: 1000 });
   await expect(source).toBeVisible();
   await expect(source).toHaveAttribute("data-identity", "original");
@@ -157,7 +237,7 @@ test("settings topics replace tabs, the 600px body stays centered and a live JSO
   expect(await page.evaluate(() => localStorage.getItem("settings"))).toBe(
     saved,
   );
-  expect(await centered()).toEqual({ width: 600, delta: 0 });
+  await expectCentered();
   await page.screenshot({
     path: "test-results/settings-wide.png",
     fullPage: true,
@@ -603,4 +683,92 @@ test("global settings update the readonly file viewer in place while conversatio
   await expect(
     page.getByRole("textbox", { name: "Message", exact: true }),
   ).toHaveCSS("tab-size", "2");
+});
+
+test("settings sections form compact responsive columns with aligned text and ordered metadata", async ({
+  page,
+}) => {
+  await ready(page);
+  await settings(page);
+  const groups = page.locator(".settings-editor-groups > .settings-group");
+  const geometry = () =>
+    groups.evaluateAll((elements) =>
+      elements.map((el) => {
+        const box = el.getBoundingClientRect();
+        return { x: box.x, y: box.y, width: box.width };
+      }),
+    );
+  const wide = await geometry();
+  expect(wide[0].y).toBe(wide[1].y);
+  expect(wide[1].x).toBeGreaterThan(wide[0].x);
+  const sectionWidth = await page
+    .locator(".settings-page")
+    .evaluate((el) =>
+      parseFloat(
+        getComputedStyle(el).getPropertyValue("--settings-column-width"),
+      ),
+    );
+  expect(wide[0].width).toBe(sectionWidth);
+  const alignment = await page
+    .locator(".settings-editor-body")
+    .evaluate((el) => {
+      const title = el.querySelector("header h1")!.getBoundingClientRect();
+      const sectionTitle = el
+        .querySelector(".settings-group h2")!
+        .getBoundingClientRect();
+      const section = el.querySelector(".settings-group")!;
+      return {
+        delta: Math.abs(title.left - sectionTitle.left),
+        outsidePadding: getComputedStyle(el.querySelector(":scope > header")!)
+          .paddingLeft,
+        radius: getComputedStyle(section).borderTopLeftRadius,
+      };
+    });
+  expect(alignment.delta).toBeLessThan(0.1);
+  expect(alignment.outsidePadding).toBe(alignment.radius);
+  const expectFieldOrder = async (field: Locator, detailed = false) => {
+    const positions = await field.evaluate(
+      (el, detailed) =>
+        [
+          ".setting-title",
+          ".setting-id",
+          ".setting-summary",
+          ".setting-control",
+          ...(detailed ? [".setting-details"] : []),
+        ].map(
+          (selector) => el.querySelector(selector)!.getBoundingClientRect().top,
+        ),
+      detailed,
+    );
+    for (let index = 1; index < positions.length; index++)
+      expect(positions[index]).toBeGreaterThan(positions[index - 1]);
+  };
+  await expectFieldOrder(page.locator(".setting-row").first(), true);
+  await expect(
+    page.locator(".setting-row").first().locator(".setting-details"),
+  ).toHaveCount(1);
+  await page.screenshot({ path: "test-results/settings-columns.png" });
+  await page.setViewportSize({ width: 900, height: 1000 });
+  await expect
+    .poll(async () => (await geometry())[0].x === (await geometry())[1].x)
+    .toBe(true);
+  const narrow = await geometry();
+  expect(narrow[0].width).toBe(sectionWidth);
+  expect(narrow[1].y).toBeGreaterThan(narrow[0].y);
+  await page
+    .getByRole("navigation", { name: "Settings topics" })
+    .getByRole("link", { name: "General", exact: true })
+    .click();
+  const language = page
+    .locator(".setting-row")
+    .filter({ has: page.locator("code", { hasText: "ui.language" }) });
+  await expectFieldOrder(language, true);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(
+    page.getByRole("radiogroup", { name: "Appearance", exact: true }),
+  ).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(
+    390,
+  );
+  await page.screenshot({ path: "test-results/settings-general-compact.png" });
 });

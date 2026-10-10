@@ -65,7 +65,23 @@ func (p *Projects) Download(r *resource.ProjectDownloadRequest, stream grpc.Serv
 	}
 	text, ok := files(project.GetRuntimeId())[path.Clean(r.GetPath())]
 	if !ok {
-		return status.Error(codes.NotFound, "sandbox file not found")
+		p.S.mu.Lock()
+		upload, found := p.S.uploads[r.GetPath()]
+		p.S.mu.Unlock()
+		if !found || upload.project != project.GetRuntimeId() {
+			return status.Error(codes.NotFound, "sandbox file not found")
+		}
+		if len(upload.content) == 0 {
+			size := int64(0)
+			return stream.Send(resource.ProjectDownloadReply_builder{TotalSize: &size}.Build())
+		}
+		for offset := 0; offset < len(upload.content); offset += 256 * 1024 {
+			size := int64(len(upload.content))
+			if err := stream.Send(resource.ProjectDownloadReply_builder{Data: upload.content[offset:min(offset+256*1024, len(upload.content))], TotalSize: &size}.Build()); err != nil {
+				return err
+			}
+		}
+		return nil
 	}
 	size := int64(len(text))
 	return stream.Send(resource.ProjectDownloadReply_builder{Data: []byte(text), TotalSize: &size}.Build())

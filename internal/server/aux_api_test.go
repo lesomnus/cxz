@@ -33,3 +33,10 @@ func TestAuxRefusesWithoutAManager(t *testing.T) {
 }
 
 func must[T any](_ T, err error) error { return err }
+
+func TestSessionTitleRefusesWithoutOwningManager(t *testing.T) {
+	_, err := (&Server{}).SetSessionTitle(t.Context(), "s", "Title")
+	if status.Code(err) != codes.FailedPrecondition {
+		t.Fatal("project runtime accepted manager-owned title metadata", err)
+	}
+}

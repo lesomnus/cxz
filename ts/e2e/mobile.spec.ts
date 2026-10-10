@@ -19,10 +19,13 @@ test("mobile sign-in, conversation, questions, drafts and sign-out", async ({
   await expect(
     page.getByLabel("Response metrics", { exact: true }),
   ).toContainText("4.2s");
-  await expect(page.getByRole("radio", { name: /Development/ })).toBeVisible();
-  await page.getByRole("radio", { name: /Development/ }).check();
-  await page.getByRole("button", { name: "Submit answers" }).click();
-  await expect(page.locator(".approval")).toHaveCount(0);
+  const question = page.getByRole("region", { name: "Question", exact: true });
+  await expect(
+    question.getByRole("radio", { name: /Development/ }),
+  ).toBeVisible();
+  await question.getByRole("radio", { name: /Development/ }).check();
+  await question.getByRole("button", { name: "Submit", exact: true }).click();
+  await expect(question).toHaveCount(0);
   expect(await page.evaluate(() => "pwned" in window)).toBe(false);
   expect(
     await page.evaluate(

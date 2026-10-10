@@ -24,3 +24,6 @@ coverage.out
 /ts/.sandbox/
 /ts/dist-sandbox/
 /ts/storybook-static/
+
+/ts/packages/*/dist/
+/ts/storybook-ui-static/

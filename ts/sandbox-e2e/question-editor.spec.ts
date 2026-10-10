@@ -91,9 +91,7 @@ test("option cards and Other share native selection and multiline paste editing"
     path: "test-results/question-option-editor.png",
     fullPage: true,
   });
-  await question
-    .getByRole("button", { name: "Submit answers", exact: true })
-    .click();
+  await question.getByRole("button", { name: "Submit", exact: true }).click();
   await expect(question).toHaveCount(0);
   const response = page
     .locator(".response .markdown")
@@ -101,7 +99,7 @@ test("option cards and Other share native selection and multiline paste editing"
   await expect(response).toBeVisible();
   const text = (await response.textContent())!;
   expect(JSON.parse(text.slice(text.indexOf("{")))).toEqual({
-    environment: { selected: ["Production"], other: "prefix\n" + body },
+    environment: { selected: [], other: "prefix\n" + body },
   });
   await expect(composer).toHaveValue("Keep composer draft");
 });

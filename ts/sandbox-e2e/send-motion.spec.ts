@@ -61,7 +61,7 @@ test("Send carries visible draft content upward and reveals one real message wit
 }) => {
   await ready(page);
   const input = page.getByRole("textbox", { name: "Message", exact: true });
-  const text = "Send motion `code`\nSecond line";
+  const text = "Send motion 한글\nSecond line";
   await input.fill(text);
   const initialHeight = (await input.boundingBox())!.height;
   const geometry = () =>
@@ -80,6 +80,11 @@ test("Send carries visible draft content upward and reveals one real message wit
   await probe(page);
   await page.getByRole("button", { name: "Send", exact: true }).click();
   await expect(page.locator(".composer-send-ghost")).toHaveCount(1);
+  await expect(page.locator(".composer-send-ghost .editor-surface")).toHaveCSS(
+    "visibility",
+    "visible",
+  );
+  await expect(input).toHaveCSS("color", "rgba(0, 0, 0, 0)");
   await expect(input).toHaveValue(text);
   const outgoing = await page
     .locator(".composer-send-ghost .editor-mirror")

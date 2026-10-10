@@ -6,12 +6,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
-	"unicode"
 
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/sessiontitle"
 )
 
 // Title metadata is durable, separate from the prunable summary context.
@@ -53,13 +52,7 @@ func (c *Controller) saveTitle(id string, s TitleState) error {
 	return core.WriteJSON(c.titlePath(id), s)
 }
 func cleanTitle(s string) string {
-	s = strings.Join(strings.FieldsFunc(s, func(r rune) bool { return unicode.IsSpace(r) || unicode.IsControl(r) }), " ")
-	s = strings.Trim(s, "\"'` ")
-	r := []rune(s)
-	if len(r) > 120 {
-		s = string(r[:117]) + "..."
-	}
-	return s
+	return sessiontitle.Normalize(s)
 }
 func (c *Controller) Title(id string) (TitleState, error) {
 	c.mu.Lock()

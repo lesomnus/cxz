@@ -261,8 +261,11 @@ test("pending questions stay dimmed behind previews and only lift for a taller c
     question.getByText("Which environment?", { exact: true }),
   ).toBeVisible();
   await expect(question).toHaveCSS("border-top-width", "1px");
-  await expect(question).toHaveCSS("border-radius", "12px");
-  await expect(question).toHaveCSS("backdrop-filter", "blur(48px)");
+  await expect(question.locator(".question-body")).toHaveCSS(
+    "border-top-width",
+    "0px",
+  );
+  await expect(question).toHaveCSS("backdrop-filter", "blur(24px)");
   await expect(question.locator(".card-close")).toHaveCount(0);
   const choice = question.getByRole("radio", { name: /Development/ });
   await choice.check();
@@ -278,12 +281,11 @@ test("pending questions stay dimmed behind previews and only lift for a taller c
     .locator(".transcript")
     .evaluate((el) => ({ top: el.scrollTop, height: el.scrollHeight }));
 
-  const details = question.getByRole("button", {
-    name: "Request details",
-    exact: true,
-  });
+  await input.fill("");
+  await paste(page, "preview source line\n".repeat(80));
+  const details = page.locator(".composer .paste-chip");
   await details.click();
-  const preview = page.getByRole("dialog", { name: "Request details" });
+  const preview = page.getByRole("dialog", { name: "Paste source" });
   await expect(preview).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
   await expect(layer).toHaveAttribute("data-covered", "true");
   await expect(layer).toHaveJSProperty("inert", true);
@@ -313,8 +315,8 @@ test("pending questions stay dimmed behind previews and only lift for a taller c
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(layer).toHaveJSProperty("inert", false);
-  await expect(details).toBeFocused();
-  await expect(choice).toBeChecked();
+  await expect(input).toBeFocused();
+  await expect(choice).not.toBeChecked();
   await expect(other).toHaveValue("Keep my answer\n");
 
   await input.fill("");
@@ -339,14 +341,14 @@ test("pending questions stay dimmed behind previews and only lift for a taller c
   await expect(question).toHaveCount(1);
   await expect(layer).toHaveJSProperty("inert", false);
   await expect(layer).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
-  await expect(choice).toBeChecked();
+  await expect(choice).not.toBeChecked();
   await expect(input).toHaveValue(draft);
   expect(
     await page
       .locator(".transcript")
       .evaluate((el) => ({ top: el.scrollTop, height: el.scrollHeight })),
   ).toEqual(geometry);
-  await question.getByRole("button", { name: "Submit answers" }).click();
+  await question.getByRole("button", { name: "Submit" }).click();
   await expect(question).toHaveCount(0);
   await expect(
     page.getByText("Your selection was recorded for this preview.", {
@@ -355,54 +357,64 @@ test("pending questions stay dimmed behind previews and only lift for a taller c
   ).toBeVisible();
 });
 
-test("question and covering details stay bounded on mobile and dismiss independently", async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 390, height: 620 });
-  await open(page);
-  await page.getByLabel("Scenario", { exact: true }).selectOption("session-4");
-  const question = page.locator(".approval");
-  await expect(
-    question.getByText("Which environment?", { exact: true }),
-  ).toBeVisible();
-  await question
-    .getByRole("button", { name: "Request details", exact: true })
-    .click();
-  const layer = page.locator(".question-cards");
-  const preview = page.getByRole("dialog", { name: "Request details" });
-  await expect(preview).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
-  await expect(layer).toHaveAttribute("data-covered", "true");
-  await expect
-    .poll(async () =>
-      Math.round(
-        (await preview.boundingBox())!.y - (await question.boundingBox())!.y,
-      ),
-    )
-    .toBe(28);
-  await page.setViewportSize({ width: 390, height: 560 });
-  await expect
-    .poll(async () =>
-      Math.round(
-        (await preview.boundingBox())!.y - (await question.boundingBox())!.y,
-      ),
-    )
-    .toBe(28);
-  expect(await page.locator("body").evaluate((el) => el.scrollWidth)).toBe(390);
-  const area = (await page.locator(".transcript-area").boundingBox())!;
-  const bounds = (await question.boundingBox())!;
-  expect(bounds.y).toBeGreaterThanOrEqual(area.y + 7);
-  expect(bounds.x).toBeGreaterThanOrEqual(0);
-  expect(bounds.x + bounds.width).toBeLessThanOrEqual(390);
-  await expect(
-    page.getByRole("button", { name: "Send", exact: true }),
-  ).toBeVisible();
-  await preview
-    .getByRole("button", { name: "Close details", exact: true })
-    .click();
-  await expect(page.getByRole("dialog")).toHaveCount(0);
-  await expect(question).toHaveCount(1);
-  await page.emulateMedia({ reducedMotion: "reduce" });
-  await expect(layer).toHaveCSS("transition-duration", "0s");
-  await question.getByRole("button", { name: "Deny", exact: true }).click();
-  await expect(question).toHaveCount(0);
+test.describe("touch questions", () => {
+  test.use({ hasTouch: true });
+  test("question and covering details stay bounded on mobile and dismiss independently", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 620 });
+    await open(page);
+    await page
+      .getByLabel("Scenario", { exact: true })
+      .selectOption("session-4");
+    const question = page.locator(".approval");
+    await expect(
+      question.getByText("Which environment?", { exact: true }),
+    ).toBeVisible();
+    await paste(page, "preview source line\n".repeat(80));
+    await page.locator(".composer .paste-chip").click();
+    const layer = page.locator(".question-cards");
+    const preview = page.getByRole("dialog", { name: "Paste source" });
+    await expect(preview).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
+    await expect(layer).toHaveAttribute("data-covered", "true");
+    await expect
+      .poll(async () =>
+        Math.round(
+          (await preview.boundingBox())!.y - (await question.boundingBox())!.y,
+        ),
+      )
+      .toBe(28);
+    await page.setViewportSize({ width: 390, height: 560 });
+    await expect
+      .poll(async () =>
+        Math.round(
+          (await preview.boundingBox())!.y - (await question.boundingBox())!.y,
+        ),
+      )
+      .toBe(28);
+    expect(await page.locator("body").evaluate((el) => el.scrollWidth)).toBe(
+      390,
+    );
+    const area = (await page.locator(".transcript-area").boundingBox())!;
+    const bounds = (await question.boundingBox())!;
+    expect(bounds.y).toBeGreaterThanOrEqual(area.y + 7);
+    expect(bounds.x).toBeGreaterThanOrEqual(0);
+    expect(bounds.x + bounds.width).toBeLessThanOrEqual(390);
+    await expect(
+      page.getByRole("button", { name: "Send", exact: true }),
+    ).toBeVisible();
+    await preview
+      .getByRole("button", { name: "Close paste preview", exact: true })
+      .click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(question).toHaveCount(1);
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await expect(layer).toHaveCSS("transition-duration", "0s");
+    await question.getByRole("button", { name: "Cancel", exact: true }).tap();
+    await expect(question).toHaveCount(1);
+    await question
+      .getByRole("button", { name: "Confirm cancel", exact: true })
+      .tap();
+    await expect(question).toHaveCount(0);
+  });
 });

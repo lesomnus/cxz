@@ -30,6 +30,9 @@ type Runtime interface {
 	assets.Uploader
 	RegisterProject(context.Context, string, string) (*api.Project, error)
 	ResourceSnapshot(context.Context) (*api.ProjectList, *api.SessionList, error)
+	// SetSessionTitle persists a manual title for a resolved runtime ID without
+	// executing auxiliary AI or calling back into the resource layer.
+	SetSessionTitle(context.Context, string, string) (string, error)
 }
 type shared struct {
 	db          *sql.DB

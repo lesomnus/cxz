@@ -167,7 +167,7 @@ sends produce identical random tool sequences. Switching scenarios preserves
 session state; reloading starts fresh. Event timestamps use the current clock,
 including seeded history. The seed controls content, not a fixed date. Response
 footers omit the year; metric icons expose names and scope on hover and to
-assistive technology. Relative-time rules are defined in `src/message-time.ts`.
+assistive technology. Relative-time rules are defined in `src/features/session/conversation/message-time.ts`.
 
 While the agent is working, the composer toolbar has a subdued aurora behind it.
 The field keeps volume at both ends of the toolbar and fades softly beyond them.
@@ -231,7 +231,7 @@ or handle/marker physics. Previews are discarded on session navigation.
 Pending Question/approval requests use the same FloatingCard shell and anchor,
 outside the composer form. They have no Close control. Escape, side-margin dismissal
 and preview replacement never discard requests or selected/free-text answers.
-Only explicit Submit/Allow/Deny resolves them. Enter in an answer does not send the
+Only explicit Submit/Cancel (or Allow/Deny for other approvals) resolves them. Enter in an answer does not send the
 composer. Whenever a composer-anchored preview is active, questions shrink and
 dim to show their background layer. If the preview is at least as tall, questions also move upward
 so part of their top remains visible. A shorter preview keeps the bottom anchor,
@@ -244,13 +244,21 @@ Multiple pending requests remain in a bounded, scrollable layer.
 
 Question options are monochrome cards with titles, descriptions and native
 radio/checkbox controls, retaining keyboard navigation and accessible labels.
-Options and Other editors have no border inside the bordered Question card;
-selection, hover and focus use background tones. Fieldsets keep grouping semantics
+Unselected options and Other editors have no border inside the bordered Question card;
+selected options use an inset outline without shifting layout, while hover and focus use background tones. Fieldsets keep grouping semantics
 without default border, margin or padding. Ordinary Other answers reuse ComposerEditor
 with multiline text, monospace line numbers, atomic chips and native Undo/Redo.
 Answer editors and composer have independent values but share the connection's
 bounded paste cache. Submit expands chips to original text in answersJson; Enter
 inserts a line and Ctrl+Enter never sends the conversation draft from an answer.
+Question forms use numbered tabs with completion indicators, preserving every
+step's mounted editor and Undo history. The longest question sizes the card within
+the conversation height limit; only the option list scrolls, while Other and the
+Cancel/Submit/Next footer remain fixed. Submit requires all answers; Next is disabled
+at the final step. Redundant question and request-detail headings are omitted.
+Transcript reading tucks the pending card behind the composer into the background
+fade. Pointer proximity or answer focus raises it again without discarding state.
+Cancellation retains the existing allow=false wire response.
 Password answers keep masked native controls. Chip editing releases the Question's
 inert state before native insertion, preserving the correct editor's Undo history.
 
@@ -260,7 +268,7 @@ emerging into the transcript and returning to full size. These transforms do not
 change measured row heights or create optimistic journal entries. Failed sends
 keep the draft; edits made during sending survive, and switching sessions removes
 the decorative layers without restoring an accepted draft. Reduced-motion
-preferences skip the effect. `ts/src/send-motion.ts` coordinates the animation;
+preferences skip the effect. `ts/src/features/session/conversation/send-motion.ts` coordinates the animation;
 CSS tokens define its appearance and timing.
 
 The shared composer is a monospace editor with logical line numbers and no resize
@@ -304,13 +312,14 @@ them to indentation. IME composition and modified Ctrl/Alt/Meta+Tab are left to
 the browser. Question Other answers share the same controls.
 
 Drafts remain native Markdown, preserving selection, Undo/Redo and session draft
-restoration. Sending expands code's paste chips before detection, replaces Auto with the detected
+restoration. Syntax detection reads a paste chip's original source, while sending
+uses the uploaded path for an attachment. Sending replaces Auto with the detected
 syntax name (or plaintext when detection is inconclusive), canonicalizes common
 language aliases and finishes an unclosed fence. Surrounding prose and code body
 bytes remain intact. Question Other answers use the same editor and serialization.
 The highlighter uses a bounded common language set and cached detection samples.
 Oversized blocks or lines fall back to unhighlighted text; the limits are defined
-in `src/composer-code.ts`. Fences inside
+in `src/features/session/composer/composer-code.ts`. Fences inside
 a paste chip grow the enclosing Markdown fence as needed, and Markdown within
 standalone chips remains unchanged. See the
 [Highlight.js API](https://highlightjs.readthedocs.io/en/latest/api.html) for the
@@ -328,17 +337,46 @@ press Enter, or use Ctrl+P to preview the original; the preview can remove that
 occurrence or expand it into editable text. Backspace/Delete removes a whole
 chip. If the draft changes while its preview is open, expansion/deletion is
 blocked and asks you to reopen the chip, avoiding replacement at a stale offset.
-Sending and copying expand chips to original text in one pass, preserving
-whitespace; short pastes remain ordinary text. Drafts and paste bodies stay in
-the authenticated connection's memory across session navigation, and are lost
-on page reload, sign-out or sandbox Reset. Each paste is limited to 1 MiB, with
-a 32 MiB connection cache. Paste insertion/removal uses native undo when the
-browser supports `insertText`, with a `setRangeText` fallback. IME composition
-retains the native textarea and cannot trigger Ctrl+Enter submission.
+In the connected conversation, large pastes upload a text file and become a
+filename chip. File or directory drops and Session menu's Upload files / Upload
+folder actions use the same attachment flow. A directory becomes a tar archive
+preserving nested paths, Unicode filenames and empty directories when dropping.
+Directory traversal drains all `readEntries` pages. The native folder picker
+provides the files and relative paths exposed by the browser. Uploaded chips
+expand to attachment paths with an instruction to read the file or unpack the
+directory archive; the original bytes are not embedded again in the prompt.
+Short pastes remain ordinary text. Question Other editors retain their inline
+paste expansion because they submit textual answers rather than conversation
+attachments.
+
+Uploads are queued, and Send is blocked while a referenced chip is pending or
+failed. Preview a chip to inspect its path, retry a failed upload, delete that
+occurrence or expand a text paste. The draft and caret stay editable while an
+upload runs. Removing its last occurrence or leaving the editor cancels pending
+work. Completed files remain attached to the session; deleting a chip does not
+delete the uploaded file. Drafts, source previews and retry file handles stay in
+the authenticated connection's memory across navigation and disappear on page
+reload, sign-out or sandbox Reset.
+
+The authenticated HTTP `/attachments/{session}` endpoint streams a raw body to
+the existing `Session.Upload` RPC. It reuses login/origin checks, revoked-session
+cancellation and the Manager's run validation, byte limits and storage mount.
+Vite forwards this route to the host gateway. The sandbox calls Upload through
+its in-process transport and stores simulated files only in memory; Download
+can read them in the owning project, and Purge releases them. Real uploads use
+the existing container-readable `/cxz/assets` attachment mount and survive until
+session purge. Uploads do not alter workspace files or add transcript events.
+Implementation limits live in `composer-files.ts`, `composer-pastes.ts`,
+`composer-upload.ts` and the server attachment implementation.
+
+Paste insertion/removal uses native undo when the browser supports `insertText`,
+with a `setRangeText` fallback. IME composition retains the native textarea and
+cannot trigger Ctrl+Enter submission. The directory API's paged-reading contract
+is documented in the [File and Directory Entries specification](https://wicg.github.io/entries-api/#dom-filesystemdirectoryreader-readentries).
 
 Fake history and remembered send IDs are bounded by the simulator. Client rendering
 uses the regular bounded cache and visible-message overscan from
-`src/virtual-messages.tsx`.
+`src/features/session/conversation/virtual-messages.tsx`.
 
 ## Builds and verification
 
@@ -386,10 +424,10 @@ generated `.sandbox` and `dist-sandbox` directories.
   deterministic fake-agent jobs. Generated protobuf services are shared with the
   real server, but the fixture lifecycle is deliberately simplified. Unimplemented
   RPCs remain unimplemented; it does not exercise the production lifecycle stack.
-- `ts/src/sandbox.tsx`: payday sandbox startup, seed/pace controls, reset and a
+- `ts/src/app/sandbox/sandbox.tsx`: payday sandbox startup, seed/pace controls, reset and a
   sandbox Connection. No browser-auth bypass is added to the production app.
-- `ts/src/app.tsx`: shared production workspace/conversation UI.
-- `ts/src/connection.ts`: accepts a Connect Transport; normal connections use HTTPS,
+- `ts/src/app/workspace-shell.tsx` and `ts/src/pages/`: shared production workspace and page composition. Session conversation behavior lives under `ts/src/features/session/`.
+- `ts/src/shared/api/connection.ts`: accepts a Connect Transport; normal connections use HTTPS,
   while the sandbox supplies payday's Worker transport.
 
 Use the existing HTTPS browser fixture and Go integration tests for real gateway

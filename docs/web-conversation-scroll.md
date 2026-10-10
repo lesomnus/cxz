@@ -64,14 +64,14 @@ npm run --prefix ts sandbox
 않는다. 응답 막대는 표시 범위 주변만 마운트하되, 애니메이션 중이거나 가장자리로
 들어오고 나가는 막대는 유지한다. 사용자 입력 막대의 기존 위상과 크기는 보존한다.
 
-| 역할                                | 현재 기준 구현                                                                                           |
-| ----------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| 크기·노출·스타일·전환               | [style.css](../ts/src/style.css)의 토큰과 관련 selector                                                  |
-| 범위 유지·장력·좌표 변환            | [scroll-physics.ts](../ts/src/scroll-physics.ts)                                                         |
-| 핸들·막대 공통 timeline과 본문 이동 | [transcript.tsx](../ts/src/transcript.tsx)                                                               |
-| 가상 높이·행 측정·읽는 anchor       | [virtual-layout.ts](../ts/src/virtual-layout.ts), [virtual-messages.tsx](../ts/src/virtual-messages.tsx) |
-| 고정 입력의 노출·유지·이동          | [pinned-prompt.tsx](../ts/src/pinned-prompt.tsx)와 transcript의 jump 처리                                |
-| Latest의 방향별 노출                | [app.tsx](../ts/src/app.tsx)의 읽는 이동 처리                                                            |
+| 역할                                | 현재 기준 구현                                                                                                                                                       |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 크기·노출·스타일·전환               | [style.css](../ts/src/app/styles/style.css)의 토큰과 관련 selector                                                                                                   |
+| 범위 유지·장력·좌표 변환            | [scroll-physics.ts](../ts/src/features/session/conversation/scroll-physics.ts)                                                                                       |
+| 핸들·막대 공통 timeline과 본문 이동 | [transcript.tsx](../ts/src/features/session/conversation/transcript.tsx)                                                                                             |
+| 가상 높이·행 측정·읽는 anchor       | [virtual-layout.ts](../ts/src/features/session/conversation/virtual-layout.ts), [virtual-messages.tsx](../ts/src/features/session/conversation/virtual-messages.tsx) |
+| 고정 입력의 노출·유지·이동          | [pinned-prompt.tsx](../ts/src/features/session/conversation/pinned-prompt.tsx)와 transcript의 jump 처리                                                              |
+| Latest의 방향별 노출                | [conversation.tsx](../ts/src/features/session/conversation/conversation.tsx)의 읽는 이동 처리                                                                        |
 
 `messageMap`의 변환은 단조이며 역변환이 가능해야 한다. `RowKnot`은 행 높이가
 바뀌어도 현재 읽는 행 내부의 비율을 보존한다. `history-shift`는 휠 목표와 본문
@@ -146,7 +146,7 @@ inert/aria-hidden이며 클릭과 focus를 가로채지 않는다. Reduced motio
 초기 기록, 과거 페이지 로딩과 단순 재마운트는 등장 효과를 반복하지 않는다.
 읽기 동작이나 명시적인 이동을 시작하면 전환을 정리하고 사용자의 이동을 바로
 따른다. Reduced motion에서는 모든 위치와 내용이 즉시 반영된다.
-구현은 `ts/src/transcript-motion.ts`, 값은 CSS 토큰이 기준이다.
+구현은 `ts/src/features/session/conversation/transcript-motion.ts`, 값은 CSS 토큰이 기준이다.
 
 ## 회귀 검증
 

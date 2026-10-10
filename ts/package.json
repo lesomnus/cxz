@@ -2,25 +2,39 @@
   "name": "cxz-web",
   "private": true,
   "type": "module",
+  "imports": {
+    "#gen/*": "./gen/*.ts",
+    "#src/*": "./src/*"
+  },
   "scripts": {
     "dev": "vite --config vite.dev.config.mjs",
     "build": "tsc --noEmit && vite build",
     "test": "vitest run src scripts",
     "test:browser": "playwright test",
     "test:browser:plaintext": "playwright test --config playwright.plaintext.config.ts",
-    "format": "prettier --write src .storybook vite.config.ts vite.dev.config.mjs vite.sandbox.config.ts playwright.config.ts playwright.sandbox.config.ts e2e sandbox-e2e test-support scripts",
+    "format": "prettier --write src .storybook vite.config.ts vite.dev.config.mjs vite.sandbox.config.ts playwright.storybook.config.ts storybook-e2e playwright.config.ts playwright.sandbox.config.ts e2e sandbox-e2e test-support scripts .storybook-ui packages/ui playwright.ui.config.ts ui-e2e",
     "sandbox:prepare": "node scripts/build-sandbox.mjs",
     "sandbox": "npm run sandbox:prepare && vite --config vite.sandbox.config.ts --open /sandbox.html",
     "sandbox:serve": "vite --config vite.sandbox.config.ts",
     "sandbox:build": "npm run sandbox:prepare && tsc --noEmit && vite build --config vite.sandbox.config.ts",
     "test:sandbox": "playwright test --config playwright.sandbox.config.ts",
     "storybook": "storybook dev -p 6006 --host 0.0.0.0 --no-open",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "test:storybook": "playwright test --config playwright.storybook.config.ts",
+    "build:ui": "npm run build --workspace @lesomnus/cxz-ui",
+    "storybook:ui": "storybook dev -c .storybook-ui -p 6008 --host 0.0.0.0 --no-open",
+    "build-storybook:ui": "storybook build -c .storybook-ui -o storybook-ui-static",
+    "prebuild": "npm run build:ui",
+    "prebuild-storybook": "npm run build:ui",
+    "prebuild-storybook:ui": "npm run build:ui",
+    "presandbox:build": "npm run build:ui",
+    "test:ui": "playwright test --config playwright.ui.config.ts"
   },
   "dependencies": {
     "@bufbuild/protobuf": "2.12.1",
     "@connectrpc/connect": "2.1.2",
     "@connectrpc/connect-web": "2.1.2",
+    "@lesomnus/cxz-ui": "*",
     "@lesomnus/payday": "0.0.5",
     "@tanstack/react-router": "1.170.41",
     "@xterm/addon-fit": "0.11.0",
@@ -39,6 +53,7 @@
     "@playwright/test": "1.58.2",
     "@storybook/addon-docs": "10.6.1",
     "@storybook/react-vite": "10.6.1",
+    "@types/node": "24.19.2",
     "@types/react": "19.2.2",
     "@types/react-dom": "19.2.2",
     "prettier": "3.6.2",
@@ -46,5 +61,8 @@
     "typescript": "5.9.3",
     "vite": "7.3.6",
     "vitest": "5.0.3"
-  }
+  },
+  "workspaces": [
+    "packages/*"
+  ]
 }

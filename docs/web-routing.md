@@ -1,19 +1,19 @@
 # Web routing
 
 The browser uses TanStack Router with a code-defined, typed route tree in
-`ts/src/router.tsx`. Route paths and parameters are the source of truth for the
+`ts/src/app/router.tsx`. Route paths and parameters are the source of truth for the
 selected resource, session and settings topic. The root shell keeps authentication,
 the Connection and shared resource inventory alive during navigation. RPC,
 SessionHistory, draft caching and transcript scroll physics remain in their existing
 components; the router does not preload session data or restore transcript scroll.
 
-| Route | View |
-| --- | --- |
-| `/sessions` | Session catalog |
+| Route                  | View                                      |
+| ---------------------- | ----------------------------------------- |
+| `/sessions`            | Session catalog                           |
 | `/sessions/$sessionId` | Conversation identified by its runtime ID |
-| `/projects` | Project catalog |
-| `/settings/general` | General settings |
-| `/settings/editor` | Editor settings |
+| `/projects`            | Project catalog                           |
+| `/settings/general`    | General settings                          |
+| `/settings/editor`     | Editor settings                           |
 
 `/` redirects to `/sessions`, and `/settings` redirects to `/settings/general`.
 Unknown routes show a recoverable page within the workspace. Signing in preserves

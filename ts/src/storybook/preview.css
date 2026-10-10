@@ -1,0 +1,60 @@
+/* Story framing only. Production components retain their application CSS. */
+.storybook-conversation {
+  width: 100%;
+  height: min(760px, 92dvh);
+  min-height: 400px;
+  background: var(--background);
+}
+.storybook-playground {
+  width: 100%;
+}
+.storybook-playground > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 20px;
+  font-size: 12px;
+  color: var(--shade-170);
+}
+.storybook-panel {
+  width: 180px;
+  height: 480px;
+}
+.storybook-burst-status {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  padding: 4px 8px;
+  min-height: 24px;
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+}
+.storybook-panel > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.storybook-panel h2 {
+  font-size: 14px;
+}
+.storybook-card {
+  --card-max-height: calc(100dvh - 48px);
+  width: min(600px, calc(100vw - 48px));
+  overflow: visible;
+}
+.storybook-card > .floating-card {
+  position: relative;
+  inset: auto;
+  width: 100%;
+}
+.storybook-source-editor {
+  display: flex;
+  flex-direction: column;
+  width: min(800px, calc(100vw - 48px));
+  height: 420px;
+}

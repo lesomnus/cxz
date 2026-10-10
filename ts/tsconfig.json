@@ -8,7 +8,11 @@
     "strict": true,
     "skipLibCheck": true,
     "noEmit": true,
-    "allowImportingTsExtensions": true
+    "allowImportingTsExtensions": true,
+    "paths": {
+      "@lesomnus/cxz-ui": ["./packages/ui/src/index.ts"],
+      "@lesomnus/cxz-ui/editor": ["./packages/ui/src/editor/index.ts"]
+    }
   },
   "include": [
     ".storybook",
@@ -19,6 +23,12 @@
     "e2e",
     "vite.sandbox.config.ts",
     "playwright.sandbox.config.ts",
-    "sandbox-e2e"
+    "sandbox-e2e",
+    "playwright.storybook.config.ts",
+    "storybook-e2e",
+    "packages/ui/src",
+    ".storybook-ui",
+    "playwright.ui.config.ts",
+    "ui-e2e"
   ]
 }

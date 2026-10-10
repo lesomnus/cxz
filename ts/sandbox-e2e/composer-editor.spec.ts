@@ -87,10 +87,14 @@ test("monospace line numbers follow soft wraps, native scrolling and mobile widt
     page.locator("article.input").filter({ hasText: "한글 조합 중" }),
   ).toHaveCount(0);
   await input.dispatchEvent("compositionend", { data: "중" });
-  await expect(page.locator(".editor-surface")).toBeVisible();
+  await expect(input).not.toHaveCSS("color", "rgba(0, 0, 0, 0)");
+  await expect(page.locator(".editor-surface")).toHaveCSS(
+    "visibility",
+    "hidden",
+  );
 });
 
-test("paste chips preserve session drafts and send exact original text inline", async ({
+test("paste files preserve source and session drafts while sending the uploaded path", async ({
   page,
 }) => {
   const input = await openEditor(page);
@@ -104,11 +108,21 @@ test("paste chips preserve session drafts and send exact original text inline", 
   await input.press("End");
   await input.pressSequentially(" 뒤");
   const draft = await input.inputValue();
-  expect(draft).toMatch(/^앞 \[Paste [0-9a-f]{8} · 5L · \d+B\] 뒤$/);
+  expect(draft).toMatch(
+    /^앞 \[File [0-9a-f]{8} · paste-[0-9a-f]{8}\.txt\] 뒤$/,
+  );
+  await expect(page.locator(".paste-chip")).toHaveAttribute(
+    "data-upload-state",
+    "ready",
+  );
   await page.locator(".paste-chip").click();
   const preview = page.getByRole("dialog", { name: "Paste source" });
   await expect(preview).toBeVisible();
   expect(await preview.locator("pre").textContent()).toBe(body);
+  const path = await preview.locator(".attachment-info code").textContent();
+  expect(path).toMatch(
+    /^\/cxz\/assets\/session-1\/upload-\d+\/paste-[0-9a-f]{8}\.txt$/,
+  );
   await page.keyboard.press("Escape");
   await expect(preview).not.toBeVisible();
   await page.getByLabel("Scenario", { exact: true }).selectOption("session-2");
@@ -125,11 +139,13 @@ test("paste chips preserve session drafts and send exact original text inline", 
   await page.getByRole("button", { name: "Send", exact: true }).click();
   await expect(input).toHaveValue("");
   await expect(page.locator("article.input .message-body").last()).toHaveText(
-    `앞 ${body} 뒤`,
+    `앞 [Attached file: ${path} — read this file for the full content] 뒤`,
   );
   expect(
     await page.locator("article.input .message-body").last().textContent(),
-  ).toBe(`앞 ${body} 뒤`);
+  ).toBe(
+    `앞 [Attached file: ${path} — read this file for the full content] 뒤`,
+  );
 });
 
 test("chips are atomic, undoable, previewable and expandable one occurrence at a time", async ({

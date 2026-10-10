@@ -1,0 +1,38 @@
+:is(.setting_row),
+:is(.setting_row) * {
+  box-sizing: border-box;
+}
+.setting_row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space);
+  margin-bottom: 12px;
+}
+.setting_row :global(.setting-summary) {
+  margin-block: 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--ui-muted);
+}
+.setting_row :global(.setting-details) {
+  margin-block: 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--ui-muted);
+}
+.setting_row :global(.setting-control) {
+  min-width: 0;
+}
+.setting_row strong {
+  font-size: 12px;
+  font-weight: 500;
+}
+.setting_row code {
+  display: block;
+  font-size: 10px;
+  color: var(--ui-shade-136);
+  overflow-wrap: anywhere;
+}
+.setting_row :global(.value-menu) {
+  font-size: 12px;
+}
