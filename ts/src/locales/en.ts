@@ -389,5 +389,17 @@ export const messages = {
     "{name}: Enter a non-empty font family list.",
   "Browser monospace follows your browser's fixed-width font preference. Custom fonts must be available on your device; list fallback fonts separated by commas.":
     "Browser monospace follows your browser's fixed-width font preference. Custom fonts must be available on your device; list fallback fonts separated by commas.",
+  "Google Fonts": "Google Fonts",
+  "Loading font…": "Loading font…",
+  "{label} Google Fonts family": "{label} Google Fonts family",
+  "Enter a Google Fonts family name.": "Enter a Google Fonts family name.",
+  "Could not load the font. Check the name or connection and try again.":
+    "Could not load the font. Check the name or connection and try again.",
+  "Enter a family from Google Fonts, such as Roboto Mono, JetBrains Mono or Noto Sans KR. Only the selected font is downloaded.":
+    "Enter a family from Google Fonts, such as Roboto Mono, JetBrains Mono or Noto Sans KR. Only the selected font is downloaded.",
+  "{name}: Enter a font family list or a Google Fonts selection.":
+    "{name}: Enter a font family list or a Google Fonts selection.",
+  "Browser monospace follows your browser's fixed-width font preference. Custom fonts use local font families. Google Fonts are downloaded on demand and cached by your browser.":
+    "Browser monospace follows your browser's fixed-width font preference. Custom fonts use local font families. Google Fonts are downloaded on demand and cached by your browser.",
 } as const;
 export type Message = keyof typeof messages;

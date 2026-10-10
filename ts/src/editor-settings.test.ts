@@ -86,6 +86,39 @@ it("inherits global fonts and removes a session override without writing default
     "editor.fontFamily": '"D2Coding", monospace',
   });
 });
+it("inherits a complete Google selection and replaces its provider with a local session font", () => {
+  const { store, file } = fixture();
+  store.set("editor.fontFamily", { provider: "google", family: "Roboto Mono" });
+  expect(
+    resolveEditorSettings(store.snapshot().document, "session"),
+  ).toMatchObject({
+    fontFamily: '"Roboto Mono", monospace',
+    googleFont: "Roboto Mono",
+  });
+  store.set("session.editor.fontFamily", "monospace");
+  const session = resolveEditorSettings(store.snapshot().document, "session");
+  expect(session.fontFamily).toBe("monospace");
+  expect(session.googleFont).toBeUndefined();
+  store.set("session.editor.fontFamily", undefined);
+  expect(
+    resolveEditorSettings(store.snapshot().document, "session").googleFont,
+  ).toBe("Roboto Mono");
+  expect(JSON.parse(file()!)).toEqual({
+    "editor.fontFamily": { provider: "google", family: "Roboto Mono" },
+  });
+  for (const font of [
+    null,
+    {},
+    { provider: "other", family: "Roboto Mono" },
+    { provider: "google", family: "" },
+    { provider: "google", family: 'Bad"; font' },
+    { provider: "google", family: " Bad" },
+  ]) {
+    expect(() =>
+      parseSettings(JSON.stringify({ "editor.fontFamily": font })),
+    ).toThrow();
+  }
+});
 it("does not write defaults on read, and notifications follow a successful whole-file save", () => {
   const { store, file } = fixture();
   expect(file()).toBeNull();

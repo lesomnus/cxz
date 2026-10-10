@@ -390,4 +390,16 @@ export const messages = {
     "{name}: 비어 있지 않은 글꼴 목록을 입력하세요.",
   "Browser monospace follows your browser's fixed-width font preference. Custom fonts must be available on your device; list fallback fonts separated by commas.":
     "브라우저 고정폭 글꼴은 브라우저의 고정폭 글꼴 설정을 따릅니다. 직접 지정한 글꼴은 기기에 있어야 하며, 대체 글꼴을 쉼표로 구분해 함께 적을 수 있습니다.",
+  "Google Fonts": "Google Fonts",
+  "Loading font…": "글꼴 불러오는 중…",
+  "{label} Google Fonts family": "{label} Google Fonts 글꼴 이름",
+  "Enter a Google Fonts family name.": "Google Fonts 글꼴 이름을 입력하세요.",
+  "Could not load the font. Check the name or connection and try again.":
+    "글꼴을 불러오지 못했습니다. 이름이나 연결 상태를 확인하고 다시 시도하세요.",
+  "Enter a family from Google Fonts, such as Roboto Mono, JetBrains Mono or Noto Sans KR. Only the selected font is downloaded.":
+    "Roboto Mono, JetBrains Mono, Noto Sans KR 등 Google Fonts의 글꼴 이름을 입력하세요. 선택한 글꼴만 내려받습니다.",
+  "{name}: Enter a font family list or a Google Fonts selection.":
+    "{name}: 글꼴 목록 또는 Google Fonts 선택 정보를 입력하세요.",
+  "Browser monospace follows your browser's fixed-width font preference. Custom fonts use local font families. Google Fonts are downloaded on demand and cached by your browser.":
+    "브라우저 고정폭 글꼴은 브라우저 설정을 따릅니다. 직접 지정한 글꼴은 기기의 글꼴을 사용합니다. Google Fonts는 필요할 때 내려받아 브라우저에서 캐시합니다.",
 } satisfies LanguagePack;

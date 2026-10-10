@@ -13,6 +13,7 @@ npm run storybook
 
 - `Components`: 버튼, 에이전트 로고, 설정 드롭다운·슬라이더·분할 선택, floating card, 타이머와 Monaco 상세 탭.
 - `Settings/SettingField`: 제목·설정 ID·요약·컨트롤·선택적 상세설명을 배치하는 공통 설정 항목.
+- `Components/FontFamilyControl`: 로컬 글꼴과 Google Fonts 선택, 적용 후 저장되는 메타데이터. Google Fonts는 Apply font를 누를 때만 다운로드합니다.
 - `Editor/SourceEditor`: 파일 미리보기와 편집 가능한 settings JSON.
 - `Sessions/Panel`: 실제 세션 카드, 선택 하이라이트, 상태 indicator, 프로젝트 접기, 긴 목록의 스크롤.
 - `Conversation/Composer`: Markdown, 코드블록, 붙여넣기 chip, 명령어 제안, 전송 대기, 작업 중 glow, 모델·effort와 usage 표시.

@@ -129,22 +129,42 @@ Frequently reused inputs have their own files:
 
 ## Editor scope and inheritance
 
-| Global key            | Behavior                                                         |
-| --------------------- | ---------------------------------------------------------------- |
-| `editor.fontFamily`   | CSS font family list shared by editor text and line numbers.       |
-| `editor.indentSize`   | Spaces inserted by Tab and removed by Shift+Tab.                 |
-| `editor.insertSpaces` | Choose spaces or actual Tab characters.                          |
-| `editor.tabSize`      | Display width of existing Tab characters; does not rewrite text. |
-| `editor.colorPalette` | Syntax highlighting palette.                                     |
+| Global key            | Behavior                                                                        |
+| --------------------- | ------------------------------------------------------------------------------- |
+| `editor.fontFamily`   | Local CSS font list or Google Fonts selection for editor text and line numbers. |
+| `editor.indentSize`   | Spaces inserted by Tab and removed by Shift+Tab.                                |
+| `editor.insertSpaces` | Choose spaces or actual Tab characters.                                         |
+| `editor.tabSize`      | Display width of existing Tab characters; does not rewrite text.                |
+| `editor.colorPalette` | Syntax highlighting palette.                                                    |
 
 The font control offers System monospace, Browser monospace and a custom CSS
 font family list. Browser monospace uses `monospace` to respect the browser's
 fixed-width font preference. System monospace keeps the application's platform
 font stack. Custom families use fonts available on the device, with comma-separated
-fallbacks; choosing a family does not download a font. The live preview, file
+fallbacks. Google Fonts downloads only the selected family; enter its name and
+choose Apply font. Applying waits for the stylesheet and representative Latin/Korean
+glyphs to load, then switches the editor metrics. Other language subsets load as
+needed. A failed download preserves the current font and offers a retry. Switching
+selection during a download cannot apply an obsolete choice. The live preview, file
 editors and task-detail editors use the global value. Conversation and Question
 editors use the session value, or inherit the global value when it is absent.
 Font changes preserve the current draft and editor model.
+
+Google selections are stored as metadata in the same settings file, for example:
+
+```json
+{
+  "editor.fontFamily": { "provider": "google", "family": "Roboto Mono" },
+  "session.editor.fontFamily": "monospace"
+}
+```
+
+The session override replaces the entire font selection, including its provider;
+removing it restores global inheritance. Existing CSS string settings stay valid.
+On reload or JSON edits, remote fonts load lazily while the editor keeps its prior
+available font (the system stack on first load). Font CSS and binary files use the
+browser's HTTP cache, never localStorage or OPFS. Selecting Google Fonts makes
+requests to Google's font servers; local/system choices make none.
 
 Each key also has a **`session.editor.*`** counterpart. Resolution is independent
 for every field: explicit session value → explicit global value → default.

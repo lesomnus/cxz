@@ -38,8 +38,28 @@ export const palettes = {
   },
 } as const;
 export type Palette = keyof typeof palettes;
+export type GoogleFont = { provider: "google"; family: string };
+export type FontFamilySetting = string | GoogleFont;
+export function isGoogleFont(value: unknown): value is GoogleFont {
+  if (!value || typeof value !== "object") return false;
+  const font = value as GoogleFont;
+  return (
+    font.provider === "google" &&
+    typeof font.family === "string" &&
+    font.family === font.family.trim() &&
+    font.family.length > 0 &&
+    font.family.length <= 100 &&
+    /^[\p{L}\p{N} -]+$/u.test(font.family)
+  );
+}
+export function fontFamilyCSS(value: FontFamilySetting): string {
+  return typeof value === "string"
+    ? value
+    : `${JSON.stringify(value.family)}, monospace`;
+}
 export type EditorSettings = {
   fontFamily: string;
+  googleFont?: string;
   indentSize: number;
   insertSpaces: boolean;
   tabSize: number;
@@ -87,9 +107,14 @@ export function parseSettings(raw: string): SettingsDocument {
             t("{name}: Enter an integer between 1 and 16.", { name }),
           );
       } else if (key === "fontFamily") {
-        if (typeof entry !== "string" || !entry.trim() || entry.length > 1024)
+        if (
+          !isGoogleFont(entry) &&
+          (typeof entry !== "string" || !entry.trim() || entry.length > 1024)
+        )
           throw new Error(
-            t("{name}: Enter a non-empty font family list.", { name }),
+            t("{name}: Enter a font family list or a Google Fonts selection.", {
+              name,
+            }),
           );
       } else if (key === "insertSpaces") {
         if (typeof entry !== "boolean")
@@ -124,8 +149,13 @@ export function resolveEditorSettings(
     const global = `editor.${key}`;
     const name =
       scope === "session" && Object.hasOwn(document, scoped) ? scoped : global;
-    if (Object.hasOwn(document, name))
-      Object.assign(result, { [key]: document[name] });
+    if (Object.hasOwn(document, name)) {
+      if (key === "fontFamily") {
+        const font = document[name] as FontFamilySetting;
+        result.fontFamily = fontFamilyCSS(font);
+        if (isGoogleFont(font)) result.googleFont = font.family;
+      } else Object.assign(result, { [key]: document[name] });
+    }
   }
   return result;
 }

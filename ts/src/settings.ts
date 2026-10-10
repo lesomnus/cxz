@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { resolveEditorSettings, type EditorScope } from "./editor-settings";
 import { SettingsStore } from "./settings-store";
+import { useFontFamily } from "./use-font-family";
 
 let instance: SettingsStore | undefined;
 export function settingsStore() {
@@ -29,5 +30,7 @@ export function useSettings() {
 }
 export function useEditorSettings(scope: EditorScope = "global") {
   const { snapshot } = useSettings();
-  return resolveEditorSettings(snapshot.document, scope);
+  const settings = resolveEditorSettings(snapshot.document, scope);
+  const font = useFontFamily(settings.fontFamily, settings.googleFont);
+  return { ...settings, fontFamily: font.fontFamily };
 }

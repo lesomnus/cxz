@@ -23,6 +23,23 @@ type testSessions struct {
 	resource.UnimplementedSessionServiceServer
 }
 
+func TestBrowserFontPolicy(t *testing.T) {
+	a := &browserAuth{origin: "https://cxz.test"}
+	w := httptest.NewRecorder()
+	a.wrap(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})).ServeHTTP(w, httptest.NewRequest("GET", "https://cxz.test/", nil))
+	policy := w.Header().Get("Content-Security-Policy")
+	for _, directive := range []string{
+		"style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com;",
+		"font-src 'self' https://fonts.gstatic.com;",
+		"script-src 'self';",
+		"connect-src 'self';",
+	} {
+		if !strings.Contains(policy, directive) {
+			t.Fatalf("missing bounded font permission or altered script/RPC policy: %s", policy)
+		}
+	}
+}
+
 func (*testSessions) Send(_ context.Context, r *resource.SessionSendRequest) (*resource.SessionReceipt, error) {
 	return resource.SessionReceipt_builder{ClientId: proto.String(r.GetClientId()), Status: proto.String(r.GetText())}.Build(), nil
 }

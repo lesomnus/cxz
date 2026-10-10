@@ -9,7 +9,7 @@ import {
 import { useLocale } from "./i18n-react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Button } from "./button";
-import { useSettings } from "./settings";
+import { useSettings, useEditorSettings } from "./settings";
 import {
   defaultEditorSettings,
   editorKeys,
@@ -19,6 +19,7 @@ import {
   resolveEditorSettings,
   parseSettings,
   type EditorScope,
+  type FontFamilySetting,
 } from "./editor-settings";
 import { SettingField } from "./setting-field";
 import { ValueMenu } from "./value-menu";
@@ -71,6 +72,8 @@ export function SettingsPage({
   const locale = useLocale();
   const theme = useTheme();
   const { store, snapshot } = useSettings();
+  const globalEditor = useEditorSettings();
+  const sessionEditor = useEditorSettings("session");
   const savedLanguage = resolveLocale(snapshot.document["ui.language"]);
   const [language, setLanguage] = useState<Locale>(savedLanguage);
   const [applying, setApplying] = useState(false);
@@ -180,7 +183,7 @@ export function SettingsPage({
     }
   }
   function group(scope: EditorScope) {
-    const resolved = resolveEditorSettings(snapshot.document, scope);
+    const resolved = scope === "session" ? sessionEditor : globalEditor;
     const prefix = scope === "session" ? "session.editor." : "editor.";
     const title =
       scope === "session" ? t("Session editor") : t("Global editor");
@@ -209,7 +212,7 @@ export function SettingsPage({
                 details={
                   key === "fontFamily"
                     ? t(
-                        "Browser monospace follows your browser's fixed-width font preference. Custom fonts must be available on your device; list fallback fonts separated by commas.",
+                        "Browser monospace follows your browser's fixed-width font preference. Custom fonts use local font families. Google Fonts are downloaded on demand and cached by your browser.",
                       )
                     : undefined
                 }
@@ -218,9 +221,17 @@ export function SettingsPage({
                   <FontFamilyControl
                     label={`${title} ${translateKnown(fields[key].label)}`}
                     value={
-                      hasValue ? String(snapshot.document[name]) : undefined
+                      hasValue
+                        ? (snapshot.document[name] as FontFamilySetting)
+                        : undefined
                     }
-                    inherited={String(inherited)}
+                    inherited={
+                      scope === "session"
+                        ? ((snapshot.document["editor.fontFamily"] as
+                            | FontFamilySetting
+                            | undefined) ?? defaultEditorSettings.fontFamily)
+                        : defaultEditorSettings.fontFamily
+                    }
                     disabled={!snapshot.valid}
                     onChange={(value) => update(name, value)}
                   />
