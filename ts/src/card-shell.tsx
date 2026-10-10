@@ -1,4 +1,4 @@
-import type { HTMLAttributes, Ref } from "react";
+import type { HTMLAttributes, ReactNode, Ref } from "react";
 import { useLocale } from "./i18n-react";
 import { Button } from "./button";
 
@@ -8,6 +8,7 @@ export function FloatingCard({
   close,
   closeLabel,
   bodyTabIndex,
+  footer,
   children,
   className = "",
   ref,
@@ -18,6 +19,7 @@ export function FloatingCard({
   close?: () => void;
   closeLabel?: string;
   bodyTabIndex?: number;
+  footer?: ReactNode;
   ref?: Ref<HTMLElement>;
 }) {
   useLocale();
@@ -41,6 +43,7 @@ export function FloatingCard({
       <div className="card-body" tabIndex={bodyTabIndex}>
         {children}
       </div>
+      {footer && <footer className="card-footer">{footer}</footer>}
     </section>
   );
 }

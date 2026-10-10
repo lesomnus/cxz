@@ -3353,6 +3353,8 @@ summary:hover {
 
 /* A shared card surface in the browser's modal top layer. */
 .confirmation-dialog {
+  --confirmation-padding: calc(3 * var(--space));
+  --confirmation-button-min-width: 72px;
   width: min(480px, calc(100vw - 4 * var(--space)));
   max-height: calc(100dvh - 4 * var(--space));
   padding: 0;
@@ -3369,22 +3371,43 @@ summary:hover {
   inset: auto;
   width: 100%;
   max-height: calc(100dvh - 4 * var(--space));
+  background: color-mix(in srgb, var(--shade-16) 68%, transparent);
 }
 .confirmation-dialog .card-heading {
   display: flex;
   align-items: center;
   min-height: 32px;
-  padding: var(--space);
   font-size: 12px;
+}
+.confirmation-dialog .card-heading strong {
+  margin-left: 0;
+}
+.confirmation-dialog :is(.card-heading, .card-footer) {
+  flex-shrink: 0;
+  padding: var(--confirmation-padding);
+}
+.confirmation-dialog .card-body {
+  margin: 0 var(--space);
+  padding: calc(var(--confirmation-padding) - var(--space));
+  border-radius: var(--card-inner-radius);
+  background: var(--shade-28);
+}
+.confirmation-dialog .card-body > :first-child,
+.confirmation-dialog .card-body > :first-child > :first-child {
+  margin-top: 0;
+}
+.confirmation-dialog .card-body > :last-child,
+.confirmation-dialog .card-body > :last-child > :last-child {
+  margin-bottom: 0;
 }
 .confirmation-actions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: var(--space);
-  margin-top: calc(2 * var(--space));
 }
 .confirmation-actions button {
-  background: var(--shade-42);
+  min-width: var(--confirmation-button-min-width);
+  background: var(--shade-32);
 }
 .tab-list {
   display: flex;

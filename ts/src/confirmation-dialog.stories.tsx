@@ -20,7 +20,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "A modal confirmation dialog using the shared card surface. Focus starts on Cancel and stays inside; Escape or a backdrop click cancels. While an action runs, duplicate execution and dismissal are disabled. Failure keeps the dialog open for retry.",
+          "A modal confirmation dialog using the shared card surface, with padded header/body/footer, a distinct rounded body and minimum-width actions. Confirm is on the left and Cancel on the right; focus starts on Cancel and stays inside. Escape or a backdrop click cancels. The footer stays outside the scrollable body. While an action runs, duplicate execution and dismissal are disabled. Failure keeps the dialog open for retry.",
       },
     },
   },
@@ -75,3 +75,21 @@ export const Pending: Story = {
   },
 };
 export const Failure: Story = { args: { execute: async () => false } };
+export const LongContent: Story = {
+  args: {
+    title: "Purge session",
+    confirmLabel: "Purge permanently",
+    children: (
+      <>
+        <p>Permanently deletes this session and its stored data.</p>
+        {Array.from({ length: 16 }, (_, index) => (
+          <p key={index}>
+            Resource {index + 1}: saved conversation history and temporary
+            session artifacts will be removed. Project workspace files are
+            retained.
+          </p>
+        ))}
+      </>
+    ),
+  },
+};

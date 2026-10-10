@@ -114,21 +114,26 @@ export function ConfirmationDialog({
           close();
       }}
     >
-      <FloatingCard title={title} data-entered="true">
+      <FloatingCard
+        title={title}
+        data-entered="true"
+        footer={
+          <div className="confirmation-actions">
+            <Button type="button" disabled={busy} onClick={() => void submit()}>
+              {busy ? t("Working…") : confirmLabel}
+            </Button>
+            <Button ref={cancel} type="button" disabled={busy} onClick={close}>
+              {t("Cancel")}
+            </Button>
+          </div>
+        }
+      >
         <div id={id}>{children}</div>
         {failed && (
           <p role="alert">
             {failureMessage ?? t("Action failed. Please try again.")}
           </p>
         )}
-        <div className="confirmation-actions">
-          <Button ref={cancel} type="button" disabled={busy} onClick={close}>
-            {t("Cancel")}
-          </Button>
-          <Button type="button" disabled={busy} onClick={() => void submit()}>
-            {busy ? t("Working…") : confirmLabel}
-          </Button>
-        </div>
       </FloatingCard>
     </dialog>,
     document.body,

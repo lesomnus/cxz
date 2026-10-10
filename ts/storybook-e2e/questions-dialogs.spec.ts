@@ -13,13 +13,41 @@ test("confirmation dialog traps focus, cancels without acting and fits a small v
   await launch.click();
   const dialog = page.getByRole("dialog", { name: "Stop session" });
   const cancel = dialog.getByRole("button", { name: "Cancel", exact: true });
+  const confirm = dialog.getByRole("button", { name: "Stop", exact: true });
   await expect(cancel).toBeFocused();
+  const confirmBounds = (await confirm.boundingBox())!;
+  const cancelBounds = (await cancel.boundingBox())!;
+  expect(confirmBounds.x + confirmBounds.width).toBeLessThan(cancelBounds.x);
+  expect(confirmBounds.width).toEqual(cancelBounds.width);
+  const heading = (await dialog.locator(".card-heading strong").boundingBox())!;
+  const text = (await dialog.locator(".card-body p").boundingBox())!;
+  expect(text.x).toBeCloseTo(heading.x, 0);
+  expect(confirmBounds.x).toBeCloseTo(heading.x, 0);
+  expect(
+    await dialog
+      .locator(".card-body")
+      .evaluate((el) => getComputedStyle(el).borderRadius),
+  ).not.toBe("0px");
+  const bodyColor = await dialog
+    .locator(".card-body")
+    .evaluate((el) => getComputedStyle(el).backgroundColor);
+  const chromeColor = await dialog
+    .locator(".floating-card")
+    .evaluate((el) => getComputedStyle(el).backgroundColor);
+  expect(bodyColor).not.toBe(chromeColor);
   await page.keyboard.press("Shift+Tab");
   await expect(
     dialog.getByRole("button", { name: "Stop", exact: true }),
   ).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(cancel).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(confirm).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
+  await expect(cancel).toBeFocused();
+  await page.screenshot({
+    path: "test-results/confirmation-dialog-layout.png",
+  });
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
   await expect(launch).toBeFocused();
@@ -39,6 +67,45 @@ test("confirmation dialog traps focus, cancels without acting and fits a small v
   await dialog.getByRole("button", { name: "Stop", exact: true }).click();
   await expect(dialog).toHaveCount(0);
   await expect(page.getByRole("status")).toHaveText("Action completed");
+});
+
+test("long confirmation bodies scroll while the padded header and actions stay visible", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 480 });
+  await page.goto(
+    "/iframe.html?id=components-confirmationdialog--long-content&viewMode=story",
+  );
+  await page
+    .getByRole("button", { name: "Open confirmation", exact: true })
+    .click();
+  const dialog = page.getByRole("dialog", { name: "Purge session" });
+  const body = dialog.locator(".card-body");
+  const footer = dialog.locator(".card-footer");
+  const header = dialog.locator(".card-heading");
+  await expect(
+    dialog.getByRole("button", { name: "Cancel", exact: true }),
+  ).toBeFocused();
+  expect(await body.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(
+    true,
+  );
+  const originalFooter = await footer.boundingBox();
+  const originalHeader = await header.boundingBox();
+  await body.evaluate((el) => (el.scrollTop = el.scrollHeight));
+  expect(await footer.boundingBox()).toEqual(originalFooter);
+  expect(await header.boundingBox()).toEqual(originalHeader);
+  await expect(
+    dialog.getByRole("button", { name: "Purge permanently", exact: true }),
+  ).toBeVisible();
+  const bounds = (await dialog.boundingBox())!;
+  expect(bounds.y).toBeGreaterThanOrEqual(0);
+  expect(bounds.y + bounds.height).toBeLessThanOrEqual(480);
+  await page.screenshot({
+    path: "test-results/confirmation-dialog-long-mobile.png",
+  });
+  await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByRole("status")).toHaveCount(0);
 });
 
 test("pending dialogs prevent dismissal and failed actions stay open for retry", async ({
