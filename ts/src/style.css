@@ -2195,8 +2195,8 @@ pre {
 .activity-card-preview[data-hovered="true"],
 .activity-card-preview[data-focused="true"],
 .activity-card-preview[data-detail-open="true"] {
-  --muted: var(--shade-144);
-  color: var(--shade-181);
+  --muted: var(--shade-160);
+  color: var(--shade-237);
 }
 .detail-anchor,
 .activity-card-preview {
