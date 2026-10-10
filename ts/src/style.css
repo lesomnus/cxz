@@ -352,6 +352,25 @@ header strong {
   flex-shrink: 0;
   font-size: 12px;
 }
+.font-family-control {
+  display: grid;
+  gap: var(--space);
+}
+.font-family-custom {
+  display: flex;
+  gap: var(--space);
+  align-items: center;
+}
+.font-family-custom input {
+  min-width: 0;
+  width: 100%;
+  border: 0;
+  padding: var(--control-inset) var(--control-inline-inset);
+}
+.font-family-custom button {
+  flex-shrink: 0;
+  font-size: 12px;
+}
 .setting-row strong {
   font-size: 12px;
   font-weight: 500;
@@ -1551,7 +1570,7 @@ pre {
   resize: none;
   max-height: 35dvh;
   line-height: 1.5;
-  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-family: inherit;
   color: transparent;
   caret-color: var(--shade-237);
   overflow-wrap: anywhere;
@@ -1569,6 +1588,11 @@ pre {
   position: relative;
   font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
   line-height: 1.5;
+}
+.composer-editor textarea,
+.editor-mirror {
+  font-kerning: none;
+  font-variant-ligatures: none;
 }
 .editor-gutter {
   position: relative;
@@ -1765,7 +1789,7 @@ pre {
   color: var(--code-title, #7797ac);
 }
 .editor-code-line .hljs-keyword {
-  font-weight: 600;
+  font-weight: inherit;
 }
 .editor-code-line .hljs-string {
   color: var(--code-string, #839c7b);

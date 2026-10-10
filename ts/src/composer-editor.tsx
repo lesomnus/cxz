@@ -153,7 +153,7 @@ export function ComposerEditor({
       syncScroll();
       followOnEdit.current = false;
     }
-  }, [value, composition, editorSettings.tabSize]);
+  }, [value, composition, editorSettings.tabSize, editorSettings.fontFamily]);
   useEffect(() => {
     const observer = new ResizeObserver(measure);
     observer.observe(input.current!);
@@ -266,6 +266,7 @@ export function ComposerEditor({
         data-decorated={decorated}
         data-command-open={commandHints.open}
         style={{
+          fontFamily: editorSettings.fontFamily,
           tabSize: editorSettings.tabSize,
           ...paletteVariables(editorSettings.colorPalette, theme),
         }}

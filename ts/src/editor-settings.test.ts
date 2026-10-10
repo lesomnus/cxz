@@ -25,12 +25,14 @@ it("inherits each missing session field independently, including explicit false"
     insertSpaces: true,
     tabSize: 8,
     colorPalette: "warm",
+    fontFamily: defaultEditorSettings.fontFamily,
   });
   expect(resolveEditorSettings(document, "session")).toEqual({
     indentSize: 4,
     insertSpaces: false,
     tabSize: 2,
     colorPalette: "warm",
+    fontFamily: defaultEditorSettings.fontFamily,
   });
   expect(resolveEditorSettings({})).toEqual(defaultEditorSettings);
 });
@@ -44,6 +46,8 @@ it("validates known settings and retains unknown future keys in a flat JSON obje
     '{"editor.tabSize":1.5}',
     '{"editor.insertSpaces":"false"}',
     '{"editor.colorPalette":"unknown"}',
+    '{"editor.fontFamily":42}',
+    '{"session.editor.fontFamily":"  "}',
   ])
     expect(() => parseSettings(raw)).toThrow();
   const { store, file } = fixture(
@@ -60,6 +64,27 @@ it("validates known settings and retains unknown future keys in a flat JSON obje
   expect(
     resolveEditorSettings(store.snapshot().document, "session").tabSize,
   ).toBe(4);
+});
+it("inherits global fonts and removes a session override without writing defaults", () => {
+  const { store, file } = fixture();
+  store.set("editor.fontFamily", '"D2Coding", monospace');
+  expect(
+    resolveEditorSettings(store.snapshot().document, "session").fontFamily,
+  ).toBe('"D2Coding", monospace');
+  store.set("session.editor.fontFamily", "monospace");
+  expect(resolveEditorSettings(store.snapshot().document).fontFamily).toBe(
+    '"D2Coding", monospace',
+  );
+  expect(
+    resolveEditorSettings(store.snapshot().document, "session").fontFamily,
+  ).toBe("monospace");
+  store.set("session.editor.fontFamily", undefined);
+  expect(
+    resolveEditorSettings(store.snapshot().document, "session").fontFamily,
+  ).toBe('"D2Coding", monospace');
+  expect(JSON.parse(file()!)).toEqual({
+    "editor.fontFamily": '"D2Coding", monospace',
+  });
 });
 it("does not write defaults on read, and notifications follow a successful whole-file save", () => {
   const { store, file } = fixture();

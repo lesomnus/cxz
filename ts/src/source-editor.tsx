@@ -108,6 +108,7 @@ export function SourceEditor({
     settings.insertSpaces,
     settings.tabSize,
     settings.colorPalette,
+    settings.fontFamily,
     theme,
   ]);
   useEffect(() => {

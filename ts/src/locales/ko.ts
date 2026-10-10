@@ -377,4 +377,17 @@ export const messages = {
   "{name}: {value}": "{name}: {value}",
   "{percent}% remaining": "{percent}% 남음",
   "{seconds}s": "{seconds}초",
+  "Font family": "글꼴",
+  "Font used for editor text and line numbers":
+    "에디터 본문과 줄번호에 사용할 글꼴",
+  "System monospace": "시스템 고정폭 글꼴",
+  "Browser monospace": "브라우저 고정폭 글꼴",
+  "Custom font": "직접 지정",
+  "Apply font": "글꼴 적용",
+  "Enter a valid CSS font family list.": "올바른 CSS 글꼴 목록을 입력하세요.",
+  "{label} custom font family": "{label} 직접 지정 글꼴",
+  "{name}: Enter a non-empty font family list.":
+    "{name}: 비어 있지 않은 글꼴 목록을 입력하세요.",
+  "Browser monospace follows your browser's fixed-width font preference. Custom fonts must be available on your device; list fallback fonts separated by commas.":
+    "브라우저 고정폭 글꼴은 브라우저의 고정폭 글꼴 설정을 따릅니다. 직접 지정한 글꼴은 기기에 있어야 하며, 대체 글꼴을 쉼표로 구분해 함께 적을 수 있습니다.",
 } satisfies LanguagePack;

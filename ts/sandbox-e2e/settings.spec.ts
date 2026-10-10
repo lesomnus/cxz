@@ -81,6 +81,80 @@ const fields = [
   "Color palette",
 ];
 
+test("font settings apply live to file editors and session drafts with independent inheritance", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 2104, height: 1000 });
+  await ready(page);
+  const composer = page.getByRole("textbox", { name: "Message", exact: true });
+  await composer.fill("keep 한글 draft");
+  await settings(page);
+  const source = await file(page);
+  await chooseSetting(page, "Global editor Font family", "monospace");
+  await expectInherited(page, "Session editor Font family");
+  await expect(page.locator(".settings-preview").first()).toHaveCSS(
+    "font-family",
+    "monospace",
+  );
+  await expect(page.locator(".settings-file .view-lines")).toHaveCSS(
+    "font-family",
+    /^monospace/,
+  );
+  expect(await stored(page)).toEqual({ "editor.fontFamily": "monospace" });
+  await chooseSetting(page, "Session editor Font family", "custom");
+  const custom = page.getByRole("textbox", {
+    name: "Session editor Font family custom font family",
+    exact: true,
+  });
+  await custom.fill('"Liberation Mono", monospace');
+  await custom.press("Enter");
+  expect(await stored(page)).toEqual({
+    "editor.fontFamily": "monospace",
+    "session.editor.fontFamily": '"Liberation Mono", monospace',
+  });
+  await expect(page.locator(".settings-file .view-lines")).toHaveCSS(
+    "font-family",
+    /^monospace/,
+  );
+  await expect
+    .poll(() => readJSON(page, source))
+    .toContain('"session.editor.fontFamily"');
+  await page.screenshot({ path: "test-results/settings-font-family.png" });
+  await page.getByRole("link", { name: "Sessions view", exact: true }).click();
+  await expect(composer).toHaveValue("keep 한글 draft");
+  await expect(composer).toHaveCSS("font-family", /Liberation Mono/);
+  await composer.fill("keep 한글 `draft`");
+  const font = await composer.evaluate((el) => getComputedStyle(el).fontFamily);
+  await expect(page.locator(".editor-mirror")).toHaveCSS("font-family", font);
+  await expect(page.locator(".editor-gutter")).toHaveCSS("font-family", font);
+  await settings(page);
+  await chooseSetting(page, "Session editor Font family", "");
+  await expectInherited(page, "Session editor Font family");
+  await page.reload();
+  await expect(
+    page.getByLabel("Global editor Font family", { exact: true }),
+  ).toBeVisible();
+  await expectInherited(page, "Session editor Font family");
+  expect(await stored(page)).toEqual({ "editor.fontFamily": "monospace" });
+  await chooseSetting(page, "Global editor Font family", "custom");
+  const globalCustom = page.getByRole("textbox", {
+    name: "Global editor Font family custom font family",
+    exact: true,
+  });
+  await globalCustom.fill("bad;");
+  await globalCustom.press("Enter");
+  await expect(page.locator(".font-family-control [role=alert]")).toHaveText(
+    "Enter a valid CSS font family list.",
+  );
+  expect(await stored(page)).toEqual({ "editor.fontFamily": "monospace" });
+  await chooseSetting(page, "Global editor Font family", "");
+  await page.getByRole("link", { name: "Sessions view", exact: true }).click();
+  await page
+    .locator('a[href="/sandbox.html#/sessions/session-1"]')
+    .click({ timeout: 5000 });
+  await expect(composer).toHaveCSS("font-family", /ui-monospace/);
+});
+
 test("settings topics keep compact columns centered and a live JSON pane unfolds at the conversation width threshold", async ({
   page,
 }) => {
@@ -669,10 +743,10 @@ test("settings sections form compact responsive columns with aligned text and or
     for (let index = 1; index < positions.length; index++)
       expect(positions[index]).toBeGreaterThan(positions[index - 1]);
   };
-  await expectFieldOrder(page.locator(".setting-row").first());
+  await expectFieldOrder(page.locator(".setting-row").first(), true);
   await expect(
     page.locator(".setting-row").first().locator(".setting-details"),
-  ).toHaveCount(0);
+  ).toHaveCount(1);
   await page.screenshot({ path: "test-results/settings-columns.png" });
   await page.setViewportSize({ width: 900, height: 1000 });
   await expect

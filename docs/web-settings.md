@@ -131,10 +131,20 @@ Frequently reused inputs have their own files:
 
 | Global key            | Behavior                                                         |
 | --------------------- | ---------------------------------------------------------------- |
+| `editor.fontFamily`   | CSS font family list shared by editor text and line numbers.       |
 | `editor.indentSize`   | Spaces inserted by Tab and removed by Shift+Tab.                 |
 | `editor.insertSpaces` | Choose spaces or actual Tab characters.                          |
 | `editor.tabSize`      | Display width of existing Tab characters; does not rewrite text. |
 | `editor.colorPalette` | Syntax highlighting palette.                                     |
+
+The font control offers System monospace, Browser monospace and a custom CSS
+font family list. Browser monospace uses `monospace` to respect the browser's
+fixed-width font preference. System monospace keeps the application's platform
+font stack. Custom families use fonts available on the device, with comma-separated
+fallbacks; choosing a family does not download a font. The live preview, file
+editors and task-detail editors use the global value. Conversation and Question
+editors use the session value, or inherit the global value when it is absent.
+Font changes preserve the current draft and editor model.
 
 Each key also has a **`session.editor.*`** counterpart. Resolution is independent
 for every field: explicit session value → explicit global value → default.

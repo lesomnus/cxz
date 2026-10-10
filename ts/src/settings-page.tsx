@@ -22,12 +22,17 @@ import {
 } from "./editor-settings";
 import { SettingField } from "./setting-field";
 import { ValueMenu } from "./value-menu";
+import { FontFamilyControl } from "./font-family-control";
 import { SettingSlider } from "./setting-slider";
 import { SegmentedControl } from "./segmented-control";
 import { useTheme, resolveTheme } from "./theme";
 import { SourceEditor, type SourceEditorHandle } from "./source-editor";
 
 const fields = {
+  fontFamily: {
+    label: "Font family",
+    description: "Font used for editor text and line numbers",
+  },
   indentSize: {
     label: "Indentation size",
     description: "Spaces inserted with Tab or removed with Shift+Tab",
@@ -201,8 +206,25 @@ export function SettingsPage({
                 title={translateKnown(fields[key].label)}
                 settingId={name}
                 summary={translateKnown(fields[key].description)}
+                details={
+                  key === "fontFamily"
+                    ? t(
+                        "Browser monospace follows your browser's fixed-width font preference. Custom fonts must be available on your device; list fallback fonts separated by commas.",
+                      )
+                    : undefined
+                }
               >
-                {key === "indentSize" || key === "tabSize" ? (
+                {key === "fontFamily" ? (
+                  <FontFamilyControl
+                    label={`${title} ${translateKnown(fields[key].label)}`}
+                    value={
+                      hasValue ? String(snapshot.document[name]) : undefined
+                    }
+                    inherited={String(inherited)}
+                    disabled={!snapshot.valid}
+                    onChange={(value) => update(name, value)}
+                  />
+                ) : key === "indentSize" || key === "tabSize" ? (
                   <SettingSlider
                     label={`${title} ${translateKnown(fields[key].label)}`}
                     value={
@@ -261,6 +283,7 @@ export function SettingsPage({
         <pre
           className="settings-preview"
           style={{
+            fontFamily: resolved.fontFamily,
             tabSize: resolved.tabSize,
             ...paletteVariables(resolved.colorPalette, theme),
           }}

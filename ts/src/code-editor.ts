@@ -16,6 +16,7 @@ import { jsonDefaults } from "monaco-editor/esm/vs/language/json/monaco.contribu
 import EditorWorker from "monaco-editor/esm/vs/editor/editor.worker.js?worker";
 import JsonWorker from "monaco-editor/esm/vs/language/json/json.worker.js?worker";
 import {
+  defaultEditorSettings,
   paletteForTheme,
   palettes,
   type EditorSettings,
@@ -37,7 +38,7 @@ export const editorOptions: monaco.editor.IStandaloneEditorConstructionOptions =
     automaticLayout: true,
     minimap: { enabled: false },
     fontSize: 12,
-    fontFamily: "ui-monospace, SFMono-Regular, Consolas, monospace",
+    fontFamily: defaultEditorSettings.fontFamily,
     scrollBeyondLastLine: false,
     padding: { top: 8, bottom: 8 },
     renderLineHighlight: "none",
@@ -91,7 +92,10 @@ export function configureEditor(
     indentSize: settings.indentSize,
     insertSpaces: settings.insertSpaces,
   });
-  editor.updateOptions({ theme: `cxz-${settings.colorPalette}-${theme}` });
+  editor.updateOptions({
+    theme: `cxz-${settings.colorPalette}-${theme}`,
+    fontFamily: settings.fontFamily,
+  });
 }
 
 export function language(path: string) {

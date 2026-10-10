@@ -376,5 +376,18 @@ export const messages = {
   "{name}: {value}": "{name}: {value}",
   "{percent}% remaining": "{percent}% remaining",
   "{seconds}s": "{seconds}s",
+  "Font family": "Font family",
+  "Font used for editor text and line numbers":
+    "Font used for editor text and line numbers",
+  "System monospace": "System monospace",
+  "Browser monospace": "Browser monospace",
+  "Custom font": "Custom font",
+  "Apply font": "Apply font",
+  "Enter a valid CSS font family list.": "Enter a valid CSS font family list.",
+  "{label} custom font family": "{label} custom font family",
+  "{name}: Enter a non-empty font family list.":
+    "{name}: Enter a non-empty font family list.",
+  "Browser monospace follows your browser's fixed-width font preference. Custom fonts must be available on your device; list fallback fonts separated by commas.":
+    "Browser monospace follows your browser's fixed-width font preference. Custom fonts must be available on your device; list fallback fonts separated by commas.",
 } as const;
 export type Message = keyof typeof messages;

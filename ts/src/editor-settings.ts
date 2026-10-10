@@ -39,12 +39,14 @@ export const palettes = {
 } as const;
 export type Palette = keyof typeof palettes;
 export type EditorSettings = {
+  fontFamily: string;
   indentSize: number;
   insertSpaces: boolean;
   tabSize: number;
   colorPalette: Palette;
 };
 export const defaultEditorSettings: EditorSettings = {
+  fontFamily: "ui-monospace, SFMono-Regular, Consolas, monospace",
   indentSize: 2,
   insertSpaces: true,
   tabSize: 4,
@@ -53,6 +55,7 @@ export const defaultEditorSettings: EditorSettings = {
 export type SettingsDocument = Record<string, unknown>;
 export type EditorScope = "global" | "session";
 export const editorKeys = [
+  "fontFamily",
   "indentSize",
   "insertSpaces",
   "tabSize",
@@ -82,6 +85,11 @@ export function parseSettings(raw: string): SettingsDocument {
         )
           throw new Error(
             t("{name}: Enter an integer between 1 and 16.", { name }),
+          );
+      } else if (key === "fontFamily") {
+        if (typeof entry !== "string" || !entry.trim() || entry.length > 1024)
+          throw new Error(
+            t("{name}: Enter a non-empty font family list.", { name }),
           );
       } else if (key === "insertSpaces") {
         if (typeof entry !== "boolean")
