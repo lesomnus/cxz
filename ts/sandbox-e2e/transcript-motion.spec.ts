@@ -16,6 +16,33 @@ async function ready(page: import("@playwright/test").Page) {
   ).toBeVisible();
 }
 
+test("zoomed live conversations keep following after Send and the final response", async ({
+  page,
+}) => {
+  await ready(page);
+  await page.evaluate(() => {
+    document.documentElement.style.zoom = "1.1";
+  });
+  const pane = page.locator(".transcript");
+  const distance = () =>
+    pane.evaluate((el) => el.scrollHeight - el.scrollTop - el.clientHeight);
+  await expect.poll(distance).toBeLessThan(2);
+  await page
+    .getByRole("textbox", { name: "Message", exact: true })
+    .fill("Keep following at a fractional zoom.");
+  await page.getByRole("button", { name: "Send", exact: true }).click();
+  await expect(page.locator("article.response").last()).toContainText(
+    "Preview ready",
+  );
+  await expect(page.locator(".transcript-area")).toHaveClass(
+    /scroll-following/,
+  );
+  await expect.poll(distance).toBeLessThan(2);
+  await expect(
+    page.getByRole("button", { name: "Latest", exact: true }),
+  ).toBeHidden();
+});
+
 test("live additions glide existing rows and reveal new cards faster without changing virtual heights", async ({
   page,
 }) => {

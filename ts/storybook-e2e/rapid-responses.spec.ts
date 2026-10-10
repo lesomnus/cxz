@@ -12,10 +12,8 @@ async function ready(page: Page, id = "rapid-responses") {
   return errors;
 }
 
-async function send(page: Page) {
-  await page
-    .getByRole("textbox", { name: "Message", exact: true })
-    .fill("Keep following this rapid stream.");
+async function send(page: Page, text = "Keep following this rapid stream.") {
+  await page.getByRole("textbox", { name: "Message", exact: true }).fill(text);
   await page.getByRole("button", { name: "Send", exact: true }).click();
 }
 
@@ -31,11 +29,22 @@ async function gap(page: Page) {
     .evaluate((node) => node.scrollHeight - node.scrollTop - node.clientHeight);
 }
 
-for (const id of ["rapid-responses", "rapid-responses-from-empty"]) {
-  test(`${id} follows every rapid update and the final reply`, async ({
+for (const [id, zoom, expanded] of [
+  ["rapid-responses", 1, false],
+  ["rapid-responses-from-empty", 1, false],
+  ["rapid-responses", 1.1, false],
+  ["rapid-responses-from-empty", 1.1, false],
+  ["rapid-responses", 1.1, true],
+] as const) {
+  test(`${id}${zoom !== 1 ? " zoomed" : ""}${expanded ? " expanded composer" : ""} follows Send, every rapid update and the final reply`, async ({
     page,
   }) => {
+    if (zoom !== 1) await page.setViewportSize({ width: 1440, height: 900 });
     const errors = await ready(page, id);
+    if (zoom !== 1)
+      await page.evaluate((zoom) => {
+        document.documentElement.style.zoom = String(zoom);
+      }, zoom);
     // Observe natural playback, including native scroll/ResizeObserver frames.
     await page.evaluate(() => {
       const samples: { following: boolean; gap: number; rows: number }[] = [];
@@ -43,10 +52,9 @@ for (const id of ["rapid-responses", "rapid-responses-from-empty"]) {
       const sample = () => {
         const status = document.querySelector(".storybook-burst-status");
         const pane = document.querySelector<HTMLElement>(".transcript");
-        const received = Number(
-          status?.textContent?.match(/Updates (\d+)/)?.[1],
-        );
-        if (pane && received > 0)
+        // Start at form submission, not the first response: a lost follow state
+        // during Send used to escape this test entirely.
+        if (pane && (window as any).burstSubmitted)
           samples.push({
             following:
               status
@@ -57,9 +65,24 @@ for (const id of ["rapid-responses", "rapid-responses-from-empty"]) {
           });
         requestAnimationFrame(sample);
       };
+      document.querySelector("form.composer")!.addEventListener(
+        "submit",
+        () => {
+          (window as any).burstSubmitted = true;
+        },
+        { once: true },
+      );
       requestAnimationFrame(sample);
     });
-    await send(page);
+    await send(
+      page,
+      expanded
+        ? Array.from(
+            { length: 16 },
+            (_, index) => `Line ${index}: keep following the rapid stream.`,
+          ).join("\n")
+        : undefined,
+    );
     await expect.poll(() => received(page), { timeout: 15000 }).toBe(150);
     await expect(
       page.getByRole("button", { name: "Stop response", exact: true }),
@@ -67,7 +90,7 @@ for (const id of ["rapid-responses", "rapid-responses-from-empty"]) {
     await expect(page.locator("article.response").last()).toContainText(
       "Message received in the Storybook preview.",
     );
-    await expect.poll(() => gap(page)).toBeLessThan(1);
+    await expect.poll(() => gap(page)).toBeLessThan(2);
     const samples = await page.evaluate(
       () =>
         (window as any).burstSamples as {
@@ -78,7 +101,7 @@ for (const id of ["rapid-responses", "rapid-responses-from-empty"]) {
     );
     expect(samples.length).toBeGreaterThan(30);
     expect(samples.filter((sample) => !sample.following)).toEqual([]);
-    expect(Math.max(...samples.map((sample) => sample.gap))).toBeLessThan(1);
+    expect(Math.max(...samples.map((sample) => sample.gap))).toBeLessThan(2);
     expect(Math.max(...samples.map((sample) => sample.rows))).toBeLessThan(150);
     expect(errors).toEqual([]);
   });
@@ -91,7 +114,10 @@ test("rapid updates respect reading history, and Latest resumes following during
   await send(page);
   await expect.poll(() => received(page)).toBeGreaterThan(15);
   const pane = page.locator(".transcript");
-  await pane.hover();
+  const bounds = (await pane.boundingBox())!;
+  // Rows move under the pointer during the stream. Keep the wheel over the
+  // transcript margin so a lifted tool preview cannot capture the gesture.
+  await pane.hover({ position: { x: 8, y: bounds.height / 2 } });
   await page.mouse.wheel(0, -800);
   await expect(
     page.locator(".storybook-burst-status [data-following]"),

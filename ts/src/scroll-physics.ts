@@ -4,6 +4,14 @@ export type ScrollRange = { start: number; span: number };
 export const clamp = (n: number, low: number, high: number) =>
   Math.max(low, Math.min(high, n));
 
+// Heights round to integers while scrollTop stays fractional. Zoom can leave
+// more than a pixel of reported gap even after the browser clamps to its end.
+export function atScrollBottom(
+  pane: Pick<HTMLElement, "scrollHeight" | "scrollTop" | "clientHeight">,
+) {
+  return pane.scrollHeight - pane.scrollTop - pane.clientHeight <= 2;
+}
+
 // The handle maps a local window, so adding older pages cannot shrink it forever.
 export function scrollRange(
   top: number,

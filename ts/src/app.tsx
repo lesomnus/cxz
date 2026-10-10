@@ -54,6 +54,7 @@ import { useResourceInventory } from "./resource-inventory";
 import { key } from "@lesomnus/payday/store";
 import { transcriptEvents } from "./tool-activity";
 import { Transcript } from "./transcript";
+import { atScrollBottom } from "./scroll-physics";
 import { WorkspaceEditor } from "./workspace-editor";
 import { SettingsPage } from "./settings-page";
 import { RouteLink } from "./route-link";
@@ -1209,10 +1210,7 @@ function ConversationContent({ c, id }: { c: Connection; id: string }) {
         onScroll={(reading) => {
           const el = pane.current!;
           updateShadow();
-          const next =
-            !reading &&
-            !detached.current &&
-            el.scrollHeight - el.scrollTop - el.clientHeight < 1;
+          const next = !reading && !detached.current && atScrollBottom(el);
           followRef.current = next;
           setFollow(next);
         }}

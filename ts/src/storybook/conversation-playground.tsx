@@ -5,6 +5,7 @@ import { FloatingCardHost } from "../floating-card";
 import { composerPrompt } from "../composer-code";
 import { sessionCommands } from "../composer-commands";
 import { useSendMotion } from "../send-motion";
+import { atScrollBottom } from "../scroll-physics";
 import type { TurnProgress } from "../turn-progress";
 import {
   conversationEvents,
@@ -213,7 +214,7 @@ function ConversationSimulation({
           );
           // Use the application's follow decision, including wheel/drag frames.
           // The old preview only showed gesture activity and never resumed follow.
-          follow.current = !active && gap < 1;
+          follow.current = !active && atScrollBottom(el);
           setReading(!follow.current);
           if (bottomGap.current)
             bottomGap.current.value = String(Math.round(gap));
