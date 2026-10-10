@@ -152,6 +152,7 @@ export function ComponentPreview({
   sending = false,
   working = false,
   sessionStopped = false,
+  uploadMode,
   children,
 }: {
   events?: SessionEvent[];
@@ -161,6 +162,7 @@ export function ComponentPreview({
   sending?: boolean;
   working?: boolean;
   sessionStopped?: boolean;
+  uploadMode?: "ready" | "slow" | "retry";
   children?: ReactNode;
 }) {
   const pane = useRef<HTMLDivElement>(null);
@@ -176,6 +178,33 @@ export function ComponentPreview({
     alias: storySession().alias,
   });
   const identityRef = useRef(identity);
+  const attempts = useRef(new Set<string>());
+  const previewUpload = async (file: File, signal: AbortSignal) => {
+    await new Promise<void>((resolve, reject) => {
+      if (signal.aborted) {
+        reject(signal.reason);
+        return;
+      }
+      const abort = () => {
+        clearTimeout(timer);
+        reject(signal.reason);
+      };
+      const timer = setTimeout(
+        () => {
+          signal.removeEventListener("abort", abort);
+          resolve();
+        },
+        uploadMode === "slow" ? 3000 : 500,
+      );
+      signal.addEventListener("abort", abort, { once: true });
+    });
+    const key = file.name + ":" + file.size;
+    if (uploadMode === "retry" && !attempts.current.has(key)) {
+      attempts.current.add(key);
+      throw new Error("Simulated upload failure. Retry from the chip.");
+    }
+    return `/cxz/assets/storybook/upload/${file.name}`;
+  };
   const session = storySession();
   Object.assign(session, identity);
   session.agent = agent;
@@ -199,7 +228,8 @@ export function ComponentPreview({
         pastes={pastes.current}
         commands={sessionCommands(agent)}
         onSubmit={(e) => e.preventDefault()}
-        canSend={false}
+        canSend={!!uploadMode && !!value.trim() && !sending}
+        upload={uploadMode ? previewUpload : undefined}
         sending={sending}
         busy={sending}
         turn={
@@ -214,7 +244,7 @@ export function ComponentPreview({
         }
         working={active}
         interrupt={() => setStopped(true)}
-        menu={
+        menu={(pick) => (
           <SessionMenu
             session={purged ? undefined : session}
             info={{
@@ -225,6 +255,7 @@ export function ComponentPreview({
               contextWindow: 200000,
             }}
             busy={sending}
+            upload={uploadMode ? pick : undefined}
             edit={async (field, value) => {
               identityRef.current = { ...identityRef.current, [field]: value };
               setIdentity(identityRef.current);
@@ -254,7 +285,7 @@ export function ComponentPreview({
               return true;
             }}
           />
-        }
+        )}
       >
         <PreviewMetadata agent={agent} busy={sending || active} />
       </ConversationComposer>

@@ -1,6 +1,7 @@
 package webui
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"encoding/json"
@@ -19,7 +20,9 @@ import (
 	"github.com/lesomnus/cxz/internal/editor"
 	"github.com/lesomnus/cxz/resource"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
 	"google.golang.org/protobuf/proto"
 )
@@ -182,6 +185,15 @@ type browserFixture struct {
 	events       []*resource.SessionEvent
 	resolved     bool
 	transcriptDB *sql.DB
+}
+
+func (*browserFixture) Upload(stream grpc.ClientStreamingServer[resource.SessionUploadRequest, resource.SessionAttachment]) error {
+	return (&attachmentFixture{run: "run", validate: func(header *resource.SessionUploadRequest, content []byte) error {
+		if header.GetName() == "report.bin" && !bytes.Equal(content, []byte{0, 255, 13, 10}) {
+			return status.Error(codes.InvalidArgument, "binary upload fixture bytes changed")
+		}
+		return nil
+	}}).Upload(stream)
 }
 
 func (f *browserFixture) snapshot() *resource.Session {

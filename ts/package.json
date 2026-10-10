@@ -34,6 +34,7 @@
     "@bufbuild/protobuf": "2.12.1",
     "@connectrpc/connect": "2.1.2",
     "@connectrpc/connect-web": "2.1.2",
+    "@lesomnus/cxz-ui": "*",
     "@lesomnus/payday": "0.0.5",
     "@tanstack/react-router": "1.170.41",
     "@xterm/addon-fit": "0.11.0",
@@ -44,8 +45,7 @@
     "marked": "16.4.1",
     "monaco-editor": "0.55.1",
     "react": "19.2.0",
-    "react-dom": "19.2.0",
-    "@lesomnus/cxz-ui": "*"
+    "react-dom": "19.2.0"
   },
   "devDependencies": {
     "@bufbuild/protoc-gen-es": "2.13.0",
@@ -53,6 +53,7 @@
     "@playwright/test": "1.58.2",
     "@storybook/addon-docs": "10.6.1",
     "@storybook/react-vite": "10.6.1",
+    "@types/node": "24.19.2",
     "@types/react": "19.2.2",
     "@types/react-dom": "19.2.2",
     "prettier": "3.6.2",

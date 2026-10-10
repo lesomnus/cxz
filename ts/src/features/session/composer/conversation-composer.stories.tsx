@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useArgs } from "storybook/preview-api";
+import { useState } from "react";
 import {
   ComponentPreview,
   samplePaste,
@@ -71,6 +72,34 @@ export const StoppedSession: Story = {
       description: {
         story:
           "Open Session menu to resume the simulated stopped session, restart it, inspect session details or review a fake purge plan. These actions affect only this preview; no server or filesystem is used.",
+      },
+    },
+  },
+};
+
+export const FileUploads: Story = {
+  args: { uploadMode: "slow" },
+  render: function UploadPreview(args) {
+    const [value, setValue] = useState("");
+    return <ComponentPreview {...args} value={value} onChange={setValue} />;
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Drop files or folders into the editor, or open Session menu → Upload files / Upload folder. Folders retain their tree in a tar archive. Large pastes become text-file chips. Send stays disabled until every attachment finishes. Click a chip to inspect its path or remove it. This preview simulates upload acknowledgement; no server file is written and Send does not start a turn. The connected WASM sandbox exercises the real Upload RPC with in-memory files.",
+      },
+    },
+  },
+};
+export const FailedUpload: Story = {
+  ...FileUploads,
+  args: { uploadMode: "retry" },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Each filename fails once. Open its chip and choose Retry upload to finish; deleting the chip removes the send blocker. Other draft text and the caret stay editable while uploads are pending.",
       },
     },
   },

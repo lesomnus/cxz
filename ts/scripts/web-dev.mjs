@@ -2,7 +2,14 @@ import { readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, join, relative, resolve, sep } from "node:path";
 
-const routes = ["/auth/", "/cxz.", "/payday.", "/editor/", "/terminal/"];
+const routes = [
+  "/auth/",
+  "/cxz.",
+  "/payday.",
+  "/editor/",
+  "/terminal/",
+  "/attachments/",
+];
 const isGatewayPath = (path) => routes.some((route) => path.startsWith(route));
 
 async function readToken(path) {

@@ -131,7 +131,7 @@ export function resolvedCodeSyntax(
   const syntax = codeSyntax(block.syntax);
   return syntax === "auto"
     ? detectCodeSyntax(
-        expandPastes(text.slice(block.bodyStart, block.bodyEnd), pastes),
+        expandPastes(text.slice(block.bodyStart, block.bodyEnd), pastes, false),
       )
     : syntax;
 }

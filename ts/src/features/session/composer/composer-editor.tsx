@@ -1,7 +1,15 @@
 import { useTheme } from "#src/shared/theme/theme.tsx";
 import { t, translateKnown, currentLocale } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  useEffect,
+  useImperativeHandle,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type Ref,
+} from "react";
 import { flushSync } from "react-dom";
 import { Button } from "@lesomnus/cxz-ui";
 import { useFloatingCard } from "#src/features/session/cards/floating-card.tsx";
@@ -26,6 +34,7 @@ import {
 } from "./composer-code";
 import {
   createPaste,
+  createFileChip,
   MAX_PASTE_BYTES,
   MAX_PASTE_CACHE_BYTES,
   needsPasteChip,
@@ -36,6 +45,12 @@ import {
   type ComposerPaste,
   type PasteRange,
 } from "./composer-pastes";
+import { droppedFiles, pickedFiles, type PickedFile } from "./composer-files";
+import { MAX_UPLOAD_BYTES, type UploadFile } from "./composer-upload";
+
+export type ComposerEditorHandle = {
+  insertFiles: (files: readonly File[]) => void;
+};
 
 export function ComposerEditor({
   value,
@@ -46,6 +61,9 @@ export function ComposerEditor({
   commands,
   ariaLabel = t("Message"),
   placeholder = t("Continue the conversation…"),
+  editorRef,
+  upload,
+  onUploadChange,
 }: {
   value: string;
   pastes: Map<string, ComposerPaste>;
@@ -55,6 +73,9 @@ export function ComposerEditor({
   commands?: readonly ComposerCommand[];
   ariaLabel?: string;
   placeholder?: string;
+  editorRef?: Ref<ComposerEditorHandle>;
+  upload?: UploadFile;
+  onUploadChange?: () => void;
 }) {
   useLocale();
   const input = useRef<HTMLTextAreaElement>(null);
@@ -67,6 +88,13 @@ export function ComposerEditor({
   const composing = useRef(false);
   const [composition, setComposition] = useState(false);
   const [notice, setNotice] = useState("");
+  const [dragging, setDragging] = useState(false);
+  const [, refreshUploads] = useState(0);
+  const jobs = useRef(new Map<string, AbortController>());
+  const queue = useRef(Promise.resolve());
+  const mounted = useRef(true);
+  const notify = useRef(onUploadChange);
+  notify.current = onUploadChange;
   const [tabMovesFocus, setTabMovesFocus] = useState(false);
   const cursor = useRef<
     | { start: number; end: number; direction: "forward" | "backward" | "none" }
@@ -77,6 +105,91 @@ export function ComposerEditor({
   const ranges = pasteRanges(value, pastes);
   const latest = useRef({ value, replace, readOnly });
   latest.current = { value, replace, readOnly };
+  function changedUploads(paste: ComposerPaste) {
+    paste.attachment?.listeners?.forEach((listener) => listener());
+    if (!mounted.current) return;
+    refreshUploads((v) => v + 1);
+    notify.current?.();
+  }
+  function startUpload(paste: ComposerPaste) {
+    if (!upload || !paste.attachment || jobs.current.has(paste.token)) return;
+    const attachment = paste.attachment;
+    const controller = new AbortController();
+    jobs.current.set(paste.token, controller);
+    attachment.state = "uploading";
+    attachment.error = undefined;
+    changedUploads(paste);
+    const uploader = upload;
+    queue.current = queue.current.then(async () => {
+      try {
+        controller.signal.throwIfAborted();
+        const path = await uploader(
+          attachment.file,
+          AbortSignal.any([controller.signal, AbortSignal.timeout(600_000)]),
+        );
+        controller.signal.throwIfAborted();
+        attachment.path = path;
+        attachment.state = "ready";
+      } catch (error) {
+        attachment.state = "error";
+        attachment.error = controller.signal.aborted
+          ? t("Upload cancelled.")
+          : String(error instanceof Error ? error.message : error);
+      } finally {
+        jobs.current.delete(paste.token);
+        changedUploads(paste);
+      }
+    });
+  }
+  async function insertPicked(picking: Promise<PickedFile[]> | PickedFile[]) {
+    try {
+      const picked = await picking;
+      if (!mounted.current || latest.current.readOnly || !upload) return;
+      const chips = picked.map(({ file, name, directory }) => {
+        if (file.size > MAX_UPLOAD_BYTES)
+          throw new Error(t("Files are limited to 1 GiB."));
+        return createFileChip(file, name, directory);
+      });
+      if (!chips.length) return;
+      const el = input.current!;
+      const selection = wholePasteSelection(
+        pasteRanges(latest.current.value, pastes),
+        el.selectionStart,
+        el.selectionEnd,
+      );
+      for (const chip of chips) pastes.set(chip.token, chip);
+      latest.current.replace(
+        selection.start,
+        selection.end,
+        chips.map((chip) => chip.token).join("\n"),
+      );
+      setNotice("");
+      for (const chip of chips) startUpload(chip);
+    } catch (error) {
+      if (mounted.current)
+        setNotice(String(error instanceof Error ? error.message : error));
+    }
+  }
+  useImperativeHandle(editorRef, () => ({
+    insertFiles: (files) => {
+      try {
+        void insertPicked(pickedFiles(files));
+      } catch (error) {
+        setNotice(String(error instanceof Error ? error.message : error));
+      }
+    },
+  }));
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      for (const job of jobs.current.values()) job.abort();
+    };
+  }, []);
+  useEffect(() => {
+    for (const [token, controller] of jobs.current)
+      if (!value.includes(token)) controller.abort();
+  }, [value]);
   const lines = value.split("\n");
   const commandHints = useCommandSuggestions({
     value,
@@ -191,6 +304,9 @@ export function ComposerEditor({
     const el = input.current!;
     const next = value.slice(0, start) + text + value.slice(end);
     expectedEdit.current = next;
+    // Native input can commit React synchronously, including async file drops.
+    // Stage the caret before that commit so it cannot rewind the next keystroke.
+    cursor.current = { start: caret, end: selectionEnd, direction };
     el.focus({ preventScroll: true });
     el.setSelectionRange(start, end);
     // Native insertion preserves the browser's undo stack and selection behavior.
@@ -200,7 +316,6 @@ export function ComposerEditor({
       el.setRangeText(text, start, end, "end");
       onChange(next);
     }
-    cursor.current = { start: caret, end: selectionEnd, direction };
     el.setSelectionRange(caret, selectionEnd, direction);
     expectedEdit.current = undefined;
   }
@@ -234,8 +349,9 @@ export function ComposerEditor({
     input.current!.setSelectionRange(range.start, range.end);
     openCard({
       kind: "paste",
-      label: () => t("Paste source"),
+      label: () => t(range.paste.body ? "Paste source" : "Attachment"),
       title: () =>
+        range.paste.attachment?.name ??
         t("Paste · {lines} lines · {bytes}B", {
           lines: range.paste.lines,
           bytes: range.paste.bytes.toLocaleString(currentLocale()),
@@ -243,6 +359,9 @@ export function ComposerEditor({
       content: (close) => (
         <PastePreview
           paste={range.paste}
+          retry={() => {
+            if (!latest.current.readOnly) startUpload(range.paste);
+          }}
           apply={(text) => {
             // Cards are non-modal: editing behind a preview must never replace a
             // different occurrence at a stale offset.
@@ -265,6 +384,24 @@ export function ComposerEditor({
         data-composing={composition}
         data-decorated={decorated}
         data-command-open={commandHints.open}
+        data-file-drag={dragging}
+        onDragOver={(event) => {
+          if (!event.dataTransfer.types.includes("Files")) return;
+          event.preventDefault();
+          event.dataTransfer.dropEffect = upload && !readOnly ? "copy" : "none";
+          setDragging(!!upload && !readOnly);
+        }}
+        onDragLeave={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget as Node | null))
+            setDragging(false);
+        }}
+        onDrop={(event) => {
+          if (!event.dataTransfer.types.includes("Files")) return;
+          event.preventDefault();
+          setDragging(false);
+          if (!readOnly && upload)
+            void insertPicked(droppedFiles(event.dataTransfer));
+        }}
         style={{
           fontFamily: editorSettings.fontFamily,
           tabSize: editorSettings.tabSize,
@@ -352,6 +489,13 @@ export function ComposerEditor({
                 return;
               }
               const text = event.clipboardData.getData("text/plain");
+              if (upload && event.clipboardData.files.length) {
+                event.preventDefault();
+                void insertPicked(
+                  pickedFiles(Array.from(event.clipboardData.files)),
+                );
+                return;
+              }
               if (!text) return;
               const selection = normalizedSelection();
               if (!needsPasteChip(text)) return;
@@ -371,15 +515,30 @@ export function ComposerEditor({
               }
               if (
                 paste.bytes +
-                  [...pastes.values()].reduce((sum, p) => sum + p.bytes, 0) >
+                  [...pastes.values()].reduce(
+                    (sum, p) => sum + (p.body ? p.bytes : 0),
+                    0,
+                  ) >
                 MAX_PASTE_CACHE_BYTES
               ) {
                 setNotice("Paste storage has reached 32 MiB.");
                 return;
               }
+              if (upload) {
+                const id = paste.token.slice(7, 15);
+                const file = new File([text], `paste-${id}.txt`, {
+                  type: "text/plain",
+                });
+                paste = {
+                  ...createFileChip(file, file.name),
+                  body: text,
+                  lines: paste.lines,
+                };
+              }
               pastes.set(paste.token, paste);
               setNotice("");
               replace(selection.start, selection.end, paste.token);
+              if (upload) startUpload(paste);
             }}
             onCopy={(event) => {
               const selection = normalizedSelection();
@@ -634,13 +793,26 @@ export function ComposerEditor({
                     fragment,
                     <span
                       className="paste-chip"
+                      data-upload-state={range.paste.attachment?.state}
                       role="button"
                       tabIndex={0}
-                      aria-label={t(
-                        "View paste source: {lines} lines, {bytes} bytes",
-                        { lines: range.paste.lines, bytes: range.paste.bytes },
-                      )}
-                      title={t("View source · Ctrl+P")}
+                      aria-label={
+                        range.paste.attachment
+                          ? `${range.paste.attachment.name} · ${t(range.paste.attachment.state === "uploading" ? "Uploading…" : range.paste.attachment.state === "error" ? "Upload failed." : "Attachment")}`
+                          : t(
+                              "View paste source: {lines} lines, {bytes} bytes",
+                              {
+                                lines: range.paste.lines,
+                                bytes: range.paste.bytes,
+                              },
+                            )
+                      }
+                      title={
+                        range.paste.attachment?.error ??
+                        (range.paste.attachment?.state === "uploading"
+                          ? t("Uploading…")
+                          : t("View source · Ctrl+P"))
+                      }
                       key={range.start}
                       onClick={() => showPreview(range)}
                       onKeyDown={(event) => {
@@ -758,23 +930,59 @@ function tokenSpans(tokens: CodeToken[], start: number, end: number) {
 function PastePreview({
   paste,
   apply,
+  retry,
 }: {
   paste: ComposerPaste;
   apply: (text: string) => boolean;
+  retry: () => void;
 }) {
   useLocale();
   const [stale, setStale] = useState(false);
+  const [, refresh] = useState(0);
+  useEffect(() => {
+    if (!paste.attachment) return;
+    const listeners = (paste.attachment.listeners ??= new Set());
+    const listener = () => refresh((v) => v + 1);
+    listeners.add(listener);
+    return () => {
+      listeners.delete(listener);
+    };
+  }, [paste]);
   return (
     <>
-      <pre>{paste.body}</pre>
+      {paste.attachment && (
+        <p className="attachment-info">
+          {paste.attachment.name} ·{" "}
+          {paste.bytes.toLocaleString(currentLocale())} B
+          {paste.attachment.state === "uploading" && (
+            <span role="status"> · {t("Uploading…")}</span>
+          )}
+          {paste.attachment.error && (
+            <span role="alert"> · {paste.attachment.error}</span>
+          )}
+        </p>
+      )}
+      {paste.attachment?.path && (
+        <p className="attachment-info">
+          <code>{paste.attachment.path}</code>
+        </p>
+      )}
+      {paste.body && <pre>{paste.body}</pre>}
       <div className="buttons">
-        <Button
-          type="button"
-          disabled={stale}
-          onClick={() => setStale(!apply(paste.body))}
-        >
-          {t("Expand source")}
-        </Button>
+        {paste.attachment?.state === "error" && (
+          <Button type="button" onClick={retry}>
+            {t("Retry upload")}
+          </Button>
+        )}
+        {paste.body && (
+          <Button
+            type="button"
+            disabled={stale}
+            onClick={() => setStale(!apply(paste.body))}
+          >
+            {t("Expand source")}
+          </Button>
+        )}
         <Button
           type="button"
           disabled={stale}

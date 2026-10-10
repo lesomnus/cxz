@@ -1,5 +1,19 @@
 import type { LanguagePack } from "#src/shared/i18n/i18n.ts";
 export const messages = {
+  "Upload files": "파일 업로드",
+  "Upload folder": "폴더 업로드",
+  Attachment: "첨부 파일",
+  "Uploading…": "업로드 중…",
+  "Upload failed.": "업로드 실패",
+  "Upload cancelled.": "업로드가 취소되었습니다.",
+  "Retry upload": "업로드 재시도",
+  "Files are limited to 1 GiB.": "파일은 1 GiB까지 업로드할 수 있습니다.",
+  "Folders are limited to 10,000 entries.":
+    "폴더는 항목 10,000개까지 업로드할 수 있습니다.",
+  "Invalid upload filename.": "올바르지 않은 업로드 파일명입니다.",
+  "Duplicate upload filename.": "중복된 업로드 파일명입니다.",
+  "Wait for uploads to finish, or remove the failed chip.":
+    "업로드 완료를 기다리거나 실패한 chip을 지워주세요.",
   "Expand question": "질문 확대",
   "Collapse question": "질문 축소",
   Controls: "상태 관리",

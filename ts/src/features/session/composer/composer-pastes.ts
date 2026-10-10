@@ -3,6 +3,15 @@ export type ComposerPaste = {
   body: string;
   lines: number;
   bytes: number;
+  attachment?: {
+    file: File;
+    name: string;
+    directory?: boolean;
+    state: "uploading" | "ready" | "error";
+    path?: string;
+    error?: string;
+    listeners?: Set<() => void>;
+  };
 };
 export type PasteRange = {
   start: number;
@@ -35,7 +44,9 @@ export function createPaste(text: string, id: string): ComposerPaste {
 
 export function pasteRanges(text: string, pastes: Map<string, ComposerPaste>) {
   const ranges: PasteRange[] = [];
-  for (const match of text.matchAll(/\[Paste [0-9a-f]{8} · \d+L · \d+B\]/g)) {
+  for (const match of text.matchAll(
+    /\[(?:Paste [0-9a-f]{8} · \d+L · \d+B|File [0-9a-f]{8} · [^\]\r\n]+)\]/g,
+  )) {
     const paste = pastes.get(match[0]);
     if (paste)
       ranges.push({
@@ -48,14 +59,50 @@ export function pasteRanges(text: string, pastes: Map<string, ComposerPaste>) {
 }
 
 // One pass: original pasted text can itself contain a label from another chip.
-export function expandPastes(text: string, pastes: Map<string, ComposerPaste>) {
+export function expandPastes(
+  text: string,
+  pastes: Map<string, ComposerPaste>,
+  attachmentPaths = true,
+) {
   let result = "",
     offset = 0;
   for (const range of pasteRanges(text, pastes)) {
-    result += text.slice(offset, range.start) + range.paste.body;
+    const attachment = range.paste.attachment;
+    const body =
+      attachmentPaths && attachment?.path
+        ? attachment.directory
+          ? `[Attached directory archive: ${attachment.path} — extract this tar archive to read the directory contents]`
+          : `[Attached file: ${attachment.path} — read this file for the full content]`
+        : range.paste.body;
+    result += text.slice(offset, range.start) + body;
     offset = range.end;
   }
   return result + text.slice(offset);
+}
+
+export function attachmentsReady(
+  text: string,
+  pastes: Map<string, ComposerPaste>,
+) {
+  return pasteRanges(text, pastes).every(
+    ({ paste }) => !paste.attachment || paste.attachment.state === "ready",
+  );
+}
+
+export function createFileChip(
+  file: File,
+  name: string,
+  directory = false,
+): ComposerPaste {
+  const id = crypto.randomUUID().replaceAll("-", "").slice(0, 8);
+  const label = name.replace(/[\[\]\r\n\x00-\x1f\x7f]/g, "_");
+  return {
+    token: `[File ${id} · ${label}]`,
+    body: "",
+    lines: 0,
+    bytes: file.size,
+    attachment: { file, name, directory, state: "uploading" },
+  };
 }
 
 export function wholePasteSelection(

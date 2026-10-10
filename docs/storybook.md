@@ -104,3 +104,9 @@ npm run storybook:ui
 별도의 UI Storybook은 앱 전역 CSS와 설정·언어 저장소 없이 패키지를 검증합니다. 앱 Storybook은 실제 제품 화면 안에서의 조합을 검증합니다. 패키지 설치·테마·번역·에디터 사용법은 [UI README](../ts/packages/ui/README.md)를 참조하세요. 배포용 CSS와 타입 선언은 빌드 결과이며 git에 저장하지 않습니다.
 
 소스의 역할별 분류와 파일 배치 기준은 [웹 소스 구조](web-structure.md)에 정리되어 있습니다.
+
+`Conversation/Composer`의 `FileUploads`, `FailedUpload`는 파일·폴더 드롭과
+toolbar의 파일·폴더 선택, 큰 붙여넣기, 업로드 대기 중 편집·전송 차단,
+chip 상세·삭제·재시도를 보여줍니다. Storybook은 업로드 응답만 흉내 내며 파일을
+서버에 저장하지 않습니다. 실제 `Session.Upload` 연결은 WASM sandbox의 메모리
+파일과 인증된 gateway 브라우저 fixture에서 검증합니다.

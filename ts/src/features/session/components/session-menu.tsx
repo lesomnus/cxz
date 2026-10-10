@@ -22,6 +22,7 @@ export type SessionMenuProps = {
   previewPurge: () => Promise<SessionPurgeReply | undefined>;
   purge: () => Promise<boolean>;
   edit: (field: SessionField, value: string) => Promise<Session>;
+  upload?: (directory?: boolean) => void;
 };
 
 export function SessionMenu({
@@ -32,6 +33,7 @@ export function SessionMenu({
   previewPurge,
   purge,
   edit,
+  upload,
 }: SessionMenuProps) {
   useLocale();
   const open = useFloatingCard();
@@ -93,6 +95,22 @@ export function SessionMenu({
           {
             label: "",
             items: [
+              ...(upload
+                ? [
+                    {
+                      label: t("Upload files"),
+                      icon: <SessionActionIcon action="upload" />,
+                      disabled: busy || !session?.status?.runId,
+                      run: () => upload(),
+                    },
+                    {
+                      label: t("Upload folder"),
+                      icon: <SessionActionIcon action="folder" />,
+                      disabled: busy || !session?.status?.runId,
+                      run: () => upload(true),
+                    },
+                  ]
+                : []),
               {
                 label: t("Details"),
                 icon: <SessionActionIcon action="details" />,
@@ -195,7 +213,14 @@ export function SessionMenu({
 function SessionActionIcon({
   action,
 }: {
-  action: "stop" | "resume" | "restart" | "purge" | "details";
+  action:
+    | "stop"
+    | "resume"
+    | "restart"
+    | "purge"
+    | "details"
+    | "upload"
+    | "folder";
 }) {
   return (
     <svg
@@ -226,6 +251,10 @@ function SessionActionIcon({
           <circle cx="8" cy="8" r="5.5" />
           <path d="M8 7.5v3M8 5.2v.1" />
         </>
+      )}
+      {action === "upload" && <path d="M8 11V2m-3 3 3-3 3 3M3 10v4h10v-4" />}
+      {action === "folder" && (
+        <path d="M2 4h5l1.5 2H14v7H2ZM8 11V7m-2 2 2-2 2 2" />
       )}
     </svg>
   );

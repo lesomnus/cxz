@@ -1739,6 +1739,20 @@ pre {
   outline: none;
   color: var(--shade-255);
 }
+.composer-editor[data-file-drag="true"] {
+  background: var(--shade-40);
+  outline: 1px solid var(--shade-120);
+  outline-offset: -1px;
+}
+.paste-chip[data-upload-state="uploading"] {
+  color: var(--shade-150);
+}
+.paste-chip[data-upload-state="error"] {
+  outline: 1px solid var(--shade-120);
+}
+.attachment-info {
+  overflow-wrap: anywhere;
+}
 .composer-editor[data-composing="true"] textarea {
   color: inherit;
 }

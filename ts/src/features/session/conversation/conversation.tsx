@@ -59,6 +59,8 @@ import { key } from "@lesomnus/payday/store";
 import { transcriptEvents } from "#src/features/session/model/tool-activity.ts";
 import { Transcript } from "./transcript";
 import { atScrollBottom } from "./scroll-physics";
+import { uploadFile } from "#src/features/session/composer/composer-upload.ts";
+import { attachmentsReady } from "#src/features/session/composer/composer-pastes.ts";
 
 type ConversationProps = { c: Connection; id: string; projects: Project[] };
 
@@ -641,6 +643,10 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
   async function send(e: React.FormEvent) {
     e.preventDefault();
     if (!draft.trim()) return;
+    if (!attachmentsReady(draft, c.pastes)) {
+      setError(t("Wait for uploads to finish, or remove the failed chip."));
+      return;
+    }
     const sent = draft;
     const clearCommand = () => {
       if (c.drafts.get(id) === sent) c.drafts.set(id, "");
@@ -829,11 +835,17 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         terminalVisible={terminalVisible}
         terminalAvailable={!!s?.project?.id.length}
         onTerminal={() => showTerminal(!terminalVisibleRef.current)}
-        menu={
+        upload={
+          s?.status?.runId
+            ? (file, signal) => uploadFile(c, id, s.status!.runId, file, signal)
+            : undefined
+        }
+        menu={(pick) => (
           <SessionMenu
             session={s && { ...s, project: sessionProject ?? s.project }}
             info={info}
             busy={busy}
+            upload={pick}
             edit={async (field, value) => {
               const updated = await editSession(c.sessions, id, field, value);
               c.store.apply("cxz.Session", [
@@ -876,7 +888,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
               })
             }
           />
-        }
+        )}
       >
         <ModelSettings
           session={s}

@@ -1,13 +1,21 @@
-import { useId, type FormEventHandler, type ReactNode, type Ref } from "react";
+import {
+  useId,
+  useRef,
+  useState,
+  type FormEventHandler,
+  type ReactNode,
+  type Ref,
+} from "react";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { Button } from "@lesomnus/cxz-ui";
 import { ComposerAurora } from "./composer-aurora";
 import { TurnControls } from "./turn-controls";
 import type { TurnProgress } from "#src/features/session/model/turn-progress.ts";
-import { ComposerEditor } from "./composer-editor";
+import { ComposerEditor, type ComposerEditorHandle } from "./composer-editor";
 import type { ComposerCommand } from "./composer-commands";
-import type { ComposerPaste } from "./composer-pastes";
+import { attachmentsReady, type ComposerPaste } from "./composer-pastes";
+import type { UploadFile } from "./composer-upload";
 
 // Presentation shared by the connected conversation and serverless UI previews.
 export function ConversationComposer({
@@ -30,6 +38,7 @@ export function ConversationComposer({
   terminalAvailable = false,
   onTerminal,
   menu,
+  upload,
   children,
 }: {
   formRef?: Ref<HTMLFormElement>;
@@ -50,14 +59,63 @@ export function ConversationComposer({
   terminalVisible?: boolean;
   terminalAvailable?: boolean;
   onTerminal?: () => void;
-  menu?: ReactNode;
+  menu?: ReactNode | ((pick: (directory?: boolean) => void) => ReactNode);
+  upload?: UploadFile;
   children?: ReactNode;
 }) {
   useLocale();
   const terminalHint = useId();
   const sendHint = useId();
+  const editor = useRef<ComposerEditorHandle>(null);
+  const files = useRef<HTMLInputElement>(null);
+  const directory = useRef<HTMLInputElement>(null);
+  const [, refreshUploads] = useState(0);
+  const ready = attachmentsReady(draft, pastes);
+  const pick = (folder = false) => {
+    if (!sending && upload) (folder ? directory : files).current?.click();
+  };
   return (
-    <form ref={formRef} className="composer" onSubmit={onSubmit}>
+    <form
+      ref={formRef}
+      className="composer"
+      onSubmit={(event) => {
+        if (!ready) event.preventDefault();
+        else onSubmit(event);
+      }}
+    >
+      {upload && (
+        <>
+          <input
+            type="file"
+            ref={files}
+            hidden
+            multiple
+            aria-label={t("Upload files")}
+            onChange={(event) => {
+              editor.current?.insertFiles(
+                Array.from(event.currentTarget.files ?? []),
+              );
+              event.currentTarget.value = "";
+            }}
+          />
+          <input
+            type="file"
+            hidden
+            multiple
+            aria-label={t("Upload folder")}
+            ref={(node) => {
+              directory.current = node;
+              node?.setAttribute("webkitdirectory", "");
+            }}
+            onChange={(event) => {
+              editor.current?.insertFiles(
+                Array.from(event.currentTarget.files ?? []),
+              );
+              event.currentTarget.value = "";
+            }}
+          />
+        </>
+      )}
       <div className="composer-wrapper">
         <ComposerAurora active={working} />
         <div className="composer-toolbar">
@@ -89,7 +147,7 @@ export function ConversationComposer({
               </svg>
             </Button>
           </span>
-          {menu}
+          {typeof menu === "function" ? menu(pick) : menu}
           <span className="terminal-control">
             <Button
               className="toolbar-button terminal-toggle"
@@ -126,7 +184,7 @@ export function ConversationComposer({
               aria-label={t("Send")}
               aria-keyshortcuts="Control+Enter"
               aria-describedby={sendHint}
-              disabled={!canSend}
+              disabled={!canSend || !ready}
             >
               <svg
                 width="18"
@@ -160,6 +218,9 @@ export function ConversationComposer({
             pastes={pastes}
             canSend={canSend}
             commands={commands}
+            editorRef={editor}
+            upload={upload}
+            onUploadChange={() => refreshUploads((value) => value + 1)}
           />
         </div>
       </div>

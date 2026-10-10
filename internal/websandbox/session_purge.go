@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"slices"
+	"strings"
 
 	"github.com/lesomnus/cxz/resource"
 	"google.golang.org/protobuf/proto"
@@ -29,6 +30,12 @@ func (x *Sessions) Purge(_ context.Context, r *resource.SessionPurgeRequest) (*r
 	}.Build()
 	if !r.GetDryRun() {
 		s.cancelTurn(st)
+		for path, upload := range s.uploads {
+			if strings.HasPrefix(path, "/cxz/assets/"+st.value.GetRuntimeId()+"/") {
+				s.uploadBytes -= int64(len(upload.content))
+				delete(s.uploads, path)
+			}
+		}
 		s.sessions = slices.DeleteFunc(s.sessions, func(candidate *session) bool { return candidate == st })
 		s.rev++
 	}

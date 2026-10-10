@@ -24,14 +24,17 @@ import (
 const maxEvents = 3000
 
 type Server struct {
-	mu       sync.Mutex
-	projects []*resource.Project
-	sessions []*session
-	seed     uint64
-	delay    time.Duration
-	rev      uint64
-	ctx      context.Context
-	cancel   context.CancelFunc
+	mu             sync.Mutex
+	projects       []*resource.Project
+	sessions       []*session
+	seed           uint64
+	delay          time.Duration
+	rev            uint64
+	ctx            context.Context
+	cancel         context.CancelFunc
+	uploads        map[string]sandboxAttachment
+	uploadSequence uint64
+	uploadBytes    int64
 }
 type session struct {
 	value      *resource.Session

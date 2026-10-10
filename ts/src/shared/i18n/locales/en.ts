@@ -1,5 +1,19 @@
 // English source messages are always bundled; other packs load on demand.
 export const messages = {
+  "Upload files": "Upload files",
+  "Upload folder": "Upload folder",
+  Attachment: "Attachment",
+  "Uploading…": "Uploading…",
+  "Upload failed.": "Upload failed.",
+  "Upload cancelled.": "Upload cancelled.",
+  "Retry upload": "Retry upload",
+  "Files are limited to 1 GiB.": "Files are limited to 1 GiB.",
+  "Folders are limited to 10,000 entries.":
+    "Folders are limited to 10,000 entries.",
+  "Invalid upload filename.": "Invalid upload filename.",
+  "Duplicate upload filename.": "Duplicate upload filename.",
+  "Wait for uploads to finish, or remove the failed chip.":
+    "Wait for uploads to finish, or remove the failed chip.",
   Controls: "Controls",
   "Expand question": "Expand question",
   "Collapse question": "Collapse question",

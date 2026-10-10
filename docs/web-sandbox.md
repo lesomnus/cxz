@@ -312,7 +312,8 @@ them to indentation. IME composition and modified Ctrl/Alt/Meta+Tab are left to
 the browser. Question Other answers share the same controls.
 
 Drafts remain native Markdown, preserving selection, Undo/Redo and session draft
-restoration. Sending expands code's paste chips before detection, replaces Auto with the detected
+restoration. Syntax detection reads a paste chip's original source, while sending
+uses the uploaded path for an attachment. Sending replaces Auto with the detected
 syntax name (or plaintext when detection is inconclusive), canonicalizes common
 language aliases and finishes an unclosed fence. Surrounding prose and code body
 bytes remain intact. Question Other answers use the same editor and serialization.
@@ -336,13 +337,42 @@ press Enter, or use Ctrl+P to preview the original; the preview can remove that
 occurrence or expand it into editable text. Backspace/Delete removes a whole
 chip. If the draft changes while its preview is open, expansion/deletion is
 blocked and asks you to reopen the chip, avoiding replacement at a stale offset.
-Sending and copying expand chips to original text in one pass, preserving
-whitespace; short pastes remain ordinary text. Drafts and paste bodies stay in
-the authenticated connection's memory across session navigation, and are lost
-on page reload, sign-out or sandbox Reset. Each paste is limited to 1 MiB, with
-a 32 MiB connection cache. Paste insertion/removal uses native undo when the
-browser supports `insertText`, with a `setRangeText` fallback. IME composition
-retains the native textarea and cannot trigger Ctrl+Enter submission.
+In the connected conversation, large pastes upload a text file and become a
+filename chip. File or directory drops and Session menu's Upload files / Upload
+folder actions use the same attachment flow. A directory becomes a tar archive
+preserving nested paths, Unicode filenames and empty directories when dropping.
+Directory traversal drains all `readEntries` pages. The native folder picker
+provides the files and relative paths exposed by the browser. Uploaded chips
+expand to attachment paths with an instruction to read the file or unpack the
+directory archive; the original bytes are not embedded again in the prompt.
+Short pastes remain ordinary text. Question Other editors retain their inline
+paste expansion because they submit textual answers rather than conversation
+attachments.
+
+Uploads are queued, and Send is blocked while a referenced chip is pending or
+failed. Preview a chip to inspect its path, retry a failed upload, delete that
+occurrence or expand a text paste. The draft and caret stay editable while an
+upload runs. Removing its last occurrence or leaving the editor cancels pending
+work. Completed files remain attached to the session; deleting a chip does not
+delete the uploaded file. Drafts, source previews and retry file handles stay in
+the authenticated connection's memory across navigation and disappear on page
+reload, sign-out or sandbox Reset.
+
+The authenticated HTTP `/attachments/{session}` endpoint streams a raw body to
+the existing `Session.Upload` RPC. It reuses login/origin checks, revoked-session
+cancellation and the Manager's run validation, byte limits and storage mount.
+Vite forwards this route to the host gateway. The sandbox calls Upload through
+its in-process transport and stores simulated files only in memory; Download
+can read them in the owning project, and Purge releases them. Real uploads use
+the existing container-readable `/cxz/assets` attachment mount and survive until
+session purge. Uploads do not alter workspace files or add transcript events.
+Implementation limits live in `composer-files.ts`, `composer-pastes.ts`,
+`composer-upload.ts` and the server attachment implementation.
+
+Paste insertion/removal uses native undo when the browser supports `insertText`,
+with a `setRangeText` fallback. IME composition retains the native textarea and
+cannot trigger Ctrl+Enter submission. The directory API's paged-reading contract
+is documented in the [File and Directory Entries specification](https://wicg.github.io/entries-api/#dom-filesystemdirectoryreader-readentries).
 
 Fake history and remembered send IDs are bounded by the simulator. Client rendering
 uses the regular bounded cache and visible-message overscan from

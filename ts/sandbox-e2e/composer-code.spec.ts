@@ -235,7 +235,10 @@ test("multiple blocks, paste chips, highlighting and native line geometry stay a
   await page.getByRole("button", { name: "Send", exact: true }).click();
   await expect(
     page.locator("article.input .message-body").last(),
-  ).toContainText("```json\n" + body + "\n```");
+  ).toContainText("```json\n[Attached file: /cxz/assets/");
+  await expect(
+    page.locator("article.input .message-body").last(),
+  ).toContainText("read this file for the full content]\n```");
 });
 
 test("unfinished code blocks are completed on send without changing draft source", async ({
