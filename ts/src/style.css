@@ -994,6 +994,7 @@ header strong {
   position: relative;
   padding: 12px;
   border-radius: 8px;
+  background: var(--background);
 }
 .response:hover {
   background: var(--shade-27);
@@ -2086,14 +2087,13 @@ pre {
   grid-template-rows: 0fr;
   border-radius: calc(2 * var(--space));
   line-height: var(--activity-card-line-height);
-  background: color-mix(in srgb, var(--shade-27) 62%, transparent);
+  background: var(--shade-27);
   transform-origin: center top;
   transform: perspective(var(--activity-card-perspective))
     rotateX(var(--activity-card-tilt));
   transition:
     grid-template-rows var(--activity-card-duration) ease-out,
-    transform var(--activity-card-duration) ease-out,
-    background-color var(--activity-card-duration) ease-out;
+    transform var(--activity-card-duration) ease-out;
 }
 .transcript-row[data-activity="true"] .activity-card-content,
 .activity-card-preview .activity-card-content {
@@ -2111,7 +2111,6 @@ pre {
 .activity-card-preview[data-unfolded="true"] .activity-card-face {
   grid-template-rows: 1fr;
   transform: perspective(var(--activity-card-perspective)) rotateX(0deg);
-  background: color-mix(in srgb, var(--shade-27) 86%, transparent);
 }
 .transcript-row[data-latest-activity="true"] .activity-card-face {
   grid-template-rows: 1fr;
