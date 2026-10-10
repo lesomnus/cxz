@@ -260,10 +260,10 @@ test("pending questions stay dimmed behind previews and only lift for a taller c
   await expect(
     question.getByText("Which environment?", { exact: true }),
   ).toBeVisible();
-  await expect(question).toHaveCSS("border-top-width", "0px");
+  await expect(question).toHaveCSS("border-top-width", "1px");
   await expect(question.locator(".question-body")).toHaveCSS(
     "border-top-width",
-    "1px",
+    "0px",
   );
   await expect(question).toHaveCSS("backdrop-filter", "blur(24px)");
   await expect(question.locator(".card-close")).toHaveCount(0);

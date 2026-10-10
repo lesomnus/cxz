@@ -3425,7 +3425,7 @@ summary:hover {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding: var(--space);
+  padding: var(--space) 0;
   gap: var(--space);
 }
 .question-card .tab-list {
@@ -3525,7 +3525,7 @@ summary:hover {
   --question-blur: var(--dropdown-blur);
   --question-tab-width: 64px;
   --question-tab-icon-width: 20px;
-  border: 0;
+  border: var(--card-border-width) solid var(--shade-54);
   background: var(--question-background);
   -webkit-backdrop-filter: blur(var(--question-blur));
   backdrop-filter: blur(var(--question-blur));
@@ -3534,7 +3534,7 @@ summary:hover {
 .question-header,
 .question-footer {
   flex-shrink: 0;
-  padding: 0;
+  padding: 0 var(--space);
 }
 .question-header {
   overflow-x: auto;
@@ -3544,15 +3544,15 @@ summary:hover {
   border-radius: max(0px, calc(var(--card-radius) - var(--space)));
 }
 .question-body {
-  --question-body-radius: max(0px, calc(var(--card-radius) - var(--space)));
+  --question-body-radius: var(--card-radius);
   --card-inner-radius: max(
     0px,
-    calc(var(--question-body-radius) - var(--card-border-width) - var(--space))
+    calc(var(--question-body-radius) - var(--space))
   );
   padding: var(--space);
-  border: var(--card-border-width) solid var(--shade-54);
+  border: 0;
   border-radius: var(--question-body-radius);
-  background: var(--shade-20);
+  background: var(--shade-28);
 }
 .question-card .tab-list [role="tab"] {
   width: var(--question-tab-width);
