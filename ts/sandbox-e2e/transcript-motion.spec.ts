@@ -166,6 +166,119 @@ test("live additions glide existing rows and reveal new cards faster without cha
     .toBeLessThan(0);
 });
 
+test("automatic following lets work and response arrivals play through in real time", async ({
+  page,
+}) => {
+  await ready(page);
+  await page.evaluate(() => {
+    const result = { entrances: [] as any[], shifts: [] as any[] };
+    (window as any).liveMotionProbe = result;
+    function track(animation: Animation, node: HTMLElement, entries: any[]) {
+      const entry = {
+        kind: node.className,
+        duration: Number(animation.effect!.getTiming().duration),
+        endAfter: undefined as number | undefined,
+        samples: [] as { elapsed: number; y: number; opacity: number }[],
+      };
+      const began = performance.now();
+      entries.push(entry);
+      const ended = () => {
+        entry.endAfter = performance.now() - began;
+      };
+      void animation.finished.then(ended, ended);
+      const sample = () => {
+        const style = getComputedStyle(node);
+        entry.samples.push({
+          elapsed: performance.now() - began,
+          y: new DOMMatrix(style.transform).m42,
+          opacity: Number(style.opacity),
+        });
+        if (entry.endAfter === undefined) requestAnimationFrame(sample);
+      };
+      requestAnimationFrame(sample);
+    }
+    const original = Element.prototype.animate;
+    Element.prototype.animate = function (...args) {
+      const animation = original.apply(this, args);
+      if (this instanceof HTMLElement && this.dataset.row)
+        track(animation, this, result.shifts);
+      return animation;
+    };
+    new MutationObserver((records) => {
+      for (const record of records) {
+        const row = record.target as HTMLElement;
+        if (!row.hasAttribute("data-live-arrival")) continue;
+        const card = row.firstElementChild as HTMLElement;
+        const animation = card
+          .getAnimations()
+          .find(
+            (a) =>
+              a instanceof CSSAnimation &&
+              a.animationName === "transcript-enter",
+          );
+        if (animation) track(animation, card, result.entrances);
+      }
+    }).observe(document.querySelector(".virtual-messages")!, {
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["data-live-arrival"],
+    });
+  });
+  await page
+    .getByRole("textbox", { name: "Message", exact: true })
+    .fill("Check natural motion");
+  await page.getByRole("button", { name: "Send", exact: true }).click();
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        (window as any).liveMotionProbe.entrances.some(
+          (entry: any) =>
+            entry.kind.includes("response") && entry.endAfter !== undefined,
+        ),
+      ),
+    )
+    .toBe(true);
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        (window as any).liveMotionProbe.shifts.some(
+          (entry: any) => entry.endAfter >= 450,
+        ),
+      ),
+    )
+    .toBe(true);
+  const result = await page.evaluate(() => (window as any).liveMotionProbe);
+  const cards = result.entrances.filter(
+    (entry: any) =>
+      entry.kind.includes("event-detail") || entry.kind.includes("response"),
+  );
+  expect(cards.some((entry: any) => entry.kind.includes("event-detail"))).toBe(
+    true,
+  );
+  expect(cards.some((entry: any) => entry.kind.includes("response"))).toBe(
+    true,
+  );
+  for (const card of cards) {
+    expect(card.endAfter).toBeGreaterThanOrEqual(card.duration - 50);
+    expect(
+      card.samples.some(
+        (sample: any) =>
+          sample.elapsed > 80 &&
+          sample.elapsed < 220 &&
+          sample.y > 1 &&
+          sample.opacity < 0.99,
+      ),
+    ).toBe(true);
+  }
+  expect(
+    result.shifts.some((entry: any) =>
+      entry.samples.some(
+        (sample: any) => sample.elapsed > 200 && Math.abs(sample.y) > 1,
+      ),
+    ),
+  ).toBe(true);
+});
+
 test("reading history and reduced motion do not replay arrivals or displace the reading anchor", async ({
   page,
 }) => {

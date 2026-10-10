@@ -84,17 +84,21 @@ export function useTranscriptMotion({
       "touchstart",
       "pointerdown",
       "scroll-jump",
-      "reading-move",
     ];
     for (const name of navigationEvents)
       el.addEventListener(name, navigate, { passive: true });
     el.addEventListener("scroll", scroll);
+    // Transcript also publishes reading-move for native scroll events caused
+    // by automatic following. Apply the same saved-position check here; treating
+    // every notification as navigation cancels arrivals on their first frame.
+    el.addEventListener("reading-move", scroll);
     reduced.addEventListener("change", changed);
     return () => {
       stop();
       for (const name of navigationEvents)
         el.removeEventListener(name, navigate);
       el.removeEventListener("scroll", scroll);
+      el.removeEventListener("reading-move", scroll);
       reduced.removeEventListener("change", changed);
     };
   }, []);
