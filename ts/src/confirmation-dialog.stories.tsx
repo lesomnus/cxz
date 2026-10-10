@@ -20,7 +20,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "A modal confirmation dialog using the shared card surface, with padded header/body/footer, a distinct rounded body and minimum-width actions. Confirm is on the left and Cancel on the right; focus starts on Cancel and stays inside. Escape or a backdrop click cancels. The footer stays outside the scrollable body. While an action runs, duplicate execution and dismissal are disabled. Failure keeps the dialog open for retry.",
+          "A modal confirmation dialog using the shared card surface, with padded header/body/footer, a distinct rounded body flush with the card sides and minimum-width actions. The footer uses tighter padding; buttons have transparent default surfaces and hover backgrounds. Confirm is on the left and Cancel on the right; focus starts on Cancel and stays inside. Escape or a backdrop click cancels. The footer stays outside the scrollable body. While an action runs, duplicate execution and dismissal are disabled. Failure keeps the dialog open for retry.",
       },
     },
   },

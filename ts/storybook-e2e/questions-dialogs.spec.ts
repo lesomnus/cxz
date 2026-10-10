@@ -22,7 +22,16 @@ test("confirmation dialog traps focus, cancels without acting and fits a small v
   const heading = (await dialog.locator(".card-heading strong").boundingBox())!;
   const text = (await dialog.locator(".card-body p").boundingBox())!;
   expect(text.x).toBeCloseTo(heading.x, 0);
-  expect(confirmBounds.x).toBeCloseTo(heading.x, 0);
+  expect(confirmBounds.x).toBeLessThan(heading.x);
+  const cardBounds = (await dialog.locator(".floating-card").boundingBox())!;
+  const bodyBounds = (await dialog.locator(".card-body").boundingBox())!;
+  expect(bodyBounds.x - cardBounds.x).toBeLessThanOrEqual(1);
+  expect(cardBounds.width - bodyBounds.width).toBeLessThanOrEqual(2);
+  await expect(confirm).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await confirm.hover();
+  await expect(confirm).not.toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await cancel.hover();
+  await expect(confirm).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
   expect(
     await dialog
       .locator(".card-body")

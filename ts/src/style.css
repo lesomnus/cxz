@@ -3386,10 +3386,13 @@ summary:hover {
   flex-shrink: 0;
   padding: var(--confirmation-padding);
 }
+.confirmation-dialog .card-footer {
+  padding: calc(2 * var(--space));
+}
 .confirmation-dialog .card-body {
-  margin: 0 var(--space);
-  padding: calc(var(--confirmation-padding) - var(--space));
-  border-radius: var(--card-inner-radius);
+  margin: 0;
+  padding: var(--confirmation-padding);
+  border-radius: max(0px, calc(var(--card-radius) - var(--card-border-width)));
   background: var(--shade-28);
 }
 .confirmation-dialog .card-body > :first-child,
@@ -3407,7 +3410,7 @@ summary:hover {
 }
 .confirmation-actions button {
   min-width: var(--confirmation-button-min-width);
-  background: var(--shade-32);
+  background: transparent;
 }
 .tab-list {
   display: flex;
