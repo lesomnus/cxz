@@ -41,7 +41,7 @@ export function TabList({
             document.getElementById(`${prefix}-${next}`)?.focus();
           }}
         >
-          {item.label}
+          <span className="tab-label">{item.label}</span>
           {item.answered !== undefined && (
             <span
               className="tab-answered"

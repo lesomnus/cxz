@@ -3425,12 +3425,13 @@ summary:hover {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding: var(--space);
+  padding: 0;
+  gap: var(--space);
 }
 .question-card .tab-list {
   flex-shrink: 0;
   flex-wrap: nowrap;
-  margin: 0 0 calc(2 * var(--space));
+  margin: 0;
 }
 .question-panels {
   display: grid;
@@ -3473,7 +3474,7 @@ summary:hover {
 }
 .question-footer {
   flex-shrink: 0;
-  margin-top: calc(2 * var(--space));
+  margin-top: 0;
   justify-content: flex-end;
 }
 .question-footer > button:first-child {
@@ -3493,7 +3494,13 @@ summary:hover {
   right: var(--card-shadow-right);
   height: max(96px, var(--question-fade-height, 96px));
   max-height: 80%;
-  background: linear-gradient(to top, var(--background), transparent);
+  /* Become fully opaque before the host clips the descending card. Keep the
+     opaque band in the gap, so no sharp edge is visible against the composer. */
+  background: linear-gradient(
+    to top,
+    var(--background) var(--card-gap),
+    transparent
+  );
   opacity: 0;
   pointer-events: none;
   transition:
@@ -3501,7 +3508,7 @@ summary:hover {
     opacity 180ms ease-out;
 }
 .floating-card-host[data-retreated="true"] .question-scroll-fade {
-  opacity: max(0.5, var(--question-fade-opacity, 1));
+  opacity: 1;
 }
 .floating-card-host > .floating-card {
   z-index: 2;
@@ -3510,4 +3517,65 @@ summary:hover {
   .question-scroll-fade {
     transition: none;
   }
+}
+
+.question-cards > .question-card {
+  --question-chrome-background: color-mix(
+    in srgb,
+    var(--shade-8) 28%,
+    transparent
+  );
+  --question-chrome-blur: var(--dropdown-blur);
+  --question-tab-width: 64px;
+  --question-tab-icon-width: 20px;
+  border: 0;
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+.question-header,
+.question-footer {
+  flex-shrink: 0;
+  padding: var(--space);
+  border-radius: var(--card-radius);
+  background: var(--question-chrome-background);
+  -webkit-backdrop-filter: blur(var(--question-chrome-blur));
+  backdrop-filter: blur(var(--question-chrome-blur));
+}
+.question-header {
+  overflow-x: auto;
+}
+.question-header button,
+.question-footer button {
+  border-radius: max(0px, calc(var(--card-radius) - var(--space)));
+}
+.question-body {
+  padding: var(--space);
+  border: var(--card-border-width) solid var(--shade-54);
+  border-radius: var(--card-radius);
+  background: var(--shade-32);
+}
+.question-card .tab-list [role="tab"] {
+  width: var(--question-tab-width);
+  flex: 0 0 var(--question-tab-width);
+}
+.question-card .tab-list .button-content {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--question-tab-icon-width);
+  align-items: center;
+  width: 100%;
+}
+.question-card .tab-label {
+  text-align: center;
+}
+.question-card .tab-answered {
+  display: grid;
+  place-items: center;
+  width: var(--question-tab-icon-width);
+  margin: 0;
+}
+.question-other[data-selected="true"] > :is(.question-other-editor, input) {
+  outline: 1px solid var(--shade-144);
+  outline-offset: -1px;
 }

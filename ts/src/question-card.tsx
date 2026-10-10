@@ -71,21 +71,23 @@ export function QuestionCard({
         </Button>
       )}
       {qs.length > 0 && (
-        <TabList
-          prefix={prefix}
-          panelId={panel}
-          label={t("Question steps")}
-          items={qs.map((q, index) => ({
-            id: String(index),
-            label: `Q${index + 1}`,
-            answered: answered(q.key),
-          }))}
-          value={String(activeStep)}
-          choose={(value) => setStep(Number(value))}
-        />
+        <header className="question-header">
+          <TabList
+            prefix={prefix}
+            panelId={panel}
+            label={t("Question steps")}
+            items={qs.map((q, index) => ({
+              id: String(index),
+              label: `Q${index + 1}`,
+              answered: answered(q.key),
+            }))}
+            value={String(activeStep)}
+            choose={(value) => setStep(Number(value))}
+          />
+        </header>
       )}
       <div
-        className="question-panels"
+        className={`question-panels ${qs.length ? "question-body" : ""}`}
         id={panel}
         role={qs.length ? "tabpanel" : undefined}
         aria-labelledby={qs.length ? `${prefix}-${activeStep}` : undefined}
@@ -145,7 +147,10 @@ export function QuestionCard({
               ))}
             </div>
             {q.other && (
-              <div className="question-other">
+              <div
+                className="question-other"
+                data-selected={!!otherAnswer(q.key).trim()}
+              >
                 <span className="question-other-label">
                   {q.options.length ? t("Other") : t("Answer")}
                 </span>

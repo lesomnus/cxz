@@ -253,10 +253,6 @@ export function FloatingCardHost({ children }: { children?: ReactNode }) {
         "--question-fade-height",
         style.getPropertyValue("--bottom-fade-height") || "96px",
       );
-      node.style.setProperty(
-        "--question-fade-opacity",
-        style.getPropertyValue("--bottom-fade-opacity") || "1",
-      );
     };
     update();
     shadow();

@@ -130,13 +130,35 @@ test("question tabs preserve choices, draft and undo and submit all steps togeth
     exact: true,
   });
   await expect(tabs.getByRole("tab")).toHaveText(["Q1○", "Q2○", "Q3○"]);
+  const tabBefore = await tabs
+    .getByRole("tab", { name: "Q1", exact: true })
+    .boundingBox();
+  const iconBefore = await tabs
+    .getByRole("tab", { name: "Q1", exact: true })
+    .locator(".tab-answered")
+    .boundingBox();
   await question.getByRole("radio", { name: "Compact", exact: true }).check();
+  expect(
+    await tabs.getByRole("tab", { name: "Q1", exact: true }).boundingBox(),
+  ).toEqual(tabBefore);
+  expect(
+    await tabs
+      .getByRole("tab", { name: "Q1", exact: true })
+      .locator(".tab-answered")
+      .boundingBox(),
+  ).toEqual(iconBefore);
   await tabs.getByRole("tab", { name: "Q2", exact: true }).click();
   const answer = question.getByRole("textbox", {
     name: "Answer: Describe any additional changes.",
     exact: true,
   });
+  const editor = question.locator(
+    '.question-group[data-active="true"] .question-other-editor',
+  );
+  const editorBefore = await editor.boundingBox();
   await answer.fill("Keep this draft");
+  await expect(editor).toHaveCSS("outline-width", "1px");
+  expect(await editor.boundingBox()).toEqual(editorBefore);
   await answer.press("End");
   await answer.press("!");
   await tabs.getByRole("tab", { name: "Q3", exact: true }).click();
@@ -305,10 +327,8 @@ test("reading tucks the question into the composer fade and approaching restores
   await expect
     .poll(async () => (await question.boundingBox())!.y - original.y)
     .toBeCloseTo(original.height / 2, 0);
-  await expect(host.locator(".question-scroll-fade")).not.toHaveCSS(
-    "opacity",
-    "0",
-  );
+  await expect(host.locator(".question-scroll-fade")).toHaveCSS("opacity", "1");
+  await page.screenshot({ path: "test-results/question-retreated.png" });
   const retreated = (await question.boundingBox())!;
   await page.mouse.move(retreated.x + retreated.width / 2, retreated.y - 12);
   await expect(layer).toHaveAttribute("data-retreated", "false");
