@@ -797,7 +797,9 @@ header strong {
   padding: var(--control-inset);
   border: 1px solid var(--shade-54);
   border-radius: 6px;
-  background: var(--shade-32);
+  background: color-mix(in srgb, var(--shade-16) 72%, transparent);
+  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(24px);
 }
 .action-menu-popup button {
   display: block;
@@ -807,6 +809,14 @@ header strong {
 }
 .action-menu-popup .button-content {
   justify-content: space-between;
+}
+.action-menu-item-label {
+  display: flex;
+  align-items: center;
+  gap: calc(2 * var(--space));
+}
+.action-menu-item-label > svg {
+  flex-shrink: 0;
 }
 .action-menu-popup [aria-checked="true"] {
   background: var(--selected);
@@ -867,15 +877,6 @@ header strong {
 }
 .session-confirmation-actions button {
   background: var(--shade-42);
-}
-.session-link {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space);
-}
-.session-link input {
-  flex: 1;
-  min-width: 0;
 }
 .agent-brand {
   display: inline-flex;

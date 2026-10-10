@@ -29,18 +29,9 @@ export function SessionMenu({
 }: SessionMenuProps) {
   useLocale();
   const open = useFloatingCard();
-  const [copied, setCopied] = useState(false);
   const resume = resumableStates.has(session?.status?.state ?? "");
   const unavailable = busy || !session?.status?.runId;
   const run = session?.status?.runId ?? "";
-  async function copyLink() {
-    try {
-      await navigator.clipboard.writeText(location.href);
-      setCopied(true);
-    } catch {
-      open({ title: t("Copy session link"), content: () => <SessionLink /> });
-    }
-  }
   function restart() {
     open({
       title: t("Restart session"),
@@ -110,23 +101,26 @@ export function SessionMenu({
       label={t("Session menu")}
       placement="above"
       disabled={!session}
-      status={copied ? t("Session link copied") : session?.status?.state}
+      status={session?.status?.state}
       groups={[
         {
-          label: t("Session controls"),
+          label: t("Controls"),
           items: [
             {
-              label: resume ? t("Resume session") : t("Stop session"),
+              label: resume ? t("Resume") : t("Stop"),
+              icon: <SessionActionIcon action={resume ? "resume" : "stop"} />,
               disabled: unavailable,
               run: () => void manage(resume ? "resume" : "stop", run),
             },
             {
-              label: t("Restart session"),
+              label: t("Restart"),
+              icon: <SessionActionIcon action="restart" />,
               disabled: unavailable,
               run: restart,
             },
             {
-              label: t("Purge session"),
+              label: t("Purge"),
+              icon: <SessionActionIcon action="purge" />,
               disabled: busy,
               danger: true,
               run: () => void preparePurge(),
@@ -134,10 +128,11 @@ export function SessionMenu({
           ],
         },
         {
-          label: t("Information"),
+          label: "",
           items: [
             {
-              label: t("Session details"),
+              label: t("Details"),
+              icon: <SessionActionIcon action="details" />,
               run: () =>
                 open({
                   title: t("Session details"),
@@ -146,10 +141,6 @@ export function SessionMenu({
                   ),
                 }),
             },
-            {
-              label: t("Copy session link"),
-              run: () => void copyLink(),
-            },
           ],
         },
       ]}
@@ -157,31 +148,42 @@ export function SessionMenu({
   );
 }
 
-function SessionLink() {
-  const [copied, setCopied] = useState(false);
-  const [error, setError] = useState("");
-  const url = location.href;
+function SessionActionIcon({
+  action,
+}: {
+  action: "stop" | "resume" | "restart" | "purge" | "details";
+}) {
   return (
-    <div className="session-link">
-      <input
-        aria-label={t("Session link")}
-        readOnly
-        value={url}
-        onFocus={(event) => event.currentTarget.select()}
-      />
-      <Button
-        disabled={!navigator.clipboard}
-        onClick={() =>
-          void navigator.clipboard.writeText(url).then(
-            () => setCopied(true),
-            (error) => setError(String(error)),
-          )
-        }
-      >
-        {copied ? t("Copied") : t("Copy")}
-      </Button>
-      {error && <p role="alert">{error}</p>}
-    </div>
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {action === "stop" && <rect x="4" y="4" width="8" height="8" rx="1" />}
+      {action === "resume" && <path d="m5 3 7 5-7 5Z" />}
+      {action === "restart" && (
+        <>
+          <path d="M13 7a5 5 0 1 0-.8 3.7M13 3v4H9" />
+        </>
+      )}
+      {action === "purge" && (
+        <>
+          <path d="M3 4h10M6 4V2h4v2M4 4l.7 9h6.6l.7-9M6.5 6.5v4M9.5 6.5v4" />
+        </>
+      )}
+      {action === "details" && (
+        <>
+          <circle cx="8" cy="8" r="5.5" />
+          <path d="M8 7.5v3M8 5.2v.1" />
+        </>
+      )}
+    </svg>
   );
 }
 

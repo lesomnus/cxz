@@ -1,9 +1,17 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { createPortal } from "react-dom";
 import { Button } from "./button";
 
 export type ActionMenuItem = {
   label: string;
+  icon?: ReactNode;
   shortcut?: string;
   checked?: boolean;
   disabled?: boolean;
@@ -188,7 +196,10 @@ export function ActionMenu({
                       item.run();
                     }}
                   >
-                    <span>{item.label}</span>
+                    <span className="action-menu-item-label">
+                      {item.icon}
+                      <span>{item.label}</span>
+                    </span>
                     {item.shortcut && <kbd>{item.shortcut}</kbd>}
                   </Button>
                 ))}

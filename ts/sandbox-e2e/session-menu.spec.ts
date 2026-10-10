@@ -14,7 +14,7 @@ async function choose(page: Page, name: string) {
   await page.getByRole("menuitem", { name, exact: true }).click();
 }
 async function runId(page: Page) {
-  await choose(page, "Session details");
+  await choose(page, "Details");
   const value = await page
     .locator(".session-details > div")
     .filter({ has: page.getByText("Run ID", { exact: true }) })
@@ -41,12 +41,21 @@ test("composer session menu stays in the viewport, supports keyboard navigation 
   await trigger.focus();
   await trigger.press("ArrowDown");
   const menu = page.getByRole("menu", { name: "Session menu" });
+  await expect(menu.getByRole("group", { name: "Controls" })).toBeVisible();
   await expect(
-    menu.getByRole("group", { name: "Session controls" }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("menuitem", { name: "Stop session", exact: true }),
+    page.getByRole("menuitem", { name: "Stop", exact: true }),
   ).toBeFocused();
+  await expect(menu.getByRole("menuitem")).toHaveText([
+    "Stop",
+    "Restart",
+    "Purge",
+    "Details",
+  ]);
+  await expect(menu.locator(".action-menu-item-label > svg")).toHaveCount(4);
+  await expect(menu.getByText("Information", { exact: true })).toHaveCount(0);
+  await expect(
+    menu.getByRole("menuitem", { name: "Copy session link" }),
+  ).toHaveCount(0);
   const bounds = (await menu.boundingBox())!;
   expect(bounds.y).toBeGreaterThanOrEqual(0);
   expect(bounds.y + bounds.height).toBeLessThanOrEqual(900);
@@ -54,17 +63,12 @@ test("composer session menu stays in the viewport, supports keyboard navigation 
     (await trigger.boundingBox())!.y,
   );
   await page.screenshot({ path: "test-results/session-menu-desktop.png" });
-  await page
-    .getByRole("menuitem", { name: "Stop session", exact: true })
-    .press("End");
+  await page.getByRole("menuitem", { name: "Stop", exact: true }).press("End");
   await expect(
-    page.getByRole("menuitem", { name: "Copy session link", exact: true }),
+    page.getByRole("menuitem", { name: "Details", exact: true }),
   ).toBeFocused();
   await page
-    .getByRole("menuitem", { name: "Copy session link", exact: true })
-    .press("ArrowUp");
-  await page
-    .getByRole("menuitem", { name: "Session details", exact: true })
+    .getByRole("menuitem", { name: "Details", exact: true })
     .press("Enter");
   await expect(
     page.getByRole("dialog", { name: "Session details" }),
@@ -76,15 +80,6 @@ test("composer session menu stays in the viewport, supports keyboard navigation 
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(trigger).toBeFocused();
-  await page.evaluate(() => {
-    navigator.clipboard.writeText = async (value) => {
-      (window as any).copiedSessionLink = value;
-    };
-  });
-  await choose(page, "Copy session link");
-  expect(await page.evaluate(() => (window as any).copiedSessionLink)).toBe(
-    page.url(),
-  );
   await page.setViewportSize({ width: 390, height: 844 });
   await trigger.click();
   const mobile = (await menu.boundingBox())!;
@@ -103,24 +98,22 @@ test("Stop and Resume toggle, while Restart requires confirmation and preserves 
     .locator("article.input .message-body")
     .last()
     .innerText();
-  await choose(page, "Stop session");
+  await choose(page, "Stop");
   await page.getByRole("button", { name: "Session menu", exact: true }).click();
   await expect(
-    page.getByRole("menuitem", { name: "Resume session", exact: true }),
+    page.getByRole("menuitem", { name: "Resume", exact: true }),
   ).toBeVisible();
-  await page
-    .getByRole("menuitem", { name: "Resume session", exact: true })
-    .click();
+  await page.getByRole("menuitem", { name: "Resume", exact: true }).click();
   expect(await runId(page)).not.toBe(initial);
   const resumed = await runId(page);
-  await choose(page, "Restart session");
+  await choose(page, "Restart");
   await expect(
     page.getByRole("dialog", { name: "Restart session" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Cancel", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   expect(await runId(page)).toBe(resumed);
-  await choose(page, "Restart session");
+  await choose(page, "Restart");
   await page.getByRole("button", { name: "Restart", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   expect(await runId(page)).not.toBe(resumed);
@@ -132,7 +125,7 @@ test("Purge previews without deleting, cancels, then removes only the confirmed 
   page,
 }) => {
   await ready(page);
-  await choose(page, "Purge session");
+  await choose(page, "Purge");
   const dialog = page.getByRole("dialog", { name: "Purge session" });
   await expect(dialog).toContainText("/sandbox/session-1/journal");
   await expect(dialog).toContainText("Project workspace");
@@ -141,7 +134,7 @@ test("Purge previews without deleting, cancels, then removes only the confirmed 
   await expect(
     page.getByRole("button", { name: "Session menu", exact: true }),
   ).toBeEnabled();
-  await choose(page, "Purge session");
+  await choose(page, "Purge");
   await page
     .getByRole("button", { name: "Purge permanently", exact: true })
     .click();
