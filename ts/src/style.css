@@ -3425,7 +3425,7 @@ summary:hover {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding: 0;
+  padding: var(--space);
   gap: var(--space);
 }
 .question-card .tab-list {
@@ -3450,7 +3450,8 @@ summary:hover {
   pointer-events: none;
 }
 .question-text {
-  margin: 0 var(--space) calc(2 * var(--space));
+  margin: 0 0 var(--space);
+  padding: calc(2 * var(--space));
   font-size: 12px;
 }
 .question-card .question-options {
@@ -3520,28 +3521,20 @@ summary:hover {
 }
 
 .question-cards > .question-card {
-  --question-chrome-background: color-mix(
-    in srgb,
-    var(--shade-8) 28%,
-    transparent
-  );
-  --question-chrome-blur: var(--dropdown-blur);
+  --question-background: color-mix(in srgb, var(--shade-16) 68%, transparent);
+  --question-blur: var(--dropdown-blur);
   --question-tab-width: 64px;
   --question-tab-icon-width: 20px;
   border: 0;
-  background: transparent;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
+  background: var(--question-background);
+  -webkit-backdrop-filter: blur(var(--question-blur));
+  backdrop-filter: blur(var(--question-blur));
   box-shadow: none;
 }
 .question-header,
 .question-footer {
   flex-shrink: 0;
-  padding: var(--space);
-  border-radius: var(--card-radius);
-  background: var(--question-chrome-background);
-  -webkit-backdrop-filter: blur(var(--question-chrome-blur));
-  backdrop-filter: blur(var(--question-chrome-blur));
+  padding: 0;
 }
 .question-header {
   overflow-x: auto;
@@ -3551,10 +3544,15 @@ summary:hover {
   border-radius: max(0px, calc(var(--card-radius) - var(--space)));
 }
 .question-body {
+  --question-body-radius: max(0px, calc(var(--card-radius) - var(--space)));
+  --card-inner-radius: max(
+    0px,
+    calc(var(--question-body-radius) - var(--card-border-width) - var(--space))
+  );
   padding: var(--space);
   border: var(--card-border-width) solid var(--shade-54);
-  border-radius: var(--card-radius);
-  background: var(--shade-32);
+  border-radius: var(--question-body-radius);
+  background: var(--shade-20);
 }
 .question-card .tab-list [role="tab"] {
   width: var(--question-tab-width);

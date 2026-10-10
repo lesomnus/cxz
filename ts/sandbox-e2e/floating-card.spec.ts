@@ -265,10 +265,7 @@ test("pending questions stay dimmed behind previews and only lift for a taller c
     "border-top-width",
     "1px",
   );
-  await expect(question.locator(".question-header")).toHaveCSS(
-    "backdrop-filter",
-    "blur(24px)",
-  );
+  await expect(question).toHaveCSS("backdrop-filter", "blur(24px)");
   await expect(question.locator(".card-close")).toHaveCount(0);
   const choice = question.getByRole("radio", { name: /Development/ });
   await choice.check();
