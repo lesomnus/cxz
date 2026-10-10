@@ -265,6 +265,13 @@ test("the latest activity stays unfolded and hover does not add scroll range", a
   const tool = page.locator(".tool-activity");
   const metrics = () =>
     pane.evaluate((el) => ({ height: el.scrollHeight, top: el.scrollTop }));
+  // Resizing schedules bottom-following on the next frame. Measure hover only
+  // after that update, so the resize itself cannot look like a hover scroll.
+  await expect
+    .poll(() =>
+      pane.evaluate((el) => el.scrollHeight - el.clientHeight - el.scrollTop),
+    )
+    .toBe(0);
   const before = await metrics();
   await tool.hover({ position: { x: 140, y: 10 } });
   const preview = page.locator(".activity-card-preview");

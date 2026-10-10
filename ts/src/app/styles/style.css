@@ -3151,6 +3151,9 @@ summary:hover {
   border: var(--card-border-width) solid var(--shade-54);
   background: transparent;
 }
+.question-footer button.confirm-button[data-confirming="false"]:hover {
+  background: transparent;
+}
 .tab-answered[data-answered="true"] {
   color: var(--shade-237);
 }
