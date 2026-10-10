@@ -19,6 +19,7 @@
   --send-content-scale: 0.96;
   --transcript-shift-duration: 500ms;
   --transcript-enter-duration: 300ms;
+  --transcript-motion-easing: cubic-bezier(0.25, 0.1, 0.5, 1);
   --transcript-enter-travel: 28px;
   --transcript-enter-scale: 0.96;
   --activity-card-step: 36px;
@@ -889,7 +890,7 @@ header strong {
 .transcript-row[data-live-arrival] > :not([data-send-arrival]) {
   transform-origin: center bottom;
   animation: transcript-enter var(--transcript-enter-duration)
-    cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    var(--transcript-motion-easing) both;
 }
 @keyframes transcript-enter {
   from {

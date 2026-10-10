@@ -28,12 +28,22 @@ test("live additions glide existing rows and reveal new cards faster without cha
     Element.prototype.animate = function (...args) {
       const animation = original.apply(this, args);
       if (this instanceof HTMLElement && this.dataset.row) {
+        const frames = (animation.effect as KeyframeEffect).getKeyframes();
+        const duration = Number(animation.effect!.getTiming().duration);
+        const time = animation.currentTime;
+        animation.pause();
+        animation.currentTime = duration / 4;
+        const initialY = new DOMMatrix(String(frames[0].transform)).m42;
+        const quarterY = new DOMMatrix(getComputedStyle(this).transform).m42;
         result.shifts.push({
-          frames: (animation.effect as KeyframeEffect).getKeyframes(),
-          duration: animation.effect!.getTiming().duration,
+          frames,
+          duration,
+          quarterProgress: 1 - quarterY / initialY,
           height: this.offsetHeight,
           paintedHeight: this.getBoundingClientRect().height,
         });
+        animation.currentTime = time;
+        animation.play();
       }
       return animation;
     };
@@ -53,11 +63,15 @@ test("live additions glide existing rows and reveal new cards faster without cha
         const time = animation.currentTime;
         animation.pause();
         animation.currentTime =
+          Number(animation.effect!.getTiming().duration) / 4;
+        const quarterOpacity = Number(getComputedStyle(card).opacity);
+        animation.currentTime =
           Number(animation.effect!.getTiming().duration) / 2;
         const style = getComputedStyle(card),
           matrix = new DOMMatrix(style.transform);
         result.entrances.push({
           duration: animation.effect!.getTiming().duration,
+          quarterOpacity,
           y: matrix.m42,
           scale: matrix.a,
           opacity: Number(style.opacity),
@@ -103,6 +117,12 @@ test("live additions glide existing rows and reveal new cards faster without cha
   expect(entry.blur).toBe("none");
   expect(entry.duration).toBe(300);
   expect(result.shifts[0].duration).toBe(500);
+  // Both motions should still have most of their travel ahead after a quarter
+  // of their duration, instead of rushing through it in the first frames.
+  expect(entry.quarterOpacity).toBeGreaterThan(0.1);
+  expect(entry.quarterOpacity).toBeLessThan(0.4);
+  expect(result.shifts[0].quarterProgress).toBeGreaterThan(0.1);
+  expect(result.shifts[0].quarterProgress).toBeLessThan(0.4);
   expect(entry.duration).toBeLessThan(result.shifts[0].duration);
   for (const sample of [...result.shifts, ...result.entrances])
     expect(sample.paintedHeight).toBeCloseTo(sample.height, 0);

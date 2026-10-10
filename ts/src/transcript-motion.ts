@@ -129,6 +129,7 @@ export function useTranscriptMotion({
     };
     const duration = durationOf("--transcript-shift-duration");
     const entranceDuration = durationOf("--transcript-enter-duration");
+    const easing = style.getPropertyValue("--transcript-motion-easing").trim();
     const settleDuration = Math.max(duration, entranceDuration);
     if (sequence !== undefined && sequence > old.tail) {
       settling.current = now + settleDuration;
@@ -152,7 +153,7 @@ export function useTranscriptMotion({
               { transform: `translateY(${delta + offset}px)` },
               { transform: "translateY(0)" },
             ],
-            { duration, easing: "cubic-bezier(0.2, 0.7, 0.2, 1)" },
+            { duration, easing },
           );
           moves.current.set(node, animation);
           void animation.finished.then(
