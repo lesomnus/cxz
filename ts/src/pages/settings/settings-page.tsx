@@ -470,6 +470,33 @@ export function SettingsPage({
                       </SettingField>
                     </fieldset>
                   </section>
+                  <section
+                    className="settings-group"
+                    aria-label={t("Notifications")}
+                  >
+                    <h2>{t("Notifications")}</h2>
+                    <SettingField
+                      title={t("Notification sounds")}
+                      settingId="notifications.sound"
+                      summary={t(
+                        "Play a sound when a response finishes or a new question arrives.",
+                      )}
+                      details={t(
+                        "Sounds become available after interacting with the page. Tab indicators do not request notification permission.",
+                      )}
+                    >
+                      <Switch
+                        label={t("Notification sounds")}
+                        checked={
+                          snapshot.document["notifications.sound"] !== false
+                        }
+                        disabled={!snapshot.valid}
+                        onChange={(checked) =>
+                          update("notifications.sound", checked)
+                        }
+                      />
+                    </SettingField>
+                  </section>
                 </>
               )}
             </div>

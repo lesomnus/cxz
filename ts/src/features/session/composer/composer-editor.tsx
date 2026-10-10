@@ -112,7 +112,8 @@ export function ComposerEditor({
     notify.current?.();
   }
   function startUpload(paste: ComposerPaste) {
-    if (!upload || !paste.attachment || jobs.current.has(paste.token)) return;
+    if (!upload || !paste.attachment?.file || jobs.current.has(paste.token))
+      return;
     const attachment = paste.attachment;
     const controller = new AbortController();
     jobs.current.set(paste.token, controller);
@@ -124,7 +125,7 @@ export function ComposerEditor({
       try {
         controller.signal.throwIfAborted();
         const path = await uploader(
-          attachment.file,
+          attachment.file!,
           AbortSignal.any([controller.signal, AbortSignal.timeout(600_000)]),
         );
         controller.signal.throwIfAborted();
@@ -958,7 +959,10 @@ function PastePreview({
             <span role="status"> · {t("Uploading…")}</span>
           )}
           {paste.attachment.error && (
-            <span role="alert"> · {paste.attachment.error}</span>
+            <span role="alert">
+              {" "}
+              · {translateKnown(paste.attachment.error)}
+            </span>
           )}
         </p>
       )}
@@ -970,7 +974,11 @@ function PastePreview({
       {paste.body && <pre>{paste.body}</pre>}
       <div className="buttons">
         {paste.attachment?.state === "error" && (
-          <Button type="button" onClick={retry}>
+          <Button
+            type="button"
+            onClick={retry}
+            disabled={!paste.attachment.file}
+          >
             {t("Retry upload")}
           </Button>
         )}

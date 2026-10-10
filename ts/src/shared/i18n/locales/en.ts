@@ -445,5 +445,14 @@ export const messages = {
     "Alias must be 3–20 characters: lowercase letters, digits and single hyphens, beginning with a letter.",
   Confirm: "Confirm",
   Title: "Title",
+  "Unread response": "Unread response",
+  Notifications: "Notifications",
+  "Notification sounds": "Notification sounds",
+  "Play a sound when a response finishes or a new question arrives.":
+    "Play a sound when a response finishes or a new question arrives.",
+  "Sounds become available after interacting with the page. Tab indicators do not request notification permission.":
+    "Sounds become available after interacting with the page. Tab indicators do not request notification permission.",
+  "Upload interrupted. Remove this chip and select the file again.":
+    "Upload interrupted. Remove this chip and select the file again.",
 } as const;
 export type Message = keyof typeof messages;

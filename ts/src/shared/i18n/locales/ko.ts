@@ -446,4 +446,13 @@ export const messages = {
     "별칭은 소문자로 시작하는 3–20자의 소문자, 숫자, 단일 하이픈이어야 합니다.",
   Confirm: "확인",
   Title: "제목",
+  "Unread response": "읽지 않은 응답",
+  Notifications: "알림",
+  "Notification sounds": "알림 소리",
+  "Play a sound when a response finishes or a new question arrives.":
+    "응답이 완료되거나 새 질문이 도착하면 소리를 재생합니다.",
+  "Sounds become available after interacting with the page. Tab indicators do not request notification permission.":
+    "페이지를 클릭하거나 키를 누른 뒤 소리가 재생됩니다. 탭 표시는 알림 권한을 요청하지 않습니다.",
+  "Upload interrupted. Remove this chip and select the file again.":
+    "업로드가 중단됐습니다. 이 칩을 제거하고 파일을 다시 선택하세요.",
 } satisfies LanguagePack;

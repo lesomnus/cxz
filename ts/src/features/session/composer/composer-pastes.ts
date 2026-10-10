@@ -4,7 +4,7 @@ export type ComposerPaste = {
   lines: number;
   bytes: number;
   attachment?: {
-    file: File;
+    file?: File;
     name: string;
     directory?: boolean;
     state: "uploading" | "ready" | "error";

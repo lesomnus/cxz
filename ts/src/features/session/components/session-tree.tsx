@@ -13,6 +13,7 @@ export function SessionTreeGroup({
   selected,
   open,
   toggle,
+  unread = new Set<string>(),
 }: {
   project: Project;
   items: Session[];
@@ -20,6 +21,7 @@ export function SessionTreeGroup({
   selected: string;
   open: boolean;
   toggle: () => void;
+  unread?: ReadonlySet<string>;
 }) {
   useLocale();
   return (
@@ -43,6 +45,16 @@ export function SessionTreeGroup({
             >
               <SessionIndicator session={s} />
               <SessionIdentity session={s} />
+              {unread.has(s.runtimeId) && (
+                <span
+                  className="session-unread"
+                  role="img"
+                  aria-label={t("Unread response")}
+                  title={t("Unread response")}
+                >
+                  +
+                </span>
+              )}
             </RouteLink>
           ))}
           {loading && !items.length && (

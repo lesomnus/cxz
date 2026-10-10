@@ -12,6 +12,7 @@
   --conversation-width: 600px;
   --composer-radius: 15px;
   --composer-editor-height: 110px;
+  --composer-resize-duration: 300ms;
   --send-exit-duration: 180ms;
   --send-enter-duration: 240ms;
   --send-exit-travel: 72px;
@@ -1499,9 +1500,24 @@ pre {
   caret-color: var(--shade-237);
   overflow-wrap: anywhere;
   scrollbar-gutter: stable;
+  transition: height var(--composer-resize-duration)
+    cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .composer-editor textarea {
+    transition: none;
+  }
 }
 .composer-editor textarea[data-expanded="true"] {
   height: calc(3 * var(--composer-editor-height));
+  transition-duration: 0s;
+}
+.session-unread {
+  flex: 0 0 auto;
+  margin-left: auto;
+  padding-inline: var(--space);
+  color: var(--shade-237);
+  font-family: ui-monospace, monospace;
 }
 .composer-editor textarea::selection {
   background: var(--shade-65);
