@@ -113,7 +113,32 @@ test("async free-text questions submit structured native keys and only explicit 
     "0": { selected: [], other: "first line\nsecond line" },
   });
   await page.getByRole("button", { name: "Ask again", exact: true }).click();
-  await question.getByRole("button", { name: "Cancel", exact: true }).click();
+  const cancel = question.getByRole("button", { name: "Cancel", exact: true });
+  const confirm = question.getByRole("button", {
+    name: "Confirm cancel",
+    exact: true,
+  });
+  await cancel.click();
+  await expect(question).toBeVisible();
+  await expect(confirm).toHaveAttribute("data-confirming", "true");
+  await expect(confirm).toHaveCSS("background-color", "rgb(59, 27, 27)");
+  await page.screenshot({
+    path: "test-results/question-cancel-confirmation.png",
+  });
+  await answer.hover();
+  await expect(cancel).toHaveAttribute("data-confirming", "false");
+  await cancel.focus();
+  await page.keyboard.press("Enter");
+  await expect(confirm).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(cancel).toHaveAttribute("data-confirming", "false");
+  await cancel.focus();
+  await page.keyboard.press("Enter");
+  await page.keyboard.press("Escape");
+  await expect(cancel).toHaveAttribute("data-confirming", "false");
+  await expect(question).toBeVisible();
+  await page.keyboard.press("Enter");
+  await page.keyboard.press("Space");
   await expect(page.getByRole("status")).toHaveText("Denied");
 });
 

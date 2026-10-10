@@ -41,6 +41,8 @@
   --hover: var(--shade-40);
   --selected: var(--shade-48);
   --selected-hover: var(--shade-56);
+  --confirm-button-background: #3b1b1b;
+  --confirm-button-color: #f1dada;
   --resource-panel-width: 180px;
   --panel-inset: 12px;
   --scroll-handle-color: var(--shade-122);
@@ -3501,6 +3503,10 @@ summary:hover {
 }
 .question-footer > button:first-child {
   margin-right: auto;
+}
+button.confirm-button[data-confirming="true"] {
+  background: var(--confirm-button-background);
+  color: var(--confirm-button-color);
 }
 .tab-answered[data-answered="true"] {
   color: var(--shade-237);

@@ -12,6 +12,7 @@ export const messages = {
   "Purge permanently": "영구 삭제",
   "Session details": "세션 상세 정보",
   Cancel: "취소",
+  "Confirm cancel": "취소 확인",
   "Working…": "처리 중…",
   State: "상태",
   Alias: "별칭",

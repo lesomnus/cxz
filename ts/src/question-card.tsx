@@ -3,6 +3,7 @@ import type { SessionEvent } from "../gen/cxz/session_pb";
 import { t } from "./i18n";
 import { useLocale } from "./i18n-react";
 import { Button } from "./button";
+import { ConfirmButton } from "./confirm-button";
 import {
   FloatingCard,
   useFloatingCard,
@@ -245,9 +246,19 @@ export function QuestionCard({
         </p>
       )}
       <div className={`buttons ${qs.length ? "question-footer" : ""}`}>
-        <Button disabled={busy} onClick={() => reply(e, false)}>
-          {qs.length ? t("Cancel") : t("Deny")}
-        </Button>
+        {qs.length ? (
+          <ConfirmButton
+            disabled={busy}
+            confirmationLabel={t("Confirm cancel")}
+            onConfirm={() => reply(e, false)}
+          >
+            {t("Cancel")}
+          </ConfirmButton>
+        ) : (
+          <Button disabled={busy} onClick={() => reply(e, false)}>
+            {t("Deny")}
+          </Button>
+        )}
         <Button
           disabled={busy || !!requiresForm || qs.some((q) => !answered(q.key))}
           onClick={() =>

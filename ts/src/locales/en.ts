@@ -12,6 +12,7 @@ export const messages = {
   "Purge permanently": "Purge permanently",
   "Session details": "Session details",
   Cancel: "Cancel",
+  "Confirm cancel": "Confirm cancel",
   "Working…": "Working…",
   State: "State",
   Alias: "Alias",
