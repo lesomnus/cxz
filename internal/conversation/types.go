@@ -76,6 +76,7 @@ type Reply struct {
 	MissingSeqs      []uint64   `json:"missing_seqs,omitempty"`
 	UnavailableSeqs  []uint64   `json:"unavailable_seqs,omitempty"`
 	OversizedSeqs    []uint64   `json:"oversized_seqs,omitempty"`
+	UnreadableSeqs   []uint64   `json:"unreadable_seqs,omitempty"`
 	NextCursor       string     `json:"next_cursor,omitempty"`
 	HasMore          bool       `json:"has_more"`
 	Path             string     `json:"path,omitempty"`
@@ -91,6 +92,17 @@ type Store struct {
 	Project  string
 	Registry Registry
 	Now      func() time.Time
+
+	// recordLimit overrides MaxRecordBytes. It exists for tests: writing a
+	// 32 MiB record to prove that one gets skipped costs more than the proof.
+	recordLimit int
+}
+
+func (s *Store) limit() int {
+	if s.recordLimit > 0 {
+		return s.recordLimit
+	}
+	return MaxRecordBytes
 }
 
 func (s *Store) now() time.Time {

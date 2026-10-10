@@ -101,6 +101,13 @@ the selected view appear in `unavailable_seqs`. Thus callers can distinguish an
 empty match from an incomplete retained history. No provider transcript fallback
 bypasses cxz's retention policy.
 
+A single committed record over 32 MiB is skipped and named in `unreadable_seqs`,
+with its size in `message`. This is not `oversized_seqs`: that one is a page
+budget, so a file, a larger budget or a line range returns the event, while here
+no request does. Everything else in the journal is still read and the sequence
+gap is visible in the reply. A record still being written has no newline yet, and
+is neither read nor reported.
+
 ## File output
 
 Use `output: file` on `conversation_read` to receive a fixed JSONL snapshot instead
