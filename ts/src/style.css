@@ -894,15 +894,6 @@ header strong {
   display: block;
   color: var(--muted);
 }
-.session-confirmation-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--space);
-  margin-top: calc(2 * var(--space));
-}
-.session-confirmation-actions button {
-  background: var(--shade-42);
-}
 .agent-brand {
   display: inline-flex;
   height: var(--agent-logo-size);
@@ -3350,4 +3341,73 @@ summary:hover {
     :has([data-detail-present="true"])
   ) {
   z-index: 3;
+}
+
+/* A shared card surface in the browser's modal top layer. */
+.confirmation-dialog {
+  width: min(480px, calc(100vw - 4 * var(--space)));
+  max-height: calc(100dvh - 4 * var(--space));
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--shade-237);
+  overflow: visible;
+}
+.confirmation-dialog::backdrop {
+  background: color-mix(in srgb, var(--shade-0) 65%, transparent);
+}
+.confirmation-dialog .floating-card {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  max-height: calc(100dvh - 4 * var(--space));
+}
+.confirmation-dialog .card-heading {
+  display: flex;
+  align-items: center;
+  min-height: 32px;
+  padding: var(--space);
+  font-size: 12px;
+}
+.confirmation-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space);
+  margin-top: calc(2 * var(--space));
+}
+.confirmation-actions button {
+  background: var(--shade-42);
+}
+.tab-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space);
+  margin: var(--space) 0 calc(2 * var(--space));
+}
+.tab-list [role="tab"] {
+  color: var(--muted);
+}
+.tab-list [aria-selected="true"],
+.tab-list [role="tab"]:hover {
+  background: var(--hover);
+  color: inherit;
+}
+.tab-answered {
+  margin-left: var(--space);
+  color: var(--muted);
+}
+.question-option-card {
+  border-radius: var(--card-inner-radius);
+  background: var(--shade-16);
+}
+.question-option-preview {
+  padding: 0 calc(2 * var(--space)) calc(2 * var(--space));
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.question-option-preview .markdown > :last-child {
+  margin-bottom: 0;
+}
+.question-group[hidden] {
+  display: none;
 }

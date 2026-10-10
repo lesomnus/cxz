@@ -6,17 +6,27 @@ import {
   ComponentPreview,
   previewPastes,
 } from "./storybook/conversation-preview";
-import { questionEvent, toolEvents } from "./storybook/fixtures";
+import {
+  questionEvent,
+  toolEvents,
+  type QuestionExample,
+} from "./storybook/fixtures";
 
-function QuestionPreview({ busy = false }: { busy?: boolean }) {
+function QuestionPreview({
+  busy = false,
+  example = "choice",
+}: {
+  busy?: boolean;
+  example?: QuestionExample;
+}) {
   const [answer, setAnswer] = useState<string>();
   const pastes = useRef(previewPastes());
   return (
     <ComponentPreview events={toolEvents()}>
       {answer === undefined ? (
         <QuestionCard
-          e={questionEvent()}
-          agent="codex"
+          e={questionEvent(example)}
+          agent={example === "previews" ? "claude" : "codex"}
           pastes={pastes.current}
           busy={busy}
           reply={async (_, allow, answers) =>
@@ -38,13 +48,13 @@ const meta = {
   title: "Conversation/QuestionCard",
   component: QuestionPreview,
   tags: ["autodocs"],
-  args: { busy: false },
+  args: { busy: false, example: "choice" },
   parameters: {
     layout: "fullscreen",
     docs: {
       description: {
         component:
-          "A persistent question with radio cards and the same multiline editor for Other answers. Select an option or write an answer and submit. Open Request details to preview the covered-card hierarchy. Only an explicit answer or Deny dismisses the question.",
+          "A persistent question with radio cards, Markdown option previews and the same multiline editor for free-text and Other answers. Multiple questions use keyboard-accessible tabs that preserve selections, drafts and undo. Codex asynchronous questions use the same reply keys as the TUI. Select an option or write an answer and submit. Open Request details to preview the covered-card hierarchy. Only an explicit answer or Deny dismisses the question.",
       },
     },
   },
@@ -53,3 +63,8 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 export const Question: Story = {};
 export const Busy: Story = { args: { busy: true } };
+
+export const FreeText: Story = { args: { example: "free-text" } };
+export const Steps: Story = { args: { example: "steps" } };
+export const AsyncSteps: Story = { args: { example: "async-steps" } };
+export const OptionPreviews: Story = { args: { example: "previews" } };

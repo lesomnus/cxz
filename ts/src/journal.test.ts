@@ -157,6 +157,91 @@ describe("journal recovery", () => {
     });
     expect(questions("codex", e)).toEqual([]);
   });
+  it("decodes async free-text and repeated titles with positional reply keys like the TUI", () => {
+    const e = create(SessionEventSchema, {
+      text: "agentMessage/questions",
+      payload: new TextEncoder().encode(
+        JSON.stringify({
+          item: {
+            id: "recorded-message",
+            type: "agentMessage",
+            delivery: "async",
+            questions: [
+              { title: "Describe the change.", options: null },
+              { title: "Describe the change.", options: ["Light", "Dark"] },
+            ],
+          },
+        }),
+      ),
+    });
+    expect(questions("codex", e)).toEqual([
+      {
+        key: "0",
+        text: "Describe the change.",
+        multi: false,
+        other: true,
+        secret: false,
+        options: [],
+      },
+      {
+        key: "1",
+        text: "Describe the change.",
+        multi: false,
+        other: true,
+        secret: false,
+        options: [{ label: "Light" }, { label: "Dark" }],
+      },
+    ]);
+    expect(questions("claude", e)).toEqual([]);
+  });
+  it("retains native step headers and option previews without accepting malformed forms", () => {
+    const question = {
+      id: "step",
+      header: "Implementation",
+      question: "Choose?",
+      options: [
+        {
+          label: "A",
+          description: "Details",
+          preview: "```js\nconst a = 1;\n```",
+        },
+      ],
+    };
+    const make = (wire: unknown) =>
+      create(SessionEventSchema, {
+        text: "item/tool/requestUserInput",
+        payload: new TextEncoder().encode(
+          JSON.stringify({ params: { questions: wire } }),
+        ),
+      });
+    expect(questions("codex", make([question]))[0]).toMatchObject({
+      header: "Implementation",
+      options: question.options,
+    });
+    for (const wire of [
+      null,
+      {},
+      [null],
+      [{ ...question, id: "" }],
+      [question, question],
+      [{ ...question, options: [question.options[0], question.options[0]] }],
+    ])
+      expect(questions("codex", make(wire))).toEqual([]);
+    const async = create(SessionEventSchema, {
+      text: "agentMessage/questions",
+      payload: new TextEncoder().encode(
+        JSON.stringify({
+          item: {
+            id: "q",
+            type: "agentMessage",
+            delivery: "async",
+            questions: [{ title: "Pick", options: ["a", "a"] }],
+          },
+        }),
+      ),
+    });
+    expect(questions("codex", async)).toEqual([]);
+  });
 });
 
 import { pendingAfter } from "./journal";

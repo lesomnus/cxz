@@ -1,8 +1,7 @@
 import { memo } from "react";
 import type { SessionEvent } from "../gen/cxz/session_pb";
 import type { LoadEventDetails } from "./session-history";
-import { marked } from "marked";
-import DOMPurify from "dompurify";
+import { Markdown } from "./markdown";
 import { useLocale } from "./i18n-react";
 import { ActivityCard } from "./activity-card";
 import { EventDetails } from "./event-details";
@@ -16,32 +15,6 @@ import { InputMessage } from "./input-message";
 import type { ToolActivity } from "./tool-activity";
 import { ToolActivityView } from "./tool-activity-view";
 
-// Keep conversation link behavior scoped to this sanitizer instance.
-const markdownPurifier = DOMPurify();
-markdownPurifier.addHook("afterSanitizeAttributes", (node) => {
-  if (node.localName === "a" && node.hasAttribute("href")) {
-    node.setAttribute("target", "_blank");
-    node.setAttribute("rel", "noopener noreferrer");
-  }
-});
-
-function Markdown({ text }: { text: string }) {
-  useLocale();
-  return (
-    <div
-      className="markdown"
-      dangerouslySetInnerHTML={{
-        __html: markdownPurifier.sanitize(
-          marked.parse(text, { async: false }),
-          {
-            FORBID_TAGS: ["img", "style", "input", "form"],
-            FORBID_ATTR: ["style"],
-          },
-        ),
-      }}
-    />
-  );
-}
 export const EventView = memo(
   function EventView({
     e,

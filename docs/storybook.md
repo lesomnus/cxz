@@ -14,11 +14,12 @@ npm run storybook
 - `Components`: 버튼, 에이전트 로고, 설정 드롭다운·슬라이더·분할 선택, floating card, 타이머와 Monaco 상세 탭.
 - `Settings/SettingField`: 제목·설정 ID·요약·컨트롤·선택적 상세설명을 배치하는 공통 설정 항목.
 - `Components/FontFamilyControl`: 로컬 글꼴과 Google Fonts 선택, 적용 후 저장되는 메타데이터. Google Fonts는 Apply font를 누를 때만 다운로드합니다.
+- `Components/ConfirmationDialog`: 배경 조작과 포커스를 제한하는 확인창. 취소, 실행 대기, 실패 후 재시도, Purge 상태를 확인합니다.
 - `Editor/SourceEditor`: 파일 미리보기와 편집 가능한 settings JSON.
 - `Sessions/Panel`: 실제 세션 카드, 선택 하이라이트, 상태 indicator, 프로젝트 접기, 긴 목록의 스크롤.
 - `Conversation/Composer`: Markdown, 코드블록, 붙여넣기 chip, 명령어 제안, 전송 대기, 작업 중 glow, 모델·effort와 usage 표시.
 - `Conversation/EventCards`: 사용자 입력, 최종·중간 대화 응답, 작업 진행·완료, 파일 변경, 진단 메시지.
-- `Conversation/QuestionCard`: 라디오 선택, 여러 줄 Other 답변, 명시적 제출, 상세 카드에 가려지는 질문 카드.
+- `Conversation/QuestionCard`: 라디오 선택, 주관식·Other 편집기, 단계별 탭과 Markdown 선택지 preview. FreeText, Steps, AsyncSteps, OptionPreviews로 각 이벤트 형식과 전체 답변 제출을 확인합니다. 상세 카드가 가려도 답변은 유지되며, 명시적 제출 또는 Deny로만 종료합니다.
 - `Conversation/Playground`: 메시지 입력과 전송부터 대화 카드 생성까지 이어지는 인터랙티브 미리보기.
 
 ## Composer 영역과 Story 구성

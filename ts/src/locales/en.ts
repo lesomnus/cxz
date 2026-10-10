@@ -401,5 +401,12 @@ export const messages = {
     "{name}: Enter a font family list or a Google Fonts selection.",
   "Browser monospace follows your browser's fixed-width font preference. Custom fonts use local font families. Google Fonts are downloaded on demand and cached by your browser.":
     "Browser monospace follows your browser's fixed-width font preference. Custom fonts use local font families. Google Fonts are downloaded on demand and cached by your browser.",
+  "Stop session": "Stop session",
+  "Action failed. Please try again.": "Action failed. Please try again.",
+  "Question steps": "Question steps",
+  Question: "Question",
+  "Question {number}": "Question {number}",
+  Answer: "Answer",
+  "Answer: {question}": "Answer: {question}",
 } as const;
 export type Message = keyof typeof messages;

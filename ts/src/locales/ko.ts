@@ -402,4 +402,11 @@ export const messages = {
     "{name}: 글꼴 목록 또는 Google Fonts 선택 정보를 입력하세요.",
   "Browser monospace follows your browser's fixed-width font preference. Custom fonts use local font families. Google Fonts are downloaded on demand and cached by your browser.":
     "브라우저 고정폭 글꼴은 브라우저 설정을 따릅니다. 직접 지정한 글꼴은 기기의 글꼴을 사용합니다. Google Fonts는 필요할 때 내려받아 브라우저에서 캐시합니다.",
+  "Stop session": "세션 정지",
+  "Action failed. Please try again.": "작업에 실패했습니다. 다시 시도하세요.",
+  "Question steps": "질문 단계",
+  Question: "질문",
+  "Question {number}": "질문 {number}",
+  Answer: "답변",
+  "Answer: {question}": "답변: {question}",
 } satisfies LanguagePack;

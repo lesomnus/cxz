@@ -64,33 +64,79 @@ export function detail(e: SessionEvent) {
 }
 export type Question = {
   key: string;
+  header?: string;
   text: string;
   multi: boolean;
   other: boolean;
   secret: boolean;
-  options: { label: string; description?: string }[];
+  options: { label: string; description?: string; preview?: string }[];
 };
 export function questions(agent: string, e: SessionEvent): Question[] {
   const p = payload(e);
-  if (agent === "claude" && e.text === "AskUserQuestion")
-    return (p.input?.questions ?? []).map((q: any) => ({
-      key: q.question,
-      text: q.question,
-      multi: !!q.multiSelect,
-      other: true,
+  const async = agent === "codex" && e.text === "agentMessage/questions";
+  let wire: unknown;
+  if (async) {
+    if (
+      p.item?.type !== "agentMessage" ||
+      p.item?.delivery !== "async" ||
+      !p.item?.id
+    )
+      return [];
+    wire = p.item.questions;
+  } else if (agent === "claude" && e.text === "AskUserQuestion")
+    wire = p.input?.questions;
+  else if (agent === "codex" && e.text === "item/tool/requestUserInput")
+    wire = p.params?.questions;
+  else return [];
+  if (!Array.isArray(wire) || !wire.length) return [];
+  const seen = new Set<string>();
+  const result: Question[] = [];
+  for (const [index, q] of wire.entries()) {
+    if (!q || typeof q !== "object") return [];
+    const key = async ? String(index) : agent === "claude" ? q.question : q.id;
+    const text = async ? q.title : q.question;
+    if (
+      typeof key !== "string" ||
+      !key.trim() ||
+      typeof text !== "string" ||
+      !text.trim() ||
+      seen.has(key)
+    )
+      return [];
+    seen.add(key);
+    const choices = q.options ?? [];
+    if (!Array.isArray(choices)) return [];
+    const labels = new Set<string>();
+    const options: Question["options"] = [];
+    for (const option of choices) {
+      const o = async ? { label: option } : option;
+      if (
+        !o ||
+        typeof o.label !== "string" ||
+        !o.label.trim() ||
+        labels.has(o.label)
+      )
+        return [];
+      labels.add(o.label);
+      options.push({
+        label: o.label,
+        ...(typeof o.description === "string"
+          ? { description: o.description }
+          : {}),
+        ...(typeof o.preview === "string" ? { preview: o.preview } : {}),
+      });
+    }
+    result.push({
+      key,
+      text,
+      ...(typeof q.header === "string" ? { header: q.header } : {}),
+      multi: agent === "claude" && !!q.multiSelect,
+      other: async || agent === "claude" || !!q.isOther || options.length === 0,
       secret: !!q.isSecret,
-      options: q.options ?? [],
-    }));
-  if (agent === "codex" && e.text === "item/tool/requestUserInput")
-    return (p.params?.questions ?? []).map((q: any) => ({
-      key: q.id,
-      text: q.question,
-      multi: false,
-      other: !!q.isOther || !q.options?.length,
-      secret: !!q.isSecret,
-      options: q.options ?? [],
-    }));
-  return [];
+      options,
+    });
+  }
+  return result;
 }
 export function approvalTitle(e: SessionEvent) {
   const p = payload(e);

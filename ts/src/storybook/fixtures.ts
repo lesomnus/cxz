@@ -177,7 +177,13 @@ export function activityStackEvents() {
     ),
   ];
 }
-export function questionEvent() {
+export type QuestionExample =
+  | "choice"
+  | "free-text"
+  | "steps"
+  | "async-steps"
+  | "previews";
+export function questionEvent(example: QuestionExample = "choice") {
   const event = storyEvent(5, "approval", "item/tool/requestUserInput", {
     params: {
       questions: [
@@ -199,6 +205,85 @@ export function questionEvent() {
       ],
     },
   });
+  if (example === "free-text" || example === "async-steps") {
+    event.text = "agentMessage/questions";
+    event.payload = new TextEncoder().encode(
+      JSON.stringify({
+        item: {
+          id: "question-message",
+          type: "agentMessage",
+          delivery: "async",
+          questions:
+            example === "free-text"
+              ? [
+                  {
+                    title: "Describe the change you want to make.",
+                    options: null,
+                  },
+                ]
+              : [
+                  { title: "Choose a theme.", options: ["Light", "Dark"] },
+                  { title: "What else should we change?", options: null },
+                ],
+        },
+      }),
+    );
+  } else if (example === "steps") {
+    event.payload = new TextEncoder().encode(
+      JSON.stringify({
+        params: {
+          questions: [
+            {
+              id: "layout",
+              header: "Layout",
+              question: "Choose the layout.",
+              options: [{ label: "Compact" }, { label: "Spacious" }],
+            },
+            {
+              id: "notes",
+              header: "Notes",
+              question: "Describe any additional changes.",
+              options: null,
+            },
+            {
+              id: "timing",
+              header: "Timing",
+              question: "When should we ship?",
+              options: [{ label: "Now" }, { label: "Later" }],
+            },
+          ],
+        },
+      }),
+    );
+  } else if (example === "previews") {
+    event.text = "AskUserQuestion";
+    event.payload = new TextEncoder().encode(
+      JSON.stringify({
+        input: {
+          questions: [
+            {
+              header: "Change",
+              question: "Which implementation should we use?",
+              options: [
+                {
+                  label: "Compact",
+                  description: "Keep a narrow editor.",
+                  preview:
+                    "### Compact editor\n\n```css\n.editor { max-width: 600px; }\n```\n\n[Documentation](https://example.com/docs)",
+                },
+                {
+                  label: "Fluid",
+                  description: "Use the available width.",
+                  preview:
+                    "### Fluid editor\n\n```css\n.editor { width: 100%; }\n```",
+                },
+              ],
+            },
+          ],
+        },
+      }),
+    );
+  }
   event.requestId = "question-1";
   return event;
 }

@@ -1,8 +1,8 @@
-import { useRef, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import type { Session } from "../gen/cxz/session_pb";
 import type { SessionPurgeReply } from "../gen/cxz/session_svc_pb";
 import { ActionMenu } from "./action-menu";
-import { Button } from "./button";
+import { ConfirmationDialog } from "./confirmation-dialog";
 import { useFloatingCard } from "./floating-card";
 import { t, currentLocale } from "./i18n";
 import { useLocale } from "./i18n-react";
@@ -32,119 +32,153 @@ export function SessionMenu({
   const resume = resumableStates.has(session?.status?.state ?? "");
   const unavailable = busy || !session?.status?.runId;
   const run = session?.status?.runId ?? "";
-  function restart() {
-    open({
-      title: t("Restart session"),
-      content: (close) => (
-        <SessionConfirmation
-          close={close}
-          confirm={t("Restart")}
-          execute={() => manage("restart", run)}
-        >
-          <p>
-            {t(
-              "Active work stops and pending approvals are cleared. Conversation history, login and permission policy are retained.",
-            )}
-          </p>
-          <p className="muted">
-            {t(
-              "This restarts the agent; it does not recreate the project container.",
-            )}
-          </p>
-        </SessionConfirmation>
-      ),
-    });
+  const [confirmation, setConfirmation] = useState<{
+    sessionId: string;
+    run: string;
+    kind: "stop" | "restart" | "purge";
+    plan?: SessionPurgeReply;
+  }>();
+  function confirm(kind: "stop" | "restart") {
+    if (session) setConfirmation({ sessionId: session.runtimeId, run, kind });
   }
   async function preparePurge() {
     const plan = await previewPurge();
-    if (!plan) return;
-    open({
-      title: t("Purge session"),
-      content: (close) => (
-        <SessionConfirmation
-          close={close}
-          confirm={t("Purge permanently")}
-          execute={purge}
-        >
-          <p>
-            {t(
-              "Permanently deletes this session and its stored data. This cannot be undone.",
-            )}
-          </p>
-          <dl className="session-details purge-plan">
-            {plan.targets.map((target, index) => (
-              <div key={index}>
-                <dt>{target.kind}</dt>
-                <dd>
-                  <code>{target.path}</code>
-                  <small>
-                    {t("{files} files · {bytes} bytes", {
-                      files: target.files,
-                      bytes: target.bytes.toString(),
-                    })}
-                  </small>
-                </dd>
-              </div>
-            ))}
-          </dl>
-          {!!plan.retained.length && (
-            <p className="muted">
-              {t("Retained: {items}", { items: plan.retained.join(", ") })}
-            </p>
-          )}
-        </SessionConfirmation>
-      ),
-    });
+    if (plan && session)
+      setConfirmation({
+        sessionId: session.runtimeId,
+        run,
+        kind: "purge",
+        plan,
+      });
   }
   return (
-    <ActionMenu
-      label={t("Session menu")}
-      placement="above"
-      disabled={!session}
-      status={session?.status?.state}
-      groups={[
-        {
-          label: t("Controls"),
-          items: [
-            {
-              label: resume ? t("Resume") : t("Stop"),
-              icon: <SessionActionIcon action={resume ? "resume" : "stop"} />,
-              disabled: unavailable,
-              run: () => void manage(resume ? "resume" : "stop", run),
-            },
-            {
-              label: t("Restart"),
-              icon: <SessionActionIcon action="restart" />,
-              disabled: unavailable,
-              run: restart,
-            },
-            {
-              label: t("Purge"),
-              icon: <SessionActionIcon action="purge" />,
-              disabled: busy,
-              danger: true,
-              run: () => void preparePurge(),
-            },
-          ],
-        },
-        {
-          label: "",
-          items: [
-            {
-              label: t("Details"),
-              icon: <SessionActionIcon action="details" />,
-              run: () =>
-                open({
-                  title: t("Session details"),
-                  content: () => (
-                    <SessionDetails session={session!} info={info} />
-                  ),
-                }),
-            },
-          ],
-        },
-      ]}
-    />
+    <>
+      <ActionMenu
+        label={t("Session menu")}
+        placement="above"
+        disabled={!session}
+        status={session?.status?.state}
+        groups={[
+          {
+            label: t("Controls"),
+            items: [
+              {
+                label: resume ? t("Resume") : t("Stop"),
+                icon: <SessionActionIcon action={resume ? "resume" : "stop"} />,
+                disabled: unavailable,
+                run: () =>
+                  resume ? void manage("resume", run) : confirm("stop"),
+              },
+              {
+                label: t("Restart"),
+                icon: <SessionActionIcon action="restart" />,
+                disabled: unavailable,
+                run: () => confirm("restart"),
+              },
+              {
+                label: t("Purge"),
+                icon: <SessionActionIcon action="purge" />,
+                disabled: busy,
+                danger: true,
+                run: () => void preparePurge(),
+              },
+            ],
+          },
+          {
+            label: "",
+            items: [
+              {
+                label: t("Details"),
+                icon: <SessionActionIcon action="details" />,
+                run: () =>
+                  open({
+                    title: t("Session details"),
+                    content: () => (
+                      <SessionDetails session={session!} info={info} />
+                    ),
+                  }),
+              },
+            ],
+          },
+        ]}
+      />
+      {confirmation?.sessionId === session?.runtimeId && confirmation && (
+        <ConfirmationDialog
+          key={`${confirmation.sessionId}:${confirmation.kind}:${confirmation.run}`}
+          title={
+            confirmation.kind === "purge"
+              ? t("Purge session")
+              : confirmation.kind === "restart"
+                ? t("Restart session")
+                : t("Stop session")
+          }
+          confirmLabel={
+            confirmation.kind === "purge"
+              ? t("Purge permanently")
+              : confirmation.kind === "restart"
+                ? t("Restart")
+                : t("Stop")
+          }
+          close={() => setConfirmation(undefined)}
+          failureMessage={t(
+            "Action failed. Check session status before retrying.",
+          )}
+          execute={() =>
+            confirmation.kind === "purge"
+              ? purge()
+              : manage(confirmation.kind, confirmation.run)
+          }
+        >
+          {confirmation.kind === "purge" ? (
+            <>
+              <p>
+                {t(
+                  "Permanently deletes this session and its stored data. This cannot be undone.",
+                )}
+              </p>
+              <dl className="session-details purge-plan">
+                {confirmation.plan!.targets.map((target, index) => (
+                  <div key={index}>
+                    <dt>{target.kind}</dt>
+                    <dd>
+                      <code>{target.path}</code>
+                      <small>
+                        {t("{files} files · {bytes} bytes", {
+                          files: target.files,
+                          bytes: target.bytes.toString(),
+                        })}
+                      </small>
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+              {!!confirmation.plan!.retained.length && (
+                <p className="muted">
+                  {t("Retained: {items}", {
+                    items: confirmation.plan!.retained.join(", "),
+                  })}
+                </p>
+              )}
+            </>
+          ) : (
+            <>
+              <p>
+                {t(
+                  "Active work stops and pending approvals are cleared. Conversation history, login and permission policy are retained.",
+                )}
+              </p>
+              {confirmation.kind === "restart" && (
+                <p className="muted">
+                  {t(
+                    "This restarts the agent; it does not recreate the project container.",
+                  )}
+                </p>
+              )}
+            </>
+          )}
+        </ConfirmationDialog>
+      )}
+    </>
   );
 }
 
@@ -184,55 +218,6 @@ function SessionActionIcon({
         </>
       )}
     </svg>
-  );
-}
-
-function SessionConfirmation({
-  children,
-  close,
-  confirm,
-  execute,
-}: {
-  children: ReactNode;
-  close: () => void;
-  confirm: string;
-  execute: () => Promise<boolean>;
-}) {
-  const pending = useRef(false);
-  const [busy, setBusy] = useState(false);
-  const [failed, setFailed] = useState(false);
-  async function submit() {
-    if (pending.current) return;
-    pending.current = true;
-    setBusy(true);
-    setFailed(false);
-    try {
-      if (await execute()) close();
-      else setFailed(true);
-    } catch {
-      setFailed(true);
-    } finally {
-      pending.current = false;
-      setBusy(false);
-    }
-  }
-  return (
-    <div className="session-confirmation">
-      {children}
-      {failed && (
-        <p role="alert">
-          {t("Action failed. Check session status before retrying.")}
-        </p>
-      )}
-      <div className="session-confirmation-actions">
-        <Button type="button" disabled={busy} onClick={close}>
-          {t("Cancel")}
-        </Button>
-        <Button type="button" disabled={busy} onClick={() => void submit()}>
-          {busy ? t("Working…") : confirm}
-        </Button>
-      </div>
-    </div>
   );
 }
 

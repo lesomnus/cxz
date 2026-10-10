@@ -101,7 +101,7 @@ test("option cards and Other share native selection and multiline paste editing"
   await expect(response).toBeVisible();
   const text = (await response.textContent())!;
   expect(JSON.parse(text.slice(text.indexOf("{")))).toEqual({
-    environment: { selected: ["Production"], other: "prefix\n" + body },
+    environment: { selected: [], other: "prefix\n" + body },
   });
   await expect(composer).toHaveValue("Keep composer draft");
 });

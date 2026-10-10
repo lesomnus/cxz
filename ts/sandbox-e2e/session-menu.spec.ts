@@ -99,6 +99,19 @@ test("Stop and Resume toggle, while Restart requires confirmation and preserves 
     .last()
     .innerText();
   await choose(page, "Stop");
+  const stop = page.getByRole("dialog", { name: "Stop session" });
+  await expect(stop).toBeVisible();
+  await expect(
+    stop.getByRole("button", { name: "Cancel", exact: true }),
+  ).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(stop).toHaveCount(0);
+  expect(await runId(page)).toBe(initial);
+  await choose(page, "Stop");
+  await page
+    .getByRole("dialog", { name: "Stop session" })
+    .getByRole("button", { name: "Stop", exact: true })
+    .click();
   await page.getByRole("button", { name: "Session menu", exact: true }).click();
   await expect(
     page.getByRole("menuitem", { name: "Resume", exact: true }),
