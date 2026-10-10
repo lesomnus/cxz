@@ -21,6 +21,19 @@
   width: 180px;
   height: 480px;
 }
+.storybook-burst-status {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  padding: 4px 8px;
+  min-height: 24px;
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+}
 .storybook-panel > header {
   display: flex;
   align-items: center;

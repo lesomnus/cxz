@@ -54,6 +54,54 @@ export function responseEvent(
   });
   return event;
 }
+
+// One update per tick, including completions that resize an existing tool row.
+export function burstEvent(
+  index: number,
+  seq: number,
+  agent: string,
+  turn: string,
+) {
+  const step = index % 5;
+  const batch = Math.floor(index / 5) + 1;
+  if (step === 0 || step === 4) {
+    const text =
+      step === 0
+        ? `Update **${batch}**: inspecting the next part of the workspace.`
+        : `Update **${batch}**: the check completed.\n\n` +
+          (batch % 3 === 0
+            ? "```typescript\nexport async function check() {\n  const result = await inspectWorkspace();\n  return { ready: true, result };\n}\n```\n\nThe next check is starting."
+            : batch % 3 === 1
+              ? "- Read the current state.\n- Compare the expected result.\n- Keep the conversation following new activity.\n\nThis longer reply changes the measured height while more events arrive."
+              : "The measured result is ready.\n\n| Check | Result |\n| --- | --- |\n| Workspace | Ready |\n| Conversation | Updated |\n\nContinuing with the next operation.");
+    const event = responseEvent(seq, agent, text);
+    event.response!.phase = "commentary";
+    event.response!.completionJson = new Uint8Array();
+    return event;
+  }
+  const command = `/usr/bin/zsh -lc 'printf "Preview check ${batch}\\n"'`;
+  const kind =
+    step === 1 ? "tool_call" : step === 2 ? "tool_output" : "tool_result";
+  const output =
+    `Preview check ${batch}\n` +
+    "Workspace check passed.\n".repeat((batch % 4) + 1);
+  const event = storyEvent(
+    seq,
+    kind,
+    step === 1 ? (agent === "claude" ? "Bash" : command) : output,
+    {
+      ...(agent === "claude" ? { command } : {}),
+      item: {
+        type: "commandExecution",
+        command,
+        status: step === 3 ? "completed" : "inProgress",
+        ...(step === 3 ? { exitCode: 0, aggregatedOutput: output } : {}),
+      },
+    },
+  );
+  event.requestId = `${turn}/check-${batch}`;
+  return event;
+}
 export function toolEvents(state = "completed") {
   const command = "/usr/bin/zsh -lc 'git status --short --branch'";
   const call = storyEvent(3, "tool_call", command, {
@@ -65,7 +113,7 @@ export function toolEvents(state = "completed") {
     item: {
       type: "commandExecution",
       command,
-      status,
+      status: state,
       exitCode: state === "completed" ? 0 : 1,
       aggregatedOutput: "## main\n M ts/src/app.tsx\n",
     },

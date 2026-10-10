@@ -8,6 +8,7 @@ import { useSendMotion } from "../send-motion";
 import type { TurnProgress } from "../turn-progress";
 import {
   conversationEvents,
+  burstEvent,
   responseEvent,
   storyEvent,
   toolEvents,
@@ -25,11 +26,15 @@ export function ConversationPlayground({
   acknowledgementMs = 450,
   responseMs = 1800,
   historyTurns = 1,
+  burstUpdates = 0,
+  burstIntervalMs = 40,
 }: {
   agent?: string;
   acknowledgementMs?: number;
   responseMs?: number;
   historyTurns?: number;
+  burstUpdates?: number;
+  burstIntervalMs?: number;
 }) {
   const [reset, setReset] = useState(0);
   return (
@@ -44,6 +49,8 @@ export function ConversationPlayground({
           acknowledgementMs={acknowledgementMs}
           responseMs={responseMs}
           historyTurns={historyTurns}
+          burstUpdates={burstUpdates}
+          burstIntervalMs={burstIntervalMs}
         />
       </PreviewFrame>
     </div>
@@ -56,6 +63,8 @@ function ConversationSimulation({
   acknowledgementMs,
   responseMs,
   historyTurns,
+  burstUpdates,
+  burstIntervalMs,
 }: Required<Parameters<typeof ConversationPlayground>[0]>) {
   const [events, setEvents] = useState(() =>
     historyTurns === 1
@@ -70,6 +79,8 @@ function ConversationSimulation({
   const [sending, setSending] = useState(false);
   const [turn, setTurn] = useState<TurnProgress>(idleTurn);
   const [reading, setReading] = useState(false);
+  const [received, setReceived] = useState(0);
+  const bottomGap = useRef<HTMLOutputElement>(null);
   const follow = useRef(true);
   const pane = useRef<HTMLDivElement>(null);
   const source = useRef<HTMLDivElement>(null);
@@ -115,6 +126,7 @@ function ConversationSimulation({
     event.preventDefault();
     if (sending || turn.active || !draft.trim()) return;
     const submitted = draft;
+    setReceived(0);
     const text = composerPrompt(submitted, pastes.current);
     const controller = new AbortController();
     request.current = controller;
@@ -140,6 +152,19 @@ function ConversationSimulation({
     motion.enter(departure);
     await delay(responseMs, controller.signal);
     if (controller.signal.aborted) return;
+    for (let index = 0; index < burstUpdates; index++) {
+      const update = burstEvent(
+        index,
+        Number(++sequence.current),
+        agent,
+        `burst-${input.seq}`,
+      );
+      update.timeMs = BigInt(Date.now());
+      setEvents((old) => [...old, update]);
+      setReceived(index + 1);
+      await delay(burstIntervalMs, controller.signal);
+      if (controller.signal.aborted) return;
+    }
     const answer = responseEvent(
       Number(++sequence.current),
       agent,
@@ -155,6 +180,22 @@ function ConversationSimulation({
   }
   return (
     <>
+      {burstUpdates > 0 && (
+        <div
+          className="storybook-burst-status"
+          aria-label="Stream preview status"
+        >
+          <span data-following={!reading}>
+            {reading ? "Reading history" : "Following latest"}
+          </span>
+          <span>
+            Updates {received} / {burstUpdates}
+          </span>
+          <span>
+            Bottom gap <output ref={bottomGap}>0</output>px
+          </span>
+        </div>
+      )}
       <PreviewTranscript
         events={events}
         agent={agent}
@@ -163,7 +204,20 @@ function ConversationSimulation({
         navigate={() => {
           follow.current = false;
         }}
-        reading={(value) => setReading(value)}
+        reading={(active) => {
+          const el = pane.current;
+          if (!el) return;
+          const gap = Math.max(
+            0,
+            el.scrollHeight - el.scrollTop - el.clientHeight,
+          );
+          // Use the application's follow decision, including wheel/drag frames.
+          // The old preview only showed gesture activity and never resumed follow.
+          follow.current = !active && gap < 1;
+          setReading(!follow.current);
+          if (bottomGap.current)
+            bottomGap.current.value = String(Math.round(gap));
+        }}
       />
       <FloatingCardHost />
       <ConversationComposer

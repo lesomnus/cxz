@@ -48,6 +48,12 @@ Playground에서 메시지를 작성하고 화살표 버튼이나 Ctrl+Enter로 
 Esc 두 번으로 모의 응답을 정지할 수 있습니다. Reset preview는 기록과 대기 중인 응답을 초기화합니다.
 긴 대화와 느린 전송 확인 상태도 별도 스토리로 제공합니다.
 
+`RapidResponses`는 긴 기록에서, `RapidResponsesFromEmpty`는 빈 대화에서 시작합니다.
+메시지를 Send하면 중간 대화 응답과 작업 시작·출력·완료가 빠르게 이어지고 최종 응답으로 끝납니다.
+Controls의 `burstUpdates`와 `burstIntervalMs`로 발생 횟수와 간격을 조절합니다.
+미리보기의 추적 상태와 `Bottom gap`으로 맨 아래를 계속 따라가는지 확인할 수 있습니다.
+진행 중 위로 스크롤해 기록을 읽거나 Latest로 추적을 재개할 수 있으며, Stop과 Reset은 발생을 중단합니다.
+
 여러 줄 텍스트를 붙여넣으면 chip이 만들어지고, chip을 누르면 미리보기 카드가 열립니다.
 전송된 카드에는 chip이 가리키는 원문이 들어갑니다. 작업 카드를 더블클릭하면
 카드 아래에 Input/Output/Result 탭과 Monaco 에디터가 열립니다.
