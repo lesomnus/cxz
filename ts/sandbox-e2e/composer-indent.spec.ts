@@ -125,7 +125,7 @@ test("Tab indents, Shift+Tab outdents, native undo preserves selection and Ctrl+
   await input.press("Control+Enter");
   await expect(input).toHaveValue("");
   await expect(page.locator("article.input .message-body").last()).toHaveText(
-    "    " + pasted,
+    /^ {4}\[Attached file: \/cxz\/assets\/session-1\/upload-\d+\/paste-[a-f0-9]+\.txt — read this file for the full content\]$/,
   );
 });
 
@@ -211,6 +211,10 @@ test("Question Other shares indentation and focus escape without touching the co
   await expect(input).toHaveValue("answer");
   await input.press("Control+m");
   await input.press("Tab");
+  await expect(
+    question.getByRole("button", { name: "Cancel", exact: true }),
+  ).toBeFocused();
+  await page.keyboard.press("Tab");
   await expect(
     question.getByRole("button", { name: "Submit", exact: true }),
   ).toBeFocused();
