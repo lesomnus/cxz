@@ -87,7 +87,11 @@ test("monospace line numbers follow soft wraps, native scrolling and mobile widt
     page.locator("article.input").filter({ hasText: "한글 조합 중" }),
   ).toHaveCount(0);
   await input.dispatchEvent("compositionend", { data: "중" });
-  await expect(page.locator(".editor-surface")).toBeVisible();
+  await expect(input).not.toHaveCSS("color", "rgba(0, 0, 0, 0)");
+  await expect(page.locator(".editor-surface")).toHaveCSS(
+    "visibility",
+    "hidden",
+  );
 });
 
 test("paste chips preserve session drafts and send exact original text inline", async ({

@@ -100,6 +100,13 @@ export function ComposerEditor({
       }),
     [value, pastes],
   );
+  // Plain drafts use the native text painter, including throughout IME edits.
+  // Only decorations need the mirrored text layer over the native caret.
+  const decorated =
+    commandHints.open ||
+    blocks.length > 0 ||
+    ranges.length > 0 ||
+    lines.some((line) => inlineCodeRanges(line).length > 0);
 
   function syncScroll() {
     const el = input.current!;
@@ -117,8 +124,9 @@ export function ComposerEditor({
     const baseline = parseFloat(
       style.getPropertyValue("--composer-editor-height"),
     );
+    // These sizes become CSS lengths; screen-space bounds would apply zoom twice.
     const contentHeight =
-      mirror.current!.getBoundingClientRect().height +
+      parseFloat(getComputedStyle(mirror.current!).height) +
       parseFloat(style.paddingTop) +
       parseFloat(style.paddingBottom);
     const expanded = String(contentHeight > baseline + 1);
@@ -126,7 +134,7 @@ export function ComposerEditor({
     const numbers = gutter.current!.children;
     Array.from(mirror.current!.children).forEach((line, index) => {
       (numbers[index] as HTMLElement).style.height =
-        `${line.getBoundingClientRect().height}px`;
+        getComputedStyle(line).height;
     });
     syncScroll();
   }
@@ -255,6 +263,7 @@ export function ComposerEditor({
       <div
         className="composer-editor"
         data-composing={composition}
+        data-decorated={decorated}
         data-command-open={commandHints.open}
         style={{
           tabSize: editorSettings.tabSize,

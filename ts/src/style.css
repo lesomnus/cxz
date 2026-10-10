@@ -1526,7 +1526,8 @@ pre {
   .editor-mirror {
   visibility: hidden;
 }
-.composer-input[data-send-exiting] textarea {
+.composer-input[data-send-exiting] > .composer-editor textarea {
+  color: transparent;
   caret-color: transparent;
 }
 .composer-input[data-send-exiting] .command-suggestions {
@@ -1798,7 +1799,11 @@ pre {
 .composer-editor[data-composing="true"] textarea {
   color: inherit;
 }
-.composer-editor[data-composing="true"] .editor-surface {
+.composer-editor[data-decorated="false"] textarea {
+  color: inherit;
+}
+.composer-editor[data-composing="true"] .editor-surface,
+.composer-editor[data-decorated="false"] .editor-surface {
   visibility: hidden;
 }
 .composer-editor[data-composing="true"] .editor-code-line {

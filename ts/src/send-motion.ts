@@ -136,6 +136,8 @@ export function useSendMotion({
     const snapshot = editor.cloneNode(true) as HTMLElement;
     // Only submitted source text departs; unaccepted command hints are decoration.
     snapshot.removeAttribute("data-command-open");
+    // Plain drafts paint natively while editing; departure uses their mirror.
+    snapshot.dataset.decorated = "true";
     snapshot.querySelector(".command-suggestions")?.remove();
     snapshot.classList.add("composer-send-ghost");
     snapshot.setAttribute("aria-hidden", "true");
