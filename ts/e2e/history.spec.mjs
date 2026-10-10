@@ -371,65 +371,53 @@ test("viewport fades cover native tool rows while the scrollbar and detail inter
     el.scrollTop = (el.scrollHeight - el.clientHeight) / 2;
   });
   for (const edge of ["top", "bottom"]) {
-    let seq;
-    await expect
-      .poll(async () => {
-        seq = await pane.evaluate((el) => {
-          const area = el.getBoundingClientRect();
-          const task = [...el.querySelectorAll(".tool-activity")].find(
-            (node) => {
-              const box = node.getBoundingClientRect();
-              return (
-                box.top > area.top + area.height / 3 &&
-                box.bottom < area.bottom - area.height / 3
-              );
-            },
-          );
-          return task?.dataset.seq;
-        });
-        return seq;
-      })
-      .toBeTruthy();
-    const task = page.locator(`.tool-activity[data-seq="${seq}"]`);
-    await task.evaluate((el, edge) => {
-      const pane = el.closest(".transcript");
-      const area = pane.getBoundingClientRect();
-      const box = el.getBoundingClientRect();
-      pane.scrollTop +=
-        box.top +
-        box.height / 2 -
-        (edge === "top" ? area.top + 8 : area.bottom - 8);
-    }, edge);
     const fade = page.locator(`.transcript-fade-${edge}`);
     await expect(fade).toHaveCSS("opacity", "1");
     await expect
       .poll(() => fade.evaluate((el) => el.getBoundingClientRect().height))
       .toBeGreaterThan(16);
-    const layers = await task.evaluate((el, edge) => {
-      const box = el.getBoundingClientRect();
+    // Coverage is a box overlap, and the layering is hit-tested at a point
+    // taken from inside that overlap. Neither depends on scrolling a chosen row
+    // to a computed offset, which is what used to decide this test: a scroll
+    // that landed a pixel short, or a point that fell in the gap between two
+    // rows, read as a layering failure.
+    const layers = await pane.evaluate((el, edge) => {
       const area = el.closest(".transcript-area");
       const fade = area.querySelector(`.transcript-fade-${edge}`);
+      const box = fade.getBoundingClientRect();
+      const row = [...el.querySelectorAll(".tool-activity")]
+        .map((node) => ({ node, rect: node.getBoundingClientRect() }))
+        .find(
+          ({ rect }) => rect.top < box.bottom - 1 && rect.bottom > box.top + 1,
+        );
+      if (!row) {
+        return { covered: false };
+      }
+      // Horizontally the row's own centre, which is inside the content column
+      // and clear of the scrollbar; vertically the middle of the overlap.
+      const x = row.rect.x + row.rect.width / 2;
+      const y =
+        (Math.max(row.rect.top, box.top) +
+          Math.min(row.rect.bottom, box.bottom)) /
+        2;
       fade.style.pointerEvents = "auto";
-      const bodyBelow =
-        document.elementFromPoint(box.x + 20, box.y + box.height / 2) === fade;
+      const fadeOnTop = document.elementFromPoint(x, y) === fade;
       const thumb = area.querySelector(".scroll-thumb");
       const handle = thumb.getBoundingClientRect();
       const scrollbarAbove = thumb.contains(
         document.elementFromPoint(handle.x + handle.width / 2, handle.y + 2),
       );
       fade.style.pointerEvents = "none";
-      const stillInteractive = el.contains(
-        document.elementFromPoint(box.x + 20, box.y + box.height / 2),
+      const stillInteractive = row.node.contains(
+        document.elementFromPoint(x, y),
       );
-      return { bodyBelow, scrollbarAbove, stillInteractive };
+      return { covered: true, fadeOnTop, scrollbarAbove, stillInteractive };
     }, edge);
     expect(layers).toEqual({
-      bodyBelow: true,
+      covered: true,
+      fadeOnTop: true,
       scrollbarAbove: true,
       stillInteractive: true,
-    });
-    await pane.evaluate((el) => {
-      el.scrollTop = (el.scrollHeight - el.clientHeight) / 2;
     });
   }
 });
