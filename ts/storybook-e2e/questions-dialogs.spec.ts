@@ -22,7 +22,7 @@ test("confirmation dialog traps focus, cancels without acting and fits a small v
   const heading = (await dialog.locator(".card-heading strong").boundingBox())!;
   const text = (await dialog.locator(".card-body p").boundingBox())!;
   expect(text.x).toBeCloseTo(heading.x, 0);
-  expect(confirmBounds.x).toBeLessThan(heading.x);
+  expect(confirmBounds.x).toBeGreaterThan(heading.x);
   const cardBounds = (await dialog.locator(".floating-card").boundingBox())!;
   const bodyBounds = (await dialog.locator(".card-body").boundingBox())!;
   expect(bodyBounds.x - cardBounds.x).toBeLessThanOrEqual(1);
