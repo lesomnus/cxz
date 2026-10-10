@@ -2054,7 +2054,10 @@ pre {
   grid-template-rows: 1fr;
   transform: none;
 }
-.event-detail[data-lifted="true"] .activity-card-face {
+/* Fold the hidden native face together with its preview so removing the portal
+   reveals the folded state, without replaying a second closing transition. */
+.event-detail[data-lifted="true"][data-lifted-entered="true"]
+  .activity-card-face {
   grid-template-rows: 1fr;
   transform: none;
 }

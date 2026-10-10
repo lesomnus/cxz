@@ -171,6 +171,26 @@ test("folded activity cards unfold above neighbors without shifting the transcri
   await expect(timestamp).toHaveCSS("opacity", "1");
   await expect(timestamp).toHaveCSS("transition-duration", "0s");
   await page.screenshot({ path: "test-results/activity-stack-unfolded.png" });
+  // Sample the painted surface across the portal-to-native handoff, rather than
+  // checking only the final folded state: reopening for a frame is visible.
+  const seq = await file.getAttribute("data-seq");
+  await page.evaluate((seq) => {
+    const native = document.querySelector(
+      `.event-detail[data-seq="${seq}"] .activity-card-face`,
+    )!;
+    const probe = { done: false, nativeTilts: [] as number[] };
+    (window as any).activityExitProbe = probe;
+    const deadline = performance.now() + 600;
+    const sample = () => {
+      if (!document.querySelector(".activity-card-preview"))
+        probe.nativeTilts.push(
+          new DOMMatrix(getComputedStyle(native).transform).m23,
+        );
+      if (performance.now() < deadline) requestAnimationFrame(sample);
+      else probe.done = true;
+    };
+    requestAnimationFrame(sample);
+  }, seq);
   await page.mouse.move(20, 20);
   // The timestamp disappears while the lifted face is still folding away.
   const leaving = await page
@@ -191,6 +211,17 @@ test("folded activity cards unfold above neighbors without shifting the transcri
     visibility: "hidden",
   });
   await expect.poll(() => content.evaluate((el) => el.clientHeight)).toBe(18);
+  await expect
+    .poll(() => page.evaluate(() => (window as any).activityExitProbe.done))
+    .toBe(true);
+  const tilts = await page.evaluate(
+    () => (window as any).activityExitProbe.nativeTilts as number[],
+  );
+  expect(tilts.length).toBeGreaterThan(0);
+  const foldedTilt = await face.evaluate(
+    (el) => new DOMMatrix(getComputedStyle(el).transform).m23,
+  );
+  for (const tilt of tilts) expect(tilt).toBeCloseTo(foldedTilt, 2);
   await file.focus();
   await expect
     .poll(() => content.evaluate((el) => el.clientHeight))

@@ -152,6 +152,7 @@ export function ActivityCard({
       aria-controls={details.controls}
       aria-describedby={timestamp}
       data-lifted={present && !!area}
+      data-lifted-entered={entered}
       onPointerEnter={() => setHovered(true)}
       onPointerLeave={() => setHovered(false)}
       onFocus={() => setFocused(true)}
