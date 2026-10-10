@@ -90,3 +90,14 @@ npm run test:storybook
 
 빌드 결과는 Git에서 제외된 `ts/storybook-static/`에 생성됩니다.
 브라우저 검증은 정적 빌드를 별도 포트에서 서빙하며 입력·전송·chip·상세 탭·질문 응답·세션 선택을 확인합니다.
+
+## 독립 UI 패키지
+
+다른 프로젝트에서 사용할 기본 컴포넌트는 `ts/packages/ui`의 `@lesomnus/cxz-ui`로 분리합니다. 각 컴포넌트의 스타일은 옆에 있는 CSS Module이 소유하고 공통 디자인 값은 패키지의 `tokens.css`가 관리합니다. 앱의 `style.css`에는 세션·대화·설정 페이지 배치와 공용 컴포넌트를 그 배치에 맞추는 스타일을 남깁니다. 번역은 UIProvider로 주입하고 Monaco 에디터의 설정·테마는 props로 전달합니다.
+
+```sh
+cd ts
+npm run storybook:ui
+```
+
+별도의 UI Storybook은 앱 전역 CSS와 설정·언어 저장소 없이 패키지를 검증합니다. 앱 Storybook은 실제 제품 화면 안에서의 조합을 검증합니다. 패키지 설치·테마·번역·에디터 사용법은 [UI README](../ts/packages/ui/README.md)를 참조하세요. 배포용 CSS와 타입 선언은 빌드 결과이며 git에 저장하지 않습니다.

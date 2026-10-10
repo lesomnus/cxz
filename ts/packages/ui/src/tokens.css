@@ -1,0 +1,100 @@
+/* Shared monochrome ramp. Dark values retain the existing appearance. */
+:root {
+  --ui-shade-0: #000000;
+  --ui-shade-16: #101010;
+  --ui-shade-17: #111111;
+  --ui-shade-20: #141414;
+  --ui-shade-22: #161616;
+  --ui-shade-24: #181818;
+  --ui-shade-25: #191919;
+  --ui-shade-27: #1b1b1b;
+  --ui-shade-28: #1c1c1c;
+  --ui-shade-32: #202020;
+  --ui-shade-34: #222222;
+  --ui-shade-36: #242424;
+  --ui-shade-38: #262626;
+  --ui-shade-40: #282828;
+  --ui-shade-41: #292929;
+  --ui-shade-43: #2b2b2b;
+  --ui-shade-44: #2c2c2c;
+  --ui-shade-48: #303030;
+  --ui-shade-51: #333333;
+  --ui-shade-54: #363636;
+  --ui-shade-56: #383838;
+  --ui-shade-58: #3a3a3a;
+  --ui-shade-60: #3c3c3c;
+  --ui-shade-65: #414141;
+  --ui-shade-72: #484848;
+  --ui-shade-115: #737373;
+  --ui-shade-119: #777777;
+  --ui-shade-122: #7a7a7a;
+  --ui-shade-136: #888888;
+  --ui-shade-140: #8c8c8c;
+  --ui-shade-144: #909090;
+  --ui-shade-160: #a0a0a0;
+  --ui-shade-170: #aaaaaa;
+  --ui-shade-181: #b5b5b5;
+  --ui-shade-204: #cccccc;
+  --ui-shade-221: #dddddd;
+  --ui-shade-237: #ededed;
+  --ui-shade-255: #ffffff;
+}
+:root[data-ui-theme="light"],
+:root[data-theme="light"] {
+  --ui-shade-0: #ffffff;
+  --ui-shade-16: #fcfcfc;
+  --ui-shade-17: #fbfbfb;
+  --ui-shade-20: #fafafa;
+  --ui-shade-22: #f9f9f9;
+  --ui-shade-24: #f7f7f7;
+  --ui-shade-25: #f6f6f6;
+  --ui-shade-27: #f5f5f5;
+  --ui-shade-28: #f4f4f4;
+  --ui-shade-32: #f1f1f1;
+  --ui-shade-34: #eeeeee;
+  --ui-shade-36: #ececec;
+  --ui-shade-38: #e9e9e9;
+  --ui-shade-40: #e6e6e6;
+  --ui-shade-41: #d6d6d6;
+  --ui-shade-43: #d4d4d4;
+  --ui-shade-44: #d3d3d3;
+  --ui-shade-48: #cfcfcf;
+  --ui-shade-51: #cccccc;
+  --ui-shade-54: #c9c9c9;
+  --ui-shade-56: #c7c7c7;
+  --ui-shade-58: #c5c5c5;
+  --ui-shade-60: #c3c3c3;
+  --ui-shade-65: #bebebe;
+  --ui-shade-72: #b7b7b7;
+  --ui-shade-115: #8c8c8c;
+  --ui-shade-119: #888888;
+  --ui-shade-122: #858585;
+  --ui-shade-136: #777777;
+  --ui-shade-140: #737373;
+  --ui-shade-144: #6f6f6f;
+  --ui-shade-160: #5f5f5f;
+  --ui-shade-170: #555555;
+  --ui-shade-181: #4a4a4a;
+  --ui-shade-204: #333333;
+  --ui-shade-221: #222222;
+  --ui-shade-237: #121212;
+  --ui-shade-255: #111111;
+}
+
+:root {
+  --ui-space: 4px;
+  --ui-control-inset: 2px;
+  --ui-control-inline-inset: 6px;
+  --ui-hover: var(--ui-shade-40);
+  --ui-muted: var(--ui-shade-160);
+  --ui-selected: var(--ui-shade-48);
+  --ui-dropdown-background: color-mix(
+    in srgb,
+    var(--ui-shade-0) 14%,
+    transparent
+  );
+  --ui-dropdown-blur: 24px;
+  --ui-toolbar-button-width: 48px;
+  --ui-confirm-button-background: #3b1b1b;
+  --ui-confirm-button-color: #f1dada;
+}

@@ -1,0 +1,81 @@
+:is(.confirmation_dialog),
+:is(.confirmation_dialog) * {
+  box-sizing: border-box;
+}
+.confirmation_dialog {
+  --confirmation-padding: calc(3 * var(--ui-space));
+  --confirmation-button-min-width: 72px;
+  width: min(480px, calc(100vw - 4 * var(--ui-space)));
+  max-height: calc(100dvh - 4 * var(--ui-space));
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ui-shade-237);
+  overflow: visible;
+}
+.confirmation_dialog::backdrop {
+  background: color-mix(in srgb, var(--ui-shade-0) 65%, transparent);
+}
+.confirmation_dialog :global(.floating-card) {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  max-height: calc(100dvh - 4 * var(--ui-space));
+  background: color-mix(in srgb, var(--ui-shade-16) 68%, transparent);
+}
+.confirmation_dialog :global(.floating-card) :global(.card-heading) {
+  display: flex;
+  align-items: center;
+  min-height: 32px;
+  font-size: 12px;
+}
+.confirmation_dialog :global(.floating-card) :global(.card-heading) strong {
+  margin-left: 0;
+}
+.confirmation_dialog
+  :global(.floating-card)
+  :is(:global(.card-heading), :global(.card-footer)) {
+  flex-shrink: 0;
+  padding: var(--confirmation-padding);
+}
+.confirmation_dialog :global(.floating-card) :global(.card-footer) {
+  padding: var(--ui-space);
+}
+.confirmation_dialog :global(.floating-card) :global(.card-body) {
+  margin: 0;
+  padding: calc(2 * var(--confirmation-padding)) var(--confirmation-padding);
+  border-radius: max(0px, calc(var(--card-radius) - var(--card-border-width)));
+  background: var(--ui-shade-28);
+}
+.confirmation_dialog
+  :global(.floating-card)
+  :global(.card-body)
+  > :first-child {
+  margin-top: 0;
+}
+.confirmation_dialog
+  :global(.floating-card)
+  :global(.card-body)
+  > :first-child
+  > :first-child {
+  margin-top: 0;
+}
+.confirmation_dialog :global(.floating-card) :global(.card-body) > :last-child {
+  margin-bottom: 0;
+}
+.confirmation_dialog
+  :global(.floating-card)
+  :global(.card-body)
+  > :last-child
+  > :last-child {
+  margin-bottom: 0;
+}
+.confirmation_dialog :global(.confirmation-actions) {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--ui-space);
+}
+.confirmation_dialog :global(.confirmation-actions) button {
+  min-width: var(--confirmation-button-min-width);
+  background: transparent;
+}

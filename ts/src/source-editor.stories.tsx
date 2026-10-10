@@ -1,11 +1,12 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { useArgs } from "storybook/preview-api";
+import { useState } from "react";
 import { SourceEditor } from "./source-editor";
 import "./storybook/preview.css";
 
 const meta = {
   title: "Editor/SourceEditor",
   component: SourceEditor,
+  argTypes: { value: { control: false } },
   tags: ["autodocs"],
   args: {
     path: "example.ts",
@@ -23,10 +24,8 @@ const meta = {
     ),
   ],
   render: function Editor(args) {
-    const [, updateArgs] = useArgs();
-    return (
-      <SourceEditor {...args} onChange={(value) => updateArgs({ value })} />
-    );
+    const [value, setValue] = useState(args.value);
+    return <SourceEditor {...args} value={value} onChange={setValue} />;
   },
 } satisfies Meta<typeof SourceEditor>;
 export default meta;

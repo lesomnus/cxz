@@ -1,3 +1,4 @@
+import { UIProvider } from "@lesomnus/cxz-ui";
 import { useEffect, useSyncExternalStore, type ReactNode } from "react";
 import { localeStore, resolveLocale, t } from "./i18n";
 import { useSettings } from "./settings";
@@ -28,7 +29,9 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
           </Button>
         </div>
       )}
-      {children}
+      <UIProvider translate={t} locale={locale}>
+        {children}
+      </UIProvider>
     </>
   );
 }

@@ -1,0 +1,76 @@
+:is(.editable_value_trigger, .editable_value_dialog),
+:is(.editable_value_trigger, .editable_value_dialog) * {
+  box-sizing: border-box;
+}
+.editable_value_dialog input {
+  font: inherit;
+  color: inherit;
+  width: 100%;
+}
+.editable_value_trigger {
+  display: block;
+  width: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: var(--ui-space) var(--ui-control-inline-inset);
+  text-align: left;
+}
+.editable_value_trigger > :global(.button-content) {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.editable_value_trigger[data-monospace="true"] {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+.editable_value_dialog {
+  position: fixed;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ui-shade-237);
+  overflow: visible;
+}
+.editable_value_dialog::backdrop {
+  background: color-mix(in srgb, var(--ui-shade-0) 65%, transparent);
+}
+.editable_value_dialog input {
+  display: block;
+  width: 100%;
+  height: var(--editable-value-height);
+  padding: var(--editable-value-padding);
+  border-radius: var(--editable-value-radius);
+  border: 0;
+  outline: 0;
+  background: var(--ui-shade-28);
+  box-shadow: inset 0 0 0 1px var(--ui-shade-160);
+}
+:is(.editable_value_trigger, .editable_value_dialog)
+  :global(.editable-value-overlay) {
+  position: absolute;
+  top: calc(100% + var(--ui-space));
+  right: 0;
+  width: max-content;
+  max-width: min(360px, calc(100dvw - 4 * var(--ui-space)));
+  padding: var(--ui-space);
+  border-radius: calc(2 * var(--ui-space));
+  background: var(--ui-shade-16);
+  box-shadow: 0 8px 24px #0006;
+  font-family: system-ui, sans-serif;
+}
+:is(.editable_value_trigger, .editable_value_dialog)
+  :global(.editable-value-overlay)
+  p {
+  margin: var(--ui-space);
+  overflow-wrap: anywhere;
+}
+:is(.editable_value_trigger, .editable_value_dialog)
+  :global(.editable-value-actions) {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--ui-space);
+}

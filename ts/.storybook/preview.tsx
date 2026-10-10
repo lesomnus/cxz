@@ -1,6 +1,8 @@
+import { UIProvider } from "@lesomnus/cxz-ui";
 import { useLayoutEffect } from "react";
 import type { Preview } from "@storybook/react-vite";
-import { localeStore } from "../src/i18n";
+import { t, localeStore } from "../src/i18n";
+import { useLocale } from "../src/i18n-react";
 import { settingsStore } from "../src/settings";
 import "../src/style.css";
 
@@ -26,6 +28,7 @@ const preview: Preview = {
   },
   decorators: [
     function Appearance(Story, context) {
+      const { locale } = useLocale();
       useLayoutEffect(() => {
         // Apply the toolbar theme to editor hooks too, without writing settings.json.
         const store = settingsStore();
@@ -39,7 +42,11 @@ const preview: Preview = {
         document.documentElement.lang = context.globals.locale;
         void localeStore.activate(context.globals.locale);
       }, [context.globals.theme, context.globals.locale]);
-      return <Story />;
+      return (
+        <UIProvider translate={t} locale={locale}>
+          <Story />
+        </UIProvider>
+      );
     },
   ],
 };

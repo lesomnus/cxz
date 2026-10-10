@@ -1,0 +1,131 @@
+:is(.value_menu, .setting_menu),
+:is(.value_menu, .setting_menu) * {
+  box-sizing: border-box;
+}
+.setting_menu {
+  background: var(--ui-dropdown-background);
+  -webkit-backdrop-filter: blur(var(--ui-dropdown-blur));
+  backdrop-filter: blur(var(--ui-dropdown-blur));
+}
+.value_menu {
+  --value-padding-block: 6px;
+  --value-padding-inline: 10px;
+  --value-row-height: calc(20px + 2 * var(--value-padding-block));
+}
+.setting_menu {
+  --value-padding-block: 6px;
+  --value-padding-inline: 10px;
+  --value-row-height: calc(20px + 2 * var(--value-padding-block));
+}
+.value_menu[data-variant="compact"] {
+  --value-padding-block: var(--ui-control-inset);
+  --value-padding-inline: var(--ui-control-inline-inset);
+}
+.setting_menu[data-variant="compact"] {
+  --value-padding-block: var(--ui-control-inset);
+  --value-padding-inline: var(--ui-control-inline-inset);
+}
+.value_menu {
+  --value-background: var(--ui-shade-32);
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: var(--value-row-height);
+}
+.value_menu[data-variant="compact"] {
+  --value-background: transparent;
+}
+:is(.value_menu, .setting_menu) :global(.setting-trigger) {
+  background: var(--value-background);
+  display: block;
+  padding: var(--value-padding-block) var(--value-padding-inline);
+  min-height: var(--value-row-height);
+  height: var(--value-row-height);
+  width: 100%;
+  font-size: inherit;
+  line-height: 20px;
+  text-align: left;
+  color: inherit;
+}
+:is(.value_menu, .setting_menu)
+  :global(.setting-trigger)
+  :global(.button-content) {
+  height: 20px;
+  justify-content: flex-start;
+  transform-origin: left center;
+}
+:is(.value_menu, .setting_menu)
+  :global(.setting-current)
+  :global(.button-content) {
+  height: 20px;
+  justify-content: flex-start;
+  transform-origin: left center;
+}
+:is(.value_menu, .setting_menu) :global(.setting-trigger) :global(.meta-value) {
+  display: block;
+  white-space: nowrap;
+}
+:is(.value_menu, .setting_menu) :global(.setting-current) :global(.meta-value) {
+  display: block;
+  white-space: nowrap;
+}
+.setting_menu {
+  position: fixed;
+  z-index: 1100;
+  top: calc(-1 * var(--ui-control-inset));
+  left: calc(-1 * var(--ui-control-inset));
+  display: flex;
+  flex-direction: column;
+  width: var(--menu-width, 180px);
+  padding: var(--ui-control-inset);
+  border-radius: 6px;
+  outline: 1px solid var(--ui-shade-58);
+  box-shadow: 0 6px 24px #0005;
+}
+.setting_menu:global(.opens-up) {
+  top: auto;
+  bottom: calc(-1 * var(--ui-control-inset));
+  flex-direction: column-reverse;
+}
+:is(.value_menu, .setting_menu) :global(.setting-current) {
+  flex-shrink: 0;
+}
+:is(.value_menu, .setting_menu) :global(.setting-current) :global(.meta-value) {
+  max-width: calc(var(--value-width) - 2 * var(--value-padding-inline));
+}
+:is(.value_menu, .setting_menu) :global(.setting-divider) {
+  height: 1px;
+  flex-shrink: 0;
+  margin: 6px 0;
+  background: var(--ui-shade-60);
+}
+:is(.value_menu, .setting_menu) :global(.setting-options) {
+  max-height: var(--options-height, 240px);
+  overflow: auto;
+}
+.setting_menu button {
+  display: block;
+  min-height: var(--value-row-height);
+  padding: var(--value-padding-block) var(--value-padding-inline);
+  width: 100%;
+  text-align: left;
+  font-size: inherit;
+  line-height: 20px;
+}
+.setting_menu :global(.button-content) {
+  justify-content: flex-start;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  transform-origin: left center;
+}
+:global(.setting-trigger):not(:disabled):hover,
+.setting_menu button:not(:disabled):hover {
+  color: var(--ui-shade-255);
+}
+:is(.value_menu, .setting_menu) :global(.setting-trigger)[data-muted="true"] {
+  color: var(--ui-muted);
+}
+.setting_menu button[data-muted="true"] {
+  color: var(--ui-muted);
+}

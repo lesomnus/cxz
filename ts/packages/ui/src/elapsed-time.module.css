@@ -1,0 +1,14 @@
+:is(.elapsed_time),
+:is(.elapsed_time) * {
+  box-sizing: border-box;
+}
+.elapsed_time {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  white-space: nowrap;
+  color: var(--ui-shade-204);
+}
+.elapsed_time :global(.elapsed-time-leading) {
+  color: var(--ui-shade-115);
+}

@@ -491,9 +491,12 @@ test("source editor fills its preview and accepts edits", async ({ page }) => {
     page.getByRole("textbox", { name: "Settings file", exact: true }),
   ).toBeFocused();
   await page.keyboard.press("Control+A");
+  // Clear the selection before typing delimiters, which would wrap it.
+  await page.keyboard.press("Backspace");
   await page.keyboard.type('{"editor.tabSize": 6}');
   await expect(page.locator(".view-lines")).toContainText(
     '"editor.tabSize": 6',
   );
+  await expect(page.locator(".view-line")).toHaveText('{"editor.tabSize": 6}');
   expect(errors).toEqual([]);
 });

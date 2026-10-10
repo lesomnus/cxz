@@ -1,0 +1,78 @@
+:is(.floating_card),
+:is(.floating_card) * {
+  box-sizing: border-box;
+}
+.floating_card {
+  position: relative;
+  width: 100%;
+  max-height: var(--card-max-height, 460px);
+}
+.floating_card {
+  --card-radius: calc(3 * var(--ui-space));
+  --card-border-width: 1px;
+  --card-inner-radius: max(
+    0px,
+    calc(var(--card-radius) - var(--card-border-width) - var(--ui-space))
+  );
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: inherit;
+  background: color-mix(in srgb, var(--ui-shade-32) 78%, transparent);
+  -webkit-backdrop-filter: blur(48px);
+  backdrop-filter: blur(48px);
+  border: var(--card-border-width) solid var(--ui-shade-54);
+  border-radius: var(--card-radius);
+  box-shadow: 0 8px 24px #0006;
+}
+.floating_card :global(.card-heading) {
+  flex: 0 0 auto;
+  min-height: 32px;
+  height: auto;
+  display: flex;
+  align-items: center;
+  gap: calc(2 * var(--ui-space));
+  padding: var(--ui-space);
+  font-size: 12px;
+}
+.floating_card :global(.card-heading) strong {
+  margin-left: var(--ui-space);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.floating_card :global(.card-close) {
+  border-radius: var(--card-inner-radius);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.floating_card :global(.card-body) {
+  padding: 0 var(--ui-space) var(--ui-space);
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.floating_card :global(.card-body) pre {
+  padding: calc(2 * var(--ui-space)) var(--ui-space);
+  margin: var(--ui-space) 0;
+  background: var(--ui-shade-16);
+  border-radius: var(--card-inner-radius);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.floating_card :global(.card-body) pre:last-child {
+  margin-bottom: 0;
+}
+
+.floating_card :global(.card-close) {
+  width: var(--ui-toolbar-button-width);
+  height: 24px;
+  min-height: 24px;
+  padding: 3px 6px;
+  background: transparent;
+  color: inherit;
+}
+.floating_card :global(.card-close):not(:disabled):hover {
+  background: var(--ui-shade-54);
+}

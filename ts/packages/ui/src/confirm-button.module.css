@@ -1,0 +1,9 @@
+:is(.confirm_button),
+:is(.confirm_button) * {
+  box-sizing: border-box;
+}
+button.confirm_button[data-confirming="true"],
+button.confirm_button[data-confirming="true"]:is(:hover, :focus-visible) {
+  background: var(--ui-confirm-button-background);
+  color: var(--ui-confirm-button-color);
+}

@@ -1,0 +1,16 @@
+/* Documentation framing only. The library never resets the host document. */
+body {
+  margin: 0;
+  background: var(--ui-shade-20);
+}
+.ui-showcase {
+  width: min(540px, calc(100vw - 48px));
+  font:
+    14px/1.4 system-ui,
+    sans-serif;
+  color: var(--ui-shade-237);
+}
+.ui-showcase .buttons {
+  display: flex;
+  gap: var(--ui-space);
+}

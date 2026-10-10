@@ -20,11 +20,12 @@ import {
   paletteForTheme,
   palettes,
   type EditorSettings,
-} from "./editor-settings";
+} from "./settings";
 
-(
-  globalThis as typeof globalThis & { MonacoEnvironment: unknown }
-).MonacoEnvironment = {
+const environment = globalThis as typeof globalThis & {
+  MonacoEnvironment?: unknown;
+};
+environment.MonacoEnvironment ??= {
   getWorker: (_module: string, label: string) =>
     label === "json" ? new JsonWorker() : new EditorWorker(),
 };
