@@ -63,7 +63,31 @@ export function MicrophoneControl({
     options.push({ value: language, label: language });
 
   return (
-    <span className={styles.controls}>
+    <span
+      className={styles.controls}
+      role="group"
+      aria-label={t("Voice input")}
+    >
+      <span className={styles.language}>
+        <ValueMenu
+          label={t("Voice language")}
+          variant="compact"
+          value={language || "browser"}
+          display={speech.language.toUpperCase()}
+          options={options}
+          muted={!language}
+          minMenuWidth={180}
+          disabled={disabled || !speech.supported || speech.active}
+          disabledReason={
+            speech.active
+              ? t("Stop voice input before changing the language.")
+              : undefined
+          }
+          choose={(value) =>
+            onLanguage(value === "browser" ? undefined : value)
+          }
+        />
+      </span>
       <span
         className={styles.control}
         data-active={speech.active}
@@ -83,7 +107,7 @@ export function MicrophoneControl({
         >
           <svg
             width="18"
-            height="18"
+            height="16"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -112,26 +136,6 @@ export function MicrophoneControl({
             )}
           </span>
         </span>
-      </span>
-      <span className={styles.language}>
-        <ValueMenu
-          label={t("Voice language")}
-          variant="compact"
-          value={language || "browser"}
-          display={speech.language.toUpperCase()}
-          options={options}
-          muted={!language}
-          minMenuWidth={180}
-          disabled={disabled || !speech.supported || speech.active}
-          disabledReason={
-            speech.active
-              ? t("Stop voice input before changing the language.")
-              : undefined
-          }
-          choose={(value) =>
-            onLanguage(value === "browser" ? undefined : value)
-          }
-        />
       </span>
     </span>
   );

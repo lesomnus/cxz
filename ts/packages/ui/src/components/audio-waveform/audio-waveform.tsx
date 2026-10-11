@@ -6,10 +6,13 @@ export function AudioWaveform({
   active,
   readLevel,
   className = "",
+  variant = "centered",
 }: {
   active: boolean;
   readLevel: () => number;
   className?: string;
+  /** Upward folds the wave above a baseline at the canvas bottom edge. */
+  variant?: "centered" | "upward";
 }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
@@ -56,9 +59,11 @@ export function AudioWaveform({
           const wave =
             Math.sin(t * Math.PI * 5 - phase + layer * 0.7) +
             0.24 * Math.sin(t * Math.PI * 9 + phase * 0.6);
+          const amplitude = envelope * level * height * (0.3 - layer * 0.07);
           const y =
-            height / 2 +
-            wave * envelope * level * height * (0.3 - layer * 0.07);
+            variant === "upward"
+              ? height - Math.abs(wave) * amplitude
+              : height / 2 + wave * amplitude;
           if (x === 0) ctx!.moveTo(x, y);
           else ctx!.lineTo(x, y);
         }
@@ -81,12 +86,13 @@ export function AudioWaveform({
       resize.disconnect();
       document.removeEventListener("visibilitychange", visibility);
     };
-  }, [active, readLevel]);
+  }, [active, readLevel, variant]);
   return (
     <canvas
       ref={canvas}
       className={`${styles.waveform} ${className}`}
       data-active={active}
+      data-variant={variant}
       aria-hidden="true"
     />
   );

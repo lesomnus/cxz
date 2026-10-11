@@ -11,7 +11,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "A monochrome, smoothed audio-level visualization. The host supplies readLevel (0–1); capture, permissions and recognition are independent. This story simulates volume without opening a microphone. Motion pauses in hidden tabs; reduced motion freezes the wave phase while retaining volume feedback.",
+          "A monochrome, smoothed audio-level visualization. The host supplies readLevel (0–1); capture, permissions and recognition are independent. The upward variant folds the wave above its bottom baseline for input borders. This story simulates volume without opening a microphone. Motion pauses in hidden tabs; reduced motion freezes the wave phase while retaining volume feedback.",
       },
     },
   },
@@ -47,3 +47,5 @@ const meta = {
 export default meta;
 export const Listening: StoryObj<typeof meta> = {};
 export const Stopped: StoryObj<typeof meta> = { args: { active: false } };
+
+export const Upward: StoryObj<typeof meta> = { args: { variant: "upward" } };

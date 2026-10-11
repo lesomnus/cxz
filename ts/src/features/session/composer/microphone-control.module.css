@@ -2,6 +2,16 @@
   display: inline-flex;
   align-items: center;
   gap: var(--control-inset);
+  /* Move the toolbar inset inside the group without shifting its buttons. */
+  margin: calc(-1 * var(--control-inset));
+  padding: var(--control-inset);
+  border-radius: calc(var(--wrapper-radius) - var(--composer-border-width));
+  transition: background-color 120ms;
+}
+.controls:hover,
+.controls:focus-within,
+.controls:has([aria-expanded="true"]) {
+  background: var(--shade-27);
 }
 .language {
   width: 52px;
@@ -14,7 +24,8 @@
 }
 .visualization {
   position: absolute;
-  inset: auto var(--control-inline-inset) var(--control-inset);
+  /* The canvas baseline sits on the center of the input's bottom border. */
+  inset: auto var(--composer-radius) calc(-0.5 * var(--composer-border-width));
   height: 48px;
   pointer-events: none;
   opacity: 0.65;
@@ -67,6 +78,7 @@
   transform: translateY(0);
 }
 @media (prefers-reduced-motion: reduce) {
+  .controls,
   .hint {
     transition: none;
   }

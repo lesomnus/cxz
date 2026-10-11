@@ -44,5 +44,24 @@ test("portable waveform responds to host levels without requesting microphone ac
   await expect.poll(pixels).toBeLessThan(4);
   await volume.press("End");
   await expect.poll(pixels).toBeGreaterThan(14);
+  await page.goto(
+    "/iframe.html?id=components-audiowaveform--upward&viewMode=story",
+  );
+  await expect(wave).toHaveAttribute("data-variant", "upward");
+  await volume.focus();
+  await volume.press("Home");
+  await expect.poll(pixels).toBeLessThan(4);
+  await expect
+    .poll(() =>
+      wave.evaluate((el: HTMLCanvasElement) => {
+        const data = el
+          .getContext("2d")!
+          .getImageData(0, el.height - 1, el.width, 1).data;
+        return data.some((alpha, index) => index % 4 === 3 && alpha > 12);
+      }),
+    )
+    .toBe(true);
+  await volume.press("End");
+  await expect.poll(pixels).toBeGreaterThan(14);
   expect(errors).toEqual([]);
 });

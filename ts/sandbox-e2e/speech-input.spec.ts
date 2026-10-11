@@ -165,6 +165,38 @@ test("voice language dropdown persists a choice and locks while dictating", asyn
   await mockRecognition(page, "SpeechRecognition");
   await openComposer(page);
   const language = page.getByRole("combobox", { name: "Voice language" });
+  const microphone = page.getByRole("button", {
+    name: "Voice input",
+    exact: true,
+  });
+  const group = page.getByRole("group", { name: "Voice input", exact: true });
+  const toolbar = page.locator(".composer-toolbar");
+  const languageBox = await language.boundingBox();
+  const micBox = await microphone.boundingBox();
+  expect(languageBox!.x + languageBox!.width).toBeLessThanOrEqual(micBox!.x);
+  const groupBox = await group.boundingBox();
+  const toolbarBox = await toolbar.boundingBox();
+  expect(groupBox!.y).toBeCloseTo(toolbarBox!.y, 0);
+  expect(groupBox!.y + groupBox!.height).toBeCloseTo(
+    toolbarBox!.y + toolbarBox!.height,
+    0,
+  );
+  const background = () =>
+    group.evaluate((el) => getComputedStyle(el).backgroundColor);
+  const hoverBackground = await group.evaluate((el) => {
+    const probe = document.createElement("span");
+    probe.style.color = "var(--shade-27)";
+    el.append(probe);
+    const color = getComputedStyle(probe).color;
+    probe.remove();
+    return color;
+  });
+  await language.hover();
+  await expect.poll(background).toBe(hoverBackground);
+  await microphone.hover();
+  await expect.poll(background).toBe(hoverBackground);
+  await page.getByRole("textbox", { name: "Message", exact: true }).hover();
+  await expect.poll(background).toBe("rgba(0, 0, 0, 0)");
   await language.click();
   await page.getByRole("option", { name: "日本語", exact: true }).click();
   await expect(language).toHaveText("JA-JP");
@@ -219,6 +251,7 @@ test("microphone waveform responds to real analysed samples, keeps typing access
   await page.getByRole("button", { name: "Voice input", exact: true }).click();
   await expect(meter).toHaveAttribute("data-voice-waveform", "ready");
   const canvas = meter.locator("canvas");
+  await expect(canvas).toHaveAttribute("data-variant", "upward");
   const inkHeight = () =>
     canvas.evaluate((el: HTMLCanvasElement) => {
       const image = el
@@ -238,6 +271,25 @@ test("microphone waveform responds to real analysed samples, keeps typing access
       return Math.max(0, bottom - top);
     });
   await expect.poll(inkHeight).toBeLessThan(8);
+  await expect
+    .poll(() =>
+      canvas.evaluate((el: HTMLCanvasElement) => {
+        const data = el
+          .getContext("2d")!
+          .getImageData(0, el.height - 1, el.width, 1).data;
+        return data.some((alpha, index) => index % 4 === 3 && alpha > 12);
+      }),
+    )
+    .toBe(true);
+  const baseline = await page.locator(".composer-input").evaluate((el) => {
+    const input = el.getBoundingClientRect();
+    const canvas = el.querySelector("canvas")!.getBoundingClientRect();
+    return (
+      canvas.bottom -
+      (input.bottom - parseFloat(getComputedStyle(el).borderBottomWidth) / 2)
+    );
+  });
+  expect(Math.abs(baseline)).toBeLessThan(0.1);
   await page.evaluate(() => {
     window.meterTest.gain!.gain.value = 0.18;
   });

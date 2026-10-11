@@ -257,6 +257,7 @@ export function ConversationComposer({
             data-voice-waveform={meter.status}
           >
             <AudioWaveform
+              variant="upward"
               active={meter.status === "ready"}
               readLevel={meter.readLevel}
             />
