@@ -201,14 +201,14 @@ test("voice language dropdown persists a choice and locks while dictating", asyn
   await page
     .getByRole("menuitemcheckbox", { name: "日本語", exact: true })
     .click();
-  await expect(language).toHaveText("日本語");
+  await expect(language).toHaveText("JA-JP");
   expect(
     await page.evaluate(
       () => JSON.parse(localStorage.getItem("settings")!)["voice.language"],
     ),
   ).toBe("ja-JP");
   await page.reload();
-  await expect(language).toHaveText("日本語");
+  await expect(language).toHaveText("JA-JP");
   await page.getByRole("button", { name: "Voice input", exact: true }).click();
   expect(await page.evaluate(() => window.voiceTest.instances[0].lang)).toBe(
     "ja-JP",

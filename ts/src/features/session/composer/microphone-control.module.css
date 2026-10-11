@@ -18,9 +18,9 @@
   font-family: ui-monospace, monospace;
 }
 .controls .language :global(.toolbar-button) {
-  width: clamp(var(--toolbar-button-width), 12vw, 104px);
+  width: 52px;
 }
-.languageName {
+.languageCode {
   display: block;
   min-width: 0;
   overflow: hidden;

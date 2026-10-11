@@ -82,8 +82,8 @@ export function MicrophoneControl({
           label={t("Voice language")}
           placement="above"
           triggerContent={
-            <span className={styles.languageName} title={languageName}>
-              {languageName}
+            <span className={styles.languageCode} title={languageName}>
+              {speech.language.toUpperCase()}
             </span>
           }
           items={options.map((option) => ({
