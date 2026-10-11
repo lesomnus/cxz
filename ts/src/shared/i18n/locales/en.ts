@@ -11,6 +11,8 @@ export const messages = {
     "Local recognition is unavailable for this language. Install its browser language pack or turn off local recognition.",
 
   "Voice language": "Voice language",
+  "Use your browser's language by default, or choose a recognition language.":
+    "Use your browser's language by default, or choose a recognition language.",
   "Browser language": "Browser language",
   "Stop voice input before changing the language.":
     "Stop voice input before changing the language.",

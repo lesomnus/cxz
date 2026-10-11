@@ -8,6 +8,8 @@ import {
 } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { voiceLanguages } from "#src/shared/browser/voice-language.ts";
+import { browserSpeechLanguage } from "#src/shared/browser/speech-language.ts";
 import { Button } from "@lesomnus/cxz-ui";
 import {
   useSettings,
@@ -82,6 +84,29 @@ export function SettingsPage({
   const { store, snapshot } = useSettings();
   const globalEditor = useEditorSettings();
   const sessionEditor = useEditorSettings("session");
+  const voiceLanguage =
+    typeof snapshot.document["voice.language"] === "string"
+      ? (snapshot.document["voice.language"] as string)
+      : undefined;
+  const voiceOptions = [
+    {
+      value: "browser",
+      label: `${t("Browser language")} · ${browserSpeechLanguage()}`,
+    },
+    ...voiceLanguages.map(([value, label]) => ({ value, label })),
+  ];
+  if (
+    voiceLanguage &&
+    !voiceOptions.some((option) => option.value === voiceLanguage)
+  ) {
+    voiceOptions.push({
+      value: voiceLanguage,
+      label:
+        new Intl.DisplayNames(locale.locale, { type: "language" }).of(
+          voiceLanguage,
+        ) || voiceLanguage,
+    });
+  }
   const savedLanguage = resolveLocale(snapshot.document["ui.language"]);
   const [language, setLanguage] = useState<Locale>(savedLanguage);
   const [applying, setApplying] = useState(false);
@@ -475,6 +500,27 @@ export function SettingsPage({
                     aria-label={t("Voice input")}
                   >
                     <h2>{t("Voice input")}</h2>
+                    <SettingField
+                      title={t("Voice language")}
+                      settingId="voice.language"
+                      summary={t(
+                        "Use your browser's language by default, or choose a recognition language.",
+                      )}
+                    >
+                      <ValueMenu
+                        label={t("Voice language")}
+                        value={voiceLanguage || "browser"}
+                        options={voiceOptions}
+                        muted={!voiceLanguage}
+                        disabled={!snapshot.valid}
+                        choose={(value) =>
+                          update(
+                            "voice.language",
+                            value === "browser" ? undefined : value,
+                          )
+                        }
+                      />
+                    </SettingField>
                     <SettingField
                       title={t("Force local recognition")}
                       settingId="voice.processLocally"

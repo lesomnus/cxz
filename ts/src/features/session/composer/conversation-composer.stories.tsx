@@ -42,7 +42,7 @@ export const VoiceInput: Story = {
     docs: {
       description: {
         story:
-          "Choose a recognition language from the ActionMenu to the left of the microphone, then click the microphone to start native browser dictation. The browser language is the initial fallback; an explicit choice persists as voice.language in settings.json. The input shows a softly folded lime/purple waveform driven by local microphone volume, and the language selector locks until recognition stops. Sending and switching sessions stop both recognition and metering. A metering failure leaves dictation working. Native recognition may use the browser vendor's online service; the waveform itself never records or uploads audio. This preview uses your real browser microphone; Components/AudioWaveform simulates levels without permissions.",
+          "Click the microphone to start native browser dictation. Choose the recognition language in Settings > General > Voice input. The browser language is the initial fallback; an explicit choice persists as voice.language in settings.json. The input shows a softly folded lime/purple waveform driven by local microphone volume, with no language selector in the toolbar. Sending and switching sessions stop both recognition and metering. A metering failure leaves dictation working. Native recognition may use the browser vendor's online service; the waveform itself never records or uploads audio. This preview uses your real browser microphone; Components/AudioWaveform simulates levels without permissions.",
       },
     },
   },

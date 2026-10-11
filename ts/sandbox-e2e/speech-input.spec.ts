@@ -168,89 +168,68 @@ async function mockMeter(page: Page) {
   });
 }
 
-test("voice language dropdown persists a choice and locks while dictating", async ({
+test("voice language defaults to browser preferences and persists settings-page overrides", async ({
   page,
 }) => {
   await mockRecognition(page, "SpeechRecognition");
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "language", {
+      configurable: true,
+      value: "ko",
+    });
+    Object.defineProperty(navigator, "languages", {
+      configurable: true,
+      value: ["ko", "ko-KR"],
+    });
+  });
   await openComposer(page);
-  const language = page.getByRole("button", { name: "Voice language" });
-  const microphone = page.getByRole("button", {
-    name: "Voice input",
+  await expect(
+    page.getByRole("button", { name: "Voice language" }),
+  ).toHaveCount(0);
+  await page.getByRole("button", { name: "Voice input", exact: true }).click();
+  expect(await page.evaluate(() => window.voiceTest.instances[0].lang)).toBe(
+    "ko-KR",
+  );
+  await page.getByRole("button", { name: "Stop voice input" }).click();
+  await page.evaluate(() => window.voiceTest.instances[0].end());
+  await page.getByRole("link", { name: "Settings view", exact: true }).click();
+  const language = page.getByRole("combobox", {
+    name: "Voice language",
     exact: true,
   });
-  const group = page.getByRole("group", { name: "Voice input", exact: true });
-  const toolbar = page.locator(".composer-toolbar");
-  const languageBox = await language.boundingBox();
-  const micBox = await microphone.boundingBox();
-  expect(languageBox!.x + languageBox!.width).toBeLessThanOrEqual(micBox!.x);
-  const groupBox = await group.boundingBox();
-  const toolbarBox = await toolbar.boundingBox();
-  expect(groupBox!.y).toBeCloseTo(toolbarBox!.y, 0);
-  expect(groupBox!.y + groupBox!.height).toBeCloseTo(
-    toolbarBox!.y + toolbarBox!.height,
-    0,
-  );
-  const background = () =>
-    group.evaluate((el) => getComputedStyle(el).backgroundColor);
-  const hoverBackground = await group.evaluate((el) => {
-    const probe = document.createElement("span");
-    probe.style.color = "var(--shade-27)";
-    el.append(probe);
-    const color = getComputedStyle(probe).color;
-    probe.remove();
-    return color;
-  });
-  await language.hover();
-  await expect.poll(background).toBe(hoverBackground);
-  await microphone.hover();
-  await expect.poll(background).toBe(hoverBackground);
-  await page.getByRole("textbox", { name: "Message", exact: true }).hover();
-  await expect.poll(background).toBe("rgba(0, 0, 0, 0)");
+  await expect(language).toContainText("Browser language · ko-KR");
   await language.click();
-  await page
-    .getByRole("menuitemcheckbox", { name: "日本語", exact: true })
-    .click();
-  await expect(language).toHaveText("JA-JP");
+  await page.getByRole("option", { name: "日本語", exact: true }).click();
+  await expect(language).toHaveText("日本語");
   expect(
     await page.evaluate(
       () => JSON.parse(localStorage.getItem("settings")!)["voice.language"],
     ),
   ).toBe("ja-JP");
   await page.reload();
-  await expect(language).toHaveText("JA-JP");
+  await expect(language).toHaveText("日本語");
+  await openComposer(page);
   await page.getByRole("button", { name: "Voice input", exact: true }).click();
   expect(await page.evaluate(() => window.voiceTest.instances[0].lang)).toBe(
     "ja-JP",
   );
-  await expect(language).toBeDisabled();
-  await page.getByRole("button", { name: "Stop voice input" }).click();
-  await page.evaluate(() => window.voiceTest.instances[0].end());
+  await page.getByRole("link", { name: "Settings view", exact: true }).click();
   await language.click();
   await page
-    .getByRole("menuitemcheckbox", { name: "Browser language", exact: true })
+    .getByRole("option", { name: "Browser language · ko-KR", exact: true })
     .click();
   expect(
     await page.evaluate(
       () => JSON.parse(localStorage.getItem("settings")!)["voice.language"],
     ),
   ).toBeUndefined();
+  await page.reload();
+  await expect(language).toContainText("Browser language · ko-KR");
+  await openComposer(page);
   await page.getByRole("button", { name: "Voice input", exact: true }).click();
-  await page.evaluate(() =>
-    window.voiceTest.instances.at(-1)!.onerror?.({ error: "network" }),
+  expect(await page.evaluate(() => window.voiceTest.instances[0].lang)).toBe(
+    "ko-KR",
   );
-  await language.click();
-  await page
-    .getByRole("menuitemcheckbox", { name: "한국어", exact: true })
-    .click();
-  await expect(
-    page
-      .getByRole("tooltip")
-      .filter({ hasText: "service is unavailable or unreachable" }),
-  ).toHaveCount(0);
-  await page.setViewportSize({ width: 390, height: 844 });
-  expect(
-    await page.evaluate(() => document.documentElement.scrollWidth),
-  ).toBeLessThanOrEqual(390);
 });
 
 test("microphone waveform responds to real analysed samples, keeps typing accessible, and releases capture", async ({

@@ -79,12 +79,11 @@ export function ConversationComposer({
   const terminalHint = useId();
   const sendHint = useId();
   const editor = useRef<ComposerEditorHandle>(null);
-  const { store, snapshot } = useSettings();
+  const { snapshot } = useSettings();
   const language =
     typeof snapshot.document["voice.language"] === "string"
       ? (snapshot.document["voice.language"] as string)
       : undefined;
-  const [languageError, setLanguageError] = useState("");
   const speech = useSpeechInput({
     disabled: sending,
     language,
@@ -208,21 +207,7 @@ export function ConversationComposer({
           <MicrophoneControl
             speech={speech}
             disabled={sending}
-            language={language}
-            languageError={languageError}
             meterUnavailable={meter.status === "unavailable"}
-            onLanguage={(language) => {
-              try {
-                store.set("voice.language", language);
-                setLanguageError("");
-              } catch (error) {
-                setLanguageError(
-                  t("Cannot save voice language: {error}", {
-                    error: String(error),
-                  }),
-                );
-              }
-            }}
           />
           <span className="send-control">
             <Button

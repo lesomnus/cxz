@@ -5,7 +5,7 @@ export function speechLanguage(
   alternatives: readonly string[] = [],
 ): string {
   try {
-    const locale = new Intl.Locale(preferred || "en-US");
+    const locale = new Intl.Locale(preferred || alternatives[0] || "en-US");
     if (locale.region) return locale.baseName;
     for (const tag of alternatives) {
       try {
@@ -25,4 +25,11 @@ export function speechLanguage(
   } catch {
     return "en-US";
   }
+}
+
+/** Use a saved override, otherwise the browser's preferred user language. */
+export function browserSpeechLanguage(preferred?: string) {
+  return typeof navigator === "undefined"
+    ? speechLanguage(preferred)
+    : speechLanguage(preferred || navigator.language, navigator.languages);
 }
