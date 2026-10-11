@@ -1,0 +1,45 @@
+.control {
+  position: relative;
+  display: inline-flex;
+}
+.microphone:disabled {
+  pointer-events: none;
+}
+.microphone[aria-pressed="true"] {
+  background: var(--shade-54);
+  color: var(--shade-221);
+}
+.hint {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  right: 0;
+  width: max-content;
+  max-width: min(280px, 70vw);
+  padding: 5px 8px;
+  border-radius: 5px;
+  background: var(--shade-51);
+  color: var(--shade-221);
+  font-size: 11px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(3px);
+  transition:
+    opacity 120ms,
+    transform 120ms,
+    visibility 120ms;
+  pointer-events: none;
+  z-index: 1;
+}
+.control:hover .hint,
+.control:focus-within .hint,
+.control[data-active="true"] .hint,
+.control[data-notice="true"] .hint {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .hint {
+    transition: none;
+  }
+}

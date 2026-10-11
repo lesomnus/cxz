@@ -1,5 +1,18 @@
 import type { LanguagePack } from "#src/shared/i18n/i18n.ts";
 export const messages = {
+  "Voice input": "음성 입력",
+  "Stop voice input": "음성 입력 중지",
+  "Voice input is not supported in this browser. Use HTTPS or localhost in a supported browser.":
+    "이 브라우저에서는 음성 입력을 지원하지 않습니다. 지원되는 브라우저에서 HTTPS 또는 localhost로 접속하세요.",
+  "Microphone access was denied. Allow it in your browser settings.":
+    "마이크 접근이 거부되었습니다. 브라우저 설정에서 허용하세요.",
+  "No microphone is available.": "사용 가능한 마이크가 없습니다.",
+  "No speech detected. Try again.":
+    "음성이 감지되지 않았습니다. 다시 시도하세요.",
+  "Voice input failed. Check your connection and try again.":
+    "음성 입력에 실패했습니다. 연결을 확인하고 다시 시도하세요.",
+  "Finishing voice input…": "음성 입력을 마무리하는 중…",
+  "Listening…": "듣는 중…",
   "Terminal {number}": "터미널 {number}",
   "Terminal tabs": "터미널 탭",
   "New terminal": "새 터미널",

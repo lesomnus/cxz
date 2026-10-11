@@ -16,6 +16,8 @@ import { ComposerEditor, type ComposerEditorHandle } from "./composer-editor";
 import type { ComposerCommand } from "./composer-commands";
 import { attachmentsReady, type ComposerPaste } from "./composer-pastes";
 import type { UploadFile } from "./composer-upload";
+import { useSpeechInput } from "#src/shared/browser/use-speech-input.ts";
+import { MicrophoneControl } from "./microphone-control";
 
 // Presentation shared by the connected conversation and serverless UI previews.
 export function ConversationComposer({
@@ -69,6 +71,10 @@ export function ConversationComposer({
   const terminalHint = useId();
   const sendHint = useId();
   const editor = useRef<ComposerEditorHandle>(null);
+  const speech = useSpeechInput({
+    disabled: sending,
+    onTranscript: (text) => editor.current?.insertText(text),
+  });
   const files = useRef<HTMLInputElement>(null);
   const directory = useRef<HTMLInputElement>(null);
   const [, refreshUploads] = useState(0);
@@ -82,7 +88,10 @@ export function ConversationComposer({
       className="composer"
       onSubmit={(event) => {
         if (!ready) event.preventDefault();
-        else onSubmit(event);
+        else {
+          speech.cancel();
+          onSubmit(event);
+        }
       }}
     >
       {upload && (
@@ -179,6 +188,7 @@ export function ConversationComposer({
               {t("Terminal")} · ctrl+`
             </span>
           </span>
+          <MicrophoneControl speech={speech} disabled={sending} />
           <span className="send-control">
             <Button
               className="toolbar-button send"

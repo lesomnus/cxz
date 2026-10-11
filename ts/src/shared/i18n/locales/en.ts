@@ -1,5 +1,17 @@
 // English source messages are always bundled; other packs load on demand.
 export const messages = {
+  "Voice input": "Voice input",
+  "Stop voice input": "Stop voice input",
+  "Voice input is not supported in this browser. Use HTTPS or localhost in a supported browser.":
+    "Voice input is not supported in this browser. Use HTTPS or localhost in a supported browser.",
+  "Microphone access was denied. Allow it in your browser settings.":
+    "Microphone access was denied. Allow it in your browser settings.",
+  "No microphone is available.": "No microphone is available.",
+  "No speech detected. Try again.": "No speech detected. Try again.",
+  "Voice input failed. Check your connection and try again.":
+    "Voice input failed. Check your connection and try again.",
+  "Finishing voice input…": "Finishing voice input…",
+  "Listening…": "Listening…",
   "Terminal {number}": "Terminal {number}",
   "Terminal tabs": "Terminal tabs",
   "New terminal": "New terminal",

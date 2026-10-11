@@ -50,6 +50,7 @@ import { MAX_UPLOAD_BYTES, type UploadFile } from "./composer-upload";
 
 export type ComposerEditorHandle = {
   insertFiles: (files: readonly File[]) => void;
+  insertText: (text: string) => void;
 };
 
 export function ComposerEditor({
@@ -172,6 +173,15 @@ export function ComposerEditor({
     }
   }
   useImperativeHandle(editorRef, () => ({
+    insertText: (text) => {
+      if (latest.current.readOnly) return;
+      const selection = normalizedSelection();
+      const before = value.slice(0, selection.start);
+      const after = value.slice(selection.end);
+      const prefix = before && !/\s$/.test(before) ? " " : "";
+      const suffix = after && !/^\s/.test(after) ? " " : "";
+      replace(selection.start, selection.end, prefix + text + suffix);
+    },
     insertFiles: (files) => {
       try {
         void insertPicked(pickedFiles(files));
