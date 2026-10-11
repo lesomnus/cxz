@@ -1,0 +1,42 @@
+.pane,
+.split,
+.part {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.pane,
+.part {
+  flex-direction: column;
+}
+.split[data-axis="vertical"] {
+  flex-direction: column;
+}
+.separator {
+  flex: 0 0 5px;
+  position: relative;
+  cursor: col-resize;
+  touch-action: none;
+  outline: none;
+}
+.split[data-axis="vertical"] > .separator {
+  cursor: row-resize;
+}
+.separator::before {
+  content: "";
+  position: absolute;
+  inset: 0 2px;
+  background: var(--ui-shade-54);
+}
+.split[data-axis="vertical"] > .separator::before {
+  inset: 2px 0;
+}
+.separator:hover::before,
+.separator:focus-visible::before,
+.separator:active::before {
+  inset: 0;
+  background: var(--ui-muted);
+}

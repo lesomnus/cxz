@@ -19,14 +19,42 @@ shell variables, running commands, scrollback and the draft. Switching sessions,
 leaving the conversation, resetting the sandbox, reloading or signing out closes
 that panel's connection and shell; it is not a persistent server terminal. An
 exited or disconnected shell shows **Reconnect**, which starts a new shell.
-The compact header shows a single active **Terminal** tab; selecting it focuses
-the existing shell. It shares the composer toolbar's height and control insets,
-with a folding button on the right. Workspace paths and normal connection labels
-are omitted; connecting, exit/error and clipboard feedback remain available.
+Each pane has a compact tab bar. **+** opens an independent project shell and
+the tab's **×** closes that shell. Selecting a tab focuses its existing shell;
+inactive tabs keep their connections and output buffers. Closing the last tab
+in a pane removes that pane; closing every tab folds the panel. Reopening after
+that starts a fresh shell.
+
+**Terminal layout → Split right / Split down** opens a new shell in a neighboring
+pane. Drag tabs along a tab bar to reorder them, to another pane's center to
+merge, or to its edges to split. A drop preview shows the destination. A lone
+tab cannot split away from itself. **Move to next pane** is the keyboard/menu
+alternative to dragging between panes. Pane separators resize with pointer
+drag or arrow keys; Shift makes a larger step, Home/End reach the limits, and
+double click equalizes the split. The panel's upper edge adjusts its overall
+height. Docking, splitting and resizing preserve existing shells, scrollback
+and partially typed commands.
+
+The tab bars share the composer toolbar's height and control insets, with a
+folding button on the first pane's right. Workspace paths and normal connection
+labels are omitted; connecting, exit/error and clipboard feedback remain
+available. Tabs support arrow/Home/End navigation and Delete to close; Enter
+focuses the selected shell. Touch users can use the layout menu and resize
+handles without dragging tabs. These are docked panes inside the conversation's
+terminal area, not detached browser windows. Layouts and PTYs are scoped to the
+open conversation and are not restored after a reload.
 Scrollback is bounded to 2000 terminal lines independently of virtualized messages.
 Panel sizing follows [workspace-terminal.module.css](../ts/src/features/workspace/terminal/workspace-terminal.module.css), bounded by the conversation
 viewport. ResizeObserver updates the PTY within the project service's validated
 dimension limits. The wide-view editor remains a separate adjacent pane.
+Split layout geometry and its accessible separators are provided by the reusable
+`SplitLayout` component in `@lesomnus/cxz-ui`; tab ownership/docking are separate
+from PTY lifecycle. Each shell lives in a stable keyed `TerminalSession` with a
+stable portal host that is moved between pane slots. Rebuilding a split tree
+never remounts that session or reconnects its transport. Pane slot refs are
+registered before session layout effects, including StrictMode effect replay.
+Storybook includes **Workspace/Terminal → Docking** with real xterm.js and a
+local fake shell, and **Components/SplitLayout → Nested** for the portable layout.
 
 ## Browser transport
 

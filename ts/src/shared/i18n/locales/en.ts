@@ -1,5 +1,14 @@
 // English source messages are always bundled; other packs load on demand.
 export const messages = {
+  "Terminal {number}": "Terminal {number}",
+  "Terminal tabs": "Terminal tabs",
+  "New terminal": "New terminal",
+  "Terminal layout": "Terminal layout",
+  "Split right": "Split right",
+  "Split down": "Split down",
+  "Move to next pane": "Move to next pane",
+  "Resize terminal": "Resize terminal",
+  "Resize panes": "Resize panes",
   "Terminal settings": "Terminal settings",
   "Copy on selection": "Copy on selection",
   "Automatically copy selected terminal text.":
