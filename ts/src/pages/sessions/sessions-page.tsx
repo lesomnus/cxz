@@ -1,6 +1,8 @@
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { ResizeHandle } from "@lesomnus/cxz-ui";
+import { usePaneWidth } from "#src/shared/layout/use-pane-width.ts";
 import { useQuery } from "@lesomnus/payday/react";
 import { SessionService } from "#gen/cxz/session_svc_pb";
 import type { Project } from "#gen/cxz/project_pb";
@@ -41,6 +43,7 @@ function SessionWorkspace({
     select: { all: true, project: { all: true } },
   });
   const area = useRef<HTMLDivElement>(null);
+  const pane = usePaneWidth(area, "session");
   const [activated, setActivated] = useState(false);
   useEffect(() => {
     const observer = new ResizeObserver(([entry]) => {
@@ -52,14 +55,26 @@ function SessionWorkspace({
   const project = current.data?.project;
   return (
     <div className="session-workspace" ref={area}>
-      <div className="session-split">
+      <div
+        className="session-split"
+        style={
+          { "--session-resized-width": `${pane.value}px` } as CSSProperties
+        }
+      >
         <Conversation key={id} c={c} id={id} projects={projects} />
         {activated && !!project?.id.length && (
-          <ProjectEditorPane
-            key={Array.from(project.id).join("-")}
-            c={c}
-            projectId={project.id}
-          />
+          <>
+            <ResizeHandle
+              {...pane}
+              className="session-divider"
+              label={t("Resize workspace editor")}
+            />
+            <ProjectEditorPane
+              key={Array.from(project.id).join("-")}
+              c={c}
+              projectId={project.id}
+            />
+          </>
         )}
       </div>
     </div>

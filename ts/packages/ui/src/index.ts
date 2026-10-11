@@ -13,3 +13,4 @@ export * from "./components/setting-slider/setting-slider";
 export * from "./components/elapsed-time/elapsed-time";
 export * from "./components/switch/switch";
 export * from "./components/split-layout/split-layout";
+export * from "./components/resize-handle/resize-handle";

@@ -48,6 +48,12 @@
   --scroll-fade-depth: 24px;
   --scroll-fade-extension: 24px;
   --resource-panel-width: 180px;
+  --session-pane-width: 800px;
+  --session-pane-min-width: 360px;
+  --session-other-min-width: 360px;
+  --file-pane-width: 180px;
+  --file-pane-min-width: 120px;
+  --file-other-min-width: 240px;
   --panel-inset: 12px;
   --scroll-handle-color: var(--shade-122);
   --scroll-handle-hover-color: color-mix(
@@ -561,13 +567,20 @@ header strong {
   display: none;
   min-width: 0;
   min-height: 0;
-  border-left: 1px solid var(--shade-54);
   overflow: hidden;
   flex-direction: column;
 }
+.session-divider {
+  display: none;
+}
 @container (min-width: 1600px) {
   .session-split {
-    grid-template-columns: 800px minmax(0, 1fr);
+    grid-template-columns:
+      var(--session-resized-width, var(--session-pane-width))
+      var(--ui-resize-handle-size) minmax(0, 1fr);
+  }
+  .session-divider {
+    display: block;
   }
   .workspace-editor {
     display: flex;
@@ -599,7 +612,9 @@ header strong {
 }
 .file-workbench {
   display: grid;
-  grid-template-columns: 180px minmax(0, 1fr);
+  grid-template-columns:
+    var(--file-resized-width, var(--file-pane-width))
+    var(--ui-resize-handle-size) minmax(0, 1fr);
   flex: 1;
   min-height: 0;
 }
