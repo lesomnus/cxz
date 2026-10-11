@@ -59,7 +59,22 @@ func TestServeMultipleLookupsAndMetadata(t *testing.T) {
 			entries[e.Name] = e
 		}
 	}
-	if done != 3 || errors != 1 || len(entries) != 5 || !entries["dir"].Directory || !entries["run"].Executable || entries["link"].LinkTarget != "missing target" {
+	if done != 3 || errors != 1 || len(entries) != 5 || !entries["dir"].Directory || !entries["run"].Executable || entries["link"].LinkTarget != "missing target" || entries["link"].Kind != "symlink" || entries["dir"].Kind != "directory" || entries["run"].Kind != "file" {
 		t.Fatal(done, errors, entries)
+	}
+}
+
+func TestFileKind(t *testing.T) {
+	for _, tc := range []struct {
+		mode os.FileMode
+		want string
+	}{
+		{0600, "file"}, {0700, "file"}, {os.ModeDir, "directory"}, {os.ModeSymlink, "symlink"},
+		{os.ModeNamedPipe, "fifo"}, {os.ModeSocket, "socket"}, {os.ModeDevice, "block"},
+		{os.ModeDevice | os.ModeCharDevice, "character"}, {os.ModeIrregular, "unknown"},
+	} {
+		if got := fileKind(tc.mode); got != tc.want {
+			t.Fatalf("%v: %s, want %s", tc.mode, got, tc.want)
+		}
 	}
 }

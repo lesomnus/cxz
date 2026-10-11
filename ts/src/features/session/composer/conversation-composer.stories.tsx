@@ -68,7 +68,7 @@ export const Commands: Story = {
     docs: {
       description: {
         story:
-          "Focus the editor at the end of the first line. Arrow keys navigate suggestions; Right accepts the selected hint.",
+          "Focus the editor at the end of the first line. Up/Down navigates suggestions; Tab or Right accepts the selected hint.",
       },
     },
   },
@@ -83,6 +83,21 @@ export const PathHints: Story = {
           ? [
               { name: "src", directory: true },
               { name: "README.md", directory: false },
+              { name: "bin", directory: true },
+              { name: "run.sh", executable: true },
+              { name: "channel.pipe", kind: "fifo" },
+              { name: "control.sock", kind: "socket" },
+              {
+                name: "docs-link",
+                symlink: true,
+                directory: true,
+                linkTarget: "src",
+              },
+              { name: "disk", kind: "block" },
+              { name: "console", kind: "character" },
+              ...Array.from({ length: 20 }, (_, i) => ({
+                name: `example-${i}.txt`,
+              })),
             ]
           : directory === "/workspace/src/"
             ? [
@@ -98,7 +113,7 @@ export const PathHints: Story = {
     docs: {
       description: {
         story:
-          "Place the caret inside the backticks after /workspace/. Up/Down selects immediate container paths; Tab or Right accepts. Choosing a directory continues completion inside it, Escape dismisses and Undo restores the previous draft. This example simulates path listings; the connected sandbox also supports home paths and /download <path> through the existing project APIs.",
+          "Place the caret inside the backticks after /workspace/. The responsive path grid sits above or below the typing line without covering it. All four arrow keys move between cells; Tab or Enter accepts, Escape dismisses and Undo restores the previous draft. Names use different colors for directories, executables, symbolic links, pipes, sockets and devices; hover for metadata. Choosing a directory continues completion inside it. This example simulates path listings; the connected sandbox also supports home paths and /download <path> through the existing project APIs.",
       },
     },
   },

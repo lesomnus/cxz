@@ -1603,11 +1603,6 @@ pre {
 .command-suggestion[data-current="true"] [data-matched="true"] {
   color: var(--shade-237);
 }
-.command-suggestions[data-path="true"]
-  .command-suggestion[data-current="true"] {
-  z-index: 4;
-  pointer-events: auto;
-}
 .command-suggestion:not([data-current="true"]):hover {
   background: var(--hover);
   color: var(--shade-237);

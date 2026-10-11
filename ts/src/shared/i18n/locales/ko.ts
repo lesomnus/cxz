@@ -190,6 +190,13 @@ export const messages = {
   "Loading paths…": "경로 불러오는 중…",
   "No matching paths": "일치하는 경로 없음",
   "Directory unavailable": "디렉터리를 읽을 수 없음",
+  "Symbolic link": "심볼릭 링크",
+  Pipe: "파이프",
+  Socket: "소켓",
+  "Block device": "블록 장치",
+  "Character device": "문자 장치",
+  "Unknown file type": "알 수 없는 파일 종류",
+  Executable: "실행 가능",
   "Download a container file": "컨테이너 파일 다운로드",
   "Choose a container file: /download <path>":
     "컨테이너 파일을 선택하세요: /download <경로>",

@@ -15,8 +15,8 @@ import {
   matchPaths,
   type LookupPaths,
 } from "./composer-paths";
-import { EditorSuggestions } from "./editor-suggestions";
-import { COMMAND_NEIGHBORS } from "./composer-commands";
+import { moveGridSelection } from "@lesomnus/cxz-ui";
+import { PathGrid } from "./path-grid";
 
 export function usePathSuggestions({
   value,
@@ -35,6 +35,7 @@ export function usePathSuggestions({
 }) {
   useLocale();
   const id = useId();
+  const [columns, setColumns] = useState(1);
   const [selection, setSelection] = useState({
     focused: false,
     start: 0,
@@ -147,9 +148,15 @@ export function usePathSuggestions({
     )
       return false;
     if (
-      !["ArrowUp", "ArrowDown", "ArrowRight", "Tab", "Escape"].includes(
-        event.key,
-      )
+      ![
+        "ArrowUp",
+        "ArrowDown",
+        "ArrowLeft",
+        "ArrowRight",
+        "Tab",
+        "Enter",
+        "Escape",
+      ].includes(event.key)
     )
       return false;
     if (!matches.length && event.key !== "Escape") return false;
@@ -157,14 +164,12 @@ export function usePathSuggestions({
     event.stopPropagation();
     if (event.key === "Escape")
       setChoice({ text: signature, index: selected, dismissed: true });
-    else if (event.key === "ArrowRight" || event.key === "Tab")
+    else if (event.key === "Enter" || event.key === "Tab")
       commit(matches[selected].command.name);
     else
       setChoice({
         text: signature,
-        index:
-          (selected + (event.key === "ArrowDown" ? 1 : -1) + matches.length) %
-          matches.length,
+        index: moveGridSelection(selected, matches.length, columns, event.key),
         dismissed: false,
       });
     return true;
@@ -174,13 +179,14 @@ export function usePathSuggestions({
     key,
     updateSelection,
     inputProps: {
-      "aria-autocomplete": lookup ? ("both" as const) : undefined,
+      "aria-autocomplete": lookup ? ("list" as const) : undefined,
+      "aria-haspopup": open ? ("grid" as const) : undefined,
       "aria-controls": open ? id : undefined,
       "aria-activedescendant":
-        open && matches.length ? `${id}-${COMMAND_NEIGHBORS}` : undefined,
+        open && matches.length ? `${id}-${selected}` : undefined,
     },
     overlay: open && (
-      <EditorSuggestions
+      <PathGrid
         id={id}
         input={input}
         matches={matches}
@@ -188,6 +194,7 @@ export function usePathSuggestions({
         label={t("Path suggestions")}
         choose={commit}
         caret={selection.start}
+        onColumnsChange={setColumns}
         message={
           !current
             ? t("Loading paths…")

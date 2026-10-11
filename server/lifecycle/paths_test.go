@@ -33,7 +33,7 @@ func (f *pathsRuntime) Paths(ctx context.Context, project, path string, emit fun
 	if path == "/denied" {
 		return containerterm.PathListing{}, status.Error(codes.PermissionDenied, "directory denied")
 	}
-	out := containerterm.PathListing{Entries: []containerterm.PathEntry{{Name: "한글 dir", Directory: true}}}
+	out := containerterm.PathListing{Entries: []containerterm.PathEntry{{Name: "한글 dir", Kind: "directory", Directory: true}}}
 	emit(out)
 	if path == "~/cancel" {
 		<-ctx.Done()
@@ -45,7 +45,7 @@ func (f *pathsRuntime) Paths(ctx context.Context, project, path string, emit fun
 	case <-ctx.Done():
 		return out, ctx.Err()
 	}
-	out.Entries = append(out.Entries, containerterm.PathEntry{Name: "link", Symlink: true, LinkTarget: "한글 dir", Directory: true}, containerterm.PathEntry{Name: "run.sh", Executable: true})
+	out.Entries = append(out.Entries, containerterm.PathEntry{Name: "link", Kind: "symlink", Symlink: true, LinkTarget: "한글 dir", Directory: true}, containerterm.PathEntry{Name: "run.sh", Kind: "file", Executable: true}, containerterm.PathEntry{Name: "pipe", Kind: "fifo"}, containerterm.PathEntry{Name: "socket", Kind: "socket"})
 	emit(out)
 	out.Truncated = true
 	return out, nil
@@ -85,7 +85,7 @@ func TestProjectPathsRPCStreamsAndCancels(t *testing.T) {
 			close(f.release) // No final response can arrive until the first batch is visible.
 		}
 	})
-	want := []containerterm.PathEntry{{Name: "한글 dir", Directory: true}, {Name: "link", Symlink: true, LinkTarget: "한글 dir", Directory: true}, {Name: "run.sh", Executable: true}}
+	want := []containerterm.PathEntry{{Name: "한글 dir", Kind: "directory", Directory: true}, {Name: "link", Kind: "symlink", Symlink: true, LinkTarget: "한글 dir", Directory: true}, {Name: "run.sh", Kind: "file", Executable: true}, {Name: "pipe", Kind: "fifo"}, {Name: "socket", Kind: "socket"}}
 	if err != nil || !reflect.DeepEqual(out.Entries, want) || !out.Truncated || len(snapshots) != 3 || len(snapshots[0].Entries) != 1 {
 		t.Fatalf("streamed entries: %+v, snapshots %+v, error %v", out, snapshots, err)
 	}

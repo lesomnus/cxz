@@ -11,38 +11,6 @@ import {
   type CommandMatch,
 } from "./composer-commands";
 
-// Measure the native caret's wrapped line without altering the input or its
-// selection. The offscreen mirror uses the textarea's actual font and width.
-function caretTop(input: HTMLTextAreaElement, offset: number) {
-  const style = getComputedStyle(input);
-  const mirror = document.createElement("div");
-  Object.assign(mirror.style, {
-    position: "fixed",
-    visibility: "hidden",
-    left: "-10000px",
-    top: "0",
-    width: `${input.clientWidth}px`,
-    boxSizing: "border-box",
-    whiteSpace: "pre-wrap",
-    overflowWrap: "anywhere",
-    font: style.font,
-    lineHeight: style.lineHeight,
-    letterSpacing: style.letterSpacing,
-    tabSize: style.tabSize,
-    padding: style.padding,
-    textIndent: style.textIndent,
-  });
-  mirror.textContent = input.value.slice(0, offset);
-  const marker = document.createElement("span");
-  marker.textContent = input.value[offset] || ".";
-  mirror.append(marker);
-  document.body.append(mirror);
-  const top =
-    marker.getBoundingClientRect().top - mirror.getBoundingClientRect().top;
-  mirror.remove();
-  return top;
-}
-
 export function EditorSuggestions({
   id,
   input,
@@ -50,8 +18,6 @@ export function EditorSuggestions({
   selected,
   label,
   choose,
-  caret,
-  message,
 }: {
   id: string;
   input: RefObject<HTMLTextAreaElement | null>;
@@ -59,8 +25,6 @@ export function EditorSuggestions({
   selected: number;
   label: string;
   choose: (name: string) => void;
-  caret?: number;
-  message?: string;
 }) {
   const root = useRef<HTMLDivElement>(null);
   const rows = commandWindow(matches, selected);
@@ -71,10 +35,7 @@ export function EditorSuggestions({
       const style = getComputedStyle(el),
         height = parseFloat(style.lineHeight);
       const inset = parseFloat(getComputedStyle(overlay).paddingTop);
-      const top =
-        caret === undefined
-          ? parseFloat(style.paddingTop)
-          : caretTop(el, caret);
+      const top = parseFloat(style.paddingTop);
       overlay.style.top = `${el.offsetTop + top - el.scrollTop - COMMAND_NEIGHBORS * height - inset}px`;
       overlay.style.left = `${el.offsetLeft}px`;
       overlay.style.width = `${el.clientWidth}px`;
@@ -90,11 +51,10 @@ export function EditorSuggestions({
       resize.disconnect();
       el.removeEventListener("scroll", measure);
     };
-  }, [input, caret, matches]);
+  }, [input, matches]);
   return (
     <div
       className="command-suggestions"
-      data-path={caret !== undefined}
       ref={root}
       id={id}
       role="listbox"
@@ -144,9 +104,7 @@ export function EditorSuggestions({
           ),
         )
       ) : (
-        <div className="command-suggestion" role="status" title={message}>
-          {message}
-        </div>
+        <div className="command-suggestion" role="status"></div>
       )}
     </div>
   );

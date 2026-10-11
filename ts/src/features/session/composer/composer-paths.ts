@@ -14,6 +14,42 @@ export type PathQuery = {
   parent: string;
   query: string;
 };
+export type PathMatch = CommandMatch & { entry: ProjectPathEntry };
+
+export function pathKind(entry: ProjectPathEntry) {
+  if (entry.symlink) return "symlink";
+  if (entry.directory) return "directory";
+  if (!entry.kind) return "file";
+  return [
+    "file",
+    "directory",
+    "symlink",
+    "fifo",
+    "socket",
+    "block",
+    "character",
+  ].includes(entry.kind)
+    ? entry.kind
+    : "unknown";
+}
+
+export function pathDescription(entry: ProjectPathEntry) {
+  const labels: Record<string, string> = {
+    directory: t("Directory"),
+    file: t("File"),
+    symlink: t("Symbolic link"),
+    fifo: t("Pipe"),
+    socket: t("Socket"),
+    block: t("Block device"),
+    character: t("Character device"),
+    unknown: t("Unknown file type"),
+  };
+  const kind = pathKind(entry);
+  return (
+    (labels[kind] ?? labels.unknown) +
+    (entry.executable ? ` · ${t("Executable")}` : "")
+  );
+}
 
 function pathQuery(
   value: string,
@@ -95,7 +131,7 @@ export function containerPathQuery(
 export function matchPaths(
   entries: readonly ProjectPathEntry[],
   token: PathQuery,
-): CommandMatch[] {
+): PathMatch[] {
   const valid = entries.filter(
     (entry) =>
       entry.name &&
@@ -105,7 +141,7 @@ export function matchPaths(
   const matched = matchCommands(
     valid.map((entry) => ({
       name: entry.name,
-      description: entry.directory ? t("Directory") : t("File"),
+      description: pathDescription(entry),
     })),
     token.query,
   );
@@ -120,6 +156,7 @@ export function matchPaths(
     )
     .map((match) => ({
       ...match,
+      entry: byName.get(match.command.name)!,
       positions: match.positions.map(
         (position) => position + token.parent.length,
       ),

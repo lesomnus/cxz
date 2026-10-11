@@ -187,6 +187,13 @@ export const messages = {
   "Loading paths…": "Loading paths…",
   "No matching paths": "No matching paths",
   "Directory unavailable": "Directory unavailable",
+  "Symbolic link": "Symbolic link",
+  Pipe: "Pipe",
+  Socket: "Socket",
+  "Block device": "Block device",
+  "Character device": "Character device",
+  "Unknown file type": "Unknown file type",
+  Executable: "Executable",
   "Download a container file": "Download a container file",
   "Choose a container file: /download <path>":
     "Choose a container file: /download <path>",

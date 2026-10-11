@@ -361,6 +361,9 @@ message ProjectPathEntry {
   bool executable = 3;
   bool symlink = 4;
   string link_target = 5;
+  // file, directory, symlink, fifo, socket, block, character, or unknown.
+  // Empty on older runtimes; callers can fall back to the boolean metadata.
+  string kind = 6;
 }
 
 message ProjectDownloadRequest {

@@ -20,6 +20,7 @@ const Version = 1
 
 type Entry struct {
 	Name       string
+	Kind       string
 	Directory  bool
 	Executable bool
 	LinkTarget string
@@ -80,6 +81,27 @@ func printable(s string) bool {
 	return utf8.ValidString(s) && strings.IndexFunc(s, unicode.IsControl) < 0
 }
 
+func fileKind(mode os.FileMode) string {
+	switch {
+	case mode.IsRegular():
+		return "file"
+	case mode.IsDir():
+		return "directory"
+	case mode&os.ModeSymlink != 0:
+		return "symlink"
+	case mode&os.ModeNamedPipe != 0:
+		return "fifo"
+	case mode&os.ModeSocket != 0:
+		return "socket"
+	case mode&os.ModeCharDevice != 0:
+		return "character"
+	case mode&os.ModeDevice != 0:
+		return "block"
+	default:
+		return "unknown"
+	}
+}
+
 func list(path string, send func(any) error) error {
 	fail := func() error { return send(Response{Done: true, Error: "directory unavailable or permission denied"}) }
 	if len(path) > 4096 || strings.ContainsRune(path, 0) {
@@ -119,7 +141,7 @@ func list(path string, send func(any) error) error {
 			if e != nil {
 				continue
 			}
-			entry := Entry{Name: d.Name(), Directory: d.IsDir(), Executable: info.Mode().IsRegular() && info.Mode().Perm()&0111 != 0, Symlink: info.Mode()&os.ModeSymlink != 0}
+			entry := Entry{Name: d.Name(), Kind: fileKind(info.Mode()), Directory: d.IsDir(), Executable: info.Mode().IsRegular() && info.Mode().Perm()&0111 != 0, Symlink: info.Mode()&os.ModeSymlink != 0}
 			if entry.Symlink {
 				full := filepath.Join(path, d.Name())
 				entry.LinkTarget, _ = os.Readlink(full)

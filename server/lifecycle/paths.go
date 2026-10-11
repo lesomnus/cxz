@@ -43,7 +43,7 @@ func (s ProjectServer) Paths(r *resource.ProjectPathsRequest, stream grpc.Server
 		}
 		entries := make([]*resource.ProjectPathEntry, 0, len(listing.Entries)-sent)
 		for _, e := range listing.Entries[sent:] {
-			entries = append(entries, resource.ProjectPathEntry_builder{Name: &e.Name, Directory: &e.Directory, Executable: &e.Executable, Symlink: &e.Symlink, LinkTarget: &e.LinkTarget}.Build())
+			entries = append(entries, resource.ProjectPathEntry_builder{Name: &e.Name, Kind: &e.Kind, Directory: &e.Directory, Executable: &e.Executable, Symlink: &e.Symlink, LinkTarget: &e.LinkTarget}.Build())
 		}
 		sendErr = stream.Send(resource.ProjectPathsReply_builder{Entries: entries, Truncated: &listing.Truncated}.Build())
 		if sendErr != nil {

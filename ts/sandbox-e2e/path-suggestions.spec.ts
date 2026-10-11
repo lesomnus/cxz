@@ -26,11 +26,12 @@ test("inline container paths complete through directories without moving the car
       el.setSelectionRange(position, position),
     caret,
   );
-  const list = page.getByRole("listbox", {
+  const list = page.getByRole("grid", {
     name: "Path suggestions",
     exact: true,
   });
-  await expect(list.locator('[aria-selected="true"] .command-name')).toHaveText(
+  await expect(list.locator('[aria-selected="true"]')).toHaveAttribute(
+    "aria-label",
     "/workspace/",
   );
   await expect(page.locator(".editor-mirror > .editor-line").first()).toHaveCSS(
@@ -48,16 +49,18 @@ test("inline container paths complete through directories without moving the car
     "First line\nInspect `/workspace/` and preserve the rest",
   );
   await expect(
-    list.getByRole("option", { name: /\/workspace\/src\// }),
+    list.getByRole("gridcell", { name: /\/workspace\/src\// }),
   ).toBeVisible();
-  await list.getByRole("option", { name: /\/workspace\/src\// }).click();
+  await list.getByRole("gridcell", { name: /\/workspace\/src\// }).click();
   await expect(input).toHaveValue(
     "First line\nInspect `/workspace/src/` and preserve the rest",
   );
   await expect(
-    list.getByRole("option", { name: /\/workspace\/src\/app.ts/ }),
+    list.getByRole("gridcell", { name: /\/workspace\/src\/app.ts/ }),
   ).toBeVisible();
-  await list.getByRole("option", { name: /\/workspace\/src\/app.ts/ }).click();
+  await list
+    .getByRole("gridcell", { name: /\/workspace\/src\/app.ts/ })
+    .click();
   await expect(input).toHaveValue(
     "First line\nInspect `/workspace/src/app.ts` and preserve the rest",
   );
@@ -72,13 +75,13 @@ test("home paths, missing directories, Escape, IME and fenced code use the right
   page,
 }) => {
   const input = page.getByRole("textbox", { name: "Message", exact: true });
-  const list = page.getByRole("listbox", {
+  const list = page.getByRole("grid", {
     name: "Path suggestions",
     exact: true,
   });
   await input.fill("Look `~");
   await expect(
-    list.getByRole("option", { name: /~\/notes.txt/ }),
+    list.getByRole("gridcell", { name: /~\/notes.txt/ }),
   ).toBeVisible();
   await input.press("Escape");
   await expect(list).toHaveCount(0);
@@ -107,7 +110,7 @@ test("typing paths between automatically paired backticks matches download argum
   page,
 }) => {
   const input = page.getByRole("textbox", { name: "Message", exact: true });
-  const list = page.getByRole("listbox", {
+  const list = page.getByRole("grid", {
     name: "Path suggestions",
     exact: true,
   });
@@ -115,7 +118,7 @@ test("typing paths between automatically paired backticks matches download argum
     await input.fill("");
     await input.pressSequentially(`Inspect \`${path}`, { delay: 25 });
     await expect(input).toHaveValue(`Inspect \`${path}\``);
-    const selected = list.locator('[aria-selected="true"] .command-name');
+    const selected = list.locator('[aria-selected="true"]');
     await expect(selected).toBeVisible();
     const inline = await selected.innerText();
     await input.fill("");
@@ -129,14 +132,15 @@ test("download completes its path and saves bytes without sending a prompt; fail
 }) => {
   const input = page.getByRole("textbox", { name: "Message", exact: true });
   await input.fill("/download README");
-  const list = page.getByRole("listbox", {
+  const list = page.getByRole("grid", {
     name: "Path suggestions",
     exact: true,
   });
-  await expect(list.locator('[aria-selected="true"] .command-name')).toHaveText(
+  await expect(list.locator('[aria-selected="true"]')).toHaveAttribute(
+    "aria-label",
     "/workspace/README.md",
   );
-  await input.press("ArrowRight");
+  await input.press("Tab");
   await expect(input).toHaveValue("/download /workspace/README.md");
   const downloadReady = page.waitForEvent("download");
   await input.press("Control+Enter");

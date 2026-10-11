@@ -57,6 +57,10 @@ for entry in ./* ./.[!.]* ./..?*; do
   target=
   if [ -x "$entry" ]; then kind=x; fi
   if [ -d "$entry" ]; then kind=d; fi
+  if [ -p "$entry" ]; then kind=p; fi
+  if [ -S "$entry" ]; then kind=s; fi
+  if [ -b "$entry" ]; then kind=b; fi
+  if [ -c "$entry" ]; then kind=c; fi
   if [ -L "$entry" ]; then
     if [ "$kind" = d ]; then kind=ld; else kind=l; fi
     target=$(readlink "$entry" 2>/dev/null || :)
@@ -117,6 +121,7 @@ func parsePaths(b []byte) (PathListing, error) {
 func readPaths(src io.Reader, emit func(PathListing)) (PathListing, error) {
 	var out PathListing
 	r := bufio.NewReader(src)
+	kinds := map[string]string{"d": "directory", "f": "file", "x": "file", "l": "symlink", "ld": "symlink", "p": "fifo", "s": "socket", "b": "block", "c": "character"}
 	for n := 0; ; n++ {
 		kind, err := r.ReadString(0)
 		if err == io.EOF && kind == "" {
@@ -138,7 +143,7 @@ func readPaths(src io.Reader, emit func(PathListing)) (PathListing, error) {
 			out.Truncated = true
 			continue
 		}
-		if (kind != "d" && kind != "f" && kind != "x" && kind != "l" && kind != "ld") || name == "" || strings.ContainsRune(name, '/') {
+		if kinds[kind] == "" || name == "" || strings.ContainsRune(name, '/') {
 			return out, fmt.Errorf("invalid directory entry")
 		}
 		if !utf8.ValidString(name) || strings.IndexFunc(name, unicode.IsControl) >= 0 {
@@ -147,7 +152,7 @@ func readPaths(src io.Reader, emit func(PathListing)) (PathListing, error) {
 		if !utf8.ValidString(target) || strings.IndexFunc(target, unicode.IsControl) >= 0 {
 			target = "(unprintable target)"
 		}
-		out.Entries = append(out.Entries, PathEntry{Name: name, Directory: kind == "d" || kind == "ld", Executable: kind == "x", Symlink: kind == "l" || kind == "ld", LinkTarget: target})
+		out.Entries = append(out.Entries, PathEntry{Name: name, Kind: kinds[kind], Directory: kind == "d" || kind == "ld", Executable: kind == "x", Symlink: kind == "l" || kind == "ld", LinkTarget: target})
 		if emit != nil && (len(out.Entries) == 1 || len(out.Entries)%16 == 0) {
 			emit(PathListing{Entries: append([]PathEntry(nil), out.Entries...), Truncated: out.Truncated})
 		}
