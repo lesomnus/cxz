@@ -45,6 +45,7 @@ export function SuggestionGrid({
   choose,
   onColumnsChange,
   message,
+  className,
 }: {
   id: string;
   label: string;
@@ -53,6 +54,7 @@ export function SuggestionGrid({
   choose: (index: number) => void;
   onColumnsChange: (columns: number) => void;
   message?: string;
+  className?: string;
 }) {
   const root = useRef<HTMLDivElement>(null);
   const [columns, setColumns] = useState(1);
@@ -87,7 +89,7 @@ export function SuggestionGrid({
   }, [selected, items, columns]);
   return (
     <div
-      className={styles.grid}
+      className={[styles.grid, className].filter(Boolean).join(" ")}
       ref={root}
       id={id}
       role="grid"

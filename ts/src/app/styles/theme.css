@@ -1,5 +1,9 @@
 @import "@lesomnus/cxz-ui/styles.css";
 :root {
+  --editor-hint-padding: calc(2 * var(--space));
+  --editor-hint-background: color-mix(in srgb, var(--shade-0) 32%, transparent);
+  --editor-hint-blur: 24px;
+  --editor-hint-radius: var(--space);
   --shade-0: var(--ui-shade-0);
   --shade-16: var(--ui-shade-16);
   --shade-17: var(--ui-shade-17);

@@ -79,6 +79,10 @@ export function PathGrid({
       popup.style.fontFamily = style.fontFamily;
       popup.style.fontSize = `${parseFloat(style.fontSize) * scale}px`;
       popup.style.lineHeight = `${height}px`;
+      popup.style.setProperty(
+        "--path-entry-inset",
+        `${parseFloat(style.paddingLeft) * scale}px`,
+      );
       const above = Math.max(0, top - inset - gap);
       const below = Math.max(
         0,
@@ -87,7 +91,7 @@ export function PathGrid({
       const upward = above >= popup.scrollHeight || above >= below;
       popup.style.setProperty(
         "--suggestion-grid-max-height",
-        `min(var(--path-menu-height), ${Math.max(0, (upward ? above : below) - 2)}px)`,
+        `min(var(--path-menu-height), ${upward ? above : below}px)`,
       );
       popup.style.top = `${upward ? top - gap - popup.offsetHeight : top + height + gap}px`;
     };
@@ -107,6 +111,7 @@ export function PathGrid({
     <div ref={root} className={styles.popup}>
       <SuggestionGrid
         id={id}
+        className={styles.candidates}
         label={label}
         items={items}
         selected={selected}

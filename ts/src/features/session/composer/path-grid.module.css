@@ -12,11 +12,11 @@
   position: fixed;
   z-index: 100;
   box-sizing: border-box;
-  background: var(--ui-dropdown-background);
-  backdrop-filter: blur(var(--ui-dropdown-blur));
-  -webkit-backdrop-filter: blur(var(--ui-dropdown-blur));
-  border: 1px solid var(--ui-shade-54);
-  border-radius: 6px;
+  background: var(--editor-hint-background);
+  backdrop-filter: blur(var(--editor-hint-blur));
+  -webkit-backdrop-filter: blur(var(--editor-hint-blur));
+  border: 0;
+  border-radius: var(--editor-hint-radius);
 }
 .popup [data-matched="true"] {
   font-weight: 600;
@@ -30,4 +30,29 @@
   --path-socket-color: #74528a;
   --path-block-color: #81542c;
   --path-character-color: #81542c;
+}
+
+.candidates {
+  box-sizing: border-box;
+  padding: var(--editor-hint-padding) 0;
+  row-gap: 0;
+}
+.candidates [role="gridcell"] {
+  height: 1lh;
+  min-height: 0;
+  padding: 0 var(--path-entry-inset);
+  border-radius: 0;
+  line-height: inherit;
+  opacity: 0.72;
+}
+.candidates [aria-selected="true"] {
+  background: transparent;
+  opacity: 1;
+  font-weight: 600;
+}
+.candidates [role="gridcell"]:hover {
+  opacity: 1;
+}
+.candidates [role="row"]:has([role="status"]) {
+  padding: 0;
 }
