@@ -178,6 +178,21 @@ before rewriting headers for the gateway. Production builds and `npm run sandbox
 do not load this dev-only configuration. Stop the sandbox before starting dev if
 it is using the same port; `npm run dev -- --port 5174` selects another.
 
+Vite refreshes frontend code, not the running gateway. If container path hints
+report `permission_denied: path outside project workspace`, the gateway still
+has the older workspace-only restriction. Refresh its image after updating cxz,
+or run the gateway from the updated checkout on the Manager host:
+
+```sh
+npm --prefix ts run build
+cxz web down
+go run ./cmd/cxz web serve --assets-dir ./internal/webui/assets
+```
+
+Keep that foreground process running while using Vite. This replaces only the
+web gateway; existing projects do not need to be recreated. Running `web up`
+without updating its image uses the same older gateway code.
+
 ## Reaching it from another machine
 
 Two ways, and the first needs nothing new:

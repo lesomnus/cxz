@@ -144,7 +144,7 @@ export function EditorSuggestions({
           ),
         )
       ) : (
-        <div className="command-suggestion" role="status">
+        <div className="command-suggestion" role="status" title={message}>
           {message}
         </div>
       )}

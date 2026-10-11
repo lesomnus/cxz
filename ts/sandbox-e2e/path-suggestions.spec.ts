@@ -89,7 +89,11 @@ test("home paths, missing directories, Escape, IME and fenced code use the right
   await input.dispatchEvent("compositionend", { data: "중" });
   await expect(list).toBeVisible();
   await input.fill("Look `/workspace/missing/");
-  await expect(list.getByRole("status")).toHaveText("Directory unavailable");
+  await expect(list.getByRole("status")).toContainText("Directory unavailable");
+  await expect(list.getByRole("status")).toContainText("/workspace/missing/");
+  await expect(list.getByRole("status")).toContainText(
+    "sandbox directory not found",
+  );
   await input.fill("```\n/workspace/src/\n```");
   await input.evaluate((el: HTMLTextAreaElement) =>
     el.setSelectionRange(19, 19),
@@ -97,6 +101,27 @@ test("home paths, missing directories, Escape, IME and fenced code use the right
   await expect(list).toHaveCount(0);
   await input.fill("plain /workspace/src/");
   await expect(list).toHaveCount(0);
+});
+
+test("typing paths between automatically paired backticks matches download argument hints", async ({
+  page,
+}) => {
+  const input = page.getByRole("textbox", { name: "Message", exact: true });
+  const list = page.getByRole("listbox", {
+    name: "Path suggestions",
+    exact: true,
+  });
+  for (const path of ["/workspace/", "~/"]) {
+    await input.fill("");
+    await input.pressSequentially(`Inspect \`${path}`, { delay: 25 });
+    await expect(input).toHaveValue(`Inspect \`${path}\``);
+    const selected = list.locator('[aria-selected="true"] .command-name');
+    await expect(selected).toBeVisible();
+    const inline = await selected.innerText();
+    await input.fill("");
+    await input.pressSequentially(`/download ${path}`, { delay: 25 });
+    await expect(selected).toHaveText(inline);
+  }
 });
 
 test("download completes its path and saves bytes without sending a prompt; failures retain the command", async ({

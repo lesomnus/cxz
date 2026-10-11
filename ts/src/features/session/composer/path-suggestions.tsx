@@ -7,6 +7,7 @@ import {
   type RefObject,
 } from "react";
 import type { ProjectPathEntry } from "#gen/cxz/project_svc_pb";
+import { ConnectError } from "@connectrpc/connect";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import {
@@ -111,13 +112,13 @@ export function usePathSuggestions({
           cache.current.set(parent, { entries, time: Date.now() });
           setListing({ lookup, parent, entries });
         })
-        .catch(() => {
+        .catch((error: unknown) => {
           if (!controller.signal.aborted)
             setListing({
               lookup,
               parent,
               entries: [],
-              error: t("Directory unavailable"),
+              error: `${t("Directory unavailable")}: ${parent} — ${ConnectError.from(error).message}`,
             });
         });
     }, 75);

@@ -1588,6 +1588,11 @@ pre {
   height: 100%;
   justify-content: start;
 }
+.command-suggestion[role="status"] {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
 .command-suggestions .command-suggestion[data-current="true"] {
   /* Paint the selected hint below the transparent native textarea/caret. */
   z-index: 2;
