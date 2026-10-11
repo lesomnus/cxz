@@ -1,4 +1,7 @@
+import { create } from "@bufbuild/protobuf";
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { AuxKind } from "#gen/cxz/project_svc_pb";
+import { AuxStateSchema, AuxSchema } from "#gen/cxz/session_svc_pb";
 import { ComponentPreview } from "#src/storybook/conversation-preview.tsx";
 import {
   fileEvents,
@@ -70,5 +73,66 @@ export const Diagnostic: Story = {
         retryable: true,
       }),
     ],
+  },
+};
+
+type AuxRun = Parameters<typeof create<typeof AuxSchema>>[1];
+const summaryState = (over?: AuxRun, text = "") =>
+  create(AuxStateSchema, {
+    summaries: text ? [{ runId: "storybook", turn: 2n, text }] : [],
+    ...(over
+      ? {
+          current: create(AuxSchema, { runId: "storybook", turn: 2n, ...over }),
+        }
+      : {}),
+  });
+
+export const TurnSummary: Story = {
+  args: {
+    events: [responseEvent()],
+    aux: summaryState(
+      undefined,
+      "Reviewed the conversation components and agreed to keep the cards compact. **No code changed yet.**",
+    ),
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "A summary is one auxiliary task's result: what a model wrote about the turn, not what the agent answered. It is labelled and set apart below the response footer, because an unlabelled paragraph in a conversation reads as something somebody said. The server names a turn by its turn_end sequence; this view attaches the summary to the last row at or before it, which is the final response in both live and projected history.",
+      },
+    },
+  },
+};
+export const TurnSummaryPending: Story = {
+  args: {
+    events: [responseEvent()],
+    aux: summaryState({ state: "running", kinds: [AuxKind.SUMMARY] }),
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "A summary that was asked for and has not arrived says so. Showing nothing would be indistinguishable from a session that generates no summaries.",
+      },
+    },
+  },
+};
+export const TurnSummaryFailed: Story = {
+  args: {
+    events: [responseEvent()],
+    aux: summaryState({
+      state: "failed",
+      kinds: [AuxKind.SUMMARY],
+      message: "Summary account is not configured.",
+    }),
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "A failure takes the summary's place rather than being hidden: the reason is what a reader can act on.",
+      },
+    },
   },
 };
