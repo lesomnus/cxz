@@ -28,14 +28,16 @@
   white-space: nowrap;
 }
 .visualization {
+  --voice-waveform-height: 72px;
   position: absolute;
   inset: auto var(--composer-radius) 0;
-  height: 48px;
+  height: min(var(--voice-waveform-height), 100%);
   overflow: clip;
   pointer-events: none;
   opacity: 0.65;
 }
 .visualization > canvas {
+  height: 100%;
   /* Hide the flat baseline below the border without clipping the editor. */
   transform: translateY(calc(var(--composer-border-width) + 1px));
 }
