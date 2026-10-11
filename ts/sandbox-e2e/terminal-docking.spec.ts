@@ -39,11 +39,12 @@ test("tabs own independent shells; folding, reordering, moving and closing prese
     exact: true,
   });
   const foldBox = (await fold.boundingBox())!;
-  for (const button of [add, close]) {
-    const box = (await button.boundingBox())!;
-    expect(box.width).toBe(foldBox.width);
-    expect(box.height).toBe(foldBox.height);
-  }
+  const addBox = (await add.boundingBox())!;
+  expect(addBox.width).toBe(foldBox.width);
+  expect(addBox.height).toBe(foldBox.height);
+  const closeBox = (await close.boundingBox())!;
+  expect(closeBox.width).toBe(closeBox.height);
+  expect(closeBox.height).toBe(foldBox.height);
   const tabBox = (await left
     .locator("[data-terminal-tab]")
     .last()

@@ -68,7 +68,8 @@
   background: var(--ui-shade-27);
 }
 .header .close[data-variant="toolbar"] {
-  width: var(--ui-toolbar-button-width);
+  width: calc(var(--ui-terminal-toolbar-height) - 2 * var(--ui-control-inset));
+  flex: 0 0 auto;
   padding-inline: 0;
   opacity: 0;
 }

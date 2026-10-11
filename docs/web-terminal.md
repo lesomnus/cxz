@@ -35,7 +35,8 @@ and partially typed commands.
 
 The tab bars share the composer toolbar's height and control insets, with a
 folding button on the first pane's right. The add button sits immediately after
-the last tab; add, close and fold use the same toolbar button dimensions. Workspace paths and normal connection
+the last tab; add and fold share the same rectangular shape, while close is square
+at the same height. Workspace paths and normal connection
 labels are omitted; connecting, exit/error and clipboard feedback remain
 available. Tabs support arrow/Home/End navigation and Delete to close; Enter
 focuses the selected shell. These are docked panes inside the conversation's
