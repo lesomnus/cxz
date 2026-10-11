@@ -1,5 +1,15 @@
 // English source messages are always bundled; other packs load on demand.
 export const messages = {
+  "Force local recognition": "Force local recognition",
+  "Require speech recognition on this device.":
+    "Require speech recognition on this device.",
+  "Requires browser support and an installed language pack. If unavailable, voice input stops instead of using a cloud service.":
+    "Requires browser support and an installed language pack. If unavailable, voice input stops instead of using a cloud service.",
+  "This browser cannot force local speech recognition. Turn off local recognition or use a supported browser.":
+    "This browser cannot force local speech recognition. Turn off local recognition or use a supported browser.",
+  "Local recognition is unavailable for this language. Install its browser language pack or turn off local recognition.":
+    "Local recognition is unavailable for this language. Install its browser language pack or turn off local recognition.",
+
   "Voice language": "Voice language",
   "Browser language": "Browser language",
   "Stop voice input before changing the language.":

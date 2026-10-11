@@ -48,6 +48,11 @@
 .microphone:disabled {
   pointer-events: none;
 }
+.recordingIndicator {
+  fill: #e65c64;
+  stroke: var(--shade-16);
+  stroke-width: 1.2;
+}
 .microphone[aria-pressed="true"] {
   background: var(--shade-54);
   color: var(--shade-221);

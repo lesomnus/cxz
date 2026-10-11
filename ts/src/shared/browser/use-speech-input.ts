@@ -10,6 +10,7 @@ type Recognition = {
   lang: string;
   continuous: boolean;
   interimResults: boolean;
+  processLocally?: boolean;
   onstart: (() => void) | null;
   onend: (() => void) | null;
   onerror: ((event: { error: string; message?: string }) => void) | null;
@@ -38,10 +39,12 @@ function recognitionConstructor(): RecognitionConstructor | undefined {
 export function useSpeechInput({
   disabled,
   language: selectedLanguage,
+  processLocally = false,
   onTranscript,
 }: {
   disabled: boolean;
   language?: string;
+  processLocally?: boolean;
   onTranscript: (text: string) => void;
 }) {
   const [Constructor] = useState(() => recognitionConstructor());
@@ -86,24 +89,54 @@ export function useSpeechInput({
     if (disabled) cancel();
   }, [disabled]);
   useLayoutEffect(() => {
-    if (recognition.current && recognition.current.lang !== language) cancel();
+    if (
+      recognition.current &&
+      (recognition.current.lang !== language ||
+        (recognition.current.processLocally ?? false) !== processLocally)
+    )
+      cancel();
     setError("");
     setErrorMessage("");
-  }, [language]);
+  }, [language, processLocally]);
   useLayoutEffect(() => () => detach(), []);
+
+  function stop() {
+    if (!recognition.current || phase === "stopping") return;
+    setPhase("stopping");
+    try {
+      recognition.current.stop();
+    } catch {
+      cancel();
+    }
+  }
+  useLayoutEffect(() => {
+    if (phase === "idle") return;
+    const escape = (event: KeyboardEvent) => {
+      if (
+        event.key !== "Escape" ||
+        event.repeat ||
+        event.isComposing ||
+        event.ctrlKey ||
+        event.altKey ||
+        event.metaKey ||
+        event.shiftKey
+      )
+        return;
+      event.preventDefault();
+      // Voice input consumes Escape before editor menus and response-stop shortcuts.
+      event.stopPropagation();
+      stop();
+    };
+    document.addEventListener("keydown", escape, true);
+    return () => document.removeEventListener("keydown", escape, true);
+  }, [phase]);
 
   function toggle() {
     if (disabled || !Constructor) return;
     const current = recognition.current;
     if (current) {
-      if (phase === "stopping") return;
-      setPhase("stopping");
       // stop() requests a final result; abort() deliberately discards it.
-      try {
-        current.stop();
-      } catch {
-        cancel();
-      }
+      stop();
       return;
     }
     setError("");
@@ -111,6 +144,11 @@ export function useSpeechInput({
     try {
       const next = new Constructor();
       recognition.current = next;
+      if (processLocally && !("processLocally" in next)) {
+        reportError("local-unavailable", "");
+        return;
+      }
+      if ("processLocally" in next) next.processLocally = processLocally;
       next.lang = language;
       next.continuous = true;
       next.interimResults = true;
@@ -138,7 +176,12 @@ export function useSpeechInput({
       };
       next.onerror = (event) => {
         if (recognition.current !== next) return;
-        reportError(event.error, event.message ?? "");
+        reportError(
+          processLocally && event.error === "language-not-supported"
+            ? "local-language-unavailable"
+            : event.error,
+          event.message ?? "",
+        );
       };
       next.onend = () => {
         if (recognition.current !== next) return;

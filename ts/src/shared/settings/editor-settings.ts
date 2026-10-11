@@ -50,6 +50,13 @@ export function parseSettings(raw: string): SettingsDocument {
   if (!document || typeof document !== "object" || Array.isArray(document))
     throw new Error(t("Settings must be a JSON object."));
   const value = document as SettingsDocument;
+  if (
+    Object.hasOwn(value, "voice.processLocally") &&
+    typeof value["voice.processLocally"] !== "boolean"
+  )
+    throw new Error(
+      t("{name}: Enter true or false.", { name: "voice.processLocally" }),
+    );
   if (Object.hasOwn(value, "voice.language")) {
     const language = value["voice.language"];
     try {

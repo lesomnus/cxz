@@ -9,6 +9,8 @@ type TestRecognition = {
   lang: string;
   continuous: boolean;
   interimResults: boolean;
+  processLocally?: boolean;
+  starts: number;
   stops: number;
   aborts: number;
   onresult: ((event: ResultEvent) => void) | null;
@@ -43,63 +45,70 @@ test.use({
   hasTouch: false,
 });
 
-async function mockRecognition(page: Page, api: string) {
-  await page.addInitScript((api) => {
-    class MockRecognition {
-      lang = "";
-      continuous = false;
-      interimResults = false;
-      stops = 0;
-      aborts = 0;
-      onstart: (() => void) | null = null;
-      onend: (() => void) | null = null;
-      onresult: ((event: ResultEvent) => void) | null = null;
-      onerror: ((event: { error: string }) => void) | null = null;
-      constructor() {
-        window.voiceTest.instances.push(this);
+async function mockRecognition(page: Page, api: string, localSupport = true) {
+  await page.addInitScript(
+    ({ api, localSupport }) => {
+      class MockRecognition {
+        lang = "";
+        continuous = false;
+        interimResults = false;
+        processLocally?: boolean = false;
+        starts = 0;
+        stops = 0;
+        aborts = 0;
+        onstart: (() => void) | null = null;
+        onend: (() => void) | null = null;
+        onresult: ((event: ResultEvent) => void) | null = null;
+        onerror: ((event: { error: string }) => void) | null = null;
+        constructor() {
+          if (!localSupport) delete this.processLocally;
+          window.voiceTest.instances.push(this);
+        }
+        start() {
+          this.starts++;
+          if (window.voiceTest.startError)
+            throw new DOMException(
+              "Recognition service is unavailable",
+              window.voiceTest.startError,
+            );
+          if (window.voiceTest.deferStart) return;
+          this.onstart?.();
+        }
+        stop() {
+          this.stops++;
+        }
+        abort() {
+          this.aborts++;
+        }
+        end() {
+          this.onend?.();
+        }
+        result(results: Result[]) {
+          this.onresult?.({
+            resultIndex: 0,
+            results: results.map(({ transcript, final }) => ({
+              isFinal: final,
+              0: { transcript },
+            })),
+          });
+        }
       }
-      start() {
-        if (window.voiceTest.startError)
-          throw new DOMException(
-            "Recognition service is unavailable",
-            window.voiceTest.startError,
-          );
-        if (window.voiceTest.deferStart) return;
-        this.onstart?.();
-      }
-      stop() {
-        this.stops++;
-      }
-      abort() {
-        this.aborts++;
-      }
-      end() {
-        this.onend?.();
-      }
-      result(results: Result[]) {
-        this.onresult?.({
-          resultIndex: 0,
-          results: results.map(({ transcript, final }) => ({
-            isFinal: final,
-            0: { transcript },
-          })),
-        });
-      }
-    }
-    window.voiceTest = { instances: [] };
-    Object.defineProperty(window, "SpeechRecognition", {
-      configurable: true,
-      value: undefined,
-    });
-    Object.defineProperty(window, "webkitSpeechRecognition", {
-      configurable: true,
-      value: undefined,
-    });
-    Object.defineProperty(window, api, {
-      configurable: true,
-      value: MockRecognition,
-    });
-  }, api);
+      window.voiceTest = { instances: [] };
+      Object.defineProperty(window, "SpeechRecognition", {
+        configurable: true,
+        value: undefined,
+      });
+      Object.defineProperty(window, "webkitSpeechRecognition", {
+        configurable: true,
+        value: undefined,
+      });
+      Object.defineProperty(window, api, {
+        configurable: true,
+        value: MockRecognition,
+      });
+    },
+    { api, localSupport },
+  );
 }
 
 async function openComposer(page: Page) {
@@ -415,7 +424,7 @@ test("unsupported microphone is disabled but still shows its hover and keyboard 
   await expect(hint).toBeVisible();
 });
 
-test("reports the actual service error and waits for native start before showing Listening", async ({
+test("reports the actual service error and shows recording only after native start", async ({
   page,
 }) => {
   await mockRecognition(page, "SpeechRecognition");
@@ -448,10 +457,12 @@ test("reports the actual service error and waits for native start before showing
   await expect(
     page.getByRole("tooltip").filter({ hasText: "Listening…" }),
   ).toHaveCount(0);
+  await expect(page.locator("[data-voice-recording]")).toHaveCount(0);
   await page.evaluate(() => window.voiceTest.instances[0].onstart?.());
+  await expect(page.locator("[data-voice-recording]")).toBeVisible();
   await expect(
     page.getByRole("tooltip").filter({ hasText: "Listening…" }),
-  ).toBeVisible();
+  ).toHaveCount(0);
   await page.evaluate(() =>
     window.voiceTest.instances[0].onerror?.({ error: "network" }),
   );
@@ -618,4 +629,112 @@ test("permission and recognition errors show a retryable hint without changing t
   await expect(
     page.getByRole("button", { name: "Stop voice input" }),
   ).toHaveAttribute("aria-pressed", "true");
+});
+
+test("local recognition setting persists and is applied without cloud fallback", async ({
+  page,
+}) => {
+  await mockRecognition(page, "SpeechRecognition");
+  await openComposer(page);
+  await page.getByRole("link", { name: "Settings view", exact: true }).click();
+  const local = page.getByRole("switch", { name: "Force local recognition" });
+  await expect(local).toHaveAttribute("aria-checked", "false");
+  await local.click();
+  await expect(local).toHaveAttribute("aria-checked", "true");
+  expect(
+    await page.evaluate(
+      () =>
+        JSON.parse(localStorage.getItem("settings")!)["voice.processLocally"],
+    ),
+  ).toBe(true);
+  await page.reload();
+  await expect(local).toHaveAttribute("aria-checked", "true");
+  await openComposer(page);
+  await page.getByRole("button", { name: "Voice input", exact: true }).click();
+  expect(
+    await page.evaluate(() => window.voiceTest.instances[0].processLocally),
+  ).toBe(true);
+  await page.evaluate(() =>
+    window.voiceTest.instances[0].onerror?.({
+      error: "language-not-supported",
+    }),
+  );
+  await expect(
+    page
+      .getByRole("tooltip")
+      .filter({ hasText: "Install its browser language pack" }),
+  ).toBeVisible();
+  expect(await page.evaluate(() => window.voiceTest.instances.length)).toBe(1);
+  await page.getByRole("link", { name: "Settings view", exact: true }).click();
+  await local.click();
+  await openComposer(page);
+  await page.getByRole("button", { name: "Voice input", exact: true }).click();
+  expect(
+    await page.evaluate(
+      () => window.voiceTest.instances.at(-1)!.processLocally,
+    ),
+  ).toBe(false);
+});
+
+test("forcing local recognition on an unsupported browser never starts remote recognition", async ({
+  page,
+}) => {
+  await mockRecognition(page, "SpeechRecognition", false);
+  await page.addInitScript(() =>
+    localStorage.setItem(
+      "settings",
+      JSON.stringify({ "voice.processLocally": true }),
+    ),
+  );
+  await openComposer(page);
+  await page.getByRole("button", { name: "Voice input", exact: true }).click();
+  await expect(
+    page
+      .getByRole("tooltip")
+      .filter({ hasText: "cannot force local speech recognition" }),
+  ).toBeVisible();
+  expect(await page.evaluate(() => window.voiceTest.instances[0].starts)).toBe(
+    0,
+  );
+  await expect(page.locator("[data-voice-recording]")).toHaveCount(0);
+});
+
+test("Escape stops dictation, keeps its final result and clears the recording indicator", async ({
+  page,
+}) => {
+  await mockRecognition(page, "SpeechRecognition");
+  const input = await openComposer(page);
+  await input.fill("draft ");
+  await page.getByRole("button", { name: "Voice input", exact: true }).click();
+  await expect(page.locator("[data-voice-recording]")).toBeVisible();
+  await expect(
+    page.getByRole("tooltip").filter({ hasText: "Listening…" }),
+  ).toHaveCount(0);
+  await page.evaluate(() =>
+    window.voiceTest.instances[0].result([
+      { transcript: "interim", final: false },
+    ]),
+  );
+  await expect(
+    page.getByRole("tooltip").filter({ hasText: "interim" }),
+  ).toBeVisible();
+  await input.focus();
+  await input.press("Escape");
+  expect(await page.evaluate(() => window.voiceTest.instances[0].stops)).toBe(
+    1,
+  );
+  expect(await page.evaluate(() => window.voiceTest.instances[0].aborts)).toBe(
+    0,
+  );
+  await expect(page.locator("[data-voice-recording]")).toHaveCount(0);
+  await page.evaluate(() => {
+    window.voiceTest.instances[0].result([
+      { transcript: "final", final: true },
+    ]);
+    window.voiceTest.instances[0].end();
+  });
+  await expect(input).toHaveValue("draft final");
+  await expect(
+    page.getByRole("button", { name: "Voice input", exact: true }),
+  ).toHaveAttribute("aria-pressed", "false");
 });

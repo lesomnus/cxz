@@ -83,6 +83,7 @@ export function ConversationComposer({
   const speech = useSpeechInput({
     disabled: sending,
     language,
+    processLocally: snapshot.document["voice.processLocally"] === true,
     onTranscript: (text) => editor.current?.insertText(text),
   });
   const meter = useMicrophoneLevel(speech.listening);

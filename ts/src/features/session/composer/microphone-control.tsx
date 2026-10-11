@@ -27,6 +27,14 @@ export function MicrophoneControl({
     hint = t(
       "Voice input is not supported in this browser. Use HTTPS or localhost in a supported browser.",
     );
+  else if (speech.error === "local-unavailable")
+    hint = t(
+      "This browser cannot force local speech recognition. Turn off local recognition or use a supported browser.",
+    );
+  else if (speech.error === "local-language-unavailable")
+    hint = t(
+      "Local recognition is unavailable for this language. Install its browser language pack or turn off local recognition.",
+    );
   else if (speech.error === "not-allowed")
     hint = t(
       "Microphone access was denied. Allow it in your browser settings.",
@@ -53,8 +61,9 @@ export function MicrophoneControl({
     hint = t("Voice input could not start. See the browser error below.");
   else if (speech.stopping) hint = t("Finishing voice input…");
   else if (speech.starting) hint = t("Starting voice input…");
-  else if (speech.active) hint = speech.interim || t("Listening…");
+  else if (speech.active) hint = speech.interim;
   if (languageError) hint = languageError;
+  const showHint = Boolean(hint) || (meterUnavailable && speech.listening);
   const options = [
     { value: "browser", label: t("Browser language") },
     ...voiceLanguages.map(([value, label]) => ({ value, label })),
@@ -113,7 +122,8 @@ export function MicrophoneControl({
           type="button"
           aria-label={label}
           aria-pressed={speech.active}
-          aria-describedby={hintId}
+          aria-describedby={showHint ? hintId : undefined}
+          aria-keyshortcuts={speech.active ? "Escape" : undefined}
           disabled={disabled || !speech.supported || speech.stopping}
           onClick={speech.toggle}
         >
@@ -128,26 +138,37 @@ export function MicrophoneControl({
           >
             <rect x="9" y="2" width="6" height="12" rx="3" />
             <path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3m-4 0h8" />
+            {speech.listening && (
+              <circle
+                className={styles.recordingIndicator}
+                data-voice-recording
+                cx="19"
+                cy="5"
+                r="3"
+              />
+            )}
           </svg>
         </Button>
-        <span id={hintId} role="tooltip" className={styles.hint}>
-          <span role="status" aria-live="polite">
-            {hint}
-            {meterUnavailable && speech.listening && (
-              <span className={styles.details}>
-                {t(
-                  "Audio visualization is unavailable. Voice input is still active.",
-                )}
-              </span>
-            )}
-            {speech.error && (
-              <span className={styles.details}>
-                {speech.error} · {speech.language}
-                {speech.errorMessage && <span>{speech.errorMessage}</span>}
-              </span>
-            )}
+        {showHint && (
+          <span id={hintId} role="tooltip" className={styles.hint}>
+            <span role="status" aria-live="polite">
+              {hint}
+              {meterUnavailable && speech.listening && (
+                <span className={styles.details}>
+                  {t(
+                    "Audio visualization is unavailable. Voice input is still active.",
+                  )}
+                </span>
+              )}
+              {speech.error && (
+                <span className={styles.details}>
+                  {speech.error} · {speech.language}
+                  {speech.errorMessage && <span>{speech.errorMessage}</span>}
+                </span>
+              )}
+            </span>
           </span>
-        </span>
+        )}
       </span>
     </span>
   );

@@ -44,6 +44,25 @@ it("persists voice language with other settings and rejects invalid language tag
   store.set("voice.language", undefined);
   expect(JSON.parse(file()!)).toEqual({ "editor.tabSize": 4 });
 });
+it("persists local recognition as a boolean without changing other settings", () => {
+  const { store, file } = fixture('{"voice.language":"ko-KR"}');
+  store.set("voice.processLocally", true);
+  expect(JSON.parse(file()!)).toEqual({
+    "voice.language": "ko-KR",
+    "voice.processLocally": true,
+  });
+  expect(
+    new SettingsStore({ getItem: () => file(), setItem: () => {} }).snapshot()
+      .document["voice.processLocally"],
+  ).toBe(true);
+  for (const value of [null, 0, "true", []])
+    expect(() => store.set("voice.processLocally", value)).toThrow(
+      "Enter true or false",
+    );
+  expect(store.snapshot().document["voice.processLocally"]).toBe(true);
+  store.set("voice.processLocally", false);
+  expect(store.snapshot().document["voice.processLocally"]).toBe(false);
+});
 it("persists terminal copy preferences in the settings file and rejects non-booleans", () => {
   const { store, file } = fixture('{"future":true}');
   expect(resolveTerminalSettings(store.snapshot().document).copyOnSelect).toBe(

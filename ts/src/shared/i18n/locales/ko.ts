@@ -1,5 +1,15 @@
 import type { LanguagePack } from "#src/shared/i18n/i18n.ts";
 export const messages = {
+  "Force local recognition": "로컬 인식 강제",
+  "Require speech recognition on this device.":
+    "이 기기에서 음성을 인식하도록 강제합니다.",
+  "Requires browser support and an installed language pack. If unavailable, voice input stops instead of using a cloud service.":
+    "브라우저 지원과 설치된 언어팩이 필요합니다. 사용할 수 없으면 클라우드로 전환하지 않고 음성 입력을 중지합니다.",
+  "This browser cannot force local speech recognition. Turn off local recognition or use a supported browser.":
+    "이 브라우저에서는 로컬 음성 인식을 강제할 수 없습니다. 로컬 인식을 끄거나 지원되는 브라우저를 사용하세요.",
+  "Local recognition is unavailable for this language. Install its browser language pack or turn off local recognition.":
+    "이 언어의 로컬 인식을 사용할 수 없습니다. 브라우저 언어팩을 설치하거나 로컬 인식을 끄세요.",
+
   "Voice language": "음성 인식 언어",
   "Browser language": "브라우저 언어",
   "Stop voice input before changing the language.":
