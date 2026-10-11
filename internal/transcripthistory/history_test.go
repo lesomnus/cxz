@@ -97,6 +97,39 @@ func TestSnapshotPagesAndLazyTaskDetails(t *testing.T) {
 		t.Fatal(memory, err)
 	}
 }
+
+func TestQuestionAnswersSurviveIncrementalIndexAndSnapshots(t *testing.T) {
+	db, add := fixture(t)
+	request := event(1, "approval", "q", `{"params":{"questions":[{"id":"choice","question":"Pick?","options":[{"label":"A"}]}]}}`)
+	request.Text = "item/tool/requestUserInput"
+	add(request)
+	initial := syncPage(t, db, &api.TranscriptRequest{})
+	if len(initial.Events) != 1 || object(initial.Events[0].Payload)["cxz_resolution"] != nil {
+		t.Fatal(initial)
+	}
+	resolved := event(2, "approval_resolved", "q", `{"state":"allowed","answers":{"choice":{"selected":["A"],"other":""}}}`)
+	resolved.Text = "allowed"
+	add(resolved)
+	current := syncPage(t, db, &api.TranscriptRequest{})
+	if len(current.Events) != 1 || current.Events[0].Seq != 1 || !strings.Contains(string(current.Events[0].Payload), `"selected":["A"]`) {
+		t.Fatal(current)
+	}
+	old := syncPage(t, db, &api.TranscriptRequest{SnapshotSeq: 1})
+	if object(old.Events[0].Payload)["cxz_resolution"] != nil || strings.Contains(string(request.Payload), "cxz_resolution") {
+		t.Fatal("snapshot or native journal mutated")
+	}
+	memory, err := FromEvents([]*api.Event{request, resolved}, &api.TranscriptRequest{})
+	if err != nil || !proto.Equal(memory.Events[0], current.Events[0]) {
+		t.Fatal(memory, err)
+	}
+	// Reused request IDs in another run must not resolve the original question.
+	other := event(3, "approval_resolved", "q", "{}")
+	other.RunId, other.Text = "other", "denied"
+	add(other)
+	if got := syncPage(t, db, &api.TranscriptRequest{}); !proto.Equal(got.Events[0], current.Events[0]) {
+		t.Fatal(got)
+	}
+}
 func TestBackfillRetentionAndCancellation(t *testing.T) {
 	db, add := fixture(t)
 	add(event(10, "input", "", ""), event(30, "assistant", "", ""))

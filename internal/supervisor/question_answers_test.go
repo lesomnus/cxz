@@ -61,4 +61,13 @@ func TestCodexStructuredQuestionReply(t *testing.T) {
 	if len(a) != 1 || a[0] != "a, b" {
 		t.Fatal(a)
 	}
+	for _, e := range s.log.All() {
+		if e.Kind == "approval_resolved" {
+			if !strings.Contains(string(e.Payload), `"selected":["a, b"]`) {
+				t.Fatal(string(e.Payload))
+			}
+			return
+		}
+	}
+	t.Fatal("answer history missing")
 }

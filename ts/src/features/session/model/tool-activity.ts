@@ -1,5 +1,7 @@
 import type { SessionEvent, ToolFileSummary } from "#gen/cxz/session_pb";
-import { isTranscriptEvent, payload } from "./journal";
+import { isTranscriptEvent, isQuestionEvent, payload } from "./journal";
+import { clone } from "@bufbuild/protobuf";
+import { SessionEventSchema } from "#gen/cxz/session_pb";
 import { responseCompletionIndex } from "./response-completion";
 
 export type ToolActivity = {
@@ -141,10 +143,22 @@ export function transcriptEvents(events: SessionEvent[]) {
     groups.set(key(e), group);
   }
   const pairedApprovals = new Set<SessionEvent>();
+  const questionTools = new Set<string>();
   for (const e of events) {
     if (e.kind !== "approval") continue;
-    if (["AskUserQuestion", "item/tool/requestUserInput"].includes(e.text))
+    if (isQuestionEvent(e)) {
+      const p = payload(e);
+      const id = p.tool_use_id || p.params?.itemId;
+      if (typeof id === "string" && id) {
+        const call = groups.get(key(e, id))?.call;
+        if (
+          call?.text === "AskUserQuestion" ||
+          call?.toolSummary?.name === "AskUserQuestion"
+        )
+          questionTools.add(key(e, id));
+      }
       continue;
+    }
     const p = payload(e);
     const id = p.tool_use_id || p.params?.itemId;
     const group =
@@ -165,6 +179,7 @@ export function transcriptEvents(events: SessionEvent[]) {
       representedEnds.has(e.seq)
     )
       return false;
+    if (toolKinds.has(e.kind) && questionTools.has(key(e))) return false;
     const group =
       toolKinds.has(e.kind) && e.requestId ? groups.get(key(e)) : undefined;
     if (!group) {
@@ -184,7 +199,20 @@ export function transcriptEvents(events: SessionEvent[]) {
     activities.set(e.seq, group);
     return true;
   });
-  return { events: rows, activities, completions };
+  const projected = rows.map((e) => {
+    if (!isQuestionEvent(e)) return e;
+    const resolution = resolutions.get(key(e));
+    if (!resolution || resolution.seq <= e.seq) return e;
+    const updated = clone(SessionEventSchema, e);
+    updated.payload = new TextEncoder().encode(
+      JSON.stringify({
+        ...payload(e),
+        cxz_resolution: { ...payload(resolution), state: resolution.text },
+      }),
+    );
+    return updated;
+  });
+  return { events: projected, activities, completions };
 }
 
 export function toolState(activity: ToolActivity, agent: string) {

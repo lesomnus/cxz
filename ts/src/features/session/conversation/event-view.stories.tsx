@@ -9,6 +9,7 @@ import {
   responseEvent,
   storyEvent,
   toolEvents,
+  questionEvent,
 } from "#src/storybook/fixtures.ts";
 
 const meta = {
@@ -54,6 +55,29 @@ commentary.response!.completionJson = new Uint8Array();
 export const Commentary: Story = { args: { events: [commentary] } };
 export const CompletedTool: Story = { args: { events: toolEvents() } };
 export const WorkingTool: Story = { args: { events: toolEvents("working") } };
+const question = questionEvent("steps");
+question.requestId = "question-history";
+const questionAnswer = storyEvent(6, "approval_resolved", "allowed", {
+  state: "allowed",
+  answers: {
+    layout: { selected: ["Compact"] },
+    notes: {
+      selected: [],
+      other:
+        "Keep the existing toolbar.\n\n```typescript\nconst compact = true;\n```",
+    },
+    timing: { selected: ["Now"] },
+  },
+});
+questionAnswer.requestId = question.requestId;
+export const AnsweredQuestion: Story = {
+  args: { events: [question, questionAnswer] },
+};
+const canceledQuestion = storyEvent(6, "approval_resolved", "denied");
+canceledQuestion.requestId = question.requestId;
+export const CanceledQuestion: Story = {
+  args: { events: [question, canceledQuestion] },
+};
 export const FileChanges: Story = { args: { events: fileEvents() } };
 export const FoldedActivityStack: Story = {
   args: { events: activityStackEvents() },

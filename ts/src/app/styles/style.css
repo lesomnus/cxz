@@ -1653,7 +1653,7 @@ pre {
   border-radius: 6px;
 }
 .editor-code-info {
-  visibility: hidden;
+  visibility: visible;
 }
 .editor-code-controls {
   position: absolute;
@@ -1661,8 +1661,11 @@ pre {
   inset: 0;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   white-space: nowrap;
+  pointer-events: none;
+}
+.editor-code-controls > * {
   pointer-events: auto;
 }
 .editor-code-controls select {

@@ -4,7 +4,7 @@ import {
   ResponseMetadataSchema,
   SessionEventSchema,
 } from "#gen/cxz/session_pb";
-import { pendingAfter } from "./journal";
+import { pendingAfter, payload } from "./journal";
 import {
   shellCommand,
   toolLabel,
@@ -65,6 +65,55 @@ const result = event(
 );
 
 describe("tool transcript projection", () => {
+  it("attaches structured question answers once without losing the original request or joining another run", () => {
+    const question = event(
+      2,
+      "approval",
+      "q",
+      { params: { questions: [{ id: "choice", question: "Choose?" }] } },
+      "item/tool/requestUserInput",
+    );
+    const resolved = event(
+      3,
+      "approval_resolved",
+      "q",
+      { answers: { choice: { selected: ["A, B"], other: "notes" } } },
+      "allowed",
+    );
+    const projected = transcriptEvents([question, resolved]);
+    expect(projected.events).toHaveLength(1);
+    expect(payload(projected.events[0])).toMatchObject({
+      params: payload(question).params,
+      cxz_resolution: {
+        state: "allowed",
+        answers: { choice: { selected: ["A, B"], other: "notes" } },
+      },
+    });
+    expect(payload(question).cxz_resolution).toBeUndefined();
+    expect(transcriptEvents([projected.events[0]]).events[0]).toBe(
+      projected.events[0],
+    );
+    resolved.runId = "another";
+    expect(transcriptEvents([question, resolved]).events).toEqual([question]);
+  });
+  it("replaces a Claude question's tool call/result with its question and answer card", () => {
+    const call = event(1, "tool_call", "tool-q", {}, "AskUserQuestion");
+    const question = event(
+      2,
+      "approval",
+      "q",
+      {
+        tool_use_id: "tool-q",
+        input: { questions: [{ question: "Choose?" }] },
+      },
+      "AskUserQuestion",
+    );
+    const result = event(3, "tool_result", "tool-q", {}, "done");
+    expect(transcriptEvents([call, question, result]).events).toEqual([
+      question,
+    ]);
+    expect(transcriptEvents([result]).events).toEqual([result]);
+  });
   it("shows a completed response once while retaining its completion metrics", () => {
     const response = event(1, "assistant", "", {}, "Done");
     const end = event(2, "turn_end", "", {}, "completed");

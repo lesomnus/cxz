@@ -47,7 +47,7 @@ test("inline backticks keep native text geometry and send literal Markdown with 
   );
 });
 
-test("fenced editor opens inline, detects syntax, closes to prose and sends resolved Markdown", async ({
+test("fenced editor opens inline, detects syntax, closes to prose and sends unchanged Markdown", async ({
   page,
 }) => {
   await page.goto("/sandbox.html");
@@ -55,6 +55,7 @@ test("fenced editor opens inline, detects syntax, closes to prose and sends reso
     page.getByRole("heading", { name: "Current status" }),
   ).toBeVisible({ timeout: 45000 });
   const input = page.getByRole("textbox", { name: "Message", exact: true });
+  await expect(input).toBeFocused();
   await input.pressSequentially("```");
   await expect(input).toHaveValue("```\n\n```");
   expect(
@@ -75,7 +76,11 @@ test("fenced editor opens inline, detects syntax, closes to prose and sends reso
   const selectorBox = (await page
     .getByRole("combobox", { name: "Code syntax 1", exact: true })
     .boundingBox())!;
-  expect(selectorBox.x).toBeCloseTo(openingBox.x + openingBox.width, 1);
+  const closeBox = (await page
+    .getByRole("button", { name: "Close code block 1", exact: true })
+    .boundingBox())!;
+  expect(selectorBox.x).toBeGreaterThan(openingBox.x + openingBox.width);
+  expect(selectorBox.x + selectorBox.width).toBeCloseTo(closeBox.x, 1);
   expect(selectorBox.y).toBeGreaterThanOrEqual(openingBox.y - 1);
   await expect(page.locator(".editor-code-last")).toHaveText("```");
   await input.fill("  ``\ntail");
@@ -122,10 +127,6 @@ test("fenced editor opens inline, detects syntax, closes to prose and sends reso
   await input.dispatchEvent("compositionend", { data: "중" });
   await syntax.selectOption("javascript");
   await expect(input).toHaveValue(
-    'before\n```javascript\n{"hello": true, "count": 42}\n```',
-  );
-  await input.press("Control+z");
-  await expect(input).toHaveValue(
     'before\n```\n{"hello": true, "count": 42}\n```',
   );
   await syntax.selectOption("auto");
@@ -144,7 +145,7 @@ test("fenced editor opens inline, detects syntax, closes to prose and sends reso
   await input.press("Control+Enter");
   await expect(input).toHaveValue("");
   await expect(page.locator("article.input .message-body").last()).toHaveText(
-    'before\n```json\n{"hello": true, "count": 42}\n```\nafter',
+    'before\n```\n{"hello": true, "count": 42}\n```\nafter',
   );
 });
 
@@ -235,7 +236,7 @@ test("multiple blocks, paste chips, highlighting and native line geometry stay a
   await page.getByRole("button", { name: "Send", exact: true }).click();
   await expect(
     page.locator("article.input .message-body").last(),
-  ).toContainText("```json\n[Attached file: /cxz/assets/");
+  ).toContainText("```\n[Attached file: /cxz/assets/");
   await expect(
     page.locator("article.input .message-body").last(),
   ).toContainText("read this file for the full content]\n```");
@@ -255,7 +256,7 @@ test("unfinished code blocks are completed on send without changing draft source
   ).toHaveValue("python");
   await input.press("Control+Enter");
   await expect(page.locator("article.input .message-body").last()).toHaveText(
-    "```python\nprint('hello')\n```",
+    "```py\nprint('hello')\n```",
   );
 });
 
@@ -284,9 +285,15 @@ test("Question Other uses the same code editor and sends fenced syntax without s
   ).toHaveText("Auto · json");
   await other.press("Control+Enter");
   await expect(question).toHaveCount(1);
+  await expect(
+    question.getByRole("button", { name: "Submit", exact: true }),
+  ).toBeFocused();
   await expect(composer).toHaveValue("Keep my draft");
   await question.getByRole("button", { name: "Submit", exact: true }).click();
   await expect(question).toHaveCount(0);
+  const history = page.locator("button.question-history");
+  await expect(history).toContainText("Which environment?");
+  await expect(history).toHaveAttribute("data-state", "completed");
   const response = page
     .locator(".response")
     .filter({ hasText: "Your selection was recorded for this preview." });
@@ -295,7 +302,11 @@ test("Question Other uses the same code editor and sends fenced syntax without s
   await response.getByRole("button", { name: "Copy", exact: true }).click();
   const text = await page.evaluate(() => navigator.clipboard.readText());
   expect(JSON.parse(text.slice(text.indexOf("{"))).environment.other).toBe(
-    '```json\n{"environment": "test"}\n```',
+    '```\n{"environment": "test"}\n```',
   );
   await expect(composer).toHaveValue("Keep my draft");
+  await page.getByLabel("Scenario", { exact: true }).selectOption("session-1");
+  await page.getByLabel("Scenario", { exact: true }).selectOption("session-4");
+  await expect(history).toContainText("environment");
+  await expect(history).toHaveAttribute("data-state", "completed");
 });

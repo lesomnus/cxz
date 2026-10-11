@@ -1,0 +1,23 @@
+.details {
+  overflow-y: auto;
+  max-height: 100%;
+  padding: var(--control-inset);
+}
+.details section + section {
+  margin-top: calc(var(--space) * 2);
+}
+.question,
+.answer {
+  padding: var(--control-inset) var(--control-inline-inset);
+}
+.question small,
+.answer small {
+  color: var(--muted);
+}
+.answer {
+  background: var(--shade-0);
+  border-radius: var(--wrapper-radius);
+}
+.details p {
+  margin: var(--space) 0 0;
+}

@@ -860,8 +860,15 @@ func (s *Supervisor) executeLocked(op string, c core.Command) (core.Receipt, err
 			s.event("state", "working", "", nil, nil)
 		}
 	case "reply":
+		pending := s.pending[c.RequestID]
+		answerRecord := agentview.QuestionReply(s.session.Kind, pending.Text, pending.Payload, resolved, c.Answers, c.Selections)
 		delete(s.pending, c.RequestID)
-		s.event("approval_resolved", resolved, c.RequestID, nil, nil)
+		// Keep ordinary permission resolutions unchanged, including nil payloads.
+		if answerRecord != nil {
+			s.event("approval_resolved", resolved, c.RequestID, answerRecord, nil)
+		} else {
+			s.event("approval_resolved", resolved, c.RequestID, nil, nil)
+		}
 		if asyncReply {
 			if c.Allow {
 				s.event("state", "working", "", nil, nil)

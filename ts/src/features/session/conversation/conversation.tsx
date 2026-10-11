@@ -95,6 +95,11 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
   const scrollMotion = useRef(0);
   const composerInput = useRef<HTMLDivElement>(null);
   const composer = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    composerInput.current
+      ?.querySelector<HTMLTextAreaElement>("textarea")
+      ?.focus({ preventScroll: true });
+  }, [id]);
   const [pending, setPending] = useState<SessionEvent[]>([]);
   const [gap, setGap] = useState(false);
   const [status, setStatus] = useState("Connecting…");

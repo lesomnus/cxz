@@ -29,6 +29,7 @@ import {
   codeSyntaxes,
   highlightCodeLines,
   resolvedCodeSyntax,
+  moveCodeSyntaxChoices,
   type CodeBlock,
   type CodeToken,
 } from "./composer-code";
@@ -59,6 +60,7 @@ export function ComposerEditor({
   onChange,
   readOnly = false,
   canSend,
+  onSubmitShortcut,
   commands,
   ariaLabel = t("Message"),
   placeholder = t("Continue the conversation…"),
@@ -71,6 +73,7 @@ export function ComposerEditor({
   onChange: (value: string) => void;
   readOnly?: boolean;
   canSend?: boolean;
+  onSubmitShortcut?: () => void;
   commands?: readonly ComposerCommand[];
   ariaLabel?: string;
   placeholder?: string;
@@ -202,6 +205,15 @@ export function ComposerEditor({
       if (!value.includes(token)) controller.abort();
   }, [value]);
   const lines = value.split("\n");
+  const [highlight, setHighlight] = useState({
+    text: value,
+    choices: new Map<number, string>(),
+  });
+  let choices = highlight.choices;
+  if (highlight.text !== value) {
+    choices = moveCodeSyntaxChoices(highlight.text, value, choices);
+    setHighlight({ text: value, choices });
+  }
   const commandHints = useCommandSuggestions({
     value,
     commands: readOnly ? undefined : commands,
@@ -212,9 +224,15 @@ export function ComposerEditor({
   const blocks = useMemo(
     () =>
       codeBlocks(value).map((block) => {
-        const syntax = resolvedCodeSyntax(block, value, pastes);
+        const selected = choices.get(block.start) ?? block.syntax;
+        const syntax = resolvedCodeSyntax(
+          { ...block, syntax: selected },
+          value,
+          pastes,
+        );
         return {
           ...block,
+          syntax: selected,
           detected: syntax,
           tokens: highlightCodeLines(
             value.slice(block.bodyStart, block.bodyEnd),
@@ -222,7 +240,7 @@ export function ComposerEditor({
           ),
         };
       }),
-    [value, pastes],
+    [value, pastes, choices],
   );
   // Plain drafts use the native text painter, including throughout IME edits.
   // Only decorations need the mirrored text layer over the native caret.
@@ -331,17 +349,11 @@ export function ComposerEditor({
     expectedEdit.current = undefined;
   }
   function changeSyntax(block: CodeBlock, syntax: string) {
-    const header =
-      block.indent + block.fence + (syntax === "auto" ? "" : syntax);
-    const el = input.current!;
-    const position = el.selectionStart;
-    const delta = header.length - (block.headerEnd - block.start);
-    replace(
-      block.start,
-      block.headerEnd,
-      header,
-      position > block.headerEnd ? position + delta : block.bodyStart + delta,
-    );
+    setHighlight({
+      text: value,
+      choices: new Map(choices).set(block.start, syntax),
+    });
+    input.current?.focus({ preventScroll: true });
   }
   function closeCode(block: CodeBlock) {
     if (!block.closed) {
@@ -637,7 +649,11 @@ export function ComposerEditor({
               }
               if (event.ctrlKey && event.key === "Enter") {
                 event.preventDefault();
-                if (canSend) el.form?.requestSubmit();
+                event.stopPropagation();
+                if (!event.repeat) {
+                  if (onSubmitShortcut) onSubmitShortcut();
+                  else if (canSend) el.form?.requestSubmit();
+                }
                 return;
               }
               const selection = normalizedSelection();
@@ -852,12 +868,7 @@ export function ComposerEditor({
                             )}
                           </span>
                         </span>
-                        <div
-                          className="editor-code-controls"
-                          style={{
-                            left: `${block!.indent.length + block!.fence.length}ch`,
-                          }}
-                        >
+                        <div className="editor-code-controls">
                           <select
                             disabled={readOnly}
                             aria-label={t("Code syntax {index}", {

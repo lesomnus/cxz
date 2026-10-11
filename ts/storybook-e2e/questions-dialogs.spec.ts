@@ -183,6 +183,9 @@ test("async free-text questions submit structured native keys and only explicit 
   ]);
   await page.keyboard.press("Escape");
   await expect(question).toBeVisible();
+  await answer.press("Control+Enter");
+  await expect(submit).toBeFocused();
+  await expect(question).toBeVisible();
   await submit.click();
   await expect(question).toHaveCount(0);
   expect(JSON.parse((await page.getByRole("status").innerText())!)).toEqual({
@@ -267,13 +270,21 @@ test("question tabs preserve choices, draft and undo and submit all steps togeth
   expect(await editor.boundingBox()).toEqual(editorBefore);
   await answer.press("End");
   await answer.press("!");
-  await tabs.getByRole("tab", { name: "Q3", exact: true }).click();
+  await answer.press("Control+Enter");
+  await expect(
+    tabs.getByRole("tab", { name: "Q3", exact: true }),
+  ).toHaveAttribute("aria-selected", "true");
   await expect(submit).toBeDisabled();
   await question.getByRole("radio", { name: "Now", exact: true }).check();
   await tabs.getByRole("tab", { name: "Q2", exact: true }).click();
   await expect(answer).toHaveValue("Keep this draft!");
   await answer.press("Control+z");
   await expect(answer).toHaveValue("Keep this draft");
+  await answer.press("Control+Enter");
+  await expect(submit).toBeFocused();
+  await expect(
+    tabs.getByRole("tab", { name: "Q2", exact: true }),
+  ).toHaveAttribute("aria-selected", "true");
   await tabs.getByRole("tab", { name: "Q1", exact: true }).focus();
   await page.keyboard.press("End");
   await expect(

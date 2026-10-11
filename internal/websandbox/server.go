@@ -548,8 +548,24 @@ func (x *Sessions) Reply(_ context.Context, r *resource.SessionReplyRequest) (*r
 	if len(pending) != 1 || pending[0].GetRequestId() != r.GetRequestId() {
 		return nil, status.Error(codes.NotFound, "sandbox question no longer pending")
 	}
+	answers := map[string]any{}
+	if r.GetAnswersJson() != "" {
+		if err := json.Unmarshal([]byte(r.GetAnswersJson()), &answers); err != nil || answers == nil {
+			return nil, status.Error(codes.InvalidArgument, "answers_json must be an object")
+		}
+	}
+	for key, value := range answers {
+		if text, ok := value.(string); ok {
+			answers[key] = map[string]any{"other": text}
+		}
+	}
 	remember(st, r.GetClientId())
-	s.event(st, "approval_resolved", fmt.Sprintf("allow=%t", r.GetAllow()), r.GetRequestId(), nil)
+	resolved := map[bool]string{true: "allowed", false: "denied"}[r.GetAllow()]
+	if !r.GetAllow() {
+		answers = nil
+	}
+	answerPayload, _ := json.Marshal(map[string]any{"state": resolved, "answers": answers})
+	s.event(st, "approval_resolved", resolved, r.GetRequestId(), answerPayload)
 	st.value.GetStatus().SetPending(nil)
 	s.event(st, "assistant", "Your selection was recorded for this preview.\n\n"+r.GetAnswersJson(), "", nil)
 	s.complete(st, st.value.GetStatus().GetLastSeq())
