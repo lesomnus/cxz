@@ -141,6 +141,16 @@ test("reports the actual service error and waits for native start before showing
   page,
 }) => {
   await mockRecognition(page, "SpeechRecognition");
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "language", {
+      configurable: true,
+      value: "ko",
+    });
+    Object.defineProperty(navigator, "languages", {
+      configurable: true,
+      value: ["ko", "ko-KR"],
+    });
+  });
   const input = await openComposer(page);
   await input.fill("keep this draft");
   await page.evaluate(() => {
@@ -151,6 +161,9 @@ test("reports the actual service error and waits for native start before showing
     exact: true,
   });
   await microphone.click();
+  expect(await page.evaluate(() => window.voiceTest.instances[0].lang)).toBe(
+    "ko-KR",
+  );
   await expect(
     page.getByRole("tooltip").filter({ hasText: "Starting voice input…" }),
   ).toBeVisible();
@@ -164,13 +177,11 @@ test("reports the actual service error and waits for native start before showing
   await page.evaluate(() =>
     window.voiceTest.instances[0].onerror?.({ error: "network" }),
   );
-  const hint = page
-    .getByRole("tooltip")
-    .filter({
-      hasText: "speech recognition service is unavailable or unreachable",
-    });
+  const hint = page.getByRole("tooltip").filter({
+    hasText: "speech recognition service is unavailable or unreachable",
+  });
   await expect(hint).toBeVisible();
-  await expect(hint).toContainText("network ·");
+  await expect(hint).toContainText("network · ko-KR");
   await expect(input).toHaveValue("keep this draft");
   await page.evaluate(() => {
     window.voiceTest.deferStart = false;
