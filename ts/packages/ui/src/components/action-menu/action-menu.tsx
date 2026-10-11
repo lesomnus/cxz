@@ -70,7 +70,10 @@ export function ActionMenu({
           : below < popup.scrollHeight && above > below;
       popup.style.maxHeight = `${Math.min(window.innerHeight / 2, upward ? above : below)}px`;
       popup.style.top = `${upward ? Math.max(inset, bounds.top - gap - popup.offsetHeight) : bounds.bottom + gap}px`;
-      popup.style.right = `${Math.max(inset, window.innerWidth - bounds.right)}px`;
+      // A trigger near the left edge cannot keep a wide menu right-aligned.
+      // Bound both edges after measuring the popup's actual width.
+      const right = Math.max(inset, window.innerWidth - bounds.right);
+      popup.style.right = `${Math.min(right, Math.max(inset, window.innerWidth - popup.offsetWidth - inset))}px`;
     };
     position();
     popup
