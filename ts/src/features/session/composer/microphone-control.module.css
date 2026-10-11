@@ -29,6 +29,13 @@
     visibility 120ms;
   pointer-events: none;
   z-index: 1;
+  overflow-wrap: anywhere;
+}
+.details {
+  display: grid;
+  margin-top: var(--control-inset);
+  color: var(--muted);
+  font-family: monospace;
 }
 .control:hover .hint,
 .control:focus-within .hint,

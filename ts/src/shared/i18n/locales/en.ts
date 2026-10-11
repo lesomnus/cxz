@@ -8,8 +8,17 @@ export const messages = {
     "Microphone access was denied. Allow it in your browser settings.",
   "No microphone is available.": "No microphone is available.",
   "No speech detected. Try again.": "No speech detected. Try again.",
-  "Voice input failed. Check your connection and try again.":
-    "Voice input failed. Check your connection and try again.",
+  "The browser's speech recognition service is unavailable or unreachable. Microphone permission alone does not enable it.":
+    "The browser's speech recognition service is unavailable or unreachable. Microphone permission alone does not enable it.",
+  "This browser does not allow its speech recognition service. Check browser settings or use another supported browser.":
+    "This browser does not allow its speech recognition service. Check browser settings or use another supported browser.",
+  "The browser's speech recognition service does not support the selected language.":
+    "The browser's speech recognition service does not support the selected language.",
+  "The browser interrupted voice input. Try again.":
+    "The browser interrupted voice input. Try again.",
+  "Voice input could not start. See the browser error below.":
+    "Voice input could not start. See the browser error below.",
+  "Starting voice input…": "Starting voice input…",
   "Finishing voice input…": "Finishing voice input…",
   "Listening…": "Listening…",
   "Terminal {number}": "Terminal {number}",

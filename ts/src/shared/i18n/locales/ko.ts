@@ -9,8 +9,17 @@ export const messages = {
   "No microphone is available.": "사용 가능한 마이크가 없습니다.",
   "No speech detected. Try again.":
     "음성이 감지되지 않았습니다. 다시 시도하세요.",
-  "Voice input failed. Check your connection and try again.":
-    "음성 입력에 실패했습니다. 연결을 확인하고 다시 시도하세요.",
+  "The browser's speech recognition service is unavailable or unreachable. Microphone permission alone does not enable it.":
+    "브라우저의 음성 인식 서비스를 사용할 수 없거나 연결하지 못했습니다. 마이크 권한만으로 인식 서비스가 활성화되지는 않습니다.",
+  "This browser does not allow its speech recognition service. Check browser settings or use another supported browser.":
+    "브라우저가 음성 인식 서비스를 허용하지 않습니다. 브라우저 설정을 확인하거나 지원되는 다른 브라우저를 사용하세요.",
+  "The browser's speech recognition service does not support the selected language.":
+    "브라우저의 음성 인식 서비스가 선택된 언어를 지원하지 않습니다.",
+  "The browser interrupted voice input. Try again.":
+    "브라우저가 음성 입력을 중단했습니다. 다시 시도하세요.",
+  "Voice input could not start. See the browser error below.":
+    "음성 입력을 시작하지 못했습니다. 아래 브라우저 오류를 확인하세요.",
+  "Starting voice input…": "음성 입력을 시작하는 중…",
   "Finishing voice input…": "음성 입력을 마무리하는 중…",
   "Listening…": "듣는 중…",
   "Terminal {number}": "터미널 {number}",

@@ -13,6 +13,7 @@ type TestRecognition = {
   aborts: number;
   onresult: ((event: ResultEvent) => void) | null;
   onerror: ((event: { error: string }) => void) | null;
+  onstart: (() => void) | null;
   result(results: Result[]): void;
   end(): void;
 };
@@ -21,6 +22,8 @@ declare global {
     voiceTest: {
       instances: TestRecognition[];
       lateResult?: (event: ResultEvent) => void;
+      deferStart?: boolean;
+      startError?: string;
     };
   }
 }
@@ -47,6 +50,12 @@ async function mockRecognition(page: Page, api: string) {
         window.voiceTest.instances.push(this);
       }
       start() {
+        if (window.voiceTest.startError)
+          throw new DOMException(
+            "Recognition service is unavailable",
+            window.voiceTest.startError,
+          );
+        if (window.voiceTest.deferStart) return;
         this.onstart?.();
       }
       stop() {
@@ -126,6 +135,75 @@ test("unsupported microphone is disabled but still shows its hover and keyboard 
   expect(microphoneBox!.x).toBeLessThan(sendBox!.x);
   await microphone.locator("..").focus();
   await expect(hint).toBeVisible();
+});
+
+test("reports the actual service error and waits for native start before showing Listening", async ({
+  page,
+}) => {
+  await mockRecognition(page, "SpeechRecognition");
+  const input = await openComposer(page);
+  await input.fill("keep this draft");
+  await page.evaluate(() => {
+    window.voiceTest.deferStart = true;
+  });
+  const microphone = page.getByRole("button", {
+    name: "Voice input",
+    exact: true,
+  });
+  await microphone.click();
+  await expect(
+    page.getByRole("tooltip").filter({ hasText: "Starting voice input…" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("tooltip").filter({ hasText: "Listening…" }),
+  ).toHaveCount(0);
+  await page.evaluate(() => window.voiceTest.instances[0].onstart?.());
+  await expect(
+    page.getByRole("tooltip").filter({ hasText: "Listening…" }),
+  ).toBeVisible();
+  await page.evaluate(() =>
+    window.voiceTest.instances[0].onerror?.({ error: "network" }),
+  );
+  const hint = page
+    .getByRole("tooltip")
+    .filter({
+      hasText: "speech recognition service is unavailable or unreachable",
+    });
+  await expect(hint).toBeVisible();
+  await expect(hint).toContainText("network ·");
+  await expect(input).toHaveValue("keep this draft");
+  await page.evaluate(() => {
+    window.voiceTest.deferStart = false;
+  });
+  for (const [code, text] of [
+    ["service-not-allowed", "does not allow its speech recognition service"],
+    ["language-not-supported", "does not support the selected language"],
+    ["aborted", "interrupted voice input"],
+  ]) {
+    await microphone.click();
+    await page.evaluate(
+      (error) => window.voiceTest.instances.at(-1)!.onerror?.({ error }),
+      code,
+    );
+    await expect(
+      page.getByRole("tooltip").filter({ hasText: text }),
+    ).toBeVisible();
+    await expect(microphone.locator("..")).toHaveAttribute("data-error", code);
+  }
+  await page.evaluate(() => {
+    window.voiceTest.startError = "NotSupportedError";
+  });
+  await microphone.click();
+  await expect(
+    page
+      .getByRole("tooltip")
+      .filter({ hasText: "Recognition service is unavailable" }),
+  ).toBeVisible();
+  await expect(microphone.locator("..")).toHaveAttribute(
+    "data-error",
+    "service-not-allowed",
+  );
+  await expect(input).toHaveValue("keep this draft");
 });
 
 for (const api of ["SpeechRecognition", "webkitSpeechRecognition"]) {

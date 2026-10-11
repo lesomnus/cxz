@@ -11,7 +11,7 @@ type Recognition = {
   interimResults: boolean;
   onstart: (() => void) | null;
   onend: (() => void) | null;
-  onerror: ((event: { error: string }) => void) | null;
+  onerror: ((event: { error: string; message?: string }) => void) | null;
   onresult:
     | ((event: {
         resultIndex: number;
@@ -45,9 +45,22 @@ export function useSpeechInput({
   const recognition = useRef<Recognition | null>(null);
   const callback = useRef(onTranscript);
   callback.current = onTranscript;
-  const [phase, setPhase] = useState<"idle" | "listening" | "stopping">("idle");
+  const [phase, setPhase] = useState<
+    "idle" | "starting" | "listening" | "stopping"
+  >("idle");
   const [interim, setInterim] = useState("");
   const [error, setError] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const language =
+    typeof navigator === "undefined" ? "en-US" : navigator.language || "en-US";
+
+  function reportError(code: string, message: string) {
+    setError(code);
+    setErrorMessage(message);
+    // Diagnostic metadata only; never log audio or recognized text.
+    console.warn("Voice input failed", { code, message, language });
+    cancel();
+  }
 
   function detach() {
     const current = recognition.current;
@@ -81,13 +94,18 @@ export function useSpeechInput({
       return;
     }
     setError("");
+    setErrorMessage("");
     try {
       const next = new Constructor();
       recognition.current = next;
-      next.lang = navigator.language || "en-US";
+      next.lang = language;
       next.continuous = true;
       next.interimResults = true;
       const committed = new Set<number>();
+      next.onstart = () => {
+        if (recognition.current !== next) return;
+        setPhase((phase) => (phase === "starting" ? "listening" : phase));
+      };
       next.onresult = (event) => {
         if (recognition.current !== next) return;
         const final: string[] = [];
@@ -107,8 +125,7 @@ export function useSpeechInput({
       };
       next.onerror = (event) => {
         if (recognition.current !== next) return;
-        setError(event.error);
-        cancel();
+        reportError(event.error, event.message ?? "");
       };
       next.onend = () => {
         if (recognition.current !== next) return;
@@ -118,19 +135,28 @@ export function useSpeechInput({
         setInterim("");
       };
       // Mark active while permission/start is pending, so another click stops it.
-      setPhase("listening");
+      setPhase("starting");
       next.start();
-    } catch {
-      cancel();
-      setError("start-failed");
+    } catch (error) {
+      const name = error instanceof Error ? error.name : "";
+      const code =
+        name === "NotAllowedError"
+          ? "not-allowed"
+          : name === "NotSupportedError"
+            ? "service-not-allowed"
+            : "start-failed";
+      reportError(code, error instanceof Error ? error.message : String(error));
     }
   }
   return {
     supported: Boolean(Constructor),
     active: phase !== "idle",
     stopping: phase === "stopping",
+    starting: phase === "starting",
     interim,
     error,
+    errorMessage,
+    language,
     toggle,
     cancel,
   };
