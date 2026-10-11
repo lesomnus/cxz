@@ -22,7 +22,10 @@ async function shell(page: Page) {
   await ready(page);
   await page.keyboard.press("Control+Backquote");
   const panel = page.getByRole("region", { name: "Workspace terminal" });
-  await expect(panel).toContainText("Simulated · /workspace");
+  await expect(panel.locator(".terminal-screen")).toHaveAttribute(
+    "data-terminal-state",
+    "ready",
+  );
   await expect(panel.locator(".xterm-helper-textarea")).toBeFocused();
   return panel;
 }

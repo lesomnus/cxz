@@ -11,7 +11,8 @@
     "allowImportingTsExtensions": true,
     "paths": {
       "@lesomnus/cxz-ui": ["./packages/ui/src/index.ts"],
-      "@lesomnus/cxz-ui/editor": ["./packages/ui/src/editor/index.ts"]
+      "@lesomnus/cxz-ui/editor": ["./packages/ui/src/editor/index.ts"],
+      "@lesomnus/cxz-ui/terminal": ["./packages/ui/src/terminal/index.ts"]
     }
   },
   "include": [

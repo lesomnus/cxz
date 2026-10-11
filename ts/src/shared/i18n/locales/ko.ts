@@ -1,5 +1,16 @@
 import type { LanguagePack } from "#src/shared/i18n/i18n.ts";
 export const messages = {
+  "Terminal {number}": "터미널 {number}",
+  "Terminal tabs": "터미널 탭",
+  "New terminal": "새 터미널",
+  "Terminal layout": "터미널 배치",
+  "Split right": "오른쪽으로 분할",
+  "Split down": "아래로 분할",
+  "Move to next pane": "다음 영역으로 이동",
+  "Resize terminal": "터미널 크기 조절",
+  "Resize panes": "분할 크기 조절",
+  "Resize workspace editor": "워크스페이스 에디터 크기 조절",
+  "Resize file explorer": "파일 탐색기 크기 조절",
   "Terminal settings": "터미널 설정",
   "Copy on selection": "선택 시 복사",
   "Automatically copy selected terminal text.":

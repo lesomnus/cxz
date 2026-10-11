@@ -18,7 +18,10 @@ async function openShell(page: import("@playwright/test").Page) {
   await page.keyboard.press("Control+Backquote");
   const panel = page.getByRole("region", { name: "Workspace terminal" });
   await expect(panel.locator(".xterm-helper-textarea")).toBeFocused();
-  await expect(panel).toContainText("Simulated · /workspace");
+  await expect(panel.locator(".terminal-screen")).toHaveAttribute(
+    "data-terminal-state",
+    "ready",
+  );
   return panel;
 }
 

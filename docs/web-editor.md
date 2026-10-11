@@ -10,6 +10,14 @@ loaded until the wide layout has first been activated.
 
 Layout dimensions and breakpoints are defined in
 [style.css](../ts/src/app/styles/style.css).
+Drag the conversation/editor boundary to adjust their relative widths. The file
+preview also has a draggable boundary between its explorer and file contents.
+Both use the reusable `ResizeHandle` from `@lesomnus/cxz-ui`: arrow keys resize,
+Shift takes a larger step, Home/End reach the available limits, and double click
+restores the default width. Minimum pane widths keep the remaining content usable.
+Viewport changes constrain the visible width while retaining the user's chosen
+width for when space is available again. These layout changes preserve the
+mounted conversation, Monaco instance, file tabs and editor connection.
 
 ## File preview
 

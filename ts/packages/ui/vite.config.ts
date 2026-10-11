@@ -3,7 +3,11 @@ export default defineConfig({
   base: "./",
   build: {
     lib: {
-      entry: { index: "src/index.ts", editor: "src/editor/index.ts" },
+      entry: {
+        index: "src/index.ts",
+        editor: "src/editor/index.ts",
+        terminal: "src/terminal/index.ts",
+      },
       formats: ["es"],
       fileName: (_format, entry) => `${entry}.js`,
       cssFileName: "style",

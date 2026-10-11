@@ -24,7 +24,10 @@ for (const renderer of ["DOM", "WebGL"]) {
     const panel = page.getByRole("region", { name: "Workspace terminal" });
     const input = panel.locator(".xterm-helper-textarea");
     await expect(input).toBeFocused();
-    await expect(panel).toContainText("Simulated · /workspace");
+    await expect(panel.locator(".terminal-screen")).toHaveAttribute(
+      "data-terminal-state",
+      "ready",
+    );
     if (renderer === "WebGL")
       await expect(panel.locator(".xterm-screen canvas").last()).toBeVisible();
     await page.evaluate(() =>

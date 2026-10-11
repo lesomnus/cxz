@@ -48,6 +48,12 @@
   --scroll-fade-depth: 24px;
   --scroll-fade-extension: 24px;
   --resource-panel-width: 180px;
+  --session-pane-width: 800px;
+  --session-pane-min-width: 360px;
+  --session-other-min-width: 360px;
+  --file-pane-width: 180px;
+  --file-pane-min-width: 120px;
+  --file-other-min-width: 240px;
   --panel-inset: 12px;
   --scroll-handle-color: var(--shade-122);
   --scroll-handle-hover-color: color-mix(
@@ -561,70 +567,20 @@ header strong {
   display: none;
   min-width: 0;
   min-height: 0;
-  border-left: 1px solid var(--shade-54);
   overflow: hidden;
   flex-direction: column;
 }
-.workspace-terminal {
-  flex: 0 0 auto;
-  height: clamp(160px, 28vh, 300px);
-  max-height: 40%;
-  min-height: 120px;
-  display: flex;
-  flex-direction: column;
-  border-top: 1px solid var(--shade-54);
-  background: var(--shade-17);
-  overflow: hidden;
-}
-.workspace-terminal[hidden] {
+.session-divider {
   display: none;
-}
-.workspace-terminal > header {
-  flex: 0 0 28px;
-  min-height: 28px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 2px 8px;
-}
-.workspace-terminal > header strong,
-.workspace-terminal > header small {
-  font-size: 11px;
-  font-weight: normal;
-}
-.workspace-terminal > header small {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--muted);
-}
-.terminal-clipboard-feedback {
-  font-size: 11px;
-  color: var(--shade-204);
-  white-space: nowrap;
-}
-.workspace-terminal .toolbar-button {
-  width: 48px;
-  height: 24px;
-  padding: 2px;
-}
-.terminal-screen {
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-  padding: 4px 8px;
-}
-.terminal-screen .xterm .xterm-viewport {
-  background: var(--shade-17);
-}
-.terminal-screen .xterm {
-  height: 100%;
 }
 @container (min-width: 1600px) {
   .session-split {
-    grid-template-columns: 800px minmax(0, 1fr);
+    grid-template-columns:
+      var(--session-resized-width, var(--session-pane-width))
+      var(--ui-resize-handle-size) minmax(0, 1fr);
+  }
+  .session-divider {
+    display: block;
   }
   .workspace-editor {
     display: flex;
@@ -656,7 +612,9 @@ header strong {
 }
 .file-workbench {
   display: grid;
-  grid-template-columns: 180px minmax(0, 1fr);
+  grid-template-columns:
+    var(--file-resized-width, var(--file-pane-width))
+    var(--ui-resize-handle-size) minmax(0, 1fr);
   flex: 1;
   min-height: 0;
 }

@@ -1,10 +1,17 @@
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type CSSProperties,
+} from "react";
 import type { Project } from "#gen/cxz/project_pb";
 import type { ProjectPathEntry } from "#gen/cxz/project_svc_pb";
 import { Connection, ref } from "#src/shared/api/connection.ts";
-import { Button } from "@lesomnus/cxz-ui";
+import { Button, ResizeHandle } from "@lesomnus/cxz-ui";
+import { usePaneWidth } from "#src/shared/layout/use-pane-width.ts";
 import type * as Monaco from "monaco-editor/esm/vs/editor/editor.api.js";
 import { SourceEditor } from "#src/shared/editor/source-editor.tsx";
 
@@ -63,6 +70,12 @@ export function WorkspaceEditor({
     return state;
   });
   const value = useSyncExternalStore(state.subscribe, state.snapshot);
+  const fileArea = useRef<HTMLDivElement>(null);
+  const filePane = usePaneWidth(
+    fileArea,
+    "file",
+    value.phase !== "connected" || value.simulated,
+  );
   const root = project.status?.remoteWorkspace || "";
   const [expanded, setExpanded] = useState(new Set<string>([root]));
   const [directories, setDirectories] = useState(
@@ -269,7 +282,13 @@ export function WorkspaceEditor({
           src={`/editor/${encodeURIComponent(id)}/?folder=${encodeURIComponent(value.workspace)}`}
         />
       ) : (
-        <div className="file-workbench">
+        <div
+          className="file-workbench"
+          ref={fileArea}
+          style={
+            { "--file-resized-width": `${filePane.value}px` } as CSSProperties
+          }
+        >
           <nav className="file-explorer" aria-label={t("Workspace files")}>
             <div className="file-explorer-heading">
               <span>{t("Files")}</span>
@@ -287,6 +306,7 @@ export function WorkspaceEditor({
             {loading.has(root) && <small>{t("Loading files…")}</small>}
             {!root && <small>{t("Workspace unavailable.")}</small>}
           </nav>
+          <ResizeHandle {...filePane} label={t("Resize file explorer")} />
           <div className="file-content">
             <div
               className="file-tabs"

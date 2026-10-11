@@ -39,7 +39,51 @@ export function SaveButton() {
 
 The base components inherit the host font and text color. The stylesheet defines only namespaced tokens and styles for library component classes; it does not reset the host's body, buttons or form fields. Dark is the default palette. Set `data-ui-theme="light"` on the document root for the light palette. Root-level `--ui-*` overrides also reach portaled menus and dialogs. Keep token values in CSS rather than duplicating design measurements in documentation.
 
-The public core entry exports Button/ButtonContent, ConfirmButton, ActionMenu, ValueMenu, SegmentedControl, Switch, ConfirmationDialog, EditableValue, FloatingCard, SettingField, SettingSlider, ElapsedTime and UIProvider. Button's `toolbar` variant provides the compact rectangular shape. Callbacks and selected values belong to the consuming application; cxz adapters handle persistence and session operations separately.
+The public core entry exports Button/ButtonContent, ConfirmButton, ActionMenu, ValueMenu, SegmentedControl, Switch, ConfirmationDialog, EditableValue, FloatingCard, SettingField, SettingSlider, ElapsedTime, SplitLayout, ResizeHandle and UIProvider. Button's `toolbar` variant provides the compact rectangular shape. Callbacks and selected values belong to the consuming application; cxz adapters handle persistence and session operations separately.
+
+`SplitLayout` takes a controlled `SplitNode` tree, a `renderPane` callback, and `onResize`. `setSplitRatio` applies a bounded ratio update to that tree. Separators support pointer dragging, arrow keys, Home/End and double click to equalize; the host supplies the accessible separator label. It owns no workspace connections or tabs, so it can lay out arbitrary content in other applications. When moving expensive stateful content between panes, keep its instance outside the changing tree and attach a stable portal host to pane slots, as the terminal integration does.
+
+`ResizeHandle` controls one neighboring pane in pixels. Supply `value`, responsive
+`min`/`max` limits and `onChange`; `axis` selects horizontal or vertical resizing.
+It captures pointer drags, supports arrow keys and Home/End, and accepts optional
+`onReset` for double click. The host owns layout and content; the handle does not
+remount either pane. Its appearance follows the same separator tokens as split layouts.
+
+## Terminal workbench
+
+The separate terminal entry provides tabs, drag docking, nested resizable panes,
+status/clipboard feedback and folding. It does not install xterm, open sockets or
+look up projects. Supply your own session renderer; cxz keeps its existing
+connection and settings adapter in the app.
+
+```tsx
+import { TerminalWorkbench } from "@lesomnus/cxz-ui/terminal";
+
+<TerminalWorkbench
+  visible={visible}
+  hide={() => setVisible(false)}
+  renderSession={(props) => <MyTerminalSession {...props} connect={connect} />}
+/>;
+```
+
+`TerminalSurfaceProps` describes the renderer contract:
+
+- Each `id` owns a stable mounted session. `groupId` and `placement` change when
+  docking; they must not become connection effect dependencies.
+- Create a stable DOM host, render its content with a React portal, and attach it
+  to `getHost(groupId)` in a layout effect. Hide inactive hosts with `active`.
+  Remove the host in a layout-effect cleanup so StrictMode replay is safe.
+- `visible`, `active` and `focused` drive fitting and focusing without reconnecting.
+  The `ref` exposes `focus()` and `reconnect()`. Report focus with `onFocus(id)`.
+- Report connection state, ended state and clipboard feedback with `onStatus`.
+  The host can supply an `error`, `formatStatus`, `hideShortcut` and `className`.
+  UIProvider translates built-in labels; terminal sizing uses `--ui-*` tokens.
+
+**Components/TerminalWorkbench → Portable** demonstrates the complete contract
+using plain React inputs without application providers or CSS. Its drafts and
+submitted lines survive tab moves, split-tree rebuilds and folding. This entry
+can move to a dedicated terminal package later without changing the application
+transport boundary.
 
 ## Translation
 
@@ -89,4 +133,4 @@ This Storybook imports the package stylesheet and documentation framing only. It
 
 ## Source layout
 
-`src/components/<component>/` keeps each control's implementation, CSS Module and Storybook examples together. The optional editor is in `src/editor`, the translation provider is in `src/providers`, and theme tokens are in `src/theme`. Multi-component integration stories live in `src/stories/integration`. Use the public package entries rather than depending on this internal layout. App pages, session behavior and workspace integration are described in [web source organization](../../../docs/web-structure.md).
+`src/components/<component>/` keeps each control's implementation, CSS Module and Storybook examples together. The terminal workbench is in `src/terminal`, the optional editor is in `src/editor`, the translation provider is in `src/providers`, and theme tokens are in `src/theme`. Multi-component integration stories live in `src/stories/integration`. Use the public package entries rather than depending on this internal layout. App pages, session behavior and workspace integration are described in [web source organization](../../../docs/web-structure.md).

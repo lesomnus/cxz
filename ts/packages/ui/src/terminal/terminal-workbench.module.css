@@ -1,0 +1,184 @@
+.panel {
+  box-sizing: border-box;
+  color: var(--ui-shade-237);
+  position: relative;
+  flex: 0 0 auto;
+  height: clamp(160px, 28vh, 300px);
+  max-height: 70%;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--ui-shade-54);
+  background: var(--ui-shade-17);
+  overflow: hidden;
+}
+.panel[hidden] {
+  display: none;
+}
+.header {
+  box-sizing: border-box;
+  flex: 0 0 var(--ui-terminal-toolbar-height);
+  height: var(--ui-terminal-toolbar-height);
+  display: flex;
+  align-items: center;
+  gap: var(--ui-control-inset);
+  padding: var(--ui-control-inset);
+  min-width: 0;
+}
+.tabs {
+  display: flex;
+  align-items: stretch;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar {
+  display: none;
+}
+.header .tab,
+.header .action,
+.header .control[data-variant="toolbar"],
+.header .close[data-variant="toolbar"],
+.header .fold[data-variant="toolbar"] {
+  height: calc(var(--ui-terminal-toolbar-height) - 2 * var(--ui-control-inset));
+  min-height: 0;
+  padding: var(--ui-control-inset) var(--ui-control-inline-inset);
+  font-size: 11px;
+}
+.header .tab {
+  max-width: 140px;
+  min-width: 0;
+  color: var(--ui-muted);
+  white-space: nowrap;
+}
+.header .tab :global(.button-content) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+.tabItem {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  border-radius: var(--ui-control-inline-inset);
+}
+.tabItem[data-selected="true"] {
+  background: var(--ui-shade-27);
+}
+.header .close[data-variant="toolbar"] {
+  width: calc(var(--ui-terminal-toolbar-height) - 2 * var(--ui-control-inset));
+  flex: 0 0 auto;
+  padding-inline: 0;
+  opacity: 0;
+}
+.tabItem:hover .close,
+.tabItem:focus-within .close,
+.tabItem[data-selected="true"] .close {
+  opacity: 1;
+}
+.header .control[data-variant="toolbar"],
+.header .fold[data-variant="toolbar"] {
+  width: var(--ui-toolbar-button-width);
+  flex: 0 0 auto;
+}
+.tabList {
+  display: flex;
+  flex: 0 0 auto;
+  min-width: 0;
+}
+.tab[aria-selected="true"] {
+  color: var(--ui-shade-237);
+}
+.status {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--ui-muted);
+}
+.feedback {
+  position: absolute;
+  bottom: var(--ui-control-inset);
+  right: var(--ui-control-inline-inset);
+  left: var(--ui-control-inline-inset);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--ui-control-inline-inset);
+  pointer-events: none;
+}
+.feedback .action {
+  min-height: 24px;
+  padding: var(--ui-control-inset) var(--ui-control-inline-inset);
+  font-size: 11px;
+  pointer-events: auto;
+}
+.feedback > :not(:empty) {
+  background: var(--ui-shade-17);
+  border-radius: var(--ui-control-inline-inset);
+}
+.clipboardFeedback {
+  font-size: 11px;
+  color: var(--ui-shade-204);
+  white-space: nowrap;
+}
+.clipboardFeedback:empty {
+  display: none;
+}
+.group,
+.slot {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.group {
+  position: relative;
+}
+.slot {
+  flex: 1;
+}
+.heightHandle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  z-index: 4;
+  cursor: row-resize;
+  touch-action: none;
+}
+.heightHandle:hover,
+.heightHandle:focus-visible {
+  background: var(--ui-muted);
+}
+.dropPreview {
+  position: absolute;
+  top: var(--ui-terminal-toolbar-height);
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--ui-shade-237) 12%, transparent);
+  border: 1px solid var(--ui-muted);
+  border-radius: var(--ui-control-inline-inset);
+}
+.dropPreview[data-edge="left"] {
+  right: 50%;
+}
+.dropPreview[data-edge="right"] {
+  left: 50%;
+}
+.dropPreview[data-edge="top"] {
+  bottom: calc((100% - var(--ui-terminal-toolbar-height)) / 2);
+}
+.dropPreview[data-edge="bottom"] {
+  top: calc((100% + var(--ui-terminal-toolbar-height)) / 2);
+}
