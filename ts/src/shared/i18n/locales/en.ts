@@ -324,6 +324,8 @@ export const messages = {
   "Starting sandbox…": "Starting sandbox…",
   "Stopped session": "Stopped session",
   "Stored value": "Stored value",
+  "Summarizing…": "Summarizing…",
+  Summary: "Summary",
   "Submit answers": "Submit answers",
   "Syntax highlighting colors": "Syntax highlighting colors",
   "Tab character": "Tab character",

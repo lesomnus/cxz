@@ -3352,6 +3352,7 @@ type Aux struct {
 	Kinds         []string               `protobuf:"bytes,3,rep,name=kinds,proto3" json:"kinds,omitempty"`
 	RunId         string                 `protobuf:"bytes,4,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
 	Turn          uint64                 `protobuf:"varint,5,opt,name=turn,proto3" json:"turn,omitempty"`
+	ResponseSeq   uint64                 `protobuf:"varint,11,opt,name=response_seq,json=responseSeq,proto3" json:"response_seq,omitempty"`
 	Revision      string                 `protobuf:"bytes,6,opt,name=revision,proto3" json:"revision,omitempty"`
 	State         string                 `protobuf:"bytes,7,opt,name=state,proto3" json:"state,omitempty"`
 	Results       []*AuxResult           `protobuf:"bytes,8,rep,name=results,proto3" json:"results,omitempty"`
@@ -3422,6 +3423,13 @@ func (x *Aux) GetRunId() string {
 func (x *Aux) GetTurn() uint64 {
 	if x != nil {
 		return x.Turn
+	}
+	return 0
+}
+
+func (x *Aux) GetResponseSeq() uint64 {
+	if x != nil {
+		return x.ResponseSeq
 	}
 	return 0
 }
@@ -3594,6 +3602,7 @@ type AuxSummary struct {
 	RunId         string                 `protobuf:"bytes,1,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
 	Turn          uint64                 `protobuf:"varint,2,opt,name=turn,proto3" json:"turn,omitempty"`
 	Text          string                 `protobuf:"bytes,3,opt,name=text,proto3" json:"text,omitempty"`
+	ResponseSeq   uint64                 `protobuf:"varint,4,opt,name=response_seq,json=responseSeq,proto3" json:"response_seq,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3647,6 +3656,13 @@ func (x *AuxSummary) GetText() string {
 		return x.Text
 	}
 	return ""
+}
+
+func (x *AuxSummary) GetResponseSeq() uint64 {
+	if x != nil {
+		return x.ResponseSeq
+	}
+	return 0
 }
 
 type AuxProfile struct {
@@ -7258,14 +7274,15 @@ const file_cxz_proto_rawDesc = "" +
 	"\vSearchReply\x12.\n" +
 	"\x05visit\x18\x01 \x01(\v2\x18.cxz.runtime.SearchVisitR\x05visit\x127\n" +
 	"\bprogress\x18\x02 \x01(\v2\x1b.cxz.runtime.SearchProgressR\bprogress\x124\n" +
-	"\asummary\x18\x03 \x01(\v2\x1a.cxz.runtime.SearchSummaryR\asummary\"\xa0\x02\n" +
+	"\asummary\x18\x03 \x01(\v2\x1a.cxz.runtime.SearchSummaryR\asummary\"\xc3\x02\n" +
 	"\x03Aux\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x02 \x01(\tR\tsessionId\x12\x14\n" +
 	"\x05kinds\x18\x03 \x03(\tR\x05kinds\x12\x15\n" +
 	"\x06run_id\x18\x04 \x01(\tR\x05runId\x12\x12\n" +
-	"\x04turn\x18\x05 \x01(\x04R\x04turn\x12\x1a\n" +
+	"\x04turn\x18\x05 \x01(\x04R\x04turn\x12!\n" +
+	"\fresponse_seq\x18\v \x01(\x04R\vresponseSeq\x12\x1a\n" +
 	"\brevision\x18\x06 \x01(\tR\brevision\x12\x14\n" +
 	"\x05state\x18\a \x01(\tR\x05state\x120\n" +
 	"\aresults\x18\b \x03(\v2\x16.cxz.runtime.AuxResultR\aresults\x12+\n" +
@@ -7280,12 +7297,13 @@ const file_cxz_proto_rawDesc = "" +
 	"\aaccount\x18\x01 \x01(\tR\aaccount\x12\x14\n" +
 	"\x05model\x18\x02 \x01(\tR\x05model\x12\x12\n" +
 	"\x04kind\x18\x03 \x01(\tR\x04kind\x12\x12\n" +
-	"\x04data\x18\x04 \x01(\fR\x04data\"K\n" +
+	"\x04data\x18\x04 \x01(\fR\x04data\"n\n" +
 	"\n" +
 	"AuxSummary\x12\x15\n" +
 	"\x06run_id\x18\x01 \x01(\tR\x05runId\x12\x12\n" +
 	"\x04turn\x18\x02 \x01(\x04R\x04turn\x12\x12\n" +
-	"\x04text\x18\x03 \x01(\tR\x04text\"\xcd\x01\n" +
+	"\x04text\x18\x03 \x01(\tR\x04text\x12!\n" +
+	"\fresponse_seq\x18\x04 \x01(\x04R\vresponseSeq\"\xcd\x01\n" +
 	"\n" +
 	"AuxProfile\x12\x12\n" +
 	"\x04kind\x18\x01 \x01(\tR\x04kind\x12\x18\n" +

@@ -1,4 +1,6 @@
 import { EventView } from "./event-view";
+import { attachSummaries } from "#src/features/session/model/session-aux.ts";
+import { useSessionAux } from "#src/features/session/model/use-session-aux.ts";
 import { QuestionCard } from "#src/features/session/questions/question-card.tsx";
 import { ConversationComposer } from "#src/features/session/composer/conversation-composer.tsx";
 import { SessionMenu } from "#src/features/session/components/session-menu.tsx";
@@ -533,11 +535,18 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
     }
   }
   const transcript = useMemo(() => transcriptEvents(events), [events]);
+  const aux = useSessionAux(c, id);
   const s = current.data;
   const sessionProject =
     s?.project?.id &&
     projects.find((project) => key(project.id) === key(s.project!.id));
   const completions = transcript.completions;
+  // Summaries arrive on their own stream and are matched to the turn each one
+  // names, not merged into the journal: they are not events.
+  const summaries = useMemo(
+    () => attachSummaries(transcript.events, aux),
+    [transcript.events, aux],
+  );
   const combined = useMemo(
     () =>
       [
@@ -774,6 +783,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
             e={e}
             agent={s?.agent ?? ""}
             completion={completions.get(e.seq.toString())}
+            summary={summaries.get(e.seq.toString())}
             activity={transcript.activities.get(e.seq)}
             loadDetails={history.mode === "summary" ? loadDetails : undefined}
           />

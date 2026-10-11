@@ -305,8 +305,9 @@ message SearchReply {
 message Aux {
   string id = 1; string session_id = 2;
   repeated string kinds = 3;
-  // The turn this answered. Results are shown beside it.
-  string run_id = 4; uint64 turn = 5;
+  // The turn this answered. Results are shown beside it. response_seq is the
+  // row they are shown on; see AuxSummary.
+  string run_id = 4; uint64 turn = 5; uint64 response_seq = 11;
   // The configuration revision it ran under. A changed one makes it stale,
   // because its answer is not an answer for the new settings.
   string revision = 6;
@@ -320,7 +321,15 @@ message AuxResult { string kind = 1; string text = 2; bool truncated = 3; }
 // What this task spent, not what an account has spent.
 message AuxUsage { string account = 1; string model = 2; string kind = 3; bytes data = 4; }
 // Kept per turn on the session, so a summary outlives the task that wrote it.
-message AuxSummary { string run_id = 1; uint64 turn = 2; string text = 3; }
+// response_seq is the sequence of the turn's final response. turn names the
+// turn_end record, which the reading projection deletes once it has folded that
+// turn's metrics onto the response row -- so a client reading the projection
+// has no row with that sequence. This is the row the summary belongs beside,
+// and the manager knows it because it watched the turn.
+message AuxSummary {
+  string run_id = 1; uint64 turn = 2; string text = 3;
+  uint64 response_seq = 4;
+}
 // Which account and model run a kind. Per kind, because whether two kinds share
 // a profile is what decides whether one call can answer both.
 // kind is which task this profile runs. agent and backend are read only: they

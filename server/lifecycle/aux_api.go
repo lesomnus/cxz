@@ -131,7 +131,7 @@ func (s SessionServer) auxState(ctx context.Context, ref *resource.SessionRef, o
 	}
 	for _, v := range out.Summaries {
 		reply.Summaries = append(reply.Summaries, resource.AuxSummary_builder{
-			RunId: &v.RunId, Turn: &v.Turn, Text: &v.Text,
+			RunId: &v.RunId, Turn: &v.Turn, ResponseSeq: &v.ResponseSeq, Text: &v.Text,
 		}.Build())
 	}
 	for _, v := range out.Recent {
@@ -286,7 +286,8 @@ func auxOf(a *api.Aux) *resource.Aux {
 	}
 	out := resource.Aux_builder{
 		Id: &a.Id, SessionId: []byte(a.SessionId), RunId: &a.RunId, Turn: &a.Turn,
-		Revision: &a.Revision, State: &a.State, Message: &a.Message,
+		ResponseSeq: &a.ResponseSeq,
+		Revision:    &a.Revision, State: &a.State, Message: &a.Message,
 		Kinds: auxkind.Enums(a.Kinds),
 	}
 	for _, r := range a.Results {
