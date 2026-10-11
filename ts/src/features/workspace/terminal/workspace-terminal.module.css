@@ -1,0 +1,73 @@
+.panel {
+  flex: 0 0 auto;
+  height: clamp(160px, 28vh, 300px);
+  max-height: 40%;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--shade-54);
+  background: var(--shade-17);
+  overflow: hidden;
+}
+.panel[hidden] {
+  display: none;
+}
+.header {
+  flex: 0 0 var(--composer-toolbar-height);
+  height: var(--composer-toolbar-height);
+  display: flex;
+  align-items: center;
+  gap: var(--control-inset);
+  padding: var(--control-inset);
+}
+.tabs {
+  display: flex;
+  align-items: stretch;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+}
+.header .tab,
+.header .action,
+.header .fold[data-variant="toolbar"] {
+  height: calc(var(--composer-toolbar-height) - 2 * var(--control-inset));
+  min-height: 0;
+  padding: var(--control-inset) var(--control-inline-inset);
+  font-size: 11px;
+}
+.header .tab {
+  background: var(--shade-27);
+  border-radius: var(--control-inline-inset);
+}
+.tab[aria-selected="true"] {
+  color: var(--shade-237);
+}
+.status {
+  max-width: 40%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--muted);
+}
+.clipboardFeedback {
+  font-size: 11px;
+  color: var(--shade-204);
+  white-space: nowrap;
+}
+.clipboardFeedback:empty {
+  display: none;
+}
+.screen {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  padding: var(--control-inset) var(--control-inline-inset);
+}
+.screen :global(.xterm .xterm-viewport) {
+  background: var(--shade-17);
+}
+.screen :global(.xterm) {
+  height: 100%;
+}

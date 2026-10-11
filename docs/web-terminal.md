@@ -19,8 +19,12 @@ shell variables, running commands, scrollback and the draft. Switching sessions,
 leaving the conversation, resetting the sandbox, reloading or signing out closes
 that panel's connection and shell; it is not a persistent server terminal. An
 exited or disconnected shell shows **Reconnect**, which starts a new shell.
+The compact header shows a single active **Terminal** tab; selecting it focuses
+the existing shell. It shares the composer toolbar's height and control insets,
+with a folding button on the right. Workspace paths and normal connection labels
+are omitted; connecting, exit/error and clipboard feedback remain available.
 Scrollback is bounded to 2000 terminal lines independently of virtualized messages.
-Panel sizing follows [style.css](../ts/src/app/styles/style.css), bounded by the conversation
+Panel sizing follows [workspace-terminal.module.css](../ts/src/features/workspace/terminal/workspace-terminal.module.css), bounded by the conversation
 viewport. ResizeObserver updates the PTY within the project service's validated
 dimension limits. The wide-view editor remains a separate adjacent pane.
 

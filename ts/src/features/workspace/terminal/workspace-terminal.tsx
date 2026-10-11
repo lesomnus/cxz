@@ -1,7 +1,7 @@
 import { useTheme } from "#src/shared/theme/theme.tsx";
 import { t, translateKnown } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { useQuery } from "@lesomnus/payday/react";
 import { ProjectService } from "#gen/cxz/project_svc_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
@@ -13,6 +13,7 @@ import { installTerminalSelectionCopy } from "./terminal-selection-copy";
 import { installTerminalKeyboard } from "./terminal-keyboard";
 import { useSettings } from "#src/shared/settings/settings.ts";
 import { resolveTerminalSettings } from "#src/shared/settings/terminal-settings.ts";
+import styles from "./workspace-terminal.module.css";
 
 export function terminalShortcut(
   event: Pick<
@@ -48,6 +49,8 @@ export function WorkspaceTerminal({
   hide: () => void;
 }) {
   useLocale();
+  const tabId = useId();
+  const screenId = useId();
   const project = useQuery(ProjectService.method.get, {
     ref: { key: { case: "id", value: projectId } },
     select: { all: true },
@@ -147,11 +150,7 @@ export function WorkspaceTerminal({
         (frame) => {
           if (disposed) return;
           if (frame.ready) {
-            setState(
-              c.inProcess
-                ? "Simulated · /workspace"
-                : project.data?.status?.remoteWorkspace || "Connected",
-            );
+            setState("");
             resize();
             if (showing.current) term.focus();
           }
@@ -207,17 +206,33 @@ export function WorkspaceTerminal({
   }, [visible]);
   return (
     <section
-      className="workspace-terminal"
+      className={`workspace-terminal ${styles.panel}`}
       aria-label={t("Workspace terminal")}
       hidden={!visible}
     >
-      <header>
-        <strong>{t("Terminal")}</strong>
-        <small role={project.error ? "alert" : "status"}>
-          {project.error ? String(project.error) : translateKnown(state)}
-        </small>
+      <header className={styles.header}>
+        <div className={styles.tabs} role="tablist" aria-label={t("Terminal")}>
+          <Button
+            className={styles.tab}
+            role="tab"
+            id={tabId}
+            aria-selected="true"
+            aria-controls={screenId}
+            onClick={() => terminal.current?.focus()}
+          >
+            {t("Terminal")}
+          </Button>
+        </div>
+        {(project.error || state) && (
+          <small
+            className={styles.status}
+            role={project.error || ended ? "alert" : "status"}
+          >
+            {project.error ? String(project.error) : translateKnown(state)}
+          </small>
+        )}
         <span
-          className="terminal-clipboard-feedback"
+          className={`terminal-clipboard-feedback ${styles.clipboardFeedback}`}
           role="status"
           aria-live="polite"
           title={
@@ -235,12 +250,16 @@ export function WorkspaceTerminal({
               : ""}
         </span>
         {ended && (
-          <Button onClick={() => reconnect((value) => value + 1)}>
+          <Button
+            className={styles.action}
+            onClick={() => reconnect((value) => value + 1)}
+          >
             {t("Reconnect")}
           </Button>
         )}
         <Button
-          className="toolbar-button"
+          variant="toolbar"
+          className={styles.fold}
           aria-label={t("Hide terminal")}
           title="Ctrl+`"
           onClick={hide}
@@ -248,7 +267,13 @@ export function WorkspaceTerminal({
           ⌄
         </Button>
       </header>
-      <div className="terminal-screen" ref={screen} />
+      <div
+        className={`terminal-screen ${styles.screen}`}
+        id={screenId}
+        role="tabpanel"
+        aria-labelledby={tabId}
+        ref={screen}
+      />
     </section>
   );
 }
