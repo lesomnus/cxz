@@ -11,6 +11,8 @@ export const messages = {
     "Local recognition is unavailable for this language. Install its browser language pack or turn off local recognition.",
 
   "Voice language": "Voice language",
+  "Use your browser's language by default, or choose a recognition language.":
+    "Use your browser's language by default, or choose a recognition language.",
   "Browser language": "Browser language",
   "Stop voice input before changing the language.":
     "Stop voice input before changing the language.",
@@ -187,6 +189,13 @@ export const messages = {
   "Loading paths…": "Loading paths…",
   "No matching paths": "No matching paths",
   "Directory unavailable": "Directory unavailable",
+  "Symbolic link": "Symbolic link",
+  Pipe: "Pipe",
+  Socket: "Socket",
+  "Block device": "Block device",
+  "Character device": "Character device",
+  "Unknown file type": "Unknown file type",
+  Executable: "Executable",
   "Download a container file": "Download a container file",
   "Choose a container file: /download <path>":
     "Choose a container file: /download <path>",

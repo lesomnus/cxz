@@ -1,23 +1,16 @@
 import { useId } from "react";
-import { ActionMenu, Button } from "@lesomnus/cxz-ui";
+import { Button } from "@lesomnus/cxz-ui";
 import { t } from "#src/shared/i18n/i18n.ts";
 import type { SpeechInput } from "#src/shared/browser/use-speech-input.ts";
 import styles from "./microphone-control.module.css";
-import { voiceLanguages } from "./voice-language";
 
 export function MicrophoneControl({
   speech,
   disabled,
-  language,
-  onLanguage,
-  languageError,
   meterUnavailable,
 }: {
   speech: SpeechInput;
   disabled: boolean;
-  language?: string;
-  onLanguage: (language: string | undefined) => void;
-  languageError: string;
   meterUnavailable: boolean;
 }) {
   const hintId = useId();
@@ -62,114 +55,68 @@ export function MicrophoneControl({
   else if (speech.stopping) hint = t("Finishing voice input…");
   else if (speech.starting) hint = t("Starting voice input…");
   else if (speech.active) hint = speech.interim;
-  if (languageError) hint = languageError;
   const showHint = Boolean(hint) || (meterUnavailable && speech.listening);
-  const options = [
-    { value: "browser", label: t("Browser language") },
-    ...voiceLanguages.map(([value, label]) => ({ value, label })),
-  ];
-  if (language && !options.some((option) => option.value === language))
-    options.push({
-      value: language,
-      label:
-        new Intl.DisplayNames(undefined, { type: "language" }).of(language) ||
-        language,
-    });
-  const selected = language || "browser";
-  const languageName = options.find(
-    (option) => option.value === selected,
-  )!.label;
-
   return (
     <span
-      className={styles.controls}
-      role="group"
-      aria-label={t("Voice input")}
+      className={styles.control}
+      data-active={speech.active}
+      data-notice={Boolean(speech.error)}
+      data-error={speech.error || undefined}
+      tabIndex={!speech.supported ? 0 : undefined}
+      aria-describedby={!speech.supported ? hintId : undefined}
     >
-      <span className={styles.language}>
-        <ActionMenu
-          label={t("Voice language")}
-          placement="above"
-          triggerContent={
-            <span className={styles.languageCode} title={languageName}>
-              {speech.language.toUpperCase()}
-            </span>
-          }
-          items={options.map((option) => ({
-            label: option.label,
-            checked: option.value === selected,
-            run: () =>
-              onLanguage(option.value === "browser" ? undefined : option.value),
-          }))}
-          disabled={disabled || !speech.supported || speech.active}
-          disabledReason={
-            speech.active
-              ? t("Stop voice input before changing the language.")
-              : undefined
-          }
-        />
-      </span>
-      <span
-        className={styles.control}
-        data-active={speech.active}
-        data-notice={Boolean(speech.error || languageError)}
-        data-error={speech.error || undefined}
-        tabIndex={!speech.supported ? 0 : undefined}
-        aria-describedby={!speech.supported ? hintId : undefined}
+      <Button
+        className={`toolbar-button ${styles.microphone}`}
+        type="button"
+        aria-label={label}
+        aria-pressed={speech.active}
+        aria-describedby={showHint ? hintId : undefined}
+        aria-keyshortcuts={speech.active ? "Escape" : undefined}
+        disabled={disabled || !speech.supported || speech.stopping}
+        onClick={speech.toggle}
       >
-        <Button
-          className={`toolbar-button ${styles.microphone}`}
-          type="button"
-          aria-label={label}
-          aria-pressed={speech.active}
-          aria-describedby={showHint ? hintId : undefined}
-          aria-keyshortcuts={speech.active ? "Escape" : undefined}
-          disabled={disabled || !speech.supported || speech.stopping}
-          onClick={speech.toggle}
+        <svg
+          width="18"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          aria-hidden="true"
         >
-          <svg
-            width="18"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            aria-hidden="true"
-          >
-            <rect x="9" y="2" width="6" height="12" rx="3" />
-            <path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3m-4 0h8" />
-            {speech.listening && (
-              <circle
-                className={styles.recordingIndicator}
-                data-voice-recording
-                cx="19"
-                cy="5"
-                r="3"
-              />
+          <rect x="9" y="2" width="6" height="12" rx="3" />
+          <path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3m-4 0h8" />
+          {speech.listening && (
+            <circle
+              className={styles.recordingIndicator}
+              data-voice-recording
+              cx="19"
+              cy="5"
+              r="3"
+            />
+          )}
+        </svg>
+      </Button>
+      {showHint && (
+        <span id={hintId} role="tooltip" className={styles.hint}>
+          <span role="status" aria-live="polite">
+            {hint}
+            {meterUnavailable && speech.listening && (
+              <span className={styles.details}>
+                {t(
+                  "Audio visualization is unavailable. Voice input is still active.",
+                )}
+              </span>
             )}
-          </svg>
-        </Button>
-        {showHint && (
-          <span id={hintId} role="tooltip" className={styles.hint}>
-            <span role="status" aria-live="polite">
-              {hint}
-              {meterUnavailable && speech.listening && (
-                <span className={styles.details}>
-                  {t(
-                    "Audio visualization is unavailable. Voice input is still active.",
-                  )}
-                </span>
-              )}
-              {speech.error && (
-                <span className={styles.details}>
-                  {speech.error} · {speech.language}
-                  {speech.errorMessage && <span>{speech.errorMessage}</span>}
-                </span>
-              )}
-            </span>
+            {speech.error && (
+              <span className={styles.details}>
+                {speech.error} · {speech.language}
+                {speech.errorMessage && <span>{speech.errorMessage}</span>}
+              </span>
+            )}
           </span>
-        )}
-      </span>
+        </span>
+      )}
     </span>
   );
 }

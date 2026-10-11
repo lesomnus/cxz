@@ -5,6 +5,8 @@ import {
   containerPathQuery,
   downloadArgument,
   matchPaths,
+  pathKind,
+  pathDescription,
 } from "./composer-paths";
 
 describe("container path completion", () => {
@@ -93,4 +95,28 @@ describe("download command arguments", () => {
     ])
       expect(() => downloadArgument(value)).toThrow();
   });
+});
+
+it("preserves typed metadata and falls back safely on older runtimes", () => {
+  for (const kind of ["fifo", "socket", "block", "character"]) {
+    const entry = create(ProjectPathEntrySchema, { name: "entry", kind });
+    expect(pathKind(entry)).toBe(kind);
+    expect(matchPaths([entry], containerPathQuery("See `/", 6)!)[0].entry).toBe(
+      entry,
+    );
+  }
+  expect(pathKind(create(ProjectPathEntrySchema, { directory: true }))).toBe(
+    "directory",
+  );
+  expect(
+    pathKind(
+      create(ProjectPathEntrySchema, { directory: true, symlink: true }),
+    ),
+  ).toBe("symlink");
+  expect(
+    pathDescription(create(ProjectPathEntrySchema, { executable: true })),
+  ).toBe("File · Executable");
+  expect(pathKind(create(ProjectPathEntrySchema, { kind: "unexpected" }))).toBe(
+    "unknown",
+  );
 });

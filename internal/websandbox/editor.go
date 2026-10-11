@@ -21,6 +21,8 @@ func files(project string) map[string]string {
 		"/workspace/.devcontainer/devcontainer.json": "{\n  \"name\": \"Sandbox workspace\",\n  \"image\": \"mcr.microsoft.com/devcontainers/base:debian\",\n  \"workspaceFolder\": \"/workspace\"\n}\n",
 		"/home/sandbox/notes.txt":                    "Sandbox home for " + project + "\n",
 		"/home/sandbox/.config/settings.json":        "{\"sandbox\": true}\n",
+		"/home/sandbox/demo/notes.txt":               "Sandbox path hints\n",
+		"/home/sandbox/demo/run.sh":                  "#!/bin/sh\nprintf 'Sandbox script\\n'\n",
 	}
 }
 
@@ -58,6 +60,11 @@ func (p *Projects) Paths(r *resource.ProjectPathsRequest, stream grpc.ServerStre
 	if !found {
 		return status.Error(codes.NotFound, "sandbox directory not found")
 	}
+	if root == "/home/sandbox/demo" {
+		for _, name := range []string{"channel.pipe", "control.sock", "notes-link"} {
+			entries[name] = false
+		}
+	}
 	names := make([]string, 0, len(entries))
 	for name := range entries {
 		names = append(names, name)
@@ -66,7 +73,26 @@ func (p *Projects) Paths(r *resource.ProjectPathsRequest, stream grpc.ServerStre
 	reply := resource.ProjectPathsReply_builder{}.Build()
 	for _, name := range names {
 		directory := entries[name]
-		reply.SetEntries(append(reply.GetEntries(), resource.ProjectPathEntry_builder{Name: &name, Directory: &directory}.Build()))
+		kind := "file"
+		if directory {
+			kind = "directory"
+		}
+		entry := resource.ProjectPathEntry_builder{Name: &name, Directory: &directory, Kind: &kind}.Build()
+		if root == "/home/sandbox/demo" {
+			switch name {
+			case "run.sh":
+				entry.SetExecutable(true)
+			case "channel.pipe":
+				entry.SetKind("fifo")
+			case "control.sock":
+				entry.SetKind("socket")
+			case "notes-link":
+				entry.SetKind("symlink")
+				entry.SetSymlink(true)
+				entry.SetLinkTarget("notes.txt")
+			}
+		}
+		reply.SetEntries(append(reply.GetEntries(), entry))
 	}
 	return stream.Send(reply)
 }

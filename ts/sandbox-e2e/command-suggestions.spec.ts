@@ -88,7 +88,7 @@ test("suggestions cover only the text area, arrows preserve the caret and Right 
   await expect(list).toBeVisible();
 });
 
-test("fuzzy model hints use reported choices and submitting them applies the setting", async ({
+test("Tab accepts fuzzy command/model hints and submitting them applies the setting", async ({
   page,
 }) => {
   const input = page.getByRole("textbox", { name: "Message", exact: true });
@@ -102,10 +102,10 @@ test("fuzzy model hints use reported choices and submitting them applies the set
   await expect(
     list.getByRole("option", { name: /compact the current context/i }),
   ).toHaveCount(0);
-  await input.press("ArrowRight");
+  await input.press("Tab");
   await input.pressSequentially(" sandbox-claude-co");
   await expect(selected).toHaveText("/model sandbox-claude-compact");
-  await input.press("ArrowRight");
+  await input.press("Tab");
   await input.press("Control+Enter");
   await expect(input).toHaveValue("");
   await expect(page.locator(".model-field .meta-value")).toHaveText(

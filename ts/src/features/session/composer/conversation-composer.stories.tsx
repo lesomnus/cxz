@@ -42,7 +42,7 @@ export const VoiceInput: Story = {
     docs: {
       description: {
         story:
-          "Choose a recognition language from the ActionMenu to the left of the microphone, then click the microphone to start native browser dictation. The browser language is the initial fallback; an explicit choice persists as voice.language in settings.json. The input shows a softly folded lime/purple waveform driven by local microphone volume, and the language selector locks until recognition stops. Sending and switching sessions stop both recognition and metering. A metering failure leaves dictation working. Native recognition may use the browser vendor's online service; the waveform itself never records or uploads audio. This preview uses your real browser microphone; Components/AudioWaveform simulates levels without permissions.",
+          "Click the microphone to start native browser dictation. Choose the recognition language in Settings > General > Voice input. The browser language is the initial fallback; an explicit choice persists as voice.language in settings.json. The input shows a softly folded lime/purple waveform driven by local microphone volume, with no language selector in the toolbar. Sending and switching sessions stop both recognition and metering. A metering failure leaves dictation working. Native recognition may use the browser vendor's online service; the waveform itself never records or uploads audio. This preview uses your real browser microphone; Components/AudioWaveform simulates levels without permissions.",
       },
     },
   },
@@ -68,7 +68,7 @@ export const Commands: Story = {
     docs: {
       description: {
         story:
-          "Focus the editor at the end of the first line. Arrow keys navigate suggestions; Right accepts the selected hint.",
+          "Focus the editor at the end of the first line. Up/Down navigates suggestions; Tab or Right accepts the selected hint.",
       },
     },
   },
@@ -83,6 +83,21 @@ export const PathHints: Story = {
           ? [
               { name: "src", directory: true },
               { name: "README.md", directory: false },
+              { name: "bin", directory: true },
+              { name: "run.sh", executable: true },
+              { name: "channel.pipe", kind: "fifo" },
+              { name: "control.sock", kind: "socket" },
+              {
+                name: "docs-link",
+                symlink: true,
+                directory: true,
+                linkTarget: "src",
+              },
+              { name: "disk", kind: "block" },
+              { name: "console", kind: "character" },
+              ...Array.from({ length: 20 }, (_, i) => ({
+                name: `example-${i}.txt`,
+              })),
             ]
           : directory === "/workspace/src/"
             ? [
@@ -98,7 +113,7 @@ export const PathHints: Story = {
     docs: {
       description: {
         story:
-          "Place the caret inside the backticks after /workspace/. Up/Down selects immediate container paths; Tab or Right accepts. Choosing a directory continues completion inside it, Escape dismisses and Undo restores the previous draft. This example simulates path listings; the connected sandbox also supports home paths and /download <path> through the existing project APIs.",
+          "Place the caret inside the backticks after /workspace/. The responsive path grid sits above or below the typing line without covering it. Candidates fan out from the caret with the best fuzzy match nearest and selected by default. All four arrow keys move between physical cells; Tab or Enter accepts, Escape dismisses and Undo restores the previous draft. Names use different colors for directories, executables, symbolic links, pipes, sockets and devices; hover for metadata. Choosing a directory continues completion inside it. This example simulates path listings; the connected sandbox also supports home paths and /download <path> through the existing project APIs.",
       },
     },
   },

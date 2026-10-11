@@ -23,7 +23,7 @@ func (c *Client) Paths(ctx context.Context, project, path string, emit func(cont
 			return out, err
 		}
 		for _, e := range r.GetEntries() {
-			out.Entries = append(out.Entries, containerterm.PathEntry{Name: e.GetName(), Directory: e.GetDirectory(), Executable: e.GetExecutable(), Symlink: e.GetSymlink(), LinkTarget: e.GetLinkTarget()})
+			out.Entries = append(out.Entries, containerterm.PathEntry{Name: e.GetName(), Kind: e.GetKind(), Directory: e.GetDirectory(), Executable: e.GetExecutable(), Symlink: e.GetSymlink(), LinkTarget: e.GetLinkTarget()})
 		}
 		out.Truncated = r.GetTruncated()
 		if emit != nil {

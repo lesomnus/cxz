@@ -11,6 +11,8 @@ export const messages = {
     "이 언어의 로컬 인식을 사용할 수 없습니다. 브라우저 언어팩을 설치하거나 로컬 인식을 끄세요.",
 
   "Voice language": "음성 인식 언어",
+  "Use your browser's language by default, or choose a recognition language.":
+    "기본으로 브라우저의 언어를 사용하거나 음성 인식 언어를 선택하세요.",
   "Browser language": "브라우저 언어",
   "Stop voice input before changing the language.":
     "언어를 변경하려면 음성 입력을 먼저 중지하세요.",
@@ -190,6 +192,13 @@ export const messages = {
   "Loading paths…": "경로 불러오는 중…",
   "No matching paths": "일치하는 경로 없음",
   "Directory unavailable": "디렉터리를 읽을 수 없음",
+  "Symbolic link": "심볼릭 링크",
+  Pipe: "파이프",
+  Socket: "소켓",
+  "Block device": "블록 장치",
+  "Character device": "문자 장치",
+  "Unknown file type": "알 수 없는 파일 종류",
+  Executable: "실행 가능",
   "Download a container file": "컨테이너 파일 다운로드",
   "Choose a container file: /download <path>":
     "컨테이너 파일을 선택하세요: /download <경로>",

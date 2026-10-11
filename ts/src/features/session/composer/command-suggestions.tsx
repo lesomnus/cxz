@@ -98,13 +98,18 @@ export function useCommandSuggestions({
       event.shiftKey
     )
       return false;
-    if (!["ArrowUp", "ArrowDown", "ArrowRight", "Escape"].includes(event.key))
+    if (
+      !["ArrowUp", "ArrowDown", "ArrowRight", "Tab", "Escape"].includes(
+        event.key,
+      )
+    )
       return false;
     event.preventDefault();
     event.stopPropagation();
     if (event.key === "Escape")
       setChoice({ query: query!, index: selected, dismissed: true });
-    else if (event.key === "ArrowRight") commit(suggestion.command.name);
+    else if (event.key === "ArrowRight" || event.key === "Tab")
+      commit(suggestion.command.name);
     else
       setChoice({
         query: query!,

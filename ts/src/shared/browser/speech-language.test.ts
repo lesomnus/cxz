@@ -19,5 +19,6 @@ describe("speech recognition language", () => {
     expect(speechLanguage("ko-KR-u-nu-latn")).toBe("ko-KR");
     expect(speechLanguage("invalid_locale")).toBe("en-US");
     expect(speechLanguage(undefined)).toBe("en-US");
+    expect(speechLanguage(undefined, ["ko", "ko-KR"])).toBe("ko-KR");
   });
 });

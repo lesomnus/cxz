@@ -1543,8 +1543,8 @@ pre {
   z-index: 3;
 }
 .command-suggestions {
-  --command-overlay-padding: calc(2 * var(--space));
-  --command-overlay-blur: 24px;
+  --command-overlay-padding: var(--editor-hint-padding);
+  --command-overlay-blur: var(--editor-hint-blur);
   position: absolute;
   padding-block: var(--command-overlay-padding);
   pointer-events: none;
@@ -1556,8 +1556,8 @@ pre {
   position: absolute;
   inset: 0;
   z-index: 2;
-  border-radius: var(--space);
-  background: color-mix(in srgb, var(--shade-0) 32%, transparent);
+  border-radius: var(--editor-hint-radius);
+  background: var(--editor-hint-background);
   -webkit-backdrop-filter: blur(var(--command-overlay-blur));
   backdrop-filter: blur(var(--command-overlay-blur));
 }
@@ -1602,11 +1602,6 @@ pre {
 }
 .command-suggestion[data-current="true"] [data-matched="true"] {
   color: var(--shade-237);
-}
-.command-suggestions[data-path="true"]
-  .command-suggestion[data-current="true"] {
-  z-index: 4;
-  pointer-events: auto;
 }
 .command-suggestion:not([data-current="true"]):hover {
   background: var(--hover);

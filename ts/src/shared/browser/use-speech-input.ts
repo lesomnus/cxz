@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState } from "react";
-import { speechLanguage } from "./speech-language";
+import { browserSpeechLanguage } from "./speech-language";
 
 // Web Speech is not yet included in TypeScript's DOM declarations.
 type RecognitionResult = {
@@ -57,13 +57,7 @@ export function useSpeechInput({
   const [interim, setInterim] = useState("");
   const [error, setError] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
-  const language =
-    typeof navigator === "undefined"
-      ? "en-US"
-      : speechLanguage(
-          selectedLanguage || navigator.language,
-          navigator.languages,
-        );
+  const language = browserSpeechLanguage(selectedLanguage);
 
   function reportError(code: string, message: string) {
     setError(code);

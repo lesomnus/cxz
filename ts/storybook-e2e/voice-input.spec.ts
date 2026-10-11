@@ -10,7 +10,7 @@ test("composer voice input and portable waveform examples are available", async 
   );
   await expect(
     page.getByRole("button", { name: "Voice language" }),
-  ).toBeVisible();
+  ).toHaveCount(0);
   await expect(
     page.getByRole("button", { name: "Voice input", exact: true }),
   ).toBeVisible();

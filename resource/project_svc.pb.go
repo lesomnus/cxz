@@ -3225,6 +3225,7 @@ type ProjectPathEntry struct {
 	xxx_hidden_Executable  bool                   `protobuf:"varint,3,opt,name=executable"`
 	xxx_hidden_Symlink     bool                   `protobuf:"varint,4,opt,name=symlink"`
 	xxx_hidden_LinkTarget  *string                `protobuf:"bytes,5,opt,name=link_target,json=linkTarget"`
+	xxx_hidden_Kind        *string                `protobuf:"bytes,6,opt,name=kind"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
 	XXX_presence           [1]uint32
 	unknownFields          protoimpl.UnknownFields
@@ -3297,29 +3298,44 @@ func (x *ProjectPathEntry) GetLinkTarget() string {
 	return ""
 }
 
+func (x *ProjectPathEntry) GetKind() string {
+	if x != nil {
+		if x.xxx_hidden_Kind != nil {
+			return *x.xxx_hidden_Kind
+		}
+		return ""
+	}
+	return ""
+}
+
 func (x *ProjectPathEntry) SetName(v string) {
 	x.xxx_hidden_Name = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 5)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 6)
 }
 
 func (x *ProjectPathEntry) SetDirectory(v bool) {
 	x.xxx_hidden_Directory = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 5)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 6)
 }
 
 func (x *ProjectPathEntry) SetExecutable(v bool) {
 	x.xxx_hidden_Executable = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 5)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 6)
 }
 
 func (x *ProjectPathEntry) SetSymlink(v bool) {
 	x.xxx_hidden_Symlink = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 5)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 6)
 }
 
 func (x *ProjectPathEntry) SetLinkTarget(v string) {
 	x.xxx_hidden_LinkTarget = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 5)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 6)
+}
+
+func (x *ProjectPathEntry) SetKind(v string) {
+	x.xxx_hidden_Kind = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 6)
 }
 
 func (x *ProjectPathEntry) HasName() bool {
@@ -3357,6 +3373,13 @@ func (x *ProjectPathEntry) HasLinkTarget() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
 }
 
+func (x *ProjectPathEntry) HasKind() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
+}
+
 func (x *ProjectPathEntry) ClearName() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
 	x.xxx_hidden_Name = nil
@@ -3382,6 +3405,11 @@ func (x *ProjectPathEntry) ClearLinkTarget() {
 	x.xxx_hidden_LinkTarget = nil
 }
 
+func (x *ProjectPathEntry) ClearKind() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
+	x.xxx_hidden_Kind = nil
+}
+
 type ProjectPathEntry_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -3390,6 +3418,9 @@ type ProjectPathEntry_builder struct {
 	Executable *bool
 	Symlink    *bool
 	LinkTarget *string
+	// file, directory, symlink, fifo, socket, block, character, or unknown.
+	// Empty on older runtimes; callers can fall back to the boolean metadata.
+	Kind *string
 }
 
 func (b0 ProjectPathEntry_builder) Build() *ProjectPathEntry {
@@ -3397,24 +3428,28 @@ func (b0 ProjectPathEntry_builder) Build() *ProjectPathEntry {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 5)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 6)
 		x.xxx_hidden_Name = b.Name
 	}
 	if b.Directory != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 5)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 6)
 		x.xxx_hidden_Directory = *b.Directory
 	}
 	if b.Executable != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 5)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 6)
 		x.xxx_hidden_Executable = *b.Executable
 	}
 	if b.Symlink != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 5)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 6)
 		x.xxx_hidden_Symlink = *b.Symlink
 	}
 	if b.LinkTarget != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 5)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 6)
 		x.xxx_hidden_LinkTarget = b.LinkTarget
+	}
+	if b.Kind != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 6)
+		x.xxx_hidden_Kind = b.Kind
 	}
 	return m0
 }
@@ -11067,7 +11102,7 @@ const file_cxz_project_svc_g_proto_rawDesc = "" +
 	"\x04path\x18\x02 \x01(\tR\x04path\"b\n" +
 	"\x11ProjectPathsReply\x12/\n" +
 	"\aentries\x18\x01 \x03(\v2\x15.cxz.ProjectPathEntryR\aentries\x12\x1c\n" +
-	"\ttruncated\x18\x02 \x01(\bR\ttruncated\"\x9f\x01\n" +
+	"\ttruncated\x18\x02 \x01(\bR\ttruncated\"\xb3\x01\n" +
 	"\x10ProjectPathEntry\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1c\n" +
 	"\tdirectory\x18\x02 \x01(\bR\tdirectory\x12\x1e\n" +
@@ -11076,7 +11111,8 @@ const file_cxz_project_svc_g_proto_rawDesc = "" +
 	"executable\x12\x18\n" +
 	"\asymlink\x18\x04 \x01(\bR\asymlink\x12\x1f\n" +
 	"\vlink_target\x18\x05 \x01(\tR\n" +
-	"linkTarget\"O\n" +
+	"linkTarget\x12\x12\n" +
+	"\x04kind\x18\x06 \x01(\tR\x04kind\"O\n" +
 	"\x16ProjectDownloadRequest\x12!\n" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.ProjectRefR\x03ref\x12\x12\n" +
 	"\x04path\x18\x02 \x01(\tR\x04path\"I\n" +

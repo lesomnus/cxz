@@ -101,3 +101,12 @@ func TestPathListingLimit(t *testing.T) {
 		}
 	}
 }
+
+func TestSpecialPathMetadata(t *testing.T) {
+	for code, want := range map[string]string{"p": "fifo", "s": "socket", "b": "block", "c": "character", "ld": "symlink"} {
+		out, err := parsePaths([]byte(code + "\x00entry\x00target\x00"))
+		if err != nil || len(out.Entries) != 1 || out.Entries[0].Kind != want {
+			t.Fatalf("%s: %+v, %v", code, out, err)
+		}
+	}
+}
