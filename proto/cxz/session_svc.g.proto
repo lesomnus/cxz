@@ -42,7 +42,42 @@ service SessionService {
   rpc Stop(SessionControl) returns (Session);
   rpc Interrupt(SessionControl) returns (SessionReceipt);
   rpc CopyMemory(SessionCopyMemoryRequest) returns (SessionReceipt);
-  rpc Library(SessionLibraryRequest) returns (SessionMemoryReply);
+  // The project's shared memory library: each session's working memory and the
+  // snapshots saved from them, which agents read from each other. One message
+  // with an action string carried every operation; these are the reads.
+  //
+  // An empty memory id is this session's own memory, which is the one an agent
+  // writes and the one a person most often opens.
+  rpc LibraryMemories(SessionLibraryMemoriesRequest) returns (SessionLibraryMemoriesReply);
+  rpc LibraryMemory(SessionLibraryMemoryRequest) returns (SessionLibraryMemoryReply);
+  rpc LibraryDocument(SessionLibraryDocumentRequest) returns (SessionLibraryDocumentReply);
+  // Metadata changed since a cursor, for an agent keeping its own view of the
+  // library without re-reading it.
+  rpc LibraryChanges(SessionLibraryChangesRequest) returns (SessionLibraryChangesReply);
+  // Writing one document. Only this session's own memory can be written, and
+  // never one in the trash, which is why neither a memory id nor a scope
+  // appears here. revision is what the caller read; omitted for a new document.
+  rpc WriteLibraryDocument(SessionLibraryWriteRequest) returns (SessionLibraryDocumentReply);
+  // Removing one document is reversible and takes the revision that was read,
+  // so a document nobody looked at cannot be deleted by a stale view. Purging
+  // one is not reversible and applies only to a document already deleted.
+  rpc DeleteLibraryDocument(SessionLibraryDocumentEditRequest) returns (SessionLibraryMemoryReply);
+  rpc RestoreLibraryDocument(SessionLibraryDocumentEditRequest) returns (SessionLibraryMemoryReply);
+  rpc PurgeLibraryDocument(SessionLibraryDocumentEditRequest) returns (SessionLibraryMemoryReply);
+  // A snapshot keeps a copy of a memory as it is now; a fork makes one to carry
+  // on from. Merging combines two to eight. None of them accepts a deleted
+  // memory, so none of them takes a scope.
+  rpc SnapshotLibraryMemory(SessionLibraryCopyRequest) returns (SessionLibraryMemoryReply);
+  rpc ForkLibraryMemory(SessionLibraryCopyRequest) returns (SessionLibraryMemoryReply);
+  rpc MergeLibraryMemories(SessionLibraryMergeRequest) returns (SessionLibraryMemoryReply);
+  rpc RenameLibraryMemory(SessionLibraryRenameRequest) returns (SessionLibraryMemoryReply);
+  // Deleting a memory moves it to the trash. Purging one is permanent and
+  // requires that it is already there, which is why it takes no scope either.
+  rpc DeleteLibraryMemory(SessionLibraryMemoryEditRequest) returns (SessionLibraryMemoryReply);
+  rpc RestoreLibraryMemory(SessionLibraryMemoryEditRequest) returns (SessionLibraryMemoryReply);
+  rpc PurgeLibraryMemory(SessionLibraryMemoryEditRequest) returns (SessionLibraryMemoryReply);
+  // Adopt memory files an agent wrote outside the library.
+  rpc ImportLibraryMemories(SessionLibraryImportRequest) returns (SessionLibraryMemoriesReply);
   rpc Memory(SessionMemoryRequest) returns (SessionMemoryReply);
   rpc Logs(SessionLogsRequest) returns (SessionLogsReply);
   rpc Permission(SessionPermissionRequest) returns (SessionReceipt);
@@ -342,18 +377,164 @@ message SessionCopyMemoryRequest {
   string target_path = 4;
 }
 
-message SessionLibraryRequest {
+// query filters by name and document text; empty lists everything in scope.
+message SessionLibraryMemoriesRequest {
   SessionRef ref = 1;
-  bytes request = 2;
+  LibraryScope scope = 2;
+  string query = 3;
 }
 
-message SessionMemoryReply {
-  bytes data = 1;
+// location is where the library is, for a person who wants to open it directly.
+message SessionLibraryMemoriesReply {
+  repeated LibraryMemory memories = 1;
+  string location = 2;
+}
+
+// Where a memory is. The library holds what is in use; the trash holds what was
+// deleted and can still be restored. Operations that only make sense in one of
+// them do not take this -- a snapshot of a deleted memory is refused, and
+// purging one requires that it was deleted first.
+enum LibraryScope {
+  LIBRARY_SCOPE_UNSPECIFIED = 0;
+  LIBRARY_SCOPE_LIBRARY = 1;
+  LIBRARY_SCOPE_TRASH = 2;
+}
+
+// session is the session whose working memory this is; snapshot says it was
+// saved from one rather than being one. parents records what it was copied or
+// merged from.
+message LibraryMemory {
+  string id = 1;
+  string name = 2;
+  string session = 3;
+  string agent = 4;
+  google.protobuf.Timestamp created = 5;
+  google.protobuf.Timestamp updated = 6;
+  bool snapshot = 7;
+  repeated string parents = 8;
+  int64 size = 9;
+  bool deleted = 10;
+}
+
+message SessionLibraryMemoryRequest {
+  SessionRef ref = 1;
+  string id = 2;
+  LibraryScope scope = 3;
+  LibraryDocuments documents = 4;
+}
+
+message SessionLibraryMemoryReply {
+  LibraryMemory memory = 1;
+  repeated LibraryDocument documents = 2;
+  string location = 3;
+}
+
+// Which of a memory's documents to list: the ones it has, or the ones it has
+// deleted and could restore.
+enum LibraryDocuments {
+  LIBRARY_DOCUMENTS_UNSPECIFIED = 0;
+  LIBRARY_DOCUMENTS_PRESENT = 1;
+  LIBRARY_DOCUMENTS_DELETED = 2;
+}
+
+// revision is what a write has to present to prove it read this document first.
+message LibraryDocument {
+  string name = 1;
+  int64 size = 2;
+  google.protobuf.Timestamp modified = 3;
+  string revision = 4;
+  bool deleted = 5;
+}
+
+message SessionLibraryDocumentRequest {
+  SessionRef ref = 1;
+  string id = 2;
+  string document = 3;
+  LibraryScope scope = 4;
+}
+
+message SessionLibraryDocumentReply {
+  LibraryMemory memory = 1;
+  string content = 2;
+  string revision = 3;
+}
+
+// cursor continues a previous read; absent asks for a baseline of everything.
+message SessionLibraryChangesRequest {
+  SessionRef ref = 1;
+  string cursor = 2;
+  int32 limit = 3;
+}
+
+// baseline says this page is the whole current state rather than a difference.
+// reset_required says the cursor is too old to continue from, so a caller has
+// to discard what it cached and ask for a baseline.
+message SessionLibraryChangesReply {
+  repeated LibraryChange changes = 1;
+  string cursor = 2;
+  bool has_more = 3;
+  bool baseline = 4;
+  bool reset_required = 5;
+}
+
+message LibraryChange {
+  uint64 sequence = 1;
+  string kind = 2;
+  string memory = 3;
+  string document = 4;
+  string name = 5;
+  string revision = 6;
+}
+
+message SessionLibraryWriteRequest {
+  SessionRef ref = 1;
+  string document = 2;
+  string content = 3;
+  string revision = 4;
+}
+
+message SessionLibraryDocumentEditRequest {
+  SessionRef ref = 1;
+  string id = 2;
+  string document = 3;
+  string revision = 4;
+}
+
+// name is what the copy will be called.
+message SessionLibraryCopyRequest {
+  SessionRef ref = 1;
+  string id = 2;
+  string name = 3;
+}
+
+message SessionLibraryMergeRequest {
+  SessionRef ref = 1;
+  repeated string ids = 2;
+  string name = 3;
+}
+
+message SessionLibraryRenameRequest {
+  SessionRef ref = 1;
+  string id = 2;
+  string name = 3;
+}
+
+message SessionLibraryMemoryEditRequest {
+  SessionRef ref = 1;
+  string id = 2;
+}
+
+message SessionLibraryImportRequest {
+  SessionRef ref = 1;
 }
 
 message SessionMemoryRequest {
   SessionRef ref = 1;
   string path = 2;
+}
+
+message SessionMemoryReply {
+  bytes data = 1;
 }
 
 message SessionLogsRequest {
@@ -736,4 +917,9 @@ message SessionMcpRequest {
 message SessionMcpLogsReply {
   string text = 1;
   string message = 2;
+}
+
+message SessionLibraryRequest {
+  SessionRef ref = 1;
+  bytes request = 2;
 }

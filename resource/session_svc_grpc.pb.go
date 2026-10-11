@@ -19,45 +19,60 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	SessionService_Add_FullMethodName               = "/cxz.SessionService/Add"
-	SessionService_Get_FullMethodName               = "/cxz.SessionService/Get"
-	SessionService_Patch_FullMethodName             = "/cxz.SessionService/Patch"
-	SessionService_Apply_FullMethodName             = "/cxz.SessionService/Apply"
-	SessionService_Erase_FullMethodName             = "/cxz.SessionService/Erase"
-	SessionService_List_FullMethodName              = "/cxz.SessionService/List"
-	SessionService_Watch_FullMethodName             = "/cxz.SessionService/Watch"
-	SessionService_ConversationStats_FullMethodName = "/cxz.SessionService/ConversationStats"
-	SessionService_Restore_FullMethodName           = "/cxz.SessionService/Restore"
-	SessionService_Resume_FullMethodName            = "/cxz.SessionService/Resume"
-	SessionService_Stop_FullMethodName              = "/cxz.SessionService/Stop"
-	SessionService_Interrupt_FullMethodName         = "/cxz.SessionService/Interrupt"
-	SessionService_CopyMemory_FullMethodName        = "/cxz.SessionService/CopyMemory"
-	SessionService_Library_FullMethodName           = "/cxz.SessionService/Library"
-	SessionService_Memory_FullMethodName            = "/cxz.SessionService/Memory"
-	SessionService_Logs_FullMethodName              = "/cxz.SessionService/Logs"
-	SessionService_Permission_FullMethodName        = "/cxz.SessionService/Permission"
-	SessionService_Send_FullMethodName              = "/cxz.SessionService/Send"
-	SessionService_Attach_FullMethodName            = "/cxz.SessionService/Attach"
-	SessionService_Upload_FullMethodName            = "/cxz.SessionService/Upload"
-	SessionService_Activity_FullMethodName          = "/cxz.SessionService/Activity"
-	SessionService_UpdateAgent_FullMethodName       = "/cxz.SessionService/UpdateAgent"
-	SessionService_Reply_FullMethodName             = "/cxz.SessionService/Reply"
-	SessionService_History_FullMethodName           = "/cxz.SessionService/History"
-	SessionService_Transcript_FullMethodName        = "/cxz.SessionService/Transcript"
-	SessionService_EventDetails_FullMethodName      = "/cxz.SessionService/EventDetails"
-	SessionService_Background_FullMethodName        = "/cxz.SessionService/Background"
-	SessionService_Models_FullMethodName            = "/cxz.SessionService/Models"
-	SessionService_Events_FullMethodName            = "/cxz.SessionService/Events"
-	SessionService_Search_FullMethodName            = "/cxz.SessionService/Search"
-	SessionService_AuxRun_FullMethodName            = "/cxz.SessionService/AuxRun"
-	SessionService_AuxStatus_FullMethodName         = "/cxz.SessionService/AuxStatus"
-	SessionService_AuxEvents_FullMethodName         = "/cxz.SessionService/AuxEvents"
-	SessionService_AuxPrefer_FullMethodName         = "/cxz.SessionService/AuxPrefer"
-	SessionService_AuxCancel_FullMethodName         = "/cxz.SessionService/AuxCancel"
-	SessionService_Purge_FullMethodName             = "/cxz.SessionService/Purge"
-	SessionService_GetHistoryFloor_FullMethodName   = "/cxz.SessionService/GetHistoryFloor"
-	SessionService_McpLogs_FullMethodName           = "/cxz.SessionService/McpLogs"
-	SessionService_RestartMcp_FullMethodName        = "/cxz.SessionService/RestartMcp"
+	SessionService_Add_FullMethodName                    = "/cxz.SessionService/Add"
+	SessionService_Get_FullMethodName                    = "/cxz.SessionService/Get"
+	SessionService_Patch_FullMethodName                  = "/cxz.SessionService/Patch"
+	SessionService_Apply_FullMethodName                  = "/cxz.SessionService/Apply"
+	SessionService_Erase_FullMethodName                  = "/cxz.SessionService/Erase"
+	SessionService_List_FullMethodName                   = "/cxz.SessionService/List"
+	SessionService_Watch_FullMethodName                  = "/cxz.SessionService/Watch"
+	SessionService_ConversationStats_FullMethodName      = "/cxz.SessionService/ConversationStats"
+	SessionService_Restore_FullMethodName                = "/cxz.SessionService/Restore"
+	SessionService_Resume_FullMethodName                 = "/cxz.SessionService/Resume"
+	SessionService_Stop_FullMethodName                   = "/cxz.SessionService/Stop"
+	SessionService_Interrupt_FullMethodName              = "/cxz.SessionService/Interrupt"
+	SessionService_CopyMemory_FullMethodName             = "/cxz.SessionService/CopyMemory"
+	SessionService_LibraryMemories_FullMethodName        = "/cxz.SessionService/LibraryMemories"
+	SessionService_LibraryMemory_FullMethodName          = "/cxz.SessionService/LibraryMemory"
+	SessionService_LibraryDocument_FullMethodName        = "/cxz.SessionService/LibraryDocument"
+	SessionService_LibraryChanges_FullMethodName         = "/cxz.SessionService/LibraryChanges"
+	SessionService_WriteLibraryDocument_FullMethodName   = "/cxz.SessionService/WriteLibraryDocument"
+	SessionService_DeleteLibraryDocument_FullMethodName  = "/cxz.SessionService/DeleteLibraryDocument"
+	SessionService_RestoreLibraryDocument_FullMethodName = "/cxz.SessionService/RestoreLibraryDocument"
+	SessionService_PurgeLibraryDocument_FullMethodName   = "/cxz.SessionService/PurgeLibraryDocument"
+	SessionService_SnapshotLibraryMemory_FullMethodName  = "/cxz.SessionService/SnapshotLibraryMemory"
+	SessionService_ForkLibraryMemory_FullMethodName      = "/cxz.SessionService/ForkLibraryMemory"
+	SessionService_MergeLibraryMemories_FullMethodName   = "/cxz.SessionService/MergeLibraryMemories"
+	SessionService_RenameLibraryMemory_FullMethodName    = "/cxz.SessionService/RenameLibraryMemory"
+	SessionService_DeleteLibraryMemory_FullMethodName    = "/cxz.SessionService/DeleteLibraryMemory"
+	SessionService_RestoreLibraryMemory_FullMethodName   = "/cxz.SessionService/RestoreLibraryMemory"
+	SessionService_PurgeLibraryMemory_FullMethodName     = "/cxz.SessionService/PurgeLibraryMemory"
+	SessionService_ImportLibraryMemories_FullMethodName  = "/cxz.SessionService/ImportLibraryMemories"
+	SessionService_Memory_FullMethodName                 = "/cxz.SessionService/Memory"
+	SessionService_Logs_FullMethodName                   = "/cxz.SessionService/Logs"
+	SessionService_Permission_FullMethodName             = "/cxz.SessionService/Permission"
+	SessionService_Send_FullMethodName                   = "/cxz.SessionService/Send"
+	SessionService_Attach_FullMethodName                 = "/cxz.SessionService/Attach"
+	SessionService_Upload_FullMethodName                 = "/cxz.SessionService/Upload"
+	SessionService_Activity_FullMethodName               = "/cxz.SessionService/Activity"
+	SessionService_UpdateAgent_FullMethodName            = "/cxz.SessionService/UpdateAgent"
+	SessionService_Reply_FullMethodName                  = "/cxz.SessionService/Reply"
+	SessionService_History_FullMethodName                = "/cxz.SessionService/History"
+	SessionService_Transcript_FullMethodName             = "/cxz.SessionService/Transcript"
+	SessionService_EventDetails_FullMethodName           = "/cxz.SessionService/EventDetails"
+	SessionService_Background_FullMethodName             = "/cxz.SessionService/Background"
+	SessionService_Models_FullMethodName                 = "/cxz.SessionService/Models"
+	SessionService_Events_FullMethodName                 = "/cxz.SessionService/Events"
+	SessionService_Search_FullMethodName                 = "/cxz.SessionService/Search"
+	SessionService_AuxRun_FullMethodName                 = "/cxz.SessionService/AuxRun"
+	SessionService_AuxStatus_FullMethodName              = "/cxz.SessionService/AuxStatus"
+	SessionService_AuxEvents_FullMethodName              = "/cxz.SessionService/AuxEvents"
+	SessionService_AuxPrefer_FullMethodName              = "/cxz.SessionService/AuxPrefer"
+	SessionService_AuxCancel_FullMethodName              = "/cxz.SessionService/AuxCancel"
+	SessionService_Purge_FullMethodName                  = "/cxz.SessionService/Purge"
+	SessionService_GetHistoryFloor_FullMethodName        = "/cxz.SessionService/GetHistoryFloor"
+	SessionService_McpLogs_FullMethodName                = "/cxz.SessionService/McpLogs"
+	SessionService_RestartMcp_FullMethodName             = "/cxz.SessionService/RestartMcp"
 )
 
 // SessionServiceClient is the client API for SessionService service.
@@ -95,7 +110,42 @@ type SessionServiceClient interface {
 	Stop(ctx context.Context, in *SessionControl, opts ...grpc.CallOption) (*Session, error)
 	Interrupt(ctx context.Context, in *SessionControl, opts ...grpc.CallOption) (*SessionReceipt, error)
 	CopyMemory(ctx context.Context, in *SessionCopyMemoryRequest, opts ...grpc.CallOption) (*SessionReceipt, error)
-	Library(ctx context.Context, in *SessionLibraryRequest, opts ...grpc.CallOption) (*SessionMemoryReply, error)
+	// The project's shared memory library: each session's working memory and the
+	// snapshots saved from them, which agents read from each other. One message
+	// with an action string carried every operation; these are the reads.
+	//
+	// An empty memory id is this session's own memory, which is the one an agent
+	// writes and the one a person most often opens.
+	LibraryMemories(ctx context.Context, in *SessionLibraryMemoriesRequest, opts ...grpc.CallOption) (*SessionLibraryMemoriesReply, error)
+	LibraryMemory(ctx context.Context, in *SessionLibraryMemoryRequest, opts ...grpc.CallOption) (*SessionLibraryMemoryReply, error)
+	LibraryDocument(ctx context.Context, in *SessionLibraryDocumentRequest, opts ...grpc.CallOption) (*SessionLibraryDocumentReply, error)
+	// Metadata changed since a cursor, for an agent keeping its own view of the
+	// library without re-reading it.
+	LibraryChanges(ctx context.Context, in *SessionLibraryChangesRequest, opts ...grpc.CallOption) (*SessionLibraryChangesReply, error)
+	// Writing one document. Only this session's own memory can be written, and
+	// never one in the trash, which is why neither a memory id nor a scope
+	// appears here. revision is what the caller read; omitted for a new document.
+	WriteLibraryDocument(ctx context.Context, in *SessionLibraryWriteRequest, opts ...grpc.CallOption) (*SessionLibraryDocumentReply, error)
+	// Removing one document is reversible and takes the revision that was read,
+	// so a document nobody looked at cannot be deleted by a stale view. Purging
+	// one is not reversible and applies only to a document already deleted.
+	DeleteLibraryDocument(ctx context.Context, in *SessionLibraryDocumentEditRequest, opts ...grpc.CallOption) (*SessionLibraryMemoryReply, error)
+	RestoreLibraryDocument(ctx context.Context, in *SessionLibraryDocumentEditRequest, opts ...grpc.CallOption) (*SessionLibraryMemoryReply, error)
+	PurgeLibraryDocument(ctx context.Context, in *SessionLibraryDocumentEditRequest, opts ...grpc.CallOption) (*SessionLibraryMemoryReply, error)
+	// A snapshot keeps a copy of a memory as it is now; a fork makes one to carry
+	// on from. Merging combines two to eight. None of them accepts a deleted
+	// memory, so none of them takes a scope.
+	SnapshotLibraryMemory(ctx context.Context, in *SessionLibraryCopyRequest, opts ...grpc.CallOption) (*SessionLibraryMemoryReply, error)
+	ForkLibraryMemory(ctx context.Context, in *SessionLibraryCopyRequest, opts ...grpc.CallOption) (*SessionLibraryMemoryReply, error)
+	MergeLibraryMemories(ctx context.Context, in *SessionLibraryMergeRequest, opts ...grpc.CallOption) (*SessionLibraryMemoryReply, error)
+	RenameLibraryMemory(ctx context.Context, in *SessionLibraryRenameRequest, opts ...grpc.CallOption) (*SessionLibraryMemoryReply, error)
+	// Deleting a memory moves it to the trash. Purging one is permanent and
+	// requires that it is already there, which is why it takes no scope either.
+	DeleteLibraryMemory(ctx context.Context, in *SessionLibraryMemoryEditRequest, opts ...grpc.CallOption) (*SessionLibraryMemoryReply, error)
+	RestoreLibraryMemory(ctx context.Context, in *SessionLibraryMemoryEditRequest, opts ...grpc.CallOption) (*SessionLibraryMemoryReply, error)
+	PurgeLibraryMemory(ctx context.Context, in *SessionLibraryMemoryEditRequest, opts ...grpc.CallOption) (*SessionLibraryMemoryReply, error)
+	// Adopt memory files an agent wrote outside the library.
+	ImportLibraryMemories(ctx context.Context, in *SessionLibraryImportRequest, opts ...grpc.CallOption) (*SessionLibraryMemoriesReply, error)
 	Memory(ctx context.Context, in *SessionMemoryRequest, opts ...grpc.CallOption) (*SessionMemoryReply, error)
 	Logs(ctx context.Context, in *SessionLogsRequest, opts ...grpc.CallOption) (*SessionLogsReply, error)
 	Permission(ctx context.Context, in *SessionPermissionRequest, opts ...grpc.CallOption) (*SessionReceipt, error)
@@ -290,10 +340,160 @@ func (c *sessionServiceClient) CopyMemory(ctx context.Context, in *SessionCopyMe
 	return out, nil
 }
 
-func (c *sessionServiceClient) Library(ctx context.Context, in *SessionLibraryRequest, opts ...grpc.CallOption) (*SessionMemoryReply, error) {
+func (c *sessionServiceClient) LibraryMemories(ctx context.Context, in *SessionLibraryMemoriesRequest, opts ...grpc.CallOption) (*SessionLibraryMemoriesReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(SessionMemoryReply)
-	err := c.cc.Invoke(ctx, SessionService_Library_FullMethodName, in, out, cOpts...)
+	out := new(SessionLibraryMemoriesReply)
+	err := c.cc.Invoke(ctx, SessionService_LibraryMemories_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionServiceClient) LibraryMemory(ctx context.Context, in *SessionLibraryMemoryRequest, opts ...grpc.CallOption) (*SessionLibraryMemoryReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SessionLibraryMemoryReply)
+	err := c.cc.Invoke(ctx, SessionService_LibraryMemory_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionServiceClient) LibraryDocument(ctx context.Context, in *SessionLibraryDocumentRequest, opts ...grpc.CallOption) (*SessionLibraryDocumentReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SessionLibraryDocumentReply)
+	err := c.cc.Invoke(ctx, SessionService_LibraryDocument_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionServiceClient) LibraryChanges(ctx context.Context, in *SessionLibraryChangesRequest, opts ...grpc.CallOption) (*SessionLibraryChangesReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SessionLibraryChangesReply)
+	err := c.cc.Invoke(ctx, SessionService_LibraryChanges_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionServiceClient) WriteLibraryDocument(ctx context.Context, in *SessionLibraryWriteRequest, opts ...grpc.CallOption) (*SessionLibraryDocumentReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SessionLibraryDocumentReply)
+	err := c.cc.Invoke(ctx, SessionService_WriteLibraryDocument_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionServiceClient) DeleteLibraryDocument(ctx context.Context, in *SessionLibraryDocumentEditRequest, opts ...grpc.CallOption) (*SessionLibraryMemoryReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SessionLibraryMemoryReply)
+	err := c.cc.Invoke(ctx, SessionService_DeleteLibraryDocument_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionServiceClient) RestoreLibraryDocument(ctx context.Context, in *SessionLibraryDocumentEditRequest, opts ...grpc.CallOption) (*SessionLibraryMemoryReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SessionLibraryMemoryReply)
+	err := c.cc.Invoke(ctx, SessionService_RestoreLibraryDocument_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionServiceClient) PurgeLibraryDocument(ctx context.Context, in *SessionLibraryDocumentEditRequest, opts ...grpc.CallOption) (*SessionLibraryMemoryReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SessionLibraryMemoryReply)
+	err := c.cc.Invoke(ctx, SessionService_PurgeLibraryDocument_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionServiceClient) SnapshotLibraryMemory(ctx context.Context, in *SessionLibraryCopyRequest, opts ...grpc.CallOption) (*SessionLibraryMemoryReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SessionLibraryMemoryReply)
+	err := c.cc.Invoke(ctx, SessionService_SnapshotLibraryMemory_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionServiceClient) ForkLibraryMemory(ctx context.Context, in *SessionLibraryCopyRequest, opts ...grpc.CallOption) (*SessionLibraryMemoryReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SessionLibraryMemoryReply)
+	err := c.cc.Invoke(ctx, SessionService_ForkLibraryMemory_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionServiceClient) MergeLibraryMemories(ctx context.Context, in *SessionLibraryMergeRequest, opts ...grpc.CallOption) (*SessionLibraryMemoryReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SessionLibraryMemoryReply)
+	err := c.cc.Invoke(ctx, SessionService_MergeLibraryMemories_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionServiceClient) RenameLibraryMemory(ctx context.Context, in *SessionLibraryRenameRequest, opts ...grpc.CallOption) (*SessionLibraryMemoryReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SessionLibraryMemoryReply)
+	err := c.cc.Invoke(ctx, SessionService_RenameLibraryMemory_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionServiceClient) DeleteLibraryMemory(ctx context.Context, in *SessionLibraryMemoryEditRequest, opts ...grpc.CallOption) (*SessionLibraryMemoryReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SessionLibraryMemoryReply)
+	err := c.cc.Invoke(ctx, SessionService_DeleteLibraryMemory_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionServiceClient) RestoreLibraryMemory(ctx context.Context, in *SessionLibraryMemoryEditRequest, opts ...grpc.CallOption) (*SessionLibraryMemoryReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SessionLibraryMemoryReply)
+	err := c.cc.Invoke(ctx, SessionService_RestoreLibraryMemory_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionServiceClient) PurgeLibraryMemory(ctx context.Context, in *SessionLibraryMemoryEditRequest, opts ...grpc.CallOption) (*SessionLibraryMemoryReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SessionLibraryMemoryReply)
+	err := c.cc.Invoke(ctx, SessionService_PurgeLibraryMemory_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionServiceClient) ImportLibraryMemories(ctx context.Context, in *SessionLibraryImportRequest, opts ...grpc.CallOption) (*SessionLibraryMemoriesReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SessionLibraryMemoriesReply)
+	err := c.cc.Invoke(ctx, SessionService_ImportLibraryMemories_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -615,7 +815,42 @@ type SessionServiceServer interface {
 	Stop(context.Context, *SessionControl) (*Session, error)
 	Interrupt(context.Context, *SessionControl) (*SessionReceipt, error)
 	CopyMemory(context.Context, *SessionCopyMemoryRequest) (*SessionReceipt, error)
-	Library(context.Context, *SessionLibraryRequest) (*SessionMemoryReply, error)
+	// The project's shared memory library: each session's working memory and the
+	// snapshots saved from them, which agents read from each other. One message
+	// with an action string carried every operation; these are the reads.
+	//
+	// An empty memory id is this session's own memory, which is the one an agent
+	// writes and the one a person most often opens.
+	LibraryMemories(context.Context, *SessionLibraryMemoriesRequest) (*SessionLibraryMemoriesReply, error)
+	LibraryMemory(context.Context, *SessionLibraryMemoryRequest) (*SessionLibraryMemoryReply, error)
+	LibraryDocument(context.Context, *SessionLibraryDocumentRequest) (*SessionLibraryDocumentReply, error)
+	// Metadata changed since a cursor, for an agent keeping its own view of the
+	// library without re-reading it.
+	LibraryChanges(context.Context, *SessionLibraryChangesRequest) (*SessionLibraryChangesReply, error)
+	// Writing one document. Only this session's own memory can be written, and
+	// never one in the trash, which is why neither a memory id nor a scope
+	// appears here. revision is what the caller read; omitted for a new document.
+	WriteLibraryDocument(context.Context, *SessionLibraryWriteRequest) (*SessionLibraryDocumentReply, error)
+	// Removing one document is reversible and takes the revision that was read,
+	// so a document nobody looked at cannot be deleted by a stale view. Purging
+	// one is not reversible and applies only to a document already deleted.
+	DeleteLibraryDocument(context.Context, *SessionLibraryDocumentEditRequest) (*SessionLibraryMemoryReply, error)
+	RestoreLibraryDocument(context.Context, *SessionLibraryDocumentEditRequest) (*SessionLibraryMemoryReply, error)
+	PurgeLibraryDocument(context.Context, *SessionLibraryDocumentEditRequest) (*SessionLibraryMemoryReply, error)
+	// A snapshot keeps a copy of a memory as it is now; a fork makes one to carry
+	// on from. Merging combines two to eight. None of them accepts a deleted
+	// memory, so none of them takes a scope.
+	SnapshotLibraryMemory(context.Context, *SessionLibraryCopyRequest) (*SessionLibraryMemoryReply, error)
+	ForkLibraryMemory(context.Context, *SessionLibraryCopyRequest) (*SessionLibraryMemoryReply, error)
+	MergeLibraryMemories(context.Context, *SessionLibraryMergeRequest) (*SessionLibraryMemoryReply, error)
+	RenameLibraryMemory(context.Context, *SessionLibraryRenameRequest) (*SessionLibraryMemoryReply, error)
+	// Deleting a memory moves it to the trash. Purging one is permanent and
+	// requires that it is already there, which is why it takes no scope either.
+	DeleteLibraryMemory(context.Context, *SessionLibraryMemoryEditRequest) (*SessionLibraryMemoryReply, error)
+	RestoreLibraryMemory(context.Context, *SessionLibraryMemoryEditRequest) (*SessionLibraryMemoryReply, error)
+	PurgeLibraryMemory(context.Context, *SessionLibraryMemoryEditRequest) (*SessionLibraryMemoryReply, error)
+	// Adopt memory files an agent wrote outside the library.
+	ImportLibraryMemories(context.Context, *SessionLibraryImportRequest) (*SessionLibraryMemoriesReply, error)
 	Memory(context.Context, *SessionMemoryRequest) (*SessionMemoryReply, error)
 	Logs(context.Context, *SessionLogsRequest) (*SessionLogsReply, error)
 	Permission(context.Context, *SessionPermissionRequest) (*SessionReceipt, error)
@@ -710,8 +945,53 @@ func (UnimplementedSessionServiceServer) Interrupt(context.Context, *SessionCont
 func (UnimplementedSessionServiceServer) CopyMemory(context.Context, *SessionCopyMemoryRequest) (*SessionReceipt, error) {
 	return nil, status.Error(codes.Unimplemented, "method CopyMemory not implemented")
 }
-func (UnimplementedSessionServiceServer) Library(context.Context, *SessionLibraryRequest) (*SessionMemoryReply, error) {
-	return nil, status.Error(codes.Unimplemented, "method Library not implemented")
+func (UnimplementedSessionServiceServer) LibraryMemories(context.Context, *SessionLibraryMemoriesRequest) (*SessionLibraryMemoriesReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method LibraryMemories not implemented")
+}
+func (UnimplementedSessionServiceServer) LibraryMemory(context.Context, *SessionLibraryMemoryRequest) (*SessionLibraryMemoryReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method LibraryMemory not implemented")
+}
+func (UnimplementedSessionServiceServer) LibraryDocument(context.Context, *SessionLibraryDocumentRequest) (*SessionLibraryDocumentReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method LibraryDocument not implemented")
+}
+func (UnimplementedSessionServiceServer) LibraryChanges(context.Context, *SessionLibraryChangesRequest) (*SessionLibraryChangesReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method LibraryChanges not implemented")
+}
+func (UnimplementedSessionServiceServer) WriteLibraryDocument(context.Context, *SessionLibraryWriteRequest) (*SessionLibraryDocumentReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method WriteLibraryDocument not implemented")
+}
+func (UnimplementedSessionServiceServer) DeleteLibraryDocument(context.Context, *SessionLibraryDocumentEditRequest) (*SessionLibraryMemoryReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteLibraryDocument not implemented")
+}
+func (UnimplementedSessionServiceServer) RestoreLibraryDocument(context.Context, *SessionLibraryDocumentEditRequest) (*SessionLibraryMemoryReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method RestoreLibraryDocument not implemented")
+}
+func (UnimplementedSessionServiceServer) PurgeLibraryDocument(context.Context, *SessionLibraryDocumentEditRequest) (*SessionLibraryMemoryReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method PurgeLibraryDocument not implemented")
+}
+func (UnimplementedSessionServiceServer) SnapshotLibraryMemory(context.Context, *SessionLibraryCopyRequest) (*SessionLibraryMemoryReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method SnapshotLibraryMemory not implemented")
+}
+func (UnimplementedSessionServiceServer) ForkLibraryMemory(context.Context, *SessionLibraryCopyRequest) (*SessionLibraryMemoryReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method ForkLibraryMemory not implemented")
+}
+func (UnimplementedSessionServiceServer) MergeLibraryMemories(context.Context, *SessionLibraryMergeRequest) (*SessionLibraryMemoryReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method MergeLibraryMemories not implemented")
+}
+func (UnimplementedSessionServiceServer) RenameLibraryMemory(context.Context, *SessionLibraryRenameRequest) (*SessionLibraryMemoryReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method RenameLibraryMemory not implemented")
+}
+func (UnimplementedSessionServiceServer) DeleteLibraryMemory(context.Context, *SessionLibraryMemoryEditRequest) (*SessionLibraryMemoryReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteLibraryMemory not implemented")
+}
+func (UnimplementedSessionServiceServer) RestoreLibraryMemory(context.Context, *SessionLibraryMemoryEditRequest) (*SessionLibraryMemoryReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method RestoreLibraryMemory not implemented")
+}
+func (UnimplementedSessionServiceServer) PurgeLibraryMemory(context.Context, *SessionLibraryMemoryEditRequest) (*SessionLibraryMemoryReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method PurgeLibraryMemory not implemented")
+}
+func (UnimplementedSessionServiceServer) ImportLibraryMemories(context.Context, *SessionLibraryImportRequest) (*SessionLibraryMemoriesReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method ImportLibraryMemories not implemented")
 }
 func (UnimplementedSessionServiceServer) Memory(context.Context, *SessionMemoryRequest) (*SessionMemoryReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method Memory not implemented")
@@ -1036,20 +1316,290 @@ func _SessionService_CopyMemory_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SessionService_Library_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SessionLibraryRequest)
+func _SessionService_LibraryMemories_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SessionLibraryMemoriesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(SessionServiceServer).Library(ctx, in)
+		return srv.(SessionServiceServer).LibraryMemories(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: SessionService_Library_FullMethodName,
+		FullMethod: SessionService_LibraryMemories_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SessionServiceServer).Library(ctx, req.(*SessionLibraryRequest))
+		return srv.(SessionServiceServer).LibraryMemories(ctx, req.(*SessionLibraryMemoriesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SessionService_LibraryMemory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SessionLibraryMemoryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionServiceServer).LibraryMemory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SessionService_LibraryMemory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionServiceServer).LibraryMemory(ctx, req.(*SessionLibraryMemoryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SessionService_LibraryDocument_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SessionLibraryDocumentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionServiceServer).LibraryDocument(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SessionService_LibraryDocument_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionServiceServer).LibraryDocument(ctx, req.(*SessionLibraryDocumentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SessionService_LibraryChanges_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SessionLibraryChangesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionServiceServer).LibraryChanges(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SessionService_LibraryChanges_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionServiceServer).LibraryChanges(ctx, req.(*SessionLibraryChangesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SessionService_WriteLibraryDocument_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SessionLibraryWriteRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionServiceServer).WriteLibraryDocument(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SessionService_WriteLibraryDocument_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionServiceServer).WriteLibraryDocument(ctx, req.(*SessionLibraryWriteRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SessionService_DeleteLibraryDocument_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SessionLibraryDocumentEditRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionServiceServer).DeleteLibraryDocument(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SessionService_DeleteLibraryDocument_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionServiceServer).DeleteLibraryDocument(ctx, req.(*SessionLibraryDocumentEditRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SessionService_RestoreLibraryDocument_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SessionLibraryDocumentEditRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionServiceServer).RestoreLibraryDocument(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SessionService_RestoreLibraryDocument_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionServiceServer).RestoreLibraryDocument(ctx, req.(*SessionLibraryDocumentEditRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SessionService_PurgeLibraryDocument_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SessionLibraryDocumentEditRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionServiceServer).PurgeLibraryDocument(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SessionService_PurgeLibraryDocument_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionServiceServer).PurgeLibraryDocument(ctx, req.(*SessionLibraryDocumentEditRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SessionService_SnapshotLibraryMemory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SessionLibraryCopyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionServiceServer).SnapshotLibraryMemory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SessionService_SnapshotLibraryMemory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionServiceServer).SnapshotLibraryMemory(ctx, req.(*SessionLibraryCopyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SessionService_ForkLibraryMemory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SessionLibraryCopyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionServiceServer).ForkLibraryMemory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SessionService_ForkLibraryMemory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionServiceServer).ForkLibraryMemory(ctx, req.(*SessionLibraryCopyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SessionService_MergeLibraryMemories_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SessionLibraryMergeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionServiceServer).MergeLibraryMemories(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SessionService_MergeLibraryMemories_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionServiceServer).MergeLibraryMemories(ctx, req.(*SessionLibraryMergeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SessionService_RenameLibraryMemory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SessionLibraryRenameRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionServiceServer).RenameLibraryMemory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SessionService_RenameLibraryMemory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionServiceServer).RenameLibraryMemory(ctx, req.(*SessionLibraryRenameRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SessionService_DeleteLibraryMemory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SessionLibraryMemoryEditRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionServiceServer).DeleteLibraryMemory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SessionService_DeleteLibraryMemory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionServiceServer).DeleteLibraryMemory(ctx, req.(*SessionLibraryMemoryEditRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SessionService_RestoreLibraryMemory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SessionLibraryMemoryEditRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionServiceServer).RestoreLibraryMemory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SessionService_RestoreLibraryMemory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionServiceServer).RestoreLibraryMemory(ctx, req.(*SessionLibraryMemoryEditRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SessionService_PurgeLibraryMemory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SessionLibraryMemoryEditRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionServiceServer).PurgeLibraryMemory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SessionService_PurgeLibraryMemory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionServiceServer).PurgeLibraryMemory(ctx, req.(*SessionLibraryMemoryEditRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SessionService_ImportLibraryMemories_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SessionLibraryImportRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionServiceServer).ImportLibraryMemories(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SessionService_ImportLibraryMemories_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionServiceServer).ImportLibraryMemories(ctx, req.(*SessionLibraryImportRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1528,8 +2078,68 @@ var SessionService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _SessionService_CopyMemory_Handler,
 		},
 		{
-			MethodName: "Library",
-			Handler:    _SessionService_Library_Handler,
+			MethodName: "LibraryMemories",
+			Handler:    _SessionService_LibraryMemories_Handler,
+		},
+		{
+			MethodName: "LibraryMemory",
+			Handler:    _SessionService_LibraryMemory_Handler,
+		},
+		{
+			MethodName: "LibraryDocument",
+			Handler:    _SessionService_LibraryDocument_Handler,
+		},
+		{
+			MethodName: "LibraryChanges",
+			Handler:    _SessionService_LibraryChanges_Handler,
+		},
+		{
+			MethodName: "WriteLibraryDocument",
+			Handler:    _SessionService_WriteLibraryDocument_Handler,
+		},
+		{
+			MethodName: "DeleteLibraryDocument",
+			Handler:    _SessionService_DeleteLibraryDocument_Handler,
+		},
+		{
+			MethodName: "RestoreLibraryDocument",
+			Handler:    _SessionService_RestoreLibraryDocument_Handler,
+		},
+		{
+			MethodName: "PurgeLibraryDocument",
+			Handler:    _SessionService_PurgeLibraryDocument_Handler,
+		},
+		{
+			MethodName: "SnapshotLibraryMemory",
+			Handler:    _SessionService_SnapshotLibraryMemory_Handler,
+		},
+		{
+			MethodName: "ForkLibraryMemory",
+			Handler:    _SessionService_ForkLibraryMemory_Handler,
+		},
+		{
+			MethodName: "MergeLibraryMemories",
+			Handler:    _SessionService_MergeLibraryMemories_Handler,
+		},
+		{
+			MethodName: "RenameLibraryMemory",
+			Handler:    _SessionService_RenameLibraryMemory_Handler,
+		},
+		{
+			MethodName: "DeleteLibraryMemory",
+			Handler:    _SessionService_DeleteLibraryMemory_Handler,
+		},
+		{
+			MethodName: "RestoreLibraryMemory",
+			Handler:    _SessionService_RestoreLibraryMemory_Handler,
+		},
+		{
+			MethodName: "PurgeLibraryMemory",
+			Handler:    _SessionService_PurgeLibraryMemory_Handler,
+		},
+		{
+			MethodName: "ImportLibraryMemories",
+			Handler:    _SessionService_ImportLibraryMemories_Handler,
 		},
 		{
 			MethodName: "Memory",
