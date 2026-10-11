@@ -1,3 +1,24 @@
+.controls {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--control-inset);
+}
+.language {
+  width: 52px;
+  font-size: 10px;
+  font-family: ui-monospace, monospace;
+}
+.language :global(.meta-value) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.visualization {
+  position: absolute;
+  inset: auto var(--control-inline-inset) var(--control-inset);
+  height: 48px;
+  pointer-events: none;
+  opacity: 0.65;
+}
 .control {
   position: relative;
   display: inline-flex;

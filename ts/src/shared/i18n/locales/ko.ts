@@ -1,5 +1,15 @@
 import type { LanguagePack } from "#src/shared/i18n/i18n.ts";
 export const messages = {
+  "Voice language": "음성 인식 언어",
+  "Browser language": "브라우저 언어",
+  "Stop voice input before changing the language.":
+    "언어를 변경하려면 음성 입력을 먼저 중지하세요.",
+  "Audio visualization is unavailable. Voice input is still active.":
+    "음파 시각화를 사용할 수 없습니다. 음성 입력은 계속 진행됩니다.",
+  "Cannot save voice language: {error}":
+    "음성 인식 언어를 저장할 수 없습니다: {error}",
+  "{name}: Enter a valid language tag.":
+    "{name}: 유효한 언어 태그를 입력하세요.",
   "Voice input": "음성 입력",
   "Stop voice input": "음성 입력 중지",
   "Voice input is not supported in this browser. Use HTTPS or localhost in a supported browser.":

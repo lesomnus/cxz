@@ -35,6 +35,16 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const Empty: Story = {};
+export const VoiceInput: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Choose a recognition language beside the microphone, then click the microphone to start native browser dictation. The browser language is the initial fallback; an explicit choice persists as voice.language in settings.json. The input shows a soft waveform driven by local microphone volume, and the language selector locks until recognition stops. Sending and switching sessions stop both recognition and metering. A metering failure leaves dictation working. Native recognition may use the browser vendor's online service; the waveform itself never records or uploads audio. This preview uses your real browser microphone; Components/AudioWaveform simulates levels without permissions.",
+      },
+    },
+  },
+};
 export const Markdown: Story = {
   args: {
     value:

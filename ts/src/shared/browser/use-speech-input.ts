@@ -37,9 +37,11 @@ function recognitionConstructor(): RecognitionConstructor | undefined {
 /** Native browser recognition only: no bundled model or app-server audio upload. */
 export function useSpeechInput({
   disabled,
+  language: selectedLanguage,
   onTranscript,
 }: {
   disabled: boolean;
+  language?: string;
   onTranscript: (text: string) => void;
 }) {
   const [Constructor] = useState(() => recognitionConstructor());
@@ -55,7 +57,10 @@ export function useSpeechInput({
   const language =
     typeof navigator === "undefined"
       ? "en-US"
-      : speechLanguage(navigator.language, navigator.languages);
+      : speechLanguage(
+          selectedLanguage || navigator.language,
+          navigator.languages,
+        );
 
   function reportError(code: string, message: string) {
     setError(code);
@@ -80,6 +85,11 @@ export function useSpeechInput({
   useLayoutEffect(() => {
     if (disabled) cancel();
   }, [disabled]);
+  useLayoutEffect(() => {
+    if (recognition.current && recognition.current.lang !== language) cancel();
+    setError("");
+    setErrorMessage("");
+  }, [language]);
   useLayoutEffect(() => () => detach(), []);
 
   function toggle() {
@@ -156,6 +166,7 @@ export function useSpeechInput({
     active: phase !== "idle",
     stopping: phase === "stopping",
     starting: phase === "starting",
+    listening: phase === "listening",
     interim,
     error,
     errorMessage,

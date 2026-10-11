@@ -25,6 +25,15 @@ declare global {
       deferStart?: boolean;
       startError?: string;
     };
+    meterTest: {
+      contexts: AudioContext[];
+      streams: MediaStream[];
+      gain?: GainNode;
+      requests: number;
+      defer?: boolean;
+      deny?: boolean;
+      resolve?: () => void;
+    };
   }
 }
 
@@ -100,6 +109,220 @@ async function openComposer(page: Page) {
   ).toBeVisible();
   return page.getByRole("textbox", { name: "Message", exact: true });
 }
+
+async function mockMeter(page: Page) {
+  await page.addInitScript(() => {
+    const NativeContext = window.AudioContext;
+    window.meterTest = { contexts: [], streams: [], requests: 0 };
+    let latestContext: AudioContext | undefined;
+    class TrackedContext extends NativeContext {
+      constructor() {
+        super();
+        latestContext = this;
+      }
+    }
+    window.AudioContext = TrackedContext;
+    Object.defineProperty(navigator.mediaDevices, "getUserMedia", {
+      configurable: true,
+      value: async () => {
+        const meter = window.meterTest;
+        meter.requests++;
+        // Notifications own a separate long-lived AudioContext. Only count the
+        // context created immediately before this metering capture request.
+        if (latestContext) meter.contexts.push(latestContext);
+        if (meter.deny) throw new DOMException("Denied", "NotAllowedError");
+        const context = new NativeContext();
+        const oscillator = context.createOscillator();
+        const gain = context.createGain();
+        gain.gain.value = 0;
+        meter.gain = gain;
+        const destination = context.createMediaStreamDestination();
+        oscillator.connect(gain).connect(destination);
+        oscillator.start();
+        await context.resume();
+        meter.streams.push(destination.stream);
+        destination.stream.getTracks().forEach((track) => {
+          const stop = track.stop.bind(track);
+          track.stop = () => {
+            stop();
+            if (context.state !== "closed")
+              void context.close().catch(() => {});
+          };
+        });
+        if (meter.defer)
+          await new Promise<void>((resolve) => {
+            meter.resolve = resolve;
+          });
+        return destination.stream;
+      },
+    });
+  });
+}
+
+test("voice language dropdown persists a choice and locks while dictating", async ({
+  page,
+}) => {
+  await mockRecognition(page, "SpeechRecognition");
+  await openComposer(page);
+  const language = page.getByRole("combobox", { name: "Voice language" });
+  await language.click();
+  await page.getByRole("option", { name: "日本語", exact: true }).click();
+  await expect(language).toHaveText("JA-JP");
+  expect(
+    await page.evaluate(
+      () => JSON.parse(localStorage.getItem("settings")!)["voice.language"],
+    ),
+  ).toBe("ja-JP");
+  await page.reload();
+  await expect(language).toHaveText("JA-JP");
+  await page.getByRole("button", { name: "Voice input", exact: true }).click();
+  expect(await page.evaluate(() => window.voiceTest.instances[0].lang)).toBe(
+    "ja-JP",
+  );
+  await expect(language).toBeDisabled();
+  await page.getByRole("button", { name: "Stop voice input" }).click();
+  await page.evaluate(() => window.voiceTest.instances[0].end());
+  await language.click();
+  await page
+    .getByRole("option", { name: "Browser language", exact: true })
+    .click();
+  expect(
+    await page.evaluate(
+      () => JSON.parse(localStorage.getItem("settings")!)["voice.language"],
+    ),
+  ).toBeUndefined();
+  await page.getByRole("button", { name: "Voice input", exact: true }).click();
+  await page.evaluate(() =>
+    window.voiceTest.instances.at(-1)!.onerror?.({ error: "network" }),
+  );
+  await language.click();
+  await page.getByRole("option", { name: "한국어", exact: true }).click();
+  await expect(
+    page
+      .getByRole("tooltip")
+      .filter({ hasText: "service is unavailable or unreachable" }),
+  ).toHaveCount(0);
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth),
+  ).toBeLessThanOrEqual(390);
+});
+
+test("microphone waveform responds to real analysed samples, keeps typing accessible, and releases capture", async ({
+  page,
+}) => {
+  await mockRecognition(page, "SpeechRecognition");
+  await mockMeter(page);
+  const input = await openComposer(page);
+  const meter = page.locator("[data-voice-waveform]");
+  expect(await page.evaluate(() => window.meterTest.requests)).toBe(0);
+  await page.getByRole("button", { name: "Voice input", exact: true }).click();
+  await expect(meter).toHaveAttribute("data-voice-waveform", "ready");
+  const canvas = meter.locator("canvas");
+  const inkHeight = () =>
+    canvas.evaluate((el: HTMLCanvasElement) => {
+      const image = el
+        .getContext("2d")!
+        .getImageData(0, 0, el.width, el.height);
+      let top = el.height,
+        bottom = 0;
+      for (let y = 0; y < el.height; y++) {
+        for (let x = 0; x < el.width; x++) {
+          if (image.data[(y * el.width + x) * 4 + 3] > 12) {
+            top = Math.min(top, y);
+            bottom = Math.max(bottom, y);
+            break;
+          }
+        }
+      }
+      return Math.max(0, bottom - top);
+    });
+  await expect.poll(inkHeight).toBeLessThan(8);
+  await page.evaluate(() => {
+    window.meterTest.gain!.gain.value = 0.18;
+  });
+  await expect.poll(inkHeight).toBeGreaterThan(20);
+  await input.click();
+  await input.pressSequentially("still editable");
+  await expect(input).toHaveValue("still editable");
+  const inputBox = await page.locator(".composer-input").boundingBox();
+  const waveBox = await canvas.boundingBox();
+  expect(waveBox!.y).toBeGreaterThanOrEqual(inputBox!.y);
+  expect(waveBox!.y + waveBox!.height).toBeLessThanOrEqual(
+    inputBox!.y + inputBox!.height,
+  );
+  await page.screenshot({ path: "test-results/voice-waveform.png" });
+  await page.getByRole("button", { name: "Stop voice input" }).click();
+  await expect(meter).toHaveAttribute("data-voice-waveform", "idle");
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        window.meterTest.contexts.every(
+          (context) => context.state === "closed",
+        ),
+      ),
+    )
+    .toBe(true);
+  expect(
+    await page.evaluate(() =>
+      window.meterTest.streams.every((stream) =>
+        stream.getTracks().every((track) => track.readyState === "ended"),
+      ),
+    ),
+  ).toBe(true);
+});
+
+test("late meter permissions and meter errors cannot keep capture alive or interrupt dictation", async ({
+  page,
+}) => {
+  await mockRecognition(page, "SpeechRecognition");
+  await mockMeter(page);
+  const input = await openComposer(page);
+  await page.evaluate(() => {
+    window.meterTest.defer = true;
+  });
+  await page.getByRole("button", { name: "Voice input", exact: true }).click();
+  await expect
+    .poll(() => page.evaluate(() => Boolean(window.meterTest.resolve)))
+    .toBe(true);
+  await page.getByRole("button", { name: "Stop voice input" }).click();
+  await page.evaluate(() => {
+    window.meterTest.resolve!();
+    window.voiceTest.instances[0].end();
+  });
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => window.meterTest.streams[0].getTracks()[0].readyState,
+      ),
+    )
+    .toBe("ended");
+  await page.evaluate(() => {
+    window.meterTest.deny = true;
+  });
+  await page.getByRole("button", { name: "Voice input", exact: true }).click();
+  await expect(page.locator("[data-voice-waveform]")).toHaveAttribute(
+    "data-voice-waveform",
+    "unavailable",
+  );
+  await page.evaluate(() =>
+    window.voiceTest.instances[1].result([
+      { transcript: "still works", final: true },
+    ]),
+  );
+  await expect(input).toHaveValue("still works");
+  await input.press("Control+Enter");
+  await expect(input).toHaveValue("");
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        window.meterTest.contexts.every(
+          (context) => context.state === "closed",
+        ),
+      ),
+    )
+    .toBe(true);
+});
 
 test("unsupported microphone is disabled but still shows its hover and keyboard hint", async ({
   page,

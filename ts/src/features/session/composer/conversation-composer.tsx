@@ -8,7 +8,7 @@ import {
 } from "react";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
-import { Button } from "@lesomnus/cxz-ui";
+import { AudioWaveform, Button } from "@lesomnus/cxz-ui";
 import { ComposerAurora } from "./composer-aurora";
 import { TurnControls } from "./turn-controls";
 import type { TurnProgress } from "#src/features/session/model/turn-progress.ts";
@@ -18,6 +18,9 @@ import { attachmentsReady, type ComposerPaste } from "./composer-pastes";
 import type { UploadFile } from "./composer-upload";
 import { useSpeechInput } from "#src/shared/browser/use-speech-input.ts";
 import { MicrophoneControl } from "./microphone-control";
+import { useMicrophoneLevel } from "#src/shared/browser/use-microphone-level.ts";
+import { useSettings } from "#src/shared/settings/settings.ts";
+import microphoneStyles from "./microphone-control.module.css";
 
 // Presentation shared by the connected conversation and serverless UI previews.
 export function ConversationComposer({
@@ -71,10 +74,18 @@ export function ConversationComposer({
   const terminalHint = useId();
   const sendHint = useId();
   const editor = useRef<ComposerEditorHandle>(null);
+  const { store, snapshot } = useSettings();
+  const language =
+    typeof snapshot.document["voice.language"] === "string"
+      ? (snapshot.document["voice.language"] as string)
+      : undefined;
+  const [languageError, setLanguageError] = useState("");
   const speech = useSpeechInput({
     disabled: sending,
+    language,
     onTranscript: (text) => editor.current?.insertText(text),
   });
+  const meter = useMicrophoneLevel(speech.listening);
   const files = useRef<HTMLInputElement>(null);
   const directory = useRef<HTMLInputElement>(null);
   const [, refreshUploads] = useState(0);
@@ -188,7 +199,25 @@ export function ConversationComposer({
               {t("Terminal")} · ctrl+`
             </span>
           </span>
-          <MicrophoneControl speech={speech} disabled={sending} />
+          <MicrophoneControl
+            speech={speech}
+            disabled={sending}
+            language={language}
+            languageError={languageError}
+            meterUnavailable={meter.status === "unavailable"}
+            onLanguage={(language) => {
+              try {
+                store.set("voice.language", language);
+                setLanguageError("");
+              } catch (error) {
+                setLanguageError(
+                  t("Cannot save voice language: {error}", {
+                    error: String(error),
+                  }),
+                );
+              }
+            }}
+          />
           <span className="send-control">
             <Button
               className="toolbar-button send"
@@ -223,6 +252,15 @@ export function ConversationComposer({
           data-sending={sending}
           aria-busy={sending}
         >
+          <div
+            className={microphoneStyles.visualization}
+            data-voice-waveform={meter.status}
+          >
+            <AudioWaveform
+              active={meter.status === "ready"}
+              readLevel={meter.readLevel}
+            />
+          </div>
           <ComposerEditor
             value={draft}
             readOnly={sending}

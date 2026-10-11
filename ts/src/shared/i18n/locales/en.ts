@@ -1,5 +1,13 @@
 // English source messages are always bundled; other packs load on demand.
 export const messages = {
+  "Voice language": "Voice language",
+  "Browser language": "Browser language",
+  "Stop voice input before changing the language.":
+    "Stop voice input before changing the language.",
+  "Audio visualization is unavailable. Voice input is still active.":
+    "Audio visualization is unavailable. Voice input is still active.",
+  "Cannot save voice language: {error}": "Cannot save voice language: {error}",
+  "{name}: Enter a valid language tag.": "{name}: Enter a valid language tag.",
   "Voice input": "Voice input",
   "Stop voice input": "Stop voice input",
   "Voice input is not supported in this browser. Use HTTPS or localhost in a supported browser.":
