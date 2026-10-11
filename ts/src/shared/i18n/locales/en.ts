@@ -1,5 +1,44 @@
 // English source messages are always bundled; other packs load on demand.
 export const messages = {
+  "Force local recognition": "Force local recognition",
+  "Require speech recognition on this device.":
+    "Require speech recognition on this device.",
+  "Requires browser support and an installed language pack. If unavailable, voice input stops instead of using a cloud service.":
+    "Requires browser support and an installed language pack. If unavailable, voice input stops instead of using a cloud service.",
+  "This browser cannot force local speech recognition. Turn off local recognition or use a supported browser.":
+    "This browser cannot force local speech recognition. Turn off local recognition or use a supported browser.",
+  "Local recognition is unavailable for this language. Install its browser language pack or turn off local recognition.":
+    "Local recognition is unavailable for this language. Install its browser language pack or turn off local recognition.",
+
+  "Voice language": "Voice language",
+  "Browser language": "Browser language",
+  "Stop voice input before changing the language.":
+    "Stop voice input before changing the language.",
+  "Audio visualization is unavailable. Voice input is still active.":
+    "Audio visualization is unavailable. Voice input is still active.",
+  "Cannot save voice language: {error}": "Cannot save voice language: {error}",
+  "{name}: Enter a valid language tag.": "{name}: Enter a valid language tag.",
+  "Voice input": "Voice input",
+  "Stop voice input": "Stop voice input",
+  "Voice input is not supported in this browser. Use HTTPS or localhost in a supported browser.":
+    "Voice input is not supported in this browser. Use HTTPS or localhost in a supported browser.",
+  "Microphone access was denied. Allow it in your browser settings.":
+    "Microphone access was denied. Allow it in your browser settings.",
+  "No microphone is available.": "No microphone is available.",
+  "No speech detected. Try again.": "No speech detected. Try again.",
+  "The browser's speech recognition service is unavailable or unreachable. Microphone permission alone does not enable it.":
+    "The browser's speech recognition service is unavailable or unreachable. Microphone permission alone does not enable it.",
+  "This browser does not allow its speech recognition service. Check browser settings or use another supported browser.":
+    "This browser does not allow its speech recognition service. Check browser settings or use another supported browser.",
+  "The browser's speech recognition service does not support the selected language.":
+    "The browser's speech recognition service does not support the selected language.",
+  "The browser interrupted voice input. Try again.":
+    "The browser interrupted voice input. Try again.",
+  "Voice input could not start. See the browser error below.":
+    "Voice input could not start. See the browser error below.",
+  "Starting voice input…": "Starting voice input…",
+  "Finishing voice input…": "Finishing voice input…",
+  "Listening…": "Listening…",
   "Terminal {number}": "Terminal {number}",
   "Terminal tabs": "Terminal tabs",
   "New terminal": "New terminal",
@@ -139,6 +178,20 @@ export const messages = {
   "Approval question": "Approval question",
   "Auto · {syntax}": "Auto · {syntax}",
   "Awaiting answer": "Awaiting answer",
+  Canceled: "Canceled",
+  "Answer not recorded": "Answer not recorded",
+  "Hidden answer": "Hidden answer",
+  Directory: "Directory",
+  File: "File",
+  "Path suggestions": "Path suggestions",
+  "Loading paths…": "Loading paths…",
+  "No matching paths": "No matching paths",
+  "Directory unavailable": "Directory unavailable",
+  "Download a container file": "Download a container file",
+  "Choose a container file: /download <path>":
+    "Choose a container file: /download <path>",
+  "Project workspace unavailable": "Project workspace unavailable",
+  "File download was incomplete": "File download was incomplete",
   "Back to sessions": "Back to sessions",
   "Back to settings": "Back to settings",
   "Binary files cannot be previewed.": "Binary files cannot be previewed.",

@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import type { SessionEvent } from "#gen/cxz/session_pb";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
@@ -41,6 +41,14 @@ export function QuestionCard({
   const [selected, setSelected] = useState<Record<string, string[]>>({});
   const [other, setOther] = useState<Record<string, string>>({});
   const [step, setStep] = useState(0);
+  const submit = useRef<HTMLButtonElement>(null);
+  const next = useRef<HTMLButtonElement>(null);
+  const answerShortcut = () => {
+    if (busy || !qs[activeStep] || !answered(qs[activeStep].key)) return;
+    if (!submit.current?.disabled)
+      submit.current?.focus({ preventScroll: true });
+    else if (!next.current?.disabled) next.current?.click();
+  };
   const prefix = useId();
   const { expanded, toggle } = useQuestionExpansion(prefix);
   const activeStep = Math.min(step, qs.length - 1);
@@ -208,6 +216,17 @@ export function QuestionCard({
                     )}
                     type="password"
                     value={other[q.key] ?? ""}
+                    onKeyDown={(event) => {
+                      if (
+                        event.ctrlKey &&
+                        event.key === "Enter" &&
+                        !event.nativeEvent.isComposing
+                      ) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        if (!event.repeat) answerShortcut();
+                      }
+                    }}
                     onChange={(event) => {
                       if (!q.multi)
                         setSelected((old) => ({ ...old, [q.key]: [] }));
@@ -231,6 +250,7 @@ export function QuestionCard({
                       placeholder={t("Type your answer…")}
                       value={other[q.key] ?? ""}
                       pastes={pastes}
+                      onSubmitShortcut={answerShortcut}
                       onChange={(value) => {
                         if (!q.multi)
                           setSelected((old) => ({ ...old, [q.key]: [] }));
@@ -266,6 +286,7 @@ export function QuestionCard({
           </Button>
         )}
         <Button
+          ref={submit}
           disabled={busy || !!requiresForm || qs.some((q) => !answered(q.key))}
           onClick={() =>
             reply(
@@ -291,6 +312,7 @@ export function QuestionCard({
         </Button>
         {!!qs.length && (
           <Button
+            ref={next}
             disabled={busy || activeStep >= qs.length - 1}
             onClick={() => setStep((old) => Math.min(old + 1, qs.length - 1))}
           >

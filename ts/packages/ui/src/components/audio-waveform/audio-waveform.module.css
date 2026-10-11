@@ -1,0 +1,19 @@
+.waveform {
+  --waveform-positive-color: #bddb80;
+  --waveform-negative-color: #b49adc;
+  display: block;
+  width: 100%;
+  height: 48px;
+  color: var(--ui-muted);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease-out;
+}
+.waveform[data-active="true"] {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .waveform {
+    transition: none;
+  }
+}

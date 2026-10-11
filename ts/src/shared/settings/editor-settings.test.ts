@@ -17,6 +17,52 @@ function fixture(raw: string | null = null) {
   };
   return { store: new SettingsStore(storage), storage, file: () => file };
 }
+it("persists voice language with other settings and rejects invalid language tags", () => {
+  const { store, file } = fixture('{"editor.tabSize":4}');
+  store.set("voice.language", "ja-JP");
+  expect(JSON.parse(file()!)).toEqual({
+    "editor.tabSize": 4,
+    "voice.language": "ja-JP",
+  });
+  expect(
+    new SettingsStore({ getItem: () => file(), setItem: () => {} }).snapshot()
+      .document["voice.language"],
+  ).toBe("ja-JP");
+  for (const language of [
+    null,
+    false,
+    0,
+    "",
+    "not_a_locale",
+    [],
+    "a".repeat(65),
+  ])
+    expect(() => store.set("voice.language", language)).toThrow(
+      "valid language tag",
+    );
+  expect(store.snapshot().document["voice.language"]).toBe("ja-JP");
+  store.set("voice.language", undefined);
+  expect(JSON.parse(file()!)).toEqual({ "editor.tabSize": 4 });
+});
+it("persists local recognition as a boolean without changing other settings", () => {
+  const { store, file } = fixture('{"voice.language":"ko-KR"}');
+  store.set("voice.processLocally", true);
+  expect(JSON.parse(file()!)).toEqual({
+    "voice.language": "ko-KR",
+    "voice.processLocally": true,
+  });
+  expect(
+    new SettingsStore({ getItem: () => file(), setItem: () => {} }).snapshot()
+      .document["voice.processLocally"],
+  ).toBe(true);
+  for (const value of [null, 0, "true", []])
+    expect(() => store.set("voice.processLocally", value)).toThrow(
+      "Enter true or false",
+    );
+  expect(store.snapshot().document["voice.processLocally"]).toBe(true);
+  store.set("voice.processLocally", false);
+  expect(store.snapshot().document["voice.processLocally"]).toBe(false);
+});
 it("persists terminal copy preferences in the settings file and rejects non-booleans", () => {
   const { store, file } = fixture('{"future":true}');
   expect(resolveTerminalSettings(store.snapshot().document).copyOnSelect).toBe(

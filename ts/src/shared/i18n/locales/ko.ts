@@ -1,5 +1,47 @@
 import type { LanguagePack } from "#src/shared/i18n/i18n.ts";
 export const messages = {
+  "Force local recognition": "로컬 인식 강제",
+  "Require speech recognition on this device.":
+    "이 기기에서 음성을 인식하도록 강제합니다.",
+  "Requires browser support and an installed language pack. If unavailable, voice input stops instead of using a cloud service.":
+    "브라우저 지원과 설치된 언어팩이 필요합니다. 사용할 수 없으면 클라우드로 전환하지 않고 음성 입력을 중지합니다.",
+  "This browser cannot force local speech recognition. Turn off local recognition or use a supported browser.":
+    "이 브라우저에서는 로컬 음성 인식을 강제할 수 없습니다. 로컬 인식을 끄거나 지원되는 브라우저를 사용하세요.",
+  "Local recognition is unavailable for this language. Install its browser language pack or turn off local recognition.":
+    "이 언어의 로컬 인식을 사용할 수 없습니다. 브라우저 언어팩을 설치하거나 로컬 인식을 끄세요.",
+
+  "Voice language": "음성 인식 언어",
+  "Browser language": "브라우저 언어",
+  "Stop voice input before changing the language.":
+    "언어를 변경하려면 음성 입력을 먼저 중지하세요.",
+  "Audio visualization is unavailable. Voice input is still active.":
+    "음파 시각화를 사용할 수 없습니다. 음성 입력은 계속 진행됩니다.",
+  "Cannot save voice language: {error}":
+    "음성 인식 언어를 저장할 수 없습니다: {error}",
+  "{name}: Enter a valid language tag.":
+    "{name}: 유효한 언어 태그를 입력하세요.",
+  "Voice input": "음성 입력",
+  "Stop voice input": "음성 입력 중지",
+  "Voice input is not supported in this browser. Use HTTPS or localhost in a supported browser.":
+    "이 브라우저에서는 음성 입력을 지원하지 않습니다. 지원되는 브라우저에서 HTTPS 또는 localhost로 접속하세요.",
+  "Microphone access was denied. Allow it in your browser settings.":
+    "마이크 접근이 거부되었습니다. 브라우저 설정에서 허용하세요.",
+  "No microphone is available.": "사용 가능한 마이크가 없습니다.",
+  "No speech detected. Try again.":
+    "음성이 감지되지 않았습니다. 다시 시도하세요.",
+  "The browser's speech recognition service is unavailable or unreachable. Microphone permission alone does not enable it.":
+    "브라우저의 음성 인식 서비스를 사용할 수 없거나 연결하지 못했습니다. 마이크 권한만으로 인식 서비스가 활성화되지는 않습니다.",
+  "This browser does not allow its speech recognition service. Check browser settings or use another supported browser.":
+    "브라우저가 음성 인식 서비스를 허용하지 않습니다. 브라우저 설정을 확인하거나 지원되는 다른 브라우저를 사용하세요.",
+  "The browser's speech recognition service does not support the selected language.":
+    "브라우저의 음성 인식 서비스가 선택된 언어를 지원하지 않습니다.",
+  "The browser interrupted voice input. Try again.":
+    "브라우저가 음성 입력을 중단했습니다. 다시 시도하세요.",
+  "Voice input could not start. See the browser error below.":
+    "음성 입력을 시작하지 못했습니다. 아래 브라우저 오류를 확인하세요.",
+  "Starting voice input…": "음성 입력을 시작하는 중…",
+  "Finishing voice input…": "음성 입력을 마무리하는 중…",
+  "Listening…": "듣는 중…",
   "Terminal {number}": "터미널 {number}",
   "Terminal tabs": "터미널 탭",
   "New terminal": "새 터미널",
@@ -139,6 +181,20 @@ export const messages = {
   "Approval question": "승인 질문",
   "Auto · {syntax}": "자동 · {syntax}",
   "Awaiting answer": "응답 대기",
+  Canceled: "취소됨",
+  "Answer not recorded": "기록된 답변 없음",
+  "Hidden answer": "숨겨진 답변",
+  Directory: "디렉터리",
+  File: "파일",
+  "Path suggestions": "경로 힌트",
+  "Loading paths…": "경로 불러오는 중…",
+  "No matching paths": "일치하는 경로 없음",
+  "Directory unavailable": "디렉터리를 읽을 수 없음",
+  "Download a container file": "컨테이너 파일 다운로드",
+  "Choose a container file: /download <path>":
+    "컨테이너 파일을 선택하세요: /download <경로>",
+  "Project workspace unavailable": "프로젝트 워크스페이스를 사용할 수 없음",
+  "File download was incomplete": "파일 다운로드가 완료되지 않음",
   "Back to sessions": "세션으로 돌아가기",
   "Back to settings": "설정으로 돌아가기",
   "Binary files cannot be previewed.": "바이너리 파일은 미리 볼 수 없습니다.",

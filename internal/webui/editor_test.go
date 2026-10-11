@@ -175,16 +175,16 @@ func TestEditorProxyAuthenticationBytesUpgradeAndRevocation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if stream.Receive() || connect.CodeOf(stream.Err()) != connect.CodeResourceExhausted {
-		t.Fatal("unbounded preview", stream.Err())
+	if !stream.Receive() || stream.Msg().GetTotalSize() != 2<<20 {
+		t.Fatal("download still has the editor preview limit", stream.Err())
 	}
-	file = "/workspace/../secret"
+	file = "/workspace/invalid\x00path"
 	stream, err = download.CallServerStream(context.Background(), connect.NewRequest(resource.ProjectDownloadRequest_builder{Ref: resource.ProjectRef_builder{RuntimeId: &id}.Build(), Path: &file}.Build()))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if stream.Receive() || connect.CodeOf(stream.Err()) != connect.CodePermissionDenied {
-		t.Fatal("workspace path escaped", stream.Err())
+	if stream.Receive() || connect.CodeOf(stream.Err()) != connect.CodeInvalidArgument {
+		t.Fatal("invalid container path accepted", stream.Err())
 	}
 	socket, err := net.Dial("tcp", strings.TrimPrefix(server.URL, "http://"))
 	if err != nil {

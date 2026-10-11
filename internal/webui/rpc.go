@@ -4,7 +4,6 @@ package webui
 import (
 	"context"
 	"io"
-	"path"
 	"strings"
 
 	"github.com/lesomnus/cxz/resource"
@@ -28,19 +27,15 @@ func (s *projects) Get(ctx context.Context, r *resource.ProjectGetRequest) (*res
 	return s.client.Get(ctx, r)
 }
 
-func (s *projects) workspacePath(ctx context.Context, ref *resource.ProjectRef, requested string) error {
-	p, err := s.client.Get(ctx, resource.ProjectGetRequest_builder{Ref: ref, Select: resource.ProjectSelect_builder{All: boolPointer(true)}.Build()}.Build())
-	if err != nil {
-		return err
+// The manager resolves paths inside the owned project container, using its
+// remote user and workspace. Home expansion never refers to the web host.
+func containerPath(requested string, relative bool) error {
+	if requested == "" || len(requested) > 4096 || strings.ContainsAny(requested, "\x00\r\n") {
+		return status.Error(codes.InvalidArgument, "a container path is required")
 	}
-	root := p.GetStatus().GetRemoteWorkspace()
-	if root == "" || !strings.HasPrefix(root, "/") {
-		return status.Error(codes.FailedPrecondition, "project workspace unavailable")
-	}
-	root = path.Clean(root)
-	requested = path.Clean(requested)
-	if requested != root && !strings.HasPrefix(requested, strings.TrimSuffix(root, "/")+"/") {
-		return status.Error(codes.PermissionDenied, "path outside project workspace")
+	home := requested == "~" || strings.HasPrefix(requested, "~/")
+	if (strings.HasPrefix(requested, "~") && !home) || (!relative && !home && !strings.HasPrefix(requested, "/")) {
+		return status.Error(codes.InvalidArgument, "absolute or home-relative directory required")
 	}
 	return nil
 }
@@ -49,7 +44,7 @@ func boolPointer(v bool) *bool { return &v }
 func (s *projects) Paths(r *resource.ProjectPathsRequest, stream grpc.ServerStreamingServer[resource.ProjectPathsReply]) error {
 	ctx, cancel := context.WithCancel(stream.Context())
 	defer cancel()
-	if err := s.workspacePath(ctx, r.GetRef(), r.GetPath()); err != nil {
+	if err := containerPath(r.GetPath(), false); err != nil {
 		return err
 	}
 	upstream, err := s.client.Paths(ctx, r)
@@ -72,14 +67,13 @@ func (s *projects) Paths(r *resource.ProjectPathsRequest, stream grpc.ServerStre
 func (s *projects) Download(r *resource.ProjectDownloadRequest, stream grpc.ServerStreamingServer[resource.ProjectDownloadReply]) error {
 	ctx, cancel := context.WithCancel(stream.Context())
 	defer cancel()
-	if err := s.workspacePath(ctx, r.GetRef(), r.GetPath()); err != nil {
+	if err := containerPath(r.GetPath(), true); err != nil {
 		return err
 	}
 	upstream, err := s.client.Download(ctx, r)
 	if err != nil {
 		return err
 	}
-	total := 0
 	for {
 		v, err := upstream.Recv()
 		if err == io.EOF {
@@ -87,10 +81,6 @@ func (s *projects) Download(r *resource.ProjectDownloadRequest, stream grpc.Serv
 		}
 		if err != nil {
 			return err
-		}
-		total += len(v.GetData())
-		if total > 1<<20 || v.GetTotalSize() > 1<<20 {
-			return status.Error(codes.ResourceExhausted, "file preview is limited to 1 MiB")
 		}
 		if err = stream.Send(v); err != nil {
 			return err

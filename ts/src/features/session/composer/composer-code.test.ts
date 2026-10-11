@@ -4,10 +4,37 @@ import {
   composerPrompt,
   detectCodeSyntax,
   highlightCodeLines,
+  moveCodeSyntaxChoices,
 } from "./composer-code";
 import { createPaste } from "./composer-pastes";
 
 describe("composer code blocks", () => {
+  it("keeps highlight choices on their fences when surrounding text or earlier blocks change", () => {
+    const block = "```\nconst n = 1;\n```";
+    const before = "intro\n" + block;
+    const choices = new Map([[6, "javascript"]]);
+    expect([
+      ...moveCodeSyntaxChoices(before, "new intro\n" + block, choices),
+    ]).toEqual([[10, "javascript"]]);
+    expect([
+      ...moveCodeSyntaxChoices(
+        before,
+        "intro\n```\nconst n = 2;\n```",
+        choices,
+      ),
+    ]).toEqual([[6, "javascript"]]);
+    expect([
+      ...moveCodeSyntaxChoices(
+        before,
+        "intro\n```py\nconst n = 1;\n```",
+        choices,
+      ),
+    ]).toEqual([]);
+    expect([...moveCodeSyntaxChoices(before, "", choices)]).toEqual([]);
+    expect([
+      ...moveCodeSyntaxChoices(before, block + "\n" + before, choices),
+    ]).toEqual([[block.length + 7, "javascript"]]);
+  });
   it("recognizes line fences, multiple blocks and longer fences without treating inline ticks as blocks", () => {
     const text =
       "inline ``` is text\n```js\nconst n = 1;\n```\nafter\n ````python\n```\nprint(1)\n ````\n```\nunfinished";
@@ -29,22 +56,22 @@ describe("composer code blocks", () => {
     );
   });
 
-  it("detects syntax at send, canonicalizes aliases, closes unfinished fences and preserves surrounding/body text", () => {
+  it("preserves typed syntax and closes unfinished fences without injecting highlight choices", () => {
     const json = '{"hello": true, "count": 42}';
     expect(detectCodeSyntax(json)).toBe("json");
     expect(
       composerPrompt(`before\n\`\`\`\n${json}\n\`\`\`\nafter`, new Map()),
-    ).toBe(`before\n\`\`\`json\n${json}\n\`\`\`\nafter`);
+    ).toBe(`before\n\`\`\`\n${json}\n\`\`\`\nafter`);
     expect(composerPrompt("```py\nprint('hi')", new Map())).toBe(
-      "```python\nprint('hi')\n```",
+      "```py\nprint('hi')\n```",
     );
-    expect(composerPrompt("```auto\n", new Map())).toBe("```plaintext\n```");
+    expect(composerPrompt("```auto\n", new Map())).toBe("```auto\n```");
     expect(composerPrompt("plain\r\ntext", new Map())).toBe("plain\r\ntext");
     expect(composerPrompt("```custom extra\nraw\n```", new Map())).toBe(
       "```custom extra\nraw\n```",
     );
     expect(composerPrompt("````md\n```\n````", new Map())).toBe(
-      "````markdown\n```\n````",
+      "````md\n```\n````",
     );
   });
 
@@ -56,7 +83,7 @@ describe("composer code blocks", () => {
     const pastes = new Map([[paste.token, paste]]);
     expect(
       composerPrompt(`prefix\n\`\`\`\n${paste.token}\n\`\`\`\nsuffix`, pastes),
-    ).toBe(`prefix\n\`\`\`json\n${paste.body}\n\`\`\`\nsuffix`);
+    ).toBe(`prefix\n\`\`\`\n${paste.body}\n\`\`\`\nsuffix`);
     const nested = createPaste("```python\nprint('hi')\n```", "abcd1234");
     pastes.set(nested.token, nested);
     expect(composerPrompt(`before ${nested.token} after`, pastes)).toBe(
@@ -70,7 +97,7 @@ describe("composer code blocks", () => {
     expect(composerPrompt(innerLabel.token, pastes)).toBe(nested.token);
     expect(
       composerPrompt("```js\r\nlet a = 1;\r\n```\r\nafter", new Map()),
-    ).toBe("```javascript\r\nlet a = 1;\r\n```\r\nafter");
+    ).toBe("```js\r\nlet a = 1;\r\n```\r\nafter");
   });
 
   it("preserves every character through multiline highlighting and renders user HTML as text", () => {

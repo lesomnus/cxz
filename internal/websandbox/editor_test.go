@@ -51,6 +51,18 @@ func TestEditorFixturesProjectIsolationAndCancellation(t *testing.T) {
 		}
 	}
 	listing := &fixtureStream[resource.ProjectPathsReply]{ctx: t.Context()}
+	for _, directory := range []string{"/", "~", "~/.config"} {
+		hints := &fixtureStream[resource.ProjectPathsReply]{ctx: t.Context()}
+		if err := p.Paths(resource.ProjectPathsRequest_builder{Ref: project("project-1"), Path: &directory}.Build(), hints); err != nil || len(hints.replies) == 0 || len(hints.replies[0].GetEntries()) == 0 {
+			t.Fatal("missing root/home path hints", directory, err)
+		}
+	}
+	for _, source := range []string{"~/notes.txt", "README.md"} {
+		file := &fixtureStream[resource.ProjectDownloadReply]{ctx: t.Context()}
+		if err := p.Download(resource.ProjectDownloadRequest_builder{Ref: project("project-1"), Path: &source}.Build(), file); err != nil || len(file.replies) != 1 {
+			t.Fatal("home/workspace download failed", source, err)
+		}
+	}
 	if err := p.Paths(resource.ProjectPathsRequest_builder{Ref: project("project-1"), Path: proto.String("/workspace/../../etc")}.Build(), listing); status.Code(err) != codes.PermissionDenied {
 		t.Fatal("fixture path escape accepted", err)
 	}

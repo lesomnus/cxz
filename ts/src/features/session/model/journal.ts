@@ -138,6 +138,16 @@ export function questions(agent: string, e: SessionEvent): Question[] {
   }
   return result;
 }
+export function isQuestionEvent(e: SessionEvent) {
+  return (
+    e.kind === "approval" &&
+    [
+      "AskUserQuestion",
+      "item/tool/requestUserInput",
+      "agentMessage/questions",
+    ].includes(e.text)
+  );
+}
 export function approvalTitle(e: SessionEvent) {
   const p = payload(e);
   return e.text === "mcpServer/elicitation/request"

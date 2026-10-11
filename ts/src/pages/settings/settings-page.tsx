@@ -472,6 +472,31 @@ export function SettingsPage({
                   </section>
                   <section
                     className="settings-group"
+                    aria-label={t("Voice input")}
+                  >
+                    <h2>{t("Voice input")}</h2>
+                    <SettingField
+                      title={t("Force local recognition")}
+                      settingId="voice.processLocally"
+                      summary={t("Require speech recognition on this device.")}
+                      details={t(
+                        "Requires browser support and an installed language pack. If unavailable, voice input stops instead of using a cloud service.",
+                      )}
+                    >
+                      <Switch
+                        label={t("Force local recognition")}
+                        checked={
+                          snapshot.document["voice.processLocally"] === true
+                        }
+                        disabled={!snapshot.valid}
+                        onChange={(checked) =>
+                          update("voice.processLocally", checked)
+                        }
+                      />
+                    </SettingField>
+                  </section>
+                  <section
+                    className="settings-group"
                     aria-label={t("Notifications")}
                   >
                     <h2>{t("Notifications")}</h2>

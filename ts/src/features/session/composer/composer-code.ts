@@ -136,6 +136,52 @@ export function resolvedCodeSyntax(
     : syntax;
 }
 
+// Presentation choices follow their opening fence through edits, but never
+// become part of the draft or the prompt sent to the agent.
+export function moveCodeSyntaxChoices(
+  before: string,
+  after: string,
+  choices: ReadonlyMap<number, string>,
+) {
+  let prefix = 0,
+    suffix = 0;
+  while (
+    prefix < Math.min(before.length, after.length) &&
+    before[prefix] === after[prefix]
+  )
+    prefix++;
+  while (
+    suffix < Math.min(before.length, after.length) - prefix &&
+    before[before.length - 1 - suffix] === after[after.length - 1 - suffix]
+  )
+    suffix++;
+  const delta = after.length - before.length;
+  const blocks = new Map(
+    codeBlocks(after).map((block) => [block.start, block]),
+  );
+  const result = new Map<number, string>();
+  for (const block of codeBlocks(before)) {
+    const syntax = choices.get(block.start);
+    if (!syntax) continue;
+    const start =
+      block.headerEnd < prefix
+        ? block.start
+        : block.start >= before.length - suffix
+          ? block.start + delta
+          : block.start < prefix
+            ? block.start
+            : undefined;
+    const next = start === undefined ? undefined : blocks.get(start);
+    if (
+      next &&
+      before.slice(block.start, block.headerEnd) ===
+        after.slice(next.start, next.headerEnd)
+    )
+      result.set(next.start, syntax);
+  }
+  return result;
+}
+
 export function composerPrompt(
   text: string,
   pastes: Map<string, ComposerPaste>,
@@ -143,10 +189,10 @@ export function composerPrompt(
   let result = "",
     offset = 0;
   for (const block of codeBlocks(text)) {
-    const syntax = resolvedCodeSyntax(block, text, pastes);
     const header = text.slice(block.start, block.headerEnd);
-    const info = header.slice(block.indent.length + block.fence.length).trim();
-    const suffix = info.replace(/^\S+/, "");
+    const info = header
+      .slice(block.indent.length + block.fence.length)
+      .replace(/\r$/, "");
     const body = expandPastes(
       text.slice(block.bodyStart, block.bodyEnd),
       pastes,
@@ -161,8 +207,7 @@ export function composerPrompt(
       expandPastes(text.slice(offset, block.start), pastes) +
       block.indent +
       fence +
-      syntax +
-      suffix +
+      info +
       (header.endsWith("\r") ? "\r\n" : "\n") +
       body;
     if (!result.endsWith("\n")) result += "\n";

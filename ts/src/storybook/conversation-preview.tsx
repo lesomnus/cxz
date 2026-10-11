@@ -10,6 +10,7 @@ import { EventView } from "#src/features/session/conversation/event-view.tsx";
 import { transcriptEvents } from "#src/features/session/model/tool-activity.ts";
 import { attachSummaries } from "#src/features/session/model/session-aux.ts";
 import { ConversationComposer } from "#src/features/session/composer/conversation-composer.tsx";
+import type { LookupPaths } from "#src/features/session/composer/composer-paths.ts";
 import {
   createPaste,
   type ComposerPaste,
@@ -160,6 +161,7 @@ export function ComponentPreview({
   working = false,
   sessionStopped = false,
   uploadMode,
+  lookupPaths,
   children,
 }: {
   events?: SessionEvent[];
@@ -171,6 +173,7 @@ export function ComponentPreview({
   working?: boolean;
   sessionStopped?: boolean;
   uploadMode?: "ready" | "slow" | "retry";
+  lookupPaths?: LookupPaths;
   children?: ReactNode;
 }) {
   const pane = useRef<HTMLDivElement>(null);
@@ -236,6 +239,8 @@ export function ComponentPreview({
         onChange={onChange ?? noop}
         pastes={pastes.current}
         commands={sessionCommands(agent)}
+        lookupPaths={lookupPaths}
+        workspace="/workspace"
         onSubmit={(e) => e.preventDefault()}
         canSend={!!uploadMode && !!value.trim() && !sending}
         upload={uploadMode ? previewUpload : undefined}

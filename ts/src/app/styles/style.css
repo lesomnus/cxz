@@ -1531,7 +1531,9 @@ pre {
 .composer:has([data-command-open="true"]) {
   z-index: 6;
 }
-.composer-editor[data-command-open="true"] .editor-mirror > :first-child {
+.composer-editor[data-command-open="true"]:not([data-path-open="true"])
+  .editor-mirror
+  > :first-child {
   visibility: hidden;
 }
 .composer-editor[data-command-open="true"] .editor-surface {
@@ -1586,6 +1588,11 @@ pre {
   height: 100%;
   justify-content: start;
 }
+.command-suggestion[role="status"] {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
 .command-suggestions .command-suggestion[data-current="true"] {
   /* Paint the selected hint below the transparent native textarea/caret. */
   z-index: 2;
@@ -1595,6 +1602,11 @@ pre {
 }
 .command-suggestion[data-current="true"] [data-matched="true"] {
   color: var(--shade-237);
+}
+.command-suggestions[data-path="true"]
+  .command-suggestion[data-current="true"] {
+  z-index: 4;
+  pointer-events: auto;
 }
 .command-suggestion:not([data-current="true"]):hover {
   background: var(--hover);
@@ -1653,7 +1665,7 @@ pre {
   border-radius: 6px;
 }
 .editor-code-info {
-  visibility: hidden;
+  visibility: visible;
 }
 .editor-code-controls {
   position: absolute;
@@ -1661,8 +1673,11 @@ pre {
   inset: 0;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   white-space: nowrap;
+  pointer-events: none;
+}
+.editor-code-controls > * {
   pointer-events: auto;
 }
 .editor-code-controls select {

@@ -31,13 +31,17 @@ type Projection struct {
 	Rows      map[uint64]*api.Event
 	tools     map[string]*api.Event
 	approvals map[string]string
+	questions map[string]*api.Event
 	last      map[string]*api.Event
 	input     map[string]int64
 	inputSeq  map[string]uint64
 }
 
 func New() *Projection {
-	return &Projection{Rows: map[uint64]*api.Event{}, tools: map[string]*api.Event{}, approvals: map[string]string{}, last: map[string]*api.Event{}, input: map[string]int64{}, inputSeq: map[string]uint64{}}
+	return &Projection{Rows: map[uint64]*api.Event{}, tools: map[string]*api.Event{}, approvals: map[string]string{}, questions: map[string]*api.Event{}, last: map[string]*api.Event{}, input: map[string]int64{}, inputSeq: map[string]uint64{}}
+}
+func isQuestion(e *api.Event) bool {
+	return e.Kind == "approval" && slices.Contains([]string{"AskUserQuestion", "item/tool/requestUserInput", "agentMessage/questions"}, e.Text)
 }
 func identity(run, id string) string { return run + "\x00" + id }
 func object(raw []byte) map[string]any {
@@ -58,7 +62,7 @@ func child(p map[string]any, key string) map[string]any {
 func text(p map[string]any, key string) string { v, _ := p[key].(string); return v }
 func related(e *api.Event) string {
 	p := object(e.Payload)
-	if e.Text == "AskUserQuestion" || e.Text == "item/tool/requestUserInput" {
+	if isQuestion(e) {
 		return ""
 	}
 	if id := text(p, "tool_use_id"); id != "" {
@@ -190,6 +194,9 @@ func (p *Projection) Apply(e *api.Event) {
 			return
 		}
 	case "approval":
+		if isQuestion(e) {
+			p.questions[key] = e
+		}
 		if id := related(e); id != "" {
 			toolKey := identity(e.RunId, id)
 			p.approvals[key] = toolKey
@@ -204,6 +211,16 @@ func (p *Projection) Apply(e *api.Event) {
 			}
 		}
 	case "approval_resolved":
+		if request := p.questions[key]; request != nil {
+			v := proto.Clone(request).(*api.Event)
+			data := object(request.Payload)
+			resolution := object(e.Payload)
+			resolution["state"] = e.Text
+			data["cxz_resolution"] = resolution
+			v.Payload, _ = json.Marshal(data)
+			p.questions[key] = v
+			p.put(v, e.Seq)
+		}
 		if previous := p.tools[p.approvals[key]]; previous != nil {
 			v := proto.Clone(previous).(*api.Event)
 			if v.ToolSummary.State != "completed" && v.ToolSummary.State != "failed" {
@@ -304,7 +321,7 @@ var schema = []string{
 	`CREATE TABLE IF NOT EXISTS transcript_format(session_id TEXT PRIMARY KEY,version INTEGER)`,
 }
 
-const projectionFormat = 2
+const projectionFormat = 3
 
 // Sync indexes only native non-raw records. A cache backfill or retention change
 // rebuilds this disposable session index; normal queries read only the new suffix.
@@ -368,6 +385,9 @@ func Sync(ctx context.Context, db *sql.DB, id string, decode Decode) error {
 				return e
 			}
 			projection.Rows[v.Seq] = &v
+			if isQuestion(&v) {
+				projection.questions[identity(v.RunId, v.RequestId)] = &v
+			}
 			if v.ToolSummary != nil {
 				projection.tools[identity(v.RunId, v.RequestId)] = &v
 			}

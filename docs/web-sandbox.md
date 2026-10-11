@@ -251,6 +251,8 @@ with multiline text, monospace line numbers, atomic chips and native Undo/Redo.
 Answer editors and composer have independent values but share the connection's
 bounded paste cache. Submit expands chips to original text in answersJson; Enter
 inserts a line and Ctrl+Enter never sends the conversation draft from an answer.
+In Answer/Other, Ctrl+Enter advances to Next while answers remain incomplete;
+when Submit is enabled it only focuses Submit, requiring a separate activation.
 Question forms use numbered tabs with completion indicators, preserving every
 step's mounted editor and Undo history. The longest question sizes the card within
 the conversation height limit; only the option list scrolls, while Other and the
@@ -261,6 +263,13 @@ fade. Pointer proximity or answer focus raises it again without discarding state
 Cancellation retains the existing allow=false wire response.
 Password answers keep masked native controls. Chip editing releases the Question's
 inert state before native insertion, preserving the correct editor's Undo history.
+Question requests also appear as transcript activities. Their resolution stores
+the structured selections and free-text answers, masking secret fields. Double-click
+the activity to read each question and its answer. The indexed Transcript API keeps
+the request as the stable row and attaches the resolution, matching the live view.
+Older resolutions without answer data show “Answer not recorded”; unanswered and
+canceled requests remain identifiable. Storybook's EventCards includes answered and
+canceled examples. Opening a session focuses the main message editor.
 
 After an accepted Send, a non-interactive copy of the visible draft moves upward
 out of the composer while shrinking, followed by the actual input message
@@ -285,10 +294,10 @@ when the draft fits.
 Typing three backticks at the start of a line opens an inline black code
 block, inserts the matching closing fence two lines below, and places the cursor
 on the empty body line between them. The opening backticks remain visible, with
-a syntax selector beside them and a shared Close button at the right, without
+a syntax selector immediately left of the shared Close button at the right, without
 changing native text/line-number coordinates.
 The default Auto setting detects the snippet's language; manually chosen syntax
-wins. Close finishes the Markdown fence and moves the cursor into prose after it;
+wins for highlighting only and does not edit the draft. Close finishes the Markdown fence and moves the cursor into prose after it;
 it does not delete the snippet. Existing fenced snippets also render this way,
 including multiple blocks, language aliases and longer backtick fences. Code
 blocks expand the editor within its CSS height cap.
@@ -313,9 +322,9 @@ the browser. Question Other answers share the same controls.
 
 Drafts remain native Markdown, preserving selection, Undo/Redo and session draft
 restoration. Syntax detection reads a paste chip's original source, while sending
-uses the uploaded path for an attachment. Sending replaces Auto with the detected
-syntax name (or plaintext when detection is inconclusive), canonicalizes common
-language aliases and finishes an unclosed fence. Surrounding prose and code body
+uses the uploaded path for an attachment. Sending preserves the typed fence header,
+including an omitted language or a manually typed alias, and finishes an unclosed
+fence. Highlighting choices never add a language to the prompt. Surrounding prose and code body
 bytes remain intact. Question Other answers use the same editor and serialization.
 The highlighter uses a bounded common language set and cached detection samples.
 Oversized blocks or lines fall back to unhighlighted text; the limits are defined

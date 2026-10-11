@@ -5,7 +5,12 @@ import { Markdown } from "#src/shared/content/markdown.tsx";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { ActivityCard } from "./activity-card";
 import { EventDetails } from "./event-details";
-import { approvalTitle } from "#src/features/session/model/journal.ts";
+import {
+  approvalTitle,
+  isQuestionEvent,
+  questions,
+} from "#src/features/session/model/journal.ts";
+import { QuestionHistory } from "#src/features/session/questions/question-history.tsx";
 import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
 import { responseInfo } from "#src/features/session/model/response-info.ts";
 import type { ResponseCompletion } from "#src/features/session/model/response-completion.ts";
@@ -34,6 +39,8 @@ export const EventView = memo(
     loadDetails?: LoadEventDetails;
   }) {
     useLocale();
+    if (isQuestionEvent(e) && questions(agent, e).length)
+      return <QuestionHistory event={e} agent={agent} />;
     if (activity)
       return (
         <ToolActivityView
