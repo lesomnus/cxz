@@ -15,7 +15,10 @@ import {
   matchPaths,
   type LookupPaths,
 } from "./composer-paths";
-import { moveGridSelection } from "@lesomnus/cxz-ui";
+import {
+  moveRankedGridSelection,
+  type SuggestionGridLayout,
+} from "@lesomnus/cxz-ui";
 import { PathGrid } from "./path-grid";
 
 export function usePathSuggestions({
@@ -35,7 +38,10 @@ export function usePathSuggestions({
 }) {
   useLocale();
   const id = useId();
-  const [columns, setColumns] = useState(1);
+  const [layout, setLayout] = useState<SuggestionGridLayout>({
+    columns: 1,
+    order: [],
+  });
   const [selection, setSelection] = useState({
     focused: false,
     start: 0,
@@ -169,7 +175,12 @@ export function usePathSuggestions({
     else
       setChoice({
         text: signature,
-        index: moveGridSelection(selected, matches.length, columns, event.key),
+        index: moveRankedGridSelection(
+          selected,
+          layout.order,
+          layout.columns,
+          event.key,
+        ),
         dismissed: false,
       });
     return true;
@@ -194,7 +205,7 @@ export function usePathSuggestions({
         label={t("Path suggestions")}
         choose={commit}
         caret={selection.start}
-        onColumnsChange={setColumns}
+        onLayoutChange={setLayout}
         message={
           !current
             ? t("Loading paths…")

@@ -1,7 +1,17 @@
-import { useLayoutEffect, useMemo, useRef, type RefObject } from "react";
+import {
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type RefObject,
+} from "react";
 import { createPortal } from "react-dom";
-import { SuggestionGrid } from "@lesomnus/cxz-ui";
-import { caretTop } from "./editor-caret";
+import {
+  SuggestionGrid,
+  type SuggestionAnchor,
+  type SuggestionGridLayout,
+} from "@lesomnus/cxz-ui";
+import { caretPosition } from "./editor-caret";
 import { pathKind, type PathMatch } from "./composer-paths";
 import styles from "./path-grid.module.css";
 
@@ -13,7 +23,7 @@ export function PathGrid({
   label,
   choose,
   caret,
-  onColumnsChange,
+  onLayoutChange,
   message,
 }: {
   id: string;
@@ -23,10 +33,14 @@ export function PathGrid({
   label: string;
   choose: (path: string) => void;
   caret: number;
-  onColumnsChange: (columns: number) => void;
+  onLayoutChange: (layout: SuggestionGridLayout) => void;
   message: string;
 }) {
   const root = useRef<HTMLDivElement>(null);
+  const [anchor, setAnchor] = useState<SuggestionAnchor>({
+    x: 0,
+    edge: "bottom",
+  });
   const items = useMemo(
     () =>
       matches.map((match) => {
@@ -67,7 +81,8 @@ export function PathGrid({
         style = getComputedStyle(el);
       const scale = bounds.width / el.offsetWidth || 1;
       const height = parseFloat(style.lineHeight) * scale;
-      const top = bounds.top + (caretTop(el, caret) - el.scrollTop) * scale;
+      const point = caretPosition(el, caret);
+      const top = bounds.top + (point.top - el.scrollTop) * scale;
       const inset = 8,
         gap = 4 * scale;
       const width = Math.min(
@@ -94,15 +109,32 @@ export function PathGrid({
         `min(var(--path-menu-height), ${upward ? above : below}px)`,
       );
       popup.style.top = `${upward ? top - gap - popup.offsetHeight : top + height + gap}px`;
+      const next: SuggestionAnchor = {
+        x:
+          bounds.left +
+          (point.left - el.scrollLeft) * scale -
+          popup.getBoundingClientRect().left,
+        edge: upward ? "bottom" : "top",
+        distance: gap + height / 2,
+      };
+      setAnchor((old) =>
+        old.x === next.x &&
+        old.edge === next.edge &&
+        old.distance === next.distance
+          ? old
+          : next,
+      );
     };
     position();
     const resize = new ResizeObserver(position);
     resize.observe(el);
     resize.observe(popup);
+    document.fonts.addEventListener("loadingdone", position);
     window.addEventListener("resize", position);
     window.addEventListener("scroll", position, true);
     return () => {
       resize.disconnect();
+      document.fonts.removeEventListener("loadingdone", position);
       window.removeEventListener("resize", position);
       window.removeEventListener("scroll", position, true);
     };
@@ -116,7 +148,8 @@ export function PathGrid({
         items={items}
         selected={selected}
         choose={(index) => choose(matches[index].command.name)}
-        onColumnsChange={onColumnsChange}
+        anchor={anchor}
+        onLayoutChange={onLayoutChange}
         message={message}
       />
     </div>,

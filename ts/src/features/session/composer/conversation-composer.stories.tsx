@@ -113,7 +113,7 @@ export const PathHints: Story = {
     docs: {
       description: {
         story:
-          "Place the caret inside the backticks after /workspace/. The responsive path grid sits above or below the typing line without covering it. All four arrow keys move between cells; Tab or Enter accepts, Escape dismisses and Undo restores the previous draft. Names use different colors for directories, executables, symbolic links, pipes, sockets and devices; hover for metadata. Choosing a directory continues completion inside it. This example simulates path listings; the connected sandbox also supports home paths and /download <path> through the existing project APIs.",
+          "Place the caret inside the backticks after /workspace/. The responsive path grid sits above or below the typing line without covering it. Candidates fan out from the caret with the best fuzzy match nearest and selected by default. All four arrow keys move between physical cells; Tab or Enter accepts, Escape dismisses and Undo restores the previous draft. Names use different colors for directories, executables, symbolic links, pipes, sockets and devices; hover for metadata. Choosing a directory continues completion inside it. This example simulates path listings; the connected sandbox also supports home paths and /download <path> through the existing project APIs.",
       },
     },
   },

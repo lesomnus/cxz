@@ -1,6 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
-import { SuggestionGrid, moveGridSelection } from "@lesomnus/cxz-ui";
+import {
+  SuggestionGrid,
+  moveGridSelection,
+  moveRankedGridSelection,
+} from "@lesomnus/cxz-ui";
 
 const meta = {
   title: "Components/SuggestionGrid",
@@ -70,4 +74,53 @@ type Story = StoryObj<typeof meta>;
 export const Candidates: Story = {};
 export const Empty: Story = {
   args: { items: [], message: "No matching candidates" },
+};
+
+export const Radial: Story = {
+  args: { anchor: { x: 300, edge: "bottom", distance: 12 } },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Items are relevance-ranked and fan out from the caret anchor at the bottom. Rank zero is selected initially; placement adapts to the available columns.",
+      },
+    },
+  },
+  render: function RadialPreview(args) {
+    const [selected, setSelected] = useState(0),
+      [layout, setLayout] = useState({ columns: 1, order: [] as number[] });
+    return (
+      <div
+        style={{
+          width: "min(600px,85vw)",
+          fontFamily: "monospace",
+          background: "var(--ui-shade-16)",
+        }}
+      >
+        <SuggestionGrid
+          {...args}
+          selected={selected}
+          onLayoutChange={setLayout}
+          choose={setSelected}
+        />
+        <input
+          aria-label="Query"
+          placeholder="The caret anchor is centered on this edge"
+          onKeyDown={(event) => {
+            if (event.key.startsWith("Arrow")) {
+              event.preventDefault();
+              setSelected(
+                moveRankedGridSelection(
+                  selected,
+                  layout.order,
+                  layout.columns,
+                  event.key,
+                ),
+              );
+            }
+          }}
+        />
+      </div>
+    );
+  },
 };

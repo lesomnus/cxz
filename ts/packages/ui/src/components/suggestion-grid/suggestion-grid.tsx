@@ -1,5 +1,6 @@
 import {
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   type CSSProperties,
@@ -7,6 +8,13 @@ import {
 } from "react";
 import { Button } from "../button/button";
 import styles from "./suggestion-grid.module.css";
+import { radialGridOrder, type SuggestionAnchor } from "./suggestion-layout";
+export {
+  radialGridOrder,
+  moveRankedGridSelection,
+  type SuggestionAnchor,
+} from "./suggestion-layout";
+export type SuggestionGridLayout = { columns: number; order: number[] };
 
 export type SuggestionGridItem = {
   label: string;
@@ -44,6 +52,8 @@ export function SuggestionGrid({
   selected,
   choose,
   onColumnsChange,
+  onLayoutChange,
+  anchor,
   message,
   className,
 }: {
@@ -52,25 +62,83 @@ export function SuggestionGrid({
   items: readonly SuggestionGridItem[];
   selected: number;
   choose: (index: number) => void;
-  onColumnsChange: (columns: number) => void;
+  onColumnsChange?: (columns: number) => void;
+  onLayoutChange?: (layout: SuggestionGridLayout) => void;
+  anchor?: SuggestionAnchor;
   message?: string;
   className?: string;
 }) {
   const root = useRef<HTMLDivElement>(null);
-  const [columns, setColumns] = useState(1);
+  const [geometry, setGeometry] = useState({
+    centers: [0],
+    rowHeight: 0,
+    rowGap: 0,
+    padding: 0,
+  });
+  const columns = geometry.centers.length;
+  const order = useMemo(
+    () =>
+      anchor
+        ? radialGridOrder(
+            items.length,
+            geometry.centers,
+            geometry.rowHeight,
+            geometry.rowGap,
+            geometry.padding,
+            anchor,
+          )
+        : Array.from({ length: items.length }, (_, index) => index),
+    [anchor, geometry, items.length],
+  );
   useLayoutEffect(() => {
     const el = root.current!;
     const measure = () => {
-      const tracks = getComputedStyle(el).gridTemplateColumns;
-      const next = tracks === "none" ? 1 : tracks.split(" ").length;
-      setColumns(next);
-      onColumnsChange(next);
+      const css = getComputedStyle(el),
+        bounds = el.getBoundingClientRect();
+      const scale = bounds.width / el.offsetWidth || 1;
+      const widths =
+        css.gridTemplateColumns === "none"
+          ? [bounds.width]
+          : css.gridTemplateColumns
+              .split(" ")
+              .map((value) => parseFloat(value) * scale);
+      const gap = (parseFloat(css.columnGap) || 0) * scale;
+      let left = parseFloat(css.paddingLeft) * scale;
+      const centers = widths.map((width) => {
+        const center = left + width / 2;
+        left += width + gap;
+        return center;
+      });
+      const next = {
+        centers,
+        rowHeight:
+          el.querySelector('[role="gridcell"]')?.getBoundingClientRect()
+            .height ?? 0,
+        rowGap: (parseFloat(css.rowGap) || 0) * scale,
+        padding:
+          parseFloat(
+            anchor?.edge === "bottom" ? css.paddingBottom : css.paddingTop,
+          ) * scale,
+      };
+      setGeometry((old) =>
+        JSON.stringify(old) === JSON.stringify(next) ? old : next,
+      );
+      onColumnsChange?.(centers.length);
     };
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(el);
-    return () => observer.disconnect();
-  }, [onColumnsChange]);
+    const first = el.querySelector('[role="gridcell"]');
+    if (first) observer.observe(first);
+    document.fonts.addEventListener("loadingdone", measure);
+    return () => {
+      observer.disconnect();
+      document.fonts.removeEventListener("loadingdone", measure);
+    };
+  }, [onColumnsChange, anchor?.edge, items.length]);
+  useLayoutEffect(() => {
+    onLayoutChange?.({ columns, order });
+  }, [columns, order, onLayoutChange]);
   useLayoutEffect(() => {
     const el = root.current!;
     const item = el.querySelector<HTMLElement>('[aria-selected="true"]');
@@ -86,7 +154,7 @@ export function SuggestionGrid({
     const observer = new ResizeObserver(ensureVisible);
     observer.observe(el);
     return () => observer.disconnect();
-  }, [selected, items, columns]);
+  }, [selected, items, columns, order]);
   return (
     <div
       className={[styles.grid, className].filter(Boolean).join(" ")}
@@ -94,16 +162,29 @@ export function SuggestionGrid({
       id={id}
       role="grid"
       aria-label={label}
-      aria-rowcount={Math.max(1, Math.ceil(items.length / columns))}
+      aria-rowcount={Math.max(1, Math.ceil(order.length / columns))}
       aria-colcount={columns}
     >
       {items.length ? (
-        Array.from({ length: Math.ceil(items.length / columns) }, (_, row) => (
-          <div key={row} role="row" className={styles.row}>
-            {items
+        Array.from({ length: Math.ceil(order.length / columns) }, (_, row) => (
+          <div
+            key={row}
+            role="row"
+            aria-rowindex={row + 1}
+            className={styles.row}
+          >
+            {order
               .slice(row * columns, (row + 1) * columns)
-              .map((item, column) => {
-                const index = row * columns + column;
+              .map((index, column) => {
+                if (index < 0)
+                  return (
+                    <div
+                      key={`empty-${column}`}
+                      className={styles.placeholder}
+                      aria-hidden="true"
+                    />
+                  );
+                const item = items[index];
                 return (
                   <Button
                     key={index}
@@ -113,6 +194,8 @@ export function SuggestionGrid({
                     role="gridcell"
                     tabIndex={-1}
                     aria-selected={index === selected}
+                    aria-colindex={column + 1}
+                    data-rank={index}
                     aria-label={item.label}
                     title={item.title ?? item.label}
                     style={

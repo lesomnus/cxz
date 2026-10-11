@@ -1,6 +1,6 @@
 // Measure the native caret's wrapped line without altering the input or its
 // selection. The offscreen mirror uses the textarea's actual font and width.
-export function caretTop(input: HTMLTextAreaElement, offset: number) {
+export function caretPosition(input: HTMLTextAreaElement, offset: number) {
   const style = getComputedStyle(input);
   const mirror = document.createElement("div");
   Object.assign(mirror.style, {
@@ -12,7 +12,17 @@ export function caretTop(input: HTMLTextAreaElement, offset: number) {
     boxSizing: "border-box",
     whiteSpace: "pre-wrap",
     overflowWrap: "anywhere",
-    font: style.font,
+    fontFamily: style.fontFamily,
+    fontSize: style.fontSize,
+    fontWeight: style.fontWeight,
+    fontStyle: style.fontStyle,
+    fontStretch: style.fontStretch,
+    fontVariant: style.fontVariant,
+    fontKerning: style.fontKerning,
+    fontVariantLigatures: style.fontVariantLigatures,
+    fontFeatureSettings: style.fontFeatureSettings,
+    fontVariationSettings: style.fontVariationSettings,
+    wordSpacing: style.wordSpacing,
     lineHeight: style.lineHeight,
     letterSpacing: style.letterSpacing,
     tabSize: style.tabSize,
@@ -21,11 +31,20 @@ export function caretTop(input: HTMLTextAreaElement, offset: number) {
   });
   mirror.textContent = input.value.slice(0, offset);
   const marker = document.createElement("span");
-  marker.textContent = input.value[offset] || ".";
+  marker.textContent = input.value[offset] || "\u200b";
+  Object.assign(marker.style, {
+    display: "inline-block",
+    height: style.lineHeight,
+    verticalAlign: "top",
+  });
   mirror.append(marker);
   document.body.append(mirror);
-  const top =
-    marker.getBoundingClientRect().top - mirror.getBoundingClientRect().top;
+  const point = marker.getBoundingClientRect(),
+    bounds = mirror.getBoundingClientRect();
+  const position = {
+    top: point.top - bounds.top,
+    left: point.left - bounds.left,
+  };
   mirror.remove();
-  return top;
+  return position;
 }

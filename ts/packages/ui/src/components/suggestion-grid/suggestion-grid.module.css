@@ -44,3 +44,7 @@
   white-space: nowrap;
   text-overflow: ellipsis;
 }
+
+.placeholder {
+  min-width: 0;
+}
