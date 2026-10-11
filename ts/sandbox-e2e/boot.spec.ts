@@ -8,6 +8,18 @@ test.use({
   hasTouch: false,
 });
 
+// The page's boot deadline is fifteen seconds, chosen for a person on a slow
+// machine, and these tests wait it out on purpose. Only the one that never
+// boots successfully shortens it: a measured boot here is 385ms cold and the
+// deadline bounds every attempt, so a short one would also cut off the retry
+// these other two require -- on a slower machine than this, which is the flake
+// the long deadlines exist to prevent.
+//
+// Where nothing has to fit inside it, the wait is pure cost: the sequence being
+// verified is the same at 300ms, and 300ms of a stall that is already forced is
+// not load-dependent.
+const neverBoots = "/sandbox.html?boot-deadline=300";
+
 // The failure this guards against is a boot that never finishes and never says
 // anything: the module's response arrives, no progress follows, and the page
 // stays on "Starting sandbox…" until whatever is watching gives up. It is rare
@@ -42,7 +54,7 @@ test("a stalled module boots on the retry and says what happened", async ({
 // same hang with more logs.
 test("a boot that keeps stalling is reported", async ({ page }) => {
   await page.route("**/app.wasm", async () => {});
-  await page.goto("/sandbox.html");
+  await page.goto(neverBoots);
   await expect(page.getByRole("alert")).toHaveText(/did not start within/, {
     timeout: 45000,
   });

@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
-import { boot, BootTimeout, deadline } from "./sandbox-boot";
+import {
+  boot,
+  BootDeadlineMs,
+  bootDeadline,
+  BootTimeout,
+  deadline,
+} from "./sandbox-boot";
 
 describe("sandbox boot", () => {
   it("resolves what finishes in time and clears its timer", async () => {
@@ -81,5 +87,31 @@ describe("sandbox boot", () => {
     };
     await expect(boot(attempt, { ms: 5 })).resolves.toBe("ready");
     expect(calls).toEqual(["closed", "retry"]);
+  });
+});
+
+describe("the deadline the page uses", () => {
+  it("is the product's unless the URL names another", () => {
+    expect(bootDeadline("")).toBe(BootDeadlineMs);
+    expect(bootDeadline("?scenario=session-2")).toBe(BootDeadlineMs);
+    expect(bootDeadline("?boot-deadline=300")).toBe(300);
+  });
+
+  // The parameter exists so a test that forces a stall need not wait out a
+  // deadline meant for people. It must not be usable to make a person's
+  // sandbox fail to start, so anything outside a second, or not a number at
+  // all, is ignored rather than honoured or refused.
+  it("ignores a value that would break a real start", () => {
+    for (const search of [
+      "?boot-deadline=0",
+      "?boot-deadline=-1",
+      "?boot-deadline=1001",
+      "?boot-deadline=60000",
+      "?boot-deadline=soon",
+      "?boot-deadline=",
+      "?boot-deadline=NaN",
+      "?boot-deadline=Infinity",
+    ])
+      expect(bootDeadline(search), search).toBe(BootDeadlineMs);
   });
 });
