@@ -215,12 +215,19 @@ cxz ai models ACCOUNT
 cxz ai login ACCOUNT                 # dedicated login, on the manager host
 cxz ai set summary    --account ACCOUNT --model MODEL [--effort EFFORT]
 cxz ai set suggestion --account ACCOUNT --model MODEL [--effort EFFORT]
-cxz ai disable summary|suggestion
+cxz ai set title      --account ACCOUNT --model MODEL [--effort EFFORT]
+cxz ai disable summary|suggestion|title
 cxz ai status SESSION
 cxz ai cancel SESSION
+cxz ai title SESSION                 # generate from retained completed turns
+cxz ai title SESSION --text TITLE    # name it without a model
 ```
 
-Background summaries and next-message suggestions, on their own account. See
+Background summaries, next-message suggestions and session titles, on their own
+account. `set` and `disable` name a kind, `models` and `login` name an account,
+and the rest name a session. Generating a title needs a configured title profile
+and an idle session; naming one with `--text` needs neither, and either way
+automatic naming for that session ends. See
 [auxiliary AI](auxiliary-ai.md).
 
 ## The shared Docker engine
