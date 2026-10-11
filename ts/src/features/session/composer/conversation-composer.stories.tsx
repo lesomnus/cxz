@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useArgs } from "storybook/preview-api";
 import { useState } from "react";
+import { create } from "@bufbuild/protobuf";
+import { ProjectPathEntrySchema } from "#gen/cxz/project_svc_pb";
 import {
   ComponentPreview,
   samplePaste,
@@ -67,6 +69,36 @@ export const Commands: Story = {
       description: {
         story:
           "Focus the editor at the end of the first line. Arrow keys navigate suggestions; Right accepts the selected hint.",
+      },
+    },
+  },
+};
+export const PathHints: Story = {
+  args: {
+    value: "Inspect `/workspace/` before changing files.",
+    lookupPaths: async (directory, signal) => {
+      signal.throwIfAborted();
+      const entries =
+        directory === "/workspace/"
+          ? [
+              { name: "src", directory: true },
+              { name: "README.md", directory: false },
+            ]
+          : directory === "/workspace/src/"
+            ? [
+                { name: "app.ts", directory: false },
+                { name: "main.go", directory: false },
+              ]
+            : [];
+      return entries.map((entry) => create(ProjectPathEntrySchema, entry));
+    },
+  },
+  argTypes: { lookupPaths: { control: false } },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Place the caret inside the backticks after /workspace/. Up/Down selects immediate container paths; Tab or Right accepts. Choosing a directory continues completion inside it, Escape dismisses and Undo restores the previous draft. This example simulates path listings; the connected sandbox also supports home paths and /download <path> through the existing project APIs.",
       },
     },
   },

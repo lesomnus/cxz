@@ -3,6 +3,14 @@ import { attachSummaries } from "#src/features/session/model/session-aux.ts";
 import { useSessionAux } from "#src/features/session/model/use-session-aux.ts";
 import { QuestionCard } from "#src/features/session/questions/question-card.tsx";
 import { ConversationComposer } from "#src/features/session/composer/conversation-composer.tsx";
+import {
+  downloadArgument,
+  type LookupPaths,
+} from "#src/features/session/composer/composer-paths.ts";
+import {
+  containerDownload,
+  saveContainerDownload,
+} from "#src/features/session/composer/composer-download.ts";
 import { SessionMenu } from "#src/features/session/components/session-menu.tsx";
 import { manageSession } from "#src/features/session/model/session-actions.ts";
 import { editSession } from "#src/features/session/model/session-edit.ts";
@@ -95,6 +103,8 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
   const scrollMotion = useRef(0);
   const composerInput = useRef<HTMLDivElement>(null);
   const composer = useRef<HTMLFormElement>(null);
+  const downloadRequest = useRef<AbortController | null>(null);
+  useEffect(() => () => downloadRequest.current?.abort(), []);
   useEffect(() => {
     composerInput.current
       ?.querySelector<HTMLTextAreaElement>("textarea")
@@ -545,6 +555,21 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
   const sessionProject =
     s?.project?.id &&
     projects.find((project) => key(project.id) === key(s.project!.id));
+  const projectId = sessionProject?.runtimeId ?? "";
+  const lookupPaths = useCallback<LookupPaths>(
+    async (path, signal) => {
+      const entries = [];
+      for await (const reply of c.projects.paths(
+        { ref: ref(projectId), path },
+        { signal, timeoutMs: 5000 },
+      )) {
+        entries.push(...reply.entries);
+        if (entries.length >= 2048) break;
+      }
+      return entries.slice(0, 2048);
+    },
+    [c, projectId],
+  );
   const completions = transcript.completions;
   // Summaries arrive on their own stream and are matched to the turn each one
   // names, not merged into the journal: they are not events.
@@ -693,6 +718,45 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
       if (c.drafts.get(id) === sent) c.drafts.set(id, "");
       setDraft((old) => (old === sent ? "" : old));
     };
+    let downloadPath: string | undefined;
+    try {
+      downloadPath = downloadArgument(sent);
+    } catch (error) {
+      setError(String(error));
+      return;
+    }
+    if (downloadPath !== undefined) {
+      if (lock.current) return;
+      if (!projectId) {
+        setError(t("Project workspace unavailable"));
+        return;
+      }
+      const controller = new AbortController();
+      downloadRequest.current = controller;
+      lock.current = true;
+      setSending(true);
+      setBusy(true);
+      setError("");
+      try {
+        const blob = await containerDownload(
+          c.projects,
+          projectId,
+          downloadPath,
+          controller.signal,
+        );
+        if (controller.signal.aborted) return;
+        saveContainerDownload(blob, downloadPath);
+        clearCommand();
+      } catch (error) {
+        if (!controller.signal.aborted) setError(String(error));
+      } finally {
+        downloadRequest.current = null;
+        lock.current = false;
+        setSending(false);
+        setBusy(false);
+      }
+      return;
+    }
     const setting = /^\/(model|effort)(?:[ \t]+(\S+))?[ \t]*$/.exec(sent);
     if (setting) {
       const kind = setting[1] as "model" | "effort";
@@ -858,6 +922,8 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         onChange={setDraft}
         onSubmit={send}
         commands={sessionCommands(s?.agent ?? "", catalog)}
+        lookupPaths={projectId ? lookupPaths : undefined}
+        workspace={sessionProject?.status?.remoteWorkspace}
         canSend={!busy && !!s && !!draft.trim()}
         sending={sending}
         busy={busy}

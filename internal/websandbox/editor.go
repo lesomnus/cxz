@@ -19,7 +19,19 @@ func files(project string) map[string]string {
 		"/workspace/src/main.go":                     "package main\n\nimport \"fmt\"\n\nfunc main() {\n\tfmt.Println(\"Hello from " + project + "\")\n}\n",
 		"/workspace/src/app.ts":                      "export const workspace = \"" + project + "\";\n\nexport function greet(name: string) {\n  return `Hello, ${name}`;\n}\n",
 		"/workspace/.devcontainer/devcontainer.json": "{\n  \"name\": \"Sandbox workspace\",\n  \"image\": \"mcr.microsoft.com/devcontainers/base:debian\",\n  \"workspaceFolder\": \"/workspace\"\n}\n",
+		"/home/sandbox/notes.txt":                    "Sandbox home for " + project + "\n",
+		"/home/sandbox/.config/settings.json":        "{\"sandbox\": true}\n",
 	}
+}
+
+func sandboxPath(requested string) string {
+	if requested == "~" || strings.HasPrefix(requested, "~/") {
+		requested = "/home/sandbox" + strings.TrimPrefix(requested, "~")
+	}
+	if !strings.HasPrefix(requested, "/") {
+		requested = "/workspace/" + requested
+	}
+	return path.Clean(requested)
 }
 
 func (p *Projects) Paths(r *resource.ProjectPathsRequest, stream grpc.ServerStreamingServer[resource.ProjectPathsReply]) error {
@@ -27,16 +39,17 @@ func (p *Projects) Paths(r *resource.ProjectPathsRequest, stream grpc.ServerStre
 	if err != nil {
 		return err
 	}
-	root := path.Clean(r.GetPath())
-	if root != "/workspace" && !strings.HasPrefix(root, "/workspace/") {
+	root := sandboxPath(r.GetPath())
+	if root != "/" && root != "/home" && root != "/home/sandbox" && !strings.HasPrefix(root, "/home/sandbox/") && root != "/workspace" && !strings.HasPrefix(root, "/workspace/") {
 		return status.Error(codes.PermissionDenied, "path outside sandbox workspace")
 	}
 	entries := map[string]bool{}
 	found := false
+	prefix := strings.TrimSuffix(root, "/") + "/"
 	for name := range files(project.GetRuntimeId()) {
-		if strings.HasPrefix(name, root+"/") {
+		if strings.HasPrefix(name, prefix) {
 			found = true
-			rel := strings.TrimPrefix(name, root+"/")
+			rel := strings.TrimPrefix(name, prefix)
 			first, rest, dir := strings.Cut(rel, "/")
 			_ = rest
 			entries[first] = dir
@@ -63,7 +76,7 @@ func (p *Projects) Download(r *resource.ProjectDownloadRequest, stream grpc.Serv
 	if err != nil {
 		return err
 	}
-	text, ok := files(project.GetRuntimeId())[path.Clean(r.GetPath())]
+	text, ok := files(project.GetRuntimeId())[sandboxPath(r.GetPath())]
 	if !ok {
 		p.S.mu.Lock()
 		upload, found := p.S.uploads[r.GetPath()]

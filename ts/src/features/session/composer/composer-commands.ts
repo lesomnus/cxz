@@ -17,6 +17,7 @@ export function sessionCommands(
     { name: "/model", description: t("Choose the provider model") },
     { name: "/effort", description: t("Choose the reasoning effort") },
     { name: "/compact", description: t("Compact the current context") },
+    { name: "/download", description: t("Download a container file") },
   ];
   if (agent === "claude")
     commands.push({

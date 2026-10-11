@@ -16,6 +16,8 @@ import { useFloatingCard } from "#src/features/session/cards/floating-card.tsx";
 import { indentEdit } from "./composer-indent";
 import { useCommandSuggestions } from "./command-suggestions";
 import type { ComposerCommand } from "./composer-commands";
+import { usePathSuggestions } from "./path-suggestions";
+import type { LookupPaths } from "./composer-paths";
 import {
   inlineBacktickEdit,
   inlineCodeRanges,
@@ -62,6 +64,8 @@ export function ComposerEditor({
   canSend,
   onSubmitShortcut,
   commands,
+  lookupPaths,
+  workspace,
   ariaLabel = t("Message"),
   placeholder = t("Continue the conversation…"),
   editorRef,
@@ -75,6 +79,8 @@ export function ComposerEditor({
   canSend?: boolean;
   onSubmitShortcut?: () => void;
   commands?: readonly ComposerCommand[];
+  lookupPaths?: LookupPaths;
+  workspace?: string;
   ariaLabel?: string;
   placeholder?: string;
   editorRef?: Ref<ComposerEditorHandle>;
@@ -221,6 +227,19 @@ export function ComposerEditor({
     composing: composition,
     accept: (name, end) => replace(0, end, name),
   });
+  const pathHints = usePathSuggestions({
+    value,
+    input,
+    composing: composition,
+    lookup: readOnly ? undefined : lookupPaths,
+    workspace,
+    accept: (start, end, path) => replace(start, end, path),
+  });
+  const hints = pathHints.open ? pathHints : commandHints;
+  const updateSuggestions = () => {
+    commandHints.updateSelection();
+    pathHints.updateSelection();
+  };
   const blocks = useMemo(
     () =>
       codeBlocks(value).map((block) => {
@@ -245,7 +264,7 @@ export function ComposerEditor({
   // Plain drafts use the native text painter, including throughout IME edits.
   // Only decorations need the mirrored text layer over the native caret.
   const decorated =
-    commandHints.open ||
+    hints.open ||
     blocks.length > 0 ||
     ranges.length > 0 ||
     lines.some((line) => inlineCodeRanges(line).length > 0);
@@ -289,6 +308,9 @@ export function ComposerEditor({
       );
       cursor.current = undefined;
     }
+    // Controlled values can arrive after the native edit (for example, Storybook
+    // args). Read the committed caret rather than the selection from that edit.
+    updateSuggestions();
     measure();
     if (followOnEdit.current) {
       input.current!.scrollTop = input.current!.scrollHeight;
@@ -406,7 +428,8 @@ export function ComposerEditor({
         className="composer-editor"
         data-composing={composition}
         data-decorated={decorated}
-        data-command-open={commandHints.open}
+        data-command-open={hints.open}
+        data-path-open={pathHints.open}
         data-file-drag={dragging}
         onDragOver={(event) => {
           if (!event.dataTransfer.types.includes("Files")) return;
@@ -446,7 +469,7 @@ export function ComposerEditor({
           <textarea
             ref={input}
             aria-label={ariaLabel}
-            {...commandHints.inputProps}
+            {...hints.inputProps}
             aria-description={
               tabMovesFocus
                 ? t("Tab: Move focus. Ctrl+M: Switch to indentation mode.")
@@ -469,9 +492,9 @@ export function ComposerEditor({
             autoCapitalize="off"
             autoCorrect="off"
             wrap="soft"
-            onFocus={commandHints.updateSelection}
-            onBlur={commandHints.updateSelection}
-            onKeyUp={commandHints.updateSelection}
+            onFocus={updateSuggestions}
+            onBlur={updateSuggestions}
+            onKeyUp={updateSuggestions}
             onScroll={syncScroll}
             onCompositionStart={() => {
               composing.current = true;
@@ -483,7 +506,7 @@ export function ComposerEditor({
             }}
             onSelect={() => {
               if (!composing.current) normalizedSelection();
-              commandHints.updateSelection();
+              updateSuggestions();
             }}
             onBeforeInput={() => {
               if (!composing.current) normalizedSelection();
@@ -504,7 +527,7 @@ export function ComposerEditor({
                 event.target.selectionStart === event.target.selectionEnd &&
                 next.indexOf("\n", event.target.selectionEnd) < 0;
               onChange(next);
-              commandHints.updateSelection();
+              updateSuggestions();
             }}
             onPaste={(event) => {
               if (readOnly) {
@@ -591,7 +614,7 @@ export function ComposerEditor({
             onKeyDown={(event) => {
               if (readOnly) return;
               if (event.nativeEvent.isComposing || composing.current) return;
-              if (commandHints.key(event)) return;
+              if (hints.key(event)) return;
               const el = event.currentTarget;
               if (
                 event.ctrlKey &&
@@ -766,7 +789,7 @@ export function ComposerEditor({
               }
             }}
           />
-          {commandHints.overlay}
+          {hints.overlay}
           <div className="editor-surface" ref={surface}>
             <div className="editor-mirror" ref={mirror}>
               {lines.map((line, index) => {

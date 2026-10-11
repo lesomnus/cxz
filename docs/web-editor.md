@@ -38,9 +38,12 @@ authenticated browser Connection and project. Sessions in the same project share
 them. Switching projects isolates them. Reload/sign-out discards this in-memory
 state. File browsing requires a running project container and a resolved
 `remoteWorkspace`; existing `ProjectService.Paths`/`Download` operations run as
-that project's remote user. The gateway additionally rejects paths lexically
-outside that workspace and bounds download bytes. This is a navigation boundary,
-not a filesystem sandbox for symlink targets or a restriction on the owner's IDE.
+that project's remote user. The explorer starts at the workspace, while composer
+path hints and `/download` can also use absolute paths and the container user's
+home. The gateway validates path syntax and delegates owned-container checks to
+the Manager. File preview limits apply in the browser editor; downloading a file
+is not subject to the preview limit. The browser collects download RPC chunks into
+a Blob before handing the file to its download manager.
 
 ## Connect to the devcontainer
 
@@ -132,7 +135,7 @@ an optional, independently loaded scenario if that behavior needs to be tested.
 - Lifecycle RPC test checks native metadata/binary bytes, cancellation cleanup,
   deleted-project rejection and malformed/oversized tunnel frames.
 - Native gateway test covers unauthorized requests, RPC token removal, the
-  workbench cookie scope, preview size/path limits, HTTP/WS bytes and logout
+  workbench cookie scope, container path validation, download streaming, HTTP/WS bytes and logout
   revocation.
 - Opt-in real browser probe uses a disposable container's OpenVSCode server through
   the gateway: `CXZ_EDITOR_PROBE_CONTAINER=NAME npm --prefix ts run test:browser`.

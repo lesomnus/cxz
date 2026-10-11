@@ -14,6 +14,7 @@ import { TurnControls } from "./turn-controls";
 import type { TurnProgress } from "#src/features/session/model/turn-progress.ts";
 import { ComposerEditor, type ComposerEditorHandle } from "./composer-editor";
 import type { ComposerCommand } from "./composer-commands";
+import type { LookupPaths } from "./composer-paths";
 import { attachmentsReady, type ComposerPaste } from "./composer-pastes";
 import type { UploadFile } from "./composer-upload";
 import { useSpeechInput } from "#src/shared/browser/use-speech-input.ts";
@@ -31,6 +32,8 @@ export function ConversationComposer({
   onChange,
   onSubmit,
   commands,
+  lookupPaths,
+  workspace,
   canSend,
   sending,
   busy,
@@ -54,6 +57,8 @@ export function ConversationComposer({
   onChange: (value: string) => void;
   onSubmit: FormEventHandler<HTMLFormElement>;
   commands?: readonly ComposerCommand[];
+  lookupPaths?: LookupPaths;
+  workspace?: string;
   canSend: boolean;
   sending: boolean;
   busy: boolean;
@@ -270,6 +275,8 @@ export function ConversationComposer({
             pastes={pastes}
             canSend={canSend}
             commands={commands}
+            lookupPaths={lookupPaths}
+            workspace={workspace}
             editorRef={editor}
             upload={upload}
             onUploadChange={() => {

@@ -44,12 +44,26 @@ concealing it. Padding extends the surface without shifting the selected
 line. The backdrop occupies its own layer below the native textarea so the caret
 remains visible; applying a filter to the whole overlay would change that stacking.
 
-The initial catalog contains `/model`, `/effort`, `/compact` and Claude's
+The initial catalog contains `/model`, `/effort`, `/compact`, `/download` and Claude's
 `/context`, plus model and effort values reported by the provider. Submitting a
 bare model/effort command opens the existing picker; submitting a value uses the
 same setting path as that picker, including resetting an explicit effort before
 a model change. Suggestions remain visual until accepted, so an unaccepted hint
 cannot silently replace submitted text. TUI-only screen commands are not offered.
+
+Inside a single-backtick span, a path beginning with `/` or `~` offers file and
+directory hints from the session's project container. Up/Down browses; Tab or
+Right accepts. Directories continue completion, and a file leaves the existing
+closing backtick and surrounding message intact. Fenced code, bare paths, selections
+and IME composition do not trigger lookups. Parent listings are briefly cached,
+so refining a filename filters locally rather than issuing a request per character.
+The same hints work in `/download <path>`, including workspace-relative arguments.
+This command downloads a regular file using ProjectService.Download and the
+browser's save behavior without sending an agent prompt. Quoted paths with spaces,
+absolute paths and container-user home paths are supported. A failed transfer keeps
+the command for retry; switching sessions cancels it. Web path access remains scoped
+to the owned project container and its remote user. File previews retain their
+frontend size limit; downloads use the full file stream.
 
 The browser shares project and session inventories across navigation. Each entity
 type has a bounded initial List and a single Watch spanning all listed projects;
