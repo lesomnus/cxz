@@ -12,7 +12,7 @@ import { Connection } from "#src/shared/api/connection.ts";
 import "#src/app/styles/style.css";
 import "./sandbox.css";
 import workerURL from "./sandbox-worker.ts?worker&url";
-import { boot, BootTimeout } from "./sandbox-boot";
+import { boot, bootDeadline, BootTimeout } from "./sandbox-boot";
 import { createClient } from "@connectrpc/connect";
 import { ProjectService } from "#gen/cxz/project_svc_pb";
 
@@ -112,6 +112,7 @@ function SandboxApp({ children }: PropsWithChildren) {
         }
       },
       {
+        ms: bootDeadline(),
         onRetry: () => {
           if (canceled) return;
           setStalled(true);

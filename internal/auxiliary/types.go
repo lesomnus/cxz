@@ -82,15 +82,22 @@ type Reply struct {
 	Message       string                  `json:"message,omitempty"`
 }
 type Turn struct {
-	Run    string `json:"run"`
-	Seq    uint64 `json:"seq"`
-	User   string `json:"user"`
-	Answer string `json:"answer"`
+	Run string `json:"run"`
+	Seq uint64 `json:"seq"`
+	// Response is the sequence of the final answer. Seq ends up being the
+	// turn_end record, which a reading projection deletes once it has folded
+	// the turn's metrics onto this row -- so this is the one a client can
+	// actually point at. Discarded with Answer when a tool follows, because
+	// then the text so far was commentary rather than the answer.
+	Response uint64 `json:"response,omitempty"`
+	User     string `json:"user"`
+	Answer   string `json:"answer"`
 }
 type Summary struct {
-	Run  string `json:"run"`
-	Turn uint64 `json:"turn"`
-	Text string `json:"text"`
+	Run      string `json:"run"`
+	Turn     uint64 `json:"turn"`
+	Response uint64 `json:"response,omitempty"`
+	Text     string `json:"text"`
 }
 
 // State is working state: the rolling context a task is built from, and the
@@ -123,6 +130,7 @@ type Job struct {
 	Session             string  `json:"session"`
 	Run                 string  `json:"run"`
 	Turn                uint64  `json:"turn"`
+	Response            uint64  `json:"response,omitempty"`
 	Revision            string  `json:"revision"`
 	Status              string  `json:"status"`
 	Summary             string  `json:"summary,omitempty"`

@@ -3815,9 +3815,84 @@ func (s interceptSession) CopyMemory(ctx context.Context, req *resource.SessionC
 		resource.SessionService_CopyMemory_FullMethodName, req, s.SessionServiceServer.CopyMemory)
 }
 
-func (s interceptSession) Library(ctx context.Context, req *resource.SessionLibraryRequest) (*resource.SessionMemoryReply, error) {
+func (s interceptSession) LibraryMemories(ctx context.Context, req *resource.SessionLibraryMemoriesRequest) (*resource.SessionLibraryMemoriesReply, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
-		resource.SessionService_Library_FullMethodName, req, s.SessionServiceServer.Library)
+		resource.SessionService_LibraryMemories_FullMethodName, req, s.SessionServiceServer.LibraryMemories)
+}
+
+func (s interceptSession) LibraryMemory(ctx context.Context, req *resource.SessionLibraryMemoryRequest) (*resource.SessionLibraryMemoryReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
+		resource.SessionService_LibraryMemory_FullMethodName, req, s.SessionServiceServer.LibraryMemory)
+}
+
+func (s interceptSession) LibraryDocument(ctx context.Context, req *resource.SessionLibraryDocumentRequest) (*resource.SessionLibraryDocumentReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
+		resource.SessionService_LibraryDocument_FullMethodName, req, s.SessionServiceServer.LibraryDocument)
+}
+
+func (s interceptSession) LibraryChanges(ctx context.Context, req *resource.SessionLibraryChangesRequest) (*resource.SessionLibraryChangesReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
+		resource.SessionService_LibraryChanges_FullMethodName, req, s.SessionServiceServer.LibraryChanges)
+}
+
+func (s interceptSession) WriteLibraryDocument(ctx context.Context, req *resource.SessionLibraryWriteRequest) (*resource.SessionLibraryDocumentReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
+		resource.SessionService_WriteLibraryDocument_FullMethodName, req, s.SessionServiceServer.WriteLibraryDocument)
+}
+
+func (s interceptSession) DeleteLibraryDocument(ctx context.Context, req *resource.SessionLibraryDocumentEditRequest) (*resource.SessionLibraryMemoryReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
+		resource.SessionService_DeleteLibraryDocument_FullMethodName, req, s.SessionServiceServer.DeleteLibraryDocument)
+}
+
+func (s interceptSession) RestoreLibraryDocument(ctx context.Context, req *resource.SessionLibraryDocumentEditRequest) (*resource.SessionLibraryMemoryReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
+		resource.SessionService_RestoreLibraryDocument_FullMethodName, req, s.SessionServiceServer.RestoreLibraryDocument)
+}
+
+func (s interceptSession) PurgeLibraryDocument(ctx context.Context, req *resource.SessionLibraryDocumentEditRequest) (*resource.SessionLibraryMemoryReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
+		resource.SessionService_PurgeLibraryDocument_FullMethodName, req, s.SessionServiceServer.PurgeLibraryDocument)
+}
+
+func (s interceptSession) SnapshotLibraryMemory(ctx context.Context, req *resource.SessionLibraryCopyRequest) (*resource.SessionLibraryMemoryReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
+		resource.SessionService_SnapshotLibraryMemory_FullMethodName, req, s.SessionServiceServer.SnapshotLibraryMemory)
+}
+
+func (s interceptSession) ForkLibraryMemory(ctx context.Context, req *resource.SessionLibraryCopyRequest) (*resource.SessionLibraryMemoryReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
+		resource.SessionService_ForkLibraryMemory_FullMethodName, req, s.SessionServiceServer.ForkLibraryMemory)
+}
+
+func (s interceptSession) MergeLibraryMemories(ctx context.Context, req *resource.SessionLibraryMergeRequest) (*resource.SessionLibraryMemoryReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
+		resource.SessionService_MergeLibraryMemories_FullMethodName, req, s.SessionServiceServer.MergeLibraryMemories)
+}
+
+func (s interceptSession) RenameLibraryMemory(ctx context.Context, req *resource.SessionLibraryRenameRequest) (*resource.SessionLibraryMemoryReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
+		resource.SessionService_RenameLibraryMemory_FullMethodName, req, s.SessionServiceServer.RenameLibraryMemory)
+}
+
+func (s interceptSession) DeleteLibraryMemory(ctx context.Context, req *resource.SessionLibraryMemoryEditRequest) (*resource.SessionLibraryMemoryReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
+		resource.SessionService_DeleteLibraryMemory_FullMethodName, req, s.SessionServiceServer.DeleteLibraryMemory)
+}
+
+func (s interceptSession) RestoreLibraryMemory(ctx context.Context, req *resource.SessionLibraryMemoryEditRequest) (*resource.SessionLibraryMemoryReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
+		resource.SessionService_RestoreLibraryMemory_FullMethodName, req, s.SessionServiceServer.RestoreLibraryMemory)
+}
+
+func (s interceptSession) PurgeLibraryMemory(ctx context.Context, req *resource.SessionLibraryMemoryEditRequest) (*resource.SessionLibraryMemoryReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
+		resource.SessionService_PurgeLibraryMemory_FullMethodName, req, s.SessionServiceServer.PurgeLibraryMemory)
+}
+
+func (s interceptSession) ImportLibraryMemories(ctx context.Context, req *resource.SessionLibraryImportRequest) (*resource.SessionLibraryMemoriesReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
+		resource.SessionService_ImportLibraryMemories_FullMethodName, req, s.SessionServiceServer.ImportLibraryMemories)
 }
 
 func (s interceptSession) Memory(ctx context.Context, req *resource.SessionMemoryRequest) (*resource.SessionMemoryReply, error) {
@@ -5605,13 +5680,208 @@ func dispatch(ctx context.Context, s resource.Server, op *pdpb.Op) (*anypb.Any, 
 
 		return anypb.New(res)
 
-	case resource.SessionService_Library_FullMethodName:
-		v := &resource.SessionLibraryRequest{}
+	case resource.SessionService_LibraryMemories_FullMethodName:
+		v := &resource.SessionLibraryMemoriesRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
 
-		res, err := s.Session().Library(ctx, v)
+		res, err := s.Session().LibraryMemories(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.SessionService_LibraryMemory_FullMethodName:
+		v := &resource.SessionLibraryMemoryRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Session().LibraryMemory(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.SessionService_LibraryDocument_FullMethodName:
+		v := &resource.SessionLibraryDocumentRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Session().LibraryDocument(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.SessionService_LibraryChanges_FullMethodName:
+		v := &resource.SessionLibraryChangesRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Session().LibraryChanges(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.SessionService_WriteLibraryDocument_FullMethodName:
+		v := &resource.SessionLibraryWriteRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Session().WriteLibraryDocument(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.SessionService_DeleteLibraryDocument_FullMethodName:
+		v := &resource.SessionLibraryDocumentEditRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Session().DeleteLibraryDocument(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.SessionService_RestoreLibraryDocument_FullMethodName:
+		v := &resource.SessionLibraryDocumentEditRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Session().RestoreLibraryDocument(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.SessionService_PurgeLibraryDocument_FullMethodName:
+		v := &resource.SessionLibraryDocumentEditRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Session().PurgeLibraryDocument(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.SessionService_SnapshotLibraryMemory_FullMethodName:
+		v := &resource.SessionLibraryCopyRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Session().SnapshotLibraryMemory(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.SessionService_ForkLibraryMemory_FullMethodName:
+		v := &resource.SessionLibraryCopyRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Session().ForkLibraryMemory(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.SessionService_MergeLibraryMemories_FullMethodName:
+		v := &resource.SessionLibraryMergeRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Session().MergeLibraryMemories(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.SessionService_RenameLibraryMemory_FullMethodName:
+		v := &resource.SessionLibraryRenameRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Session().RenameLibraryMemory(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.SessionService_DeleteLibraryMemory_FullMethodName:
+		v := &resource.SessionLibraryMemoryEditRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Session().DeleteLibraryMemory(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.SessionService_RestoreLibraryMemory_FullMethodName:
+		v := &resource.SessionLibraryMemoryEditRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Session().RestoreLibraryMemory(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.SessionService_PurgeLibraryMemory_FullMethodName:
+		v := &resource.SessionLibraryMemoryEditRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Session().PurgeLibraryMemory(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.SessionService_ImportLibraryMemories_FullMethodName:
+		v := &resource.SessionLibraryImportRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Session().ImportLibraryMemories(ctx, v)
 		if err != nil {
 			return nil, err
 		}

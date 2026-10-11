@@ -268,7 +268,7 @@ func (m *Manager) auxState(session, message string, afterTurn uint64, limit int3
 		},
 	}
 	for _, s := range summaries {
-		out.Summaries = append(out.Summaries, &api.AuxSummary{RunId: s.Run, Turn: s.Turn, Text: s.Text})
+		out.Summaries = append(out.Summaries, &api.AuxSummary{RunId: s.Run, Turn: s.Turn, ResponseSeq: s.Response, Text: s.Text})
 	}
 	for i := range recent {
 		out.Recent = append(out.Recent, auxOf(session, &recent[i]))
@@ -313,7 +313,8 @@ func auxOf(session string, j *auxiliary.Job) *api.Aux {
 	}
 	out := &api.Aux{
 		Id: j.ID, SessionId: j.Session, RunId: j.Run, Turn: j.Turn,
-		Revision: j.Revision, State: j.Status, Message: j.Error,
+		ResponseSeq: j.Response,
+		Revision:    j.Revision, State: j.Status, Message: j.Error,
 	}
 	if out.SessionId == "" {
 		out.SessionId = session

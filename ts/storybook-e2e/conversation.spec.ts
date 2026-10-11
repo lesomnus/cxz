@@ -507,3 +507,55 @@ test("source editor fills its preview and accepts edits", async ({ page }) => {
   await expect(page.locator(".view-line")).toHaveText('{"editor.tabSize": 6}');
   expect(errors).toEqual([]);
 });
+
+// A summary is drawn beside the turn it names, labelled and outside the
+// response body. Three things make it readable as a model's note rather than
+// as something somebody said: it is in the response article, it is after the
+// footer, and it carries the label.
+test("a turn summary is labelled, inside its response and below the footer", async ({
+  page,
+}) => {
+  const errors = await story(page, "conversation-eventcards--turn-summary");
+  const summary = page.getByRole("complementary", { name: "Summary" });
+  await expect(summary).toBeVisible();
+  await expect(summary).toContainText("Reviewed the conversation components");
+  await expect(summary.locator("strong")).toHaveText("No code changed yet.");
+  const placement = await summary.evaluate((el) => {
+    const response = el.closest(".response");
+    const footer = response?.querySelector(".response-footer");
+    return {
+      insideResponse: Boolean(response),
+      afterFooter: Boolean(
+        footer &&
+          footer.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ),
+      labelled: el.querySelector(".turn-summary-label")?.textContent,
+    };
+  });
+  expect(placement).toEqual({
+    insideResponse: true,
+    afterFooter: true,
+    labelled: "Summary",
+  });
+  expect(errors).toEqual([]);
+});
+
+// Asked for and not arrived says so. Showing nothing is indistinguishable from
+// a session that generates no summaries, and a failure is reported in the
+// summary's place because the reason is what a reader can act on.
+test("a pending summary says it is coming and a failed one says why", async ({
+  page,
+}) => {
+  await story(page, "conversation-eventcards--turn-summary-pending");
+  const pending = page.getByRole("complementary", { name: "Summary" });
+  await expect(pending).toContainText("Summarizing");
+
+  const errors = await story(
+    page,
+    "conversation-eventcards--turn-summary-failed",
+  );
+  const failed = page.getByRole("complementary", { name: "Summary" });
+  await expect(failed).toContainText("Summary account is not configured.");
+  await expect(failed).toHaveClass(/error/);
+  expect(errors).toEqual([]);
+});

@@ -95,7 +95,7 @@ func auxState(v *resource.AuxState, err error) (*api.AuxState, error) {
 	}
 	out := &api.AuxState{Title: v.GetTitle(), Message: v.GetMessage(), Current: aux(v.GetCurrent())}
 	for _, s := range v.GetSummaries() {
-		out.Summaries = append(out.Summaries, &api.AuxSummary{RunId: s.GetRunId(), Turn: s.GetTurn(), Text: s.GetText()})
+		out.Summaries = append(out.Summaries, &api.AuxSummary{RunId: s.GetRunId(), Turn: s.GetTurn(), ResponseSeq: s.GetResponseSeq(), Text: s.GetText()})
 	}
 	for _, r := range v.GetRecent() {
 		out.Recent = append(out.Recent, aux(r))
@@ -114,7 +114,8 @@ func aux(v *resource.Aux) *api.Aux {
 	}
 	out := &api.Aux{
 		Id: v.GetId(), SessionId: string(v.GetSessionId()), RunId: v.GetRunId(), Turn: v.GetTurn(),
-		Revision: v.GetRevision(), State: v.GetState(), Message: v.GetMessage(),
+		ResponseSeq: v.GetResponseSeq(),
+		Revision:    v.GetRevision(), State: v.GetState(), Message: v.GetMessage(),
 		Kinds: auxkind.Names(v.GetKinds()),
 	}
 	for _, r := range v.GetResults() {

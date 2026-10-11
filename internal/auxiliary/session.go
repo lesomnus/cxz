@@ -221,7 +221,7 @@ func (c *Controller) start(id string, s *State, cfg Config) error {
 		return fmt.Errorf("Auxiliary queue is full")
 	}
 	last := s.Recent[len(s.Recent)-1]
-	j := &Job{ID: core.ID(), Session: id, Run: last.Run, Turn: last.Seq, Revision: cfg.Revision, Status: "queued", SummaryRequested: cfg.Summary.Enabled, SuggestionRequested: cfg.Suggestion.Enabled}
+	j := &Job{ID: core.ID(), Session: id, Run: last.Run, Turn: last.Seq, Response: last.Response, Revision: cfg.Revision, Status: "queued", SummaryRequested: cfg.Summary.Enabled, SuggestionRequested: cfg.Suggestion.Enabled}
 	if old := s.Job; old != nil && old.Turn == j.Turn && old.Run == j.Run && old.Revision == j.Revision {
 		// A separate one-shot suggestion can use the existing same-turn summary.
 		if !cfg.Summary.Enabled {
@@ -256,7 +256,8 @@ func (c *Controller) rememberSummary(id string, j *Job) error {
 		return nil
 	}
 	return c.store.putSummary(id, Summary{
-		Run: j.Run, Turn: j.Turn, Text: Clip(j.Summary, RetainedSummaryLimit),
+		Run: j.Run, Turn: j.Turn, Response: j.Response,
+		Text: Clip(j.Summary, RetainedSummaryLimit),
 	}, time.Now().UnixMilli())
 }
 

@@ -18,6 +18,26 @@
 
 export const BootDeadlineMs = 15000;
 
+/**
+ * bootDeadline reads the deadline from the page's own URL, so a test that
+ * forces a stall does not also have to wait out a deadline chosen for people.
+ *
+ * What the stall tests verify is the sequence -- deadline, retry without the
+ * cache, report the second failure -- and that is the same at 300ms as at
+ * fifteen seconds. The stall itself is already forced rather than waited for;
+ * this is the other half of the same arrangement.
+ *
+ * Bounded to a second so the parameter cannot be used to make a person's
+ * sandbox fail to start, and ignored unless it parses.
+ */
+export function bootDeadline(search = location.search): number {
+  const raw = new URLSearchParams(search).get("boot-deadline");
+  if (raw === null) return BootDeadlineMs;
+  const ms = Number(raw);
+  if (!Number.isFinite(ms) || ms < 1 || ms > 1000) return BootDeadlineMs;
+  return ms;
+}
+
 export class BootTimeout extends Error {
   constructor(ms: number) {
     super(

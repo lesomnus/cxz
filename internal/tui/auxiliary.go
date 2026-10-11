@@ -140,7 +140,7 @@ func auxStateOf(out *api.AuxState) auxiliary.Reply {
 		reply.Title = &auxiliary.TitleState{Text: out.Title}
 	}
 	for _, s := range out.Summaries {
-		reply.Summaries = append(reply.Summaries, auxiliary.Summary{Run: s.RunId, Turn: s.Turn, Text: s.Text})
+		reply.Summaries = append(reply.Summaries, auxiliary.Summary{Run: s.RunId, Turn: s.Turn, Response: s.ResponseSeq, Text: s.Text})
 	}
 	// Only an answer that reported preferences replaces the ones held: a reply
 	// that said nothing about them is not a reply that said they are off.
@@ -168,6 +168,7 @@ func auxJobOf(a *api.Aux) *auxiliary.Job {
 	}
 	job := &auxiliary.Job{
 		ID: a.Id, Session: a.SessionId, Run: a.RunId, Turn: a.Turn,
+		Response: a.ResponseSeq,
 		Revision: a.Revision, Status: a.State, Error: a.Message,
 	}
 	for _, kind := range a.Kinds {

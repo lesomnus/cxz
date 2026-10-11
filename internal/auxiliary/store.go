@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/url"
 	"path/filepath"
+	"strings"
 
 	"github.com/lesomnus/payday/config"
 	// This package cannot work without a SQLite engine, so it links one rather
@@ -69,6 +70,7 @@ var auxSchema = []string{
 		session TEXT NOT NULL,
 		run TEXT NOT NULL,
 		turn INTEGER NOT NULL,
+		response INTEGER NOT NULL DEFAULT 0,
 		text TEXT NOT NULL,
 		updated_ms INTEGER NOT NULL DEFAULT 0,
 		PRIMARY KEY (session, run, turn)
@@ -90,6 +92,15 @@ func openStore(ctx context.Context, root string) (*store, error) {
 			db.Close()
 			return nil, fmt.Errorf("aux store: %w", err)
 		}
+	}
+	// A store opened before summaries named a response row needs the column
+	// added. SQLite has no IF NOT EXISTS for one, and this is a derived cache
+	// rather than a record, so an existing column is the only tolerated
+	// failure: anything else still fails the open.
+	if _, err = db.ExecContext(ctx, `ALTER TABLE summaries ADD COLUMN response INTEGER NOT NULL DEFAULT 0`); err != nil &&
+		!strings.Contains(err.Error(), "duplicate column name") {
+		db.Close()
+		return nil, fmt.Errorf("aux store: %w", err)
 	}
 	return &store{db: db}, nil
 }
@@ -219,9 +230,9 @@ func (s *store) putSummary(session string, v Summary, now int64) error {
 		return err
 	}
 	defer tx.Rollback()
-	if _, err = tx.Exec(`INSERT INTO summaries (session, run, turn, text, updated_ms) VALUES (?,?,?,?,?)
-		ON CONFLICT(session, run, turn) DO UPDATE SET text=excluded.text, updated_ms=excluded.updated_ms`,
-		session, v.Run, v.Turn, v.Text, now); err != nil {
+	if _, err = tx.Exec(`INSERT INTO summaries (session, run, turn, response, text, updated_ms) VALUES (?,?,?,?,?,?)
+		ON CONFLICT(session, run, turn) DO UPDATE SET response=excluded.response, text=excluded.text, updated_ms=excluded.updated_ms`,
+		session, v.Run, v.Turn, v.Response, v.Text, now); err != nil {
 		return err
 	}
 	if _, err = tx.Exec(`DELETE FROM summaries WHERE session = ? AND turn <= (
@@ -242,7 +253,7 @@ func (s *store) summaries(session string, afterTurn uint64, limit int) ([]Summar
 	if limit <= 0 || limit > SummaryHistory {
 		limit = SummaryHistory
 	}
-	rows, err := s.db.Query(`SELECT run, turn, text FROM summaries
+	rows, err := s.db.Query(`SELECT run, turn, response, text FROM summaries
 		WHERE session = ? AND turn > ? ORDER BY turn DESC LIMIT ?`, session, afterTurn, limit)
 	if err != nil {
 		return nil, err
@@ -251,7 +262,7 @@ func (s *store) summaries(session string, afterTurn uint64, limit int) ([]Summar
 	var out []Summary
 	for rows.Next() {
 		var v Summary
-		if err = rows.Scan(&v.Run, &v.Turn, &v.Text); err != nil {
+		if err = rows.Scan(&v.Run, &v.Turn, &v.Response, &v.Text); err != nil {
 			return nil, err
 		}
 		out = append(out, v)
