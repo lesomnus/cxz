@@ -63,5 +63,23 @@ test("portable waveform responds to host levels without requesting microphone ac
     .toBe(true);
   await volume.press("End");
   await expect.poll(pixels).toBeGreaterThan(14);
+  await expect
+    .poll(() =>
+      wave.evaluate((el: HTMLCanvasElement) => {
+        const data = el
+          .getContext("2d")!
+          .getImageData(0, 0, el.width, el.height).data;
+        let lime = 0,
+          purple = 0;
+        for (let i = 0; i < data.length; i += 4) {
+          if (data[i + 3] <= 12) continue;
+          const [r, g, b] = [data[i], data[i + 1], data[i + 2]];
+          if (g > r && r > b) lime++;
+          if (b > r && r > g) purple++;
+        }
+        return lime > 10 && purple > 10;
+      }),
+    )
+    .toBe(true);
   expect(errors).toEqual([]);
 });

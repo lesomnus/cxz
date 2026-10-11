@@ -27,6 +27,8 @@ export function ActionMenu({
   disabled = false,
   placement = "below",
   status,
+  triggerContent,
+  disabledReason,
 }: {
   label: string;
   items?: ActionMenuItem[];
@@ -34,11 +36,17 @@ export function ActionMenu({
   disabled?: boolean;
   placement?: "above" | "below";
   status?: string;
+  /** Custom trigger content; defaults to the More (ellipsis) icon. */
+  triggerContent?: ReactNode;
+  disabledReason?: string;
 }) {
   const [open, setOpen] = useState(false);
   const trigger = useRef<HTMLDivElement>(null);
   const menu = useRef<HTMLDivElement>(null);
   const id = useId();
+  useEffect(() => {
+    if (disabled) setOpen(false);
+  }, [disabled]);
   function close(restore = false) {
     setOpen(false);
     if (restore)
@@ -94,10 +102,11 @@ export function ActionMenu({
   return (
     <div className={`${styles.action_menu} action-menu`} ref={trigger}>
       <Button
-        variant="toolbar"
+        variant={triggerContent === undefined ? "toolbar" : "default"}
         className="toolbar-button"
         type="button"
         disabled={disabled}
+        title={disabled ? disabledReason : undefined}
         aria-label={label}
         aria-description={status}
         aria-haspopup="menu"
@@ -111,17 +120,19 @@ export function ActionMenu({
           }
         }}
       >
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 18 18"
-          aria-hidden="true"
-          fill="currentColor"
-        >
-          <circle cx="4" cy="9" r="1.5" />
-          <circle cx="9" cy="9" r="1.5" />
-          <circle cx="14" cy="9" r="1.5" />
-        </svg>
+        {triggerContent ?? (
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 18 18"
+            aria-hidden="true"
+            fill="currentColor"
+          >
+            <circle cx="4" cy="9" r="1.5" />
+            <circle cx="9" cy="9" r="1.5" />
+            <circle cx="14" cy="9" r="1.5" />
+          </svg>
+        )}
       </Button>
       {open &&
         createPortal(

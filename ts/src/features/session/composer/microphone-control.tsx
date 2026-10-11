@@ -1,5 +1,5 @@
 import { useId } from "react";
-import { Button, ValueMenu, type ValueOption } from "@lesomnus/cxz-ui";
+import { ActionMenu, Button } from "@lesomnus/cxz-ui";
 import { t } from "#src/shared/i18n/i18n.ts";
 import type { SpeechInput } from "#src/shared/browser/use-speech-input.ts";
 import styles from "./microphone-control.module.css";
@@ -55,12 +55,21 @@ export function MicrophoneControl({
   else if (speech.starting) hint = t("Starting voice input…");
   else if (speech.active) hint = speech.interim || t("Listening…");
   if (languageError) hint = languageError;
-  const options: ValueOption[] = [
-    { value: "browser", label: t("Browser language"), muted: true },
+  const options = [
+    { value: "browser", label: t("Browser language") },
     ...voiceLanguages.map(([value, label]) => ({ value, label })),
   ];
   if (language && !options.some((option) => option.value === language))
-    options.push({ value: language, label: language });
+    options.push({
+      value: language,
+      label:
+        new Intl.DisplayNames(undefined, { type: "language" }).of(language) ||
+        language,
+    });
+  const selected = language || "browser";
+  const languageName = options.find(
+    (option) => option.value === selected,
+  )!.label;
 
   return (
     <span
@@ -69,22 +78,25 @@ export function MicrophoneControl({
       aria-label={t("Voice input")}
     >
       <span className={styles.language}>
-        <ValueMenu
+        <ActionMenu
           label={t("Voice language")}
-          variant="compact"
-          value={language || "browser"}
-          display={speech.language.toUpperCase()}
-          options={options}
-          muted={!language}
-          minMenuWidth={180}
+          placement="above"
+          triggerContent={
+            <span className={styles.languageName} title={languageName}>
+              {languageName}
+            </span>
+          }
+          items={options.map((option) => ({
+            label: option.label,
+            checked: option.value === selected,
+            run: () =>
+              onLanguage(option.value === "browser" ? undefined : option.value),
+          }))}
           disabled={disabled || !speech.supported || speech.active}
           disabledReason={
             speech.active
               ? t("Stop voice input before changing the language.")
               : undefined
-          }
-          choose={(value) =>
-            onLanguage(value === "browser" ? undefined : value)
           }
         />
       </span>

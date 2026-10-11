@@ -11,7 +11,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "A monochrome, smoothed audio-level visualization. The host supplies readLevel (0–1); capture, permissions and recognition are independent. The upward variant folds the wave above its bottom baseline for input borders. This story simulates volume without opening a microphone. Motion pauses in hidden tabs; reduced motion freezes the wave phase while retaining volume feedback.",
+          "A smoothed audio-level visualization. The host supplies readLevel (0–1); capture, permissions and recognition are independent. The upward variant smoothly squares and folds both half-waves above its bottom baseline: original positive lobes are lime and negative lobes purple. The slope approaches zero at each baseline contact. Colors can be customized with --waveform-positive-color and --waveform-negative-color. This story simulates volume without opening a microphone. Motion pauses in hidden tabs; reduced motion freezes the wave phase while retaining volume feedback.",
       },
     },
   },

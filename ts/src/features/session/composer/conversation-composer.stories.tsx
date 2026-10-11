@@ -20,7 +20,7 @@ const meta = {
           "- **Composer editor** (`ComposerEditor`, `.composer-editor`): line numbers, Markdown, code blocks, paste chips and slash-command suggestions. Its input container is `.composer-input`.\n" +
           "- **Composer status bar** (`.composer-meta`): model, effort, usage and context.\n" +
           "- **Composer surface** (`.composer-wrapper`): the box around the toolbar and input; the status bar sits outside this box.\n\n" +
-          "These stories show states of the complete `ConversationComposer`, rather than isolated toolbar/editor/status-bar stories. Shared buttons, value menus and the timer have their own Components stories. Submission and response creation are demonstrated in Conversation/Playground.",
+          "These stories show states of the complete `ConversationComposer`, rather than isolated toolbar/editor/status-bar stories. Shared buttons, ActionMenu (separate popup), ValueMenu (current-value overlay) and the timer have their own Components stories. Submission and response creation are demonstrated in Conversation/Playground.",
       },
     },
   },
@@ -40,7 +40,7 @@ export const VoiceInput: Story = {
     docs: {
       description: {
         story:
-          "Choose a recognition language beside the microphone, then click the microphone to start native browser dictation. The browser language is the initial fallback; an explicit choice persists as voice.language in settings.json. The input shows a soft waveform driven by local microphone volume, and the language selector locks until recognition stops. Sending and switching sessions stop both recognition and metering. A metering failure leaves dictation working. Native recognition may use the browser vendor's online service; the waveform itself never records or uploads audio. This preview uses your real browser microphone; Components/AudioWaveform simulates levels without permissions.",
+          "Choose a recognition language from the ActionMenu to the left of the microphone, then click the microphone to start native browser dictation. The browser language is the initial fallback; an explicit choice persists as voice.language in settings.json. The input shows a softly folded lime/purple waveform driven by local microphone volume, and the language selector locks until recognition stops. Sending and switching sessions stop both recognition and metering. A metering failure leaves dictation working. Native recognition may use the browser vendor's online service; the waveform itself never records or uploads audio. This preview uses your real browser microphone; Components/AudioWaveform simulates levels without permissions.",
       },
     },
   },

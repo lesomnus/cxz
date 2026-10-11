@@ -164,7 +164,7 @@ test("voice language dropdown persists a choice and locks while dictating", asyn
 }) => {
   await mockRecognition(page, "SpeechRecognition");
   await openComposer(page);
-  const language = page.getByRole("combobox", { name: "Voice language" });
+  const language = page.getByRole("button", { name: "Voice language" });
   const microphone = page.getByRole("button", {
     name: "Voice input",
     exact: true,
@@ -198,15 +198,17 @@ test("voice language dropdown persists a choice and locks while dictating", asyn
   await page.getByRole("textbox", { name: "Message", exact: true }).hover();
   await expect.poll(background).toBe("rgba(0, 0, 0, 0)");
   await language.click();
-  await page.getByRole("option", { name: "日本語", exact: true }).click();
-  await expect(language).toHaveText("JA-JP");
+  await page
+    .getByRole("menuitemcheckbox", { name: "日本語", exact: true })
+    .click();
+  await expect(language).toHaveText("日本語");
   expect(
     await page.evaluate(
       () => JSON.parse(localStorage.getItem("settings")!)["voice.language"],
     ),
   ).toBe("ja-JP");
   await page.reload();
-  await expect(language).toHaveText("JA-JP");
+  await expect(language).toHaveText("日本語");
   await page.getByRole("button", { name: "Voice input", exact: true }).click();
   expect(await page.evaluate(() => window.voiceTest.instances[0].lang)).toBe(
     "ja-JP",
@@ -216,7 +218,7 @@ test("voice language dropdown persists a choice and locks while dictating", asyn
   await page.evaluate(() => window.voiceTest.instances[0].end());
   await language.click();
   await page
-    .getByRole("option", { name: "Browser language", exact: true })
+    .getByRole("menuitemcheckbox", { name: "Browser language", exact: true })
     .click();
   expect(
     await page.evaluate(
@@ -228,7 +230,9 @@ test("voice language dropdown persists a choice and locks while dictating", asyn
     window.voiceTest.instances.at(-1)!.onerror?.({ error: "network" }),
   );
   await language.click();
-  await page.getByRole("option", { name: "한국어", exact: true }).click();
+  await page
+    .getByRole("menuitemcheckbox", { name: "한국어", exact: true })
+    .click();
   await expect(
     page
       .getByRole("tooltip")

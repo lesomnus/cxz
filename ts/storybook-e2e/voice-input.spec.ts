@@ -9,7 +9,7 @@ test("composer voice input and portable waveform examples are available", async 
     "/iframe.html?id=conversation-composer--voice-input&viewMode=story",
   );
   await expect(
-    page.getByRole("combobox", { name: "Voice language" }),
+    page.getByRole("button", { name: "Voice language" }),
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Voice input", exact: true }),

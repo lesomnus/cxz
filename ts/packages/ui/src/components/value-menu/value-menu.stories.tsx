@@ -6,6 +6,14 @@ const meta = {
   title: "Components/ValueMenu",
   component: ValueMenu,
   tags: ["autodocs"],
+  parameters: {
+    docs: {
+      description: {
+        component:
+          "A value selector (combobox/listbox). The selected row overlays the trigger text in place, followed by a divider and other choices. This is a separate component from ActionMenu, whose popup sits beside its trigger and contains actions or checked choices. The compact variant only changes spacing.",
+      },
+    },
+  },
   args: {
     choose: () => {},
     label: "Effort",

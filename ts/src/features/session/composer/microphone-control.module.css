@@ -14,13 +14,18 @@
   background: var(--shade-27);
 }
 .language {
-  width: 52px;
   font-size: 10px;
   font-family: ui-monospace, monospace;
 }
-.language :global(.meta-value) {
+.controls .language :global(.toolbar-button) {
+  width: clamp(var(--toolbar-button-width), 12vw, 104px);
+}
+.languageName {
+  display: block;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .visualization {
   position: absolute;
