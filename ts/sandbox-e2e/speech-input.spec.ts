@@ -288,12 +288,10 @@ test("microphone waveform responds to real analysed samples, keeps typing access
   const baseline = await page.locator(".composer-input").evaluate((el) => {
     const input = el.getBoundingClientRect();
     const canvas = el.querySelector("canvas")!.getBoundingClientRect();
-    return (
-      canvas.bottom -
-      (input.bottom - parseFloat(getComputedStyle(el).borderBottomWidth) / 2)
-    );
+    return canvas.bottom - input.bottom;
   });
-  expect(Math.abs(baseline)).toBeLessThan(0.1);
+  expect(baseline).toBeCloseTo(1, 1);
+  await expect(meter).toHaveCSS("overflow", "clip");
   await page.evaluate(() => {
     window.meterTest.gain!.gain.value = 0.18;
   });
@@ -304,7 +302,8 @@ test("microphone waveform responds to real analysed samples, keeps typing access
   const inputBox = await page.locator(".composer-input").boundingBox();
   const waveBox = await canvas.boundingBox();
   expect(waveBox!.y).toBeGreaterThanOrEqual(inputBox!.y);
-  expect(waveBox!.y + waveBox!.height).toBeLessThanOrEqual(
+  const meterBox = await meter.boundingBox();
+  expect(meterBox!.y + meterBox!.height).toBeLessThanOrEqual(
     inputBox!.y + inputBox!.height,
   );
   await page.screenshot({ path: "test-results/voice-waveform.png" });

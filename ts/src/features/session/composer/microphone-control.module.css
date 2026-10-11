@@ -29,11 +29,15 @@
 }
 .visualization {
   position: absolute;
-  /* The canvas baseline sits on the center of the input's bottom border. */
-  inset: auto var(--composer-radius) calc(-0.5 * var(--composer-border-width));
+  inset: auto var(--composer-radius) 0;
   height: 48px;
+  overflow: clip;
   pointer-events: none;
   opacity: 0.65;
+}
+.visualization > canvas {
+  /* Hide the flat baseline below the border without clipping the editor. */
+  transform: translateY(calc(var(--composer-border-width) + 1px));
 }
 .control {
   position: relative;
