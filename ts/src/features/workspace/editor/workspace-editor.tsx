@@ -14,6 +14,7 @@ import { Button, ResizeHandle } from "@lesomnus/cxz-ui";
 import { usePaneWidth } from "#src/shared/layout/use-pane-width.ts";
 import type * as Monaco from "monaco-editor/esm/vs/editor/editor.api.js";
 import { SourceEditor } from "#src/shared/editor/source-editor.tsx";
+import { connectWorkspaceEditor } from "./editor-connect";
 
 type File = {
   path: string;
@@ -186,10 +187,7 @@ export function WorkspaceEditor({
     connectRequest.current = controller;
     state.update({ phase: "connecting", error: "" });
     try {
-      const result = await c.projects.editor(
-        { ref: ref(id) },
-        { signal: controller.signal, timeoutMs: 180000 },
-      );
+      const result = await connectWorkspaceEditor(c, id, controller.signal);
       if (!controller.signal.aborted) {
         state.update({
           phase: "connected",

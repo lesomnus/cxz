@@ -1,191 +1,50 @@
-// Package webui serves a browser transport for the existing Manager.
 package webui
 
 import (
 	"context"
-	"io"
-	"strings"
+	"encoding/json"
+	"net"
+	"net/http"
+	"net/http/httputil"
+	"time"
 
-	"github.com/lesomnus/cxz/resource"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"github.com/lesomnus/cxz/internal/transport"
 )
 
-// Keep the initial browser surface explicit. Unimplemented methods fail closed;
-// no second database or lifecycle implementation is opened by this gateway.
-type projects struct {
-	resource.UnimplementedProjectServiceServer
-	client  resource.ProjectServiceClient
-	editors *editorProxy
+// ManagerProxy forwards HTTP unchanged to the private Manager Connect listener.
+// All RPC registration and protocol conversion happen on the Manager's actual
+// gRPC server. The frontend server owns only browser authentication and bridges.
+func ManagerProxy(root string) (http.Handler, func()) {
+	upstream := &http.Transport{
+		DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
+			return transport.LocalConnectConnection(ctx, root)
+		},
+		IdleConnTimeout:     60 * time.Second,
+		MaxIdleConnsPerHost: 16,
+	}
+	proxy := &httputil.ReverseProxy{
+		Rewrite: func(r *httputil.ProxyRequest) {
+			r.Out.URL.Scheme = "http"
+			r.Out.URL.Host = "cxz-manager"
+			r.Out.Host = "cxz-manager"
+			r.Out.Header.Del("Cookie")
+			r.Out.Header.Del("Authorization")
+			r.Out.Header.Del("Origin")
+		},
+		Transport:     upstream,
+		FlushInterval: -1,
+		ErrorHandler: func(w http.ResponseWriter, r *http.Request, _ error) {
+			if r.Context().Err() == nil {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusBadGateway)
+				_ = json.NewEncoder(w).Encode(struct {
+					Code    string `json:"code"`
+					Message string `json:"message"`
+				}{Code: "unavailable", Message: "Manager Connect endpoint unavailable; update and restart the Manager"})
+			}
+		},
+	}
+	return proxy, upstream.CloseIdleConnections
 }
 
-func (s *projects) List(ctx context.Context, r *resource.ProjectListRequest) (*resource.ProjectListResponse, error) {
-	return s.client.List(ctx, r)
-}
-func (s *projects) Get(ctx context.Context, r *resource.ProjectGetRequest) (*resource.Project, error) {
-	return s.client.Get(ctx, r)
-}
-
-// The manager resolves paths inside the owned project container, using its
-// remote user and workspace. Home expansion never refers to the web host.
-func containerPath(requested string, relative bool) error {
-	if requested == "" || len(requested) > 4096 || strings.ContainsAny(requested, "\x00\r\n") {
-		return status.Error(codes.InvalidArgument, "a container path is required")
-	}
-	home := requested == "~" || strings.HasPrefix(requested, "~/")
-	if (strings.HasPrefix(requested, "~") && !home) || (!relative && !home && !strings.HasPrefix(requested, "/")) {
-		return status.Error(codes.InvalidArgument, "absolute or home-relative directory required")
-	}
-	return nil
-}
 func boolPointer(v bool) *bool { return &v }
-
-func (s *projects) Paths(r *resource.ProjectPathsRequest, stream grpc.ServerStreamingServer[resource.ProjectPathsReply]) error {
-	ctx, cancel := context.WithCancel(stream.Context())
-	defer cancel()
-	if err := containerPath(r.GetPath(), false); err != nil {
-		return err
-	}
-	upstream, err := s.client.Paths(ctx, r)
-	if err != nil {
-		return err
-	}
-	for {
-		v, err := upstream.Recv()
-		if err == io.EOF {
-			return nil
-		}
-		if err != nil {
-			return err
-		}
-		if err = stream.Send(v); err != nil {
-			return err
-		}
-	}
-}
-func (s *projects) Download(r *resource.ProjectDownloadRequest, stream grpc.ServerStreamingServer[resource.ProjectDownloadReply]) error {
-	ctx, cancel := context.WithCancel(stream.Context())
-	defer cancel()
-	if err := containerPath(r.GetPath(), true); err != nil {
-		return err
-	}
-	upstream, err := s.client.Download(ctx, r)
-	if err != nil {
-		return err
-	}
-	for {
-		v, err := upstream.Recv()
-		if err == io.EOF {
-			return nil
-		}
-		if err != nil {
-			return err
-		}
-		if err = stream.Send(v); err != nil {
-			return err
-		}
-	}
-}
-func (s *projects) Editor(ctx context.Context, r *resource.ProjectEditorRequest) (*resource.ProjectEditorReply, error) {
-	return s.editors.connect(ctx, r)
-}
-
-type sessions struct {
-	resource.UnimplementedSessionServiceServer
-	client resource.SessionServiceClient
-}
-
-func (s *sessions) List(ctx context.Context, r *resource.SessionListRequest) (*resource.SessionListResponse, error) {
-	return s.client.List(ctx, r)
-}
-func (s *sessions) Get(ctx context.Context, r *resource.SessionGetRequest) (*resource.Session, error) {
-	return s.client.Get(ctx, r)
-}
-func (s *sessions) History(ctx context.Context, r *resource.SessionEventsRequest) (*resource.SessionEventBatch, error) {
-	return s.client.History(ctx, r)
-}
-func (s *sessions) Send(ctx context.Context, r *resource.SessionSendRequest) (*resource.SessionReceipt, error) {
-	return s.client.Send(ctx, r)
-}
-func (s *sessions) Reply(ctx context.Context, r *resource.SessionReplyRequest) (*resource.SessionReceipt, error) {
-	return s.client.Reply(ctx, r)
-}
-func (s *sessions) Interrupt(ctx context.Context, r *resource.SessionControl) (*resource.SessionReceipt, error) {
-	return s.client.Interrupt(ctx, r)
-}
-func (s *sessions) Stop(ctx context.Context, r *resource.SessionControl) (*resource.Session, error) {
-	return s.client.Stop(ctx, r)
-}
-func (s *sessions) Resume(ctx context.Context, r *resource.SessionControl) (*resource.Session, error) {
-	return s.client.Resume(ctx, r)
-}
-func (s *sessions) Permission(ctx context.Context, r *resource.SessionPermissionRequest) (*resource.SessionReceipt, error) {
-	return s.client.Permission(ctx, r)
-}
-func (s *sessions) Events(r *resource.SessionEventsRequest, stream grpc.ServerStreamingServer[resource.SessionEvent]) error {
-	upstream, err := s.client.Events(stream.Context(), r)
-	if err != nil {
-		return err
-	}
-	for {
-		e, err := upstream.Recv()
-		if err == io.EOF {
-			return nil
-		}
-		if err != nil {
-			return err
-		}
-		if err = stream.Send(e); err != nil {
-			return err
-		}
-	}
-}
-
-func (s *projects) Watch(r *resource.ProjectWatchRequest, stream grpc.ServerStreamingServer[resource.ProjectWatchResponse]) error {
-	upstream, err := s.client.Watch(stream.Context(), r)
-	if err != nil {
-		return err
-	}
-	for {
-		e, err := upstream.Recv()
-		if err == io.EOF {
-			return nil
-		}
-		if err != nil {
-			return err
-		}
-		if err = stream.Send(e); err != nil {
-			return err
-		}
-	}
-}
-func (s *sessions) Watch(r *resource.SessionWatchRequest, stream grpc.ServerStreamingServer[resource.SessionWatchResponse]) error {
-	upstream, err := s.client.Watch(stream.Context(), r)
-	if err != nil {
-		return err
-	}
-	for {
-		e, err := upstream.Recv()
-		if err == io.EOF {
-			return nil
-		}
-		if err != nil {
-			return err
-		}
-		if err = stream.Send(e); err != nil {
-			return err
-		}
-	}
-}
-
-func (s *sessions) Transcript(ctx context.Context, r *resource.SessionTranscriptRequest) (*resource.SessionTranscriptReply, error) {
-	return s.client.Transcript(ctx, r)
-}
-func (s *sessions) EventDetails(ctx context.Context, r *resource.SessionEventDetailsRequest) (*resource.SessionEventBatch, error) {
-	return s.client.EventDetails(ctx, r)
-}
-
-func (s *sessions) Models(ctx context.Context, r *resource.SessionModelsRequest) (*resource.SessionModelsReply, error) {
-	return s.client.Models(ctx, r)
-}

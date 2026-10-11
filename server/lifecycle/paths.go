@@ -17,7 +17,7 @@ func (s ProjectServer) Paths(r *resource.ProjectPathsRequest, stream grpc.Server
 		return err
 	}
 	path := r.GetPath()
-	if len(path) > 4096 || strings.ContainsRune(path, 0) || !(strings.HasPrefix(path, "/") || path == "~" || strings.HasPrefix(path, "~/")) {
+	if len(path) > 4096 || strings.ContainsAny(path, "\x00\r\n") || !(strings.HasPrefix(path, "/") || path == "~" || strings.HasPrefix(path, "~/")) {
 		return status.Error(codes.InvalidArgument, "absolute or home-relative directory required")
 	}
 	ctx, cancel := context.WithTimeout(stream.Context(), 4*time.Second)

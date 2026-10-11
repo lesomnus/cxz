@@ -56,7 +56,7 @@ func TestBrowserFixture(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	h, stop, err := Handler(c, conn, assets)
+	h, stop, err := Handler(c, conn, assets, testManagerRPC(t, g))
 	if err != nil {
 		t.Fatal(err)
 	}

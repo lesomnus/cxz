@@ -222,7 +222,7 @@ not issue certificates or install them into any trust store.
 
 `<manager-container>-web`, using the installed Manager's image, with Docker's
 `unless-stopped` restart policy. It survives terminal closure and host reboot,
-and serves the UI files packaged in the image and the payday Connect API. It mounts only the
+and serves the UI files packaged in the image, browser authentication and an HTTP proxy to the Manager's Connect API. It mounts only the
 Manager state volume's `run` subdirectory, the token file, and the certificate
 and key when those are configured, all read-only; it receives no Docker socket
 and no database mount. Configured files must exist on both the command host and
@@ -295,31 +295,34 @@ reports either state. A gateway restart invalidates browser logins; sign in
 again. It does not stop agent turns. `cxz web serve` runs the same gateway in
 this terminal for developing cxz itself, and Ctrl+C stops only that gateway.
 
-## First-version support
+## Current support
 
 | Area | Web support |
 | --- | --- |
-| Projects and sessions | Shared listed-project/session inventories, live membership, collapsible project groups, opening existing sessions |
-| Conversation | Retained history, live events, Markdown, code blocks, response model/effort snapshots beside the agent logo, response copy, raw event details |
-| History | Last 2,000 events in browser memory; Manager retention still applies; latest button |
-| Drafts | Per-session in-memory drafts survive navigation within the tab, not reload/sign-out |
-| Sending | Explicit Send button; mutation IDs; no automatic replay after ambiguous failure |
-| Session control | Interrupt turn, stop, resume |
-| Approval | Allow/deny and raw payload inspection |
-| Questions | Claude AskUserQuestion and Codex requestUserInput choices/free text |
-| MCP | Server name/message/raw request; complex elicitation forms require the TUI |
-| Connectivity | Same-origin Connection, cursor reconnect, deduplication and retention gap notice |
-| Workspace editor | Wide-view read-only Monaco file preview; explicit Connect embeds OpenVSCode in the session project devcontainer; see [editor contract](web-editor.md) |
-| Workspace shell | Ctrl+Backquote or title-bar button opens a project terminal below the composer; folding retains shell state; see [terminal contract](web-terminal.md) |
-| Authentication | Token login, Secure/HttpOnly/SameSite cookie, sign-out, 12-hour expiry |
+| Projects and sessions | Shared inventories and watches, opening existing sessions, editable session titles and aliases |
+| Conversation | Virtualized paged history, live events, Markdown, highlighted code, model/effort snapshots, response metrics and copy |
+| Drafts | Per-session drafts and paste chips survive navigation and reload in tab-local sessionStorage |
+| Sending | Explicit Send or Ctrl+Enter; mutation IDs; no automatic replay after ambiguous failure |
+| Session control | Interrupt, stop/resume, restart, purge with dry-run review and confirmation |
+| Approval | Allow/deny and full tool input/output/approval inspection |
+| Questions | Claude choices/free text/previews; Codex requestUserInput and asynchronous questions; recorded replies |
+| MCP | Basic request display; schema-based elicitation forms still require the TUI |
+| Model and usage | Model/effort selectors, account remaining quota/reset, context gauge and per-response metrics |
+| Files | File/folder upload, large paste attachments, container path completion and /download |
+| Workspace editor | Wide-view Monaco file preview; explicit Connect embeds OpenVSCode in the project devcontainer |
+| Workspace shell | Ctrl+Backquote or toolbar toggle; retained terminal tabs, drag docking, resize, WebGL with fallback |
+| Settings | Browser-local JSON document, language/theme, editor fonts/indentation/palette, terminal behavior, voice input and sounds |
+| Attention | Unread session markers, favicon badges and completion/question sounds after browser interaction |
+| Voice | Browser speech recognition, configured language or browser preference, optional local-only recognition |
+| Auxiliary summaries | Live Manager summaries displayed next to their associated responses |
+| Authentication | Token login, Secure/HttpOnly/SameSite cookie, sign-out and expiry |
 
-Not yet implemented: session/project creation and deletion, Settings, version
-panels, model/effort/permission controls, structured usage metrics, auxiliary AI
-controls, file transfer, slash-command UI, secret attachments, async Codex
-question forms, PWA installation/push or multiple connections. Raw tool details
-are available, but the TUI's specialized input/output presentation is not yet
-ported. The gateway exposes only the RPC subset used here; unimplemented RPCs
-fail rather than silently gaining a second implementation.
+There is no UI yet for session creation/account login, archived-session restore,
+conversation search, shared memory management, queued-message recall, permission
+policy selection, auxiliary AI configuration, provider background task reports,
+MCP server management, installation/history/version maintenance, diagnostics,
+secret attachments, multiple composer cursors or multiple connections. The
+Manager's RPC availability is independent of which UI controls exist.
 
 A disconnected mutation may have reached the Manager even if the browser did
 not receive its result. The draft remains; check the conversation before
@@ -329,12 +332,34 @@ recovered from the browser.
 
 ## Architecture and authentication
 
-`payday/web` translates Connect and gRPC-Web into registered gRPC services.
-The gateway forwards the existing generated ProjectService and SessionService
-requests to the Manager. Lifecycle validation, run IDs, mutation handling and
-storage remain in the Manager. The browser uses generated protobuf-es service
-descriptors, Connect transport and payday Store/Queries; journal Events is a
-separate ordered stream from payday's resource Watch.
+The Manager exposes its **actual registered gRPC server** through payday on a
+private HTTP Unix socket, `STATE/run/web.sock`, with owner-only permissions. All
+registered services, their generated method definitions and the existing Manager
+interceptors are used by Connect/gRPC-Web. Adding a Manager RPC does not require
+a corresponding web implementation or forwarding method. Native gRPC continues
+on `STATE/run/daemon.sock`; project-container runtimes do not open the web socket.
+
+The `cxz web` frontend server forwards authenticated RPC requests as HTTP to that
+socket, without decoding messages or maintaining a second service registry. A
+host-side `web serve` reaches an installed Manager through `docker exec` and
+`_web-bridge`; the installed web container uses its existing read-only run mount.
+No additional network port is opened on the Manager. Browser cookies remain in
+the frontend server; request cancellation, streaming responses, RPC errors and
+metadata pass through to the Manager.
+
+The frontend still owns UI files, browser authentication and the HTTP/WebSocket
+bridges for terminals, uploads and OpenVSCode. `POST /editor/connect` prepares the
+workbench bridge and keeps its connection token server-side. Ordinary resource
+RPCs, including `Session.Patch`, `Session.Purge` and `Session.AuxEvents`, go
+directly to the registered Manager handlers. The browser uses generated
+protobuf-es descriptors, Connect transport and payday Store/Queries; journal
+Events is a separate ordered stream from resource Watch.
+
+Both the Manager and web frontend need this architecture change. Updating only
+the UI or frontend against an older Manager produces a `502` explaining that
+the Manager Connect endpoint is unavailable. Update/restart the Manager first,
+then refresh the web frontend. Projects do not need recreation for this listener
+change. A foreground `web serve` is refreshed by restarting that process.
 
 There is no REST conversation API. `/auth/login`, `/auth/status` and
 `/auth/logout` are browser-session endpoints. The first version has one
@@ -347,11 +372,11 @@ server-side session. Logout/expiry cancels that session's active gateway
 requests; agent turns remain independent. Origin and Host must match the
 configured HTTPS origin, including for mutation requests. Cross-origin access
 is disabled. Markdown is sanitized, embedded HTML cannot execute scripts, and
-external images are disabled. Assets are embedded in the binary so source-based
-updates do not require Node on the deployment host.
+external images are disabled. Assets are served from the files packaged in the web container; they are not
+embedded in Go binaries. Source deployments can select a built assets directory.
 
 The broader feature contracts and support matrix are tracked separately in
-PR #78; this page describes only the implementation shipped by the web PR.
+PR #78; this page describes the current implementation in this checkout.
 
 ## UI development without a server
 

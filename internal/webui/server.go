@@ -18,7 +18,7 @@ import (
 	"time"
 
 	"github.com/lesomnus/cxz/resource"
-	"github.com/lesomnus/payday/config"
+
 	pdweb "github.com/lesomnus/payday/web"
 	"google.golang.org/grpc"
 )
@@ -86,33 +86,35 @@ type browserAuth struct {
 	sessions  map[[32]byte]browserSession
 }
 
-// Handler uses payday's transcoder; all RPCs still run in the installed Manager.
+// Handler authenticates browser requests; the Manager handles Connect RPCs.
 // The returned close function stops gateway streams, never the Manager/agents.
-func Handler(c Config, conn grpc.ClientConnInterface, assets fs.FS) (http.Handler, func(), error) {
+func Handler(c Config, conn grpc.ClientConnInterface, assets fs.FS, rpc http.Handler) (http.Handler, func(), error) {
 	if err := c.Validate(); err != nil {
 		return nil, nil, err
 	}
-	g := grpc.NewServer(grpc.MaxRecvMsgSize(8<<20), grpc.MaxSendMsgSize(24<<20))
-	editorProxy := &editorProxy{client: resource.NewProjectServiceClient(conn), connected: make(map[string]editorConnection)}
-	resource.RegisterProjectServiceServer(g, &projects{client: resource.NewProjectServiceClient(conn), editors: editorProxy})
-	resource.RegisterSessionServiceServer(g, &sessions{client: resource.NewSessionServiceClient(conn)})
-	mux, err := pdweb.New(config.HttpConfig{AllowWeb: true}, g)
-	if err != nil {
-		g.Stop()
-		return nil, nil, err
+	if rpc == nil {
+		return nil, nil, fmt.Errorf("Manager Connect handler is required")
 	}
+	editorProxy := &editorProxy{client: resource.NewProjectServiceClient(conn), connected: make(map[string]editorConnection)}
+	mux := http.NewServeMux()
 	mux.Handle("/", spaFiles(assets))
 	mux.Handle("/editor/", editorProxy)
 	mux.Handle("/terminal/", &terminalProxy{client: resource.NewProjectServiceClient(conn)})
 	mux.Handle("/attachments/", &attachmentProxy{client: resource.NewSessionServiceClient(conn)})
 	auth := &browserAuth{origin: c.Origin, transport: !c.plaintext(), token: sha256.Sum256([]byte(c.Token)), sessions: make(map[[32]byte]browserSession)}
-	return auth.wrap(mux), func() {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if pdweb.Rpc(r) {
+			rpc.ServeHTTP(w, r)
+			return
+		}
+		mux.ServeHTTP(w, r)
+	})
+	return auth.wrap(handler), func() {
 		auth.mu.Lock()
 		for k := range auth.sessions {
 			auth.revoke(k)
 		}
 		auth.mu.Unlock()
-		g.Stop()
 	}, nil
 }
 
@@ -244,8 +246,8 @@ func (a *browserAuth) login(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func Serve(ctx context.Context, c Config, conn grpc.ClientConnInterface, assets fs.FS) error {
-	h, closeHandler, err := Handler(c, conn, assets)
+func Serve(ctx context.Context, c Config, conn grpc.ClientConnInterface, assets fs.FS, rpc http.Handler) error {
+	h, closeHandler, err := Handler(c, conn, assets, rpc)
 	if err != nil {
 		return err
 	}

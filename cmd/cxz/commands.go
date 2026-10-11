@@ -250,6 +250,7 @@ func internalCommands() xli.Commands {
 		}),
 		makeCmd("_boot", nil, func(ctx context.Context, _ *xli.Command) error { return workspace.Boot(stateFrom(ctx)) }),
 		makeCmd("_bridge", nil, func(ctx context.Context, _ *xli.Command) error { return transport.Bridge(stateFrom(ctx)) }),
+		makeCmd("_web-bridge", nil, func(ctx context.Context, _ *xli.Command) error { return transport.WebBridge(stateFrom(ctx)) }),
 		makeCmd("_project", nil, func(ctx context.Context, _ *xli.Command) error {
 			r, err := workspace.LoadRuntime(stateFrom(ctx))
 			if err != nil {
