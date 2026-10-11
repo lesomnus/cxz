@@ -8,7 +8,19 @@ export type UIMessage =
   | "Edit {label}"
   | "{label} choices"
   | "Inherited: {value}"
-  | "Reset to inherited value";
+  | "Reset to inherited value"
+  | "Terminal {number}"
+  | "Terminal tabs"
+  | "Close {name}"
+  | "New terminal"
+  | "Hide terminal"
+  | "Workspace terminal"
+  | "Resize terminal"
+  | "Resize panes"
+  | "Reconnect"
+  | "Copied"
+  | "Copy failed"
+  | "Clipboard access failed. Use the terminal context menu to copy.";
 export type UITranslate = (
   message: UIMessage,
   values?: Record<string, string | number>,

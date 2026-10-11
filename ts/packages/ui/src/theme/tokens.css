@@ -95,6 +95,7 @@
   );
   --ui-dropdown-blur: 24px;
   --ui-toolbar-button-width: 48px;
+  --ui-terminal-toolbar-height: 28px;
   --ui-confirm-button-background: #3b1b1b;
   --ui-confirm-button-color: #f1dada;
 }

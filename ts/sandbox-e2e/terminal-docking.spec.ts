@@ -32,6 +32,26 @@ test("tabs own independent shells; folding, reordering, moving and closing prese
   page.on("pageerror", (error) => errors.push(error.message));
   const panel = page.getByRole("region", { name: "Workspace terminal" });
   let left = panel.locator("[data-terminal-group]").first();
+  const add = left.getByRole("button", { name: "New terminal" });
+  const fold = panel.getByRole("button", { name: "Hide terminal" });
+  const close = left.getByRole("button", {
+    name: "Close Terminal 1",
+    exact: true,
+  });
+  const foldBox = (await fold.boundingBox())!;
+  for (const button of [add, close]) {
+    const box = (await button.boundingBox())!;
+    expect(box.width).toBe(foldBox.width);
+    expect(box.height).toBe(foldBox.height);
+  }
+  const tabBox = (await left
+    .locator("[data-terminal-tab]")
+    .last()
+    .boundingBox())!;
+  expect((await add.boundingBox())!.x).toBeCloseTo(tabBox.x + tabBox.width, 0);
+  await expect(
+    panel.getByRole("button", { name: "Terminal layout" }),
+  ).toHaveCount(0);
   await command(page, left, "echo first-shell-marker");
   await left.getByRole("button", { name: "New terminal" }).click();
   await command(page, left, "echo second-shell-marker");
@@ -56,8 +76,12 @@ test("tabs own independent shells; folding, reordering, moving and closing prese
       targetPosition: { x: 2, y: 12 },
     });
   await expect(left.getByRole("tab").first()).toHaveText("Terminal 2");
-  await left.getByRole("button", { name: "Terminal layout" }).click();
-  await page.getByRole("menuitem", { name: "Split right" }).click();
+  await left.getByRole("button", { name: "New terminal" }).click();
+  const leftSlot = left.getByRole("tabpanel");
+  const leftBounds = (await leftSlot.boundingBox())!;
+  await left.locator('[data-terminal-tab="terminal-3"]').dragTo(leftSlot, {
+    targetPosition: { x: leftBounds.width - 8, y: leftBounds.height / 2 },
+  });
   await expect(panel.locator("[data-terminal-group]")).toHaveCount(2);
   const right = panel.locator("[data-terminal-group]").last();
   await command(page, right, "echo third-shell-marker");
@@ -156,8 +180,12 @@ test("edge drops create nested panes and both split separators and the panel hei
   await expect
     .poll(async () => (await first.boundingBox())!.width)
     .toBeLessThan(previous + 30);
-  await right.getByRole("button", { name: "Terminal layout" }).click();
-  await page.getByRole("menuitem", { name: "Split down" }).click();
+  await right.getByRole("button", { name: "New terminal" }).click();
+  const rightSlot = right.getByRole("tabpanel");
+  const rightBounds = (await rightSlot.boundingBox())!;
+  await right.locator('[data-terminal-tab="terminal-3"]').dragTo(rightSlot, {
+    targetPosition: { x: rightBounds.width / 2, y: rightBounds.height - 8 },
+  });
   await expect(panel.locator("[data-terminal-group]")).toHaveCount(3);
   await expect(
     panel.getByRole("separator", { name: "Resize panes" }),

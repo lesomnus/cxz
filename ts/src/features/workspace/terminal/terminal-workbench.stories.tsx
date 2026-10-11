@@ -55,7 +55,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Add/close independent terminal tabs. Terminal layout menu creates splits. Drag tabs within a header to reorder, to a pane's center to merge, or to its edges to split. Resize pane separators or the upper edge of the terminal area. Folding and docking preserve each shell's screen and connection. This story uses real xterm.js with a local simulated shell.",
+          "Add/close independent terminal tabs. The add button follows the last tab. Drag tabs within a header to reorder, to a pane's center to merge, or to its edges to split. Resize pane separators or the upper edge of the terminal area. Folding and docking preserve each shell's screen and connection. This story uses real xterm.js with a local simulated shell.",
       },
     },
   },

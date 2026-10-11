@@ -17,6 +17,11 @@
       "import": "./dist/index.js"
     },
     "./styles.css": "./dist/style.css",
+    "./terminal": {
+      "types": "./dist/terminal/index.d.ts",
+      "development": "./src/terminal/index.ts",
+      "import": "./dist/terminal.js"
+    },
     "./editor": {
       "types": "./dist/editor/index.d.ts",
       "development": "./src/editor/index.ts",

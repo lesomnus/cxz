@@ -19,8 +19,12 @@ test("terminal docking story opens independent xterm shells and nested panes", a
   await expect(panel.locator(".terminal-screen:visible")).toContainText(
     "story-marker",
   );
-  await panel.getByRole("button", { name: "Terminal layout" }).click();
-  await page.getByRole("menuitem", { name: "Split down" }).click();
+  await panel.getByRole("button", { name: "New terminal" }).click();
+  const slot = panel.getByRole("tabpanel");
+  const bounds = (await slot.boundingBox())!;
+  await panel.locator('[data-terminal-tab="terminal-3"]').dragTo(slot, {
+    targetPosition: { x: bounds.width / 2, y: bounds.height - 8 },
+  });
   await expect(panel.locator("[data-terminal-group]")).toHaveCount(2);
   await panel
     .getByRole("button", { name: "Close Terminal 3", exact: true })

@@ -1,4 +1,4 @@
-import type { SplitNode } from "@lesomnus/cxz-ui";
+import type { SplitNode } from "../components/split-layout/split-layout";
 
 export type DockEdge = "center" | "left" | "right" | "top" | "bottom";
 export type TerminalGroup = { id: string; tabs: string[]; active: string };

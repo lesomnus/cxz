@@ -5,7 +5,6 @@ import {
   useLayoutEffect,
   useRef,
   useState,
-  type Ref,
 } from "react";
 import { createPortal } from "react-dom";
 import type { Connection } from "#src/shared/api/connection.ts";
@@ -17,16 +16,11 @@ import { installTerminalKeyboard } from "./terminal-keyboard";
 import { useSettings } from "#src/shared/settings/settings.ts";
 import { resolveTerminalSettings } from "#src/shared/settings/terminal-settings.ts";
 import styles from "./workspace-terminal.module.css";
-
-export type TerminalSessionStatus = {
-  state: string;
-  ended: boolean;
-  clipboardNotice: "copied" | "failed" | "";
-};
-export type TerminalSessionHandle = {
-  focus: () => void;
-  reconnect: () => void;
-};
+import type {
+  TerminalSurfaceProps,
+  TerminalSessionStatus,
+  TerminalSessionHandle,
+} from "@lesomnus/cxz-ui/terminal";
 
 // Each shell stays in this flat keyed list; docking only reparents its portal host.
 // React pane remounts and tab switches must never reopen the PTY or clear its buffer.
@@ -43,19 +37,9 @@ export function TerminalSession({
   onStatus,
   onFocus,
   ref,
-}: {
+}: TerminalSurfaceProps & {
   c: Connection;
   runtimeId?: string;
-  id: string;
-  groupId: string;
-  active: boolean;
-  focused: boolean;
-  visible: boolean;
-  placement: unknown;
-  getHost: (group: string) => HTMLElement | null;
-  onStatus: (id: string, status: TerminalSessionStatus) => void;
-  onFocus: (id: string) => void;
-  ref?: Ref<TerminalSessionHandle>;
 }) {
   const [mount] = useState(() => {
     const el = document.createElement("div");

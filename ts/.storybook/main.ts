@@ -4,6 +4,7 @@ const config: StorybookConfig = {
   stories: [
     "../src/**/*.stories.@(ts|tsx)",
     "../packages/ui/src/components/split-layout/*.stories.tsx",
+    "../packages/ui/src/terminal/*.stories.tsx",
   ],
   addons: ["@storybook/addon-docs"],
   framework: "@storybook/react-vite",

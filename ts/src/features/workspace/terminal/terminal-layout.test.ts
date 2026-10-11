@@ -7,7 +7,7 @@ import {
   paneOrder,
   selectTerminal,
   type TerminalLayout,
-} from "./terminal-layout";
+} from "@lesomnus/cxz-ui/terminal";
 import { setSplitRatio } from "@lesomnus/cxz-ui";
 
 function invariant(layout: TerminalLayout) {
