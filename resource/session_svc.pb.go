@@ -9380,11 +9380,17 @@ func (b0 AuxState_builder) Build() *AuxState {
 }
 
 // Kept per turn on the session, so a summary outlives the task that wrote it.
+// response_seq is the sequence of the turn's final response. turn names the
+// turn_end record, which the reading projection deletes once it has folded that
+// turn's metrics onto the response row -- so a client reading the projection
+// has no row with that sequence. This is the row the summary belongs beside,
+// and the manager knows it because it watched the turn.
 type AuxSummary struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_RunId       *string                `protobuf:"bytes,1,opt,name=run_id,json=runId"`
 	xxx_hidden_Turn        uint64                 `protobuf:"varint,2,opt,name=turn"`
 	xxx_hidden_Text        *string                `protobuf:"bytes,3,opt,name=text"`
+	xxx_hidden_ResponseSeq uint64                 `protobuf:"varint,4,opt,name=response_seq,json=responseSeq"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
 	XXX_presence           [1]uint32
 	unknownFields          protoimpl.UnknownFields
@@ -9443,19 +9449,31 @@ func (x *AuxSummary) GetText() string {
 	return ""
 }
 
+func (x *AuxSummary) GetResponseSeq() uint64 {
+	if x != nil {
+		return x.xxx_hidden_ResponseSeq
+	}
+	return 0
+}
+
 func (x *AuxSummary) SetRunId(v string) {
 	x.xxx_hidden_RunId = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 3)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 4)
 }
 
 func (x *AuxSummary) SetTurn(v uint64) {
 	x.xxx_hidden_Turn = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 3)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 4)
 }
 
 func (x *AuxSummary) SetText(v string) {
 	x.xxx_hidden_Text = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 3)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 4)
+}
+
+func (x *AuxSummary) SetResponseSeq(v uint64) {
+	x.xxx_hidden_ResponseSeq = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 4)
 }
 
 func (x *AuxSummary) HasRunId() bool {
@@ -9479,6 +9497,13 @@ func (x *AuxSummary) HasText() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
 }
 
+func (x *AuxSummary) HasResponseSeq() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
+}
+
 func (x *AuxSummary) ClearRunId() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
 	x.xxx_hidden_RunId = nil
@@ -9494,12 +9519,18 @@ func (x *AuxSummary) ClearText() {
 	x.xxx_hidden_Text = nil
 }
 
+func (x *AuxSummary) ClearResponseSeq() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
+	x.xxx_hidden_ResponseSeq = 0
+}
+
 type AuxSummary_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	RunId *string
-	Turn  *uint64
-	Text  *string
+	RunId       *string
+	Turn        *uint64
+	Text        *string
+	ResponseSeq *uint64
 }
 
 func (b0 AuxSummary_builder) Build() *AuxSummary {
@@ -9507,16 +9538,20 @@ func (b0 AuxSummary_builder) Build() *AuxSummary {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.RunId != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 3)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 4)
 		x.xxx_hidden_RunId = b.RunId
 	}
 	if b.Turn != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 3)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 4)
 		x.xxx_hidden_Turn = *b.Turn
 	}
 	if b.Text != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 3)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 4)
 		x.xxx_hidden_Text = b.Text
+	}
+	if b.ResponseSeq != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 4)
+		x.xxx_hidden_ResponseSeq = *b.ResponseSeq
 	}
 	return m0
 }
@@ -9535,6 +9570,7 @@ type Aux struct {
 	xxx_hidden_Kinds       []AuxKind              `protobuf:"varint,3,rep,packed,name=kinds,enum=cxz.AuxKind"`
 	xxx_hidden_RunId       *string                `protobuf:"bytes,4,opt,name=run_id,json=runId"`
 	xxx_hidden_Turn        uint64                 `protobuf:"varint,5,opt,name=turn"`
+	xxx_hidden_ResponseSeq uint64                 `protobuf:"varint,11,opt,name=response_seq,json=responseSeq"`
 	xxx_hidden_Revision    *string                `protobuf:"bytes,6,opt,name=revision"`
 	xxx_hidden_State       *string                `protobuf:"bytes,7,opt,name=state"`
 	xxx_hidden_Results     *[]*AuxResult          `protobuf:"bytes,8,rep,name=results"`
@@ -9612,6 +9648,13 @@ func (x *Aux) GetTurn() uint64 {
 	return 0
 }
 
+func (x *Aux) GetResponseSeq() uint64 {
+	if x != nil {
+		return x.xxx_hidden_ResponseSeq
+	}
+	return 0
+}
+
 func (x *Aux) GetRevision() string {
 	if x != nil {
 		if x.xxx_hidden_Revision != nil {
@@ -9662,7 +9705,7 @@ func (x *Aux) GetMessage() string {
 
 func (x *Aux) SetId(v string) {
 	x.xxx_hidden_Id = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 11)
 }
 
 func (x *Aux) SetSessionId(v []byte) {
@@ -9670,7 +9713,7 @@ func (x *Aux) SetSessionId(v []byte) {
 		v = []byte{}
 	}
 	x.xxx_hidden_SessionId = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 11)
 }
 
 func (x *Aux) SetKinds(v []AuxKind) {
@@ -9679,22 +9722,27 @@ func (x *Aux) SetKinds(v []AuxKind) {
 
 func (x *Aux) SetRunId(v string) {
 	x.xxx_hidden_RunId = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 11)
 }
 
 func (x *Aux) SetTurn(v uint64) {
 	x.xxx_hidden_Turn = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 11)
+}
+
+func (x *Aux) SetResponseSeq(v uint64) {
+	x.xxx_hidden_ResponseSeq = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 11)
 }
 
 func (x *Aux) SetRevision(v string) {
 	x.xxx_hidden_Revision = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 11)
 }
 
 func (x *Aux) SetState(v string) {
 	x.xxx_hidden_State = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 11)
 }
 
 func (x *Aux) SetResults(v []*AuxResult) {
@@ -9707,7 +9755,7 @@ func (x *Aux) SetUsage(v []*AuxUsage) {
 
 func (x *Aux) SetMessage(v string) {
 	x.xxx_hidden_Message = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 11)
 }
 
 func (x *Aux) HasId() bool {
@@ -9738,25 +9786,32 @@ func (x *Aux) HasTurn() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
 }
 
-func (x *Aux) HasRevision() bool {
+func (x *Aux) HasResponseSeq() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
 }
 
-func (x *Aux) HasState() bool {
+func (x *Aux) HasRevision() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
 }
 
+func (x *Aux) HasState() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 7)
+}
+
 func (x *Aux) HasMessage() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 9)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 10)
 }
 
 func (x *Aux) ClearId() {
@@ -9779,18 +9834,23 @@ func (x *Aux) ClearTurn() {
 	x.xxx_hidden_Turn = 0
 }
 
-func (x *Aux) ClearRevision() {
+func (x *Aux) ClearResponseSeq() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
+	x.xxx_hidden_ResponseSeq = 0
+}
+
+func (x *Aux) ClearRevision() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
 	x.xxx_hidden_Revision = nil
 }
 
 func (x *Aux) ClearState() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
 	x.xxx_hidden_State = nil
 }
 
 func (x *Aux) ClearMessage() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 9)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 10)
 	x.xxx_hidden_Message = nil
 }
 
@@ -9800,9 +9860,11 @@ type Aux_builder struct {
 	Id        *string
 	SessionId []byte
 	Kinds     []AuxKind
-	// The turn this answered. Results are shown beside it.
-	RunId *string
-	Turn  *uint64
+	// The turn this answered. Results are shown beside it. response_seq is the
+	// row they are shown on; see AuxSummary.
+	RunId       *string
+	Turn        *uint64
+	ResponseSeq *uint64
 	// The configuration revision it ran under. A changed one makes it stale,
 	// because its answer is not an answer for the new settings.
 	Revision *string
@@ -9817,34 +9879,38 @@ func (b0 Aux_builder) Build() *Aux {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Id != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 11)
 		x.xxx_hidden_Id = b.Id
 	}
 	if b.SessionId != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 11)
 		x.xxx_hidden_SessionId = b.SessionId
 	}
 	x.xxx_hidden_Kinds = b.Kinds
 	if b.RunId != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 11)
 		x.xxx_hidden_RunId = b.RunId
 	}
 	if b.Turn != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 11)
 		x.xxx_hidden_Turn = *b.Turn
 	}
+	if b.ResponseSeq != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 11)
+		x.xxx_hidden_ResponseSeq = *b.ResponseSeq
+	}
 	if b.Revision != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 11)
 		x.xxx_hidden_Revision = b.Revision
 	}
 	if b.State != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 11)
 		x.xxx_hidden_State = b.State
 	}
 	x.xxx_hidden_Results = &b.Results
 	x.xxx_hidden_Usage = &b.Usage
 	if b.Message != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 11)
 		x.xxx_hidden_Message = b.Message
 	}
 	return m0
@@ -11716,19 +11782,21 @@ const file_cxz_session_svc_g_proto_rawDesc = "" +
 	"\x06recent\x18\x06 \x03(\v2\b.cxz.AuxR\x06recent\x124\n" +
 	"\vpreferences\x18\x03 \x03(\v2\x12.cxz.AuxPreferenceR\vpreferences\x12\x14\n" +
 	"\x05title\x18\x04 \x01(\tR\x05title\x12\x18\n" +
-	"\amessage\x18\x05 \x01(\tR\amessage\"K\n" +
+	"\amessage\x18\x05 \x01(\tR\amessage\"n\n" +
 	"\n" +
 	"AuxSummary\x12\x15\n" +
 	"\x06run_id\x18\x01 \x01(\tR\x05runId\x12\x12\n" +
 	"\x04turn\x18\x02 \x01(\x04R\x04turn\x12\x12\n" +
-	"\x04text\x18\x03 \x01(\tR\x04text\"\x9e\x02\n" +
+	"\x04text\x18\x03 \x01(\tR\x04text\x12!\n" +
+	"\fresponse_seq\x18\x04 \x01(\x04R\vresponseSeq\"\xc1\x02\n" +
 	"\x03Aux\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x02 \x01(\fR\tsessionId\x12\"\n" +
 	"\x05kinds\x18\x03 \x03(\x0e2\f.cxz.AuxKindR\x05kinds\x12\x15\n" +
 	"\x06run_id\x18\x04 \x01(\tR\x05runId\x12\x12\n" +
-	"\x04turn\x18\x05 \x01(\x04R\x04turn\x12\x1a\n" +
+	"\x04turn\x18\x05 \x01(\x04R\x04turn\x12!\n" +
+	"\fresponse_seq\x18\v \x01(\x04R\vresponseSeq\x12\x1a\n" +
 	"\brevision\x18\x06 \x01(\tR\brevision\x12\x14\n" +
 	"\x05state\x18\a \x01(\tR\x05state\x12(\n" +
 	"\aresults\x18\b \x03(\v2\x0e.cxz.AuxResultR\aresults\x12#\n" +

@@ -1,5 +1,6 @@
 import { useRef, useState, type ReactNode } from "react";
 import type { SessionEvent } from "#gen/cxz/session_pb";
+import type { AuxState } from "#gen/cxz/session_svc_pb";
 import {
   FloatingCardHost,
   FloatingCardProvider,
@@ -7,6 +8,7 @@ import {
 import { Transcript } from "#src/features/session/conversation/transcript.tsx";
 import { EventView } from "#src/features/session/conversation/event-view.tsx";
 import { transcriptEvents } from "#src/features/session/model/tool-activity.ts";
+import { attachSummaries } from "#src/features/session/model/session-aux.ts";
 import { ConversationComposer } from "#src/features/session/composer/conversation-composer.tsx";
 import {
   createPaste,
@@ -101,6 +103,7 @@ export function PreviewFrame({ children }: { children: ReactNode }) {
 export function PreviewTranscript({
   events,
   agent = "codex",
+  aux,
   pane,
   follow,
   navigate = noop,
@@ -108,12 +111,14 @@ export function PreviewTranscript({
 }: {
   events: SessionEvent[];
   agent?: string;
+  aux?: AuxState;
   pane: React.RefObject<HTMLDivElement | null>;
   follow: React.RefObject<boolean>;
   navigate?: () => void;
   reading?: (reading: boolean) => void;
 }) {
   const projected = transcriptEvents(events);
+  const summaries = attachSummaries(projected.events, aux);
   const [jump, setJump] = useState<string>();
   return (
     <Transcript
@@ -126,6 +131,7 @@ export function PreviewTranscript({
           agent={agent}
           activity={projected.activities.get(e.seq)}
           completion={projected.completions.get(e.seq.toString())}
+          summary={summaries.get(e.seq.toString())}
         />
       )}
       notice={null}
@@ -147,6 +153,7 @@ export function PreviewTranscript({
 export function ComponentPreview({
   events = [],
   agent = "codex",
+  aux,
   value = "",
   onChange,
   sending = false,
@@ -157,6 +164,7 @@ export function ComponentPreview({
 }: {
   events?: SessionEvent[];
   agent?: string;
+  aux?: AuxState;
   value?: string;
   onChange?: (value: string) => void;
   sending?: boolean;
@@ -215,6 +223,7 @@ export function ComponentPreview({
       <PreviewTranscript
         events={events}
         agent={agent}
+        aux={aux}
         pane={pane}
         follow={follow}
         navigate={() => {

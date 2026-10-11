@@ -325,6 +325,8 @@ export const messages = {
   "Starting sandbox…": "샌드박스 시작 중…",
   "Stopped session": "중지된 세션",
   "Stored value": "저장된 값",
+  "Summarizing…": "요약 중…",
+  Summary: "요약",
   "Submit answers": "답변 제출",
   "Syntax highlighting colors": "코드의 syntax highlight 색상",
   "Tab character": "Tab 문자",

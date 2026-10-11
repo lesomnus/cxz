@@ -211,9 +211,11 @@ func (c *Controller) Observe(events []*api.Event) {
 			}
 			s.Current = Turn{Run: e.RunId, Seq: e.Seq, User: Clip(e.Text, 8<<10)}
 		case "tool_call":
-			s.Current.Answer = "" // discard commentary preceding a tool
+			// Discard commentary preceding a tool, and the row it was on.
+			s.Current.Answer, s.Current.Response = "", 0
 		case "assistant":
 			s.Current.Answer = Clip(s.Current.Answer+"\n"+e.Text, 8<<10)
+			s.Current.Response = e.Seq
 		case "turn_end":
 			if e.Text == "completed" && s.Current.User != "" && s.Current.Answer != "" && s.Current.Run == e.RunId {
 				s.Current.Seq = e.Seq
@@ -229,7 +231,7 @@ func (c *Controller) Observe(events []*api.Event) {
 				s.Current = Turn{}
 				if cfg.Active() && e.TimeMs >= cfg.Since {
 					if err := c.start(e.SessionId, &s, cfg); err != nil {
-						s.Job = &Job{Run: e.RunId, Turn: e.Seq, Revision: cfg.Revision, Status: "failed", Error: err.Error(), SummaryRequested: cfg.Summary.Enabled, SuggestionRequested: cfg.Suggestion.Enabled}
+						s.Job = &Job{Run: e.RunId, Turn: e.Seq, Response: s.Recent[len(s.Recent)-1].Response, Revision: cfg.Revision, Status: "failed", Error: err.Error(), SummaryRequested: cfg.Summary.Enabled, SuggestionRequested: cfg.Suggestion.Enabled}
 					}
 				}
 			}

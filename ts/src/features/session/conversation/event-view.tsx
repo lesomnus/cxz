@@ -9,7 +9,9 @@ import { approvalTitle } from "#src/features/session/model/journal.ts";
 import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
 import { responseInfo } from "#src/features/session/model/response-info.ts";
 import type { ResponseCompletion } from "#src/features/session/model/response-completion.ts";
+import type { TurnSummary } from "#src/features/session/model/session-aux.ts";
 import { ResponseFooter } from "./response-footer";
+import { TurnSummaryView } from "./turn-summary";
 import { CopyButton } from "#src/shared/components/copy-button.tsx";
 import { InputMessage } from "./input-message";
 import type { ToolActivity } from "#src/features/session/model/tool-activity.ts";
@@ -20,12 +22,14 @@ export const EventView = memo(
     e,
     agent,
     completion,
+    summary,
     activity,
     loadDetails,
   }: {
     e: SessionEvent;
     agent: string;
     completion?: ResponseCompletion;
+    summary?: TurnSummary;
     activity?: ToolActivity;
     loadDetails?: LoadEventDetails;
   }) {
@@ -55,6 +59,7 @@ export const EventView = memo(
           </small>
           <Markdown text={e.text} />
           <ResponseFooter timeMs={e.timeMs} completion={completion} />
+          {summary && <TurnSummaryView summary={summary} />}
         </article>
       );
     }
@@ -90,5 +95,8 @@ export const EventView = memo(
     previous.agent === next.agent &&
     previous.activity === next.activity &&
     previous.loadDetails === next.loadDetails &&
+    previous.summary?.text === next.summary?.text &&
+    previous.summary?.loading === next.summary?.loading &&
+    previous.summary?.failed === next.summary?.failed &&
     JSON.stringify(previous.completion) === JSON.stringify(next.completion),
 );

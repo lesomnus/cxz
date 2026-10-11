@@ -275,3 +275,74 @@ func TestRestartDoesNotRegeneratePrunedHistory(t *testing.T) {
 		t.Fatal("restart regenerated evicted turn")
 	}
 }
+
+// A summary names the row it is shown beside, not only the turn_end record it
+// was generated after. turn_end is what a reading projection deletes once it
+// has folded the turn's metrics onto the response, so a client reading that
+// projection has no row with the turn's sequence; the manager watched the turn
+// and knows which row it was.
+func TestASummaryNamesTheResponseItBelongsBeside(t *testing.T) {
+	c, err := New(t.TempDir(), func(context.Context, Input) (Output, error) {
+		return Output{Summary: "what happened"}, nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer c.Close()
+	if _, err = c.Save("summary", profile()); err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now().UnixMilli() + 1
+	ev := func(seq uint64, kind, text string) *api.Event {
+		return &api.Event{TimeMs: now, SessionId: "a", RunId: "run", Seq: seq, Kind: kind, Text: text}
+	}
+	// Commentary, a tool, then the real answer: the response is the last
+	// assistant row after the tool, not the commentary before it.
+	c.Observe([]*api.Event{
+		ev(1, "input", "ask"),
+		ev(2, "assistant", "let me look"),
+		ev(3, "tool_call", "ls"),
+		ev(4, "assistant", "here it is"),
+		ev(5, "turn_end", "completed"),
+	})
+	j := waitJob(t, c, "a", "completed")
+	if j.Turn != 5 || j.Response != 4 {
+		t.Fatalf("job named turn %d response %d, want 5 and 4", j.Turn, j.Response)
+	}
+	stored, err := c.Summaries("a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(stored) != 1 || stored[0].Turn != 5 || stored[0].Response != 4 {
+		t.Fatalf("%+v", stored)
+	}
+}
+
+// A turn whose last word was a tool call has no answer, so it is not
+// summarised at all -- which is why no summary can name a tool row.
+func TestATurnEndingInAToolIsNotSummarised(t *testing.T) {
+	c, err := New(t.TempDir(), func(context.Context, Input) (Output, error) {
+		return Output{Summary: "should not run"}, nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer c.Close()
+	if _, err = c.Save("summary", profile()); err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now().UnixMilli() + 1
+	ev := func(seq uint64, kind, text string) *api.Event {
+		return &api.Event{TimeMs: now, SessionId: "a", RunId: "run", Seq: seq, Kind: kind, Text: text}
+	}
+	c.Observe([]*api.Event{
+		ev(1, "input", "ask"),
+		ev(2, "assistant", "working on it"),
+		ev(3, "tool_call", "ls"),
+		ev(4, "turn_end", "completed"),
+	})
+	time.Sleep(50 * time.Millisecond)
+	if j, _ := c.Status("a"); j != nil {
+		t.Fatalf("summarised a turn with no answer: %+v", j)
+	}
+}

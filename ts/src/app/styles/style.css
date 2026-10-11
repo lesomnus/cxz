@@ -1188,6 +1188,24 @@ pre {
 .response-metric svg {
   flex-shrink: 0;
 }
+/* A summary is set apart from the response it follows rather than styled like
+   one: it is what a model wrote about the turn, not what the agent answered. */
+.turn-summary {
+  margin: 8px -12px -12px;
+  padding: 8px 12px 10px;
+  border-top: 1px solid var(--shade-24);
+  border-radius: 0 0 8px 8px;
+  font-size: 0.85rem;
+}
+.turn-summary-label {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--muted);
+}
+.turn-summary > p:last-child {
+  margin-bottom: 0;
+}
+
 .copy-control:focus-within .meta-tooltip,
 .detail-copy:focus-within .meta-tooltip {
   opacity: 1;
