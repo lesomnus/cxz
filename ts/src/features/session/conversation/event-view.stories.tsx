@@ -117,6 +117,33 @@ export const ModelAtCapacity: Story = {
 };
 export const FailedTool: Story = { args: { events: toolEvents("failed") } };
 
+export const EarlierError: Story = {
+  args: {
+    events: [
+      ...ModelAtCapacity.args!.events!,
+      ...toolEvents(),
+      responseEvent(6),
+    ],
+  },
+};
+
+const legacyError = storyEvent(1, "diagnostic", "Codex error");
+legacyError.payload = new Uint8Array();
+export const LegacyErrorHistory: Story = {
+  args: {
+    events: [legacyError, ...toolEvents()],
+    loadDetails: async () => ModelAtCapacity.args!.events!,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Older Transcript servers omit the diagnostic JSON. A visible error card reads native details to replace the generic label with error.message. Error cards stay upright and unfolded even when later tools arrive.",
+      },
+    },
+  },
+};
+
 type AuxRun = Parameters<typeof create<typeof AuxSchema>>[1];
 const summaryState = (over?: AuxRun, text = "") =>
   create(AuxStateSchema, {

@@ -60,3 +60,42 @@ test("failed Bash stays neutral before and during hover", async ({ page }) => {
     page.locator(".activity-card-preview .activity-card-face"),
   ).toHaveCSS("background-color", background);
 });
+
+for (const id of ["earlier-error", "legacy-error-history"]) {
+  test(`${id}: error stays upright with the full native message`, async ({
+    page,
+  }) => {
+    await page.goto(
+      `/iframe.html?id=conversation-eventcards--${id}&viewMode=story`,
+    );
+    const card = page.locator(".event-detail[data-seq='1']");
+    await expect(card).toContainText(
+      "Selected model is at capacity. Please try a different model.",
+    );
+    const row = page.locator("[data-row='1']");
+    await expect(row).toHaveAttribute("data-activity", "false");
+    const face = card.locator(".activity-card-face");
+    await expect(face).toHaveCSS("transform", "none");
+    expect(
+      await row.evaluate((node) => node.getBoundingClientRect().height),
+    ).toBeGreaterThan(40);
+    await card.hover();
+    const preview = page.locator(".activity-card-preview");
+    await expect(preview).toHaveAttribute("data-unfolded", "true");
+    await expect(preview).toContainText(
+      "serverOverloaded · No automatic retry",
+    );
+    const upright = (
+      await preview
+        .locator(".activity-card-face")
+        .evaluate((node) => [
+          ...new DOMMatrix(getComputedStyle(node).transform).toFloat64Array(),
+        ])
+    ).map((number) => Math.round(number * 1000) / 1000);
+    expect(upright).toEqual([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+    await card.dblclick();
+    await expect(
+      page.getByRole("tab", { name: "Result", exact: true }),
+    ).toBeVisible();
+  });
+}

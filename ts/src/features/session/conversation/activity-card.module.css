@@ -2,12 +2,19 @@
   --activity-card-background: color-mix(in srgb, var(--shade-20) 82%, #b52c40);
   background: var(--activity-card-background);
   color: color-mix(in srgb, var(--shade-237) 78%, #df5266);
+  border-radius: calc(2 * var(--space));
 }
 
 .error.notice {
   padding: calc(2 * var(--space));
   border-radius: calc(2 * var(--space));
   color: color-mix(in srgb, var(--shade-237) 78%, #df5266);
+}
+
+:global(.activity-card-preview[data-unfolded="true"])
+  .error:global(.activity-card-face) {
+  transform: none;
+  grid-template-rows: 1fr;
 }
 
 .diagnostic {

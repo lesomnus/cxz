@@ -37,7 +37,7 @@ export function ActivityCard({
   state?: string;
   tone?: "error";
 }) {
-  const unfolded = useContext(ActivityCardUnfolded);
+  const unfolded = useContext(ActivityCardUnfolded) || tone === "error";
   const surface = useRef<HTMLDivElement>(null);
   const details = useAnchoredCard(surface);
   const timestamp = useId();

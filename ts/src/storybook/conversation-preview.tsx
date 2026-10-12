@@ -27,6 +27,7 @@ import { create } from "@bufbuild/protobuf";
 import { SessionPurgeReplySchema } from "#gen/cxz/session_svc_pb";
 import type { SessionInfo } from "#src/features/session/model/session-info.ts";
 import type { TurnProgress } from "#src/features/session/model/turn-progress.ts";
+import type { LoadEventDetails } from "#src/features/session/model/session-history.ts";
 import "./preview.css";
 
 export const samplePaste = createPaste(
@@ -109,6 +110,7 @@ export function PreviewTranscript({
   follow,
   navigate = noop,
   reading = noop,
+  loadDetails,
 }: {
   events: SessionEvent[];
   agent?: string;
@@ -117,6 +119,7 @@ export function PreviewTranscript({
   follow: React.RefObject<boolean>;
   navigate?: () => void;
   reading?: (reading: boolean) => void;
+  loadDetails?: LoadEventDetails;
 }) {
   const projected = transcriptEvents(events);
   const summaries = attachSummaries(projected.events, aux);
@@ -133,6 +136,7 @@ export function PreviewTranscript({
           activity={projected.activities.get(e.seq)}
           completion={projected.completions.get(e.seq.toString())}
           summary={summaries.get(e.seq.toString())}
+          loadDetails={loadDetails}
         />
       )}
       notice={null}
@@ -162,6 +166,7 @@ export function ComponentPreview({
   sessionStopped = false,
   uploadMode,
   lookupPaths,
+  loadDetails,
   children,
 }: {
   events?: SessionEvent[];
@@ -174,6 +179,7 @@ export function ComponentPreview({
   sessionStopped?: boolean;
   uploadMode?: "ready" | "slow" | "retry";
   lookupPaths?: LookupPaths;
+  loadDetails?: LoadEventDetails;
   children?: ReactNode;
 }) {
   const pane = useRef<HTMLDivElement>(null);
@@ -229,6 +235,7 @@ export function ComponentPreview({
         aux={aux}
         pane={pane}
         follow={follow}
+        loadDetails={loadDetails}
         navigate={() => {
           follow.current = false;
         }}

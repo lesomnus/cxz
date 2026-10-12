@@ -8,6 +8,7 @@ import React, {
 import type { SessionEvent } from "#gen/cxz/session_pb";
 import { useTranscriptMotion } from "./transcript-motion";
 import { ActivityCardUnfolded } from "./activity-card";
+import { isDiagnosticEvent } from "#src/features/session/model/event-diagnostic.ts";
 import {
   messageLayout,
   messageMap,
@@ -18,6 +19,11 @@ import {
   type MessageMap,
   type RowKnot,
 } from "./virtual-layout";
+
+const foldable = (event: SessionEvent) =>
+  event.kind !== "input" &&
+  event.kind !== "assistant" &&
+  !isDiagnosticEvent(event);
 
 export function VirtualMessages({
   pane,
@@ -212,8 +218,7 @@ export function VirtualMessages({
   );
   const latestActivity = useMemo(() => {
     for (let index = events.length - 1; index >= 0; index--)
-      if (events[index].kind !== "input" && events[index].kind !== "assistant")
-        return index;
+      if (foldable(events[index])) return index;
     return -1;
   }, [events]);
   let promptIndex = -1;
@@ -273,7 +278,7 @@ export function VirtualMessages({
           <div
             key={id}
             data-row={id}
-            data-activity={event.kind !== "input" && event.kind !== "assistant"}
+            data-activity={foldable(event)}
             data-latest-activity={start + index === latestActivity}
             className="transcript-row"
             style={{ top: layout.rows[start + index].top }}
@@ -285,7 +290,11 @@ export function VirtualMessages({
               };
             }}
           >
-            <ActivityCardUnfolded value={start + index === latestActivity}>
+            <ActivityCardUnfolded
+              value={
+                isDiagnosticEvent(event) || start + index === latestActivity
+              }
+            >
               {render(event)}
             </ActivityCardUnfolded>
           </div>
