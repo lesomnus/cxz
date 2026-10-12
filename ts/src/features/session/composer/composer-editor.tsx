@@ -98,7 +98,6 @@ export function ComposerEditor({
   const theme = useTheme();
   const editorSettings = useEditorSettings("session");
   const mirror = useRef<HTMLDivElement>(null);
-  const surface = useRef<HTMLDivElement>(null);
   const gutter = useRef<HTMLDivElement>(null);
   const openCard = useFloatingCard();
   const composing = useRef(false);
@@ -297,8 +296,6 @@ export function ComposerEditor({
   }
   function measure() {
     const el = input.current!;
-    // Match the actual native text width, including a visible scrollbar's gutter.
-    surface.current!.style.width = `${el.clientWidth}px`;
     const style = getComputedStyle(el);
     const baseline = parseFloat(
       style.getPropertyValue("--composer-editor-height"),
@@ -808,7 +805,7 @@ export function ComposerEditor({
             }}
           />
           {hints.overlay}
-          <div className="editor-surface" ref={surface}>
+          <div className="editor-surface">
             <div className="editor-mirror" ref={mirror}>
               {lines.map((line, index) => {
                 const start = lineOffset;

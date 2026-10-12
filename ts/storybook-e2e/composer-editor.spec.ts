@@ -101,3 +101,157 @@ test("zoom does not inflate editor expansion or line-number spacing", async ({
     )
     .toBeLessThan(1);
 });
+
+// Read soft-wrap starts using the browser's own textarea navigation. A clone
+// avoids the editor's intentional selection snapping inside attachment chips.
+async function wrapping(
+  input: import("@playwright/test").Locator,
+  page: import("@playwright/test").Page,
+) {
+  const mirrored = await input.evaluate((el: HTMLTextAreaElement) => {
+    const mirror = el
+      .closest(".composer-editor")!
+      .querySelector(".editor-mirror")!;
+    const starts: number[] = [];
+    let offset = 0;
+    for (const line of mirror.children) {
+      const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+      let node: Node | null, lastTop: number | undefined;
+      while ((node = walker.nextNode())) {
+        for (let i = 0; i < node.textContent!.length; i++) {
+          const range = document.createRange();
+          range.setStart(node, i);
+          range.setEnd(node, i + 1);
+          const top = range.getBoundingClientRect().top;
+          if (top !== lastTop) starts.push(offset);
+          lastTop = top;
+          offset++;
+        }
+      }
+      offset++; // newlines separate the mirror's block elements
+    }
+    const native = el.cloneNode() as HTMLTextAreaElement;
+    native.removeAttribute("id");
+    native.dataset.nativeProbe = "true";
+    native.value = el.value;
+    Object.assign(native.style, {
+      position: "absolute",
+      top: "0",
+      left: "0",
+      opacity: "0",
+      pointerEvents: "none",
+      transition: "none",
+    });
+    el.parentElement!.append(native);
+    return starts;
+  });
+  const native = page.locator("[data-native-probe]");
+  try {
+    await native.press("Control+End");
+    const starts: number[] = [];
+    for (let i = 0; i < 40; i++) {
+      await native.press("Home");
+      const start = await native.evaluate(
+        (el: HTMLTextAreaElement) => el.selectionStart,
+      );
+      if (starts.includes(start)) break;
+      starts.push(start);
+      if (!start) break;
+      await native.press("ArrowUp");
+    }
+    return { native: starts.reverse(), mirrored };
+  } finally {
+    await native.evaluate((el) => el.remove());
+  }
+}
+
+test("decorated Korean drafts match native wrapping at fractional widths while typing and composing", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=conversation-playground--interactive&viewMode=story",
+  );
+  const input = page.getByRole("textbox", { name: "Message", exact: true });
+  // Synthetic attachment reference: no user file contents or secrets are needed.
+  const prefix =
+    "토큰: `[Attached file: /cxz/assets/aaaaaaaaaaaaaaaaaaaaaaaa/bbbbbbbbbbbbbbbbbbbbbbbb/paste-cccccccc.txt — read this file for the full content]`\n";
+  const lastLine =
+    "근데 한도를 0으로 안한 이유가, OOM 상황에서 OOM kill 순위가 가장 낮아져서 정작 중요한 app이";
+  const cdp = await page.context().newCDPSession(page);
+  for (const width of [390, 590, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const zoom of [1, 1.1, 1.25]) {
+      await page.evaluate((zoom) => {
+        document.documentElement.style.zoom = String(zoom);
+      }, zoom);
+      await input.fill(prefix + lastLine);
+      await expect(page.locator(".composer-editor")).toHaveAttribute(
+        "data-decorated",
+        "true",
+      );
+      for (const tail of ["", "고 있는거지?"]) {
+        await input.press("Control+End");
+        if (tail) await input.pressSequentially(tail);
+        const rows = await wrapping(input, page);
+        expect(
+          rows.mirrored,
+          `width=${width}, zoom=${zoom}, tail=${tail}`,
+        ).toEqual(rows.native);
+      }
+      await input.fill(prefix + lastLine);
+      await input.press("Control+End");
+      await cdp.send("Input.imeSetComposition", {
+        text: "요",
+        selectionStart: 1,
+        selectionEnd: 1,
+      });
+      await expect(page.locator(".composer-editor")).toHaveAttribute(
+        "data-composing",
+        "true",
+      );
+      await expect(input).not.toHaveCSS("color", "rgba(0, 0, 0, 0)");
+      await cdp.send("Input.insertText", { text: "요" });
+      await expect(page.locator(".composer-editor")).toHaveAttribute(
+        "data-composing",
+        "false",
+      );
+      const rows = await wrapping(input, page);
+      expect(rows.mirrored).toEqual(rows.native);
+    }
+  }
+});
+
+test("a pasted chip and the following Korean paragraph keep the same native line breaks", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=conversation-playground--interactive&viewMode=story",
+  );
+  await page.setViewportSize({ width: 390, height: 900 });
+  await page.evaluate(() => {
+    document.documentElement.style.zoom = "1.1";
+  });
+  const input = page.getByRole("textbox", { name: "Message", exact: true });
+  await input.fill("토큰: `");
+  await input.evaluate((el) => {
+    const clipboardData = new DataTransfer();
+    clipboardData.setData("text/plain", "synthetic attachment\n".repeat(100));
+    el.dispatchEvent(
+      new ClipboardEvent("paste", {
+        bubbles: true,
+        cancelable: true,
+        clipboardData,
+      }),
+    );
+  });
+  await expect(page.locator(".paste-chip")).toBeVisible();
+  await input.press("Control+End");
+  // Add the rest without replacing the chip or bypassing its native edit path.
+  await input.press("`");
+  await input.press("Enter");
+  await input.pressSequentially(
+    "근데 한도를 0으로 안한 이유가, OOM 상황에서 OOM kill 순위가 가장 낮아져서 정작 중요한 app이",
+  );
+  const rows = await wrapping(input, page);
+  expect(rows.mirrored).toEqual(rows.native);
+});
