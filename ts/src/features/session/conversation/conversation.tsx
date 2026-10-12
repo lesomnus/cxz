@@ -70,6 +70,10 @@ import { composerPrompt } from "#src/features/session/composer/composer-code.ts"
 import { key } from "@lesomnus/payday/store";
 import { transcriptEvents } from "#src/features/session/model/tool-activity.ts";
 import { Transcript } from "./transcript";
+import {
+  ConversationLoading,
+  type ConversationLoad,
+} from "./conversation-loading";
 import { atScrollBottom } from "./scroll-physics";
 import { uploadFile } from "#src/features/session/composer/composer-upload.ts";
 import { attachmentsReady } from "#src/features/session/composer/composer-pastes.ts";
@@ -130,6 +134,10 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
   const [pending, setPending] = useState<SessionEvent[]>([]);
   const [gap, setGap] = useState(false);
   const [status, setStatus] = useState("Connecting…");
+  const historyReady = useRef(false);
+  const [initialLoad, setInitialLoad] = useState<ConversationLoad | undefined>({
+    stage: "session",
+  });
   const [executionState, setExecutionState] = useState("");
   const [turn, setTurn] = useState<TurnProgress>({ runId: "", active: false });
   const [error, setError] = useState("");
@@ -406,6 +414,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
       active = new AbortController();
       const signal = active.signal;
       setStatus("Connecting…");
+      if (!historyReady.current) setInitialLoad({ stage: "session" });
       try {
         const snapshot = await c.sessions.get(
           { ref: ref(id), select: { all: true } },
@@ -417,6 +426,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         if (snapshotSeq > latestSeq.current) latestSeq.current = snapshotSeq;
         let loaded: SessionEvent[] = [];
         if (cursor === 0n) {
+          if (!historyReady.current) setInitialLoad({ stage: "history" });
           const page = await history.page({ snapshotSeq }, signal);
           if (canceled) return;
           rememberPage(page);
@@ -453,6 +463,8 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         setExecutionState(snapshot.status?.state ?? "");
         setTurn((old) => snapshotTurn(snapshot.status, loaded, old));
         setQueued(snapshot.status?.queued ?? "");
+        historyReady.current = true;
+        setInitialLoad(undefined);
         setStatus("Live");
         for await (const e of c.sessions.events(
           { ref: ref(id), afterSeq: cursor, clientId: c.clientId },
@@ -498,6 +510,8 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         }
       } catch (e) {
         if (canceled) return;
+        if (!historyReady.current)
+          setInitialLoad({ stage: "retrying", error: String(e) });
         setStatus(t("Disconnected · retrying: {error}", { error: String(e) }));
       } finally {
         if (!canceled) timer = setTimeout(connect, 2000);
@@ -957,6 +971,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
       aria-description={`${s?.status?.state ?? ""} · ${translateKnown(status)}`}
     >
       <Transcript
+        loading={initialLoad && <ConversationLoading {...initialLoad} />}
         pane={pane}
         events={transcript.events}
         follow={followRef}

@@ -60,6 +60,7 @@ export function Transcript({
   follow,
   render,
   notice,
+  loading,
   onScroll,
   onNavigate,
   onTension,
@@ -77,6 +78,7 @@ export function Transcript({
   follow: React.RefObject<boolean>;
   render: (event: SessionEvent) => React.ReactNode;
   notice: React.ReactNode;
+  loading?: React.ReactNode;
   onScroll: (reading: boolean) => void;
   onNavigate: () => void;
   onTension: (stretch: number) => void;
@@ -651,6 +653,7 @@ export function Transcript({
         id="conversation-transcript"
         tabIndex={0}
         aria-label={t("Conversation")}
+        aria-busy={Boolean(loading)}
         onScroll={scrolled}
       >
         <div className="transcript-content" ref={content}>
@@ -670,6 +673,7 @@ export function Transcript({
           />
         </div>
       </div>
+      {loading}
       <div className="transcript-fade transcript-fade-top" aria-hidden="true" />
       <div
         className="transcript-fade transcript-fade-bottom"
