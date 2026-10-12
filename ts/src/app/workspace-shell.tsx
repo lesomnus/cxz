@@ -72,6 +72,7 @@ export function Workspace({
       value={{
         c,
         projects,
+        sessions: inventory.sessions,
         projectsLoading: inventory.loading.projects,
         settingsFileOpen,
         setSettingsFileOpen,
@@ -79,7 +80,7 @@ export function Workspace({
       }}
     >
       <div
-        className={`workspace ${(session && resource === "sessions") || route.resource === "not-found" ? "conversation-open" : ""} ${resource === "settings" ? "settings-open" : ""}`}
+        className={`workspace ${(session && resource === "sessions") || route.resource === "not-found" ? "conversation-open" : ""} ${resource === "settings" ? "settings-open" : !session || resource !== "sessions" ? "resource-open" : ""}`}
       >
         <nav className="resource-sidebar" aria-label={t("Resources")}>
           <span className="brand" aria-label="cxz">
@@ -107,6 +108,33 @@ export function Workspace({
               <span>{view === "sessions" ? t("Sessions") : t("Projects")}</span>
             </RouteLink>
           ))}
+          {(
+            ["accounts", "search", "memory", "activity", "auxiliary"] as const
+          ).map((view) => (
+            <RouteLink
+              key={view}
+              to={`/${view}`}
+              className={`resource-link ${resource === view ? "active" : ""}`}
+              aria-label={
+                view === "auxiliary"
+                  ? "Auxiliary AI"
+                  : view[0].toUpperCase() + view.slice(1)
+              }
+              title={
+                view === "auxiliary"
+                  ? "Auxiliary AI"
+                  : view[0].toUpperCase() + view.slice(1)
+              }
+              aria-current={resource === view ? "page" : undefined}
+            >
+              <ResourceIcon kind={view} />
+              <span>
+                {view === "auxiliary"
+                  ? "Auxiliary AI"
+                  : view[0].toUpperCase() + view.slice(1)}
+              </span>
+            </RouteLink>
+          ))}
           <RouteLink
             to="/settings/general"
             className={`resource-link settings-link ${resource === "settings" ? "active" : ""}`}
@@ -128,7 +156,9 @@ export function Workspace({
               ? t("Session list")
               : resource === "settings"
                 ? t("Settings navigation")
-                : t("Project list")
+                : resource === "projects"
+                  ? t("Project list")
+                  : `${resource} navigation`
           }
         >
           <header>
@@ -137,8 +167,21 @@ export function Workspace({
                 ? t("Sessions")
                 : resource === "settings"
                   ? t("Settings")
-                  : t("Projects")}
+                  : resource === "projects"
+                    ? t("Projects")
+                    : resource === "auxiliary"
+                      ? "Auxiliary AI"
+                      : resource[0].toUpperCase() + resource.slice(1)}
             </strong>
+            {resource === "sessions" && (
+              <RouteLink
+                to="/sessions"
+                title="Manage sessions"
+                aria-label="Manage sessions"
+              >
+                ＋
+              </RouteLink>
+            )}
             <Button onClick={() => logout().catch((e) => setError(String(e)))}>
               {exitLabel}
             </Button>
@@ -193,7 +236,7 @@ export function Workspace({
                   />
                 ))}
               </div>
-            ) : (
+            ) : resource === "projects" ? (
               projects.map((p) => (
                 <RouteLink
                   key={p.runtimeId}
@@ -203,6 +246,16 @@ export function Workspace({
                   {p.name || p.alias}
                 </RouteLink>
               ))
+            ) : (
+              <nav className="settings-topics" aria-label="Resource navigation">
+                <RouteLink to={`/${resource}`} aria-current="page">
+                  {resource === "memory"
+                    ? "Shared memory"
+                    : resource === "auxiliary"
+                      ? "Auxiliary AI"
+                      : resource[0].toUpperCase() + resource.slice(1)}
+                </RouteLink>
+              </nav>
             )}
             {(inventory.errors.projects ||
               inventory.errors.sessions ||

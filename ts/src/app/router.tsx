@@ -9,7 +9,16 @@ import {
 } from "@tanstack/react-router";
 import type { ComponentType, PropsWithChildren } from "react";
 
-export type ResourceView = "sessions" | "projects" | "settings" | "not-found";
+export type ResourceView =
+  | "sessions"
+  | "projects"
+  | "settings"
+  | "accounts"
+  | "search"
+  | "memory"
+  | "activity"
+  | "auxiliary"
+  | "not-found";
 export type SettingsTopic = "general" | "editor";
 
 type WorkspaceRouterContext = {
@@ -63,12 +72,48 @@ const sessionRoute = createRoute({
   getParentRoute: () => sessionsRoute,
   path: "$sessionId",
   staticData: { resource: "sessions" },
+  validateSearch: (search: Record<string, unknown>): { seq?: string } => ({
+    seq:
+      typeof search.seq === "string" && /^[1-9]\d*$/.test(search.seq)
+        ? search.seq
+        : undefined,
+  }),
 });
 const projectsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "projects",
   component: RouteView,
   staticData: { resource: "projects" },
+});
+const accountsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "accounts",
+  component: RouteView,
+  staticData: { resource: "accounts" },
+});
+const searchRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "search",
+  component: RouteView,
+  staticData: { resource: "search" },
+});
+const memoryRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "memory",
+  component: RouteView,
+  staticData: { resource: "memory" },
+});
+const activityRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "activity",
+  component: RouteView,
+  staticData: { resource: "activity" },
+});
+const auxiliaryRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "auxiliary",
+  component: RouteView,
+  staticData: { resource: "auxiliary" },
 });
 const settingsRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -102,6 +147,11 @@ const routeTree = rootRoute.addChildren([
   indexRoute,
   sessionsRoute.addChildren([sessionListRoute, sessionRoute]),
   projectsRoute,
+  accountsRoute,
+  searchRoute,
+  memoryRoute,
+  activityRoute,
+  auxiliaryRoute,
   settingsRoute.addChildren([settingsIndexRoute, generalRoute, editorRoute]),
   notFoundRoute,
 ]);
@@ -131,5 +181,6 @@ export function useWorkspaceRoute() {
     resource: data?.resource ?? "sessions",
     settingsTopic: data?.settingsTopic ?? "general",
     session,
+    seq: sessionRoute.useSearch({ shouldThrow: false })?.seq,
   };
 }

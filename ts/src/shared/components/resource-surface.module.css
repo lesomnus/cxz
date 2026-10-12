@@ -1,0 +1,144 @@
+.page {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space);
+  padding: calc(3 * var(--space));
+}
+.heading h1 {
+  font-size: 1rem;
+  margin: 0;
+}
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: calc(3 * var(--space));
+}
+.content {
+  width: min(100%, 600px);
+  margin-inline: auto;
+  display: grid;
+  gap: var(--space);
+}
+.section {
+  padding: calc(3 * var(--space));
+  background: var(--shade-24);
+  border-radius: var(--wrapper-radius);
+  display: grid;
+  gap: var(--space);
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space);
+  flex-wrap: wrap;
+}
+.row > :first-child:not(button) {
+  flex: 1;
+  min-width: 0;
+}
+.field {
+  display: grid;
+  gap: var(--space);
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.field input,
+.field textarea,
+.input {
+  width: 100%;
+  min-width: 0;
+  background: var(--shade-17);
+  border: 0;
+  border-radius: var(--wrapper-radius);
+  padding: calc(3 * var(--space));
+  color: var(--shade-237);
+  font: inherit;
+}
+.field textarea {
+  resize: vertical;
+}
+.list {
+  display: grid;
+  gap: var(--space);
+}
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--space);
+  padding: calc(3 * var(--space));
+  border-radius: var(--wrapper-radius);
+  text-align: left;
+  text-decoration: none;
+  color: var(--shade-237);
+}
+.item:hover {
+  background: var(--hover, #252525);
+}
+.item small {
+  display: block;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+.muted {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.editor {
+  height: min(45vh, 420px);
+  min-height: 160px;
+  overflow: hidden;
+}
+.tabs {
+  display: flex;
+  gap: var(--space);
+  flex-wrap: wrap;
+}
+.tabs [aria-selected="true"],
+.tabs [aria-pressed="true"] {
+  background: var(--hover, #252525);
+  color: var(--shade-237);
+}
+.status {
+  font:
+    0.8rem ui-monospace,
+    SFMono-Regular,
+    Consolas,
+    monospace;
+  color: var(--muted);
+  white-space: pre-wrap;
+}
+.queuedText {
+  max-height: 5lh;
+  overflow: auto;
+  margin-block: var(--space);
+}
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space);
+}
+.metrics div {
+  padding: calc(3 * var(--space));
+}
+.metrics dt {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+.metrics dd {
+  margin: 0;
+  font:
+    1rem ui-monospace,
+    SFMono-Regular,
+    Consolas,
+    monospace;
+}
