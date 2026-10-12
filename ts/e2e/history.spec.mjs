@@ -146,7 +146,10 @@ async function openReplay(page, summary = false, options = {}) {
     data: { token: "a".repeat(32) },
   });
   await page.goto("/");
-  await page.getByRole("link", { name: /demo-chat/ }).click();
+  await page
+    .getByRole("link", { name: /demo-chat/ })
+    .first()
+    .click();
   return latest;
 }
 const geometry = (page) =>

@@ -17,7 +17,10 @@ test("production file viewer loads under the gateway CSP", async ({ page }) => {
   page.on("console", (message) => {
     if (message.type() === "error") errors.push(message.text());
   });
-  await page.getByRole("link", { name: /demo-chat/ }).click();
+  await page
+    .getByRole("link", { name: /demo-chat/ })
+    .first()
+    .click();
   const editor = page.getByRole("complementary", { name: "Workspace editor" });
   await expect(editor).toBeVisible();
   await editor.getByRole("button", { name: "README.md", exact: true }).click();
@@ -106,7 +109,10 @@ test("real container editor opens the workspace through the authenticated iframe
   await page.goto("/");
   await page.getByLabel("Web access token").fill("a".repeat(32));
   await page.getByRole("button", { name: "Connect", exact: true }).click();
-  await page.getByRole("link", { name: /demo-chat/ }).click();
+  await page
+    .getByRole("link", { name: /demo-chat/ })
+    .first()
+    .click();
   const editor = page.getByRole("complementary", { name: "Workspace editor" });
   await editor.getByRole("button", { name: "README.md", exact: true }).click();
   await expect(editor.locator(".view-lines")).toContainText(

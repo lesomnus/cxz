@@ -148,6 +148,25 @@ export function Workspace({
             <ResourceIcon kind="settings" />
             <span>{t("Settings")}</span>
           </RouteLink>
+          <Button
+            className="resource-link resource-exit"
+            aria-label={exitLabel}
+            title={exitLabel}
+            onClick={() => logout().catch((e) => setError(String(e)))}
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              aria-hidden="true"
+            >
+              <path d="M10 4H4v16h6M8 12h13m-5-5 5 5-5 5" />
+            </svg>
+            <span>{exitLabel}</span>
+          </Button>
         </nav>
         <aside
           className={`resource-panel${resource === "sessions" ? " session-panel" : ""}`}

@@ -3,6 +3,7 @@ import { Button, ConfirmationDialog } from "@lesomnus/cxz-ui";
 import { RouteLink } from "#src/shared/navigation/route-link.tsx";
 import { Connection, ref } from "#src/shared/api/connection.ts";
 import { useRemote } from "#src/shared/api/use-remote.ts";
+import { useResourceInventory } from "#src/shared/api/resource-inventory.ts";
 import { SessionCreate } from "./session-create";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
@@ -19,8 +20,10 @@ export function SessionLibrary({
   const [create, setCreate] = useState(false);
   const [confirm, setConfirm] = useState<Session>();
   const [error, setError] = useState("");
+  const inventory = useResourceInventory(c);
   const rows = useRemote(
     async (signal) => {
+      if (!archived) return [];
       const items: Session[] = [];
       let after = "";
       do {
@@ -51,11 +54,15 @@ export function SessionLibrary({
             <Button aria-pressed={archived} onClick={() => setArchived(true)}>
               Archived
             </Button>
-            <Button onClick={rows.reload}>Refresh</Button>
+            <Button onClick={archived ? rows.reload : c.inventory.refresh}>
+              Refresh
+            </Button>
           </div>
           {(rows.error || error) && <p role="alert">{rows.error || error}</p>}
-          {rows.loading && <p className={styles.muted}>Loading sessions…</p>}
-          {rows.data?.map((session) => (
+          {(archived ? rows.loading : inventory.loading.sessions) && (
+            <p className={styles.muted}>Loading sessions…</p>
+          )}
+          {(archived ? rows.data : inventory.sessions)?.map((session) => (
             <div className={styles.row} key={session.runtimeId}>
               {archived ? (
                 <div className={styles.item}>
@@ -107,9 +114,10 @@ export function SessionLibrary({
               </Button>
             </div>
           ))}
-          {!rows.loading && !rows.data?.length && (
-            <p className={styles.muted}>No sessions.</p>
-          )}
+          {!(archived ? rows.loading : inventory.loading.sessions) &&
+            !(archived ? rows.data : inventory.sessions)?.length && (
+              <p className={styles.muted}>No sessions.</p>
+            )}
           {confirm && (
             <ConfirmationDialog
               title="Archive session"

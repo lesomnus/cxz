@@ -9,9 +9,12 @@ test("mobile sign-in, conversation, questions, drafts and sign-out", async ({
   await page.getByLabel("Web access token").fill("a".repeat(32));
   await page.getByRole("button", { name: "Connect", exact: true }).click();
   await expect(
-    page.getByRole("button", { name: /Demo project/ }),
+    page.getByRole("heading", { name: "Sessions", exact: true }),
   ).toBeVisible();
-  await page.getByRole("link", { name: /demo-chat/ }).click();
+  await page
+    .getByRole("link", { name: /demo-chat/ })
+    .first()
+    .click();
   await expect(page.getByRole("heading", { name: "Ready" })).toBeVisible();
   await expect(page.locator(".response-settings")).toHaveText(
     "fixture-model · high",
@@ -36,7 +39,10 @@ test("mobile sign-in, conversation, questions, drafts and sign-out", async ({
     .getByRole("textbox", { name: "Message", exact: true })
     .fill("초안 preserved");
   await page.goBack();
-  await page.getByRole("link", { name: /demo-chat/ }).click();
+  await page
+    .getByRole("link", { name: /demo-chat/ })
+    .first()
+    .click();
   await expect(
     page.getByRole("textbox", { name: "Message", exact: true }),
   ).toHaveValue("초안 preserved");

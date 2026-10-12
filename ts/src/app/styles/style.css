@@ -212,6 +212,9 @@ header strong {
 .settings-link {
   margin-top: auto;
 }
+.resource-exit {
+  display: none;
+}
 .settings-page {
   --settings-column-width: 320px;
   --settings-section-gap: calc(3 * var(--space));
@@ -2489,6 +2492,9 @@ summary:hover {
   margin-top: 8px;
 }
 @media (max-width: 700px) {
+  .workspace.resource-open .resource-exit {
+    display: block;
+  }
   .workspace.resource-open > .resource-panel {
     display: none;
   }
