@@ -64,7 +64,10 @@ func (p *pipeConn) SetDeadline(time.Time) error      { return nil }
 func (p *pipeConn) SetReadDeadline(time.Time) error  { return nil }
 func (p *pipeConn) SetWriteDeadline(time.Time) error { return nil }
 func Bridge(root string) error {
-	c, e := net.Dial("unix", Socket(root))
+	return bridgeSocket(Socket(root))
+}
+func bridgeSocket(path string) error {
+	c, e := net.Dial("unix", path)
 	if e != nil {
 		return e
 	}

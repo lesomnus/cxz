@@ -105,6 +105,9 @@ func TestProjectPathsRPCStreamsAndCancels(t *testing.T) {
 	}{
 		{"project", "relative", codes.InvalidArgument},
 		{"project", "/bad\x00", codes.InvalidArgument},
+		{"project", "/bad\npath", codes.InvalidArgument},
+		{"project", "/bad\rpath", codes.InvalidArgument},
+		{"project", "~other/path", codes.InvalidArgument},
 		{"project", "/" + strings.Repeat("a", 4096), codes.InvalidArgument},
 		{"missing", "/", codes.NotFound},
 		{"project", "/denied", codes.PermissionDenied},

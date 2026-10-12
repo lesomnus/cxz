@@ -106,7 +106,7 @@ func TestTerminalGatewayPTYAuthenticationResizeFlowAndRevocation(t *testing.T) {
 	defer conn.Close()
 	server := httptest.NewUnstartedServer(nil)
 	config := Config{Listen: "127.0.0.1:0", Origin: "http://" + server.Listener.Addr().String(), Token: strings.Repeat("t", 32)}
-	h, stop, err := Handler(config, conn, fstest.MapFS{"index.html": {Data: []byte("fixture")}})
+	h, stop, err := Handler(config, conn, fstest.MapFS{"index.html": {Data: []byte("fixture")}}, testManagerRPC(t, g))
 	if err != nil {
 		t.Fatal(err)
 	}

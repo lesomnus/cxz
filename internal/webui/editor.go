@@ -2,6 +2,7 @@ package webui
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net"
@@ -52,6 +53,10 @@ func (p *editorProxy) connect(ctx context.Context, r *resource.ProjectEditorRequ
 }
 
 func (p *editorProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path == "/editor/connect" {
+		p.connectBrowser(w, r)
+		return
+	}
 	parts := strings.SplitN(strings.TrimPrefix(r.URL.Path, "/editor/"), "/", 2)
 	if len(parts) != 2 {
 		http.Error(w, "editor path required", http.StatusNotFound)
@@ -133,6 +138,39 @@ func (p *editorProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 	proxy.ServeHTTP(w, r)
+}
+
+// Browser setup keeps the workbench token server-side. Ordinary Project.Editor
+// RPCs remain the Manager's own API; this endpoint prepares the HTTP/WS bridge.
+func (p *editorProxy) connectBrowser(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.Header().Set("Allow", http.MethodPost)
+		http.Error(w, "POST required", http.StatusMethodNotAllowed)
+		return
+	}
+	var request struct {
+		Project string `json:"project"`
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, 4096)
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	if decoder.Decode(&request) != nil || request.Project == "" {
+		http.Error(w, "project required", http.StatusBadRequest)
+		return
+	}
+	if _, err := editor.BasePath(request.Project); err != nil {
+		http.Error(w, "invalid project", http.StatusBadRequest)
+		return
+	}
+	reply, err := p.connect(r.Context(), resource.ProjectEditorRequest_builder{Ref: resource.ProjectRef_builder{RuntimeId: &request.Project}.Build()}.Build())
+	if err != nil {
+		http.Error(w, status.Convert(err).Message(), http.StatusBadGateway)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(struct {
+		Workspace string `json:"workspace"`
+	}{Workspace: reply.GetWorkspace()})
 }
 
 type editorStream struct {

@@ -3,7 +3,11 @@ package webui
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
+	"github.com/lesomnus/cxz/internal/containerterm"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"io"
 	"net"
 	"net/http"
@@ -74,7 +78,10 @@ func (p *testEditorProjects) EditorTunnel(stream grpc.BidiStreamingServer[resour
 		}
 	}
 }
-func (p *testEditorProjects) Download(_ *resource.ProjectDownloadRequest, stream grpc.ServerStreamingServer[resource.ProjectDownloadReply]) error {
+func (p *testEditorProjects) Download(r *resource.ProjectDownloadRequest, stream grpc.ServerStreamingServer[resource.ProjectDownloadReply]) error {
+	if !containerterm.ValidDownloadPath(r.GetPath()) {
+		return status.Error(codes.InvalidArgument, "a file path is required")
+	}
 	total := int64(2 << 20)
 	return stream.Send(resource.ProjectDownloadReply_builder{TotalSize: &total}.Build())
 }
@@ -112,7 +119,7 @@ func TestEditorProxyAuthenticationBytesUpgradeAndRevocation(t *testing.T) {
 	}
 	defer conn.Close()
 	config := Config{Listen: "127.0.0.1:0", Origin: "https://cxz.test", Certificate: "fixture", Key: "fixture", Token: strings.Repeat("a", 32)}
-	handler, stop, err := Handler(config, conn, fstest.MapFS{"index.html": {Data: []byte("cxz")}})
+	handler, stop, err := Handler(config, conn, fstest.MapFS{"index.html": {Data: []byte("cxz")}}, testManagerRPC(t, g))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -147,14 +154,15 @@ func TestEditorProxyAuthenticationBytesUpgradeAndRevocation(t *testing.T) {
 		r.AddCookie(cookie)
 		return http.DefaultTransport.RoundTrip(r)
 	})}
-	editor := connect.NewClient[resource.ProjectEditorRequest, resource.ProjectEditorReply](client, server.URL+"/cxz.ProjectService/Editor", connect.WithProtoJSON())
 	id := "project"
-	reply, err := editor.CallUnary(context.Background(), connect.NewRequest(resource.ProjectEditorRequest_builder{Ref: resource.ProjectRef_builder{RuntimeId: &id}.Build()}.Build()))
-	if err != nil {
+	setup := request("POST", "/editor/connect", `{"project":"project"}`, cookie)
+	var reply map[string]any
+	if err := json.NewDecoder(setup.Body).Decode(&reply); err != nil {
 		t.Fatal(err)
 	}
-	if reply.Msg.GetConnectionToken() != "" || reply.Msg.GetWorkspace() != "/workspace" {
-		t.Fatal("private token leaked")
+	setup.Body.Close()
+	if setup.StatusCode != http.StatusOK || len(reply) != 1 || reply["workspace"] != "/workspace" {
+		t.Fatal("private token leaked or setup failed", reply, setup.StatusCode)
 	}
 	res := request("GET", "/editor/project/?folder=%2Fworkspace", "", cookie)
 	data, err := io.ReadAll(res.Body)

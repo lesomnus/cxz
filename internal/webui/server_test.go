@@ -3,6 +3,8 @@ package webui
 import (
 	"context"
 	"crypto/sha256"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"io"
 	"net"
 	"net/http"
@@ -10,6 +12,7 @@ import (
 	"strings"
 	"testing"
 	"testing/fstest"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/lesomnus/cxz/resource"
@@ -21,6 +24,7 @@ import (
 
 type testSessions struct {
 	resource.UnimplementedSessionServiceServer
+	auxCanceled chan struct{}
 }
 
 func TestBrowserFontPolicy(t *testing.T) {
@@ -46,10 +50,28 @@ func (*testSessions) Send(_ context.Context, r *resource.SessionSendRequest) (*r
 func (*testSessions) Events(r *resource.SessionEventsRequest, s grpc.ServerStreamingServer[resource.SessionEvent]) error {
 	return s.Send(resource.SessionEvent_builder{Seq: r.GetAfterSeq() + 1, Text: "안녕"}.Build())
 }
+func (*testSessions) Patch(_ context.Context, r *resource.SessionPatchRequest) (*resource.Session, error) {
+	if r.GetName() == "denied" {
+		return nil, status.Error(codes.PermissionDenied, "Manager policy denied patch")
+	}
+	return resource.Session_builder{Name: r.GetName(), Alias: r.GetAlias()}.Build(), nil
+}
+func (*testSessions) Purge(_ context.Context, r *resource.SessionPurgeRequest) (*resource.SessionPurgeReply, error) {
+	return resource.SessionPurgeReply_builder{Ref: r.GetRef(), DryRun: proto.Bool(r.GetDryRun()), Retained: []string{"account"}}.Build(), nil
+}
+func (f *testSessions) AuxEvents(_ *resource.AuxStatusRequest, stream grpc.ServerStreamingServer[resource.AuxState]) error {
+	defer close(f.auxCanceled)
+	if err := stream.Send(resource.AuxState_builder{Title: proto.String("Live summary")}.Build()); err != nil {
+		return err
+	}
+	<-stream.Context().Done()
+	return stream.Context().Err()
+}
 func TestBrowserConnect(t *testing.T) {
 	ln := bufconn.Listen(1 << 20)
 	g := grpc.NewServer()
-	resource.RegisterSessionServiceServer(g, &testSessions{})
+	fixture := &testSessions{auxCanceled: make(chan struct{})}
+	resource.RegisterSessionServiceServer(g, fixture)
 	go g.Serve(ln)
 	defer g.Stop()
 	conn, err := grpc.NewClient("passthrough:///test", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) { return ln.Dial() }))
@@ -58,7 +80,7 @@ func TestBrowserConnect(t *testing.T) {
 	}
 	defer conn.Close()
 	c := Config{Listen: "127.0.0.1:0", Origin: "https://cxz.test", Certificate: "cert", Key: "key", Token: strings.Repeat("a", 32)}
-	h, closeHandler, err := Handler(c, conn, fstest.MapFS{"index.html": {Data: []byte("cxz")}})
+	h, closeHandler, err := Handler(c, conn, fstest.MapFS{"index.html": {Data: []byte("cxz")}}, testManagerRPC(t, g))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -122,12 +144,44 @@ func TestBrowserConnect(t *testing.T) {
 	if stream.Receive() || stream.Err() != nil {
 		t.Fatalf("end: %v", stream.Err())
 	}
+	// These methods used to be present in the UI but absent in the gateway.
+	// They now reach the same registered service without any web-side adapter.
+	patch := connect.NewClient[resource.SessionPatchRequest, resource.Session](client, server.URL+"/cxz.SessionService/Patch", connect.WithProtoJSON())
+	edited, err := patch.CallUnary(t.Context(), connect.NewRequest(resource.SessionPatchRequest_builder{Name: proto.String("Title"), Alias: proto.String("alias")}.Build()))
+	if err != nil || edited.Msg.GetName() != "Title" || edited.Msg.GetAlias() != "alias" {
+		t.Fatal("Patch not forwarded", err)
+	}
+	_, err = patch.CallUnary(t.Context(), connect.NewRequest(resource.SessionPatchRequest_builder{Name: proto.String("denied")}.Build()))
+	if connect.CodeOf(err) != connect.CodePermissionDenied || !strings.Contains(err.Error(), "Manager policy denied patch") {
+		t.Fatal("Manager status lost", err)
+	}
+	purge := connect.NewClient[resource.SessionPurgeRequest, resource.SessionPurgeReply](client, server.URL+"/cxz.SessionService/Purge")
+	for _, dryRun := range []bool{true, false} {
+		plan, err := purge.CallUnary(t.Context(), connect.NewRequest(resource.SessionPurgeRequest_builder{DryRun: proto.Bool(dryRun)}.Build()))
+		if err != nil || plan.Msg.GetDryRun() != dryRun || len(plan.Msg.GetRetained()) != 1 {
+			t.Fatal("Purge not forwarded", err)
+		}
+	}
+	aux := connect.NewClient[resource.AuxStatusRequest, resource.AuxState](client, server.URL+"/cxz.SessionService/AuxEvents")
+	summaries, err := aux.CallServerStream(t.Context(), connect.NewRequest(&resource.AuxStatusRequest{}))
+	if err != nil || !summaries.Receive() || summaries.Msg().GetTitle() != "Live summary" {
+		t.Fatal("AuxEvents not forwarded", err)
+	}
 	if w := request("/auth/logout", "", c.Origin, cookie); w.Code != 204 {
 		t.Fatal(w.Code)
 	}
 	if w := request("/cxz.SessionService/Send", "{}", c.Origin, cookie); w.Code != 401 {
 		t.Fatal("logout did not revoke access")
 	}
+	select {
+	case <-fixture.auxCanceled:
+	case <-time.After(2 * time.Second):
+		t.Fatal("logout did not cancel the Manager stream")
+	}
+	if summaries.Receive() || summaries.Err() == nil {
+		t.Fatal("revoked stream still active")
+	}
+	summaries.Close()
 	r, _ := http.NewRequest("GET", server.URL+"/", nil)
 	r.Host = "evil.test"
 	res, err := http.DefaultClient.Do(r)

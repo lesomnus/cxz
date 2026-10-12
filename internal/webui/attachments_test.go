@@ -81,7 +81,7 @@ func TestBrowserAttachmentStreamsWithAuthenticationAndRunBinding(t *testing.T) {
 	}
 	defer conn.Close()
 	c := Config{Listen: "127.0.0.1:0", Origin: "https://cxz.test", Certificate: "fixture", Key: "fixture", Token: strings.Repeat("a", 32)}
-	h, closeHandler, err := Handler(c, conn, fstest.MapFS{"index.html": {Data: []byte("fixture")}})
+	h, closeHandler, err := Handler(c, conn, fstest.MapFS{"index.html": {Data: []byte("fixture")}}, testManagerRPC(t, g))
 	if err != nil {
 		t.Fatal(err)
 	}

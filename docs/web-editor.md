@@ -155,3 +155,11 @@ CXZ_TEST_EDITOR=1 CXZ_TEST_BINARY=/tmp/cxz-editor-probe \
 `CXZ_TEST_EDITOR_ARCHIVE` can supply an already downloaded official archive for
 the Manager cache; its digest is still verified. Default image: debian:bookworm-slim.
 These opt-in tests create disposable containers and remove them on completion.
+
+## Browser connection setup
+
+The authenticated frontend receives `POST /editor/connect` with the project runtime
+ID. It opens the Manager editor connection and retains the workbench token for its
+HTTP/WebSocket bridge; the response contains only the workspace path. Ordinary
+ProjectService RPCs are served by the Manager's Connect listener. The WASM sandbox
+continues to use its in-process ProjectService.Editor simulation.

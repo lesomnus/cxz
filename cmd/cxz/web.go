@@ -211,7 +211,9 @@ func serveWeb(published bool) func(context.Context, *xli.Command) error {
 		}
 		defer conn.Close()
 		fmt.Fprintf(c.ErrWriter, "cxz web: %s (browser sign-in required; Ctrl+C stops only the gateway)\n", config.Origin)
-		return webui.Serve(ctx, config, conn, assets)
+		rpc, closeRPC := webui.ManagerProxy(stateFrom(ctx))
+		defer closeRPC()
+		return webui.Serve(ctx, config, conn, assets, rpc)
 	}
 }
 

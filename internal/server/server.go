@@ -279,6 +279,13 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 	opts = append(opts, grpc.ChainUnaryInterceptor(versionpin.Unary(root), s.updateGate.Unary), grpc.ChainStreamInterceptor(versionpin.Stream(root), s.updateGate.Stream), grpc.MaxRecvMsgSize(8*1024*1024), grpc.MaxSendMsgSize(20*1024*1024))
 	g := grpc.NewServer(opts...)
 	resource.RegisterServer(g, resources)
+	if os.Getenv("CXZ_PROJECT_ID") == "" {
+		closeWeb, err := transport.StartConnect(ctx, root, g)
+		if err != nil {
+			return fmt.Errorf("Manager Connect listener: %w", err)
+		}
+		defer closeWeb()
+	}
 	if os.Getenv("CXZ_PROJECT_ID") != "" {
 		runtime, e := workspace.LoadRuntime(root)
 		if e != nil {
