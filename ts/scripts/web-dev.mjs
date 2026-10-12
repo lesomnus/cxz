@@ -8,6 +8,7 @@ const routes = [
   "/payday.",
   "/editor/",
   "/terminal/",
+  "/login/",
   "/attachments/",
 ];
 const isGatewayPath = (path) => routes.some((route) => path.startsWith(route));
