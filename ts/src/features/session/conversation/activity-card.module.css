@@ -1,0 +1,23 @@
+.error {
+  --activity-card-background: color-mix(in srgb, var(--shade-20) 82%, #b52c40);
+  background: var(--activity-card-background);
+  color: color-mix(in srgb, var(--shade-237) 78%, #df5266);
+}
+
+.error.notice {
+  padding: calc(2 * var(--space));
+  border-radius: calc(2 * var(--space));
+  color: color-mix(in srgb, var(--shade-237) 78%, #df5266);
+}
+
+.diagnostic {
+  display: grid;
+  gap: var(--space);
+  white-space: pre-wrap;
+}
+
+.metadata {
+  font-size: 0.75rem;
+  font-family: var(--ui-font-mono, monospace);
+  opacity: 0.8;
+}

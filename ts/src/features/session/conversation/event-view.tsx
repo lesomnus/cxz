@@ -21,6 +21,9 @@ import { CopyButton } from "#src/shared/components/copy-button.tsx";
 import { InputMessage } from "./input-message";
 import type { ToolActivity } from "#src/features/session/model/tool-activity.ts";
 import { ToolActivityView } from "./tool-activity-view";
+import { eventDiagnostic } from "#src/features/session/model/event-diagnostic.ts";
+import { t } from "#src/shared/i18n/i18n.ts";
+import styles from "./activity-card.module.css";
 
 export const EventView = memo(
   function EventView({
@@ -76,24 +79,57 @@ export const EventView = memo(
           <InputMessage event={e} />
         </article>
       );
+    const diagnostic = eventDiagnostic(e);
     return (
       <ActivityCard
         seq={e.seq}
         timeMs={e.timeMs}
-        className={
-          e.kind === "diagnostic" || e.kind === "stderr" ? "error" : ""
+        tone={diagnostic ? "error" : undefined}
+        title={
+          diagnostic
+            ? t("Error")
+            : e.kind === "approval"
+              ? approvalTitle(e)
+              : e.kind
         }
-        title={e.kind === "approval" ? approvalTitle(e) : e.kind}
         details={() => (
           <EventDetails
             event={e}
-            loadDetails={e.payload.length ? undefined : loadDetails}
+            loadDetails={
+              diagnostic
+                ? loadDetails
+                : e.payload.length
+                  ? undefined
+                  : loadDetails
+            }
           />
         )}
       >
-        {e.kind === "approval"
-          ? approvalTitle(e)
-          : `${e.kind} · ${e.text.slice(0, 160)}`}
+        {diagnostic ? (
+          <span className={styles.diagnostic}>
+            <span>
+              {t("Error")} · {diagnostic.message || t("Request failed")}
+            </span>
+            {(diagnostic.code || diagnostic.retrying !== undefined) && (
+              <small className={styles.metadata}>
+                {[
+                  diagnostic.code,
+                  diagnostic.retrying === true
+                    ? t("Retrying…")
+                    : diagnostic.retrying === false
+                      ? t("No automatic retry")
+                      : undefined,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </small>
+            )}
+          </span>
+        ) : e.kind === "approval" ? (
+          approvalTitle(e)
+        ) : (
+          `${e.kind} · ${e.text.slice(0, 160)}`
+        )}
       </ActivityCard>
     );
   },

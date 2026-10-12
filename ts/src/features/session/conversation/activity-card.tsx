@@ -12,6 +12,7 @@ import { createPortal } from "react-dom";
 import { Button } from "@lesomnus/cxz-ui";
 import { EventTimePopover } from "./event-time-popover";
 import { useAnchoredCard } from "#src/features/session/cards/floating-card.tsx";
+import styles from "./activity-card.module.css";
 
 export const ActivityCardUnfolded = createContext(false);
 
@@ -25,6 +26,7 @@ export function ActivityCard({
   details: content,
   className = "",
   state,
+  tone,
 }: {
   seq: bigint;
   timeMs: bigint;
@@ -33,6 +35,7 @@ export function ActivityCard({
   details: () => ReactNode;
   className?: string;
   state?: string;
+  tone?: "error";
 }) {
   const unfolded = useContext(ActivityCardUnfolded);
   const surface = useRef<HTMLDivElement>(null);
@@ -134,7 +137,9 @@ export function ActivityCard({
     };
   }, [present, area]);
   const face = (
-    <span className="activity-card-face">
+    <span
+      className={`activity-card-face${tone === "error" ? ` ${styles.error}` : ""}`}
+    >
       <span className="activity-card-content">{children}</span>
     </span>
   );

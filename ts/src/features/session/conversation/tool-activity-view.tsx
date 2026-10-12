@@ -58,6 +58,7 @@ export function ToolActivityView({
       seq={seq}
       timeMs={timeMs}
       state={state}
+      tone={state === "failed" ? "error" : undefined}
       className="tool-activity"
       title={`${label.name} · ${t("Details")}`}
       details={() => (

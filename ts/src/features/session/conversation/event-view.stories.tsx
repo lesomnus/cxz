@@ -99,6 +99,23 @@ export const Diagnostic: Story = {
     ],
   },
 };
+export const ModelAtCapacity: Story = {
+  args: {
+    events: [
+      storyEvent(1, "diagnostic", "Codex error", {
+        error: {
+          message:
+            "Selected model is at capacity. Please try a different model.",
+          codexErrorInfo: "serverOverloaded",
+          additionalDetails: null,
+          misalignment: null,
+        },
+        willRetry: false,
+      }),
+    ],
+  },
+};
+export const FailedTool: Story = { args: { events: toolEvents("failed") } };
 
 type AuxRun = Parameters<typeof create<typeof AuxSchema>>[1];
 const summaryState = (over?: AuxRun, text = "") =>

@@ -1,5 +1,9 @@
 import type { LanguagePack } from "#src/shared/i18n/i18n.ts";
 export const messages = {
+  Error: "오류",
+  "Request failed": "요청에 실패했습니다",
+  "No automatic retry": "자동 재시도 없음",
+  "Retrying…": "재시도 중…",
   "Force local recognition": "로컬 인식 강제",
   "Require speech recognition on this device.":
     "이 기기에서 음성을 인식하도록 강제합니다.",

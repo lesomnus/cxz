@@ -1,4 +1,5 @@
 import { EventView } from "./event-view";
+import errorStyles from "./activity-card.module.css";
 import { attachSummaries } from "#src/features/session/model/session-aux.ts";
 import { useSessionAux } from "#src/features/session/model/use-session-aux.ts";
 import { QuestionCard } from "#src/features/session/questions/question-card.tsx";
@@ -1052,7 +1053,10 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         ))}
       </FloatingCardHost>
       {!!(error || current.error) && (
-        <p className="error" role="alert">
+        <p
+          className={`error ${errorStyles.error} ${errorStyles.notice}`}
+          role="alert"
+        >
           {error || String(current.error)}
         </p>
       )}

@@ -1,5 +1,9 @@
 // English source messages are always bundled; other packs load on demand.
 export const messages = {
+  Error: "Error",
+  "Request failed": "Request failed",
+  "No automatic retry": "No automatic retry",
+  "Retrying…": "Retrying…",
   "Force local recognition": "Force local recognition",
   "Require speech recognition on this device.":
     "Require speech recognition on this device.",
