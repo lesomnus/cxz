@@ -30,14 +30,13 @@ test("browser file drop reaches the authenticated HTTP upload bridge and sends i
   });
   const reply = await uploading;
   expect(reply.status()).toBe(200);
-  // The gRPC fixture validates exact binary bytes before acknowledging upload.
+  // The raw Manager storage fixture validates binary bytes before acknowledgement.
   // Chromium's request inspector does not expose Blob bodies as postData.
   expect(reply.request().headers()["content-type"]).toBe(
     "application/octet-stream",
   );
-  expect((await reply.json()).path).toBe(
-    "/cxz/assets/session/upload/report.bin",
-  );
+  const path = (await reply.json()).path;
+  expect(path).toMatch(/^\/cxz\/assets\/session\/[a-f0-9]+\/report\.bin$/);
   await expect(page.locator(".composer .paste-chip")).toHaveAttribute(
     "data-upload-state",
     "ready",
@@ -47,6 +46,6 @@ test("browser file drop reaches the authenticated HTTP upload bridge and sends i
   await expect(
     page.locator("article.input .message-body").last(),
   ).toContainText(
-    "[Attached file: /cxz/assets/session/upload/report.bin — read this file for the full content]",
+    `[Attached file: ${path} — read this file for the full content]`,
   );
 });

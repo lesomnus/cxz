@@ -367,8 +367,9 @@ delete the uploaded file. Drafts, source previews and retry file handles stay in
 the authenticated connection's memory across navigation and disappear on page
 reload, sign-out or sandbox Reset.
 
-The authenticated HTTP `/attachments/{session}` endpoint streams a raw body to
-the existing `Session.Upload` RPC. It reuses login/origin checks, revoked-session
+The authenticated HTTP `/attachments/{session}` endpoint proxies the raw body to
+the Manager's private attachment handler, with `Session.Upload` compatibility for
+older Managers. It reuses login/origin checks, revoked-session
 cancellation and the Manager's run validation, byte limits and storage mount.
 Vite forwards this route to the host gateway. The sandbox calls Upload through
 its in-process transport and stores simulated files only in memory; Download
@@ -377,6 +378,8 @@ the existing container-readable `/cxz/assets` attachment mount and survive until
 session purge. Uploads do not alter workspace files or add transcript events.
 Implementation limits live in `composer-files.ts`, `composer-pastes.ts`,
 `composer-upload.ts` and the server attachment implementation.
+See [Attachment data path](attachment-data-path.md) for discovery, cancellation,
+the retained RPC adapter and measured processing costs.
 
 Paste insertion/removal uses native undo when the browser supports `insertText`,
 with a `setRangeText` fallback. IME composition retains the native textarea and

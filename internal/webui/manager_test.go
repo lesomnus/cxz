@@ -16,7 +16,7 @@ import (
 
 // Every gateway fixture uses the real Manager Connect listener and HTTP proxy,
 // rather than another set of web-specific service implementations.
-func testManagerRPC(t *testing.T, g *grpc.Server) http.Handler {
+func testManagerRPC(t *testing.T, g *grpc.Server, attachments ...http.Handler) http.Handler {
 	t.Helper()
 	root, err := os.MkdirTemp("", "cxz-web-")
 	if err != nil {
@@ -26,7 +26,7 @@ func testManagerRPC(t *testing.T, g *grpc.Server) http.Handler {
 	if err := os.Mkdir(filepath.Join(root, "run"), 0700); err != nil {
 		t.Fatal(err)
 	}
-	stop, err := transport.StartConnect(t.Context(), root, g)
+	stop, err := transport.StartConnect(t.Context(), root, g, attachments...)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/attachmenthttp"
 	"github.com/lesomnus/cxz/internal/sessionalias"
 	"github.com/lesomnus/cxz/resource"
 	"google.golang.org/grpc"
@@ -16,10 +17,20 @@ type Client struct {
 	sessions resource.SessionServiceClient
 	Accounts resource.AccountServiceClient
 	Bindings resource.AuthBindingServiceClient
+	uploads  *attachmenthttp.Client
 }
 
-func New(conn grpc.ClientConnInterface) *Client {
-	return &Client{resource.NewProjectServiceClient(conn), resource.NewSessionServiceClient(conn), resource.NewAccountServiceClient(conn), resource.NewAuthBindingServiceClient(conn)}
+func New(conn grpc.ClientConnInterface, uploads ...*attachmenthttp.Client) *Client {
+	c := &Client{projects: resource.NewProjectServiceClient(conn), sessions: resource.NewSessionServiceClient(conn), Accounts: resource.NewAccountServiceClient(conn), Bindings: resource.NewAuthBindingServiceClient(conn)}
+	if len(uploads) > 0 {
+		c.uploads = uploads[0]
+	}
+	return c
+}
+func (c *Client) Close() {
+	if c.uploads != nil {
+		c.uploads.Close()
+	}
 }
 
 var _ api.SessionsClient = (*Client)(nil)

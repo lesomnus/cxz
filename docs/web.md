@@ -166,6 +166,11 @@ Open `http://127.0.0.1:5173/`. UI edits use Vite HMR; API calls, editor connecti
 and terminal WebSockets are proxied to the installed gateway. This uses real
 projects and sessions, including real sends and decisions.
 
+File bodies pass through the authenticated attachment proxy to the Manager's
+private raw HTTP handler when supported, with an Upload RPC adapter for older
+Managers. [Attachment data path](attachment-data-path.md) documents the rollout
+and measured CPU/allocation improvements.
+
 Vite terminates `/rpc-stream/` locally and forwards the Connect HTTP stream to
 the installed gateway, so this development path also works with older gateways.
 Restart Vite after changing its gateway plugin; a browser reload starts the new

@@ -50,8 +50,16 @@ export async function uploadFile(
       headers: { "Content-Type": "application/octet-stream" },
       body: file,
     });
-    if (!response.ok)
-      throw new Error((await response.text()).trim() || "Upload failed.");
+    if (!response.ok) {
+      const message = response.headers
+        .get("Content-Type")
+        ?.includes("application/json")
+        ? (await response.json()).message
+        : (await response.text()).trim();
+      throw new Error(
+        typeof message === "string" && message ? message : "Upload failed.",
+      );
+    }
     path = (await response.json()).path;
   }
   if (typeof path !== "string" || !path.startsWith("/"))

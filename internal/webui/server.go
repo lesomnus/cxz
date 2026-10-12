@@ -101,7 +101,7 @@ func Handler(c Config, conn grpc.ClientConnInterface, assets fs.FS, rpc http.Han
 	mux.Handle("/editor/", editorProxy)
 	mux.Handle("/terminal/", &terminalProxy{client: resource.NewProjectServiceClient(conn)})
 	mux.Handle("/login/", &loginProxy{client: resource.NewProjectServiceClient(conn)})
-	mux.Handle("/attachments/", &attachmentProxy{client: resource.NewSessionServiceClient(conn)})
+	mux.Handle("/attachments/", &attachmentRoute{raw: rpc, legacy: &attachmentProxy{client: resource.NewSessionServiceClient(conn)}})
 	mux.Handle("/rpc-stream/", &rpcStreamProxy{rpc: rpc})
 	auth := &browserAuth{origin: c.Origin, transport: !c.plaintext(), token: sha256.Sum256([]byte(c.Token)), sessions: make(map[[32]byte]browserSession)}
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
