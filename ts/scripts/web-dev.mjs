@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, join, relative, resolve, sep } from "node:path";
+import { devRPCStreams } from "./rpc-stream.mjs";
 
 const routes = [
   "/auth/",
@@ -11,7 +12,9 @@ const routes = [
   "/login/",
   "/attachments/",
 ];
-const isGatewayPath = (path) => routes.some((route) => path.startsWith(route));
+const isGatewayPath = (path) =>
+  path.startsWith("/rpc-stream/") ||
+  routes.some((route) => path.startsWith(route));
 
 async function readToken(path) {
   let bytes;
@@ -137,6 +140,7 @@ export function devGatewayPlugin(gateway) {
         );
       }
       const port = () => server.httpServer.address().port;
+      devRPCStreams(server, gateway, (req) => localRequest(req, port(), true));
       const publicRelative = server.config.publicDir
         ? relative(server.config.publicDir, gateway.tokenFile)
         : "..";

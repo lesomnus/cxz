@@ -79,6 +79,14 @@ Older Managers that require individual IDs for Watch retain a paginated static
 list and show an update message instead of repeatedly retrying the unsupported
 subscription. The Manager must be updated to use shared live subscriptions.
 
+On plaintext HTTP origins, Connect subscriptions travel over authenticated
+`/rpc-stream/` WebSockets. Their Connect headers, message envelopes, errors and
+trailers are forwarded to the same Manager handler. This keeps long-lived
+subscriptions out of the browser's HTTP/1.1 connection pool shared across tabs,
+so opening more windows cannot block history reads or Send. Closing a subscription
+or signing out cancels its native RPC. HTTPS retains the ordinary Connect fetch
+transport. The loopback gateway must be updated for the WebSocket endpoint.
+
 The conversation renders messages, tool activity and actionable notices.
 Protocol `raw` records, quota/model polling and internal control acknowledgements
 remain in the journal but do not appear as conversation rows. Usage snapshots
@@ -157,6 +165,12 @@ npm run dev
 Open `http://127.0.0.1:5173/`. UI edits use Vite HMR; API calls, editor connections
 and terminal WebSockets are proxied to the installed gateway. This uses real
 projects and sessions, including real sends and decisions.
+
+Vite terminates `/rpc-stream/` locally and forwards the Connect HTTP stream to
+the installed gateway, so this development path also works with older gateways.
+Restart Vite after changing its gateway plugin; a browser reload starts the new
+transport. `playwright.dev.config.ts` exercises simultaneous windows against
+this actual local development bridge.
 
 The dev server reads `STATE/web-installation.json` first, so gateway address and
 token-path overrides from the last successful `cxz web up` are respected. It

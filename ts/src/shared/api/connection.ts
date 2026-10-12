@@ -12,6 +12,7 @@ import type { EditorState } from "#src/features/workspace/editor/workspace-edito
 import { ResourceInventory } from "./resource-inventory";
 import { SessionDrafts } from "#src/features/session/model/session-drafts.ts";
 import { SessionAttention } from "#src/features/session/model/session-attention.ts";
+import { rpcFetch } from "./stream-fetch";
 
 // All client state belongs to one authenticated Connection. No credentials or
 // conversation cache are persisted in localStorage. Drafts use tab-local storage.
@@ -41,8 +42,7 @@ export class Connection {
       transport ??
       createConnectTransport({
         baseUrl,
-        fetch: (input, init) =>
-          fetch(input, { ...init, credentials: "same-origin" }),
+        fetch: rpcFetch,
       });
     this.store = Store.open(entities, {
       name: "cxz",

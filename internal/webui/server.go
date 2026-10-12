@@ -102,6 +102,7 @@ func Handler(c Config, conn grpc.ClientConnInterface, assets fs.FS, rpc http.Han
 	mux.Handle("/terminal/", &terminalProxy{client: resource.NewProjectServiceClient(conn)})
 	mux.Handle("/login/", &loginProxy{client: resource.NewProjectServiceClient(conn)})
 	mux.Handle("/attachments/", &attachmentProxy{client: resource.NewSessionServiceClient(conn)})
+	mux.Handle("/rpc-stream/", &rpcStreamProxy{rpc: rpc})
 	auth := &browserAuth{origin: c.Origin, transport: !c.plaintext(), token: sha256.Sum256([]byte(c.Token)), sessions: make(map[[32]byte]browserSession)}
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if pdweb.Rpc(r) {
@@ -159,7 +160,7 @@ func (a *browserAuth) wrap(next http.Handler) http.Handler {
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
-		if pdweb.Rpc(r) || strings.HasPrefix(r.URL.Path, "/cxz.") || strings.HasPrefix(r.URL.Path, "/editor/") || strings.HasPrefix(r.URL.Path, "/terminal/") || strings.HasPrefix(r.URL.Path, "/login/") || strings.HasPrefix(r.URL.Path, "/attachments/") || r.URL.Path == "/auth/status" {
+		if pdweb.Rpc(r) || strings.HasPrefix(r.URL.Path, "/cxz.") || strings.HasPrefix(r.URL.Path, "/editor/") || strings.HasPrefix(r.URL.Path, "/terminal/") || strings.HasPrefix(r.URL.Path, "/login/") || strings.HasPrefix(r.URL.Path, "/attachments/") || strings.HasPrefix(r.URL.Path, "/rpc-stream/") || r.URL.Path == "/auth/status" {
 			c, err := r.Cookie(cookieName)
 			if err != nil {
 				http.Error(w, "sign in required", http.StatusUnauthorized)
