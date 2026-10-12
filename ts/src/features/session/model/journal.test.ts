@@ -27,13 +27,18 @@ describe("transcript events", () => {
         kind: "usage_status",
         text: "polling",
       }),
+      create(SessionEventSchema, {
+        seq: 5n,
+        kind: "queued",
+        text: "Waiting input",
+      }),
     ];
     const history = mergeEvents([], rows);
     expect(history.filter(isTranscriptEvent).map((e) => e.seq)).toEqual([
       1n,
       3n,
     ]);
-    expect(history.map((e) => e.seq)).toEqual([1n, 2n, 3n, 4n]);
+    expect(history.map((e) => e.seq)).toEqual([1n, 2n, 3n, 4n, 5n]);
   });
 
   it("still updates the quota indicator from snapshots omitted from the conversation", () => {

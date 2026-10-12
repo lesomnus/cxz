@@ -80,6 +80,7 @@ export class SessionDrafts extends Map<string, string> {
           body: p.body,
           lines: p.lines,
           bytes: p.bytes,
+          secret: p.secret,
           attachment: p.attachment && {
             name: p.attachment.name,
             directory: p.attachment.directory,

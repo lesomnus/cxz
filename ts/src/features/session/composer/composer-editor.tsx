@@ -15,6 +15,10 @@ import { Button } from "@lesomnus/cxz-ui";
 import { useFloatingCard } from "#src/features/session/cards/floating-card.tsx";
 import { indentEdit } from "./composer-indent";
 import { useCommandSuggestions } from "./command-suggestions";
+import {
+  useMentionSuggestions,
+  type MentionContext,
+} from "./mention-suggestions";
 import type { ComposerCommand } from "./composer-commands";
 import { usePathSuggestions } from "./path-suggestions";
 import type { LookupPaths } from "./composer-paths";
@@ -71,6 +75,7 @@ export function ComposerEditor({
   editorRef,
   upload,
   onUploadChange,
+  mentions,
 }: {
   value: string;
   pastes: Map<string, ComposerPaste>;
@@ -86,6 +91,7 @@ export function ComposerEditor({
   editorRef?: Ref<ComposerEditorHandle>;
   upload?: UploadFile;
   onUploadChange?: () => void;
+  mentions?: MentionContext;
 }) {
   useLocale();
   const input = useRef<HTMLTextAreaElement>(null);
@@ -235,10 +241,22 @@ export function ComposerEditor({
     workspace,
     accept: (start, end, path) => replace(start, end, path),
   });
-  const hints = pathHints.open ? pathHints : commandHints;
+  const mentionHints = useMentionSuggestions({
+    value,
+    input,
+    context: readOnly ? undefined : mentions,
+    composing: composition,
+    accept: replace,
+  });
+  const hints = pathHints.open
+    ? pathHints
+    : mentionHints.open
+      ? mentionHints
+      : commandHints;
   const updateSuggestions = () => {
     commandHints.updateSelection();
     pathHints.updateSelection();
+    mentionHints.updateSelection();
   };
   const blocks = useMemo(
     () =>
@@ -847,15 +865,17 @@ export function ComposerEditor({
                       role="button"
                       tabIndex={0}
                       aria-label={
-                        range.paste.attachment
-                          ? `${range.paste.attachment.name} · ${t(range.paste.attachment.state === "uploading" ? "Uploading…" : range.paste.attachment.state === "error" ? "Upload failed." : "Attachment")}`
-                          : t(
-                              "View paste source: {lines} lines, {bytes} bytes",
-                              {
-                                lines: range.paste.lines,
-                                bytes: range.paste.bytes,
-                              },
-                            )
+                        range.paste.secret
+                          ? "Secret file reference"
+                          : range.paste.attachment
+                            ? `${range.paste.attachment.name} · ${t(range.paste.attachment.state === "uploading" ? "Uploading…" : range.paste.attachment.state === "error" ? "Upload failed." : "Attachment")}`
+                            : t(
+                                "View paste source: {lines} lines, {bytes} bytes",
+                                {
+                                  lines: range.paste.lines,
+                                  bytes: range.paste.bytes,
+                                },
+                              )
                       }
                       title={
                         range.paste.attachment?.error ??
@@ -1015,7 +1035,12 @@ function PastePreview({
           <code>{paste.attachment.path}</code>
         </p>
       )}
-      {paste.body && <pre>{paste.body}</pre>}
+      {paste.secret && (
+        <p className="attachment-info">
+          Secret file · <code>{paste.secret.path}</code>
+        </p>
+      )}
+      {!paste.secret && paste.body && <pre>{paste.body}</pre>}
       <div className="buttons">
         {paste.attachment?.state === "error" && (
           <Button

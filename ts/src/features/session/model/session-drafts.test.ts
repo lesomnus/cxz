@@ -24,6 +24,28 @@ function storage() {
     clear: () => data.clear(),
   } satisfies Storage;
 }
+it("restores secret chips with only a file reference and run binding", () => {
+  const file = storage();
+  const pastes = new Map<string, ComposerPaste>();
+  const chip: ComposerPaste = {
+    token: "[Secret 12345678]",
+    body: "(secret placed at /run/cxz-secrets/file)",
+    lines: 0,
+    bytes: 0,
+    secret: { session: "one", run: "run", path: "/run/cxz-secrets/file" },
+  };
+  pastes.set(chip.token, chip);
+  new SessionDrafts("host", pastes, () => file).set(
+    "one",
+    `Read ${chip.token}`,
+  );
+  const restored = new Map<string, ComposerPaste>();
+  const drafts = new SessionDrafts("host", restored, () => file);
+  expect(expandPastes(drafts.get("one")!, restored)).toBe(
+    "Read (secret placed at /run/cxz-secrets/file)",
+  );
+  expect(restored.get(chip.token)?.secret).toEqual(chip.secret);
+});
 it("restores session-scoped Markdown after refresh and clears accepted drafts and sign-out data", () => {
   const file = storage(),
     pastes = new Map();

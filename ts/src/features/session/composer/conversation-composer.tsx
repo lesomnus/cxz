@@ -22,6 +22,7 @@ import { MicrophoneControl } from "./microphone-control";
 import { useMicrophoneLevel } from "#src/shared/browser/use-microphone-level.ts";
 import { useSettings } from "#src/shared/settings/settings.ts";
 import microphoneStyles from "./microphone-control.module.css";
+import type { MentionContext } from "./mention-suggestions";
 
 // Presentation shared by the connected conversation and serverless UI previews.
 export function ConversationComposer({
@@ -33,6 +34,7 @@ export function ConversationComposer({
   onSubmit,
   commands,
   lookupPaths,
+  mentions,
   workspace,
   canSend,
   sending,
@@ -48,6 +50,7 @@ export function ConversationComposer({
   menu,
   upload,
   onDraftAssetsChange,
+  queued,
   children,
 }: {
   formRef?: Ref<HTMLFormElement>;
@@ -58,6 +61,7 @@ export function ConversationComposer({
   onSubmit: FormEventHandler<HTMLFormElement>;
   commands?: readonly ComposerCommand[];
   lookupPaths?: LookupPaths;
+  mentions?: MentionContext;
   workspace?: string;
   canSend: boolean;
   sending: boolean;
@@ -73,6 +77,7 @@ export function ConversationComposer({
   menu?: ReactNode | ((pick: (directory?: boolean) => void) => ReactNode);
   upload?: UploadFile;
   onDraftAssetsChange?: () => void;
+  queued?: ReactNode;
   children?: ReactNode;
 }) {
   useLocale();
@@ -143,6 +148,7 @@ export function ConversationComposer({
           />
         </>
       )}
+      {queued}
       <div className="composer-wrapper">
         <ComposerAurora active={working} />
         <div className="composer-toolbar">
@@ -261,6 +267,7 @@ export function ConversationComposer({
             canSend={canSend}
             commands={commands}
             lookupPaths={lookupPaths}
+            mentions={mentions}
             workspace={workspace}
             editorRef={editor}
             upload={upload}

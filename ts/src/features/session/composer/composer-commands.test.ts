@@ -22,14 +22,10 @@ describe("slash command suggestions", () => {
     expect(matchCommands(commands, "/MODEL")[0].command.name).toBe("/model");
     expect(matchCommands(commands, "/mdl")[0].positions).toEqual([0, 1, 3, 5]);
     expect(matchCommands(commands, "/zzz")).toEqual([]);
-    expect(
-      matchCommands(commands, "/co").every((match) =>
-        match.command.name.startsWith("/co"),
-      ),
-    ).toBe(true);
+    expect(matchCommands(commands, "/co")[0].command.name).toBe("/compact");
   });
   it("keeps the selected command at the center and wraps neighbors without duplicating short lists", () => {
-    const matches = matchCommands(sessionCommands("claude"), "/");
+    const matches = matchCommands(sessionCommands("claude").slice(0, 4), "/");
     const rows = commandWindow(matches, 0);
     expect(rows[3]?.command.name).toBe("/model");
     expect(rows.filter(Boolean)).toHaveLength(matches.length);
@@ -38,6 +34,11 @@ describe("slash command suggestions", () => {
     ).toBe(matches.length);
     expect(commandWindow(matches, matches.length - 1)[3]).toBe(matches.at(-1));
     expect(commandWindow([], 0)).toEqual([]);
+    expect(
+      commandWindow(matchCommands(sessionCommands("claude"), "/"), 0).filter(
+        Boolean,
+      ),
+    ).toHaveLength(7);
   });
   it("offers only reported model/effort values and agent-supported context commands", () => {
     const commands = sessionCommands("codex", {

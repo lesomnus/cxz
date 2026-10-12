@@ -23,6 +23,7 @@ export type SessionMenuProps = {
   purge: () => Promise<boolean>;
   edit: (field: SessionField, value: string) => Promise<Session>;
   upload?: (directory?: boolean) => void;
+  tools?: { label: string; run: () => void; disabled?: boolean }[];
 };
 
 export function SessionMenu({
@@ -34,6 +35,7 @@ export function SessionMenu({
   purge,
   edit,
   upload,
+  tools = [],
 }: SessionMenuProps) {
   useLocale();
   const open = useFloatingCard();
@@ -95,6 +97,7 @@ export function SessionMenu({
           {
             label: "",
             items: [
+              ...tools,
               ...(upload
                 ? [
                     {

@@ -15,10 +15,12 @@ import { SessionMenu } from "#src/features/session/components/session-menu.tsx";
 import { manageSession } from "#src/features/session/model/session-actions.ts";
 import { editSession } from "#src/features/session/model/session-edit.ts";
 import { useNavigate } from "@tanstack/react-router";
+import { useWorkspaceRoute } from "#src/app/router.tsx";
 import { t, translateKnown } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import React, {
   useCallback,
+  useContext,
   useEffect,
   useMemo,
   useRef,
@@ -71,6 +73,16 @@ import { Transcript } from "./transcript";
 import { atScrollBottom } from "./scroll-physics";
 import { uploadFile } from "#src/features/session/composer/composer-upload.ts";
 import { attachmentsReady } from "#src/features/session/composer/composer-pastes.ts";
+import { QueuedMessage } from "#src/features/session/components/queued-message.tsx";
+import { AuxiliaryControls } from "#src/features/auxiliary/auxiliary-controls.tsx";
+import { UsageReport } from "#src/features/activity/usage-report.tsx";
+import { BackgroundReport } from "#src/features/activity/background-report.tsx";
+import { MemoryLibrary } from "#src/features/memory/memory-library.tsx";
+import { LoginPanel } from "#src/features/accounts/login-panel.tsx";
+import { useFloatingCard } from "#src/features/session/cards/floating-card.tsx";
+import { WorkspaceContext } from "#src/app/workspace-context.tsx";
+import { SecretInput } from "#src/features/session/composer/secret-input.tsx";
+import { pasteRanges } from "#src/features/session/composer/composer-pastes.ts";
 
 type ConversationProps = { c: Connection; id: string; projects: Project[] };
 
@@ -85,10 +97,15 @@ export function Conversation(props: ConversationProps) {
 function ConversationContent({ c, id, projects }: ConversationProps) {
   useLocale();
   const navigate = useNavigate();
+  const openCard = useFloatingCard();
+  const workspaceContext = useContext(WorkspaceContext);
+  const [queued, setQueued] = useState("");
+  const { seq: requestedSeq } = useWorkspaceRoute();
+  const openedSearch = useRef("");
   const [sending, setSending] = useState(false);
   const current = useQuery(SessionService.method.get, {
     ref: ref(id),
-    select: { all: true, project: { all: true } },
+    select: { all: true, project: { all: true }, account: { all: true } },
   });
   const [events, setEvents] = useState<SessionEvent[]>([]);
   const [metadata, setMetadata] = useState<SessionEvent[]>([]);
@@ -279,11 +296,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
       );
       if (controller.signal.aborted) return;
       rememberPage(page);
-      if (
-        !page.events.some(
-          (event) => event.seq === target && event.kind === "input",
-        )
-      ) {
+      if (!page.events.some((event) => event.seq === target)) {
         setError(t("This input is no longer available in retained history."));
         return;
       }
@@ -298,6 +311,17 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
       if (historyRequest.current === controller) historyRequest.current = null;
     }
   }
+
+  useEffect(() => {
+    if (
+      !requestedSeq ||
+      status !== "Live" ||
+      openedSearch.current === requestedSeq
+    )
+      return;
+    openedSearch.current = requestedSeq;
+    void showPrompt(requestedSeq);
+  }, [requestedSeq, status]);
 
   function rememberPage(page: HistoryPage) {
     rememberMetadata(page.metadata);
@@ -428,6 +452,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         }
         setExecutionState(snapshot.status?.state ?? "");
         setTurn((old) => snapshotTurn(snapshot.status, loaded, old));
+        setQueued(snapshot.status?.queued ?? "");
         setStatus("Live");
         for await (const e of c.sessions.events(
           { ref: ref(id), afterSeq: cursor, clientId: c.clientId },
@@ -436,6 +461,9 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
           if (canceled) return;
           c.attention.event(id, e);
           if (e.kind === "state") setExecutionState(e.text);
+          if (e.kind === "queued") setQueued(e.text);
+          if (e.kind === "input")
+            setQueued((old) => (old === e.text ? "" : old));
           setTurn((old) => advanceTurn(old, e, true));
           rememberMetadata([e]);
           cursor = e.seq > cursor ? e.seq : cursor;
@@ -706,6 +734,72 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
       clientId: crypto.randomUUID(),
     };
   }
+  function localOpen(kind: "memory" | "usage" | "background" | "aux") {
+    if (kind === "memory")
+      openCard({
+        title: "Shared memory",
+        content: () => <MemoryLibrary c={c} session={id} />,
+      });
+    if (kind === "usage")
+      openCard({
+        title: "Conversation usage",
+        content: () => <UsageReport c={c} session={id} />,
+      });
+    if (kind === "background")
+      openCard({
+        title: "Background tasks",
+        content: () => (
+          <BackgroundReport c={c} session={id} run={s?.status?.runId ?? ""} />
+        ),
+      });
+    if (kind === "aux")
+      openCard({
+        title: "Auxiliary AI",
+        content: () => (
+          <AuxiliaryControls
+            c={c}
+            session={id}
+            insert={(text) => {
+              setDraft(text);
+              c.drafts.set(id, text);
+            }}
+          />
+        ),
+      });
+  }
+  function openSecret(command = false, range?: { start: number; end: number }) {
+    if (!s?.status?.runId || !projectId) return;
+    const base = command ? "" : draft;
+    const textarea =
+      composerInput.current?.querySelector<HTMLTextAreaElement>("textarea");
+    const start = command
+      ? 0
+      : (range?.start ?? textarea?.selectionStart ?? base.length);
+    const end = command ? 0 : (range?.end ?? textarea?.selectionEnd ?? start);
+    const run = s.status.runId;
+    openCard({
+      title: "Secret",
+      content: (close) => (
+        <SecretInput
+          c={c}
+          project={projectId}
+          session={id}
+          run={run}
+          close={close}
+          insert={(chip) => {
+            if ((c.drafts.get(id) ?? "") !== base)
+              throw new Error(
+                "Draft changed. Close this card and insert the secret again.",
+              );
+            c.pastes.set(chip.token, chip);
+            const next = base.slice(0, start) + chip.token + base.slice(end);
+            setDraft(next);
+            c.drafts.set(id, next);
+          }}
+        />
+      ),
+    });
+  }
   async function send(e: React.FormEvent) {
     e.preventDefault();
     if (!draft.trim()) return;
@@ -714,10 +808,27 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
       return;
     }
     const sent = draft;
+    if (sent.trim() === "/@redact") {
+      setDraft("");
+      c.drafts.set(id, "");
+      openSecret(true);
+      return;
+    }
     const clearCommand = () => {
       if (c.drafts.get(id) === sent) c.drafts.set(id, "");
       setDraft((old) => (old === sent ? "" : old));
     };
+    const localCommands: Record<string, () => void> = {
+      "/memory": () => localOpen("memory"),
+      "/usage": () => localOpen("usage"),
+      "/background": () => localOpen("background"),
+      "/aux": () => localOpen("aux"),
+    };
+    if (localCommands[sent.trim()]) {
+      clearCommand();
+      localCommands[sent.trim()]();
+      return;
+    }
     let downloadPath: string | undefined;
     try {
       downloadPath = downloadArgument(sent);
@@ -779,6 +890,17 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
       return;
     }
     await action(async (s) => {
+      if (
+        pasteRanges(sent, c.pastes).some(
+          ({ paste }) =>
+            paste.secret &&
+            (paste.secret.session !== id ||
+              paste.secret.run !== s.status?.runId),
+        )
+      )
+        throw new Error(
+          "Secret belongs to an earlier run. Remove the chip and insert it again.",
+        );
       const text = composerPrompt(sent, c.pastes);
       const motion = sendMotion.prepare(text, latestSeq.current);
       try {
@@ -787,6 +909,12 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
           const receipt = await c.sessions.send({ ...control(s), text });
           if (receipt.status === "rejected")
             throw new Error(t("Provider rejected the input"));
+          if (receipt.status === "queued") {
+            setQueued(text);
+            clearCommand();
+            if (motion) sendMotion.cancel(motion);
+            return;
+          }
         } finally {
           setSending(false);
         }
@@ -914,6 +1042,15 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         </p>
       )}
       <ConversationComposer
+        mentions={
+          s
+            ? {
+                current: s,
+                sessions: workspaceContext?.sessions ?? [],
+                redact: (start, end) => openSecret(false, { start, end }),
+              }
+            : undefined
+        }
         formRef={composer}
         inputRef={composerInput}
         draft={draft}
@@ -925,6 +1062,28 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         lookupPaths={projectId ? lookupPaths : undefined}
         workspace={sessionProject?.status?.remoteWorkspace}
         canSend={!busy && !!s && !!draft.trim()}
+        queued={
+          <QueuedMessage
+            text={queued}
+            busy={busy}
+            canRecall={!draft.trim()}
+            recall={() =>
+              void action(async (session) => {
+                const text = queued;
+                await c.sessions.send({ ...control(session), cancel: true });
+                setQueued("");
+                setDraft(text);
+                c.drafts.set(id, text);
+              })
+            }
+            cancel={() =>
+              void action(async (session) => {
+                await c.sessions.send({ ...control(session), cancel: true });
+                setQueued("");
+              })
+            }
+          />
+        }
         sending={sending}
         busy={busy}
         turn={turn}
@@ -954,6 +1113,43 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
             session={s && { ...s, project: sessionProject ?? s.project }}
             info={info}
             busy={busy}
+            tools={[
+              {
+                label: "Insert secret",
+                disabled: !s?.status?.runId || !projectId || busy,
+                run: () => openSecret(),
+              },
+              { label: "Shared memory", run: () => localOpen("memory") },
+              { label: "Auxiliary AI", run: () => localOpen("aux") },
+              { label: "Conversation usage", run: () => localOpen("usage") },
+              { label: "Background tasks", run: () => localOpen("background") },
+              ...(s?.account?.agent === "claude"
+                ? [
+                    {
+                      label: "Log in",
+                      disabled: !["stopped", "failed"].includes(
+                        s?.status?.state ?? "",
+                      ),
+                      run: () =>
+                        openCard({
+                          title: "Session login",
+                          content: (close) => (
+                            <LoginPanel
+                              c={c}
+                              target={{
+                                account: s.account!.alias,
+                                project: projectId,
+                                key: s.clientId,
+                              }}
+                              complete={close}
+                              cancel={close}
+                            />
+                          ),
+                        }),
+                    },
+                  ]
+                : []),
+            ]}
             upload={pick}
             edit={async (field, value) => {
               const updated = await editSession(c.sessions, id, field, value);
