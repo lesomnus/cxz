@@ -43,7 +43,7 @@ test("unread response uses the left indicator and Sessions icon count clears whe
   });
   await expect(count).toBeVisible();
   await expect(count).toHaveText("1");
-  await expect(count.locator("circle")).toHaveCSS("fill", "rgb(217, 255, 48)");
+  await expect(count).toHaveCSS("background-color", "rgb(217, 255, 48)");
   const favicon = await page
     .locator("link[data-session-attention]")
     .getAttribute("href");

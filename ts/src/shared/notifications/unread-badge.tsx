@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { SESSION_ATTENTION_COLOR } from "./attention-color";
@@ -7,8 +8,8 @@ export function UnreadBadge({ count }: { count?: number }) {
   useLocale();
   return (
     <span
-      className={styles.badge}
-      style={{ color: SESSION_ATTENTION_COLOR }}
+      className={`${styles.badge} ${count === undefined ? "" : styles.count}`}
+      style={{ "--attention-color": SESSION_ATTENTION_COLOR } as CSSProperties}
       role="img"
       aria-label={
         count === undefined
@@ -16,10 +17,13 @@ export function UnreadBadge({ count }: { count?: number }) {
           : t("{count} unread sessions", { count })
       }
     >
-      <svg width="8" height="8" viewBox="0 0 8 8" aria-hidden="true">
-        <circle cx="4" cy="4" r="4" fill="currentColor" />
-      </svg>
-      {count !== undefined && <span aria-hidden="true">{count}</span>}
+      {count === undefined ? (
+        <svg width="6" height="6" viewBox="0 0 6 6" aria-hidden="true">
+          <circle cx="3" cy="3" r="3" fill="currentColor" />
+        </svg>
+      ) : (
+        <span aria-hidden="true">{count > 99 ? "99+" : count}</span>
+      )}
     </span>
   );
 }

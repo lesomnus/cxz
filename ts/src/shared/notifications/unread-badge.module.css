@@ -2,14 +2,21 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  color: var(--attention-color);
   font:
-    10px/1 ui-monospace,
+    9px/1 ui-monospace,
     SFMono-Regular,
     Consolas,
     monospace;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+.count {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--attention-color);
+  color: #181818;
 }
 .badge svg {
   display: block;
