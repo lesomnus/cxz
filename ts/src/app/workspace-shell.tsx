@@ -104,7 +104,10 @@ export function Workspace({
               aria-current={resource === view ? "page" : undefined}
               title={view === "sessions" ? t("Sessions") : t("Projects")}
             >
-              <ResourceIcon kind={view} />
+              <ResourceIcon
+                kind={view}
+                unreadCount={view === "sessions" ? unread.size : 0}
+              />
               <span>{view === "sessions" ? t("Sessions") : t("Projects")}</span>
             </RouteLink>
           ))}

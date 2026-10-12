@@ -5,6 +5,7 @@ import type { Session } from "#gen/cxz/session_pb";
 import { RouteLink } from "#src/shared/navigation/route-link.tsx";
 import { Button } from "@lesomnus/cxz-ui";
 import { SessionIdentity } from "./session-identity";
+import { UnreadBadge } from "#src/shared/notifications/unread-badge.tsx";
 
 export function SessionTreeGroup({
   project,
@@ -43,18 +44,8 @@ export function SessionTreeGroup({
               pressTarget=".session-heading"
               aria-current={selected === s.runtimeId ? "true" : undefined}
             >
-              <SessionIndicator session={s} />
+              <SessionIndicator session={s} unread={unread.has(s.runtimeId)} />
               <SessionIdentity session={s} />
-              {unread.has(s.runtimeId) && (
-                <span
-                  className="session-unread"
-                  role="img"
-                  aria-label={t("Unread response")}
-                  title={t("Unread response")}
-                >
-                  +
-                </span>
-              )}
             </RouteLink>
           ))}
           {loading && !items.length && (
@@ -81,11 +72,23 @@ const activityDots = [
   [4, 6],
 ] as const;
 
-function SessionIndicator({ session }: { session: Session }) {
+function SessionIndicator({
+  session,
+  unread,
+}: {
+  session: Session;
+  unread: boolean;
+}) {
   useLocale();
   const state = session.status?.state || "unknown";
   const question = !!session.status?.pending.length;
   const working = ["running", "working", "waiting_input"].includes(state);
+  if (unread)
+    return (
+      <span className="session-indicator" title={t("Unread response")}>
+        <UnreadBadge />
+      </span>
+    );
   return (
     <span
       className={`session-indicator ${question ? "attention" : ""}`}

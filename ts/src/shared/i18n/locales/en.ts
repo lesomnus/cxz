@@ -524,6 +524,7 @@ export const messages = {
   Confirm: "Confirm",
   Title: "Title",
   "Unread response": "Unread response",
+  "{count} unread sessions": "{count} unread sessions",
   Notifications: "Notifications",
   "Notification sounds": "Notification sounds",
   "Play a sound when a response finishes or a new question arrives.":

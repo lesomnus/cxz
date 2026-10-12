@@ -1494,13 +1494,6 @@ pre {
   height: calc(3 * var(--composer-editor-height));
   transition-duration: 0s;
 }
-.session-unread {
-  flex: 0 0 auto;
-  margin-left: auto;
-  padding-inline: var(--space);
-  color: var(--shade-237);
-  font-family: ui-monospace, monospace;
-}
 .composer-editor textarea::selection {
   background: var(--shade-65);
   color: var(--shade-237);

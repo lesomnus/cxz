@@ -1,0 +1,17 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  font:
+    10px/1 ui-monospace,
+    SFMono-Regular,
+    Consolas,
+    monospace;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.badge svg {
+  display: block;
+  flex: 0 0 auto;
+}

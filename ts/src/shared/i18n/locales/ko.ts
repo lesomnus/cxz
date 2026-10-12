@@ -528,6 +528,7 @@ export const messages = {
   Confirm: "확인",
   Title: "제목",
   "Unread response": "읽지 않은 응답",
+  "{count} unread sessions": "읽지 않은 세션 {count}개",
   Notifications: "알림",
   "Notification sounds": "알림 소리",
   "Play a sound when a response finishes or a new question arrives.":
