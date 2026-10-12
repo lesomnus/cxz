@@ -12,8 +12,9 @@
   white-space: nowrap;
 }
 .count {
-  width: 20px;
-  height: 20px;
+  width: 14px;
+  height: 14px;
+  font-size: 7px;
   border-radius: 50%;
   background: var(--attention-color);
   color: #181818;

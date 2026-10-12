@@ -6,8 +6,8 @@
 }
 .badge {
   position: absolute;
-  top: -8px;
-  right: -12px;
+  top: -5px;
+  right: -7px;
   display: flex;
   pointer-events: none;
 }
