@@ -35,3 +35,28 @@ test("provider errors show their message in a red face, including the hover port
   await expect(preview).toContainText("Selected model is at capacity.");
   expect(errors).toEqual([]);
 });
+
+test("failed Bash stays neutral before and during hover", async ({ page }) => {
+  await page.goto(
+    "/iframe.html?id=conversation-eventcards--failed-tool&viewMode=story",
+  );
+  const card = page.locator(".event-detail[data-state='failed']");
+  await expect(card).toContainText("Bash");
+  await expect(card.getByRole("img", { name: "Failed" })).toHaveText("×");
+  const face = card.locator(".activity-card-face");
+  const background = await face.evaluate(
+    (node) => getComputedStyle(node).backgroundColor,
+  );
+  const channels = await face.evaluate((node) => {
+    const ctx = document.createElement("canvas").getContext("2d")!;
+    ctx.fillStyle = getComputedStyle(node).backgroundColor;
+    ctx.fillRect(0, 0, 1, 1);
+    return [...ctx.getImageData(0, 0, 1, 1).data];
+  });
+  expect(channels[0]).toBe(channels[1]);
+  expect(channels[1]).toBe(channels[2]);
+  await card.hover();
+  await expect(
+    page.locator(".activity-card-preview .activity-card-face"),
+  ).toHaveCSS("background-color", background);
+});

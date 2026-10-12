@@ -1,13 +1,9 @@
 import type { SessionEvent } from "#gen/cxz/session_pb";
 import { payload } from "./journal";
 
-// Diagnose only explicit failure records; ordinary responses may discuss errors.
+// Error events are distinct from failed tools or turn completion statuses.
 export function eventDiagnostic(event: SessionEvent) {
-  if (
-    !["diagnostic", "stderr", "error"].includes(event.kind) &&
-    !(event.kind === "turn_end" && event.text === "failed")
-  )
-    return;
+  if (!["diagnostic", "stderr", "error"].includes(event.kind)) return;
   const data = payload(event);
   const message = [
     data.error?.message,

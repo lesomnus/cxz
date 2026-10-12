@@ -50,8 +50,14 @@ it("keeps legacy plain diagnostics and stderr without inventing a retry decision
   ).toBe("Not authorized");
 });
 
-it("does not classify successful responses, quota telemetry or user interruptions as errors", () => {
-  for (const kind of ["assistant", "input", "tool_output", "usage_status"])
+it("does not classify conversation text, tool failures or turn statuses as error events", () => {
+  for (const kind of [
+    "assistant",
+    "input",
+    "tool_output",
+    "tool_result",
+    "usage_status",
+  ])
     expect(
       eventDiagnostic(
         event(kind, "An error occurred", { error: { message: "Example" } }),
@@ -61,6 +67,6 @@ it("does not classify successful responses, quota telemetry or user interruption
   expect(
     eventDiagnostic(
       event("turn_end", "failed", { error: { message: "Failed turn" } }),
-    )?.message,
-  ).toBe("Failed turn");
+    ),
+  ).toBeUndefined();
 });
