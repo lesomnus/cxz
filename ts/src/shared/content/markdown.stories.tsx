@@ -35,6 +35,11 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const CodeBlocks: Story = {};
+export const Tables: Story = {
+  args: {
+    text: "| 값 | 수 | | 상태 |\n| --- | --- | --- | --- |\n| 가 | 1 | | 확인됨 |\n| 한글자 | 2 | | 대기 |\n\n| Name | Count | Description |\n| --- | ---: | --- |\n| API | 3 | Longer content can still determine a column's width. |",
+  },
+};
 function StreamingPreview() {
   const [extra, setExtra] = useState(false);
   return (

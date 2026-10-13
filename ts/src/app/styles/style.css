@@ -10,6 +10,7 @@
   font-size: 14px;
   --space: var(--ui-space);
   --conversation-width: 600px;
+  --markdown-table-column-min-width: 3em;
   --composer-radius: 15px;
   --composer-editor-height: 110px;
   --composer-resize-duration: 300ms;
@@ -1063,6 +1064,8 @@ pre {
 }
 .markdown td,
 .markdown th {
+  box-sizing: content-box;
+  min-width: var(--markdown-table-column-min-width);
   padding: 6px 8px;
   border: 1px solid var(--shade-60);
 }
