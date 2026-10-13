@@ -268,16 +268,11 @@ export function VirtualMessages({
     onPromptChange(prompt, peek);
   }, [prompt, peek, onPromptChange]);
   useTranscriptMotion({ root, pane, follow, rows: layout.rows, start, end });
-  return (
-    <div
-      className="virtual-messages"
-      ref={root}
-      data-cached={events.length}
-      data-first={events[0]?.seq.toString()}
-      data-last={events.at(-1)?.seq.toString()}
-      style={{ height: layout.total }}
-    >
-      {events.slice(start, end).map((event, index) => {
+  // Pixel movement only changes the window and prompt peeking. Reuse row
+  // elements until that window, its events, or its renderer actually changes.
+  const children = useMemo(
+    () =>
+      events.slice(start, end).map((event, index) => {
         const id = event.seq.toString();
         return (
           <div
@@ -306,7 +301,19 @@ export function VirtualMessages({
             </ActivityCardUnfolded>
           </div>
         );
-      })}
+      }),
+    [events, start, end, foldActivities, latestActivity, layout, render],
+  );
+  return (
+    <div
+      className="virtual-messages"
+      ref={root}
+      data-cached={events.length}
+      data-first={events[0]?.seq.toString()}
+      data-last={events.at(-1)?.seq.toString()}
+      style={{ height: layout.total }}
+    >
+      {children}
     </div>
   );
 }

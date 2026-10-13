@@ -22,6 +22,11 @@ import {
   useNavigate,
 } from "@tanstack/react-router";
 import { createWorkspaceRouter, useWorkspaceRoute } from "#src/app/router.tsx";
+import { installReactPerformanceBudget } from "#src/shared/browser/react-performance.ts";
+if (import.meta.env.DEV) {
+  const dispose = installReactPerformanceBudget();
+  import.meta.hot?.dispose(dispose);
+}
 
 const scenarios = [
   "Project checklist",

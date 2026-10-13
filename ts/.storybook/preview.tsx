@@ -5,6 +5,11 @@ import { t, localeStore } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { settingsStore } from "#src/shared/settings/settings.ts";
 import "#src/app/styles/style.css";
+import { installReactPerformanceBudget } from "#src/shared/browser/react-performance.ts";
+if (import.meta.env.DEV) {
+  const dispose = installReactPerformanceBudget();
+  import.meta.hot?.dispose(dispose);
+}
 
 const preview: Preview = {
   globalTypes: {

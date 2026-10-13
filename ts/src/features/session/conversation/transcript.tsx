@@ -111,10 +111,34 @@ export function Transcript({
   const activeWork = selectedWorkGroup(work.groups, selectedWork);
   const workTrigger = useRef<HTMLButtonElement | null>(null);
   const workOrigin = useRef<DialogTriggerOrigin | undefined>(undefined);
-  const closeWork = (restore = true) => {
+  const closeWork = React.useCallback((restore = true) => {
     restoreWorkFocus.current = restore;
     setWorkClosing(true);
-  };
+  }, []);
+  const renderRow = React.useCallback(
+    (event: SessionEvent) => {
+      const group = work.summaries.get(event.seq);
+      return group ? (
+        <WorkSummary
+          work={group}
+          expanded={activeWork === group && !workClosing}
+          partial={!group.hasBoundary && !!workHistory?.hasOlder}
+          open={(trigger) => {
+            workTrigger.current = trigger;
+            workOrigin.current = captureDialogTrigger(trigger);
+            if (activeWork === group && !workClosing) closeWork();
+            else {
+              setWorkClosing(false);
+              selectWork(group.anchor);
+            }
+          }}
+        />
+      ) : (
+        render(event)
+      );
+    },
+    [work, activeWork, workClosing, workHistory?.hasOlder, closeWork, render],
+  );
   useEffect(() => {
     if (!workClosing) return;
     const node = document.getElementById("work-dialog");
@@ -248,17 +272,18 @@ export function Transcript({
       window.matchMedia("(prefers-reduced-motion: reduce)").matches
     )
       return;
+    const railHeight = track.current!.clientHeight;
     const motion = {
       time: performance.now(),
       progress: 0,
       thumb: parseFloat(getComputedStyle(thumb.current).top),
       markers: new Map(
-        [...track.current!.querySelectorAll<HTMLElement>(".scroll-tick")].map(
-          (node) => [
+        [...track.current!.querySelectorAll<HTMLElement>(".scroll-tick")]
+          .map((node): [string, number] => [
             node.dataset.event!,
             parseFloat(getComputedStyle(node).top),
-          ],
-        ),
+          ])
+          .filter(([, top]) => top >= -railHeight && top <= railHeight * 2),
       ),
     };
     rangeMotion.current = motion;
@@ -337,7 +362,6 @@ export function Transcript({
       }))
       .filter(
         ({ id, kind, top }) =>
-          kind === "input" ||
           (top >= -height && top <= height * 2) ||
           rangeMotion.current?.markers.has(id),
       );
@@ -715,27 +739,7 @@ export function Transcript({
             events={work.events}
             follow={follow}
             foldActivities={false}
-            render={(event) => {
-              const group = work.summaries.get(event.seq);
-              return group ? (
-                <WorkSummary
-                  work={group}
-                  expanded={activeWork === group && !workClosing}
-                  partial={!group.hasBoundary && !!workHistory?.hasOlder}
-                  open={(trigger) => {
-                    workTrigger.current = trigger;
-                    workOrigin.current = captureDialogTrigger(trigger);
-                    if (activeWork === group && !workClosing) closeWork();
-                    else {
-                      setWorkClosing(false);
-                      selectWork(group.anchor);
-                    }
-                  }}
-                />
-              ) : (
-                render(event)
-              );
-            }}
+            render={renderRow}
             precedingPrompt={precedingPrompt}
             onPromptChange={promptChanged}
             changed={(nextMap) => {

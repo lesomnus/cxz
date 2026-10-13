@@ -3,6 +3,7 @@ import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import type { SessionEvent } from "#gen/cxz/session_pb";
 import { absoluteMessageTime } from "./message-time";
 import { useMessageTime } from "./use-message-time";
+import { memo } from "react";
 
 function InputTime({ timeMs }: { timeMs: bigint }) {
   useLocale();
@@ -22,7 +23,11 @@ function InputTime({ timeMs }: { timeMs: bigint }) {
 }
 
 // Shared by the transcript and the fixed preview of the preceding input.
-export function InputMessage({ event }: { event: SessionEvent }) {
+export const InputMessage = memo(function InputMessage({
+  event,
+}: {
+  event: SessionEvent;
+}) {
   return (
     <div className="input-box">
       <InputTime timeMs={event.timeMs} />
@@ -34,4 +39,4 @@ export function InputMessage({ event }: { event: SessionEvent }) {
       </div>
     </div>
   );
-}
+});
