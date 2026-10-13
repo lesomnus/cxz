@@ -28,9 +28,10 @@
 }
 .settings {
   font-size: 11px;
+  color: var(--shade-115);
 }
 .time {
   font-size: 10px;
-  color: var(--shade-115);
+  color: inherit;
   font-variant-numeric: tabular-nums;
 }
