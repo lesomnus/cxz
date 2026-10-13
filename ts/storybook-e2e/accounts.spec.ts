@@ -139,15 +139,25 @@ for (const theme of ["dark", "light"]) {
     const appearance = (node: HTMLElement) => {
       const surface = node.querySelector<HTMLElement>("[data-anchored]")!;
       const style = getComputedStyle(surface);
+      const heading = getComputedStyle(node.querySelector(".card-heading")!);
+      const body = getComputedStyle(node.querySelector(".card-body")!);
+      const footer = getComputedStyle(node.querySelector(".card-footer")!);
       return {
         background: style.backgroundColor,
         blur: style.backdropFilter,
         radius: style.borderRadius,
         backdrop: getComputedStyle(node, "::backdrop").backgroundColor,
+        headerPadding: heading.padding,
+        bodyPadding: body.padding,
+        bodyBackground: body.backgroundColor,
+        bodyRadius: body.borderRadius,
+        footerPadding: footer.padding,
       };
     };
     const initial = await addition.evaluate(appearance);
     expect(initial.blur).toMatch(/^blur\(/);
+    expect(initial.bodyBackground).not.toBe("rgba(0, 0, 0, 0)");
+    expect(initial.bodyRadius).not.toBe("0px");
     const alpha = await addition.locator("[data-anchored]").evaluate((node) => {
       const context = document.createElement("canvas").getContext("2d")!;
       context.fillStyle = getComputedStyle(node).backgroundColor;

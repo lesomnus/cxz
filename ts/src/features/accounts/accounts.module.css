@@ -27,19 +27,11 @@
 }
 .form {
   border: 0;
-  padding: calc(2 * var(--space));
+  padding: 0;
   margin: 0;
   display: grid;
   gap: calc(2 * var(--space));
   min-width: 0;
-}
-.actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--space);
-}
-.actions button {
-  min-width: var(--toolbar-button-width);
 }
 .session {
   display: block;

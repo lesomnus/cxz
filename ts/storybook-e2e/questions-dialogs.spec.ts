@@ -10,6 +10,36 @@ async function finishEntrance(dialog: Locator) {
   });
 }
 
+test("composer Stop uses the shared dialog header, body and footer", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=conversation-composer--empty&viewMode=story",
+  );
+  await page.getByRole("button", { name: "Session menu", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Stop", exact: true }).click();
+  const dialog = page.getByRole("dialog", {
+    name: "Stop session",
+    exact: true,
+  });
+  await finishEntrance(dialog);
+  await expect(dialog.locator(".card-heading")).toHaveText("Stop session");
+  await expect(dialog.locator(".card-body")).toContainText("Active work stops");
+  const bodyColor = await dialog
+    .locator(".card-body")
+    .evaluate((node) => getComputedStyle(node).backgroundColor);
+  const surfaceColor = await dialog
+    .locator("[data-anchored]")
+    .evaluate((node) => getComputedStyle(node).backgroundColor);
+  expect(bodyColor).not.toBe(surfaceColor);
+  await expect(dialog.locator(".card-footer").getByRole("button")).toHaveText([
+    "Stop",
+    "Cancel",
+  ]);
+  await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+});
+
 test("dialog blur visibly softens content behind the animated surface", async ({
   page,
 }) => {

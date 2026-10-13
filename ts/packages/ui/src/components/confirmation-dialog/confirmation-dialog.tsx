@@ -8,7 +8,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "../button/button";
-import { FloatingCard } from "../floating-card/floating-card";
+import { DialogCard, DialogActions } from "../dialog-card/dialog-card";
 import {
   DialogSurface,
   dialogClassName,
@@ -119,11 +119,11 @@ export function ConfirmationDialog({
       }}
     >
       <DialogSurface>
-        <FloatingCard
+        <DialogCard
           title={title}
           data-entered="true"
           footer={
-            <div className="confirmation-actions">
+            <DialogActions>
               <Button
                 type="button"
                 disabled={busy}
@@ -139,7 +139,7 @@ export function ConfirmationDialog({
               >
                 {t("Cancel")}
               </Button>
-            </div>
+            </DialogActions>
           }
         >
           <div id={id}>{children}</div>
@@ -148,7 +148,7 @@ export function ConfirmationDialog({
               {failureMessage ?? t("Action failed. Please try again.")}
             </p>
           )}
-        </FloatingCard>
+        </DialogCard>
       </DialogSurface>
     </dialog>,
     document.body,

@@ -94,6 +94,9 @@
   --ui-dialog-backdrop: color-mix(in srgb, var(--ui-shade-0) 65%, transparent);
   --ui-dialog-blur: var(--ui-dropdown-blur);
   --ui-dialog-radius: calc(3 * var(--ui-space));
+  --ui-dialog-padding: calc(3 * var(--ui-space));
+  --ui-dialog-body-background: var(--ui-shade-28);
+  --ui-dialog-action-min-width: 72px;
   --ui-control-inset: 2px;
   --ui-control-inline-inset: 6px;
   --ui-hover: var(--ui-shade-40);

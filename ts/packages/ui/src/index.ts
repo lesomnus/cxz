@@ -3,6 +3,7 @@ export * from "./providers/ui-provider";
 export * from "./components/button/button";
 export * from "./components/panel-item/panel-item";
 export * from "./components/dialog-surface/dialog-surface";
+export * from "./components/dialog-card/dialog-card";
 export * from "./components/confirm-button/confirm-button";
 export * from "./components/action-menu/action-menu";
 export * from "./components/value-menu/value-menu";

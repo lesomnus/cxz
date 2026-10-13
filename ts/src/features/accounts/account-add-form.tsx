@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useId } from "react";
-import { Button, FloatingCard } from "@lesomnus/cxz-ui";
+import { Button, DialogCard, DialogActions } from "@lesomnus/cxz-ui";
 import type { Account } from "#gen/cxz/account_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { AnchoredDialog } from "#src/shared/components/anchored-dialog.tsx";
@@ -57,16 +57,13 @@ export function AccountAddForm({
           }
         }}
       >
-        <FloatingCard
+        <DialogCard
           title="Add account"
           close={busy ? undefined : close}
           closeLabel="Close"
           data-entered="true"
           footer={
-            <div className={accountStyles.actions}>
-              <Button type="button" disabled={busy} onClick={close}>
-                Cancel
-              </Button>
+            <DialogActions>
               <Button
                 type="submit"
                 form={id}
@@ -74,7 +71,10 @@ export function AccountAddForm({
               >
                 {busy ? "Adding…" : "Add"}
               </Button>
-            </div>
+              <Button type="button" disabled={busy} onClick={close}>
+                Cancel
+              </Button>
+            </DialogActions>
           }
         >
           <fieldset disabled={busy} className={accountStyles.form}>
@@ -115,7 +115,7 @@ export function AccountAddForm({
             </small>
             {error && <p role="alert">{error}</p>}
           </fieldset>
-        </FloatingCard>
+        </DialogCard>
       </form>
     </AnchoredDialog>
   );
