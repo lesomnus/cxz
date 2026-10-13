@@ -36,28 +36,48 @@ export function WorkSummary({
   partial?: boolean;
 }) {
   useLocale();
+  const tooltip = useId();
+  const countLabel = t(
+    partial
+      ? "{count}+ tasks performed"
+      : work.events.length === 1
+        ? "{count} task performed"
+        : "{count} tasks performed",
+    { count: work.events.length },
+  );
   return (
     <div className={styles.summary} data-work-summary={work.id}>
-      <span>
-        {t(
-          partial
-            ? "{count}+ tasks performed"
-            : work.events.length === 1
-              ? "{count} task performed"
-              : "{count} tasks performed",
-          {
-            count: work.events.length,
-          },
-        )}
+      <span className="meta-popover">
+        <Button
+          type="button"
+          aria-label={t("View details")}
+          aria-describedby={tooltip}
+          aria-expanded={expanded}
+          aria-controls={expanded ? "work-dialog" : undefined}
+          onClick={(event) => open(event.currentTarget)}
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="m2 3 1 1 2-2M7 3h7m-12 5 1 1 2-2M7 8h7m-12 5 1 1 2-2M7 13h7" />
+          </svg>
+          <span aria-hidden="true">
+            {work.events.length}
+            {partial ? "+" : ""}
+          </span>
+        </Button>
+        <span id={tooltip} className="meta-tooltip" role="tooltip">
+          {countLabel} · {t("View details")}
+        </span>
       </span>
-      <Button
-        type="button"
-        aria-expanded={expanded}
-        aria-controls={expanded ? "work-dialog" : undefined}
-        onClick={(event) => open(event.currentTarget)}
-      >
-        {t("View details")}
-      </Button>
     </div>
   );
 }

@@ -11,6 +11,10 @@
   min-height: 0;
   padding: var(--space) calc(2 * var(--space));
 }
+.summary :global(.meta-popover):focus-within :global(.meta-tooltip) {
+  opacity: 1;
+  visibility: visible;
+}
 .overlay.overlay {
   position: fixed;
   inset: auto;

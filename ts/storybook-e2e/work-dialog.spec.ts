@@ -10,7 +10,13 @@ test("turn work collapses into one line and its dialog never covers adjacent pan
   );
   const summaries = page.locator("[data-work-summary]");
   await expect(summaries).toHaveCount(2);
-  await expect(summaries.first()).toContainText("4 tasks performed");
+  await expect(summaries.first().getByRole("button")).toHaveText("4");
+  await expect(summaries.first().locator("svg")).toBeVisible();
+  const tooltip = summaries.first().getByRole("tooltip");
+  await expect(tooltip).toBeHidden();
+  await summaries.first().getByRole("button").hover();
+  await expect(tooltip).toContainText("4 tasks performed · View details");
+  await expect(tooltip).toBeVisible();
   await expect(page.locator(".transcript .tool-activity")).toHaveCount(0);
   const pane = page.locator(".transcript");
   const before = await pane.evaluate((node) => ({
@@ -70,9 +76,9 @@ test("long task lists remain virtualized and scroll independently", async ({
   await page.goto(
     "/iframe.html?id=conversation-workdialog--long-turn&viewMode=story",
   );
-  await expect(page.locator("[data-work-summary]")).toContainText(
-    "600 tasks performed",
-  );
+  await expect(
+    page.locator("[data-work-summary]").getByRole("button"),
+  ).toHaveText("600");
   await page.getByRole("button", { name: "View details", exact: true }).click();
   const dialog = page.getByRole("dialog", {
     name: "Tasks between responses",
@@ -115,9 +121,9 @@ test("paging earlier tasks preserves the open execution and its detail editor", 
   await page.goto(
     "/iframe.html?id=conversation-workdialog--paged-turn&viewMode=story",
   );
-  await expect(page.locator("[data-work-summary]")).toContainText(
-    "1+ tasks performed",
-  );
+  await expect(
+    page.locator("[data-work-summary]").getByRole("button"),
+  ).toHaveText("1+");
   await page.getByRole("button", { name: "View details", exact: true }).click();
   const dialog = page.getByRole("dialog", {
     name: "Tasks between responses",
@@ -131,9 +137,9 @@ test("paging earlier tasks preserves the open execution and its detail editor", 
   await dialog
     .getByRole("button", { name: "Load earlier tasks", exact: true })
     .click();
-  await expect(page.locator("[data-work-summary]")).toContainText(
-    "2 tasks performed",
-  );
+  await expect(
+    page.locator("[data-work-summary]").getByRole("button"),
+  ).toHaveText("2");
   await expect(dialog.locator(".tool-activity")).toHaveCount(2);
   await expect(dialog.getByRole("tabpanel")).toContainText("main");
   await expect(
@@ -149,8 +155,8 @@ test("work batches split at assistant replies and summaries align right", async 
   );
   const summaries = page.locator("[data-work-summary]");
   await expect(summaries).toHaveCount(2);
-  await expect(summaries.first()).toContainText("1 task performed");
-  await expect(summaries.nth(1)).toContainText("2 tasks performed");
+  await expect(summaries.first().getByRole("button")).toHaveText("1");
+  await expect(summaries.nth(1).getByRole("button")).toHaveText("2");
   await expect(summaries.first()).toHaveCSS("justify-content", "flex-end");
   await summaries.first().getByRole("button").click();
   const dialog = page.getByRole("dialog", {
