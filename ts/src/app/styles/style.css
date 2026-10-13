@@ -223,16 +223,6 @@ header strong {
   min-height: 0;
   overflow: hidden;
 }
-.settings-topics :is(button, a.route-link) {
-  width: 100%;
-  text-align: left;
-  padding: 8px;
-  color: var(--shade-255);
-}
-.settings-topics .button-content {
-  justify-content: flex-start;
-  transform-origin: left center;
-}
 .settings-split {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -503,31 +493,6 @@ header strong {
   font-weight: 500;
   color: var(--muted);
   margin: 20px 8px 6px;
-}
-.panel-scroll-inner > :is(button, a.route-link) {
-  display: block;
-  width: 100%;
-  text-align: left;
-  margin: 2px 0;
-  padding: 8px;
-  background: transparent;
-  border: 0;
-}
-.panel-scroll-inner > :is(button, a.route-link) > .button-content {
-  display: block;
-  transform-origin: left center;
-  overflow-wrap: anywhere;
-}
-.panel-scroll-inner > :is(button, a.route-link).active {
-  font-weight: 650;
-  color: var(--shade-255);
-}
-.panel-scroll-inner > :is(button, a.route-link).active small {
-  font-weight: 400;
-}
-.panel-scroll-inner > :is(button, a.route-link):hover {
-  background: var(--hover);
-  border: 0;
 }
 .resource-panel header button {
   font-size: 0.75rem;
@@ -2592,31 +2557,14 @@ summary:hover {
   .usage-info {
     gap: 4px 8px;
   }
-  .panel-scroll-inner > :is(button, a.route-link) {
-    min-height: 44px;
-  }
 }
 
 .session-tree-group {
   margin: 4px 0 12px;
 }
 .session-tree :is(button, a.route-link) {
-  display: block;
-  width: 100%;
   min-height: 30px;
   padding: 5px 6px;
-  text-align: left;
-  background: transparent;
-  border: 0;
-}
-.session-tree :is(button, a.route-link):hover {
-  background: var(--hover);
-}
-.session-tree .tree-session.active {
-  background: var(--selected);
-}
-.session-tree .tree-session.active:hover {
-  background: var(--selected-hover);
 }
 .session-tree .button-content {
   justify-content: flex-start;

@@ -1,6 +1,6 @@
 import { createLink } from "@tanstack/react-router";
 import { forwardRef, type AnchorHTMLAttributes } from "react";
-import { ButtonContent } from "@lesomnus/cxz-ui";
+import { ButtonContent, PanelItemAnchor } from "@lesomnus/cxz-ui";
 
 const NavigationAnchor = forwardRef<
   HTMLAnchorElement,
@@ -18,3 +18,4 @@ const NavigationAnchor = forwardRef<
 
 // Real links retain native new-tab behavior and the shared button press motion.
 export const RouteLink = createLink(NavigationAnchor);
+export const PanelLink = createLink(PanelItemAnchor);

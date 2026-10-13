@@ -14,6 +14,7 @@
   overflow: visible;
 }
 .confirmation_dialog::backdrop {
+  animation: backdrop-enter var(--ui-dialog-enter-duration) ease-out both;
   background: color-mix(in srgb, var(--ui-shade-0) 65%, transparent);
 }
 .confirmation_dialog :global(.floating-card) {
@@ -78,4 +79,18 @@
 .confirmation_dialog :global(.confirmation-actions) button {
   min-width: var(--confirmation-button-min-width);
   background: transparent;
+}
+
+@keyframes backdrop-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .confirmation_dialog::backdrop {
+    animation: none;
+  }
 }

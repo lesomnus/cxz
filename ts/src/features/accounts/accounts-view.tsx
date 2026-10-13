@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Button } from "@lesomnus/cxz-ui";
+import { Button, PanelItem } from "@lesomnus/cxz-ui";
 import type { Session } from "#gen/cxz/session_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { useRemote } from "#src/shared/api/use-remote.ts";
@@ -67,7 +67,7 @@ export function AccountsView({
         </header>
         <PanelScroll>
           {accounts.data?.map((account) => (
-            <Button
+            <PanelItem
               key={account.alias}
               className={styles.item}
               pressTarget=".session-heading"
@@ -79,7 +79,7 @@ export function AccountsView({
                 name={account.name || account.alias}
                 alias={account.alias}
               />
-            </Button>
+            </PanelItem>
           ))}
           {accounts.loading && !accounts.data && (
             <p className={resourceStyles.muted}>Loading accounts…</p>

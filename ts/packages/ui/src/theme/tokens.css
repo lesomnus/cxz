@@ -83,6 +83,9 @@
 
 :root {
   --ui-space: 4px;
+  --ui-dialog-enter-duration: 240ms;
+  --ui-dialog-enter-easing: cubic-bezier(0.16, 1, 0.3, 1);
+  --ui-dialog-enter-offset: calc(2 * var(--ui-space));
   --ui-control-inset: 2px;
   --ui-control-inline-inset: 6px;
   --ui-hover: var(--ui-shade-40);

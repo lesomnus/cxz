@@ -10,19 +10,8 @@
   margin-left: auto;
   width: var(--toolbar-button-width);
 }
-.item {
-  display: block;
-  width: 100%;
-  text-align: left;
-  background: transparent;
-  padding: calc(2 * var(--space));
-  border-radius: var(--wrapper-radius);
-}
 .item > :global(.button-content) {
   display: block;
-}
-.item[aria-pressed="true"] {
-  background: var(--shade-40);
 }
 .item[aria-pressed="true"] :global(.session-title) {
   color: var(--shade-255);

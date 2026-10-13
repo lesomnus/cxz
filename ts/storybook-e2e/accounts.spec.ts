@@ -11,6 +11,15 @@ test("account selection shows identity, scoped sessions, usage and actual login 
   await expect(
     panel.getByRole("button", { name: /Work.*work/ }),
   ).toHaveAttribute("aria-pressed", "true");
+  const work = panel.getByRole("button", { name: /Work.*work/ });
+  const personal = panel.getByRole("button", { name: /Personal.*personal/ });
+  const background = (element: HTMLElement) =>
+    getComputedStyle(element).backgroundColor;
+  const selectedBackground = await work.evaluate(background);
+  expect(selectedBackground).not.toBe(await personal.evaluate(background));
+  expect(selectedBackground).not.toBe("rgba(0, 0, 0, 0)");
+  await work.hover();
+  expect(await work.evaluate(background)).not.toBe(selectedBackground);
   const sessions = page.getByRole("region", {
     name: "Sessions using this account",
   });
@@ -26,6 +35,9 @@ test("account selection shows identity, scoped sessions, usage and actual login 
     page.getByText("Conversation usage", { exact: true }),
   ).toBeVisible();
   await panel.getByRole("button", { name: /Personal.*personal/ }).click();
+  await page.getByRole("region", { name: "Account details" }).hover();
+  expect(await personal.evaluate(background)).toBe(selectedBackground);
+  expect(await work.evaluate(background)).not.toBe(selectedBackground);
   await expect(
     page.getByText("Session-scoped login", { exact: true }),
   ).toBeVisible();
@@ -46,6 +58,21 @@ test("Add opens beside the panel and its language/provider dropdown works inside
   await panel.getByRole("button", { name: "Add account", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Add account", exact: true });
   await expect(dialog).toBeVisible();
+  const entrance = await dialog
+    .locator("[data-anchored]")
+    .evaluate((surface) => {
+      const animation = surface.getAnimations()[0];
+      return animation?.effect instanceof KeyframeEffect
+        ? animation.effect.getKeyframes()
+        : [];
+    });
+  expect(entrance[0]?.opacity).toBe("0");
+  expect(entrance.at(-1)?.opacity).toBe("1");
+  expect(entrance.at(-1)?.transform).toBe("none");
+  // The top-layer dialog stays untransformed so fixed menus retain viewport coordinates.
+  expect(
+    await dialog.evaluate((node) => getComputedStyle(node).transform),
+  ).toBe("none");
   const panelBox = (await panel.boundingBox())!,
     dialogBox = (await dialog.boundingBox())!;
   expect(dialogBox.x).toBeGreaterThanOrEqual(panelBox.x + panelBox.width - 1);
@@ -69,6 +96,30 @@ test("Add opens beside the panel and its language/provider dropdown works inside
     page.getByRole("region", { name: "Account details" }),
   ).toContainText("New team account");
   expect(errors).toEqual([]);
+});
+
+test("dialogs respect reduced motion", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/iframe.html?id=resources-views--accounts&viewMode=story");
+  await page.getByRole("button", { name: "Add account", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Add account", exact: true });
+  await expect(dialog).toBeVisible();
+  expect(
+    await dialog
+      .locator("[data-anchored]")
+      .evaluate((node) => getComputedStyle(node).animationName),
+  ).toBe("none");
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "Log out", exact: true }).click();
+  const confirmation = page.getByRole("dialog", {
+    name: "Log out · Work",
+    exact: true,
+  });
+  expect(
+    await confirmation
+      .locator("[data-anchored]")
+      .evaluate((node) => getComputedStyle(node).animationName),
+  ).toBe("none");
 });
 
 test("logout needs confirmation and then enables login", async ({ page }) => {

@@ -2,8 +2,8 @@ import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
-import { RouteLink } from "#src/shared/navigation/route-link.tsx";
-import { Button } from "@lesomnus/cxz-ui";
+import { PanelLink } from "#src/shared/navigation/route-link.tsx";
+import { PanelItem } from "@lesomnus/cxz-ui";
 import { SessionIdentity } from "./session-identity";
 import { UnreadBadge } from "#src/shared/notifications/unread-badge.tsx";
 
@@ -30,13 +30,13 @@ export function SessionTreeGroup({
       className="session-tree-group"
       aria-label={project.name || project.alias}
     >
-      <Button className="tree-project" aria-expanded={open} onClick={toggle}>
+      <PanelItem className="tree-project" aria-expanded={open} onClick={toggle}>
         <span>{project.name || project.alias}</span>
-      </Button>
+      </PanelItem>
       {open && (
         <div className="tree-sessions">
           {items.map((s) => (
-            <RouteLink
+            <PanelLink
               to="/sessions/$sessionId"
               params={{ sessionId: s.runtimeId }}
               key={s.runtimeId}
@@ -46,7 +46,7 @@ export function SessionTreeGroup({
             >
               <SessionIndicator session={s} unread={unread.has(s.runtimeId)} />
               <SessionIdentity session={s} />
-            </RouteLink>
+            </PanelLink>
           ))}
           {loading && !items.length && (
             <small className="tree-message">{t("Loading…")}</small>

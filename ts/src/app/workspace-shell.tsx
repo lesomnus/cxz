@@ -15,7 +15,7 @@ import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
 import { useScrollbars } from "#src/shared/scroll/scrollbars.ts";
 import { useResourceInventory } from "#src/shared/api/resource-inventory.ts";
 import { key } from "@lesomnus/payday/store";
-import { RouteLink } from "#src/shared/navigation/route-link.tsx";
+import { RouteLink, PanelLink } from "#src/shared/navigation/route-link.tsx";
 import { useWorkspaceRoute } from "./router";
 import { ResourceIcon } from "#src/shared/navigation/resource-icon.tsx";
 import { WorkspaceContext } from "./workspace-context";
@@ -220,7 +220,7 @@ export function Workspace({
                   aria-label={t("Settings topics")}
                 >
                   {(["general", "editor"] as const).map((topic) => (
-                    <RouteLink
+                    <PanelLink
                       key={topic}
                       to={
                         topic === "general"
@@ -236,7 +236,7 @@ export function Workspace({
                       }}
                     >
                       {topic === "general" ? t("General") : t("Editor")}
-                    </RouteLink>
+                    </PanelLink>
                   ))}
                 </nav>
               ) : resource === "sessions" ? (
@@ -266,26 +266,26 @@ export function Workspace({
                 </div>
               ) : resource === "projects" ? (
                 projects.map((p) => (
-                  <RouteLink
+                  <PanelLink
                     key={p.runtimeId}
                     to="/sessions"
                     onClick={() => expandProject(p.runtimeId)}
                   >
                     {p.name || p.alias}
-                  </RouteLink>
+                  </PanelLink>
                 ))
               ) : (
                 <nav
                   className="settings-topics"
                   aria-label="Resource navigation"
                 >
-                  <RouteLink to={`/${resource}`} aria-current="page">
+                  <PanelLink to={`/${resource}`} aria-current="page">
                     {resource === "memory"
                       ? "Shared memory"
                       : resource === "auxiliary"
                         ? "Auxiliary AI"
                         : resource[0].toUpperCase() + resource.slice(1)}
-                  </RouteLink>
+                  </PanelLink>
                 </nav>
               )}
               {(inventory.errors.projects ||

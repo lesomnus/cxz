@@ -1,0 +1,28 @@
+.surface {
+  width: 100%;
+  max-height: inherit;
+  transform-origin: center;
+  animation: enter var(--ui-dialog-enter-duration) var(--ui-dialog-enter-easing)
+    both;
+}
+.surface[data-anchored="true"] {
+  transform-origin: top left;
+}
+.surface > form {
+  max-height: inherit;
+}
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(var(--ui-dialog-enter-offset)) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .surface {
+    animation: none;
+  }
+}

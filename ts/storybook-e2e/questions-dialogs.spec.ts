@@ -1,4 +1,14 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator } from "@playwright/test";
+
+async function finishEntrance(dialog: Locator) {
+  await dialog.evaluate(async (node) => {
+    await Promise.all(
+      node
+        .getAnimations({ subtree: true })
+        .map((animation) => animation.finished.catch(() => undefined)),
+    );
+  });
+}
 
 test("confirmation dialog traps focus, cancels without acting and fits a small viewport", async ({
   page,
@@ -15,6 +25,7 @@ test("confirmation dialog traps focus, cancels without acting and fits a small v
   const cancel = dialog.getByRole("button", { name: "Cancel", exact: true });
   const confirm = dialog.getByRole("button", { name: "Stop", exact: true });
   await expect(cancel).toBeFocused();
+  await finishEntrance(dialog);
   const confirmBounds = (await confirm.boundingBox())!;
   const cancelBounds = (await cancel.boundingBox())!;
   expect(confirmBounds.x + confirmBounds.width).toBeLessThan(cancelBounds.x);
@@ -95,6 +106,7 @@ test("long confirmation bodies scroll while the padded header and actions stay v
   await expect(
     dialog.getByRole("button", { name: "Cancel", exact: true }),
   ).toBeFocused();
+  await finishEntrance(dialog);
   expect(await body.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(
     true,
   );
