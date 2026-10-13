@@ -9,6 +9,7 @@ export type ComposerPaste = {
     name: string;
     directory?: boolean;
     state: "uploading" | "ready" | "error";
+    progress?: number;
     path?: string;
     error?: string;
     listeners?: Set<() => void>;

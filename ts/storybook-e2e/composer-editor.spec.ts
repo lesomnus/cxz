@@ -258,3 +258,116 @@ test("a pasted chip and the following Korean paragraph keep the same native line
   const rows = await wrapping(input, page);
   expect(rows.mirrored).toEqual(rows.native);
 });
+
+test("chips and code controls remain visible throughout Korean composition", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=conversation-playground--interactive&viewMode=story",
+  );
+  const input = page.getByRole("textbox", { name: "Message", exact: true });
+  await input.fill("```typescript\nconst value = 1;\n```\n");
+  await input.evaluate((node: HTMLTextAreaElement) => {
+    node.focus();
+    node.setSelectionRange(node.value.length, node.value.length);
+    const clipboardData = new DataTransfer();
+    clipboardData.setData("text/plain", "synthetic paste\n".repeat(20));
+    node.dispatchEvent(
+      new ClipboardEvent("paste", {
+        clipboardData,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+  });
+  await input.press("Control+End");
+  await input.press("Enter");
+  const cdp = await page.context().newCDPSession(page);
+  for (const text of ["ㅎ", "하", "한"]) {
+    await cdp.send("Input.imeSetComposition", {
+      text,
+      selectionStart: 1,
+      selectionEnd: 1,
+    });
+    await expect(page.locator(".composer-editor")).toHaveAttribute(
+      "data-composing",
+      "true",
+    );
+    await expect(page.locator(".paste-chip-label")).toBeVisible();
+    await expect(page.locator(".paste-chip-token")).toBeHidden();
+    await expect(page.locator(".editor-code-controls select")).toBeVisible();
+    await expect(
+      page.locator(".editor-code-controls .code-close"),
+    ).toBeVisible();
+  }
+  await cdp.send("Input.insertText", { text: "한" });
+  await expect(page.locator(".composer-editor")).toHaveAttribute(
+    "data-composing",
+    "false",
+  );
+  await expect(page.locator(".paste-chip-label")).toBeVisible();
+  await expect(page.locator(".editor-code-controls select")).toBeVisible();
+  await expect(input).toHaveValue(/\n한$/);
+});
+
+test("the native caret remains visible immediately after a paste chip", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=conversation-playground--interactive&viewMode=story",
+  );
+  const input = page.getByRole("textbox", { name: "Message", exact: true });
+  await input.evaluate((node) => {
+    node.focus();
+    const clipboardData = new DataTransfer();
+    clipboardData.setData("text/plain", "synthetic paste\n".repeat(20));
+    node.dispatchEvent(
+      new ClipboardEvent("paste", {
+        clipboardData,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+  });
+  await input.press("Control+End");
+  const chip = page.locator(".paste-chip");
+  const bounds = (await chip.boundingBox())!;
+  let visible = false;
+  for (let attempt = 0; attempt < 5 && !visible; attempt++) {
+    await input.evaluate((node) => {
+      node.blur();
+      node.focus();
+    });
+    const image = await page.screenshot({
+      caret: "initial",
+      clip: {
+        x: Math.floor(bounds.x + bounds.width) - 3,
+        y: Math.floor(bounds.y),
+        width: 6,
+        height: Math.ceil(bounds.height),
+      },
+    });
+    const count = await page.evaluate(async (base64) => {
+      const image = new Image();
+      image.src = `data:image/png;base64,${base64}`;
+      await image.decode();
+      const canvas = document.createElement("canvas");
+      canvas.width = image.width;
+      canvas.height = image.height;
+      const context = canvas.getContext("2d")!;
+      context.drawImage(image, 0, 0);
+      const pixels = context.getImageData(0, 0, image.width, image.height).data;
+      let count = 0;
+      for (let offset = 0; offset < pixels.length; offset += 4)
+        if (
+          pixels[offset] > 180 &&
+          pixels[offset + 1] > 180 &&
+          pixels[offset + 2] > 180
+        )
+          count++;
+      return count;
+    }, image.toString("base64"));
+    visible = count >= 6;
+  }
+  expect(visible).toBe(true);
+});

@@ -1143,7 +1143,8 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         onTerminal={() => showTerminal(!terminalVisibleRef.current)}
         upload={
           s?.status?.runId
-            ? (file, signal) => uploadFile(c, id, s.status!.runId, file, signal)
+            ? (file, signal, progress) =>
+                uploadFile(c, id, s.status!.runId, file, signal, progress)
             : undefined
         }
         menu={(pick) => (

@@ -54,6 +54,7 @@ import {
 } from "./composer-pastes";
 import { droppedFiles, pickedFiles, type PickedFile } from "./composer-files";
 import { MAX_UPLOAD_BYTES, type UploadFile } from "./composer-upload";
+import { PasteChip } from "./paste-chip";
 import {
   restoreEditorSelection,
   type EditorSelection,
@@ -130,11 +131,11 @@ export function ComposerEditor({
   const ranges = pasteRanges(value, pastes);
   const latest = useRef({ value, replace, readOnly });
   latest.current = { value, replace, readOnly };
-  function changedUploads(paste: ComposerPaste) {
+  function changedUploads(paste: ComposerPaste, persist = true) {
     paste.attachment?.listeners?.forEach((listener) => listener());
     if (!mounted.current) return;
     refreshUploads((v) => v + 1);
-    notify.current?.();
+    if (persist) notify.current?.();
   }
   function startUpload(paste: ComposerPaste) {
     if (!upload || !paste.attachment?.file || jobs.current.has(paste.token))
@@ -143,6 +144,7 @@ export function ComposerEditor({
     const controller = new AbortController();
     jobs.current.set(paste.token, controller);
     attachment.state = "uploading";
+    attachment.progress = 0;
     attachment.error = undefined;
     changedUploads(paste);
     const uploader = upload;
@@ -152,6 +154,18 @@ export function ComposerEditor({
         const path = await uploader(
           attachment.file!,
           AbortSignal.any([controller.signal, AbortSignal.timeout(600_000)]),
+          (loaded, total) => {
+            if (controller.signal.aborted || attachment.state !== "uploading")
+              return;
+            const progress =
+              total > 0
+                ? Math.max(0, Math.min(100, Math.floor((loaded / total) * 100)))
+                : 0;
+            if (attachment.progress === progress) return;
+            attachment.progress = progress;
+            // Progress is transient: don't rewrite pasted bodies in storage.
+            changedUploads(paste, false);
+          },
         );
         controller.signal.throwIfAborted();
         attachment.path = path;
@@ -892,18 +906,6 @@ export function ComposerEditor({
                 );
                 let offset = start;
                 const parts = chips.flatMap((range) => {
-                  const attachment = range.paste.attachment;
-                  const status =
-                    attachment?.state === "uploading"
-                      ? t("Uploading…")
-                      : attachment?.state === "error"
-                        ? t("Upload failed.")
-                        : `${range.paste.bytes.toLocaleString(currentLocale())} B`;
-                  const label = range.paste.secret
-                    ? range.paste.token
-                    : attachment && !range.paste.body
-                      ? `${attachment.name} · ${status}`
-                      : status;
                   const fragment = (
                     <span aria-hidden="true" key={`text-${range.start}`}>
                       {text(offset, range.start)}
@@ -912,39 +914,11 @@ export function ComposerEditor({
                   offset = range.end;
                   return [
                     fragment,
-                    <span
-                      className="paste-chip"
-                      data-upload-state={range.paste.attachment?.state}
-                      role="button"
-                      tabIndex={0}
-                      aria-label={
-                        range.paste.secret ? "Secret file reference" : label
-                      }
-                      title={
-                        range.paste.attachment?.error ??
-                        (range.paste.attachment?.state === "uploading"
-                          ? t("Uploading…")
-                          : t("View source · Ctrl+P"))
-                      }
+                    <PasteChip
                       key={range.start}
-                      onClick={() => showPreview(range)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault();
-                          showPreview(range);
-                        }
-                      }}
-                    >
-                      {/* Keep the native textarea's exact character geometry.
-                          Upload state changes only the visible label, so the
-                          caret and following text do not jump on completion. */}
-                      <span className="paste-chip-token" aria-hidden="true">
-                        {range.paste.token}
-                      </span>
-                      <span className="paste-chip-label" aria-hidden="true">
-                        {label}
-                      </span>
-                    </span>,
+                      paste={range.paste}
+                      onOpen={() => showPreview(range)}
+                    />,
                   ];
                 });
                 return (

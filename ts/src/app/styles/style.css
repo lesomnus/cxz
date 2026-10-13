@@ -1702,47 +1702,10 @@ pre {
 .editor-code-line .hljs-attr {
   color: var(--code-attr, #a18b7c);
 }
-.paste-chip {
-  position: relative;
-  z-index: 2;
-  background: var(--shade-56);
-  border-radius: 4px;
-  box-shadow: 0 0 0 1px var(--shade-56);
-  box-decoration-break: clone;
-  -webkit-box-decoration-break: clone;
-  cursor: pointer;
-  pointer-events: auto;
-}
-.paste-chip:hover,
-.paste-chip:focus-visible {
-  background: var(--shade-72);
-  box-shadow: 0 0 0 1px var(--shade-72);
-  outline: none;
-  color: var(--shade-255);
-}
-.paste-chip-token {
-  visibility: hidden;
-}
-.paste-chip-label {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  white-space: nowrap;
-  overflow: hidden;
-  pointer-events: none;
-}
 .composer-editor[data-file-drag="true"] {
   background: var(--shade-40);
   outline: 1px solid var(--shade-120);
   outline-offset: -1px;
-}
-.paste-chip[data-upload-state="uploading"] {
-  color: var(--shade-150);
-}
-.paste-chip[data-upload-state="error"] {
-  outline: 1px solid var(--shade-120);
 }
 .attachment-info {
   overflow-wrap: anywhere;
@@ -1762,6 +1725,9 @@ pre {
 }
 .composer-editor[data-composing="true"] .editor-code-line > * {
   visibility: hidden;
+}
+.composer-editor[data-composing="true"] .editor-code-controls {
+  visibility: visible;
 }
 .composer-editor[data-composing="true"] .editor-inline-code {
   visibility: visible;

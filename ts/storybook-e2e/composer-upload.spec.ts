@@ -111,7 +111,7 @@ test("large pasted text shows upload status then UTF-8 bytes without internal na
     "/iframe.html?id=conversation-composer--file-uploads&viewMode=story",
   );
   const input = page.getByRole("textbox", { name: "Message", exact: true });
-  const text = "한글😀\n".repeat(20);
+  const text = "한글😀\n".repeat(3000) + "x".repeat(1500);
   const bytes = Buffer.byteLength(text, "utf8");
   await input.fill("Before  after");
   await input.evaluate((node: HTMLTextAreaElement, text) => {
@@ -129,9 +129,16 @@ test("large pasted text shows upload status then UTF-8 bytes without internal na
   }, text);
   const chip = page.locator(".composer .paste-chip");
   const label = chip.locator(".paste-chip-label");
-  await expect(chip).toHaveAccessibleName("Uploading…");
-  await expect(label).toHaveText("Uploading…");
+  await expect(chip).toHaveAccessibleName("[Paste 000%]");
+  await expect(label).toHaveText("[Paste 000%]");
   await expect(chip.locator(".paste-chip-token")).toBeHidden();
+  await expect(label).toHaveText("[Paste 012%]");
+  await expect(label.locator("[data-paste-leading]")).toHaveText("0");
+  expect(
+    await label
+      .locator("[data-paste-leading]")
+      .evaluate((node) => getComputedStyle(node).color),
+  ).not.toBe(await label.evaluate((node) => getComputedStyle(node).color));
   await input.pressSequentially(" typing");
   const before = await input.inputValue();
   const selection = await input.evaluate(
@@ -139,8 +146,10 @@ test("large pasted text shows upload status then UTF-8 bytes without internal na
   );
   const bounds = await chip.boundingBox();
   await expect(chip).toHaveAttribute("data-upload-state", "ready");
-  await expect(label).toHaveText(`${bytes} B`);
-  await expect(chip).toHaveAccessibleName(`${bytes} B`);
+  expect(bytes).toBe(34500);
+  await expect(label).toHaveText("[Text 34.5K]");
+  await expect(chip).toHaveAccessibleName("[Text 34.5K]");
+  await expect(chip).toHaveAttribute("title", /34,500 B/);
   await expect(input).toHaveValue(before);
   expect(
     await input.evaluate((node: HTMLTextAreaElement) => node.selectionStart),

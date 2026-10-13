@@ -27,6 +27,7 @@ import { UsageInfo } from "#src/features/session/composer/usage-info.tsx";
 import { storySession } from "./fixtures";
 import { SessionMenu } from "#src/features/session/components/session-menu.tsx";
 import type { EditorSelection } from "#src/features/session/composer/editor-selection.ts";
+import type { UploadProgress } from "#src/features/session/composer/composer-upload.ts";
 import { create } from "@bufbuild/protobuf";
 import { SessionPurgeReplySchema } from "#gen/cxz/session_svc_pb";
 import type { SessionInfo } from "#src/features/session/model/session-info.ts";
@@ -213,7 +214,11 @@ export function ComponentPreview({
   });
   const identityRef = useRef(identity);
   const attempts = useRef(new Set<string>());
-  const previewUpload = async (file: File, signal: AbortSignal) => {
+  const previewUpload = async (
+    file: File,
+    signal: AbortSignal,
+    onProgress?: UploadProgress,
+  ) => {
     await new Promise<void>((resolve, reject) => {
       if (signal.aborted) {
         reject(signal.reason);
@@ -221,15 +226,21 @@ export function ComponentPreview({
       }
       const abort = () => {
         clearTimeout(timer);
+        progressTimers.forEach(clearTimeout);
         reject(signal.reason);
       };
-      const timer = setTimeout(
-        () => {
-          signal.removeEventListener("abort", abort);
-          resolve();
-        },
-        uploadMode === "slow" ? 3000 : 500,
+      const duration = uploadMode === "slow" ? 3000 : 500;
+      const progressTimers = [0.12, 0.25, 0.5, 0.75, 1].map((ratio, index) =>
+        setTimeout(
+          () => onProgress?.(Math.ceil(file.size * ratio), file.size),
+          ((index + 1) * duration) / 6,
+        ),
       );
+      const timer = setTimeout(() => {
+        progressTimers.forEach(clearTimeout);
+        signal.removeEventListener("abort", abort);
+        resolve();
+      }, duration);
       signal.addEventListener("abort", abort, { once: true });
     });
     const key = file.name + ":" + file.size;
