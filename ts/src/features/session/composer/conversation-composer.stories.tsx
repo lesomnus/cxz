@@ -195,7 +195,7 @@ export const FileUploads: Story = {
     docs: {
       description: {
         story:
-          "Drop files or folders into the editor, or open Session menu → Upload files / Upload folder. Folders retain their tree in a tar archive. Large pastes become text-file chips. Send stays disabled until every attachment finishes. Click a chip to inspect its path or remove it. This preview simulates upload acknowledgement; no server file is written and Send does not start a turn. The connected WASM sandbox exercises the real Upload RPC with in-memory files.",
+          "Drop files or folders into the editor, or open Session menu → Upload files / Upload folder. Folders retain their tree in a tar archive. Large pastes show upload status, then their UTF-8 byte count, without internal IDs or generated filenames. Picked files retain their names beside the status or size. Completion does not move the caret or following text. Send stays disabled until every attachment finishes. Click a chip to inspect its path or remove it. This preview simulates upload acknowledgement; no server file is written and Send does not start a turn. The connected WASM sandbox exercises the real Upload RPC with in-memory files.",
       },
     },
   },

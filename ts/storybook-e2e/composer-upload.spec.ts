@@ -26,12 +26,14 @@ test("pending uploads block send without moving the caret and deletion releases 
   });
   const chip = page.locator(".composer .paste-chip");
   await expect(chip).toHaveAttribute("data-upload-state", "uploading");
+  await expect(chip).toHaveAccessibleName("sample.txt · Uploading…");
   await expect(send).toBeDisabled();
   await input.pressSequentially(" typing");
   const position = await input.evaluate(
     (node: HTMLTextAreaElement) => node.selectionStart,
   );
   await expect(chip).toHaveAttribute("data-upload-state", "ready");
+  await expect(chip).toHaveAccessibleName("sample.txt · 5 B");
   expect(
     await input.evaluate((node: HTMLTextAreaElement) => node.selectionStart),
   ).toBe(position);
@@ -69,11 +71,13 @@ test("failed uploads retry in place and deleting a pending chip cancels it", asy
   const input = page.getByRole("textbox", { name: "Message", exact: true });
   const send = page.getByRole("button", { name: "Send", exact: true });
   await expect(chip).toHaveAttribute("data-upload-state", "error");
+  await expect(chip).toHaveAccessibleName("retry.txt · Upload failed.");
   await expect(send).toBeDisabled();
   const before = await input.inputValue();
   await chip.click();
   await page.getByRole("button", { name: "Retry upload", exact: true }).click();
   await expect(chip).toHaveAttribute("data-upload-state", "ready");
+  await expect(chip).toHaveAccessibleName("retry.txt · 5 B");
   await expect(
     page.getByRole("dialog", { name: "Attachment", exact: true }),
   ).toContainText("/cxz/assets/storybook/upload/retry.txt");
@@ -98,4 +102,50 @@ test("failed uploads retry in place and deleting a pending chip cancels it", asy
   await page.waitForTimeout(600);
   await expect(chip).toHaveCount(0);
   expect(errors).toEqual([]);
+});
+
+test("large pasted text shows upload status then UTF-8 bytes without internal names", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=conversation-composer--file-uploads&viewMode=story",
+  );
+  const input = page.getByRole("textbox", { name: "Message", exact: true });
+  const text = "한글😀\n".repeat(20);
+  const bytes = Buffer.byteLength(text, "utf8");
+  await input.fill("Before  after");
+  await input.evaluate((node: HTMLTextAreaElement, text) => {
+    node.focus();
+    node.setSelectionRange(7, 7);
+    const clipboardData = new DataTransfer();
+    clipboardData.setData("text/plain", text);
+    node.dispatchEvent(
+      new ClipboardEvent("paste", {
+        clipboardData,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+  }, text);
+  const chip = page.locator(".composer .paste-chip");
+  const label = chip.locator(".paste-chip-label");
+  await expect(chip).toHaveAccessibleName("Uploading…");
+  await expect(label).toHaveText("Uploading…");
+  await expect(chip.locator(".paste-chip-token")).toBeHidden();
+  await input.pressSequentially(" typing");
+  const before = await input.inputValue();
+  const selection = await input.evaluate(
+    (node: HTMLTextAreaElement) => node.selectionStart,
+  );
+  const bounds = await chip.boundingBox();
+  await expect(chip).toHaveAttribute("data-upload-state", "ready");
+  await expect(label).toHaveText(`${bytes} B`);
+  await expect(chip).toHaveAccessibleName(`${bytes} B`);
+  await expect(input).toHaveValue(before);
+  expect(
+    await input.evaluate((node: HTMLTextAreaElement) => node.selectionStart),
+  ).toBe(selection);
+  expect(await chip.boundingBox()).toEqual(bounds);
+  await chip.click();
+  await expect(page.getByRole("dialog")).toContainText(text.trim());
 });

@@ -1720,6 +1720,19 @@ pre {
   outline: none;
   color: var(--shade-255);
 }
+.paste-chip-token {
+  visibility: hidden;
+}
+.paste-chip-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  overflow: hidden;
+  pointer-events: none;
+}
 .composer-editor[data-file-drag="true"] {
   background: var(--shade-40);
   outline: 1px solid var(--shade-120);

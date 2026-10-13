@@ -635,6 +635,7 @@ export function ComposerEditor({
                 });
                 paste = {
                   ...createFileChip(file, file.name),
+                  token: paste.token,
                   body: text,
                   lines: paste.lines,
                 };
@@ -891,6 +892,18 @@ export function ComposerEditor({
                 );
                 let offset = start;
                 const parts = chips.flatMap((range) => {
+                  const attachment = range.paste.attachment;
+                  const status =
+                    attachment?.state === "uploading"
+                      ? t("Uploading…")
+                      : attachment?.state === "error"
+                        ? t("Upload failed.")
+                        : `${range.paste.bytes.toLocaleString(currentLocale())} B`;
+                  const label = range.paste.secret
+                    ? range.paste.token
+                    : attachment && !range.paste.body
+                      ? `${attachment.name} · ${status}`
+                      : status;
                   const fragment = (
                     <span aria-hidden="true" key={`text-${range.start}`}>
                       {text(offset, range.start)}
@@ -905,17 +918,7 @@ export function ComposerEditor({
                       role="button"
                       tabIndex={0}
                       aria-label={
-                        range.paste.secret
-                          ? "Secret file reference"
-                          : range.paste.attachment
-                            ? `${range.paste.attachment.name} · ${t(range.paste.attachment.state === "uploading" ? "Uploading…" : range.paste.attachment.state === "error" ? "Upload failed." : "Attachment")}`
-                            : t(
-                                "View paste source: {lines} lines, {bytes} bytes",
-                                {
-                                  lines: range.paste.lines,
-                                  bytes: range.paste.bytes,
-                                },
-                              )
+                        range.paste.secret ? "Secret file reference" : label
                       }
                       title={
                         range.paste.attachment?.error ??
@@ -932,7 +935,15 @@ export function ComposerEditor({
                         }
                       }}
                     >
-                      {range.paste.token}
+                      {/* Keep the native textarea's exact character geometry.
+                          Upload state changes only the visible label, so the
+                          caret and following text do not jump on completion. */}
+                      <span className="paste-chip-token" aria-hidden="true">
+                        {range.paste.token}
+                      </span>
+                      <span className="paste-chip-label" aria-hidden="true">
+                        {label}
+                      </span>
                     </span>,
                   ];
                 });

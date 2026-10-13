@@ -118,6 +118,9 @@ async function wrapping(
       const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
       let node: Node | null, lastTop: number | undefined;
       while ((node = walker.nextNode())) {
+        // Chip labels are positioned decoration, not textarea characters.
+        // The hidden token still reserves the native input's exact geometry.
+        if (node.parentElement?.closest(".paste-chip-label")) continue;
         for (let i = 0; i < node.textContent!.length; i++) {
           const range = document.createRange();
           range.setStart(node, i);

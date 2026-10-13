@@ -83,7 +83,7 @@ test("paste chips preview and send their expanded contents", async ({
       }),
     );
   }, text);
-  await expect(editor).toHaveValue(/\[Paste .*4L/);
+  await expect(editor).toHaveValue(/\[Paste [0-9a-f]{8}\]/);
   await page.locator(".paste-chip").click();
   await expect(page.getByRole("dialog")).toContainText("const three = 3;");
   await page.getByRole("button", { name: "Close paste preview" }).click();

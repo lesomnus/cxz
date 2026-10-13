@@ -36,7 +36,7 @@ export function createPaste(text: string, id: string): ComposerPaste {
   const bytes = new TextEncoder().encode(text).length;
   const lines = text.split("\n").length;
   return {
-    token: `[Paste ${id} · ${lines}L · ${bytes}B]`,
+    token: `[Paste ${id}]`,
     body: text,
     lines,
     bytes,
@@ -46,7 +46,7 @@ export function createPaste(text: string, id: string): ComposerPaste {
 export function pasteRanges(text: string, pastes: Map<string, ComposerPaste>) {
   const ranges: PasteRange[] = [];
   for (const match of text.matchAll(
-    /\[(?:Paste [0-9a-f]{8} · \d+L · \d+B|File [0-9a-f]{8} · [^\]\r\n]+|Secret [0-9a-f]{8})\]/g,
+    /\[(?:Paste [0-9a-f]{8}(?: · \d+L · \d+B)?|File [0-9a-f]{8} · [^\]\r\n]+|Secret [0-9a-f]{8})\]/g,
   )) {
     const paste = pastes.get(match[0]);
     if (paste)
