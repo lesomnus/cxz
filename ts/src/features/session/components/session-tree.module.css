@@ -1,0 +1,3 @@
+.session[data-state="stopped"] :global(.session-heading) {
+  opacity: 0.65;
+}

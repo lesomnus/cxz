@@ -88,7 +88,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Real project/session rows and panel scrolling, with a memory router. Select a session to check highlighting and logo/title/alias press motion. Collapse the project to hide its sessions. The long-list story exposes hover-only scrollbar handles and edge fades.",
+          "Real project/session rows and panel scrolling, with a memory router. Stopped sessions have a dimmed identity and an empty indicator slot, preserving row alignment. Select a session to check highlighting and logo/title/alias press motion. Collapse the project to hide its sessions. The long-list story exposes hover-only scrollbar handles and edge fades.",
       },
     },
   },

@@ -6,6 +6,7 @@ import { PanelLink } from "#src/shared/navigation/route-link.tsx";
 import { PanelItem } from "@lesomnus/cxz-ui";
 import { SessionIdentity } from "./session-identity";
 import { UnreadBadge } from "#src/shared/notifications/unread-badge.tsx";
+import styles from "./session-tree.module.css";
 
 export function SessionTreeGroup({
   project,
@@ -40,7 +41,8 @@ export function SessionTreeGroup({
               to="/sessions/$sessionId"
               params={{ sessionId: s.runtimeId }}
               key={s.runtimeId}
-              className={`tree-session ${selected === s.runtimeId ? "active" : ""}`}
+              className={`tree-session ${styles.session} ${selected === s.runtimeId ? "active" : ""}`}
+              data-state={s.status?.state}
               pressTarget=".session-heading"
               aria-current={selected === s.runtimeId ? "true" : undefined}
             >
@@ -81,6 +83,8 @@ function SessionIndicator({
 }) {
   useLocale();
   const state = session.status?.state || "unknown";
+  if (state === "stopped")
+    return <span className="session-indicator" aria-hidden="true" />;
   const question = !!session.status?.pending.length;
   const working = ["running", "working", "waiting_input"].includes(state);
   if (unread)
@@ -112,8 +116,6 @@ function SessionIndicator({
             />
           ))}
         </svg>
-      ) : state === "stopped" ? (
-        "○"
       ) : (
         " "
       )}
