@@ -57,11 +57,11 @@ export function WorkSummary({
           aria-controls={expanded ? "work-dialog" : undefined}
           onClick={(event) => open(event.currentTarget)}
         >
-          <CategoryIcon />
-          <span aria-hidden="true">
-            {work.events.length}
-            {partial ? "+" : ""}
+          <span className={styles.count} aria-hidden="true">
+            <span className={styles.countValue}>{work.events.length}</span>
+            <span className={styles.countSuffix}>{partial ? "+" : ""}</span>
           </span>
+          <CategoryIcon />
         </Button>
         <span id={tooltip} className="meta-tooltip" role="tooltip">
           {countLabel} · {t("View details")}

@@ -18,6 +18,13 @@ test("turn work collapses into one line and its dialog never covers adjacent pan
   expect(await icon.evaluate((node) => node.getAttribute("fill"))).toBe(
     "currentColor",
   );
+  const count = summaries.first().locator(".button-content > span");
+  expect((await count.boundingBox())!.x).toBeLessThan(
+    (await icon.boundingBox())!.x,
+  );
+  expect(
+    (await summaries.first().getByRole("button").boundingBox())!.width,
+  ).toBe((await summaries.nth(1).getByRole("button").boundingBox())!.width);
   const tooltip = summaries.first().getByRole("tooltip");
   await expect(tooltip).toBeHidden();
   await summaries.first().getByRole("button").hover();
@@ -130,6 +137,9 @@ test("paging earlier tasks preserves the open execution and its detail editor", 
   await expect(
     page.locator("[data-work-summary]").getByRole("button"),
   ).toHaveText("1+");
+  const summary = page.locator("[data-work-summary]").getByRole("button");
+  const summaryWidth = (await summary.boundingBox())!.width;
+  const iconX = (await summary.locator("svg").boundingBox())!.x;
   await page.getByRole("button", { name: "View details", exact: true }).click();
   const dialog = page.getByRole("dialog", {
     name: "Tasks between responses",
@@ -147,6 +157,8 @@ test("paging earlier tasks preserves the open execution and its detail editor", 
     page.locator("[data-work-summary]").getByRole("button"),
   ).toHaveText("2");
   await expect(dialog.locator(".tool-activity")).toHaveCount(2);
+  expect((await summary.boundingBox())!.width).toBe(summaryWidth);
+  expect((await summary.locator("svg").boundingBox())!.x).toBe(iconX);
   await expect(dialog.getByRole("tabpanel")).toContainText("main");
   await expect(
     dialog.getByRole("button", { name: "Load earlier tasks", exact: true }),

@@ -6,6 +6,7 @@ import {
   type ResponseCompletion,
 } from "#src/features/session/model/response-completion.ts";
 import { formatTokens } from "#src/features/session/model/session-info.ts";
+import styles from "./response-footer.module.css";
 
 const names: Record<string, string> = {
   input_tokens: "Input",
@@ -117,7 +118,7 @@ export function ResponseFooter({
           )}
           {completion.durationMs !== undefined && (
             <span
-              className="response-metric"
+              className={`response-metric ${styles.metric}`}
               data-metric="duration"
               role="img"
               aria-label={t("Duration: {duration}", {
@@ -131,8 +132,10 @@ export function ResponseFooter({
                     )
               }
             >
+              <span className={styles.value}>
+                {durationLabel(completion.durationMs)}
+              </span>
               <MetricIcon kind="duration" />
-              {durationLabel(completion.durationMs)}
             </span>
           )}
           {Object.entries(completion.metrics).map(
@@ -140,14 +143,16 @@ export function ResponseFooter({
               names[key] && (
                 <span
                   key={key}
-                  className="response-metric"
+                  className={`response-metric ${styles.metric}`}
                   data-metric={key}
                   role="img"
                   aria-label={metricTitle(key, value, completion.tokenScope)}
                   title={metricTitle(key, value, completion.tokenScope)}
                 >
+                  <span className={styles.value}>
+                    {metricValue(key, value)}
+                  </span>
                   <MetricIcon kind={key} />
-                  {metricValue(key, value)}
                 </span>
               ),
           )}

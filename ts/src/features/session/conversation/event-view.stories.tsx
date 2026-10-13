@@ -1,4 +1,6 @@
 import { create } from "@bufbuild/protobuf";
+import { useState } from "react";
+import { Button } from "@lesomnus/cxz-ui";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { AuxKind } from "#gen/cxz/project_svc_pb";
 import { AuxStateSchema, AuxSchema } from "#gen/cxz/session_svc_pb";
@@ -21,7 +23,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Conversation responses and errors stay in the transcript. Tool executions collapse into one summary per turn; View details opens an in-conversation drawer. Select a task to read its Input/Output/Result tabs.",
+          "Conversation responses and errors stay in the transcript. Work between replies is summarized as a count followed by an icon, opening an in-conversation dialog. Select a task to read its Input/Output/Result tabs. Response metrics also show values before icons and reserve space for their expected ranges.",
       },
     },
   },
@@ -31,6 +33,46 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const FinalResponse: Story = {};
+export const MetricRanges: Story = {
+  render: function MetricRanges() {
+    const [large, setLarge] = useState(false);
+    const [base] = useState(() => responseEvent());
+    const event = { ...base, response: { ...base.response! } };
+    event.response!.completionJson = new TextEncoder().encode(
+      JSON.stringify({
+        response_seq: String(event.seq),
+        duration_ms: large ? 5_999_000 : 500,
+        duration_source: "cxz",
+        token_scope: "turn",
+        metrics: {
+          input_tokens: large ? 999_900 : 1,
+          output_tokens: large ? 99_900 : 1,
+          cache_read_tokens: large ? 999_900 : 1,
+          cost_usd: large ? 99.9999 : 0.0001,
+          api_duration_ms: large ? 5_999_000 : 500,
+          api_turns: large ? 999 : 1,
+          tool_calls: large ? 999 : 1,
+        },
+      }),
+    );
+    return (
+      <>
+        <Button onClick={() => setLarge(!large)}>
+          {large ? "Use small values" : "Use large values"}
+        </Button>
+        <ComponentPreview events={[event]} />
+      </>
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Switch between short and long metric values. The value slots, icons and neighboring metrics retain their positions; values are right-aligned before their icons. Narrow viewports wrap whole metrics without changing each metric's reserved width.",
+      },
+    },
+  },
+};
 export const ClaudeResponse: Story = {
   args: { agent: "claude", events: [responseEvent(2, "claude")] },
 };

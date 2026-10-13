@@ -1,0 +1,22 @@
+.metric {
+  --metric-value-width: 6ch;
+  flex-shrink: 0;
+}
+.metric:is([data-metric="duration"], [data-metric="api_duration_ms"]) {
+  --metric-value-width: 10ch;
+}
+.metric[data-metric="cost_usd"] {
+  --metric-value-width: 9ch;
+}
+.metric:is([data-metric="tool_calls"], [data-metric="api_turns"]) {
+  --metric-value-width: 3ch;
+}
+.value {
+  width: var(--metric-value-width);
+  flex-shrink: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: right;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+}
