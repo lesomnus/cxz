@@ -6,6 +6,7 @@ import { PanelLink } from "#src/shared/navigation/route-link.tsx";
 import { PanelItem } from "@lesomnus/cxz-ui";
 import { SessionIdentity } from "./session-identity";
 import { UnreadBadge } from "#src/shared/notifications/unread-badge.tsx";
+import { useState, type CSSProperties } from "react";
 import styles from "./session-tree.module.css";
 
 export function SessionTreeGroup({
@@ -73,6 +74,19 @@ const activityDots = [
   [4, 10],
   [4, 6],
 ] as const;
+const activityColors = ["green", "cyan", "violet"] as const;
+
+function randomActivityColors() {
+  // Keep all toolbar hues present, with a stable random order per indicator.
+  const colors = activityDots.map(
+    (_, index) => activityColors[index % activityColors.length]!,
+  );
+  for (let index = colors.length - 1; index > 0; index--) {
+    const other = Math.floor(Math.random() * (index + 1));
+    [colors[index], colors[other]] = [colors[other]!, colors[index]!];
+  }
+  return colors;
+}
 
 function SessionIndicator({
   session,
@@ -82,6 +96,7 @@ function SessionIndicator({
   unread: boolean;
 }) {
   useLocale();
+  const [dotColors] = useState(randomActivityColors);
   const state = session.status?.state || "unknown";
   if (state === "stopped")
     return <span className="session-indicator" aria-hidden="true" />;
@@ -110,9 +125,12 @@ function SessionIndicator({
               cx={cx}
               cy={cy}
               r="1.3"
-              style={{
-                animationDelay: `calc(${index} * var(--session-dot-step) * -1)`,
-              }}
+              style={
+                {
+                  animationDelay: `calc(${index} * var(--session-dot-step) * -1)`,
+                  "--session-dot-highlight": `var(--aurora-${dotColors[index]})`,
+                } as CSSProperties
+              }
             />
           ))}
         </svg>

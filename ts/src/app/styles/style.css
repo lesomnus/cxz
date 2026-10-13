@@ -11,6 +11,9 @@
   --space: var(--ui-space);
   --conversation-width: 600px;
   --markdown-table-column-min-width: 3em;
+  --aurora-green: #23b04a;
+  --aurora-cyan: #2596e9;
+  --aurora-violet: #b14ccd;
   --composer-radius: 15px;
   --composer-editor-height: 110px;
   --composer-resize-duration: 300ms;
@@ -1197,9 +1200,6 @@ pre {
   pointer-events: none;
 }
 .composer-aurora {
-  --aurora-green: #23b04a;
-  --aurora-cyan: #2596e9;
-  --aurora-violet: #b14ccd;
   --aurora-strength: 0.5;
   --aurora-envelope-duration: 3200ms;
   --aurora-drift-duration: 24s;
@@ -2653,7 +2653,7 @@ summary:hover {
 }
 .session-indicator {
   --session-dot-step: 200ms;
-  --session-dot-highlight: #d9ff30;
+  --session-dot-highlight: var(--aurora-green);
   display: flex;
   align-items: center;
   justify-content: center;
