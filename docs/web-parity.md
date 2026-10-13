@@ -13,6 +13,13 @@ authentication store, search index, or memory library.
   composer menu.
 - **Accounts**: register isolated Codex or Claude authentication profiles and log
   in to a central Codex account. Claude credentials belong to each session.
+  The panel shows agent logo, display name and alias. Its add button opens a
+  form beside the panel; selecting a profile shows its metadata, listed sessions
+  and recorded usage in the main area. `AccountService.Status` reports saved
+  login readiness and its scope; a logged-in central account does not offer an
+  active login action. `AccountService.Logout` removes the central saved login
+  and future token-supply authorizations after confirmation. Session-scoped
+  profiles direct login management to their sessions.
   Missing session login opens the provider workflow before creation is retried
   with the same creation key. Other authentication errors are not retried.
   An existing Claude session can log in again from its menu after stopping it.

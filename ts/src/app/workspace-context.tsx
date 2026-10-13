@@ -8,6 +8,7 @@ export const WorkspaceContext = createContext<
       c: Connection;
       projects: Project[];
       sessions: Session[];
+      sessionsLoading?: boolean;
       projectsLoading: boolean;
       settingsFileOpen: boolean;
       setSettingsFileOpen: (open: boolean) => void;

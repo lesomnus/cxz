@@ -73,6 +73,7 @@ export function Workspace({
         c,
         projects,
         sessions: inventory.sessions,
+        sessionsLoading: inventory.loading.sessions,
         projectsLoading: inventory.loading.projects,
         settingsFileOpen,
         setSettingsFileOpen,
@@ -80,7 +81,7 @@ export function Workspace({
       }}
     >
       <div
-        className={`workspace ${(session && resource === "sessions") || route.resource === "not-found" ? "conversation-open" : ""} ${resource === "settings" ? "settings-open" : !session || resource !== "sessions" ? "resource-open" : ""}`}
+        className={`workspace ${resource === "accounts" ? "accounts-open" : ""} ${(session && resource === "sessions") || route.resource === "not-found" ? "conversation-open" : ""} ${resource === "settings" ? "settings-open" : !session || resource !== "sessions" ? "resource-open" : ""}`}
       >
         <nav className="resource-sidebar" aria-label={t("Resources")}>
           <span className="brand" aria-label="cxz">
@@ -171,130 +172,139 @@ export function Workspace({
             <span>{exitLabel}</span>
           </Button>
         </nav>
-        <aside
-          className={`resource-panel${resource === "sessions" ? " session-panel" : ""}`}
-          aria-label={
-            resource === "sessions"
-              ? t("Session list")
-              : resource === "settings"
-                ? t("Settings navigation")
-                : resource === "projects"
-                  ? t("Project list")
-                  : `${resource} navigation`
-          }
-        >
-          <header>
-            <strong>
-              {resource === "sessions"
-                ? t("Sessions")
+        {resource !== "accounts" && (
+          <aside
+            className={`resource-panel${resource === "sessions" ? " session-panel" : ""}`}
+            aria-label={
+              resource === "sessions"
+                ? t("Session list")
                 : resource === "settings"
-                  ? t("Settings")
+                  ? t("Settings navigation")
                   : resource === "projects"
-                    ? t("Projects")
-                    : resource === "auxiliary"
-                      ? "Auxiliary AI"
-                      : resource[0].toUpperCase() + resource.slice(1)}
-            </strong>
-            {resource === "sessions" && (
-              <RouteLink
-                to="/sessions"
-                title="Manage sessions"
-                aria-label="Manage sessions"
-              >
-                ＋
-              </RouteLink>
-            )}
-            <Button onClick={() => logout().catch((e) => setError(String(e)))}>
-              {exitLabel}
-            </Button>
-          </header>
-          <p className="muted">{new URL(c.baseUrl).host}</p>
-          <PanelScroll>
-            {resource === "settings" ? (
-              <nav
-                className="settings-topics"
-                aria-label={t("Settings topics")}
-              >
-                {(["general", "editor"] as const).map((topic) => (
-                  <RouteLink
-                    key={topic}
-                    to={
-                      topic === "general"
-                        ? "/settings/general"
-                        : "/settings/editor"
-                    }
-                    aria-current={settingsTopic === topic ? "page" : undefined}
-                    aria-controls="settings-editor"
-                    onClick={() => {
-                      setSettingsFileOpen(false);
-                    }}
-                  >
-                    {topic === "general" ? t("General") : t("Editor")}
-                  </RouteLink>
-                ))}
-              </nav>
-            ) : resource === "sessions" ? (
-              <div
-                className="session-tree"
-                aria-label={t("Projects and sessions")}
-              >
-                {projects.map((p) => (
-                  <SessionTreeGroup
-                    key={p.runtimeId}
-                    project={p}
-                    items={sessionsByProject.get(key(p.id)) ?? []}
-                    loading={inventory.loading.sessions}
-                    selected={session}
-                    unread={unread}
-                    open={!collapsed.has(p.runtimeId)}
-                    toggle={() =>
-                      setCollapsed((old) => {
-                        const next = new Set(old);
-                        if (next.has(p.runtimeId)) next.delete(p.runtimeId);
-                        else next.add(p.runtimeId);
-                        return next;
-                      })
-                    }
-                  />
-                ))}
-              </div>
-            ) : resource === "projects" ? (
-              projects.map((p) => (
+                    ? t("Project list")
+                    : `${resource} navigation`
+            }
+          >
+            <header>
+              <strong>
+                {resource === "sessions"
+                  ? t("Sessions")
+                  : resource === "settings"
+                    ? t("Settings")
+                    : resource === "projects"
+                      ? t("Projects")
+                      : resource === "auxiliary"
+                        ? "Auxiliary AI"
+                        : resource[0].toUpperCase() + resource.slice(1)}
+              </strong>
+              {resource === "sessions" && (
                 <RouteLink
-                  key={p.runtimeId}
                   to="/sessions"
-                  onClick={() => expandProject(p.runtimeId)}
+                  title="Manage sessions"
+                  aria-label="Manage sessions"
                 >
-                  {p.name || p.alias}
+                  ＋
                 </RouteLink>
-              ))
-            ) : (
-              <nav className="settings-topics" aria-label="Resource navigation">
-                <RouteLink to={`/${resource}`} aria-current="page">
-                  {resource === "memory"
-                    ? "Shared memory"
-                    : resource === "auxiliary"
-                      ? "Auxiliary AI"
-                      : resource[0].toUpperCase() + resource.slice(1)}
-                </RouteLink>
-              </nav>
-            )}
-            {(inventory.errors.projects ||
-              inventory.errors.sessions ||
-              error) && (
-              <p role="alert">
-                {String(
-                  inventory.errors.projects ||
-                    inventory.errors.sessions ||
-                    error,
-                )}
-              </p>
-            )}
-            {inventory.loading.projects && !projects.length && (
-              <p className="muted">{t("Loading projects…")}</p>
-            )}
-          </PanelScroll>
-        </aside>
+              )}
+              <Button
+                onClick={() => logout().catch((e) => setError(String(e)))}
+              >
+                {exitLabel}
+              </Button>
+            </header>
+            <p className="muted">{new URL(c.baseUrl).host}</p>
+            <PanelScroll>
+              {resource === "settings" ? (
+                <nav
+                  className="settings-topics"
+                  aria-label={t("Settings topics")}
+                >
+                  {(["general", "editor"] as const).map((topic) => (
+                    <RouteLink
+                      key={topic}
+                      to={
+                        topic === "general"
+                          ? "/settings/general"
+                          : "/settings/editor"
+                      }
+                      aria-current={
+                        settingsTopic === topic ? "page" : undefined
+                      }
+                      aria-controls="settings-editor"
+                      onClick={() => {
+                        setSettingsFileOpen(false);
+                      }}
+                    >
+                      {topic === "general" ? t("General") : t("Editor")}
+                    </RouteLink>
+                  ))}
+                </nav>
+              ) : resource === "sessions" ? (
+                <div
+                  className="session-tree"
+                  aria-label={t("Projects and sessions")}
+                >
+                  {projects.map((p) => (
+                    <SessionTreeGroup
+                      key={p.runtimeId}
+                      project={p}
+                      items={sessionsByProject.get(key(p.id)) ?? []}
+                      loading={inventory.loading.sessions}
+                      selected={session}
+                      unread={unread}
+                      open={!collapsed.has(p.runtimeId)}
+                      toggle={() =>
+                        setCollapsed((old) => {
+                          const next = new Set(old);
+                          if (next.has(p.runtimeId)) next.delete(p.runtimeId);
+                          else next.add(p.runtimeId);
+                          return next;
+                        })
+                      }
+                    />
+                  ))}
+                </div>
+              ) : resource === "projects" ? (
+                projects.map((p) => (
+                  <RouteLink
+                    key={p.runtimeId}
+                    to="/sessions"
+                    onClick={() => expandProject(p.runtimeId)}
+                  >
+                    {p.name || p.alias}
+                  </RouteLink>
+                ))
+              ) : (
+                <nav
+                  className="settings-topics"
+                  aria-label="Resource navigation"
+                >
+                  <RouteLink to={`/${resource}`} aria-current="page">
+                    {resource === "memory"
+                      ? "Shared memory"
+                      : resource === "auxiliary"
+                        ? "Auxiliary AI"
+                        : resource[0].toUpperCase() + resource.slice(1)}
+                  </RouteLink>
+                </nav>
+              )}
+              {(inventory.errors.projects ||
+                inventory.errors.sessions ||
+                error) && (
+                <p role="alert">
+                  {String(
+                    inventory.errors.projects ||
+                      inventory.errors.sessions ||
+                      error,
+                  )}
+                </p>
+              )}
+              {inventory.loading.projects && !projects.length && (
+                <p className="muted">{t("Loading projects…")}</p>
+              )}
+            </PanelScroll>
+          </aside>
+        )}
         {children}
       </div>
     </WorkspaceContext.Provider>

@@ -17,6 +17,7 @@ export function WorkspaceView() {
     c,
     projects,
     sessions,
+    sessionsLoading,
     projectsLoading,
     settingsFileOpen,
     setSettingsFileOpen,
@@ -24,7 +25,14 @@ export function WorkspaceView() {
   } = useContext(WorkspaceContext)!;
   const { resource, session, settingsTopic } = useWorkspaceRoute();
   if (resource === "not-found") return <NotFoundPage />;
-  if (resource === "accounts") return <AccountsPage c={c} />;
+  if (resource === "accounts")
+    return (
+      <AccountsPage
+        c={c}
+        sessions={sessions}
+        sessionsLoading={sessionsLoading}
+      />
+    );
   if (resource === "search") return <SearchPage c={c} projects={projects} />;
   if (resource === "memory") return <MemoryPage c={c} sessions={sessions} />;
   if (resource === "activity")

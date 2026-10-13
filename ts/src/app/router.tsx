@@ -90,6 +90,13 @@ const accountsRoute = createRoute({
   path: "accounts",
   component: RouteView,
   staticData: { resource: "accounts" },
+  validateSearch: (search: Record<string, unknown>): { account?: string } => ({
+    account:
+      typeof search.account === "string" &&
+      /^[a-z][a-z0-9-]{0,62}$/.test(search.account)
+        ? search.account
+        : undefined,
+  }),
 });
 const searchRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -182,5 +189,6 @@ export function useWorkspaceRoute() {
     settingsTopic: data?.settingsTopic ?? "general",
     session,
     seq: sessionRoute.useSearch({ shouldThrow: false })?.seq,
+    account: accountsRoute.useSearch({ shouldThrow: false })?.account ?? "",
   };
 }

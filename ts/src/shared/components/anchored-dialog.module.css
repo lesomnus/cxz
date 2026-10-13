@@ -1,0 +1,30 @@
+.dialog {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  padding: 0;
+  width: min(420px, calc(100vw - 2 * var(--space)));
+  max-width: none;
+  max-height: calc(100dvh - 2 * var(--space));
+  border: 0;
+  background: transparent;
+  color: var(--shade-237);
+  overflow: visible;
+}
+.dialog::backdrop {
+  background: #0003;
+}
+.dialog > form {
+  max-height: inherit;
+}
+.dialog :global(.floating-card) {
+  position: relative;
+  max-height: calc(100dvh - 2 * var(--space));
+}
+.label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}

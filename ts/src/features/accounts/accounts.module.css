@@ -1,0 +1,70 @@
+.panel {
+  min-height: 0;
+}
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--space);
+}
+.add {
+  margin-left: auto;
+  width: var(--toolbar-button-width);
+}
+.item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  padding: calc(2 * var(--space));
+  border-radius: var(--wrapper-radius);
+}
+.item > :global(.button-content) {
+  display: block;
+}
+.item[aria-pressed="true"] {
+  background: var(--shade-40);
+}
+.item[aria-pressed="true"] :global(.session-title) {
+  color: var(--shade-255);
+}
+.identity {
+  padding: calc(3 * var(--space));
+}
+.value {
+  overflow-wrap: anywhere;
+}
+.metrics .value {
+  font-size: 0.8rem;
+}
+.form {
+  border: 0;
+  padding: calc(2 * var(--space));
+  margin: 0;
+  display: grid;
+  gap: calc(2 * var(--space));
+  min-width: 0;
+}
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space);
+}
+.actions button {
+  min-width: var(--toolbar-button-width);
+}
+.session {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  padding: calc(2 * var(--space));
+  border-radius: var(--wrapper-radius);
+}
+.session:hover {
+  background: var(--hover);
+}
+.session > :global(.button-content) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space);
+}

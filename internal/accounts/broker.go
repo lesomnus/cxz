@@ -465,3 +465,35 @@ func RevokeProjectGrants(root, project string) error {
 	}
 	return nil
 }
+
+func revokeAccountGrants(ctx context.Context, root, account string) error {
+	paths, err := filepath.Glob(filepath.Join(root, "central", "bindings", "*.json"))
+	if err != nil {
+		return err
+	}
+	for _, path := range paths {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		raw, err := os.ReadFile(path)
+		if err != nil {
+			return fmt.Errorf("cannot read token-supply authorization")
+		}
+		var grant Grant
+		if json.Unmarshal(raw, &grant) != nil {
+			return fmt.Errorf("invalid token-supply authorization")
+		}
+		if grant.Account != account {
+			continue
+		}
+		if validateGrantBinding(grant) != nil || filepath.Base(path) != grant.Binding+".json" || len(grant.Capability) != 64 {
+			return fmt.Errorf("invalid token-supply authorization")
+		}
+		for _, target := range []string{capabilityPath(root, grant.Capability), path} {
+			if err := os.Remove(target); err != nil && !os.IsNotExist(err) {
+				return fmt.Errorf("cannot revoke token-supply authorization")
+			}
+		}
+	}
+	return nil
+}

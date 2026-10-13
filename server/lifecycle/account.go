@@ -13,6 +13,62 @@ type AccountServer struct {
 	resource.AccountServiceServer
 }
 
+type accountAuthentication interface {
+	AccountStatus(context.Context, string, string, string) (accounts.AuthStatus, error)
+	LogoutAccount(context.Context, string, string, string) error
+}
+
+func authStatus(out accounts.AuthStatus) *resource.AccountAuthStatus {
+	state := map[string]resource.AccountAuthStatus_State{
+		"ready":          resource.AccountAuthStatus_STATE_READY,
+		"login_required": resource.AccountAuthStatus_STATE_LOGIN_REQUIRED,
+		"session_scoped": resource.AccountAuthStatus_STATE_SESSION_SCOPED,
+		"busy":           resource.AccountAuthStatus_STATE_BUSY,
+	}[out.State]
+	return resource.AccountAuthStatus_builder{State: &state, Scope: &out.Scope, CredentialPresent: &out.CredentialPresent, VendorVerified: ptr(false), CanLogin: &out.CanLogin, CanLogout: &out.CanLogout, Message: &out.Message}.Build()
+}
+
+func (s AccountServer) Status(ctx context.Context, ref *resource.AccountRef) (*resource.AccountAuthStatus, error) {
+	if err := s.effect(); err != nil {
+		return nil, err
+	}
+	account, err := s.Next().Account().Get(ctx, resource.AccountGetRequest_builder{Ref: ref, Select: resource.AccountSelect_builder{All: ptr(true)}.Build()}.Build())
+	if err != nil {
+		return nil, err
+	}
+	runtime, ok := s.shared.runtime.(accountAuthentication)
+	if !ok {
+		return nil, status.Error(codes.Unimplemented, "account authentication status unavailable; update the Manager")
+	}
+	out, err := runtime.AccountStatus(ctx, account.GetAlias(), account.GetAgent(), account.GetAuthBackend())
+	if err != nil {
+		return nil, err
+	}
+	return authStatus(out), nil
+}
+
+func (s AccountServer) Logout(ctx context.Context, ref *resource.AccountRef) (*resource.AccountAuthStatus, error) {
+	if err := s.effect(); err != nil {
+		return nil, err
+	}
+	account, err := s.Next().Account().Get(ctx, resource.AccountGetRequest_builder{Ref: ref, Select: resource.AccountSelect_builder{All: ptr(true)}.Build()}.Build())
+	if err != nil {
+		return nil, err
+	}
+	runtime, ok := s.shared.runtime.(accountAuthentication)
+	if !ok {
+		return nil, status.Error(codes.Unimplemented, "account logout unavailable; update the Manager")
+	}
+	if err := runtime.LogoutAccount(ctx, account.GetAlias(), account.GetAgent(), account.GetAuthBackend()); err != nil {
+		return nil, err
+	}
+	out, err := runtime.AccountStatus(ctx, account.GetAlias(), account.GetAgent(), account.GetAuthBackend())
+	if err != nil {
+		return nil, err
+	}
+	return authStatus(out), nil
+}
+
 func (s Layer) Account() resource.AccountServiceServer { return AccountServer{s, s.Next().Account()} }
 func accountRef(alias string) *resource.AccountRef {
 	return resource.AccountRef_builder{Alias: &alias}.Build()

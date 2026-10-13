@@ -2332,6 +2332,31 @@ func filterSession(f *resource.SessionFilter) (predicate.Session, error) {
 			ps = append(ps, session.HasProjectWith(q))
 		}
 	}
+	if f.HasAccount() {
+		w := f.GetAccount()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "account: %s", err)
+			}
+
+			ps = append(ps, session.AccountIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.AccountPick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, session.HasAccountWith(q))
+		}
+	}
 	if f.HasListed() {
 		ps = append(ps, session.ListedEQ(f.GetListed()))
 	}
@@ -3319,6 +3344,16 @@ func (s interceptAccount) List(ctx context.Context, req *resource.AccountListReq
 func (s interceptAccount) Watch(req *resource.AccountWatchRequest, out grpc.ServerStreamingServer[resource.AccountWatchResponse]) error {
 	return grpcx.RunStream(s.stream, s.AccountServiceServer,
 		resource.AccountService_Watch_FullMethodName, req, out, s.AccountServiceServer.Watch)
+}
+
+func (s interceptAccount) Status(ctx context.Context, req *resource.AccountRef) (*resource.AccountAuthStatus, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.AccountServiceServer,
+		resource.AccountService_Status_FullMethodName, req, s.AccountServiceServer.Status)
+}
+
+func (s interceptAccount) Logout(ctx context.Context, req *resource.AccountRef) (*resource.AccountAuthStatus, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.AccountServiceServer,
+		resource.AccountService_Logout_FullMethodName, req, s.AccountServiceServer.Logout)
 }
 
 func (s Intercept) Project() resource.ProjectServiceServer {
@@ -4608,6 +4643,32 @@ func dispatch(ctx context.Context, s resource.Server, op *pdpb.Op) (*anypb.Any, 
 		}
 
 		res, err := s.Account().List(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.AccountService_Status_FullMethodName:
+		v := &resource.AccountRef{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Account().Status(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.AccountService_Logout_FullMethodName:
+		v := &resource.AccountRef{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Account().Logout(ctx, v)
 		if err != nil {
 			return nil, err
 		}

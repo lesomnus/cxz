@@ -1,11 +1,51 @@
 import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { AccountList } from "#src/features/accounts/account-list.tsx";
+import { AccountsPage } from "#src/pages/accounts/accounts-page.tsx";
 import { MemoryLibrary } from "#src/features/memory/memory-library.tsx";
 import { UsageReport } from "#src/features/activity/usage-report.tsx";
 import { BackgroundReport } from "#src/features/activity/background-report.tsx";
 import { AuxiliarySettings } from "#src/features/auxiliary/auxiliary-settings.tsx";
 import { resourceFixture } from "./resource-fixture";
+import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
+import { createWorkspaceRouter } from "#src/app/router.tsx";
+import { create } from "@bufbuild/protobuf";
+import { SessionSchema } from "#gen/cxz/session_pb";
+import type { Connection } from "#src/shared/api/connection.ts";
+
+function AccountPreview({ c }: { c: Connection }) {
+  const [router] = useState(() =>
+    createWorkspaceRouter(
+      {
+        shell: ({ children }) => <>{children}</>,
+        view: () => (
+          <AccountsPage
+            c={c}
+            sessions={[
+              create(SessionSchema, {
+                runtimeId: "demo",
+                name: "Web account layout",
+                alias: "oak",
+                account: { alias: "work" },
+                agent: "codex",
+                status: { state: "idle" },
+              }),
+              create(SessionSchema, {
+                runtimeId: "personal-demo",
+                name: "Claude project",
+                alias: "elm",
+                account: { alias: "personal" },
+                agent: "claude",
+                status: { state: "stopped" },
+              }),
+            ]}
+          />
+        ),
+      },
+      createMemoryHistory({ initialEntries: ["/accounts"] }),
+    ),
+  );
+  return <RouterProvider router={router} />;
+}
 function ResourcePreview({
   view,
 }: {
@@ -15,14 +55,16 @@ function ResourcePreview({
   return (
     <div
       style={{
-        width: "min(600px, 100vw)",
+        width: view === "accounts" ? "min(960px, 100vw)" : "min(600px, 100vw)",
         padding: "var(--space)",
         height: "95vh",
-        overflow: "auto",
+        overflow: view === "accounts" ? "hidden" : "auto",
+        display: view === "accounts" ? "grid" : "block",
+        gridTemplateColumns: "180px minmax(0, 1fr)",
       }}
     >
       {view === "accounts" ? (
-        <AccountList c={c} />
+        <AccountPreview c={c} />
       ) : view === "memory" ? (
         <MemoryLibrary c={c} session="demo" />
       ) : view === "usage" ? (

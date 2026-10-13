@@ -255,7 +255,8 @@ message SessionListResponse {
 message SessionFilter {
   SessionRef ref = 1;
   ProjectRef project = 2;
-  bool listed = 3;
+  AccountRef account = 3;
+  bool listed = 4;
 }
 
 message SessionWatchRequest {
@@ -313,6 +314,7 @@ message ConversationStatsRequest {
   SessionRef session = 2;
   int64 from_ms = 3;
   int64 to_ms = 4;
+  AccountRef account = 5;
 }
 
 message ConversationStatsReply {

@@ -19,13 +19,15 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AccountService_Add_FullMethodName   = "/cxz.AccountService/Add"
-	AccountService_Get_FullMethodName   = "/cxz.AccountService/Get"
-	AccountService_Patch_FullMethodName = "/cxz.AccountService/Patch"
-	AccountService_Apply_FullMethodName = "/cxz.AccountService/Apply"
-	AccountService_Erase_FullMethodName = "/cxz.AccountService/Erase"
-	AccountService_List_FullMethodName  = "/cxz.AccountService/List"
-	AccountService_Watch_FullMethodName = "/cxz.AccountService/Watch"
+	AccountService_Add_FullMethodName    = "/cxz.AccountService/Add"
+	AccountService_Get_FullMethodName    = "/cxz.AccountService/Get"
+	AccountService_Patch_FullMethodName  = "/cxz.AccountService/Patch"
+	AccountService_Apply_FullMethodName  = "/cxz.AccountService/Apply"
+	AccountService_Erase_FullMethodName  = "/cxz.AccountService/Erase"
+	AccountService_List_FullMethodName   = "/cxz.AccountService/List"
+	AccountService_Watch_FullMethodName  = "/cxz.AccountService/Watch"
+	AccountService_Status_FullMethodName = "/cxz.AccountService/Status"
+	AccountService_Logout_FullMethodName = "/cxz.AccountService/Logout"
 )
 
 // AccountServiceClient is the client API for AccountService service.
@@ -56,6 +58,11 @@ type AccountServiceClient interface {
 	// once in that first message and once as a change that happened while it was
 	// being read -- and that is harmless for the same reason.
 	Watch(ctx context.Context, in *AccountWatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[AccountWatchResponse], error)
+	// Local authentication readiness, never a provider-side verification or secret.
+	Status(ctx context.Context, in *AccountRef, opts ...grpc.CallOption) (*AccountAuthStatus, error)
+	// Remove the central saved login and future token-supply authorizations.
+	// Already-issued access tokens are not revoked at the provider.
+	Logout(ctx context.Context, in *AccountRef, opts ...grpc.CallOption) (*AccountAuthStatus, error)
 }
 
 type accountServiceClient struct {
@@ -145,6 +152,26 @@ func (c *accountServiceClient) Watch(ctx context.Context, in *AccountWatchReques
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type AccountService_WatchClient = grpc.ServerStreamingClient[AccountWatchResponse]
 
+func (c *accountServiceClient) Status(ctx context.Context, in *AccountRef, opts ...grpc.CallOption) (*AccountAuthStatus, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AccountAuthStatus)
+	err := c.cc.Invoke(ctx, AccountService_Status_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *accountServiceClient) Logout(ctx context.Context, in *AccountRef, opts ...grpc.CallOption) (*AccountAuthStatus, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AccountAuthStatus)
+	err := c.cc.Invoke(ctx, AccountService_Logout_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AccountServiceServer is the server API for AccountService service.
 // All implementations must embed UnimplementedAccountServiceServer
 // for forward compatibility.
@@ -173,6 +200,11 @@ type AccountServiceServer interface {
 	// once in that first message and once as a change that happened while it was
 	// being read -- and that is harmless for the same reason.
 	Watch(*AccountWatchRequest, grpc.ServerStreamingServer[AccountWatchResponse]) error
+	// Local authentication readiness, never a provider-side verification or secret.
+	Status(context.Context, *AccountRef) (*AccountAuthStatus, error)
+	// Remove the central saved login and future token-supply authorizations.
+	// Already-issued access tokens are not revoked at the provider.
+	Logout(context.Context, *AccountRef) (*AccountAuthStatus, error)
 	mustEmbedUnimplementedAccountServiceServer()
 }
 
@@ -203,6 +235,12 @@ func (UnimplementedAccountServiceServer) List(context.Context, *AccountListReque
 }
 func (UnimplementedAccountServiceServer) Watch(*AccountWatchRequest, grpc.ServerStreamingServer[AccountWatchResponse]) error {
 	return status.Error(codes.Unimplemented, "method Watch not implemented")
+}
+func (UnimplementedAccountServiceServer) Status(context.Context, *AccountRef) (*AccountAuthStatus, error) {
+	return nil, status.Error(codes.Unimplemented, "method Status not implemented")
+}
+func (UnimplementedAccountServiceServer) Logout(context.Context, *AccountRef) (*AccountAuthStatus, error) {
+	return nil, status.Error(codes.Unimplemented, "method Logout not implemented")
 }
 func (UnimplementedAccountServiceServer) mustEmbedUnimplementedAccountServiceServer() {}
 func (UnimplementedAccountServiceServer) testEmbeddedByValue()                        {}
@@ -344,6 +382,42 @@ func _AccountService_Watch_Handler(srv interface{}, stream grpc.ServerStream) er
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type AccountService_WatchServer = grpc.ServerStreamingServer[AccountWatchResponse]
 
+func _AccountService_Status_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AccountRef)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AccountServiceServer).Status(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AccountService_Status_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AccountServiceServer).Status(ctx, req.(*AccountRef))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AccountService_Logout_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AccountRef)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AccountServiceServer).Logout(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AccountService_Logout_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AccountServiceServer).Logout(ctx, req.(*AccountRef))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AccountService_ServiceDesc is the grpc.ServiceDesc for AccountService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -374,6 +448,14 @@ var AccountService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "List",
 			Handler:    _AccountService_List_Handler,
+		},
+		{
+			MethodName: "Status",
+			Handler:    _AccountService_Status_Handler,
+		},
+		{
+			MethodName: "Logout",
+			Handler:    _AccountService_Logout_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

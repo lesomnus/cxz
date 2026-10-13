@@ -6,7 +6,7 @@ import { requiredSessionLogin } from "#src/features/accounts/login-required.ts";
 import type { Project } from "#gen/cxz/project_pb";
 import { Connection, ref } from "#src/shared/api/connection.ts";
 import { useRemote } from "#src/shared/api/use-remote.ts";
-import { listAccounts } from "#src/features/accounts/account-list.tsx";
+import { listAccounts } from "#src/features/accounts/account-data.ts";
 import {
   LoginPanel,
   type LoginTarget,

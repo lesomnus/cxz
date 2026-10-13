@@ -1,5 +1,8 @@
 import { createRouterTransport, ConnectError, Code } from "@connectrpc/connect";
-import { AccountService } from "#gen/cxz/account_svc_pb";
+import {
+  AccountService,
+  AccountAuthStatus_State as AuthState,
+} from "#gen/cxz/account_svc_pb";
 import { ProjectService, AuxKind } from "#gen/cxz/project_svc_pb";
 import { SessionService } from "#gen/cxz/session_svc_pb";
 import { Connection } from "#src/shared/api/connection.ts";
@@ -31,6 +34,34 @@ export function resourceFixture() {
       authBackend: "project-local-oauth",
     },
   ];
+  const signedIn = new Set(["work"]);
+  const authStatus = (alias: string) => {
+    const account = accounts.find((account) => account.alias === alias);
+    if (!account) throw new ConnectError("Account not found", Code.NotFound);
+    if (account.authBackend === "project-local-oauth")
+      return {
+        state: AuthState.SESSION_SCOPED,
+        scope: "session",
+        canLogin: false,
+        canLogout: false,
+        credentialPresent: false,
+        vendorVerified: false,
+        message:
+          "Login belongs to each session. Manage it from that session's details.",
+      };
+    const ready = signedIn.has(alias);
+    return {
+      state: ready ? AuthState.READY : AuthState.LOGIN_REQUIRED,
+      scope: "account",
+      credentialPresent: ready,
+      vendorVerified: false,
+      canLogin: !ready,
+      canLogout: ready,
+      message: ready
+        ? "Saved login is present. Provider validity has not been checked."
+        : "Log in to this account to use it.",
+    };
+  };
   const config = [
     {
       kind: AuxKind.SUMMARY,
@@ -44,9 +75,11 @@ export function resourceFixture() {
     router.service(AccountService, {
       list: () => ({ items: accounts }),
       add: (request) => {
+        if (accounts.some((account) => account.alias === request.alias))
+          throw new ConnectError("Account already exists", Code.AlreadyExists);
         const account = {
           alias: request.alias,
-          name: request.name,
+          name: request.name || request.alias,
           agent: request.agent,
           authBackend:
             request.agent === "claude"
@@ -55,6 +88,19 @@ export function resourceFixture() {
         };
         accounts.push(account);
         return account;
+      },
+      status: (ref) =>
+        authStatus(ref.key.case === "alias" ? ref.key.value : ""),
+      logout: (ref) => {
+        const alias = ref.key.case === "alias" ? ref.key.value : "";
+        const status = authStatus(alias);
+        if (status.scope !== "account")
+          throw new ConnectError(
+            "Account uses session logins",
+            Code.FailedPrecondition,
+          );
+        signedIn.delete(alias);
+        return authStatus(alias);
       },
     });
     router.service(ProjectService, {

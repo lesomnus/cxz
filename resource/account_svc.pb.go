@@ -22,6 +22,56 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type AccountAuthStatus_State int32
+
+const (
+	AccountAuthStatus_STATE_UNSPECIFIED    AccountAuthStatus_State = 0
+	AccountAuthStatus_STATE_READY          AccountAuthStatus_State = 1
+	AccountAuthStatus_STATE_LOGIN_REQUIRED AccountAuthStatus_State = 2
+	AccountAuthStatus_STATE_SESSION_SCOPED AccountAuthStatus_State = 3
+	AccountAuthStatus_STATE_BUSY           AccountAuthStatus_State = 4
+)
+
+// Enum value maps for AccountAuthStatus_State.
+var (
+	AccountAuthStatus_State_name = map[int32]string{
+		0: "STATE_UNSPECIFIED",
+		1: "STATE_READY",
+		2: "STATE_LOGIN_REQUIRED",
+		3: "STATE_SESSION_SCOPED",
+		4: "STATE_BUSY",
+	}
+	AccountAuthStatus_State_value = map[string]int32{
+		"STATE_UNSPECIFIED":    0,
+		"STATE_READY":          1,
+		"STATE_LOGIN_REQUIRED": 2,
+		"STATE_SESSION_SCOPED": 3,
+		"STATE_BUSY":           4,
+	}
+)
+
+func (x AccountAuthStatus_State) Enum() *AccountAuthStatus_State {
+	p := new(AccountAuthStatus_State)
+	*p = x
+	return p
+}
+
+func (x AccountAuthStatus_State) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (AccountAuthStatus_State) Descriptor() protoreflect.EnumDescriptor {
+	return file_cxz_account_svc_g_proto_enumTypes[0].Descriptor()
+}
+
+func (AccountAuthStatus_State) Type() protoreflect.EnumType {
+	return &file_cxz_account_svc_g_proto_enumTypes[0]
+}
+
+func (x AccountAuthStatus_State) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
 type AccountAddRequest struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
@@ -1701,6 +1751,269 @@ func (b0 AccountWatchItem_builder) Build() *AccountWatchItem {
 	return m0
 }
 
+type AccountAuthStatus struct {
+	state                        protoimpl.MessageState  `protogen:"opaque.v1"`
+	xxx_hidden_State             AccountAuthStatus_State `protobuf:"varint,1,opt,name=state,enum=cxz.AccountAuthStatus_State"`
+	xxx_hidden_Scope             *string                 `protobuf:"bytes,2,opt,name=scope"`
+	xxx_hidden_CredentialPresent bool                    `protobuf:"varint,3,opt,name=credential_present,json=credentialPresent"`
+	xxx_hidden_VendorVerified    bool                    `protobuf:"varint,4,opt,name=vendor_verified,json=vendorVerified"`
+	xxx_hidden_CanLogin          bool                    `protobuf:"varint,5,opt,name=can_login,json=canLogin"`
+	xxx_hidden_CanLogout         bool                    `protobuf:"varint,6,opt,name=can_logout,json=canLogout"`
+	xxx_hidden_Message           *string                 `protobuf:"bytes,7,opt,name=message"`
+	XXX_raceDetectHookData       protoimpl.RaceDetectHookData
+	XXX_presence                 [1]uint32
+	unknownFields                protoimpl.UnknownFields
+	sizeCache                    protoimpl.SizeCache
+}
+
+func (x *AccountAuthStatus) Reset() {
+	*x = AccountAuthStatus{}
+	mi := &file_cxz_account_svc_g_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AccountAuthStatus) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AccountAuthStatus) ProtoMessage() {}
+
+func (x *AccountAuthStatus) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_account_svc_g_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *AccountAuthStatus) GetState() AccountAuthStatus_State {
+	if x != nil {
+		if protoimpl.X.Present(&(x.XXX_presence[0]), 0) {
+			return x.xxx_hidden_State
+		}
+	}
+	return AccountAuthStatus_STATE_UNSPECIFIED
+}
+
+func (x *AccountAuthStatus) GetScope() string {
+	if x != nil {
+		if x.xxx_hidden_Scope != nil {
+			return *x.xxx_hidden_Scope
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *AccountAuthStatus) GetCredentialPresent() bool {
+	if x != nil {
+		return x.xxx_hidden_CredentialPresent
+	}
+	return false
+}
+
+func (x *AccountAuthStatus) GetVendorVerified() bool {
+	if x != nil {
+		return x.xxx_hidden_VendorVerified
+	}
+	return false
+}
+
+func (x *AccountAuthStatus) GetCanLogin() bool {
+	if x != nil {
+		return x.xxx_hidden_CanLogin
+	}
+	return false
+}
+
+func (x *AccountAuthStatus) GetCanLogout() bool {
+	if x != nil {
+		return x.xxx_hidden_CanLogout
+	}
+	return false
+}
+
+func (x *AccountAuthStatus) GetMessage() string {
+	if x != nil {
+		if x.xxx_hidden_Message != nil {
+			return *x.xxx_hidden_Message
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *AccountAuthStatus) SetState(v AccountAuthStatus_State) {
+	x.xxx_hidden_State = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 7)
+}
+
+func (x *AccountAuthStatus) SetScope(v string) {
+	x.xxx_hidden_Scope = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 7)
+}
+
+func (x *AccountAuthStatus) SetCredentialPresent(v bool) {
+	x.xxx_hidden_CredentialPresent = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 7)
+}
+
+func (x *AccountAuthStatus) SetVendorVerified(v bool) {
+	x.xxx_hidden_VendorVerified = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 7)
+}
+
+func (x *AccountAuthStatus) SetCanLogin(v bool) {
+	x.xxx_hidden_CanLogin = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 7)
+}
+
+func (x *AccountAuthStatus) SetCanLogout(v bool) {
+	x.xxx_hidden_CanLogout = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 7)
+}
+
+func (x *AccountAuthStatus) SetMessage(v string) {
+	x.xxx_hidden_Message = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 7)
+}
+
+func (x *AccountAuthStatus) HasState() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *AccountAuthStatus) HasScope() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
+}
+
+func (x *AccountAuthStatus) HasCredentialPresent() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+}
+
+func (x *AccountAuthStatus) HasVendorVerified() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
+}
+
+func (x *AccountAuthStatus) HasCanLogin() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
+}
+
+func (x *AccountAuthStatus) HasCanLogout() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
+}
+
+func (x *AccountAuthStatus) HasMessage() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
+}
+
+func (x *AccountAuthStatus) ClearState() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_State = AccountAuthStatus_STATE_UNSPECIFIED
+}
+
+func (x *AccountAuthStatus) ClearScope() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_Scope = nil
+}
+
+func (x *AccountAuthStatus) ClearCredentialPresent() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	x.xxx_hidden_CredentialPresent = false
+}
+
+func (x *AccountAuthStatus) ClearVendorVerified() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
+	x.xxx_hidden_VendorVerified = false
+}
+
+func (x *AccountAuthStatus) ClearCanLogin() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
+	x.xxx_hidden_CanLogin = false
+}
+
+func (x *AccountAuthStatus) ClearCanLogout() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
+	x.xxx_hidden_CanLogout = false
+}
+
+func (x *AccountAuthStatus) ClearMessage() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
+	x.xxx_hidden_Message = nil
+}
+
+type AccountAuthStatus_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	State             *AccountAuthStatus_State
+	Scope             *string
+	CredentialPresent *bool
+	VendorVerified    *bool
+	CanLogin          *bool
+	CanLogout         *bool
+	Message           *string
+}
+
+func (b0 AccountAuthStatus_builder) Build() *AccountAuthStatus {
+	m0 := &AccountAuthStatus{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.State != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 7)
+		x.xxx_hidden_State = *b.State
+	}
+	if b.Scope != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 7)
+		x.xxx_hidden_Scope = b.Scope
+	}
+	if b.CredentialPresent != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 7)
+		x.xxx_hidden_CredentialPresent = *b.CredentialPresent
+	}
+	if b.VendorVerified != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 7)
+		x.xxx_hidden_VendorVerified = *b.VendorVerified
+	}
+	if b.CanLogin != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 7)
+		x.xxx_hidden_CanLogin = *b.CanLogin
+	}
+	if b.CanLogout != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 7)
+		x.xxx_hidden_CanLogout = *b.CanLogout
+	}
+	if b.Message != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 7)
+		x.xxx_hidden_Message = b.Message
+	}
+	return m0
+}
+
 var File_cxz_account_svc_g_proto protoreflect.FileDescriptor
 
 const file_cxz_account_svc_g_proto_rawDesc = "" +
@@ -1763,7 +2076,23 @@ const file_cxz_account_svc_g_proto_rawDesc = "" +
 	"\x10AccountWatchItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12\"\n" +
 	"\x05value\x18\x02 \x01(\v2\f.cxz.AccountR\x05value\x12\x1d\n" +
-	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action2\xfc\x02\n" +
+	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action\"\x80\x03\n" +
+	"\x11AccountAuthStatus\x122\n" +
+	"\x05state\x18\x01 \x01(\x0e2\x1c.cxz.AccountAuthStatus.StateR\x05state\x12\x14\n" +
+	"\x05scope\x18\x02 \x01(\tR\x05scope\x12-\n" +
+	"\x12credential_present\x18\x03 \x01(\bR\x11credentialPresent\x12'\n" +
+	"\x0fvendor_verified\x18\x04 \x01(\bR\x0evendorVerified\x12\x1b\n" +
+	"\tcan_login\x18\x05 \x01(\bR\bcanLogin\x12\x1d\n" +
+	"\n" +
+	"can_logout\x18\x06 \x01(\bR\tcanLogout\x12\x18\n" +
+	"\amessage\x18\a \x01(\tR\amessage\"s\n" +
+	"\x05State\x12\x15\n" +
+	"\x11STATE_UNSPECIFIED\x10\x00\x12\x0f\n" +
+	"\vSTATE_READY\x10\x01\x12\x18\n" +
+	"\x14STATE_LOGIN_REQUIRED\x10\x02\x12\x18\n" +
+	"\x14STATE_SESSION_SCOPED\x10\x03\x12\x0e\n" +
+	"\n" +
+	"STATE_BUSY\x10\x042\xe2\x03\n" +
 	"\x0eAccountService\x12+\n" +
 	"\x03Add\x12\x16.cxz.AccountAddRequest\x1a\f.cxz.Account\x12+\n" +
 	"\x03Get\x12\x16.cxz.AccountGetRequest\x1a\f.cxz.Account\x12/\n" +
@@ -1771,60 +2100,70 @@ const file_cxz_account_svc_g_proto_rawDesc = "" +
 	"\x05Apply\x12\x18.cxz.AccountApplyRequest\x1a\f.cxz.Account\x123\n" +
 	"\x05Erase\x12\x0f.cxz.AccountRef\x1a\x19.cxz.AccountEraseResponse\x129\n" +
 	"\x04List\x12\x17.cxz.AccountListRequest\x1a\x18.cxz.AccountListResponse\x12>\n" +
-	"\x05Watch\x12\x18.cxz.AccountWatchRequest\x1a\x19.cxz.AccountWatchResponse0\x01B\"Z github.com/lesomnus/cxz/resourceb\beditionsp\xe8\a"
+	"\x05Watch\x12\x18.cxz.AccountWatchRequest\x1a\x19.cxz.AccountWatchResponse0\x01\x121\n" +
+	"\x06Status\x12\x0f.cxz.AccountRef\x1a\x16.cxz.AccountAuthStatus\x121\n" +
+	"\x06Logout\x12\x0f.cxz.AccountRef\x1a\x16.cxz.AccountAuthStatusB\"Z github.com/lesomnus/cxz/resourceb\beditionsp\xe8\a"
 
-var file_cxz_account_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_cxz_account_svc_g_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_cxz_account_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_cxz_account_svc_g_proto_goTypes = []any{
-	(*AccountAddRequest)(nil),     // 0: cxz.AccountAddRequest
-	(*AccountGetRequest)(nil),     // 1: cxz.AccountGetRequest
-	(*AccountRef)(nil),            // 2: cxz.AccountRef
-	(*AccountSelect)(nil),         // 3: cxz.AccountSelect
-	(*AccountPatchRequest)(nil),   // 4: cxz.AccountPatchRequest
-	(*AccountApplyRequest)(nil),   // 5: cxz.AccountApplyRequest
-	(*AccountEraseResponse)(nil),  // 6: cxz.AccountEraseResponse
-	(*AccountListRequest)(nil),    // 7: cxz.AccountListRequest
-	(*AccountListResponse)(nil),   // 8: cxz.AccountListResponse
-	(*AccountFilter)(nil),         // 9: cxz.AccountFilter
-	(*AccountWatchRequest)(nil),   // 10: cxz.AccountWatchRequest
-	(*AccountWatchResponse)(nil),  // 11: cxz.AccountWatchResponse
-	(*AccountWatchItem)(nil),      // 12: cxz.AccountWatchItem
-	(*timestamppb.Timestamp)(nil), // 13: google.protobuf.Timestamp
-	(*patchpb.Patch)(nil),         // 14: patch.Patch
-	(*Account)(nil),               // 15: cxz.Account
+	(AccountAuthStatus_State)(0),  // 0: cxz.AccountAuthStatus.State
+	(*AccountAddRequest)(nil),     // 1: cxz.AccountAddRequest
+	(*AccountGetRequest)(nil),     // 2: cxz.AccountGetRequest
+	(*AccountRef)(nil),            // 3: cxz.AccountRef
+	(*AccountSelect)(nil),         // 4: cxz.AccountSelect
+	(*AccountPatchRequest)(nil),   // 5: cxz.AccountPatchRequest
+	(*AccountApplyRequest)(nil),   // 6: cxz.AccountApplyRequest
+	(*AccountEraseResponse)(nil),  // 7: cxz.AccountEraseResponse
+	(*AccountListRequest)(nil),    // 8: cxz.AccountListRequest
+	(*AccountListResponse)(nil),   // 9: cxz.AccountListResponse
+	(*AccountFilter)(nil),         // 10: cxz.AccountFilter
+	(*AccountWatchRequest)(nil),   // 11: cxz.AccountWatchRequest
+	(*AccountWatchResponse)(nil),  // 12: cxz.AccountWatchResponse
+	(*AccountWatchItem)(nil),      // 13: cxz.AccountWatchItem
+	(*AccountAuthStatus)(nil),     // 14: cxz.AccountAuthStatus
+	(*timestamppb.Timestamp)(nil), // 15: google.protobuf.Timestamp
+	(*patchpb.Patch)(nil),         // 16: patch.Patch
+	(*Account)(nil),               // 17: cxz.Account
 }
 var file_cxz_account_svc_g_proto_depIdxs = []int32{
-	13, // 0: cxz.AccountAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	2,  // 1: cxz.AccountGetRequest.ref:type_name -> cxz.AccountRef
-	3,  // 2: cxz.AccountGetRequest.select:type_name -> cxz.AccountSelect
-	2,  // 3: cxz.AccountPatchRequest.ref:type_name -> cxz.AccountRef
-	13, // 4: cxz.AccountPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	2,  // 5: cxz.AccountApplyRequest.ref:type_name -> cxz.AccountRef
-	14, // 6: cxz.AccountApplyRequest.patch:type_name -> patch.Patch
-	9,  // 7: cxz.AccountListRequest.filters:type_name -> cxz.AccountFilter
-	15, // 8: cxz.AccountListResponse.items:type_name -> cxz.Account
-	2,  // 9: cxz.AccountFilter.ref:type_name -> cxz.AccountRef
-	9,  // 10: cxz.AccountWatchRequest.filters:type_name -> cxz.AccountFilter
-	12, // 11: cxz.AccountWatchResponse.items:type_name -> cxz.AccountWatchItem
-	15, // 12: cxz.AccountWatchItem.value:type_name -> cxz.Account
-	0,  // 13: cxz.AccountService.Add:input_type -> cxz.AccountAddRequest
-	1,  // 14: cxz.AccountService.Get:input_type -> cxz.AccountGetRequest
-	4,  // 15: cxz.AccountService.Patch:input_type -> cxz.AccountPatchRequest
-	5,  // 16: cxz.AccountService.Apply:input_type -> cxz.AccountApplyRequest
-	2,  // 17: cxz.AccountService.Erase:input_type -> cxz.AccountRef
-	7,  // 18: cxz.AccountService.List:input_type -> cxz.AccountListRequest
-	10, // 19: cxz.AccountService.Watch:input_type -> cxz.AccountWatchRequest
-	15, // 20: cxz.AccountService.Add:output_type -> cxz.Account
-	15, // 21: cxz.AccountService.Get:output_type -> cxz.Account
-	15, // 22: cxz.AccountService.Patch:output_type -> cxz.Account
-	15, // 23: cxz.AccountService.Apply:output_type -> cxz.Account
-	6,  // 24: cxz.AccountService.Erase:output_type -> cxz.AccountEraseResponse
-	8,  // 25: cxz.AccountService.List:output_type -> cxz.AccountListResponse
-	11, // 26: cxz.AccountService.Watch:output_type -> cxz.AccountWatchResponse
-	20, // [20:27] is the sub-list for method output_type
-	13, // [13:20] is the sub-list for method input_type
-	13, // [13:13] is the sub-list for extension type_name
-	13, // [13:13] is the sub-list for extension extendee
-	0,  // [0:13] is the sub-list for field type_name
+	15, // 0: cxz.AccountAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	3,  // 1: cxz.AccountGetRequest.ref:type_name -> cxz.AccountRef
+	4,  // 2: cxz.AccountGetRequest.select:type_name -> cxz.AccountSelect
+	3,  // 3: cxz.AccountPatchRequest.ref:type_name -> cxz.AccountRef
+	15, // 4: cxz.AccountPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	3,  // 5: cxz.AccountApplyRequest.ref:type_name -> cxz.AccountRef
+	16, // 6: cxz.AccountApplyRequest.patch:type_name -> patch.Patch
+	10, // 7: cxz.AccountListRequest.filters:type_name -> cxz.AccountFilter
+	17, // 8: cxz.AccountListResponse.items:type_name -> cxz.Account
+	3,  // 9: cxz.AccountFilter.ref:type_name -> cxz.AccountRef
+	10, // 10: cxz.AccountWatchRequest.filters:type_name -> cxz.AccountFilter
+	13, // 11: cxz.AccountWatchResponse.items:type_name -> cxz.AccountWatchItem
+	17, // 12: cxz.AccountWatchItem.value:type_name -> cxz.Account
+	0,  // 13: cxz.AccountAuthStatus.state:type_name -> cxz.AccountAuthStatus.State
+	1,  // 14: cxz.AccountService.Add:input_type -> cxz.AccountAddRequest
+	2,  // 15: cxz.AccountService.Get:input_type -> cxz.AccountGetRequest
+	5,  // 16: cxz.AccountService.Patch:input_type -> cxz.AccountPatchRequest
+	6,  // 17: cxz.AccountService.Apply:input_type -> cxz.AccountApplyRequest
+	3,  // 18: cxz.AccountService.Erase:input_type -> cxz.AccountRef
+	8,  // 19: cxz.AccountService.List:input_type -> cxz.AccountListRequest
+	11, // 20: cxz.AccountService.Watch:input_type -> cxz.AccountWatchRequest
+	3,  // 21: cxz.AccountService.Status:input_type -> cxz.AccountRef
+	3,  // 22: cxz.AccountService.Logout:input_type -> cxz.AccountRef
+	17, // 23: cxz.AccountService.Add:output_type -> cxz.Account
+	17, // 24: cxz.AccountService.Get:output_type -> cxz.Account
+	17, // 25: cxz.AccountService.Patch:output_type -> cxz.Account
+	17, // 26: cxz.AccountService.Apply:output_type -> cxz.Account
+	7,  // 27: cxz.AccountService.Erase:output_type -> cxz.AccountEraseResponse
+	9,  // 28: cxz.AccountService.List:output_type -> cxz.AccountListResponse
+	12, // 29: cxz.AccountService.Watch:output_type -> cxz.AccountWatchResponse
+	14, // 30: cxz.AccountService.Status:output_type -> cxz.AccountAuthStatus
+	14, // 31: cxz.AccountService.Logout:output_type -> cxz.AccountAuthStatus
+	23, // [23:32] is the sub-list for method output_type
+	14, // [14:23] is the sub-list for method input_type
+	14, // [14:14] is the sub-list for extension type_name
+	14, // [14:14] is the sub-list for extension extendee
+	0,  // [0:14] is the sub-list for field type_name
 }
 
 func init() { file_cxz_account_svc_g_proto_init() }
@@ -1842,13 +2181,14 @@ func file_cxz_account_svc_g_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_cxz_account_svc_g_proto_rawDesc), len(file_cxz_account_svc_g_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   13,
+			NumEnums:      1,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_cxz_account_svc_g_proto_goTypes,
 		DependencyIndexes: file_cxz_account_svc_g_proto_depIdxs,
+		EnumInfos:         file_cxz_account_svc_g_proto_enumTypes,
 		MessageInfos:      file_cxz_account_svc_g_proto_msgTypes,
 	}.Build()
 	File_cxz_account_svc_g_proto = out.File

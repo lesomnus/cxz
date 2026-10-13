@@ -6,7 +6,7 @@ import { create } from "@bufbuild/protobuf";
 import { AuxProfileSchema } from "#gen/cxz/project_svc_pb";
 import { Connection } from "#src/shared/api/connection.ts";
 import { useRemote } from "#src/shared/api/use-remote.ts";
-import { listAccounts } from "#src/features/accounts/account-list.tsx";
+import { listAccounts } from "#src/features/accounts/account-data.ts";
 import { LoginPanel } from "#src/features/accounts/login-panel.tsx";
 import { auxKinds } from "./auxiliary-controls";
 import styles from "#src/shared/components/resource-surface.module.css";

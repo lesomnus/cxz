@@ -23,7 +23,7 @@ func (s SessionServer) ConversationStats(ctx context.Context, r *resource.Conver
 	if from == 0 {
 		from = to - int64(30*24*time.Hour/time.Millisecond)
 	}
-	if from < 0 || to <= from || to-from > int64(366*24*time.Hour/time.Millisecond) || r.HasProject() && r.HasSession() {
+	if from < 0 || to <= from || to-from > int64(366*24*time.Hour/time.Millisecond) || boolCount(r.HasProject(), r.HasSession(), r.HasAccount()) > 1 {
 		return nil, status.Error(codes.InvalidArgument, "provide at most one scope and a positive time range of at most 366 days")
 	}
 	if err := s.ensureSnapshot(ctx); err != nil {
@@ -41,6 +41,13 @@ func (s SessionServer) ConversationStats(ctx context.Context, r *resource.Conver
 		sessions = append(sessions, v)
 	} else {
 		filter := resource.SessionFilter_builder{Listed: ptr(true)}.Build()
+		if r.HasAccount() {
+			account, err := s.Next().Account().Get(ctx, resource.AccountGetRequest_builder{Ref: r.GetAccount(), Select: resource.AccountSelect_builder{All: ptr(true)}.Build()}.Build())
+			if err != nil {
+				return nil, err
+			}
+			filter.SetAccount(resource.AccountRef_builder{Id: account.GetId()}.Build())
+		}
 		if r.HasProject() {
 			p, err := s.Next().Project().Get(ctx, resource.ProjectGetRequest_builder{Ref: r.GetProject(), Select: resource.ProjectSelect_builder{All: ptr(true)}.Build()}.Build())
 			if err != nil {
@@ -142,6 +149,16 @@ func (s SessionServer) ConversationStats(ctx context.Context, r *resource.Conver
 		result.SetDays(append(result.GetDays(), resource.ConversationStatsDay_builder{Date: ptr(date), Values: days[date]}.Build()))
 	}
 	return result, nil
+}
+
+func boolCount(values ...bool) int {
+	count := 0
+	for _, value := range values {
+		if value {
+			count++
+		}
+	}
+	return count
 }
 
 func newStatsValues() *resource.ConversationStatsValues {

@@ -23,7 +23,7 @@ test("account and usage stories use isolated typed clients", async ({
 }) => {
   await page.goto("/iframe.html?id=resources-views--accounts&viewMode=story");
   await expect(
-    page.getByText("work · codex · brokered-access-token", { exact: true }),
+    page.getByText("brokered-access-token", { exact: true }),
   ).toBeVisible();
   await page.goto("/iframe.html?id=resources-views--usage&viewMode=story");
   await expect(

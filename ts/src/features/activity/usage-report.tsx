@@ -6,10 +6,12 @@ export function UsageReport({
   c,
   session = "",
   project = "",
+  account = "",
 }: {
   c: Connection;
   session?: string;
   project?: string;
+  account?: string;
 }) {
   const stats = useRemote(
     (signal) =>
@@ -17,10 +19,13 @@ export function UsageReport({
         {
           session: session ? ref(session) : undefined,
           project: !session && project ? ref(project) : undefined,
+          account: account
+            ? { key: { case: "alias", value: account } }
+            : undefined,
         },
         { signal, timeoutMs: 20000 },
       ),
-    [c, session, project],
+    [c, session, project, account],
   );
   const total = stats.data?.total;
   return (
@@ -30,8 +35,9 @@ export function UsageReport({
         <Button onClick={stats.reload}>Refresh</Button>
       </div>
       <small className={styles.muted}>
-        Retained conversation statistics for the last 30 days. These are
-        reported token and cost metrics, not account billing or lifetime totals.
+        {account
+          ? "Recorded conversation usage for this account's listed sessions over the last 30 days. Provider billing and remaining quota are not included."
+          : "Retained conversation statistics for the last 30 days. These are reported token and cost metrics, not account billing or lifetime totals."}
       </small>
       {stats.error && <p role="alert">{stats.error}</p>}
       {stats.loading && <p className={styles.muted}>Loading usage…</p>}
