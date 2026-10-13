@@ -1,6 +1,5 @@
 import { t, translateKnown, currentLocale } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
-import { messageDate } from "./message-time";
 import {
   durationLabel,
   type ResponseCompletion,
@@ -94,34 +93,21 @@ function metricTitle(key: string, value: number, scope?: string) {
 }
 
 export function ResponseFooter({
-  timeMs,
   completion,
 }: {
-  timeMs: bigint;
   completion?: ResponseCompletion;
 }) {
   useLocale();
-  if (!completion) return null;
-  const date = messageDate(timeMs);
+  if (
+    !completion ||
+    (completion.durationMs === undefined &&
+      !Object.keys(completion.metrics).some((key) => names[key]))
+  )
+    return null;
   return (
     <footer className="response-footer">
       {completion && (
         <div className="response-metrics" aria-label={t("Response metrics")}>
-          {date && (
-            <time
-              dateTime={date.toISOString()}
-              title={t("Time cxz received and recorded the response")}
-            >
-              {date.toLocaleString(currentLocale(), {
-                month: "2-digit",
-                day: "2-digit",
-                hour: "2-digit",
-                minute: "2-digit",
-                second: "2-digit",
-                hour12: false,
-              })}
-            </time>
-          )}
           {completion.durationMs !== undefined && (
             <span
               className={`response-metric ${styles.metric}`}

@@ -33,6 +33,15 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const FinalResponse: Story = {};
+const longModel = responseEvent();
+longModel.response!.model = "provider/very-long-model-identifier-".repeat(8);
+export const LongModelName: Story = { args: { events: [longModel] } };
+const recentResponse = responseEvent();
+recentResponse.timeMs = BigInt(Date.now() - 5 * 60_000);
+export const RecentResponse: Story = { args: { events: [recentResponse] } };
+const oldResponse = responseEvent();
+oldResponse.timeMs = BigInt(Date.now() - 8 * 86_400_000);
+export const OlderResponse: Story = { args: { events: [oldResponse] } };
 export const MetricRanges: Story = {
   render: function MetricRanges() {
     const [large, setLarge] = useState(false);

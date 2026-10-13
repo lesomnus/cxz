@@ -42,8 +42,14 @@ turn-end payloads remain unchanged. Every intermediate and final event has
 `time_ms`: the time cxz received and recorded it, rather than a claimed provider
 generation timestamp.
 
-The web final-response footer shows that timestamp, duration and known metrics,
-with an icon-only Copy control on the right and a `copy` hover/focus popover.
+Every assistant response, including commentary and final answers, shows that
+recorded timestamp below its model/effort snapshot beside the agent logo. The
+compact two-line header leaves breathing room between rows, with an icon-only Copy control on the
+right and a `copy` hover/focus popover. The final-response footer contains duration
+and known metrics, without a repeated timestamp. Assistant timestamps use the
+same relative-age labels as inputs, updating while recent and omitting the
+relative label after its supported age window expires. Both assistant and input
+cards separate the recorded time and relative age with a hyphen.
 Duration uses Claude's `duration_ms` or Codex's `turn.durationMs` when reported;
 otherwise cxz measures from actual input delivery to turn completion, excluding
 queued-input wait and including tools/approval wait. The duration hover describes

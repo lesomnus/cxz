@@ -881,20 +881,6 @@ header strong {
 .response:hover {
   background: var(--shade-27);
 }
-.response-heading {
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 24px;
-}
-.response-settings {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 11px;
-}
 .transcript-row > .input {
   padding: 0;
 }
