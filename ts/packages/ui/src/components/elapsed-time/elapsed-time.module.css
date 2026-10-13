@@ -10,5 +10,5 @@
   color: var(--ui-shade-204);
 }
 .elapsed_time :global(.elapsed-time-leading) {
-  color: var(--ui-shade-115);
+  color: var(--ui-shade-65);
 }

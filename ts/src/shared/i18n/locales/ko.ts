@@ -187,6 +187,9 @@ export const messages = {
   " · Modified": " · 수정됨",
   " · Simulated": " · 모의 연결",
   API: "API",
+  "API time": "API 시간",
+  "API time reported by the agent: {duration} ({milliseconds} ms)":
+    "에이전트가 보고한 API 시간: {duration} ({milliseconds} ms)",
   "API turns": "API 턴",
   Agent: "에이전트",
   Allow: "허용",

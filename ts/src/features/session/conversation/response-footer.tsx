@@ -7,6 +7,7 @@ import {
 } from "#src/features/session/model/response-completion.ts";
 import { formatTokens } from "#src/features/session/model/session-info.ts";
 import styles from "./response-footer.module.css";
+import { CompactNumber, ElapsedTime } from "@lesomnus/cxz-ui";
 
 const names: Record<string, string> = {
   input_tokens: "Input",
@@ -16,7 +17,7 @@ const names: Record<string, string> = {
   reasoning_tokens: "Reasoning",
   total_tokens: "Total",
   cost_usd: "Cost",
-  api_duration_ms: "API",
+  api_duration_ms: "API time",
   api_turns: "API turns",
   tool_calls: "Tools",
 };
@@ -60,7 +61,7 @@ function MetricIcon({ kind }: { kind: string }) {
 
 function metricValue(key: string, value: number) {
   return key === "cost_usd"
-    ? `$${value.toFixed(4)}`
+    ? `$${value}`
     : key === "api_duration_ms"
       ? durationLabel(value)
       : key.includes("tokens")
@@ -69,6 +70,11 @@ function metricValue(key: string, value: number) {
 }
 
 function metricTitle(key: string, value: number, scope?: string) {
+  if (key === "api_duration_ms")
+    return t("API time reported by the agent: {duration} ({milliseconds} ms)", {
+      duration: durationLabel(value),
+      milliseconds: value.toLocaleString(currentLocale()),
+    });
   return key.includes("tokens")
     ? t("{name} — {scope}: {count} tokens{included}", {
         name: translateKnown(names[key]),
@@ -133,7 +139,12 @@ export function ResponseFooter({
               }
             >
               <span className={styles.value}>
-                {durationLabel(completion.durationMs)}
+                <ElapsedTime
+                  durationMs={completion.durationMs}
+                  label={t("Duration: {duration}", {
+                    duration: durationLabel(completion.durationMs),
+                  })}
+                />
               </span>
               <MetricIcon kind="duration" />
             </span>
@@ -150,7 +161,22 @@ export function ResponseFooter({
                   title={metricTitle(key, value, completion.tokenScope)}
                 >
                   <span className={styles.value}>
-                    {metricValue(key, value)}
+                    {key === "api_duration_ms" ? (
+                      <ElapsedTime
+                        durationMs={value}
+                        label={metricTitle(key, value)}
+                      />
+                    ) : (
+                      <CompactNumber
+                        value={value}
+                        mode={
+                          key === "tool_calls" || key === "api_turns"
+                            ? "integer"
+                            : "compact"
+                        }
+                        label={metricTitle(key, value, completion.tokenScope)}
+                      />
+                    )}
                   </span>
                   <MetricIcon kind={key} />
                 </span>

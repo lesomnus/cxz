@@ -49,6 +49,16 @@ otherwise cxz measures from actual input delivery to turn completion, excluding
 queued-input wait and including tools/approval wait. The duration hover describes
 its source. Unknown duration/usage is omitted.
 
+Completed durations use the shared elapsed-time component in snapshot mode;
+they do not advance after the response completes. Numeric metrics use the shared
+compact-number display, with dimmed padding and stable numeric/unit slots. Hover
+and accessibility descriptions retain the original value. Small cost amounts use
+fractional prefixes relative to USD rather than being rounded away to zero.
+Ordinary tool-call and API-turn counters omit the unit slot and stay integral;
+token and cost values use compact units selected to retain precision.
+API time is the agent-reported Claude result field `duration_api_ms`, forwarded
+as `api_duration_ms`; it is not a measurement of web UI requests.
+
 Claude result usage is scoped to the turn, with reported input/output/cache
 counts, cost, API duration and API turns. Codex's `tokenUsage.last` is scoped to
 the last model call and labeled accordingly; cumulative thread totals are not

@@ -3,22 +3,27 @@ import { useEffect, useState } from "react";
 
 export function ElapsedTime({
   startedAt,
+  durationMs,
   label,
 }: {
   startedAt?: number;
+  durationMs?: number;
   label: string;
 }) {
   const [now, setNow] = useState(Date.now);
   useEffect(() => {
-    if (startedAt === undefined) return;
+    // Completed snapshots use the same display without a running interval.
+    if (startedAt === undefined || durationMs !== undefined) return;
     setNow(Date.now());
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
-  }, [startedAt]);
+  }, [startedAt, durationMs]);
   const seconds =
-    startedAt === undefined
-      ? 0
-      : Math.max(0, Math.floor((now - startedAt) / 1000));
+    durationMs !== undefined
+      ? Math.max(0, Math.floor(durationMs / 1000))
+      : startedAt === undefined
+        ? 0
+        : Math.max(0, Math.floor((now - startedAt) / 1000));
   const text = [
     Math.floor(seconds / 3600),
     Math.floor(seconds / 60) % 60,
@@ -32,7 +37,7 @@ export function ElapsedTime({
   return (
     <span
       className={`${styles.elapsed_time} elapsed-time`}
-      role="timer"
+      role={durationMs === undefined ? "timer" : "img"}
       aria-label={label}
       aria-live="off"
     >

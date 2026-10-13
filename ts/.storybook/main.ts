@@ -6,6 +6,7 @@ const config: StorybookConfig = {
     "../packages/ui/src/components/action-menu/*.stories.tsx",
     "../packages/ui/src/components/panel-item/*.stories.tsx",
     "../packages/ui/src/components/dialog-card/*.stories.tsx",
+    "../packages/ui/src/components/compact-number/*.stories.tsx",
     "../packages/ui/src/components/suggestion-grid/*.stories.tsx",
     "../packages/ui/src/components/split-layout/*.stories.tsx",
     "../packages/ui/src/components/resize-handle/*.stories.tsx",

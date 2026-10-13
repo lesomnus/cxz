@@ -15,6 +15,7 @@ export * from "./components/floating-card/floating-card";
 export * from "./components/setting-field/setting-field";
 export * from "./components/setting-slider/setting-slider";
 export * from "./components/elapsed-time/elapsed-time";
+export * from "./components/compact-number/compact-number";
 export * from "./components/switch/switch";
 export * from "./components/split-layout/split-layout";
 export * from "./components/resize-handle/resize-handle";

@@ -1,15 +1,12 @@
 .metric {
-  --metric-value-width: 6ch;
+  --metric-value-width: 5ch;
   flex-shrink: 0;
 }
 .metric:is([data-metric="duration"], [data-metric="api_duration_ms"]) {
-  --metric-value-width: 10ch;
-}
-.metric[data-metric="cost_usd"] {
-  --metric-value-width: 9ch;
+  --metric-value-width: 8ch;
 }
 .metric:is([data-metric="tool_calls"], [data-metric="api_turns"]) {
-  --metric-value-width: 3ch;
+  --metric-value-width: 4ch;
 }
 .value {
   width: var(--metric-value-width);
@@ -19,4 +16,8 @@
   text-align: right;
   font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
   font-variant-numeric: tabular-nums;
+}
+.value :global(.elapsed-time) {
+  color: inherit;
+  font-size: inherit;
 }

@@ -184,6 +184,9 @@ export const messages = {
   " · Modified": " · Modified",
   " · Simulated": " · Simulated",
   API: "API",
+  "API time": "API time",
+  "API time reported by the agent: {duration} ({milliseconds} ms)":
+    "API time reported by the agent: {duration} ({milliseconds} ms)",
   "API turns": "API turns",
   Agent: "Agent",
   Allow: "Allow",
