@@ -9,11 +9,13 @@ import styles from "./turn-controls.module.css";
 export function TurnControls({
   turn,
   busy,
+  working,
   interrupt,
   children,
 }: {
   turn: TurnProgress;
   busy: boolean;
+  working?: boolean;
   interrupt: () => void;
   children?: ReactNode;
 }) {
@@ -98,6 +100,7 @@ export function TurnControls({
           type="button"
           className={`toolbar-button stop ${styles.stop}`}
           data-armed={armed}
+          data-working={working ?? turn.active}
           aria-label={t("Stop response")}
           aria-keyshortcuts="Escape"
           aria-describedby={hint}

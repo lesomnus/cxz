@@ -164,7 +164,12 @@ export function ConversationComposer({
       <div className="composer-wrapper">
         <ComposerAurora active={working} />
         <div className="composer-toolbar">
-          <TurnControls turn={turn} busy={busy} interrupt={interrupt}>
+          <TurnControls
+            turn={turn}
+            busy={busy}
+            working={working}
+            interrupt={interrupt}
+          >
             <BackgroundJobsIndicator
               count={backgroundJobs}
               open={onBackgroundJobs}

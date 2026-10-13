@@ -19,6 +19,9 @@
   position: static;
   transform: none;
 }
+.indicator:global(.toolbar-button):not(:disabled):hover {
+  background: transparent;
+}
 .count {
   position: relative;
   z-index: 1;

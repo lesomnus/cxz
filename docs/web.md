@@ -96,6 +96,11 @@ Unknown telemetry is a dash rather than a guessed zero. The initial state comes
 from Session.Background; native background events update it without periodic
 polling, with snapshot refreshes on reconnection and return to the tab. Ordinary
 tool launch results do not count as background jobs or mark them completed.
+The current reducer handles Claude's native task telemetry. Codex can run
+background terminals and exposes the experimental `thread/backgroundTerminals/list`
+API, but cxz does not yet connect it to this counter. Unavailable status therefore
+does not mean there are no running Codex background processes. See the
+[official App Server documentation](https://learn.chatgpt.com/docs/app-server#clean-background-terminals).
 
 Protocol `raw` records, quota/model polling and internal control acknowledgements
 remain in the journal but do not appear as conversation rows. Usage snapshots
