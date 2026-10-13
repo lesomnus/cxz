@@ -7,6 +7,13 @@
   border-radius: var(--toolbar-button-radius);
   background: transparent;
   color: var(--shade-136);
+  transition: color 180ms ease;
+}
+.indicator:global(.toolbar-button)[data-active="false"] {
+  color: var(--shade-65);
+}
+.indicator[data-active="false"] .rail {
+  stroke: var(--composer-toolbar-background);
 }
 .indicator.indicator :global(.button-content) {
   position: static;
@@ -44,6 +51,7 @@
 }
 .rail {
   stroke: var(--shade-54);
+  transition: stroke 180ms ease;
 }
 .glow {
   stroke: #d9ff30;

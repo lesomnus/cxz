@@ -1,0 +1,7 @@
+.stop:global(.toolbar-button.stop) {
+  width: var(--toolbar-button-height);
+  padding-inline: 3px;
+}
+.duration {
+  padding-inline: var(--control-inline-inset);
+}

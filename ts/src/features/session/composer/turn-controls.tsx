@@ -4,6 +4,7 @@ import { ElapsedTime } from "@lesomnus/cxz-ui";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
 import type { TurnProgress } from "#src/features/session/model/turn-progress.ts";
+import styles from "./turn-controls.module.css";
 
 export function TurnControls({
   turn,
@@ -95,7 +96,7 @@ export function TurnControls({
       <span className="stop-control">
         <Button
           type="button"
-          className="toolbar-button stop"
+          className={`toolbar-button stop ${styles.stop}`}
           data-armed={armed}
           aria-label={t("Stop response")}
           aria-keyshortcuts="Escape"
@@ -119,10 +120,12 @@ export function TurnControls({
             : t("Click twice or press Esc twice within 3 seconds")}
         </span>
       </span>
-      <ElapsedTime
-        startedAt={turn.active ? turn.startedAt : undefined}
-        label={t("Response elapsed time")}
-      />
+      <span className={styles.duration}>
+        <ElapsedTime
+          startedAt={turn.active ? turn.startedAt : undefined}
+          label={t("Response elapsed time")}
+        />
+      </span>
       {children}
     </div>
   );

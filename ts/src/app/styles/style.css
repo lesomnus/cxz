@@ -41,6 +41,11 @@
     calc(var(--wrapper-radius) - 1px - var(--control-inset))
   );
   --composer-toolbar-height: 28px;
+  --composer-toolbar-background: color-mix(
+    in srgb,
+    var(--shade-16) 72%,
+    transparent
+  );
   --composer-extension: 10px;
   --composer-overhang: 4px;
   --muted: var(--ui-muted);
@@ -1163,7 +1168,7 @@ pre {
 .composer-toolbar {
   position: relative;
   z-index: 1;
-  background: color-mix(in srgb, var(--shade-16) 72%, transparent);
+  background: var(--composer-toolbar-background);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   border-radius: calc(var(--wrapper-radius) - var(--composer-border-width))
