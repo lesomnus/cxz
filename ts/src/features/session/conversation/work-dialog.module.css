@@ -11,6 +11,18 @@
   min-height: 0;
   padding: var(--space) calc(2 * var(--space));
 }
+.categoryIcon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  background: currentColor;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
 .summary :global(.meta-popover):focus-within :global(.meta-tooltip) {
   opacity: 1;
   visibility: visible;

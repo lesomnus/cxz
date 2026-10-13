@@ -11,7 +11,13 @@ test("turn work collapses into one line and its dialog never covers adjacent pan
   const summaries = page.locator("[data-work-summary]");
   await expect(summaries).toHaveCount(2);
   await expect(summaries.first().getByRole("button")).toHaveText("4");
-  await expect(summaries.first().locator("svg")).toBeVisible();
+  await expect(
+    summaries
+      .first()
+      .getByRole("button")
+      .locator('[aria-hidden="true"]')
+      .first(),
+  ).toBeVisible();
   const tooltip = summaries.first().getByRole("tooltip");
   await expect(tooltip).toBeHidden();
   await summaries.first().getByRole("button").hover();
