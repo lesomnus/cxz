@@ -1,5 +1,14 @@
 // English source messages are always bundled; other packs load on demand.
 export const messages = {
+  "Task details": "Task details",
+  "{count} tasks performed": "{count} tasks performed",
+  "{count} task performed": "{count} task performed",
+  "{count}+ tasks performed": "{count}+ tasks performed",
+  "Load earlier tasks": "Load earlier tasks",
+  "View details": "View details",
+  "Tasks between responses": "Tasks between responses",
+  Tasks: "Tasks",
+  "Close task dialog": "Close task dialog",
   Error: "Error",
   "Request failed": "Request failed",
   "No automatic retry": "No automatic retry",

@@ -17,6 +17,15 @@ import { VirtualMessages } from "./virtual-messages";
 import { PinnedPrompt } from "./pinned-prompt";
 import type { MessageMap } from "./virtual-layout";
 import { HISTORY_PREFETCH_SCREENS } from "#src/features/session/model/session-history.ts";
+import {
+  workGroups,
+  selectedWorkGroup,
+} from "#src/features/session/model/work-groups.ts";
+import { WorkDialog, WorkSummary } from "./work-dialog";
+import {
+  captureDialogTrigger,
+  type DialogTriggerOrigin,
+} from "@lesomnus/cxz-ui";
 
 type Geometry = {
   top: number;
@@ -28,6 +37,7 @@ type Geometry = {
   range: ScrollRange;
   markers: { id: string; kind: "input" | "assistant"; top: number }[];
 };
+export type WorkHistory = { hasOlder: boolean; loadOlder: () => Promise<void> };
 const empty: Geometry = {
   top: 0,
   mappedTop: 0,
@@ -72,6 +82,7 @@ export function Transcript({
   onJumped,
   older,
   newer,
+  workHistory,
 }: {
   pane: React.RefObject<HTMLDivElement | null>;
   events: SessionEvent[];
@@ -90,8 +101,41 @@ export function Transcript({
   onJumped: () => void;
   older: () => void;
   newer: () => void;
+  workHistory?: WorkHistory;
 }) {
   useLocale();
+  const work = React.useMemo(() => workGroups(events), [events]);
+  const [selectedWork, selectWork] = useState<SessionEvent>();
+  const [workClosing, setWorkClosing] = useState(false);
+  const restoreWorkFocus = useRef(true);
+  const activeWork = selectedWorkGroup(work.groups, selectedWork);
+  const workTrigger = useRef<HTMLButtonElement | null>(null);
+  const workOrigin = useRef<DialogTriggerOrigin | undefined>(undefined);
+  const closeWork = (restore = true) => {
+    restoreWorkFocus.current = restore;
+    setWorkClosing(true);
+  };
+  useEffect(() => {
+    if (!workClosing) return;
+    const node = document.getElementById("work-dialog");
+    const token =
+      node &&
+      getComputedStyle(node).getPropertyValue("--ui-dialog-enter-duration");
+    const duration = token
+      ? parseFloat(token) * (token.trim().endsWith("ms") ? 1 : 1000)
+      : 0;
+    const timer = setTimeout(
+      () => {
+        selectWork(undefined);
+        setWorkClosing(false);
+      },
+      matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : duration,
+    );
+    return () => clearTimeout(timer);
+  }, [workClosing, pane]);
+  useEffect(() => {
+    if (selectedWork && !activeWork) selectWork(undefined);
+  }, [selectedWork, activeWork]);
   const content = useRef<HTMLDivElement>(null);
   const [pinned, setPinned] = useState<{
     prompt: SessionEvent | undefined;
@@ -634,6 +678,14 @@ export function Transcript({
   return (
     <div
       className={`transcript-area ${follow.current ? "scroll-following" : ""} ${near ? "scroll-near" : ""} ${dragging ? "scroll-dragging" : ""}`}
+      onPointerDownCapture={(event) => {
+        if (
+          activeWork &&
+          event.target instanceof Element &&
+          !event.target.closest("#work-dialog, [data-work-summary]")
+        )
+          closeWork(false);
+      }}
       style={
         { "--elastic-reserve": `${ELASTIC_RESERVE}px` } as React.CSSProperties
       }
@@ -660,9 +712,30 @@ export function Transcript({
           {notice}
           <VirtualMessages
             pane={pane}
-            events={events}
+            events={work.events}
             follow={follow}
-            render={render}
+            foldActivities={false}
+            render={(event) => {
+              const group = work.summaries.get(event.seq);
+              return group ? (
+                <WorkSummary
+                  work={group}
+                  expanded={activeWork === group && !workClosing}
+                  partial={!group.hasBoundary && !!workHistory?.hasOlder}
+                  open={(trigger) => {
+                    workTrigger.current = trigger;
+                    workOrigin.current = captureDialogTrigger(trigger);
+                    if (activeWork === group && !workClosing) closeWork();
+                    else {
+                      setWorkClosing(false);
+                      selectWork(group.anchor);
+                    }
+                  }}
+                />
+              ) : (
+                render(event)
+              );
+            }}
             precedingPrompt={precedingPrompt}
             onPromptChange={promptChanged}
             changed={(nextMap) => {
@@ -674,6 +747,25 @@ export function Transcript({
         </div>
       </div>
       {loading}
+      {activeWork && (
+        <WorkDialog
+          key={`${selectedWork!.runId}/${selectedWork!.requestId || selectedWork!.seq}`}
+          work={activeWork}
+          render={render}
+          close={closeWork}
+          closing={workClosing}
+          history={workHistory}
+          container={pane.current!.closest<HTMLElement>(".conversation")!}
+          trigger={workOrigin.current}
+          onClosed={() => {
+            if (restoreWorkFocus.current)
+              (workTrigger.current?.isConnected
+                ? workTrigger.current
+                : pane.current
+              )?.focus({ preventScroll: true });
+          }}
+        />
+      )}
       <div className="transcript-fade transcript-fade-top" aria-hidden="true" />
       <div
         className="transcript-fade transcript-fade-bottom"

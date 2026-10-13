@@ -21,7 +21,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Production event cards, including response metadata, copy-on-hover and tool detail overlays. Double-click a tool card to open its Input/Output/Result editor tabs; click elsewhere in the transcript to dismiss.",
+          "Conversation responses and errors stay in the transcript. Tool executions collapse into one summary per turn; View details opens an in-conversation drawer. Select a task to read its Input/Output/Result tabs.",
       },
     },
   },
@@ -79,13 +79,13 @@ export const CanceledQuestion: Story = {
   args: { events: [question, canceledQuestion] },
 };
 export const FileChanges: Story = { args: { events: fileEvents() } };
-export const FoldedActivityStack: Story = {
+export const TurnTasks: Story = {
   args: { events: activityStackEvents() },
   parameters: {
     docs: {
       description: {
         story:
-          "Earlier tool cards keep one line on a tilted translucent face; the newest activity remains unfolded. Hover or keyboard focus straightens and unfolds an earlier face above its neighbors without moving the transcript; double-click opens the existing detail editor.",
+          "A single summary represents all work in this turn. Its drawer stays within the conversation, with a virtualized task list and on-demand details.",
       },
     },
   },

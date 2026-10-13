@@ -127,11 +127,6 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
   const composer = useRef<HTMLFormElement>(null);
   const downloadRequest = useRef<AbortController | null>(null);
   useEffect(() => () => downloadRequest.current?.abort(), []);
-  useEffect(() => {
-    composerInput.current
-      ?.querySelector<HTMLTextAreaElement>("textarea")
-      ?.focus({ preventScroll: true });
-  }, [id]);
   const [pending, setPending] = useState<SessionEvent[]>([]);
   const [gap, setGap] = useState(false);
   const [status, setStatus] = useState("Connecting…");
@@ -975,6 +970,10 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         loading={initialLoad && <ConversationLoading {...initialLoad} />}
         pane={pane}
         events={transcript.events}
+        workHistory={{
+          hasOlder: firstSeq !== undefined && firstSeq > floor.current + 1n,
+          loadOlder: () => loadHistory("older"),
+        }}
         follow={followRef}
         precedingPrompt={
           firstSeq !== undefined &&
@@ -1061,6 +1060,9 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         </p>
       )}
       <ConversationComposer
+        autoFocus
+        initialSelection={c.drafts.selection(id)}
+        onSelectionChange={(selection) => c.drafts.setSelection(id, selection)}
         mentions={
           s
             ? {

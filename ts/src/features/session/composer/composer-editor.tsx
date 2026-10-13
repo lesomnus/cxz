@@ -54,6 +54,10 @@ import {
 } from "./composer-pastes";
 import { droppedFiles, pickedFiles, type PickedFile } from "./composer-files";
 import { MAX_UPLOAD_BYTES, type UploadFile } from "./composer-upload";
+import {
+  restoreEditorSelection,
+  type EditorSelection,
+} from "./editor-selection";
 
 export type ComposerEditorHandle = {
   insertFiles: (files: readonly File[]) => void;
@@ -76,6 +80,9 @@ export function ComposerEditor({
   upload,
   onUploadChange,
   mentions,
+  autoFocus = false,
+  initialSelection,
+  onSelectionChange,
 }: {
   value: string;
   pastes: Map<string, ComposerPaste>;
@@ -92,6 +99,9 @@ export function ComposerEditor({
   upload?: UploadFile;
   onUploadChange?: () => void;
   mentions?: MentionContext;
+  autoFocus?: boolean;
+  initialSelection?: EditorSelection;
+  onSelectionChange?: (selection: EditorSelection) => void;
 }) {
   useLocale();
   const input = useRef<HTMLTextAreaElement>(null);
@@ -339,6 +349,29 @@ export function ComposerEditor({
     observer.observe(mirror.current!);
     return () => observer.disconnect();
   }, []);
+  useLayoutEffect(() => {
+    if (!autoFocus) return;
+    const el = input.current!;
+    const selection = restoreEditorSelection(initialSelection, el.value.length);
+    el.setSelectionRange(selection.start, selection.end, selection.direction);
+    el.focus({ preventScroll: true });
+    el.scrollTop = selection.scrollTop;
+    el.scrollLeft = selection.scrollLeft;
+    syncScroll();
+    // Restore once at entry, rather than moving the caret on controlled edits.
+  }, []);
+
+  function rememberSelection() {
+    const el = input.current;
+    if (el)
+      onSelectionChange?.({
+        start: el.selectionStart,
+        end: el.selectionEnd,
+        direction: el.selectionDirection,
+        scrollTop: el.scrollTop,
+        scrollLeft: el.scrollLeft,
+      });
+  }
 
   function normalizedSelection() {
     const el = input.current!;
@@ -508,9 +541,18 @@ export function ComposerEditor({
             autoCorrect="off"
             wrap="soft"
             onFocus={updateSuggestions}
-            onBlur={updateSuggestions}
-            onKeyUp={updateSuggestions}
-            onScroll={syncScroll}
+            onBlur={() => {
+              rememberSelection();
+              updateSuggestions();
+            }}
+            onKeyUp={() => {
+              rememberSelection();
+              updateSuggestions();
+            }}
+            onScroll={() => {
+              syncScroll();
+              rememberSelection();
+            }}
             onCompositionStart={() => {
               composing.current = true;
               setComposition(true);
@@ -522,6 +564,7 @@ export function ComposerEditor({
             onSelect={() => {
               if (!composing.current) normalizedSelection();
               updateSuggestions();
+              rememberSelection();
             }}
             onBeforeInput={() => {
               if (!composing.current) normalizedSelection();

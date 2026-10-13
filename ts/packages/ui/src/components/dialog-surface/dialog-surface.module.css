@@ -33,6 +33,27 @@
 .surface[data-anchored="true"] {
   transform-origin: top left;
 }
+.surface[data-motion="from-right"] {
+  animation-name: enter-from-right;
+}
+.surface[data-motion="from-right"][data-closing="true"] {
+  animation: none;
+  transform: translateX(calc(100% + 2 * var(--ui-space)));
+  opacity: 0;
+  transition:
+    transform var(--ui-dialog-enter-duration) ease-in,
+    opacity var(--ui-dialog-enter-duration) ease-in;
+}
+@keyframes enter-from-right {
+  from {
+    opacity: 0;
+    transform: translateX(calc(100% + 2 * var(--ui-space)));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
 .surface > form {
   max-height: inherit;
 }
@@ -50,6 +71,9 @@
   .surface,
   .dialog::backdrop {
     animation: none;
+  }
+  .surface[data-motion="from-right"][data-closing="true"] {
+    transition: none;
   }
 }
 @keyframes backdrop-enter {

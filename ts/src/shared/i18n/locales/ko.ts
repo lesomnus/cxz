@@ -1,5 +1,14 @@
 import type { LanguagePack } from "#src/shared/i18n/i18n.ts";
 export const messages = {
+  "Task details": "작업 상세",
+  "{count} tasks performed": "{count}개의 작업이 진행됨",
+  "{count} task performed": "{count}개의 작업이 진행됨",
+  "{count}+ tasks performed": "{count}개 이상의 작업이 진행됨",
+  "Load earlier tasks": "이전 작업 불러오기",
+  "View details": "자세히 보기",
+  "Tasks between responses": "대화 응답 사이의 작업",
+  Tasks: "작업",
+  "Close task dialog": "작업 다이얼로그 닫기",
   Error: "오류",
   "Request failed": "요청에 실패했습니다",
   "No automatic retry": "자동 재시도 없음",

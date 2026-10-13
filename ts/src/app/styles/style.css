@@ -454,7 +454,11 @@ header strong {
     )
   );
   opacity: var(--panel-top-opacity, 0);
-  background: linear-gradient(to bottom, var(--shade-24), transparent);
+  background: linear-gradient(
+    to bottom,
+    var(--panel-background, var(--shade-24)),
+    transparent
+  );
 }
 .panel-scroll-fade-bottom {
   bottom: 0;
@@ -466,7 +470,11 @@ header strong {
     )
   );
   opacity: var(--panel-bottom-opacity, 0);
-  background: linear-gradient(to top, var(--shade-24), transparent);
+  background: linear-gradient(
+    to top,
+    var(--panel-background, var(--shade-24)),
+    transparent
+  );
 }
 .panel-scroll-thumb {
   position: absolute;

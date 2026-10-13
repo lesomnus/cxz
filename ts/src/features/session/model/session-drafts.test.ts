@@ -1,5 +1,6 @@
 import { expect, it } from "vitest";
 import { SessionDrafts } from "./session-drafts";
+import { restoreEditorSelection } from "#src/features/session/composer/editor-selection.ts";
 import {
   createPaste,
   expandPastes,
@@ -24,6 +25,81 @@ function storage() {
     clear: () => data.clear(),
   } satisfies Storage;
 }
+it("restores tab-local cursor ranges per host/session without rewriting draft contents", () => {
+  const file = storage();
+  const drafts = new SessionDrafts("cursor-host", new Map(), () => file);
+  drafts.set("one", "A long draft");
+  drafts.set("two", "Other text");
+  const before = file.getItem("cxz.draft.v1:cursor-host:one");
+  drafts.setSelection("one", {
+    start: 2,
+    end: 7,
+    direction: "backward",
+    scrollTop: 24,
+    scrollLeft: 0,
+  });
+  drafts.setSelection("two", {
+    start: 3,
+    end: 3,
+    direction: "none",
+    scrollTop: 0,
+    scrollLeft: 0,
+  });
+  expect(file.getItem("cxz.draft.v1:cursor-host:one")).toBe(before);
+  const refreshed = new SessionDrafts("cursor-host", new Map(), () => file);
+  expect(refreshed.selection("one")).toEqual({
+    start: 2,
+    end: 7,
+    direction: "backward",
+    scrollTop: 24,
+    scrollLeft: 0,
+  });
+  expect(refreshed.selection("two")?.start).toBe(3);
+  expect(
+    new SessionDrafts("another-host", new Map(), () => file).selection("one"),
+  ).toBeUndefined();
+  expect(restoreEditorSelection(refreshed.selection("one"), 4)).toMatchObject({
+    start: 2,
+    end: 4,
+  });
+  refreshed.set("one", "");
+  expect(refreshed.selection("one")).toBeUndefined();
+  refreshed.clear();
+  expect(file.length).toBe(0);
+});
+it("rejects corrupt cursor records and tolerates blocked cursor storage", () => {
+  const file = storage();
+  file.setItem(
+    "cxz.draft.v1:host:selection:one",
+    JSON.stringify({
+      start: -1,
+      end: 3,
+      direction: "none",
+      scrollTop: 0,
+      scrollLeft: 0,
+    }),
+  );
+  expect(
+    new SessionDrafts("host", new Map(), () => file).selection("one"),
+  ).toBeUndefined();
+  expect(restoreEditorSelection(undefined, 5)).toMatchObject({
+    start: 5,
+    end: 5,
+  });
+  const drafts = new SessionDrafts("blocked", new Map(), () => {
+    throw new Error("blocked");
+  });
+  drafts.set("one", "text");
+  drafts.setSelection("one", {
+    start: 1,
+    end: 1,
+    direction: "none",
+    scrollTop: 0,
+    scrollLeft: 0,
+  });
+  expect(drafts.selection("one")?.start).toBe(1);
+  expect(() => drafts.clear()).not.toThrow();
+});
 it("restores secret chips with only a file reference and run binding", () => {
   const file = storage();
   const pastes = new Map<string, ComposerPaste>();

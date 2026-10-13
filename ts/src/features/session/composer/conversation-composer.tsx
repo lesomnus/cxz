@@ -23,6 +23,7 @@ import { useMicrophoneLevel } from "#src/shared/browser/use-microphone-level.ts"
 import { useSettings } from "#src/shared/settings/settings.ts";
 import microphoneStyles from "./microphone-control.module.css";
 import type { MentionContext } from "./mention-suggestions";
+import type { EditorSelection } from "./editor-selection";
 
 // Presentation shared by the connected conversation and serverless UI previews.
 export function ConversationComposer({
@@ -52,6 +53,9 @@ export function ConversationComposer({
   onDraftAssetsChange,
   queued,
   children,
+  autoFocus = false,
+  initialSelection,
+  onSelectionChange,
 }: {
   formRef?: Ref<HTMLFormElement>;
   inputRef?: Ref<HTMLDivElement>;
@@ -79,6 +83,9 @@ export function ConversationComposer({
   onDraftAssetsChange?: () => void;
   queued?: ReactNode;
   children?: ReactNode;
+  autoFocus?: boolean;
+  initialSelection?: EditorSelection;
+  onSelectionChange?: (selection: EditorSelection) => void;
 }) {
   useLocale();
   const terminalHint = useId();
@@ -260,6 +267,9 @@ export function ConversationComposer({
             />
           </div>
           <ComposerEditor
+            autoFocus={autoFocus}
+            initialSelection={initialSelection}
+            onSelectionChange={onSelectionChange}
             value={draft}
             readOnly={sending}
             onChange={onChange}

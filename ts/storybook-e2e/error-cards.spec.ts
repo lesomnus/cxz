@@ -36,29 +36,28 @@ test("provider errors show their message in a red face, including the hover port
   expect(errors).toEqual([]);
 });
 
-test("failed Bash stays neutral before and during hover", async ({ page }) => {
+test("failed Bash stays neutral in its task dialog", async ({ page }) => {
   await page.goto(
     "/iframe.html?id=conversation-eventcards--failed-tool&viewMode=story",
   );
-  const card = page.locator(".event-detail[data-state='failed']");
+  await page.getByRole("button", { name: "View details", exact: true }).click();
+  const card = page.locator('.tool-activity[data-state="failed"]');
   await expect(card).toContainText("Bash");
   await expect(card.getByRole("img", { name: "Failed" })).toHaveText("×");
-  const face = card.locator(".activity-card-face");
-  const background = await face.evaluate(
-    (node) => getComputedStyle(node).backgroundColor,
-  );
-  const channels = await face.evaluate((node) => {
-    const ctx = document.createElement("canvas").getContext("2d")!;
-    ctx.fillStyle = getComputedStyle(node).backgroundColor;
-    ctx.fillRect(0, 0, 1, 1);
-    return [...ctx.getImageData(0, 0, 1, 1).data];
-  });
-  expect(channels[0]).toBe(channels[1]);
-  expect(channels[1]).toBe(channels[2]);
+  const channels = async () =>
+    card.evaluate((node) => {
+      const ctx = document.createElement("canvas").getContext("2d")!;
+      ctx.fillStyle = getComputedStyle(node).backgroundColor;
+      ctx.fillRect(0, 0, 1, 1);
+      return [...ctx.getImageData(0, 0, 1, 1).data];
+    });
+  const normal = await channels();
+  expect(normal[0]).toBe(normal[1]);
+  expect(normal[1]).toBe(normal[2]);
   await card.hover();
-  await expect(
-    page.locator(".activity-card-preview .activity-card-face"),
-  ).toHaveCSS("background-color", background);
+  const hovered = await channels();
+  expect(hovered[0]).toBe(hovered[1]);
+  expect(hovered[1]).toBe(hovered[2]);
 });
 
 for (const id of ["earlier-error", "legacy-error-history"]) {

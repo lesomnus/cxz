@@ -1,0 +1,128 @@
+.summary {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--space);
+  padding: 0 calc(4 * var(--space));
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+.summary button {
+  min-height: 0;
+  padding: var(--space) calc(2 * var(--space));
+}
+.overlay.overlay {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  max-width: none;
+  max-height: none;
+  overflow: clip;
+  --work-dialog-gap: calc(2 * var(--ui-space));
+}
+.overlay.overlay::backdrop {
+  background: transparent;
+}
+.backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgb(0 0 0 / 22%);
+  animation: dim-enter var(--ui-dialog-enter-duration) ease-out both;
+}
+.overlay[data-closing="true"] .backdrop {
+  animation: none;
+  opacity: 0;
+  transition: opacity var(--ui-dialog-enter-duration) ease-in;
+}
+.frame {
+  position: absolute;
+  top: var(--work-dialog-gap);
+  right: var(--work-dialog-gap);
+  bottom: var(--work-dialog-gap);
+  width: min(420px, calc(100% - 2 * var(--work-dialog-gap)));
+}
+.frame > div {
+  height: 100%;
+}
+.card.card {
+  height: 100%;
+}
+.card.card :global(.card-body) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: var(--ui-space);
+}
+.layout {
+  --panel-background: var(--ui-dialog-body-background);
+  --panel-inset: 0px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+.layout > :global(.panel-scroll-region) {
+  flex: 1;
+  min-height: 0;
+}
+.layout :global(.panel-scroll-inner) {
+  padding-left: var(--space);
+}
+.task {
+  padding: var(--space);
+}
+.task > button {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: calc(2 * var(--space));
+  text-align: left;
+  color: var(--muted);
+  background: var(--shade-20);
+}
+.task > button:hover :global(.event-time-tooltip) {
+  opacity: 1;
+  visibility: visible;
+  transition: none;
+}
+.task > button:is(:hover, :focus-visible, [aria-expanded="true"]) {
+  color: var(--shade-237);
+  background: var(--shade-32);
+}
+.task > button > :global(.button-content) {
+  justify-content: flex-start;
+}
+.task :global(.activity-card-content) {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.details {
+  flex: 0 0 min(340px, 45%);
+  min-height: 0;
+  overflow: hidden;
+  min-width: 0;
+  padding: var(--space);
+}
+.details :global(.detail-tabs) {
+  height: 100%;
+}
+.details :global(.detail-tab-bar) {
+  margin-block: var(--space);
+}
+@keyframes dim-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .backdrop {
+    animation: none;
+  }
+  .overlay[data-closing="true"] .backdrop {
+    transition: none;
+  }
+}

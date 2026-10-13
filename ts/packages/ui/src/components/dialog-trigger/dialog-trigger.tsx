@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from "react";
+import { useLayoutEffect, useRef, type RefObject } from "react";
 import styles from "./dialog-trigger.module.css";
 
 export type DialogTriggerOrigin = {
@@ -54,7 +54,13 @@ export function focusedDialogTrigger() {
 
 // This visual copy is inside the modal top layer, above its backdrop. The source
 // remains inert in the page; no event handlers or focusable content are copied.
-export function DialogTrigger({ origin }: { origin?: DialogTriggerOrigin }) {
+export function DialogTrigger({
+  origin,
+  relativeTo,
+}: {
+  origin?: DialogTriggerOrigin;
+  relativeTo?: RefObject<HTMLElement | null>;
+}) {
   const host = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     const node = host.current;
@@ -75,29 +81,45 @@ export function DialogTrigger({ origin }: { origin?: DialogTriggerOrigin }) {
     });
     content.setAttribute("aria-disabled", "true");
     node.replaceChildren(content);
+    let frame = 0;
+    let containerObserved = false;
     const position = () => {
+      const container = relativeTo?.current;
+      if (relativeTo && !container) {
+        node.style.visibility = "hidden";
+        frame = requestAnimationFrame(position);
+        return;
+      }
+      node.style.visibility = "visible";
       const rect = origin.element.isConnected
         ? origin.element.getBoundingClientRect()
         : origin.bounds;
+      const bounds = container?.getBoundingClientRect();
       Object.assign(node.style, {
-        left: `${rect.left}px`,
-        top: `${rect.top}px`,
+        position: container ? "absolute" : "fixed",
+        left: `${rect.left - (bounds?.left ?? 0)}px`,
+        top: `${rect.top - (bounds?.top ?? 0)}px`,
         width: `${rect.width}px`,
         height: `${rect.height}px`,
       });
+      if (container && !containerObserved) {
+        observer.observe(container);
+        containerObserved = true;
+      }
     };
-    position();
     const observer = new ResizeObserver(position);
+    position();
     if (origin.element.isConnected) observer.observe(origin.element);
     window.addEventListener("resize", position);
     window.addEventListener("scroll", position, true);
     return () => {
+      cancelAnimationFrame(frame);
       observer.disconnect();
       window.removeEventListener("resize", position);
       window.removeEventListener("scroll", position, true);
       node.replaceChildren();
     };
-  }, [origin]);
+  }, [origin, relativeTo]);
   if (!origin) return null;
   return (
     <div

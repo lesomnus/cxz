@@ -1,0 +1,144 @@
+import { useState } from "react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
+import { ComponentPreview } from "#src/storybook/conversation-preview.tsx";
+import {
+  activityStackEvents,
+  storyEvent,
+  toolEvents,
+  responseEvent,
+} from "#src/storybook/fixtures.ts";
+
+const meta = {
+  title: "Conversation/WorkDialog",
+  component: ComponentPreview,
+  parameters: {
+    layout: "fullscreen",
+    docs: {
+      description: {
+        component:
+          "Work between conversation replies is summarized on the right of the reading column. View details opens a full-height dialog with outer gaps, sliding from the right inside the conversation. Only the conversation is dimmed; neighboring panes stay uncovered. The list is virtualized and details load on demand. Close with the button, Escape or the dimmed backdrop.",
+      },
+    },
+  },
+} satisfies Meta<typeof ComponentPreview>;
+export default meta;
+type Story = StoryObj<typeof meta>;
+
+const secondTools = toolEvents().map((event, index) => ({
+  ...event,
+  seq: BigInt(13 + index),
+  requestId: "second-turn",
+}));
+const turns = [
+  ...activityStackEvents(),
+  storyEvent(12, "input", "Check the next turn separately."),
+  ...secondTools,
+  responseEvent(15, "codex", "The second check is complete."),
+];
+export const TurnTasks: Story = { args: { events: turns } };
+export const Contained: Story = {
+  args: { events: turns },
+  decorators: [
+    (Story) => (
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "180px minmax(0, 1fr) 240px",
+        }}
+      >
+        <aside className="resource-panel" aria-label="Sessions panel">
+          <header>Sessions</header>
+          <span>example</span>
+        </aside>
+        <div style={{ minWidth: 0 }}>
+          <Story />
+        </div>
+        <aside className="file-explorer" aria-label="File explorer">
+          <header>Workspace</header>
+          <span>README.md</span>
+        </aside>
+      </div>
+    ),
+  ],
+};
+const manyTasks = Array.from({ length: 600 }, (_, index) =>
+  toolEvents().map((event, offset) => ({
+    ...event,
+    seq: BigInt(2 + index * 2 + offset),
+    requestId: `task-${index}`,
+  })),
+).flat();
+export const LongTurn: Story = {
+  args: {
+    events: [
+      storyEvent(1, "input", "Inspect this long turn."),
+      ...manyTasks,
+      responseEvent(1202, "codex", "All checks are complete."),
+    ],
+  },
+};
+const result = { ...toolEvents()[1], seq: 5n };
+const final = responseEvent(8, "codex", "The check is complete.");
+export const PagedTurn: Story = {
+  render: function PagedTurn() {
+    const [loaded, setLoaded] = useState(false);
+    const earlier = toolEvents().map((event, offset) => ({
+      ...event,
+      seq: BigInt(2 + offset),
+      requestId: "earlier-task",
+    }));
+    const call = { ...toolEvents()[0], seq: 4n };
+    return (
+      <ComponentPreview
+        events={
+          loaded
+            ? [
+                storyEvent(1, "input", "Read all work in the turn."),
+                ...earlier,
+                call,
+                result,
+                final,
+              ]
+            : [result, final]
+        }
+        workHistory={{
+          hasOlder: !loaded,
+          loadOlder: async () => setLoaded(true),
+        }}
+      />
+    );
+  },
+};
+
+const first = toolEvents().map((event, index) => ({
+  ...event,
+  seq: BigInt(3 + index),
+  requestId: "first-batch",
+}));
+const next = toolEvents().map((event, index) => ({
+  ...event,
+  seq: BigInt(6 + index),
+  requestId: "second-batch",
+}));
+const more = toolEvents().map((event, index) => ({
+  ...event,
+  seq: BigInt(8 + index),
+  requestId: "third-task",
+}));
+export const BetweenResponses: Story = {
+  args: {
+    events: [
+      storyEvent(1, "input", "Inspect the two work batches."),
+      storyEvent(2, "assistant", "I’ll begin with the first check."),
+      ...first,
+      storyEvent(
+        5,
+        "assistant",
+        "The first check passed. I’ll do the remaining checks.",
+      ),
+      ...next,
+      ...more,
+      responseEvent(10, "codex", "Both batches are complete."),
+    ],
+  },
+};

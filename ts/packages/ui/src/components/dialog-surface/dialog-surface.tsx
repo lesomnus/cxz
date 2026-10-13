@@ -9,14 +9,20 @@ export const dialogAppearanceClassName = styles.appearance;
 export function DialogSurface({
   children,
   anchored = false,
+  motion = "default",
+  closing = false,
 }: {
   children: ReactNode;
   anchored?: boolean;
+  motion?: "default" | "from-right";
+  closing?: boolean;
 }) {
   return (
     <div
       className={`${styles.surface} ${styles.appearance}`}
       data-anchored={anchored}
+      data-motion={motion}
+      data-closing={closing}
     >
       {children}
     </div>

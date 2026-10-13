@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useArgs } from "storybook/preview-api";
 import { useState } from "react";
+import { Button } from "@lesomnus/cxz-ui";
+import { SessionDrafts } from "#src/features/session/model/session-drafts.ts";
 import { create } from "@bufbuild/protobuf";
 import { ProjectPathEntrySchema } from "#gen/cxz/project_svc_pb";
 import {
@@ -37,6 +39,55 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const Empty: Story = {};
+export const CursorMemory: Story = {
+  render: function CursorMemory() {
+    const [drafts] = useState(
+      () => new SessionDrafts("storybook-cursor-memory", new Map()),
+    );
+    const [session, select] = useState("one");
+    const [value, setValue] = useState(() => drafts.get("one") ?? "");
+    return (
+      <>
+        <nav aria-label="Preview sessions">
+          {["one", "two"].map((id) => (
+            <Button
+              key={id}
+              role="tab"
+              aria-selected={session === id}
+              onClick={() => {
+                setValue(drafts.get(id) ?? "");
+                select(id);
+              }}
+            >
+              {id}
+            </Button>
+          ))}
+        </nav>
+        <ComponentPreview
+          key={session}
+          value={value}
+          autoFocus
+          initialSelection={drafts.selection(session)}
+          onSelectionChange={(selection) =>
+            drafts.setSelection(session, selection)
+          }
+          onChange={(text) => {
+            drafts.set(session, text);
+            setValue(text);
+          }}
+        />
+      </>
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Switch sessions to restore the draft, caret/selection direction and editor scroll position. Entry focuses the editor. The tab-local cursor record also survives refresh and is stored separately so caret movements do not rewrite pasted file contents.",
+      },
+    },
+  },
+};
 export const VoiceInput: Story = {
   parameters: {
     docs: {

@@ -1,4 +1,8 @@
 import { pasteRanges, type ComposerPaste } from "../composer/composer-pastes";
+import {
+  validEditorSelection,
+  type EditorSelection,
+} from "#src/features/session/composer/editor-selection.ts";
 
 type SavedPaste = Omit<ComposerPaste, "attachment"> & {
   attachment?: Pick<
@@ -11,6 +15,7 @@ type SavedPaste = Omit<ComposerPaste, "attachment"> & {
 // editor, or persisting credentials and conversation history alongside drafts.
 export class SessionDrafts extends Map<string, string> {
   private prefix: string;
+  private selections = new Map<string, EditorSelection>();
   constructor(
     scope: string,
     private pastes: Map<string, ComposerPaste>,
@@ -63,8 +68,54 @@ export class SessionDrafts extends Map<string, string> {
   }
   override set(id: string, text: string) {
     super.set(id, text);
+    if (!text) this.clearSelection(id);
     this.persist(id);
     return this;
+  }
+  selection(id: string): EditorSelection | undefined {
+    if (this.selections.has(id)) return this.selections.get(id);
+    try {
+      const raw = this.storage().getItem(
+        this.prefix + "selection:" + encodeURIComponent(id),
+      );
+      const value: unknown = raw ? JSON.parse(raw) : undefined;
+      if (validEditorSelection(value)) {
+        this.selections.set(id, value);
+        return value;
+      }
+    } catch {
+      /* Keep the editor usable with unavailable storage. */
+    }
+  }
+  setSelection(id: string, selection: EditorSelection) {
+    if (
+      !(super.get(id) ?? "") &&
+      selection.start === 0 &&
+      selection.end === 0
+    ) {
+      this.clearSelection(id);
+      return;
+    }
+    this.selections.set(id, selection);
+    // Cursor movement writes only a small record, not the text or pasted files.
+    try {
+      this.storage().setItem(
+        this.prefix + "selection:" + encodeURIComponent(id),
+        JSON.stringify(selection),
+      );
+    } catch {
+      /* memory still works */
+    }
+  }
+  private clearSelection(id: string) {
+    this.selections.delete(id);
+    try {
+      this.storage().removeItem(
+        this.prefix + "selection:" + encodeURIComponent(id),
+      );
+    } catch {
+      /* unavailable */
+    }
   }
   persist(id: string) {
     try {
@@ -95,6 +146,7 @@ export class SessionDrafts extends Map<string, string> {
     }
   }
   override delete(id: string) {
+    this.clearSelection(id);
     try {
       this.storage().removeItem(this.prefix + encodeURIComponent(id));
     } catch {
@@ -113,5 +165,6 @@ export class SessionDrafts extends Map<string, string> {
       /* unavailable */
     }
     super.clear();
+    this.selections.clear();
   }
 }

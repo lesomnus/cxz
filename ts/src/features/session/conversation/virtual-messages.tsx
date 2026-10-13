@@ -33,6 +33,7 @@ export function VirtualMessages({
   changed,
   precedingPrompt,
   onPromptChange,
+  foldActivities = true,
 }: {
   pane: React.RefObject<HTMLDivElement | null>;
   events: SessionEvent[];
@@ -41,6 +42,7 @@ export function VirtualMessages({
   changed: (mapping: MessageMap) => void;
   precedingPrompt: SessionEvent | undefined;
   onPromptChange: (prompt: SessionEvent | undefined, peek: number) => void;
+  foldActivities?: boolean;
 }) {
   const root = useRef<HTMLDivElement>(null);
   const sizes = useRef(new Map<string, number>());
@@ -87,6 +89,9 @@ export function VirtualMessages({
   useEffect(() => {
     const el = pane.current!;
     observer.current = new ResizeObserver((entries) => {
+      // A closing drawer can detach refs before passive effect cleanup runs.
+      // Ignore already queued measurements instead of touching its removed DOM.
+      if (!root.current?.isConnected || !pane.current?.isConnected) return;
       let dirty = false;
       const mountedRow = root.current!.querySelector<HTMLElement>("[data-row]");
       if (mountedRow)
@@ -278,7 +283,7 @@ export function VirtualMessages({
           <div
             key={id}
             data-row={id}
-            data-activity={foldable(event)}
+            data-activity={foldActivities && foldable(event)}
             data-latest-activity={start + index === latestActivity}
             className="transcript-row"
             style={{ top: layout.rows[start + index].top }}

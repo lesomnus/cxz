@@ -5,7 +5,10 @@ import {
   FloatingCardHost,
   FloatingCardProvider,
 } from "#src/features/session/cards/floating-card.tsx";
-import { Transcript } from "#src/features/session/conversation/transcript.tsx";
+import {
+  Transcript,
+  type WorkHistory,
+} from "#src/features/session/conversation/transcript.tsx";
 import { EventView } from "#src/features/session/conversation/event-view.tsx";
 import { transcriptEvents } from "#src/features/session/model/tool-activity.ts";
 import { attachSummaries } from "#src/features/session/model/session-aux.ts";
@@ -23,6 +26,7 @@ import {
 import { UsageInfo } from "#src/features/session/composer/usage-info.tsx";
 import { storySession } from "./fixtures";
 import { SessionMenu } from "#src/features/session/components/session-menu.tsx";
+import type { EditorSelection } from "#src/features/session/composer/editor-selection.ts";
 import { create } from "@bufbuild/protobuf";
 import { SessionPurgeReplySchema } from "#gen/cxz/session_svc_pb";
 import type { SessionInfo } from "#src/features/session/model/session-info.ts";
@@ -111,6 +115,7 @@ export function PreviewTranscript({
   navigate = noop,
   reading = noop,
   loadDetails,
+  workHistory,
 }: {
   events: SessionEvent[];
   agent?: string;
@@ -120,12 +125,14 @@ export function PreviewTranscript({
   navigate?: () => void;
   reading?: (reading: boolean) => void;
   loadDetails?: LoadEventDetails;
+  workHistory?: WorkHistory;
 }) {
   const projected = transcriptEvents(events);
   const summaries = attachSummaries(projected.events, aux);
   const [jump, setJump] = useState<string>();
   return (
     <Transcript
+      workHistory={workHistory}
       pane={pane}
       events={projected.events}
       follow={follow}
@@ -168,6 +175,10 @@ export function ComponentPreview({
   lookupPaths,
   loadDetails,
   children,
+  workHistory,
+  autoFocus = false,
+  initialSelection,
+  onSelectionChange,
 }: {
   events?: SessionEvent[];
   agent?: string;
@@ -181,6 +192,10 @@ export function ComponentPreview({
   lookupPaths?: LookupPaths;
   loadDetails?: LoadEventDetails;
   children?: ReactNode;
+  workHistory?: WorkHistory;
+  autoFocus?: boolean;
+  initialSelection?: EditorSelection;
+  onSelectionChange?: (selection: EditorSelection) => void;
 }) {
   const pane = useRef<HTMLDivElement>(null);
   const follow = useRef(true);
@@ -230,6 +245,7 @@ export function ComponentPreview({
   return (
     <PreviewFrame>
       <PreviewTranscript
+        workHistory={workHistory}
         events={events}
         agent={agent}
         aux={aux}
@@ -242,6 +258,9 @@ export function ComponentPreview({
       />
       <FloatingCardHost>{children}</FloatingCardHost>
       <ConversationComposer
+        autoFocus={autoFocus}
+        initialSelection={initialSelection}
+        onSelectionChange={onSelectionChange}
         draft={value}
         onChange={onChange ?? noop}
         pastes={pastes.current}
