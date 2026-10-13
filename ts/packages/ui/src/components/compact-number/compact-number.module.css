@@ -3,7 +3,7 @@
   width: 5ch;
   flex-shrink: 0;
   white-space: nowrap;
-  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-family: var(--ui-font-mono);
   font-variant-numeric: tabular-nums;
 }
 .leading {

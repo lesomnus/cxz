@@ -735,7 +735,7 @@ header strong {
     var(--details-row-radius) - var(--details-row-inset)
   );
   margin: calc(2 * var(--space)) 0 0;
-  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-family: var(--ui-font-mono);
 }
 .session-details > div {
   display: grid;
@@ -1470,7 +1470,7 @@ pre {
 .composer-editor {
   display: flex;
   position: relative;
-  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-family: var(--ui-font-mono);
   line-height: 1.5;
 }
 .composer-editor textarea,
@@ -2282,7 +2282,7 @@ pre {
 .quota-dots {
   display: block;
   flex-shrink: 0;
-  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-family: var(--ui-font-mono);
   font-size: inherit;
   line-height: 20px;
   white-space: nowrap;
@@ -2644,7 +2644,7 @@ summary:hover {
   color: var(--muted);
 }
 .session-alias {
-  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-family: var(--ui-font-mono);
   flex-shrink: 0;
   max-width: 100%;
 }
@@ -2657,7 +2657,7 @@ summary:hover {
   height: 20px;
   flex: 0 0 12px;
   align-self: center;
-  font: 14px/20px monospace;
+  font: 14px/20px var(--ui-font-mono);
 }
 .session-activity-dot {
   fill: currentColor;
@@ -2726,14 +2726,14 @@ summary:hover {
   overflow-wrap: anywhere;
 }
 .tool-file-path {
-  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-family: var(--ui-font-mono);
 }
 .tool-file-measure,
 .tool-file-more {
   color: var(--muted);
 }
 .tool-command {
-  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-family: var(--ui-font-mono);
 }
 .tree-message {
   padding: 4px 20px;

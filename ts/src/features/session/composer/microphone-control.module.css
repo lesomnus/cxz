@@ -54,7 +54,7 @@
   display: grid;
   margin-top: var(--control-inset);
   color: var(--muted);
-  font-family: monospace;
+  font-family: var(--ui-font-mono);
 }
 .control:hover .hint,
 .control:focus-within .hint,

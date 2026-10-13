@@ -87,7 +87,7 @@
 .item small {
   display: block;
   color: var(--muted);
-  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-family: var(--ui-font-mono);
 }
 .muted {
   color: var(--muted);
@@ -109,11 +109,7 @@
   color: var(--shade-237);
 }
 .status {
-  font:
-    0.8rem ui-monospace,
-    SFMono-Regular,
-    Consolas,
-    monospace;
+  font: 0.8rem var(--ui-font-mono);
   color: var(--muted);
   white-space: pre-wrap;
 }
@@ -136,9 +132,5 @@
 }
 .metrics dd {
   margin: 0;
-  font:
-    1rem ui-monospace,
-    SFMono-Regular,
-    Consolas,
-    monospace;
+  font: 1rem var(--ui-font-mono);
 }

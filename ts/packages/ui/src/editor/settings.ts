@@ -1,3 +1,5 @@
+import { MONOSPACE_FONT_FALLBACK } from "../theme/fonts";
+
 export const palettes = {
   muted: {
     label: "Muted",
@@ -45,7 +47,7 @@ export type EditorSettings = {
   colorPalette: Palette;
 };
 export const defaultEditorSettings: EditorSettings = {
-  fontFamily: "ui-monospace, SFMono-Regular, Consolas, monospace",
+  fontFamily: MONOSPACE_FONT_FALLBACK,
   indentSize: 2,
   insertSpaces: true,
   tabSize: 4,

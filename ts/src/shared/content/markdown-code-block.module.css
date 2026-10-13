@@ -15,9 +15,7 @@
   gap: var(--space);
   background: var(--shade-16);
   border-radius: var(--space);
-  font:
-    11px/20px ui-monospace,
-    monospace;
+  font: 11px/20px var(--ui-font-mono);
   opacity: 0;
   pointer-events: none;
   transition: opacity 120ms ease;

@@ -93,14 +93,26 @@ jobs beside the elapsed time. Its border lights progressively as jobs are added
 and softly drifts and breathes while work remains active, including after the
 foreground response finishes. Click the count for background task details.
 Unknown telemetry is a dash rather than a guessed zero. The initial state comes
-from Session.Background; native background events update it without periodic
-polling, with snapshot refreshes on reconnection and return to the tab. Ordinary
+from Session.Background; background events update it without browser polling,
+with snapshot refreshes on reconnection and return to the tab. Ordinary
 tool launch results do not count as background jobs or mark them completed.
-The current reducer handles Claude's native task telemetry. Codex can run
-background terminals and exposes the experimental `thread/backgroundTerminals/list`
-API, but cxz does not yet connect it to this counter. Unavailable status therefore
-does not mean there are no running Codex background processes. See the
+Claude supplies native task telemetry. For Codex, the supervisor queries the
+experimental `thread/backgroundTerminals/list` API after thread loading, command
+activity, and periodically while the session is connected. It combines paginated
+results and publishes changed snapshots through the same Background API and
+Watch stream, shared by all browser windows. A successful empty list means zero;
+unsupported APIs or failed reads remain unavailable without failing the turn.
+Codex counts its reported background terminals, not arbitrary operating-system
+processes or subagents. Existing Codex sessions need an updated supervisor and
+a session restart to use this integration. See the
 [official App Server documentation](https://learn.chatgpt.com/docs/app-server#clean-background-terminals).
+
+Permission requests that resolve automatically before the display grace period
+remain in the journal without flashing an approval card above the composer.
+Unresolved requests still become actionable cards; human questions appear
+immediately. Fixed-width UI text shares the `--ui-font-mono` token, including the
+elapsed timer and background count. Terminal and editor defaults resolve that
+same token, with explicit editor font preferences taking precedence.
 
 Protocol `raw` records, quota/model polling and internal control acknowledgements
 remain in the journal but do not appear as conversation rows. Usage snapshots

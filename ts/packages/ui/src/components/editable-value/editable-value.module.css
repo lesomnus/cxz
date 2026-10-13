@@ -22,7 +22,7 @@
   white-space: nowrap;
 }
 .editable_value_trigger[data-monospace="true"] {
-  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-family: var(--ui-font-mono);
 }
 .editable_value_dialog {
   position: fixed;

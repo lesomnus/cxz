@@ -3,7 +3,7 @@
   box-sizing: border-box;
 }
 .elapsed_time {
-  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-family: var(--ui-font-mono);
   font-variant-numeric: tabular-nums;
   font-size: 11px;
   white-space: nowrap;

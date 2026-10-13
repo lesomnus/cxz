@@ -1,4 +1,7 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { SessionEvent } from "#gen/cxz/session_pb";
+import { useVisibleApprovals } from "#src/features/session/model/use-visible-approvals.ts";
+import { pendingAfter } from "#src/features/session/model/journal.ts";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { QuestionCard } from "./question-card";
 import { Button } from "@lesomnus/cxz-ui";
@@ -10,6 +13,7 @@ import {
   questionEvent,
   toolEvents,
   responseEvent,
+  storyEvent,
   type QuestionExample,
 } from "#src/storybook/fixtures.ts";
 
@@ -83,3 +87,107 @@ export const AsyncSteps: Story = { args: { example: "async-steps" } };
 export const OptionPreviews: Story = { args: { example: "previews" } };
 
 export const LongQuestions: Story = { args: { example: "long" } };
+
+export const LiveApprovals: Story = {
+  render: function ApprovalStream() {
+    const [pending, setPending] = useState<SessionEvent[]>([]);
+    const visible = useVisibleApprovals(pending);
+    const pastes = useRef(previewPastes());
+    const sequence = useRef(100);
+    const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+    const cancelTimers = () => {
+      timers.current.forEach(clearTimeout);
+      timers.current = [];
+    };
+    useEffect(() => cancelTimers, []);
+    const request = () => {
+      const seq = ++sequence.current;
+      const event = storyEvent(
+        seq,
+        "approval",
+        "item/commandExecution/requestApproval",
+        {
+          params: { itemId: `tool-${seq}`, command: "git status --short" },
+        },
+      );
+      event.requestId = `request-${seq}`;
+      return event;
+    };
+    const receive = (event: SessionEvent) =>
+      setPending((old) => pendingAfter(old, [event]));
+    const resolve = (event: SessionEvent) => {
+      const reply = storyEvent(
+        ++sequence.current,
+        "approval_resolved",
+        "allowed",
+      );
+      reply.requestId = event.requestId;
+      receive(reply);
+    };
+    const automatic = (remaining: number) => {
+      const event = request();
+      receive(event);
+      timers.current.push(setTimeout(() => resolve(event), 10));
+      if (remaining > 1)
+        timers.current.push(setTimeout(() => automatic(remaining - 1), 50));
+    };
+    return (
+      <>
+        <div style={{ display: "flex", gap: 4 }}>
+          <Button
+            onClick={() => {
+              cancelTimers();
+              automatic(30);
+            }}
+          >
+            Simulate automatic approvals
+          </Button>
+          <Button
+            onClick={() => {
+              cancelTimers();
+              setPending([request()]);
+            }}
+          >
+            Request approval
+          </Button>
+          <Button
+            onClick={() => {
+              cancelTimers();
+              setPending([questionEvent()]);
+            }}
+          >
+            Ask question
+          </Button>
+          <Button
+            onClick={() => {
+              cancelTimers();
+              setPending([]);
+            }}
+          >
+            Resolve request
+          </Button>
+        </div>
+        <ComponentPreview working>
+          {visible.map((event) => (
+            <QuestionCard
+              key={`${event.runId}:${event.requestId}:${event.seq}`}
+              e={event}
+              agent="codex"
+              pastes={pastes.current}
+              busy={false}
+              reply={async () => setPending([])}
+            />
+          ))}
+        </ComponentPreview>
+      </>
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Automatic native approval/resolution pairs use the real pending reducer and display gate, without flashing cards. Permission requests that remain unresolved become visible; human questions appear immediately.",
+      },
+    },
+  },
+};

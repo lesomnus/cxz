@@ -83,6 +83,7 @@ import { AuxiliaryControls } from "#src/features/auxiliary/auxiliary-controls.ts
 import { UsageReport } from "#src/features/activity/usage-report.tsx";
 import { BackgroundReport } from "#src/features/activity/background-report.tsx";
 import { useSessionBackground } from "#src/features/session/model/use-session-background.ts";
+import { useVisibleApprovals } from "#src/features/session/model/use-visible-approvals.ts";
 import { MemoryLibrary } from "#src/features/memory/memory-library.tsx";
 import { LoginPanel } from "#src/features/accounts/login-panel.tsx";
 import { useFloatingCard } from "#src/features/session/cards/floating-card.tsx";
@@ -129,6 +130,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
   const downloadRequest = useRef<AbortController | null>(null);
   useEffect(() => () => downloadRequest.current?.abort(), []);
   const [pending, setPending] = useState<SessionEvent[]>([]);
+  const visibleApprovals = useVisibleApprovals(pending);
   const [gap, setGap] = useState(false);
   const [status, setStatus] = useState("Connecting…");
   const historyReady = useRef(false);
@@ -1053,7 +1055,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         }}
       />
       <FloatingCardHost>
-        {pending.map((e) => (
+        {visibleApprovals.map((e) => (
           <QuestionCard
             key={`${e.runId}:${e.requestId}`}
             e={e}

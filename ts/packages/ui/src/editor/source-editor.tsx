@@ -1,3 +1,4 @@
+import { monospaceFont } from "../theme/fonts";
 import styles from "./source-editor.module.css";
 import { defaultEditorSettings, type EditorSettings } from "./settings";
 import {
@@ -55,7 +56,11 @@ export function SourceEditor({
   >(undefined);
   const [activated, setActivated] = useState(active);
   const [error, setError] = useState("");
-  const settings = { ...defaultEditorSettings, ...configuration };
+  const settings = {
+    ...defaultEditorSettings,
+    fontFamily: monospaceFont(),
+    ...configuration,
+  };
   const latest = useRef({
     value,
     ariaLabel,
