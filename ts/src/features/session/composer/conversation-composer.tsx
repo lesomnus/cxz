@@ -11,6 +11,7 @@ import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { AudioWaveform, Button } from "@lesomnus/cxz-ui";
 import { ComposerAurora } from "./composer-aurora";
 import { TurnControls } from "./turn-controls";
+import { BackgroundJobsIndicator } from "./background-jobs-indicator";
 import type { TurnProgress } from "#src/features/session/model/turn-progress.ts";
 import { ComposerEditor, type ComposerEditorHandle } from "./composer-editor";
 import type { ComposerCommand } from "./composer-commands";
@@ -43,6 +44,8 @@ export function ConversationComposer({
   turn,
   working,
   interrupt,
+  backgroundJobs,
+  onBackgroundJobs,
   latestVisible = false,
   onLatest,
   terminalVisible = false,
@@ -73,6 +76,8 @@ export function ConversationComposer({
   turn: TurnProgress;
   working: boolean;
   interrupt: () => void;
+  backgroundJobs?: number;
+  onBackgroundJobs?: () => void;
   latestVisible?: boolean;
   onLatest?: () => void;
   terminalVisible?: boolean;
@@ -159,7 +164,12 @@ export function ConversationComposer({
       <div className="composer-wrapper">
         <ComposerAurora active={working} />
         <div className="composer-toolbar">
-          <TurnControls turn={turn} busy={busy} interrupt={interrupt} />
+          <TurnControls turn={turn} busy={busy} interrupt={interrupt}>
+            <BackgroundJobsIndicator
+              count={backgroundJobs}
+              open={onBackgroundJobs}
+            />
+          </TurnControls>
           <span
             className="latest-slot"
             data-visible={latestVisible}

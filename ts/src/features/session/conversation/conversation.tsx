@@ -82,6 +82,7 @@ import { QueuedMessage } from "#src/features/session/components/queued-message.t
 import { AuxiliaryControls } from "#src/features/auxiliary/auxiliary-controls.tsx";
 import { UsageReport } from "#src/features/activity/usage-report.tsx";
 import { BackgroundReport } from "#src/features/activity/background-report.tsx";
+import { useSessionBackground } from "#src/features/session/model/use-session-background.ts";
 import { MemoryLibrary } from "#src/features/memory/memory-library.tsx";
 import { LoginPanel } from "#src/features/accounts/login-panel.tsx";
 import { useFloatingCard } from "#src/features/session/cards/floating-card.tsx";
@@ -136,6 +137,11 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
   });
   const [executionState, setExecutionState] = useState("");
   const [turn, setTurn] = useState<TurnProgress>({ runId: "", active: false });
+  const background = useSessionBackground(
+    c,
+    id,
+    turn.runId || current.data?.status?.runId || "",
+  );
   const [error, setError] = useState("");
   const [draft, setDraft] = useState(c.drafts.get(id) ?? "");
   const [busy, setBusy] = useState(false);
@@ -419,6 +425,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         if (canceled) return;
         setPending(snapshot.status?.pending ?? []);
         const snapshotSeq = snapshot.status?.lastSeq ?? 0n;
+        if (cursor > 0n) background.refresh();
         if (snapshotSeq > latestSeq.current) latestSeq.current = snapshotSeq;
         let loaded: SessionEvent[] = [];
         if (cursor === 0n) {
@@ -445,6 +452,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
           } while (cursor < snapshotSeq);
         }
         if (loaded.length) {
+          for (const event of loaded) background.receive(event);
           setPending(
             pendingAfter(
               snapshot.status?.pending ?? [],
@@ -468,6 +476,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         )) {
           if (canceled) return;
           c.attention.event(id, e);
+          background.receive(e);
           if (e.kind === "state") setExecutionState(e.text);
           if (e.kind === "queued") setQueued(e.text);
           if (e.kind === "input")
@@ -759,7 +768,11 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
       openCard({
         title: "Background tasks",
         content: () => (
-          <BackgroundReport c={c} session={id} run={s?.status?.runId ?? ""} />
+          <BackgroundReport
+            c={c}
+            session={id}
+            run={turn.runId || s?.status?.runId || ""}
+          />
         ),
       });
     if (kind === "aux")
@@ -1108,6 +1121,8 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         sending={sending}
         busy={busy}
         turn={turn}
+        backgroundJobs={background.count}
+        onBackgroundJobs={() => localOpen("background")}
         working={turn.active && ["working", "running"].includes(executionState)}
         interrupt={() =>
           void action(async (session) => {

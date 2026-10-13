@@ -170,6 +170,7 @@ export function ComponentPreview({
   onChange,
   sending = false,
   working = false,
+  backgroundJobs = 0,
   sessionStopped = false,
   uploadMode,
   lookupPaths,
@@ -187,6 +188,7 @@ export function ComponentPreview({
   onChange?: (value: string) => void;
   sending?: boolean;
   working?: boolean;
+  backgroundJobs?: number;
   sessionStopped?: boolean;
   uploadMode?: "ready" | "slow" | "retry";
   lookupPaths?: LookupPaths;
@@ -282,6 +284,7 @@ export function ComponentPreview({
               }
             : idleTurn
         }
+        backgroundJobs={backgroundJobs}
         working={active}
         interrupt={() => setStopped(true)}
         menu={(pick) => (

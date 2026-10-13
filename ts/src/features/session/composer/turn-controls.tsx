@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { Button } from "@lesomnus/cxz-ui";
 import { ElapsedTime } from "@lesomnus/cxz-ui";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
@@ -9,10 +9,12 @@ export function TurnControls({
   turn,
   busy,
   interrupt,
+  children,
 }: {
   turn: TurnProgress;
   busy: boolean;
   interrupt: () => void;
+  children?: ReactNode;
 }) {
   useLocale();
   const root = useRef<HTMLDivElement>(null);
@@ -121,6 +123,7 @@ export function TurnControls({
         startedAt={turn.active ? turn.startedAt : undefined}
         label={t("Response elapsed time")}
       />
+      {children}
     </div>
   );
 }

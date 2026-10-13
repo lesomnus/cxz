@@ -35,6 +35,11 @@
   --dropdown-background: var(--ui-dropdown-background);
   --dropdown-blur: var(--ui-dropdown-blur);
   --toolbar-button-width: var(--ui-toolbar-button-width);
+  --toolbar-button-height: 24px;
+  --toolbar-button-radius: max(
+    0px,
+    calc(var(--wrapper-radius) - 1px - var(--control-inset))
+  );
   --composer-toolbar-height: 28px;
   --composer-extension: 10px;
   --composer-overhang: 4px;
@@ -2131,15 +2136,12 @@ pre {
   color: var(--shade-144);
 }
 .composer .toolbar-button {
-  border-radius: max(
-    0px,
-    calc(var(--wrapper-radius) - 1px - var(--control-inset))
-  );
+  border-radius: var(--toolbar-button-radius);
 }
 .composer .toolbar-button {
   width: var(--toolbar-button-width);
-  height: 24px;
-  min-height: 24px;
+  height: var(--toolbar-button-height);
+  min-height: var(--toolbar-button-height);
   padding: 3px 6px;
   background: transparent;
   color: inherit;

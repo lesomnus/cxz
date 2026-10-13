@@ -3,25 +3,8 @@ import { Button } from "@lesomnus/cxz-ui";
 import { Connection, ref } from "#src/shared/api/connection.ts";
 import { useRemote } from "#src/shared/api/use-remote.ts";
 import styles from "#src/shared/components/resource-surface.module.css";
-type Task = {
-  task_id: string;
-  description: string;
-  status: string;
-  summary: string;
-  output_file: string;
-  active: boolean;
-};
-export function backgroundTasks(bytes: Uint8Array, run: string): Task[] {
-  const states = JSON.parse(new TextDecoder().decode(bytes) || "{}");
-  const tasks = states[run]?.Tasks;
-  if (!tasks || typeof tasks !== "object") return [];
-  return Object.values(tasks).filter(
-    (task): task is Task =>
-      !!task &&
-      typeof task === "object" &&
-      typeof (task as Task).task_id === "string",
-  );
-}
+import { backgroundTasks } from "./background-tasks";
+export { backgroundTasks } from "./background-tasks";
 export function BackgroundReport({
   c,
   session,

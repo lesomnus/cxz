@@ -88,6 +88,15 @@ or signing out cancels its native RPC. HTTPS retains the ordinary Connect fetch
 transport. The loopback gateway must be updated for the WebSocket endpoint.
 
 The conversation renders messages, tool activity and actionable notices.
+The composer toolbar shows the current run's active provider-reported background
+jobs beside the elapsed time. Its border lights progressively as jobs are added
+and softly drifts and breathes while work remains active, including after the
+foreground response finishes. Click the count for background task details.
+Unknown telemetry is a dash rather than a guessed zero. The initial state comes
+from Session.Background; native background events update it without periodic
+polling, with snapshot refreshes on reconnection and return to the tab. Ordinary
+tool launch results do not count as background jobs or mark them completed.
+
 Protocol `raw` records, quota/model polling and internal control acknowledgements
 remain in the journal but do not appear as conversation rows. Usage snapshots
 still drive composer indicators, and turn-completion events still supply response
