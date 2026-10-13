@@ -97,6 +97,7 @@
   --ui-dialog-padding: calc(3 * var(--ui-space));
   --ui-dialog-body-background: var(--ui-shade-28);
   --ui-dialog-action-min-width: 72px;
+  --ui-dialog-trigger-opacity: 0.6;
   --ui-control-inset: 2px;
   --ui-control-inline-inset: 6px;
   --ui-hover: var(--ui-shade-40);

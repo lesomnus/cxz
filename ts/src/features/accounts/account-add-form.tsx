@@ -11,11 +11,13 @@ export function AccountAddForm({
   anchor,
   added,
   close,
+  trigger,
 }: {
   c: Connection;
   anchor?: HTMLElement | null;
   added: (account: Account) => void;
   close: () => void;
+  trigger?: HTMLElement | null;
 }) {
   const [agent, setAgent] = useState("codex"),
     [alias, setAlias] = useState(""),
@@ -32,6 +34,7 @@ export function AccountAddForm({
       anchor={anchor}
       close={close}
       busy={busy}
+      trigger={trigger}
     >
       <form
         id={id}

@@ -16,6 +16,8 @@
   border-radius: var(--ui-dialog-radius);
 }
 .surface {
+  position: relative;
+  z-index: 1;
   width: 100%;
   max-height: inherit;
   transform-origin: center;

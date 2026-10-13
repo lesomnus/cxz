@@ -1,6 +1,18 @@
-import { useId, useLayoutEffect, useRef, type ReactNode } from "react";
+import {
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { createPortal } from "react-dom";
-import { DialogSurface, dialogClassName } from "@lesomnus/cxz-ui";
+import {
+  DialogSurface,
+  dialogClassName,
+  DialogTrigger,
+  captureDialogTrigger,
+  focusedDialogTrigger,
+} from "@lesomnus/cxz-ui";
 import styles from "./anchored-dialog.module.css";
 
 // A native modal focus boundary positioned beside an existing panel.
@@ -10,14 +22,19 @@ export function AnchoredDialog({
   close,
   busy = false,
   children,
+  trigger,
 }: {
   title: string;
   anchor?: HTMLElement | null;
   close: () => void;
   busy?: boolean;
   children: ReactNode;
+  trigger?: HTMLElement | null;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
+  const [origin] = useState(() =>
+    trigger ? captureDialogTrigger(trigger) : focusedDialogTrigger(),
+  );
   const id = useId();
   useLayoutEffect(() => {
     const node = dialog.current!;
@@ -64,6 +81,7 @@ export function AnchoredDialog({
       <span id={id} className={styles.label}>
         {title}
       </span>
+      <DialogTrigger origin={origin} />
       <DialogSurface anchored>{children}</DialogSurface>
     </dialog>,
     document.body,

@@ -55,8 +55,25 @@ test("Add opens beside the panel and its language/provider dropdown works inside
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("/iframe.html?id=resources-views--accounts&viewMode=story");
   const panel = page.getByRole("complementary", { name: "Account list" });
+  const addBounds = (await panel
+    .getByRole("button", { name: "Add account", exact: true })
+    .boundingBox())!;
   await panel.getByRole("button", { name: "Add account", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Add account", exact: true });
+  await expect(dialog).toBeVisible();
+  const foreground = dialog.locator('[data-dialog-trigger="true"]');
+  const foregroundBounds = (await foreground.boundingBox())!;
+  for (const key of ["x", "y", "width", "height"] as const)
+    expect(foregroundBounds[key]).toBeCloseTo(addBounds[key], 1);
+  await expect(foreground.locator("button")).toBeDisabled();
+  await expect(foreground).toHaveAttribute("aria-hidden", "true");
+  expect(
+    await foreground.evaluate((node) => getComputedStyle(node).opacity),
+  ).not.toBe("1");
+  await page.mouse.click(
+    addBounds.x + addBounds.width / 2,
+    addBounds.y + addBounds.height / 2,
+  );
   await expect(dialog).toBeVisible();
   const entrance = await dialog
     .locator("[data-anchored]")

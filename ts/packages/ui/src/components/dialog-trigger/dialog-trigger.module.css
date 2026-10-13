@@ -1,0 +1,11 @@
+.trigger {
+  position: fixed;
+  z-index: 0;
+  box-sizing: border-box;
+  opacity: var(--ui-dialog-trigger-opacity);
+  pointer-events: auto;
+  cursor: default;
+}
+.trigger * {
+  pointer-events: none !important;
+}

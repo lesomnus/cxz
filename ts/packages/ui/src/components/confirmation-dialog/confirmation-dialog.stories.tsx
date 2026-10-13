@@ -116,3 +116,27 @@ export const BlurredBackground: Story = {
     ),
   ],
 };
+
+export const TriggerForeground: Story = {
+  decorators: [
+    (Story) => (
+      <div
+        style={{
+          position: "fixed",
+          right: "calc(4 * var(--ui-space))",
+          bottom: "calc(4 * var(--ui-space))",
+        }}
+      >
+        <Story />
+      </div>
+    ),
+  ],
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "The trigger stays visible above the dimmed page in its original position, as a disabled visual copy. It cannot act or receive keyboard focus; the dialog surface stays in front.",
+      },
+    },
+  },
+};

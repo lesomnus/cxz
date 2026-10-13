@@ -27,6 +27,7 @@ export function AccountsView({
   const [chosen, setChosen] = useState(""),
     [adding, setAdding] = useState(false);
   const panel = useRef<HTMLElement>(null);
+  const add = useRef<HTMLButtonElement>(null);
   const alias =
     (selected !== undefined ? selected : chosen) ||
     accounts.data?.[0]?.alias ||
@@ -46,6 +47,7 @@ export function AccountsView({
         <header className={styles.header}>
           <strong>Accounts</strong>
           <Button
+            ref={add}
             type="button"
             className={styles.add}
             aria-label="Add account"
@@ -117,6 +119,7 @@ export function AccountsView({
         <AccountAddForm
           c={c}
           anchor={panel.current}
+          trigger={add.current}
           close={() => setAdding(false)}
           added={(account) => {
             setAdding(false);

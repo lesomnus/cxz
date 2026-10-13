@@ -3,6 +3,10 @@ import type { Session } from "#gen/cxz/session_pb";
 import type { SessionPurgeReply } from "#gen/cxz/session_svc_pb";
 import { ActionMenu } from "@lesomnus/cxz-ui";
 import { ConfirmationDialog } from "@lesomnus/cxz-ui";
+import {
+  captureDialogTrigger,
+  type DialogTriggerOrigin,
+} from "@lesomnus/cxz-ui";
 import { useFloatingCard } from "#src/features/session/cards/floating-card.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
@@ -47,11 +51,19 @@ export function SessionMenu({
     run: string;
     kind: "stop" | "restart" | "purge";
     plan?: SessionPurgeReply;
+    trigger?: DialogTriggerOrigin;
   }>();
-  function confirm(kind: "stop" | "restart") {
-    if (session) setConfirmation({ sessionId: session.runtimeId, run, kind });
+  function confirm(kind: "stop" | "restart", trigger: HTMLButtonElement) {
+    if (session)
+      setConfirmation({
+        sessionId: session.runtimeId,
+        run,
+        kind,
+        trigger: captureDialogTrigger(trigger),
+      });
   }
-  async function preparePurge() {
+  async function preparePurge(trigger: HTMLButtonElement) {
+    const origin = captureDialogTrigger(trigger);
     const plan = await previewPurge();
     if (plan && session)
       setConfirmation({
@@ -59,6 +71,7 @@ export function SessionMenu({
         run,
         kind: "purge",
         plan,
+        trigger: origin,
       });
   }
   return (
@@ -76,21 +89,23 @@ export function SessionMenu({
                 label: resume ? t("Resume") : t("Stop"),
                 icon: <SessionActionIcon action={resume ? "resume" : "stop"} />,
                 disabled: unavailable,
-                run: () =>
-                  resume ? void manage("resume", run) : confirm("stop"),
+                run: (trigger) =>
+                  resume
+                    ? void manage("resume", run)
+                    : confirm("stop", trigger),
               },
               {
                 label: t("Restart"),
                 icon: <SessionActionIcon action="restart" />,
                 disabled: unavailable,
-                run: () => confirm("restart"),
+                run: (trigger) => confirm("restart", trigger),
               },
               {
                 label: t("Purge"),
                 icon: <SessionActionIcon action="purge" />,
                 disabled: busy,
                 danger: true,
-                run: () => void preparePurge(),
+                run: (trigger) => void preparePurge(trigger),
               },
             ],
           },
@@ -136,6 +151,7 @@ export function SessionMenu({
       {confirmation?.sessionId === session?.runtimeId && confirmation && (
         <ConfirmationDialog
           key={`${confirmation.sessionId}:${confirmation.kind}:${confirmation.run}`}
+          trigger={confirmation.trigger}
           title={
             confirmation.kind === "purge"
               ? t("Purge session")
