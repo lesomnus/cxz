@@ -7,22 +7,13 @@
   --confirmation-button-min-width: 72px;
   width: min(480px, calc(100vw - 4 * var(--ui-space)));
   max-height: calc(100dvh - 4 * var(--ui-space));
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--ui-shade-237);
-  overflow: visible;
 }
-.confirmation_dialog::backdrop {
-  animation: backdrop-enter var(--ui-dialog-enter-duration) ease-out both;
-  background: color-mix(in srgb, var(--ui-shade-0) 65%, transparent);
-}
+
 .confirmation_dialog :global(.floating-card) {
   position: relative;
   inset: auto;
   width: 100%;
   max-height: calc(100dvh - 4 * var(--ui-space));
-  background: color-mix(in srgb, var(--ui-shade-16) 68%, transparent);
 }
 .confirmation_dialog :global(.floating-card) :global(.card-heading) {
   display: flex;
@@ -79,18 +70,4 @@
 .confirmation_dialog :global(.confirmation-actions) button {
   min-width: var(--confirmation-button-min-width);
   background: transparent;
-}
-
-@keyframes backdrop-enter {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .confirmation_dialog::backdrop {
-    animation: none;
-  }
 }

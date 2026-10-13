@@ -2,19 +2,11 @@
   position: fixed;
   inset: auto;
   margin: 0;
-  padding: 0;
   width: min(420px, calc(100vw - 2 * var(--space)));
   max-width: none;
   max-height: calc(100dvh - 2 * var(--space));
-  border: 0;
-  background: transparent;
-  color: var(--shade-237);
-  overflow: visible;
 }
-.dialog::backdrop {
-  animation: backdrop-enter var(--ui-dialog-enter-duration) ease-out both;
-  background: #0003;
-}
+
 .dialog :global(.floating-card) {
   position: relative;
   max-height: calc(100dvh - 2 * var(--space));
@@ -25,18 +17,4 @@
   height: 1px;
   overflow: hidden;
   clip-path: inset(50%);
-}
-
-@keyframes backdrop-enter {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .dialog::backdrop {
-    animation: none;
-  }
 }

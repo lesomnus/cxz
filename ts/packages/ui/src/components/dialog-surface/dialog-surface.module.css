@@ -1,9 +1,32 @@
+.dialog {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ui-shade-237);
+  overflow: visible;
+}
+.dialog::backdrop {
+  background: var(--ui-dialog-backdrop);
+  animation: backdrop-enter var(--ui-dialog-enter-duration) ease-out both;
+}
+.appearance {
+  background: var(--ui-dialog-background);
+  -webkit-backdrop-filter: blur(var(--ui-dialog-blur));
+  backdrop-filter: blur(var(--ui-dialog-blur));
+  border-radius: var(--ui-dialog-radius);
+}
 .surface {
   width: 100%;
   max-height: inherit;
   transform-origin: center;
   animation: enter var(--ui-dialog-enter-duration) var(--ui-dialog-enter-easing)
     both;
+}
+.surface :global(.floating-card) {
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  border-radius: var(--ui-dialog-radius);
 }
 .surface[data-anchored="true"] {
   transform-origin: top left;
@@ -22,7 +45,16 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .surface {
+  .surface,
+  .dialog::backdrop {
     animation: none;
+  }
+}
+@keyframes backdrop-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }

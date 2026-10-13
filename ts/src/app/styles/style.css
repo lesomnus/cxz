@@ -3188,8 +3188,8 @@ summary:hover {
 }
 
 .question-cards > .question-card {
-  --question-background: color-mix(in srgb, var(--shade-16) 68%, transparent);
-  --question-blur: var(--dropdown-blur);
+  --question-background: var(--ui-dialog-background);
+  --question-blur: var(--ui-dialog-blur);
   --question-tab-width: 64px;
   --question-tab-icon-width: 20px;
   border: var(--card-border-width) solid var(--shade-54);

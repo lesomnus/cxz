@@ -20,7 +20,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "A modal confirmation dialog using the shared card surface, with padded header/body/footer, a distinct rounded body flush with the card sides and minimum-width actions. The body has generous vertical padding, and the footer uses compact padding; buttons have transparent default surfaces and hover backgrounds. Both actions align right, with Confirm immediately before Cancel; focus starts on Cancel and stays inside. Escape or a backdrop click cancels. The footer stays outside the scrollable body. While an action runs, duplicate execution and dismissal are disabled. Failure keeps the dialog open for retry.",
+          "A modal confirmation dialog using the shared DialogSurface translucency, backdrop blur, dimming and entrance motion, with padded header/body/footer, a distinct rounded body flush with the card sides and minimum-width actions. The body has generous vertical padding, and the footer uses compact padding; buttons have transparent default surfaces and hover backgrounds. Both actions align right, with Confirm immediately before Cancel; focus starts on Cancel and stays inside. Escape or a backdrop click cancels. The footer stays outside the scrollable body. While an action runs, duplicate execution and dismissal are disabled. Failure keeps the dialog open for retry.",
       },
     },
   },
@@ -92,4 +92,27 @@ export const LongContent: Story = {
       </>
     ),
   },
+};
+
+export const BlurredBackground: Story = {
+  decorators: [
+    (Story) => (
+      <div style={{ position: "relative" }}>
+        <div
+          aria-hidden="true"
+          style={{
+            position: "fixed",
+            inset: 0,
+            pointerEvents: "none",
+            background:
+              "repeating-linear-gradient(90deg, #141414 0 8px, #888 8px 16px)",
+            opacity: 0.7,
+          }}
+        />
+        <div style={{ position: "relative" }}>
+          <Story />
+        </div>
+      </div>
+    ),
+  ],
 };

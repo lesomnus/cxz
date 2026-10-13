@@ -122,6 +122,55 @@ test("dialogs respect reduced motion", async ({ page }) => {
   ).toBe("none");
 });
 
+for (const theme of ["dark", "light"]) {
+  test(`account and confirmation dialogs share a translucent blurred surface (${theme})`, async ({
+    page,
+  }) => {
+    await page.goto(
+      `/iframe.html?id=resources-views--accounts&viewMode=story&globals=theme:${theme}`,
+    );
+    await page
+      .getByRole("button", { name: "Add account", exact: true })
+      .click();
+    const addition = page.getByRole("dialog", {
+      name: "Add account",
+      exact: true,
+    });
+    const appearance = (node: HTMLElement) => {
+      const surface = node.querySelector<HTMLElement>("[data-anchored]")!;
+      const style = getComputedStyle(surface);
+      return {
+        background: style.backgroundColor,
+        blur: style.backdropFilter,
+        radius: style.borderRadius,
+        backdrop: getComputedStyle(node, "::backdrop").backgroundColor,
+      };
+    };
+    const initial = await addition.evaluate(appearance);
+    expect(initial.blur).toMatch(/^blur\(/);
+    const alpha = await addition.locator("[data-anchored]").evaluate((node) => {
+      const context = document.createElement("canvas").getContext("2d")!;
+      context.fillStyle = getComputedStyle(node).backgroundColor;
+      context.fillRect(0, 0, 1, 1);
+      return context.getImageData(0, 0, 1, 1).data[3];
+    });
+    expect(alpha).toBeGreaterThan(0);
+    expect(alpha).toBeLessThan(255);
+    // Blur belongs to the animated surface itself, not a descendant inside its opacity layer.
+    await expect(addition.locator(".floating-card")).toHaveCSS(
+      "backdrop-filter",
+      "none",
+    );
+    await page.keyboard.press("Escape");
+    await page.getByRole("button", { name: "Log out", exact: true }).click();
+    const confirmation = page.getByRole("dialog", {
+      name: "Log out · Work",
+      exact: true,
+    });
+    expect(await confirmation.evaluate(appearance)).toEqual(initial);
+  });
+}
+
 test("logout needs confirmation and then enables login", async ({ page }) => {
   await page.goto("/iframe.html?id=resources-views--accounts&viewMode=story");
   await page.getByRole("button", { name: "Log out", exact: true }).click();

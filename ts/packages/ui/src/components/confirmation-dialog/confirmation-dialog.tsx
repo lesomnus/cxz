@@ -9,7 +9,10 @@ import {
 import { createPortal } from "react-dom";
 import { Button } from "../button/button";
 import { FloatingCard } from "../floating-card/floating-card";
-import { DialogSurface } from "../dialog-surface/dialog-surface";
+import {
+  DialogSurface,
+  dialogClassName,
+} from "../dialog-surface/dialog-surface";
 import { useUI } from "../../providers/ui-provider";
 
 // Native modal dialogs provide the focus boundary and make the rest of the
@@ -71,7 +74,7 @@ export function ConfirmationDialog({
     <dialog
       ref={dialog}
       tabIndex={-1}
-      className={`${styles.confirmation_dialog} confirmation-dialog`}
+      className={`${dialogClassName} ${styles.confirmation_dialog} confirmation-dialog`}
       aria-label={title}
       aria-describedby={id}
       aria-busy={busy}

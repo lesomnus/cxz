@@ -2,6 +2,10 @@ import styles from "./editable-value.module.css";
 import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "../button/button";
+import {
+  dialogClassName,
+  dialogAppearanceClassName,
+} from "../dialog-surface/dialog-surface";
 import { useUI } from "../../providers/ui-provider";
 
 // A native modal keeps shortcuts and the background inert while the input
@@ -141,7 +145,7 @@ function ValueEditor({
   return createPortal(
     <dialog
       ref={dialog}
-      className={`${styles.editable_value_dialog} editable-value-dialog`}
+      className={`${dialogClassName} ${styles.editable_value_dialog} editable-value-dialog`}
       style={position}
       aria-label={t("Edit {label}", { label })}
       aria-busy={busy}
@@ -185,7 +189,7 @@ function ValueEditor({
           autoComplete="off"
           spellCheck={false}
         />
-        <div className="editable-value-overlay">
+        <div className={`${dialogAppearanceClassName} editable-value-overlay`}>
           {error && (
             <p id="editable-value-error" role="alert">
               {error}

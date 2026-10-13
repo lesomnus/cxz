@@ -29,14 +29,6 @@
   max-width: none;
   max-height: none;
   margin: 0;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--ui-shade-237);
-  overflow: visible;
-}
-.editable_value_dialog::backdrop {
-  background: color-mix(in srgb, var(--ui-shade-0) 65%, transparent);
 }
 .editable_value_dialog input {
   display: block;
@@ -58,7 +50,6 @@
   max-width: min(360px, calc(100dvw - 4 * var(--ui-space)));
   padding: var(--ui-space);
   border-radius: calc(2 * var(--ui-space));
-  background: var(--ui-shade-16);
   box-shadow: 0 8px 24px #0006;
   font-family: system-ui, sans-serif;
 }
