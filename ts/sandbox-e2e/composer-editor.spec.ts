@@ -107,14 +107,12 @@ test("paste files preserve source and session drafts while sending the uploaded 
   await expect(page.locator(".paste-chip")).toHaveCount(1);
   await input.press("End");
   await input.pressSequentially(" 뒤");
-  const draft = await input.inputValue();
-  expect(draft).toMatch(
-    /^앞 \[File [0-9a-f]{8} · paste-[0-9a-f]{8}\.txt\] 뒤$/,
-  );
   await expect(page.locator(".paste-chip")).toHaveAttribute(
     "data-upload-state",
     "ready",
   );
+  const draft = await input.inputValue();
+  expect(draft).toMatch(/^앞 \[Text [0-9.]{4}[BKMT]\] 뒤$/);
   await page.locator(".paste-chip").click();
   const preview = page.getByRole("dialog", { name: "Paste source" });
   await expect(preview).toBeVisible();
