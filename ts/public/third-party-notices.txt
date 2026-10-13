@@ -774,7 +774,7 @@ Material Symbols — Category (Rounded, weight 300, fill 0, optical size 24)
 Copyright Google LLC
 Source: https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsrounded/category/wght300/24px.svg
 Project: https://github.com/google/material-design-icons
-The SVG is stored unchanged and displayed as a CSS mask using currentColor.
+The source SVG is stored unchanged. Its geometry is rendered as inline SVG using currentColor.
 
 
                                  Apache License

@@ -17,7 +17,7 @@ import { createPortal } from "react-dom";
 import type { SessionEvent } from "#gen/cxz/session_pb";
 import type { WorkGroup } from "#src/features/session/model/work-groups.ts";
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
-import categoryIcon from "#src/shared/assets/icons/category-rounded-wght300.svg";
+import { CategoryIcon } from "#src/shared/components/category-icon.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { VirtualMessages } from "./virtual-messages";
@@ -57,14 +57,7 @@ export function WorkSummary({
           aria-controls={expanded ? "work-dialog" : undefined}
           onClick={(event) => open(event.currentTarget)}
         >
-          <span
-            className={styles.categoryIcon}
-            style={{
-              maskImage: `url(${categoryIcon})`,
-              WebkitMaskImage: `url(${categoryIcon})`,
-            }}
-            aria-hidden="true"
-          />
+          <CategoryIcon />
           <span aria-hidden="true">
             {work.events.length}
             {partial ? "+" : ""}

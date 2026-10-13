@@ -11,13 +11,13 @@ test("turn work collapses into one line and its dialog never covers adjacent pan
   const summaries = page.locator("[data-work-summary]");
   await expect(summaries).toHaveCount(2);
   await expect(summaries.first().getByRole("button")).toHaveText("4");
-  await expect(
-    summaries
-      .first()
-      .getByRole("button")
-      .locator('[aria-hidden="true"]')
-      .first(),
-  ).toBeVisible();
+  const icon = summaries.first().getByRole("button").locator("svg");
+  await expect(icon).toBeVisible();
+  await expect(icon.locator("path")).toBeVisible();
+  await expect(icon).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  expect(await icon.evaluate((node) => node.getAttribute("fill"))).toBe(
+    "currentColor",
+  );
   const tooltip = summaries.first().getByRole("tooltip");
   await expect(tooltip).toBeHidden();
   await summaries.first().getByRole("button").hover();
