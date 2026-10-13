@@ -83,7 +83,7 @@ test("paste chips preview and send their expanded contents", async ({
       }),
     );
   }, text);
-  await expect(editor).toHaveValue(/\[Paste [0-9a-f]{8}\]/);
+  await expect(editor).toHaveValue(/\[Text [0-9.]{4}[BKMT]\]/);
   await page.locator(".paste-chip").click();
   await expect(page.getByRole("dialog")).toContainText("const three = 3;");
   await page.getByRole("button", { name: "Close paste preview" }).click();
@@ -95,6 +95,74 @@ test("paste chips preview and send their expanded contents", async ({
     page.locator("article.input").filter({ hasText: "const three = 3;" }),
   ).not.toContainText("[Paste");
   expect(errors).toEqual([]);
+});
+
+test("same-size chips use exact visible widths and keep distinct sources through delete, undo and send", async ({
+  page,
+}) => {
+  await story(page, "conversation-playground--interactive");
+  const input = page.getByRole("textbox", { name: "Message", exact: true });
+  const alpha = "alpha\n".repeat(4);
+  const bravo = "bravo\n".repeat(4);
+  const paste = (body: string) =>
+    input.evaluate((node, body) => {
+      const clipboardData = new DataTransfer();
+      clipboardData.setData("text/plain", body);
+      node.dispatchEvent(
+        new ClipboardEvent("paste", {
+          clipboardData,
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+    }, body);
+  await input.focus();
+  await paste(alpha);
+  await input.press("Space");
+  await paste(bravo);
+  await expect(input).toHaveValue("[Text 0024B] [Text 0024B]");
+  const chips = page.locator(".paste-chip");
+  await expect(chips).toHaveCount(2);
+  for (const chip of await chips.all()) {
+    const width = await chip.evaluate((node) => {
+      const range = document.createRange();
+      range.selectNodeContents(node.querySelector(".paste-chip-label")!);
+      return {
+        chip: node.getBoundingClientRect().width,
+        text: range.getBoundingClientRect().width,
+      };
+    });
+    expect(Math.abs(width.chip - width.text)).toBeLessThan(0.1);
+  }
+  await expect(chips.first().locator("[data-paste-leading]")).toHaveText("00");
+  await chips.first().click();
+  await expect(page.getByRole("dialog")).toContainText(alpha.trim());
+  await page.getByRole("button", { name: "Delete", exact: true }).click();
+  await expect(input).toHaveValue(" [Text 0024B]");
+  await input.press("Control+z");
+  await expect(input).toHaveValue("[Text 0024B] [Text 0024B]");
+  await chips.first().click();
+  await expect(page.getByRole("dialog")).toContainText(alpha.trim());
+  const copied = await input.evaluate((node) => {
+    const clipboardData = new DataTransfer();
+    node.dispatchEvent(
+      new ClipboardEvent("copy", {
+        clipboardData,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+    return clipboardData.getData("text/plain");
+  });
+  expect(copied).toBe(alpha);
+  await page.getByRole("button", { name: "Close paste preview" }).click();
+  await chips.last().click();
+  await expect(page.getByRole("dialog")).toContainText(bravo.trim());
+  await page.getByRole("button", { name: "Close paste preview" }).click();
+  await page.getByRole("button", { name: "Send", exact: true }).click();
+  await expect(
+    page.locator("article.input").filter({ hasText: alpha.trim() }),
+  ).toContainText(bravo.trim());
 });
 
 test("tool details stay inside the work dialog and dismiss on backdrop clicks", async ({
