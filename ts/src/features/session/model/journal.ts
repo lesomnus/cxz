@@ -13,6 +13,7 @@ const internalEventKinds = new Set([
   "models_status",
   "usage",
   "usage_status",
+  "background",
   "history_checkpoint",
   "queued",
 ]);

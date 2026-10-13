@@ -48,73 +48,112 @@ export const InToolbar: Story = {
   parameters: { layout: "fullscreen" },
 };
 
-export const LiveTelemetry: Story = {
-  render: function Telemetry() {
-    const connection = useMemo(
-      () =>
-        ({
-          sessions: {
-            background: async () => ({
-              data: new TextEncoder().encode(
-                JSON.stringify({ preview: { Snapshot: true, Tasks: {} } }),
-              ),
-              lastSeq: 0n,
-            }),
-          },
-        }) as unknown as Connection,
-      [],
-    );
-    const jobs = useSessionBackground(connection, "preview", "preview");
-    const sequence = useRef(0);
-    const active = useRef<string[]>([]);
-    const emit = (data: Record<string, unknown>) => {
-      const event = storyEvent(++sequence.current, "background", "", {
-        type: "system",
-        ...data,
-      });
-      event.runId = "preview";
-      jobs.receive(event);
-    };
-    return (
-      <>
-        <div style={{ display: "flex", gap: 4 }}>
-          <Button
-            onClick={() => {
-              const id = `task-${sequence.current + 1}`;
-              active.current.push(id);
+function Telemetry({ provider = "claude" }: { provider?: "claude" | "codex" }) {
+  const connection = useMemo(
+    () =>
+      ({
+        sessions: {
+          background: async () => ({
+            data: new TextEncoder().encode(
+              JSON.stringify({ preview: { Snapshot: true, Tasks: {} } }),
+            ),
+            lastSeq: 0n,
+          }),
+        },
+      }) as unknown as Connection,
+    [],
+  );
+  const jobs = useSessionBackground(connection, "preview", "preview");
+  const sequence = useRef(0);
+  const active = useRef<string[]>([]);
+  const emit = (data: Record<string, unknown>) => {
+    const event = storyEvent(++sequence.current, "background", "", {
+      type: "system",
+      ...data,
+    });
+    event.runId = "preview";
+    jobs.receive(event);
+  };
+  const emitCodex = (unavailable = false) =>
+    emit({
+      type: "background",
+      provider: "codex",
+      subtype: unavailable ? "background_status" : "background_tasks_changed",
+      status: unavailable ? "error" : undefined,
+      tasks: active.current.map((task_id) => ({ task_id })),
+    });
+  return (
+    <>
+      <div style={{ display: "flex", gap: 4 }}>
+        <Button
+          onClick={() => {
+            const id = `task-${sequence.current + 1}`;
+            active.current.push(id);
+            if (provider === "codex") {
+              emitCodex();
+              return;
+            }
+            emit({
+              subtype: "task_started",
+              task_id: id,
+              is_backgrounded: true,
+            });
+          }}
+        >
+          Start job
+        </Button>
+        <Button
+          onClick={() => {
+            const id = active.current.pop();
+            if (provider === "codex") {
+              emitCodex();
+              return;
+            }
+            if (id)
               emit({
-                subtype: "task_started",
+                subtype: "task_notification",
                 task_id: id,
-                is_backgrounded: true,
+                status: "completed",
               });
-            }}
-          >
-            Start job
-          </Button>
-          <Button
-            onClick={() => {
-              const id = active.current.pop();
-              if (id)
-                emit({
-                  subtype: "task_notification",
-                  task_id: id,
-                  status: "completed",
-                });
-            }}
-          >
-            Finish job
-          </Button>
-        </div>
-        <ComponentPreview backgroundJobs={jobs.count} />
-      </>
-    );
-  },
+          }}
+        >
+          Finish job
+        </Button>
+        {provider === "codex" && (
+          <>
+            <Button onClick={() => emitCodex(true)}>
+              Simulate unavailable
+            </Button>
+            <Button onClick={() => emitCodex()}>Refresh terminals</Button>
+          </>
+        )}
+      </div>
+      <ComponentPreview backgroundJobs={jobs.count} />
+    </>
+  );
+}
+
+export const LiveTelemetry: Story = {
+  render: () => <Telemetry />,
   parameters: {
     layout: "fullscreen",
     docs: {
       description: {
         story:
           "Uses the connected UI's real background state hook with a fake initial RPC snapshot and native start/completion events. Jobs continue while the foreground turn is idle. No real session is changed.",
+      },
+    },
+  },
+};
+
+export const CodexTelemetry: Story = {
+  render: () => <Telemetry provider="codex" />,
+  parameters: {
+    layout: "fullscreen",
+    docs: {
+      description: {
+        story:
+          "Codex's supervisor publishes complete background-terminal snapshots through the real UI state hook. An empty list is zero; an unavailable read is unknown. Recovering refreshes replace the count, independently of the foreground turn.",
       },
     },
   },

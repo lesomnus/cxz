@@ -340,6 +340,7 @@ func Run(ctx context.Context, root, id string) error {
 			s.mu.Lock()
 			if s.codex != nil {
 				s.codex.checkProgress(time.Now())
+				s.codex.readBackground(time.Now(), false)
 			}
 			if s.codex == nil && (s.snap.State == "idle" || s.snap.State == "working" || s.snap.State == "waiting_input") {
 				s.readClaudeQuota()

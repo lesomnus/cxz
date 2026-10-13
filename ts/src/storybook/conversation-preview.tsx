@@ -170,7 +170,7 @@ export function ComponentPreview({
   onChange,
   sending = false,
   working = false,
-  backgroundJobs = 0,
+  backgroundJobs,
   sessionStopped = false,
   uploadMode,
   lookupPaths,

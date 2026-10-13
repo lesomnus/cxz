@@ -20,6 +20,11 @@ export function BackgroundReport({
         { ref: ref(session) },
         { signal, timeoutMs: 10000 },
       );
+      const state = JSON.parse(new TextDecoder().decode(reply.data) || "{}")[
+        run
+      ];
+      if (state?.Unavailable)
+        throw new Error("Background job status unavailable");
       return backgroundTasks(reply.data, run);
     },
     [c, session, run],
@@ -55,7 +60,7 @@ export function BackgroundReport({
           )}
         </div>
       ))}
-      {!snapshot.loading && !snapshot.data?.length && (
+      {!snapshot.loading && !snapshot.error && !snapshot.data?.length && (
         <p className={styles.muted}>
           No provider-reported background tasks for this run.
         </p>

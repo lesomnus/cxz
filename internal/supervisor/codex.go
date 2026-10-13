@@ -20,7 +20,8 @@ type codexProtocol struct {
 	// Steering is the one write whose acceptance is not implied by writing it:
 	// the turn it names can end first. Until Codex answers, the message is
 	// still waiting rather than said.
-	steering map[string]core.Command
+	steering   map[string]core.Command
+	background codexBackground
 }
 
 func rpc(id, method string, params any) any {
@@ -41,6 +42,9 @@ func (c *codexProtocol) consume(raw []byte) {
 	}
 	c.observeProgress(v.Method, v.Params, time.Now())
 	id := string(v.ID)
+	if c.consumeBackground(id, v.Result, v.Error, time.Now()) {
+		return
+	}
 	if id == `"cxz-progress-interrupt"` {
 		if len(v.Error) > 0 && string(v.Error) != "null" {
 			s.event("diagnostic", "Codex rejected the response-timeout interrupt; resume the session to reconnect.", "", nil, nil)
@@ -161,6 +165,7 @@ func (c *codexProtocol) consume(raw []byte) {
 		s.event("vendor", r.Thread.ID, "", nil, nil)
 		s.event("state", "idle", "", nil, nil)
 		c.readQuota()
+		c.readBackground(time.Now(), true)
 		return
 	}
 	if len(v.ID) > 0 && v.Method != "" {
@@ -259,6 +264,7 @@ func (c *codexProtocol) consume(raw []byte) {
 		s.responseTracking = responseTracking{}
 		s.event("state", "idle", "", nil, nil)
 		c.readQuota()
+		c.readBackground(time.Now(), true)
 	case "item/commandExecution/outputDelta":
 		var output struct {
 			ItemID string `json:"itemId"`
@@ -270,6 +276,9 @@ func (c *codexProtocol) consume(raw []byte) {
 	case "item/started":
 		if p.Item.Type == "commandExecution" || p.Item.Type == "fileChange" {
 			s.event("tool_call", p.Item.Command, p.Item.ID, v.Params, nil)
+		}
+		if p.Item.Type == "commandExecution" {
+			c.readBackground(time.Now(), true)
 		}
 	case "item/completed":
 		if p.Item.Type == "contextCompaction" {
@@ -297,6 +306,9 @@ func (c *codexProtocol) consume(raw []byte) {
 			}
 		} else if p.Item.Type == "commandExecution" || p.Item.Type == "fileChange" {
 			s.event("tool_result", p.Item.Output, p.Item.ID, v.Params, nil)
+		}
+		if p.Item.Type == "commandExecution" {
+			c.readBackground(time.Now(), true)
 		}
 	case "thread/tokenUsage/updated", "account/rateLimits/updated":
 		s.event("usage", v.Method, "", v.Params, nil)

@@ -83,3 +83,22 @@ test("unknown status stays distinct from zero and reduced motion stops the lumin
     "none",
   );
 });
+test("Codex snapshots replace the count and unavailable reads recover", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=conversation-backgroundjobs--codex-telemetry&viewMode=story",
+  );
+  const indicator = page.locator("[data-background-jobs]");
+  await expect(indicator).toHaveText("0");
+  await page.getByRole("button", { name: "Start job", exact: true }).click();
+  await page.getByRole("button", { name: "Start job", exact: true }).click();
+  await expect(indicator).toHaveText("2");
+  await page.getByRole("button", { name: "Simulate unavailable" }).click();
+  await expect(indicator).toHaveText("—");
+  await page.getByRole("button", { name: "Refresh terminals" }).click();
+  await expect(indicator).toHaveText("2");
+  await page.getByRole("button", { name: "Finish job", exact: true }).click();
+  await page.getByRole("button", { name: "Finish job", exact: true }).click();
+  await expect(indicator).toHaveText("0");
+});

@@ -10,6 +10,7 @@ const kinds = new Set([
   "task_started",
   "task_updated",
   "task_notification",
+  "background_status",
 ]);
 const finished = new Set([
   "completed",
@@ -30,6 +31,7 @@ export class BackgroundJobs {
   private snapshotStart = 0n;
   private pending: SessionEvent[] = [];
   private value: { count?: number } = {};
+  private available = false;
   private listeners = new Set<() => void>();
   constructor(readonly run: string) {}
   snapshot = () => this.value;
@@ -45,9 +47,9 @@ export class BackgroundJobs {
     this.pending = [];
   }
   private publish() {
-    const count = [...this.tasks.values()].filter(
-      (task) => task.active === true,
-    ).length;
+    const count = this.available
+      ? [...this.tasks.values()].filter((task) => task.active === true).length
+      : undefined;
     if (this.value.count === count) return;
     this.value = { count };
     this.listeners.forEach((listener) => listener());
@@ -59,6 +61,7 @@ export class BackgroundJobs {
     }
     const states = JSON.parse(new TextDecoder().decode(bytes) || "{}");
     if (states[this.run]) {
+      this.available = states[this.run].Unavailable !== true;
       this.tasks = new Map(
         backgroundStateTasks(states[this.run]).map((task) => [
           task.task_id,
@@ -87,9 +90,20 @@ export class BackgroundJobs {
     )
       return;
     const data = payload(event);
-    if (data.type !== "system" || !kinds.has(data.subtype)) return;
+    const native =
+      data.type === "system" && data.subtype !== "background_status";
+    const codex =
+      data.type === "background" &&
+      data.provider === "codex" &&
+      ["background_tasks_changed", "background_status"].includes(data.subtype);
+    if ((!native && !codex) || !kinds.has(data.subtype)) return;
     this.lastSeq = event.seq;
     if (this.collecting) this.pending.push(event);
+    if (data.subtype === "background_status") {
+      this.available = false;
+      this.publish();
+      return;
+    }
     const merge = (
       target: Partial<BackgroundTask>,
       source: Record<string, unknown>,
@@ -137,6 +151,7 @@ export class BackgroundJobs {
       if (next.status && finished.has(next.status)) next.active = false;
       this.tasks.set(data.task_id, next);
     }
+    this.available = true;
     this.publish();
   };
 }

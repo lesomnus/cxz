@@ -25,6 +25,65 @@ const seed = (jobs: BackgroundJobs, tasks: unknown[] = [], seq = 1) =>
   );
 
 describe("provider-reported background jobs", () => {
+  it("uses Codex snapshots and distinguishes failed reads from empty lists", () => {
+    const jobs = new BackgroundJobs("run");
+    seed(jobs);
+    const snapshot = (seq: number, tasks: unknown[]) =>
+      event(seq, {
+        type: "background",
+        provider: "codex",
+        subtype: "background_tasks_changed",
+        tasks,
+      });
+    jobs.receive(snapshot(2, [{ task_id: "42" }, { task_id: "43" }]));
+    expect(jobs.snapshot().count).toBe(2);
+    jobs.receive(
+      event(3, {
+        type: "background",
+        provider: "codex",
+        subtype: "background_status",
+        status: "error",
+      }),
+    );
+    expect(jobs.snapshot().count).toBeUndefined();
+    jobs.beginSnapshot();
+    jobs.seed(
+      bytes({
+        run: {
+          Unavailable: true,
+          Tasks: { "42": { task_id: "42", active: true } },
+        },
+      }),
+      3n,
+    );
+    expect(jobs.snapshot().count).toBeUndefined();
+    jobs.receive(snapshot(4, []));
+    expect(jobs.snapshot().count).toBe(0);
+    jobs.receive(snapshot(2, [{ task_id: "42" }]));
+    expect(jobs.snapshot().count).toBe(0);
+    jobs.receive(
+      event(5, {
+        type: "background",
+        provider: "unknown",
+        subtype: "background_tasks_changed",
+        tasks: [{ task_id: "42" }],
+      }),
+    );
+    expect(jobs.snapshot().count).toBe(0);
+  });
+  it("replays a newer Codex list after a delayed bootstrap", () => {
+    const jobs = new BackgroundJobs("run");
+    jobs.receive(
+      event(7, {
+        type: "background",
+        provider: "codex",
+        subtype: "background_tasks_changed",
+        tasks: [{ task_id: "42" }],
+      }),
+    );
+    seed(jobs, [], 6);
+    expect(jobs.snapshot().count).toBe(1);
+  });
   it("distinguishes missing telemetry from a confirmed empty snapshot", () => {
     const jobs = new BackgroundJobs("run");
     jobs.seed(bytes({}), 1n);
