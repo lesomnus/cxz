@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("provider errors show their message in a red face, including the hover portal", async ({
+test("provider errors retain their visible red face and text on hover", async ({
   page,
 }) => {
   const errors: string[] = [];
@@ -29,10 +29,14 @@ test("provider errors show their message in a red face, including the hover port
   expect(channels[0]).toBeGreaterThan(channels[2]);
   expect(channels[3]).toBe(255);
   await card.hover();
-  const preview = page.locator(".activity-card-preview .activity-card-face");
-  await expect(preview).toBeVisible();
-  await expect(preview).toHaveCSS("background-color", background);
-  await expect(preview).toContainText("Selected model is at capacity.");
+  await expect(page.locator(".activity-card-preview")).toHaveCount(0);
+  await expect(card.locator(":scope > .button-content")).toHaveCSS(
+    "opacity",
+    "1",
+  );
+  await expect(face).toBeVisible();
+  await expect(face).toHaveCSS("background-color", background);
+  await expect(face).toContainText("Selected model is at capacity.");
   expect(errors).toEqual([]);
 });
 
@@ -79,17 +83,16 @@ for (const id of ["earlier-error", "legacy-error-history"]) {
       await row.evaluate((node) => node.getBoundingClientRect().height),
     ).toBeGreaterThan(40);
     await card.hover();
-    const preview = page.locator(".activity-card-preview");
-    await expect(preview).toHaveAttribute("data-unfolded", "true");
-    await expect(preview).toContainText(
-      "serverOverloaded · No automatic retry",
+    await expect(page.locator(".activity-card-preview")).toHaveCount(0);
+    await expect(card.locator(":scope > .button-content")).toHaveCSS(
+      "opacity",
+      "1",
     );
+    await expect(face).toContainText("serverOverloaded · No automatic retry");
     const upright = (
-      await preview
-        .locator(".activity-card-face")
-        .evaluate((node) => [
-          ...new DOMMatrix(getComputedStyle(node).transform).toFloat64Array(),
-        ])
+      await face.evaluate((node) => [
+        ...new DOMMatrix(getComputedStyle(node).transform).toFloat64Array(),
+      ])
     ).map((number) => Math.round(number * 1000) / 1000);
     expect(upright).toEqual([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
     await card.dblclick();

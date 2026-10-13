@@ -1,5 +1,54 @@
 import { expect, test } from "@playwright/test";
 
+test("all work kinds live in the task dialog while important errors remain readable in the transcript", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto(
+    "/iframe.html?id=conversation-workdialog--mixed-activity&viewMode=story",
+  );
+  const transcript = page.locator(".transcript");
+  const summary = transcript.locator("[data-work-summary]");
+  await expect(summary).toHaveCount(1);
+  await expect(summary.getByRole("button")).toHaveText("4");
+  await expect(transcript.locator(".tool-activity")).toHaveCount(0);
+  await expect(transcript).not.toContainText("Context compacted");
+  await expect(transcript).not.toContainText("Agent update applied");
+  await expect(transcript).not.toContainText("Provider background work");
+  const error = transcript.locator('.event-detail[data-seq="8"]');
+  await expect(error).toContainText(
+    "The workspace connection was interrupted.",
+  );
+  await error.hover();
+  await expect(error.locator(":scope > .button-content")).toHaveCSS(
+    "opacity",
+    "1",
+  );
+  await expect(page.locator(".activity-card-preview")).toHaveCount(0);
+  await summary.getByRole("button").click();
+  const dialog = page.getByRole("dialog", {
+    name: "Tasks between responses",
+    exact: true,
+  });
+  await expect(dialog).toContainText("Context compacted");
+  await expect(dialog).toContainText("Agent update applied");
+  await expect(dialog).toContainText("Provider background work");
+  const work = dialog.locator('button[data-seq="7"]');
+  await work.hover();
+  await expect(work.locator(":scope > .button-content")).toHaveCSS(
+    "opacity",
+    "1",
+  );
+  await work.click();
+  await expect(
+    dialog.getByRole("tab", { name: "Result", exact: true }),
+  ).toBeVisible();
+  await dialog.getByRole("tab", { name: "Result", exact: true }).click();
+  await expect(dialog.getByRole("tabpanel")).toContainText('"status": "done"');
+  expect(errors).toEqual([]);
+});
+
 test("turn work collapses into one line and its dialog never covers adjacent panes", async ({
   page,
 }) => {

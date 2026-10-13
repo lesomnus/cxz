@@ -297,7 +297,9 @@ export function VirtualMessages({
           >
             <ActivityCardUnfolded
               value={
-                isDiagnosticEvent(event) || start + index === latestActivity
+                !foldActivities ||
+                isDiagnosticEvent(event) ||
+                start + index === latestActivity
               }
             >
               {render(event)}

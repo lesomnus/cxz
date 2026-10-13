@@ -77,7 +77,7 @@ describe("work between conversation responses", () => {
       [...projected.groups.values()].map((group) =>
         group.events.map((e) => e.seq),
       ),
-    ).toEqual([[1n], [4n], [6n]]);
+    ).toEqual([[1n], [4n, 5n], [6n]]);
   });
   it("keeps dialog selection when history prepends the missing call and input", () => {
     const result = event(5, "tool_result", "execution");
@@ -106,5 +106,35 @@ describe("work between conversation responses", () => {
     ]);
     expect(projected.events).toHaveLength(3);
     expect([...projected.groups.values()][0].events).toHaveLength(4000);
+  });
+  it("moves non-tool activity and unfamiliar work kinds into the dialog, retaining important notices", () => {
+    const events = [
+      event(1, "input"),
+      event(2, "compact"),
+      event(3, "update"),
+      event(4, "provider_specific_work"),
+      event(5, "error"),
+      event(6, "approval"),
+      event(7, "history_trimmed"),
+      event(8, "turn_end"),
+      event(9, "tool_call", "next"),
+      event(10, "turn_end"),
+    ];
+    events[9].text = "failed";
+    const projected = workGroups(transcriptEvents(events).events);
+    expect(projected.events.map((e) => e.seq)).toEqual([
+      1n,
+      2n,
+      5n,
+      6n,
+      7n,
+      9n,
+      10n,
+    ]);
+    expect(
+      [...projected.groups.values()].map((group) =>
+        group.events.map((e) => e.seq),
+      ),
+    ).toEqual([[2n, 3n, 4n, 8n], [9n]]);
   });
 });

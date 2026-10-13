@@ -142,3 +142,29 @@ export const BetweenResponses: Story = {
     ],
   },
 };
+
+export const MixedActivity: Story = {
+  args: {
+    events: [
+      storyEvent(
+        1,
+        "input",
+        "Inspect all activity, including non-tool events.",
+      ),
+      ...toolEvents(),
+      storyEvent(5, "compact", "Context compacted"),
+      storyEvent(6, "update", "Agent update applied"),
+      storyEvent(7, "provider_specific_work", "Provider background work", {
+        status: "done",
+      }),
+      storyEvent(8, "diagnostic", "The workspace connection was interrupted.", {
+        error: { message: "The workspace connection was interrupted." },
+      }),
+      responseEvent(
+        9,
+        "codex",
+        "Work is recorded in the task dialog; the error remains visible.",
+      ),
+    ],
+  },
+};

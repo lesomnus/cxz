@@ -99,7 +99,9 @@ function TranscriptActivityCard({
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
   const [pressed, setPressed] = useState(false);
-  const active = hovered || focused || details.present;
+  // An unfolded row already paints its full content in place. Lifting a second
+  // face on hover hides the original and can leave only the native hover box.
+  const active = !unfolded && (hovered || focused || details.present);
   const [present, setPresent] = useState(false);
   const [entered, setEntered] = useState(false);
   const [area, setArea] = useState<HTMLElement | null>(null);

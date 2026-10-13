@@ -1,4 +1,6 @@
 import type { SessionEvent } from "#gen/cxz/session_pb";
+import { isTranscriptEvent } from "./journal";
+import { isDiagnosticEvent } from "./event-diagnostic";
 
 export type WorkGroup = {
   id: string;
@@ -6,8 +8,21 @@ export type WorkGroup = {
   events: SessionEvent[];
   hasBoundary: boolean;
 };
-const workKinds = new Set(["tool_call", "tool_output", "tool_result"]);
-export const isWorkEvent = (event: SessionEvent) => workKinds.has(event.kind);
+// Keep conversation and actionable/important notices visible. Everything else
+// belongs in the work dialog, including provider-specific and future work kinds.
+const conversationKinds = new Set([
+  "input",
+  "assistant",
+  "approval",
+  "history_trimmed",
+]);
+export const isWorkEvent = (event: SessionEvent) =>
+  isTranscriptEvent(event) &&
+  !conversationKinds.has(event.kind) &&
+  !isDiagnosticEvent(event) &&
+  !(
+    event.kind === "turn_end" && ["failed", "interrupted"].includes(event.text)
+  );
 
 // Conversation replies delimit work batches; runtime IDs keep executions isolated.
 // Rows already represent executions, not their individual output/result updates.
