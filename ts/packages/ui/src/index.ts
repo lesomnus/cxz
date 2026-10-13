@@ -2,6 +2,7 @@ import "./theme/tokens.css";
 export { monospaceFont, MONOSPACE_FONT_FALLBACK } from "./theme/fonts";
 export * from "./providers/ui-provider";
 export * from "./components/button/button";
+export * from "./components/badged-icon/badged-icon";
 export * from "./components/panel-item/panel-item";
 export * from "./components/dialog-surface/dialog-surface";
 export * from "./components/dialog-card/dialog-card";

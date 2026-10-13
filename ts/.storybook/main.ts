@@ -11,6 +11,7 @@ const config: StorybookConfig = {
     "../packages/ui/src/components/split-layout/*.stories.tsx",
     "../packages/ui/src/components/resize-handle/*.stories.tsx",
     "../packages/ui/src/components/audio-waveform/*.stories.tsx",
+    "../packages/ui/src/components/badged-icon/*.stories.tsx",
     "../packages/ui/src/terminal/*.stories.tsx",
   ],
   addons: ["@storybook/addon-docs"],

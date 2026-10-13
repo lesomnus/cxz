@@ -1,6 +1,7 @@
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { UnreadBadge } from "#src/shared/notifications/unread-badge.tsx";
 import styles from "./resource-icon.module.css";
+import { BadgedIcon } from "@lesomnus/cxz-ui";
 
 export function ResourceIcon({
   kind,
@@ -19,7 +20,11 @@ export function ResourceIcon({
 }) {
   useLocale();
   return (
-    <span className={styles.icon}>
+    <BadgedIcon
+      className={styles.icon}
+      badgeClassName={styles.badge}
+      badge={unreadCount > 0 ? <UnreadBadge count={unreadCount} /> : undefined}
+    >
       <svg
         width="20"
         height="20"
@@ -62,11 +67,6 @@ export function ResourceIcon({
           </>
         )}
       </svg>
-      {unreadCount > 0 && (
-        <span className={styles.badge}>
-          <UnreadBadge count={unreadCount} />
-        </span>
-      )}
-    </span>
+    </BadgedIcon>
   );
 }

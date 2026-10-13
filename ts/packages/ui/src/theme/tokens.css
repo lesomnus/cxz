@@ -100,6 +100,7 @@
   --ui-dialog-action-min-width: 72px;
   --ui-dialog-trigger-opacity: 0.6;
   --ui-control-inset: 2px;
+  --ui-badged-icon-gap: 1.5px;
   --ui-control-inline-inset: 6px;
   --ui-hover: var(--ui-shade-40);
   --ui-muted: var(--ui-shade-160);
