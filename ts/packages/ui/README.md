@@ -47,6 +47,12 @@ default palette. Set `data-ui-theme="light"` on the document root for the light
 palette. Root-level `--ui-*` overrides also reach portaled menus and dialogs. Keep
 token values in CSS rather than duplicating design measurements in documentation.
 
+`DialogTrigger` requires `adjacent` to show a disabled visual copy above a modal
+backdrop. Use it only when the dialog actually sits beside its source. Centered
+confirmations and dialogs docked to a screen edge leave the source under the
+backdrop. If an anchored dialog cannot fit beside its source after a resize,
+hide its foreground trigger until adjacent placement is restored.
+
 The public core entry exports Button/ButtonContent, ConfirmButton, ActionMenu, ValueMenu, SegmentedControl, Switch, ConfirmationDialog, EditableValue, FloatingCard, SettingField, SettingSlider, ElapsedTime, SplitLayout, ResizeHandle and UIProvider. Button's `toolbar` variant provides the compact rectangular shape. Callbacks and selected values belong to the consuming application; cxz adapters handle persistence and session operations separately.
 
 `SplitLayout` takes a controlled `SplitNode` tree, a `renderPane` callback, and `onResize`. `setSplitRatio` applies a bounded ratio update to that tree. Separators support pointer dragging, arrow keys, Home/End and double click to equalize; the host supplies the accessible separator label. It owns no workspace connections or tabs, so it can lay out arbitrary content in other applications. When moving expensive stateful content between panes, keep its instance outside the changing tree and attach a stable portal host to pane slots, as the terminal integration does.

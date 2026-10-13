@@ -52,19 +52,21 @@ export function focusedDialogTrigger() {
   );
 }
 
-// This visual copy is inside the modal top layer, above its backdrop. The source
-// remains inert in the page; no event handlers or focusable content are copied.
+// Only an explicitly adjacent dialog retains its trigger above the backdrop.
+// The source remains inert; no event handlers or focusable content are copied.
 export function DialogTrigger({
   origin,
   relativeTo,
+  adjacent = false,
 }: {
   origin?: DialogTriggerOrigin;
   relativeTo?: RefObject<HTMLElement | null>;
+  adjacent?: boolean;
 }) {
   const host = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     const node = host.current;
-    if (!node || !origin) return;
+    if (!node || !origin || !adjacent) return;
     const content = origin.content.cloneNode(true) as HTMLElement;
     Object.assign(content.style, {
       position: "relative",
@@ -119,8 +121,8 @@ export function DialogTrigger({
       window.removeEventListener("scroll", position, true);
       node.replaceChildren();
     };
-  }, [origin, relativeTo]);
-  if (!origin) return null;
+  }, [origin, relativeTo, adjacent]);
+  if (!origin || !adjacent) return null;
   return (
     <div
       ref={host}

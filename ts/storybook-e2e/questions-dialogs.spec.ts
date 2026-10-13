@@ -11,7 +11,7 @@ async function finishEntrance(dialog: Locator) {
 }
 
 for (const action of ["Restart", "Purge"]) {
-  test(`${action} keeps its menu trigger after the menu unmounts`, async ({
+  test(`${action} opens centrally without a foreground menu trigger`, async ({
     page,
   }) => {
     await page.goto(
@@ -25,9 +25,8 @@ for (const action of ["Restart", "Purge"]) {
       name: `${action} session`,
       exact: true,
     });
-    const foreground = dialog.locator('[data-dialog-trigger="true"]');
-    await expect(foreground).toContainText(action);
-    await expect(foreground.locator("button")).toBeDisabled();
+    await expect(dialog).toBeVisible();
+    await expect(dialog.locator('[data-dialog-trigger="true"]')).toHaveCount(0);
     await expect(page.getByRole("menu")).toHaveCount(0);
     await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
     await expect(page.locator('[data-dialog-trigger="true"]')).toHaveCount(0);
@@ -41,25 +40,13 @@ test("composer Stop uses the shared dialog header, body and footer", async ({
     "/iframe.html?id=conversation-composer--empty&viewMode=story",
   );
   await page.getByRole("button", { name: "Session menu", exact: true }).click();
-  const stopBounds = (await page
-    .getByRole("menuitem", { name: "Stop", exact: true })
-    .boundingBox())!;
   await page.getByRole("menuitem", { name: "Stop", exact: true }).click();
   const dialog = page.getByRole("dialog", {
     name: "Stop session",
     exact: true,
   });
   await finishEntrance(dialog);
-  const foreground = dialog.locator('[data-dialog-trigger="true"]');
-  await expect(foreground).toContainText("Stop");
-  await expect(foreground.locator("button")).toBeDisabled();
-  const foregroundBounds = (await foreground.boundingBox())!;
-  for (const key of ["x", "y", "width", "height"] as const)
-    expect(foregroundBounds[key]).toBeCloseTo(stopBounds[key], 1);
-  await page.mouse.click(
-    stopBounds.x + stopBounds.width / 2,
-    stopBounds.y + stopBounds.height / 2,
-  );
+  await expect(dialog.locator('[data-dialog-trigger="true"]')).toHaveCount(0);
   await expect(dialog).toBeVisible();
   await expect(dialog.locator(".card-heading")).toHaveText("Stop session");
   await expect(dialog.locator(".card-body")).toContainText("Active work stops");

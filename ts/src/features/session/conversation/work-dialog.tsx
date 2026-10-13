@@ -9,9 +9,7 @@ import {
   Button,
   DialogCard,
   DialogSurface,
-  DialogTrigger,
   dialogClassName,
-  type DialogTriggerOrigin,
 } from "@lesomnus/cxz-ui";
 import { createPortal } from "react-dom";
 import type { SessionEvent } from "#gen/cxz/session_pb";
@@ -78,7 +76,6 @@ export function WorkDialog({
   closing = false,
   history,
   container,
-  trigger,
   onClosed,
 }: {
   work: WorkGroup;
@@ -87,7 +84,6 @@ export function WorkDialog({
   closing?: boolean;
   history?: WorkHistory;
   container: HTMLElement;
-  trigger?: DialogTriggerOrigin;
   onClosed: () => void;
 }) {
   useLocale();
@@ -176,7 +172,6 @@ export function WorkDialog({
         aria-hidden="true"
         onClick={() => close()}
       />
-      <DialogTrigger origin={trigger} relativeTo={dialog} />
       <div className={styles.frame}>
         <DialogSurface motion="from-right" closing={closing}>
           <DialogCard

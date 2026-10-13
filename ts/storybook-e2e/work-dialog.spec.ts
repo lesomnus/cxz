@@ -32,6 +32,7 @@ test("all work kinds live in the task dialog while important errors remain reada
     exact: true,
   });
   await expect(dialog).toContainText("Context compacted");
+  await expect(dialog.locator('[data-dialog-trigger="true"]')).toHaveCount(0);
   await expect(dialog).toContainText("Agent update applied");
   await expect(dialog).toContainText("Provider background work");
   const work = dialog.locator('button[data-seq="7"]');

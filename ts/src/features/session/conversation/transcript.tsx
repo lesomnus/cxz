@@ -22,10 +22,6 @@ import {
   selectedWorkGroup,
 } from "#src/features/session/model/work-groups.ts";
 import { WorkDialog, WorkSummary } from "./work-dialog";
-import {
-  captureDialogTrigger,
-  type DialogTriggerOrigin,
-} from "@lesomnus/cxz-ui";
 
 type Geometry = {
   top: number;
@@ -110,7 +106,6 @@ export function Transcript({
   const restoreWorkFocus = useRef(true);
   const activeWork = selectedWorkGroup(work.groups, selectedWork);
   const workTrigger = useRef<HTMLButtonElement | null>(null);
-  const workOrigin = useRef<DialogTriggerOrigin | undefined>(undefined);
   const closeWork = React.useCallback((restore = true) => {
     restoreWorkFocus.current = restore;
     setWorkClosing(true);
@@ -125,7 +120,6 @@ export function Transcript({
           partial={!group.hasBoundary && !!workHistory?.hasOlder}
           open={(trigger) => {
             workTrigger.current = trigger;
-            workOrigin.current = captureDialogTrigger(trigger);
             if (activeWork === group && !workClosing) closeWork();
             else {
               setWorkClosing(false);
@@ -760,7 +754,6 @@ export function Transcript({
           closing={workClosing}
           history={workHistory}
           container={pane.current!.closest<HTMLElement>(".conversation")!}
-          trigger={workOrigin.current}
           onClosed={() => {
             if (restoreWorkFocus.current)
               (workTrigger.current?.isConnected

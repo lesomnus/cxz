@@ -115,6 +115,23 @@ test("Add opens beside the panel and its language/provider dropdown works inside
   expect(errors).toEqual([]);
 });
 
+test("foreground trigger appears only while the account dialog fits beside the panel", async ({
+  page,
+}) => {
+  await page.goto("/iframe.html?id=resources-views--accounts&viewMode=story");
+  const panel = page.getByRole("complementary", { name: "Account list" });
+  await panel.getByRole("button", { name: "Add account", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Add account", exact: true });
+  await expect(dialog.locator('[data-dialog-trigger="true"]')).toHaveCount(1);
+  await page.setViewportSize({ width: 390, height: 700 });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.locator('[data-dialog-trigger="true"]')).toHaveCount(0);
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await expect(dialog.locator('[data-dialog-trigger="true"]')).toHaveCount(1);
+  await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+});
+
 test("dialogs respect reduced motion", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/iframe.html?id=resources-views--accounts&viewMode=story");

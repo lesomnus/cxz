@@ -32,8 +32,13 @@ export function AnchoredDialog({
   trigger?: HTMLElement | null;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
+  const [adjacent, setAdjacent] = useState(false);
   const [origin] = useState(() =>
-    trigger ? captureDialogTrigger(trigger) : focusedDialogTrigger(),
+    anchor
+      ? trigger
+        ? captureDialogTrigger(trigger)
+        : focusedDialogTrigger()
+      : undefined,
   );
   const id = useId();
   useLayoutEffect(() => {
@@ -42,9 +47,19 @@ export function AnchoredDialog({
     const position = () => {
       const inset =
         parseFloat(getComputedStyle(node).getPropertyValue("--space")) || 4;
-      const rect = anchor?.getBoundingClientRect();
-      node.style.left = `${Math.max(inset, Math.min(rect?.right ?? (window.innerWidth - node.offsetWidth) / 2, window.innerWidth - node.offsetWidth - inset))}px`;
+      const rect = anchor?.isConnected
+        ? anchor.getBoundingClientRect()
+        : undefined;
+      const left = Math.max(
+        inset,
+        Math.min(
+          rect?.right ?? (window.innerWidth - node.offsetWidth) / 2,
+          window.innerWidth - node.offsetWidth - inset,
+        ),
+      );
+      node.style.left = `${left}px`;
       node.style.top = `${Math.max(inset, Math.min(rect?.top ?? inset, window.innerHeight - node.offsetHeight - inset))}px`;
+      setAdjacent(!!rect && left >= rect.right);
     };
     position();
     window.addEventListener("resize", position);
@@ -81,8 +96,8 @@ export function AnchoredDialog({
       <span id={id} className={styles.label}>
         {title}
       </span>
-      <DialogTrigger origin={origin} />
-      <DialogSurface anchored>{children}</DialogSurface>
+      <DialogTrigger origin={origin} adjacent={adjacent} />
+      <DialogSurface anchored={adjacent}>{children}</DialogSurface>
     </dialog>,
     document.body,
   );

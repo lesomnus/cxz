@@ -10,11 +10,6 @@ import { createPortal } from "react-dom";
 import { Button } from "../button/button";
 import { DialogCard, DialogActions } from "../dialog-card/dialog-card";
 import {
-  DialogTrigger,
-  focusedDialogTrigger,
-  type DialogTriggerOrigin,
-} from "../dialog-trigger/dialog-trigger";
-import {
   DialogSurface,
   dialogClassName,
 } from "../dialog-surface/dialog-surface";
@@ -29,7 +24,6 @@ export function ConfirmationDialog({
   execute,
   close,
   failureMessage,
-  trigger,
 }: {
   title: string;
   children: ReactNode;
@@ -37,10 +31,8 @@ export function ConfirmationDialog({
   execute: () => Promise<boolean> | boolean;
   close: () => void;
   failureMessage?: string;
-  trigger?: DialogTriggerOrigin;
 }) {
   const { t } = useUI();
-  const [origin] = useState(() => trigger ?? focusedDialogTrigger());
   const id = useId();
   const dialog = useRef<HTMLDialogElement>(null);
   const cancel = useRef<HTMLButtonElement>(null);
@@ -126,7 +118,6 @@ export function ConfirmationDialog({
           close();
       }}
     >
-      <DialogTrigger origin={origin} />
       <DialogSurface>
         <DialogCard
           title={title}
