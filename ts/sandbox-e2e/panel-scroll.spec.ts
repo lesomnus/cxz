@@ -147,19 +147,23 @@ test("compact panels keep their heading fixed and share the conversation handle'
   const thumb = panel.getByRole("scrollbar", { name: "Panel scroll" });
   await expect(thumb).toBeVisible();
   const handle = thumb.locator(".scroll-handle");
+  const rail = panel.locator(".panel-scroll-rail");
+  const railOpacity = () =>
+    rail.evaluate((el) => getComputedStyle(el, "::before").opacity);
   const heading = panel.locator("header");
   const headingY = (await heading.boundingBox())!.y;
   await page.mouse.move(1000, 100);
   await expect(handle).toHaveCSS("opacity", "0");
   await heading.hover();
   await expect(handle).toHaveCSS("opacity", "0");
+  await expect.poll(railOpacity).toBe("0");
   await list.hover();
   await expect(handle).toHaveCSS("opacity", "0.7");
+  await expect.poll(railOpacity).toBe("1");
   const initial = (await handle.boundingBox())!;
   const scrollBox = (await panel
     .locator(".panel-scroll-region")
     .boundingBox())!;
-  const rail = panel.locator(".panel-scroll-rail");
   const railBox = (await rail.boundingBox())!;
   expect(railBox.height).toBeLessThan(scrollBox.height);
   expect(railBox.y + railBox.height / 2).toBeCloseTo(

@@ -86,6 +86,11 @@
   --panel-scroll-rail-max-size: 320px;
   --panel-scroll-rail-max-ratio: 0.75;
   --panel-scroll-rail-growth: 0.35;
+  --panel-scroll-rail-background: color-mix(
+    in srgb,
+    var(--scroll-handle-color) 18%,
+    transparent
+  );
   --panel-fade-depth: 24px;
   --panel-fade-extension: 72px;
   --agent-logo-size: 14px;
@@ -455,6 +460,22 @@ header strong {
   width: 24px;
   z-index: 2;
   pointer-events: none;
+}
+.panel-scroll-rail:not(:empty)::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  left: 50%;
+  width: var(--scroll-handle-size);
+  transform: translateX(-50%);
+  border-radius: var(--scroll-handle-radius);
+  background: var(--panel-scroll-rail-background);
+  opacity: 0;
+  transition: opacity 160ms;
+}
+.panel-scroll-region:is(:hover, .scroll-dragging) .panel-scroll-rail::before,
+.panel-scroll-rail:has(.panel-scroll-thumb:focus-visible)::before {
+  opacity: 1;
 }
 .panel-scroll-fade {
   position: absolute;
@@ -2811,6 +2832,7 @@ summary:hover {
   .scroll-handle,
   .scroll-tick,
   .panel-scroll-fade,
+  .panel-scroll-rail::before,
   .send-shortcut,
   .tree-chevron {
     transition: none !important;
