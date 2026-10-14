@@ -17,7 +17,7 @@ export function ResourcePanel({
   return (
     <aside {...props} className={`resource-panel ${styles.panel} ${className}`}>
       <header className={styles.header}>
-        <strong>{title}</strong>
+        <strong className={styles.title}>{title}</strong>
         {actions && <div className={styles.actions}>{actions}</div>}
       </header>
       <PanelScroll>{children}</PanelScroll>

@@ -12,8 +12,13 @@
   display: flex;
   align-items: center;
   gap: var(--ui-space);
-  padding: var(--ui-dialog-padding);
+  padding: var(--ui-control-inset);
   border-right: 1px solid var(--ui-shade-36);
+}
+.title {
+  flex: 1;
+  min-width: 0;
+  padding: var(--ui-dialog-padding);
 }
 .actions {
   display: flex;
@@ -23,6 +28,7 @@
 }
 .actions button {
   width: var(--ui-toolbar-button-width);
+  border: 1px solid var(--ui-shade-54);
 }
 .panel > :global(.panel-scroll-region) {
   --panel-inset: 0px;
