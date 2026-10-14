@@ -245,8 +245,10 @@ Question은 사용자가 답해야 하는 작업이다. 다른 정보가 앞에 
 - 움직임이 위치와 관계를 설명하고, 작은 변화에도 안정적으로 반응하는가.
 - 같은 조작을 다른 화면에서도 익숙하게 사용할 수 있는가.
 
-디자인 수치는 [style.css](../ts/src/app/styles/style.css)와 [theme.css](../ts/src/app/styles/theme.css)의
-토큰과 각 컴포넌트의 CSS Module을 기준으로 한다. 스크롤·노출·애니메이션처럼 동작에 속한 수치는 해당 구현에서
+디자인 수치는 [style.css](../ts/src/app/styles/style.css), [theme.css](../ts/src/app/styles/theme.css),
+[cxz-ui 토큰](../ts/packages/ui/src/theme/tokens.css)과 각 컴포넌트의 CSS Module을 기준으로 한다.
+재사용 스크롤의 스타일과 기본값은 cxz-ui의 `ScrollArea`가 소유하고, 앱은 패널 배경과 번역만 연결한다.
+스크롤·노출·애니메이션처럼 동작에 속한 수치는 해당 구현에서
 관리한다. 문서에 상수나 기본값을 복사해 별도의 기준을 만들지 않는다.
 
 화면별 경험과 동작은 [스크롤 경험 문서](web-conversation-scroll.md),

@@ -103,6 +103,11 @@ npm run storybook:ui
 
 별도의 UI Storybook은 앱 전역 CSS와 설정·언어 저장소 없이 패키지를 검증합니다. 앱 Storybook은 실제 제품 화면 안에서의 조합을 검증합니다. 패키지 설치·테마·번역·에디터 사용법은 [UI README](../ts/packages/ui/README.md)를 참조하세요. 배포용 CSS와 타입 선언은 빌드 결과이며 git에 저장하지 않습니다.
 
+`Components/ScrollArea`는 중앙 레일·핸들·본문 배경색의 그림자를 가진 재사용 세로 스크롤입니다.
+`LongList`, `ShortOverflow`, `NoOverflow`, `GrowingContent`에서 내용 길이에 따른 레일 변화,
+hover·포커스·드래그, 키보드 이동과 `viewportRef`를 통한 위치 이동을 확인합니다.
+앱의 `PanelScroll`은 이 컴포넌트에 번역과 패널 배치를 연결하는 래퍼입니다.
+
 소스의 역할별 분류와 파일 배치 기준은 [웹 소스 구조](web-structure.md)에 정리되어 있습니다.
 
 `Conversation/Composer`의 `FileUploads`, `FailedUpload`는 파일·폴더 드롭과

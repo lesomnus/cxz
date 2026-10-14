@@ -41,9 +41,8 @@
   border: var(--panel-border-width) solid var(--panel-border-color);
 }
 .panel > :global(.panel-scroll-region) {
-  --panel-inset: 0px;
-  --panel-background: var(--ui-dialog-body-background);
-  background: var(--panel-background);
+  --ui-scroll-area-background: var(--ui-dialog-body-background);
+  background: var(--ui-scroll-area-background);
   border-radius: var(--ui-dialog-radius) var(--ui-dialog-radius) 0 0;
   overflow: hidden;
 }

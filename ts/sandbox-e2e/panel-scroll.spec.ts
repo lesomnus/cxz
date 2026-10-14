@@ -146,7 +146,7 @@ test("compact panels keep their heading fixed and share the conversation handle'
   expect((await panel.boundingBox())!.width).toBe(180);
   const thumb = panel.getByRole("scrollbar", { name: "Panel scroll" });
   await expect(thumb).toBeVisible();
-  const handle = thumb.locator(".scroll-handle");
+  const handle = thumb.locator("[data-scroll-area=handle]");
   const rail = panel.locator(".panel-scroll-rail");
   const railOpacity = () =>
     rail.evaluate((el) => getComputedStyle(el, "::before").opacity);
@@ -174,7 +174,7 @@ test("compact panels keep their heading fixed and share the conversation handle'
   expect(initial.height).toBeLessThan(scrollBox.height / 2);
   const maxSize = await handle.evaluate((el) =>
     parseFloat(
-      getComputedStyle(el).getPropertyValue("--panel-scroll-thumb-max-size"),
+      getComputedStyle(el).getPropertyValue("--ui-scroll-area-thumb-max-size"),
     ),
   );
   expect(initial.height).toBeLessThanOrEqual(maxSize);

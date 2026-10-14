@@ -84,6 +84,29 @@
 
 :root {
   --ui-space: 4px;
+  --ui-scroll-area-background: var(--ui-shade-24);
+  --ui-scroll-area-content-inset: 14px;
+  --ui-scroll-area-hit-size: 24px;
+  --ui-scroll-area-near-distance: 32px;
+  --ui-scroll-area-handle-color: var(--ui-shade-122);
+  --ui-scroll-area-handle-size: 4px;
+  --ui-scroll-area-handle-radius: 3px;
+  --ui-scroll-area-handle-expansion: 2;
+  --ui-scroll-area-transition-duration: 160ms;
+  --ui-scroll-area-thumb-max-size: 96px;
+  --ui-scroll-area-thumb-max-ratio: 0.35;
+  --ui-scroll-area-rail-min-size: 128px;
+  --ui-scroll-area-rail-max-size: 320px;
+  --ui-scroll-area-rail-max-ratio: 0.75;
+  --ui-scroll-area-rail-growth: 0.35;
+  --ui-scroll-area-rail-offset: calc(-1 * var(--ui-space));
+  --ui-scroll-area-rail-background: color-mix(
+    in srgb,
+    var(--ui-scroll-area-handle-color) 18%,
+    transparent
+  );
+  --ui-scroll-area-fade-depth: 24px;
+  --ui-scroll-area-fade-extension: 72px;
   --ui-dialog-enter-duration: 240ms;
   --ui-dialog-enter-easing: cubic-bezier(0.16, 1, 0.3, 1);
   --ui-dialog-enter-offset: calc(2 * var(--ui-space));

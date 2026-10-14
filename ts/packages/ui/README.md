@@ -75,7 +75,7 @@ The component has no application dependencies or idle animation loop. See
 [SVG effects on HTML](https://developer.mozilla.org/en-US/docs/Web/SVG/Guides/Applying_SVG_effects_to_HTML_content)
 describes the underlying mask mechanism.
 
-The public core entry exports Button/ButtonContent, BadgedIcon, ConfirmButton, ActionMenu, ValueMenu, SegmentedControl, Switch, ConfirmationDialog, EditableValue, FloatingCard, SettingField, SettingSlider, ElapsedTime, SplitLayout, ResizeHandle and UIProvider. Button's `toolbar` variant provides the compact rectangular shape. Callbacks and selected values belong to the consuming application; cxz adapters handle persistence and session operations separately.
+The public core entry exports Button/ButtonContent, BadgedIcon, ConfirmButton, ActionMenu, ValueMenu, SegmentedControl, Switch, ConfirmationDialog, EditableValue, FloatingCard, SettingField, SettingSlider, ElapsedTime, SplitLayout, ResizeHandle, ScrollArea and UIProvider. Button's `toolbar` variant provides the compact rectangular shape. Callbacks and selected values belong to the consuming application; cxz adapters handle persistence and session operations separately.
 
 `SplitLayout` takes a controlled `SplitNode` tree, a `renderPane` callback, and `onResize`. `setSplitRatio` applies a bounded ratio update to that tree. Separators support pointer dragging, arrow keys, Home/End and double click to equalize; the host supplies the accessible separator label. It owns no workspace connections or tabs, so it can lay out arbitrary content in other applications. When moving expensive stateful content between panes, keep its instance outside the changing tree and attach a stable portal host to pane slots, as the terminal integration does.
 
@@ -84,6 +84,34 @@ The public core entry exports Button/ButtonContent, BadgedIcon, ConfirmButton, A
 It captures pointer drags, supports arrow keys and Home/End, and accepts optional
 `onReset` for double click. The host owns layout and content; the handle does not
 remount either pane. Its appearance follows the same separator tokens as split layouts.
+
+## Scroll areas
+
+`ScrollArea` is exported from the core entry. It owns native vertical scrolling,
+the centered growing rail, capped handle, hover/focus/drag interaction and edge
+fades. Its styles and defaults belong to this package; it needs no cxz app CSS,
+connection, router or provider. Supply bounded height, or place it in a flex
+parent whose height is constrained.
+
+```tsx
+import "@lesomnus/cxz-ui/styles.css";
+import { ScrollArea } from "@lesomnus/cxz-ui";
+
+<ScrollArea className="document-scroll" scrollbarLabel="Scroll document">
+  <Article />
+</ScrollArea>
+```
+
+Size `.document-scroll` in your stylesheet. `viewportRef` points to the native
+scroll element for reading position or scrolling programmatically; `onScroll`
+receives its scroll events. `viewportClassName`, `contentClassName` and
+`classNames` customize slots. Override `--ui-scroll-area-background` to match
+the containing surface and its fades; rail geometry, handle appearance and
+fade limits use the other `--ui-scroll-area-*` CSS tokens. Defaults live in
+`src/theme/tokens.css`. See **Components/ScrollArea** for short overflow, long
+lists, growing content and no-overflow examples. Content fetching and
+virtualization belong to the caller. The cxz conversation's elastic transcript
+scrollbar remains specialized; it is not part of this primitive.
 
 ## Terminal workbench
 

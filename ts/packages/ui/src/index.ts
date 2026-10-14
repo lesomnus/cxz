@@ -23,3 +23,4 @@ export * from "./components/split-layout/split-layout";
 export * from "./components/resize-handle/resize-handle";
 export * from "./components/audio-waveform/audio-waveform";
 export * from "./components/suggestion-grid/suggestion-grid";
+export * from "./components/scroll-area/scroll-area";

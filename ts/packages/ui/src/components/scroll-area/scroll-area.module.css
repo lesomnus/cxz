@@ -1,0 +1,140 @@
+.area,
+.area * {
+  box-sizing: border-box;
+}
+.area {
+  position: relative;
+  isolation: isolate;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--ui-scroll-area-background);
+}
+.viewport {
+  height: 100%;
+  overflow: auto;
+  scrollbar-width: none;
+}
+.viewport::-webkit-scrollbar {
+  display: none;
+}
+.content {
+  display: flow-root;
+  padding-right: var(--ui-scroll-area-content-inset);
+}
+.rail {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  right: var(--ui-scroll-area-rail-offset);
+  width: var(--ui-scroll-area-hit-size);
+  z-index: 2;
+  pointer-events: none;
+}
+.rail:not(:empty)::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  left: 50%;
+  width: var(--ui-scroll-area-handle-size);
+  transform: translateX(-50%);
+  border-radius: var(--ui-scroll-area-handle-radius);
+  background: var(--ui-scroll-area-rail-background);
+  opacity: 0;
+  transition: opacity var(--ui-scroll-area-transition-duration);
+}
+.area:is(:hover, [data-dragging]) .rail::before,
+.rail:has(.thumb:focus-visible)::before {
+  opacity: 1;
+}
+.fade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  pointer-events: none;
+  max-height: 40%;
+  transition:
+    height 180ms ease-out,
+    opacity 180ms ease-out;
+}
+.topFade {
+  top: 0;
+  height: min(
+    var(--ui-scroll-area-top-hidden, 0px),
+    calc(
+      var(--ui-scroll-area-fade-depth) + var(--ui-scroll-area-fade-extension) *
+        var(--ui-scroll-area-top-motion, 0)
+    )
+  );
+  opacity: var(--ui-scroll-area-top-opacity, 0);
+  background: linear-gradient(
+    to bottom,
+    var(--ui-scroll-area-background),
+    transparent
+  );
+}
+.bottomFade {
+  bottom: 0;
+  height: min(
+    var(--ui-scroll-area-bottom-hidden, 0px),
+    calc(
+      var(--ui-scroll-area-fade-depth) + var(--ui-scroll-area-fade-extension) *
+        var(--ui-scroll-area-bottom-motion, 0)
+    )
+  );
+  opacity: var(--ui-scroll-area-bottom-opacity, 0);
+  background: linear-gradient(
+    to top,
+    var(--ui-scroll-area-background),
+    transparent
+  );
+}
+.thumb {
+  position: absolute;
+  width: var(--ui-scroll-area-hit-size);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  pointer-events: auto;
+}
+.handle {
+  display: block;
+  position: absolute;
+  inset-block: 0;
+  left: calc(
+    (var(--ui-scroll-area-hit-size) - var(--ui-scroll-area-handle-size)) / 2
+  );
+  width: var(--ui-scroll-area-handle-size);
+  border-radius: var(--ui-scroll-area-handle-radius);
+  background: var(--ui-scroll-area-handle-color);
+  opacity: 0;
+  transform: scaleX(1);
+  transition:
+    opacity var(--ui-scroll-area-transition-duration),
+    transform var(--ui-scroll-area-transition-duration);
+}
+.area:hover .handle,
+.thumb:focus-visible .handle {
+  opacity: 0.7;
+}
+.area:is([data-near], [data-dragging]) .handle {
+  transform: scaleX(var(--ui-scroll-area-handle-expansion));
+  opacity: 1;
+}
+.area[data-dragging] .thumb {
+  cursor: grabbing;
+}
+.thumb:focus-visible {
+  outline: 1px solid var(--ui-shade-204);
+  outline-offset: 2px;
+  border-radius: var(--ui-scroll-area-handle-radius);
+}
+@media (prefers-reduced-motion: reduce) {
+  .fade,
+  .handle,
+  .rail::before {
+    transition: none;
+  }
+}
