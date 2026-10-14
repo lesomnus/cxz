@@ -40,9 +40,12 @@ export function useTranscriptMotion({
     return {
       tail,
       scroll: el.scrollTop,
-      width: column.clientWidth,
+      width: follow.current ? column.clientWidth : (saved.current?.width ?? 0),
       positions: new Map(
-        [...column.querySelectorAll<HTMLElement>("[data-row]")].map((node) => [
+        (follow.current
+          ? [...column.querySelectorAll<HTMLElement>("[data-row]")]
+          : []
+        ).map((node) => [
           node.dataset.row!,
           { node, top: column.offsetTop + node.offsetTop - el.scrollTop },
         ]),

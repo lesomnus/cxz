@@ -14,6 +14,8 @@ import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import styles from "./session-search.module.css";
 import { useSearchHighlights, type SearchLocation } from "./search-highlights";
 
+const noHits: LoadedSearchHit[] = [];
+
 export function SessionSearch({
   events,
   area,
@@ -45,7 +47,10 @@ export function SessionSearch({
   const latest = useRef({ open, query: query.trim(), restoreFocus });
   latest.current = { open, query: query.trim(), restoreFocus };
   const visible = useMemo(
-    () => searchLoadedMessages(events, open ? query.trim() : ""),
+    () =>
+      open && query.trim()
+        ? searchLoadedMessages(events, query.trim())
+        : noHits,
     [events, open, query],
   );
   const selectedIndex = Math.min(selected, Math.max(0, visible.length - 1));

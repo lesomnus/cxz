@@ -34,7 +34,7 @@ const foldable = (event: SessionEvent) =>
   event.kind !== "assistant" &&
   !isDiagnosticEvent(event);
 
-export function VirtualMessages({
+export const VirtualMessages = React.memo(function VirtualMessages({
   pane,
   events,
   follow,
@@ -59,6 +59,7 @@ export function VirtualMessages({
   const sizes = useRef(cache?.sizes ?? new Map<string, number>());
   const knots = useRef(cache?.knots ?? new Map<string, RowKnot>());
   const mapping = useRef<MessageMap | null>(null);
+  const markerEvents = useRef<SessionEvent[] | undefined>(undefined);
   const [revision, setRevision] = useState(0);
   const [rowPadding, setRowPadding] = useState(0);
   const [viewport, setViewport] = useState({ top: 0, offset: 0, height: 800 });
@@ -97,11 +98,18 @@ export function VirtualMessages({
       ? { id: row.id, offset: row.top + root.current!.offsetTop - el.scrollTop }
       : null;
     if (cache) cache.anchor = anchor.current;
-    setViewport({
+    const next = {
       top: Math.max(0, el.scrollTop - root.current!.offsetTop),
       offset: el.scrollTop - root.current!.offsetTop,
       height: el.clientHeight,
-    });
+    };
+    setViewport((old) =>
+      old.top === next.top &&
+      old.offset === next.offset &&
+      old.height === next.height
+        ? old
+        : next,
+    );
   }
   useEffect(() => {
     const el = pane.current!;
@@ -219,7 +227,14 @@ export function VirtualMessages({
       root.current!.offsetTop,
       knots.current,
       rowPadding,
+      // Row-height/reading-knot corrections do not change logical marker
+      // positions. Rebuild them only when events or the content origin change.
+      markerEvents.current === events &&
+        oldMap?.origin === root.current!.offsetTop
+        ? oldMap.markers
+        : undefined,
     );
+    markerEvents.current = events;
     mapping.current = nextMap;
     if (beforeMapped !== undefined) {
       // Rebase the rail by stable event coordinates, not a measured row's
@@ -334,4 +349,4 @@ export function VirtualMessages({
       {children}
     </div>
   );
-}
+});
