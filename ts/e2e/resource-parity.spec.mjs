@@ -427,7 +427,36 @@ test("account registration, session creation and archive restore use resource AP
     )
     .toBe(true);
   await page.getByRole("link", { name: "Sessions view" }).click();
-  await page.getByRole("button", { name: "New session", exact: true }).click();
+  const panel = page.getByRole("complementary", {
+    name: "Session list",
+    exact: true,
+  });
+  await expect(panel).not.toContainText("127.0.0.1");
+  const body = panel.locator(".panel-scroll-region");
+  const appearance = await panel.evaluate((el) => ({
+    background: getComputedStyle(el).backgroundColor,
+    body: getComputedStyle(el.querySelector(".panel-scroll-region"))
+      .backgroundColor,
+  }));
+  expect(appearance.body).not.toBe(appearance.background);
+  expect(
+    await body.evaluate((el) => parseFloat(getComputedStyle(el).borderRadius)),
+  ).toBeGreaterThan(0);
+  await panel.getByRole("button", { name: "Add session", exact: true }).click();
+  const create = page.getByRole("dialog", { name: "Add session", exact: true });
+  await expect(create).toBeVisible();
+  const box = await create.boundingBox();
+  const panelBox = await panel.boundingBox();
+  expect(box.x).toBeCloseTo(panelBox.x + panelBox.width, 0);
+  await expect
+    .poll(() => create.evaluate((el) => el.contains(document.activeElement)))
+    .toBe(true);
+  await page.keyboard.press("Escape");
+  await expect(create).toHaveCount(0);
+  await expect(
+    panel.getByRole("button", { name: "Add session", exact: true }),
+  ).toBeFocused();
+  await panel.getByRole("button", { name: "Add session", exact: true }).click();
   await page.getByRole("combobox", { name: "Account", exact: true }).click();
   await page.getByRole("option", { name: "Work account · codex" }).click();
   await page
@@ -444,9 +473,8 @@ test("account registration, session creation and archive restore use resource AP
       ),
     )
     .toBe(true);
-  await page
-    .getByRole("link", { name: "Manage sessions", exact: true })
-    .click();
+  await expect(create).toHaveCount(0);
+  await page.goto("/sessions");
   await page
     .locator("main")
     .getByRole("button", { name: "Archive", exact: true })

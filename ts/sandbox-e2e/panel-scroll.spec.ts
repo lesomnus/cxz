@@ -101,7 +101,7 @@ test("panel fades track hidden edges and scroll intensity without covering the h
       handleAbove,
       belowHeading: fade.getBoundingClientRect().top >= header.bottom,
       background: getComputedStyle(fade).backgroundImage,
-      panel: getComputedStyle(el).backgroundColor,
+      panel: getComputedStyle(region).backgroundColor,
     };
   });
   expect(layers.overlapsHandle).toBe(true);

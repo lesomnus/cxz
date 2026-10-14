@@ -8,10 +8,12 @@ import {
   useState,
 } from "react";
 import type { Session } from "#gen/cxz/session_pb";
+import { Button } from "@lesomnus/cxz-ui";
 import { Connection } from "#src/shared/api/connection.ts";
 import { ProfileMenu } from "./profile-menu";
 import { SessionTreeGroup } from "#src/features/session/components/session-tree.tsx";
-import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
+import { ResourcePanel } from "#src/shared/components/resource-panel.tsx";
+import { SessionCreate } from "#src/features/session/components/session-create.tsx";
 import { useScrollbars } from "#src/shared/scroll/scrollbars.ts";
 import { useResourceInventory } from "#src/shared/api/resource-inventory.ts";
 import { key } from "@lesomnus/payday/store";
@@ -42,6 +44,10 @@ export function Workspace({
   const [settingsFileOpen, setSettingsFileOpen] = useState(false);
   useEffect(() => setSettingsFileOpen(false), [resource, settingsTopic]);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [addingSession, setAddingSession] = useState(false);
+  const panel = useRef<HTMLElement>(null);
+  const addSession = useRef<HTMLButtonElement>(null);
+  useEffect(() => setAddingSession(false), [resource, session]);
   const inventory = useResourceInventory(c);
   const unread = useSessionAttention(
     c,
@@ -146,8 +152,43 @@ export function Workspace({
           />
         </nav>
         {resource !== "accounts" && (
-          <aside
-            className={`resource-panel${resource === "sessions" ? " session-panel" : ""}`}
+          <ResourcePanel
+            ref={panel}
+            className={resource === "sessions" ? "session-panel" : ""}
+            title={
+              resource === "sessions"
+                ? t("Sessions")
+                : resource === "settings"
+                  ? t("Settings")
+                  : resource === "projects"
+                    ? t("Projects")
+                    : resource === "auxiliary"
+                      ? "Auxiliary AI"
+                      : resource[0].toUpperCase() + resource.slice(1)
+            }
+            actions={
+              resource === "sessions" && (
+                <Button
+                  ref={addSession}
+                  type="button"
+                  title="Add session"
+                  aria-label="Add session"
+                  onClick={() => setAddingSession(true)}
+                >
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                    aria-hidden="true"
+                  >
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                </Button>
+              )
+            }
             aria-label={
               resource === "sessions"
                 ? t("Session list")
@@ -158,118 +199,95 @@ export function Workspace({
                     : `${resource} navigation`
             }
           >
-            <header>
-              <strong>
-                {resource === "sessions"
-                  ? t("Sessions")
-                  : resource === "settings"
-                    ? t("Settings")
-                    : resource === "projects"
-                      ? t("Projects")
-                      : resource === "auxiliary"
-                        ? "Auxiliary AI"
-                        : resource[0].toUpperCase() + resource.slice(1)}
-              </strong>
-              {resource === "sessions" && (
-                <RouteLink
-                  to="/sessions"
-                  title="Manage sessions"
-                  aria-label="Manage sessions"
-                >
-                  ＋
-                </RouteLink>
-              )}
-            </header>
-            <p className="muted">{new URL(c.baseUrl).host}</p>
-            <PanelScroll>
-              {resource === "settings" ? (
-                <nav
-                  className="settings-topics"
-                  aria-label={t("Settings topics")}
-                >
-                  {(["general", "editor"] as const).map((topic) => (
-                    <PanelLink
-                      key={topic}
-                      to={
-                        topic === "general"
-                          ? "/settings/general"
-                          : "/settings/editor"
-                      }
-                      aria-current={
-                        settingsTopic === topic ? "page" : undefined
-                      }
-                      aria-controls="settings-editor"
-                      onClick={() => {
-                        setSettingsFileOpen(false);
-                      }}
-                    >
-                      {topic === "general" ? t("General") : t("Editor")}
-                    </PanelLink>
-                  ))}
-                </nav>
-              ) : resource === "sessions" ? (
-                <div
-                  className="session-tree"
-                  aria-label={t("Projects and sessions")}
-                >
-                  {projects.map((p) => (
-                    <SessionTreeGroup
-                      key={p.runtimeId}
-                      project={p}
-                      items={sessionsByProject.get(key(p.id)) ?? []}
-                      loading={inventory.loading.sessions}
-                      selected={session}
-                      unread={unread}
-                      open={!collapsed.has(p.runtimeId)}
-                      toggle={() =>
-                        setCollapsed((old) => {
-                          const next = new Set(old);
-                          if (next.has(p.runtimeId)) next.delete(p.runtimeId);
-                          else next.add(p.runtimeId);
-                          return next;
-                        })
-                      }
-                    />
-                  ))}
-                </div>
-              ) : resource === "projects" ? (
-                projects.map((p) => (
+            {resource === "settings" ? (
+              <nav
+                className="settings-topics"
+                aria-label={t("Settings topics")}
+              >
+                {(["general", "editor"] as const).map((topic) => (
                   <PanelLink
-                    key={p.runtimeId}
-                    to="/sessions"
-                    onClick={() => expandProject(p.runtimeId)}
+                    key={topic}
+                    to={
+                      topic === "general"
+                        ? "/settings/general"
+                        : "/settings/editor"
+                    }
+                    aria-current={settingsTopic === topic ? "page" : undefined}
+                    aria-controls="settings-editor"
+                    onClick={() => {
+                      setSettingsFileOpen(false);
+                    }}
                   >
-                    {p.name || p.alias}
+                    {topic === "general" ? t("General") : t("Editor")}
                   </PanelLink>
-                ))
-              ) : (
-                <nav
-                  className="settings-topics"
-                  aria-label="Resource navigation"
+                ))}
+              </nav>
+            ) : resource === "sessions" ? (
+              <div
+                className="session-tree"
+                aria-label={t("Projects and sessions")}
+              >
+                {projects.map((p) => (
+                  <SessionTreeGroup
+                    key={p.runtimeId}
+                    project={p}
+                    items={sessionsByProject.get(key(p.id)) ?? []}
+                    loading={inventory.loading.sessions}
+                    selected={session}
+                    unread={unread}
+                    open={!collapsed.has(p.runtimeId)}
+                    toggle={() =>
+                      setCollapsed((old) => {
+                        const next = new Set(old);
+                        if (next.has(p.runtimeId)) next.delete(p.runtimeId);
+                        else next.add(p.runtimeId);
+                        return next;
+                      })
+                    }
+                  />
+                ))}
+              </div>
+            ) : resource === "projects" ? (
+              projects.map((p) => (
+                <PanelLink
+                  key={p.runtimeId}
+                  to="/sessions"
+                  onClick={() => expandProject(p.runtimeId)}
                 >
-                  <PanelLink to={`/${resource}`} aria-current="page">
-                    {resource === "memory"
-                      ? "Shared memory"
-                      : resource === "auxiliary"
-                        ? "Auxiliary AI"
-                        : resource[0].toUpperCase() + resource.slice(1)}
-                  </PanelLink>
-                </nav>
-              )}
-              {!!(inventory.errors.projects || inventory.errors.sessions) && (
-                <p role="alert">
-                  {String(
-                    inventory.errors.projects || inventory.errors.sessions,
-                  )}
-                </p>
-              )}
-              {inventory.loading.projects && !projects.length && (
-                <p className="muted">{t("Loading projects…")}</p>
-              )}
-            </PanelScroll>
-          </aside>
+                  {p.name || p.alias}
+                </PanelLink>
+              ))
+            ) : (
+              <nav className="settings-topics" aria-label="Resource navigation">
+                <PanelLink to={`/${resource}`} aria-current="page">
+                  {resource === "memory"
+                    ? "Shared memory"
+                    : resource === "auxiliary"
+                      ? "Auxiliary AI"
+                      : resource[0].toUpperCase() + resource.slice(1)}
+                </PanelLink>
+              </nav>
+            )}
+            {!!(inventory.errors.projects || inventory.errors.sessions) && (
+              <p role="alert">
+                {String(inventory.errors.projects || inventory.errors.sessions)}
+              </p>
+            )}
+            {inventory.loading.projects && !projects.length && (
+              <p className="muted">{t("Loading projects…")}</p>
+            )}
+          </ResourcePanel>
         )}
         {children}
+        {addingSession && (
+          <SessionCreate
+            c={c}
+            projects={projects}
+            anchor={panel.current}
+            trigger={addSession.current}
+            close={() => setAddingSession(false)}
+          />
+        )}
       </div>
     </WorkspaceContext.Provider>
   );

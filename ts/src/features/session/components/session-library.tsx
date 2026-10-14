@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button, ConfirmationDialog } from "@lesomnus/cxz-ui";
 import { RouteLink } from "#src/shared/navigation/route-link.tsx";
 import { Connection, ref } from "#src/shared/api/connection.ts";
@@ -16,6 +16,8 @@ export function SessionLibrary({
   c: Connection;
   projects: Project[];
 }) {
+  const anchor = useRef<HTMLElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
   const [archived, setArchived] = useState(false);
   const [create, setCreate] = useState(false);
   const [confirm, setConfirm] = useState<Session>();
@@ -40,13 +42,23 @@ export function SessionLibrary({
   );
   return (
     <main className={styles.page}>
-      <header className={styles.heading}>
+      <header ref={anchor} className={styles.heading}>
         <h1>Sessions</h1>
-        <Button onClick={() => setCreate(!create)}>New session</Button>
+        <Button ref={trigger} onClick={() => setCreate(true)}>
+          New session
+        </Button>
       </header>
       <div className={styles.body}>
         <div className={styles.content}>
-          {create && <SessionCreate c={c} projects={projects} />}
+          {create && (
+            <SessionCreate
+              c={c}
+              projects={projects}
+              anchor={anchor.current}
+              trigger={trigger.current}
+              close={() => setCreate(false)}
+            />
+          )}
           <div className={styles.tabs}>
             <Button aria-pressed={!archived} onClick={() => setArchived(false)}>
               Active

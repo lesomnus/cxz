@@ -86,6 +86,7 @@ export function LoginPanel({
       </label>
       <div className={styles.row}>
         <Button
+          type="button"
           disabled={!ready || !code}
           onClick={() => {
             socket.current?.send(code + "\n");
@@ -94,7 +95,9 @@ export function LoginPanel({
         >
           Submit code
         </Button>
-        <Button onClick={cancel}>Cancel</Button>
+        <Button type="button" onClick={cancel}>
+          Cancel
+        </Button>
       </div>
     </section>
   );
