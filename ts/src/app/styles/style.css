@@ -234,11 +234,11 @@ header strong {
   height: 36px;
   border-radius: 10px;
   overflow: hidden;
-  background:
-    radial-gradient(ellipse at 20% 15%, #b3c7ad 0 24%, transparent 26%),
-    radial-gradient(ellipse at 85% 80%, #6d749b 0 36%, transparent 38%),
-    linear-gradient(135deg, #779c96, #424d69);
+  background: #000;
   box-shadow: inset 0 0 0 1px #ffffff18;
+}
+.profile-avatar > svg {
+  display: block;
 }
 /* The default theme is dark, including before an explicit theme is set. */
 :root:not([data-theme="light"]) .profile-avatar {
