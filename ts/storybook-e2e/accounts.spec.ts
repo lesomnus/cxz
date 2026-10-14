@@ -83,8 +83,8 @@ test("Add opens beside the panel and its language/provider dropdown works inside
         ? animation.effect.getKeyframes()
         : [];
     });
-  expect(entrance[0]?.opacity).toBe("0");
-  expect(entrance.at(-1)?.opacity).toBe("1");
+  expect(entrance.every((frame) => frame.opacity === undefined)).toBe(true);
+  expect(entrance[0]?.transform).not.toBe("none");
   expect(entrance.at(-1)?.transform).toBe("none");
   // The top-layer dialog stays untransformed so fixed menus retain viewport coordinates.
   expect(
