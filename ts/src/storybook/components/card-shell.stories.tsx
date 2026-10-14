@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { FloatingCard } from "@lesomnus/cxz-ui";
+import { FloatingCard } from "@lesomnus/nox";
 import { DetailTabs } from "#src/features/session/conversation/detail-tabs.tsx";
 import "#src/storybook/preview.css";
 

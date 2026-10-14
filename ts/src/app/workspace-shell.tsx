@@ -8,7 +8,7 @@ import {
   useState,
 } from "react";
 import type { Session } from "#gen/cxz/session_pb";
-import { Button } from "@lesomnus/cxz-ui";
+import { Button } from "@lesomnus/nox";
 import { Connection } from "#src/shared/api/connection.ts";
 import { ProfileMenu } from "./profile-menu";
 import { SessionTreeGroup } from "#src/features/session/components/session-tree.tsx";

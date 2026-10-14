@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { Button } from "@lesomnus/cxz-ui";
+import { Button } from "@lesomnus/nox";
 import { ConversationComposer } from "#src/features/session/composer/conversation-composer.tsx";
 import { FloatingCardHost } from "#src/features/session/cards/floating-card.tsx";
 import { composerPrompt } from "#src/features/session/composer/composer-code.ts";

@@ -1,5 +1,5 @@
 import type { ComponentProps } from "react";
-import { ValueMenu } from "@lesomnus/cxz-ui";
+import { ValueMenu } from "@lesomnus/nox";
 import styles from "./resource-surface.module.css";
 export function ResourceValue(props: ComponentProps<typeof ValueMenu>) {
   return (

@@ -1,6 +1,6 @@
 import { useId, useRef, useState } from "react";
 import type * as Monaco from "monaco-editor/esm/vs/editor/editor.api.js";
-import { Button } from "@lesomnus/cxz-ui";
+import { Button } from "@lesomnus/nox";
 import { CopyButton } from "#src/shared/components/copy-button.tsx";
 import { SourceEditor } from "#src/shared/editor/source-editor.tsx";
 import { detectCodeSyntax } from "#src/features/session/composer/composer-code.ts";

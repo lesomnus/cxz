@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { FloatingCard } from "@lesomnus/cxz-ui";
+import { FloatingCard } from "@lesomnus/nox";
 
 // The overlay lives outside the virtualized rows. Only the trigger's backdrop
 // expands, so opening details never changes measured message heights or range.

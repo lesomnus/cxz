@@ -10,7 +10,7 @@ import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { voiceLanguages } from "#src/shared/browser/voice-language.ts";
 import { browserSpeechLanguage } from "#src/shared/browser/speech-language.ts";
-import { Button } from "@lesomnus/cxz-ui";
+import { Button } from "@lesomnus/nox";
 import {
   useSettings,
   useEditorSettings,
@@ -26,12 +26,12 @@ import {
   type EditorScope,
   type FontFamilySetting,
 } from "#src/shared/settings/editor-settings.ts";
-import { SettingField } from "@lesomnus/cxz-ui";
-import { ValueMenu } from "@lesomnus/cxz-ui";
+import { SettingField } from "@lesomnus/nox";
+import { ValueMenu } from "@lesomnus/nox";
 import { FontFamilyControl } from "#src/features/settings/components/font-family-control.tsx";
-import { SettingSlider } from "@lesomnus/cxz-ui";
-import { SegmentedControl } from "@lesomnus/cxz-ui";
-import { Switch } from "@lesomnus/cxz-ui";
+import { SettingSlider } from "@lesomnus/nox";
+import { SegmentedControl } from "@lesomnus/nox";
+import { Switch } from "@lesomnus/nox";
 import { resolveTerminalSettings } from "#src/shared/settings/terminal-settings.ts";
 import { useTheme, resolveTheme } from "#src/shared/theme/theme.tsx";
 import {

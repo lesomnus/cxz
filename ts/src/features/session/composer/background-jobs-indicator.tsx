@@ -1,5 +1,5 @@
 import { useId } from "react";
-import { Button } from "@lesomnus/cxz-ui";
+import { Button } from "@lesomnus/nox";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import styles from "./background-jobs-indicator.module.css";

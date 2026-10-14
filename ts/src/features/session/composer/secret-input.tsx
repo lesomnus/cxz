@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button } from "@lesomnus/cxz-ui";
+import { Button } from "@lesomnus/nox";
 import { Connection, ref } from "#src/shared/api/connection.ts";
 import type { ComposerPaste } from "./composer-pastes";
 import styles from "#src/shared/components/resource-surface.module.css";

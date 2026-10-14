@@ -5,7 +5,7 @@ import React, { useEffect, useState, type PropsWithChildren } from "react";
 import { createRoot } from "react-dom/client";
 import { start, type Sandbox } from "@lesomnus/payday/sandbox";
 import { Provider } from "@lesomnus/payday/react";
-import { Button } from "@lesomnus/cxz-ui";
+import { Button } from "@lesomnus/nox";
 import { Workspace } from "#src/app/workspace-shell.tsx";
 import { WorkspaceView } from "#src/app/workspace-view.tsx";
 import { Connection } from "#src/shared/api/connection.ts";

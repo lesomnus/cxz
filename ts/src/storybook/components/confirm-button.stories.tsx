@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { ConfirmButton } from "@lesomnus/cxz-ui";
-import { Button } from "@lesomnus/cxz-ui";
+import { ConfirmButton } from "@lesomnus/nox";
+import { Button } from "@lesomnus/nox";
 
 const meta = {
   title: "Components/ConfirmButton",

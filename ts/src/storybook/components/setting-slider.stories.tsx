@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useArgs } from "storybook/preview-api";
-import { SettingSlider } from "@lesomnus/cxz-ui";
+import { SettingSlider } from "@lesomnus/nox";
 
 const meta = {
   title: "Components/SettingSlider",

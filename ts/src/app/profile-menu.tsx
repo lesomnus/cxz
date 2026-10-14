@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { ActionMenu } from "@lesomnus/cxz-ui";
+import { ActionMenu } from "@lesomnus/nox";
 import { ResourceIcon } from "#src/shared/navigation/resource-icon.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
 

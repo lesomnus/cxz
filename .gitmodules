@@ -1,0 +1,4 @@
+[submodule "ts/packages/nox"]
+	path = ts/packages/nox
+	url = https://github.com/lesomnus/nox.git
+	branch = main

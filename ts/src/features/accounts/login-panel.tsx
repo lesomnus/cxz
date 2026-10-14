@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Button } from "@lesomnus/cxz-ui";
+import { Button } from "@lesomnus/nox";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { Markdown } from "#src/shared/content/markdown.tsx";
 import styles from "#src/shared/components/resource-surface.module.css";

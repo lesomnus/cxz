@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useArgs } from "storybook/preview-api";
 import { useState } from "react";
-import { Button } from "@lesomnus/cxz-ui";
+import { Button } from "@lesomnus/nox";
 import { SessionDrafts } from "#src/features/session/model/session-drafts.ts";
 import { create } from "@bufbuild/protobuf";
 import { ProjectPathEntrySchema } from "#gen/cxz/project_svc_pb";

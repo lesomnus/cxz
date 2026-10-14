@@ -43,11 +43,11 @@ focuses the selected shell. These are docked panes inside the conversation's
 terminal area, not detached browser windows. Layouts and PTYs are scoped to the
 open conversation and are not restored after a reload.
 Scrollback is bounded to 2000 terminal lines independently of virtualized messages.
-Panel sizing follows [terminal-workbench.module.css](../ts/packages/ui/src/terminal/terminal-workbench.module.css), bounded by the conversation
+Panel sizing follows [terminal-workbench.module.css](https://github.com/lesomnus/nox/blob/main/src/terminal/terminal-workbench.module.css), bounded by the conversation
 viewport. ResizeObserver updates the PTY within the project service's validated
 dimension limits. The wide-view editor remains a separate adjacent pane.
 Tabs, docking and pane resizing are provided by `TerminalWorkbench` in the
-separate `@lesomnus/cxz-ui/terminal` entry. It has component-local CSS, namespaced
+separate `@lesomnus/nox/terminal` entry. It has component-local CSS, namespaced
 tokens and a renderer/status/focus contract; it imports no cxz API, settings or
 locale store. The application adapter supplies the existing xterm session and
 cxz transport, translated statuses and the workspace shortcut. The workbench can

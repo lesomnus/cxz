@@ -1,6 +1,6 @@
 import { createLink } from "@tanstack/react-router";
 import { forwardRef, type AnchorHTMLAttributes } from "react";
-import { ButtonContent, PanelItemAnchor } from "@lesomnus/cxz-ui";
+import { ButtonContent, PanelItemAnchor } from "@lesomnus/nox";
 
 const NavigationAnchor = forwardRef<
   HTMLAnchorElement,

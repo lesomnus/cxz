@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { Button, PanelItem } from "@lesomnus/cxz-ui";
+import { Button, PanelItem } from "@lesomnus/nox";
 import { ResourcePanel } from "./resource-panel";
 import { AgentIdentity } from "./agent-identity";
 

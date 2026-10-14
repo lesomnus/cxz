@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { SettingField } from "@lesomnus/cxz-ui";
-import { SegmentedControl } from "@lesomnus/cxz-ui";
+import { SettingField } from "@lesomnus/nox";
+import { SegmentedControl } from "@lesomnus/nox";
 
 function ThemeControl() {
   const [value, setValue] = useState("dark");

@@ -7,7 +7,7 @@ import {
   type CSSProperties,
   type RefObject,
 } from "react";
-import { Button, ScrollArea } from "@lesomnus/cxz-ui";
+import { Button, ScrollArea } from "@lesomnus/nox";
 import { searchLoadedMessages, type LoadedSearchHit } from "./loaded-search";
 import { currentLocale, t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";

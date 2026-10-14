@@ -117,19 +117,19 @@ in light mode. Connected OpenVSCode retains its own appearance settings.
 
 Frequently reused inputs have their own files:
 
-- `packages/ui/src/components/value-menu/value-menu.tsx`: model/effort, language, theme and palette menus. The
+- `packages/nox/src/components/value-menu/value-menu.tsx`: model/effort, language, theme and palette menus. The
   selected row overlays the trigger's text origin; current row, divider, then
   other choices. Native button activation, arrow keys/Home/End, Escape with
   focus restoration, outside dismissal, a bounded scrollable option list and
   automatic up/down placement are shared. A fixed portal avoids clipping in
   scrollable settings panes. Default choices display the effective value in
   muted text; explicit values have normal text. No UI library was added.
-- `packages/ui/src/components/setting-slider/setting-slider.tsx`: native discrete slider with a reset position followed
+- `packages/nox/src/components/setting-slider/setting-slider.tsx`: native discrete slider with a reset position followed
   by explicit choices. Reset displays the inherited value and a reset symbol;
   keyboard Home/End/arrows work. Valid saved values outside the slider's visible
   range remain displayed until an explicit choice. Reading settings never clamps
   or rewrites the file. Choice ranges are defined in the component and validator.
-- `packages/ui/src/components/segmented-control/segmented-control.tsx`: equal-width native radio cells with a sliding,
+- `packages/nox/src/components/segmented-control/segmented-control.tsx`: equal-width native radio cells with a sliding,
   shadow-free selection box. Tab input uses reset/effective value, Spaces and
   Tab character. Reset deletes the key; explicit false still means a real Tab.
   Arrow-key selection and browser focus traversal use native radio behavior;

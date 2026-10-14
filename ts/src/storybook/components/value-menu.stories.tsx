@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useArgs } from "storybook/preview-api";
-import { ValueMenu } from "@lesomnus/cxz-ui";
+import { ValueMenu } from "@lesomnus/nox";
 
 const meta = {
   title: "Components/ValueMenu",

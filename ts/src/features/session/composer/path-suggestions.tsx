@@ -18,7 +18,7 @@ import {
 import {
   moveRankedGridSelection,
   type SuggestionGridLayout,
-} from "@lesomnus/cxz-ui";
+} from "@lesomnus/nox";
 import { PathGrid } from "./path-grid";
 
 export function usePathSuggestions({

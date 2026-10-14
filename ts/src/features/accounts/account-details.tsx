@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, ConfirmationDialog } from "@lesomnus/cxz-ui";
+import { Button, ConfirmationDialog } from "@lesomnus/nox";
 import type { Account } from "#gen/cxz/account_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import { AccountAuthStatus_State as AuthState } from "#gen/cxz/account_svc_pb";

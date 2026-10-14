@@ -1,4 +1,4 @@
-import { BRAND_COLOR } from "../packages/ui/src/theme/colors";
+import { BRAND_COLOR } from "../packages/nox/src/theme/colors";
 import { expect, test, devices } from "@playwright/test";
 test.use({
   ...devices["Desktop Chrome"],

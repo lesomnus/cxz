@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
 import type { Session } from "#gen/cxz/session_pb";
-import { EditableValue } from "@lesomnus/cxz-ui";
+import { EditableValue } from "@lesomnus/nox";
 import {
   validateSessionField,
   type SessionField,

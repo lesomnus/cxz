@@ -4,7 +4,7 @@ import {
   type CSSProperties,
   type RefObject,
 } from "react";
-import { Button } from "@lesomnus/cxz-ui";
+import { Button } from "@lesomnus/nox";
 import {
   COMMAND_NEIGHBORS,
   commandWindow,

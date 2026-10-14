@@ -3,7 +3,7 @@ import {
   moveGridSelection,
   radialGridOrder,
   moveRankedGridSelection,
-} from "@lesomnus/cxz-ui";
+} from "@lesomnus/nox";
 
 describe("candidate grid navigation", () => {
   it("moves by physical cells and stays inside rows and incomplete edges", () => {

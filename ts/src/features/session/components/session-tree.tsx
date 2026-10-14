@@ -3,7 +3,7 @@ import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import { PanelLink } from "#src/shared/navigation/route-link.tsx";
-import { PanelItem } from "@lesomnus/cxz-ui";
+import { PanelItem } from "@lesomnus/nox";
 import { SessionIdentity } from "./session-identity";
 import { UnreadBadge } from "#src/shared/notifications/unread-badge.tsx";
 import { useState, type CSSProperties } from "react";

@@ -1,6 +1,6 @@
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
-import { ValueMenu } from "@lesomnus/cxz-ui";
+import { ValueMenu } from "@lesomnus/nox";
 import type { Session, SessionEvent } from "#gen/cxz/session_pb";
 import { payload } from "#src/features/session/model/journal.ts";
 import type { SessionInfo } from "#src/features/session/model/session-info.ts";

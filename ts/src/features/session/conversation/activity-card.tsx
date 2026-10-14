@@ -10,7 +10,7 @@ import {
   type ComponentProps,
 } from "react";
 import { createPortal } from "react-dom";
-import { Button } from "@lesomnus/cxz-ui";
+import { Button } from "@lesomnus/nox";
 import { EventTimePopover } from "./event-time-popover";
 import { useAnchoredCard } from "#src/features/session/cards/floating-card.tsx";
 import styles from "./activity-card.module.css";

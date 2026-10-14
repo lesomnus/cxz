@@ -1,5 +1,5 @@
 import { createRoot } from "react-dom/client";
-import { UIProvider, Button } from "@lesomnus/cxz-ui";
+import { UIProvider, Button } from "@lesomnus/nox";
 import { useState } from "react";
 import { MAX_EVENTS } from "#src/features/session/model/journal.ts";
 import { ComponentPreview } from "#src/storybook/conversation-preview.tsx";

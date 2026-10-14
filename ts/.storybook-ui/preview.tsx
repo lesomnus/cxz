@@ -1,6 +1,6 @@
 import type { Preview } from "@storybook/react-vite";
 import { useLayoutEffect } from "react";
-import "@lesomnus/cxz-ui/styles.css";
+import "@lesomnus/nox/styles.css";
 import "./preview.css";
 const preview: Preview = {
   initialGlobals: { theme: "dark" },

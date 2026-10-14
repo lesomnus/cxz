@@ -1,5 +1,5 @@
 import { useTheme } from "#src/shared/theme/theme.tsx";
-import { monospaceFont } from "@lesomnus/cxz-ui";
+import { monospaceFont } from "@lesomnus/nox";
 import {
   useEffect,
   useImperativeHandle,
@@ -21,7 +21,7 @@ import type {
   TerminalSurfaceProps,
   TerminalSessionStatus,
   TerminalSessionHandle,
-} from "@lesomnus/cxz-ui/terminal";
+} from "@lesomnus/nox/terminal";
 
 // Each shell stays in this flat keyed list; docking only reparents its portal host.
 // React pane remounts and tab switches must never reopen the PTY or clear its buffer.

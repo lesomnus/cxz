@@ -12,7 +12,7 @@ import {
   DialogCard,
   DialogSurface,
   dialogClassName,
-} from "@lesomnus/cxz-ui";
+} from "@lesomnus/nox";
 import { createPortal } from "react-dom";
 import type { SessionEvent } from "#gen/cxz/session_pb";
 import type { WorkGroup } from "#src/features/session/model/work-groups.ts";

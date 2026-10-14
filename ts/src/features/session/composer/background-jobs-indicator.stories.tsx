@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { Button } from "@lesomnus/cxz-ui";
+import { Button } from "@lesomnus/nox";
 import { ComponentPreview } from "#src/storybook/conversation-preview.tsx";
 import { BackgroundJobsIndicator } from "./background-jobs-indicator";
 import { useMemo, useRef } from "react";

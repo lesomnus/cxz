@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Button, ConfirmationDialog } from "@lesomnus/cxz-ui";
+import { Button, ConfirmationDialog } from "@lesomnus/nox";
 import { RouteLink } from "#src/shared/navigation/route-link.tsx";
 import { Connection, ref } from "#src/shared/api/connection.ts";
 import { useRemote } from "#src/shared/api/use-remote.ts";

@@ -9,11 +9,7 @@
     "skipLibCheck": true,
     "noEmit": true,
     "allowImportingTsExtensions": true,
-    "paths": {
-      "@lesomnus/cxz-ui": ["./packages/ui/src/index.ts"],
-      "@lesomnus/cxz-ui/editor": ["./packages/ui/src/editor/index.ts"],
-      "@lesomnus/cxz-ui/terminal": ["./packages/ui/src/terminal/index.ts"]
-    }
+    "customConditions": ["nox-source"]
   },
   "include": [
     ".storybook",
@@ -30,9 +26,13 @@
     "playwright.performance.config.ts",
     "performance-e2e",
     "test-support/transcript-performance.tsx",
-    "packages/ui/src",
+    "packages/nox/src",
     ".storybook-ui",
     "playwright.ui.config.ts",
-    "ui-e2e"
+    "ui-e2e",
+    "nox-e2e",
+    "playwright.nox.config.ts",
+    "vite.nox-development.config.ts",
+    "test-support/nox-development.tsx"
   ]
 }

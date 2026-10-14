@@ -15,5 +15,12 @@ ts/dist-sandbox/
 ts/test-results/
 ts/playwright-report/
 ts/storybook-static/
+ts/storybook-ui-static/
+ts/packages/nox/.git
+ts/packages/nox/node_modules/
+ts/packages/nox/dist/
+ts/packages/nox/storybook-static/
+ts/packages/nox/test-results/
+ts/packages/nox/playwright-report/
 ts/core.*
 internal/webui/assets/

@@ -1,10 +1,10 @@
 # Web source organization
 
-The web application separates application wiring, pages, feature implementation and shared application infrastructure. The reusable UI package remains independent of all four.
+The web application separates application wiring, pages, feature implementation and shared application infrastructure. The reusable UI package remains independent of all four. `ts/packages/nox` is a Git submodule of `lesomnus/nox`, linked by npm workspaces; see [Nox development](nox-development.md) for source editing and pinned builds.
 
 ```text
 ts/
-├─ packages/ui/src/
+├─ packages/nox/src/
 │  ├─ components/<component>/
 │  ├─ editor/
 │  ├─ providers/
@@ -56,7 +56,7 @@ ts/
 
 `features` keeps domain UI and processing close together. Session composition, transcript rendering, questions, card hosting and history projection are grouped by responsibility. Workspace editor and terminal behavior form separate feature areas. Features receive application context values as props rather than importing the workspace shell or its context.
 
-`shared` contains application-wide connection/inventory, settings, translations, fonts, navigation primitives and other utilities. It is still cxz application code: shared API connection state uses feature-owned draft/cache type contracts. It is not the package boundary for reuse by another application. Keep reusable controls in `@lesomnus/cxz-ui`, and keep session-specific card hosting in the session feature.
+`shared` contains application-wide connection/inventory, settings, translations, fonts, navigation primitives and other utilities. It is still cxz application code: shared API connection state uses feature-owned draft/cache type contracts. It is not the package boundary for reuse by another application. Keep reusable controls in `@lesomnus/nox`, and keep session-specific card hosting in the session feature.
 
 In the UI package, each component folder contains its implementation, CSS Module and independent Storybook examples. The optional editor has its own entry. Theme tokens and the translation provider have dedicated directories. Consumers import the public package entries; internal file paths are not an API. Application code uses those public entries directly rather than maintaining one-file re-export wrappers.
 
@@ -81,4 +81,4 @@ The root is the web package directory, `ts/`. Use `#gen/cxz/session_pb` for gene
 
 TypeScript's Bundler resolution, Vite, Vitest and the application Storybook read this mapping directly. Do not duplicate it in TypeScript `paths` or individual Vite configurations. The independent UI package continues to use its own local imports and public package entries, without depending on the application's aliases.
 
-See [Storybook](storybook.md) for preview and browser checks, and the [UI package README](../ts/packages/ui/README.md) for installation, theming, translation and optional-editor usage.
+See [Storybook](storybook.md) for preview and browser checks, and the [UI package README](https://github.com/lesomnus/nox/blob/main/README.md) for installation, theming, translation and optional-editor usage.

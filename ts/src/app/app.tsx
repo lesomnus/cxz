@@ -3,7 +3,7 @@ import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import React, { type PropsWithChildren, useEffect, useState } from "react";
 import { Provider } from "@lesomnus/payday/react";
 import { Connection, authenticate } from "#src/shared/api/connection.ts";
-import { Button } from "@lesomnus/cxz-ui";
+import { Button } from "@lesomnus/nox";
 import { Workspace } from "./workspace-shell";
 import "#src/app/styles/style.css";
 export function App({ children }: PropsWithChildren) {
