@@ -159,6 +159,13 @@ test("compact panels keep their heading fixed and share the conversation handle'
   const scrollBox = (await panel
     .locator(".panel-scroll-region")
     .boundingBox())!;
+  const rail = panel.locator(".panel-scroll-rail");
+  const railBox = (await rail.boundingBox())!;
+  expect(railBox.height).toBeLessThan(scrollBox.height);
+  expect(railBox.y + railBox.height / 2).toBeCloseTo(
+    scrollBox.y + scrollBox.height / 2,
+    0,
+  );
   // A small overflow must not turn the handle into a wall along the panel.
   expect(initial.height).toBeLessThan(scrollBox.height / 2);
   const maxSize = await handle.evaluate((el) =>
@@ -210,6 +217,42 @@ test("compact panels keep their heading fixed and share the conversation handle'
     )
     .toBeLessThan(1);
   expect((await heading.boundingBox())!.y).toBe(headingY);
+  // New content lengthens the centered range without changing its midpoint.
+  await list.evaluate((el) => {
+    const extra = document.createElement("div");
+    extra.dataset.testPanelExtra = "true";
+    const item = el.querySelector(".tree-session")!;
+    for (let i = 0; i < 12; i++) extra.append(item.cloneNode(true));
+    el.querySelector(".panel-scroll-inner")!.append(extra);
+  });
+  await expect
+    .poll(async () => (await rail.boundingBox())!.height)
+    .toBeGreaterThan(railBox.height);
+  const grown = (await rail.boundingBox())!;
+  expect(grown.y + grown.height / 2).toBeCloseTo(
+    scrollBox.y + scrollBox.height / 2,
+    0,
+  );
+  await thumb.press("End");
+  await expect
+    .poll(async () => {
+      const handle = (await thumb.boundingBox())!,
+        range = (await rail.boundingBox())!;
+      return Math.abs(handle.y + handle.height - range.y - range.height);
+    })
+    .toBeLessThan(1);
+  await thumb.press("Home");
+  await expect
+    .poll(async () =>
+      Math.abs((await thumb.boundingBox())!.y - (await rail.boundingBox())!.y),
+    )
+    .toBeLessThan(1);
+  await list.evaluate((el) =>
+    el.querySelector("[data-test-panel-extra]")!.remove(),
+  );
+  await expect
+    .poll(async () => (await rail.boundingBox())!.height)
+    .toBeCloseTo(railBox.height, 0);
   await page.screenshot({
     path: "test-results/panel-scroll.png",
     fullPage: true,

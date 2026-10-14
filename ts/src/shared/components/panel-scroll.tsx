@@ -41,14 +41,31 @@ export function PanelScroll({
   function measure() {
     const el = pane.current;
     if (!el || !rail.current) return;
-    const height = rail.current.clientHeight;
     const style = getComputedStyle(rail.current);
+    const available = el.clientHeight;
+    const max = Math.max(0, el.scrollHeight - available);
+    const railMin =
+      parseFloat(style.getPropertyValue("--panel-scroll-rail-min-size")) || 0;
+    const railMax =
+      parseFloat(style.getPropertyValue("--panel-scroll-rail-max-size")) ||
+      available;
+    const railRatio =
+      parseFloat(style.getPropertyValue("--panel-scroll-rail-max-ratio")) || 1;
+    const railGrowth =
+      parseFloat(style.getPropertyValue("--panel-scroll-rail-growth")) || 1;
+    // The centered travel range grows with overflow, rather than consuming
+    // the viewport's entire edge as soon as a scrollbar becomes necessary.
+    const height = Math.min(
+      available,
+      railMax,
+      available * clamp(railRatio, 0, 1),
+      railMin + max * railGrowth,
+    );
     const maxSize =
       parseFloat(style.getPropertyValue("--panel-scroll-thumb-max-size")) ||
       height;
     const maxRatio =
       parseFloat(style.getPropertyValue("--panel-scroll-thumb-max-ratio")) || 1;
-    const max = Math.max(0, el.scrollHeight - el.clientHeight);
     const top = clamp(el.scrollTop, 0, max);
     region.current?.style.setProperty("--panel-top-hidden", `${top}px`);
     region.current?.style.setProperty(
@@ -120,7 +137,6 @@ export function PanelScroll({
     const observer = new ResizeObserver(measure);
     observer.observe(pane.current!);
     observer.observe(content.current!);
-    observer.observe(rail.current!);
     measure();
     return () => {
       observer.disconnect();
@@ -157,7 +173,11 @@ export function PanelScroll({
         className="panel-scroll-fade panel-scroll-fade-bottom"
         aria-hidden="true"
       />
-      <div ref={rail} className="panel-scroll-rail">
+      <div
+        ref={rail}
+        className="panel-scroll-rail"
+        style={{ height: view.height }}
+      >
         {view.max > 0 && (
           <div
             className="panel-scroll-thumb"
