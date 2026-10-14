@@ -36,7 +36,8 @@ async function drag(page: Page, panel: Locator) {
   await page.mouse.move(box.x + 150, box.y + 6, { steps: 8 });
 }
 async function general(page: Page) {
-  await page.getByRole("link", { name: "Settings view", exact: true }).click();
+  await page.getByRole("button", { name: "Profile", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Settings", exact: true }).click();
   await page
     .getByRole("navigation", { name: "Settings topics" })
     .getByRole("link", { name: "General", exact: true })

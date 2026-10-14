@@ -9,7 +9,7 @@ import {
 } from "react";
 import type { Session } from "#gen/cxz/session_pb";
 import { Connection } from "#src/shared/api/connection.ts";
-import { Button } from "@lesomnus/cxz-ui";
+import { ProfileMenu } from "./profile-menu";
 import { SessionTreeGroup } from "#src/features/session/components/session-tree.tsx";
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
 import { useScrollbars } from "#src/shared/scroll/scrollbars.ts";
@@ -60,7 +60,6 @@ export function Workspace({
     }
     return grouped;
   }, [inventory.sessions]);
-  const [error, setError] = useState("");
   function expandProject(id: string) {
     setCollapsed((old) => {
       const next = new Set(old);
@@ -140,38 +139,11 @@ export function Workspace({
               </span>
             </RouteLink>
           ))}
-          <RouteLink
-            to="/settings/general"
-            className={`resource-link settings-link ${resource === "settings" ? "active" : ""}`}
-            aria-label={t("Settings view")}
-            aria-current={resource === "settings" ? "page" : undefined}
-            title={t("Settings")}
-            onClick={() => {
-              setSettingsFileOpen(false);
-            }}
-          >
-            <ResourceIcon kind="settings" />
-            <span>{t("Settings")}</span>
-          </RouteLink>
-          <Button
-            className="resource-link resource-exit"
-            aria-label={exitLabel}
-            title={exitLabel}
-            onClick={() => logout().catch((e) => setError(String(e)))}
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              aria-hidden="true"
-            >
-              <path d="M10 4H4v16h6M8 12h13m-5-5 5 5-5 5" />
-            </svg>
-            <span>{exitLabel}</span>
-          </Button>
+          <ProfileMenu
+            logout={logout}
+            exitLabel={exitLabel}
+            openSettings={() => setSettingsFileOpen(false)}
+          />
         </nav>
         {resource !== "accounts" && (
           <aside
@@ -207,11 +179,6 @@ export function Workspace({
                   ＋
                 </RouteLink>
               )}
-              <Button
-                onClick={() => logout().catch((e) => setError(String(e)))}
-              >
-                {exitLabel}
-              </Button>
             </header>
             <p className="muted">{new URL(c.baseUrl).host}</p>
             <PanelScroll>
@@ -289,14 +256,10 @@ export function Workspace({
                   </PanelLink>
                 </nav>
               )}
-              {(inventory.errors.projects ||
-                inventory.errors.sessions ||
-                error) && (
+              {!!(inventory.errors.projects || inventory.errors.sessions) && (
                 <p role="alert">
                   {String(
-                    inventory.errors.projects ||
-                      inventory.errors.sessions ||
-                      error,
+                    inventory.errors.projects || inventory.errors.sessions,
                   )}
                 </p>
               )}

@@ -88,7 +88,8 @@ test("new Questions receive tab attention and a sound; the settings switch can s
   await expect
     .poll(() => page.evaluate(() => (window as any).soundStarts.length))
     .toBeGreaterThan(0);
-  await page.getByRole("link", { name: "Settings view" }).click();
+  await page.getByRole("button", { name: "Profile", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Settings", exact: true }).click();
   const sound = page.getByRole("switch", { name: "Notification sounds" });
   await expect(sound).toHaveAttribute("aria-checked", "true");
   await sound.click();
