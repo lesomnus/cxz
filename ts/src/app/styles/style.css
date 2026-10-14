@@ -884,7 +884,6 @@ header strong {
   margin-top: 0;
 }
 .transcript-row > article {
-  isolation: isolate;
   padding: 0 12px;
 }
 .transcript-row > .response {

@@ -341,7 +341,7 @@ test("summary history prefetches before the loaded edge even with delayed respon
   expect(await pane.locator("[data-row]").count()).toBeLessThan(60);
 });
 
-test("viewport fades cover conversation cards while the scrollbar and card interaction remain available", async ({
+test("viewport fades cover response bodies while the scrollbar and controls remain available", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 700 });
@@ -397,7 +397,7 @@ test("viewport fades cover conversation cards while the scrollbar and card inter
       const area = el.closest(".transcript-area");
       const fade = area.querySelector(`.transcript-fade-${edge}`);
       const box = fade.getBoundingClientRect();
-      const row = [...el.querySelectorAll(".response")]
+      const row = [...el.querySelectorAll(".response .markdown")]
         .map((node) => ({ node, rect: node.getBoundingClientRect() }))
         .find(
           ({ rect }) => rect.top < box.bottom - 1 && rect.bottom > box.top + 1,

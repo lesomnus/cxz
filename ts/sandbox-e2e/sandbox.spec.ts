@@ -43,7 +43,13 @@ test("WASM sandbox reuses the UI without backend, credentials or provider calls"
     "aria-description",
     /idle/,
   );
-  await page.locator("[data-work-summary] button").last().click();
+  await page
+    .locator(".transcript-row")
+    .filter({ has: page.locator("article.input") })
+    .last()
+    .locator("xpath=following-sibling::*[.//*[@data-work-summary]][1]")
+    .getByRole("button", { name: "View details", exact: true })
+    .click();
   await expect(
     page.locator('#work-dialog .tool-activity[data-state="completed"]').last(),
   ).toBeVisible();
@@ -83,7 +89,13 @@ test("WASM sandbox reuses the UI without backend, credentials or provider calls"
     "aria-description",
     /idle/,
   );
-  await page.locator("[data-work-summary] button").last().click();
+  await page
+    .locator(".transcript-row")
+    .filter({ has: page.locator("article.input") })
+    .last()
+    .locator("xpath=following-sibling::*[.//*[@data-work-summary]][1]")
+    .getByRole("button", { name: "View details", exact: true })
+    .click();
   await expect(
     page.locator('#work-dialog .tool-activity[data-state="completed"]').last(),
   ).toBeVisible();
@@ -103,7 +115,13 @@ test("WASM sandbox reuses the UI without backend, credentials or provider calls"
     "aria-description",
     /idle/,
   );
-  await page.locator("[data-work-summary] button").last().click();
+  await page
+    .locator(".transcript-row")
+    .filter({ has: page.locator("article.input") })
+    .last()
+    .locator("xpath=following-sibling::*[.//*[@data-work-summary]][1]")
+    .getByRole("button", { name: "View details", exact: true })
+    .click();
   await expect(
     page.locator('#work-dialog .tool-activity[data-state="completed"]').last(),
   ).toBeVisible();

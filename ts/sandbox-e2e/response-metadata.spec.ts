@@ -45,9 +45,10 @@ test("response headings keep their own model and effort after settings change", 
   await expect(original).toHaveText("sandbox-claude · high");
   const alignment = await original.evaluate((el) => {
     const logo = el
-      .parentElement!.querySelector(".agent-brand")!
+      .closest(".response-heading")!
+      .querySelector(".agent-brand")!
       .getBoundingClientRect();
-    const text = el.getBoundingClientRect();
+    const text = el.parentElement!.getBoundingClientRect();
     return Math.abs(logo.y + logo.height / 2 - text.y - text.height / 2);
   });
   expect(alignment).toBeLessThan(0.1);
