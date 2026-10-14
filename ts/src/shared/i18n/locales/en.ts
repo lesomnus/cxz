@@ -1,6 +1,5 @@
 // English source messages are always bundled; other packs load on demand.
 export const messages = {
-  "Search {label}": "Search {label}",
   "Search current conversation": "Search current conversation",
   "This message is no longer available in retained history.":
     "This message is no longer available in retained history.",
@@ -8,7 +7,6 @@ export const messages = {
   "Search this conversation": "Search this conversation",
   "Close search": "Close search",
   "Searching…": "Searching…",
-  "No matches": "No matches",
   "{count} matches": "{count} matches",
   "Search results": "Search results",
   "Session history is still being indexed.":

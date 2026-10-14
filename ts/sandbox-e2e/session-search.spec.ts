@@ -1,3 +1,4 @@
+import { BRAND_COLOR } from "../packages/ui/src/theme/colors";
 import { expect, test, devices } from "@playwright/test";
 test.use({
   ...devices["Desktop Chrome"],
@@ -113,7 +114,10 @@ test("green search ticks share existing marker motion and disappear when search 
   await expect.poll(() => ticks.count()).toBeGreaterThan(0);
   await expect(ticks.first()).toHaveCSS(
     "background-color",
-    "rgb(140, 255, 107)",
+    `rgb(${BRAND_COLOR.slice(1)
+      .match(/../g)!
+      .map((part) => parseInt(part, 16))
+      .join(", ")})`,
   );
   await expect(ticks.first()).toHaveCSS("opacity", "1");
   const aligned = () =>

@@ -1,6 +1,5 @@
 import type { LanguagePack } from "#src/shared/i18n/i18n.ts";
 export const messages = {
-  "Search {label}": "{label} 검색",
   "Search current conversation": "현재 대화 검색",
   "This message is no longer available in retained history.":
     "보존된 기록에서 이 메시지를 더 이상 찾을 수 없습니다.",
@@ -8,7 +7,6 @@ export const messages = {
   "Search this conversation": "이 대화에서 검색",
   "Close search": "검색 닫기",
   "Searching…": "검색 중…",
-  "No matches": "검색 결과 없음",
   "{count} matches": "검색 결과 {count}개",
   "Search results": "검색 결과",
   "Session history is still being indexed.": "세션 기록을 아직 색인 중입니다.",
