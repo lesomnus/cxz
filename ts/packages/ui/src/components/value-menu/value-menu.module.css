@@ -129,3 +129,19 @@
 .setting_menu button[data-muted="true"] {
   color: var(--ui-muted);
 }
+
+.setting_menu[data-searchable="true"] {
+  flex-direction: column;
+}
+.setting_menu :global(.setting-search) {
+  width: 100%;
+  min-width: 0;
+  flex-shrink: 0;
+  padding: var(--value-padding-block) var(--value-padding-inline);
+  border: 0;
+  border-radius: 4px;
+  background: var(--ui-shade-17);
+  color: var(--ui-shade-237);
+  font: inherit;
+  line-height: 20px;
+}

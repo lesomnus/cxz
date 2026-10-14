@@ -559,3 +559,54 @@ test("usage, background tasks and auxiliary controls are connected", async ({
     .toBe(true);
   await expect(page.getByText("running", { exact: true })).toBeVisible();
 });
+
+test("project picker supports fuzzy search, keyboard selection and dark form backgrounds", async ({
+  page,
+}) => {
+  await fixture(page);
+  await page.getByRole("link", { name: "Sessions view", exact: true }).click();
+  await page.getByRole("button", { name: "New session", exact: true }).click();
+  const create = page.getByRole("dialog", { name: "Add session", exact: true });
+  await expect(create).toBeVisible();
+  const projectPicker = create.getByRole("combobox", {
+    name: "Project",
+    exact: true,
+  });
+  const titleInput = create.getByRole("textbox", {
+    name: "Title",
+    exact: true,
+  });
+  expect(
+    await projectPicker.evaluate((el) => getComputedStyle(el).backgroundColor),
+  ).toBe(
+    await titleInput.evaluate((el) => getComputedStyle(el).backgroundColor),
+  );
+  await projectPicker.click();
+  const search = create.getByRole("combobox", {
+    name: "Search Project",
+    exact: true,
+  });
+  await expect(search).toBeFocused();
+  await search.fill("dmprj");
+  await expect(search).toBeFocused();
+  await expect(
+    create.getByRole("option", { name: "Demo project", exact: true }),
+  ).toBeVisible();
+  await search.fill("not-a-project");
+  await expect(create.getByRole("status")).toHaveText("No matches");
+  await search.press("Enter");
+  await expect(search).toBeVisible();
+  await search.fill("PROJECT");
+  await search.press("ArrowDown");
+  await expect(
+    create.getByRole("option", { name: "Demo project", exact: true }),
+  ).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(search).toHaveCount(0);
+  await expect(create).toBeVisible();
+  await expect(projectPicker).toBeFocused();
+  await projectPicker.click();
+  await expect(search).toHaveValue("");
+  await search.press("Escape");
+  await expect(create).toBeVisible();
+});
