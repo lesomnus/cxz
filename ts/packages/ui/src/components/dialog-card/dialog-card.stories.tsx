@@ -35,7 +35,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Shared dialog header, rounded body flush with the card edges, and compact footer. DialogActions aligns actions together on the right. DialogSurface supplies translucency, blur and entrance motion; native modal wrappers supply focus and dismissal behavior. Forms and confirmations use the same structure and styling.",
+          "Shared dialog header, rounded body inset from the card edges using the control inset token, and compact footer. Body text stays aligned with the heading; its radius accounts for the border and inset. DialogActions aligns actions together on the right. DialogSurface supplies translucency, blur and entrance motion; native modal wrappers supply focus and dismissal behavior. Forms and confirmations use the same structure and styling.",
       },
     },
   },
