@@ -20,6 +20,15 @@ import {
   type RowKnot,
 } from "./virtual-layout";
 
+// Data-only viewport state: retain measurements and a row-relative reading
+// anchor without keeping any hidden transcript DOM mounted.
+export type TranscriptViewport = {
+  sizes: Map<string, number>;
+  knots: Map<string, RowKnot>;
+  width: number;
+  anchor: { id: string; offset: number } | null;
+};
+
 const foldable = (event: SessionEvent) =>
   event.kind !== "input" &&
   event.kind !== "assistant" &&
@@ -34,6 +43,7 @@ export function VirtualMessages({
   precedingPrompt,
   onPromptChange,
   foldActivities = true,
+  cache,
 }: {
   pane: React.RefObject<HTMLDivElement | null>;
   events: SessionEvent[];
@@ -43,10 +53,11 @@ export function VirtualMessages({
   precedingPrompt: SessionEvent | undefined;
   onPromptChange: (prompt: SessionEvent | undefined, peek: number) => void;
   foldActivities?: boolean;
+  cache?: TranscriptViewport;
 }) {
   const root = useRef<HTMLDivElement>(null);
-  const sizes = useRef(new Map<string, number>());
-  const knots = useRef(new Map<string, RowKnot>());
+  const sizes = useRef(cache?.sizes ?? new Map<string, number>());
+  const knots = useRef(cache?.knots ?? new Map<string, RowKnot>());
   const mapping = useRef<MessageMap | null>(null);
   const [revision, setRevision] = useState(0);
   const [rowPadding, setRowPadding] = useState(0);
@@ -58,13 +69,18 @@ export function VirtualMessages({
   const previous = useRef<typeof layout | null>(null);
   const latest = useRef({ layout, follow, changed });
   latest.current = { layout, follow, changed };
-  const anchor = useRef<{ id: string; offset: number } | null>(null);
+  const anchor = useRef<{ id: string; offset: number } | null>(
+    cache?.anchor ?? null,
+  );
   const jumpAnchor = useRef<{ id: string; top: number } | null>(null);
   const observer = useRef<ResizeObserver | null>(null);
-  const width = useRef(0);
+  const width = useRef(cache?.width ?? 0);
   const lastPrompt = useRef<SessionEvent | undefined>(undefined);
 
   function remember() {
+    // Composer focus and early geometry callbacks can run before the first
+    // layout effect. Do not replace a saved anchor with the pane's initial top.
+    if (!previous.current && anchor.current && !follow.current) return;
     const el = pane.current;
     if (!el) return;
     const rows = latest.current.layout.rows;
@@ -80,6 +96,7 @@ export function VirtualMessages({
     anchor.current = row
       ? { id: row.id, offset: row.top + root.current!.offsetTop - el.scrollTop }
       : null;
+    if (cache) cache.anchor = anchor.current;
     setViewport({
       top: Math.max(0, el.scrollTop - root.current!.offsetTop),
       offset: el.scrollTop - root.current!.offsetTop,
@@ -106,6 +123,7 @@ export function VirtualMessages({
           dirty = true;
         }
         width.current = columnWidth;
+        if (cache) cache.width = columnWidth;
       }
       for (const entry of entries) {
         const node = entry.target as HTMLElement;

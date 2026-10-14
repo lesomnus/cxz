@@ -32,6 +32,7 @@ export function Workspace({
 } & PropsWithChildren) {
   useLocale();
   useScrollbars();
+  useEffect(() => c.conversations.mount(), [c]);
   const route = useWorkspaceRoute();
   const resource = route.resource === "not-found" ? "sessions" : route.resource;
   const session = route.session;

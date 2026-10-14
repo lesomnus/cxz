@@ -48,6 +48,33 @@ to native `History` paging only when the selected runtime reports
 at the last visible row. Reconnects replay native updates, including results whose
 historical row is anchored earlier than the cursor.
 
+Conversation records and native subscriptions belong to the authenticated
+`Connection`, rather than a mounted conversation view. Returning to a recently
+viewed session uses the existing records immediately; switching sessions or
+resource pages does not cancel its `Events` stream. Responses, questions, queued
+messages and completion notifications continue arriving while another view is
+open. Only visited conversations open streams; the shared resource inventory
+continues tracking unvisited sessions.
+
+The cache retains row measurements and a row-relative reading anchor, not hidden
+conversation DOM. Reading an older window leaves that window stable while a
+separate live tail receives updates. Latest can use the cached tail; reconnects
+resume from the native cursor and replay missing updates instead of loading the
+initial transcript again. An empty loaded conversation is still a valid cache.
+
+Idle entries are evicted in least-recently-used order, with both count and byte
+budgets. Viewed and active conversations remain available; each conversation's
+record window also has a byte limit. Limits are defined in
+`features/session/model/conversation-cache.ts`. Evicted records can be fetched
+again from the retained server journal. Purge deletes the entry, and sign-out
+stops subscriptions and clears connection-owned records. A changed session
+identity or reset journal discards the previous cached data.
+
+Conversation history is not persisted to localStorage or sessionStorage. The
+cache lasts for the current authenticated browser connection; refreshing the
+page fetches history from the server again. Composer drafts and attention
+cursors retain their separate tab-local persistence.
+
 Browser cache size and DOM size are separate. The cache holds multiple pages;
 virtual messages mount the visible range and an overscan buffer. Reading anchors
 survive prepending history and resize. Protocol-only live records update the

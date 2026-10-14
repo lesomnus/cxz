@@ -38,6 +38,7 @@ export function App({ children }: PropsWithChildren) {
     if (!r.ok) throw Error(t("Sign out failed"));
     connection?.drafts.clear();
     connection?.attention.clear();
+    connection?.dispose();
     setConnection(undefined);
   }
   if (!connection)

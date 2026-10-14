@@ -149,6 +149,7 @@ function SandboxApp({ children }: PropsWithChildren) {
       box?.close();
     };
   }, [generation, applied]);
+  useEffect(() => () => connection?.dispose(), [connection]);
   async function reset() {
     if (!/^\d{1,10}$/.test(seed) || Number(seed) > 4294967295) {
       setError(t("Seed must be an integer from 0 to 4294967295."));

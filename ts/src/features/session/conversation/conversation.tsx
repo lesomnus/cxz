@@ -26,6 +26,7 @@ import React, {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
 } from "react";
 import { useQuery } from "@lesomnus/payday/react";
 import { SessionService, SessionRefSchema } from "#gen/cxz/session_svc_pb";
@@ -33,18 +34,12 @@ import type { Project } from "#gen/cxz/project_pb";
 import type { Session, SessionEvent } from "#gen/cxz/session_pb";
 import { Connection, ref } from "#src/shared/api/connection.ts";
 import {
-  SessionHistory,
   type HistoryPage,
   type LoadEventDetails,
 } from "#src/features/session/model/session-history.ts";
 import { create } from "@bufbuild/protobuf";
 import { SessionEventSchema } from "#gen/cxz/session_pb";
-import {
-  mergeEvents,
-  isTranscriptEvent,
-  payload,
-  pendingAfter,
-} from "#src/features/session/model/journal.ts";
+import { mergeEvents, payload } from "#src/features/session/model/journal.ts";
 import { mergeMetadata } from "#src/features/session/model/session-metadata.ts";
 import { sessionInfo } from "#src/features/session/model/session-info.ts";
 import {
@@ -52,11 +47,7 @@ import {
   modelCatalog,
 } from "#src/features/session/composer/model-settings.tsx";
 import { UsageInfo } from "#src/features/session/composer/usage-info.tsx";
-import {
-  advanceTurn,
-  snapshotTurn,
-  type TurnProgress,
-} from "#src/features/session/model/turn-progress.ts";
+
 import { sessionCommands } from "#src/features/session/composer/composer-commands.ts";
 import { useSendMotion } from "./send-motion";
 import {
@@ -71,10 +62,7 @@ import { composerPrompt } from "#src/features/session/composer/composer-code.ts"
 import { key } from "@lesomnus/payday/store";
 import { transcriptEvents } from "#src/features/session/model/tool-activity.ts";
 import { Transcript } from "./transcript";
-import {
-  ConversationLoading,
-  type ConversationLoad,
-} from "./conversation-loading";
+import { ConversationLoading } from "./conversation-loading";
 import { atScrollBottom } from "./scroll-physics";
 import { uploadFile } from "#src/features/session/composer/composer-upload.ts";
 import { attachmentsReady } from "#src/features/session/composer/composer-pastes.ts";
@@ -106,7 +94,20 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
   const navigate = useNavigate();
   const openCard = useFloatingCard();
   const workspaceContext = useContext(WorkspaceContext);
-  const [queued, setQueued] = useState("");
+  const feed = useMemo(() => c.conversations.get(id), [c, id]);
+  const cached = useSyncExternalStore(feed.subscribe, feed.snapshot);
+  const {
+    events,
+    metadata,
+    pending,
+    gap,
+    status,
+    loading: initialLoad,
+    executionState,
+    turn,
+    queued,
+  } = cached;
+  const { setEvents, setMetadata, setPending, setQueued } = feed;
   const { seq: requestedSeq } = useWorkspaceRoute();
   const openedSearch = useRef("");
   const [sending, setSending] = useState(false);
@@ -114,11 +115,9 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
     ref: ref(id),
     select: { all: true, project: { all: true }, account: { all: true } },
   });
-  const [events, setEvents] = useState<SessionEvent[]>([]);
-  const [metadata, setMetadata] = useState<SessionEvent[]>([]);
   const catalogRun = useRef("");
-  const history = useMemo(() => new SessionHistory(c.sessions, id), [c, id]);
-  const newest = useRef({ anchor: 0n, through: 0n });
+  const history = feed.history;
+  const newest = feed.newest;
   const loadDetails = useCallback<LoadEventDetails>(
     (seq, signal) => history.details(seq, signal),
     [history],
@@ -129,16 +128,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
   const composer = useRef<HTMLFormElement>(null);
   const downloadRequest = useRef<AbortController | null>(null);
   useEffect(() => () => downloadRequest.current?.abort(), []);
-  const [pending, setPending] = useState<SessionEvent[]>([]);
   const visibleApprovals = useVisibleApprovals(pending);
-  const [gap, setGap] = useState(false);
-  const [status, setStatus] = useState("Connecting…");
-  const historyReady = useRef(false);
-  const [initialLoad, setInitialLoad] = useState<ConversationLoad | undefined>({
-    stage: "session",
-  });
-  const [executionState, setExecutionState] = useState("");
-  const [turn, setTurn] = useState<TurnProgress>({ runId: "", active: false });
   const background = useSessionBackground(
     c,
     id,
@@ -169,9 +159,11 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
     document.addEventListener("keydown", keydown, true);
     return () => document.removeEventListener("keydown", keydown, true);
   }, []);
-  const [follow, setFollow] = useState(true);
-  const [latestShown, setLatestShown] = useState(false);
-  const latestTravel = useRef({ shown: false, distance: 0 });
+  const [follow, setFollow] = useState(feed.follow.current);
+  const [latestShown, setLatestShown] = useState(
+    feed.latestTravel.current.shown,
+  );
+  const latestTravel = feed.latestTravel;
   useEffect(() => {
     if (!follow) return;
     latestTravel.current = { shown: false, distance: 0 };
@@ -186,19 +178,22 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
   });
   const lock = useRef(false);
   const historyRequest = useRef<AbortController | null>(null);
-  const [precedingPrompt, setPrecedingPrompt] = useState<{
-    before: bigint;
-    through: bigint;
-    event?: SessionEvent;
-  }>();
-  const precedingRef = useRef<typeof precedingPrompt>(undefined);
+  const [precedingPrompt, setPrecedingPrompt] = useState<
+    | {
+        before: bigint;
+        through: bigint;
+        event?: SessionEvent;
+      }
+    | undefined
+  >(feed.preceding);
+  const precedingRef = useRef<typeof precedingPrompt>(feed.preceding);
   const [jumpTarget, setJumpTarget] = useState<string>();
-  const floor = useRef(0n);
-  const latestSeq = useRef(0n);
-  const detached = useRef(false);
+  const floor = feed.floor;
+  const latestSeq = feed.latestSeq;
+  const detached = feed.detached;
   const eventsRef = useRef(events);
   eventsRef.current = events;
-  const followRef = useRef(follow);
+  const followRef = feed.follow;
   followRef.current = follow;
   const firstSeq = events[0]?.seq;
   useEffect(() => {
@@ -229,13 +224,18 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
   }, [c, id, follow, status, events, turn, terminalVisible]);
   useEffect(() => {
     if (firstSeq === undefined) return;
-    const known = precedingRef.current;
-    if (known && known.before <= firstSeq && firstSeq <= known.through) return;
+    const known = feed.preceding ?? precedingRef.current;
+    if (known && known.before <= firstSeq && firstSeq <= known.through) {
+      precedingRef.current = known;
+      setPrecedingPrompt(known);
+      return;
+    }
     const through =
       events.find((event) => event.kind === "input")?.seq ??
       events.at(-1)!.seq + 1n;
     const remember = (event?: SessionEvent) => {
       const next = { before: firstSeq, through, event };
+      feed.preceding = next;
       precedingRef.current = next;
       setPrecedingPrompt(next);
     };
@@ -336,21 +336,9 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
   }, [requestedSeq, status]);
 
   function rememberPage(page: HistoryPage) {
-    rememberMetadata(page.metadata);
-    const first = page.events[0]?.seq;
-    const last = page.events.at(-1)?.seq;
-    if (first !== undefined) {
-      if (!page.hasOlder) floor.current = first - 1n;
-      const next = {
-        before: first,
-        through: page.events.find((e) => e.kind === "input")?.seq ?? last! + 1n,
-        event: page.precedingInput,
-      };
-      precedingRef.current = next;
-      setPrecedingPrompt(next);
-    }
-    if (last !== undefined && !page.hasNewer)
-      newest.current = { anchor: last, through: page.snapshotSeq };
+    feed.rememberPage(page);
+    precedingRef.current = feed.preceding;
+    setPrecedingPrompt(feed.preceding);
   }
   function atLatest(rows: SessionEvent[]) {
     const last = rows.at(-1)?.seq ?? 0n;
@@ -409,138 +397,11 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
   useEffect(() => {
     c.drafts.set(id, draft);
   }, [c, id, draft]);
-  useEffect(() => {
-    let canceled = false;
-    let active: AbortController | undefined;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    let cursor = 0n;
-    async function connect() {
-      active = new AbortController();
-      const signal = active.signal;
-      setStatus("Connecting…");
-      if (!historyReady.current) setInitialLoad({ stage: "session" });
-      try {
-        const snapshot = await c.sessions.get(
-          { ref: ref(id), select: { all: true } },
-          { signal },
-        );
-        if (canceled) return;
-        setPending(snapshot.status?.pending ?? []);
-        const snapshotSeq = snapshot.status?.lastSeq ?? 0n;
-        if (cursor > 0n) background.refresh();
-        if (snapshotSeq > latestSeq.current) latestSeq.current = snapshotSeq;
-        let loaded: SessionEvent[] = [];
-        if (cursor === 0n) {
-          if (!historyReady.current) setInitialLoad({ stage: "history" });
-          const page = await history.page({ snapshotSeq }, signal);
-          if (canceled) return;
-          rememberPage(page);
-          loaded = page.events;
-          // The stream replays native records, including the ones omitted from
-          // the summary. Resume at its snapshot fence, not the last display row.
-          cursor = page.snapshotSeq;
-        } else {
-          // On reconnect, replay every native update after the stream cursor:
-          // an old task's completion has an earlier summary row anchor.
-          do {
-            const page = await history.nativePage(cursor, signal);
-            if (canceled) return;
-            rememberMetadata(page.events);
-            if (cursor > 0n && page.events[0]?.seq > cursor + 1n) setGap(true);
-            const next = page.events.at(-1)?.seq ?? cursor;
-            if (next <= cursor) break;
-            loaded = mergeEvents(loaded, page.events);
-            cursor = next;
-          } while (cursor < snapshotSeq);
-        }
-        if (loaded.length) {
-          for (const event of loaded) background.receive(event);
-          setPending(
-            pendingAfter(
-              snapshot.status?.pending ?? [],
-              loaded,
-              snapshot.status?.lastSeq ?? 0n,
-            ),
-          );
-          setEvents((old) =>
-            detached.current ? old : mergeEvents(old, loaded),
-          );
-        }
-        setExecutionState(snapshot.status?.state ?? "");
-        setTurn((old) => snapshotTurn(snapshot.status, loaded, old));
-        setQueued(snapshot.status?.queued ?? "");
-        historyReady.current = true;
-        setInitialLoad(undefined);
-        setStatus("Live");
-        for await (const e of c.sessions.events(
-          { ref: ref(id), afterSeq: cursor, clientId: c.clientId },
-          { signal },
-        )) {
-          if (canceled) return;
-          c.attention.event(id, e);
-          background.receive(e);
-          if (e.kind === "state") setExecutionState(e.text);
-          if (e.kind === "queued") setQueued(e.text);
-          if (e.kind === "input")
-            setQueued((old) => (old === e.text ? "" : old));
-          setTurn((old) => advanceTurn(old, e, true));
-          rememberMetadata([e]);
-          cursor = e.seq > cursor ? e.seq : cursor;
-          if (cursor > latestSeq.current) latestSeq.current = cursor;
-          // Receive every native record, but token/protocol traffic cannot
-          // change the reading layout. Metadata is reduced separately above.
-          if (!isTranscriptEvent(e) && e.kind !== "approval_resolved") {
-            if (!detached.current) newest.current.through = cursor;
-            continue;
-          }
-          setEvents((old) => {
-            if (detached.current) return old;
-            const next = mergeEvents(old, [e]);
-            // Protocol compaction alone must not detach a reader. Freeze only
-            // when adding live records would evict a visible reading row.
-            if (
-              !followRef.current &&
-              transcriptEvents(old).events.some(
-                (row) => row.seq < (next[0]?.seq ?? 0n),
-              )
-            ) {
-              detached.current = true;
-              return old;
-            }
-            newest.current = {
-              anchor: next.at(-1)?.seq ?? 0n,
-              through: cursor,
-            };
-            return next;
-          });
-          setPending((old) => pendingAfter(old, [e]));
-        }
-      } catch (e) {
-        if (canceled) return;
-        if (!historyReady.current)
-          setInitialLoad({ stage: "retrying", error: String(e) });
-        setStatus(t("Disconnected · retrying: {error}", { error: String(e) }));
-      } finally {
-        if (!canceled) timer = setTimeout(connect, 2000);
-      }
-    }
-    void connect();
-    const resume = () => {
-      if (document.visibilityState === "visible") {
-        active?.abort();
-      }
-    };
-    const offline = () => active?.abort();
-    window.addEventListener("offline", offline);
-    document.addEventListener("visibilitychange", resume);
-    return () => {
-      canceled = true;
-      active?.abort();
-      clearTimeout(timer);
-      document.removeEventListener("visibilitychange", resume);
-      window.removeEventListener("offline", offline);
-    };
-  }, [c, id, history]);
+  useEffect(() => feed.onEvent(background.receive), [feed, background.receive]);
+  useEffect(
+    () => feed.onReconnect(background.refresh),
+    [feed, background.refresh],
+  );
   async function loadHistory(direction: "older" | "newer", goLatest = false) {
     if (goLatest) pane.current?.dispatchEvent(new Event("scroll-jump"));
     if (historyRequest.current) {
@@ -566,14 +427,16 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
     const controller = new AbortController();
     historyRequest.current = controller;
     try {
-      const page = await history.page(
-        goLatest
-          ? { snapshotSeq: latestSeq.current }
-          : direction === "older"
-            ? { beforeSeq: first, snapshotSeq: latestSeq.current }
-            : { afterSeq: last, snapshotSeq: latestSeq.current },
-        controller.signal,
-      );
+      const page =
+        (goLatest ? feed.latestPage() : undefined) ??
+        (await history.page(
+          goLatest
+            ? { snapshotSeq: latestSeq.current }
+            : direction === "older"
+              ? { beforeSeq: first, snapshotSeq: latestSeq.current }
+              : { afterSeq: last, snapshotSeq: latestSeq.current },
+          controller.signal,
+        ));
       if (controller.signal.aborted) return;
       rememberPage(page);
       const incoming = page.events;
@@ -589,7 +452,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         ? incoming
         : mergeEvents(eventsRef.current, incoming, direction);
       detached.current = !atLatest(next);
-      setEvents(next);
+      setEvents(next, direction);
       if (goLatest) setFollow(true);
     } catch (e) {
       if (!controller.signal.aborted)
@@ -983,6 +846,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
     >
       <Transcript
         loading={initialLoad && <ConversationLoading {...initialLoad} />}
+        viewportCache={feed.viewport}
         pane={pane}
         events={transcript.events}
         workHistory={{
@@ -1229,6 +1093,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
                 c.store.apply("cxz.Session", [{ id: session.id }]);
                 c.drafts.delete(id);
                 c.attention.reset(id);
+                c.conversations.delete(id);
                 await navigate({ to: "/sessions", replace: true });
               })
             }

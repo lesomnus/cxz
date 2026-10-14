@@ -13,7 +13,7 @@ import {
 } from "./scroll-physics";
 
 import type { SessionEvent } from "#gen/cxz/session_pb";
-import { VirtualMessages } from "./virtual-messages";
+import { VirtualMessages, type TranscriptViewport } from "./virtual-messages";
 import { PinnedPrompt } from "./pinned-prompt";
 import type { MessageMap } from "./virtual-layout";
 import { HISTORY_PREFETCH_SCREENS } from "#src/features/session/model/session-history.ts";
@@ -79,6 +79,7 @@ export function Transcript({
   older,
   newer,
   workHistory,
+  viewportCache,
 }: {
   pane: React.RefObject<HTMLDivElement | null>;
   events: SessionEvent[];
@@ -98,6 +99,7 @@ export function Transcript({
   older: () => void;
   newer: () => void;
   workHistory?: WorkHistory;
+  viewportCache?: TranscriptViewport;
 }) {
   useLocale();
   const work = React.useMemo(() => workGroups(events), [events]);
@@ -729,6 +731,7 @@ export function Transcript({
         <div className="transcript-content" ref={content}>
           {notice}
           <VirtualMessages
+            cache={viewportCache}
             pane={pane}
             events={work.events}
             follow={follow}

@@ -1,6 +1,7 @@
 # Session attention and drafts
 
-The web app marks unread completed responses with a `+` on the session row.
+The web app marks unread completed responses with a fluorescent circle in the
+session row's indicator position. The Sessions icon shows a count badge.
 The browser tab title counts sessions needing attention, and its icon receives
 a quiet badge. New questions also contribute while their session is not being
 viewed. These indicators use no OS notification permission, prompt or modal.
@@ -8,9 +9,11 @@ viewed. These indicators use no OS notification permission, prompt or modal.
 Completion is confirmed by a successful native `turn_end`, including fast turns
 coalesced into a single idle resource update. Errors, interruptions and unrelated
 settings or usage records do not count. The existing shared resource inventory
-drives checks; the app does not add a live event subscription per session.
-History probes have bounded concurrency and cancellation. Initial snapshots
-establish a baseline instead of replaying historical sounds.
+drives checks for unvisited sessions. Previously visited conversations keep
+receiving their cached native stream when another view is open, so their
+completions can be recognized immediately. The same notification cursor
+deduplicates stream and catalog checks. History probes have bounded concurrency
+and cancellation. Initial snapshots establish a baseline instead of replaying historical sounds.
 
 An open, focused conversation acknowledges replies only when its latest history
 is visible. Reading older messages, switching away, hiding the tab or focusing
