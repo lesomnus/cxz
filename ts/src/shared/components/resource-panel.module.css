@@ -38,7 +38,8 @@
 }
 .actions button {
   width: var(--ui-toolbar-button-width);
-  border: var(--panel-border-width) solid var(--panel-border-color);
+  border: 0;
+  background: var(--ui-shade-32);
 }
 .panel > :global(.panel-scroll-region) {
   --ui-scroll-area-background: var(--ui-dialog-body-background);
