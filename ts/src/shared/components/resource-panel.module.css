@@ -51,6 +51,5 @@
   overflow: hidden;
 }
 .panel :global(.panel-scroll-inner) {
-  padding: var(--ui-dialog-padding);
-  padding-right: calc(var(--ui-dialog-padding) + 14px);
+  padding: var(--ui-control-inset);
 }

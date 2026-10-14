@@ -30,7 +30,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Persistent navigation with a fixed header and rounded scrollable body. Header action spacing uses the same token as DialogCard's footer. Body side insets use the narrower control inset, including the panel's continuous right edge. Shares DialogCard's body color and radius tokens. Sessions, accounts, projects and settings use this frame; its action can open an AnchoredDialog beside the panel.",
+          "Persistent navigation with a fixed header and rounded scrollable body. Header action spacing uses the same token as DialogCard's footer. Body side insets and the item-to-body padding share the narrower control inset, including the panel's continuous right edge. Shares DialogCard's body color and radius tokens. Sessions, accounts, projects and settings use this frame; its action can open an AnchoredDialog beside the panel.",
       },
     },
   },

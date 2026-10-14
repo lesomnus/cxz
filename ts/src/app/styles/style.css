@@ -2458,7 +2458,10 @@ summary:hover {
 }
 
 .session-tree-group {
-  margin: 4px 0 12px;
+  margin: 0;
+}
+.session-tree-group + .session-tree-group {
+  margin-top: var(--ui-control-inset);
 }
 .session-tree :is(button, a.route-link) {
   min-height: 30px;
