@@ -74,7 +74,7 @@
   padding: var(--ui-space);
 }
 .layout {
-  --ui-scroll-area-background: var(--ui-dialog-body-background);
+  --ui-scroll-area-background: var(--ui-dialog-body-glass-background);
   display: flex;
   flex-direction: column;
   min-height: 0;
