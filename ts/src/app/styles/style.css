@@ -2465,7 +2465,7 @@ summary:hover {
 }
 .session-tree :is(button, a.route-link) {
   min-height: 30px;
-  padding: 5px 6px;
+  padding: var(--ui-space) 6px;
 }
 .session-tree .button-content {
   justify-content: flex-start;
