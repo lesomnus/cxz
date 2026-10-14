@@ -4,6 +4,7 @@ import { create } from "@bufbuild/protobuf";
 import { Button } from "@lesomnus/cxz-ui";
 import { SessionEventSchema } from "#gen/cxz/session_pb";
 import { SessionSearch } from "./session-search";
+import { Transcript } from "./transcript";
 import { Markdown } from "#src/shared/content/markdown.tsx";
 
 const messages = [
@@ -34,7 +35,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Ctrl+Shift+F (Cmd+Shift+F on macOS) opens a persistent nonmodal search near the top of the current conversation. Typing immediately searches loaded conversation data, including virtualized messages outside the viewport. No Search API, pagination or history loading is used. The transcript highlights rendered matches without changing layout. Enter visits each occurrence from newest to oldest, then wraps; arrow keys select results and clicking jumps without dismissing search. Only Close or Escape dismiss it. This story supplies local messages; try 'network'.",
+          "Ctrl+Shift+F (Cmd+Shift+F on macOS) opens a persistent nonmodal search near the top of the current conversation. Typing immediately searches loaded conversation data, including virtualized messages outside the viewport. No Search API, pagination or history loading is used. The transcript highlights rendered matches without changing layout and adds green search ticks beside its scroll handle, sharing the existing elastic marker motion. Enter visits each occurrence from newest to oldest, then wraps; arrow keys select results and clicking jumps without dismissing search. Only Close or Escape dismiss it. This story supplies local messages; try 'network'.",
       },
     },
   },
@@ -43,6 +44,9 @@ const meta = {
       input = useRef<HTMLTextAreaElement>(null);
     const [selected, setSelected] = useState("");
     const [loaded, setLoaded] = useState(events);
+    const pane = useRef<HTMLDivElement>(null),
+      follow = useRef(false);
+    const [searchMatches, setSearchMatches] = useState<readonly string[]>([]);
     return (
       <div
         ref={area}
@@ -76,36 +80,47 @@ const meta = {
         </p>
         {selected && <p>Jumped to message {selected}</p>}
         <div
-          className="transcript"
           style={{
             position: "absolute",
             top: 80,
             bottom: 80,
             insetInline: 16,
-            overflow: "auto",
+            display: "flex",
+            minHeight: 0,
           }}
         >
-          <div
-            className="virtual-messages"
-            style={{ position: "relative", paddingBottom: 500 }}
-          >
-            {loaded.map(({ text }, index) => (
-              <div key={index} data-row={index + 1}>
-                {index ? (
-                  <article className="response">
-                    <Markdown text={text} />
-                  </article>
-                ) : (
-                  <article className="input">
-                    <p className="message-body">{text}</p>
-                  </article>
-                )}
-              </div>
-            ))}
-          </div>
+          <Transcript
+            pane={pane}
+            events={loaded}
+            follow={follow}
+            searchMatches={searchMatches}
+            notice={null}
+            onScroll={() => {}}
+            onNavigate={() => {}}
+            onTension={() => {}}
+            onMotion={() => {}}
+            onReadingMove={() => {}}
+            precedingPrompt={undefined}
+            jumpTarget={undefined}
+            onPromptJump={setSelected}
+            onJumped={() => {}}
+            older={() => {}}
+            newer={() => {}}
+            render={(event) =>
+              event.kind === "input" ? (
+                <article className="input">
+                  <p className="message-body">{event.text}</p>
+                </article>
+              ) : (
+                <article className="response">
+                  <Markdown text={event.text} />
+                </article>
+              )
+            }
+          />
         </div>
         <Button
-          style={{ position: "absolute", right: 16, bottom: 96 }}
+          style={{ position: "absolute", right: 16, bottom: 96, zIndex: 4 }}
           onClick={() =>
             setLoaded((old) => [
               ...old,
@@ -134,6 +149,7 @@ const meta = {
         />
         <SessionSearch
           events={loaded}
+          onMatchesChange={setSearchMatches}
           area={area}
           jump={setSelected}
           restoreFocus={() => input.current?.focus()}

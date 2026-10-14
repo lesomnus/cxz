@@ -190,6 +190,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
   >(feed.preceding);
   const precedingRef = useRef<typeof precedingPrompt>(feed.preceding);
   const [jumpTarget, setJumpTarget] = useState<string>();
+  const [searchMatches, setSearchMatches] = useState<readonly string[]>([]);
   const jumpInset = useRef(18);
   const floor = feed.floor;
   const latestSeq = feed.latestSeq;
@@ -857,6 +858,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
     >
       <SessionSearch
         events={transcript.events}
+        onMatchesChange={setSearchMatches}
         area={conversationArea}
         jump={(seq, inset, matchVisible) => {
           // Results belong only to the loaded window. An evicted message must
@@ -871,6 +873,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         }
       />
       <Transcript
+        searchMatches={searchMatches}
         loading={initialLoad && <ConversationLoading {...initialLoad} />}
         viewportCache={feed.viewport}
         pane={pane}

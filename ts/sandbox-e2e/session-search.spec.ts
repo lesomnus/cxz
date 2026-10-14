@@ -96,3 +96,77 @@ test("local search has no result page limit and Enter visits newest matches with
     .poll(() => page.evaluate(() => CSS.highlights.has("conversation-search")))
     .toBe(false);
 });
+
+test("green search ticks share existing marker motion and disappear when search clears or closes", async ({
+  page,
+}) => {
+  await page.goto("/sandbox.html#/sessions/session-3");
+  const pane = page.locator(".transcript");
+  await expect(pane).toContainText("History item 2100", { timeout: 45000 });
+  await page.getByRole("textbox", { name: "Message", exact: true }).focus();
+  await page.keyboard.press("Control+Shift+F");
+  const input = page.getByRole("searchbox", {
+      name: "Search this conversation",
+    }),
+    ticks = page.locator(".scroll-tick[data-search]");
+  await input.fill("History item");
+  await expect.poll(() => ticks.count()).toBeGreaterThan(0);
+  await expect(ticks.first()).toHaveCSS(
+    "background-color",
+    "rgb(140, 255, 107)",
+  );
+  await expect(ticks.first()).toHaveCSS("opacity", "1");
+  const aligned = () =>
+    page.evaluate(() => {
+      const ticks = [
+        ...document.querySelectorAll<HTMLElement>(".scroll-tick[data-search]"),
+      ];
+      return (
+        ticks.length > 0 &&
+        ticks.every((tick) => {
+          const original = document.querySelector<HTMLElement>(
+            `.scroll-tick[data-event="${tick.dataset.search}"]`,
+          );
+          return (
+            !!original &&
+            Math.abs(
+              parseFloat(getComputedStyle(tick).top) -
+                parseFloat(getComputedStyle(original).top),
+            ) < 0.5
+          );
+        })
+      );
+    });
+  await expect.poll(aligned).toBe(true);
+  await pane.hover({ position: { x: 40, y: 450 } });
+  await page.mouse.wheel(0, -300);
+  await expect.poll(aligned).toBe(true);
+  const thumb = page.locator(".scroll-thumb"),
+    bounds = (await thumb.boundingBox())!,
+    rail = (await page.locator(".scroll-track").boundingBox())!;
+  await page.mouse.move(
+    bounds.x + bounds.width / 2,
+    bounds.y + bounds.height / 2,
+  );
+  await page.mouse.down();
+  try {
+    await page.mouse.move(
+      bounds.x + bounds.width / 2,
+      rail.y + bounds.height / 2 - 100,
+      { steps: 4 },
+    );
+    await expect
+      .poll(() => thumb.getAttribute("data-stretch").then(Number))
+      .toBeGreaterThan(1);
+    await expect.poll(aligned).toBe(true);
+  } finally {
+    await page.mouse.up();
+  }
+  await expect.poll(aligned).toBe(true);
+  await input.fill("No matching phrase at all");
+  await expect(ticks).toHaveCount(0);
+  await input.fill("History item");
+  await expect.poll(() => ticks.count()).toBeGreaterThan(0);
+  await input.press("Escape");
+  await expect(ticks).toHaveCount(0);
+});

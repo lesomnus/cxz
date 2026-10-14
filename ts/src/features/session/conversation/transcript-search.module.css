@@ -1,0 +1,5 @@
+.marker:global(.scroll-tick) {
+  right: 2px;
+  width: 8px;
+  background: var(--conversation-search-marker-color, #8cff6b);
+}

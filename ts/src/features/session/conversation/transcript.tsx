@@ -22,6 +22,7 @@ import {
   selectedWorkGroup,
 } from "#src/features/session/model/work-groups.ts";
 import { WorkDialog, WorkSummary } from "./work-dialog";
+import searchStyles from "./transcript-search.module.css";
 
 type Geometry = {
   top: number;
@@ -31,7 +32,11 @@ type Geometry = {
   height: number;
   thumb: number;
   range: ScrollRange;
-  markers: { id: string; kind: "input" | "assistant"; top: number }[];
+  markers: {
+    id: string;
+    kind: "input" | "assistant" | "search";
+    top: number;
+  }[];
 };
 export type WorkHistory = { hasOlder: boolean; loadOlder: () => Promise<void> };
 const empty: Geometry = {
@@ -81,6 +86,7 @@ export function Transcript({
   newer,
   workHistory,
   viewportCache,
+  searchMatches,
 }: {
   pane: React.RefObject<HTMLDivElement | null>;
   events: SessionEvent[];
@@ -102,6 +108,7 @@ export function Transcript({
   newer: () => void;
   workHistory?: WorkHistory;
   viewportCache?: TranscriptViewport;
+  searchMatches?: readonly string[];
 }) {
   useLocale();
   const work = React.useMemo(() => workGroups(events), [events]);
@@ -173,6 +180,11 @@ export function Transcript({
   const track = useRef<HTMLDivElement>(null);
   const thumb = useRef<HTMLDivElement>(null);
   const offsets = useRef<MessageMap["markers"]>([]);
+  const searchIds = useRef<ReadonlySet<string>>(new Set());
+  searchIds.current = React.useMemo(
+    () => new Set(searchMatches),
+    [searchMatches],
+  );
   const mapping = useRef<MessageMap | null>(null);
   const geometry = useRef(empty);
   const drag = useRef<Drag | null>(null);
@@ -353,6 +365,18 @@ export function Transcript({
     // Keep off-rail ticks mounted so incoming/outgoing markers animate too.
     const markerStart = markerRangeStart(mappedTop, range);
     const markers = offsets.current
+      .flatMap(
+        (
+          marker,
+        ): {
+          id: string;
+          kind: "input" | "assistant" | "search";
+          y: number;
+        }[] =>
+          searchIds.current.has(marker.id)
+            ? [marker, { ...marker, id: `search:${marker.id}`, kind: "search" }]
+            : [marker],
+      )
       .map(({ id, kind, y }) => ({
         id,
         kind,
@@ -385,6 +409,11 @@ export function Transcript({
     };
     setView(geometry.current);
   }
+  useLayoutEffect(() => {
+    // A query changes ticks, not the scroll position or loaded history. Reuse
+    // the same range/tension geometry and animation timeline as existing ticks.
+    measure();
+  }, [searchMatches]);
   function readOffsets() {
     const el = pane.current;
     if (!el) return;
@@ -789,13 +818,23 @@ export function Transcript({
           {view.markers.map(({ id, kind, top }) => (
             <span
               key={id}
-              className={`scroll-tick ${kind === "input" ? "scroll-marker" : "scroll-response-marker"}`}
+              className={`scroll-tick ${kind === "search" ? searchStyles.marker : kind === "input" ? "scroll-marker" : "scroll-response-marker"}`}
               data-event={id}
+              data-search={
+                kind === "search" ? id.slice("search:".length) : undefined
+              }
               data-prompt={kind === "input" ? id : undefined}
               data-response={kind === "assistant" ? id : undefined}
               data-target-top={top + stretch}
               style={{
-                top: animated(top + stretch, rangeFrame?.markers.get(id)),
+                top: animated(
+                  top + stretch,
+                  rangeFrame?.markers.get(id) ??
+                    (kind === "search"
+                      ? rangeFrame?.markers.get(id.slice("search:".length))
+                      : undefined),
+                ),
+                opacity: kind === "search" ? 1 : undefined,
               }}
               aria-hidden="true"
             />

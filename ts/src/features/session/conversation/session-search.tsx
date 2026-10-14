@@ -19,6 +19,7 @@ export function SessionSearch({
   area,
   jump,
   restoreFocus,
+  onMatchesChange,
 }: {
   events: SessionEvent[];
   area: RefObject<HTMLElement | null>;
@@ -28,6 +29,7 @@ export function SessionSearch({
     matchVisible?: boolean,
   ) => void | Promise<void>;
   restoreFocus: () => void;
+  onMatchesChange?: (seqs: readonly string[]) => void;
 }) {
   useLocale();
   const [open, setOpen] = useState(false);
@@ -47,6 +49,10 @@ export function SessionSearch({
     [events, open, query],
   );
   const selectedIndex = Math.min(selected, Math.max(0, visible.length - 1));
+  useEffect(() => {
+    onMatchesChange?.(visible.map((hit) => hit.seq.toString()));
+  }, [visible, onMatchesChange]);
+  useEffect(() => () => onMatchesChange?.([]), [onMatchesChange]);
   const matches = useSearchHighlights({
     area,
     query: open ? query.trim() : "",

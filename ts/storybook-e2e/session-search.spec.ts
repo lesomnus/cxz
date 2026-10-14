@@ -12,6 +12,7 @@ test("session-search story opens, matches and jumps while keeping the overlay un
   });
   await search.getByRole("searchbox").fill("network");
   await expect(search.getByRole("status")).toHaveText("2 matches");
+  await expect(page.locator(".scroll-tick[data-search]")).toHaveCount(2);
   await search
     .getByRole("button", { name: /Investigate network latency/ })
     .click();
@@ -21,6 +22,7 @@ test("session-search story opens, matches and jumps while keeping the overlay un
   await expect(search).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(search).toHaveCount(0);
+  await expect(page.locator(".scroll-tick[data-search]")).toHaveCount(0);
 });
 
 test("Enter highlights each occurrence newest first, including inline Markdown, and wraps", async ({
