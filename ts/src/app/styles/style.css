@@ -2224,7 +2224,10 @@ pre {
   transform: translateY(0);
 }
 .composer .stop[data-armed="true"] {
-  background: var(--shade-54);
+  background: #68172f;
+}
+.composer .stop[data-armed="true"] svg {
+  color: #ff526d;
 }
 .send-shortcut {
   position: absolute;
