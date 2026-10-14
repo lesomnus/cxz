@@ -665,7 +665,7 @@ test("project picker supports fuzzy search, keyboard selection and dark form bac
   await fixture(page);
   await page.getByRole("link", { name: "Sessions view", exact: true }).click();
   await page
-    .getByRole("button", { name: /^(New|Add) session$/, exact: true })
+    .getByRole("button", { name: "New session", exact: true })
     .click();
   const create = page.getByRole("dialog", { name: "Add session", exact: true });
   await expect(create).toBeVisible();
