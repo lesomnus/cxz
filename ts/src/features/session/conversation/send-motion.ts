@@ -1,4 +1,11 @@
 import { useEffect, useLayoutEffect, useRef, type RefObject } from "react";
+import {
+  SEND_PULL_DURATION,
+  sendPullFrames,
+  sendPullState,
+  SEND_SPRING_DURATION,
+  sendSpringFrames,
+} from "./send-spring";
 import type { SessionEvent } from "#gen/cxz/session_pb";
 
 type SendMotion = {
@@ -12,6 +19,8 @@ type SendMotion = {
   raf: number;
   ready: boolean;
   row?: HTMLElement;
+  pull?: Animation;
+  recoil?: Animation;
   exit?: Animation;
   arrival?: Animation;
   started: boolean;
@@ -46,6 +55,8 @@ export function useSendMotion({
     clearTimeout(motion.timeout);
     cancelAnimationFrame(motion.raf);
     motion.observer.disconnect();
+    motion.pull?.cancel();
+    motion.recoil?.cancel();
     motion.exit?.cancel();
     motion.snapshot.remove();
     motion.source.removeAttribute("data-send-exiting");
@@ -107,7 +118,10 @@ export function useSendMotion({
     locate();
     const motion = active.current;
     // Preserve edits made while the request or its departure animation is pending.
-    if (motion?.exit && draft !== motion.draft) motion.exit.finish();
+    if (motion && draft !== motion.draft) {
+      if (motion.exit) motion.exit.finish();
+      else finish(motion);
+    }
   }, [events, draft]);
   useEffect(() => {
     const reduced = matchMedia("(prefers-reduced-motion: reduce)");
@@ -162,21 +176,35 @@ export function useSendMotion({
       started: false,
     };
     active.current = motion;
+    node.append(snapshot);
+    node.dataset.sendExiting = "true";
+    const mirror = snapshot.querySelector<HTMLElement>(".editor-mirror")!;
+    motion.pull = mirror.animate(sendPullFrames(), {
+      duration: SEND_PULL_DURATION,
+      easing: "linear",
+      fill: "both",
+    });
+    motion.pull.id = "send-pull";
     // Virtual rows can mount after the live event or after returning to Latest.
     motion.observer.observe(pane.current, { childList: true, subtree: true });
-    motion.timeout = window.setTimeout(() => finish(motion), 10_000);
     return motion;
   }
   async function depart(motion: SendMotion | undefined) {
     if (!motion || active.current !== motion) return;
-    if (latest.current.draft !== motion.draft) return;
+    if (latest.current.draft !== motion.draft) {
+      finish(motion);
+      return;
+    }
+    // Bound arrival cleanup only after acceptance; a pending RPC can take
+    // arbitrarily long and keeps its bounded pull until it resolves.
+    motion.timeout = window.setTimeout(() => finish(motion), 10_000);
     const { source: node, snapshot } = motion;
-    node.append(snapshot);
-    node.dataset.sendExiting = "true";
     const mirror = snapshot.querySelector<HTMLElement>(".editor-mirror")!;
+    const transform = getComputedStyle(mirror).transform;
+    motion.pull?.cancel();
     motion.exit = mirror.animate(
       [
-        { transform: "translateY(0) scale(1)", opacity: 1 },
+        { transform, opacity: 1 },
         {
           transform: `translateY(${-timing(node, "--send-exit-travel")}px) scale(${timing(node, "--send-content-scale")})`,
           opacity: 0,
@@ -188,6 +216,8 @@ export function useSendMotion({
         fill: "both",
       },
     );
+    motion.exit.id = "send-exit";
+    snapshot.dataset.sendPhase = "departing";
     await motion.exit.finished.catch(() => {});
   }
   function enter(motion: SendMotion | undefined) {
@@ -203,5 +233,38 @@ export function useSendMotion({
       });
     });
   }
-  return { prepare, depart, enter, cancel: finish };
+  function cancel(motion: SendMotion | undefined) {
+    if (!motion || active.current !== motion) return;
+    if (
+      motion.exit ||
+      latest.current.draft !== motion.draft ||
+      matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      finish(motion);
+      return;
+    }
+    const mirror =
+      motion.snapshot.querySelector<HTMLElement>(".editor-mirror")!;
+    const elapsed = Math.min(
+      Number(motion.pull?.currentTime ?? 0),
+      SEND_PULL_DURATION,
+    );
+    const state = sendPullState(elapsed);
+    const position = new DOMMatrix(getComputedStyle(mirror).transform).m42;
+    motion.pull?.cancel();
+    motion.recoil = mirror.animate(
+      sendSpringFrames(position, 0, state.velocity),
+      {
+        duration: SEND_SPRING_DURATION,
+        easing: "linear",
+        fill: "both",
+      },
+    );
+    motion.recoil.id = "send-recoil";
+    void motion.recoil.finished.then(
+      () => finish(motion),
+      () => {},
+    );
+  }
+  return { prepare, depart, enter, cancel };
 }

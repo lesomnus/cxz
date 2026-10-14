@@ -24,7 +24,8 @@ async function probe(page: Page) {
     const observer = new MutationObserver(() => {
       const exit = document
         .querySelector(".composer-send-ghost .editor-mirror")
-        ?.getAnimations()[0];
+        ?.getAnimations()
+        .find((animation) => animation.id === "send-exit");
       if (exit && !state.exit) {
         state.exit = exit;
         exit.pause();
@@ -41,7 +42,7 @@ async function probe(page: Page) {
       childList: true,
       subtree: true,
       attributes: true,
-      attributeFilter: ["data-send-arrival"],
+      attributeFilter: ["data-send-arrival", "data-send-phase"],
     });
     function sample() {
       if (state.arrival?.playState === "running") {
@@ -80,6 +81,7 @@ test("Send carries visible draft content upward and reveals one real message wit
   await probe(page);
   await page.getByRole("button", { name: "Send", exact: true }).click();
   await expect(page.locator(".composer-send-ghost")).toHaveCount(1);
+  await page.waitForFunction(() => !!(window as any).sendMotionProbe.exit);
   await expect(page.locator(".composer-send-ghost .editor-surface")).toHaveCSS(
     "visibility",
     "visible",
@@ -219,6 +221,19 @@ test("pending sends lock native and custom edits until confirmation", async ({
   await hold();
   await page.getByRole("button", { name: "Send", exact: true }).click();
   await expect(input).not.toBeEditable();
+  const mirror = page.locator(".composer-send-ghost .editor-mirror");
+  await expect
+    .poll(() =>
+      mirror.evaluate(
+        (el) => new DOMMatrix(getComputedStyle(el).transform).m42,
+      ),
+    )
+    .toBeGreaterThan(4);
+  await expect(mirror).toHaveCSS("opacity", "1");
+  await expect(page.locator(".composer-send-ghost")).not.toHaveAttribute(
+    "data-send-phase",
+    "departing",
+  );
   await expect(surface).toHaveAttribute("aria-busy", "true");
   await expect
     .poll(() => surface.evaluate((el) => getComputedStyle(el).backgroundColor))
@@ -240,7 +255,9 @@ test("pending sends lock native and custom edits until confirmation", async ({
   });
   await expect(input).toHaveValue(text);
   await expect(
-    page.getByLabel("Code syntax 1", { exact: true }),
+    page
+      .locator(".composer-editor:not(.composer-send-ghost)")
+      .getByLabel("Code syntax 1", { exact: true }),
   ).toBeDisabled();
   await page.evaluate(() => (window as any).releaseSend());
   await expect(input).toBeEditable();
@@ -260,6 +277,7 @@ test("leaving during departure clears the accepted saved draft and cancels the d
   await probe(page);
   await input.press("Control+Enter");
   await expect(page.locator(".composer-send-ghost")).toHaveCount(1);
+  await page.waitForFunction(() => !!(window as any).sendMotionProbe.exit);
   await page.getByLabel("Scenario", { exact: true }).selectOption("session-2");
   await expect(input).toHaveValue("");
   await page.getByLabel("Scenario", { exact: true }).selectOption("session-1");
