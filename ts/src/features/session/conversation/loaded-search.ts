@@ -1,5 +1,5 @@
 import type { SessionEvent } from "#gen/cxz/session_pb";
-import { marked } from "marked";
+import { conversationMarkdown } from "#src/shared/content/markdown-parser.ts";
 import DOMPurify from "dompurify";
 
 export type LoadedSearchHit = Pick<SessionEvent, "seq" | "timeMs" | "kind"> & {
@@ -13,10 +13,13 @@ function bodyText(event: SessionEvent) {
   if (event.kind === "input") return event.text;
   const saved = textCache.get(event);
   if (saved?.source === event.text) return saved.text;
-  const html = DOMPurify.sanitize(marked.parse(event.text, { async: false }), {
-    FORBID_TAGS: ["img", "style", "input", "form"],
-    FORBID_ATTR: ["style"],
-  });
+  const html = DOMPurify.sanitize(
+    conversationMarkdown.parse(event.text, { async: false }),
+    {
+      FORBID_TAGS: ["img", "style", "input", "form"],
+      FORBID_ATTR: ["style"],
+    },
+  );
   const doc = new DOMParser().parseFromString(html, "text/html");
   for (const control of doc.body.querySelectorAll(
     'button, select, [aria-hidden="true"]',

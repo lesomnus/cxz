@@ -1,4 +1,5 @@
-import { marked, Renderer } from "marked";
+import { Renderer } from "marked";
+import { conversationMarkdown } from "./markdown-parser";
 import DOMPurify from "dompurify";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
@@ -27,7 +28,7 @@ export function Markdown({ text }: { text: string }) {
       `<div class="${styles.block}">${code(token)}</div>`;
     return {
       __html: markdownPurifier.sanitize(
-        marked.parse(text, { async: false, renderer }),
+        conversationMarkdown.parse(text, { async: false, renderer }),
         {
           FORBID_TAGS: ["img", "style", "input", "form"],
           FORBID_ATTR: ["style"],
