@@ -1,6 +1,9 @@
 import { expect, it } from "vitest";
 import {
   SEND_SPRING_DURATION,
+  SEND_PULL_DURATION,
+  sendPullState,
+  sendPullFrames,
   sendSpringState,
   sendSpringFrames,
 } from "./send-spring";
@@ -33,4 +36,29 @@ it("returns from the current displacement with continuous initial velocity", () 
       ).position,
     ),
   ).toBeLessThan(0.1);
+});
+
+it("keeps pulling slowly during a long request without exceeding the limit", () => {
+  expect(sendPullState(0)).toEqual({ position: 0, velocity: 0 });
+  expect(sendPullState(500).position).toBeGreaterThan(2.8);
+  expect(sendPullState(500).position).toBeLessThan(3.2);
+  let previous = 0;
+  for (let ms = 0; ms <= SEND_PULL_DURATION; ms += 50) {
+    const { position, velocity } = sendPullState(ms);
+    expect(position).toBeGreaterThanOrEqual(previous);
+    expect(position).toBeLessThanOrEqual(8);
+    expect(velocity).toBeGreaterThanOrEqual(0);
+    previous = position;
+  }
+  expect(sendPullState(3000).position).toBeGreaterThan(5);
+  expect(sendPullState(8000).position).toBeGreaterThan(7);
+  expect(sendPullState(8000).velocity).toBeLessThan(
+    sendPullState(3000).velocity,
+  );
+  expect(sendPullState(60000)).toEqual({ position: 8, velocity: 0 });
+  expect(sendPullFrames().at(-1)).toEqual({
+    offset: 1,
+    transform: "translateY(8px) scale(1)",
+    opacity: 1,
+  });
 });

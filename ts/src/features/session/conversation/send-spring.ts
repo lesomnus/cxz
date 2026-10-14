@@ -3,7 +3,38 @@
 // but the displacement is a physical spring, independent of frame rate.
 export const SEND_PULL_DISTANCE = 8;
 export const SEND_SPRING_DURATION = 540;
-export const SEND_PULL_MINIMUM = 100;
+export const SEND_PULL_DURATION = 16_000;
+
+// Two critically damped responses: a small immediate tug, then slow tension
+// toward the limit. Both start at rest and approach their targets monotonically.
+export function sendPullState(ms: number) {
+  if (ms >= SEND_PULL_DURATION)
+    return { position: SEND_PULL_DISTANCE, velocity: 0 };
+  const time = Math.max(0, ms) / 1000;
+  let position = 0;
+  let velocity = 0;
+  for (const [distance, rate] of [
+    [3, 14],
+    [5, 0.5],
+  ]) {
+    const envelope = Math.exp(-rate * time);
+    position += distance * (1 - (1 + rate * time) * envelope);
+    velocity += distance * rate * rate * time * envelope;
+  }
+  return { position, velocity };
+}
+
+export function sendPullFrames(): Keyframe[] {
+  const times = [
+    ...Array.from({ length: 36 }, (_, i) => (i * 1000) / 60),
+    ...Array.from({ length: 155 }, (_, i) => 600 + i * 100),
+  ];
+  return times.map((ms) => ({
+    offset: ms / SEND_PULL_DURATION,
+    transform: `translateY(${sendPullState(ms).position}px) scale(1)`,
+    opacity: 1,
+  }));
+}
 export function sendSpringState(
   from: number,
   target: number,

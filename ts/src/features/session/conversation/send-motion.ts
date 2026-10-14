@@ -1,10 +1,10 @@
 import { useEffect, useLayoutEffect, useRef, type RefObject } from "react";
 import {
-  SEND_PULL_DISTANCE,
-  SEND_PULL_MINIMUM,
+  SEND_PULL_DURATION,
+  sendPullFrames,
+  sendPullState,
   SEND_SPRING_DURATION,
   sendSpringFrames,
-  sendSpringState,
 } from "./send-spring";
 import type { SessionEvent } from "#gen/cxz/session_pb";
 
@@ -21,7 +21,6 @@ type SendMotion = {
   row?: HTMLElement;
   pull?: Animation;
   recoil?: Animation;
-  createdAt: number;
   exit?: Animation;
   arrival?: Animation;
   started: boolean;
@@ -175,21 +174,19 @@ export function useSendMotion({
       raf: 0,
       ready: false,
       started: false,
-      createdAt: performance.now(),
     };
     active.current = motion;
     node.append(snapshot);
     node.dataset.sendExiting = "true";
     const mirror = snapshot.querySelector<HTMLElement>(".editor-mirror")!;
-    motion.pull = mirror.animate(sendSpringFrames(0, SEND_PULL_DISTANCE), {
-      duration: SEND_SPRING_DURATION,
+    motion.pull = mirror.animate(sendPullFrames(), {
+      duration: SEND_PULL_DURATION,
       easing: "linear",
       fill: "both",
     });
     motion.pull.id = "send-pull";
     // Virtual rows can mount after the live event or after returning to Latest.
     motion.observer.observe(pane.current, { childList: true, subtree: true });
-    motion.timeout = window.setTimeout(() => finish(motion), 10_000);
     return motion;
   }
   async function depart(motion: SendMotion | undefined) {
@@ -198,16 +195,9 @@ export function useSendMotion({
       finish(motion);
       return;
     }
-    // Do not delay the RPC, only its decorative departure on very fast replies.
-    const remaining =
-      SEND_PULL_MINIMUM - (performance.now() - motion.createdAt);
-    if (remaining > 0)
-      await new Promise((resolve) => setTimeout(resolve, remaining));
-    if (active.current !== motion) return;
-    if (latest.current.draft !== motion.draft) {
-      finish(motion);
-      return;
-    }
+    // Bound arrival cleanup only after acceptance; a pending RPC can take
+    // arbitrarily long and keeps its bounded pull until it resolves.
+    motion.timeout = window.setTimeout(() => finish(motion), 10_000);
     const { source: node, snapshot } = motion;
     const mirror = snapshot.querySelector<HTMLElement>(".editor-mirror")!;
     const transform = getComputedStyle(mirror).transform;
@@ -257,9 +247,9 @@ export function useSendMotion({
       motion.snapshot.querySelector<HTMLElement>(".editor-mirror")!;
     const elapsed = Math.min(
       Number(motion.pull?.currentTime ?? 0),
-      SEND_SPRING_DURATION,
+      SEND_PULL_DURATION,
     );
-    const state = sendSpringState(0, SEND_PULL_DISTANCE, 0, elapsed);
+    const state = sendPullState(elapsed);
     const position = new DOMMatrix(getComputedStyle(mirror).transform).m42;
     motion.pull?.cancel();
     motion.recoil = mirror.animate(
