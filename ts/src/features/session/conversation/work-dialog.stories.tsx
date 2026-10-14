@@ -16,7 +16,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Work between conversation replies is summarized on the right of the reading column. View details opens a full-height dialog with outer gaps, sliding from the right inside the conversation. Only the conversation is dimmed; neighboring panes stay uncovered. The list is virtualized and details load on demand. Close with the button, Escape or the dimmed backdrop.",
+          "Work between conversation replies is summarized on the right of the reading column. The elapsed time between the surrounding replies precedes the task count; the first batch uses the input timestamp. Missing history boundaries leave the duration hidden. View details opens a full-height dialog with outer gaps, sliding from the right inside the conversation. Only the conversation is dimmed; neighboring panes stay uncovered. The list is virtualized and details load on demand. Close with the button, Escape or the dimmed backdrop.",
       },
     },
   },
@@ -139,7 +139,10 @@ export const BetweenResponses: Story = {
       ...next,
       ...more,
       responseEvent(10, "codex", "Both batches are complete."),
-    ],
+    ].map((event) => ({
+      ...event,
+      timeMs: 1710000000000n + event.seq * 2000n,
+    })),
   },
 };
 

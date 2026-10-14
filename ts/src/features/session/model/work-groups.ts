@@ -7,6 +7,7 @@ export type WorkGroup = {
   anchor: SessionEvent;
   events: SessionEvent[];
   hasBoundary: boolean;
+  durationMs?: number;
 };
 // Keep conversation and actionable/important notices visible. Everything else
 // belongs in the work dialog, including provider-specific and future work kinds.
@@ -29,6 +30,7 @@ export const isWorkEvent = (event: SessionEvent) =>
 export function workGroups(events: SessionEvent[]) {
   const active = new Map<string, WorkGroup>();
   const boundaries = new Set<string>();
+  const starts = new Map<string, bigint>();
   const groups = new Map<string, WorkGroup>();
   const summaries = new Map<bigint, WorkGroup>();
   const rows: SessionEvent[] = [];
@@ -50,8 +52,15 @@ export function workGroups(events: SessionEvent[]) {
       group.events.push(event);
     } else rows.push(event);
     if (["input", "assistant", "turn_end"].includes(event.kind)) {
+      const group = active.get(event.runId);
+      const start = starts.get(event.runId);
+      if (group && start !== undefined && start > 0n && event.timeMs >= start)
+        group.durationMs = Number(event.timeMs - start);
       active.delete(event.runId);
-      if (event.kind !== "turn_end") boundaries.add(event.runId);
+      if (event.kind !== "turn_end") {
+        boundaries.add(event.runId);
+        starts.set(event.runId, event.timeMs);
+      } else starts.delete(event.runId);
     }
   }
   return { events: rows, groups, summaries };

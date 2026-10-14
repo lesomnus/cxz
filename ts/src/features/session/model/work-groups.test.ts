@@ -11,6 +11,60 @@ const event = (seq: number, kind: string, requestId = "", runId = "run") =>
   create(SessionEventSchema, { seq: BigInt(seq), kind, requestId, runId });
 
 describe("work between conversation responses", () => {
+  const timed = (seq: number, kind: string, timeMs: number, runId = "run") => ({
+    ...event(seq, kind, "", runId),
+    timeMs: BigInt(timeMs),
+  });
+
+  it("measures the whole gap between replies, using the input for the first batch", () => {
+    const projected = workGroups([
+      timed(1, "input", 1000),
+      timed(2, "tool_call", 2000),
+      timed(3, "assistant", 6000),
+      timed(4, "tool_call", 9000),
+      timed(5, "error", 10000),
+      timed(6, "assistant", 16000),
+    ]);
+    expect([...projected.groups.values()].map((g) => g.durationMs)).toEqual([
+      5000, 10000,
+    ]);
+  });
+
+  it("keeps elapsed intervals isolated for interleaved runs", () => {
+    const projected = workGroups([
+      timed(1, "assistant", 1000),
+      timed(2, "input", 4000, "other"),
+      timed(3, "tool_call", 5000),
+      timed(4, "tool_call", 6000, "other"),
+      timed(5, "assistant", 7000),
+      timed(6, "assistant", 14000, "other"),
+    ]);
+    expect([...projected.groups.values()].map((g) => g.durationMs)).toEqual([
+      6000, 10000,
+    ]);
+  });
+
+  it("leaves incomplete or invalid intervals unknown and stops timing at turn completion", () => {
+    const projected = workGroups([
+      timed(1, "tool_call", 2000),
+      timed(2, "assistant", 6000),
+      timed(3, "tool_call", 6500),
+      timed(4, "assistant", 5000),
+      timed(5, "tool_call", 7000),
+      timed(6, "turn_end", 8000),
+      timed(7, "tool_call", 9000),
+      timed(8, "assistant", 10000),
+      timed(9, "tool_call", 11000),
+    ]);
+    expect([...projected.groups.values()].map((g) => g.durationMs)).toEqual([
+      undefined,
+      undefined,
+      3000,
+      undefined,
+      undefined,
+    ]);
+  });
+
   it("counts executions once and keeps commentary, answers, questions and errors in the conversation", () => {
     const events = [
       event(1, "input"),

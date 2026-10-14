@@ -8,6 +8,7 @@ import {
 } from "react";
 import {
   Button,
+  ElapsedTime,
   DialogCard,
   DialogSurface,
   dialogClassName,
@@ -27,12 +28,14 @@ import type { WorkHistory } from "./transcript";
 export function WorkSummary({
   id,
   count,
+  durationMs,
   expanded,
   open,
   partial = false,
 }: {
   id: string;
   count: number;
+  durationMs?: number;
   expanded: boolean;
   open: (trigger: HTMLButtonElement) => void;
   partial?: boolean;
@@ -49,6 +52,12 @@ export function WorkSummary({
   );
   return (
     <div className={styles.summary} data-work-summary={id}>
+      {durationMs !== undefined && (
+        <ElapsedTime
+          durationMs={durationMs}
+          label={t("Response elapsed time")}
+        />
+      )}
       <span className="meta-popover">
         <Button
           type="button"
