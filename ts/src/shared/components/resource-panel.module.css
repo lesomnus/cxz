@@ -16,6 +16,8 @@
 }
 .actions {
   display: flex;
+  flex: 0 0 auto;
+  justify-content: flex-end;
   margin-left: auto;
 }
 .actions button {
