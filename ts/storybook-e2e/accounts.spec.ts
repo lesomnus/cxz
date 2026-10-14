@@ -184,15 +184,25 @@ for (const theme of ["dark", "light"]) {
         headerPadding: heading.padding,
         bodyPadding: body.padding,
         bodyBackground: body.backgroundColor,
+        bodyBlur: body.backdropFilter,
+        headerBackground: heading.backgroundColor,
+        headerBlur: heading.backdropFilter,
+        footerBackground: footer.backgroundColor,
+        footerBlur: footer.backdropFilter,
         bodyRadius: body.borderRadius,
         footerPadding: footer.padding,
       };
     };
     const initial = await addition.evaluate(appearance);
-    expect(initial.blur).toMatch(/^blur\(/);
+    expect(initial.blur).toBe("none");
+    expect(initial.background).toBe("rgba(0, 0, 0, 0)");
+    expect(initial.bodyBlur).toMatch(/^blur\(/);
+    expect(initial.headerBlur).toEqual(initial.bodyBlur);
+    expect(initial.footerBlur).toEqual(initial.bodyBlur);
+    expect(initial.headerBackground).toEqual(initial.footerBackground);
     expect(initial.bodyBackground).not.toBe("rgba(0, 0, 0, 0)");
     expect(initial.bodyRadius).not.toBe("0px");
-    const alpha = await addition.locator("[data-anchored]").evaluate((node) => {
+    const alpha = await addition.locator(".card-body").evaluate((node) => {
       const context = document.createElement("canvas").getContext("2d")!;
       context.fillStyle = getComputedStyle(node).backgroundColor;
       context.fillRect(0, 0, 1, 1);
@@ -200,7 +210,7 @@ for (const theme of ["dark", "light"]) {
     });
     expect(alpha).toBeGreaterThan(0);
     expect(alpha).toBeLessThan(255);
-    // Blur belongs to the animated surface itself, not a descendant inside its opacity layer.
+    // Each card region samples the page without a filled/filtered ancestor.
     await expect(addition.locator(".floating-card")).toHaveCSS(
       "backdrop-filter",
       "none",

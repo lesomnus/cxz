@@ -80,16 +80,55 @@ test("dialog blur visibly softens content behind the animated surface", async ({
     .click();
   const dialog = page.getByRole("dialog", { name: "Stop session" });
   await finishEntrance(dialog);
-  const surface = dialog.locator("[data-anchored]");
-  const blurred = await surface.screenshot({
+  const body = dialog.locator(".card-body");
+  const blurred = await body.screenshot({
     path: "test-results/dialog-blurred-surface.png",
   });
-  await surface.evaluate((node) => {
+  await body.evaluate((node) => {
     (node as HTMLElement).style.backdropFilter = "none";
     (node as HTMLElement).style.setProperty("-webkit-backdrop-filter", "none");
   });
-  const clear = await surface.screenshot();
+  const clear = await body.screenshot();
   expect(blurred.equals(clear)).toBe(false);
+  await body.evaluate((node) => {
+    (node as HTMLElement).style.removeProperty("backdrop-filter");
+    (node as HTMLElement).style.removeProperty("-webkit-backdrop-filter");
+  });
+  // Check actual page transmission through the native modal, including its
+  // dimming backdrop. Nested filled surfaces must not hide the body again.
+  await page.evaluate(() => {
+    const behind = document.createElement("div");
+    behind.id = "dialog-background-check";
+    Object.assign(behind.style, {
+      position: "fixed",
+      inset: "0",
+      background: "rgb(160, 40, 40)",
+    });
+    document.body.append(behind);
+  });
+  const sample = async () => {
+    const png = (await body.screenshot()).toString("base64");
+    return page.evaluate(async (base64) => {
+      const image = new Image();
+      image.src = `data:image/png;base64,${base64}`;
+      await image.decode();
+      const canvas = document.createElement("canvas");
+      canvas.width = image.width;
+      canvas.height = image.height;
+      const context = canvas.getContext("2d")!;
+      context.drawImage(image, 0, 0);
+      return [
+        ...context.getImageData(Math.floor(image.width / 2), 8, 1, 1).data,
+      ];
+    }, png);
+  };
+  const red = await sample();
+  await page.locator("#dialog-background-check").evaluate((node) => {
+    (node as HTMLElement).style.background = "rgb(40, 40, 160)";
+  });
+  const blue = await sample();
+  expect(red[0] - blue[0]).toBeGreaterThan(25);
+  expect(blue[2] - red[2]).toBeGreaterThan(25);
 });
 
 test("confirmation dialog traps focus, cancels without acting and fits a small viewport", async ({
