@@ -51,19 +51,27 @@ export function ValueMenu({
   const menu = useRef<HTMLDivElement>(null);
   const id = useId();
   const [query, setQuery] = useState("");
+  const [queryEdited, setQueryEdited] = useState(false);
   const search = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const [up, setUp] = useState(true);
   const selected = items.find((item) => item.value === value);
   const text = display ?? selected?.label ?? value;
   const isMuted = muted || selected?.muted;
-  const options = searchable
-    ? items.filter((item) =>
-        matchesValueQuery(`${item.label} ${item.searchText ?? ""}`, query),
-      )
-    : items.filter((item) => item.value !== value);
+  const options = items.filter(
+    (item) =>
+      item.value !== value &&
+      (!searchable ||
+        !queryEdited ||
+        matchesValueQuery(`${item.label} ${item.searchText ?? ""}`, query)),
+  );
   const trigger = () =>
     root.current?.querySelector<HTMLButtonElement>(".setting-trigger");
+  function openMenu() {
+    setQuery(text);
+    setQueryEdited(false);
+    setOpen(true);
+  }
   function close(restore = false) {
     setOpen(false);
     setQuery("");
@@ -120,7 +128,10 @@ export function ValueMenu({
     return () => document.removeEventListener("scroll", scrolled, true);
   }, [open, options.length, minMenuWidth, searchable]);
   useLayoutEffect(() => {
-    if (open && searchable) search.current?.focus({ preventScroll: true });
+    if (open && searchable) {
+      search.current?.focus({ preventScroll: true });
+      search.current?.select();
+    }
   }, [open, searchable]);
   useEffect(() => {
     if (!open) return;
@@ -152,7 +163,9 @@ export function ValueMenu({
       if (e.nativeEvent.isComposing) return;
       if (e.key === "Enter") {
         e.preventDefault();
-        if (options[0]) {
+        if (!queryEdited) {
+          close(true);
+        } else if (options[0]) {
           choose(options[0].value);
           close(true);
         }
@@ -163,7 +176,7 @@ export function ValueMenu({
     if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(e.key)) return;
     e.preventDefault();
     if (!open) {
-      setOpen(true);
+      openMenu();
       return;
     }
     const buttons = [
@@ -213,7 +226,7 @@ export function ValueMenu({
         aria-expanded={open}
         disabled={disabled}
         title={disabled ? disabledReason : text}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => (open ? close() : openMenu())}
       >
         <span className="meta-value">{text}</span>
       </Button>
@@ -242,14 +255,17 @@ export function ValueMenu({
             {searchable ? (
               <input
                 ref={search}
-                className="setting-search"
+                className="setting-current setting-search"
                 aria-label={t("Search {label}", { label })}
                 role="combobox"
                 aria-expanded="true"
                 aria-autocomplete="list"
                 aria-controls={`${id}-results`}
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setQueryEdited(true);
+                }}
               />
             ) : (
               <Button
