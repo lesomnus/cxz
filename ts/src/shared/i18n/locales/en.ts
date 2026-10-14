@@ -1,5 +1,6 @@
 // English source messages are always bundled; other packs load on demand.
 export const messages = {
+  Profile: "Profile",
   "Search {label}": "Search {label}",
   "No matches": "No matches",
   "Background job status unavailable": "Background job status unavailable",

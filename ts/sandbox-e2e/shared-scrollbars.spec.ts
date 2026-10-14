@@ -161,7 +161,8 @@ test("horizontal code, dropdowns and Monaco reuse the panel handle styling", asy
   await expect(choices).toHaveAttribute("data-scrollbar-near-y", "true");
   expect((await skin(choices)).width).toBe("12px");
   await page.keyboard.press("Escape");
-  await page.getByRole("link", { name: "Settings view", exact: true }).click();
+  await page.getByRole("button", { name: "Profile", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Settings", exact: true }).click();
   await page.getByRole("button", { name: /^Edit settings\.json/ }).click();
   const editor = page.locator(".settings-file .monaco-editor");
   await expect(editor).toBeVisible({ timeout: 30000 });

@@ -29,16 +29,18 @@ export function ActionMenu({
   status,
   triggerContent,
   disabledReason,
+  triggerClassName = "",
 }: {
   label: string;
   items?: ActionMenuItem[];
   groups?: { label: string; items: ActionMenuItem[] }[];
   disabled?: boolean;
-  placement?: "above" | "below";
+  placement?: "above" | "below" | "right";
   status?: string;
   /** Custom trigger content; defaults to the More (ellipsis) icon. */
   triggerContent?: ReactNode;
   disabledReason?: string;
+  triggerClassName?: string;
 }) {
   const [open, setOpen] = useState(false);
   const trigger = useRef<HTMLDivElement>(null);
@@ -59,6 +61,12 @@ export function ActionMenu({
       const bounds = trigger.current!.getBoundingClientRect();
       const gap = 4,
         inset = 8;
+      if (placement === "right") {
+        popup.style.maxHeight = `${window.innerHeight - 2 * inset}px`;
+        popup.style.left = `${Math.max(inset, Math.min(bounds.right + gap, window.innerWidth - popup.offsetWidth - inset))}px`;
+        popup.style.top = `${Math.max(inset, Math.min(bounds.bottom - popup.offsetHeight, window.innerHeight - popup.offsetHeight - inset))}px`;
+        return;
+      }
       const above = Math.max(0, bounds.top - gap - inset);
       const below = Math.max(
         0,
@@ -86,7 +94,7 @@ export function ActionMenu({
       resize.disconnect();
       window.removeEventListener("scroll", position, true);
     };
-  }, [open]);
+  }, [open, placement]);
   useEffect(() => {
     if (!open) return;
     const outside = (event: PointerEvent) => {
@@ -106,7 +114,7 @@ export function ActionMenu({
     <div className={`${styles.action_menu} action-menu`} ref={trigger}>
       <Button
         variant={triggerContent === undefined ? "toolbar" : "default"}
-        className="toolbar-button"
+        className={`toolbar-button ${triggerClassName}`}
         type="button"
         disabled={disabled}
         title={disabled ? disabledReason : undefined}

@@ -223,11 +223,42 @@ header strong {
 .resource-link.active {
   color: var(--shade-255);
 }
-.settings-link {
+.profile-menu {
   margin-top: auto;
+  flex-shrink: 0;
 }
-.resource-exit {
-  display: none;
+/* Photo-sized placeholder: replace the background with an image when available. */
+.profile-avatar {
+  display: block;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #000;
+  box-shadow: inset 0 0 0 1px #ffffff18;
+}
+.profile-avatar > svg {
+  display: block;
+}
+/* The default theme is dark, including before an explicit theme is set. */
+:root:not([data-theme="light"]) .profile-avatar {
+  filter: brightness(0.55);
+  transition: filter 160ms ease;
+}
+:root:not([data-theme="light"]) .profile-trigger:hover .profile-avatar,
+:root:not([data-theme="light"]) .profile-trigger:focus-visible .profile-avatar {
+  filter: brightness(1);
+}
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-theme="light"]) .profile-avatar {
+    transition: none;
+  }
+}
+.profile-error {
+  width: 56px;
+  font-size: 10px;
+  overflow-wrap: anywhere;
+  color: var(--shade-255);
 }
 .settings-page {
   --settings-column-width: 320px;
@@ -2193,7 +2224,10 @@ pre {
   transform: translateY(0);
 }
 .composer .stop[data-armed="true"] {
-  background: var(--shade-54);
+  background: #68172f;
+}
+.composer .stop[data-armed="true"] svg {
+  color: #ff526d;
 }
 .send-shortcut {
   position: absolute;
@@ -2450,9 +2484,6 @@ summary:hover {
   }
   .workspace.accounts-open.resource-open > .resource-sidebar {
     grid-row: 1 / -1;
-  }
-  .workspace.resource-open .resource-exit {
-    display: block;
   }
   .workspace.resource-open > .resource-panel {
     display: none;

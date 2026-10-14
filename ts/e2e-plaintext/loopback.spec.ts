@@ -48,7 +48,8 @@ test("sign in over loopback http, stay signed in, sign out", async ({
   await page.keyboard.press("Enter");
   await expect(terminal).toContainText("plaintext:shell");
 
-  await page.getByRole("button", { name: "Sign out" }).click();
+  await page.getByRole("button", { name: "Profile", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Sign out", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "Connect", exact: true }),
   ).toBeVisible();

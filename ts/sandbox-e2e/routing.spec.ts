@@ -15,7 +15,8 @@ test("sandbox shares routes through hash history and keeps scenario selection in
     "session-2",
   );
   await input.fill("Sandbox route draft");
-  await page.getByRole("link", { name: "Settings view", exact: true }).click();
+  await page.getByRole("button", { name: "Profile", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Settings", exact: true }).click();
   await expect(page).toHaveURL(/#\/settings\/general$/);
   await page.goBack();
   await expect(input).toHaveValue("Sandbox route draft");

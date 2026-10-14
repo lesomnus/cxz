@@ -54,7 +54,8 @@ test("editable settings JSON and its worker load under production CSP and save t
   page.on("console", (message) => {
     if (message.type() === "error") errors.push(message.text());
   });
-  await page.getByRole("link", { name: "Settings view", exact: true }).click();
+  await page.getByRole("button", { name: "Profile", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Settings", exact: true }).click();
   const pane = page.getByRole("complementary", {
     name: "Settings file editor",
     exact: true,
@@ -169,7 +170,8 @@ test("language packs load only on Apply under the production CSP and the saved l
   page.on("console", (message) => {
     if (message.type() === "error") errors.push(message.text());
   });
-  await page.getByRole("link", { name: "Settings view", exact: true }).click();
+  await page.getByRole("button", { name: "Profile", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Settings", exact: true }).click();
   await page
     .getByRole("navigation", { name: "Settings topics", exact: true })
     .getByRole("link", { name: "General", exact: true })
@@ -191,7 +193,7 @@ test("language packs load only on Apply under the production CSP and the saved l
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("lang", "ko");
   await expect(
-    page.getByRole("link", { name: "설정 보기", exact: true }),
+    page.getByRole("button", { name: "프로필", exact: true }),
   ).toBeVisible();
   expect(errors).toEqual([]);
 });

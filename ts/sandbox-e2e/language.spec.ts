@@ -14,13 +14,14 @@ async function ready(page: Page) {
 async function language(page: Page) {
   if (
     !(await page
-      .getByRole("link", { name: "Settings view", exact: true })
+      .getByRole("button", { name: "Profile", exact: true })
       .isVisible())
   )
     await page.evaluate(() => {
       location.hash = "/sessions";
     });
-  await page.getByRole("link", { name: "Settings view", exact: true }).click();
+  await page.getByRole("button", { name: "Profile", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Settings", exact: true }).click();
   await page
     .getByRole("navigation", { name: "Settings topics", exact: true })
     .getByRole("link", { name: "General", exact: true })
