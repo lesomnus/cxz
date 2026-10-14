@@ -176,6 +176,10 @@ for (const theme of ["dark", "light"]) {
       const heading = getComputedStyle(node.querySelector(".card-heading")!);
       const body = getComputedStyle(node.querySelector(".card-body")!);
       const footer = getComputedStyle(node.querySelector(".card-footer")!);
+      const glass = getComputedStyle(
+        node.querySelector("[data-dialog-card]")!,
+        "::before",
+      );
       return {
         background: style.backgroundColor,
         blur: style.backdropFilter,
@@ -185,6 +189,8 @@ for (const theme of ["dark", "light"]) {
         bodyPadding: body.padding,
         bodyBackground: body.backgroundColor,
         bodyBlur: body.backdropFilter,
+        glassBackground: glass.backgroundColor,
+        glassBlur: glass.backdropFilter,
         headerBackground: heading.backgroundColor,
         headerBlur: heading.backdropFilter,
         footerBackground: footer.backgroundColor,
@@ -196,21 +202,24 @@ for (const theme of ["dark", "light"]) {
     const initial = await addition.evaluate(appearance);
     expect(initial.blur).toBe("none");
     expect(initial.background).toBe("rgba(0, 0, 0, 0)");
-    expect(initial.bodyBlur).toMatch(/^blur\(/);
+    expect(initial.glassBlur).toMatch(/^blur\(/);
+    expect(initial.bodyBlur).toBe("none");
     expect(initial.headerBlur).toEqual(initial.bodyBlur);
     expect(initial.footerBlur).toEqual(initial.bodyBlur);
     expect(initial.headerBackground).toEqual(initial.footerBackground);
-    expect(initial.bodyBackground).not.toBe("rgba(0, 0, 0, 0)");
+    expect(initial.bodyBackground).toBe("rgba(0, 0, 0, 0)");
     expect(initial.bodyRadius).not.toBe("0px");
-    const alpha = await addition.locator(".card-body").evaluate((node) => {
-      const context = document.createElement("canvas").getContext("2d")!;
-      context.fillStyle = getComputedStyle(node).backgroundColor;
-      context.fillRect(0, 0, 1, 1);
-      return context.getImageData(0, 0, 1, 1).data[3];
-    });
+    const alpha = await addition
+      .locator("[data-dialog-card]")
+      .evaluate((node) => {
+        const context = document.createElement("canvas").getContext("2d")!;
+        context.fillStyle = getComputedStyle(node, "::before").backgroundColor;
+        context.fillRect(0, 0, 1, 1);
+        return context.getImageData(0, 0, 1, 1).data[3];
+      });
     expect(alpha).toBeGreaterThan(0);
     expect(alpha).toBeLessThan(255);
-    // Each card region samples the page without a filled/filtered ancestor.
+    // The separate background layer samples the page across regions and gaps.
     await expect(addition.locator(".floating-card")).toHaveCSS(
       "backdrop-filter",
       "none",

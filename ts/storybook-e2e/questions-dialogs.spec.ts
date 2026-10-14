@@ -51,10 +51,10 @@ test("composer Stop uses the shared dialog header, body and footer", async ({
   await expect(dialog.locator(".card-heading")).toHaveText("Stop session");
   await expect(dialog.locator(".card-body")).toContainText("Active work stops");
   const bodyColor = await dialog
-    .locator(".card-body")
-    .evaluate((node) => getComputedStyle(node).backgroundColor);
+    .locator("[data-dialog-card]")
+    .evaluate((node) => getComputedStyle(node, "::before").backgroundColor);
   const surfaceColor = await dialog
-    .locator("[data-anchored]")
+    .locator(".card-heading")
     .evaluate((node) => getComputedStyle(node).backgroundColor);
   expect(bodyColor).not.toBe(surfaceColor);
   await expect(dialog.locator(".card-footer").getByRole("button")).toHaveText([
@@ -81,12 +81,12 @@ test("dialog blur visibly softens content behind the animated surface", async ({
   const dialog = page.getByRole("dialog", { name: "Stop session" });
   await finishEntrance(dialog);
   const body = dialog.locator(".card-body");
+  const card = dialog.locator("[data-dialog-card]");
   const blurred = await body.screenshot({
     path: "test-results/dialog-blurred-surface.png",
   });
-  await body.evaluate((node) => {
-    (node as HTMLElement).style.backdropFilter = "none";
-    (node as HTMLElement).style.setProperty("-webkit-backdrop-filter", "none");
+  await card.evaluate((node) => {
+    (node as HTMLElement).style.setProperty("--ui-dialog-blur", "0px");
   });
   const clear = await body.screenshot();
   const stripeVariation = (png: Buffer) =>
@@ -113,9 +113,8 @@ test("dialog blur visibly softens content behind the animated surface", async ({
   const sharpVariation = await stripeVariation(clear);
   expect(sharpVariation).toBeGreaterThan(5);
   expect(await stripeVariation(blurred)).toBeLessThan(sharpVariation / 4);
-  await body.evaluate((node) => {
-    (node as HTMLElement).style.removeProperty("backdrop-filter");
-    (node as HTMLElement).style.removeProperty("-webkit-backdrop-filter");
+  await card.evaluate((node) => {
+    (node as HTMLElement).style.removeProperty("--ui-dialog-blur");
   });
   // Check actual page transmission through the native modal, including its
   // dimming backdrop. Nested filled surfaces must not hide the body again.
@@ -202,10 +201,10 @@ test("confirmation dialog traps focus, cancels without acting and fits a small v
       .evaluate((el) => getComputedStyle(el).borderRadius),
   ).not.toBe("0px");
   const bodyColor = await dialog
-    .locator(".card-body")
-    .evaluate((el) => getComputedStyle(el).backgroundColor);
+    .locator("[data-dialog-card]")
+    .evaluate((el) => getComputedStyle(el, "::before").backgroundColor);
   const chromeColor = await dialog
-    .locator(".floating-card")
+    .locator(".card-heading")
     .evaluate((el) => getComputedStyle(el).backgroundColor);
   expect(bodyColor).not.toBe(chromeColor);
   await page.keyboard.press("Shift+Tab");
