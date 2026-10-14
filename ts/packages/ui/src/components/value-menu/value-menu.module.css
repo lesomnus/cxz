@@ -155,12 +155,6 @@
 }
 .setting_menu :global(.setting-match-label) mark {
   background: transparent;
-  color: #ffd27a;
-  font-weight: 700;
-}
-:global(:root[data-theme="light"])
-  .setting_menu
-  :global(.setting-match-label)
-  mark {
-  color: #8a4300;
+  color: var(--ui-brand-color);
+  font-weight: inherit;
 }

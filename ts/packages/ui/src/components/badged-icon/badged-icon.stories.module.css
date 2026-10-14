@@ -17,7 +17,7 @@
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #d9ff30;
+  background: var(--ui-brand-color);
   color: #181818;
   font: 11px/1 var(--ui-font-mono);
 }
