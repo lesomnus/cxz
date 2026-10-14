@@ -61,15 +61,15 @@ VM or real command execution; see the [terminal contract](web-terminal.md).
 ## Scenarios and controls
 
 **Ctrl+Shift+F** inside the conversation opens a persistent search overlay near
-its top (**Cmd+Shift+F** also works). Search is scoped to the current session's
-retained journal, including records outside the loaded transcript window.
+its top (**Cmd+Shift+F** also works). Search runs immediately over the current
+loaded conversation window, including virtualized messages outside the viewport.
+Messages not loaded into that window are excluded. It sends no Search request
+and does not fetch a message's history to open a result.
 Rendered conversation text highlights the query. Enter visits individual matches
 from newest to oldest, including repeated matches in one message, and wraps
-after the last result; older result pages load as needed. Arrow keys select a
-result, and clicking it jumps without closing search.
-Only Close or Escape dismisses the overlay. The WASM simulator implements
-single-session substring search and cursor pagination in memory; the native
-UI uses the existing `SessionService.Search` index rather than scanning DOM.
+after the last result. Arrow keys select a result, and clicking it jumps without
+closing search. Only Close or Escape dismisses the overlay. The separate global
+Search view continues to use the server's `SessionService.Search` API.
 
 The Scenario selector opens one of the sample sessions:
 

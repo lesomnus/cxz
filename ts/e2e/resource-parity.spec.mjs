@@ -516,110 +516,37 @@ test("search opens the matched response and queue recall preserves its text", as
     ),
   ).toBe(true);
 });
-test("conversation shortcut sends a session-scoped search and keeps the search overlay after navigation", async ({
+test("conversation search uses loaded messages immediately without a Search request", async ({
   page,
 }) => {
   const requests = await fixture(page);
   await page.locator('.tree-session[href="/sessions/fixture"]').click();
-  const editor = page.getByRole("textbox", { name: "Message", exact: true });
-  await editor.focus();
+  await expect(page.locator(".transcript")).toContainText("Current response");
+  await page.getByRole("textbox", { name: "Message", exact: true }).focus();
   await page.keyboard.press("Control+Shift+F");
   const search = page.getByRole("search", {
-    name: "Search current conversation",
-  });
-  await search.getByRole("searchbox").fill("Earlier");
+      name: "Search current conversation",
+    }),
+    input = search.getByRole("searchbox");
+  await input.fill("Earlier");
+  await expect(search.getByRole("status")).toHaveText("2 matches");
   await search.getByRole("button", { name: /Earlier response/ }).click();
+  await expect(input).toBeFocused();
+  await page.getByRole("textbox", { name: "Message", exact: true }).focus();
+  await expect(search).toBeVisible();
+  await input.fill("query not in loaded messages");
+  await expect(search.getByRole("status")).toHaveText("No matches");
+  await input.fill("Current");
+  await input.fill("Earlier");
+  await expect(search.getByRole("status")).toHaveText("2 matches");
+  await expect(search).not.toContainText("Current response");
   expect(
-    requests.filter((r) => r.path.endsWith("SessionService/Search")).at(-1).q
-      .sessions,
-  ).toEqual(["fixture"]);
-  await expect(search).toBeVisible();
-  await editor.focus();
-  await expect(search).toBeVisible();
-  await page.keyboard.press("Escape");
+    requests.filter((r) => r.path.endsWith("SessionService/Search")),
+  ).toHaveLength(0);
+  await input.press("Escape");
   await expect(search).toHaveCount(0);
 });
-test("query replacement rejects delayed results and explicit close cancels a pending session search", async ({
-  page,
-}) => {
-  await fixture(page);
-  const requests = [];
-  let releaseSlow, releaseClosed;
-  const slow = new Promise((resolve) => {
-    releaseSlow = resolve;
-  });
-  const closed = new Promise((resolve) => {
-    releaseClosed = resolve;
-  });
-  await page.route("**/cxz.SessionService/Search", async (route) => {
-    const raw = route.request().postDataBuffer();
-    const q = JSON.parse(raw.subarray(5).toString());
-    requests.push(q);
-    if (q.query === "slow") await slow;
-    if (q.query === "closed") await closed;
-    return route.fulfill({
-      contentType: "application/connect+json",
-      body: stream([
-        {
-          visit: {
-            sessionId: "fixture",
-            hits: [
-              { seq: "2", kind: "assistant", snippet: `${q.query} result` },
-            ],
-          },
-        },
-        {
-          visit: {
-            sessionId: "another-session",
-            hits: [
-              {
-                seq: "4",
-                kind: "assistant",
-                snippet: "Other session must not appear",
-              },
-            ],
-          },
-        },
-        { summary: { hits: 1 } },
-      ]),
-    });
-  });
-  try {
-    await page.locator('.tree-session[href="/sessions/fixture"]').click();
-    await page.getByRole("textbox", { name: "Message", exact: true }).focus();
-    await page.keyboard.press("Control+Shift+F");
-    const search = page.getByRole("search", {
-        name: "Search current conversation",
-      }),
-      input = search.getByRole("searchbox");
-    await input.fill("slow");
-    await expect
-      .poll(() => requests.some((q) => q.query === "slow"))
-      .toBe(true);
-    await input.fill("fast");
-    await input.press("Enter");
-    await expect(search).toContainText("fast result");
-    releaseSlow();
-    await page.waitForTimeout(300);
-    await expect(search).not.toContainText("slow result");
-    await expect(search).not.toContainText("Other session must not appear");
-    expect(requests.filter((q) => q.query === "fast")).toHaveLength(1);
-    expect(
-      requests.every((q) => JSON.stringify(q.sessions) === '["fixture"]'),
-    ).toBe(true);
-    await input.fill("closed");
-    await expect
-      .poll(() => requests.some((q) => q.query === "closed"))
-      .toBe(true);
-    await search.getByRole("button", { name: "Close search" }).click();
-    releaseClosed();
-    await expect(search).toHaveCount(0);
-  } finally {
-    releaseSlow();
-    releaseClosed();
-    await page.unrouteAll({ behavior: "ignoreErrors" });
-  }
-});
+
 test("memory edits carry the revision and keep drafts on a conflict", async ({
   page,
 }) => {
@@ -692,41 +619,10 @@ test("usage, background tasks and auxiliary controls are connected", async ({
   await expect(page.getByText("running", { exact: true })).toBeVisible();
 });
 
-test("session search Enter fetches the older result page before wrapping and reuses loaded messages", async ({
+test("local session search Enter visits loaded responses before wrapping without search or target history requests", async ({
   page,
 }) => {
   const requests = await fixture(page);
-  const searches = [];
-  await page.route("**/cxz.SessionService/Search", async (route) => {
-    const q = JSON.parse(
-      route.request().postDataBuffer().subarray(5).toString(),
-    );
-    searches.push(q);
-    return route.fulfill({
-      contentType: "application/connect+json",
-      body: stream([
-        {
-          visit: {
-            sessionId: "fixture",
-            hits: [
-              {
-                seq: q.cursor ? "2" : "4",
-                kind: "assistant",
-                snippet: q.cursor ? "Earlier response" : "Current response",
-              },
-            ],
-          },
-        },
-        {
-          summary: {
-            hits: 1,
-            hasMore: !q.cursor,
-            nextCursor: q.cursor ? "" : "older-page",
-          },
-        },
-      ]),
-    });
-  });
   await page.locator('.tree-session[href="/sessions/fixture"]').click();
   await expect(page.locator(".transcript")).toContainText("Current response");
   await page.getByRole("textbox", { name: "Message", exact: true }).focus();
@@ -736,7 +632,7 @@ test("session search Enter fetches the older result page before wrapping and reu
     }),
     input = search.getByRole("searchbox");
   await input.fill("response");
-  await expect(search.getByRole("status")).toHaveText("1 matches");
+  await expect(search.getByRole("status")).toHaveText("2 matches");
   const historyCount = () =>
     requests.filter((r) => /SessionService\/(History|Transcript)$/.test(r.path))
       .length;
@@ -754,11 +650,11 @@ test("session search Enter fetches the older result page before wrapping and reu
   await expect(input).toBeFocused();
   await input.press("Enter");
   await expect.poll(active).toBe("2");
-  await expect(search.getByRole("status")).toHaveText("2 matches");
-  expect(searches.map((q) => q.cursor ?? "")).toEqual(["", "older-page"]);
   await input.press("Enter");
   await expect.poll(active).toBe("4");
-  expect(searches).toHaveLength(2);
+  expect(
+    requests.filter((r) => r.path.endsWith("SessionService/Search")),
+  ).toHaveLength(0);
   expect(historyCount()).toBe(before);
   await expect(input).toBeFocused();
 });

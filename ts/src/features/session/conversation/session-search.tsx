@@ -1,30 +1,26 @@
 import {
   useEffect,
+  useMemo,
   useRef,
   useState,
   type CSSProperties,
   type RefObject,
 } from "react";
 import { Button, ScrollArea } from "@lesomnus/cxz-ui";
-import type {
-  SessionSearchHit,
-  SessionSearchSummary,
-} from "#gen/cxz/session_svc_pb";
-import type { Connection } from "#src/shared/api/connection.ts";
+import type { SessionEvent } from "#gen/cxz/session_pb";
+import { searchLoadedMessages, type LoadedSearchHit } from "./loaded-search";
 import { currentLocale, t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import styles from "./session-search.module.css";
 import { useSearchHighlights, type SearchLocation } from "./search-highlights";
 
 export function SessionSearch({
-  c,
-  id,
+  events,
   area,
   jump,
   restoreFocus,
 }: {
-  c: Connection;
-  id: string;
+  events: SessionEvent[];
   area: RefObject<HTMLElement | null>;
   jump: (
     seq: string,
@@ -36,11 +32,6 @@ export function SessionSearch({
   useLocale();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [searched, setSearched] = useState("");
-  const [hits, setHits] = useState<SessionSearchHit[]>([]);
-  const [summary, setSummary] = useState<SessionSearchSummary>();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const [selected, setSelected] = useState(0);
   const [location, setLocation] = useState<SearchLocation>();
   const position = useRef<SearchLocation | undefined>(undefined);
@@ -49,13 +40,13 @@ export function SessionSearch({
   const overlay = useRef<HTMLElement>(null);
   const results = useRef<HTMLDivElement>(null);
   const origin = useRef<HTMLElement | null>(null);
-  const active = useRef<AbortController | undefined>(undefined);
-  const debounce = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const latest = useRef({ open, query: query.trim(), restoreFocus });
   latest.current = { open, query: query.trim(), restoreFocus };
-  const fresh = searched === query.trim();
-  const visible = fresh ? hits : [];
-  const busy = !!query.trim() && (loading || !fresh);
+  const visible = useMemo(
+    () => searchLoadedMessages(events, open ? query.trim() : ""),
+    [events, open, query],
+  );
+  const selectedIndex = Math.min(selected, Math.max(0, visible.length - 1));
   const matches = useSearchHighlights({
     area,
     query: open ? query.trim() : "",
@@ -66,7 +57,7 @@ export function SessionSearch({
       input.current?.focus({ preventScroll: true });
     },
   });
-  async function select(hit: SessionSearchHit, occurrence = -1) {
+  async function select(hit: LoadedSearchHit, occurrence = -1) {
     const element = overlay.current;
     if (!element) return;
     const bottom = element.getBoundingClientRect().bottom;
@@ -75,7 +66,7 @@ export function SessionSearch({
       parseFloat(getComputedStyle(element).getPropertyValue("--ui-space")) || 4;
     const next = {
       seq: hit.seq.toString(),
-      occurrence,
+      occurrence: occurrence < 0 ? hit.occurrences - 1 : occurrence,
       inset: bottom - top + 2 * gap,
       token: ++navigation.current,
     };
@@ -90,39 +81,24 @@ export function SessionSearch({
 
   async function nextMatch() {
     if (!query.trim()) return;
-    let available = visible;
-    if (!fresh || !available.length) {
-      if (fresh && loading) return;
-      available = (await search(query.trim())) ?? [];
-      if (!available.length) return;
-    }
+    const available = visible;
+    if (!available.length) return;
     const current = position.current;
     const index = available.findIndex(
       (hit) => hit.seq.toString() === current?.seq,
     );
-    if (current && index === selected) {
-      if (current.occurrence > 0 && matches.current.get(current.seq)?.length) {
+    if (current && index === selectedIndex) {
+      if (current.occurrence > 0) {
         await select(available[index], current.occurrence - 1);
         return;
       }
-      let next = index + 1;
-      if (next === available.length && summary?.hasMore && !loading) {
-        const added = await search(query.trim(), summary.nextCursor);
-        if (!added) return;
-        available = [
-          ...new Map(
-            [...available, ...added].map((hit) => [hit.seq, hit]),
-          ).values(),
-        ].sort(newestFirst);
-      }
-      next %= available.length;
+      const next = (index + 1) % available.length;
       setSelected(next);
       await select(available[next]);
-    } else await select(available[selected] ?? available[0]);
+    } else await select(available[selectedIndex] ?? available[0]);
   }
 
   function close() {
-    active.current?.abort();
     navigation.current++;
     position.current = undefined;
     setLocation(undefined);
@@ -175,90 +151,28 @@ export function SessionSearch({
       input.current?.select();
     }
   }, [open]);
-  async function search(text: string, cursor = "") {
-    clearTimeout(debounce.current);
-    if (!latest.current.open || latest.current.query !== text) return;
-    active.current?.abort();
-    const controller = new AbortController();
-    active.current = controller;
-    const page: SessionSearchHit[] = [];
-    if (!cursor) {
+  useEffect(() => {
+    const current = position.current;
+    const index = visible.findIndex(
+      (hit) => hit.seq.toString() === current?.seq,
+    );
+    if (current && index < 0) {
       position.current = undefined;
       setLocation(undefined);
-      setHits([]);
-      setSummary(undefined);
-      setSelected(0);
     }
-    setSearched(text);
-    setLoading(true);
-    setError("");
-    try {
-      for await (const reply of c.sessions.search(
-        {
-          query: text,
-          match: "substring",
-          ignoreCase: true,
-          includeTools: false,
-          sessions: [id],
-          cursor,
-          limit: 100,
-          snippet: 240,
-          clientId: c.clientId,
-        },
-        { signal: controller.signal, timeoutMs: 60000 },
-      )) {
-        if (
-          controller.signal.aborted ||
-          active.current !== controller ||
-          latest.current.query !== text
-        )
-          return;
-        if (reply.visit?.sessionId === id) {
-          const next = reply.visit.hits;
-          page.push(...next);
-          setHits((old) =>
-            [
-              ...new Map(
-                [...old, ...next].map((hit) => [hit.seq, hit]),
-              ).values(),
-            ].sort(newestFirst),
-          );
-        }
-        if (reply.summary) setSummary(reply.summary);
-      }
-      return page.sort(newestFirst);
-    } catch (error) {
-      if (!controller.signal.aborted && active.current === controller)
-        setError(String(error));
-    } finally {
-      if (active.current === controller) setLoading(false);
-    }
-  }
-  useEffect(() => {
-    active.current?.abort();
-    if (!open || !query.trim()) {
-      setLoading(false);
-      return;
-    }
-    debounce.current = setTimeout(() => void search(query.trim()), 250);
-    return () => {
-      clearTimeout(debounce.current);
-      active.current?.abort();
-    };
-  }, [c, id, open, query]);
-  useEffect(() => () => active.current?.abort(), []);
+    setSelected(index >= 0 ? index : 0);
+  }, [visible]);
   useEffect(() => {
     results.current
-      ?.querySelector<HTMLElement>(`[data-search-index="${selected}"]`)
+      ?.querySelector<HTMLElement>(`[data-search-index="${selectedIndex}"]`)
       ?.scrollIntoView({ block: "nearest" });
-  }, [selected]);
+  }, [selectedIndex]);
   if (!open) return null;
   return (
     <section
       ref={overlay}
       role="search"
       aria-label={t("Search current conversation")}
-      aria-busy={busy}
       className={styles.search}
     >
       <form
@@ -323,13 +237,9 @@ export function SessionSearch({
       {!!query.trim() && (
         <>
           <div className={styles.status} role="status">
-            {busy
-              ? t("Searching…")
-              : error
-                ? error
-                : visible.length
-                  ? t("{count} matches", { count: visible.length })
-                  : t("No matches")}
+            {visible.length
+              ? t("{count} matches", { count: visible.length })
+              : t("No matches")}
           </div>
           {visible.length > 0 && (
             <ScrollArea
@@ -347,7 +257,7 @@ export function SessionSearch({
                   type="button"
                   data-search-index={index}
                   data-seq={hit.seq.toString()}
-                  aria-pressed={index === selected}
+                  aria-pressed={index === selectedIndex}
                   onClick={() => {
                     setSelected(index);
                     void select(hit);
@@ -376,27 +286,8 @@ export function SessionSearch({
               ))}
             </ScrollArea>
           )}
-          {fresh && summary?.pending ? (
-            <p className={styles.status}>
-              {t("Session history is still being indexed.")}
-            </p>
-          ) : null}
-          {fresh && summary?.hasMore && (
-            <Button
-              type="button"
-              className={styles.more}
-              disabled={busy}
-              onClick={() => void search(query.trim(), summary.nextCursor)}
-            >
-              {t("Load more results")}
-            </Button>
-          )}
         </>
       )}
     </section>
   );
-}
-
-function newestFirst(a: SessionSearchHit, b: SessionSearchHit) {
-  return a.seq > b.seq ? -1 : a.seq < b.seq ? 1 : 0;
 }

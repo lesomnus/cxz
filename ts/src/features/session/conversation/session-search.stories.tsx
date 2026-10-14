@@ -2,8 +2,7 @@ import { useRef, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { create } from "@bufbuild/protobuf";
 import { Button } from "@lesomnus/cxz-ui";
-import { SessionSearchReplySchema } from "#gen/cxz/session_svc_pb";
-import type { Connection } from "#src/shared/api/connection.ts";
+import { SessionEventSchema } from "#gen/cxz/session_pb";
 import { SessionSearch } from "./session-search";
 import { Markdown } from "#src/shared/content/markdown.tsx";
 
@@ -14,41 +13,19 @@ const messages = [
     "Second network match in this reply.",
   "Update the file preview layout.",
 ];
-const client = {
-  clientId: "storybook",
-  sessions: {
-    async *search(
-      request: { query: string },
-      options: { signal?: AbortSignal },
-    ) {
-      if (options.signal?.aborted) return;
-      const hits = messages.flatMap((text, i) =>
-        text.toLowerCase().includes(request.query.toLowerCase())
-          ? [
-              {
-                seq: BigInt(i + 1),
-                kind: i ? "assistant" : "input",
-                snippet: text,
-                timeMs: BigInt(Date.now()),
-              },
-            ]
-          : [],
-      );
-      yield create(SessionSearchReplySchema, {
-        visit: { sessionId: "preview", hits },
-      });
-      yield create(SessionSearchReplySchema, {
-        summary: { hits: hits.length },
-      });
-    },
-  },
-} as unknown as Connection;
+const events = messages.map((text, index) =>
+  create(SessionEventSchema, {
+    seq: BigInt(index + 1),
+    kind: index ? "assistant" : "input",
+    text,
+    timeMs: BigInt(Date.now()),
+  }),
+);
 const meta = {
   title: "Conversation/SessionSearch",
   component: SessionSearch,
   args: {
-    c: client,
-    id: "preview",
+    events,
     area: { current: null },
     jump: () => {},
     restoreFocus: () => {},
@@ -57,7 +34,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Ctrl+Shift+F (Cmd+Shift+F on macOS) opens a persistent nonmodal search near the top of the current conversation. Typing searches retained session history through SessionService.Search; debounce, cancellation and cursor pagination keep requests bounded. The transcript highlights rendered matches without changing layout. Enter visits each occurrence from newest to oldest, then wraps; arrow keys select results and clicking jumps without dismissing search. Only Close or Escape dismiss it. This story mocks the search stream; try 'network'.",
+          "Ctrl+Shift+F (Cmd+Shift+F on macOS) opens a persistent nonmodal search near the top of the current conversation. Typing immediately searches loaded conversation data, including virtualized messages outside the viewport. No Search API, pagination or history loading is used. The transcript highlights rendered matches without changing layout. Enter visits each occurrence from newest to oldest, then wraps; arrow keys select results and clicking jumps without dismissing search. Only Close or Escape dismiss it. This story supplies local messages; try 'network'.",
       },
     },
   },
@@ -65,6 +42,7 @@ const meta = {
     const area = useRef<HTMLDivElement>(null),
       input = useRef<HTMLTextAreaElement>(null);
     const [selected, setSelected] = useState("");
+    const [loaded, setLoaded] = useState(events);
     return (
       <div
         ref={area}
@@ -111,7 +89,7 @@ const meta = {
             className="virtual-messages"
             style={{ position: "relative", paddingBottom: 500 }}
           >
-            {messages.map((text, index) => (
+            {loaded.map(({ text }, index) => (
               <div key={index} data-row={index + 1}>
                 {index ? (
                   <article className="response">
@@ -126,6 +104,22 @@ const meta = {
             ))}
           </div>
         </div>
+        <Button
+          style={{ position: "absolute", right: 16, bottom: 96 }}
+          onClick={() =>
+            setLoaded((old) => [
+              ...old,
+              create(SessionEventSchema, {
+                seq: BigInt(old.length + 1),
+                kind: "assistant",
+                text: "Another network response.",
+                timeMs: BigInt(Date.now()),
+              }),
+            ])
+          }
+        >
+          Append response
+        </Button>
         <textarea
           ref={input}
           aria-label="Conversation input"
@@ -139,8 +133,7 @@ const meta = {
           }}
         />
         <SessionSearch
-          c={client}
-          id="preview"
+          events={loaded}
           area={area}
           jump={setSelected}
           restoreFocus={() => input.current?.focus()}

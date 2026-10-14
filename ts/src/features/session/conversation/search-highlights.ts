@@ -1,4 +1,5 @@
 import { useEffect, useRef, type RefObject } from "react";
+import { literalSearchPattern } from "./loaded-search";
 
 export type SearchLocation = {
   seq: string;
@@ -28,10 +29,7 @@ export function textMatches(root: HTMLElement, query: string): Range[] {
     text += node.textContent ?? "";
     nodes.push({ node: node as Text, start, end: text.length });
   }
-  const pattern = new RegExp(
-    query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
-    "giu",
-  );
+  const pattern = literalSearchPattern(query);
   const ranges: Range[] = [];
   for (const match of text.matchAll(pattern)) {
     const start = match.index,

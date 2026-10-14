@@ -75,6 +75,20 @@ test("Enter highlights each occurrence newest first, including inline Markdown, 
   await expect
     .poll(active)
     .toEqual({ seq: "2", text: "Second network match in this reply." });
+  await input.fill("network transfer");
+  await expect(search.getByRole("status")).toHaveText("1 matches");
+  await input.press("Enter");
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        (
+          [...(CSS.highlights.get("conversation-search-current") ?? [])][0] as
+            | Range
+            | undefined
+        )?.toString(),
+      ),
+    )
+    .toBe("network transfer");
   await input.fill("[network]");
   await expect
     .poll(() =>
@@ -87,4 +101,27 @@ test("Enter highlights each occurrence newest first, including inline Markdown, 
       page.evaluate(() => CSS.highlights.has("conversation-search-current")),
     )
     .toBe(false);
+});
+
+test("local search updates when loaded responses arrive without changing the query", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=conversation-sessionsearch--default&viewMode=story",
+  );
+  await page.getByRole("button", { name: "Search conversation" }).click();
+  const search = page.getByRole("search", {
+      name: "Search current conversation",
+    }),
+    input = search.getByRole("searchbox");
+  await input.fill("network");
+  await expect(search.getByRole("status")).toHaveText("2 matches");
+  await page.getByRole("button", { name: "Append response" }).click();
+  await expect(input).toHaveValue("network");
+  await expect(search.getByRole("status")).toHaveText("3 matches");
+  await search.locator('[data-search-index="0"]').click();
+  await expect(page.getByText("Jumped to message 4")).toBeVisible();
+  await expect(input).toBeFocused();
+  await input.press("Escape");
+  await expect(search).toHaveCount(0);
 });

@@ -856,12 +856,14 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
       aria-description={`${s?.status?.state ?? ""} · ${translateKnown(status)}`}
     >
       <SessionSearch
-        c={c}
-        id={id}
+        events={transcript.events}
         area={conversationArea}
-        jump={(seq, inset, matchVisible) =>
-          showPrompt(seq, inset, matchVisible)
-        }
+        jump={(seq, inset, matchVisible) => {
+          // Results belong only to the loaded window. An evicted message must
+          // not turn local search into a history request.
+          if (eventsRef.current.some((event) => event.seq.toString() === seq))
+            return showPrompt(seq, inset, matchVisible);
+        }}
         restoreFocus={() =>
           composerInput.current
             ?.querySelector<HTMLTextAreaElement>("textarea")
