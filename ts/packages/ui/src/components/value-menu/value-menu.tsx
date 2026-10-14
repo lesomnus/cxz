@@ -1,3 +1,4 @@
+import { matchesValueQuery } from "./value-search";
 import styles from "./value-menu.module.css";
 import {
   useEffect,
@@ -11,7 +12,12 @@ import { createPortal } from "react-dom";
 import { Button } from "../button/button";
 import { useUI } from "../../providers/ui-provider";
 
-export type ValueOption = { value: string; label: string; muted?: boolean };
+export type ValueOption = {
+  value: string;
+  label: string;
+  muted?: boolean;
+  searchText?: string;
+};
 
 // The selected row overlays the trigger text exactly. A portal avoids clipping
 // inside settings panes while sharing the composer menu's focus and geometry.
@@ -26,6 +32,7 @@ export function ValueMenu({
   disabled,
   disabledReason,
   choose,
+  searchable = false,
 }: {
   label: string;
   display?: string;
@@ -37,21 +44,29 @@ export function ValueMenu({
   disabled?: boolean;
   disabledReason?: string;
   choose: (value: string) => void;
+  searchable?: boolean;
 }) {
   const { t } = useUI();
   const root = useRef<HTMLDivElement>(null);
   const menu = useRef<HTMLDivElement>(null);
   const id = useId();
+  const [query, setQuery] = useState("");
+  const search = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const [up, setUp] = useState(true);
   const selected = items.find((item) => item.value === value);
   const text = display ?? selected?.label ?? value;
   const isMuted = muted || selected?.muted;
-  const options = items.filter((item) => item.value !== value);
+  const options = searchable
+    ? items.filter((item) =>
+        matchesValueQuery(`${item.label} ${item.searchText ?? ""}`, query),
+      )
+    : items.filter((item) => item.value !== value);
   const trigger = () =>
     root.current?.querySelector<HTMLButtonElement>(".setting-trigger");
   function close(restore = false) {
     setOpen(false);
+    setQuery("");
     if (restore) trigger()?.focus({ preventScroll: true });
   }
   useLayoutEffect(() => {
@@ -98,11 +113,15 @@ export function ValueMenu({
       if (!menu.current?.contains(e.target as Node)) position();
     };
     document.addEventListener("scroll", scrolled, true);
-    menu.current
-      .querySelector<HTMLButtonElement>("[role=option]")
-      ?.focus({ preventScroll: true });
+    if (!searchable)
+      menu.current
+        .querySelector<HTMLButtonElement>("[role=option]")
+        ?.focus({ preventScroll: true });
     return () => document.removeEventListener("scroll", scrolled, true);
-  }, [open, options.length, minMenuWidth]);
+  }, [open, options.length, minMenuWidth, searchable]);
+  useLayoutEffect(() => {
+    if (open && searchable) search.current?.focus({ preventScroll: true });
+  }, [open, searchable]);
   useEffect(() => {
     if (!open) return;
     const outside = (e: PointerEvent) => {
@@ -129,6 +148,18 @@ export function ValueMenu({
       close(true);
       return;
     }
+    if (searchable && e.target === search.current) {
+      if (e.nativeEvent.isComposing) return;
+      if (e.key === "Enter") {
+        e.preventDefault();
+        if (options[0]) {
+          choose(options[0].value);
+          close(true);
+        }
+        return;
+      }
+      if (!["ArrowDown", "ArrowUp"].includes(e.key)) return;
+    }
     if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(e.key)) return;
     e.preventDefault();
     if (!open) {
@@ -139,16 +170,22 @@ export function ValueMenu({
       ...(menu.current?.querySelectorAll<HTMLButtonElement>("[role=option]") ||
         []),
     ];
-    const visual = up ? [...buttons.slice(1), buttons[0]] : buttons;
+    const visual =
+      up && !searchable ? [...buttons.slice(1), buttons[0]] : buttons;
     const index = visual.indexOf(document.activeElement as HTMLButtonElement);
     const next =
       e.key === "Home"
         ? 0
         : e.key === "End"
           ? visual.length - 1
-          : (index + (e.key === "ArrowUp" ? -1 : 1) + visual.length) %
+          : (index < 0
+              ? e.key === "ArrowUp"
+                ? visual.length - 1
+                : 0
+              : index + (e.key === "ArrowUp" ? -1 : 1) + visual.length) %
             visual.length;
     visual[next]?.focus({ preventScroll: true });
+    if (searchable) visual[next]?.scrollIntoView({ block: "nearest" });
   }
   return (
     <div
@@ -172,7 +209,7 @@ export function ValueMenu({
         role="combobox"
         aria-label={label}
         aria-haspopup="listbox"
-        aria-controls={id}
+        aria-controls={searchable ? `${id}-results` : id}
         aria-expanded={open}
         disabled={disabled}
         title={disabled ? disabledReason : text}
@@ -186,6 +223,7 @@ export function ValueMenu({
             ref={menu}
             id={id}
             data-variant={variant}
+            data-searchable={searchable}
             className={`${styles.setting_menu} setting-menu ${up ? "opens-up" : ""}`}
             onKeyDown={(e) => {
               e.stopPropagation();
@@ -198,23 +236,47 @@ export function ValueMenu({
               )
                 close();
             }}
-            role="listbox"
+            role={searchable ? "group" : "listbox"}
             aria-label={t("{label} choices", { label })}
           >
-            <Button
-              type="button"
-              className="setting-current"
-              data-option-value={value}
-              data-muted={!!isMuted}
-              role="option"
-              tabIndex={-1}
-              aria-selected="true"
-              onClick={() => close(true)}
-            >
-              <span className="meta-value">{text}</span>
-            </Button>
+            {searchable ? (
+              <input
+                ref={search}
+                className="setting-search"
+                aria-label={t("Search {label}", { label })}
+                role="combobox"
+                aria-expanded="true"
+                aria-autocomplete="list"
+                aria-controls={`${id}-results`}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+            ) : (
+              <Button
+                type="button"
+                className="setting-current"
+                data-option-value={value}
+                data-muted={!!isMuted}
+                role="option"
+                tabIndex={-1}
+                aria-selected="true"
+                onClick={() => close(true)}
+              >
+                <span className="meta-value">{text}</span>
+              </Button>
+            )}
             <div className="setting-divider" role="separator" />
-            <div className="setting-options">
+            <div
+              className="setting-options"
+              id={`${id}-results`}
+              role={searchable ? "listbox" : undefined}
+              aria-label={
+                searchable ? t("{label} choices", { label }) : undefined
+              }
+            >
+              {searchable && options.length === 0 && (
+                <p role="status">{t("No matches")}</p>
+              )}
               {options.map((choice) => (
                 <Button
                   key={choice.value}
@@ -222,7 +284,7 @@ export function ValueMenu({
                   type="button"
                   role="option"
                   tabIndex={-1}
-                  aria-selected="false"
+                  aria-selected={choice.value === value}
                   title={choice.label}
                   data-muted={!!choice.muted}
                   onClick={() => {
