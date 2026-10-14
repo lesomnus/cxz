@@ -342,7 +342,9 @@ test("every resource tab has its own body and navigation", async ({ page }) => {
     await expect(
       name === "Projects view"
         ? page.locator("main.resource-view header strong")
-        : page.getByRole("heading", { name: heading, exact: true }),
+        : name === "Accounts"
+          ? page.getByLabel("Account list").locator("header strong")
+          : page.getByRole("heading", { name: heading, exact: true }),
     ).toBeVisible();
     if (name !== "Projects view")
       await expect(page.locator(".resource-panel .project-row")).toHaveCount(0);
@@ -410,10 +412,12 @@ test("account registration, session creation and archive restore use resource AP
 }) => {
   const requests = await fixture(page);
   await page.getByRole("link", { name: "Accounts", exact: true }).click();
-  await page
+  await page.getByRole("button", { name: "Add account", exact: true }).click();
+  const add = page.getByRole("dialog", { name: "Add account", exact: true });
+  await add
     .getByRole("textbox", { name: "Alias", exact: true })
     .fill("personal");
-  await page.getByRole("button", { name: "Add account" }).click();
+  await add.getByRole("button", { name: "Add", exact: true }).click();
   await expect
     .poll(() =>
       requests.some(

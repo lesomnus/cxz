@@ -152,6 +152,10 @@ test("chips are atomic, undoable, previewable and expandable one occurrence at a
   const input = await openEditor(page);
   const body = "one\ntwo\nthree\nfour";
   await paste(page, body);
+  await expect(page.locator(".paste-chip")).toHaveAttribute(
+    "data-upload-state",
+    "ready",
+  );
   const token = await input.inputValue();
   await input.press("Backspace");
   await expect(input).toHaveValue("");
@@ -174,7 +178,16 @@ test("chips are atomic, undoable, previewable and expandable one occurrence at a
     page.getByRole("dialog", { name: "Paste source" }),
   ).toBeVisible();
   await page.keyboard.press("Escape");
-  await input.fill(`${token}\n${token}`);
+  // Visible labels are not attachment IDs. Create the second attachment via
+  // the real paste path instead of duplicating its presentation with fill().
+  await input.press("Control+End");
+  await input.press("Enter");
+  await paste(page, body);
+  await expect(page.locator(".paste-chip").nth(1)).toHaveAttribute(
+    "data-upload-state",
+    "ready",
+  );
+  await expect(input).toHaveValue(`${token}\n${token}`);
   await page.locator(".paste-chip").nth(1).click();
   await page
     .getByRole("button", { name: "Expand source", exact: true })

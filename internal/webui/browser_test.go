@@ -248,6 +248,12 @@ func (f *browserFixture) Watch(_ *resource.SessionWatchRequest, s grpc.ServerStr
 	<-s.Context().Done()
 	return s.Context().Err()
 }
+
+// The production client requests background snapshots alongside conversation events.
+func (*browserFixture) Background(context.Context, *resource.SessionBackgroundRequest) (*resource.SessionBackgroundReply, error) {
+	return resource.SessionBackgroundReply_builder{Data: []byte(`{}`)}.Build(), nil
+}
+
 func (f *browserFixture) History(_ context.Context, r *resource.SessionEventsRequest) (*resource.SessionEventBatch, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()

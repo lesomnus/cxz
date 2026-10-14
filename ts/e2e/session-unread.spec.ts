@@ -1,3 +1,4 @@
+import { Buffer } from "node:buffer";
 import { expect, test } from "@playwright/test";
 
 test.use({
@@ -27,6 +28,70 @@ test("unread response uses the left indicator and Sessions icon count clears whe
         },
       }),
     );
+  });
+  // Other tests may resolve the fixture's question. Seed every catalog path
+  // consistently so this case does not depend on test order.
+  const session = {
+    id: Buffer.from("abcdefghijklmnop").toString("base64"),
+    runtimeId: "session",
+    alias: "demo-chat",
+    name: "Demo conversation",
+    agent: "claude",
+    listed: true,
+    project: {
+      id: Buffer.from("1234567890123456").toString("base64"),
+      runtimeId: "project",
+      alias: "demo",
+      name: "Demo project",
+      listed: true,
+    },
+    status: {
+      runId: "run",
+      state: "idle",
+      lastSeq: "3",
+      pending: [
+        {
+          seq: "3",
+          runId: "run",
+          kind: "approval",
+          requestId: "q",
+          text: "AskUserQuestion",
+          payload: Buffer.from(
+            JSON.stringify({
+              input: {
+                questions: [
+                  {
+                    question: "Which environment?",
+                    options: [{ label: "Development" }],
+                  },
+                ],
+              },
+            }),
+          ).toString("base64"),
+        },
+      ],
+    },
+  };
+  await page.route("**/cxz.SessionService/Get", (route) =>
+    route.fulfill({ json: session }),
+  );
+  await page.route("**/cxz.SessionService/List", (route) =>
+    route.fulfill({ json: { items: [session] } }),
+  );
+  await page.route("**/cxz.SessionService/Watch", async (route) => {
+    const body = Buffer.from(
+      JSON.stringify({ items: [{ id: session.id, value: session }] }),
+    );
+    const header = Buffer.alloc(5);
+    header.writeUInt32BE(body.length, 1);
+    await route.fulfill({
+      contentType: "application/connect+json",
+      body: Buffer.concat([
+        header,
+        body,
+        Buffer.from([2, 0, 0, 0, 2, 123, 125]),
+      ]),
+    });
   });
   await page.goto("/sessions");
   const row = page.locator(".tree-session").first();

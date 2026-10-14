@@ -21,7 +21,10 @@ test("mobile sign-in, conversation, questions, drafts and sign-out", async ({
   );
   await expect(
     page.getByLabel("Response metrics", { exact: true }),
-  ).toContainText("4.2s");
+  ).toContainText("00:00:04");
+  await expect(
+    page.locator('.response-metric[data-metric="duration"]'),
+  ).toHaveAttribute("aria-label", "Duration: 4.2s");
   const question = page.getByRole("region", { name: "Question", exact: true });
   await expect(
     question.getByRole("radio", { name: /Development/ }),

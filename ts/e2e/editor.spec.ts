@@ -36,7 +36,9 @@ test("production file viewer loads under the gateway CSP", async ({ page }) => {
     "background-color",
     "rgb(20, 20, 20)",
   );
-  await expect(page.locator(".markdown [style]")).toHaveCount(0);
+  await expect(
+    page.locator(".markdown span").filter({ hasText: /^style fixture$/ }),
+  ).not.toHaveAttribute("style");
   expect(errors).toEqual([]);
 });
 

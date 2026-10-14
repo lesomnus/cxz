@@ -804,21 +804,29 @@ export function ComposerEditor({
                 const direction = el.selectionDirection;
                 const selection = normalizedSelection();
                 const edit = indentEdit(
-                  value,
-                  selection.start,
-                  selection.end,
+                  source,
+                  projection.toSource(selection.start),
+                  projection.toSource(selection.end),
                   event.shiftKey,
                   editorSettings,
                 );
-                if (value.slice(edit.from, edit.to) !== edit.text)
+                if (source.slice(edit.from, edit.to) !== edit.text) {
+                  const next = new PasteProjection(
+                    source.slice(0, edit.from) +
+                      edit.text +
+                      source.slice(edit.to),
+                    pastes,
+                    frozenPresentations.current,
+                  );
                   replace(
-                    edit.from,
-                    edit.to,
+                    projection.toDisplay(edit.from),
+                    projection.toDisplay(edit.to),
                     edit.text,
-                    edit.start,
-                    edit.end,
+                    next.toDisplay(edit.start),
+                    next.toDisplay(edit.end),
                     direction,
                   );
+                }
                 return;
               }
               if (event.ctrlKey && event.key === "Enter") {

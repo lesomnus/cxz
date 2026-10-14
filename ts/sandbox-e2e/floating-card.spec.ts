@@ -19,6 +19,10 @@ async function paste(page: Page, body: string) {
   const input = page.getByRole("textbox", { name: "Message", exact: true });
   await input.focus();
   await input.press("Control+v");
+  await expect(page.locator(".paste-chip").last()).toHaveAttribute(
+    "data-upload-state",
+    "ready",
+  );
 }
 
 test("response copy appears on hover and keyboard focus without changing layout", async ({
@@ -34,13 +38,13 @@ test("response copy appears on hover and keyboard focus without changing layout"
   await expect(copy).toHaveCSS("opacity", "1");
   await page.mouse.move(0, 0);
   await expect(copy).toHaveCSS("opacity", "0");
-  await response.getByRole("button", { name: "Copy", exact: true }).focus();
+  await copy.getByRole("button", { name: "Copy", exact: true }).focus();
   await expect(copy).toHaveCSS("opacity", "1");
-  await expect(response.getByRole("tooltip")).toHaveText("Copy");
+  await expect(copy.getByRole("tooltip")).toHaveText("Copy");
   expect(await response.boundingBox()).toEqual(before);
 });
 
-test("floating event and paste cards replace one another without moving the transcript", async ({
+test("task details and replacing paste previews preserve the transcript and draft", async ({
   page,
 }) => {
   const input = await open(page);
@@ -49,57 +53,48 @@ test("floating event and paste cards replace one another without moving the tran
   await input.pressSequentially(" ");
   await paste(page, "another\npaste\nbody\nhere");
   const draft = await input.inputValue();
-  const trigger = page.locator(".transcript-row > .event-detail").last();
-  await trigger.scrollIntoViewIfNeeded();
-  const before = await page
-    .locator(".transcript")
-    .evaluate((el) => ({ top: el.scrollTop, height: el.scrollHeight }));
-  await trigger.dblclick();
-  const event = page.locator('.floating-card[data-active="true"]');
-  await expect(event).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
-  const eventId = await event.getAttribute("data-card");
-  const card = (await event.boundingBox())!;
-  const anchor = (await trigger.boundingBox())!;
-  expect(card.y).toBeCloseTo(anchor.y + anchor.height - 4, 0);
-  await expect(event).toHaveCSS("border-top-width", "1px");
-  await expect(event).toHaveCSS("border-radius", "0px 0px 12px 12px");
-  await expect(event).toHaveCSS("backdrop-filter", "blur(48px)");
-  await expect(event.locator(".card-body")).toHaveCSS("padding-left", "4px");
-  const eventRow = await trigger.boundingBox();
-  expect(
-    await page
+  const trigger = page.locator("[data-work-summary] button").last();
+  const geometry = () =>
+    page
       .locator(".transcript")
-      .evaluate((el) => ({ top: el.scrollTop, height: el.scrollHeight })),
-  ).toEqual(before);
-  await expect(page.locator(".transcript-row details")).toHaveCount(0);
-
+      .evaluate((el) => ({ top: el.scrollTop, height: el.scrollHeight }));
+  const before = await geometry();
+  await trigger.click();
+  const dialog = page.getByRole("dialog", { name: "Tasks between responses" });
+  const task = dialog.locator("button[data-seq]").first();
+  await task.click();
+  await expect(
+    dialog
+      .getByRole("region", { name: "Task details" })
+      .locator(".monaco-editor"),
+  ).toBeVisible();
+  expect(await geometry()).toEqual(before);
+  await task.click();
+  await expect(
+    dialog.getByRole("region", { name: "Task details" }),
+  ).toHaveCount(0);
+  await dialog.getByRole("button", { name: "Close task dialog" }).click();
   await page.locator(".paste-chip").first().click();
   const preview = page.getByRole("dialog", { name: "Paste source" });
   await expect(preview).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
   await expect(preview.locator("pre")).toHaveText(
     "first\nsecond\nthird\nfourth",
   );
-  await expect(page.locator(`[data-card="${eventId}"]`)).toHaveCount(0);
   const firstPreviewId = await preview.getAttribute("data-card");
   await page.locator(".paste-chip").nth(1).click();
   await expect(preview.locator("pre")).toHaveText("another\npaste\nbody\nhere");
   await expect(page.locator(`[data-card="${firstPreviewId}"]`)).toHaveCount(0);
   await expect(page.locator(".floating-card")).toHaveCount(1);
   await expect(input).toHaveValue(draft);
-  await expect(preview).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
+  await expect(preview).toHaveCSS("backdrop-filter", "blur(48px)");
+  expect(await geometry()).toEqual(before);
   await page.screenshot({
     path: "test-results/floating-card.png",
     fullPage: true,
   });
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  await expect(page.locator(".floating-card")).toHaveCount(0);
   await expect(input).toBeFocused();
-  expect(await trigger.boundingBox()).toEqual(eventRow);
-  await trigger.dblclick();
-  await expect(trigger).toHaveAttribute("aria-expanded", "true");
-  await trigger.click();
-  await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(input).toHaveValue(draft);
 });
 

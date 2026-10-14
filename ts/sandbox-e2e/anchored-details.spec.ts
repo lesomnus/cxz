@@ -78,7 +78,7 @@ test("event details grow only the trigger's exterior, toggle and replace in plac
     return (
       target === el ||
       (!!target && el.contains(target)) ||
-      !!target?.closest(".activity-card-preview")
+      !!target?.closest(".anchored-detail")
     );
   });
   expect(hit).toBe(true);
@@ -98,18 +98,13 @@ test("event details grow only the trigger's exterior, toggle and replace in plac
   await expect(card).toHaveCount(0);
   await trigger.press("Enter");
   await expect(card).toBeVisible();
-  const previous = await card.getAttribute("id");
-  const first = page.locator(".detail-anchor").first();
-  await first.dblclick();
-  await expect(first).toHaveAttribute("aria-expanded", "true");
-  await expect(trigger).toHaveAttribute("aria-expanded", "false");
-  await expect(page.locator(`[id="${previous}"]`)).toHaveCount(0);
-  await expect(card).toHaveCount(1);
+  // Important errors stay in the transcript; ordinary tasks live in WorkDialog.
+  await expect(page.locator(".detail-anchor")).toHaveCount(1);
   const column = (await page.locator(".transcript-content").boundingBox())!;
   const view = (await pane.boundingBox())!;
   await page.mouse.click(column.x - 16, view.y + 30);
   await expect(card).toHaveCount(0);
-  await expect(first).toHaveAttribute("aria-expanded", "false");
+  await expect(trigger).toHaveAttribute("aria-expanded", "false");
   await trigger.dblclick();
   await expect(card).toHaveCSS("opacity", "1");
   // A body click closes details without restoring focus to their source.
@@ -131,7 +126,7 @@ test("event details grow only the trigger's exterior, toggle and replace in plac
   await expect(trigger).toBeFocused();
 });
 
-test("grouped tool details fit short output, follow native scrolling, and close when a virtualized trigger leaves view", async ({
+test("grouped tool details fit short viewports and isolate editor scrolling", async ({
   page,
 }) => {
   // A short conversation leaves less room than this tool's combined details.
@@ -141,7 +136,13 @@ test("grouped tool details fit short output, follow native scrolling, and close 
   await expect(input).toBeVisible({ timeout: 45000 });
   await input.fill("Inspect this work");
   await page.getByRole("button", { name: "Send", exact: true }).click();
-  const tool = page.locator(".tool-activity").last();
+  await expect(page.locator(".conversation")).toHaveAttribute(
+    "aria-description",
+    /idle/,
+  );
+  await page.locator("[data-work-summary] button").last().click();
+  const dialog = page.getByRole("dialog", { name: "Tasks between responses" });
+  const tool = dialog.locator(".tool-activity").last();
   await expect(tool).toHaveAttribute("data-state", "completed");
   await expect(tool.getByRole("tooltip", { includeHidden: true })).toBeHidden();
   await tool.hover();
@@ -151,17 +152,22 @@ test("grouped tool details fit short output, follow native scrolling, and close 
   expect(Math.abs(Date.now() - Date.parse(recorded!))).toBeLessThan(60_000);
   const timeBounds = (await timestamp.boundingBox())!;
   const toolBounds = (await tool.boundingBox())!;
-  expect(timeBounds.x).toBeCloseTo(toolBounds.x, 0);
-  expect(timeBounds.y + timeBounds.height).toBeLessThan(toolBounds.y);
+  expect(timeBounds.x).toBeGreaterThanOrEqual(toolBounds.x);
+  expect(timeBounds.x + timeBounds.width).toBeLessThanOrEqual(
+    toolBounds.x + toolBounds.width,
+  );
+  expect(timeBounds.y + timeBounds.height).toBeLessThanOrEqual(
+    toolBounds.y + 8,
+  );
   await page.mouse.move(0, 0);
   await expect(timestamp).toBeHidden();
   await expect(page.locator(".conversation")).toHaveAttribute(
     "aria-description",
     /idle/,
   );
-  await tool.dblclick();
-  const card = page.getByRole("dialog");
-  await expect(card).toHaveCSS("opacity", "1");
+  await tool.click();
+  const card = dialog.getByRole("region", { name: "Task details" });
+  await expect(card).toBeVisible();
   const bounds = (await card.boundingBox())!;
   expect(bounds.y + bounds.height).toBeLessThanOrEqual(360);
   const inputTab = card.getByRole("tab", { name: "Input", exact: true });
@@ -178,24 +184,25 @@ test("grouped tool details fit short output, follow native scrolling, and close 
   await editor.hover();
   await page.mouse.wheel(0, 80);
   // This fixture's result fits: wheel input still belongs to the editor.
-  expect(await card.locator(".card-body").evaluate((el) => el.scrollTop)).toBe(
-    0,
-  );
+  expect(
+    await dialog.locator(".card-body").evaluate((el) => el.scrollTop),
+  ).toBe(0);
   expect(await pane.evaluate((el) => el.scrollTop)).toBe(top);
-  await pane.evaluate((el) => {
-    el.scrollTop -= 32;
-  });
+  await page.setViewportSize({ width: 390, height: 480 });
   await expect
     .poll(async () => {
-      const source = (await tool.boundingBox())!;
-      const details = (await card.boundingBox())!;
-      return Math.abs(details.y - (source.y + source.height - 4));
+      const box = (await card.boundingBox())!;
+      return Math.max(
+        0,
+        -box.x,
+        box.x + box.width - 390,
+        box.y + box.height - 480,
+      );
     })
     .toBeLessThan(1);
-  await pane.focus();
-  await pane.evaluate((el) => {
-    el.scrollTop = 0;
-  });
+  await tool.click();
   await expect(card).toHaveCount(0);
-  await expect(pane).toBeFocused();
+  await expect(dialog).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
 });
