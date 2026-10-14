@@ -167,3 +167,42 @@ test("workspace split, readonly files and simulated connections keep project sta
     fullPage: true,
   });
 });
+
+test("pane widths survive refresh, viewport clamping and reset", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 2100, height: 1000 });
+  await page.goto("/sandbox.html");
+  const divider = page.getByRole("separator", {
+    name: "Resize workspace editor",
+    exact: true,
+  });
+  const explorer = page.getByRole("separator", {
+    name: "Resize file explorer",
+    exact: true,
+  });
+  await expect(divider).toBeVisible({ timeout: 45000 });
+  const initial = await divider.getAttribute("aria-valuenow");
+  await divider.focus();
+  await page.keyboard.press("Shift+ArrowRight");
+  const chosen = await divider.getAttribute("aria-valuenow");
+  expect(chosen).not.toBe(initial);
+  await explorer.focus();
+  await page.keyboard.press("ArrowRight");
+  const fileWidth = await explorer.getAttribute("aria-valuenow");
+  await page.reload();
+  await expect(divider).toHaveAttribute("aria-valuenow", chosen!, {
+    timeout: 45000,
+  });
+  await expect(explorer).toHaveAttribute("aria-valuenow", fileWidth!);
+  await page.setViewportSize({ width: 1700, height: 1000 });
+  await page.setViewportSize({ width: 2100, height: 1000 });
+  await expect(divider).toHaveAttribute("aria-valuenow", chosen!);
+  await divider.dblclick();
+  await expect(divider).toHaveAttribute("aria-valuenow", initial!);
+  await page.reload();
+  await expect(divider).toHaveAttribute("aria-valuenow", initial!, {
+    timeout: 45000,
+  });
+  await expect(explorer).toHaveAttribute("aria-valuenow", fileWidth!);
+});

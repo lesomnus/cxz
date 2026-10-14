@@ -1,12 +1,16 @@
 import { useLayoutEffect, useState, type RefObject } from "react";
 
+import { loadPaneWidth, savePaneWidth } from "./layout-storage";
+
 /** Resolve sizes from CSS tokens, keeping the user's width across viewport changes. */
 export function usePaneWidth(
   area: RefObject<HTMLElement | null>,
   prefix: "session" | "file",
   enabled = true,
 ) {
-  const [chosen, choose] = useState<number>();
+  const [chosen, choose] = useState<number | undefined>(() =>
+    loadPaneWidth(prefix),
+  );
   const [bounds, setBounds] = useState({ initial: 0, min: 0, max: 0 });
   useLayoutEffect(() => {
     const element = area.current;
@@ -47,7 +51,13 @@ export function usePaneWidth(
     value: Math.max(bounds.min, Math.min(bounds.max, chosen ?? bounds.initial)),
     min: bounds.min,
     max: bounds.max,
-    onChange: choose,
-    onReset: () => choose(undefined),
+    onChange: (width: number) => {
+      choose(width);
+      savePaneWidth(prefix, width);
+    },
+    onReset: () => {
+      choose(undefined);
+      savePaneWidth(prefix, undefined);
+    },
   };
 }
