@@ -96,10 +96,10 @@
 }
 
 :global(::highlight(conversation-search)) {
-  background-color: var(--ui-shade-72);
-  color: var(--ui-shade-237);
+  background-color: #d9ff30;
+  color: #111111;
 }
 :global(::highlight(conversation-search-current)) {
-  background-color: var(--ui-shade-237);
-  color: var(--ui-shade-17);
+  background-color: #8cff6b;
+  color: #111111;
 }
