@@ -253,7 +253,7 @@ export function Workspace({
                       loading={inventory.loading.sessions}
                       selected={session}
                       unread={unread}
-                        errors={errors}
+                      errors={errors}
                       open={!collapsed.has(p.runtimeId)}
                       toggle={() =>
                         setCollapsed((old) => {

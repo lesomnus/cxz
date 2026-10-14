@@ -114,5 +114,5 @@ export const Loading: Story = { args: { count: 0, loading: true } };
 export const UnreadCompleted: Story = { args: { unread: true } };
 
 export const ErrorBeforeCompletion: Story = {
-  args: { unread: true, error: true },
+  args: { count: 4, unread: true, error: true },
 };
