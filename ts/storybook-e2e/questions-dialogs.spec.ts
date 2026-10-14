@@ -89,7 +89,30 @@ test("dialog blur visibly softens content behind the animated surface", async ({
     (node as HTMLElement).style.setProperty("-webkit-backdrop-filter", "none");
   });
   const clear = await body.screenshot();
-  expect(blurred.equals(clear)).toBe(false);
+  const stripeVariation = (png: Buffer) =>
+    page.evaluate(async (base64) => {
+      const image = new Image();
+      image.src = `data:image/png;base64,${base64}`;
+      await image.decode();
+      const canvas = document.createElement("canvas");
+      canvas.width = image.width;
+      canvas.height = image.height;
+      const context = canvas.getContext("2d")!;
+      context.drawImage(image, 0, 0);
+      // The blank top padding avoids text and rounded edges. A real blur
+      // removes the narrow backdrop stripes, rather than merely tinting them.
+      const row = context.getImageData(24, 10, image.width - 48, 1).data;
+      const values = Array.from(row).filter((_, index) => index % 4 === 0);
+      const mean =
+        values.reduce((sum, value) => sum + value, 0) / values.length;
+      return Math.sqrt(
+        values.reduce((sum, value) => sum + (value - mean) ** 2, 0) /
+          values.length,
+      );
+    }, png.toString("base64"));
+  const sharpVariation = await stripeVariation(clear);
+  expect(sharpVariation).toBeGreaterThan(5);
+  expect(await stripeVariation(blurred)).toBeLessThan(sharpVariation / 4);
   await body.evaluate((node) => {
     (node as HTMLElement).style.removeProperty("backdrop-filter");
     (node as HTMLElement).style.removeProperty("-webkit-backdrop-filter");
