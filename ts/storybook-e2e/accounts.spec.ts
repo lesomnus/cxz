@@ -83,8 +83,8 @@ test("Add opens beside the panel and its language/provider dropdown works inside
         ? animation.effect.getKeyframes()
         : [];
     });
-  expect(entrance.every((frame) => frame.opacity === undefined)).toBe(true);
-  expect(entrance[0]?.transform).not.toBe("none");
+  expect(entrance[0]?.opacity).toBe("0");
+  expect(entrance.at(-1)?.opacity).toBe("1");
   expect(entrance.at(-1)?.transform).toBe("none");
   // The top-layer dialog stays untransformed so fixed menus retain viewport coordinates.
   expect(
@@ -176,11 +176,6 @@ for (const theme of ["dark", "light"]) {
       const heading = getComputedStyle(node.querySelector(".card-heading")!);
       const body = getComputedStyle(node.querySelector(".card-body")!);
       const footer = getComputedStyle(node.querySelector(".card-footer")!);
-      const frame = getComputedStyle(node.querySelector(".card-body-frame")!);
-      const frameEdge = getComputedStyle(
-        node.querySelector(".card-body-frame")!,
-        "::before",
-      );
       return {
         background: style.backgroundColor,
         blur: style.backdropFilter,
@@ -189,31 +184,15 @@ for (const theme of ["dark", "light"]) {
         headerPadding: heading.padding,
         bodyPadding: body.padding,
         bodyBackground: body.backgroundColor,
-        bodyBlur: body.backdropFilter,
-        frameBackground: frame.backgroundColor,
-        frameBlur: frame.backdropFilter,
-        bodyFrameShadow: frameEdge.boxShadow,
-        headerBackground: heading.backgroundColor,
-        headerBlur: heading.backdropFilter,
-        footerBackground: footer.backgroundColor,
-        footerBlur: footer.backdropFilter,
         bodyRadius: body.borderRadius,
         footerPadding: footer.padding,
       };
     };
     const initial = await addition.evaluate(appearance);
-    expect(initial.blur).toBe("none");
-    expect(initial.background).toBe("rgba(0, 0, 0, 0)");
-    expect(initial.bodyBlur).toMatch(/^blur\(/);
-    expect(initial.frameBackground).toBe("rgba(0, 0, 0, 0)");
-    expect(initial.frameBlur).toBe("none");
-    expect(initial.headerBlur).toBe("none");
-    expect(initial.footerBlur).toBe("none");
-    expect(initial.headerBackground).toEqual(initial.footerBackground);
-    expect(initial.bodyFrameShadow).toContain(initial.headerBackground);
+    expect(initial.blur).toMatch(/^blur\(/);
     expect(initial.bodyBackground).not.toBe("rgba(0, 0, 0, 0)");
     expect(initial.bodyRadius).not.toBe("0px");
-    const alpha = await addition.locator(".card-body").evaluate((node) => {
+    const alpha = await addition.locator("[data-anchored]").evaluate((node) => {
       const context = document.createElement("canvas").getContext("2d")!;
       context.fillStyle = getComputedStyle(node).backgroundColor;
       context.fillRect(0, 0, 1, 1);
@@ -221,7 +200,7 @@ for (const theme of ["dark", "light"]) {
     });
     expect(alpha).toBeGreaterThan(0);
     expect(alpha).toBeLessThan(255);
-    // Only the body samples the page; the surrounding frame has the chrome tint.
+    // Blur belongs to the animated surface itself, not a descendant inside its opacity layer.
     await expect(addition.locator(".floating-card")).toHaveCSS(
       "backdrop-filter",
       "none",

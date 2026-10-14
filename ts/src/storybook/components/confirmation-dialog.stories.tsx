@@ -20,7 +20,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "A modal confirmation dialog using shared DialogCard region backgrounds and blur, with DialogSurface dimming and entrance motion, with padded header/body/footer, a distinct rounded translucent body inset from the card sides and minimum-width actions. The body has generous vertical padding, and the footer uses compact padding; buttons have transparent default surfaces and hover backgrounds. Both actions align right, with Confirm immediately before Cancel; focus starts on Cancel and stays inside. Escape or a backdrop click cancels. The footer stays outside the scrollable body. While an action runs, duplicate execution and dismissal are disabled. Failure keeps the dialog open for retry. Centered confirmations keep their trigger under the backdrop; foreground triggers are reserved for adjacent dialogs.",
+          "A modal confirmation dialog using the shared DialogSurface translucency, backdrop blur, dimming and entrance motion, with padded header/body/footer, a distinct rounded body flush with the card sides and minimum-width actions. The body has generous vertical padding, and the footer uses compact padding; buttons have transparent default surfaces and hover backgrounds. Both actions align right, with Confirm immediately before Cancel; focus starts on Cancel and stays inside. Escape or a backdrop click cancels. The footer stays outside the scrollable body. While an action runs, duplicate execution and dismissal are disabled. Failure keeps the dialog open for retry. Centered confirmations keep their trigger under the backdrop; foreground triggers are reserved for adjacent dialogs.",
       },
     },
   },
