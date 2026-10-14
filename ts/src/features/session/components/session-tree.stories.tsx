@@ -82,6 +82,9 @@ function SessionList({
                 )
               : undefined
           }
+          background={
+            background ? new Set(items.map((s) => s.runtimeId)) : undefined
+          }
           open={open}
           toggle={() => setOpen((value) => !value)}
         />
