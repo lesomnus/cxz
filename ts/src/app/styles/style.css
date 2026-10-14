@@ -240,6 +240,20 @@ header strong {
     linear-gradient(135deg, #779c96, #424d69);
   box-shadow: inset 0 0 0 1px #ffffff18;
 }
+/* The default theme is dark, including before an explicit theme is set. */
+:root:not([data-theme="light"]) .profile-avatar {
+  filter: brightness(0.55);
+  transition: filter 160ms ease;
+}
+:root:not([data-theme="light"]) .profile-trigger:hover .profile-avatar,
+:root:not([data-theme="light"]) .profile-trigger:focus-visible .profile-avatar {
+  filter: brightness(1);
+}
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-theme="light"]) .profile-avatar {
+    transition: none;
+  }
+}
 .profile-error {
   width: 56px;
   font-size: 10px;
