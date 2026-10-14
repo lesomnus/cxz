@@ -51,8 +51,8 @@ test("composer Stop uses the shared dialog header, body and footer", async ({
   await expect(dialog.locator(".card-heading")).toHaveText("Stop session");
   await expect(dialog.locator(".card-body")).toContainText("Active work stops");
   const bodyColor = await dialog
-    .locator("[data-dialog-card]")
-    .evaluate((node) => getComputedStyle(node, "::before").backgroundColor);
+    .locator(".card-body")
+    .evaluate((node) => getComputedStyle(node).backgroundColor);
   const surfaceColor = await dialog
     .locator(".card-heading")
     .evaluate((node) => getComputedStyle(node).backgroundColor);
@@ -201,8 +201,8 @@ test("confirmation dialog traps focus, cancels without acting and fits a small v
       .evaluate((el) => getComputedStyle(el).borderRadius),
   ).not.toBe("0px");
   const bodyColor = await dialog
-    .locator("[data-dialog-card]")
-    .evaluate((el) => getComputedStyle(el, "::before").backgroundColor);
+    .locator(".card-body")
+    .evaluate((el) => getComputedStyle(el).backgroundColor);
   const chromeColor = await dialog
     .locator(".card-heading")
     .evaluate((el) => getComputedStyle(el).backgroundColor);
