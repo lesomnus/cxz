@@ -227,6 +227,19 @@ header strong {
   margin-top: auto;
   flex-shrink: 0;
 }
+/* Photo-sized placeholder: replace the background with an image when available. */
+.profile-avatar {
+  display: block;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 20% 15%, #b3c7ad 0 24%, transparent 26%),
+    radial-gradient(ellipse at 85% 80%, #6d749b 0 36%, transparent 38%),
+    linear-gradient(135deg, #779c96, #424d69);
+  box-shadow: inset 0 0 0 1px #ffffff18;
+}
 .profile-error {
   width: 56px;
   font-size: 10px;
