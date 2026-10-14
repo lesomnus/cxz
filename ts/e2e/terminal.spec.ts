@@ -198,7 +198,8 @@ test("authenticated terminal runs a PTY shell under production CSP and preserves
   await expect(panel).toContainText("fixture$");
   await expect(panel).not.toContainText("state:preserved");
   expect(errors).toEqual([]);
-  await page.getByRole("button", { name: "Sign out" }).click();
+  await page.getByRole("button", { name: "Profile", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Sign out", exact: true }).click();
   await expect(panel).toHaveCount(0);
 });
 

@@ -26,7 +26,8 @@ test("direct routes, reload, browser history and new tabs preserve workspace nav
   const session = page.getByRole("link", { name: /demo-chat/ });
   await expect(session).toHaveAttribute("href", "/sessions/session");
   await expect(session).toHaveClass(/active/);
-  await page.getByRole("link", { name: "Settings view", exact: true }).click();
+  await page.getByRole("button", { name: "Profile", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Settings", exact: true }).click();
   await expect(page).toHaveURL(/\/settings\/general$/);
   await page.getByRole("link", { name: "Editor", exact: true }).click();
   await expect(page).toHaveURL(/\/settings\/editor$/);
@@ -89,9 +90,28 @@ test("a deep link survives sign-in, redirects and unknown routes stay navigable"
   expect((await page.request.get("/auth/missing")).status()).toBe(404);
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/sessions/session");
-  await page.getByRole("button", { name: "Sign out", exact: true }).click();
+  await page.getByRole("button", { name: "Profile", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Sign out", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "Connect", exact: true }),
   ).toBeVisible();
   await expect(page).toHaveURL(/\/sessions\/session$/);
+});
+
+test("profile sign out failures stay visible and can be retried", async ({
+  page,
+}) => {
+  await signIn(page);
+  await page.goto("/accounts");
+  await page.route("**/auth/logout", (route) => route.fulfill({ status: 500 }));
+  const profile = page.getByRole("button", { name: "Profile", exact: true });
+  await profile.click();
+  await page.getByRole("menuitem", { name: "Sign out", exact: true }).click();
+  await expect(page.locator(".profile-error")).toContainText("Sign out failed");
+  await page.unroute("**/auth/logout");
+  await profile.click();
+  await page.getByRole("menuitem", { name: "Sign out", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Connect", exact: true }),
+  ).toBeVisible();
 });

@@ -1,5 +1,6 @@
 import type { LanguagePack } from "#src/shared/i18n/i18n.ts";
 export const messages = {
+  Profile: "프로필",
   "Background job status unavailable": "백그라운드 작업 상태를 확인할 수 없음",
   "{count} active background job": "활성 백그라운드 작업 {count}개",
   "{count} active background jobs": "활성 백그라운드 작업 {count}개",

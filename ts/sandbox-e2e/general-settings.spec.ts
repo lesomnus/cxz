@@ -12,7 +12,8 @@ async function ready(page: Page) {
   ).toBeVisible({ timeout: 45000 });
 }
 async function general(page: Page) {
-  await page.getByRole("link", { name: "Settings view", exact: true }).click();
+  await page.getByRole("button", { name: "Profile", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Settings", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "General", exact: true }),
   ).toBeVisible();

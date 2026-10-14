@@ -94,7 +94,8 @@ test("mobile sign-in, conversation, questions, drafts and sign-out", async ({
     fullPage: true,
   });
   await page.goBack();
-  await page.getByRole("button", { name: "Sign out" }).click();
+  await page.getByRole("button", { name: "Profile", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Sign out", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "Connect", exact: true }),
   ).toBeVisible();

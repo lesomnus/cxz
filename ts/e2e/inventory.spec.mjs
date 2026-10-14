@@ -56,7 +56,8 @@ test("resource navigation shares catalog subscriptions instead of opening a list
     .first()
     .click();
   await expect(page.locator(".composer")).toBeVisible();
-  await page.getByRole("link", { name: "Settings view", exact: true }).click();
+  await page.getByRole("button", { name: "Profile", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Settings", exact: true }).click();
   await page.getByRole("link", { name: "Sessions view", exact: true }).click();
   await page.waitForTimeout(300);
   expect(calls).toEqual({

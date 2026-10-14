@@ -223,11 +223,15 @@ header strong {
 .resource-link.active {
   color: var(--shade-255);
 }
-.settings-link {
+.profile-menu {
   margin-top: auto;
+  flex-shrink: 0;
 }
-.resource-exit {
-  display: none;
+.profile-error {
+  width: 56px;
+  font-size: 10px;
+  overflow-wrap: anywhere;
+  color: var(--shade-255);
 }
 .settings-page {
   --settings-column-width: 320px;
@@ -2450,9 +2454,6 @@ summary:hover {
   }
   .workspace.accounts-open.resource-open > .resource-sidebar {
     grid-row: 1 / -1;
-  }
-  .workspace.resource-open .resource-exit {
-    display: block;
   }
   .workspace.resource-open > .resource-panel {
     display: none;

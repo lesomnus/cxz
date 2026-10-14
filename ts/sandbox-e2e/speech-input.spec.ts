@@ -192,7 +192,8 @@ test("voice language defaults to browser preferences and persists settings-page 
   );
   await page.getByRole("button", { name: "Stop voice input" }).click();
   await page.evaluate(() => window.voiceTest.instances[0].end());
-  await page.getByRole("link", { name: "Settings view", exact: true }).click();
+  await page.getByRole("button", { name: "Profile", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Settings", exact: true }).click();
   const language = page.getByRole("combobox", {
     name: "Voice language",
     exact: true,
@@ -213,7 +214,8 @@ test("voice language defaults to browser preferences and persists settings-page 
   expect(await page.evaluate(() => window.voiceTest.instances[0].lang)).toBe(
     "ja-JP",
   );
-  await page.getByRole("link", { name: "Settings view", exact: true }).click();
+  await page.getByRole("button", { name: "Profile", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Settings", exact: true }).click();
   await language.click();
   await page
     .getByRole("option", { name: "Browser language · ko-KR", exact: true })
@@ -615,7 +617,8 @@ test("local recognition setting persists and is applied without cloud fallback",
 }) => {
   await mockRecognition(page, "SpeechRecognition");
   await openComposer(page);
-  await page.getByRole("link", { name: "Settings view", exact: true }).click();
+  await page.getByRole("button", { name: "Profile", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Settings", exact: true }).click();
   const local = page.getByRole("switch", { name: "Force local recognition" });
   await expect(local).toHaveAttribute("aria-checked", "false");
   await local.click();
@@ -644,7 +647,8 @@ test("local recognition setting persists and is applied without cloud fallback",
       .filter({ hasText: "Install its browser language pack" }),
   ).toBeVisible();
   expect(await page.evaluate(() => window.voiceTest.instances.length)).toBe(1);
-  await page.getByRole("link", { name: "Settings view", exact: true }).click();
+  await page.getByRole("button", { name: "Profile", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Settings", exact: true }).click();
   await local.click();
   await openComposer(page);
   await page.getByRole("button", { name: "Voice input", exact: true }).click();
