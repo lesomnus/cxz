@@ -1,4 +1,4 @@
-import type { SessionEvent } from "#gen/cxz/session_pb";
+import type { EventSource } from "#src/features/session/model/event-source.ts";
 import {
   questions,
   payload,
@@ -24,12 +24,13 @@ function answerText(q: Question, resolution: any) {
 }
 
 export function QuestionHistory({
-  event,
+  source,
   agent,
 }: {
-  event: SessionEvent;
+  source: EventSource;
   agent: string;
 }) {
+  const event = source();
   const qs = questions(agent, event);
   const resolution = payload(event).cxz_resolution;
   const state = !resolution

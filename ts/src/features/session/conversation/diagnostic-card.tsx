@@ -1,4 +1,7 @@
-import type { SessionEvent } from "#gen/cxz/session_pb";
+import {
+  eventSource,
+  type EventSource,
+} from "#src/features/session/model/event-source.ts";
 import type { LoadEventDetails } from "#src/features/session/model/session-history.ts";
 import { eventDiagnostic } from "#src/features/session/model/event-diagnostic.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
@@ -8,12 +11,13 @@ import { EventDetails, useEventDetails } from "./event-details";
 import styles from "./activity-card.module.css";
 
 export function DiagnosticCard({
-  event,
+  source,
   loadDetails,
 }: {
-  event: SessionEvent;
+  source: EventSource;
   loadDetails?: LoadEventDetails;
 }) {
+  const event = source();
   useLocale();
   // Older Transcript servers omit payloads, leaving only a generic event label.
   // Fetch those errors once on mount; current summaries already carry a message.
@@ -24,8 +28,9 @@ export function DiagnosticCard({
     event,
     missingMessage ? loadDetails : undefined,
   );
-  const source = state.events?.find((item) => item.seq === event.seq) ?? event;
-  const diagnostic = eventDiagnostic(source) ?? eventDiagnostic(event)!;
+  const resolved =
+    state.events?.find((item) => item.seq === event.seq) ?? event;
+  const diagnostic = eventDiagnostic(resolved) ?? eventDiagnostic(event)!;
   return (
     <ActivityCard
       seq={event.seq}
@@ -34,8 +39,8 @@ export function DiagnosticCard({
       title={t("Error")}
       details={() => (
         <EventDetails
-          event={source}
-          loadDetails={source === event ? loadDetails : undefined}
+          source={eventSource(resolved)}
+          loadDetails={resolved === event ? loadDetails : undefined}
         />
       )}
     >

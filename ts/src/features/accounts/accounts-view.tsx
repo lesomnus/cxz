@@ -3,7 +3,7 @@ import { Button, PanelItem } from "@lesomnus/cxz-ui";
 import type { Session } from "#gen/cxz/session_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { useRemote } from "#src/shared/api/use-remote.ts";
-import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
+import { ResourcePanel } from "#src/shared/components/resource-panel.tsx";
 import { AgentIdentity } from "#src/shared/components/agent-identity.tsx";
 import { listAccounts } from "./account-data";
 import { AccountAddForm } from "./account-add-form";
@@ -39,13 +39,12 @@ export function AccountsView({
   };
   return (
     <>
-      <aside
+      <ResourcePanel
         ref={panel}
-        className={`resource-panel ${styles.panel}`}
+        className={styles.panel}
         aria-label="Account list"
-      >
-        <header className={styles.header}>
-          <strong>Accounts</strong>
+        title="Accounts"
+        actions={
           <Button
             ref={add}
             type="button"
@@ -66,32 +65,31 @@ export function AccountsView({
               <path d="M12 5v14M5 12h14" />
             </svg>
           </Button>
-        </header>
-        <PanelScroll>
-          {accounts.data?.map((account) => (
-            <PanelItem
-              key={account.alias}
-              className={styles.item}
-              pressTarget=".session-heading"
-              aria-pressed={account.alias === alias}
-              onClick={() => choose(account.alias)}
-            >
-              <AgentIdentity
-                agent={account.agent}
-                name={account.name || account.alias}
-                alias={account.alias}
-              />
-            </PanelItem>
-          ))}
-          {accounts.loading && !accounts.data && (
-            <p className={resourceStyles.muted}>Loading accounts…</p>
-          )}
-          {accounts.error && <p role="alert">{accounts.error}</p>}
-          {!accounts.loading && !accounts.data?.length && (
-            <p className={resourceStyles.muted}>No accounts yet.</p>
-          )}
-        </PanelScroll>
-      </aside>
+        }
+      >
+        {accounts.data?.map((account) => (
+          <PanelItem
+            key={account.alias}
+            className={styles.item}
+            pressTarget=".session-heading"
+            aria-pressed={account.alias === alias}
+            onClick={() => choose(account.alias)}
+          >
+            <AgentIdentity
+              agent={account.agent}
+              name={account.name || account.alias}
+              alias={account.alias}
+            />
+          </PanelItem>
+        ))}
+        {accounts.loading && !accounts.data && (
+          <p className={resourceStyles.muted}>Loading accounts…</p>
+        )}
+        {accounts.error && <p role="alert">{accounts.error}</p>}
+        {!accounts.loading && !accounts.data?.length && (
+          <p className={resourceStyles.muted}>No accounts yet.</p>
+        )}
+      </ResourcePanel>
       <main className={resourceStyles.page}>
         <div className={resourceStyles.body}>
           {account ? (

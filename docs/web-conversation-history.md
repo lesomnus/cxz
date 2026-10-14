@@ -48,6 +48,49 @@ to native `History` paging only when the selected runtime reports
 at the last visible row. Reconnects replay native updates, including results whose
 historical row is anchored earlier than the cursor.
 
+Conversation records and native subscriptions belong to the authenticated
+`Connection`, rather than a mounted conversation view. Returning to a recently
+viewed session uses the existing records immediately; switching sessions or
+resource pages does not cancel its `Events` stream. Responses, questions, queued
+messages and completion notifications continue arriving while another view is
+open. Only visited conversations open streams; the shared resource inventory
+continues tracking unvisited sessions.
+
+Turn summaries are auxiliary AI results, separate from the transcript projection.
+The manager observes committed completion events and schedules automatic summaries
+when enabled. Its independent observation loop also processes sessions without
+attached clients. Results are persisted in the manager's auxiliary store.
+`AuxEvents` sends the current persisted state on subscription and pushes a new
+snapshot when that state changes; reading it does not request a new summary.
+Explicit one-shot generation uses `AuxRun`.
+
+The connection's conversation entry also owns its auxiliary snapshot and stream.
+Transcript and auxiliary controls share this subscription. Navigating away keeps
+receiving summaries, and returning or reconnecting displays the last snapshot
+until a new authoritative snapshot arrives. Auxiliary snapshots count toward the
+idle cache byte budget. Viewed auxiliary controls and running auxiliary tasks
+protect their entries from idle eviction. Purge, sign-out, eviction, and a changed
+session identity/reset journal apply to both conversation and auxiliary data.
+
+The cache retains row measurements and a row-relative reading anchor, not hidden
+conversation DOM. Reading an older window leaves that window stable while a
+separate live tail receives updates. Latest can use the cached tail; reconnects
+resume from the native cursor and replay missing updates instead of loading the
+initial transcript again. An empty loaded conversation is still a valid cache.
+
+Idle entries are evicted in least-recently-used order, with both count and byte
+budgets. Viewed and active conversations remain available; each conversation's
+record window also has a byte limit. Limits are defined in
+`features/session/model/conversation-cache.ts`. Evicted records can be fetched
+again from the retained server journal. Purge deletes the entry, and sign-out
+stops subscriptions and clears connection-owned records. A changed session
+identity or reset journal discards the previous cached data.
+
+Conversation history is not persisted to localStorage or sessionStorage. The
+cache lasts for the current authenticated browser connection; refreshing the
+page fetches history from the server again. Composer drafts and attention
+cursors retain their separate tab-local persistence.
+
 Browser cache size and DOM size are separate. The cache holds multiple pages;
 virtual messages mount the visible range and an overscan buffer. Reading anchors
 survive prepending history and resize. Protocol-only live records update the

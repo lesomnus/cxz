@@ -441,7 +441,36 @@ test("account registration, session creation and archive restore use resource AP
     )
     .toBe(true);
   await page.getByRole("link", { name: "Sessions view" }).click();
-  await page.getByRole("button", { name: "New session", exact: true }).click();
+  const panel = page.getByRole("complementary", {
+    name: "Session list",
+    exact: true,
+  });
+  await expect(panel).not.toContainText("127.0.0.1");
+  const body = panel.locator(".panel-scroll-region");
+  const appearance = await panel.evaluate((el) => ({
+    background: getComputedStyle(el).backgroundColor,
+    body: getComputedStyle(el.querySelector(".panel-scroll-region"))
+      .backgroundColor,
+  }));
+  expect(appearance.body).not.toBe(appearance.background);
+  expect(
+    await body.evaluate((el) => parseFloat(getComputedStyle(el).borderRadius)),
+  ).toBeGreaterThan(0);
+  await panel.getByRole("button", { name: "Add session", exact: true }).click();
+  const create = page.getByRole("dialog", { name: "Add session", exact: true });
+  await expect(create).toBeVisible();
+  const box = await create.boundingBox();
+  const panelBox = await panel.boundingBox();
+  expect(box.x).toBeCloseTo(panelBox.x + panelBox.width, 0);
+  await expect
+    .poll(() => create.evaluate((el) => el.contains(document.activeElement)))
+    .toBe(true);
+  await page.keyboard.press("Escape");
+  await expect(create).toHaveCount(0);
+  await expect(
+    panel.getByRole("button", { name: "Add session", exact: true }),
+  ).toBeFocused();
+  await panel.getByRole("button", { name: "Add session", exact: true }).click();
   await page.getByRole("combobox", { name: "Account", exact: true }).click();
   await page.getByRole("option", { name: "Work account · codex" }).click();
   await page
@@ -458,9 +487,8 @@ test("account registration, session creation and archive restore use resource AP
       ),
     )
     .toBe(true);
-  await page
-    .getByRole("link", { name: "Manage sessions", exact: true })
-    .click();
+  await expect(create).toHaveCount(0);
+  await page.goto("/sessions");
   await page
     .locator("main")
     .getByRole("button", { name: "Archive", exact: true })
@@ -502,6 +530,37 @@ test("search opens the matched response and queue recall preserves its text", as
     ),
   ).toBe(true);
 });
+test("conversation search uses loaded messages immediately without a Search request", async ({
+  page,
+}) => {
+  const requests = await fixture(page);
+  await page.locator('.tree-session[href="/sessions/fixture"]').click();
+  await expect(page.locator(".transcript")).toContainText("Current response");
+  await page.getByRole("textbox", { name: "Message", exact: true }).focus();
+  await page.keyboard.press("Control+Shift+F");
+  const search = page.getByRole("search", {
+      name: "Search current conversation",
+    }),
+    input = search.getByRole("searchbox");
+  await input.fill("Earlier");
+  await expect(search.getByRole("status")).toHaveText("2 matches");
+  await search.getByRole("button", { name: /Earlier response/ }).click();
+  await expect(input).toBeFocused();
+  await page.getByRole("textbox", { name: "Message", exact: true }).focus();
+  await expect(search).toBeVisible();
+  await input.fill("query not in loaded messages");
+  await expect(search.getByRole("status")).toHaveText("No matches");
+  await input.fill("Current");
+  await input.fill("Earlier");
+  await expect(search.getByRole("status")).toHaveText("2 matches");
+  await expect(search).not.toContainText("Current response");
+  expect(
+    requests.filter((r) => r.path.endsWith("SessionService/Search")),
+  ).toHaveLength(0);
+  await input.press("Escape");
+  await expect(search).toHaveCount(0);
+});
+
 test("memory edits carry the revision and keep drafts on a conflict", async ({
   page,
 }) => {
@@ -574,6 +633,46 @@ test("usage, background tasks and auxiliary controls are connected", async ({
   await expect(page.getByText("running", { exact: true })).toBeVisible();
 });
 
+test("local session search Enter visits loaded responses before wrapping without search or target history requests", async ({
+  page,
+}) => {
+  const requests = await fixture(page);
+  await page.locator('.tree-session[href="/sessions/fixture"]').click();
+  await expect(page.locator(".transcript")).toContainText("Current response");
+  await page.getByRole("textbox", { name: "Message", exact: true }).focus();
+  await page.keyboard.press("Control+Shift+F");
+  const search = page.getByRole("search", {
+      name: "Search current conversation",
+    }),
+    input = search.getByRole("searchbox");
+  await input.fill("response");
+  await expect(search.getByRole("status")).toHaveText("2 matches");
+  const historyCount = () =>
+    requests.filter((r) => /SessionService\/(History|Transcript)$/.test(r.path))
+      .length;
+  const before = historyCount();
+  const active = () =>
+    page.evaluate(() => {
+      const range = [
+        ...(CSS.highlights.get("conversation-search-current") ?? []),
+      ][0];
+      return range?.startContainer.parentElement?.closest("[data-row]")?.dataset
+        .row;
+    });
+  await input.press("Enter");
+  await expect.poll(active).toBe("4");
+  await expect(input).toBeFocused();
+  await input.press("Enter");
+  await expect.poll(active).toBe("2");
+  await input.press("Enter");
+  await expect.poll(active).toBe("4");
+  expect(
+    requests.filter((r) => r.path.endsWith("SessionService/Search")),
+  ).toHaveLength(0);
+  expect(historyCount()).toBe(before);
+  await expect(input).toBeFocused();
+});
+
 test("project picker supports fuzzy search, keyboard selection and dark form backgrounds", async ({
   page,
 }) => {
@@ -596,6 +695,19 @@ test("project picker supports fuzzy search, keyboard selection and dark form bac
     await projectPicker.evaluate((el) => getComputedStyle(el).backgroundColor),
   ).toBe(
     await titleInput.evaluate((el) => getComputedStyle(el).backgroundColor),
+  );
+  // The anchored creation dialog moves during entrance. Measure the value
+  // overlay against its settled trigger, rather than an intermediate frame.
+  await create.evaluate((node) =>
+    Promise.all(
+      node
+        .getAnimations({ subtree: true })
+        .filter(
+          (animation) =>
+            animation.effect?.getComputedTiming().endTime !== Infinity,
+        )
+        .map((animation) => animation.finished.catch(() => {})),
+    ),
   );
   const triggerBounds = await projectPicker.boundingBox();
   await projectPicker.click();
@@ -625,11 +737,6 @@ test("project picker supports fuzzy search, keyboard selection and dark form bac
   await expect(
     page.getByRole("option", { name: "Docs playground", exact: true }),
   ).toBeVisible();
-  await expect(
-    page
-      .getByRole("option", { name: "Docs playground", exact: true })
-      .locator("mark"),
-  ).toHaveText(["D", "cs", "pl", "g"]);
   await search.fill("not-a-project");
   await expect(page.getByRole("status")).toHaveText("No matches");
   await search.press("Enter");

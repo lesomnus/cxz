@@ -1,5 +1,9 @@
 import { memo } from "react";
-import type { SessionEvent } from "#gen/cxz/session_pb";
+import {
+  eventSource,
+  type SnapshotSource,
+  type EventSource,
+} from "#src/features/session/model/event-source.ts";
 import type { LoadEventDetails } from "#src/features/session/model/session-history.ts";
 import { Markdown } from "#src/shared/content/markdown.tsx";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
@@ -24,27 +28,29 @@ import { DiagnosticCard } from "./diagnostic-card";
 
 export const EventView = memo(
   function EventView({
-    e,
+    source,
     agent,
     completion,
     summary,
-    activity,
+    activitySource,
     loadDetails,
   }: {
-    e: SessionEvent;
+    source: EventSource;
     agent: string;
     completion?: ResponseCompletion;
     summary?: TurnSummary;
-    activity?: ToolActivity;
+    activitySource?: SnapshotSource<ToolActivity>;
     loadDetails?: LoadEventDetails;
   }) {
     useLocale();
+    const e = source();
+    const activity = activitySource?.();
     if (isQuestionEvent(e) && questions(agent, e).length)
-      return <QuestionHistory event={e} agent={agent} />;
+      return <QuestionHistory source={eventSource(e)} agent={agent} />;
     if (activity)
       return (
         <ToolActivityView
-          activity={activity}
+          source={activitySource!}
           agent={agent}
           seq={e.seq}
           timeMs={e.timeMs}
@@ -69,11 +75,13 @@ export const EventView = memo(
     if (e.kind === "input")
       return (
         <article className="input" data-seq={e.seq.toString()}>
-          <InputMessage event={e} />
+          <InputMessage source={eventSource(e)} />
         </article>
       );
     if (isDiagnosticEvent(e))
-      return <DiagnosticCard event={e} loadDetails={loadDetails} />;
+      return (
+        <DiagnosticCard source={eventSource(e)} loadDetails={loadDetails} />
+      );
     return (
       <ActivityCard
         seq={e.seq}
@@ -81,7 +89,7 @@ export const EventView = memo(
         title={e.kind === "approval" ? approvalTitle(e) : e.kind}
         details={() => (
           <EventDetails
-            event={e}
+            source={eventSource(e)}
             loadDetails={e.payload.length ? undefined : loadDetails}
           />
         )}
@@ -93,9 +101,9 @@ export const EventView = memo(
     );
   },
   (previous, next) =>
-    previous.e === next.e &&
+    previous.source === next.source &&
     previous.agent === next.agent &&
-    previous.activity === next.activity &&
+    previous.activitySource === next.activitySource &&
     previous.loadDetails === next.loadDetails &&
     previous.summary?.text === next.summary?.text &&
     previous.summary?.loading === next.summary?.loading &&

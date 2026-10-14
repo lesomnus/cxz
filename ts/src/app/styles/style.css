@@ -68,7 +68,6 @@
   --file-pane-width: 180px;
   --file-pane-min-width: 120px;
   --file-other-min-width: 240px;
-  --panel-inset: 12px;
   --scroll-handle-color: var(--shade-122);
   --scroll-handle-hover-color: color-mix(
     in srgb,
@@ -80,8 +79,6 @@
   --scroll-handle-expansion: 2;
   --native-scrollbar-size: 12px;
   --scroll-near-distance: 32px;
-  --panel-fade-depth: 24px;
-  --panel-fade-extension: 72px;
   --agent-logo-size: 14px;
 }
 * {
@@ -437,110 +434,6 @@ header strong {
 .settings-file-actions button {
   font-size: 12px;
 }
-.resource-panel {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  min-width: 0;
-  min-height: 0;
-  background: var(--shade-24);
-  padding: var(--panel-inset);
-}
-.resource-panel > header {
-  flex: 0 0 auto;
-  flex-wrap: wrap;
-  gap: var(--space);
-}
-.panel-scroll-region {
-  position: relative;
-  isolation: isolate;
-  flex: 1;
-  min-height: 0;
-}
-.panel-scroll-content {
-  height: 100%;
-  overflow: auto;
-  scrollbar-width: none;
-}
-.panel-scroll-content::-webkit-scrollbar {
-  display: none;
-}
-.panel-scroll-inner {
-  display: flow-root;
-  padding-right: 14px;
-}
-.panel-scroll-rail {
-  position: absolute;
-  top: var(--space);
-  bottom: var(--space);
-  right: calc(var(--space) - var(--panel-inset));
-  width: 24px;
-  z-index: 2;
-  pointer-events: none;
-}
-.panel-scroll-fade {
-  position: absolute;
-  left: 0;
-  right: 0;
-  z-index: 1;
-  pointer-events: none;
-  max-height: 40%;
-  transition:
-    height 180ms ease-out,
-    opacity 180ms ease-out;
-}
-.panel-scroll-fade-top {
-  top: 0;
-  height: min(
-    var(--panel-top-hidden, 0px),
-    calc(
-      var(--panel-fade-depth) + var(--panel-fade-extension) *
-        var(--panel-top-motion, 0)
-    )
-  );
-  opacity: var(--panel-top-opacity, 0);
-  background: linear-gradient(
-    to bottom,
-    var(--panel-background, var(--shade-24)),
-    transparent
-  );
-}
-.panel-scroll-fade-bottom {
-  bottom: 0;
-  height: min(
-    var(--panel-bottom-hidden, 0px),
-    calc(
-      var(--panel-fade-depth) + var(--panel-fade-extension) *
-        var(--panel-bottom-motion, 0)
-    )
-  );
-  opacity: var(--panel-bottom-opacity, 0);
-  background: linear-gradient(
-    to top,
-    var(--panel-background, var(--shade-24)),
-    transparent
-  );
-}
-.panel-scroll-thumb {
-  position: absolute;
-  width: 24px;
-  cursor: grab;
-  touch-action: none;
-  user-select: none;
-  pointer-events: auto;
-}
-.resource-panel:hover .scroll-handle,
-.panel-scroll-thumb:focus-visible .scroll-handle {
-  opacity: 0.7;
-}
-.panel-scroll-region.scroll-dragging .panel-scroll-thumb {
-  cursor: grabbing;
-}
-.panel-scroll-thumb:focus-visible {
-  outline: 1px solid var(--shade-204);
-  outline-offset: 2px;
-  border-radius: 4px;
-}
 .resource-panel h2 {
   font-size: 0.75rem;
   font-weight: 500;
@@ -550,11 +443,6 @@ header strong {
 .resource-panel header button {
   font-size: 0.75rem;
   padding: 6px;
-}
-.resource-panel > .muted {
-  margin: 8px 0 12px;
-  font-size: 0.75rem;
-  overflow-wrap: anywhere;
 }
 .resource-panel small {
   margin: 2px 0 0;
@@ -2509,7 +2397,6 @@ summary:hover {
   .settings-open > .resource-panel {
     grid-column: 2;
     grid-row: 1;
-    padding: 8px 12px;
   }
   .settings-open .panel-scroll-region {
     flex: 0 0 auto;
@@ -2517,9 +2404,6 @@ summary:hover {
   .settings-open .panel-scroll-content {
     height: auto;
     overflow: visible;
-  }
-  .settings-open > .resource-panel > .muted {
-    display: none;
   }
   .settings-open > .settings-page {
     grid-column: 2;
@@ -2844,7 +2728,6 @@ summary:hover {
   .scroll-thumb,
   .scroll-handle,
   .scroll-tick,
-  .panel-scroll-fade,
   .send-shortcut,
   .tree-chevron {
     transition: none !important;

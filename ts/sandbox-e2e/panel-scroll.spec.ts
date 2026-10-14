@@ -8,6 +8,9 @@ test.use({
 test("panel fades track hidden edges and scroll intensity without covering the heading or handle", async ({
   page,
 }) => {
+  // Leave enough scroll travel for the fast sample after the compact header;
+  // reaching the end would measure a clamped movement instead of its speed.
+  await page.setViewportSize({ width: 1200, height: 340 });
   await page.goto("/sandbox.html");
   const panel = page.getByRole("complementary", {
     name: "Session list",
@@ -88,6 +91,12 @@ test("panel fades track hidden edges and scroll intensity without covering the h
     const thumb = region.querySelector<HTMLElement>(".panel-scroll-thumb")!;
     const fade = region.querySelector<HTMLElement>(".panel-scroll-fade-top")!;
     const header = el.querySelector("header")!.getBoundingClientRect();
+    // Capped handles no longer necessarily overlap the resting edge fade.
+    // Create an overlap explicitly to test their stacking independently.
+    const previousHeight = fade.style.height;
+    const previousTransition = fade.style.transition;
+    fade.style.transition = "none";
+    fade.style.height = "40%";
     fade.style.pointerEvents = "auto";
     const box = thumb.getBoundingClientRect();
     const fadeBox = fade.getBoundingClientRect();
@@ -96,12 +105,14 @@ test("panel fades track hidden edges and scroll intensity without covering the h
       document.elementFromPoint(box.x + box.width / 2, box.y + 2),
     );
     fade.style.pointerEvents = "none";
+    fade.style.height = previousHeight;
+    fade.style.transition = previousTransition;
     return {
       overlapsHandle,
       handleAbove,
       belowHeading: fade.getBoundingClientRect().top >= header.bottom,
       background: getComputedStyle(fade).backgroundImage,
-      panel: getComputedStyle(el).backgroundColor,
+      panel: getComputedStyle(region).backgroundColor,
     };
   });
   expect(layers.overlapsHandle).toBe(true);
@@ -135,26 +146,48 @@ test("compact panels keep their heading fixed and share the conversation handle'
   expect((await panel.boundingBox())!.width).toBe(180);
   const thumb = panel.getByRole("scrollbar", { name: "Panel scroll" });
   await expect(thumb).toBeVisible();
-  const handle = thumb.locator(".scroll-handle");
+  const handle = thumb.locator("[data-scroll-area=handle]");
+  const rail = panel.locator(".panel-scroll-rail");
+  const railOpacity = () =>
+    rail.evaluate((el) => getComputedStyle(el, "::before").opacity);
   const heading = panel.locator("header");
   const headingY = (await heading.boundingBox())!.y;
   await page.mouse.move(1000, 100);
   await expect(handle).toHaveCSS("opacity", "0");
   await heading.hover();
+  await expect(handle).toHaveCSS("opacity", "0");
+  await expect.poll(railOpacity).toBe("0");
+  await list.hover();
   await expect(handle).toHaveCSS("opacity", "0.7");
+  await expect.poll(railOpacity).toBe("1");
   const initial = (await handle.boundingBox())!;
   const scrollBox = (await panel
     .locator(".panel-scroll-region")
     .boundingBox())!;
+  const railBox = (await rail.boundingBox())!;
+  expect(railBox.height).toBeLessThan(scrollBox.height);
+  expect(railBox.y + railBox.height / 2).toBeCloseTo(
+    scrollBox.y + scrollBox.height / 2,
+    0,
+  );
+  // A small overflow must not turn the handle into a wall along the panel.
+  expect(initial.height).toBeLessThan(scrollBox.height / 2);
+  const maxSize = await handle.evaluate((el) =>
+    parseFloat(
+      getComputedStyle(el).getPropertyValue("--ui-scroll-area-thumb-max-size"),
+    ),
+  );
+  expect(initial.height).toBeLessThanOrEqual(maxSize);
   await page.mouse.move(initial.x + initial.width / 2, scrollBox.y + 16);
   await expect
     .poll(async () => (await handle.boundingBox())!.width)
     .toBeGreaterThan(initial.width * 1.9);
-  expect(
+  const rightGap =
     (await panel.boundingBox())!.x +
-      (await panel.boundingBox())!.width -
-      ((await handle.boundingBox())!.x + (await handle.boundingBox())!.width),
-  ).toBeGreaterThan(4);
+    (await panel.boundingBox())!.width -
+    ((await handle.boundingBox())!.x + (await handle.boundingBox())!.width);
+  expect(rightGap).toBeGreaterThan(0);
+  expect(rightGap).toBeLessThan(8);
   const conversationHandle = page.locator(".transcript-area .scroll-handle");
   await expect(conversationHandle).toBeAttached();
   expect(
@@ -189,6 +222,42 @@ test("compact panels keep their heading fixed and share the conversation handle'
     )
     .toBeLessThan(1);
   expect((await heading.boundingBox())!.y).toBe(headingY);
+  // New content lengthens the centered range without changing its midpoint.
+  await list.evaluate((el) => {
+    const extra = document.createElement("div");
+    extra.dataset.testPanelExtra = "true";
+    const item = el.querySelector(".tree-session")!;
+    for (let i = 0; i < 12; i++) extra.append(item.cloneNode(true));
+    el.querySelector(".panel-scroll-inner")!.append(extra);
+  });
+  await expect
+    .poll(async () => (await rail.boundingBox())!.height)
+    .toBeGreaterThan(railBox.height);
+  const grown = (await rail.boundingBox())!;
+  expect(grown.y + grown.height / 2).toBeCloseTo(
+    scrollBox.y + scrollBox.height / 2,
+    0,
+  );
+  await thumb.press("End");
+  await expect
+    .poll(async () => {
+      const handle = (await thumb.boundingBox())!,
+        range = (await rail.boundingBox())!;
+      return Math.abs(handle.y + handle.height - range.y - range.height);
+    })
+    .toBeLessThan(1);
+  await thumb.press("Home");
+  await expect
+    .poll(async () =>
+      Math.abs((await thumb.boundingBox())!.y - (await rail.boundingBox())!.y),
+    )
+    .toBeLessThan(1);
+  await list.evaluate((el) =>
+    el.querySelector("[data-test-panel-extra]")!.remove(),
+  );
+  await expect
+    .poll(async () => (await rail.boundingBox())!.height)
+    .toBeCloseTo(railBox.height, 0);
   await page.screenshot({
     path: "test-results/panel-scroll.png",
     fullPage: true,

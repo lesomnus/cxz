@@ -1,3 +1,8 @@
+import {
+  eventListSource,
+  snapshotSource,
+  type EventListSource,
+} from "#src/features/session/model/event-source.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -13,7 +18,7 @@ import {
 } from "./scroll-physics";
 
 import type { SessionEvent } from "#gen/cxz/session_pb";
-import { VirtualMessages } from "./virtual-messages";
+import { VirtualMessages, type TranscriptViewport } from "./virtual-messages";
 import { PinnedPrompt } from "./pinned-prompt";
 import type { MessageMap } from "./virtual-layout";
 import { HISTORY_PREFETCH_SCREENS } from "#src/features/session/model/session-history.ts";
@@ -22,6 +27,11 @@ import {
   selectedWorkGroup,
 } from "#src/features/session/model/work-groups.ts";
 import { WorkDialog, WorkSummary } from "./work-dialog";
+import { ScrollMarkers, type ScrollTick } from "./scroll-markers";
+import {
+  scrollMarkerWindow,
+  type MarkerCoordinate,
+} from "./scroll-marker-window";
 
 type Geometry = {
   top: number;
@@ -31,7 +41,7 @@ type Geometry = {
   height: number;
   thumb: number;
   range: ScrollRange;
-  markers: { id: string; kind: "input" | "assistant"; top: number }[];
+  markers: ScrollTick[];
 };
 export type WorkHistory = { hasOlder: boolean; loadOlder: () => Promise<void> };
 const empty: Geometry = {
@@ -62,7 +72,7 @@ type RangeMotion = {
 
 export function Transcript({
   pane,
-  events,
+  source,
   follow,
   render,
   notice,
@@ -74,14 +84,17 @@ export function Transcript({
   onReadingMove,
   precedingPrompt,
   jumpTarget,
+  jumpInset = 18,
   onPromptJump,
   onJumped,
   older,
   newer,
   workHistory,
+  viewportCache,
+  searchMatches,
 }: {
   pane: React.RefObject<HTMLDivElement | null>;
-  events: SessionEvent[];
+  source: EventListSource;
   follow: React.RefObject<boolean>;
   render: (event: SessionEvent) => React.ReactNode;
   notice: React.ReactNode;
@@ -93,12 +106,16 @@ export function Transcript({
   onReadingMove: (delta: number) => void;
   precedingPrompt: SessionEvent | undefined;
   jumpTarget: string | undefined;
+  jumpInset?: number;
   onPromptJump: (seq: string) => void;
   onJumped: () => void;
   older: () => void;
   newer: () => void;
   workHistory?: WorkHistory;
+  viewportCache?: TranscriptViewport;
+  searchMatches?: readonly string[];
 }) {
+  const events = source();
   useLocale();
   const work = React.useMemo(() => workGroups(events), [events]);
   const [selectedWork, selectWork] = useState<SessionEvent>();
@@ -115,7 +132,9 @@ export function Transcript({
       const group = work.summaries.get(event.seq);
       return group ? (
         <WorkSummary
-          work={group}
+          id={group.id}
+          count={group.events.length}
+          durationMs={group.durationMs}
           expanded={activeWork === group && !workClosing}
           partial={!group.hasBoundary && !!workHistory?.hasOlder}
           open={(trigger) => {
@@ -162,13 +181,27 @@ export function Transcript({
   const { prompt, peek } = pinned;
   const promptChanged = React.useCallback(
     (prompt: SessionEvent | undefined, peek: number) => {
-      setPinned({ prompt, peek });
+      setPinned((old) =>
+        old.prompt === prompt && old.peek === peek ? old : { prompt, peek },
+      );
     },
     [],
   );
   const track = useRef<HTMLDivElement>(null);
   const thumb = useRef<HTMLDivElement>(null);
+  const markerNodes = useRef(new Map<string, HTMLSpanElement>());
   const offsets = useRef<MessageMap["markers"]>([]);
+  const markerCoordinates = useRef<MarkerCoordinate[]>([]);
+  const markersById = useRef(new Map<string, MarkerCoordinate>());
+  const indexedMarkers = useRef<
+    | { offsets: MessageMap["markers"]; searches: ReadonlySet<string> }
+    | undefined
+  >(undefined);
+  const searchIds = useRef<ReadonlySet<string>>(new Set());
+  searchIds.current = React.useMemo(
+    () => new Set(searchMatches),
+    [searchMatches],
+  );
   const mapping = useRef<MessageMap | null>(null);
   const geometry = useRef(empty);
   const drag = useRef<Drag | null>(null);
@@ -207,7 +240,7 @@ export function Transcript({
     newer,
   };
 
-  function jumpToPrompt(seq: string) {
+  function jumpToPrompt(seq: string, inset = 18) {
     const el = pane.current;
     const map = mapping.current;
     const row = map?.rows.find((row) => row.id === seq);
@@ -218,7 +251,7 @@ export function Transcript({
     }
     el.dispatchEvent(new Event("scroll-jump"));
     callbacks.current.onNavigate();
-    el.scrollTop = Math.max(0, map.origin + row.top + map.rowPadding - 18);
+    el.scrollTop = Math.max(0, map.origin + row.top + map.rowPadding - inset);
     scrolled();
     el.dispatchEvent(new CustomEvent("reading-anchor", { detail: seq }));
     el.focus({ preventScroll: true });
@@ -228,10 +261,10 @@ export function Transcript({
       jumpTarget &&
       mapping.current?.rows.some((row) => row.id === jumpTarget)
     ) {
-      jumpToPrompt(jumpTarget);
+      jumpToPrompt(jumpTarget, jumpInset);
       onJumped();
     }
-  }, [jumpTarget, events]);
+  }, [jumpTarget, jumpInset, events]);
 
   function fadeMotion(time: number) {
     const sample = motion.current;
@@ -270,12 +303,12 @@ export function Transcript({
     const motion = {
       time: performance.now(),
       progress: 0,
-      thumb: parseFloat(getComputedStyle(thumb.current).top),
+      thumb: parseFloat(thumb.current.style.top),
       markers: new Map(
-        [...track.current!.querySelectorAll<HTMLElement>(".scroll-tick")]
+        [...markerNodes.current.values()]
           .map((node): [string, number] => [
             node.dataset.event!,
-            parseFloat(getComputedStyle(node).top),
+            parseFloat(node.style.top),
           ])
           .filter(([, top]) => top >= -railHeight && top <= railHeight * 2),
       ),
@@ -348,17 +381,18 @@ export function Transcript({
     // Stable event IDs preserve the same DOM nodes through range rebasing.
     // Keep off-rail ticks mounted so incoming/outgoing markers animate too.
     const markerStart = markerRangeStart(mappedTop, range);
-    const markers = offsets.current
-      .map(({ id, kind, y }) => ({
-        id,
-        kind,
-        top: ((y - markerStart) / (range.span + el.clientHeight || 1)) * height,
-      }))
-      .filter(
-        ({ id, kind, top }) =>
-          (top >= -height && top <= height * 2) ||
-          rangeMotion.current?.markers.has(id),
-      );
+    const span = range.span + el.clientHeight || 1;
+    const markers = scrollMarkerWindow(
+      markerCoordinates.current,
+      markersById.current,
+      markerStart - span,
+      markerStart + 2 * span,
+      rangeMotion.current?.markers,
+    ).map(({ id, kind, y }) => ({
+      id,
+      kind,
+      top: ((y - markerStart) / span) * height,
+    }));
     // One timeline for the handle and every marker. Height corrections retarget
     // that timeline instead of restarting an individual CSS transition.
     if (
@@ -381,6 +415,56 @@ export function Transcript({
     };
     setView(geometry.current);
   }
+  useLayoutEffect(() => {
+    // A query changes ticks, not the scroll position or loaded history. Reuse
+    // the same range/tension geometry and animation timeline as existing ticks.
+    indexMarkers();
+    measure();
+  }, [searchMatches]);
+  function indexMarkers() {
+    if (
+      indexedMarkers.current?.offsets === offsets.current &&
+      indexedMarkers.current.searches === searchIds.current
+    )
+      return;
+    indexedMarkers.current = {
+      offsets: offsets.current,
+      searches: searchIds.current,
+    };
+    markerCoordinates.current = offsets.current.flatMap(
+      (marker): MarkerCoordinate[] =>
+        searchIds.current.has(marker.id)
+          ? [marker, { ...marker, id: `search:${marker.id}`, kind: "search" }]
+          : [marker],
+    );
+    markersById.current = new Map(
+      markerCoordinates.current.map((marker) => [marker.id, marker]),
+    );
+  }
+  const offsetsChanged = React.useCallback(
+    (nextMap: MessageMap) => {
+      mapping.current = nextMap;
+      offsets.current = nextMap.markers;
+      indexMarkers();
+      readOffsets();
+    },
+    [pane, follow],
+  );
+  useLayoutEffect(() => {
+    for (const { id, kind, top } of view.markers) {
+      const node = markerNodes.current.get(id);
+      if (!node) continue;
+      const target = top + stretch;
+      const before =
+        rangeFrame?.markers.get(id) ??
+        (kind === "search"
+          ? rangeFrame?.markers.get(id.slice("search:".length))
+          : undefined);
+      const position = animated(target, before);
+      node.style.top = `${position}px`;
+      node.dataset.targetTop = String(target);
+    }
+  }, [view, stretch, rangeFrame]);
   function readOffsets() {
     const el = pane.current;
     if (!el) return;
@@ -729,18 +813,15 @@ export function Transcript({
         <div className="transcript-content" ref={content}>
           {notice}
           <VirtualMessages
+            cache={viewportCache}
             pane={pane}
-            events={work.events}
+            source={eventListSource(work.events)}
             follow={follow}
             foldActivities={false}
             render={renderRow}
             precedingPrompt={precedingPrompt}
             onPromptChange={promptChanged}
-            changed={(nextMap) => {
-              mapping.current = nextMap;
-              offsets.current = nextMap.markers;
-              readOffsets();
-            }}
+            changed={offsetsChanged}
           />
         </div>
       </div>
@@ -748,7 +829,7 @@ export function Transcript({
       {activeWork && (
         <WorkDialog
           key={`${selectedWork!.runId}/${selectedWork!.requestId || selectedWork!.seq}`}
-          work={activeWork}
+          source={snapshotSource(activeWork)}
           render={render}
           close={closeWork}
           closing={workClosing}
@@ -780,22 +861,7 @@ export function Transcript({
         />
       )}
       <div className="scroll-track" ref={track} aria-hidden={view.max === 0}>
-        <div className="scroll-markers">
-          {view.markers.map(({ id, kind, top }) => (
-            <span
-              key={id}
-              className={`scroll-tick ${kind === "input" ? "scroll-marker" : "scroll-response-marker"}`}
-              data-event={id}
-              data-prompt={kind === "input" ? id : undefined}
-              data-response={kind === "assistant" ? id : undefined}
-              data-target-top={top + stretch}
-              style={{
-                top: animated(top + stretch, rangeFrame?.markers.get(id)),
-              }}
-              aria-hidden="true"
-            />
-          ))}
-        </div>
+        <ScrollMarkers markers={view.markers} nodes={markerNodes} />
         <div
           ref={thumb}
           className="scroll-thumb"

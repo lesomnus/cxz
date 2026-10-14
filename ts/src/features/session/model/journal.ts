@@ -50,12 +50,20 @@ export function mergeEvents(
     ? sorted.slice(0, MAX_EVENTS)
     : sorted.slice(-MAX_EVENTS);
 }
+const decodedPayloads = new WeakMap<Uint8Array, Record<string, any>>();
 export function payload(e: SessionEvent): Record<string, any> {
+  const saved = decodedPayloads.get(e.payload);
+  if (saved) return saved;
+  let decoded: Record<string, any>;
   try {
-    return JSON.parse(new TextDecoder().decode(e.payload)) ?? {};
+    decoded = JSON.parse(new TextDecoder().decode(e.payload)) ?? {};
   } catch {
-    return {};
+    decoded = {};
   }
+  // Event payload buffers are immutable snapshots. Read-only callers share
+  // their decode; replacing a buffer naturally invalidates the weak cache.
+  decodedPayloads.set(e.payload, decoded);
+  return decoded;
 }
 export function detail(e: SessionEvent) {
   try {

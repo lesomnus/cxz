@@ -1,3 +1,4 @@
+import type { EventListSource } from "#src/features/session/model/event-source.ts";
 import React, {
   useEffect,
   useLayoutEffect,
@@ -20,34 +21,47 @@ import {
   type RowKnot,
 } from "./virtual-layout";
 
+// Data-only viewport state: retain measurements and a row-relative reading
+// anchor without keeping any hidden transcript DOM mounted.
+export type TranscriptViewport = {
+  sizes: Map<string, number>;
+  knots: Map<string, RowKnot>;
+  width: number;
+  anchor: { id: string; offset: number } | null;
+};
+
 const foldable = (event: SessionEvent) =>
   event.kind !== "input" &&
   event.kind !== "assistant" &&
   !isDiagnosticEvent(event);
 
-export function VirtualMessages({
+export const VirtualMessages = React.memo(function VirtualMessages({
   pane,
-  events,
+  source,
   follow,
   render,
   changed,
   precedingPrompt,
   onPromptChange,
   foldActivities = true,
+  cache,
 }: {
   pane: React.RefObject<HTMLDivElement | null>;
-  events: SessionEvent[];
+  source: EventListSource;
   follow: React.RefObject<boolean>;
   render: (event: SessionEvent) => React.ReactNode;
   changed: (mapping: MessageMap) => void;
   precedingPrompt: SessionEvent | undefined;
   onPromptChange: (prompt: SessionEvent | undefined, peek: number) => void;
   foldActivities?: boolean;
+  cache?: TranscriptViewport;
 }) {
+  const events = source();
   const root = useRef<HTMLDivElement>(null);
-  const sizes = useRef(new Map<string, number>());
-  const knots = useRef(new Map<string, RowKnot>());
+  const sizes = useRef(cache?.sizes ?? new Map<string, number>());
+  const knots = useRef(cache?.knots ?? new Map<string, RowKnot>());
   const mapping = useRef<MessageMap | null>(null);
+  const markerEvents = useRef<SessionEvent[] | undefined>(undefined);
   const [revision, setRevision] = useState(0);
   const [rowPadding, setRowPadding] = useState(0);
   const [viewport, setViewport] = useState({ top: 0, offset: 0, height: 800 });
@@ -58,13 +72,18 @@ export function VirtualMessages({
   const previous = useRef<typeof layout | null>(null);
   const latest = useRef({ layout, follow, changed });
   latest.current = { layout, follow, changed };
-  const anchor = useRef<{ id: string; offset: number } | null>(null);
+  const anchor = useRef<{ id: string; offset: number } | null>(
+    cache?.anchor ?? null,
+  );
   const jumpAnchor = useRef<{ id: string; top: number } | null>(null);
   const observer = useRef<ResizeObserver | null>(null);
-  const width = useRef(0);
+  const width = useRef(cache?.width ?? 0);
   const lastPrompt = useRef<SessionEvent | undefined>(undefined);
 
   function remember() {
+    // Composer focus and early geometry callbacks can run before the first
+    // layout effect. Do not replace a saved anchor with the pane's initial top.
+    if (!previous.current && anchor.current && !follow.current) return;
     const el = pane.current;
     if (!el) return;
     const rows = latest.current.layout.rows;
@@ -80,11 +99,19 @@ export function VirtualMessages({
     anchor.current = row
       ? { id: row.id, offset: row.top + root.current!.offsetTop - el.scrollTop }
       : null;
-    setViewport({
+    if (cache) cache.anchor = anchor.current;
+    const next = {
       top: Math.max(0, el.scrollTop - root.current!.offsetTop),
       offset: el.scrollTop - root.current!.offsetTop,
       height: el.clientHeight,
-    });
+    };
+    setViewport((old) =>
+      old.top === next.top &&
+      old.offset === next.offset &&
+      old.height === next.height
+        ? old
+        : next,
+    );
   }
   useEffect(() => {
     const el = pane.current!;
@@ -106,6 +133,7 @@ export function VirtualMessages({
           dirty = true;
         }
         width.current = columnWidth;
+        if (cache) cache.width = columnWidth;
       }
       for (const entry of entries) {
         const node = entry.target as HTMLElement;
@@ -201,7 +229,14 @@ export function VirtualMessages({
       root.current!.offsetTop,
       knots.current,
       rowPadding,
+      // Row-height/reading-knot corrections do not change logical marker
+      // positions. Rebuild them only when events or the content origin change.
+      markerEvents.current === events &&
+        oldMap?.origin === root.current!.offsetTop
+        ? oldMap.markers
+        : undefined,
     );
+    markerEvents.current = events;
     mapping.current = nextMap;
     if (beforeMapped !== undefined) {
       // Rebase the rail by stable event coordinates, not a measured row's
@@ -316,4 +351,4 @@ export function VirtualMessages({
       {children}
     </div>
   );
-}
+});

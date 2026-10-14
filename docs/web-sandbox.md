@@ -60,6 +60,20 @@ VM or real command execution; see the [terminal contract](web-terminal.md).
 
 ## Scenarios and controls
 
+**Ctrl+Shift+F** inside the conversation opens a persistent search overlay near
+its top (**Cmd+Shift+F** also works). Search runs immediately over the current
+loaded conversation window, including virtualized messages outside the viewport.
+Messages not loaded into that window are excluded. It sends no Search request
+and does not fetch a message's history to open a result.
+Rendered conversation text highlights the query. Green ticks beside the scroll
+handle indicate matching messages within the represented scroll range and move
+with the existing conversation markers; clearing or closing search removes them.
+Enter visits individual matches
+from newest to oldest, including repeated matches in one message, and wraps
+after the last result. Arrow keys select a result, and clicking it jumps without
+closing search. Only Close or Escape dismisses the overlay. The separate global
+Search view continues to use the server's `SessionService.Search` API.
+
 The Scenario selector opens one of the sample sessions:
 
 - English answers with Markdown, tables, checklists and code.

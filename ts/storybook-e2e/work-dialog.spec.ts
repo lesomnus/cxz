@@ -225,6 +225,19 @@ test("work batches split at assistant replies and summaries align right", async 
   await expect(summaries).toHaveCount(2);
   await expect(summaries.first().getByRole("button")).toHaveText("1");
   await expect(summaries.nth(1).getByRole("button")).toHaveText("2");
+  await expect(summaries.first().locator(".elapsed-time")).toHaveText(
+    "00:00:06",
+  );
+  await expect(summaries.nth(1).locator(".elapsed-time")).toHaveText(
+    "00:00:10",
+  );
+  expect(
+    await summaries.first().evaluate((node) => {
+      const time = node.querySelector(".elapsed-time")!.getBoundingClientRect();
+      const button = node.querySelector("button")!.getBoundingClientRect();
+      return time.right <= button.left;
+    }),
+  ).toBe(true);
   await expect(summaries.first()).toHaveCSS("justify-content", "flex-end");
   await summaries.first().getByRole("button").click();
   const dialog = page.getByRole("dialog", {

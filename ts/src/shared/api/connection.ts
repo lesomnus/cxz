@@ -11,6 +11,7 @@ import type { ComposerPaste } from "#src/features/session/composer/composer-past
 import type { EditorState } from "#src/features/workspace/editor/workspace-editor.tsx";
 import { ResourceInventory } from "./resource-inventory";
 import { SessionDrafts } from "#src/features/session/model/session-drafts.ts";
+import { ConversationCache } from "#src/features/session/model/conversation-cache.ts";
 import { SessionAttention } from "#src/features/session/model/session-attention.ts";
 import { rpcFetch } from "./stream-fetch";
 
@@ -27,6 +28,7 @@ export class Connection {
   readonly bindings;
   readonly inventory;
   readonly attention;
+  readonly conversations;
   // Original paste bodies stay in this authenticated connection's memory, like drafts.
   readonly pastes = new Map<string, ComposerPaste>();
   readonly drafts;
@@ -54,11 +56,16 @@ export class Connection {
     this.accounts = createClient(AccountService, this.transport);
     this.bindings = createClient(AuthBindingService, this.transport);
     this.attention = new SessionAttention(this.sessions, baseUrl);
+    this.conversations = new ConversationCache(this);
     this.inventory = new ResourceInventory(
       this.projects,
       this.sessions,
       this.store,
     );
+  }
+  dispose() {
+    this.conversations.dispose();
+    this.attention.dispose();
   }
 }
 export const ref = (id: string) => ({

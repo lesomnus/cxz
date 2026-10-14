@@ -1,3 +1,4 @@
+import type { EventSource } from "#src/features/session/model/event-source.ts";
 import { useEffect, useState } from "react";
 import type { SessionEvent } from "#gen/cxz/session_pb";
 import type { LoadEventDetails } from "#src/features/session/model/session-history.ts";
@@ -29,12 +30,13 @@ export function useEventDetails(event: SessionEvent, load?: LoadEventDetails) {
   return !load ? { events: [event] } : state;
 }
 export function EventDetails({
-  event,
+  source,
   loadDetails,
 }: {
-  event: SessionEvent;
+  source: EventSource;
   loadDetails?: LoadEventDetails;
 }) {
+  const event = source();
   useLocale();
   const state = useEventDetails(event, loadDetails);
   if (state.error) return <p role="alert">{state.error}</p>;

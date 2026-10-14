@@ -227,7 +227,11 @@ test("session navigation highlights rows and long-list scrolling stays inside th
       page.locator(".panel-scroll-content").evaluate((el) => el.scrollTop),
     )
     .toBeGreaterThan(0);
-  await expect(page.locator(".resource-panel h2")).toBeVisible();
+  await expect(
+    page
+      .locator(".resource-panel > header")
+      .getByText("Sessions", { exact: true }),
+  ).toBeVisible();
   expect(errors).toEqual([]);
 });
 
