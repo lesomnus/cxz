@@ -182,11 +182,12 @@ test("compact panels keep their heading fixed and share the conversation handle'
   await expect
     .poll(async () => (await handle.boundingBox())!.width)
     .toBeGreaterThan(initial.width * 1.9);
-  expect(
+  const rightGap =
     (await panel.boundingBox())!.x +
-      (await panel.boundingBox())!.width -
-      ((await handle.boundingBox())!.x + (await handle.boundingBox())!.width),
-  ).toBeGreaterThan(4);
+    (await panel.boundingBox())!.width -
+    ((await handle.boundingBox())!.x + (await handle.boundingBox())!.width);
+  expect(rightGap).toBeGreaterThan(0);
+  expect(rightGap).toBeLessThan(8);
   const conversationHandle = page.locator(".transcript-area .scroll-handle");
   await expect(conversationHandle).toBeAttached();
   expect(

@@ -86,6 +86,7 @@
   --panel-scroll-rail-max-size: 320px;
   --panel-scroll-rail-max-ratio: 0.75;
   --panel-scroll-rail-growth: 0.35;
+  --panel-scroll-rail-offset: calc(-1 * var(--space));
   --panel-scroll-rail-background: color-mix(
     in srgb,
     var(--scroll-handle-color) 18%,
@@ -456,7 +457,7 @@ header strong {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  right: calc(var(--space) - var(--panel-inset));
+  right: calc(var(--panel-scroll-rail-offset) - var(--panel-inset));
   width: 24px;
   z-index: 2;
   pointer-events: none;
