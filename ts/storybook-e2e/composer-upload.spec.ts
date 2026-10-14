@@ -152,7 +152,11 @@ test("large pasted text shows upload status then UTF-8 bytes without internal na
   expect(
     await input.evaluate((node: HTMLTextAreaElement) => node.selectionStart),
   ).toBe(selection);
-  expect(await chip.boundingBox()).toEqual(bounds);
+  const readyBounds = (await chip.boundingBox())!;
+  // Different colored text runs can round their advances to neighboring
+  // subpixels. Still reject any visible movement or change in chip size.
+  for (const key of ["x", "y", "width", "height"] as const)
+    expect(Math.abs(readyBounds[key] - bounds![key])).toBeLessThan(0.1);
   await chip.click();
   await expect(page.getByRole("dialog")).toContainText(text.trim());
 });
