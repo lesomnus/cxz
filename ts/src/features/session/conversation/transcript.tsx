@@ -74,6 +74,7 @@ export function Transcript({
   onReadingMove,
   precedingPrompt,
   jumpTarget,
+  jumpInset = 18,
   onPromptJump,
   onJumped,
   older,
@@ -94,6 +95,7 @@ export function Transcript({
   onReadingMove: (delta: number) => void;
   precedingPrompt: SessionEvent | undefined;
   jumpTarget: string | undefined;
+  jumpInset?: number;
   onPromptJump: (seq: string) => void;
   onJumped: () => void;
   older: () => void;
@@ -209,7 +211,7 @@ export function Transcript({
     newer,
   };
 
-  function jumpToPrompt(seq: string) {
+  function jumpToPrompt(seq: string, inset = 18) {
     const el = pane.current;
     const map = mapping.current;
     const row = map?.rows.find((row) => row.id === seq);
@@ -220,7 +222,7 @@ export function Transcript({
     }
     el.dispatchEvent(new Event("scroll-jump"));
     callbacks.current.onNavigate();
-    el.scrollTop = Math.max(0, map.origin + row.top + map.rowPadding - 18);
+    el.scrollTop = Math.max(0, map.origin + row.top + map.rowPadding - inset);
     scrolled();
     el.dispatchEvent(new CustomEvent("reading-anchor", { detail: seq }));
     el.focus({ preventScroll: true });
@@ -230,10 +232,10 @@ export function Transcript({
       jumpTarget &&
       mapping.current?.rows.some((row) => row.id === jumpTarget)
     ) {
-      jumpToPrompt(jumpTarget);
+      jumpToPrompt(jumpTarget, jumpInset);
       onJumped();
     }
-  }, [jumpTarget, events]);
+  }, [jumpTarget, jumpInset, events]);
 
   function fadeMotion(time: number) {
     const sample = motion.current;

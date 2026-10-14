@@ -516,6 +516,110 @@ test("search opens the matched response and queue recall preserves its text", as
     ),
   ).toBe(true);
 });
+test("conversation shortcut sends a session-scoped search and keeps the search overlay after navigation", async ({
+  page,
+}) => {
+  const requests = await fixture(page);
+  await page.locator('.tree-session[href="/sessions/fixture"]').click();
+  const editor = page.getByRole("textbox", { name: "Message", exact: true });
+  await editor.focus();
+  await page.keyboard.press("Control+Shift+F");
+  const search = page.getByRole("search", {
+    name: "Search current conversation",
+  });
+  await search.getByRole("searchbox").fill("Earlier");
+  await search.getByRole("button", { name: /Earlier response/ }).click();
+  expect(
+    requests.filter((r) => r.path.endsWith("SessionService/Search")).at(-1).q
+      .sessions,
+  ).toEqual(["fixture"]);
+  await expect(search).toBeVisible();
+  await editor.focus();
+  await expect(search).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(search).toHaveCount(0);
+});
+test("query replacement rejects delayed results and explicit close cancels a pending session search", async ({
+  page,
+}) => {
+  await fixture(page);
+  const requests = [];
+  let releaseSlow, releaseClosed;
+  const slow = new Promise((resolve) => {
+    releaseSlow = resolve;
+  });
+  const closed = new Promise((resolve) => {
+    releaseClosed = resolve;
+  });
+  await page.route("**/cxz.SessionService/Search", async (route) => {
+    const raw = route.request().postDataBuffer();
+    const q = JSON.parse(raw.subarray(5).toString());
+    requests.push(q);
+    if (q.query === "slow") await slow;
+    if (q.query === "closed") await closed;
+    return route.fulfill({
+      contentType: "application/connect+json",
+      body: stream([
+        {
+          visit: {
+            sessionId: "fixture",
+            hits: [
+              { seq: "2", kind: "assistant", snippet: `${q.query} result` },
+            ],
+          },
+        },
+        {
+          visit: {
+            sessionId: "another-session",
+            hits: [
+              {
+                seq: "4",
+                kind: "assistant",
+                snippet: "Other session must not appear",
+              },
+            ],
+          },
+        },
+        { summary: { hits: 1 } },
+      ]),
+    });
+  });
+  try {
+    await page.locator('.tree-session[href="/sessions/fixture"]').click();
+    await page.getByRole("textbox", { name: "Message", exact: true }).focus();
+    await page.keyboard.press("Control+Shift+F");
+    const search = page.getByRole("search", {
+        name: "Search current conversation",
+      }),
+      input = search.getByRole("searchbox");
+    await input.fill("slow");
+    await expect
+      .poll(() => requests.some((q) => q.query === "slow"))
+      .toBe(true);
+    await input.fill("fast");
+    await input.press("Enter");
+    await expect(search).toContainText("fast result");
+    releaseSlow();
+    await page.waitForTimeout(300);
+    await expect(search).not.toContainText("slow result");
+    await expect(search).not.toContainText("Other session must not appear");
+    expect(requests.filter((q) => q.query === "fast")).toHaveLength(1);
+    expect(
+      requests.every((q) => JSON.stringify(q.sessions) === '["fixture"]'),
+    ).toBe(true);
+    await input.fill("closed");
+    await expect
+      .poll(() => requests.some((q) => q.query === "closed"))
+      .toBe(true);
+    await search.getByRole("button", { name: "Close search" }).click();
+    releaseClosed();
+    await expect(search).toHaveCount(0);
+  } finally {
+    releaseSlow();
+    releaseClosed();
+    await page.unrouteAll({ behavior: "ignoreErrors" });
+  }
+});
 test("memory edits carry the revision and keep drafts on a conflict", async ({
   page,
 }) => {

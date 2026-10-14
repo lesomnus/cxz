@@ -1,5 +1,19 @@
 // English source messages are always bundled; other packs load on demand.
 export const messages = {
+  "Search current conversation": "Search current conversation",
+  "This message is no longer available in retained history.":
+    "This message is no longer available in retained history.",
+  "Cannot open message: {error}": "Cannot open message: {error}",
+  "Search this conversation": "Search this conversation",
+  "Close search": "Close search",
+  "Searching…": "Searching…",
+  "No matches": "No matches",
+  "{count} matches": "{count} matches",
+  "Search results": "Search results",
+  "Session history is still being indexed.":
+    "Session history is still being indexed.",
+  "Load more results": "Load more results",
+
   Profile: "Profile",
   "Background job status unavailable": "Background job status unavailable",
   "{count} active background job": "{count} active background job",

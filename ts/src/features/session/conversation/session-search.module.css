@@ -1,0 +1,96 @@
+.search {
+  --search-result-height: 64px;
+  position: absolute;
+  top: calc(3 * var(--ui-space));
+  inset-inline: 0;
+  width: min(var(--conversation-width), calc(100% - 4 * var(--ui-space)));
+  margin-inline: auto;
+  z-index: 6;
+  color: var(--ui-shade-237);
+  background: var(--ui-dialog-background);
+  backdrop-filter: blur(var(--ui-dialog-blur));
+  border: 1px solid var(--ui-shade-54);
+  border-radius: var(--ui-dialog-radius);
+  overflow: hidden;
+}
+.controls {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space);
+  padding: var(--ui-space);
+}
+.icon {
+  flex-shrink: 0;
+  margin-inline: var(--ui-space);
+  color: var(--ui-muted);
+}
+.input {
+  flex: 1;
+  min-width: 0;
+  height: 32px;
+  padding: var(--ui-control-inline-inset);
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  outline: none;
+}
+.input::-webkit-search-cancel-button {
+  display: none;
+}
+.input:focus-visible {
+  outline: none;
+}
+.search:focus-within {
+  border-color: var(--ui-shade-72);
+}
+.status {
+  margin: 0;
+  padding: var(--ui-space) calc(2 * var(--ui-space));
+  font-size: 12px;
+  color: var(--ui-muted);
+  overflow-wrap: anywhere;
+}
+.results {
+  --ui-scroll-area-background: var(--ui-shade-17);
+  height: min(
+    calc(var(--search-result-count) * var(--search-result-height)),
+    35vh
+  );
+}
+.result {
+  display: block;
+  width: 100%;
+  height: var(--search-result-height);
+  padding: var(--ui-space) calc(2 * var(--ui-space));
+  border-radius: var(--ui-space);
+  text-align: left;
+}
+.result > :global(.button-content) {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--ui-space);
+}
+.result[aria-pressed="true"] {
+  background: var(--ui-selected);
+}
+.meta {
+  display: flex;
+  justify-content: space-between;
+  font: 11px/14px var(--ui-font-mono);
+  color: var(--ui-muted);
+}
+.snippet {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-size: 12px;
+  line-height: 16px;
+  white-space: pre-wrap;
+}
+.more {
+  width: 100%;
+  font-size: 12px;
+}

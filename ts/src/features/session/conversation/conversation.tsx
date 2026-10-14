@@ -78,6 +78,7 @@ import { useFloatingCard } from "#src/features/session/cards/floating-card.tsx";
 import { WorkspaceContext } from "#src/app/workspace-context.tsx";
 import { SecretInput } from "#src/features/session/composer/secret-input.tsx";
 import { pasteRanges } from "#src/features/session/composer/composer-pastes.ts";
+import { SessionSearch } from "./session-search";
 
 type ConversationProps = { c: Connection; id: string; projects: Project[] };
 
@@ -90,6 +91,7 @@ export function Conversation(props: ConversationProps) {
   );
 }
 function ConversationContent({ c, id, projects }: ConversationProps) {
+  const conversationArea = useRef<HTMLElement>(null);
   useLocale();
   const navigate = useNavigate();
   const openCard = useFloatingCard();
@@ -188,6 +190,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
   >(feed.preceding);
   const precedingRef = useRef<typeof precedingPrompt>(feed.preceding);
   const [jumpTarget, setJumpTarget] = useState<string>();
+  const jumpInset = useRef(18);
   const floor = feed.floor;
   const latestSeq = feed.latestSeq;
   const detached = feed.detached;
@@ -293,7 +296,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
     return () => controller.abort();
   }, [c, id, firstSeq, history]);
 
-  async function showPrompt(seq: string) {
+  async function showPrompt(seq: string, inset = 18) {
     historyRequest.current?.abort();
     const controller = new AbortController();
     historyRequest.current = controller;
@@ -309,16 +312,17 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
       if (controller.signal.aborted) return;
       rememberPage(page);
       if (!page.events.some((event) => event.seq === target)) {
-        setError(t("This input is no longer available in retained history."));
+        setError(t("This message is no longer available in retained history."));
         return;
       }
       detached.current = page.hasNewer;
       rememberMetadata(page.events);
       setEvents(page.events);
+      jumpInset.current = inset;
       setJumpTarget(seq);
     } catch (e) {
       if (!controller.signal.aborted)
-        setError(t("Cannot open input: {error}", { error: String(e) }));
+        setError(t("Cannot open message: {error}", { error: String(e) }));
     } finally {
       if (historyRequest.current === controller) historyRequest.current = null;
     }
@@ -841,9 +845,21 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
   }
   return (
     <main
+      ref={conversationArea}
       className="conversation"
       aria-description={`${s?.status?.state ?? ""} · ${translateKnown(status)}`}
     >
+      <SessionSearch
+        c={c}
+        id={id}
+        area={conversationArea}
+        jump={(seq, inset) => void showPrompt(seq, inset)}
+        restoreFocus={() =>
+          composerInput.current
+            ?.querySelector<HTMLTextAreaElement>("textarea")
+            ?.focus({ preventScroll: true })
+        }
+      />
       <Transcript
         loading={initialLoad && <ConversationLoading {...initialLoad} />}
         viewportCache={feed.viewport}
@@ -863,6 +879,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
             : undefined
         }
         jumpTarget={jumpTarget}
+        jumpInset={jumpInset.current}
         onPromptJump={(seq) => void showPrompt(seq)}
         onJumped={() => setJumpTarget(undefined)}
         onNavigate={() => {
