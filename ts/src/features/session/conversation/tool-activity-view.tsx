@@ -1,3 +1,4 @@
+import type { SnapshotSource } from "#src/features/session/model/event-source.ts";
 import type { LoadEventDetails } from "#src/features/session/model/session-history.ts";
 import { DetailTabs, type DetailSection } from "./detail-tabs";
 import { useEventDetails } from "./event-details";
@@ -17,18 +18,19 @@ import {
 } from "#src/features/session/model/tool-activity.ts";
 
 export function ToolActivityView({
-  activity,
+  source,
   agent,
   seq,
   timeMs,
   loadDetails,
 }: {
-  activity: ToolActivity;
+  source: SnapshotSource<ToolActivity>;
   agent: string;
   seq: bigint;
   timeMs: bigint;
   loadDetails?: LoadEventDetails;
 }) {
+  const activity = source();
   useLocale();
   const label = toolLabel(activity, agent);
   const state = toolState(activity, agent);
@@ -61,7 +63,7 @@ export function ToolActivityView({
       className="tool-activity"
       title={`${label.name} · ${t("Details")}`}
       details={() => (
-        <ToolDetails activity={activity} seq={seq} loadDetails={loadDetails} />
+        <ToolDetails source={source} seq={seq} loadDetails={loadDetails} />
       )}
     >
       {files.length ? (
@@ -114,14 +116,15 @@ export function ToolActivityView({
 }
 
 function ToolDetails({
-  activity: original,
+  source,
   seq,
   loadDetails,
 }: {
-  activity: ToolActivity;
+  source: SnapshotSource<ToolActivity>;
   seq: bigint;
   loadDetails?: LoadEventDetails;
 }) {
+  const original = source();
   useLocale();
   const anchor = original.call ?? original.output[0] ?? original.result!;
   const summary = !!anchor.toolSummary;

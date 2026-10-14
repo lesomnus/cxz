@@ -1,4 +1,9 @@
 import { EventView } from "./event-view";
+import {
+  eventSource,
+  snapshotSource,
+  eventListSource,
+} from "#src/features/session/model/event-source.ts";
 import errorStyles from "./activity-card.module.css";
 import { attachSummaries } from "#src/features/session/model/session-aux.ts";
 import { useSessionAux } from "#src/features/session/model/use-session-aux.ts";
@@ -420,7 +425,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
       historyRequest.current.abort();
       historyRequest.current = null;
     }
-    const old = eventsRef.current;
+    const old = feed.snapshot().events;
     if (!old.length) return;
     const first = old[0].seq,
       last = old.at(-1)!.seq;
@@ -461,7 +466,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
       rememberMetadata(incoming);
       const next = goLatest
         ? incoming
-        : mergeEvents(eventsRef.current, incoming, direction);
+        : mergeEvents(feed.snapshot().events, incoming, direction);
       detached.current = !atLatest(next);
       setEvents(next, direction);
       if (goLatest) setFollow(true);
@@ -857,7 +862,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
       aria-description={`${s?.status?.state ?? ""} · ${translateKnown(status)}`}
     >
       <SessionSearch
-        events={transcript.events}
+        source={eventListSource(transcript.events)}
         onMatchesChange={setSearchMatches}
         area={conversationArea}
         jump={(seq, inset, matchVisible) => {
@@ -877,7 +882,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         loading={initialLoad && <ConversationLoading {...initialLoad} />}
         viewportCache={feed.viewport}
         pane={pane}
-        events={transcript.events}
+        source={eventListSource(transcript.events)}
         workHistory={{
           hasOlder: firstSeq !== undefined && firstSeq > floor.current + 1n,
           loadOlder: () => loadHistory("older"),
@@ -901,11 +906,11 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         }}
         render={(e) => (
           <EventView
-            e={e}
+            source={eventSource(e)}
             agent={s?.agent ?? ""}
             completion={completions.get(e.seq.toString())}
             summary={summaries.get(e.seq.toString())}
-            activity={transcript.activities.get(e.seq)}
+            activitySource={snapshotSource(transcript.activities.get(e.seq))}
             loadDetails={history.mode === "summary" ? loadDetails : undefined}
           />
         )}

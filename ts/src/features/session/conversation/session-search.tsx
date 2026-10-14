@@ -1,3 +1,4 @@
+import type { EventListSource } from "#src/features/session/model/event-source.ts";
 import {
   useEffect,
   useMemo,
@@ -7,7 +8,6 @@ import {
   type RefObject,
 } from "react";
 import { Button, ScrollArea } from "@lesomnus/cxz-ui";
-import type { SessionEvent } from "#gen/cxz/session_pb";
 import { searchLoadedMessages, type LoadedSearchHit } from "./loaded-search";
 import { currentLocale, t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
@@ -17,13 +17,13 @@ import { useSearchHighlights, type SearchLocation } from "./search-highlights";
 const noHits: LoadedSearchHit[] = [];
 
 export function SessionSearch({
-  events,
+  source,
   area,
   jump,
   restoreFocus,
   onMatchesChange,
 }: {
-  events: SessionEvent[];
+  source: EventListSource;
   area: RefObject<HTMLElement | null>;
   jump: (
     seq: string,
@@ -33,6 +33,7 @@ export function SessionSearch({
   restoreFocus: () => void;
   onMatchesChange?: (seqs: readonly string[]) => void;
 }) {
+  const events = source();
   useLocale();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");

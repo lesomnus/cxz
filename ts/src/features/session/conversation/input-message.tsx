@@ -1,6 +1,6 @@
+import type { EventSource } from "#src/features/session/model/event-source.ts";
 import { currentLocale } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
-import type { SessionEvent } from "#gen/cxz/session_pb";
 import { absoluteMessageTime } from "./message-time";
 import { useMessageTime } from "./use-message-time";
 import { memo } from "react";
@@ -24,10 +24,11 @@ function InputTime({ timeMs }: { timeMs: bigint }) {
 
 // Shared by the transcript and the fixed preview of the preceding input.
 export const InputMessage = memo(function InputMessage({
-  event,
+  source,
 }: {
-  event: SessionEvent;
+  source: EventSource;
 }) {
+  const event = source();
   return (
     <div className="input-box">
       <InputTime timeMs={event.timeMs} />

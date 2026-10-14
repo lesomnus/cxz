@@ -1,3 +1,4 @@
+import type { EventListSource } from "#src/features/session/model/event-source.ts";
 import React, {
   useEffect,
   useLayoutEffect,
@@ -36,7 +37,7 @@ const foldable = (event: SessionEvent) =>
 
 export const VirtualMessages = React.memo(function VirtualMessages({
   pane,
-  events,
+  source,
   follow,
   render,
   changed,
@@ -46,7 +47,7 @@ export const VirtualMessages = React.memo(function VirtualMessages({
   cache,
 }: {
   pane: React.RefObject<HTMLDivElement | null>;
-  events: SessionEvent[];
+  source: EventListSource;
   follow: React.RefObject<boolean>;
   render: (event: SessionEvent) => React.ReactNode;
   changed: (mapping: MessageMap) => void;
@@ -55,6 +56,7 @@ export const VirtualMessages = React.memo(function VirtualMessages({
   foldActivities?: boolean;
   cache?: TranscriptViewport;
 }) {
+  const events = source();
   const root = useRef<HTMLDivElement>(null);
   const sizes = useRef(cache?.sizes ?? new Map<string, number>());
   const knots = useRef(cache?.knots ?? new Map<string, RowKnot>());

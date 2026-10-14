@@ -1,3 +1,8 @@
+import {
+  eventListSource,
+  snapshotSource,
+  type EventListSource,
+} from "#src/features/session/model/event-source.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -67,7 +72,7 @@ type RangeMotion = {
 
 export function Transcript({
   pane,
-  events,
+  source,
   follow,
   render,
   notice,
@@ -89,7 +94,7 @@ export function Transcript({
   searchMatches,
 }: {
   pane: React.RefObject<HTMLDivElement | null>;
-  events: SessionEvent[];
+  source: EventListSource;
   follow: React.RefObject<boolean>;
   render: (event: SessionEvent) => React.ReactNode;
   notice: React.ReactNode;
@@ -110,6 +115,7 @@ export function Transcript({
   viewportCache?: TranscriptViewport;
   searchMatches?: readonly string[];
 }) {
+  const events = source();
   useLocale();
   const work = React.useMemo(() => workGroups(events), [events]);
   const [selectedWork, selectWork] = useState<SessionEvent>();
@@ -126,7 +132,8 @@ export function Transcript({
       const group = work.summaries.get(event.seq);
       return group ? (
         <WorkSummary
-          work={group}
+          id={group.id}
+          count={group.events.length}
           expanded={activeWork === group && !workClosing}
           partial={!group.hasBoundary && !!workHistory?.hasOlder}
           open={(trigger) => {
@@ -807,7 +814,7 @@ export function Transcript({
           <VirtualMessages
             cache={viewportCache}
             pane={pane}
-            events={work.events}
+            source={eventListSource(work.events)}
             follow={follow}
             foldActivities={false}
             render={renderRow}
@@ -821,7 +828,7 @@ export function Transcript({
       {activeWork && (
         <WorkDialog
           key={`${selectedWork!.runId}/${selectedWork!.requestId || selectedWork!.seq}`}
-          work={activeWork}
+          source={snapshotSource(activeWork)}
           render={render}
           close={closeWork}
           closing={workClosing}

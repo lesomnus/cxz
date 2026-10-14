@@ -1,3 +1,4 @@
+import { eventListSource } from "#src/features/session/model/event-source.ts";
 import { useRef, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { create } from "@bufbuild/protobuf";
@@ -26,7 +27,7 @@ const meta = {
   title: "Conversation/SessionSearch",
   component: SessionSearch,
   args: {
-    events,
+    source: eventListSource(events),
     area: { current: null },
     jump: () => {},
     restoreFocus: () => {},
@@ -91,7 +92,7 @@ const meta = {
         >
           <Transcript
             pane={pane}
-            events={loaded}
+            source={eventListSource(loaded)}
             follow={follow}
             searchMatches={searchMatches}
             notice={null}
@@ -148,7 +149,7 @@ const meta = {
           }}
         />
         <SessionSearch
-          events={loaded}
+          source={eventListSource(loaded)}
           onMatchesChange={setSearchMatches}
           area={area}
           jump={setSelected}

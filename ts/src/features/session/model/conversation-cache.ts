@@ -78,21 +78,49 @@ export const eventBytes = (e: SessionEvent) => {
     128
   );
 };
-function bounded(rows: SessionEvent[], edge: "older" | "newer" = "newer") {
+function bounded(
+  rows: SessionEvent[],
+  edge: "older" | "newer" = "newer",
+  anchor?: string,
+) {
   let size = 0;
-  const ordered = edge === "older" ? rows : [...rows].reverse();
   let count = 0;
-  for (const e of ordered) {
-    const bytes = eventBytes(e);
+  const step = edge === "older" ? 1 : -1;
+  for (
+    let i = step === 1 ? 0 : rows.length - 1;
+    i >= 0 && i < rows.length;
+    i += step
+  ) {
+    const bytes = eventBytes(rows[i]);
     if (count && size + bytes > MAX_CONVERSATION_BYTES) break;
     size += bytes;
     count++;
   }
-  return count === rows.length
-    ? rows
-    : edge === "older"
-      ? rows.slice(0, count)
-      : rows.slice(-count);
+  if (count === rows.length) return rows;
+  let start = edge === "older" ? 0 : rows.length - count;
+  let end = start + count;
+  const at = anchor ? rows.findIndex((e) => e.seq.toString() === anchor) : -1;
+  if (at >= 0 && (at < start || at >= end)) {
+    // A large page must not replace the message currently being read. Keep a
+    // contiguous window around it, reserving context on the other side before
+    // spending the remaining budget towards the requested history edge.
+    start = at;
+    end = at + 1;
+    size = eventBytes(rows[at]);
+    const extend = (direction: number, budget: number) => {
+      while (direction < 0 ? start > 0 : end < rows.length) {
+        const bytes = eventBytes(rows[direction < 0 ? start - 1 : end]);
+        if (size + bytes > budget) break;
+        size += bytes;
+        if (direction < 0) start--;
+        else end++;
+      }
+    };
+    extend(step, size + Math.max(0, MAX_CONVERSATION_BYTES - size) / 4);
+    extend(-step, MAX_CONVERSATION_BYTES);
+    extend(step, MAX_CONVERSATION_BYTES);
+  }
+  return rows.slice(start, end);
 }
 
 // A connection owns data and the native stream; a React view only subscribes.
@@ -220,7 +248,17 @@ export class CachedConversation {
   ) => {
     const rows =
       typeof update === "function" ? update(this.state.events) : update;
-    const events = bounded(rows, edge);
+    const boundedEvents = bounded(
+      rows,
+      edge,
+      this.follow.current ? undefined : this.viewport.anchor?.id,
+    );
+    const previous = this.state.events;
+    const events =
+      boundedEvents.length === previous.length &&
+      boundedEvents.every((event, i) => event === previous[i])
+        ? previous
+        : boundedEvents;
     if (events !== rows && edge === "older") this.detached.current = true;
     this.patch({ events });
   };

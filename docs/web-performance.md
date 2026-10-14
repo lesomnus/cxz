@@ -38,12 +38,28 @@ budget, not a replacement for fixing application allocations or React's internal
 prop traversal. Production builds do not install this wrapper. Limits live in
 the implementation, and HMR removes the installed wrapper on disposal.
 
+Transcript, virtual-row, search and event-detail components receive protocol
+snapshots through stable readers from `features/session/model/event-source.ts`. React's changed-prop
+inspection otherwise enumerates large `Uint8Array` payloads before the timing
+wrapper can limit their retained details. The reader preserves the original
+event, payload and serialization; it does not strip metadata or disable React
+diagnostics. Payload decoding is shared by immutable buffer identity through a
+weak cache. Replacing the buffer invalidates the decoded snapshot.
+
+When a fetched page exceeds the conversation byte budget, historical reading
+retains a contiguous window containing the saved reading anchor and nearby
+context. Pagination reads the connection cache's current snapshot, including
+updates not yet delivered to React, rather than a previous render's event list.
+
 From `ts`, run `npm run test:performance` for the development-build regression
 fixture. It exercises repeated scrolling over long history, checks bounded rows,
 markers and timing entries, then loads additional records. A full-capacity
 fixture crosses rail ranges and verifies that historical reading performs no
-message-position reads for arrival animation. Other scroll and
-work-dialog behavior remains covered by the existing Storybook tests. Compare
+message-position reads for arrival animation. A separate RPC pagination fixture
+opens the real development app with large approval metadata and verifies frame
+progress, bounded request counts and reading-anchor retention as pages arrive.
+Private recorded pages can be replayed locally but must not be committed. Other
+scroll and work-dialog behavior remains covered by the existing Storybook tests. Compare
 timings with other builds and tests idle; parallel compilation distorts browser
 frame times. Synthetic measurements do not establish the exact cause of an OOM
 in a user's browser without its stack and memory profile.

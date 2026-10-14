@@ -1,3 +1,4 @@
+import { eventSource } from "#src/features/session/model/event-source.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { useEffect, useRef, useState } from "react";
@@ -114,7 +115,7 @@ export function PinnedPrompt({
           jump(prompt.seq.toString());
         }}
       >
-        <InputMessage event={prompt} />
+        <InputMessage source={eventSource(prompt)} />
       </Button>
     </div>
   );

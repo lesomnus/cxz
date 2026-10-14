@@ -2,6 +2,11 @@ import { useRef, useState, type ReactNode } from "react";
 import type { SessionEvent } from "#gen/cxz/session_pb";
 import type { AuxState } from "#gen/cxz/session_svc_pb";
 import {
+  eventSource,
+  snapshotSource,
+  eventListSource,
+} from "#src/features/session/model/event-source.ts";
+import {
   FloatingCardHost,
   FloatingCardProvider,
 } from "#src/features/session/cards/floating-card.tsx";
@@ -135,13 +140,13 @@ export function PreviewTranscript({
     <Transcript
       workHistory={workHistory}
       pane={pane}
-      events={projected.events}
+      source={eventListSource(projected.events)}
       follow={follow}
       render={(e) => (
         <EventView
-          e={e}
+          source={eventSource(e)}
           agent={agent}
-          activity={projected.activities.get(e.seq)}
+          activitySource={snapshotSource(projected.activities.get(e.seq))}
           completion={projected.completions.get(e.seq.toString())}
           summary={summaries.get(e.seq.toString())}
           loadDetails={loadDetails}

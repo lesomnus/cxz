@@ -10,6 +10,7 @@ import {
   ConversationCache,
   MAX_IDLE_CONVERSATIONS,
   MAX_CONVERSATION_BYTES,
+  eventBytes,
 } from "./conversation-cache";
 
 const event = (seq: bigint, kind = "assistant", text = `Response ${seq}`) =>
@@ -213,6 +214,34 @@ it("limits large live bodies by bytes as well as record count", async () => {
   expect(a.feed.snapshot().events.length).toBeLessThan(5);
   expect(a.feed.snapshot().events.at(-1)!.seq).toBe(5n);
 });
+it.each(["older", "newer"] as const)(
+  "retains a contiguous reading window when a large %s page exceeds the budget",
+  async (edge) => {
+    const f = fixture();
+    const { feed } = await f.open("a");
+    const rows = Array.from({ length: 24 }, (_, index) =>
+      event(BigInt(index + 1)),
+    );
+    for (const e of rows)
+      e.payload = new Uint8Array(MAX_CONVERSATION_BYTES / 8);
+    feed.follow.current = false;
+    feed.viewport.anchor = { id: "12", offset: 18 };
+    feed.setEvents(rows, edge);
+    const retained = feed.snapshot().events;
+    expect(retained.some((e) => e.seq === 12n)).toBe(true);
+    expect(retained.some((e) => e.seq < 12n)).toBe(true);
+    expect(retained.some((e) => e.seq > 12n)).toBe(true);
+    expect(retained.reduce((n, e) => n + eventBytes(e), 0)).toBeLessThanOrEqual(
+      MAX_CONVERSATION_BYTES,
+    );
+    expect(
+      retained.every((e, i) => !i || e.seq === retained[i - 1].seq + 1n),
+    ).toBe(true);
+    expect(feed.viewport.anchor).toEqual({ id: "12", offset: 18 });
+    feed.setEvents(rows, edge);
+    expect(feed.snapshot().events).toBe(retained);
+  },
+);
 it("drops a recreated session's old journal before loading its new identity", async () => {
   const f = fixture();
   const a = await f.open("a");
@@ -323,19 +352,17 @@ it("includes structured summary bodies in the cache byte budget", async () => {
   const f = fixture();
   const a = await f.open("a");
   for (let seq = 2n; seq <= 3n; seq++)
-    f.channels
-      .get("a")!
-      .enqueue(
-        create(SessionEventSchema, {
-          seq,
-          runId: "run",
-          kind: "tool_call",
-          toolSummary: {
-            name: "Bash",
-            command: "x".repeat(MAX_CONVERSATION_BYTES / 3),
-          },
-        }),
-      );
+    f.channels.get("a")!.enqueue(
+      create(SessionEventSchema, {
+        seq,
+        runId: "run",
+        kind: "tool_call",
+        toolSummary: {
+          name: "Bash",
+          command: "x".repeat(MAX_CONVERSATION_BYTES / 3),
+        },
+      }),
+    );
   await vi.waitFor(() => expect(a.feed.latestSeq.current).toBe(3n));
   expect(a.feed.snapshot().events).toHaveLength(1);
   expect(a.feed.snapshot().events[0].seq).toBe(3n);

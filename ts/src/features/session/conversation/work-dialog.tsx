@@ -1,3 +1,4 @@
+import { eventListSource } from "#src/features/session/model/event-source.ts";
 import {
   useId,
   useLayoutEffect,
@@ -24,12 +25,14 @@ import styles from "./work-dialog.module.css";
 import type { WorkHistory } from "./transcript";
 
 export function WorkSummary({
-  work,
+  id,
+  count,
   expanded,
   open,
   partial = false,
 }: {
-  work: WorkGroup;
+  id: string;
+  count: number;
   expanded: boolean;
   open: (trigger: HTMLButtonElement) => void;
   partial?: boolean;
@@ -39,13 +42,13 @@ export function WorkSummary({
   const countLabel = t(
     partial
       ? "{count}+ tasks performed"
-      : work.events.length === 1
+      : count === 1
         ? "{count} task performed"
         : "{count} tasks performed",
-    { count: work.events.length },
+    { count },
   );
   return (
-    <div className={styles.summary} data-work-summary={work.id}>
+    <div className={styles.summary} data-work-summary={id}>
       <span className="meta-popover">
         <Button
           type="button"
@@ -56,7 +59,7 @@ export function WorkSummary({
           onClick={(event) => open(event.currentTarget)}
         >
           <span className={styles.count} aria-hidden="true">
-            <span className={styles.countValue}>{work.events.length}</span>
+            <span className={styles.countValue}>{count}</span>
             <span className={styles.countSuffix}>{partial ? "+" : ""}</span>
           </span>
           <CategoryIcon />
@@ -70,7 +73,7 @@ export function WorkSummary({
 }
 
 export function WorkDialog({
-  work,
+  source,
   render,
   close,
   closing = false,
@@ -78,7 +81,7 @@ export function WorkDialog({
   container,
   onClosed,
 }: {
-  work: WorkGroup;
+  source: () => WorkGroup;
   render: (event: SessionEvent) => ReactNode;
   close: () => void;
   closing?: boolean;
@@ -86,6 +89,7 @@ export function WorkDialog({
   container: HTMLElement;
   onClosed: () => void;
 }) {
+  const work = source();
   useLocale();
   const pane = useRef<HTMLDivElement>(null);
   const follow = useRef(false);
@@ -208,7 +212,7 @@ export function WorkDialog({
                 <PanelScroll viewportRef={pane}>
                   <VirtualMessages
                     pane={pane}
-                    events={work.events}
+                    source={eventListSource(work.events)}
                     follow={follow}
                     render={render}
                     changed={() => {}}
