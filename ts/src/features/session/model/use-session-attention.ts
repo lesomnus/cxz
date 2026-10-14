@@ -15,6 +15,7 @@ export function useSessionAttention(
     c.attention.subscribe,
     c.attention.snapshot,
   );
+  const errors = c.attention.errorSnapshot();
   const { snapshot } = useSettings();
   const enabled = useRef(true);
   enabled.current = snapshot.document["notifications.sound"] !== false;
@@ -52,7 +53,7 @@ export function useSessionAttention(
       )
         ids.add(s.runtimeId);
     }
-    badge.current?.update(ids.size);
-  }, [unread, sessions, active, focused]);
-  return unread;
+    badge.current?.update(ids.size, errors.size > 0);
+  }, [unread, errors, sessions, active, focused]);
+  return { unread, errors };
 }

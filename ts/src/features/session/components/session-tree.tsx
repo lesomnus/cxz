@@ -17,6 +17,7 @@ export function SessionTreeGroup({
   open,
   toggle,
   unread = new Set<string>(),
+  errors = new Set<string>(),
 }: {
   project: Project;
   items: Session[];
@@ -25,6 +26,7 @@ export function SessionTreeGroup({
   open: boolean;
   toggle: () => void;
   unread?: ReadonlySet<string>;
+  errors?: ReadonlySet<string>;
 }) {
   useLocale();
   return (
@@ -47,7 +49,11 @@ export function SessionTreeGroup({
               pressTarget=".session-heading"
               aria-current={selected === s.runtimeId ? "true" : undefined}
             >
-              <SessionIndicator session={s} unread={unread.has(s.runtimeId)} />
+              <SessionIndicator
+                session={s}
+                unread={unread.has(s.runtimeId)}
+                error={errors.has(s.runtimeId)}
+              />
               <SessionIdentity session={s} />
             </PanelLink>
           ))}
@@ -91,13 +97,21 @@ function randomActivityColors() {
 function SessionIndicator({
   session,
   unread,
+  error,
 }: {
   session: Session;
   unread: boolean;
+  error: boolean;
 }) {
   useLocale();
   const [dotColors] = useState(randomActivityColors);
   const state = session.status?.state || "unknown";
+  if (error)
+    return (
+      <span className="session-indicator" title={t("Unread error")}>
+        <UnreadBadge error />
+      </span>
+    );
   if (state === "stopped")
     return <span className="session-indicator" aria-hidden="true" />;
   const question = !!session.status?.pending.length;

@@ -1,5 +1,7 @@
 import { SESSION_ATTENTION_COLOR } from "./attention-color";
 
+import { SESSION_ERROR_COLOR } from "./error-color";
+
 export function tabAttention() {
   const original = document.title;
   const icon = document.createElement("link");
@@ -7,9 +9,9 @@ export function tabAttention() {
   icon.dataset.sessionAttention = "true";
   document.head.append(icon);
   return {
-    update(count: number) {
+    update(count: number, error = false) {
       document.title = count ? `(${count}) ${original}` : original;
-      icon.href = `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#181818"/><path d="m7 11 5 5-5 5m9 0h9" fill="none" stroke="#eee" stroke-width="3"/>${count ? `<circle cx="26" cy="6" r="5" fill="${SESSION_ATTENTION_COLOR}" stroke="#181818" stroke-width="2"/>` : ""}</svg>`)}`;
+      icon.href = `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#181818"/><path d="m7 11 5 5-5 5m9 0h9" fill="none" stroke="#eee" stroke-width="3"/>${count ? `<circle cx="26" cy="6" r="5" fill="${error ? SESSION_ERROR_COLOR : SESSION_ATTENTION_COLOR}" stroke="#181818" stroke-width="2"/>` : ""}</svg>`)}`;
     },
     dispose() {
       document.title = original;
