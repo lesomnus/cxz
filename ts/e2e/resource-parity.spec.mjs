@@ -696,6 +696,19 @@ test("project picker supports fuzzy search, keyboard selection and dark form bac
   ).toBe(
     await titleInput.evaluate((el) => getComputedStyle(el).backgroundColor),
   );
+  // The anchored creation dialog moves during entrance. Measure the value
+  // overlay against its settled trigger, rather than an intermediate frame.
+  await create.evaluate((node) =>
+    Promise.all(
+      node
+        .getAnimations({ subtree: true })
+        .filter(
+          (animation) =>
+            animation.effect?.getComputedTiming().endTime !== Infinity,
+        )
+        .map((animation) => animation.finished.catch(() => {})),
+    ),
+  );
   const triggerBounds = await projectPicker.boundingBox();
   await projectPicker.click();
   const search = page.getByRole("combobox", {
