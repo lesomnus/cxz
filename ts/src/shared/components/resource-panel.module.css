@@ -13,6 +13,7 @@
   align-items: center;
   gap: var(--ui-space);
   padding: var(--ui-dialog-padding);
+  border-right: 1px solid var(--ui-shade-36);
 }
 .actions {
   display: flex;
@@ -27,7 +28,7 @@
   --panel-inset: 0px;
   --panel-background: var(--ui-dialog-body-background);
   background: var(--panel-background);
-  border-radius: var(--ui-dialog-radius);
+  border-radius: var(--ui-dialog-radius) var(--ui-dialog-radius) 0 0;
   overflow: hidden;
 }
 .panel :global(.panel-scroll-inner) {
