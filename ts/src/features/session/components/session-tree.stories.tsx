@@ -13,12 +13,14 @@ function SessionPanel({
   expanded = true,
   unread = false,
   error = false,
+  background = false,
 }: {
   count?: number;
   loading?: boolean;
   expanded?: boolean;
   unread?: boolean;
   error?: boolean;
+  background?: boolean;
 }) {
   const router = useMemo(
     () =>
@@ -32,12 +34,13 @@ function SessionPanel({
               expanded={expanded}
               unread={unread}
               error={error}
+              background={background}
             />
           ),
         },
         createMemoryHistory({ initialEntries: ["/sessions/session-0"] }),
       ),
-    [count, loading, expanded, unread, error],
+    [count, loading, expanded, unread, error, background],
   );
   return <RouterProvider router={router} />;
 }
@@ -47,6 +50,7 @@ function SessionList({
   expanded,
   unread,
   error,
+  background,
 }: Required<Parameters<typeof SessionPanel>[0]>) {
   const route = useWorkspaceRoute();
   const [open, setOpen] = useState(expanded);
@@ -110,4 +114,9 @@ export const UnreadCompleted: Story = { args: { unread: true } };
 
 export const ErrorBeforeCompletion: Story = {
   args: { count: 4, unread: true, error: true },
+};
+
+export const BackgroundOnly: Story = { args: { background: true } };
+export const BackgroundWithUnread: Story = {
+  args: { background: true, unread: true },
 };

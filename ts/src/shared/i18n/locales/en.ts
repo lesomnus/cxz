@@ -1,5 +1,6 @@
 // English source messages are always bundled; other packs load on demand.
 export const messages = {
+  "Background tasks": "Background tasks",
   "Search current conversation": "Search current conversation",
   "This message is no longer available in retained history.":
     "This message is no longer available in retained history.",

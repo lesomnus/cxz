@@ -1,5 +1,6 @@
 import type { LanguagePack } from "#src/shared/i18n/i18n.ts";
 export const messages = {
+  "Background tasks": "백그라운드 작업",
   "Search current conversation": "현재 대화 검색",
   "This message is no longer available in retained history.":
     "보존된 기록에서 이 메시지를 더 이상 찾을 수 없습니다.",

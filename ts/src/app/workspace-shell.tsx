@@ -1,3 +1,4 @@
+import { useBackgroundSessions } from "#src/features/session/model/use-background-sessions.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import {
@@ -54,6 +55,7 @@ export function Workspace({
     inventory.sessions,
     resource === "sessions" ? session : "",
   );
+  const background = useBackgroundSessions(c, inventory.sessions);
   const projects = inventory.projects;
   const sessionsByProject = useMemo(() => {
     const grouped = new Map<string, Session[]>();
@@ -237,6 +239,7 @@ export function Workspace({
                     selected={session}
                     unread={unread}
                     errors={errors}
+                    background={background}
                     open={!collapsed.has(p.runtimeId)}
                     toggle={() =>
                       setCollapsed((old) => {
