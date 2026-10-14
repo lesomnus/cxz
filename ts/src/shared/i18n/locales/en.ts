@@ -1,5 +1,7 @@
 // English source messages are always bundled; other packs load on demand.
 export const messages = {
+  "Search {label}": "Search {label}",
+  "No matches": "No matches",
   "Background job status unavailable": "Background job status unavailable",
   "{count} active background job": "{count} active background job",
   "{count} active background jobs": "{count} active background jobs",
