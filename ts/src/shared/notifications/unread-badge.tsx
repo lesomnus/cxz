@@ -2,19 +2,34 @@ import type { CSSProperties } from "react";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { SESSION_ATTENTION_COLOR } from "./attention-color";
+import { SESSION_ERROR_COLOR } from "./error-color";
 import styles from "./unread-badge.module.css";
 
-export function UnreadBadge({ count }: { count?: number }) {
+export function UnreadBadge({
+  count,
+  error = false,
+}: {
+  count?: number;
+  error?: boolean;
+}) {
   useLocale();
   return (
     <span
       className={`${styles.badge} ${count === undefined ? "" : styles.count}`}
-      style={{ "--attention-color": SESSION_ATTENTION_COLOR } as CSSProperties}
+      style={
+        {
+          "--attention-color": error
+            ? SESSION_ERROR_COLOR
+            : SESSION_ATTENTION_COLOR,
+        } as CSSProperties
+      }
       role="img"
       aria-label={
-        count === undefined
-          ? t("Unread response")
-          : t("{count} unread sessions", { count })
+        error
+          ? t("Unread error")
+          : count === undefined
+            ? t("Unread response")
+            : t("{count} unread sessions", { count })
       }
     >
       {count === undefined ? (

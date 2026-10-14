@@ -15,6 +15,8 @@ export const messages = {
   "Load more results": "검색 결과 더 보기",
 
   Profile: "프로필",
+  "Search {label}": "{label} 검색",
+  "No matches": "검색 결과 없음",
   "Background job status unavailable": "백그라운드 작업 상태를 확인할 수 없음",
   "{count} active background job": "활성 백그라운드 작업 {count}개",
   "{count} active background jobs": "활성 백그라운드 작업 {count}개",
@@ -561,6 +563,7 @@ export const messages = {
     "별칭은 소문자로 시작하는 3–20자의 소문자, 숫자, 단일 하이픈이어야 합니다.",
   Confirm: "확인",
   Title: "제목",
+  "Unread error": "확인하지 않은 오류",
   "Unread response": "읽지 않은 응답",
   "{count} unread sessions": "읽지 않은 세션 {count}개",
   Notifications: "알림",

@@ -130,18 +130,31 @@
   color: var(--ui-muted);
 }
 
-.setting_menu[data-searchable="true"] {
-  flex-direction: column;
-}
 .setting_menu :global(.setting-search) {
   width: 100%;
   min-width: 0;
   flex-shrink: 0;
   padding: var(--value-padding-block) var(--value-padding-inline);
   border: 0;
-  border-radius: 4px;
-  background: var(--ui-shade-17);
+  height: var(--value-row-height);
+  border-radius: 6px;
+  background: transparent;
   color: var(--ui-shade-237);
   font: inherit;
   line-height: 20px;
+}
+
+/* Edit the existing selected-value row without adding a nested input surface. */
+.setting_menu :global(.setting-search:focus-visible) {
+  outline: none;
+}
+
+.setting_menu :global(.setting-match-label) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.setting_menu :global(.setting-match-label) mark {
+  background: transparent;
+  color: var(--ui-brand-color);
+  font-weight: inherit;
 }

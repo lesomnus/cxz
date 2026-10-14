@@ -34,7 +34,15 @@ export function ProfileMenu({
         label={t("Profile")}
         placement="right"
         triggerClassName="resource-link profile-trigger"
-        triggerContent={<span className="profile-avatar" aria-hidden="true" />}
+        triggerContent={
+          <span className="profile-avatar" aria-hidden="true">
+            <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+              <circle cx="18" cy="18" r="8" stroke="white" strokeWidth="1.5" />
+              <circle cx="18" cy="18" r="2" fill="white" />
+              <circle cx="18" cy="10" r="2" fill="white" />
+            </svg>
+          </span>
+        }
         items={[
           {
             label: t("Settings"),

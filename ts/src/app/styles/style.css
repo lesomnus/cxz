@@ -231,11 +231,25 @@ header strong {
   height: 36px;
   border-radius: 10px;
   overflow: hidden;
-  background:
-    radial-gradient(ellipse at 20% 15%, #b3c7ad 0 24%, transparent 26%),
-    radial-gradient(ellipse at 85% 80%, #6d749b 0 36%, transparent 38%),
-    linear-gradient(135deg, #779c96, #424d69);
+  background: #000;
   box-shadow: inset 0 0 0 1px #ffffff18;
+}
+.profile-avatar > svg {
+  display: block;
+}
+/* The default theme is dark, including before an explicit theme is set. */
+:root:not([data-theme="light"]) .profile-avatar {
+  filter: brightness(0.55);
+  transition: filter 160ms ease;
+}
+:root:not([data-theme="light"]) .profile-trigger:hover .profile-avatar,
+:root:not([data-theme="light"]) .profile-trigger:focus-visible .profile-avatar {
+  filter: brightness(1);
+}
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-theme="light"]) .profile-avatar {
+    transition: none;
+  }
 }
 .profile-error {
   width: 56px;
@@ -2098,7 +2112,10 @@ pre {
   transform: translateY(0);
 }
 .composer .stop[data-armed="true"] {
-  background: var(--shade-54);
+  background: #68172f;
+}
+.composer .stop[data-armed="true"] svg {
+  color: #ff526d;
 }
 .send-shortcut {
   position: absolute;

@@ -1,3 +1,4 @@
+import errorURL from "./sounds/error.wav?url";
 import completeURL from "./sounds/complete.wav?url";
 import questionURL from "./sounds/attention.wav?url";
 import type { SessionAlert } from "#src/features/session/model/session-attention.ts";
@@ -9,6 +10,7 @@ export function sessionSound(enabled: () => boolean) {
   let buffers: Partial<Record<SessionAlert, AudioBuffer>> = {};
   let disposed = false;
   let nextTime = 0;
+  const playing = new Set<AudioBufferSourceNode>();
   const abort = new AbortController();
   const unlock = () => {
     if (disposed || !enabled()) return;
@@ -18,6 +20,7 @@ export function sessionSound(enabled: () => boolean) {
         for (const [kind, url] of [
           ["complete", completeURL],
           ["question", questionURL],
+          ["error", errorURL],
         ] as const) {
           const audio = context;
           void fetch(url, { signal: abort.signal })
@@ -46,7 +49,12 @@ export function sessionSound(enabled: () => boolean) {
         return;
       // Serialize a small burst, then drop excess alerts instead of building a
       // long sound queue when several sessions finish together.
-      if (nextTime > context.currentTime + 1) return;
+      if (kind === "error") {
+        // A failure takes priority over queued completion/question cues.
+        for (const source of playing) source.stop();
+        playing.clear();
+        nextTime = context.currentTime;
+      } else if (nextTime > context.currentTime + 1) return;
       const source = context.createBufferSource();
       const gain = context.createGain();
       source.buffer = buffer;
@@ -54,8 +62,10 @@ export function sessionSound(enabled: () => boolean) {
       source.connect(gain).connect(context.destination);
       const start = Math.max(context.currentTime, nextTime);
       nextTime = start + buffer.duration;
+      playing.add(source);
       source.start(start);
       source.onended = () => {
+        playing.delete(source);
         source.disconnect();
         gain.disconnect();
       };
@@ -66,6 +76,7 @@ export function sessionSound(enabled: () => boolean) {
       document.removeEventListener("pointerdown", unlock, true);
       document.removeEventListener("keydown", unlock, true);
       buffers = {};
+      playing.clear();
       void context?.close().catch(() => {});
     },
   };

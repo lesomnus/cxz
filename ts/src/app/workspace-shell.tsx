@@ -49,7 +49,7 @@ export function Workspace({
   const addSession = useRef<HTMLButtonElement>(null);
   useEffect(() => setAddingSession(false), [resource, session]);
   const inventory = useResourceInventory(c);
-  const unread = useSessionAttention(
+  const { unread, errors } = useSessionAttention(
     c,
     inventory.sessions,
     resource === "sessions" ? session : "",
@@ -114,6 +114,7 @@ export function Workspace({
               <ResourceIcon
                 kind={view}
                 unreadCount={view === "sessions" ? unread.size : 0}
+                error={view === "sessions" && errors.size > 0}
               />
               <span>{view === "sessions" ? t("Sessions") : t("Projects")}</span>
             </RouteLink>
@@ -235,6 +236,7 @@ export function Workspace({
                     loading={inventory.loading.sessions}
                     selected={session}
                     unread={unread}
+                    errors={errors}
                     open={!collapsed.has(p.runtimeId)}
                     toggle={() =>
                       setCollapsed((old) => {

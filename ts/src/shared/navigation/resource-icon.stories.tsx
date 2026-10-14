@@ -23,3 +23,7 @@ export const MultipleUnread: StoryObj<typeof meta> = {
   args: { unreadCount: 12 },
 };
 export const ManyUnread: StoryObj<typeof meta> = { args: { unreadCount: 123 } };
+
+export const UnreadError: StoryObj<typeof meta> = {
+  args: { unreadCount: 3, error: true },
+};

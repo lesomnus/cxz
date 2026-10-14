@@ -16,6 +16,8 @@ export const messages = {
   "Load more results": "Load more results",
 
   Profile: "Profile",
+  "Search {label}": "Search {label}",
+  "No matches": "No matches",
   "Background job status unavailable": "Background job status unavailable",
   "{count} active background job": "{count} active background job",
   "{count} active background jobs": "{count} active background jobs",
@@ -558,6 +560,7 @@ export const messages = {
     "Alias must be 3–20 characters: lowercase letters, digits and single hyphens, beginning with a letter.",
   Confirm: "Confirm",
   Title: "Title",
+  "Unread error": "Unread error",
   "Unread response": "Unread response",
   "{count} unread sessions": "{count} unread sessions",
   Notifications: "Notifications",

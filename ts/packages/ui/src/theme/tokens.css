@@ -1,5 +1,6 @@
 /* Shared monochrome ramp. Dark values retain the existing appearance. */
 :root {
+  --ui-brand-color: #d9ff30;
   --ui-font-mono: ui-monospace, SFMono-Regular, Consolas, monospace;
   --ui-shade-0: #000000;
   --ui-shade-16: #101010;

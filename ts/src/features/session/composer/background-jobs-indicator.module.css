@@ -57,7 +57,7 @@
   transition: stroke 180ms ease;
 }
 .glow {
-  stroke: #d9ff30;
+  stroke: var(--ui-brand-color);
   opacity: 0;
   stroke-linecap: round;
   transition:

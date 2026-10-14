@@ -15,7 +15,7 @@ function stream(rows) {
   });
   return Buffer.concat([...frames, Buffer.from([2, 0, 0, 0, 2, 123, 125])]);
 }
-async function fixture(page, helpers = false) {
+async function fixture(page, helpers = false, extraProject = false) {
   const id = (value) => Buffer.from(value.padEnd(16, "0")).toString("base64");
   const project = {
     id: id("project"),
@@ -26,6 +26,18 @@ async function fixture(page, helpers = false) {
     listed: true,
     status: { state: "running" },
   };
+  const projects = extraProject
+    ? [
+        project,
+        {
+          ...project,
+          id: id("second"),
+          runtimeId: "second",
+          alias: "docs-playground",
+          name: "Docs playground",
+        },
+      ]
+    : [project];
   const account = {
     id: id("account"),
     alias: "work",
@@ -127,9 +139,11 @@ async function fixture(page, helpers = false) {
       recent: [],
       summaries: [],
     };
-    if (path === "/cxz.ProjectService/List") return send({ items: [project] });
+    if (path === "/cxz.ProjectService/List") return send({ items: projects });
     if (path === "/cxz.ProjectService/Watch")
-      return sendStream([{ items: [{ id: project.id, value: project }] }]);
+      return sendStream([
+        { items: projects.map((value) => ({ id: value.id, value })) },
+      ]);
     if (path === "/cxz.ProjectService/Get") return send(project);
     if (path === "/cxz.AccountService/List") return send({ items: [account] });
     if (path === "/cxz.AccountService/Add")
@@ -662,12 +676,12 @@ test("local session search Enter visits loaded responses before wrapping without
 test("project picker supports fuzzy search, keyboard selection and dark form backgrounds", async ({
   page,
 }) => {
-  await fixture(page);
+  await fixture(page, false, true);
   await page.getByRole("link", { name: "Sessions view", exact: true }).click();
-  await page
-    .getByRole("button", { name: "New session", exact: true })
-    .click();
-  const create = page.getByRole("dialog", { name: "Add session", exact: true });
+  await page.getByRole("button", { name: "New session", exact: true }).click();
+  const create = page
+    .getByRole("dialog", { name: "Add session", exact: true })
+    .or(page.getByRole("region", { name: "New session", exact: true }));
   await expect(create).toBeVisible();
   const projectPicker = create.getByRole("combobox", {
     name: "Project",
@@ -682,32 +696,56 @@ test("project picker supports fuzzy search, keyboard selection and dark form bac
   ).toBe(
     await titleInput.evaluate((el) => getComputedStyle(el).backgroundColor),
   );
+  const triggerBounds = await projectPicker.boundingBox();
   await projectPicker.click();
-  const search = create.getByRole("combobox", {
+  const search = page.getByRole("combobox", {
     name: "Search Project",
     exact: true,
   });
   await expect(search).toBeFocused();
-  await search.fill("dmprj");
+  await expect(search).toHaveValue("Demo project");
+  await search.press("Enter");
+  await expect(search).toHaveCount(0);
+  await expect(projectPicker).toHaveText("Demo project");
+  await projectPicker.click();
+  await expect(search).toHaveValue("Demo project");
+  const searchBounds = await search.boundingBox();
+  expect(searchBounds.x).toBeCloseTo(triggerBounds.x, 0);
+  expect(searchBounds.y).toBeCloseTo(triggerBounds.y, 0);
+  await expect(search).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await expect(
+    page.getByRole("option", { name: "Demo project", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("option", { name: "Docs playground", exact: true }),
+  ).toBeVisible();
+  await search.fill("dcsplg");
   await expect(search).toBeFocused();
   await expect(
-    create.getByRole("option", { name: "Demo project", exact: true }),
+    page.getByRole("option", { name: "Docs playground", exact: true }),
   ).toBeVisible();
   await search.fill("not-a-project");
-  await expect(create.getByRole("status")).toHaveText("No matches");
+  await expect(page.getByRole("status")).toHaveText("No matches");
   await search.press("Enter");
   await expect(search).toBeVisible();
-  await search.fill("PROJECT");
+  await search.fill("DOCS");
   await search.press("ArrowDown");
   await expect(
-    create.getByRole("option", { name: "Demo project", exact: true }),
+    page.getByRole("option", { name: "Docs playground", exact: true }),
   ).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(search).toHaveCount(0);
   await expect(create).toBeVisible();
   await expect(projectPicker).toBeFocused();
   await projectPicker.click();
-  await expect(search).toHaveValue("");
+  await expect(search).toHaveValue("Docs playground");
+  await search.fill("");
+  await expect(
+    page.getByRole("option", { name: "Docs playground", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("option", { name: "Demo project", exact: true }),
+  ).toBeVisible();
   await search.press("Escape");
   await expect(create).toBeVisible();
 });
