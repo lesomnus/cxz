@@ -39,9 +39,21 @@ test("WASM sandbox reuses the UI without backend, credentials or provider calls"
   const message = page.getByRole("textbox", { name: "Message", exact: true });
   await message.fill("Test message");
   await page.getByRole("button", { name: "Send", exact: true }).click();
+  await expect(page.locator(".conversation")).toHaveAttribute(
+    "aria-description",
+    /idle/,
+  );
+  await page
+    .locator(".transcript-row")
+    .filter({ has: page.locator("article.input") })
+    .last()
+    .locator("xpath=following-sibling::*[.//*[@data-work-summary]][1]")
+    .getByRole("button", { name: "View details", exact: true })
+    .click();
   await expect(
-    page.getByRole("button", { name: "Completed Tool result", exact: true }),
+    page.locator('#work-dialog .tool-activity[data-state="completed"]').last(),
   ).toBeVisible();
+  await page.getByRole("button", { name: "Close task dialog" }).click();
   // Shared pending-question UI sends the same Reply RPC through the WASM transport.
   await page.getByLabel("Scenario", { exact: true }).selectOption("session-4");
   await expect(
@@ -73,13 +85,24 @@ test("WASM sandbox reuses the UI without backend, credentials or provider calls"
   await page.getByLabel("Scenario", { exact: true }).selectOption("session-6");
   await message.fill("Run a sample");
   await page.getByRole("button", { name: "Send", exact: true }).click();
+  await expect(page.locator(".conversation")).toHaveAttribute(
+    "aria-description",
+    /idle/,
+  );
+  await page
+    .locator(".transcript-row")
+    .filter({ has: page.locator("article.input") })
+    .last()
+    .locator("xpath=following-sibling::*[.//*[@data-work-summary]][1]")
+    .getByRole("button", { name: "View details", exact: true })
+    .click();
   await expect(
-    page.getByRole("button", { name: "Completed Tool result", exact: true }),
+    page.locator('#work-dialog .tool-activity[data-state="completed"]').last(),
   ).toBeVisible();
   const first = await page
-    .locator(".event-detail")
-    .filter({ hasText: /^tool ·/ })
+    .locator("#work-dialog .activity-card-content")
     .allTextContents();
+  await page.getByRole("button", { name: "Close task dialog" }).click();
   await page
     .getByRole("button", { name: "Reset sandbox", exact: true })
     .first()
@@ -88,15 +111,24 @@ test("WASM sandbox reuses the UI without backend, credentials or provider calls"
   await expect(page.getByText("Run a sample", { exact: true })).toHaveCount(0);
   await message.fill("Run a sample");
   await page.getByRole("button", { name: "Send", exact: true }).click();
+  await expect(page.locator(".conversation")).toHaveAttribute(
+    "aria-description",
+    /idle/,
+  );
+  await page
+    .locator(".transcript-row")
+    .filter({ has: page.locator("article.input") })
+    .last()
+    .locator("xpath=following-sibling::*[.//*[@data-work-summary]][1]")
+    .getByRole("button", { name: "View details", exact: true })
+    .click();
   await expect(
-    page.getByRole("button", { name: "Completed Tool result", exact: true }),
+    page.locator('#work-dialog .tool-activity[data-state="completed"]').last(),
   ).toBeVisible();
   expect(
-    await page
-      .locator(".event-detail")
-      .filter({ hasText: /^tool ·/ })
-      .allTextContents(),
+    await page.locator("#work-dialog .activity-card-content").allTextContents(),
   ).toEqual(first);
+  await page.getByRole("button", { name: "Close task dialog" }).click();
   expect(backend).toEqual([]);
   expect(errors).toEqual([]);
   await page.screenshot({

@@ -18,6 +18,11 @@ export function sessionCommands(
     { name: "/effort", description: t("Choose the reasoning effort") },
     { name: "/compact", description: t("Compact the current context") },
     { name: "/download", description: t("Download a container file") },
+    { name: "/memory", description: "Open shared memory" },
+    { name: "/usage", description: "View retained conversation usage" },
+    { name: "/background", description: "View provider background tasks" },
+    { name: "/aux", description: "Run or configure auxiliary AI" },
+    { name: "/@redact", description: "Insert a secret file reference" },
   ];
   if (agent === "claude")
     commands.push({

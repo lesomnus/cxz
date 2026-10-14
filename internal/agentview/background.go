@@ -16,17 +16,24 @@ type BackgroundTask struct {
 type backgroundEvent struct {
 	BackgroundTask
 	Type         string           `json:"type"`
+	Provider     string           `json:"provider"`
 	Subtype      string           `json:"subtype"`
 	Backgrounded bool             `json:"is_backgrounded"`
 	Tasks        []BackgroundTask `json:"tasks"`
 	Patch        BackgroundTask   `json:"patch"`
 }
 
-// IsBackgroundEvent recognizes Claude's native system envelope. Raw journal
-// records remain intact; the API may expose these as background telemetry.
+// IsBackgroundEvent recognizes native Claude telemetry and normalized provider
+// snapshots. Raw journal records remain intact.
 func IsBackgroundEvent(raw []byte) bool {
 	var e backgroundEvent
-	if json.Unmarshal(raw, &e) != nil || e.Type != "system" {
+	if json.Unmarshal(raw, &e) != nil {
+		return false
+	}
+	if e.Type == "background" && e.Provider == "codex" {
+		return e.Subtype == "background_tasks_changed" || e.Subtype == "background_status"
+	}
+	if e.Type != "system" {
 		return false
 	}
 	switch e.Subtype {
@@ -37,8 +44,9 @@ func IsBackgroundEvent(raw []byte) bool {
 }
 
 type BackgroundState struct {
-	Tasks    map[string]BackgroundTask
-	Snapshot bool
+	Tasks       map[string]BackgroundTask
+	Snapshot    bool
+	Unavailable bool `json:"Unavailable,omitempty"`
 }
 
 func (s *BackgroundState) Apply(raw []byte) {
@@ -49,10 +57,19 @@ func (s *BackgroundState) Apply(raw []byte) {
 	if s.Tasks == nil {
 		s.Tasks = map[string]BackgroundTask{}
 	}
+	if e.Subtype == "background_status" {
+		s.Unavailable = true
+		s.Snapshot = false
+		return
+	}
+	s.Unavailable = false
 	if e.Subtype == "background_tasks_changed" {
 		s.Snapshot = true
 		for id, t := range s.Tasks {
 			t.Active = false
+			if e.Provider == "codex" {
+				t.Status = "inactive"
+			}
 			s.Tasks[id] = t
 		}
 		for _, t := range e.Tasks {

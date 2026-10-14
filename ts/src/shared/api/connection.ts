@@ -5,11 +5,14 @@ import { Queries } from "@lesomnus/payday/query";
 import { entities } from "#gen/entities";
 import { ProjectService } from "#gen/cxz/project_svc_pb";
 import { SessionService } from "#gen/cxz/session_svc_pb";
+import { AccountService } from "#gen/cxz/account_svc_pb";
+import { AuthBindingService } from "#gen/cxz/auth_binding_svc_pb";
 import type { ComposerPaste } from "#src/features/session/composer/composer-pastes.ts";
 import type { EditorState } from "#src/features/workspace/editor/workspace-editor.tsx";
 import { ResourceInventory } from "./resource-inventory";
 import { SessionDrafts } from "#src/features/session/model/session-drafts.ts";
 import { SessionAttention } from "#src/features/session/model/session-attention.ts";
+import { rpcFetch } from "./stream-fetch";
 
 // All client state belongs to one authenticated Connection. No credentials or
 // conversation cache are persisted in localStorage. Drafts use tab-local storage.
@@ -20,6 +23,8 @@ export class Connection {
   readonly queries;
   readonly projects;
   readonly sessions;
+  readonly accounts;
+  readonly bindings;
   readonly inventory;
   readonly attention;
   // Original paste bodies stay in this authenticated connection's memory, like drafts.
@@ -37,8 +42,7 @@ export class Connection {
       transport ??
       createConnectTransport({
         baseUrl,
-        fetch: (input, init) =>
-          fetch(input, { ...init, credentials: "same-origin" }),
+        fetch: rpcFetch,
       });
     this.store = Store.open(entities, {
       name: "cxz",
@@ -47,6 +51,8 @@ export class Connection {
     this.queries = new Queries(this.store, this.transport, entities);
     this.projects = createClient(ProjectService, this.transport);
     this.sessions = createClient(SessionService, this.transport);
+    this.accounts = createClient(AccountService, this.transport);
+    this.bindings = createClient(AuthBindingService, this.transport);
     this.attention = new SessionAttention(this.sessions, baseUrl);
     this.inventory = new ResourceInventory(
       this.projects,

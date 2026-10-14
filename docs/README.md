@@ -12,6 +12,7 @@ start. This is the map of everything else.
 | [settings.md](settings.md) | `cxz edit`, `settings.jsonc`, shared sources, file mappings |
 | [docker.md](docker.md) | What cxz creates, the shared engine, Compose overrides, remote engines |
 | [remote.md](remote.md) | SSH and TCP frontends, named connections, Windows |
+| [attachment-data-path.md](attachment-data-path.md) | Raw attachment streaming, compatibility, cancellation and processing measurements |
 | [web.md](web.md) | Browser client: loopback desktop setup, VPN HTTPS, current support |
 | [web-editor.md](web-editor.md) | Wide-view file preview, devcontainer IDE connection, WASM fake connection and Linux review |
 | [web-terminal.md](web-terminal.md) | Conversation shell shortcut, PTY lifetime, authenticated browser transport and WASM simulation |

@@ -21,6 +21,7 @@
     "storybook": "storybook dev -p 6006 --host 0.0.0.0 --no-open",
     "build-storybook": "storybook build",
     "test:storybook": "playwright test --config playwright.storybook.config.ts",
+    "test:performance": "playwright test --config playwright.performance.config.ts",
     "build:ui": "npm run build --workspace @lesomnus/cxz-ui",
     "storybook:ui": "storybook dev -c .storybook-ui -p 6008 --host 0.0.0.0 --no-open",
     "build-storybook:ui": "storybook build -c .storybook-ui -o storybook-ui-static",
@@ -60,7 +61,8 @@
     "storybook": "10.6.1",
     "typescript": "5.9.3",
     "vite": "7.3.6",
-    "vitest": "5.0.3"
+    "vitest": "5.0.3",
+    "ws": "8.22.0"
   },
   "workspaces": [
     "packages/*"

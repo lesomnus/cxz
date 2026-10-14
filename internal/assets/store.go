@@ -19,6 +19,12 @@ import (
 const MaxSize int64 = 1024 * 1024 * 1024
 const MountPath = "/cxz/assets"
 
+var ErrSizeMismatch = errors.New("attachment size mismatch")
+
+func ValidName(name string) bool {
+	return name != "" && len(name) <= 255 && utf8.ValidString(name) && name != "." && name != ".." && !strings.ContainsAny(name, "/\\") && !strings.ContainsFunc(name, unicode.IsControl)
+}
+
 // Upload describes a single live request. It is never persisted as metadata.
 type Upload struct {
 	SessionID, RunID, Name string
@@ -50,7 +56,7 @@ func Add(ctx context.Context, root, project, session, name string, size int64, s
 	if !ValidID(project) || !ValidID(session) {
 		return "", fmt.Errorf("invalid attachment scope")
 	}
-	if name == "" || len(name) > 255 || !utf8.ValidString(name) || name == "." || name == ".." || strings.ContainsAny(name, "/\\") || strings.ContainsFunc(name, unicode.IsControl) {
+	if !ValidName(name) {
 		return "", fmt.Errorf("invalid attachment filename")
 	}
 	if size < 0 || size > MaxSize {
@@ -146,7 +152,7 @@ func (r *sizedReader) Read(p []byte) (int, error) {
 	n, err := r.src.Read(p)
 	r.remaining -= int64(n)
 	if r.remaining < 0 {
-		return n, fmt.Errorf("attachment exceeds declared size")
+		return n, fmt.Errorf("%w: exceeds declared size", ErrSizeMismatch)
 	}
 	if err == io.EOF && r.remaining != 0 {
 		err = io.ErrUnexpectedEOF

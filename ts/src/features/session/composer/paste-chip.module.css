@@ -1,0 +1,33 @@
+.chip {
+  position: relative;
+  z-index: 2;
+  visibility: visible;
+  /* Reserve the last pixel for the native caret; no outward shadow covers it. */
+  --chip-background: var(--shade-56);
+  background: linear-gradient(
+    to left,
+    transparent 1px,
+    var(--chip-background) 1px
+  );
+  border-radius: 4px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.chip:hover,
+.chip:focus-visible {
+  --chip-background: var(--shade-72);
+  outline: none;
+  color: var(--shade-255);
+}
+.leading {
+  color: var(--shade-65);
+}
+.chip[data-upload-state="uploading"] {
+  color: var(--shade-150);
+}
+.chip[data-upload-state="error"] {
+  outline: 1px solid var(--shade-120);
+  outline-offset: -1px;
+}

@@ -1,0 +1,23 @@
+.metric {
+  --metric-value-width: 5ch;
+  flex-shrink: 0;
+}
+.metric:is([data-metric="duration"], [data-metric="api_duration_ms"]) {
+  --metric-value-width: 8ch;
+}
+.metric:is([data-metric="tool_calls"], [data-metric="api_turns"]) {
+  --metric-value-width: 4ch;
+}
+.value {
+  width: var(--metric-value-width);
+  flex-shrink: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: right;
+  font-family: var(--ui-font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.value :global(.elapsed-time) {
+  color: inherit;
+  font-size: inherit;
+}

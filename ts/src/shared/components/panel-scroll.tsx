@@ -1,13 +1,34 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { clamp } from "#src/shared/lib/math.ts";
 
 // Native scrolling keeps wheel, touch and focus navigation predictable; only
 // its visual handle is custom, sharing the conversation handle's appearance.
-export function PanelScroll({ children }: { children: ReactNode }) {
+export function PanelScroll({
+  children,
+  viewportRef,
+}: {
+  children: ReactNode;
+  viewportRef?: RefObject<HTMLDivElement | null>;
+}) {
   const id = useId();
   const region = useRef<HTMLDivElement>(null);
   const pane = useRef<HTMLDivElement>(null);
+  const attachPane = useCallback(
+    (node: HTMLDivElement | null) => {
+      pane.current = node;
+      if (viewportRef) viewportRef.current = node;
+    },
+    [viewportRef],
+  );
   const content = useRef<HTMLDivElement>(null);
   const rail = useRef<HTMLDivElement>(null);
   const drag = useRef<{ pointer: number; y: number; top: number } | null>(null);
@@ -110,7 +131,7 @@ export function PanelScroll({ children }: { children: ReactNode }) {
       onPointerLeave={() => setNear(false)}
     >
       <div
-        ref={pane}
+        ref={attachPane}
         id={id}
         className="panel-scroll-content"
         onScroll={scrolled}

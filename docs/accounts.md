@@ -82,6 +82,32 @@ account may hold.
 
 ## The accounts view
 
+In the web UI, **Accounts** has its own profile panel and detail area. Select a
+profile to see its metadata, listed sessions and recorded token/cost usage.
+The panel's add button opens a modal form beside the panel. Usage covers retained
+conversation records for the account's listed sessions; it does not represent
+provider billing or remaining quota.
+
+`AccountService.Status(AccountRef)` describes local authentication readiness:
+saved credentials present, login required, authentication busy, or a
+session-scoped login. The response contains no credentials and does not claim
+provider-side verification. Central Codex profiles enable **Log in** only when
+needed. Project-local OAuth profiles have independent session credentials and
+cannot truthfully report a single global logged-in flag.
+
+`AccountService.Logout(AccountRef)` removes the central saved credential and
+revokes its project and auxiliary token-supply capabilities. It preserves the
+account's immutable identity pin and other profiles. Already-issued provider
+access tokens can remain usable until their expiry; the operation does not
+revoke a grant at the provider. Session-local login removal is not supported by
+this account-scoped operation. The web UI confirms logout before executing it.
+
+These RPCs and the account filter on `SessionService.ConversationStats` require
+an updated Manager. Older servers show status as unavailable rather than guessing
+that login is required or presenting all-account usage as one account's usage.
+
+### TUI
+
 `a` in the project list opens accounts without leaving the TUI; `n` for a new
 session opens the same view in selection mode, and an empty list offers to create
 an account.

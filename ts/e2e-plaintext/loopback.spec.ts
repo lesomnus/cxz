@@ -16,7 +16,7 @@ test("sign in over loopback http, stay signed in, sign out", async ({
   await page.getByLabel("Web access token").fill("a".repeat(32));
   await page.getByRole("button", { name: "Connect", exact: true }).click();
   await expect(
-    page.getByRole("button", { name: /Demo project/ }),
+    page.getByRole("link", { name: /demo-chat/ }).first(),
   ).toBeVisible();
 
   const named = async () =>
@@ -29,14 +29,17 @@ test("sign in over loopback http, stay signed in, sign out", async ({
   // A reload carries the cookie: the session is the server's, not the tab's.
   await page.reload();
   await expect(
-    page.getByRole("button", { name: /Demo project/ }),
+    page.getByRole("link", { name: /demo-chat/ }).first(),
   ).toBeVisible();
 
   // HSTS is a promise about a host; a loopback gateway must not make one.
   const response = await page.goto("/");
   expect(response?.headers()["strict-transport-security"]).toBeUndefined();
 
-  await page.getByRole("link", { name: /demo-chat/ }).click();
+  await page
+    .getByRole("link", { name: /demo-chat/ })
+    .first()
+    .click();
   await page.keyboard.press("Control+Backquote");
   const terminal = page.getByRole("region", { name: "Workspace terminal" });
   await expect(terminal).toContainText("fixture$");

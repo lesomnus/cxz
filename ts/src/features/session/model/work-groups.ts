@@ -1,0 +1,76 @@
+import type { SessionEvent } from "#gen/cxz/session_pb";
+import { isTranscriptEvent } from "./journal";
+import { isDiagnosticEvent } from "./event-diagnostic";
+
+export type WorkGroup = {
+  id: string;
+  anchor: SessionEvent;
+  events: SessionEvent[];
+  hasBoundary: boolean;
+};
+// Keep conversation and actionable/important notices visible. Everything else
+// belongs in the work dialog, including provider-specific and future work kinds.
+const conversationKinds = new Set([
+  "input",
+  "assistant",
+  "approval",
+  "history_trimmed",
+]);
+export const isWorkEvent = (event: SessionEvent) =>
+  isTranscriptEvent(event) &&
+  !conversationKinds.has(event.kind) &&
+  !isDiagnosticEvent(event) &&
+  !(
+    event.kind === "turn_end" && ["failed", "interrupted"].includes(event.text)
+  );
+
+// Conversation replies delimit work batches; runtime IDs keep executions isolated.
+// Rows already represent executions, not their individual output/result updates.
+export function workGroups(events: SessionEvent[]) {
+  const active = new Map<string, WorkGroup>();
+  const boundaries = new Set<string>();
+  const groups = new Map<string, WorkGroup>();
+  const summaries = new Map<bigint, WorkGroup>();
+  const rows: SessionEvent[] = [];
+  for (const event of events) {
+    if (isWorkEvent(event)) {
+      let group = active.get(event.runId);
+      if (!group) {
+        group = {
+          id: `${event.runId}/work/${event.seq}`,
+          anchor: event,
+          events: [],
+          hasBoundary: boundaries.has(event.runId),
+        };
+        active.set(event.runId, group);
+        groups.set(group.id, group);
+        summaries.set(event.seq, group);
+        rows.push(event);
+      }
+      group.events.push(event);
+    } else rows.push(event);
+    if (["input", "assistant", "turn_end"].includes(event.kind)) {
+      active.delete(event.runId);
+      if (event.kind !== "turn_end") boundaries.add(event.runId);
+    }
+  }
+  return { events: rows, groups, summaries };
+}
+
+// Paging can replace an orphan result's row with its earlier call. Keep the
+// dialog attached to the execution when its display anchor or turn key changes.
+export function selectedWorkGroup(
+  groups: Map<string, WorkGroup>,
+  selected?: SessionEvent,
+) {
+  if (!selected) return;
+  return [...groups.values()].find((group) =>
+    group.events.some(
+      (event) =>
+        event.seq === selected.seq ||
+        (selected.requestId &&
+          event.requestId === selected.requestId &&
+          event.runId === selected.runId),
+    ),
+  );
+}

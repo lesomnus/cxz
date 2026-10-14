@@ -4,6 +4,7 @@ import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createServer } from "vite";
+import WebSocket from "ws";
 import { devGatewayPlugin, loadDevGateway } from "./web-dev.mjs";
 
 const token = "test-only-token-".repeat(4);
@@ -104,7 +105,11 @@ describe("dev gateway discovery", () => {
   });
 });
 
-async function fixture({ loginStatus = 204, publicToken = false } = {}) {
+async function fixture({
+  loginStatus = 204,
+  publicToken = false,
+  streamRPC = false,
+} = {}) {
   const dir = await temp();
   const tokenFile = join(
     dir,
@@ -135,6 +140,10 @@ async function fixture({ loginStatus = 204, publicToken = false } = {}) {
           : {},
       );
       res.end(loginStatus === 204 ? undefined : token);
+    } else if (streamRPC && req.url === "/cxz.SessionService/Events") {
+      res.writeHead(200, { "Content-Type": "application/connect+json" });
+      res.write(Buffer.from([0, 0, 0, 0, 2, 123, 125]));
+      res.on("close", () => calls.push({ path: "stream canceled" }));
     } else {
       res.end("proxied");
     }
@@ -174,6 +183,55 @@ async function fixture({ loginStatus = 204, publicToken = false } = {}) {
 }
 
 describe("Vite against a real HTTP gateway", () => {
+  it("carries live RPC bytes locally, preserves gateway auth and releases the upstream on close", async () => {
+    const f = await fixture({ streamRPC: true });
+    const socket = new WebSocket(
+      f.url.replace("http:", "ws:") + "/rpc-stream/cxz.SessionService/Events",
+      { headers: { Origin: f.url, Cookie: "test-session=valid" } },
+    );
+    const frames = [];
+    socket.on("message", (data, binary) => frames.push({ data, binary }));
+    await new Promise((resolve, reject) => {
+      socket.once("open", resolve);
+      socket.once("error", reject);
+    });
+    const body = Buffer.from([0, 0, 0, 0, 2, 123, 125]);
+    socket.send(
+      JSON.stringify({
+        headers: {
+          "content-type": "application/connect+json",
+          "connect-protocol-version": "1",
+          cookie: "foreign-cookie",
+          origin: "https://foreign.test",
+          authorization: "ignored",
+        },
+      }),
+    );
+    socket.send(body);
+    await expect.poll(() => frames.length).toBe(2);
+    expect(JSON.parse(frames[0].data.toString()).status).toBe(200);
+    expect(frames[1].binary).toBe(true);
+    expect(frames[1].data).toEqual(body);
+    expect(f.calls[0].headers.origin).toBe(f.origin);
+    expect(f.calls[0].headers.cookie).toBe("test-session=valid");
+    expect(f.calls[0].headers.authorization).toBeUndefined();
+    expect(f.calls[0].body).toBe(body.toString());
+    socket.close();
+    await expect
+      .poll(() => f.calls.some((call) => call.path === "stream canceled"))
+      .toBe(true);
+    const wrong = new WebSocket(
+      f.url.replace("http:", "ws:") + "/rpc-stream/cxz.SessionService/Events",
+      {
+        headers: {
+          Origin: "https://foreign.test",
+          Cookie: "test-session=valid",
+        },
+      },
+    );
+    await new Promise((resolve) => wrong.once("error", resolve));
+    expect(f.calls).toHaveLength(2);
+  });
   it("does not expose a token through Vite's public directory", async () => {
     const f = await fixture({ publicToken: true });
     for (const path of [

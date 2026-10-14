@@ -9,16 +9,22 @@ test("mobile sign-in, conversation, questions, drafts and sign-out", async ({
   await page.getByLabel("Web access token").fill("a".repeat(32));
   await page.getByRole("button", { name: "Connect", exact: true }).click();
   await expect(
-    page.getByRole("button", { name: /Demo project/ }),
+    page.getByRole("heading", { name: "Sessions", exact: true }),
   ).toBeVisible();
-  await page.getByRole("link", { name: /demo-chat/ }).click();
+  await page
+    .getByRole("link", { name: /demo-chat/ })
+    .first()
+    .click();
   await expect(page.getByRole("heading", { name: "Ready" })).toBeVisible();
   await expect(page.locator(".response-settings")).toHaveText(
     "fixture-model · high",
   );
   await expect(
     page.getByLabel("Response metrics", { exact: true }),
-  ).toContainText("4.2s");
+  ).toContainText("00:00:04");
+  await expect(
+    page.locator('.response-metric[data-metric="duration"]'),
+  ).toHaveAttribute("aria-label", "Duration: 4.2s");
   const question = page.getByRole("region", { name: "Question", exact: true });
   await expect(
     question.getByRole("radio", { name: /Development/ }),
@@ -36,7 +42,10 @@ test("mobile sign-in, conversation, questions, drafts and sign-out", async ({
     .getByRole("textbox", { name: "Message", exact: true })
     .fill("초안 preserved");
   await page.goBack();
-  await page.getByRole("link", { name: /demo-chat/ }).click();
+  await page
+    .getByRole("link", { name: /demo-chat/ })
+    .first()
+    .click();
   await expect(
     page.getByRole("textbox", { name: "Message", exact: true }),
   ).toHaveValue("초안 preserved");

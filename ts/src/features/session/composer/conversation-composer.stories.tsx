@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useArgs } from "storybook/preview-api";
 import { useState } from "react";
+import { Button } from "@lesomnus/cxz-ui";
+import { SessionDrafts } from "#src/features/session/model/session-drafts.ts";
 import { create } from "@bufbuild/protobuf";
 import { ProjectPathEntrySchema } from "#gen/cxz/project_svc_pb";
 import {
@@ -37,6 +39,55 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const Empty: Story = {};
+export const CursorMemory: Story = {
+  render: function CursorMemory() {
+    const [drafts] = useState(
+      () => new SessionDrafts("storybook-cursor-memory", new Map()),
+    );
+    const [session, select] = useState("one");
+    const [value, setValue] = useState(() => drafts.get("one") ?? "");
+    return (
+      <>
+        <nav aria-label="Preview sessions">
+          {["one", "two"].map((id) => (
+            <Button
+              key={id}
+              role="tab"
+              aria-selected={session === id}
+              onClick={() => {
+                setValue(drafts.get(id) ?? "");
+                select(id);
+              }}
+            >
+              {id}
+            </Button>
+          ))}
+        </nav>
+        <ComponentPreview
+          key={session}
+          value={value}
+          autoFocus
+          initialSelection={drafts.selection(session)}
+          onSelectionChange={(selection) =>
+            drafts.setSelection(session, selection)
+          }
+          onChange={(text) => {
+            drafts.set(session, text);
+            setValue(text);
+          }}
+        />
+      </>
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Switch sessions to restore the draft, caret/selection direction and editor scroll position. Entry focuses the editor. The tab-local cursor record also survives refresh and is stored separately so caret movements do not rewrite pasted file contents.",
+      },
+    },
+  },
+};
 export const VoiceInput: Story = {
   parameters: {
     docs: {
@@ -144,7 +195,7 @@ export const FileUploads: Story = {
     docs: {
       description: {
         story:
-          "Drop files or folders into the editor, or open Session menu → Upload files / Upload folder. Folders retain their tree in a tar archive. Large pastes become text-file chips. Send stays disabled until every attachment finishes. Click a chip to inspect its path or remove it. This preview simulates upload acknowledgement; no server file is written and Send does not start a turn. The connected WASM sandbox exercises the real Upload RPC with in-memory files.",
+          "Drop files or folders into the editor, or open Session menu → Upload files / Upload folder. Folders retain their tree in a tar archive. Large pastes show [Paste 012%] while transferring, with dark leading zeros, then a compact UTF-8 byte count such as [Text 34.5K] after acknowledgement. Picked files retain their names beside the status or size. The textarea contains exactly the visible chip label; sizes occupy a fixed field with dark leading zeros, and internal references stay in the draft model. Logical selections follow those references through progress, completion, copying and undo. Chips and code-block controls remain visible while composing with an IME. Send stays disabled until every attachment finishes. Click a chip to inspect its path or remove it. This preview simulates upload progress and acknowledgement; no server file is written and Send does not start a turn. The connected WASM sandbox exercises the real Upload RPC with in-memory files.",
       },
     },
   },

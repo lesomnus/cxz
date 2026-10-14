@@ -7,17 +7,73 @@ import {
   useRef,
   useState,
   type ReactNode,
+  type ComponentProps,
 } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "@lesomnus/cxz-ui";
 import { EventTimePopover } from "./event-time-popover";
 import { useAnchoredCard } from "#src/features/session/cards/floating-card.tsx";
+import styles from "./activity-card.module.css";
+import workStyles from "./work-dialog.module.css";
 
 export const ActivityCardUnfolded = createContext(false);
+export const ActivityWorkContext = createContext<
+  | {
+      selected?: string;
+      select: (seq: string | undefined) => void;
+      detailsOnly?: boolean;
+      controls?: string;
+    }
+  | undefined
+>(undefined);
+
+export function ActivityCard(
+  props: ComponentProps<typeof TranscriptActivityCard>,
+) {
+  const dialog = useContext(ActivityWorkContext);
+  if (dialog?.detailsOnly) return props.details();
+  return dialog ? (
+    <WorkActivityCard {...props} dialog={dialog} />
+  ) : (
+    <TranscriptActivityCard {...props} />
+  );
+}
+
+function WorkActivityCard({
+  seq,
+  timeMs,
+  title,
+  children,
+  className = "",
+  state,
+  dialog,
+}: ComponentProps<typeof TranscriptActivityCard> & {
+  dialog: NonNullable<React.ContextType<typeof ActivityWorkContext>>;
+}) {
+  const id = useId();
+  const expanded = dialog.selected === seq.toString();
+  return (
+    <div className={workStyles.task}>
+      <Button
+        type="button"
+        data-seq={seq.toString()}
+        data-state={state}
+        className={className}
+        aria-label={title}
+        aria-expanded={expanded}
+        aria-controls={expanded ? dialog.controls : undefined}
+        onClick={() => dialog.select(expanded ? undefined : seq.toString())}
+      >
+        <span className="activity-card-content">{children}</span>
+        <EventTimePopover timeMs={timeMs} id={`${id}-time`} />
+      </Button>
+    </div>
+  );
+}
 
 // The virtual row owns the folded footprint; this face can unfold above its
 // neighbors without changing the transcript's measured heights or scroll map.
-export function ActivityCard({
+function TranscriptActivityCard({
   seq,
   timeMs,
   title,
@@ -25,6 +81,7 @@ export function ActivityCard({
   details: content,
   className = "",
   state,
+  tone,
 }: {
   seq: bigint;
   timeMs: bigint;
@@ -33,15 +90,18 @@ export function ActivityCard({
   details: () => ReactNode;
   className?: string;
   state?: string;
+  tone?: "error";
 }) {
-  const unfolded = useContext(ActivityCardUnfolded);
+  const unfolded = useContext(ActivityCardUnfolded) || tone === "error";
   const surface = useRef<HTMLDivElement>(null);
   const details = useAnchoredCard(surface);
   const timestamp = useId();
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
   const [pressed, setPressed] = useState(false);
-  const active = hovered || focused || details.present;
+  // An unfolded row already paints its full content in place. Lifting a second
+  // face on hover hides the original and can leave only the native hover box.
+  const active = !unfolded && (hovered || focused || details.present);
   const [present, setPresent] = useState(false);
   const [entered, setEntered] = useState(false);
   const [area, setArea] = useState<HTMLElement | null>(null);
@@ -134,7 +194,9 @@ export function ActivityCard({
     };
   }, [present, area]);
   const face = (
-    <span className="activity-card-face">
+    <span
+      className={`activity-card-face${tone === "error" ? ` ${styles.error}` : ""}`}
+    >
       <span className="activity-card-content">{children}</span>
     </span>
   );

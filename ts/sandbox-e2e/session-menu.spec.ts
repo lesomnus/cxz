@@ -49,6 +49,11 @@ test("composer session menu stays in the viewport, supports keyboard navigation 
     "Stop",
     "Restart",
     "Purge",
+    "Insert secret",
+    "Shared memory",
+    "Auxiliary AI",
+    "Conversation usage",
+    "Background tasks",
     "Upload files",
     "Upload folder",
     "Details",
@@ -154,7 +159,7 @@ test("Purge previews without deleting, cancels, then removes only the confirmed 
     .getByRole("button", { name: "Purge permanently", exact: true })
     .click();
   await expect(
-    page.getByRole("heading", { name: "Your workspace" }),
+    page.getByRole("heading", { name: "Sessions", exact: true }),
   ).toBeVisible();
   await expect(
     page

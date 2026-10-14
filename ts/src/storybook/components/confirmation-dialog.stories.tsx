@@ -20,7 +20,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "A modal confirmation dialog using the shared card surface, with padded header/body/footer, a distinct rounded body flush with the card sides and minimum-width actions. The body has generous vertical padding, and the footer uses compact padding; buttons have transparent default surfaces and hover backgrounds. Both actions align right, with Confirm immediately before Cancel; focus starts on Cancel and stays inside. Escape or a backdrop click cancels. The footer stays outside the scrollable body. While an action runs, duplicate execution and dismissal are disabled. Failure keeps the dialog open for retry.",
+          "A modal confirmation dialog using the shared DialogSurface translucency, backdrop blur, dimming and entrance motion, with padded header/body/footer, a distinct rounded body flush with the card sides and minimum-width actions. The body has generous vertical padding, and the footer uses compact padding; buttons have transparent default surfaces and hover backgrounds. Both actions align right, with Confirm immediately before Cancel; focus starts on Cancel and stays inside. Escape or a backdrop click cancels. The footer stays outside the scrollable body. While an action runs, duplicate execution and dismissal are disabled. Failure keeps the dialog open for retry. Centered confirmations keep their trigger under the backdrop; foreground triggers are reserved for adjacent dialogs.",
       },
     },
   },
@@ -91,5 +91,52 @@ export const LongContent: Story = {
         ))}
       </>
     ),
+  },
+};
+
+export const BlurredBackground: Story = {
+  decorators: [
+    (Story) => (
+      <div style={{ position: "relative" }}>
+        <div
+          aria-hidden="true"
+          style={{
+            position: "fixed",
+            inset: 0,
+            pointerEvents: "none",
+            background:
+              "repeating-linear-gradient(90deg, #141414 0 8px, #888 8px 16px)",
+            opacity: 0.7,
+          }}
+        />
+        <div style={{ position: "relative" }}>
+          <Story />
+        </div>
+      </div>
+    ),
+  ],
+};
+
+export const TriggerForeground: Story = {
+  decorators: [
+    (Story) => (
+      <div
+        style={{
+          position: "fixed",
+          right: "calc(4 * var(--ui-space))",
+          bottom: "calc(4 * var(--ui-space))",
+        }}
+      >
+        <Story />
+      </div>
+    ),
+  ],
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "The trigger stays visible above the dimmed page in its original position, as a disabled visual copy. It cannot act or receive keyboard focus; the dialog surface stays in front.",
+      },
+    },
   },
 };

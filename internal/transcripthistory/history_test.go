@@ -58,6 +58,35 @@ func syncPage(t *testing.T, db *sql.DB, r *api.TranscriptRequest) *api.Transcrip
 	}
 	return p
 }
+func TestDiagnosticCardsRetainMessageButLoadOriginalDetailsLazily(t *testing.T) {
+	db, add := fixture(t)
+	raw := event(1, "diagnostic", "", `{"error":{"message":"Selected model is at capacity. Please try a different model.","codexErrorInfo":"serverOverloaded","additionalDetails":"`+strings.Repeat("large private detail", 1000)+`"},"willRetry":false,"threadId":"original-thread"}`)
+	raw.Text = "Codex error"
+	add(raw)
+	page := syncPage(t, db, &api.TranscriptRequest{})
+	check := func(got *api.Event) {
+		t.Helper()
+		data := object(got.Payload)
+		if text(data, "message") != "Selected model is at capacity. Please try a different model." || text(child(data, "error"), "codexErrorInfo") != "serverOverloaded" || data["willRetry"] != false || len(got.Payload) > 300 {
+			t.Fatal("missing compact error display metadata", got)
+		}
+	}
+	check(page.Events[0])
+	// An old cached projection must rebuild even when the journal is unchanged.
+	if _, err := db.Exec(`UPDATE transcript_format SET version=3 WHERE session_id='s'`); err != nil {
+		t.Fatal(err)
+	}
+	check(syncPage(t, db, &api.TranscriptRequest{}).Events[0])
+	memory, err := FromEvents([]*api.Event{raw}, &api.TranscriptRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	check(memory.Events[0])
+	details, err := Details(context.Background(), db, &api.EventDetailsRequest{SessionId: "s", Seq: 1}, decode)
+	if err != nil || len(details.Events) != 1 || !proto.Equal(details.Events[0], raw) {
+		t.Fatal("native error detail was changed", details, err)
+	}
+}
 func TestSnapshotPagesAndLazyTaskDetails(t *testing.T) {
 	db, add := fixture(t)
 	records := []*api.Event{event(1, "input", "", ""), event(2, "tool_call", "task", `{"item":{"type":"commandExecution","command":"/bin/zsh -lc 'git status'","status":"inProgress"}}`), event(3, "approval", "approve", `{"params":{"itemId":"task"}}`), event(4, "approval_resolved", "approve", ""), event(5, "tool_output", "task", `{"content":"full output"}`), event(7, "assistant", "", "")}

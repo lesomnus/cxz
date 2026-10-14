@@ -11,11 +11,14 @@ import (
 	"net/http/httptest"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/lesomnus/cxz/internal/assets"
+	"github.com/lesomnus/cxz/internal/attachmenthttp"
 	"github.com/lesomnus/cxz/internal/dockerx"
 	"github.com/lesomnus/cxz/internal/editor"
 	"github.com/lesomnus/cxz/resource"
@@ -34,7 +37,7 @@ func TestBrowserFixture(t *testing.T) {
 	}
 	ln := bufconn.Listen(1 << 20)
 	g := grpc.NewServer()
-	f := &browserFixture{}
+	f := &browserFixture{assetRoot: t.TempDir()}
 	setupTranscriptReplay(t, f)
 	resource.RegisterProjectServiceServer(g, &fixtureProjects{probe: os.Getenv("CXZ_EDITOR_PROBE_CONTAINER")})
 	resource.RegisterSessionServiceServer(g, f)
@@ -56,7 +59,7 @@ func TestBrowserFixture(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	h, stop, err := Handler(c, conn, assets, testManagerRPC(t, g))
+	h, stop, err := Handler(c, conn, assets, testManagerRPC(t, g, attachmenthttp.Handler{Uploader: f}))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -185,6 +188,28 @@ type browserFixture struct {
 	events       []*resource.SessionEvent
 	resolved     bool
 	transcriptDB *sql.DB
+	assetRoot    string
+}
+
+func (f *browserFixture) UploadAttachment(ctx context.Context, in assets.Upload, src io.Reader) (string, error) {
+	if in.SessionID != "session" {
+		return "", status.Error(codes.NotFound, "session unavailable")
+	}
+	if in.RunID != "run" {
+		return "", status.Error(codes.FailedPrecondition, "session run changed")
+	}
+	path, err := assets.Add(ctx, f.assetRoot, "project", in.SessionID, in.Name, in.Size, src)
+	if err != nil {
+		return "", err
+	}
+	if in.Name == "report.bin" {
+		data, err := os.ReadFile(path)
+		if err != nil || !bytes.Equal(data, []byte{0, 255, 13, 10}) {
+			return "", status.Error(codes.InvalidArgument, "binary fixture changed")
+		}
+	}
+	rel, err := filepath.Rel(assets.ExportRoot(f.assetRoot, "project"), path)
+	return filepath.ToSlash(filepath.Join(assets.MountPath, rel)), err
 }
 
 func (*browserFixture) Upload(stream grpc.ClientStreamingServer[resource.SessionUploadRequest, resource.SessionAttachment]) error {
@@ -223,6 +248,12 @@ func (f *browserFixture) Watch(_ *resource.SessionWatchRequest, s grpc.ServerStr
 	<-s.Context().Done()
 	return s.Context().Err()
 }
+
+// The production client requests background snapshots alongside conversation events.
+func (*browserFixture) Background(context.Context, *resource.SessionBackgroundRequest) (*resource.SessionBackgroundReply, error) {
+	return resource.SessionBackgroundReply_builder{Data: []byte(`{}`)}.Build(), nil
+}
+
 func (f *browserFixture) History(_ context.Context, r *resource.SessionEventsRequest) (*resource.SessionEventBatch, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()

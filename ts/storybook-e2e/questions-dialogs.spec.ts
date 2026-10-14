@@ -1,4 +1,96 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator } from "@playwright/test";
+
+async function finishEntrance(dialog: Locator) {
+  await dialog.evaluate(async (node) => {
+    await Promise.all(
+      node
+        .getAnimations({ subtree: true })
+        .map((animation) => animation.finished.catch(() => undefined)),
+    );
+  });
+}
+
+for (const action of ["Restart", "Purge"]) {
+  test(`${action} opens centrally without a foreground menu trigger`, async ({
+    page,
+  }) => {
+    await page.goto(
+      "/iframe.html?id=conversation-composer--empty&viewMode=story",
+    );
+    await page
+      .getByRole("button", { name: "Session menu", exact: true })
+      .click();
+    await page.getByRole("menuitem", { name: action, exact: true }).click();
+    const dialog = page.getByRole("dialog", {
+      name: `${action} session`,
+      exact: true,
+    });
+    await expect(dialog).toBeVisible();
+    await expect(dialog.locator('[data-dialog-trigger="true"]')).toHaveCount(0);
+    await expect(page.getByRole("menu")).toHaveCount(0);
+    await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+    await expect(page.locator('[data-dialog-trigger="true"]')).toHaveCount(0);
+  });
+}
+
+test("composer Stop uses the shared dialog header, body and footer", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=conversation-composer--empty&viewMode=story",
+  );
+  await page.getByRole("button", { name: "Session menu", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Stop", exact: true }).click();
+  const dialog = page.getByRole("dialog", {
+    name: "Stop session",
+    exact: true,
+  });
+  await finishEntrance(dialog);
+  await expect(dialog.locator('[data-dialog-trigger="true"]')).toHaveCount(0);
+  await expect(dialog).toBeVisible();
+  await expect(dialog.locator(".card-heading")).toHaveText("Stop session");
+  await expect(dialog.locator(".card-body")).toContainText("Active work stops");
+  const bodyColor = await dialog
+    .locator(".card-body")
+    .evaluate((node) => getComputedStyle(node).backgroundColor);
+  const surfaceColor = await dialog
+    .locator("[data-anchored]")
+    .evaluate((node) => getComputedStyle(node).backgroundColor);
+  expect(bodyColor).not.toBe(surfaceColor);
+  await expect(dialog.locator(".card-footer").getByRole("button")).toHaveText([
+    "Stop",
+    "Cancel",
+  ]);
+  await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.locator('[data-dialog-trigger="true"]')).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Session menu", exact: true }),
+  ).toBeFocused();
+});
+
+test("dialog blur visibly softens content behind the animated surface", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=components-confirmationdialog--blurred-background&viewMode=story",
+  );
+  await page
+    .getByRole("button", { name: "Open confirmation", exact: true })
+    .click();
+  const dialog = page.getByRole("dialog", { name: "Stop session" });
+  await finishEntrance(dialog);
+  const surface = dialog.locator("[data-anchored]");
+  const blurred = await surface.screenshot({
+    path: "test-results/dialog-blurred-surface.png",
+  });
+  await surface.evaluate((node) => {
+    (node as HTMLElement).style.backdropFilter = "none";
+    (node as HTMLElement).style.setProperty("-webkit-backdrop-filter", "none");
+  });
+  const clear = await surface.screenshot();
+  expect(blurred.equals(clear)).toBe(false);
+});
 
 test("confirmation dialog traps focus, cancels without acting and fits a small viewport", async ({
   page,
@@ -15,6 +107,7 @@ test("confirmation dialog traps focus, cancels without acting and fits a small v
   const cancel = dialog.getByRole("button", { name: "Cancel", exact: true });
   const confirm = dialog.getByRole("button", { name: "Stop", exact: true });
   await expect(cancel).toBeFocused();
+  await finishEntrance(dialog);
   const confirmBounds = (await confirm.boundingBox())!;
   const cancelBounds = (await cancel.boundingBox())!;
   expect(confirmBounds.x + confirmBounds.width).toBeLessThan(cancelBounds.x);
@@ -95,6 +188,7 @@ test("long confirmation bodies scroll while the padded header and actions stay v
   await expect(
     dialog.getByRole("button", { name: "Cancel", exact: true }),
   ).toBeFocused();
+  await finishEntrance(dialog);
   expect(await body.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(
     true,
   );
@@ -250,12 +344,18 @@ test("question tabs preserve choices, draft and undo and submit all steps togeth
   expect(
     await tabs.getByRole("tab", { name: "Q1", exact: true }).boundingBox(),
   ).toEqual(tabBefore);
-  expect(
-    await tabs
-      .getByRole("tab", { name: "Q1", exact: true })
-      .locator(".tab-answered")
-      .boundingBox(),
-  ).toEqual(iconBefore);
+  const iconAfter = (await tabs
+    .getByRole("tab", { name: "Q1", exact: true })
+    .locator(".tab-answered")
+    .boundingBox())!;
+  // Different glyphs have different heights; their allocated width and center stay fixed.
+  expect(iconAfter.width).toBe(iconBefore!.width);
+  expect(iconAfter.x + iconAfter.width / 2).toBe(
+    iconBefore!.x + iconBefore!.width / 2,
+  );
+  expect(iconAfter.y + iconAfter.height / 2).toBe(
+    iconBefore!.y + iconBefore!.height / 2,
+  );
   await tabs.getByRole("tab", { name: "Q2", exact: true }).click();
   const answer = question.getByRole("textbox", {
     name: "Answer: Describe any additional changes.",
@@ -552,6 +652,14 @@ test("questions expand to the available conversation height and collapse from ei
   await page.setViewportSize({ width: 390, height: 620 });
   await question.getByRole("button", { name: "Expand question" }).focus();
   await page.keyboard.press("Enter");
+  // Expansion follows the viewport ResizeObserver; measure after its layout settles.
+  await expect
+    .poll(async () => {
+      const card = (await question.boundingBox())!;
+      const area = (await page.locator(".transcript-area").boundingBox())!;
+      return card.y - area.y;
+    })
+    .toBeLessThan(16);
   const mobile = (await question.boundingBox())!;
   const mobileArea = (await page.locator(".transcript-area").boundingBox())!;
   const mobileComposer = (await page

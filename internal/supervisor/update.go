@@ -85,6 +85,9 @@ func (s *Supervisor) updateReason(now time.Time, quiet bool) (reason string) {
 	if s.updateUnknown {
 		return "background telemetry unknown"
 	}
+	if s.updateBackground.Unavailable {
+		return "background telemetry unknown"
+	}
 	if len(s.updateTools) > 0 {
 		return "unfinished tool calls"
 	}

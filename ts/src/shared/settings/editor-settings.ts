@@ -1,4 +1,5 @@
 import { t } from "#src/shared/i18n/i18n.ts";
+import { monospaceFont } from "@lesomnus/cxz-ui";
 import {
   palettes,
   paletteForTheme,
@@ -135,7 +136,7 @@ export function resolveEditorSettings(
   document: SettingsDocument,
   scope: EditorScope = "global",
 ): EditorSettings {
-  const result = { ...defaultEditorSettings };
+  const result = { ...defaultEditorSettings, fontFamily: monospaceFont() };
   for (const key of editorKeys) {
     const scoped = `session.editor.${key}`;
     const global = `editor.${key}`;

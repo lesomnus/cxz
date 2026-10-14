@@ -1,4 +1,5 @@
 import { useTheme } from "#src/shared/theme/theme.tsx";
+import { monospaceFont } from "@lesomnus/cxz-ui";
 import {
   useEffect,
   useImperativeHandle,
@@ -87,7 +88,7 @@ export function TerminalSession({
       const term = new Terminal({
         cursorBlink: true,
         fontSize: 12,
-        fontFamily: "ui-monospace, SFMono-Regular, Consolas, monospace",
+        fontFamily: monospaceFont(screen.current ?? undefined),
         scrollback: 2000,
         allowProposedApi: false,
         theme: terminalTheme(currentTheme.current),

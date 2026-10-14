@@ -2,9 +2,12 @@ import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
-import { RouteLink } from "#src/shared/navigation/route-link.tsx";
-import { Button } from "@lesomnus/cxz-ui";
+import { PanelLink } from "#src/shared/navigation/route-link.tsx";
+import { PanelItem } from "@lesomnus/cxz-ui";
 import { SessionIdentity } from "./session-identity";
+import { UnreadBadge } from "#src/shared/notifications/unread-badge.tsx";
+import { useState, type CSSProperties } from "react";
+import styles from "./session-tree.module.css";
 
 export function SessionTreeGroup({
   project,
@@ -29,33 +32,24 @@ export function SessionTreeGroup({
       className="session-tree-group"
       aria-label={project.name || project.alias}
     >
-      <Button className="tree-project" aria-expanded={open} onClick={toggle}>
+      <PanelItem className="tree-project" aria-expanded={open} onClick={toggle}>
         <span>{project.name || project.alias}</span>
-      </Button>
+      </PanelItem>
       {open && (
         <div className="tree-sessions">
           {items.map((s) => (
-            <RouteLink
+            <PanelLink
               to="/sessions/$sessionId"
               params={{ sessionId: s.runtimeId }}
               key={s.runtimeId}
-              className={`tree-session ${selected === s.runtimeId ? "active" : ""}`}
+              className={`tree-session ${styles.session} ${selected === s.runtimeId ? "active" : ""}`}
+              data-state={s.status?.state}
               pressTarget=".session-heading"
               aria-current={selected === s.runtimeId ? "true" : undefined}
             >
-              <SessionIndicator session={s} />
+              <SessionIndicator session={s} unread={unread.has(s.runtimeId)} />
               <SessionIdentity session={s} />
-              {unread.has(s.runtimeId) && (
-                <span
-                  className="session-unread"
-                  role="img"
-                  aria-label={t("Unread response")}
-                  title={t("Unread response")}
-                >
-                  +
-                </span>
-              )}
-            </RouteLink>
+            </PanelLink>
           ))}
           {loading && !items.length && (
             <small className="tree-message">{t("Loading…")}</small>
@@ -80,12 +74,40 @@ const activityDots = [
   [4, 10],
   [4, 6],
 ] as const;
+const activityColors = ["green", "cyan", "violet"] as const;
 
-function SessionIndicator({ session }: { session: Session }) {
+function randomActivityColors() {
+  // Keep all toolbar hues present, with a stable random order per indicator.
+  const colors = activityDots.map(
+    (_, index) => activityColors[index % activityColors.length]!,
+  );
+  for (let index = colors.length - 1; index > 0; index--) {
+    const other = Math.floor(Math.random() * (index + 1));
+    [colors[index], colors[other]] = [colors[other]!, colors[index]!];
+  }
+  return colors;
+}
+
+function SessionIndicator({
+  session,
+  unread,
+}: {
+  session: Session;
+  unread: boolean;
+}) {
   useLocale();
+  const [dotColors] = useState(randomActivityColors);
   const state = session.status?.state || "unknown";
+  if (state === "stopped")
+    return <span className="session-indicator" aria-hidden="true" />;
   const question = !!session.status?.pending.length;
   const working = ["running", "working", "waiting_input"].includes(state);
+  if (unread)
+    return (
+      <span className="session-indicator" title={t("Unread response")}>
+        <UnreadBadge />
+      </span>
+    );
   return (
     <span
       className={`session-indicator ${question ? "attention" : ""}`}
@@ -103,14 +125,15 @@ function SessionIndicator({ session }: { session: Session }) {
               cx={cx}
               cy={cy}
               r="1.3"
-              style={{
-                animationDelay: `calc(${index} * var(--session-dot-step) * -1)`,
-              }}
+              style={
+                {
+                  animationDelay: `calc(${index} * var(--session-dot-step) * -1)`,
+                  "--session-dot-highlight": `var(--aurora-${dotColors[index]})`,
+                } as CSSProperties
+              }
             />
           ))}
         </svg>
-      ) : state === "stopped" ? (
-        "○"
       ) : (
         " "
       )}

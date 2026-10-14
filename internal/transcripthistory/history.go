@@ -301,6 +301,28 @@ func (p *Projection) Apply(e *api.Event) {
 	if e.Kind != "approval" {
 		v.Payload = nil
 	}
+	if slices.Contains([]string{"diagnostic", "stderr", "error"}, e.Kind) || e.Kind == "turn_end" && e.Text == "failed" {
+		// Error cards need a readable reason even before opening native details.
+		// Keep only display metadata, never the potentially large native body.
+		data := object(e.Payload)
+		native := child(data, "error")
+		diagnostic := map[string]any{}
+		for _, message := range []string{text(native, "message"), text(data, "message"), text(data, "error")} {
+			if strings.TrimSpace(message) != "" {
+				diagnostic["message"] = message
+				break
+			}
+		}
+		if code := text(native, "codexErrorInfo"); code != "" {
+			diagnostic["error"] = map[string]string{"codexErrorInfo": code}
+		}
+		if retrying, ok := data["willRetry"].(bool); ok {
+			diagnostic["willRetry"] = retrying
+		}
+		if len(diagnostic) > 0 {
+			v.Payload, _ = json.Marshal(diagnostic)
+		}
+	}
 	if e.Kind == "assistant" && v.Response == nil {
 		phase := text(child(object(e.Payload), "item"), "phase")
 		if phase != "" {
@@ -321,7 +343,7 @@ var schema = []string{
 	`CREATE TABLE IF NOT EXISTS transcript_format(session_id TEXT PRIMARY KEY,version INTEGER)`,
 }
 
-const projectionFormat = 3
+const projectionFormat = 4
 
 // Sync indexes only native non-raw records. A cache backfill or retention change
 // rebuilds this disposable session index; normal queries read only the new suffix.

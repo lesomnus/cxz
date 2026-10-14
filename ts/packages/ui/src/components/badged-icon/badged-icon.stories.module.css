@@ -1,0 +1,64 @@
+.backdrop {
+  padding: 48px;
+  color: var(--ui-shade-237);
+  background: repeating-linear-gradient(
+    135deg,
+    #273b45 0 8px,
+    #4e2851 8px 16px
+  );
+  border-radius: var(--ui-dialog-radius);
+}
+.counter,
+.pill,
+.solidBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #d9ff30;
+  color: #181818;
+  font: 11px/1 var(--ui-font-mono);
+}
+.pill {
+  width: 32px;
+  border-radius: 6px;
+}
+.solidBadge {
+  background: #e65c64;
+}
+.preview {
+  display: grid;
+  gap: var(--ui-space);
+}
+.preview > span {
+  justify-self: center;
+  margin-bottom: calc(3 * var(--ui-space));
+}
+.preview label {
+  display: grid;
+  gap: var(--ui-space);
+}
+.moving {
+  animation: roam 3s ease-in-out infinite alternate;
+}
+@keyframes roam {
+  0% {
+    left: 25%;
+    top: 25%;
+  }
+  50% {
+    left: 75%;
+    top: 25%;
+  }
+  100% {
+    left: 75%;
+    top: 75%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .moving {
+    animation: none;
+  }
+}

@@ -55,6 +55,10 @@ func makeHistoryCheckpoint(events []core.Event) (core.Event, error) {
 	latest := map[string]core.Event{}
 	for _, e := range resumeEvents(events) {
 		switch e.Kind {
+		case "background":
+			// Preserve the last normalized provider snapshot across retention,
+			// including an authoritative empty list or unavailable status.
+			latest["background:"+e.RunID] = e
 		case "setting":
 			latest["setting:"+e.Text] = e
 		case "intent", "receipt", "permission":
@@ -108,7 +112,7 @@ func (s *Supervisor) retainHistory(root string, authorize func() error) error {
 	if !overDisk && !overRaw {
 		return nil
 	}
-	if s.snap.State != "idle" || len(s.pending) > 0 || s.settingPending != "" || s.updateUnknown || len(s.updateTools) > 0 {
+	if s.snap.State != "idle" || len(s.pending) > 0 || s.settingPending != "" || s.updateUnknown || s.updateBackground.Unavailable || len(s.updateTools) > 0 {
 		return nil
 	}
 	if s.codex != nil && (s.codex.turn != "" || len(s.codex.asyncReplies) > 0) {
@@ -177,6 +181,8 @@ func (s *Supervisor) retainHistory(root string, authorize func() error) error {
 			if agentview.IsBackgroundEvent(e.Raw) {
 				background.Apply(e.Raw)
 			}
+		case "background":
+			background.Apply(e.Payload)
 		}
 
 		total -= sizes[i]
@@ -228,6 +234,7 @@ func (s *Supervisor) retainHistory(root string, authorize func() error) error {
 	s.event(core.HistoryTrimmedKind, "Earlier display history was removed by the size limit.", "", core.HistoryBoundary{Through: checkpoint.Seq}, nil)
 	return nil
 }
+
 // shedRaw empties vendor payloads oldest first, down to four fifths of the
 // budget, and never touches the turn in flight or the one before it: the most
 // recent turn's stream is what a person is looking at when they open the raw

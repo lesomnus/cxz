@@ -107,14 +107,12 @@ test("paste files preserve source and session drafts while sending the uploaded 
   await expect(page.locator(".paste-chip")).toHaveCount(1);
   await input.press("End");
   await input.pressSequentially(" 뒤");
-  const draft = await input.inputValue();
-  expect(draft).toMatch(
-    /^앞 \[File [0-9a-f]{8} · paste-[0-9a-f]{8}\.txt\] 뒤$/,
-  );
   await expect(page.locator(".paste-chip")).toHaveAttribute(
     "data-upload-state",
     "ready",
   );
+  const draft = await input.inputValue();
+  expect(draft).toMatch(/^앞 \[Text [0-9.]{4}[BKMT]\] 뒤$/);
   await page.locator(".paste-chip").click();
   const preview = page.getByRole("dialog", { name: "Paste source" });
   await expect(preview).toBeVisible();
@@ -154,6 +152,10 @@ test("chips are atomic, undoable, previewable and expandable one occurrence at a
   const input = await openEditor(page);
   const body = "one\ntwo\nthree\nfour";
   await paste(page, body);
+  await expect(page.locator(".paste-chip")).toHaveAttribute(
+    "data-upload-state",
+    "ready",
+  );
   const token = await input.inputValue();
   await input.press("Backspace");
   await expect(input).toHaveValue("");
@@ -176,7 +178,16 @@ test("chips are atomic, undoable, previewable and expandable one occurrence at a
     page.getByRole("dialog", { name: "Paste source" }),
   ).toBeVisible();
   await page.keyboard.press("Escape");
-  await input.fill(`${token}\n${token}`);
+  // Visible labels are not attachment IDs. Create the second attachment via
+  // the real paste path instead of duplicating its presentation with fill().
+  await input.press("Control+End");
+  await input.press("Enter");
+  await paste(page, body);
+  await expect(page.locator(".paste-chip").nth(1)).toHaveAttribute(
+    "data-upload-state",
+    "ready",
+  );
+  await expect(input).toHaveValue(`${token}\n${token}`);
   await page.locator(".paste-chip").nth(1).click();
   await page
     .getByRole("button", { name: "Expand source", exact: true })

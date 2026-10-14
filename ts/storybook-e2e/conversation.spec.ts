@@ -83,7 +83,7 @@ test("paste chips preview and send their expanded contents", async ({
       }),
     );
   }, text);
-  await expect(editor).toHaveValue(/\[Paste .*4L/);
+  await expect(editor).toHaveValue(/\[Text [0-9.]{4}[BKMT]\]/);
   await page.locator(".paste-chip").click();
   await expect(page.getByRole("dialog")).toContainText("const three = 3;");
   await page.getByRole("button", { name: "Close paste preview" }).click();
@@ -97,198 +97,95 @@ test("paste chips preview and send their expanded contents", async ({
   expect(errors).toEqual([]);
 });
 
-test("tool detail tabs load Monaco and dismiss on transcript clicks", async ({
+test("same-size chips use exact visible widths and keep distinct sources through delete, undo and send", async ({
+  page,
+}) => {
+  await story(page, "conversation-playground--interactive");
+  const input = page.getByRole("textbox", { name: "Message", exact: true });
+  const alpha = "alpha\n".repeat(4);
+  const bravo = "bravo\n".repeat(4);
+  const paste = (body: string) =>
+    input.evaluate((node, body) => {
+      const clipboardData = new DataTransfer();
+      clipboardData.setData("text/plain", body);
+      node.dispatchEvent(
+        new ClipboardEvent("paste", {
+          clipboardData,
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+    }, body);
+  await input.focus();
+  await paste(alpha);
+  await input.press("Space");
+  await paste(bravo);
+  await expect(input).toHaveValue("[Text 0024B] [Text 0024B]");
+  const chips = page.locator(".paste-chip");
+  await expect(chips).toHaveCount(2);
+  for (const chip of await chips.all()) {
+    const width = await chip.evaluate((node) => {
+      const range = document.createRange();
+      range.selectNodeContents(node.querySelector(".paste-chip-label")!);
+      return {
+        chip: node.getBoundingClientRect().width,
+        text: range.getBoundingClientRect().width,
+      };
+    });
+    expect(Math.abs(width.chip - width.text)).toBeLessThan(0.1);
+  }
+  await expect(chips.first().locator("[data-paste-leading]")).toHaveText("00");
+  await chips.first().click();
+  await expect(page.getByRole("dialog")).toContainText(alpha.trim());
+  await page.getByRole("button", { name: "Delete", exact: true }).click();
+  await expect(input).toHaveValue(" [Text 0024B]");
+  await input.press("Control+z");
+  await expect(input).toHaveValue("[Text 0024B] [Text 0024B]");
+  await chips.first().click();
+  await expect(page.getByRole("dialog")).toContainText(alpha.trim());
+  const copied = await input.evaluate((node) => {
+    const clipboardData = new DataTransfer();
+    node.dispatchEvent(
+      new ClipboardEvent("copy", {
+        clipboardData,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+    return clipboardData.getData("text/plain");
+  });
+  expect(copied).toBe(alpha);
+  await page.getByRole("button", { name: "Close paste preview" }).click();
+  await chips.last().click();
+  await expect(page.getByRole("dialog")).toContainText(bravo.trim());
+  await page.getByRole("button", { name: "Close paste preview" }).click();
+  await page.getByRole("button", { name: "Send", exact: true }).click();
+  await expect(
+    page.locator("article.input").filter({ hasText: alpha.trim() }),
+  ).toContainText(bravo.trim());
+});
+
+test("tool details stay inside the work dialog and dismiss on backdrop clicks", async ({
   page,
 }) => {
   const errors = await story(page, "conversation-eventcards--completed-tool");
-  const tool = page.locator(".tool-activity");
-  await tool.click();
-  await expect(page.getByRole("dialog")).toHaveCount(0);
-  await tool.dblclick();
-  await expect(page.getByRole("dialog")).toBeVisible();
-  await expect(page.locator(".monaco-editor")).toBeVisible();
-  await page.getByRole("tab", { name: "Output", exact: true }).click();
-  await expect(page.getByRole("tabpanel")).toContainText("main");
-  await expect(page.getByRole("tabpanel")).toHaveAttribute(
-    "data-language",
-    /.+/,
-  );
-  await expect(page.locator(".detail-copy")).toBeVisible();
-  await page.locator(".transcript").click({ position: { x: 30, y: 250 } });
-  await expect(page.getByRole("dialog")).toHaveCount(0);
-  expect(errors).toEqual([]);
-});
-
-test("folded activity cards unfold above neighbors without shifting the transcript", async ({
-  page,
-}) => {
-  const errors = await story(
-    page,
-    "conversation-eventcards--folded-activity-stack",
-  );
-  const rows = page.locator('.transcript-row[data-activity="true"]');
-  await expect(rows).toHaveCount(4);
-  const foldedRow = rows.nth(1);
-  const file = foldedRow.locator(".event-detail");
-  const face = file.locator(".activity-card-face");
-  const content = file.locator(".activity-card-content");
-  await expect.poll(() => content.evaluate((el) => el.clientHeight)).toBe(18);
-  await expect(face).toHaveCSS("backdrop-filter", "none");
-  await expect(face).toHaveCSS("clip-path", "none");
-  expect(
-    await face.evaluate(
-      (el) => new DOMMatrix(getComputedStyle(el).transform).m23,
-    ),
-  ).toBeLessThan(0);
-  const geometry = () =>
-    page.locator(".transcript").evaluate((pane) => ({
-      top: pane.scrollTop,
-      height: pane.scrollHeight,
-      rows: [...pane.querySelectorAll<HTMLElement>(".transcript-row")].map(
-        (row) => ({
-          id: row.dataset.row,
-          top: row.offsetTop,
-          height: row.offsetHeight,
-        }),
-      ),
-    }));
-  const before = await geometry();
-  await page.screenshot({ path: "test-results/activity-stack-folded.png" });
-  await file.hover({ position: { x: 140, y: 10 } });
-  await expect
-    .poll(() => content.evaluate((el) => el.clientHeight))
-    .toBeGreaterThan(18);
-  await expect
-    .poll(() =>
-      page
-        .locator(".activity-card-preview .activity-card-face")
-        .evaluate((el) => new DOMMatrix(getComputedStyle(el).transform).m23),
-    )
-    .toBe(0);
-  await expect(foldedRow).toHaveCSS("z-index", "3");
-  expect(await geometry()).toEqual(before);
-  const timestamp = page.locator(".activity-card-preview .event-time-tooltip");
-  await expect(timestamp).toHaveCSS("opacity", "1");
-  await expect(timestamp).toHaveCSS("transition-duration", "0s");
-  await page.screenshot({ path: "test-results/activity-stack-unfolded.png" });
-  // Sample the painted surface across the portal-to-native handoff, rather than
-  // checking only the final folded state: reopening for a frame is visible.
-  const seq = await file.getAttribute("data-seq");
-  await page.evaluate((seq) => {
-    const native = document.querySelector(
-      `.event-detail[data-seq="${seq}"] .activity-card-face`,
-    )!;
-    const probe = { done: false, nativeTilts: [] as number[] };
-    (window as any).activityExitProbe = probe;
-    const deadline = performance.now() + 600;
-    const sample = () => {
-      if (!document.querySelector(".activity-card-preview"))
-        probe.nativeTilts.push(
-          new DOMMatrix(getComputedStyle(native).transform).m23,
-        );
-      if (performance.now() < deadline) requestAnimationFrame(sample);
-      else probe.done = true;
-    };
-    requestAnimationFrame(sample);
-  }, seq);
-  await page.mouse.move(20, 20);
-  // The timestamp disappears while the lifted face is still folding away.
-  const leaving = await page
-    .locator(".activity-card-preview")
-    .evaluate((preview) => {
-      const tooltip = getComputedStyle(
-        preview.querySelector(".event-time-tooltip")!,
-      );
-      return {
-        hovered: preview.getAttribute("data-hovered"),
-        opacity: tooltip.opacity,
-        visibility: tooltip.visibility,
-      };
-    });
-  expect(leaving).toEqual({
-    hovered: "false",
-    opacity: "0",
-    visibility: "hidden",
+  await expect(page.locator(".transcript .tool-activity")).toHaveCount(0);
+  await page.getByRole("button", { name: "View details", exact: true }).click();
+  const drawer = page.getByRole("dialog", {
+    name: "Tasks between responses",
+    exact: true,
   });
-  await expect.poll(() => content.evaluate((el) => el.clientHeight)).toBe(18);
-  await expect
-    .poll(() => page.evaluate(() => (window as any).activityExitProbe.done))
-    .toBe(true);
-  const tilts = await page.evaluate(
-    () => (window as any).activityExitProbe.nativeTilts as number[],
-  );
-  expect(tilts.length).toBeGreaterThan(0);
-  const foldedTilt = await face.evaluate(
-    (el) => new DOMMatrix(getComputedStyle(el).transform).m23,
-  );
-  for (const tilt of tilts) expect(tilt).toBeCloseTo(foldedTilt, 2);
-  await file.focus();
-  await expect
-    .poll(() => content.evaluate((el) => el.clientHeight))
-    .toBeGreaterThan(18);
-  await file.press("Enter");
-  await expect(page.getByRole("dialog")).toBeVisible();
-  await expect(file).toHaveAttribute("data-detail-open", "true");
-  await page.getByRole("tab", { name: "Input", exact: true }).click();
-  await expect
-    .poll(() => content.evaluate((el) => el.clientHeight))
-    .toBeGreaterThan(18);
-  await expect(foldedRow).toHaveCSS("z-index", "4");
-  expect((await geometry()).rows).toEqual(before.rows);
-  await page.locator("article.response").first().click();
-  await expect(page.getByRole("dialog")).toHaveCount(0);
-  await expect.poll(() => content.evaluate((el) => el.clientHeight)).toBe(18);
-  expect(errors).toEqual([]);
-});
-
-test("the latest activity stays unfolded and hover does not add scroll range", async ({
-  page,
-}) => {
-  const errors = await story(page, "conversation-eventcards--file-changes");
-  const latest = page.locator('.transcript-row[data-latest-activity="true"]');
-  await expect(latest).toHaveCount(1);
-  const face = latest.locator(".activity-card-face");
-  await expect(face).toHaveCSS("transform", "none");
-  await expect
-    .poll(() =>
-      latest
-        .locator(".activity-card-content")
-        .evaluate((el) => el.clientHeight),
-    )
-    .toBeGreaterThan(18);
-  // Keep both lines reachable in a short viewport and preserve its scroll range.
-  await page.locator(".transcript-area").evaluate((el) => {
-    el.style.flex = "none";
-    el.style.height = "80px";
-  });
-  const pane = page.locator(".transcript");
-  const tool = page.locator(".tool-activity");
-  const metrics = () =>
-    pane.evaluate((el) => ({ height: el.scrollHeight, top: el.scrollTop }));
-  // Resizing schedules bottom-following on the next frame. Measure hover only
-  // after that update, so the resize itself cannot look like a hover scroll.
-  await expect
-    .poll(() =>
-      pane.evaluate((el) => el.scrollHeight - el.clientHeight - el.scrollTop),
-    )
-    .toBe(0);
-  const before = await metrics();
-  await tool.hover({ position: { x: 140, y: 10 } });
-  const preview = page.locator(".activity-card-preview");
-  await expect
-    .poll(() => preview.evaluate((el) => el.clientHeight))
-    .toBeGreaterThan(34);
-  expect(await metrics()).toEqual(before);
-  // The unfolded card's second line also activates the same detail editor.
-  await page.locator(".transcript-area").evaluate((el) => {
-    el.style.removeProperty("flex");
-    el.style.removeProperty("height");
-  });
-  await expect(preview).toBeVisible();
-  const box = (await preview.boundingBox())!;
-  await page.mouse.move(box.x + 140, box.y + box.height - 8);
-  await page.mouse.dblclick(box.x + 140, box.y + box.height - 8);
-  await expect(page.getByRole("dialog")).toBeVisible();
+  await drawer
+    .getByRole("button", { name: "Bash · Details", exact: true })
+    .click();
+  await expect(drawer.locator(".monaco-editor")).toBeVisible();
+  await drawer.getByRole("tab", { name: "Output", exact: true }).click();
+  await expect(drawer.getByRole("tabpanel")).toContainText("main");
+  await expect(drawer.locator(".detail-copy")).toBeVisible();
+  await drawer
+    .locator("[data-work-backdrop]")
+    .click({ position: { x: 4, y: 100 } });
+  await expect(drawer).toHaveCount(0);
   expect(errors).toEqual([]);
 });
 

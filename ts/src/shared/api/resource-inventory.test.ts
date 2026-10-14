@@ -84,6 +84,23 @@ function fixture(empty = false) {
 afterEach(() => vi.useRealTimers());
 
 describe("shared resource inventory", () => {
+  it("explicit refresh replaces the shared streams and stops when no view subscribes", async () => {
+    vi.useFakeTimers();
+    const f = fixture();
+    const off = f.inventory.subscribe(() => {});
+    await vi.advanceTimersByTimeAsync(0);
+    const previous = f.sessions.watch.mock.calls[0][1].signal;
+    f.inventory.refresh();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(previous.aborted).toBe(true);
+    expect(f.sessions.list).toHaveBeenCalledTimes(2);
+    expect(f.sessions.watch).toHaveBeenCalledTimes(2);
+    expect(f.projects.watch).toHaveBeenCalledTimes(2);
+    off();
+    f.inventory.refresh();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(f.sessions.watch).toHaveBeenCalledTimes(2);
+  });
   it("reads all fallback pages once when an older manager rejects global watches", async () => {
     vi.useFakeTimers();
     const f = fixture();

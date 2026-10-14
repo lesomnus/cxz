@@ -235,7 +235,7 @@ export function ValueMenu({
               ))}
             </div>
           </div>,
-          document.body,
+          root.current?.closest("dialog[open]") ?? document.body,
         )}
     </div>
   );

@@ -1,0 +1,13 @@
+.stop:global(.toolbar-button.stop) {
+  width: calc(var(--toolbar-button-height) + 4 * var(--control-inset));
+  padding-inline: 3px;
+}
+.stop[data-working="true"] svg {
+  color: #851b3a;
+}
+.duration {
+  display: inline-flex;
+  align-items: center;
+  height: var(--toolbar-button-height);
+  padding-inline: var(--control-inline-inset);
+}

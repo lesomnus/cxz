@@ -104,7 +104,9 @@ test("live additions glide existing rows and reveal new cards faster without cha
           opacity: Number(style.opacity),
           height: row.offsetHeight,
           paintedHeight: row.getBoundingClientRect().height,
-          event: card.className,
+          event: card.hasAttribute("data-work-summary")
+            ? "work-summary"
+            : card.className,
           blur: style.backdropFilter,
         });
         animation.currentTime = time;
@@ -125,7 +127,7 @@ test("live additions glide existing rows and reveal new cards faster without cha
       page.evaluate(
         () =>
           (window as any).transcriptMotionProbe.entrances.filter((e: any) =>
-            e.event.includes("event-detail"),
+            e.event.includes("work-summary"),
           ).length,
       ),
     )
@@ -135,7 +137,7 @@ test("live additions glide existing rows and reveal new cards faster without cha
   );
   expect(result.shifts.length).toBeGreaterThan(0);
   const entry = result.entrances.find((e: any) =>
-    e.event.includes("event-detail"),
+    e.event.includes("work-summary"),
   );
   expect(entry.y).toBeGreaterThan(0);
   expect(entry.scale).toBeLessThan(1);
@@ -166,31 +168,28 @@ test("live additions glide existing rows and reveal new cards faster without cha
         ),
     )
     .toBeLessThan(1);
-  const latest = page.locator('.transcript-row[data-latest-activity="true"]');
-  await expect(latest).toHaveCount(1);
-  await expect(latest.locator(".activity-card-face")).toHaveCSS(
-    "transform",
-    "none",
+  await expect(page.locator(".conversation")).toHaveAttribute(
+    "aria-description",
+    /idle/,
   );
-  const previous = await latest.getAttribute("data-row");
+  const summaries = page.locator("[data-work-summary]");
+  const previous = await summaries.last().getAttribute("data-work-summary");
   await page
     .getByRole("textbox", { name: "Message", exact: true })
     .fill("Continue the review");
   await page.getByRole("button", { name: "Send", exact: true }).click();
-  await expect(latest).not.toHaveAttribute("data-row", previous!);
-  await expect(latest.locator(".activity-card-face")).toHaveCSS(
+  await expect(summaries.last()).not.toHaveAttribute(
+    "data-work-summary",
+    previous!,
+  );
+  await expect(page.locator(".transcript .tool-activity")).toHaveCount(0);
+  await summaries.last().getByRole("button").click();
+  const dialog = page.getByRole("dialog", { name: "Tasks between responses" });
+  await expect(dialog.locator(".tool-activity").last()).toBeVisible();
+  await expect(dialog.locator(".tool-activity").last()).toHaveCSS(
     "transform",
     "none",
   );
-  const earlier = page.locator(`.transcript-row[data-row="${previous}"]`);
-  await expect(earlier).toHaveAttribute("data-latest-activity", "false");
-  await expect
-    .poll(() =>
-      earlier
-        .locator(".activity-card-face")
-        .evaluate((el) => new DOMMatrix(getComputedStyle(el).transform).m23),
-    )
-    .toBeLessThan(0);
 });
 
 test("automatic following lets work and response arrivals play through in real time", async ({
@@ -202,7 +201,9 @@ test("automatic following lets work and response arrivals play through in real t
     (window as any).liveMotionProbe = result;
     function track(animation: Animation, node: HTMLElement, entries: any[]) {
       const entry = {
-        kind: node.className,
+        kind: node.hasAttribute("data-work-summary")
+          ? "work-summary"
+          : node.className,
         duration: Number(animation.effect!.getTiming().duration),
         endAfter: undefined as number | undefined,
         samples: [] as { elapsed: number; y: number; opacity: number }[],
@@ -277,9 +278,9 @@ test("automatic following lets work and response arrivals play through in real t
   const result = await page.evaluate(() => (window as any).liveMotionProbe);
   const cards = result.entrances.filter(
     (entry: any) =>
-      entry.kind.includes("event-detail") || entry.kind.includes("response"),
+      entry.kind.includes("work-summary") || entry.kind.includes("response"),
   );
-  expect(cards.some((entry: any) => entry.kind.includes("event-detail"))).toBe(
+  expect(cards.some((entry: any) => entry.kind.includes("work-summary"))).toBe(
     true,
   );
   expect(cards.some((entry: any) => entry.kind.includes("response"))).toBe(

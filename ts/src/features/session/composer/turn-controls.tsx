@@ -1,18 +1,23 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { Button } from "@lesomnus/cxz-ui";
 import { ElapsedTime } from "@lesomnus/cxz-ui";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
 import type { TurnProgress } from "#src/features/session/model/turn-progress.ts";
+import styles from "./turn-controls.module.css";
 
 export function TurnControls({
   turn,
   busy,
+  working,
   interrupt,
+  children,
 }: {
   turn: TurnProgress;
   busy: boolean;
+  working?: boolean;
   interrupt: () => void;
+  children?: ReactNode;
 }) {
   useLocale();
   const root = useRef<HTMLDivElement>(null);
@@ -93,8 +98,9 @@ export function TurnControls({
       <span className="stop-control">
         <Button
           type="button"
-          className="toolbar-button stop"
+          className={`toolbar-button stop ${styles.stop}`}
           data-armed={armed}
+          data-working={working ?? turn.active}
           aria-label={t("Stop response")}
           aria-keyshortcuts="Escape"
           aria-describedby={hint}
@@ -117,10 +123,13 @@ export function TurnControls({
             : t("Click twice or press Esc twice within 3 seconds")}
         </span>
       </span>
-      <ElapsedTime
-        startedAt={turn.active ? turn.startedAt : undefined}
-        label={t("Response elapsed time")}
-      />
+      <span className={styles.duration}>
+        <ElapsedTime
+          startedAt={turn.active ? turn.startedAt : undefined}
+          label={t("Response elapsed time")}
+        />
+      </span>
+      {children}
     </div>
   );
 }

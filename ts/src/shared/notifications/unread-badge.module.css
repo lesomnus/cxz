@@ -1,0 +1,21 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--attention-color);
+  font: 9px/1 var(--ui-font-mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.count {
+  width: 14px;
+  height: 14px;
+  font-size: 7px;
+  border-radius: 50%;
+  background: var(--attention-color);
+  color: #181818;
+}
+.badge svg {
+  display: block;
+  flex: 0 0 auto;
+}

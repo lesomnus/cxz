@@ -2,8 +2,8 @@
 // @generated from file cxz/account_svc.g.proto (package cxz, edition 2023)
 /* eslint-disable */
 
-import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
-import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
+import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
+import { enumDesc, fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
 import type { Account, AccountSchema } from "./account_pb.js";
 import { file_cxz_account } from "./account_pb.js";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
@@ -16,7 +16,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file cxz/account_svc.g.proto.
  */
 export const file_cxz_account_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChdjeHovYWNjb3VudF9zdmMuZy5wcm90bxIDY3h6IsQBChFBY2NvdW50QWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIUCgVhbGlhcxgEIAEoCUIFqgECCAISEwoEbmFtZRgFIAEoCUIFqgECCAISEwoEZGVzYxgGIAEoCUIFqgECCAISFAoFYWdlbnQYCCABKAlCBaoBAggCEhsKDGF1dGhfYmFja2VuZBgJIAEoCUIFqgECCAISMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJVChFBY2NvdW50R2V0UmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouQWNjb3VudFJlZhIiCgZzZWxlY3QYAiABKAsyEi5jeHouQWNjb3VudFNlbGVjdCIyCgpBY2NvdW50UmVmEgwKAmlkGAEgASgMSAASDwoFYWxpYXMYBCABKAlIAEIFCgNrZXkirQEKDUFjY291bnRTZWxlY3QSCwoDYWxsGAEgASgIEg0KBWFsaWFzGAQgASgIEgwKBG5hbWUYBSABKAgSDAoEZGVzYxgGIAEoCBINCgVhZ2VudBgIIAEoCBIUCgxhdXRoX2JhY2tlbmQYCSABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCCKsAQoTQWNjb3VudFBhdGNoUmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouQWNjb3VudFJlZhINCgVhbGlhcxgIIAEoCRIMCgRuYW1lGAogASgJEgwKBGRlc2MYDCABKAkSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgiUAoTQWNjb3VudEFwcGx5UmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouQWNjb3VudFJlZhIbCgVwYXRjaBgCIAEoCzIMLnBhdGNoLlBhdGNoIiYKFEFjY291bnRFcmFzZVJlc3BvbnNlEg4KBmVyYXNlZBgBIAEoCCJkChJBY2NvdW50TGlzdFJlcXVlc3QSIwoHZmlsdGVycxgBIAMoCzISLmN4ei5BY2NvdW50RmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAiJHChNBY2NvdW50TGlzdFJlc3BvbnNlEhsKBWl0ZW1zGAEgAygLMgwuY3h6LkFjY291bnQSEwoEbmV4dBgCIAEoCUIFqgECCAIiLQoNQWNjb3VudEZpbHRlchIcCgNyZWYYASABKAsyDy5jeHouQWNjb3VudFJlZiJYChNBY2NvdW50V2F0Y2hSZXF1ZXN0EiMKB2ZpbHRlcnMYASADKAsyEi5jeHouQWNjb3VudEZpbHRlchIcCg1za2lwX3NuYXBzaG90GAIgASgIQgWqAQIIAiI8ChRBY2NvdW50V2F0Y2hSZXNwb25zZRIkCgVpdGVtcxgBIAMoCzIVLmN4ei5BY2NvdW50V2F0Y2hJdGVtIlIKEEFjY291bnRXYXRjaEl0ZW0SCgoCaWQYASABKAwSGwoFdmFsdWUYAiABKAsyDC5jeHouQWNjb3VudBIVCgZhY3Rpb24YAyABKAlCBaoBAggCMvwCCg5BY2NvdW50U2VydmljZRIrCgNBZGQSFi5jeHouQWNjb3VudEFkZFJlcXVlc3QaDC5jeHouQWNjb3VudBIrCgNHZXQSFi5jeHouQWNjb3VudEdldFJlcXVlc3QaDC5jeHouQWNjb3VudBIvCgVQYXRjaBIYLmN4ei5BY2NvdW50UGF0Y2hSZXF1ZXN0GgwuY3h6LkFjY291bnQSLwoFQXBwbHkSGC5jeHouQWNjb3VudEFwcGx5UmVxdWVzdBoMLmN4ei5BY2NvdW50EjMKBUVyYXNlEg8uY3h6LkFjY291bnRSZWYaGS5jeHouQWNjb3VudEVyYXNlUmVzcG9uc2USOQoETGlzdBIXLmN4ei5BY2NvdW50TGlzdFJlcXVlc3QaGC5jeHouQWNjb3VudExpc3RSZXNwb25zZRI+CgVXYXRjaBIYLmN4ei5BY2NvdW50V2F0Y2hSZXF1ZXN0GhkuY3h6LkFjY291bnRXYXRjaFJlc3BvbnNlMAFCIlogZ2l0aHViLmNvbS9sZXNvbW51cy9jeHovcmVzb3VyY2ViCGVkaXRpb25zcOgH", [file_cxz_account, file_google_protobuf_timestamp, file_patch_patch]);
+  fileDesc("ChdjeHovYWNjb3VudF9zdmMuZy5wcm90bxIDY3h6IsQBChFBY2NvdW50QWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIUCgVhbGlhcxgEIAEoCUIFqgECCAISEwoEbmFtZRgFIAEoCUIFqgECCAISEwoEZGVzYxgGIAEoCUIFqgECCAISFAoFYWdlbnQYCCABKAlCBaoBAggCEhsKDGF1dGhfYmFja2VuZBgJIAEoCUIFqgECCAISMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJVChFBY2NvdW50R2V0UmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouQWNjb3VudFJlZhIiCgZzZWxlY3QYAiABKAsyEi5jeHouQWNjb3VudFNlbGVjdCIyCgpBY2NvdW50UmVmEgwKAmlkGAEgASgMSAASDwoFYWxpYXMYBCABKAlIAEIFCgNrZXkirQEKDUFjY291bnRTZWxlY3QSCwoDYWxsGAEgASgIEg0KBWFsaWFzGAQgASgIEgwKBG5hbWUYBSABKAgSDAoEZGVzYxgGIAEoCBINCgVhZ2VudBgIIAEoCBIUCgxhdXRoX2JhY2tlbmQYCSABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCCKsAQoTQWNjb3VudFBhdGNoUmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouQWNjb3VudFJlZhINCgVhbGlhcxgIIAEoCRIMCgRuYW1lGAogASgJEgwKBGRlc2MYDCABKAkSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgiUAoTQWNjb3VudEFwcGx5UmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouQWNjb3VudFJlZhIbCgVwYXRjaBgCIAEoCzIMLnBhdGNoLlBhdGNoIiYKFEFjY291bnRFcmFzZVJlc3BvbnNlEg4KBmVyYXNlZBgBIAEoCCJkChJBY2NvdW50TGlzdFJlcXVlc3QSIwoHZmlsdGVycxgBIAMoCzISLmN4ei5BY2NvdW50RmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAiJHChNBY2NvdW50TGlzdFJlc3BvbnNlEhsKBWl0ZW1zGAEgAygLMgwuY3h6LkFjY291bnQSEwoEbmV4dBgCIAEoCUIFqgECCAIiLQoNQWNjb3VudEZpbHRlchIcCgNyZWYYASABKAsyDy5jeHouQWNjb3VudFJlZiJYChNBY2NvdW50V2F0Y2hSZXF1ZXN0EiMKB2ZpbHRlcnMYASADKAsyEi5jeHouQWNjb3VudEZpbHRlchIcCg1za2lwX3NuYXBzaG90GAIgASgIQgWqAQIIAiI8ChRBY2NvdW50V2F0Y2hSZXNwb25zZRIkCgVpdGVtcxgBIAMoCzIVLmN4ei5BY2NvdW50V2F0Y2hJdGVtIlIKEEFjY291bnRXYXRjaEl0ZW0SCgoCaWQYASABKAwSGwoFdmFsdWUYAiABKAsyDC5jeHouQWNjb3VudBIVCgZhY3Rpb24YAyABKAlCBaoBAggCIrECChFBY2NvdW50QXV0aFN0YXR1cxIrCgVzdGF0ZRgBIAEoDjIcLmN4ei5BY2NvdW50QXV0aFN0YXR1cy5TdGF0ZRINCgVzY29wZRgCIAEoCRIaChJjcmVkZW50aWFsX3ByZXNlbnQYAyABKAgSFwoPdmVuZG9yX3ZlcmlmaWVkGAQgASgIEhEKCWNhbl9sb2dpbhgFIAEoCBISCgpjYW5fbG9nb3V0GAYgASgIEg8KB21lc3NhZ2UYByABKAkicwoFU3RhdGUSFQoRU1RBVEVfVU5TUEVDSUZJRUQQABIPCgtTVEFURV9SRUFEWRABEhgKFFNUQVRFX0xPR0lOX1JFUVVJUkVEEAISGAoUU1RBVEVfU0VTU0lPTl9TQ09QRUQQAxIOCgpTVEFURV9CVVNZEAQy4gMKDkFjY291bnRTZXJ2aWNlEisKA0FkZBIWLmN4ei5BY2NvdW50QWRkUmVxdWVzdBoMLmN4ei5BY2NvdW50EisKA0dldBIWLmN4ei5BY2NvdW50R2V0UmVxdWVzdBoMLmN4ei5BY2NvdW50Ei8KBVBhdGNoEhguY3h6LkFjY291bnRQYXRjaFJlcXVlc3QaDC5jeHouQWNjb3VudBIvCgVBcHBseRIYLmN4ei5BY2NvdW50QXBwbHlSZXF1ZXN0GgwuY3h6LkFjY291bnQSMwoFRXJhc2USDy5jeHouQWNjb3VudFJlZhoZLmN4ei5BY2NvdW50RXJhc2VSZXNwb25zZRI5CgRMaXN0EhcuY3h6LkFjY291bnRMaXN0UmVxdWVzdBoYLmN4ei5BY2NvdW50TGlzdFJlc3BvbnNlEj4KBVdhdGNoEhguY3h6LkFjY291bnRXYXRjaFJlcXVlc3QaGS5jeHouQWNjb3VudFdhdGNoUmVzcG9uc2UwARIxCgZTdGF0dXMSDy5jeHouQWNjb3VudFJlZhoWLmN4ei5BY2NvdW50QXV0aFN0YXR1cxIxCgZMb2dvdXQSDy5jeHouQWNjb3VudFJlZhoWLmN4ei5BY2NvdW50QXV0aFN0YXR1c0IiWiBnaXRodWIuY29tL2xlc29tbnVzL2N4ei9yZXNvdXJjZWIIZWRpdGlvbnNw6Ac", [file_cxz_account, file_google_protobuf_timestamp, file_patch_patch]);
 
 /**
  * @generated from message cxz.AccountAddRequest
@@ -463,6 +463,89 @@ export const AccountWatchItemSchema: GenMessage<AccountWatchItem> = /*@__PURE__*
   messageDesc(file_cxz_account_svc_g, 12);
 
 /**
+ * @generated from message cxz.AccountAuthStatus
+ */
+export type AccountAuthStatus = Message<"cxz.AccountAuthStatus"> & {
+  /**
+   * @generated from field: cxz.AccountAuthStatus.State state = 1;
+   */
+  state: AccountAuthStatus_State;
+
+  /**
+   * @generated from field: string scope = 2;
+   */
+  scope: string;
+
+  /**
+   * @generated from field: bool credential_present = 3;
+   */
+  credentialPresent: boolean;
+
+  /**
+   * @generated from field: bool vendor_verified = 4;
+   */
+  vendorVerified: boolean;
+
+  /**
+   * @generated from field: bool can_login = 5;
+   */
+  canLogin: boolean;
+
+  /**
+   * @generated from field: bool can_logout = 6;
+   */
+  canLogout: boolean;
+
+  /**
+   * @generated from field: string message = 7;
+   */
+  message: string;
+};
+
+/**
+ * Describes the message cxz.AccountAuthStatus.
+ * Use `create(AccountAuthStatusSchema)` to create a new message.
+ */
+export const AccountAuthStatusSchema: GenMessage<AccountAuthStatus> = /*@__PURE__*/
+  messageDesc(file_cxz_account_svc_g, 13);
+
+/**
+ * @generated from enum cxz.AccountAuthStatus.State
+ */
+export enum AccountAuthStatus_State {
+  /**
+   * @generated from enum value: STATE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: STATE_READY = 1;
+   */
+  READY = 1,
+
+  /**
+   * @generated from enum value: STATE_LOGIN_REQUIRED = 2;
+   */
+  LOGIN_REQUIRED = 2,
+
+  /**
+   * @generated from enum value: STATE_SESSION_SCOPED = 3;
+   */
+  SESSION_SCOPED = 3,
+
+  /**
+   * @generated from enum value: STATE_BUSY = 4;
+   */
+  BUSY = 4,
+}
+
+/**
+ * Describes the enum cxz.AccountAuthStatus.State.
+ */
+export const AccountAuthStatus_StateSchema: GenEnum<AccountAuthStatus_State> = /*@__PURE__*/
+  enumDesc(file_cxz_account_svc_g, 13, 0);
+
+/**
  * @generated from service cxz.AccountService
  */
 export const AccountService: GenService<{
@@ -545,6 +628,27 @@ export const AccountService: GenService<{
     methodKind: "server_streaming";
     input: typeof AccountWatchRequestSchema;
     output: typeof AccountWatchResponseSchema;
+  },
+  /**
+   * Local authentication readiness, never a provider-side verification or secret.
+   *
+   * @generated from rpc cxz.AccountService.Status
+   */
+  status: {
+    methodKind: "unary";
+    input: typeof AccountRefSchema;
+    output: typeof AccountAuthStatusSchema;
+  },
+  /**
+   * Remove the central saved login and future token-supply authorizations.
+   * Already-issued access tokens are not revoked at the provider.
+   *
+   * @generated from rpc cxz.AccountService.Logout
+   */
+  logout: {
+    methodKind: "unary";
+    input: typeof AccountRefSchema;
+    output: typeof AccountAuthStatusSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_cxz_account_svc_g, 0);

@@ -15,6 +15,10 @@ import { Button } from "@lesomnus/cxz-ui";
 import { useFloatingCard } from "#src/features/session/cards/floating-card.tsx";
 import { indentEdit } from "./composer-indent";
 import { useCommandSuggestions } from "./command-suggestions";
+import {
+  useMentionSuggestions,
+  type MentionContext,
+} from "./mention-suggestions";
 import type { ComposerCommand } from "./composer-commands";
 import { usePathSuggestions } from "./path-suggestions";
 import type { LookupPaths } from "./composer-paths";
@@ -41,15 +45,23 @@ import {
   MAX_PASTE_BYTES,
   MAX_PASTE_CACHE_BYTES,
   needsPasteChip,
-  partialPasteEdit,
-  pasteRanges,
   wholePasteSelection,
   expandPastes,
   type ComposerPaste,
-  type PasteRange,
 } from "./composer-pastes";
+import {
+  PasteEditHistory,
+  PasteProjection,
+  type ProjectedPasteRange,
+} from "./paste-projection";
+import type { PastePresentation } from "./paste-presentation";
 import { droppedFiles, pickedFiles, type PickedFile } from "./composer-files";
 import { MAX_UPLOAD_BYTES, type UploadFile } from "./composer-upload";
+import { PasteChip } from "./paste-chip";
+import {
+  restoreEditorSelection,
+  type EditorSelection,
+} from "./editor-selection";
 
 export type ComposerEditorHandle = {
   insertFiles: (files: readonly File[]) => void;
@@ -57,9 +69,9 @@ export type ComposerEditorHandle = {
 };
 
 export function ComposerEditor({
-  value,
+  value: source,
   pastes,
-  onChange,
+  onChange: onSourceChange,
   readOnly = false,
   canSend,
   onSubmitShortcut,
@@ -71,6 +83,10 @@ export function ComposerEditor({
   editorRef,
   upload,
   onUploadChange,
+  mentions,
+  autoFocus = false,
+  initialSelection,
+  onSelectionChange,
 }: {
   value: string;
   pastes: Map<string, ComposerPaste>;
@@ -86,17 +102,23 @@ export function ComposerEditor({
   editorRef?: Ref<ComposerEditorHandle>;
   upload?: UploadFile;
   onUploadChange?: () => void;
+  mentions?: MentionContext;
+  autoFocus?: boolean;
+  initialSelection?: EditorSelection;
+  onSelectionChange?: (selection: EditorSelection) => void;
 }) {
   useLocale();
   const input = useRef<HTMLTextAreaElement>(null);
   const theme = useTheme();
   const editorSettings = useEditorSettings("session");
   const mirror = useRef<HTMLDivElement>(null);
-  const surface = useRef<HTMLDivElement>(null);
   const gutter = useRef<HTMLDivElement>(null);
   const openCard = useFloatingCard();
   const composing = useRef(false);
   const [composition, setComposition] = useState(false);
+  const frozenPresentations = useRef<
+    Map<string, PastePresentation> | undefined
+  >(undefined);
   const [notice, setNotice] = useState("");
   const [dragging, setDragging] = useState(false);
   const [, refreshUploads] = useState(0);
@@ -110,16 +132,44 @@ export function ComposerEditor({
     | { start: number; end: number; direction: "forward" | "backward" | "none" }
     | undefined
   >(undefined);
-  const expectedEdit = useRef<string | undefined>(undefined);
+  const expectedEdit = useRef<{ text: string; source: string } | undefined>(
+    undefined,
+  );
   const followOnEdit = useRef(false);
-  const ranges = pasteRanges(value, pastes);
-  const latest = useRef({ value, replace, readOnly });
-  latest.current = { value, replace, readOnly };
-  function changedUploads(paste: ComposerPaste) {
+  const projection = new PasteProjection(
+    source,
+    pastes,
+    frozenPresentations.current,
+  );
+  const value = projection.text;
+  const ranges = projection.ranges;
+  const previousProjection = useRef(projection);
+  const presentationSelection =
+    input.current &&
+    previousProjection.current.source === source &&
+    previousProjection.current.text !== value
+      ? {
+          start: previousProjection.current.toSource(
+            input.current.selectionStart,
+          ),
+          end: previousProjection.current.toSource(input.current.selectionEnd),
+          direction: input.current.selectionDirection,
+        }
+      : undefined;
+  const history = useRef<PasteEditHistory | null>(null);
+  history.current ??= new PasteEditHistory(projection);
+  history.current.observe(projection);
+  const latest = useRef({ value, source, projection, replace, readOnly });
+  latest.current = { value, source, projection, replace, readOnly };
+  function commit(nextSource: string, text: string) {
+    history.current!.record(nextSource, text);
+    onSourceChange(nextSource);
+  }
+  function changedUploads(paste: ComposerPaste, persist = true) {
     paste.attachment?.listeners?.forEach((listener) => listener());
     if (!mounted.current) return;
     refreshUploads((v) => v + 1);
-    notify.current?.();
+    if (persist) notify.current?.();
   }
   function startUpload(paste: ComposerPaste) {
     if (!upload || !paste.attachment?.file || jobs.current.has(paste.token))
@@ -128,6 +178,7 @@ export function ComposerEditor({
     const controller = new AbortController();
     jobs.current.set(paste.token, controller);
     attachment.state = "uploading";
+    attachment.progress = 0;
     attachment.error = undefined;
     changedUploads(paste);
     const uploader = upload;
@@ -137,6 +188,18 @@ export function ComposerEditor({
         const path = await uploader(
           attachment.file!,
           AbortSignal.any([controller.signal, AbortSignal.timeout(600_000)]),
+          (loaded, total) => {
+            if (controller.signal.aborted || attachment.state !== "uploading")
+              return;
+            const progress =
+              total > 0
+                ? Math.max(0, Math.min(100, Math.floor((loaded / total) * 100)))
+                : 0;
+            if (attachment.progress === progress) return;
+            attachment.progress = progress;
+            // Progress is transient: don't rewrite pasted bodies in storage.
+            changedUploads(paste, false);
+          },
         );
         controller.signal.throwIfAborted();
         attachment.path = path;
@@ -164,7 +227,7 @@ export function ComposerEditor({
       if (!chips.length) return;
       const el = input.current!;
       const selection = wholePasteSelection(
-        pasteRanges(latest.current.value, pastes),
+        latest.current.projection.ranges,
         el.selectionStart,
         el.selectionEnd,
       );
@@ -208,8 +271,8 @@ export function ComposerEditor({
   }, []);
   useEffect(() => {
     for (const [token, controller] of jobs.current)
-      if (!value.includes(token)) controller.abort();
-  }, [value]);
+      if (!source.includes(token)) controller.abort();
+  }, [source]);
   const lines = value.split("\n");
   const [highlight, setHighlight] = useState({
     text: value,
@@ -235,18 +298,35 @@ export function ComposerEditor({
     workspace,
     accept: (start, end, path) => replace(start, end, path),
   });
-  const hints = pathHints.open ? pathHints : commandHints;
+  const mentionHints = useMentionSuggestions({
+    value,
+    input,
+    context: readOnly ? undefined : mentions,
+    composing: composition,
+    accept: replace,
+  });
+  const hints = pathHints.open
+    ? pathHints
+    : mentionHints.open
+      ? mentionHints
+      : commandHints;
   const updateSuggestions = () => {
     commandHints.updateSelection();
     pathHints.updateSelection();
+    mentionHints.updateSelection();
   };
   const blocks = useMemo(
     () =>
       codeBlocks(value).map((block) => {
         const selected = choices.get(block.start) ?? block.syntax;
         const syntax = resolvedCodeSyntax(
-          { ...block, syntax: selected },
-          value,
+          {
+            ...block,
+            syntax: selected,
+            bodyStart: projection.toSource(block.bodyStart),
+            bodyEnd: projection.toSource(block.bodyEnd),
+          },
+          source,
           pastes,
         );
         return {
@@ -259,7 +339,7 @@ export function ComposerEditor({
           ),
         };
       }),
-    [value, pastes, choices],
+    [value, source, pastes, choices],
   );
   // Plain drafts use the native text painter, including throughout IME edits.
   // Only decorations need the mirrored text layer over the native caret.
@@ -279,8 +359,6 @@ export function ComposerEditor({
   }
   function measure() {
     const el = input.current!;
-    // Match the actual native text width, including a visible scrollbar's gutter.
-    surface.current!.style.width = `${el.clientWidth}px`;
     const style = getComputedStyle(el);
     const baseline = parseFloat(
       style.getPropertyValue("--composer-editor-height"),
@@ -307,7 +385,14 @@ export function ComposerEditor({
         cursor.current.direction,
       );
       cursor.current = undefined;
+    } else if (presentationSelection && !composing.current) {
+      input.current!.setSelectionRange(
+        projection.toDisplay(presentationSelection.start),
+        projection.toDisplay(presentationSelection.end),
+        presentationSelection.direction,
+      );
     }
+    previousProjection.current = projection;
     // Controlled values can arrive after the native edit (for example, Storybook
     // args). Read the committed caret rather than the selection from that edit.
     updateSuggestions();
@@ -317,13 +402,46 @@ export function ComposerEditor({
       syncScroll();
       followOnEdit.current = false;
     }
-  }, [value, composition, editorSettings.tabSize, editorSettings.fontFamily]);
+  }, [
+    value,
+    source,
+    composition,
+    editorSettings.tabSize,
+    editorSettings.fontFamily,
+  ]);
   useEffect(() => {
     const observer = new ResizeObserver(measure);
     observer.observe(input.current!);
     observer.observe(mirror.current!);
     return () => observer.disconnect();
   }, []);
+  useLayoutEffect(() => {
+    if (!autoFocus) return;
+    const el = input.current!;
+    const selection = restoreEditorSelection(initialSelection, source.length);
+    el.setSelectionRange(
+      projection.toDisplay(selection.start),
+      projection.toDisplay(selection.end),
+      selection.direction,
+    );
+    el.focus({ preventScroll: true });
+    el.scrollTop = selection.scrollTop;
+    el.scrollLeft = selection.scrollLeft;
+    syncScroll();
+    // Restore once at entry, rather than moving the caret on controlled edits.
+  }, []);
+
+  function rememberSelection() {
+    const el = input.current;
+    if (el)
+      onSelectionChange?.({
+        start: projection.toSource(el.selectionStart),
+        end: projection.toSource(el.selectionEnd),
+        direction: el.selectionDirection,
+        scrollTop: el.scrollTop,
+        scrollLeft: el.scrollLeft,
+      });
+  }
 
   function normalizedSelection() {
     const el = input.current!;
@@ -350,11 +468,13 @@ export function ComposerEditor({
     if (readOnly) return;
     // Edit with native LF line breaks; untouched chips retain their original bytes.
     text = text.replaceAll("\r\n", "\n").replaceAll("\r", "\n");
+    const nextSource = projection.splice(start, end, text);
+    text = new PasteProjection(text, pastes, frozenPresentations.current).text;
     caret ??= start + text.length;
     selectionEnd ??= caret;
     const el = input.current!;
     const next = value.slice(0, start) + text + value.slice(end);
-    expectedEdit.current = next;
+    expectedEdit.current = { text: next, source: nextSource };
     // Native input can commit React synchronously, including async file drops.
     // Stage the caret before that commit so it cannot rewind the next keystroke.
     cursor.current = { start: caret, end: selectionEnd, direction };
@@ -365,7 +485,7 @@ export function ComposerEditor({
     document.execCommand("insertText", false, text);
     if (el.value !== next) {
       el.setRangeText(text, start, end, "end");
-      onChange(next);
+      commit(nextSource, next);
     }
     el.setSelectionRange(caret, selectionEnd, direction);
     expectedEdit.current = undefined;
@@ -389,7 +509,7 @@ export function ComposerEditor({
       input.current!.setSelectionRange(block.end + 1, block.end + 1);
     }
   }
-  function showPreview(range: PasteRange) {
+  function showPreview(range: ProjectedPasteRange) {
     input.current!.focus({ preventScroll: true });
     input.current!.setSelectionRange(range.start, range.end);
     openCard({
@@ -410,11 +530,15 @@ export function ComposerEditor({
           apply={(text) => {
             // Cards are non-modal: editing behind a preview must never replace a
             // different occurrence at a stale offset.
-            if (latest.current.readOnly || latest.current.value !== value)
+            if (latest.current.readOnly || latest.current.source !== source)
               return false;
             // Release a background Question's inert state before native editing.
             flushSync(close);
-            latest.current.replace(range.start, range.end, text);
+            latest.current.replace(
+              latest.current.projection.toDisplay(range.sourceStart),
+              latest.current.projection.toDisplay(range.sourceEnd),
+              text,
+            );
             return true;
           }}
         />
@@ -493,20 +617,34 @@ export function ComposerEditor({
             autoCorrect="off"
             wrap="soft"
             onFocus={updateSuggestions}
-            onBlur={updateSuggestions}
-            onKeyUp={updateSuggestions}
-            onScroll={syncScroll}
+            onBlur={() => {
+              rememberSelection();
+              updateSuggestions();
+            }}
+            onKeyUp={() => {
+              rememberSelection();
+              updateSuggestions();
+            }}
+            onScroll={() => {
+              syncScroll();
+              rememberSelection();
+            }}
             onCompositionStart={() => {
+              frozenPresentations.current = new Map(
+                ranges.map((range) => [range.paste.token, range.presentation]),
+              );
               composing.current = true;
               setComposition(true);
             }}
             onCompositionEnd={() => {
+              frozenPresentations.current = undefined;
               composing.current = false;
               setComposition(false);
             }}
             onSelect={() => {
               if (!composing.current) normalizedSelection();
               updateSuggestions();
+              rememberSelection();
             }}
             onBeforeInput={() => {
               if (!composing.current) normalizedSelection();
@@ -514,11 +652,17 @@ export function ComposerEditor({
             onChange={(event) => {
               if (readOnly) return;
               const next = event.target.value;
-              if (
-                !composing.current &&
-                next !== expectedEdit.current &&
-                partialPasteEdit(value, next, pastes)
-              ) {
+              const inputType = (event.nativeEvent as InputEvent).inputType;
+              const restored =
+                inputType === "historyUndo" || inputType === "historyRedo"
+                  ? history.current!.restore(next, inputType)
+                  : undefined;
+              const nextSource =
+                next === expectedEdit.current?.text
+                  ? expectedEdit.current.source
+                  : (restored ??
+                    projection.edit(next, event.target.selectionEnd));
+              if (nextSource === undefined) {
                 event.target.value = value;
                 normalizedSelection();
                 return;
@@ -526,7 +670,7 @@ export function ComposerEditor({
               followOnEdit.current =
                 event.target.selectionStart === event.target.selectionEnd &&
                 next.indexOf("\n", event.target.selectionEnd) < 0;
-              onChange(next);
+              commit(nextSource, next);
               updateSuggestions();
             }}
             onPaste={(event) => {
@@ -577,6 +721,7 @@ export function ComposerEditor({
                 });
                 paste = {
                   ...createFileChip(file, file.name),
+                  token: paste.token,
                   body: text,
                   lines: paste.lines,
                 };
@@ -593,7 +738,10 @@ export function ComposerEditor({
               event.clipboardData.setData(
                 "text/plain",
                 expandPastes(
-                  value.slice(selection.start, selection.end),
+                  source.slice(
+                    projection.toSource(selection.start),
+                    projection.toSource(selection.end),
+                  ),
                   pastes,
                 ),
               );
@@ -605,7 +753,10 @@ export function ComposerEditor({
               event.clipboardData.setData(
                 "text/plain",
                 expandPastes(
-                  value.slice(selection.start, selection.end),
+                  source.slice(
+                    projection.toSource(selection.start),
+                    projection.toSource(selection.end),
+                  ),
                   pastes,
                 ),
               );
@@ -653,21 +804,29 @@ export function ComposerEditor({
                 const direction = el.selectionDirection;
                 const selection = normalizedSelection();
                 const edit = indentEdit(
-                  value,
-                  selection.start,
-                  selection.end,
+                  source,
+                  projection.toSource(selection.start),
+                  projection.toSource(selection.end),
                   event.shiftKey,
                   editorSettings,
                 );
-                if (value.slice(edit.from, edit.to) !== edit.text)
+                if (source.slice(edit.from, edit.to) !== edit.text) {
+                  const next = new PasteProjection(
+                    source.slice(0, edit.from) +
+                      edit.text +
+                      source.slice(edit.to),
+                    pastes,
+                    frozenPresentations.current,
+                  );
                   replace(
-                    edit.from,
-                    edit.to,
+                    projection.toDisplay(edit.from),
+                    projection.toDisplay(edit.to),
                     edit.text,
-                    edit.start,
-                    edit.end,
+                    next.toDisplay(edit.start),
+                    next.toDisplay(edit.end),
                     direction,
                   );
+                }
                 return;
               }
               if (event.ctrlKey && event.key === "Enter") {
@@ -790,7 +949,7 @@ export function ComposerEditor({
             }}
           />
           {hints.overlay}
-          <div className="editor-surface" ref={surface}>
+          <div className="editor-surface">
             <div className="editor-mirror" ref={mirror}>
               {lines.map((line, index) => {
                 const start = lineOffset;
@@ -841,39 +1000,12 @@ export function ComposerEditor({
                   offset = range.end;
                   return [
                     fragment,
-                    <span
-                      className="paste-chip"
-                      data-upload-state={range.paste.attachment?.state}
-                      role="button"
-                      tabIndex={0}
-                      aria-label={
-                        range.paste.attachment
-                          ? `${range.paste.attachment.name} · ${t(range.paste.attachment.state === "uploading" ? "Uploading…" : range.paste.attachment.state === "error" ? "Upload failed." : "Attachment")}`
-                          : t(
-                              "View paste source: {lines} lines, {bytes} bytes",
-                              {
-                                lines: range.paste.lines,
-                                bytes: range.paste.bytes,
-                              },
-                            )
-                      }
-                      title={
-                        range.paste.attachment?.error ??
-                        (range.paste.attachment?.state === "uploading"
-                          ? t("Uploading…")
-                          : t("View source · Ctrl+P"))
-                      }
+                    <PasteChip
                       key={range.start}
-                      onClick={() => showPreview(range)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault();
-                          showPreview(range);
-                        }
-                      }}
-                    >
-                      {range.paste.token}
-                    </span>,
+                      paste={range.paste}
+                      presentation={range.presentation}
+                      onOpen={() => showPreview(range)}
+                    />,
                   ];
                 });
                 return (
@@ -1015,7 +1147,12 @@ function PastePreview({
           <code>{paste.attachment.path}</code>
         </p>
       )}
-      {paste.body && <pre>{paste.body}</pre>}
+      {paste.secret && (
+        <p className="attachment-info">
+          Secret file · <code>{paste.secret.path}</code>
+        </p>
+      )}
+      {!paste.secret && paste.body && <pre>{paste.body}</pre>}
       <div className="buttons">
         {paste.attachment?.state === "error" && (
           <Button

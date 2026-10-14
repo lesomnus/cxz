@@ -402,7 +402,7 @@ test("a long pinned input stays bounded and its own wheel does not move the tran
   const pinned = page.getByRole("button", { name: "Jump to user message" });
   // The tall input remains partly visible at the latest position in a tall
   // viewport. A shorter viewport fits inside its response, clearing the input.
-  await page.setViewportSize({ width: 1440, height: 600 });
+  await page.setViewportSize({ width: 1440, height: 400 });
   await page.locator(".transcript").evaluate((el) => {
     el.scrollTop = el.scrollHeight;
     window.scrollTo(0, 0);

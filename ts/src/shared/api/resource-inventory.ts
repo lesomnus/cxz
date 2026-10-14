@@ -34,6 +34,14 @@ export class ResourceInventory {
   ) {}
 
   snapshot = () => this.state;
+  refresh = () => {
+    if (!this.listeners.size) return;
+    this.stop?.abort();
+    const stop = new AbortController();
+    this.stop = stop;
+    void this.watch("projects", this.projects, "cxz.Project", stop.signal);
+    void this.watch("sessions", this.sessions, "cxz.Session", stop.signal);
+  };
   subscribe = (listener: () => void) => {
     this.listeners.add(listener);
     if (!this.stop) {

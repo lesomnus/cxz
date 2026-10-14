@@ -1,0 +1,86 @@
+.dialog {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ui-shade-237);
+  overflow: visible;
+}
+.dialog::backdrop {
+  background: var(--ui-dialog-backdrop);
+  animation: backdrop-enter var(--ui-dialog-enter-duration) ease-out both;
+}
+.appearance {
+  background: var(--ui-dialog-background);
+  -webkit-backdrop-filter: blur(var(--ui-dialog-blur));
+  backdrop-filter: blur(var(--ui-dialog-blur));
+  border-radius: var(--ui-dialog-radius);
+}
+.surface {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-height: inherit;
+  transform-origin: center;
+  animation: enter var(--ui-dialog-enter-duration) var(--ui-dialog-enter-easing)
+    both;
+}
+.surface :global(.floating-card) {
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  border-radius: var(--ui-dialog-radius);
+}
+.surface[data-anchored="true"] {
+  transform-origin: top left;
+}
+.surface[data-motion="from-right"] {
+  animation-name: enter-from-right;
+}
+.surface[data-motion="from-right"][data-closing="true"] {
+  animation: none;
+  transform: translateX(calc(100% + 2 * var(--ui-space)));
+  opacity: 0;
+  transition:
+    transform var(--ui-dialog-enter-duration) ease-in,
+    opacity var(--ui-dialog-enter-duration) ease-in;
+}
+@keyframes enter-from-right {
+  from {
+    opacity: 0;
+    transform: translateX(calc(100% + 2 * var(--ui-space)));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.surface > form {
+  max-height: inherit;
+}
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(var(--ui-dialog-enter-offset)) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .surface,
+  .dialog::backdrop {
+    animation: none;
+  }
+  .surface[data-motion="from-right"][data-closing="true"] {
+    transition: none;
+  }
+}
+@keyframes backdrop-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

@@ -107,6 +107,20 @@ func (s *Server) lockProjection(ctx context.Context, m core.Session) (*sessionPr
 	}
 	p.snapshot = supervisor.ReplayFrom(p.snapshot, events)
 	for _, e := range events {
+		if e.Kind == core.HistoryCheckpointKind {
+			var checkpoint core.HistoryCheckpoint
+			if err := json.Unmarshal(e.Payload, &checkpoint); err != nil {
+				return nil, err
+			}
+			for _, saved := range checkpoint.Resume {
+				if saved.Kind == "background" {
+					if p.background[saved.RunID] == nil {
+						p.background[saved.RunID] = &agentview.BackgroundState{}
+					}
+					p.background[saved.RunID].Apply(saved.Payload)
+				}
+			}
+		}
 		v := pbEvent(e)
 		if v.Kind == "models" {
 			if p.catalogs == nil {

@@ -23,6 +23,7 @@ export type SessionMenuProps = {
   purge: () => Promise<boolean>;
   edit: (field: SessionField, value: string) => Promise<Session>;
   upload?: (directory?: boolean) => void;
+  tools?: { label: string; run: () => void; disabled?: boolean }[];
 };
 
 export function SessionMenu({
@@ -34,6 +35,7 @@ export function SessionMenu({
   purge,
   edit,
   upload,
+  tools = [],
 }: SessionMenuProps) {
   useLocale();
   const open = useFloatingCard();
@@ -47,7 +49,12 @@ export function SessionMenu({
     plan?: SessionPurgeReply;
   }>();
   function confirm(kind: "stop" | "restart") {
-    if (session) setConfirmation({ sessionId: session.runtimeId, run, kind });
+    if (session)
+      setConfirmation({
+        sessionId: session.runtimeId,
+        run,
+        kind,
+      });
   }
   async function preparePurge() {
     const plan = await previewPurge();
@@ -95,6 +102,7 @@ export function SessionMenu({
           {
             label: "",
             items: [
+              ...tools,
               ...(upload
                 ? [
                     {

@@ -150,7 +150,7 @@ test("font settings apply live to file editors and session drafts with independe
   await chooseSetting(page, "Global editor Font family", "");
   await page.getByRole("link", { name: "Sessions view", exact: true }).click();
   await page
-    .locator('a[href="/sandbox.html#/sessions/session-1"]')
+    .locator('.tree-session[href="/sandbox.html#/sessions/session-1"]')
     .click({ timeout: 5000 });
   await expect(composer).toHaveCSS("font-family", /ui-monospace/);
 });
@@ -574,6 +574,7 @@ test("cross-tab changes refresh editors and preserve stale JSON drafts instead o
   await expect(composer).toHaveCSS("tab-size", "6");
   await expect(composer).toHaveValue("keep draft");
   await chooseSetting(other, "Session editor Indentation size", "5");
+  await expect(composer).toHaveAttribute("aria-description", /Indent 5 spaces/);
   await composer.press("Home");
   await composer.press("Tab");
   await expect(composer).toHaveValue("     keep draft");

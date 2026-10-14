@@ -36,7 +36,7 @@ message Session {
   option (payday.entity) = {
     domain: 8
     global: {}
-    list: {order: [{field: {name: "date_created"}}, {field: {name: "id"}}], by: [{name: "ref"}, {name: "project"}, {name: "listed"}], size: 50, max: 200}
+    list: {order: [{field: {name: "date_created"}}, {field: {name: "id"}}], by: [{name: "ref"}, {name: "project"}, {name: "account"}, {name: "listed"}], size: 50, max: 200}
     watch: {}
   };
 }

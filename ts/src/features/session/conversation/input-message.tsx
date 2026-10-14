@@ -1,25 +1,14 @@
 import { currentLocale } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
-import { useEffect, useState } from "react";
 import type { SessionEvent } from "#gen/cxz/session_pb";
-import {
-  absoluteMessageTime,
-  messageDate,
-  relativeMessageTime,
-} from "./message-time";
+import { absoluteMessageTime } from "./message-time";
+import { useMessageTime } from "./use-message-time";
+import { memo } from "react";
 
 function InputTime({ timeMs }: { timeMs: bigint }) {
   useLocale();
-  const [now, setNow] = useState(() => new Date());
-  const date = messageDate(timeMs);
-  const recent = !!date && now.getTime() - date.getTime() < 7 * 86_400_000;
-  useEffect(() => {
-    if (!recent) return;
-    const timer = setInterval(() => setNow(new Date()), 30_000);
-    return () => clearInterval(timer);
-  }, [recent, timeMs]);
+  const { date, relative } = useMessageTime(timeMs);
   if (!date) return null;
-  const relative = relativeMessageTime(date, now);
   return (
     <div className="input-time">
       <time
@@ -28,13 +17,17 @@ function InputTime({ timeMs }: { timeMs: bigint }) {
       >
         {absoluteMessageTime(date)}
       </time>
-      {relative && <span className="input-relative-time">{relative}</span>}
+      {relative && <span className="input-relative-time">- {relative}</span>}
     </div>
   );
 }
 
 // Shared by the transcript and the fixed preview of the preceding input.
-export function InputMessage({ event }: { event: SessionEvent }) {
+export const InputMessage = memo(function InputMessage({
+  event,
+}: {
+  event: SessionEvent;
+}) {
   return (
     <div className="input-box">
       <InputTime timeMs={event.timeMs} />
@@ -46,4 +39,4 @@ export function InputMessage({ event }: { event: SessionEvent }) {
       </div>
     </div>
   );
-}
+});

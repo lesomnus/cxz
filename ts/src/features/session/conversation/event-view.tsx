@@ -11,16 +11,16 @@ import {
   questions,
 } from "#src/features/session/model/journal.ts";
 import { QuestionHistory } from "#src/features/session/questions/question-history.tsx";
-import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
-import { responseInfo } from "#src/features/session/model/response-info.ts";
 import type { ResponseCompletion } from "#src/features/session/model/response-completion.ts";
 import type { TurnSummary } from "#src/features/session/model/session-aux.ts";
 import { ResponseFooter } from "./response-footer";
 import { TurnSummaryView } from "./turn-summary";
-import { CopyButton } from "#src/shared/components/copy-button.tsx";
+import { ResponseHeading } from "./response-heading";
 import { InputMessage } from "./input-message";
 import type { ToolActivity } from "#src/features/session/model/tool-activity.ts";
 import { ToolActivityView } from "./tool-activity-view";
+import { isDiagnosticEvent } from "#src/features/session/model/event-diagnostic.ts";
+import { DiagnosticCard } from "./diagnostic-card";
 
 export const EventView = memo(
   function EventView({
@@ -52,20 +52,16 @@ export const EventView = memo(
         />
       );
     if (e.kind === "assistant") {
-      const info = responseInfo(e.response);
       return (
         <article className="response" data-seq={e.seq.toString()}>
-          <small className="response-heading">
-            <AgentBrand agent={agent} />
-            {info.label && (
-              <span className="response-settings" title={info.description}>
-                {info.label}
-              </span>
-            )}
-            <CopyButton value={e.text} className="copy-control" />
-          </small>
+          <ResponseHeading
+            agent={agent}
+            response={e.response}
+            timeMs={e.timeMs}
+            text={e.text}
+          />
           <Markdown text={e.text} />
-          <ResponseFooter timeMs={e.timeMs} completion={completion} />
+          <ResponseFooter completion={completion} />
           {summary && <TurnSummaryView summary={summary} />}
         </article>
       );
@@ -76,13 +72,12 @@ export const EventView = memo(
           <InputMessage event={e} />
         </article>
       );
+    if (isDiagnosticEvent(e))
+      return <DiagnosticCard event={e} loadDetails={loadDetails} />;
     return (
       <ActivityCard
         seq={e.seq}
         timeMs={e.timeMs}
-        className={
-          e.kind === "diagnostic" || e.kind === "stderr" ? "error" : ""
-        }
         title={e.kind === "approval" ? approvalTitle(e) : e.kind}
         details={() => (
           <EventDetails

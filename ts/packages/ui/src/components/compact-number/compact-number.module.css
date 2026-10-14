@@ -1,0 +1,17 @@
+.number {
+  display: inline-block;
+  width: 5ch;
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-family: var(--ui-font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.leading {
+  color: var(--ui-shade-65);
+}
+.unit {
+  color: color-mix(in srgb, currentColor 78%, var(--ui-shade-0));
+}
+.number[data-mode="integer"] {
+  width: 4ch;
+}

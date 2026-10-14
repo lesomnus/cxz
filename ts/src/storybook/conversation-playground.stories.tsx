@@ -9,7 +9,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "A serverless conversation using the application's composer, virtual transcript, event cards and send animation. Send a message with the arrow or Ctrl+Enter. Paste multiline text to create a chip; double-click a tool card to open its Monaco details. Reset clears the local simulation. Terminal connections are disabled.",
+          "A serverless conversation using the application's composer, virtual transcript, event cards and send animation. Send a message with the arrow or Ctrl+Enter. Paste multiline text to create a chip; open the task summary dialog and select a task to read its Monaco details. Reset clears the local simulation. Terminal connections are disabled.",
       },
     },
   },

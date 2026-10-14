@@ -146,7 +146,10 @@ async function openReplay(page, summary = false, options = {}) {
     data: { token: "a".repeat(32) },
   });
   await page.goto("/");
-  await page.getByRole("link", { name: /demo-chat/ }).click();
+  await page
+    .getByRole("link", { name: /demo-chat/ })
+    .first()
+    .click();
   return latest;
 }
 const geometry = (page) =>
@@ -277,9 +280,10 @@ for (const mode of ["legacy", "summary"])
       expect(calls.history).toBe(0);
       expect(calls.transcript).toBeLessThan(10);
       expect(calls.details).toBe(0);
-      const task = page.locator(".tool-activity").first();
-      if (await task.count()) {
-        await task.dblclick();
+      const summary = page.locator("[data-work-summary] button").first();
+      if (await summary.count()) {
+        await summary.click();
+        await page.locator(".tool-activity").first().click();
         await expect.poll(() => calls.details).toBe(1);
         await expect(
           page.locator(".card-body").getByText("Loading…"),
@@ -337,36 +341,44 @@ test("summary history prefetches before the loaded edge even with delayed respon
   expect(await pane.locator("[data-row]").count()).toBeLessThan(60);
 });
 
-test("viewport fades cover native tool rows while the scrollbar and detail interaction remain available", async ({
+test("viewport fades cover response bodies while the scrollbar and controls remain available", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 700 });
-  const events = Array.from({ length: 100 }, (_, index) => {
-    const seq = index + 1;
-    const command = `/usr/bin/zsh -lc 'echo task-${Math.floor(index / 2)}'`;
-    return {
-      seq: String(seq),
+  const events = Array.from({ length: 50 }, (_, index) => {
+    const command = `/usr/bin/zsh -lc 'echo task-${index}'`;
+    return ["tool_call", "tool_result", "assistant"].map((kind, offset) => ({
+      seq: String(index * 3 + offset + 1),
       runId: "run",
-      requestId: `task-${Math.floor(index / 2)}`,
-      kind: index % 2 ? "tool_result" : "tool_call",
-      text: command,
-      timeMs: String(1700000000000 + seq),
-      payload: Buffer.from(
-        JSON.stringify({
-          item: {
-            type: "commandExecution",
-            command,
-            status: index % 2 ? "completed" : "inProgress",
-            ...(index % 2 ? { exitCode: 0, aggregatedOutput: "done" } : {}),
-          },
-        }),
-      ).toString("base64"),
-    };
-  });
+      requestId: `task-${index}`,
+      kind,
+      text:
+        kind === "assistant"
+          ? `Task ${index} completed.\n\nA response with enough content to read while scrolling.`
+          : command,
+      timeMs: String(1700000000000 + index * 3 + offset),
+      ...(kind !== "assistant"
+        ? {
+            payload: Buffer.from(
+              JSON.stringify({
+                item: {
+                  type: "commandExecution",
+                  command,
+                  status: offset ? "completed" : "inProgress",
+                  ...(offset ? { exitCode: 0, aggregatedOutput: "done" } : {}),
+                },
+              }),
+            ).toString("base64"),
+          }
+        : {}),
+    }));
+  }).flat();
   await openReplay(page, true, { events });
   const pane = page.locator(".transcript");
-  await expect(page.locator(".tool-activity").first()).toBeAttached();
-  await expect(page.locator(".scroll-response-marker")).toHaveCount(0);
+  await expect(page.locator(".response").first()).toBeAttached();
+  expect(await page.locator(".scroll-response-marker").count()).toBeGreaterThan(
+    0,
+  );
   await pane.evaluate((el) => {
     el.scrollTop = (el.scrollHeight - el.clientHeight) / 2;
   });
@@ -385,7 +397,7 @@ test("viewport fades cover native tool rows while the scrollbar and detail inter
       const area = el.closest(".transcript-area");
       const fade = area.querySelector(`.transcript-fade-${edge}`);
       const box = fade.getBoundingClientRect();
-      const row = [...el.querySelectorAll(".tool-activity")]
+      const row = [...el.querySelectorAll(".response .markdown")]
         .map((node) => ({ node, rect: node.getBoundingClientRect() }))
         .find(
           ({ rect }) => rect.top < box.bottom - 1 && rect.bottom > box.top + 1,
@@ -534,7 +546,11 @@ for (const mode of ["legacy", "summary"])
         },
       });
     });
-    const task = page.locator('.tool-activity[data-seq="2"]');
+    await page.locator("[data-work-summary] button").first().click();
+    const dialog = page.getByRole("dialog", {
+      name: "Tasks between responses",
+    });
+    const task = dialog.locator('.tool-activity[data-seq="2"]');
     await expect(task).toHaveAttribute("data-state", "completed");
     await expect(task.locator(".tool-file-row")).toHaveText([
       "✓Edit /workspace/ts/src/app.tsx · +25 -11",
@@ -545,11 +561,11 @@ for (const mode of ["legacy", "summary"])
       await expect(row).toBeVisible();
     await expect(page.locator(".tool-activity")).toHaveCount(1);
     expect(details).toBe(0);
+    await expect(
+      dialog.getByRole("region", { name: "Task details" }),
+    ).toHaveCount(0);
     await task.click();
-    expect(details).toBe(0);
-    await expect(page.getByRole("dialog")).toHaveCount(0);
-    await task.dblclick();
-    const card = page.getByRole("dialog", { name: "Details" });
+    const card = dialog.getByRole("region", { name: "Task details" });
     await expect(card).toBeVisible();
     await card.getByRole("tab", { name: "Result", exact: true }).click();
     await expect(card.locator(".view-lines")).toContainText(
@@ -564,28 +580,16 @@ for (const mode of ["legacy", "summary"])
     await expect
       .poll(() => page.evaluate(() => document.documentElement.scrollWidth))
       .toBe(390);
-    await expect(card).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
-    // ResizeObserver schedules overlay positioning on the next animation frame.
-    // An already-settled opening transform does not prove the resize was applied.
     await expect
-      .poll(
-        () =>
-          page.evaluate(() => {
-            const anchor = document
-              .querySelector('.tool-activity[data-seq="2"]')
-              .getBoundingClientRect();
-            const box = document
-              .querySelector(".anchored-detail")
-              .getBoundingClientRect();
-            return Math.max(
-              Math.abs(box.x - (anchor.x - 4)),
-              Math.abs(box.width - (anchor.width + 8)),
-              Math.abs(box.y - (anchor.bottom - 4)),
-              Math.max(0, box.bottom - window.innerHeight),
-            );
-          }),
-        { message: "Detail geometry should follow the resized mobile trigger" },
-      )
+      .poll(async () => {
+        const box = await card.boundingBox();
+        return Math.max(
+          0,
+          -box.x,
+          box.x + box.width - 390,
+          box.y + box.height - 844,
+        );
+      })
       .toBeLessThan(1);
     const pane = page.locator(".transcript");
     const top = await pane.evaluate((el) => el.scrollTop);
@@ -601,7 +605,7 @@ for (const mode of ["legacy", "summary"])
       )
       .toBeGreaterThan(0);
     expect(
-      await card.locator(".card-body").evaluate((el) => el.scrollTop),
+      await dialog.locator(".card-body").evaluate((el) => el.scrollTop),
     ).toBe(0);
     expect(await pane.evaluate((el) => el.scrollTop)).toBe(top);
     await card.getByRole("tab", { name: "Approval", exact: true }).click();
@@ -615,6 +619,7 @@ for (const mode of ["legacy", "summary"])
     );
     await task.click();
     await expect(card).toHaveCount(0);
+    await dialog.getByRole("button", { name: "Close task dialog" }).click();
     expect(details).toBe(mode === "summary" ? 1 : 0);
   });
 
@@ -693,8 +698,12 @@ test.describe("task detail editor", () => {
       requests++;
       return route.fulfill({ json: { events: native } });
     });
-    await page.locator(".tool-activity").dblclick();
-    const card = page.getByRole("dialog", { name: "Details" });
+    await page.locator("[data-work-summary] button").first().click();
+    const dialog = page.getByRole("dialog", {
+      name: "Tasks between responses",
+    });
+    await dialog.locator(".tool-activity").click();
+    const card = dialog.getByRole("region", { name: "Task details" });
     const outputTab = card.getByRole("tab", { name: "Output", exact: true });
     await outputTab.click();
     await expect(card.locator(".detail-editor")).toHaveAttribute(
@@ -721,7 +730,7 @@ test.describe("task detail editor", () => {
         .evaluate((el) => parseFloat(el.style.top));
     await expect.poll(readingPosition).toBeGreaterThan(0);
     expect(
-      await card.locator(".card-body").evaluate((el) => el.scrollTop),
+      await dialog.locator(".card-body").evaluate((el) => el.scrollTop),
     ).toBe(0);
     expect(await pane.evaluate((el) => el.scrollTop)).toBe(top);
     await card.getByRole("tab", { name: "Input", exact: true }).click();

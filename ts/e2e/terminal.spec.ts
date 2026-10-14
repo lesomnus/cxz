@@ -22,7 +22,10 @@ test("large native paste preserves bytes and sustained output drains before shel
   await page.goto("/");
   await page.getByLabel("Web access token").fill("a".repeat(32));
   await page.getByRole("button", { name: "Connect", exact: true }).click();
-  await page.getByRole("link", { name: /demo-chat/ }).click();
+  await page
+    .getByRole("link", { name: /demo-chat/ })
+    .first()
+    .click();
   await page.keyboard.press("Control+Backquote");
   const panel = page.getByRole("region", { name: "Workspace terminal" });
   const input = panel.locator(".xterm-helper-textarea");
@@ -68,7 +71,10 @@ test("terminal keyboard shortcuts paste once, erase words and select without edi
   await page.goto("/");
   await page.getByLabel("Web access token").fill("a".repeat(32));
   await page.getByRole("button", { name: "Connect", exact: true }).click();
-  await page.getByRole("link", { name: /demo-chat/ }).click();
+  await page
+    .getByRole("link", { name: /demo-chat/ })
+    .first()
+    .click();
   await page.keyboard.press("Control+Backquote");
   const panel = page.getByRole("region", { name: "Workspace terminal" });
   const input = panel.locator(".xterm-helper-textarea");
@@ -136,7 +142,10 @@ test("authenticated terminal runs a PTY shell under production CSP and preserves
   await page.goto("/");
   await page.getByLabel("Web access token").fill("a".repeat(32));
   await page.getByRole("button", { name: "Connect", exact: true }).click();
-  await page.getByRole("link", { name: /demo-chat/ }).click();
+  await page
+    .getByRole("link", { name: /demo-chat/ })
+    .first()
+    .click();
   page.on("console", (m) => {
     if (m.type() === "error") errors.push(m.text());
   });
@@ -201,7 +210,10 @@ test("WebGL works under production CSP and context loss keeps the PTY alive", as
   await page.goto("/");
   await page.getByLabel("Web access token").fill("a".repeat(32));
   await page.getByRole("button", { name: "Connect", exact: true }).click();
-  await page.getByRole("link", { name: /demo-chat/ }).click();
+  await page
+    .getByRole("link", { name: /demo-chat/ })
+    .first()
+    .click();
   await page.keyboard.press("Control+Backquote");
   const panel = page.getByRole("region", { name: "Workspace terminal" });
   await expect(panel.locator(".xterm-screen canvas").last()).toBeVisible();

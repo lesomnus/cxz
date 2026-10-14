@@ -17,7 +17,18 @@ describe("composer paste chips", () => {
     const paste = createPaste("한\r\n글\nthree\nlast", "1234abcd");
     expect(paste.lines).toBe(4);
     expect(paste.bytes).toBe(new TextEncoder().encode(paste.body).length);
-    expect(paste.token).toBe(`[Paste 1234abcd · 4L · ${paste.bytes}B]`);
+    expect(paste.token).toBe("[Paste 1234abcd]");
+  });
+
+  it("still recognizes existing saved paste tokens", () => {
+    const paste = {
+      ...createPaste("original text", "1234abcd"),
+      token: "[Paste 1234abcd · 1L · 13B]",
+    };
+    const pastes = new Map([[paste.token, paste]]);
+    expect(expandPastes(`Read ${paste.token}`, pastes)).toBe(
+      "Read original text",
+    );
   });
 
   it("expands only known chips in one pass without changing original whitespace", () => {

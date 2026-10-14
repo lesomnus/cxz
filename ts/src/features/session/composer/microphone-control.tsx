@@ -1,5 +1,5 @@
 import { useId } from "react";
-import { Button } from "@lesomnus/cxz-ui";
+import { Button, BadgedIcon } from "@lesomnus/cxz-ui";
 import { t } from "#src/shared/i18n/i18n.ts";
 import type { SpeechInput } from "#src/shared/browser/use-speech-input.ts";
 import styles from "./microphone-control.module.css";
@@ -75,27 +75,31 @@ export function MicrophoneControl({
         disabled={disabled || !speech.supported || speech.stopping}
         onClick={speech.toggle}
       >
-        <svg
-          width="18"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          aria-hidden="true"
+        <BadgedIcon
+          className={styles.microphoneIcon}
+          badgeClassName={styles.recordingPosition}
+          badge={
+            speech.listening ? (
+              <span
+                className={styles.recordingIndicator}
+                data-voice-recording
+              />
+            ) : undefined
+          }
         >
-          <rect x="9" y="2" width="6" height="12" rx="3" />
-          <path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3m-4 0h8" />
-          {speech.listening && (
-            <circle
-              className={styles.recordingIndicator}
-              data-voice-recording
-              cx="19"
-              cy="5"
-              r="3"
-            />
-          )}
-        </svg>
+          <svg
+            width="18"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            aria-hidden="true"
+          >
+            <rect x="9" y="2" width="6" height="12" rx="3" />
+            <path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3m-4 0h8" />
+          </svg>
+        </BadgedIcon>
       </Button>
       {showHint && (
         <span id={hintId} role="tooltip" className={styles.hint}>

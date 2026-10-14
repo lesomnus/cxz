@@ -112,7 +112,7 @@ func (m *model) backgroundStatesFor(id string) map[string]*agentview.BackgroundS
 		if state == nil {
 			continue
 		}
-		copy := &agentview.BackgroundState{Snapshot: state.Snapshot, Tasks: map[string]agentview.BackgroundTask{}}
+		copy := &agentview.BackgroundState{Snapshot: state.Snapshot, Unavailable: state.Unavailable, Tasks: map[string]agentview.BackgroundTask{}}
 		for id, task := range state.Tasks {
 			copy.Tasks[id] = task
 		}
@@ -148,7 +148,7 @@ func (m *model) hasActiveBackground(s *api.Session) bool {
 		return false
 	}
 	state := m.backgroundStatesFor(s.Id)[s.RunId]
-	if state != nil {
+	if state != nil && !state.Unavailable {
 		for _, task := range state.Tasks {
 			if task.Active {
 				return true
@@ -164,7 +164,7 @@ func (m *model) backgroundStatus() string {
 		return ""
 	}
 	state := m.backgroundStates()[s.RunId]
-	if state == nil {
+	if state == nil || state.Unavailable {
 		if m.backgroundLoading[s.Id] {
 			return muted.Render("background · loading state · /background")
 		}
@@ -196,7 +196,9 @@ func (m *model) backgroundReport() string {
 	}
 	state := m.backgroundStates()[s.RunId]
 	lines := []string{"Provider-reported background tasks · current run", ""}
-	if state == nil || len(state.Tasks) == 0 {
+	if state != nil && state.Unavailable {
+		lines = append(lines, "Background task telemetry is unavailable for this run.")
+	} else if state == nil || len(state.Tasks) == 0 {
 		lines = append(lines, "No background task telemetry recorded for this run.")
 	} else {
 		ids := make([]string, 0, len(state.Tasks))

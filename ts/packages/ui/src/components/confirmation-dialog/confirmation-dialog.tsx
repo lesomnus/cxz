@@ -8,7 +8,11 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "../button/button";
-import { FloatingCard } from "../floating-card/floating-card";
+import { DialogCard, DialogActions } from "../dialog-card/dialog-card";
+import {
+  DialogSurface,
+  dialogClassName,
+} from "../dialog-surface/dialog-surface";
 import { useUI } from "../../providers/ui-provider";
 
 // Native modal dialogs provide the focus boundary and make the rest of the
@@ -70,7 +74,7 @@ export function ConfirmationDialog({
     <dialog
       ref={dialog}
       tabIndex={-1}
-      className={`${styles.confirmation_dialog} confirmation-dialog`}
+      className={`${dialogClassName} ${styles.confirmation_dialog} confirmation-dialog`}
       aria-label={title}
       aria-describedby={id}
       aria-busy={busy}
@@ -114,27 +118,38 @@ export function ConfirmationDialog({
           close();
       }}
     >
-      <FloatingCard
-        title={title}
-        data-entered="true"
-        footer={
-          <div className="confirmation-actions">
-            <Button type="button" disabled={busy} onClick={() => void submit()}>
-              {busy ? t("Working…") : confirmLabel}
-            </Button>
-            <Button ref={cancel} type="button" disabled={busy} onClick={close}>
-              {t("Cancel")}
-            </Button>
-          </div>
-        }
-      >
-        <div id={id}>{children}</div>
-        {failed && (
-          <p role="alert">
-            {failureMessage ?? t("Action failed. Please try again.")}
-          </p>
-        )}
-      </FloatingCard>
+      <DialogSurface>
+        <DialogCard
+          title={title}
+          data-entered="true"
+          footer={
+            <DialogActions>
+              <Button
+                type="button"
+                disabled={busy}
+                onClick={() => void submit()}
+              >
+                {busy ? t("Working…") : confirmLabel}
+              </Button>
+              <Button
+                ref={cancel}
+                type="button"
+                disabled={busy}
+                onClick={close}
+              >
+                {t("Cancel")}
+              </Button>
+            </DialogActions>
+          }
+        >
+          <div id={id}>{children}</div>
+          {failed && (
+            <p role="alert">
+              {failureMessage ?? t("Action failed. Please try again.")}
+            </p>
+          )}
+        </DialogCard>
+      </DialogSurface>
     </dialog>,
     document.body,
   );

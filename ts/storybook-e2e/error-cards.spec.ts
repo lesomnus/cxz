@@ -1,0 +1,103 @@
+import { expect, test } from "@playwright/test";
+
+test("provider errors retain their visible red face and text on hover", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto(
+    "/iframe.html?id=conversation-eventcards--model-at-capacity&viewMode=story",
+  );
+  const card = page.locator(".event-detail");
+  await expect(card).toContainText(
+    "Selected model is at capacity. Please try a different model.",
+  );
+  await expect(card).toContainText("serverOverloaded · No automatic retry");
+  const face = card.locator(".activity-card-face");
+  const background = await face.evaluate(
+    (node) => getComputedStyle(node).backgroundColor,
+  );
+  // Resolve color-mix through canvas to compare channels across Chromium versions.
+  const channels = await face.evaluate((node) => {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d")!;
+    ctx.fillStyle = getComputedStyle(node).backgroundColor;
+    ctx.fillRect(0, 0, 1, 1);
+    return [...ctx.getImageData(0, 0, 1, 1).data];
+  });
+  expect(channels[0]).toBeGreaterThan(channels[1]);
+  expect(channels[0]).toBeGreaterThan(channels[2]);
+  expect(channels[3]).toBe(255);
+  await card.hover();
+  await expect(page.locator(".activity-card-preview")).toHaveCount(0);
+  await expect(card.locator(":scope > .button-content")).toHaveCSS(
+    "opacity",
+    "1",
+  );
+  await expect(face).toBeVisible();
+  await expect(face).toHaveCSS("background-color", background);
+  await expect(face).toContainText("Selected model is at capacity.");
+  expect(errors).toEqual([]);
+});
+
+test("failed Bash stays neutral in its task dialog", async ({ page }) => {
+  await page.goto(
+    "/iframe.html?id=conversation-eventcards--failed-tool&viewMode=story",
+  );
+  await page.getByRole("button", { name: "View details", exact: true }).click();
+  const card = page.locator('.tool-activity[data-state="failed"]');
+  await expect(card).toContainText("Bash");
+  await expect(card.getByRole("img", { name: "Failed" })).toHaveText("×");
+  const channels = async () =>
+    card.evaluate((node) => {
+      const ctx = document.createElement("canvas").getContext("2d")!;
+      ctx.fillStyle = getComputedStyle(node).backgroundColor;
+      ctx.fillRect(0, 0, 1, 1);
+      return [...ctx.getImageData(0, 0, 1, 1).data];
+    });
+  const normal = await channels();
+  expect(normal[0]).toBe(normal[1]);
+  expect(normal[1]).toBe(normal[2]);
+  await card.hover();
+  const hovered = await channels();
+  expect(hovered[0]).toBe(hovered[1]);
+  expect(hovered[1]).toBe(hovered[2]);
+});
+
+for (const id of ["earlier-error", "legacy-error-history"]) {
+  test(`${id}: error stays upright with the full native message`, async ({
+    page,
+  }) => {
+    await page.goto(
+      `/iframe.html?id=conversation-eventcards--${id}&viewMode=story`,
+    );
+    const card = page.locator(".event-detail[data-seq='1']");
+    await expect(card).toContainText(
+      "Selected model is at capacity. Please try a different model.",
+    );
+    const row = page.locator("[data-row='1']");
+    await expect(row).toHaveAttribute("data-activity", "false");
+    const face = card.locator(".activity-card-face");
+    await expect(face).toHaveCSS("transform", "none");
+    expect(
+      await row.evaluate((node) => node.getBoundingClientRect().height),
+    ).toBeGreaterThan(40);
+    await card.hover();
+    await expect(page.locator(".activity-card-preview")).toHaveCount(0);
+    await expect(card.locator(":scope > .button-content")).toHaveCSS(
+      "opacity",
+      "1",
+    );
+    await expect(face).toContainText("serverOverloaded · No automatic retry");
+    const upright = (
+      await face.evaluate((node) => [
+        ...new DOMMatrix(getComputedStyle(node).transform).toFloat64Array(),
+      ])
+    ).map((number) => Math.round(number * 1000) / 1000);
+    expect(upright).toEqual([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+    await card.dblclick();
+    await expect(
+      page.getByRole("tab", { name: "Result", exact: true }),
+    ).toBeVisible();
+  });
+}

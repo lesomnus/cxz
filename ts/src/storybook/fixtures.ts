@@ -27,7 +27,7 @@ export function storyEvent(
 export function responseEvent(
   seq = 2,
   agent = "codex",
-  text = "The preview is ready. **No server connection is required.**\n\n- Try editing the message below.\n- Double-click a tool card to inspect its input and output.\n\n[Project documentation](https://github.com/lesomnus/cxz)",
+  text = "The preview is ready. **No server connection is required.**\n\n- Try editing the message below.\n- Open the task summary to inspect input and output.\n\n[Project documentation](https://github.com/lesomnus/cxz)",
   durationMs = 2400,
 ) {
   const event = storyEvent(seq, "assistant", text);
@@ -161,19 +161,22 @@ export function activityStackEvents() {
   });
   const files = fileEvents()[0];
   files.seq = 9n;
+  const introduction = responseEvent(
+    2,
+    "codex",
+    "I’ll inspect the cards, update the files and check the result.",
+  );
+  introduction.response!.phase = "commentary";
+  introduction.response!.completionJson = new Uint8Array();
   return [
     storyEvent(1, "input", "Show the work between conversational responses."),
-    responseEvent(
-      2,
-      "codex",
-      "I’ll inspect the cards, update the files and check the result.",
-    ),
+    introduction,
     ...tools,
     files,
     responseEvent(
       10,
       "codex",
-      "The activity cards are folded. Hover or focus a card to bring it forward; double-click for its full details.",
+      "The work is summarized. Open the task drawer to inspect the checks and file changes.",
     ),
   ];
 }

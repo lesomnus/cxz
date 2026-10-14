@@ -11,6 +11,7 @@ import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { AudioWaveform, Button } from "@lesomnus/cxz-ui";
 import { ComposerAurora } from "./composer-aurora";
 import { TurnControls } from "./turn-controls";
+import { BackgroundJobsIndicator } from "./background-jobs-indicator";
 import type { TurnProgress } from "#src/features/session/model/turn-progress.ts";
 import { ComposerEditor, type ComposerEditorHandle } from "./composer-editor";
 import type { ComposerCommand } from "./composer-commands";
@@ -22,6 +23,8 @@ import { MicrophoneControl } from "./microphone-control";
 import { useMicrophoneLevel } from "#src/shared/browser/use-microphone-level.ts";
 import { useSettings } from "#src/shared/settings/settings.ts";
 import microphoneStyles from "./microphone-control.module.css";
+import type { MentionContext } from "./mention-suggestions";
+import type { EditorSelection } from "./editor-selection";
 
 // Presentation shared by the connected conversation and serverless UI previews.
 export function ConversationComposer({
@@ -33,6 +36,7 @@ export function ConversationComposer({
   onSubmit,
   commands,
   lookupPaths,
+  mentions,
   workspace,
   canSend,
   sending,
@@ -40,6 +44,8 @@ export function ConversationComposer({
   turn,
   working,
   interrupt,
+  backgroundJobs,
+  onBackgroundJobs,
   latestVisible = false,
   onLatest,
   terminalVisible = false,
@@ -48,7 +54,11 @@ export function ConversationComposer({
   menu,
   upload,
   onDraftAssetsChange,
+  queued,
   children,
+  autoFocus = false,
+  initialSelection,
+  onSelectionChange,
 }: {
   formRef?: Ref<HTMLFormElement>;
   inputRef?: Ref<HTMLDivElement>;
@@ -58,6 +68,7 @@ export function ConversationComposer({
   onSubmit: FormEventHandler<HTMLFormElement>;
   commands?: readonly ComposerCommand[];
   lookupPaths?: LookupPaths;
+  mentions?: MentionContext;
   workspace?: string;
   canSend: boolean;
   sending: boolean;
@@ -65,6 +76,8 @@ export function ConversationComposer({
   turn: TurnProgress;
   working: boolean;
   interrupt: () => void;
+  backgroundJobs?: number;
+  onBackgroundJobs?: () => void;
   latestVisible?: boolean;
   onLatest?: () => void;
   terminalVisible?: boolean;
@@ -73,7 +86,11 @@ export function ConversationComposer({
   menu?: ReactNode | ((pick: (directory?: boolean) => void) => ReactNode);
   upload?: UploadFile;
   onDraftAssetsChange?: () => void;
+  queued?: ReactNode;
   children?: ReactNode;
+  autoFocus?: boolean;
+  initialSelection?: EditorSelection;
+  onSelectionChange?: (selection: EditorSelection) => void;
 }) {
   useLocale();
   const terminalHint = useId();
@@ -143,10 +160,21 @@ export function ConversationComposer({
           />
         </>
       )}
+      {queued}
       <div className="composer-wrapper">
         <ComposerAurora active={working} />
         <div className="composer-toolbar">
-          <TurnControls turn={turn} busy={busy} interrupt={interrupt} />
+          <TurnControls
+            turn={turn}
+            busy={busy}
+            working={working}
+            interrupt={interrupt}
+          >
+            <BackgroundJobsIndicator
+              count={backgroundJobs}
+              open={onBackgroundJobs}
+            />
+          </TurnControls>
           <span
             className="latest-slot"
             data-visible={latestVisible}
@@ -254,6 +282,9 @@ export function ConversationComposer({
             />
           </div>
           <ComposerEditor
+            autoFocus={autoFocus}
+            initialSelection={initialSelection}
+            onSelectionChange={onSelectionChange}
             value={draft}
             readOnly={sending}
             onChange={onChange}
@@ -261,6 +292,7 @@ export function ConversationComposer({
             canSend={canSend}
             commands={commands}
             lookupPaths={lookupPaths}
+            mentions={mentions}
             workspace={workspace}
             editorRef={editor}
             upload={upload}

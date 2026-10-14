@@ -1,6 +1,7 @@
 edition = "2023";
 package cxz;
 import "cxz/session.proto";
+import "cxz/account_svc.g.proto";
 import "google/protobuf/timestamp.proto";
 option go_package = "github.com/lesomnus/cxz/resource";
 
@@ -238,6 +239,7 @@ message ConversationStatsRequest {
   SessionRef session = 2;
   int64 from_ms = 3;
   int64 to_ms = 4;
+  AccountRef account = 5;
 }
 message ConversationStatsValues {
   uint64 events = 1;

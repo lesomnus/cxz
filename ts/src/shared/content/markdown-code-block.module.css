@@ -1,0 +1,71 @@
+.block {
+  position: relative;
+  min-width: 0;
+  margin-block: calc(2 * var(--space));
+}
+:global(.markdown) .block > pre {
+  margin: 0;
+}
+.toolbar {
+  position: absolute;
+  top: var(--space);
+  right: var(--space);
+  display: flex;
+  align-items: center;
+  gap: var(--space);
+  background: var(--shade-16);
+  border-radius: var(--space);
+  font: 11px/20px var(--ui-font-mono);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+.toolbar :global(.value-menu) {
+  flex: none;
+}
+.block:hover > .toolbar,
+.block:focus-within > .toolbar,
+.toolbar:has([aria-expanded="true"]) {
+  opacity: 1;
+  pointer-events: auto;
+}
+.toolbar :global(.copy):focus-visible + :global(.meta-tooltip) {
+  opacity: 1;
+  visibility: visible;
+}
+.syntax :global(.hljs-comment),
+.syntax :global(.hljs-quote) {
+  color: var(--code-comment);
+}
+.syntax :global(.hljs-keyword),
+.syntax :global(.hljs-selector-tag),
+.syntax :global(.hljs-meta) {
+  color: var(--code-keyword);
+}
+.syntax :global(.hljs-title),
+.syntax :global(.hljs-built_in),
+.syntax :global(.hljs-type) {
+  color: var(--code-title);
+}
+.syntax :global(.hljs-string) {
+  color: var(--code-string);
+}
+.syntax :global(.hljs-number),
+.syntax :global(.hljs-literal) {
+  color: var(--code-number);
+}
+.syntax :global(.hljs-tag),
+.syntax :global(.hljs-attr) {
+  color: var(--code-attr);
+}
+@media (prefers-reduced-motion: reduce) {
+  .toolbar {
+    transition: none;
+  }
+}
+@media (hover: none) {
+  .toolbar {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}

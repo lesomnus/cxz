@@ -13,7 +13,9 @@ const internalEventKinds = new Set([
   "models_status",
   "usage",
   "usage_status",
+  "background",
   "history_checkpoint",
+  "queued",
 ]);
 
 // The journal also carries protocol bytes and control/telemetry snapshots.

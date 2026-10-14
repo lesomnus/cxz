@@ -1,6 +1,7 @@
 package lifecycle
 
 import (
+	"context"
 	"io"
 
 	"github.com/lesomnus/cxz/internal/assets"
@@ -19,19 +20,32 @@ func (s SessionServer) Upload(stream grpc.ClientStreamingServer[resource.Session
 		return status.Error(codes.InvalidArgument, "file upload must start with a header")
 	}
 	ctx := stream.Context()
-	s.shared.transition.RLock()
-	defer s.shared.transition.RUnlock()
-	session, err := s.resolve(ctx, header.GetRef())
-	if err != nil {
-		return err
-	}
-	path, err := s.shared.runtime.UploadAttachment(ctx, assets.Upload{
-		SessionID: session.GetRuntimeId(), RunID: header.GetRunId(), Name: header.GetName(), Size: header.GetSize(),
+	path, err := s.upload(ctx, header.GetRef(), assets.Upload{
+		RunID: header.GetRunId(), Name: header.GetName(), Size: header.GetSize(),
 	}, &attachmentReader{stream: stream})
 	if err != nil {
 		return err
 	}
 	return stream.SendAndClose(resource.SessionAttachment_builder{Path: &path}.Build())
+}
+
+// Both wire paths retain the same lifecycle lock, resolved session and runtime
+// run/mount checks. Only their io.Reader adapters differ.
+func (s Layer) UploadAttachment(ctx context.Context, in assets.Upload, src io.Reader) (string, error) {
+	return (SessionServer{Layer: s, SessionServiceServer: s.Next().Session()}).upload(ctx, sessionRef(in.SessionID), in, src)
+}
+func (s SessionServer) upload(ctx context.Context, ref *resource.SessionRef, in assets.Upload, src io.Reader) (string, error) {
+	s.shared.transition.RLock()
+	defer s.shared.transition.RUnlock()
+	if err := s.effect(); err != nil {
+		return "", err
+	}
+	v, err := s.resolve(ctx, ref)
+	if err != nil {
+		return "", err
+	}
+	in.SessionID = v.GetRuntimeId()
+	return s.shared.runtime.UploadAttachment(ctx, in, src)
 }
 
 // Adapt the live gRPC stream to the reader consumed by flob.Add. No upload

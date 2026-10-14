@@ -1,0 +1,41 @@
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+.status {
+  display: grid;
+  justify-items: center;
+  gap: var(--space);
+  padding: calc(3 * var(--space));
+  max-width: min(100%, var(--conversation-width));
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-align: center;
+}
+.spinner {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  animation: spin 1s linear infinite;
+}
+.spinner circle {
+  opacity: 0.2;
+}
+.error {
+  overflow-wrap: anywhere;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+  }
+}

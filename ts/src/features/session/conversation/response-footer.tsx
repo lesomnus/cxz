@@ -1,11 +1,12 @@
 import { t, translateKnown, currentLocale } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
-import { messageDate } from "./message-time";
 import {
   durationLabel,
   type ResponseCompletion,
 } from "#src/features/session/model/response-completion.ts";
 import { formatTokens } from "#src/features/session/model/session-info.ts";
+import styles from "./response-footer.module.css";
+import { CompactNumber, ElapsedTime } from "@lesomnus/cxz-ui";
 
 const names: Record<string, string> = {
   input_tokens: "Input",
@@ -15,7 +16,7 @@ const names: Record<string, string> = {
   reasoning_tokens: "Reasoning",
   total_tokens: "Total",
   cost_usd: "Cost",
-  api_duration_ms: "API",
+  api_duration_ms: "API time",
   api_turns: "API turns",
   tool_calls: "Tools",
 };
@@ -59,7 +60,7 @@ function MetricIcon({ kind }: { kind: string }) {
 
 function metricValue(key: string, value: number) {
   return key === "cost_usd"
-    ? `$${value.toFixed(4)}`
+    ? `$${value}`
     : key === "api_duration_ms"
       ? durationLabel(value)
       : key.includes("tokens")
@@ -68,6 +69,11 @@ function metricValue(key: string, value: number) {
 }
 
 function metricTitle(key: string, value: number, scope?: string) {
+  if (key === "api_duration_ms")
+    return t("API time reported by the agent: {duration} ({milliseconds} ms)", {
+      duration: durationLabel(value),
+      milliseconds: value.toLocaleString(currentLocale()),
+    });
   return key.includes("tokens")
     ? t("{name} — {scope}: {count} tokens{included}", {
         name: translateKnown(names[key]),
@@ -87,37 +93,24 @@ function metricTitle(key: string, value: number, scope?: string) {
 }
 
 export function ResponseFooter({
-  timeMs,
   completion,
 }: {
-  timeMs: bigint;
   completion?: ResponseCompletion;
 }) {
   useLocale();
-  if (!completion) return null;
-  const date = messageDate(timeMs);
+  if (
+    !completion ||
+    (completion.durationMs === undefined &&
+      !Object.keys(completion.metrics).some((key) => names[key]))
+  )
+    return null;
   return (
     <footer className="response-footer">
       {completion && (
         <div className="response-metrics" aria-label={t("Response metrics")}>
-          {date && (
-            <time
-              dateTime={date.toISOString()}
-              title={t("Time cxz received and recorded the response")}
-            >
-              {date.toLocaleString(currentLocale(), {
-                month: "2-digit",
-                day: "2-digit",
-                hour: "2-digit",
-                minute: "2-digit",
-                second: "2-digit",
-                hour12: false,
-              })}
-            </time>
-          )}
           {completion.durationMs !== undefined && (
             <span
-              className="response-metric"
+              className={`response-metric ${styles.metric}`}
               data-metric="duration"
               role="img"
               aria-label={t("Duration: {duration}", {
@@ -131,8 +124,15 @@ export function ResponseFooter({
                     )
               }
             >
+              <span className={styles.value}>
+                <ElapsedTime
+                  durationMs={completion.durationMs}
+                  label={t("Duration: {duration}", {
+                    duration: durationLabel(completion.durationMs),
+                  })}
+                />
+              </span>
               <MetricIcon kind="duration" />
-              {durationLabel(completion.durationMs)}
             </span>
           )}
           {Object.entries(completion.metrics).map(
@@ -140,14 +140,31 @@ export function ResponseFooter({
               names[key] && (
                 <span
                   key={key}
-                  className="response-metric"
+                  className={`response-metric ${styles.metric}`}
                   data-metric={key}
                   role="img"
                   aria-label={metricTitle(key, value, completion.tokenScope)}
                   title={metricTitle(key, value, completion.tokenScope)}
                 >
+                  <span className={styles.value}>
+                    {key === "api_duration_ms" ? (
+                      <ElapsedTime
+                        durationMs={value}
+                        label={metricTitle(key, value)}
+                      />
+                    ) : (
+                      <CompactNumber
+                        value={value}
+                        mode={
+                          key === "tool_calls" || key === "api_turns"
+                            ? "integer"
+                            : "compact"
+                        }
+                        label={metricTitle(key, value, completion.tokenScope)}
+                      />
+                    )}
+                  </span>
                   <MetricIcon kind={key} />
-                  {metricValue(key, value)}
                 </span>
               ),
           )}

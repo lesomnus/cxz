@@ -24,7 +24,7 @@ type statsFixture struct {
 
 func (f *statsFixture) ResourceSnapshot(context.Context) (*api.ProjectList, *api.SessionList, error) {
 	p := &api.Project{Id: "other-project", Workspace: "/other", State: "running"}
-	other := &api.Session{Id: "abcdef0123456789abcdef01", ProjectId: p.Id, Agent: "codex", Account: "work", AuthBackend: accounts.ProjectLocalOAuth, AuthBinding: accounts.BindingID(p.Id, "work", accounts.ProjectLocalOAuth), CreateId: "other-create", State: "idle"}
+	other := &api.Session{Id: "abcdef0123456789abcdef01", ProjectId: p.Id, Agent: "codex", Account: "personal", AuthBackend: accounts.ProjectLocalOAuth, AuthBinding: accounts.BindingID(p.Id, "personal", accounts.ProjectLocalOAuth), CreateId: "other-create", State: "idle"}
 	return &api.ProjectList{Projects: []*api.Project{f.p, p}}, &api.SessionList{Sessions: []*api.Session{f.s, other}}, nil
 }
 
@@ -73,13 +73,16 @@ func TestConversationStatsRPC(t *testing.T) {
 	}
 	defer conn.Close()
 	c := resource.NewSessionServiceClient(conn)
-	for _, scope := range []string{"all", "project", "session"} {
+	for _, scope := range []string{"all", "project", "session", "account"} {
 		r := resource.ConversationStatsRequest_builder{FromMs: ptr(day), ToMs: ptr(day + 86400000)}.Build()
 		if scope == "project" {
 			r.SetProject(projectRef("project"))
 		}
 		if scope == "session" {
 			r.SetSession(sessionRef(f.s.Id))
+		}
+		if scope == "account" {
+			r.SetAccount(accountRef("work"))
 		}
 		got, err := c.ConversationStats(ctx, r)
 		if err != nil {
@@ -93,6 +96,19 @@ func TestConversationStatsRPC(t *testing.T) {
 		if !got.GetComplete() || len(got.GetSessions()) != wantSessions || len(got.GetDays()) != 1 || v.GetEvents() != 3 || v.GetConversationBytes() != 6 || v.GetInputTokens() != 60 || v.GetCacheReadTokens() != 40 || v.GetOutputTokens() != 10 || v.GetReportedCostUsd() != 1 || v.GetTokenReportedTurns() != 1 {
 			t.Fatalf("%s: %v", scope, got)
 		}
+	}
+
+	personal, err := c.ConversationStats(ctx, resource.ConversationStatsRequest_builder{Account: accountRef("personal"), FromMs: ptr(day), ToMs: ptr(day + 86400000)}.Build())
+	if err != nil || len(personal.GetSessions()) != 1 || personal.GetTotal().GetEvents() != 0 {
+		t.Fatal("account scope included another account", personal, err)
+	}
+	_, err = c.ConversationStats(ctx, resource.ConversationStatsRequest_builder{Account: accountRef("missing")}.Build())
+	if status.Code(err) != codes.NotFound {
+		t.Fatal(err)
+	}
+	_, err = c.ConversationStats(ctx, resource.ConversationStatsRequest_builder{Account: accountRef("work"), Project: projectRef("project")}.Build())
+	if status.Code(err) != codes.InvalidArgument {
+		t.Fatal(err)
 	}
 
 	_, err = c.ConversationStats(ctx, resource.ConversationStatsRequest_builder{Project: projectRef("project"), Session: sessionRef(f.s.Id)}.Build())

@@ -44,12 +44,15 @@ concealing it. Padding extends the surface without shifting the selected
 line. The backdrop occupies its own layer below the native textarea so the caret
 remains visible; applying a filter to the whole overlay would change that stacking.
 
-The initial catalog contains `/model`, `/effort`, `/compact`, `/download` and Claude's
-`/context`, plus model and effort values reported by the provider. Submitting a
+The catalog contains `/model`, `/effort`, `/compact`, `/download` and Claude's
+`/context`, plus model and effort values reported by the provider. Local commands
+`/memory`, `/usage`, `/background`, `/aux` and `/@redact` open resource controls
+without being sent to the agent. Submitting a
 bare model/effort command opens the existing picker; submitting a value uses the
 same setting path as that picker, including resetting an explicit effort before
 a model change. Suggestions remain visual until accepted, so an unaccepted hint
-cannot silently replace submitted text. TUI-only screen commands are not offered.
+cannot silently replace submitted text. [Web/TUI parity](web-parity.md) describes
+the resource views, input assistance, queued messages and remaining interfaces.
 
 Inside a single-backtick span, a path beginning with `/` or `~` offers file and
 directory hints from the session's project container. Up/Down browses; Tab or
@@ -76,7 +79,41 @@ Older Managers that require individual IDs for Watch retain a paginated static
 list and show an update message instead of repeatedly retrying the unsupported
 subscription. The Manager must be updated to use shared live subscriptions.
 
+On plaintext HTTP origins, Connect subscriptions travel over authenticated
+`/rpc-stream/` WebSockets. Their Connect headers, message envelopes, errors and
+trailers are forwarded to the same Manager handler. This keeps long-lived
+subscriptions out of the browser's HTTP/1.1 connection pool shared across tabs,
+so opening more windows cannot block history reads or Send. Closing a subscription
+or signing out cancels its native RPC. HTTPS retains the ordinary Connect fetch
+transport. The loopback gateway must be updated for the WebSocket endpoint.
+
 The conversation renders messages, tool activity and actionable notices.
+The composer toolbar shows the current run's active provider-reported background
+jobs beside the elapsed time. Its border lights progressively as jobs are added
+and softly drifts and breathes while work remains active, including after the
+foreground response finishes. Click the count for background task details.
+Unknown telemetry is a dash rather than a guessed zero. The initial state comes
+from Session.Background; background events update it without browser polling,
+with snapshot refreshes on reconnection and return to the tab. Ordinary
+tool launch results do not count as background jobs or mark them completed.
+Claude supplies native task telemetry. For Codex, the supervisor queries the
+experimental `thread/backgroundTerminals/list` API after thread loading, command
+activity, and periodically while the session is connected. It combines paginated
+results and publishes changed snapshots through the same Background API and
+Watch stream, shared by all browser windows. A successful empty list means zero;
+unsupported APIs or failed reads remain unavailable without failing the turn.
+Codex counts its reported background terminals, not arbitrary operating-system
+processes or subagents. Existing Codex sessions need an updated supervisor and
+a session restart to use this integration. See the
+[official App Server documentation](https://learn.chatgpt.com/docs/app-server#clean-background-terminals).
+
+Permission requests that resolve automatically before the display grace period
+remain in the journal without flashing an approval card above the composer.
+Unresolved requests still become actionable cards; human questions appear
+immediately. Fixed-width UI text shares the `--ui-font-mono` token, including the
+elapsed timer and background count. Terminal and editor defaults resolve that
+same token, with explicit editor font preferences taking precedence.
+
 Protocol `raw` records, quota/model polling and internal control acknowledgements
 remain in the journal but do not appear as conversation rows. Usage snapshots
 still drive composer indicators, and turn-completion events still supply response
@@ -154,6 +191,17 @@ npm run dev
 Open `http://127.0.0.1:5173/`. UI edits use Vite HMR; API calls, editor connections
 and terminal WebSockets are proxied to the installed gateway. This uses real
 projects and sessions, including real sends and decisions.
+
+File bodies pass through the authenticated attachment proxy to the Manager's
+private raw HTTP handler when supported, with an Upload RPC adapter for older
+Managers. [Attachment data path](attachment-data-path.md) documents the rollout
+and measured CPU/allocation improvements.
+
+Vite terminates `/rpc-stream/` locally and forwards the Connect HTTP stream to
+the installed gateway, so this development path also works with older gateways.
+Restart Vite after changing its gateway plugin; a browser reload starts the new
+transport. `playwright.dev.config.ts` exercises simultaneous windows against
+this actual local development bridge.
 
 The dev server reads `STATE/web-installation.json` first, so gateway address and
 token-path overrides from the last successful `cxz web up` are respected. It
@@ -299,30 +347,34 @@ this terminal for developing cxz itself, and Ctrl+C stops only that gateway.
 
 | Area | Web support |
 | --- | --- |
-| Projects and sessions | Shared inventories and watches, opening existing sessions, editable session titles and aliases |
+| Projects and sessions | Shared inventories and watches, creating/opening sessions, archive/restore, editable titles and aliases |
+| Accounts | Profile registration, central Codex login, isolated Claude session login and helper login |
+| Search | Indexed server search, project/date/match filters, result paging and event navigation |
+| Shared memory | Project library, revision-checked documents, snapshots, forks, merge, import, rename and trash controls |
 | Conversation | Virtualized paged history, live events, Markdown, highlighted code, model/effort snapshots, response metrics and copy |
 | Drafts | Per-session drafts and paste chips survive navigation and reload in tab-local sessionStorage |
 | Sending | Explicit Send or Ctrl+Enter; mutation IDs; no automatic replay after ambiguous failure |
-| Session control | Interrupt, stop/resume, restart, purge with dry-run review and confirmation |
+| Session control | Interrupt, stop/resume, restart, purge with dry-run review and confirmation; queued-message cancel/recall |
 | Approval | Allow/deny and full tool input/output/approval inspection |
 | Questions | Claude choices/free text/previews; Codex requestUserInput and asynchronous questions; recorded replies |
 | MCP | Basic request display; schema-based elicitation forms still require the TUI |
-| Model and usage | Model/effort selectors, account remaining quota/reset, context gauge and per-response metrics |
-| Files | File/folder upload, large paste attachments, container path completion and /download |
+| Model and usage | Model/effort selectors, account quota/reset, context gauge, per-response metrics and retained conversation statistics |
+| Work status | Active sessions, pending requests, provider background-task reports |
+| Files and input assistance | File/folder upload, large paste attachments, path completion, /download, project session mentions and secret file chips |
 | Workspace editor | Wide-view Monaco file preview; explicit Connect embeds OpenVSCode in the project devcontainer |
 | Workspace shell | Ctrl+Backquote or toolbar toggle; retained terminal tabs, drag docking, resize, WebGL with fallback |
 | Settings | Browser-local JSON document, language/theme, editor fonts/indentation/palette, terminal behavior, voice input and sounds |
 | Attention | Unread session markers, favicon badges and completion/question sounds after browser interaction |
 | Voice | Browser speech recognition, configured language or browser preference, optional local-only recognition |
-| Auxiliary summaries | Live Manager summaries displayed next to their associated responses |
+| Auxiliary AI | Live response summaries, helper profile configuration, automatic preferences, run/cancel, suggestions/title results and task usage |
 | Authentication | Token login, Secure/HttpOnly/SameSite cookie, sign-out and expiry |
 
-There is no UI yet for session creation/account login, archived-session restore,
-conversation search, shared memory management, queued-message recall, permission
-policy selection, auxiliary AI configuration, provider background task reports,
-MCP server management, installation/history/version maintenance, diagnostics,
-secret attachments, multiple composer cursors or multiple connections. The
-Manager's RPC availability is independent of which UI controls exist.
+There is no UI yet for permission policy selection, model catalog refresh/provenance,
+MCP/skills management and schema elicitation forms, installation/history/version
+maintenance, logs/debug recording, multiple composer cursors, line move/duplicate
+shortcuts or multiple Manager connections. [Web/TUI parity](web-parity.md) tracks
+these remaining interfaces. The Manager's RPC availability is independent of which
+UI controls exist.
 
 A disconnected mutation may have reached the Manager even if the browser did
 not receive its result. The draft remains; check the conversation before

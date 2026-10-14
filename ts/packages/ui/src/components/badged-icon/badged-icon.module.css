@@ -1,0 +1,42 @@
+.root {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  vertical-align: middle;
+  --ui-badged-icon-x: 100%;
+  --ui-badged-icon-y: 0%;
+}
+.root[data-position="top-left"],
+.root[data-position="bottom-left"] {
+  --ui-badged-icon-x: 0%;
+}
+.root[data-position="bottom-left"],
+.root[data-position="bottom-right"] {
+  --ui-badged-icon-y: 100%;
+}
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  mask-mode: luminance;
+}
+.badge {
+  position: absolute;
+  left: var(--ui-badged-icon-x);
+  top: var(--ui-badged-icon-y);
+  transform: translate(-50%, -50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+  pointer-events: none;
+}
+.definitions {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
+}

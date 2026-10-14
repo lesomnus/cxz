@@ -1,0 +1,16 @@
+.dialog {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  width: min(420px, calc(100vw - 2 * var(--space)));
+  max-width: none;
+  max-height: calc(100dvh - 2 * var(--space));
+}
+
+.label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}

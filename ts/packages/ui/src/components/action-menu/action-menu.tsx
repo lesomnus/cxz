@@ -17,7 +17,7 @@ export type ActionMenuItem = {
   checked?: boolean;
   disabled?: boolean;
   danger?: boolean;
-  run: () => void;
+  run: (trigger: HTMLButtonElement) => void;
 };
 
 export function ActionMenu({
@@ -207,9 +207,9 @@ export function ActionMenu({
                     aria-label={item.label}
                     disabled={item.disabled}
                     data-danger={item.danger}
-                    onClick={() => {
+                    onClick={(event) => {
                       close(true);
-                      item.run();
+                      item.run(event.currentTarget);
                     }}
                   >
                     <span className="action-menu-item-label">

@@ -77,7 +77,8 @@ func runRemote(ctx context.Context, state string, o remoteOptions) error {
 		return err
 	}
 	defer conn.Close()
-	client := resourceclient.New(conn)
+	client := resourceclient.New(conn, transport.AttachmentClient(state, e))
+	defer client.Close()
 	check, cancel := context.WithTimeout(ctx, 15*time.Second)
 	_, err = client.List(check, &api.Empty{})
 	cancel()
@@ -114,11 +115,18 @@ func configuredSources(ctx context.Context, state string, cfg settings.Config, o
 		name, entry := name, cfg.Connections.Entries[name]
 		endpoint, _ := transport.ParseEndpoint(entry.Resolve(state).Target)
 		open := func() (api.SessionsClient, io.Closer, error) {
-			_, conn, err := openConnection(ctx, state, name, entry, !o.noEnroll, out)
+			scheme, conn, err := openConnection(ctx, state, name, entry, !o.noEnroll, out)
 			if err != nil {
 				return nil, nil, err
 			}
-			return resourceclient.New(conn), conn, nil
+			// An enrolled SSH entry uses mTLS for RPC; do not open an unexpected
+			// SSH data connection behind that choice. Such relays use compatibility.
+			dataEndpoint := endpoint
+			if scheme == "mtls" {
+				dataEndpoint.Scheme = "mtls"
+			}
+			client := resourceclient.New(conn, transport.AttachmentClient(state, dataEndpoint))
+			return client, uploadConnection{ClientConn: conn, client: client}, nil
 		}
 		// The scheme is what this client will use, decided from what it holds
 		// rather than from the target alone, so an enrolled ssh connection is
@@ -133,6 +141,13 @@ func configuredSources(ctx context.Context, state string, cfg settings.Config, o
 	}
 	return sources
 }
+
+type uploadConnection struct {
+	*grpc.ClientConn
+	client *resourceclient.Client
+}
+
+func (c uploadConnection) Close() error { c.client.Close(); return c.ClientConn.Close() }
 func runConfigured(ctx context.Context, state string, cfg settings.Config, selected, session string, o remoteOptions) error {
 	if selected == "" {
 		selected = cfg.Connections.DefaultName()

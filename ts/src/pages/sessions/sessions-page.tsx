@@ -9,6 +9,7 @@ import type { Project } from "#gen/cxz/project_pb";
 import { Connection, ref } from "#src/shared/api/connection.ts";
 import { Conversation } from "#src/features/session/conversation/conversation.tsx";
 import { ProjectEditorPane } from "#src/features/workspace/editor/project-editor-pane.tsx";
+import { SessionLibrary } from "#src/features/session/components/session-library.tsx";
 export function SessionsPage({
   c,
   id,
@@ -22,10 +23,7 @@ export function SessionsPage({
   return id ? (
     <SessionWorkspace c={c} id={id} projects={projects} />
   ) : (
-    <main className="empty">
-      <h1>{t("Your workspace")}</h1>
-      <p>{t("Select a session to continue.")}</p>
-    </main>
+    <SessionLibrary c={c} projects={projects} />
   );
 }
 function SessionWorkspace({

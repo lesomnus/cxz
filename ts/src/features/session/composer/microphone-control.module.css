@@ -20,9 +20,19 @@
   pointer-events: none;
 }
 .recordingIndicator {
-  fill: #e65c64;
-  stroke: var(--shade-16);
-  stroke-width: 1.2;
+  display: block;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #e65c64;
+}
+.microphoneIcon {
+  width: 18px;
+  height: 16px;
+}
+.microphoneIcon > .recordingPosition {
+  left: 76%;
+  top: 21%;
 }
 .microphone[aria-pressed="true"] {
   background: var(--shade-54);
@@ -54,7 +64,7 @@
   display: grid;
   margin-top: var(--control-inset);
   color: var(--muted);
-  font-family: monospace;
+  font-family: var(--ui-font-mono);
 }
 .control:hover .hint,
 .control:focus-within .hint,

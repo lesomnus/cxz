@@ -8,6 +8,7 @@ import React, {
 import type { SessionEvent } from "#gen/cxz/session_pb";
 import { useTranscriptMotion } from "./transcript-motion";
 import { ActivityCardUnfolded } from "./activity-card";
+import { isDiagnosticEvent } from "#src/features/session/model/event-diagnostic.ts";
 import {
   messageLayout,
   messageMap,
@@ -19,6 +20,11 @@ import {
   type RowKnot,
 } from "./virtual-layout";
 
+const foldable = (event: SessionEvent) =>
+  event.kind !== "input" &&
+  event.kind !== "assistant" &&
+  !isDiagnosticEvent(event);
+
 export function VirtualMessages({
   pane,
   events,
@@ -27,6 +33,7 @@ export function VirtualMessages({
   changed,
   precedingPrompt,
   onPromptChange,
+  foldActivities = true,
 }: {
   pane: React.RefObject<HTMLDivElement | null>;
   events: SessionEvent[];
@@ -35,6 +42,7 @@ export function VirtualMessages({
   changed: (mapping: MessageMap) => void;
   precedingPrompt: SessionEvent | undefined;
   onPromptChange: (prompt: SessionEvent | undefined, peek: number) => void;
+  foldActivities?: boolean;
 }) {
   const root = useRef<HTMLDivElement>(null);
   const sizes = useRef(new Map<string, number>());
@@ -81,6 +89,9 @@ export function VirtualMessages({
   useEffect(() => {
     const el = pane.current!;
     observer.current = new ResizeObserver((entries) => {
+      // A closing drawer can detach refs before passive effect cleanup runs.
+      // Ignore already queued measurements instead of touching its removed DOM.
+      if (!root.current?.isConnected || !pane.current?.isConnected) return;
       let dirty = false;
       const mountedRow = root.current!.querySelector<HTMLElement>("[data-row]");
       if (mountedRow)
@@ -212,8 +223,7 @@ export function VirtualMessages({
   );
   const latestActivity = useMemo(() => {
     for (let index = events.length - 1; index >= 0; index--)
-      if (events[index].kind !== "input" && events[index].kind !== "assistant")
-        return index;
+      if (foldable(events[index])) return index;
     return -1;
   }, [events]);
   let promptIndex = -1;
@@ -258,22 +268,17 @@ export function VirtualMessages({
     onPromptChange(prompt, peek);
   }, [prompt, peek, onPromptChange]);
   useTranscriptMotion({ root, pane, follow, rows: layout.rows, start, end });
-  return (
-    <div
-      className="virtual-messages"
-      ref={root}
-      data-cached={events.length}
-      data-first={events[0]?.seq.toString()}
-      data-last={events.at(-1)?.seq.toString()}
-      style={{ height: layout.total }}
-    >
-      {events.slice(start, end).map((event, index) => {
+  // Pixel movement only changes the window and prompt peeking. Reuse row
+  // elements until that window, its events, or its renderer actually changes.
+  const children = useMemo(
+    () =>
+      events.slice(start, end).map((event, index) => {
         const id = event.seq.toString();
         return (
           <div
             key={id}
             data-row={id}
-            data-activity={event.kind !== "input" && event.kind !== "assistant"}
+            data-activity={foldActivities && foldable(event)}
             data-latest-activity={start + index === latestActivity}
             className="transcript-row"
             style={{ top: layout.rows[start + index].top }}
@@ -285,12 +290,30 @@ export function VirtualMessages({
               };
             }}
           >
-            <ActivityCardUnfolded value={start + index === latestActivity}>
+            <ActivityCardUnfolded
+              value={
+                !foldActivities ||
+                isDiagnosticEvent(event) ||
+                start + index === latestActivity
+              }
+            >
               {render(event)}
             </ActivityCardUnfolded>
           </div>
         );
-      })}
+      }),
+    [events, start, end, foldActivities, latestActivity, layout, render],
+  );
+  return (
+    <div
+      className="virtual-messages"
+      ref={root}
+      data-cached={events.length}
+      data-first={events[0]?.seq.toString()}
+      data-last={events.at(-1)?.seq.toString()}
+      style={{ height: layout.total }}
+    >
+      {children}
     </div>
   );
 }

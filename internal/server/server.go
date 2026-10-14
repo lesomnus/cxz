@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/attachmenthttp"
 	"github.com/lesomnus/cxz/internal/convindex"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/cxzupdate"
@@ -280,7 +281,9 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 	g := grpc.NewServer(opts...)
 	resource.RegisterServer(g, resources)
 	if os.Getenv("CXZ_PROJECT_ID") == "" {
-		closeWeb, err := transport.StartConnect(ctx, root, g)
+		layer, _ := resource.Find[lifecycle.Layer](resources)
+		uploads := attachmenthttp.Handler{Uploader: attachmenthttp.Guard(layer, versionpin.Stream(root), s.updateGate.Stream)}
+		closeWeb, err := transport.StartConnect(ctx, root, g, uploads)
 		if err != nil {
 			return fmt.Errorf("Manager Connect listener: %w", err)
 		}
