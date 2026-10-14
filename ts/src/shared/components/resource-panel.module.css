@@ -1,11 +1,21 @@
 .panel {
+  --panel-border-color: var(--ui-shade-36);
+  --panel-border-width: 1px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   min-width: 0;
   min-height: 0;
   padding: 0;
-  background: var(--ui-shade-16);
+  /* Continue the edge behind the body's top corner. The opaque body covers
+     this stripe, keeping its full width without adding a border beside it. */
+  background:
+    linear-gradient(
+      to left,
+      var(--panel-border-color) var(--panel-border-width),
+      transparent var(--panel-border-width)
+    ),
+    var(--ui-shade-16);
 }
 .header {
   flex: 0 0 auto;
@@ -13,12 +23,12 @@
   align-items: center;
   gap: var(--ui-space);
   padding: var(--ui-control-inset);
-  border-right: 1px solid var(--ui-shade-36);
+  border-right: var(--panel-border-width) solid var(--panel-border-color);
 }
 .title {
   flex: 1;
   min-width: 0;
-  padding: var(--ui-dialog-padding);
+  padding: 0 var(--ui-dialog-padding);
 }
 .actions {
   display: flex;
@@ -28,7 +38,7 @@
 }
 .actions button {
   width: var(--ui-toolbar-button-width);
-  border: 1px solid var(--ui-shade-54);
+  border: var(--panel-border-width) solid var(--panel-border-color);
 }
 .panel > :global(.panel-scroll-region) {
   --panel-inset: 0px;
