@@ -91,6 +91,12 @@ test("panel fades track hidden edges and scroll intensity without covering the h
     const thumb = region.querySelector<HTMLElement>(".panel-scroll-thumb")!;
     const fade = region.querySelector<HTMLElement>(".panel-scroll-fade-top")!;
     const header = el.querySelector("header")!.getBoundingClientRect();
+    // Capped handles no longer necessarily overlap the resting edge fade.
+    // Create an overlap explicitly to test their stacking independently.
+    const previousHeight = fade.style.height;
+    const previousTransition = fade.style.transition;
+    fade.style.transition = "none";
+    fade.style.height = "40%";
     fade.style.pointerEvents = "auto";
     const box = thumb.getBoundingClientRect();
     const fadeBox = fade.getBoundingClientRect();
@@ -99,6 +105,8 @@ test("panel fades track hidden edges and scroll intensity without covering the h
       document.elementFromPoint(box.x + box.width / 2, box.y + 2),
     );
     fade.style.pointerEvents = "none";
+    fade.style.height = previousHeight;
+    fade.style.transition = previousTransition;
     return {
       overlapsHandle,
       handleAbove,
@@ -151,6 +159,14 @@ test("compact panels keep their heading fixed and share the conversation handle'
   const scrollBox = (await panel
     .locator(".panel-scroll-region")
     .boundingBox())!;
+  // A small overflow must not turn the handle into a wall along the panel.
+  expect(initial.height).toBeLessThan(scrollBox.height / 2);
+  const maxSize = await handle.evaluate((el) =>
+    parseFloat(
+      getComputedStyle(el).getPropertyValue("--panel-scroll-thumb-max-size"),
+    ),
+  );
+  expect(initial.height).toBeLessThanOrEqual(maxSize);
   await page.mouse.move(initial.x + initial.width / 2, scrollBox.y + 16);
   await expect
     .poll(async () => (await handle.boundingBox())!.width)

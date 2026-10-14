@@ -42,6 +42,12 @@ export function PanelScroll({
     const el = pane.current;
     if (!el || !rail.current) return;
     const height = rail.current.clientHeight;
+    const style = getComputedStyle(rail.current);
+    const maxSize =
+      parseFloat(style.getPropertyValue("--panel-scroll-thumb-max-size")) ||
+      height;
+    const maxRatio =
+      parseFloat(style.getPropertyValue("--panel-scroll-thumb-max-ratio")) || 1;
     const max = Math.max(0, el.scrollHeight - el.clientHeight);
     const top = clamp(el.scrollTop, 0, max);
     region.current?.style.setProperty("--panel-top-hidden", `${top}px`);
@@ -59,6 +65,9 @@ export function PanelScroll({
     );
     const thumb = Math.min(
       height,
+      // Keep both drawing and drag travel based on the same capped size.
+      // Short rails still retain a usable minimum grab area.
+      Math.max(32, Math.min(maxSize, height * clamp(maxRatio, 0, 1))),
       Math.max(32, (height * el.clientHeight) / (el.scrollHeight || 1)),
     );
     setView({
