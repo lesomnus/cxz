@@ -1,6 +1,8 @@
 import { createContext, useContext, useMemo, type ReactNode } from "react";
 
 export type UIMessage =
+  | "Search {label}"
+  | "No matches"
   | "Cancel"
   | "Confirm"
   | "Working…"
