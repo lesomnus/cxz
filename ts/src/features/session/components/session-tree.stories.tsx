@@ -3,7 +3,7 @@ import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { createWorkspaceRouter, useWorkspaceRoute } from "#src/app/router.tsx";
 import { SessionTreeGroup } from "./session-tree";
-import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
+import { ResourcePanel } from "#src/shared/components/resource-panel.tsx";
 import { project, storySession } from "#src/storybook/fixtures.ts";
 import "#src/storybook/preview.css";
 
@@ -55,39 +55,34 @@ function SessionList({
     [count],
   );
   return (
-    <aside className="resource-panel storybook-panel">
-      <header>
-        <h2>Sessions</h2>
-      </header>
-      <PanelScroll>
-        <div className="session-tree">
-          <SessionTreeGroup
-            project={project}
-            items={items}
-            loading={loading}
-            selected={route.session}
-            unread={
-              unread
-                ? new Set(
-                    items
-                      .filter((s) => s.runtimeId !== route.session)
-                      .map((s) => s.runtimeId),
-                  )
-                : undefined
-            }
-            errors={
-              error
-                ? new Set(
-                    [items[1]?.runtimeId].filter((id): id is string => !!id),
-                  )
-                : undefined
-            }
-            open={open}
-            toggle={() => setOpen((value) => !value)}
-          />
-        </div>
-      </PanelScroll>
-    </aside>
+    <ResourcePanel title="Sessions" className="storybook-panel">
+      <div className="session-tree">
+        <SessionTreeGroup
+          project={project}
+          items={items}
+          loading={loading}
+          selected={route.session}
+          unread={
+            unread
+              ? new Set(
+                  items
+                    .filter((s) => s.runtimeId !== route.session)
+                    .map((s) => s.runtimeId),
+                )
+              : undefined
+          }
+          errors={
+            error
+              ? new Set(
+                  [items[1]?.runtimeId].filter((id): id is string => !!id),
+                )
+              : undefined
+          }
+          open={open}
+          toggle={() => setOpen((value) => !value)}
+        />
+      </div>
+    </ResourcePanel>
   );
 }
 const meta = {
