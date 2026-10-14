@@ -12,11 +12,13 @@ function SessionPanel({
   loading = false,
   expanded = true,
   unread = false,
+  error = false,
 }: {
   count?: number;
   loading?: boolean;
   expanded?: boolean;
   unread?: boolean;
+  error?: boolean;
 }) {
   const router = useMemo(
     () =>
@@ -29,12 +31,13 @@ function SessionPanel({
               loading={loading}
               expanded={expanded}
               unread={unread}
+              error={error}
             />
           ),
         },
         createMemoryHistory({ initialEntries: ["/sessions/session-0"] }),
       ),
-    [count, loading, expanded, unread],
+    [count, loading, expanded, unread, error],
   );
   return <RouterProvider router={router} />;
 }
@@ -43,6 +46,7 @@ function SessionList({
   loading,
   expanded,
   unread,
+  error,
 }: Required<Parameters<typeof SessionPanel>[0]>) {
   const route = useWorkspaceRoute();
   const [open, setOpen] = useState(expanded);
@@ -68,6 +72,13 @@ function SessionList({
                     items
                       .filter((s) => s.runtimeId !== route.session)
                       .map((s) => s.runtimeId),
+                  )
+                : undefined
+            }
+            errors={
+              error
+                ? new Set(
+                    [items[1]?.runtimeId].filter((id): id is string => !!id),
                   )
                 : undefined
             }
@@ -101,3 +112,7 @@ export const Collapsed: Story = { args: { expanded: false } };
 export const Empty: Story = { args: { count: 0 } };
 export const Loading: Story = { args: { count: 0, loading: true } };
 export const UnreadCompleted: Story = { args: { unread: true } };
+
+export const ErrorBeforeCompletion: Story = {
+  args: { unread: true, error: true },
+};

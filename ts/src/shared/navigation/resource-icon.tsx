@@ -6,8 +6,10 @@ import { BadgedIcon } from "@lesomnus/cxz-ui";
 export function ResourceIcon({
   kind,
   unreadCount = 0,
+  error = false,
 }: {
   unreadCount?: number;
+  error?: boolean;
   kind:
     | "sessions"
     | "projects"
@@ -23,7 +25,11 @@ export function ResourceIcon({
     <BadgedIcon
       className={styles.icon}
       badgeClassName={styles.badge}
-      badge={unreadCount > 0 ? <UnreadBadge count={unreadCount} /> : undefined}
+      badge={
+        unreadCount > 0 ? (
+          <UnreadBadge count={unreadCount} error={error} />
+        ) : undefined
+      }
     >
       <svg
         width="20"

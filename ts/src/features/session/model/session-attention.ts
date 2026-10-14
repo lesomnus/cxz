@@ -3,11 +3,12 @@ import type { Client } from "@connectrpc/connect";
 import type { SessionService } from "#gen/cxz/session_svc_pb";
 import { questions } from "./journal";
 
-export type SessionAlert = "complete" | "question";
+export type SessionAlert = "complete" | "question" | "error";
 type Activity = {
   run: string;
   last: bigint;
   done: bigint;
+  failed: bigint;
   seen: bigint;
   notified: bigint;
   pending: Set<string>;
@@ -16,7 +17,7 @@ const working = (state: string) =>
   ["working", "running", "waiting_input", "waiting"].includes(state);
 
 // Consume the shared resource catalog, never open a live stream per session.
-// Confirm completions against native history so idle errors/settings are silent.
+// Confirm turn outcomes against native history; diagnostics/settings are silent.
 export class SessionAttention {
   private activities = new Map<string, Activity>();
   private restored = new Set<string>();
@@ -26,6 +27,7 @@ export class SessionAttention {
   private queued = new Map<string, Session>();
   private reading = { id: "", through: 0n };
   private value = new Set<string>();
+  private errors = new Set<string>();
   private storageKey: string;
   private stopped = false;
   constructor(
@@ -42,6 +44,7 @@ export class SessionAttention {
           run: a.run,
           last: BigInt(a.last),
           done: BigInt(a.done),
+          failed: BigInt(a.failed ?? "0"),
           seen: BigInt(a.seen),
           notified: BigInt(a.notified),
           pending: new Set(JSON.parse(a.pending)),
@@ -54,6 +57,7 @@ export class SessionAttention {
     this.publish();
   }
   snapshot = () => this.value;
+  errorSnapshot = () => this.errors;
   subscribe = (fn: () => void) => {
     this.listeners.add(fn);
     return () => {
@@ -68,13 +72,23 @@ export class SessionAttention {
   };
   private publish() {
     const next = new Set(
-      [...this.activities].filter(([, a]) => a.done > a.seen).map(([id]) => id),
+      [...this.activities]
+        .filter(([, a]) => a.done > a.seen || a.failed > a.seen)
+        .map(([id]) => id),
+    );
+    const errors = new Set(
+      [...this.activities]
+        .filter(([, a]) => a.failed > a.seen)
+        .map(([id]) => id),
     );
     if (
+      errors.size !== this.errors.size ||
+      [...errors].some((id) => !this.errors.has(id)) ||
       next.size !== this.value.size ||
       [...next].some((id) => !this.value.has(id))
     ) {
       this.value = next;
+      this.errors = errors;
       this.listeners.forEach((fn) => fn());
     }
     try {
@@ -88,6 +102,7 @@ export class SessionAttention {
                 run: a.run,
                 last: String(a.last),
                 done: String(a.done),
+                failed: String(a.failed),
                 seen: String(a.seen),
                 notified: String(a.notified),
                 pending: JSON.stringify([...a.pending]),
@@ -108,19 +123,28 @@ export class SessionAttention {
       this.publish();
     }
   }
-  private complete(id: string, a: Activity, seq: bigint) {
+  private complete(
+    id: string,
+    a: Activity,
+    seq: bigint,
+    kind: "complete" | "error" = "complete",
+  ) {
     if (seq <= a.notified) return;
     a.notified = seq;
-    a.done = seq;
+    if (kind === "error") a.failed = seq;
+    else a.done = seq;
     if (this.reading.id === id && this.reading.through >= seq) a.seen = seq;
     this.publish();
-    this.alerts.forEach((fn) => fn("complete"));
+    this.alerts.forEach((fn) => fn(kind));
   }
   event(id: string, event: SessionEvent) {
     const a = this.activities.get(id);
     if (!a || a.run !== event.runId) return;
-    if (event.kind === "turn_end" && event.text === "completed")
-      this.complete(id, a, event.seq);
+    if (event.kind === "turn_end") {
+      if (event.text === "completed") this.complete(id, a, event.seq);
+      else if (event.text === "failed")
+        this.complete(id, a, event.seq, "error");
+    }
   }
   observe(sessions: Session[]) {
     if (this.stopped) return;
@@ -144,6 +168,7 @@ export class SessionAttention {
           run: status.runId,
           last: status.lastSeq,
           done: 0n,
+          failed: 0n,
           seen: status.lastSeq,
           notified: status.lastSeq,
           pending,
@@ -156,7 +181,7 @@ export class SessionAttention {
         if (restored) {
           // A purge or an ephemeral sandbox reset can restart its journal.
           a.last = a.seen = a.notified = status.lastSeq;
-          a.done = 0n;
+          a.done = a.failed = 0n;
           a.run = status.runId;
           a.pending = pending;
         }
@@ -173,7 +198,7 @@ export class SessionAttention {
         this.alerts.forEach((fn) => fn("question"));
       a.pending = pending;
       if (
-        status.state === "idle" &&
+        ["idle", "failed", "error", "stopped"].includes(status.state) &&
         status.lastSeq > a.last &&
         status.lastSeq > a.notified
       ) {
@@ -213,10 +238,11 @@ export class SessionAttention {
     const timeout = setTimeout(() => controller.abort(), 5000);
     try {
       // Usually one request near the tail; older servers may page more narrowly.
+      let done = 0n;
+      let failed = 0n;
       for (let before = end; before > from; ) {
         const floor = before - from > 512n ? before - 512n : from;
         let cursor = floor;
-        let done = 0n;
         while (cursor < before) {
           const batch = await this.api.history(
             {
@@ -236,21 +262,31 @@ export class SessionAttention {
               e.seq > from &&
               e.seq <= end &&
               e.kind === "turn_end" &&
-              e.text === "completed" &&
-              e.seq > done
-            )
-              done = e.seq;
+              ["completed", "failed"].includes(e.text)
+            ) {
+              if (e.text === "failed" && e.seq > failed) failed = e.seq;
+              if (e.text === "completed" && e.seq > done) done = e.seq;
+            }
           }
           if (next <= cursor) break;
           cursor = next;
         }
-        if (done) {
-          this.complete(id, a, done);
-          break;
-        }
+        // Retain unseen failures even when a later turn succeeded. Scan the
+        // entire new range, including earlier pages, before publishing.
         before = floor;
       }
       if (!controller.signal.aborted && a.run === run) {
+        if (failed > a.failed) a.failed = failed;
+        if (done > a.done) a.done = done;
+        const outcome = a.failed > a.notified ? "error" : "complete";
+        const latest = a.failed > a.done ? a.failed : a.done;
+        if (latest > a.notified) {
+          a.notified = latest;
+          if (this.reading.id === id && this.reading.through >= latest)
+            a.seen = latest;
+          this.publish();
+          this.alerts.forEach((fn) => fn(outcome));
+        }
         a.last = end;
         this.publish();
       }

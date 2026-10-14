@@ -542,6 +542,7 @@ export const messages = {
     "Alias must be 3–20 characters: lowercase letters, digits and single hyphens, beginning with a letter.",
   Confirm: "Confirm",
   Title: "Title",
+  "Unread error": "Unread error",
   "Unread response": "Unread response",
   "{count} unread sessions": "{count} unread sessions",
   Notifications: "Notifications",

@@ -165,3 +165,75 @@ it("caps simultaneous history probes and cancels them on disposal", async () => 
   await new Promise((r) => setTimeout(r, 0));
   expect(f.history).toHaveBeenCalledTimes(4);
 });
+
+it("prioritizes an unseen failure over completion until that failure is read", () => {
+  const f = fixture();
+  f.tracker.observe([session(10)]);
+  f.tracker.event("session", event(12));
+  f.tracker.event("session", event(14, "failed"));
+  f.tracker.event("session", event(14, "failed"));
+  expect(f.alert.mock.calls).toEqual([["complete"], ["error"]]);
+  expect(f.tracker.errorSnapshot().has("session")).toBe(true);
+  f.tracker.event("session", event(16));
+  expect(f.tracker.errorSnapshot().has("session")).toBe(true);
+  f.tracker.setReading("session", 14n);
+  expect(f.tracker.errorSnapshot().size).toBe(0);
+  expect(f.tracker.snapshot().has("session")).toBe(true);
+  f.tracker.setReading("session", 16n);
+  expect(f.tracker.snapshot().size).toBe(0);
+});
+
+it("sounds for a failure already being read without leaving a badge", () => {
+  const f = fixture();
+  f.tracker.observe([session(10)]);
+  f.tracker.setReading("session", 12n);
+  f.tracker.event("session", event(12, "failed"));
+  expect(f.alert.mock.calls).toEqual([["error"]]);
+  expect(f.tracker.snapshot().size).toBe(0);
+  expect(f.tracker.errorSnapshot().size).toBe(0);
+});
+
+it("restores unread errors silently and removes them on reset", () => {
+  const f = fixture();
+  f.tracker.observe([session(10)]);
+  f.tracker.event("session", event(12, "failed"));
+  const reload = new SessionAttention(
+    { history: f.history },
+    "host",
+    f.storage,
+  );
+  const alert = vi.fn();
+  reload.onAlert(alert);
+  expect(reload.errorSnapshot().has("session")).toBe(true);
+  reload.event("session", event(12, "failed"));
+  expect(alert).not.toHaveBeenCalled();
+  reload.reset("session");
+  expect(reload.errorSnapshot().size).toBe(0);
+});
+
+it("finds a background failure before a later completion on another history page", async () => {
+  const f = fixture();
+  f.tracker.observe([session(10)]);
+  f.history.mockImplementation(async ({ afterSeq }) => ({
+    events: [event(12, "failed"), event(600)].filter((e) => e.seq > afterSeq),
+  }));
+  f.tracker.observe([session(600)]);
+  await vi.waitFor(() => expect(f.alert).toHaveBeenCalledWith("error"));
+  expect(f.tracker.errorSnapshot().has("session")).toBe(true);
+  expect(f.alert).toHaveBeenCalledTimes(1);
+  f.tracker.setReading("session", 12n);
+  expect(f.tracker.errorSnapshot().size).toBe(0);
+  expect(f.tracker.snapshot().has("session")).toBe(true);
+});
+
+it("publishes severity changes even when the unread session count is unchanged", () => {
+  const f = fixture();
+  f.tracker.observe([session(10)]);
+  f.tracker.event("session", event(12));
+  const before = f.tracker.snapshot();
+  const listener = vi.fn();
+  f.tracker.subscribe(listener);
+  f.tracker.event("session", event(14, "failed"));
+  expect(f.tracker.snapshot()).not.toBe(before);
+  expect(listener).toHaveBeenCalledTimes(1);
+});
