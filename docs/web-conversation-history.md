@@ -56,6 +56,22 @@ messages and completion notifications continue arriving while another view is
 open. Only visited conversations open streams; the shared resource inventory
 continues tracking unvisited sessions.
 
+Turn summaries are auxiliary AI results, separate from the transcript projection.
+The manager observes committed completion events and schedules automatic summaries
+when enabled. Its independent observation loop also processes sessions without
+attached clients. Results are persisted in the manager's auxiliary store.
+`AuxEvents` sends the current persisted state on subscription and pushes a new
+snapshot when that state changes; reading it does not request a new summary.
+Explicit one-shot generation uses `AuxRun`.
+
+The connection's conversation entry also owns its auxiliary snapshot and stream.
+Transcript and auxiliary controls share this subscription. Navigating away keeps
+receiving summaries, and returning or reconnecting displays the last snapshot
+until a new authoritative snapshot arrives. Auxiliary snapshots count toward the
+idle cache byte budget. Viewed auxiliary controls and running auxiliary tasks
+protect their entries from idle eviction. Purge, sign-out, eviction, and a changed
+session identity/reset journal apply to both conversation and auxiliary data.
+
 The cache retains row measurements and a row-relative reading anchor, not hidden
 conversation DOM. Reading an older window leaves that window stable while a
 separate live tail receives updates. Latest can use the cached tail; reconnects

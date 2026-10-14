@@ -34,6 +34,9 @@ test("switching views retains one native stream and returns cached offscreen res
     data: { token: "a".repeat(32) },
   });
   const held = gate();
+  const auxHeld = gate();
+  let deliveredAux = 0;
+  const auxStreams: string[] = [];
   const project = {
     id: b64("1234567890123456"),
     runtimeId: "project",
@@ -87,6 +90,36 @@ test("switching views retains one native stream and returns cached offscreen res
       });
     }
     if (method === "History") return route.fulfill({ json: { events: [] } });
+    if (method === "AuxEvents") {
+      auxStreams.push(id);
+      if (id !== "alpha")
+        return route.fulfill({
+          contentType: "application/connect+json",
+          body: frames([{}]),
+        });
+      const summaries = [
+        {
+          runId: "run",
+          turn: "1",
+          responseSeq: "1",
+          text: "Summary already received",
+        },
+      ];
+      if (auxStreams.filter((s) => s === "alpha").length > 1) {
+        await auxHeld.promise;
+        summaries.push({
+          runId: "run",
+          turn: "3",
+          responseSeq: "2",
+          text: "Summary generated while beta is open",
+        });
+        deliveredAux++;
+      }
+      return route.fulfill({
+        contentType: "application/connect+json",
+        body: frames([{ summaries }]),
+      });
+    }
     if (method === "Events") {
       streams.push({ id, after: q.afterSeq ?? "0" });
       if (id === "alpha" && q.afterSeq === "1") {
@@ -118,21 +151,34 @@ test("switching views retains one native stream and returns cached offscreen res
       "Cached alpha response",
     );
     await expect.poll(() => streams.some((s) => s.id === "alpha")).toBe(true);
+    await expect(page.locator(".turn-summary")).toContainText(
+      "Summary already received",
+    );
     await page.locator('.tree-session[href="/sessions/beta"]').click();
     await expect(page.locator(".transcript")).toContainText(
       "Cached beta response",
     );
     held.release();
+    auxHeld.release();
+    // The mocked stream ends after each frame; its next reconnect delivers an
+    // offscreen summary before returning to alpha. No session view owns it.
+    await expect.poll(() => deliveredAux).toBeGreaterThan(0);
     const alpha = page.locator('.tree-session[href="/sessions/alpha"]');
     await expect(
       alpha.getByRole("img", { name: "Unread response", exact: true }),
     ).toBeVisible();
     await page.evaluate(() => {
       (window as any).cacheLoading = [];
+      (window as any).cacheSummaryMissing = [];
       new MutationObserver(() => {
         const pane = document.querySelector(".transcript");
         if (pane?.getAttribute("aria-busy") === "true")
           (window as any).cacheLoading.push(true);
+        if (
+          pane?.textContent?.includes("Cached alpha response") &&
+          !pane.textContent.includes("Summary already received")
+        )
+          (window as any).cacheSummaryMissing.push(true);
       }).observe(document.body, {
         subtree: true,
         childList: true,
@@ -152,6 +198,12 @@ test("switching views retains one native stream and returns cached offscreen res
       "false",
     );
     expect(await page.evaluate(() => (window as any).cacheLoading)).toEqual([]);
+    await expect(page.locator(".transcript")).toContainText(
+      "Summary generated while beta is open",
+    );
+    expect(
+      await page.evaluate(() => (window as any).cacheSummaryMissing),
+    ).toEqual([]);
     expect(histories.filter((id) => id === "alpha")).toHaveLength(1);
     expect(histories.filter((id) => id === "beta")).toHaveLength(1);
     expect(
@@ -166,6 +218,7 @@ test("switching views retains one native stream and returns cached offscreen res
     expect(storage).not.toContain("Response produced while beta is open");
   } finally {
     held.release();
+    auxHeld.release();
     await page.unrouteAll({ behavior: "ignoreErrors" });
   }
 });

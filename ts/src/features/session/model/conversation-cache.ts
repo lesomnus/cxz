@@ -9,6 +9,7 @@ import { advanceTurn, snapshotTurn, type TurnProgress } from "./turn-progress";
 import { transcriptEvents } from "./tool-activity";
 import type { ConversationLoad } from "../conversation/conversation-loading";
 import type { TranscriptViewport } from "../conversation/virtual-messages";
+import { CachedSessionAux } from "./session-aux-cache";
 
 export const MAX_IDLE_CONVERSATIONS = 8;
 export const MAX_CONVERSATION_BYTES = 8 << 20;
@@ -112,6 +113,7 @@ export class CachedConversation {
   private notificationFrame?: number;
   private notificationQueued = false;
   readonly history: SessionHistory;
+  readonly aux: CachedSessionAux;
   readonly latestSeq = { current: 0n };
   readonly newest = { current: { anchor: 0n, through: 0n } };
   readonly floor = { current: 0n };
@@ -132,13 +134,15 @@ export class CachedConversation {
     private changed: () => void,
   ) {
     this.history = new SessionHistory(client.sessions, id);
+    this.aux = new CachedSessionAux(client.sessions, id, changed);
   }
   snapshot = () => this.state;
   get viewed() {
-    return this.listeners.size > 0;
+    return this.listeners.size > 0 || this.aux.viewed;
   }
   get active() {
     return (
+      this.aux.active ||
       this.state.turn.active ||
       this.state.pending.length > 0 ||
       ["working", "running", "waiting_input", "waiting"].includes(
@@ -154,7 +158,7 @@ export class CachedConversation {
         ...this.state.metadata,
         ...this.state.pending,
       ]),
-    ].reduce((n, e) => n + eventBytes(e), 0);
+    ].reduce((n, e) => n + eventBytes(e), this.aux.bytes);
   }
   subscribe = (listener: () => void) => {
     this.listeners.add(listener);
@@ -340,6 +344,7 @@ export class CachedConversation {
         }
       }
       if (identityChanged || journalReset) {
+        this.aux.reset();
         this.cursor = 0n;
         this.history.mode = "unknown";
         this.ready = false;
@@ -464,20 +469,24 @@ export class CachedConversation {
     }
   }
   reconnect() {
+    this.aux.reconnect();
     if (this.started && !this.paused) this.controller?.abort();
   }
   pause() {
+    this.aux.pause();
     this.paused = true;
     this.controller?.abort();
     clearTimeout(this.timer);
   }
   resume() {
+    this.aux.resume();
     if (this.paused && !this.stopped) {
       this.paused = false;
       if (this.started) void this.connect();
     }
   }
   dispose() {
+    this.aux.dispose();
     this.stopped = true;
     this.pause();
     if (this.notificationFrame !== undefined)
