@@ -14,6 +14,7 @@ import type { Connection } from "#src/shared/api/connection.ts";
 import { currentLocale, t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import styles from "./session-search.module.css";
+import { useSearchHighlights, type SearchLocation } from "./search-highlights";
 
 export function SessionSearch({
   c,
@@ -25,7 +26,11 @@ export function SessionSearch({
   c: Connection;
   id: string;
   area: RefObject<HTMLElement | null>;
-  jump: (seq: string, inset: number) => void;
+  jump: (
+    seq: string,
+    inset: number,
+    matchVisible?: boolean,
+  ) => void | Promise<void>;
   restoreFocus: () => void;
 }) {
   useLocale();
@@ -37,6 +42,9 @@ export function SessionSearch({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [selected, setSelected] = useState(0);
+  const [location, setLocation] = useState<SearchLocation>();
+  const position = useRef<SearchLocation | undefined>(undefined);
+  const navigation = useRef(0);
   const input = useRef<HTMLInputElement>(null);
   const overlay = useRef<HTMLElement>(null);
   const results = useRef<HTMLDivElement>(null);
@@ -48,18 +56,76 @@ export function SessionSearch({
   const fresh = searched === query.trim();
   const visible = fresh ? hits : [];
   const busy = !!query.trim() && (loading || !fresh);
-  function select(hit: SessionSearchHit) {
+  const matches = useSearchHighlights({
+    area,
+    query: open ? query.trim() : "",
+    location,
+    located: (occurrence) => {
+      if (position.current)
+        position.current = { ...position.current, occurrence };
+      input.current?.focus({ preventScroll: true });
+    },
+  });
+  async function select(hit: SessionSearchHit, occurrence = -1) {
     const element = overlay.current;
     if (!element) return;
     const bottom = element.getBoundingClientRect().bottom;
     const top = area.current?.getBoundingClientRect().top ?? 0;
     const gap =
       parseFloat(getComputedStyle(element).getPropertyValue("--ui-space")) || 4;
-    jump(hit.seq.toString(), bottom - top + 2 * gap);
+    const next = {
+      seq: hit.seq.toString(),
+      occurrence,
+      inset: bottom - top + 2 * gap,
+      token: ++navigation.current,
+    };
+    position.current = next;
+    // An already mounted match only needs exact Range navigation. Avoid an
+    // intermediate jump to the message header and redundant history loading.
+    await jump(next.seq, next.inset, matches.current.has(next.seq));
+    if (!latest.current.open || next.token !== navigation.current) return;
+    setLocation(next);
+    requestAnimationFrame(() => input.current?.focus({ preventScroll: true }));
+  }
+
+  async function nextMatch() {
+    if (!query.trim()) return;
+    let available = visible;
+    if (!fresh || !available.length) {
+      if (fresh && loading) return;
+      available = (await search(query.trim())) ?? [];
+      if (!available.length) return;
+    }
+    const current = position.current;
+    const index = available.findIndex(
+      (hit) => hit.seq.toString() === current?.seq,
+    );
+    if (current && index === selected) {
+      if (current.occurrence > 0 && matches.current.get(current.seq)?.length) {
+        await select(available[index], current.occurrence - 1);
+        return;
+      }
+      let next = index + 1;
+      if (next === available.length && summary?.hasMore && !loading) {
+        const added = await search(query.trim(), summary.nextCursor);
+        if (!added) return;
+        available = [
+          ...new Map(
+            [...available, ...added].map((hit) => [hit.seq, hit]),
+          ).values(),
+        ].sort(newestFirst);
+      }
+      next %= available.length;
+      setSelected(next);
+      await select(available[next]);
+    } else await select(available[selected] ?? available[0]);
   }
 
   function close() {
     active.current?.abort();
+    navigation.current++;
+    position.current = undefined;
+    setLocation(undefined);
     setOpen(false);
     if (
       origin.current?.isConnected &&
@@ -115,7 +181,10 @@ export function SessionSearch({
     active.current?.abort();
     const controller = new AbortController();
     active.current = controller;
+    const page: SessionSearchHit[] = [];
     if (!cursor) {
+      position.current = undefined;
+      setLocation(undefined);
       setHits([]);
       setSummary(undefined);
       setSelected(0);
@@ -146,12 +215,18 @@ export function SessionSearch({
           return;
         if (reply.visit?.sessionId === id) {
           const next = reply.visit.hits;
-          setHits((old) => [
-            ...new Map([...old, ...next].map((hit) => [hit.seq, hit])).values(),
-          ]);
+          page.push(...next);
+          setHits((old) =>
+            [
+              ...new Map(
+                [...old, ...next].map((hit) => [hit.seq, hit]),
+              ).values(),
+            ].sort(newestFirst),
+          );
         }
         if (reply.summary) setSummary(reply.summary);
       }
+      return page.sort(newestFirst);
     } catch (error) {
       if (!controller.signal.aborted && active.current === controller)
         setError(String(error));
@@ -190,9 +265,7 @@ export function SessionSearch({
         className={styles.controls}
         onSubmit={(event) => {
           event.preventDefault();
-          if (!query.trim()) return;
-          if (fresh && visible[selected]) select(visible[selected]);
-          else void search(query.trim());
+          void nextMatch();
         }}
       >
         <svg
@@ -217,6 +290,9 @@ export function SessionSearch({
           placeholder={t("Search this conversation")}
           autoComplete="off"
           onChange={(event) => {
+            navigation.current++;
+            position.current = undefined;
+            setLocation(undefined);
             setQuery(event.target.value);
             setSelected(0);
           }}
@@ -274,7 +350,7 @@ export function SessionSearch({
                   aria-pressed={index === selected}
                   onClick={() => {
                     setSelected(index);
-                    select(hit);
+                    void select(hit);
                   }}
                 >
                   <span className={styles.meta}>
@@ -319,4 +395,8 @@ export function SessionSearch({
       )}
     </section>
   );
+}
+
+function newestFirst(a: SessionSearchHit, b: SessionSearchHit) {
+  return a.seq > b.seq ? -1 : a.seq < b.seq ? 1 : 0;
 }

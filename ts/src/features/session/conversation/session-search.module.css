@@ -1,7 +1,7 @@
 .search {
   --search-result-height: 64px;
   position: absolute;
-  top: calc(3 * var(--ui-space));
+  top: calc(12 * var(--ui-space));
   inset-inline: 0;
   width: min(var(--conversation-width), calc(100% - 4 * var(--ui-space)));
   margin-inline: auto;
@@ -93,4 +93,13 @@
 .more {
   width: 100%;
   font-size: 12px;
+}
+
+:global(::highlight(conversation-search)) {
+  background-color: var(--ui-shade-72);
+  color: var(--ui-shade-237);
+}
+:global(::highlight(conversation-search-current)) {
+  background-color: var(--ui-shade-237);
+  color: var(--ui-shade-17);
 }

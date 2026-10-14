@@ -74,3 +74,65 @@ test("search pagination remains scoped and keyboard result navigation leaves sea
   await expect(search.getByRole("status")).toHaveText("No matches");
   await search.getByRole("button", { name: "Close search" }).click();
 });
+
+test("Enter visits newest conversation matches in order and preserves input focus and highlights", async ({
+  page,
+}) => {
+  await page.goto("/sandbox.html#/sessions/session-3");
+  const pane = page.locator(".transcript");
+  await expect(pane).toContainText("History item 2100", { timeout: 45000 });
+  await page.getByRole("textbox", { name: "Message", exact: true }).focus();
+  await page.keyboard.press("Control+Shift+F");
+  const search = page.getByRole("search", {
+    name: "Search current conversation",
+  });
+  const input = search.getByRole("searchbox");
+  const outer = (await page.locator("main.conversation").boundingBox())!,
+    box = (await search.boundingBox())!;
+  expect(box.y - outer.y).toBeGreaterThanOrEqual(40);
+  await input.fill("History item");
+  await expect(search.getByRole("status")).toHaveText("100 matches");
+  await expect
+    .poll(() =>
+      page.evaluate(() => CSS.highlights.get("conversation-search")?.size ?? 0),
+    )
+    .toBeGreaterThan(0);
+  const active = () =>
+    page.evaluate(() => {
+      const range = [
+        ...(CSS.highlights.get("conversation-search-current") ?? []),
+      ][0] as Range | undefined;
+      return range?.startContainer.parentElement?.closest<HTMLElement>(
+        "[data-row]",
+      )?.dataset.row;
+    });
+  const seqs = await Promise.all(
+    [0, 1, 2].map((index) =>
+      search.locator(`[data-search-index="${index}"]`).getAttribute("data-seq"),
+    ),
+  );
+  await input.press("Enter");
+  await expect.poll(active).toBe(seqs[0]);
+  await expect(input).toBeFocused();
+  await input.press("Enter");
+  await expect.poll(active).toBe(seqs[1]);
+  await expect(input).toBeFocused();
+  await input.press("Enter");
+  await expect.poll(active).toBe(seqs[2]);
+  await expect(input).toBeFocused();
+  await input.fill("HISTORY ITEM 0001");
+  await expect(search.getByRole("status")).toHaveText("1 matches");
+  const oldest = await search
+    .locator('[data-search-index="0"]')
+    .getAttribute("data-seq");
+  await input.press("Enter");
+  await expect.poll(active).toBe(oldest);
+  await expect(pane).toContainText("History item 0001");
+  await expect(input).toBeFocused();
+  await input.press("Enter");
+  await expect.poll(active).toBe(oldest);
+  await input.press("Escape");
+  await expect
+    .poll(() => page.evaluate(() => CSS.highlights.has("conversation-search")))
+    .toBe(false);
+});

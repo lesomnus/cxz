@@ -5,10 +5,13 @@ import { Button } from "@lesomnus/cxz-ui";
 import { SessionSearchReplySchema } from "#gen/cxz/session_svc_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { SessionSearch } from "./session-search";
+import { Markdown } from "#src/shared/content/markdown.tsx";
 
 const messages = [
   "Investigate network latency in the terminal.",
-  "The network transfer now uses bounded batches.",
+  "The **network** transfer now uses bounded batches.\n\n" +
+    "Transfer diagnostics.\n\n".repeat(12) +
+    "Second network match in this reply.",
   "Update the file preview layout.",
 ];
 const client = {
@@ -54,7 +57,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Ctrl+Shift+F (Cmd+Shift+F on macOS) opens a persistent nonmodal search near the top of the current conversation. Typing searches retained session history through SessionService.Search; debounce, cancellation and cursor pagination keep requests bounded. Arrow keys select results; Enter or click jumps without dismissing search. Only Close or Escape dismiss it. This story mocks the search stream; try 'network'.",
+          "Ctrl+Shift+F (Cmd+Shift+F on macOS) opens a persistent nonmodal search near the top of the current conversation. Typing searches retained session history through SessionService.Search; debounce, cancellation and cursor pagination keep requests bounded. The transcript highlights rendered matches without changing layout. Enter visits each occurrence from newest to oldest, then wraps; arrow keys select results and clicking jumps without dismissing search. Only Close or Escape dismiss it. This story mocks the search stream; try 'network'.",
       },
     },
   },
@@ -68,7 +71,7 @@ const meta = {
         style={{
           position: "relative",
           width: "min(640px, 90vw)",
-          height: 480,
+          height: 680,
           background: "var(--background)",
           padding: "var(--ui-dialog-padding)",
         }}
@@ -94,6 +97,35 @@ const meta = {
           close it.
         </p>
         {selected && <p>Jumped to message {selected}</p>}
+        <div
+          className="transcript"
+          style={{
+            position: "absolute",
+            top: 80,
+            bottom: 80,
+            insetInline: 16,
+            overflow: "auto",
+          }}
+        >
+          <div
+            className="virtual-messages"
+            style={{ position: "relative", paddingBottom: 500 }}
+          >
+            {messages.map((text, index) => (
+              <div key={index} data-row={index + 1}>
+                {index ? (
+                  <article className="response">
+                    <Markdown text={text} />
+                  </article>
+                ) : (
+                  <article className="input">
+                    <p className="message-body">{text}</p>
+                  </article>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
         <textarea
           ref={input}
           aria-label="Conversation input"

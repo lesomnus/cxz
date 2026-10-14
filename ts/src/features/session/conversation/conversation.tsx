@@ -296,13 +296,19 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
     return () => controller.abort();
   }, [c, id, firstSeq, history]);
 
-  async function showPrompt(seq: string, inset = 18) {
+  async function showPrompt(seq: string, inset = 18, matchVisible = false) {
     historyRequest.current?.abort();
     const controller = new AbortController();
     historyRequest.current = controller;
     pane.current?.dispatchEvent(new Event("scroll-jump"));
     followRef.current = false;
     setFollow(false);
+    if (events.some((event) => event.seq.toString() === seq)) {
+      jumpInset.current = inset;
+      if (!matchVisible) setJumpTarget(seq);
+      historyRequest.current = null;
+      return;
+    }
     try {
       const target = BigInt(seq);
       const page = await history.page(
@@ -853,7 +859,9 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         c={c}
         id={id}
         area={conversationArea}
-        jump={(seq, inset) => void showPrompt(seq, inset)}
+        jump={(seq, inset, matchVisible) =>
+          showPrompt(seq, inset, matchVisible)
+        }
         restoreFocus={() =>
           composerInput.current
             ?.querySelector<HTMLTextAreaElement>("textarea")

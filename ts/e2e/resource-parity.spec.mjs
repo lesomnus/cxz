@@ -691,3 +691,74 @@ test("usage, background tasks and auxiliary controls are connected", async ({
     .toBe(true);
   await expect(page.getByText("running", { exact: true })).toBeVisible();
 });
+
+test("session search Enter fetches the older result page before wrapping and reuses loaded messages", async ({
+  page,
+}) => {
+  const requests = await fixture(page);
+  const searches = [];
+  await page.route("**/cxz.SessionService/Search", async (route) => {
+    const q = JSON.parse(
+      route.request().postDataBuffer().subarray(5).toString(),
+    );
+    searches.push(q);
+    return route.fulfill({
+      contentType: "application/connect+json",
+      body: stream([
+        {
+          visit: {
+            sessionId: "fixture",
+            hits: [
+              {
+                seq: q.cursor ? "2" : "4",
+                kind: "assistant",
+                snippet: q.cursor ? "Earlier response" : "Current response",
+              },
+            ],
+          },
+        },
+        {
+          summary: {
+            hits: 1,
+            hasMore: !q.cursor,
+            nextCursor: q.cursor ? "" : "older-page",
+          },
+        },
+      ]),
+    });
+  });
+  await page.locator('.tree-session[href="/sessions/fixture"]').click();
+  await expect(page.locator(".transcript")).toContainText("Current response");
+  await page.getByRole("textbox", { name: "Message", exact: true }).focus();
+  await page.keyboard.press("Control+Shift+F");
+  const search = page.getByRole("search", {
+      name: "Search current conversation",
+    }),
+    input = search.getByRole("searchbox");
+  await input.fill("response");
+  await expect(search.getByRole("status")).toHaveText("1 matches");
+  const historyCount = () =>
+    requests.filter((r) => /SessionService\/(History|Transcript)$/.test(r.path))
+      .length;
+  const before = historyCount();
+  const active = () =>
+    page.evaluate(() => {
+      const range = [
+        ...(CSS.highlights.get("conversation-search-current") ?? []),
+      ][0];
+      return range?.startContainer.parentElement?.closest("[data-row]")?.dataset
+        .row;
+    });
+  await input.press("Enter");
+  await expect.poll(active).toBe("4");
+  await expect(input).toBeFocused();
+  await input.press("Enter");
+  await expect.poll(active).toBe("2");
+  await expect(search.getByRole("status")).toHaveText("2 matches");
+  expect(searches.map((q) => q.cursor ?? "")).toEqual(["", "older-page"]);
+  await input.press("Enter");
+  await expect.poll(active).toBe("4");
+  expect(searches).toHaveLength(2);
+  expect(historyCount()).toBe(before);
+  await expect(input).toBeFocused();
+});
