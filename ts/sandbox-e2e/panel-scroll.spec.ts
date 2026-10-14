@@ -8,6 +8,9 @@ test.use({
 test("panel fades track hidden edges and scroll intensity without covering the heading or handle", async ({
   page,
 }) => {
+  // Leave enough scroll travel for the fast sample after the compact header;
+  // reaching the end would measure a clamped movement instead of its speed.
+  await page.setViewportSize({ width: 1200, height: 340 });
   await page.goto("/sandbox.html");
   const panel = page.getByRole("complementary", {
     name: "Session list",
@@ -141,6 +144,8 @@ test("compact panels keep their heading fixed and share the conversation handle'
   await page.mouse.move(1000, 100);
   await expect(handle).toHaveCSS("opacity", "0");
   await heading.hover();
+  await expect(handle).toHaveCSS("opacity", "0");
+  await list.hover();
   await expect(handle).toHaveCSS("opacity", "0.7");
   const initial = (await handle.boundingBox())!;
   const scrollBox = (await panel

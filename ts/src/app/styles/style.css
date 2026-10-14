@@ -501,7 +501,7 @@ header strong {
   user-select: none;
   pointer-events: auto;
 }
-.resource-panel:hover .scroll-handle,
+.panel-scroll-region:hover .scroll-handle,
 .panel-scroll-thumb:focus-visible .scroll-handle {
   opacity: 0.7;
 }
