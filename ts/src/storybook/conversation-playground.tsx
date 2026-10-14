@@ -29,6 +29,7 @@ export function ConversationPlayground({
   historyTurns = 1,
   burstUpdates = 0,
   burstIntervalMs = 40,
+  initialDraft = "",
 }: {
   agent?: string;
   acknowledgementMs?: number;
@@ -36,6 +37,7 @@ export function ConversationPlayground({
   historyTurns?: number;
   burstUpdates?: number;
   burstIntervalMs?: number;
+  initialDraft?: string;
 }) {
   const [reset, setReset] = useState(0);
   return (
@@ -52,6 +54,7 @@ export function ConversationPlayground({
           historyTurns={historyTurns}
           burstUpdates={burstUpdates}
           burstIntervalMs={burstIntervalMs}
+          initialDraft={initialDraft}
         />
       </PreviewFrame>
     </div>
@@ -66,6 +69,7 @@ function ConversationSimulation({
   historyTurns,
   burstUpdates,
   burstIntervalMs,
+  initialDraft,
 }: Required<Parameters<typeof ConversationPlayground>[0]>) {
   const [events, setEvents] = useState(() =>
     historyTurns === 1
@@ -76,7 +80,7 @@ function ConversationSimulation({
         ]
       : conversationEvents(agent, historyTurns),
   );
-  const [draft, setDraft] = useState("");
+  const [draft, setDraft] = useState(initialDraft);
   const [sending, setSending] = useState(false);
   const [turn, setTurn] = useState<TurnProgress>(idleTurn);
   const [reading, setReading] = useState(false);
