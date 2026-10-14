@@ -1,4 +1,4 @@
-import { matchesValueQuery } from "./value-search";
+import { matchValueQuery, matchesValueQuery } from "./value-search";
 import styles from "./value-menu.module.css";
 import {
   useEffect,
@@ -308,7 +308,10 @@ export function ValueMenu({
                     choose(choice.value);
                   }}
                 >
-                  {choice.label}
+                  <ValueLabel
+                    option={choice}
+                    query={searchable && queryEdited ? query : ""}
+                  />
                 </Button>
               ))}
             </div>
@@ -317,4 +320,23 @@ export function ValueMenu({
         )}
     </div>
   );
+}
+
+function ValueLabel({ option, query }: { option: ValueOption; query: string }) {
+  const source = `${option.label} ${option.searchText ?? ""}`;
+  const ranges = matchValueQuery(source, query) ?? [];
+  // Show the alias only when it contributed to matching, so hidden metadata
+  // never produces an unexplained result without any highlighted characters.
+  const text = ranges.some((range) => range.end > option.label.length)
+    ? source
+    : option.label;
+  const parts = [];
+  let from = 0;
+  for (const { start, end } of ranges) {
+    parts.push(text.slice(from, start));
+    parts.push(<mark key={start}>{text.slice(start, end)}</mark>);
+    from = end;
+  }
+  parts.push(text.slice(from));
+  return <span className="setting-match-label">{parts}</span>;
 }

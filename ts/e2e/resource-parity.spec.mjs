@@ -625,6 +625,11 @@ test("project picker supports fuzzy search, keyboard selection and dark form bac
   await expect(
     page.getByRole("option", { name: "Docs playground", exact: true }),
   ).toBeVisible();
+  await expect(
+    page
+      .getByRole("option", { name: "Docs playground", exact: true })
+      .locator("mark"),
+  ).toHaveText(["D", "cs", "pl", "g"]);
   await search.fill("not-a-project");
   await expect(page.getByRole("status")).toHaveText("No matches");
   await search.press("Enter");
