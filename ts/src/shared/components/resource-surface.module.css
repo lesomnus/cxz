@@ -134,3 +134,11 @@
   margin: 0;
   font: 1rem var(--ui-font-mono);
 }
+
+.field :global(.value-menu) {
+  --value-background: var(--shade-17);
+  color: var(--shade-237);
+}
+.field :global(.setting-trigger) {
+  border-radius: var(--wrapper-radius);
+}

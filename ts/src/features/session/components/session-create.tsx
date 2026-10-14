@@ -133,10 +133,12 @@ export function SessionCreate({
           <div className={styles.list}>
             <ValueMenu
               label="Project"
+              searchable
               value={project}
               options={projects.map((p) => ({
                 value: p.runtimeId,
                 label: p.name || p.alias,
+                searchText: p.alias,
               }))}
               choose={setProject}
               disabled={busy || !!login}
