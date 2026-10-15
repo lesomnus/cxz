@@ -5,6 +5,7 @@ import type { Session } from "#gen/cxz/session_pb";
 import { PanelLink } from "#src/shared/navigation/route-link.tsx";
 import { PanelItem } from "@lesomnus/nox";
 import { SessionIdentity } from "./session-identity";
+import { resumableStates } from "#src/features/session/model/session-actions.ts";
 import { UnreadBadge } from "#src/shared/notifications/unread-badge.tsx";
 import { useState, type CSSProperties } from "react";
 import styles from "./session-tree.module.css";
@@ -48,6 +49,7 @@ export function SessionTreeGroup({
               key={s.runtimeId}
               className={`tree-session ${styles.session} ${selected === s.runtimeId ? "active" : ""}`}
               data-state={s.status?.state}
+              data-inactive={resumableStates.has(s.status?.state ?? "")}
               pressTarget=".session-heading"
               aria-current={selected === s.runtimeId ? "true" : undefined}
             >
@@ -117,7 +119,7 @@ function SessionIndicator({
         <UnreadBadge error />
       </span>
     );
-  if (state === "stopped")
+  if (resumableStates.has(state))
     return <span className="session-indicator" aria-hidden="true" />;
   const question = !!session.status?.pending.length;
   const working = ["running", "working", "waiting_input"].includes(state);
