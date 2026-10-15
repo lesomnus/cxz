@@ -3,6 +3,7 @@ import { currentLocale } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { absoluteMessageTime } from "./message-time";
 import { useMessageTime } from "./use-message-time";
+import { Markdown } from "#src/shared/content/markdown.tsx";
 import { memo } from "react";
 
 function InputTime({ timeMs }: { timeMs: bigint }) {
@@ -36,7 +37,9 @@ export const InputMessage = memo(function InputMessage({
         <span className="input-prefix" aria-hidden="true">
           &gt;
         </span>
-        <p className="message-body">{event.text}</p>
+        <div className="message-body">
+          <Markdown text={event.text} />
+        </div>
       </div>
     </div>
   );

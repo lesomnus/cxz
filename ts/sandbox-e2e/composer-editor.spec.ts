@@ -140,7 +140,9 @@ test("paste files preserve source and session drafts while sending the uploaded 
     `앞 [Attached file: ${path} — read this file for the full content] 뒤`,
   );
   expect(
-    await page.locator("article.input .message-body").last().textContent(),
+    (
+      await page.locator("article.input .message-body").last().textContent()
+    )?.trim(),
   ).toBe(
     `앞 [Attached file: ${path} — read this file for the full content] 뒤`,
   );

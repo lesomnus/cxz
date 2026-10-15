@@ -43,8 +43,11 @@ test("inline backticks keep native text geometry and send literal Markdown with 
   await input.press("Control+Enter");
   await expect(input).toHaveValue("");
   await expect(page.locator("article.input .message-body").last()).toHaveText(
-    draft,
+    "Use git status and a ` tick.\nEscaped `plain` and `unfinished",
   );
+  await expect(
+    page.locator("article.input .message-body").last().locator("code"),
+  ).toHaveText(["git status", "a ` tick"]);
 });
 
 test("fenced editor opens inline, detects syntax, closes to prose and sends unchanged Markdown", async ({
@@ -144,9 +147,9 @@ test("fenced editor opens inline, detects syntax, closes to prose and sends unch
   await expect(syntax).toHaveValue("auto");
   await input.press("Control+Enter");
   await expect(input).toHaveValue("");
-  await expect(page.locator("article.input .message-body").last()).toHaveText(
-    'before\n```\n{"hello": true, "count": 42}\n```\nafter',
-  );
+  await expect(
+    page.locator("article.input .message-body").last().locator("pre code"),
+  ).toHaveText('{"hello": true, "count": 42}');
 });
 
 test("multiple blocks, paste chips, highlighting and native line geometry stay aligned at mobile widths", async ({
@@ -236,10 +239,10 @@ test("multiple blocks, paste chips, highlighting and native line geometry stay a
   await page.getByRole("button", { name: "Send", exact: true }).click();
   await expect(
     page.locator("article.input .message-body").last(),
-  ).toContainText("```\n[Attached file: /cxz/assets/");
+  ).toContainText("[Attached file: /cxz/assets/");
   await expect(
     page.locator("article.input .message-body").last(),
-  ).toContainText("read this file for the full content]\n```");
+  ).toContainText("read this file for the full content]");
 });
 
 test("unfinished code blocks are completed on send without changing draft source", async ({
@@ -255,9 +258,9 @@ test("unfinished code blocks are completed on send without changing draft source
     page.getByRole("combobox", { name: "Code syntax 1" }),
   ).toHaveValue("python");
   await input.press("Control+Enter");
-  await expect(page.locator("article.input .message-body").last()).toHaveText(
-    "```py\nprint('hello')\n```",
-  );
+  await expect(
+    page.locator("article.input .message-body").last().locator("pre code"),
+  ).toHaveText("print('hello')");
 });
 
 test("Question Other uses the same code editor and sends fenced syntax without submitting the conversation", async ({
