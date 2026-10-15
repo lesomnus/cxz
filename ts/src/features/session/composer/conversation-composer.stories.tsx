@@ -175,7 +175,7 @@ export const PendingSend: Story = {
     docs: {
       description: {
         story:
-          "The read-only editor dims while Send awaits acknowledgement. If it takes longer, a subtle gray radial glow breathes from the top center until the request settles. Reduced motion uses a steady glow instead.",
+          "The editor has a subtle, static monochrome grain for a matte surface. The read-only editor dims while Send awaits acknowledgement. If it takes longer, a subdued gray radial glow breathes from the top center until the request settles. Reduced motion uses a steady glow instead.",
       },
     },
   },

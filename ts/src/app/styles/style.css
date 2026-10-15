@@ -17,9 +17,10 @@
   --composer-radius: 15px;
   --composer-editor-height: 110px;
   --composer-resize-duration: 300ms;
-  --composer-pending-glow: color-mix(in srgb, var(--shade-65) 60%, transparent);
+  --composer-pending-glow: color-mix(in srgb, var(--shade-65) 35%, transparent);
   --composer-pending-pulse-duration: 2400ms;
   --composer-pending-pulse-delay: 500ms;
+  --composer-grain-texture: url("../../shared/assets/textures/fine-grain.svg");
   --send-exit-duration: 180ms;
   --send-enter-duration: 240ms;
   --send-exit-travel: 72px;
@@ -1314,10 +1315,12 @@ pre {
 .composer-input,
 .question-other-editor {
   position: relative;
-  background: var(--shade-34);
+  background-color: var(--shade-34);
 }
 .composer-input {
   z-index: 2;
+  background-image: var(--composer-grain-texture);
+  background-blend-mode: soft-light;
   border: 1px solid var(--shade-58);
   width: calc(100% + 2px + 2 * var(--composer-overhang));
   margin: 0 calc(-1px - var(--composer-overhang)) -1px;
@@ -1325,7 +1328,7 @@ pre {
   transition: background-color 150ms ease-out;
 }
 .composer-input[data-sending="true"] {
-  background: var(--shade-27);
+  background-color: var(--shade-27);
 }
 .composer-input::before {
   content: "";
