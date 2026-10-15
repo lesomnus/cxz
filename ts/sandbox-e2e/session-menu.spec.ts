@@ -71,9 +71,12 @@ test("composer session menu stays in the viewport, supports keyboard navigation 
   });
   const bounds = (await menu.boundingBox())!;
 
-  expect(
-    (await trigger.boundingBox())!.y - (bounds.y + bounds.height),
-  ).toBeCloseTo(2, 0);
+  const triggerBounds = (await trigger.boundingBox())!;
+  const toolbarBounds = (await page
+    .locator(".composer-toolbar")
+    .boundingBox())!;
+  const inset = triggerBounds.y - toolbarBounds.y;
+  expect(toolbarBounds.y - (bounds.y + bounds.height)).toBeCloseTo(inset, 0);
   // Measure in the same frame, before ResizeObserver can repair stale coordinates.
   expect(
     await menu.evaluate((el) => {
@@ -87,7 +90,7 @@ test("composer session menu stays in the viewport, supports keyboard navigation 
       el.style.maxHeight = previous;
       return gap;
     }),
-  ).toBeCloseTo(2, 0);
+  ).toBeCloseTo(2 * inset, 0);
 
   expect(bounds.y).toBeGreaterThanOrEqual(0);
   expect(bounds.y + bounds.height).toBeLessThanOrEqual(900);

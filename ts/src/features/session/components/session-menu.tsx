@@ -27,6 +27,15 @@ export type SessionMenuProps = {
   tools?: { label: string; run: () => void; disabled?: boolean }[];
 };
 
+// Mirror the button's inset across the toolbar's top edge.
+function toolbarMenuGap(trigger: HTMLButtonElement) {
+  const toolbar = trigger.closest(".composer-toolbar");
+  if (!toolbar) return 4;
+  const inset =
+    trigger.getBoundingClientRect().top - toolbar.getBoundingClientRect().top;
+  return 2 * Math.max(0, inset);
+}
+
 export function SessionMenu({
   session,
   info,
@@ -73,7 +82,7 @@ export function SessionMenu({
       <ActionMenu
         label={t("Session menu")}
         placement="above"
-        gap={2}
+        gap={toolbarMenuGap}
         motion={{ from: "bottom-right", effect: "reveal" }}
         disabled={!session}
         status={session?.status?.state}
