@@ -462,21 +462,29 @@ test("account registration, session creation and archive restore use resource AP
   await page
     .getByRole("menu", { name: "Session panel options", exact: true })
     .evaluate(async (el) => {
-      const animations = el.getAnimations();
+      const shell = getComputedStyle(el);
+      if (
+        shell.filter !== "none" ||
+        shell.maskImage !== "none" ||
+        shell.transform !== "none"
+      )
+        throw new Error("Menu border must remain outside the reveal effects");
+      const content = el.querySelector('[data-enter-effect="reveal"]');
+      const animations = el.getAnimations({ subtree: true });
       if (!animations.length)
         throw new Error("Menu entrance animation missing");
-      const entrance = animations[0];
+      const entrance = content.getAnimations()[0];
       entrance.pause();
       entrance.currentTime = 0;
-      const start = new DOMMatrix(getComputedStyle(el).transform);
+      const start = new DOMMatrix(getComputedStyle(content).transform);
       if (start.m41 >= 0 || start.m42 >= 0)
         throw new Error("Menu must reveal from the top left");
-      if (getComputedStyle(el).filter !== "blur(4px)")
+      if (getComputedStyle(content).filter !== "blur(4px)")
         throw new Error("Reveal must start blurred");
-      if (getComputedStyle(el).maskImage === "none")
+      if (getComputedStyle(content).maskImage === "none")
         throw new Error("Reveal must use a directional mask");
       entrance.currentTime = Number(entrance.effect.getTiming().duration) * 0.7;
-      const settled = getComputedStyle(el);
+      const settled = getComputedStyle(content);
       if (settled.filter !== "blur(0px)" || settled.maskPosition !== "0% 0%")
         throw new Error("Reveal edges must be clear before the animation ends");
       entrance.play();
@@ -523,6 +531,10 @@ test("account registration, session creation and archive restore use resource AP
   await expect(reducedMenu).toHaveCSS("animation-name", "none");
   await expect(reducedMenu).toHaveCSS("mask-image", "none");
   await expect(reducedMenu).toHaveCSS("filter", "none");
+  await expect(reducedMenu.locator('[data-enter-effect="reveal"]')).toHaveCSS(
+    "animation-name",
+    "none",
+  );
 
   await page
     .getByRole("menuitem", { name: "Add session", exact: true })
