@@ -475,6 +475,10 @@ test("account registration, session creation and archive restore use resource AP
         throw new Error("Reveal must start blurred");
       if (getComputedStyle(el).maskImage === "none")
         throw new Error("Reveal must use a directional mask");
+      entrance.currentTime = Number(entrance.effect.getTiming().duration) * 0.7;
+      const settled = getComputedStyle(el);
+      if (settled.filter !== "blur(0px)" || settled.maskPosition !== "0% 0%")
+        throw new Error("Reveal edges must be clear before the animation ends");
       entrance.play();
       await Promise.all(animations.map((animation) => animation.finished));
     });
