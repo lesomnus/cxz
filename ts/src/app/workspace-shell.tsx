@@ -1,3 +1,4 @@
+import { SidebarHint } from "#src/shared/navigation/sidebar-hint.tsx";
 import { useBackgroundSessions } from "#src/features/session/model/use-background-sessions.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
@@ -96,57 +97,65 @@ export function Workspace({
             cxz
           </span>
           {(["sessions", "projects"] as const).map((view) => (
-            <RouteLink
+            <SidebarHint
               key={view}
-              {...(view === "projects"
-                ? { to: "/projects" as const }
-                : lastSession.current
-                  ? {
-                      to: "/sessions/$sessionId" as const,
-                      params: { sessionId: lastSession.current },
-                    }
-                  : { to: "/sessions" as const })}
-              className={`resource-link ${resource === view ? "active" : ""}`}
-              aria-label={
-                view === "sessions" ? t("Sessions view") : t("Projects view")
-              }
-              aria-current={resource === view ? "page" : undefined}
-              title={view === "sessions" ? t("Sessions") : t("Projects")}
+              label={view === "sessions" ? t("Sessions") : t("Projects")}
             >
-              <ResourceIcon
-                kind={view}
-                unreadCount={view === "sessions" ? unread.size : 0}
-                error={view === "sessions" && errors.size > 0}
-              />
-              <span>{view === "sessions" ? t("Sessions") : t("Projects")}</span>
-            </RouteLink>
+              <RouteLink
+                {...(view === "projects"
+                  ? { to: "/projects" as const }
+                  : lastSession.current
+                    ? {
+                        to: "/sessions/$sessionId" as const,
+                        params: { sessionId: lastSession.current },
+                      }
+                    : { to: "/sessions" as const })}
+                className={`resource-link ${resource === view ? "active" : ""}`}
+                aria-label={
+                  view === "sessions" ? t("Sessions view") : t("Projects view")
+                }
+                aria-current={resource === view ? "page" : undefined}
+              >
+                <ResourceIcon
+                  kind={view}
+                  unreadCount={view === "sessions" ? unread.size : 0}
+                  error={view === "sessions" && errors.size > 0}
+                />
+                <span>
+                  {view === "sessions" ? t("Sessions") : t("Projects")}
+                </span>
+              </RouteLink>
+            </SidebarHint>
           ))}
           {(
             ["accounts", "search", "memory", "activity", "auxiliary"] as const
           ).map((view) => (
-            <RouteLink
+            <SidebarHint
               key={view}
-              to={`/${view}`}
-              className={`resource-link ${resource === view ? "active" : ""}`}
-              aria-label={
+              label={
                 view === "auxiliary"
                   ? "Auxiliary AI"
                   : view[0].toUpperCase() + view.slice(1)
               }
-              title={
-                view === "auxiliary"
-                  ? "Auxiliary AI"
-                  : view[0].toUpperCase() + view.slice(1)
-              }
-              aria-current={resource === view ? "page" : undefined}
             >
-              <ResourceIcon kind={view} />
-              <span>
-                {view === "auxiliary"
-                  ? "Auxiliary AI"
-                  : view[0].toUpperCase() + view.slice(1)}
-              </span>
-            </RouteLink>
+              <RouteLink
+                to={`/${view}`}
+                className={`resource-link ${resource === view ? "active" : ""}`}
+                aria-label={
+                  view === "auxiliary"
+                    ? "Auxiliary AI"
+                    : view[0].toUpperCase() + view.slice(1)
+                }
+                aria-current={resource === view ? "page" : undefined}
+              >
+                <ResourceIcon kind={view} />
+                <span>
+                  {view === "auxiliary"
+                    ? "Auxiliary AI"
+                    : view[0].toUpperCase() + view.slice(1)}
+                </span>
+              </RouteLink>
+            </SidebarHint>
           ))}
           <ProfileMenu
             logout={logout}
