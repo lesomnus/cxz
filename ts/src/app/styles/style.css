@@ -1410,6 +1410,8 @@ pre {
   > .composer-editor:not(.composer-send-ghost)
   .editor-mirror {
   visibility: hidden;
+  /* Chips explicitly restore visibility; hide the entire original paint layer. */
+  opacity: 0;
 }
 .composer-input[data-send-exiting] > .composer-editor textarea {
   color: transparent;
