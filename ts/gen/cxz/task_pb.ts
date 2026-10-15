@@ -33,8 +33,6 @@ export type Task = Message<"cxz.Task"> & {
   id: Uint8Array;
 
   /**
-   * payday header slots retain their standard names and types.
-   *
    * @generated from field: string alias = 4;
    */
   alias: string;
@@ -70,8 +68,6 @@ export type Task = Message<"cxz.Task"> & {
   dateCreated?: Timestamp | undefined;
 
   /**
-   * App-owned slots are 8–12 and 16+; preserve payday header slots.
-   *
    * @generated from field: cxz.Project project = 8;
    */
   project?: Project | undefined;

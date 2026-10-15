@@ -364,16 +364,14 @@ func (x *Task) ClearProject() {
 type Task_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Id []byte
-	// payday header slots retain their standard names and types.
-	Alias       string
-	Name        string
-	Desc        string
-	Labels      map[string]string
-	DateUpdated *timestamppb.Timestamp
-	DateErased  *timestamppb.Timestamp
-	DateCreated *timestamppb.Timestamp
-	// App-owned slots are 8–12 and 16+; preserve payday header slots.
+	Id            []byte
+	Alias         string
+	Name          string
+	Desc          string
+	Labels        map[string]string
+	DateUpdated   *timestamppb.Timestamp
+	DateErased    *timestamppb.Timestamp
+	DateCreated   *timestamppb.Timestamp
 	Project       *Project
 	Status        TaskStatus
 	Priority      int32

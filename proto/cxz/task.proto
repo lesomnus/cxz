@@ -12,7 +12,6 @@ option go_package = "github.com/lesomnus/cxz/resource";
 // must not delete its work record or conversation reference.
 message Task {
   bytes id = 1 [(orm.field) = {type: TYPE_UUID, key: true, default: ""}];
-  // payday header slots retain their standard names and types.
   string alias = 4 [(orm.field) = {unique: true}];
   string name = 5;
   string desc = 6;
@@ -20,7 +19,6 @@ message Task {
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
   google.protobuf.Timestamp date_created = 15 [(orm.field) = {immutable: true, default: ""}];
-  // App-owned slots are 8–12 and 16+; preserve payday header slots.
   Project project = 8 [(orm.edge) = {immutable: true}];
   TaskStatus status = 9;
   int32 priority = 10;
