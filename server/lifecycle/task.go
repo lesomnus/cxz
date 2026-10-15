@@ -9,6 +9,7 @@ import (
 	"github.com/lesomnus/cxz/internal/taskapi"
 	"github.com/lesomnus/cxz/resource"
 	"github.com/lesomnus/cxz/server/pd"
+	"github.com/lesomnus/payday/watch"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -21,6 +22,18 @@ type TaskServer struct {
 }
 
 func (s Layer) Task() resource.TaskServiceServer { return TaskServer{Layer: s} }
+
+func taskWatchUnary(w *watch.Watch) grpc.UnaryServerInterceptor {
+	next := w.Unary()
+	return func(ctx context.Context, request any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+		if action := taskapi.MutationAction(ctx); action != "" {
+			copy := *info
+			copy.FullMethod = action
+			info = &copy
+		}
+		return next(ctx, request, info, handler)
+	}
+}
 
 // Manager implementations return an authenticated project connection. A project
 // runtime returns nil and uses its own volume's resources.db. Never fall back to

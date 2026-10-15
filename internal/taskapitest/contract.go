@@ -73,6 +73,9 @@ func Run(t *testing.T, conn *grpc.ClientConn, f Fixture) {
 		t.Fatalf("committed Add: %v %v", frame, err)
 	}
 	stopWatch()
+	if frame.GetItems()[0].GetAction() != resource.TaskService_Add_FullMethodName {
+		t.Fatalf("missing Add action: %v", frame)
+	}
 	if len(v.GetId()) != 16 || v.GetId()[9] != 11 || v.GetStatus() != resource.TaskStatus_TASK_STATUS_TODO {
 		t.Fatalf("invalid initial task: %v", v)
 	}
@@ -175,6 +178,9 @@ func Run(t *testing.T, conn *grpc.ClientConn, f Fixture) {
 		t.Fatalf("filtered removal: %v %v", frame, err)
 	}
 	stopFiltered()
+	if frame.GetItems()[0].GetAction() != resource.TaskService_Release_FullMethodName {
+		t.Fatalf("missing Release action: %v", frame)
+	}
 	if released.GetAssignee() != "" || released.GetStatus() != resource.TaskStatus_TASK_STATUS_TODO {
 		t.Fatal("Release retained ownership")
 	}

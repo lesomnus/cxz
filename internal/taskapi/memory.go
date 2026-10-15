@@ -24,11 +24,12 @@ type Memory struct {
 	resource.UnimplementedTaskServiceServer
 	mu      sync.Mutex
 	rows    map[string]*resource.Task
+	actions map[string]string
 	changed chan struct{}
 }
 
 func NewMemory() *Memory {
-	return &Memory{rows: map[string]*resource.Task{}, changed: make(chan struct{})}
+	return &Memory{rows: map[string]*resource.Task{}, actions: map[string]string{}, changed: make(chan struct{})}
 }
 func clone(v *resource.Task) *resource.Task { return proto.Clone(v).(*resource.Task) }
 func (m *Memory) notify()                   { close(m.changed); m.changed = make(chan struct{}) }
@@ -53,7 +54,7 @@ func (m *Memory) find(ref *resource.TaskRef) (*resource.Task, error) {
 	return nil, status.Error(codes.NotFound, "task not found")
 }
 
-func (m *Memory) Add(_ context.Context, r *resource.TaskAddRequest) (*resource.Task, error) {
+func (m *Memory) Add(ctx context.Context, r *resource.TaskAddRequest) (*resource.Task, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	for _, v := range m.rows {
@@ -71,6 +72,7 @@ func (m *Memory) Add(_ context.Context, r *resource.TaskAddRequest) (*resource.T
 	now := timestamppb.Now()
 	v := resource.Task_builder{Id: id, ClientId: r.GetClientId(), Name: r.GetName(), Desc: r.GetDesc(), Project: resource.Project_builder{Id: r.GetProject().GetId()}.Build(), Status: r.GetStatus(), Priority: r.GetPriority(), Labels: r.GetLabels(), SourceSession: r.GetSourceSession(), SourceRun: r.GetSourceRun(), SourceSeq: r.GetSourceSeq(), DateCreated: now, DateUpdated: now}.Build()
 	m.rows[string(id)] = clone(v)
+	m.actions[string(id)], _ = ctx.Value(actionKey{}).(string)
 	m.notify()
 	return clone(v), nil
 }
@@ -101,7 +103,7 @@ func (m *Memory) Get(_ context.Context, r *resource.TaskGetRequest) (*resource.T
 	return result, nil
 }
 
-func (m *Memory) Patch(_ context.Context, r *resource.TaskPatchRequest) (*resource.Task, error) {
+func (m *Memory) Patch(ctx context.Context, r *resource.TaskPatchRequest) (*resource.Task, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	v, err := m.find(r.GetRef())
@@ -140,6 +142,7 @@ func (m *Memory) Patch(_ context.Context, r *resource.TaskPatchRequest) (*resour
 		now = v.GetDateUpdated().AsTime().Add(time.Nanosecond)
 	}
 	v.SetDateUpdated(timestamppb.New(now))
+	m.actions[string(v.GetId())], _ = ctx.Value(actionKey{}).(string)
 	m.notify()
 	return clone(v), nil
 }
@@ -227,11 +230,15 @@ func (m *Memory) Watch(r *resource.TaskWatchRequest, out grpc.ServerStreamingSer
 			if match && !proto.Equal(versions[id], v.GetDateUpdated()) {
 				versions[id] = v.GetDateUpdated()
 				seen[id] = true
-				items = append(items, resource.TaskWatchItem_builder{Id: v.GetId(), Value: clone(v)}.Build())
+				action := ""
+				if !first {
+					action = m.actions[id]
+				}
+				items = append(items, resource.TaskWatchItem_builder{Id: v.GetId(), Value: clone(v), Action: action}.Build())
 			} else if !match && seen[id] {
 				delete(seen, id)
 				delete(versions, id)
-				items = append(items, resource.TaskWatchItem_builder{Id: v.GetId()}.Build())
+				items = append(items, resource.TaskWatchItem_builder{Id: v.GetId(), Action: m.actions[id]}.Build())
 			}
 		}
 		m.mu.Unlock()

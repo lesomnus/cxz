@@ -21,6 +21,19 @@ type Service struct {
 	Session func(context.Context, *resource.SessionRef) (*resource.Session, error)
 }
 
+type actionKey struct{}
+
+func actionContext(ctx context.Context, action string) context.Context {
+	return context.WithValue(ctx, actionKey{}, action)
+}
+
+// MutationAction retains the public operation when Claim/Release use the
+// generated versioned Patch internally. Storage publication uses it for Watch.
+func MutationAction(ctx context.Context) string {
+	action, _ := ctx.Value(actionKey{}).(string)
+	return action
+}
+
 func all() *resource.TaskSelect {
 	return resource.TaskSelect_builder{All: proto.Bool(true), Project: resource.ProjectSelect_builder{All: proto.Bool(true)}.Build()}.Build()
 }
@@ -110,7 +123,7 @@ func (s Service) Add(ctx context.Context, r *resource.TaskAddRequest) (*resource
 	} else if status.Code(err) != codes.NotFound {
 		return nil, err
 	}
-	v, err := s.TaskServiceServer.Add(ctx, request)
+	v, err := s.TaskServiceServer.Add(actionContext(ctx, resource.TaskService_Add_FullMethodName), request)
 	if status.Code(err) == codes.AlreadyExists {
 		return s.read(ctx, ref)
 	}
@@ -203,7 +216,7 @@ func (s Service) Patch(ctx context.Context, r *resource.TaskPatchRequest) (*reso
 	request := proto.Clone(r).(*resource.TaskPatchRequest)
 	request.SetRef(resource.TaskRef_builder{Id: v.GetId(), Project: resource.ProjectRef_builder{Id: v.GetProject().GetId()}.Build()}.Build())
 	request.ClearActor() // Routing/policy fields are not ORM patch fields.
-	return s.TaskServiceServer.Patch(ctx, request)
+	return s.TaskServiceServer.Patch(actionContext(ctx, resource.TaskService_Patch_FullMethodName), request)
 }
 
 func (s Service) Claim(ctx context.Context, r *resource.TaskClaimRequest) (*resource.Task, error) {
@@ -225,7 +238,7 @@ func (s Service) Claim(ctx context.Context, r *resource.TaskClaimRequest) (*reso
 	if v.GetAssignee() != "" || v.GetStatus() != resource.TaskStatus_TASK_STATUS_TODO {
 		return nil, status.Error(codes.FailedPrecondition, "task is already owned or not Todo")
 	}
-	return s.TaskServiceServer.Patch(ctx, resource.TaskPatchRequest_builder{
+	return s.TaskServiceServer.Patch(actionContext(ctx, resource.TaskService_Claim_FullMethodName), resource.TaskPatchRequest_builder{
 		Ref: resource.TaskRef_builder{Id: v.GetId()}.Build(), DateUpdated: r.GetDateUpdated(), Assignee: proto.String(a.GetRuntimeId()),
 		AssigneeRun: proto.String(r.GetActor().GetRunId()), Status: resource.TaskStatus_TASK_STATUS_IN_PROGRESS.Enum(),
 	}.Build())
@@ -253,7 +266,7 @@ func (s Service) Release(ctx context.Context, r *resource.TaskClaimRequest) (*re
 	if id == "" || r.GetActor().GetRunId() == "" || id != v.GetAssignee() || r.GetActor().GetRunId() != v.GetAssigneeRun() {
 		return nil, status.Error(codes.FailedPrecondition, "expected owner does not match")
 	}
-	return s.TaskServiceServer.Patch(ctx, resource.TaskPatchRequest_builder{
+	return s.TaskServiceServer.Patch(actionContext(ctx, resource.TaskService_Release_FullMethodName), resource.TaskPatchRequest_builder{
 		Ref: resource.TaskRef_builder{Id: v.GetId()}.Build(), DateUpdated: r.GetDateUpdated(), Assignee: proto.String(""), AssigneeRun: proto.String(""),
 		Status: resource.TaskStatus_TASK_STATUS_TODO.Enum(),
 	}.Build())
