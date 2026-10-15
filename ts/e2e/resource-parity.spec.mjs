@@ -456,21 +456,32 @@ test("account registration, session creation and archive restore use resource AP
   expect(
     await body.evaluate((el) => parseFloat(getComputedStyle(el).borderRadius)),
   ).toBeGreaterThan(0);
-  await panel.getByRole("button", { name: "Add session", exact: true }).click();
+  await panel
+    .getByRole("button", { name: "Session panel options", exact: true })
+    .click();
+  await page
+    .getByRole("menuitem", { name: "Add session", exact: true })
+    .click();
   const create = page.getByRole("dialog", { name: "Add session", exact: true });
   await expect(create).toBeVisible();
   const box = await create.boundingBox();
-  const panelBox = await panel.boundingBox();
-  expect(box.x).toBeCloseTo(panelBox.x + panelBox.width, 0);
+  const viewport = page.viewportSize();
+  expect(box.x + box.width / 2).toBeCloseTo(viewport.width / 2, 0);
+  expect(box.y + box.height / 2).toBeCloseTo(viewport.height / 2, 0);
   await expect
     .poll(() => create.evaluate((el) => el.contains(document.activeElement)))
     .toBe(true);
   await page.keyboard.press("Escape");
   await expect(create).toHaveCount(0);
   await expect(
-    panel.getByRole("button", { name: "Add session", exact: true }),
+    panel.getByRole("button", { name: "Session panel options", exact: true }),
   ).toBeFocused();
-  await panel.getByRole("button", { name: "Add session", exact: true }).click();
+  await panel
+    .getByRole("button", { name: "Session panel options", exact: true })
+    .click();
+  await page
+    .getByRole("menuitem", { name: "Add session", exact: true })
+    .click();
   await page.getByRole("combobox", { name: "Account", exact: true }).click();
   await page.getByRole("option", { name: "Work account · codex" }).click();
   await page

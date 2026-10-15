@@ -19,12 +19,14 @@ export function SessionCreate({
   projects,
   anchor,
   trigger,
+  centered = false,
   close,
 }: {
   c: Connection;
   projects: Project[];
   anchor?: HTMLElement | null;
   trigger?: HTMLElement | null;
+  centered?: boolean;
   close: () => void;
 }) {
   const navigate = useNavigate();
@@ -100,6 +102,7 @@ export function SessionCreate({
     <AnchoredDialog
       title="Add session"
       anchor={anchor}
+      centered={centered}
       trigger={trigger}
       close={close}
       busy={busy}
