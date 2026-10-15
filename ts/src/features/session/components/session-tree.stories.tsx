@@ -68,7 +68,11 @@ function SessionList({
     [count, states],
   );
   return (
-    <ResourcePanel title="Sessions" className="storybook-panel">
+    <ResourcePanel
+      title="Sessions"
+      className="storybook-panel"
+      unreadSelector='[data-unread="true"]'
+    >
       <div className="session-tree">
         <SessionTreeGroup
           project={project}
@@ -142,3 +146,5 @@ export const LifecycleStates: Story = {
     error: true,
   },
 };
+
+export const UnreadBeyondScroll: Story = { args: { count: 24, unread: true } };

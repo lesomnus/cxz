@@ -37,7 +37,18 @@ export function SessionTreeGroup({
       className="session-tree-group"
       aria-label={project.name || project.alias}
     >
-      <PanelItem className="tree-project" aria-expanded={open} onClick={toggle}>
+      <PanelItem
+        className="tree-project"
+        aria-expanded={open}
+        onClick={toggle}
+        data-unread={
+          (!open &&
+            items.some(
+              (s) => unread.has(s.runtimeId) || errors.has(s.runtimeId),
+            )) ||
+          undefined
+        }
+      >
         <span>{project.name || project.alias}</span>
       </PanelItem>
       {open && (
@@ -49,6 +60,9 @@ export function SessionTreeGroup({
               key={s.runtimeId}
               className={`tree-session ${styles.session} ${selected === s.runtimeId ? "active" : ""}`}
               data-state={s.status?.state}
+              data-unread={
+                unread.has(s.runtimeId) || errors.has(s.runtimeId) || undefined
+              }
               data-inactive={resumableStates.has(s.status?.state ?? "")}
               pressTarget=".session-heading"
               aria-current={selected === s.runtimeId ? "true" : undefined}
