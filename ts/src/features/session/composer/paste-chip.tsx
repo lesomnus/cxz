@@ -37,7 +37,7 @@ export function PasteChip({
         }
       }}
     >
-      <span className="paste-chip-label" aria-hidden="true">
+      <span className={`paste-chip-label ${styles.label}`} aria-hidden="true">
         {before}
         <span className={styles.leading} data-paste-leading>
           {leading}
