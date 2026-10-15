@@ -302,7 +302,7 @@ func AuthBindingGetKey(ctx context.Context, db *ent.Client, ref *resource.AuthBi
 var authBindingOrmEntity = ormpatch.MustEntityOf(resource.File_cxz_auth_binding_proto, "AuthBinding")
 
 var authBindingPatchColumns = entpatch.Columns{
-	1: authbinding.FieldId, 4: authbinding.FieldBindingId, 8: authbinding.AccountColumn, 9: authbinding.ProjectColumn, 10: authbinding.FieldAuthBackend, 11: authbinding.FieldScope, 12: authbinding.FieldCredentialRef, 13: authbinding.FieldDateUpdated, 14: authbinding.FieldDateErased, 15: authbinding.FieldDateCreated}
+	1: authbinding.FieldId, 16: authbinding.FieldBindingId, 8: authbinding.AccountColumn, 9: authbinding.ProjectColumn, 10: authbinding.FieldAuthBackend, 11: authbinding.FieldScope, 12: authbinding.FieldCredentialRef, 13: authbinding.FieldDateUpdated, 14: authbinding.FieldDateErased, 15: authbinding.FieldDateCreated}
 
 func (s AuthBindingServiceServer) Apply(ctx context.Context, req *resource.AuthBindingApplyRequest) (*resource.AuthBinding, error) {
 	if !req.HasPatch() {

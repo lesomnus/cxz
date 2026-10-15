@@ -28,7 +28,7 @@ const (
 type AuthBinding struct {
 	state                    protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Id            []byte                 `protobuf:"bytes,1,opt,name=id"`
-	xxx_hidden_BindingId     string                 `protobuf:"bytes,4,opt,name=binding_id,json=bindingId"`
+	xxx_hidden_BindingId     string                 `protobuf:"bytes,16,opt,name=binding_id,json=bindingId"`
 	xxx_hidden_Account       *Account               `protobuf:"bytes,8,opt,name=account"`
 	xxx_hidden_Project       *Project               `protobuf:"bytes,9,opt,name=project"`
 	xxx_hidden_AuthBackend   string                 `protobuf:"bytes,10,opt,name=auth_backend,json=authBackend"`
@@ -274,7 +274,7 @@ const file_cxz_auth_binding_proto_rawDesc = "" +
 	"\vAuthBinding\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12'\n" +
 	"\n" +
-	"binding_id\x18\x04 \x01(\tB\b\xea\x82\x16\x040\x01@\x01R\tbindingId\x12.\n" +
+	"binding_id\x18\x10 \x01(\tB\b\xea\x82\x16\x040\x01@\x01R\tbindingId\x12.\n" +
 	"\aaccount\x18\b \x01(\v2\f.cxz.AccountB\x06\xf2\x82\x16\x02@\x01R\aaccount\x120\n" +
 	"\aproject\x18\t \x01(\v2\f.cxz.ProjectB\b\xf2\x82\x16\x048\x01@\x01R\aproject\x12)\n" +
 	"\fauth_backend\x18\n" +

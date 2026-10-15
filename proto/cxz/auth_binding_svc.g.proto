@@ -38,7 +38,7 @@ service AuthBindingService {
 
 message AuthBindingAddRequest {
   bytes id = 1;
-  string binding_id = 4 [features.field_presence = IMPLICIT];
+  string binding_id = 16 [features.field_presence = IMPLICIT];
   AccountRef account = 8;
   ProjectRef project = 9;
   string auth_backend = 10 [features.field_presence = IMPLICIT];
@@ -55,13 +55,13 @@ message AuthBindingGetRequest {
 message AuthBindingRef {
   oneof key {
     bytes id = 1;
-    string binding_id = 4;
+    string binding_id = 16;
   }
 }
 
 message AuthBindingSelect {
   bool all = 1;
-  bool binding_id = 4;
+  bool binding_id = 16;
   AccountSelect account = 8;
   ProjectSelect project = 9;
   bool auth_backend = 10;

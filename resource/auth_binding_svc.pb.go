@@ -25,7 +25,7 @@ const (
 type AuthBindingAddRequest struct {
 	state                    protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Id            []byte                 `protobuf:"bytes,1,opt,name=id"`
-	xxx_hidden_BindingId     string                 `protobuf:"bytes,4,opt,name=binding_id,json=bindingId"`
+	xxx_hidden_BindingId     string                 `protobuf:"bytes,16,opt,name=binding_id,json=bindingId"`
 	xxx_hidden_Account       *AccountRef            `protobuf:"bytes,8,opt,name=account"`
 	xxx_hidden_Project       *ProjectRef            `protobuf:"bytes,9,opt,name=project"`
 	xxx_hidden_AuthBackend   string                 `protobuf:"bytes,10,opt,name=auth_backend,json=authBackend"`
@@ -426,7 +426,7 @@ func (x *AuthBindingRef) ClearBindingId() {
 
 const AuthBindingRef_Key_not_set_case case_AuthBindingRef_Key = 0
 const AuthBindingRef_Id_case case_AuthBindingRef_Key = 1
-const AuthBindingRef_BindingId_case case_AuthBindingRef_Key = 4
+const AuthBindingRef_BindingId_case case_AuthBindingRef_Key = 16
 
 func (x *AuthBindingRef) WhichKey() case_AuthBindingRef_Key {
 	if x == nil {
@@ -483,7 +483,7 @@ type authBindingRef_Id struct {
 }
 
 type authBindingRef_BindingId struct {
-	BindingId string `protobuf:"bytes,4,opt,name=binding_id,json=bindingId,oneof"`
+	BindingId string `protobuf:"bytes,16,opt,name=binding_id,json=bindingId,oneof"`
 }
 
 func (*authBindingRef_Id) isAuthBindingRef_Key() {}
@@ -493,7 +493,7 @@ func (*authBindingRef_BindingId) isAuthBindingRef_Key() {}
 type AuthBindingSelect struct {
 	state                    protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_All           bool                   `protobuf:"varint,1,opt,name=all"`
-	xxx_hidden_BindingId     bool                   `protobuf:"varint,4,opt,name=binding_id,json=bindingId"`
+	xxx_hidden_BindingId     bool                   `protobuf:"varint,16,opt,name=binding_id,json=bindingId"`
 	xxx_hidden_Account       *AccountSelect         `protobuf:"bytes,8,opt,name=account"`
 	xxx_hidden_Project       *ProjectSelect         `protobuf:"bytes,9,opt,name=project"`
 	xxx_hidden_AuthBackend   bool                   `protobuf:"varint,10,opt,name=auth_backend,json=authBackend"`
@@ -1716,7 +1716,7 @@ const file_cxz_auth_binding_svc_g_proto_rawDesc = "" +
 	"\x15AuthBindingAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12$\n" +
 	"\n" +
-	"binding_id\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\tbindingId\x12)\n" +
+	"binding_id\x18\x10 \x01(\tB\x05\xaa\x01\x02\b\x02R\tbindingId\x12)\n" +
 	"\aaccount\x18\b \x01(\v2\x0f.cxz.AccountRefR\aaccount\x12)\n" +
 	"\aproject\x18\t \x01(\v2\x0f.cxz.ProjectRefR\aproject\x12(\n" +
 	"\fauth_backend\x18\n" +
@@ -1730,12 +1730,12 @@ const file_cxz_auth_binding_svc_g_proto_rawDesc = "" +
 	"\x0eAuthBindingRef\x12\x10\n" +
 	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12\x1f\n" +
 	"\n" +
-	"binding_id\x18\x04 \x01(\tH\x00R\tbindingIdB\x05\n" +
+	"binding_id\x18\x10 \x01(\tH\x00R\tbindingIdB\x05\n" +
 	"\x03key\"\xe7\x02\n" +
 	"\x11AuthBindingSelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12\x1d\n" +
 	"\n" +
-	"binding_id\x18\x04 \x01(\bR\tbindingId\x12,\n" +
+	"binding_id\x18\x10 \x01(\bR\tbindingId\x12,\n" +
 	"\aaccount\x18\b \x01(\v2\x12.cxz.AccountSelectR\aaccount\x12,\n" +
 	"\aproject\x18\t \x01(\v2\x12.cxz.ProjectSelectR\aproject\x12!\n" +
 	"\fauth_backend\x18\n" +

@@ -48,3 +48,7 @@ API 정책: 사용자 배포 전이므로 하위호환을 제공하지 않는다
 `cxz`, 경로는 `proto/cxz`와 `proto/ext/cxz`이며 버전 접미사나 별칭을 두지 않는다.
 내부 runtime view model은 `cxz.runtime`으로 구분한다.
 사용자 인증/roster, HTTP/Web UI, Docker Bake는 이 전환에 추가하지 않았다.
+
+2026-10-15: `AuthBinding.binding_id`의 protobuf 번호를 4에서 16으로 정정했다.
+DB의 `binding_id` 컬럼과 저장 값은 유지된다. Add·Ref·Select의 생성 계약도
+함께 변경되므로 manager, project runtime과 클라이언트는 같은 계약으로 업데이트한다.
