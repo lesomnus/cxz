@@ -10,7 +10,6 @@ import (
 
 	"github.com/lesomnus/cxz/internal/ent/predicate"
 	"github.com/lesomnus/cxz/internal/ent/task"
-	"github.com/lesomnus/cxz/resource"
 	"github.com/protobuf-orm/ent/dialect/sql"
 	"github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 	"github.com/protobuf-orm/ent/schema/field"
@@ -27,6 +26,20 @@ type TaskUpdate struct {
 // Where appends a list predicates to the TaskUpdate builder.
 func (_u *TaskUpdate) Where(ps ...predicate.Task) *TaskUpdate {
 	_u.mutation.Where(ps...)
+	return _u
+}
+
+// SetAlias sets the "alias" field.
+func (_u *TaskUpdate) SetAlias(v string) *TaskUpdate {
+	_u.mutation.SetAlias(v)
+	return _u
+}
+
+// SetNillableAlias sets the "alias" field if the given value is not nil.
+func (_u *TaskUpdate) SetNillableAlias(v *string) *TaskUpdate {
+	if v != nil {
+		_u.SetAlias(*v)
+	}
 	return _u
 }
 
@@ -55,6 +68,52 @@ func (_u *TaskUpdate) SetNillableDesc(v *string) *TaskUpdate {
 	if v != nil {
 		_u.SetDesc(*v)
 	}
+	return _u
+}
+
+// SetLabels sets the "labels" field.
+func (_u *TaskUpdate) SetLabels(v map[string]string) *TaskUpdate {
+	_u.mutation.SetLabels(v)
+	return _u
+}
+
+// ClearLabels clears the value of the "labels" field.
+func (_u *TaskUpdate) ClearLabels() *TaskUpdate {
+	_u.mutation.ClearLabels()
+	return _u
+}
+
+// SetDateUpdated sets the "date_updated" field.
+func (_u *TaskUpdate) SetDateUpdated(v time.Time) *TaskUpdate {
+	_u.mutation.SetDateUpdated(v)
+	return _u
+}
+
+// SetNillableDateUpdated sets the "date_updated" field if the given value is not nil.
+func (_u *TaskUpdate) SetNillableDateUpdated(v *time.Time) *TaskUpdate {
+	if v != nil {
+		_u.SetDateUpdated(*v)
+	}
+	return _u
+}
+
+// SetDateErased sets the "date_erased" field.
+func (_u *TaskUpdate) SetDateErased(v time.Time) *TaskUpdate {
+	_u.mutation.SetDateErased(v)
+	return _u
+}
+
+// SetNillableDateErased sets the "date_erased" field if the given value is not nil.
+func (_u *TaskUpdate) SetNillableDateErased(v *time.Time) *TaskUpdate {
+	if v != nil {
+		_u.SetDateErased(*v)
+	}
+	return _u
+}
+
+// ClearDateErased clears the value of the "date_erased" field.
+func (_u *TaskUpdate) ClearDateErased() *TaskUpdate {
+	_u.mutation.ClearDateErased()
 	return _u
 }
 
@@ -128,52 +187,6 @@ func (_u *TaskUpdate) SetNillableAssigneeRun(v *string) *TaskUpdate {
 	return _u
 }
 
-// SetDateUpdated sets the "date_updated" field.
-func (_u *TaskUpdate) SetDateUpdated(v time.Time) *TaskUpdate {
-	_u.mutation.SetDateUpdated(v)
-	return _u
-}
-
-// SetNillableDateUpdated sets the "date_updated" field if the given value is not nil.
-func (_u *TaskUpdate) SetNillableDateUpdated(v *time.Time) *TaskUpdate {
-	if v != nil {
-		_u.SetDateUpdated(*v)
-	}
-	return _u
-}
-
-// SetDateErased sets the "date_erased" field.
-func (_u *TaskUpdate) SetDateErased(v time.Time) *TaskUpdate {
-	_u.mutation.SetDateErased(v)
-	return _u
-}
-
-// SetNillableDateErased sets the "date_erased" field if the given value is not nil.
-func (_u *TaskUpdate) SetNillableDateErased(v *time.Time) *TaskUpdate {
-	if v != nil {
-		_u.SetDateErased(*v)
-	}
-	return _u
-}
-
-// ClearDateErased clears the value of the "date_erased" field.
-func (_u *TaskUpdate) ClearDateErased() *TaskUpdate {
-	_u.mutation.ClearDateErased()
-	return _u
-}
-
-// SetLabels sets the "labels" field.
-func (_u *TaskUpdate) SetLabels(v *resource.TaskLabels) *TaskUpdate {
-	_u.mutation.SetLabels(v)
-	return _u
-}
-
-// ClearLabels clears the value of the "labels" field.
-func (_u *TaskUpdate) ClearLabels() *TaskUpdate {
-	_u.mutation.ClearLabels()
-	return _u
-}
-
 // Mutation returns the TaskMutation object of the builder.
 func (_u *TaskUpdate) Mutation() *TaskMutation {
 	return _u.mutation
@@ -232,11 +245,32 @@ func (_u *TaskUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			}
 		}
 	}
+	if value, ok := _u.mutation.Alias(); ok {
+		_spec.SetField(task.FieldAlias, field.TypeString, value)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(task.FieldName, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(task.FieldDesc, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Labels(); ok {
+		_spec.SetField(task.FieldLabels, field.TypeJson, value)
+	}
+	if _u.mutation.LabelsCleared() {
+		_spec.ClearField(task.FieldLabels, field.TypeJson)
+	}
+	if value, ok := _u.mutation.DateUpdated(); ok {
+		_spec.SetField(task.FieldDateUpdated, field.TypeTime, value)
+	}
+	if value, ok := _u.mutation.DateErased(); ok {
+		_spec.SetField(task.FieldDateErased, field.TypeTime, value)
+	}
+	if _u.mutation.DateErasedCleared() {
+		_spec.ClearField(task.FieldDateErased, field.TypeTime)
+	}
+	if _u.mutation.DateCreatedCleared() {
+		_spec.ClearField(task.FieldDateCreated, field.TypeTime)
 	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(task.FieldStatus, field.TypeInt32, value)
@@ -255,31 +289,6 @@ func (_u *TaskUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.AssigneeRun(); ok {
 		_spec.SetField(task.FieldAssigneeRun, field.TypeString, value)
-	}
-	if value, ok := _u.mutation.DateUpdated(); ok {
-		_spec.SetField(task.FieldDateUpdated, field.TypeTime, value)
-	}
-	if value, ok := _u.mutation.DateErased(); ok {
-		_spec.SetField(task.FieldDateErased, field.TypeTime, value)
-	}
-	if _u.mutation.DateErasedCleared() {
-		_spec.ClearField(task.FieldDateErased, field.TypeTime)
-	}
-	if _u.mutation.DateCreatedCleared() {
-		_spec.ClearField(task.FieldDateCreated, field.TypeTime)
-	}
-	if value, ok := _u.mutation.Labels(); ok {
-		vv, err := task.ValueScanner.Labels.Value(value)
-		if err != nil {
-			return 0, err
-		}
-		if vv, err = field.JsonValue(vv); err != nil {
-			return 0, err
-		}
-		_spec.SetField(task.FieldLabels, field.TypeJson, vv)
-	}
-	if _u.mutation.LabelsCleared() {
-		_spec.ClearField(task.FieldLabels, field.TypeJson)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
@@ -301,6 +310,20 @@ type TaskUpdateOne struct {
 	hooks     []Hook
 	mutation  *TaskMutation
 	modifiers []func(*sql.UpdateBuilder)
+}
+
+// SetAlias sets the "alias" field.
+func (_u *TaskUpdateOne) SetAlias(v string) *TaskUpdateOne {
+	_u.mutation.SetAlias(v)
+	return _u
+}
+
+// SetNillableAlias sets the "alias" field if the given value is not nil.
+func (_u *TaskUpdateOne) SetNillableAlias(v *string) *TaskUpdateOne {
+	if v != nil {
+		_u.SetAlias(*v)
+	}
+	return _u
 }
 
 // SetName sets the "name" field.
@@ -328,6 +351,52 @@ func (_u *TaskUpdateOne) SetNillableDesc(v *string) *TaskUpdateOne {
 	if v != nil {
 		_u.SetDesc(*v)
 	}
+	return _u
+}
+
+// SetLabels sets the "labels" field.
+func (_u *TaskUpdateOne) SetLabels(v map[string]string) *TaskUpdateOne {
+	_u.mutation.SetLabels(v)
+	return _u
+}
+
+// ClearLabels clears the value of the "labels" field.
+func (_u *TaskUpdateOne) ClearLabels() *TaskUpdateOne {
+	_u.mutation.ClearLabels()
+	return _u
+}
+
+// SetDateUpdated sets the "date_updated" field.
+func (_u *TaskUpdateOne) SetDateUpdated(v time.Time) *TaskUpdateOne {
+	_u.mutation.SetDateUpdated(v)
+	return _u
+}
+
+// SetNillableDateUpdated sets the "date_updated" field if the given value is not nil.
+func (_u *TaskUpdateOne) SetNillableDateUpdated(v *time.Time) *TaskUpdateOne {
+	if v != nil {
+		_u.SetDateUpdated(*v)
+	}
+	return _u
+}
+
+// SetDateErased sets the "date_erased" field.
+func (_u *TaskUpdateOne) SetDateErased(v time.Time) *TaskUpdateOne {
+	_u.mutation.SetDateErased(v)
+	return _u
+}
+
+// SetNillableDateErased sets the "date_erased" field if the given value is not nil.
+func (_u *TaskUpdateOne) SetNillableDateErased(v *time.Time) *TaskUpdateOne {
+	if v != nil {
+		_u.SetDateErased(*v)
+	}
+	return _u
+}
+
+// ClearDateErased clears the value of the "date_erased" field.
+func (_u *TaskUpdateOne) ClearDateErased() *TaskUpdateOne {
+	_u.mutation.ClearDateErased()
 	return _u
 }
 
@@ -398,52 +467,6 @@ func (_u *TaskUpdateOne) SetNillableAssigneeRun(v *string) *TaskUpdateOne {
 	if v != nil {
 		_u.SetAssigneeRun(*v)
 	}
-	return _u
-}
-
-// SetDateUpdated sets the "date_updated" field.
-func (_u *TaskUpdateOne) SetDateUpdated(v time.Time) *TaskUpdateOne {
-	_u.mutation.SetDateUpdated(v)
-	return _u
-}
-
-// SetNillableDateUpdated sets the "date_updated" field if the given value is not nil.
-func (_u *TaskUpdateOne) SetNillableDateUpdated(v *time.Time) *TaskUpdateOne {
-	if v != nil {
-		_u.SetDateUpdated(*v)
-	}
-	return _u
-}
-
-// SetDateErased sets the "date_erased" field.
-func (_u *TaskUpdateOne) SetDateErased(v time.Time) *TaskUpdateOne {
-	_u.mutation.SetDateErased(v)
-	return _u
-}
-
-// SetNillableDateErased sets the "date_erased" field if the given value is not nil.
-func (_u *TaskUpdateOne) SetNillableDateErased(v *time.Time) *TaskUpdateOne {
-	if v != nil {
-		_u.SetDateErased(*v)
-	}
-	return _u
-}
-
-// ClearDateErased clears the value of the "date_erased" field.
-func (_u *TaskUpdateOne) ClearDateErased() *TaskUpdateOne {
-	_u.mutation.ClearDateErased()
-	return _u
-}
-
-// SetLabels sets the "labels" field.
-func (_u *TaskUpdateOne) SetLabels(v *resource.TaskLabels) *TaskUpdateOne {
-	_u.mutation.SetLabels(v)
-	return _u
-}
-
-// ClearLabels clears the value of the "labels" field.
-func (_u *TaskUpdateOne) ClearLabels() *TaskUpdateOne {
-	_u.mutation.ClearLabels()
 	return _u
 }
 
@@ -535,11 +558,32 @@ func (_u *TaskUpdateOne) sqlSave(ctx context.Context) (_node *Task, err error) {
 			}
 		}
 	}
+	if value, ok := _u.mutation.Alias(); ok {
+		_spec.SetField(task.FieldAlias, field.TypeString, value)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(task.FieldName, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(task.FieldDesc, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Labels(); ok {
+		_spec.SetField(task.FieldLabels, field.TypeJson, value)
+	}
+	if _u.mutation.LabelsCleared() {
+		_spec.ClearField(task.FieldLabels, field.TypeJson)
+	}
+	if value, ok := _u.mutation.DateUpdated(); ok {
+		_spec.SetField(task.FieldDateUpdated, field.TypeTime, value)
+	}
+	if value, ok := _u.mutation.DateErased(); ok {
+		_spec.SetField(task.FieldDateErased, field.TypeTime, value)
+	}
+	if _u.mutation.DateErasedCleared() {
+		_spec.ClearField(task.FieldDateErased, field.TypeTime)
+	}
+	if _u.mutation.DateCreatedCleared() {
+		_spec.ClearField(task.FieldDateCreated, field.TypeTime)
 	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(task.FieldStatus, field.TypeInt32, value)
@@ -558,31 +602,6 @@ func (_u *TaskUpdateOne) sqlSave(ctx context.Context) (_node *Task, err error) {
 	}
 	if value, ok := _u.mutation.AssigneeRun(); ok {
 		_spec.SetField(task.FieldAssigneeRun, field.TypeString, value)
-	}
-	if value, ok := _u.mutation.DateUpdated(); ok {
-		_spec.SetField(task.FieldDateUpdated, field.TypeTime, value)
-	}
-	if value, ok := _u.mutation.DateErased(); ok {
-		_spec.SetField(task.FieldDateErased, field.TypeTime, value)
-	}
-	if _u.mutation.DateErasedCleared() {
-		_spec.ClearField(task.FieldDateErased, field.TypeTime)
-	}
-	if _u.mutation.DateCreatedCleared() {
-		_spec.ClearField(task.FieldDateCreated, field.TypeTime)
-	}
-	if value, ok := _u.mutation.Labels(); ok {
-		vv, err := task.ValueScanner.Labels.Value(value)
-		if err != nil {
-			return nil, err
-		}
-		if vv, err = field.JsonValue(vv); err != nil {
-			return nil, err
-		}
-		_spec.SetField(task.FieldLabels, field.TypeJson, vv)
-	}
-	if _u.mutation.LabelsCleared() {
-		_spec.ClearField(task.FieldLabels, field.TypeJson)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	_node = &Task{config: _u.config}

@@ -56,9 +56,9 @@ func IdLTE(id uuid.UUID) predicate.Task {
 	return predicate.Task(sql.FieldLTE(FieldId, id))
 }
 
-// ClientId applies equality check predicate on the "client_id" field. It's identical to ClientIdEQ.
-func ClientId(v string) predicate.Task {
-	return predicate.Task(sql.FieldEQ(FieldClientId, v))
+// Alias applies equality check predicate on the "alias" field. It's identical to AliasEQ.
+func Alias(v string) predicate.Task {
+	return predicate.Task(sql.FieldEQ(FieldAlias, v))
 }
 
 // Name applies equality check predicate on the "name" field. It's identical to NameEQ.
@@ -69,6 +69,21 @@ func Name(v string) predicate.Task {
 // Desc applies equality check predicate on the "desc" field. It's identical to DescEQ.
 func Desc(v string) predicate.Task {
 	return predicate.Task(sql.FieldEQ(FieldDesc, v))
+}
+
+// DateUpdated applies equality check predicate on the "date_updated" field. It's identical to DateUpdatedEQ.
+func DateUpdated(v time.Time) predicate.Task {
+	return predicate.Task(sql.FieldEQ(FieldDateUpdated, v))
+}
+
+// DateErased applies equality check predicate on the "date_erased" field. It's identical to DateErasedEQ.
+func DateErased(v time.Time) predicate.Task {
+	return predicate.Task(sql.FieldEQ(FieldDateErased, v))
+}
+
+// DateCreated applies equality check predicate on the "date_created" field. It's identical to DateCreatedEQ.
+func DateCreated(v time.Time) predicate.Task {
+	return predicate.Task(sql.FieldEQ(FieldDateCreated, v))
 }
 
 // Status applies equality check predicate on the "status" field. It's identical to StatusEQ.
@@ -91,19 +106,9 @@ func AssigneeRun(v string) predicate.Task {
 	return predicate.Task(sql.FieldEQ(FieldAssigneeRun, v))
 }
 
-// DateUpdated applies equality check predicate on the "date_updated" field. It's identical to DateUpdatedEQ.
-func DateUpdated(v time.Time) predicate.Task {
-	return predicate.Task(sql.FieldEQ(FieldDateUpdated, v))
-}
-
-// DateErased applies equality check predicate on the "date_erased" field. It's identical to DateErasedEQ.
-func DateErased(v time.Time) predicate.Task {
-	return predicate.Task(sql.FieldEQ(FieldDateErased, v))
-}
-
-// DateCreated applies equality check predicate on the "date_created" field. It's identical to DateCreatedEQ.
-func DateCreated(v time.Time) predicate.Task {
-	return predicate.Task(sql.FieldEQ(FieldDateCreated, v))
+// ClientId applies equality check predicate on the "client_id" field. It's identical to ClientIdEQ.
+func ClientId(v string) predicate.Task {
+	return predicate.Task(sql.FieldEQ(FieldClientId, v))
 }
 
 // SourceSession applies equality check predicate on the "source_session" field. It's identical to SourceSessionEQ.
@@ -126,69 +131,69 @@ func ProjectId(v uuid.UUID) predicate.Task {
 	return predicate.Task(sql.FieldEQ(FieldProjectId, v))
 }
 
-// ClientIdEQ applies the EQ predicate on the "client_id" field.
-func ClientIdEQ(v string) predicate.Task {
-	return predicate.Task(sql.FieldEQ(FieldClientId, v))
+// AliasEQ applies the EQ predicate on the "alias" field.
+func AliasEQ(v string) predicate.Task {
+	return predicate.Task(sql.FieldEQ(FieldAlias, v))
 }
 
-// ClientIdNEQ applies the NEQ predicate on the "client_id" field.
-func ClientIdNEQ(v string) predicate.Task {
-	return predicate.Task(sql.FieldNEQ(FieldClientId, v))
+// AliasNEQ applies the NEQ predicate on the "alias" field.
+func AliasNEQ(v string) predicate.Task {
+	return predicate.Task(sql.FieldNEQ(FieldAlias, v))
 }
 
-// ClientIdIn applies the In predicate on the "client_id" field.
-func ClientIdIn(vs ...string) predicate.Task {
-	return predicate.Task(sql.FieldIn(FieldClientId, vs...))
+// AliasIn applies the In predicate on the "alias" field.
+func AliasIn(vs ...string) predicate.Task {
+	return predicate.Task(sql.FieldIn(FieldAlias, vs...))
 }
 
-// ClientIdNotIn applies the NotIn predicate on the "client_id" field.
-func ClientIdNotIn(vs ...string) predicate.Task {
-	return predicate.Task(sql.FieldNotIn(FieldClientId, vs...))
+// AliasNotIn applies the NotIn predicate on the "alias" field.
+func AliasNotIn(vs ...string) predicate.Task {
+	return predicate.Task(sql.FieldNotIn(FieldAlias, vs...))
 }
 
-// ClientIdGT applies the GT predicate on the "client_id" field.
-func ClientIdGT(v string) predicate.Task {
-	return predicate.Task(sql.FieldGT(FieldClientId, v))
+// AliasGT applies the GT predicate on the "alias" field.
+func AliasGT(v string) predicate.Task {
+	return predicate.Task(sql.FieldGT(FieldAlias, v))
 }
 
-// ClientIdGTE applies the GTE predicate on the "client_id" field.
-func ClientIdGTE(v string) predicate.Task {
-	return predicate.Task(sql.FieldGTE(FieldClientId, v))
+// AliasGTE applies the GTE predicate on the "alias" field.
+func AliasGTE(v string) predicate.Task {
+	return predicate.Task(sql.FieldGTE(FieldAlias, v))
 }
 
-// ClientIdLT applies the LT predicate on the "client_id" field.
-func ClientIdLT(v string) predicate.Task {
-	return predicate.Task(sql.FieldLT(FieldClientId, v))
+// AliasLT applies the LT predicate on the "alias" field.
+func AliasLT(v string) predicate.Task {
+	return predicate.Task(sql.FieldLT(FieldAlias, v))
 }
 
-// ClientIdLTE applies the LTE predicate on the "client_id" field.
-func ClientIdLTE(v string) predicate.Task {
-	return predicate.Task(sql.FieldLTE(FieldClientId, v))
+// AliasLTE applies the LTE predicate on the "alias" field.
+func AliasLTE(v string) predicate.Task {
+	return predicate.Task(sql.FieldLTE(FieldAlias, v))
 }
 
-// ClientIdContains applies the Contains predicate on the "client_id" field.
-func ClientIdContains(v string) predicate.Task {
-	return predicate.Task(sql.FieldContains(FieldClientId, v))
+// AliasContains applies the Contains predicate on the "alias" field.
+func AliasContains(v string) predicate.Task {
+	return predicate.Task(sql.FieldContains(FieldAlias, v))
 }
 
-// ClientIdHasPrefix applies the HasPrefix predicate on the "client_id" field.
-func ClientIdHasPrefix(v string) predicate.Task {
-	return predicate.Task(sql.FieldHasPrefix(FieldClientId, v))
+// AliasHasPrefix applies the HasPrefix predicate on the "alias" field.
+func AliasHasPrefix(v string) predicate.Task {
+	return predicate.Task(sql.FieldHasPrefix(FieldAlias, v))
 }
 
-// ClientIdHasSuffix applies the HasSuffix predicate on the "client_id" field.
-func ClientIdHasSuffix(v string) predicate.Task {
-	return predicate.Task(sql.FieldHasSuffix(FieldClientId, v))
+// AliasHasSuffix applies the HasSuffix predicate on the "alias" field.
+func AliasHasSuffix(v string) predicate.Task {
+	return predicate.Task(sql.FieldHasSuffix(FieldAlias, v))
 }
 
-// ClientIdEqualFold applies the EqualFold predicate on the "client_id" field.
-func ClientIdEqualFold(v string) predicate.Task {
-	return predicate.Task(sql.FieldEqualFold(FieldClientId, v))
+// AliasEqualFold applies the EqualFold predicate on the "alias" field.
+func AliasEqualFold(v string) predicate.Task {
+	return predicate.Task(sql.FieldEqualFold(FieldAlias, v))
 }
 
-// ClientIdContainsFold applies the ContainsFold predicate on the "client_id" field.
-func ClientIdContainsFold(v string) predicate.Task {
-	return predicate.Task(sql.FieldContainsFold(FieldClientId, v))
+// AliasContainsFold applies the ContainsFold predicate on the "alias" field.
+func AliasContainsFold(v string) predicate.Task {
+	return predicate.Task(sql.FieldContainsFold(FieldAlias, v))
 }
 
 // NameEQ applies the EQ predicate on the "name" field.
@@ -319,6 +324,156 @@ func DescEqualFold(v string) predicate.Task {
 // DescContainsFold applies the ContainsFold predicate on the "desc" field.
 func DescContainsFold(v string) predicate.Task {
 	return predicate.Task(sql.FieldContainsFold(FieldDesc, v))
+}
+
+// LabelsIsNil applies the IsNil predicate on the "labels" field.
+func LabelsIsNil() predicate.Task {
+	return predicate.Task(sql.FieldIsNull(FieldLabels))
+}
+
+// LabelsNotNil applies the NotNil predicate on the "labels" field.
+func LabelsNotNil() predicate.Task {
+	return predicate.Task(sql.FieldNotNull(FieldLabels))
+}
+
+// DateUpdatedEQ applies the EQ predicate on the "date_updated" field.
+func DateUpdatedEQ(v time.Time) predicate.Task {
+	return predicate.Task(sql.FieldEQ(FieldDateUpdated, v))
+}
+
+// DateUpdatedNEQ applies the NEQ predicate on the "date_updated" field.
+func DateUpdatedNEQ(v time.Time) predicate.Task {
+	return predicate.Task(sql.FieldNEQ(FieldDateUpdated, v))
+}
+
+// DateUpdatedIn applies the In predicate on the "date_updated" field.
+func DateUpdatedIn(vs ...time.Time) predicate.Task {
+	return predicate.Task(sql.FieldIn(FieldDateUpdated, vs...))
+}
+
+// DateUpdatedNotIn applies the NotIn predicate on the "date_updated" field.
+func DateUpdatedNotIn(vs ...time.Time) predicate.Task {
+	return predicate.Task(sql.FieldNotIn(FieldDateUpdated, vs...))
+}
+
+// DateUpdatedGT applies the GT predicate on the "date_updated" field.
+func DateUpdatedGT(v time.Time) predicate.Task {
+	return predicate.Task(sql.FieldGT(FieldDateUpdated, v))
+}
+
+// DateUpdatedGTE applies the GTE predicate on the "date_updated" field.
+func DateUpdatedGTE(v time.Time) predicate.Task {
+	return predicate.Task(sql.FieldGTE(FieldDateUpdated, v))
+}
+
+// DateUpdatedLT applies the LT predicate on the "date_updated" field.
+func DateUpdatedLT(v time.Time) predicate.Task {
+	return predicate.Task(sql.FieldLT(FieldDateUpdated, v))
+}
+
+// DateUpdatedLTE applies the LTE predicate on the "date_updated" field.
+func DateUpdatedLTE(v time.Time) predicate.Task {
+	return predicate.Task(sql.FieldLTE(FieldDateUpdated, v))
+}
+
+// DateErasedEQ applies the EQ predicate on the "date_erased" field.
+func DateErasedEQ(v time.Time) predicate.Task {
+	return predicate.Task(sql.FieldEQ(FieldDateErased, v))
+}
+
+// DateErasedNEQ applies the NEQ predicate on the "date_erased" field.
+func DateErasedNEQ(v time.Time) predicate.Task {
+	return predicate.Task(sql.FieldNEQ(FieldDateErased, v))
+}
+
+// DateErasedIn applies the In predicate on the "date_erased" field.
+func DateErasedIn(vs ...time.Time) predicate.Task {
+	return predicate.Task(sql.FieldIn(FieldDateErased, vs...))
+}
+
+// DateErasedNotIn applies the NotIn predicate on the "date_erased" field.
+func DateErasedNotIn(vs ...time.Time) predicate.Task {
+	return predicate.Task(sql.FieldNotIn(FieldDateErased, vs...))
+}
+
+// DateErasedGT applies the GT predicate on the "date_erased" field.
+func DateErasedGT(v time.Time) predicate.Task {
+	return predicate.Task(sql.FieldGT(FieldDateErased, v))
+}
+
+// DateErasedGTE applies the GTE predicate on the "date_erased" field.
+func DateErasedGTE(v time.Time) predicate.Task {
+	return predicate.Task(sql.FieldGTE(FieldDateErased, v))
+}
+
+// DateErasedLT applies the LT predicate on the "date_erased" field.
+func DateErasedLT(v time.Time) predicate.Task {
+	return predicate.Task(sql.FieldLT(FieldDateErased, v))
+}
+
+// DateErasedLTE applies the LTE predicate on the "date_erased" field.
+func DateErasedLTE(v time.Time) predicate.Task {
+	return predicate.Task(sql.FieldLTE(FieldDateErased, v))
+}
+
+// DateErasedIsNil applies the IsNil predicate on the "date_erased" field.
+func DateErasedIsNil() predicate.Task {
+	return predicate.Task(sql.FieldIsNull(FieldDateErased))
+}
+
+// DateErasedNotNil applies the NotNil predicate on the "date_erased" field.
+func DateErasedNotNil() predicate.Task {
+	return predicate.Task(sql.FieldNotNull(FieldDateErased))
+}
+
+// DateCreatedEQ applies the EQ predicate on the "date_created" field.
+func DateCreatedEQ(v time.Time) predicate.Task {
+	return predicate.Task(sql.FieldEQ(FieldDateCreated, v))
+}
+
+// DateCreatedNEQ applies the NEQ predicate on the "date_created" field.
+func DateCreatedNEQ(v time.Time) predicate.Task {
+	return predicate.Task(sql.FieldNEQ(FieldDateCreated, v))
+}
+
+// DateCreatedIn applies the In predicate on the "date_created" field.
+func DateCreatedIn(vs ...time.Time) predicate.Task {
+	return predicate.Task(sql.FieldIn(FieldDateCreated, vs...))
+}
+
+// DateCreatedNotIn applies the NotIn predicate on the "date_created" field.
+func DateCreatedNotIn(vs ...time.Time) predicate.Task {
+	return predicate.Task(sql.FieldNotIn(FieldDateCreated, vs...))
+}
+
+// DateCreatedGT applies the GT predicate on the "date_created" field.
+func DateCreatedGT(v time.Time) predicate.Task {
+	return predicate.Task(sql.FieldGT(FieldDateCreated, v))
+}
+
+// DateCreatedGTE applies the GTE predicate on the "date_created" field.
+func DateCreatedGTE(v time.Time) predicate.Task {
+	return predicate.Task(sql.FieldGTE(FieldDateCreated, v))
+}
+
+// DateCreatedLT applies the LT predicate on the "date_created" field.
+func DateCreatedLT(v time.Time) predicate.Task {
+	return predicate.Task(sql.FieldLT(FieldDateCreated, v))
+}
+
+// DateCreatedLTE applies the LTE predicate on the "date_created" field.
+func DateCreatedLTE(v time.Time) predicate.Task {
+	return predicate.Task(sql.FieldLTE(FieldDateCreated, v))
+}
+
+// DateCreatedIsNil applies the IsNil predicate on the "date_created" field.
+func DateCreatedIsNil() predicate.Task {
+	return predicate.Task(sql.FieldIsNull(FieldDateCreated))
+}
+
+// DateCreatedNotNil applies the NotNil predicate on the "date_created" field.
+func DateCreatedNotNil() predicate.Task {
+	return predicate.Task(sql.FieldNotNull(FieldDateCreated))
 }
 
 // StatusEQ applies the EQ predicate on the "status" field.
@@ -531,154 +686,69 @@ func AssigneeRunContainsFold(v string) predicate.Task {
 	return predicate.Task(sql.FieldContainsFold(FieldAssigneeRun, v))
 }
 
-// DateUpdatedEQ applies the EQ predicate on the "date_updated" field.
-func DateUpdatedEQ(v time.Time) predicate.Task {
-	return predicate.Task(sql.FieldEQ(FieldDateUpdated, v))
+// ClientIdEQ applies the EQ predicate on the "client_id" field.
+func ClientIdEQ(v string) predicate.Task {
+	return predicate.Task(sql.FieldEQ(FieldClientId, v))
 }
 
-// DateUpdatedNEQ applies the NEQ predicate on the "date_updated" field.
-func DateUpdatedNEQ(v time.Time) predicate.Task {
-	return predicate.Task(sql.FieldNEQ(FieldDateUpdated, v))
+// ClientIdNEQ applies the NEQ predicate on the "client_id" field.
+func ClientIdNEQ(v string) predicate.Task {
+	return predicate.Task(sql.FieldNEQ(FieldClientId, v))
 }
 
-// DateUpdatedIn applies the In predicate on the "date_updated" field.
-func DateUpdatedIn(vs ...time.Time) predicate.Task {
-	return predicate.Task(sql.FieldIn(FieldDateUpdated, vs...))
+// ClientIdIn applies the In predicate on the "client_id" field.
+func ClientIdIn(vs ...string) predicate.Task {
+	return predicate.Task(sql.FieldIn(FieldClientId, vs...))
 }
 
-// DateUpdatedNotIn applies the NotIn predicate on the "date_updated" field.
-func DateUpdatedNotIn(vs ...time.Time) predicate.Task {
-	return predicate.Task(sql.FieldNotIn(FieldDateUpdated, vs...))
+// ClientIdNotIn applies the NotIn predicate on the "client_id" field.
+func ClientIdNotIn(vs ...string) predicate.Task {
+	return predicate.Task(sql.FieldNotIn(FieldClientId, vs...))
 }
 
-// DateUpdatedGT applies the GT predicate on the "date_updated" field.
-func DateUpdatedGT(v time.Time) predicate.Task {
-	return predicate.Task(sql.FieldGT(FieldDateUpdated, v))
+// ClientIdGT applies the GT predicate on the "client_id" field.
+func ClientIdGT(v string) predicate.Task {
+	return predicate.Task(sql.FieldGT(FieldClientId, v))
 }
 
-// DateUpdatedGTE applies the GTE predicate on the "date_updated" field.
-func DateUpdatedGTE(v time.Time) predicate.Task {
-	return predicate.Task(sql.FieldGTE(FieldDateUpdated, v))
+// ClientIdGTE applies the GTE predicate on the "client_id" field.
+func ClientIdGTE(v string) predicate.Task {
+	return predicate.Task(sql.FieldGTE(FieldClientId, v))
 }
 
-// DateUpdatedLT applies the LT predicate on the "date_updated" field.
-func DateUpdatedLT(v time.Time) predicate.Task {
-	return predicate.Task(sql.FieldLT(FieldDateUpdated, v))
+// ClientIdLT applies the LT predicate on the "client_id" field.
+func ClientIdLT(v string) predicate.Task {
+	return predicate.Task(sql.FieldLT(FieldClientId, v))
 }
 
-// DateUpdatedLTE applies the LTE predicate on the "date_updated" field.
-func DateUpdatedLTE(v time.Time) predicate.Task {
-	return predicate.Task(sql.FieldLTE(FieldDateUpdated, v))
+// ClientIdLTE applies the LTE predicate on the "client_id" field.
+func ClientIdLTE(v string) predicate.Task {
+	return predicate.Task(sql.FieldLTE(FieldClientId, v))
 }
 
-// DateErasedEQ applies the EQ predicate on the "date_erased" field.
-func DateErasedEQ(v time.Time) predicate.Task {
-	return predicate.Task(sql.FieldEQ(FieldDateErased, v))
+// ClientIdContains applies the Contains predicate on the "client_id" field.
+func ClientIdContains(v string) predicate.Task {
+	return predicate.Task(sql.FieldContains(FieldClientId, v))
 }
 
-// DateErasedNEQ applies the NEQ predicate on the "date_erased" field.
-func DateErasedNEQ(v time.Time) predicate.Task {
-	return predicate.Task(sql.FieldNEQ(FieldDateErased, v))
+// ClientIdHasPrefix applies the HasPrefix predicate on the "client_id" field.
+func ClientIdHasPrefix(v string) predicate.Task {
+	return predicate.Task(sql.FieldHasPrefix(FieldClientId, v))
 }
 
-// DateErasedIn applies the In predicate on the "date_erased" field.
-func DateErasedIn(vs ...time.Time) predicate.Task {
-	return predicate.Task(sql.FieldIn(FieldDateErased, vs...))
+// ClientIdHasSuffix applies the HasSuffix predicate on the "client_id" field.
+func ClientIdHasSuffix(v string) predicate.Task {
+	return predicate.Task(sql.FieldHasSuffix(FieldClientId, v))
 }
 
-// DateErasedNotIn applies the NotIn predicate on the "date_erased" field.
-func DateErasedNotIn(vs ...time.Time) predicate.Task {
-	return predicate.Task(sql.FieldNotIn(FieldDateErased, vs...))
+// ClientIdEqualFold applies the EqualFold predicate on the "client_id" field.
+func ClientIdEqualFold(v string) predicate.Task {
+	return predicate.Task(sql.FieldEqualFold(FieldClientId, v))
 }
 
-// DateErasedGT applies the GT predicate on the "date_erased" field.
-func DateErasedGT(v time.Time) predicate.Task {
-	return predicate.Task(sql.FieldGT(FieldDateErased, v))
-}
-
-// DateErasedGTE applies the GTE predicate on the "date_erased" field.
-func DateErasedGTE(v time.Time) predicate.Task {
-	return predicate.Task(sql.FieldGTE(FieldDateErased, v))
-}
-
-// DateErasedLT applies the LT predicate on the "date_erased" field.
-func DateErasedLT(v time.Time) predicate.Task {
-	return predicate.Task(sql.FieldLT(FieldDateErased, v))
-}
-
-// DateErasedLTE applies the LTE predicate on the "date_erased" field.
-func DateErasedLTE(v time.Time) predicate.Task {
-	return predicate.Task(sql.FieldLTE(FieldDateErased, v))
-}
-
-// DateErasedIsNil applies the IsNil predicate on the "date_erased" field.
-func DateErasedIsNil() predicate.Task {
-	return predicate.Task(sql.FieldIsNull(FieldDateErased))
-}
-
-// DateErasedNotNil applies the NotNil predicate on the "date_erased" field.
-func DateErasedNotNil() predicate.Task {
-	return predicate.Task(sql.FieldNotNull(FieldDateErased))
-}
-
-// DateCreatedEQ applies the EQ predicate on the "date_created" field.
-func DateCreatedEQ(v time.Time) predicate.Task {
-	return predicate.Task(sql.FieldEQ(FieldDateCreated, v))
-}
-
-// DateCreatedNEQ applies the NEQ predicate on the "date_created" field.
-func DateCreatedNEQ(v time.Time) predicate.Task {
-	return predicate.Task(sql.FieldNEQ(FieldDateCreated, v))
-}
-
-// DateCreatedIn applies the In predicate on the "date_created" field.
-func DateCreatedIn(vs ...time.Time) predicate.Task {
-	return predicate.Task(sql.FieldIn(FieldDateCreated, vs...))
-}
-
-// DateCreatedNotIn applies the NotIn predicate on the "date_created" field.
-func DateCreatedNotIn(vs ...time.Time) predicate.Task {
-	return predicate.Task(sql.FieldNotIn(FieldDateCreated, vs...))
-}
-
-// DateCreatedGT applies the GT predicate on the "date_created" field.
-func DateCreatedGT(v time.Time) predicate.Task {
-	return predicate.Task(sql.FieldGT(FieldDateCreated, v))
-}
-
-// DateCreatedGTE applies the GTE predicate on the "date_created" field.
-func DateCreatedGTE(v time.Time) predicate.Task {
-	return predicate.Task(sql.FieldGTE(FieldDateCreated, v))
-}
-
-// DateCreatedLT applies the LT predicate on the "date_created" field.
-func DateCreatedLT(v time.Time) predicate.Task {
-	return predicate.Task(sql.FieldLT(FieldDateCreated, v))
-}
-
-// DateCreatedLTE applies the LTE predicate on the "date_created" field.
-func DateCreatedLTE(v time.Time) predicate.Task {
-	return predicate.Task(sql.FieldLTE(FieldDateCreated, v))
-}
-
-// DateCreatedIsNil applies the IsNil predicate on the "date_created" field.
-func DateCreatedIsNil() predicate.Task {
-	return predicate.Task(sql.FieldIsNull(FieldDateCreated))
-}
-
-// DateCreatedNotNil applies the NotNil predicate on the "date_created" field.
-func DateCreatedNotNil() predicate.Task {
-	return predicate.Task(sql.FieldNotNull(FieldDateCreated))
-}
-
-// LabelsIsNil applies the IsNil predicate on the "labels" field.
-func LabelsIsNil() predicate.Task {
-	return predicate.Task(sql.FieldIsNull(FieldLabels))
-}
-
-// LabelsNotNil applies the NotNil predicate on the "labels" field.
-func LabelsNotNil() predicate.Task {
-	return predicate.Task(sql.FieldNotNull(FieldLabels))
+// ClientIdContainsFold applies the ContainsFold predicate on the "client_id" field.
+func ClientIdContainsFold(v string) predicate.Task {
+	return predicate.Task(sql.FieldContainsFold(FieldClientId, v))
 }
 
 // SourceSessionEQ applies the EQ predicate on the "source_session" field.

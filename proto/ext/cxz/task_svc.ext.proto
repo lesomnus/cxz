@@ -15,10 +15,16 @@ service TaskService {
 
 // Scope is mandatory even when addressing an ID. It routes to the authoritative
 // project runtime, and is checked there rather than trusted as an identity.
-message TaskRef { ProjectRef project = 100; }
-message TaskListRequest { ProjectRef project = 100; }
-message TaskWatchRequest { ProjectRef project = 100; }
-message TaskPatchRequest { TaskActor actor = 100; }
+// Keep custom fields outside the generated request field numbers. Header slot
+// reservations apply to entities, not these independent request messages.
+message TaskRef { ProjectRef project = 1000; }
+message TaskListRequest { ProjectRef project = 1000; }
+message TaskWatchRequest { ProjectRef project = 1000; }
+message TaskPatchRequest {
+  TaskActor actor = 1000;
+  // Protobuf maps have no presence: an empty map otherwise means no edit.
+  bool clear_labels = 1001;
+}
 message TaskActor { SessionRef session = 1; string run_id = 2; }
 message TaskClaimRequest {
   TaskRef ref = 1;

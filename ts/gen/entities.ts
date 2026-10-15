@@ -121,6 +121,7 @@ export const Task = {
 	domain: 11,
 	version: "dateUpdated",
 	refs: [{ field: "project", to: "cxz.Project" }],
+	alias: "alias",
 	key: "id",
 	ids: ["id"],
 	service: TaskService,

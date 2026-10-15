@@ -9,7 +9,6 @@ import (
 	"uuid"
 
 	"github.com/lesomnus/cxz/internal/ent/predicate"
-	"github.com/lesomnus/cxz/resource"
 	"github.com/protobuf-orm/ent"
 	"github.com/protobuf-orm/ent/dialect/sql"
 )
@@ -18,19 +17,20 @@ import (
 type Mutation struct {
 	op             ent.Op
 	typ            string
-	client_id      *string
+	alias          *string
 	name           *string
 	desc           *string
+	labels         *map[string]string
+	date_updated   *time.Time
+	date_erased    *time.Time
+	date_created   *time.Time
 	status         *int32
 	addstatus      *int32
 	priority       *int32
 	addpriority    *int32
 	assignee       *string
 	assignee_run   *string
-	date_updated   *time.Time
-	date_erased    *time.Time
-	date_created   *time.Time
-	labels         **resource.TaskLabels
+	client_id      *string
 	source_session *string
 	source_run     *string
 	source_seq     *uint64
@@ -55,23 +55,23 @@ func (m *Mutation) Predicates() []predicate.Task {
 	return m.predicates
 }
 
-// SetClientId sets the "client_id" field.
-func (m *Mutation) SetClientId(s string) {
-	m.client_id = &s
+// SetAlias sets the "alias" field.
+func (m *Mutation) SetAlias(s string) {
+	m.alias = &s
 }
 
-// ClientId returns the value of the "client_id" field in the mutation.
-func (m *Mutation) ClientId() (r string, exists bool) {
-	v := m.client_id
+// Alias returns the value of the "alias" field in the mutation.
+func (m *Mutation) Alias() (r string, exists bool) {
+	v := m.alias
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// ResetClientId resets all changes to the "client_id" field.
-func (m *Mutation) ResetClientId() {
-	m.client_id = nil
+// ResetAlias resets all changes to the "alias" field.
+func (m *Mutation) ResetAlias() {
+	m.alias = nil
 }
 
 // SetName sets the "name" field.
@@ -110,6 +110,121 @@ func (m *Mutation) Desc() (r string, exists bool) {
 // ResetDesc resets all changes to the "desc" field.
 func (m *Mutation) ResetDesc() {
 	m.desc = nil
+}
+
+// SetLabels sets the "labels" field.
+func (m *Mutation) SetLabels(value map[string]string) {
+	m.labels = &value
+}
+
+// Labels returns the value of the "labels" field in the mutation.
+func (m *Mutation) Labels() (r map[string]string, exists bool) {
+	v := m.labels
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearLabels clears the value of the "labels" field.
+func (m *Mutation) ClearLabels() {
+	m.labels = nil
+	m.clearedFields[FieldLabels] = struct{}{}
+}
+
+// LabelsCleared returns if the "labels" field was cleared in this mutation.
+func (m *Mutation) LabelsCleared() bool {
+	_, ok := m.clearedFields[FieldLabels]
+	return ok
+}
+
+// ResetLabels resets all changes to the "labels" field.
+func (m *Mutation) ResetLabels() {
+	m.labels = nil
+	delete(m.clearedFields, FieldLabels)
+}
+
+// SetDateUpdated sets the "date_updated" field.
+func (m *Mutation) SetDateUpdated(t time.Time) {
+	m.date_updated = &t
+}
+
+// DateUpdated returns the value of the "date_updated" field in the mutation.
+func (m *Mutation) DateUpdated() (r time.Time, exists bool) {
+	v := m.date_updated
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetDateUpdated resets all changes to the "date_updated" field.
+func (m *Mutation) ResetDateUpdated() {
+	m.date_updated = nil
+}
+
+// SetDateErased sets the "date_erased" field.
+func (m *Mutation) SetDateErased(t time.Time) {
+	m.date_erased = &t
+}
+
+// DateErased returns the value of the "date_erased" field in the mutation.
+func (m *Mutation) DateErased() (r time.Time, exists bool) {
+	v := m.date_erased
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearDateErased clears the value of the "date_erased" field.
+func (m *Mutation) ClearDateErased() {
+	m.date_erased = nil
+	m.clearedFields[FieldDateErased] = struct{}{}
+}
+
+// DateErasedCleared returns if the "date_erased" field was cleared in this mutation.
+func (m *Mutation) DateErasedCleared() bool {
+	_, ok := m.clearedFields[FieldDateErased]
+	return ok
+}
+
+// ResetDateErased resets all changes to the "date_erased" field.
+func (m *Mutation) ResetDateErased() {
+	m.date_erased = nil
+	delete(m.clearedFields, FieldDateErased)
+}
+
+// SetDateCreated sets the "date_created" field.
+func (m *Mutation) SetDateCreated(t time.Time) {
+	m.date_created = &t
+}
+
+// DateCreated returns the value of the "date_created" field in the mutation.
+func (m *Mutation) DateCreated() (r time.Time, exists bool) {
+	v := m.date_created
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearDateCreated clears the value of the "date_created" field.
+func (m *Mutation) ClearDateCreated() {
+	m.date_created = nil
+	m.clearedFields[FieldDateCreated] = struct{}{}
+}
+
+// DateCreatedCleared returns if the "date_created" field was cleared in this mutation.
+func (m *Mutation) DateCreatedCleared() bool {
+	_, ok := m.clearedFields[FieldDateCreated]
+	return ok
+}
+
+// ResetDateCreated resets all changes to the "date_created" field.
+func (m *Mutation) ResetDateCreated() {
+	m.date_created = nil
+	delete(m.clearedFields, FieldDateCreated)
 }
 
 // SetStatus sets the "status" field.
@@ -228,119 +343,23 @@ func (m *Mutation) ResetAssigneeRun() {
 	m.assignee_run = nil
 }
 
-// SetDateUpdated sets the "date_updated" field.
-func (m *Mutation) SetDateUpdated(t time.Time) {
-	m.date_updated = &t
+// SetClientId sets the "client_id" field.
+func (m *Mutation) SetClientId(s string) {
+	m.client_id = &s
 }
 
-// DateUpdated returns the value of the "date_updated" field in the mutation.
-func (m *Mutation) DateUpdated() (r time.Time, exists bool) {
-	v := m.date_updated
+// ClientId returns the value of the "client_id" field in the mutation.
+func (m *Mutation) ClientId() (r string, exists bool) {
+	v := m.client_id
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// ResetDateUpdated resets all changes to the "date_updated" field.
-func (m *Mutation) ResetDateUpdated() {
-	m.date_updated = nil
-}
-
-// SetDateErased sets the "date_erased" field.
-func (m *Mutation) SetDateErased(t time.Time) {
-	m.date_erased = &t
-}
-
-// DateErased returns the value of the "date_erased" field in the mutation.
-func (m *Mutation) DateErased() (r time.Time, exists bool) {
-	v := m.date_erased
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// ClearDateErased clears the value of the "date_erased" field.
-func (m *Mutation) ClearDateErased() {
-	m.date_erased = nil
-	m.clearedFields[FieldDateErased] = struct{}{}
-}
-
-// DateErasedCleared returns if the "date_erased" field was cleared in this mutation.
-func (m *Mutation) DateErasedCleared() bool {
-	_, ok := m.clearedFields[FieldDateErased]
-	return ok
-}
-
-// ResetDateErased resets all changes to the "date_erased" field.
-func (m *Mutation) ResetDateErased() {
-	m.date_erased = nil
-	delete(m.clearedFields, FieldDateErased)
-}
-
-// SetDateCreated sets the "date_created" field.
-func (m *Mutation) SetDateCreated(t time.Time) {
-	m.date_created = &t
-}
-
-// DateCreated returns the value of the "date_created" field in the mutation.
-func (m *Mutation) DateCreated() (r time.Time, exists bool) {
-	v := m.date_created
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// ClearDateCreated clears the value of the "date_created" field.
-func (m *Mutation) ClearDateCreated() {
-	m.date_created = nil
-	m.clearedFields[FieldDateCreated] = struct{}{}
-}
-
-// DateCreatedCleared returns if the "date_created" field was cleared in this mutation.
-func (m *Mutation) DateCreatedCleared() bool {
-	_, ok := m.clearedFields[FieldDateCreated]
-	return ok
-}
-
-// ResetDateCreated resets all changes to the "date_created" field.
-func (m *Mutation) ResetDateCreated() {
-	m.date_created = nil
-	delete(m.clearedFields, FieldDateCreated)
-}
-
-// SetLabels sets the "labels" field.
-func (m *Mutation) SetLabels(rl *resource.TaskLabels) {
-	m.labels = &rl
-}
-
-// Labels returns the value of the "labels" field in the mutation.
-func (m *Mutation) Labels() (r *resource.TaskLabels, exists bool) {
-	v := m.labels
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// ClearLabels clears the value of the "labels" field.
-func (m *Mutation) ClearLabels() {
-	m.labels = nil
-	m.clearedFields[FieldLabels] = struct{}{}
-}
-
-// LabelsCleared returns if the "labels" field was cleared in this mutation.
-func (m *Mutation) LabelsCleared() bool {
-	_, ok := m.clearedFields[FieldLabels]
-	return ok
-}
-
-// ResetLabels resets all changes to the "labels" field.
-func (m *Mutation) ResetLabels() {
-	m.labels = nil
-	delete(m.clearedFields, FieldLabels)
+// ResetClientId resets all changes to the "client_id" field.
+func (m *Mutation) ResetClientId() {
+	m.client_id = nil
 }
 
 // SetSourceSession sets the "source_session" field.
@@ -500,15 +519,27 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 15)
-	if m.client_id != nil {
-		fields = append(fields, FieldClientId)
+	fields := make([]string, 0, 16)
+	if m.alias != nil {
+		fields = append(fields, FieldAlias)
 	}
 	if m.name != nil {
 		fields = append(fields, FieldName)
 	}
 	if m.desc != nil {
 		fields = append(fields, FieldDesc)
+	}
+	if m.labels != nil {
+		fields = append(fields, FieldLabels)
+	}
+	if m.date_updated != nil {
+		fields = append(fields, FieldDateUpdated)
+	}
+	if m.date_erased != nil {
+		fields = append(fields, FieldDateErased)
+	}
+	if m.date_created != nil {
+		fields = append(fields, FieldDateCreated)
 	}
 	if m.status != nil {
 		fields = append(fields, FieldStatus)
@@ -522,17 +553,8 @@ func (m *Mutation) Fields() []string {
 	if m.assignee_run != nil {
 		fields = append(fields, FieldAssigneeRun)
 	}
-	if m.date_updated != nil {
-		fields = append(fields, FieldDateUpdated)
-	}
-	if m.date_erased != nil {
-		fields = append(fields, FieldDateErased)
-	}
-	if m.date_created != nil {
-		fields = append(fields, FieldDateCreated)
-	}
-	if m.labels != nil {
-		fields = append(fields, FieldLabels)
+	if m.client_id != nil {
+		fields = append(fields, FieldClientId)
 	}
 	if m.source_session != nil {
 		fields = append(fields, FieldSourceSession)
@@ -554,12 +576,20 @@ func (m *Mutation) Fields() []string {
 // schema.
 func (m *Mutation) Field(name string) (ent.Value, bool) {
 	switch name {
-	case FieldClientId:
-		return m.ClientId()
+	case FieldAlias:
+		return m.Alias()
 	case FieldName:
 		return m.Name()
 	case FieldDesc:
 		return m.Desc()
+	case FieldLabels:
+		return m.Labels()
+	case FieldDateUpdated:
+		return m.DateUpdated()
+	case FieldDateErased:
+		return m.DateErased()
+	case FieldDateCreated:
+		return m.DateCreated()
 	case FieldStatus:
 		return m.Status()
 	case FieldPriority:
@@ -568,14 +598,8 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.Assignee()
 	case FieldAssigneeRun:
 		return m.AssigneeRun()
-	case FieldDateUpdated:
-		return m.DateUpdated()
-	case FieldDateErased:
-		return m.DateErased()
-	case FieldDateCreated:
-		return m.DateCreated()
-	case FieldLabels:
-		return m.Labels()
+	case FieldClientId:
+		return m.ClientId()
 	case FieldSourceSession:
 		return m.SourceSession()
 	case FieldSourceRun:
@@ -600,12 +624,12 @@ func (m *Mutation) OldField(ctx context.Context, name string) (ent.Value, error)
 // type.
 func (m *Mutation) SetField(name string, value ent.Value) error {
 	switch name {
-	case FieldClientId:
+	case FieldAlias:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetClientId(v)
+		m.SetAlias(v)
 		return nil
 	case FieldName:
 		v, ok := value.(string)
@@ -620,6 +644,34 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetDesc(v)
+		return nil
+	case FieldLabels:
+		v, ok := value.(map[string]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLabels(v)
+		return nil
+	case FieldDateUpdated:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDateUpdated(v)
+		return nil
+	case FieldDateErased:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDateErased(v)
+		return nil
+	case FieldDateCreated:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDateCreated(v)
 		return nil
 	case FieldStatus:
 		v, ok := value.(int32)
@@ -649,33 +701,12 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetAssigneeRun(v)
 		return nil
-	case FieldDateUpdated:
-		v, ok := value.(time.Time)
+	case FieldClientId:
+		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetDateUpdated(v)
-		return nil
-	case FieldDateErased:
-		v, ok := value.(time.Time)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetDateErased(v)
-		return nil
-	case FieldDateCreated:
-		v, ok := value.(time.Time)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetDateCreated(v)
-		return nil
-	case FieldLabels:
-		v, ok := value.(*resource.TaskLabels)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetLabels(v)
+		m.SetClientId(v)
 		return nil
 	case FieldSourceSession:
 		v, ok := value.(string)
@@ -774,14 +805,14 @@ func (m *Mutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *Mutation) ClearedFields() []string {
 	var fields []string
+	if m.FieldCleared(FieldLabels) {
+		fields = append(fields, FieldLabels)
+	}
 	if m.FieldCleared(FieldDateErased) {
 		fields = append(fields, FieldDateErased)
 	}
 	if m.FieldCleared(FieldDateCreated) {
 		fields = append(fields, FieldDateCreated)
-	}
-	if m.FieldCleared(FieldLabels) {
-		fields = append(fields, FieldLabels)
 	}
 	return fields
 }
@@ -797,14 +828,14 @@ func (m *Mutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *Mutation) ClearField(name string) error {
 	switch name {
+	case FieldLabels:
+		m.ClearLabels()
+		return nil
 	case FieldDateErased:
 		m.ClearDateErased()
 		return nil
 	case FieldDateCreated:
 		m.ClearDateCreated()
-		return nil
-	case FieldLabels:
-		m.ClearLabels()
 		return nil
 	}
 	return fmt.Errorf("unknown Task nullable field %s", name)
@@ -814,14 +845,26 @@ func (m *Mutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *Mutation) ResetField(name string) error {
 	switch name {
-	case FieldClientId:
-		m.ResetClientId()
+	case FieldAlias:
+		m.ResetAlias()
 		return nil
 	case FieldName:
 		m.ResetName()
 		return nil
 	case FieldDesc:
 		m.ResetDesc()
+		return nil
+	case FieldLabels:
+		m.ResetLabels()
+		return nil
+	case FieldDateUpdated:
+		m.ResetDateUpdated()
+		return nil
+	case FieldDateErased:
+		m.ResetDateErased()
+		return nil
+	case FieldDateCreated:
+		m.ResetDateCreated()
 		return nil
 	case FieldStatus:
 		m.ResetStatus()
@@ -835,17 +878,8 @@ func (m *Mutation) ResetField(name string) error {
 	case FieldAssigneeRun:
 		m.ResetAssigneeRun()
 		return nil
-	case FieldDateUpdated:
-		m.ResetDateUpdated()
-		return nil
-	case FieldDateErased:
-		m.ResetDateErased()
-		return nil
-	case FieldDateCreated:
-		m.ResetDateCreated()
-		return nil
-	case FieldLabels:
-		m.ResetLabels()
+	case FieldClientId:
+		m.ResetClientId()
 		return nil
 	case FieldSourceSession:
 		m.ResetSourceSession()

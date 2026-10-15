@@ -12,18 +12,21 @@ option go_package = "github.com/lesomnus/cxz/resource";
 // must not delete its work record or conversation reference.
 message Task {
   bytes id = 1 [(orm.field) = {type: TYPE_UUID, key: true, default: ""}];
-  string client_id = 4 [(orm.field) = {unique: true, immutable: true}];
+  // payday header slots retain their standard names and types.
+  string alias = 4 [(orm.field) = {unique: true}];
   string name = 5;
   string desc = 6;
+  map<string, string> labels = 7;
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {immutable: true, default: ""}];
+  // App-owned slots are 8–12 and 16+; preserve payday header slots.
   Project project = 8 [(orm.edge) = {immutable: true}];
   TaskStatus status = 9;
   int32 priority = 10;
   string assignee = 11;
   string assignee_run = 12;
-  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
-  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
-  google.protobuf.Timestamp date_created = 15 [(orm.field) = {immutable: true, default: ""}];
-  TaskLabels labels = 16;
+  string client_id = 16 [(orm.field) = {unique: true, immutable: true}];
   string source_session = 17 [(orm.field) = {immutable: true}];
   string source_run = 18 [(orm.field) = {immutable: true}];
   uint64 source_seq = 19 [(orm.field) = {immutable: true}];
@@ -47,6 +50,3 @@ enum TaskStatus {
   TASK_STATUS_DONE = 4;
   TASK_STATUS_CANCELED = 5;
 }
-
-// Present with no values clears labels in a Patch.
-message TaskLabels { repeated string values = 1; }

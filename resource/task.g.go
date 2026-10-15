@@ -14,6 +14,9 @@ func (x *Task) Ref() *TaskRef {
 	if v := x.GetId(); len(v) > 0 {
 		return TaskById(v)
 	}
+	if v := x.GetAlias(); len(v) > 0 {
+		return TaskByAlias(v)
+	}
 	if v := x.GetClientId(); len(v) > 0 {
 		return TaskByClientId(v)
 	}
@@ -29,6 +32,8 @@ func (x *TaskRef) Picks(v *Task) bool {
 	switch x.WhichKey() {
 	case TaskRef_Id_case:
 		return bytes.Equal(x.GetId(), v.GetId())
+	case TaskRef_Alias_case:
+		return x.GetAlias() == v.GetAlias()
 	case TaskRef_ClientId_case:
 		return x.GetClientId() == v.GetClientId()
 	default:
@@ -50,6 +55,12 @@ func TaskById(v []byte) *TaskRef {
 	return x
 }
 
+func TaskByAlias(v string) *TaskRef {
+	x := &TaskRef{}
+	x.SetAlias(v)
+	return x
+}
+
 func TaskByClientId(v string) *TaskRef {
 	x := &TaskRef{}
 	x.SetClientId(v)
@@ -58,6 +69,10 @@ func TaskByClientId(v string) *TaskRef {
 
 func TaskGetById(v []byte) *TaskGetRequest {
 	return TaskGetRequest_builder{Ref: TaskById(v)}.Build()
+}
+
+func TaskGetByAlias(v string) *TaskGetRequest {
+	return TaskGetRequest_builder{Ref: TaskByAlias(v)}.Build()
 }
 
 func TaskGetByClientId(v string) *TaskGetRequest {

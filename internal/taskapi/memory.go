@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
+	"maps"
 	"sort"
 	"sync"
 	"time"
@@ -42,6 +43,12 @@ func (m *Memory) find(ref *resource.TaskRef) (*resource.Task, error) {
 		if v := m.rows[string(ref.GetId())]; v != nil {
 			return v, nil
 		}
+	} else if ref.HasAlias() {
+		for _, v := range m.rows {
+			if v.GetAlias() == ref.GetAlias() && (len(ref.GetProject().GetId()) == 0 || bytes.Equal(v.GetProject().GetId(), ref.GetProject().GetId())) {
+				return v, nil
+			}
+		}
 	} else if ref.HasClientId() {
 		for _, v := range m.rows {
 			if v.GetClientId() == ref.GetClientId() && (len(ref.GetProject().GetId()) == 0 || bytes.Equal(v.GetProject().GetId(), ref.GetProject().GetId())) {
@@ -58,8 +65,8 @@ func (m *Memory) Add(ctx context.Context, r *resource.TaskAddRequest) (*resource
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	for _, v := range m.rows {
-		if v.GetClientId() == r.GetClientId() && bytes.Equal(v.GetProject().GetId(), r.GetProject().GetId()) {
-			return nil, status.Error(codes.AlreadyExists, "client_id exists")
+		if bytes.Equal(v.GetProject().GetId(), r.GetProject().GetId()) && (v.GetClientId() == r.GetClientId() || v.GetAlias() == r.GetAlias()) {
+			return nil, status.Error(codes.AlreadyExists, "client_id or alias exists")
 		}
 	}
 	id := make([]byte, 16)
@@ -70,7 +77,7 @@ func (m *Memory) Add(ctx context.Context, r *resource.TaskAddRequest) (*resource
 	id[8] = id[8]&63 | 0x80
 	id[9] = 11
 	now := timestamppb.Now()
-	v := resource.Task_builder{Id: id, ClientId: r.GetClientId(), Name: r.GetName(), Desc: r.GetDesc(), Project: resource.Project_builder{Id: r.GetProject().GetId()}.Build(), Status: r.GetStatus(), Priority: r.GetPriority(), Labels: r.GetLabels(), SourceSession: r.GetSourceSession(), SourceRun: r.GetSourceRun(), SourceSeq: r.GetSourceSeq(), DateCreated: now, DateUpdated: now}.Build()
+	v := resource.Task_builder{Id: id, Alias: r.GetAlias(), ClientId: r.GetClientId(), Name: r.GetName(), Desc: r.GetDesc(), Project: resource.Project_builder{Id: r.GetProject().GetId()}.Build(), Status: r.GetStatus(), Priority: r.GetPriority(), Labels: r.GetLabels(), SourceSession: r.GetSourceSession(), SourceRun: r.GetSourceRun(), SourceSeq: r.GetSourceSeq(), DateCreated: now, DateUpdated: now}.Build()
 	m.rows[string(id)] = clone(v)
 	m.actions[string(id)], _ = ctx.Value(actionKey{}).(string)
 	m.notify()
@@ -113,6 +120,14 @@ func (m *Memory) Patch(ctx context.Context, r *resource.TaskPatchRequest) (*reso
 	if !proto.Equal(v.GetDateUpdated(), r.GetDateUpdated()) {
 		return nil, status.Error(codes.FailedPrecondition, "task changed since the last read")
 	}
+	if r.HasAlias() {
+		for _, other := range m.rows {
+			if other != v && other.GetAlias() == r.GetAlias() && bytes.Equal(other.GetProject().GetId(), v.GetProject().GetId()) {
+				return nil, status.Error(codes.AlreadyExists, "alias exists")
+			}
+		}
+		v.SetAlias(r.GetAlias())
+	}
 	if r.HasName() {
 		v.SetName(r.GetName())
 	}
@@ -131,11 +146,11 @@ func (m *Memory) Patch(ctx context.Context, r *resource.TaskPatchRequest) (*reso
 	if r.HasAssigneeRun() {
 		v.SetAssigneeRun(r.GetAssigneeRun())
 	}
-	if r.HasLabels() {
-		v.SetLabels(proto.Clone(r.GetLabels()).(*resource.TaskLabels))
+	if len(r.GetLabels()) > 0 {
+		v.SetLabels(maps.Clone(r.GetLabels()))
 	}
-	if r.GetLabelsNull() {
-		v.ClearLabels()
+	if r.GetClearLabels() {
+		v.SetLabels(nil)
 	}
 	now := time.Now()
 	if !now.After(v.GetDateUpdated().AsTime()) {
@@ -163,7 +178,10 @@ func matches(v *resource.Task, filters []*resource.TaskFilter) bool {
 			if ref.HasClientId() && ref.GetClientId() != v.GetClientId() {
 				continue
 			}
-			if !ref.HasId() && !ref.HasClientId() {
+			if ref.HasAlias() && ref.GetAlias() != v.GetAlias() {
+				continue
+			}
+			if !ref.HasId() && !ref.HasClientId() && !ref.HasAlias() {
 				continue
 			}
 		}

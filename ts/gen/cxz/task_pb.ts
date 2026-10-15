@@ -17,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file cxz/task.proto.
  */
 export const file_cxz_task: GenFile = /*@__PURE__*/
-  fileDesc("Cg5jeHovdGFzay5wcm90bxIDY3h6IvoECgRUYXNrEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABIbCgljbGllbnRfaWQYBCABKAlCCOqCFgQwAUABEgwKBG5hbWUYBSABKAkSDAoEZGVzYxgGIAEoCRIlCgdwcm9qZWN0GAggASgLMgwuY3h6LlByb2plY3RCBvKCFgJAARIfCgZzdGF0dXMYCSABKA4yDy5jeHouVGFza1N0YXR1cxIQCghwcmlvcml0eRgKIAEoBRIQCghhc3NpZ25lZRgLIAEoCRIUCgxhc3NpZ25lZV9ydW4YDCABKAkSOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAEh8KBmxhYmVscxgQIAEoCzIPLmN4ei5UYXNrTGFiZWxzEh4KDnNvdXJjZV9zZXNzaW9uGBEgASgJQgbqghYCQAESGgoKc291cmNlX3J1bhgSIAEoCUIG6oIWAkABEhoKCnNvdXJjZV9zZXEYEyABKARCBuqCFgJAATpzyvwVJhICEAEaIBIEcGFnZRoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABirsWRQgLMj0KEAoOCgxkYXRlX2NyZWF0ZWQKBgoECgJpZBoFCgNyZWYaCQoHcHJvamVjdBoKCghhc3NpZ25lZSBkKPQDOgAqACIcCgpUYXNrTGFiZWxzEg4KBnZhbHVlcxgBIAMoCSqlAQoKVGFza1N0YXR1cxIbChdUQVNLX1NUQVRVU19VTlNQRUNJRklFRBAAEhQKEFRBU0tfU1RBVFVTX1RPRE8QARIbChdUQVNLX1NUQVRVU19JTl9QUk9HUkVTUxACEhcKE1RBU0tfU1RBVFVTX1dBSVRJTkcQAxIUChBUQVNLX1NUQVRVU19ET05FEAQSGAoUVEFTS19TVEFUVVNfQ0FOQ0VMRUQQBUInWiBnaXRodWIuY29tL2xlc29tbnVzL2N4ei9yZXNvdXJjZZIDAggCYghlZGl0aW9uc3DoBw", [file_cxz_project, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("Cg5jeHovdGFzay5wcm90bxIDY3h6IsYFCgRUYXNrEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABIVCgVhbGlhcxgEIAEoCUIG6oIWAjABEgwKBG5hbWUYBSABKAkSDAoEZGVzYxgGIAEoCRIlCgZsYWJlbHMYByADKAsyFS5jeHouVGFzay5MYWJlbHNFbnRyeRI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQASJQoHcHJvamVjdBgIIAEoCzIMLmN4ei5Qcm9qZWN0QgbyghYCQAESHwoGc3RhdHVzGAkgASgOMg8uY3h6LlRhc2tTdGF0dXMSEAoIcHJpb3JpdHkYCiABKAUSEAoIYXNzaWduZWUYCyABKAkSFAoMYXNzaWduZWVfcnVuGAwgASgJEhsKCWNsaWVudF9pZBgQIAEoCUII6oIWBDABQAESHgoOc291cmNlX3Nlc3Npb24YESABKAlCBuqCFgJAARIaCgpzb3VyY2VfcnVuGBIgASgJQgbqghYCQAESGgoKc291cmNlX3NlcRgTIAEoBEIG6oIWAkABGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAE6c8r8FSYSAhABGiASBHBhZ2UaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQAYq7FkUICzI9ChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmGgkKB3Byb2plY3QaCgoIYXNzaWduZWUgZCj0AzoAKgAqpQEKClRhc2tTdGF0dXMSGwoXVEFTS19TVEFUVVNfVU5TUEVDSUZJRUQQABIUChBUQVNLX1NUQVRVU19UT0RPEAESGwoXVEFTS19TVEFUVVNfSU5fUFJPR1JFU1MQAhIXChNUQVNLX1NUQVRVU19XQUlUSU5HEAMSFAoQVEFTS19TVEFUVVNfRE9ORRAEEhgKFFRBU0tfU1RBVFVTX0NBTkNFTEVEEAVCJ1ogZ2l0aHViLmNvbS9sZXNvbW51cy9jeHovcmVzb3VyY2WSAwIIAmIIZWRpdGlvbnNw6Ac", [file_cxz_project, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Project-local shared work, independent of a provider's background jobs.
@@ -33,9 +33,11 @@ export type Task = Message<"cxz.Task"> & {
   id: Uint8Array;
 
   /**
-   * @generated from field: string client_id = 4;
+   * payday header slots retain their standard names and types.
+   *
+   * @generated from field: string alias = 4;
    */
-  clientId: string;
+  alias: string;
 
   /**
    * @generated from field: string name = 5;
@@ -48,6 +50,28 @@ export type Task = Message<"cxz.Task"> & {
   desc: string;
 
   /**
+   * @generated from field: map<string, string> labels = 7;
+   */
+  labels: { [key: string]: string };
+
+  /**
+   * @generated from field: google.protobuf.Timestamp date_updated = 13;
+   */
+  dateUpdated?: Timestamp | undefined;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp date_erased = 14;
+   */
+  dateErased?: Timestamp | undefined;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp date_created = 15;
+   */
+  dateCreated?: Timestamp | undefined;
+
+  /**
+   * App-owned slots are 8–12 and 16+; preserve payday header slots.
+   *
    * @generated from field: cxz.Project project = 8;
    */
   project?: Project | undefined;
@@ -73,24 +97,9 @@ export type Task = Message<"cxz.Task"> & {
   assigneeRun: string;
 
   /**
-   * @generated from field: google.protobuf.Timestamp date_updated = 13;
+   * @generated from field: string client_id = 16;
    */
-  dateUpdated?: Timestamp | undefined;
-
-  /**
-   * @generated from field: google.protobuf.Timestamp date_erased = 14;
-   */
-  dateErased?: Timestamp | undefined;
-
-  /**
-   * @generated from field: google.protobuf.Timestamp date_created = 15;
-   */
-  dateCreated?: Timestamp | undefined;
-
-  /**
-   * @generated from field: cxz.TaskLabels labels = 16;
-   */
-  labels?: TaskLabels | undefined;
+  clientId: string;
 
   /**
    * @generated from field: string source_session = 17;
@@ -114,25 +123,6 @@ export type Task = Message<"cxz.Task"> & {
  */
 export const TaskSchema: GenMessage<Task> = /*@__PURE__*/
   messageDesc(file_cxz_task, 0);
-
-/**
- * Present with no values clears labels in a Patch.
- *
- * @generated from message cxz.TaskLabels
- */
-export type TaskLabels = Message<"cxz.TaskLabels"> & {
-  /**
-   * @generated from field: repeated string values = 1;
-   */
-  values: string[];
-};
-
-/**
- * Describes the message cxz.TaskLabels.
- * Use `create(TaskLabelsSchema)` to create a new message.
- */
-export const TaskLabelsSchema: GenMessage<TaskLabels> = /*@__PURE__*/
-  messageDesc(file_cxz_task, 1);
 
 /**
  * @generated from enum cxz.TaskStatus

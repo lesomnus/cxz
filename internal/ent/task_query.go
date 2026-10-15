@@ -301,12 +301,12 @@ func (_q *TaskQuery) WithProject(opts ...func(*ProjectQuery)) *TaskQuery {
 // Example:
 //
 //	var v []struct {
-//		ClientId string `json:"client_id,omitempty"`
+//		Alias string `json:"alias,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Task.Query().
-//		GroupBy(task.FieldClientId).
+//		GroupBy(task.FieldAlias).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (_q *TaskQuery) GroupBy(field string, fields ...string) *TaskGroupBy {
@@ -324,11 +324,11 @@ func (_q *TaskQuery) GroupBy(field string, fields ...string) *TaskGroupBy {
 // Example:
 //
 //	var v []struct {
-//		ClientId string `json:"client_id,omitempty"`
+//		Alias string `json:"alias,omitempty"`
 //	}
 //
 //	client.Task.Query().
-//		Select(task.FieldClientId).
+//		Select(task.FieldAlias).
 //		Scan(ctx, &v)
 func (_q *TaskQuery) Select(fields ...string) *TaskSelect {
 	_q.ctx.Fields = append(_q.ctx.Fields, fields...)

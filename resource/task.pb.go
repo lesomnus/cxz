@@ -82,18 +82,19 @@ func (x TaskStatus) Number() protoreflect.EnumNumber {
 type Task struct {
 	state                    protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Id            []byte                 `protobuf:"bytes,1,opt,name=id"`
-	xxx_hidden_ClientId      string                 `protobuf:"bytes,4,opt,name=client_id,json=clientId"`
+	xxx_hidden_Alias         string                 `protobuf:"bytes,4,opt,name=alias"`
 	xxx_hidden_Name          string                 `protobuf:"bytes,5,opt,name=name"`
 	xxx_hidden_Desc          string                 `protobuf:"bytes,6,opt,name=desc"`
+	xxx_hidden_Labels        map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	xxx_hidden_DateUpdated   *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
+	xxx_hidden_DateErased    *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
+	xxx_hidden_DateCreated   *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
 	xxx_hidden_Project       *Project               `protobuf:"bytes,8,opt,name=project"`
 	xxx_hidden_Status        TaskStatus             `protobuf:"varint,9,opt,name=status,enum=cxz.TaskStatus"`
 	xxx_hidden_Priority      int32                  `protobuf:"varint,10,opt,name=priority"`
 	xxx_hidden_Assignee      string                 `protobuf:"bytes,11,opt,name=assignee"`
 	xxx_hidden_AssigneeRun   string                 `protobuf:"bytes,12,opt,name=assignee_run,json=assigneeRun"`
-	xxx_hidden_DateUpdated   *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
-	xxx_hidden_DateErased    *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
-	xxx_hidden_DateCreated   *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
-	xxx_hidden_Labels        *TaskLabels            `protobuf:"bytes,16,opt,name=labels"`
+	xxx_hidden_ClientId      string                 `protobuf:"bytes,16,opt,name=client_id,json=clientId"`
 	xxx_hidden_SourceSession string                 `protobuf:"bytes,17,opt,name=source_session,json=sourceSession"`
 	xxx_hidden_SourceRun     string                 `protobuf:"bytes,18,opt,name=source_run,json=sourceRun"`
 	xxx_hidden_SourceSeq     uint64                 `protobuf:"varint,19,opt,name=source_seq,json=sourceSeq"`
@@ -133,9 +134,9 @@ func (x *Task) GetId() []byte {
 	return nil
 }
 
-func (x *Task) GetClientId() string {
+func (x *Task) GetAlias() string {
 	if x != nil {
-		return x.xxx_hidden_ClientId
+		return x.xxx_hidden_Alias
 	}
 	return ""
 }
@@ -152,6 +153,34 @@ func (x *Task) GetDesc() string {
 		return x.xxx_hidden_Desc
 	}
 	return ""
+}
+
+func (x *Task) GetLabels() map[string]string {
+	if x != nil {
+		return x.xxx_hidden_Labels
+	}
+	return nil
+}
+
+func (x *Task) GetDateUpdated() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateUpdated
+	}
+	return nil
+}
+
+func (x *Task) GetDateErased() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateErased
+	}
+	return nil
+}
+
+func (x *Task) GetDateCreated() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateCreated
+	}
+	return nil
 }
 
 func (x *Task) GetProject() *Project {
@@ -189,32 +218,11 @@ func (x *Task) GetAssigneeRun() string {
 	return ""
 }
 
-func (x *Task) GetDateUpdated() *timestamppb.Timestamp {
+func (x *Task) GetClientId() string {
 	if x != nil {
-		return x.xxx_hidden_DateUpdated
+		return x.xxx_hidden_ClientId
 	}
-	return nil
-}
-
-func (x *Task) GetDateErased() *timestamppb.Timestamp {
-	if x != nil {
-		return x.xxx_hidden_DateErased
-	}
-	return nil
-}
-
-func (x *Task) GetDateCreated() *timestamppb.Timestamp {
-	if x != nil {
-		return x.xxx_hidden_DateCreated
-	}
-	return nil
-}
-
-func (x *Task) GetLabels() *TaskLabels {
-	if x != nil {
-		return x.xxx_hidden_Labels
-	}
-	return nil
+	return ""
 }
 
 func (x *Task) GetSourceSession() string {
@@ -245,8 +253,8 @@ func (x *Task) SetId(v []byte) {
 	x.xxx_hidden_Id = v
 }
 
-func (x *Task) SetClientId(v string) {
-	x.xxx_hidden_ClientId = v
+func (x *Task) SetAlias(v string) {
+	x.xxx_hidden_Alias = v
 }
 
 func (x *Task) SetName(v string) {
@@ -255,6 +263,22 @@ func (x *Task) SetName(v string) {
 
 func (x *Task) SetDesc(v string) {
 	x.xxx_hidden_Desc = v
+}
+
+func (x *Task) SetLabels(v map[string]string) {
+	x.xxx_hidden_Labels = v
+}
+
+func (x *Task) SetDateUpdated(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateUpdated = v
+}
+
+func (x *Task) SetDateErased(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateErased = v
+}
+
+func (x *Task) SetDateCreated(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateCreated = v
 }
 
 func (x *Task) SetProject(v *Project) {
@@ -277,20 +301,8 @@ func (x *Task) SetAssigneeRun(v string) {
 	x.xxx_hidden_AssigneeRun = v
 }
 
-func (x *Task) SetDateUpdated(v *timestamppb.Timestamp) {
-	x.xxx_hidden_DateUpdated = v
-}
-
-func (x *Task) SetDateErased(v *timestamppb.Timestamp) {
-	x.xxx_hidden_DateErased = v
-}
-
-func (x *Task) SetDateCreated(v *timestamppb.Timestamp) {
-	x.xxx_hidden_DateCreated = v
-}
-
-func (x *Task) SetLabels(v *TaskLabels) {
-	x.xxx_hidden_Labels = v
+func (x *Task) SetClientId(v string) {
+	x.xxx_hidden_ClientId = v
 }
 
 func (x *Task) SetSourceSession(v string) {
@@ -303,13 +315,6 @@ func (x *Task) SetSourceRun(v string) {
 
 func (x *Task) SetSourceSeq(v uint64) {
 	x.xxx_hidden_SourceSeq = v
-}
-
-func (x *Task) HasProject() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Project != nil
 }
 
 func (x *Task) HasDateUpdated() bool {
@@ -333,15 +338,11 @@ func (x *Task) HasDateCreated() bool {
 	return x.xxx_hidden_DateCreated != nil
 }
 
-func (x *Task) HasLabels() bool {
+func (x *Task) HasProject() bool {
 	if x == nil {
 		return false
 	}
-	return x.xxx_hidden_Labels != nil
-}
-
-func (x *Task) ClearProject() {
-	x.xxx_hidden_Project = nil
+	return x.xxx_hidden_Project != nil
 }
 
 func (x *Task) ClearDateUpdated() {
@@ -356,26 +357,29 @@ func (x *Task) ClearDateCreated() {
 	x.xxx_hidden_DateCreated = nil
 }
 
-func (x *Task) ClearLabels() {
-	x.xxx_hidden_Labels = nil
+func (x *Task) ClearProject() {
+	x.xxx_hidden_Project = nil
 }
 
 type Task_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Id            []byte
-	ClientId      string
-	Name          string
-	Desc          string
+	Id []byte
+	// payday header slots retain their standard names and types.
+	Alias       string
+	Name        string
+	Desc        string
+	Labels      map[string]string
+	DateUpdated *timestamppb.Timestamp
+	DateErased  *timestamppb.Timestamp
+	DateCreated *timestamppb.Timestamp
+	// App-owned slots are 8–12 and 16+; preserve payday header slots.
 	Project       *Project
 	Status        TaskStatus
 	Priority      int32
 	Assignee      string
 	AssigneeRun   string
-	DateUpdated   *timestamppb.Timestamp
-	DateErased    *timestamppb.Timestamp
-	DateCreated   *timestamppb.Timestamp
-	Labels        *TaskLabels
+	ClientId      string
 	SourceSession string
 	SourceRun     string
 	SourceSeq     uint64
@@ -386,79 +390,22 @@ func (b0 Task_builder) Build() *Task {
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Id = b.Id
-	x.xxx_hidden_ClientId = b.ClientId
+	x.xxx_hidden_Alias = b.Alias
 	x.xxx_hidden_Name = b.Name
 	x.xxx_hidden_Desc = b.Desc
+	x.xxx_hidden_Labels = b.Labels
+	x.xxx_hidden_DateUpdated = b.DateUpdated
+	x.xxx_hidden_DateErased = b.DateErased
+	x.xxx_hidden_DateCreated = b.DateCreated
 	x.xxx_hidden_Project = b.Project
 	x.xxx_hidden_Status = b.Status
 	x.xxx_hidden_Priority = b.Priority
 	x.xxx_hidden_Assignee = b.Assignee
 	x.xxx_hidden_AssigneeRun = b.AssigneeRun
-	x.xxx_hidden_DateUpdated = b.DateUpdated
-	x.xxx_hidden_DateErased = b.DateErased
-	x.xxx_hidden_DateCreated = b.DateCreated
-	x.xxx_hidden_Labels = b.Labels
+	x.xxx_hidden_ClientId = b.ClientId
 	x.xxx_hidden_SourceSession = b.SourceSession
 	x.xxx_hidden_SourceRun = b.SourceRun
 	x.xxx_hidden_SourceSeq = b.SourceSeq
-	return m0
-}
-
-// Present with no values clears labels in a Patch.
-type TaskLabels struct {
-	state             protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Values []string               `protobuf:"bytes,1,rep,name=values"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
-}
-
-func (x *TaskLabels) Reset() {
-	*x = TaskLabels{}
-	mi := &file_cxz_task_proto_msgTypes[1]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *TaskLabels) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*TaskLabels) ProtoMessage() {}
-
-func (x *TaskLabels) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_task_proto_msgTypes[1]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *TaskLabels) GetValues() []string {
-	if x != nil {
-		return x.xxx_hidden_Values
-	}
-	return nil
-}
-
-func (x *TaskLabels) SetValues(v []string) {
-	x.xxx_hidden_Values = v
-}
-
-type TaskLabels_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	Values []string
-}
-
-func (b0 TaskLabels_builder) Build() *TaskLabels {
-	m0 := &TaskLabels{}
-	b, x := &b0, m0
-	_, _ = b, x
-	x.xxx_hidden_Values = b.Values
 	return m0
 }
 
@@ -466,28 +413,32 @@ var File_cxz_task_proto protoreflect.FileDescriptor
 
 const file_cxz_task_proto_rawDesc = "" +
 	"\n" +
-	"\x0ecxz/task.proto\x12\x03cxz\x1a\x11cxz/project.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\x99\x06\n" +
+	"\x0ecxz/task.proto\x12\x03cxz\x1a\x11cxz/project.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xf8\x06\n" +
 	"\x04Task\x12\x1b\n" +
-	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12%\n" +
-	"\tclient_id\x18\x04 \x01(\tB\b\xea\x82\x16\x040\x01@\x01R\bclientId\x12\x12\n" +
+	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12\x1c\n" +
+	"\x05alias\x18\x04 \x01(\tB\x06\xea\x82\x16\x020\x01R\x05alias\x12\x12\n" +
 	"\x04name\x18\x05 \x01(\tR\x04name\x12\x12\n" +
-	"\x04desc\x18\x06 \x01(\tR\x04desc\x12.\n" +
+	"\x04desc\x18\x06 \x01(\tR\x04desc\x12-\n" +
+	"\x06labels\x18\a \x03(\v2\x15.cxz.Task.LabelsEntryR\x06labels\x12F\n" +
+	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
+	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
+	"dateErased\x12H\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated\x12.\n" +
 	"\aproject\x18\b \x01(\v2\f.cxz.ProjectB\x06\xf2\x82\x16\x02@\x01R\aproject\x12'\n" +
 	"\x06status\x18\t \x01(\x0e2\x0f.cxz.TaskStatusR\x06status\x12\x1a\n" +
 	"\bpriority\x18\n" +
 	" \x01(\x05R\bpriority\x12\x1a\n" +
 	"\bassignee\x18\v \x01(\tR\bassignee\x12!\n" +
-	"\fassignee_run\x18\f \x01(\tR\vassigneeRun\x12F\n" +
-	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
-	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
-	"dateErased\x12H\n" +
-	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated\x12'\n" +
-	"\x06labels\x18\x10 \x01(\v2\x0f.cxz.TaskLabelsR\x06labels\x12-\n" +
+	"\fassignee_run\x18\f \x01(\tR\vassigneeRun\x12%\n" +
+	"\tclient_id\x18\x10 \x01(\tB\b\xea\x82\x16\x040\x01@\x01R\bclientId\x12-\n" +
 	"\x0esource_session\x18\x11 \x01(\tB\x06\xea\x82\x16\x02@\x01R\rsourceSession\x12%\n" +
 	"\n" +
 	"source_run\x18\x12 \x01(\tB\x06\xea\x82\x16\x02@\x01R\tsourceRun\x12%\n" +
 	"\n" +
-	"source_seq\x18\x13 \x01(\x04B\x06\xea\x82\x16\x02@\x01R\tsourceSeq:s\xca\xfc\x15&\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
+	"source_seq\x18\x13 \x01(\x04B\x06\xea\x82\x16\x02@\x01R\tsourceSeq\x1a9\n" +
+	"\vLabelsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:s\xca\xfc\x15&\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
 	"\fdate_created\x10\x0f\x1a\x06\n" +
 	"\x02id\x10\x01\x8a\xbb\x16E\b\v2=\n" +
 	"\x10\n" +
@@ -499,10 +450,7 @@ const file_cxz_task_proto_rawDesc = "" +
 	"\x03ref\x1a\t\n" +
 	"\aproject\x1a\n" +
 	"\n" +
-	"\bassignee d(\xf4\x03:\x00*\x00\"$\n" +
-	"\n" +
-	"TaskLabels\x12\x16\n" +
-	"\x06values\x18\x01 \x03(\tR\x06values*\xa5\x01\n" +
+	"\bassignee d(\xf4\x03:\x00*\x00*\xa5\x01\n" +
 	"\n" +
 	"TaskStatus\x12\x1b\n" +
 	"\x17TASK_STATUS_UNSPECIFIED\x10\x00\x12\x14\n" +
@@ -517,17 +465,17 @@ var file_cxz_task_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_cxz_task_proto_goTypes = []any{
 	(TaskStatus)(0),               // 0: cxz.TaskStatus
 	(*Task)(nil),                  // 1: cxz.Task
-	(*TaskLabels)(nil),            // 2: cxz.TaskLabels
-	(*Project)(nil),               // 3: cxz.Project
-	(*timestamppb.Timestamp)(nil), // 4: google.protobuf.Timestamp
+	nil,                           // 2: cxz.Task.LabelsEntry
+	(*timestamppb.Timestamp)(nil), // 3: google.protobuf.Timestamp
+	(*Project)(nil),               // 4: cxz.Project
 }
 var file_cxz_task_proto_depIdxs = []int32{
-	3, // 0: cxz.Task.project:type_name -> cxz.Project
-	0, // 1: cxz.Task.status:type_name -> cxz.TaskStatus
-	4, // 2: cxz.Task.date_updated:type_name -> google.protobuf.Timestamp
-	4, // 3: cxz.Task.date_erased:type_name -> google.protobuf.Timestamp
-	4, // 4: cxz.Task.date_created:type_name -> google.protobuf.Timestamp
-	2, // 5: cxz.Task.labels:type_name -> cxz.TaskLabels
+	2, // 0: cxz.Task.labels:type_name -> cxz.Task.LabelsEntry
+	3, // 1: cxz.Task.date_updated:type_name -> google.protobuf.Timestamp
+	3, // 2: cxz.Task.date_erased:type_name -> google.protobuf.Timestamp
+	3, // 3: cxz.Task.date_created:type_name -> google.protobuf.Timestamp
+	4, // 4: cxz.Task.project:type_name -> cxz.Project
+	0, // 5: cxz.Task.status:type_name -> cxz.TaskStatus
 	6, // [6:6] is the sub-list for method output_type
 	6, // [6:6] is the sub-list for method input_type
 	6, // [6:6] is the sub-list for extension type_name

@@ -8,7 +8,7 @@ import type { ProjectRef, ProjectSelect } from "./project_svc_pb.js";
 import { file_cxz_project_svc_g } from "./project_svc_pb.js";
 import type { SessionRef } from "./session_svc_pb.js";
 import { file_cxz_session_svc_g } from "./session_svc_pb.js";
-import type { Task, TaskLabels, TaskSchema, TaskStatus } from "./task_pb.js";
+import type { Task, TaskSchema, TaskStatus } from "./task_pb.js";
 import { file_cxz_task } from "./task_pb.js";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
@@ -20,7 +20,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file cxz/task_svc.g.proto.
  */
 export const file_cxz_task_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChRjeHovdGFza19zdmMuZy5wcm90bxIDY3h6IqEDCg5UYXNrQWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIYCgljbGllbnRfaWQYBCABKAlCBaoBAggCEhMKBG5hbWUYBSABKAlCBaoBAggCEhMKBGRlc2MYBiABKAlCBaoBAggCEiAKB3Byb2plY3QYCCABKAsyDy5jeHouUHJvamVjdFJlZhImCgZzdGF0dXMYCSABKA4yDy5jeHouVGFza1N0YXR1c0IFqgECCAISFwoIcHJpb3JpdHkYCiABKAVCBaoBAggCEhcKCGFzc2lnbmVlGAsgASgJQgWqAQIIAhIbCgxhc3NpZ25lZV9ydW4YDCABKAlCBaoBAggCEjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASHwoGbGFiZWxzGBAgASgLMg8uY3h6LlRhc2tMYWJlbHMSHQoOc291cmNlX3Nlc3Npb24YESABKAlCBaoBAggCEhkKCnNvdXJjZV9ydW4YEiABKAlCBaoBAggCEhkKCnNvdXJjZV9zZXEYEyABKARCBaoBAggCIkwKDlRhc2tHZXRSZXF1ZXN0EhkKA3JlZhgBIAEoCzIMLmN4ei5UYXNrUmVmEh8KBnNlbGVjdBgCIAEoCzIPLmN4ei5UYXNrU2VsZWN0IlUKB1Rhc2tSZWYSDAoCaWQYASABKAxIABITCgljbGllbnRfaWQYBCABKAlIABIgCgdwcm9qZWN0GGQgASgLMg8uY3h6LlByb2plY3RSZWZCBQoDa2V5IsgCCgpUYXNrU2VsZWN0EgsKA2FsbBgBIAEoCBIRCgljbGllbnRfaWQYBCABKAgSDAoEbmFtZRgFIAEoCBIMCgRkZXNjGAYgASgIEiMKB3Byb2plY3QYCCABKAsyEi5jeHouUHJvamVjdFNlbGVjdBIOCgZzdGF0dXMYCSABKAgSEAoIcHJpb3JpdHkYCiABKAgSEAoIYXNzaWduZWUYCyABKAgSFAoMYXNzaWduZWVfcnVuGAwgASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgSDgoGbGFiZWxzGBAgASgIEhYKDnNvdXJjZV9zZXNzaW9uGBEgASgIEhIKCnNvdXJjZV9ydW4YEiABKAgSEgoKc291cmNlX3NlcRgTIAEoCCLHAgoQVGFza1BhdGNoUmVxdWVzdBIZCgNyZWYYASABKAsyDC5jeHouVGFza1JlZhIMCgRuYW1lGAogASgJEgwKBGRlc2MYDCABKAkSHwoGc3RhdHVzGBIgASgOMg8uY3h6LlRhc2tTdGF0dXMSEAoIcHJpb3JpdHkYFCABKAUSEAoIYXNzaWduZWUYFiABKAkSFAoMYXNzaWduZWVfcnVuGBggASgJEjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIEh8KBmxhYmVscxggIAEoCzIPLmN4ei5UYXNrTGFiZWxzEhMKC2xhYmVsc19udWxsGCEgASgIEh0KBWFjdG9yGGQgASgLMg4uY3h6LlRhc2tBY3RvciI9CglUYXNrQWN0b3ISIAoHc2Vzc2lvbhgBIAEoCzIPLmN4ei5TZXNzaW9uUmVmEg4KBnJ1bl9pZBgCIAEoCSJKChBUYXNrQXBwbHlSZXF1ZXN0EhkKA3JlZhgBIAEoCzIMLmN4ei5UYXNrUmVmEhsKBXBhdGNoGAIgASgLMgwucGF0Y2guUGF0Y2giIwoRVGFza0VyYXNlUmVzcG9uc2USDgoGZXJhc2VkGAEgASgIIoABCg9UYXNrTGlzdFJlcXVlc3QSIAoHZmlsdGVycxgBIAMoCzIPLmN4ei5UYXNrRmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAhIgCgdwcm9qZWN0GGQgASgLMg8uY3h6LlByb2plY3RSZWYiQQoQVGFza0xpc3RSZXNwb25zZRIYCgVpdGVtcxgBIAMoCzIJLmN4ei5UYXNrEhMKBG5leHQYAiABKAlCBaoBAggCIlsKClRhc2tGaWx0ZXISGQoDcmVmGAEgASgLMgwuY3h6LlRhc2tSZWYSIAoHcHJvamVjdBgCIAEoCzIPLmN4ei5Qcm9qZWN0UmVmEhAKCGFzc2lnbmVlGAMgASgJInQKEFRhc2tXYXRjaFJlcXVlc3QSIAoHZmlsdGVycxgBIAMoCzIPLmN4ei5UYXNrRmlsdGVyEhwKDXNraXBfc25hcHNob3QYAiABKAhCBaoBAggCEiAKB3Byb2plY3QYZCABKAsyDy5jeHouUHJvamVjdFJlZiI2ChFUYXNrV2F0Y2hSZXNwb25zZRIhCgVpdGVtcxgBIAMoCzISLmN4ei5UYXNrV2F0Y2hJdGVtIkwKDVRhc2tXYXRjaEl0ZW0SCgoCaWQYASABKAwSGAoFdmFsdWUYAiABKAsyCS5jeHouVGFzaxIVCgZhY3Rpb24YAyABKAlCBaoBAggCIn4KEFRhc2tDbGFpbVJlcXVlc3QSGQoDcmVmGAEgASgLMgwuY3h6LlRhc2tSZWYSHQoFYWN0b3IYAiABKAsyDi5jeHouVGFza0FjdG9yEjAKDGRhdGVfdXBkYXRlZBgDIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAypwMKC1Rhc2tTZXJ2aWNlEiUKA0FkZBITLmN4ei5UYXNrQWRkUmVxdWVzdBoJLmN4ei5UYXNrEiUKA0dldBITLmN4ei5UYXNrR2V0UmVxdWVzdBoJLmN4ei5UYXNrEikKBVBhdGNoEhUuY3h6LlRhc2tQYXRjaFJlcXVlc3QaCS5jeHouVGFzaxIpCgVBcHBseRIVLmN4ei5UYXNrQXBwbHlSZXF1ZXN0GgkuY3h6LlRhc2sSLQoFRXJhc2USDC5jeHouVGFza1JlZhoWLmN4ei5UYXNrRXJhc2VSZXNwb25zZRIzCgRMaXN0EhQuY3h6LlRhc2tMaXN0UmVxdWVzdBoVLmN4ei5UYXNrTGlzdFJlc3BvbnNlEjgKBVdhdGNoEhUuY3h6LlRhc2tXYXRjaFJlcXVlc3QaFi5jeHouVGFza1dhdGNoUmVzcG9uc2UwARIpCgVDbGFpbRIVLmN4ei5UYXNrQ2xhaW1SZXF1ZXN0GgkuY3h6LlRhc2sSKwoHUmVsZWFzZRIVLmN4ei5UYXNrQ2xhaW1SZXF1ZXN0GgkuY3h6LlRhc2tCIlogZ2l0aHViLmNvbS9sZXNvbW51cy9jeHovcmVzb3VyY2ViCGVkaXRpb25zcOgH", [file_cxz_project_svc_g, file_cxz_session_svc_g, file_cxz_task, file_google_protobuf_timestamp, file_patch_patch]);
+  fileDesc("ChRjeHovdGFza19zdmMuZy5wcm90bxIDY3h6IvYDCg5UYXNrQWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIUCgVhbGlhcxgEIAEoCUIFqgECCAISEwoEbmFtZRgFIAEoCUIFqgECCAISEwoEZGVzYxgGIAEoCUIFqgECCAISLwoGbGFiZWxzGAcgAygLMh8uY3h6LlRhc2tBZGRSZXF1ZXN0LkxhYmVsc0VudHJ5EjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASIAoHcHJvamVjdBgIIAEoCzIPLmN4ei5Qcm9qZWN0UmVmEiYKBnN0YXR1cxgJIAEoDjIPLmN4ei5UYXNrU3RhdHVzQgWqAQIIAhIXCghwcmlvcml0eRgKIAEoBUIFqgECCAISFwoIYXNzaWduZWUYCyABKAlCBaoBAggCEhsKDGFzc2lnbmVlX3J1bhgMIAEoCUIFqgECCAISGAoJY2xpZW50X2lkGBAgASgJQgWqAQIIAhIdCg5zb3VyY2Vfc2Vzc2lvbhgRIAEoCUIFqgECCAISGQoKc291cmNlX3J1bhgSIAEoCUIFqgECCAISGQoKc291cmNlX3NlcRgTIAEoBEIFqgECCAIaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASJMCg5UYXNrR2V0UmVxdWVzdBIZCgNyZWYYASABKAsyDC5jeHouVGFza1JlZhIfCgZzZWxlY3QYAiABKAsyDy5jeHouVGFza1NlbGVjdCJnCgdUYXNrUmVmEgwKAmlkGAEgASgMSAASDwoFYWxpYXMYBCABKAlIABITCgljbGllbnRfaWQYECABKAlIABIhCgdwcm9qZWN0GOgHIAEoCzIPLmN4ei5Qcm9qZWN0UmVmQgUKA2tleSLXAgoKVGFza1NlbGVjdBILCgNhbGwYASABKAgSDQoFYWxpYXMYBCABKAgSDAoEbmFtZRgFIAEoCBIMCgRkZXNjGAYgASgIEg4KBmxhYmVscxgHIAEoCBIUCgxkYXRlX3VwZGF0ZWQYDSABKAgSEwoLZGF0ZV9lcmFzZWQYDiABKAgSFAoMZGF0ZV9jcmVhdGVkGA8gASgIEiMKB3Byb2plY3QYCCABKAsyEi5jeHouUHJvamVjdFNlbGVjdBIOCgZzdGF0dXMYCSABKAgSEAoIcHJpb3JpdHkYCiABKAgSEAoIYXNzaWduZWUYCyABKAgSFAoMYXNzaWduZWVfcnVuGAwgASgIEhEKCWNsaWVudF9pZBgQIAEoCBIWCg5zb3VyY2Vfc2Vzc2lvbhgRIAEoCBISCgpzb3VyY2VfcnVuGBIgASgIEhIKCnNvdXJjZV9zZXEYEyABKAgimgMKEFRhc2tQYXRjaFJlcXVlc3QSGQoDcmVmGAEgASgLMgwuY3h6LlRhc2tSZWYSDQoFYWxpYXMYCCABKAkSDAoEbmFtZRgKIAEoCRIMCgRkZXNjGAwgASgJEjEKBmxhYmVscxgOIAMoCzIhLmN4ei5UYXNrUGF0Y2hSZXF1ZXN0LkxhYmVsc0VudHJ5EjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIEh8KBnN0YXR1cxgSIAEoDjIPLmN4ei5UYXNrU3RhdHVzEhAKCHByaW9yaXR5GBQgASgFEhAKCGFzc2lnbmVlGBYgASgJEhQKDGFzc2lnbmVlX3J1bhgYIAEoCRIeCgVhY3RvchjoByABKAsyDi5jeHouVGFza0FjdG9yEhUKDGNsZWFyX2xhYmVscxjpByABKAgaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASI9CglUYXNrQWN0b3ISIAoHc2Vzc2lvbhgBIAEoCzIPLmN4ei5TZXNzaW9uUmVmEg4KBnJ1bl9pZBgCIAEoCSJKChBUYXNrQXBwbHlSZXF1ZXN0EhkKA3JlZhgBIAEoCzIMLmN4ei5UYXNrUmVmEhsKBXBhdGNoGAIgASgLMgwucGF0Y2guUGF0Y2giIwoRVGFza0VyYXNlUmVzcG9uc2USDgoGZXJhc2VkGAEgASgIIoEBCg9UYXNrTGlzdFJlcXVlc3QSIAoHZmlsdGVycxgBIAMoCzIPLmN4ei5UYXNrRmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAhIhCgdwcm9qZWN0GOgHIAEoCzIPLmN4ei5Qcm9qZWN0UmVmIkEKEFRhc2tMaXN0UmVzcG9uc2USGAoFaXRlbXMYASADKAsyCS5jeHouVGFzaxITCgRuZXh0GAIgASgJQgWqAQIIAiJbCgpUYXNrRmlsdGVyEhkKA3JlZhgBIAEoCzIMLmN4ei5UYXNrUmVmEiAKB3Byb2plY3QYAiABKAsyDy5jeHouUHJvamVjdFJlZhIQCghhc3NpZ25lZRgDIAEoCSJ1ChBUYXNrV2F0Y2hSZXF1ZXN0EiAKB2ZpbHRlcnMYASADKAsyDy5jeHouVGFza0ZpbHRlchIcCg1za2lwX3NuYXBzaG90GAIgASgIQgWqAQIIAhIhCgdwcm9qZWN0GOgHIAEoCzIPLmN4ei5Qcm9qZWN0UmVmIjYKEVRhc2tXYXRjaFJlc3BvbnNlEiEKBWl0ZW1zGAEgAygLMhIuY3h6LlRhc2tXYXRjaEl0ZW0iTAoNVGFza1dhdGNoSXRlbRIKCgJpZBgBIAEoDBIYCgV2YWx1ZRgCIAEoCzIJLmN4ei5UYXNrEhUKBmFjdGlvbhgDIAEoCUIFqgECCAIifgoQVGFza0NsYWltUmVxdWVzdBIZCgNyZWYYASABKAsyDC5jeHouVGFza1JlZhIdCgVhY3RvchgCIAEoCzIOLmN4ei5UYXNrQWN0b3ISMAoMZGF0ZV91cGRhdGVkGAMgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcDKnAwoLVGFza1NlcnZpY2USJQoDQWRkEhMuY3h6LlRhc2tBZGRSZXF1ZXN0GgkuY3h6LlRhc2sSJQoDR2V0EhMuY3h6LlRhc2tHZXRSZXF1ZXN0GgkuY3h6LlRhc2sSKQoFUGF0Y2gSFS5jeHouVGFza1BhdGNoUmVxdWVzdBoJLmN4ei5UYXNrEikKBUFwcGx5EhUuY3h6LlRhc2tBcHBseVJlcXVlc3QaCS5jeHouVGFzaxItCgVFcmFzZRIMLmN4ei5UYXNrUmVmGhYuY3h6LlRhc2tFcmFzZVJlc3BvbnNlEjMKBExpc3QSFC5jeHouVGFza0xpc3RSZXF1ZXN0GhUuY3h6LlRhc2tMaXN0UmVzcG9uc2USOAoFV2F0Y2gSFS5jeHouVGFza1dhdGNoUmVxdWVzdBoWLmN4ei5UYXNrV2F0Y2hSZXNwb25zZTABEikKBUNsYWltEhUuY3h6LlRhc2tDbGFpbVJlcXVlc3QaCS5jeHouVGFzaxIrCgdSZWxlYXNlEhUuY3h6LlRhc2tDbGFpbVJlcXVlc3QaCS5jeHouVGFza0IiWiBnaXRodWIuY29tL2xlc29tbnVzL2N4ei9yZXNvdXJjZWIIZWRpdGlvbnNw6Ac", [file_cxz_project_svc_g, file_cxz_session_svc_g, file_cxz_task, file_google_protobuf_timestamp, file_patch_patch]);
 
 /**
  * @generated from message cxz.TaskAddRequest
@@ -32,9 +32,9 @@ export type TaskAddRequest = Message<"cxz.TaskAddRequest"> & {
   id: Uint8Array;
 
   /**
-   * @generated from field: string client_id = 4 [features.field_presence = IMPLICIT];
+   * @generated from field: string alias = 4 [features.field_presence = IMPLICIT];
    */
-  clientId: string;
+  alias: string;
 
   /**
    * @generated from field: string name = 5 [features.field_presence = IMPLICIT];
@@ -45,6 +45,16 @@ export type TaskAddRequest = Message<"cxz.TaskAddRequest"> & {
    * @generated from field: string desc = 6 [features.field_presence = IMPLICIT];
    */
   desc: string;
+
+  /**
+   * @generated from field: map<string, string> labels = 7;
+   */
+  labels: { [key: string]: string };
+
+  /**
+   * @generated from field: google.protobuf.Timestamp date_created = 15;
+   */
+  dateCreated?: Timestamp | undefined;
 
   /**
    * @generated from field: cxz.ProjectRef project = 8;
@@ -72,14 +82,9 @@ export type TaskAddRequest = Message<"cxz.TaskAddRequest"> & {
   assigneeRun: string;
 
   /**
-   * @generated from field: google.protobuf.Timestamp date_created = 15;
+   * @generated from field: string client_id = 16 [features.field_presence = IMPLICIT];
    */
-  dateCreated?: Timestamp | undefined;
-
-  /**
-   * @generated from field: cxz.TaskLabels labels = 16;
-   */
-  labels?: TaskLabels | undefined;
+  clientId: string;
 
   /**
    * @generated from field: string source_session = 17 [features.field_presence = IMPLICIT];
@@ -141,14 +146,20 @@ export type TaskRef = Message<"cxz.TaskRef"> & {
     case: "id";
   } | {
     /**
-     * @generated from field: string client_id = 4;
+     * @generated from field: string alias = 4;
+     */
+    value: string;
+    case: "alias";
+  } | {
+    /**
+     * @generated from field: string client_id = 16;
      */
     value: string;
     case: "clientId";
   } | { case: undefined; value?: undefined };
 
   /**
-   * @generated from field: cxz.ProjectRef project = 100;
+   * @generated from field: cxz.ProjectRef project = 1000;
    */
   project?: ProjectRef | undefined;
 };
@@ -170,9 +181,9 @@ export type TaskSelect = Message<"cxz.TaskSelect"> & {
   all: boolean;
 
   /**
-   * @generated from field: bool client_id = 4;
+   * @generated from field: bool alias = 4;
    */
-  clientId: boolean;
+  alias: boolean;
 
   /**
    * @generated from field: bool name = 5;
@@ -183,6 +194,26 @@ export type TaskSelect = Message<"cxz.TaskSelect"> & {
    * @generated from field: bool desc = 6;
    */
   desc: boolean;
+
+  /**
+   * @generated from field: bool labels = 7;
+   */
+  labels: boolean;
+
+  /**
+   * @generated from field: bool date_updated = 13;
+   */
+  dateUpdated: boolean;
+
+  /**
+   * @generated from field: bool date_erased = 14;
+   */
+  dateErased: boolean;
+
+  /**
+   * @generated from field: bool date_created = 15;
+   */
+  dateCreated: boolean;
 
   /**
    * @generated from field: cxz.ProjectSelect project = 8;
@@ -210,24 +241,9 @@ export type TaskSelect = Message<"cxz.TaskSelect"> & {
   assigneeRun: boolean;
 
   /**
-   * @generated from field: bool date_updated = 13;
+   * @generated from field: bool client_id = 16;
    */
-  dateUpdated: boolean;
-
-  /**
-   * @generated from field: bool date_erased = 14;
-   */
-  dateErased: boolean;
-
-  /**
-   * @generated from field: bool date_created = 15;
-   */
-  dateCreated: boolean;
-
-  /**
-   * @generated from field: bool labels = 16;
-   */
-  labels: boolean;
+  clientId: boolean;
 
   /**
    * @generated from field: bool source_session = 17;
@@ -262,6 +278,11 @@ export type TaskPatchRequest = Message<"cxz.TaskPatchRequest"> & {
   ref?: TaskRef | undefined;
 
   /**
+   * @generated from field: string alias = 8;
+   */
+  alias: string;
+
+  /**
    * @generated from field: string name = 10;
    */
   name: string;
@@ -272,24 +293,9 @@ export type TaskPatchRequest = Message<"cxz.TaskPatchRequest"> & {
   desc: string;
 
   /**
-   * @generated from field: cxz.TaskStatus status = 18;
+   * @generated from field: map<string, string> labels = 14;
    */
-  status: TaskStatus;
-
-  /**
-   * @generated from field: int32 priority = 20;
-   */
-  priority: number;
-
-  /**
-   * @generated from field: string assignee = 22;
-   */
-  assignee: string;
-
-  /**
-   * @generated from field: string assignee_run = 24;
-   */
-  assigneeRun: string;
+  labels: { [key: string]: string };
 
   /**
    * The version this update requires the stored date_updated to be.
@@ -316,24 +322,36 @@ export type TaskPatchRequest = Message<"cxz.TaskPatchRequest"> & {
   dateUpdatedForce: boolean;
 
   /**
-   * @generated from field: cxz.TaskLabels labels = 32;
+   * @generated from field: cxz.TaskStatus status = 18;
    */
-  labels?: TaskLabels | undefined;
+  status: TaskStatus;
 
   /**
-   * Clear labels instead of writing it.
-   * It takes a field of its own because an unset value already means
-   * "leave it alone", so no value could have meant NULL. It wins
-   * outright: setting both this and labels clears.
-   *
-   * @generated from field: bool labels_null = 33;
+   * @generated from field: int32 priority = 20;
    */
-  labelsNull: boolean;
+  priority: number;
 
   /**
-   * @generated from field: cxz.TaskActor actor = 100;
+   * @generated from field: string assignee = 22;
+   */
+  assignee: string;
+
+  /**
+   * @generated from field: string assignee_run = 24;
+   */
+  assigneeRun: string;
+
+  /**
+   * @generated from field: cxz.TaskActor actor = 1000;
    */
   actor?: TaskActor | undefined;
+
+  /**
+   * Protobuf maps have no presence: an empty map otherwise means no edit.
+   *
+   * @generated from field: bool clear_labels = 1001;
+   */
+  clearLabels: boolean;
 };
 
 /**
@@ -442,7 +460,7 @@ export type TaskListRequest = Message<"cxz.TaskListRequest"> & {
   after: string;
 
   /**
-   * @generated from field: cxz.ProjectRef project = 100;
+   * @generated from field: cxz.ProjectRef project = 1000;
    */
   project?: ProjectRef | undefined;
 };
@@ -540,7 +558,7 @@ export type TaskWatchRequest = Message<"cxz.TaskWatchRequest"> & {
   skipSnapshot: boolean;
 
   /**
-   * @generated from field: cxz.ProjectRef project = 100;
+   * @generated from field: cxz.ProjectRef project = 1000;
    */
   project?: ProjectRef | undefined;
 };

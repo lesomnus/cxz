@@ -25,16 +25,17 @@ const (
 type TaskAddRequest struct {
 	state                    protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Id            []byte                 `protobuf:"bytes,1,opt,name=id"`
-	xxx_hidden_ClientId      string                 `protobuf:"bytes,4,opt,name=client_id,json=clientId"`
+	xxx_hidden_Alias         string                 `protobuf:"bytes,4,opt,name=alias"`
 	xxx_hidden_Name          string                 `protobuf:"bytes,5,opt,name=name"`
 	xxx_hidden_Desc          string                 `protobuf:"bytes,6,opt,name=desc"`
+	xxx_hidden_Labels        map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	xxx_hidden_DateCreated   *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
 	xxx_hidden_Project       *ProjectRef            `protobuf:"bytes,8,opt,name=project"`
 	xxx_hidden_Status        TaskStatus             `protobuf:"varint,9,opt,name=status,enum=cxz.TaskStatus"`
 	xxx_hidden_Priority      int32                  `protobuf:"varint,10,opt,name=priority"`
 	xxx_hidden_Assignee      string                 `protobuf:"bytes,11,opt,name=assignee"`
 	xxx_hidden_AssigneeRun   string                 `protobuf:"bytes,12,opt,name=assignee_run,json=assigneeRun"`
-	xxx_hidden_DateCreated   *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
-	xxx_hidden_Labels        *TaskLabels            `protobuf:"bytes,16,opt,name=labels"`
+	xxx_hidden_ClientId      string                 `protobuf:"bytes,16,opt,name=client_id,json=clientId"`
 	xxx_hidden_SourceSession string                 `protobuf:"bytes,17,opt,name=source_session,json=sourceSession"`
 	xxx_hidden_SourceRun     string                 `protobuf:"bytes,18,opt,name=source_run,json=sourceRun"`
 	xxx_hidden_SourceSeq     uint64                 `protobuf:"varint,19,opt,name=source_seq,json=sourceSeq"`
@@ -76,9 +77,9 @@ func (x *TaskAddRequest) GetId() []byte {
 	return nil
 }
 
-func (x *TaskAddRequest) GetClientId() string {
+func (x *TaskAddRequest) GetAlias() string {
 	if x != nil {
-		return x.xxx_hidden_ClientId
+		return x.xxx_hidden_Alias
 	}
 	return ""
 }
@@ -95,6 +96,20 @@ func (x *TaskAddRequest) GetDesc() string {
 		return x.xxx_hidden_Desc
 	}
 	return ""
+}
+
+func (x *TaskAddRequest) GetLabels() map[string]string {
+	if x != nil {
+		return x.xxx_hidden_Labels
+	}
+	return nil
+}
+
+func (x *TaskAddRequest) GetDateCreated() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateCreated
+	}
+	return nil
 }
 
 func (x *TaskAddRequest) GetProject() *ProjectRef {
@@ -132,18 +147,11 @@ func (x *TaskAddRequest) GetAssigneeRun() string {
 	return ""
 }
 
-func (x *TaskAddRequest) GetDateCreated() *timestamppb.Timestamp {
+func (x *TaskAddRequest) GetClientId() string {
 	if x != nil {
-		return x.xxx_hidden_DateCreated
+		return x.xxx_hidden_ClientId
 	}
-	return nil
-}
-
-func (x *TaskAddRequest) GetLabels() *TaskLabels {
-	if x != nil {
-		return x.xxx_hidden_Labels
-	}
-	return nil
+	return ""
 }
 
 func (x *TaskAddRequest) GetSourceSession() string {
@@ -172,11 +180,11 @@ func (x *TaskAddRequest) SetId(v []byte) {
 		v = []byte{}
 	}
 	x.xxx_hidden_Id = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 14)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 15)
 }
 
-func (x *TaskAddRequest) SetClientId(v string) {
-	x.xxx_hidden_ClientId = v
+func (x *TaskAddRequest) SetAlias(v string) {
+	x.xxx_hidden_Alias = v
 }
 
 func (x *TaskAddRequest) SetName(v string) {
@@ -185,6 +193,14 @@ func (x *TaskAddRequest) SetName(v string) {
 
 func (x *TaskAddRequest) SetDesc(v string) {
 	x.xxx_hidden_Desc = v
+}
+
+func (x *TaskAddRequest) SetLabels(v map[string]string) {
+	x.xxx_hidden_Labels = v
+}
+
+func (x *TaskAddRequest) SetDateCreated(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateCreated = v
 }
 
 func (x *TaskAddRequest) SetProject(v *ProjectRef) {
@@ -207,12 +223,8 @@ func (x *TaskAddRequest) SetAssigneeRun(v string) {
 	x.xxx_hidden_AssigneeRun = v
 }
 
-func (x *TaskAddRequest) SetDateCreated(v *timestamppb.Timestamp) {
-	x.xxx_hidden_DateCreated = v
-}
-
-func (x *TaskAddRequest) SetLabels(v *TaskLabels) {
-	x.xxx_hidden_Labels = v
+func (x *TaskAddRequest) SetClientId(v string) {
+	x.xxx_hidden_ClientId = v
 }
 
 func (x *TaskAddRequest) SetSourceSession(v string) {
@@ -234,13 +246,6 @@ func (x *TaskAddRequest) HasId() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
 }
 
-func (x *TaskAddRequest) HasProject() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Project != nil
-}
-
 func (x *TaskAddRequest) HasDateCreated() bool {
 	if x == nil {
 		return false
@@ -248,11 +253,11 @@ func (x *TaskAddRequest) HasDateCreated() bool {
 	return x.xxx_hidden_DateCreated != nil
 }
 
-func (x *TaskAddRequest) HasLabels() bool {
+func (x *TaskAddRequest) HasProject() bool {
 	if x == nil {
 		return false
 	}
-	return x.xxx_hidden_Labels != nil
+	return x.xxx_hidden_Project != nil
 }
 
 func (x *TaskAddRequest) ClearId() {
@@ -260,32 +265,29 @@ func (x *TaskAddRequest) ClearId() {
 	x.xxx_hidden_Id = nil
 }
 
-func (x *TaskAddRequest) ClearProject() {
-	x.xxx_hidden_Project = nil
-}
-
 func (x *TaskAddRequest) ClearDateCreated() {
 	x.xxx_hidden_DateCreated = nil
 }
 
-func (x *TaskAddRequest) ClearLabels() {
-	x.xxx_hidden_Labels = nil
+func (x *TaskAddRequest) ClearProject() {
+	x.xxx_hidden_Project = nil
 }
 
 type TaskAddRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Id            []byte
-	ClientId      string
+	Alias         string
 	Name          string
 	Desc          string
+	Labels        map[string]string
+	DateCreated   *timestamppb.Timestamp
 	Project       *ProjectRef
 	Status        TaskStatus
 	Priority      int32
 	Assignee      string
 	AssigneeRun   string
-	DateCreated   *timestamppb.Timestamp
-	Labels        *TaskLabels
+	ClientId      string
 	SourceSession string
 	SourceRun     string
 	SourceSeq     uint64
@@ -296,19 +298,20 @@ func (b0 TaskAddRequest_builder) Build() *TaskAddRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Id != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 14)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 15)
 		x.xxx_hidden_Id = b.Id
 	}
-	x.xxx_hidden_ClientId = b.ClientId
+	x.xxx_hidden_Alias = b.Alias
 	x.xxx_hidden_Name = b.Name
 	x.xxx_hidden_Desc = b.Desc
+	x.xxx_hidden_Labels = b.Labels
+	x.xxx_hidden_DateCreated = b.DateCreated
 	x.xxx_hidden_Project = b.Project
 	x.xxx_hidden_Status = b.Status
 	x.xxx_hidden_Priority = b.Priority
 	x.xxx_hidden_Assignee = b.Assignee
 	x.xxx_hidden_AssigneeRun = b.AssigneeRun
-	x.xxx_hidden_DateCreated = b.DateCreated
-	x.xxx_hidden_Labels = b.Labels
+	x.xxx_hidden_ClientId = b.ClientId
 	x.xxx_hidden_SourceSession = b.SourceSession
 	x.xxx_hidden_SourceRun = b.SourceRun
 	x.xxx_hidden_SourceSeq = b.SourceSeq
@@ -411,7 +414,7 @@ func (b0 TaskGetRequest_builder) Build() *TaskGetRequest {
 type TaskRef struct {
 	state              protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Key     isTaskRef_Key          `protobuf_oneof:"key"`
-	xxx_hidden_Project *ProjectRef            `protobuf:"bytes,100,opt,name=project"`
+	xxx_hidden_Project *ProjectRef            `protobuf:"bytes,1000,opt,name=project"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -450,6 +453,15 @@ func (x *TaskRef) GetId() []byte {
 	return nil
 }
 
+func (x *TaskRef) GetAlias() string {
+	if x != nil {
+		if x, ok := x.xxx_hidden_Key.(*taskRef_Alias); ok {
+			return x.Alias
+		}
+	}
+	return ""
+}
+
 func (x *TaskRef) GetClientId() string {
 	if x != nil {
 		if x, ok := x.xxx_hidden_Key.(*taskRef_ClientId); ok {
@@ -473,6 +485,10 @@ func (x *TaskRef) SetId(v []byte) {
 	x.xxx_hidden_Key = &taskRef_Id{v}
 }
 
+func (x *TaskRef) SetAlias(v string) {
+	x.xxx_hidden_Key = &taskRef_Alias{v}
+}
+
 func (x *TaskRef) SetClientId(v string) {
 	x.xxx_hidden_Key = &taskRef_ClientId{v}
 }
@@ -493,6 +509,14 @@ func (x *TaskRef) HasId() bool {
 		return false
 	}
 	_, ok := x.xxx_hidden_Key.(*taskRef_Id)
+	return ok
+}
+
+func (x *TaskRef) HasAlias() bool {
+	if x == nil {
+		return false
+	}
+	_, ok := x.xxx_hidden_Key.(*taskRef_Alias)
 	return ok
 }
 
@@ -521,6 +545,12 @@ func (x *TaskRef) ClearId() {
 	}
 }
 
+func (x *TaskRef) ClearAlias() {
+	if _, ok := x.xxx_hidden_Key.(*taskRef_Alias); ok {
+		x.xxx_hidden_Key = nil
+	}
+}
+
 func (x *TaskRef) ClearClientId() {
 	if _, ok := x.xxx_hidden_Key.(*taskRef_ClientId); ok {
 		x.xxx_hidden_Key = nil
@@ -533,7 +563,8 @@ func (x *TaskRef) ClearProject() {
 
 const TaskRef_Key_not_set_case case_TaskRef_Key = 0
 const TaskRef_Id_case case_TaskRef_Key = 1
-const TaskRef_ClientId_case case_TaskRef_Key = 4
+const TaskRef_Alias_case case_TaskRef_Key = 4
+const TaskRef_ClientId_case case_TaskRef_Key = 16
 
 func (x *TaskRef) WhichKey() case_TaskRef_Key {
 	if x == nil {
@@ -542,6 +573,8 @@ func (x *TaskRef) WhichKey() case_TaskRef_Key {
 	switch x.xxx_hidden_Key.(type) {
 	case *taskRef_Id:
 		return TaskRef_Id_case
+	case *taskRef_Alias:
+		return TaskRef_Alias_case
 	case *taskRef_ClientId:
 		return TaskRef_ClientId_case
 	default:
@@ -554,6 +587,7 @@ type TaskRef_builder struct {
 
 	// Fields of oneof xxx_hidden_Key:
 	Id       []byte
+	Alias    *string
 	ClientId *string
 	// -- end of xxx_hidden_Key
 	Project *ProjectRef
@@ -565,6 +599,9 @@ func (b0 TaskRef_builder) Build() *TaskRef {
 	_, _ = b, x
 	if b.Id != nil {
 		x.xxx_hidden_Key = &taskRef_Id{b.Id}
+	}
+	if b.Alias != nil {
+		x.xxx_hidden_Key = &taskRef_Alias{*b.Alias}
 	}
 	if b.ClientId != nil {
 		x.xxx_hidden_Key = &taskRef_ClientId{*b.ClientId}
@@ -591,29 +628,36 @@ type taskRef_Id struct {
 	Id []byte `protobuf:"bytes,1,opt,name=id,oneof"`
 }
 
+type taskRef_Alias struct {
+	Alias string `protobuf:"bytes,4,opt,name=alias,oneof"`
+}
+
 type taskRef_ClientId struct {
-	ClientId string `protobuf:"bytes,4,opt,name=client_id,json=clientId,oneof"`
+	ClientId string `protobuf:"bytes,16,opt,name=client_id,json=clientId,oneof"`
 }
 
 func (*taskRef_Id) isTaskRef_Key() {}
+
+func (*taskRef_Alias) isTaskRef_Key() {}
 
 func (*taskRef_ClientId) isTaskRef_Key() {}
 
 type TaskSelect struct {
 	state                    protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_All           bool                   `protobuf:"varint,1,opt,name=all"`
-	xxx_hidden_ClientId      bool                   `protobuf:"varint,4,opt,name=client_id,json=clientId"`
+	xxx_hidden_Alias         bool                   `protobuf:"varint,4,opt,name=alias"`
 	xxx_hidden_Name          bool                   `protobuf:"varint,5,opt,name=name"`
 	xxx_hidden_Desc          bool                   `protobuf:"varint,6,opt,name=desc"`
+	xxx_hidden_Labels        bool                   `protobuf:"varint,7,opt,name=labels"`
+	xxx_hidden_DateUpdated   bool                   `protobuf:"varint,13,opt,name=date_updated,json=dateUpdated"`
+	xxx_hidden_DateErased    bool                   `protobuf:"varint,14,opt,name=date_erased,json=dateErased"`
+	xxx_hidden_DateCreated   bool                   `protobuf:"varint,15,opt,name=date_created,json=dateCreated"`
 	xxx_hidden_Project       *ProjectSelect         `protobuf:"bytes,8,opt,name=project"`
 	xxx_hidden_Status        bool                   `protobuf:"varint,9,opt,name=status"`
 	xxx_hidden_Priority      bool                   `protobuf:"varint,10,opt,name=priority"`
 	xxx_hidden_Assignee      bool                   `protobuf:"varint,11,opt,name=assignee"`
 	xxx_hidden_AssigneeRun   bool                   `protobuf:"varint,12,opt,name=assignee_run,json=assigneeRun"`
-	xxx_hidden_DateUpdated   bool                   `protobuf:"varint,13,opt,name=date_updated,json=dateUpdated"`
-	xxx_hidden_DateErased    bool                   `protobuf:"varint,14,opt,name=date_erased,json=dateErased"`
-	xxx_hidden_DateCreated   bool                   `protobuf:"varint,15,opt,name=date_created,json=dateCreated"`
-	xxx_hidden_Labels        bool                   `protobuf:"varint,16,opt,name=labels"`
+	xxx_hidden_ClientId      bool                   `protobuf:"varint,16,opt,name=client_id,json=clientId"`
 	xxx_hidden_SourceSession bool                   `protobuf:"varint,17,opt,name=source_session,json=sourceSession"`
 	xxx_hidden_SourceRun     bool                   `protobuf:"varint,18,opt,name=source_run,json=sourceRun"`
 	xxx_hidden_SourceSeq     bool                   `protobuf:"varint,19,opt,name=source_seq,json=sourceSeq"`
@@ -655,9 +699,9 @@ func (x *TaskSelect) GetAll() bool {
 	return false
 }
 
-func (x *TaskSelect) GetClientId() bool {
+func (x *TaskSelect) GetAlias() bool {
 	if x != nil {
-		return x.xxx_hidden_ClientId
+		return x.xxx_hidden_Alias
 	}
 	return false
 }
@@ -672,6 +716,34 @@ func (x *TaskSelect) GetName() bool {
 func (x *TaskSelect) GetDesc() bool {
 	if x != nil {
 		return x.xxx_hidden_Desc
+	}
+	return false
+}
+
+func (x *TaskSelect) GetLabels() bool {
+	if x != nil {
+		return x.xxx_hidden_Labels
+	}
+	return false
+}
+
+func (x *TaskSelect) GetDateUpdated() bool {
+	if x != nil {
+		return x.xxx_hidden_DateUpdated
+	}
+	return false
+}
+
+func (x *TaskSelect) GetDateErased() bool {
+	if x != nil {
+		return x.xxx_hidden_DateErased
+	}
+	return false
+}
+
+func (x *TaskSelect) GetDateCreated() bool {
+	if x != nil {
+		return x.xxx_hidden_DateCreated
 	}
 	return false
 }
@@ -711,30 +783,9 @@ func (x *TaskSelect) GetAssigneeRun() bool {
 	return false
 }
 
-func (x *TaskSelect) GetDateUpdated() bool {
+func (x *TaskSelect) GetClientId() bool {
 	if x != nil {
-		return x.xxx_hidden_DateUpdated
-	}
-	return false
-}
-
-func (x *TaskSelect) GetDateErased() bool {
-	if x != nil {
-		return x.xxx_hidden_DateErased
-	}
-	return false
-}
-
-func (x *TaskSelect) GetDateCreated() bool {
-	if x != nil {
-		return x.xxx_hidden_DateCreated
-	}
-	return false
-}
-
-func (x *TaskSelect) GetLabels() bool {
-	if x != nil {
-		return x.xxx_hidden_Labels
+		return x.xxx_hidden_ClientId
 	}
 	return false
 }
@@ -762,22 +813,42 @@ func (x *TaskSelect) GetSourceSeq() bool {
 
 func (x *TaskSelect) SetAll(v bool) {
 	x.xxx_hidden_All = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 16)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 17)
 }
 
-func (x *TaskSelect) SetClientId(v bool) {
-	x.xxx_hidden_ClientId = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 16)
+func (x *TaskSelect) SetAlias(v bool) {
+	x.xxx_hidden_Alias = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 17)
 }
 
 func (x *TaskSelect) SetName(v bool) {
 	x.xxx_hidden_Name = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 16)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 17)
 }
 
 func (x *TaskSelect) SetDesc(v bool) {
 	x.xxx_hidden_Desc = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 16)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 17)
+}
+
+func (x *TaskSelect) SetLabels(v bool) {
+	x.xxx_hidden_Labels = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 17)
+}
+
+func (x *TaskSelect) SetDateUpdated(v bool) {
+	x.xxx_hidden_DateUpdated = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 17)
+}
+
+func (x *TaskSelect) SetDateErased(v bool) {
+	x.xxx_hidden_DateErased = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 17)
+}
+
+func (x *TaskSelect) SetDateCreated(v bool) {
+	x.xxx_hidden_DateCreated = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 17)
 }
 
 func (x *TaskSelect) SetProject(v *ProjectSelect) {
@@ -786,57 +857,42 @@ func (x *TaskSelect) SetProject(v *ProjectSelect) {
 
 func (x *TaskSelect) SetStatus(v bool) {
 	x.xxx_hidden_Status = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 16)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 17)
 }
 
 func (x *TaskSelect) SetPriority(v bool) {
 	x.xxx_hidden_Priority = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 16)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 17)
 }
 
 func (x *TaskSelect) SetAssignee(v bool) {
 	x.xxx_hidden_Assignee = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 16)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 17)
 }
 
 func (x *TaskSelect) SetAssigneeRun(v bool) {
 	x.xxx_hidden_AssigneeRun = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 16)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 17)
 }
 
-func (x *TaskSelect) SetDateUpdated(v bool) {
-	x.xxx_hidden_DateUpdated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 16)
-}
-
-func (x *TaskSelect) SetDateErased(v bool) {
-	x.xxx_hidden_DateErased = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 16)
-}
-
-func (x *TaskSelect) SetDateCreated(v bool) {
-	x.xxx_hidden_DateCreated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 16)
-}
-
-func (x *TaskSelect) SetLabels(v bool) {
-	x.xxx_hidden_Labels = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 16)
+func (x *TaskSelect) SetClientId(v bool) {
+	x.xxx_hidden_ClientId = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 13, 17)
 }
 
 func (x *TaskSelect) SetSourceSession(v bool) {
 	x.xxx_hidden_SourceSession = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 13, 16)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 14, 17)
 }
 
 func (x *TaskSelect) SetSourceRun(v bool) {
 	x.xxx_hidden_SourceRun = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 14, 16)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 15, 17)
 }
 
 func (x *TaskSelect) SetSourceSeq(v bool) {
 	x.xxx_hidden_SourceSeq = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 15, 16)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 16, 17)
 }
 
 func (x *TaskSelect) HasAll() bool {
@@ -846,7 +902,7 @@ func (x *TaskSelect) HasAll() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
 }
 
-func (x *TaskSelect) HasClientId() bool {
+func (x *TaskSelect) HasAlias() bool {
 	if x == nil {
 		return false
 	}
@@ -867,6 +923,34 @@ func (x *TaskSelect) HasDesc() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
 }
 
+func (x *TaskSelect) HasLabels() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
+}
+
+func (x *TaskSelect) HasDateUpdated() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
+}
+
+func (x *TaskSelect) HasDateErased() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
+}
+
+func (x *TaskSelect) HasDateCreated() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 7)
+}
+
 func (x *TaskSelect) HasProject() bool {
 	if x == nil {
 		return false
@@ -878,77 +962,56 @@ func (x *TaskSelect) HasStatus() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 9)
 }
 
 func (x *TaskSelect) HasPriority() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 10)
 }
 
 func (x *TaskSelect) HasAssignee() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 7)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 11)
 }
 
 func (x *TaskSelect) HasAssigneeRun() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 8)
-}
-
-func (x *TaskSelect) HasDateUpdated() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 9)
-}
-
-func (x *TaskSelect) HasDateErased() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 10)
-}
-
-func (x *TaskSelect) HasDateCreated() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 11)
-}
-
-func (x *TaskSelect) HasLabels() bool {
-	if x == nil {
-		return false
-	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 12)
 }
 
-func (x *TaskSelect) HasSourceSession() bool {
+func (x *TaskSelect) HasClientId() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 13)
 }
 
-func (x *TaskSelect) HasSourceRun() bool {
+func (x *TaskSelect) HasSourceSession() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 14)
 }
 
-func (x *TaskSelect) HasSourceSeq() bool {
+func (x *TaskSelect) HasSourceRun() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 15)
+}
+
+func (x *TaskSelect) HasSourceSeq() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 16)
 }
 
 func (x *TaskSelect) ClearAll() {
@@ -956,9 +1019,9 @@ func (x *TaskSelect) ClearAll() {
 	x.xxx_hidden_All = false
 }
 
-func (x *TaskSelect) ClearClientId() {
+func (x *TaskSelect) ClearAlias() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
-	x.xxx_hidden_ClientId = false
+	x.xxx_hidden_Alias = false
 }
 
 func (x *TaskSelect) ClearName() {
@@ -971,62 +1034,67 @@ func (x *TaskSelect) ClearDesc() {
 	x.xxx_hidden_Desc = false
 }
 
+func (x *TaskSelect) ClearLabels() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
+	x.xxx_hidden_Labels = false
+}
+
+func (x *TaskSelect) ClearDateUpdated() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
+	x.xxx_hidden_DateUpdated = false
+}
+
+func (x *TaskSelect) ClearDateErased() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
+	x.xxx_hidden_DateErased = false
+}
+
+func (x *TaskSelect) ClearDateCreated() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
+	x.xxx_hidden_DateCreated = false
+}
+
 func (x *TaskSelect) ClearProject() {
 	x.xxx_hidden_Project = nil
 }
 
 func (x *TaskSelect) ClearStatus() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 9)
 	x.xxx_hidden_Status = false
 }
 
 func (x *TaskSelect) ClearPriority() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 10)
 	x.xxx_hidden_Priority = false
 }
 
 func (x *TaskSelect) ClearAssignee() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 11)
 	x.xxx_hidden_Assignee = false
 }
 
 func (x *TaskSelect) ClearAssigneeRun() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 8)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 12)
 	x.xxx_hidden_AssigneeRun = false
 }
 
-func (x *TaskSelect) ClearDateUpdated() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 9)
-	x.xxx_hidden_DateUpdated = false
-}
-
-func (x *TaskSelect) ClearDateErased() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 10)
-	x.xxx_hidden_DateErased = false
-}
-
-func (x *TaskSelect) ClearDateCreated() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 11)
-	x.xxx_hidden_DateCreated = false
-}
-
-func (x *TaskSelect) ClearLabels() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 12)
-	x.xxx_hidden_Labels = false
+func (x *TaskSelect) ClearClientId() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 13)
+	x.xxx_hidden_ClientId = false
 }
 
 func (x *TaskSelect) ClearSourceSession() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 13)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 14)
 	x.xxx_hidden_SourceSession = false
 }
 
 func (x *TaskSelect) ClearSourceRun() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 14)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 15)
 	x.xxx_hidden_SourceRun = false
 }
 
 func (x *TaskSelect) ClearSourceSeq() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 15)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 16)
 	x.xxx_hidden_SourceSeq = false
 }
 
@@ -1034,18 +1102,19 @@ type TaskSelect_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	All           *bool
-	ClientId      *bool
+	Alias         *bool
 	Name          *bool
 	Desc          *bool
+	Labels        *bool
+	DateUpdated   *bool
+	DateErased    *bool
+	DateCreated   *bool
 	Project       *ProjectSelect
 	Status        *bool
 	Priority      *bool
 	Assignee      *bool
 	AssigneeRun   *bool
-	DateUpdated   *bool
-	DateErased    *bool
-	DateCreated   *bool
-	Labels        *bool
+	ClientId      *bool
 	SourceSession *bool
 	SourceRun     *bool
 	SourceSeq     *bool
@@ -1056,64 +1125,68 @@ func (b0 TaskSelect_builder) Build() *TaskSelect {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.All != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 16)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 17)
 		x.xxx_hidden_All = *b.All
 	}
-	if b.ClientId != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 16)
-		x.xxx_hidden_ClientId = *b.ClientId
+	if b.Alias != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 17)
+		x.xxx_hidden_Alias = *b.Alias
 	}
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 16)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 17)
 		x.xxx_hidden_Name = *b.Name
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 16)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 17)
 		x.xxx_hidden_Desc = *b.Desc
 	}
-	x.xxx_hidden_Project = b.Project
-	if b.Status != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 16)
-		x.xxx_hidden_Status = *b.Status
-	}
-	if b.Priority != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 16)
-		x.xxx_hidden_Priority = *b.Priority
-	}
-	if b.Assignee != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 16)
-		x.xxx_hidden_Assignee = *b.Assignee
-	}
-	if b.AssigneeRun != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 16)
-		x.xxx_hidden_AssigneeRun = *b.AssigneeRun
+	if b.Labels != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 17)
+		x.xxx_hidden_Labels = *b.Labels
 	}
 	if b.DateUpdated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 16)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 17)
 		x.xxx_hidden_DateUpdated = *b.DateUpdated
 	}
 	if b.DateErased != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 16)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 17)
 		x.xxx_hidden_DateErased = *b.DateErased
 	}
 	if b.DateCreated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 16)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 17)
 		x.xxx_hidden_DateCreated = *b.DateCreated
 	}
-	if b.Labels != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 16)
-		x.xxx_hidden_Labels = *b.Labels
+	x.xxx_hidden_Project = b.Project
+	if b.Status != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 17)
+		x.xxx_hidden_Status = *b.Status
+	}
+	if b.Priority != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 17)
+		x.xxx_hidden_Priority = *b.Priority
+	}
+	if b.Assignee != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 17)
+		x.xxx_hidden_Assignee = *b.Assignee
+	}
+	if b.AssigneeRun != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 17)
+		x.xxx_hidden_AssigneeRun = *b.AssigneeRun
+	}
+	if b.ClientId != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 13, 17)
+		x.xxx_hidden_ClientId = *b.ClientId
 	}
 	if b.SourceSession != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 13, 16)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 14, 17)
 		x.xxx_hidden_SourceSession = *b.SourceSession
 	}
 	if b.SourceRun != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 14, 16)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 15, 17)
 		x.xxx_hidden_SourceRun = *b.SourceRun
 	}
 	if b.SourceSeq != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 15, 16)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 16, 17)
 		x.xxx_hidden_SourceSeq = *b.SourceSeq
 	}
 	return m0
@@ -1122,17 +1195,18 @@ func (b0 TaskSelect_builder) Build() *TaskSelect {
 type TaskPatchRequest struct {
 	state                       protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Ref              *TaskRef               `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Alias            *string                `protobuf:"bytes,8,opt,name=alias"`
 	xxx_hidden_Name             *string                `protobuf:"bytes,10,opt,name=name"`
 	xxx_hidden_Desc             *string                `protobuf:"bytes,12,opt,name=desc"`
+	xxx_hidden_Labels           map[string]string      `protobuf:"bytes,14,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	xxx_hidden_DateUpdated      *timestamppb.Timestamp `protobuf:"bytes,26,opt,name=date_updated,json=dateUpdated"`
+	xxx_hidden_DateUpdatedForce bool                   `protobuf:"varint,27,opt,name=date_updated_force,json=dateUpdatedForce"`
 	xxx_hidden_Status           TaskStatus             `protobuf:"varint,18,opt,name=status,enum=cxz.TaskStatus"`
 	xxx_hidden_Priority         int32                  `protobuf:"varint,20,opt,name=priority"`
 	xxx_hidden_Assignee         *string                `protobuf:"bytes,22,opt,name=assignee"`
 	xxx_hidden_AssigneeRun      *string                `protobuf:"bytes,24,opt,name=assignee_run,json=assigneeRun"`
-	xxx_hidden_DateUpdated      *timestamppb.Timestamp `protobuf:"bytes,26,opt,name=date_updated,json=dateUpdated"`
-	xxx_hidden_DateUpdatedForce bool                   `protobuf:"varint,27,opt,name=date_updated_force,json=dateUpdatedForce"`
-	xxx_hidden_Labels           *TaskLabels            `protobuf:"bytes,32,opt,name=labels"`
-	xxx_hidden_LabelsNull       bool                   `protobuf:"varint,33,opt,name=labels_null,json=labelsNull"`
-	xxx_hidden_Actor            *TaskActor             `protobuf:"bytes,100,opt,name=actor"`
+	xxx_hidden_Actor            *TaskActor             `protobuf:"bytes,1000,opt,name=actor"`
+	xxx_hidden_ClearLabels      bool                   `protobuf:"varint,1001,opt,name=clear_labels,json=clearLabels"`
 	XXX_raceDetectHookData      protoimpl.RaceDetectHookData
 	XXX_presence                [1]uint32
 	unknownFields               protoimpl.UnknownFields
@@ -1171,6 +1245,16 @@ func (x *TaskPatchRequest) GetRef() *TaskRef {
 	return nil
 }
 
+func (x *TaskPatchRequest) GetAlias() string {
+	if x != nil {
+		if x.xxx_hidden_Alias != nil {
+			return *x.xxx_hidden_Alias
+		}
+		return ""
+	}
+	return ""
+}
+
 func (x *TaskPatchRequest) GetName() string {
 	if x != nil {
 		if x.xxx_hidden_Name != nil {
@@ -1191,9 +1275,30 @@ func (x *TaskPatchRequest) GetDesc() string {
 	return ""
 }
 
+func (x *TaskPatchRequest) GetLabels() map[string]string {
+	if x != nil {
+		return x.xxx_hidden_Labels
+	}
+	return nil
+}
+
+func (x *TaskPatchRequest) GetDateUpdated() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateUpdated
+	}
+	return nil
+}
+
+func (x *TaskPatchRequest) GetDateUpdatedForce() bool {
+	if x != nil {
+		return x.xxx_hidden_DateUpdatedForce
+	}
+	return false
+}
+
 func (x *TaskPatchRequest) GetStatus() TaskStatus {
 	if x != nil {
-		if protoimpl.X.Present(&(x.XXX_presence[0]), 3) {
+		if protoimpl.X.Present(&(x.XXX_presence[0]), 7) {
 			return x.xxx_hidden_Status
 		}
 	}
@@ -1227,34 +1332,6 @@ func (x *TaskPatchRequest) GetAssigneeRun() string {
 	return ""
 }
 
-func (x *TaskPatchRequest) GetDateUpdated() *timestamppb.Timestamp {
-	if x != nil {
-		return x.xxx_hidden_DateUpdated
-	}
-	return nil
-}
-
-func (x *TaskPatchRequest) GetDateUpdatedForce() bool {
-	if x != nil {
-		return x.xxx_hidden_DateUpdatedForce
-	}
-	return false
-}
-
-func (x *TaskPatchRequest) GetLabels() *TaskLabels {
-	if x != nil {
-		return x.xxx_hidden_Labels
-	}
-	return nil
-}
-
-func (x *TaskPatchRequest) GetLabelsNull() bool {
-	if x != nil {
-		return x.xxx_hidden_LabelsNull
-	}
-	return false
-}
-
 func (x *TaskPatchRequest) GetActor() *TaskActor {
 	if x != nil {
 		return x.xxx_hidden_Actor
@@ -1262,38 +1339,34 @@ func (x *TaskPatchRequest) GetActor() *TaskActor {
 	return nil
 }
 
+func (x *TaskPatchRequest) GetClearLabels() bool {
+	if x != nil {
+		return x.xxx_hidden_ClearLabels
+	}
+	return false
+}
+
 func (x *TaskPatchRequest) SetRef(v *TaskRef) {
 	x.xxx_hidden_Ref = v
 }
 
+func (x *TaskPatchRequest) SetAlias(v string) {
+	x.xxx_hidden_Alias = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 13)
+}
+
 func (x *TaskPatchRequest) SetName(v string) {
 	x.xxx_hidden_Name = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 13)
 }
 
 func (x *TaskPatchRequest) SetDesc(v string) {
 	x.xxx_hidden_Desc = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 13)
 }
 
-func (x *TaskPatchRequest) SetStatus(v TaskStatus) {
-	x.xxx_hidden_Status = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 12)
-}
-
-func (x *TaskPatchRequest) SetPriority(v int32) {
-	x.xxx_hidden_Priority = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 12)
-}
-
-func (x *TaskPatchRequest) SetAssignee(v string) {
-	x.xxx_hidden_Assignee = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 12)
-}
-
-func (x *TaskPatchRequest) SetAssigneeRun(v string) {
-	x.xxx_hidden_AssigneeRun = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 12)
+func (x *TaskPatchRequest) SetLabels(v map[string]string) {
+	x.xxx_hidden_Labels = v
 }
 
 func (x *TaskPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
@@ -1302,20 +1375,36 @@ func (x *TaskPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
 
 func (x *TaskPatchRequest) SetDateUpdatedForce(v bool) {
 	x.xxx_hidden_DateUpdatedForce = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 13)
 }
 
-func (x *TaskPatchRequest) SetLabels(v *TaskLabels) {
-	x.xxx_hidden_Labels = v
+func (x *TaskPatchRequest) SetStatus(v TaskStatus) {
+	x.xxx_hidden_Status = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 13)
 }
 
-func (x *TaskPatchRequest) SetLabelsNull(v bool) {
-	x.xxx_hidden_LabelsNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 12)
+func (x *TaskPatchRequest) SetPriority(v int32) {
+	x.xxx_hidden_Priority = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 13)
+}
+
+func (x *TaskPatchRequest) SetAssignee(v string) {
+	x.xxx_hidden_Assignee = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 13)
+}
+
+func (x *TaskPatchRequest) SetAssigneeRun(v string) {
+	x.xxx_hidden_AssigneeRun = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 13)
 }
 
 func (x *TaskPatchRequest) SetActor(v *TaskActor) {
 	x.xxx_hidden_Actor = v
+}
+
+func (x *TaskPatchRequest) SetClearLabels(v bool) {
+	x.xxx_hidden_ClearLabels = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 13)
 }
 
 func (x *TaskPatchRequest) HasRef() bool {
@@ -1325,46 +1414,25 @@ func (x *TaskPatchRequest) HasRef() bool {
 	return x.xxx_hidden_Ref != nil
 }
 
-func (x *TaskPatchRequest) HasName() bool {
+func (x *TaskPatchRequest) HasAlias() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
 }
 
-func (x *TaskPatchRequest) HasDesc() bool {
+func (x *TaskPatchRequest) HasName() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
 }
 
-func (x *TaskPatchRequest) HasStatus() bool {
+func (x *TaskPatchRequest) HasDesc() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
-}
-
-func (x *TaskPatchRequest) HasPriority() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
-}
-
-func (x *TaskPatchRequest) HasAssignee() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
-}
-
-func (x *TaskPatchRequest) HasAssigneeRun() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
 }
 
 func (x *TaskPatchRequest) HasDateUpdated() bool {
@@ -1378,17 +1446,31 @@ func (x *TaskPatchRequest) HasDateUpdatedForce() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 8)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
 }
 
-func (x *TaskPatchRequest) HasLabels() bool {
+func (x *TaskPatchRequest) HasStatus() bool {
 	if x == nil {
 		return false
 	}
-	return x.xxx_hidden_Labels != nil
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 7)
 }
 
-func (x *TaskPatchRequest) HasLabelsNull() bool {
+func (x *TaskPatchRequest) HasPriority() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 8)
+}
+
+func (x *TaskPatchRequest) HasAssignee() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 9)
+}
+
+func (x *TaskPatchRequest) HasAssigneeRun() bool {
 	if x == nil {
 		return false
 	}
@@ -1402,38 +1484,30 @@ func (x *TaskPatchRequest) HasActor() bool {
 	return x.xxx_hidden_Actor != nil
 }
 
+func (x *TaskPatchRequest) HasClearLabels() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 12)
+}
+
 func (x *TaskPatchRequest) ClearRef() {
 	x.xxx_hidden_Ref = nil
 }
 
-func (x *TaskPatchRequest) ClearName() {
+func (x *TaskPatchRequest) ClearAlias() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_Alias = nil
+}
+
+func (x *TaskPatchRequest) ClearName() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
 	x.xxx_hidden_Name = nil
 }
 
 func (x *TaskPatchRequest) ClearDesc() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
-	x.xxx_hidden_Desc = nil
-}
-
-func (x *TaskPatchRequest) ClearStatus() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
-	x.xxx_hidden_Status = TaskStatus_TASK_STATUS_UNSPECIFIED
-}
-
-func (x *TaskPatchRequest) ClearPriority() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
-	x.xxx_hidden_Priority = 0
-}
-
-func (x *TaskPatchRequest) ClearAssignee() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
-	x.xxx_hidden_Assignee = nil
-}
-
-func (x *TaskPatchRequest) ClearAssigneeRun() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
-	x.xxx_hidden_AssigneeRun = nil
+	x.xxx_hidden_Desc = nil
 }
 
 func (x *TaskPatchRequest) ClearDateUpdated() {
@@ -1441,33 +1515,47 @@ func (x *TaskPatchRequest) ClearDateUpdated() {
 }
 
 func (x *TaskPatchRequest) ClearDateUpdatedForce() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 8)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
 	x.xxx_hidden_DateUpdatedForce = false
 }
 
-func (x *TaskPatchRequest) ClearLabels() {
-	x.xxx_hidden_Labels = nil
+func (x *TaskPatchRequest) ClearStatus() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
+	x.xxx_hidden_Status = TaskStatus_TASK_STATUS_UNSPECIFIED
 }
 
-func (x *TaskPatchRequest) ClearLabelsNull() {
+func (x *TaskPatchRequest) ClearPriority() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 8)
+	x.xxx_hidden_Priority = 0
+}
+
+func (x *TaskPatchRequest) ClearAssignee() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 9)
+	x.xxx_hidden_Assignee = nil
+}
+
+func (x *TaskPatchRequest) ClearAssigneeRun() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 10)
-	x.xxx_hidden_LabelsNull = false
+	x.xxx_hidden_AssigneeRun = nil
 }
 
 func (x *TaskPatchRequest) ClearActor() {
 	x.xxx_hidden_Actor = nil
 }
 
+func (x *TaskPatchRequest) ClearClearLabels() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 12)
+	x.xxx_hidden_ClearLabels = false
+}
+
 type TaskPatchRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Ref         *TaskRef
-	Name        *string
-	Desc        *string
-	Status      *TaskStatus
-	Priority    *int32
-	Assignee    *string
-	AssigneeRun *string
+	Ref    *TaskRef
+	Alias  *string
+	Name   *string
+	Desc   *string
+	Labels map[string]string
 	// The version this update requires the stored date_updated to be.
 	// It is a precondition, not a write: the update applies only if the row
 	// still holds this value, and the server stamps the new version itself.
@@ -1482,13 +1570,13 @@ type TaskPatchRequest_builder struct {
 	// refused rather than assumed, because an unset field cannot be told
 	// apart from a caller who never considered locking at all.
 	DateUpdatedForce *bool
-	Labels           *TaskLabels
-	// Clear labels instead of writing it.
-	// It takes a field of its own because an unset value already means
-	// "leave it alone", so no value could have meant NULL. It wins
-	// outright: setting both this and labels clears.
-	LabelsNull *bool
-	Actor      *TaskActor
+	Status           *TaskStatus
+	Priority         *int32
+	Assignee         *string
+	AssigneeRun      *string
+	Actor            *TaskActor
+	// Protobuf maps have no presence: an empty map otherwise means no edit.
+	ClearLabels *bool
 }
 
 func (b0 TaskPatchRequest_builder) Build() *TaskPatchRequest {
@@ -1496,41 +1584,45 @@ func (b0 TaskPatchRequest_builder) Build() *TaskPatchRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
+	if b.Alias != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 13)
+		x.xxx_hidden_Alias = b.Alias
+	}
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 13)
 		x.xxx_hidden_Name = b.Name
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 13)
 		x.xxx_hidden_Desc = b.Desc
 	}
+	x.xxx_hidden_Labels = b.Labels
+	x.xxx_hidden_DateUpdated = b.DateUpdated
+	if b.DateUpdatedForce != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 13)
+		x.xxx_hidden_DateUpdatedForce = *b.DateUpdatedForce
+	}
 	if b.Status != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 13)
 		x.xxx_hidden_Status = *b.Status
 	}
 	if b.Priority != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 13)
 		x.xxx_hidden_Priority = *b.Priority
 	}
 	if b.Assignee != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 13)
 		x.xxx_hidden_Assignee = b.Assignee
 	}
 	if b.AssigneeRun != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 13)
 		x.xxx_hidden_AssigneeRun = b.AssigneeRun
 	}
-	x.xxx_hidden_DateUpdated = b.DateUpdated
-	if b.DateUpdatedForce != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 12)
-		x.xxx_hidden_DateUpdatedForce = *b.DateUpdatedForce
-	}
-	x.xxx_hidden_Labels = b.Labels
-	if b.LabelsNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 12)
-		x.xxx_hidden_LabelsNull = *b.LabelsNull
-	}
 	x.xxx_hidden_Actor = b.Actor
+	if b.ClearLabels != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 13)
+		x.xxx_hidden_ClearLabels = *b.ClearLabels
+	}
 	return m0
 }
 
@@ -1815,7 +1907,7 @@ type TaskListRequest struct {
 	xxx_hidden_Filters *[]*TaskFilter         `protobuf:"bytes,1,rep,name=filters"`
 	xxx_hidden_Size    int32                  `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                 `protobuf:"bytes,3,opt,name=after"`
-	xxx_hidden_Project *ProjectRef            `protobuf:"bytes,100,opt,name=project"`
+	xxx_hidden_Project *ProjectRef            `protobuf:"bytes,1000,opt,name=project"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -2143,7 +2235,7 @@ type TaskWatchRequest struct {
 	state                   protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Filters      *[]*TaskFilter         `protobuf:"bytes,1,rep,name=filters"`
 	xxx_hidden_SkipSnapshot bool                   `protobuf:"varint,2,opt,name=skip_snapshot,json=skipSnapshot"`
-	xxx_hidden_Project      *ProjectRef            `protobuf:"bytes,100,opt,name=project"`
+	xxx_hidden_Project      *ProjectRef            `protobuf:"bytes,1000,opt,name=project"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -2565,70 +2657,79 @@ var File_cxz_task_svc_g_proto protoreflect.FileDescriptor
 
 const file_cxz_task_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x14cxz/task_svc.g.proto\x12\x03cxz\x1a\x17cxz/project_svc.g.proto\x1a\x17cxz/session_svc.g.proto\x1a\x0ecxz/task.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\"\xa7\x04\n" +
+	"\x14cxz/task_svc.g.proto\x12\x03cxz\x1a\x17cxz/project_svc.g.proto\x1a\x17cxz/session_svc.g.proto\x1a\x0ecxz/task.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\"\x8f\x05\n" +
 	"\x0eTaskAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12\"\n" +
-	"\tclient_id\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\bclientId\x12\x19\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12\x1b\n" +
+	"\x05alias\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05alias\x12\x19\n" +
 	"\x04name\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04name\x12\x19\n" +
-	"\x04desc\x18\x06 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04desc\x12)\n" +
+	"\x04desc\x18\x06 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04desc\x127\n" +
+	"\x06labels\x18\a \x03(\v2\x1f.cxz.TaskAddRequest.LabelsEntryR\x06labels\x12=\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\x12)\n" +
 	"\aproject\x18\b \x01(\v2\x0f.cxz.ProjectRefR\aproject\x12.\n" +
 	"\x06status\x18\t \x01(\x0e2\x0f.cxz.TaskStatusB\x05\xaa\x01\x02\b\x02R\x06status\x12!\n" +
 	"\bpriority\x18\n" +
 	" \x01(\x05B\x05\xaa\x01\x02\b\x02R\bpriority\x12!\n" +
 	"\bassignee\x18\v \x01(\tB\x05\xaa\x01\x02\b\x02R\bassignee\x12(\n" +
-	"\fassignee_run\x18\f \x01(\tB\x05\xaa\x01\x02\b\x02R\vassigneeRun\x12=\n" +
-	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\x12'\n" +
-	"\x06labels\x18\x10 \x01(\v2\x0f.cxz.TaskLabelsR\x06labels\x12,\n" +
+	"\fassignee_run\x18\f \x01(\tB\x05\xaa\x01\x02\b\x02R\vassigneeRun\x12\"\n" +
+	"\tclient_id\x18\x10 \x01(\tB\x05\xaa\x01\x02\b\x02R\bclientId\x12,\n" +
 	"\x0esource_session\x18\x11 \x01(\tB\x05\xaa\x01\x02\b\x02R\rsourceSession\x12$\n" +
 	"\n" +
 	"source_run\x18\x12 \x01(\tB\x05\xaa\x01\x02\b\x02R\tsourceRun\x12$\n" +
 	"\n" +
-	"source_seq\x18\x13 \x01(\x04B\x05\xaa\x01\x02\b\x02R\tsourceSeq\"Y\n" +
+	"source_seq\x18\x13 \x01(\x04B\x05\xaa\x01\x02\b\x02R\tsourceSeq\x1a9\n" +
+	"\vLabelsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"Y\n" +
 	"\x0eTaskGetRequest\x12\x1e\n" +
 	"\x03ref\x18\x01 \x01(\v2\f.cxz.TaskRefR\x03ref\x12'\n" +
-	"\x06select\x18\x02 \x01(\v2\x0f.cxz.TaskSelectR\x06select\"l\n" +
+	"\x06select\x18\x02 \x01(\v2\x0f.cxz.TaskSelectR\x06select\"\x85\x01\n" +
 	"\aTaskRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12\x1d\n" +
-	"\tclient_id\x18\x04 \x01(\tH\x00R\bclientId\x12)\n" +
-	"\aproject\x18d \x01(\v2\x0f.cxz.ProjectRefR\aprojectB\x05\n" +
-	"\x03key\"\xe8\x03\n" +
+	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12\x16\n" +
+	"\x05alias\x18\x04 \x01(\tH\x00R\x05alias\x12\x1d\n" +
+	"\tclient_id\x18\x10 \x01(\tH\x00R\bclientId\x12*\n" +
+	"\aproject\x18\xe8\a \x01(\v2\x0f.cxz.ProjectRefR\aprojectB\x05\n" +
+	"\x03key\"\xfe\x03\n" +
 	"\n" +
 	"TaskSelect\x12\x10\n" +
-	"\x03all\x18\x01 \x01(\bR\x03all\x12\x1b\n" +
-	"\tclient_id\x18\x04 \x01(\bR\bclientId\x12\x12\n" +
+	"\x03all\x18\x01 \x01(\bR\x03all\x12\x14\n" +
+	"\x05alias\x18\x04 \x01(\bR\x05alias\x12\x12\n" +
 	"\x04name\x18\x05 \x01(\bR\x04name\x12\x12\n" +
-	"\x04desc\x18\x06 \x01(\bR\x04desc\x12,\n" +
+	"\x04desc\x18\x06 \x01(\bR\x04desc\x12\x16\n" +
+	"\x06labels\x18\a \x01(\bR\x06labels\x12!\n" +
+	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +
+	"\vdate_erased\x18\x0e \x01(\bR\n" +
+	"dateErased\x12!\n" +
+	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\x12,\n" +
 	"\aproject\x18\b \x01(\v2\x12.cxz.ProjectSelectR\aproject\x12\x16\n" +
 	"\x06status\x18\t \x01(\bR\x06status\x12\x1a\n" +
 	"\bpriority\x18\n" +
 	" \x01(\bR\bpriority\x12\x1a\n" +
 	"\bassignee\x18\v \x01(\bR\bassignee\x12!\n" +
-	"\fassignee_run\x18\f \x01(\bR\vassigneeRun\x12!\n" +
-	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +
-	"\vdate_erased\x18\x0e \x01(\bR\n" +
-	"dateErased\x12!\n" +
-	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\x12\x16\n" +
-	"\x06labels\x18\x10 \x01(\bR\x06labels\x12%\n" +
+	"\fassignee_run\x18\f \x01(\bR\vassigneeRun\x12\x1b\n" +
+	"\tclient_id\x18\x10 \x01(\bR\bclientId\x12%\n" +
 	"\x0esource_session\x18\x11 \x01(\bR\rsourceSession\x12\x1d\n" +
 	"\n" +
 	"source_run\x18\x12 \x01(\bR\tsourceRun\x12\x1d\n" +
 	"\n" +
-	"source_seq\x18\x13 \x01(\bR\tsourceSeq\"\xbb\x03\n" +
+	"source_seq\x18\x13 \x01(\bR\tsourceSeq\"\xa2\x04\n" +
 	"\x10TaskPatchRequest\x12\x1e\n" +
-	"\x03ref\x18\x01 \x01(\v2\f.cxz.TaskRefR\x03ref\x12\x12\n" +
+	"\x03ref\x18\x01 \x01(\v2\f.cxz.TaskRefR\x03ref\x12\x14\n" +
+	"\x05alias\x18\b \x01(\tR\x05alias\x12\x12\n" +
 	"\x04name\x18\n" +
 	" \x01(\tR\x04name\x12\x12\n" +
-	"\x04desc\x18\f \x01(\tR\x04desc\x12'\n" +
+	"\x04desc\x18\f \x01(\tR\x04desc\x129\n" +
+	"\x06labels\x18\x0e \x03(\v2!.cxz.TaskPatchRequest.LabelsEntryR\x06labels\x12=\n" +
+	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
+	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\x12'\n" +
 	"\x06status\x18\x12 \x01(\x0e2\x0f.cxz.TaskStatusR\x06status\x12\x1a\n" +
 	"\bpriority\x18\x14 \x01(\x05R\bpriority\x12\x1a\n" +
 	"\bassignee\x18\x16 \x01(\tR\bassignee\x12!\n" +
-	"\fassignee_run\x18\x18 \x01(\tR\vassigneeRun\x12=\n" +
-	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
-	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\x12'\n" +
-	"\x06labels\x18  \x01(\v2\x0f.cxz.TaskLabelsR\x06labels\x12\x1f\n" +
-	"\vlabels_null\x18! \x01(\bR\n" +
-	"labelsNull\x12$\n" +
-	"\x05actor\x18d \x01(\v2\x0e.cxz.TaskActorR\x05actor\"M\n" +
+	"\fassignee_run\x18\x18 \x01(\tR\vassigneeRun\x12%\n" +
+	"\x05actor\x18\xe8\a \x01(\v2\x0e.cxz.TaskActorR\x05actor\x12\"\n" +
+	"\fclear_labels\x18\xe9\a \x01(\bR\vclearLabels\x1a9\n" +
+	"\vLabelsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"M\n" +
 	"\tTaskActor\x12)\n" +
 	"\asession\x18\x01 \x01(\v2\x0f.cxz.SessionRefR\asession\x12\x15\n" +
 	"\x06run_id\x18\x02 \x01(\tR\x05runId\"V\n" +
@@ -2636,12 +2737,12 @@ const file_cxz_task_svc_g_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\f.cxz.TaskRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"+\n" +
 	"\x11TaskEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\x9f\x01\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xa0\x01\n" +
 	"\x0fTaskListRequest\x12)\n" +
 	"\afilters\x18\x01 \x03(\v2\x0f.cxz.TaskFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
-	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12)\n" +
-	"\aproject\x18d \x01(\v2\x0f.cxz.ProjectRefR\aproject\"N\n" +
+	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12*\n" +
+	"\aproject\x18\xe8\a \x01(\v2\x0f.cxz.ProjectRefR\aproject\"N\n" +
 	"\x10TaskListResponse\x12\x1f\n" +
 	"\x05items\x18\x01 \x03(\v2\t.cxz.TaskR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"s\n" +
@@ -2649,11 +2750,11 @@ const file_cxz_task_svc_g_proto_rawDesc = "" +
 	"TaskFilter\x12\x1e\n" +
 	"\x03ref\x18\x01 \x01(\v2\f.cxz.TaskRefR\x03ref\x12)\n" +
 	"\aproject\x18\x02 \x01(\v2\x0f.cxz.ProjectRefR\aproject\x12\x1a\n" +
-	"\bassignee\x18\x03 \x01(\tR\bassignee\"\x94\x01\n" +
+	"\bassignee\x18\x03 \x01(\tR\bassignee\"\x95\x01\n" +
 	"\x10TaskWatchRequest\x12)\n" +
 	"\afilters\x18\x01 \x03(\v2\x0f.cxz.TaskFilterR\afilters\x12*\n" +
-	"\rskip_snapshot\x18\x02 \x01(\bB\x05\xaa\x01\x02\b\x02R\fskipSnapshot\x12)\n" +
-	"\aproject\x18d \x01(\v2\x0f.cxz.ProjectRefR\aproject\"=\n" +
+	"\rskip_snapshot\x18\x02 \x01(\bB\x05\xaa\x01\x02\b\x02R\fskipSnapshot\x12*\n" +
+	"\aproject\x18\xe8\a \x01(\v2\x0f.cxz.ProjectRefR\aproject\"=\n" +
 	"\x11TaskWatchResponse\x12(\n" +
 	"\x05items\x18\x01 \x03(\v2\x12.cxz.TaskWatchItemR\x05items\"_\n" +
 	"\rTaskWatchItem\x12\x0e\n" +
@@ -2675,7 +2776,7 @@ const file_cxz_task_svc_g_proto_rawDesc = "" +
 	"\x05Claim\x12\x15.cxz.TaskClaimRequest\x1a\t.cxz.Task\x12+\n" +
 	"\aRelease\x12\x15.cxz.TaskClaimRequest\x1a\t.cxz.TaskB\"Z github.com/lesomnus/cxz/resourceb\beditionsp\xe8\a"
 
-var file_cxz_task_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
+var file_cxz_task_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
 var file_cxz_task_svc_g_proto_goTypes = []any{
 	(*TaskAddRequest)(nil),        // 0: cxz.TaskAddRequest
 	(*TaskGetRequest)(nil),        // 1: cxz.TaskGetRequest
@@ -2692,41 +2793,42 @@ var file_cxz_task_svc_g_proto_goTypes = []any{
 	(*TaskWatchResponse)(nil),     // 12: cxz.TaskWatchResponse
 	(*TaskWatchItem)(nil),         // 13: cxz.TaskWatchItem
 	(*TaskClaimRequest)(nil),      // 14: cxz.TaskClaimRequest
-	(*ProjectRef)(nil),            // 15: cxz.ProjectRef
-	(TaskStatus)(0),               // 16: cxz.TaskStatus
+	nil,                           // 15: cxz.TaskAddRequest.LabelsEntry
+	nil,                           // 16: cxz.TaskPatchRequest.LabelsEntry
 	(*timestamppb.Timestamp)(nil), // 17: google.protobuf.Timestamp
-	(*TaskLabels)(nil),            // 18: cxz.TaskLabels
-	(*ProjectSelect)(nil),         // 19: cxz.ProjectSelect
-	(*SessionRef)(nil),            // 20: cxz.SessionRef
-	(*patchpb.Patch)(nil),         // 21: patch.Patch
-	(*Task)(nil),                  // 22: cxz.Task
+	(*ProjectRef)(nil),            // 18: cxz.ProjectRef
+	(TaskStatus)(0),               // 19: cxz.TaskStatus
+	(*ProjectSelect)(nil),         // 20: cxz.ProjectSelect
+	(*SessionRef)(nil),            // 21: cxz.SessionRef
+	(*patchpb.Patch)(nil),         // 22: patch.Patch
+	(*Task)(nil),                  // 23: cxz.Task
 }
 var file_cxz_task_svc_g_proto_depIdxs = []int32{
-	15, // 0: cxz.TaskAddRequest.project:type_name -> cxz.ProjectRef
-	16, // 1: cxz.TaskAddRequest.status:type_name -> cxz.TaskStatus
-	17, // 2: cxz.TaskAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	18, // 3: cxz.TaskAddRequest.labels:type_name -> cxz.TaskLabels
+	15, // 0: cxz.TaskAddRequest.labels:type_name -> cxz.TaskAddRequest.LabelsEntry
+	17, // 1: cxz.TaskAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	18, // 2: cxz.TaskAddRequest.project:type_name -> cxz.ProjectRef
+	19, // 3: cxz.TaskAddRequest.status:type_name -> cxz.TaskStatus
 	2,  // 4: cxz.TaskGetRequest.ref:type_name -> cxz.TaskRef
 	3,  // 5: cxz.TaskGetRequest.select:type_name -> cxz.TaskSelect
-	15, // 6: cxz.TaskRef.project:type_name -> cxz.ProjectRef
-	19, // 7: cxz.TaskSelect.project:type_name -> cxz.ProjectSelect
+	18, // 6: cxz.TaskRef.project:type_name -> cxz.ProjectRef
+	20, // 7: cxz.TaskSelect.project:type_name -> cxz.ProjectSelect
 	2,  // 8: cxz.TaskPatchRequest.ref:type_name -> cxz.TaskRef
-	16, // 9: cxz.TaskPatchRequest.status:type_name -> cxz.TaskStatus
+	16, // 9: cxz.TaskPatchRequest.labels:type_name -> cxz.TaskPatchRequest.LabelsEntry
 	17, // 10: cxz.TaskPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	18, // 11: cxz.TaskPatchRequest.labels:type_name -> cxz.TaskLabels
+	19, // 11: cxz.TaskPatchRequest.status:type_name -> cxz.TaskStatus
 	5,  // 12: cxz.TaskPatchRequest.actor:type_name -> cxz.TaskActor
-	20, // 13: cxz.TaskActor.session:type_name -> cxz.SessionRef
+	21, // 13: cxz.TaskActor.session:type_name -> cxz.SessionRef
 	2,  // 14: cxz.TaskApplyRequest.ref:type_name -> cxz.TaskRef
-	21, // 15: cxz.TaskApplyRequest.patch:type_name -> patch.Patch
+	22, // 15: cxz.TaskApplyRequest.patch:type_name -> patch.Patch
 	10, // 16: cxz.TaskListRequest.filters:type_name -> cxz.TaskFilter
-	15, // 17: cxz.TaskListRequest.project:type_name -> cxz.ProjectRef
-	22, // 18: cxz.TaskListResponse.items:type_name -> cxz.Task
+	18, // 17: cxz.TaskListRequest.project:type_name -> cxz.ProjectRef
+	23, // 18: cxz.TaskListResponse.items:type_name -> cxz.Task
 	2,  // 19: cxz.TaskFilter.ref:type_name -> cxz.TaskRef
-	15, // 20: cxz.TaskFilter.project:type_name -> cxz.ProjectRef
+	18, // 20: cxz.TaskFilter.project:type_name -> cxz.ProjectRef
 	10, // 21: cxz.TaskWatchRequest.filters:type_name -> cxz.TaskFilter
-	15, // 22: cxz.TaskWatchRequest.project:type_name -> cxz.ProjectRef
+	18, // 22: cxz.TaskWatchRequest.project:type_name -> cxz.ProjectRef
 	13, // 23: cxz.TaskWatchResponse.items:type_name -> cxz.TaskWatchItem
-	22, // 24: cxz.TaskWatchItem.value:type_name -> cxz.Task
+	23, // 24: cxz.TaskWatchItem.value:type_name -> cxz.Task
 	2,  // 25: cxz.TaskClaimRequest.ref:type_name -> cxz.TaskRef
 	5,  // 26: cxz.TaskClaimRequest.actor:type_name -> cxz.TaskActor
 	17, // 27: cxz.TaskClaimRequest.date_updated:type_name -> google.protobuf.Timestamp
@@ -2739,15 +2841,15 @@ var file_cxz_task_svc_g_proto_depIdxs = []int32{
 	11, // 34: cxz.TaskService.Watch:input_type -> cxz.TaskWatchRequest
 	14, // 35: cxz.TaskService.Claim:input_type -> cxz.TaskClaimRequest
 	14, // 36: cxz.TaskService.Release:input_type -> cxz.TaskClaimRequest
-	22, // 37: cxz.TaskService.Add:output_type -> cxz.Task
-	22, // 38: cxz.TaskService.Get:output_type -> cxz.Task
-	22, // 39: cxz.TaskService.Patch:output_type -> cxz.Task
-	22, // 40: cxz.TaskService.Apply:output_type -> cxz.Task
+	23, // 37: cxz.TaskService.Add:output_type -> cxz.Task
+	23, // 38: cxz.TaskService.Get:output_type -> cxz.Task
+	23, // 39: cxz.TaskService.Patch:output_type -> cxz.Task
+	23, // 40: cxz.TaskService.Apply:output_type -> cxz.Task
 	7,  // 41: cxz.TaskService.Erase:output_type -> cxz.TaskEraseResponse
 	9,  // 42: cxz.TaskService.List:output_type -> cxz.TaskListResponse
 	12, // 43: cxz.TaskService.Watch:output_type -> cxz.TaskWatchResponse
-	22, // 44: cxz.TaskService.Claim:output_type -> cxz.Task
-	22, // 45: cxz.TaskService.Release:output_type -> cxz.Task
+	23, // 44: cxz.TaskService.Claim:output_type -> cxz.Task
+	23, // 45: cxz.TaskService.Release:output_type -> cxz.Task
 	37, // [37:46] is the sub-list for method output_type
 	28, // [28:37] is the sub-list for method input_type
 	28, // [28:28] is the sub-list for extension type_name
@@ -2765,6 +2867,7 @@ func file_cxz_task_svc_g_proto_init() {
 	file_cxz_task_proto_init()
 	file_cxz_task_svc_g_proto_msgTypes[2].OneofWrappers = []any{
 		(*taskRef_Id)(nil),
+		(*taskRef_Alias)(nil),
 		(*taskRef_ClientId)(nil),
 	}
 	type x struct{}
@@ -2773,7 +2876,7 @@ func file_cxz_task_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_cxz_task_svc_g_proto_rawDesc), len(file_cxz_task_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   15,
+			NumMessages:   17,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

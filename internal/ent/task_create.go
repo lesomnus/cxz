@@ -11,7 +11,6 @@ import (
 
 	"github.com/lesomnus/cxz/internal/ent/project"
 	"github.com/lesomnus/cxz/internal/ent/task"
-	"github.com/lesomnus/cxz/resource"
 	"github.com/protobuf-orm/ent/dialect/sql"
 	"github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 	"github.com/protobuf-orm/ent/schema/field"
@@ -24,9 +23,9 @@ type TaskCreate struct {
 	hooks    []Hook
 }
 
-// SetClientId sets the "client_id" field.
-func (_c *TaskCreate) SetClientId(v string) *TaskCreate {
-	_c.mutation.SetClientId(v)
+// SetAlias sets the "alias" field.
+func (_c *TaskCreate) SetAlias(v string) *TaskCreate {
+	_c.mutation.SetAlias(v)
 	return _c
 }
 
@@ -42,27 +41,9 @@ func (_c *TaskCreate) SetDesc(v string) *TaskCreate {
 	return _c
 }
 
-// SetStatus sets the "status" field.
-func (_c *TaskCreate) SetStatus(v int32) *TaskCreate {
-	_c.mutation.SetStatus(v)
-	return _c
-}
-
-// SetPriority sets the "priority" field.
-func (_c *TaskCreate) SetPriority(v int32) *TaskCreate {
-	_c.mutation.SetPriority(v)
-	return _c
-}
-
-// SetAssignee sets the "assignee" field.
-func (_c *TaskCreate) SetAssignee(v string) *TaskCreate {
-	_c.mutation.SetAssignee(v)
-	return _c
-}
-
-// SetAssigneeRun sets the "assignee_run" field.
-func (_c *TaskCreate) SetAssigneeRun(v string) *TaskCreate {
-	_c.mutation.SetAssigneeRun(v)
+// SetLabels sets the "labels" field.
+func (_c *TaskCreate) SetLabels(v map[string]string) *TaskCreate {
+	_c.mutation.SetLabels(v)
 	return _c
 }
 
@@ -100,9 +81,33 @@ func (_c *TaskCreate) SetNillableDateCreated(v *time.Time) *TaskCreate {
 	return _c
 }
 
-// SetLabels sets the "labels" field.
-func (_c *TaskCreate) SetLabels(v *resource.TaskLabels) *TaskCreate {
-	_c.mutation.SetLabels(v)
+// SetStatus sets the "status" field.
+func (_c *TaskCreate) SetStatus(v int32) *TaskCreate {
+	_c.mutation.SetStatus(v)
+	return _c
+}
+
+// SetPriority sets the "priority" field.
+func (_c *TaskCreate) SetPriority(v int32) *TaskCreate {
+	_c.mutation.SetPriority(v)
+	return _c
+}
+
+// SetAssignee sets the "assignee" field.
+func (_c *TaskCreate) SetAssignee(v string) *TaskCreate {
+	_c.mutation.SetAssignee(v)
+	return _c
+}
+
+// SetAssigneeRun sets the "assignee_run" field.
+func (_c *TaskCreate) SetAssigneeRun(v string) *TaskCreate {
+	_c.mutation.SetAssigneeRun(v)
+	return _c
+}
+
+// SetClientId sets the "client_id" field.
+func (_c *TaskCreate) SetClientId(v string) *TaskCreate {
+	_c.mutation.SetClientId(v)
 	return _c
 }
 
@@ -175,14 +180,17 @@ func (_c *TaskCreate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (_c *TaskCreate) check() error {
-	if _, ok := _c.mutation.ClientId(); !ok {
-		return &ValidationError{Name: "client_id", err: errors.New(`ent: missing required field "Task.client_id"`)}
+	if _, ok := _c.mutation.Alias(); !ok {
+		return &ValidationError{Name: "alias", err: errors.New(`ent: missing required field "Task.alias"`)}
 	}
 	if _, ok := _c.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Task.name"`)}
 	}
 	if _, ok := _c.mutation.Desc(); !ok {
 		return &ValidationError{Name: "desc", err: errors.New(`ent: missing required field "Task.desc"`)}
+	}
+	if _, ok := _c.mutation.DateUpdated(); !ok {
+		return &ValidationError{Name: "date_updated", err: errors.New(`ent: missing required field "Task.date_updated"`)}
 	}
 	if _, ok := _c.mutation.Status(); !ok {
 		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "Task.status"`)}
@@ -196,8 +204,8 @@ func (_c *TaskCreate) check() error {
 	if _, ok := _c.mutation.AssigneeRun(); !ok {
 		return &ValidationError{Name: "assignee_run", err: errors.New(`ent: missing required field "Task.assignee_run"`)}
 	}
-	if _, ok := _c.mutation.DateUpdated(); !ok {
-		return &ValidationError{Name: "date_updated", err: errors.New(`ent: missing required field "Task.date_updated"`)}
+	if _, ok := _c.mutation.ClientId(); !ok {
+		return &ValidationError{Name: "client_id", err: errors.New(`ent: missing required field "Task.client_id"`)}
 	}
 	if _, ok := _c.mutation.SourceSession(); !ok {
 		return &ValidationError{Name: "source_session", err: errors.New(`ent: missing required field "Task.source_session"`)}
@@ -221,10 +229,7 @@ func (_c *TaskCreate) sqlSave(ctx context.Context) (*Task, error) {
 	if err := _c.check(); err != nil {
 		return nil, err
 	}
-	_node, _spec, err := _c.createSpec()
-	if err != nil {
-		return nil, err
-	}
+	_node, _spec := _c.createSpec()
 	if err := sqlgraph.CreateNode(ctx, _c.driver, _spec); err != nil {
 		if sqlgraph.IsConstraintError(err) {
 			err = &ConstraintError{msg: err.Error(), wrap: err}
@@ -247,7 +252,7 @@ func (_c *TaskCreate) sqlSave(ctx context.Context) (*Task, error) {
 	return _node, nil
 }
 
-func (_c *TaskCreate) createSpec() (*Task, *sqlgraph.CreateSpec, error) {
+func (_c *TaskCreate) createSpec() (*Task, *sqlgraph.CreateSpec) {
 	var (
 		_node = &Task{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(task.Table, sqlgraph.NewFieldSpec(task.FieldId, field.TypeUuid))
@@ -256,9 +261,9 @@ func (_c *TaskCreate) createSpec() (*Task, *sqlgraph.CreateSpec, error) {
 		_node.Id = id
 		_spec.Id.Value = &id
 	}
-	if value, ok := _c.mutation.ClientId(); ok {
-		_spec.SetField(task.FieldClientId, field.TypeString, value)
-		_node.ClientId = value
+	if value, ok := _c.mutation.Alias(); ok {
+		_spec.SetField(task.FieldAlias, field.TypeString, value)
+		_node.Alias = value
 	}
 	if value, ok := _c.mutation.Name(); ok {
 		_spec.SetField(task.FieldName, field.TypeString, value)
@@ -267,6 +272,22 @@ func (_c *TaskCreate) createSpec() (*Task, *sqlgraph.CreateSpec, error) {
 	if value, ok := _c.mutation.Desc(); ok {
 		_spec.SetField(task.FieldDesc, field.TypeString, value)
 		_node.Desc = value
+	}
+	if value, ok := _c.mutation.Labels(); ok {
+		_spec.SetField(task.FieldLabels, field.TypeJson, value)
+		_node.Labels = value
+	}
+	if value, ok := _c.mutation.DateUpdated(); ok {
+		_spec.SetField(task.FieldDateUpdated, field.TypeTime, value)
+		_node.DateUpdated = value
+	}
+	if value, ok := _c.mutation.DateErased(); ok {
+		_spec.SetField(task.FieldDateErased, field.TypeTime, value)
+		_node.DateErased = &value
+	}
+	if value, ok := _c.mutation.DateCreated(); ok {
+		_spec.SetField(task.FieldDateCreated, field.TypeTime, value)
+		_node.DateCreated = value
 	}
 	if value, ok := _c.mutation.Status(); ok {
 		_spec.SetField(task.FieldStatus, field.TypeInt32, value)
@@ -284,28 +305,9 @@ func (_c *TaskCreate) createSpec() (*Task, *sqlgraph.CreateSpec, error) {
 		_spec.SetField(task.FieldAssigneeRun, field.TypeString, value)
 		_node.AssigneeRun = value
 	}
-	if value, ok := _c.mutation.DateUpdated(); ok {
-		_spec.SetField(task.FieldDateUpdated, field.TypeTime, value)
-		_node.DateUpdated = value
-	}
-	if value, ok := _c.mutation.DateErased(); ok {
-		_spec.SetField(task.FieldDateErased, field.TypeTime, value)
-		_node.DateErased = &value
-	}
-	if value, ok := _c.mutation.DateCreated(); ok {
-		_spec.SetField(task.FieldDateCreated, field.TypeTime, value)
-		_node.DateCreated = value
-	}
-	if value, ok := _c.mutation.Labels(); ok {
-		vv, err := task.ValueScanner.Labels.Value(value)
-		if err != nil {
-			return nil, nil, err
-		}
-		if vv, err = field.JsonValue(vv); err != nil {
-			return nil, nil, err
-		}
-		_spec.SetField(task.FieldLabels, field.TypeJson, vv)
-		_node.Labels = value
+	if value, ok := _c.mutation.ClientId(); ok {
+		_spec.SetField(task.FieldClientId, field.TypeString, value)
+		_node.ClientId = value
 	}
 	if value, ok := _c.mutation.SourceSession(); ok {
 		_spec.SetField(task.FieldSourceSession, field.TypeString, value)
@@ -336,7 +338,7 @@ func (_c *TaskCreate) createSpec() (*Task, *sqlgraph.CreateSpec, error) {
 		_node.ProjectId = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	return _node, _spec, nil
+	return _node, _spec
 }
 
 // TaskCreateBulk is the builder for creating many Task entities in bulk.
@@ -367,10 +369,7 @@ func (_c *TaskCreateBulk) Save(ctx context.Context) ([]*Task, error) {
 				}
 				builder.mutation = mutation
 				var err error
-				nodes[i], specs[i], err = builder.createSpec()
-				if err != nil {
-					return nil, err
-				}
+				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
 				} else {

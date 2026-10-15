@@ -324,17 +324,18 @@ var (
 	// TaskColumns holds the columns for the "task" table.
 	TaskColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUuid, Unique: true},
-		{Name: "client_id", Type: field.TypeString},
+		{Name: "alias", Type: field.TypeString},
 		{Name: "name", Type: field.TypeString},
 		{Name: "desc", Type: field.TypeString},
+		{Name: "labels", Type: field.TypeJson, Nullable: true},
+		{Name: "date_updated", Type: field.TypeTime},
+		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
 		{Name: "status", Type: field.TypeInt32},
 		{Name: "priority", Type: field.TypeInt32},
 		{Name: "assignee", Type: field.TypeString},
 		{Name: "assignee_run", Type: field.TypeString},
-		{Name: "date_updated", Type: field.TypeTime},
-		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
-		{Name: "date_created", Type: field.TypeTime, Nullable: true},
-		{Name: "labels", Type: field.TypeJson, Nullable: true},
+		{Name: "client_id", Type: field.TypeString},
 		{Name: "source_session", Type: field.TypeString},
 		{Name: "source_run", Type: field.TypeString},
 		{Name: "source_seq", Type: field.TypeUint64},
@@ -348,7 +349,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "task_project_project",
-				Columns:    []*schema.Column{TaskColumns[15]},
+				Columns:    []*schema.Column{TaskColumns[16]},
 				RefColumns: []*schema.Column{ProjectColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -357,12 +358,20 @@ var (
 			{
 				Name:    "task_date_created_id",
 				Unique:  false,
-				Columns: []*schema.Column{TaskColumns[10], TaskColumns[0]},
+				Columns: []*schema.Column{TaskColumns[7], TaskColumns[0]},
+			},
+			{
+				Name:    "task_alias",
+				Unique:  true,
+				Columns: []*schema.Column{TaskColumns[1]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "date_erased IS NULL",
+				},
 			},
 			{
 				Name:    "task_client_id",
 				Unique:  true,
-				Columns: []*schema.Column{TaskColumns[1]},
+				Columns: []*schema.Column{TaskColumns[12]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},

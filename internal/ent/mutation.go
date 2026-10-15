@@ -2305,21 +2305,21 @@ func (m *TaskMutation) Ids(ctx context.Context) ([]uuid.UUID, error) {
 	}
 }
 
-// OldClientId returns the old "client_id" field's value of the Task entity.
+// OldAlias returns the old "alias" field's value of the Task entity.
 // If the Task object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *TaskMutation) OldClientId(ctx context.Context) (v string, err error) {
+func (m *TaskMutation) OldAlias(ctx context.Context) (v string, err error) {
 	if !m.Op().Is(OpUpdateOne) {
-		return v, errors.New("OldClientId is only allowed on UpdateOne operations")
+		return v, errors.New("OldAlias is only allowed on UpdateOne operations")
 	}
 	if _, exists := m.Id(); !exists || m.oldValue == nil {
-		return v, errors.New("OldClientId requires an Id field in the mutation")
+		return v, errors.New("OldAlias requires an Id field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldClientId: %w", err)
+		return v, fmt.Errorf("querying old value for OldAlias: %w", err)
 	}
-	return oldValue.ClientId, nil
+	return oldValue.Alias, nil
 }
 
 // OldName returns the old "name" field's value of the Task entity.
@@ -2354,6 +2354,74 @@ func (m *TaskMutation) OldDesc(ctx context.Context) (v string, err error) {
 		return v, fmt.Errorf("querying old value for OldDesc: %w", err)
 	}
 	return oldValue.Desc, nil
+}
+
+// OldLabels returns the old "labels" field's value of the Task entity.
+// If the Task object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TaskMutation) OldLabels(ctx context.Context) (v map[string]string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldLabels is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldLabels requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLabels: %w", err)
+	}
+	return oldValue.Labels, nil
+}
+
+// OldDateUpdated returns the old "date_updated" field's value of the Task entity.
+// If the Task object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TaskMutation) OldDateUpdated(ctx context.Context) (v time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateUpdated is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateUpdated requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateUpdated: %w", err)
+	}
+	return oldValue.DateUpdated, nil
+}
+
+// OldDateErased returns the old "date_erased" field's value of the Task entity.
+// If the Task object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TaskMutation) OldDateErased(ctx context.Context) (v *time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateErased is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateErased requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateErased: %w", err)
+	}
+	return oldValue.DateErased, nil
+}
+
+// OldDateCreated returns the old "date_created" field's value of the Task entity.
+// If the Task object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TaskMutation) OldDateCreated(ctx context.Context) (v time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateCreated is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateCreated requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateCreated: %w", err)
+	}
+	return oldValue.DateCreated, nil
 }
 
 // OldStatus returns the old "status" field's value of the Task entity.
@@ -2424,72 +2492,21 @@ func (m *TaskMutation) OldAssigneeRun(ctx context.Context) (v string, err error)
 	return oldValue.AssigneeRun, nil
 }
 
-// OldDateUpdated returns the old "date_updated" field's value of the Task entity.
+// OldClientId returns the old "client_id" field's value of the Task entity.
 // If the Task object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *TaskMutation) OldDateUpdated(ctx context.Context) (v time.Time, err error) {
+func (m *TaskMutation) OldClientId(ctx context.Context) (v string, err error) {
 	if !m.Op().Is(OpUpdateOne) {
-		return v, errors.New("OldDateUpdated is only allowed on UpdateOne operations")
+		return v, errors.New("OldClientId is only allowed on UpdateOne operations")
 	}
 	if _, exists := m.Id(); !exists || m.oldValue == nil {
-		return v, errors.New("OldDateUpdated requires an Id field in the mutation")
+		return v, errors.New("OldClientId requires an Id field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDateUpdated: %w", err)
+		return v, fmt.Errorf("querying old value for OldClientId: %w", err)
 	}
-	return oldValue.DateUpdated, nil
-}
-
-// OldDateErased returns the old "date_erased" field's value of the Task entity.
-// If the Task object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *TaskMutation) OldDateErased(ctx context.Context) (v *time.Time, err error) {
-	if !m.Op().Is(OpUpdateOne) {
-		return v, errors.New("OldDateErased is only allowed on UpdateOne operations")
-	}
-	if _, exists := m.Id(); !exists || m.oldValue == nil {
-		return v, errors.New("OldDateErased requires an Id field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDateErased: %w", err)
-	}
-	return oldValue.DateErased, nil
-}
-
-// OldDateCreated returns the old "date_created" field's value of the Task entity.
-// If the Task object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *TaskMutation) OldDateCreated(ctx context.Context) (v time.Time, err error) {
-	if !m.Op().Is(OpUpdateOne) {
-		return v, errors.New("OldDateCreated is only allowed on UpdateOne operations")
-	}
-	if _, exists := m.Id(); !exists || m.oldValue == nil {
-		return v, errors.New("OldDateCreated requires an Id field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDateCreated: %w", err)
-	}
-	return oldValue.DateCreated, nil
-}
-
-// OldLabels returns the old "labels" field's value of the Task entity.
-// If the Task object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *TaskMutation) OldLabels(ctx context.Context) (v *resource.TaskLabels, err error) {
-	if !m.Op().Is(OpUpdateOne) {
-		return v, errors.New("OldLabels is only allowed on UpdateOne operations")
-	}
-	if _, exists := m.Id(); !exists || m.oldValue == nil {
-		return v, errors.New("OldLabels requires an Id field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldLabels: %w", err)
-	}
-	return oldValue.Labels, nil
+	return oldValue.ClientId, nil
 }
 
 // OldSourceSession returns the old "source_session" field's value of the Task entity.
@@ -2565,12 +2582,20 @@ func (m *TaskMutation) OldProjectId(ctx context.Context) (v uuid.UUID, err error
 // database failed.
 func (m *TaskMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
-	case task.FieldClientId:
-		return m.OldClientId(ctx)
+	case task.FieldAlias:
+		return m.OldAlias(ctx)
 	case task.FieldName:
 		return m.OldName(ctx)
 	case task.FieldDesc:
 		return m.OldDesc(ctx)
+	case task.FieldLabels:
+		return m.OldLabels(ctx)
+	case task.FieldDateUpdated:
+		return m.OldDateUpdated(ctx)
+	case task.FieldDateErased:
+		return m.OldDateErased(ctx)
+	case task.FieldDateCreated:
+		return m.OldDateCreated(ctx)
 	case task.FieldStatus:
 		return m.OldStatus(ctx)
 	case task.FieldPriority:
@@ -2579,14 +2604,8 @@ func (m *TaskMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldAssignee(ctx)
 	case task.FieldAssigneeRun:
 		return m.OldAssigneeRun(ctx)
-	case task.FieldDateUpdated:
-		return m.OldDateUpdated(ctx)
-	case task.FieldDateErased:
-		return m.OldDateErased(ctx)
-	case task.FieldDateCreated:
-		return m.OldDateCreated(ctx)
-	case task.FieldLabels:
-		return m.OldLabels(ctx)
+	case task.FieldClientId:
+		return m.OldClientId(ctx)
 	case task.FieldSourceSession:
 		return m.OldSourceSession(ctx)
 	case task.FieldSourceRun:

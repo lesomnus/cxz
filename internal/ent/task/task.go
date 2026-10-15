@@ -3,10 +3,8 @@
 package task
 
 import (
-	"github.com/lesomnus/cxz/resource"
 	"github.com/protobuf-orm/ent/dialect/sql"
 	"github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
-	"github.com/protobuf-orm/ent/schema/field"
 )
 
 const (
@@ -14,12 +12,20 @@ const (
 	Label = "task"
 	// FieldId holds the string denoting the id field in the database.
 	FieldId = "id"
-	// FieldClientId holds the string denoting the client_id field in the database.
-	FieldClientId = "client_id"
+	// FieldAlias holds the string denoting the alias field in the database.
+	FieldAlias = "alias"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
 	// FieldDesc holds the string denoting the desc field in the database.
 	FieldDesc = "desc"
+	// FieldLabels holds the string denoting the labels field in the database.
+	FieldLabels = "labels"
+	// FieldDateUpdated holds the string denoting the date_updated field in the database.
+	FieldDateUpdated = "date_updated"
+	// FieldDateErased holds the string denoting the date_erased field in the database.
+	FieldDateErased = "date_erased"
+	// FieldDateCreated holds the string denoting the date_created field in the database.
+	FieldDateCreated = "date_created"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
 	// FieldPriority holds the string denoting the priority field in the database.
@@ -28,14 +34,8 @@ const (
 	FieldAssignee = "assignee"
 	// FieldAssigneeRun holds the string denoting the assignee_run field in the database.
 	FieldAssigneeRun = "assignee_run"
-	// FieldDateUpdated holds the string denoting the date_updated field in the database.
-	FieldDateUpdated = "date_updated"
-	// FieldDateErased holds the string denoting the date_erased field in the database.
-	FieldDateErased = "date_erased"
-	// FieldDateCreated holds the string denoting the date_created field in the database.
-	FieldDateCreated = "date_created"
-	// FieldLabels holds the string denoting the labels field in the database.
-	FieldLabels = "labels"
+	// FieldClientId holds the string denoting the client_id field in the database.
+	FieldClientId = "client_id"
 	// FieldSourceSession holds the string denoting the source_session field in the database.
 	FieldSourceSession = "source_session"
 	// FieldSourceRun holds the string denoting the source_run field in the database.
@@ -60,17 +60,18 @@ const (
 // Columns holds all SQL columns for task fields.
 var Columns = []string{
 	FieldId,
-	FieldClientId,
+	FieldAlias,
 	FieldName,
 	FieldDesc,
+	FieldLabels,
+	FieldDateUpdated,
+	FieldDateErased,
+	FieldDateCreated,
 	FieldStatus,
 	FieldPriority,
 	FieldAssignee,
 	FieldAssigneeRun,
-	FieldDateUpdated,
-	FieldDateErased,
-	FieldDateCreated,
-	FieldLabels,
+	FieldClientId,
 	FieldSourceSession,
 	FieldSourceRun,
 	FieldSourceSeq,
@@ -87,13 +88,6 @@ func ValidColumn(column string) bool {
 	return false
 }
 
-var (
-	// ValueScanner of all Task fields.
-	ValueScanner struct {
-		Labels field.TypeValueScanner[*resource.TaskLabels]
-	}
-)
-
 // OrderOption defines the ordering options for the Task queries.
 type OrderOption func(*sql.Selector)
 
@@ -102,9 +96,9 @@ func ById(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldId, opts...).ToFunc()
 }
 
-// ByClientId orders the results by the client_id field.
-func ByClientId(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldClientId, opts...).ToFunc()
+// ByAlias orders the results by the alias field.
+func ByAlias(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAlias, opts...).ToFunc()
 }
 
 // ByName orders the results by the name field.
@@ -115,6 +109,21 @@ func ByName(opts ...sql.OrderTermOption) OrderOption {
 // ByDesc orders the results by the desc field.
 func ByDesc(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDesc, opts...).ToFunc()
+}
+
+// ByDateUpdated orders the results by the date_updated field.
+func ByDateUpdated(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDateUpdated, opts...).ToFunc()
+}
+
+// ByDateErased orders the results by the date_erased field.
+func ByDateErased(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDateErased, opts...).ToFunc()
+}
+
+// ByDateCreated orders the results by the date_created field.
+func ByDateCreated(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDateCreated, opts...).ToFunc()
 }
 
 // ByStatus orders the results by the status field.
@@ -137,19 +146,9 @@ func ByAssigneeRun(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldAssigneeRun, opts...).ToFunc()
 }
 
-// ByDateUpdated orders the results by the date_updated field.
-func ByDateUpdated(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldDateUpdated, opts...).ToFunc()
-}
-
-// ByDateErased orders the results by the date_erased field.
-func ByDateErased(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldDateErased, opts...).ToFunc()
-}
-
-// ByDateCreated orders the results by the date_created field.
-func ByDateCreated(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldDateCreated, opts...).ToFunc()
+// ByClientId orders the results by the client_id field.
+func ByClientId(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldClientId, opts...).ToFunc()
 }
 
 // BySourceSession orders the results by the source_session field.

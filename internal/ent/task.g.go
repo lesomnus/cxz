@@ -12,9 +12,15 @@ import (
 func (e *Task) Proto() *resource.Task {
 	x := &resource.Task{}
 	x.SetId(e.Id[:])
-	x.SetClientId(e.ClientId)
+	x.SetAlias(e.Alias)
 	x.SetName(e.Name)
 	x.SetDesc(e.Desc)
+	x.SetLabels(e.Labels)
+	x.SetDateUpdated(timestamppb.New(e.DateUpdated))
+	if e.DateErased != nil {
+		x.SetDateErased(timestamppb.New(*e.DateErased))
+	}
+	x.SetDateCreated(timestamppb.New(e.DateCreated))
 	if v := e.Edges.Project; v != nil {
 		x.SetProject(v.Proto())
 	} else if v := e.ProjectId; v != *new(uuid.UUID) {
@@ -26,14 +32,7 @@ func (e *Task) Proto() *resource.Task {
 	x.SetPriority(e.Priority)
 	x.SetAssignee(e.Assignee)
 	x.SetAssigneeRun(e.AssigneeRun)
-	x.SetDateUpdated(timestamppb.New(e.DateUpdated))
-	if e.DateErased != nil {
-		x.SetDateErased(timestamppb.New(*e.DateErased))
-	}
-	x.SetDateCreated(timestamppb.New(e.DateCreated))
-	if e.Labels != nil {
-		x.SetLabels(e.Labels)
-	}
+	x.SetClientId(e.ClientId)
 	x.SetSourceSession(e.SourceSession)
 	x.SetSourceRun(e.SourceRun)
 	x.SetSourceSeq(e.SourceSeq)

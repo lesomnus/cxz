@@ -4,14 +4,12 @@
 package schema
 
 import (
-	resource "github.com/lesomnus/cxz/resource"
 	ent "github.com/protobuf-orm/ent"
 	entsql "github.com/protobuf-orm/ent/dialect/entsql"
 	schema "github.com/protobuf-orm/ent/schema"
 	edge "github.com/protobuf-orm/ent/schema/edge"
 	field "github.com/protobuf-orm/ent/schema/field"
 	index "github.com/protobuf-orm/ent/schema/index"
-	entpb "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpb"
 )
 
 type Task struct {
@@ -23,14 +21,11 @@ func (Task) Fields() []ent.Field {
 		field.Uuid("id").
 			Unique().
 			Immutable(),
-		field.String("client_id").
-			Immutable(),
+		field.String("alias"),
 		field.String("name"),
 		field.String("desc"),
-		field.Int32("status"),
-		field.Int32("priority"),
-		field.String("assignee"),
-		field.String("assignee_run"),
+		field.Json("labels", map[string]string{}).
+			Optional(),
 		field.Time("date_updated"),
 		field.Time("date_erased").
 			Nillable().
@@ -38,8 +33,12 @@ func (Task) Fields() []ent.Field {
 		field.Time("date_created").
 			Immutable().
 			Optional(),
-		field.Json("labels", &resource.TaskLabels{}).ValueScanner(entpb.ValueScanner[*resource.TaskLabels]{}).
-			Optional(),
+		field.Int32("status"),
+		field.Int32("priority"),
+		field.String("assignee"),
+		field.String("assignee_run"),
+		field.String("client_id").
+			Immutable(),
 		field.String("source_session").
 			Immutable(),
 		field.String("source_run").
@@ -64,6 +63,9 @@ func (Task) Edges() []ent.Edge {
 func (Task) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("date_created", "id"),
+		index.Fields("alias").
+			Unique().
+			Annotations(entsql.IndexWhere("date_erased IS NULL")),
 		index.Fields("client_id").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),

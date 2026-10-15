@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -10,7 +11,6 @@ import (
 
 	"github.com/lesomnus/cxz/internal/ent/project"
 	"github.com/lesomnus/cxz/internal/ent/task"
-	"github.com/lesomnus/cxz/resource"
 	"github.com/protobuf-orm/ent"
 	"github.com/protobuf-orm/ent/dialect/sql"
 )
@@ -20,12 +20,20 @@ type Task struct {
 	config `json:"-"`
 	// Id of the ent.
 	Id uuid.UUID `json:"id,omitempty"`
-	// ClientId holds the value of the "client_id" field.
-	ClientId string `json:"client_id,omitempty"`
+	// Alias holds the value of the "alias" field.
+	Alias string `json:"alias,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// Desc holds the value of the "desc" field.
 	Desc string `json:"desc,omitempty"`
+	// Labels holds the value of the "labels" field.
+	Labels map[string]string `json:"labels,omitempty"`
+	// DateUpdated holds the value of the "date_updated" field.
+	DateUpdated time.Time `json:"date_updated,omitempty"`
+	// DateErased holds the value of the "date_erased" field.
+	DateErased *time.Time `json:"date_erased,omitempty"`
+	// DateCreated holds the value of the "date_created" field.
+	DateCreated time.Time `json:"date_created,omitempty"`
 	// Status holds the value of the "status" field.
 	Status int32 `json:"status,omitempty"`
 	// Priority holds the value of the "priority" field.
@@ -34,14 +42,8 @@ type Task struct {
 	Assignee string `json:"assignee,omitempty"`
 	// AssigneeRun holds the value of the "assignee_run" field.
 	AssigneeRun string `json:"assignee_run,omitempty"`
-	// DateUpdated holds the value of the "date_updated" field.
-	DateUpdated time.Time `json:"date_updated,omitempty"`
-	// DateErased holds the value of the "date_erased" field.
-	DateErased *time.Time `json:"date_erased,omitempty"`
-	// DateCreated holds the value of the "date_created" field.
-	DateCreated time.Time `json:"date_created,omitempty"`
-	// Labels holds the value of the "labels" field.
-	Labels *resource.TaskLabels `json:"labels,omitempty"`
+	// ClientId holds the value of the "client_id" field.
+	ClientId string `json:"client_id,omitempty"`
 	// SourceSession holds the value of the "source_session" field.
 	SourceSession string `json:"source_session,omitempty"`
 	// SourceRun holds the value of the "source_run" field.
@@ -81,16 +83,16 @@ func (*Task) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case task.FieldLabels:
+			values[i] = new([]byte)
 		case task.FieldStatus, task.FieldPriority, task.FieldSourceSeq:
 			values[i] = new(sql.NullInt64)
-		case task.FieldClientId, task.FieldName, task.FieldDesc, task.FieldAssignee, task.FieldAssigneeRun, task.FieldSourceSession, task.FieldSourceRun:
+		case task.FieldAlias, task.FieldName, task.FieldDesc, task.FieldAssignee, task.FieldAssigneeRun, task.FieldClientId, task.FieldSourceSession, task.FieldSourceRun:
 			values[i] = new(sql.NullString)
 		case task.FieldDateUpdated, task.FieldDateErased, task.FieldDateCreated:
 			values[i] = new(sql.NullTime)
 		case task.FieldId, task.FieldProjectId:
 			values[i] = new(uuid.UUID)
-		case task.FieldLabels:
-			values[i] = task.ValueScanner.Labels.ScanValue()
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -112,11 +114,11 @@ func (_m *Task) assignValues(columns []string, values []any) error {
 			} else if value != nil {
 				_m.Id = *value
 			}
-		case task.FieldClientId:
+		case task.FieldAlias:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field client_id", values[i])
+				return fmt.Errorf("unexpected type %T for field alias", values[i])
 			} else if value.Valid {
-				_m.ClientId = value.String
+				_m.Alias = value.String
 			}
 		case task.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -129,6 +131,33 @@ func (_m *Task) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field desc", values[i])
 			} else if value.Valid {
 				_m.Desc = value.String
+			}
+		case task.FieldLabels:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field labels", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.Labels); err != nil {
+					return fmt.Errorf("unmarshal field labels: %w", err)
+				}
+			}
+		case task.FieldDateUpdated:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field date_updated", values[i])
+			} else if value.Valid {
+				_m.DateUpdated = value.Time
+			}
+		case task.FieldDateErased:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field date_erased", values[i])
+			} else if value.Valid {
+				_m.DateErased = new(time.Time)
+				*_m.DateErased = value.Time
+			}
+		case task.FieldDateCreated:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field date_created", values[i])
+			} else if value.Valid {
+				_m.DateCreated = value.Time
 			}
 		case task.FieldStatus:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -154,30 +183,11 @@ func (_m *Task) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.AssigneeRun = value.String
 			}
-		case task.FieldDateUpdated:
-			if value, ok := values[i].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field date_updated", values[i])
+		case task.FieldClientId:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field client_id", values[i])
 			} else if value.Valid {
-				_m.DateUpdated = value.Time
-			}
-		case task.FieldDateErased:
-			if value, ok := values[i].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field date_erased", values[i])
-			} else if value.Valid {
-				_m.DateErased = new(time.Time)
-				*_m.DateErased = value.Time
-			}
-		case task.FieldDateCreated:
-			if value, ok := values[i].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field date_created", values[i])
-			} else if value.Valid {
-				_m.DateCreated = value.Time
-			}
-		case task.FieldLabels:
-			if value, err := task.ValueScanner.Labels.FromValue(values[i]); err != nil {
-				return err
-			} else {
-				_m.Labels = value
+				_m.ClientId = value.String
 			}
 		case task.FieldSourceSession:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -244,14 +254,28 @@ func (_m *Task) String() string {
 	var builder strings.Builder
 	builder.WriteString("Task(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", _m.Id))
-	builder.WriteString("client_id=")
-	builder.WriteString(_m.ClientId)
+	builder.WriteString("alias=")
+	builder.WriteString(_m.Alias)
 	builder.WriteString(", ")
 	builder.WriteString("name=")
 	builder.WriteString(_m.Name)
 	builder.WriteString(", ")
 	builder.WriteString("desc=")
 	builder.WriteString(_m.Desc)
+	builder.WriteString(", ")
+	builder.WriteString("labels=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Labels))
+	builder.WriteString(", ")
+	builder.WriteString("date_updated=")
+	builder.WriteString(_m.DateUpdated.Format(time.ANSIC))
+	builder.WriteString(", ")
+	if v := _m.DateErased; v != nil {
+		builder.WriteString("date_erased=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	builder.WriteString("date_created=")
+	builder.WriteString(_m.DateCreated.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("status=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Status))
@@ -265,19 +289,8 @@ func (_m *Task) String() string {
 	builder.WriteString("assignee_run=")
 	builder.WriteString(_m.AssigneeRun)
 	builder.WriteString(", ")
-	builder.WriteString("date_updated=")
-	builder.WriteString(_m.DateUpdated.Format(time.ANSIC))
-	builder.WriteString(", ")
-	if v := _m.DateErased; v != nil {
-		builder.WriteString("date_erased=")
-		builder.WriteString(v.Format(time.ANSIC))
-	}
-	builder.WriteString(", ")
-	builder.WriteString("date_created=")
-	builder.WriteString(_m.DateCreated.Format(time.ANSIC))
-	builder.WriteString(", ")
-	builder.WriteString("labels=")
-	builder.WriteString(fmt.Sprintf("%v", _m.Labels))
+	builder.WriteString("client_id=")
+	builder.WriteString(_m.ClientId)
 	builder.WriteString(", ")
 	builder.WriteString("source_session=")
 	builder.WriteString(_m.SourceSession)

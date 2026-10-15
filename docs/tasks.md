@@ -28,15 +28,24 @@ No Docker, provider account or external database is needed there.
 | Field | Meaning |
 |---|---|
 | `id` | Server-assigned payday resource ID |
+| `alias` | Human-readable project-local identifier; generated when omitted, normalized and unique |
 | `client_id` | Required creation retry key, unique within the authoritative project |
 | `project` | Immutable owning project |
 | `name`, `desc` | Work title and description |
 | `status` | `TODO`, `IN_PROGRESS`, `WAITING`, `DONE`, `CANCELED` |
 | `priority` | Ordered priority; lower is more important |
-| `labels.values` | Labels; an explicitly empty labels message clears them |
+| `labels` | payday's standard string-to-string label map |
 | `assignee`, `assignee_run` | Owning session's runtime ID and run ID; only Claim/Release write them |
 | `source_session`, `source_run`, `source_seq` | Optional immutable reference into the retained conversation |
 | `date_created`, `date_updated` | Server timestamps; `date_updated` is the optimistic concurrency token |
+
+Entity numbers follow payday's schema contract: header slots retain their
+standard meanings, application fields use 8–12 and 16 onward, and 13–15 remain
+the update/erase/create timestamps. `client_id` is an application field, not a
+payday-provided header. Service-overlay fields are kept outside the generated
+request numbers; standalone helper messages do not use entity header numbering.
+This revises the unreleased draft wire schema; regenerate clients and use a
+matching runtime when testing this branch.
 
 Ownership and source references are snapshot IDs, not session foreign keys.
 Session purge retains Tasks and those references. A reference does not prevent
@@ -53,7 +62,7 @@ aliases before forwarding; the runtime independently checks the project scope.
 - **Add** creates unassigned Todo work. Supply a fresh `client_id`; retries
   return the first record with that key, including after its mutable fields
   changed. Reusing the key is not an upsert.
-- **Get** reads one Task by ID or `client_id`, with payday field selection.
+- **Get** reads one Task by ID, alias or `client_id`, with payday field selection.
 - **List** pages by creation time and ID. Filters are OR-ed; fields within one
   filter are AND-ed. Every filter is constrained to the required project. Ref
   and assignee filters are supported, including an explicitly empty assignee
@@ -62,10 +71,13 @@ aliases before forwarding; the runtime independently checks the project scope.
   an empty project, then emits committed full-row replacements. Absence of a
   previously delivered row's value removes it from the subscription's view.
   Reconnect for a fresh snapshot; this is not a replayable event journal.
-- **Patch** updates name, description, priority, labels and status using the
+- **Patch** updates alias, name, description, priority, labels and status using the
   `date_updated` returned by a read. Force updates and direct ownership edits
   are rejected. Ordinary unassigned work cannot enter In progress/Waiting
-  through Patch. Owned work returns to Todo through Release.
+  through Patch. Owned work returns to Todo through Release. A nonempty labels
+  map replaces the labels; `clear_labels: true` clears them with the same
+  version check. An empty map alone means no edit, since protobuf maps have no
+  presence. Combining a nonempty map and `clear_labels` is rejected.
 - **Claim** compares the observed version and atomically assigns unowned Todo
   work to the supplied session/current active run, moving it to In progress.
   Two competing claims cannot both win. Retrying for the same current owner
@@ -102,6 +114,7 @@ project := resource.ProjectRef_builder{RuntimeId: proto.String(projectID)}.Build
 work, err := tasks.Add(ctx, resource.TaskAddRequest_builder{
     Project: project,
     ClientId: creationKey,
+    Alias: "task-board",
     Name: "Implement project task board",
 }.Build())
 if err != nil { return err }
@@ -132,7 +145,9 @@ agent-facing Task MCP are not part of this API implementation yet.
 
 `internal/taskapitest` runs the same public gRPC contract against SQLite and
 the sandbox. It covers claim races, creation retries, version/run fencing,
-forbidden write paths, project isolation, pagination and filtered Watch removal.
+forbidden write paths, project isolation, pagination, alias naming/lookup,
+standard payday header reads and filtered Watch removal. A schema regression
+checks payday-reserved field slots and standard labels types.
 Native tests additionally verify persistence after rebuilding the service,
 session projection removal, Manager forwarding with independent aliases, live
 Watch forwarding and absence of manager-side shadow rows or offline fallback.

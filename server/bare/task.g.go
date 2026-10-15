@@ -106,9 +106,18 @@ func (s TaskServiceServer) Add(ctx context.Context, req *resource.TaskAddRequest
 	} else {
 		q.SetId(v)
 	}
-	q.SetClientId(req.GetClientId())
+	q.SetAlias(req.GetAlias())
 	q.SetName(req.GetName())
 	q.SetDesc(req.GetDesc())
+	if u := req.GetLabels(); len(u) > 0 {
+		q.SetLabels(u)
+	}
+	q.SetDateUpdated(st.now())
+	if req.HasDateCreated() {
+		q.SetDateCreated(req.GetDateCreated().AsTime())
+	} else {
+		q.SetDateCreated(st.now())
+	}
 	if k, err := ProjectGetKey(ctx, st.Db, req.GetProject()); err != nil {
 		return nil, err
 	} else {
@@ -121,15 +130,7 @@ func (s TaskServiceServer) Add(ctx context.Context, req *resource.TaskAddRequest
 	q.SetPriority(req.GetPriority())
 	q.SetAssignee(req.GetAssignee())
 	q.SetAssigneeRun(req.GetAssigneeRun())
-	q.SetDateUpdated(st.now())
-	if req.HasDateCreated() {
-		q.SetDateCreated(req.GetDateCreated().AsTime())
-	} else {
-		q.SetDateCreated(st.now())
-	}
-	if req.HasLabels() {
-		q.SetLabels(req.GetLabels())
-	}
+	q.SetClientId(req.GetClientId())
 	q.SetSourceSession(req.GetSourceSession())
 	q.SetSourceRun(req.GetSourceRun())
 	q.SetSourceSeq(req.GetSourceSeq())
@@ -200,14 +201,26 @@ func TaskSelectedFields(m *resource.TaskSelect) []string {
 	{
 		vs = append(vs, task.FieldId)
 	}
-	if m.GetClientId() {
-		vs = append(vs, task.FieldClientId)
+	if m.GetAlias() {
+		vs = append(vs, task.FieldAlias)
 	}
 	if m.GetName() {
 		vs = append(vs, task.FieldName)
 	}
 	if m.GetDesc() {
 		vs = append(vs, task.FieldDesc)
+	}
+	if m.GetLabels() {
+		vs = append(vs, task.FieldLabels)
+	}
+	if m.GetDateUpdated() {
+		vs = append(vs, task.FieldDateUpdated)
+	}
+	if m.GetDateErased() {
+		vs = append(vs, task.FieldDateErased)
+	}
+	if m.GetDateCreated() {
+		vs = append(vs, task.FieldDateCreated)
 	}
 	if m.GetStatus() {
 		vs = append(vs, task.FieldStatus)
@@ -221,17 +234,8 @@ func TaskSelectedFields(m *resource.TaskSelect) []string {
 	if m.GetAssigneeRun() {
 		vs = append(vs, task.FieldAssigneeRun)
 	}
-	if m.GetDateUpdated() {
-		vs = append(vs, task.FieldDateUpdated)
-	}
-	if m.GetDateErased() {
-		vs = append(vs, task.FieldDateErased)
-	}
-	if m.GetDateCreated() {
-		vs = append(vs, task.FieldDateCreated)
-	}
-	if m.GetLabels() {
-		vs = append(vs, task.FieldLabels)
+	if m.GetClientId() {
+		vs = append(vs, task.FieldClientId)
 	}
 	if m.GetSourceSession() {
 		vs = append(vs, task.FieldSourceSession)
@@ -314,7 +318,7 @@ func TaskGetKey(ctx context.Context, db *ent.Client, ref *resource.TaskRef) (uui
 var taskOrmEntity = ormpatch.MustEntityOf(resource.File_cxz_task_proto, "Task")
 
 var taskPatchColumns = entpatch.Columns{
-	1: task.FieldId, 4: task.FieldClientId, 5: task.FieldName, 6: task.FieldDesc, 8: task.ProjectColumn, 9: task.FieldStatus, 10: task.FieldPriority, 11: task.FieldAssignee, 12: task.FieldAssigneeRun, 13: task.FieldDateUpdated, 14: task.FieldDateErased, 15: task.FieldDateCreated, 16: task.FieldLabels, 17: task.FieldSourceSession, 18: task.FieldSourceRun, 19: task.FieldSourceSeq}
+	1: task.FieldId, 4: task.FieldAlias, 5: task.FieldName, 6: task.FieldDesc, 7: task.FieldLabels, 13: task.FieldDateUpdated, 14: task.FieldDateErased, 15: task.FieldDateCreated, 8: task.ProjectColumn, 9: task.FieldStatus, 10: task.FieldPriority, 11: task.FieldAssignee, 12: task.FieldAssigneeRun, 16: task.FieldClientId, 17: task.FieldSourceSession, 18: task.FieldSourceRun, 19: task.FieldSourceSeq}
 
 func (s TaskServiceServer) Apply(ctx context.Context, req *resource.TaskApplyRequest) (*resource.Task, error) {
 	if !req.HasPatch() {
@@ -515,6 +519,8 @@ func pickTask(req *resource.TaskRef) (predicate.Task, error) {
 		} else {
 			return task.IdEQ(v), nil
 		}
+	case resource.TaskRef_Alias_case:
+		return task.AliasEQ(req.GetAlias()), nil
 	case resource.TaskRef_ClientId_case:
 		return task.ClientIdEQ(req.GetClientId()), nil
 	case resource.TaskRef_Key_not_set_case:

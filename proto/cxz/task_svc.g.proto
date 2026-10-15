@@ -42,16 +42,17 @@ service TaskService {
 
 message TaskAddRequest {
   bytes id = 1;
-  string client_id = 4 [features.field_presence = IMPLICIT];
+  string alias = 4 [features.field_presence = IMPLICIT];
   string name = 5 [features.field_presence = IMPLICIT];
   string desc = 6 [features.field_presence = IMPLICIT];
+  map<string, string> labels = 7;
+  google.protobuf.Timestamp date_created = 15;
   ProjectRef project = 8;
   TaskStatus status = 9 [features.field_presence = IMPLICIT];
   int32 priority = 10 [features.field_presence = IMPLICIT];
   string assignee = 11 [features.field_presence = IMPLICIT];
   string assignee_run = 12 [features.field_presence = IMPLICIT];
-  google.protobuf.Timestamp date_created = 15;
-  TaskLabels labels = 16;
+  string client_id = 16 [features.field_presence = IMPLICIT];
   string source_session = 17 [features.field_presence = IMPLICIT];
   string source_run = 18 [features.field_presence = IMPLICIT];
   uint64 source_seq = 19 [features.field_presence = IMPLICIT];
@@ -65,25 +66,27 @@ message TaskGetRequest {
 message TaskRef {
   oneof key {
     bytes id = 1;
-    string client_id = 4;
+    string alias = 4;
+    string client_id = 16;
   }
-  ProjectRef project = 100;
+  ProjectRef project = 1000;
 }
 
 message TaskSelect {
   bool all = 1;
-  bool client_id = 4;
+  bool alias = 4;
   bool name = 5;
   bool desc = 6;
+  bool labels = 7;
+  bool date_updated = 13;
+  bool date_erased = 14;
+  bool date_created = 15;
   ProjectSelect project = 8;
   bool status = 9;
   bool priority = 10;
   bool assignee = 11;
   bool assignee_run = 12;
-  bool date_updated = 13;
-  bool date_erased = 14;
-  bool date_created = 15;
-  bool labels = 16;
+  bool client_id = 16;
   bool source_session = 17;
   bool source_run = 18;
   bool source_seq = 19;
@@ -91,12 +94,10 @@ message TaskSelect {
 
 message TaskPatchRequest {
   TaskRef ref = 1;
+  string alias = 8;
   string name = 10;
   string desc = 12;
-  TaskStatus status = 18;
-  int32 priority = 20;
-  string assignee = 22;
-  string assignee_run = 24;
+  map<string, string> labels = 14;
   // The version this update requires the stored date_updated to be.
   // It is a precondition, not a write: the update applies only if the row
   // still holds this value, and the server stamps the new version itself.
@@ -111,13 +112,13 @@ message TaskPatchRequest {
   // refused rather than assumed, because an unset field cannot be told
   // apart from a caller who never considered locking at all.
   bool date_updated_force = 27;
-  TaskLabels labels = 32;
-  // Clear labels instead of writing it.
-  // It takes a field of its own because an unset value already means
-  // "leave it alone", so no value could have meant NULL. It wins
-  // outright: setting both this and labels clears.
-  bool labels_null = 33;
-  TaskActor actor = 100;
+  TaskStatus status = 18;
+  int32 priority = 20;
+  string assignee = 22;
+  string assignee_run = 24;
+  TaskActor actor = 1000;
+  // Protobuf maps have no presence: an empty map otherwise means no edit.
+  bool clear_labels = 1001;
 }
 
 message TaskActor {
@@ -152,7 +153,7 @@ message TaskListRequest {
   // ahead of the page does not shift it and a caller reading through never sees
   // one twice or misses one.
   string after = 3 [features.field_presence = IMPLICIT];
-  ProjectRef project = 100;
+  ProjectRef project = 1000;
 }
 
 message TaskListResponse {
@@ -189,7 +190,7 @@ message TaskWatchRequest {
   // know the current state and did not ask for it holds something wrong until
   // the next write happens to correct it.
   bool skip_snapshot = 2 [features.field_presence = IMPLICIT];
-  ProjectRef project = 100;
+  ProjectRef project = 1000;
 }
 
 message TaskWatchResponse {

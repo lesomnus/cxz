@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/lesomnus/cxz/resource"
+	"github.com/lesomnus/payday/header"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -43,7 +44,7 @@ func Run(t *testing.T, conn *grpc.ClientConn, f Fixture) {
 	}
 	add := func(key string) *resource.Task {
 		t.Helper()
-		v, err := client.Add(ctx, resource.TaskAddRequest_builder{Project: f.Project, ClientId: key, Name: key, Labels: resource.TaskLabels_builder{Values: []string{"api"}}.Build()}.Build())
+		v, err := client.Add(ctx, resource.TaskAddRequest_builder{Project: f.Project, ClientId: key, Name: key, Labels: map[string]string{"area": "api"}}.Build())
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -79,6 +80,9 @@ func Run(t *testing.T, conn *grpc.ClientConn, f Fixture) {
 	if len(v.GetId()) != 16 || v.GetId()[9] != 11 || v.GetStatus() != resource.TaskStatus_TASK_STATUS_TODO {
 		t.Fatalf("invalid initial task: %v", v)
 	}
+	if h := header.Of(v); h.Alias == "" || h.Labels["area"] != "api" || h.Name != "shared-work" {
+		t.Fatalf("Task is not readable as a payday header: %+v", h)
+	}
 	duplicate := add("shared-work")
 	if !bytes.Equal(v.GetId(), duplicate.GetId()) {
 		t.Fatal("Add retry created duplicate work")
@@ -87,6 +91,18 @@ func Run(t *testing.T, conn *grpc.ClientConn, f Fixture) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	v, err = client.Patch(ctx, resource.TaskPatchRequest_builder{Ref: ref(v), DateUpdated: v.GetDateUpdated(), Alias: proto.String("  Task-Main ")}.Build())
+	if err != nil || v.GetAlias() != "task-main" {
+		t.Fatalf("alias folding: %v %v", v, err)
+	}
+	byAlias, err := client.Get(ctx, resource.TaskGetRequest_builder{Ref: resource.TaskRef_builder{Alias: proto.String("task-main"), Project: f.Project}.Build(), Select: selectAll}.Build())
+	if err != nil || !bytes.Equal(byAlias.GetId(), v.GetId()) {
+		t.Fatalf("alias lookup: %v %v", byAlias, err)
+	}
+	_, err = client.Add(ctx, resource.TaskAddRequest_builder{Project: f.Project, ClientId: "occupied-alias", Alias: " TASK-MAIN ", Name: "Must not duplicate an alias"}.Build())
+	wantCode(err, codes.AlreadyExists)
+	_, err = client.Patch(ctx, resource.TaskPatchRequest_builder{Ref: ref(v), DateUpdated: v.GetDateUpdated(), Alias: proto.String("not a valid alias")}.Build())
+	wantCode(err, codes.InvalidArgument)
 	_, err = client.List(ctx, &resource.TaskListRequest{})
 	wantCode(err, codes.InvalidArgument)
 	_, err = client.Get(ctx, resource.TaskGetRequest_builder{Ref: resource.TaskRef_builder{Id: v.GetId(), Project: f.OtherProject}.Build(), Select: selectAll}.Build())
@@ -150,13 +166,17 @@ func Run(t *testing.T, conn *grpc.ClientConn, f Fixture) {
 	wantCode(err, codes.FailedPrecondition)
 	_, err = client.Patch(ctx, resource.TaskPatchRequest_builder{Ref: ref(v), DateUpdated: owned.GetDateUpdated(), Status: resource.TaskStatus_TASK_STATUS_DONE.Enum()}.Build())
 	wantCode(err, codes.InvalidArgument)
-	owned, err = client.Patch(ctx, resource.TaskPatchRequest_builder{Ref: ref(v), DateUpdated: owned.GetDateUpdated(), Actor: winner.actor, Status: resource.TaskStatus_TASK_STATUS_WAITING.Enum(), Labels: resource.TaskLabels_builder{}.Build()}.Build())
+	owned, err = client.Patch(ctx, resource.TaskPatchRequest_builder{Ref: ref(v), DateUpdated: owned.GetDateUpdated(), Actor: winner.actor, Status: resource.TaskStatus_TASK_STATUS_WAITING.Enum(), ClearLabels: proto.Bool(true)}.Build())
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(get(owned).GetLabels().GetValues()) != 0 {
+	if len(get(owned).GetLabels()) != 0 {
 		t.Fatal("empty label set did not clear labels")
 	}
+	_, err = client.Patch(ctx, resource.TaskPatchRequest_builder{Ref: ref(v), DateUpdated: v.GetDateUpdated(), ClearLabels: proto.Bool(true)}.Build())
+	wantCode(err, codes.FailedPrecondition)
+	_, err = client.Patch(ctx, resource.TaskPatchRequest_builder{Ref: ref(v), DateUpdated: owned.GetDateUpdated(), Labels: map[string]string{"area": "api"}, ClearLabels: proto.Bool(true)}.Build())
+	wantCode(err, codes.InvalidArgument)
 
 	// Filtered subscriptions remove a row when Release changes its owner.
 	filteredCtx, stopFiltered := context.WithCancel(ctx)

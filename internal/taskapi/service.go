@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/lesomnus/cxz/resource"
+	"github.com/lesomnus/payday/slug"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -123,11 +124,29 @@ func (s Service) Add(ctx context.Context, r *resource.TaskAddRequest) (*resource
 			return nil, invalid("an event reference requires source_run")
 		}
 	}
-	v, err := s.TaskServiceServer.Add(actionContext(ctx, resource.TaskService_Add_FullMethodName), request)
-	if status.Code(err) == codes.AlreadyExists {
-		return s.read(ctx, ref)
+	tries := 1
+	if r.GetAlias() == "" {
+		tries = slug.Tries
 	}
-	return v, err
+	for attempt := 0; ; attempt++ {
+		alias, err := slug.NameWith(ctx, nil, "cxz.Task", r.GetAlias(), request)
+		if err != nil {
+			return nil, invalid(err.Error())
+		}
+		request.SetAlias(alias)
+		v, err := s.TaskServiceServer.Add(actionContext(ctx, resource.TaskService_Add_FullMethodName), request)
+		if status.Code(err) != codes.AlreadyExists {
+			return v, err
+		}
+		if existing, lookupErr := s.read(ctx, ref); lookupErr == nil {
+			return existing, nil
+		} else if status.Code(lookupErr) != codes.NotFound {
+			return nil, lookupErr
+		}
+		if attempt+1 >= tries {
+			return nil, err
+		}
+	}
 }
 
 func version(at *timestamppb.Timestamp) error {
@@ -178,11 +197,14 @@ func (s Service) Patch(ctx context.Context, r *resource.TaskPatchRequest) (*reso
 	if r.HasPriority() {
 		next.SetPriority(r.GetPriority())
 	}
-	if r.HasLabels() {
+	if len(r.GetLabels()) > 0 {
 		next.SetLabels(r.GetLabels())
 	}
-	if r.GetLabelsNull() {
-		next.ClearLabels()
+	if r.GetClearLabels() {
+		if len(r.GetLabels()) > 0 {
+			return nil, invalid("labels and clear_labels cannot be combined")
+		}
+		next.SetLabels(nil)
 	}
 	if err := fields(next.GetName(), next.GetDesc(), next.GetPriority(), next.GetLabels()); err != nil {
 		return nil, err
@@ -214,6 +236,13 @@ func (s Service) Patch(ctx context.Context, r *resource.TaskPatchRequest) (*reso
 		}
 	}
 	request := proto.Clone(r).(*resource.TaskPatchRequest)
+	if r.HasAlias() {
+		alias, err := slug.ParseAlias(r.GetAlias())
+		if err != nil {
+			return nil, invalid(err.Error())
+		}
+		request.SetAlias(alias)
+	}
 	request.SetRef(resource.TaskRef_builder{Id: v.GetId(), Project: resource.ProjectRef_builder{Id: v.GetProject().GetId()}.Build()}.Build())
 	request.ClearActor() // Routing/policy fields are not ORM patch fields.
 	return s.TaskServiceServer.Patch(actionContext(ctx, resource.TaskService_Patch_FullMethodName), request)
@@ -338,7 +367,7 @@ func (s Service) Erase(context.Context, *resource.TaskRef) (*resource.TaskEraseR
 }
 
 func invalid(s string) error { return status.Error(codes.InvalidArgument, s) }
-func fields(name, desc string, priority int32, labels *resource.TaskLabels) error {
+func fields(name, desc string, priority int32, labels map[string]string) error {
 	if strings.TrimSpace(name) == "" || len(name) > 256 {
 		return invalid("task name must contain 1–256 bytes")
 	}
@@ -348,12 +377,12 @@ func fields(name, desc string, priority int32, labels *resource.TaskLabels) erro
 	if priority < 0 || priority > 4 {
 		return invalid("priority must be 0 (highest) through 4")
 	}
-	if len(labels.GetValues()) > 32 {
+	if len(labels) > 32 {
 		return invalid("too many labels")
 	}
-	for _, label := range labels.GetValues() {
-		if strings.TrimSpace(label) == "" || len(label) > 64 {
-			return invalid("labels must contain 1–64 bytes")
+	for key, value := range labels {
+		if strings.TrimSpace(key) == "" || len(key) > 64 || len(value) > 256 {
+			return invalid("label keys must contain 1–64 bytes and values at most 256 bytes")
 		}
 	}
 	return nil

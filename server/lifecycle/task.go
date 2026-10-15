@@ -10,6 +10,8 @@ import (
 	"github.com/lesomnus/cxz/resource"
 	"github.com/lesomnus/cxz/server/pd"
 	"github.com/lesomnus/payday/watch"
+	"github.com/lesomnus/protobuf-patch/patch"
+	"github.com/protobuf-orm/protobuf-orm/ormpatch"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -274,6 +276,21 @@ func (s taskClientServer) Watch(r *resource.TaskWatchRequest, out grpc.ServerStr
 type taskInventory struct {
 	resource.TaskServiceServer
 	Layer
+}
+
+func (s taskInventory) Patch(ctx context.Context, r *resource.TaskPatchRequest) (*resource.Task, error) {
+	if !r.GetClearLabels() {
+		return s.TaskServiceServer.Patch(ctx, r)
+	}
+	// Empty maps have no wire presence. Preserve the generated version test and
+	// other edits, then append an explicit empty-map assignment to the document.
+	doc, err := ormpatch.FromPatchRequest(ormpatch.MustEntityOf(resource.File_cxz_task_proto, "Task"), r.ProtoReflect(), nil)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	clear := patch.MustNew("cxz.Task", patch.Target(patch.Name("labels")).Assign(patch.Map()))
+	doc.GetDelta().SetEntries(append(doc.GetDelta().GetEntries(), clear.GetDelta().GetEntries()...))
+	return s.TaskServiceServer.Apply(ctx, resource.TaskApplyRequest_builder{Ref: r.GetRef(), Patch: doc}.Build())
 }
 
 // Empty snapshots settle immediately too. Changes are coalesced full state from
