@@ -276,6 +276,12 @@ it("reconciles only events newer than the pending snapshot across runs", () => {
   });
   expect(pendingAfter([pending], [resolved, next], 1n)).toEqual([next]);
   expect(pendingAfter([], [pending, resolved], 2n)).toEqual([]);
+  expect(pendingAfter([pending], [{ ...event(4n), kind: "state" }])).toEqual(
+    [],
+  );
+  expect(
+    pendingAfter([pending], [{ ...event(4n), kind: "fork_boundary" }]),
+  ).toEqual([]);
 });
 
 it("pages toward older history without evicting the newly fetched records", () => {

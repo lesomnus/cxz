@@ -174,6 +174,11 @@ export function pendingAfter(
   let out = pending;
   for (const e of events) {
     if (e.seq <= after) continue;
+    if (e.kind === "fork_boundary") out = [];
+    if (e.kind === "state") {
+      const current = out.filter((p) => p.runId === e.runId);
+      if (current.length !== out.length) out = current;
+    }
     if (e.kind === "approval" || e.kind === "approval_resolved") {
       out = out.filter(
         (p) => p.runId !== e.runId || p.requestId !== e.requestId,
