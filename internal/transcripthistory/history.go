@@ -71,7 +71,7 @@ func related(e *api.Event) string {
 	return text(child(p, "params"), "itemId")
 }
 
-var hidden = map[string]bool{"raw": true, "state": true, "vendor": true, "intent": true, "receipt": true, "approval_resolved": true, "models": true, "models_status": true, "usage": true, "usage_status": true, "history_checkpoint": true}
+var hidden = map[string]bool{"raw": true, "state": true, "vendor": true, "intent": true, "receipt": true, "approval_resolved": true, "models": true, "models_status": true, "usage": true, "usage_status": true, "history_checkpoint": true, "fork_boundary": true}
 
 func (p *Projection) put(e *api.Event, updated uint64) {
 	p.Rows[e.Seq] = e

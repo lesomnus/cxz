@@ -161,6 +161,12 @@ func (c *codexProtocol) consume(raw []byte) {
 			s.kill()
 			return
 		}
+		if s.snap.VendorID == "" && s.session.Fork != nil && r.Thread.ID == s.session.Fork.VendorID {
+			s.event("diagnostic", "Codex did not create an independent fork", "", nil, nil)
+			s.event("state", "failed", "", nil, nil)
+			s.kill()
+			return
+		}
 		s.snap.VendorID = r.Thread.ID
 		s.event("vendor", r.Thread.ID, "", nil, nil)
 		s.event("state", "idle", "", nil, nil)
@@ -330,7 +336,12 @@ func (c *codexProtocol) startThread() {
 	if s.session.Model != "" {
 		params["model"] = s.session.Model
 	}
-	if s.snap.VendorID != "" {
+	if s.snap.VendorID == "" && s.session.Fork != nil && s.session.Fork.VendorID != "" {
+		method = "thread/fork"
+		params["threadId"] = s.session.Fork.VendorID
+		params["path"] = s.session.Fork.NativePath
+		params["excludeTurns"] = true
+	} else if s.snap.VendorID != "" {
 		method = "thread/resume"
 		params["threadId"] = s.snap.VendorID
 		// The journal already owns the conversation. Only metadata is needed

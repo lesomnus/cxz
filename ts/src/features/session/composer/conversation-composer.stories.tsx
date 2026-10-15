@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@lesomnus/nox";
 import { SessionDrafts } from "#src/features/session/model/session-drafts.ts";
 import { create } from "@bufbuild/protobuf";
+import { responseEvent, storyEvent } from "#src/storybook/fixtures.ts";
 import { ProjectPathEntrySchema } from "#gen/cxz/project_svc_pb";
 import {
   ComponentPreview,
@@ -181,6 +182,22 @@ export const PendingSend: Story = {
   },
 };
 export const Working: Story = { args: { working: true } };
+export const ForkConversation: Story = {
+  args: {
+    events: [
+      storyEvent(1, "input", "Explore two approaches to the same problem."),
+      responseEvent(2, "codex", "The current context is ready to branch."),
+    ],
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Open Session menu → Fork to simulate a new session identity and alias while preserving the conversation, model and effort. Open Details to inspect the new identity. This preview stays local; the connected app uses Session.Fork and navigates to the new session. Active turns and pending questions or queued input disable Fork.",
+      },
+    },
+  },
+};
 export const StoppedSession: Story = {
   args: { sessionStopped: true },
   parameters: {

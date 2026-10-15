@@ -48,6 +48,7 @@ test("composer session menu stays in the viewport, supports keyboard navigation 
   await expect(menu.getByRole("menuitem")).toHaveText([
     "Stop",
     "Restart",
+    "Fork",
     "Purge",
     "Insert secret",
     "Shared memory",
@@ -58,7 +59,7 @@ test("composer session menu stays in the viewport, supports keyboard navigation 
     "Upload folder",
     "Details",
   ]);
-  await expect(menu.locator(".action-menu-item-label > svg")).toHaveCount(6);
+  await expect(menu.locator(".action-menu-item-label > svg")).toHaveCount(7);
   await expect(menu.getByText("Information", { exact: true })).toHaveCount(0);
   await expect(
     menu.getByRole("menuitem", { name: "Copy session link" }),
@@ -95,6 +96,30 @@ test("composer session menu stays in the viewport, supports keyboard navigation 
   expect(mobile.y).toBeGreaterThanOrEqual(0);
   expect(mobile.y + mobile.height).toBeLessThanOrEqual(844);
   await page.screenshot({ path: "test-results/session-menu-mobile.png" });
+});
+test("Fork preserves the conversation and new input stays in the child session", async ({
+  page,
+}) => {
+  await ready(page);
+  const original = page.url();
+  const messages = page.locator(
+    ".transcript-content article.input .message-body",
+  );
+  const previous = await messages.allTextContents();
+  await choose(page, "Fork");
+  await expect(page).toHaveURL(/#\/sessions\/session-fork-/);
+  await expect(messages).toHaveText(previous);
+  const input = page.getByRole("textbox", { name: "Message", exact: true });
+  await input.fill("Explore the second direction in this fork.");
+  await page.getByRole("button", { name: "Send", exact: true }).click();
+  await expect(messages.last()).toHaveText(
+    "Explore the second direction in this fork.",
+  );
+  await page.goto(original);
+  await expect(
+    page.getByRole("heading", { name: "Current status" }),
+  ).toBeVisible();
+  await expect(messages).toHaveText(previous);
 });
 test("Stop and Resume toggle, while Restart requires confirmation and preserves conversation history", async ({
   page,

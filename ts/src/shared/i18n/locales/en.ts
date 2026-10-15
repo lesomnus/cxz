@@ -332,6 +332,7 @@ export const messages = {
   "Last week": "Last week",
   Latest: "Latest",
   "Just now": "Just now",
+  Fork: "Fork",
   Live: "Live",
   "Loading files…": "Loading files…",
   "Loading projects…": "Loading projects…",

@@ -335,6 +335,7 @@ export const messages = {
   "Last week": "지난주",
   Latest: "최신 대화",
   "Just now": "방금",
+  Fork: "분기",
   Live: "실시간",
   "Loading files…": "파일 로딩 중…",
   "Loading projects…": "프로젝트 로딩 중…",

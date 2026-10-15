@@ -29,6 +29,7 @@ const (
 	SessionService_ConversationStats_FullMethodName      = "/cxz.SessionService/ConversationStats"
 	SessionService_Restore_FullMethodName                = "/cxz.SessionService/Restore"
 	SessionService_Resume_FullMethodName                 = "/cxz.SessionService/Resume"
+	SessionService_Fork_FullMethodName                   = "/cxz.SessionService/Fork"
 	SessionService_Stop_FullMethodName                   = "/cxz.SessionService/Stop"
 	SessionService_Interrupt_FullMethodName              = "/cxz.SessionService/Interrupt"
 	SessionService_CopyMemory_FullMethodName             = "/cxz.SessionService/CopyMemory"
@@ -107,6 +108,9 @@ type SessionServiceClient interface {
 	ConversationStats(ctx context.Context, in *ConversationStatsRequest, opts ...grpc.CallOption) (*ConversationStatsReply, error)
 	Restore(ctx context.Context, in *SessionRef, opts ...grpc.CallOption) (*Session, error)
 	Resume(ctx context.Context, in *SessionControl, opts ...grpc.CallOption) (*Session, error)
+	// Branch a settled conversation, retaining its project, account and settings.
+	// client_id makes retries return the same child rather than creating another.
+	Fork(ctx context.Context, in *SessionControl, opts ...grpc.CallOption) (*Session, error)
 	Stop(ctx context.Context, in *SessionControl, opts ...grpc.CallOption) (*Session, error)
 	Interrupt(ctx context.Context, in *SessionControl, opts ...grpc.CallOption) (*SessionReceipt, error)
 	CopyMemory(ctx context.Context, in *SessionCopyMemoryRequest, opts ...grpc.CallOption) (*SessionReceipt, error)
@@ -304,6 +308,16 @@ func (c *sessionServiceClient) Resume(ctx context.Context, in *SessionControl, o
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Session)
 	err := c.cc.Invoke(ctx, SessionService_Resume_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionServiceClient) Fork(ctx context.Context, in *SessionControl, opts ...grpc.CallOption) (*Session, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Session)
+	err := c.cc.Invoke(ctx, SessionService_Fork_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -812,6 +826,9 @@ type SessionServiceServer interface {
 	ConversationStats(context.Context, *ConversationStatsRequest) (*ConversationStatsReply, error)
 	Restore(context.Context, *SessionRef) (*Session, error)
 	Resume(context.Context, *SessionControl) (*Session, error)
+	// Branch a settled conversation, retaining its project, account and settings.
+	// client_id makes retries return the same child rather than creating another.
+	Fork(context.Context, *SessionControl) (*Session, error)
 	Stop(context.Context, *SessionControl) (*Session, error)
 	Interrupt(context.Context, *SessionControl) (*SessionReceipt, error)
 	CopyMemory(context.Context, *SessionCopyMemoryRequest) (*SessionReceipt, error)
@@ -935,6 +952,9 @@ func (UnimplementedSessionServiceServer) Restore(context.Context, *SessionRef) (
 }
 func (UnimplementedSessionServiceServer) Resume(context.Context, *SessionControl) (*Session, error) {
 	return nil, status.Error(codes.Unimplemented, "method Resume not implemented")
+}
+func (UnimplementedSessionServiceServer) Fork(context.Context, *SessionControl) (*Session, error) {
+	return nil, status.Error(codes.Unimplemented, "method Fork not implemented")
 }
 func (UnimplementedSessionServiceServer) Stop(context.Context, *SessionControl) (*Session, error) {
 	return nil, status.Error(codes.Unimplemented, "method Stop not implemented")
@@ -1258,6 +1278,24 @@ func _SessionService_Resume_Handler(srv interface{}, ctx context.Context, dec fu
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SessionServiceServer).Resume(ctx, req.(*SessionControl))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SessionService_Fork_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SessionControl)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionServiceServer).Fork(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SessionService_Fork_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionServiceServer).Fork(ctx, req.(*SessionControl))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2064,6 +2102,10 @@ var SessionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Resume",
 			Handler:    _SessionService_Resume_Handler,
+		},
+		{
+			MethodName: "Fork",
+			Handler:    _SessionService_Fork_Handler,
 		},
 		{
 			MethodName: "Stop",

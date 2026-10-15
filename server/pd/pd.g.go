@@ -3835,6 +3835,11 @@ func (s interceptSession) Resume(ctx context.Context, req *resource.SessionContr
 		resource.SessionService_Resume_FullMethodName, req, s.SessionServiceServer.Resume)
 }
 
+func (s interceptSession) Fork(ctx context.Context, req *resource.SessionControl) (*resource.Session, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
+		resource.SessionService_Fork_FullMethodName, req, s.SessionServiceServer.Fork)
+}
+
 func (s interceptSession) Stop(ctx context.Context, req *resource.SessionControl) (*resource.Session, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
 		resource.SessionService_Stop_FullMethodName, req, s.SessionServiceServer.Stop)
@@ -5696,6 +5701,19 @@ func dispatch(ctx context.Context, s resource.Server, op *pdpb.Op) (*anypb.Any, 
 		}
 
 		res, err := s.Session().Resume(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.SessionService_Fork_FullMethodName:
+		v := &resource.SessionControl{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Session().Fork(ctx, v)
 		if err != nil {
 			return nil, err
 		}

@@ -358,7 +358,7 @@ this terminal for developing cxz itself, and Ctrl+C stops only that gateway.
 | Conversation | Virtualized paged history, live events, Markdown, highlighted code, model/effort snapshots, response metrics and copy |
 | Drafts | Per-session drafts and paste chips survive navigation and reload in tab-local sessionStorage |
 | Sending | Explicit Send or Ctrl+Enter; mutation IDs; no automatic replay after ambiguous failure |
-| Session control | Interrupt, stop/resume, restart, purge with dry-run review and confirmation; queued-message cancel/recall |
+| Session control | Interrupt, stop/resume, restart, fork with inherited account/settings/history, purge with dry-run review and confirmation; queued-message cancel/recall |
 | Approval | Allow/deny and full tool input/output/approval inspection |
 | Questions | Claude choices/free text/previews; Codex requestUserInput and asynchronous questions; recorded replies |
 | MCP | Basic request display; schema-based elicitation forms still require the TUI |

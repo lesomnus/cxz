@@ -3,6 +3,7 @@ package main
 
 import (
 	"bufio"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -25,8 +26,43 @@ func main() {
 	}
 	var mu sync.Mutex
 	vendor := "00000000-0000-4000-8000-000000000001"
+	resume, fork := "", false
+	for i, arg := range os.Args {
+		if arg == "--resume" && i+1 < len(os.Args) {
+			resume = os.Args[i+1]
+		}
+		if arg == "--fork-session" {
+			fork = true
+		}
+	}
+	if resume != "" {
+		vendor = resume
+	}
+	native := func(id string) string {
+		return filepath.Join(os.Getenv("CLAUDE_CONFIG_DIR"), "projects", "fixture", id+".jsonl")
+	}
+	if fork {
+		hash := fmt.Sprintf("%x", sha256.Sum256([]byte(os.Getenv("CLAUDE_CONFIG_DIR"))))
+		vendor = hash[:8] + "-" + hash[8:12] + "-" + hash[12:16] + "-" + hash[16:20] + "-" + hash[20:32]
+		previous, err := os.ReadFile(native(resume))
+		if err != nil {
+			panic(err)
+		}
+		if err := os.WriteFile(native(vendor), previous, 0600); err != nil {
+			panic(err)
+		}
+	}
+
+	var nativeMu sync.Mutex
 	emit := func(v any) { mu.Lock(); defer mu.Unlock(); b, _ := json.Marshal(v); fmt.Println(string(b)) }
 	finish := func(text string) {
+		nativeMu.Lock()
+		os.MkdirAll(filepath.Dir(native(vendor)), 0700)
+		if file, err := os.OpenFile(native(vendor), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600); err == nil {
+			json.NewEncoder(file).Encode(map[string]string{"text": text})
+			file.Close()
+		}
+		nativeMu.Unlock()
 		emit(map[string]any{"type": "assistant", "session_id": vendor, "message": map[string]any{"content": []any{map[string]any{"type": "text", "text": text}}}})
 		emit(map[string]any{"type": "result", "subtype": "success", "session_id": vendor, "result": text})
 	}
@@ -73,6 +109,9 @@ func main() {
 				finish("Compacted fixture context")
 			case v.Message.Content == "account-context":
 				finish("profile=" + filepath.Base(filepath.Dir(os.Getenv("CLAUDE_CONFIG_DIR"))) + " home=" + filepath.Base(filepath.Dir(os.Getenv("HOME"))) + " inherited-key=" + fmt.Sprint(os.Getenv("OPENAI_API_KEY") != "" || os.Getenv("ANTHROPIC_API_KEY") != ""))
+			case v.Message.Content == "fork-context":
+				history, _ := os.ReadFile(native(vendor))
+				finish("inherited hello=" + fmt.Sprint(strings.Contains(string(history), "echo: hello")))
 			case strings.HasPrefix(v.Message.Content, "approval"), v.Message.Content == "question":
 				pending = v.Message.Content
 				tool := "Bash"

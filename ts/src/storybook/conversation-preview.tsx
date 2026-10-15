@@ -217,6 +217,7 @@ export function ComponentPreview({
   const [generation, setGeneration] = useState(1);
   const active = working && !stopped;
   const [identity, setIdentity] = useState({
+    runtimeId: storySession().runtimeId,
     name: storySession().name,
     alias: storySession().alias,
   });
@@ -318,6 +319,17 @@ export function ComponentPreview({
               contextWindow: 200000,
             }}
             busy={sending}
+            fork={async () => {
+              const next = {
+                ...identityRef.current,
+                runtimeId: crypto.randomUUID(),
+                alias: `fork-${generation + 1}`,
+              };
+              identityRef.current = next;
+              setIdentity(next);
+              setStopped(false);
+              setGeneration((value) => value + 1);
+            }}
             upload={uploadMode ? pick : undefined}
             edit={async (field, value) => {
               identityRef.current = { ...identityRef.current, [field]: value };

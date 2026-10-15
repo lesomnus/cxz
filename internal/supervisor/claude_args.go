@@ -1,6 +1,16 @@
 package supervisor
 
-import "time"
+import (
+	"github.com/lesomnus/cxz/internal/core"
+	"time"
+)
+
+func claudeSessionArgs(session core.Session, effort, resume string) []string {
+	if resume == "" && session.Fork != nil && session.Fork.VendorID != "" {
+		return append(claudeRunArgs(session.Model, effort, session.Fork.VendorID), "--fork-session")
+	}
+	return claudeRunArgs(session.Model, effort, resume)
+}
 
 func claudeArgs() []string {
 	// Use Claude's default tool set. Built-in /context and /compact are enabled;

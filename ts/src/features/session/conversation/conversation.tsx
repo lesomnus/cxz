@@ -8,6 +8,7 @@ import errorStyles from "./activity-card.module.css";
 import { attachSummaries } from "#src/features/session/model/session-aux.ts";
 import { useSessionAux } from "#src/features/session/model/use-session-aux.ts";
 import { QuestionCard } from "#src/features/session/questions/question-card.tsx";
+import { requiredSessionLogin } from "#src/features/accounts/login-required.ts";
 import { ConversationComposer } from "#src/features/session/composer/conversation-composer.tsx";
 import {
   downloadArgument,
@@ -627,6 +628,57 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
       setBusy(false);
     }
   }
+  const forkRequest = useRef<
+    { source: string; run: string; clientId: string } | undefined
+  >(undefined);
+  async function forkConversation(afterLogin = false) {
+    return action(async (session) => {
+      const run = session.status?.runId ?? "";
+      if (forkRequest.current?.source !== id || forkRequest.current.run !== run)
+        forkRequest.current = {
+          source: id,
+          run,
+          clientId: crypto.randomUUID(),
+        };
+      const clientId = forkRequest.current.clientId;
+      try {
+        const child = await c.sessions.fork(
+          { ref: ref(id), runId: run, clientId },
+          { timeoutMs: 120000 },
+        );
+        c.store.apply("cxz.Session", [{ id: child.id, value: child }]);
+        await navigate({
+          to: "/sessions/$sessionId",
+          params: { sessionId: child.runtimeId },
+        });
+        forkRequest.current = undefined;
+      } catch (error) {
+        const account = session.account?.alias ?? "";
+        if (
+          afterLogin ||
+          session.agent !== "claude" ||
+          !account ||
+          !projectId ||
+          !requiredSessionLogin(error, account, clientId)
+        )
+          throw error;
+        openCard({
+          title: "Session login",
+          content: (close) => (
+            <LoginPanel
+              c={c}
+              target={{ account, project: projectId, key: clientId }}
+              complete={() => {
+                close();
+                void forkConversation(true);
+              }}
+              cancel={close}
+            />
+          ),
+        });
+      }
+    });
+  }
   function control(s: Session) {
     return {
       ref: ref(id),
@@ -1051,6 +1103,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
             session={s && { ...s, project: sessionProject ?? s.project }}
             info={info}
             busy={busy}
+            fork={() => forkConversation()}
             tools={[
               {
                 label: "Insert secret",
