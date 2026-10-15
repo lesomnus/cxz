@@ -252,7 +252,9 @@ header strong {
   filter: brightness(0.55);
   transition: filter 160ms ease;
 }
-:root:not([data-theme="light"]) .profile-trigger:hover .profile-avatar,
+:root:not([data-theme="light"])
+  .profile-trigger:is(:hover, [aria-expanded="true"])
+  .profile-avatar,
 :root:not([data-theme="light"]) .profile-trigger:focus-visible .profile-avatar {
   filter: brightness(1);
 }
@@ -2122,7 +2124,7 @@ pre {
   background: transparent;
   color: inherit;
 }
-.composer .toolbar-button:not(:disabled):hover,
+.composer .toolbar-button:not(:disabled):is(:hover, [aria-expanded="true"]),
 .card-close:not(:disabled):hover {
   background: var(--shade-54);
 }

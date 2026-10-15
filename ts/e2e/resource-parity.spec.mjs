@@ -456,9 +456,21 @@ test("account registration, session creation and archive restore use resource AP
   expect(
     await body.evaluate((el) => parseFloat(getComputedStyle(el).borderRadius)),
   ).toBeGreaterThan(0);
+  const menuTrigger = panel.getByRole("button", {
+    name: "Session panel options",
+    exact: true,
+  });
+  await menuTrigger.hover();
+  const hoverBackground = await menuTrigger.evaluate(
+    (el) => getComputedStyle(el).backgroundColor,
+  );
+  await expect(menuTrigger).toHaveCSS("border-right-width", "0px");
   await panel
     .getByRole("button", { name: "Session panel options", exact: true })
     .click();
+  await page.mouse.move(0, 0);
+  await expect(menuTrigger).toHaveCSS("background-color", hoverBackground);
+
   await page
     .getByRole("menu", { name: "Session panel options", exact: true })
     .evaluate(async (el) => {
