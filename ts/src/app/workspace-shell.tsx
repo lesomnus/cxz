@@ -10,7 +10,7 @@ import {
   useState,
 } from "react";
 import type { Session } from "#gen/cxz/session_pb";
-import { Button } from "@lesomnus/nox";
+import { ActionMenu } from "@lesomnus/nox";
 import { Connection } from "#src/shared/api/connection.ts";
 import { ProfileMenu } from "./profile-menu";
 import { SessionTreeGroup } from "#src/features/session/components/session-tree.tsx";
@@ -47,8 +47,6 @@ export function Workspace({
   useEffect(() => setSettingsFileOpen(false), [resource, settingsTopic]);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [addingSession, setAddingSession] = useState(false);
-  const panel = useRef<HTMLElement>(null);
-  const addSession = useRef<HTMLButtonElement>(null);
   useEffect(() => setAddingSession(false), [resource, session]);
   const inventory = useResourceInventory(c);
   const { unread, errors } = useSessionAttention(
@@ -157,7 +155,6 @@ export function Workspace({
         </nav>
         {resource !== "accounts" && (
           <ResourcePanel
-            ref={panel}
             className={resource === "sessions" ? "session-panel" : ""}
             title={
               resource === "sessions"
@@ -172,25 +169,15 @@ export function Workspace({
             }
             actions={
               resource === "sessions" && (
-                <Button
-                  ref={addSession}
-                  type="button"
-                  title="Add session"
-                  aria-label="Add session"
-                  onClick={() => setAddingSession(true)}
-                >
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.6"
-                    aria-hidden="true"
-                  >
-                    <path d="M12 5v14M5 12h14" />
-                  </svg>
-                </Button>
+                <ActionMenu
+                  label="Session panel options"
+                  items={[
+                    {
+                      label: "Add session",
+                      run: () => setAddingSession(true),
+                    },
+                  ]}
+                />
               )
             }
             aria-label={
@@ -289,8 +276,7 @@ export function Workspace({
           <SessionCreate
             c={c}
             projects={projects}
-            anchor={panel.current}
-            trigger={addSession.current}
+            centered
             close={() => setAddingSession(false)}
           />
         )}
