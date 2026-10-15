@@ -53,3 +53,12 @@
 .panel :global(.panel-scroll-inner) {
   padding: var(--ui-control-inset);
 }
+
+.actions button:global(.session-panel-menu-trigger) {
+  border: 1px solid var(--ui-shade-58);
+  background: transparent;
+}
+.actions button:global(.session-panel-menu-trigger):hover {
+  border-color: var(--ui-shade-115);
+  background: transparent;
+}
