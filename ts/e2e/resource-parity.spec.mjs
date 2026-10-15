@@ -459,6 +459,14 @@ test("account registration, session creation and archive restore use resource AP
   await panel
     .getByRole("button", { name: "Session panel options", exact: true })
     .click();
+  await page
+    .getByRole("menu", { name: "Session panel options", exact: true })
+    .evaluate(async (el) => {
+      const animations = el.getAnimations();
+      if (!animations.length)
+        throw new Error("Menu entrance animation missing");
+      await Promise.all(animations.map((animation) => animation.finished));
+    });
   const menuBox = await page
     .getByRole("menu", { name: "Session panel options", exact: true })
     .boundingBox();
