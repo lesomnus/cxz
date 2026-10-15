@@ -20,7 +20,7 @@
   --composer-pending-glow: color-mix(in srgb, var(--shade-65) 35%, transparent);
   --composer-pending-pulse-duration: 2400ms;
   --composer-pending-pulse-delay: 500ms;
-  --composer-grain-texture: url("../../shared/assets/textures/fine-grain.svg");
+  --fine-grain-texture: url("../../shared/assets/textures/fine-grain.svg");
   --send-exit-duration: 180ms;
   --send-enter-duration: 240ms;
   --send-exit-travel: 72px;
@@ -822,9 +822,14 @@ header strong {
   padding: 0;
 }
 .input-box {
-  background: var(--shade-34);
+  background-color: var(--shade-34);
   border-radius: 8px;
   padding: 10px 12px;
+}
+.input-box,
+.composer-input {
+  background-image: var(--fine-grain-texture);
+  background-blend-mode: soft-light;
 }
 .input[data-send-arrival] {
   overflow: clip;
@@ -1319,8 +1324,6 @@ pre {
 }
 .composer-input {
   z-index: 2;
-  background-image: var(--composer-grain-texture);
-  background-blend-mode: soft-light;
   border: 1px solid var(--shade-58);
   width: calc(100% + 2px + 2 * var(--composer-overhang));
   margin: 0 calc(-1px - var(--composer-overhang)) -1px;
