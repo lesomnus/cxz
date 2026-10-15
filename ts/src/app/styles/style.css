@@ -81,7 +81,7 @@
   --scroll-handle-size: 4px;
   --scroll-handle-radius: 3px;
   --scroll-handle-expansion: 2;
-  --scroll-thumb-response-duration: 100ms;
+  --scroll-thumb-response-duration: 28ms;
   --native-scrollbar-size: 12px;
   --scroll-near-distance: 32px;
   --agent-logo-size: 14px;
@@ -2721,6 +2721,7 @@ summary:hover {
   pointer-events: none;
 }
 .scroll-thumb {
+  top: 0;
   position: absolute;
   right: 0;
   width: 24px;
@@ -2728,14 +2729,6 @@ summary:hover {
   pointer-events: auto;
   touch-action: none;
   user-select: none;
-  transition: top var(--scroll-thumb-response-duration) ease-out;
-}
-/* Dragging already follows the pointer through the scroll physics. Range
-   rebases share a frame-by-frame timeline with the message markers. */
-.scroll-following .scroll-thumb,
-.scroll-dragging .scroll-thumb,
-.scroll-rebasing .scroll-thumb {
-  transition: none;
 }
 .scroll-handle {
   display: block;

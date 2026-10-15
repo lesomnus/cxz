@@ -258,6 +258,32 @@ for (const reduced of [false, true]) {
     );
     expect(intermediate.length > 0).toBe(!reduced);
     await expect.poll(settled).toBeLessThan(0.1);
+
+    // Keep changing the target for multiple frames. An isolated jump does not
+    // catch a handle that waits until scrolling stops before catching up.
+    const continuous = await page.evaluate(async () => {
+      const pane = document.querySelector(".transcript");
+      const thumb = document.querySelector(".scroll-thumb");
+      const before = parseFloat(getComputedStyle(thumb).top);
+      const frames = [];
+      for (let i = 0; i < 20; i++) {
+        pane.scrollTop -= 48;
+        await new Promise(requestAnimationFrame);
+        frames.push({
+          top: parseFloat(getComputedStyle(thumb).top),
+          target: Number(thumb.dataset.targetTop),
+        });
+      }
+      return { before, frames };
+    });
+    expect(continuous.frames[7].top).toBeLessThan(continuous.before - 5);
+    const moving = continuous.frames.slice(5);
+    expect(moving.every((f, i) => !i || f.top < moving[i - 1].top)).toBe(true);
+    const last = moving.at(-1);
+    expect(
+      (continuous.before - last.top) / (continuous.before - last.target),
+    ).toBeGreaterThan(0.8);
+    await expect.poll(settled).toBeLessThan(0.1);
   });
 }
 for (const mode of ["legacy", "summary"])
