@@ -189,8 +189,43 @@ return err
 
 For a browser client, create a Connect client from
 `ts/gen/cxz/task_svc_pb.ts` using the existing connection transport. It works
-with the sandbox transport too. A Task board and CLI/TUI task commands are not
-implemented yet; agents use the built-in MCP tools above.
+with the sandbox transport too. Agents use the built-in MCP tools above;
+dedicated CLI/TUI task commands remain a follow-up.
+
+## Web board
+
+Open **Tasks** in the resource sidebar and choose a project. The board groups
+work into Todo, In progress, Waiting and Done. Recent completed work appears
+first, with older completed and canceled work available explicitly. Cards show
+the title, alias, owner, last update and ownership warnings. Owner and source
+links open the corresponding session, with the source event selected when its
+reference is available.
+
+The project catalog is live through TaskService.Watch. The board and session
+toolbar share a subscription for the same project; leaving the view retains its
+in-memory snapshot, and returning reconciles it with a fresh server snapshot.
+There is no browser-persisted authoritative Task store or polling loop. If the
+runtime is stopped or does not implement Tasks, the view reports that condition
+and offers Retry.
+
+Use Add to register work or open a card to edit its title, alias, description,
+priority and permitted status. The dialog reads the current Task, then saves
+against that observed version. Incoming updates do not overwrite an open edit.
+After a version conflict, the draft remains visible and an explicit Reload
+latest task action lets the operator start from the new record. Stable Task IDs
+keep an open detail view associated with its record across alias changes.
+
+Stopped, unavailable and previous-run owners are flagged rather than silently
+reassigned. Release requires confirmation and clears the stored owner/run under
+the version precondition, including after the owning session was removed. It
+does not stop an agent. Manual claim/reassignment is left to the agent tools;
+the browser provides explicit operator recovery without bypassing the API's
+ownership rules.
+
+The session composer toolbar shows active Tasks assigned to that session's
+current run, separately from provider background jobs. It opens the board with
+that owner/run filter, which can be cleared to see the whole project. The URL
+preserves project, selected Task and owner/run selection.
 
 ## Verification
 
@@ -208,3 +243,10 @@ the private runtime handshake, the stdio bridge and launch replacement fencing.
 Native tests additionally verify persistence after rebuilding the service,
 session projection removal, Manager forwarding with independent aliases, live
 Watch forwarding and absence of manager-side shadow rows or offline fallback.
+
+Web tests cover shared project subscriptions, reconnect snapshots, ownership
+warnings and filtering. Storybook browser tests exercise creation, editing,
+confirmed Release, concurrent updates and narrow-screen project selection. A
+WASM browser test verifies the real Task service through session navigation,
+registration and editing. `Resources/Tasks` supplies interactive board fixtures
+without starting a project runtime.
