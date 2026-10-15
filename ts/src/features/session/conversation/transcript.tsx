@@ -303,7 +303,9 @@ export function Transcript({
     const motion = {
       time: performance.now(),
       progress: 0,
-      thumb: parseFloat(thumb.current.style.top),
+      // Ordinary handle motion can still be easing toward its target. Rebase
+      // from the painted position so switching to the shared timeline is smooth.
+      thumb: parseFloat(getComputedStyle(thumb.current).top),
       markers: new Map(
         [...markerNodes.current.values()]
           .map((node): [string, number] => [
@@ -779,7 +781,7 @@ export function Transcript({
       : target;
   return (
     <div
-      className={`transcript-area ${follow.current ? "scroll-following" : ""} ${near ? "scroll-near" : ""} ${dragging ? "scroll-dragging" : ""}`}
+      className={`transcript-area ${follow.current ? "scroll-following" : ""} ${near ? "scroll-near" : ""} ${dragging ? "scroll-dragging" : ""} ${rangeFrame ? "scroll-rebasing" : ""}`}
       onPointerDownCapture={(event) => {
         if (
           activeWork &&
