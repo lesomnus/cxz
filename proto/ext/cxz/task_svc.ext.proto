@@ -1,0 +1,27 @@
+edition = "2023";
+package cxz;
+import "cxz/task.proto";
+import "cxz/project_svc.g.proto";
+import "cxz/session_svc.g.proto";
+import "google/protobuf/timestamp.proto";
+option go_package = "github.com/lesomnus/cxz/resource";
+
+service TaskService {
+  // Atomically reserve unowned Todo work. Same session/run retries are safe.
+  rpc Claim(TaskClaimRequest) returns (Task);
+  // Explicitly return owned work to Todo, including after its session stopped.
+  rpc Release(TaskClaimRequest) returns (Task);
+}
+
+// Scope is mandatory even when addressing an ID. It routes to the authoritative
+// project runtime, and is checked there rather than trusted as an identity.
+message TaskRef { ProjectRef project = 100; }
+message TaskListRequest { ProjectRef project = 100; }
+message TaskWatchRequest { ProjectRef project = 100; }
+message TaskPatchRequest { TaskActor actor = 100; }
+message TaskActor { SessionRef session = 1; string run_id = 2; }
+message TaskClaimRequest {
+  TaskRef ref = 1;
+  TaskActor actor = 2;
+  google.protobuf.Timestamp date_updated = 3;
+}

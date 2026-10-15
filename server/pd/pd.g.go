@@ -21,6 +21,7 @@ import (
 	predicate "github.com/lesomnus/cxz/internal/ent/predicate"
 	project "github.com/lesomnus/cxz/internal/ent/project"
 	session "github.com/lesomnus/cxz/internal/ent/session"
+	task "github.com/lesomnus/cxz/internal/ent/task"
 	tenant "github.com/lesomnus/cxz/internal/ent/tenant"
 	resource "github.com/lesomnus/cxz/resource"
 	bare "github.com/lesomnus/cxz/server/bare"
@@ -88,6 +89,7 @@ const (
 	OutboxDomain      pdid.Domain = 4  // "outbox"
 	ProjectDomain     pdid.Domain = 7  // "project"
 	SessionDomain     pdid.Domain = 8  // "session"
+	TaskDomain        pdid.Domain = 11 // "task"
 	TenantDomain      pdid.Domain = 1  // "tenant"
 )
 
@@ -99,6 +101,7 @@ func init() {
 	pdid.Register("cxz.Outbox", OutboxDomain, "outbox")
 	pdid.Register("cxz.Project", ProjectDomain, "project")
 	pdid.Register("cxz.Session", SessionDomain, "session")
+	pdid.Register("cxz.Task", TaskDomain, "task")
 	pdid.Register("cxz.Tenant", TenantDomain, "tenant")
 
 	pdid.RegisterTenant(TenantDomain)
@@ -114,6 +117,7 @@ var Domains = map[string]pdid.Domain{
 	"cxz.Outbox":      OutboxDomain,
 	"cxz.Project":     ProjectDomain,
 	"cxz.Session":     SessionDomain,
+	"cxz.Task":        TaskDomain,
 	"cxz.Tenant":      TenantDomain,
 }
 
@@ -201,6 +205,11 @@ func (wall) ProjectScope(ctx context.Context) (predicate.Project, error) {
 
 // SessionScope: declared `global`, so it is not behind the wall at all.
 func (wall) SessionScope(ctx context.Context) (predicate.Session, error) {
+	return nil, nil
+}
+
+// TaskScope: declared `global`, so it is not behind the wall at all.
+func (wall) TaskScope(ctx context.Context) (predicate.Task, error) {
 	return nil, nil
 }
 
@@ -2549,6 +2558,359 @@ func (s sinkSession) watchSessionKeys(
 	return ks, nil
 }
 
+type sinkTask struct {
+	resource.TaskServiceServer
+	store  bare.Store
+	w      *watch.Watch
+	namer  slug.Namer
+	joined bool
+}
+
+func (s Sink) Task() resource.TaskServiceServer {
+	return sinkTask{s.Server.Task(), s.Server.Store, s.w, s.namer, s.joined}
+}
+
+// orderTask is how Tasks come back.
+//
+// The last column is the key, and it is not decoration: a cursor cannot
+// tell apart two rows equal in every column of the order, so the page after
+// the first of them either repeats the second or skips it. Rows written by
+// one request are stamped a moment apart at best.
+var orderTask = []sqlpage.Order{
+	{Column: task.FieldDateCreated, Desc: false},
+	{Column: task.FieldId, Desc: false},
+}
+
+const (
+	// TaskPageSize is what a request that did not say gets, and
+	// TaskPageLimit is the most it gets however loudly it asks.
+	TaskPageSize  = 100
+	TaskPageLimit = 500
+
+	// TaskFilterLimit is how many filters one request may carry. Each is a
+	// predicate in the same query, so it is what says how much of the
+	// database a request may ask to read -- and it is refused rather than
+	// clamped, because dropping half the filters would answer a question
+	// nobody asked.
+	TaskFilterLimit = 32
+)
+
+// List answers with the Tasks that match any of the given filters, or with
+// every one there is if the request named none, a page at a time.
+func (s sinkTask) List(ctx context.Context, req *resource.TaskListRequest) (*resource.TaskListResponse, error) {
+	q := s.store.Db.Task.Query()
+
+	// Through the same narrowing every generated read goes through, and not
+	// by asking the scope alone: what narrows a read is the wall today and
+	// the wall and something else tomorrow, and a list that reached past it
+	// would be the one read that missed the something else.
+	if p, err := bare.TaskNarrow(ctx, s.store.Scope, nil); err != nil {
+		return nil, err
+	} else if p != nil {
+		q.Where(p)
+	}
+
+	if fs := req.GetFilters(); len(fs) > 0 {
+		if len(fs) > TaskFilterLimit {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters: %d of them, and %d is the most one list carries", len(fs), TaskFilterLimit)
+		}
+
+		ps := make([]predicate.Task, 0, len(fs))
+		for i, f := range fs {
+			p, err := filterTask(f)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "filters[%d]: %s", i, err)
+			}
+
+			ps = append(ps, p)
+		}
+
+		q.Where(task.Or(ps...))
+	}
+
+	if v := req.GetAfter(); v != "" {
+		var (
+			at0 time.Time
+			at1 uuid.UUID
+		)
+		if err := sqlpage.Decode(v, &at0, &at1); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		p, err := sqlpage.After(orderTask, []any{at0, at1})
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		q.Where(p)
+	}
+
+	// One row more than the page, which is how "is there another" is answered
+	// without a second query and without a count. The extra is dropped before
+	// the answer is built; it was only ever asked for to see whether it was
+	// there -- so a full last page answers with no cursor rather than sending
+	// the caller back for an empty one.
+	size := sqlpage.Size(int(req.GetSize()), TaskPageSize, TaskPageLimit)
+	us, err := q.Order(task.ByDateCreated(), task.ById()).Limit(size + 1).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	more := len(us) > size
+	if more {
+		us = us[:size]
+	}
+
+	items := make([]*resource.Task, len(us))
+	for i, u := range us {
+		items[i] = u.Proto()
+	}
+
+	res := resource.TaskListResponse_builder{Items: items}.Build()
+	if more {
+		last := us[len(us)-1]
+		next, err := sqlpage.Encode(last.DateCreated, last.Id)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "next: %s", err)
+		}
+
+		res.SetNext(next)
+	}
+
+	return res, nil
+}
+
+// filterTask turns one filter into the predicate that selects what it
+// names. Naming nothing is refused, since the request asked for "these" and
+// did not say which.
+func filterTask(f *resource.TaskFilter) (predicate.Task, error) {
+	ps := make([]predicate.Task, 0, 1)
+	if f.HasRef() {
+		p, err := bare.TaskPick(f.GetRef())
+		if err != nil {
+			return nil, err
+		}
+
+		ps = append(ps, p)
+	}
+	if f.HasProject() {
+		w := f.GetProject()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "project: %s", err)
+			}
+
+			ps = append(ps, task.ProjectIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.ProjectPick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, task.HasProjectWith(q))
+		}
+	}
+	if f.HasAssignee() {
+		ps = append(ps, task.AssigneeEQ(f.GetAssignee()))
+	}
+	if len(ps) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
+	}
+
+	return task.And(ps...), nil
+}
+
+// TaskService is the prefix of every Rpc of that service, which is how a
+// change is known to be about a Task. A service is named for the entity it
+// is about, so the name carries it.
+var TaskService = watch.ServiceOf(resource.TaskService_Get_FullMethodName)
+
+// Watch answers with the Tasks this caller may see, as they are now and as
+// they change.
+//
+// What is sent is **state and never a delta**, which is what makes a stream
+// that missed something still correct: the next item about a row carries the
+// whole of it, so a client converges rather than replays. It is also what
+// makes the first message safe to duplicate against the ones after it.
+func (s sinkTask) Watch(req *resource.TaskWatchRequest, out grpc.ServerStreamingServer[resource.TaskWatchResponse]) error {
+	ctx := out.Context()
+
+	// A watch with no filters is the whole table, forever. It is the one
+	// shape that has no cap at all, so it is the one shape refused.
+	fs := req.GetFilters()
+	switch {
+	case len(fs) == 0:
+		return status.Error(codes.InvalidArgument,
+			"filters: a watch says which rows it is about; one that says nothing is the whole table, for as long as it is open")
+	case len(fs) > TaskFilterLimit:
+		return status.Errorf(codes.InvalidArgument,
+			"filters: %d of them, and %d is the most one watch carries", len(fs), TaskFilterLimit)
+	}
+
+	// Resolved before anything is subscribed to, so a name that names
+	// nothing is an answer rather than a stream that quietly watches none.
+	watching, err := s.watchTaskKeys(ctx, fs)
+	if err != nil {
+		return err
+	}
+
+	var snapshot func(watch.Seen) error
+	if !req.GetSkipSnapshot() {
+		snapshot = func(sent watch.Seen) error { return s.watchNow(ctx, req, out, sent) }
+	}
+
+	if s.w == nil {
+		return status.Error(codes.Unimplemented,
+			"this deployment publishes no changes; see WithWatch")
+	}
+
+	return watch.Stream(ctx, s.w, TaskService, snapshot,
+		func(ks map[pdid.Id]string, sent watch.Seen) error {
+			items := make([]*resource.TaskWatchItem, 0, len(ks))
+			for k, action := range ks {
+				u, err := s.watchRead(ctx, watching, k)
+				if err != nil {
+					return err
+				}
+				if u == nil && !sent[k] {
+					// Not theirs, or not what they asked for, and they
+					// have never been told about it. A row that never
+					// matched is not news.
+					continue
+				}
+
+				sent[k] = u != nil
+				items = append(items, resource.TaskWatchItem_builder{
+					Id:     k.Bytes(),
+					Value:  u,
+					Action: action,
+				}.Build())
+			}
+			if len(items) == 0 {
+				return nil
+			}
+
+			return out.Send(resource.TaskWatchResponse_builder{Items: items}.Build())
+		})
+}
+
+// watchNow sends what matches right now, through the same List a caller
+// would have called -- so what a stream begins with and what a list answers
+// cannot disagree, and a client does not have to do both and race them.
+func (s sinkTask) watchNow(
+	ctx context.Context, req *resource.TaskWatchRequest, out grpc.ServerStreamingServer[resource.TaskWatchResponse],
+	sent watch.Seen,
+) error {
+	after := ""
+	for {
+		res, err := s.List(ctx, resource.TaskListRequest_builder{
+			Filters: req.GetFilters(),
+			After:   after,
+		}.Build())
+		if err != nil {
+			return err
+		}
+
+		items := make([]*resource.TaskWatchItem, 0, len(res.GetItems()))
+		for _, u := range res.GetItems() {
+			k, err := pdid.From(u.GetId())
+			if err != nil {
+				return err
+			}
+
+			sent[k] = true
+			// No action: this is not something anybody asked for, it is
+			// what is already there.
+			items = append(items, resource.TaskWatchItem_builder{Id: u.GetId(), Value: u}.Build())
+		}
+		if len(items) > 0 {
+			if err := out.Send(resource.TaskWatchResponse_builder{Items: items}.Build()); err != nil {
+				return err
+			}
+		}
+
+		if after = res.GetNext(); after == "" {
+			return nil
+		}
+	}
+}
+
+// watchRead answers with the row as it is now, or nil when it is no longer
+// one this caller may see -- erased, walled off, or no longer matching what
+// they asked for. The three are deliberately indistinguishable to a caller:
+// a stream that told them apart would be saying which rows stopped being
+// theirs, which is the thing the wall is for.
+//
+// The Get is what keeps the wall out of this file. It goes through the same
+// server every other read does, with the context of the caller who asked, so
+// a row they may not see comes back NotFound and is never sent.
+func (s sinkTask) watchRead(
+	ctx context.Context, watching []pdid.Id, k pdid.Id,
+) (*resource.Task, error) {
+	// Not one of the rows this stream is about. Asked before the read, so a
+	// busy table costs a stream nothing for the rows it does not watch.
+	if !slices.Contains(watching, k) {
+		return nil, nil
+	}
+
+	v, err := s.Get(ctx, resource.TaskGetRequest_builder{
+		Ref: resource.TaskRef_builder{Id: k.Bytes()}.Build(),
+	}.Build())
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return v, nil
+}
+
+// watchTaskKeys is the rows a stream is about, resolved once when it opens.
+//
+// A filter names a row and a row is named several ways -- by identifier, or
+// by whatever unique index the schema declared. Resolving them here rather
+// than comparing them per event does three things: the comparison afterwards
+// is an identifier against an identifier, a name that names nothing is
+// refused when the stream opens rather than silently watching nothing, and a
+// row renamed while the stream is open goes on being the row that was asked
+// for -- which is what somebody watching a thing meant.
+func (s sinkTask) watchTaskKeys(
+	ctx context.Context, fs []*resource.TaskFilter,
+) ([]pdid.Id, error) {
+	ks := make([]pdid.Id, 0, len(fs))
+	for i, f := range fs {
+		if !f.HasRef() {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters[%d]: a watch says which rows it is about by naming them", i)
+		}
+
+		v, err := s.Get(ctx, resource.TaskGetRequest_builder{Ref: f.GetRef()}.Build())
+		if err != nil {
+			return nil, err
+		}
+
+		k, err := pdid.From(v.GetId())
+		if err != nil {
+			return nil, err
+		}
+
+		ks = append(ks, k)
+	}
+
+	return ks, nil
+}
+
 type sinkTenant struct {
 	resource.TenantServiceServer
 	store  bare.Store
@@ -4053,6 +4415,60 @@ func (s interceptSession) McpLogs(ctx context.Context, req *resource.SessionMcpR
 func (s interceptSession) RestartMcp(ctx context.Context, req *resource.SessionMcpRequest) (*resource.SessionReceipt, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
 		resource.SessionService_RestartMcp_FullMethodName, req, s.SessionServiceServer.RestartMcp)
+}
+
+func (s Intercept) Task() resource.TaskServiceServer {
+	return interceptTask{s, s.Next().Task()}
+}
+
+type interceptTask struct {
+	Intercept
+	resource.TaskServiceServer
+}
+
+func (s interceptTask) Add(ctx context.Context, req *resource.TaskAddRequest) (*resource.Task, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.TaskServiceServer,
+		resource.TaskService_Add_FullMethodName, req, s.TaskServiceServer.Add)
+}
+
+func (s interceptTask) Get(ctx context.Context, req *resource.TaskGetRequest) (*resource.Task, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.TaskServiceServer,
+		resource.TaskService_Get_FullMethodName, req, s.TaskServiceServer.Get)
+}
+
+func (s interceptTask) Patch(ctx context.Context, req *resource.TaskPatchRequest) (*resource.Task, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.TaskServiceServer,
+		resource.TaskService_Patch_FullMethodName, req, s.TaskServiceServer.Patch)
+}
+
+func (s interceptTask) Apply(ctx context.Context, req *resource.TaskApplyRequest) (*resource.Task, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.TaskServiceServer,
+		resource.TaskService_Apply_FullMethodName, req, s.TaskServiceServer.Apply)
+}
+
+func (s interceptTask) Erase(ctx context.Context, req *resource.TaskRef) (*resource.TaskEraseResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.TaskServiceServer,
+		resource.TaskService_Erase_FullMethodName, req, s.TaskServiceServer.Erase)
+}
+
+func (s interceptTask) List(ctx context.Context, req *resource.TaskListRequest) (*resource.TaskListResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.TaskServiceServer,
+		resource.TaskService_List_FullMethodName, req, s.TaskServiceServer.List)
+}
+
+func (s interceptTask) Watch(req *resource.TaskWatchRequest, out grpc.ServerStreamingServer[resource.TaskWatchResponse]) error {
+	return grpcx.RunStream(s.stream, s.TaskServiceServer,
+		resource.TaskService_Watch_FullMethodName, req, out, s.TaskServiceServer.Watch)
+}
+
+func (s interceptTask) Claim(ctx context.Context, req *resource.TaskClaimRequest) (*resource.Task, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.TaskServiceServer,
+		resource.TaskService_Claim_FullMethodName, req, s.TaskServiceServer.Claim)
+}
+
+func (s interceptTask) Release(ctx context.Context, req *resource.TaskClaimRequest) (*resource.Task, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.TaskServiceServer,
+		resource.TaskService_Release_FullMethodName, req, s.TaskServiceServer.Release)
 }
 
 // WatchRecorder answers with the recorder that remembers a write for `w`.
@@ -6234,6 +6650,110 @@ func dispatch(ctx context.Context, s resource.Server, op *pdpb.Op) (*anypb.Any, 
 		}
 
 		res, err := s.Session().RestartMcp(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.TaskService_Add_FullMethodName:
+		v := &resource.TaskAddRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Task().Add(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.TaskService_Get_FullMethodName:
+		v := &resource.TaskGetRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Task().Get(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.TaskService_Patch_FullMethodName:
+		v := &resource.TaskPatchRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Task().Patch(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.TaskService_Apply_FullMethodName:
+		v := &resource.TaskApplyRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Task().Apply(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.TaskService_Erase_FullMethodName:
+		v := &resource.TaskRef{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Task().Erase(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.TaskService_List_FullMethodName:
+		v := &resource.TaskListRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Task().List(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.TaskService_Claim_FullMethodName:
+		v := &resource.TaskClaimRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Task().Claim(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.TaskService_Release_FullMethodName:
+		v := &resource.TaskClaimRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Task().Release(ctx, v)
 		if err != nil {
 			return nil, err
 		}

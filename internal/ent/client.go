@@ -17,6 +17,7 @@ import (
 	"github.com/lesomnus/cxz/internal/ent/outbox"
 	"github.com/lesomnus/cxz/internal/ent/project"
 	"github.com/lesomnus/cxz/internal/ent/session"
+	"github.com/lesomnus/cxz/internal/ent/task"
 	"github.com/lesomnus/cxz/internal/ent/tenant"
 	"github.com/protobuf-orm/ent"
 	"github.com/protobuf-orm/ent/dialect"
@@ -41,6 +42,8 @@ type Client struct {
 	Project *ProjectClient
 	// Session is the client for interacting with the Session builders.
 	Session *SessionClient
+	// Task is the client for interacting with the Task builders.
+	Task *TaskClient
 	// Tenant is the client for interacting with the Tenant builders.
 	Tenant *TenantClient
 }
@@ -60,6 +63,7 @@ func (c *Client) init() {
 	c.Outbox = NewOutboxClient(c.config)
 	c.Project = NewProjectClient(c.config)
 	c.Session = NewSessionClient(c.config)
+	c.Task = NewTaskClient(c.config)
 	c.Tenant = NewTenantClient(c.config)
 }
 
@@ -160,6 +164,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Outbox:      NewOutboxClient(cfg),
 		Project:     NewProjectClient(cfg),
 		Session:     NewSessionClient(cfg),
+		Task:        NewTaskClient(cfg),
 		Tenant:      NewTenantClient(cfg),
 	}, nil
 }
@@ -187,6 +192,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Outbox:      NewOutboxClient(cfg),
 		Project:     NewProjectClient(cfg),
 		Session:     NewSessionClient(cfg),
+		Task:        NewTaskClient(cfg),
 		Tenant:      NewTenantClient(cfg),
 	}, nil
 }
@@ -264,7 +270,7 @@ func (c *Client) InTx() bool {
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
 		c.Account, c.Audit, c.AuthBinding, c.Holder, c.Outbox, c.Project, c.Session,
-		c.Tenant,
+		c.Task, c.Tenant,
 	} {
 		n.Use(hooks...)
 	}
@@ -275,7 +281,7 @@ func (c *Client) Use(hooks ...Hook) {
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
 		c.Account, c.Audit, c.AuthBinding, c.Holder, c.Outbox, c.Project, c.Session,
-		c.Tenant,
+		c.Task, c.Tenant,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -298,6 +304,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Project.mutate(ctx, m)
 	case *SessionMutation:
 		return c.Session.mutate(ctx, m)
+	case *TaskMutation:
+		return c.Task.mutate(ctx, m)
 	case *TenantMutation:
 		return c.Tenant.mutate(ctx, m)
 	default:
@@ -1332,6 +1340,155 @@ func (c *SessionClient) mutate(ctx context.Context, m *SessionMutation) (Value, 
 	}
 }
 
+// TaskClient is a client for the Task schema.
+type TaskClient struct {
+	config
+}
+
+// NewTaskClient returns a client for the Task from the given config.
+func NewTaskClient(c config) *TaskClient {
+	return &TaskClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `task.Hooks(f(g(h())))`.
+func (c *TaskClient) Use(hooks ...Hook) {
+	c.hooks.Task = append(c.hooks.Task, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `task.Intercept(f(g(h())))`.
+func (c *TaskClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Task = append(c.inters.Task, interceptors...)
+}
+
+// Create returns a builder for creating a Task entity.
+func (c *TaskClient) Create() *TaskCreate {
+	mutation := newTaskMutation(c.config, OpCreate)
+	return &TaskCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Task entities.
+func (c *TaskClient) CreateBulk(builders ...*TaskCreate) *TaskCreateBulk {
+	return &TaskCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *TaskClient) MapCreateBulk(slice any, setFunc func(*TaskCreate, int)) *TaskCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &TaskCreateBulk{err: fmt.Errorf("calling to TaskClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*TaskCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &TaskCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Task.
+func (c *TaskClient) Update() *TaskUpdate {
+	mutation := newTaskMutation(c.config, OpUpdate)
+	return &TaskUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *TaskClient) UpdateOne(_m *Task) *TaskUpdateOne {
+	mutation := newTaskMutation(c.config, OpUpdateOne, withTask(_m))
+	return &TaskUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneId returns an update builder for the given id.
+func (c *TaskClient) UpdateOneId(id uuid.UUID) *TaskUpdateOne {
+	mutation := newTaskMutation(c.config, OpUpdateOne, withTaskId(id))
+	return &TaskUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Task.
+func (c *TaskClient) Delete() *TaskDelete {
+	mutation := newTaskMutation(c.config, OpDelete)
+	return &TaskDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *TaskClient) DeleteOne(_m *Task) *TaskDeleteOne {
+	return c.DeleteOneId(_m.Id)
+}
+
+// DeleteOneId returns a builder for deleting the given entity by its id.
+func (c *TaskClient) DeleteOneId(id uuid.UUID) *TaskDeleteOne {
+	builder := c.Delete().Where(task.Id(id))
+	builder.mutation.id = &id
+	builder.mutation.SetOp(OpDeleteOne)
+	return &TaskDeleteOne{builder}
+}
+
+// Query returns a query builder for Task.
+func (c *TaskClient) Query() *TaskQuery {
+	return &TaskQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeTask},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Task entity by its id.
+func (c *TaskClient) Get(ctx context.Context, id uuid.UUID) (*Task, error) {
+	return c.Query().Where(task.Id(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *TaskClient) GetX(ctx context.Context, id uuid.UUID) *Task {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryProject queries the project edge of a Task.
+func (c *TaskClient) QueryProject(_m *Task) *ProjectQuery {
+	query := (&ProjectClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(task.Table, task.FieldId, id),
+			sqlgraph.To(project.Table, project.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, task.ProjectTable, task.ProjectColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *TaskClient) Hooks() []Hook {
+	return c.hooks.Task
+}
+
+// Interceptors returns the client interceptors.
+func (c *TaskClient) Interceptors() []Interceptor {
+	return c.inters.Task
+}
+
+func (c *TaskClient) mutate(ctx context.Context, m *TaskMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&TaskCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&TaskUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&TaskUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&TaskDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Task mutation op: %q", m.Op())
+	}
+}
+
 // TenantClient is a client for the Tenant schema.
 type TenantClient struct {
 	config
@@ -1468,10 +1625,11 @@ func (c *TenantClient) mutate(ctx context.Context, m *TenantMutation) (Value, er
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Account, Audit, AuthBinding, Holder, Outbox, Project, Session, Tenant []ent.Hook
+		Account, Audit, AuthBinding, Holder, Outbox, Project, Session, Task,
+		Tenant []ent.Hook
 	}
 	inters struct {
-		Account, Audit, AuthBinding, Holder, Outbox, Project, Session,
+		Account, Audit, AuthBinding, Holder, Outbox, Project, Session, Task,
 		Tenant []ent.Interceptor
 	}
 )

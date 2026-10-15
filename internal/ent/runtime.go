@@ -6,6 +6,7 @@ import (
 	"github.com/lesomnus/cxz/internal/ent/project"
 	"github.com/lesomnus/cxz/internal/ent/schema"
 	"github.com/lesomnus/cxz/internal/ent/session"
+	"github.com/lesomnus/cxz/internal/ent/task"
 	"github.com/lesomnus/cxz/resource"
 
 	"github.com/protobuf-orm/ent/schema/field"
@@ -25,4 +26,9 @@ func init() {
 	// sessionDescStatus is the schema descriptor for status field.
 	sessionDescStatus := sessionFields[11].Descriptor()
 	session.ValueScanner.Status = sessionDescStatus.ValueScanner.(field.TypeValueScanner[*resource.SessionStatus])
+	taskFields := schema.Task{}.Fields()
+	_ = taskFields
+	// taskDescLabels is the schema descriptor for labels field.
+	taskDescLabels := taskFields[11].Descriptor()
+	task.ValueScanner.Labels = taskDescLabels.ValueScanner.(field.TypeValueScanner[*resource.TaskLabels])
 }

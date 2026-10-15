@@ -1,0 +1,52 @@
+edition = "2023";
+package cxz;
+import "cxz/project.proto";
+import "google/protobuf/timestamp.proto";
+import "orm.proto";
+import "payday.proto";
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/cxz/resource";
+
+// Project-local shared work, independent of a provider's background jobs.
+// Session/run identifiers are snapshots, not foreign keys: purging a session
+// must not delete its work record or conversation reference.
+message Task {
+  bytes id = 1 [(orm.field) = {type: TYPE_UUID, key: true, default: ""}];
+  string client_id = 4 [(orm.field) = {unique: true, immutable: true}];
+  string name = 5;
+  string desc = 6;
+  Project project = 8 [(orm.edge) = {immutable: true}];
+  TaskStatus status = 9;
+  int32 priority = 10;
+  string assignee = 11;
+  string assignee_run = 12;
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {immutable: true, default: ""}];
+  TaskLabels labels = 16;
+  string source_session = 17 [(orm.field) = {immutable: true}];
+  string source_run = 18 [(orm.field) = {immutable: true}];
+  uint64 source_seq = 19 [(orm.field) = {immutable: true}];
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [{name: "page", refs: [{name: "date_created", number: 15}, {name: "id", number: 1}]}]
+  };
+  option (payday.entity) = {
+    domain: 11
+    global: {}
+    list: {order: [{field: {name: "date_created"}}, {field: {name: "id"}}], by: [{name: "ref"}, {name: "project"}, {name: "assignee"}], size: 100, max: 500}
+    watch: {}
+  };
+}
+
+enum TaskStatus {
+  TASK_STATUS_UNSPECIFIED = 0;
+  TASK_STATUS_TODO = 1;
+  TASK_STATUS_IN_PROGRESS = 2;
+  TASK_STATUS_WAITING = 3;
+  TASK_STATUS_DONE = 4;
+  TASK_STATUS_CANCELED = 5;
+}
+
+// Present with no values clears labels in a Patch.
+message TaskLabels { repeated string values = 1; }

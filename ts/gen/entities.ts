@@ -20,6 +20,7 @@ import { HolderSchema } from './cxz/payday/holder_pb.js'
 import { OutboxSchema } from './cxz/payday/outbox_pb.js'
 import { ProjectSchema } from './cxz/project_pb.js'
 import { SessionSchema } from './cxz/session_pb.js'
+import { TaskSchema } from './cxz/task_pb.js'
 import { TenantSchema } from './cxz/payday/tenant_pb.js'
 import { AccountService } from './cxz/account_svc_pb.js'
 import { AuditService } from './cxz/payday/audit_svc_pb.js'
@@ -28,6 +29,7 @@ import { HolderService } from './cxz/payday/holder_svc_pb.js'
 import { OutboxService } from './cxz/payday/outbox_svc_pb.js'
 import { ProjectService } from './cxz/project_svc_pb.js'
 import { SessionService } from './cxz/session_svc_pb.js'
+import { TaskService } from './cxz/task_svc_pb.js'
 import { TenantService } from './cxz/payday/tenant_svc_pb.js'
 
 /** cxz.Account, as the store holds it. */
@@ -112,6 +114,18 @@ export const Session = {
 	service: SessionService,
 } as const satisfies EntityDesc
 
+/** cxz.Task, as the store holds it. */
+export const Task = {
+	typeName: "cxz.Task",
+	schema: TaskSchema,
+	domain: 11,
+	version: "dateUpdated",
+	refs: [{ field: "project", to: "cxz.Project" }],
+	key: "id",
+	ids: ["id"],
+	service: TaskService,
+} as const satisfies EntityDesc
+
 /** cxz.Tenant, as the store holds it. */
 export const Tenant = {
 	typeName: "cxz.Tenant",
@@ -125,5 +139,5 @@ export const Tenant = {
 } as const satisfies EntityDesc
 
 /** Every entity of this app, which is what a store is opened over. */
-export const entities = [Account, Audit, AuthBinding, Holder, Outbox, Project, Session, Tenant] as const
+export const entities = [Account, Audit, AuthBinding, Holder, Outbox, Project, Session, Task, Tenant] as const
 
