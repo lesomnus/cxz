@@ -498,9 +498,12 @@ test("account registration, session creation and archive restore use resource AP
     .boundingBox();
   const panelBox = await panel.boundingBox();
   const edge = panelBox.x + panelBox.width;
+  const border = await panel
+    .locator("header")
+    .evaluate((el) => parseFloat(getComputedStyle(el).borderRightWidth));
   expect(menuBox.y).toBeCloseTo(triggerBox.y, 0);
   expect(menuBox.x - edge).toBeCloseTo(
-    edge - triggerBox.x - triggerBox.width,
+    edge - border - triggerBox.x - triggerBox.width,
     0,
   );
   await page

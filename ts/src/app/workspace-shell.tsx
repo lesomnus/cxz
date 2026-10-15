@@ -50,9 +50,16 @@ export function Workspace({
   const [addingSession, setAddingSession] = useState(false);
   const sessionPanel = useRef<HTMLElement>(null);
   const positionSessionMenu = useCallback((trigger: DOMRect) => {
-    const edge =
-      sessionPanel.current?.getBoundingClientRect().right ?? trigger.right;
-    return { left: edge + Math.max(0, edge - trigger.right), top: trigger.top };
+    const header = sessionPanel.current?.querySelector("header");
+    const edge = header?.getBoundingClientRect().right ?? trigger.right;
+    const border = header
+      ? parseFloat(getComputedStyle(header).borderRightWidth) || 0
+      : 0;
+    // Mirror the empty space, not the panel's visible border thickness.
+    return {
+      left: edge + Math.max(0, edge - border - trigger.right),
+      top: trigger.top,
+    };
   }, []);
   useEffect(() => setAddingSession(false), [resource, session]);
   const inventory = useResourceInventory(c);
