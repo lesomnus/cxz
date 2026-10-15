@@ -2,12 +2,14 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/sessionpurge"
 	"google.golang.org/grpc/codes"
@@ -95,6 +97,73 @@ func TestPurgeDryRunLeavesTheProjectionAndJournalAlone(t *testing.T) {
 	}
 	if _, err = os.Stat(filepath.Join(core.Dir(s.root, m.ID), "events.jsonl")); err != nil {
 		t.Fatal("dry run deleted the journal", err)
+	}
+}
+
+func TestPurgeSessionCreatedWithAWebUUID(t *testing.T) {
+	ctx := context.Background()
+	t.Setenv("CXZ_PROJECT_ID", "")
+	s, m, l := projectionFixture(t)
+	m.CreateID = "9b3bc6ba-0626-4a43-86fd-9f2601234567"
+	manifest, err := json.Marshal(m)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = s.db.Exec("UPDATE sessions SET manifest=? WHERE id=?", manifest, m.ID); err != nil {
+		t.Fatal(err)
+	}
+	if err = core.WriteJSON(filepath.Join(core.Dir(s.root, m.ID), "session.json"), m); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = l.AppendBatch([]core.Event{{Kind: "assistant", RunID: "run", Text: "remember this"}}); err != nil {
+		t.Fatal(err)
+	}
+	profile := accounts.SessionRoot(s.root, m.CreateID)
+	neighbour := accounts.SessionRoot(s.root, "another-web-client-key")
+	for _, dir := range []string{profile, neighbour} {
+		if err = os.MkdirAll(dir, 0700); err != nil {
+			t.Fatal(err)
+		}
+		if err = os.WriteFile(filepath.Join(dir, "transcript.jsonl"), []byte("conversation"), 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	plan, err := s.PurgeSession(ctx, purgeIn(m.ID, true))
+	if err != nil {
+		t.Fatal("UUID creation key refused during preview", err)
+	}
+	want := map[string]string{"profile": profile, "journal": core.Dir(s.root, m.ID)}
+	if !plan.DryRun || len(plan.Targets) != len(want) {
+		t.Fatal("preview did not include profile and journal", plan)
+	}
+	for _, target := range plan.Targets {
+		if want[target.Kind] != target.Path {
+			t.Fatal("preview named the wrong target", target)
+		}
+		if _, err = os.Stat(target.Path); err != nil {
+			t.Fatal("preview deleted data", err)
+		}
+	}
+	if rows(t, s, "SELECT count(*) FROM sessions WHERE id=?", m.ID) != 1 {
+		t.Fatal("preview deleted the session projection")
+	}
+	done, err := s.PurgeSession(ctx, purgeIn(m.ID, false))
+	if err != nil {
+		t.Fatal("UUID creation key refused during purge", err)
+	}
+	if len(done.Targets) != len(plan.Targets) {
+		t.Fatal("purge differed from preview", done)
+	}
+	for _, path := range want {
+		if _, err = os.Stat(path); !os.IsNotExist(err) {
+			t.Fatal("purge left data behind", path, err)
+		}
+	}
+	if rows(t, s, "SELECT count(*) FROM sessions WHERE id=?", m.ID) != 0 {
+		t.Fatal("purge left the session projection behind")
+	}
+	if _, err = os.Stat(filepath.Join(neighbour, "transcript.jsonl")); err != nil {
+		t.Fatal("purge affected another session", err)
 	}
 }
 

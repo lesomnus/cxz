@@ -27,8 +27,9 @@ import (
 // bounded: a purge carries one handle, never a payload.
 const MaxSpec = 4096
 
-// Session and creation ids are 24 hex characters. Refusing anything else is
-// what stops a crafted spec from turning a path join into a traversal.
+// Session ids are 24 hex characters and are used directly in filesystem paths.
+// Creation keys are opaque (web clients use UUIDs) and SessionRoot hashes them
+// before building a path, so they must not be restricted to this id format.
 var validID = regexp.MustCompile(`^[a-f0-9]{24}$`)
 
 type Request struct {
@@ -48,9 +49,6 @@ type Subject struct {
 func (s Subject) validate() error {
 	if !validID.MatchString(s.Session) {
 		return fmt.Errorf("invalid session id")
-	}
-	if s.CreateID != "" && !validID.MatchString(s.CreateID) {
-		return fmt.Errorf("invalid session creation key")
 	}
 	if s.Project != "" && !assets.ValidID(s.Project) {
 		return fmt.Errorf("invalid project id")

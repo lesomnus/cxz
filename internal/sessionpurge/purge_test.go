@@ -173,7 +173,6 @@ func TestMalformedSubjectsAreRefusedBeforeAnyDeletion(t *testing.T) {
 		"traversal":    {Session: "../../etc", Project: project},
 		"empty":        {},
 		"short":        {Session: "abc"},
-		"bad create":   {Session: session, CreateID: "../.."},
 		"bad project":  {Session: session, Project: "../../.."},
 		"upper case":   {Session: strings.ToUpper(session)},
 		"long session": {Session: session + session},
@@ -181,6 +180,49 @@ func TestMalformedSubjectsAreRefusedBeforeAnyDeletion(t *testing.T) {
 		if _, err := Paths(Runtime, root, s); err == nil {
 			t.Fatal(name, "was accepted")
 		}
+	}
+}
+
+func TestPurgeAcceptsOpaqueCreationKeysAndOnlyRemovesTheirHashedProfile(t *testing.T) {
+	for _, key := range []string{
+		createKey,
+		"9b3bc6ba-0626-4a43-86fd-9f2601234567",
+		"fork-request-key",
+		"../../outside",
+	} {
+		t.Run(key, func(t *testing.T) {
+			ctx := context.Background()
+			root := t.TempDir()
+			s := Subject{Session: session, CreateID: key}
+			profile := accounts.SessionRoot(root, key)
+			mine := filepath.Join(profile, "transcript.jsonl")
+			neighbour := filepath.Join(accounts.SessionRoot(root, other), "transcript.jsonl")
+			for _, path := range []string{mine, neighbour} {
+				if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(path, []byte("conversation"), 0600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			plan, err := Plan(ctx, Runtime, root, s)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(plan.Targets) != 1 || plan.Targets[0].Kind != "profile" || plan.Targets[0].Path != profile {
+				t.Fatal("plan did not resolve the hashed profile", plan)
+			}
+			if !exists(t, mine) || !exists(t, neighbour) {
+				t.Fatal("dry run removed a profile")
+			}
+			done, err := Execute(ctx, Runtime, root, s)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if done.Bytes() != plan.Bytes() || exists(t, mine) || !exists(t, neighbour) {
+				t.Fatal("purge did not remove exactly the planned profile", done)
+			}
+		})
 	}
 }
 
