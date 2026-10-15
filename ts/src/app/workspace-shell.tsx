@@ -5,6 +5,7 @@ import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import {
   type PropsWithChildren,
   useEffect,
+  useCallback,
   useMemo,
   useRef,
   useState,
@@ -47,6 +48,12 @@ export function Workspace({
   useEffect(() => setSettingsFileOpen(false), [resource, settingsTopic]);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [addingSession, setAddingSession] = useState(false);
+  const sessionPanel = useRef<HTMLElement>(null);
+  const positionSessionMenu = useCallback((trigger: DOMRect) => {
+    const edge =
+      sessionPanel.current?.getBoundingClientRect().right ?? trigger.right;
+    return { left: edge + Math.max(0, edge - trigger.right), top: trigger.top };
+  }, []);
   useEffect(() => setAddingSession(false), [resource, session]);
   const inventory = useResourceInventory(c);
   const { unread, errors } = useSessionAttention(
@@ -155,6 +162,7 @@ export function Workspace({
         </nav>
         {resource !== "accounts" && (
           <ResourcePanel
+            ref={sessionPanel}
             className={resource === "sessions" ? "session-panel" : ""}
             title={
               resource === "sessions"
@@ -172,6 +180,7 @@ export function Workspace({
                 <ActionMenu
                   label="Session panel options"
                   placement="right"
+                  position={positionSessionMenu}
                   triggerClassName="session-panel-menu-trigger"
                   items={[
                     {
