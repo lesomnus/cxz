@@ -99,9 +99,60 @@ history. Invalid input is `InvalidArgument`; stale versions, competing owners
 and inactive/stale runs are `FailedPrecondition`.
 
 The actor identifies the intended assignee; it is **not independent proof of
-the caller's identity**. This API currently uses cxz's trusted operator/project
-transport boundary. A future session-bound MCP facade must derive its actor
-from the bound session rather than accepting an arbitrary model-supplied owner.
+the caller's identity**. The public API uses cxz's trusted operator/project
+transport boundary. The built-in Task MCP derives its actor from the authenticated
+agent launch rather than accepting a model-supplied owner.
+
+## Agent tools
+
+The built-in `cxz_tasks` MCP is enabled by default, with the same global and
+per-project activation controls as `cxz_memory`:
+
+```sh
+cxz mcp list --project PROJECT
+cxz mcp disable --project PROJECT cxz_tasks
+cxz mcp enable --project PROJECT cxz_tasks
+```
+
+New or explicitly restarted agents receive its tools and short usage instructions.
+Updating a running agent's desired MCP settings does not replace its launch
+snapshot. Use matching Manager/project-runtime versions; no task migration or
+project recreation is required.
+
+| Tool | Arguments and result |
+|---|---|
+| `task_list` | Paginated summaries; optional `mine` or `unassigned`, `limit` and `after`. Defaults to 20 rows, caps at 100; follow `next` for more. No descriptions, labels or source details. |
+| `task_get` | `ref` is a task UUID or alias in this project. Returns details and a `version`. |
+| `task_add` | Required `client_id` and `name`; optional alias, description, priority and labels. Returns unassigned Todo work. |
+| `task_claim` | `ref` and last-read `version`; assigns this session/run atomically. |
+| `task_patch` | `ref`, `version` and explicit edits. Status accepts `in_progress`, `waiting`, `done` or `canceled`. Use Claim to start and Release to return to Todo. |
+| `task_release` | `ref` and `version`; releases this run's work. |
+
+Project, session and run are not tool arguments. The runtime binds them using
+the private launch capability. The run remains fixed for that connection, and
+an old launch cannot silently adopt a replacement run. Reads are project-scoped;
+mutations also require an active, listed session in the bound run. A missing
+launch run requires restarting the agent. Each tool request has a deadline.
+
+`version` is the exact update timestamp returned by a read or successful change.
+It is passed through to the API's atomic comparison, never replaced with a newer
+version behind the agent's back. A conflict requires rereading and deciding
+whether to retry. Interrupted mutations are not automatically replayed by the
+bridge.
+
+Creation keys are scoped to the bound session before calling Add. Reuse a
+`client_id` only to retry the same creation; different sessions using the same
+short key do not accidentally share a creation. New tasks record the bound
+source session and run. MCP agents may edit unassigned work or their own run's
+work; they cannot change another owner's task or release it. Execution status
+changes require ownership. Canceling unassigned work is allowed. Operators can
+still release abandoned work through the public API's explicit owner/version
+contract.
+
+The tool layer calls the existing public Task RPCs. It adds no task database,
+scheduler or background polling. The same MCP protocol contract is tested over
+native SQLite and sandbox Task services; the browser sandbox itself does not
+launch provider agents or stdio bridges.
 
 ## Go client example
 
@@ -138,8 +189,8 @@ return err
 
 For a browser client, create a Connect client from
 `ts/gen/cxz/task_svc_pb.ts` using the existing connection transport. It works
-with the sandbox transport too. A Task board, CLI/TUI task commands and an
-agent-facing Task MCP are not part of this API implementation yet.
+with the sandbox transport too. A Task board and CLI/TUI task commands are not
+implemented yet; agents use the built-in MCP tools above.
 
 ## Verification
 
@@ -148,6 +199,12 @@ the sandbox. It covers claim races, creation retries, version/run fencing,
 forbidden write paths, project isolation, pagination, alias naming/lookup,
 standard payday header reads and filtered Watch removal. A schema regression
 checks payday-reserved field slots and standard labels types.
+
+`internal/taskmcptest` exercises real MCP clients over both Task backends,
+covering discovery, session-bound identities, creation retries, compact pages,
+version conflicts, ownership, release/completion, project isolation and stale
+runs. `internal/taskmcp/builtin_test.go` also checks activation, usage instructions,
+the private runtime handshake, the stdio bridge and launch replacement fencing.
 Native tests additionally verify persistence after rebuilding the service,
 session projection removal, Manager forwarding with independent aliases, live
 Watch forwarding and absence of manager-side shadow rows or offline fallback.
