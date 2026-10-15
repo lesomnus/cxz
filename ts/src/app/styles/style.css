@@ -209,9 +209,14 @@ header strong {
   margin: 4px 0 16px;
 }
 .resource-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
   width: 56px;
-  padding: 8px 2px;
+  height: 56px;
+  box-sizing: border-box;
+  padding: 0;
   color: var(--shade-140);
 }
 .resource-link > .button-content {
