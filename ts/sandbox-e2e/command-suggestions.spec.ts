@@ -194,7 +194,9 @@ test("unaccepted hints never replace the submitted prompt or its send animation"
     )
     .toEqual({ text: "/co", hints: 0, commandOpen: false });
   await expect(
-    page.locator("article.input .message-body").filter({ hasText: /^\/co$/ }),
+    page
+      .locator("article.input .message-body .markdown > p")
+      .filter({ hasText: /^\/co$/ }),
   ).toBeVisible();
   await expect(input).toHaveValue("");
 });

@@ -11,6 +11,7 @@ import { SearchPage } from "#src/pages/search/search-page.tsx";
 import { MemoryPage } from "#src/pages/memory/memory-page.tsx";
 import { ActivityPage } from "#src/pages/activity/activity-page.tsx";
 import { AuxiliaryPage } from "#src/pages/auxiliary/auxiliary-page.tsx";
+import { TasksPage } from "#src/pages/tasks/tasks-page.tsx";
 export function WorkspaceView() {
   useLocale();
   const {
@@ -25,6 +26,16 @@ export function WorkspaceView() {
   } = useContext(WorkspaceContext)!;
   const { resource, session, settingsTopic } = useWorkspaceRoute();
   if (resource === "not-found") return <NotFoundPage />;
+  if (resource === "tasks")
+    return (
+      <TasksPage
+        c={c}
+        projects={projects}
+        sessions={sessions}
+        projectsLoading={projectsLoading}
+        sessionsLoading={sessionsLoading}
+      />
+    );
   if (resource === "accounts")
     return (
       <AccountsPage

@@ -251,6 +251,17 @@ func (m *Manager) ClientFor(ctx context.Context, id string) (*grpc.ClientConn, a
 	}
 	return nil, nil, fmt.Errorf("session not found: %s", id)
 }
+
+// ClientForProject uses the same ownership, running-state and private token
+// checks as session forwarding, including projects with no sessions yet.
+func (m *Manager) ClientForProject(ctx context.Context, id string) (*grpc.ClientConn, error) {
+	p, err := m.resolve(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	conn, _, err := m.client(ctx, p)
+	return conn, err
+}
 func (m *Manager) Sessions(ctx context.Context) (*api.SessionList, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()

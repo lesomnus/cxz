@@ -26,6 +26,8 @@ type Tx struct {
 	Project *ProjectClient
 	// Session is the client for interacting with the Session builders.
 	Session *SessionClient
+	// Task is the client for interacting with the Task builders.
+	Task *TaskClient
 	// Tenant is the client for interacting with the Tenant builders.
 	Tenant *TenantClient
 
@@ -166,6 +168,7 @@ func (tx *Tx) init() {
 	tx.Outbox = NewOutboxClient(tx.config)
 	tx.Project = NewProjectClient(tx.config)
 	tx.Session = NewSessionClient(tx.config)
+	tx.Task = NewTaskClient(tx.config)
 	tx.Tenant = NewTenantClient(tx.config)
 }
 

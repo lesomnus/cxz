@@ -101,7 +101,18 @@ test("provider dropdowns, quota popovers, aligned headings and bounded press/sha
   await expect(input).not.toContainText("You");
   const bodyBox = (await input.locator(".message-body").boundingBox())!;
   const prefixBox = (await input.locator(".input-prefix").boundingBox())!;
-  expect(bodyBox.y).toBeCloseTo(prefixBox.y, 1);
+  const textTops = await input.evaluate((element) => {
+    const top = (selector: string) => {
+      const range = document.createRange();
+      range.selectNodeContents(element.querySelector(selector)!.firstChild!);
+      return range.getClientRects()[0].y;
+    };
+    return {
+      body: top(".message-body .markdown > p"),
+      prefix: top(".input-prefix"),
+    };
+  });
+  expect(textTops.body).toBeCloseTo(textTops.prefix, 1);
   expect(bodyBox.x).toBeGreaterThan(prefixBox.x + prefixBox.width);
   const timestamp = input.locator(".input-box .input-time time");
   await expect(timestamp).not.toContainText(/\d{4}/);
@@ -125,9 +136,10 @@ test("provider dropdowns, quota popovers, aligned headings and bounded press/sha
     .first()
     .boundingBox();
   expect(userHeading!.x).toBe(agentHeading!.x);
+  await expect(input.locator(".markdown")).toHaveCSS("padding-left", "0px");
   expect(
     await page
-      .locator(".markdown")
+      .locator("article.response .markdown")
       .first()
       .evaluate((el) => getComputedStyle(el).paddingLeft),
   ).toBe("12px");

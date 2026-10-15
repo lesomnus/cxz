@@ -25,6 +25,7 @@ import (
 
 type Launch struct {
 	Token  string             `json:"token"`
+	RunID  string             `json:"run_id,omitempty"`
 	Config mcpconfig.Snapshot `json:"config"`
 }
 type Hello struct{ Session, Server, Token string }
@@ -47,14 +48,22 @@ func LaunchPath(root, id string) string { return filepath.Join(core.Dir(root, id
 func StatePath(root, id, server string) string {
 	return filepath.Join(core.Dir(root, id), "mcp-"+server+".status.json")
 }
-func Prepare(root, id string) (Launch, error) {
+func Prepare(root, id, runID string) (Launch, error) {
 	s, e := mcpconfig.LoadRuntime(root)
 	if e != nil {
 		return Launch{}, e
 	}
-	v := Launch{Token: core.ID() + core.ID(), Config: s}
+	v := Launch{Token: core.ID() + core.ID(), RunID: runID, Config: s}
 	e = core.WriteJSON(LaunchPath(root, id), v)
 	return v, e
+}
+
+type runKey struct{}
+
+// RunID is the run authenticated by this connection's launch capability.
+func RunID(ctx context.Context) string {
+	id, _ := ctx.Value(runKey{}).(string)
+	return id
 }
 func ReadLaunch(root, id string) (Launch, error) {
 	var v Launch
@@ -164,6 +173,7 @@ func (r *Runtime) serve(c net.Conn) {
 	_ = c.SetDeadline(time.Time{})
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+	ctx = context.WithValue(ctx, runKey{}, launch.RunID)
 	state := func(s string) {
 		_ = core.WriteJSON(StatePath(r.root, h.Session, h.Server), State{s, time.Now().UnixMilli()})
 	}

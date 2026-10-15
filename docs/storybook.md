@@ -20,6 +20,7 @@ npm run storybook
 - `Components/SessionDetails`: 고정폭 key·value와 Title·Alias 편집. 편집 가능한 행의 hover 배경 안에서 값 영역은 더 밝은 둥근 표면을 유지하며, 외곽과 내부 모서리는 같은 중심을 갖습니다. Title은 `Session.name`이고 alias와 별개이며, 둘 다 `Session.Patch`로 저장합니다. 이름 변경은 수동 제목으로 기록하고 진행 중인 자동 제목 생성을 취소하며, 보조 AI를 실행하지 않습니다.
 - `Editor/SourceEditor`: 파일 미리보기와 편집 가능한 settings JSON.
 - `Sessions/Panel`: 실제 세션 카드, 선택 하이라이트, 상태 indicator, 프로젝트 접기, 긴 목록의 스크롤.
+- `Resources/Tasks`: 프로젝트 선택과 상태별 작업 보드. `ProjectBoard`, `ManyTasks`, `EmptyProject`, `OlderRuntime`에서 등록·수정, 담당 세션 이동, 정지/이전 run 경고와 Release 확인을 확인합니다. `Simulate agent update`는 열린 편집 내용을 보존하면서 원격 갱신·alias 변경과 저장 충돌을 재현합니다. 실제 Connect 클라이언트와 메모리 서비스 fixture를 사용하며 서버의 Task는 변경하지 않습니다.
 - `Conversation/Composer`: Markdown, 코드블록, 붙여넣기 chip, 명령어 제안, 전송 대기, 작업 중 glow, 모델·effort와 usage 표시.
 - `Conversation/EventCards`: 사용자 입력, 최종·중간 대화 응답, 작업 진행·완료, 파일 변경, 진단 메시지.
 - `Conversation/QuestionCard`: 라디오 선택, 주관식·Other 편집기, 단계별 탭과 Markdown 선택지 preview. FreeText, Steps, AsyncSteps, OptionPreviews, LongQuestions로 각 이벤트 형식과 전체 답변 제출을 확인합니다. 선택지 목록만 스크롤하고 Other와 footer는 고정됩니다. 질문 전환 시 가장 긴 질문에 맞춘 높이를 유지하며, 대화를 스크롤하면 카드가 입력창 뒤로 내려갔다가 마우스 접근이나 포커스로 복귀합니다. 상세 카드가 가려도 답변은 유지되며, 명시적 제출 또는 Cancel로만 종료합니다.

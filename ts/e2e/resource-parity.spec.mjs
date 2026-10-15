@@ -456,21 +456,104 @@ test("account registration, session creation and archive restore use resource AP
   expect(
     await body.evaluate((el) => parseFloat(getComputedStyle(el).borderRadius)),
   ).toBeGreaterThan(0);
-  await panel.getByRole("button", { name: "Add session", exact: true }).click();
+  const menuTrigger = panel.getByRole("button", {
+    name: "Session panel options",
+    exact: true,
+  });
+  await menuTrigger.hover();
+  const hoverBackground = await menuTrigger.evaluate(
+    (el) => getComputedStyle(el).backgroundColor,
+  );
+  await expect(menuTrigger).toHaveCSS("border-right-width", "0px");
+  await panel
+    .getByRole("button", { name: "Session panel options", exact: true })
+    .click();
+  await page.mouse.move(0, 0);
+  await expect(menuTrigger).toHaveCSS("background-color", hoverBackground);
+
+  await page
+    .getByRole("menu", { name: "Session panel options", exact: true })
+    .evaluate(async (el) => {
+      const shell = getComputedStyle(el);
+      if (
+        shell.filter !== "none" ||
+        shell.maskImage !== "none" ||
+        shell.transform !== "none"
+      )
+        throw new Error("Menu border must remain outside the reveal effects");
+      const content = el.querySelector('[data-enter-effect="reveal"]');
+      const animations = el.getAnimations({ subtree: true });
+      if (!animations.length)
+        throw new Error("Menu entrance animation missing");
+      const entrance = content.getAnimations()[0];
+      entrance.pause();
+      entrance.currentTime = 0;
+      const start = new DOMMatrix(getComputedStyle(content).transform);
+      if (start.m41 >= 0 || start.m42 >= 0)
+        throw new Error("Menu must reveal from the top left");
+      if (getComputedStyle(content).filter !== "blur(4px)")
+        throw new Error("Reveal must start blurred");
+      if (getComputedStyle(content).maskImage === "none")
+        throw new Error("Reveal must use a directional mask");
+      entrance.currentTime = Number(entrance.effect.getTiming().duration) * 0.7;
+      const settled = getComputedStyle(content);
+      if (settled.filter !== "blur(0px)" || settled.maskPosition !== "0% 0%")
+        throw new Error("Reveal edges must be clear before the animation ends");
+      entrance.play();
+      await Promise.all(animations.map((animation) => animation.finished));
+    });
+  const menuBox = await page
+    .getByRole("menu", { name: "Session panel options", exact: true })
+    .boundingBox();
+  const triggerBox = await panel
+    .getByRole("button", { name: "Session panel options", exact: true })
+    .boundingBox();
+  const panelBox = await panel.boundingBox();
+  const edge = panelBox.x + panelBox.width;
+  const border = await panel
+    .locator("header")
+    .evaluate((el) => parseFloat(getComputedStyle(el).borderRightWidth));
+  expect(menuBox.y).toBeCloseTo(triggerBox.y, 0);
+  expect(menuBox.x - edge).toBeCloseTo(
+    edge - border - triggerBox.x - triggerBox.width,
+    0,
+  );
+  await page
+    .getByRole("menuitem", { name: "Add session", exact: true })
+    .click();
   const create = page.getByRole("dialog", { name: "Add session", exact: true });
   await expect(create).toBeVisible();
   const box = await create.boundingBox();
-  const panelBox = await panel.boundingBox();
-  expect(box.x).toBeCloseTo(panelBox.x + panelBox.width, 0);
+  const viewport = page.viewportSize();
+  expect(box.x + box.width / 2).toBeCloseTo(viewport.width / 2, 0);
+  expect(box.y + box.height / 2).toBeCloseTo(viewport.height / 2, 0);
   await expect
     .poll(() => create.evaluate((el) => el.contains(document.activeElement)))
     .toBe(true);
   await page.keyboard.press("Escape");
   await expect(create).toHaveCount(0);
   await expect(
-    panel.getByRole("button", { name: "Add session", exact: true }),
+    panel.getByRole("button", { name: "Session panel options", exact: true }),
   ).toBeFocused();
-  await panel.getByRole("button", { name: "Add session", exact: true }).click();
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await panel
+    .getByRole("button", { name: "Session panel options", exact: true })
+    .click();
+  const reducedMenu = page.getByRole("menu", {
+    name: "Session panel options",
+    exact: true,
+  });
+  await expect(reducedMenu).toHaveCSS("animation-name", "none");
+  await expect(reducedMenu).toHaveCSS("mask-image", "none");
+  await expect(reducedMenu).toHaveCSS("filter", "none");
+  await expect(reducedMenu.locator('[data-enter-effect="reveal"]')).toHaveCSS(
+    "animation-name",
+    "none",
+  );
+
+  await page
+    .getByRole("menuitem", { name: "Add session", exact: true })
+    .click();
   await page.getByRole("combobox", { name: "Account", exact: true }).click();
   await page.getByRole("option", { name: "Work account · codex" }).click();
   await page

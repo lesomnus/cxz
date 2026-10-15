@@ -42,7 +42,7 @@ test("Markdown bullets continue indentation, undo atomically, and leave code and
   await input.press("Control+Enter");
   await expect(input).toHaveValue("");
   await expect(page.locator("article.input .message-body").last()).toHaveText(
-    "- first\n  - nested",
+    "first nested",
   );
 });
 
@@ -128,8 +128,10 @@ test("Tab indents, Shift+Tab outdents, native undo preserves selection and Ctrl+
   await page.keyboard.press("Escape");
   await input.press("Control+Enter");
   await expect(input).toHaveValue("");
-  await expect(page.locator("article.input .message-body").last()).toHaveText(
-    /^ {4}\[Attached file: \/cxz\/assets\/session-1\/upload-\d+\/paste-[a-f0-9]+\.txt — read this file for the full content\]$/,
+  await expect(
+    page.locator("article.input .message-body").last().locator("pre code"),
+  ).toHaveText(
+    /^\[Attached file: \/cxz\/assets\/session-1\/upload-\d+\/paste-[a-f0-9]+\.txt — read this file for the full content\]\n$/,
   );
 });
 

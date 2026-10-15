@@ -61,6 +61,7 @@ linked guides explain existing behavior; correct these documents when code chang
 
 | ID | Capability | Behavioral contract |
 |---|---|---|
+| TASK-01 | Project shared work | Maintain project-local TODO records with versioned edits, atomic session/run claims, explicit release and live state subscriptions. Preserve work and conversation references after session removal; distinguish these records from provider background jobs and auxiliary tasks. See [Task API](tasks.md). |
 | MEM-01 | Shared memory browsing | Browse/search project Markdown and snapshots; distinguish own/other session memory and frozen copies. |
 | MEM-02 | Memory lifecycle | Snapshot, copy, combine, rename, import native Markdown, start from memory, trash, restore and permanently remove with ownership and revision checks. |
 | MEM-03 | Native agent data | Browse original provider memory/history separately from shared cxz Markdown. |

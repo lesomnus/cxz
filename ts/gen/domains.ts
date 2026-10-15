@@ -33,6 +33,9 @@ export const ProjectDomain = 7
 /** The domain identifiers of cxz.Session carry. */
 export const SessionDomain = 8
 
+/** The domain identifiers of cxz.Task carry. */
+export const TaskDomain = 11
+
 /** The domain identifiers of cxz.Tenant carry. */
 export const TenantDomain = 1
 
@@ -45,5 +48,6 @@ pdid.register("cxz.Holder", HolderDomain, "holder")
 pdid.register("cxz.Outbox", OutboxDomain, "outbox")
 pdid.register("cxz.Project", ProjectDomain, "project")
 pdid.register("cxz.Session", SessionDomain, "session")
+pdid.register("cxz.Task", TaskDomain, "task")
 pdid.register("cxz.Tenant", TenantDomain, "tenant")
 

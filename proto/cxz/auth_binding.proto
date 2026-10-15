@@ -12,7 +12,7 @@ option go_package = "github.com/lesomnus/cxz/resource";
 // succeeded. Credential validity is checked privately by the selected backend.
 message AuthBinding {
   bytes id = 1 [(orm.field) = {type: TYPE_UUID, key: true, default: ""}];
-  string binding_id = 4 [(orm.field) = {unique: true, immutable: true}];
+  string binding_id = 16 [(orm.field) = {unique: true, immutable: true}];
   Account account = 8 [(orm.edge) = {immutable: true}];
   Project project = 9 [(orm.edge) = {immutable: true, nullable: true}];
   string auth_backend = 10 [(orm.field) = {immutable: true}];

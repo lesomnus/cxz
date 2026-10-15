@@ -23,8 +23,10 @@ export function AnchoredDialog({
   busy = false,
   children,
   trigger,
+  centered = false,
 }: {
   title: string;
+  centered?: boolean;
   anchor?: HTMLElement | null;
   close: () => void;
   busy?: boolean;
@@ -47,9 +49,10 @@ export function AnchoredDialog({
     const position = () => {
       const inset =
         parseFloat(getComputedStyle(node).getPropertyValue("--space")) || 4;
-      const rect = anchor?.isConnected
-        ? anchor.getBoundingClientRect()
-        : undefined;
+      const rect =
+        !centered && anchor?.isConnected
+          ? anchor.getBoundingClientRect()
+          : undefined;
       const left = Math.max(
         inset,
         Math.min(
@@ -58,7 +61,7 @@ export function AnchoredDialog({
         ),
       );
       node.style.left = `${left}px`;
-      node.style.top = `${Math.max(inset, Math.min(rect?.top ?? inset, window.innerHeight - node.offsetHeight - inset))}px`;
+      node.style.top = `${Math.max(inset, Math.min(rect?.top ?? (centered ? (window.innerHeight - node.offsetHeight) / 2 : inset), window.innerHeight - node.offsetHeight - inset))}px`;
       setAdjacent(!!rect && left >= rect.right);
     };
     position();
@@ -70,7 +73,7 @@ export function AnchoredDialog({
       window.removeEventListener("resize", position);
       node.close();
     };
-  }, [anchor]);
+  }, [anchor, centered]);
   return createPortal(
     <dialog
       ref={dialog}

@@ -484,14 +484,28 @@ export function Transcript({
       node.dataset.targetTop = String(target);
     }
   }, [view, stretch, rangeFrame, moveThumb, follow]);
+  function keepVisibleTail(el: HTMLDivElement) {
+    const previous = geometry.current;
+    if (drag.current || wheel.current) return;
+    // Reading the tail need not mean exact-bottom/live-follow mode. Preserve
+    // its bottom inset when the composer changes the available viewport, so
+    // a nearby last reply is not covered. History readers retain their top.
+    const gap = Math.max(0, previous.max - previous.top);
+    if (follow.current) el.scrollTop = el.scrollHeight;
+    else if (
+      previous.viewport > 0 &&
+      el.clientHeight !== previous.viewport &&
+      gap <= 96
+    )
+      el.scrollTop = Math.max(0, el.scrollHeight - el.clientHeight - gap);
+  }
   function readOffsets() {
     const el = pane.current;
     if (!el) return;
     // A measurement/viewport change is not a reading gesture. Keep a follower
     // at the new bottom before publishing geometry, rather than detaching it
     // because the measured content temporarily grew below its old position.
-    if (follow.current && !drag.current && !wheel.current)
-      el.scrollTop = el.scrollHeight;
+    keepVisibleTail(el);
     measure();
     callbacks.current.onScroll(!!(drag.current || wheel.current));
     // Short/filtered pages cannot emit a native scroll event. Recheck after
@@ -527,13 +541,10 @@ export function Transcript({
     // navigation with unchanged dimensions still detaches as before.
     const previous = geometry.current;
     if (
-      follow.current &&
-      !drag.current &&
-      !wheel.current &&
-      (el.clientHeight !== previous.viewport ||
-        Math.max(0, el.scrollHeight - el.clientHeight) !== previous.max)
+      el.clientHeight !== previous.viewport ||
+      Math.max(0, el.scrollHeight - el.clientHeight) !== previous.max
     )
-      el.scrollTop = el.scrollHeight;
+      keepVisibleTail(el);
     // Programmatic wheel/drag frames precede the browser's native scroll event.
     // Publish their anchor now so a ResizeObserver cannot restore a stale frame.
     el.dispatchEvent(new Event("reading-move"));

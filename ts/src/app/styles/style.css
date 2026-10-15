@@ -252,7 +252,9 @@ header strong {
   filter: brightness(0.55);
   transition: filter 160ms ease;
 }
-:root:not([data-theme="light"]) .profile-trigger:hover .profile-avatar,
+:root:not([data-theme="light"])
+  .profile-trigger:is(:hover, [aria-expanded="true"])
+  .profile-avatar,
 :root:not([data-theme="light"]) .profile-trigger:focus-visible .profile-avatar {
   filter: brightness(1);
 }
@@ -869,9 +871,18 @@ header strong {
   flex: 1;
   min-width: 0;
   padding: 0;
-  white-space: pre-wrap;
+  white-space: normal;
   overflow-wrap: anywhere;
   margin: 0;
+}
+.input-box .message-body > .markdown {
+  padding: 0;
+}
+.input-box .message-body > .markdown > :first-child {
+  margin-top: 0;
+}
+.input-box .message-body > .markdown > :last-child {
+  margin-bottom: 0;
 }
 .input-time {
   position: relative;
@@ -1401,6 +1412,8 @@ pre {
   > .composer-editor:not(.composer-send-ghost)
   .editor-mirror {
   visibility: hidden;
+  /* Chips explicitly restore visibility; hide the entire original paint layer. */
+  opacity: 0;
 }
 .composer-input[data-send-exiting] > .composer-editor textarea {
   color: transparent;
@@ -2111,7 +2124,7 @@ pre {
   background: transparent;
   color: inherit;
 }
-.composer .toolbar-button:not(:disabled):hover,
+.composer .toolbar-button:not(:disabled):is(:hover, [aria-expanded="true"]),
 .card-close:not(:disabled):hover {
   background: var(--shade-54);
 }

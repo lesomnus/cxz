@@ -18,6 +18,10 @@ message, or resends a prompt. Disabled servers are omitted from cxz's agent MCP
 configuration; their tools and built-in usage instructions are not advertised.
 Existing turns/history may still contain earlier tool descriptions or results.
 
+Built-in `cxz_tasks` exposes project-shared work to session agents, alongside
+`cxz_memory`. It provides six compact tools with launch-bound session/run identity
+and versioned changes; see [Task API and agent tools](tasks.md#agent-tools).
+
 ## CLI
 
 ```sh

@@ -53,3 +53,15 @@
 .panel :global(.panel-scroll-inner) {
   padding: var(--ui-control-inset);
 }
+
+.actions button:global(.session-panel-menu-trigger) {
+  border: 0;
+  background: transparent;
+}
+.actions
+  button:global(.session-panel-menu-trigger):is(
+    :hover,
+    [aria-expanded="true"]
+  ) {
+  background: var(--ui-hover);
+}

@@ -64,7 +64,34 @@ test("composer session menu stays in the viewport, supports keyboard navigation 
   await expect(
     menu.getByRole("menuitem", { name: "Copy session link" }),
   ).toHaveCount(0);
+  await menu.evaluate(async (el) => {
+    await Promise.all(
+      el.getAnimations({ subtree: true }).map((a) => a.finished),
+    );
+  });
   const bounds = (await menu.boundingBox())!;
+
+  const triggerBounds = (await trigger.boundingBox())!;
+  const toolbarBounds = (await page
+    .locator(".composer-toolbar")
+    .boundingBox())!;
+  const inset = triggerBounds.y - toolbarBounds.y;
+  expect(toolbarBounds.y - (bounds.y + bounds.height)).toBeCloseTo(inset, 0);
+  // Measure in the same frame, before ResizeObserver can repair stale coordinates.
+  expect(
+    await menu.evaluate((el) => {
+      const trigger = document.querySelector(
+        '[aria-label="Session menu"][aria-haspopup="menu"]',
+      )!;
+      const previous = el.style.maxHeight;
+      el.style.maxHeight = "180px";
+      const gap =
+        trigger.getBoundingClientRect().top - el.getBoundingClientRect().bottom;
+      el.style.maxHeight = previous;
+      return gap;
+    }),
+  ).toBeCloseTo(2 * inset, 0);
+
   expect(bounds.y).toBeGreaterThanOrEqual(0);
   expect(bounds.y + bounds.height).toBeLessThanOrEqual(900);
   expect(bounds.y + bounds.height).toBeLessThan(

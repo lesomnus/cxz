@@ -220,7 +220,7 @@ func Run(ctx context.Context, root, id string) error {
 		args = []string{"app-server", "--listen", "stdio://"}
 	}
 	if session.ProjectID != "" {
-		launch, err := mcpruntime.Prepare(root, session.ID)
+		launch, err := mcpruntime.Prepare(root, session.ID, s.snap.RunID)
 		if err != nil {
 			return err
 		}

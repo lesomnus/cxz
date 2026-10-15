@@ -19,6 +19,7 @@ export function PasteChip({
     <span
       className={`paste-chip ${styles.chip}`}
       data-upload-state={attachment?.state}
+      aria-busy={attachment?.state === "uploading"}
       role="button"
       tabIndex={0}
       aria-label={paste.secret ? "Secret file reference" : label}
@@ -36,7 +37,7 @@ export function PasteChip({
         }
       }}
     >
-      <span className="paste-chip-label" aria-hidden="true">
+      <span className={`paste-chip-label ${styles.label}`} aria-hidden="true">
         {before}
         <span className={styles.leading} data-paste-leading>
           {leading}

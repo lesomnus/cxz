@@ -12,6 +12,7 @@ import type { ComponentType, PropsWithChildren } from "react";
 export type ResourceView =
   | "sessions"
   | "projects"
+  | "tasks"
   | "settings"
   | "accounts"
   | "search"
@@ -98,6 +99,26 @@ const accountsRoute = createRoute({
         : undefined,
   }),
 });
+const tasksRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "tasks",
+  component: RouteView,
+  staticData: { resource: "tasks" },
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { project?: string; task?: string; assignee?: string; run?: string } => {
+    const value = (key: string) =>
+      typeof search[key] === "string" && (search[key] as string).length <= 256
+        ? (search[key] as string)
+        : undefined;
+    return {
+      project: value("project"),
+      task: value("task"),
+      assignee: value("assignee"),
+      run: value("run"),
+    };
+  },
+});
 const searchRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "search",
@@ -155,6 +176,7 @@ const routeTree = rootRoute.addChildren([
   sessionsRoute.addChildren([sessionListRoute, sessionRoute]),
   projectsRoute,
   accountsRoute,
+  tasksRoute,
   searchRoute,
   memoryRoute,
   activityRoute,
@@ -190,5 +212,6 @@ export function useWorkspaceRoute() {
     session,
     seq: sessionRoute.useSearch({ shouldThrow: false })?.seq,
     account: accountsRoute.useSearch({ shouldThrow: false })?.account ?? "",
+    tasks: tasksRoute.useSearch({ shouldThrow: false }) ?? {},
   };
 }

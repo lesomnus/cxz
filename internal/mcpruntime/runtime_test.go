@@ -26,7 +26,7 @@ func TestRuntimeIsolationAndLaunchSnapshot(t *testing.T) {
 	id := core.ID()
 	os.MkdirAll(core.Dir(root, id), 0700)
 	core.WriteJSON(filepath.Join(core.Dir(root, id), "session.json"), core.Session{ID: id, Workspace: root})
-	launch, e := Prepare(root, id)
+	launch, e := Prepare(root, id, "first-run")
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -76,7 +76,7 @@ func TestRuntimeCloseDisconnectsClients(t *testing.T) {
 	os.MkdirAll(core.Dir(root, id), 0700)
 	core.WriteJSON(filepath.Join(core.Dir(root, id), "session.json"), core.Session{ID: id, Workspace: root})
 	mcpconfig.SaveRuntime(root, mcpconfig.Snapshot{Servers: map[string]mcpconfig.Server{"cat": {Name: "cat", Kind: "stdio", Command: "cat"}}})
-	launch, _ := Prepare(root, id)
+	launch, _ := Prepare(root, id, "first-run")
 	r, e := Start(root)
 	if e != nil {
 		t.Fatal(e)
@@ -133,7 +133,7 @@ func TestBridgeReconnectDoesNotReplayCalls(t *testing.T) {
 	})
 	defer func() { delete(providers, "reconnect_test") }()
 	mcpconfig.SaveRuntime(root, mcpconfig.Snapshot{Servers: map[string]mcpconfig.Server{"reconnect_test": {Name: "test", Kind: "builtin"}}})
-	Prepare(root, id)
+	Prepare(root, id, "first-run")
 	r, e := Start(root)
 	if e != nil {
 		t.Fatal(e)

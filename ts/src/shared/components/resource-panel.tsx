@@ -9,10 +9,12 @@ export function ResourcePanel({
   actions,
   children,
   className = "",
+  unreadSelector,
   ...props
 }: Omit<ComponentProps<"aside">, "title"> & {
   title: ReactNode;
   actions?: ReactNode;
+  unreadSelector?: string;
 }) {
   return (
     <aside {...props} className={`resource-panel ${styles.panel} ${className}`}>
@@ -20,7 +22,7 @@ export function ResourcePanel({
         <strong className={styles.title}>{title}</strong>
         {actions && <div className={styles.actions}>{actions}</div>}
       </header>
-      <PanelScroll>{children}</PanelScroll>
+      <PanelScroll unreadSelector={unreadSelector}>{children}</PanelScroll>
     </aside>
   );
 }

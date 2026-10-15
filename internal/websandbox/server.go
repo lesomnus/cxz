@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/lesomnus/cxz/internal/historypage"
+	"github.com/lesomnus/cxz/internal/taskapi"
 	"github.com/lesomnus/cxz/resource"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -31,6 +32,7 @@ type Server struct {
 	delay          time.Duration
 	rev            uint64
 	ctx            context.Context
+	tasks          *taskapi.Memory
 	cancel         context.CancelFunc
 	uploads        map[string]sandboxAttachment
 	uploadSequence uint64
@@ -59,7 +61,7 @@ type Sessions struct {
 
 func New(seed uint64, delay time.Duration) *Server {
 	ctx, cancel := context.WithCancel(context.Background())
-	s := &Server{seed: seed, delay: delay, ctx: ctx, cancel: cancel}
+	s := &Server{seed: seed, delay: delay, ctx: ctx, cancel: cancel, tasks: taskapi.NewMemory()}
 	for i, name := range []string{"Design playground", "Secondary project"} {
 		id := fmt.Sprintf("project-%d", i+1)
 		s.projects = append(s.projects, resource.Project_builder{Id: []byte(fmt.Sprintf("project-%08d", i+1)), RuntimeId: id, Alias: id, Name: name, Workspace: "/workspace", Listed: true, Status: resource.ProjectStatus_builder{State: "running", RemoteWorkspace: "/workspace", RemoteUser: "sandbox", ContainerId: "fake-" + id}.Build()}.Build())
@@ -145,6 +147,7 @@ func (s *Server) Close() { s.cancel() }
 func (s *Server) Register(r grpc.ServiceRegistrar) {
 	resource.RegisterProjectServiceServer(r, &Projects{S: s})
 	resource.RegisterSessionServiceServer(r, &Sessions{S: s})
+	resource.RegisterTaskServiceServer(r, s.Tasks())
 }
 func (s *Server) event(st *session, kind, text, request string, payload []byte) {
 	seq := st.value.GetStatus().GetLastSeq() + 1

@@ -1,0 +1,31 @@
+.area :global(.panel-scroll-fade)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease-out;
+}
+.area :global(.panel-scroll-fade-top)::after {
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--ui-brand-color) 18%, transparent),
+    transparent
+  );
+}
+.area :global(.panel-scroll-fade-bottom)::after {
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--ui-brand-color) 18%, transparent),
+    transparent
+  );
+}
+.area[data-unread-above="true"] :global(.panel-scroll-fade-top)::after,
+.area[data-unread-below="true"] :global(.panel-scroll-fade-bottom)::after {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .area :global(.panel-scroll-fade)::after {
+    transition: none;
+  }
+}

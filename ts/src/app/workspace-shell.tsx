@@ -5,12 +5,13 @@ import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import {
   type PropsWithChildren,
   useEffect,
+  useCallback,
   useMemo,
   useRef,
   useState,
 } from "react";
 import type { Session } from "#gen/cxz/session_pb";
-import { Button } from "@lesomnus/nox";
+import { ActionMenu } from "@lesomnus/nox";
 import { Connection } from "#src/shared/api/connection.ts";
 import { ProfileMenu } from "./profile-menu";
 import { SessionTreeGroup } from "#src/features/session/components/session-tree.tsx";
@@ -47,8 +48,19 @@ export function Workspace({
   useEffect(() => setSettingsFileOpen(false), [resource, settingsTopic]);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [addingSession, setAddingSession] = useState(false);
-  const panel = useRef<HTMLElement>(null);
-  const addSession = useRef<HTMLButtonElement>(null);
+  const sessionPanel = useRef<HTMLElement>(null);
+  const positionSessionMenu = useCallback((trigger: DOMRect) => {
+    const header = sessionPanel.current?.querySelector("header");
+    const edge = header?.getBoundingClientRect().right ?? trigger.right;
+    const border = header
+      ? parseFloat(getComputedStyle(header).borderRightWidth) || 0
+      : 0;
+    // Mirror the empty space, not the panel's visible border thickness.
+    return {
+      left: edge + Math.max(0, edge - border - trigger.right),
+      top: trigger.top,
+    };
+  }, []);
   useEffect(() => setAddingSession(false), [resource, session]);
   const inventory = useResourceInventory(c);
   const { unread, errors } = useSessionAttention(
@@ -125,7 +137,14 @@ export function Workspace({
             </SidebarHint>
           ))}
           {(
-            ["accounts", "search", "memory", "activity", "auxiliary"] as const
+            [
+              "tasks",
+              "accounts",
+              "search",
+              "memory",
+              "activity",
+              "auxiliary",
+            ] as const
           ).map((view) => (
             <SidebarHint
               key={view}
@@ -155,9 +174,12 @@ export function Workspace({
             openSettings={() => setSettingsFileOpen(false)}
           />
         </nav>
-        {resource !== "accounts" && (
+        {resource !== "accounts" && resource !== "tasks" && (
           <ResourcePanel
-            ref={panel}
+            ref={sessionPanel}
+            unreadSelector={
+              resource === "sessions" ? '[data-unread="true"]' : undefined
+            }
             className={resource === "sessions" ? "session-panel" : ""}
             title={
               resource === "sessions"
@@ -172,25 +194,32 @@ export function Workspace({
             }
             actions={
               resource === "sessions" && (
-                <Button
-                  ref={addSession}
-                  type="button"
-                  title="Add session"
-                  aria-label="Add session"
-                  onClick={() => setAddingSession(true)}
-                >
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.6"
-                    aria-hidden="true"
-                  >
-                    <path d="M12 5v14M5 12h14" />
-                  </svg>
-                </Button>
+                <ActionMenu
+                  label="Session panel options"
+                  placement="right"
+                  motion={{ from: "top-left", effect: "reveal" }}
+                  position={positionSessionMenu}
+                  triggerClassName="session-panel-menu-trigger"
+                  items={[
+                    {
+                      label: "Add session",
+                      icon: (
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.6"
+                          aria-hidden="true"
+                        >
+                          <path d="M12 5v14M5 12h14" />
+                        </svg>
+                      ),
+                      run: () => setAddingSession(true),
+                    },
+                  ]}
+                />
               )
             }
             aria-label={
@@ -289,8 +318,7 @@ export function Workspace({
           <SessionCreate
             c={c}
             projects={projects}
-            anchor={panel.current}
-            trigger={addSession.current}
+            centered
             close={() => setAddingSession(false)}
           />
         )}

@@ -7,6 +7,8 @@ import { ProjectService } from "#gen/cxz/project_svc_pb";
 import { SessionService } from "#gen/cxz/session_svc_pb";
 import { AccountService } from "#gen/cxz/account_svc_pb";
 import { AuthBindingService } from "#gen/cxz/auth_binding_svc_pb";
+import { TaskService } from "#gen/cxz/task_svc_pb";
+import { TaskCatalog } from "#src/features/tasks/task-catalog.ts";
 import type { ComposerPaste } from "#src/features/session/composer/composer-pastes.ts";
 import type { EditorState } from "#src/features/workspace/editor/workspace-editor.tsx";
 import { ResourceInventory } from "./resource-inventory";
@@ -26,6 +28,8 @@ export class Connection {
   readonly sessions;
   readonly accounts;
   readonly bindings;
+  readonly tasks;
+  readonly taskCatalog;
   readonly inventory;
   readonly attention;
   readonly conversations;
@@ -55,6 +59,8 @@ export class Connection {
     this.sessions = createClient(SessionService, this.transport);
     this.accounts = createClient(AccountService, this.transport);
     this.bindings = createClient(AuthBindingService, this.transport);
+    this.tasks = createClient(TaskService, this.transport);
+    this.taskCatalog = new TaskCatalog(this.tasks);
     this.attention = new SessionAttention(this.sessions, baseUrl);
     this.conversations = new ConversationCache(this);
     this.inventory = new ResourceInventory(
@@ -64,6 +70,7 @@ export class Connection {
     );
   }
   dispose() {
+    this.taskCatalog.dispose();
     this.conversations.dispose();
     this.attention.dispose();
   }
