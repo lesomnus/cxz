@@ -469,8 +469,12 @@ test("account registration, session creation and archive restore use resource AP
       entrance.pause();
       entrance.currentTime = 0;
       const start = new DOMMatrix(getComputedStyle(el).transform);
-      if (start.m41 >= 0 || start.m42 !== 0)
-        throw new Error("Menu must enter horizontally from the left");
+      if (start.m41 >= 0 || start.m42 >= 0)
+        throw new Error("Menu must reveal from the top left");
+      if (getComputedStyle(el).filter !== "blur(4px)")
+        throw new Error("Reveal must start blurred");
+      if (getComputedStyle(el).maskImage === "none")
+        throw new Error("Reveal must use a directional mask");
       entrance.play();
       await Promise.all(animations.map((animation) => animation.finished));
     });
@@ -504,9 +508,18 @@ test("account registration, session creation and archive restore use resource AP
   await expect(
     panel.getByRole("button", { name: "Session panel options", exact: true }),
   ).toBeFocused();
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await panel
     .getByRole("button", { name: "Session panel options", exact: true })
     .click();
+  const reducedMenu = page.getByRole("menu", {
+    name: "Session panel options",
+    exact: true,
+  });
+  await expect(reducedMenu).toHaveCSS("animation-name", "none");
+  await expect(reducedMenu).toHaveCSS("mask-image", "none");
+  await expect(reducedMenu).toHaveCSS("filter", "none");
+
   await page
     .getByRole("menuitem", { name: "Add session", exact: true })
     .click();
