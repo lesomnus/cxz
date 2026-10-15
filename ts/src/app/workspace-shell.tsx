@@ -180,7 +180,7 @@ export function Workspace({
                 <ActionMenu
                   label="Session panel options"
                   placement="right"
-                  motion="from-left"
+                  motion={{ from: "top-left", effect: "reveal" }}
                   position={positionSessionMenu}
                   triggerClassName="session-panel-menu-trigger"
                   items={[
