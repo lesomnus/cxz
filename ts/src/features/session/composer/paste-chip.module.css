@@ -3,7 +3,7 @@
   z-index: 2;
   visibility: visible;
   /* Reserve the last pixel for the native caret; no outward shadow covers it. */
-  --chip-background: var(--shade-16);
+  --chip-background: var(--shade-24);
   background: linear-gradient(
     to left,
     transparent 1px,
@@ -18,7 +18,7 @@
 }
 .chip:hover,
 .chip:focus-visible {
-  --chip-background: var(--shade-24);
+  --chip-background: var(--shade-32);
   outline: none;
   color: var(--shade-255);
 }
@@ -44,7 +44,7 @@
   background: linear-gradient(
     105deg,
     transparent 30%,
-    color-mix(in srgb, var(--shade-255) 8%, transparent) 50%,
+    color-mix(in srgb, var(--shade-255) 16%, transparent) 50%,
     transparent 70%
   );
   background-size: 250% 100%;
