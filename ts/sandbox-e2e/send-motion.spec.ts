@@ -291,3 +291,37 @@ test("leaving during departure clears the accepted saved draft and cancels the d
     ),
   ).toHaveCount(0);
 });
+
+test("sending a paste chip hides its original paint layer while the snapshot moves", async ({
+  page,
+}) => {
+  await ready(page);
+  const input = page.getByRole("textbox", { name: "Message", exact: true });
+  await input.fill("Before ");
+  await input.evaluate((node) => {
+    const data = new DataTransfer();
+    data.setData("text/plain", "one\ntwo\nthree\nfour\nfive\n");
+    node.dispatchEvent(
+      new ClipboardEvent("paste", {
+        clipboardData: data,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+  });
+  const original = page.locator(".composer-editor:not(.composer-send-ghost)");
+  await expect(original.locator(".paste-chip")).toHaveAttribute(
+    "data-upload-state",
+    "ready",
+  );
+  await probe(page);
+  await page.getByRole("button", { name: "Send", exact: true }).click();
+  await page.waitForFunction(() => !!(window as any).sendMotionProbe.exit);
+  await expect(original.locator(".editor-mirror")).toHaveCSS("opacity", "0");
+  await expect(page.locator(".composer-send-ghost .paste-chip")).toBeVisible();
+  await page.evaluate(() => (window as any).sendMotionProbe.exit.play());
+  await page.waitForFunction(() => (window as any).sendMotionProbe.entered);
+  await page.evaluate(() => (window as any).sendMotionProbe.arrival.play());
+  await expect(page.locator(".composer-send-ghost")).toHaveCount(0);
+  await expect(original.locator(".editor-mirror")).toHaveCSS("opacity", "1");
+});
