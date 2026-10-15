@@ -334,7 +334,7 @@ export const messages = {
   "Last model call": "마지막 모델 호출",
   "Last week": "지난주",
   Latest: "최신 대화",
-  "Less than a minute ago": "1분 이내",
+  "Just now": "방금",
   Live: "실시간",
   "Loading files…": "파일 로딩 중…",
   "Loading projects…": "프로젝트 로딩 중…",

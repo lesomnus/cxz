@@ -331,7 +331,7 @@ export const messages = {
   "Last model call": "Last model call",
   "Last week": "Last week",
   Latest: "Latest",
-  "Less than a minute ago": "Less than a minute ago",
+  "Just now": "Just now",
   Live: "Live",
   "Loading files…": "Loading files…",
   "Loading projects…": "Loading projects…",
