@@ -96,6 +96,17 @@ func (s Service) Add(ctx context.Context, r *resource.TaskAddRequest) (*resource
 	if err := fields(r.GetName(), r.GetDesc(), r.GetPriority(), r.GetLabels()); err != nil {
 		return nil, err
 	}
+	request := proto.Clone(r).(*resource.TaskAddRequest)
+	request.SetProject(resource.ProjectRef_builder{Id: p.GetId()}.Build())
+	request.SetStatus(resource.TaskStatus_TASK_STATUS_TODO)
+	ref := resource.TaskRef_builder{ClientId: proto.String(r.GetClientId()), Project: request.GetProject()}.Build()
+	// A client_id is a project-local idempotency key. The first Add wins, even
+	// when its mutable fields have subsequently been edited.
+	if v, err := s.read(ctx, ref); err == nil {
+		return v, nil
+	} else if status.Code(err) != codes.NotFound {
+		return nil, err
+	}
 	if r.GetSourceSession() == "" {
 		if r.GetSourceRun() != "" || r.GetSourceSeq() != 0 {
 			return nil, invalid("a conversation reference requires source_session")
@@ -111,17 +122,6 @@ func (s Service) Add(ctx context.Context, r *resource.TaskAddRequest) (*resource
 		if r.GetSourceSeq() != 0 && r.GetSourceRun() == "" {
 			return nil, invalid("an event reference requires source_run")
 		}
-	}
-	request := proto.Clone(r).(*resource.TaskAddRequest)
-	request.SetProject(resource.ProjectRef_builder{Id: p.GetId()}.Build())
-	request.SetStatus(resource.TaskStatus_TASK_STATUS_TODO)
-	ref := resource.TaskRef_builder{ClientId: proto.String(r.GetClientId()), Project: request.GetProject()}.Build()
-	// A client_id is a project-local idempotency key. The first Add wins, even
-	// when its mutable fields have subsequently been edited.
-	if v, err := s.read(ctx, ref); err == nil {
-		return v, nil
-	} else if status.Code(err) != codes.NotFound {
-		return nil, err
 	}
 	v, err := s.TaskServiceServer.Add(actionContext(ctx, resource.TaskService_Add_FullMethodName), request)
 	if status.Code(err) == codes.AlreadyExists {

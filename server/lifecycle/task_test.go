@@ -139,6 +139,10 @@ func TestTaskPersistenceAndPurgedSessionReference(t *testing.T) {
 	if saved.GetSourceSession() != f.s.Id || saved.GetAssignee() != f.s.Id || !proto.Equal(saved.GetDateUpdated(), v.GetDateUpdated()) {
 		t.Fatalf("lost durable work: %v", saved)
 	}
+	retried, err := rebuilt.Task().Add(ctx, resource.TaskAddRequest_builder{Project: projectRef(f.p.Id), ClientId: "retained", Name: "Keep after purge", SourceSession: f.s.Id, SourceRun: f.s.RunId, SourceSeq: 1}.Build())
+	if err != nil || !proto.Equal(retried.GetDateUpdated(), saved.GetDateUpdated()) {
+		t.Fatalf("creation retry after source purge: %v %v", retried, err)
+	}
 	if _, err := rebuilt.Task().Release(ctx, resource.TaskClaimRequest_builder{Ref: ref, Actor: actor, DateUpdated: saved.GetDateUpdated()}.Build()); err != nil {
 		t.Fatal(err)
 	}
