@@ -121,9 +121,6 @@ export function Workspace({
                   unreadCount={view === "sessions" ? unread.size : 0}
                   error={view === "sessions" && errors.size > 0}
                 />
-                <span>
-                  {view === "sessions" ? t("Sessions") : t("Projects")}
-                </span>
               </RouteLink>
             </SidebarHint>
           ))}
@@ -149,11 +146,6 @@ export function Workspace({
                 aria-current={resource === view ? "page" : undefined}
               >
                 <ResourceIcon kind={view} />
-                <span>
-                  {view === "auxiliary"
-                    ? "Auxiliary AI"
-                    : view[0].toUpperCase() + view.slice(1)}
-                </span>
               </RouteLink>
             </SidebarHint>
           ))}
