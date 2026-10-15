@@ -33,6 +33,7 @@ for (const story of [
       const modelBox = (await settings.boundingBox())!;
       const timeBox = (await header.locator(".response-time").boundingBox())!;
       const logoBox = (await header.locator(".agent-brand").boundingBox())!;
+      expect(copyBox.height).toBe(24);
       expect(headingBox.height).toBeGreaterThanOrEqual(copyBox.height);
       expect(modelBox.x).toBe(timeBox.x);
       expect(timeBox.y).toBeGreaterThan(modelBox.y + modelBox.height);

@@ -16,6 +16,7 @@ export function CopyButton({
     <span className={`meta-popover ${className}`}>
       <Button
         type="button"
+        variant="toolbar"
         className="copy"
         aria-label={t("Copy")}
         aria-describedby={tooltip}
