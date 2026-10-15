@@ -108,7 +108,7 @@ test("provider dropdowns, quota popovers, aligned headings and bounded press/sha
   const recorded = await timestamp.getAttribute("datetime");
   expect(Math.abs(Date.now() - Date.parse(recorded!))).toBeLessThan(60_000);
   await expect(input.locator(".input-relative-time")).toHaveText(
-    "- Less than a minute ago",
+    "- Just now",
   );
   const timeBox = (await timestamp.boundingBox())!;
   const inputBox = (await input.locator(".input-box").boundingBox())!;

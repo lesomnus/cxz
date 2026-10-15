@@ -56,7 +56,7 @@ for (const story of [
       }
     }
     await expect(header.locator(".response-relative-time")).toHaveText(
-      /^ - .*ago$/,
+      /^ - (Just now|.*ago)$/,
     );
     expect(
       await header.evaluate(
