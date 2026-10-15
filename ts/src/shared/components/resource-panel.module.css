@@ -55,10 +55,13 @@
 }
 
 .actions button:global(.session-panel-menu-trigger) {
-  border: 1px solid var(--ui-shade-58);
+  border: 0;
   background: transparent;
 }
-.actions button:global(.session-panel-menu-trigger):hover {
-  border-color: var(--ui-shade-115);
-  background: transparent;
+.actions
+  button:global(.session-panel-menu-trigger):is(
+    :hover,
+    [aria-expanded="true"]
+  ) {
+  background: var(--ui-hover);
 }
