@@ -171,6 +171,8 @@ export function Workspace({
               resource === "sessions" && (
                 <ActionMenu
                   label="Session panel options"
+                  placement="right"
+                  triggerClassName="session-panel-menu-trigger"
                   items={[
                     {
                       label: "Add session",
