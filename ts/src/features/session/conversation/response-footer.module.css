@@ -2,8 +2,13 @@
   --metric-value-width: 5ch;
   flex-shrink: 0;
 }
-.metric:is([data-metric="duration"], [data-metric="api_duration_ms"]) {
-  --metric-value-width: 8ch;
+.metric:is([data-metric="duration"], [data-metric="api_duration_ms"]) .value {
+  /* Font metrics/rounding can make HH:MM:SS slightly wider than 8ch.
+     Keep the usual alignment, but never truncate a duration (including 100h+). */
+  width: max-content;
+  min-width: 8ch;
+  overflow: visible;
+  text-overflow: clip;
 }
 .metric:is([data-metric="tool_calls"], [data-metric="api_turns"]) {
   --metric-value-width: 4ch;

@@ -110,3 +110,31 @@ test("response metric values precede their icons and do not move them across val
     .not.toBe(initial);
   expect(errors).toEqual([]);
 });
+
+test("durations remain fully visible when glyph spacing exceeds eight character cells", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=conversation-eventcards--metric-ranges&viewMode=story",
+  );
+  await page
+    .getByRole("button", { name: "Use large values", exact: true })
+    .click();
+  for (const key of ["duration", "api_duration_ms"]) {
+    const value = page.locator('[data-metric="' + key + '"] > span');
+    await expect(value).toHaveText("01:39:59");
+    await value.evaluate((node) => {
+      (node as HTMLElement).style.letterSpacing = "0.5px";
+    });
+    expect(
+      await value.evaluate((node) => node.scrollWidth <= node.clientWidth + 1),
+    ).toBe(true);
+    await expect(value).toHaveCSS("text-overflow", "clip");
+    await value.locator(".elapsed-time").evaluate((node) => {
+      node.textContent = "123:45:06";
+    });
+    expect(
+      await value.evaluate((node) => node.scrollWidth <= node.clientWidth + 1),
+    ).toBe(true);
+  }
+});
