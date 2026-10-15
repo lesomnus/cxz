@@ -188,7 +188,11 @@ npm ci
 npm run dev
 ```
 
-Open `http://127.0.0.1:5173/`. UI edits use Vite HMR; API calls, editor connections
+The command starts Vite at `http://127.0.0.1:5173/` and Storybook at
+`http://localhost:6006/`. Ctrl+C stops both; if either process exits, the other
+is stopped too. Use `npm run dev:app` to start only Vite.
+
+UI edits use Vite HMR; API calls, editor connections
 and terminal WebSockets are proxied to the installed gateway. This uses real
 projects and sessions, including real sends and decisions.
 

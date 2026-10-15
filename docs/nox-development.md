@@ -14,6 +14,8 @@ npm ci --prefix ts
 ```
 
 From `ts`, run the usual `npm run dev`, `npm run sandbox`, or `npm run storybook`.
+`npm run dev` also starts the application Storybook on port 6006; Ctrl+C stops
+both processes. `npm run dev:app` starts only the application.
 Edit `packages/nox/src` alongside the application. Development selects Nox's
 `nox-source` conditional exports, including source theme tokens and editor/terminal
 entries. Vite watches these source files; the application and sandbox use React

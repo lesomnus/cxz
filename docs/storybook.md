@@ -9,7 +9,8 @@ npm run storybook
 ```
 
 브라우저에서 <http://localhost:6006>을 엽니다. 컨테이너나 원격 개발 환경에서는
-6006 포트를 로컬로 포워딩합니다.
+6006 포트를 로컬로 포워딩합니다. `npm run dev`는 Vite와 이 Storybook을 함께
+실행하며, Ctrl+C로 둘 다 종료합니다. Vite만 실행하려면 `npm run dev:app`을 사용합니다.
 
 - `Components`: 버튼, 에이전트 로고, 설정 드롭다운·슬라이더·분할 선택, floating card, 타이머와 Monaco 상세 탭.
 - `Settings/SettingField`: 제목·설정 ID·요약·컨트롤·선택적 상세설명을 배치하는 공통 설정 항목.
