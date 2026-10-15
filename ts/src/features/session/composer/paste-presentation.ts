@@ -1,4 +1,4 @@
-import { formatCompactNumber } from "@lesomnus/cxz-ui";
+import { formatCompactNumber } from "@lesomnus/nox";
 import { currentLocale, t } from "#src/shared/i18n/i18n.ts";
 import type { ComposerPaste } from "./composer-pastes";
 

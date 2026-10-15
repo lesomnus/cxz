@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button } from "@lesomnus/cxz-ui";
+import { Button } from "@lesomnus/nox";
 import { AuxKind } from "#gen/cxz/project_svc_pb";
 import { Connection, ref } from "#src/shared/api/connection.ts";
 import { useSessionAux } from "#src/features/session/model/use-session-aux.ts";

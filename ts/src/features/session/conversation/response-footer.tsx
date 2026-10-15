@@ -6,7 +6,7 @@ import {
 } from "#src/features/session/model/response-completion.ts";
 import { formatTokens } from "#src/features/session/model/session-info.ts";
 import styles from "./response-footer.module.css";
-import { CompactNumber, ElapsedTime } from "@lesomnus/cxz-ui";
+import { CompactNumber, ElapsedTime } from "@lesomnus/nox";
 
 const names: Record<string, string> = {
   input_tokens: "Input",

@@ -1,8 +1,8 @@
 import { useState } from "react";
 import type { Session } from "#gen/cxz/session_pb";
 import type { SessionPurgeReply } from "#gen/cxz/session_svc_pb";
-import { ActionMenu } from "@lesomnus/cxz-ui";
-import { ConfirmationDialog } from "@lesomnus/cxz-ui";
+import { ActionMenu } from "@lesomnus/nox";
+import { ConfirmationDialog } from "@lesomnus/nox";
 import { useFloatingCard } from "#src/features/session/cards/floating-card.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
@@ -22,6 +22,7 @@ export type SessionMenuProps = {
   previewPurge: () => Promise<SessionPurgeReply | undefined>;
   purge: () => Promise<boolean>;
   edit: (field: SessionField, value: string) => Promise<Session>;
+  fork?: () => void | Promise<unknown>;
   upload?: (directory?: boolean) => void;
   tools?: { label: string; run: () => void; disabled?: boolean }[];
 };
@@ -34,6 +35,7 @@ export function SessionMenu({
   previewPurge,
   purge,
   edit,
+  fork,
   upload,
   tools = [],
 }: SessionMenuProps) {
@@ -90,6 +92,23 @@ export function SessionMenu({
                 disabled: unavailable,
                 run: () => confirm("restart"),
               },
+              ...(fork
+                ? [
+                    {
+                      label: t("Fork"),
+                      icon: <SessionActionIcon action="fork" />,
+                      disabled:
+                        busy ||
+                        !session?.status?.runId ||
+                        !["idle", "stopped", "interrupted", "failed"].includes(
+                          session?.status?.state ?? "",
+                        ) ||
+                        !!session?.status?.pending.length ||
+                        !!session?.status?.queued,
+                      run: () => void fork(),
+                    },
+                  ]
+                : []),
               {
                 label: t("Purge"),
                 icon: <SessionActionIcon action="purge" />,
@@ -225,6 +244,7 @@ function SessionActionIcon({
     | "stop"
     | "resume"
     | "restart"
+    | "fork"
     | "purge"
     | "details"
     | "upload"
@@ -247,6 +267,14 @@ function SessionActionIcon({
       {action === "restart" && (
         <>
           <path d="M13 7a5 5 0 1 0-.8 3.7M13 3v4H9" />
+        </>
+      )}
+      {action === "fork" && (
+        <>
+          <path d="M5 11V5m0 4h3a3 3 0 0 0 3-3V5" />
+          <circle cx="5" cy="3" r="1.5" />
+          <circle cx="11" cy="3" r="1.5" />
+          <circle cx="5" cy="13" r="1.5" />
         </>
       )}
       {action === "purge" && (

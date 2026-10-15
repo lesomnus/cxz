@@ -1,14 +1,14 @@
 import { t } from "#src/shared/i18n/i18n.ts";
-import { monospaceFont } from "@lesomnus/cxz-ui";
+import { monospaceFont } from "@lesomnus/nox";
 import {
   palettes,
   paletteForTheme,
   defaultEditorSettings as defaultUIEditorSettings,
   type EditorSettings as UIEditorSettings,
-} from "@lesomnus/cxz-ui/editor";
-export { palettes, paletteForTheme } from "@lesomnus/cxz-ui/editor";
-export type { Palette } from "@lesomnus/cxz-ui/editor";
-import type { Palette } from "@lesomnus/cxz-ui/editor";
+} from "@lesomnus/nox/editor";
+export { palettes, paletteForTheme } from "@lesomnus/nox/editor";
+export type { Palette } from "@lesomnus/nox/editor";
+import type { Palette } from "@lesomnus/nox/editor";
 export type GoogleFont = { provider: "google"; family: string };
 export type FontFamilySetting = string | GoogleFont;
 export function isGoogleFont(value: unknown): value is GoogleFont {

@@ -3,7 +3,7 @@ import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import { PanelLink } from "#src/shared/navigation/route-link.tsx";
-import { PanelItem } from "@lesomnus/cxz-ui";
+import { PanelItem } from "@lesomnus/nox";
 import { SessionIdentity } from "./session-identity";
 import { UnreadBadge } from "#src/shared/notifications/unread-badge.tsx";
 import { useState, type CSSProperties } from "react";
@@ -18,6 +18,7 @@ export function SessionTreeGroup({
   toggle,
   unread = new Set<string>(),
   errors = new Set<string>(),
+  background = new Set<string>(),
 }: {
   project: Project;
   items: Session[];
@@ -27,6 +28,7 @@ export function SessionTreeGroup({
   toggle: () => void;
   unread?: ReadonlySet<string>;
   errors?: ReadonlySet<string>;
+  background?: ReadonlySet<string>;
 }) {
   useLocale();
   return (
@@ -53,6 +55,7 @@ export function SessionTreeGroup({
                 session={s}
                 unread={unread.has(s.runtimeId)}
                 error={errors.has(s.runtimeId)}
+                background={background.has(s.runtimeId)}
               />
               <SessionIdentity session={s} />
             </PanelLink>
@@ -98,10 +101,12 @@ function SessionIndicator({
   session,
   unread,
   error,
+  background,
 }: {
   session: Session;
   unread: boolean;
   error: boolean;
+  background: boolean;
 }) {
   useLocale();
   const [dotColors] = useState(randomActivityColors);
@@ -126,12 +131,26 @@ function SessionIndicator({
     <span
       className={`session-indicator ${question ? "attention" : ""}`}
       role="img"
-      aria-label={question ? t("Awaiting answer") : state}
+      aria-label={
+        question
+          ? t("Awaiting answer")
+          : !working && background
+            ? t("Background tasks")
+            : state
+      }
     >
       {question ? (
         "?"
-      ) : working ? (
-        <svg width="12" height="16" viewBox="0 0 12 16" aria-hidden="true">
+      ) : working || background ? (
+        <svg
+          className={
+            !working && background ? styles.backgroundActivity : undefined
+          }
+          width="12"
+          height="16"
+          viewBox="0 0 12 16"
+          aria-hidden="true"
+        >
           {activityDots.map(([cx, cy], index) => (
             <circle
               className="session-activity-dot"

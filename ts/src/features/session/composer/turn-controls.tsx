@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
-import { Button } from "@lesomnus/cxz-ui";
-import { ElapsedTime } from "@lesomnus/cxz-ui";
+import { Button } from "@lesomnus/nox";
+import { ElapsedTime } from "@lesomnus/nox";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
 import type { TurnProgress } from "#src/features/session/model/turn-progress.ts";

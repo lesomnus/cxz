@@ -1,9 +1,9 @@
 import type { ComponentProps } from "react";
-import { ScrollArea } from "@lesomnus/cxz-ui";
+import { ScrollArea } from "@lesomnus/nox";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 
-// App labels and layout hooks only; behavior, styles and defaults live in cxz-ui.
+// App labels and layout hooks only; behavior, styles and defaults live in Nox.
 export function PanelScroll({
   className = "",
   classNames,

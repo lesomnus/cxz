@@ -10,6 +10,9 @@ service SessionService {
   rpc ConversationStats(ConversationStatsRequest) returns (ConversationStatsReply);
   rpc Restore(SessionRef) returns (Session);
   rpc Resume(SessionControl) returns (Session);
+  // Branch a settled conversation, retaining its project, account and settings.
+  // client_id makes retries return the same child rather than creating another.
+  rpc Fork(SessionControl) returns (Session);
   rpc Stop(SessionControl) returns (Session);
   rpc Interrupt(SessionControl) returns (SessionReceipt);
   rpc CopyMemory(SessionCopyMemoryRequest) returns (SessionReceipt);

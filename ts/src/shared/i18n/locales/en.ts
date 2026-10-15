@@ -1,5 +1,6 @@
 // English source messages are always bundled; other packs load on demand.
 export const messages = {
+  "Background tasks": "Background tasks",
   "Search current conversation": "Search current conversation",
   "This message is no longer available in retained history.":
     "This message is no longer available in retained history.",
@@ -330,7 +331,8 @@ export const messages = {
   "Last model call": "Last model call",
   "Last week": "Last week",
   Latest: "Latest",
-  "Less than a minute ago": "Less than a minute ago",
+  "Just now": "Just now",
+  Fork: "Fork",
   Live: "Live",
   "Loading files…": "Loading files…",
   "Loading projects…": "Loading projects…",

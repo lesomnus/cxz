@@ -2,6 +2,7 @@
 FROM --platform=$BUILDPLATFORM node:24-bookworm-slim AS web
 WORKDIR /src/ts
 COPY ts/package.json ts/package-lock.json ./
+COPY ts/packages/nox/package.json ./packages/nox/package.json
 RUN --mount=type=cache,target=/root/.npm npm ci
 COPY ts/ ./
 RUN npm run build

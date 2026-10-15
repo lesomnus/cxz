@@ -7,12 +7,13 @@
     "#src/*": "./src/*"
   },
   "scripts": {
-    "dev": "vite --config vite.dev.config.mjs",
+    "dev": "concurrently --kill-others --kill-timeout 3000 --names vite,storybook -P \"npm run dev:app -- {@}\" \"npm run storybook -- --ci\" --",
+    "dev:app": "vite --config vite.dev.config.mjs",
     "build": "tsc --noEmit && vite build",
     "test": "vitest run src scripts",
     "test:browser": "playwright test",
     "test:browser:plaintext": "playwright test --config playwright.plaintext.config.ts",
-    "format": "prettier --write src .storybook vite.config.ts vite.dev.config.mjs vite.sandbox.config.ts playwright.storybook.config.ts storybook-e2e playwright.config.ts playwright.sandbox.config.ts e2e sandbox-e2e test-support scripts .storybook-ui packages/ui playwright.ui.config.ts ui-e2e",
+    "format": "prettier --write src .storybook vite.config.ts vite.dev.config.mjs vite.sandbox.config.ts playwright.storybook.config.ts storybook-e2e playwright.config.ts playwright.sandbox.config.ts e2e sandbox-e2e test-support scripts .storybook-ui playwright.ui.config.ts ui-e2e playwright.nox.config.ts vite.nox-development.config.ts nox-e2e",
     "sandbox:prepare": "node scripts/build-sandbox.mjs",
     "sandbox": "npm run sandbox:prepare && vite --config vite.sandbox.config.ts --open /sandbox.html",
     "sandbox:serve": "vite --config vite.sandbox.config.ts",
@@ -22,20 +23,24 @@
     "build-storybook": "storybook build",
     "test:storybook": "playwright test --config playwright.storybook.config.ts",
     "test:performance": "playwright test --config playwright.performance.config.ts",
-    "build:ui": "npm run build --workspace @lesomnus/cxz-ui",
+    "build:ui": "npm run build:nox",
     "storybook:ui": "storybook dev -c .storybook-ui -p 6008 --host 0.0.0.0 --no-open",
     "build-storybook:ui": "storybook build -c .storybook-ui -o storybook-ui-static",
     "prebuild": "npm run build:ui",
     "prebuild-storybook": "npm run build:ui",
     "prebuild-storybook:ui": "npm run build:ui",
     "presandbox:build": "npm run build:ui",
-    "test:ui": "playwright test --config playwright.ui.config.ts"
+    "test:ui": "playwright test --config playwright.ui.config.ts",
+    "build:nox": "npm run build --workspace @lesomnus/nox",
+    "nox:check": "npm run check --workspace @lesomnus/nox",
+    "nox:test": "npm test --workspace @lesomnus/nox",
+    "test:nox:live": "playwright test --config playwright.nox.config.ts"
   },
   "dependencies": {
     "@bufbuild/protobuf": "2.12.1",
     "@connectrpc/connect": "2.1.2",
     "@connectrpc/connect-web": "2.1.2",
-    "@lesomnus/cxz-ui": "*",
+    "@lesomnus/nox": "*",
     "@lesomnus/payday": "0.0.5",
     "@tanstack/react-router": "1.170.41",
     "@xterm/addon-fit": "0.11.0",
@@ -57,6 +62,8 @@
     "@types/node": "24.19.2",
     "@types/react": "19.2.2",
     "@types/react-dom": "19.2.2",
+    "@vitejs/plugin-react": "5.2.0",
+    "concurrently": "10.0.6",
     "prettier": "3.6.2",
     "storybook": "10.6.1",
     "typescript": "5.9.3",
@@ -65,6 +72,6 @@
     "ws": "8.22.0"
   },
   "workspaces": [
-    "packages/*"
+    "packages/nox"
   ]
 }

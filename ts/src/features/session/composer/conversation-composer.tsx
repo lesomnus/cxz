@@ -8,7 +8,7 @@ import {
 } from "react";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
-import { AudioWaveform, Button } from "@lesomnus/cxz-ui";
+import { AudioWaveform, Button } from "@lesomnus/nox";
 import { ComposerAurora } from "./composer-aurora";
 import { TurnControls } from "./turn-controls";
 import { BackgroundJobsIndicator } from "./background-jobs-indicator";

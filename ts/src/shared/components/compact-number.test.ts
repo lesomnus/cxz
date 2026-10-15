@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatCompactNumber } from "@lesomnus/cxz-ui";
+import { formatCompactNumber } from "@lesomnus/nox";
 
 const text = (value: number) => {
   const result = formatCompactNumber(value);

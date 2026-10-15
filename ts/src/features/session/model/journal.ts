@@ -15,6 +15,7 @@ const internalEventKinds = new Set([
   "usage_status",
   "background",
   "history_checkpoint",
+  "fork_boundary",
   "queued",
 ]);
 

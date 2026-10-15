@@ -1,8 +1,0 @@
-:is(.confirmation_dialog),
-:is(.confirmation_dialog) * {
-  box-sizing: border-box;
-}
-.confirmation_dialog {
-  width: min(480px, calc(100vw - 4 * var(--ui-space)));
-  max-height: calc(100dvh - 4 * var(--ui-space));
-}

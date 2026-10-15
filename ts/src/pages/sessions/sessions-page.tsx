@@ -1,7 +1,7 @@
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { ResizeHandle } from "@lesomnus/cxz-ui";
+import { ResizeHandle } from "@lesomnus/nox";
 import { usePaneWidth } from "#src/shared/layout/use-pane-width.ts";
 import { useQuery } from "@lesomnus/payday/react";
 import { SessionService } from "#gen/cxz/session_svc_pb";

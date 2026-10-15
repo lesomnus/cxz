@@ -6,8 +6,8 @@ describe("input timestamps", () => {
     const now = new Date(2026, 9, 6, 12);
     const ago = (ms: number) =>
       relativeMessageTime(new Date(now.getTime() - ms), now);
-    expect(ago(0)).toBe("Less than a minute ago");
-    expect(ago(59_999)).toBe("Less than a minute ago");
+    expect(ago(0)).toBe("Just now");
+    expect(ago(59_999)).toBe("Just now");
     expect(ago(60_000)).toBe("1 minute ago");
     expect(ago(5 * 60_000)).toBe("5 minutes ago");
     expect(ago(3_600_000)).toBe("1 hour ago");

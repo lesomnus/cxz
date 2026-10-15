@@ -17,6 +17,10 @@
   --composer-radius: 15px;
   --composer-editor-height: 110px;
   --composer-resize-duration: 300ms;
+  --composer-pending-glow: color-mix(in srgb, var(--shade-65) 35%, transparent);
+  --composer-pending-pulse-duration: 2400ms;
+  --composer-pending-pulse-delay: 500ms;
+  --fine-grain-texture: url("../../shared/assets/textures/fine-grain.svg");
   --send-exit-duration: 180ms;
   --send-enter-duration: 240ms;
   --send-exit-travel: 72px;
@@ -205,9 +209,14 @@ header strong {
   margin: 4px 0 16px;
 }
 .resource-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
   width: 56px;
-  padding: 8px 2px;
+  height: 56px;
+  box-sizing: border-box;
+  padding: 0;
   color: var(--shade-140);
 }
 .resource-link > .button-content {
@@ -818,9 +827,14 @@ header strong {
   padding: 0;
 }
 .input-box {
-  background: var(--shade-34);
+  background-color: var(--shade-34);
   border-radius: 8px;
   padding: 10px 12px;
+}
+.input-box,
+.composer-input {
+  background-image: var(--fine-grain-texture);
+  background-blend-mode: soft-light;
 }
 .input[data-send-arrival] {
   overflow: clip;
@@ -1311,7 +1325,7 @@ pre {
 .composer-input,
 .question-other-editor {
   position: relative;
-  background: var(--shade-34);
+  background-color: var(--shade-34);
 }
 .composer-input {
   z-index: 2;
@@ -1322,7 +1336,39 @@ pre {
   transition: background-color 150ms ease-out;
 }
 .composer-input[data-sending="true"] {
-  background: var(--shade-27);
+  background-color: var(--shade-27);
+}
+.composer-input::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at 50% 0%,
+    var(--composer-pending-glow),
+    transparent 75%
+  );
+  opacity: 0;
+}
+.composer-input[data-sending="true"]::before {
+  animation: composer-pending-pulse var(--composer-pending-pulse-duration)
+    ease-in-out var(--composer-pending-pulse-delay) infinite;
+}
+@keyframes composer-pending-pulse {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .composer-input[data-sending="true"]::before {
+    animation: none;
+    opacity: 0.5;
+  }
 }
 .composer-input:focus-within {
   border-color: var(--shade-115);
@@ -2458,11 +2504,14 @@ summary:hover {
 }
 
 .session-tree-group {
-  margin: 4px 0 12px;
+  margin: 0;
+}
+.session-tree-group + .session-tree-group {
+  margin-top: var(--ui-control-inset);
 }
 .session-tree :is(button, a.route-link) {
   min-height: 30px;
-  padding: 5px 6px;
+  padding: var(--ui-space) 6px;
 }
 .session-tree .button-content {
   justify-content: flex-start;

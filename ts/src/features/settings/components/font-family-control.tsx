@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Button } from "@lesomnus/cxz-ui";
-import { ValueMenu } from "@lesomnus/cxz-ui";
+import { Button } from "@lesomnus/nox";
+import { ValueMenu } from "@lesomnus/nox";
 import {
   defaultEditorSettings,
   fontFamilyCSS,

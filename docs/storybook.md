@@ -9,7 +9,8 @@ npm run storybook
 ```
 
 브라우저에서 <http://localhost:6006>을 엽니다. 컨테이너나 원격 개발 환경에서는
-6006 포트를 로컬로 포워딩합니다.
+6006 포트를 로컬로 포워딩합니다. `npm run dev`는 Vite와 이 Storybook을 함께
+실행하며, Ctrl+C로 둘 다 종료합니다. Vite만 실행하려면 `npm run dev:app`을 사용합니다.
 
 - `Components`: 버튼, 에이전트 로고, 설정 드롭다운·슬라이더·분할 선택, floating card, 타이머와 Monaco 상세 탭.
 - `Settings/SettingField`: 제목·설정 ID·요약·컨트롤·선택적 상세설명을 배치하는 공통 설정 항목.
@@ -95,14 +96,14 @@ npm run test:storybook
 
 ## 독립 UI 패키지
 
-다른 프로젝트에서 사용할 기본 컴포넌트는 `ts/packages/ui`의 `@lesomnus/cxz-ui`로 분리합니다. 각 컴포넌트의 스타일은 옆에 있는 CSS Module이 소유하고 공통 디자인 값은 패키지의 `tokens.css`가 관리합니다. 앱의 `style.css`에는 세션·대화·설정 페이지 배치와 공용 컴포넌트를 그 배치에 맞추는 스타일을 남깁니다. 번역은 UIProvider로 주입하고 Monaco 에디터의 설정·테마는 props로 전달합니다.
+다른 프로젝트에서 사용할 기본 컴포넌트는 `ts/packages/nox` Git submodule의 `@lesomnus/nox`를 사용합니다. 소스 수정과 의존성 커밋 관리 방법은 [Nox development](nox-development.md)를 참조하세요. 각 컴포넌트의 스타일은 옆에 있는 CSS Module이 소유하고 공통 디자인 값은 패키지의 `tokens.css`가 관리합니다. 앱의 `style.css`에는 세션·대화·설정 페이지 배치와 공용 컴포넌트를 그 배치에 맞추는 스타일을 남깁니다. 번역은 UIProvider로 주입하고 Monaco 에디터의 설정·테마는 props로 전달합니다.
 
 ```sh
 cd ts
 npm run storybook:ui
 ```
 
-별도의 UI Storybook은 앱 전역 CSS와 설정·언어 저장소 없이 패키지를 검증합니다. 앱 Storybook은 실제 제품 화면 안에서의 조합을 검증합니다. 패키지 설치·테마·번역·에디터 사용법은 [UI README](../ts/packages/ui/README.md)를 참조하세요. 배포용 CSS와 타입 선언은 빌드 결과이며 git에 저장하지 않습니다.
+별도의 UI Storybook은 앱 전역 CSS와 설정·언어 저장소 없이 패키지를 검증합니다. 앱 Storybook은 실제 제품 화면 안에서의 조합을 검증합니다. 패키지 설치·테마·번역·에디터 사용법은 [UI README](https://github.com/lesomnus/nox/blob/main/README.md)를 참조하세요. 배포용 CSS와 타입 선언은 빌드 결과이며 git에 저장하지 않습니다.
 
 `Components/ScrollArea`는 중앙 레일·핸들·본문 배경색의 그림자를 가진 재사용 세로 스크롤입니다.
 `LongList`, `ShortOverflow`, `NoOverflow`, `GrowingContent`에서 내용 길이에 따른 레일 변화,

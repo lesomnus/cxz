@@ -1,9 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useArgs } from "storybook/preview-api";
 import { useState } from "react";
-import { Button } from "@lesomnus/cxz-ui";
+import { Button } from "@lesomnus/nox";
 import { SessionDrafts } from "#src/features/session/model/session-drafts.ts";
 import { create } from "@bufbuild/protobuf";
+import { responseEvent, storyEvent } from "#src/storybook/fixtures.ts";
 import { ProjectPathEntrySchema } from "#gen/cxz/project_svc_pb";
 import {
   ComponentPreview,
@@ -171,8 +172,32 @@ export const PathHints: Story = {
 };
 export const PendingSend: Story = {
   args: { value: "A message awaiting acknowledgement…", sending: true },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "The editor has a subtle, static monochrome grain for a matte surface. The read-only editor dims while Send awaits acknowledgement. If it takes longer, a subdued gray radial glow breathes from the top center until the request settles. Reduced motion uses a steady glow instead.",
+      },
+    },
+  },
 };
 export const Working: Story = { args: { working: true } };
+export const ForkConversation: Story = {
+  args: {
+    events: [
+      storyEvent(1, "input", "Explore two approaches to the same problem."),
+      responseEvent(2, "codex", "The current context is ready to branch."),
+    ],
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Open Session menu → Fork to simulate a new session identity and alias while preserving the conversation, model and effort. Open Details to inspect the new identity. This preview stays local; the connected app uses Session.Fork and navigates to the new session. Active turns and pending questions or queued input disable Fork.",
+      },
+    },
+  },
+};
 export const StoppedSession: Story = {
   args: { sessionStopped: true },
   parameters: {

@@ -1,6 +1,6 @@
 import { ResourceValue as ValueMenu } from "#src/shared/components/resource-value.tsx";
 import { useEffect, useId, useRef, useState } from "react";
-import { Button, DialogCard, DialogActions } from "@lesomnus/cxz-ui";
+import { Button, DialogCard, DialogActions } from "@lesomnus/nox";
 import { useNavigate } from "@tanstack/react-router";
 import { requiredSessionLogin } from "#src/features/accounts/login-required.ts";
 import type { Project } from "#gen/cxz/project_pb";

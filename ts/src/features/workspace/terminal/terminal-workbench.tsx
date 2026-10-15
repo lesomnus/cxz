@@ -1,7 +1,7 @@
 import {
   TerminalWorkbench as Workbench,
   type TerminalWorkbenchProps,
-} from "@lesomnus/cxz-ui/terminal";
+} from "@lesomnus/nox/terminal";
 import { translateKnown } from "#src/shared/i18n/i18n.ts";
 import styles from "./workspace-terminal.module.css";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";

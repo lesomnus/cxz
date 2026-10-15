@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useArgs } from "storybook/preview-api";
-import { SegmentedControl } from "@lesomnus/cxz-ui";
+import { SegmentedControl } from "@lesomnus/nox";
 
 const meta = {
   title: "Components/SegmentedControl",

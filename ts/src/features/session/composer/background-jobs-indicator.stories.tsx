@@ -1,10 +1,14 @@
 import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { Button } from "@lesomnus/cxz-ui";
+import { Button } from "@lesomnus/nox";
 import { ComponentPreview } from "#src/storybook/conversation-preview.tsx";
 import { BackgroundJobsIndicator } from "./background-jobs-indicator";
 import { useMemo, useRef } from "react";
-import type { Connection } from "#src/shared/api/connection.ts";
+import { Connection } from "#src/shared/api/connection.ts";
+import { createRouterTransport } from "@connectrpc/connect";
+import { SessionService } from "#gen/cxz/session_svc_pb";
+import { BackgroundReport } from "#src/features/activity/background-report.tsx";
+import type { BackgroundTask } from "#src/features/activity/background-tasks.ts";
 import { useSessionBackground } from "#src/features/session/model/use-session-background.ts";
 import { storyEvent } from "#src/storybook/fixtures.ts";
 
@@ -46,6 +50,101 @@ export const InToolbar: Story = {
     );
   },
   parameters: { layout: "fullscreen" },
+};
+
+function JobListPreview({ empty = false }: { empty?: boolean }) {
+  const [fixture] = useState(() => {
+    const tasks: BackgroundTask[] = empty
+      ? []
+      : [
+          {
+            task_id: "build",
+            description:
+              "Build the web application and verify generated assets",
+            status: "working",
+            active: true,
+            summary: "Compiling the production bundle and checking types.",
+            output_file: "/tmp/cxz/jobs/build.log",
+          },
+          {
+            task_id: "watch",
+            description: "Watch workspace files",
+            status: "working",
+            active: true,
+            summary: "Waiting for changes in /workspace/ts/src.",
+            output_file: "",
+          },
+          {
+            task_id: "tests",
+            description: "Run conversation tests",
+            status: "completed",
+            active: false,
+            summary: "All conversation tests passed.",
+            output_file: "/tmp/cxz/jobs/tests.log",
+          },
+          {
+            task_id: "lint",
+            description: "Check formatting",
+            status: "failed",
+            active: false,
+            summary: "Formatting changes are needed in src/example.ts.",
+            output_file: "/tmp/cxz/jobs/lint.log",
+          },
+        ];
+    const transport = createRouterTransport((router) => {
+      router.service(SessionService, {
+        background: () => ({
+          data: new TextEncoder().encode(
+            JSON.stringify({
+              preview: {
+                Snapshot: true,
+                Tasks: Object.fromEntries(
+                  tasks.map((task) => [task.task_id, task]),
+                ),
+              },
+            }),
+          ),
+        }),
+      });
+    });
+    return { c: new Connection(location.origin, transport), tasks };
+  });
+  return (
+    <ComponentPreview
+      backgroundJobs={fixture.tasks.filter((task) => task.active).length}
+      backgroundReport={
+        <BackgroundReport c={fixture.c} session="preview" run="preview" />
+      }
+    />
+  );
+}
+
+export const JobList: Story = {
+  render: () => <JobListPreview />,
+  argTypes: { count: { control: false } },
+  parameters: {
+    layout: "fullscreen",
+    docs: {
+      description: {
+        story:
+          "Click the background-job count in the composer toolbar to open the same floating card and BackgroundReport used in the session view. The in-memory RPC fixture includes running, completed and failed jobs, descriptions, summaries and output paths. Refresh reloads the fixture; Escape, Close or a conversation margin dismisses the card. No server is required.",
+      },
+    },
+  },
+};
+
+export const EmptyJobList: Story = {
+  ...JobList,
+  render: () => <JobListPreview empty />,
+  parameters: {
+    layout: "fullscreen",
+    docs: {
+      description: {
+        story:
+          "Click the zero background-job count to inspect the real list card's empty state.",
+      },
+    },
+  },
 };
 
 function Telemetry({ provider = "claude" }: { provider?: "claude" | "codex" }) {

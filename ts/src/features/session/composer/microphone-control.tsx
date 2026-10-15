@@ -1,5 +1,5 @@
 import { useId } from "react";
-import { Button, BadgedIcon } from "@lesomnus/cxz-ui";
+import { Button, BadgedIcon } from "@lesomnus/nox";
 import { t } from "#src/shared/i18n/i18n.ts";
 import type { SpeechInput } from "#src/shared/browser/use-speech-input.ts";
 import styles from "./microphone-control.module.css";

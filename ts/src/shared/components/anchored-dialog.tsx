@@ -12,7 +12,7 @@ import {
   DialogTrigger,
   captureDialogTrigger,
   focusedDialogTrigger,
-} from "@lesomnus/cxz-ui";
+} from "@lesomnus/nox";
 import styles from "./anchored-dialog.module.css";
 
 // A native modal focus boundary positioned beside an existing panel.

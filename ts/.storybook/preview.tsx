@@ -1,4 +1,4 @@
-import { UIProvider } from "@lesomnus/cxz-ui";
+import { UIProvider } from "@lesomnus/nox";
 import { useLayoutEffect } from "react";
 import type { Preview } from "@storybook/react-vite";
 import { t, localeStore } from "#src/shared/i18n/i18n.ts";

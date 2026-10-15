@@ -160,6 +160,7 @@ test("compact panels keep their heading fixed and share the conversation handle'
   await list.hover();
   await expect(handle).toHaveCSS("opacity", "0.7");
   await expect.poll(railOpacity).toBe("1");
+  await expect(handle).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
   const initial = (await handle.boundingBox())!;
   const scrollBox = (await panel
     .locator(".panel-scroll-region")
@@ -209,8 +210,10 @@ test("compact panels keep their heading fixed and share the conversation handle'
   );
   await page.mouse.up();
   await expect
-    .poll(() => list.evaluate((el) => el.scrollTop))
-    .toBeGreaterThan(30);
+    .poll(() =>
+      list.evaluate((el) => el.scrollHeight - el.clientHeight - el.scrollTop),
+    )
+    .toBeLessThan(1);
   expect((await heading.boundingBox())!.y).toBe(headingY);
   await thumb.focus();
   await thumb.press("Home");

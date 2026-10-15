@@ -22,7 +22,7 @@ export function messageDate(timeMs: bigint) {
 export function relativeMessageTime(date: Date, now = new Date()) {
   const age = now.getTime() - date.getTime();
   if (age < 0 || age >= 7 * DAY) return "";
-  if (age < MINUTE) return t("Less than a minute ago");
+  if (age < MINUTE) return t("Just now");
   if (age < 60 * MINUTE)
     return t(
       Math.floor(age / MINUTE) === 1

@@ -1,5 +1,5 @@
 import { useId } from "react";
-import { Button } from "@lesomnus/cxz-ui";
+import { Button } from "@lesomnus/nox";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 
@@ -16,6 +16,7 @@ export function CopyButton({
     <span className={`meta-popover ${className}`}>
       <Button
         type="button"
+        variant="toolbar"
         className="copy"
         aria-label={t("Copy")}
         aria-describedby={tooltip}

@@ -1,6 +1,6 @@
 import { ResourceValue as ValueMenu } from "#src/shared/components/resource-value.tsx";
 import { useEffect, useRef, useState } from "react";
-import { Button } from "@lesomnus/cxz-ui";
+import { Button } from "@lesomnus/nox";
 import type {
   SessionSearchVisit,
   SessionSearchSummary,

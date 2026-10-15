@@ -9,20 +9,34 @@ import (
 )
 
 type Session struct {
-	Supervisor  string `json:"supervisor,omitempty"`
-	CreateID    string `json:"create_id"`
-	ID          string `json:"id"`
-	Workspace   string `json:"workspace"`
-	Title       string `json:"title"`
-	CreatedAt   int64  `json:"created_at"`
-	Agent       string `json:"agent"`
-	Kind        string `json:"kind,omitempty"`
-	Model       string `json:"model,omitempty"`
-	ProjectID   string `json:"project_id,omitempty"`
-	Account     string `json:"account,omitempty"`
-	AuthBackend string `json:"auth_backend"`
-	AuthBinding string `json:"auth_binding"`
+	Supervisor  string      `json:"supervisor,omitempty"`
+	CreateID    string      `json:"create_id"`
+	ID          string      `json:"id"`
+	Workspace   string      `json:"workspace"`
+	Title       string      `json:"title"`
+	CreatedAt   int64       `json:"created_at"`
+	Agent       string      `json:"agent"`
+	Kind        string      `json:"kind,omitempty"`
+	Model       string      `json:"model,omitempty"`
+	ProjectID   string      `json:"project_id,omitempty"`
+	Account     string      `json:"account,omitempty"`
+	AuthBackend string      `json:"auth_backend"`
+	AuthBinding string      `json:"auth_binding"`
+	Fork        *ForkOrigin `json:"fork,omitempty"`
 }
+
+// ForkOrigin is private runtime metadata. NativePath refers to the child's own
+// snapshot of the provider transcript, never a mutable file in the parent.
+type ForkOrigin struct {
+	SessionID  string `json:"session_id"`
+	RunID      string `json:"run_id"`
+	VendorID   string `json:"vendor_id,omitempty"`
+	ThroughSeq uint64 `json:"through_seq"`
+	NativePath string `json:"native_path,omitempty"`
+}
+
+const ForkBoundaryKind = "fork_boundary"
+
 type Event struct {
 	SessionID string            `json:"session_id"`
 	RunID     string            `json:"run_id"`

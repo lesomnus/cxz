@@ -1,8 +1,8 @@
-import { SourceEditor as UIEditor } from "@lesomnus/cxz-ui/editor";
+import { SourceEditor as UIEditor } from "@lesomnus/nox/editor";
 import type { ComponentProps } from "react";
 import { useEditorSettings } from "#src/shared/settings/settings.ts";
 import { useTheme } from "#src/shared/theme/theme.tsx";
-export type { SourceEditorHandle } from "@lesomnus/cxz-ui/editor";
+export type { SourceEditorHandle } from "@lesomnus/nox/editor";
 
 // The app adapter resolves persisted settings; the UI editor accepts only values.
 export function SourceEditor(

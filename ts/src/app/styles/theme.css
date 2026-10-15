@@ -1,4 +1,4 @@
-@import "@lesomnus/cxz-ui/styles.css";
+@import "@lesomnus/nox/styles.css";
 :root {
   --editor-hint-padding: calc(2 * var(--space));
   --editor-hint-background: color-mix(in srgb, var(--shade-0) 32%, transparent);

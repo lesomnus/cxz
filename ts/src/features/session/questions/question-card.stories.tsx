@@ -4,7 +4,7 @@ import { useVisibleApprovals } from "#src/features/session/model/use-visible-app
 import { pendingAfter } from "#src/features/session/model/journal.ts";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { QuestionCard } from "./question-card";
-import { Button } from "@lesomnus/cxz-ui";
+import { Button } from "@lesomnus/nox";
 import {
   ComponentPreview,
   previewPastes,

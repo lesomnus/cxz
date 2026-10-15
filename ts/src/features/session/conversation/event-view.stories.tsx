@@ -1,6 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { useState } from "react";
-import { Button } from "@lesomnus/cxz-ui";
+import { Button } from "@lesomnus/nox";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { AuxKind } from "#gen/cxz/project_svc_pb";
 import { AuxStateSchema, AuxSchema } from "#gen/cxz/session_svc_pb";

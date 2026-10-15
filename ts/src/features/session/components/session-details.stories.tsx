@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useRef } from "react";
-import { FloatingCard } from "@lesomnus/cxz-ui";
+import { FloatingCard } from "@lesomnus/nox";
 import { SessionDetails } from "./session-details";
 import { storySession } from "#src/storybook/fixtures.ts";
 

@@ -15,8 +15,8 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
-import { FloatingCard } from "@lesomnus/cxz-ui";
-export { FloatingCard } from "@lesomnus/cxz-ui";
+import { FloatingCard } from "@lesomnus/nox";
+export { FloatingCard } from "@lesomnus/nox";
 import { AnchoredDetail } from "#src/features/session/conversation/anchored-detail.tsx";
 
 type Card = {

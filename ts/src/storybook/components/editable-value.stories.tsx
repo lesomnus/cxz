@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
-import { EditableValue } from "@lesomnus/cxz-ui";
+import { EditableValue } from "@lesomnus/nox";
 import { validateSessionField } from "#src/features/session/model/session-edit.ts";
 
 const meta = {

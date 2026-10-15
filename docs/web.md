@@ -188,7 +188,11 @@ npm ci
 npm run dev
 ```
 
-Open `http://127.0.0.1:5173/`. UI edits use Vite HMR; API calls, editor connections
+The command starts Vite at `http://127.0.0.1:5173/` and Storybook at
+`http://localhost:6006/`. Ctrl+C stops both; if either process exits, the other
+is stopped too. Use `npm run dev:app` to start only Vite.
+
+UI edits use Vite HMR; API calls, editor connections
 and terminal WebSockets are proxied to the installed gateway. This uses real
 projects and sessions, including real sends and decisions.
 
@@ -354,7 +358,7 @@ this terminal for developing cxz itself, and Ctrl+C stops only that gateway.
 | Conversation | Virtualized paged history, live events, Markdown, highlighted code, model/effort snapshots, response metrics and copy |
 | Drafts | Per-session drafts and paste chips survive navigation and reload in tab-local sessionStorage |
 | Sending | Explicit Send or Ctrl+Enter; mutation IDs; no automatic replay after ambiguous failure |
-| Session control | Interrupt, stop/resume, restart, purge with dry-run review and confirmation; queued-message cancel/recall |
+| Session control | Interrupt, stop/resume, restart, fork with inherited account/settings/history, purge with dry-run review and confirmation; queued-message cancel/recall |
 | Approval | Allow/deny and full tool input/output/approval inspection |
 | Questions | Claude choices/free text/previews; Codex requestUserInput and asynchronous questions; recorded replies |
 | MCP | Basic request display; schema-based elicitation forms still require the TUI |

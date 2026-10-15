@@ -118,8 +118,17 @@ test("confirmation dialog traps focus, cancels without acting and fits a small v
   expect(confirmBounds.x).toBeGreaterThan(heading.x);
   const cardBounds = (await dialog.locator(".floating-card").boundingBox())!;
   const bodyBounds = (await dialog.locator(".card-body").boundingBox())!;
-  expect(bodyBounds.x - cardBounds.x).toBeLessThanOrEqual(1);
-  expect(cardBounds.width - bodyBounds.width).toBeLessThanOrEqual(2);
+  const bodyInset = await dialog.locator(".floating-card").evaluate((node) => {
+    const style = getComputedStyle(node);
+    return (
+      parseFloat(style.getPropertyValue("--ui-control-inset")) +
+      parseFloat(style.borderLeftWidth)
+    );
+  });
+  expect(bodyBounds.x - cardBounds.x).toBeCloseTo(bodyInset, 0);
+  expect(
+    cardBounds.x + cardBounds.width - bodyBounds.x - bodyBounds.width,
+  ).toBeCloseTo(bodyInset, 0);
   await expect(confirm).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
   await confirm.hover();
   await expect(confirm).not.toHaveCSS("background-color", "rgba(0, 0, 0, 0)");

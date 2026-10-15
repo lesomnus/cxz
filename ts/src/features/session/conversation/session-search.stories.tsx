@@ -2,7 +2,7 @@ import { eventListSource } from "#src/features/session/model/event-source.ts";
 import { useRef, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { create } from "@bufbuild/protobuf";
-import { Button } from "@lesomnus/cxz-ui";
+import { Button } from "@lesomnus/nox";
 import { SessionEventSchema } from "#gen/cxz/session_pb";
 import { SessionSearch } from "./session-search";
 import { Transcript } from "./transcript";

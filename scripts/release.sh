@@ -14,6 +14,7 @@ if [[ "$version" == edge ]]; then
 fi
 mkdir -p "$output"
 # Keep the browser build out of Go executables and package it for manager images.
+git submodule update --init --recursive
 npm ci --prefix ts
 npm run --prefix ts build
 rm -rf "$output/webui"

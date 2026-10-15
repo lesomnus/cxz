@@ -128,6 +128,9 @@ func ReplayFrom(s core.Snapshot, events []core.Event) core.Snapshot {
 			}
 		case "vendor":
 			s.VendorID = e.Text
+		case core.ForkBoundaryKind:
+			s.State, s.RunID, s.VendorID, s.Queued, s.QueuedID = "stopped", "", "", "", ""
+			p = map[string]core.Event{}
 		case "approval":
 			p[e.RequestID] = e
 		case "approval_resolved":
@@ -200,7 +203,7 @@ func Run(ctx context.Context, root, id string) error {
 	if events := l.All(); len(events) > 0 && events[0].Kind == core.HistoryCheckpointKind {
 		s.event(core.HistoryTrimmedKind, "Earlier display history was removed by the size limit.", "", core.HistoryBoundary{Through: events[0].Seq}, nil)
 	}
-	args := claudeRunArgs(s.session.Model, s.effort, old.VendorID)
+	args := claudeSessionArgs(s.session, s.effort, old.VendorID)
 	if session.Kind == "codex" {
 		// Codex does not persist an empty thread until its first turn. Starting
 		// a fresh empty thread is safe only when no send intent ever existed.
@@ -210,7 +213,7 @@ func Run(ctx context.Context, root, id string) error {
 				hasInput = true
 			}
 		}
-		if !hasInput {
+		if !hasInput && (session.Fork == nil || session.Fork.VendorID == "") {
 			s.snap.VendorID = ""
 		}
 		s.codex = &codexProtocol{s: s}
@@ -556,6 +559,12 @@ func (s *Supervisor) consume(raw []byte) {
 		return
 	}
 	if v.SessionID != "" && v.SessionID != s.snap.VendorID {
+		if s.session.Fork != nil && v.SessionID == s.session.Fork.VendorID {
+			s.event("diagnostic", "Claude did not create an independent fork", "", nil, nil)
+			s.event("state", "failed", "", nil, nil)
+			s.kill()
+			return
+		}
 		s.snap.VendorID = v.SessionID
 		s.event("vendor", v.SessionID, "", nil, nil)
 	}
@@ -903,6 +912,9 @@ func (s *Supervisor) executeLocked(op string, c core.Command) (core.Receipt, err
 }
 func (s *Supervisor) serve(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	if s.serveFork(w, r) {
+		return
+	}
 	if s.serveUpdate(w, r) {
 		return
 	}
@@ -958,7 +970,11 @@ func Call(ctx context.Context, root, id, op string, in, out any) error {
 	if e != nil {
 		return e
 	}
-	res, e := (&http.Client{Transport: tr, Timeout: 5 * time.Second}).Do(req)
+	timeout := 5 * time.Second
+	if op == "fork" {
+		timeout = 45 * time.Second
+	}
+	res, e := (&http.Client{Transport: tr, Timeout: timeout}).Do(req)
 	if e != nil {
 		return e
 	}

@@ -4,7 +4,7 @@ import type { Connection } from "#src/shared/api/connection.ts";
 import type { ProjectTerminalRequest } from "#gen/cxz/project_svc_pb";
 import { TerminalWorkbench } from "./terminal-workbench";
 import { TerminalSession } from "./terminal-session";
-import { Button } from "@lesomnus/cxz-ui";
+import { Button } from "@lesomnus/nox";
 
 // Every stream has its own line/buffer. This is deliberately a local fake shell.
 const connection = {

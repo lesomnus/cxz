@@ -11,7 +11,7 @@ import { ProjectPathEntrySchema } from "#gen/cxz/project_svc_pb";
 import {
   moveRankedGridSelection,
   type SuggestionGridLayout,
-} from "@lesomnus/cxz-ui";
+} from "@lesomnus/nox";
 import { PathGrid } from "./path-grid";
 import { mentionQuery, mentionMatches, redactQuery } from "./composer-mentions";
 import { matchCommands } from "./composer-commands";

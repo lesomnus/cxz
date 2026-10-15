@@ -1,6 +1,6 @@
 import { StrictMode, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { Button } from "@lesomnus/cxz-ui";
+import { Button } from "@lesomnus/nox";
 import { Markdown } from "./markdown";
 
 const snippet =

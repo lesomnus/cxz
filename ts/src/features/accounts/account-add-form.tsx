@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useId } from "react";
-import { Button, DialogCard, DialogActions } from "@lesomnus/cxz-ui";
+import { Button, DialogCard, DialogActions } from "@lesomnus/nox";
 import type { Account } from "#gen/cxz/account_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { AnchoredDialog } from "#src/shared/components/anchored-dialog.tsx";

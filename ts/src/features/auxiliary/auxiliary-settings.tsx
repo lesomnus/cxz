@@ -1,6 +1,6 @@
 import { ResourceValue as ValueMenu } from "#src/shared/components/resource-value.tsx";
 import { useEffect, useState } from "react";
-import { Button } from "@lesomnus/cxz-ui";
+import { Button } from "@lesomnus/nox";
 import { AuxKind, type AuxProfile } from "#gen/cxz/project_svc_pb";
 import { create } from "@bufbuild/protobuf";
 import { AuxProfileSchema } from "#gen/cxz/project_svc_pb";

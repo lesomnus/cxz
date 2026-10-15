@@ -1,4 +1,4 @@
-import { Button } from "@lesomnus/cxz-ui";
+import { Button } from "@lesomnus/nox";
 import styles from "#src/shared/components/resource-surface.module.css";
 export function QueuedMessage({
   text,

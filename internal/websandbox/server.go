@@ -37,6 +37,8 @@ type Server struct {
 	uploadBytes    int64
 }
 type session struct {
+	forkSource string
+	forkRun    string
 	value      *resource.Session
 	effort     string
 	scenario   string

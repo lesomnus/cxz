@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Button, PanelItem } from "@lesomnus/cxz-ui";
+import { Button, PanelItem } from "@lesomnus/nox";
 import type { Session } from "#gen/cxz/session_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { useRemote } from "#src/shared/api/use-remote.ts";

@@ -10,7 +10,7 @@ import {
 import type { Project } from "#gen/cxz/project_pb";
 import type { ProjectPathEntry } from "#gen/cxz/project_svc_pb";
 import { Connection, ref } from "#src/shared/api/connection.ts";
-import { Button, ResizeHandle } from "@lesomnus/cxz-ui";
+import { Button, ResizeHandle } from "@lesomnus/nox";
 import { usePaneWidth } from "#src/shared/layout/use-pane-width.ts";
 import type * as Monaco from "monaco-editor/esm/vs/editor/editor.api.js";
 import { SourceEditor } from "#src/shared/editor/source-editor.tsx";

@@ -11,6 +11,18 @@ authentication store, search index, or memory library.
   link opens this view even while another conversation is selected. Titles and
   aliases remain editable in session details; runtime controls stay in the
   composer menu.
+  **Fork** branches a settled conversation into a new session in the same project,
+  preserving its account, agent, current model/effort and permission settings.
+  Earlier retained messages, task details and response timestamps are copied;
+  subsequent messages belong only to their own session. Codex uses native thread
+  forking and Claude uses native session forking, with separate private provider
+  histories. The project workspace files remain shared. Pending questions and
+  queued input must be resolved first, and running turns cannot be forked.
+  Session-local OAuth opens the existing login flow for the new session before
+  retrying the same fork request. Fork never copies refresh tokens; brokered
+  Codex reuses its central account binding without an extra login.
+  The Manager and project runtime both need the updated Fork API; reloading Vite
+  alone does not install the backend change. The WASM sandbox simulates forks.
 - **Accounts**: register isolated Codex or Claude authentication profiles and log
   in to a central Codex account. Claude credentials belong to each session.
   The panel shows agent logo, display name and alias. Its add button opens a

@@ -1,4 +1,4 @@
-import { Button } from "@lesomnus/cxz-ui";
+import { Button } from "@lesomnus/nox";
 
 // The owner supplies IDs so panels and tabs can share accessible relationships.
 export function TabList({

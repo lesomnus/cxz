@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { ElapsedTime } from "@lesomnus/cxz-ui";
+import { ElapsedTime } from "@lesomnus/nox";
 
 const meta = {
   title: "Components/ElapsedTime",

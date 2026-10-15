@@ -329,6 +329,98 @@ func TestLifecycle(t *testing.T) {
 	r := send("hello")
 	readUntil(0, func(v *api.Event) bool { return v.Kind == "turn_end" })
 	await("idle")
+	t.Run("fork conversation", func(t *testing.T) {
+		source := get()
+		request := &api.SessionForkInput{SessionId: source.Id, RunId: source.RunId, ClientId: core.ID()}
+		if _, err := client.ForkSession(ctx, request); err == nil {
+			t.Fatal("fork copied the parent's login")
+		} else {
+			details := status.Convert(err).Details()
+			if len(details) != 1 {
+				t.Fatal("fork lost login challenge", err)
+			}
+			info, ok := details[0].(*errdetails.ErrorInfo)
+			if !ok || info.Reason != "PROJECT_LOGIN_REQUIRED" || info.Metadata["session_key"] != request.ClientId {
+				t.Fatal("fork login challenge used the wrong creation key", err)
+			}
+		}
+		if err := accounts.Install(accounts.SessionRoot(state, request.ClientId), source.Account, source.Agent, []byte(`{"claudeAiOauth":{"accessToken":"synthetic-independent-child"}}`)); err != nil {
+			t.Fatal(err)
+		}
+		child, err := client.ForkSession(ctx, request)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer client.Stop(context.Background(), &api.Control{SessionId: child.Id, RunId: child.RunId, ClientId: "cleanup-fork"})
+		if child.Id == source.Id || child.Alias == source.Alias || child.ProjectId != source.ProjectId || child.Workspace != source.Workspace || child.Account != source.Account || child.AuthBinding != source.AuthBinding || child.Agent != source.Agent || child.Model != source.Model || child.Title != source.Title {
+			t.Fatal("fork did not preserve settings with a new identity", child, source)
+		}
+		repeated, err := client.ForkSession(ctx, request)
+		if err != nil || repeated.Id != child.Id {
+			t.Fatal("fork retry created another session", repeated, err)
+		}
+		history, err := client.History(ctx, &api.WatchRequest{SessionId: child.Id, Limit: 1000})
+		if err != nil {
+			t.Fatal(err)
+		}
+		inherited := false
+		for _, event := range history.Events {
+			if event.Kind == "input" && event.Text == "hello" {
+				inherited = true
+			}
+		}
+		if !inherited {
+			t.Fatal("child lost the conversation history")
+		}
+		if _, err := client.Send(ctx, &api.Input{SessionId: child.Id, RunId: child.RunId, ClientId: "child-input", Text: "fork-context"}); err != nil {
+			t.Fatal(err)
+		}
+		streamCtx, cancel := context.WithTimeout(ctx, 8*time.Second)
+		defer cancel()
+		stream, err := client.Watch(streamCtx, &api.WatchRequest{SessionId: child.Id, AfterSeq: child.LastSeq})
+		if err != nil {
+			t.Fatal(err)
+		}
+		for {
+			event, err := stream.Recv()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if event.Kind == "assistant" {
+				if event.Text != "inherited hello=true" {
+					t.Fatal("native provider context was not forked", event.Text)
+				}
+				break
+			}
+		}
+		child, err = client.Get(ctx, &api.SessionRef{Id: child.Id})
+		if err != nil || child.VendorId == source.VendorId || child.VendorId == "" {
+			t.Fatal("child reused provider identity", child, err)
+		}
+		parent, err := client.History(ctx, &api.WatchRequest{SessionId: source.Id, Limit: 1000})
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, event := range parent.Events {
+			if event.Kind == "input" && event.Text == "fork-context" {
+				t.Fatal("child input leaked into parent")
+			}
+		}
+		if _, err := client.Stop(ctx, &api.Control{SessionId: child.Id, RunId: child.RunId, ClientId: "stop-fork"}); err != nil {
+			t.Fatal(err)
+		}
+		resumed, err := client.Resume(ctx, &api.Control{SessionId: child.Id, RunId: child.RunId, ClientId: "resume-fork"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if resumed.VendorId != child.VendorId {
+			t.Fatal("resume forked again", resumed)
+		}
+		child = resumed
+		if _, err := client.PurgeSession(ctx, &api.SessionPurgeInput{SessionId: child.Id}); err != nil {
+			t.Fatal(err)
+		}
+	})
 	if v, e := client.Send(ctx, r); e != nil || v.Status != "accepted" {
 		t.Fatalf("retry: %v %v", v, e)
 	}

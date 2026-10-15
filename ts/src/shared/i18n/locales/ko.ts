@@ -1,5 +1,6 @@
 import type { LanguagePack } from "#src/shared/i18n/i18n.ts";
 export const messages = {
+  "Background tasks": "백그라운드 작업",
   "Search current conversation": "현재 대화 검색",
   "This message is no longer available in retained history.":
     "보존된 기록에서 이 메시지를 더 이상 찾을 수 없습니다.",
@@ -333,7 +334,8 @@ export const messages = {
   "Last model call": "마지막 모델 호출",
   "Last week": "지난주",
   Latest: "최신 대화",
-  "Less than a minute ago": "1분 이내",
+  "Just now": "방금",
+  Fork: "분기",
   Live: "실시간",
   "Loading files…": "파일 로딩 중…",
   "Loading projects…": "프로젝트 로딩 중…",

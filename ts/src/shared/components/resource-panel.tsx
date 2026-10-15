@@ -3,7 +3,7 @@ import { PanelScroll } from "./panel-scroll";
 import styles from "./resource-panel.module.css";
 
 // Persistent resource navigation uses the same distinct header and rounded
-// flush body as DialogCard, without modal behavior or floating-card effects.
+// inset body as DialogCard, without modal behavior or floating-card effects.
 export function ResourcePanel({
   title,
   actions,

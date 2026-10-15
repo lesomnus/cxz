@@ -34,6 +34,10 @@ func compactRecord(r record) record {
 func resumeEvents(events []core.Event) []core.Event {
 	var out []core.Event
 	for _, e := range events {
+		if e.Kind == core.ForkBoundaryKind {
+			out = nil
+			continue
+		}
 		if e.Kind == core.HistoryCheckpointKind {
 			var c core.HistoryCheckpoint
 			_ = json.Unmarshal(e.Payload, &c)

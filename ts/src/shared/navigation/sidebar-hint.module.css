@@ -1,0 +1,17 @@
+.anchor {
+  display: contents;
+}
+.hint {
+  position: fixed;
+  z-index: 1000;
+  transform: translateY(-50%);
+  width: max-content;
+  max-width: calc(100vw - 80px);
+  padding: 6px 8px;
+  border-radius: 5px;
+  background: var(--shade-51);
+  color: var(--shade-237);
+  font-size: 12px;
+  line-height: 1.4;
+  pointer-events: none;
+}

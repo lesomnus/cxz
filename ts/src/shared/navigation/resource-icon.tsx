@@ -1,7 +1,7 @@
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { UnreadBadge } from "#src/shared/notifications/unread-badge.tsx";
 import styles from "./resource-icon.module.css";
-import { BadgedIcon } from "@lesomnus/cxz-ui";
+import { BadgedIcon } from "@lesomnus/nox";
 
 export function ResourceIcon({
   kind,

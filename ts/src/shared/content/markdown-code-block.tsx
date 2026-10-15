@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { ValueMenu } from "@lesomnus/cxz-ui";
+import { ValueMenu } from "@lesomnus/nox";
 import { CopyButton } from "#src/shared/components/copy-button.tsx";
 import {
   codeSyntax,

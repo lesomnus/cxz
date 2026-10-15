@@ -10,7 +10,7 @@ import {
   SuggestionGrid,
   type SuggestionAnchor,
   type SuggestionGridLayout,
-} from "@lesomnus/cxz-ui";
+} from "@lesomnus/nox";
 import { caretPosition } from "./editor-caret";
 import { pathKind, type PathMatch } from "./composer-paths";
 import styles from "./path-grid.module.css";
