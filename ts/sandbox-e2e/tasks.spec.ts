@@ -12,13 +12,8 @@ test("Tasks routes and versioned forms work against the real WASM Task service",
   await page.goto("/sandbox.html#/sessions/session-1");
   const input = page.getByRole("textbox", { name: "Message", exact: true });
   await expect(input).toBeVisible({ timeout: 45000 });
-  const tasks = page.getByRole("link", { name: /^Project tasks:/ });
-  await expect(tasks).toBeVisible();
-  await tasks.click();
-  await expect(page).toHaveURL(/#\/tasks\?/);
-  await page
-    .getByRole("button", { name: "Show all project tasks", exact: true })
-    .click();
+  await page.getByRole("link", { name: "Tasks", exact: true }).click();
+  await expect(page).toHaveURL(/#\/tasks/);
   await page.getByRole("button", { name: "Add task", exact: true }).click();
   const add = page.getByRole("dialog", { name: "Add task", exact: true });
   await add

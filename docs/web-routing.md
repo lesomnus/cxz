@@ -29,8 +29,7 @@ conversation drafts stay scoped to their existing Connection and session.
 The Tasks route accepts `project` (runtime ID), `task` (stable Task ID or alias),
 `assignee` (session runtime ID) and `run` search parameters. Opening a card uses
 its stable ID so an alias rename does not break the detail selection. The
-session toolbar links to this route with the current project, session and run;
-clearing that filter returns to the project's full board.
+owner/run filter can be cleared to return to the project's full board.
 
 The Go gateway serves `index.html` for HTML navigation to client routes. Missing
 assets, non-HTML requests and auth/RPC/editor/terminal paths keep their normal

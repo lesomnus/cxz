@@ -7,7 +7,7 @@ import { key } from "@lesomnus/payday/store";
 type Snapshot = { tasks: Task[]; loading: boolean; error: string };
 type TaskClient = Pick<Client<typeof TaskService>, "watch">;
 
-// A board and its session-toolbar entry share one project subscription.
+// Consumers of a project share its subscription and cached snapshot.
 export class ProjectTasks {
   private state: Snapshot;
   private rows = new Map<string, Task>();

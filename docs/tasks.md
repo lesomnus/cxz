@@ -201,8 +201,8 @@ the title, alias, owner, last update and ownership warnings. Owner and source
 links open the corresponding session, with the source event selected when its
 reference is available.
 
-The project catalog is live through TaskService.Watch. The board and session
-toolbar share a subscription for the same project; leaving the view retains its
+The project catalog is live through TaskService.Watch. Consumers share a
+subscription for the same project; leaving the view retains its
 in-memory snapshot, and returning reconciles it with a fresh server snapshot.
 There is no browser-persisted authoritative Task store or polling loop. If the
 runtime is stopped or does not implement Tasks, the view reports that condition
@@ -222,10 +222,8 @@ does not stop an agent. Manual claim/reassignment is left to the agent tools;
 the browser provides explicit operator recovery without bypassing the API's
 ownership rules.
 
-The session composer toolbar shows active Tasks assigned to that session's
-current run, separately from provider background jobs. It opens the board with
-that owner/run filter, which can be cleared to see the whole project. The URL
-preserves project, selected Task and owner/run selection.
+The URL preserves project, selected Task and optional owner/run selection.
+Clear an owner/run filter to see the whole project.
 
 ## Verification
 

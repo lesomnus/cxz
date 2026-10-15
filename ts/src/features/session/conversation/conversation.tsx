@@ -25,7 +25,6 @@ import { useNavigate } from "@tanstack/react-router";
 import { useWorkspaceRoute } from "#src/app/router.tsx";
 import { t, translateKnown } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
-import { SessionTasksLink } from "#src/features/tasks/session-tasks-link.tsx";
 import React, {
   useCallback,
   useContext,
@@ -1077,14 +1076,6 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         turn={turn}
         backgroundJobs={background.count}
         onBackgroundJobs={() => localOpen("background")}
-        taskControl={
-          <SessionTasksLink
-            c={c}
-            project={projectId}
-            session={id}
-            run={s?.status?.runId ?? ""}
-          />
-        }
         working={turn.active && ["working", "running"].includes(executionState)}
         interrupt={() =>
           void action(async (session) => {

@@ -279,38 +279,6 @@
 .mobileProject {
   display: none;
 }
-.sessionTasks {
-  color: var(--muted);
-  width: var(--toolbar-button-width);
-  height: var(--toolbar-button-height);
-  padding: var(--control-inset);
-  border-radius: var(--toolbar-button-radius);
-  text-decoration: none;
-}
-.sessionTasks > :global(.button-content) {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: var(--space);
-}
-.sessionTasks .count {
-  width: 3ch;
-  font-size: 0.7rem;
-}
-.sessionTasks svg {
-  width: 14px;
-  height: 14px;
-}
-.sessionTasks:hover {
-  background: var(--hover);
-  color: var(--shade-237);
-}
-.sessionTasks[data-active="true"] {
-  color: var(--shade-237);
-}
-.sessionTasks[data-active="true"] .count {
-  color: inherit;
-}
 @container (max-width: 720px) {
   .board {
     display: flex;
