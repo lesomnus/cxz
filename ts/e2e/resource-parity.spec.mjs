@@ -465,6 +465,13 @@ test("account registration, session creation and archive restore use resource AP
       const animations = el.getAnimations();
       if (!animations.length)
         throw new Error("Menu entrance animation missing");
+      const entrance = animations[0];
+      entrance.pause();
+      entrance.currentTime = 0;
+      const start = new DOMMatrix(getComputedStyle(el).transform);
+      if (start.m41 >= 0 || start.m42 !== 0)
+        throw new Error("Menu must enter horizontally from the left");
+      entrance.play();
       await Promise.all(animations.map((animation) => animation.finished));
     });
   const menuBox = await page
