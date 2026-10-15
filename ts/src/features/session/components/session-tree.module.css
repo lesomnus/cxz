@@ -1,4 +1,4 @@
-.session[data-state="stopped"] :global(.session-heading) {
+.session[data-inactive="true"] :global(.session-heading) {
   opacity: 0.25;
 }
 
