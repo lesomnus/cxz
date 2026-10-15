@@ -7,6 +7,8 @@ import { ResourcePanel } from "#src/shared/components/resource-panel.tsx";
 import { project, storySession } from "#src/storybook/fixtures.ts";
 import "#src/storybook/preview.css";
 
+const defaultStates: string[] = [];
+
 function SessionPanel({
   count = 3,
   loading = false,
@@ -14,7 +16,7 @@ function SessionPanel({
   unread = false,
   error = false,
   background = false,
-  states = [],
+  states = defaultStates,
 }: {
   count?: number;
   loading?: boolean;
