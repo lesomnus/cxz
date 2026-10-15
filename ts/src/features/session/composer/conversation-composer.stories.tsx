@@ -171,6 +171,14 @@ export const PathHints: Story = {
 };
 export const PendingSend: Story = {
   args: { value: "A message awaiting acknowledgement…", sending: true },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "The read-only editor dims while Send awaits acknowledgement. If it takes longer, a subtle gray radial glow breathes from the top center until the request settles. Reduced motion uses a steady glow instead.",
+      },
+    },
+  },
 };
 export const Working: Story = { args: { working: true } };
 export const StoppedSession: Story = {
