@@ -9,9 +9,13 @@ import { WorkspaceEditor } from "./workspace-editor";
 export function ProjectEditorPane({
   c,
   projectId,
+  requestedFile,
+  closePreview,
 }: {
   c: Connection;
   projectId: Uint8Array;
+  requestedFile?: { path: string };
+  closePreview?: () => void;
 }) {
   useLocale();
   const project = useQuery(ProjectService.method.get, {
@@ -19,7 +23,12 @@ export function ProjectEditorPane({
     select: { all: true },
   });
   return project.data ? (
-    <WorkspaceEditor c={c} project={project.data} />
+    <WorkspaceEditor
+      c={c}
+      project={project.data}
+      requestedFile={requestedFile}
+      closePreview={closePreview}
+    />
   ) : (
     <aside className="workspace-editor" aria-label={t("Workspace editor")}>
       <p role={project.error ? "alert" : "status"}>

@@ -56,9 +56,13 @@ export class EditorState {
 export function WorkspaceEditor({
   c,
   project,
+  requestedFile,
+  closePreview,
 }: {
   c: Connection;
   project: Project;
+  requestedFile?: { path: string };
+  closePreview?: () => void;
 }) {
   useLocale();
   const id = project.runtimeId;
@@ -85,6 +89,8 @@ export function WorkspaceEditor({
   const [loading, setLoading] = useState(new Set<string>());
   const [browseError, setBrowseError] = useState("");
   const pending = useRef(new Map<string, AbortController>());
+  const desiredFile = useRef("");
+  const [opening, setOpening] = useState("");
   const connectRequest = useRef<AbortController | null>(null);
   const [frame, setFrame] = useState(0);
   useEffect(
@@ -141,20 +147,26 @@ export function WorkspaceEditor({
     if (root) void list(root);
   }, [root]);
   async function open(path: string) {
+    desiredFile.current = path;
+    setBrowseError("");
+    setOpening("");
     if (state.value.files.some((f) => f.path === path)) {
       state.update({ active: path });
       return;
     }
-    if (pending.current.has(path)) return;
+    if (pending.current.has(path)) {
+      setOpening(path);
+      return;
+    }
     const controller = new AbortController();
     pending.current.set(path, controller);
-    setBrowseError("");
+    setOpening(path);
     try {
       const chunks: Uint8Array[] = [];
       let size = 0;
       for await (const reply of c.projects.download(
         { ref: ref(id), path },
-        { signal: controller.signal },
+        { signal: controller.signal, timeoutMs: 30000 },
       )) {
         size += reply.data.length;
         if (size > 1048576 || reply.totalSize > 1048576n)
@@ -173,14 +185,23 @@ export function WorkspaceEditor({
       if (!controller.signal.aborted)
         state.update({
           files: [...state.value.files.slice(-15), { path, text }],
-          active: path,
+          active: desiredFile.current === path ? path : state.value.active,
         });
     } catch (e) {
-      if (!controller.signal.aborted) setBrowseError(String(e));
+      if (!controller.signal.aborted && desiredFile.current === path)
+        setBrowseError(String(e));
     } finally {
       pending.current.delete(path);
+      setOpening((current) => (current === path ? "" : current));
     }
   }
+  useEffect(() => {
+    if (!requestedFile) return;
+    // File links use the readonly preview, including when an IDE was connected.
+    connectRequest.current?.abort();
+    state.update({ phase: "idle", error: "" });
+    void open(requestedFile.path);
+  }, [requestedFile, state]);
   async function connect() {
     if (state.value.phase === "connecting") return;
     const controller = new AbortController();
@@ -255,6 +276,15 @@ export function WorkspaceEditor({
             · {value.workspace || root || t("Workspace unavailable")}
           </small>
         </div>
+        {closePreview && (
+          <Button
+            variant="toolbar"
+            aria-label={t("Close file preview")}
+            onClick={closePreview}
+          >
+            ×
+          </Button>
+        )}
         {value.phase === "connected" ? (
           <Button onClick={() => state.update({ phase: "idle", error: "" })}>
             {t("Disconnect")}
@@ -317,7 +347,7 @@ export function WorkspaceEditor({
                     role="tab"
                     aria-selected={file.path === value.active}
                     title={file.path}
-                    onClick={() => state.update({ active: file.path })}
+                    onClick={() => void open(file.path)}
                   >
                     {file.path.split("/").at(-1)}
                   </Button>
@@ -343,7 +373,11 @@ export function WorkspaceEditor({
                 </div>
               ))}
             </div>
-            {active ? (
+            {opening ? (
+              <div className="file-empty" role="status">
+                {t("Loading…")}
+              </div>
+            ) : active ? (
               <FileEditor key={active.path} file={active} />
             ) : (
               <div className="file-empty">{t("Select a file to preview.")}</div>

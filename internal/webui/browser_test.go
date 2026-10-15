@@ -91,8 +91,14 @@ func (*fixtureProjects) Paths(_ *resource.ProjectPathsRequest, s grpc.ServerStre
 	name := "README.md"
 	return s.Send(resource.ProjectPathsReply_builder{Entries: []*resource.ProjectPathEntry{resource.ProjectPathEntry_builder{Name: &name}.Build()}}.Build())
 }
-func (*fixtureProjects) Download(_ *resource.ProjectDownloadRequest, s grpc.ServerStreamingServer[resource.ProjectDownloadReply]) error {
+func (*fixtureProjects) Download(r *resource.ProjectDownloadRequest, s grpc.ServerStreamingServer[resource.ProjectDownloadReply]) error {
 	data := []byte("# Fixture workspace\n\nA readonly file preview.\n")
+	switch r.GetPath() {
+	case "/tmp/report.md", "/tmp/a report.md":
+		data = []byte("# Linked report\n\nRead from " + r.GetPath() + "\n")
+	case "/tmp/missing.md":
+		return status.Error(codes.NotFound, "report does not exist")
+	}
 	size := int64(len(data))
 	return s.Send(resource.ProjectDownloadReply_builder{Data: data, TotalSize: &size}.Build())
 }
@@ -258,7 +264,7 @@ func (f *browserFixture) History(_ context.Context, r *resource.SessionEventsReq
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	if f.events == nil {
-		f.events = []*resource.SessionEvent{resource.SessionEvent_builder{Seq: 1, RunId: "run", Kind: "input", Text: "Show the project"}.Build(), resource.SessionEvent_builder{Seq: 2, RunId: "run", Kind: "assistant", Text: "## Ready\n\nHello **mobile**. <span style=\"position:fixed;inset:0;color:red\">style fixture</span>\n\n```go\nfmt.Println(\"안녕\")\n```\n\n<script>window.pwned=true</script>", Response: resource.ResponseMetadata_builder{Model: "fixture-model", Effort: "high", ModelSource: "response", EffortSource: "settings"}.Build()}.Build()}
+		f.events = []*resource.SessionEvent{resource.SessionEvent_builder{Seq: 1, RunId: "run", Kind: "input", Text: "Show the project"}.Build(), resource.SessionEvent_builder{Seq: 2, RunId: "run", Kind: "assistant", Text: "## Ready\n\nHello **mobile**. <span style=\"position:fixed;inset:0;color:red\">style fixture</span>\n\n```go\nfmt.Println(\"안녕\")\n```\n\n[report **file**](/tmp/report.md) · [encoded report](/tmp/a%20report.md#section) · [missing report](/tmp/missing.md) · [External](https://example.com/) · [Network](//example.com/docs)\n\n<script>window.pwned=true</script>", Response: resource.ResponseMetadata_builder{Model: "fixture-model", Effort: "high", ModelSource: "response", EffortSource: "settings"}.Build()}.Build()}
 		f.events[1].SetTimeMs(time.Now().UnixMilli())
 		f.events = append(f.events, resource.SessionEvent_builder{Seq: 4, RunId: "run", Kind: "turn_end", Text: "completed", Response: resource.ResponseMetadata_builder{CompletionJson: []byte(`{"response_seq":"2","duration_ms":4200,"duration_source":"provider","token_scope":"turn","metrics":{"input_tokens":1200,"output_tokens":320}}`)}.Build()}.Build())
 	}

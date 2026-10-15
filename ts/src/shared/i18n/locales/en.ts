@@ -255,6 +255,7 @@ export const messages = {
     "Choose spaces or a real tab character",
   "Close code block {index}": "Close code block {index}",
   "Close details": "Close details",
+  "Close file preview": "Close file preview",
   "Close paste preview": "Close paste preview",
   "Close {name}": "Close {name}",
   "Code syntax {index}": "Code syntax {index}",
