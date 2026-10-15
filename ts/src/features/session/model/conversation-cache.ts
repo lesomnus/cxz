@@ -310,6 +310,7 @@ export class CachedConversation {
     const patch: Partial<ConversationSnapshot> = {
       turn: advanceTurn(this.state.turn, e, true),
       metadata: mergeMetadata(this.state.metadata, [e]),
+      pending: pendingAfter(this.state.pending, [e]),
     };
     if (e.kind === "state") patch.executionState = e.text;
     if (e.kind === "queued") patch.queued = e.text;
@@ -330,7 +331,6 @@ export class CachedConversation {
           this.detached.current = true;
         else patch.events = next;
       }
-      patch.pending = pendingAfter(this.state.pending, [e]);
     }
     this.newest.current = {
       anchor: this.tail.at(-1)?.seq ?? 0n,
@@ -403,47 +403,82 @@ export class CachedConversation {
           ? snapshotSeq
           : this.latestSeq.current;
       let loaded: SessionEvent[] = [];
+      const catalogBehind = this.ready && snapshotSeq < this.cursor;
+      let pending = catalogBehind
+        ? this.state.pending
+        : (session.status?.pending ?? []);
+      let cursor = this.cursor;
       if (!this.ready) {
         this.patch({ loading: { stage: "history" } });
         const page = await this.history.page({ snapshotSeq }, signal);
         if (signal.aborted) return;
         this.rememberPage(page);
         loaded = page.events;
-        this.cursor = page.snapshotSeq;
-        this.tail = bounded(loaded);
+        cursor = page.snapshotSeq;
       } else {
         for (const listener of this.reconnectListeners) listener();
-        do {
-          const page = await this.history.nativePage(this.cursor, signal);
-          if (signal.aborted) return;
-          this.setMetadata((old) => mergeMetadata(old, page.events));
-          if (this.cursor > 0n && page.events[0]?.seq > this.cursor + 1n)
-            this.patch({ gap: true });
-          const next = page.events.at(-1)?.seq ?? this.cursor;
-          if (next <= this.cursor) break;
-          loaded = mergeEvents(loaded, page.events);
-          this.cursor = next;
-        } while (this.cursor < snapshotSeq);
-        this.tail = bounded(
-          mergeEvents(
-            this.tail,
-            loaded.filter(
-              (e) => isTranscriptEvent(e) || e.kind === "approval_resolved",
-            ),
-          ),
-        );
       }
+      let turn = catalogBehind
+        ? this.state.turn
+        : snapshotTurn(session.status, loaded, this.state.turn);
+      let executionState = catalogBehind
+        ? this.state.executionState
+        : (session.status?.state ?? "");
+      let queued = catalogBehind
+        ? this.state.queued
+        : (session.status?.queued ?? "");
+      // Get is a catalog snapshot and may trail the journal. Settle native
+      // control events before exposing pending requests, rather than briefly
+      // opening historical approvals while Events catches up. Transcript rows
+      // are display projections; they can omit approval_resolved entirely.
+      let after = this.ready
+        ? cursor
+        : snapshotSeq < cursor
+          ? snapshotSeq
+          : cursor;
+      for (;;) {
+        const page = await this.history.nativePage(after, signal);
+        if (signal.aborted) return;
+        this.setMetadata((old) => mergeMetadata(old, page.events));
+        if (after > 0n && page.events[0]?.seq > after + 1n)
+          this.patch({ gap: true });
+        pending = pendingAfter(pending, page.events, snapshotSeq);
+        for (const e of page.events) {
+          if (e.seq <= snapshotSeq) continue;
+          turn = advanceTurn(turn, e, true);
+          if (e.kind === "state") executionState = e.text;
+          if (e.kind === "queued") queued = e.text;
+          if (e.kind === "input" && e.text === queued) queued = "";
+        }
+        const next = page.events.at(-1)?.seq ?? after;
+        if (next <= after) break;
+        loaded = mergeEvents(
+          loaded,
+          page.events.filter((e) => e.seq > cursor),
+        );
+        cursor = next > cursor ? next : cursor;
+        after = next;
+      }
+      this.cursor = cursor;
+      this.latestSeq.current =
+        this.cursor > this.latestSeq.current
+          ? this.cursor
+          : this.latestSeq.current;
+      this.tail = bounded(
+        mergeEvents(
+          this.tail,
+          loaded.filter(
+            (e) => isTranscriptEvent(e) || e.kind === "approval_resolved",
+          ),
+        ),
+      );
       for (const e of loaded) {
         if (this.ready) this.client.attention.event(this.id, e);
         for (const listener of this.eventListeners) listener(e);
       }
       const wasActive = this.active;
       this.patch({
-        pending: pendingAfter(
-          session.status?.pending ?? [],
-          loaded,
-          snapshotSeq,
-        ),
+        pending,
         events: this.detached.current
           ? this.state.events
           : bounded(
@@ -454,9 +489,9 @@ export class CachedConversation {
                 ),
               ),
             ),
-        executionState: session.status?.state ?? "",
-        turn: snapshotTurn(session.status, loaded, this.state.turn),
-        queued: session.status?.queued ?? "",
+        executionState,
+        turn,
+        queued,
         loading: undefined,
         status: "Live",
       });

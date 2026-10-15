@@ -6,7 +6,7 @@ the conversation from the workspace editor, which fills the remainder. Conversat
 and composer keep their centered, bounded content width. Below that breakpoint the
 editor hides and conversation fills the available area. Resizing does not
 reset the draft, file tabs or connection. On narrower screens no editor code is
-loaded until the wide layout has first been activated.
+loaded until the wide layout has first been activated or a conversation file link is opened.
 
 Layout dimensions and breakpoints are defined in
 [style.css](../ts/src/app/styles/style.css).
@@ -20,6 +20,15 @@ width for when space is available again. These layout changes preserve the
 mounted conversation, Monaco instance, file tabs and editor connection.
 
 ## File preview
+
+Conversation links with an absolute container path, such as
+`[Report](/tmp/report.md)`, open that file in the selected session's project
+preview. URL-encoded filenames are decoded, and query strings and fragments are
+not part of the file path. Web URLs (including `//host/path`) keep opening in a
+new tab. On narrow screens a file link reveals the preview on the right; its
+close button returns to the conversation and preserves the draft. A file link
+returns a connected IDE to the readonly preview; the private IDE process keeps
+running and can be reopened with Connect.
 
 The initial view lists the selected session's **project** workspace, not an agent's
 account/configuration directory. Directories expand on demand. UTF-8 text files

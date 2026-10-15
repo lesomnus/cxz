@@ -79,7 +79,8 @@ export function smoothStep(
   target: number,
   elapsed: number,
   response = 24,
+  precision = 1,
 ) {
   const next = top + (target - top) * (1 - Math.exp(-elapsed / response));
-  return Math.abs(target - next) < 1 ? target : next;
+  return Math.abs(target - next) < precision ? target : next;
 }

@@ -111,20 +111,23 @@ without a recording is a guess.
 
 ## Codex response stalls
 
-The supervisor distinguishes response silence from a running native item or a
-blocking approval. With no running items, an active Codex turn that stops producing
-item progress for two minutes receives one `turn/interrupt` request. Account quota
-polling does not reset this timer. A completed interrupt returns the session to
-idle; if Codex rejects it or produces no turn completion within the grace period,
-the agent is stopped and the session becomes a resumable failure. The journal and
-native thread ID are retained. User input and tool calls are never replayed by this
-watchdog.
+Response silence alone does not prove a stalled inference. Codex can pause between
+commentary, reasoning and tool calls and still finish normally. The supervisor
+therefore does not interrupt a turn for silence by default; the user can still
+interrupt or stop it explicitly.
 
-Set `CXZ_CODEX_PROGRESS_TIMEOUT` to a positive Go duration, such as `5m`, in the
-project runtime environment to allow a longer silent response budget. Running
-tools, compaction and human approval waits remain outside this response deadline.
-The watchdog is loaded by a new supervisor; updating sources does not change an
-already running supervisor.
+An installation can opt into a silence deadline by setting
+`CXZ_CODEX_PROGRESS_TIMEOUT` to a positive Go duration, such as `5m`, in the project
+runtime environment. Unset, zero, negative or invalid values disable this deadline.
+Running native tools, compaction and human approval waits remain excluded, and
+account/background telemetry does not reset the response timer. When the configured
+deadline expires, the supervisor sends one `turn/interrupt`. A completed interrupt
+returns the session to idle; rejection or missing completion after the grace period
+stops the agent as a resumable failure. The journal and native thread ID are
+retained, and user input and tool calls are never replayed.
+
+The policy is loaded by a new supervisor. Updating the UI or sources does not change
+an already running supervisor; update the project runtime and restart the session.
 
 ## Pinned versions
 

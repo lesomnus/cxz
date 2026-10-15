@@ -136,6 +136,118 @@ it("retains completed empty history without treating a zero cursor as a new init
   expect(f.sessions.transcript).toHaveBeenCalledTimes(1);
   expect(a.feed.snapshot().loading).toBeUndefined();
 });
+
+it("settles stale catalog approvals before exposing the initial conversation", async () => {
+  const f = fixture();
+  const approval = {
+    ...event(1n, "approval", "Bash"),
+    requestId: "permission",
+  };
+  const resolved = {
+    ...event(2n, "approval_resolved"),
+    requestId: "permission",
+  };
+  f.sessions.get.mockResolvedValue(
+    create(SessionSchema, {
+      id: new TextEncoder().encode("a"),
+      status: {
+        runId: "run",
+        state: "waiting_input",
+        lastSeq: 1n,
+        pending: [approval],
+      },
+    }),
+  );
+  let finish!: (value: { events: SessionEvent[] }) => void;
+  f.sessions.history.mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+  );
+  const feed = f.cache.get("a");
+  const shown: SessionEvent[][] = [];
+  feed.subscribe(() => shown.push(feed.snapshot().pending));
+  await vi.waitFor(() => expect(f.sessions.history).toHaveBeenCalled());
+  // Longer than the UI grace period: loading must not expose the stale request.
+  await new Promise((resolve) => setTimeout(resolve, 200));
+  expect(feed.snapshot().loading).toBeDefined();
+  expect(feed.snapshot().pending).toEqual([]);
+  finish({ events: [resolved, event(3n, "state", "idle")] });
+  await vi.waitFor(() => expect(feed.snapshot().status).toBe("Live"));
+  expect(shown.flat()).toEqual([]);
+  expect(feed.snapshot().executionState).toBe("idle");
+  expect(f.sessions.events.mock.calls[0][0]).toMatchObject({ afterSeq: 3n });
+});
+
+it("keeps genuinely pending requests discovered during initial catch-up", async () => {
+  const f = fixture();
+  const approval = {
+    ...event(2n, "approval", "Bash"),
+    requestId: "permission",
+  };
+  const question = {
+    ...event(3n, "approval", "AskUserQuestion"),
+    requestId: "question",
+  };
+  f.sessions.history.mockResolvedValueOnce({ events: [approval, question] });
+  const { feed } = await f.open("a");
+  expect(feed.snapshot().pending).toEqual([approval, question]);
+  f.channels
+    .get("a")!
+    .enqueue({ ...event(4n, "approval_resolved"), requestId: "permission" });
+  await vi.waitFor(() => expect(feed.snapshot().pending).toEqual([question]));
+});
+
+it("settles approval lifecycles across short native pages without trusting projected rows", async () => {
+  const f = fixture();
+  const approval = {
+    ...event(2n, "approval", "Bash"),
+    requestId: "permission",
+  };
+  // A projection may retain the approval while folding away its resolution.
+  f.sessions.transcript.mockResolvedValue({
+    events: [event(1n), approval],
+    metadata: [],
+    snapshotSeq: 4n,
+    hasOlder: false,
+    hasNewer: false,
+  });
+  f.sessions.history.mockResolvedValueOnce({ events: [approval] });
+  f.sessions.history.mockResolvedValueOnce({
+    events: [
+      { ...event(3n, "approval_resolved"), requestId: "permission" },
+      event(4n),
+    ],
+  });
+  const { feed } = await f.open("a");
+  expect(feed.snapshot().pending).toEqual([]);
+  expect(f.sessions.history.mock.calls.map(([q]) => q.afterSeq)).toEqual([
+    1n,
+    2n,
+    4n,
+  ]);
+  expect(f.sessions.events.mock.calls[0][0]).toMatchObject({ afterSeq: 4n });
+});
+
+it("clears a prior run's approval at a resume boundary, during loading and live", async () => {
+  const f = fixture();
+  const approval = {
+    ...event(2n, "approval", "Bash"),
+    requestId: "permission",
+  };
+  f.sessions.history.mockResolvedValueOnce({
+    events: [approval, { ...event(3n, "state", "idle"), runId: "new" }],
+  });
+  const { feed } = await f.open("a");
+  expect(feed.snapshot().pending).toEqual([]);
+  f.channels.get("a")!.enqueue({ ...approval, seq: 4n, runId: "new" });
+  await vi.waitFor(() => expect(feed.snapshot().pending).toHaveLength(1));
+  f.channels
+    .get("a")!
+    .enqueue({ ...event(5n, "state", "idle"), runId: "next" });
+  await vi.waitFor(() => expect(feed.snapshot().pending).toEqual([]));
+});
 it("reconnects at the native cursor and replays an old task's completion without fetching the first transcript again", async () => {
   const f = fixture();
   const a = await f.open("a");
@@ -152,13 +264,52 @@ it("reconnects at the native cursor and replays an old task's completion without
   vi.useFakeTimers();
   f.channels.get("a")!.error(new Error("offline"));
   await vi.advanceTimersByTimeAsync(2000);
-  expect(f.sessions.history.mock.calls[0][0]).toMatchObject({ afterSeq: 2n });
+  expect(f.sessions.history.mock.calls.at(-1)![0]).toMatchObject({
+    afterSeq: 3n,
+  });
+  expect(f.sessions.history.mock.calls).toContainEqual([
+    expect.objectContaining({ afterSeq: 2n }),
+    expect.anything(),
+  ]);
   expect(f.sessions.events.mock.calls.at(-1)![0]).toMatchObject({
     afterSeq: 3n,
   });
   expect(f.sessions.transcript).toHaveBeenCalledTimes(1);
   expect(a.feed.snapshot().events.map((e) => e.seq)).toEqual([1n, 2n, 3n]);
   expect(a.feed.snapshot().loading).toBeUndefined();
+});
+
+it("retries an interrupted catch-up from the committed cursor without losing pending requests", async () => {
+  const f = fixture();
+  const { feed } = await f.open("a");
+  const approval = {
+    ...event(2n, "approval", "Bash"),
+    requestId: "permission",
+  };
+  f.sessions.history.mockResolvedValueOnce({ events: [approval] });
+  f.sessions.history.mockRejectedValueOnce(new Error("history interrupted"));
+  f.sessions.history.mockResolvedValueOnce({ events: [approval] });
+  vi.useFakeTimers();
+  f.channels.get("a")!.error(new Error("offline"));
+  await vi.advanceTimersByTimeAsync(2000);
+  expect(feed.snapshot().pending).toEqual([]);
+  expect(feed.latestSeq.current).toBe(1n);
+  await vi.advanceTimersByTimeAsync(2000);
+  expect(feed.snapshot().pending).toEqual([approval]);
+  expect(f.sessions.events.mock.calls.at(-1)![0]).toMatchObject({
+    afterSeq: 2n,
+  });
+  // A stale Get on the next reconnect must not erase known live approvals.
+  f.sessions.transcript.mockResolvedValue({
+    events: [approval],
+    metadata: [],
+    snapshotSeq: 2n,
+    hasOlder: true,
+    hasNewer: false,
+  });
+  f.channels.get("a")!.error(new Error("offline again"));
+  await vi.advanceTimersByTimeAsync(2000);
+  expect(feed.snapshot().pending).toEqual([approval]);
 });
 it("freezes a detached reading window while maintaining a latest page and control state", async () => {
   const f = fixture();

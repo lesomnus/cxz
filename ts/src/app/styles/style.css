@@ -81,6 +81,7 @@
   --scroll-handle-size: 4px;
   --scroll-handle-radius: 3px;
   --scroll-handle-expansion: 2;
+  --scroll-thumb-response-duration: 28ms;
   --native-scrollbar-size: 12px;
   --scroll-near-distance: 32px;
   --agent-logo-size: 14px;
@@ -474,6 +475,7 @@ header strong {
   min-height: 0;
 }
 .session-workspace {
+  position: relative;
   min-width: 0;
   min-height: 0;
   container-type: inline-size;
@@ -493,6 +495,17 @@ header strong {
 }
 .session-divider {
   display: none;
+}
+@container (width < 1600px) {
+  .session-workspace[data-file-open="true"] .workspace-editor {
+    display: flex;
+    position: absolute;
+    inset: 0 0 0 auto;
+    width: min(100%, var(--conversation-width));
+    z-index: 10;
+    background: var(--background);
+    border-left: 1px solid var(--shade-36);
+  }
 }
 @container (min-width: 1600px) {
   .session-split {
@@ -2708,6 +2721,7 @@ summary:hover {
   pointer-events: none;
 }
 .scroll-thumb {
+  top: 0;
   position: absolute;
   right: 0;
   width: 24px;

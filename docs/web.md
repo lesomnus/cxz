@@ -109,6 +109,9 @@ a session restart to use this integration. See the
 
 Permission requests that resolve automatically before the display grace period
 remain in the journal without flashing an approval card above the composer.
+Initial loading and reconnects reconcile native history before publishing pending
+requests: the catalog can lag the journal, and transcript projections can omit
+approval resolutions. A new agent run or fork boundary clears prior-run requests.
 Unresolved requests still become actionable cards; human questions appear
 immediately. Fixed-width UI text shares the `--ui-font-mono` token, including the
 elapsed timer and background count. Terminal and editor defaults resolve that

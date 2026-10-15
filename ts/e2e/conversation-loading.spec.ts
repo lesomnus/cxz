@@ -119,3 +119,91 @@ test("initial load failure is visible until an automatic retry succeeds", async 
     await page.unrouteAll({ behavior: "wait" });
   }
 });
+
+for (const resolved of [true, false]) {
+  test(`initial catch-up ${resolved ? "never flashes resolved" : "preserves unresolved"} approvals from a stale catalog`, async ({
+    page,
+  }) => {
+    await signIn(page);
+    const request = {
+      seq: "1",
+      runId: "run",
+      kind: "approval",
+      text: "Bash",
+      requestId: "permission",
+    };
+    await page.addInitScript(() => {
+      (window as any).approvalFlashed = false;
+      new MutationObserver(() => {
+        if (document.querySelector(".question-cards .approval"))
+          (window as any).approvalFlashed = true;
+      }).observe(document, { childList: true, subtree: true });
+    });
+    await page.route("**/cxz.SessionService/Get", async (route) => {
+      const response = await route.fetch();
+      const json = await response.json();
+      json.status = {
+        runId: "run",
+        state: "waiting_input",
+        lastSeq: "1",
+        pending: [request],
+      };
+      await route.fulfill({ response, json });
+    });
+    await page.route("**/cxz.SessionService/Transcript", (route) =>
+      route.fulfill({
+        json: { snapshotSeq: "1", events: [request] },
+      }),
+    );
+    await page.route("**/cxz.SessionService/History", async (route) => {
+      const after = Number(route.request().postDataJSON().afterSeq ?? 0);
+      if (after >= 3) return route.fulfill({ json: {} });
+      // Resolving history arrives well after the automatic-approval UI grace.
+      await new Promise((resolve) => setTimeout(resolve, 350));
+      await route.fulfill({
+        json: {
+          events: [
+            ...(resolved
+              ? [
+                  {
+                    seq: "2",
+                    runId: "run",
+                    requestId: "permission",
+                    kind: "approval_resolved",
+                    text: "allowed",
+                  },
+                ]
+              : []),
+            {
+              seq: "3",
+              runId: "run",
+              kind: "state",
+              text: resolved ? "idle" : "waiting_input",
+            },
+          ],
+        },
+      });
+    });
+    await page.goto("/sessions/session");
+    await expect(page.locator(".transcript")).toHaveAttribute(
+      "aria-busy",
+      "false",
+    );
+    if (resolved) {
+      await page.waitForTimeout(250);
+      await expect(
+        page.getByRole("button", { name: "Allow", exact: true }),
+      ).toHaveCount(0);
+      expect(await page.evaluate(() => (window as any).approvalFlashed)).toBe(
+        false,
+      );
+    } else {
+      await expect(
+        page.getByRole("button", { name: "Allow", exact: true }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "Deny", exact: true }),
+      ).toBeVisible();
+    }
+  });
+}

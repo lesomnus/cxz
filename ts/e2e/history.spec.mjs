@@ -183,6 +183,109 @@ test.afterEach(async ({ page }) => {
   // Complete those handlers before Playwright disposes their API responses.
   await page.unrouteAll({ behavior: "wait" });
 });
+
+for (const reduced of [false, true]) {
+  test(`conversation handle ${reduced ? "respects reduced motion" : "eases toward native scroll positions"} without moving message markers`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({
+      reducedMotion: reduced ? "reduce" : "no-preference",
+    });
+    const events = Array.from({ length: 400 }, (_, i) => ({
+      seq: String(i + 1),
+      runId: "run",
+      kind: i % 2 ? "assistant" : "input",
+      text: `Scroll sample ${i + 1}`,
+      timeMs: "1700000000000",
+    }));
+    await openReplay(page, true, { events });
+    const pane = page.locator(".transcript");
+    const thumb = page.locator(".scroll-thumb");
+    await expect(pane).toHaveAttribute("aria-busy", "false");
+    // Initial follow goes directly to its final position without flying in.
+    await expect(page.locator(".transcript-area")).toHaveClass(
+      /scroll-following/,
+    );
+    await expect(thumb).toHaveCSS("transition-duration", "0s");
+    await pane.hover();
+    await page.mouse.wheel(0, -1200);
+    await expect(page.locator(".transcript-area")).not.toHaveClass(
+      /scroll-following|scroll-rebasing/,
+    );
+    const settled = () =>
+      thumb.evaluate((el) =>
+        Math.abs(
+          parseFloat(getComputedStyle(el).top) - Number(el.dataset.targetTop),
+        ),
+      );
+    await expect.poll(settled).toBeLessThan(0.1);
+    const samples = await page.evaluate(async () => {
+      const pane = document.querySelector(".transcript");
+      const thumb = document.querySelector(".scroll-thumb");
+      const before = parseFloat(getComputedStyle(thumb).top);
+      const start = thumb.dataset.start;
+      const marker = [...document.querySelectorAll(".scroll-marker")].find(
+        (el) => {
+          const top = parseFloat(el.style.top);
+          return top > 0 && top < el.parentElement.clientHeight;
+        },
+      );
+      const markerTop = marker.style.top;
+      pane.scrollTop -= 800;
+      const frames = [];
+      const until = performance.now() + 350;
+      do {
+        await new Promise(requestAnimationFrame);
+        frames.push({
+          top: parseFloat(getComputedStyle(thumb).top),
+          target: Number(thumb.dataset.targetTop),
+          start: thumb.dataset.start,
+          markerTop: marker.style.top,
+        });
+      } while (performance.now() < until);
+      return { before, start, markerTop, frames };
+    });
+    expect(samples.frames.every((f) => f.start === samples.start)).toBe(true);
+    expect(samples.frames.every((f) => f.markerTop === samples.markerTop)).toBe(
+      true,
+    );
+    const changed = samples.frames.filter(
+      (f) => Math.abs(f.target - samples.before) > 5,
+    );
+    expect(changed.length).toBeGreaterThan(0);
+    const intermediate = changed.filter(
+      (f) => f.top < samples.before - 0.1 && f.top > f.target + 0.1,
+    );
+    expect(intermediate.length > 0).toBe(!reduced);
+    await expect.poll(settled).toBeLessThan(0.1);
+
+    // Keep changing the target for multiple frames. An isolated jump does not
+    // catch a handle that waits until scrolling stops before catching up.
+    const continuous = await page.evaluate(async () => {
+      const pane = document.querySelector(".transcript");
+      const thumb = document.querySelector(".scroll-thumb");
+      const before = parseFloat(getComputedStyle(thumb).top);
+      const frames = [];
+      for (let i = 0; i < 20; i++) {
+        pane.scrollTop -= 48;
+        await new Promise(requestAnimationFrame);
+        frames.push({
+          top: parseFloat(getComputedStyle(thumb).top),
+          target: Number(thumb.dataset.targetTop),
+        });
+      }
+      return { before, frames };
+    });
+    expect(continuous.frames[7].top).toBeLessThan(continuous.before - 5);
+    const moving = continuous.frames.slice(5);
+    expect(moving.every((f, i) => !i || f.top < moving[i - 1].top)).toBe(true);
+    const last = moving.at(-1);
+    expect(
+      (continuous.before - last.top) / (continuous.before - last.target),
+    ).toBeGreaterThan(0.8);
+    await expect.poll(settled).toBeLessThan(0.1);
+  });
+}
 for (const mode of ["legacy", "summary"])
   test(`${mode} recorded pages fill a tall pane and keep scrolling usable through resize`, async ({
     page,

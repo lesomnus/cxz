@@ -7,7 +7,6 @@ import (
 	"time"
 )
 
-const codexProgressTimeout = 2 * time.Minute
 const codexInterruptGrace = 15 * time.Second
 
 type codexProgress struct {
@@ -17,8 +16,9 @@ type codexProgress struct {
 }
 
 // Telemetry polling is not turn progress. Native running items and human
-// approvals are excluded from the response watchdog; their outcomes are not
-// inferred from silence, and no user input or tool call is replayed.
+// approvals are excluded from an explicitly configured response deadline. Silence
+// alone does not prove a stalled inference, so there is no default deadline and
+// no user input or tool call is ever replayed.
 func (c *codexProtocol) observeProgress(method string, params []byte, now time.Time) {
 	if method == "turn/started" || method == "turn/completed" {
 		c.progress = codexProgress{last: now}
@@ -67,9 +67,9 @@ func (c *codexProtocol) checkProgress(now time.Time) {
 		c.progress.last = now
 		return
 	}
-	limit := codexProgressTimeout
-	if v, err := time.ParseDuration(os.Getenv("CXZ_CODEX_PROGRESS_TIMEOUT")); err == nil && v > 0 {
-		limit = v
+	limit, err := time.ParseDuration(os.Getenv("CXZ_CODEX_PROGRESS_TIMEOUT"))
+	if err != nil || limit <= 0 {
+		return
 	}
 	if now.Sub(c.progress.last) < limit {
 		return

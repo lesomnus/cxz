@@ -7,6 +7,39 @@ import (
 	"time"
 )
 
+const codexProgressTimeout = 2 * time.Minute
+
+func TestCodexResponseSilenceDoesNotInterruptWithoutAnExplicitDeadline(t *testing.T) {
+	for _, budget := range []string{"", "0", "0s", "-1m", "invalid"} {
+		t.Run("budget="+budget, func(t *testing.T) {
+			t.Setenv("CXZ_CODEX_PROGRESS_TIMEOUT", budget)
+			s, input := displaySupervisor(t, "codex")
+			s.consume([]byte(`{"method":"turn/started","params":{"turn":{"id":"turn"}}}`))
+			s.consume([]byte(`{"method":"item/completed","params":{"item":{"id":"comment","type":"agentMessage","phase":"commentary","text":"Working on it"}}}`))
+			// Recorded conversations can go quiet beyond the old two-minute budget,
+			// then continue successfully. Account replies cannot establish model progress.
+			last := s.codex.progress.last
+			s.consume([]byte(`{"id":"cxz-quota","result":{}}`))
+			s.codex.checkProgress(last.Add(3 * time.Minute))
+			s.codex.checkProgress(last.Add(time.Hour))
+			if input.Len() != 0 || s.interrupted || !s.codex.progress.interrupt.IsZero() || s.snap.State != "working" {
+				t.Fatal("silence interrupted a turn without an explicit deadline", input.String(), s.snap)
+			}
+			s.consume([]byte(`{"method":"item/started","params":{"item":{"id":"tool","type":"commandExecution"}}}`))
+			s.consume([]byte(`{"method":"item/completed","params":{"item":{"id":"tool","type":"commandExecution"}}}`))
+			s.consume([]byte(`{"method":"turn/completed","params":{"turn":{"id":"turn","status":"completed"}}}`))
+			if s.snap.State != "idle" || s.codex.turn != "" || s.interrupted {
+				t.Fatal("a slow turn did not complete normally", s.snap)
+			}
+			for _, event := range s.log.All() {
+				if event.Kind == "turn_end" && event.Text != "completed" {
+					t.Fatal("normal completion was reported as interrupted", event)
+				}
+			}
+		})
+	}
+}
+
 func TestCodexSilentResponseInterruptsOnceAndCompletionRecovers(t *testing.T) {
 	t.Setenv("CXZ_CODEX_PROGRESS_TIMEOUT", "2m")
 	s, input := displaySupervisor(t, "codex")

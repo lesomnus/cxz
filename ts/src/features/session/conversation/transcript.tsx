@@ -28,6 +28,7 @@ import {
 } from "#src/features/session/model/work-groups.ts";
 import { WorkDialog, WorkSummary } from "./work-dialog";
 import { ScrollMarkers, type ScrollTick } from "./scroll-markers";
+import { useScrollThumb } from "./use-scroll-thumb";
 import {
   scrollMarkerWindow,
   type MarkerCoordinate,
@@ -54,6 +55,12 @@ const empty: Geometry = {
   range: { start: 0, span: 0 },
   markers: [],
 };
+function thumbPosition(view: Geometry) {
+  return view.range.span
+    ? clamp((view.mappedTop - view.range.start) / view.range.span, 0, 1) *
+        (view.height - view.thumb)
+    : 0;
+}
 type Drag = {
   id: number;
   offset: number;
@@ -189,6 +196,7 @@ export function Transcript({
   );
   const track = useRef<HTMLDivElement>(null);
   const thumb = useRef<HTMLDivElement>(null);
+  const { move: moveThumb, stop: stopThumb } = useScrollThumb(thumb);
   const markerNodes = useRef(new Map<string, HTMLSpanElement>());
   const offsets = useRef<MessageMap["markers"]>([]);
   const markerCoordinates = useRef<MarkerCoordinate[]>([]);
@@ -299,11 +307,13 @@ export function Transcript({
       window.matchMedia("(prefers-reduced-motion: reduce)").matches
     )
       return;
+    stopThumb();
     const railHeight = track.current!.clientHeight;
     const motion = {
       time: performance.now(),
       progress: 0,
-      thumb: parseFloat(thumb.current.style.top),
+      // The frame loop owns this painted position, independently of React.
+      thumb: parseFloat(thumb.current.style.top) || 0,
       markers: new Map(
         [...markerNodes.current.values()]
           .map((node): [string, number] => [
@@ -413,6 +423,11 @@ export function Transcript({
       range,
       markers,
     };
+    if (!rangeMotion.current)
+      moveThumb(
+        thumbPosition(geometry.current) + (drag.current?.stretch ?? 0),
+        !!drag.current || follow.current || max === 0,
+      );
     setView(geometry.current);
   }
   useLayoutEffect(() => {
@@ -451,6 +466,10 @@ export function Transcript({
     [pane, follow],
   );
   useLayoutEffect(() => {
+    moveThumb(
+      animated(thumbPosition(view) + stretch, rangeFrame?.thumb),
+      !!rangeFrame || !!drag.current || follow.current || view.max === 0,
+    );
     for (const { id, kind, top } of view.markers) {
       const node = markerNodes.current.get(id);
       if (!node) continue;
@@ -464,7 +483,7 @@ export function Transcript({
       node.style.top = `${position}px`;
       node.dataset.targetTop = String(target);
     }
-  }, [view, stretch, rangeFrame]);
+  }, [view, stretch, rangeFrame, moveThumb, follow]);
   function readOffsets() {
     const el = pane.current;
     if (!el) return;
@@ -769,17 +788,14 @@ export function Transcript({
       scrolled();
     }
   }
-  const position = view.range.span
-    ? clamp((view.mappedTop - view.range.start) / view.range.span, 0, 1) *
-      (view.height - view.thumb)
-    : 0;
+  const position = thumbPosition(view);
   const animated = (target: number, from: number | undefined) =>
     rangeFrame && from !== undefined
       ? from + (target - from) * rangeFrame.progress
       : target;
   return (
     <div
-      className={`transcript-area ${follow.current ? "scroll-following" : ""} ${near ? "scroll-near" : ""} ${dragging ? "scroll-dragging" : ""}`}
+      className={`transcript-area ${follow.current ? "scroll-following" : ""} ${near ? "scroll-near" : ""} ${dragging ? "scroll-dragging" : ""} ${rangeFrame ? "scroll-rebasing" : ""}`}
       onPointerDownCapture={(event) => {
         if (
           activeWork &&
@@ -880,7 +896,6 @@ export function Transcript({
           data-stretch={Math.abs(stretch).toFixed(2)}
           data-target-top={position + stretch}
           style={{
-            top: animated(position + stretch, rangeFrame?.thumb),
             height: view.thumb,
             visibility: view.max > 0 ? "visible" : "hidden",
           }}

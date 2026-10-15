@@ -10,6 +10,12 @@ import {
 import { quotaDots } from "#src/features/session/model/session-info.ts";
 
 describe("bounded scroll handle", () => {
+  it("preserves fractional handle motion instead of snapping small updates", () => {
+    const next = smoothStep(0, 0.8, 16, 28, 0.05);
+    expect(next).toBeGreaterThan(0);
+    expect(next).toBeLessThan(0.8);
+    expect(smoothStep(next, 0.8, 200, 28, 0.05)).toBe(0.8);
+  });
   it("keeps its range bounded as history grows and preserves a usable local range", () => {
     const before = scrollRange(50000, 100000, 800);
     const after = scrollRange(50100, 1000000, 800, before);

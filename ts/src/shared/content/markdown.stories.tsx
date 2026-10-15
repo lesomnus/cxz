@@ -1,7 +1,7 @@
 import { StrictMode, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Button } from "@lesomnus/nox";
-import { Markdown } from "./markdown";
+import { Markdown, MarkdownFileLinks } from "./markdown";
 
 const snippet =
   "const greeting = '<script>alert(1)</script>';\nconsole.log(greeting);";
@@ -57,3 +57,14 @@ function StreamingPreview() {
   );
 }
 export const Streaming: Story = { render: () => <StreamingPreview /> };
+
+function FileLinksPreview() {
+  const [path, openFile] = useState("");
+  return (
+    <MarkdownFileLinks.Provider value={openFile}>
+      <Markdown text="[Report](/tmp/report.md) · [File with spaces](/tmp/a%20report.md) · [External documentation](https://example.com/)" />
+      <output aria-label="Opened file">{path || "Select a file link."}</output>
+    </MarkdownFileLinks.Provider>
+  );
+}
+export const FileLinks: Story = { render: () => <FileLinksPreview /> };

@@ -257,6 +257,7 @@ export const messages = {
     "공백을 넣을지 실제 Tab 문자를 넣을지 선택",
   "Close code block {index}": "코드 블록 {index} 닫기",
   "Close details": "세부 정보 닫기",
+  "Close file preview": "파일 미리보기 닫기",
   "Close paste preview": "붙여넣기 미리보기 닫기",
   "Close {name}": "{name} 닫기",
   "Code syntax {index}": "코드 문법 {index}",
