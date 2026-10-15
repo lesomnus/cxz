@@ -169,7 +169,7 @@ func (s Service) actor(ctx context.Context, a *resource.TaskActor, p *resource.P
 	}
 	if active {
 		state := v.GetStatus().GetState()
-		if !v.GetListed() || v.GetStatus().GetRunId() != a.GetRunId() || (state != "idle" && state != "working") {
+		if !v.GetListed() || v.GetStatus().GetRunId() != a.GetRunId() || (state != "idle" && state != "working" && state != "waiting_input") {
 			return nil, status.Error(codes.FailedPrecondition, "assignee run is stale or inactive")
 		}
 	}

@@ -56,7 +56,7 @@ func TestBuiltinActivationAndRuntimeSessions(t *testing.T) {
 		s := core.Session{ID: core.ID(), ProjectID: "P", Workspace: root}
 		os.MkdirAll(core.Dir(root, s.ID), 0700)
 		core.WriteJSON(filepath.Join(core.Dir(root, s.ID), "session.json"), s)
-		launch, e := mcpruntime.Prepare(root, s.ID)
+		launch, e := mcpruntime.Prepare(root, s.ID, "memory-test-run")
 		if e != nil {
 			t.Fatal(e)
 		}

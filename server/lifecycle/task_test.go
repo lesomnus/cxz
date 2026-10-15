@@ -13,6 +13,8 @@ import (
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/internal/taskapitest"
+	"github.com/lesomnus/cxz/internal/taskmcp"
+	"github.com/lesomnus/cxz/internal/taskmcptest"
 	"github.com/lesomnus/cxz/resource"
 	"github.com/lesomnus/payday/config"
 	"google.golang.org/grpc"
@@ -103,6 +105,33 @@ func TestTaskContract(t *testing.T) {
 					s.RunId += "-restarted"
 				}
 			}
+		},
+	})
+}
+
+func TestTaskMCPContract(t *testing.T) {
+	f, stack, _ := taskStack(t)
+	f.sessions[1].State = "waiting_input"
+	layer, _ := resource.Find[Layer](stack)
+	if err := layer.RefreshSession(t.Context(), f.sessions[1].Id); err != nil {
+		t.Fatal(err)
+	}
+	actors := []taskmcp.Binding{}
+	for _, s := range f.sessions {
+		actors = append(actors, taskmcp.Binding{Project: f.p.Id, Session: s.Id, Run: s.RunId})
+	}
+	taskmcptest.Run(t, taskConn(t, stack), taskmcptest.Fixture{
+		Actors: actors, OtherProject: projectRef("other-project"),
+		Restart: func() taskmcp.Binding {
+			f.lock.Lock()
+			f.sessions[1].RunId += "-new"
+			binding := taskmcp.Binding{Project: f.p.Id, Session: f.sessions[1].Id, Run: f.sessions[1].RunId}
+			f.lock.Unlock()
+			layer, _ := resource.Find[Layer](stack)
+			if err := layer.RefreshSession(t.Context(), binding.Session); err != nil {
+				t.Fatal(err)
+			}
+			return binding
 		},
 	})
 }
