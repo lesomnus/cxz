@@ -73,6 +73,7 @@ export function SessionMenu({
       <ActionMenu
         label={t("Session menu")}
         placement="above"
+        gap={2}
         motion={{ from: "bottom-right", effect: "reveal" }}
         disabled={!session}
         status={session?.status?.state}
