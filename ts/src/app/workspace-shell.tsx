@@ -170,6 +170,9 @@ export function Workspace({
         {resource !== "accounts" && (
           <ResourcePanel
             ref={sessionPanel}
+            unreadSelector={
+              resource === "sessions" ? '[data-unread="true"]' : undefined
+            }
             className={resource === "sessions" ? "session-panel" : ""}
             title={
               resource === "sessions"

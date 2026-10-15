@@ -1,4 +1,6 @@
-import type { ComponentProps } from "react";
+import { useRef, type ComponentProps } from "react";
+import { useHiddenItems } from "./use-hidden-items";
+import styles from "./panel-scroll.module.css";
 import { ScrollArea } from "@lesomnus/nox";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
@@ -8,14 +10,22 @@ export function PanelScroll({
   className = "",
   classNames,
   scrollbarLabel,
+  viewportRef: suppliedViewport,
+  unreadSelector,
   ...props
-}: ComponentProps<typeof ScrollArea>) {
+}: ComponentProps<typeof ScrollArea> & { unreadSelector?: string }) {
   useLocale();
+  const localViewport = useRef<HTMLDivElement>(null);
+  const viewport = suppliedViewport ?? localViewport;
+  const hidden = useHiddenItems(viewport, unreadSelector);
   return (
     <ScrollArea
       {...props}
+      viewportRef={viewport}
+      data-unread-above={hidden.above || undefined}
+      data-unread-below={hidden.below || undefined}
       scrollbarLabel={scrollbarLabel ?? t("Panel scroll")}
-      className={`panel-scroll-region ${className}`}
+      className={`panel-scroll-region ${styles.area} ${className}`}
       classNames={{
         viewport: "panel-scroll-content",
         content: "panel-scroll-inner",
