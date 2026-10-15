@@ -869,9 +869,18 @@ header strong {
   flex: 1;
   min-width: 0;
   padding: 0;
-  white-space: pre-wrap;
+  white-space: normal;
   overflow-wrap: anywhere;
   margin: 0;
+}
+.input-box .message-body > .markdown {
+  padding: 0;
+}
+.input-box .message-body > .markdown > :first-child {
+  margin-top: 0;
+}
+.input-box .message-body > .markdown > :last-child {
+  margin-bottom: 0;
 }
 .input-time {
   position: relative;

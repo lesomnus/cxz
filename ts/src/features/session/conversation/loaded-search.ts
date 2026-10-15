@@ -10,7 +10,6 @@ export type LoadedSearchHit = Pick<SessionEvent, "seq" | "timeMs" | "kind"> & {
 // Cache strings, never detached DOM. Weak keys let evicted messages disappear.
 const textCache = new WeakMap<SessionEvent, { source: string; text: string }>();
 function bodyText(event: SessionEvent) {
-  if (event.kind === "input") return event.text;
   const saved = textCache.get(event);
   if (saved?.source === event.text) return saved.text;
   const html = DOMPurify.sanitize(
