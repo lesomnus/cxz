@@ -46,6 +46,7 @@ export function ConversationComposer({
   interrupt,
   backgroundJobs,
   onBackgroundJobs,
+  taskControl,
   latestVisible = false,
   onLatest,
   terminalVisible = false,
@@ -78,6 +79,7 @@ export function ConversationComposer({
   interrupt: () => void;
   backgroundJobs?: number;
   onBackgroundJobs?: () => void;
+  taskControl?: ReactNode;
   latestVisible?: boolean;
   onLatest?: () => void;
   terminalVisible?: boolean;
@@ -174,6 +176,7 @@ export function ConversationComposer({
               count={backgroundJobs}
               open={onBackgroundJobs}
             />
+            {taskControl}
           </TurnControls>
           <span
             className="latest-slot"

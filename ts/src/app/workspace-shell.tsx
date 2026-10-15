@@ -137,7 +137,14 @@ export function Workspace({
             </SidebarHint>
           ))}
           {(
-            ["accounts", "search", "memory", "activity", "auxiliary"] as const
+            [
+              "tasks",
+              "accounts",
+              "search",
+              "memory",
+              "activity",
+              "auxiliary",
+            ] as const
           ).map((view) => (
             <SidebarHint
               key={view}
@@ -167,7 +174,7 @@ export function Workspace({
             openSettings={() => setSettingsFileOpen(false)}
           />
         </nav>
-        {resource !== "accounts" && (
+        {resource !== "accounts" && resource !== "tasks" && (
           <ResourcePanel
             ref={sessionPanel}
             unreadSelector={

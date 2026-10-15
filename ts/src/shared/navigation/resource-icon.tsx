@@ -13,6 +13,7 @@ export function ResourceIcon({
   kind:
     | "sessions"
     | "projects"
+    | "tasks"
     | "settings"
     | "accounts"
     | "search"
@@ -46,6 +47,10 @@ export function ResourceIcon({
           <path d="M5 4h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6 3V6a2 2 0 0 1 2-2Z" />
         ) : kind === "projects" ? (
           <path d="M3 7V5a2 2 0 0 1 2-2h5l3 3h6a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" />
+        ) : kind === "tasks" ? (
+          <>
+            <path d="m3 6 1.5 1.5L7 4M10 6h11M3 12h3m4 0h11M3 18h3m4 0h11" />
+          </>
         ) : kind === "accounts" ? (
           <>
             <circle cx="12" cy="8" r="4" />
