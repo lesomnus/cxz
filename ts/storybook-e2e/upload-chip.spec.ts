@@ -8,6 +8,16 @@ test("upload chips shimmer and fade into solid chips on completion", async ({
   );
   const chips = page.locator(".paste-chip");
   await expect(chips).toHaveCount(2);
+  // The shimmer must paint above the opaque inline chip background.
+  expect(
+    await chips
+      .first()
+      .evaluate((el) => getComputedStyle(el, "::before").zIndex),
+  ).toBe("0");
+  await expect(chips.first().locator(".paste-chip-label")).toHaveCSS(
+    "z-index",
+    "1",
+  );
   await expect(chips.first()).toHaveAttribute("aria-busy", "true");
   const effect = () =>
     chips.first().evaluate((el) => {

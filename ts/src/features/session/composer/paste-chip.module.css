@@ -38,13 +38,13 @@
   content: "";
   position: absolute;
   inset: 0 1px 0 0;
-  z-index: -1;
+  z-index: 0;
   border-radius: inherit;
   pointer-events: none;
   background: linear-gradient(
     105deg,
     transparent 30%,
-    color-mix(in srgb, var(--shade-255) 18%, transparent) 50%,
+    color-mix(in srgb, var(--shade-255) 30%, transparent) 50%,
     transparent 70%
   );
   background-size: 250% 100%;
@@ -74,4 +74,9 @@
     transition: none;
     background-position: 50% 0;
   }
+}
+
+.label {
+  position: relative;
+  z-index: 1;
 }
