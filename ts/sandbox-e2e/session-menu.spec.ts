@@ -170,6 +170,7 @@ test("Purge previews without deleting, cancels, then removes only the confirmed 
   page,
 }) => {
   await ready(page);
+  await expect(page.locator(".resource-panel .tree-session")).toHaveCount(8);
   await choose(page, "Purge");
   const dialog = page.getByRole("dialog", { name: "Purge session" });
   await expect(dialog).toContainText("/sandbox/session-1/journal");

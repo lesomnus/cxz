@@ -13,6 +13,7 @@ import "#src/app/styles/style.css";
 import "./sandbox.css";
 import workerURL from "./sandbox-worker.ts?worker&url";
 import { boot, bootDeadline, BootTimeout } from "./sandbox-boot";
+import { sandboxTransport } from "./sandbox-transport";
 import { createClient } from "@connectrpc/connect";
 import { ProjectService } from "#gen/cxz/project_svc_pb";
 
@@ -77,7 +78,7 @@ function SandboxApp({ children }: PropsWithChildren) {
     const cacheable = !navigator.webdriver;
     boot(
       async (cached, signal) => {
-        const v = await start({
+        const started = await start({
           url: "/app.wasm",
           worker,
           wasmExec: "/wasm_exec.js",
@@ -94,6 +95,7 @@ function SandboxApp({ children }: PropsWithChildren) {
               );
           },
         });
+        const v = { ...started, transport: sandboxTransport(started) };
         const close = () => v.close();
         signal.addEventListener("abort", close, { once: true });
         try {
