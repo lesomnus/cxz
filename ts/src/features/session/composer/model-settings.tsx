@@ -88,7 +88,33 @@ export function ModelSettings({
           busy || session?.status?.state !== "idle" || !values.length;
         return (
           <div key={kind} className={`${kind}-field setting-field`}>
-            <span className="meta-label">{label}</span>
+            <span className="meta-label meta-popover" aria-hidden="true">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                {kind === "model" ? (
+                  <>
+                    <rect x="6" y="6" width="12" height="12" rx="2" />
+                    <rect x="9" y="9" width="6" height="6" rx="1" />
+                    <path d="M9 3v3m6-3v3M9 18v3m6-3v3M3 9h3m-3 6h3m12-6h3m-3 6h3" />
+                  </>
+                ) : (
+                  <>
+                    <path d="M4.2 18a9 9 0 1 1 15.6 0H4.2Z" />
+                    <path d="m12 13 4-5M5 12h1m2-6 .5 1M12 4v1m6 7h1" />
+                    <circle cx="12" cy="13" r="1" />
+                  </>
+                )}
+              </svg>
+              <span className="meta-tooltip">{label}</span>
+            </span>
             <ValueMenu
               variant="compact"
               label={label}
