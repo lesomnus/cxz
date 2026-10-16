@@ -21,6 +21,15 @@ test("quota hover opens left, covers the stationary graph and has stable columns
     await expect(tooltip).toHaveAttribute("data-enter-effect", "reveal-frame");
     const content = tooltip.locator('[data-enter-effect="reveal"]');
     await expect(content).toHaveAttribute("data-enter-from", "from-right");
+    await expect(content.locator(":scope > span").last()).toHaveText(
+      story === "full"
+        ? "100%"
+        : story === "low"
+          ? "1%"
+          : story === "weekly"
+            ? "72%"
+            : "—",
+    );
     await expect(content).toHaveCSS("animation-duration", "0.36s");
     await expect(content).toHaveCSS("filter", "blur(0px)");
     await expect(tooltip).toHaveCSS("font-size", "10px");

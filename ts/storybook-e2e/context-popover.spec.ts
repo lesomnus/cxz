@@ -28,7 +28,12 @@ test("context reveals left with stable numeric slots and a stationary donut", as
     if (width !== undefined) expect(box.width).toBeCloseTo(width, 0);
     width = box.width;
     if (story === "small-context")
-      await expect(popup).toHaveText("0123·/0999·");
+      await expect(popup).toHaveText("0123·/0999·12%");
+    const percent = content.locator(":scope > span").last();
+    await expect(percent).toHaveText(
+      story === "full" ? "24%" : story === "small-context" ? "12%" : "—",
+    );
+    await expect(percent).toHaveCSS("border-left-width", "1px");
     const colors = await content.evaluate((el) => {
       const number = el.children[0];
       const separator = el.children[1];
