@@ -14,11 +14,15 @@ test("quota hover opens left, covers the stationary graph and has stable columns
     await graph.hover();
     const tooltip = page.getByRole("tooltip");
     await expect(tooltip).toBeVisible();
-    await expect(tooltip).toContainText(
-      /left (\d+d \d{2}h \d{2}m|--d --h --m)/,
-    );
+    await expect(tooltip).toContainText(/left (\d{2}d\d{2}h\d{2}m|--d--h--m)/);
     await expect(tooltip).toHaveCSS("opacity", "1");
-    await expect(tooltip).toHaveCSS("clip-path", "inset(0px round 6px)");
+    await expect(tooltip).toHaveCSS("transform", "none");
+    await expect(tooltip).toHaveCSS("filter", "none");
+    await expect(tooltip).toHaveAttribute("data-enter-effect", "reveal-frame");
+    const content = tooltip.locator('[data-enter-effect="reveal"]');
+    await expect(content).toHaveAttribute("data-enter-from", "from-right");
+    await expect(content).toHaveCSS("animation-duration", "0.36s");
+    await expect(content).toHaveCSS("filter", "blur(0px)");
     await expect(tooltip).toHaveCSS("font-size", "10px");
     await expect(tooltip).toHaveCSS("border-top-width", "0px");
     if (story === "weekly") await expect(tooltip).toContainText("weekly");
@@ -35,7 +39,7 @@ test("quota hover opens left, covers the stationary graph and has stable columns
     expect(await graph.boundingBox()).toEqual(before);
     if (width !== undefined) expect(box.width).toBeCloseTo(width, 0);
     width = box.width;
-    await expect(tooltip.getByRole("img")).toHaveAttribute(
+    await expect(tooltip.locator(".agent-brand")).toHaveAttribute(
       "aria-label",
       story === "low" ? "Claude" : "Codex",
     );
@@ -46,4 +50,44 @@ test("quota hover opens left, covers the stationary graph and has stable columns
     await graph.locator("..").focus();
     await expect(tooltip).toBeVisible();
   }
+});
+
+test("duration uses dim padding and intermediate units in nine fixed cells", async ({
+  page,
+}) => {
+  let width: number | undefined;
+  for (const story of ["days", "minutes", "zero", "unknown", "overflow"]) {
+    await page.goto(
+      `/iframe.html?id=components-durationdisplay--${story}&viewMode=story`,
+    );
+    const value = page.getByRole("img");
+    await expect(value).toBeVisible();
+    const text = await value.textContent();
+    expect(text).toHaveLength(9);
+    if (story === "minutes") {
+      expect(text).toBe("00d00h05m");
+      const colors = await value.evaluate((el) => {
+        const field = el.children[2];
+        return Array.from(field.children).map(
+          (child) => getComputedStyle(child).color,
+        );
+      });
+      expect(new Set(colors).size).toBe(3);
+    }
+    const box = (await value.boundingBox())!;
+    if (width !== undefined) expect(box.width).toBeCloseTo(width, 0);
+    width = box.width;
+  }
+});
+test("quota reveal respects reduced motion", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/iframe.html?id=conversation-usage--full&viewMode=story");
+  await page.locator(".quota-dots").hover();
+  const tooltip = page.getByRole("tooltip");
+  await expect(tooltip).toBeVisible();
+  await expect(tooltip).toHaveCSS("animation-name", "none");
+  await expect(tooltip.locator('[data-enter-effect="reveal"]')).toHaveCSS(
+    "animation-name",
+    "none",
+  );
 });

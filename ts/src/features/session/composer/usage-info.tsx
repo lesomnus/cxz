@@ -1,3 +1,4 @@
+import { DialogReveal, DurationDisplay } from "@lesomnus/nox";
 import { useEffect, useId, useState } from "react";
 import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
 import styles from "./usage-info.module.css";
@@ -8,12 +9,6 @@ import {
   quotaDots,
   type SessionInfo,
 } from "#src/features/session/model/session-info.ts";
-
-function remainingTime(reset: number | undefined, now: number) {
-  if (reset === undefined) return "--d --h --m";
-  const minutes = Math.max(0, Math.ceil((reset - now) / 60_000));
-  return `${Math.floor(minutes / 1440)}d ${String(Math.floor(minutes / 60) % 24).padStart(2, "0")}h ${String(minutes % 60).padStart(2, "0")}m`;
-}
 
 function quotaPeriod(label: string | undefined) {
   const period = label?.split(" · ").at(-1) || "—";
@@ -79,18 +74,36 @@ export function UsageInfo({
         >
           <span>{quotaDots(info.remaining)}</span>
         </span>
-        <span id={quotaId} className={styles.details} role="tooltip">
-          <AgentBrand agent={agent} />
-          <span className={styles.period}>{quotaPeriod(info.quotaLabel)}</span>
-          <span className={styles.percent}>
-            {info.remaining === undefined
-              ? "—"
-              : `${Math.round(info.remaining)}%`}
-          </span>
-          <span className={styles.time}>
-            left {remainingTime(info.reset, now)}
-          </span>
-        </span>
+        {open && (
+          <DialogReveal
+            id={quotaId}
+            className={styles.details}
+            contentClassName={styles.content}
+            from="right"
+            role="tooltip"
+          >
+            <AgentBrand agent={agent} />
+            <span className={styles.period}>
+              {quotaPeriod(info.quotaLabel)}
+            </span>
+            <span className={styles.percent}>
+              {info.remaining === undefined
+                ? "—"
+                : `${Math.round(info.remaining)}%`}
+            </span>
+            <span className={styles.time}>
+              left{" "}
+              <DurationDisplay
+                durationMs={
+                  info.reset === undefined
+                    ? undefined
+                    : Math.max(0, info.reset - now)
+                }
+                rounding="ceil"
+              />
+            </span>
+          </DialogReveal>
+        )}
       </span>
       <span
         className="meta-popover context-popover"
