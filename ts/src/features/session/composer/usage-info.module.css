@@ -38,12 +38,7 @@
   right: -10px;
   top: -6px;
   bottom: -6px;
-  display: grid;
-  grid-template-columns: 14px calc(8ch + 11px) calc(4ch + 11px) calc(
-      16ch + 11px
-    );
-  align-items: center;
-  gap: 10px;
+  display: block;
   width: max-content;
   padding: 6px calc(100% + 30px) 6px 10px;
 
@@ -54,20 +49,14 @@
   font-size: 10px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-  visibility: hidden;
-  opacity: 0;
-  clip-path: inset(0 0 0 100% round 6px);
-  transition:
-    opacity 180ms,
-    clip-path 360ms cubic-bezier(0.22, 0.61, 0.36, 1),
-    visibility 360ms;
-  pointer-events: none;
 }
-.quota[data-open="true"] .details {
-  visibility: visible;
-  opacity: 1;
-  clip-path: inset(0 0 0 0 round 6px);
-  pointer-events: auto;
+.content {
+  display: grid;
+  grid-template-columns: 14px calc(8ch + 11px) calc(4ch + 11px) calc(
+      14ch + 11px
+    );
+  align-items: center;
+  gap: 10px;
 }
 .period,
 .time {
@@ -76,11 +65,6 @@
 }
 .percent {
   text-align: right;
-}
-@media (prefers-reduced-motion: reduce) {
-  .details {
-    transition: none;
-  }
 }
 
 .period,
