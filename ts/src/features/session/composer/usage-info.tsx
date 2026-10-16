@@ -10,9 +10,9 @@ import {
 } from "#src/features/session/model/session-info.ts";
 
 function remainingTime(reset: number | undefined, now: number) {
-  if (reset === undefined) return "--:--";
-  const minutes = Math.max(0, Math.ceil((reset - now) / 60_000));
-  return `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
+  if (reset === undefined) return "--:--:--";
+  const seconds = Math.max(0, Math.ceil((reset - now) / 1000));
+  return `${String(Math.floor(seconds / 3600)).padStart(2, "0")}:${String(Math.floor(seconds / 60) % 60).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
 }
 
 function quotaPeriod(label: string | undefined) {
@@ -22,9 +22,9 @@ function quotaPeriod(label: string | undefined) {
       {
         "five hour": "5h",
         five_hour: "5h",
-        "seven day": "7d",
-        seven_day: "7d",
-        weekly: "7d",
+        "seven day": "weekly",
+        seven_day: "weekly",
+        weekly: "weekly",
       } as Record<string, string>
     )[period] ?? period
   );
@@ -77,7 +77,7 @@ export function UsageInfo({
                 })
           }
         >
-          {quotaDots(info.remaining)}
+          <span>{quotaDots(info.remaining)}</span>
         </span>
         <span id={quotaId} className={styles.details} role="tooltip">
           <AgentBrand agent={agent} />
