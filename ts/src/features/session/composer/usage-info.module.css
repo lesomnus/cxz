@@ -105,10 +105,10 @@
 }
 
 .quota[data-quota-level="warning"] {
-  --quota-color: #dfb95a;
+  --quota-color: #9d8245;
 }
 .quota[data-quota-level="critical"] {
-  --quota-color: #ff526d;
+  --quota-color: #b0485b;
 }
 .quota:is([data-quota-level="warning"], [data-quota-level="critical"])
   :is(.graph, .percent) {

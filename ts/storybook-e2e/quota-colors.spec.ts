@@ -29,10 +29,10 @@ for (const theme of ["dark", "light"]) {
         const expected =
           level === "warning"
             ? theme === "dark"
-              ? "rgb(223, 185, 90)"
+              ? "rgb(157, 130, 69)"
               : "rgb(138, 98, 0)"
             : theme === "dark"
-              ? "rgb(255, 82, 109)"
+              ? "rgb(176, 72, 91)"
               : "rgb(197, 46, 72)";
         await expect(graph).toHaveCSS("color", expected);
         await expect(percent).toHaveCSS("color", expected);
@@ -41,7 +41,7 @@ for (const theme of ["dark", "light"]) {
         await page
           .locator(".context-donut")
           .evaluate((el) => getComputedStyle(el).color),
-      ).not.toBe("rgb(255, 82, 109)");
+      ).not.toBe("rgb(176, 72, 91)");
     }
   });
 }
