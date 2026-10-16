@@ -88,11 +88,6 @@ export function UsageInfo({
             <span className={styles.period}>
               {quotaPeriod(info.quotaLabel)}
             </span>
-            <span className={styles.percent}>
-              {info.remaining === undefined
-                ? "—"
-                : `${Math.round(info.remaining)}%`}
-            </span>
             <span className={styles.time}>
               left{" "}
               <DurationDisplay
@@ -103,6 +98,11 @@ export function UsageInfo({
                 }
                 rounding="ceil"
               />
+            </span>
+            <span className={styles.percent}>
+              {info.remaining === undefined
+                ? "—"
+                : `${Math.round(info.remaining)}%`}
             </span>
           </DialogReveal>
         )}
@@ -157,6 +157,9 @@ export function UsageInfo({
             <CompactNumber value={info.contextUsed ?? NaN} />
             <span className={styles.separator}>/</span>
             <CompactNumber value={info.contextWindow ?? NaN} />
+            <span className={styles.percent}>
+              {known ? `${Math.round(ratio * 100)}%` : "—"}
+            </span>
           </DialogReveal>
         )}
       </span>
