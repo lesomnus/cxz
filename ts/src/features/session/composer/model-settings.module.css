@@ -2,8 +2,7 @@
   position: relative;
   isolation: isolate;
   align-items: center;
-  /* Match the SVG's average vertical inset: (20px row + control insets - 14px) / 2. */
-  padding-left: calc(3px + var(--ui-control-inset));
+  padding-left: calc(6px + var(--ui-control-inset));
 }
 .field::before {
   content: "";
@@ -11,7 +10,7 @@
   inset: -2px;
   z-index: -1;
   border-radius: 8px;
-  background: var(--shade-36);
+  background: var(--shade-32);
   opacity: 0;
   pointer-events: none;
 }
@@ -35,4 +34,15 @@
 .icon > svg {
   /* Optical alignment with the x-height of lowercase model/effort names. */
   transform: translateY(1px);
+}
+
+.field:global(.model-field) {
+  --setting-value-width: 14ch;
+}
+.field:global(.effort-field) {
+  --setting-value-width: 7ch;
+}
+.field > :global(.value-menu) {
+  flex: none;
+  width: calc(var(--setting-value-width) + 2 * var(--ui-control-inline-inset));
 }

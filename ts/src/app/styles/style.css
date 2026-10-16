@@ -2238,9 +2238,9 @@ pre {
 }
 .model-info {
   display: grid;
-  grid-template-columns: 160px 80px;
+  grid-template-columns: max-content max-content;
   gap: 8px;
-  flex: 0 0 248px;
+  flex: 0 0 auto;
   min-width: 0;
 }
 .model-info > .setting-field {
