@@ -2,6 +2,8 @@
   position: relative;
   isolation: isolate;
   align-items: center;
+  /* Match the SVG's average vertical inset: (20px row + control insets - 14px) / 2. */
+  padding-left: calc(3px + var(--ui-control-inset));
 }
 .field::before {
   content: "";
@@ -9,7 +11,7 @@
   inset: -2px;
   z-index: -1;
   border-radius: 8px;
-  background: var(--shade-24);
+  background: var(--shade-36);
   opacity: 0;
   pointer-events: none;
 }
@@ -28,4 +30,9 @@
   justify-content: center;
   width: 14px;
   height: 20px;
+}
+
+.icon > svg {
+  /* Optical alignment with the x-height of lowercase model/effort names. */
+  transform: translateY(1px);
 }
