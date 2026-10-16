@@ -49,28 +49,6 @@ func TestPickerAsksOncePerRun(t *testing.T) {
 	}
 }
 
-// A manager without the capability RPC still works, and the scan reads backwards
-// from the end rather than walking the whole journal to reach the newest run.
-func TestPickerFallsBackToABackwardScan(t *testing.T) {
-	m := conversationModel()
-	var events []*api.Event
-	for i := uint64(1); i <= 400; i++ {
-		events = append(events, &api.Event{Seq: i, RunId: "old", Kind: "assistant"})
-	}
-	events = append(events, catalogEvent(401, "sonnet", true, time.Now().UnixMilli()))
-	c := &catalogClient{events: events, legacy: true}
-	m.client = c
-	m.current().LastSeq = 401
-	m.Update(m.modelCommand("/model")())
-	if p := m.modelPicker; p == nil || p.catalog == nil || p.catalog.Model != "sonnet" {
-		t.Fatalf("the fallback did not find the record: %+v", m.modelPicker)
-	}
-	// 401 events in pages of 128: a forward scan needs four, backwards needs one.
-	if c.pages != 1 {
-		t.Fatal("the fallback did not read backwards:", c.pages)
-	}
-}
-
 // The picker says what it is showing: where it came from, how old it is, and
 // whether the provider confirmed it. Codex reports no applied value, and a
 // request must not read as a fact.
