@@ -842,6 +842,8 @@ header strong {
   padding: 0;
 }
 .input-box {
+  --markdown-inline-background: var(--shade-51);
+  --markdown-block-background: var(--shade-24);
   background-color: var(--shade-34);
   border-radius: 8px;
   padding: 10px 12px;
@@ -994,7 +996,7 @@ header strong {
 .markdown pre,
 pre {
   overflow: auto;
-  background: var(--shade-16);
+  background: var(--markdown-block-background, var(--shade-16));
   border-radius: 6px;
   padding: 12px;
   font-size: 0.85rem;
@@ -1002,7 +1004,7 @@ pre {
   margin: 8px 0;
 }
 .markdown code {
-  background: var(--shade-41);
+  background: var(--markdown-inline-background, var(--shade-41));
   padding: 2px 4px;
   border-radius: 4px;
   overflow-wrap: anywhere;
