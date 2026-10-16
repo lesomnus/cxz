@@ -22,12 +22,11 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func TestBrowserRawAttachmentUsesManagerBodyNotRPC(t *testing.T) {
+func TestBrowserRawAttachmentUsesManagerBody(t *testing.T) {
 	root := t.TempDir()
-	native := &attachmentFixture{}
 	g := grpc.NewServer()
 	defer g.Stop()
-	resource.RegisterSessionServiceServer(g, native)
+	resource.RegisterSessionServiceServer(g, &resource.UnimplementedSessionServiceServer{})
 	raw := attachmenthttp.Handler{Uploader: attachmenthttp.UploaderFunc(func(ctx context.Context, in assets.Upload, body io.Reader) (string, error) {
 		if in.RunID != "run" {
 			return "", status.Error(codes.FailedPrecondition, "session run changed")
@@ -78,9 +77,6 @@ func TestBrowserRawAttachmentUsesManagerBodyNotRPC(t *testing.T) {
 	if err != nil || !bytes.Equal(stored, data) {
 		t.Fatal("raw body changed", err)
 	}
-	if native.header != nil {
-		t.Fatal("file bytes were wrapped in Upload RPC")
-	}
 	if w := request(strings.Replace(path, "run=run", "run=stale", 1), c.Origin, true); w.Code != 409 {
 		t.Fatal("run binding changed", w.Code, w.Body)
 	}
@@ -93,7 +89,7 @@ func TestBrowserLogoutCancelsRawUploadBeforePublication(t *testing.T) {
 	started := make(chan struct{})
 	finished := make(chan error, 1)
 	g := grpc.NewServer()
-	resource.RegisterSessionServiceServer(g, &attachmentFixture{})
+	resource.RegisterSessionServiceServer(g, &resource.UnimplementedSessionServiceServer{})
 	defer g.Stop()
 	raw := attachmenthttp.Handler{Uploader: attachmenthttp.UploaderFunc(func(ctx context.Context, in assets.Upload, body io.Reader) (string, error) {
 		path, err := assets.Add(ctx, root, "project", in.SessionID, in.Name, in.Size, &uploadStartedReader{Reader: body, started: started})

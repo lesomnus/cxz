@@ -54,7 +54,6 @@ const (
 	SessionService_Permission_FullMethodName             = "/cxz.SessionService/Permission"
 	SessionService_Send_FullMethodName                   = "/cxz.SessionService/Send"
 	SessionService_Attach_FullMethodName                 = "/cxz.SessionService/Attach"
-	SessionService_Upload_FullMethodName                 = "/cxz.SessionService/Upload"
 	SessionService_Activity_FullMethodName               = "/cxz.SessionService/Activity"
 	SessionService_UpdateAgent_FullMethodName            = "/cxz.SessionService/UpdateAgent"
 	SessionService_Reply_FullMethodName                  = "/cxz.SessionService/Reply"
@@ -155,7 +154,6 @@ type SessionServiceClient interface {
 	Permission(ctx context.Context, in *SessionPermissionRequest, opts ...grpc.CallOption) (*SessionReceipt, error)
 	Send(ctx context.Context, in *SessionSendRequest, opts ...grpc.CallOption) (*SessionReceipt, error)
 	Attach(ctx context.Context, in *SessionAttachRequest, opts ...grpc.CallOption) (*SessionAttachment, error)
-	Upload(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[SessionUploadRequest, SessionAttachment], error)
 	Activity(ctx context.Context, in *SessionActivityRequest, opts ...grpc.CallOption) (*SessionReceipt, error)
 	UpdateAgent(ctx context.Context, in *SessionUpdateRequest, opts ...grpc.CallOption) (*SessionUpdateStatus, error)
 	Reply(ctx context.Context, in *SessionReplyRequest, opts ...grpc.CallOption) (*SessionReceipt, error)
@@ -564,19 +562,6 @@ func (c *sessionServiceClient) Attach(ctx context.Context, in *SessionAttachRequ
 	return out, nil
 }
 
-func (c *sessionServiceClient) Upload(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[SessionUploadRequest, SessionAttachment], error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &SessionService_ServiceDesc.Streams[1], SessionService_Upload_FullMethodName, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &grpc.GenericClientStream[SessionUploadRequest, SessionAttachment]{ClientStream: stream}
-	return x, nil
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type SessionService_UploadClient = grpc.ClientStreamingClient[SessionUploadRequest, SessionAttachment]
-
 func (c *sessionServiceClient) Activity(ctx context.Context, in *SessionActivityRequest, opts ...grpc.CallOption) (*SessionReceipt, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SessionReceipt)
@@ -659,7 +644,7 @@ func (c *sessionServiceClient) Models(ctx context.Context, in *SessionModelsRequ
 
 func (c *sessionServiceClient) Events(ctx context.Context, in *SessionEventsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SessionEvent], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &SessionService_ServiceDesc.Streams[2], SessionService_Events_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &SessionService_ServiceDesc.Streams[1], SessionService_Events_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -678,7 +663,7 @@ type SessionService_EventsClient = grpc.ServerStreamingClient[SessionEvent]
 
 func (c *sessionServiceClient) Search(ctx context.Context, in *SessionSearchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SessionSearchReply], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &SessionService_ServiceDesc.Streams[3], SessionService_Search_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &SessionService_ServiceDesc.Streams[2], SessionService_Search_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -717,7 +702,7 @@ func (c *sessionServiceClient) AuxStatus(ctx context.Context, in *AuxStatusReque
 
 func (c *sessionServiceClient) AuxEvents(ctx context.Context, in *AuxStatusRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[AuxState], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &SessionService_ServiceDesc.Streams[4], SessionService_AuxEvents_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &SessionService_ServiceDesc.Streams[3], SessionService_AuxEvents_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -873,7 +858,6 @@ type SessionServiceServer interface {
 	Permission(context.Context, *SessionPermissionRequest) (*SessionReceipt, error)
 	Send(context.Context, *SessionSendRequest) (*SessionReceipt, error)
 	Attach(context.Context, *SessionAttachRequest) (*SessionAttachment, error)
-	Upload(grpc.ClientStreamingServer[SessionUploadRequest, SessionAttachment]) error
 	Activity(context.Context, *SessionActivityRequest) (*SessionReceipt, error)
 	UpdateAgent(context.Context, *SessionUpdateRequest) (*SessionUpdateStatus, error)
 	Reply(context.Context, *SessionReplyRequest) (*SessionReceipt, error)
@@ -1027,9 +1011,6 @@ func (UnimplementedSessionServiceServer) Send(context.Context, *SessionSendReque
 }
 func (UnimplementedSessionServiceServer) Attach(context.Context, *SessionAttachRequest) (*SessionAttachment, error) {
 	return nil, status.Error(codes.Unimplemented, "method Attach not implemented")
-}
-func (UnimplementedSessionServiceServer) Upload(grpc.ClientStreamingServer[SessionUploadRequest, SessionAttachment]) error {
-	return status.Error(codes.Unimplemented, "method Upload not implemented")
 }
 func (UnimplementedSessionServiceServer) Activity(context.Context, *SessionActivityRequest) (*SessionReceipt, error) {
 	return nil, status.Error(codes.Unimplemented, "method Activity not implemented")
@@ -1732,13 +1713,6 @@ func _SessionService_Attach_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SessionService_Upload_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(SessionServiceServer).Upload(&grpc.GenericServerStream[SessionUploadRequest, SessionAttachment]{ServerStream: stream})
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type SessionService_UploadServer = grpc.ClientStreamingServer[SessionUploadRequest, SessionAttachment]
-
 func _SessionService_Activity_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SessionActivityRequest)
 	if err := dec(in); err != nil {
@@ -2273,11 +2247,6 @@ var SessionService_ServiceDesc = grpc.ServiceDesc{
 			StreamName:    "Watch",
 			Handler:       _SessionService_Watch_Handler,
 			ServerStreams: true,
-		},
-		{
-			StreamName:    "Upload",
-			Handler:       _SessionService_Upload_Handler,
-			ClientStreams: true,
 		},
 		{
 			StreamName:    "Events",
