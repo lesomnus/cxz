@@ -1,11 +1,10 @@
-import { DialogReveal, DurationDisplay } from "@lesomnus/nox";
+import { CompactNumber, DialogReveal, DurationDisplay } from "@lesomnus/nox";
 import { useEffect, useId, useState } from "react";
 import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
 import styles from "./usage-info.module.css";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import {
-  formatTokens,
   quotaDots,
   type SessionInfo,
 } from "#src/features/session/model/session-info.ts";
@@ -38,6 +37,9 @@ export function UsageInfo({
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
   const open = hovered || focused;
+  const [contextHovered, setContextHovered] = useState(false);
+  const [contextFocused, setContextFocused] = useState(false);
+  const contextOpen = contextHovered || contextFocused;
   const [now, setNow] = useState(Date.now);
   useEffect(() => {
     if (!open) return;
@@ -106,12 +108,17 @@ export function UsageInfo({
         )}
       </span>
       <span
-        className="meta-popover context-popover"
+        className={`meta-popover context-popover ${styles.context}`}
+        data-open={contextOpen}
+        onMouseEnter={() => setContextHovered(true)}
+        onMouseLeave={() => setContextHovered(false)}
+        onFocus={() => setContextFocused(true)}
+        onBlur={() => setContextFocused(false)}
         tabIndex={0}
         aria-describedby={contextId}
       >
         <svg
-          className="context-donut"
+          className={`context-donut ${styles.donut}`}
           width="18"
           height="18"
           viewBox="0 0 20 20"
@@ -139,9 +146,19 @@ export function UsageInfo({
             transform="rotate(-90 10 10)"
           />
         </svg>
-        <span id={contextId} className="meta-tooltip" role="tooltip">
-          {formatTokens(info.contextUsed)}/{formatTokens(info.contextWindow)}
-        </span>
+        {contextOpen && (
+          <DialogReveal
+            id={contextId}
+            className={styles.details}
+            contentClassName={styles.contextContent}
+            from="right"
+            role="tooltip"
+          >
+            <CompactNumber value={info.contextUsed ?? NaN} />
+            <span className={styles.separator}>/</span>
+            <CompactNumber value={info.contextWindow ?? NaN} />
+          </DialogReveal>
+        )}
       </span>
     </div>
   );
