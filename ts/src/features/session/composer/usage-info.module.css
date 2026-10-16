@@ -1,0 +1,57 @@
+.quota {
+  isolation: isolate;
+}
+.graph {
+  position: relative;
+  z-index: 5;
+  width: 8ch;
+}
+.details {
+  --agent-logo-size: 16px;
+  position: absolute;
+  z-index: 4;
+  right: -6px;
+  top: -6px;
+  bottom: -6px;
+  display: grid;
+  grid-template-columns: 16px 8ch 4ch 12ch;
+  align-items: center;
+  gap: 10px;
+  width: max-content;
+  padding: 6px calc(100% + 16px) 6px 10px;
+  border: 1px solid var(--shade-60);
+  border-radius: 6px;
+  background: var(--shade-36);
+  color: var(--shade-237);
+  font-family: var(--ui-font-mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  visibility: hidden;
+  opacity: 0;
+  transform: translateX(4px);
+  transition:
+    opacity 160ms,
+    transform 160ms,
+    visibility 160ms;
+  pointer-events: none;
+}
+.quota[data-open="true"] .details {
+  visibility: visible;
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+.period,
+.time {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.percent {
+  text-align: right;
+}
+@media (prefers-reduced-motion: reduce) {
+  .details {
+    transition: none;
+  }
+}

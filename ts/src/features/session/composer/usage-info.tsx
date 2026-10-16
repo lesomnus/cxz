@@ -1,14 +1,55 @@
-import { t, currentLocale } from "#src/shared/i18n/i18n.ts";
+import { useEffect, useId, useState } from "react";
+import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
+import styles from "./usage-info.module.css";
+import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import {
   formatTokens,
-  formatReset,
   quotaDots,
   type SessionInfo,
 } from "#src/features/session/model/session-info.ts";
 
-export function UsageInfo({ info }: { info: SessionInfo }) {
+function remainingTime(reset: number | undefined, now: number) {
+  if (reset === undefined) return "--:--";
+  const minutes = Math.max(0, Math.ceil((reset - now) / 60_000));
+  return `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
+}
+
+function quotaPeriod(label: string | undefined) {
+  const period = label?.split(" · ").at(-1) || "—";
+  return (
+    (
+      {
+        "five hour": "5h",
+        five_hour: "5h",
+        "seven day": "7d",
+        seven_day: "7d",
+        weekly: "7d",
+      } as Record<string, string>
+    )[period] ?? period
+  );
+}
+
+export function UsageInfo({
+  info,
+  agent,
+}: {
+  info: SessionInfo;
+  agent: string;
+}) {
   useLocale();
+  const quotaId = useId();
+  const contextId = useId();
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const open = hovered || focused;
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => {
+    if (!open) return;
+    setNow(Date.now());
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [open]);
   const known = info.contextUsed !== undefined && !!info.contextWindow;
   const ratio = known
     ? Math.min(1, info.contextUsed! / info.contextWindow!)
@@ -16,12 +57,17 @@ export function UsageInfo({ info }: { info: SessionInfo }) {
   return (
     <div className="usage-info">
       <span
-        className="meta-popover"
+        className={`meta-popover ${styles.quota}`}
+        data-open={open}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
         tabIndex={0}
-        aria-describedby="quota-popover"
+        aria-describedby={quotaId}
       >
         <span
-          className="quota-dots"
+          className={`quota-dots ${styles.graph}`}
           role="img"
           aria-label={
             info.remaining === undefined
@@ -33,24 +79,23 @@ export function UsageInfo({ info }: { info: SessionInfo }) {
         >
           {quotaDots(info.remaining)}
         </span>
-        <span id="quota-popover" className="meta-tooltip" role="tooltip">
-          {info.quotaLabel || t("Usage")} ·{" "}
-          {info.remaining === undefined
-            ? "—"
-            : t("{percent}% remaining", {
-                percent: Math.round(info.remaining),
-              })}
-          <br />
-          {t("Reset")} {formatReset(info.reset)}
-          {info.reset
-            ? ` · ${new Date(info.reset).toLocaleDateString(currentLocale())}`
-            : ""}
+        <span id={quotaId} className={styles.details} role="tooltip">
+          <AgentBrand agent={agent} />
+          <span className={styles.period}>{quotaPeriod(info.quotaLabel)}</span>
+          <span className={styles.percent}>
+            {info.remaining === undefined
+              ? "—"
+              : `${Math.round(info.remaining)}%`}
+          </span>
+          <span className={styles.time}>
+            left {remainingTime(info.reset, now)}
+          </span>
         </span>
       </span>
       <span
         className="meta-popover context-popover"
         tabIndex={0}
-        aria-describedby="context-popover"
+        aria-describedby={contextId}
       >
         <svg
           className="context-donut"
@@ -81,7 +126,7 @@ export function UsageInfo({ info }: { info: SessionInfo }) {
             transform="rotate(-90 10 10)"
           />
         </svg>
-        <span id="context-popover" className="meta-tooltip" role="tooltip">
+        <span id={contextId} className="meta-tooltip" role="tooltip">
           {formatTokens(info.contextUsed)}/{formatTokens(info.contextWindow)}
         </span>
       </span>
