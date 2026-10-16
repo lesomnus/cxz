@@ -56,6 +56,15 @@ export function UsageInfo({
       <span
         className={`meta-popover ${styles.quota}`}
         data-open={open}
+        data-quota-level={
+          info.remaining === undefined
+            ? "unknown"
+            : info.remaining < 10
+              ? "critical"
+              : info.remaining <= 30
+                ? "warning"
+                : "normal"
+        }
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         onFocus={() => setFocused(true)}
