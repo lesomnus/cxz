@@ -253,7 +253,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
     // Resolve just the prompt preceding the cached window, retaining one event.
     // This read-only lookup does not prepend rows or change scrollbar geometry.
     void (async () => {
-      if (history.mode === "summary") {
+      {
         const page = await c.sessions.transcript(
           {
             ref: ref(id),
@@ -963,7 +963,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
             completion={completions.get(e.seq.toString())}
             summary={summaries.get(e.seq.toString())}
             activitySource={snapshotSource(transcript.activities.get(e.seq))}
-            loadDetails={history.mode === "summary" ? loadDetails : undefined}
+            loadDetails={loadDetails}
           />
         )}
         notice={
