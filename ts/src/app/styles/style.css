@@ -1154,8 +1154,9 @@ pre {
   height: calc(var(--composer-toolbar-height) + var(--composer-border-width));
   border-radius: var(--wrapper-radius) var(--wrapper-radius) 0 0;
   z-index: 0;
-  overflow: clip;
-  contain: paint;
+  /* The blurred orbs extend above and beside the toolbar. Keep their
+     paint overflow visible; the editor surface covers the glow below. */
+  overflow: visible;
   pointer-events: none;
 }
 .composer-aurora {
