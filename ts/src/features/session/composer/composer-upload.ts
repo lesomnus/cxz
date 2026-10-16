@@ -1,5 +1,4 @@
 import type { Connection } from "#src/shared/api/connection.ts";
-import { ref } from "#src/shared/api/connection.ts";
 
 export type UploadProgress = (loaded: number, total: number) => void;
 export type UploadFile = (
@@ -8,6 +7,22 @@ export type UploadFile = (
   onProgress?: UploadProgress,
 ) => Promise<string>;
 export const MAX_UPLOAD_BYTES = 1024 * 1024 * 1024;
+
+/**
+ * Transfer is the one thing an upload needs that differs by where the server
+ * is: a request with a body, and the answer to it. Every caller above this
+ * builds the same request and reads the same reply.
+ *
+ * The sandbox has one because a page holding its own server has no socket to
+ * POST to -- not because its uploads work differently. It carries the body to
+ * the same handler and returns what that handler said.
+ */
+export type Transfer = (
+  url: URL,
+  file: File,
+  signal: AbortSignal,
+  onProgress?: UploadProgress,
+) => Promise<string>;
 
 export async function uploadFile(
   c: Connection,
@@ -20,43 +35,48 @@ export async function uploadFile(
   signal.throwIfAborted();
   if (file.size > MAX_UPLOAD_BYTES)
     throw new Error("Files are limited to 1 GiB.");
-  let path: string;
-  if (c.inProcess) {
-    async function* messages() {
-      yield {
-        ref: ref(sessionId),
-        runId,
-        name: file.name,
-        size: BigInt(file.size),
-      };
-      for (let offset = 0; offset < file.size; offset += 256 * 1024) {
-        signal.throwIfAborted();
-        const content = new Uint8Array(
-          await file.slice(offset, offset + 256 * 1024).arrayBuffer(),
-        );
-        yield {
-          content,
-        };
-        onProgress?.(offset + content.length, file.size);
-      }
-    }
-    path = (await c.sessions.upload(messages(), { signal, timeoutMs: 600_000 }))
-      .path;
-  } else {
-    const url = new URL(
-      `/attachments/${encodeURIComponent(sessionId)}`,
-      c.baseUrl,
-    );
-    url.search = new URLSearchParams({
-      run: runId,
-      name: file.name,
-      size: String(file.size),
-    }).toString();
-    path = await uploadHttp(url, file, signal, onProgress);
-  }
+  const url = new URL(
+    `/attachments/${encodeURIComponent(sessionId)}`,
+    c.baseUrl,
+  );
+  url.search = new URLSearchParams({
+    run: runId,
+    name: file.name,
+    size: String(file.size),
+  }).toString();
+  const path = await (c.transfer ?? uploadHttp)(url, file, signal, onProgress);
   if (typeof path !== "string" || !path.startsWith("/"))
     throw new Error("Upload completed without a file path.");
   return path;
+}
+
+/**
+ * accepted reads one upload's reply, whichever transfer carried it. The reply
+ * is the handler's, so it is the same shape in the sandbox as on a socket: a
+ * JSON path on success, and on failure a JSON message or whatever text the
+ * status came with.
+ */
+export function accepted(
+  status: number,
+  contentType: string | null,
+  text: string,
+): string {
+  let body: { path?: string; message?: string } | undefined;
+  try {
+    body = JSON.parse(text);
+  } catch {
+    // Non-JSON failures still use the HTTP response's message below.
+  }
+  if (status < 200 || status >= 300) {
+    const message = contentType?.includes("application/json")
+      ? body?.message
+      : text.trim();
+    throw new Error(
+      typeof message === "string" && message ? message : "Upload failed.",
+    );
+  }
+  // The caller validates the acknowledgement, including missing paths.
+  return body?.path as string;
 }
 
 // Keep the existing raw HTTP body and same-origin cookies. XHR exposes actual
@@ -92,28 +112,19 @@ function uploadHttp(
       if (event.lengthComputable) onProgress?.(event.loaded, event.total);
     };
     request.onload = () => {
-      let response: { path?: string; message?: string } | undefined;
+      let path: string;
       try {
-        response = JSON.parse(request.responseText);
-      } catch {
-        // Non-JSON failures still use the HTTP response's message below.
-      }
-      if (request.status < 200 || request.status >= 300) {
-        const message = request
-          .getResponseHeader("Content-Type")
-          ?.includes("application/json")
-          ? response?.message
-          : request.responseText.trim();
-        fail(
-          new Error(
-            typeof message === "string" && message ? message : "Upload failed.",
-          ),
+        path = accepted(
+          request.status,
+          request.getResponseHeader("Content-Type"),
+          request.responseText,
         );
+      } catch (error) {
+        fail(error);
         return;
       }
       cleanup();
-      // The caller validates the acknowledgement, including missing paths.
-      resolve(response?.path as string);
+      resolve(path);
     };
     request.onerror = () => fail(new Error("Upload failed."));
     request.onabort = () =>
