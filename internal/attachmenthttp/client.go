@@ -21,8 +21,13 @@ import (
 )
 
 type Client struct {
-	HTTP      *http.Client
-	Origin    string
+	HTTP   *http.Client
+	Origin string
+	// Header is what this link authenticates with, when the link does not
+	// authenticate itself. A relay on the plaintext surface reads the same
+	// `Authorization: Bearer` that link's calls carry; mutual TLS presents a
+	// certificate in the handshake and leaves this empty.
+	Header    http.Header
 	supported atomic.Bool
 	mu        sync.Mutex
 	active    map[*http.Request]context.CancelFunc
@@ -129,6 +134,12 @@ func (c *Client) Close() {
 func (c *Client) do(r *http.Request) (*http.Response, error) {
 	ctx, cancel := context.WithCancel(r.Context())
 	request := r.Clone(ctx)
+	// Set here rather than per call site, so discovery and the upload present
+	// the same credential: a probe that is accepted and a POST that is not
+	// would read as an endpoint that does not exist.
+	for name, values := range c.Header {
+		request.Header[name] = values
+	}
 	if body, ok := r.Body.(*uploadBody); ok {
 		body.ctx = ctx
 	}

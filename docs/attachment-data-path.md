@@ -11,17 +11,20 @@ flowchart LR
   Browser -->|raw body, browser cookie| Gateway
   Gateway -->|raw HTTP, private web.sock| Manager
   TUI -->|raw HTTP, local or SSH bridge| Manager
+  TUI -->|raw HTTP, token or client certificate| Relay[TCP / mTLS relay]
+  Relay -->|raw HTTP, private web.sock| Manager
   Manager -->|lifecycle checks, io.Reader| CAS[flob CAS and immutable export]
-  Compatibility[Older Manager / TCP / mTLS / WASM] -->|Session.Upload| Manager
+  Compatibility[Older Manager / WASM] -->|Session.Upload| Manager
 ```
 
 `HEAD /attachments/` on the private Manager listener advertises
 `Cxz-Attachment-Protocol: 1`. `POST /attachments/{runtime-id}` uses `run`, `name`
-and `size` query parameters and returns `{"path":"/cxz/assets/..."}`. Metadata
-and actual EOF are checked independently. TUI requests use chunked HTTP so an
+and `size` query parameters and returns `{"path":"/cxz/assets/..."}`. A relay
+serves the same two on its own listener, beside the calls, and forwards them to
+the Manager's socket. Metadata and actual EOF are checked independently. TUI requests use chunked HTTP so an
 excess source byte cannot be silently omitted by a fixed Content-Length before
 storage decides whether to publish. Browser File bodies retain their native
-Content-Length. Limits and filename rules live in `internal/assets/store.go`.
+Content-Length. Limits and filename rules live in `internal/assets/assets.go`.
 
 Storage consumes the same reader in both implementations. The lifecycle layer
 resolves the session while holding the existing transition lock; the runtime
@@ -44,15 +47,28 @@ keep their existing semantics.
 | Host-local TUI / installed Manager | Private socket, or the existing authenticated Docker exec bridge |
 | Explicit conventional Unix daemon socket | Neighboring private Connect socket |
 | SSH TUI | Same SSH identity, binary and state, through `_connect-http` |
-| TCP or mTLS relay, including enrolled SSH using mTLS | Existing authenticated gRPC Upload |
+| TCP relay | The relay's own listener, with the `Authorization: Bearer` its calls carry |
+| mTLS relay, including enrolled SSH using mTLS | The relay's own listener, authorized by the same handshake |
 | Manager without raw endpoint | Existing gRPC Upload |
-| In-process WASM sandbox | Existing in-process Upload |
+| In-process WASM sandbox | The same handler, over the worker's message channel |
 
-Relays currently forward native gRPC and do not advertise raw HTTP. The client
-does not infer another port, obtain a new credential or unexpectedly open SSH
-after choosing an enrolled mTLS connection. Adding authenticated raw relay
-multiplexing is a separate transport change; preserving the RPC adapter is the
-rollout decision here.
+A relay carries bodies on the one address and with the one credential its calls
+use. Both are HTTP/2, so the route is the only addition: `/attachments/` is
+forwarded to the Manager's socket and everything else remains the transparent
+gRPC proxy, which still passes through methods the relay does not know. There is
+no second port, and no tunnel RPC -- wrapping a body in protobuf messages again
+is the cost this exists to remove. The client does not infer another port,
+obtain a new credential or unexpectedly open SSH after choosing an enrolled mTLS
+connection; without the connection's credential there is no raw client at all,
+and the connection falls back to RPC.
+
+On the plaintext surface the token travels as the header its calls already
+travel in, so there is no second credential to manage and nothing new is
+exposed. On mTLS there is nothing for the route to check that the handshake has
+not already refused: a request that reaches a handler presented a certificate
+this installation signed, has not revoked, and issued for a client rather than
+for the relay. Either way authorization happens before the body is read, so a
+refused upload does not first cost the transfer.
 
 Capability discovery happens before consuming upload bytes. A missing endpoint
 or absent private socket can select compatibility; authentication failures and
@@ -65,7 +81,9 @@ source ownership with the caller.
 
 Updating the UI alone does not update the Manager storage endpoint. Update both
 Manager and web gateway to use the raw browser path; newer clients and gateways
-retain compatibility with a Manager that still exposes only Upload.
+retain compatibility with a Manager that still exposes only Upload. A relay that
+has not been updated serves `/` and not `/attachments/`, which its clients
+discover through the probe and answer by using RPC.
 
 ## Measurement
 

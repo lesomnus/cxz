@@ -406,6 +406,17 @@ func verifyChain(roots *x509.CertPool, usage x509.ExtKeyUsage, revoked func() ma
 // ClientCredentials presents this client's certificate and accepts only the
 // relay of the installation that signed it.
 func ClientCredentials(certPEM, keyPEM, caPEM []byte) (credentials.TransportCredentials, error) {
+	c, err := ClientTLS(certPEM, keyPEM, caPEM)
+	if err != nil {
+		return nil, err
+	}
+	return credentials.NewTLS(c), nil
+}
+
+// ClientTLS is the acceptance [ClientCredentials] wraps, for a caller that
+// speaks HTTP over the link rather than gRPC. A relay carries both, and they
+// have to accept the same peers for the same reasons.
+func ClientTLS(certPEM, keyPEM, caPEM []byte) (*tls.Config, error) {
 	identity, err := tls.X509KeyPair(certPEM, keyPEM)
 	if err != nil {
 		return nil, fmt.Errorf("client identity: %w", err)
@@ -414,7 +425,7 @@ func ClientCredentials(certPEM, keyPEM, caPEM []byte) (credentials.TransportCred
 	if err != nil {
 		return nil, err
 	}
-	return credentials.NewTLS(&tls.Config{
+	return &tls.Config{
 		Certificates: []tls.Certificate{identity},
 		MinVersion:   tls.VersionTLS13,
 		// Name verification is replaced, not skipped: VerifyPeerCertificate below
@@ -422,12 +433,23 @@ func ClientCredentials(certPEM, keyPEM, caPEM []byte) (credentials.TransportCred
 		// hostname match would be.
 		InsecureSkipVerify:    true,
 		VerifyPeerCertificate: verifyChain(roots, x509.ExtKeyUsageServerAuth, nil),
-	}), nil
+	}, nil
 }
 
 // ServerCredentials is the relay's side. The revocation list is read per
 // handshake, so a revoked client stops being accepted without a restart.
 func ServerCredentials(dir string) (credentials.TransportCredentials, error) {
+	c, err := ServerTLS(dir)
+	if err != nil {
+		return nil, err
+	}
+	return credentials.NewTLS(c), nil
+}
+
+// ServerTLS is the acceptance [ServerCredentials] wraps. A relay serving its
+// calls and its file bodies on one listener has one handshake to accept them
+// both with, and this is it.
+func ServerTLS(dir string) (*tls.Config, error) {
 	identity, err := tls.LoadX509KeyPair(filepath.Join(dir, "tls.crt"), filepath.Join(dir, "tls.key"))
 	if err != nil {
 		return nil, fmt.Errorf("relay identity: %w", err)
@@ -440,12 +462,12 @@ func ServerCredentials(dir string) (credentials.TransportCredentials, error) {
 	if err != nil {
 		return nil, err
 	}
-	return credentials.NewTLS(&tls.Config{
+	return &tls.Config{
 		Certificates:          []tls.Certificate{identity},
 		MinVersion:            tls.VersionTLS13,
 		ClientAuth:            tls.RequireAnyClientCert,
 		VerifyPeerCertificate: verifyChain(roots, x509.ExtKeyUsageClientAuth, func() map[string]bool { list, _ := Revoked(dir); return list }),
-	}), nil
+	}, nil
 }
 
 // Expiry reports when a stored client certificate stops being accepted, so a

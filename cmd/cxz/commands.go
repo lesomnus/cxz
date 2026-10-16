@@ -83,7 +83,7 @@ func withClient(fn clientFunc) xli.Handler {
 			return err
 		}
 		defer conn.Close()
-		client := resourceclient.New(conn, transport.AttachmentClient(root, transport.Endpoint{}))
+		client := resourceclient.New(conn, transport.AttachmentClient(root, transport.Endpoint{}, transport.Credential{}))
 		defer client.Close()
 		return fn(ctx, client, c)
 	})

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"net/http"
 	"slices"
 
 	"google.golang.org/grpc"
@@ -144,11 +145,15 @@ func Expose(ctx context.Context, root, endpoint, token string, ready io.Writer) 
 	}
 	defer ln.Close()
 	g := authenticatedProxy(conn, token)
+	server := relayServer(relayHandler(g, root, func(r *http.Request) error {
+		return RequireTokenHeader(r.Header, token)
+	}), true)
 	done := make(chan struct{})
 	defer close(done)
 	go func() {
 		select {
 		case <-ctx.Done():
+			_ = server.Close()
 			g.Stop()
 		case <-done:
 		}
@@ -156,8 +161,8 @@ func Expose(ctx context.Context, root, endpoint, token string, ready io.Writer) 
 	if ready != nil {
 		fmt.Fprintf(ready, "cxz remote listener: tcp://%s (token required)\n", ln.Addr())
 	}
-	err = g.Serve(ln)
-	if ctx.Err() != nil {
+	err = server.Serve(ln)
+	if ctx.Err() != nil || err == http.ErrServerClosed {
 		return nil
 	}
 	return err
