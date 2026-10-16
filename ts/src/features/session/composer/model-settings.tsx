@@ -128,7 +128,7 @@ export function ModelSettings({
                 muted: value === "default",
               }))}
               muted={value === "default"}
-              minMenuWidth={kind === "model" ? 240 : 140}
+              minMenuWidth={kind === "model" ? 180 : 140}
               disabled={disabled}
               disabledReason={
                 !values.length
