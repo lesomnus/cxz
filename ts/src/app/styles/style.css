@@ -1151,7 +1151,11 @@ pre {
   top: calc(-1 * var(--composer-border-width));
   left: calc(-1 * var(--composer-border-width));
   right: calc(-1 * var(--composer-border-width));
-  height: calc(var(--composer-toolbar-height) + var(--composer-border-width));
+  /* Continue behind the editor's rounded top corners. The opaque editor
+     covers the center; the exposed toolbar shoulders retain their glow. */
+  height: calc(
+    var(--composer-toolbar-height) + var(--composer-radius) + var(--composer-border-width)
+  );
   border-radius: var(--wrapper-radius) var(--wrapper-radius) 0 0;
   z-index: 0;
   overflow: clip;
