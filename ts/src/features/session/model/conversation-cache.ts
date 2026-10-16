@@ -363,6 +363,9 @@ export class CachedConversation {
   }
   private async connect() {
     if (this.stopped || this.paused) return;
+    // Retire the previous attempt here rather than when it ended, so its last
+    // frames are applied and its loops do not outlive it.
+    this.controller?.abort();
     const request = new AbortController();
     this.controller = request;
     const signal = request.signal;
@@ -509,7 +512,13 @@ export class CachedConversation {
       // answer, which is the point -- this client used to reduce records into
       // rows itself, and so did the TUI, over two shapes that had to agree.
       // See cxz#155.
-      await Promise.all([
+      // Raced rather than awaited together: a conversation with one dead stream
+      // is a broken conversation, so whichever ends first reconnects both.
+      // Awaiting both would mean a dead Events is never noticed while Rows is
+      // still open. The surviving stream is not cancelled here -- the next
+      // connect retires it -- because frames already in flight are worth
+      // applying, and a reader that drops them shows less than it was sent.
+      await Promise.race([
         (async () => {
           for await (const e of this.client.sessions.events(
             {

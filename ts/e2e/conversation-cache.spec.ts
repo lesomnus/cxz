@@ -54,7 +54,8 @@ test("switching views retains one native stream and returns cached offscreen res
     status: { runId: "run", state: "idle", lastSeq: "1" },
   }));
   const histories: string[] = [],
-    streams: { id: string; after: string }[] = [];
+    streams: { id: string; after: string }[] = [],
+    rowStreams: { id: string; after: string }[] = [];
   await page.route("**/cxz.SessionService/*", async (route) => {
     const request = route.request(),
       method = new URL(request.url()).pathname.split("/").at(-1);
@@ -120,6 +121,34 @@ test("switching views retains one native stream and returns cached offscreen res
         body: frames([{ summaries }]),
       });
     }
+    // Rows is where a response arrives now. The record stream still carries
+    // what the session is doing, so a live answer needs both: the record moves
+    // the cursor, the row is what is read.
+    if (method === "Rows") {
+      rowStreams.push({ id, after: q.afterUpdated ?? "0" });
+      if (id === "alpha" && q.afterUpdated === "1") {
+        await held.promise;
+        const answer = {
+          seq: "2",
+          runId: "run",
+          kind: "assistant",
+          text: "Response produced while beta is open",
+        };
+        return route.fulfill({
+          contentType: "application/connect+json",
+          body: frames([
+            { event: answer, updated: "2" },
+            // The completing record republishes the response row rather than
+            // adding one of its own.
+            { event: answer, updated: "3" },
+          ]),
+        });
+      }
+      return route.fulfill({
+        contentType: "application/connect+json",
+        body: frames([]),
+      });
+    }
     if (method === "Events") {
       streams.push({ id, after: q.afterSeq ?? "0" });
       if (id === "alpha" && q.afterSeq === "1") {
@@ -128,12 +157,7 @@ test("switching views retains one native stream and returns cached offscreen res
         return route.fulfill({
           contentType: "application/connect+json",
           body: frames([
-            {
-              seq: "2",
-              runId: "run",
-              kind: "assistant",
-              text: "Response produced while beta is open",
-            },
+            { seq: "2", runId: "run", kind: "assistant", text: "" },
             { seq: "3", runId: "run", kind: "turn_end", text: "completed" },
           ]),
         });
@@ -208,6 +232,9 @@ test("switching views retains one native stream and returns cached offscreen res
     expect(histories.filter((id) => id === "beta")).toHaveLength(1);
     expect(
       streams.filter((s) => s.id === "alpha" && s.after === "1"),
+    ).toHaveLength(1);
+    expect(
+      rowStreams.filter((s) => s.id === "alpha" && s.after === "1"),
     ).toHaveLength(1);
     await expect(
       alpha.getByRole("img", { name: "Unread response", exact: true }),

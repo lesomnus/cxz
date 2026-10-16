@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/core"
@@ -13,6 +14,7 @@ import (
 	"github.com/lesomnus/cxz/resource"
 	"github.com/lesomnus/payday/config"
 	_ "github.com/lesomnus/payday/config/dbsqlite3"
+	"google.golang.org/grpc"
 )
 
 func decodeReplay(b []byte) (*api.Event, error) {
@@ -123,4 +125,38 @@ func (f *browserFixture) EventDetails(ctx context.Context, r *resource.SessionEv
 		out.SetEvents(append(out.GetEvents(), eventwire.ToResource(e)))
 	}
 	return out, nil
+}
+
+// Rows is Transcript arriving, from the same projection, so the browser
+// fixture answers a reading client the way a runtime does. Rebuilt per read
+// rather than kept: a fixture's conversation is small, and one source of rows
+// is the property worth preserving here.
+func (f *browserFixture) Rows(r *resource.SessionRowsRequest, s grpc.ServerStreamingServer[resource.SessionRow]) error {
+	if _, err := f.History(s.Context(), resource.SessionEventsRequest_builder{}.Build()); err != nil {
+		return err
+	}
+	cursor := r.GetAfterUpdated()
+	ticker := time.NewTicker(50 * time.Millisecond)
+	defer ticker.Stop()
+	for {
+		f.mu.Lock()
+		native := make([]*api.Event, 0, len(f.events))
+		for _, e := range f.events {
+			native = append(native, eventwire.FromResource("session", e))
+		}
+		f.mu.Unlock()
+		for _, v := range transcripthistory.VersionsFromEvents(native, cursor) {
+			out := resource.SessionRow_builder{Updated: &v.Updated}.Build()
+			out.SetEvent(eventwire.ToResource(v.Event))
+			if err := s.Send(out); err != nil {
+				return err
+			}
+			cursor = v.Updated
+		}
+		select {
+		case <-s.Context().Done():
+			return s.Context().Err()
+		case <-ticker.C:
+		}
+	}
 }
