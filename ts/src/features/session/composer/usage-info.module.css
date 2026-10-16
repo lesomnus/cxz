@@ -1,3 +1,6 @@
+.usage:global(.usage-info) {
+  gap: 18px;
+}
 .quota {
   isolation: isolate;
 }
@@ -29,41 +32,41 @@
   opacity: 1;
 }
 .details {
-  --agent-logo-size: 16px;
+  --agent-logo-size: 14px;
   position: absolute;
   z-index: 4;
-  right: -4px;
+  right: -10px;
   top: -6px;
   bottom: -6px;
   display: grid;
-  grid-template-columns: 16px calc(8ch + 11px) calc(4ch + 11px) calc(
-      14ch + 11px
+  grid-template-columns: 14px calc(8ch + 11px) calc(4ch + 11px) calc(
+      16ch + 11px
     );
   align-items: center;
   gap: 10px;
   width: max-content;
-  padding: 6px calc(100% + 24px) 6px 10px;
+  padding: 6px calc(100% + 30px) 6px 10px;
 
   border-radius: 6px;
   background: var(--shade-36);
   color: var(--shade-237);
   font-family: var(--ui-font-mono);
-  font-size: 11px;
+  font-size: 10px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   visibility: hidden;
   opacity: 0;
-  transform: translateX(-4px);
+  clip-path: inset(0 0 0 100% round 6px);
   transition:
-    opacity 160ms,
-    transform 160ms,
-    visibility 160ms;
+    opacity 180ms,
+    clip-path 360ms cubic-bezier(0.22, 0.61, 0.36, 1),
+    visibility 360ms;
   pointer-events: none;
 }
 .quota[data-open="true"] .details {
   visibility: visible;
   opacity: 1;
-  transform: none;
+  clip-path: inset(0 0 0 0 round 6px);
   pointer-events: auto;
 }
 .period,
@@ -85,4 +88,8 @@
 .time {
   border-left: 1px solid var(--shade-65);
   padding-left: 10px;
+}
+
+.period {
+  text-align: center;
 }

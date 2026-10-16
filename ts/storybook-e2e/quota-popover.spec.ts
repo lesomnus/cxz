@@ -14,8 +14,12 @@ test("quota hover opens left, covers the stationary graph and has stable columns
     await graph.hover();
     const tooltip = page.getByRole("tooltip");
     await expect(tooltip).toBeVisible();
-    await expect(tooltip).toContainText(/left (\d{2,3}:\d{2}:\d{2}|--:--:--)/);
+    await expect(tooltip).toContainText(
+      /left (\d+d \d{2}h \d{2}m|--d --h --m)/,
+    );
     await expect(tooltip).toHaveCSS("opacity", "1");
+    await expect(tooltip).toHaveCSS("clip-path", "inset(0px round 6px)");
+    await expect(tooltip).toHaveCSS("font-size", "10px");
     await expect(tooltip).toHaveCSS("border-top-width", "0px");
     if (story === "weekly") await expect(tooltip).toContainText("weekly");
     const glyphs = await graph.locator("span").boundingBox();
@@ -23,6 +27,7 @@ test("quota hover opens left, covers the stationary graph and has stable columns
     expect(glyphs!.x + glyphs!.width).toBeLessThan(donut.x);
     const box = (await tooltip.boundingBox())!;
     expect(box.x + box.width).toBeLessThan(donut.x);
+    expect(box.x + box.width - before.x - before.width).toBeCloseTo(10, 0);
     expect(box.x).toBeLessThan(before.x);
     expect(box.x + box.width).toBeGreaterThan(before.x + before.width);
     expect(box.y).toBeLessThan(before.y);

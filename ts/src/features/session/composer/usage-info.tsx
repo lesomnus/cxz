@@ -10,9 +10,9 @@ import {
 } from "#src/features/session/model/session-info.ts";
 
 function remainingTime(reset: number | undefined, now: number) {
-  if (reset === undefined) return "--:--:--";
-  const seconds = Math.max(0, Math.ceil((reset - now) / 1000));
-  return `${String(Math.floor(seconds / 3600)).padStart(2, "0")}:${String(Math.floor(seconds / 60) % 60).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
+  if (reset === undefined) return "--d --h --m";
+  const minutes = Math.max(0, Math.ceil((reset - now) / 60_000));
+  return `${Math.floor(minutes / 1440)}d ${String(Math.floor(minutes / 60) % 24).padStart(2, "0")}h ${String(minutes % 60).padStart(2, "0")}m`;
 }
 
 function quotaPeriod(label: string | undefined) {
@@ -55,7 +55,7 @@ export function UsageInfo({
     ? Math.min(1, info.contextUsed! / info.contextWindow!)
     : 0;
   return (
-    <div className="usage-info">
+    <div className={`usage-info ${styles.usage}`}>
       <span
         className={`meta-popover ${styles.quota}`}
         data-open={open}
