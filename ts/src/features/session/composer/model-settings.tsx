@@ -1,3 +1,4 @@
+import styles from "./model-settings.module.css";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { ValueMenu } from "@lesomnus/nox";
@@ -87,8 +88,11 @@ export function ModelSettings({
         const disabled =
           busy || session?.status?.state !== "idle" || !values.length;
         return (
-          <div key={kind} className={`${kind}-field setting-field`}>
-            <span className="meta-label meta-popover" aria-hidden="true">
+          <div
+            key={kind}
+            className={`${kind}-field setting-field ${styles.field}`}
+          >
+            <span className={`meta-label ${styles.icon}`} aria-hidden="true">
               <svg
                 width="14"
                 height="14"
@@ -101,19 +105,15 @@ export function ModelSettings({
               >
                 {kind === "model" ? (
                   <>
-                    <rect x="6" y="6" width="12" height="12" rx="2" />
-                    <rect x="9" y="9" width="6" height="6" rx="1" />
-                    <path d="M9 3v3m6-3v3M9 18v3m6-3v3M3 9h3m-3 6h3m12-6h3m-3 6h3" />
+                    <path d="M12 18V5a3 3 0 0 0-5.8-1A4 4 0 0 0 4 11.5a4 4 0 0 0 3 7.5 3 3 0 0 0 5-1Z" />
+                    <path d="M12 5a3 3 0 0 1 5.8-1 4 4 0 0 1 2.2 7.5 4 4 0 0 1-3 7.5 3 3 0 0 1-5-1M8 8c2 0 4 2 4 4m4-4c-2 0-4 2-4 4M7 15c2-1 3-1 5 1m5-1c-2-1-3-1-5 1" />
                   </>
                 ) : (
                   <>
-                    <path d="M4.2 18a9 9 0 1 1 15.6 0H4.2Z" />
-                    <path d="m12 13 4-5M5 12h1m2-6 .5 1M12 4v1m6 7h1" />
-                    <circle cx="12" cy="13" r="1" />
+                    <path d="M4 18a9 9 0 1 1 16 0M12 14l4-6" />
                   </>
                 )}
               </svg>
-              <span className="meta-tooltip">{label}</span>
             </span>
             <ValueMenu
               variant="compact"

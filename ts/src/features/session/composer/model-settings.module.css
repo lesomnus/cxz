@@ -1,0 +1,31 @@
+.field {
+  position: relative;
+  isolation: isolate;
+  align-items: center;
+}
+.field::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  z-index: -1;
+  border-radius: 8px;
+  background: var(--shade-24);
+  opacity: 0;
+  pointer-events: none;
+}
+.field:has(
+    :global(.setting-trigger):not(:disabled):is(
+        :hover,
+        :focus-visible,
+        [aria-expanded="true"]
+      )
+  )::before {
+  opacity: 1;
+}
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 20px;
+}
