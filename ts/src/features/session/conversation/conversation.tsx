@@ -1195,7 +1195,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
           busy={busy}
           change={(kind, value) => void changeSetting(kind, value)}
         />
-        <UsageInfo info={info} />
+        <UsageInfo info={info} agent={s?.agent ?? ""} />
       </ConversationComposer>
       {terminalActivated && !!s?.project?.id.length && (
         <WorkspaceTerminal

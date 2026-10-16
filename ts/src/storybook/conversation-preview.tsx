@@ -99,7 +99,7 @@ export function PreviewMetadata({
           kind === "model" ? setModel(value) : setEffort(value)
         }
       />
-      <UsageInfo info={info} />
+      <UsageInfo info={info} agent={agent} />
     </>
   );
 }
