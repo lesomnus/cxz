@@ -52,6 +52,20 @@ func connectionTransport(state, name, target string) (scheme, detail string) {
 	}
 }
 
+// opened is a reached connection: the calls, where a file body for the same
+// connection goes, and what both authenticate with.
+//
+// Data is not derived from the target. An ssh entry that enrolled reaches a
+// relay at an address only this function knows -- the stored one, or the one it
+// just repaired -- and posting a body anywhere else would be posting it to a
+// host that is not serving the session.
+type opened struct {
+	Scheme string
+	Conn   *grpc.ClientConn
+	Data   transport.Endpoint
+	Cred   transport.Credential
+}
+
 // openConnection reaches a named connection the best way it can, in one place
 // for both the single-endpoint path and the multi-connection one.
 //
@@ -59,42 +73,43 @@ func connectionTransport(state, name, target string) (scheme, detail string) {
 // one over ssh if that is what the target offers, and fall back to ssh itself
 // rather than failing. Nothing that works today stops working because this
 // exists.
-func openConnection(ctx context.Context, state, name string, entry settings.Connection, enrolling bool, out io.Writer) (string, *grpc.ClientConn, error) {
+func openConnection(ctx context.Context, state, name string, entry settings.Connection, enrolling bool, out io.Writer) (opened, error) {
 	target := entry.Resolve(state).Target
 	e, err := transport.ParseEndpoint(target)
 	if err != nil {
-		return "", nil, err
+		return opened{}, err
 	}
 	switch e.Scheme {
 	case "mtls":
 		stored, ok, err := enroll.Load(state, name)
 		if err != nil {
-			return "", nil, err
+			return opened{}, err
 		}
 		if !ok {
-			return "", nil, fmt.Errorf("connection %s has no client certificate; run cxz connection enroll %s", name, name)
+			return opened{}, fmt.Errorf("connection %s has no client certificate; run cxz connection enroll %s", name, name)
 		}
 		if !stored.Usable() {
-			return "", nil, fmt.Errorf("the certificate for %s expired on %s; run cxz connection enroll %s", name, stored.Expires.UTC().Format("2006-01-02"), name)
+			return opened{}, fmt.Errorf("the certificate for %s expired on %s; run cxz connection enroll %s", name, stored.Expires.UTC().Format("2006-01-02"), name)
 		}
-		conn, err := transport.DialMutual(address(stored, e), stored.Identity)
-		return "mtls", conn, err
+		identity, at := stored.Identity, address(stored, e)
+		conn, err := transport.DialMutual(at, identity)
+		return opened{"mtls", conn, transport.Endpoint{Scheme: "mtls", Address: at}, transport.Credential{Identity: &identity}}, err
 	case "ssh":
-		if conn := mutualOverSSH(ctx, state, name, e, enrolling, out); conn != nil {
-			return "mtls", conn, nil
+		if conn, identity, at := mutualOverSSH(ctx, state, name, e, enrolling, out); conn != nil {
+			return opened{"mtls", conn, transport.Endpoint{Scheme: "mtls", Address: at}, transport.Credential{Identity: identity}}, nil
 		}
 		conn, err := transport.DialEndpoint(target, "", nil)
-		return "ssh", conn, err
+		return opened{"ssh", conn, e, transport.Credential{}}, err
 	case "tcp":
 		token, err := transport.ReadToken(entry.Resolve(state).TokenFile)
 		if err != nil {
-			return "", nil, err
+			return opened{}, err
 		}
 		conn, err := transport.DialEndpoint(target, token, nil)
-		return "tcp", conn, err
+		return opened{"tcp", conn, e, transport.Credential{Token: token}}, err
 	}
 	conn, err := dialConnection(state, target, "")
-	return e.Scheme, conn, err
+	return opened{e.Scheme, conn, e, transport.Credential{}}, err
 }
 
 func address(stored enroll.Stored, e transport.Endpoint) string {
@@ -104,21 +119,23 @@ func address(stored enroll.Stored, e transport.Endpoint) string {
 	return e.Address
 }
 
-// mutualOverSSH returns a working mutual-TLS connection to an ssh target, or
-// nil to say "use ssh". It is allowed to enroll and to start a stopped relay,
+// mutualOverSSH returns a working mutual-TLS connection to an ssh target and
+// the identity it used, or nil to say "use ssh". The identity comes back
+// because the relay it reached carries file bodies too, with that certificate
+// and no other credential. It is allowed to enroll and to start a stopped relay,
 // because both are things the person could do by hand through the same channel
 // they just authorized -- but it reports each one, and gives up quietly rather
 // than turning a reachable host into an error.
-func mutualOverSSH(ctx context.Context, state, name string, e transport.Endpoint, enrolling bool, out io.Writer) *grpc.ClientConn {
+func mutualOverSSH(ctx context.Context, state, name string, e transport.Endpoint, enrolling bool, out io.Writer) (*grpc.ClientConn, *transport.Identity, string) {
 	stored, ok, err := enroll.Load(state, name)
 	if err != nil {
 		fmt.Fprintf(out, "%s: stored identity unreadable (%v); using ssh\n", name, err)
-		return nil
+		return nil, nil, ""
 	}
 	run := sshRunner(e)
 	if !ok || !stored.Usable() {
 		if !enrolling {
-			return nil
+			return nil, nil, ""
 		}
 		if ok {
 			fmt.Fprintf(out, "%s: the client certificate expired on %s; enrolling again over ssh\n", name, stored.Expires.UTC().Format("2006-01-02"))
@@ -126,25 +143,26 @@ func mutualOverSSH(ctx context.Context, state, name string, e transport.Endpoint
 		host, err := e.SSHDialHost(ctx)
 		if err != nil {
 			fmt.Fprintf(out, "%s: %v; using ssh\n", name, err)
-			return nil
+			return nil, nil, ""
 		}
 		stored, err = enroll.Over(ctx, run, state, name, host, enroll.Options{Start: true, Out: out})
 		if err != nil {
 			fmt.Fprintf(out, "%s: %v; using ssh\n", name, err)
-			return nil
+			return nil, nil, ""
 		}
 	}
-	conn, err := transport.DialMutual(address(stored, e), stored.Identity)
+	at := address(stored, e)
+	conn, err := transport.DialMutual(at, stored.Identity)
 	if err != nil {
 		fmt.Fprintf(out, "%s: %v; using ssh\n", name, err)
-		return nil
+		return nil, nil, ""
 	}
 	if reach(ctx, conn) == nil {
-		return conn
+		return conn, &stored.Identity, at
 	}
 	conn.Close()
 	if !enrolling {
-		return nil
+		return nil, nil, ""
 	}
 	// Two things stop a stored address from answering, and the channel that is
 	// still up can repair both: the relay is gone, which is the ordinary state
@@ -154,22 +172,22 @@ func mutualOverSSH(ctx context.Context, state, name string, e transport.Endpoint
 	host, err := e.SSHDialHost(ctx)
 	if err != nil {
 		fmt.Fprintf(out, "%s: %v; using ssh\n", name, err)
-		return nil
+		return nil, nil, ""
 	}
 	if stored.Address, err = relayAddress(ctx, run, state, name, host, stored.Address, out); err != nil {
 		fmt.Fprintf(out, "%s: %v; using ssh\n", name, err)
-		return nil
+		return nil, nil, ""
 	}
 	if conn, err = transport.DialMutual(stored.Address, stored.Identity); err != nil {
 		fmt.Fprintf(out, "%s: %v; using ssh\n", name, err)
-		return nil
+		return nil, nil, ""
 	}
 	if err = reach(ctx, conn); err != nil {
 		conn.Close()
 		fmt.Fprintf(out, "%s: the relay did not answer (%v); using ssh\n", name, err)
-		return nil
+		return nil, nil, ""
 	}
-	return conn
+	return conn, &stored.Identity, stored.Address
 }
 
 // relayAddress re-derives where a connection's relay is, and records it when it
