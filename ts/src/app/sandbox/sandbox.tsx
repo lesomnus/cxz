@@ -14,6 +14,7 @@ import "./sandbox.css";
 import workerURL from "./sandbox-worker.ts?worker&url";
 import { boot, bootDeadline, BootTimeout } from "./sandbox-boot";
 import { sandboxTransport } from "./sandbox-transport";
+import { sandboxTransfer } from "./sandbox-upload";
 import { createClient } from "@connectrpc/connect";
 import { ProjectService } from "#gen/cxz/project_svc_pb";
 
@@ -133,7 +134,13 @@ function SandboxApp({ children }: PropsWithChildren) {
           return;
         }
         box = v;
-        setConnection(new Connection("https://sandbox.invalid", v.transport));
+        setConnection(
+          new Connection(
+            "https://sandbox.invalid",
+            v.transport,
+            v.sock.worker && sandboxTransfer(v.sock.worker),
+          ),
+        );
         setLoading("");
       })
       .catch((e) => {

@@ -146,9 +146,12 @@ func (s *Server) models(st *session) {
 func (s *Server) Close() { s.cancel() }
 func (s *Server) Register(r grpc.ServiceRegistrar) {
 	resource.RegisterProjectServiceServer(r, &Projects{S: s})
-	resource.RegisterSessionServiceServer(r, &Sessions{S: s})
+	resource.RegisterSessionServiceServer(r, s.Sessions())
 	resource.RegisterTaskServiceServer(r, s.Tasks())
 }
+
+// Sessions is also what receives file bodies, which do not arrive as calls.
+func (s *Server) Sessions() *Sessions { return &Sessions{S: s} }
 func (s *Server) event(st *session, kind, text, request string, payload []byte) {
 	seq := st.value.GetStatus().GetLastSeq() + 1
 	e := resource.SessionEvent_builder{RunId: st.value.GetStatus().GetRunId(), Seq: seq, TimeMs: time.Now().UnixMilli(), Kind: kind, Text: text, RequestId: request, Payload: payload}.Build()

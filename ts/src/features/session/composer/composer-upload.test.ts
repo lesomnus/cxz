@@ -145,19 +145,22 @@ test("server errors and invalid acknowledgements never mark an upload ready", as
   }
 });
 
-test("WASM uploads report consumed chunks while retaining bounded reads", async () => {
-  const file = new File([new Uint8Array(300_000)], "data.bin");
+// A connection whose server is in the page gets the same request every other
+// connection gets. What differs is only who carries it, so this pins the
+// request rather than the carrying: a transfer that saw a different URL, or a
+// caller that trusted a transfer's answer without checking it, is the failure.
+test("a connection that carries its own bodies still makes the same request", async () => {
+  vi.stubGlobal("XMLHttpRequest", FakeRequest);
+  const previous = FakeRequest.latest;
+  const file = new File([new Uint8Array(300_000)], "한글.bin");
   const progress = vi.fn();
-  const sizes: number[] = [];
+  const seen: { url: string; size: number }[] = [];
   const local = {
     inProcess: true,
-    sessions: {
-      upload: async (messages: AsyncIterable<{ content?: Uint8Array }>) => {
-        for await (const message of messages) {
-          if (message.content) sizes.push(message.content.length);
-        }
-        return { path: "/cxz/assets/wasm/data.bin" };
-      },
+    baseUrl: "https://sandbox.invalid",
+    transfer: async (url: URL, carried: File) => {
+      seen.push({ url: url.toString(), size: carried.size });
+      return "/cxz/assets/wasm/한글.bin";
     },
   } as unknown as Connection;
   await expect(
@@ -169,11 +172,25 @@ test("WASM uploads report consumed chunks while retaining bounded reads", async 
       new AbortController().signal,
       progress,
     ),
-  ).resolves.toBe("/cxz/assets/wasm/data.bin");
-  expect(sizes.reduce((sum, size) => sum + size, 0)).toBe(file.size);
-  expect(Math.max(...sizes)).toBeLessThanOrEqual(256 * 1024);
-  expect(progress.mock.calls).toEqual([
-    [sizes[0], file.size],
-    [file.size, file.size],
+  ).resolves.toBe("/cxz/assets/wasm/한글.bin");
+  expect(seen).toEqual([
+    {
+      url: "https://sandbox.invalid/attachments/session?run=run&name=%ED%95%9C%EA%B8%80.bin&size=300000",
+      size: file.size,
+    },
   ]);
+  // The request never went out, and the acknowledgement is still checked.
+  expect(FakeRequest.latest).toBe(previous);
+  await expect(
+    uploadFile(
+      {
+        ...local,
+        transfer: async () => "relative.bin",
+      } as unknown as Connection,
+      "session",
+      "run",
+      file,
+      new AbortController().signal,
+    ),
+  ).rejects.toThrow("without a file path");
 });

@@ -1,79 +1,84 @@
 package websandbox
 
 import (
-	"bytes"
+	"context"
 	"fmt"
 	"io"
-	"strings"
-	"unicode"
-	"unicode/utf8"
 
+	"github.com/lesomnus/cxz/internal/assets"
 	"github.com/lesomnus/cxz/resource"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 )
 
+// A sandbox file is smaller than a real one, and all of them together are
+// smaller still: the bytes live in the page's memory until a reload, and a
+// person trying the upload affordance is not moving a disk image through it.
+const SandboxUploadMax = 32 << 20
+const SandboxUploadBudget = 128 << 20
+
 // The sandbox retains bytes in memory until reset; it never writes a host file.
-func (x *Sessions) Upload(stream grpc.ClientStreamingServer[resource.SessionUploadRequest, resource.SessionAttachment]) error {
-	header, err := stream.Recv()
-	if err != nil {
-		return err
+//
+// Filenames, declared sizes, run identifiers and the stream's own length are
+// not checked here, because they are not the sandbox's to check: the same raw
+// HTTP handler the Manager serves sits in front of this, so a page that uploads
+// something the real server would refuse sees the real server's refusal. What
+// is left is what belongs to a fake -- a memory budget rather than a filesystem
+// -- and minting a path the way the real store mints one.
+func (x *Sessions) UploadAttachment(ctx context.Context, in assets.Upload, body io.Reader) (string, error) {
+	if in.Size > SandboxUploadMax {
+		return "", status.Errorf(codes.InvalidArgument, "sandbox uploads contain at most %d MiB", SandboxUploadMax>>20)
 	}
-	name, size := header.GetName(), header.GetSize()
-	if header.GetRef() == nil || header.GetRunId() == "" || name == "" || name == "." || name == ".." || len(name) > 255 || !utf8.ValidString(name) || strings.ContainsAny(name, "/\\") || strings.ContainsFunc(name, unicode.IsControl) || len(header.GetContent()) != 0 || size < 0 || size > 32<<20 {
-		return status.Error(codes.InvalidArgument, "sandbox uploads require a filename and contain at most 32 MiB")
-	}
+	ref := resource.SessionRef_builder{RuntimeId: proto.String(in.SessionID)}.Build()
 	s := x.S
+	// Refused before the body is read as well as after it, so an upload against
+	// a stale run does not first spend the transfer.
 	s.mu.Lock()
-	st, err := s.find(header.GetRef())
+	st, err := s.find(ref)
 	if err == nil {
-		err = checkRun(st, header.GetRunId())
+		err = checkRun(st, in.RunID)
 	}
 	s.mu.Unlock()
 	if err != nil {
-		return err
+		return "", err
 	}
-	var content bytes.Buffer
-	for {
-		if err := stream.Context().Err(); err != nil {
-			return err
+	content := make([]byte, in.Size)
+	if _, err := io.ReadFull(body, content); err != nil {
+		if err == io.EOF || err == io.ErrUnexpectedEOF {
+			return "", assets.ErrSizeMismatch
 		}
-		part, err := stream.Recv()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return err
-		}
-		if part.HasRef() || part.HasRunId() || part.HasName() || part.HasSize() || int64(content.Len()+len(part.GetContent())) > size {
-			return status.Error(codes.InvalidArgument, "invalid upload chunk")
-		}
-		_, _ = content.Write(part.GetContent())
+		return "", err
 	}
-	if int64(content.Len()) != size {
-		return status.Error(codes.InvalidArgument, "upload size mismatch")
+	// A source with a byte left in it declared the wrong size. Storing the
+	// declared prefix would publish a file nobody chose.
+	var excess [1]byte
+	if n, _ := body.Read(excess[:]); n > 0 {
+		return "", assets.ErrSizeMismatch
+	}
+	if err := ctx.Err(); err != nil {
+		return "", err
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	st, err = s.find(header.GetRef())
+	st, err = s.find(ref)
 	if err == nil {
-		err = checkRun(st, header.GetRunId())
+		err = checkRun(st, in.RunID)
 	}
 	if err != nil {
-		return err
+		return "", err
 	}
-	if s.uploadBytes+size > 128<<20 {
-		return status.Error(codes.ResourceExhausted, "reset the sandbox to release uploaded files")
+	if s.uploadBytes+in.Size > SandboxUploadBudget {
+		return "", status.Error(codes.ResourceExhausted, "reset the sandbox to release uploaded files")
 	}
 	s.uploadSequence++
-	path := fmt.Sprintf("/cxz/assets/%s/upload-%d/%s", st.value.GetRuntimeId(), s.uploadSequence, name)
+	path := fmt.Sprintf("/cxz/assets/%s/upload-%d/%s", st.value.GetRuntimeId(), s.uploadSequence, in.Name)
 	if s.uploads == nil {
 		s.uploads = make(map[string]sandboxAttachment)
 	}
-	s.uploads[path] = sandboxAttachment{project: st.value.GetProject().GetRuntimeId(), content: content.Bytes()}
-	s.uploadBytes += size
-	return stream.SendAndClose(resource.SessionAttachment_builder{Path: &path}.Build())
+	s.uploads[path] = sandboxAttachment{project: st.value.GetProject().GetRuntimeId(), content: content}
+	s.uploadBytes += in.Size
+	return path, nil
 }
 
 type sandboxAttachment struct {
