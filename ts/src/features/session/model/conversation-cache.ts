@@ -3,7 +3,7 @@ import type { Connection } from "#src/shared/api/connection.ts";
 import { ref } from "#src/shared/api/connection.ts";
 import { Code, ConnectError } from "@connectrpc/connect";
 import { SessionHistory, type HistoryPage } from "./session-history";
-import { isTranscriptEvent, mergeEvents, pendingAfter } from "./journal";
+import { mergeEvents, pendingAfter } from "./journal";
 import { mergeMetadata } from "./session-metadata";
 import { advanceTurn, snapshotTurn, type TurnProgress } from "./turn-progress";
 import { transcriptEvents } from "./tool-activity";
@@ -156,12 +156,15 @@ export class CachedConversation {
   };
   preceding?: { before: bigint; through: bigint; event?: SessionEvent };
   private tail: SessionEvent[] = [];
+  // A cursor over row versions, which is not the record cursor: a row is
+  // published again when a later record corrects it.
+  private rowCursor = 0n;
   constructor(
     private client: Client,
     readonly id: string,
     private changed: () => void,
   ) {
-    this.history = new SessionHistory(client.sessions, id);
+    this.history = new SessionHistory(client.sessions, id, client.clientId);
     this.aux = new CachedSessionAux(client.sessions, id, changed);
   }
   snapshot = () => this.state;
@@ -304,6 +307,12 @@ export class CachedConversation {
       hasNewer: false,
     };
   }
+  /**
+   * receive takes a record, which is what the session *is*: what it is doing
+   * and what it is waiting for. Rows do not arrive here -- see [receiveRow] --
+   * because a record is not a row, and deciding which records make one is the
+   * runtime's job rather than this client's.
+   */
   private receive(e: SessionEvent) {
     this.client.attention.event(this.id, e);
     for (const listener of this.eventListeners) listener(e);
@@ -318,19 +327,31 @@ export class CachedConversation {
     this.cursor = e.seq > this.cursor ? e.seq : this.cursor;
     if (this.cursor > this.latestSeq.current)
       this.latestSeq.current = this.cursor;
-    if (isTranscriptEvent(e) || e.kind === "approval_resolved") {
-      this.tail = bounded(mergeEvents(this.tail, [e]));
-      if (!this.detached.current) {
-        const next = bounded(mergeEvents(this.state.events, [e]));
-        if (
-          !this.follow.current &&
-          transcriptEvents(this.state.events).events.some(
-            (row) => row.seq < (next[0]?.seq ?? 0n),
-          )
-        )
-          this.detached.current = true;
-        else patch.events = next;
-      }
+    this.newest.current = {
+      anchor: this.tail.at(-1)?.seq ?? 0n,
+      through: this.cursor,
+    };
+    const wasActive = this.active;
+    this.patch(patch);
+    if (wasActive && !this.active) this.changed();
+  }
+  /**
+   * receiveRow takes a row of the conversation, already reduced. A row arrives
+   * again when it is corrected -- a response gains its turn's metrics, a tool
+   * completes -- and replacing by seq is the whole of handling that, because
+   * [mergeEvents] is keyed by seq and the later write wins.
+   */
+  private receiveRow(e: SessionEvent) {
+    this.tail = bounded(mergeEvents(this.tail, [e]));
+    const patch: Partial<ConversationSnapshot> = {};
+    if (!this.detached.current) {
+      const next = bounded(mergeEvents(this.state.events, [e]));
+      if (
+        !this.follow.current &&
+        this.state.events.some((row) => row.seq < (next[0]?.seq ?? 0n))
+      )
+        this.detached.current = true;
+      else patch.events = next;
     }
     this.newest.current = {
       anchor: this.tail.at(-1)?.seq ?? 0n,
@@ -342,6 +363,9 @@ export class CachedConversation {
   }
   private async connect() {
     if (this.stopped || this.paused) return;
+    // Retire the previous attempt here rather than when it ended, so its last
+    // frames are applied and its loops do not outlive it.
+    this.controller?.abort();
     const request = new AbortController();
     this.controller = request;
     const signal = request.signal;
@@ -363,30 +387,17 @@ export class CachedConversation {
       let journalReset = false;
       // Catalog status can lag the native stream. Only the journal's own
       // snapshot fence proves a reset; a stale LastSeq must not erase a cache.
-      if (
-        !identityChanged &&
-        this.ready &&
-        snapshotSeq < this.cursor &&
-        this.history.mode === "summary"
-      ) {
-        try {
-          const tail = await this.client.sessions.transcript(
-            { ref: ref(this.id), limit: 1 },
-            { signal },
-          );
-          if (signal.aborted) return;
-          journalReset = tail.snapshotSeq < this.cursor;
-        } catch (error) {
-          if (ConnectError.from(error).code !== Code.Unimplemented) throw error;
-          this.history.mode = "legacy";
-        }
+      if (!identityChanged && this.ready && snapshotSeq < this.cursor) {
+        const fence = await this.history.snapshot(signal);
+        if (signal.aborted) return;
+        journalReset = fence < this.cursor;
       }
       if (identityChanged || journalReset) {
         this.aux.reset();
         this.cursor = 0n;
-        this.history.mode = "unknown";
         this.ready = false;
         this.tail = [];
+        this.rowCursor = 0n;
         this.latestSeq.current = 0n;
         this.floor.current = 0n;
         this.detached.current = false;
@@ -403,6 +414,9 @@ export class CachedConversation {
           ? snapshotSeq
           : this.latestSeq.current;
       let loaded: SessionEvent[] = [];
+      // Rows for the display list, and the records the catch-up walked, which
+      // are two different things and were one before the row stream existed.
+      let caught: SessionEvent[] = [];
       const catalogBehind = this.ready && snapshotSeq < this.cursor;
       let pending = catalogBehind
         ? this.state.pending
@@ -415,6 +429,10 @@ export class CachedConversation {
         this.rememberPage(page);
         loaded = page.events;
         cursor = page.snapshotSeq;
+        // Resume the row stream from the page's fence rather than from zero. A
+        // row already in this page still arrives again if a later record
+        // corrects it, because the correction is published at that record.
+        this.rowCursor = page.snapshotSeq;
       } else {
         for (const listener of this.reconnectListeners) listener();
       }
@@ -452,10 +470,10 @@ export class CachedConversation {
         }
         const next = page.events.at(-1)?.seq ?? after;
         if (next <= after) break;
-        loaded = mergeEvents(
-          loaded,
-          page.events.filter((e) => e.seq > cursor),
-        );
+        // Records settle what the session is doing and what bodies a running
+        // tool has produced. They are not added to the display list: the rows
+        // for everything past the snapshot arrive on the row stream below.
+        caught = mergeEvents(caught, page.events);
         cursor = next > cursor ? next : cursor;
         after = next;
       }
@@ -464,15 +482,8 @@ export class CachedConversation {
         this.cursor > this.latestSeq.current
           ? this.cursor
           : this.latestSeq.current;
-      this.tail = bounded(
-        mergeEvents(
-          this.tail,
-          loaded.filter(
-            (e) => isTranscriptEvent(e) || e.kind === "approval_resolved",
-          ),
-        ),
-      );
-      for (const e of loaded) {
+      this.tail = bounded(mergeEvents(this.tail, loaded));
+      for (const e of caught) {
         if (this.ready) this.client.attention.event(this.id, e);
         for (const listener of this.eventListeners) listener(e);
       }
@@ -481,14 +492,7 @@ export class CachedConversation {
         pending,
         events: this.detached.current
           ? this.state.events
-          : bounded(
-              mergeEvents(
-                this.state.events,
-                loaded.filter(
-                  (e) => isTranscriptEvent(e) || e.kind === "approval_resolved",
-                ),
-              ),
-            ),
+          : bounded(mergeEvents(this.state.events, loaded)),
         executionState,
         turn,
         queued,
@@ -502,17 +506,41 @@ export class CachedConversation {
       };
       if (wasActive && !this.active) this.changed();
       if (signal.aborted) return;
-      for await (const e of this.client.sessions.events(
-        {
-          ref: ref(this.id),
-          afterSeq: this.cursor,
-          clientId: this.client.clientId,
-        },
-        { signal },
-      )) {
-        if (signal.aborted) return;
-        this.receive(e);
-      }
+      // Two streams, each with one job. Events carries records: what the
+      // session is doing, what it is waiting for, and the replay cursor. Rows
+      // carries the conversation as it reads. Neither derives the other's
+      // answer, which is the point -- this client used to reduce records into
+      // rows itself, and so did the TUI, over two shapes that had to agree.
+      // See cxz#155.
+      // Raced rather than awaited together: a conversation with one dead stream
+      // is a broken conversation, so whichever ends first reconnects both.
+      // Awaiting both would mean a dead Events is never noticed while Rows is
+      // still open. The surviving stream is not cancelled here -- the next
+      // connect retires it -- because frames already in flight are worth
+      // applying, and a reader that drops them shows less than it was sent.
+      await Promise.race([
+        (async () => {
+          for await (const e of this.client.sessions.events(
+            {
+              ref: ref(this.id),
+              afterSeq: this.cursor,
+              clientId: this.client.clientId,
+            },
+            { signal },
+          )) {
+            if (signal.aborted) return;
+            this.receive(e);
+          }
+        })(),
+        (async () => {
+          for await (const row of this.history.rows(this.rowCursor, signal)) {
+            if (signal.aborted) return;
+            this.rowCursor =
+              row.updated > this.rowCursor ? row.updated : this.rowCursor;
+            this.receiveRow(row.event);
+          }
+        })(),
+      ]);
     } catch (error) {
       if (this.stopped || this.paused || this.controller !== request) return;
       this.patch({

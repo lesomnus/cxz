@@ -32,7 +32,42 @@ function fixture() {
     string,
     ReadableStreamDefaultController<SessionEvent>
   >();
+  const rowChannels = new Map<
+    string,
+    ReadableStreamDefaultController<{ event: SessionEvent; updated: bigint }>
+  >();
   const signals = new Map<string, AbortSignal>();
+  // Both live streams are the same shape of fake: a channel a test pushes into.
+  // Events carries records, rows carries rows, and a test that wants a row on
+  // screen pushes a row rather than the records it was reduced from.
+  function channel<T>(
+    into: Map<string, ReadableStreamDefaultController<T>>,
+    id: string,
+    signal: AbortSignal,
+  ) {
+    const stream = new ReadableStream<T>({
+      start(c) {
+        into.set(id, c);
+      },
+    });
+    const reader = stream.getReader();
+    return (async function* () {
+      const cancel = () => {
+        void reader.cancel();
+      };
+      signal.addEventListener("abort", cancel, { once: true });
+      try {
+        while (!signal.aborted) {
+          const next = await reader.read();
+          if (next.done) return;
+          yield next.value;
+        }
+      } finally {
+        signal.removeEventListener("abort", cancel);
+        reader.releaseLock();
+      }
+    })();
+  }
   const sessions = {
     get: vi.fn(async ({ ref }) =>
       create(SessionSchema, {
@@ -54,29 +89,11 @@ function fixture() {
     events: vi.fn(({ ref }, { signal }) => {
       const id = ref.key.value;
       signals.set(id, signal);
-      const stream = new ReadableStream<SessionEvent>({
-        start(c) {
-          channels.set(id, c);
-        },
-      });
-      const reader = stream.getReader();
-      return (async function* () {
-        const cancel = () => {
-          void reader.cancel();
-        };
-        signal.addEventListener("abort", cancel, { once: true });
-        try {
-          while (!signal.aborted) {
-            const next = await reader.read();
-            if (next.done) return;
-            yield next.value;
-          }
-        } finally {
-          signal.removeEventListener("abort", cancel);
-          reader.releaseLock();
-        }
-      })();
+      return channel(channels, id, signal);
     }),
+    rows: vi.fn(({ ref }, { signal }) =>
+      channel(rowChannels, ref.key.value, signal),
+    ),
   };
   const attention = { event: vi.fn() };
   const cache = new ConversationCache({
@@ -91,21 +108,43 @@ function fixture() {
     await vi.waitFor(() => expect(feed.snapshot().status).toBe("Live"));
     return { feed, stop };
   };
-  return { cache, sessions, attention, channels, signals, open };
+  // A record and a row are pushed separately because they are separately
+  // true: the record advances what the session is doing, the row is what is
+  // read. A response that completes produces one record and two rows -- itself,
+  // then itself again carrying the turn's metrics.
+  const record = (id: string, e: SessionEvent) => channels.get(id)!.enqueue(e);
+  const row = (id: string, e: SessionEvent, updated = e.seq) =>
+    rowChannels.get(id)!.enqueue({ event: e, updated });
+  return {
+    cache,
+    sessions,
+    attention,
+    channels,
+    rowChannels,
+    signals,
+    open,
+    record,
+    row,
+  };
 }
 it("keeps the native stream and unseen responses when another session is opened", async () => {
   const f = fixture();
   const a = await f.open("a");
   a.stop();
   const b = await f.open("b");
-  f.channels.get("a")!.enqueue(event(2n));
-  f.channels.get("a")!.enqueue(event(3n, "turn_end", "completed"));
+  const answer = event(2n);
+  f.record("a", answer);
+  f.record("a", event(3n, "turn_end", "completed"));
+  // The completing record is not a row. It republishes the response row it
+  // completed, which the reader replaces by seq.
+  f.row("a", answer);
+  f.row("a", answer, 3n);
   await vi.waitFor(() => expect(a.feed.latestSeq.current).toBe(3n));
   expect(f.signals.get("a")!.aborted).toBe(false);
   const again = await f.open("a");
   expect(again.feed).toBe(a.feed);
   expect(again.feed.snapshot().loading).toBeUndefined();
-  expect(again.feed.snapshot().events.map((e) => e.seq)).toEqual([1n, 2n, 3n]);
+  expect(again.feed.snapshot().events.map((e) => e.seq)).toEqual([1n, 2n]);
   expect(f.sessions.transcript).toHaveBeenCalledTimes(2);
   expect(f.sessions.events).toHaveBeenCalledTimes(2);
   expect(f.attention.event).toHaveBeenCalledWith(
@@ -252,7 +291,9 @@ it("reconnects at the native cursor and replays an old task's completion without
   const f = fixture();
   const a = await f.open("a");
   a.stop();
-  f.channels.get("a")!.enqueue(event(2n, "tool_call"));
+  const tool = event(2n, "tool_call");
+  f.record("a", tool);
+  f.row("a", tool);
   await vi.waitFor(() => expect(a.feed.latestSeq.current).toBe(2n));
   f.sessions.get.mockResolvedValue(
     create(SessionSchema, {
@@ -274,8 +315,15 @@ it("reconnects at the native cursor and replays an old task's completion without
   expect(f.sessions.events.mock.calls.at(-1)![0]).toMatchObject({
     afterSeq: 3n,
   });
+  // Rows resume from the version cursor, which is not the record cursor: the
+  // last row seen was published at 2, whatever records followed it.
+  expect(f.sessions.rows.mock.calls.at(-1)![0]).toMatchObject({
+    afterUpdated: 2n,
+  });
   expect(f.sessions.transcript).toHaveBeenCalledTimes(1);
-  expect(a.feed.snapshot().events.map((e) => e.seq)).toEqual([1n, 2n, 3n]);
+  // The result folded onto the tool's row rather than adding one. The record
+  // arrived on the other stream and settled what the session is doing.
+  expect(a.feed.snapshot().events.map((e) => e.seq)).toEqual([1n, 2n]);
   expect(a.feed.snapshot().loading).toBeUndefined();
 });
 
@@ -318,13 +366,14 @@ it("freezes a detached reading window while maintaining a latest page and contro
   a.feed.detached.current = true;
   a.feed.follow.current = false;
   a.stop();
-  f.channels.get("a")!.enqueue(event(2n, "input"));
-  f.channels.get("a")!.enqueue(event(3n));
-  f.channels.get("a")!.enqueue(event(4n, "queued", "Next prompt"));
-  await vi.waitFor(() => expect(a.feed.latestSeq.current).toBe(4n));
+  f.row("a", event(2n, "input"));
+  f.row("a", event(3n));
+  f.record("a", event(4n, "queued", "Next prompt"));
+  await vi.waitFor(() => expect(a.feed.snapshot().queued).toBe("Next prompt"));
+  // The reading window is frozen; the latest page keeps filling behind it, and
+  // control state still arrives because it comes from the other stream.
   expect(a.feed.snapshot().events).toHaveLength(1);
   expect(a.feed.latestPage()!.events.map((e) => e.seq)).toEqual([1n, 2n, 3n]);
-  expect(a.feed.snapshot().queued).toBe("Next prompt");
 });
 it("protocol traffic advances the replay cursor without notifying or rebuilding readable rows", async () => {
   const f = fixture();
@@ -360,8 +409,8 @@ it("limits large live bodies by bytes as well as record count", async () => {
   const a = await f.open("a");
   const text = "x".repeat(MAX_CONVERSATION_BYTES / 4);
   for (let seq = 2n; seq <= 5n; seq++)
-    f.channels.get("a")!.enqueue(event(seq, "assistant", text));
-  await vi.waitFor(() => expect(a.feed.latestSeq.current).toBe(5n));
+    f.row("a", event(seq, "assistant", text));
+  await vi.waitFor(() => expect(a.feed.snapshot().events.at(-1)!.seq).toBe(5n));
   expect(a.feed.snapshot().events.length).toBeLessThan(5);
   expect(a.feed.snapshot().events.at(-1)!.seq).toBe(5n);
 });
@@ -421,7 +470,8 @@ it("does not erase received responses when catalog LastSeq lags the journal on r
   const f = fixture();
   const a = await f.open("a");
   a.stop();
-  f.channels.get("a")!.enqueue(event(2n));
+  f.record("a", event(2n));
+  f.row("a", event(2n));
   await vi.waitFor(() => expect(a.feed.latestSeq.current).toBe(2n));
   // Get still reports 1; the journal itself has already persisted 2.
   f.sessions.transcript.mockResolvedValue({
@@ -456,14 +506,16 @@ it("coalesces visible updates into one frame and schedules no painting for an of
   const a = await f.open("a");
   for (const cb of frames.splice(0)) cb(0);
   raf.mockClear();
-  for (let seq = 2n; seq <= 4n; seq++) f.channels.get("a")!.enqueue(event(seq));
-  await vi.waitFor(() => expect(a.feed.latestSeq.current).toBe(4n));
+  for (let seq = 2n; seq <= 4n; seq++) f.row("a", event(seq));
+  await vi.waitFor(() => expect(a.feed.snapshot().events.at(-1)!.seq).toBe(4n));
   expect(raf).toHaveBeenCalledTimes(1);
   for (const cb of frames.splice(0)) cb(0);
   a.stop();
   raf.mockClear();
-  f.channels.get("a")!.enqueue(event(5n));
-  await vi.waitFor(() => expect(a.feed.latestSeq.current).toBe(5n));
+  f.row("a", event(5n));
+  await vi.waitFor(() =>
+    expect(a.feed.latestPage()!.events.at(-1)!.seq).toBe(5n),
+  );
   expect(raf).not.toHaveBeenCalled();
 });
 
@@ -503,7 +555,8 @@ it("includes structured summary bodies in the cache byte budget", async () => {
   const f = fixture();
   const a = await f.open("a");
   for (let seq = 2n; seq <= 3n; seq++)
-    f.channels.get("a")!.enqueue(
+    f.row(
+      "a",
       create(SessionEventSchema, {
         seq,
         runId: "run",
@@ -514,7 +567,7 @@ it("includes structured summary bodies in the cache byte budget", async () => {
         },
       }),
     );
-  await vi.waitFor(() => expect(a.feed.latestSeq.current).toBe(3n));
+  await vi.waitFor(() => expect(a.feed.snapshot().events.at(-1)!.seq).toBe(3n));
   expect(a.feed.snapshot().events).toHaveLength(1);
   expect(a.feed.snapshot().events[0].seq).toBe(3n);
 });

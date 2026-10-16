@@ -56,7 +56,7 @@ function replayEvents() {
     };
   });
 }
-async function openReplay(page, summary = false, options = {}) {
+async function openReplay(page, options = {}) {
   const events = options.events ?? replayEvents();
   const latest = Number(events.at(-1).seq);
   // Serve the current build even when an already-running fixture embeds an old one.
@@ -80,14 +80,7 @@ async function openReplay(page, summary = false, options = {}) {
     }[extension];
     await route.fulfill({ body: readFileSync(file), contentType });
   });
-  if (!summary)
-    await page.route("**/cxz.SessionService/Transcript", (route) =>
-      route.fulfill({
-        status: 501,
-        json: { code: "unimplemented", message: "legacy project runtime" },
-      }),
-    );
-  else if (!process.env.CXZ_REPLAY_EVENTS)
+  if (!process.env.CXZ_REPLAY_EVENTS)
     await page.route("**/cxz.SessionService/Transcript", async (route) => {
       const q = route.request().postDataJSON();
       if (options.delay && q.beforeSeq && q.limit > 1)
@@ -198,7 +191,7 @@ for (const reduced of [false, true]) {
       text: `Scroll sample ${i + 1}`,
       timeMs: "1700000000000",
     }));
-    await openReplay(page, true, { events });
+    await openReplay(page, { events });
     const pane = page.locator(".transcript");
     const thumb = page.locator(".scroll-thumb");
     await expect(pane).toHaveAttribute("aria-busy", "false");
@@ -286,117 +279,110 @@ for (const reduced of [false, true]) {
     await expect.poll(settled).toBeLessThan(0.1);
   });
 }
-for (const mode of ["legacy", "summary"])
-  test(`${mode} recorded pages fill a tall pane and keep scrolling usable through resize`, async ({
-    page,
-  }) => {
-    const errors = [];
-    page.on("pageerror", (e) => errors.push(e.message));
-    const calls = { history: 0, transcript: 0, details: 0 };
-    let latest = Infinity;
-    page.on("request", (request) => {
-      if (
-        request.url().endsWith("/History") &&
-        Number(request.postDataJSON().afterSeq ?? 0) < latest
-      )
-        calls.history++;
-      if (request.url().endsWith("/Transcript")) calls.transcript++;
-      if (request.url().endsWith("/EventDetails")) calls.details++;
-    });
-    latest = await openReplay(page, mode === "summary");
-    await expect
-      .poll(async () => (await geometry(page)).max)
-      .toBeGreaterThan(0);
-    await expect
-      .poll(async () => {
-        const g = await geometry(page);
-        return g.max - g.top;
-      })
-      .toBeLessThan(1);
-    await expect
-      .poll(async () =>
-        Number(
-          await page.locator(".virtual-messages").getAttribute("data-first"),
-        ),
-      )
-      .toBeLessThan(latest - 256);
-    await page.locator(".transcript").hover();
-    await page.mouse.wheel(0, -240);
-    await expect
-      .poll(async () => {
-        const g = await geometry(page);
-        return g.max - g.top;
-      })
-      .toBeGreaterThan(100);
-    // Wait for near-edge prefetch and row measurements to settle.
-    await page.waitForTimeout(400);
-    const anchor = await readingAnchor(page);
-    await page.setViewportSize({ width: 1100, height: 750 });
-    await expect
-      .poll(async () =>
-        page
-          .locator(`[data-row="${anchor.id}"]`)
-          .evaluate(
-            (el) =>
-              el.getBoundingClientRect().top -
-              el.closest(".transcript").getBoundingClientRect().top,
-          ),
-      )
-      .toBeCloseTo(anchor.offset, 0);
-    const g = await geometry(page);
-    expect(g.top).toBeGreaterThanOrEqual(0);
-    expect(g.top).toBeLessThanOrEqual(g.max);
-    await page.locator(".transcript").hover();
-    const thumb = page.locator(".scroll-thumb");
-    const bounds = await thumb.boundingBox();
-    const area = await page.locator(".transcript-area").boundingBox();
-    await page.mouse.move(
-      bounds.x + bounds.width / 2,
-      bounds.y + bounds.height / 2,
-    );
-    await page.mouse.down();
-    await page.mouse.move(bounds.x + bounds.width / 2, area.y - 80);
-    await page.waitForTimeout(250);
-    const pulled = await thumb.boundingBox();
-    expect(pulled.y).toBeGreaterThanOrEqual(area.y);
-    expect(pulled.y + pulled.height).toBeLessThanOrEqual(area.y + area.height);
-    await page.mouse.move(bounds.x + bounds.width / 2, area.y + 100);
-    await page.mouse.up();
-    await page.waitForTimeout(400);
-    const read = await readingAnchor(page);
-    await page.waitForTimeout(400);
-    expect((await readingAnchor(page)).id).toBe(read.id);
-    expect(
-      Number(
-        await page.locator(".virtual-messages").getAttribute("data-cached"),
-      ),
-    ).toBeLessThanOrEqual(8192);
-    expect(await page.locator(".transcript [data-row]").count()).toBeLessThan(
-      60,
-    );
-    expect(errors).toEqual([]);
-    if (process.env.CXZ_REPLAY_EVENTS)
-      console.log(
-        `${mode} replay RPCs: History=${calls.history}, Transcript=${calls.transcript}, EventDetails=${calls.details}`,
-      );
-    if (mode === "summary") {
-      expect(calls.history).toBe(0);
-      expect(calls.transcript).toBeLessThan(10);
-      expect(calls.details).toBe(0);
-      const summary = page.locator("[data-work-summary] button").first();
-      if (await summary.count()) {
-        await summary.click();
-        await page.locator(".tool-activity").first().click();
-        await expect.poll(() => calls.details).toBe(1);
-        await expect(
-          page.locator(".card-body").getByText("Loading…"),
-        ).toHaveCount(0);
-        await expect(
-          page.locator(".card-body .monaco-editor").first(),
-        ).toBeVisible();
-      }
-    }
+test("recorded pages fill a tall pane and keep scrolling usable through resize", async ({
+  page,
+}) => {
+  const errors = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  const calls = { history: 0, transcript: 0, details: 0 };
+  let latest = Infinity;
+  page.on("request", (request) => {
+    if (
+      request.url().endsWith("/History") &&
+      Number(request.postDataJSON().afterSeq ?? 0) < latest
+    )
+      calls.history++;
+    if (request.url().endsWith("/Transcript")) calls.transcript++;
+    if (request.url().endsWith("/EventDetails")) calls.details++;
   });
+  latest = await openReplay(page);
+  await expect.poll(async () => (await geometry(page)).max).toBeGreaterThan(0);
+  await expect
+    .poll(async () => {
+      const g = await geometry(page);
+      return g.max - g.top;
+    })
+    .toBeLessThan(1);
+  await expect
+    .poll(async () =>
+      Number(
+        await page.locator(".virtual-messages").getAttribute("data-first"),
+      ),
+    )
+    .toBeLessThan(latest - 256);
+  await page.locator(".transcript").hover();
+  await page.mouse.wheel(0, -240);
+  await expect
+    .poll(async () => {
+      const g = await geometry(page);
+      return g.max - g.top;
+    })
+    .toBeGreaterThan(100);
+  // Wait for near-edge prefetch and row measurements to settle.
+  await page.waitForTimeout(400);
+  const anchor = await readingAnchor(page);
+  await page.setViewportSize({ width: 1100, height: 750 });
+  await expect
+    .poll(async () =>
+      page
+        .locator(`[data-row="${anchor.id}"]`)
+        .evaluate(
+          (el) =>
+            el.getBoundingClientRect().top -
+            el.closest(".transcript").getBoundingClientRect().top,
+        ),
+    )
+    .toBeCloseTo(anchor.offset, 0);
+  const g = await geometry(page);
+  expect(g.top).toBeGreaterThanOrEqual(0);
+  expect(g.top).toBeLessThanOrEqual(g.max);
+  await page.locator(".transcript").hover();
+  const thumb = page.locator(".scroll-thumb");
+  const bounds = await thumb.boundingBox();
+  const area = await page.locator(".transcript-area").boundingBox();
+  await page.mouse.move(
+    bounds.x + bounds.width / 2,
+    bounds.y + bounds.height / 2,
+  );
+  await page.mouse.down();
+  await page.mouse.move(bounds.x + bounds.width / 2, area.y - 80);
+  await page.waitForTimeout(250);
+  const pulled = await thumb.boundingBox();
+  expect(pulled.y).toBeGreaterThanOrEqual(area.y);
+  expect(pulled.y + pulled.height).toBeLessThanOrEqual(area.y + area.height);
+  await page.mouse.move(bounds.x + bounds.width / 2, area.y + 100);
+  await page.mouse.up();
+  await page.waitForTimeout(400);
+  const read = await readingAnchor(page);
+  await page.waitForTimeout(400);
+  expect((await readingAnchor(page)).id).toBe(read.id);
+  expect(
+    Number(await page.locator(".virtual-messages").getAttribute("data-cached")),
+  ).toBeLessThanOrEqual(8192);
+  expect(await page.locator(".transcript [data-row]").count()).toBeLessThan(60);
+  expect(errors).toEqual([]);
+  if (process.env.CXZ_REPLAY_EVENTS)
+    console.log(
+      `replay RPCs: History=${calls.history}, Transcript=${calls.transcript}, EventDetails=${calls.details}`,
+    );
+  {
+    expect(calls.history).toBe(0);
+    expect(calls.transcript).toBeLessThan(10);
+    expect(calls.details).toBe(0);
+    const summary = page.locator("[data-work-summary] button").first();
+    if (await summary.count()) {
+      await summary.click();
+      await page.locator(".tool-activity").first().click();
+      await expect.poll(() => calls.details).toBe(1);
+      await expect(
+        page.locator(".card-body").getByText("Loading…"),
+      ).toHaveCount(0);
+      await expect(
+        page.locator(".card-body .monaco-editor").first(),
+      ).toBeVisible();
+    }
+  }
+});
 
 test("summary history prefetches before the loaded edge even with delayed responses", async ({
   page,
@@ -412,7 +398,7 @@ test("summary history prefetches before the loaded edge even with delayed respon
     if (request.url().endsWith("/Transcript"))
       requests.push(request.postDataJSON());
   });
-  await openReplay(page, true, { events, delay: 400 });
+  await openReplay(page, { events, delay: 400 });
   const pane = page.locator(".transcript");
   const messages = page.locator(".virtual-messages");
   await expect(messages).toHaveAttribute("data-cached", "1024");
@@ -476,7 +462,7 @@ test("viewport fades cover response bodies while the scrollbar and controls rema
         : {}),
     }));
   }).flat();
-  await openReplay(page, true, { events });
+  await openReplay(page, { events });
   const pane = page.locator(".transcript");
   await expect(page.locator(".response").first()).toBeAttached();
   expect(await page.locator(".scroll-response-marker").count()).toBeGreaterThan(
@@ -537,194 +523,190 @@ test("viewport fades cover response bodies while the scrollbar and controls rema
   }
 });
 
-for (const mode of ["legacy", "summary"])
-  test(`${mode} file changes show per-file actions and deltas without fetching details`, async ({
-    page,
-  }) => {
-    const changes = [
-      {
-        path: "/workspace/ts/src/app.tsx",
-        kind: { type: "update" },
-        diff: "@@ -1,11 +1,25 @@\n" + "-old\n".repeat(11) + "+new\n".repeat(25),
+test("file changes show per-file actions and deltas without fetching details", async ({
+  page,
+}) => {
+  const changes = [
+    {
+      path: "/workspace/ts/src/app.tsx",
+      kind: { type: "update" },
+      diff: "@@ -1,11 +1,25 @@\n" + "-old\n".repeat(11) + "+new\n".repeat(25),
+    },
+    { path: "/workspace/ts/src/send-motion.ts", kind: { type: "add" } },
+    {
+      path: "/workspace/ts/src/style.css",
+      kind: { type: "update" },
+      diff: "@@ -0,0 +1,32 @@\n" + "+style\n".repeat(32),
+    },
+  ];
+  const native = [
+    {
+      seq: "1",
+      kind: "input",
+      text: "Change the UI",
+      runId: "run",
+      timeMs: "1700000000000",
+    },
+    {
+      seq: "2",
+      kind: "tool_call",
+      requestId: "patch",
+      runId: "run",
+      payload: Buffer.from(
+        JSON.stringify({
+          item: { type: "fileChange", status: "inProgress", changes: [] },
+        }),
+      ).toString("base64"),
+    },
+    {
+      seq: "3",
+      kind: "tool_result",
+      requestId: "patch",
+      runId: "run",
+      payload: Buffer.from(
+        JSON.stringify({
+          item: { type: "fileChange", status: "completed", changes },
+        }),
+      ).toString("base64"),
+    },
+    { seq: "4", kind: "assistant", text: "Changes completed", runId: "run" },
+  ];
+  native.push(
+    {
+      seq: "5",
+      kind: "approval",
+      text: "Write",
+      requestId: "approve",
+      runId: "run",
+      payload: Buffer.from(
+        JSON.stringify({ tool_use_id: "patch", file_path: changes[1].path }),
+      ).toString("base64"),
+    },
+    {
+      seq: "6",
+      kind: "approval_resolved",
+      text: "allowed",
+      requestId: "approve",
+      runId: "run",
+    },
+  );
+  const events = [
+    native[0],
+    {
+      ...native[1],
+      payload: undefined,
+      toolSummary: {
+        name: "Files",
+        state: "completed",
+        files: [
+          {
+            path: changes[0].path,
+            action: "update",
+            added: 25,
+            removed: 11,
+            measure: "diff",
+          },
+          { path: changes[1].path, action: "add", measure: "unknown" },
+          {
+            path: changes[2].path,
+            action: "update",
+            added: 32,
+            removed: 0,
+            measure: "diff",
+          },
+        ],
       },
-      { path: "/workspace/ts/src/send-motion.ts", kind: { type: "add" } },
-      {
-        path: "/workspace/ts/src/style.css",
-        kind: { type: "update" },
-        diff: "@@ -0,0 +1,32 @@\n" + "+style\n".repeat(32),
+    },
+    native[3],
+  ];
+  let details = 0;
+  await openReplay(page, { events });
+  await page.route("**/cxz.SessionService/EventDetails", (route) => {
+    details++;
+    return route.fulfill({
+      json: {
+        events: native.filter(
+          (event) => !["input", "assistant"].includes(event.kind),
+        ),
       },
-    ];
-    const native = [
-      {
-        seq: "1",
-        kind: "input",
-        text: "Change the UI",
-        runId: "run",
-        timeMs: "1700000000000",
-      },
-      {
-        seq: "2",
-        kind: "tool_call",
-        requestId: "patch",
-        runId: "run",
-        payload: Buffer.from(
-          JSON.stringify({
-            item: { type: "fileChange", status: "inProgress", changes: [] },
-          }),
-        ).toString("base64"),
-      },
-      {
-        seq: "3",
-        kind: "tool_result",
-        requestId: "patch",
-        runId: "run",
-        payload: Buffer.from(
-          JSON.stringify({
-            item: { type: "fileChange", status: "completed", changes },
-          }),
-        ).toString("base64"),
-      },
-      { seq: "4", kind: "assistant", text: "Changes completed", runId: "run" },
-    ];
-    native.push(
-      {
-        seq: "5",
-        kind: "approval",
-        text: "Write",
-        requestId: "approve",
-        runId: "run",
-        payload: Buffer.from(
-          JSON.stringify({ tool_use_id: "patch", file_path: changes[1].path }),
-        ).toString("base64"),
-      },
-      {
-        seq: "6",
-        kind: "approval_resolved",
-        text: "allowed",
-        requestId: "approve",
-        runId: "run",
-      },
-    );
-    const events =
-      mode === "legacy"
-        ? native
-        : [
-            native[0],
-            {
-              ...native[1],
-              payload: undefined,
-              toolSummary: {
-                name: "Files",
-                state: "completed",
-                files: [
-                  {
-                    path: changes[0].path,
-                    action: "update",
-                    added: 25,
-                    removed: 11,
-                    measure: "diff",
-                  },
-                  { path: changes[1].path, action: "add", measure: "unknown" },
-                  {
-                    path: changes[2].path,
-                    action: "update",
-                    added: 32,
-                    removed: 0,
-                    measure: "diff",
-                  },
-                ],
-              },
-            },
-            native[3],
-          ];
-    let details = 0;
-    await openReplay(page, mode === "summary", { events });
-    await page.route("**/cxz.SessionService/EventDetails", (route) => {
-      details++;
-      return route.fulfill({
-        json: {
-          events: native.filter(
-            (event) => !["input", "assistant"].includes(event.kind),
-          ),
-        },
-      });
     });
-    await page.locator("[data-work-summary] button").first().click();
-    const dialog = page.getByRole("dialog", {
-      name: "Tasks between responses",
-    });
-    const task = dialog.locator('.tool-activity[data-seq="2"]');
-    await expect(task).toHaveAttribute("data-state", "completed");
-    await expect(task.locator(".tool-file-row")).toHaveText([
-      "✓Edit /workspace/ts/src/app.tsx · +25 -11",
-      "✓Write /workspace/ts/src/send-motion.ts · Δ?",
-      "✓Edit /workspace/ts/src/style.css · +32 -0",
-    ]);
-    for (const row of await task.locator(".tool-file-row").all())
-      await expect(row).toBeVisible();
-    await expect(page.locator(".tool-activity")).toHaveCount(1);
-    expect(details).toBe(0);
-    await expect(
-      dialog.getByRole("region", { name: "Task details" }),
-    ).toHaveCount(0);
-    await task.click();
-    const card = dialog.getByRole("region", { name: "Task details" });
-    await expect(card).toBeVisible();
-    await card.getByRole("tab", { name: "Result", exact: true }).click();
-    await expect(card.locator(".view-lines")).toContainText(
-      "/workspace/ts/src/send-motion.ts",
-    );
-    await expect(card.locator(".monaco-editor textarea")).toHaveJSProperty(
-      "readOnly",
-      true,
-    );
-    expect(details).toBe(mode === "summary" ? 1 : 0);
-    await page.setViewportSize({ width: 390, height: 844 });
-    await expect
-      .poll(() => page.evaluate(() => document.documentElement.scrollWidth))
-      .toBe(390);
-    await expect
-      .poll(async () => {
-        const box = await card.boundingBox();
-        return Math.max(
-          0,
-          -box.x,
-          box.x + box.width - 390,
-          box.y + box.height - 844,
-        );
-      })
-      .toBeLessThan(1);
-    const pane = page.locator(".transcript");
-    const top = await pane.evaluate((el) => el.scrollTop);
-    const editor = card.locator(".monaco-editor");
-    await editor.hover();
-    await page.mouse.wheel(0, 80);
-    await expect
-      .poll(() =>
-        editor
-          .locator(".scrollbar.vertical > .slider")
-          .first()
-          .evaluate((el) => parseFloat(el.style.top)),
-      )
-      .toBeGreaterThan(0);
-    expect(
-      await dialog.locator(".card-body").evaluate((el) => el.scrollTop),
-    ).toBe(0);
-    expect(await pane.evaluate((el) => el.scrollTop)).toBe(top);
-    await card.getByRole("tab", { name: "Approval", exact: true }).click();
-    await expect(card.locator(".view-lines")).toContainText("allowed");
-    await expect(card.locator(".view-lines")).toContainText(
-      "/workspace/ts/src/send-motion.ts",
-    );
-    await expect(card.locator(".detail-editor")).toHaveAttribute(
-      "data-language",
-      "json",
-    );
-    await task.click();
-    await expect(card).toHaveCount(0);
-    await dialog.getByRole("button", { name: "Close task dialog" }).click();
-    expect(details).toBe(mode === "summary" ? 1 : 0);
   });
+  await page.locator("[data-work-summary] button").first().click();
+  const dialog = page.getByRole("dialog", {
+    name: "Tasks between responses",
+  });
+  const task = dialog.locator('.tool-activity[data-seq="2"]');
+  await expect(task).toHaveAttribute("data-state", "completed");
+  await expect(task.locator(".tool-file-row")).toHaveText([
+    "✓Edit /workspace/ts/src/app.tsx · +25 -11",
+    "✓Write /workspace/ts/src/send-motion.ts · Δ?",
+    "✓Edit /workspace/ts/src/style.css · +32 -0",
+  ]);
+  for (const row of await task.locator(".tool-file-row").all())
+    await expect(row).toBeVisible();
+  await expect(page.locator(".tool-activity")).toHaveCount(1);
+  expect(details).toBe(0);
+  await expect(
+    dialog.getByRole("region", { name: "Task details" }),
+  ).toHaveCount(0);
+  await task.click();
+  const card = dialog.getByRole("region", { name: "Task details" });
+  await expect(card).toBeVisible();
+  await card.getByRole("tab", { name: "Result", exact: true }).click();
+  await expect(card.locator(".view-lines")).toContainText(
+    "/workspace/ts/src/send-motion.ts",
+  );
+  await expect(card.locator(".monaco-editor textarea")).toHaveJSProperty(
+    "readOnly",
+    true,
+  );
+  expect(details).toBe(1);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect
+    .poll(() => page.evaluate(() => document.documentElement.scrollWidth))
+    .toBe(390);
+  await expect
+    .poll(async () => {
+      const box = await card.boundingBox();
+      return Math.max(
+        0,
+        -box.x,
+        box.x + box.width - 390,
+        box.y + box.height - 844,
+      );
+    })
+    .toBeLessThan(1);
+  const pane = page.locator(".transcript");
+  const top = await pane.evaluate((el) => el.scrollTop);
+  const editor = card.locator(".monaco-editor");
+  await editor.hover();
+  await page.mouse.wheel(0, 80);
+  await expect
+    .poll(() =>
+      editor
+        .locator(".scrollbar.vertical > .slider")
+        .first()
+        .evaluate((el) => parseFloat(el.style.top)),
+    )
+    .toBeGreaterThan(0);
+  expect(
+    await dialog.locator(".card-body").evaluate((el) => el.scrollTop),
+  ).toBe(0);
+  expect(await pane.evaluate((el) => el.scrollTop)).toBe(top);
+  await card.getByRole("tab", { name: "Approval", exact: true }).click();
+  await expect(card.locator(".view-lines")).toContainText("allowed");
+  await expect(card.locator(".view-lines")).toContainText(
+    "/workspace/ts/src/send-motion.ts",
+  );
+  await expect(card.locator(".detail-editor")).toHaveAttribute(
+    "data-language",
+    "json",
+  );
+  await task.click();
+  await expect(card).toHaveCount(0);
+  await dialog.getByRole("button", { name: "Close task dialog" }).click();
+  expect(details).toBe(1);
+});
 
 test.describe("task detail editor", () => {
   // Exercise Monaco with Chromium's own identity. The fixture's default iPhone
@@ -781,7 +763,7 @@ test.describe("task detail editor", () => {
     ];
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.stack ?? error.message));
-    await openReplay(page, true, {
+    await openReplay(page, {
       events: [
         { seq: "1", kind: "input", text: "Show the source", runId: "run" },
         {
