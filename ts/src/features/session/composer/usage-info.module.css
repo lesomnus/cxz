@@ -103,3 +103,20 @@
   flex: 0 0 calc(4ch + 11px);
   margin-left: 10px;
 }
+
+.quota[data-quota-level="warning"] {
+  --quota-color: #dfb95a;
+}
+.quota[data-quota-level="critical"] {
+  --quota-color: #ff526d;
+}
+.quota:is([data-quota-level="warning"], [data-quota-level="critical"])
+  :is(.graph, .percent) {
+  color: var(--quota-color);
+}
+:global(:root[data-theme="light"]) .quota[data-quota-level="warning"] {
+  --quota-color: #8a6200;
+}
+:global(:root[data-theme="light"]) .quota[data-quota-level="critical"] {
+  --quota-color: #c52e48;
+}
