@@ -78,3 +78,23 @@
 .period {
   text-align: center;
 }
+
+.context {
+  isolation: isolate;
+}
+.context[data-open="true"] {
+  /* The leftward popup covers the neighboring quota graph. */
+  z-index: 6;
+}
+.donut {
+  position: relative;
+  z-index: 5;
+}
+.contextContent {
+  display: flex;
+  align-items: center;
+}
+.separator {
+  padding-inline: 6px;
+  color: color-mix(in srgb, currentColor 78%, var(--ui-shade-0));
+}

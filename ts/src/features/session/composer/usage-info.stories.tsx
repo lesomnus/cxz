@@ -57,3 +57,7 @@ export const Weekly: Story = {
   },
 };
 export const Unreported: Story = { args: { info: { model: "", effort: "" } } };
+
+export const SmallContext: Story = {
+  args: { info: { ...meta.args.info, contextUsed: 123, contextWindow: 999 } },
+};
