@@ -27,14 +27,20 @@ export const BootDeadlineMs = 15000;
  * fifteen seconds. The stall itself is already forced rather than waited for;
  * this is the other half of the same arrangement.
  *
- * Bounded to a second so the parameter cannot be used to make a person's
- * sandbox fail to start, and ignored unless it parses.
+ * It can only shorten. A value above the page's own deadline is ignored, so a
+ * link cannot make the page wait longer than the page chose to. It can name a
+ * value below the time a real boot needs -- measured at 750ms here -- and such
+ * a page reports that the sandbox did not start: that is what the forced stalls
+ * want, and why a test that has to boot for real names a value with room above
+ * that measurement rather than the smallest one that parses. Ignored unless it
+ * parses.
  */
 export function bootDeadline(search = location.search): number {
   const raw = new URLSearchParams(search).get("boot-deadline");
   if (raw === null) return BootDeadlineMs;
   const ms = Number(raw);
-  if (!Number.isFinite(ms) || ms < 1 || ms > 1000) return BootDeadlineMs;
+  if (!Number.isFinite(ms) || ms < 1 || ms > BootDeadlineMs)
+    return BootDeadlineMs;
   return ms;
 }
 

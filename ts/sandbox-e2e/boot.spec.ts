@@ -9,16 +9,24 @@ test.use({
 });
 
 // The page's boot deadline is fifteen seconds, chosen for a person on a slow
-// machine, and these tests wait it out on purpose. Only the one that never
-// boots successfully shortens it: a measured boot here is 385ms cold and the
-// deadline bounds every attempt, so a short one would also cut off the retry
-// these other two require -- on a slower machine than this, which is the flake
-// the long deadlines exist to prevent.
+// machine, and every test here forces a stall and then waits one out. That wait
+// is pure cost: the stall is forced rather than waited for, so the sequence
+// being verified -- deadline, retry without the module cache, report a second
+// failure -- is the same at a shorter deadline, and a forced stall is not
+// load-dependent. Each deadline below is the shortest this file can use, and
+// that is not the same number for both.
 //
-// Where nothing has to fit inside it, the wait is pure cost: the sequence being
-// verified is the same at 300ms, and 300ms of a stall that is already forced is
-// not load-dependent.
+// Nothing has to fit inside this one: the page it belongs to never boots.
 const neverBoots = "/sandbox.html?boot-deadline=300";
+// A real boot has to fit inside this one, because the deadline bounds every
+// attempt -- including the retry these tests need to succeed. Measured here, a
+// boot with the module cache off is 750ms: 27.8MB fetched over loopback in
+// 120-204ms, compiled in 53-110ms, and the rest the Go runtime starting, the
+// page mounting and the first RPC answering. Five seconds leaves room for a
+// machine 6.7 times slower; shortening it further walks back toward #131, a
+// flake that was load-dependent precisely because a real boot was racing a
+// deadline.
+const retries = "/sandbox.html?boot-deadline=5000";
 
 // The failure this guards against is a boot that never finishes and never says
 // anything: the module's response arrives, no progress follows, and the page
@@ -36,7 +44,7 @@ test("a stalled module boots on the retry and says what happened", async ({
     await route.continue();
   });
 
-  await page.goto("/sandbox.html");
+  await page.goto(retries);
   await expect(page.getByRole("status")).toHaveText(/Starting sandbox/);
   await expect(
     page.getByRole("heading", { name: "Current status" }),
@@ -96,7 +104,7 @@ test("a published worker with a stalled RPC is closed and retried", async ({
       );
     };
   });
-  await page.goto("/sandbox.html");
+  await page.goto(retries);
   await expect(
     page.getByRole("heading", { name: "Current status" }),
   ).toBeVisible({ timeout: 45000 });

@@ -95,17 +95,25 @@ describe("the deadline the page uses", () => {
     expect(bootDeadline("")).toBe(BootDeadlineMs);
     expect(bootDeadline("?scenario=session-2")).toBe(BootDeadlineMs);
     expect(bootDeadline("?boot-deadline=300")).toBe(300);
+    // A test that forces a stall and then boots for real names a value that a
+    // real boot fits inside. 750ms is the measured one; this is the room above
+    // it, and it has to be honoured for that test to be any faster.
+    expect(bootDeadline("?boot-deadline=5000")).toBe(5000);
+    expect(bootDeadline(`?boot-deadline=${BootDeadlineMs}`)).toBe(
+      BootDeadlineMs,
+    );
   });
 
   // The parameter exists so a test that forces a stall need not wait out a
-  // deadline meant for people. It must not be usable to make a person's
-  // sandbox fail to start, so anything outside a second, or not a number at
-  // all, is ignored rather than honoured or refused.
-  it("ignores a value that would break a real start", () => {
+  // deadline meant for people. It only shortens: a longer wait than the page
+  // chose for itself is not the parameter's to grant, and a value that is not a
+  // number names no wait at all. Either is ignored rather than honoured or
+  // refused.
+  it("ignores a value it cannot shorten the wait with", () => {
     for (const search of [
       "?boot-deadline=0",
       "?boot-deadline=-1",
-      "?boot-deadline=1001",
+      `?boot-deadline=${BootDeadlineMs + 1}`,
       "?boot-deadline=60000",
       "?boot-deadline=soon",
       "?boot-deadline=",
