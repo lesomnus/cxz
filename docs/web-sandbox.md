@@ -382,11 +382,11 @@ the authenticated connection's memory across navigation and disappear on page
 reload, sign-out or sandbox Reset.
 
 The authenticated HTTP `/attachments/{session}` endpoint proxies the raw body to
-the Manager's private attachment handler, with `Session.Upload` compatibility for
-older Managers. It reuses login/origin checks, revoked-session
-cancellation and the Manager's run validation, byte limits and storage mount.
-Vite forwards this route to the host gateway. The sandbox calls Upload through
-its in-process transport and stores simulated files only in memory; Download
+the Manager's private attachment handler. It reuses login/origin checks,
+revoked-session cancellation and the Manager's run validation, byte limits and
+storage mount. Vite forwards this route to the host gateway. The sandbox builds
+the same request and carries it over the worker's message channel to the same
+handler, where the fake service stores simulated files only in memory; Download
 can read them in the owning project, and Purge releases them. Real uploads use
 the existing container-readable `/cxz/assets` attachment mount and survive until
 session purge. Uploads do not alter workspace files or add transcript events.

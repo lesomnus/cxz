@@ -1,10 +1,9 @@
 # Attachment data path
 
-The browser and eligible TUI connections upload a raw HTTP request body to the
-Manager that owns the attachment store. No protobuf content messages are created
-on this path. Session discovery, aliases and every other control operation stay
-on the existing RPC API. `SessionService.Upload` remains the compatibility API;
-the in-process WASM sandbox continues to use it.
+Every client uploads a raw HTTP request body to the Manager that owns the
+attachment store. No protobuf content messages are created anywhere: there is
+one upload path and `SessionService.Upload` no longer exists. Session discovery,
+aliases and every other control operation stay on the RPC API.
 
 ```mermaid
 flowchart LR
@@ -14,7 +13,7 @@ flowchart LR
   TUI -->|raw HTTP, token or client certificate| Relay[TCP / mTLS relay]
   Relay -->|raw HTTP, private web.sock| Manager
   Manager -->|lifecycle checks, io.Reader| CAS[flob CAS and immutable export]
-  Compatibility[Older Manager / WASM] -->|Session.Upload| Manager
+  Sandbox[WASM sandbox] -->|raw HTTP, worker message channel| Fake[in-page handler]
 ```
 
 `HEAD /attachments/` on the private Manager listener advertises
@@ -49,7 +48,6 @@ keep their existing semantics.
 | SSH TUI | Same SSH identity, binary and state, through `_connect-http` |
 | TCP relay | The relay's own listener, with the `Authorization: Bearer` its calls carry |
 | mTLS relay, including enrolled SSH using mTLS | The relay's own listener, authorized by the same handshake |
-| Manager without raw endpoint | Existing gRPC Upload |
 | In-process WASM sandbox | The same handler, over the worker's message channel |
 
 A relay carries bodies on the one address and with the one credential its calls
@@ -81,9 +79,12 @@ source ownership with the caller.
 
 Updating the UI alone does not update the Manager storage endpoint. Update both
 Manager and web gateway to use the raw browser path; newer clients and gateways
-retain compatibility with a Manager that still exposes only Upload. A relay that
-has not been updated serves `/` and not `/attachments/`, which its clients
-discover through the probe and answer by using RPC.
+cannot upload to a Manager that does not serve the route, and a relay that has
+not been updated serves `/` and not `/attachments/`. Both report that rather
+than falling back, because there is nothing left to fall back to. A connection
+with no data path at all -- a unix address that is not a Manager's
+`daemon.sock`, a relay whose credential this client does not hold -- says so
+when an upload is attempted.
 
 ## Measurement
 
@@ -140,20 +141,23 @@ it excludes baseline memory, stacks, kernel buffers and OS page cache, and may
 miss peaks between samples. It is not peak RSS or a memory limit. Raw HTTP still
 copies buffers, hashes data and encrypts TLS records; it is not zero-copy.
 
-These results support the raw path for eligible uploads while retaining RPC for
-transport compatibility. More extensive production/relay and cold-storage
-measurements should precede any decision to remove Upload.
+These results are what retiring the RPC rests on. More extensive
+production/relay and cold-storage measurement would still be worth having, but
+the gap measured here is not close enough to argue about.
 
 ## Validation
 
 - Raw HTTP storage tests cover binary/Unicode names, empty files, short and
   excessive streams, stale runs, cancellation, immutable publication and purge.
 - Lifecycle/resource-client tests cover runtime IDs, aliases, unknown sessions,
-  transaction restrictions, missing endpoint fallback and no replay after a
-  dropped POST receipt.
+  transaction restrictions, a Manager without the endpoint, a connection with no
+  data path, and a dropped POST receipt reported rather than retried.
 - The private-socket transport test verifies local installation and conventional
   Unix selection, and refuses invented TCP/mTLS endpoints.
-- Web tests cover cookie/origin authentication, large raw bodies without invoking
-  Upload RPC, legacy RPC compatibility and logout during a stalled upload.
+- Web tests cover cookie/origin authentication, large raw bodies, declared sizes
+  that disagree with the body, and logout during a stalled upload.
+- Relay tests cover a body carried beside the calls on one listener, a foreign
+  certificate refused at the handshake, and a wrong token refused before the
+  body is read.
 - The browser file-drop test uses the real private HTTP proxy and storage reader;
   it checks returned paths and the attachment reference sent to the conversation.

@@ -218,15 +218,6 @@ func (f *browserFixture) UploadAttachment(ctx context.Context, in assets.Upload,
 	return filepath.ToSlash(filepath.Join(assets.MountPath, rel)), err
 }
 
-func (*browserFixture) Upload(stream grpc.ClientStreamingServer[resource.SessionUploadRequest, resource.SessionAttachment]) error {
-	return (&attachmentFixture{run: "run", validate: func(header *resource.SessionUploadRequest, content []byte) error {
-		if header.GetName() == "report.bin" && !bytes.Equal(content, []byte{0, 255, 13, 10}) {
-			return status.Error(codes.InvalidArgument, "binary upload fixture bytes changed")
-		}
-		return nil
-	}}).Upload(stream)
-}
-
 func (f *browserFixture) snapshot() *resource.Session {
 	pending := []*resource.SessionEvent{}
 	if !f.resolved {

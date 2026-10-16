@@ -3,9 +3,9 @@ package lifecycle
 import (
 	"bytes"
 	"context"
-	"errors"
 	"io"
 	"net"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
@@ -14,6 +14,7 @@ import (
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/internal/assets"
+	"github.com/lesomnus/cxz/internal/attachmenthttp"
 	"github.com/lesomnus/cxz/internal/resourceclient"
 	"github.com/lesomnus/cxz/resource"
 	"github.com/lesomnus/payday/config"
@@ -57,7 +58,12 @@ func (r *observedUploadReader) Read(p []byte) (int, error) {
 	return n, err
 }
 
-func TestFileUploadStream(t *testing.T) {
+// What storage promises about a file body, over the one path that carries one:
+// bytes and name preserved at a size no unary message would hold, a second file
+// of the same name not overwriting the first, a declared size that disagrees
+// with the stream refused, a stale run refused, and a transfer cancelled with
+// bytes in flight leaving nothing published.
+func TestFileUpload(t *testing.T) {
 	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 	defer cancel()
 	db, _, err := (config.DbConfig{Driver: "sqlite3", Dsn: "file:" + filepath.Join(t.TempDir(), "db"), MaxOpenConns: 1}).Open(ctx)
@@ -75,6 +81,9 @@ func TestFileUploadStream(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	layer, _ := resource.Find[Layer](stack)
+	httpServer := httptest.NewServer(attachmenthttp.Handler{Uploader: layer})
+	defer httpServer.Close()
 	ln := bufconn.Listen(1 << 20)
 	server := grpc.NewServer()
 	resource.RegisterServer(server, stack)
@@ -85,7 +94,8 @@ func TestFileUploadStream(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer conn.Close()
-	client := resourceclient.New(conn)
+	client := resourceclient.New(conn, &attachmenthttp.Client{Origin: httpServer.URL, HTTP: httpServer.Client()})
+	defer client.Close()
 	wait := func(wantError bool) {
 		t.Helper()
 		select {
@@ -109,7 +119,7 @@ func TestFileUploadStream(t *testing.T) {
 	}
 	wait(false)
 	if data, err := os.ReadFile(path); err != nil || !bytes.Equal(data, body) || filepath.Base(path) != request.Name {
-		t.Fatal("stream changed content or name", err)
+		t.Fatal("upload changed content or name", err)
 	}
 	request.Size = 0
 	empty, err := client.UploadAttachment(ctx, request, bytes.NewReader(nil))
@@ -121,28 +131,21 @@ func TestFileUploadStream(t *testing.T) {
 		t.Fatal("same filename overwrote the previous upload")
 	}
 
-	raw := resource.NewSessionServiceClient(conn)
 	// Cancelling with bytes in flight must return from flob without an export.
-	requestCtx, abort := context.WithCancel(ctx)
-	stream, err := raw.Upload(requestCtx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	header := resource.SessionUploadRequest_builder{Ref: sessionRef(f.s.Id), RunId: ptr("run"), Name: ptr("partial.txt"), Size: ptr(int64(6))}.Build()
-	if err := stream.Send(header); err != nil {
-		t.Fatal(err)
-	}
-	if err := stream.Send(resource.SessionUploadRequest_builder{Content: []byte("abc")}.Build()); err != nil {
-		t.Fatal(err)
-	}
+	partial, abort := context.WithCancel(ctx)
+	done := make(chan error, 1)
+	go func() {
+		_, err := client.UploadAttachment(partial, assets.Upload{SessionID: f.s.Id, RunID: "run", Name: "partial.txt", Size: 6}, &slowReader{content: []byte("abc"), stop: partial.Done()})
+		done <- err
+	}()
 	select {
 	case <-f.started:
 	case <-ctx.Done():
 		t.Fatal("upload did not start")
 	}
 	abort()
-	if _, err := stream.CloseAndRecv(); status.Code(err) != codes.Canceled {
-		t.Fatal("cancellation lost", err)
+	if err := <-done; err == nil {
+		t.Fatal("cancellation lost")
 	}
 	wait(true)
 	entries, err := os.ReadDir(filepath.Join(assets.ExportRoot(f.root, "project"), f.s.Id))
@@ -169,20 +172,24 @@ func TestFileUploadStream(t *testing.T) {
 	if _, err := client.UploadAttachment(ctx, request, bytes.NewReader(nil)); status.Code(err) != codes.FailedPrecondition {
 		t.Fatal("server rejection lost", err)
 	}
-	// Repeating the header must not create another upload or redirect its scope.
-	header.SetName("repeated.txt")
-	bad, err := raw.Upload(ctx)
-	if err != nil {
-		t.Fatal(err)
+}
+
+// slowReader hands over its content and then waits, so a transfer can be
+// cancelled while the server is reading it rather than after. It waits on the
+// cancellation rather than forever: a Read already in progress when the context
+// is cancelled is not re-entered, so a reader that never returns holds the
+// request open and the test closes nothing.
+type slowReader struct {
+	content []byte
+	sent    bool
+	stop    <-chan struct{}
+}
+
+func (r *slowReader) Read(p []byte) (int, error) {
+	if !r.sent {
+		r.sent = true
+		return copy(p, r.content), nil
 	}
-	if err := bad.Send(header); err != nil {
-		t.Fatal(err)
-	}
-	if err := bad.Send(header); err != nil && !errors.Is(err, io.EOF) {
-		t.Fatal(err)
-	}
-	if _, err := bad.CloseAndRecv(); status.Code(err) != codes.InvalidArgument {
-		t.Fatal("repeated header accepted", err)
-	}
-	wait(true)
+	<-r.stop
+	return 0, io.EOF
 }

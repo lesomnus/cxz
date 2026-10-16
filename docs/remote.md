@@ -233,9 +233,10 @@ Some things are host-local by nature and are unavailable or reduced over a remot
 connection:
 
 - **Host file attachments** come from the machine running the *client*, and are
-  uploaded to the daemon. Local and unenrolled SSH connections can stream raw
-  HTTP over their existing private bridge; TCP/mTLS relays retain authenticated
-  gRPC Upload. See [Attachment data path](attachment-data-path.md).
+  uploaded to the daemon. Every connection streams a raw HTTP body: local and
+  unenrolled SSH over their existing private bridge, TCP and mTLS relays on the
+  relay's own listener with the credential their calls use. See
+  [Attachment data path](attachment-data-path.md).
 - **Container path completion** runs on the host through a project helper, reached
   by an RPC — the client's own filesystem is never browsed.
 - **Server settings and the manager's own update policy** are managed on the Linux

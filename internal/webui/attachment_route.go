@@ -3,21 +3,24 @@ package webui
 import (
 	"context"
 	"net/http"
-	"sync/atomic"
 	"time"
 
 	"github.com/lesomnus/cxz/internal/attachmenthttp"
 )
 
-// Prefer a raw proxy to the storage owner. Probe without reading the upload;
-// the legacy RPC adapter is used only when the Manager lacks this endpoint.
-// Once POST starts, errors are returned without replaying any bytes.
-type attachmentRoute struct {
-	raw, legacy http.Handler
-	supported   atomic.Bool
-}
+// The browser's file body goes to the storage owner as itself.
+//
+// This used to probe for the endpoint and fall back to an RPC adapter when the
+// Manager lacked it. There is no adapter to fall back to now, so there is
+// nothing for a probe to decide: the request goes, and a Manager that does not
+// serve the route says so before the body is read -- the upload carries
+// `Expect: 100-continue`. Once POST starts, errors are returned without
+// replaying any bytes.
+type attachmentRoute struct{ raw http.Handler }
 
 func (p *attachmentRoute) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// Refused here as well as by the Manager, so a malformed browser request
+	// does not cross the gateway to be refused on the other side.
 	if _, err := attachmenthttp.Parse(r); err != nil {
 		attachmenthttp.Error(w, err)
 		return
@@ -28,48 +31,5 @@ func (p *attachmentRoute) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	_ = controller.SetReadDeadline(time.Now().Add(10 * time.Minute))
 	stop := context.AfterFunc(ctx, func() { _ = controller.SetReadDeadline(time.Now()) })
 	defer stop()
-	r = r.WithContext(ctx)
-	if !p.supported.Load() {
-		ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
-		probe := r.Clone(ctx)
-		probe.Method = http.MethodHead
-		probe.URL.Path = attachmenthttp.Prefix
-		probe.URL.RawQuery = ""
-		probe.RequestURI = attachmenthttp.Prefix
-		probe.ContentLength = 0
-		probe.Body = http.NoBody
-		probe.GetBody = nil
-		probe.TransferEncoding = nil
-		probe.Header.Del("Content-Length")
-		probe.Header.Del("Expect")
-		result := &attachmentProbe{header: make(http.Header)}
-		p.raw.ServeHTTP(result, probe)
-		cancel()
-		if result.code == http.StatusNoContent && result.header.Get(attachmenthttp.ProtocolHeader) == "1" {
-			p.supported.Store(true)
-		} else if result.code == http.StatusNotFound || result.code == http.StatusNotImplemented {
-			p.legacy.ServeHTTP(w, r)
-			return
-		} else {
-			http.Error(w, "attachment endpoint discovery failed", http.StatusBadGateway)
-			return
-		}
-	}
-	p.raw.ServeHTTP(w, r)
-}
-
-type attachmentProbe struct {
-	header http.Header
-	code   int
-}
-
-func (p *attachmentProbe) Header() http.Header { return p.header }
-func (p *attachmentProbe) WriteHeader(code int) {
-	if p.code == 0 {
-		p.code = code
-	}
-}
-func (p *attachmentProbe) Write(b []byte) (int, error) {
-	p.WriteHeader(http.StatusOK)
-	return len(b), nil
+	p.raw.ServeHTTP(w, r.WithContext(ctx))
 }

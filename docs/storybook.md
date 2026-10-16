@@ -116,5 +116,5 @@ hover·포커스·드래그, 키보드 이동과 `viewportRef`를 통한 위치 
 `Conversation/Composer`의 `FileUploads`, `FailedUpload`는 파일·폴더 드롭과
 toolbar의 파일·폴더 선택, 큰 붙여넣기, 업로드 대기 중 편집·전송 차단,
 chip 상세·삭제·재시도를 보여줍니다. Storybook은 업로드 응답만 흉내 내며 파일을
-서버에 저장하지 않습니다. 실제 `Session.Upload` 연결은 WASM sandbox의 메모리
-파일과 인증된 gateway 브라우저 fixture에서 검증합니다.
+서버에 저장하지 않습니다. 실제 업로드 연결은 WASM sandbox의 메모리 파일과
+인증된 gateway 브라우저 fixture에서 검증합니다.
