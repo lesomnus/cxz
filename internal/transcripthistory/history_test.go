@@ -304,3 +304,96 @@ func TestFileSummaryCountsAreRecordedSpansAndBounded(t *testing.T) {
 		t.Fatal("unbounded summary", len(s.Files), s.OmittedFiles)
 	}
 }
+
+// The stream and the page are one projection, which is the property every
+// client that moves onto Rows depends on. Pinned here rather than asserted at
+// each call site: a row a reader was streamed and the same row it later pages
+// in have to be the same bytes, or the reader has to tell them apart -- which
+// is the dual-shape problem Rows exists to remove.
+func TestTailAndPageAgreeOnEveryRow(t *testing.T) {
+	db, add := fixture(t)
+	input := event(1, "input", "", "")
+	call := event(2, "tool_call", "r1", `{"name":"read"}`)
+	result := event(3, "tool_result", "r1", `{"ok":true}`)
+	assistant := event(4, "assistant", "", `{"item":{"phase":"final_answer"}}`)
+	assistant.Response = &api.ResponseMetadata{Model: "model", Phase: "final_answer"}
+	end := event(5, "turn_end", "", `{"duration_ms":90,"usage":{"input_tokens":7},"total_cost_usd":0.5}`)
+	end.Text = "completed"
+	add(input, call, result, assistant, end)
+
+	page := syncPage(t, db, &api.TranscriptRequest{})
+	current := map[uint64]*api.Event{}
+	var order []uint64
+	for _, v := range tail(t, db, 0) {
+		if _, seen := current[v.Event.Seq]; !seen {
+			order = append(order, v.Event.Seq)
+		}
+		current[v.Event.Seq] = v.Event
+	}
+	if len(order) != len(page.Events) {
+		t.Fatalf("stream had %d rows, page had %d", len(order), len(page.Events))
+	}
+	for i, seq := range order {
+		want := page.Events[i]
+		if got := current[seq]; !proto.Equal(got, want) {
+			t.Fatalf("row %d differs\nstream: %v\npage:   %v", seq, got, want)
+		}
+	}
+
+	// The turn's completion arrives as a second version of the response row,
+	// after the version without it. A reader replaces by seq; it is never asked
+	// to fold anything itself.
+	versions := tail(t, db, 0)
+	var response []Version
+	for _, v := range versions {
+		if v.Event.Seq == assistant.Seq {
+			response = append(response, v)
+		}
+	}
+	if len(response) != 2 {
+		t.Fatalf("the response row was published %d times, want 2", len(response))
+	}
+	if response[0].Updated >= response[1].Updated || response[1].Updated != end.Seq {
+		t.Fatal("the correction did not arrive after the row, keyed by the completing record", response[0].Updated, response[1].Updated)
+	}
+	if len(object(response[0].Event.GetResponse().GetCompletionJson())) != 0 {
+		t.Fatal("the first version already carried a completion")
+	}
+	if object(response[1].Event.GetResponse().GetCompletionJson())["duration_ms"] != float64(90) {
+		t.Fatal("the second version did not carry the turn's metrics")
+	}
+
+	// No turn_end row of its own: the metrics are on the response. A client that
+	// kept the record would be holding the shape this removes.
+	for _, v := range versions {
+		if v.Event.Kind == "turn_end" {
+			t.Fatal("a completed turn kept its record as a row")
+		}
+	}
+
+	// Resuming from a cursor yields what came after it and nothing else: from
+	// the response row's first version, that is the correction alone.
+	from := tail(t, db, response[0].Updated)
+	if len(from) != 1 || from[0].Updated != end.Seq || from[0].Event.Seq != assistant.Seq {
+		t.Fatalf("resume from a cursor replayed or skipped: %v", from)
+	}
+	if last := tail(t, db, end.Seq); len(last) != 0 {
+		t.Fatalf("resume from the end replayed %d rows", len(last))
+	}
+}
+
+func tail(t *testing.T, db *sql.DB, after uint64) []Version {
+	t.Helper()
+	if err := Sync(context.Background(), db, "s", decode); err != nil {
+		t.Fatal(err)
+	}
+	rows, err := Tail(context.Background(), db, "s", after, 0, decode)
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := make([]Version, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, Version{Seq: r.Event.Seq, Updated: r.Updated, Event: r.Event})
+	}
+	return out
+}

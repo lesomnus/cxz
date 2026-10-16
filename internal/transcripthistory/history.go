@@ -675,3 +675,42 @@ func pageLimit(limit uint32) int {
 	}
 	return int(min(limit, uint32(MaxPage)))
 }
+
+// Tail is the projection as it arrives, for a client that is reading rather
+// than deriving. It answers with every row version published after a cursor,
+// in publication order.
+//
+// A cursor over `updated` rather than over `seq` is what makes a stream of rows
+// possible at all: folding a turn's metrics onto its response publishes that
+// response again, at the sequence of the record that completed it. Ordering by
+// updated therefore delivers the correction after the row it corrects, and a
+// reader replaces by seq. Page asks the same table for one version per seq as
+// of a snapshot; this asks it for the versions themselves.
+//
+// The data column holds the row as Page returns it, so a row from here and the
+// same row from a page are the same bytes. That is the property the clients
+// depend on, and history_test.go pins it.
+func Tail(ctx context.Context, db *sql.DB, id string, afterUpdated uint64, limit int, decode Decode) ([]*api.Row, error) {
+	if limit <= 0 {
+		limit = 256
+	}
+	rows, err := db.QueryContext(ctx, `SELECT seq,updated,data FROM transcript_rows WHERE session_id=? AND updated>? ORDER BY updated ASC,seq ASC LIMIT ?`, id, afterUpdated, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []*api.Row
+	for rows.Next() {
+		var seq, updated uint64
+		var b []byte
+		if err = rows.Scan(&seq, &updated, &b); err != nil {
+			return nil, err
+		}
+		var e api.Event
+		if err = json.Unmarshal(b, &e); err != nil {
+			return nil, err
+		}
+		out = append(out, &api.Row{Event: &e, Updated: updated})
+	}
+	return out, rows.Err()
+}

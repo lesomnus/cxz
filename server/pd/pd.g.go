@@ -4421,6 +4421,11 @@ func (s interceptSession) Transcript(ctx context.Context, req *resource.SessionT
 		resource.SessionService_Transcript_FullMethodName, req, s.SessionServiceServer.Transcript)
 }
 
+func (s interceptSession) Rows(req *resource.SessionRowsRequest, out grpc.ServerStreamingServer[resource.SessionRow]) error {
+	return grpcx.RunStream(s.stream, s.SessionServiceServer,
+		resource.SessionService_Rows_FullMethodName, req, out, s.SessionServiceServer.Rows)
+}
+
 func (s interceptSession) EventDetails(ctx context.Context, req *resource.SessionEventDetailsRequest) (*resource.SessionEventBatch, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
 		resource.SessionService_EventDetails_FullMethodName, req, s.SessionServiceServer.EventDetails)

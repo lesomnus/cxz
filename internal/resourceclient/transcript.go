@@ -37,3 +37,24 @@ func (c *Client) EventDetails(ctx context.Context, r *api.EventDetailsRequest, o
 	}
 	return out, nil
 }
+
+type rowStream struct {
+	grpc.ServerStreamingClient[resource.SessionRow]
+	id string
+}
+
+func (s rowStream) Recv() (*api.Row, error) {
+	v, err := s.ServerStreamingClient.Recv()
+	if err != nil {
+		return nil, err
+	}
+	return &api.Row{Event: eventwire.FromResource(s.id, v.GetEvent()), Updated: v.GetUpdated()}, nil
+}
+
+func (c *Client) Rows(ctx context.Context, r *api.RowsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[api.Row], error) {
+	s, err := c.sessions.Rows(ctx, resource.SessionRowsRequest_builder{Ref: sr(r.SessionId), AfterUpdated: &r.AfterUpdated, ClientId: &r.ClientId}.Build(), opts...)
+	if err != nil {
+		return nil, err
+	}
+	return rowStream{s, r.SessionId}, nil
+}
