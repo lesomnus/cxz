@@ -2,7 +2,7 @@
   position: relative;
   isolation: isolate;
   align-items: center;
-  padding-left: calc(6px + var(--ui-control-inset));
+  padding-left: calc(4px + var(--ui-control-inset));
 }
 .field::before {
   content: "";
@@ -45,4 +45,8 @@
 .field > :global(.value-menu) {
   flex: none;
   width: calc(var(--setting-value-width) + 2 * var(--ui-control-inline-inset));
+}
+
+.field:global(.model-field) .icon > svg {
+  transform: none;
 }
