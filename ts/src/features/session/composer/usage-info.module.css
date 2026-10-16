@@ -4,22 +4,46 @@
 .graph {
   position: relative;
   z-index: 5;
-  width: 8ch;
+  display: inline-grid;
+}
+/* Braille may use a fallback font wider than 1ch. Reserve its actual width,
+   including when quota is unreported, instead of letting it overflow the donut. */
+.graph::before {
+  content: "⣿⣿⣿⣿⣿⣿⣿⣿";
+  visibility: hidden;
+}
+.graph::before,
+.graph > span {
+  grid-area: 1 / 1;
+}
+.graph::after {
+  content: "";
+  position: absolute;
+  left: -10px;
+  top: 3px;
+  height: 14px;
+  border-left: 1px solid var(--shade-65);
+  opacity: 0;
+}
+.quota[data-open="true"] .graph::after {
+  opacity: 1;
 }
 .details {
   --agent-logo-size: 16px;
   position: absolute;
   z-index: 4;
-  right: -6px;
+  right: -4px;
   top: -6px;
   bottom: -6px;
   display: grid;
-  grid-template-columns: 16px 8ch 4ch 12ch;
+  grid-template-columns: 16px calc(8ch + 11px) calc(4ch + 11px) calc(
+      14ch + 11px
+    );
   align-items: center;
   gap: 10px;
   width: max-content;
-  padding: 6px calc(100% + 16px) 6px 10px;
-  border: 1px solid var(--shade-60);
+  padding: 6px calc(100% + 24px) 6px 10px;
+
   border-radius: 6px;
   background: var(--shade-36);
   color: var(--shade-237);
@@ -29,7 +53,7 @@
   white-space: nowrap;
   visibility: hidden;
   opacity: 0;
-  transform: translateX(4px);
+  transform: translateX(-4px);
   transition:
     opacity 160ms,
     transform 160ms,
@@ -54,4 +78,11 @@
   .details {
     transition: none;
   }
+}
+
+.period,
+.percent,
+.time {
+  border-left: 1px solid var(--shade-65);
+  padding-left: 10px;
 }
