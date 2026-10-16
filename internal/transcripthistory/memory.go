@@ -105,3 +105,22 @@ func DetailsFromEvents(events []*api.Event, seq uint64) (*api.EventBatch, error)
 	}
 	return out, nil
 }
+
+// VersionsFromEvents is Tail without a database, for an in-memory conversation.
+// The sandbox has one, and it has to answer the same rows the index would: a
+// page the sandbox serves and a row the sandbox streams come from this same
+// projection, which is the property that makes the sandbox worth designing
+// against.
+func VersionsFromEvents(events []*api.Event, afterUpdated uint64) []Version {
+	p := New()
+	for _, e := range events {
+		p.Apply(e)
+	}
+	var out []Version
+	for _, v := range p.Versions {
+		if v.Updated > afterUpdated {
+			out = append(out, v)
+		}
+	}
+	return out
+}

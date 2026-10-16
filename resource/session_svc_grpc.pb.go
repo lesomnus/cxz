@@ -59,6 +59,7 @@ const (
 	SessionService_Reply_FullMethodName                  = "/cxz.SessionService/Reply"
 	SessionService_History_FullMethodName                = "/cxz.SessionService/History"
 	SessionService_Transcript_FullMethodName             = "/cxz.SessionService/Transcript"
+	SessionService_Rows_FullMethodName                   = "/cxz.SessionService/Rows"
 	SessionService_EventDetails_FullMethodName           = "/cxz.SessionService/EventDetails"
 	SessionService_Background_FullMethodName             = "/cxz.SessionService/Background"
 	SessionService_Models_FullMethodName                 = "/cxz.SessionService/Models"
@@ -161,6 +162,10 @@ type SessionServiceClient interface {
 	History(ctx context.Context, in *SessionEventsRequest, opts ...grpc.CallOption) (*SessionEventBatch, error)
 	// Readable, indexed history. Paging counts transcript rows, not protocol records.
 	Transcript(ctx context.Context, in *SessionTranscriptRequest, opts ...grpc.CallOption) (*SessionTranscriptReply, error)
+	// Rows is Transcript arriving rather than Transcript paged: the same reading
+	// projection, streamed. Events carries records as the journal has them, which
+	// is what derives from a conversation; this carries the rows a person reads.
+	Rows(ctx context.Context, in *SessionRowsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SessionRow], error)
 	// Full native records for one row/execution, fetched only for inspection.
 	EventDetails(ctx context.Context, in *SessionEventDetailsRequest, opts ...grpc.CallOption) (*SessionEventBatch, error)
 	Background(ctx context.Context, in *SessionBackgroundRequest, opts ...grpc.CallOption) (*SessionBackgroundReply, error)
@@ -612,6 +617,25 @@ func (c *sessionServiceClient) Transcript(ctx context.Context, in *SessionTransc
 	return out, nil
 }
 
+func (c *sessionServiceClient) Rows(ctx context.Context, in *SessionRowsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SessionRow], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &SessionService_ServiceDesc.Streams[1], SessionService_Rows_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[SessionRowsRequest, SessionRow]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type SessionService_RowsClient = grpc.ServerStreamingClient[SessionRow]
+
 func (c *sessionServiceClient) EventDetails(ctx context.Context, in *SessionEventDetailsRequest, opts ...grpc.CallOption) (*SessionEventBatch, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SessionEventBatch)
@@ -644,7 +668,7 @@ func (c *sessionServiceClient) Models(ctx context.Context, in *SessionModelsRequ
 
 func (c *sessionServiceClient) Events(ctx context.Context, in *SessionEventsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SessionEvent], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &SessionService_ServiceDesc.Streams[1], SessionService_Events_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &SessionService_ServiceDesc.Streams[2], SessionService_Events_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -663,7 +687,7 @@ type SessionService_EventsClient = grpc.ServerStreamingClient[SessionEvent]
 
 func (c *sessionServiceClient) Search(ctx context.Context, in *SessionSearchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SessionSearchReply], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &SessionService_ServiceDesc.Streams[2], SessionService_Search_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &SessionService_ServiceDesc.Streams[3], SessionService_Search_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -702,7 +726,7 @@ func (c *sessionServiceClient) AuxStatus(ctx context.Context, in *AuxStatusReque
 
 func (c *sessionServiceClient) AuxEvents(ctx context.Context, in *AuxStatusRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[AuxState], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &SessionService_ServiceDesc.Streams[3], SessionService_AuxEvents_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &SessionService_ServiceDesc.Streams[4], SessionService_AuxEvents_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -865,6 +889,10 @@ type SessionServiceServer interface {
 	History(context.Context, *SessionEventsRequest) (*SessionEventBatch, error)
 	// Readable, indexed history. Paging counts transcript rows, not protocol records.
 	Transcript(context.Context, *SessionTranscriptRequest) (*SessionTranscriptReply, error)
+	// Rows is Transcript arriving rather than Transcript paged: the same reading
+	// projection, streamed. Events carries records as the journal has them, which
+	// is what derives from a conversation; this carries the rows a person reads.
+	Rows(*SessionRowsRequest, grpc.ServerStreamingServer[SessionRow]) error
 	// Full native records for one row/execution, fetched only for inspection.
 	EventDetails(context.Context, *SessionEventDetailsRequest) (*SessionEventBatch, error)
 	Background(context.Context, *SessionBackgroundRequest) (*SessionBackgroundReply, error)
@@ -1026,6 +1054,9 @@ func (UnimplementedSessionServiceServer) History(context.Context, *SessionEvents
 }
 func (UnimplementedSessionServiceServer) Transcript(context.Context, *SessionTranscriptRequest) (*SessionTranscriptReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method Transcript not implemented")
+}
+func (UnimplementedSessionServiceServer) Rows(*SessionRowsRequest, grpc.ServerStreamingServer[SessionRow]) error {
+	return status.Error(codes.Unimplemented, "method Rows not implemented")
 }
 func (UnimplementedSessionServiceServer) EventDetails(context.Context, *SessionEventDetailsRequest) (*SessionEventBatch, error) {
 	return nil, status.Error(codes.Unimplemented, "method EventDetails not implemented")
@@ -1803,6 +1834,17 @@ func _SessionService_Transcript_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SessionService_Rows_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(SessionRowsRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(SessionServiceServer).Rows(m, &grpc.GenericServerStream[SessionRowsRequest, SessionRow]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type SessionService_RowsServer = grpc.ServerStreamingServer[SessionRow]
+
 func _SessionService_EventDetails_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SessionEventDetailsRequest)
 	if err := dec(in); err != nil {
@@ -2246,6 +2288,11 @@ var SessionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "Watch",
 			Handler:       _SessionService_Watch_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "Rows",
+			Handler:       _SessionService_Rows_Handler,
 			ServerStreams: true,
 		},
 		{
