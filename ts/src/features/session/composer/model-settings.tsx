@@ -105,8 +105,10 @@ export function ModelSettings({
               >
                 {kind === "model" ? (
                   <>
-                    <path d="M6 17a4 4 0 0 1-3-6 4 4 0 0 1 4-6 4 4 0 0 1 6-1 4 4 0 0 1 6 3 4 4 0 0 1 2 6 4 4 0 0 1-4 4h-1l2 4h-3l-3-4H6Z" />
-                    <path d="M7 5c-1 2 0 4 2 4M3 11c2-1 4 0 4 2m2-4c3-2 5 0 5 2m-1-7c-1 2 0 3 2 4m4-1c-2 0-3 2-2 4m-5 6c-1-3 1-5 4-4m1 4c2-1 2-3 1-4" />
+                    <rect x="4" y="7" width="16" height="13" rx="3" />
+                    <path d="M12 7V3M2 12v4m20-4v4M9 17h6" />
+                    <circle cx="8.5" cy="12" r="1" />
+                    <circle cx="15.5" cy="12" r="1" />
                   </>
                 ) : (
                   <>

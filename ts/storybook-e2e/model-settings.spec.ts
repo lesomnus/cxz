@@ -10,6 +10,25 @@ test("composer setting hover frames include icons without moving values or showi
     const menu = page.getByRole("combobox", { name, exact: true });
     await expect(menu).toBeVisible();
     const before = await menu.boundingBox();
+    const measured = await menu.evaluate(
+      (el, chars) => {
+        const style = getComputedStyle(el);
+        const ruler = document.createElement("span");
+        ruler.style.cssText = `position:absolute; width:${chars}ch; font:${style.font}`;
+        el.append(ruler);
+        const expected = ruler.getBoundingClientRect().width;
+        ruler.remove();
+        return {
+          actual:
+            el.clientWidth -
+            parseFloat(style.paddingLeft) -
+            parseFloat(style.paddingRight),
+          expected,
+        };
+      },
+      name === "Model" ? 14 : 7,
+    );
+    expect(measured.actual).toBeCloseTo(measured.expected, 0);
     await expect(field.locator(".meta-tooltip")).toHaveCount(0);
     await menu.hover();
     const frame = await field.evaluate((el) => {
@@ -30,7 +49,7 @@ test("composer setting hover frames include icons without moving values or showi
     const top = iconBox.y - (fieldBox.y - 2);
     const bottom =
       fieldBox.y + fieldBox.height + 2 - iconBox.y - iconBox.height;
-    expect(left).toBeCloseTo((top + bottom) / 2, 1);
+    expect(left).toBeCloseTo((top + bottom) / 2 + 3, 1);
     expect(top - bottom).toBeCloseTo(2, 1);
     expect([frame.top, frame.left, frame.right, frame.bottom]).toEqual([
       "-2px",
