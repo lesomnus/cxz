@@ -30,6 +30,13 @@ test("quota hover opens left, covers the stationary graph and has stable columns
     const donut = (await page.locator(".context-donut").boundingBox())!;
     expect(glyphs!.x + glyphs!.width).toBeLessThan(donut.x);
     const box = (await tooltip.boundingBox())!;
+    const center = before.y + before.height / 2;
+    for (const item of await content.locator(":scope > *").all()) {
+      const bounds = (await item.boundingBox())!;
+      expect(Math.abs(bounds.y + bounds.height / 2 - center)).toBeLessThan(1);
+    }
+    expect(Math.abs(box.y + box.height / 2 - center)).toBeLessThan(1);
+
     expect(box.x + box.width).toBeLessThan(donut.x);
     expect(box.x + box.width - before.x - before.width).toBeCloseTo(10, 0);
     expect(box.x).toBeLessThan(before.x);

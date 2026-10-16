@@ -38,7 +38,8 @@
   right: -10px;
   top: -6px;
   bottom: -6px;
-  display: block;
+  display: flex;
+  align-items: center;
   width: max-content;
   padding: 6px calc(100% + 30px) 6px 10px;
 
