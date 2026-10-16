@@ -24,6 +24,14 @@ test("composer setting hover frames include icons without moving values or showi
       };
     });
     expect(frame.opacity).toBe("1");
+    const fieldBox = (await field.boundingBox())!;
+    const iconBox = (await field.locator("svg").boundingBox())!;
+    const left = iconBox.x - (fieldBox.x - 2);
+    const top = iconBox.y - (fieldBox.y - 2);
+    const bottom =
+      fieldBox.y + fieldBox.height + 2 - iconBox.y - iconBox.height;
+    expect(left).toBeCloseTo((top + bottom) / 2, 1);
+    expect(top - bottom).toBeCloseTo(2, 1);
     expect([frame.top, frame.left, frame.right, frame.bottom]).toEqual([
       "-2px",
       "-2px",
