@@ -21,6 +21,7 @@ const meta = {
       description: {
         component:
           "The **Composer** is the complete message-writing area, including its toolbar, editor and status bar.\n\n" +
+          "- **Toolbar surface** (`.composer-toolbar-surface`): one glow and glass background extending behind the editor by its top corner radius. The editor overlaps it without changing the button row geometry.\n" +
           "- **Composer toolbar** (`.composer-toolbar`): Stop, elapsed time, Session menu, Terminal, Voice input, Latest and Send. Voice input uses the browser's native Web Speech API and browser language, resolving bare languages such as `ko` to a regional speech locale such as `ko-KR`; unsupported browsers show a disabled microphone with a hover hint. Interim speech appears in a live hint and final text is inserted at the editor caret. Click again or press Escape to stop; sending or switching sessions ends recognition. A red microphone dot indicates listening, and an idle listener has no Listening popover. General settings can force local recognition with voice.processLocally; unsupported browsers or missing language packs show an error without cloud fallback. Depending on the browser, recognition may use an online service.\n" +
           "- **Composer editor** (`ComposerEditor`, `.composer-editor`): line numbers, Markdown, code blocks, paste chips and slash-command suggestions. Its input container is `.composer-input`.\n" +
           "- **Composer status bar** (`.composer-meta`): model, effort, usage and context.\n" +
