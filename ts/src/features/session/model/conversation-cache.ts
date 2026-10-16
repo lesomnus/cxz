@@ -3,12 +3,7 @@ import type { Connection } from "#src/shared/api/connection.ts";
 import { ref } from "#src/shared/api/connection.ts";
 import { Code, ConnectError } from "@connectrpc/connect";
 import { SessionHistory, type HistoryPage } from "./session-history";
-import {
-  liveOutputKinds,
-  mergeEvents,
-  outputKey,
-  pendingAfter,
-} from "./journal";
+import { mergeEvents, pendingAfter } from "./journal";
 import { mergeMetadata } from "./session-metadata";
 import { advanceTurn, snapshotTurn, type TurnProgress } from "./turn-progress";
 import { transcriptEvents } from "./tool-activity";
@@ -161,9 +156,6 @@ export class CachedConversation {
   };
   preceding?: { before: bigint; through: bigint; event?: SessionEvent };
   private tail: SessionEvent[] = [];
-  // Tool bodies, by request identity, for the output a row does not carry.
-  // Replaced rather than accumulated: a result supersedes the output before it.
-  private records = new Map<string, SessionEvent>();
   // A cursor over row versions, which is not the record cursor: a row is
   // published again when a later record corrects it.
   private rowCursor = 0n;
@@ -316,10 +308,10 @@ export class CachedConversation {
     };
   }
   /**
-   * receive takes a record, which is what the session *is*: what it is doing,
-   * what it is waiting for, and the tool bodies a running tool produces. Rows
-   * do not arrive here -- see [receiveRow] -- because a record is not a row and
-   * deciding which records make one is the runtime's job.
+   * receive takes a record, which is what the session *is*: what it is doing
+   * and what it is waiting for. Rows do not arrive here -- see [receiveRow] --
+   * because a record is not a row, and deciding which records make one is the
+   * runtime's job rather than this client's.
    */
   private receive(e: SessionEvent) {
     this.client.attention.event(this.id, e);
@@ -335,11 +327,6 @@ export class CachedConversation {
     this.cursor = e.seq > this.cursor ? e.seq : this.cursor;
     if (this.cursor > this.latestSeq.current)
       this.latestSeq.current = this.cursor;
-    // A running tool's output is not a row and never becomes one: the row says
-    // the tool is working, and the bytes it is producing are read from here
-    // until the result lands. Bounded with the rows, by request identity.
-    if (liveOutputKinds.has(e.kind) && e.requestId)
-      this.records.set(outputKey(e), e);
     this.newest.current = {
       anchor: this.tail.at(-1)?.seq ?? 0n,
       through: this.cursor,
@@ -407,7 +394,6 @@ export class CachedConversation {
         this.cursor = 0n;
         this.ready = false;
         this.tail = [];
-        this.records.clear();
         this.rowCursor = 0n;
         this.latestSeq.current = 0n;
         this.floor.current = 0n;
@@ -479,10 +465,6 @@ export class CachedConversation {
           if (e.kind === "queued") queued = e.text;
           if (e.kind === "input" && e.text === queued) queued = "";
         }
-        for (const e of page.events) {
-          if (liveOutputKinds.has(e.kind) && e.requestId)
-            this.records.set(outputKey(e), e);
-        }
         const next = page.events.at(-1)?.seq ?? after;
         if (next <= after) break;
         // Records settle what the session is doing and what bodies a running
@@ -521,11 +503,12 @@ export class CachedConversation {
       };
       if (wasActive && !this.active) this.changed();
       if (signal.aborted) return;
-      // Two streams, each with one job. Events carries records -- what the
-      // session is doing, and the bodies a running tool produces. Rows carries
-      // the conversation as it reads. Neither derives the other's answer, which
-      // is the point: this client used to reduce records into rows itself, and
-      // so did the TUI, over two shapes that had to agree. See cxz#155.
+      // Two streams, each with one job. Events carries records: what the
+      // session is doing, what it is waiting for, and the replay cursor. Rows
+      // carries the conversation as it reads. Neither derives the other's
+      // answer, which is the point -- this client used to reduce records into
+      // rows itself, and so did the TUI, over two shapes that had to agree.
+      // See cxz#155.
       await Promise.all([
         (async () => {
           for await (const e of this.client.sessions.events(

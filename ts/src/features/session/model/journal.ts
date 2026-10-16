@@ -188,11 +188,3 @@ export function pendingAfter(
   }
   return out;
 }
-
-// A running tool's bytes. The projection does not keep these as rows -- the row
-// says the tool is working -- so a reader that wants the output while it runs
-// reads the records themselves.
-export const liveOutputKinds = new Set(["tool_output", "tool_result"]);
-export function outputKey(e: SessionEvent) {
-  return `${e.runId}/${e.requestId}/${e.kind}`;
-}
