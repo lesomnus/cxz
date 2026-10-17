@@ -513,10 +513,13 @@ export class CachedConversation {
       // See cxz#155.
       // Raced rather than awaited together: a conversation with one dead stream
       // is a broken conversation, so whichever ends first reconnects both.
-      // Awaiting both would mean a dead Events is never noticed while Rows is
-      // still open. The surviving stream is not cancelled here -- the next
-      // connect retires it -- because frames already in flight are worth
+      // Awaiting both would mean an Events that ended is never noticed while
+      // Rows is still open. The surviving stream is not cancelled here -- the
+      // next connect retires it -- because frames already in flight are worth
       // applying, and a reader that drops them shows less than it was sent.
+      // A race only catches a stream that ends or throws, never one that goes
+      // quiet while open; that is why the row stream reports its own silence
+      // rather than leaving it to be noticed here. See cxz#188 and ROW_STALL_MS.
       await Promise.race([
         (async () => {
           for await (const e of this.client.sessions.events(

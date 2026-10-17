@@ -14,6 +14,18 @@ import (
 // more behind it: the loop drains rather than waiting for the next write.
 const rowsPage = 256
 
+// rowsHeartbeat says the stream is alive when it has nothing to say. That was
+// the hole in cxz#188: a conversation stopped growing while the client still
+// read as live, because a stream that never ends and never throws is invisible
+// to the reader waiting on it.
+//
+// An event-less row is the frame, because it cannot be mistaken for a row:
+// Tail always decodes one, and both the resource layer and the web client
+// already pass over a row without an event.
+//
+// A variable so a test can shorten it; nothing else writes it.
+var rowsHeartbeat = transcripthistory.Heartbeat
+
 // Rows streams the reading projection.
 //
 // Watch and this answer the same journal and are not alternatives: Watch
@@ -39,6 +51,10 @@ func (s *Server) Rows(r *api.RowsRequest, stream grpc.ServerStreamingServer[api.
 	cursor := r.AfterUpdated
 	ticker := time.NewTicker(150 * time.Millisecond)
 	defer ticker.Stop()
+	// Due immediately, so the first heartbeat goes out as soon as the stream has
+	// caught up: a reader learns that silence will be reported to it within one
+	// round trip rather than after the first idle interval.
+	last := time.Now().Add(-rowsHeartbeat)
 	for {
 		batch, err := s.syncedRows(ctx, m, cursor)
 		if err != nil {
@@ -49,9 +65,16 @@ func (s *Server) Rows(r *api.RowsRequest, stream grpc.ServerStreamingServer[api.
 				return err
 			}
 			cursor = v.Updated
+			last = time.Now()
 		}
 		if len(batch) == rowsPage {
 			continue
+		}
+		if time.Since(last) >= rowsHeartbeat {
+			if err = stream.Send(&api.Row{Updated: cursor}); err != nil {
+				return err
+			}
+			last = time.Now()
 		}
 		select {
 		case <-ctx.Done():
@@ -89,6 +112,12 @@ func (s *Server) rowsRemote(r *api.RowsRequest, stream grpc.ServerStreamingServe
 	// Rows are not cached on the way through. The manager's cache is of records,
 	// which is what it rebuilds a projection from; a row is derived from those
 	// and keeping a second copy would be a second thing to invalidate.
+	//
+	// Heartbeats are forwarded rather than generated here, so what a reader
+	// measures is the runtime's liveness and not this proxy's. A runtime too old
+	// to send them leaves the reader where it was before cxz#188: silent, and
+	// unable to tell. That is why the client arms its deadline only once it has
+	// seen a heartbeat.
 	for {
 		v, err := remote.Recv()
 		if err != nil {

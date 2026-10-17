@@ -18,6 +18,11 @@ export type LoadEventDetails = (
 export const HISTORY_PAGE_SIZE = 1024;
 export const NATIVE_HISTORY_PAGE_SIZE = 1024;
 export const HISTORY_PREFETCH_SCREENS = 6;
+/**
+ * How long a row stream may say nothing before it is reported as stalled. The
+ * runtime heartbeats an idle stream every 10s, so this is two missed beats.
+ */
+export const ROW_STALL_MS = 30_000;
 
 /**
  * Reading a conversation is reading rows, and rows come from the session's
@@ -79,17 +84,44 @@ export class SessionHistory {
    * versions rather than over records: a response row is published again when
    * its turn completes, so the same seq arrives twice and the second one is the
    * correction. Callers replace by seq.
+   *
+   * A row with no event is the runtime's heartbeat, not a row. It is what makes
+   * silence legible: without it an open stream that has stalled looks exactly
+   * like one with nothing to send, and the conversation stops growing while the
+   * reader still believes it is live (cxz#188). Seeing one arms a deadline, and
+   * missing the next two throws -- which is what the caller already handles,
+   * because it reconnects on a stream that fails.
    */
   async *rows(afterUpdated: bigint, signal: AbortSignal) {
+    const stream = this.sessions.rows(
+      { ref: ref(this.id), afterUpdated, clientId: this.clientId },
+      { signal },
+    )[Symbol.asyncIterator]();
+    // Armed by the first heartbeat rather than on open, because a runtime that
+    // predates them is legitimately silent: timing it out would reconnect a
+    // healthy conversation every ROW_STALL_MS forever.
+    let armed = false;
     try {
-      for await (const row of this.sessions.rows(
-        { ref: ref(this.id), afterUpdated, clientId: this.clientId },
-        { signal },
-      )) {
-        if (row.event) yield { event: row.event, updated: row.updated };
+      for (;;) {
+        const next = await (armed
+          ? deadline(stream.next(), ROW_STALL_MS)
+          : stream.next());
+        if (next.done) return;
+        if (!next.value.event) {
+          armed = true;
+          continue;
+        }
+        yield { event: next.value.event, updated: next.value.updated };
       }
     } catch (error) {
       throw outdated(error);
+    } finally {
+      // Best effort, and deliberately not awaited: an iterator suspended on a
+      // read that never completes -- exactly the case being reported -- would
+      // never process the return, and awaiting it here would swallow the very
+      // error that is being thrown. The request itself is released when the
+      // next connect aborts the signal.
+      void stream.return?.().catch(() => {});
     }
   }
   readonly details: LoadEventDetails = async (seq, signal) => {
@@ -99,6 +131,29 @@ export class SessionHistory {
     );
     return page.events;
   };
+}
+
+// deadline reports a frame that did not arrive. The abandoned read stays
+// attached to the race, so its own later rejection is already handled; nothing
+// is lost by dropping its value, because the only reason to be here is that
+// there was no value.
+function deadline<T>(read: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout>;
+  return Promise.race([
+    read,
+    new Promise<never>((_, reject) => {
+      timer = setTimeout(
+        () =>
+          reject(
+            new ConnectError(
+              "The conversation stream stopped responding.",
+              Code.Unavailable,
+            ),
+          ),
+        ms,
+      );
+    }),
+  ]).finally(() => clearTimeout(timer));
 }
 
 // Unimplemented from a session's runtime means that runtime predates the
