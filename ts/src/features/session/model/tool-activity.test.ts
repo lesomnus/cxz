@@ -133,6 +133,11 @@ describe("what a card displays", () => {
       name: "Bash",
       shell: "zsh",
       command: "git status --short --branch",
+      // Derived from records rather than read from a row, so the shape and the
+      // provider's own words are not known here. An empty kind says that; it is
+      // not a claim that this is a tool of no shape.
+      kind: "",
+      description: "",
     });
   });
 

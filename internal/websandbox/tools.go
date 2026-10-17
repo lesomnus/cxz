@@ -26,3 +26,13 @@ func (s *Server) toolActivity(st *session, id string, complete bool) {
 	}
 	s.event(st, "tool_result", output, request, []byte(fmt.Sprintf(`{"simulated":true,"item":{"type":"commandExecution","command":%q,"status":"completed","exitCode":0,"aggregatedOutput":%q}}`, command, output)))
 }
+
+// skillActivity is a tool whose name is not what it is. "Skill" names every one
+// of them; which skill and with what arguments is in the payload, which is why
+// a row carries a description. Without one, this card read "Skill" and nothing
+// else -- the gap that adding ToolSummary.kind/description closed.
+func (s *Server) skillActivity(st *session, id string) {
+	request := st.value.GetStatus().GetRunId() + "/" + id
+	s.event(st, "tool_call", "Skill", request, []byte(`{"simulated":true,"input":{"skill":"dataviz","args":"palette"}}`))
+	s.event(st, "tool_result", "Loaded the dataviz skill.", request, []byte(`{"simulated":true,"content":"Loaded the dataviz skill."}`))
+}

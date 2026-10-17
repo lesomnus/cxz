@@ -21,21 +21,26 @@ const details = (page: import("@playwright/test").Page) =>
     .last()
     .getByRole("button", { name: "View details", exact: true });
 
-test("a paired tool is one card carrying the command it ran", async ({
+test("paired tools are one card each, carrying what the row says they are", async ({
   page,
 }) => {
   await page.goto("/sandbox.html#/sessions/session-9");
   await expect(page.locator(".transcript")).toBeVisible({ timeout: 45000 });
   await details(page).click();
-  const card = page
+  const cards = page.locator("#work-dialog .tool-activity");
+  // Five records, two cards: a call, its output and its result merge into one,
+  // and the skill's call and result into another.
+  await expect(cards).toHaveCount(2);
+  const command = page
     .locator('#work-dialog .tool-activity[data-state="completed"]')
-    .last();
-  await expect(card).toBeVisible();
+    .first();
   // The command is on the row. A client that had to pair records to find it
   // would be deriving what the projection already decided.
-  await expect(card).toContainText("ls -la ts/src");
-  // Three records, one card.
-  await expect(page.locator("#work-dialog .tool-activity")).toHaveCount(1);
+  await expect(command).toContainText("ls -la ts/src");
+
+  // "Skill" names every skill, so a card with only the name says nothing about
+  // which one ran. The row carries the provider's own words for the call.
+  await expect(cards.last()).toContainText("Skill dataviz palette");
 
   // The output bytes are deliberately not here: the projection drops output
   // records once the row carries the state the tool reached, and a reader that

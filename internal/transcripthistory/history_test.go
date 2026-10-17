@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -536,5 +537,49 @@ func TestOrphanToolRecordsStillRead(t *testing.T) {
 	}
 	if got := p.Events[0].GetToolSummary().GetState(); got != "completed" {
 		t.Fatal("an orphan result lost its state:", got)
+	}
+}
+
+// A row says what shape it is, because a reader lays out a command, a file list
+// and a bare tool differently and cannot work it out from the rest of the row:
+// a Read puts the path it read in Command as well as in Files.
+func TestRowSaysWhatShapeAToolIs(t *testing.T) {
+	db, add := fixture(t)
+	calls := []struct {
+		name, payload, kind, description string
+	}{
+		{"Read", `{"input":{"file_path":"ts/src/app/app.tsx"}}`, "read", ""},
+		{"Bash", `{"input":{"command":"/usr/bin/zsh -lc 'ls -la'","description":"List the tree"}}`, "command", "List the tree"},
+		{"Skill", `{"input":{"skill":"dataviz","args":"palette"}}`, "tool", "Skill dataviz palette"},
+		{"cxz_memory_search", `{"input":{"query":"anything"}}`, "tool", ""},
+	}
+	for i, c := range calls {
+		e := event(uint64(i+1), "tool_call", fmt.Sprintf("call-%d", i), c.payload)
+		e.Text = c.name
+		add(e)
+	}
+	p := syncPage(t, db, &api.TranscriptRequest{})
+	if len(p.Events) != len(calls) {
+		t.Fatalf("%d calls produced %d rows", len(calls), len(p.Events))
+	}
+	for i, c := range calls {
+		label := p.Events[i].GetToolSummary()
+		if label.GetKind() != c.kind {
+			t.Fatalf("%s is shaped %q, want %q", c.name, label.GetKind(), c.kind)
+		}
+		if label.GetDescription() != c.description {
+			t.Fatalf("%s describes itself as %q, want %q", c.name, label.GetDescription(), c.description)
+		}
+	}
+	// The Read is the reason kind is carried rather than inferred: Command is
+	// set, so a reader guessing from it would draw a shell.
+	if read := p.Events[0].GetToolSummary(); read.GetCommand() == "" {
+		t.Fatal("a Read lost the path it read")
+	}
+	// A call the projection cannot parse says it is a tool and says nothing
+	// else: its name is all a reader gets, and a description repeating the name
+	// would be a reader thinking it had more than it does.
+	if last := p.Events[3].GetToolSummary(); last.GetName() != "cxz_memory_search" {
+		t.Fatal("an unparsed call lost its name:", last.GetName())
 	}
 }

@@ -35,6 +35,14 @@ export function ToolActivityView({
   const label = toolLabel(activity, agent);
   const state = toolState(activity, agent);
   const { files, omitted } = toolFiles(activity);
+  // A call the provider described says more than its name does: a Skill is
+  // "Skill <name> <args>" and its name is only "Skill". A command keeps its
+  // name, because the description is about the script rather than instead of
+  // it, and stands in only when there is no script to show.
+  const heading =
+    label.kind === "tool" && label.description ? label.description : label.name;
+  const trailing =
+    label.command || (label.kind === "command" ? label.description : "");
   const symbol = { pending: "○", working: "•", completed: "✓", failed: "×" }[
     state
   ];
@@ -101,13 +109,11 @@ export function ToolActivityView({
         <>
           {status}
           <span className="tool-summary">
-            <span>{label.name}</span>
+            <span>{heading}</span>
             {label.shell && (
               <span className="tool-shell"> · {label.shell}</span>
             )}
-            {label.command && (
-              <span className="tool-command"> · {label.command}</span>
-            )}
+            {trailing && <span className="tool-command"> · {trailing}</span>}
           </span>
         </>
       )}

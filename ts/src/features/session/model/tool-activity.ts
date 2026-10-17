@@ -281,9 +281,20 @@ export function shellCommand(command: string) {
   return carries && script.trim() ? { shell, command: script } : original;
 }
 
+/**
+ * toolLabel answers what a row says about itself. A row that carries a summary
+ * is read as it is; the branches below are for an activity assembled from
+ * records, which is what the details panel works with.
+ *
+ * `kind` and `description` are empty on those branches rather than derived a
+ * second time here. An empty kind means "shape unknown", and a reader falls
+ * back to exactly what it drew before the row carried one.
+ */
 export function toolLabel(activity: ToolActivity, agent: string) {
+  const unknown = { kind: "", description: "" };
   const event = activity.call ?? activity.result ?? activity.output[0];
-  if (!event) return { name: "Tool output", shell: "", command: "" };
+  if (!event)
+    return { name: "Tool output", shell: "", command: "", ...unknown };
   if (event.toolSummary) return event.toolSummary;
   const p = payload(event);
   if (
@@ -296,6 +307,7 @@ export function toolLabel(activity: ToolActivity, agent: string) {
       ...shellCommand(
         typeof command === "string" ? command : (activity.call?.text ?? ""),
       ),
+      ...unknown,
     };
   }
   if (agent === "codex" && p.item?.type === "fileChange") {
@@ -306,12 +318,14 @@ export function toolLabel(activity: ToolActivity, agent: string) {
         .map((v: { path?: string }) => v.path)
         .filter(Boolean)
         .join(", "),
+      ...unknown,
     };
   }
   return {
     name: activity.call?.text || "Tool result",
     shell: "",
     command: typeof p.file_path === "string" ? p.file_path : "",
+    ...unknown,
   };
 }
 

@@ -15,7 +15,7 @@ func ToResource(e *api.Event) *resource.SessionEvent {
 		for _, f := range t.Files {
 			files = append(files, resource.ToolFileSummary_builder{Path: f.Path, MovePath: f.MovePath, Action: f.Action, Added: f.Added, Removed: f.Removed, Lines: f.Lines, Measure: f.Measure, PerMatch: f.PerMatch}.Build())
 		}
-		v.SetToolSummary(resource.ToolSummary_builder{Name: t.Name, Shell: t.Shell, Command: t.Command, State: t.State, Files: files, OmittedFiles: t.OmittedFiles}.Build())
+		v.SetToolSummary(resource.ToolSummary_builder{Name: t.Name, Shell: t.Shell, Command: t.Command, State: t.State, Files: files, OmittedFiles: t.OmittedFiles, Kind: t.Kind, Description: t.Description}.Build())
 	}
 	return v
 }
@@ -29,7 +29,7 @@ func FromResource(id string, e *resource.SessionEvent) *api.Event {
 		for _, f := range t.GetFiles() {
 			files = append(files, &api.ToolFileSummary{Path: f.GetPath(), MovePath: f.GetMovePath(), Action: f.GetAction(), Added: f.GetAdded(), Removed: f.GetRemoved(), Lines: f.GetLines(), Measure: f.GetMeasure(), PerMatch: f.GetPerMatch()})
 		}
-		v.ToolSummary = &api.ToolSummary{Name: t.GetName(), Shell: t.GetShell(), Command: t.GetCommand(), State: t.GetState(), Files: files, OmittedFiles: t.GetOmittedFiles()}
+		v.ToolSummary = &api.ToolSummary{Name: t.GetName(), Shell: t.GetShell(), Command: t.GetCommand(), State: t.GetState(), Files: files, OmittedFiles: t.GetOmittedFiles(), Kind: t.GetKind(), Description: t.GetDescription()}
 	}
 	return v
 }
