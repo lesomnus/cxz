@@ -23,11 +23,11 @@ func TestScrollTrackStableAcrossHistoryPages(t *testing.T) {
 		}
 		return events
 	}
-	m.applyHistoryPage(historyPage{id: "s", start: 256, initial: true, events: page(256, 384)})
+	m.applyHistoryPage(historyPage{id: "s", start: 256, initial: true, rows: page(256, 384)})
 	m.view.SetYOffset(5)
 	before := ansi.Strip(m.scrollTrack())
 	for _, start := range []uint64{128, 0} {
-		m.applyHistoryPage(historyPage{id: "s", start: start, end: start + 128, events: page(start, start+128)})
+		m.applyHistoryPage(historyPage{id: "s", start: start, end: start + 128, rows: page(start, start+128)})
 		if got := ansi.Strip(m.scrollTrack()); got != before {
 			t.Fatalf("prepend moved handle:\n%s\n%s", before, got)
 		}

@@ -24,6 +24,7 @@ func TestAgentStatusStaysInFooter(t *testing.T) {
 			m.current().Model = "sonnet-4-5"
 			m.current().State = state
 			m.events["s"] = []*api.Event{{Seq: 1, Kind: "assistant", Text: strings.Repeat("history\n", 60)}}
+			setRows(m, "s", m.events["s"])
 			m.render()
 			for _, bottom := range []bool{true, false} {
 				if bottom {
@@ -40,6 +41,7 @@ func TestAgentStatusStaysInFooter(t *testing.T) {
 			// A reasoning level appears only once the provider confirms one.
 			m.events["s"] = append(m.events["s"], &api.Event{Seq: 2, RunId: "run", Kind: "models",
 				Payload: []byte(`{"model":"opus-4-6","effective_effort":"high","models":[{"id":"opus-4-6"}]}`)})
+			setRows(m, "s", m.events["s"])
 			m.render()
 			footer := strings.Split(ansi.Strip(m.sessionScreen()), "\n")
 			if last := footer[len(footer)-1]; !strings.HasPrefix(last, " opus-4-6 · high ") {
@@ -112,6 +114,7 @@ func TestStatusClickCopiesWholeVisibleNotice(t *testing.T) {
 			out.Reset()
 			m.notice = message
 			m.events["s"] = []*api.Event{{Seq: 1, Kind: "assistant", Text: strings.Repeat("history\n", 100)}}
+			setRows(m, "s", m.events["s"])
 			m.render()
 			m.view.GotoTop()
 			m.Update(tea.MouseMsg{X: x, Y: y, Button: tea.MouseButtonLeft, Action: tea.MouseActionPress})

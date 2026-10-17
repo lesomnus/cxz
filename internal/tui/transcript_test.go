@@ -35,9 +35,11 @@ func TestStateReplacedNotAddedToTranscript(t *testing.T) {
 	m.projectView = false
 	m.sessions = []*api.Session{{Id: "s", ProjectId: "p", State: "working"}}
 	m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
-	m.Update(received{id: "s", event: &api.Event{Kind: "state", Seq: 1, Text: "working"}})
-	m.Update(received{id: "s", event: &api.Event{Kind: "assistant", Seq: 2, Text: "Useful output"}})
-	m.Update(received{id: "s", event: &api.Event{Kind: "state", Seq: 3, Text: "idle"}})
+	live(m, "s",
+		&api.Event{Kind: "state", Seq: 1, Text: "working"},
+		&api.Event{Kind: "assistant", Seq: 2, Text: "Useful output"},
+		&api.Event{Kind: "state", Seq: 3, Text: "idle"},
+	)
 	m.Update(listing{sessions: []*api.Session{{Id: "s", ProjectId: "p", State: "idle"}}})
 	text := ansi.Strip(m.View())
 	if strings.Contains(text, "[working]") || strings.Contains(text, "[idle]") || !strings.Contains(text, "Useful output") {

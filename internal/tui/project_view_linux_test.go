@@ -137,6 +137,9 @@ func (*screenClient) Projects(context.Context, *api.Empty, ...grpc.CallOption) (
 func (*screenClient) Watch(context.Context, *api.WatchRequest, ...grpc.CallOption) (grpc.ServerStreamingClient[api.Event], error) {
 	return nil, fmt.Errorf("fixture has no event stream")
 }
+func (*screenClient) Rows(context.Context, *api.RowsRequest, ...grpc.CallOption) (grpc.ServerStreamingClient[api.Row], error) {
+	return nil, fmt.Errorf("fixture has no row stream")
+}
 
 func TestProjectSessionTerminalNavigation(t *testing.T) {
 	master, err := os.OpenFile("/dev/ptmx", os.O_RDWR|unix.O_NOCTTY, 0)

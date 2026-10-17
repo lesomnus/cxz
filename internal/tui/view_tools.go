@@ -37,8 +37,8 @@ func (m *model) toolTargets() []toolTarget {
 		return nil
 	}
 	eligible := map[uint64]bool{}
-	for _, e := range m.events[s.Id] {
-		if e.Kind == "tool_call" || e.Kind == "tool_result" {
+	for _, e := range m.rows[s.Id] {
+		if e.GetToolSummary() != nil {
 			eligible[e.Seq] = true
 		}
 	}
@@ -165,11 +165,11 @@ func (m *model) previewSubject(seq uint64) *api.Event {
 	if s == nil {
 		return nil
 	}
-	for _, e := range m.events[s.Id] {
+	for _, e := range m.rows[s.Id] {
 		if e.Seq != seq {
 			continue
 		}
-		if e.Kind == "approval" || e.Kind == "tool_call" || e.Kind == "tool_result" {
+		if e.Kind == "approval" || e.GetToolSummary() != nil {
 			return e
 		}
 		return nil

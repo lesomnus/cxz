@@ -10,7 +10,7 @@ import (
 func TestAuxiliarySuggestionRequiresCurrentSourceAndEmptyDraft(t *testing.T) {
 	m := conversationModel()
 	connection := m.connectionRef()
-	j := &auxiliary.Job{ID: "job", Session: "s", Run: "run", Turn: 3, Status: "completed", Suggestion: "다음 작업을 진행해줘"}
+	j := &auxiliary.Job{ID: "job", Session: "s", Run: "run", Turn: 3, Response: 2, Status: "completed", Suggestion: "다음 작업을 진행해줘"}
 	receive := func() {
 		m.receiveAuxiliary(auxiliaryResult{connection: connection, session: "s", action: "apply", reply: auxiliary.Reply{Job: j}})
 	}
@@ -21,11 +21,13 @@ func TestAuxiliarySuggestionRequiresCurrentSourceAndEmptyDraft(t *testing.T) {
 	}
 	m.input.Reset()
 	m.events["s"] = []*api.Event{{Kind: "input", Seq: 4}}
+	setRows(m, "s", m.events["s"])
 	receive()
 	if m.input.Value() != "" {
 		t.Fatal("applied stale suggestion")
 	}
 	m.events["s"] = nil
+	setRows(m, "s", m.events["s"])
 	j.Run = "old"
 	receive()
 	if m.input.Value() != "" {

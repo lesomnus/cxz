@@ -57,7 +57,8 @@ func TestConversationCodeCopyAfterCacheResizeAndScroll(t *testing.T) {
 		source := "printf '한글'\n\tprintf done\n"
 		e := &api.Event{Kind: "assistant", Seq: 1, Text: strings.Repeat("intro text\n", 25) + "\n```sh\n" + source + "```"}
 		m.events["s"] = []*api.Event{e}
-		page := m.prepareHistoryPage(context.Background(), historyPage{events: []*api.Event{e}}, "claude", m.view.Width)
+		setRows(m, "s", m.events["s"])
+		page := m.prepareHistoryPage(context.Background(), historyPage{rows: []*api.Event{e}}, "claude", m.view.Width)
 		m.renderedResponses = page.prepared
 		m.Update(tea.WindowSizeMsg{Width: width, Height: 32})
 		m.render()
@@ -148,6 +149,7 @@ func TestPreviewSixteenRowsAndCopyCloseButtons(t *testing.T) {
 func TestConversationSelectionCopyAndDetach(t *testing.T) {
 	m := conversationModel()
 	m.events["s"] = []*api.Event{{Kind: "assistant", Seq: 1, Text: "alpha 한글 beta\nsecond line"}}
+	setRows(m, "s", m.events["s"])
 	m.render()
 	m.view.GotoTop()
 	var out bytes.Buffer
@@ -195,6 +197,7 @@ func TestCodeBlockDragExcludesDisplayPadding(t *testing.T) {
 					raw = "- nested\n\n" + raw
 				}
 				m.events["s"] = []*api.Event{{Kind: "assistant", Seq: 1, Text: raw}}
+				setRows(m, "s", m.events["s"])
 				m.render()
 				m.view.GotoTop()
 				b := m.codeButtons[0]
@@ -227,6 +230,7 @@ func TestCodeBlockDragExcludesDisplayPadding(t *testing.T) {
 func TestCodeBlockPartialSelectionAfterScroll(t *testing.T) {
 	m := conversationModel()
 	m.events["s"] = []*api.Event{{Kind: "assistant", Seq: 1, Text: "```text\nfirst line\n    second line\n" + strings.Repeat("more\n", 40) + "```"}}
+	setRows(m, "s", m.events["s"])
 	m.render()
 	b := m.codeButtons[0]
 	m.view.SetYOffset(b.y + 1)

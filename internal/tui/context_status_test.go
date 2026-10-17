@@ -26,10 +26,12 @@ func TestContextStatusRunAndCompaction(t *testing.T) {
 	s := m.current()
 	s.Agent = "codex"
 	m.events[s.Id] = []*api.Event{{RunId: s.RunId, Kind: "usage", Text: "thread/tokenUsage/updated", Payload: []byte(`{"tokenUsage":{"last":{"totalTokens":47000},"modelContextWindow":112000}}`)}}
+	setRows(m, s.Id, m.events[s.Id])
 	if got := m.contextStatus(); got != "⣄35%" {
 		t.Fatal(got)
 	}
 	m.events[s.Id] = append(m.events[s.Id], &api.Event{RunId: s.RunId, Kind: "compact"})
+	setRows(m, s.Id, m.events[s.Id])
 	if got := m.contextStatus(); got != "⠀—" {
 		t.Fatal(got)
 	}
@@ -51,6 +53,7 @@ func TestClaudeContextReportStatus(t *testing.T) {
 		t.Fatal(got)
 	}
 	m.events[s.Id] = append(m.events[s.Id], &api.Event{RunId: s.RunId, Kind: "input", Seq: 4})
+	setRows(m, s.Id, m.events[s.Id])
 	if got := m.contextStatus(); got != "⠀—" {
 		t.Fatal("stale report", got)
 	}
@@ -65,6 +68,7 @@ func TestClaudeEmptyResultKeepsKnownLimits(t *testing.T) {
 		{RunId: s.RunId, Kind: "usage", Text: "context/message", Payload: []byte(`{"model":"x","usage":{"input_tokens":110000}}`)},
 		{RunId: s.RunId, Kind: "turn_end", Payload: []byte(`{}`)},
 	}
+	setRows(m, s.Id, m.events[s.Id])
 	if got := m.contextStatus(); got != "⡀11%" {
 		t.Fatal(got)
 	}
@@ -75,10 +79,12 @@ func TestContextStatusInvalidatesWhenOlderLimitsArrive(t *testing.T) {
 	s := m.current()
 	usage := &api.Event{RunId: s.RunId, Kind: "usage", Text: "context/message", Payload: []byte(`{"model":"x","usage":{"input_tokens":110000}}`)}
 	m.events[s.Id] = []*api.Event{usage}
+	setRows(m, s.Id, m.events[s.Id])
 	if got := m.contextStatus(); got != "⠀—" {
 		t.Fatal(got)
 	}
 	m.events[s.Id] = []*api.Event{{RunId: s.RunId, Kind: "turn_end", Payload: []byte(`{"modelUsage":{"x":{"contextWindow":1000000}}}`)}, usage}
+	setRows(m, s.Id, m.events[s.Id])
 	if got := m.contextStatus(); got != "⡀11%" {
 		t.Fatal("older limits did not invalidate cached status", got)
 	}

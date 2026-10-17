@@ -72,7 +72,7 @@ func (m *model) scrollStatus() string {
 		floor := m.historyWindow(s.Id).floor
 		tail := max(s.LastSeq, m.cursor[s.Id])
 		// The journal reaches at least as far as what is loaded from it.
-		if events := m.events[s.Id]; len(events) > 0 {
+		if events := m.rows[s.Id]; len(events) > 0 {
 			tail = max(tail, events[len(events)-1].Seq)
 		}
 		if tail > floor {

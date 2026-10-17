@@ -19,7 +19,7 @@ func TestConversationNeverStopsPartwayDownTheView(t *testing.T) {
 		for i := uint64(1); i <= 80; i++ {
 			events = append(events, &api.Event{Seq: i, RunId: "run", Kind: "assistant", Text: fmt.Sprintf("line %d", i)})
 		}
-		m.applyHistoryPage(historyPage{id: "s", start: 0, initial: true, events: events})
+		m.applyHistoryPage(historyPage{id: "s", start: 0, initial: true, rows: rowsOf(events)})
 		return m, events
 	}
 	past := func(t *testing.T, m *model) {
@@ -31,6 +31,7 @@ func TestConversationNeverStopsPartwayDownTheView(t *testing.T) {
 	}
 	show := func(m *model, events []*api.Event) {
 		m.events["s"] = events
+		setRows(m, "s", m.events["s"])
 		m.dropUnloadedRenderCaches()
 		m.render()
 	}

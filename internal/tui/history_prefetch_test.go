@@ -28,11 +28,11 @@ func historyFixture(start uint64, count int) []*api.Event {
 func TestHistoryPrefetchStartsBeforeLoadedEdge(t *testing.T) {
 	m := conversationModel()
 	m.client = &pagedClient{}
-	m.Update(historyPage{id: "s", start: 512, initial: true, events: historyFixture(512, 128)})
+	m.Update(historyPage{id: "s", start: 512, initial: true, rows: historyFixture(512, 128)})
 	if m.view.YOffset <= 6*m.view.Height || m.historyLoading["s"] != 512 {
 		t.Fatal("initial tail did not schedule one older page while still at the bottom")
 	}
-	m.applyHistoryPage(historyPage{id: "s", start: 384, end: 512, events: historyFixture(384, 128)})
+	m.applyHistoryPage(historyPage{id: "s", start: 384, end: 512, rows: historyFixture(384, 128)})
 	if m.loadOlderHistory() != nil || !m.view.AtBottom() {
 		t.Fatal("prefetch eagerly drained the whole journal or moved the viewport")
 	}
@@ -58,8 +58,19 @@ type slowHistoryClient struct {
 	events    []*api.Event
 }
 
-func (c *slowHistoryClient) History(ctx context.Context, _ *api.WatchRequest, _ ...grpc.CallOption) (*api.EventBatch, error) {
+// A page that is still in flight: what the test holds open is the fetch the
+// pager issues, which is a page of rows.
+func (c *slowHistoryClient) Transcript(ctx context.Context, _ *api.TranscriptRequest, _ ...grpc.CallOption) (*api.TranscriptReply, error) {
 	close(c.requested)
+	select {
+	case <-c.release:
+		return &api.TranscriptReply{Events: c.events}, nil
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+}
+
+func (c *slowHistoryClient) History(ctx context.Context, _ *api.WatchRequest, _ ...grpc.CallOption) (*api.EventBatch, error) {
 	select {
 	case <-c.release:
 		return &api.EventBatch{Events: c.events}, nil
@@ -73,13 +84,15 @@ func TestHistoryPreparationKeepsUIResponsive(t *testing.T) {
 	lipgloss.SetColorProfile(termenv.TrueColor)
 	defer lipgloss.SetColorProfile(profile)
 	m := conversationModel()
-	m.applyHistoryPage(historyPage{id: "s", start: 256, initial: true, events: historyFixture(256, 64)})
+	m.applyHistoryPage(historyPage{id: "s", start: 256, initial: true, rows: historyFixture(256, 64)})
 	m.view.SetYOffset(4 * m.view.Height)
-	client := &slowHistoryClient{requested: make(chan struct{}), release: make(chan struct{}), events: []*api.Event{
+	// What a page carries is rows, so the fake answers with the rows the
+	// projection makes of these records: the call and its result are one.
+	client := &slowHistoryClient{requested: make(chan struct{}), release: make(chan struct{}), events: rowsOf([]*api.Event{
 		{Seq: 129, Kind: "assistant", Text: "## Earlier answer\n\n```go\npackage main\nfunc main() {}\n```"},
 		{Seq: 130, RunId: "run", RequestId: "bash", Kind: "tool_call", Text: "Bash", Payload: []byte(`{"command":"for i in 1 2 3; do echo $i; done"}`)},
 		{Seq: 131, RunId: "run", RequestId: "bash", Kind: "tool_result", Text: "done"},
-	}}
+	})}
 	m.client = client
 	cmd := m.loadOlderHistory()
 	if cmd == nil {
@@ -103,7 +116,7 @@ func TestHistoryPreparationKeepsUIResponsive(t *testing.T) {
 			if page.err != nil || len(page.prepared) != 1 || len(page.toolBodies) != 1 {
 				t.Fatal("history arrived without prepared Markdown and tool rows", page.err)
 			}
-			if _, exists := m.renderedResponses[page.events[0]]; exists || len(m.renderedTools) != 0 {
+			if _, exists := m.renderedResponses[page.rows[0]]; exists || len(m.renderedTools) != 0 {
 				t.Fatal("worker mutated the UI caches")
 			}
 			visible := m.view.View()
@@ -167,7 +180,7 @@ func TestInitialHistorySkeletonLifecycle(t *testing.T) {
 			if !m.historyOpening["s"] {
 				t.Fatal("stale watcher cleared the skeleton")
 			}
-			m.applyHistoryPage(historyPage{id: "s", initial: true, epoch: 2, events: []*api.Event{{Seq: 1, Kind: "assistant", Text: "Loaded answer"}}})
+			m.applyHistoryPage(historyPage{id: "s", initial: true, epoch: 2, rows: []*api.Event{{Seq: 1, Kind: "assistant", Text: "Loaded answer"}}})
 			if m.historyOpening["s"] || !strings.Contains(m.conversationView(), "Loading conversation") {
 				t.Fatal("a ready conversation interrupted the current sweep or kept fetching history")
 			}
@@ -204,7 +217,7 @@ func TestHistorySkeletonWaitsThroughBookkeepingPages(t *testing.T) {
 	for seq := uint64(385); seq <= 512; seq++ {
 		tail = append(tail, &api.Event{Seq: seq, Kind: "state", Text: "idle"})
 	}
-	m.Update(historyPage{id: "s", initial: true, epoch: 2, start: 384, events: tail})
+	m.Update(historyPage{id: "s", initial: true, epoch: 2, start: 384, rows: rowsOf(tail)})
 	if !m.historyOpening["s"] || m.historyLoading["s"] != 384 || !strings.Contains(m.conversationView(), "Loading conversation") {
 		t.Fatal("an invisible tail page ended loading before any conversation arrived")
 	}
@@ -212,14 +225,14 @@ func TestHistorySkeletonWaitsThroughBookkeepingPages(t *testing.T) {
 	for seq := uint64(257); seq <= 384; seq++ {
 		updates = append(updates, &api.Event{Seq: seq, Kind: "update", Text: "agent update completed"})
 	}
-	m.Update(historyPage{id: "s", end: 384, start: 256, events: updates})
+	m.Update(historyPage{id: "s", end: 384, start: 256, rows: rowsOf(updates)})
 	if m.view.YOffset <= 6*m.view.Height {
 		t.Fatal("fixture must exceed the normal prefetch runway")
 	}
 	if !m.historyOpening["s"] || m.historyLoading["s"] != 256 || !strings.Contains(m.conversationView(), "Loading conversation") {
 		t.Fatal("visible bookkeeping stopped loading or replaced the skeleton")
 	}
-	m.Update(historyPage{id: "s", end: 256, start: 128, events: []*api.Event{{Seq: 256, Kind: "assistant", Text: "Actual conversation"}}})
+	m.Update(historyPage{id: "s", end: 256, start: 128, rows: []*api.Event{{Seq: 256, Kind: "assistant", Text: "Actual conversation"}}})
 	if m.historyOpening["s"] || !m.view.AtBottom() || m.historyLoading["s"] != 0 || m.cursor["s"] != 513 {
 		t.Fatal("conversation arrival did not end opening at the latest position or stop eager paging")
 	}
@@ -245,9 +258,11 @@ func TestHistorySkeletonFinishesCurrentCycleWhileEventsContinue(t *testing.T) {
 			t.Fatal("skeleton ended while history was still loading")
 		}
 	}
-	m.Update(historyPage{id: "s", initial: true, epoch: 2, events: []*api.Event{{Seq: 1, Kind: "assistant", Text: "Loaded answer"}}})
+	m.Update(historyPage{id: "s", initial: true, epoch: 2, rows: []*api.Event{{Seq: 1, Kind: "assistant", Text: "Loaded answer"}}})
 	m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("draft during sweep")})
-	m.Update(received{id: "s", event: &api.Event{Seq: 2, Kind: "assistant", Text: "Live follow-up"}})
+	followUp := &api.Event{Seq: 2, Kind: "assistant", Text: "Live follow-up"}
+	m.Update(received{id: "s", event: followUp})
+	m.Update(liveRows{id: "s", rows: []*api.Event{followUp}, updated: 2, epoch: 2})
 	// Resizing must preserve the remaining time in the current cycle.
 	m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
 	if m.historyOpening["s"] || m.cursor["s"] != 2 || m.input.Value() != "draft during sweep" {
@@ -270,10 +285,10 @@ func TestHistoryOpeningSurvivesSessionSwitch(t *testing.T) {
 	m.sessions = append(m.sessions, &api.Session{Id: "other", Agent: "claude"})
 	m.historyOpening = map[string]bool{"s": true}
 	m.watchID, m.watchEpoch = "s", 2
-	m.Update(historyPage{id: "s", initial: true, epoch: 2, start: 256, events: []*api.Event{{Seq: 384, Kind: "state"}}})
+	m.Update(historyPage{id: "s", initial: true, epoch: 2, start: 256, rows: []*api.Event{{Seq: 384, Kind: "state"}}})
 	m.conversationView()
 	m.selected, m.watchID = 1, "other"
-	m.Update(historyPage{id: "s", start: 128, end: 256, events: []*api.Event{{Seq: 256, Kind: "state"}}})
+	m.Update(historyPage{id: "s", start: 128, end: 256, rows: []*api.Event{{Seq: 256, Kind: "state"}}})
 	m.render()
 	if strings.Contains(m.conversationView(), "Loading conversation") || m.historyLoading["s"] != 0 {
 		t.Fatal("inactive session affected the selected conversation or kept fetching")
@@ -291,9 +306,9 @@ func TestHistoryOpeningEndsOnExhaustionOrError(t *testing.T) {
 		m := conversationModel()
 		m.historyOpening = map[string]bool{"s": true}
 		m.watchID, m.watchEpoch = "s", 2
-		m.Update(historyPage{id: "s", initial: true, epoch: 2, start: 128, events: []*api.Event{{Seq: 256, Kind: "state"}}})
+		m.Update(historyPage{id: "s", initial: true, epoch: 2, start: 128, rows: []*api.Event{{Seq: 256, Kind: "state"}}})
 		m.conversationView()
-		page := historyPage{id: "s", start: 0, end: 128, events: []*api.Event{{Seq: 128, Kind: "state"}}}
+		page := historyPage{id: "s", start: 0, end: 128, rows: []*api.Event{{Seq: 128, Kind: "state"}}}
 		if fail {
 			page.err = errors.New("offline")
 		}
@@ -362,7 +377,7 @@ func BenchmarkHistoryPageApply(b *testing.B) {
 	}
 	for _, prepared := range []bool{false, true} {
 		b.Run(fmt.Sprintf("prepared=%v", prepared), func(b *testing.B) {
-			page := historyPage{id: "s", start: 0, end: 128, events: events}
+			page := historyPage{id: "s", start: 0, end: 128, rows: rowsOf(events)}
 			if prepared {
 				m := conversationModel()
 				page = m.prepareHistoryPage(context.Background(), page, "claude", m.view.Width)
@@ -370,7 +385,7 @@ func BenchmarkHistoryPageApply(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				b.StopTimer()
 				m := conversationModel()
-				m.applyHistoryPage(historyPage{id: "s", start: 128, initial: true, events: historyFixture(128, 128)})
+				m.applyHistoryPage(historyPage{id: "s", start: 128, initial: true, rows: historyFixture(128, 128)})
 				m.view.SetYOffset(4 * m.view.Height)
 				b.StartTimer()
 				m.applyHistoryPage(page)

@@ -56,7 +56,7 @@ func TestLocalHelpAndQuotaOnlyFooter(t *testing.T) {
 	if !strings.Contains(ansi.Strip(m.View()), "cxz /help") {
 		t.Fatal("missing local help")
 	}
-	m.Update(received{id: "s", event: &api.Event{Seq: 1, Kind: "assistant", Text: "New reply"}})
+	live(m, "s", &api.Event{Seq: 1, Kind: "assistant", Text: "New reply"})
 	// Scroll to inspect the full content; help remains before subsequent replies.
 	m.view.GotoTop()
 	content := m.View()

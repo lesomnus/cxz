@@ -233,9 +233,11 @@ func (p *Projection) Apply(e *api.Event) {
 			return
 		}
 	case "approval":
-		if isQuestion(e) {
-			p.questions[key] = e
-		}
+		// Every approval row keeps its own request, so a resolution has
+		// somewhere to be folded. A question always needed that; so does an
+		// approval whose tool never produced a row -- its decision used to be
+		// dropped, leaving the row reading "requested" after it was answered.
+		p.questions[key] = e
 		if id := related(e); id != "" {
 			toolKey := identity(e.RunId, id)
 			p.approvals[key] = toolKey
@@ -250,7 +252,7 @@ func (p *Projection) Apply(e *api.Event) {
 			}
 		}
 	case "approval_resolved":
-		if request := p.questions[key]; request != nil {
+		if request := p.questions[key]; request != nil && p.Rows[request.Seq] != nil {
 			v := proto.Clone(request).(*api.Event)
 			data := object(request.Payload)
 			resolution := object(e.Payload)
@@ -336,8 +338,14 @@ func (p *Projection) Apply(e *api.Event) {
 		return
 	}
 	v := proto.Clone(e).(*api.Event)
-	// Questions retain their options; other native bodies are loaded on demand.
-	if e.Kind != "approval" {
+	// A payload is dropped because it is a native body, loaded on demand by a
+	// reader that wants it. Two kinds are exceptions, because their payload is
+	// not a body but the whole of what the row says: a question's options, and
+	// the floor a trim leaves behind -- without it a client cannot tell that
+	// display history below it is gone while the agent's context is not.
+	// The kind is spelled out rather than taken from internal/core: that package
+	// locks files, which the WASM sandbox cannot build. See core.HistoryTrimmedKind.
+	if e.Kind != "approval" && e.Kind != "history_trimmed" {
 		v.Payload = nil
 	}
 	if slices.Contains([]string{"diagnostic", "stderr", "error"}, e.Kind) || e.Kind == "turn_end" && e.Text == "failed" {

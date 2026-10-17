@@ -52,6 +52,7 @@ func TestQuotaDefaultModelAndRunIsolation(t *testing.T) {
 		{Kind: "models", RunId: "run", Payload: []byte(`{"Model":"","Models":[{"ID":"gpt-5.3-codex-spark","Default":true}]}`)},
 		{Kind: "models", RunId: "old", Payload: []byte(`{"Model":"wrong"}`)},
 	}
+	setRows(m, "s", m.events["s"])
 	if m.quotaModel() != "gpt-5.3-codex-spark" {
 		t.Fatal(m.quotaModel())
 	}

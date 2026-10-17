@@ -97,6 +97,7 @@ func toolViewModel() *model {
 		{Seq: 5, RunId: "run", Kind: "tool_call", Text: "Read", RequestId: "r", Payload: []byte(`{"file_path":"main.go"}`)},
 		{Seq: 6, RunId: "run", Kind: "tool_result", RequestId: "r", Payload: []byte(fmt.Sprintf(`{"content":%q}`, strings.Repeat("package main\n", 30)))},
 	}
+	setRows(m, "s", m.events["s"])
 	m.render()
 	return m
 }
@@ -186,12 +187,14 @@ func TestViewPreservesSelectionAsEventsArriveAndDoesNotCrossRuns(t *testing.T) {
 	m.Update(tea.KeyMsg{Type: tea.KeyHome})
 	for i := uint64(7); i < 100; i++ {
 		m.events["s"] = append(m.events["s"], &api.Event{Seq: i, Kind: "assistant", Text: "incoming output"})
+		setRows(m, "s", m.events["s"])
 	}
 	m.render()
 	if m.toolSelector.seq != 2 || !strings.Contains(ansi.Strip(m.conversationView()), "› ") {
 		t.Fatal("new events displaced selection")
 	}
 	m.events["s"] = append(m.events["s"], &api.Event{Seq: 100, RunId: "new-run", Kind: "tool_result", RequestId: "r", Payload: []byte(`{"content":"wrong run"}`)})
+	setRows(m, "s", m.events["s"])
 	p := preview(m, 5)
 	if strings.Contains(p.source, "wrong run") {
 		t.Fatal("matched another run")
@@ -294,6 +297,9 @@ func TestToolPreviewTabClicksInBothLayouts(t *testing.T) {
 	}
 }
 
+// A tool is one row, at the sequence of the record that opened it. Its result
+// is not a second row to open, which is why the panel is addressed by that one
+// sequence and reads both halves from the records behind it.
 func TestCodexPreviewTabsAndMissingPayloads(t *testing.T) {
 	m := conversationModel()
 	m.current().Agent = "codex"
@@ -302,15 +308,25 @@ func TestCodexPreviewTabsAndMissingPayloads(t *testing.T) {
 		{Seq: 2, RunId: "r", Kind: "tool_result", RequestId: "cmd", Payload: []byte(`{"item":{"type":"commandExecution","aggregatedOutput":"hello"}}`)},
 		{Seq: 3, RunId: "other", Kind: "tool_result", RequestId: "cmd", Payload: []byte(`{"item":{"type":"commandExecution","aggregatedOutput":"wrong run"}}`)},
 	}
-	p := preview(m, 2)
+	setRows(m, "s", m.events["s"])
+	if len(m.rows["s"]) != 2 {
+		t.Fatal("the call and its result are one row", len(m.rows["s"]))
+	}
+	p := preview(m, 1)
 	if p.source != "hello" {
 		t.Fatal(p.source)
+	}
+	if strings.Contains(p.source, "wrong run") {
+		t.Fatal("matched another run")
 	}
 	p.selectTab(0)
 	if p.source != "echo hello" || p.language != "bash" {
 		t.Fatal(p)
 	}
+
+	// A call with nothing back yet says so rather than showing an empty tab.
 	m.events["s"] = m.events["s"][:1]
+	setRows(m, "s", m.events["s"])
 	p = preview(m, 1)
 	if p.source != "echo hello" {
 		t.Fatal("pending input missing")
@@ -319,7 +335,11 @@ func TestCodexPreviewTabsAndMissingPayloads(t *testing.T) {
 	if p.source != "No output available yet." {
 		t.Fatal(p.source)
 	}
-	m.events["s"] = []*api.Event{{Seq: 4, Kind: "tool_result", Text: "orphan output"}}
+
+	// A result whose call is gone keeps its own row, and the panel says what it
+	// does not have rather than leaving the tab blank.
+	m.events["s"] = []*api.Event{{Seq: 4, RunId: "r", RequestId: "orphan", Kind: "tool_result", Text: "orphan output"}}
+	setRows(m, "s", m.events["s"])
 	p = preview(m, 4)
 	if p.source != "orphan output" {
 		t.Fatal(p.source)

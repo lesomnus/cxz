@@ -20,6 +20,7 @@ func TestMCPApprovalLabelAndDoubleClick(t *testing.T) {
 			{Seq: 2, RunId: "run", RequestId: "mcp-1", Kind: "approval_resolved", Text: state},
 			{Seq: 3, RunId: "other-run", RequestId: "mcp-1", Kind: "approval_resolved", Text: "wrong-run"},
 		}
+		setRows(m, "s", m.events["s"])
 		m.render()
 		m.view.GotoTop()
 		view := ansi.Strip(m.view.View())
@@ -58,6 +59,7 @@ func TestMCPApprovalMissingNameAndResolution(t *testing.T) {
 	m.current().Agent = "codex"
 	e := &api.Event{Seq: 1, Kind: "approval", Text: agentview.CodexElicitation, Payload: []byte(`{"params":{"mode":"form"}}`)}
 	m.events["s"] = []*api.Event{e}
+	setRows(m, "s", m.events["s"])
 	if got := ansi.Strip(approvalLine(m.current(), e, "allowed", 80)); strings.Contains(got, "·") || !strings.Contains(got, "✓ MCP") {
 		t.Fatal(got)
 	}

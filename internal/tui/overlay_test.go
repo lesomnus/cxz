@@ -89,9 +89,10 @@ func TestClaudeContextIsCorrelatedAndJournalRetained(t *testing.T) {
 		{Seq: 3, RunId: "run", Kind: "assistant", Text: "context breakdown"},
 		{Seq: 4, RunId: "run", Kind: "turn_end", Text: "completed"},
 	}
-	for _, e := range events {
-		m.Update(received{id: "s", event: e})
-	}
+	live(m, "s", events...)
+	// The /context answer is captured from records, and the rows for the same
+	// turn arrive on the row stream.
+	m.Update(liveRows{id: "s", rows: rowsOf(events), updated: 4, epoch: m.watchEpoch})
 	if !strings.Contains(m.report.context.raw, "context breakdown") || strings.Contains(m.report.context.raw, "unrelated") {
 		t.Fatal("wrong context capture")
 	}

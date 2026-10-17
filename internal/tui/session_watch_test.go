@@ -15,12 +15,17 @@ import (
 type multipleWatchClient struct {
 	api.SessionsClient
 	streams  map[string]chan streamEvent
+	rows     map[string]chan streamRow
 	requests chan *api.WatchRequest
 }
 
 func (c *multipleWatchClient) Watch(ctx context.Context, r *api.WatchRequest, _ ...grpc.CallOption) (api.Sessions_WatchClient, error) {
 	c.requests <- r
 	return &liveWatchStream{channelEvents: channelEvents{ctx, c.streams[r.SessionId]}}, nil
+}
+
+func (c *multipleWatchClient) Rows(ctx context.Context, r *api.RowsRequest, _ ...grpc.CallOption) (api.Sessions_RowsClient, error) {
+	return &liveRowStream{ctx: ctx, rows: c.rows[r.SessionId]}, nil
 }
 
 func TestUnselectedSessionsStayCurrentWithoutReplayingOnSwitch(t *testing.T) {
@@ -30,9 +35,13 @@ func TestUnselectedSessionsStayCurrentWithoutReplayingOnSwitch(t *testing.T) {
 	m.ctx = ctx
 	m.sessions = append(m.sessions, &api.Session{Id: "second", Agent: "claude", RunId: "other-run"})
 	m.allSessions = m.sessions
-	c := &multipleWatchClient{streams: map[string]chan streamEvent{"s": make(chan streamEvent, 2), "second": make(chan streamEvent, 2)}, requests: make(chan *api.WatchRequest, 4)}
+	c := &multipleWatchClient{
+		streams:  map[string]chan streamEvent{"s": make(chan streamEvent, 2), "second": make(chan streamEvent, 2)},
+		rows:     map[string]chan streamRow{"s": make(chan streamRow, 2), "second": make(chan streamRow, 2)},
+		requests: make(chan *api.WatchRequest, 4),
+	}
 	m.client = c
-	probe := &liveWatchProbe{messages: make(chan caughtUp, 4)}
+	probe := &liveWatchProbe{messages: make(chan liveRows, 4)}
 	p := tea.NewProgram(probe, tea.WithContext(ctx), tea.WithInput(nil), tea.WithOutput(io.Discard), tea.WithoutRenderer(), tea.WithoutSignalHandler())
 	m.program = p
 	done := make(chan struct{})
@@ -47,14 +56,16 @@ func TestUnselectedSessionsStayCurrentWithoutReplayingOnSwitch(t *testing.T) {
 		}
 	}
 	before := m.view.View()
-	c.streams["second"] <- streamEvent{event: &api.Event{Seq: 1, RunId: "other-run", Kind: "assistant", Text: "Already current when opened"}}
+	answer := &api.Event{Seq: 1, RunId: "other-run", Kind: "assistant", Text: "Already current when opened"}
+	c.streams["second"] <- streamEvent{event: answer}
+	c.rows["second"] <- streamRow{row: &api.Row{Event: answer, Updated: 1}}
 	select {
 	case batch := <-probe.messages:
 		m.Update(batch)
 	case <-ctx.Done():
 		t.Fatal("background conversation not delivered")
 	}
-	if m.cursor["second"] != 1 || m.view.View() != before {
+	if len(m.rows["second"]) != 1 || m.view.View() != before {
 		t.Fatal("background update did not stay in its own cache")
 	}
 	m.selected = 1
@@ -81,8 +92,8 @@ func TestUnselectedSessionsStayCurrentWithoutReplayingOnSwitch(t *testing.T) {
 	if old.ctx.Err() == nil {
 		t.Fatal("removed session's subscription leaked")
 	}
-	m.Update(caughtUp{id: "second", epoch: old.epoch, events: []*api.Event{{Seq: 2, Kind: "assistant", Text: "stale"}}})
-	if m.cursor["second"] != 1 {
+	m.Update(liveRows{id: "second", epoch: old.epoch, rows: []*api.Event{{Seq: 2, Kind: "assistant", Text: "stale"}}, updated: 2})
+	if len(m.rows["second"]) != 1 {
 		t.Fatal("removed stream's queued response was accepted")
 	}
 }

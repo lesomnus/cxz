@@ -50,6 +50,7 @@ func TestSessionIndicatorsAndReadAcknowledgement(t *testing.T) {
 	}
 	delete(m.historyOpening, s.Id)
 	m.events[s.Id] = []*api.Event{{Seq: 4, Kind: "assistant", Text: strings.Repeat("response\n", 60)}}
+	setRows(m, s.Id, m.events[s.Id])
 	m.render()
 	m.view.GotoTop()
 	m.View()
