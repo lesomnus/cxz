@@ -5,8 +5,22 @@ import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import type { ProjectService } from "#gen/cxz/project_svc_pb";
 import type { SessionService } from "#gen/cxz/session_svc_pb";
+import { readBy, release } from "./stream-deadline";
+
+/**
+ * How long the Watch snapshot may take to start. The List before it has
+ * already answered, so the server is known to be responsive; this is about a
+ * subscription that was accepted and then never delivered.
+ */
+export const SNAPSHOT_DEADLINE_MS = 10_000;
 
 type Kind = "projects" | "sessions";
+// What this reads from a Watch frame, which is all two entities have in common
+// at the type level: a row named by id that either carries its value or says it
+// is gone. `action` is the RPC behind the change and nothing here shows it.
+type WatchFrame = {
+  items: readonly { id: Uint8Array; value?: Project | Session }[];
+};
 type Snapshot = {
   projects: Project[];
   sessions: Session[];
@@ -83,6 +97,9 @@ export class ResourceInventory {
     signal: AbortSignal,
   ) {
     let retry = 0;
+    const stalled = `The ${
+      kind === "sessions" ? "session" : "project"
+    } list stopped loading.`;
     while (!signal.aborted) {
       const rows = new Map<string, Project | Session>();
       let after = "";
@@ -100,22 +117,47 @@ export class ResourceInventory {
           entity,
           page.items.map((value) => ({ id: value.id, value })),
         );
-        this.publish(kind, rows, false);
-        let first = true;
-        for await (const batch of client.watch(request, { signal })) {
-          if (signal.aborted) return;
-          // A reconnect begins with a fresh snapshot, replacing stale membership
-          // rather than keeping rows that disappeared while disconnected.
-          if (first) rows.clear();
-          first = false;
-          retry = 0;
-          this.store.apply(entity, batch.items);
-          for (const item of batch.items) {
-            const id = key(item.id);
-            if (item.value) rows.set(id, item.value);
-            else rows.delete(id);
+        // What this one row settles is only whether the catalog is empty, or
+        // holds exactly one. Beyond that it is a probe, not an inventory, and
+        // publishing it as a settled catalog is what made cxz#189 look
+        // plausible instead of broken: one session listed, no spinner, no
+        // error, forever. The snapshot owes the rest, so say it is still coming.
+        const partial = after !== "";
+        this.publish(kind, rows, partial);
+        const stream: AsyncIterator<WatchFrame> = client
+          .watch(request, {
+            signal,
+          })
+          [Symbol.asyncIterator]();
+        try {
+          let first = true;
+          for (;;) {
+            // Only the first frame is waited on. A snapshot that has arrived
+            // and a catalog that is not changing are both legitimately silent,
+            // but a snapshot that never starts is not -- and nothing else here
+            // can tell it from a stream that is merely quiet.
+            const step = await (first && partial
+              ? readBy(stream.next(), SNAPSHOT_DEADLINE_MS, stalled)
+              : stream.next());
+            if (step.done) break;
+            if (signal.aborted) return;
+            const batch = step.value;
+            // A reconnect begins with a fresh snapshot, replacing stale
+            // membership rather than keeping rows that disappeared while
+            // disconnected.
+            if (first) rows.clear();
+            first = false;
+            retry = 0;
+            this.store.apply(entity, batch.items);
+            for (const item of batch.items) {
+              const id = key(item.id);
+              if (item.value) rows.set(id, item.value);
+              else rows.delete(id);
+            }
+            this.publish(kind, rows, false);
           }
-          this.publish(kind, rows, false);
+        } finally {
+          release(stream);
         }
         throw new Error("Resource subscription disconnected");
       } catch (error) {

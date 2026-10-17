@@ -1,6 +1,7 @@
 import { Code, ConnectError } from "@connectrpc/connect";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { ref } from "#src/shared/api/connection.ts";
+import { readBy, release } from "#src/shared/api/stream-deadline.ts";
 import type { SessionEvent } from "#gen/cxz/session_pb";
 
 export type HistoryPage = {
@@ -23,6 +24,7 @@ export const HISTORY_PREFETCH_SCREENS = 6;
  * runtime heartbeats an idle stream every 10s, so this is two missed beats.
  */
 export const ROW_STALL_MS = 30_000;
+const stalled = "The conversation stream stopped responding.";
 
 /**
  * Reading a conversation is reading rows, and rows come from the session's
@@ -93,10 +95,12 @@ export class SessionHistory {
    * because it reconnects on a stream that fails.
    */
   async *rows(afterUpdated: bigint, signal: AbortSignal) {
-    const stream = this.sessions.rows(
-      { ref: ref(this.id), afterUpdated, clientId: this.clientId },
-      { signal },
-    )[Symbol.asyncIterator]();
+    const stream = this.sessions
+      .rows(
+        { ref: ref(this.id), afterUpdated, clientId: this.clientId },
+        { signal },
+      )
+      [Symbol.asyncIterator]();
     // Armed by the first heartbeat rather than on open, because a runtime that
     // predates them is legitimately silent: timing it out would reconnect a
     // healthy conversation every ROW_STALL_MS forever.
@@ -104,7 +108,7 @@ export class SessionHistory {
     try {
       for (;;) {
         const next = await (armed
-          ? deadline(stream.next(), ROW_STALL_MS)
+          ? readBy(stream.next(), ROW_STALL_MS, stalled)
           : stream.next());
         if (next.done) return;
         if (!next.value.event) {
@@ -116,12 +120,7 @@ export class SessionHistory {
     } catch (error) {
       throw outdated(error);
     } finally {
-      // Best effort, and deliberately not awaited: an iterator suspended on a
-      // read that never completes -- exactly the case being reported -- would
-      // never process the return, and awaiting it here would swallow the very
-      // error that is being thrown. The request itself is released when the
-      // next connect aborts the signal.
-      void stream.return?.().catch(() => {});
+      release(stream);
     }
   }
   readonly details: LoadEventDetails = async (seq, signal) => {
@@ -131,29 +130,6 @@ export class SessionHistory {
     );
     return page.events;
   };
-}
-
-// deadline reports a frame that did not arrive. The abandoned read stays
-// attached to the race, so its own later rejection is already handled; nothing
-// is lost by dropping its value, because the only reason to be here is that
-// there was no value.
-function deadline<T>(read: Promise<T>, ms: number): Promise<T> {
-  let timer: ReturnType<typeof setTimeout>;
-  return Promise.race([
-    read,
-    new Promise<never>((_, reject) => {
-      timer = setTimeout(
-        () =>
-          reject(
-            new ConnectError(
-              "The conversation stream stopped responding.",
-              Code.Unavailable,
-            ),
-          ),
-        ms,
-      );
-    }),
-  ]).finally(() => clearTimeout(timer));
 }
 
 // Unimplemented from a session's runtime means that runtime predates the
